@@ -1,0 +1,8 @@
+# History files
+.Rhistory
+
+# Crap Mac OS X Hidden Files
+.DS_Store
+
+# Example code in package build process
+*-Ex.R
