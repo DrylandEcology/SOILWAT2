@@ -1,1 +1,0 @@
-gcc -Wall -Wextra -o testing/sw_v27 SW_Main.c filefuncs.c generic.c mymemory.c rands.c SW_Control.c SW_Files.c SW_Flow_lib.c SW_Flow.c SW_Markov.c SW_Model.c SW_Output.c SW_Site.c SW_Sky.c SW_SoilWater.c SW_VegEstab.c SW_VegProd.c SW_Weather.c Times.c

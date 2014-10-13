@@ -20,7 +20,7 @@ objects = SW_Main.o SW_VegEstab.o SW_Control.o generic.o \
           SW_VegProd.o SW_Flow_lib.o SW_Flow.o
 
 test : $(objects)
-		gcc -o sw_v27 $(objects)
+		gcc -o sw_v31 $(objects)
 
 SW_Main.o : generic.h filefuncs.h SW_Defines.h SW_Control.h
 SW_VegEstab.o : generic.h filefuncs.h myMemory.h SW_Defines.h SW_Files.h SW_Site.h SW_Times.h SW_Model.h SW_SoilWater.h SW_Weather.h SW_VegEstab.h
@@ -44,26 +44,27 @@ SW_Flow.o : generic.h filefuncs.h SW_Defines.h SW_Model.h SW_Site.h SW_SoilWater
 
 .PHONY : compile
 compile :
-		gcc -O3 -Wall -Wextra -o sw_v27 SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+		gcc -O3 -Wall -Wextra -o sw_v31 SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
 		
 .PHONY : compilem
 compilem :
-		gcc -O3 -Wall -Wextra -o sw_v27 SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
-		cp sw_v27 test
+		gcc -O3 -Wall -Wextra -o sw_v31 SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+		cp sw_v31 test
 		mv test testing/test
 		
 .PHONY : compilej
 compilej :
-		mpicc -o sw_v27 SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+		mpicc -o sw_v31 SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
 
 .PHONY : clean
 clean :
-		-rm sw_v27 $(objects)
+		-rm sw_v31 $(objects)
 		
 .PHONY : cleano
 cleano : 
 		-rm $(objects)
 
 .PHONY : compilel
-compile :
-		gcc -O3 -lm -Wall -Wextra -o sw_v27 SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+compilel :
+		gcc -O3 -Wall -Wextra -o sw_v31 SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c -lm
+		cp sw_v31 testing

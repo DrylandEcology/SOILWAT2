@@ -8,21 +8,25 @@
 1982	# first year to begin historical weather.
 5      # number of days to use in the running average of temperature.
 
-# Monthly scaling parameters.
+# Monthly scaling parameters:
 # Month 1 = January, Month 2 = February, etc.
-# PPT = multiplicative for PPT (scale*ppt).
-# MaxT = additive for max temp (scale+maxtemp).
-# MinT = additive for min temp (scale+mintemp).
-#Mon  PPT  MaxT  MinT
-1	1.000	0.00	0.00
-2	1.000	0.00	0.00
-3	1.000	0.00	0.00
-4	1.000	0.00	0.00
-5	1.000	0.00	0.00
-6	1.000	0.00	0.00
-7	1.000	0.00	0.00
-8	1.000	0.00	0.00
-9	1.000	0.00	0.00
-10	1.000	0.00	0.00
-11	1.000	0.00	0.00
-12	1.000	0.00	0.00
+# PPT = multiplicative for daily PPT; max(0, scale * ppt)
+# MaxT = additive for daily max temperature [C]; scale + maxtemp
+# MinT = additive for daily min temperature [C]; scale + mintemp
+# SkyCover = additive for mean monthly sky cover [%]; min(100, max(0, scale + sky cover))
+# Wind = multiplicative for mean monthly wind speed; max(0, scale * wind speed)
+# rH = additive for mean monthly relative humidity [%]; min(100, max(0, scale + rel. Humidity))
+# Transmissivity = multiplicative for mean monthly relative transmissivity; min(1, max(0, scale * transmissivity))
+#Mon	PPT		MaxT	MinT	SkyCover	Wind	rH		Transmissivity
+1		1.000	0.00	0.00	0.0			1.0		0.0		1.0
+2		1.000	0.00	0.00	0.0			1.0		0.0		1.0	
+3		1.000	0.00	0.00	0.0			1.0		0.0		1.0
+4		1.000	0.00	0.00	0.0			1.0		0.0		1.0
+5		1.000	0.00	0.00	0.0			1.0		0.0		1.0
+6		1.000	0.00	0.00	0.0			1.0		0.0		1.0
+7		1.000	0.00	0.00	0.0			1.0		0.0		1.0
+8		1.000	0.00	0.00	0.0			1.0		0.0		1.0
+9		1.000	0.00	0.00	0.0			1.0		0.0		1.0
+10		1.000	0.00	0.00	0.0			1.0		0.0		1.0
+11		1.000	0.00	0.00	0.0			1.0		0.0		1.0
+12		1.000	0.00	0.00	0.0			1.0		0.0		1.0

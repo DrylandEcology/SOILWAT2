@@ -34,11 +34,12 @@
 #include "Times.h"
 
 /*---------------------------------------------------------------*/
-typedef enum {Yesterday, Today}
-  TwoDays;
+typedef enum {
+	Yesterday, Today
+} TwoDays;
 
 typedef struct {
-  TimeInt first, last, total;
+	TimeInt first, last, total;
 } SW_TIMES;
 
 #define DAYFIRST_NORTH 1
@@ -53,7 +54,5 @@ typedef struct {
  * The user need only supply a 0/1 flag in the file
  * containing the start/end years.
  */
-
-
 
 #endif

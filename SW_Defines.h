@@ -10,6 +10,7 @@
  *     (8/28/01) -- INITIAL CODING - cwb
 	09/09/2011	(drs) added #define ForEachXXXTranspLayer() for each vegetation type (XXX = tree, shrub, grass)
 	05/31/2012  (DLM) added MAX_ST_RGR definition for the maximum amount of soil temperature regressions allowed...
+	07/09/2013	(clk) added the ForEachForbTranspLayer(i) function
  */
 /********************************************************/
 /********************************************************/
@@ -17,6 +18,13 @@
 #ifndef SOILW_DEF_H
 #define SOILW_DEF_H
 
+#ifdef RSOILWAT
+#include <R.h>
+#include <Rdefines.h>
+#include <Rconfig.h>
+#include <Rinterface.h>
+#include <Rinternals.h>
+#endif
 #include <math.h>  /* for atan() in tanfunc() below */
 
 /* Not sure if this parameter is variable or a consequence of algebra,
@@ -33,7 +41,10 @@
 
 #define SW_MISSING     999.     /* value to use as MISSING */
 
-#define PI          3.14159265358979
+#ifndef PI
+	#define PI          3.141592653589793238462643383279502884197169399375
+#endif
+
 #define PI2         6.28318530717958
 #define BARCONV     1024.
 
@@ -66,6 +77,7 @@
 #define ForEachTreeTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs_tree; (i)++)
 #define ForEachShrubTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs_shrub; (i)++)
 #define ForEachGrassTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs_grass; (i)++)
+#define ForEachForbTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs_forb; (i)++)
 #define ForEachTranspRegion(r)  for((r)=0; (r) < SW_Site.n_transp_rgn;  (r)++)
 /* define m as Months */
 #define ForEachMonth(m)         for((m)=Jan; (m) <= Dec;  (m)++)

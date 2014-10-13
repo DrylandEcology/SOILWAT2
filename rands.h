@@ -8,11 +8,18 @@
 /* Chris Bennett @ LTER-CSU 6/15/2000            */
 /*    - 5/19/2001 - split from gen_funcs.c       */
 
-
 #ifndef RANDS_H
 
 #include <stdio.h>
 #include <float.h>
+
+#ifdef RSOILWAT
+#include <R.h>
+#include <Rdefines.h>
+#include <Rconfig.h>
+#include <Rinterface.h>
+#include <Rinternals.h>
+#endif
 
 /***************************************************
  * Basic definitions
@@ -40,19 +47,18 @@ typedef long RandListType;
  * Function definitions
  ***************************************************/
 
-void RandSeed( signed long seed);
-double RandUni_good( void );
-double RandUni_fast( void);
-int RandUniRange( const long first, const long last);
-double RandNorm( double mean, double stddev);
-void RandUniList( long, long, long, RandListType []);
+void RandSeed(signed long seed);
+double RandUni_good(void);
+double RandUni_fast(void);
+int RandUniRange(const long first, const long last);
+double RandNorm(double mean, double stddev);
+void RandUniList(long, long, long, RandListType[]);
 
 #if RAND_FAST
-  #define RandUni RandUni_fast
+#define RandUni RandUni_fast
 #else
-  #define RandUni RandUni_good
+#define RandUni RandUni_good
 #endif
-
 
 #define RANDS_H
 #endif

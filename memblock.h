@@ -10,22 +10,21 @@
 
 #define bGarbage 0xCC
 /*typedef unsigned char byte*/
-typedef signed   char flag;
+typedef signed char flag;
 
 /* ------------------------------------------------------------------
  * blockinfo is a structure that contains the memory log information
  * for one allocated memory block.  Every allocated memory block has
  * a corresponding blockinfo structure in the memory log.
  */
- typedef struct BLOCKINFO {
-   struct BLOCKINFO *pbiNext;
-   byte   *pb;               /* start of block    */
-   size_t size;              /* length of block   */
-   flag   fReferenced;       /* Ever referenced?  */
-} blockinfo;                 /* Naming:  bi, *pbi */
+typedef struct BLOCKINFO {
+	struct BLOCKINFO *pbiNext;
+	byte *pb; /* start of block    */
+	size_t size; /* length of block   */
+	flag fReferenced; /* Ever referenced?  */
+} blockinfo; /* Naming:  bi, *pbi */
 
-
-flag fCreateBlockInfo( byte *pbNew, size_t sizeNew);
+flag fCreateBlockInfo(byte *pbNew, size_t sizeNew);
 void FreeBlockInfo(byte *pbToFree);
 void UpdateBlockInfo(byte *pbOld, byte *pbNew, size_t sizeNew);
 size_t sizeofBlock(byte *pb);

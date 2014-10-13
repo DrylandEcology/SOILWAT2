@@ -8,7 +8,7 @@
 1			# deepdrain (1/0): allow/disallow deep drainage function. 
 			#   if deepdrain == 1, model expects extra layer in soils file.
 1          	# multiplier for PET (eg for climate change).
-.5			#proportion of ponded surface water removed as runoff daily (value ranges between 0 and 1; 0=no loss of surface water, 1=all ponded water lost via runoff)
+0			#proportion of ponded surface water removed as runoff daily (value ranges between 0 and 1; 0=no loss of surface water, 1=all ponded water lost via runoff)
 
 # ---- Snow simulation parameters (SWAT2K model): Neitsch S, Arnold J, Kiniry J, Williams J. 2005. Soil and water assessment tool (SWAT) theoretical documentation. version 2005. Blackland Research Center, Texas Agricultural Experiment Station: Temple, TX.
 # these parameters are RMSE optimized values for 10 random SNOTEL sites for western US
@@ -60,7 +60,7 @@
 6.69		# constant mean air temperature (the soil temperature at the lower boundary, 180 cm) in celsius
 15.			# deltaX parameter for soil_temperature function, default is 15.  (distance between profile points in cm)  max depth (the next number) should be evenly divisible by this number
 180.		# max depth for the soil_temperature function equation, default is 180.  this number should be evenly divisible by deltaX
-1			# flag, 1 to calculate soil_temperature, 0 to not calculate soil_temperature
+0			# flag, 1 to calculate soil_temperature, 0 to not calculate soil_temperature
 
 
 # ---- Transpiration regions ----
