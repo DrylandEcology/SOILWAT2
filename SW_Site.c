@@ -18,7 +18,7 @@
  09/15/2011	(drs)	deleted albedo from SW_SIT_read() and _echo_inputs(): moved it to SW_VegProd.h to make input vegetation type dependent
  02/03/2012	(drs)	if input of SWCmin < 0 then estimate SWCmin with 'SW_SWC_SWCres' for each soil layer
  02/04/2012	(drs)	included SW_VegProd.h and created global variable extern SW_VegProd: to access vegetation-specific SWPcrit
- 02/04/2012	(drs)	added calculation of swc at SWPcrit for each vegetation type and layer to function '_init_site_info()'
+ 02/04/2012	(drs)	added calculation of swc at SWPcrit for each vegetation type and layer to function 'init_site_info()'
  added vwc/swc at SWPcrit to '_echo_inputs()'
  05/24/2012  (DLM) edited SW_SIT_read(void) function to be able to read in Soil Temperature constants from siteparam.in file
  05/24/2012  (DLM) edited _echo_inputs(void) function to echo the Soil Temperature constants to the logfile
@@ -26,7 +26,7 @@
  05/25/2012  (DLM) edited _echo_inputs( void) function to echo the read in soil temperatures for each layer
  05/30/2012  (DLM) edited _read_layers & _echo_inputs functions to read in/echo the deltaX parameter
  05/31/2012  (DLM) edited _read_layers & _echo_inputs functions to read in/echo stMaxDepth & use_soil_temp variables
- 05/31/2012  (DLM) edited _init_site_info(void) to check if stMaxDepth & stDeltaX values are usable, if not it resets them to the defaults (180 & 15).
+ 05/31/2012  (DLM) edited init_site_info(void) to check if stMaxDepth & stDeltaX values are usable, if not it resets them to the defaults (180 & 15).
  11/06/2012	(clk)	In SW_SIT_read(void), added lines to read in aspect and slope from siteparam.in
  11/06/2012	(clk)	In _echo_inputs(void), added lines to echo aspect and slope to logfile
  11/30/2012	(clk)	In SW_SIT_read(void), added lines to read in percentRunoff from siteparam.in
@@ -38,7 +38,7 @@
  First, it now reads in a value for fractionVolBulk_gravel from soils.in
  Secondly, it calls the calculate_soilBulkDensity function for each layer
  Lastly, since fieldcap and wiltpt were removed from soils.in, those values are now calculated within read_layers()
- 05/16/2013	(drs)	fixed in _init_site_info() the check of transpiration region validity: it gave error if only one layer was present
+ 05/16/2013	(drs)	fixed in init_site_info() the check of transpiration region validity: it gave error if only one layer was present
  06/24/2013	(rjm)	added function void SW_SIT_clear_layers(void) to free allocated soil layers
  06/27/2013	(drs)	closed open files if LogError() with LOGFATAL is called in SW_SIT_read(), _read_layers()
  07/09/2013	(clk)	added the initialization of all the new variables
@@ -99,11 +99,13 @@ _SWCMinVal; /* lower bound on swc.          */
 /*             Private Function Definitions            */
 /* --------------------------------------------------- */
 
-static void _init_site_info(void);
+void init_site_info(void);
+void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n);
 static void _read_layers(void);
 static void _echo_inputs(void);
 
-static void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
+//STEPWAT calls this function so no longer private
+void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 	/* --------------------------------------------------- */
 	RealD theta33, theta33t, OM = 0., thetasMatric33, thetasMatric33t; /* Saxton et al. auxiliary variables */
 
@@ -346,10 +348,10 @@ void SW_SIT_read(void) {
 
 	_read_layers();
 #ifndef RSOILWAT
-	_init_site_info();
+	init_site_info();
 #else
 	if(!collectInData)
-		_init_site_info();
+		init_site_info();
 #endif
 	if (EchoInits)
 		_echo_inputs();
@@ -436,27 +438,27 @@ static void _read_layers(void) {
 				evap_ok = FALSE;
 		}
 		if (transp_ok_forb) {
-			if (GT(v->lyr[lyrno]->transp_coeff_forb, 0.0))
+			if (GT(v->lyr[lyrno]->transp_coeff_forb, 0.0)) {
 				v->n_transp_lyrs_forb++;
-			else
+			} else
 				transp_ok_forb = FALSE;
 		}
 		if (transp_ok_tree) {
-			if (GT(v->lyr[lyrno]->transp_coeff_tree, 0.0))
+			if (GT(v->lyr[lyrno]->transp_coeff_tree, 0.0)) {
 				v->n_transp_lyrs_tree++;
-			else
+			} else
 				transp_ok_tree = FALSE;
 		}
 		if (transp_ok_shrub) {
-			if (GT(v->lyr[lyrno]->transp_coeff_shrub, 0.0))
+			if (GT(v->lyr[lyrno]->transp_coeff_shrub, 0.0)) {
 				v->n_transp_lyrs_shrub++;
-			else
+			} else
 				transp_ok_shrub = FALSE;
 		}
 		if (transp_ok_grass) {
-			if (GT(v->lyr[lyrno]->transp_coeff_grass, 0.0))
+			if (GT(v->lyr[lyrno]->transp_coeff_grass, 0.0)) {
 				v->n_transp_lyrs_grass++;
-			else
+			} else
 				transp_ok_grass = FALSE;
 		}
 
@@ -929,13 +931,13 @@ void onSet_SW_SIT(SEXP SW_SIT) {
 	}
 
 	onSet_SW_LYR(GET_SLOT(InputData,install("soils")));
-	_init_site_info();
+	init_site_info();
 	if (EchoInits)
 		_echo_inputs();
 	UNPROTECT(11);
 }
 #endif
-static void _init_site_info(void) {
+void init_site_info(void) {
 	/* =================================================== */
 	/* potentially this routine can be called whether the
 	 * layer data came from a file or a function call which
@@ -991,6 +993,7 @@ static void _init_site_info(void) {
 		}
 
 		if (curregion || ZRO(_TranspRgnBounds[curregion])) {
+			LogError(logfp, LOGNOTE, "  Layer %d : curregion %d _TranspRgnBounds %d", s + 1, curregion, _TranspRgnBounds[curregion]);
 			lyr->my_transp_rgn_forb = curregion;
 			sp->n_transp_lyrs_forb = max(sp->n_transp_lyrs_forb, s);
 

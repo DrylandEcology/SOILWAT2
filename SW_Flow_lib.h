@@ -110,6 +110,9 @@ void infiltrate_water_low(double swc[], double drain[], double *drainout, unsign
 void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], double hydred[], unsigned int nlyrs, double maxCondroot, double swp50, double shapeCond,
 		double scale);
 
+void soil_temperature_init(double bDensity[], double width[], double oldsTemp[], unsigned int nlyrs, double fc[], double wp[], double deltaX, double theMaxDepth,
+		double meanAirTemp, unsigned int nRgr);
+
 void soil_temperature(double airTemp, double pet, double aet, double biomass, double swc[], double bDensity[], double width[], double oldsTemp[], double sTemp[],
 		unsigned int nlyrs, double fc[], double wp[], double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1, double csParam2, double shParam,
 		double snowpack, double meanAirTemp, double deltaX, double theMaxDepth, unsigned int nRgr);

@@ -206,7 +206,7 @@ extern unsigned int yr_nrow, mo_nrow, wk_nrow, dy_nrow;
 
 
 #ifdef STEPWAT
-#include "sxw.h"
+#include "../sxw.h"
 extern SXW_t SXW;
 #endif
 
@@ -585,7 +585,7 @@ void SW_OUT_read(void) {
 			/* prepare the remaining structure if use==true */
 			if (SW_Output[k].use) {
 				if (timeSteps[k][i] < 4) {
-#ifndef RSOILWAT
+#if !defined(STEPWAT) && !defined(RSOILWAT)
 					SW_OutputPrefix(prefix);
 					strcpy(str, prefix);
 					strcat(str, outfile);
@@ -615,7 +615,6 @@ void SW_OUT_read(void) {
 					strcat(str, Str_ToLower(period, ext));
 					SW_Output[k].outfile = (char *) Str_Dup(str);
 
-#ifndef STEPWAT
 					switch (timeSteps[k][i]) { /* depending on iteration through for loop, chooses the proper FILE pointer to use */
 					case eSW_Day:
 						SW_Output[k].fp_dy = OpenFile(SW_Output[k].outfile, "w");
@@ -630,7 +629,6 @@ void SW_OUT_read(void) {
 						SW_Output[k].fp_yr = OpenFile(SW_Output[k].outfile, "w");
 						break;
 					}
-#endif
 #endif
 				}
 			}
@@ -1153,7 +1151,8 @@ static void get_temp(void) {
 	 */
 	SW_WEATHER *v = &SW_Weather;
 	OutPeriod pd = SW_Output[eSW_Temp].period;
-	RealD v_avg = SW_MISSING, v_min = SW_MISSING, v_max = SW_MISSING;
+	RealD v_avg = SW_MISSING;
+	RealD v_min = SW_MISSING, v_max = SW_MISSING;
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
@@ -1223,7 +1222,7 @@ static void get_temp(void) {
 	strcat(outstr, str);
 #elif defined(STEPWAT)
 	if (pd != eSW_Year)
-	LogError(logfp, LOGFATAL, "Invalid output period for TEMP; should be YR");
+		LogError(logfp, LOGFATAL, "Invalid output period for TEMP; should be YR %7.6f, %7.6f",v_max, v_min);//added v_max, v_min for compiler
 	SXW.temp = v_avg;
 #endif
 }
@@ -1319,7 +1318,7 @@ static void get_precip(void) {
 	strcat(outstr, str);
 #elif defined(STEPWAT)
 	if (pd != eSW_Year)
-	LogError(logfp, LOGFATAL, "Invalid output period for PRECIP; should be YR");
+		LogError(logfp, LOGFATAL, "Invalid output period for PRECIP; should be YR, %7.6f,%7.6f,%7.6f,%7.6f", val_snowloss, val_snowmelt, val_snow, val_rain);//added extra for compiler
 	SXW.ppt = val_ppt;
 #endif
 }
@@ -1335,9 +1334,6 @@ static void get_vwcBulk(void) {
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
-#elif defined(STEPWAT)
-	TimeInt p;
-	SW_MODEL *t = &SW_Model;
 #endif
 
 	get_outstrleader(pd);
@@ -1396,16 +1392,16 @@ static void get_vwcBulk(void) {
 			strcat(outstr, str);
 		}
 #elif defined(STEPWAT)
-		ForEachSoilLayer(i) {
+		/*ForEachSoilLayer(i) {
 			switch (pd) {
-				case eSW_Day: p = t->doy-1; break; /* print current but as index */
-				case eSW_Week: p = t->week-1; break; /* print previous to current */
-				case eSW_Month: p = t->month-1; break; /* print previous to current */
-				/* YEAR should never be used with STEPWAT */
+				case eSW_Day: p = t->doy-1; break; // print current but as index
+				case eSW_Week: p = t->week-1; break; // print previous to current
+				case eSW_Month: p = t->month-1; break; // print previous to current
+				// YEAR should never be used with STEPWAT //
 			}
 			if (bFlush) p++;
 			SXW.swc[Ilp(i,p)] = val[i];
-		}
+		}*/
 #endif
 		free(val);
 }
@@ -1422,9 +1418,6 @@ static void get_vwcMatric(void) {
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
-#elif defined(STEPWAT)
-	TimeInt p;
-	SW_MODEL *t = &SW_Model;
 #endif
 
 	get_outstrleader(pd);
@@ -1501,17 +1494,17 @@ static void get_vwcMatric(void) {
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
-	ForEachSoilLayer(i)
+	/*ForEachSoilLayer(i)
 	{
 		switch (pd) {
-			case eSW_Day: p = t->doy-1; break; /* print current but as index */
-			case eSW_Week: p = t->week-1; break; /* print previous to current */
-			case eSW_Month: p = t->month-1; break; /* print previous to current */
-			/* YEAR should never be used with STEPWAT */
+			case eSW_Day: p = t->doy-1; break; // print current but as index
+			case eSW_Week: p = t->week-1; break; // print previous to current
+			case eSW_Month: p = t->month-1; break; // print previous to current
+			// YEAR should never be used with STEPWAT
 		}
 		if (bFlush) p++;
 		SXW.swc[Ilp(i,p)] = val[i];
-	}
+	}*/
 #endif
 	free(val);
 }
@@ -1519,12 +1512,15 @@ static void get_vwcMatric(void) {
 static void get_swcBulk(void) {
 	/* --------------------------------------------------- */
 	/* added 21-Oct-03, cwb */
-
+#ifdef STEPWAT
+	TimeInt p;
+	SW_MODEL *t = &SW_Model;
+#endif
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_SWCBulk].period;
 	RealD val = SW_MISSING;
-#ifndef RSOILWAT
+#if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 	ForEachSoilLayer(i)
@@ -1546,7 +1542,7 @@ static void get_swcBulk(void) {
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
-#else
+#elif defined(RSOILWAT)
 	switch (pd) {
 		case eSW_Day:
 			p_RswcBulk_dy[SW_Output[eSW_SWCBulk].dy_row + dy_nrow * 0] = SW_Model.year;
@@ -1576,6 +1572,26 @@ static void get_swcBulk(void) {
 			SW_Output[eSW_SWCBulk].yr_row++;
 			break;
 		}
+#elif defined(STEPWAT)
+	ForEachSoilLayer(i)
+	{
+		switch (pd) {
+			case eSW_Day:
+				p = t->doy-1;
+				val = v->dysum.swcBulk[i];
+				break; // print current but as index
+			case eSW_Week:
+				p = t->week-1;
+				val = v->wkavg.swcBulk[i];
+				break;// print previous to current
+			case eSW_Month:
+				p = t->month-1;
+				val = v->moavg.swcBulk[i];
+				break;// print previous to current
+			// YEAR should never be used with STEPWAT
+		}
+		SXW.swc[Ilp(i,p)] = val;
+	}
 #endif
 }
 
@@ -1915,6 +1931,12 @@ static void get_transp(void) {
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_Transp].period;
 	RealD *val = malloc(sizeof(RealD) * SW_Site.n_layers);
+#if !defined(STEPWAT) && !defined(RSOILWAT)
+	char str[OUTSTRLEN];
+#elif defined(STEPWAT)
+	TimeInt p;
+	SW_MODEL *t = &SW_Model;
+#endif
 	ForEachSoilLayer(i)
 		val[i] = 0;
 
@@ -1938,16 +1960,10 @@ static void get_transp(void) {
 	}
 #endif
 
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-	char str[OUTSTRLEN];
-#elif defined(STEPWAT)
-	TimeInt p;
-	SW_MODEL *t = &SW_Model;
-#endif
-
 #ifndef RSOILWAT
 	get_outstrleader(pd);
-	/* total transpiration */ForEachSoilLayer(i)
+	/* total transpiration */
+	ForEachSoilLayer(i)
 	{
 		switch (pd) {
 		case eSW_Day:

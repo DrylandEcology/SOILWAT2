@@ -25,7 +25,7 @@
 #include <Rinternals.h>
 #endif
 #ifdef STEPWAT
-	#include "ST_defines.h"
+	#include "../ST_defines.h"
 #endif
 
 /* indices to bars[] */
