@@ -318,7 +318,7 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	if(periodUse[eSW_WetDays][2]) p_Rwetdays_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Month")));
 	if(periodUse[eSW_WetDays][1]) p_Rwetdays_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Week")));
 	if(periodUse[eSW_WetDays][0]) p_Rwetdays_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Day")));
-	Rprintf("After Pointers\n");
+	
 	//Rprintf("Day Pointers Set\n");
 	SW_CTL_main();
 
