@@ -48,6 +48,7 @@ extern SW_MODEL SW_Model;
 //extern SW_SITE SW_Site;
 extern SW_VEGESTAB SW_VegEstab;
 
+static int periodUse[28][4];
 
 /* =================================================== */
 /*                Module-Level Declarations            */
@@ -198,112 +199,128 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	dy_nrow = INTEGER(GET_SLOT(outputData, install("dy_nrow")))[0];
 
 	//Get the pointers to the pre configured output data setup. These are used in output.c
-	//RealD Year:
-	p_Raet_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("AET")),install("Year")));
-	p_Rdeep_drain_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("DEEPSWC")),install("Year")));
-	p_Restabs_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("ESTABL")),install("Year")));
-	p_Revap_soil_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSOIL")),install("Year")));
-	p_Revap_surface_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSURFACE")),install("Year")));
-	p_Rhydred_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("HYDRED")),install("Year")));
-	p_Rinfiltration_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILINFILT")),install("Year")));
-	p_Rinterception_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("INTERCEPTION")),install("Year")));
-	p_Rpercolation_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("LYRDRAIN")),install("Year")));
-	p_Rpet_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("PET")),install("Year")));
-	p_Rprecip_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("PRECIP")),install("Year")));
-	p_Rrunoff_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("RUNOFF")),install("Year")));
-	p_Rsnowpack_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SNOWPACK")),install("Year")));
-	p_Rsoil_temp_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILTEMP")),install("Year")));
-	p_Rsurface_water_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SURFACEWATER")),install("Year")));
-	p_RvwcBulk_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCBULK")),install("Year")));
-	p_RvwcMatric_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCMATRIC")),install("Year")));
-	p_RswcBulk_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SWCBULK")),install("Year")));
-	p_RswpMatric_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SWPMATRIC")),install("Year")));
-	p_RswaBulk_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SWABULK")),install("Year")));
-	p_RswaMatric_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SWAMATRIC")),install("Year")));
-	p_Rtemp_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Year")));
-	p_Rtransp_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("TRANSP")),install("Year")));
-	p_Rwetdays_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Year")));
-	//Rprintf("Year Pointers Set\n");
-	//RealD mo
-	p_Raet_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("AET")),install("Month")));
-	p_Rdeep_drain_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("DEEPSWC")),install("Month")));
-	p_Restabs_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("ESTABL")),install("Month")));
-	p_Revap_soil_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSOIL")),install("Month")));
-	p_Revap_surface_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSURFACE")),install("Month")));
-	p_Rhydred_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("HYDRED")),install("Month")));
-	p_Rinfiltration_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILINFILT")),install("Month")));
-	p_Rinterception_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("INTERCEPTION")),install("Month")));
-	p_Rpercolation_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("LYRDRAIN")),install("Month")));
-	p_Rpet_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("PET")),install("Month")));
-	p_Rprecip_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("PRECIP")),install("Month")));
-	p_Rrunoff_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("RUNOFF")),install("Month")));
-	p_Rsnowpack_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SNOWPACK")),install("Month")));
-	p_Rsoil_temp_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILTEMP")),install("Month")));
-	p_Rsurface_water_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SURFACEWATER")),install("Month")));
-	p_RvwcBulk_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCBULK")),install("Month")));
-	p_RvwcMatric_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCMATRIC")),install("Month")));
-	p_RswcBulk_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SWCBULK")),install("Month")));
-	p_RswpMatric_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SWPMATRIC")),install("Month")));
-	p_RswaBulk_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SWABULK")),install("Month")));
-	p_RswaMatric_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SWAMATRIC")),install("Month")));
-	p_Rtemp_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Month")));
-	p_Rtransp_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("TRANSP")),install("Month")));
-	p_Rwetdays_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Month")));
-	//Rprintf("Month Pointers Set\n");
-	//RealD wk
-	p_Raet_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("AET")),install("Week")));
-	p_Rdeep_drain_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("DEEPSWC")),install("Week")));
-	p_Restabs_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("ESTABL")),install("Week")));
-	p_Revap_soil_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSOIL")),install("Week")));
-	p_Revap_surface_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSURFACE")),install("Week")));
-	p_Rhydred_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("HYDRED")),install("Week")));
-	p_Rinfiltration_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILINFILT")),install("Week")));
-	p_Rinterception_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("INTERCEPTION")),install("Week")));
-	p_Rpercolation_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("LYRDRAIN")),install("Week")));
-	p_Rpet_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("PET")),install("Week")));
-	p_Rprecip_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("PRECIP")),install("Week")));
-	p_Rrunoff_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("RUNOFF")),install("Week")));
-	p_Rsnowpack_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SNOWPACK")),install("Week")));
-	p_Rsoil_temp_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILTEMP")),install("Week")));
-	p_Rsurface_water_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SURFACEWATER")),install("Week")));
-	p_RvwcBulk_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCBULK")),install("Week")));
-	p_RvwcMatric_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCMATRIC")),install("Week")));
-	p_RswcBulk_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SWCBULK")),install("Week")));
-	p_RswpMatric_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SWPMATRIC")),install("Week")));
-	p_RswaBulk_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SWABULK")),install("Week")));
-	p_RswaMatric_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SWAMATRIC")),install("Week")));
-	p_Rtemp_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Week")));
-	p_Rtransp_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("TRANSP")),install("Week")));
-	p_Rwetdays_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Week")));
-	//Rprintf("Week Pointers Set\n");
-	//RealD dy
-	p_Raet_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("AET")),install("Day")));
-	p_Rdeep_drain_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("DEEPSWC")),install("Day")));
-	p_Restabs_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("ESTABL")),install("Day")));
-	p_Revap_soil_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSOIL")),install("Day")));
-	p_Revap_surface_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSURFACE")),install("Day")));
-	p_Rhydred_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("HYDRED")),install("Day")));
-	p_Rinfiltration_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILINFILT")),install("Day")));
-	p_Rinterception_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("INTERCEPTION")),install("Day")));
-	p_Rpercolation_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("LYRDRAIN")),install("Day")));
-	p_Rpet_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("PET")),install("Day")));
-	p_Rprecip_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("PRECIP")),install("Day")));
-	p_Rrunoff_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("RUNOFF")),install("Day")));
-	p_Rsnowpack_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SNOWPACK")),install("Day")));
-	p_Rsoil_temp_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILTEMP")),install("Day")));
-	p_Rsurface_water_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SURFACEWATER")),install("Day")));
-	p_RvwcBulk_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCBULK")),install("Day")));
-	p_RvwcMatric_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCMATRIC")),install("Day")));
-	p_RswcBulk_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SWCBULK")),install("Day")));
-	p_RswpMatric_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SWPMATRIC")),install("Day")));
-	p_RswaBulk_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SWABULK")),install("Day")));
-	p_RswaMatric_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SWAMATRIC")),install("Day")));
-	p_Rtemp_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Day")));
-	p_Rtransp_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("TRANSP")),install("Day")));
-	p_Rwetdays_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Day")));
+	if(periodUse[eSW_Temp][3]) p_Rtemp_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Year")));
+	if(periodUse[eSW_Temp][2]) p_Rtemp_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Month")));
+	if(periodUse[eSW_Temp][1]) p_Rtemp_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Week")));
+	if(periodUse[eSW_Temp][0]) p_Rtemp_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Day")));
+
+	if(periodUse[eSW_AET][3]) p_Raet_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("AET")),install("Year")));
+	if(periodUse[eSW_AET][2]) p_Raet_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("AET")),install("Month")));
+	if(periodUse[eSW_AET][1]) p_Raet_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("AET")),install("Week")));
+	if(periodUse[eSW_AET][0]) p_Raet_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("AET")),install("Day")));
+
+	if(periodUse[eSW_DeepSWC][3]) p_Rdeep_drain_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("DEEPSWC")),install("Year")));
+	if(periodUse[eSW_DeepSWC][2]) p_Rdeep_drain_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("DEEPSWC")),install("Month")));
+	if(periodUse[eSW_DeepSWC][1]) p_Rdeep_drain_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("DEEPSWC")),install("Week")));
+	if(periodUse[eSW_DeepSWC][0]) p_Rdeep_drain_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("DEEPSWC")),install("Day")));
+
+	if(periodUse[eSW_Estab][3]) p_Restabs_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("ESTABL")),install("Year")));
+	if(periodUse[eSW_Estab][2]) p_Restabs_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("ESTABL")),install("Month")));
+	if(periodUse[eSW_Estab][1]) p_Restabs_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("ESTABL")),install("Week")));
+	if(periodUse[eSW_Estab][0]) p_Restabs_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("ESTABL")),install("Day")));
+
+	if(periodUse[eSW_EvapSoil][3]) p_Revap_soil_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSOIL")),install("Year")));
+	if(periodUse[eSW_EvapSoil][2]) p_Revap_soil_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSOIL")),install("Month")));
+	if(periodUse[eSW_EvapSoil][1]) p_Revap_soil_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSOIL")),install("Week")));
+	if(periodUse[eSW_EvapSoil][0]) p_Revap_soil_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSOIL")),install("Day")));
+
+	if(periodUse[eSW_EvapSurface][3]) p_Revap_surface_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSURFACE")),install("Year")));
+	if(periodUse[eSW_EvapSurface][2]) p_Revap_surface_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSURFACE")),install("Month")));
+	if(periodUse[eSW_EvapSurface][1]) p_Revap_surface_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSURFACE")),install("Week")));
+	if(periodUse[eSW_EvapSurface][0]) p_Revap_surface_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("EVAPSURFACE")),install("Day")));
+
+	if(periodUse[eSW_HydRed][3]) p_Rhydred_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("HYDRED")),install("Year")));
+	if(periodUse[eSW_HydRed][2]) p_Rhydred_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("HYDRED")),install("Month")));
+	if(periodUse[eSW_HydRed][1]) p_Rhydred_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("HYDRED")),install("Week")));
+	if(periodUse[eSW_HydRed][0]) p_Rhydred_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("HYDRED")),install("Day")));
+
+	if(periodUse[eSW_SoilInf][3]) p_Rinfiltration_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILINFILT")),install("Year")));
+	if(periodUse[eSW_SoilInf][2]) p_Rinfiltration_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILINFILT")),install("Month")));
+	if(periodUse[eSW_SoilInf][1]) p_Rinfiltration_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILINFILT")),install("Week")));
+	if(periodUse[eSW_SoilInf][0]) p_Rinfiltration_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILINFILT")),install("Day")));
+
+	if(periodUse[eSW_Interception][3]) p_Rinterception_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("INTERCEPTION")),install("Year")));
+	if(periodUse[eSW_Interception][2]) p_Rinterception_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("INTERCEPTION")),install("Month")));
+	if(periodUse[eSW_Interception][1]) p_Rinterception_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("INTERCEPTION")),install("Week")));
+	if(periodUse[eSW_Interception][0]) p_Rinterception_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("INTERCEPTION")),install("Day")));
+
+	if(periodUse[eSW_LyrDrain][3]) p_Rpercolation_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("LYRDRAIN")),install("Year")));
+	if(periodUse[eSW_LyrDrain][2]) p_Rpercolation_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("LYRDRAIN")),install("Month")));
+	if(periodUse[eSW_LyrDrain][1]) p_Rpercolation_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("LYRDRAIN")),install("Week")));
+	if(periodUse[eSW_LyrDrain][0]) p_Rpercolation_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("LYRDRAIN")),install("Day")));
+
+	if(periodUse[eSW_PET][3]) p_Rpet_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("PET")),install("Year")));
+	if(periodUse[eSW_PET][2]) p_Rpet_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("PET")),install("Month")));
+	if(periodUse[eSW_PET][1]) p_Rpet_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("PET")),install("Week")));
+	if(periodUse[eSW_PET][0]) p_Rpet_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("PET")),install("Day")));
+
+	if(periodUse[eSW_Precip][3]) p_Rprecip_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("PRECIP")),install("Year")));
+	if(periodUse[eSW_Precip][2]) p_Rprecip_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("PRECIP")),install("Month")));
+	if(periodUse[eSW_Precip][1]) p_Rprecip_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("PRECIP")),install("Week")));
+	if(periodUse[eSW_Precip][0]) p_Rprecip_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("PRECIP")),install("Day")));
+
+	if(periodUse[eSW_Runoff][3]) p_Rrunoff_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("RUNOFF")),install("Year")));
+	if(periodUse[eSW_Runoff][2]) p_Rrunoff_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("RUNOFF")),install("Month")));
+	if(periodUse[eSW_Runoff][1]) p_Rrunoff_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("RUNOFF")),install("Week")));
+	if(periodUse[eSW_Runoff][0]) p_Rrunoff_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("RUNOFF")),install("Day")));
+
+	if(periodUse[eSW_SnowPack][3]) p_Rsnowpack_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SNOWPACK")),install("Year")));
+	if(periodUse[eSW_SnowPack][2]) p_Rsnowpack_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SNOWPACK")),install("Month")));
+	if(periodUse[eSW_SnowPack][1]) p_Rsnowpack_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SNOWPACK")),install("Week")));
+	if(periodUse[eSW_SnowPack][0]) p_Rsnowpack_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SNOWPACK")),install("Day")));
+
+	if(periodUse[eSW_SoilTemp][3]) p_Rsoil_temp_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILTEMP")),install("Year")));
+	if(periodUse[eSW_SoilTemp][2]) p_Rsoil_temp_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILTEMP")),install("Month")));
+	if(periodUse[eSW_SoilTemp][1]) p_Rsoil_temp_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILTEMP")),install("Week")));
+	if(periodUse[eSW_SoilTemp][0]) p_Rsoil_temp_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SOILTEMP")),install("Day")));
+
+	if(periodUse[eSW_SurfaceWater][3]) p_Rsurface_water_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SURFACEWATER")),install("Year")));
+	if(periodUse[eSW_SurfaceWater][2]) p_Rsurface_water_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SURFACEWATER")),install("Month")));
+	if(periodUse[eSW_SurfaceWater][1]) p_Rsurface_water_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SURFACEWATER")),install("Week")));
+	if(periodUse[eSW_SurfaceWater][0]) p_Rsurface_water_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SURFACEWATER")),install("Day")));
+
+	if(periodUse[eSW_VWCBulk][3]) p_RvwcBulk_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCBULK")),install("Year")));
+	if(periodUse[eSW_VWCBulk][2]) p_RvwcBulk_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCBULK")),install("Month")));
+	if(periodUse[eSW_VWCBulk][1]) p_RvwcBulk_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCBULK")),install("Week")));
+	if(periodUse[eSW_VWCBulk][0]) p_RvwcBulk_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCBULK")),install("Day")));
+
+	if(periodUse[eSW_VWCMatric][3]) p_RvwcMatric_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCMATRIC")),install("Year")));
+	if(periodUse[eSW_VWCMatric][2]) p_RvwcMatric_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCMATRIC")),install("Month")));
+	if(periodUse[eSW_VWCMatric][1]) p_RvwcMatric_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCMATRIC")),install("Week")));
+	if(periodUse[eSW_VWCMatric][0]) p_RvwcMatric_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("VWCMATRIC")),install("Day")));
+
+	if(periodUse[eSW_SWCBulk][3]) p_RswcBulk_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SWCBULK")),install("Year")));
+	if(periodUse[eSW_SWCBulk][2]) p_RswcBulk_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SWCBULK")),install("Month")));
+	if(periodUse[eSW_SWCBulk][1]) p_RswcBulk_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SWCBULK")),install("Week")));
+	if(periodUse[eSW_SWCBulk][0]) p_RswcBulk_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SWCBULK")),install("Day")));
+
+	if(periodUse[eSW_SWPMatric][3]) p_RswpMatric_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SWPMATRIC")),install("Year")));
+	if(periodUse[eSW_SWPMatric][2]) p_RswpMatric_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SWPMATRIC")),install("Month")));
+	if(periodUse[eSW_SWPMatric][1]) p_RswpMatric_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SWPMATRIC")),install("Week")));
+	if(periodUse[eSW_SWPMatric][0]) p_RswpMatric_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SWPMATRIC")),install("Day")));
+
+	if(periodUse[eSW_SWABulk][3]) p_RswaBulk_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SWABULK")),install("Year")));
+	if(periodUse[eSW_SWABulk][2]) p_RswaBulk_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SWABULK")),install("Month")));
+	if(periodUse[eSW_SWABulk][1]) p_RswaBulk_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SWABULK")),install("Week")));
+	if(periodUse[eSW_SWABulk][0]) p_RswaBulk_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SWABULK")),install("Day")));
+
+	if(periodUse[eSW_SWAMatric][3]) p_RswaMatric_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("SWAMATRIC")),install("Year")));
+	if(periodUse[eSW_SWAMatric][2]) p_RswaMatric_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("SWAMATRIC")),install("Month")));
+	if(periodUse[eSW_SWAMatric][1]) p_RswaMatric_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("SWAMATRIC")),install("Week")));
+	if(periodUse[eSW_SWAMatric][0]) p_RswaMatric_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("SWAMATRIC")),install("Day")));
+
+	if(periodUse[eSW_Transp][3]) p_Rtransp_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("TRANSP")),install("Year")));
+	if(periodUse[eSW_Transp][2]) p_Rtransp_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("TRANSP")),install("Month")));
+	if(periodUse[eSW_Transp][1]) p_Rtransp_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("TRANSP")),install("Week")));
+	if(periodUse[eSW_Transp][0]) p_Rtransp_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("TRANSP")),install("Day")));
+
+	if(periodUse[eSW_WetDays][3]) p_Rwetdays_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Year")));
+	if(periodUse[eSW_WetDays][2]) p_Rwetdays_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Month")));
+	if(periodUse[eSW_WetDays][1]) p_Rwetdays_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Week")));
+	if(periodUse[eSW_WetDays][0]) p_Rwetdays_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Day")));
+	Rprintf("After Pointers\n");
 	//Rprintf("Day Pointers Set\n");
 	SW_CTL_main();
-
 
 	SW_SIT_clear_layers();
 	SW_WTH_clear_runavg_list();
@@ -324,7 +341,6 @@ SEXP onGetOutput(SEXP inputData) {
 					RswaMatric_columns, Rtemp_columns, Rtransp_columns, Rwetdays_columns, /*NOT USED ->*/ Rwthr_columns,RallH2O_columns,Ret_columns,Rallveg_columns;
 	int i,j, pCount=0;
 	int use[28];
-	int periodUse[28][4];
 	Bool useTimeStep;
 
 	SEXP swOutput, swOutput_Object;
@@ -417,20 +433,41 @@ SEXP onGetOutput(SEXP inputData) {
 
 	PROTECT(TimeSteps = GET_SLOT(GET_SLOT(inputData, install("output")),install("timePeriods")));
 	useTimeStep = LOGICAL(GET_SLOT(GET_SLOT(inputData, install("output")),install("useTimeStep")))[0];
-	for (i = 0; i < LENGTH(TimeSteps); i++) {
-		switch (INTEGER(TimeSteps)[i]) {
-			case eSW_Day:
-			pDayUse = 1;
-			break;
-			case eSW_Week:
-			pWeekUse = 1;
-			break;
-			case eSW_Month:
-			pMonthUse = 1;
-			break;
-			case eSW_Year:
-			pYearUse = 1;
-			break;
+	if(useTimeStep) {
+		PROTECT(Periods = GET_SLOT(GET_SLOT(inputData, install("output")),install("timePeriods")));
+		for (i = 0; i < LENGTH(TimeSteps); i++) {
+			switch (INTEGER(TimeSteps)[i]) {
+				case eSW_Day:
+				pDayUse = 1;
+				break;
+				case eSW_Week:
+				pWeekUse = 1;
+				break;
+				case eSW_Month:
+				pMonthUse = 1;
+				break;
+				case eSW_Year:
+				pYearUse = 1;
+				break;
+			}
+		}
+	} else {
+		PROTECT(Periods = GET_SLOT(GET_SLOT(inputData, install("output")),install("period")));
+		for(i=0; i<28; i++) {
+			switch (INTEGER(Periods)[i]) {
+				case eSW_Day:
+				pDayUse = 1;
+				break;
+				case eSW_Week:
+				pWeekUse = 1;
+				break;
+				case eSW_Month:
+				pMonthUse = 1;
+				break;
+				case eSW_Year:
+				pYearUse = 1;
+				break;
+			}
 		}
 	}
 
@@ -459,11 +496,6 @@ SEXP onGetOutput(SEXP inputData) {
 
 	if(debug) Rprintf("Year Rows: %d, Month Rows: %d, Week Rows: %d, Day Rows: %d\n",yr_nrow, mo_nrow, wk_nrow, dy_nrow);
 
-	if(useTimeStep)
-		PROTECT(Periods = GET_SLOT(GET_SLOT(inputData, install("output")),install("timePeriods")));
-	else
-		PROTECT(Periods = GET_SLOT(GET_SLOT(inputData, install("output")),install("period")));
-
 	for(i=0; i<28; i++) {
 		periodUse[i][0]=periodUse[i][1]=periodUse[i][2]=periodUse[i][3]=0;
 		if(useTimeStep) {
@@ -472,7 +504,7 @@ SEXP onGetOutput(SEXP inputData) {
 				//pCount+=3;
 			}
 		} else {
-			periodUse[i][INTEGER(Periods)[0]] = 1;
+			periodUse[i][INTEGER(Periods)[i]] = 1;
 			//pCount+=3;
 		}
 	}

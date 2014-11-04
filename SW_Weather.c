@@ -521,10 +521,22 @@ SEXP onGet_WTH_DATA(void) {
 	SEXP WTH_DATA, WTH_DATA_names;
 	Bool setNames = FALSE;
 	char cYear[5];
+	char fname[MAX_FILENAMESIZE];
+	FILE *f;
+	int nWeathData = 0;
 	int years = ((SW_Model.endyr + 1) - SW_Model.startyr), i = 0;
 
-	PROTECT(WTH_DATA = allocVector(VECSXP,years));
-	PROTECT(WTH_DATA_names = allocVector(STRSXP,years));
+	for (year = SW_Model.startyr; year <= SW_Model.endyr; year++) {
+		sprintf(fname, "%s.%4d", SW_Weather.name_prefix, year);
+		if (NULL == (f = fopen(fname, "r"))) {
+			break;
+		}
+		fclose(f);
+		nWeathData++;
+	}
+
+	PROTECT(WTH_DATA = allocVector(VECSXP,nWeathData));
+	PROTECT(WTH_DATA_names = allocVector(STRSXP,nWeathData));
 	weth_found = TRUE;
 	for (year = SW_Model.startyr; year <= SW_Model.endyr; year++) {
 		if (year < SW_Weather.yr.first) {

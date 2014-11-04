@@ -672,16 +672,16 @@ void onSet_SW_OUT(SEXP OUT) {
 	ForEachOutKey(k)
 	{
 		for (i = 0; i < numPeriods; i++) {
-			if (i < 1 && !useTimeStep) {
+			if (i < 1 && !LOGICAL(useTimeStep)[0]) {
 				timeSteps[k][i] = INTEGER(period)[k];
-			} else if(useTimeStep && i<LENGTH(timestep)) {
+			} else if(LOGICAL(useTimeStep)[0] && i<LENGTH(timestep)) {
 				timeSteps[k][i] = INTEGER(timestep)[i];
 			} else {
 				timeSteps[k][i] = 4;
 			}
 		}
 		if (k == eSW_Estab) {
-			INTEGER(sumtype)[k] = 1;
+			INTEGER(sumtype)[k] = LOGICAL(use)[k]?eSW_Sum:eSW_Off;
 			INTEGER(first)[k] = 1;
 			INTEGER(period)[k] = 3;
 			INTEGER(last)[k] = 366;
@@ -744,6 +744,8 @@ SEXP onGet_SW_OUT(void) {
 
 	PROTECT(useTimeStep = allocVector(LGLSXP,1));
 	PROTECT(timestep = allocVector(INTSXP,numPeriod));
+	if(numPeriod == 0)
+		LOGICAL(useTimeStep)[0] = FALSE;
 
 	PROTECT(mykey = NEW_INTEGER(28));
 	PROTECT(myobj = NEW_INTEGER(28));
@@ -766,8 +768,6 @@ SEXP onGet_SW_OUT(void) {
 			doOnce=TRUE;
 		}
 
-		SET_SLOT(OUT, install("timePeriods"), timestep);
-
 		INTEGER(mykey)[k] = SW_Output[k].mykey;
 		INTEGER(myobj)[k] = SW_Output[k].myobj;
 		INTEGER(period)[k] = SW_Output[k].period;
@@ -782,6 +782,8 @@ SEXP onGet_SW_OUT(void) {
 		} else
 			SET_STRING_ELT(outfile, k, mkChar(""));
 	}
+	SET_SLOT(OUT, install("timePeriods"), timestep);
+	SET_SLOT(OUT, install("useTimeStep"),  useTimeStep);
 	SET_SLOT(OUT, install(cKEY[0]), mykey);
 	SET_SLOT(OUT, install(cKEY[1]), myobj);
 	SET_SLOT(OUT, install(cKEY[2]), period);
