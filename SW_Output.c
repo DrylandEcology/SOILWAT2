@@ -1592,6 +1592,7 @@ static void get_swcBulk(void) {
 				break;// print previous to current
 			// YEAR should never be used with STEPWAT
 		}
+		if (bFlush) p++;
 		SXW.swc[Ilp(i,p)] = val;
 	}
 #endif
