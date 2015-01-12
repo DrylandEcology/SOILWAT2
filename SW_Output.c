@@ -2017,7 +2017,7 @@ static void get_transp(void) {
 			/* YEAR should never be used with STEPWAT */
 		}
 		if (bFlush) p++;
-		SXW.transp[Ilp(i,p)] = val[i];
+		SXW.transpTotal[Ilp(i,p)] = val[i];
 	}
 #endif
 
@@ -2065,6 +2065,17 @@ static void get_transp(void) {
 		sprintf(str, "%c%7.6f", _Sep, val[i]);
 		strcat(outstr, str);
 	}
+#elif defined(STEPWAT)
+	ForEachSoilLayer(i) {
+		switch (pd) {
+			case eSW_Day: p = t->doy-1; break; /* print current but as index */
+			case eSW_Week: p = t->week-1; break; /* print previous to current */
+			case eSW_Month: p = t->month-1; break; /* print previous to current */
+			/* YEAR should never be used with STEPWAT */
+		}
+		if (bFlush) p++;
+		SXW.transpTrees[Ilp(i,p)] = val[i];
+	}
 #endif
 
 #ifndef RSOILWAT
@@ -2111,6 +2122,17 @@ static void get_transp(void) {
 		sprintf(str, "%c%7.6f", _Sep, val[i]);
 		strcat(outstr, str);
 	}
+#elif defined(STEPWAT)
+	ForEachSoilLayer(i) {
+		switch (pd) {
+			case eSW_Day: p = t->doy-1; break; /* print current but as index */
+			case eSW_Week: p = t->week-1; break; /* print previous to current */
+			case eSW_Month: p = t->month-1; break; /* print previous to current */
+			/* YEAR should never be used with STEPWAT */
+		}
+		if (bFlush) p++;
+		SXW.transpShrubs[Ilp(i,p)] = val[i];
+	}
 #endif
 
 #ifndef RSOILWAT
@@ -2156,6 +2178,17 @@ static void get_transp(void) {
 	ForEachSoilLayer(i) {
 		sprintf(str, "%c%7.6f", _Sep, val[i]);
 		strcat(outstr, str);
+	}
+#elif defined(STEPWAT)
+	ForEachSoilLayer(i) {
+		switch (pd) {
+			case eSW_Day: p = t->doy-1; break; /* print current but as index */
+			case eSW_Week: p = t->week-1; break; /* print previous to current */
+			case eSW_Month: p = t->month-1; break; /* print previous to current */
+			/* YEAR should never be used with STEPWAT */
+		}
+		if (bFlush) p++;
+		SXW.transpForbs[Ilp(i,p)] = val[i];
 	}
 #endif
 
@@ -2207,6 +2240,17 @@ static void get_transp(void) {
 	ForEachSoilLayer(i) {
 		sprintf(str, "%c%7.6f", _Sep, val[i]);
 		strcat(outstr, str);
+	}
+#elif defined(STEPWAT)
+	ForEachSoilLayer(i) {
+		switch (pd) {
+			case eSW_Day: p = t->doy-1; break; /* print current but as index */
+			case eSW_Week: p = t->week-1; break; /* print previous to current */
+			case eSW_Month: p = t->month-1; break; /* print previous to current */
+			/* YEAR should never be used with STEPWAT */
+		}
+		if (bFlush) p++;
+		SXW.transpGrasses[Ilp(i,p)] = val[i];
 	}
 #endif
 	free(val);
