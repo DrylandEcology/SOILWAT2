@@ -746,6 +746,8 @@ SEXP onGet_SW_OUT(void) {
 	PROTECT(timestep = allocVector(INTSXP,numPeriod));
 	if(numPeriod == 0)
 		LOGICAL(useTimeStep)[0] = FALSE;
+	else
+		LOGICAL(useTimeStep)[0] = TRUE;
 
 	PROTECT(mykey = NEW_INTEGER(28));
 	PROTECT(myobj = NEW_INTEGER(28));
