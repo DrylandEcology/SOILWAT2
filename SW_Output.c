@@ -2474,7 +2474,8 @@ static void get_interception(void) {
 		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 3] = v->dysum.tree_int;
 		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 4] = v->dysum.shrub_int;
 		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 5] = v->dysum.grass_int;
-		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 6] = v->dysum.litter_int;
+		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 6] = v->dysum.forb_int;
+		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 7] = v->dysum.litter_int;
 		SW_Output[eSW_Interception].dy_row++;
 		break;
 	case eSW_Week:
@@ -2484,7 +2485,8 @@ static void get_interception(void) {
 		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 3] = v->wkavg.tree_int;
 		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 4] = v->wkavg.shrub_int;
 		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 5] = v->wkavg.grass_int;
-		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 6] = v->wkavg.litter_int;
+		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 6] = v->wkavg.forb_int;
+		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 7] = v->wkavg.litter_int;
 		SW_Output[eSW_Interception].wk_row++;
 		break;
 	case eSW_Month:
@@ -2494,7 +2496,8 @@ static void get_interception(void) {
 		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 3] = v->moavg.tree_int;
 		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 4] = v->moavg.shrub_int;
 		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 5] = v->moavg.grass_int;
-		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 6] = v->moavg.litter_int;
+		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 6] = v->moavg.forb_int;
+		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 7] = v->moavg.litter_int;
 		SW_Output[eSW_Interception].mo_row++;
 		break;
 	case eSW_Year:
@@ -2503,7 +2506,8 @@ static void get_interception(void) {
 		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 2] = v->yravg.tree_int;
 		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 3] = v->yravg.shrub_int;
 		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 4] = v->yravg.grass_int;
-		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 5] = v->yravg.litter_int;
+		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 5] = v->yravg.forb_int;
+		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 6] = v->yravg.litter_int;
 		SW_Output[eSW_Interception].yr_row++;
 		break;
 	}

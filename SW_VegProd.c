@@ -668,6 +668,7 @@ SEXP onGet_SW_VPD() {
 	p_VegInterception[9] = v->tree.veg_intPPT_b;
 	p_VegInterception[10] = v->tree.veg_intPPT_c;
 	p_VegInterception[11] = v->tree.veg_intPPT_d;
+
 	p_VegInterception[12] = v->forb.veg_intPPT_a;
 	p_VegInterception[13] = v->forb.veg_intPPT_b;
 	p_VegInterception[14] = v->forb.veg_intPPT_c;
@@ -694,6 +695,7 @@ SEXP onGet_SW_VPD() {
 	p_LitterInterception[9] = v->tree.litt_intPPT_b;
 	p_LitterInterception[10] = v->tree.litt_intPPT_c;
 	p_LitterInterception[11] = v->tree.litt_intPPT_d;
+
 	p_LitterInterception[12] = v->forb.litt_intPPT_a;
 	p_LitterInterception[13] = v->forb.litt_intPPT_b;
 	p_LitterInterception[14] = v->forb.litt_intPPT_c;
