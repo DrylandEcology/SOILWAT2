@@ -1044,6 +1044,9 @@ Bug fix:
 SW_Flow.c
 	09/26/2013 (drs) records2arrays(): Init hydraulic redistribution to zero; if not used and not initialized, then there could be non-zero values resulting
 
+SW_R_Lib.c/SW_Output.c:
+	04/18/2015 (drs) fixed output of forb interception and evaporation
+
 #-----------
 
 --> use Saxton 2006 pedotransfer functions adding organic content

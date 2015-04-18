@@ -2379,9 +2379,10 @@ static void get_evapSurface(void) {
 		p_Revap_surface_dy[SW_Output[eSW_EvapSurface].dy_row + dy_nrow * 2] = v->dysum.total_evap;
 		p_Revap_surface_dy[SW_Output[eSW_EvapSurface].dy_row + dy_nrow * 3] = v->dysum.tree_evap;
 		p_Revap_surface_dy[SW_Output[eSW_EvapSurface].dy_row + dy_nrow * 4] = v->dysum.shrub_evap;
-		p_Revap_surface_dy[SW_Output[eSW_EvapSurface].dy_row + dy_nrow * 5] = v->dysum.grass_evap;
-		p_Revap_surface_dy[SW_Output[eSW_EvapSurface].dy_row + dy_nrow * 6] = v->dysum.litter_evap;
-		p_Revap_surface_dy[SW_Output[eSW_EvapSurface].dy_row + dy_nrow * 7] = v->dysum.surfaceWater_evap;
+		p_Revap_surface_dy[SW_Output[eSW_EvapSurface].dy_row + dy_nrow * 5] = v->dysum.forb_evap;
+		p_Revap_surface_dy[SW_Output[eSW_EvapSurface].dy_row + dy_nrow * 6] = v->dysum.grass_evap;
+		p_Revap_surface_dy[SW_Output[eSW_EvapSurface].dy_row + dy_nrow * 7] = v->dysum.litter_evap;
+		p_Revap_surface_dy[SW_Output[eSW_EvapSurface].dy_row + dy_nrow * 8] = v->dysum.surfaceWater_evap;
 		SW_Output[eSW_EvapSurface].dy_row++;
 		break;
 	case eSW_Week:
@@ -2390,9 +2391,10 @@ static void get_evapSurface(void) {
 		p_Revap_surface_wk[SW_Output[eSW_EvapSurface].wk_row + wk_nrow * 2] = v->wkavg.total_evap;
 		p_Revap_surface_wk[SW_Output[eSW_EvapSurface].wk_row + wk_nrow * 3] = v->wkavg.tree_evap;
 		p_Revap_surface_wk[SW_Output[eSW_EvapSurface].wk_row + wk_nrow * 4] = v->wkavg.shrub_evap;
-		p_Revap_surface_wk[SW_Output[eSW_EvapSurface].wk_row + wk_nrow * 5] = v->wkavg.grass_evap;
-		p_Revap_surface_wk[SW_Output[eSW_EvapSurface].wk_row + wk_nrow * 6] = v->wkavg.litter_evap;
-		p_Revap_surface_wk[SW_Output[eSW_EvapSurface].wk_row + wk_nrow * 7] = v->wkavg.surfaceWater_evap;
+		p_Revap_surface_wk[SW_Output[eSW_EvapSurface].wk_row + wk_nrow * 5] = v->wkavg.forb_evap;
+		p_Revap_surface_wk[SW_Output[eSW_EvapSurface].wk_row + wk_nrow * 6] = v->wkavg.grass_evap;
+		p_Revap_surface_wk[SW_Output[eSW_EvapSurface].wk_row + wk_nrow * 7] = v->wkavg.litter_evap;
+		p_Revap_surface_wk[SW_Output[eSW_EvapSurface].wk_row + wk_nrow * 8] = v->wkavg.surfaceWater_evap;
 		SW_Output[eSW_EvapSurface].wk_row++;
 		break;
 	case eSW_Month:
@@ -2402,8 +2404,9 @@ static void get_evapSurface(void) {
 		p_Revap_surface_mo[SW_Output[eSW_EvapSurface].mo_row + mo_nrow * 3] = v->moavg.tree_evap;
 		p_Revap_surface_mo[SW_Output[eSW_EvapSurface].mo_row + mo_nrow * 4] = v->moavg.shrub_evap;
 		p_Revap_surface_mo[SW_Output[eSW_EvapSurface].mo_row + mo_nrow * 5] = v->moavg.grass_evap;
-		p_Revap_surface_mo[SW_Output[eSW_EvapSurface].mo_row + mo_nrow * 6] = v->moavg.litter_evap;
-		p_Revap_surface_mo[SW_Output[eSW_EvapSurface].mo_row + mo_nrow * 7] = v->moavg.surfaceWater_evap;
+		p_Revap_surface_mo[SW_Output[eSW_EvapSurface].mo_row + mo_nrow * 6] = v->moavg.grass_evap;
+		p_Revap_surface_mo[SW_Output[eSW_EvapSurface].mo_row + mo_nrow * 7] = v->moavg.litter_evap;
+		p_Revap_surface_mo[SW_Output[eSW_EvapSurface].mo_row + mo_nrow * 8] = v->moavg.surfaceWater_evap;
 		SW_Output[eSW_EvapSurface].mo_row++;
 		break;
 	case eSW_Year:
@@ -2411,9 +2414,10 @@ static void get_evapSurface(void) {
 		p_Revap_surface_yr[SW_Output[eSW_EvapSurface].yr_row + yr_nrow * 1] = v->yravg.total_evap;
 		p_Revap_surface_yr[SW_Output[eSW_EvapSurface].yr_row + yr_nrow * 2] = v->yravg.tree_evap;
 		p_Revap_surface_yr[SW_Output[eSW_EvapSurface].yr_row + yr_nrow * 3] = v->yravg.shrub_evap;
-		p_Revap_surface_yr[SW_Output[eSW_EvapSurface].yr_row + yr_nrow * 4] = v->yravg.grass_evap;
-		p_Revap_surface_yr[SW_Output[eSW_EvapSurface].yr_row + yr_nrow * 5] = v->yravg.litter_evap;
-		p_Revap_surface_yr[SW_Output[eSW_EvapSurface].yr_row + yr_nrow * 6] = v->yravg.surfaceWater_evap;
+		p_Revap_surface_yr[SW_Output[eSW_EvapSurface].yr_row + yr_nrow * 4] = v->yravg.forb_evap;
+		p_Revap_surface_yr[SW_Output[eSW_EvapSurface].yr_row + yr_nrow * 5] = v->yravg.grass_evap;
+		p_Revap_surface_yr[SW_Output[eSW_EvapSurface].yr_row + yr_nrow * 6] = v->yravg.litter_evap;
+		p_Revap_surface_yr[SW_Output[eSW_EvapSurface].yr_row + yr_nrow * 7] = v->yravg.surfaceWater_evap;
 		SW_Output[eSW_EvapSurface].yr_row++;
 		break;
 	}
@@ -2473,8 +2477,8 @@ static void get_interception(void) {
 		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 2] = v->dysum.total_int;
 		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 3] = v->dysum.tree_int;
 		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 4] = v->dysum.shrub_int;
-		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 5] = v->dysum.grass_int;
-		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 6] = v->dysum.forb_int;
+		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 5] = v->dysum.forb_int;
+		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 6] = v->dysum.grass_int;
 		p_Rinterception_dy[SW_Output[eSW_Interception].dy_row + dy_nrow * 7] = v->dysum.litter_int;
 		SW_Output[eSW_Interception].dy_row++;
 		break;
@@ -2484,8 +2488,8 @@ static void get_interception(void) {
 		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 2] = v->wkavg.total_int;
 		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 3] = v->wkavg.tree_int;
 		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 4] = v->wkavg.shrub_int;
-		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 5] = v->wkavg.grass_int;
-		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 6] = v->wkavg.forb_int;
+		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 5] = v->wkavg.forb_int;
+		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 6] = v->wkavg.grass_int;
 		p_Rinterception_wk[SW_Output[eSW_Interception].wk_row + wk_nrow * 7] = v->wkavg.litter_int;
 		SW_Output[eSW_Interception].wk_row++;
 		break;
@@ -2495,8 +2499,8 @@ static void get_interception(void) {
 		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 2] = v->moavg.total_int;
 		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 3] = v->moavg.tree_int;
 		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 4] = v->moavg.shrub_int;
-		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 5] = v->moavg.grass_int;
-		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 6] = v->moavg.forb_int;
+		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 5] = v->moavg.forb_int;
+		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 6] = v->moavg.grass_int;
 		p_Rinterception_mo[SW_Output[eSW_Interception].mo_row + mo_nrow * 7] = v->moavg.litter_int;
 		SW_Output[eSW_Interception].mo_row++;
 		break;
@@ -2505,8 +2509,8 @@ static void get_interception(void) {
 		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 1] = v->yravg.total_int;
 		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 2] = v->yravg.tree_int;
 		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 3] = v->yravg.shrub_int;
-		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 4] = v->yravg.grass_int;
-		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 5] = v->yravg.forb_int;
+		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 4] = v->yravg.forb_int;
+		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 5] = v->yravg.grass_int;
 		p_Rinterception_yr[SW_Output[eSW_Interception].yr_row + yr_nrow * 6] = v->yravg.litter_int;
 		SW_Output[eSW_Interception].yr_row++;
 		break;
