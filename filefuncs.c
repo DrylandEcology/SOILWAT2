@@ -150,7 +150,16 @@ Bool ChDir(const char *dname) {
 #elif __APPLE__
 #define mkdir(d, m) mkdir(d, m)
 #else
-#define mkdir(d, m) mkdir(d)
+
+
+//Added this new _mkdir  if we want to run this build in Window env using cgywin
+#ifdef __linux__
+    #define mkdir(d, m) mkdir(d)
+#else
+    #define _mkdir(d, m) _mkdir(d)
+#endif
+
+
 #endif
 Bool MkDir(const char *dname) {
 	/* make a path with 'mkdir -p' -like behavior. provides an
