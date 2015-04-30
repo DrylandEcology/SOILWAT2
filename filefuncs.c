@@ -153,11 +153,7 @@ Bool ChDir(const char *dname) {
 
 
 //Added this new _mkdir  if we want to run this build in Window env using cgywin
-#ifdef __linux__
-    #define mkdir(d, m) mkdir(d)
-#else
-    #define _mkdir(d, m) _mkdir(d)
-#endif
+#define _mkdir(d, m) _mkdir(d)
 
 
 #endif
