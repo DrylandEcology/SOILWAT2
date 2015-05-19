@@ -77,7 +77,22 @@ typedef struct {
 	swaMatric[MAX_LAYERS], transp_total[MAX_LAYERS], transp_tree[MAX_LAYERS], transp_forb[MAX_LAYERS], transp_shrub[MAX_LAYERS], transp_grass[MAX_LAYERS], evap[MAX_LAYERS],
 			lyrdrain[MAX_LAYERS], hydred_total[MAX_LAYERS], hydred_tree[MAX_LAYERS], /* hydraulic redistribution cm/layer */
 			hydred_forb[MAX_LAYERS], hydred_shrub[MAX_LAYERS], hydred_grass[MAX_LAYERS], surfaceWater, total_evap, surfaceWater_evap, tree_evap, forb_evap, shrub_evap,
-			grass_evap, litter_evap, total_int, tree_int, forb_int, shrub_int, grass_int, litter_int, snowpack, snowdepth, et, aet, pet, deep, sTemp[MAX_LAYERS]; // soil temperature in celcius for each layer
+			grass_evap,
+			litter_evap,
+			total_int,
+			tree_int,
+			forb_int,
+			shrub_int,
+			grass_int,
+			litter_int,
+			snowpack,
+			snowdepth,
+			et,
+			aet,
+			pet,
+			deep,
+			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
+			surfaceTemp; // soil surface temperature
 } SW_SOILWAT_OUTPUTS;
 
 typedef struct {
@@ -89,7 +104,14 @@ typedef struct {
 			drain[MAX_LAYERS], /* amt of swc able to drain from curr layer to next */
 			hydred_tree[MAX_LAYERS], /* hydraulic redistribution cm/layer */
 			hydred_forb[MAX_LAYERS], hydred_shrub[MAX_LAYERS], hydred_grass[MAX_LAYERS], surfaceWater, surfaceWater_evap, pet, aet, litter_evap, tree_evap, forb_evap,
-			shrub_evap, grass_evap, litter_int, tree_int, forb_int, shrub_int, grass_int, sTemp[MAX_LAYERS]; // soil temperature
+			shrub_evap, grass_evap,
+			litter_int,
+			tree_int,
+			forb_int,
+			shrub_int,
+			grass_int,
+			sTemp[MAX_LAYERS],
+			surfaceTemp; // soil surface temperature
 
 	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */
 	wksum, mosum, yrsum, /* accumulators for *avg */

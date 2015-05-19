@@ -119,10 +119,10 @@ typedef struct {
 		bmLimiter,	/* bmLimiter is the biomass limiter constant, for use in the T1 equation */
 		meanAirTemp, 	/* meanAirTemp is the mean air temperature for last year, it's a constant read in from the siteparams.in file used in soil_temperature function */
 		stDeltaX,		/* for the soil_temperature function, deltaX is the distance between profile points (default: 15) */
-		stMaxDepth,		/* for the soil_temperature function, the maxDepth of the regression function */
+		stMaxDepth,		/* for the soil_temperature function, the maxDepth of the interpolation function */
 		percentRunoff;	/* the percentage of surface water lost daily */
 
-	unsigned int stNRGR; /* number of regressions, for the soil_temperature function */
+	unsigned int stNRGR; /* number of interpolations, for the soil_temperature function */
 
 	/* params for tanfunc rate calculations for evap and transp. */
 	/* tanfunc() creates a logistic-type graph if shift is positive,

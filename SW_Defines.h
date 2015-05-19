@@ -37,7 +37,7 @@
 /* some basic constants */
 #define MAX_LAYERS  25
 #define MAX_TRANSP_REGIONS 4
-#define MAX_ST_RGR 30
+#define MAX_ST_RGR 100
 
 #define SW_MISSING     999.     /* value to use as MISSING */
 

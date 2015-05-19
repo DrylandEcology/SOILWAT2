@@ -96,14 +96,14 @@
 /* --------------------------------------------------- */
 extern SW_SITE SW_Site;
 unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
-unsigned int soil_temp_init;   // simply keeps track of whether or not the regression values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
+unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 unsigned int fusion_pool_init;
 
 /* *************************************************** */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
 
-ST_RGR_VALUES stValues; // keeps track of the regression values, for use in soil_temperature function
+ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 
 /* *************************************************** */
 /* *************************************************** */
@@ -1166,137 +1166,266 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 }
 
 /**********************************************************************
- PURPOSE: Initialize soil temperature regression values, only needs to be called once (ie the first time the soil_temperature function is called).  this is not included in the header file since it is NOT an external function
+ PURPOSE: Initialize soil temperature values, only needs to be called once (ie the first time the soil_temperature function is called).  this is not included in the header file since it is NOT an external function
 
  HISTORY:
  05/31/2012 (DLM) initial coding
 
  INPUTS: they are all defined in the soil_temperature function, so go look there to see their meaning as it would be redundant to explain them all here as well.
 
- OUTPUT: none, but places the regression values in stValues struct for use in the soil_temperature function later
+ OUTPUT: none, but places the interpolation values in stValues struct for use in the soil_temperature function later
  **********************************************************************/
-void soil_temperature_init(double bDensity[], double width[], double oldsTemp[], unsigned int nlyrs, double fc[], double wp[], double deltaX, double theMaxDepth,
-		double meanAirTemp, unsigned int nRgr) {
-	// local vars
-	unsigned int i, j, k, x1 = 1, x2 = 1, equal = 1;
-	double acc = 0.0;
-	// pointers
-	unsigned int *x1P = &x1, *x2P = &x2, *equalP = &equal;
-	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
-	soil_temp_init = 1; // make this value 1 to make sure that this function isn't called more than once... (b/c it doesn't need to be)
+void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrTemp, double depth_Temp[], double width_Temp, double sTempR[], unsigned int nlyrSoil, double depth_Soil[], double width_Soil[], double sTemp[]){
+	unsigned int i = 0, j, n, toDebug=0;
+	double acc;
 
-	for (i = 0; i < nlyrs; i++) {
-		acc += width[i];
-		st->depths[i] = acc;
-	}
-
-	for (i = 0; i < nRgr + 1; i++)
-		*(st->depthsR + i) = ((deltaX * i) + deltaX);
-
-	// if there's less then 2 lyrs of soil, or the max layer depth < 30 cm the function quits (& prints out an error message) so it doesn't blow up later...
-	if ((nlyrs < 2) || LT(st->depths[nlyrs - 1], deltaX + deltaX)) {
-		if (!soil_temp_error) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
-			// fprintf(stderr, "\nSOIL_TEMP FUNCTION ERROR: (there needs to be >= 2 soil layers, with a maximum combined depth of >= %5.2f cm)... soil temperature will NOT be calculated\n", (deltaX + deltaX));
-#ifndef RSOILWAT
-			fprintf(logfp,
-					"\nSOIL_TEMP FUNCTION ERROR: (there needs to be >= 2 soil layers, with a maximum combined depth of >= %5.2f cm)... soil temperature will NOT be calculated\n",
-					(deltaX + deltaX));
-#else
-			Rprintf("\nSOIL_TEMP FUNCTION ERROR: (there needs to be >= 2 soil layers, with a maximum combined depth of >= %5.2f cm)... soil temperature will NOT be calculated\n",
-					(deltaX + deltaX));
-#endif
-			soil_temp_error = 1;
+	// interpolate soil temperature values for depth of soil profile layers
+	for (j = 0; j < nlyrSoil + 1; j++) {
+		sTemp[j] = 0.0;
+		acc = 0.0;
+		n = 0;
+		while (LT(acc, width_Soil[j]) && i <= nlyrTemp + 1) {
+			if (EQ(cor[i][j], 0.0)) {// zero cor values indicate next soil temperature layer
+				i++;}
+			if (GT(cor[i][j], 0.0)) { // there are soil layers to add; index i = 0 is soil surface temperature
+				if (!(i == 0 && LT(acc + cor[i][j], width_Soil[j]))) {//don't use soil surface temperature if there is other sufficient soil temperature to interpolate
+					sTemp[j] += interpolation(((i > 0) ? depth_Temp[i - 1] : 0.0), depth_Temp[i], sTempR[i], sTempR[i + 1], depth_Soil[j]);
+					n++; // add weighting by layer width
+				}
+				acc += cor[i][j];
+				if (LT(acc, width_Soil[j])) i++;
+			} else if (LT(cor[i][j], 0.0)) { // negative cor values indicate copying values from deepest soil layer
+				break;
+			}
 		}
-		return; // exits the function
+		if(n > 0)
+			sTemp[j] = sTemp[j] / n;
+		if (toDebug)
+			#ifndef RSOILWAT
+				printf("\nConf T : i=%i, j=%i, n=%i, sTemp[%i]=%2.2f, acc=%2.2f", i, j, n, j, sTemp[j], acc);
+			#else
+				Rprintf("\nConf T : i=%i, j=%i, n=%i, sTemp[%i]=%2.2f, acc=%2.2f", i, j, n, j, sTemp[j], acc);
+			#endif
+
 	}
+}
 
-	acc = deltaX;
-	k = j = 0;
-	// linear regression time complexity of this should be something like O(k * nlyrs).  might be able to do it faster... but would also be a lot more code & would require a rewrite (shouldn't matter anyways, because this function is only called once)
-	while (LE(acc, st->depths[nlyrs - 1])) {
-		st_getBounds(x1P, x2P, equalP, nlyrs, acc, st->depths);
+void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[], double surfaceTemp, double sTemp[], double endTemp, unsigned int nlyrTemp, double depth_Temp[], double maxTempDepth, double sTempR[]){
+	unsigned int i, j1=0, j2, toDebug = 0;
+	double depth_Soil2[nlyrSoil + 1], sTemp2[nlyrSoil + 1];
 
-		i = -1;
-		if (x1 == i) { // sets the values to the first layer of soils values, since theres nothing else that can be done... fc * wp must be scaled appropriately
-			st->fcR[k] = (fc[0] / width[0]) * deltaX; // all the division and multiplication is to make sure that the regressions are scaled appropriately, since the widths of the layers & the layers of the regressions, may not be the same
-			st->wpR[k] = (wp[0] / width[0]) * deltaX;
-			// st->oldsTempR[k] = regression(0.0, st->depths[0], T1, oldsTemp[0], acc); // regression using the temp at the top of the soil, commented out b/c it's giving worse results
-			st->oldsTempR[k] = oldsTemp[0]; // no scaling is necessary with temperature & bulk density
-			st->bDensityR[k] = bDensity[0];
-		} else if ((x1 == x2) || (equal != 0)) { // sets the values to the layers values, since x1 and x2 are the same, no regression is necessary
-			st->fcR[k] = (fc[x1] / width[x1]) * deltaX;
-			st->wpR[k] = (wp[x1] / width[x1]) * deltaX;
-			st->oldsTempR[k] = oldsTemp[x1];
-			st->bDensityR[k] = bDensity[x1];
-		} else { // double regression( double x1, double x2, double y1, double y2, double deltaX ), located in generic.c
-			st->fcR[k] = regression(st->depths[x1], st->depths[x2], (fc[x1] / width[x1]) * deltaX, (fc[x2] / width[x2]) * deltaX, acc);
-			st->wpR[k] = regression(st->depths[x1], st->depths[x2], (wp[x1] / width[x1]) * deltaX, (wp[x2] / width[x2]) * deltaX, acc);
-			st->oldsTempR[k] = regression(st->depths[x1], st->depths[x2], oldsTemp[x1], oldsTemp[x2], acc);
-			st->bDensityR[k] = regression(st->depths[x1], st->depths[x2], bDensity[x1], bDensity[x2], acc);
+	//transfer data to include bottom conditions; do not include surface temperature in interpolations
+	for (i = 0; i < nlyrSoil; i++) {
+		depth_Soil2[i] = depth_Soil[i];
+		sTemp2[i] = sTemp[i];
+	}
+	depth_Soil2[nlyrSoil] = maxTempDepth;
+	sTemp2[nlyrSoil] = endTemp;
+
+	//interpolate soil temperature at soil temperature profile depths
+	for (i = 0; i < nlyrTemp; i++) {
+		while (LT(depth_Soil2[j1 + 1], depth_Temp[i]) && (j1 + 1) < nlyrSoil) {
+			j1++;
+		}
+		j2 = j1 + 1;
+		while (LE(depth_Soil2[j2 + 1], depth_Temp[i]) && (j2 + 1) < nlyrSoil + 1) {
+			j2++;
 		}
 
-		if (equal != 0)
-			x2 = x1;
-		st->x1BoundsR[k] = x1;
-		st->x2BoundsR[k] = x2;
+		sTempR[i + 1] = interpolation(depth_Soil2[j1], depth_Soil2[j2], sTemp2[j1], sTemp2[j2], depth_Temp[i]);
 
-		k++;
-		acc += deltaX;
+		if (toDebug)
+			#ifndef RSOILWAT
+				printf("\nConf T: i=%i, j1=%i, j2=%i, sTempR[%i]=%2.2f, sTemp2[%i]=%2.2f, sTemp2[%i]=%2.2f, depthT[%i]=%2.2f, depthS2[%i]=%2.2f, depthS2[%i]=%2.2f", i, j1, j2, i, sTempR[i], j1, sTemp2[j1], j2, sTemp2[j2], i, depth_Temp[i], j1, depth_Soil2[j1], j2, depth_Soil2[j2]);
+			#else
+				Rprintf("\nConf T: i=%i, j1=%i, j2=%i, sTempR[%i]=%2.2f, sTemp2[%i]=%2.2f, sTemp2[%i]=%2.2f, depthT[%i]=%2.2f, depthS2[%i]=%2.2f, depthS2[%i]=%2.2f", i, j1, j2, i, sTempR[i], j1, sTemp2[j1], j2, sTemp2[j2], i, depth_Temp[i], j1, depth_Soil2[j1], j2, depth_Soil2[j2]);
+			#endif
+
 	}
+	sTempR[nlyrTemp + 1] = endTemp;
+}
 
-	// this next chunk is commented out... the code is kept here though if if we want to change back to extrapolating the rest of the regression values
+void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrSoil, double depth_Soil[], double width_Soil[], double var[], unsigned int nlyrTemp, double depth_Temp[], double width_Temp, double res[], Bool summed){
+	unsigned int i, j = 0, toDebug = 0;
+	double acc, ratio, sum;
 
-	// to fill the rest of the regression values, simply use the last two values since there is no more actual data to go off of
-	// if k is < 2 this code will blow up... but that should never happen since the function quits if there isn't enough soil data earlier
-	/*for( i=k; i < nRgr; i++) {
-	 st->wpR[i] = regression(st->depthsR[i - 2], st->depthsR[i - 1], st->wpR[i - 2], st->wpR[i - 1], st->depthsR[i]);
-	 st->fcR[i] = regression(st->depthsR[i - 2], st->depthsR[i - 1], st->fcR[i - 2], st->fcR[i - 1], st->depthsR[i]);
-	 st->bDensityR[i] = regression(st->depthsR[i - 2], st->depthsR[i - 1], st->bDensityR[i - 2], st->bDensityR[i - 1], st->depthsR[i]);
-	 }
+	for (i = 0; i < nlyrTemp + 1; i++) {
+		res[i] = 0.0;
+		acc = 0.0;
+		sum = 0.0;
+		while (LT(acc, width_Temp) && j < nlyrSoil + 1) {
+			if (GE(cor[i][j], 0.0)) { // there are soil layers to add
+				ratio = cor[i][j] / width_Soil[j];
+				res[i] += var[j] * ratio;
+				sum += ratio;
+				acc += cor[i][j];
+				if (LT(acc, width_Temp)) j++;
+			} else if (LT(cor[i][j], 0.0)) { // negative cor values indicate end of soil layer profile
+				// copying values from deepest soil layer
+				ratio = -cor[i][j] / width_Soil[j - 1];
+				res[i] += var[j - 1] * ratio;
+				sum += ratio;
+				acc += (-cor[i][j]);
+			}
+		}
+		if (!summed) res[i] = res[i] / sum;
+		if (toDebug)
+			#ifndef RSOILWAT
+				printf("\nConf A: acc=%2.2f, sum=%2.2f, res[%i]=%2.2f, var[%i]=%2.2f, [%i]=%2.2f, cor[%i][%i]=%2.2f, width_Soil[%i]=%2.2f, [%i]=%2.2f", acc, sum, i, res[i], j, var[j], j-1, var[j-1], i, j, cor[i][j], j, width_Soil[j], j-1, width_Soil[j-1]);
+			#else
+				Rprintf("\nConf A: acc=%2.2f, sum=%2.2f, res[%i]=%2.2f, var[%i]=%2.2f, [%i]=%2.2f, cor[%i][%i]=%2.2f, width_Soil[%i]=%2.2f, [%i]=%2.2f", acc, sum, i, res[i], j, var[j], j-1, var[j-1], i, j, cor[i][j], j, width_Soil[j], j-1, width_Soil[j-1]);
+			#endif
 
-	 // getting the average for a regression...
-	 for( i=0; i < nlyrs; i++) {
-	 wpAverage += wp[i] / width[i];
-	 fcAverage += fc[i] / width[i];
-	 bDensityAverage += bDensity[i];
-	 }
-	 wpAverage = deltaX * (wpAverage / (nlyrs + 0.0));
-	 fcAverage = deltaX * (fcAverage / (nlyrs + 0.0));
-	 bDensityAverage = (bDensityAverage / (nlyrs + 0.0));
 
-	 // if the values are too small, we reset them to the average for the regression... it's a safeguard
-	 for( i=k; i < nRgr; i++ ) {
-	 if(LT(st->wpR[i], 1))
-	 st->wpR[i] = wpAverage;
-	 if(LT(st->fcR[i], 2))
-	 st->fcR[i] = fcAverage;
-	 st->bDensityR[i] = bDensityAverage; // just set the bulk density to the average, it seems to be a better approximation...
-	 }*/
-
-	// just use the last soil layers values...
-	for (i = k; i < nRgr; i++) {
-		st->wpR[i] = deltaX * (wp[nlyrs - 1] / width[nlyrs - 1]);
-		st->fcR[i] = deltaX * (fc[nlyrs - 1] / width[nlyrs - 1]);
-		st->bDensityR[i] = bDensity[nlyrs - 1];
 	}
+}
 
-	if (k < nRgr) //was k < 11
-		st->oldsTempR[k] = regression(st->depths[nlyrs - 1], theMaxDepth, oldsTemp[nlyrs - 1], meanAirTemp, st->depthsR[k]); // to give a slightly better temp approximation
-	for (i = k + 1; i < nRgr; i++) {
-		st->oldsTempR[i] = regression(st->depthsR[i - 1], theMaxDepth, st->oldsTempR[i - 1], meanAirTemp, st->depthsR[i]); // we do temperature differently, since we already have the temperature for the last layer of soil
-	}
 
-	st->oldsTempR[nRgr] = meanAirTemp; // the soil temp at the last layer of the regression is equal to the meanAirTemp, this is constant so it's the same for yesterdays temp & todays temp
+void soil_temperature_init(double bDensity[], double width[], double surfaceTemp, double oldsTemp[], double meanAirTemp, unsigned int nlyrs, double fc[], double wp[], double deltaX,
+		 double theMaxDepth,unsigned int nRgr) {
 
-	// getting all the xBounds values for later use in the soil_temperature function...
-	for (i = 0; i < nlyrs; i++) {
-		st_getBounds(x1P, x2P, equalP, nRgr + 1, st->depths[i], st->depthsR);
-		if (equal != 0)
-			x2 = x1;
-		st->x1Bounds[i] = x1;
-		st->x2Bounds[i] = x2;
-	}
+
+	   unsigned int x1 = 0, x2 = 0, j = 0, i, k, toDebug = 0;
+		double d1 = 0.0, d2 = 0.0, acc = 0.0;
+		// pointers
+		ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
+
+		soil_temp_init = 1; // make this value 1 to make sure that this function isn't called more than once... (b/c it doesn't need to be)
+
+
+		if (toDebug)
+			#ifndef RSOILWAT
+				printf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
+			#else
+				Rprintf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
+			#endif
+
+
+		// init st
+		for (i = 0; i < nRgr + 1; i++) {
+			st->fcR[i] = 0.0;
+			st->wpR[i] = 0.0;
+			st->bDensityR[i] = 0.0;
+			st->oldsTempR[i] = 0.0;
+			for (j = 0; j < nlyrs + 1; j++) // last column is used for soil temperature layers that are deeper than the deepest soil profile layer
+				st->tlyrs_by_slyrs[i][j] = 0.0;
+		}
+
+		// copy depths of soil layer profile
+		for (j = 0; j < nlyrs + 1; j++) {
+			acc += width[j];
+			st->depths[j] = acc;
+		}
+		// calculate evenly spaced depths of soil temperature profile
+		acc = 0.0;
+		for (i = 0; i < nRgr + 1; i++) {
+			acc += deltaX;
+			st->depthsR[i] = acc;
+		}
+
+
+		// if soil temperature max depth is less than soil layer depth then quit
+		if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
+			if (!soil_temp_error) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
+
+			#ifndef RSOILWAT
+				printf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
+			#else
+				Rprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
+			#endif
+
+				soil_temp_error = 1;
+			}
+			return; // exits the function
+		}
+
+		// calculate values of correspondance 'tlyrs_by_slyrs' between soil profile layers and soil temperature layers
+		for (i = 0; i < nRgr + 1; i++) {
+			acc = 0.0; // cumulative sum towards deltaX
+			while (x2 < nlyrs && acc < deltaX) { // there are soil layers to add
+				// add from previous (x1) soil layer
+				if (GT(d1, 0.0)) {
+					j = x1;
+					if (GT(d1, deltaX)) { // soil temperatur layer ends within x1-th soil layer
+						d2 = deltaX;
+						d1 -= deltaX;
+					} else {
+						d2 = d1;
+						d1 = 0.0;
+						x2++;
+					}
+				} else {
+					// add from next (x2) soil layer
+					j = x2;
+					if (LT(st->depthsR[i], st->depths[x2])) { // soil temperatur layer ends within x2-th soil layer
+						d2 = fmax(deltaX - acc, 0.0);
+						d1 = width[x2] - d2;
+					} else {
+						d2 = width[x2];
+						d1 = 0.0;
+						x2++;
+					}
+				}
+				acc += d2;
+				st->tlyrs_by_slyrs[i][j] = d2;
+			}
+			x1 = x2;
+
+			if (x2 >= nlyrs) { // soil temperature profile is deeper than deepest soil layer; copy data from deepest soil layer
+				st->tlyrs_by_slyrs[i][x2] = -(deltaX - acc);
+			}
+		}
+
+		if (toDebug) {
+			for (i = 0; i < nRgr + 1; i++) {
+				#ifndef RSOILWAT
+				 	 printf("\ntl_by_sl");
+						for (j = 0; j < nlyrs + 1; j++)
+					       printf("[%i,%i]=%3.2f ", i, j, st->tlyrs_by_slyrs[i][j]);
+
+				#else
+					  Rprintf("\ntl_by_sl");
+						for (j = 0; j < nlyrs + 1; j++)
+						   Rprintf("[%i,%i]=%3.2f ", i, j, st->tlyrs_by_slyrs[i][j]);
+				#endif
+
+
+			}
+		}
+
+		// calculate field capacity, wilting point, bulk density, and initial soil temperature for layers of the soil temperature profile
+		lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, st->depths, width, fc, nRgr, st->depthsR, deltaX, st->fcR, (1 == 1));
+		lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, st->depths, width, wp, nRgr, st->depthsR, deltaX, st->wpR, (1 == 1));
+		lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, st->depths, width, bDensity, nRgr, st->depthsR, deltaX, st->bDensityR, (1 != 1));
+		lyrSoil_to_lyrTemp_temperature(nlyrs, st->depths, surfaceTemp, oldsTemp, meanAirTemp, nRgr, st->depthsR, theMaxDepth, st->oldsTempR);
+
+		// st->oldsTempR: index 0 is surface temperature
+		if (toDebug){
+
+			#ifndef RSOILWAT
+			 	 for (j = 0; j < nlyrs; j++)
+							printf("\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, oldT=%2.2f",
+								j, st->depths[j], fc[j], wp[j], bDensity[j], oldsTemp[j]);
+						printf("\nConv ST oldSurfaceTR=%2.2f", st->oldsTempR[0]);
+						for (i = 0; i < nRgr + 1; i++)
+						   printf("\nConv ST depth[%i]=%2.2f, fcR=%2.2f, wpR=%2.2f, bDensR=%2.2f, oldTR=%2.2f",
+								i, st->depthsR[i], st->fcR[i], st->wpR[i], st->bDensityR[i], st->oldsTempR[i+1]);
+
+
+			#else
+				 for (j = 0; j < nlyrs; j++)
+						Rprintf("\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, oldT=%2.2f",
+								j, st->depths[j], fc[j], wp[j], bDensity[j], oldsTemp[j]);
+					Rprintf("\nConv ST oldSurfaceTR=%2.2f", st->oldsTempR[0]);
+						for (i = 0; i < nRgr + 1; i++)
+							Rprintf("\nConv ST depth[%i]=%2.2f, fcR=%2.2f, wpR=%2.2f, bDensR=%2.2f, oldTR=%2.2f",
+								i, st->depthsR[i], st->fcR[i], st->wpR[i], st->bDensityR[i], st->oldsTempR[i+1]);
+
+			#endif
+
+
+			}
 }
 
 /**********************************************************************
@@ -1343,11 +1472,16 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
  sTemp - soil layer temperatures in celsius
  **********************************************************************/
 
-void soil_temperature(double airTemp, double pet, double aet, double biomass, double swc[], double bDensity[], double width[], double oldsTemp[], double sTemp[],
+void soil_temperature(double airTemp, double pet, double aet, double biomass, double swc[], double bDensity[], double width[], double oldsTemp[], double sTemp[],double surfaceTemp[2],
 		unsigned int nlyrs, double fc[], double wp[], double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1, double csParam2, double shParam,
 		double snowpack, double meanAirTemp, double deltaX, double theMaxDepth, unsigned int nRgr) {
-	unsigned int i, j, k, x1 = 1, x2 = 1, toDebug = 0;
+
+	/*unsigned int i, j, k, x1 = 1, x2 = 1, toDebug = 0;
 	double T1, cs, sh, sm, pe, deltaT, deltaTemp, tc, fH2O, fp, part1, part2, acc, swcR[nRgr], sTempR[nRgr + 1], sFusionPool[nlyrs], maxLyrDepth;
+	*/
+	unsigned int i, j, k, toDebug = 0;
+	double T1, cs, sh, sm, pe, deltaT, deltaTemp, tc, fH2O, fp,parts, part1, part2, acc, swcR[nRgr], sTempR[nRgr + 1], sFusionPool[nlyrs], maxLyrDepth;
+
 	/* local variables explained: 
 
 	 toDebug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
@@ -1365,8 +1499,25 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	 fp - freezing point of water in soil
 	 depths[nlyrs] - the depths of each layer of soil, calculated in the function
 	 sFusionPool[] - the calculated fusion pool for each soil layer
-	 swcR[], sTempR[] - anything with a R at the end of the variable name stands for the regression of that array
+	 swcR[], sTempR[] - anything with a R at the end of the variable name stands for the interpolation of that array
 	 */
+
+	if (!soil_temp_init) {
+		if (toDebug) {
+		#ifndef RSOILWAT
+			printf("\nCalling soil_temperature_init\n");
+		#else
+			Rprintf("\nCalling soil_temperature_init\n");
+		#endif
+		}
+
+		surfaceTemp[Today] = airTemp;
+		soil_temperature_init(bDensity, width, surfaceTemp[Today], oldsTemp,
+				meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
+	}
+	if (soil_temp_error) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
+		return;
+
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
@@ -1375,45 +1526,46 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	fp = -1.00;		// this freezing point value was also used in Eitzinger 2000
 	fH2O = 80;		// this fusion enegry was also given in Eitzinger 2000
 
-	// calculating T1, the average daily air temperature at the top of the soil
+	// calculating T1, the average daily soil surface temperature
+
 	if (LE(biomass, bmLimiter)) { // bmLimiter = 300
-	//	T1 = airTemp + (t1Param1 * pet * (1. - ((aet / pet) * (1. - (biomass / bmLimiter))))); // t1Param1 = 15; math is correct
+		//	T1 = airTemp + (t1Param1 * pet * (1. - ((aet / pet) * (1. - (biomass / bmLimiter))))); // t1Param1 = 15; math is correct
 		T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
 		if (toDebug)
-#ifndef RSOILWAT
-			printf("\nT1 = %5.4f + (%5.4f * %5.4f * (1 - ((%5.4f / %5.4f) * (1 - (%5.4f / %5.4f))) ) )", airTemp, t1Param1, pet, aet, pet, biomass, bmLimiter);
-#else
-			Rprintf("\nT1 = %5.4f + (%5.4f * %5.4f * (1 - ((%5.4f / %5.4f) * (1 - (%5.4f / %5.4f))) ) )", airTemp, t1Param1, pet, aet, pet, biomass, bmLimiter);
-#endif	
+			#ifndef RSOILWAT
+			//printf("\nT1 = %5.4f + (%5.4f * %5.4f * (1 - ((%5.4f / %5.4f) * (1 - (%5.4f / %5.4f))) ) )", airTemp, t1Param1, pet, aet, pet, biomass, bmLimiter);
+				printf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
+					   airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
+			#else
+			//	Rprintf("\nT1 = %5.4f + (%5.4f * %5.4f * (1 - ((%5.4f / %5.4f) * (1 - (%5.4f / %5.4f))) ) )", airTemp, t1Param1, pet, aet, pet, biomass, bmLimiter);
+				Rprintf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
+						airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
+			#endif
 	} else {
 		T1 = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
 		if (toDebug)
-#ifndef RSOILWAT
-			printf("\nT1 = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, t1Param2, biomass, bmLimiter, t1Param3);
-#else
-			Rprintf("\nT1 = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, t1Param2, biomass, bmLimiter, t1Param3);
-#endif
+		#ifndef RSOILWAT
+			printf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
+		#else
+			Rprintf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
+		#endif
 	}
 
-	if (toDebug)
-#ifndef RSOILWAT
-		printf("\nAirTemp : %5.4f pet : %5.4f aet : %5.4f biomass : %5.4f bmLimiter : %5.4f", airTemp, pet, aet, biomass, bmLimiter);
-#else
-		Rprintf("\nAirTemp : %5.4f pet : %5.4f aet : %5.4f biomass : %5.4f bmLimiter : %5.4f", airTemp, pet, aet, biomass, bmLimiter);
-#endif
-	if (GT(snowpack, 0.0)) { // if there is snow on the ground, then T1 is simply set to -2
-		T1 = -2.0;
-		if (toDebug)
-#ifndef RSOILWAT
-			printf("\nThere is snow on the ground, T1 set to -2\n");
-#else
-			Rprintf("\nThere is snow on the ground, T1 set to -2\n");
-#endif
-	}
 
-	if (!soil_temp_init)
+
+			if (GT(snowpack, 0.0)) { // if there is snow on the ground, then T1 is simply set to -2
+				T1 = -2.0;
+					if (toDebug)
+						#ifndef RSOILWAT
+							printf("\nThere is snow on the ground, T1 set to -2\n");
+						#else
+							Rprintf("\nThere is snow on the ground, T1 set to -2\n");
+						#endif
+			}
+
+	/*if (!soil_temp_init)
 		soil_temperature_init(bDensity, width, oldsTemp, nlyrs, fc, wp, deltaX, theMaxDepth, meanAirTemp, nRgr);
-
+*/
 	if (!fusion_pool_init) {
 		for (i = 0; i < nlyrs; i++) {
 			st->oldsFusionPool[i] = 0.00;	// sets the inital fusion pool to zero
@@ -1425,167 +1577,75 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		fusion_pool_init = 1;
 	}
 
-	if (soil_temp_error) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
-		return;
+	// calculate soil water content for soil temperature layers
+	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, st->depths, width, swc, nRgr, st->depthsR, deltaX, swcR, (1==1));
 
-	maxLyrDepth = st->depths[nlyrs - 1];
 
-	k = 0; // k keeps track of which layer of the regression we are on...
-	acc = deltaX;
-	if (toDebug)
-#ifndef RSOILWAT
-		printf("\nT1 : %5.4f meanAirTemp : %5.4f \nnlyrs : %d maxLyrDepth : %5.4f \n \n", T1, meanAirTemp, nlyrs, maxLyrDepth);
-#else
-		Rprintf("\nT1 : %5.4f meanAirTemp : %5.4f \nnlyrs : %d maxLyrDepth : %5.4f \n \n", T1, meanAirTemp, nlyrs, maxLyrDepth);
-#endif	
-	// linear regression
-	while (LE(acc, maxLyrDepth)) {
+	if (toDebug) {
 
-		x1 = st->x1BoundsR[k];
-		x2 = st->x2BoundsR[k];
-		i = -1;
-		if (toDebug) {
-			if (x1 != i) { // makes sure that we're not sending st->depths[-1] to printf, b/c as it turns out that causes a nasty segmentation fault error...
-				printf("k %d %d - %d depthLow %5.4f acc %5.4f depthHigh %5.4f\n", k, x1, x2, st->depths[x1], acc, st->depths[x2]);
-			} else {
-				printf("k %d %d - %d depthLow %5.4f acc %5.4f depthHigh %5.4f\n", k, x1, x2, 0.0, acc, st->depths[x2]);
-			}
-		}
+			#ifndef RSOILWAT
+				printf("\nregression values:");
+					for (i = 0; i < nRgr; i++)
+						printf("\nk %2d width %5.4f depth %5.4f swcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f", i, deltaX, st->depthsR[i], swcR[i], st->fcR[i], st->wpR[i], st->oldsTempR[i], st->bDensityR[i]);
 
-		if (x1 == i) { // sets the values to the first layer of soils values, since theres nothing else that can be done...
-			swcR[k] = (swc[0] / width[0]) * deltaX; // division & multiplication is to make sure that the values are scaled appropriately, since the width of the layer & the width of a layer of the regression may not be the same
-		} else if (x1 == x2) { // sets the values to the layers values, since x1 and x2 are the same, no regression is necessary (scaling still is necessary, however)
-			swcR[k] = (swc[x1] / width[x1]) * deltaX;
-		} else { // double regression( double x1, double x2, double y1, double y2, double deltaX ), located in generic.c
-			part1 = (x2 != i) ? ((swc[x2] / width[x2]) * deltaX) : ((swc[nlyrs - 1] / width[nlyrs - 1]) * deltaX);
-			swcR[k] = regression(st->depths[x1], (x2 != i) ? st->depths[x2] : st->depths[nlyrs - 1], (swc[x1] / width[x1]) * deltaX, part1, acc);
-		}
+				printf("\nlayer values:");
+					for (i = 0; i < nlyrs; i++)
+						printf("\ni %2d width %5.4f depth %5.4f swc %5.4f fc %5.4f wp %5.4f oldsTemp %5.4f bDensity %5.4f", i, width[i], st->depths[i], swc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
 
-		k++;
-		acc += deltaX;
+
+			#else
+				Rprintf("\nregression values:");
+					for (i = 0; i < nRgr; i++)
+						Rprintf("\nk %2d width %5.4f depth %5.4f swcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f", i, deltaX, st->depthsR[i], swcR[i], st->fcR[i], st->wpR[i], st->oldsTempR[i], st->bDensityR[i]);
+
+				Rprintf("\nlayer values:");
+					for (i = 0; i < nlyrs; i++)
+						Rprintf("\ni %2d width %5.4f depth %5.4f swc %5.4f fc %5.4f wp %5.4f oldsTemp %5.4f bDensity %5.4f", i, width[i], st->depths[i], swc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
+			#endif
+
 	}
 
-	// uncomment out this next part if wanting to change back to extrapolating the rest of the regression values...
-
-	// to fill the rest of the regression values, simply use the last two values since there is no more actual data to go off of
-	/*for( i=k; i < nRgr; i++)
-	 swcR[i] = regression(st->depthsR[i - 2], st->depthsR[i - 1], swcR[i - 2], swcR[i - 1], st->depthsR[i]);
-
-
-	 // getting the average for a regression...
-	 for( i=0; i < k; i++) {
-	 swcAverage += swcR[i];
-	 }
-	 swcAverage = swcAverage / (k + 0.0);
-
-	 // resets the regression values if they're too small... it's a safeguard...
-	 for( i=0; i < nRgr; i++ )
-	 if(LT(swcR[i], 1))
-	 swcR[i] = swcAverage;*/
-
-	//just use the last layers values...		
-	for (i = k; i < nRgr; i++)
-		swcR[i] = deltaX * (swc[nlyrs - 1] / width[nlyrs - 1]);
-
-	if (toDebug)
-#ifndef RSOILWAT
-		printf("\nregression values: \n");
-#else
-		Rprintf("\nregression values: \n");
-#endif
-	if (toDebug)
-		for (i = 0; i < nRgr; i++)
-#ifndef RSOILWAT
-			printf("k %d swcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f \n", i, swcR[i], st->fcR[i], st->wpR[i], st->oldsTempR[i], st->bDensityR[i]);
-#else
-			Rprintf("k %d swcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f \n", i, swcR[i], st->fcR[i], st->wpR[i], st->oldsTempR[i], st->bDensityR[i]);
-#endif	
-	if (toDebug)
-#ifndef RSOILWAT
-		printf("\nlayer values: \n");
-#else
-		Rprintf("\nlayer values: \n");
-#endif
-	if (toDebug)
-		for (i = 0; i < nlyrs; i++)
-#ifndef RSOILWAT
-			printf("i %d width %5.4f depth %5.4f swc %5.4f fc %5.4f wp %5.4f oldsTemp %5.4f bDensity %5.4f \n", i, width[i], st->depths[i], swc[i], fc[i], wp[i], oldsTemp[i],
-					bDensity[i]);
-#else
-			Rprintf("i %d width %5.4f depth %5.4f swc %5.4f fc %5.4f wp %5.4f oldsTemp %5.4f bDensity %5.4f \n", i, width[i], st->depths[i], swc[i], fc[i], wp[i], oldsTemp[i],
-					bDensity[i]);
-#endif
-
-	// FINALLY done with the regressions!!! this is where we calculate the temperature for each soil layer of the regression
-	if (toDebug)
-#ifndef RSOILWAT
-		printf("\n");
-#else
-		Rprintf("\n");
-#endif
-	for (i = 0; i < nRgr; i++) { // goes to nRgr, because the soil temp of the last regression layer (nRgr) is the meanAirTemp
-
+	// calculate the new soil temperature for each layer
+	sTempR[0] = T1; //index 0 indicates surface and not first layer
+	part1 = deltaT / squared(deltaX);
+	for (i = 1; i < nRgr + 1; i++) { // goes to nRgr, because the soil temp of the last interpolation layer (nRgr) is the meanAirTemp
+		k = i - 1;
 		// first we must calculate cs & sh (& subsequently sm & pe), for use later
-		sm = swcR[i];
-		pe = (sm - st->wpR[i]) / (st->fcR[i] - st->wpR[i]);
+		sm = swcR[k];
+		pe = (sm - st->wpR[k]) / (st->fcR[k] - st->wpR[k]);
 		cs = csParam1 + (pe * csParam2); // csParam1 = 0.0007, csParam2 = 0.0003
 		sh = sm + (shParam * (1. - sm)); // shParam = 0.18
 
-		if (toDebug)
-#ifndef RSOILWAT
-			printf("k %d cs %5.4f sh %5.4f\n", i, cs, sh);
-#else
-			Rprintf("k %d cs %5.4f sh %5.4f\n", i, cs, sh);
-#endif
+		// breaking the equation down into parts
+		parts = part1 * cs / (sh * st->bDensityR[k]);
+		part2 = (sTempR[i - 1] - (2 * st->oldsTempR[i]) + st->oldsTempR[i + 1]);
 
-		// breaking the equation down into parts to make it easier for me to process
-		part1 = cs / (sh * st->bDensityR[i]);
+		//Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
+		if (GT(parts, 0.5)) {//Criterion for a stable solution
+			#ifndef RSOILWAT
+						printf("\nSOIL_TEMP FUNCTION ERROR: solution is not stable: %f > 0.5... soil temperature will NOT be calculated\n", parts);
+			#else
+						Rprintf("\nSOIL_TEMP FUNCTION ERROR: solution is not stable: %f > 0.5... soil temperature will NOT be calculated\n", parts);
+			#endif
+			soil_temp_error = 1;
+			return; // exits the function
 
-		if (i > 0) { // handles all layers except the first soil layer
-			part2 = (sTempR[i - 1] - (2 * st->oldsTempR[i]) + st->oldsTempR[i + 1]) / squared(deltaX);
-		} else { // handles the first soil layer, since it needs the temp of the top of the soil
-			part2 = (T1 - (2 * st->oldsTempR[0]) + st->oldsTempR[1]) / squared(deltaX);
 		}
 
-		sTempR[i] = ((part1 * part2) * deltaT) + st->oldsTempR[i];
-	}
-	sTempR[nRgr] = meanAirTemp; // again... the last layer of the regression is set to the constant meanAirTemp
-
-	// MORE REGRESSIONS! to change sTempR into sTemp for outputting correctly
-	if (toDebug)
-#ifndef RSOILWAT
-		printf("\n");
-#else
-		Rprintf("\n");
-#endif
-	j = -1; // have to do this to avoid signed / unsigned comparison warning.  it's a pain really but have to do since the program was all written using unsigned ints (which can be no negative value except for -1) for some reason.  keep in mind that -1 is the largest possible value that an unsigned int can be according to c (ie -1 > 100 is a true statement if they're both unsigned ints b/c -1 is converted to UINT_MAX), very confusing.
-	for (i = 0; i < nlyrs; i++) {
-		x1 = st->x1Bounds[i];
-		x2 = st->x2Bounds[i];
+		sTempR[i] = st->oldsTempR[i] + parts * part2;
 
 		if (toDebug)
-#ifndef RSOILWAT
-			printf("i %d %d - %d depthLow %5.4f acc %5.4f depthHigh %5.4f\n", i, x1, x2, ((x1 + 1) * deltaX), st->depths[i], (x2 != j) ? st->depthsR[x2] : -1.0);
-#else
-			Rprintf("i %d %d - %d depthLow %5.4f acc %5.4f depthHigh %5.4f\n", i, x1, x2, ((x1 + 1) * deltaX), st->depths[i], (x2 != j) ? st->depthsR[x2] : -1.0);
-#endif
+			#ifndef RSOILWAT
+				printf("\nk %d cs %5.4f sh %5.4f p1 %5.4f ps %5.4f p2 %5.4f p %5.4f", k, cs, sh, part1, parts, part2, parts * part2);
+			#else
+				Rprintf("\nk %d cs %5.4f sh %5.4f p1 %5.4f ps %5.4f p2 %5.4f p %5.4f", k, cs, sh, part1, parts, part2, parts * part2);
+			#endif
 
-		if (x1 == j) { // makes a regression with the temp at the top of the soil & the first soil layer...
-			//sTemp[i] = regression(0.0, deltaX, T1, sTempR[0], st->depths[i]); // commented out, b/c it was actually giving a worse approximation
-			sTemp[i] = regression(deltaX, deltaX + deltaX, sTempR[0], sTempR[1], st->depths[i]);
-		} else if (x1 == x2) { // sets the values to the layers values, since x1 and x2 are the same, no regression is necessary
-			sTemp[i] = sTempR[x1];
-		} else {
-			if (x2 != j)
-				sTemp[i] = regression(st->depthsR[x1], st->depthsR[x2], sTempR[x1], sTempR[x2], st->depths[i]);
-			else
-				sTemp[i] = regression(st->depthsR[x1], (x2 != j) ? st->depthsR[x2] : st->depthsR[nRgr - 1], sTempR[x1], (x2 != j) ? sTempR[x2] : sTempR[nRgr - 1],
-						st->depths[i]);
-		}
 	}
+
 
 	for (i = 0; i < nlyrs; i++)	// now that you have calculated the new temperatures can determine whether the soil layers should be frozen or not.
-			{
+	{
 		j = 0;
 		while (st->lyrFrozen[j] == 1) //do this to determine the i-th non frozen layer, to use in the fusion pool calculation
 		{
@@ -1637,46 +1697,55 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 			sFusionPool[i] = 0.00;		//if your temperatures don't match any of those conditions, just set the fusion pool to zero and don't change the temperature at all
 		}
 
-	if (toDebug)
-#ifndef RSOILWAT
-		printf("\nregression temp values: \n");
-#else
-		Rprintf("\nregression temp values: \n");
-#endif
-	if (toDebug)
-		for (i = 0; i < nRgr + 1; i++)
-#ifndef RSOILWAT
-			printf("k %d oldsTempR %5.4f sTempR %5.4f depth %5.4f \n", i, *(st->oldsTempR + i), sTempR[i], ((i + 1) * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
-#else
-			Rprintf("k %d oldsTempR %5.4f sTempR %5.4f depth %5.4f \n", i, *(st->oldsTempR + i), sTempR[i], ((i + 1) * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
-#endif
-	if (toDebug)
-#ifndef RSOILWAT
-		printf("\nlayer temp values: \n");
-#else
-		Rprintf("\nlayer temp values: \n");
-#endif
-	if (toDebug)
-		for (i = 0; i < nlyrs; i++)
-#ifndef RSOILWAT
-			printf("i %d oldTemp %5.4f sTemp %5.4f depth %5.4f  \n", i, oldsTemp[i], sTemp[i], st->depths[i]);
-#else
-			Rprintf("i %d oldTemp %5.4f sTemp %5.4f depth %5.4f  \n", i, oldsTemp[i], sTemp[i], st->depths[i]);
-#endif
 
-	// updating the values of yesterdays temperature regression for the next time the function is called...
-	// also added fusion pool to this update so that we can store old fusion pool for the cases where we might need that value
-	for (i = 0; i < nRgr + 1; i++) {
-		st->oldsTempR[i] = sTempR[i];
-		st->oldsFusionPool[i] = sFusionPool[i];
-	}
+
+	  sTempR[nRgr + 1] = meanAirTemp; // again... the last layer of the interpolation is set to the constant meanAirTemp
+
+		if (toDebug) {
+			#ifndef RSOILWAT
+					printf("\nSoil temperature profile values:");
+					for (i = 0; i <= nRgr + 1; i++)
+						printf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
+			#else
+					Rprintf("\nSoil temperature profile values:");
+					for (i = 0; i <= nRgr + 1; i++)
+						Rprintf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
+			#endif
+		}
+
+
+		// convert soil temperature of soil temperature profile 'sTempR' to soil profile layers 'sTemp'
+		surfaceTemp[Yesterday] = surfaceTemp[Today];
+		surfaceTemp[Today] = T1;
+		lyrTemp_to_lyrSoil_temperature(st->tlyrs_by_slyrs, nRgr, st->depthsR, deltaX, sTempR, nlyrs, st->depths, width, sTemp);
+
+		if (toDebug) {
+					#ifndef RSOILWAT
+						printf("\nSoil profile layer temperatures:");
+						printf("\nsTemp %5.4f surface", surfaceTemp[Today]);
+						for (i = 0; i < nlyrs; i++)
+							printf("\ni %d oldTemp %5.4f sTemp %5.4f depth %5.4f", i, oldsTemp[i], sTemp[i], st->depths[i]);
+					#else
+						Rprintf("\nSoil profile layer temperatures:");
+						Rprintf("\nsTemp %5.4f surface", surfaceTemp[Today]);
+						for (i = 0; i < nlyrs; i++)
+							Rprintf("\ni %d oldTemp %5.4f sTemp %5.4f depth %5.4f", i, oldsTemp[i], sTemp[i], st->depths[i]);
+					#endif
+			}
+
+		// updating the values of yesterdays temperature for the next time the function is called...
+		// also added fusion pool to this update so that we can store old fusion pool for the cases where we might need that value
+		for (i = 0; i <= nRgr + 1; i++){
+			st->oldsTempR[i] = sTempR[i];
+			st->oldsFusionPool[i] = sFusionPool[i];
+		}
 
 	if (toDebug) {
-#ifndef RSOILWAT
-		exit(0); // terminates the program, make sure to take this out later
-#else
-		Rprintf("EXIT DEBUG IS ON IN SOIL TEMPERATURE. CONSIDER TURNING OFF.");//exit(0); // terminates the program, make sure to take this out later
-		error("@ SW_Flow_lib.c function soil_temperature");
-#endif
+		#ifndef RSOILWAT
+			exit(0); // terminates the program, make sure to take this out later
+		#else
+			Rprintf("\nEXIT DEBUG IS ON IN SOIL TEMPERATURE. CONSIDER TURNING OFF.\n");//exit(0); // terminates the program, make sure to take this out later
+			error("@ SW_Flow_lib.c function soil_temperature");
+		#endif
 	}
 }

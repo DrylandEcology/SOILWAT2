@@ -51,11 +51,21 @@
 // this structure is for keeping track of the variables used in the soil_temperature function (mainly the regressions)
 typedef struct {
 
-	double depths[MAX_LAYERS], depthsR[MAX_ST_RGR + 1], fcR[MAX_ST_RGR], wpR[MAX_ST_RGR], bDensityR[MAX_ST_RGR], oldsFusionPool[MAX_LAYERS], oldsTempR[MAX_ST_RGR + 1];
+	double depths[MAX_LAYERS],  //soil layer depths of SoilWat soil
+	       depthsR[MAX_ST_RGR + 1],//evenly spaced soil layer depths for soil temperature calculations
+		   fcR[MAX_ST_RGR],//field capacity of soil layers for soil temperature calculations
+		   wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
+		   bDensityR[MAX_ST_RGR],//bulk density of soil layers for soil temperature calculations
+		   oldsFusionPool[MAX_LAYERS],
+		   oldsTempR[MAX_ST_RGR + 1];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
 
 	int lyrFrozen[MAX_LAYERS];
+	double tlyrs_by_slyrs[MAX_ST_RGR + 1][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers
 
-	unsigned int x1BoundsR[MAX_ST_RGR], x2BoundsR[MAX_ST_RGR], x1Bounds[MAX_LAYERS], x2Bounds[MAX_LAYERS];
+	/*unsigned int x1BoundsR[MAX_ST_RGR],
+	             x2BoundsR[MAX_ST_RGR],
+				 x1Bounds[MAX_LAYERS],
+				 x2Bounds[MAX_LAYERS];*/
 } ST_RGR_VALUES;
 
 /* =================================================== */
@@ -110,11 +120,42 @@ void infiltrate_water_low(double swc[], double drain[], double *drainout, unsign
 void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], double hydred[], unsigned int nlyrs, double maxCondroot, double swp50, double shapeCond,
 		double scale);
 
-void soil_temperature_init(double bDensity[], double width[], double oldsTemp[], unsigned int nlyrs, double fc[], double wp[], double deltaX, double theMaxDepth,
-		double meanAirTemp, unsigned int nRgr);
+void soil_temperature_init(double bDensity[],
+		                   double width[],
+						   double surfaceTemp,
+						   double oldsTemp[],
+						   double meanAirTemp,
+						   unsigned int nlyrs,
+						   double fc[],
+						   double wp[],
+						   double deltaX,
+						   double theMaxDepth,
+			         	   unsigned int nRgr);
 
-void soil_temperature(double airTemp, double pet, double aet, double biomass, double swc[], double bDensity[], double width[], double oldsTemp[], double sTemp[],
-		unsigned int nlyrs, double fc[], double wp[], double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1, double csParam2, double shParam,
-		double snowpack, double meanAirTemp, double deltaX, double theMaxDepth, unsigned int nRgr);
+void soil_temperature(double airTemp,
+		              double pet,
+					  double aet,
+					  double biomass,
+					  double swc[],
+					  double bDensity[],
+					  double width[],
+					  double oldsTemp[],
+					  double sTemp[],
+					  double surfaceTemp[2],
+					  unsigned int nlyrs,
+					  double fc[],
+					  double wp[],
+					  double bmLimiter,
+					  double t1Param1,
+					  double t1Param2,
+					  double t1Param3,
+					  double csParam1,
+					  double csParam2,
+					  double shParam,
+		              double snowpack,
+					  double meanAirTemp,
+					  double deltaX,
+					  double theMaxDepth,
+					  unsigned int nRgr);
 
 #endif
