@@ -11,7 +11,8 @@
 	09/09/2011	(drs) added #define ForEachXXXTranspLayer() for each vegetation type (XXX = tree, shrub, grass)
 	05/31/2012  (DLM) added MAX_ST_RGR definition for the maximum amount of soil temperature regressions allowed...
 	07/09/2013	(clk) added the ForEachForbTranspLayer(i) function
- */
+ 	01/02/2015	(drs) changed MAX_ST_RGR from 30 to 100 (to allow a depth of 10 m and 10 cm intervals)
+*/
 /********************************************************/
 /********************************************************/
 

@@ -479,9 +479,9 @@ double petfunc(unsigned int doy, double avgtemp, double rlat, double elev, doubl
 	/* calculate long wave radiation */
 	kelvin = avgtemp + 273.15; /* kelvin = Ta = average air temperature of today [C] converted to [K] */
 	ftemp = kelvin * .01;
-	ftemp = ftemp * ftemp * ftemp * ftemp * 11.71 * 0.0168; /* Sellers (1965), eqn. 3.8: ftemp [mm/day] = theoretical black-body radiation at Ta [K] = Stefan-Boltzmann law = sigma*Ta^4 [W/m2] with sigma = 5.670373*10\88-8 [W/m2/K4] = 11.71*10\88-8 [ly/day/K4] (http://physics.nist.gov/cgi-bin/cuu/Value?sigma);
+	ftemp = ftemp * ftemp * ftemp * ftemp * 11.71 * 0.0168; /* Sellers (1965), eqn. 3.8: ftemp [mm/day] = theoretical black-body radiation at Ta [K] = Stefan-Boltzmann law = sigma*Ta^4 [W/m2] with sigma = 5.670373*1e-8 [W/m2/K4] = 11.71*1e-8 [ly/day/K4] (http://physics.nist.gov/cgi-bin/cuu/Value?sigma);
 	 ftemp is used in Penman (1948), eqn. 13 with units = [evaporation equivalent-mm/day];
-	 with unknown x = 0.201*10\88-8 (value pre-Oct 11, 2012), though assuming x = sigma * conversion factor([ly] to [mm]) = 11.71*10\88-8 [ly/day/K4] * 0.0168 [mm/ly] = 0.196728 [mm/day/K4] ca.= 0.201 ? */
+	 with unknown x = 0.201*1e-8 (value pre-Oct 11, 2012), though assuming x = sigma * conversion factor([ly] to [mm]) = 11.71*10\88-8 [ly/day/K4] * 0.0168 [mm/ly] = 0.196728 [mm/day/K4] ca.= 0.201 ? */
 
 	/* calculate the PET using Penman (1948) */
 	vapor = svapor(avgtemp); /* Penman (1948), ea = vapor = saturation vapor pressure at air-Tave [mmHg] */
@@ -1281,15 +1281,13 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
 	}
 }
 
-
 void soil_temperature_init(double bDensity[], double width[], double surfaceTemp, double oldsTemp[], double meanAirTemp, unsigned int nlyrs, double fc[], double wp[], double deltaX,
 		 double theMaxDepth,unsigned int nRgr) {
-
-
-	   unsigned int x1 = 0, x2 = 0, j = 0, i, k, toDebug = 0;
-		double d1 = 0.0, d2 = 0.0, acc = 0.0;
-		// pointers
-		ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
+	// local vars
+	unsigned int x1 = 0, x2 = 0, j = 0, i, k, toDebug = 0;
+	double d1 = 0.0, d2 = 0.0, acc = 0.0;
+	// pointers
+	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
 		soil_temp_init = 1; // make this value 1 to make sure that this function isn't called more than once... (b/c it doesn't need to be)
 
@@ -1429,7 +1427,8 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 }
 
 /**********************************************************************
- PURPOSE: Calculate soil temperature for each layer as described in Parton 1978, ch. 2.2.2 Temperature-profile Submodel, regression values are gotten from a mixture of interpolation & extrapolation
+ PURPOSE: Calculate soil temperature for each layer as described in Parton 1978, ch. 2.2.2 Temperature-profile Submodel, interpolation values are gotten from a mixture of interpolation & extrapolation
+// soil freezing based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 
  *NOTE* There will be some degree of error because the original equation is written for soil layers of 15 cm.  if soil layers aren't all 15 cm then linear regressions are used to estimate the values (error should be relatively small though).
  *NOTE* Function might not work correctly if the maxDepth of the soil is > 180 cm, since Parton's equation goes only to 180 cm
@@ -1437,14 +1436,20 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
  HISTORY:
  05/24/2012 (DLM) initial coding, still need to add to header file, handle if the layer height is > 15 cm properly, & test
- 05/25/2012 (DLM) added all this 'fun' crazy linear regression stuff
- 05/29/2012 (DLM) still working on the function, linear regression stuff should work now.  needs testing
+ 05/25/2012 (DLM) added all this 'fun' crazy linear interpolation stuff
+ 05/29/2012 (DLM) still working on the function, linear interpolation stuff should work now.  needs testing
  05/30/2012 (DLM) got rid of nasty segmentation fault error, also tested math seems correct after checking by hand.  added the ability to change the value of deltaX
  05/30/2012 (DLM) added # of lyrs check & maxdepth check at the beginning to make sure code doesn't blow up... if there isn't enough lyrs (ie < 2) or the maxdepth is too little (ie < deltaX * 2), the function quits out and reports an error to the user
- 05/31/2012 (DLM) added theMaxDepth variable to allow the changing of the maxdepth of the equation, also now stores most regression data in a structure to reduce redundant regression calculations & speeds things up
- 06/01/2012 (DLM) changed deltaT variable from hours to seconds, also changed some of the regression calculations so that swc, fc, & wp regressions are scaled properly... results are actually starting to look usable!
- 06/13/2012 (DLM) no longer extrapolating values for regression layers that are out of the bounds of the soil layers... instead they are now set to the last soil layers values.  extrapolating code is still in the function and can be commented out and used if wishing to go back to extrapolating the values...
+ 05/31/2012 (DLM) added theMaxDepth variable to allow the changing of the maxdepth of the equation, also now stores most interpolation data in a structure to reduce redundant interpolation calculations & speeds things up
+ 06/01/2012 (DLM) changed deltaT variable from hours to seconds, also changed some of the interpolation calculations so that swc, fc, & wp regressions are scaled properly... results are actually starting to look usable!
+ 06/13/2012 (DLM) no longer extrapolating values for interpolation layers that are out of the bounds of the soil layers... instead they are now set to the last soil layers values.  extrapolating code is still in the function and can be commented out and used if wishing to go back to extrapolating the values...
  03/28/2013 (clk) added a check to see if the soil was freezing/thawing and adjusted the soil temperature correctly during this phase change. If the temperature was in this area, also needed to re run soil_temperature_init on next call because you need to also change the regression temperatures to match the change in soil temperature.
+ 12/23/2014 (drs) re-wrote soil temperature functions:
+ 					- soil characteristics (fc, wp, bulk density) of soil temperature now integrated across all soil layers (instead of linear interpolation between the two extreme layers;
+					- interpolation for top soil layer with surface temperature only if no other information available
+					- mean of interpolations if multiple layers affect a soil profile layer
+					- reporting of surface soil temperature
+					- test iteration steps that they meet the criterion of a stable solution
 
  INPUTS:
  airTemp - the average daily air temperature in celsius
@@ -1643,7 +1648,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 	}
 
-
+	// calculate fusion pools, soil freezing, and if necessary adjust soil temperature based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 	for (i = 0; i < nlyrs; i++)	// now that you have calculated the new temperatures can determine whether the soil layers should be frozen or not.
 	{
 		j = 0;
