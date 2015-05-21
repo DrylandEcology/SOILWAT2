@@ -1534,15 +1534,12 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	// calculating T1, the average daily soil surface temperature
 
 	if (LE(biomass, bmLimiter)) { // bmLimiter = 300
-		//	T1 = airTemp + (t1Param1 * pet * (1. - ((aet / pet) * (1. - (biomass / bmLimiter))))); // t1Param1 = 15; math is correct
 		T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
 		if (toDebug)
 			#ifndef RSOILWAT
-			//printf("\nT1 = %5.4f + (%5.4f * %5.4f * (1 - ((%5.4f / %5.4f) * (1 - (%5.4f / %5.4f))) ) )", airTemp, t1Param1, pet, aet, pet, biomass, bmLimiter);
 				printf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
 					   airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
 			#else
-			//	Rprintf("\nT1 = %5.4f + (%5.4f * %5.4f * (1 - ((%5.4f / %5.4f) * (1 - (%5.4f / %5.4f))) ) )", airTemp, t1Param1, pet, aet, pet, biomass, bmLimiter);
 				Rprintf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
 						airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
 			#endif
@@ -1648,6 +1645,27 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 	}
 
+	  sTempR[nRgr + 1] = meanAirTemp; // again... the last layer of the interpolation is set to the constant meanAirTemp
+
+		if (toDebug) {
+			#ifndef RSOILWAT
+					printf("\nSoil temperature profile values:");
+					for (i = 0; i <= nRgr + 1; i++)
+						printf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
+			#else
+					Rprintf("\nSoil temperature profile values:");
+					for (i = 0; i <= nRgr + 1; i++)
+						Rprintf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
+			#endif
+		}
+
+
+		// convert soil temperature of soil temperature profile 'sTempR' to soil profile layers 'sTemp'
+		surfaceTemp[Yesterday] = surfaceTemp[Today];
+		surfaceTemp[Today] = T1;
+		lyrTemp_to_lyrSoil_temperature(st->tlyrs_by_slyrs, nRgr, st->depthsR, deltaX, sTempR, nlyrs, st->depths, width, sTemp);
+
+
 	// calculate fusion pools, soil freezing, and if necessary adjust soil temperature based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 	for (i = 0; i < nlyrs; i++)	// now that you have calculated the new temperatures can determine whether the soil layers should be frozen or not.
 	{
@@ -1702,28 +1720,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 			sFusionPool[i] = 0.00;		//if your temperatures don't match any of those conditions, just set the fusion pool to zero and don't change the temperature at all
 		}
 
-
-
-	  sTempR[nRgr + 1] = meanAirTemp; // again... the last layer of the interpolation is set to the constant meanAirTemp
-
-		if (toDebug) {
-			#ifndef RSOILWAT
-					printf("\nSoil temperature profile values:");
-					for (i = 0; i <= nRgr + 1; i++)
-						printf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
-			#else
-					Rprintf("\nSoil temperature profile values:");
-					for (i = 0; i <= nRgr + 1; i++)
-						Rprintf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
-			#endif
-		}
-
-
-		// convert soil temperature of soil temperature profile 'sTempR' to soil profile layers 'sTemp'
-		surfaceTemp[Yesterday] = surfaceTemp[Today];
-		surfaceTemp[Today] = T1;
-		lyrTemp_to_lyrSoil_temperature(st->tlyrs_by_slyrs, nRgr, st->depthsR, deltaX, sTempR, nlyrs, st->depths, width, sTemp);
-
 		if (toDebug) {
 					#ifndef RSOILWAT
 						printf("\nSoil profile layer temperatures:");
@@ -1737,6 +1733,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 							Rprintf("\ni %d oldTemp %5.4f sTemp %5.4f depth %5.4f", i, oldsTemp[i], sTemp[i], st->depths[i]);
 					#endif
 			}
+
+		lyrSoil_to_lyrTemp_temperature(nlyrs, st->depths, surfaceTemp[Today], sTemp, meanAirTemp, nRgr, st->depthsR, theMaxDepth, sTempR);
 
 		// updating the values of yesterdays temperature for the next time the function is called...
 		// also added fusion pool to this update so that we can store old fusion pool for the cases where we might need that value
