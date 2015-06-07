@@ -1281,6 +1281,62 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
 	}
 }
 
+double surface_temperature_under_snow(	double airTemp, double oldsTemp1,
+										double snowpack, double width1)
+{
+/*Calculating surface temperature under snow, for use in Soilwat v.31
+Koren JGR 1999
+JBB (4/2/2015)
+
+PURPOSE: Calculate T1 (temperature at top of the soil profile) when snow is present
+PROPOSED LOCATION: Function will be called in the "soil_temperature" function in SW_Flow_lib.C
+	Specifically: in the beginning of the function, where T1 is calculated
+	This will replace the following line: 
+		T1 = -2.0; 
+	Will be called only when snowpack > 0
+
+SUMMARY: This function simulates the effects of altered heat flow between the snow and soil surface (approx 0-5 cm depth) due to varied snowpack thickness on the temperature top of the first soil layer.
+Estimates how much snow cover insulates surface soil temperature from air temperature.
+Based on: Koren, V., J. Schaake, K. Mitchell, Q. Y. Duan, F. Chen, and J. M. Baker. 1999. A parameterization of snowpack and frozen ground intended for NCEP weather and climate models. Journal of Geophysical Research: Atmospheres 104:19569-19585.
+
+NOTES:
+The zeta scalar and snow depth influence this equation to a great degree. As zeta approaches infinity, there is greater heat flow between air temp and soil temp and T_sfc approaches Ta very quickly; if lower zeta, lower heat flow and T_sfc approaches Ta less quickly. This contradicts the statements made by Koren (1999), which is why the exercise below proved useful. Also, zeta cannot equal zero.
+The two driving variables are snow depth and zeta, which is only adjusted as snow cover crosses the threshold of 1/2*top soil layer depth. Zeta when H < 1/2*tscd is published as 0.5. We need to decide on a value for zeta when H >= 1/2*tscd; 0.025 seems to work.
+
+
+INTPUTS (variable names matching those in the soil_temperature function):
+airTemp - air temperature (deg C) - airTemp
+oldsTemp[1]  - previous daily temperature of first soil layer (deg C): 
+snowpack  -  snow depth (cm)
+width[1] - top soil layer thickness (5 cm) 
+
+
+OUTPUT (name matches the variable for soil surface temperature in "soil_temperature" function:
+T1 - ground/air interface temperature (deg C) 
+
+
+TODO:
+Explain meaning of zeta and w
+//#####################################
+*/
+
+	double zeta, w;
+
+	if(GT(snowpack, 0.5*width1) ){   //if snow depth is greater than 1/2 first soil layer depth: set zeta constant to 0.025 -  from Koren et al for when snow is shallow
+		zeta = 0.025;
+	} else { //set zeta constant to 0.5 -  from Koren et al for when snow is deeper 
+		zeta = 0.5;
+	}
+
+	//calculate w scalar
+	w = (0.5 * zeta * width1) / (snowpack + (0.5 * zeta * width1));
+
+	//calculate T1
+	return (w * airTemp + (1 - w) * oldsTemp1);
+}	
+
+
+
 void soil_temperature_init(double bDensity[], double width[], double surfaceTemp, double oldsTemp[], double meanAirTemp, unsigned int nlyrs, double fc[], double wp[], double deltaX,
 		 double theMaxDepth,unsigned int nRgr) {
 	// local vars
@@ -1450,6 +1506,7 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 					- mean of interpolations if multiple layers affect a soil profile layer
 					- reporting of surface soil temperature
 					- test iteration steps that they meet the criterion of a stable solution
+ 04/08/2015 (drs) added call to surface_temperature_under_snow()
 
  INPUTS:
  airTemp - the average daily air temperature in celsius
@@ -1533,41 +1590,33 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 	// calculating T1, the average daily soil surface temperature
 
-	if (LE(biomass, bmLimiter)) { // bmLimiter = 300
-		T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
-		if (toDebug)
-			#ifndef RSOILWAT
-				printf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
-					   airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
-			#else
-				Rprintf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
-						airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
-			#endif
+	// calculating T1, the average daily air temperature at the top of the soil
+	if(GT(snowpack, 0.0)) {// if there is snow on the ground, then T1 based on Koren JGR 1999; previously was simply set to -2
+		T1 = surface_temperature_under_snow(airTemp, oldsTemp[1], snowpack, width[1]);
+		if(toDebug) printf("\nThere is snow on the ground, T1=%5.4f calculated using Koren et al JGR 1999\n", T1);
 	} else {
-		T1 = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
-		if (toDebug)
-		#ifndef RSOILWAT
-			printf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
-		#else
-			Rprintf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
-		#endif
+		if (LE(biomass, bmLimiter)) { // bmLimiter = 300
+			T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
+			if (toDebug)
+				#ifndef RSOILWAT
+					printf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
+						   airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
+				#else
+					Rprintf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
+							airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
+				#endif
+		} else {
+			T1 = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
+			if (toDebug)
+			#ifndef RSOILWAT
+				printf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
+			#else
+				Rprintf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
+			#endif
+		}
 	}
 
 
-
-			if (GT(snowpack, 0.0)) { // if there is snow on the ground, then T1 is simply set to -2
-				T1 = -2.0;
-					if (toDebug)
-						#ifndef RSOILWAT
-							printf("\nThere is snow on the ground, T1 set to -2\n");
-						#else
-							Rprintf("\nThere is snow on the ground, T1 set to -2\n");
-						#endif
-			}
-
-	/*if (!soil_temp_init)
-		soil_temperature_init(bDensity, width, oldsTemp, nlyrs, fc, wp, deltaX, theMaxDepth, meanAirTemp, nRgr);
-*/
 	if (!fusion_pool_init) {
 		for (i = 0; i < nlyrs; i++) {
 			st->oldsFusionPool[i] = 0.00;	// sets the inital fusion pool to zero
