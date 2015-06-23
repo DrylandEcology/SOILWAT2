@@ -751,6 +751,7 @@ static void arrays2records(void) {
 		SW_Soilwat.sTemp[i] = lyrsTemp[i];
 	}
 	SW_Soilwat.surfaceTemp = surfaceTemp[Today];
+	SW_Weather.surfaceTemp = surfaceTemp[Today];
 
 	if (SW_Site.deepdrain)
 		SW_Soilwat.swcBulk[Today][SW_Site.deep_lyr] = drainout;

@@ -1150,13 +1150,15 @@ static void get_temp(void) {
 	 * they all use the module-level string outstr[].
 	 */
 	/* 10-May-02 (cwb) Added conditionals for interfacing with STEPPE
-	 * 05-Mar-03 (cwb) Added code for max,min,avg.
-	 *                 Previously, only avg was output.
+	 * 05-Mar-03 (cwb) Added code for max,min,avg. Previously, only avg was output.
+	 * 22 June-15 (AT)  Added code for adding surfaceTemp at output
 	 */
 	SW_WEATHER *v = &SW_Weather;
 	OutPeriod pd = SW_Output[eSW_Temp].period;
 	RealD v_avg = SW_MISSING;
 	RealD v_min = SW_MISSING, v_max = SW_MISSING;
+	RealD surfaceTempVal = SW_MISSING;
+
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
@@ -1169,12 +1171,14 @@ static void get_temp(void) {
 		v_max = v->dysum.temp_max;
 		v_min = v->dysum.temp_min;
 		v_avg = v->dysum.temp_avg;
+		surfaceTempVal = v->dysum.surfaceTemp;
 #else
 		p_Rtemp_dy[SW_Output[eSW_Temp].dy_row + dy_nrow * 0] = SW_Model.year;
 		p_Rtemp_dy[SW_Output[eSW_Temp].dy_row + dy_nrow * 1] = SW_Model.doy;
 		p_Rtemp_dy[SW_Output[eSW_Temp].dy_row + dy_nrow * 2] = v->dysum.temp_max;
 		p_Rtemp_dy[SW_Output[eSW_Temp].dy_row + dy_nrow * 3] = v->dysum.temp_min;
 		p_Rtemp_dy[SW_Output[eSW_Temp].dy_row + dy_nrow * 4] = v->dysum.temp_avg;
+		p_Rtemp_dy[SW_Output[eSW_Temp].dy_row + dy_nrow * 5] = v->dysum.surfaceTemp;
 		SW_Output[eSW_Temp].dy_row++;
 #endif
 		break;
@@ -1183,12 +1187,14 @@ static void get_temp(void) {
 		v_max = v->wkavg.temp_max;
 		v_min = v->wkavg.temp_min;
 		v_avg = v->wkavg.temp_avg;
+		surfaceTempVal = v->wkavg.surfaceTemp;
 #else
 		p_Rtemp_wk[SW_Output[eSW_Temp].wk_row + wk_nrow * 0] = SW_Model.year;
 		p_Rtemp_wk[SW_Output[eSW_Temp].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
 		p_Rtemp_wk[SW_Output[eSW_Temp].wk_row + wk_nrow * 2] = v->wkavg.temp_max;
 		p_Rtemp_wk[SW_Output[eSW_Temp].wk_row + wk_nrow * 3] = v->wkavg.temp_min;
 		p_Rtemp_wk[SW_Output[eSW_Temp].wk_row + wk_nrow * 4] = v->wkavg.temp_avg;
+		p_Rtemp_wk[SW_Output[eSW_Temp].wk_row + wk_nrow * 5] = v->wkavg.surfaceTemp;
 		SW_Output[eSW_Temp].wk_row++;
 #endif
 		break;
@@ -1197,12 +1203,14 @@ static void get_temp(void) {
 		v_max = v->moavg.temp_max;
 		v_min = v->moavg.temp_min;
 		v_avg = v->moavg.temp_avg;
+		surfaceTempVal = v->moavg.surfaceTemp;
 #else
 		p_Rtemp_mo[SW_Output[eSW_Temp].mo_row + mo_nrow * 0] = SW_Model.year;
 		p_Rtemp_mo[SW_Output[eSW_Temp].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
 		p_Rtemp_mo[SW_Output[eSW_Temp].mo_row + mo_nrow * 2] = v->moavg.temp_max;
 		p_Rtemp_mo[SW_Output[eSW_Temp].mo_row + mo_nrow * 3] = v->moavg.temp_min;
 		p_Rtemp_mo[SW_Output[eSW_Temp].mo_row + mo_nrow * 4] = v->moavg.temp_avg;
+		p_Rtemp_mo[SW_Output[eSW_Temp].mo_row + mo_nrow * 5] = v->moavg.surfaceTemp;
 		SW_Output[eSW_Temp].mo_row++;
 #endif
 		break;
@@ -1211,23 +1219,26 @@ static void get_temp(void) {
 		v_max = v->yravg.temp_max;
 		v_min = v->yravg.temp_min;
 		v_avg = v->yravg.temp_avg;
+		surfaceTempVal = v->yravg.surfaceTemp;
 #else
 		p_Rtemp_yr[SW_Output[eSW_Temp].yr_row + yr_nrow * 0] = SW_Model.year;
 		p_Rtemp_yr[SW_Output[eSW_Temp].yr_row + yr_nrow * 1] = v->yravg.temp_max;
 		p_Rtemp_yr[SW_Output[eSW_Temp].yr_row + yr_nrow * 2] = v->yravg.temp_min;
 		p_Rtemp_yr[SW_Output[eSW_Temp].yr_row + yr_nrow * 3] = v->yravg.temp_avg;
+		p_Rtemp_yr[SW_Output[eSW_Temp].yr_row + yr_nrow * 4] = v->yravg.surfaceTemp;
 		SW_Output[eSW_Temp].yr_row++;
 #endif
 		break;
 	}
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f", _Sep, v_max, _Sep, v_min, _Sep, v_avg);
+	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, v_max, _Sep, v_min, _Sep, v_avg, _Sep, surfaceTempVal);
 	strcat(outstr, str);
 #elif defined(STEPWAT)
 	if (pd != eSW_Year)
 		LogError(logfp, LOGFATAL, "Invalid output period for TEMP; should be YR %7.6f, %7.6f",v_max, v_min);//added v_max, v_min for compiler
 	SXW.temp = v_avg;
+	SXW.surfaceTemp = surfaceTempVal;
 #endif
 }
 
@@ -3270,6 +3281,8 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k) {
 		s->temp_max += v->now.temp_max[Today];
 		s->temp_min += v->now.temp_min[Today];
 		s->temp_avg += v->now.temp_avg[Today];
+		//added surfaceTemp for sum
+		s->surfaceTemp += v->surfaceTemp;
 		break;
 	case eSW_Precip:
 		s->ppt += v->now.ppt[Today];
@@ -3488,6 +3501,8 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 					wavg->temp_max = wsumof->temp_max / div;
 					wavg->temp_min = wsumof->temp_min / div;
 					wavg->temp_avg = wsumof->temp_avg / div;
+                    //added surfaceTemp for avg operation
+					wavg->surfaceTemp = wsumof->surfaceTemp / div;
 					break;
 
 				case eSW_Precip:
