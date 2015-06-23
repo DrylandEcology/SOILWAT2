@@ -22,6 +22,17 @@
  Refer to the comment block at the very end of this
  file for details.
 
+Comment (06/23/2015, drs): In summary, the output of SOILWAT works as follows
+SW_OUT_flush() calls at end of year and SW_Control.c/_collect_values() calls daily
+	1) SW_OUT_sum_today() that
+		1.1) if end of an output period, call average_for(): converts the (previously summed values (by sumof_wth) of) SW_WEATHER_OUTPUTS portion of SW_Weather from the ‘Xsum' to the ‘Xavg'
+		1.2) on each day calls collect_sums() that calls sumof_wth(): SW_Weather (simulation slot ’now') values are summed up during each output period and stored in the SW_WEATHER_OUTPUTS (output) slots 'Xsum' of SW_Weather
+
+	2) SW_OUT_write_today() that
+		2.1) calls the get_temp() etc functions via SW_Output.pfunc: the values stored in ‘Xavg’ by average_for are converted to text string 'outstr’
+		2.2) outputs the text string 'outstr’ with the fresh values to a text file via SW_Output.fp_X
+
+
 
  History:
  9/11/01 cwb -- INITIAL CODING
@@ -137,6 +148,8 @@
  place a conditional that will determine which of the four possible periods are to be used for each output.
  07/09/2013	(clk)	Added forb to the outputs: transpiration, surface evaporation, interception, and hydraulic redistribution
  08/21/2013	(clk)	Modified the establisment output to actually output for each species and not just the last one in the group.
+ 06/23/2015 (akt)	Added output for surface temperature to get_temp()
+ 
  */
 /********************************************************/
 /********************************************************/
