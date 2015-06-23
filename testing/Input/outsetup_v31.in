@@ -1,4 +1,4 @@
-# Output setup file for SOILWAT v4 compiled on Mac OS X (20100202)
+# Output setup file for SOILWAT
 #
 # Notes:
 # Time periods available:  DY,WK,MO,YR 
@@ -42,7 +42,7 @@ OUTSEP t
 TIMESTEP dy wk mo yr
 
 # key			SUMTYPE		PERIOD		start	end		filename_prefix
-TEMP			avg		WK		1		end		temp_air		/* max., min, average temperature (C) */
+TEMP			avg		WK		1		end		temp_air		/* max., min, average air temperature, soil-surface temperature (C) */
 PRECIP			sum		MO		1		end		precip			/* total precip = sum(rain, snow), rain, snow-fall, snowmelt, and snowloss (cm)     */
 SOILINFILT		sum		YR		1		end		infiltration		/* water to infiltrate in top soil layer (cm), runoff (cm); (not-intercepted rain)+(snowmelt-runoff) */
 RUNOFF 			sum 	 	WK		1 		end 		runoff			/* runoff (cm): total runoff, runoff from ponded water, runoff from snowmelt */

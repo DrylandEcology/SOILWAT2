@@ -25,4 +25,4 @@ Input/swcsetup.in	# params for handling measured swc
 
 #Output
 Output/	# 'relative' path for output files: / for same directory, or e.g., Output/
-Input/outsetup_v30.in	# define output quantities
+Input/outsetup_v31.in	# define output quantities
