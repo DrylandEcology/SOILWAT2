@@ -409,7 +409,7 @@ SEXP onGetOutput(SEXP inputData) {
 	char *Cprecip_names[] = { "ppt", "rain", "snow_fall", "snowmelt", "snowloss" };
 	char *Crunoff_names[] = { "total", "ponded", "snowmelt" };
 	char *Csnowpack_names[] = { "snowpackWaterEquivalent_cm", "snowdepth_cm" };
-	char *Ctemp_names[] = { "max_C", "min_C", "avg_C" };
+	char *Ctemp_names[] = { "max_C", "min_C", "avg_C","surfaceTemp_C" };
 	char *Ctransp_names[] = { "transp_total_", "transp_tree_", "transp_shrub_", "transp_forbs_", "transp_grass_" };
 	char Ctemp[50];
 	/****************************************************************************************/
@@ -511,7 +511,7 @@ SEXP onGetOutput(SEXP inputData) {
 
 	// Number of Columns for outputs
 	Rwthr_columns = 0;
-	Rtemp_columns = 3;
+	Rtemp_columns = 4;
 	Rprecip_columns = 5;
 	Rinfiltration_columns = 1;
 	Rrunoff_columns = 3;
