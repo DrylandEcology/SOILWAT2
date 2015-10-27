@@ -16,14 +16,14 @@
 /********************************************************/
 
 #ifndef SW_SKY_H
-#define SW_SKY_H
-
+	#define SW_SKY_H
+#endif
 #ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinterface.h>
-#include <Rinternals.h>
+	#include <R.h>
+	#include <Rdefines.h>
+	#include <Rconfig.h>
+	#include <Rinterface.h>
+	#include <Rinternals.h>
 #endif
 #include "SW_Times.h"
 
@@ -45,10 +45,7 @@ typedef struct {
 void SW_SKY_read(void);
 void SW_SKY_init(double scale_sky[], double scale_wind[], double scale_rH[], double scale_transmissivity[]);
 void SW_SKY_construct(void);
-
 #ifdef RSOILWAT
-SEXP onGet_SW_SKY();
-void onSet_SW_SKY(SEXP SW_SKY);
-#endif
-
+	SEXP onGet_SW_SKY();
+	void onSet_SW_SKY(SEXP SW_SKY);
 #endif

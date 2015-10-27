@@ -165,6 +165,7 @@ Bool SW_MKV_read_prob(void) {
 
 	return TRUE;
 }
+
 #ifdef RSOILWAT
 SEXP onGet_MKV(void) {
 	SEXP swMarkov;
@@ -181,6 +182,7 @@ SEXP onGet_MKV(void) {
 	UNPROTECT(2);
 	return MKV;
 }
+
 SEXP onGet_MKV_prob(void) {
 	int i;
 	SW_MARKOV *v = &SW_Markov;
@@ -207,6 +209,7 @@ SEXP onGet_MKV_prob(void) {
 	UNPROTECT(3);
 	return MKV_prob;
 }
+
 Bool onSet_MKV_prob(SEXP MKV_prob) {
 	SW_MARKOV *v = &SW_Markov;
 	const int nitems = 5;
@@ -264,6 +267,7 @@ Bool SW_MKV_read_cov(void) {
 
 	return TRUE;
 }
+
 #ifdef RSOILWAT
 SEXP onGet_MKV_conv(void) {
 	int i;

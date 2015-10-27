@@ -173,14 +173,12 @@ void SW_OUT_write_today(void);
 void SW_OUT_write_year(void);
 void SW_OUT_close_files(void);
 void SW_OUT_flush(void);
-
 #ifdef RSOILWAT
-SEXP onGet_SW_OUT(void);
-void onSet_SW_OUT(SEXP OUT);
+	SEXP onGet_SW_OUT(void);
+	void onSet_SW_OUT(SEXP OUT);
 #endif
-
 #ifdef DEBUG_MEM
-void SW_OUT_SetMemoryRefs(void);
+	void SW_OUT_SetMemoryRefs(void);
 #endif
 
 #endif

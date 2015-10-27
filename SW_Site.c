@@ -347,12 +347,12 @@ void SW_SIT_read(void) {
 	}
 
 	_read_layers();
-#ifndef RSOILWAT
-	init_site_info();
-#else
-	if(!collectInData)
+	#ifndef RSOILWAT
 		init_site_info();
-#endif
+	#else
+		if(!collectInData)
+			init_site_info();
+	#endif
 	if (EchoInits)
 		_echo_inputs();
 }
@@ -478,18 +478,19 @@ static void _read_layers(void) {
 	CloseFile(&f);
 
 	/* n_layers set in _newlayer() */
-#ifdef RSOILWAT
-	if (v->deepdrain && !collectInData) {
-		lyrno = _newlayer();
-		v->lyr[lyrno]->width = 1.0;
-	}
-#else
-	if (v->deepdrain) {
-		lyrno = _newlayer();
-		v->lyr[lyrno]->width = 1.0;
-	}
-#endif
+	#ifdef RSOILWAT
+		if (v->deepdrain && !collectInData) {
+			lyrno = _newlayer();
+			v->lyr[lyrno]->width = 1.0;
+		}
+	#else
+		if (v->deepdrain) {
+			lyrno = _newlayer();
+			v->lyr[lyrno]->width = 1.0;
+		}
+	#endif
 }
+
 #ifdef RSOILWAT
 SEXP onGet_SW_LYR() {
 	int i, dmax = 0;
@@ -532,6 +533,7 @@ SEXP onGet_SW_LYR() {
 	UNPROTECT(5);
 	return SW_SOILS;
 }
+
 void onSet_SW_LYR(SEXP SW_SOILS) {
 
 	SW_SITE *v = &SW_Site;
@@ -646,9 +648,8 @@ void onSet_SW_LYR(SEXP SW_SOILS) {
 			else
 				transp_ok_grass = FALSE;
 		}
-
+		
 		water_eqn(f_gravel, psand, pclay, lyrno);
-
 		v->lyr[lyrno]->swcBulk_fieldcap = SW_SWPmatric2VWCBulk(f_gravel, 0.333, lyrno) * v->lyr[lyrno]->width;
 		v->lyr[lyrno]->swcBulk_wiltpt = SW_SWPmatric2VWCBulk(f_gravel, 15, lyrno) * v->lyr[lyrno]->width;
 		calculate_soilBulkDensity(matricd, f_gravel, lyrno);
@@ -666,6 +667,7 @@ void onSet_SW_LYR(SEXP SW_SOILS) {
 	}
 	UNPROTECT(1);
 }
+
 SEXP onGet_SW_SIT() {
 	int i;
 	SW_SITE *v = &SW_Site;
@@ -829,6 +831,7 @@ SEXP onGet_SW_SIT() {
 	UNPROTECT(24);
 	return SW_SIT;
 }
+
 void onSet_SW_SIT(SEXP SW_SIT) {
 	int i;
 	SW_SITE *v = &SW_Site;
@@ -937,6 +940,7 @@ void onSet_SW_SIT(SEXP SW_SIT) {
 	UNPROTECT(11);
 }
 #endif
+
 void init_site_info(void) {
 	/* =================================================== */
 	/* potentially this routine can be called whether the
@@ -1202,15 +1206,15 @@ void SW_SIT_clear_layers(void) {
 
 	j = SW_Site.n_layers;
 
-#ifdef RSOILWAT
-	if (s->deepdrain && !collectInData) {
-		j++;
-	}
-#else
-	if (s->deepdrain) {
+	#ifdef RSOILWAT
+		if (s->deepdrain && !collectInData) {
 			j++;
-	}
-#endif
+		}
+	#else
+		if (s->deepdrain) {
+				j++;
+		}
+	#endif
 
 	for (i = 0; i < j; i++) {
 		free(s->lyr[i]);

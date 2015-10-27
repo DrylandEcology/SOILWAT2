@@ -60,8 +60,8 @@ void SW_Water_Flow(void); /* see Water_Flow.c */
 extern SW_MODEL SW_Model;
 extern SW_SITE SW_Site;
 #ifdef RSOILWAT
-extern Bool useFiles;
-extern SEXP InputData;
+	extern Bool useFiles;
+	extern SEXP InputData;
 #endif
 //extern SW_OUTPUT SW_Output[];
 SW_SOILWAT SW_Soilwat; /* declared here, externed elsewhere */
@@ -72,7 +72,7 @@ SW_SOILWAT SW_Soilwat; /* declared here, externed elsewhere */
 static char *MyFileName;
 static RealD temp_snow;
 #ifdef RSOILWAT
-static int swcdataIndex;
+	static int swcdataIndex;
 #endif
 
 /* =================================================== */
@@ -109,7 +109,7 @@ void SW_SWC_construct(void) {
 	}
 	memset(&SW_Soilwat, 0, sizeof(SW_SOILWAT));
 	#ifdef RSOILWAT
-	swcdataIndex = 0;
+		swcdataIndex = 0;
 	#endif
 }
 
@@ -174,7 +174,8 @@ void SW_SWC_new_year(void) {
 
 	memset(&SW_Soilwat.yrsum, 0, sizeof(SW_SOILWAT_OUTPUTS));
 
-	/* reset the swc */ForEachSoilLayer(lyr)
+	/* reset the swc */
+	ForEachSoilLayer(lyr)
 	{
 		if (reset) {
 			SW_Soilwat.swcBulk[Today][lyr] = SW_Soilwat.swcBulk[Yesterday][lyr] = SW_Site.lyr[lyr]->swcBulk_init;
@@ -193,18 +194,17 @@ void SW_SWC_new_year(void) {
 
 	/* reset the historical (measured) values, if needed */
 	if (SW_Soilwat.hist_use && year >= SW_Soilwat.hist.yr.first) {
-#ifndef RSOILWAT
-		_read_hist(year);
-#else
-		if(useFiles) {
+		#ifndef RSOILWAT
 			_read_hist(year);
-		} else {
-			onSet_SW_SWC_hist(VECTOR_ELT(VECTOR_ELT(VECTOR_ELT(InputData,7),4),swcdataIndex));
-			swcdataIndex++;
-		}
-#endif
+		#else
+			if(useFiles) {
+				_read_hist(year);
+			} else {
+				onSet_SW_SWC_hist(VECTOR_ELT(VECTOR_ELT(VECTOR_ELT(InputData,7),4),swcdataIndex));
+				swcdataIndex++;
+			}
+		#endif
 	}
-
 	/* always reset deep drainage */
 	if (SW_Site.deepdrain)
 		SW_Soilwat.swcBulk[Today][SW_Site.deep_lyr] = 0.;
@@ -306,6 +306,7 @@ SEXP onGet_SW_SWC() {
 	UNPROTECT(6);
 	return SWC;
 }
+
 void onSet_SW_SWC(SEXP SWC) {
 	SW_SOILWAT *v = &SW_Soilwat;
 	SEXP swcUseData;
@@ -340,6 +341,7 @@ void onSet_SW_SWC(SEXP SWC) {
 	UNPROTECT(4);
 }
 #endif
+
 static void _read_hist(TimeInt year) {
 	/* =================================================== */
 	/* read a file containing historical swc measurements.
@@ -413,6 +415,7 @@ static void _read_hist(TimeInt year) {
 	}
 	CloseFile(&f);
 }
+
 #ifdef RSOILWAT
 SEXP onGet_SW_SWC_hists() {
 	TimeInt year;
@@ -436,6 +439,7 @@ SEXP onGet_SW_SWC_hists() {
 	UNPROTECT(2);
 	return SWC_hists;
 }
+
 SEXP onGet_SW_SWC_hist(TimeInt year) {
 	int i, j;
 	SW_SOILWAT *v = &SW_Soilwat;
@@ -469,6 +473,7 @@ SEXP onGet_SW_SWC_hist(TimeInt year) {
 	UNPROTECT(5);
 	return lyrs;
 }
+
 void onSet_SW_SWC_hist(SEXP lyrs) {
 	int i, j;
 	SW_SOILWAT *v = &SW_Soilwat;
@@ -481,6 +486,7 @@ void onSet_SW_SWC_hist(SEXP lyrs) {
 	}
 }
 #endif
+
 void SW_SWC_adjust_swc(TimeInt doy) {
 	/* =================================================== */
 	/* 01/07/02 (cwb) added final loop to guarantee swc > swcBulk_min

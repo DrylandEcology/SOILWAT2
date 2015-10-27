@@ -208,6 +208,7 @@ void SW_MDL_read(void) {
 	CloseFile(&f);
 
 }
+
 #ifdef RSOILWAT
 SEXP onGet_SW_MDL() {
 	int i;
@@ -249,6 +250,7 @@ SEXP onGet_SW_MDL() {
 	UNPROTECT(7);
 	return SW_MDL;
 }
+
 void onSet_SW_MDL(SEXP SW_MDL) {
 	SW_MODEL *m = &SW_Model;
 
@@ -329,6 +331,7 @@ void onSet_SW_MDL(SEXP SW_MDL) {
 	UNPROTECT(5);
 }
 #endif
+
 void SW_MDL_new_year() {
 	/* =================================================== */
 	/* sets up time structures and calls modules that have

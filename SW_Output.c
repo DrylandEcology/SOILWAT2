@@ -756,23 +756,23 @@ SEXP onGet_SW_OUT(void) {
 	SET_SLOT(OUT, install("outputSeparator"), sep);
 
 	PROTECT(useTimeStep = allocVector(LGLSXP,1));
-	PROTECT(timestep = allocVector(INTSXP,numPeriod));
+	PROTECT(timestep = allocVector(INTSXP, numPeriod));
 	if(numPeriod == 0)
 		LOGICAL(useTimeStep)[0] = FALSE;
 	else
 		LOGICAL(useTimeStep)[0] = TRUE;
 
-	PROTECT(mykey = NEW_INTEGER(28));
-	PROTECT(myobj = NEW_INTEGER(28));
-	PROTECT(period = NEW_INTEGER(28));
-	PROTECT(sumtype = NEW_INTEGER(28));
-	PROTECT(use = NEW_LOGICAL(28));
-	PROTECT(first = NEW_INTEGER(28));
-	PROTECT(last = NEW_INTEGER(28));
-	PROTECT(last = NEW_INTEGER(28));
-	PROTECT(first_orig = NEW_INTEGER(28));
-	PROTECT(last_orig = NEW_INTEGER(28));
-	PROTECT(outfile = NEW_STRING(28));
+	PROTECT(mykey = NEW_INTEGER(SW_OUTNKEYS));
+	PROTECT(myobj = NEW_INTEGER(SW_OUTNKEYS));
+	PROTECT(period = NEW_INTEGER(SW_OUTNKEYS));
+	PROTECT(sumtype = NEW_INTEGER(SW_OUTNKEYS));
+	PROTECT(use = NEW_LOGICAL(SW_OUTNKEYS));
+	PROTECT(first = NEW_INTEGER(SW_OUTNKEYS));
+	PROTECT(last = NEW_INTEGER(SW_OUTNKEYS));
+	PROTECT(last = NEW_INTEGER(SW_OUTNKEYS));
+	PROTECT(first_orig = NEW_INTEGER(SW_OUTNKEYS));
+	PROTECT(last_orig = NEW_INTEGER(SW_OUTNKEYS));
+	PROTECT(outfile = NEW_STRING(SW_OUTNKEYS));
 
 
 	ForEachOutKey(k)
@@ -814,6 +814,7 @@ SEXP onGet_SW_OUT(void) {
 	return OUT;
 }
 #endif
+
 void SW_OUT_close_files(void) {
 	/* --------------------------------------------------- */
 	/* close all of the user-specified output files.

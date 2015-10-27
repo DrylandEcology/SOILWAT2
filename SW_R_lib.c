@@ -110,17 +110,17 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	//Rprintf("Read\n");
 	PROTECT(swInputData = MAKE_CLASS("swInputData"));
 	PROTECT(SW_DataList = NEW_OBJECT(swInputData));
-	SET_SLOT(SW_DataList,install("files"),onGet_SW_F());
+	SET_SLOT(SW_DataList, install("files"), onGet_SW_F());
 	//Rprintf("swFiles\n");
-	SET_SLOT(SW_DataList,install("years"),onGet_SW_MDL());
+	SET_SLOT(SW_DataList, install("years"), onGet_SW_MDL());
 	//Rprintf("swYears\n");
-	SET_SLOT(SW_DataList,install("weather"),onGet_SW_WTH());
+	SET_SLOT(SW_DataList, install("weather"), onGet_SW_WTH());
 	//Rprintf("swWeather\n");
 	SET_SLOT(SW_DataList, install("cloud"), onGet_SW_SKY());
 	//Rprintf("swSky\n");
 	SET_SLOT(SW_DataList, install("weatherHistory"), onGet_WTH_DATA());
 	//Rprintf("swWeatherHistory\n");
-	if (LOGICAL(GET_SLOT(GET_SLOT(SW_DataList,install("weather")),install("use_Markov")))[0]) {
+	if (LOGICAL(GET_SLOT(GET_SLOT(SW_DataList, install("weather")), install("use_Markov")))[0]) {
 		SET_SLOT(SW_DataList, install("markov"), onGet_MKV());
 		//Rprintf("swMarkov\n");
 	}
@@ -132,7 +132,7 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	//Rprintf("swSoils\n");
 	SET_SLOT(SW_DataList,install("estab"),onGet_SW_VES());
 	//Rprintf("swEstab\n");
-	SET_SLOT(SW_DataList,install("output"),onGet_SW_OUT());
+	SET_SLOT(SW_DataList,install("output"), onGet_SW_OUT());
 	//Rprintf("swOUT\n");
 	SET_SLOT(SW_DataList,install("swc"),onGet_SW_SWC());
 	//Rprintf("swSWC\n");

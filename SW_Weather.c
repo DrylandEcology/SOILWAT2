@@ -376,13 +376,14 @@ void SW_WTH_read(void) {
 
 	/* required for PET */
 	SW_SKY_read();
-#ifndef RSOILWAT
-	SW_SKY_init(w->scale_skyCover, w->scale_wind, w->scale_rH, w->scale_transmissivity);
-#else
-	if(!collectInData)
+	#ifndef RSOILWAT
 		SW_SKY_init(w->scale_skyCover, w->scale_wind, w->scale_rH, w->scale_transmissivity);
-#endif
+	#else
+		if(!collectInData)
+			SW_SKY_init(w->scale_skyCover, w->scale_wind, w->scale_rH, w->scale_transmissivity);
+	#endif
 }
+
 #ifdef RSOILWAT
 SEXP onGet_SW_WTH() {
 	int i;
@@ -537,22 +538,27 @@ SEXP onGet_WTH_DATA(void) {
 
 	PROTECT(WTH_DATA = allocVector(VECSXP,nWeathData));
 	PROTECT(WTH_DATA_names = allocVector(STRSXP,nWeathData));
-	weth_found = TRUE;
-	for (year = SW_Model.startyr; year <= SW_Model.endyr; year++) {
-		if (year < SW_Weather.yr.first) {
-			weth_found = FALSE;
-		} else {
-			if(_read_hist(year)) {
-				SET_VECTOR_ELT(WTH_DATA, i, onGet_WTH_DATA_YEAR(year));
-				sprintf(cYear, "%4d", year);
-				SET_STRING_ELT(WTH_DATA_names, i, mkChar(cYear));
-				setNames=TRUE;
+	
+	if (nWeathData > 0){
+		weth_found = TRUE;
+		for (year = SW_Model.startyr; year <= SW_Model.endyr; year++) {
+			if (year < SW_Weather.yr.first) {
+				weth_found = FALSE;
+			} else {
+				if(_read_hist(year)) {
+					SET_VECTOR_ELT(WTH_DATA, i, onGet_WTH_DATA_YEAR(year));
+					sprintf(cYear, "%4d", year);
+					SET_STRING_ELT(WTH_DATA_names, i, mkChar(cYear));
+					setNames=TRUE;
+				}
 			}
+			if (!weth_found && !SW_Weather.use_markov) {
+				LogError(logfp, LOGFATAL, "Markov Simulator turned off and weather file found not for year %d", year);
+			}
+			i++;
 		}
-		if (!weth_found && !SW_Weather.use_markov) {
-			LogError(logfp, LOGFATAL, "Markov Simulator turned off and weather file found not for year %d", year);
-		}
-		i++;
+	} else {
+		weth_found = FALSE;
 	}
 	if(setNames) {
 		setAttrib(WTH_DATA, R_NamesSymbol, WTH_DATA_names);
@@ -563,6 +569,7 @@ SEXP onGet_WTH_DATA(void) {
 	}
 	return WTH_DATA;
 }
+
 SEXP onGet_WTH_DATA_YEAR(TimeInt year) {
 	int i,days;
 	SEXP swWeatherData;

@@ -44,9 +44,9 @@
 extern SW_MODEL SW_Model;
 extern SW_VEGESTAB SW_VegEstab;
 #ifdef RSOILWAT
-extern Bool useFiles;
-extern SEXP InputData;
-void SW_FLW_construct(void);
+	extern Bool useFiles;
+	extern SEXP InputData;
+	void SW_FLW_construct(void);
 #endif
 /* =================================================== */
 /*                Module-Level Declarations            */

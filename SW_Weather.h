@@ -96,11 +96,11 @@ void SW_WTH_end_day(void);
 void SW_WTH_clear_runavg_list(void);
 
 #ifdef RSOILWAT
-SEXP onGet_SW_WTH();
-void onSet_SW_WTH(SEXP SW_WTH);
-SEXP onGet_WTH_DATA(void);
-SEXP onGet_WTH_DATA_YEAR(TimeInt year);
-Bool onSet_WTH_DATA(SEXP WTH_DATA_YEAR, TimeInt year);
+	SEXP onGet_SW_WTH();
+	void onSet_SW_WTH(SEXP SW_WTH);
+	SEXP onGet_WTH_DATA(void);
+	SEXP onGet_WTH_DATA_YEAR(TimeInt year);
+	Bool onSet_WTH_DATA(SEXP WTH_DATA_YEAR, TimeInt year);
 #endif
 
 #ifdef DEBUG_MEM

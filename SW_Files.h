@@ -14,12 +14,11 @@
 /********************************************************/
 /********************************************************/
 #ifndef SW_FILES_H
-#define SW_FILES_H
+	#define SW_FILES_H
 
 #define SW_NFILES 15
-
 #ifdef RSOILWAT
-#include <R.h>
+	#include <R.h>
 #include <Rdefines.h>
 #include <Rconfig.h>
 #include <Rinterface.h>
@@ -38,12 +37,10 @@ typedef enum {
 void SW_F_read(const char *s);
 char *SW_F_name(SW_FileIndex i);
 void SW_F_construct(const char *firstfile);
-
 #ifdef RSOILWAT
-SEXP onGet_SW_F();
-void onSet_SW_F(SEXP SW_F_construct);
+	SEXP onGet_SW_F();
+	void onSet_SW_F(SEXP SW_F_construct);
 #endif
-
 void SW_WeatherPrefix(char prefix[]);
 void SW_OutputPrefix(char prefix[]);
 

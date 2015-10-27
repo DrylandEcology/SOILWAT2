@@ -182,16 +182,14 @@ SEXP onGet_SW_F() {
 	PROTECT(SW_F_construct = NEW_OBJECT(swFiles));
 	PROTECT(ProjDir = allocVector(STRSXP, 1));
 	SET_STRING_ELT(ProjDir, 0, mkChar(_ProjDir));
-	for (i = 0; i < 15; i++)
-		if (InFiles[i] != NULL )
-			j++;
-	PROTECT(FilesIn = allocVector(STRSXP, j));
-
-	for (i = 0; i < 15; i++) {
+	
+	PROTECT(FilesIn = allocVector(STRSXP, SW_NFILES));
+	for (i = 0; i < SW_NFILES; i++) {
 		if (InFiles[i] != NULL ) {
 			SET_STRING_ELT(FilesIn, i, mkChar(InFiles[i]));
 		}
 	}
+
 	PROTECT(Rweather_prefix = allocVector(STRSXP, 1));
 	SET_STRING_ELT(Rweather_prefix, 0, mkChar(weather_prefix));
 	PROTECT(Routput_prefix = allocVector(STRSXP, 1));
@@ -223,7 +221,7 @@ void onSet_SW_F(SEXP SW_F_construct) {
 
 	PROTECT(FilesIn = GET_SLOT(SW_F_construct, install("InFiles")));
 	j = LENGTH(FilesIn);
-	for(i=0;i<15;i++)
+	for(i=0;i<SW_NFILES;i++)
 		if (!isnull(InFiles[i])) {
 			Mem_Free(InFiles[i]);
 		}
