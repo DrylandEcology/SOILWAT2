@@ -391,7 +391,7 @@ static void _read_layers(void) {
 			fail = TRUE;
 			fval = matricd;
 			errtype = Str_Dup("bulk density");
-		} else if (LT(f_gravel,0.) || GT(f_gravel,1)) {
+		} else if (LT(f_gravel,0.) || GT(f_gravel,1.)) {
 			fail = TRUE;
 			fval = f_gravel;
 			errtype = Str_Dup("gravel content");

@@ -140,15 +140,13 @@ void SW_SIT_construct(void);
 
 /* these used to be in Layers */
 void SW_SIT_clear_layers(void);
-
 #ifdef RSOILWAT
-SEXP onGet_SW_SIT();
-void onSet_SW_SIT(SEXP SW_SIT);
-SEXP onGet_SW_LYR();
+	SEXP onGet_SW_SIT();
+	void onSet_SW_SIT(SEXP SW_SIT);
+	SEXP onGet_SW_LYR();
 #endif
-
 #ifdef DEBUG_MEM
-void SW_SIT_SetMemoryRefs(void);
+	void SW_SIT_SetMemoryRefs(void);
 #endif
 
 #endif
