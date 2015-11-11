@@ -1178,7 +1178,7 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
  **********************************************************************/
 
 void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrTemp, double depth_Temp[], double sTempR[], unsigned int nlyrSoil, double depth_Soil[], double width_Soil[], double sTemp[]){
-	unsigned int i = 0, j, n, toDebug=0;
+	unsigned int i = 0, j, n, toDebug = 0;
 	double acc;
 
 	// interpolate soil temperature values for depth of soil profile layers
@@ -1492,7 +1492,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		unsigned int nlyrs, double fc[], double wp[], double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1, double csParam2, double shParam,
 		double snowpack, double meanAirTemp, double deltaX, double theMaxDepth, unsigned int nRgr) {
 
-	unsigned int i, j, k, toDebug = 1, sFadjusted_sTemp;
+	unsigned int i, j, k, toDebug = 0, sFadjusted_sTemp;
 	double T1, cs, sh, sm, pe, deltaT, deltaTemp, tc, fH2O, fp,parts, part1, part2, swcR[nRgr], sTempR[nRgr + 1], sFusionPool[nlyrs];
 
 	/* local variables explained: 
@@ -1773,7 +1773,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 	if (toDebug) {
 		#ifndef RSOILWAT
-//			exit(0); // terminates the program, make sure to take this out later
+			exit(0); // terminates the program, make sure to take this out later
 		#else
 			Rprintf("\nEXIT DEBUG IS ON IN SOIL TEMPERATURE. CONSIDER TURNING OFF.\n");
 			//exit(0); // terminates the program, make sure to take this out later
