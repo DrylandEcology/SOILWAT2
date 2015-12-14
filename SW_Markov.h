@@ -29,6 +29,10 @@ typedef struct {
 	*dryprob, /* probability of being dry today */
 	*avg_ppt, /* mean precip (cm) */
 	*std_ppt, /* std dev. for precip */
+    *cfxw, /*correction factor for tmax for wet days */
+    *cfxd, /*correction factor for tmax for dry days */
+    *cfnw, /*correction factor for tmin for wet days */
+    *cfnd, /*correction factor for tmin for dry days */
 	u_cov[MAX_WEEKS][2], /* mean temp (max, min) Celsius */
 	v_cov[MAX_WEEKS][2][2]; /* covariance matrix */
 	int ppt_events; /* number of ppt events generated this year */
