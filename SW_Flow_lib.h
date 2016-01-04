@@ -56,7 +56,7 @@ typedef struct {
 		   fcR[MAX_ST_RGR],//field capacity of soil layers for soil temperature calculations
 		   wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
 		   bDensityR[MAX_ST_RGR],//bulk density of soil layers for soil temperature calculations
-		   oldsFusionPool[MAX_LAYERS],
+		   oldsFusionPool[MAX_LAYERS], oldsFusionPool_actual[MAX_LAYERS],
 		   oldsTempR[MAX_ST_RGR + 1];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
 
 	int lyrFrozen[MAX_LAYERS];

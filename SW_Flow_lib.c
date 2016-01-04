@@ -1256,7 +1256,7 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[], 
 
 }
 
-void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrSoil, double width_Soil[], double var[], unsigned int nlyrTemp, double width_Temp, double res[], Bool summed){
+void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrSoil, double width_Soil[], double var[], unsigned int nlyrTemp, double width_Temp, double res[]){
 	unsigned int i, j = 0, toDebug = 0;
 	double acc, ratio, sum;
 
@@ -1279,7 +1279,8 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
 				acc += (-cor[i][j]);
 			}
 		}
-		if (!summed) res[i] = res[i] / sum;
+		res[i] = res[i] / sum;
+		
 		if (toDebug)
 			#ifndef RSOILWAT
 				printf("\nConf A: acc=%2.2f, sum=%2.2f, res[%i]=%2.2f, var[%i]=%2.2f, [%i]=%2.2f, cor[%i][%i]=%2.2f, width_Soil[%i]=%2.2f, [%i]=%2.2f", acc, sum, i, res[i], j, var[j], j-1, var[j-1], i, j, cor[i][j], j, width_Soil[j], j-1, width_Soil[j-1]);
@@ -1349,401 +1350,249 @@ Explain meaning of zeta and w
 
 void soil_temperature_init(double bDensity[], double width[], double surfaceTemp, double oldsTemp[], double meanAirTemp, unsigned int nlyrs, double fc[], double wp[], double deltaX, double theMaxDepth,unsigned int nRgr) {
 	// local vars
-	unsigned int x1 = 0, x2 = 0, j = 0, i, k, toDebug = 0;
+	unsigned int x1 = 0, x2 = 0, j = 0, i, toDebug = 0;
 	double d1 = 0.0, d2 = 0.0, acc = 0.0;
+	double fc_vwc[nlyrs], wp_vwc[nlyrs];
 	// pointers
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
-		soil_temp_init = 1; // make this value 1 to make sure that this function isn't called more than once... (b/c it doesn't need to be)
+	soil_temp_init = 1; // make this value 1 to make sure that this function isn't called more than once... (b/c it doesn't need to be)
 
 
-		if (toDebug)
-			#ifndef RSOILWAT
-				printf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
-			#else
-				Rprintf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
-			#endif
+	if (toDebug)
+		#ifndef RSOILWAT
+			printf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
+		#else
+			Rprintf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
+		#endif
 
 
-		// init st
-		for (i = 0; i < nRgr + 1; i++) {
-			st->fcR[i] = 0.0;
-			st->wpR[i] = 0.0;
-			st->bDensityR[i] = 0.0;
-			st->oldsTempR[i] = 0.0;
-			for (j = 0; j < nlyrs + 1; j++) // last column is used for soil temperature layers that are deeper than the deepest soil profile layer
-				st->tlyrs_by_slyrs[i][j] = 0.0;
+	// init st
+	for (i = 0; i < nRgr + 1; i++) {
+		st->fcR[i] = 0.0;
+		st->wpR[i] = 0.0;
+		st->bDensityR[i] = 0.0;
+		st->oldsTempR[i] = 0.0;
+		for (j = 0; j < nlyrs + 1; j++) // last column is used for soil temperature layers that are deeper than the deepest soil profile layer
+			st->tlyrs_by_slyrs[i][j] = 0.0;
+	}
+
+	// copy depths of soil layer profile
+	for (j = 0; j < nlyrs + 1; j++) {
+		acc += width[j];
+		st->depths[j] = acc;
+	}
+	// calculate evenly spaced depths of soil temperature profile
+	acc = 0.0;
+	for (i = 0; i < nRgr + 1; i++) {
+		acc += deltaX;
+		st->depthsR[i] = acc;
+	}
+
+
+	// if soil temperature max depth is less than soil layer depth then quit
+	if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
+		if (!soil_temp_error) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
+
+		#ifndef RSOILWAT
+			printf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
+		#else
+			Rprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
+		#endif
+
+			soil_temp_error = 1;
 		}
+		return; // exits the function
+	}
 
-		// copy depths of soil layer profile
-		for (j = 0; j < nlyrs + 1; j++) {
-			acc += width[j];
-			st->depths[j] = acc;
-		}
-		// calculate evenly spaced depths of soil temperature profile
-		acc = 0.0;
-		for (i = 0; i < nRgr + 1; i++) {
-			acc += deltaX;
-			st->depthsR[i] = acc;
-		}
-
-
-		// if soil temperature max depth is less than soil layer depth then quit
-		if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
-			if (!soil_temp_error) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
-
-			#ifndef RSOILWAT
-				printf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
-			#else
-				Rprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
-			#endif
-
-				soil_temp_error = 1;
-			}
-			return; // exits the function
-		}
-
-		// calculate values of correspondance 'tlyrs_by_slyrs' between soil profile layers and soil temperature layers
-		for (i = 0; i < nRgr + 1; i++) {
-			acc = 0.0; // cumulative sum towards deltaX
-			while (x2 < nlyrs && acc < deltaX) { // there are soil layers to add
-				// add from previous (x1) soil layer
-				if (GT(d1, 0.0)) {
-					j = x1;
-					if (GT(d1, deltaX)) { // soil temperatur layer ends within x1-th soil layer
-						d2 = deltaX;
-						d1 -= deltaX;
-					} else {
-						d2 = d1;
-						d1 = 0.0;
-						x2++;
-					}
+	// calculate values of correspondance 'tlyrs_by_slyrs' between soil profile layers and soil temperature layers
+	for (i = 0; i < nRgr + 1; i++) {
+		acc = 0.0; // cumulative sum towards deltaX
+		while (x2 < nlyrs && acc < deltaX) { // there are soil layers to add
+			// add from previous (x1) soil layer
+			if (GT(d1, 0.0)) {
+				j = x1;
+				if (GT(d1, deltaX)) { // soil temperatur layer ends within x1-th soil layer
+					d2 = deltaX;
+					d1 -= deltaX;
 				} else {
-					// add from next (x2) soil layer
-					j = x2;
-					if (LT(st->depthsR[i], st->depths[x2])) { // soil temperatur layer ends within x2-th soil layer
-						d2 = fmax(deltaX - acc, 0.0);
-						d1 = width[x2] - d2;
-					} else {
-						d2 = width[x2];
-						d1 = 0.0;
-						x2++;
-					}
+					d2 = d1;
+					d1 = 0.0;
+					x2++;
 				}
-				acc += d2;
-				st->tlyrs_by_slyrs[i][j] = d2;
+			} else {
+				// add from next (x2) soil layer
+				j = x2;
+				if (LT(st->depthsR[i], st->depths[x2])) { // soil temperatur layer ends within x2-th soil layer
+					d2 = fmax(deltaX - acc, 0.0);
+					d1 = width[x2] - d2;
+				} else {
+					d2 = width[x2];
+					d1 = 0.0;
+					x2++;
+				}
 			}
-			x1 = x2;
-
-			if (x2 >= nlyrs) { // soil temperature profile is deeper than deepest soil layer; copy data from deepest soil layer
-				st->tlyrs_by_slyrs[i][x2] = -(deltaX - acc);
-			}
+			acc += d2;
+			st->tlyrs_by_slyrs[i][j] = d2;
 		}
+		x1 = x2;
 
-		if (toDebug) {
-			for (i = 0; i < nRgr + 1; i++) {
-				#ifndef RSOILWAT
-				 	 printf("\ntl_by_sl");
-						for (j = 0; j < nlyrs + 1; j++)
-					       printf("[%i,%i]=%3.2f ", i, j, st->tlyrs_by_slyrs[i][j]);
-
-				#else
-					  Rprintf("\ntl_by_sl");
-						for (j = 0; j < nlyrs + 1; j++)
-						   Rprintf("[%i,%i]=%3.2f ", i, j, st->tlyrs_by_slyrs[i][j]);
-				#endif
-
-
-			}
+		if (x2 >= nlyrs) { // soil temperature profile is deeper than deepest soil layer; copy data from deepest soil layer
+			st->tlyrs_by_slyrs[i][x2] = -(deltaX - acc);
 		}
+	}
 
-		// calculate field capacity, wilting point, bulk density, and initial soil temperature for layers of the soil temperature profile
-		lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, fc, nRgr, deltaX, st->fcR, (1 == 1));
-		lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, wp, nRgr, deltaX, st->wpR, (1 == 1));
-		lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, bDensity, nRgr, deltaX, st->bDensityR, (1 != 1));
-		lyrSoil_to_lyrTemp_temperature(nlyrs, st->depths, oldsTemp, meanAirTemp, nRgr, st->depthsR, theMaxDepth, st->oldsTempR);
-
-
-		// st->oldsTempR: index 0 is surface temperature
-		if (toDebug){
-
+	if (toDebug) {
+		for (i = 0; i < nRgr + 1; i++) {
 			#ifndef RSOILWAT
-			 	 for (j = 0; j < nlyrs; j++)
-							printf("\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, oldT=%2.2f",
-								j, st->depths[j], fc[j], wp[j], bDensity[j], oldsTemp[j]);
-						printf("\nConv ST oldSurfaceTR=%2.2f", st->oldsTempR[0]);
-						for (i = 0; i < nRgr + 1; i++)
-						   printf("\nConv ST depth[%i]=%2.2f, fcR=%2.2f, wpR=%2.2f, bDensR=%2.2f, oldTR=%2.2f",
-								i, st->depthsR[i], st->fcR[i], st->wpR[i], st->bDensityR[i], st->oldsTempR[i+1]);
-
+				 printf("\ntl_by_sl");
+					for (j = 0; j < nlyrs + 1; j++)
+					   printf("[%i,%i]=%3.2f ", i, j, st->tlyrs_by_slyrs[i][j]);
 
 			#else
-				 for (j = 0; j < nlyrs; j++)
-						Rprintf("\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, oldT=%2.2f",
-								j, st->depths[j], fc[j], wp[j], bDensity[j], oldsTemp[j]);
-					Rprintf("\nConv ST oldSurfaceTR=%2.2f", st->oldsTempR[0]);
-						for (i = 0; i < nRgr + 1; i++)
-							Rprintf("\nConv ST depth[%i]=%2.2f, fcR=%2.2f, wpR=%2.2f, bDensR=%2.2f, oldTR=%2.2f",
-								i, st->depthsR[i], st->fcR[i], st->wpR[i], st->bDensityR[i], st->oldsTempR[i+1]);
-
+				  Rprintf("\ntl_by_sl");
+					for (j = 0; j < nlyrs + 1; j++)
+					   Rprintf("[%i,%i]=%3.2f ", i, j, st->tlyrs_by_slyrs[i][j]);
 			#endif
 
 
-			}
+		}
+	}
+
+	// calculate volumetric field capacity, volumetric wilting point, bulk density, and initial soil temperature for layers of the soil temperature profile
+	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, bDensity, nRgr, deltaX, st->bDensityR);
+	lyrSoil_to_lyrTemp_temperature(nlyrs, st->depths, oldsTemp, meanAirTemp, nRgr, st->depthsR, theMaxDepth, st->oldsTempR);
+
+	// units of fc and wp are [cm H2O]; units of fcR and wpR are [m3/m3]
+	for (i = 0; i < nlyrs; i++){
+		fc_vwc[i] = fc[i] / width[i];
+		wp_vwc[i] = wp[i] / width[i];
+	}
+	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, fc_vwc, nRgr, deltaX, st->fcR);
+	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, wp_vwc, nRgr, deltaX, st->wpR);
+
+	// st->oldsTempR: index 0 is surface temperature
+	if (toDebug){
+
+		#ifndef RSOILWAT
+			 for (j = 0; j < nlyrs; j++)
+						printf("\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, oldT=%2.2f",
+							j, st->depths[j], fc[j], wp[j], bDensity[j], oldsTemp[j]);
+					printf("\nConv ST oldSurfaceTR=%2.2f", st->oldsTempR[0]);
+					for (i = 0; i < nRgr + 1; i++)
+					   printf("\nConv ST depth[%i]=%2.2f, fcR=%2.2f, wpR=%2.2f, bDensR=%2.2f, oldTR=%2.2f",
+							i, st->depthsR[i], st->fcR[i], st->wpR[i], st->bDensityR[i], st->oldsTempR[i+1]);
+
+
+		#else
+			 for (j = 0; j < nlyrs; j++)
+					Rprintf("\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, oldT=%2.2f",
+							j, st->depths[j], fc[j], wp[j], bDensity[j], oldsTemp[j]);
+				Rprintf("\nConv ST oldSurfaceTR=%2.2f", st->oldsTempR[0]);
+					for (i = 0; i < nRgr + 1; i++)
+						Rprintf("\nConv ST depth[%i]=%2.2f, fcR=%2.2f, wpR=%2.2f, bDensR=%2.2f, oldTR=%2.2f",
+							i, st->depthsR[i], st->fcR[i], st->wpR[i], st->bDensityR[i], st->oldsTempR[i+1]);
+
+		#endif
+
+
+		}
 }
 
-/**********************************************************************
- PURPOSE: Calculate soil temperature for each layer as described in Parton 1978, ch. 2.2.2 Temperature-profile Submodel, interpolation values are gotten from a mixture of interpolation & extrapolation
-// soil freezing based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
+unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTemp[], double shParam, unsigned int nlyrs, double vwc[], double bDensity[]){
+// Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
+// based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 
- *NOTE* There will be some degree of error because the original equation is written for soil layers of 15 cm.  if soil layers aren't all 15 cm then linear regressions are used to estimate the values (error should be relatively small though).
- *NOTE* Function might not work correctly if the maxDepth of the soil is > 180 cm, since Parton's equation goes only to 180 cm
- *NOTE* Function will run if maxLyrDepth > maxDepth of the equation, but the results might be slightly off...
+// NOTE: THIS FUNCTION IS CURRENTLY NOT OPERATIONAL
 
- HISTORY:
- 05/24/2012 (DLM) initial coding, still need to add to header file, handle if the layer height is > 15 cm properly, & test
- 05/25/2012 (DLM) added all this 'fun' crazy linear interpolation stuff
- 05/29/2012 (DLM) still working on the function, linear interpolation stuff should work now.  needs testing
- 05/30/2012 (DLM) got rid of nasty segmentation fault error, also tested math seems correct after checking by hand.  added the ability to change the value of deltaX
- 05/30/2012 (DLM) added # of lyrs check & maxdepth check at the beginning to make sure code doesn't blow up... if there isn't enough lyrs (ie < 2) or the maxdepth is too little (ie < deltaX * 2), the function quits out and reports an error to the user
- 05/31/2012 (DLM) added theMaxDepth variable to allow the changing of the maxdepth of the equation, also now stores most interpolation data in a structure to reduce redundant interpolation calculations & speeds things up
- 06/01/2012 (DLM) changed deltaT variable from hours to seconds, also changed some of the interpolation calculations so that swc, fc, & wp regressions are scaled properly... results are actually starting to look usable!
- 06/13/2012 (DLM) no longer extrapolating values for interpolation layers that are out of the bounds of the soil layers... instead they are now set to the last soil layers values.  extrapolating code is still in the function and can be commented out and used if wishing to go back to extrapolating the values...
- 03/28/2013 (clk) added a check to see if the soil was freezing/thawing and adjusted the soil temperature correctly during this phase change. If the temperature was in this area, also needed to re run soil_temperature_init on next call because you need to also change the regression temperatures to match the change in soil temperature.
- 12/23/2014 (drs) re-wrote soil temperature functions:
- 					- soil characteristics (fc, wp, bulk density) of soil temperature now integrated across all soil layers (instead of linear interpolation between the two extreme layers;
-					- interpolation for top soil layer with surface temperature only if no other information available
-					- mean of interpolations if multiple layers affect a soil profile layer
-					- reporting of surface soil temperature
-					- test iteration steps that they meet the criterion of a stable solution
- 11/23/2015 (drs) added call to surface_temperature_under_snow()
-
- INPUTS:
- airTemp - the average daily air temperature in celsius
- pet - the potential evapotranspiration rate
- aet - the actual evapotranspiration rate
- biomass - the standing-crop biomass
- swc - soil water content
- bDensity - bulk density of the soil layers
- width - width of layers
- oldsTemp - soil layer temperatures from the previous day in celsius
- nlyrs - number of soil layers, must be greater than 1 or the function won't work right
- fc - field capacity for each soil layer
- wp - wilting point for each soil layer
- bmLimiter - biomass limiter constant (300 g/m^2)
- t1Params - constants for the avg temp at the top of soil equation (15, -4, 600) there is 3 of them
- csParams - constants for the soil thermal conductivity equation (0.00070, 0.00030) there is 2 of them
- shParam - constant for the specific heat capacity equation (0.18)
- snowpack - the amount of snow on the ground
- meanAirTemp - the avg air temperature for the month in celsius
- deltaX - the distance between profile points (default is 15 from Parton's equation, wouldn't recommend changing the value from that).  180 must be evenly divisible by this number.
- theMaxDepth - the lower bound of the equation (default is 180 from Parton's equation, wouldn't recommend changing the value from that).
- nRgr - the number of regressions (1 extra value is needed for the sTempR and oldsTempR for the last layer
-
- OUTPUT:
- sTemp - soil layer temperatures in celsius
- **********************************************************************/
-
-void soil_temperature(double airTemp, double pet, double aet, double biomass, double swc[], double bDensity[], double width[], double oldsTemp[], double sTemp[],double surfaceTemp[2],
-		unsigned int nlyrs, double fc[], double wp[], double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1, double csParam2, double shParam,
-		double snowpack, double meanAirTemp, double deltaX, double theMaxDepth, unsigned int nRgr) {
-
-	unsigned int i, j, k, toDebug = 0, sFadjusted_sTemp;
-	double T1, cs, sh, sm, pe, deltaT, deltaTemp, tc, fH2O, fp,parts, part1, part2, swcR[nRgr], sTempR[nRgr + 1], sFusionPool[nlyrs];
+	unsigned int i, toDebug = 0, sFadjusted_sTemp;
+	double deltaT, deltaTemp, sh, tc, fH2O, fp, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
 
 	/* local variables explained: 
-
 	 toDebug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
-	 T1 - the average daily temperature at the top of the soil in celsius
-	 sm - volumetric soil-water content
-	 pe - ratio of the difference between volumetric soil-water content & soil-water content
-	 at the wilting point to the difference between soil water content at field capacity &
-	 soil-water content at wilting point.
-	 cs - soil thermal conductivity
-	 sh - specific heat capacity
-	 deltaT - time step (24 hr)
 	 deltaTemp - the change in temperature for each day
-	 tc - correction factor for fusion pool calculation
-	 fH2O - fusion energy of water
-	 fp - freezing point of water in soil
-	 depths[nlyrs] - the depths of each layer of soil, calculated in the function
-	 sFusionPool[] - the calculated fusion pool for each soil layer
-	 swcR[], sTempR[] - anything with a R at the end of the variable name stands for the interpolation of that array
-	 sFadjusted_sTemp - if soil layer temperature was changed due to freezing/thawing; if so, then temperature of the soil temperature layers need to updated as well
+	 sh - heat capacity of the i-th non-frozen soil layer (cal cm-3 K-1)
+	 sFusionPool[] - the fusion pool for each soil layer
+	 sFusionPool_actual[] - the actual fusion pool for each soil layer
+	 sFadjusted_sTemp - if soil layer temperature was changed due to freezing/thawing
 	 */
-
-	if (toDebug){
-		#ifndef RSOILWAT
-			printf("\n\nNew call to soil_temperature()");
-		#else
-			Rprintf("\n\nNew call to soil_temperature()");
-		#endif
-	}
-
-
-	if (!soil_temp_init) {
-		if (toDebug) {
-			#ifndef RSOILWAT
-				printf("\nCalling soil_temperature_init\n");
-			#else
-				Rprintf("\nCalling soil_temperature_init\n");
-			#endif
-		}
-
-		surfaceTemp[Today] = airTemp;
-		soil_temperature_init(bDensity, width, surfaceTemp[Today], oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
-	}
-	
-	if (soil_temp_error) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
-		return;
-
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
 	deltaT = 86400.0; // the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400 seconds)
-	tc = 0.02; 		// this correction value is given by Eitzinger 2000
-	fp = -1.00;		// this freezing point value was also used in Eitzinger 2000
-	fH2O = 80;		// this fusion enegry was also given in Eitzinger 2000
-
-	// calculating T1, the average daily soil surface temperature
-	if(GT(snowpack, 0.0)) {// if there is snow on the ground, then T1 based on Koren JGR 1999; previously was simply set to -2 C
-		T1 = surface_temperature_under_snow(airTemp, oldsTemp[1], snowpack, width[1]);
-		if(toDebug) printf("\nThere is snow on the ground, T1=%5.4f calculated using Koren et al JGR 1999\n", T1);
-	} else {
-		if (LE(biomass, bmLimiter)) { // bmLimiter = 300
-			T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
-			if (toDebug) {
-				#ifndef RSOILWAT
-					printf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
-						   airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
-				#else
-					Rprintf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
-							airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
-				#endif
-			}
-		} else {
-			T1 = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
-			if (toDebug){
-				#ifndef RSOILWAT
-					printf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
-				#else
-					Rprintf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
-				#endif
-			}
-		}
-	}
+	tc = 0.02; 		// Eitzinger et al. (2000): correction factor for eq. 3 [unitless]; estimate based on data from CPER/SGS LTER
+	fp = -1.00;		// Eitzinger et al. (2000): freezing point of water in soil [C]; based on Parton 1984
+	fH2O = 80;		// Eitzinger et al. (2000): fusion energy of water; units = [cal cm-3]
 
 
 	if (!fusion_pool_init) {
 		for (i = 0; i < nlyrs; i++) {
 			st->oldsFusionPool[i] = 0.00;	// sets the inital fusion pool to zero
-			if (LE(oldsTemp[i],fp))		// determines if the current layer is frozen or not
-				st->lyrFrozen[i] = 1;
-			else
+//			if (LE(oldsTemp[i], fp))		// determines if the current layer is frozen or not
+//				st->lyrFrozen[i] = 1;
+//			else
 				st->lyrFrozen[i] = 0;
 		}
 		fusion_pool_init = 1;
 	}
 
-	// calculate soil water content for soil temperature layers
-	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, swc, nRgr, deltaX, swcR, (1==1));
-
-	if (toDebug) {
-		#ifndef RSOILWAT
-			printf("\nregression values:");
-				for (i = 0; i < nRgr; i++)
-					printf("\nk %2d width %5.4f depth %5.4f swcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f", i, deltaX, st->depthsR[i], swcR[i], st->fcR[i], st->wpR[i], st->oldsTempR[i], st->bDensityR[i]);
-
-			printf("\nlayer values:");
-				for (i = 0; i < nlyrs; i++)
-					printf("\ni %2d width %5.4f depth %5.4f swc %5.4f fc %5.4f wp %5.4f oldsTemp %5.4f bDensity %5.4f", i, width[i], st->depths[i], swc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
-		#else
-			Rprintf("\nregression values:");
-				for (i = 0; i < nRgr; i++)
-					Rprintf("\nk %2d width %5.4f depth %5.4f swcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f", i, deltaX, st->depthsR[i], swcR[i], st->fcR[i], st->wpR[i], st->oldsTempR[i], st->bDensityR[i]);
-
-			Rprintf("\nlayer values:");
-				for (i = 0; i < nlyrs; i++)
-					Rprintf("\ni %2d width %5.4f depth %5.4f swc %5.4f fc %5.4f wp %5.4f oldsTemp %5.4f bDensity %5.4f", i, width[i], st->depths[i], swc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
-		#endif
-	}
-
-	// calculate the new soil temperature for each layer
-	sTempR[0] = T1; //index 0 indicates surface and not first layer
-	part1 = deltaT / squared(deltaX);
-	for (i = 1; i < nRgr + 1; i++) { // goes to nRgr, because the soil temp of the last interpolation layer (nRgr) is the meanAirTemp
-		k = i - 1;
-		// first we must calculate cs & sh (& subsequently sm & pe), for use later
-		sm = swcR[k];
-		pe = (sm - st->wpR[k]) / (st->fcR[k] - st->wpR[k]);
-		cs = csParam1 + (pe * csParam2); // csParam1 = 0.0007, csParam2 = 0.0003
-		sh = sm + (shParam * (1. - sm)); // shParam = 0.18
-
-		// breaking the equation down into parts
-		parts = part1 * cs / (sh * st->bDensityR[k]);
-		part2 = sTempR[i - 1] - 2 * st->oldsTempR[i] + st->oldsTempR[i + 1];
-
-		//Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
-		if (GT(parts, 0.5)) {//Criterion for a stable solution
-			#ifndef RSOILWAT
-				printf("\nSOIL_TEMP FUNCTION ERROR: solution is not stable: %f > 0.5... soil temperature will NOT be calculated\n", parts);
-			#else
-				Rprintf("\nSOIL_TEMP FUNCTION ERROR: solution is not stable: %f > 0.5... soil temperature will NOT be calculated\n", parts);
-			#endif
-			
-			soil_temp_error = 1;
-			return; // exits the function
-		}
-
-		sTempR[i] = st->oldsTempR[i] + parts * part2;
-
-		if (toDebug) {
-			#ifndef RSOILWAT
-				printf("\nk %d cs %5.4f sh %5.4f p1 %5.4f ps %5.4f p2 %5.4f p %5.4f", k, cs, sh, part1, parts, part2, parts * part2);
-			#else
-				Rprintf("\nk %d cs %5.4f sh %5.4f p1 %5.4f ps %5.4f p2 %5.4f p %5.4f", k, cs, sh, part1, parts, part2, parts * part2);
-			#endif
-		}
-	}
-
-	sTempR[nRgr + 1] = meanAirTemp; // again... the last layer of the interpolation is set to the constant meanAirTemp
-
-	if (toDebug) {
-		#ifndef RSOILWAT
-			printf("\nSoil temperature profile values:");
-			for (i = 0; i <= nRgr + 1; i++)
-				printf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
-		#else
-			Rprintf("\nSoil temperature profile values:");
-			for (i = 0; i <= nRgr + 1; i++)
-				Rprintf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
-		#endif
-	}
 
 
-	// convert soil temperature of soil temperature profile 'sTempR' to soil profile layers 'sTemp'
-	surfaceTemp[Yesterday] = surfaceTemp[Today];
-	surfaceTemp[Today] = T1;
-	lyrTemp_to_lyrSoil_temperature(st->tlyrs_by_slyrs, nRgr, st->depthsR, sTempR, nlyrs, st->depths, width, sTemp);
-
-
-	// calculate fusion pools based on soil profile layers, soil freezing/thawing, and if necessary adjust soil temperature based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
+/* Parton, W. J., M. Hartman, D. Ojima, and D. Schimel. 1998. DAYCENT and its land surface submodel: description and testing. Global and Planetary Change 19:35-48.
+A layer was considered frozen if its average soil temperature was below the freezing temperature (-1C), and theta(sat) - theta(cur) < 0.13,
+where theta(sat) was the saturated volumetric wetness of the layer and theta(cur) was the simulated volumetric wetness (Flerchinger and Saxton, 1989).
+The hydraulic conductivity of a frozen layer was reduced to 0.00001 cm/s.
+*/
 	sFadjusted_sTemp = 0;
-	for (i = 0; i < nlyrs; i++)	// now that you have calculated the new temperatures can determine whether the soil layers should be frozen or not.
-	{
-		j = 0;
+	for (i = 0; i < nlyrs; i++){
+
+// VWCnew: 
+/*		j = 0;
 		while (st->lyrFrozen[j] == 1) //do this to determine the i-th non frozen layer, to use in the fusion pool calculation
 		{
 			j++;
 		}
-		
+*/		
 		// only need to do something if the soil temperature is at the freezing point, or the soil temperature is transitioning over the freezing point
+// VWCnew: remove
 		if (EQ(oldsTemp[i], fp) || (GT(oldsTemp[i],fp) && LT(sTemp[i],fp))|| (LT(oldsTemp[i],fp) && GT(sTemp[i],fp)) ){
-			deltaTemp = sTemp[i] - oldsTemp[i];	// determine how much the temperature of the soil layer changed
-			sm = swc[j];
-			sh = sm + (shParam * (1. - sm));
-			sFusionPool[i] = ((fH2O*(swc[i]/width[i]))/sh)*tc*(deltaTemp/abs(deltaTemp));// calculate the fusion pool of the current soil layer, or how much temperature change must happen to freeze/thaw a soil layer
+			// Determine how much the temperature of the soil layer changed since yesterday
+			deltaTemp = sTemp[i] - oldsTemp[i]; // deltaTemp = [delta]T(sav)i; oldsTemp[i] = T(sav-1)i
+// VWCnew: 
+//			sm = swc[j];
+//			sh = sm + (shParam * (1. - sm));
+//			sFusionPool[i] = ((fH2O*(swc[i]/width[i]))/sh)*tc*(deltaTemp/abs(deltaTemp));// calculate the fusion pool of the current soil layer, or how much temperature change must happen to freeze/thaw a soil layer
 
+			sh = vwc[i] + shParam * (1. - vwc[i]); // Cis = sh * 1 / (bulk soil density): "Cis is the heat capacity of the i-th non-frozen soil layer (cal cm-3 K-1)" estimated based on Parton 1978 eq. 2.23 units(sh) = (cal g-1 C-1); unit conversion factor = 1 / 'bulk soil density' with units [g/cm3]
+bDensity;
+// should sh of thawing be different than the value of freezing?
+			sFusionPool[i] = - fH2O * vwc[i] / sh * tc; // Eitzinger et al. (2000): eq. 3 wherein sFusionPool[i] = Pi = the fusion energy pool of a soil layer given as a temperature equivalent (K), i.e., Pi = temperature change that must happen to freeze/thaw a soil layer
+
+			// Calculate actual status of the fusion energy pool in [Celsius]; Eitzinger et al. (2000): eq. 6 wherein sFusionPool_actual[i] = Pai and sTemp[i] = T(sav-1)i + [delta]T(sav)i
+			// If the freezing process of a relevant soil layer is not finished within a day, it is assumed that no change in the daily average soil layer temperature (Eq. (4)) [...] can occur.
+			// It implies that the state of the soil layer (frozen, partly frozen, or unfrozen) is not changed by the diurnal soil temperature change within the daily time step.
+//	Process				Yesterday	Today
+//						Tsoil		Tsoil	Efusion_avail (Pai)	Efusion_req (Pi)
+//	above freezing		> fp		> fp
+//	partial freezing	>= fp		<= fp	< 0					< Pai
+//	full freezing		>= fp		< fp
+//	below freezing		< fp		< fp
+//	partial thawing		< fp		>= fp
+//	full thawing		< fp		> fp
+
+			if( GT(oldsTemp[i], fp) && LE(sTemp[i], fp) ){
+				// soil above freezing yesterday; soil below freezing today
+				sFusionPool_actual[i] = sTemp[i];
+			} else {
+				if( LT(st->oldsFusionPool_actual[i], fp) && (LE(sTemp[i], fp) || GT(sTemp[i], fp)) ){
+					// actual fusion pool below freezing yesterday; soil below freezing today
+					// or actual fusion pool above freezing yesterday; soil below freezing today
+					sFusionPool_actual[i] = st->oldsFusionPool_actual[i] + deltaTemp;
+				}
+			}
+
+//
+// old:
 			if( EQ(oldsTemp[i], fp) ) {// if the temperature of the soil layer is at the freezing point, then we need to use the old fusion pool value with the newly calculated one
 				if( (LT(sFusionPool[i],0.00) && GT(st->oldsFusionPool[i],0.00)) || (GT(sFusionPool[i],0.00) && LT(st->oldsFusionPool[i],0.00)) ) {// here is just a condition to make sure that you weren't trying to freeze a layer, got half way through, and then the next day, start to thaw that layer. More for sign issues
 					sFusionPool[i] += st->oldsFusionPool[i];// if you have partially froze and now want to thaw, you need to take the newly calculated pool and add the old one. Since the signs should be different in this case, the new fusion pool should become a smaller value
@@ -1783,14 +1632,249 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		}
 	}
 
+	// updating the values of yesterdays fusion pools for the next time the function is called...
+	for (i = 0; i <= nlyrs; i++){
+		st->oldsFusionPool[i] = sFusionPool[i];
+		st->oldsFusionPool_actual[i] = sFusionPool_actual[i];
+	}
+
+sFadjusted_sTemp = 0;
+
+	return sFadjusted_sTemp;
+}
+
+/**********************************************************************
+ PURPOSE: Calculate soil temperature for each layer as described in Parton 1978, ch. 2.2.2 Temperature-profile Submodel, interpolation values are gotten from a mixture of interpolation & extrapolation
+// soil freezing based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
+
+ *NOTE* There will be some degree of error because the original equation is written for soil layers of 15 cm.  if soil layers aren't all 15 cm then linear regressions are used to estimate the values (error should be relatively small though).
+ *NOTE* Function might not work correctly if the maxDepth of the soil is > 180 cm, since Parton's equation goes only to 180 cm
+ *NOTE* Function will run if maxLyrDepth > maxDepth of the equation, but the results might be slightly off...
+
+ HISTORY:
+ 05/24/2012 (DLM) initial coding, still need to add to header file, handle if the layer height is > 15 cm properly, & test
+ 05/25/2012 (DLM) added all this 'fun' crazy linear interpolation stuff
+ 05/29/2012 (DLM) still working on the function, linear interpolation stuff should work now.  needs testing
+ 05/30/2012 (DLM) got rid of nasty segmentation fault error, also tested math seems correct after checking by hand.  added the ability to change the value of deltaX
+ 05/30/2012 (DLM) added # of lyrs check & maxdepth check at the beginning to make sure code doesn't blow up... if there isn't enough lyrs (ie < 2) or the maxdepth is too little (ie < deltaX * 2), the function quits out and reports an error to the user
+ 05/31/2012 (DLM) added theMaxDepth variable to allow the changing of the maxdepth of the equation, also now stores most interpolation data in a structure to reduce redundant interpolation calculations & speeds things up
+ 06/01/2012 (DLM) changed deltaT variable from hours to seconds, also changed some of the interpolation calculations so that swc, fc, & wp regressions are scaled properly... results are actually starting to look usable!
+ 06/13/2012 (DLM) no longer extrapolating values for interpolation layers that are out of the bounds of the soil layers... instead they are now set to the last soil layers values.  extrapolating code is still in the function and can be commented out and used if wishing to go back to extrapolating the values...
+ 03/28/2013 (clk) added a check to see if the soil was freezing/thawing and adjusted the soil temperature correctly during this phase change. If the temperature was in this area, also needed to re run soil_temperature_init on next call because you need to also change the regression temperatures to match the change in soil temperature.
+ 12/23/2014 (drs) re-wrote soil temperature functions:
+ 					- soil characteristics (fc, wp, bulk density) of soil temperature now integrated across all soil layers (instead of linear interpolation between the two extreme layers;
+					- interpolation for top soil layer with surface temperature only if no other information available
+					- mean of interpolations if multiple layers affect a soil profile layer
+					- reporting of surface soil temperature
+					- test iteration steps that they meet the criterion of a stable solution
+ 11/23/2015 (drs) added call to surface_temperature_under_snow()
+ 12/24/2015 (drs) fixed code following realization that equations in Parton 1978 were using units of volumetric soil water [cm3/cm3] instead of soil water content per layer [cm] - thanks to a comparison with the soil temperature formulations in R by Caitlin Andrews and Matt Petrie
+ 01/04/2016 (drs) moved code for freezing/thawing of soil layers to function adjust_Tsoil_by_freezing_and_thawing()
+
+ INPUTS:
+ airTemp - the average daily air temperature in celsius
+ pet - the potential evapotranspiration rate
+ aet - the actual evapotranspiration rate
+ biomass - the standing-crop biomass
+ swc - soil water content
+ bDensity - bulk density of the soil layers
+ width - width of layers
+ oldsTemp - soil layer temperatures from the previous day in celsius
+ nlyrs - number of soil layers, must be greater than 1 or the function won't work right
+ fc - field capacity for each soil layer
+ wp - wilting point for each soil layer
+ bmLimiter - biomass limiter constant (300 g/m^2)
+ t1Params - constants for the avg temp at the top of soil equation (15, -4, 600) there is 3 of them
+ csParams - constants for the soil thermal conductivity equation (0.00070, 0.00030) there is 2 of them
+ shParam - constant for the specific heat capacity equation (0.18)
+ snowpack - the amount of snow on the ground
+ meanAirTemp - the avg air temperature for the month in celsius
+ deltaX - the distance between profile points (default is 15 from Parton's equation, wouldn't recommend changing the value from that).  180 must be evenly divisible by this number.
+ theMaxDepth - the lower bound of the equation (default is 180 from Parton's equation, wouldn't recommend changing the value from that).
+ nRgr - the number of regressions (1 extra value is needed for the sTempR and oldsTempR for the last layer
+ sFadjusted_sTemp - if soil layer temperature was changed due to freezing/thawing; if so, then temperature of the soil temperature layers need to updated as well
+
+ OUTPUT:
+ sTemp - soil layer temperatures in celsius
+ **********************************************************************/
+
+void soil_temperature(double airTemp, double pet, double aet, double biomass, double swc[], double bDensity[], double width[], double oldsTemp[], double sTemp[],double surfaceTemp[2],
+		unsigned int nlyrs, double fc[], double wp[], double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1, double csParam2, double shParam,
+		double snowpack, double meanAirTemp, double deltaX, double theMaxDepth, unsigned int nRgr) {
+
+	unsigned int i, k, toDebug = 0, sFadjusted_sTemp;
+	double T1, cs, sh, pe, deltaT, parts, part1, part2, vwc[nlyrs], vwcR[nRgr], sTempR[nRgr + 1];
+
+	/* local variables explained: 
+	 toDebug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
+	 T1 - the average daily temperature at the top of the soil in celsius
+	 vwc - volumetric soil-water content
+	 pe - ratio of the difference between volumetric soil-water content & soil-water content
+	 at the wilting point to the difference between soil water content at field capacity &
+	 soil-water content at wilting point.
+	 cs - soil thermal conductivity
+	 sh - specific heat capacity
+	 deltaT - time step (24 hr)
+	 depths[nlyrs] - the depths of each layer of soil, calculated in the function
+	 vwcR[], sTempR[] - anything with a R at the end of the variable name stands for the interpolation of that array
+	 */
+
+	if (toDebug){
+		#ifndef RSOILWAT
+			printf("\n\nNew call to soil_temperature()");
+		#else
+			Rprintf("\n\nNew call to soil_temperature()");
+		#endif
+	}
+
+
+	if (!soil_temp_init) {
+		if (toDebug) {
+			#ifndef RSOILWAT
+				printf("\nCalling soil_temperature_init\n");
+			#else
+				Rprintf("\nCalling soil_temperature_init\n");
+			#endif
+		}
+
+		surfaceTemp[Today] = airTemp;
+		soil_temperature_init(bDensity, width, surfaceTemp[Today], oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
+	}
+	
+	if (soil_temp_error) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
+		return;
+
+
+	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
+
+	deltaT = 86400.0; // the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400 seconds)
+
+	// calculating T1, the average daily soil surface temperature
+	if(GT(snowpack, 0.0)) {// if there is snow on the ground, then T1 based on Koren JGR 1999; previously was simply set to -2 C
+		T1 = surface_temperature_under_snow(airTemp, oldsTemp[1], snowpack, width[1]);
+		if(toDebug) printf("\nThere is snow on the ground, T1=%5.4f calculated using Koren et al JGR 1999\n", T1);
+	} else {
+		if (LE(biomass, bmLimiter)) { // bmLimiter = 300
+			T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
+			if (toDebug) {
+				#ifndef RSOILWAT
+					printf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
+						   airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
+				#else
+					Rprintf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
+							airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
+				#endif
+			}
+		} else {
+			T1 = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
+			if (toDebug){
+				#ifndef RSOILWAT
+					printf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
+				#else
+					Rprintf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
+				#endif
+			}
+		}
+	}
+
+
+	// calculate volumetric soil water content for soil temperature layers
+	for (i = 0; i < nRgr; i++)
+		vwc[i] = swc[i] / width[i];
+	
+	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, vwc, nRgr, deltaX, vwcR);
+
+	if (toDebug) {
+		#ifndef RSOILWAT
+			printf("\nregression values:");
+				for (i = 0; i < nRgr; i++)
+					printf("\nk %2d width %5.4f depth %5.4f vwcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f", i, deltaX, st->depthsR[i], vwcR[i], st->fcR[i], st->wpR[i], st->oldsTempR[i], st->bDensityR[i]);
+
+			printf("\nlayer values:");
+				for (i = 0; i < nlyrs; i++)
+					printf("\ni %2d width %5.4f depth %5.4f vwc %5.4f fc %5.4f wp %5.4f oldsTemp %5.4f bDensity %5.4f", i, width[i], st->depths[i], vwc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
+		#else
+			Rprintf("\nregression values:");
+				for (i = 0; i < nRgr; i++)
+					Rprintf("\nk %2d width %5.4f depth %5.4f vwcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f", i, deltaX, st->depthsR[i], vwcR[i], st->fcR[i], st->wpR[i], st->oldsTempR[i], st->bDensityR[i]);
+
+			Rprintf("\nlayer values:");
+				for (i = 0; i < nlyrs; i++)
+					Rprintf("\ni %2d width %5.4f depth %5.4f vwc %5.4f fc %5.4f wp %5.4f oldsTemp %5.4f bDensity %5.4f", i, width[i], st->depths[i], vwc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
+		#endif
+	}
+
+	// calculate the new soil temperature for each layer
+	sTempR[0] = T1; //index 0 indicates surface and not first layer
+	part1 = deltaT / squared(deltaX);
+	for (i = 1; i < nRgr + 1; i++) { // goes to nRgr, because the soil temp of the last interpolation layer (nRgr) is the meanAirTemp
+		k = i - 1;
+		pe = (vwcR[k] - st->wpR[k]) / (st->fcR[k] - st->wpR[k]); // the units are volumetric!
+		cs = csParam1 + (pe * csParam2); // Parton (1978) eq. 2.22: soil thermal conductivity; csParam1 = 0.0007, csParam2 = 0.0003
+		sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
+
+		// breaking the equation down into parts
+		parts = part1 * cs / (sh * st->bDensityR[k]);
+		part2 = sTempR[i - 1] - 2 * st->oldsTempR[i] + st->oldsTempR[i + 1];
+
+		//Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
+// VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)
+/*		if (GT(parts, 0.5)) {//Criterion for a stable solution
+			#ifndef RSOILWAT
+				printf("\nSOIL_TEMP FUNCTION ERROR: solution is not stable: %f > 0.5... soil temperature will NOT be calculated\n", parts);
+			#else
+				Rprintf("\nSOIL_TEMP FUNCTION ERROR: solution is not stable: %f > 0.5... soil temperature will NOT be calculated\n", parts);
+			#endif
+			
+			soil_temp_error = 1;
+			return; // exits the function
+		}
+*/
+		sTempR[i] = st->oldsTempR[i] + parts * part2; // Parton (1978) eq. 2.21
+
+		if (toDebug) {
+			#ifndef RSOILWAT
+				printf("\nk %d cs %5.4f sh %5.4f p1 %5.4f ps %5.4f p2 %5.4f p %5.4f", k, cs, sh, part1, parts, part2, parts * part2);
+			#else
+				Rprintf("\nk %d cs %5.4f sh %5.4f p1 %5.4f ps %5.4f p2 %5.4f p %5.4f", k, cs, sh, part1, parts, part2, parts * part2);
+			#endif
+		}
+	}
+
+	sTempR[nRgr + 1] = meanAirTemp; // again... the last layer of the interpolation is set to the constant meanAirTemp
+
+	if (toDebug) {
+		#ifndef RSOILWAT
+			printf("\nSoil temperature profile values:");
+			for (i = 0; i <= nRgr + 1; i++)
+				printf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
+		#else
+			Rprintf("\nSoil temperature profile values:");
+			for (i = 0; i <= nRgr + 1; i++)
+				Rprintf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
+		#endif
+	}
+
+
+	// convert soil temperature of soil temperature profile 'sTempR' to soil profile layers 'sTemp'
+	surfaceTemp[Yesterday] = surfaceTemp[Today];
+	surfaceTemp[Today] = T1;
+	lyrTemp_to_lyrSoil_temperature(st->tlyrs_by_slyrs, nRgr, st->depthsR, sTempR, nlyrs, st->depths, width, sTemp);
+
+	
+	// Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
+//TODO: This function is currently a stub
+	sFadjusted_sTemp = adjust_Tsoil_by_freezing_and_thawing(oldsTemp, sTemp, shParam, nlyrs, vwc, bDensity);
+
 	// update sTempR if sTemp were changed due to soil freezing/thawing
 	if(sFadjusted_sTemp){
 		lyrSoil_to_lyrTemp_temperature(nlyrs, st->depths, sTemp, meanAirTemp, nRgr, st->depthsR, theMaxDepth, sTempR);
 	}
+
 	
 	if (toDebug) {
 		#ifndef RSOILWAT
-			printf("\nsTemp %5.4f surface; soil freezing/thawing: %i", surfaceTemp[Today], sFadjusted_sTemp);
+			printf("\nsTemp %5.4f surface; soil temperature adjusted by freeze/thaw: %i", surfaceTemp[Today], sFadjusted_sTemp);
 
 			printf("\nSoil temperature profile values:");
 			for (i = 0; i <= nRgr + 1; i++)
@@ -1798,9 +1882,9 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 			
 			printf("\nSoil profile layer temperatures:");
 			for (i = 0; i < nlyrs; i++)
-				printf("\ni %d oldTemp %5.4f sTemp %5.4f depth %5.4f", i, oldsTemp[i], sTemp[i], st->depths[i]);
+				printf("\ni %d oldTemp %5.4f sTemp %5.4f depth %5.4f frozen %d", i, oldsTemp[i], sTemp[i], st->depths[i], st->lyrFrozen[i]);
 		#else
-			Rprintf("\nsTemp %5.4f surface; soil freezing/thawing: %i", surfaceTemp[Today], sFadjusted_sTemp);
+			Rprintf("\nsTemp %5.4f surface; soil temperature adjusted by freeze/thaw: %i", surfaceTemp[Today], sFadjusted_sTemp);
 
 			Rprintf("\nSoil temperature profile values:");
 			for (i = 0; i <= nRgr + 1; i++)
@@ -1808,17 +1892,13 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 			Rprintf("\nSoil profile layer temperatures:");
 			for (i = 0; i < nlyrs; i++)
-				Rprintf("\ni %d oldTemp %5.4f sTemp %5.4f depth %5.4f", i, oldsTemp[i], sTemp[i], st->depths[i]);
+				Rprintf("\ni %d oldTemp %5.4f sTemp %5.4f depth %5.4f frozen %d", i, oldsTemp[i], sTemp[i], st->depths[i], st->lyrFrozen[i]);
 		#endif
 	}
 
 	// updating the values of yesterdays temperature for the next time the function is called...
 	for (i = 0; i <= nRgr + 1; i++){
 		st->oldsTempR[i] = sTempR[i];
-	}
-	// updating the values of yesterdays fusion pools for the next time the function is called...
-	for (i = 0; i <= nlyrs; i++){
-		st->oldsFusionPool[i] = sFusionPool[i];
 	}
 
 	if (toDebug) {
