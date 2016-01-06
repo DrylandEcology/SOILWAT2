@@ -70,8 +70,13 @@
  to only happen when the top soil layer is not frozen.
  06/24/2013	(rjm)	made 'soil_temp_error', 'soil_temp_init' and 'fusion_pool_init' into global variable (instead of module-level) and moved them to SW_Flow.c: otherwise they will not get reset to 0 (in call to construct) between consecutive calls as a dynamic library
  07/09/2013	(clk)	initialized the two new functions: forb_intercepted_water and forb_EsT_partitioning
-
- */
+ 01/05/2016 (drs)	added new function set_frozen_unfrozen() to determine frozen/unfrozen status of soil layers based on criteria by Parton et al. 1998 GCB
+ 					re-wrote code for consequences of a frozen soil layer: now based on Parton et al. 1998 GCB
+ 						- infiltrate_water_high(): if frozen, saturated hydraulic conductivity is reduced to 1%; infiltration is not impeded by a frozen soil
+ 						- infiltrate_water_low(): if frozen, unsaturated hydraulic conductivity is reduced to 1%
+ 						- hydraulic_redistribution(): no hd between two layers if at least one is frozen
+ 						- remove_from_soil(): no evaporation and transpiration from a frozen soil layer
+*/
 /********************************************************/
 /********************************************************/
 
@@ -321,43 +326,45 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 	unsigned int i;
 	int j;
 	double d[nlyrs];
-	double push;
+	double push, ksat_rel;
 
 	ST_RGR_VALUES *st = &stValues;
 
-	if (st->lyrFrozen[0] == 0) {
-		swc[0] += pptleft;
-		(*standingWater) = 0.;
-	}
+	// Infiltration
+	swc[0] += pptleft;
+	(*standingWater) = 0.;
 
+	// Saturated percolation
 	for (i = 0; i < nlyrs; i++) {
-		if (st->lyrFrozen[i] == 0 && st->lyrFrozen[i + 1] == 0) {
-			/* calculate potential saturated percolation */
-			d[i] = fmax(0., (1. - impermeability[i]) * (swc[i] - swcfc[i]) );
-			drain[i] = d[i];
+		if (st->lyrFrozen[i] == 1) {
+			ksat_rel = 0.01; // roughly estimated from Parton et al. 1998 GCB
+		} else {
+			ksat_rel = 1.;
+		}
+		
+		/* calculate potential saturated percolation */
+		d[i] = fmax(0., ksat_rel * (1. - impermeability[i]) * (swc[i] - swcfc[i]) );
+		drain[i] = d[i];
 
-			if (i < nlyrs - 1) { /* percolate up to next-to-last layer */
-				swc[i + 1] += d[i];
-				swc[i] -= d[i];
-			} else { /* percolate last layer */
-				(*drainout) = d[i];
-				swc[i] -= (*drainout);
-			}
+		if (i < nlyrs - 1) { /* percolate up to next-to-last layer */
+			swc[i + 1] += d[i];
+			swc[i] -= d[i];
+		} else { /* percolate last layer */
+			(*drainout) = d[i];
+			swc[i] -= (*drainout);
 		}
 	}
 
 	/* adjust (i.e., push water upwards) if water content of a layer is now above saturated water content */
 	for (j = nlyrs; j >= 0; j--) {
-		if (st->lyrFrozen[i] == 0) {
-			if (GT(swc[j], swcsat[j])) {
-				push = swc[j] - swcsat[j];
-				swc[j] -= push;
-				if (j > 0) {
-					drain[j - 1] -= push;
-					swc[j - 1] += push;
-				} else {
-					(*standingWater) = push;
-				}
+		if (GT(swc[j], swcsat[j])) {
+			push = swc[j] - swcsat[j];
+			swc[j] -= push;
+			if (j > 0) {
+				drain[j - 1] -= push;
+				swc[j - 1] += push;
+			} else {
+				(*standingWater) = push;
 			}
 		}
 	}
@@ -985,7 +992,7 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 		return;
 
 	for (i = 0; i < nlyrs; i++) {
-		if (st->lyrFrozen[i] == 0) {
+		if (st->lyrFrozen[i] == 0) { // no evaporation and transpiration from frozen soil layer
 			q = (swpfrac[i] / sumswp) * rate;
 			swc_avail = fmax(0., swc[i] - swcmin[i]);
 			qty[i] = fmin( q, swc_avail);
@@ -1034,45 +1041,47 @@ void infiltrate_water_low(double swc[], double drain[], double *drainout, unsign
 
 	unsigned int i;
 	int j;
-	double drainlw = 0.0, swc_avail, drainpot, d[nlyrs], push;
+	double drainlw = 0.0, swc_avail, drainpot, d[nlyrs], push, kunsat_rel	;
 
 	ST_RGR_VALUES *st = &stValues;
 
+	// Unsaturated percolation
 	for (i = 0; i < nlyrs; i++) {
-		if (st->lyrFrozen[i] == 0 && st->lyrFrozen[i + 1] == 0) {
-			/* calculate potential unsaturated percolation */
-			if (LE(swc[i], swcmin[i])) { /* in original code was !GT(swc[i], swcwp[i]) equivalent to LE(swc[i], swcwp[i]), but then water is drained to swcmin nevertheless - maybe should be LE(swc[i], swcmin[i]) */
-				d[i] = 0.;
+		/* calculate potential unsaturated percolation */
+		if (LE(swc[i], swcmin[i])) { /* in original code was !GT(swc[i], swcwp[i]) equivalent to LE(swc[i], swcwp[i]), but then water is drained to swcmin nevertheless - maybe should be LE(swc[i], swcmin[i]) */
+			d[i] = 0.;
+		} else {
+			if (st->lyrFrozen[i] == 1) {
+				kunsat_rel = 0.01; // roughly estimated from Parton et al. 1998 GCB
 			} else {
-				swc_avail = fmax(0., swc[i] - swcmin[i]);
-				drainpot = GT(swc[i], swcfc[i]) ? sdrainpar : sdrainpar * exp((swc[i] - swcfc[i]) * sdraindpth / width[i]);
-				d[i] = (1. - impermeability[i]) * fmin(swc_avail, drainpot);
+				kunsat_rel = 1.;
 			}
-			drain[i] += d[i];
+			swc_avail = fmax(0., swc[i] - swcmin[i]);
+			drainpot = GT(swc[i], swcfc[i]) ? sdrainpar : sdrainpar * exp((swc[i] - swcfc[i]) * sdraindpth / width[i]);
+			d[i] = kunsat_rel * (1. - impermeability[i]) * fmin(swc_avail, drainpot);
+		}
+		drain[i] += d[i];
 
-			if (i < nlyrs - 1) { /* percolate up to next-to-last layer */
-				swc[i + 1] += d[i];
-				swc[i] -= d[i];
-			} else { /* percolate last layer */
-				drainlw = fmax( d[i], 0.0);
-				(*drainout) += drainlw;
-				swc[i] -= drainlw;
-			}
+		if (i < nlyrs - 1) { /* percolate up to next-to-last layer */
+			swc[i + 1] += d[i];
+			swc[i] -= d[i];
+		} else { /* percolate last layer */
+			drainlw = fmax( d[i], 0.0);
+			(*drainout) += drainlw;
+			swc[i] -= drainlw;
 		}
 	}
 
 	/* adjust (i.e., push water upwards) if water content of a layer is now above saturated water content */
 	for (j = nlyrs; j >= 0; j--) {
-		if (st->lyrFrozen[i] == 0) {
-			if (GT(swc[j], swcsat[j])) {
-				push = swc[j] - swcsat[j];
-				swc[j] -= push;
-				if (j > 0) {
-					drain[j - 1] -= push;
-					swc[j - 1] += push;
-				} else {
-					(*standingWater) += push;
-				}
+		if (GT(swc[j], swcsat[j])) {
+			push = swc[j] - swcsat[j];
+			swc[j] -= push;
+			if (j > 0) {
+				drain[j - 1] -= push;
+				swc[j - 1] += push;
+			} else {
+				(*standingWater) += push;
 			}
 		}
 	}
@@ -1124,8 +1133,7 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 
 		for (j = i + 1; j < nlyrs; j++) {
 
-			if (LT(swp[i], swpwp[i]) || LT(swp[j], swpwp[j])) { /* hydred occurs only if source layer's swp is above wilting point */
-
+			if ((LT(swp[i], swpwp[i]) || LT(swp[j], swpwp[j])) && (st->lyrFrozen[i] == 0) && (st->lyrFrozen[j] == 0)) { /* hydred occurs only if at least one soil layer's swp is above wilting point and both soil layers are not frozen */
 				if (GT(swc[i], swc[j])) {
 					Rx = lyrRootCo[i];
 				} else {
@@ -1156,12 +1164,10 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 	}
 
 	for (i = 0; i < nlyrs; i++) {
-		if (st->lyrFrozen[i] == 0) {
-			for (j = 0; j < nlyrs; j++) {
-				hydred[i] += hydredmat[i][j] * scale;
-			}
-			swc[i] += hydred[i];
+		for (j = 0; j < nlyrs; j++) {
+			hydred[i] += hydredmat[i][j] * scale;
 		}
+		swc[i] += hydred[i];
 	}
 
 }
@@ -1293,11 +1299,11 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
 }
 
 
-double surface_temperature_under_snow(double airTemp, double oldsTemp1, double snowpack, double width1)
-{
+double surface_temperature_under_snow(double airTemp, double oldsTemp1, double snowdepth, double width1) {
 /*Calculating surface temperature under snow, for use in Soilwat v.31
 Koren JGR 1999
 JBB (4/2/2015)
+ 01/06/2016 (drs)	surface_temperature_under_snow(): changed snowpack to snowdepth (Koren et al. 1999 use snow depth and not snow water equivalents in their equation 25)
 
 PURPOSE: Calculate T1 (temperature at top of the soil profile) when snow is present
 PROPOSED LOCATION: Function will be called in the "soil_temperature" function in SW_Flow_lib.C
@@ -1309,6 +1315,7 @@ PROPOSED LOCATION: Function will be called in the "soil_temperature" function in
 SUMMARY: This function simulates the effects of altered heat flow between the snow and soil surface (approx 0-5 cm depth) due to varied snowpack thickness on the temperature top of the first soil layer.
 Estimates how much snow cover insulates surface soil temperature from air temperature.
 Based on: Koren, V., J. Schaake, K. Mitchell, Q. Y. Duan, F. Chen, and J. M. Baker. 1999. A parameterization of snowpack and frozen ground intended for NCEP weather and climate models. Journal of Geophysical Research: Atmospheres 104:19569-19585.
+	eq. 25 and 26
 
 NOTES:
 The zeta scalar and snow depth influence this equation to a great degree. As zeta approaches infinity, there is greater heat flow between air temp and soil temp and T_sfc approaches Ta very quickly; if lower zeta, lower heat flow and T_sfc approaches Ta less quickly. This contradicts the statements made by Koren (1999), which is why the exercise below proved useful. Also, zeta cannot equal zero.
@@ -1333,17 +1340,17 @@ Explain meaning of zeta and w
 
 	double zeta, w;
 
-	if(GT(snowpack, 0.5*width1) ){   //if snow depth is greater than 1/2 first soil layer depth: set zeta constant to 0.025 -  from Koren et al for when snow is shallow
+	if(GT(snowdepth, 0.5*width1) ){   //if snow depth is greater than 1/2 first soil layer depth: set zeta constant to 0.025 -  from Koren et al for when snow is deep
 		zeta = 0.025;
-	} else { //set zeta constant to 0.5 -  from Koren et al for when snow is deeper 
+	} else { //set zeta constant to 0.5 -  from Koren et al for when snow is shallow 
 		zeta = 0.5;
 	}
 
 	//calculate w scalar
-	w = (0.5 * zeta * width1) / (snowpack + (0.5 * zeta * width1));
+	w = (0.5 * zeta * width1) / (snowdepth + (0.5 * zeta * width1));
 
 	//calculate T1
-	return (w * airTemp + (1 - w) * oldsTemp1);
+	return (w * airTemp + (1. - w) * oldsTemp1);
 }	
 
 
@@ -1499,149 +1506,111 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 		}
 }
 
+void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[], double swc_sat[], double width[]){
+/*	01/06/2016 (drs)	function to determine if a soil layer is frozen or not
+
+	Parton, W. J., M. Hartman, D. Ojima, and D. Schimel. 1998. DAYCENT and its land surface submodel: description and testing. Global and Planetary Change 19:35-48.
+	A layer was considered frozen if its average soil temperature was below the freezing temperature (-1C), and theta(sat) - theta(cur) < 0.13,
+	where theta(sat) was the saturated volumetric wetness of the layer and theta(cur) was the simulated volumetric wetness (Flerchinger and Saxton, 1989).
+	The hydraulic conductivity of a frozen layer was reduced to 0.00001 cm/s.
+
+
+*/
+
+// 	TODO: freeze surfaceWater and restrict infiltration
+
+	unsigned int i;
+	ST_RGR_VALUES *st = &stValues;
+	
+	for (i = 0; i < nlyrs; i++){
+		if (LE(sTemp[i], FREEZING_TEMP_C) && GT(swc[i], swc_sat[i] - width[i] * MIN_VWC_TO_FREEZE) ){
+			st->lyrFrozen[i] = 1;
+		} else {
+			st->lyrFrozen[i] = 0;
+		}
+	}
+
+}
+
+
 unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTemp[], double shParam, unsigned int nlyrs, double vwc[], double bDensity[]){
 // Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
 // based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 
-// NOTE: THIS FUNCTION IS CURRENTLY NOT OPERATIONAL
+// NOTE: THIS FUNCTION IS CURRENTLY NOT OPERATIONAL: DESCRIPTION BY EITZINGER ET AL. 2000 SEEMS INSUFFICIENT
 
-	unsigned int i, toDebug = 0, sFadjusted_sTemp;
-	double deltaT, deltaTemp, sh, tc, fH2O, fp, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
+	unsigned int i, sFadjusted_sTemp;
+	double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
 
 	/* local variables explained: 
 	 toDebug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
 	 deltaTemp - the change in temperature for each day
-	 sh - heat capacity of the i-th non-frozen soil layer (cal cm-3 K-1)
+	 Cis - heat capacity of the i-th non-frozen soil layer (cal cm-3 K-1)
 	 sFusionPool[] - the fusion pool for each soil layer
 	 sFusionPool_actual[] - the actual fusion pool for each soil layer
 	 sFadjusted_sTemp - if soil layer temperature was changed due to freezing/thawing
 	 */
 
-	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
-
-	deltaT = 86400.0; // the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400 seconds)
-	tc = 0.02; 		// Eitzinger et al. (2000): correction factor for eq. 3 [unitless]; estimate based on data from CPER/SGS LTER
-	fp = -1.00;		// Eitzinger et al. (2000): freezing point of water in soil [C]; based on Parton 1984
-	fH2O = 80;		// Eitzinger et al. (2000): fusion energy of water; units = [cal cm-3]
+	ST_RGR_VALUES *st = &stValues;
 
 
 	if (!fusion_pool_init) {
-		for (i = 0; i < nlyrs; i++) {
-			st->oldsFusionPool[i] = 0.00;	// sets the inital fusion pool to zero
-//			if (LE(oldsTemp[i], fp))		// determines if the current layer is frozen or not
-//				st->lyrFrozen[i] = 1;
-//			else
-				st->lyrFrozen[i] = 0;
-		}
+		for (i = 0; i < nlyrs; i++)
+			st->oldsFusionPool_actual[i] = 0.;
 		fusion_pool_init = 1;
 	}
 
-
-
-/* Parton, W. J., M. Hartman, D. Ojima, and D. Schimel. 1998. DAYCENT and its land surface submodel: description and testing. Global and Planetary Change 19:35-48.
-A layer was considered frozen if its average soil temperature was below the freezing temperature (-1C), and theta(sat) - theta(cur) < 0.13,
-where theta(sat) was the saturated volumetric wetness of the layer and theta(cur) was the simulated volumetric wetness (Flerchinger and Saxton, 1989).
-The hydraulic conductivity of a frozen layer was reduced to 0.00001 cm/s.
-*/
 	sFadjusted_sTemp = 0;
+	
+/*
+// THIS FUNCTION IS CURRENTLY NOT OPERATIONAL: DESCRIPTION BY EITZINGER ET AL. 2000 SEEMS INSUFFICIENT
 	for (i = 0; i < nlyrs; i++){
-
-// VWCnew: 
-/*		j = 0;
-		while (st->lyrFrozen[j] == 1) //do this to determine the i-th non frozen layer, to use in the fusion pool calculation
-		{
-			j++;
-		}
-*/		
+		sFusionPool_actual[i] = 0.;
+		
 		// only need to do something if the soil temperature is at the freezing point, or the soil temperature is transitioning over the freezing point
-// VWCnew: remove
-		if (EQ(oldsTemp[i], fp) || (GT(oldsTemp[i],fp) && LT(sTemp[i],fp))|| (LT(oldsTemp[i],fp) && GT(sTemp[i],fp)) ){
-			// Determine how much the temperature of the soil layer changed since yesterday
-			deltaTemp = sTemp[i] - oldsTemp[i]; // deltaTemp = [delta]T(sav)i; oldsTemp[i] = T(sav-1)i
-// VWCnew: 
-//			sm = swc[j];
-//			sh = sm + (shParam * (1. - sm));
-//			sFusionPool[i] = ((fH2O*(swc[i]/width[i]))/sh)*tc*(deltaTemp/abs(deltaTemp));// calculate the fusion pool of the current soil layer, or how much temperature change must happen to freeze/thaw a soil layer
+		if (EQ(oldsTemp[i], FREEZING_TEMP_C) || (GT(oldsTemp[i], FREEZING_TEMP_C) && LT(sTemp[i], FREEZING_TEMP_C))|| (LT(oldsTemp[i], FREEZING_TEMP_C) && GT(sTemp[i], FREEZING_TEMP_C)) ){
 
-			sh = vwc[i] + shParam * (1. - vwc[i]); // Cis = sh * 1 / (bulk soil density): "Cis is the heat capacity of the i-th non-frozen soil layer (cal cm-3 K-1)" estimated based on Parton 1978 eq. 2.23 units(sh) = (cal g-1 C-1); unit conversion factor = 1 / 'bulk soil density' with units [g/cm3]
-bDensity;
-// should sh of thawing be different than the value of freezing?
-			sFusionPool[i] = - fH2O * vwc[i] / sh * tc; // Eitzinger et al. (2000): eq. 3 wherein sFusionPool[i] = Pi = the fusion energy pool of a soil layer given as a temperature equivalent (K), i.e., Pi = temperature change that must happen to freeze/thaw a soil layer
+			Cis = (vwc[i] + shParam * (1. - vwc[i])) * bDensity[i]; // Cis = sh * (bulk soil density): "Cis is the heat capacity of the i-th non-frozen soil layer (cal cm-3 K-1)" estimated based on Parton 1978 eq. 2.23 units(sh) = [cal g-1 C-1]; unit conversion factor = 'bulk soil density' with units [g/cm3]
+			sFusionPool[i] = - FUSIONHEAT_H2O * vwc[i] / Cis * TCORRECTION; // Eitzinger et al. (2000): eq. 3 wherein sFusionPool[i] = Pi = the fusion energy pool of a soil layer given as a temperature equivalent (K), i.e., Pi = temperature change that must happen to freeze/thaw a soil layer
 
-			// Calculate actual status of the fusion energy pool in [Celsius]; Eitzinger et al. (2000): eq. 6 wherein sFusionPool_actual[i] = Pai and sTemp[i] = T(sav-1)i + [delta]T(sav)i
-			// If the freezing process of a relevant soil layer is not finished within a day, it is assumed that no change in the daily average soil layer temperature (Eq. (4)) [...] can occur.
-			// It implies that the state of the soil layer (frozen, partly frozen, or unfrozen) is not changed by the diurnal soil temperature change within the daily time step.
-//	Process				Yesterday	Today
-//						Tsoil		Tsoil	Efusion_avail (Pai)	Efusion_req (Pi)
-//	above freezing		> fp		> fp
-//	partial freezing	>= fp		<= fp	< 0					< Pai
-//	full freezing		>= fp		< fp
-//	below freezing		< fp		< fp
-//	partial thawing		< fp		>= fp
-//	full thawing		< fp		> fp
-
-			if( GT(oldsTemp[i], fp) && LE(sTemp[i], fp) ){
-				// soil above freezing yesterday; soil below freezing today
+			// Calculate actual status of the fusion energy pool in [Celsius]
+			// Eitzinger et al. (2000): eq. 6 wherein sFusionPool_actual[i] = Pai and sTemp[i] = T(sav-1)i + [delta]T(sav)i
+			if( GT(oldsTemp[i], FREEZING_TEMP_C) && LE(sTemp[i], FREEZING_TEMP_C) ){ // Freezing?
+				// soil above freezing yesterday; soil at or below freezing today
 				sFusionPool_actual[i] = sTemp[i];
 			} else {
-				if( LT(st->oldsFusionPool_actual[i], fp) && (LE(sTemp[i], fp) || GT(sTemp[i], fp)) ){
-					// actual fusion pool below freezing yesterday; soil below freezing today
-					// or actual fusion pool above freezing yesterday; soil below freezing today
+				if( LT(st->oldsFusionPool_actual[i], FREEZING_TEMP_C) && (LE(sTemp[i], FREEZING_TEMP_C) || GT(sTemp[i], FREEZING_TEMP_C)) ){
+					// Thawing?
+					// actual fusion pool below freezing yesterday AND soil below or at freezing today
+// TODO: I guess the first should be above (and not below freezing yesterday)?
+					// actual fusion pool below freezing yesterday AND soil above freezing today
+					deltaTemp = sTemp[i] - oldsTemp[i]; // deltaTemp = [delta]T(sav)i; oldsTemp[i] = T(sav-1)i
 					sFusionPool_actual[i] = st->oldsFusionPool_actual[i] + deltaTemp;
-				}
-			}
-
-//
-// old:
-			if( EQ(oldsTemp[i], fp) ) {// if the temperature of the soil layer is at the freezing point, then we need to use the old fusion pool value with the newly calculated one
-				if( (LT(sFusionPool[i],0.00) && GT(st->oldsFusionPool[i],0.00)) || (GT(sFusionPool[i],0.00) && LT(st->oldsFusionPool[i],0.00)) ) {// here is just a condition to make sure that you weren't trying to freeze a layer, got half way through, and then the next day, start to thaw that layer. More for sign issues
-					sFusionPool[i] += st->oldsFusionPool[i];// if you have partially froze and now want to thaw, you need to take the newly calculated pool and add the old one. Since the signs should be different in this case, the new fusion pool should become a smaller value
 				} else {
-					sFusionPool[i] = st->oldsFusionPool[i];// if you are still freezing/thawing from the day before, you can just use the old fusion pool
+// TODO: What if not? This situation is not covered by Eitzinger et al. 2000
 				}
-			} else {
-				deltaTemp -= (fp - oldsTemp[i]);// if you aren't at the freezing point initially, then you need to adjust the deltaTemp to not account for the temperature getting to the freezing point, since you just want to determine how much past the freezing poin you get, if you do get past.
-			}
-
-			if( LT( abs(deltaTemp), abs(sFusionPool[i])) ) {// in this case, you don't have enough change in temperature to freeze/thaw the current layer fully
-				sFusionPool[i] -= deltaTemp; // adjust the fusion pool by the change in temperature
-				sTemp[i] = fp;// set the new temperature to the freezing point
-				st->lyrFrozen[i] = 1;// set the layer as frozen. For this I used that if the temperature was equal to the freezing point, the soil was at least partially frozen, so just used it as a frozen layer for simplicity
-			} else {
-				if( GT( abs(deltaTemp), abs(sFusionPool[i])) ) {// in this case you had more temperature change then the fusion pool
-					deltaTemp -= sFusionPool[i];	// adjust the deltaTemp by the total fusion pool to find out how much more you can change the temperature by
-					sFusionPool[i] = 0.00;// fusion pool is now zero
-					sTemp[i] = fp + deltaTemp;// adjust the temperature by the freezing point plus the deltaTemp, signs will work out so that freezing will lower temperature
-				
-					if ( LE(sTemp[i], fp) ) {// now determine whether the soil layer is frozen based on the new temperature, as mentioned above, the freezing point counts as a frozen layer, even though it is partially frozen
-						st->lyrFrozen[i]=1;
-					} else {
-						st->lyrFrozen[i]=0;
-					}
-				} else {							// in this case the deltaTemp and fusion pool were equal, so the soil layer should be just barely frozen/thawed
-					sFusionPool[i] = 0.00;		// fusion pool is now zero
-					sTemp[i] = fp + (deltaTemp/abs(deltaTemp));// adjust the temperature by the freezing pool plus the (deltaTemp/abs(deltaTemp)) which should pull out the sign of the deltaTemp. i.e. if deltaTemp is negative, should get a -1.
-					st->lyrFrozen[i] = 1 - st->lyrFrozen[i];// determine if the layer is frozen now. It should be the opposite of what it was going into this scenario, so 1 minus the current value should return the opposite, i.e. if layer is frozen lyrFrozen = 1, so lyrFrozen = 1 -1 = 0, which means not frozen.
-				}
-				//soil_temp_init = 0;
 			}
 			
-			sFadjusted_sTemp = 1;
-		} else {
-			sFusionPool[i] = 0.00;		//if your temperatures don't match any of those conditions, just set the fusion pool to zero and don't change the temperature at all
+			// Eitzinger et al. (2000): eq. 4
+			if( LT(sFusionPool_actual[i], 0.) && LT(sFusionPool[i], sFusionPool_actual[i]) ){
+// TODO: No condition for thawing considered?
+// TODO: If partial thawing/freezing, shouldn't sTemp[i] bet set to FREEZING_TEMP_C?
+				// If the freezing process of a relevant soil layer is not finished within a day, it is assumed that no change in the daily average soil layer temperature (Eq. (4)) [...] can occur.
+				// It implies that the state of the soil layer (frozen, partly frozen, or unfrozen) is not changed by the diurnal soil temperature change within the daily time step.
+				sTemp[i] = oldsTemp[i];
+				sFadjusted_sTemp = 1;
+			}
 		}
-	}
-
-	// updating the values of yesterdays fusion pools for the next time the function is called...
-	for (i = 0; i <= nlyrs; i++){
-		st->oldsFusionPool[i] = sFusionPool[i];
+		
+		// updating the values of yesterdays fusion pools for the next time the function is called...
 		st->oldsFusionPool_actual[i] = sFusionPool_actual[i];
+		
 	}
-
-sFadjusted_sTemp = 0;
-
+*/
 	return sFadjusted_sTemp;
 }
+
+
 
 /**********************************************************************
  PURPOSE: Calculate soil temperature for each layer as described in Parton 1978, ch. 2.2.2 Temperature-profile Submodel, interpolation values are gotten from a mixture of interpolation & extrapolation
@@ -1687,7 +1656,8 @@ sFadjusted_sTemp = 0;
  t1Params - constants for the avg temp at the top of soil equation (15, -4, 600) there is 3 of them
  csParams - constants for the soil thermal conductivity equation (0.00070, 0.00030) there is 2 of them
  shParam - constant for the specific heat capacity equation (0.18)
- snowpack - the amount of snow on the ground
+ sh -  specific heat capacity equation
+ snowdepth - the depth of snow cover (cm)
  meanAirTemp - the avg air temperature for the month in celsius
  deltaX - the distance between profile points (default is 15 from Parton's equation, wouldn't recommend changing the value from that).  180 must be evenly divisible by this number.
  theMaxDepth - the lower bound of the equation (default is 180 from Parton's equation, wouldn't recommend changing the value from that).
@@ -1698,13 +1668,16 @@ sFadjusted_sTemp = 0;
  sTemp - soil layer temperatures in celsius
  **********************************************************************/
 
-void soil_temperature(double airTemp, double pet, double aet, double biomass, double swc[], double bDensity[], double width[], double oldsTemp[], double sTemp[],double surfaceTemp[2],
+void soil_temperature(double airTemp, double pet, double aet, double biomass, double swc[], double swc_sat[], double bDensity[], double width[], double oldsTemp[], double sTemp[], double surfaceTemp[2],
 		unsigned int nlyrs, double fc[], double wp[], double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1, double csParam2, double shParam,
-		double snowpack, double meanAirTemp, double deltaX, double theMaxDepth, unsigned int nRgr) {
+		double snowdepth, double meanAirTemp, double deltaX, double theMaxDepth, unsigned int nRgr) {
 
 	unsigned int i, k, toDebug = 0, sFadjusted_sTemp;
-	double T1, cs, sh, pe, deltaT, parts, part1, part2, vwc[nlyrs], vwcR[nRgr], sTempR[nRgr + 1];
+	double T1, cs, sh, pe, parts, part1, part2, vwc[nlyrs], vwcR[nRgr], sTempR[nRgr + 1];
 
+	for (i = 0; i < nlyrs; i++)
+		vwc[i] = swc[i] / width[i];
+	
 	/* local variables explained: 
 	 toDebug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
 	 T1 - the average daily temperature at the top of the soil in celsius
@@ -1714,7 +1687,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	 soil-water content at wilting point.
 	 cs - soil thermal conductivity
 	 sh - specific heat capacity
-	 deltaT - time step (24 hr)
 	 depths[nlyrs] - the depths of each layer of soil, calculated in the function
 	 vwcR[], sTempR[] - anything with a R at the end of the variable name stands for the interpolation of that array
 	 */
@@ -1738,6 +1710,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		}
 
 		surfaceTemp[Today] = airTemp;
+		set_frozen_unfrozen(nlyrs, oldsTemp, swc, swc_sat, width);
 		soil_temperature_init(bDensity, width, surfaceTemp[Today], oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
 	}
 	
@@ -1747,11 +1720,10 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
-	deltaT = 86400.0; // the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400 seconds)
 
 	// calculating T1, the average daily soil surface temperature
-	if(GT(snowpack, 0.0)) {// if there is snow on the ground, then T1 based on Koren JGR 1999; previously was simply set to -2 C
-		T1 = surface_temperature_under_snow(airTemp, oldsTemp[1], snowpack, width[1]);
+	if(GT(snowdepth, 0.0)) {// if there is snow on the ground, then T1 based on Koren JGR 1999; previously was simply set to -2 C
+		T1 = surface_temperature_under_snow(airTemp, oldsTemp[1], snowdepth, width[1]);
 		if(toDebug) printf("\nThere is snow on the ground, T1=%5.4f calculated using Koren et al JGR 1999\n", T1);
 	} else {
 		if (LE(biomass, bmLimiter)) { // bmLimiter = 300
@@ -1779,9 +1751,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 
 	// calculate volumetric soil water content for soil temperature layers
-	for (i = 0; i < nRgr; i++)
-		vwc[i] = swc[i] / width[i];
-	
 	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, vwc, nRgr, deltaX, vwcR);
 
 	if (toDebug) {
@@ -1806,14 +1775,14 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 	// calculate the new soil temperature for each layer
 	sTempR[0] = T1; //index 0 indicates surface and not first layer
-	part1 = deltaT / squared(deltaX);
+	part1 = SEC_PER_DAY / squared(deltaX);
 	for (i = 1; i < nRgr + 1; i++) { // goes to nRgr, because the soil temp of the last interpolation layer (nRgr) is the meanAirTemp
 		k = i - 1;
 		pe = (vwcR[k] - st->wpR[k]) / (st->fcR[k] - st->wpR[k]); // the units are volumetric!
 		cs = csParam1 + (pe * csParam2); // Parton (1978) eq. 2.22: soil thermal conductivity; csParam1 = 0.0007, csParam2 = 0.0003
 		sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
-
-		// breaking the equation down into parts
+			// TODO: adjust thermal conductivity and heat capacity if layer is frozen
+			
 		parts = part1 * cs / (sh * st->bDensityR[k]);
 		part2 = sTempR[i - 1] - 2 * st->oldsTempR[i] + st->oldsTempR[i + 1];
 
@@ -1863,14 +1832,16 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 	
 	// Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
-//TODO: This function is currently a stub
 	sFadjusted_sTemp = adjust_Tsoil_by_freezing_and_thawing(oldsTemp, sTemp, shParam, nlyrs, vwc, bDensity);
 
 	// update sTempR if sTemp were changed due to soil freezing/thawing
 	if(sFadjusted_sTemp){
 		lyrSoil_to_lyrTemp_temperature(nlyrs, st->depths, sTemp, meanAirTemp, nRgr, st->depthsR, theMaxDepth, sTempR);
 	}
-
+	
+	// determine frozen/unfrozen status of soil layers
+	set_frozen_unfrozen(nlyrs, sTemp, swc, swc_sat, width);
+	
 	
 	if (toDebug) {
 		#ifndef RSOILWAT

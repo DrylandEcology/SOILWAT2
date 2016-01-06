@@ -17,10 +17,9 @@
 /********************************************************/
 
 #ifndef SOILW_DEF_H
-#define SOILW_DEF_H
-
+	#define SOILW_DEF_H
 #ifdef RSOILWAT
-#include <R.h>
+	#include <R.h>
 #include <Rdefines.h>
 #include <Rconfig.h>
 #include <Rinterface.h>
@@ -41,13 +40,13 @@
 #define MAX_ST_RGR 100
 
 #define SW_MISSING     999.     /* value to use as MISSING */
-
 #ifndef PI
 	#define PI          3.141592653589793238462643383279502884197169399375
 #endif
-
 #define PI2         6.28318530717958
 #define BARCONV     1024.
+#define SEC_PER_DAY	86400. // the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400 seconds)
+
 
 //was 256 & 1024...
 #define MAX_FILENAMESIZE 512

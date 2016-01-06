@@ -48,6 +48,14 @@
  */
 #define MAX_WINTLIT (blitter * .2)
 
+// based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
+#define TCORRECTION			0.02 	// correction factor for eq. 3 [unitless]; estimate based on data from CPER/SGS LTER
+#define FREEZING_TEMP_C		-1.		// freezing point of water in soil [C]; based on Parton 1984
+#define FUSIONHEAT_H2O		80.		// Eitzinger et al. (2000): fusion energy of water; units = [cal cm-3]
+
+// based on Parton, W. J., M. Hartman, D. Ojima, and D. Schimel. 1998. DAYCENT and its land surface submodel: description and testing. Global and Planetary Change 19:35-48.
+#define MIN_VWC_TO_FREEZE	0.13
+
 // this structure is for keeping track of the variables used in the soil_temperature function (mainly the regressions)
 typedef struct {
 
@@ -56,7 +64,7 @@ typedef struct {
 		   fcR[MAX_ST_RGR],//field capacity of soil layers for soil temperature calculations
 		   wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
 		   bDensityR[MAX_ST_RGR],//bulk density of soil layers for soil temperature calculations
-		   oldsFusionPool[MAX_LAYERS], oldsFusionPool_actual[MAX_LAYERS],
+		   oldsFusionPool_actual[MAX_LAYERS],
 		   oldsTempR[MAX_ST_RGR + 1];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
 
 	int lyrFrozen[MAX_LAYERS];
@@ -120,23 +128,12 @@ void infiltrate_water_low(double swc[], double drain[], double *drainout, unsign
 void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], double hydred[], unsigned int nlyrs, double maxCondroot, double swp50, double shapeCond,
 		double scale);
 
-void soil_temperature_init(double bDensity[],
-		                   double width[],
-						   double surfaceTemp,
-						   double oldsTemp[],
-						   double meanAirTemp,
-						   unsigned int nlyrs,
-						   double fc[],
-						   double wp[],
-						   double deltaX,
-						   double theMaxDepth,
-			         	   unsigned int nRgr);
-
 void soil_temperature(double airTemp,
 		              double pet,
 					  double aet,
 					  double biomass,
 					  double swc[],
+					  double swc_sat[],
 					  double bDensity[],
 					  double width[],
 					  double oldsTemp[],
@@ -152,7 +149,7 @@ void soil_temperature(double airTemp,
 					  double csParam1,
 					  double csParam2,
 					  double shParam,
-		              double snowpack,
+		              double snowdepth,
 					  double meanAirTemp,
 					  double deltaX,
 					  double theMaxDepth,
