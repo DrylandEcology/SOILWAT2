@@ -638,7 +638,7 @@ void SW_Water_Flow(void) {
 	if (SW_Site.use_soil_temp)
 		soil_temperature(SW_Weather.now.temp_avg[Today], SW_Soilwat.pet, SW_Soilwat.aet, biomass, lyrSWCBulk, lyrSWCBulk_Saturated, lyrbDensity, lyrWidths, lyroldsTemp, lyrsTemp,surfaceTemp, SW_Site.n_layers,
 				lyrSWCBulk_FieldCaps, lyrSWCBulk_Wiltpts, SW_Site.bmLimiter, SW_Site.t1Param1, SW_Site.t1Param2, SW_Site.t1Param3, SW_Site.csParam1, SW_Site.csParam2,
-				SW_Site.shParam, SW_Soilwat.snowpack[Today], SW_Site.meanAirTemp, SW_Site.stDeltaX, SW_Site.stMaxDepth, SW_Site.stNRGR);
+				SW_Site.shParam, SW_Soilwat.snowdepth, SW_Site.meanAirTemp, SW_Site.stDeltaX, SW_Site.stMaxDepth, SW_Site.stNRGR);
 
 	/* Soil Temperature ends here */
 
