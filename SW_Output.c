@@ -727,6 +727,7 @@ void onSet_SW_OUT(SEXP OUT) {
 					if (SW_Output[k].last_orig == 0) {
 						LogError(logfp, LOGFATAL, "output.in : Invalid ending day (%s), key=%s.", INTEGER(last)[k], key2str[k]);
 					}
+					SW_Output[k].outfile = (char *) CHAR(STRING_ELT(outfile, k));
 				}
 			}
 		}
