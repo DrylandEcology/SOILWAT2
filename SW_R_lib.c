@@ -324,6 +324,7 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 
 	SW_SIT_clear_layers();
 	SW_WTH_clear_runavg_list();
+	SW_VES_clear();
 
 	UNPROTECT(5);
 
