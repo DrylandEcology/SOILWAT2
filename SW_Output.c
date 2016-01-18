@@ -738,7 +738,7 @@ void onSet_SW_OUT(SEXP OUT) {
 }
 
 SEXP onGet_SW_OUT(void) {
-	int i;
+	int i, debug = 1;
 	Bool doOnce = FALSE;
 	OutKey k;
 	SEXP swOUT;
@@ -749,6 +749,8 @@ SEXP onGet_SW_OUT(void) {
 	SEXP mykey, myobj, period, sumtype, use, first, last, first_orig, last_orig, outfile;
 	char *cKEY[] = { "mykey", "myobj", "period", "sumtype", "use", "first", "last", "first_orig", "last_orig", "outfile" };
 
+	if(debug) Rprintf("onGet_SW_OUT begin\n");
+
 	PROTECT(swOUT = MAKE_CLASS("swOUT"));
 	PROTECT(OUT = NEW_OBJECT(swOUT));
 
@@ -756,12 +758,19 @@ SEXP onGet_SW_OUT(void) {
 	SET_STRING_ELT(sep, 0, mkChar(&_Sep));
 	SET_SLOT(OUT, install("outputSeparator"), sep);
 
-	PROTECT(useTimeStep = allocVector(LGLSXP,1));
-	PROTECT(timestep = allocVector(INTSXP, numPeriod));
+	if(debug) Rprintf("useTimeStep before assignment = %d\n", useTimeStep);
+	PROTECT(useTimeStep = NEW_LOGICAL(1));
 	if(numPeriod == 0)
 		LOGICAL(useTimeStep)[0] = FALSE;
 	else
 		LOGICAL(useTimeStep)[0] = TRUE;
+	if(debug){
+		Rprintf("useTimeStep after assignment = %d\n", useTimeStep);
+		Rprintf("	- type of slot (10 = 'logical') %d\n", TYPEOF(useTimeStep));
+		Rprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(useTimeStep));
+		Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(useTimeStep));
+	}
+	PROTECT(timestep = NEW_INTEGER(numPeriod));
 
 	PROTECT(mykey = NEW_INTEGER(SW_OUTNKEYS));
 	PROTECT(myobj = NEW_INTEGER(SW_OUTNKEYS));
@@ -769,7 +778,6 @@ SEXP onGet_SW_OUT(void) {
 	PROTECT(sumtype = NEW_INTEGER(SW_OUTNKEYS));
 	PROTECT(use = NEW_LOGICAL(SW_OUTNKEYS));
 	PROTECT(first = NEW_INTEGER(SW_OUTNKEYS));
-	PROTECT(last = NEW_INTEGER(SW_OUTNKEYS));
 	PROTECT(last = NEW_INTEGER(SW_OUTNKEYS));
 	PROTECT(first_orig = NEW_INTEGER(SW_OUTNKEYS));
 	PROTECT(last_orig = NEW_INTEGER(SW_OUTNKEYS));
@@ -799,7 +807,21 @@ SEXP onGet_SW_OUT(void) {
 			SET_STRING_ELT(outfile, k, mkChar(""));
 	}
 	SET_SLOT(OUT, install("timePeriods"), timestep);
-	SET_SLOT(OUT, install("useTimeStep"),  useTimeStep);
+	
+	if(debug){
+		Rprintf("useTimeStep slot of OUT before assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
+		Rprintf("	- type of slot %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
+		Rprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(GET_SLOT(OUT, install("useTimeStep"))));
+		Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
+	}
+	SET_SLOT(OUT, install("useTimeStep"), useTimeStep);
+	if(debug){
+		Rprintf("useTimeStep slot of OUT after assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
+		Rprintf("	- type of slot (4 = 'environments') %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
+		Rprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(GET_SLOT(OUT, install("useTimeStep"))));
+		Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
+	}
+
 	SET_SLOT(OUT, install(cKEY[0]), mykey);
 	SET_SLOT(OUT, install(cKEY[1]), myobj);
 	SET_SLOT(OUT, install(cKEY[2]), period);
@@ -811,7 +833,8 @@ SEXP onGet_SW_OUT(void) {
 	SET_SLOT(OUT, install(cKEY[8]), last_orig);
 	SET_SLOT(OUT, install(cKEY[9]), outfile);
 
-	UNPROTECT(16);
+	UNPROTECT(15);
+	if(debug) Rprintf("onGet_SW_OUT end\n");
 	return OUT;
 }
 #endif
