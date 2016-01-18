@@ -768,7 +768,10 @@ SEXP onGet_SW_OUT(void) {
 		Rprintf("useTimeStep after assignment = %d\n", useTimeStep);
 		Rprintf("	- type of slot (10 = 'logical') %d\n", TYPEOF(useTimeStep));
 		Rprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(useTimeStep));
-		Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(useTimeStep));
+		if( 10 == TYPEOF(useTimeStep) )
+			Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(useTimeStep));
+		else
+			Rprintf("	- logdata of slot not available because not of type 'logical'\n");
 	}
 	PROTECT(timestep = NEW_INTEGER(numPeriod));
 
@@ -787,8 +790,14 @@ SEXP onGet_SW_OUT(void) {
 	ForEachOutKey(k)
 	{
 		if(useTimeStep && SW_Output[k].use && !doOnce) {
-			for (i = 0; i < numPeriods; i++)
+			if(debug) Rprintf("length(timestep) = %d, numPeriod = %d\n", GET_LENGTH(timestep), numPeriod);
+			for (i = 0; i < numPeriod; i++){
+				if(debug) Rprintf("timestep, timestep[%d], and timeSteps[%d][%d] before %d assignment = %d, %d, %d\n",
+					i, i, k, k, timestep, INTEGER(timestep)[i], timeSteps[k][i]);
 				INTEGER(timestep)[i] = timeSteps[k][i];
+				if(debug) Rprintf("timestep, timestep[%d], and timeSteps[%d][%d] after %d assignment = %d, %d, %d\n",
+					i, i, k, k, timestep, INTEGER(timestep)[i], timeSteps[k][i]);
+			}
 			doOnce=TRUE;
 		}
 
@@ -812,14 +821,20 @@ SEXP onGet_SW_OUT(void) {
 		Rprintf("useTimeStep slot of OUT before assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
 		Rprintf("	- type of slot %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
 		Rprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(GET_SLOT(OUT, install("useTimeStep"))));
-		Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
+		if( 10 == TYPEOF(GET_SLOT(OUT, install("useTimeStep"))) )
+			Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
+		else
+			Rprintf("	- logdata of slot not available because not of type 'logical'\n");
 	}
 	SET_SLOT(OUT, install("useTimeStep"), useTimeStep);
 	if(debug){
 		Rprintf("useTimeStep slot of OUT after assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
 		Rprintf("	- type of slot (4 = 'environments') %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
 		Rprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(GET_SLOT(OUT, install("useTimeStep"))));
-		Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
+		if( 10 == TYPEOF(GET_SLOT(OUT, install("useTimeStep"))) )
+			Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
+		else
+			Rprintf("	- logdata of slot not available because not of type 'logical'\n");
 	}
 
 	SET_SLOT(OUT, install(cKEY[0]), mykey);
