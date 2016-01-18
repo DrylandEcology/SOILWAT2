@@ -738,7 +738,7 @@ void onSet_SW_OUT(SEXP OUT) {
 }
 
 SEXP onGet_SW_OUT(void) {
-	int i, debug = 1;
+	int i, debug = 0;
 	Bool doOnce = FALSE;
 	OutKey k;
 	SEXP swOUT;
