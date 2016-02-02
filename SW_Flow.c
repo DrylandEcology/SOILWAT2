@@ -127,7 +127,7 @@ extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
 extern SW_WEATHER SW_Weather;
 extern SW_VEGPROD SW_VegProd;
-extern SW_SKY SW_Sky; // 
+extern SW_SKY SW_Sky; //
 
 extern unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 extern unsigned int soil_temp_init; // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
@@ -630,15 +630,15 @@ void SW_Water_Flow(void) {
 	/* Soil Temperature starts here */
 
 	double biomass; // computing the standing crop biomass real quickly to condense the call to soil_temperature
-	biomass = SW_VegProd.grass.biomass_daily[doy] * SW_VegProd.fractionGrass + SW_VegProd.shrub.biomass_daily[doy] * SW_VegProd.fractionShrub
-			+ SW_VegProd.forb.biomass_daily[doy] * SW_VegProd.fractionForb + SW_VegProd.tree.biolive_daily[doy] * SW_VegProd.fractionTree; // changed to exclude tree biomass, bMatric/c it was breaking the soil_temperature function
+	biomass = SW_VegProd.grass.biolive_daily[doy] * SW_VegProd.fractionGrass + SW_VegProd.shrub.biolive_daily[doy] * SW_VegProd.fractionShrub
+			+ SW_VegProd.forb.biolive_daily[doy] * SW_VegProd.fractionForb + SW_VegProd.tree.biolive_daily[doy] * SW_VegProd.fractionTree; // changed to exclude tree biomass, bMatric/c it was breaking the soil_temperature function
 
 			// soil_temperature function computes the soil temp for each layer and stores it in lyrsTemp
 			// doesn't affect SWC at all, but needs it for the calculation, so therefore the temperature is the last calculation done
 	if (SW_Site.use_soil_temp)
 		soil_temperature(SW_Weather.now.temp_avg[Today], SW_Soilwat.pet, SW_Soilwat.aet, biomass, lyrSWCBulk, lyrSWCBulk_Saturated, lyrbDensity, lyrWidths, lyroldsTemp, lyrsTemp,surfaceTemp, SW_Site.n_layers,
 				lyrSWCBulk_FieldCaps, lyrSWCBulk_Wiltpts, SW_Site.bmLimiter, SW_Site.t1Param1, SW_Site.t1Param2, SW_Site.t1Param3, SW_Site.csParam1, SW_Site.csParam2,
-				SW_Site.shParam, SW_Soilwat.snowdepth, SW_Site.meanAirTemp, SW_Site.stDeltaX, SW_Site.stMaxDepth, SW_Site.stNRGR);
+				SW_Site.shParam, SW_Soilwat.snowdepth, SW_Site.meanAirTemp, SW_Site.stDeltaX, SW_Site.stMaxDepth, SW_Site.stNRGR, SW_Soilwat.dysum.snowpack);
 
 	/* Soil Temperature ends here */
 
