@@ -30,7 +30,6 @@
  01/31/2013	(clk) added new function, pot_soil_evap_bs()
  03/07/2013	(clk) add new array, lyrFrozen to keep track of whether a certain soil layer is frozen. 1 = frozen, 0 = not frozen.
  07/09/2013	(clk) added two new functions: forb_intercepted_water and forb_EsT_partitioning
- 01/26/2016 (ctd) added function definition for modfiied function surface_temperature_under_snow()
  */
 /********************************************************/
 /********************************************************/
@@ -81,7 +80,6 @@ typedef struct {
 /* =================================================== */
 /*                Function Definitions                 */
 /* --------------------------------------------------- */
-double surface_temperature_under_snow(double airTempAvg, double snow);
 void grass_intercepted_water(double *pptleft, double *wintgrass, double ppt, double vegcov, double scale, double a, double b, double c, double d);
 
 void shrub_intercepted_water(double *pptleft, double *wintshrub, double ppt, double vegcov, double scale, double a, double b, double c, double d);
@@ -155,7 +153,6 @@ void soil_temperature(double airTemp,
 					  double meanAirTemp,
 					  double deltaX,
 					  double theMaxDepth,
-					  unsigned int nRgr,
-						double snow);
+					  unsigned int nRgr);
 
 #endif
