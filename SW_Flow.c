@@ -95,7 +95,7 @@
  07/09/2013	(clk)	with the addition of forbs as a vegtype, needed to add a lot of calls to this code and so basically just copied and pasted the code for the other vegtypes
  09/26/2013 (drs) records2arrays(): Init hydraulic redistribution to zero; if not used and not initialized, then there could be non-zero values resulting
  06/23/2015 (akt)	Added surfaceTemp[Today] value at structure SW_Weather so that we can add surfaceTemp[Today] in output from Sw_Outout.c get_tmp() function
- 02/08/2016 (ctd) Added snowpack as an input argument to function call of soil_temperature()
+ 02/08/2016 (CMA & CTD) Added snowpack as an input argument to function call of soil_temperature()
  */
 /********************************************************/
 /********************************************************/
