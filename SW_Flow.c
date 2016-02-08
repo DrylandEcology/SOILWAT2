@@ -96,6 +96,7 @@
  09/26/2013 (drs) records2arrays(): Init hydraulic redistribution to zero; if not used and not initialized, then there could be non-zero values resulting
  06/23/2015 (akt)	Added surfaceTemp[Today] value at structure SW_Weather so that we can add surfaceTemp[Today] in output from Sw_Outout.c get_tmp() function
  02/08/2016 (CMA & CTD) Added snowpack as an input argument to function call of soil_temperature()
+ 02/08/2016 (CMA & CTD) Modified biomass to use the live biomass as opposed to standing crop
  */
 /********************************************************/
 /********************************************************/
@@ -630,9 +631,9 @@ void SW_Water_Flow(void) {
 
 	/* Soil Temperature starts here */
 
-	double biomass; // computing the standing crop biomass real quickly to condense the call to soil_temperature
-	biomass = SW_VegProd.grass.biomass_daily[doy] * SW_VegProd.fractionGrass + SW_VegProd.shrub.biomass_daily[doy] * SW_VegProd.fractionShrub
-			+ SW_VegProd.forb.biomass_daily[doy] * SW_VegProd.fractionForb + SW_VegProd.tree.biolive_daily[doy] * SW_VegProd.fractionTree; // changed to exclude tree biomass, bMatric/c it was breaking the soil_temperature function
+	double biomass; // computing the live biomass real quickly to condense the call to soil_temperature
+biomass = SW_VegProd.grass.biolive_daily[doy] * SW_VegProd.fractionGrass + SW_VegProd.shrub.biolive_daily[doy] * SW_VegProd.fractionShrub
+		+ SW_VegProd.forb.biolive_daily[doy] * SW_VegProd.fractionForb + SW_VegProd.tree.biolive_daily[doy] * SW_VegProd.fractionTree; // changed to exclude tree biomass, bMatric/c it was breaking the soil_temperature function
 
 			// soil_temperature function computes the soil temp for each layer and stores it in lyrsTemp
 			// doesn't affect SWC at all, but needs it for the calculation, so therefore the temperature is the last calculation done
