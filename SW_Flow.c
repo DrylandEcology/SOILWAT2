@@ -95,6 +95,7 @@
  07/09/2013	(clk)	with the addition of forbs as a vegtype, needed to add a lot of calls to this code and so basically just copied and pasted the code for the other vegtypes
  09/26/2013 (drs) records2arrays(): Init hydraulic redistribution to zero; if not used and not initialized, then there could be non-zero values resulting
  06/23/2015 (akt)	Added surfaceTemp[Today] value at structure SW_Weather so that we can add surfaceTemp[Today] in output from Sw_Outout.c get_tmp() function
+ 02/08/2016 (ctd) Added snowpack as an input argument to function call of soil_temperature()
  */
 /********************************************************/
 /********************************************************/
@@ -127,7 +128,7 @@ extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
 extern SW_WEATHER SW_Weather;
 extern SW_VEGPROD SW_VegProd;
-extern SW_SKY SW_Sky; // 
+extern SW_SKY SW_Sky; //
 
 extern unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 extern unsigned int soil_temp_init; // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
@@ -638,7 +639,7 @@ void SW_Water_Flow(void) {
 	if (SW_Site.use_soil_temp)
 		soil_temperature(SW_Weather.now.temp_avg[Today], SW_Soilwat.pet, SW_Soilwat.aet, biomass, lyrSWCBulk, lyrSWCBulk_Saturated, lyrbDensity, lyrWidths, lyroldsTemp, lyrsTemp,surfaceTemp, SW_Site.n_layers,
 				lyrSWCBulk_FieldCaps, lyrSWCBulk_Wiltpts, SW_Site.bmLimiter, SW_Site.t1Param1, SW_Site.t1Param2, SW_Site.t1Param3, SW_Site.csParam1, SW_Site.csParam2,
-				SW_Site.shParam, SW_Soilwat.snowdepth, SW_Site.meanAirTemp, SW_Site.stDeltaX, SW_Site.stMaxDepth, SW_Site.stNRGR);
+				SW_Site.shParam, SW_Soilwat.snowdepth, SW_Site.meanAirTemp, SW_Site.stDeltaX, SW_Site.stMaxDepth, SW_Site.stNRGR, SW_Soilwat.snowpack[Today]);
 
 	/* Soil Temperature ends here */
 
