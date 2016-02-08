@@ -76,7 +76,7 @@
  						- infiltrate_water_low(): if frozen, unsaturated hydraulic conductivity is reduced to 1%
  						- hydraulic_redistribution(): no hd between two layers if at least one is frozen
  						- remove_from_soil(): no evaporation and transpiration from a frozen soil layer
-02/08/2016 (CTD) In the function surface_temperature_under_snow(), used Parton's Eq. 5 & 6 from 1998 paper instead of koren paper
+02/08/2016 (CMA & CTD) In the function surface_temperature_under_snow(), used Parton's Eq. 5 & 6 from 1998 paper instead of koren paper
 								 Adjusted function calls to surface_temperature_under_snow to account for the new parameters
 */
 /********************************************************/
@@ -1390,7 +1390,7 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 			Rprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 		#endif
 
-			soil_temp_error = 1;
+			// soil_temp_error = 1;
 		}
 		return; // exits the function
 	}
