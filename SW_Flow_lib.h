@@ -153,6 +153,7 @@ void soil_temperature(double airTemp,
 					  double meanAirTemp,
 					  double deltaX,
 					  double theMaxDepth,
-					  unsigned int nRgr);
+					  unsigned int nRgr,
+						double snow);
 
 #endif
