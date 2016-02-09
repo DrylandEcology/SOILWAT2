@@ -1769,15 +1769,15 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 		/*Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
 VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)*/
-		if (GT(parts, 1.5)) {//Criterion for a stable solution
+		if (GT(parts, 1.0)) {//Criterion for a stable solution
 			#ifndef RSOILWAT
-				printf("\nSOIL_TEMP FUNCTION ERROR: solution is not stable: %f > 1.5... soil temperature will NOT be calculated - check matric densities\n", parts);
+				printf("\nSOIL_TEMP FUNCTION ERROR: solution is not stable: %f > 1.0... soil temperature will NOT be calculated - check deltaX\n", parts);
 			#else
-				Rprintf("\nSOIL_TEMP FUNCTION ERROR: solution is not stable: %f > 1.5... soil temperature will NOT be calculated - check matric densities\n", parts);
+				Rprintf("\nSOIL_TEMP FUNCTION ERROR: solution is not stable: %f > 1.0... soil temperature will NOT be calculated - check deltaX\n", parts);
 			#endif
 
-			// soil_temp_error = 1;
-			// return; // exits the function
+			soil_temp_error = 1;
+			return; //exits the function
 		}
 
 		sTempR[i] = st->oldsTempR[i] + parts * part2; // Parton (1978) eq. 2.21
