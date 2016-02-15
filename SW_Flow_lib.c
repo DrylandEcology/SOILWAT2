@@ -1768,27 +1768,16 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		part2 = sTempR[i - 1] - 2 * st->oldsTempR[i] + st->oldsTempR[i + 1];
 
 		/*Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
-VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)*/
-	if (GT(parts, 1.0))
-	{
-			parts = (SEC_PER_DAY / squared(30.0)) * cs / (sh * st->bDensityR[k]); /** Recalculates parts with a different deltaX to attemp to remedy the problem */
+		VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)*/
+		if (GT(parts, 1.0)){
 			#ifndef RSOILWAT
-				printf("\nRecalculating parts with a deltaX of 30.0");
+				printf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
 			#else
-				Rprintf("\nRecalculating parts with a deltaX of 30.0\n");
+				Rprintf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
 			#endif
-			if (GT(parts, 1.0))
-			{
-				#ifndef RSOILWAT
-					printf("\nSOIL_TEMP FUNCTION ERROR: solution is not stable: %f > 1.0... soil temperature will NOT be calculated - check deltaX\n", parts);
-				#else
-					Rprintf("\nPARTS STILL EXCEEDS 1.0, SOIL TEMPERATURE WILL NOT BE CALCULATED.\n");
-					Rprintf("\nParts: %f\n", parts);
-				#endif
-				soil_temp_error = 1;
-				return; //exits the function
-			}
-	}
+			// soil_temp_error = 1;
+			// return;  //Exits the Function
+		}
 
 		sTempR[i] = st->oldsTempR[i] + parts * part2; // Parton (1978) eq. 2.21
 
