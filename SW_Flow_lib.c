@@ -91,6 +91,7 @@
 #include <stdlib.h>
 
 #include "generic.h"
+#include "myMemory.h"
 #include "SW_Defines.h"
 #include "SW_Flow_lib.h"
 #include "SW_Flow_subs.h"
@@ -111,7 +112,8 @@ unsigned int fusion_pool_init;   // simply keeps track of whether or not the val
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
 
-static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
+ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
+
 /* *************************************************** */
 /* *************************************************** */
 /*              Local Function Definitions             */
@@ -1654,9 +1656,10 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		unsigned int nlyrs, double fc[], double wp[], double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1, double csParam2, double shParam,
 		double snowdepth, double meanAirTemp, double deltaX, double theMaxDepth, unsigned int nRgr, double snow) {
 
-	unsigned int i, k, toDebug = 0, sFadjusted_sTemp;
+	unsigned int i, k, toDebug = 0, sFadjusted_sTemp, changed = 0;
 	double T1, cs, sh, pe, parts, part1, part2, vwc[nlyrs], vwcR[nRgr], sTempR[nRgr + 1];
 
+	START:
 	for (i = 0; i < nlyrs; i++)
 		vwc[i] = swc[i] / width[i];
 
@@ -1763,20 +1766,36 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		cs = csParam1 + (pe * csParam2); // Parton (1978) eq. 2.22: soil thermal conductivity; csParam1 = 0.0007, csParam2 = 0.0003
 		sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
 			// TODO: adjust thermal conductivity and heat capacity if layer is frozen
-		parts = part1 * cs / (sh * st->bDensityR[k]);
+
+		parts =  part1 * cs / (sh * st->bDensityR[k]);
 
 		part2 = sTempR[i - 1] - 2 * st->oldsTempR[i] + st->oldsTempR[i + 1];
 
+
+
+		st->pe[i] = pe;
+		st->cs[i] = cs;
+		st->sh[i] = sh;
+		st->part1[i] = part1;
+		st->parts[i] = parts;
+
 		/*Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
 		VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)*/
-		if (GT(parts, 1.0)){
-			#ifndef RSOILWAT
-				printf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
-			#else
-				Rprintf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
-			#endif
-			// soil_temp_error = 1;
-			// return;  //Exits the Function
+		if (GT(parts, 1.0) & changed == 0)
+		{
+			changed = 1;
+			// Make error code for day = 1
+			st->errorTemp[i] = 1.0;
+
+			deltaX = 30.0;
+			surfaceTemp[Today] = airTemp;
+			set_frozen_unfrozen(nlyrs, oldsTemp, swc, swc_sat, width);
+			soil_temperature_init(bDensity, width, surfaceTemp[Today], oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
+			goto START;
+		}
+		else
+		{
+			st->errorTemp[i] = 0.0;
 		}
 
 		sTempR[i] = st->oldsTempR[i] + parts * part2; // Parton (1978) eq. 2.21
