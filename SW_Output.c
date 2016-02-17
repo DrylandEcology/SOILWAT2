@@ -149,7 +149,7 @@ SW_OUT_flush() calls at end of year and SW_Control.c/_collect_values() calls dai
  07/09/2013	(clk)	Added forb to the outputs: transpiration, surface evaporation, interception, and hydraulic redistribution
  08/21/2013	(clk)	Modified the establisment output to actually output for each species and not just the last one in the group.
  06/23/2015 (akt)	Added output for surface temperature to get_temp()
- 
+
  */
 /********************************************************/
 /********************************************************/
@@ -178,6 +178,7 @@ SW_OUT_flush() calls at end of year and SW_Control.c/_collect_values() calls dai
 #include "SW_Output.h"
 #include "SW_Weather.h"
 #include "SW_VegEstab.h"
+#include "SW_Flow_lib.h"
 
 #ifdef RSOILWAT
 #include "R.h"
@@ -195,6 +196,7 @@ extern SW_SOILWAT SW_Soilwat;
 extern SW_MODEL SW_Model;
 extern SW_WEATHER SW_Weather;
 extern SW_VEGESTAB SW_VegEstab;
+extern ST_RGR_VALUES stValues;
 extern Bool EchoInits;
 
 #define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
@@ -241,12 +243,12 @@ static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period
  * SW_Output.h */
 static char *key2str[] = { SW_WETHR, SW_TEMP, SW_PRECIP, SW_SOILINF, SW_RUNOFF, SW_ALLH2O, SW_VWCBULK, SW_VWCMATRIC, SW_SWCBULK, SW_SWABULK, SW_SWAMATRIC, SW_SWPMATRIC,
 		SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE, SW_INTERCEPTION, SW_LYRDRAIN, SW_HYDRED, SW_ET, SW_AET, SW_PET, SW_WETDAY, SW_SNOWPACK, SW_DEEPSWC, SW_SOILTEMP,
-		SW_ALLVEG, SW_ESTAB };
+		SW_ALLVEG, SW_ESTAB, SW_ERRORTEMP };
 /* converts an enum output key (OutKey type) to a module  */
 /* or object type. see SW_Output.h for OutKey order.         */
 /* MUST be SW_OUTNKEYS of these */
 static ObjType key2obj[] = { eWTH, eWTH, eWTH, eWTH, eWTH, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
-		eSWC, eSWC, eVES, eVES };
+		eSWC, eSWC, eVES, eVES, eVES };
 static char *pd2str[] = { SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR };
 static char *styp2str[] = { SW_SUM_OFF, SW_SUM_SUM, SW_SUM_AVG, SW_SUM_FNL };
 
@@ -283,6 +285,7 @@ static void get_snowpack(void);
 static void get_deepswc(void);
 static void get_estab(void);
 static void get_soiltemp(void);
+static void get_errorTemp(void);
 static void get_none(void); /* default until defined */
 
 static void collect_sums(ObjType otyp, OutPeriod op);
@@ -431,6 +434,9 @@ void SW_OUT_construct(void) {
 		case eSW_Estab:
 			SW_Output[k].pfunc = (void (*)(void)) get_estab;
 			break;
+    case eSW_ErrTemp:
+      SW_Output[k].pfunc = (void (*)(void)) get_errorTemp;
+      break;
 		default:
 			SW_Output[k].pfunc = (void (*)(void)) get_none;
 			break;
@@ -816,7 +822,7 @@ SEXP onGet_SW_OUT(void) {
 			SET_STRING_ELT(outfile, k, mkChar(""));
 	}
 	SET_SLOT(OUT, install("timePeriods"), timestep);
-	
+
 	if(debug){
 		Rprintf("useTimeStep slot of OUT before assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
 		Rprintf("	- type of slot %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
@@ -3236,6 +3242,40 @@ static void get_deepswc(void) {
 	}
 #endif
 }
+
+static void get_errorTemp(void){
+  ST_RGR_VALUES *v = &stValues;
+  OutPeriod pd = SW_Output[eSW_ErrTemp].period;
+	LyrIndex i;
+#ifndef RSOILWAT
+  RealD et = SW_MISSING;
+  RealD pe = SW_MISSING;
+  RealD cs = SW_MISSING;
+  RealD sh = SW_MISSING;
+  RealD part1 = SW_MISSING;
+  RealD parts = SW_MISSING;
+
+  char str[OUTSTRLEN];
+  get_outstrleader(pd);
+	ForEachSoilLayer(i)
+	{
+	  switch (pd) {
+	    case eSW_Day:
+	      et = v->errorTemp[i + 1];
+	      pe = v->pe[i + 1];
+	      cs = v->cs[i + 1];
+	      sh = v->sh[i + 1];
+	      part1 = v->part1[i + 1];
+	      parts = v->parts[i + 1];
+	    default:
+	      break;
+	    }
+		sprintf(str, "\n%c%c%7.8f%c%7.8f%c%7.8f%c%7.8f%c%7.8f%c%7.8f", _Sep, _Sep, et, _Sep, pe, _Sep, cs, _Sep, sh, _Sep, part1, _Sep, parts);
+		strcat(outstr, str);
+	}
+#endif
+  }
+
 
 static void get_soiltemp(void) {
 	/* --------------------------------------------------- */
