@@ -24,6 +24,7 @@
 	01/10/2013	(clk)	instead of using one FILE pointer named fp, created four new
 			FILE pointers; fp_dy, fp_wk, fp_mo, and fp_yr. This allows us to keep track
 			of all time steps for each OutKey.
+	02/25/2016 (ctd) added parts as an output (i.e. added macro definition, key string, incremented SW_OUTNKEYS)
 */
 /********************************************************/
 /********************************************************/
@@ -70,9 +71,9 @@
 #define SW_SNOWPACK		"SNOWPACK"		//23	4		2
 #define SW_DEEPSWC		"DEEPSWC"		//24	4		1
 #define SW_SOILTEMP		"SOILTEMP"		//25	4		2
-#define SW_ALLVEG		"ALLVEG"		//26	5		0/* position and variable marker, not an output key */
-#define SW_ESTAB		"ESTABL"		//27	5		0
-#define SW_ERRORTEMP "ERRTEMP" // 28 
+#define SW_PARTSERROR 		"PARTSERROR"			//26
+#define SW_ALLVEG		"ALLVEG"		//27	5		0/* position and variable marker, not an output key */
+#define SW_ESTAB		"ESTABL"		//28	5		0
 
 #define SW_OUTNKEYS 29 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
 
@@ -109,11 +110,11 @@ typedef enum {
 	eSW_SnowPack,
 	eSW_DeepSWC,
 	eSW_SoilTemp,
+	eSW_PartsError,
 	/* vegetation quantities */
 	eSW_AllVeg,
-	eSW_Estab,
-	eSW_ErrTemp,
-	eSW_LastKey /* make sure this is the last one */
+	eSW_Estab, /* make sure this is the last one */
+	eSW_LastKey
 } OutKey;
 
 /* output period specifiers found in input file */

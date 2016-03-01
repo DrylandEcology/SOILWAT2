@@ -34,7 +34,7 @@
  modified the use of these variables throughout the rest of the code.
  07/09/2013	(clk)	Added the variables transp_forb, forb_evap, hydred_forb, and forb_int to SW_SOILWAT_OUTPUTS
  Added the variables transpiration_forb, hydred_forb, forb_evap, and forb_int to SW_SOILWAT
-
+ 02/25/2016 (ctd) Added RealD parts to the SW_SOILWAT sub-structure: SW_SOILWAT_OUTPUTS
  */
 /********************************************************/
 /********************************************************/
@@ -92,7 +92,8 @@ typedef struct {
 			pet,
 			deep,
 			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
-			surfaceTemp; // soil surface temperature
+			surfaceTemp, // soil surface temperature
+			parts[MAX_LAYERS]; // Parton (1978) eq. 2.21 - Using for error testing in Rsoilwat
 } SW_SOILWAT_OUTPUTS;
 
 typedef struct {
@@ -111,6 +112,7 @@ typedef struct {
 			shrub_int,
 			grass_int,
 			sTemp[MAX_LAYERS],
+			parts[MAX_LAYERS],
 			surfaceTemp; // soil surface temperature
 
 	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */
