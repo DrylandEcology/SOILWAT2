@@ -71,8 +71,8 @@
 #define SW_SNOWPACK		"SNOWPACK"		//23	4		2
 #define SW_DEEPSWC		"DEEPSWC"		//24	4		1
 #define SW_SOILTEMP		"SOILTEMP"		//25	4		2
-#define SW_ALLVEG		"ALLVEG"		//27	5		0/* position and variable marker, not an output key */
-#define SW_ESTAB		"ESTABL"		//28	5		0
+#define SW_ALLVEG		"ALLVEG"		//26	5		0/* position and variable marker, not an output key */
+#define SW_ESTAB		"ESTABL"		//27	5		0
 
 #define SW_OUTNKEYS 28 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
 

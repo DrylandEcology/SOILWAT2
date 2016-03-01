@@ -34,7 +34,6 @@
  modified the use of these variables throughout the rest of the code.
  07/09/2013	(clk)	Added the variables transp_forb, forb_evap, hydred_forb, and forb_int to SW_SOILWAT_OUTPUTS
  Added the variables transpiration_forb, hydred_forb, forb_evap, and forb_int to SW_SOILWAT
- 02/25/2016 (ctd) Added RealD parts to the SW_SOILWAT sub-structure: SW_SOILWAT_OUTPUTS
  */
 /********************************************************/
 /********************************************************/
