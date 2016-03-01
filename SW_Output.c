@@ -149,9 +149,6 @@ SW_OUT_flush() calls at end of year and SW_Control.c/_collect_values() calls dai
  07/09/2013	(clk)	Added forb to the outputs: transpiration, surface evaporation, interception, and hydraulic redistribution
  08/21/2013	(clk)	Modified the establisment output to actually output for each species and not just the last one in the group.
  06/23/2015 (akt)	Added output for surface temperature to get_temp()
- 02/25/2016 (ctd) Added PARTSERROR as an output for both SOILWAT and RSOILWAT
- 									(i.e. added enum and keystring to key2str, key2obj, added get_partserror() with call in construct(),
-									added RSOILWAT pointer and calls to parts in average_for() and sumof_swc())
  */
 /********************************************************/
 /********************************************************/
@@ -243,12 +240,12 @@ static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period
  * SW_Output.h */
 static char *key2str[] = { SW_WETHR, SW_TEMP, SW_PRECIP, SW_SOILINF, SW_RUNOFF, SW_ALLH2O, SW_VWCBULK, SW_VWCMATRIC, SW_SWCBULK, SW_SWABULK, SW_SWAMATRIC, SW_SWPMATRIC,
 		SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE, SW_INTERCEPTION, SW_LYRDRAIN, SW_HYDRED, SW_ET, SW_AET, SW_PET, SW_WETDAY, SW_SNOWPACK, SW_DEEPSWC, SW_SOILTEMP,
-		SW_PARTSERROR, SW_ALLVEG, SW_ESTAB };
+	  SW_ALLVEG, SW_ESTAB };
 /* converts an enum output key (OutKey type) to a module  */
 /* or object type. see SW_Output.h for OutKey order.         */
 /* MUST be SW_OUTNKEYS of these */
 static ObjType key2obj[] = { eWTH, eWTH, eWTH, eWTH, eWTH, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
-		eSWC, eSWC, eSWC, eVES, eVES };
+		eSWC, eSWC, eVES, eVES };
 static char *pd2str[] = { SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR };
 static char *styp2str[] = { SW_SUM_OFF, SW_SUM_SUM, SW_SUM_AVG, SW_SUM_FNL };
 
@@ -285,7 +282,6 @@ static void get_snowpack(void);
 static void get_deepswc(void);
 static void get_estab(void);
 static void get_soiltemp(void);
-static void get_partserror(void);
 static void get_none(void); /* default until defined */
 
 static void collect_sums(ObjType otyp, OutPeriod op);
@@ -431,9 +427,6 @@ void SW_OUT_construct(void) {
 		case eSW_SoilTemp:
 			SW_Output[k].pfunc = (void (*)(void)) get_soiltemp;
 			break;
-    case eSW_PartsError:
-      SW_Output[k].pfunc = (void (*)(void)) get_partserror;
-      break;
 		case eSW_Estab:
 			SW_Output[k].pfunc = (void (*)(void)) get_estab;
 			break;
@@ -3243,40 +3236,6 @@ static void get_deepswc(void) {
 #endif
 }
 
-static void get_partserror(void)
-{
-  LyrIndex i; /** Check parts at each soil layer */
-  SW_SOILWAT *v = &SW_Soilwat; /** Structure containing parts output */
-  OutPeriod pd = SW_Output[eSW_PartsError].period;
-
-#ifndef RSOILWAT
-  RealD val = SW_MISSING;
-  char str[OUTSTRLEN];
-  get_outstrleader(pd);
-
-  ForEachSoilLayer(i)
-  {
-    switch(pd)
-    {
-      case eSW_Day:
-        if (v->parts[i] >= .99999) /** arbitrary value */
-        {
-          val = 1; /** Not concerned with value of parts but the threshold being crossed */
-        }
-        else
-        {
-          val = 0;
-        }
-        break;
-      default:  /** Only concerned with parts for the day */
-        break;
-    }
-    sprintf(str, "%c%7.6f", _Sep, val);
-		strcat(outstr, str);
-  }
-#endif
-}
-
 static void get_soiltemp(void) {
 	/* --------------------------------------------------- */
 	LyrIndex i;
@@ -3516,11 +3475,6 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k) {
 			s->sTemp[i] += v->sTemp[i];
 		break;
 
-  case eSW_PartsError:
-    ForEachSoilLayer(i)
-      s->parts[i] += v->parts[i];
-    break;
-
 	default:
 		LogError(stderr, LOGFATAL, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
 	}
@@ -3624,11 +3578,6 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 					ForEachSoilLayer(i)
 						savg->sTemp[i] = (SW_Output[k].sumtype == eSW_Fnl) ? SW_Soilwat.sTemp[i] : ssumof->sTemp[i] / div;
 					break;
-
-        case eSW_PartsError:
-          ForEachSoilLayer(i)
-            savg->parts[i] = (SW_Output[k].sumtype == eSW_Fnl) ? SW_Soilwat.parts[i] : ssumof->parts[i] / div;
-          break;
 
 				case eSW_VWCBulk:
 					ForEachSoilLayer(i)
