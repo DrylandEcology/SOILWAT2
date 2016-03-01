@@ -92,8 +92,7 @@ typedef struct {
 			pet,
 			deep,
 			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
-			surfaceTemp, // soil surface temperature
-			parts[MAX_LAYERS]; // Parton (1978) eq. 2.21 - Using for error testing in Rsoilwat
+			surfaceTemp; // soil surface temperature
 } SW_SOILWAT_OUTPUTS;
 
 typedef struct {
@@ -112,7 +111,6 @@ typedef struct {
 			shrub_int,
 			grass_int,
 			sTemp[MAX_LAYERS],
-			parts[MAX_LAYERS],
 			surfaceTemp; // soil surface temperature
 
 	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */

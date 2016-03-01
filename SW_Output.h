@@ -71,11 +71,10 @@
 #define SW_SNOWPACK		"SNOWPACK"		//23	4		2
 #define SW_DEEPSWC		"DEEPSWC"		//24	4		1
 #define SW_SOILTEMP		"SOILTEMP"		//25	4		2
-#define SW_PARTSERROR 		"PARTSERROR"			//26
 #define SW_ALLVEG		"ALLVEG"		//27	5		0/* position and variable marker, not an output key */
 #define SW_ESTAB		"ESTABL"		//28	5		0
 
-#define SW_OUTNKEYS 29 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
+#define SW_OUTNKEYS 28 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
 
 /* these are the code analog of the above */
 /* see also key2str[] in Output.c */
@@ -110,7 +109,6 @@ typedef enum {
 	eSW_SnowPack,
 	eSW_DeepSWC,
 	eSW_SoilTemp,
-	eSW_PartsError,
 	/* vegetation quantities */
 	eSW_AllVeg,
 	eSW_Estab, /* make sure this is the last one */
