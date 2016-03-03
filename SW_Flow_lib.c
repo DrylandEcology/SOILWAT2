@@ -105,7 +105,7 @@ extern SW_SITE SW_Site;
 unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
-
+unsigned int Rsoil_temp_error;
 /* *************************************************** */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
@@ -117,7 +117,7 @@ SEXP tempError()
 {
 	SEXP swR_temp_error;
 	PROTECT(swR_temp_error = NEW_LOGICAL(1));
-	if (soil_temp_error == 1)
+	if (Rsoil_temp_error == 1)
 	{
 		LOGICAL_POINTER(swR_temp_error)[0] = TRUE;
 	}
@@ -1790,13 +1790,12 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 		/*Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
 		VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)*/
-		if (GT(parts, 1.0)){
+		if (GE(parts, 1.0)){
 			#ifndef RSOILWAT
 				printf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
 				soil_temp_error = 1;
 			#else
-				Rprintf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
-				soil_temp_error = 1;
+				Rsoil_temp_error = 1;
 			#endif
 			// return;  //Exits the Function
 		}
