@@ -102,33 +102,16 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 extern SW_SITE SW_Site;
+extern SW_SOILWAT SW_Soilwat;
 unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
-unsigned int Rsoil_temp_error = 0;
 /* *************************************************** */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
 
 static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 
-#ifdef RSOILWAT
-SEXP tempError()
-{
-	SEXP swR_temp_error;
-	PROTECT(swR_temp_error = NEW_LOGICAL(1));
-	if (Rsoil_temp_error == 1)
-	{
-		LOGICAL_POINTER(swR_temp_error)[0] = TRUE;
-	}
-	else
-	{
-		LOGICAL_POINTER(swR_temp_error)[0] = FALSE;
-	}
-	UNPROTECT(1);
-	return swR_temp_error;
-}
-#endif
 /* *************************************************** */
 /* *************************************************** */
 /*              Local Function Definitions             */
@@ -1785,6 +1768,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
 			// TODO: adjust thermal conductivity and heat capacity if layer is frozen
 		parts = part1 * cs / (sh * st->bDensityR[k]);
+		SW_Soilwat.parts[i] = parts;
 
 		part2 = sTempR[i - 1] - 2 * st->oldsTempR[i] + st->oldsTempR[i + 1];
 
@@ -1795,8 +1779,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 				printf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
 				soil_temp_error = 1;
 			#else
-				Rprintf("\n parts : %f\n", parts);
-				Rsoil_temp_error = 1;
 			#endif
 			// return;  //Exits the Function
 		}
