@@ -120,7 +120,6 @@
 #include "SW_VegProd.h"
 #include "SW_Weather.h"
 #include "SW_Sky.h"
-
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
@@ -164,6 +163,38 @@ static RealD surfaceTemp[TWO_DAYS], forb_h2o_qum[TWO_DAYS], tree_h2o_qum[TWO_DAY
 /* --------------------------------------------------- */
 static void records2arrays(void);
 static void arrays2records(void);
+
+/* =================================================== */
+/*                RSOILWAT						                 */
+/* --------------------------------------------------- */
+#ifdef RSOILWAT
+SEXP tempError()
+{
+	SEXP swR_temp_error;
+	PROTECT(swR_temp_error = NEW_LOGICAL(1));
+
+	int i;
+	int Rsoil_temp_error = 0;
+	for (i = 0; i < MAX_LAYERS - 1; i++)
+	{
+		if (SW_Soilwat.parts[i] >= 1)
+		{
+			Rsoil_temp_error = 1;
+		}
+	}
+
+	if (Rsoil_temp_error == 1)
+	{
+		LOGICAL_POINTER(swR_temp_error)[0] = TRUE;
+	}
+	else
+	{
+		LOGICAL_POINTER(swR_temp_error)[0] = FALSE;
+	}
+	UNPROTECT(1);
+	return swR_temp_error;
+}
+#endif
 
 /* *************************************************** */
 /* *************************************************** */
