@@ -149,7 +149,6 @@ SW_OUT_flush() calls at end of year and SW_Control.c/_collect_values() calls dai
  07/09/2013	(clk)	Added forb to the outputs: transpiration, surface evaporation, interception, and hydraulic redistribution
  08/21/2013	(clk)	Modified the establisment output to actually output for each species and not just the last one in the group.
  06/23/2015 (akt)	Added output for surface temperature to get_temp()
- 
  */
 /********************************************************/
 /********************************************************/
@@ -213,7 +212,7 @@ extern RealD *p_Raet_wk, *p_Rdeep_drain_wk, *p_Restabs_wk, *p_Revap_soil_wk, *p_
 		*p_RswaBulk_wk, *p_RswaMatric_wk, *p_Rtemp_wk, *p_Rtransp_wk, *p_Rwetdays_wk;
 extern RealD *p_Raet_dy, *p_Rdeep_drain_dy, *p_Restabs_dy, *p_Revap_soil_dy, *p_Revap_surface_dy, *p_Rhydred_dy, *p_Rinfiltration_dy, *p_Rinterception_dy, *p_Rpercolation_dy,
 		*p_Rpet_dy, *p_Rprecip_dy, *p_Rrunoff_dy, *p_Rsnowpack_dy, *p_Rsoil_temp_dy, *p_Rsurface_water_dy, *p_RvwcBulk_dy, *p_RvwcMatric_dy, *p_RswcBulk_dy, *p_RswpMatric_dy,
-		*p_RswaBulk_dy, *p_RswaMatric_dy, *p_Rtemp_dy, *p_Rtransp_dy, *p_Rwetdays_dy;
+		*p_RswaBulk_dy, *p_RswaMatric_dy, *p_Rtemp_dy, *p_Rtransp_dy, *p_Rwetdays_dy, *p_Rsoil_temp_dy;
 extern unsigned int yr_nrow, mo_nrow, wk_nrow, dy_nrow;
 #endif
 
@@ -241,7 +240,7 @@ static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period
  * SW_Output.h */
 static char *key2str[] = { SW_WETHR, SW_TEMP, SW_PRECIP, SW_SOILINF, SW_RUNOFF, SW_ALLH2O, SW_VWCBULK, SW_VWCMATRIC, SW_SWCBULK, SW_SWABULK, SW_SWAMATRIC, SW_SWPMATRIC,
 		SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE, SW_INTERCEPTION, SW_LYRDRAIN, SW_HYDRED, SW_ET, SW_AET, SW_PET, SW_WETDAY, SW_SNOWPACK, SW_DEEPSWC, SW_SOILTEMP,
-		SW_ALLVEG, SW_ESTAB };
+	  SW_ALLVEG, SW_ESTAB };
 /* converts an enum output key (OutKey type) to a module  */
 /* or object type. see SW_Output.h for OutKey order.         */
 /* MUST be SW_OUTNKEYS of these */
@@ -816,7 +815,7 @@ SEXP onGet_SW_OUT(void) {
 			SET_STRING_ELT(outfile, k, mkChar(""));
 	}
 	SET_SLOT(OUT, install("timePeriods"), timestep);
-	
+
 	if(debug){
 		Rprintf("useTimeStep slot of OUT before assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
 		Rprintf("	- type of slot %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));

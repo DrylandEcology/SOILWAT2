@@ -24,6 +24,7 @@
 	01/10/2013	(clk)	instead of using one FILE pointer named fp, created four new
 			FILE pointers; fp_dy, fp_wk, fp_mo, and fp_yr. This allows us to keep track
 			of all time steps for each OutKey.
+	02/25/2016 (ctd) added parts as an output (i.e. added macro definition, key string, incremented SW_OUTNKEYS)
 */
 /********************************************************/
 /********************************************************/

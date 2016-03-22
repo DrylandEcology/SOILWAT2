@@ -159,7 +159,7 @@ static LyrIndex _newlayer(void) {
 }
 
 /*static void _clear_layer(LyrIndex n) {
- --------------------------------------------------- 
+ ---------------------------------------------------
 
  memset(SW_Site.lyr[n], 0, sizeof(SW_LAYER_INFO));
 
@@ -648,7 +648,7 @@ void onSet_SW_LYR(SEXP SW_SOILS) {
 			else
 				transp_ok_grass = FALSE;
 		}
-		
+
 		water_eqn(f_gravel, psand, pclay, lyrno);
 		v->lyr[lyrno]->swcBulk_fieldcap = SW_SWPmatric2VWCBulk(f_gravel, 0.333, lyrno) * v->lyr[lyrno]->width;
 		v->lyr[lyrno]->swcBulk_wiltpt = SW_SWPmatric2VWCBulk(f_gravel, 15, lyrno) * v->lyr[lyrno]->width;

@@ -78,6 +78,7 @@
  						- remove_from_soil(): no evaporation and transpiration from a frozen soil layer
 02/08/2016 (CMA & CTD) In the function surface_temperature_under_snow(), used Parton's Eq. 5 & 6 from 1998 paper instead of koren paper
 								 Adjusted function calls to surface_temperature_under_snow to account for the new parameters
+03/01/2016 (CTD) Added error check for Rsoilwat called tempError()
 */
 /********************************************************/
 /********************************************************/
@@ -95,23 +96,22 @@
 #include "SW_Flow_lib.h"
 #include "SW_Flow_subs.h"
 #include "Times.h"
-#ifdef RSOILWAT
-	#include <R.h>
-#endif
+
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 extern SW_SITE SW_Site;
+extern SW_SOILWAT SW_Soilwat;
 unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
-
 /* *************************************************** */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
 
 static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
+
 /* *************************************************** */
 /* *************************************************** */
 /*              Local Function Definitions             */
@@ -1390,7 +1390,7 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 			Rprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 		#endif
 
-			// soil_temp_error = 1;
+			soil_temp_error = 1;
 		}
 		return; // exits the function
 	}
@@ -1592,7 +1592,11 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTem
 	return sFadjusted_sTemp;
 }
 
-
+void endCalculations()
+{
+	soil_temp_error = 1;
+	// return;  //Exits the Function
+}
 
 /**********************************************************************
  PURPOSE: Calculate soil temperature for each layer as described in Parton 1978, ch. 2.2.2 Temperature-profile Submodel, interpolation values are gotten from a mixture of interpolation & extrapolation
@@ -1695,8 +1699,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		soil_temperature_init(bDensity, width, surfaceTemp[Today], oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
 	}
 
-	if (soil_temp_error) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
-		return;
+	// if (soil_temp_error) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
+	// 	return;
 
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
@@ -1764,20 +1768,21 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
 			// TODO: adjust thermal conductivity and heat capacity if layer is frozen
 		parts = part1 * cs / (sh * st->bDensityR[k]);
+		SW_Soilwat.parts[i] = parts;
 
 		part2 = sTempR[i - 1] - 2 * st->oldsTempR[i] + st->oldsTempR[i + 1];
 
 		/*Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
 		VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)*/
-		if (GT(parts, 1.0)){
+		if (GE(parts, 1.0)){
 			#ifndef RSOILWAT
 				printf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
+				soil_temp_error = 1;
 			#else
-				Rprintf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
 			#endif
-			// soil_temp_error = 1;
 			// return;  //Exits the Function
 		}
+
 
 		sTempR[i] = st->oldsTempR[i] + parts * part2; // Parton (1978) eq. 2.21
 

@@ -120,7 +120,6 @@
 #include "SW_VegProd.h"
 #include "SW_Weather.h"
 #include "SW_Sky.h"
-
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
@@ -164,6 +163,38 @@ static RealD surfaceTemp[TWO_DAYS], forb_h2o_qum[TWO_DAYS], tree_h2o_qum[TWO_DAY
 /* --------------------------------------------------- */
 static void records2arrays(void);
 static void arrays2records(void);
+
+/* =================================================== */
+/*                RSOILWAT						                 */
+/* --------------------------------------------------- */
+#ifdef RSOILWAT
+SEXP tempError()
+{
+	SEXP swR_temp_error;
+	PROTECT(swR_temp_error = NEW_LOGICAL(1));
+
+	int i;
+	int Rsoil_temp_error = 0;
+	for (i = 0; i < MAX_LAYERS - 1; i++)
+	{
+		if (SW_Soilwat.parts[i] >= 1)
+		{
+			Rsoil_temp_error = 1;
+		}
+	}
+
+	if (Rsoil_temp_error == 1)
+	{
+		LOGICAL_POINTER(swR_temp_error)[0] = TRUE;
+	}
+	else
+	{
+		LOGICAL_POINTER(swR_temp_error)[0] = FALSE;
+	}
+	UNPROTECT(1);
+	return swR_temp_error;
+}
+#endif
 
 /* *************************************************** */
 /* *************************************************** */
@@ -632,8 +663,8 @@ void SW_Water_Flow(void) {
 	/* Soil Temperature starts here */
 
 	double biomass; // computing the live biomass real quickly to condense the call to soil_temperature
-biomass = SW_VegProd.grass.biolive_daily[doy] * SW_VegProd.fractionGrass + SW_VegProd.shrub.biolive_daily[doy] * SW_VegProd.fractionShrub
-		+ SW_VegProd.forb.biolive_daily[doy] * SW_VegProd.fractionForb + SW_VegProd.tree.biolive_daily[doy] * SW_VegProd.fractionTree; // changed to exclude tree biomass, bMatric/c it was breaking the soil_temperature function
+biomass = SW_VegProd.grass.biomass_daily[doy] * SW_VegProd.fractionGrass + SW_VegProd.shrub.biolive_daily[doy] * SW_VegProd.fractionShrub
+		+ SW_VegProd.forb.biomass_daily[doy] * SW_VegProd.fractionForb + SW_VegProd.tree.biolive_daily[doy] * SW_VegProd.fractionTree; // changed to exclude tree biomass, bMatric/c it was breaking the soil_temperature function
 
 			// soil_temperature function computes the soil temp for each layer and stores it in lyrsTemp
 			// doesn't affect SWC at all, but needs it for the calculation, so therefore the temperature is the last calculation done

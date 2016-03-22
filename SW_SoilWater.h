@@ -34,7 +34,6 @@
  modified the use of these variables throughout the rest of the code.
  07/09/2013	(clk)	Added the variables transp_forb, forb_evap, hydred_forb, and forb_int to SW_SOILWAT_OUTPUTS
  Added the variables transpiration_forb, hydred_forb, forb_evap, and forb_int to SW_SOILWAT
-
  */
 /********************************************************/
 /********************************************************/
@@ -92,7 +91,8 @@ typedef struct {
 			pet,
 			deep,
 			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
-			surfaceTemp; // soil surface temperature
+			surfaceTemp,
+			parts[MAX_LAYERS]; // soil surface temperature
 } SW_SOILWAT_OUTPUTS;
 
 typedef struct {
@@ -111,7 +111,8 @@ typedef struct {
 			shrub_int,
 			grass_int,
 			sTemp[MAX_LAYERS],
-			surfaceTemp; // soil surface temperature
+			surfaceTemp,
+			parts[MAX_LAYERS]; // soil surface temperature
 
 	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */
 	wksum, mosum, yrsum, /* accumulators for *avg */
