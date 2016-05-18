@@ -302,8 +302,7 @@ static OutPeriod str2period(char *s)
 {
 	/* --------------------------------------------------- */
 	IntUS pd;
-	for (pd = 0; Str_CompareI(s, pd2str[pd]) && pd < SW_OUTNPERIODS; pd++)
-		;
+	for (pd = 0; Str_CompareI(s, pd2str[pd]) && pd < SW_OUTNPERIODS; pd++) ;
 
 	return pd;
 }
@@ -313,12 +312,10 @@ static OutKey str2key(char *s)
 	/* --------------------------------------------------- */
 	IntUS key;
 
-	for (key = 0; key < SW_OUTNKEYS && Str_CompareI(s, key2str[key]); key++)
-		;
+	for (key = 0; key < SW_OUTNKEYS && Str_CompareI(s, key2str[key]); key++) ;
 	if (key == SW_OUTNKEYS)
 	{
-		LogError(logfp, LOGFATAL, "%s : Invalid key (%s) in %s",
-				SW_F_name(eOutput), s);
+		LogError(logfp, LOGFATAL, "%s : Invalid key (%s) in %s", SW_F_name(eOutput), s);
 	}
 	return key;
 }
@@ -328,13 +325,10 @@ static OutSum str2stype(char *s)
 	/* --------------------------------------------------- */
 	OutSum styp;
 
-	for (styp = eSW_Off; styp < SW_NSUMTYPES && Str_CompareI(s, styp2str[styp]);
-			styp++)
-		;
+	for (styp = eSW_Off; styp < SW_NSUMTYPES && Str_CompareI(s, styp2str[styp]); styp++) ;
 	if (styp == SW_NSUMTYPES)
 	{
-		LogError(logfp, LOGFATAL, "%s : Invalid summary type (%s)\n",
-				SW_F_name(eOutput), s);
+		LogError(logfp, LOGFATAL, "%s : Invalid summary type (%s)\n", SW_F_name(eOutput), s);
 	}
 	return styp;
 }
@@ -566,7 +560,8 @@ void SW_OUT_read(void)
 				else
 				{
 					CloseFile(&f);
-					LogError(logfp, LOGFATAL, "%s : Insufficient key parameters for item %d.",
+					LogError(logfp, LOGFATAL,
+							"%s : Insufficient key parameters for item %d.",
 							MyFileName, itemno);
 					continue;
 				}
@@ -613,10 +608,7 @@ void SW_OUT_read(void)
 						|| k == eSW_SWABulk || k == eSW_SWAMatric
 						|| k == eSW_DeepSWC))
 		{
-			LogError(logfp, LOGWARN,
-					"%s : Summary Type FIN with key %s is meaningless.\n"
-							"  Using type AVG instead.", MyFileName,
-					key2str[k]);
+			LogError(logfp, LOGWARN, "%s : Summary Type FIN with key %s is meaningless.\n" "  Using type AVG instead.", MyFileName, key2str[k]);
 			SW_Output[k].sumtype = eSW_Avg;
 		}
 
@@ -624,9 +616,7 @@ void SW_OUT_read(void)
 		if (k == eSW_DeepSWC && SW_Output[k].sumtype != eSW_Off
 				&& !SW_Site.deepdrain)
 		{
-			LogError(logfp, LOGWARN,
-					"%s : DEEPSWC cannot be output if flag not set in %s.",
-					MyFileName, SW_F_name(eOutput));
+			LogError(logfp, LOGWARN, "%s : DEEPSWC cannot be output if flag not set in %s.", MyFileName, SW_F_name(eOutput));
 			continue;
 		}
 		//Set the values
@@ -642,9 +632,7 @@ void SW_OUT_read(void)
 			if (SW_Output[k].last_orig == 0)
 			{
 				CloseFile(&f);
-				LogError(logfp, LOGFATAL,
-						"%s : Invalid ending day (%s), key=%s.", MyFileName,
-						last, keyname);
+				LogError(logfp, LOGFATAL, "%s : Invalid ending day (%s), key=%s.", MyFileName, last, keyname);
 			}
 		}
 		//Set the outputs for the Periods
@@ -658,7 +646,7 @@ void SW_OUT_read(void)
 			{
 				if (timeSteps[k][i] < 4)
 				{
-					printf( "inside Soilwat SW_Output.c : isPartialSoilwatOutput=%d \n", isPartialSoilwatOutput);
+				//	printf( "inside Soilwat SW_Output.c : isPartialSoilwatOutput=%d \n", isPartialSoilwatOutput);
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 					SW_OutputPrefix(prefix);
 					strcpy(str, prefix);
@@ -1241,7 +1229,8 @@ void SW_OUT_write_today(void)
 					t = SW_Output[k].first; /* always output this period */
 					break;
 				default:
-					LogError(stdout, LOGFATAL, "Invalid period in SW_OUT_write_today().");
+					LogError(stdout, LOGFATAL,
+							"Invalid period in SW_OUT_write_today().");
 				}
 				if (!writeit || t < SW_Output[k].first || t > SW_Output[k].last)
 					continue;
@@ -1511,7 +1500,8 @@ static void get_temp(void)
 	}
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, v_max, _Sep, v_min, _Sep, v_avg, _Sep, surfaceTempVal);
+	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, v_max, _Sep, v_min, _Sep,
+			v_avg, _Sep, surfaceTempVal);
 	strcat(outstr, str);
 #elif defined(STEPWAT)
 
@@ -1628,7 +1618,8 @@ static void get_precip(void)
 	}
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep, val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
+	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
+			val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
 	strcat(outstr, str);
 #elif defined(STEPWAT)
 	if (isPartialSoilwatOutput == FALSE)
@@ -2304,8 +2295,7 @@ static void get_runoff(void)
 		break;
 	}
 	val_totalRunoff = val_surfaceRunoff + val_snowRunoff;
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f", _Sep, val_totalRunoff, _Sep,
-			val_surfaceRunoff, _Sep, val_snowRunoff);
+	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f", _Sep, val_totalRunoff, _Sep, val_surfaceRunoff, _Sep, val_snowRunoff);
 	strcat(outstr, str);
 #else
 	switch (pd)
@@ -2882,9 +2872,7 @@ static void get_evapSurface(void)
 		val_water = v->yravg.surfaceWater_evap;
 		break;
 	}
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep,
-			val_tot, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep,
-			val_grass, _Sep, val_litter, _Sep, val_water);
+	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_tot, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass, _Sep, val_litter, _Sep, val_water);
 	strcat(outstr, str);
 #else
 	switch (pd)
@@ -2987,9 +2975,7 @@ static void get_interception(void)
 		val_litter = v->yravg.litter_int;
 		break;
 	}
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_tot,
-			_Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass,
-			_Sep, val_litter);
+	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_tot, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass, _Sep, val_litter);
 	strcat(outstr, str);
 #else
 	switch (pd)
@@ -3865,8 +3851,7 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 		s->surfaceRunoff += v->surfaceRunoff;
 		break;
 	default:
-		LogError(stderr, LOGFATAL, "PGMR: Invalid key in sumof_wth(%s)",
-				key2str[k]);
+		LogError(stderr, LOGFATAL, "PGMR: Invalid key in sumof_wth(%s)", key2str[k]);
 	}
 
 }
@@ -4000,8 +3985,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	default:
-		LogError(stderr, LOGFATAL, "PGMR: Invalid key in sumof_swc(%s)",
-				key2str[k]);
+		LogError(stderr, LOGFATAL, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
 	}
 }
 
@@ -4066,8 +4050,7 @@ static void average_for(ObjType otyp, OutPeriod pd)
 					break;
 
 				default:
-					LogError(stdout, LOGFATAL,
-							"Programmer: Invalid period in average_for().");
+					LogError(stdout, LOGFATAL, "Programmer: Invalid period in average_for().");
 				} /* end switch(pd) */
 
 				if (SW_Output[k].period != pd || SW_Output[k].myobj != otyp
@@ -4256,8 +4239,8 @@ static void average_for(ObjType otyp, OutPeriod pd)
 					break;
 
 				default:
-					LogError(stderr, LOGFATAL,
-							"PGMR: Invalid key in average_for(%s)", key2str[k]);
+
+					LogError(stderr, LOGFATAL, "PGMR: Invalid key in average_for(%s)", key2str[k]);
 				}
 			}
 		} /* end of for loop */
@@ -4306,8 +4289,7 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 			vsum = &v->yrsum; /* yearly, y'see */
 			break;
 		default:
-			LogError(logfp, LOGFATAL,
-					"PGMR: Invalid outperiod in collect_sums()");
+			LogError(logfp, LOGFATAL, "PGMR: Invalid outperiod in collect_sums()");
 		}
 
 		if (pd >= SW_Output[k].first && pd <= SW_Output[k].last)
