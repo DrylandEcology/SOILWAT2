@@ -42,7 +42,9 @@
  06/24/2013	(rjm)	added function void SW_SIT_clear_layers(void) to free allocated soil layers
  06/27/2013	(drs)	closed open files if LogError() with LOGFATAL is called in SW_SIT_read(), _read_layers()
  07/09/2013	(clk)	added the initialization of all the new variables
-
+ 06/05/2016 (ctd) Modified threshold for condition involving gravel in _read_layers() function - as per Caitlin's request.
+ 									Also, added print statements to notify the user that values may be invalid if the gravel content does not follow
+									parameters of Corey-Brooks equation.
  */
 /********************************************************/
 /********************************************************/
@@ -391,10 +393,21 @@ static void _read_layers(void) {
 			fail = TRUE;
 			fval = matricd;
 			errtype = Str_Dup("bulk density");
-		} else if (LT(f_gravel,0.) || GT(f_gravel,1.)) {
+		} else if (LT(f_gravel,0.) || GT(f_gravel,0.5)) {
 			fail = TRUE;
 			fval = f_gravel;
 			errtype = Str_Dup("gravel content");
+#ifndef RSOILWAT
+			printf("\nGravel content is either too HIGH (> 0.5), or too LOW (<0.0): %0.3f", f_gravel);
+			printf("\nParameterization for Brooks-Corey equation may fall outside of valid range.");
+			printf("\nThis can cause implausible SWP values.");
+			printf("\nConsider setting SWC minimum in siteparam.in file.");
+#else
+			Rprintf("\nGravel content is either too HIGH (> 0.5), or too LOW (<0.0).");
+			Rprintf("\nParameterization for Brooks-Corey equation may fall outside of valid range.");
+			Rprintf("\nThis can cause implausible SWP values.");
+			Rprintf("\nConsider setting SWC minimum in siteparam.in file.");
+#endif
 		} else if (LE(psand,0.)) {
 			fail = TRUE;
 			fval = psand;
