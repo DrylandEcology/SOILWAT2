@@ -1,19 +1,38 @@
 /********************************************************/
 /********************************************************/
 /*  Application: SOILWAT - soilwater dynamics simulator
- *  Source file: Main.c
- *  Type: main module
+ *  Source file: SW_Main_Function.c
+ *  Type: duplicate main module
  *  Purpose: Contains the main loops and initializations.
  *
- 06/24/2013	(rjm)	included "SW_Site.h" and "SW_Weather.h";
- added calls at end of main() to SW_SIT_clear_layers() and SW_WTH_clear_runavg_list() to free memory
- */
+ 06/13/2016 (akt)
+
+  This file will compile only for Stepwat and not for RSoilwat
+
+  Added this file ‘SW_Main_Function.c’ that is similar to  as SW_Main.c except SW_Main_Function.c does not have main() function.
+  Added this because of one requirement: to have Soilwat all the output in the Stepwat, while running  Stepwat  with soilwat.
+  Like  running Soilwat standalone output , we wanted  this,  all the output files in stepwat as well.
+
+  So one of the solution was to  include soilwat  SW_Main.c file for compile in Stepwat project  and from Stepwat main() function flow,
+  we can call the main() function of Soilwat's  SW_Main.c .
+
+  However, we can not include  SW_Main.c file for compile in Stepwat project,  as  any c/cpp project can have only one entry/start point
+  as main() function so  any project can not have more than one main() functions.
+  But somehow for this requirement need to run two main() function flow (one Soilwat standalone flow, second normal stepwat flow).
+  So I had to create duplicate file  SW_Main_Function.c  from SW_Main.c , here main() function renamed so it will not give conflict
+  with Stepwat main() function and did some minor cosmetic changes for not closing log file pointers, that was  shared with both
+  stepwat and soilwat.
+
+ 	*/
 /********************************************************/
 /********************************************************/
 
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
+
+#ifdef STEPWAT
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -224,3 +243,4 @@ void init_args(int argc, char **argv) {
 
 }
 
+#endif
