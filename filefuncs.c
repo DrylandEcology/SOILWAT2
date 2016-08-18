@@ -199,12 +199,22 @@ Bool MkDir(const char *dname) {
 	for (i = 0; i < n; i++) {
 		strcat(errstr, a[i]);
 		if (!DirExists(errstr)) {
-			if (0 != (r = mkdir(errstr, 0777))) {
-				if (errno == EACCES) {
-					result = FALSE;
-					break;
+			#if defined (__linux__) || defined (__APPLE__) || defined (__MACH__)
+				if (0 != (r = mkdir(errstr, 0777))) {
+					if (errno == EACCES) {
+						result = FALSE;
+						break;
+					}
 				}
-			}
+			#endif
+			#if defined (_WIN32)
+				if (0 != (r = mkdir(errstr))) {
+					if (errno == EACCES) {
+						result = FALSE;
+						break;
+					}
+				}
+			#endif
 		}
 		strcat(errstr, "/");
 	}
