@@ -143,20 +143,16 @@ Bool ChDir(const char *dname) {
 }
 
 /**************************************************************/
-#ifdef __WIN32__
+/* Mapping mdir() function to OS specific version */
+
+#ifdef _WIN32 || _WIN64                /* 32- and 64-bit Windows OS: Windows XP, Vista, 7, 8 */
 #define mkdir(d, m) mkdir(d)
-#elif __linux__
+#elif __linux__                        /* linux: Centos, Debian, Fedora, OpenSUSE, RedHat, Ubuntu */
 #define mkdir(d, m) mkdir(d, m)
-#elif __APPLE__
+#elif __APPLE__ && __MACH__            /* (Mac) OS X, macOS, iOS, Darwin */
 #define mkdir(d, m) mkdir(d, m)
-#else
-
-
-//Added this new _mkdir  if we want to run this build in Window env using cgywin
-#define _mkdir(d, m) _mkdir(d)
-
-
 #endif
+
 Bool MkDir(const char *dname) {
 	/* make a path with 'mkdir -p' -like behavior. provides an
 	 * interface for portability problems.
