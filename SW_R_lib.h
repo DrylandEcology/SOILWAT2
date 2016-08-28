@@ -23,7 +23,6 @@
 #include <R.h>
 #include <Rdefines.h>
 #include <Rconfig.h>
-#include <Rinterface.h>
 #include <Rinternals.h>
 
 void init_args(int argc, char **argv);

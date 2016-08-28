@@ -40,7 +40,6 @@
 #include <R.h>
 #include <Rdefines.h>
 #include <Rconfig.h>
-#include <Rinterface.h>
 #include <Rinternals.h>
 #endif
 
