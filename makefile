@@ -11,6 +11,7 @@
 # make compilel				is used for compiling on Linux (explicitly link output against GCC's libmath library)
 # make clean 				delete the exe and all of the o files
 # make cleano 				delete all of the o files, but not the exe
+# make cleaner 				delete all of the o and so files (use when compiling for R package)
 #-----------------------------------------------------------------------------------
 
 objects = SW_Main.o SW_VegEstab.o SW_Control.o generic.o \
@@ -24,12 +25,16 @@ OBJECTS = SW_Main.o SW_VegEstab.o SW_Control.o generic.o \
           SW_Files.o SW_Model.o SW_Site.o SW_SoilWater.o \
           SW_Markov.o SW_Weather.o SW_Sky.o SW_Output.o \
           SW_VegProd.o SW_Flow_lib.o SW_Flow.o SW_R_lib.o
+          
+target_exe = sw_v31
+
+target_r = Rsoilwat31.so
 
 all:
-	R CMD SHLIB -o Rsoilwat31.so $(OBJECTS)
+	R CMD SHLIB -o $(target_r) $(OBJECTS)
 
 test : $(objects)
-		gcc -o sw_v31 $(objects)
+		gcc -o $(target_exe) $(objects)
 
 SW_Main.o : generic.h filefuncs.h SW_Defines.h SW_Control.h
 SW_VegEstab.o : generic.h filefuncs.h myMemory.h SW_Defines.h SW_Files.h SW_Site.h SW_Times.h SW_Model.h SW_SoilWater.h SW_Weather.h SW_VegEstab.h
@@ -53,27 +58,31 @@ SW_Flow.o : generic.h filefuncs.h SW_Defines.h SW_Model.h SW_Site.h SW_SoilWater
 
 .PHONY : compile
 compile :
-		gcc -O3 -Wall -Wextra -o sw_v31 SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+		gcc -O3 -Wall -Wextra -o $(target_exe) SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
 		
 .PHONY : compilem
 compilem :
-		gcc -O3 -Wall -Wextra -o sw_v31 SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
-		cp sw_v31 test
+		gcc -O3 -Wall -Wextra -o $(target_exe) SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+		cp $(target_exe) test
 		mv test testing/test
 		
 .PHONY : compilej
 compilej :
-		mpicc -o sw_v31 SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+		mpicc -o $(target_exe) SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
 
 .PHONY : clean
 clean :
-		-rm sw_v31 $(objects)
+		-rm $(target_exe) $(objects)
 		
 .PHONY : cleano
 cleano : 
 		-rm $(objects)
 
+.PHONY : cleaner
+cleaner : 
+		-rm $(target_r) SW_R_lib.o $(objects)
+
 .PHONY : compilel
 compilel :
-		gcc -O3 -Wall -Wextra -o sw_v31 SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c -lm
-		cp sw_v31 testing
+		gcc -O3 -Wall -Wextra -o $(target_exe) SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c -lm
+		cp $(target_exe) testing
