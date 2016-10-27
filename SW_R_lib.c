@@ -528,7 +528,7 @@ SEXP onGetOutput(SEXP inputData) {
 	Rtransp_columns = tLayers*5;
 	Revasoil_columns = tevapLayers;
 	Revasurface_columns = 7;
-	Rinterception_columns = 7;	// was 6
+	Rinterception_columns = 6;	// was 7
 	Rpercolation_columns = tLayers-1;
 	Rhydred_columns = tLayers*5;
 	Ret_columns = 0;
