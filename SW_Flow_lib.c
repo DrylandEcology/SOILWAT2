@@ -1768,7 +1768,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
 			// TODO: adjust thermal conductivity and heat capacity if layer is frozen
 		parts = part1 * cs / (sh * st->bDensityR[k]);
-		SW_Soilwat.parts[i] = parts;
 
 		part2 = sTempR[i - 1] - 2 * st->oldsTempR[i] + st->oldsTempR[i + 1];
 
@@ -1779,6 +1778,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 				printf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
 				soil_temp_error = 1;
 			#else
+			  /* Flag that an error has occurred for use in RSoilwat */
+				SW_Soilwat.partsError = 1;
 			#endif
 			// return;  //Exits the Function
 		}
