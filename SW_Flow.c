@@ -179,7 +179,7 @@ static void arrays2records(void);
 SEXP tempError() {
 	SEXP swR_temp_error;
 	PROTECT(swR_temp_error = NEW_LOGICAL(1));
-	if (SW_Soilwat.parts == 1) {
+	if (SW_Soilwat.partsError == 1) {
 		LOGICAL_POINTER(swR_temp_error)[0] = TRUE;
 	} else {
 		LOGICAL_POINTER(swR_temp_error)[0] = FALSE;
