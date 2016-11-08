@@ -168,27 +168,20 @@ static void arrays2records(void);
 /*                RSOILWAT						                 */
 /* --------------------------------------------------- */
 #ifdef RSOILWAT
-SEXP tempError()
-{
+/**
+ * Determines if a constant in the Parton equation 2.21 is invalid and would
+ * thus cause extreme soil temperature values (see SW_Flow_lib.c ~1770)
+ *
+ * @param  none
+ * @return an R boolean that denotes an error (TRUE) or lack of (FALSE)
+ *
+ */
+SEXP tempError() {
 	SEXP swR_temp_error;
 	PROTECT(swR_temp_error = NEW_LOGICAL(1));
-
-	int i;
-	int Rsoil_temp_error = 0;
-	for (i = 0; i < MAX_LAYERS - 1; i++)
-	{
-		if (SW_Soilwat.parts[i] >= 1)
-		{
-			Rsoil_temp_error = 1;
-		}
-	}
-
-	if (Rsoil_temp_error == 1)
-	{
+	if (SW_Soilwat.parts == 1) {
 		LOGICAL_POINTER(swR_temp_error)[0] = TRUE;
-	}
-	else
-	{
+	} else {
 		LOGICAL_POINTER(swR_temp_error)[0] = FALSE;
 	}
 	UNPROTECT(1);
@@ -672,6 +665,7 @@ biomass = SW_VegProd.grass.biomass_daily[doy] * SW_VegProd.fractionGrass + SW_Ve
 		soil_temperature(SW_Weather.now.temp_avg[Today], SW_Soilwat.pet, SW_Soilwat.aet, biomass, lyrSWCBulk, lyrSWCBulk_Saturated, lyrbDensity, lyrWidths, lyroldsTemp, lyrsTemp,surfaceTemp, SW_Site.n_layers,
 				lyrSWCBulk_FieldCaps, lyrSWCBulk_Wiltpts, SW_Site.bmLimiter, SW_Site.t1Param1, SW_Site.t1Param2, SW_Site.t1Param3, SW_Site.csParam1, SW_Site.csParam2,
 				SW_Site.shParam, SW_Soilwat.snowdepth, SW_Site.meanAirTemp, SW_Site.stDeltaX, SW_Site.stMaxDepth, SW_Site.stNRGR, SW_Soilwat.snowpack[Today]);
+
 
 	/* Soil Temperature ends here */
 
