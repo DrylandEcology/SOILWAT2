@@ -875,7 +875,7 @@ SEXP onGet_SW_OUT(void)
 	PROTECT(OUT = NEW_OBJECT(swOUT));
 
 	PROTECT(sep=NEW_STRING(1));
-	SET_STRING_ELT(sep, 0, mkChar(&_Sep));
+	SET_STRING_ELT(sep, 0, mkCharLen(&_Sep,1));
 	SET_SLOT(OUT, install("outputSeparator"), sep);
 
 	if(debug) Rprintf("useTimeStep before assignment = %d\n", useTimeStep);
