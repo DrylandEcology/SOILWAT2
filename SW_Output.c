@@ -1824,7 +1824,7 @@ static void get_vwcMatric(void)
 		ForEachSoilLayer(i)
 		{
 			convert = 1. / (1. - SW_Site.lyr[i]->fractionVolBulk_gravel) / SW_Site.lyr[i]->width;
-			p_RvwcBulk_yr[SW_Output[eSW_VWCMatric].yr_row + yr_nrow * (i + 1)] = v->yravg.vwcMatric[i] * convert;
+      p_RvwcMatric_yr[SW_Output[eSW_VWCMatric].yr_row + yr_nrow * (i + 1)] = v->yravg.vwcMatric[i] * convert;
 		}
 		SW_Output[eSW_VWCMatric].yr_row++;
 #endif
