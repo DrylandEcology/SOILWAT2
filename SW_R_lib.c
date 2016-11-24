@@ -341,7 +341,7 @@ SEXP onGetOutput(SEXP inputData) {
 	unsigned int Raet_columns, Rdeedrain_columns, Restabs_columns, Revasoil_columns, Revasurface_columns, Rhydred_columns, Rinfiltration_columns, Rinterception_columns, Rpercolation_columns,
 					Rpet_columns, Rprecip_columns, Rrunoff_columns, Rsnowpack_columns, Rsoil_temp_columns, Rsurface_water_columns, RvwcBulk_columns, RvwcMatric_columns, RswcBulk_columns, RswpMatric_columns, RswaBulk_columns,
 					RswaMatric_columns, Rtemp_columns, Rtransp_columns, Rwetdays_columns, /*NOT USED ->*/ Rwthr_columns,RallH2O_columns,Ret_columns,Rallveg_columns;
-	int i,j, pCount=0;
+	int i,j, k, pCount=0;
 	int use[28];
 	Bool useTimeStep;
 
@@ -2650,6 +2650,9 @@ SEXP onGetOutput(SEXP inputData) {
 			SET_STRING_ELT(Restabs_names_y_dy, 2, mkChar("YearlyEstabResults"));
 			SET_VECTOR_ELT(Restabs_names_dy, 1, Restabs_names_y_dy);
 			setAttrib(Restabs_dy, R_DimNamesSymbol, Restabs_names_dy);
+			// Initialize to 0; allocMatrix does not initialize
+			for (k = 0; k < dy_nrow * (Restabs_columns + 2); k++)
+        REAL(Restabs_dy)[k] = 0.;
 			SET_SLOT(swOutput_KEY_ESTABL, install("Day"), Restabs_dy);
 			UNPROTECT(3);
 		}
@@ -2663,6 +2666,9 @@ SEXP onGetOutput(SEXP inputData) {
 			 SET_STRING_ELT(Restabs_names_y_wk, 2, mkChar("YearlyEstabResults"));
 			 SET_VECTOR_ELT(Restabs_names_wk, 1, Restabs_names_y_wk);
 			setAttrib(Restabs_wk, R_DimNamesSymbol, Restabs_names_wk);
+			// Initialize to 0; allocMatrix does not initialize
+			for (k = 0; k < wk_nrow * (Restabs_columns + 2); k++)
+        REAL(Restabs_wk)[k] = 0.;
 			SET_SLOT(swOutput_KEY_ESTABL, install("Week"), Restabs_wk);
 			UNPROTECT(3);
 		}
@@ -2676,6 +2682,9 @@ SEXP onGetOutput(SEXP inputData) {
 			SET_STRING_ELT(Restabs_names_y_mo, 2, mkChar("YearlyEstabResults"));
 			SET_VECTOR_ELT(Restabs_names_mo, 1, Restabs_names_y_mo);
 			setAttrib(Restabs_mo, R_DimNamesSymbol, Restabs_names_mo);
+			// Initialize to 0; allocMatrix does not initialize
+			for (k = 0; k < mo_nrow * (Restabs_columns + 2); k++)
+        REAL(Restabs_mo)[k] = 0.;
 			SET_SLOT(swOutput_KEY_ESTABL, install("Month"), Restabs_mo);
 			UNPROTECT(3);
 		}
@@ -2688,6 +2697,9 @@ SEXP onGetOutput(SEXP inputData) {
 			SET_STRING_ELT(Restabs_names_y_yr, 1, mkChar("YearlyEstabResults"));
 			SET_VECTOR_ELT(Restabs_names_yr, 1, Restabs_names_y_yr);
 			setAttrib(Restabs_yr, R_DimNamesSymbol, Restabs_names_yr);
+			// Initialize to 0; allocMatrix does not initialize
+			for (k = 0; k < yr_nrow * (Restabs_columns + 1); k++)
+        REAL(Restabs_yr)[k] = 0.;
 			SET_SLOT(swOutput_KEY_ESTABL, install("Year"), Restabs_yr);
 			UNPROTECT(3);
 		}
