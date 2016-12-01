@@ -1520,7 +1520,12 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTem
 // NOTE: THIS FUNCTION IS CURRENTLY NOT OPERATIONAL: DESCRIPTION BY EITZINGER ET AL. 2000 SEEMS INSUFFICIENT
 
 	unsigned int i, sFadjusted_sTemp;
-
+	// TODO - Remove when this function is operational
+  (void) oldsTemp;
+	(void) sTemp;
+	(void) shParam;
+	(void) vwc;
+	(void) bDensity;
 	//double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
 
 	/* local variables explained:
