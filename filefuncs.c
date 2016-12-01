@@ -148,7 +148,9 @@ Bool ChDir(const char *dname) {
 /**************************************************************/
 /* Mapping mdir() function to OS specific version */
 
-#ifdef _WIN32 || _WIN64                /* 32- and 64-bit Windows OS: Windows XP, Vista, 7, 8 */
+#ifdef _WIN32  /* 32- and 64-bit Windows OS: Windows XP, Vista, 7, 8 */
+#define mkdir(d, m) mkdir(d)
+#elif _WIN64
 #define mkdir(d, m) mkdir(d)
 #elif __linux__                        /* linux: Centos, Debian, Fedora, OpenSUSE, RedHat, Ubuntu */
 #define mkdir(d, m) mkdir(d, m)
