@@ -1322,18 +1322,18 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
  */
 double surface_temperature_under_snow(double airTempAvg, double snow){
   double kSnow; /** the effect of snow based on swe */
-  double tSoilAvg; /** the average temeperature of the soil surface */
+  double tSoilAvg ; /** the average temeperature of the soil surface */
 	/** Parton et al. 1998. Equation 6. */
-  if (snow == 0){
-    return 0.0;
-  }
-  else if (snow > 0 && airTempAvg >= 0){
+  if (snow == 0) {
+    tSoilAvg = 0.0;
+  } else if (snow > 0 && airTempAvg >= 0) {
     tSoilAvg = -2.0;
-  }
-  else if (snow > 0 && airTempAvg < 0){
+  } else if (snow > 0 && airTempAvg < 0) {
     kSnow = fmax((-0.15 * snow + 1.0), 0.0); /** Parton et al. 1998. Equation 5. */
     tSoilAvg = 0.3 * airTempAvg * kSnow + -2.0;
-  }
+  } else {
+		tSoilAvg = 0.0; // TODO - Find appropriate substitute
+	}
 	return tSoilAvg;
 }
 
@@ -1520,7 +1520,8 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTem
 // NOTE: THIS FUNCTION IS CURRENTLY NOT OPERATIONAL: DESCRIPTION BY EITZINGER ET AL. 2000 SEEMS INSUFFICIENT
 
 	unsigned int i, sFadjusted_sTemp;
-	double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
+
+	//double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
 
 	/* local variables explained:
 	 toDebug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
@@ -1589,6 +1590,7 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTem
 */
 	return sFadjusted_sTemp;
 }
+
 
 void endCalculations()
 {
