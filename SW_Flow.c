@@ -179,7 +179,7 @@ static void arrays2records(void);
 SEXP tempError() {
 	SEXP swR_temp_error;
 	PROTECT(swR_temp_error = NEW_LOGICAL(1));
-	if (SW_Soilwat.partsError == 1) {
+	if (SW_Soilwat.soilError == 1) {
 		LOGICAL_POINTER(swR_temp_error)[0] = TRUE;
 	} else {
 		LOGICAL_POINTER(swR_temp_error)[0] = FALSE;
@@ -206,7 +206,7 @@ void SW_Water_Flow(void);
 void SW_FLW_construct(void) {
 	/* 06/26/2013	(rjm) added function SW_FLW_construct() to init global variables between consecutive calls to SoilWat as dynamic library */
 	int i=0;
-	soil_temp_error = 0;
+	SW_Soilwat.soilError = 0;
 	soil_temp_init = 0;
 	fusion_pool_init = 0;
 	//These only have to be cleared if a loop is wrong in the code.

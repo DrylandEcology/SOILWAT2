@@ -103,7 +103,6 @@
 /* --------------------------------------------------- */
 extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
-unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
 /* *************************************************** */
@@ -1323,18 +1322,18 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
  */
 double surface_temperature_under_snow(double airTempAvg, double snow){
   double kSnow; /** the effect of snow based on swe */
-  double tSoilAvg; /** the average temeperature of the soil surface */
+  double tSoilAvg ; /** the average temeperature of the soil surface */
 	/** Parton et al. 1998. Equation 6. */
-  if (snow == 0){
-    return 0.0;
-  }
-  else if (snow > 0 && airTempAvg >= 0){
+  if (snow == 0) {
+    tSoilAvg = 0.0;
+  } else if (snow > 0 && airTempAvg >= 0) {
     tSoilAvg = -2.0;
-  }
-  else if (snow > 0 && airTempAvg < 0){
+  } else if (snow > 0 && airTempAvg < 0) {
     kSnow = fmax((-0.15 * snow + 1.0), 0.0); /** Parton et al. 1998. Equation 5. */
     tSoilAvg = 0.3 * airTempAvg * kSnow + -2.0;
-  }
+  } else {
+		tSoilAvg = 0.0; // TODO - Find appropriate substitute
+	}
 	return tSoilAvg;
 }
 
@@ -1382,15 +1381,14 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
 	// if soil temperature max depth is less than soil layer depth then quit
 	if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
-		if (!soil_temp_error) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
+		if (SW_Soilwat.soilError == 0) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
 
 		#ifndef RSOILWAT
 			printf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 		#else
 			Rprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 		#endif
-
-			soil_temp_error = 1;
+		SW_Soilwat.soilError = 1;
 		}
 		return; // exits the function
 	}
@@ -1522,7 +1520,13 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTem
 // NOTE: THIS FUNCTION IS CURRENTLY NOT OPERATIONAL: DESCRIPTION BY EITZINGER ET AL. 2000 SEEMS INSUFFICIENT
 
 	unsigned int i, sFadjusted_sTemp;
-	double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
+	// TODO - Remove when this function is operational
+  (void) oldsTemp;
+	(void) sTemp;
+	(void) shParam;
+	(void) vwc;
+	(void) bDensity;
+	//double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
 
 	/* local variables explained:
 	 toDebug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
@@ -1592,9 +1596,10 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTem
 	return sFadjusted_sTemp;
 }
 
+
 void endCalculations()
 {
-	soil_temp_error = 1;
+	SW_Soilwat.soilError = 1;
 	// return;  //Exits the Function
 }
 
@@ -1774,12 +1779,11 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		/*Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
 		VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)*/
 		if (GE(parts, 1.0)){
+			SW_Soilwat.soilError = 1;
 			#ifndef RSOILWAT
-				printf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
-				soil_temp_error = 1;
+				printf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values.");
 			#else
-			  /* Flag that an error has occurred for use in RSoilwat */
-				SW_Soilwat.partsError = 1;
+				Rprintf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values.");
 			#endif
 			// return;  //Exits the Function
 		}
