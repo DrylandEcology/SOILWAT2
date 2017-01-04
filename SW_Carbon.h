@@ -12,4 +12,3 @@
 extern double       co2_biomass_mult; // Biomass multiplier
 extern double       co2_wue_mult;     // WUE multiplier
 extern unsigned int calculate_co2;    // Logical to determine if co2 is used
-extern unsigned int curr_year;        // Variable to track the current year
