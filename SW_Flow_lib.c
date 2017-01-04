@@ -95,6 +95,7 @@
 #include "SW_Defines.h"
 #include "SW_Flow_lib.h"
 #include "SW_Flow_subs.h"
+#include "SW_Carbon.h"
 #include "Times.h"
 
 
@@ -849,8 +850,16 @@ void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, 
 		} else {
 			shadeaf = 1.0;
 		}
-
-		*bstrate = watrate(swpavg, petday, swp_shift, swp_shape, swp_inflec, swp_range) * shadeaf * petday * fbst;
+		if (calculate_co2) {
+			// TODO - Use multiplier
+			*bstrate = watrate(
+													swpavg, petday, swp_shift, swp_shape,
+													swp_inflec, swp_range) * shadeaf * petday * fbst;
+		} else {
+			*bstrate = watrate(
+													swpavg, petday, swp_shift, swp_shape,
+													swp_inflec, swp_range) * shadeaf * petday * fbst;
+		}
 	}
 }
 
