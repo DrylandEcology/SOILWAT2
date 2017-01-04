@@ -37,6 +37,8 @@
 #include "SW_VegEstab.h"
 #include "SW_VegProd.h"
 #include "SW_Weather.h"
+#include "SW_Carbon.h"
+unsigned int curr_year;
 
 /* =================================================== */
 /*                  Global Declarations                */
@@ -68,6 +70,7 @@ void SW_CTL_main(void) {
 	TimeInt *cur_yr = &SW_Model.year;
 
 	for (*cur_yr = SW_Model.startyr; *cur_yr <= SW_Model.endyr; (*cur_yr)++) {
+		curr_year = *cur_yr;
 		SW_CTL_run_current_year();
 	}
 
