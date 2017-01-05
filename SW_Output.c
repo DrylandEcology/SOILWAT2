@@ -244,14 +244,15 @@ static char *key2str[] =
 		SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE, SW_INTERCEPTION,
 		SW_LYRDRAIN, SW_HYDRED, SW_ET, SW_AET, SW_PET, SW_WETDAY, SW_SNOWPACK,
 		SW_DEEPSWC, SW_SOILTEMP,
-		SW_ALLVEG, SW_ESTAB };
+		SW_ALLVEG, SW_ESTAB, SW_CONDUCTANCE, SW_BIOMASS };
 /* converts an enum output key (OutKey type) to a module  */
 /* or object type. see SW_Output.h for OutKey order.         */
 /* MUST be SW_OUTNKEYS of these */
 static ObjType key2obj[] =
 { eWTH, eWTH, eWTH, eWTH, eWTH, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
 		eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
-		eSWC, eVES, eVES };
+		eSWC, eVES, eVES, eSWC, eSWC }; // Verify that biomass and cond. are eSWC
+																	  // TODO - ^
 static char *pd2str[] =
 { SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR };
 static char *styp2str[] =
@@ -290,6 +291,8 @@ static void get_snowpack(void);
 static void get_deepswc(void);
 static void get_estab(void);
 static void get_soiltemp(void);
+static void get_conductance(void); // TODO - Write function
+static void get_biomass(void);	// TODO - Write function
 static void get_none(void); /* default until defined */
 
 static void collect_sums(ObjType otyp, OutPeriod op);
@@ -444,6 +447,12 @@ void SW_OUT_construct(void)
 		case eSW_Estab:
 			SW_Output[k].pfunc = (void (*)(void)) get_estab;
 			break;
+		case eSW_Conductance: // TODO - Verify
+			SW_Output[k].pfunc = (void (*)(void)) get_conductance;
+			break;
+		case eSW_Biomass:
+			SW_Output[k].pfunc = (void (*)(void)) get_biomass;
+			// Creates a pointer to a function that expects void and returns void
 		default:
 			SW_Output[k].pfunc = (void (*)(void)) get_none;
 			break;
@@ -3983,6 +3992,14 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 			s->sTemp[i] += v->sTemp[i];
 		break;
 
+	case eSW_Conductance:
+		// TODO
+		break;
+
+	case eSW_Biomass:
+		// TODO
+		break;
+
 	default:
 		LogError(stderr, LOGFATAL, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
 	}
@@ -4236,6 +4253,12 @@ static void average_for(ObjType otyp, OutPeriod pd)
 
 				case eSW_Estab: /* do nothing, no averaging required */
 					break;
+
+				case eSW_Conductance:
+					break; // TODO - Add code
+
+				case eSW_Biomass:
+					break; // TODO - Add code
 
 				default:
 
