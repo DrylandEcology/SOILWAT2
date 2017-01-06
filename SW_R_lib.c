@@ -27,10 +27,9 @@ Bool collectInData;
 Bool bWeatherList;
 
 int *p_yr, *p_mo, *p_wk, *p_dy;
-// TODO - Add new pointers for biomass and conductance
 RealD *p_Raet_yr, *p_Rdeep_drain_yr, *p_Restabs_yr, *p_Revap_soil_yr, *p_Revap_surface_yr, *p_Rhydred_yr, *p_Rinfiltration_yr, *p_Rinterception_yr, *p_Rpercolation_yr,
 		*p_Rpet_yr, *p_Rprecip_yr, *p_Rrunoff_yr, *p_Rsnowpack_yr, *p_Rsoil_temp_yr, *p_Rsurface_water_yr, *p_RvwcBulk_yr, *p_RvwcMatric_yr, *p_RswcBulk_yr, *p_RswpMatric_yr,
-		*p_RswaBulk_yr, *p_RswaMatric_yr, *p_Rtemp_yr, *p_Rtransp_yr, *p_Rwetdays_yr;
+		*p_RswaBulk_yr, *p_RswaMatric_yr, *p_Rtemp_yr, *p_Rtransp_yr, *p_Rwetdays_yr, *p_Biomass_yr, *p_Stomatal_yr;
 RealD *p_Raet_mo, *p_Rdeep_drain_mo, *p_Restabs_mo, *p_Revap_soil_mo, *p_Revap_surface_mo, *p_Rhydred_mo, *p_Rinfiltration_mo, *p_Rinterception_mo, *p_Rpercolation_mo,
 		*p_Rpet_mo, *p_Rprecip_mo, *p_Rrunoff_mo, *p_Rsnowpack_mo, *p_Rsoil_temp_mo, *p_Rsurface_water_mo, *p_RvwcBulk_mo, *p_RvwcMatric_mo, *p_RswcBulk_mo, *p_RswpMatric_mo,
 		*p_RswaBulk_mo, *p_RswaMatric_mo, *p_Rtemp_mo, *p_Rtransp_mo, *p_Rwetdays_mo;
@@ -147,7 +146,7 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	return SW_DataList;
 }
 
-SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
+SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList, SEXP CO2Multipliers) {
 	int tYears = 0, tevapLayers = 0, tVegEstabCount = 0, pYearUse = 0, pMonthUse = 0, pWeekUse = 0, pDayUse = 0;
 	int i;
 	SEXP outputData;
@@ -191,6 +190,9 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	//Set the input data either from files or from memory
 	init_args(argc, argv);
 	SW_CTL_init_model(_firstfile);
+
+	// Call might need to be moved
+	if (!isNull(CO2Multipliers)) SW_VPD_init(CO2Multipliers);
 
 	PROTECT(outputData = onGetOutput(inputData));
 
@@ -322,9 +324,13 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	if(periodUse[eSW_WetDays][1]) p_Rwetdays_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Week")));
 	if(periodUse[eSW_WetDays][0]) p_Rwetdays_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Day")));
 
+  /* The structure to use, not yet implemented
+	p_Biomass_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("BIOMASS")), install("Year")));
+	p_Stomatal_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("STOMATAL")), install("Year")));
+	*/
 
 	//Rprintf("Day Pointers Set\n");
-	SW_CTL_main();
+	SW_CTL_main(CO2Multipliers);
 
 	SW_SIT_clear_layers();
 	SW_WTH_clear_runavg_list();

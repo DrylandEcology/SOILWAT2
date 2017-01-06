@@ -28,11 +28,11 @@
 void init_args(int argc, char **argv);
 void usage(void);
 void init_args(int argc, char **argv);
-void SW_CTL_main(void);
+void SW_CTL_main(SEXP CO2Multipliers);
 void SW_CTL_init_model(const char *firstfile);
 
 SEXP onGetInputDataFromFiles(SEXP input);
-SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList);
+SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList, SEXP CO2Multipliers);
 SEXP onGetOutput(SEXP inputData);
 
 #endif /* SW_R_LIB_H_ */

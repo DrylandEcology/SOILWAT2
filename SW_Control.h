@@ -19,8 +19,8 @@
 #define SW_CONTROL_H
 
 void SW_CTL_init_model(const char *firstfile);
-void SW_CTL_main(void); /* main controlling loop for SOILWAT  */
-void SW_CTL_run_current_year(void);
+void SW_CTL_main(SEXP CO2Multipliers); /* main controlling loop for SOILWAT  */
+void SW_CTL_run_current_year(SEXP CO2Multipliers);
 
 #ifdef DEBUG_MEM
 void SW_CTL_SetMemoryRefs(void);

@@ -99,7 +99,7 @@ typedef struct {
 } SW_VEGPROD;
 
 void SW_VPD_read(void);
-void SW_VPD_init(void);
+void SW_VPD_init(SEXP CO2Multipliers);
 void SW_VPD_construct(void);
 
 #ifdef RSOILWAT

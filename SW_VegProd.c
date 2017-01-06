@@ -51,6 +51,7 @@
 #include "SW_Files.h"
 #include "SW_Times.h"
 #include "SW_VegProd.h"
+#include "SW_Control.c"
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -534,8 +535,8 @@ void SW_VPD_read(void) {
 	#ifdef RSOILWAT
 		if (!collectInData)
 	#endif
-		
-	SW_VPD_init();
+
+	SW_VPD_init(NULL);
 
 	if (EchoInits)
 		_echo_inits();
@@ -600,7 +601,7 @@ SEXP onGet_SW_VPD() {
 	REAL(VegComp)[2] = v->fractionTree; //Tree
 	REAL(VegComp)[3] = v->fractionForb; //forb
 	REAL(VegComp)[4] = v->fractionBareGround; //Bare Ground
-	
+
 	PROTECT(VegComp_names = allocVector(STRSXP, 5));
 	SET_STRING_ELT(VegComp_names, 0, mkChar("Grasses"));
 	SET_STRING_ELT(VegComp_names, 1, mkChar("Shrubs"));
@@ -622,7 +623,7 @@ SEXP onGet_SW_VPD() {
 	REAL(conv_stcr)[1] = v->shrub.conv_stcr; //Shrub
 	REAL(conv_stcr)[2] = v->tree.conv_stcr; //Tree
 	REAL(conv_stcr)[3] = v->forb.conv_stcr; //forb
-	
+
 	PROTECT(col_names = allocVector(STRSXP, 4));
 	SET_STRING_ELT(col_names, 0, mkChar("Grasses"));
 	SET_STRING_ELT(col_names, 1, mkChar("Shrubs"));
@@ -842,7 +843,7 @@ SEXP onGet_SW_VPD() {
 	SET_VECTOR_ELT(Forest_names, 0, MonthlyProductionValues_Row_names);
 	SET_VECTOR_ELT(Forest_names, 1, MonthlyProductionValues_Column_names);
 	setAttrib(Forest, R_DimNamesSymbol, Forest_names);
-	
+
 	PROTECT(Forb = allocMatrix(REALSXP, 12, 4));
 	p_Forb = REAL(Forb);
 	for (i = 0; i < 12; i++) {
@@ -951,7 +952,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	v->forb.cnpy.range = p_Canopy[17];
 	v->forb.cnpy.slope = p_Canopy[18];
 	v->forb.canopy_height_constant = p_Canopy[19];
-	
+
 	PROTECT(VegInterception = GET_SLOT(SW_VPD, install(cVegProd_names[4])));
 	p_VegInterception = REAL(VegInterception);
 	v->grass.veg_intPPT_a = p_VegInterception[0];
@@ -970,7 +971,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	v->forb.veg_intPPT_b = p_VegInterception[13];
 	v->forb.veg_intPPT_c = p_VegInterception[14];
 	v->forb.veg_intPPT_d = p_VegInterception[15];
-	
+
 	PROTECT(LitterInterception = GET_SLOT(SW_VPD, install(cVegProd_names[5])));
 	p_LitterInterception = REAL(LitterInterception);
 	v->grass.litt_intPPT_a = p_LitterInterception[0];
@@ -989,7 +990,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	v->forb.litt_intPPT_b = p_LitterInterception[13];
 	v->forb.litt_intPPT_c = p_LitterInterception[14];
 	v->forb.litt_intPPT_d = p_LitterInterception[15];
-	
+
 	PROTECT(EsTpartitioning_param = GET_SLOT(SW_VPD, install(cVegProd_names[6])));
 	v->grass.EsTpartitioning_param = REAL(EsTpartitioning_param)[0]; //Grass
 	v->shrub.EsTpartitioning_param = REAL(EsTpartitioning_param)[1]; //Shrub
@@ -1028,7 +1029,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	v->forb.tr_shade_effects.yinflec = p_Shade[21];
 	v->forb.tr_shade_effects.range = p_Shade[22];
 	v->forb.tr_shade_effects.slope = p_Shade[23];
-	
+
 	PROTECT(Hydraulic_flag = GET_SLOT(SW_VPD, install(cVegProd_names[9])));
 	PROTECT(Hydraulic = GET_SLOT(SW_VPD, install(cVegProd_names[10])));
 	v->grass.flagHydraulicRedistribution = LOGICAL_POINTER(Hydraulic_flag)[0]; //Grass
@@ -1103,7 +1104,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 			LogError(logfp, LOGWARN, "  FORB fraction : %5.4f", v->fractionForb);
 			LogError(logfp, LOGWARN, "  Bare Ground fraction : %5.4f", v->fractionBareGround);
 	}
-	SW_VPD_init();
+	SW_VPD_init(NULL);
 
 	if (EchoInits)
 		_echo_inits();
@@ -1118,7 +1119,8 @@ void SW_VPD_construct(void) {
 
 }
 
-void SW_VPD_init(void) {
+
+void SW_VPD_init(SEXP CO2Multipliers) {
 	/* ================================================== */
 	/* set up vegetation parameters to be used in
 	 * the "watrflow" subroutine.
@@ -1142,9 +1144,31 @@ void SW_VPD_init(void) {
 
 	SW_VEGPROD *v = &SW_VegProd; /* convenience */
 	TimeInt doy; /* base1 */
+	RealD biomassMult;
+	biomassMult = 1.;
+  int x = 5;
 
+  // Grab the multiplier for this year
+	// TODO: Figure out if the int stored in CO2Multipliers will evaluate with a TimeInt
+	if (!isNull(CO2Multipliers)) {
+		SEXP Years;
+		SEXP BioMults;
+		PROTECT(Years = GET_SLOT(CO2Multipliers, install("Year")));
+		PROTECT(BioMults = GET_SLOT(CO2Multipliers, install("BioMult")));
+		for (int i=0; i < (sizeof(Years) / sizeof(REAL(Years)[0])); i++) {
+			if (REAL(Years)[i] == *cur_yr) {
+				biomassMult = REAL(BioMults)[i];
+			}
+		}
+		UNPROTECT(2);
+	}
+
+	// TODO: Determine what variables need to be modified to change biomass
+	// Example: does pct_live also need to be multiplied
+	// TODO: Figure out how to multiply RealD by RealD/double
 	if (GT(v->fractionGrass, 0.)) {
 		interpolate_monthlyValues(v->grass.litter, v->grass.litter_daily);
+		*v->grass.biomass = *v->grass.biomass * biomassMult;
 		interpolate_monthlyValues(v->grass.biomass, v->grass.biomass_daily);
 		interpolate_monthlyValues(v->grass.pct_live, v->grass.pct_live_daily);
 		interpolate_monthlyValues(v->grass.lai_conv, v->grass.lai_conv_daily);
@@ -1152,6 +1176,7 @@ void SW_VPD_init(void) {
 
 	if (GT(v->fractionShrub, 0.)) {
 		interpolate_monthlyValues(v->shrub.litter, v->shrub.litter_daily);
+		*v->shrub.biomass = *v->shrub.biomass * biomassMult;
 		interpolate_monthlyValues(v->shrub.biomass, v->shrub.biomass_daily);
 		interpolate_monthlyValues(v->shrub.pct_live, v->shrub.pct_live_daily);
 		interpolate_monthlyValues(v->shrub.lai_conv, v->shrub.lai_conv_daily);
@@ -1159,6 +1184,7 @@ void SW_VPD_init(void) {
 
 	if (GT(v->fractionTree, 0.)) {
 		interpolate_monthlyValues(v->tree.litter, v->tree.litter_daily);
+		*v->tree.biomass = *v->tree.biomass * biomassMult;
 		interpolate_monthlyValues(v->tree.biomass, v->tree.biomass_daily);
 		interpolate_monthlyValues(v->tree.pct_live, v->tree.pct_live_daily);
 		interpolate_monthlyValues(v->tree.lai_conv, v->tree.lai_conv_daily);
@@ -1166,6 +1192,7 @@ void SW_VPD_init(void) {
 
 	if (GT(v->fractionForb, 0.)) {
 		interpolate_monthlyValues(v->forb.litter, v->forb.litter_daily);
+		*v->forb.biomass = *v->forb.biomass * biomassMult;
 		interpolate_monthlyValues(v->forb.biomass, v->forb.biomass_daily);
 		interpolate_monthlyValues(v->forb.pct_live, v->forb.pct_live_daily);
 		interpolate_monthlyValues(v->forb.lai_conv, v->forb.lai_conv_daily);

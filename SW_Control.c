@@ -41,9 +41,8 @@
 /* =================================================== */
 /*                  Global Declarations                */
 /* --------------------------------------------------- */
-extern   SW_MODEL 		SW_Model;
-extern 	 SW_VEGESTAB 	SW_VegEstab;
-
+extern SW_MODEL SW_Model;
+extern SW_VEGESTAB SW_VegEstab;
 #ifdef RSOILWAT
 	extern Bool useFiles;
 	extern SEXP InputData;
@@ -53,7 +52,7 @@ extern 	 SW_VEGESTAB 	SW_VegEstab;
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
 static void _read_inputs(void);
-static void _begin_year(void);
+static void _begin_year(SEXP CO2Multipliers);
 static void _begin_day(void);
 static void _end_day(void);
 static void _collect_values(void);
@@ -64,12 +63,12 @@ void SW_FLW_construct(void);
 /*******************************************************/
 /***************** Begin Main Code *********************/
 
-void SW_CTL_main(void) {
+void SW_CTL_main(SEXP CO2Multipliers) {
 
 	TimeInt *cur_yr = &SW_Model.year;
 
 	for (*cur_yr = SW_Model.startyr; *cur_yr <= SW_Model.endyr; (*cur_yr)++) {
-		SW_CTL_run_current_year();
+		SW_CTL_run_current_year(CO2Multipliers);
 	}
 
 #ifndef RSOILWAT
@@ -96,11 +95,11 @@ void SW_CTL_init_model(const char *firstfile) {
 
 }
 
-void SW_CTL_run_current_year(void) {
+void SW_CTL_run_current_year(SEXP CO2Multipliers) {
 	/*=======================================================*/
 	TimeInt *doy = &SW_Model.doy;
 
-	_begin_year();
+	_begin_year(CO2Multipliers);
 
 	for (*doy = SW_Model.firstdoy; *doy <= SW_Model.lastdoy; (*doy)++) {
 		_begin_day();
@@ -115,17 +114,22 @@ void SW_CTL_run_current_year(void) {
 	SW_OUT_flush();
 }
 
-static void _begin_year(void) {
+static void _begin_year(SEXP CO2Multipliers) {
 	/*=======================================================*/
 	/* in addition to the timekeeper (Model), usually only
 	 * modules that read input yearly or produce output need
 	 * to have this call */
-	SW_MDL_new_year();
-	SW_WTH_new_year();
-	SW_SWC_new_year();
-	SW_VES_new_year();
-	SW_OUT_new_year();
+	 // Dynamic biomass
+	 // If CO2 effects are enabled, change the biomass for this year
+	 if (!isNull(CO2Multipliers)) {
+	  	SW_VPD_init(CO2Multipliers);
+	 }
 
+	 SW_MDL_new_year();
+	 SW_WTH_new_year();
+	 SW_SWC_new_year();
+	 SW_VES_new_year();
+	 SW_OUT_new_year();
 }
 
 static void _begin_day(void) {
