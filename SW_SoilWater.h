@@ -92,7 +92,7 @@ typedef struct {
 			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
 			surfaceTemp, // soil surface temperature
 			partsError,  // soil temperature error indicator
-			conductance, // TODO - Assign values
+			stom_conduct, // TODO - Assign values
 			biomass; // TODO - Assign values
 } SW_SOILWAT_OUTPUTS;
 
@@ -114,7 +114,7 @@ typedef struct {
 			sTemp[MAX_LAYERS],
 			surfaceTemp, // soil surface temperature
 			partsError, // soil temperature error indicator
-			conductance, // TODO - Verify
+			stom_conduct, // TODO - Verify
 			biomass;
 
 	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */

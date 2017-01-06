@@ -71,7 +71,7 @@
 #define SW_SOILTEMP		"SOILTEMP"		//25	4		2
 #define SW_ALLVEG		"ALLVEG"		//26	5		0/* position and variable marker, not an output key */
 #define SW_ESTAB		"ESTABL"		//27	5		0
-#define SW_CONDUCTANCE	"CONDUCTANCE"
+#define SW_STOMCONDUCT	"STOMCONDUCT"
 #define SW_BIOMASS	"BIOMASS"
 
 #define SW_OUTNKEYS 30 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
@@ -112,7 +112,7 @@ typedef enum {
 	/* vegetation quantities */
 	eSW_AllVeg,
 	eSW_Estab, /* make sure this is the last one */
-	eSW_Conductance, // TODO - Verify
+	eSW_Stomconduct, // TODO - Verify
 	eSW_Biomass,
 	eSW_LastKey
 } OutKey;
