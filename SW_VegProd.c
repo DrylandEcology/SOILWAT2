@@ -52,12 +52,14 @@
 #include "SW_Times.h"
 #include "SW_VegProd.h"
 #include "SW_Carbon.h"
+#include "SW_Model.h"
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 extern Bool EchoInits;
 #ifdef RSOILWAT
+extern SW_MODEL SW_Model;
 extern Bool collectInData;
 #endif
 SW_VEGPROD SW_VegProd; /* declared here, externed elsewhere */
@@ -1155,7 +1157,7 @@ void SW_VPD_init(void) {
 		PROTECT(Years = GET_SLOT(co2_multipliers, install("Year")));
 		PROTECT(BioMults = GET_SLOT(co2_multipliers, install("BioMult")));
 		for (int i=0; i < (sizeof(Years) / sizeof(REAL(Years)[0])); i++) {
-			if (REAL(Years)[i] == *cur_yr) {
+			if (REAL(Years)[i] == SW_Model.year) {
 				co2_biomass_mult = REAL(BioMults)[i];
 			}
 		}

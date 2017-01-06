@@ -53,7 +53,7 @@ static   int periodUse[28][4]; // TODO - Increment to match new outputs (i.e. 30
 unsigned int calculate_co2 		= 0; /* Determines if CO2 impacts should occur */
 RealD 			 co2_wue_mult 		= 1.0;
 RealD 			 co2_biomass_mult = 1.0;
-
+SEXP				 co2_multipliers  = NULL;
 /* =================================================== */
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
@@ -197,7 +197,7 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList, SEXP CO2Multipli
 
 	// Call might need to be moved
 	if (!isNull(CO2Multipliers)) {
-		SEXP co2_multipliers = CO2Multipliers;
+		co2_multipliers = CO2Multipliers;
 		calculate_co2 = 1; /* CO2 impacts should be calculated */
 		SW_VPD_init();
 	}
