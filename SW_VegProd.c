@@ -51,7 +51,6 @@
 #include "SW_Files.h"
 #include "SW_Times.h"
 #include "SW_VegProd.h"
-#include "SW_Control.c"
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -1146,9 +1145,8 @@ void SW_VPD_init(SEXP CO2Multipliers) {
 	TimeInt doy; /* base1 */
 	RealD biomassMult;
 	biomassMult = 1.;
-  int x = 5;
 
-  // Grab the multiplier for this year
+	// Grab the multiplier for this year
 	// TODO: Figure out if the int stored in CO2Multipliers will evaluate with a TimeInt
 	if (!isNull(CO2Multipliers)) {
 		SEXP Years;
