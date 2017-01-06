@@ -369,7 +369,7 @@ SEXP onGetOutput(SEXP inputData) {
 	SEXP swOutput, swOutput_Object;
 	// TODO - Verify
 	char *cSWoutput_Names[] = {"yr_nrow","mo_nrow","wk_nrow","dy_nrow","WTHR","TEMP","PRECIP","SOILINFILT","RUNOFF","ALLH2O","VWCBULK","VWCMATRIC","SWCBULK","SWABULK","SWAMATRIC","SWPMATRIC","SURFACEWATER",
-			"TRANSP","EVAPSOIL","EVAPSURFACE","INTERCEPTION","LYRDRAIN","HYDRED","ET","AET","PET","WETDAY","SNOWPACK","DEEPSWC","SOILTEMP","ALLVEG","ESTABL", "BIOMASS", "STOMCONDUCT"};
+			"TRANSP","EVAPSOIL","EVAPSURFACE","INTERCEPTION","LYRDRAIN","HYDRED","ET","AET","PET","WETDAY","SNOWPACK","DEEPSWC","SOILTEMP","ALLVEG","ESTABL", "STOMCONDUCT", "BIOMASS"};
 
 	SEXP swOutput_KEY;
 	char *cSWoutput_KEY_Names[] = {"Title","TimeStep","Columns","Day","Week","Month","Year"};
@@ -380,7 +380,7 @@ SEXP onGetOutput(SEXP inputData) {
 		swOutput_KEY_SOILTEMP, swOutput_KEY_ALLVEG, swOutput_KEY_ESTABL, swOutput_KEY_BIOMASS, swOutput_KEY_STOMCONDUCT;
 		// TODO - Verify
 	char *cSWoutput_KEY_Titles[] = {"","temp_air","precip","infiltration","runoff","","vwc_bulk","vwc_matric","swc_bulk","swa_bulk","swa_matric","swp_matric","surface_water","transp","evap_soil","evap_surface",
-		"interception","percolation","hydred","","aet","pet","wetdays","snowpack","deep_drain","temp_soil","","estabs", "biomass", "stom_conduct"};
+		"interception","percolation","hydred","","aet","pet","wetdays","snowpack","deep_drain","temp_soil","","estabs", "stom_conduct", "biomass"};
 
 	SEXP Periods, TimeSteps;
 	SEXP r_dy_nrow, r_wk_nrow, r_mo_nrow, r_yr_nrow;
@@ -2737,11 +2737,11 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	// TODO - Add our two outputs here and create them as R objects within period use
 	if (periodUse[28][3]) {
-
+		// Stomatal Conductance
 	}
 
 	if (periodUse[29][3]) {
-		
+		// Biomass
 	}
 
 	UNPROTECT(pCount);
