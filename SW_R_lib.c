@@ -30,7 +30,7 @@ Bool bWeatherList;
 int *p_yr, *p_mo, *p_wk, *p_dy;
 RealD *p_Raet_yr, *p_Rdeep_drain_yr, *p_Restabs_yr, *p_Revap_soil_yr, *p_Revap_surface_yr, *p_Rhydred_yr, *p_Rinfiltration_yr, *p_Rinterception_yr, *p_Rpercolation_yr,
 		*p_Rpet_yr, *p_Rprecip_yr, *p_Rrunoff_yr, *p_Rsnowpack_yr, *p_Rsoil_temp_yr, *p_Rsurface_water_yr, *p_RvwcBulk_yr, *p_RvwcMatric_yr, *p_RswcBulk_yr, *p_RswpMatric_yr,
-		*p_RswaBulk_yr, *p_RswaMatric_yr, *p_Rtemp_yr, *p_Rtransp_yr, *p_Rwetdays_yr, *p_Biomass_yr, *p_StomConduct_yr;
+		*p_RswaBulk_yr, *p_RswaMatric_yr, *p_Rtemp_yr, *p_Rtransp_yr, *p_Rwetdays_yr, *p_Rbiomass_yr, *p_Rstom_conduct_yr;
 RealD *p_Raet_mo, *p_Rdeep_drain_mo, *p_Restabs_mo, *p_Revap_soil_mo, *p_Revap_surface_mo, *p_Rhydred_mo, *p_Rinfiltration_mo, *p_Rinterception_mo, *p_Rpercolation_mo,
 		*p_Rpet_mo, *p_Rprecip_mo, *p_Rrunoff_mo, *p_Rsnowpack_mo, *p_Rsoil_temp_mo, *p_Rsurface_water_mo, *p_RvwcBulk_mo, *p_RvwcMatric_mo, *p_RswcBulk_mo, *p_RswpMatric_mo,
 		*p_RswaBulk_mo, *p_RswaMatric_mo, *p_Rtemp_mo, *p_Rtransp_mo, *p_Rwetdays_mo;
@@ -49,7 +49,7 @@ extern SW_MODEL SW_Model;
 //extern SW_SITE SW_Site;
 extern SW_VEGESTAB SW_VegEstab;
 
-static   int periodUse[28][4]; // TODO - Increment to match new outputs (i.e. 30)
+static   int periodUse[30][4]; // TODO - Verify
 unsigned int calculate_co2 		= 0; /* Determines if CO2 impacts should occur */
 RealD 			 co2_wue_mult 		= 1.0;
 RealD 			 co2_biomass_mult = 1.0;
@@ -211,7 +211,11 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList, SEXP CO2Multipli
 
 	//Get the pointers to the pre configured output data setup. These are used in output.c
 
-	// TODO - Add pointer to biomass and conductance outputs
+	// TODO - Verify if mo, dy, or wk are needed
+	if (periodUse[eSW_Biomass][3]) p_Rbiomass_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("BIOMASS")), install("Year")));
+
+	if (periodUse[eSW_Stomconduct][3]) p_Rstom_conduct_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("STOMCONDUCT")), install("Year")));
+
 	if(periodUse[eSW_Temp][3]) p_Rtemp_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Year")));
 	if(periodUse[eSW_Temp][2]) p_Rtemp_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Month")));
 	if(periodUse[eSW_Temp][1]) p_Rtemp_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Week")));
@@ -363,20 +367,20 @@ SEXP onGetOutput(SEXP inputData) {
 	Bool useTimeStep;
 
 	SEXP swOutput, swOutput_Object;
-	// TODO - Add output names for biomass and conductance
+	// TODO - Verify
 	char *cSWoutput_Names[] = {"yr_nrow","mo_nrow","wk_nrow","dy_nrow","WTHR","TEMP","PRECIP","SOILINFILT","RUNOFF","ALLH2O","VWCBULK","VWCMATRIC","SWCBULK","SWABULK","SWAMATRIC","SWPMATRIC","SURFACEWATER",
-			"TRANSP","EVAPSOIL","EVAPSURFACE","INTERCEPTION","LYRDRAIN","HYDRED","ET","AET","PET","WETDAY","SNOWPACK","DEEPSWC","SOILTEMP","ALLVEG","ESTABL"};
+			"TRANSP","EVAPSOIL","EVAPSURFACE","INTERCEPTION","LYRDRAIN","HYDRED","ET","AET","PET","WETDAY","SNOWPACK","DEEPSWC","SOILTEMP","ALLVEG","ESTABL", "BIOMASS", "STOMCONDUCT"};
 
 	SEXP swOutput_KEY;
 	char *cSWoutput_KEY_Names[] = {"Title","TimeStep","Columns","Day","Week","Month","Year"};
-	// TODO - Add output keys for biomass and conductance
+	// TODO - Verify
 	SEXP swOutput_KEY_WTHR, swOutput_KEY_TEMP, swOutput_KEY_PRECIP, swOutput_KEY_SOILINFILT, swOutput_KEY_RUNOFF, swOutput_KEY_ALLH2O, swOutput_KEY_VWCBULK, swOutput_KEY_VWCMATRIC, swOutput_KEY_SWCBULK,
 		swOutput_KEY_SWPMATRIC, swOutput_KEY_SWABULK, swOutput_KEY_SWAMATRIC, swOutput_KEY_SURFACEWATER, swOutput_KEY_TRANSP, swOutput_KEY_EVAPSOIL, swOutput_KEY_EVAPSURFACE, swOutput_KEY_INTERCEPTION,
 		swOutput_KEY_LYRDRAIN, swOutput_KEY_HYDRED, swOutput_KEY_ET, swOutput_KEY_AET, swOutput_KEY_PET, swOutput_KEY_WETDAY, swOutput_KEY_SNOWPACK, swOutput_KEY_DEEPSWC,
-		swOutput_KEY_SOILTEMP, swOutput_KEY_ALLVEG, swOutput_KEY_ESTABL;
-		// TODO - Add output key names for biomass and conductance
+		swOutput_KEY_SOILTEMP, swOutput_KEY_ALLVEG, swOutput_KEY_ESTABL, swOutput_KEY_BIOMASS, swOutput_KEY_STOMCONDUCT;
+		// TODO - Verify
 	char *cSWoutput_KEY_Titles[] = {"","temp_air","precip","infiltration","runoff","","vwc_bulk","vwc_matric","swc_bulk","swa_bulk","swa_matric","swp_matric","surface_water","transp","evap_soil","evap_surface",
-		"interception","percolation","hydred","","aet","pet","wetdays","snowpack","deep_drain","temp_soil","","estabs"};
+		"interception","percolation","hydred","","aet","pet","wetdays","snowpack","deep_drain","temp_soil","","estabs", "biomass", "stom_conduct"};
 
 	SEXP Periods, TimeSteps;
 	SEXP r_dy_nrow, r_wk_nrow, r_mo_nrow, r_yr_nrow;
@@ -477,7 +481,7 @@ SEXP onGetOutput(SEXP inputData) {
 		}
 	} else {
 		PROTECT(Periods = GET_SLOT(GET_SLOT(inputData, install("output")),install("period")));
-		for(i=0; i<28; i++) { // TODO - Probably need to increment here to match output count (28 -> 30)
+		for(i=0; i<30; i++) { // TODO - Verify
 			switch (INTEGER(Periods)[i]) {
 				case eSW_Day:
 				pDayUse = 1;
@@ -520,7 +524,7 @@ SEXP onGetOutput(SEXP inputData) {
 
 	if(debug) Rprintf("Year Rows: %d, Month Rows: %d, Week Rows: %d, Day Rows: %d\n",yr_nrow, mo_nrow, wk_nrow, dy_nrow);
 
-	for(i=0; i<28; i++) { // TODO - Probably need to increment here to match output count (28 -> 30)
+	for(i=0; i<30; i++) { // TODO - Verify
 		periodUse[i][0]=periodUse[i][1]=periodUse[i][2]=periodUse[i][3]=0;
 		if(useTimeStep) {
 			for(j=0; j<length(Periods); j++) {
@@ -2732,7 +2736,13 @@ SEXP onGetOutput(SEXP inputData) {
 		UNPROTECT(3);
 	}
 	// TODO - Add our two outputs here and create them as R objects within period use
+	if (periodUse[28][3]) {
 
+	}
+
+	if (periodUse[29][3]) {
+		
+	}
 
 	UNPROTECT(pCount);
 	return swOutput_Object;
