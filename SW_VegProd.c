@@ -51,12 +51,15 @@
 #include "SW_Files.h"
 #include "SW_Times.h"
 #include "SW_VegProd.h"
+#include "SW_Carbon.h"
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 extern Bool EchoInits;
 #ifdef RSOILWAT
+RealD co2_wue_mult 		 = 1.;
+RealD co2_biomass_mult = 1.;
 extern Bool collectInData;
 #endif
 SW_VEGPROD SW_VegProd; /* declared here, externed elsewhere */
@@ -535,7 +538,7 @@ void SW_VPD_read(void) {
 		if (!collectInData)
 	#endif
 
-	SW_VPD_init(NULL);
+	SW_VPD_init();
 
 	if (EchoInits)
 		_echo_inits();
@@ -1103,7 +1106,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 			LogError(logfp, LOGWARN, "  FORB fraction : %5.4f", v->fractionForb);
 			LogError(logfp, LOGWARN, "  Bare Ground fraction : %5.4f", v->fractionBareGround);
 	}
-	SW_VPD_init(NULL);
+	SW_VPD_init();
 
 	if (EchoInits)
 		_echo_inits();
@@ -1119,7 +1122,7 @@ void SW_VPD_construct(void) {
 }
 
 
-void SW_VPD_init(SEXP CO2Multipliers) {
+void SW_VPD_init(void) {
 	/* ================================================== */
 	/* set up vegetation parameters to be used in
 	 * the "watrflow" subroutine.
@@ -1143,8 +1146,8 @@ void SW_VPD_init(SEXP CO2Multipliers) {
 
 	SW_VEGPROD *v = &SW_VegProd; /* convenience */
 	TimeInt doy; /* base1 */
-	RealD biomassMult;
-	biomassMult = 1.;
+
+	#ifdef RSOILWAT
 
 	// Grab the multiplier for this year
 	// TODO: Figure out if the int stored in CO2Multipliers will evaluate with a TimeInt
@@ -1155,18 +1158,21 @@ void SW_VPD_init(SEXP CO2Multipliers) {
 		PROTECT(BioMults = GET_SLOT(CO2Multipliers, install("BioMult")));
 		for (int i=0; i < (sizeof(Years) / sizeof(REAL(Years)[0])); i++) {
 			if (REAL(Years)[i] == *cur_yr) {
-				biomassMult = REAL(BioMults)[i];
+				co2_biomass_mult = REAL(BioMults)[i];
 			}
 		}
 		UNPROTECT(2);
 	}
 
+	#endif
+
 	// TODO: Determine what variables need to be modified to change biomass
 	// Example: does pct_live also need to be multiplied
 	// TODO: Figure out how to multiply RealD by RealD/double
+	// TODO - Use multiplier only if provided
 	if (GT(v->fractionGrass, 0.)) {
 		interpolate_monthlyValues(v->grass.litter, v->grass.litter_daily);
-		*v->grass.biomass = *v->grass.biomass * biomassMult;
+		*v->grass.biomass = *v->grass.biomass * co2_biomass_mult;
 		interpolate_monthlyValues(v->grass.biomass, v->grass.biomass_daily);
 		interpolate_monthlyValues(v->grass.pct_live, v->grass.pct_live_daily);
 		interpolate_monthlyValues(v->grass.lai_conv, v->grass.lai_conv_daily);
@@ -1174,7 +1180,7 @@ void SW_VPD_init(SEXP CO2Multipliers) {
 
 	if (GT(v->fractionShrub, 0.)) {
 		interpolate_monthlyValues(v->shrub.litter, v->shrub.litter_daily);
-		*v->shrub.biomass = *v->shrub.biomass * biomassMult;
+		*v->shrub.biomass = *v->shrub.biomass * co2_biomass_mult;
 		interpolate_monthlyValues(v->shrub.biomass, v->shrub.biomass_daily);
 		interpolate_monthlyValues(v->shrub.pct_live, v->shrub.pct_live_daily);
 		interpolate_monthlyValues(v->shrub.lai_conv, v->shrub.lai_conv_daily);
@@ -1182,7 +1188,7 @@ void SW_VPD_init(SEXP CO2Multipliers) {
 
 	if (GT(v->fractionTree, 0.)) {
 		interpolate_monthlyValues(v->tree.litter, v->tree.litter_daily);
-		*v->tree.biomass = *v->tree.biomass * biomassMult;
+		*v->tree.biomass = *v->tree.biomass * co2_biomass_mult;
 		interpolate_monthlyValues(v->tree.biomass, v->tree.biomass_daily);
 		interpolate_monthlyValues(v->tree.pct_live, v->tree.pct_live_daily);
 		interpolate_monthlyValues(v->tree.lai_conv, v->tree.lai_conv_daily);
@@ -1190,7 +1196,7 @@ void SW_VPD_init(SEXP CO2Multipliers) {
 
 	if (GT(v->fractionForb, 0.)) {
 		interpolate_monthlyValues(v->forb.litter, v->forb.litter_daily);
-		*v->forb.biomass = *v->forb.biomass * biomassMult;
+		*v->forb.biomass = *v->forb.biomass * co2_biomass_mult;
 		interpolate_monthlyValues(v->forb.biomass, v->forb.biomass_daily);
 		interpolate_monthlyValues(v->forb.pct_live, v->forb.pct_live_daily);
 		interpolate_monthlyValues(v->forb.lai_conv, v->forb.lai_conv_daily);
