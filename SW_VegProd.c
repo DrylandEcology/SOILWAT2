@@ -1149,11 +1149,11 @@ void SW_VPD_init(void) {
 
 	// Grab the multiplier for this year
 	// TODO: Figure out if the int stored in CO2Multipliers will evaluate with a TimeInt
-	if (!isNull(CO2Multipliers)) {
+	if (calculate_co2) {
 		SEXP Years;
 		SEXP BioMults;
-		PROTECT(Years = GET_SLOT(CO2Multipliers, install("Year")));
-		PROTECT(BioMults = GET_SLOT(CO2Multipliers, install("BioMult")));
+		PROTECT(Years = GET_SLOT(co2_multipliers, install("Year")));
+		PROTECT(BioMults = GET_SLOT(co2_multipliers, install("BioMult")));
 		for (int i=0; i < (sizeof(Years) / sizeof(REAL(Years)[0])); i++) {
 			if (REAL(Years)[i] == *cur_yr) {
 				co2_biomass_mult = REAL(BioMults)[i];
