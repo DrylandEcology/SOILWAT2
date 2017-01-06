@@ -9,6 +9,7 @@
 
 #include "SW_R_lib.h"
 #include "SW_Files.h"
+#include "SW_Carbon.h"
 
 /* =================================================== */
 /*                  Global Declarations                */
@@ -29,7 +30,7 @@ Bool bWeatherList;
 int *p_yr, *p_mo, *p_wk, *p_dy;
 RealD *p_Raet_yr, *p_Rdeep_drain_yr, *p_Restabs_yr, *p_Revap_soil_yr, *p_Revap_surface_yr, *p_Rhydred_yr, *p_Rinfiltration_yr, *p_Rinterception_yr, *p_Rpercolation_yr,
 		*p_Rpet_yr, *p_Rprecip_yr, *p_Rrunoff_yr, *p_Rsnowpack_yr, *p_Rsoil_temp_yr, *p_Rsurface_water_yr, *p_RvwcBulk_yr, *p_RvwcMatric_yr, *p_RswcBulk_yr, *p_RswpMatric_yr,
-		*p_RswaBulk_yr, *p_RswaMatric_yr, *p_Rtemp_yr, *p_Rtransp_yr, *p_Rwetdays_yr, *p_Biomass_yr, *p_Stomatal_yr;
+		*p_RswaBulk_yr, *p_RswaMatric_yr, *p_Rtemp_yr, *p_Rtransp_yr, *p_Rwetdays_yr, *p_Biomass_yr, *p_StomConduct_yr;
 RealD *p_Raet_mo, *p_Rdeep_drain_mo, *p_Restabs_mo, *p_Revap_soil_mo, *p_Revap_surface_mo, *p_Rhydred_mo, *p_Rinfiltration_mo, *p_Rinterception_mo, *p_Rpercolation_mo,
 		*p_Rpet_mo, *p_Rprecip_mo, *p_Rrunoff_mo, *p_Rsnowpack_mo, *p_Rsoil_temp_mo, *p_Rsurface_water_mo, *p_RvwcBulk_mo, *p_RvwcMatric_mo, *p_RswcBulk_mo, *p_RswpMatric_mo,
 		*p_RswaBulk_mo, *p_RswaMatric_mo, *p_Rtemp_mo, *p_Rtransp_mo, *p_Rwetdays_mo;
@@ -48,7 +49,9 @@ extern SW_MODEL SW_Model;
 //extern SW_SITE SW_Site;
 extern SW_VEGESTAB SW_VegEstab;
 
-static int periodUse[28][4]; // TODO - Increment to match new outputs (i.e. 30)
+static   int periodUse[28][4]; // TODO - Increment to match new outputs (i.e. 30)
+unsigned int calculate_co2 = 0; /* Determines if CO2 impacts should be calculated */
+
 
 /* =================================================== */
 /*                Module-Level Declarations            */
@@ -192,7 +195,11 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList, SEXP CO2Multipli
 	SW_CTL_init_model(_firstfile);
 
 	// Call might need to be moved
-	if (!isNull(CO2Multipliers)) SW_VPD_init(CO2Multipliers);
+	if (!isNull(CO2Multipliers)) {
+		SEXP co2_multipliers = CO2Multipliers;
+		calculate_co2 = 1; /* CO2 impacts should be calculated */
+		SW_VPD_init();
+	}
 
 	PROTECT(outputData = onGetOutput(inputData));
 
