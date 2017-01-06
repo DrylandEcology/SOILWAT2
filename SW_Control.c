@@ -122,9 +122,11 @@ static void _begin_year(void) {
 	 * to have this call */
 	 // Dynamic biomass
 	 // If CO2 effects are enabled, change the biomass for this year
+	 #ifdef RSOILWAT
 	 if (calculate_co2) {
 	  	SW_VPD_init();
 	 }
+	 #endif
 
 	 SW_MDL_new_year();
 	 SW_WTH_new_year();

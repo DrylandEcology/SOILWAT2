@@ -58,8 +58,6 @@
 /* --------------------------------------------------- */
 extern Bool EchoInits;
 #ifdef RSOILWAT
-RealD co2_wue_mult 		 = 1.;
-RealD co2_biomass_mult = 1.;
 extern Bool collectInData;
 #endif
 SW_VEGPROD SW_VegProd; /* declared here, externed elsewhere */
@@ -1172,7 +1170,11 @@ void SW_VPD_init(void) {
 	// TODO - Use multiplier only if provided
 	if (GT(v->fractionGrass, 0.)) {
 		interpolate_monthlyValues(v->grass.litter, v->grass.litter_daily);
-		*v->grass.biomass = *v->grass.biomass * co2_biomass_mult;
+		#ifdef RSOILWAT
+		if (calculate_co2) {
+			*v->grass.biomass = *v->grass.biomass * co2_biomass_mult;
+		}
+		#endif
 		interpolate_monthlyValues(v->grass.biomass, v->grass.biomass_daily);
 		interpolate_monthlyValues(v->grass.pct_live, v->grass.pct_live_daily);
 		interpolate_monthlyValues(v->grass.lai_conv, v->grass.lai_conv_daily);
@@ -1180,7 +1182,11 @@ void SW_VPD_init(void) {
 
 	if (GT(v->fractionShrub, 0.)) {
 		interpolate_monthlyValues(v->shrub.litter, v->shrub.litter_daily);
-		*v->shrub.biomass = *v->shrub.biomass * co2_biomass_mult;
+		#ifdef RSOILWAT
+		if (calculate_co2) {
+			*v->shrub.biomass = *v->shrub.biomass * co2_biomass_mult;
+		}
+		#endif
 		interpolate_monthlyValues(v->shrub.biomass, v->shrub.biomass_daily);
 		interpolate_monthlyValues(v->shrub.pct_live, v->shrub.pct_live_daily);
 		interpolate_monthlyValues(v->shrub.lai_conv, v->shrub.lai_conv_daily);
@@ -1188,7 +1194,11 @@ void SW_VPD_init(void) {
 
 	if (GT(v->fractionTree, 0.)) {
 		interpolate_monthlyValues(v->tree.litter, v->tree.litter_daily);
-		*v->tree.biomass = *v->tree.biomass * co2_biomass_mult;
+		#ifdef RSOILWAT
+		if (calculate_co2) {
+			*v->tree.biomass = *v->tree.biomass * co2_biomass_mult;
+		}
+		#endif
 		interpolate_monthlyValues(v->tree.biomass, v->tree.biomass_daily);
 		interpolate_monthlyValues(v->tree.pct_live, v->tree.pct_live_daily);
 		interpolate_monthlyValues(v->tree.lai_conv, v->tree.lai_conv_daily);
@@ -1196,7 +1206,11 @@ void SW_VPD_init(void) {
 
 	if (GT(v->fractionForb, 0.)) {
 		interpolate_monthlyValues(v->forb.litter, v->forb.litter_daily);
-		*v->forb.biomass = *v->forb.biomass * co2_biomass_mult;
+		#ifdef RSOILWAT
+		if (calculate_co2) {
+			*v->forb.biomass = *v->forb.biomass * co2_biomass_mult;
+		}
+		#endif
 		interpolate_monthlyValues(v->forb.biomass, v->forb.biomass_daily);
 		interpolate_monthlyValues(v->forb.pct_live, v->forb.pct_live_daily);
 		interpolate_monthlyValues(v->forb.lai_conv, v->forb.lai_conv_daily);

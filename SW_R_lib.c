@@ -50,8 +50,9 @@ extern SW_MODEL SW_Model;
 extern SW_VEGESTAB SW_VegEstab;
 
 static   int periodUse[28][4]; // TODO - Increment to match new outputs (i.e. 30)
-unsigned int calculate_co2 = 0; /* Determines if CO2 impacts should be calculated */
-
+unsigned int calculate_co2 		= 0; /* Determines if CO2 impacts should occur */
+RealD 			 co2_wue_mult 		= 1.0;
+RealD 			 co2_biomass_mult = 1.0;
 
 /* =================================================== */
 /*                Module-Level Declarations            */
