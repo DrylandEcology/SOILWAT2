@@ -1328,6 +1328,13 @@ static void get_outstrleader(TimeInt pd)
 #endif
 }
 
+static void get_stomconduct(void) {
+
+}
+static void get_biomass(void) {
+	
+}
+
 static void get_estab(void)
 {
 	/* --------------------------------------------------- */
