@@ -244,14 +244,14 @@ static char *key2str[] =
 		SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE, SW_INTERCEPTION,
 		SW_LYRDRAIN, SW_HYDRED, SW_ET, SW_AET, SW_PET, SW_WETDAY, SW_SNOWPACK,
 		SW_DEEPSWC, SW_SOILTEMP,
-		SW_ALLVEG, SW_ESTAB, SW_STOMCONDUCT, SW_BIOMASS };
+		SW_ALLVEG, SW_ESTAB, SW_BIOMASS };
 /* converts an enum output key (OutKey type) to a module  */
 /* or object type. see SW_Output.h for OutKey order.         */
 /* MUST be SW_OUTNKEYS of these */
 static ObjType key2obj[] =
 { eWTH, eWTH, eWTH, eWTH, eWTH, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
 		eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
-		eSWC, eVES, eVES, eSWC, eSWC }; // Verify that biomass and cond. are eSWC
+		eSWC, eVES, eVES, eSWC }; // Verify that biomass and cond. are eSWC
 																	  // TODO - ^
 static char *pd2str[] =
 { SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR };
@@ -291,7 +291,6 @@ static void get_snowpack(void);
 static void get_deepswc(void);
 static void get_estab(void);
 static void get_soiltemp(void);
-static void get_stomconduct(void); // TODO - Write function
 static void get_biomass(void);	// TODO - Write function
 static void get_none(void); /* default until defined */
 
@@ -446,9 +445,6 @@ void SW_OUT_construct(void)
 			break;
 		case eSW_Estab:
 			SW_Output[k].pfunc = (void (*)(void)) get_estab;
-			break;
-		case eSW_Stomconduct: // TODO - Verify
-			SW_Output[k].pfunc = (void (*)(void)) get_stomconduct;
 			break;
 		case eSW_Biomass:
 			SW_Output[k].pfunc = (void (*)(void)) get_biomass;
@@ -1328,11 +1324,8 @@ static void get_outstrleader(TimeInt pd)
 #endif
 }
 
-static void get_stomconduct(void) {
-
-}
 static void get_biomass(void) {
-	
+
 }
 
 static void get_estab(void)
@@ -3999,10 +3992,6 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 			s->sTemp[i] += v->sTemp[i];
 		break;
 
-	case eSW_Stomconduct:
-		// TODO
-		break;
-
 	case eSW_Biomass:
 		// TODO
 		break;
@@ -4260,9 +4249,6 @@ static void average_for(ObjType otyp, OutPeriod pd)
 
 				case eSW_Estab: /* do nothing, no averaging required */
 					break;
-
-				case eSW_Stomconduct:
-					break; // TODO - Add code
 
 				case eSW_Biomass:
 					break; // TODO - Add code

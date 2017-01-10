@@ -114,7 +114,6 @@ typedef struct {
 			sTemp[MAX_LAYERS],
 			surfaceTemp, // soil surface temperature
 			partsError, // soil temperature error indicator
-			stom_conduct, // TODO - Verify
 			biomass;
 
 	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */
