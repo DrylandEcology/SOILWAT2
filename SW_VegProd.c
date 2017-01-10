@@ -90,8 +90,8 @@ void SW_VPD_read(void) {
 	FILE *f;
 	Months mon = Jan;
 	int x, lineno = 0;
-	const int line_help = 29;
-	RealF help_grass, help_shrub, help_tree, help_forb, help_bareGround, litt, biom, pctl, laic;
+	const int line_help = 31;
+	RealF help_grass, help_shrub, help_tree, help_forb, help_bareGround, litt, biom, pctl, laic, co2_biomass_1, co2_biomass_2, co2_stomatal_1, co2_stomatal_2;
 	RealD fraction_sum = 0.;
 
 	MyFileName = SW_F_name(eVegProd);
@@ -472,6 +472,30 @@ void SW_VPD_read(void) {
 				v->forb.SWPcrit = -10. * help_forb;
 				break;
 
+			/* CO2 Biomass Linear Equation */
+			case 30:
+			x = sscanf(inbuf, "%f %f", &co2_biomass_1, &co2_biomass_2);
+			if (x < 2) {
+				sprintf(errstr, "ERROR: Not enough arguments for the CO2 Biomass Linear Equation in %s\n", MyFileName);
+				CloseFile(&f);
+				LogError(logfp, LOGFATAL, errstr);
+			}
+			v->co2_biomass_1 = co2_biomass_1;
+			v->co2_biomass_2 = co2_biomass_2;
+			break;
+
+			/* CO2 Stomatal Linear Equation */
+			case 31:
+			x = sscanf(inbuf, "%f %f", &co2_stomatal_1, &co2_stomatal_2);
+			if (x < 2) {
+				sprintf(errstr, "ERROR: Not enough arguments for the CO2 Stomatal Linear Equation in %s\n", MyFileName);
+				CloseFile(&f);
+				LogError(logfp, LOGFATAL, errstr);
+			}
+			v->co2_stomatal_1 = co2_stomatal_1;
+			v->co2_stomatal_2 = co2_stomatal_2;
+			break;
+
 			default:
 				break;
 			}
@@ -553,7 +577,7 @@ SEXP onGet_SW_VPD() {
 	SEXP VegProd, VegProd_names;
 	char *cVegProd_names[] = { "Composition", "Albedo", "Cover_stcr", "CanopyHeight", "VegetationInterceptionParameters", "LitterInterceptionParameters",
 			"EsTpartitioning_param", "Es_param_limit", "Shade", "HydraulicRedistribution_use", "HydraulicRedistribution", "CriticalSoilWaterPotential",
-			"MonthlyProductionValues_grass", "MonthlyProductionValues_shrub", "MonthlyProductionValues_tree", "MonthlyProductionValues_forb" };
+			"MonthlyProductionValues_grass", "MonthlyProductionValues_shrub", "MonthlyProductionValues_tree", "MonthlyProductionValues_forb", "CO2Coefficients" };
 
 	SEXP VegComp, VegComp_names;
 	SEXP Albedo;
@@ -589,6 +613,33 @@ SEXP onGet_SW_VPD() {
 	SEXP Shrublands, Shrublands_names;
 	SEXP Forest, Forest_names;
 	SEXP Forb, Forb_names;
+
+	/* CO2 */
+	// Initialize variables
+	SEXP CO2Coefficients, CO2_names, CO2_row_names, CO2_col_names;
+	RealD *p_CO2Coefficients;
+	// Create row and column names
+	char *cCO2_col_names[] = { "Biomass", "Stomatal" };
+	char *cCO2_row_names[] = { "Coeff1", "Coeff2" };
+	PROTECT(CO2_col_names = allocVector(STRSXP, 2));
+	for (i = 0; i < 2; i++)
+		SET_STRING_ELT(CO2_col_names, i, mkChar(cCO2_col_names[i]));
+	PROTECT(CO2_row_names = allocVector(STRSXP, 2));
+	for (i = 0; i < 2; i++)
+		SET_STRING_ELT(CO2_row_names, i, mkChar(cCO2_row_names[i]));
+	// Create matrix containing the multipliers
+	PROTECT(CO2Coefficients = allocMatrix(REALSXP, 2, 2));
+	p_CO2Coefficients = REAL(CO2Coefficients);
+	p_CO2Coefficients[0] = v->co2_biomass_1;
+	p_CO2Coefficients[1] = v->co2_biomass_2;
+	p_CO2Coefficients[2] = v->co2_stomatal_1;
+	p_CO2Coefficients[3] = v->co2_stomatal_2;
+	PROTECT(CO2_names = allocVector(VECSXP, 2));
+	SET_VECTOR_ELT(CO2_names, 1, CO2_col_names);
+	SET_VECTOR_ELT(CO2_names, 0, CO2_row_names);
+	setAttrib(CO2Coefficients, R_DimNamesSymbol, CO2_names);
+
+
 	RealD *p_Grasslands, *p_Shrublands, *p_Forest, *p_Forb;
 	SEXP MonthlyProductionValues_Column_names, MonthlyProductionValues_Row_names;
 	char *cMonthlyProductionValues_Column_names[] = { "Litter", "Biomass", "Live_pct", "LAI_conv" };
@@ -875,8 +926,9 @@ SEXP onGet_SW_VPD() {
 	SET_SLOT(VegProd, install(cVegProd_names[13]), Shrublands);
 	SET_SLOT(VegProd, install(cVegProd_names[14]), Forest);
 	SET_SLOT(VegProd, install(cVegProd_names[15]), Forb);
+	SET_SLOT(VegProd, install(cVegProd_names[16]), CO2Coefficients);
 
-	UNPROTECT(36);
+	UNPROTECT(40);
 	return VegProd;
 }
 
@@ -886,7 +938,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 
 	char *cVegProd_names[] = { "Composition", "Albedo", "Cover_stcr", "CanopyHeight", "VegetationInterceptionParameters", "LitterInterceptionParameters",
 				"EsTpartitioning_param", "Es_param_limit", "Shade", "HydraulicRedistribution_use", "HydraulicRedistribution", "CriticalSoilWaterPotential",
-				"MonthlyProductionValues_grass", "MonthlyProductionValues_shrub", "MonthlyProductionValues_tree", "MonthlyProductionValues_forb"};
+				"MonthlyProductionValues_grass", "MonthlyProductionValues_shrub", "MonthlyProductionValues_tree", "MonthlyProductionValues_forb", "CO2Coefficients"};
 	SEXP VegComp;
 	SEXP Albedo;
 	SEXP conv_stcr;
@@ -907,6 +959,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	SEXP Shrublands;
 	SEXP Forest;
 	SEXP Forb;
+	SEXP CO2Coefficients;
 	RealD *p_Grasslands, *p_Shrublands, *p_Forest, *p_Forb;
 	RealD fraction_sum = 0.;
 
@@ -1091,6 +1144,12 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 		v->forb.lai_conv[i] = p_Forb[i + 12 * 3];
 	}
 
+	PROTECT(CO2Coefficients = GET_SLOT(SW_VPD, install(cVegProd_names[16])));
+	v->co2_biomass_1 = REAL(CO2Coefficients)[0];
+	v->co2_biomass_2 = REAL(CO2Coefficients)[1];
+	v->co2_stomatal_1 = REAL(CO2Coefficients)[2];
+	v->co2_stomatal_2 = REAL(CO2Coefficients)[3];
+
 	fraction_sum = v->fractionGrass + v->fractionShrub + v->fractionTree + v->fractionForb + v->fractionBareGround;
 	if (!EQ(fraction_sum, 1.0)) {
 			LogError(logfp, LOGWARN, "%s : Fractions of vegetation components were normalized, "
@@ -1110,7 +1169,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 
 	if (EchoInits)
 		_echo_inits();
-	UNPROTECT(16);
+	UNPROTECT(17);
 }
 #endif
 
