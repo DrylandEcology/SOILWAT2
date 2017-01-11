@@ -49,10 +49,10 @@ extern SW_MODEL SW_Model;
 //extern SW_SITE SW_Site;
 extern SW_VEGESTAB SW_VegEstab;
 static   int periodUse[28][4];
-unsigned int calculate_co2 		= 0; /* Determines if CO2 impacts should occur */
-RealD 			 co2_wue_mult 		= 1.0;
-RealD 			 co2_biomass_mult = 1.0;
-SEXP				 co2_multipliers  = NULL;
+unsigned int calculate_co2 = 0; /* Determines if CO2 impacts should occur */
+RealD 	co2_wue_mult 	 = 1.0;
+RealD 	co2_biomass_mult = 1.0;
+SEXP	co2_multipliers  = NULL;
 /* =================================================== */
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
@@ -478,7 +478,7 @@ SEXP onGetOutput(SEXP inputData) {
 		}
 	} else {
 		PROTECT(Periods = GET_SLOT(GET_SLOT(inputData, install("output")),install("period")));
-		for(i=0; i<28-; i++) {
+		for(i=0; i<28; i++) {
 			switch (INTEGER(Periods)[i]) {
 				case eSW_Day:
 				pDayUse = 1;

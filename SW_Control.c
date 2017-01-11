@@ -120,6 +120,7 @@ static void _begin_year(void) {
 	/* in addition to the timekeeper (Model), usually only
 	 * modules that read input yearly or produce output need
 	 * to have this call */
+	 
 	 // Dynamic biomass
 	 // If CO2 effects are enabled, change the biomass for this year
 	 #ifdef RSOILWAT
