@@ -1218,6 +1218,7 @@ void SW_VPD_init(void) {
 		for (int i=0; i < (sizeof(Years) / sizeof(REAL(Years)[0])); i++) {
 			if (REAL(Years)[i] == SW_Model.year) {
 				co2_biomass_mult = REAL(BioMults)[i];
+				// TODO - Grab the WUE multiplier
 			}
 		}
 		UNPROTECT(2);
