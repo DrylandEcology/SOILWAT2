@@ -2746,7 +2746,7 @@ SEXP onGetOutput(SEXP inputData) {
 		PROTECT(swOutput_KEY_BIOMASS = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_BIOMASS_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_BIOMASS_NAME, 0, mkChar(cSWoutput_KEY_Titles[28]));
-		SET_SLOT(swOutput_BIOMASS_TEMP, install("Title"), r_BIOMASS_NAME);
+		SET_SLOT(swOutput_KEY_BIOMASS, install("Title"), r_BIOMASS_NAME);
 
 		// Construct the time step for the output key
 		PROTECT(r_BIOMASS_PERIOD = NEW_INTEGER(1));
