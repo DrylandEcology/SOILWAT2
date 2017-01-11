@@ -1207,29 +1207,39 @@ void SW_VPD_init(void) {
 	TimeInt doy; /* base1 */
 
 	#ifdef RSOILWAT
-
-	// Grab the multiplier for this year
-	// TODO: Figure out if the int stored in CO2Multipliers will evaluate with a TimeInt
+	/* If CO2 effects are enabled, grab the multipliers for this year */
 	if (calculate_co2) {
+		/* Initializations */
+		// Initialize the two columns
 		SEXP Years;
 		SEXP BioMults;
-		PROTECT(Years = GET_SLOT(co2_multipliers, install("Year")));
-		PROTECT(BioMults = GET_SLOT(co2_multipliers, install("BioMult")));
-		for (int i=0; i < (sizeof(Years) / sizeof(REAL(Years)[0])); i++) {
-			if (REAL(Years)[i] == SW_Model.year) {
+		SEXP StoMults;
+		PROTECT(Years = VECTOR_ELT(co2_multipliers, 1));
+		PROTECT(BioMults = VECTOR_ELT(co2_multipliers, 2));
+		PROTECT(StoMults = VECTOR_ELT(co2_multipliers, 3));
+
+		// It seems the REAL() accessor cannot directly evaluate without
+		// being stored in a variable
+		TimeInt year_iter;
+
+		// For robustness, use only the number of years provided, even though
+		// SOILWAT should have the same number stored
+		R_xlen_t num_of_years = xlength(Years);
+
+		/* Evaluations */
+		for(int i = 0; i < num_of_years; i++) {
+			year_iter = REAL(Years)[i]; // Grab the current year to evaluate
+			if (year_iter == SW_Model.year) {
 				co2_biomass_mult = REAL(BioMults)[i];
-				// TODO - Grab the WUE multiplier
+				co2_wue_mult = REAL(StoMults)[i];
 			}
 		}
-		UNPROTECT(2);
+		UNPROTECT(3);
 	}
-
 	#endif
 
 	// TODO: Determine what variables need to be modified to change biomass
 	// Example: does pct_live also need to be multiplied
-	// TODO: Figure out how to multiply RealD by RealD/double
-	// TODO - Use multiplier only if provided
 	if (GT(v->fractionGrass, 0.)) {
 		interpolate_monthlyValues(v->grass.litter, v->grass.litter_daily);
 		#ifdef RSOILWAT

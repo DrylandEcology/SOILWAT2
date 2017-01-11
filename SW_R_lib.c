@@ -190,25 +190,21 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList, SEXP CO2Multipli
 	PROTECT(oRlogfile = NEW_OBJECT(swLog));
 	PROTECT(Rlogfile = GET_SLOT(oRlogfile,install("LogData")));
 
+	if (CO2Multipliers != NULL) {
+		co2_multipliers = CO2Multipliers;
+		calculate_co2 = 1; /* CO2 impacts should be calculated */
+	}
+
 	//Set the input data either from files or from memory
 	init_args(argc, argv);
 	SW_CTL_init_model(_firstfile);
-
-	// Call might need to be moved
-	if (!isNull(CO2Multipliers)) {
-		co2_multipliers = CO2Multipliers;
-		calculate_co2 = 1; /* CO2 impacts should be calculated */
-		SW_VPD_init();
-	}
-
 	PROTECT(outputData = onGetOutput(inputData));
-
 	yr_nrow = INTEGER(GET_SLOT(outputData, install("yr_nrow")))[0];
 	mo_nrow = INTEGER(GET_SLOT(outputData, install("mo_nrow")))[0];
 	wk_nrow = INTEGER(GET_SLOT(outputData, install("wk_nrow")))[0];
 	dy_nrow = INTEGER(GET_SLOT(outputData, install("dy_nrow")))[0];
 
-	//Get the pointers to the pre configured output data setup. These are used in output.c
+	// Get the pointers to the pre configured output data setup. These are used in output.c
 	if (calculate_co2) p_Rbiomass_yr =  REAL(GET_SLOT(GET_SLOT(outputData, install("BIOMASS")), install("Year")));
 
 	if(periodUse[eSW_Temp][3]) p_Rtemp_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Year")));
@@ -357,29 +353,22 @@ SEXP onGetOutput(SEXP inputData) {
 	Bool useTimeStep;
 
 	SEXP swOutput, swOutput_Object;
-
 	char *cSWoutput_Names[] = {"yr_nrow","mo_nrow","wk_nrow","dy_nrow","WTHR","TEMP","PRECIP","SOILINFILT","RUNOFF","ALLH2O","VWCBULK","VWCMATRIC","SWCBULK","SWABULK","SWAMATRIC","SWPMATRIC","SURFACEWATER",
-			"TRANSP","EVAPSOIL","EVAPSURFACE","INTERCEPTION","LYRDRAIN","HYDRED","ET","AET","PET","WETDAY","SNOWPACK","DEEPSWC","SOILTEMP","ALLVEG","ESTABL", "BIOMASS"};
+	                           "TRANSP","EVAPSOIL","EVAPSURFACE","INTERCEPTION","LYRDRAIN","HYDRED","ET","AET","PET","WETDAY","SNOWPACK","DEEPSWC","SOILTEMP","ALLVEG","ESTABL", "BIOMASS"};
 
 	SEXP swOutput_KEY;
 	char *cSWoutput_KEY_Names[] = {"Title","TimeStep","Columns","Day","Week","Month","Year"};
-
 	SEXP swOutput_KEY_WTHR, swOutput_KEY_TEMP, swOutput_KEY_PRECIP, swOutput_KEY_SOILINFILT, swOutput_KEY_RUNOFF, swOutput_KEY_ALLH2O, swOutput_KEY_VWCBULK, swOutput_KEY_VWCMATRIC, swOutput_KEY_SWCBULK,
 		swOutput_KEY_SWPMATRIC, swOutput_KEY_SWABULK, swOutput_KEY_SWAMATRIC, swOutput_KEY_SURFACEWATER, swOutput_KEY_TRANSP, swOutput_KEY_EVAPSOIL, swOutput_KEY_EVAPSURFACE, swOutput_KEY_INTERCEPTION,
 		swOutput_KEY_LYRDRAIN, swOutput_KEY_HYDRED, swOutput_KEY_ET, swOutput_KEY_AET, swOutput_KEY_PET, swOutput_KEY_WETDAY, swOutput_KEY_SNOWPACK, swOutput_KEY_DEEPSWC,
 		swOutput_KEY_SOILTEMP, swOutput_KEY_ALLVEG, swOutput_KEY_ESTABL, swOutput_KEY_BIOMASS;
-
 	char *cSWoutput_KEY_Titles[] = {"","temp_air","precip","infiltration","runoff","","vwc_bulk","vwc_matric","swc_bulk","swa_bulk","swa_matric","swp_matric","surface_water","transp","evap_soil","evap_surface",
 		"interception","percolation","hydred","","aet","pet","wetdays","snowpack","deep_drain","temp_soil","","estabs", "biomass"};
 
 	SEXP Periods, TimeSteps;
-	
 	SEXP r_dy_nrow, r_wk_nrow, r_mo_nrow, r_yr_nrow;
-	
 	SEXP r_WTHR_NAME, r_TEMP_NAME, r_PRECIP_NAME, r_SOILINFILT_NAME, r_RUNOFF_NAME, r_ALLH2O_NAME, r_VWCBULK_NAME, r_VWCMATRIC_NAME, r_SWCBULK_NAME, r_SWPMATRIC_NAME, r_SWABULK_NAME, r_SWAMATRIC_NAME, r_SURFACEWATER_NAME, r_TRANSP_NAME, r_EVAPSOIL_NAME, r_EVAPSURFACE_NAME, r_INTERCEPTION_NAME, r_LYRDRAIN_NAME, r_HYDRED_NAME, r_ET_NAME, r_AET_NAME, r_PET_NAME, r_WETDAY_NAME, r_SNOWPACK_NAME, r_DEEPSWC_NAME, r_SOILTEMP_NAME, r_ALLVEG_NAME, r_ESTABL_NAME, r_BIOMASS_NAME;
-	
 	SEXP r_WTHR_PERIOD, r_TEMP_PERIOD, r_PRECIP_PERIOD, r_SOILINFILT_PERIOD, r_RUNOFF_PERIOD, r_ALLH2O_PERIOD, r_VWCBULK_PERIOD, r_VWCMATRIC_PERIOD, r_SWCBULK_PERIOD, r_SWPMATRIC_PERIOD, r_SWABULK_PERIOD, r_SWAMATRIC_PERIOD, r_SURFACEWATER_PERIOD, r_TRANSP_PERIOD, r_EVAPSOIL_PERIOD, r_EVAPSURFACE_PERIOD, r_INTERCEPTION_PERIOD, r_LYRDRAIN_PERIOD, r_HYDRED_PERIOD, r_ET_PERIOD, r_AET_PERIOD, r_PET_PERIOD, r_WETDAY_PERIOD, r_SNOWPACK_PERIOD, r_DEEPSWC_PERIOD, r_SOILTEMP_PERIOD, r_ALLVEG_PERIOD, r_ESTABL_PERIOD, r_BIOMASS_PERIOD;
-	
 	SEXP r_WTHR_COLUMNS, r_TEMP_COLUMNS, r_PRECIP_COLUMNS, r_SOILINFILT_COLUMNS, r_RUNOFF_COLUMNS, r_ALLH2O_COLUMNS, r_VWCBULK_COLUMNS, r_VWCMATRIC_COLUMNS, r_SWCBULK_COLUMNS, r_SWPMATRIC_COLUMNS, r_SWABULK_COLUMNS, r_SWAMATRIC_COLUMNS, r_SURFACEWATER_COLUMNS, r_TRANSP_COLUMNS, r_EVAPSOIL_COLUMNS, r_EVAPSURFACE_COLUMNS, r_INTERCEPTION_COLUMNS, r_LYRDRAIN_COLUMNS, r_HYDRED_COLUMNS, r_ET_COLUMNS, r_AET_COLUMNS, r_PET_COLUMNS, r_WETDAY_COLUMNS, r_SNOWPACK_COLUMNS, r_DEEPSWC_COLUMNS, r_SOILTEMP_COLUMNS, r_ALLVEG_COLUMNS, r_ESTABL_COLUMNS, r_BIOMASS_COLUMNS;
 
 	SEXP Rallveg_yr, Ret_yr, RallH2O_yr, Rwthr_yr, Raet_yr, Rdeedrain_yr, Restabs_yr, Revasoil_yr, Revasurface_yr, Rhydred_yr, Rinfiltration_yr, Rinterception_yr, Rpercolation_yr,
@@ -426,7 +415,7 @@ SEXP onGetOutput(SEXP inputData) {
 	Rtransp_names_y_dy, RvwcBulk_names_dy, RvwcBulk_names_y_dy, RvwcMatric_names_dy, RvwcMatric_names_y_dy, Rwetdays_names_dy, Rwetdays_names_y_dy, RswpMatric_names_dy, RswpMatric_names_y_dy;
 
 	char *Layers_names[] = { "Lyr_1", "Lyr_2", "Lyr_3", "Lyr_4", "Lyr_5", "Lyr_6", "Lyr_7", "Lyr_8", "Lyr_9", "Lyr_10", "Lyr_11", "Lyr_12", "Lyr_13", "Lyr_14", "Lyr_15",
-			"Lyr_16", "Lyr_17", "Lyr_18", "Lyr_19", "Lyr_20", "Lyr_21", "Lyr_22", "Lyr_23", "Lyr_24", "Lyr_25", "Lyr_26", "Lyr_27", "Lyr_28", "Lyr_29", "Lyr_30" };
+	                         "Lyr_16", "Lyr_17", "Lyr_18", "Lyr_19", "Lyr_20", "Lyr_21", "Lyr_22", "Lyr_23", "Lyr_24", "Lyr_25", "Lyr_26", "Lyr_27", "Lyr_28", "Lyr_29", "Lyr_30" };
 	char *Cevap_surface_names[] = { "total_evap", "tree_evap", "shrub_evap","forbs_evap", "grass_evap", "litter_evap", "surfaceWater_evap" };
 	char *Chydred_names[] = { "total_", "tree_", "shrub_", "forbs_", "grass_" };
 	char *Cinterception_names[] = { "total", "tree", "shrub", "forbs", "grass", "litter" };
@@ -533,7 +522,7 @@ SEXP onGetOutput(SEXP inputData) {
 				//pCount+=3;
 			}
 		} else {
-			periodUse[i][INTEGER(Periods)[i]] = 1; //
+			periodUse[i][INTEGER(Periods)[i]] = 1;
 			//pCount+=3;
 		}
 	}

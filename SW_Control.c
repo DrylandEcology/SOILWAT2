@@ -166,7 +166,7 @@ static void _collect_values(void) {
 static void _read_inputs(void) {
 	/*=======================================================*/
 #ifndef RSOILWAT
-	SW_F_read(NULL );
+	SW_F_read(NULL);
 	SW_MDL_read();
 	SW_WTH_read();
 	SW_VPD_read();
