@@ -209,7 +209,7 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList, SEXP CO2Multipli
 	dy_nrow = INTEGER(GET_SLOT(outputData, install("dy_nrow")))[0];
 
 	//Get the pointers to the pre configured output data setup. These are used in output.c
-	if (calculate_co2) p_Rbiomass_y =  REAL(GET_SLOT(GET_SLOT(outputData, install("BIOMASS")), install("Year")));
+	if (calculate_co2) p_Rbiomass_yr =  REAL(GET_SLOT(GET_SLOT(outputData, install("BIOMASS")), install("Year")));
 
 	if(periodUse[eSW_Temp][3]) p_Rtemp_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Year")));
 	if(periodUse[eSW_Temp][2]) p_Rtemp_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Month")));
