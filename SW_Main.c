@@ -46,11 +46,13 @@ char inbuf[1024]; /* buffer used by input statements */
 char errstr[MAX_ERROR]; /* used to compose an error msg    */
 FILE *logfp; /* file handle for logging messages */
 int logged; /* boolean: true = we logged a msg */
+int addtl_yr;
 /* if true, write indicator to stderr */
 #ifdef RSOILWAT
 extern int logFatl;
 #endif
 Bool QuietMode, EchoInits; /* if true, echo inits to logfile */
+
 //function
 void init_args(int argc, char **argv);
 
@@ -86,6 +88,7 @@ int main(int argc, char **argv) {
 	/* =================================================== */
 
 	logged = FALSE;
+	addtl_yr = 0;
 	atexit(check_log);
 	logfp = stdout; /* provides a way to inform user that something */
 	/* was logged.  can be changed by code (eg init file */

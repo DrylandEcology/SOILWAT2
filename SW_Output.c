@@ -167,8 +167,8 @@
 #include "myMemory.h"
 #include "Times.h"
 
+#include "SW_Carbon.h"
 #include "SW_Defines.h"
-
 #include "SW_Files.h"
 #include "SW_Model.h"
 #include "SW_Site.h"
@@ -177,6 +177,7 @@
 #include "SW_Output.h"
 #include "SW_Weather.h"
 #include "SW_VegEstab.h"
+#include "SW_VegProd.h"
 
 #ifdef RSOILWAT
 #include "R.h"
@@ -192,6 +193,7 @@ extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
 extern SW_MODEL SW_Model;
 extern SW_WEATHER SW_Weather;
+extern SW_VEGPROD SW_VegProd;
 extern SW_VEGESTAB SW_VegEstab;
 extern Bool EchoInits;
 
@@ -205,7 +207,7 @@ extern RealD *p_Raet_yr, *p_Rdeep_drain_yr, *p_Restabs_yr, *p_Revap_soil_yr, *p_
 *p_RswaBulk_yr, *p_RswaMatric_yr, *p_Rtemp_yr, *p_Rtransp_yr, *p_Rwetdays_yr;
 extern RealD *p_Raet_mo, *p_Rdeep_drain_mo, *p_Restabs_mo, *p_Revap_soil_mo, *p_Revap_surface_mo, *p_Rhydred_mo, *p_Rinfiltration_mo, *p_Rinterception_mo, *p_Rpercolation_mo,
 *p_Rpet_mo, *p_Rprecip_mo, *p_Rrunoff_mo, *p_Rsnowpack_mo, *p_Rsoil_temp_mo, *p_Rsurface_water_mo, *p_RvwcBulk_mo, *p_RvwcMatric_mo, *p_RswcBulk_mo, *p_RswpMatric_mo,
-*p_RswaBulk_mo, *p_RswaMatric_mo, *p_Rtemp_mo, *p_Rtransp_mo, *p_Rwetdays_mo;
+*p_RswaBulk_mo, *p_RswaMatric_mo, *p_Rtemp_mo, *p_Rtransp_mo, *p_Rwetdays_mo, *p_Rbiomass_mo;
 extern RealD *p_Raet_wk, *p_Rdeep_drain_wk, *p_Restabs_wk, *p_Revap_soil_wk, *p_Revap_surface_wk, *p_Rhydred_wk, *p_Rinfiltration_wk, *p_Rinterception_wk, *p_Rpercolation_wk,
 *p_Rpet_wk, *p_Rprecip_wk, *p_Rrunoff_wk, *p_Rsnowpack_wk, *p_Rsoil_temp_wk, *p_Rsurface_water_wk, *p_RvwcBulk_wk, *p_RvwcMatric_wk, *p_RswcBulk_wk, *p_RswpMatric_wk,
 *p_RswaBulk_wk, *p_RswaMatric_wk, *p_Rtemp_wk, *p_Rtransp_wk, *p_Rwetdays_wk;
@@ -244,14 +246,15 @@ static char *key2str[] =
 		SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE, SW_INTERCEPTION,
 		SW_LYRDRAIN, SW_HYDRED, SW_ET, SW_AET, SW_PET, SW_WETDAY, SW_SNOWPACK,
 		SW_DEEPSWC, SW_SOILTEMP,
-		SW_ALLVEG, SW_ESTAB };
+		SW_ALLVEG, SW_ESTAB, SW_BIOMASS };
 /* converts an enum output key (OutKey type) to a module  */
 /* or object type. see SW_Output.h for OutKey order.         */
 /* MUST be SW_OUTNKEYS of these */
 static ObjType key2obj[] =
 { eWTH, eWTH, eWTH, eWTH, eWTH, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
 		eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
-		eSWC, eVES, eVES };
+		eSWC, eVES, eVES, eVES };
+
 static char *pd2str[] =
 { SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR };
 static char *styp2str[] =
@@ -290,6 +293,7 @@ static void get_snowpack(void);
 static void get_deepswc(void);
 static void get_estab(void);
 static void get_soiltemp(void);
+void get_biomass(void); // Uses Carbon.h
 static void get_none(void); /* default until defined */
 
 static void collect_sums(ObjType otyp, OutPeriod op);
@@ -444,6 +448,10 @@ void SW_OUT_construct(void)
 		case eSW_Estab:
 			SW_Output[k].pfunc = (void (*)(void)) get_estab;
 			break;
+		case eSW_Biomass:
+			SW_Output[k].pfunc = (void (*)(void)) get_biomass;
+			break;
+			// Creates a pointer to a function that expects void and returns void
 		default:
 			SW_Output[k].pfunc = (void (*)(void)) get_none;
 			break;
@@ -1274,7 +1282,6 @@ void SW_OUT_write_today(void)
 			}
 		}
 	}
-
 }
 
 static void get_none(void)
@@ -1317,6 +1324,62 @@ static void get_outstrleader(TimeInt pd)
 		sprintf(outstr, "%d", SW_Model.year);
 	}
 #endif
+}
+
+void get_biomass(void) {
+	// Get the current period
+	OutPeriod pd = SW_Output[eSW_Biomass].period;
+	int month;
+
+	#ifndef RSOILWAT
+	RealD grass, shrub, tree, forb, mult;
+	grass = shrub = tree = forb = mult = SW_MISSING;
+	int SW_month, SW_year;
+	SW_month = SW_year = SW_MISSING;
+	char str[OUTSTRLEN];
+	#endif
+
+	switch(pd) {
+		// Get monthly biomass data for each functional group
+		case eSW_Month:
+			month = SW_Model.month - tOffset;
+			#ifdef RSOILWAT
+				p_Rbiomass_mo[SW_Output[eSW_Biomass].mo_row + mo_nrow * 0] = SW_Model.year;
+				p_Rbiomass_mo[SW_Output[eSW_Biomass].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
+				p_Rbiomass_mo[SW_Output[eSW_Biomass].mo_row + mo_nrow * 2] = SW_VegProd.grass.CO2_biomass[month];//SW_Output[eSW_Biomass].mo_row];
+				p_Rbiomass_mo[SW_Output[eSW_Biomass].mo_row + mo_nrow * 3] = SW_VegProd.shrub.CO2_biomass[month];//SW_Output[eSW_Biomass].mo_row];
+				p_Rbiomass_mo[SW_Output[eSW_Biomass].mo_row + mo_nrow * 4] = SW_VegProd.tree.CO2_biomass[month];//SW_Output[eSW_Biomass].mo_row];
+				p_Rbiomass_mo[SW_Output[eSW_Biomass].mo_row + mo_nrow * 5] = SW_VegProd.forb.CO2_biomass[month];//SW_Output[eSW_Biomass].mo_row];
+				p_Rbiomass_mo[SW_Output[eSW_Biomass].mo_row + mo_nrow * 6] = co2_biomass_mult;
+				SW_Output[eSW_Biomass].mo_row++;
+				break;
+			#else
+				// Grab values
+				grass = SW_VegProd.grass.CO2_biomass[month];
+				shrub = SW_VegProd.shrub.CO2_biomass[month];
+				tree = SW_VegProd.tree.CO2_biomass[month];
+				forb = SW_VegProd.forb.CO2_biomass[month];
+				SW_month = month + 1;
+				SW_year = SW_Model.year;
+				mult = co2_biomass_mult;
+
+				// Write output
+				if (SW_month == 12) {
+					// The 12th month doesn't automatically get a month value for some reason, so let's add one
+					sprintf(str, "%c%d%c%f%c%f%c%f%c%f%c%f", _Sep, SW_month, _Sep, grass, _Sep, shrub, _Sep, tree,	_Sep, forb, _Sep, mult);
+				} else {
+					sprintf(str, "%c%f%c%f%c%f%c%f%c%f", _Sep, grass, _Sep, shrub, _Sep, tree,	_Sep, forb, _Sep, mult);
+				}
+				strcat(outstr, str);
+			#endif
+		// We are not interested in other results as they are just derivations and can be determined outside SOILWAT
+		case eSW_Day:
+			break;
+		case eSW_Year:
+			break;
+		case eSW_Week:
+			break;
+		}
 }
 
 static void get_estab(void)
@@ -4235,6 +4298,9 @@ static void average_for(ObjType otyp, OutPeriod pd)
 					break;
 
 				case eSW_Estab: /* do nothing, no averaging required */
+					break;
+
+				case eSW_Biomass: /* do nothing, no averaging required */
 					break;
 
 				default:

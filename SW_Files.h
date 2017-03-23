@@ -16,12 +16,12 @@
 #ifndef SW_FILES_H
 	#define SW_FILES_H
 
-#define SW_NFILES 15
+#define SW_NFILES 16
 #ifdef RSOILWAT
 	#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
+	#include <Rdefines.h>
+	#include <Rconfig.h>
+	#include <Rinternals.h>
 #endif
 
 /* The number of enum elements between eNoFile and
@@ -30,7 +30,7 @@
  * input from files.in.
  */
 typedef enum {
-	eNoFile = -1, eFirst = 0, eModel, eLog, eSite, eLayers, eWeather, eMarkovProb, eMarkovCov, eSky, eVegProd, eVegEstab, eSoilwat, eOutput, eEndFile
+	eNoFile = -1, eFirst = 0, eModel, eLog, eSite, eLayers, eWeather, eMarkovProb, eMarkovCov, eSky, eVegProd, eVegEstab, eCarbon, eSoilwat, eOutput, eEndFile,
 } SW_FileIndex;
 
 void SW_F_read(const char *s);

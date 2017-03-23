@@ -51,11 +51,14 @@
 #include "SW_Files.h"
 #include "SW_Times.h"
 #include "SW_VegProd.h"
+#include "SW_Carbon.h"
+#include "SW_Model.h"
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 extern Bool EchoInits;
+extern SW_MODEL SW_Model;
 #ifdef RSOILWAT
 extern Bool collectInData;
 #endif
@@ -87,8 +90,8 @@ void SW_VPD_read(void) {
 	FILE *f;
 	Months mon = Jan;
 	int x, lineno = 0;
-	const int line_help = 29;
-	RealF help_grass, help_shrub, help_tree, help_forb, help_bareGround, litt, biom, pctl, laic;
+	const int line_help = 31;
+	RealF help_grass, help_shrub, help_tree, help_forb, help_bareGround, litt, biom, pctl, laic, co2_biomass_1, co2_biomass_2, co2_stomatal_1, co2_stomatal_2;
 	RealD fraction_sum = 0.;
 
 	MyFileName = SW_F_name(eVegProd);
@@ -469,6 +472,30 @@ void SW_VPD_read(void) {
 				v->forb.SWPcrit = -10. * help_forb;
 				break;
 
+			/* CO2 Biomass Linear Equation */
+			case 30:
+			x = sscanf(inbuf, "%f %f", &co2_biomass_1, &co2_biomass_2);
+			if (x < 2) {
+				sprintf(errstr, "ERROR: Not enough arguments for the CO2 Biomass Linear Equation in %s\n", MyFileName);
+				CloseFile(&f);
+				LogError(logfp, LOGFATAL, errstr);
+			}
+			v->co2_biomass_1 = co2_biomass_1;
+			v->co2_biomass_2 = co2_biomass_2;
+			break;
+
+			/* CO2 Stomatal Linear Equation */
+			case 31:
+			x = sscanf(inbuf, "%f %f", &co2_stomatal_1, &co2_stomatal_2);
+			if (x < 2) {
+				sprintf(errstr, "ERROR: Not enough arguments for the CO2 Stomatal Linear Equation in %s\n", MyFileName);
+				CloseFile(&f);
+				LogError(logfp, LOGFATAL, errstr);
+			}
+			v->co2_stomatal_1 = co2_stomatal_1;
+			v->co2_stomatal_2 = co2_stomatal_2;
+			break;
+
 			default:
 				break;
 			}
@@ -550,7 +577,7 @@ SEXP onGet_SW_VPD() {
 	SEXP VegProd, VegProd_names;
 	char *cVegProd_names[] = { "Composition", "Albedo", "Cover_stcr", "CanopyHeight", "VegetationInterceptionParameters", "LitterInterceptionParameters",
 			"EsTpartitioning_param", "Es_param_limit", "Shade", "HydraulicRedistribution_use", "HydraulicRedistribution", "CriticalSoilWaterPotential",
-			"MonthlyProductionValues_grass", "MonthlyProductionValues_shrub", "MonthlyProductionValues_tree", "MonthlyProductionValues_forb" };
+			"MonthlyProductionValues_grass", "MonthlyProductionValues_shrub", "MonthlyProductionValues_tree", "MonthlyProductionValues_forb", "CO2Coefficients" };
 
 	SEXP VegComp, VegComp_names;
 	SEXP Albedo;
@@ -586,6 +613,33 @@ SEXP onGet_SW_VPD() {
 	SEXP Shrublands, Shrublands_names;
 	SEXP Forest, Forest_names;
 	SEXP Forb, Forb_names;
+
+	/* CO2 */
+	// Initialize variables
+	SEXP CO2Coefficients, CO2_names, CO2_row_names, CO2_col_names;
+	RealD *p_CO2Coefficients;
+	// Create row and column names
+	char *cCO2_col_names[] = { "Biomass", "Stomatal" };
+	char *cCO2_row_names[] = { "Coeff1", "Coeff2" };
+	PROTECT(CO2_col_names = allocVector(STRSXP, 2));
+	for (i = 0; i < 2; i++)
+		SET_STRING_ELT(CO2_col_names, i, mkChar(cCO2_col_names[i]));
+	PROTECT(CO2_row_names = allocVector(STRSXP, 2));
+	for (i = 0; i < 2; i++)
+		SET_STRING_ELT(CO2_row_names, i, mkChar(cCO2_row_names[i]));
+	// Create matrix containing the multipliers
+	PROTECT(CO2Coefficients = allocMatrix(REALSXP, 2, 2));
+	p_CO2Coefficients = REAL(CO2Coefficients);
+	p_CO2Coefficients[0] = v->co2_biomass_1;
+	p_CO2Coefficients[1] = v->co2_biomass_2;
+	p_CO2Coefficients[2] = v->co2_stomatal_1;
+	p_CO2Coefficients[3] = v->co2_stomatal_2;
+	PROTECT(CO2_names = allocVector(VECSXP, 2));
+	SET_VECTOR_ELT(CO2_names, 1, CO2_col_names);
+	SET_VECTOR_ELT(CO2_names, 0, CO2_row_names);
+	setAttrib(CO2Coefficients, R_DimNamesSymbol, CO2_names);
+
+
 	RealD *p_Grasslands, *p_Shrublands, *p_Forest, *p_Forb;
 	SEXP MonthlyProductionValues_Column_names, MonthlyProductionValues_Row_names;
 	char *cMonthlyProductionValues_Column_names[] = { "Litter", "Biomass", "Live_pct", "LAI_conv" };
@@ -622,7 +676,7 @@ SEXP onGet_SW_VPD() {
 	REAL(conv_stcr)[1] = v->shrub.conv_stcr; //Shrub
 	REAL(conv_stcr)[2] = v->tree.conv_stcr; //Tree
 	REAL(conv_stcr)[3] = v->forb.conv_stcr; //forb
-	
+
 	PROTECT(col_names = allocVector(STRSXP, 4));
 	SET_STRING_ELT(col_names, 0, mkChar("Grasses"));
 	SET_STRING_ELT(col_names, 1, mkChar("Shrubs"));
@@ -842,7 +896,7 @@ SEXP onGet_SW_VPD() {
 	SET_VECTOR_ELT(Forest_names, 0, MonthlyProductionValues_Row_names);
 	SET_VECTOR_ELT(Forest_names, 1, MonthlyProductionValues_Column_names);
 	setAttrib(Forest, R_DimNamesSymbol, Forest_names);
-	
+
 	PROTECT(Forb = allocMatrix(REALSXP, 12, 4));
 	p_Forb = REAL(Forb);
 	for (i = 0; i < 12; i++) {
@@ -872,8 +926,9 @@ SEXP onGet_SW_VPD() {
 	SET_SLOT(VegProd, install(cVegProd_names[13]), Shrublands);
 	SET_SLOT(VegProd, install(cVegProd_names[14]), Forest);
 	SET_SLOT(VegProd, install(cVegProd_names[15]), Forb);
+	SET_SLOT(VegProd, install(cVegProd_names[16]), CO2Coefficients);
 
-	UNPROTECT(36);
+	UNPROTECT(40);
 	return VegProd;
 }
 
@@ -883,7 +938,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 
 	char *cVegProd_names[] = { "Composition", "Albedo", "Cover_stcr", "CanopyHeight", "VegetationInterceptionParameters", "LitterInterceptionParameters",
 				"EsTpartitioning_param", "Es_param_limit", "Shade", "HydraulicRedistribution_use", "HydraulicRedistribution", "CriticalSoilWaterPotential",
-				"MonthlyProductionValues_grass", "MonthlyProductionValues_shrub", "MonthlyProductionValues_tree", "MonthlyProductionValues_forb"};
+				"MonthlyProductionValues_grass", "MonthlyProductionValues_shrub", "MonthlyProductionValues_tree", "MonthlyProductionValues_forb", "CO2Coefficients"};
 	SEXP VegComp;
 	SEXP Albedo;
 	SEXP conv_stcr;
@@ -904,6 +959,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	SEXP Shrublands;
 	SEXP Forest;
 	SEXP Forb;
+	SEXP CO2Coefficients;
 	RealD *p_Grasslands, *p_Shrublands, *p_Forest, *p_Forb;
 	RealD fraction_sum = 0.;
 
@@ -951,7 +1007,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	v->forb.cnpy.range = p_Canopy[17];
 	v->forb.cnpy.slope = p_Canopy[18];
 	v->forb.canopy_height_constant = p_Canopy[19];
-	
+
 	PROTECT(VegInterception = GET_SLOT(SW_VPD, install(cVegProd_names[4])));
 	p_VegInterception = REAL(VegInterception);
 	v->grass.veg_intPPT_a = p_VegInterception[0];
@@ -970,7 +1026,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	v->forb.veg_intPPT_b = p_VegInterception[13];
 	v->forb.veg_intPPT_c = p_VegInterception[14];
 	v->forb.veg_intPPT_d = p_VegInterception[15];
-	
+
 	PROTECT(LitterInterception = GET_SLOT(SW_VPD, install(cVegProd_names[5])));
 	p_LitterInterception = REAL(LitterInterception);
 	v->grass.litt_intPPT_a = p_LitterInterception[0];
@@ -989,7 +1045,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	v->forb.litt_intPPT_b = p_LitterInterception[13];
 	v->forb.litt_intPPT_c = p_LitterInterception[14];
 	v->forb.litt_intPPT_d = p_LitterInterception[15];
-	
+
 	PROTECT(EsTpartitioning_param = GET_SLOT(SW_VPD, install(cVegProd_names[6])));
 	v->grass.EsTpartitioning_param = REAL(EsTpartitioning_param)[0]; //Grass
 	v->shrub.EsTpartitioning_param = REAL(EsTpartitioning_param)[1]; //Shrub
@@ -1028,7 +1084,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	v->forb.tr_shade_effects.yinflec = p_Shade[21];
 	v->forb.tr_shade_effects.range = p_Shade[22];
 	v->forb.tr_shade_effects.slope = p_Shade[23];
-	
+
 	PROTECT(Hydraulic_flag = GET_SLOT(SW_VPD, install(cVegProd_names[9])));
 	PROTECT(Hydraulic = GET_SLOT(SW_VPD, install(cVegProd_names[10])));
 	v->grass.flagHydraulicRedistribution = LOGICAL_POINTER(Hydraulic_flag)[0]; //Grass
@@ -1088,6 +1144,12 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 		v->forb.lai_conv[i] = p_Forb[i + 12 * 3];
 	}
 
+	PROTECT(CO2Coefficients = GET_SLOT(SW_VPD, install(cVegProd_names[16])));
+	v->co2_biomass_1 = REAL(CO2Coefficients)[0];
+	v->co2_biomass_2 = REAL(CO2Coefficients)[1];
+	v->co2_stomatal_1 = REAL(CO2Coefficients)[2];
+	v->co2_stomatal_2 = REAL(CO2Coefficients)[3];
+
 	fraction_sum = v->fractionGrass + v->fractionShrub + v->fractionTree + v->fractionForb + v->fractionBareGround;
 	if (!EQ(fraction_sum, 1.0)) {
 			LogError(logfp, LOGWARN, "%s : Fractions of vegetation components were normalized, "
@@ -1103,11 +1165,12 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 			LogError(logfp, LOGWARN, "  FORB fraction : %5.4f", v->fractionForb);
 			LogError(logfp, LOGWARN, "  Bare Ground fraction : %5.4f", v->fractionBareGround);
 	}
+
 	SW_VPD_init();
 
 	if (EchoInits)
 		_echo_inits();
-	UNPROTECT(16);
+	UNPROTECT(17);
 }
 #endif
 
@@ -1117,6 +1180,7 @@ void SW_VPD_construct(void) {
 	memset(&SW_VegProd, 0, sizeof(SW_VegProd));
 
 }
+
 
 void SW_VPD_init(void) {
 	/* ================================================== */
@@ -1141,32 +1205,43 @@ void SW_VPD_init(void) {
 	 */
 
 	SW_VEGPROD *v = &SW_VegProd; /* convenience */
+	SW_MODEL *m = &SW_Model;
 	TimeInt doy; /* base1 */
+	TimeInt year;
+
+	/* Apply this year's CO2 effects */
+	year = m->year + addtl_yr;
+	co2_biomass_mult = co2_multipliers[0][year];
+	co2_wue_mult     = co2_multipliers[1][year];
+	apply_CO2(v->grass.CO2_biomass, v->grass.biomass);
+	apply_CO2(v->shrub.CO2_biomass, v->shrub.biomass);
+	apply_CO2(v->tree.CO2_biomass, v->tree.biomass);
+	apply_CO2(v->forb.CO2_biomass, v->forb.biomass);
 
 	if (GT(v->fractionGrass, 0.)) {
 		interpolate_monthlyValues(v->grass.litter, v->grass.litter_daily);
-		interpolate_monthlyValues(v->grass.biomass, v->grass.biomass_daily);
+		interpolate_monthlyValues(v->grass.CO2_biomass, v->grass.biomass_daily);
 		interpolate_monthlyValues(v->grass.pct_live, v->grass.pct_live_daily);
 		interpolate_monthlyValues(v->grass.lai_conv, v->grass.lai_conv_daily);
 	}
 
 	if (GT(v->fractionShrub, 0.)) {
 		interpolate_monthlyValues(v->shrub.litter, v->shrub.litter_daily);
-		interpolate_monthlyValues(v->shrub.biomass, v->shrub.biomass_daily);
+		interpolate_monthlyValues(v->shrub.CO2_biomass, v->shrub.biomass_daily);
 		interpolate_monthlyValues(v->shrub.pct_live, v->shrub.pct_live_daily);
 		interpolate_monthlyValues(v->shrub.lai_conv, v->shrub.lai_conv_daily);
 	}
 
 	if (GT(v->fractionTree, 0.)) {
 		interpolate_monthlyValues(v->tree.litter, v->tree.litter_daily);
-		interpolate_monthlyValues(v->tree.biomass, v->tree.biomass_daily);
+		interpolate_monthlyValues(v->tree.CO2_biomass, v->tree.biomass_daily);
 		interpolate_monthlyValues(v->tree.pct_live, v->tree.pct_live_daily);
 		interpolate_monthlyValues(v->tree.lai_conv, v->tree.lai_conv_daily);
 	}
 
 	if (GT(v->fractionForb, 0.)) {
 		interpolate_monthlyValues(v->forb.litter, v->forb.litter_daily);
-		interpolate_monthlyValues(v->forb.biomass, v->forb.biomass_daily);
+		interpolate_monthlyValues(v->forb.CO2_biomass, v->forb.biomass_daily);
 		interpolate_monthlyValues(v->forb.pct_live, v->forb.pct_live_daily);
 		interpolate_monthlyValues(v->forb.lai_conv, v->forb.lai_conv_daily);
 	}

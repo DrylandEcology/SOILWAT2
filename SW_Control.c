@@ -37,17 +37,22 @@
 #include "SW_VegEstab.h"
 #include "SW_VegProd.h"
 #include "SW_Weather.h"
+#include "SW_Carbon.h"
 
 /* =================================================== */
 /*                  Global Declarations                */
 /* --------------------------------------------------- */
 extern SW_MODEL SW_Model;
 extern SW_VEGESTAB SW_VegEstab;
+extern SW_SITE SW_Site;
+extern SW_VEGPROD SW_VegProd;
 #ifdef RSOILWAT
 	extern Bool useFiles;
 	extern SEXP InputData;
 	void SW_FLW_construct(void);
 #endif
+
+
 /* =================================================== */
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
@@ -119,11 +124,14 @@ static void _begin_year(void) {
 	/* in addition to the timekeeper (Model), usually only
 	 * modules that read input yearly or produce output need
 	 * to have this call */
-	SW_MDL_new_year();
-	SW_WTH_new_year();
-	SW_SWC_new_year();
-	SW_VES_new_year();
-	SW_OUT_new_year();
+	 SW_MDL_new_year();
+	 SW_WTH_new_year();
+	 SW_SWC_new_year();
+	 SW_VES_new_year();
+	 SW_OUT_new_year();
+
+	 // Dynamic CO2 effects
+	 SW_VPD_init();
 
 }
 
@@ -194,6 +202,9 @@ static void _read_inputs(void) {
 		//Rprintf("swSWC\n");
 	}
 #endif
+	// This will work in both RSOILWAT and SOILWAT
+	SW_Carbon_Get();
+
 }
 
 #ifdef DEBUG_MEM

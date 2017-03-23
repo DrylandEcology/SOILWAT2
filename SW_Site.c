@@ -190,7 +190,7 @@ void SW_SIT_read(void) {
 	 */
 	SW_SITE *v = &SW_Site;
 	FILE *f;
-	int lineno = 0, x;
+	int lineno = 0, x, temp, temp2;
 	LyrIndex r, region, /* transp region definition number */
 	rgnlow; /* lower layer of region */
 	Bool too_many_regions = FALSE;
@@ -311,8 +311,21 @@ void SW_SIT_read(void) {
 		case 35:
 			v->use_soil_temp = itob(atoi(inbuf));
 			break;
+	  case 36:
+		  x - sscanf(inbuf, "%d %d", &temp, &temp2);
+		  v->use_retro_bio_mult = temp;
+			v->use_retro_sto_mult = temp2;
+			break;
+		case 37:
+			x - sscanf(inbuf, "%d %d", &temp, &temp2);
+			v->use_future_bio_mult = temp;
+			v->use_future_sto_mult = temp2;
+			break;
+		case 38:
+			v->RCP = atof(inbuf);
+			break;
 		default:
-			if (lineno > 35 + MAX_TRANSP_REGIONS)
+			if (lineno > 38 + MAX_TRANSP_REGIONS)
 				break; /* skip extra lines */
 
 			if (MAX_TRANSP_REGIONS < v->n_transp_rgn) {

@@ -101,7 +101,7 @@ void SW_F_read(const char *s) {
 		case 5:
 			strcpy(weather_prefix, inbuf);
 			break;
-		case 12:
+		case 13:
 			strcpy(output_prefix, inbuf);
 			break;
 

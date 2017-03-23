@@ -55,6 +55,7 @@ typedef struct {
 
 	RealD litter[MAX_MONTHS], /* monthly litter values (g/m**2)    */
 	biomass[MAX_MONTHS], /* monthly aboveground biomass (g/m**2) */
+	CO2_biomass[MAX_MONTHS], /* monthly aboveground biomass after CO2 effects */
 	pct_live[MAX_MONTHS], /* monthly live biomass in percent   */
 	lai_conv[MAX_MONTHS]; /* monthly amount of biomass   needed to produce lai=1 (g/m**2)      */
 
@@ -95,6 +96,8 @@ typedef struct {
 	fractionBareGround; /* bare ground component fraction of total vegetation */
 
 	RealD bareGround_albedo; /* create this here instead of creating a bareGround VegType, because it only needs albedo and no other data member */
+
+	RealD co2_biomass_1, co2_biomass_2, co2_stomatal_1, co2_stomatal_2;
 
 } SW_VEGPROD;
 
