@@ -91,11 +91,7 @@ typedef struct {
 
 	Bool reset_yr, /* 1: reset values at start of each year */
 	deepdrain, /* 1: allow drainage into deepest layer  */
-	use_soil_temp, /* whether or not to do soil_temperature calculations */
-	use_retro_bio_mult, /* whether or not to use CO2 effects on biomass */
-	use_retro_sto_mult, /* whether or not to use CO2 effects in the transpiration equation */
-	use_future_bio_mult,
-	use_future_sto_mult;
+	use_soil_temp; /* whether or not to do soil_temperature calculations */
 	LyrIndex n_layers, /* total number of soil layers */
 	n_transp_rgn, /* soil layers are grouped into n transp. regions */
 	n_evap_lyrs, /* number of layers in which evap is possible */
@@ -126,7 +122,6 @@ typedef struct {
 		percentRunoff;	/* the percentage of surface water lost daily */
 
 	unsigned int stNRGR; /* number of interpolations, for the soil_temperature function */
-  unsigned int RCP; /* the RCP to use to calculate CO2 multipliers */
 	/* params for tanfunc rate calculations for evap and transp. */
 	/* tanfunc() creates a logistic-type graph if shift is positive,
 	 * the graph has a negative slope, if shift is 0, slope is positive.

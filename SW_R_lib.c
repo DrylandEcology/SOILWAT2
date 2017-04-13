@@ -133,6 +133,8 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	//Rprintf("swSoils\n");
 	SET_SLOT(SW_DataList,install("estab"),onGet_SW_VES());
 	//Rprintf("swEstab\n");
+	SET_SLOT(SW_DataList,install("carbon"),onGet_SW_CARBON());
+	//Rprintf("swCarbon\n");
 	SET_SLOT(SW_DataList,install("output"), onGet_SW_OUT());
 	//Rprintf("swOUT\n");
 	SET_SLOT(SW_DataList,install("swc"),onGet_SW_SWC());
@@ -147,7 +149,7 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	return SW_DataList;
 }
 
-SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList, SEXP delta_yrs, SEXP use_future_bio_mult1, SEXP use_future_sto_mult1, SEXP RCP1, SEXP use_retro_bio_mult1, SEXP use_retro_sto_mult1) {
+SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	int tYears = 0, tevapLayers = 0, tVegEstabCount = 0, pYearUse = 0, pMonthUse = 0, pWeekUse = 0, pDayUse = 0;
 	int i;
 	SEXP outputData;
@@ -187,13 +189,6 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList, SEXP delta_yrs, 
 	PROTECT(swLog = MAKE_CLASS("swLog"));
 	PROTECT(oRlogfile = NEW_OBJECT(swLog));
 	PROTECT(Rlogfile = GET_SLOT(oRlogfile,install("LogData")));
-
-	addtl_yr = REAL(delta_yrs)[0];
-	use_future_bio_mult = INTEGER(use_future_bio_mult1)[0];
-	use_future_sto_mult = INTEGER(use_future_sto_mult1)[0];
-	use_retro_bio_mult = INTEGER(use_retro_bio_mult1)[0];
-	use_retro_sto_mult = INTEGER(use_retro_sto_mult1)[0];
-	RCP = REAL(RCP1)[0];
 
 	//Set the input data either from files or from memory
 	init_args(argc, argv);

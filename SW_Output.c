@@ -196,7 +196,7 @@ extern SW_WEATHER SW_Weather;
 extern SW_VEGPROD SW_VegProd;
 extern SW_VEGESTAB SW_VegEstab;
 extern Bool EchoInits;
-
+extern SW_CARBON SW_Carbon;
 #define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
 
 SW_OUTPUT SW_Output[SW_OUTNKEYS]; /* declared here, externed elsewhere */
@@ -1327,6 +1327,7 @@ static void get_outstrleader(TimeInt pd)
 }
 
 void get_biomass(void) {
+  SW_CARBON *c = &SW_Carbon;
 	// Get the current period
 	OutPeriod pd = SW_Output[eSW_Biomass].period;
 	int month;
@@ -1350,7 +1351,7 @@ void get_biomass(void) {
 				p_Rbiomass_mo[SW_Output[eSW_Biomass].mo_row + mo_nrow * 3] = SW_VegProd.shrub.CO2_biomass[month];//SW_Output[eSW_Biomass].mo_row];
 				p_Rbiomass_mo[SW_Output[eSW_Biomass].mo_row + mo_nrow * 4] = SW_VegProd.tree.CO2_biomass[month];//SW_Output[eSW_Biomass].mo_row];
 				p_Rbiomass_mo[SW_Output[eSW_Biomass].mo_row + mo_nrow * 5] = SW_VegProd.forb.CO2_biomass[month];//SW_Output[eSW_Biomass].mo_row];
-				p_Rbiomass_mo[SW_Output[eSW_Biomass].mo_row + mo_nrow * 6] = co2_biomass_mult;
+				p_Rbiomass_mo[SW_Output[eSW_Biomass].mo_row + mo_nrow * 6] = c->co2_biomass_mult;
 				SW_Output[eSW_Biomass].mo_row++;
 				break;
 			#else
@@ -1361,7 +1362,7 @@ void get_biomass(void) {
 				forb = SW_VegProd.forb.CO2_biomass[month];
 				SW_month = month + 1;
 				SW_year = SW_Model.year;
-				mult = co2_biomass_mult;
+				mult = c->co2_biomass_mult;
 
 				// Write output
 				if (SW_month == 12) {

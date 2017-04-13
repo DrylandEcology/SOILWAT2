@@ -22,23 +22,14 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-RealD co2_multipliers[2][5000];  // Declared here, externed elsewhere
-int use_future_bio_mult;
-int use_future_sto_mult;
-int use_retro_bio_mult;
-int use_retro_sto_mult;
-double co2_biomass_mult;
-double co2_wue_mult;
-int RCP;
 
 /* =================================================== */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
 
 static char *MyFileName;
-int test = 0;
-SW_SITE SW_Site;                 // Declared here, externed elsewhere
-SW_VEGPROD SW_VegProd;           // Declared here, externed elsewhere
+SW_CARBON SW_Carbon;    // Declared here, externed elsewhere
+SW_VEGPROD SW_VegProd;  // Declared here, externed elsewhere
 
 
 /* =================================================== */
@@ -51,6 +42,48 @@ SW_VEGPROD SW_VegProd;           // Declared here, externed elsewhere
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
 
+/* A description on how these 'onGet' and 'onSet' functions work...
+ * Summary: onGet instantiates the 'carbon' class and returns the object, and is only used once
+ *          onSet extracts the value of the given object, and is used on both calls to SOILWAT2
+ * 1) An S4 class is described and generated in rSOILWAT2/R
+ * 2) This class needs to be instantiatied, which is done here
+ * 3) The object that gets returned here eventually gets inserted into swRunScenariosData[[1]]
+ * 4) Data of the object is then modified with class functions in R (e.g. rSOILWAT2::swCarbon_RCP(swRUnScenariosData[[1]]) <- 85)
+ * 5) The 'onSet' function is used to extract the latest data of the object (e.g. when SOILWAT2 begins modeling the real years)
+ */
+#ifdef RSOILWAT
+SEXP onGet_SW_CARBON(void) {
+  // Create access variables
+  SEXP class, object;
+
+  // Grab our S4 carbon class as an object
+  PROTECT(class  = MAKE_CLASS("swCarbon"));
+  PROTECT(object = NEW_OBJECT(class));
+
+  // Extract the values to our global structure
+  onSet_swCarbon(object);
+
+  // Unprotect and give the object to swRunScenariosData
+  UNPROTECT(2);
+  return object;
+}
+
+
+void onSet_swCarbon(SEXP object) {
+  // Create a reference to our structure
+  SW_CARBON *c = &SW_Carbon;
+
+  // Extract the slots from our object into our structure
+  c->use_future_bio_mult = INTEGER(GET_SLOT(object, install("CarbonFutureBio")))[0];
+  c->use_future_sto_mult = INTEGER(GET_SLOT(object, install("CarbonFutureSto")))[0];
+  c->use_retro_bio_mult  = INTEGER(GET_SLOT(object, install("CarbonRetroBio")))[0];
+  c->use_retro_sto_mult  = INTEGER(GET_SLOT(object, install("CarbonRetroSto")))[0];
+  c->RCP                 = INTEGER(GET_SLOT(object, install("RCP")))[0];
+  c->addtl_yr            = INTEGER(GET_SLOT(object, install("Delta")))[0];
+}
+#endif
+
+
 /**
  * Calculates the multipliers for biomass and the transpiration
  * equation. If a multiplier is disabled, its value is set to 1. All the years
@@ -58,59 +91,43 @@ SW_VEGPROD SW_VegProd;           // Declared here, externed elsewhere
  * SOILWAT will read siteparam.in for settings.
  */
 void SW_Carbon_Get(void) {
+  // Initialize variables
   int i;
-  /* Initialize variables */
   FILE *f;
   double ppm;
   int year;
   int x = 0;
   int cur_RCP = 0;
 
-  /* Set variables */
-  #ifndef RSOILWAT
-  SW_SITE *settings = &SW_Site;
-  use_retro_bio_mult = settings->use_retro_bio_mult;
-  use_retro_sto_mult = settings->use_retro_sto_mult;
-  use_future_bio_mult = settings->use_future_bio_mult;
-  use_future_sto_mult = settings->use_future_sto_mult;
-  RCP = settings->RCP;
-  #endif
+  // Set variables
+  SW_CARBON  *c  = &SW_Carbon;
+  SW_VEGPROD *v  = &SW_VegProd;
+  MyFileName     = SW_F_name(eCarbon);
+  f              = OpenFile(MyFileName, "r");
 
-  SW_VEGPROD *data  = &SW_VegProd;
-  MyFileName = SW_F_name(eCarbon);
-  f          = OpenFile(MyFileName, "r");
-
-  /* Read carbon.in */
+  // Read carbon.in
   while (GetALine(f, inbuf)) {
     x = sscanf(inbuf, "%d %lf", &year, &ppm);
 
-    /* Ensure we are using the correct RCP */
-    if (cur_RCP != RCP) {
-      if (year == 0) cur_RCP = (int) ppm; // In this specific case, ppm is the RCP num
+    // Ensure we are using the correct RCP
+    if (cur_RCP != c->RCP) {
+      if (year == 0) cur_RCP = (int) ppm;  // In this specific case, ppm is the RCP num
     } else {
-      /* Calculate multipliers */
-      co2_multipliers[0][year] = 1.0;
-      co2_multipliers[1][year] = 1.0;
+
+      // Calculate multipliers
+      c->co2_multipliers[0][year] = 1.0;
+      c->co2_multipliers[1][year] = 1.0;
       if (year <= 2010) {
-        if (use_retro_bio_mult) co2_multipliers[0][year] = data->co2_biomass_1  * (ppm)  + data->co2_biomass_2;
-        if (use_retro_sto_mult) co2_multipliers[1][year] = data->co2_stomatal_1 * (ppm)  + data->co2_stomatal_2;
+        // Retro
+        if (c->use_retro_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * (ppm)  + v->co2_biomass_2;
+        if (c->use_retro_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * (ppm)  + v->co2_stomatal_2;
       } else if (year > 2010) {
-        if (use_future_bio_mult) co2_multipliers[0][year] = data->co2_biomass_1  * (ppm)  + data->co2_biomass_2;
-        if (use_future_sto_mult) co2_multipliers[1][year] = data->co2_stomatal_1 * (ppm)  + data->co2_stomatal_2;
+        // Future
+        if (c->use_future_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * (ppm)  + v->co2_biomass_2;
+        if (c->use_future_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * (ppm)  + v->co2_stomatal_2;
       }
     }
   }
-  #ifdef RSOILWAT
-  if (test) {
-    Rprintf("\nPrinting multipliers...\n\n");
-    for (i = 1950; i < 2100; i++) {
-      Rprintf("Year: %d\n", i);
-      Rprintf("Bio: %f\n", co2_multipliers[0][i]);
-      Rprintf("Sto: %f\n\n", co2_multipliers[1][i]);
-    }
-    Rprintf("Done!\n");
-  }
-  #endif
 }
 
 
@@ -122,8 +139,10 @@ void SW_Carbon_Get(void) {
  */
 void apply_CO2(double new_biomass[], double biomass[]) {
   int i;
-  if (co2_biomass_mult == 0) co2_biomass_mult = 1.0;  // The start-up year has a multiplier of 0 since it has not calculated the multipliers yet
+  SW_CARBON  *c  = &SW_Carbon;
+
+  if (c->co2_biomass_mult == 0) c->co2_biomass_mult = 1.0;  // The start-up year has a multiplier of 0 since it has not calculated the multipliers yet
   for (i = 0; i < 12; i++) {
-    new_biomass[i] = (biomass[i] * co2_biomass_mult);
+    new_biomass[i] = (biomass[i] * c->co2_biomass_mult);
   }
 }

@@ -104,6 +104,7 @@
 /* --------------------------------------------------- */
 extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
+SW_CARBON SW_Carbon;
 unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
@@ -837,6 +838,7 @@ void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, 
 	 **********************************************************************/
 
 	double par1, par2, shadeaf;
+	SW_CARBON *c = &SW_Carbon;
 
 	if (LE(biolive, 0.)) {
 		*bstrate = 0.;
@@ -851,10 +853,10 @@ void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, 
 			shadeaf = 1.0;
 		}
 
-		if (co2_wue_mult == 0) co2_wue_mult = 1.0;  // The start-up year has a multiplier of 0 since it has not calculated the multipliers yet
+		if (c->co2_wue_mult == 0) c->co2_wue_mult = 1.0;  // The start-up year has a multiplier of 0 since it has not calculated the multipliers yet
 
 		*bstrate = watrate(swpavg, petday, swp_shift, swp_shape,
-							   swp_inflec, swp_range) * shadeaf * petday * fbst * co2_wue_mult;
+							   swp_inflec, swp_range) * shadeaf * petday * fbst * c->co2_wue_mult;
 	}
 }
 

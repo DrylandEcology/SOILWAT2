@@ -63,6 +63,7 @@
 #include "myMemory.h"
 #include "SW_Defines.h"
 
+#include "SW_Carbon.h"
 #include "SW_Files.h"
 #include "SW_Site.h"
 #include "SW_SoilWater.h"
@@ -74,6 +75,7 @@
 /* --------------------------------------------------- */
 
 extern SW_VEGPROD SW_VegProd;
+SW_CARBON SW_Carbon;
 #ifdef RSOILWAT
 extern Bool collectInData;
 extern SEXP InputData;
@@ -189,6 +191,7 @@ void SW_SIT_read(void) {
 	 *    transpiration regions section of input
 	 */
 	SW_SITE *v = &SW_Site;
+	SW_CARBON *c = &SW_Carbon;
 	FILE *f;
 	int lineno = 0, x, temp, temp2;
 	LyrIndex r, region, /* transp region definition number */
@@ -312,17 +315,18 @@ void SW_SIT_read(void) {
 			v->use_soil_temp = itob(atoi(inbuf));
 			break;
 	  case 36:
-		  x - sscanf(inbuf, "%d %d", &temp, &temp2);
-		  v->use_retro_bio_mult = temp;
-			v->use_retro_sto_mult = temp2;
+      x = sscanf(inbuf, "%d %d", &temp, &temp2);
+      c->use_retro_bio_mult = temp;
+      c->use_retro_sto_mult = temp2;
 			break;
 		case 37:
-			x - sscanf(inbuf, "%d %d", &temp, &temp2);
-			v->use_future_bio_mult = temp;
-			v->use_future_sto_mult = temp2;
+      x = sscanf(inbuf, "%d %d", &temp, &temp2);
+      c->use_future_bio_mult = temp;
+      c->use_future_sto_mult = temp2;
 			break;
 		case 38:
-			v->RCP = atof(inbuf);
+      c->RCP = atof(inbuf);
+      c->addtl_yr = 0; // Could be done anywhere, but SOILWAT2 runs don't need a delta year
 			break;
 		default:
 			if (lineno > 38 + MAX_TRANSP_REGIONS)

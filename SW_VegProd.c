@@ -64,6 +64,7 @@ extern Bool collectInData;
 #endif
 SW_VEGPROD SW_VegProd; /* declared here, externed elsewhere */
 SW_VEGPROD Old_SW_VegProd; /* declared here for reading old value of file sbe_prod_v31, externed elsewhere */
+SW_CARBON  SW_Carbon; /* declared here, externed elsewhere */
 
 /* =================================================== */
 /*                Module-Level Variables               */
@@ -561,7 +562,7 @@ void SW_VPD_read(void) {
 	#ifdef RSOILWAT
 		if (!collectInData)
 	#endif
-		
+
 	SW_VPD_init();
 
 	if (EchoInits)
@@ -654,7 +655,7 @@ SEXP onGet_SW_VPD() {
 	REAL(VegComp)[2] = v->fractionTree; //Tree
 	REAL(VegComp)[3] = v->fractionForb; //forb
 	REAL(VegComp)[4] = v->fractionBareGround; //Bare Ground
-	
+
 	PROTECT(VegComp_names = allocVector(STRSXP, 5));
 	SET_STRING_ELT(VegComp_names, 0, mkChar("Grasses"));
 	SET_STRING_ELT(VegComp_names, 1, mkChar("Shrubs"));
@@ -1205,14 +1206,15 @@ void SW_VPD_init(void) {
 	 */
 
 	SW_VEGPROD *v = &SW_VegProd; /* convenience */
-	SW_MODEL *m = &SW_Model;
+	SW_CARBON  *c = &SW_Carbon;
+	SW_MODEL   *m = &SW_Model;
 	TimeInt doy; /* base1 */
 	TimeInt year;
 
 	/* Apply this year's CO2 effects */
-	year = m->year + addtl_yr;
-	co2_biomass_mult = co2_multipliers[0][year];
-	co2_wue_mult     = co2_multipliers[1][year];
+	year = m->year + c->addtl_yr;
+	c->co2_biomass_mult = c->co2_multipliers[0][year];
+	c->co2_wue_mult     = c->co2_multipliers[1][year];
 	apply_CO2(v->grass.CO2_biomass, v->grass.biomass);
 	apply_CO2(v->shrub.CO2_biomass, v->shrub.biomass);
 	apply_CO2(v->tree.CO2_biomass, v->tree.biomass);

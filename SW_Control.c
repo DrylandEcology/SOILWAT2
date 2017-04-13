@@ -200,9 +200,12 @@ static void _read_inputs(void) {
 		//Rprintf("swOutput\n");
 		onSet_SW_SWC(GET_SLOT(InputData,install("swc")));
 		//Rprintf("swSWC\n");
+    onSet_swCarbon(GET_SLOT(InputData, install("carbon")));
+    //Rprintf("swCarbon\n");
 	}
 #endif
 	// This will work in both RSOILWAT and SOILWAT
+  // There is no SW_CARBON_READ function because the settings are stored in already read-in files
 	SW_Carbon_Get();
 
 }
