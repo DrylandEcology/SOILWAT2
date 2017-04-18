@@ -18,13 +18,14 @@ objects = SW_Main.o SW_VegEstab.o SW_Control.o generic.o \
           rands.o Times.o mymemory.o filefuncs.o \
           SW_Files.o SW_Model.o SW_Site.o SW_SoilWater.o \
           SW_Markov.o SW_Weather.o SW_Sky.o SW_Output.o \
-          SW_VegProd.o SW_Flow_lib.o SW_Flow.o
+          SW_VegProd.o SW_Flow_lib.o SW_Flow.o SW_Carbon.o
 
 OBJECTS = SW_Main.o SW_VegEstab.o SW_Control.o generic.o \
           rands.o Times.o mymemory.o filefuncs.o \
           SW_Files.o SW_Model.o SW_Site.o SW_SoilWater.o \
           SW_Markov.o SW_Weather.o SW_Sky.o SW_Output.o \
-          SW_VegProd.o SW_Flow_lib.o SW_Flow.o SW_R_lib.o
+          SW_VegProd.o SW_Flow_lib.o SW_Flow.o SW_R_lib.o \
+		  SW_Carbon.o
 
 target_exe = sw_v31
 
@@ -55,6 +56,7 @@ SW_Output.o : generic.h filefuncs.h myMemory.h Times.h SW_Defines.h SW_Files.h S
 SW_VegProd.o : generic.h filefuncs.h SW_Defines.h SW_Files.h SW_Times.h SW_VegProd.h
 SW_Flow_lib.o : generic.h SW_Defines.h SW_Flow_lib.h SW_Flow_subs.h Times.h
 SW_Flow.o : generic.h filefuncs.h SW_Defines.h SW_Model.h SW_Site.h SW_SoilWater.h SW_Flow_lib.h SW_VegProd.h SW_Weather.h SW_Sky.h
+SW_Carbon.o: generic.h filefuncs.h SW_Defines.h SW_Times.h SW_Files.h SW_Carbon.h SW_Site.h SW_VegProd.h
 
 .PHONY : compile
 compile :
@@ -62,13 +64,13 @@ compile :
 
 .PHONY : compilem
 compilem :
-		gcc -O3 -Wall -Wextra -o $(target_exe) SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+		gcc -O3 -Wall -Wextra -o $(target_exe) SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_Carbon.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
 		cp $(target_exe) test
 		mv test testing/test
 
 .PHONY : compilej
 compilej :
-		mpicc -o $(target_exe) SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+		mpicc -o $(target_exe) SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_Carbon.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c
 
 .PHONY : clean
 clean :
@@ -84,5 +86,5 @@ cleaner :
 
 .PHONY : compilel
 compilel :
-		gcc -O3 -Wall -Wextra -o $(target_exe) SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c -lm
+		gcc -O3 -Wall -Wextra -o $(target_exe) SW_Main.c SW_VegEstab.c SW_Control.c generic.c rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c SW_Site.c SW_Carbon.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c SW_VegProd.c SW_Flow_lib.c SW_Flow.c -lm
 		cp $(target_exe) testing
