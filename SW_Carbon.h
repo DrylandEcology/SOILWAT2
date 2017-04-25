@@ -15,8 +15,8 @@
     RCP,                       // The RCP that we are extracting ppm data from
     use_future_bio_mult,       // Determine which multipliers we will be calculating...
     use_future_sto_mult,
-    use_retro_bio_mult,
-    use_retro_sto_mult;
+    use_historical_bio_mult,
+    use_historical_sto_mult;
 
     double
     carbon[2],                 // Hold misc. data
@@ -34,6 +34,6 @@
   #endif
 
   void apply_CO2(double* new_biomass, double *biomass);
-  void SW_Carbon_Get(void);
+  void calculate_CO2_multipliers(void);
 
 #endif

@@ -76,8 +76,8 @@ void onSet_swCarbon(SEXP object) {
   // Extract the slots from our object into our structure
   c->use_future_bio_mult = INTEGER(GET_SLOT(object, install("CarbonFutureBio")))[0];
   c->use_future_sto_mult = INTEGER(GET_SLOT(object, install("CarbonFutureSto")))[0];
-  c->use_retro_bio_mult  = INTEGER(GET_SLOT(object, install("CarbonRetroBio")))[0];
-  c->use_retro_sto_mult  = INTEGER(GET_SLOT(object, install("CarbonRetroSto")))[0];
+  c->use_historical_bio_mult  = INTEGER(GET_SLOT(object, install("CarbonHistoricalBio")))[0];
+  c->use_historical_sto_mult  = INTEGER(GET_SLOT(object, install("CarbonHistoricalSto")))[0];
   c->RCP                 = INTEGER(GET_SLOT(object, install("RCP")))[0];
   c->addtl_yr            = INTEGER(GET_SLOT(object, install("Delta")))[0];
 }
@@ -90,7 +90,7 @@ void onSet_swCarbon(SEXP object) {
  * in carbon.in are calculated. RSOILWAT will pass in the settings directly.
  * SOILWAT will read siteparam.in for settings.
  */
-void SW_Carbon_Get(void) {
+void calculate_CO2_multipliers(void) {
   // Initialize variables
   int i;
   FILE *f;
@@ -118,9 +118,9 @@ void SW_Carbon_Get(void) {
       c->co2_multipliers[0][year] = 1.0;
       c->co2_multipliers[1][year] = 1.0;
       if (year <= 2010) {
-        // Retro
-        if (c->use_retro_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * (ppm)  + v->co2_biomass_2;
-        if (c->use_retro_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * (ppm)  + v->co2_stomatal_2;
+        // Historical
+        if (c->use_historical_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * (ppm)  + v->co2_biomass_2;
+        if (c->use_historical_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * (ppm)  + v->co2_stomatal_2;
       } else if (year > 2010) {
         // Future
         if (c->use_future_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * (ppm)  + v->co2_biomass_2;

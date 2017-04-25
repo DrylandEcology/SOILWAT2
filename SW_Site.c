@@ -316,8 +316,8 @@ void SW_SIT_read(void) {
 			break;
 	  case 36:
       x = sscanf(inbuf, "%d %d", &temp, &temp2);
-      c->use_retro_bio_mult = temp;
-      c->use_retro_sto_mult = temp2;
+      c->use_historical_bio_mult = temp;
+      c->use_historical_sto_mult = temp2;
 			break;
 		case 37:
       x = sscanf(inbuf, "%d %d", &temp, &temp2);
