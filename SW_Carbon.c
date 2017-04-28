@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "generic.h"
 #include "filefuncs.h"
 #include "SW_Defines.h"
@@ -119,12 +120,12 @@ void calculate_CO2_multipliers(void) {
       c->co2_multipliers[1][year] = 1.0;
       if (year <= 2010) {
         // Historical
-        if (c->use_historical_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * (ppm)  + v->co2_biomass_2;
-        if (c->use_historical_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * (ppm)  + v->co2_stomatal_2;
+        if (c->use_historical_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * pow(ppm, v->co2_biomass_2);
+        if (c->use_historical_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * pow(ppm, v->co2_stomatal_2);
       } else if (year > 2010) {
         // Future
-        if (c->use_future_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * (ppm)  + v->co2_biomass_2;
-        if (c->use_future_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * (ppm)  + v->co2_stomatal_2;
+        if (c->use_future_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * pow(ppm, v->co2_biomass_2);
+        if (c->use_future_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * pow(ppm, v->co2_stomatal_2);
       }
     }
   }

@@ -73,13 +73,13 @@
 # Grasses	Shrubs		Trees		Forbs
 -3.5		-3.9		-2.0		-2.0
 
-# CO2Coefficients
+# CO2 Coefficients: Coeff1 * ppm^Coeff2
 # Biomass
 # Coeff1 Coeff2
-  0.0008 0.6914 0. 0.
+  0.127 0.3501 0. 0.
 # Stomatal conductance
 # Coeff1 Coeff2
- -0.001 1.3788 0. 0.
+  22.464 -0.531 0. 0.
 
 # Grasslands component:
 # -------------- Monthly production values ------------
