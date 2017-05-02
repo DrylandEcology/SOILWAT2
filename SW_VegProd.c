@@ -473,11 +473,11 @@ void SW_VPD_read(void) {
 				v->forb.SWPcrit = -10. * help_forb;
 				break;
 
-			/* CO2 Biomass Linear Equation */
+			/* CO2 Biomass Power Equation */
 			case 30:
 			x = sscanf(inbuf, "%f %f", &co2_biomass_1, &co2_biomass_2);
 			if (x < 2) {
-				sprintf(errstr, "ERROR: Not enough arguments for the CO2 Biomass Linear Equation in %s\n", MyFileName);
+				sprintf(errstr, "ERROR: Not enough arguments for the CO2 Biomass Power Equation in %s\n", MyFileName);
 				CloseFile(&f);
 				LogError(logfp, LOGFATAL, errstr);
 			}
@@ -485,11 +485,11 @@ void SW_VPD_read(void) {
 			v->co2_biomass_2 = co2_biomass_2;
 			break;
 
-			/* CO2 Stomatal Linear Equation */
+			/* CO2 Stomatal Power Equation */
 			case 31:
 			x = sscanf(inbuf, "%f %f", &co2_stomatal_1, &co2_stomatal_2);
 			if (x < 2) {
-				sprintf(errstr, "ERROR: Not enough arguments for the CO2 Stomatal Linear Equation in %s\n", MyFileName);
+				sprintf(errstr, "ERROR: Not enough arguments for the CO2 Stomatal Power Equation in %s\n", MyFileName);
 				CloseFile(&f);
 				LogError(logfp, LOGFATAL, errstr);
 			}
@@ -1215,12 +1215,9 @@ void SW_VPD_init(void) {
 	year = m->year + c->addtl_yr;
 	c->co2_biomass_mult = c->co2_multipliers[0][year];
 	c->co2_wue_mult     = c->co2_multipliers[1][year];
-	apply_CO2(v->grass.CO2_biomass, v->grass.biomass);
-	apply_CO2(v->shrub.CO2_biomass, v->shrub.biomass);
-	apply_CO2(v->tree.CO2_biomass, v->tree.biomass);
-	apply_CO2(v->forb.CO2_biomass, v->forb.biomass);
 
 	if (GT(v->fractionGrass, 0.)) {
+	  apply_CO2(v->grass.CO2_biomass, v->grass.biomass);
 		interpolate_monthlyValues(v->grass.litter, v->grass.litter_daily);
 		interpolate_monthlyValues(v->grass.CO2_biomass, v->grass.biomass_daily);
 		interpolate_monthlyValues(v->grass.pct_live, v->grass.pct_live_daily);
@@ -1228,6 +1225,7 @@ void SW_VPD_init(void) {
 	}
 
 	if (GT(v->fractionShrub, 0.)) {
+	  apply_CO2(v->shrub.CO2_biomass, v->shrub.biomass);
 		interpolate_monthlyValues(v->shrub.litter, v->shrub.litter_daily);
 		interpolate_monthlyValues(v->shrub.CO2_biomass, v->shrub.biomass_daily);
 		interpolate_monthlyValues(v->shrub.pct_live, v->shrub.pct_live_daily);
@@ -1235,6 +1233,7 @@ void SW_VPD_init(void) {
 	}
 
 	if (GT(v->fractionTree, 0.)) {
+	  apply_CO2(v->tree.CO2_biomass, v->tree.biomass);
 		interpolate_monthlyValues(v->tree.litter, v->tree.litter_daily);
 		interpolate_monthlyValues(v->tree.CO2_biomass, v->tree.biomass_daily);
 		interpolate_monthlyValues(v->tree.pct_live, v->tree.pct_live_daily);
@@ -1242,6 +1241,7 @@ void SW_VPD_init(void) {
 	}
 
 	if (GT(v->fractionForb, 0.)) {
+	  apply_CO2(v->forb.CO2_biomass, v->forb.biomass);
 		interpolate_monthlyValues(v->forb.litter, v->forb.litter_daily);
 		interpolate_monthlyValues(v->forb.CO2_biomass, v->forb.biomass_daily);
 		interpolate_monthlyValues(v->forb.pct_live, v->forb.pct_live_daily);

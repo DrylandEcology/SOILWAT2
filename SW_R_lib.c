@@ -30,10 +30,10 @@ Bool bWeatherList;
 int *p_yr, *p_mo, *p_wk, *p_dy;
 RealD *p_Raet_yr, *p_Rdeep_drain_yr, *p_Restabs_yr, *p_Revap_soil_yr, *p_Revap_surface_yr, *p_Rhydred_yr, *p_Rinfiltration_yr, *p_Rinterception_yr, *p_Rpercolation_yr,
 		*p_Rpet_yr, *p_Rprecip_yr, *p_Rrunoff_yr, *p_Rsnowpack_yr, *p_Rsoil_temp_yr, *p_Rsurface_water_yr, *p_RvwcBulk_yr, *p_RvwcMatric_yr, *p_RswcBulk_yr, *p_RswpMatric_yr,
-		*p_RswaBulk_yr, *p_RswaMatric_yr, *p_Rtemp_yr, *p_Rtransp_yr, *p_Rwetdays_yr;
+		*p_RswaBulk_yr, *p_RswaMatric_yr, *p_Rtemp_yr, *p_Rtransp_yr, *p_Rwetdays_yr, *p_Rco2effects_yr;
 RealD *p_Raet_mo, *p_Rdeep_drain_mo, *p_Restabs_mo, *p_Revap_soil_mo, *p_Revap_surface_mo, *p_Rhydred_mo, *p_Rinfiltration_mo, *p_Rinterception_mo, *p_Rpercolation_mo,
 		*p_Rpet_mo, *p_Rprecip_mo, *p_Rrunoff_mo, *p_Rsnowpack_mo, *p_Rsoil_temp_mo, *p_Rsurface_water_mo, *p_RvwcBulk_mo, *p_RvwcMatric_mo, *p_RswcBulk_mo, *p_RswpMatric_mo,
-		*p_RswaBulk_mo, *p_RswaMatric_mo, *p_Rtemp_mo, *p_Rtransp_mo, *p_Rwetdays_mo, *p_Rbiomass_mo;
+		*p_RswaBulk_mo, *p_RswaMatric_mo, *p_Rtemp_mo, *p_Rtransp_mo, *p_Rwetdays_mo, *p_Rco2effects_mo;
 RealD *p_Raet_wk, *p_Rdeep_drain_wk, *p_Restabs_wk, *p_Revap_soil_wk, *p_Revap_surface_wk, *p_Rhydred_wk, *p_Rinfiltration_wk, *p_Rinterception_wk, *p_Rpercolation_wk,
 		*p_Rpet_wk, *p_Rprecip_wk, *p_Rrunoff_wk, *p_Rsnowpack_wk, *p_Rsoil_temp_wk, *p_Rsurface_water_wk, *p_RvwcBulk_wk, *p_RvwcMatric_wk, *p_RswcBulk_wk, *p_RswpMatric_wk,
 		*p_RswaBulk_wk, *p_RswaMatric_wk, *p_Rtemp_wk, *p_Rtransp_wk, *p_Rwetdays_wk;
@@ -202,7 +202,8 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	dy_nrow = INTEGER(GET_SLOT(outputData, install("dy_nrow")))[0];
 
 	// Get the pointers to the pre configured output data setup. These are used in output.c
-	p_Rbiomass_mo =  REAL(GET_SLOT(GET_SLOT(outputData, install("BIOMASS")), install("Month")));
+	p_Rco2effects_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("CO2EFFECTS")), install("Year")));
+	p_Rco2effects_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("CO2EFFECTS")), install("Month")));
 
 	if(periodUse[eSW_Temp][3]) p_Rtemp_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Year")));
 	if(periodUse[eSW_Temp][2]) p_Rtemp_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Month")));
@@ -344,36 +345,36 @@ SEXP onGetOutput(SEXP inputData) {
 	int tLayers=0, tYears = 0, tevapLayers = 0, tVegEstabCount = 0, pYearUse = 0, pMonthUse = 0, pWeekUse = 0, pDayUse = 0;
 	unsigned int Raet_columns, Rdeedrain_columns, Restabs_columns, Revasoil_columns, Revasurface_columns, Rhydred_columns, Rinfiltration_columns, Rinterception_columns, Rpercolation_columns,
 					Rpet_columns, Rprecip_columns, Rrunoff_columns, Rsnowpack_columns, Rsoil_temp_columns, Rsurface_water_columns, RvwcBulk_columns, RvwcMatric_columns, RswcBulk_columns, RswpMatric_columns, RswaBulk_columns,
-					RswaMatric_columns, Rtemp_columns, Rtransp_columns, Rwetdays_columns, /*NOT USED ->*/ Rwthr_columns,RallH2O_columns,Ret_columns,Rallveg_columns, Rbiomass_columns;
+					RswaMatric_columns, Rtemp_columns, Rtransp_columns, Rwetdays_columns, Rco2effects_columns, /*NOT USED ->*/ Rwthr_columns,RallH2O_columns,Ret_columns,Rallveg_columns;
 	int i,j, k, pCount=0;
 	int use[29];
 	Bool useTimeStep;
 
 	SEXP swOutput, swOutput_Object;
 	char *cSWoutput_Names[] = {"yr_nrow","mo_nrow","wk_nrow","dy_nrow","WTHR","TEMP","PRECIP","SOILINFILT","RUNOFF","ALLH2O","VWCBULK","VWCMATRIC","SWCBULK","SWABULK","SWAMATRIC","SWPMATRIC","SURFACEWATER",
-	                           "TRANSP","EVAPSOIL","EVAPSURFACE","INTERCEPTION","LYRDRAIN","HYDRED","ET","AET","PET","WETDAY","SNOWPACK","DEEPSWC","SOILTEMP","ALLVEG","ESTABL", "BIOMASS"};
+	                           "TRANSP","EVAPSOIL","EVAPSURFACE","INTERCEPTION","LYRDRAIN","HYDRED","ET","AET","PET","WETDAY","SNOWPACK","DEEPSWC","SOILTEMP","ALLVEG","ESTABL", "CO2EFFECTS"};
 
 	SEXP swOutput_KEY;
 	char *cSWoutput_KEY_Names[] = {"Title","TimeStep","Columns","Day","Week","Month","Year"};
 	SEXP swOutput_KEY_WTHR, swOutput_KEY_TEMP, swOutput_KEY_PRECIP, swOutput_KEY_SOILINFILT, swOutput_KEY_RUNOFF, swOutput_KEY_ALLH2O, swOutput_KEY_VWCBULK, swOutput_KEY_VWCMATRIC, swOutput_KEY_SWCBULK,
 		swOutput_KEY_SWPMATRIC, swOutput_KEY_SWABULK, swOutput_KEY_SWAMATRIC, swOutput_KEY_SURFACEWATER, swOutput_KEY_TRANSP, swOutput_KEY_EVAPSOIL, swOutput_KEY_EVAPSURFACE, swOutput_KEY_INTERCEPTION,
 		swOutput_KEY_LYRDRAIN, swOutput_KEY_HYDRED, swOutput_KEY_ET, swOutput_KEY_AET, swOutput_KEY_PET, swOutput_KEY_WETDAY, swOutput_KEY_SNOWPACK, swOutput_KEY_DEEPSWC,
-		swOutput_KEY_SOILTEMP, swOutput_KEY_ALLVEG, swOutput_KEY_ESTABL, swOutput_KEY_BIOMASS;
+		swOutput_KEY_SOILTEMP, swOutput_KEY_ALLVEG, swOutput_KEY_ESTABL, swOutput_KEY_CO2EFFECTS;
 	char *cSWoutput_KEY_Titles[] = {"","temp_air","precip","infiltration","runoff","","vwc_bulk","vwc_matric","swc_bulk","swa_bulk","swa_matric","swp_matric","surface_water","transp","evap_soil","evap_surface",
-		"interception","percolation","hydred","","aet","pet","wetdays","snowpack","deep_drain","temp_soil","","estabs", "biomass"};
+		"interception","percolation","hydred","","aet","pet","wetdays","snowpack","deep_drain","temp_soil","","estabs", "co2_effects"};
 
 	SEXP Periods, TimeSteps;
 	SEXP r_dy_nrow, r_wk_nrow, r_mo_nrow, r_yr_nrow;
-	SEXP r_WTHR_NAME, r_TEMP_NAME, r_PRECIP_NAME, r_SOILINFILT_NAME, r_RUNOFF_NAME, r_ALLH2O_NAME, r_VWCBULK_NAME, r_VWCMATRIC_NAME, r_SWCBULK_NAME, r_SWPMATRIC_NAME, r_SWABULK_NAME, r_SWAMATRIC_NAME, r_SURFACEWATER_NAME, r_TRANSP_NAME, r_EVAPSOIL_NAME, r_EVAPSURFACE_NAME, r_INTERCEPTION_NAME, r_LYRDRAIN_NAME, r_HYDRED_NAME, r_ET_NAME, r_AET_NAME, r_PET_NAME, r_WETDAY_NAME, r_SNOWPACK_NAME, r_DEEPSWC_NAME, r_SOILTEMP_NAME, r_ALLVEG_NAME, r_ESTABL_NAME, r_BIOMASS_NAME;
-	SEXP r_WTHR_PERIOD, r_TEMP_PERIOD, r_PRECIP_PERIOD, r_SOILINFILT_PERIOD, r_RUNOFF_PERIOD, r_ALLH2O_PERIOD, r_VWCBULK_PERIOD, r_VWCMATRIC_PERIOD, r_SWCBULK_PERIOD, r_SWPMATRIC_PERIOD, r_SWABULK_PERIOD, r_SWAMATRIC_PERIOD, r_SURFACEWATER_PERIOD, r_TRANSP_PERIOD, r_EVAPSOIL_PERIOD, r_EVAPSURFACE_PERIOD, r_INTERCEPTION_PERIOD, r_LYRDRAIN_PERIOD, r_HYDRED_PERIOD, r_ET_PERIOD, r_AET_PERIOD, r_PET_PERIOD, r_WETDAY_PERIOD, r_SNOWPACK_PERIOD, r_DEEPSWC_PERIOD, r_SOILTEMP_PERIOD, r_ALLVEG_PERIOD, r_ESTABL_PERIOD, r_BIOMASS_PERIOD;
-	SEXP r_WTHR_COLUMNS, r_TEMP_COLUMNS, r_PRECIP_COLUMNS, r_SOILINFILT_COLUMNS, r_RUNOFF_COLUMNS, r_ALLH2O_COLUMNS, r_VWCBULK_COLUMNS, r_VWCMATRIC_COLUMNS, r_SWCBULK_COLUMNS, r_SWPMATRIC_COLUMNS, r_SWABULK_COLUMNS, r_SWAMATRIC_COLUMNS, r_SURFACEWATER_COLUMNS, r_TRANSP_COLUMNS, r_EVAPSOIL_COLUMNS, r_EVAPSURFACE_COLUMNS, r_INTERCEPTION_COLUMNS, r_LYRDRAIN_COLUMNS, r_HYDRED_COLUMNS, r_ET_COLUMNS, r_AET_COLUMNS, r_PET_COLUMNS, r_WETDAY_COLUMNS, r_SNOWPACK_COLUMNS, r_DEEPSWC_COLUMNS, r_SOILTEMP_COLUMNS, r_ALLVEG_COLUMNS, r_ESTABL_COLUMNS, r_BIOMASS_COLUMNS;
+	SEXP r_WTHR_NAME, r_TEMP_NAME, r_PRECIP_NAME, r_SOILINFILT_NAME, r_RUNOFF_NAME, r_ALLH2O_NAME, r_VWCBULK_NAME, r_VWCMATRIC_NAME, r_SWCBULK_NAME, r_SWPMATRIC_NAME, r_SWABULK_NAME, r_SWAMATRIC_NAME, r_SURFACEWATER_NAME, r_TRANSP_NAME, r_EVAPSOIL_NAME, r_EVAPSURFACE_NAME, r_INTERCEPTION_NAME, r_LYRDRAIN_NAME, r_HYDRED_NAME, r_ET_NAME, r_AET_NAME, r_PET_NAME, r_WETDAY_NAME, r_SNOWPACK_NAME, r_DEEPSWC_NAME, r_SOILTEMP_NAME, r_ALLVEG_NAME, r_ESTABL_NAME, r_CO2EFFECTS_NAME;
+	SEXP r_WTHR_PERIOD, r_TEMP_PERIOD, r_PRECIP_PERIOD, r_SOILINFILT_PERIOD, r_RUNOFF_PERIOD, r_ALLH2O_PERIOD, r_VWCBULK_PERIOD, r_VWCMATRIC_PERIOD, r_SWCBULK_PERIOD, r_SWPMATRIC_PERIOD, r_SWABULK_PERIOD, r_SWAMATRIC_PERIOD, r_SURFACEWATER_PERIOD, r_TRANSP_PERIOD, r_EVAPSOIL_PERIOD, r_EVAPSURFACE_PERIOD, r_INTERCEPTION_PERIOD, r_LYRDRAIN_PERIOD, r_HYDRED_PERIOD, r_ET_PERIOD, r_AET_PERIOD, r_PET_PERIOD, r_WETDAY_PERIOD, r_SNOWPACK_PERIOD, r_DEEPSWC_PERIOD, r_SOILTEMP_PERIOD, r_ALLVEG_PERIOD, r_ESTABL_PERIOD, r_CO2EFFECTS_PERIOD;
+	SEXP r_WTHR_COLUMNS, r_TEMP_COLUMNS, r_PRECIP_COLUMNS, r_SOILINFILT_COLUMNS, r_RUNOFF_COLUMNS, r_ALLH2O_COLUMNS, r_VWCBULK_COLUMNS, r_VWCMATRIC_COLUMNS, r_SWCBULK_COLUMNS, r_SWPMATRIC_COLUMNS, r_SWABULK_COLUMNS, r_SWAMATRIC_COLUMNS, r_SURFACEWATER_COLUMNS, r_TRANSP_COLUMNS, r_EVAPSOIL_COLUMNS, r_EVAPSURFACE_COLUMNS, r_INTERCEPTION_COLUMNS, r_LYRDRAIN_COLUMNS, r_HYDRED_COLUMNS, r_ET_COLUMNS, r_AET_COLUMNS, r_PET_COLUMNS, r_WETDAY_COLUMNS, r_SNOWPACK_COLUMNS, r_DEEPSWC_COLUMNS, r_SOILTEMP_COLUMNS, r_ALLVEG_COLUMNS, r_ESTABL_COLUMNS, r_CO2EFFECTS_COLUMNS;
 
 	SEXP Rallveg_yr, Ret_yr, RallH2O_yr, Rwthr_yr, Raet_yr, Rdeedrain_yr, Restabs_yr, Revasoil_yr, Revasurface_yr, Rhydred_yr, Rinfiltration_yr, Rinterception_yr, Rpercolation_yr,
 			Rpet_yr, Rprecip_yr, Rrunoff_yr, Rsnowpack_yr, Rsoil_temp_yr, Rsurface_water_yr, RvwcBulk_yr, RvwcMatric_yr, RswcBulk_yr, RswpMatric_yr,
-			RswaBulk_yr, RswaMatric_yr, Rtemp_yr, Rtransp_yr, Rwetdays_yr;
+			RswaBulk_yr, RswaMatric_yr, Rtemp_yr, Rtransp_yr, Rwetdays_yr, Rco2effects_yr;
 	SEXP Rallveg_mo, Ret_mo, RallH2O_mo, Rwthr_mo, Raet_mo, Rdeedrain_mo, Restabs_mo, Revasoil_mo, Revasurface_mo, Rhydred_mo, Rinfiltration_mo, Rinterception_mo, Rpercolation_mo,
 			Rpet_mo, Rprecip_mo, Rrunoff_mo, Rsnowpack_mo, Rsoil_temp_mo, Rsurface_water_mo, RvwcBulk_mo, RvwcMatric_mo, RswcBulk_mo, RswpMatric_mo,
-			RswaBulk_mo, RswaMatric_mo, Rtemp_mo, Rtransp_mo, Rwetdays_mo, Rbiomass_mo;
+			RswaBulk_mo, RswaMatric_mo, Rtemp_mo, Rtransp_mo, Rwetdays_mo, Rco2effects_mo;
 	SEXP Rallveg_wk, Ret_wk, RallH2O_wk, Rwthr_wk, Raet_wk, Rdeedrain_wk, Restabs_wk, Revasoil_wk, Revasurface_wk, Rhydred_wk, Rinfiltration_wk, Rinterception_wk, Rpercolation_wk,
 			Rpet_wk, Rprecip_wk, Rrunoff_wk, Rsnowpack_wk, Rsoil_temp_wk, Rsurface_water_wk, RvwcBulk_wk, RvwcMatric_wk, RswcBulk_wk, RswpMatric_wk,
 			RswaBulk_wk, RswaMatric_wk, Rtemp_wk, Rtransp_wk, Rwetdays_wk;
@@ -387,7 +388,8 @@ SEXP onGetOutput(SEXP inputData) {
 	Rinterception_names_y_yr, Rpercolation_names_yr, Rpercolation_names_y_yr, Rpet_names_yr, Rpet_names_y_yr, Rprecip_names_yr, Rprecip_names_y_yr, Rrunoff_names_yr,
 	Rrunoff_names_y_yr, Rsnowpack_names_yr, Rsnowpack_names_y_yr, Rsoil_temp_names_yr, Rsoil_temp_names_y_yr, Rsurface_water_names_yr, Rsurface_water_names_y_yr,
 	Rsw_pot_names_yr, Rsw_pot_names_y_yr, RswaBulk_names_yr, RswaBulk_names_y_yr, RswaMatric_names_yr, RswaMatric_names_y_yr, RswcBulk_names_yr, RswcBulk_names_y_yr, Rtemp_names_yr, Rtemp_names_y_yr, Rtransp_names_yr,
-	Rtransp_names_y_yr, RvwcBulk_names_yr, RvwcBulk_names_y_yr, RvwcMatric_names_yr, RvwcMatric_names_y_yr, Rwetdays_names_yr, Rwetdays_names_y_yr, RswpMatric_names_yr, RswpMatric_names_y_yr;
+	Rtransp_names_y_yr, RvwcBulk_names_yr, RvwcBulk_names_y_yr, RvwcMatric_names_yr, RvwcMatric_names_y_yr, Rwetdays_names_yr, Rwetdays_names_y_yr, RswpMatric_names_yr, RswpMatric_names_y_yr,
+	Rco2effects_names_y_yr, Rco2effects_names_yr;
 
 	SEXP Ret_names_mo, Ret_names_y_mo, Raet_names_mo, Raet_names_y_mo, Rdeep_drain_names_mo, Rdeep_drain_names_y_mo, Restabs_names_mo, Restabs_names_y_mo, Revap_soil_names_mo, Revap_soil_names_y_mo,
 	Revap_surface_names_mo, Revap_surface_names_y_mo, Rhydred_names_mo, Rhydred_names_y_mo, Rinfiltration_names_mo, Rinfiltration_names_y_mo, Rinterception_names_mo,
@@ -395,7 +397,7 @@ SEXP onGetOutput(SEXP inputData) {
 	Rrunoff_names_y_mo, Rsnowpack_names_mo, Rsnowpack_names_y_mo, Rsoil_temp_names_mo, Rsoil_temp_names_y_mo, Rsurface_water_names_mo, Rsurface_water_names_y_mo,
 	Rsw_pot_names_mo, Rsw_pot_names_y_mo, RswaBulk_names_mo, RswaBulk_names_y_mo, RswaMatric_names_mo, RswaMatric_names_y_mo, RswcBulk_names_mo, RswcBulk_names_y_mo, Rtemp_names_mo, Rtemp_names_y_mo, Rtransp_names_mo,
 	Rtransp_names_y_mo, RvwcBulk_names_mo, RvwcBulk_names_y_mo, RvwcMatric_names_mo, RvwcMatric_names_y_mo, Rwetdays_names_mo, Rwetdays_names_y_mo, RswpMatric_names_mo, RswpMatric_names_y_mo,
-	Rbiomass_names_y_mo, Rbiomass_names_mo;
+	Rco2effects_names_y_mo, Rco2effects_names_mo;
 
 	SEXP Ret_names_wk, Ret_names_y_wk, Raet_names_wk, Raet_names_y_wk, Rdeep_drain_names_wk, Rdeep_drain_names_y_wk, Restabs_names_wk, Restabs_names_y_wk, Revap_soil_names_wk, Revap_soil_names_y_wk,
 	Revap_surface_names_wk, Revap_surface_names_y_wk, Rhydred_names_wk, Rhydred_names_y_wk, Rinfiltration_names_wk, Rinfiltration_names_y_wk, Rinterception_names_wk,
@@ -432,7 +434,7 @@ SEXP onGetOutput(SEXP inputData) {
 		//pCount+=4;
 	}
 
-	use[28] = 1; // If CO2 values have been supplied, then flag them for output
+	use[28] = 1; // Always have this as an output, because it also holds useful biomass data
 
 	tYears = (INTEGER(GET_SLOT(GET_SLOT(inputData, install("years")), install("EndYear")))[0] - INTEGER(GET_SLOT(GET_SLOT(inputData, install("years")), install("StartYear")))[0] + 1);
 	tLayers = nrows(GET_SLOT(GET_SLOT(inputData, install("soils")), install("Layers")));
@@ -550,8 +552,7 @@ SEXP onGetOutput(SEXP inputData) {
 	Rsoil_temp_columns = tLayers;
 	Rallveg_columns = 0;
 	Restabs_columns = tVegEstabCount;
-	Rbiomass_columns = 6;
-
+	Rco2effects_columns = 7;
 	PROTECT(swOutput = MAKE_CLASS("swOutput"));
 	PROTECT(swOutput_Object = NEW_OBJECT(swOutput));
 
@@ -2721,50 +2722,68 @@ SEXP onGetOutput(SEXP inputData) {
 		UNPROTECT(3);
 	}
 
-	// Establish biomass as an output to Rsoilwat
+	// Establish co2effects as an output to Rsoilwat
 	if (use[28]) {
 		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[28]);
 
-		// Construct the biomass output key with title and time step
-		PROTECT(swOutput_KEY_BIOMASS = NEW_OBJECT(swOutput_KEY));
-		PROTECT(r_BIOMASS_NAME = NEW_STRING(1));
-		SET_STRING_ELT(r_BIOMASS_NAME, 0, mkChar(cSWoutput_KEY_Titles[28]));
-		SET_SLOT(swOutput_KEY_BIOMASS, install("Title"), r_BIOMASS_NAME);
+		// Construct the co2effects output key with title and time step
+		PROTECT(swOutput_KEY_CO2EFFECTS = NEW_OBJECT(swOutput_KEY));
+		PROTECT(r_CO2EFFECTS_NAME = NEW_STRING(1));
+		SET_STRING_ELT(r_CO2EFFECTS_NAME, 0, mkChar(cSWoutput_KEY_Titles[28]));
+		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Title"), r_CO2EFFECTS_NAME);
 
 		// Construct the time step for the output key
-		PROTECT(r_BIOMASS_PERIOD = NEW_INTEGER(1));
-		INTEGER(r_BIOMASS_PERIOD)[0] = 2;
-		SET_SLOT(swOutput_KEY_BIOMASS, install("TimeStep"), r_BIOMASS_PERIOD);
+		PROTECT(r_CO2EFFECTS_PERIOD = NEW_INTEGER(1));
+		INTEGER(r_CO2EFFECTS_PERIOD)[0] = 2;
+		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("TimeStep"), r_CO2EFFECTS_PERIOD);
 
-		// Construct the yearly output structure
-		PROTECT(Rbiomass_mo = allocMatrix(REALSXP, mo_nrow, Rbiomass_columns + 2));
-		PROTECT(Rbiomass_names_mo = allocVector(VECSXP, 2));
-		PROTECT(Rbiomass_names_y_mo = allocVector(STRSXP, Rbiomass_columns + 2));
-		SET_STRING_ELT(Rbiomass_names_y_mo, 0, mkChar("Year"));
-		SET_STRING_ELT(Rbiomass_names_y_mo, 1, mkChar("Month"));
-		SET_STRING_ELT(Rbiomass_names_y_mo, 2, mkChar("MonthlyGrassBiomass"));
-		SET_STRING_ELT(Rbiomass_names_y_mo, 3, mkChar("MonthlyShrubBiomass"));
-		SET_STRING_ELT(Rbiomass_names_y_mo, 4, mkChar("MonthlyTreeBiomass"));
-		SET_STRING_ELT(Rbiomass_names_y_mo, 5, mkChar("MonthlyForbBiomass"));
-		SET_STRING_ELT(Rbiomass_names_y_mo, 6, mkChar("Multiplier"));
-
-		SET_VECTOR_ELT(Rbiomass_names_mo, 1, Rbiomass_names_y_mo);
-
+		/* Construct the monthly output structure */
+		PROTECT(Rco2effects_mo = allocMatrix(REALSXP, mo_nrow, Rco2effects_columns + 2));
+		PROTECT(Rco2effects_names_mo = allocVector(VECSXP, 2));
+		PROTECT(Rco2effects_names_y_mo = allocVector(STRSXP, Rco2effects_columns + 2));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 0, mkChar("Year"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 1, mkChar("Month"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 2, mkChar("GrassBiomass"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 3, mkChar("ShrubBiomass"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 4, mkChar("TreeBiomass"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 5, mkChar("ForbBiomass"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 6, mkChar("TotalBiomass"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 7, mkChar("BiomassMultiplier"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 8, mkChar("WUEMultiplier"));
+		SET_VECTOR_ELT(Rco2effects_names_mo, 1, Rco2effects_names_y_mo);
 		// Initialize to 0; allocMatrix does not initialize
-		for (k = 0; k < mo_nrow * (Rbiomass_columns + 2); k++)
-			REAL(Rbiomass_mo)[k] = 0.;
+		for (k = 0; k < mo_nrow * (Rco2effects_columns + 2); k++)
+			REAL(Rco2effects_mo)[k] = 0.;
+		setAttrib(Rco2effects_mo, R_DimNamesSymbol, Rco2effects_names_mo);
+		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Month"), Rco2effects_mo);
+		
+		/* Construct the yearly output structure */
+		PROTECT(Rco2effects_yr = allocMatrix(REALSXP, yr_nrow, Rco2effects_columns + 1));
+		PROTECT(Rco2effects_names_yr = allocVector(VECSXP, 2));
+		PROTECT(Rco2effects_names_y_yr = allocVector(STRSXP, Rco2effects_columns + 1));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 0, mkChar("Year"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 1, mkChar("GrassBiomass"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 2, mkChar("ShrubBiomass"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 3, mkChar("TreeBiomass"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 4, mkChar("ForbBiomass"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 5, mkChar("TotalBiomass"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 6, mkChar("BiomassMultiplier"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 7, mkChar("WUEMultiplier"));
+		SET_VECTOR_ELT(Rco2effects_names_yr, 1, Rco2effects_names_y_yr);
+		// Initialize to 0; allocMatrix does not initialize
+		for (k = 0; k < yr_nrow * (Rco2effects_columns + 1); k++)
+		  REAL(Rco2effects_yr)[k] = 0.;
+		setAttrib(Rco2effects_yr, R_DimNamesSymbol, Rco2effects_names_yr);
+		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Year"), Rco2effects_yr);
 
-		setAttrib(Rbiomass_mo, R_DimNamesSymbol, Rbiomass_names_mo);
-		SET_SLOT(swOutput_KEY_BIOMASS, install("Month"), Rbiomass_mo);
-
-		// Add biomass to the output class
-		PROTECT(r_BIOMASS_COLUMNS = NEW_INTEGER(1));
-		INTEGER(r_BIOMASS_COLUMNS)[0] = Rbiomass_columns;
-		SET_SLOT(swOutput_KEY_BIOMASS, install("Columns"), r_BIOMASS_COLUMNS);
-		SET_SLOT(swOutput_Object, install(cSWoutput_Names[32]), swOutput_KEY_BIOMASS);
+		// Add co2effects to the output class
+		PROTECT(r_CO2EFFECTS_COLUMNS = NEW_INTEGER(1));
+		INTEGER(r_CO2EFFECTS_COLUMNS)[0] = Rco2effects_columns;
+		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Columns"), r_CO2EFFECTS_COLUMNS);
+		SET_SLOT(swOutput_Object, install(cSWoutput_Names[32]), swOutput_KEY_CO2EFFECTS);
 
 		// Free protected data as they are no longer needed
-		UNPROTECT(7);
+		UNPROTECT(10);
 	}
 
 
