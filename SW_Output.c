@@ -1367,7 +1367,7 @@ void get_co2effects(void) {
 			break;
 
   	case eSW_Year:
-  	  // Year sum could be done elsewhere, but it is only used in output so let's compute it here
+  	  // Year avg could be done elsewhere, but it is only used in output so let's compute it here
   	  grass = 0;
   	  shrub = 0;
   	  tree = 0;
@@ -1378,6 +1378,10 @@ void get_co2effects(void) {
   	    tree += SW_VegProd.tree.CO2_biomass[i];
   	    forb += SW_VegProd.forb.CO2_biomass[i];
   	  }
+  	  grass /= 12;
+  	  shrub /= 12;
+  	  tree  /= 12;
+  	  forb  /= 12;
   	  total = grass + shrub + tree + forb;
   	  BIO_mult = c->co2_biomass_mult;
   	  WUE_mult = c->co2_wue_mult;
