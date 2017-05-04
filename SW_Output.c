@@ -344,7 +344,7 @@ void SW_OUT_construct(void)
 {
 	/* =================================================== */
 	OutKey k;
-
+  
 	/* note that an initializer that is called during
 	 * execution (better called clean() or something)
 	 * will need to free all allocated memory first
@@ -458,7 +458,7 @@ void SW_OUT_construct(void)
 
 		}
 	}
-
+	
 	bFlush = FALSE;
 	tOffset = 1;
 
@@ -1207,7 +1207,10 @@ void SW_OUT_write_today(void)
 	OutKey k;
 	Bool writeit;
 	int i;
-
+	
+	// Adjust the model year to match simulation years for the output
+  SW_Model.year += SW_Carbon.addtl_yr;
+  
 	ForEachOutKey(k)
 	{
 		for (i = 0; i < numPeriods; i++)
@@ -1282,6 +1285,10 @@ void SW_OUT_write_today(void)
 			}
 		}
 	}
+	
+	// Revert changes to model year, as rest of the model does not use simulation years
+	SW_Model.year -= SW_Carbon.addtl_yr;
+	
 }
 
 static void get_none(void)
@@ -1353,7 +1360,7 @@ void get_co2effects(void) {
 		  total = grass + shrub + tree + forb;
 		  
 			#ifdef RSOILWAT
-				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 0] = SW_Model.year + c->addtl_yr;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 0] = SW_Model.year;
 				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 1] = month + 1;
 				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 2] = grass;
 				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 3] = shrub;
@@ -1387,7 +1394,7 @@ void get_co2effects(void) {
   	  WUE_mult = c->co2_wue_mult;
   	  
       #ifdef RSOILWAT
-    	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 0] = SW_Model.year + c->addtl_yr;
+    	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 0] = SW_Model.year;
     	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 1] = grass;
     	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 2] = shrub;
     	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 3] = tree;
