@@ -103,7 +103,7 @@
  05/25/2012  (DLM) added a few lines of nonsense to sumof_ves() function in order to get rid of the annoying compiler warnings
  06/12/2012  (DLM) changed OUTSTRLEN from 1000 to 2000
  07/02/2012  (DLM) updated # of chars in keyname & upkey arrays in SW_OUT_READ() function to account for longer keynames... for some reason it would still read them in correctly on OS X without an error, but wouldn't on JANUS.
- 11/30/2012	(clk)	changed get_surfaceWater() to ouput amound of surface water, surface runoff, and snowmelt runoff, respectively.
+ 11/30/2012	(clk)	changed get_surfaceWater() to ouput amount of surface water, surface runoff, and snowmelt runoff, respectively.
  12/13/2012	(clk, drs)	changed get_surfaceWater() to output amount of surface water
  added get_runoff() to output surface runoff, and snowmelt runoff, respectively, in a separate file -> new version of outsetupin;
  updated key2str and OutKey
@@ -149,6 +149,7 @@
  07/09/2013	(clk)	Added forb to the outputs: transpiration, surface evaporation, interception, and hydraulic redistribution
  08/21/2013	(clk)	Modified the establisment output to actually output for each species and not just the last one in the group.
  06/23/2015 (akt)	Added output for surface temperature to get_temp()
+ 06/15/2017 Modified PPT values so daily, weekly, monthly, and yearly are run for both RSOILWAT and STEPWAT
  */
 /********************************************************/
 /********************************************************/
@@ -199,7 +200,7 @@ extern Bool EchoInits;
 
 SW_OUTPUT SW_Output[SW_OUTNKEYS]; /* declared here, externed elsewhere */
 
-#ifdef RSOILWAT
+#ifndef RSOILWAT
 extern RealD *p_Raet_yr, *p_Rdeep_drain_yr, *p_Restabs_yr, *p_Revap_soil_yr, *p_Revap_surface_yr, *p_Rhydred_yr, *p_Rinfiltration_yr, *p_Rinterception_yr, *p_Rpercolation_yr,
 *p_Rpet_yr, *p_Rprecip_yr, *p_Rrunoff_yr, *p_Rsnowpack_yr, *p_Rsoil_temp_yr, *p_Rsurface_water_yr, *p_RvwcBulk_yr, *p_RvwcMatric_yr, *p_RswcBulk_yr, *p_RswpMatric_yr,
 *p_RswaBulk_yr, *p_RswaMatric_yr, *p_Rtemp_yr, *p_Rtransp_yr, *p_Rwetdays_yr;
@@ -392,6 +393,7 @@ void SW_OUT_construct(void)
 			break;
 		case eSW_SWABulk:
 			SW_Output[k].pfunc = (void (*)(void)) get_swaBulk;
+			//printf("SW_Output[k].pfunc: %f\n", SW_Output[k].pfunc); // all 0's
 			break;
 		case eSW_SWAMatric:
 			SW_Output[k].pfunc = (void (*)(void)) get_swaMatric;
@@ -1513,7 +1515,7 @@ static void get_temp(void)
 	{
 
 		if (pd != eSW_Year)
-		LogError(logfp, LOGFATAL, "Invalid output period for TEMP; should be YR %7.6f, %7.6f",v_max, v_min); //added v_max, v_min for compiler
+			LogError(logfp, LOGFATAL, "Invalid output period for TEMP; should be YR %7.6f, %7.6f",v_max, v_min); //added v_max, v_min for compiler
 		SXW.temp = v_avg;
 		SXW.surfaceTemp = surfaceTempVal;
 	}
@@ -1527,7 +1529,7 @@ static void get_precip(void)
 	SW_WEATHER *v = &SW_Weather;
 	OutPeriod pd = SW_Output[eSW_Precip].period;
 	RealD val_ppt = SW_MISSING, val_rain = SW_MISSING, val_snow = SW_MISSING,
-			val_snowmelt = SW_MISSING, val_snowloss = SW_MISSING;
+								val_snowmelt = SW_MISSING, val_snowloss = SW_MISSING;
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
@@ -1539,9 +1541,16 @@ static void get_precip(void)
 	{
 		get_outstrleader(pd);
 	}
+	//pd = 2;
 #endif
 
-	switch (pd)
+int switchLoop[] = {0,1,2,3};
+int switchCounter;
+for(switchCounter=0;switchCounter<4;switchCounter++){
+	//printf("pd: %d\n", pd);
+	//printf("switchLoop[switchCounter]: %d\n", switchLoop[switchCounter]);
+	//switch (pd)
+	switch(switchLoop[switchCounter])
 	{
 	case eSW_Day:
 #ifndef RSOILWAT
@@ -1558,7 +1567,7 @@ static void get_precip(void)
 		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 4] = v->dysum.snow;
 		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 5] = v->dysum.snowmelt;
 		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 6] = v->dysum.snowloss;
-		SW_Output[eSW_Precip].dy_row++;
+		//SW_Output[eSW_Precip].dy_row++;
 #endif
 		break;
 	case eSW_Week:
@@ -1576,12 +1585,19 @@ static void get_precip(void)
 		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 4] = v->wkavg.snow;
 		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 5] = v->wkavg.snowmelt;
 		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 6] = v->wkavg.snowloss;
-		SW_Output[eSW_Precip].wk_row++;
+		//SW_Output[eSW_Precip].wk_row++;
 #endif
 		break;
 	case eSW_Month:
+
 #ifndef RSOILWAT
 		val_ppt = v->moavg.ppt;
+
+		//printf("val_ppt: %f\n", val_ppt);
+		//SXW.PPT_month[SXW.curMonth] = val_ppt;
+		//printf("SXW.PPT_month[%d]: %f\n", SXW.curMonth, SXW.PPT_month[SXW.curMonth]);
+		//SXW.curMonth++;
+
 		val_rain = v->moavg.rain;
 		val_snow = v->moavg.snow;
 		val_snowmelt = v->moavg.snowmelt;
@@ -1594,11 +1610,11 @@ static void get_precip(void)
 		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 4] = v->moavg.snow;
 		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 5] = v->moavg.snowmelt;
 		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 6] = v->moavg.snowloss;
-		SW_Output[eSW_Precip].mo_row++;
+		//SW_Output[eSW_Precip].mo_row++;
 #endif
 		break;
 	case eSW_Year:
-#ifndef RSOILWAT
+#ifndef RSOILWAT // enters here even if only running STEPWAT
 		val_ppt = v->yravg.ppt;
 		val_rain = v->yravg.rain;
 		val_snow = v->yravg.snow;
@@ -1614,13 +1630,20 @@ static void get_precip(void)
 		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 5] = v->yravg.snowloss;
 		SW_Output[eSW_Precip].yr_row++;
 #endif
+	printf("3\n");
 	}
+}
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
 			val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
 	strcat(outstr, str);
 #elif defined(STEPWAT)
+	/*val_ppt = v->moavg.ppt;
+	SXW.PPT_month[SXW.curMonth] = val_ppt;
+	printf("SXW.PPT_month[%d]: %f\n", SXW.curMonth, SXW.PPT_month[SXW.curMonth]);
+	SXW.curMonth++;*/
+
 	if (isPartialSoilwatOutput == FALSE)
 	{
 		sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep, val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
@@ -1631,7 +1654,10 @@ static void get_precip(void)
 
 		if (pd != eSW_Year)
 		LogError(logfp, LOGFATAL, "Invalid output period for PRECIP; should be YR, %7.6f,%7.6f,%7.6f,%7.6f", val_snowloss, val_snowmelt, val_snow, val_rain); //added extra for compiler
-		SXW.ppt = val_ppt;
+		SXW.ppt = val_ppt; // ORIGINAL - DONT ALTER
+
+		SXW.PPTVal[SXW.yearInterval] = val_ppt;
+		SXW.yearInterval++;
 	}
 #endif
 }
@@ -1933,6 +1959,7 @@ static void get_swcBulk(void)
 	char str[OUTSTRLEN];
 	if (isPartialSoilwatOutput == FALSE)
 	{
+		//printf("in ispartial\n");
 		get_outstrleader(pd);
 		ForEachSoilLayer(i)
 		{
@@ -1958,26 +1985,34 @@ static void get_swcBulk(void)
 	}
 	else
 	{
+		//printf("in else\n");
 		ForEachSoilLayer(i)
 		{
 			switch (pd)
 			{
 				case eSW_Day:
-				p = t->doy-1;
-				val = v->dysum.swcBulk[i];
-				break; // print current but as index
+					p = t->doy-1;
+					val = v->dysum.swcBulk[i];
+					printf("eSW_Day\n");
+					break; // print current but as index
 				case eSW_Week:
-				p = t->week-1;
-				val = v->wkavg.swcBulk[i];
-				break;// print previous to current
+					p = t->week-1;
+					val = v->wkavg.swcBulk[i];
+					printf("eSW_Week\n");
+					break;// print previous to current
 				case eSW_Month:
-				p = t->month-1;
-				val = v->moavg.swcBulk[i];
-				break;// print previous to current
+					p = t->month-1;
+					val = v->moavg.swcBulk[i];
+					break;// print previous to current
 				// YEAR should never be used with STEPWAT
 			}
 			if (bFlush) p++;
-			SXW.swc[Ilp(i,p)] = val;
+
+// TODO: ENDED
+
+			SXW.swc[Ilp(i,p)] = val; // i:layer p: year
+			//printf("SXW.swc[Ilp(i,p)]: %f\n", SXW.swc[Ilp(i,p)]);
+			//printf("i, p %d, %d\n", i, p);
 		}
 	}
 #endif
@@ -2065,12 +2100,13 @@ static void get_swpMatric(void)
 static void get_swaBulk(void)
 {
 	/* --------------------------------------------------- */
-
+	printf("in get_swaBulk");
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_SWABulk].period;
 	RealD val = SW_MISSING;
 #ifndef RSOILWAT
+	printf("here");
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 	ForEachSoilLayer(i)
@@ -2095,6 +2131,7 @@ static void get_swaBulk(void)
 		strcat(outstr, str);
 	}
 #else
+	printf("there");
 	switch (pd)
 	{
 		case eSW_Day:
@@ -2131,7 +2168,7 @@ static void get_swaBulk(void)
 static void get_swaMatric(void)
 {
 	/* --------------------------------------------------- */
-
+	printf("get_swaMatric");
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_SWAMatric].period;
@@ -2448,6 +2485,8 @@ static void get_transp(void)
 			}
 			if (bFlush) p++;
 			SXW.transpTotal[Ilp(i,p)] = val[i];
+			//if(SXW.transpTotal[Ilp(i,p)] >= 2)
+				//printf("transpTotal value in SW_Output.c: %f\n", SXW.transpTotal[Ilp(i,p)]);
 		}
 	}
 #endif
@@ -3887,6 +3926,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		ForEachSoilLayer(i)
 			s->swaBulk[i] += fmax(
 					v->swcBulk[Today][i] - SW_Site.lyr[i]->swcBulk_wiltpt, 0.);
+			printf("%f\n", s->swaBulk[i]);
 		break;
 
 	case eSW_SWAMatric: /* get swaBulk and convert later */
@@ -4121,6 +4161,7 @@ static void average_for(ObjType otyp, OutPeriod pd)
 								(SW_Output[k].sumtype == eSW_Fnl) ?
 										SW_Soilwat.swcBulk[Yesterday][i] :
 										ssumof->swcBulk[i] / div;
+
 					break;
 
 				case eSW_SWPMatric:
@@ -4133,6 +4174,7 @@ static void average_for(ObjType otyp, OutPeriod pd)
 					break;
 
 				case eSW_SWABulk:
+					printf("swabulk case\n");
 					ForEachSoilLayer(i)
 						savg->swaBulk[i] =
 								(SW_Output[k].sumtype == eSW_Fnl) ?
@@ -4141,6 +4183,7 @@ static void average_for(ObjType otyp, OutPeriod pd)
 														- SW_Site.lyr[i]->swcBulk_wiltpt,
 												0.) :
 										ssumof->swaBulk[i] / div;
+						printf("savg->swaBulk[i]: %f\n", savg->swaBulk[i]);
 					break;
 
 				case eSW_SWAMatric: /* swaMatric at this point is identical to swaBulk */
