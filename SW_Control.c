@@ -112,6 +112,100 @@ void SW_CTL_run_current_year(void) {
 		_end_day();
 	}
 	SW_OUT_flush();
+
+	stat_Output_Daily_CSV_Summery();
+	stat_Output_Weekly_CSV_Summery();
+	stat_Output_Monthly_CSV_Summery();
+	stat_Output_Yearly_CSV_Summery();
+
+}
+
+//This function will create daily
+/***********************************************************/
+void stat_Output_Daily_CSV_Summery()
+{
+	char buf[1024], tbuf[80];
+
+	FILE *f;
+	Bool csv_summary = TRUE;
+	if (!csv_summary)
+		return;
+
+	f = OpenFile(SW_F_name(eOutputDaily), "w");
+
+	buf[0] = '\0';
+
+	*buf = '\0';
+
+	fprintf(f, "%s\n", buf);
+	CloseFile(&f);
+
+}
+
+//This function will create Weekly
+/***********************************************************/
+void stat_Output_Weekly_CSV_Summery()
+{
+	char buf[1024], tbuf[80];
+
+	FILE *f;
+	Bool csv_summary = TRUE;
+	if (!csv_summary)
+		return;
+
+	f = OpenFile(SW_F_name(eOutputWeekly), "w");
+
+	buf[0] = '\0';
+
+	*buf = '\0';
+
+	fprintf(f, "%s\n", buf);
+	CloseFile(&f);
+
+}
+
+//This function will create Monthly
+/***********************************************************/
+void stat_Output_Monthly_CSV_Summery()
+{
+	char buf[1024], tbuf[80];
+
+	FILE *f;
+	Bool csv_summary = TRUE;
+	if (!csv_summary)
+		return;
+
+	f = OpenFile(SW_F_name(eOutputMonthly), "w");
+
+	buf[0] = '\0';
+
+	*buf = '\0';
+
+	fprintf(f, "%s\n", buf);
+	CloseFile(&f);
+
+}
+
+//This function will create Yearly
+/***********************************************************/
+void stat_Output_Yearly_CSV_Summery()
+{
+	char buf[1024], tbuf[80];
+
+	FILE *f;
+	Bool csv_summary = TRUE;
+	if (!csv_summary)
+		return;
+
+	f = OpenFile(SW_F_name(eOutputYearly), "w");
+
+	buf[0] = '\0';
+
+	*buf = '\0';
+
+	fprintf(f, "%s\n", buf);
+	CloseFile(&f);
+
 }
 
 static void _begin_year(void) {

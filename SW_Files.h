@@ -16,7 +16,7 @@
 #ifndef SW_FILES_H
 	#define SW_FILES_H
 
-#define SW_NFILES 15
+#define SW_NFILES 19
 #ifdef RSOILWAT
 	#include <R.h>
 #include <Rdefines.h>
@@ -30,7 +30,8 @@
  * input from files.in.
  */
 typedef enum {
-	eNoFile = -1, eFirst = 0, eModel, eLog, eSite, eLayers, eWeather, eMarkovProb, eMarkovCov, eSky, eVegProd, eVegEstab, eSoilwat, eOutput, eEndFile
+	eNoFile = -1, eFirst = 0, eModel, eLog, eSite, eLayers, eWeather, eMarkovProb, eMarkovCov, eSky,
+	 				eVegProd, eVegEstab, eSoilwat, eOutput, eOutputDaily,eOutputWeekly,eOutputMonthly,eOutputYearly, eEndFile
 } SW_FileIndex;
 
 void SW_F_read(const char *s);
