@@ -2745,7 +2745,7 @@ SEXP onGetOutput(SEXP inputData) {
 		SET_STRING_ELT(Rco2effects_names_y_mo, 1, mkChar("Month"));
 		SET_STRING_ELT(Rco2effects_names_y_mo, 2, mkChar("GrassBiomass"));
 		SET_STRING_ELT(Rco2effects_names_y_mo, 3, mkChar("ShrubBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 4, mkChar("TreeBiomass"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 4, mkChar("TreePctLive"));
 		SET_STRING_ELT(Rco2effects_names_y_mo, 5, mkChar("ForbBiomass"));
 		SET_STRING_ELT(Rco2effects_names_y_mo, 6, mkChar("TotalBiomass"));
 		SET_STRING_ELT(Rco2effects_names_y_mo, 7, mkChar("BiomassMultiplier"));
@@ -2764,7 +2764,7 @@ SEXP onGetOutput(SEXP inputData) {
 		SET_STRING_ELT(Rco2effects_names_y_yr, 0, mkChar("Year"));
 		SET_STRING_ELT(Rco2effects_names_y_yr, 1, mkChar("GrassBiomass"));
 		SET_STRING_ELT(Rco2effects_names_y_yr, 2, mkChar("ShrubBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 3, mkChar("TreeBiomass"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 3, mkChar("TreePctLive"));
 		SET_STRING_ELT(Rco2effects_names_y_yr, 4, mkChar("ForbBiomass"));
 		SET_STRING_ELT(Rco2effects_names_y_yr, 5, mkChar("TotalBiomass"));
 		SET_STRING_ELT(Rco2effects_names_y_yr, 6, mkChar("BiomassMultiplier"));
