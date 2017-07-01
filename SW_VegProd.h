@@ -57,6 +57,7 @@ typedef struct {
 	biomass[MAX_MONTHS], /* monthly aboveground biomass (g/m**2) */
 	CO2_biomass[MAX_MONTHS], /* monthly aboveground biomass after CO2 effects */
 	pct_live[MAX_MONTHS], /* monthly live biomass in percent   */
+	CO2_pct_live[MAX_MONTHS], /* monthly live biomass in percent after CO2 effects */
 	lai_conv[MAX_MONTHS]; /* monthly amount of biomass   needed to produce lai=1 (g/m**2)      */
 
 	RealD litter_daily[MAX_DAYS + 1], /* daily interpolation of monthly litter values (g/m**2)    */

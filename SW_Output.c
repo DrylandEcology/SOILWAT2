@@ -1353,11 +1353,11 @@ void get_co2effects(void) {
 		  month = (SW_Model.month) - tOffset;
 		  grass = SW_VegProd.grass.CO2_biomass[month];
 		  shrub = SW_VegProd.shrub.CO2_biomass[month];
-		  tree = SW_VegProd.tree.CO2_biomass[month];
+		  tree = SW_VegProd.tree.CO2_pct_live[month];  // Only pct live is affected
 		  forb = SW_VegProd.forb.CO2_biomass[month];
 		  BIO_mult = c->co2_biomass_mult;
 		  WUE_mult = c->co2_wue_mult;
-		  total = grass + shrub + tree + forb;
+		  total = grass + shrub + forb;
 		  
 			#ifdef RSOILWAT
 				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 0] = SW_Model.year;
@@ -1382,14 +1382,14 @@ void get_co2effects(void) {
   	  for (i = 0; i < 12; i++) {
   	    grass += SW_VegProd.grass.CO2_biomass[i];
   	    shrub += SW_VegProd.shrub.CO2_biomass[i];
-  	    tree += SW_VegProd.tree.CO2_biomass[i];
+  	    tree += SW_VegProd.tree.CO2_pct_live[i];  // Only pct live is affected
   	    forb += SW_VegProd.forb.CO2_biomass[i];
   	  }
   	  grass /= 12;
   	  shrub /= 12;
   	  tree  /= 12;
   	  forb  /= 12;
-  	  total = grass + shrub + tree + forb;
+  	  total = grass + shrub + forb;
   	  BIO_mult = c->co2_biomass_mult;
   	  WUE_mult = c->co2_wue_mult;
   	  

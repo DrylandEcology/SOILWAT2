@@ -1233,10 +1233,10 @@ void SW_VPD_init(void) {
 	}
 
 	if (GT(v->fractionTree, 0.)) {
-	  apply_CO2(v->tree.CO2_biomass, v->tree.biomass);
+	  apply_CO2(v->tree.CO2_pct_live, v->tree.pct_live);
 		interpolate_monthlyValues(v->tree.litter, v->tree.litter_daily);
-		interpolate_monthlyValues(v->tree.CO2_biomass, v->tree.biomass_daily);
-		interpolate_monthlyValues(v->tree.pct_live, v->tree.pct_live_daily);
+		interpolate_monthlyValues(v->tree.biomass, v->tree.biomass_daily);
+		interpolate_monthlyValues(v->tree.CO2_pct_live, v->tree.pct_live_daily);
 		interpolate_monthlyValues(v->tree.lai_conv, v->tree.lai_conv_daily);
 	}
 
