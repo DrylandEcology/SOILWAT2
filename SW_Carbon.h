@@ -13,10 +13,8 @@
     int
     addtl_yr,                  // Added to SW_Model.year to get the future year we're simulating
     RCP,                       // The RCP that we are extracting ppm data from
-    use_future_bio_mult,       // Determine which multipliers we will be calculating...
-    use_future_sto_mult,
-    use_historical_bio_mult,
-    use_historical_sto_mult;
+    use_sto_mult,              // Determine which multipliers we will be calculating...
+    use_bio_mult;
 
     double
     carbon[2],                 // Hold misc. data

@@ -193,7 +193,7 @@ void SW_SIT_read(void) {
 	SW_SITE *v = &SW_Site;
 	SW_CARBON *c = &SW_Carbon;
 	FILE *f;
-	int lineno = 0, x, temp, temp2;
+	int lineno = 0, x, temp;
 	LyrIndex r, region, /* transp region definition number */
 	rgnlow; /* lower layer of region */
 	Bool too_many_regions = FALSE;
@@ -314,19 +314,17 @@ void SW_SIT_read(void) {
 		case 35:
 			v->use_soil_temp = itob(atoi(inbuf));
 			break;
-	  case 36:
-      x = sscanf(inbuf, "%d %d", &temp, &temp2);
-      c->use_historical_bio_mult = temp;
-      c->use_historical_sto_mult = temp2;
+		case 36:
+			x = sscanf(inbuf, "%d", &temp);
+			c->use_bio_mult = temp;
 			break;
 		case 37:
-      x = sscanf(inbuf, "%d %d", &temp, &temp2);
-      c->use_future_bio_mult = temp;
-      c->use_future_sto_mult = temp2;
+			x = sscanf(inbuf, "%d", &temp);
+			c->use_sto_mult = temp;
 			break;
 		case 38:
-      c->RCP = atof(inbuf);
-      c->addtl_yr = 0; // Could be done anywhere, but SOILWAT2 runs don't need a delta year
+			c->RCP = atof(inbuf);
+			c->addtl_yr = 0; // Could be done anywhere, but SOILWAT2 runs don't need a delta year
 			break;
 		default:
 			if (lineno > 38 + MAX_TRANSP_REGIONS)

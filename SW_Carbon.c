@@ -75,12 +75,10 @@ void onSet_swCarbon(SEXP object) {
   SW_CARBON *c = &SW_Carbon;
 
   // Extract the slots from our object into our structure
-  c->use_future_bio_mult = INTEGER(GET_SLOT(object, install("CarbonFutureBio")))[0];
-  c->use_future_sto_mult = INTEGER(GET_SLOT(object, install("CarbonFutureSto")))[0];
-  c->use_historical_bio_mult  = INTEGER(GET_SLOT(object, install("CarbonHistoricalBio")))[0];
-  c->use_historical_sto_mult  = INTEGER(GET_SLOT(object, install("CarbonHistoricalSto")))[0];
-  c->RCP                 = INTEGER(GET_SLOT(object, install("RCP")))[0];
-  c->addtl_yr            = INTEGER(GET_SLOT(object, install("Delta")))[0];
+  c->use_bio_mult = INTEGER(GET_SLOT(object, install("CarbonUseBio")))[0];
+  c->use_sto_mult = INTEGER(GET_SLOT(object, install("CarbonUseSto")))[0];
+  c->RCP = INTEGER(GET_SLOT(object, install("RCP")))[0];
+  c->addtl_yr = INTEGER(GET_SLOT(object, install("Delta")))[0];
 }
 #endif
 
@@ -114,19 +112,11 @@ void calculate_CO2_multipliers(void) {
     if (cur_RCP != c->RCP) {
       if (year == 0) cur_RCP = (int) ppm;  // In this specific case, ppm is the RCP num
     } else {
-
       // Calculate multipliers
       c->co2_multipliers[0][year] = 1.0;
       c->co2_multipliers[1][year] = 1.0;
-      if (year <= 2010) {
-        // Historical
-        if (c->use_historical_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * pow(ppm, v->co2_biomass_2);
-        if (c->use_historical_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * pow(ppm, v->co2_stomatal_2);
-      } else if (year > 2010) {
-        // Future
-        if (c->use_future_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * pow(ppm, v->co2_biomass_2);
-        if (c->use_future_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * pow(ppm, v->co2_stomatal_2);
-      }
+	  if (c->use_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * pow(ppm, v->co2_biomass_2);
+	  if (c->use_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * pow(ppm, v->co2_stomatal_2);
     }
   }
 }

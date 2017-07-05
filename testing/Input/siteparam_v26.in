@@ -63,10 +63,10 @@
 0			# flag, 1 to calculate soil_temperature, 0 to not calculate soil_temperature
 
 # ---- CO2 Settings ----
-# Retro scenarios (<= 2010): biomass stomatal
-1 1
-# Future scenarios (> 2010): biomass stomatal
-1 1
+# Use biomass
+1
+# Use stomatal
+1
 # RCP
 85
 
