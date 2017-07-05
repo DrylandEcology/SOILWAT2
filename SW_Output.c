@@ -524,6 +524,7 @@ void SW_OUT_read(void)
 	f = OpenFile(MyFileName, "r");
 	itemno = 0;
 
+
 	_Sep = '\t'; /* default in case it doesn't show up in the file */
 
 	while (GetALine(f, inbuf))
@@ -1213,13 +1214,10 @@ void SW_OUT_write_today(void)
 			//printf("sw_output.use for k = %d is: %d\n", k,SW_Output[k].use);
 			if (!SW_Output[k].use)
 				continue;
-			if(k==11)printf("here 2\n");
 			if (timeSteps[k][i] < 4)
 			{
-				if(k==11)printf("here 3\n");
 				writeit = TRUE;
 				SW_Output[k].period = timeSteps[k][i]; /* set the desired period based on the iteration */
-				if(k==11)printf("here 4\n");
 				switch (SW_Output[k].period)
 				{
 				case eSW_Day:
@@ -1626,7 +1624,7 @@ for(switchCounter=0;switchCounter<4;switchCounter++){
 	case eSW_Year:
 #ifndef RSOILWAT
 		val_ppt = v->yravg.ppt;
-		printf("val_ppt year: %f\n", val_ppt);
+		//printf("val_ppt year: %f\n", val_ppt);
 		val_rain = v->yravg.rain;
 		val_snow = v->yravg.snow;
 		val_snowmelt = v->yravg.snowmelt;
@@ -1920,7 +1918,7 @@ static void get_swcBulk(void)
 		case eSW_Week:
 			val = v->wkavg.swcBulk[i];
 			break;
-		case eSW_Month:
+		case eSW_Month: // the one interested in for now
 			val = v->moavg.swcBulk[i];
 			break;
 		case eSW_Year:
@@ -1962,6 +1960,7 @@ static void get_swcBulk(void)
 		break;
 	}
 #elif defined(STEPWAT)
+	//printf("stepwat\n");
 	char str[OUTSTRLEN];
 	if (isPartialSoilwatOutput == FALSE)
 	{
@@ -1993,7 +1992,6 @@ static void get_swcBulk(void)
 	}
 	else
 	{
-		//printf("in else\n");
 		ForEachSoilLayer(i)
 		{
 			switch (pd)
@@ -2018,6 +2016,7 @@ static void get_swcBulk(void)
 
 			// current one being accessed by stepwat
 			SXW.swc[Ilp(i,p)] = val; // i:layer p: year
+			//printf("SXW.swc[Ilp(%d,%d)]: %f\n", i, p, SXW.swc[Ilp(i,p)]);
 		}
 	}
 #endif
@@ -2174,7 +2173,6 @@ static void get_swaBulk(void)
 static void get_swaMatric(void)
 {
 	/* --------------------------------------------------- */
-	printf("get_swaMatric");
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_SWAMatric].period;
@@ -3932,7 +3930,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		ForEachSoilLayer(i)
 			s->swaBulk[i] += fmax(
 					v->swcBulk[Today][i] - SW_Site.lyr[i]->swcBulk_wiltpt, 0.);
-			printf("%f\n", s->swaBulk[i]);
+			//printf("%f\n", s->swaBulk[i]);
 		break;
 
 	case eSW_SWAMatric: /* get swaBulk and convert later */
@@ -4180,7 +4178,6 @@ static void average_for(ObjType otyp, OutPeriod pd)
 					break;
 
 				case eSW_SWABulk:
-					printf("swabulk case\n");
 					ForEachSoilLayer(i)
 						savg->swaBulk[i] =
 								(SW_Output[k].sumtype == eSW_Fnl) ?
@@ -4189,7 +4186,7 @@ static void average_for(ObjType otyp, OutPeriod pd)
 														- SW_Site.lyr[i]->swcBulk_wiltpt,
 												0.) :
 										ssumof->swaBulk[i] / div;
-						printf("savg->swaBulk[i]: %f\n", savg->swaBulk[i]);
+						//printf("savg->swaBulk[i]: %f\n", savg->swaBulk[i]);
 					break;
 
 				case eSW_SWAMatric: /* swaMatric at this point is identical to swaBulk */

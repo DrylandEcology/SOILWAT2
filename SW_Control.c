@@ -64,7 +64,6 @@ void SW_FLW_construct(void);
 /***************** Begin Main Code *********************/
 
 void SW_CTL_main(void) {
-
 	TimeInt *cur_yr = &SW_Model.year;
 
 	for (*cur_yr = SW_Model.startyr; *cur_yr <= SW_Model.endyr; (*cur_yr)++) {
@@ -81,6 +80,16 @@ void SW_CTL_init_model(const char *firstfile) {
 	/*=======================================================*/
 	/* initialize all structures, simulating
 	 * a constructor call */
+
+	 // creating files here instead of in SW_CTL_run_current_year because this is only run once and wont overwrite
+	 // also only checking for RSOILWAT and not STEPWAT since STEPWAT does not use this function and creates these files itself
+	 /*#ifndef RSOILWAT
+ 		stat_Output_Daily_CSV_Summary();
+ 		stat_Output_Weekly_CSV_Summary();
+ 		stat_Output_Monthly_CSV_Summary();
+ 		stat_Output_Yearly_CSV_Summary();
+ 	#endif*/
+
 	SW_F_construct(firstfile);
 	SW_MDL_construct();
 	SW_WTH_construct();
@@ -113,16 +122,12 @@ void SW_CTL_run_current_year(void) {
 	}
 	SW_OUT_flush();
 
-	stat_Output_Daily_CSV_Summery();
-	stat_Output_Weekly_CSV_Summery();
-	stat_Output_Monthly_CSV_Summery();
-	stat_Output_Yearly_CSV_Summery();
 
 }
 
 //This function will create daily
 /***********************************************************/
-void stat_Output_Daily_CSV_Summery()
+void stat_Output_Daily_CSV_Summary()
 {
 	char buf[1024], tbuf[80];
 
@@ -131,7 +136,8 @@ void stat_Output_Daily_CSV_Summery()
 	if (!csv_summary)
 		return;
 
-	f = OpenFile(SW_F_name(eOutputDaily), "w");
+	//f = OpenFile(SW_F_name(eOutputDaily), "w");
+	f = OpenFile("Output/csv/daily.csv", "w");
 
 	buf[0] = '\0';
 
@@ -144,7 +150,7 @@ void stat_Output_Daily_CSV_Summery()
 
 //This function will create Weekly
 /***********************************************************/
-void stat_Output_Weekly_CSV_Summery()
+void stat_Output_Weekly_CSV_Summary()
 {
 	char buf[1024], tbuf[80];
 
@@ -153,7 +159,8 @@ void stat_Output_Weekly_CSV_Summery()
 	if (!csv_summary)
 		return;
 
-	f = OpenFile(SW_F_name(eOutputWeekly), "w");
+	//f = OpenFile(SW_F_name(eOutputWeekly), "w");
+	f = OpenFile("Output/csv/weekly.csv", "w");
 
 	buf[0] = '\0';
 
@@ -166,7 +173,7 @@ void stat_Output_Weekly_CSV_Summery()
 
 //This function will create Monthly
 /***********************************************************/
-void stat_Output_Monthly_CSV_Summery()
+void stat_Output_Monthly_CSV_Summary()
 {
 	char buf[1024], tbuf[80];
 
@@ -175,7 +182,8 @@ void stat_Output_Monthly_CSV_Summery()
 	if (!csv_summary)
 		return;
 
-	f = OpenFile(SW_F_name(eOutputMonthly), "w");
+	//f = OpenFile(SW_F_name(eOutputMonthly), "w");
+	f = OpenFile("Output/csv/monthly.csv", "w");
 
 	buf[0] = '\0';
 
@@ -188,7 +196,7 @@ void stat_Output_Monthly_CSV_Summery()
 
 //This function will create Yearly
 /***********************************************************/
-void stat_Output_Yearly_CSV_Summery()
+void stat_Output_Yearly_CSV_Summary()
 {
 	char buf[1024], tbuf[80];
 
@@ -197,7 +205,8 @@ void stat_Output_Yearly_CSV_Summery()
 	if (!csv_summary)
 		return;
 
-	f = OpenFile(SW_F_name(eOutputYearly), "w");
+	//f = OpenFile(SW_F_name(eOutputYearly), "w");
+	f = OpenFile("Output/csv/yearly.csv", "w");
 
 	buf[0] = '\0';
 

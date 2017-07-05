@@ -130,25 +130,25 @@ void SW_F_read(const char *s) {
 			InFiles[eOutputDaily] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputDaily]);
-			printf("filename: %s \n",InFiles[eOutputDaily]);
+			//printf("filename: %s \n",InFiles[eOutputDaily]);
 			break;
 		case 15:
 			InFiles[eOutputWeekly] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputWeekly]);
-			printf("filename: %s \n",InFiles[eOutputWeekly]);
+			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
 		case 16:
 			InFiles[eOutputMonthly] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputMonthly]);
-			printf("filename: %s \n",InFiles[eOutputMonthly]);
+			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
 		case 17:
 			InFiles[eOutputYearly] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputYearly]);
-			printf("filename: %s \n",InFiles[eOutputYearly]);
+			//printf("filename: %s \n",InFiles[eOutputYearly]);
 			break;
 
 		default:
