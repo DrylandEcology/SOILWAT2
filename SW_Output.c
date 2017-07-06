@@ -524,21 +524,36 @@ void SW_OUT_read(void)
 	f = OpenFile(MyFileName, "r");
 	itemno = 0;
 
+	FILE *zq;
+	zq = fopen(MyFileName, "r");
+	int c;
+	if(zq){
+		printf("\n reading %s to check values.\n", MyFileName);
+		while((c=getc(zq)) != EOF){
+			putchar(c);
+		}
+		fclose(zq);
+	}
+
+
+
 
 	_Sep = '\t'; /* default in case it doesn't show up in the file */
-
+	printf("period prior to reading: %s\n", period);
 	while (GetALine(f, inbuf))
 	{
 		itemno++; /* note extra lines will cause an error */
 
 		x = sscanf(inbuf, "%s %s %s %d %s %s", keyname, sumtype, period, &first,
 				last, outfile);
+
+		//printf("period: %s\n", period);
+
 		if (Str_CompareI(keyname, "TIMESTEP") == 0)	// condition to read in the TIMESTEP line in outsetup.in
 		{
 			numPeriod = sscanf(inbuf, "%s %s %s %s %s", keyname, timeStep[0],
 					timeStep[1], timeStep[2], timeStep[3]);	// need to rescan the line because you are looking for all strings, unlike the original scan
 			numPeriod--;// decrement the count to make sure to not count keyname in the number of periods
-
 			useTimeStep = 1;
 			continue;
 		}
@@ -577,11 +592,13 @@ void SW_OUT_read(void)
 				{
 					int prd = str2period(Str_ToUpper(period, ext));
 					timeSteps[k][i] = prd;
+					//printf("timeSteps[%d][%d]: %d\n", k, i, timeSteps[k][i]);
 				}
 				else if (i < numPeriod && useTimeStep)
 				{
 					int prd = str2period(Str_ToUpper(timeStep[i], ext));
 					timeSteps[k][i] = prd;
+					//printf("timeSteps[%d][%d]: %d\n", k, i, timeSteps[k][i]);
 				}
 				else
 					timeSteps[k][i] = 4;
@@ -652,6 +669,7 @@ void SW_OUT_read(void)
 				{
 				//	printf( "inside Soilwat SW_Output.c : isPartialSoilwatOutput=%d \n", isPartialSoilwatOutput);
 #if !defined(STEPWAT) && !defined(RSOILWAT)
+//#ifndef RSOILWAT
 					SW_OutputPrefix(prefix);
 					strcpy(str, prefix);
 					strcat(str, outfile);
@@ -685,18 +703,22 @@ void SW_OUT_read(void)
 					switch (timeSteps[k][i])
 					{ /* depending on iteration through for loop, chooses the proper FILE pointer to use */
 					case eSW_Day:
+						//printf("SW_Output[%d].outfile: %s\n", k, SW_Output[k].outfile);
 						SW_Output[k].fp_dy = OpenFile(SW_Output[k].outfile,
 								"w");
 						break;
 					case eSW_Week:
+						//printf("SW_Output[%d].outfile: %s\n", k, SW_Output[k].outfile);
 						SW_Output[k].fp_wk = OpenFile(SW_Output[k].outfile,
 								"w");
 						break;
 					case eSW_Month:
+						//printf("SW_Output[%d].outfile: %s\n", k, SW_Output[k].outfile);
 						SW_Output[k].fp_mo = OpenFile(SW_Output[k].outfile,
 								"w");
 						break;
 					case eSW_Year:
+						//printf("SW_Output[%d].outfile: %s\n", k, SW_Output[k].outfile);
 						SW_Output[k].fp_yr = OpenFile(SW_Output[k].outfile,
 								"w");
 						break;
@@ -704,12 +726,14 @@ void SW_OUT_read(void)
 #elif defined(STEPWAT)
 					if (isPartialSoilwatOutput == FALSE)
 					{
+						printf("is partial is false\n");
 						SW_OutputPrefix(prefix);
 						strcpy(str, prefix);
 						strcat(str, outfile);
 						strcat(str, ".");
+						//printf("timeSteps[%d][%d]: %s\n", k, i, timeSteps[k][i]);
 						switch (timeSteps[k][i])
-						{ /* depending on iteration through, will determine what period to use from the array of period */
+						{ // depending on iteration through, will determine what period to use from the array of period
 							case eSW_Day:
 							period[0] = 'd';
 							period[1] = 'y';
@@ -735,7 +759,7 @@ void SW_OUT_read(void)
 						SW_Output[k].outfile = (char *) Str_Dup(str);
 
 						switch (timeSteps[k][i])
-						{ /* depending on iteration through for loop, chooses the proper FILE pointer to use */
+						{ //depending on iteration through for loop, chooses the proper FILE pointer to use
 							case eSW_Day:
 							SW_Output[k].fp_dy = OpenFile(SW_Output[k].outfile, "w");
 							break;
@@ -757,6 +781,7 @@ void SW_OUT_read(void)
 
 	}
 
+	//printf("timeSteps[1][0]: %d\n", timeSteps[1][0]);
 	CloseFile(&f);
 
 	if (EchoInits)
@@ -1020,8 +1045,10 @@ void SW_OUT_close_files(void)
 			}
 	}
 #elif defined(STEPWAT)
+	printf("defined\n");
 	if (isPartialSoilwatOutput == FALSE)
 	{
+		printf("in if\n");
 		OutKey k;
 		int i;
 		ForEachOutKey(k)
@@ -1218,6 +1245,7 @@ void SW_OUT_write_today(void)
 			{
 				writeit = TRUE;
 				SW_Output[k].period = timeSteps[k][i]; /* set the desired period based on the iteration */
+				//printf("SW_Output[k].period: %d\n", SW_Output[k].period);
 				switch (SW_Output[k].period)
 				{
 				case eSW_Day:
@@ -1281,6 +1309,13 @@ void SW_OUT_write_today(void)
 			}
 		}
 	}
+	float SWCbulk_convert[4][SW_Site.n_layers];
+
+	//SWCbulk[critVal, layer] = SW_SWPmatric2VWCBulk(SW_Site.lyr[layer]->fractionVolBulk_gravel, eSW_SWPMatric[critVal], layer) * SW_Site.lyr[layer]->width;
+																																															// eSW_SWPMatric[critVal] seems to be the actual critical values
+	SWCbulk_convert[0][1] = SW_SWPmatric2VWCBulk(SW_Site.lyr[1]->fractionVolBulk_gravel, 35, 1) * SW_Site.lyr[1]->width;
+
+	//printf("SWCbulk_convert: %f\n", SWCbulk_convert[0][1]);
 
 }
 
