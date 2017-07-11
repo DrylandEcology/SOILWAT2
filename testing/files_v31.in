@@ -26,3 +26,7 @@ Input/swcsetup.in	# params for handling measured swc
 #Output
 Output/	# 'relative' path for output files: / for same directory, or e.g., Output/
 Input/outsetup_v31.in	# define output quantities
+Output/csv/daily.csv	#output
+Output/csv/weekly.csv	#output
+Output/csv/monthly.csv	#output
+Output/csv/yearly.csv	#output

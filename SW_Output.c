@@ -524,7 +524,7 @@ void SW_OUT_read(void)
 	f = OpenFile(MyFileName, "r");
 	itemno = 0;
 
-	FILE *zq;
+	/*FILE *zq;
 	zq = fopen(MyFileName, "r");
 	int c;
 	if(zq){
@@ -533,13 +533,12 @@ void SW_OUT_read(void)
 			putchar(c);
 		}
 		fclose(zq);
-	}
+	}*
 
 
 
 
 	_Sep = '\t'; /* default in case it doesn't show up in the file */
-	printf("period prior to reading: %s\n", period);
 	while (GetALine(f, inbuf))
 	{
 		itemno++; /* note extra lines will cause an error */
@@ -559,8 +558,10 @@ void SW_OUT_read(void)
 		}
 		else
 		{ // If the line TIMESTEP is present, only need to read in five variables not six, so re read line.
+			printf("period2: %s\n", period);
 			if (x < 6)
 			{
+				printf("here\n");
 				if (Str_CompareI(keyname, "OUTSEP") == 0)
 				{
 					switch ((int) *sumtype)
@@ -578,6 +579,7 @@ void SW_OUT_read(void)
 				}
 				else
 				{
+					printf("here1\n");
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL,
 							"%s : Insufficient key parameters for item %d.",
@@ -1232,6 +1234,7 @@ void SW_OUT_write_today(void)
 	Bool writeit;
 	int i;
 
+
 	ForEachOutKey(k)
 	{
 		//if(k==11)printf("here\n");
@@ -1309,13 +1312,6 @@ void SW_OUT_write_today(void)
 			}
 		}
 	}
-	float SWCbulk_convert[4][SW_Site.n_layers];
-
-	//SWCbulk[critVal, layer] = SW_SWPmatric2VWCBulk(SW_Site.lyr[layer]->fractionVolBulk_gravel, eSW_SWPMatric[critVal], layer) * SW_Site.lyr[layer]->width;
-																																															// eSW_SWPMatric[critVal] seems to be the actual critical values
-	SWCbulk_convert[0][1] = SW_SWPmatric2VWCBulk(SW_Site.lyr[1]->fractionVolBulk_gravel, 35, 1) * SW_Site.lyr[1]->width;
-
-	//printf("SWCbulk_convert: %f\n", SWCbulk_convert[0][1]);
 
 }
 
@@ -1928,7 +1924,6 @@ static void get_vwcMatric(void)
 
 static void get_swcBulk(void)
 {
-	//printf("in get_swcBulkn\n");
 	/* --------------------------------------------------- */
 	/* added 21-Oct-03, cwb */
 #ifdef STEPWAT
@@ -1995,8 +1990,31 @@ static void get_swcBulk(void)
 		break;
 	}
 #elif defined(STEPWAT)
-	//printf("stepwat\n");
+	//printf("SXW.curInterval: %d\n", SXW.curInterval++);
 	char str[OUTSTRLEN];
+
+	// get the SWCbulk values. amount is number of layers * number of critical values. only run once
+	if(SXW.SWCbulk[0][0] == 0){
+		int layerCount;
+		int j;
+
+		for(layerCount=0; layerCount<SW_Site.n_layers; layerCount++){
+			SXW.SWCbulk[0][layerCount] = SW_SWPmatric2VWCBulk(
+				SW_Site.lyr[layerCount]->fractionVolBulk_gravel, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_forb, layerCount) * SW_Site.lyr[layerCount]->width;
+
+			SXW.SWCbulk[1][layerCount] = SW_SWPmatric2VWCBulk(
+				SW_Site.lyr[layerCount]->fractionVolBulk_gravel, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_tree, layerCount) * SW_Site.lyr[layerCount]->width;
+
+			SXW.SWCbulk[2][layerCount] = SW_SWPmatric2VWCBulk(
+				SW_Site.lyr[layerCount]->fractionVolBulk_gravel, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_shrub, layerCount) * SW_Site.lyr[layerCount]->width;
+
+			SXW.SWCbulk[3][layerCount] = SW_SWPmatric2VWCBulk(
+				SW_Site.lyr[layerCount]->fractionVolBulk_gravel, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_grass, layerCount) * SW_Site.lyr[layerCount]->width;
+			//printf("SXW.SWCbulk[0][%d]: %f\n",layerCount, SXW.SWCbulk[0][layerCount]);
+		}
+	}
+
+
 	if (isPartialSoilwatOutput == FALSE)
 	{
 		//printf("in ispartial\n");
@@ -2020,15 +2038,21 @@ static void get_swcBulk(void)
 			}
 			sprintf(str, "%c%7.6f", _Sep, val);
 			strcat(outstr, str);
-
 			SXW.swc[Ilp(i,p)] = val; // i:layer p: year
+
+			SXW.SWAbulk_forb[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[0][i]);
+			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[1][i]);
+			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[2][i]);
+			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[3][i]);
 		}
 
 	}
 	else
 	{
+		//pd = 0;
 		ForEachSoilLayer(i)
 		{
+
 			switch (pd)
 			{
 				case eSW_Day:
@@ -2050,10 +2074,17 @@ static void get_swcBulk(void)
 			if (bFlush) p++;
 
 			// current one being accessed by stepwat
-			SXW.swc[Ilp(i,p)] = val; // i:layer p: year
-			//printf("SXW.swc[Ilp(%d,%d)]: %f\n", i, p, SXW.swc[Ilp(i,p)]);
+			SXW.swc[Ilp(i,p)] = val; // i:layer p: timestep (day, week, month)
+
+			// convert SWCbulk to SWAbulk (not done in SWAbulk since that is not called from STEPPE)
+			SXW.SWAbulk_forb[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[0][i]);
+			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[1][i]);
+			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[2][i]);
+			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[3][i]);
+			//if(SXW.SWAbulk_forb[p][i]>0) printf("SWAbulk_forb[%d, %d]: %f\n", p, i, SXW.SWAbulk_forb[p][i]);
 		}
 	}
+
 #endif
 }
 
