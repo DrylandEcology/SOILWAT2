@@ -524,7 +524,7 @@ void SW_OUT_read(void)
 	f = OpenFile(MyFileName, "r");
 	itemno = 0;
 
-	/*FILE *zq;
+	FILE *zq;
 	zq = fopen(MyFileName, "r");
 	int c;
 	if(zq){
@@ -533,10 +533,7 @@ void SW_OUT_read(void)
 			putchar(c);
 		}
 		fclose(zq);
-	}*
-
-
-
+	}
 
 	_Sep = '\t'; /* default in case it doesn't show up in the file */
 	while (GetALine(f, inbuf))
@@ -546,7 +543,6 @@ void SW_OUT_read(void)
 		x = sscanf(inbuf, "%s %s %s %d %s %s", keyname, sumtype, period, &first,
 				last, outfile);
 
-		//printf("period: %s\n", period);
 
 		if (Str_CompareI(keyname, "TIMESTEP") == 0)	// condition to read in the TIMESTEP line in outsetup.in
 		{
@@ -554,14 +550,15 @@ void SW_OUT_read(void)
 					timeStep[1], timeStep[2], timeStep[3]);	// need to rescan the line because you are looking for all strings, unlike the original scan
 			numPeriod--;// decrement the count to make sure to not count keyname in the number of periods
 			useTimeStep = 1;
+			//printf("timestep: %s %s %s %s\n", timeStep[0], timeStep[1], timeStep[2], timeStep[3]);
+			//if(strcmp(timeStep[2], "mo") == 0) printf("yes!\n");
 			continue;
 		}
 		else
 		{ // If the line TIMESTEP is present, only need to read in five variables not six, so re read line.
-			printf("period2: %s\n", period);
+			//printf("period2: %s\n", period);
 			if (x < 6)
 			{
-				printf("here\n");
 				if (Str_CompareI(keyname, "OUTSEP") == 0)
 				{
 					switch ((int) *sumtype)
@@ -579,7 +576,6 @@ void SW_OUT_read(void)
 				}
 				else
 				{
-					printf("here1\n");
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL,
 							"%s : Insufficient key parameters for item %d.",
@@ -594,13 +590,11 @@ void SW_OUT_read(void)
 				{
 					int prd = str2period(Str_ToUpper(period, ext));
 					timeSteps[k][i] = prd;
-					//printf("timeSteps[%d][%d]: %d\n", k, i, timeSteps[k][i]);
 				}
 				else if (i < numPeriod && useTimeStep)
 				{
 					int prd = str2period(Str_ToUpper(timeStep[i], ext));
 					timeSteps[k][i] = prd;
-					//printf("timeSteps[%d][%d]: %d\n", k, i, timeSteps[k][i]);
 				}
 				else
 					timeSteps[k][i] = 4;
@@ -671,13 +665,13 @@ void SW_OUT_read(void)
 				{
 				//	printf( "inside Soilwat SW_Output.c : isPartialSoilwatOutput=%d \n", isPartialSoilwatOutput);
 #if !defined(STEPWAT) && !defined(RSOILWAT)
-//#ifndef RSOILWAT
 					SW_OutputPrefix(prefix);
 					strcpy(str, prefix);
 					strcat(str, outfile);
 					strcat(str, ".");
-					switch (timeSteps[k][i])
-					{ /* depending on iteration through, will determine what period to use from the array of period */
+					// without this switch statement the only files created are the ones strictly defined in the outsetup.in file with the timestep provided under the PERIOD column
+					/*switch (timeSteps[k][i])
+					{ //depending on iteration through, will determine what period to use from the array of period
 					case eSW_Day:
 						period[0] = 'd';
 						period[1] = 'y';
@@ -698,28 +692,32 @@ void SW_OUT_read(void)
 						period[1] = 'r';
 						period[2] = '\0';
 						break;
-					}
+					}*/
 					strcat(str, Str_ToLower(period, ext));
 					SW_Output[k].outfile = (char *) Str_Dup(str);
 
 					switch (timeSteps[k][i])
-					{ /* depending on iteration through for loop, chooses the proper FILE pointer to use */
+					{ // depending on iteration through for loop, chooses the proper FILE pointer to use
 					case eSW_Day:
-						//printf("SW_Output[%d].outfile: %s\n", k, SW_Output[k].outfile);
+						//printf("day\n");
+						printf("SW_Output[%d].outfile: %s\n", k, SW_Output[k].outfile);
 						SW_Output[k].fp_dy = OpenFile(SW_Output[k].outfile,
 								"w");
 						break;
 					case eSW_Week:
+						printf("week\n");
 						//printf("SW_Output[%d].outfile: %s\n", k, SW_Output[k].outfile);
 						SW_Output[k].fp_wk = OpenFile(SW_Output[k].outfile,
 								"w");
 						break;
 					case eSW_Month:
+						printf("month\n");
 						//printf("SW_Output[%d].outfile: %s\n", k, SW_Output[k].outfile);
 						SW_Output[k].fp_mo = OpenFile(SW_Output[k].outfile,
 								"w");
 						break;
 					case eSW_Year:
+						printf("year\n");
 						//printf("SW_Output[%d].outfile: %s\n", k, SW_Output[k].outfile);
 						SW_Output[k].fp_yr = OpenFile(SW_Output[k].outfile,
 								"w");
@@ -763,17 +761,17 @@ void SW_OUT_read(void)
 						switch (timeSteps[k][i])
 						{ //depending on iteration through for loop, chooses the proper FILE pointer to use
 							case eSW_Day:
-							SW_Output[k].fp_dy = OpenFile(SW_Output[k].outfile, "w");
-							break;
+								SW_Output[k].fp_dy = OpenFile(SW_Output[k].outfile, "w");
+								break;
 							case eSW_Week:
-							SW_Output[k].fp_wk = OpenFile(SW_Output[k].outfile, "w");
-							break;
+								SW_Output[k].fp_wk = OpenFile(SW_Output[k].outfile, "w");
+								break;
 							case eSW_Month:
-							SW_Output[k].fp_mo = OpenFile(SW_Output[k].outfile, "w");
-							break;
+								SW_Output[k].fp_mo = OpenFile(SW_Output[k].outfile, "w");
+								break;
 							case eSW_Year:
-							SW_Output[k].fp_yr = OpenFile(SW_Output[k].outfile, "w");
-							break;
+								SW_Output[k].fp_yr = OpenFile(SW_Output[k].outfile, "w");
+								break;
 						}
 					}
 #endif
@@ -1228,6 +1226,7 @@ void SW_OUT_write_today(void)
 	 */
 	/* 10-May-02 (cwb) Added conditional to interface with STEPPE.
 	 *           We want no output if running from STEPPE.
+	 * July 12, 2017: Added functionality for writing outputs for STEPPE and SOILWAT since we now do want output for STEPPE
 	 */
 	TimeInt t = 0xffff;
 	OutKey k;
@@ -1237,11 +1236,10 @@ void SW_OUT_write_today(void)
 
 	ForEachOutKey(k)
 	{
-		//if(k==11)printf("here\n");
 		for (i = 0; i < numPeriods; i++)
 		{ /* will run through this loop for as many periods are being used */
-			//if(k==11)printf("here 1\n");
-			//printf("sw_output.use for k = %d is: %d\n", k,SW_Output[k].use);
+
+			//printf("timeSteps in func: %d\n", timeSteps[k][i]);
 			if (!SW_Output[k].use)
 				continue;
 			if (timeSteps[k][i] < 4)
@@ -1275,7 +1273,7 @@ void SW_OUT_write_today(void)
 				((void (*)(void)) SW_Output[k].pfunc)();
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 				switch (timeSteps[k][i])
-				{ /* based on iteration of for loop, determines which file to output to */
+				{ // based on iteration of for loop, determines which file to output to
 				case eSW_Day:
 					fprintf(SW_Output[k].fp_dy, "%s\n", outstr);
 					break;
@@ -1293,19 +1291,19 @@ void SW_OUT_write_today(void)
 				if (isPartialSoilwatOutput == FALSE)
 				{
 					switch (timeSteps[k][i])
-					{ /* based on iteration of for loop, determines which file to output to */
+					{ // based on iteration of for loop, determines which file to output to
 						case eSW_Day:
-						fprintf(SW_Output[k].fp_dy, "%s\n", outstr);
-						break;
+							fprintf(SW_Output[k].fp_dy, "%s\n", outstr);
+							break;
 						case eSW_Week:
-						fprintf(SW_Output[k].fp_wk, "%s\n", outstr);
-						break;
+							fprintf(SW_Output[k].fp_wk, "%s\n", outstr);
+							break;
 						case eSW_Month:
-						fprintf(SW_Output[k].fp_mo, "%s\n", outstr);
-						break;
+							fprintf(SW_Output[k].fp_mo, "%s\n", outstr);
+							break;
 						case eSW_Year:
-						fprintf(SW_Output[k].fp_yr, "%s\n", outstr);
-						break;
+							fprintf(SW_Output[k].fp_yr, "%s\n", outstr);
+							break;
 					}
 				}
 #endif
@@ -2050,6 +2048,7 @@ static void get_swcBulk(void)
 	else
 	{
 		//pd = 0;
+		if(pd != 2)printf("pd: %d\n");
 		ForEachSoilLayer(i)
 		{
 
@@ -2058,7 +2057,7 @@ static void get_swcBulk(void)
 				case eSW_Day:
 					p = t->doy-1;
 					val = v->dysum.swcBulk[i];
-					printf("eSW_Day\n");
+					//printf("eSW_Day\n");
 					break; // print current but as index
 				case eSW_Week:
 					p = t->week-1;
@@ -2074,13 +2073,15 @@ static void get_swcBulk(void)
 			if (bFlush) p++;
 
 			// current one being accessed by stepwat
-			SXW.swc[Ilp(i,p)] = val; // i:layer p: timestep (day, week, month)
+			//SXW.swc[Ilp(i,p)] = val; // i:layer p: timestep (day, week, month) // THIS STRUCT DOESNT HAVE ENOUGH MEMORY ALLOCATED TO STORE ANY TIMETEP OTHER THAN MONTH
+			SXW.SWCoriginal[p][i] = val;
+			//printf("SXW.SWCoriginal[p][i] ||| %f\n", SXW.SWCoriginal[p][i]);
 
 			// convert SWCbulk to SWAbulk (not done in SWAbulk since that is not called from STEPPE)
-			SXW.SWAbulk_forb[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[0][i]);
-			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[1][i]);
-			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[2][i]);
-			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[3][i]);
+			SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[0][i]);
+			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[1][i]);
+			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[2][i]);
+			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[3][i]);
 			//if(SXW.SWAbulk_forb[p][i]>0) printf("SWAbulk_forb[%d, %d]: %f\n", p, i, SXW.SWAbulk_forb[p][i]);
 		}
 	}
