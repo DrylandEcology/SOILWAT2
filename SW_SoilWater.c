@@ -672,11 +672,12 @@ RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n) {
 	/* 27-Aug-03 (cwb) moved from the Site module. */
 	/* return the volume as cmH2O/cmSOIL */
 
+	//printf("fractionGravel, swpMatric, n: %f, %f, %d\n", fractionGravel, swpMatric, n);
 	SW_LAYER_INFO *lyr = SW_Site.lyr[n];
 	RealD t, p;
 
 	swpMatric *= BARCONV;
-	p = powe(lyr->psisMatric / swpMatric, lyr->binverseMatric);
+	p = powe(lyr->psisMatric / swpMatric, lyr->binverseMatric); // lyr->psisMatric calculated in water equation function | todo: check to make sure these are calculated before
 	t = lyr->thetasMatric * p * 0.01 * (1 - fractionGravel);
 	return (t);
 

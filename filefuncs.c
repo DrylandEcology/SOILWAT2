@@ -80,6 +80,7 @@ const char *BaseName(const char *p) {
 /**************************************************************/
 FILE * OpenFile(const char *name, const char *mode) {
 	FILE *fp;
+	//printf("name: %s\n", name);
 
 	fp = fopen(name, mode);
 	if (isnull(fp))
@@ -313,4 +314,3 @@ char **getfiles(const char *fspec, int *nfound) {
 
 	return flist;
 }
-

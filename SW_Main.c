@@ -84,7 +84,6 @@ char _firstfile[1024];
 /************  Main() ************************/
 int main(int argc, char **argv) {
 	/* =================================================== */
-
 	logged = FALSE;
 	atexit(check_log);
 	logfp = stdout; /* provides a way to inform user that something */
@@ -215,4 +214,3 @@ void init_args(int argc, char **argv) {
 	} /* end for(i) */
 
 }
-
