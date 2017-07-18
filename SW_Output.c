@@ -2009,6 +2009,7 @@ static void get_swcBulk(void)
 			SXW.SWCbulk[3][layerCount] = SW_SWPmatric2VWCBulk(
 				SW_Site.lyr[layerCount]->fractionVolBulk_gravel, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_grass, layerCount) * SW_Site.lyr[layerCount]->width;
 			//printf("SXW.SWCbulk[0][%d]: %f\n",layerCount, SXW.SWCbulk[0][layerCount]);
+			printf("SXW.SWCbulk[0][%d]: %f\n",layerCount, SXW.SWCbulk[0][layerCount]);
 		}
 	}
 
@@ -2042,6 +2043,8 @@ static void get_swcBulk(void)
 			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[1][i]);
 			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[2][i]);
 			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[3][i]);
+
+			//printf("SXW.SWCbulk[0][%d]: %f\n",layerCount, SXW.SWCbulk[0][layerCount]);
 		}
 
 	}
@@ -2083,6 +2086,7 @@ static void get_swcBulk(void)
 			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[2][i]);
 			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[3][i]);
 			//if(SXW.SWAbulk_forb[p][i]>0) printf("SWAbulk_forb[%d, %d]: %f\n", p, i, SXW.SWAbulk_forb[p][i]);
+			printf("Layer %d:   %f    %f\n", i, SXW.SWCoriginal[p][i], SXW.SWAbulk_forb[p][i]);
 		}
 	}
 
