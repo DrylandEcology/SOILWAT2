@@ -88,12 +88,10 @@ void onSet_swCarbon(SEXP object) {
  * SOILWAT will read siteparam.in for settings.
  */
 void calculate_CO2_multipliers(void) {
-  int i;
   FILE *f;
   char scenario[64];
   double ppm;
   int year;
-  int x = 0;
 
   SW_CARBON  *c  = &SW_Carbon;
   SW_VEGPROD *v  = &SW_VegProd;
@@ -103,12 +101,12 @@ void calculate_CO2_multipliers(void) {
   // Read carbon.in
   while (GetALine(f, inbuf)) {
 	// Scan for the year first, because if the year is 0 it marks a change in the scenario
-	x = sscanf(inbuf, "%d", &year);
+	sscanf(inbuf, "%d", &year);
 	  
 	// We found a scenario, do we want this one?
 	if (year == 0)
 	{
-      x = sscanf(inbuf, "%d %63s", &year, scenario);
+      sscanf(inbuf, "%d %63s", &year, scenario);
 	  continue;
 	}
 
@@ -117,7 +115,7 @@ void calculate_CO2_multipliers(void) {
 	  continue;
   
 	// YES, calculate multipliers
-	x = sscanf(inbuf, "%d %lf", &year, &ppm);
+	sscanf(inbuf, "%d %lf", &year, &ppm);
     c->co2_multipliers[0][year] = 1.0;
     c->co2_multipliers[1][year] = 1.0;
 	if (c->use_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * pow(ppm, v->co2_biomass_2);
