@@ -68,7 +68,7 @@
 # Use stomatal
 1
 # RCP
-85
+RCP85
 
 # ---- Transpiration regions ----
 # ndx  : 1=shallow, 2=medium, 3=deep, 4=very deep

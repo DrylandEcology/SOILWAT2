@@ -12,7 +12,6 @@
   typedef struct {
     int
     addtl_yr,                  // Added to SW_Model.year to get the future year we're simulating
-    RCP,                       // The RCP that we are extracting ppm data from
     use_sto_mult,              // Determine which multipliers we will be calculating...
     use_bio_mult;
 
@@ -22,6 +21,8 @@
     co2_wue_mult,              // The stomatal multiplier (yearly)
     co2_multipliers[2][3000];  // Holds the above multipliers for every year, accessed directly (e.g. biomass multiplier for 1982 is co2_multipliers[1][1982])
 
+	char
+	scenario[64];              // The scenario we are extracting PPM from
   } SW_CARBON;
 
   /* Function Declarations */

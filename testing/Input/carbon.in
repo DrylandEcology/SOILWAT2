@@ -1,8 +1,8 @@
-# To insert another RCP, simply use the same pattern as below;
-# the parser searches for "RCP" then goes until there is a blank line.
-# RCP num
-0 85
-# Year  ppm
+# To insert another scenario, simply use the same pattern as below
+
+# Placeholder Scenario
+0             RCP85
+# Year  PPM
 1765	278.05158
 1766	278.10615
 1767	278.22039

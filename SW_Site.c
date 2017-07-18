@@ -323,8 +323,8 @@ void SW_SIT_read(void) {
 			c->use_sto_mult = temp;
 			break;
 		case 38:
-			c->RCP = atof(inbuf);
-			c->addtl_yr = 0; // Could be done anywhere, but SOILWAT2 runs don't need a delta year
+			x = sscanf(inbuf, "%63s", c->scenario);
+			c->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
 			break;
 		default:
 			if (lineno > 38 + MAX_TRANSP_REGIONS)

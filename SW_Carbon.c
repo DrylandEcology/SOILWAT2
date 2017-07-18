@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "generic.h"
 #include "filefuncs.h"
 #include "SW_Defines.h"
@@ -44,12 +45,12 @@ SW_VEGPROD SW_VegProd;  // Declared here, externed elsewhere
 /* --------------------------------------------------- */
 
 /* A description on how these 'onGet' and 'onSet' functions work...
- * Summary: onGet instantiates the 'carbon' class and returns the object, and is only used once
+ * Summary: onGet instantiates the 'swCarbon' class and returns the object, and is only used once
  *          onSet extracts the value of the given object, and is used on both calls to SOILWAT2
  * 1) An S4 class is described and generated in rSOILWAT2/R
  * 2) This class needs to be instantiatied, which is done here
  * 3) The object that gets returned here eventually gets inserted into swRunScenariosData[[1]]
- * 4) Data of the object is then modified with class functions in R (e.g. rSOILWAT2::swCarbon_RCP(swRUnScenariosData[[1]]) <- 85)
+ * 4) Data of the object is then modified with class functions in R (e.g. rSOILWAT2::swCarbon_Scenario(swRUnScenariosData[[1]]) <- "RCP85")
  * 5) The 'onSet' function is used to extract the latest data of the object (e.g. when SOILWAT2 begins modeling the real years)
  */
 #ifdef RSOILWAT
@@ -64,21 +65,18 @@ SEXP onGet_SW_CARBON(void) {
   // Extract the values to our global structure
   onSet_swCarbon(object);
 
-  // Unprotect and give the object to swRunScenariosData
   UNPROTECT(2);
   return object;
 }
 
-
 void onSet_swCarbon(SEXP object) {
-  // Create a reference to our structure
   SW_CARBON *c = &SW_Carbon;
 
   // Extract the slots from our object into our structure
   c->use_bio_mult = INTEGER(GET_SLOT(object, install("CarbonUseBio")))[0];
   c->use_sto_mult = INTEGER(GET_SLOT(object, install("CarbonUseSto")))[0];
-  c->RCP = INTEGER(GET_SLOT(object, install("RCP")))[0];
-  c->addtl_yr = INTEGER(GET_SLOT(object, install("Delta")))[0];
+  c->addtl_yr = INTEGER(GET_SLOT(object, install("DeltaYear")))[0];
+  strcpy(c->scenario, CHAR(STRING_ELT(GET_SLOT(object, install("Scenario")), 0)));  // e.g. c->scenario = "RCP85"
 }
 #endif
 
@@ -90,15 +88,13 @@ void onSet_swCarbon(SEXP object) {
  * SOILWAT will read siteparam.in for settings.
  */
 void calculate_CO2_multipliers(void) {
-  // Initialize variables
   int i;
   FILE *f;
+  char scenario[64];
   double ppm;
   int year;
   int x = 0;
-  int cur_RCP = 0;
 
-  // Set variables
   SW_CARBON  *c  = &SW_Carbon;
   SW_VEGPROD *v  = &SW_VegProd;
   MyFileName     = SW_F_name(eCarbon);
@@ -106,18 +102,26 @@ void calculate_CO2_multipliers(void) {
 
   // Read carbon.in
   while (GetALine(f, inbuf)) {
-    x = sscanf(inbuf, "%d %lf", &year, &ppm);
+	// Scan for the year first, because if the year is 0 it marks a change in the scenario
+	x = sscanf(inbuf, "%d", &year);
+	  
+	// We found a scenario, do we want this one?
+	if (year == 0)
+	{
+      x = sscanf(inbuf, "%d %63s", &year, scenario);
+	  continue;
+	}
 
-    // Ensure we are using the correct RCP
-    if (cur_RCP != c->RCP) {
-      if (year == 0) cur_RCP = (int) ppm;  // In this specific case, ppm is the RCP num
-    } else {
-      // Calculate multipliers
-      c->co2_multipliers[0][year] = 1.0;
-      c->co2_multipliers[1][year] = 1.0;
-	  if (c->use_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * pow(ppm, v->co2_biomass_2);
-	  if (c->use_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * pow(ppm, v->co2_stomatal_2);
-    }
+	// NO, keep searching
+	if (strcmp(scenario, c->scenario) != 0)
+	  continue;
+  
+	// YES, calculate multipliers
+	x = sscanf(inbuf, "%d %lf", &year, &ppm);
+    c->co2_multipliers[0][year] = 1.0;
+    c->co2_multipliers[1][year] = 1.0;
+	if (c->use_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * pow(ppm, v->co2_biomass_2);
+	if (c->use_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * pow(ppm, v->co2_stomatal_2);
   }
 }
 
