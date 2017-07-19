@@ -1997,7 +1997,8 @@ static void get_swcBulk(void)
 		int j;
 
 
-		for(layerCount=0; layerCount<SW_Site.n_layers; layerCount++){
+		for(layerCount=0; layerCount<SW_Site.n_layers; layerCount++)
+		{
 			SXW.SWCbulk[0][layerCount] = SW_SWPmatric2VWCBulk(
 				SW_Site.lyr[layerCount]->fractionVolBulk_gravel, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_forb, layerCount) * SW_Site.lyr[layerCount]->width;
 
@@ -2009,11 +2010,10 @@ static void get_swcBulk(void)
 
 			SXW.SWCbulk[3][layerCount] = SW_SWPmatric2VWCBulk(
 				SW_Site.lyr[layerCount]->fractionVolBulk_gravel, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_grass, layerCount) * SW_Site.lyr[layerCount]->width;
-			//printf("forb::shrub || %f::%f\n",SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_forb, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_shrub);
-			//printf("SXW.SWCbulk[0][%d]::SXW.SWCbulk[2][%d] || %f::%f\n",layerCount, layerCount, SXW.SWCbulk[0][layerCount], SXW.SWCbulk[2][layerCount]);
+			//printf("forb_crit::shrub_crit || %f::%f\n",SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_forb, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_shrub);
+			printf("forb::shrub || %f::%f\n",SXW.SWCbulk[0][layerCount], SXW.SWCbulk[2][layerCount]);
 		}
 	}
-
 
 	if (isPartialSoilwatOutput == FALSE)
 	{
@@ -2078,17 +2078,26 @@ static void get_swcBulk(void)
 			SXW.SWCoriginal[p][i] = val; // i:layer p: timestep (day, week, month)
 
 			// convert SWCbulk to SWAbulk (not done in SWAbulk since that is not called from STEPPE)
-			SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[0][i]);
+
+			// old version that was giving forbs>shrub
+			/*SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[0][i]);
 			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[1][i]);
 			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[2][i]);
-			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[3][i]);
+			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[3][i]);*/
+			SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+
+			//if(SXW.curInterval == 0){printf("\n\nforb::shrub || %f::%f\n",SXW.SWCbulk[0][i], SXW.SWCbulk[2][i]);
+			//SXW.curInterval++;}
 
 			//printf("forb::shrub || %f::%f\n",SXW.SWCbulk[0][i], SXW.SWCbulk[2][i]); // shrub > forb
 			//printf("forbswa::shrubswa || %f::%f\n",SXW.SWAbulk_forb[p][i], SXW.SWAbulk_shrub[p][i]);
 
 			// printing out values
-			//if(SW_Model.year < 1986) printf("%d        %d        %d        %f        %f        %f        %f        %f\n", SW_Model.year, i, p, SXW.SWCoriginal[p][i], SXW.SWAbulk_forb[p][i],
-				//	SXW.SWAbulk_tree[p][i], SXW.SWAbulk_shrub[p][i], SXW.SWAbulk_grass[p][i]);
+			if(SW_Model.year < 1986) printf("%d        %d        %d        %f        %f        %f        %f        %f\n", SW_Model.year, i, p, SXW.SWCoriginal[p][i], SXW.SWAbulk_forb[p][i],
+				SXW.SWAbulk_tree[p][i], SXW.SWAbulk_shrub[p][i], SXW.SWAbulk_grass[p][i]);
 		}
 	}
 
