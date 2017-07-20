@@ -150,6 +150,30 @@ void SW_F_read(const char *s) {
 			SW_CSV_F_INIT(InFiles[eOutputYearly]);
 			//printf("filename: %s \n",InFiles[eOutputYearly]);
 			break;
+		case 18:
+			InFiles[eOutputDaily_soil] = Str_Dup(inbuf);
+			++fileno;
+			SW_CSV_F_INIT(InFiles[eOutputDaily_soil]);
+			//printf("filename: %s \n",InFiles[eOutputDaily]);
+			break;
+		case 19:
+			InFiles[eOutputWeekly_soil] = Str_Dup(inbuf);
+			++fileno;
+			SW_CSV_F_INIT(InFiles[eOutputWeekly_soil]);
+			//printf("filename: %s \n",InFiles[eOutputWeekly]);
+			break;
+		case 20:
+			InFiles[eOutputMonthly_soil] = Str_Dup(inbuf);
+			++fileno;
+			SW_CSV_F_INIT(InFiles[eOutputMonthly_soil]);
+			//printf("filename: %s \n",InFiles[eOutputMonthly]);
+			break;
+		case 21:
+			InFiles[eOutputYearly_soil] = Str_Dup(inbuf);
+			++fileno;
+			SW_CSV_F_INIT(InFiles[eOutputYearly_soil]);
+			//printf("filename: %s \n",InFiles[eOutputYearly]);
+			break;
 
 		default:
 			if (++fileno == SW_NFILES)

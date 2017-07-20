@@ -31,7 +31,8 @@
  */
 typedef enum {
 	eNoFile = -1, eFirst = 0, eModel, eLog, eSite, eLayers, eWeather, eMarkovProb, eMarkovCov, eSky,
-	 				eVegProd, eVegEstab, eSoilwat, eOutput, eOutputDaily,eOutputWeekly,eOutputMonthly,eOutputYearly, eEndFile
+	 				eVegProd, eVegEstab, eSoilwat, eOutput, eOutputDaily,eOutputWeekly,eOutputMonthly,eOutputYearly,
+					eOutputDaily_soil,eOutputWeekly_soil,eOutputMonthly_soil,eOutputYearly_soil, eEndFile
 } SW_FileIndex;
 
 void SW_F_read(const char *s);

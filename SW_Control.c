@@ -81,15 +81,6 @@ void SW_CTL_init_model(const char *firstfile) {
 	/* initialize all structures, simulating
 	 * a constructor call */
 
-	 // creating files here instead of in SW_CTL_run_current_year because this is only run once and wont overwrite
-	 // also only checking for RSOILWAT and not STEPWAT since STEPWAT does not use this function and creates these files itself
-	 /*#ifndef RSOILWAT
- 		stat_Output_Daily_CSV_Summary();
- 		stat_Output_Weekly_CSV_Summary();
- 		stat_Output_Monthly_CSV_Summary();
- 		stat_Output_Yearly_CSV_Summary();
- 	#endif*/
-
 	SW_F_construct(firstfile);
 	SW_MDL_construct();
 	SW_WTH_construct();
@@ -101,6 +92,15 @@ void SW_CTL_init_model(const char *firstfile) {
 	SW_FLW_construct();
 
 	_read_inputs();
+
+	// creating files here instead of in SW_CTL_run_current_year because this is only run once and wont overwrite
+	// also only checking for RSOILWAT and not STEPWAT since STEPWAT does not use this function and creates these files itself
+	/*#ifndef RSOILWAT
+	 stat_Output_Daily_CSV_Summary();
+	 stat_Output_Weekly_CSV_Summary();
+	 stat_Output_Monthly_CSV_Summary();
+	 stat_Output_Yearly_CSV_Summary();
+ #endif*/
 
 }
 
@@ -132,19 +132,22 @@ void stat_Output_Daily_CSV_Summary()
 	char buf[1024], tbuf[80];
 
 	FILE *f;
+	FILE *f_soil;
 	Bool csv_summary = TRUE;
 	if (!csv_summary)
 		return;
 
-	//f = OpenFile(SW_F_name(eOutputDaily), "w");
-	f = OpenFile("Output/csv/daily.csv", "w");
+	f = OpenFile(SW_F_name(eOutputDaily), "w");
+	f_soil = OpenFile(SW_F_name(eOutputDaily_soil), "w");
 
 	buf[0] = '\0';
 
 	*buf = '\0';
 
 	fprintf(f, "%s\n", buf);
+	fprintf(f_soil, "%s\n", buf);
 	CloseFile(&f);
+	CloseFile(&f_soil);
 
 }
 
@@ -155,19 +158,22 @@ void stat_Output_Weekly_CSV_Summary()
 	char buf[1024], tbuf[80];
 
 	FILE *f;
+	FILE *f_soil;
 	Bool csv_summary = TRUE;
 	if (!csv_summary)
 		return;
 
-	//f = OpenFile(SW_F_name(eOutputWeekly), "w");
-	f = OpenFile("Output/csv/weekly.csv", "w");
+	f = OpenFile(SW_F_name(eOutputWeekly), "w");
+	f_soil = OpenFile(SW_F_name(eOutputWeekly_soil), "w");
 
 	buf[0] = '\0';
 
 	*buf = '\0';
 
 	fprintf(f, "%s\n", buf);
+	fprintf(f_soil, "%s\n", buf);
 	CloseFile(&f);
+	CloseFile(&f_soil);
 
 }
 
@@ -178,19 +184,22 @@ void stat_Output_Monthly_CSV_Summary()
 	char buf[1024], tbuf[80];
 
 	FILE *f;
+	FILE *f_soil;
 	Bool csv_summary = TRUE;
 	if (!csv_summary)
 		return;
 
-	//f = OpenFile(SW_F_name(eOutputMonthly), "w");
-	f = OpenFile("Output/csv/monthly.csv", "w");
+	f = OpenFile(SW_F_name(eOutputMonthly), "w");
+	f_soil = OpenFile(SW_F_name(eOutputMonthly_soil), "w");
 
 	buf[0] = '\0';
 
 	*buf = '\0';
 
 	fprintf(f, "%s\n", buf);
+	fprintf(f_soil, "%s\n", buf);
 	CloseFile(&f);
+	CloseFile(&f_soil);
 
 }
 
@@ -201,19 +210,22 @@ void stat_Output_Yearly_CSV_Summary()
 	char buf[1024], tbuf[80];
 
 	FILE *f;
+	FILE *f_soil;
 	Bool csv_summary = TRUE;
 	if (!csv_summary)
 		return;
 
-	//f = OpenFile(SW_F_name(eOutputYearly), "w");
-	f = OpenFile("Output/csv/yearly.csv", "w");
+	f = OpenFile(SW_F_name(eOutputYearly), "w");
+	f_soil = OpenFile(SW_F_name(eOutputYearly_soil), "w");
 
 	buf[0] = '\0';
 
 	*buf = '\0';
 
 	fprintf(f, "%s\n", buf);
+	fprintf(f_soil, "%s\n", buf);
 	CloseFile(&f);
+	CloseFile(&f_soil);
 
 }
 

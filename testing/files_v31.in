@@ -30,3 +30,8 @@ Output/csv/daily.csv	#output
 Output/csv/weekly.csv	#output
 Output/csv/monthly.csv	#output
 Output/csv/yearly.csv	#output
+
+Output/csv/daily_soil.csv	#output
+Output/csv/weekly_soil.csv	#output
+Output/csv/monthly_soil.csv	#output
+Output/csv/yearly_soil.csv	#output
