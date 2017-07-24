@@ -1289,6 +1289,7 @@ void SW_OUT_write_today(void)
 					continue;
 				((void (*)(void)) SW_Output[k].pfunc)();
 #if !defined(STEPWAT) && !defined(RSOILWAT)
+				FILE *tempFile;
 				switch (timeSteps[k][i])
 				{ // based on iteration of for loop, determines which file to output to
 				case eSW_Day:
@@ -1296,14 +1297,15 @@ void SW_OUT_write_today(void)
 				//||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 				// working here at end of day
 				//||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-					FILE *tempFile;
 					tempFile = OpenFile("Output/csv/daily.csv", "w");
 					fprintf(tempFile, "%s\n", outstr);
+					//fprintf("Output/csv/daily.csv", "%s\n", outstr);
 					break;
 				case eSW_Week:
 					fprintf("Output/csv/weekly.csv", "%s\n", outstr);
 					break;
 				case eSW_Month:
+					// fprintf(SW_Output[k].fp_wk, "%s\n", outstr)
 					fprintf("Output/csv/monthly.csv", "%s\n", outstr);
 					break;
 				case eSW_Year:
@@ -2061,12 +2063,15 @@ static void get_swcBulk(void)
 			}
 			sprintf(str, "%c%7.6f", _Sep, val);
 			strcat(outstr, str);
-			SXW.swc[Ilp(i,p)] = val; // i:layer p: year
 
-			SXW.SWAbulk_forb[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[0][i]);
-			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[1][i]);
-			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[2][i]);
-			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.swc[Ilp(i,p)] - SXW.SWCbulk[3][i]);
+			// store swc values
+			SXW.swc[Ilp(i,p)] = val; // i:layer p: year
+			SXW.SWCoriginal[p][i] = val; // i:layer p: timestep (day, week, month)
+
+			SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
 
 			//printf("SXW.SWCbulk[0][%d]: %f\n",layerCount, SXW.SWCbulk[0][layerCount]);
 		}
@@ -2097,26 +2102,15 @@ static void get_swcBulk(void)
 			}
 			if (bFlush) p++;
 
-			//SXW.swc[Ilp(i,p)] = val;
+			// store swc values
+			SXW.swc[Ilp(i,p)] = val;
 			SXW.SWCoriginal[p][i] = val; // i:layer p: timestep (day, week, month)
 
 			// convert SWCbulk to SWAbulk (not done in SWAbulk since that is not called from STEPPE)
-
-			// old version that was giving forbs>shrub
-			/*SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[0][i]);
-			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[1][i]);
-			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[2][i]);
-			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SXW.SWCbulk[3][i]);*/
 			SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
 			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
 			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
 			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
-
-			//if(SXW.curInterval == 0){printf("\n\nforb::shrub || %f::%f\n",SXW.SWCbulk[0][i], SXW.SWCbulk[2][i]);
-			//SXW.curInterval++;}
-
-			//printf("forb::shrub || %f::%f\n",SXW.SWCbulk[0][i], SXW.SWCbulk[2][i]); // shrub > forb
-			//printf("forbswa::shrubswa || %f::%f\n",SXW.SWAbulk_forb[p][i], SXW.SWAbulk_shrub[p][i]);
 
 			// printing out values
 			//if(SW_Model.year < 1986) printf("%d        %d        %d        %f        %f        %f        %f        %f\n", SW_Model.year, i, p, SXW.SWCoriginal[p][i], SXW.SWAbulk_forb[p][i],

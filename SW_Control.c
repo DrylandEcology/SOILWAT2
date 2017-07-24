@@ -48,6 +48,9 @@ extern SW_VEGESTAB SW_VegEstab;
 	extern SEXP InputData;
 	void SW_FLW_construct(void);
 #endif
+
+SW_OUTPUT SW_Output[SW_OUTNKEYS]; // need to store the filenames when created in the stat_Output_timestep_CSV_Summary functions for use in SW_Output.c
+
 /* =================================================== */
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
@@ -131,23 +134,33 @@ void stat_Output_Daily_CSV_Summary()
 {
 	char buf[1024], tbuf[80];
 
-	FILE *f;
+	printf("1\n");
+	SW_Output.fp_dy = OpenFile(SW_F_name(eOutputDaily), "w");
+	SW_Output.fp_dy_soil = OpenFile(SW_F_name(eOutputDaily_soil), "w");
+	printf("2\n");
+
+	/*FILE *f;
 	FILE *f_soil;
 	Bool csv_summary = TRUE;
 	if (!csv_summary)
 		return;
 
 	f = OpenFile(SW_F_name(eOutputDaily), "w");
-	f_soil = OpenFile(SW_F_name(eOutputDaily_soil), "w");
+	f_soil = OpenFile(SW_F_name(eOutputDaily_soil), "w");*/
 
 	buf[0] = '\0';
 
 	*buf = '\0';
 
-	fprintf(f, "%s\n", buf);
+	/*fprintf(f, "%s\n", buf);
 	fprintf(f_soil, "%s\n", buf);
 	CloseFile(&f);
-	CloseFile(&f_soil);
+	CloseFile(&f_soil);*/
+
+	fprintf(SW_Output.fp_dy, "%s\n", buf);
+	fprintf(SW_Output.fp_dy_soil, "%s\n", buf);
+	CloseFile(&SW_Output.fp_dy);
+	CloseFile(&SW_Output.fp_dy_soil);
 
 }
 
