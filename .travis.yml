@@ -2,5 +2,4 @@ language: c
 compiler:
   - clang
   - gcc
-install:
-  - make compilel
+script: make compilel
