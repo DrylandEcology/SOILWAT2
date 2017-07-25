@@ -46,6 +46,7 @@ clean :
 .PHONY : cleaner
 cleaner :
 		@rm -f $(OBJECTS) $(target_exe) $(pkg).so $(pkg).dll
+		@rm -f testing/test
 
 .PHONY : compile
 compile :
@@ -54,10 +55,8 @@ compile :
 .PHONY : compilet
 compilet :
 		gcc -O3 -Wall -Wextra -o $(target_exe) $(sources)
-		cp $(target_exe) test
-		mv test testing/test
+		cp $(target_exe) testing/test
 
 .PHONY : compilel
 compilel :
 		gcc -O3 -Wall -Wextra -o $(target_exe) $(sources) -lm
-		cp $(target_exe) testing
