@@ -49,7 +49,7 @@ extern SW_VEGESTAB SW_VegEstab;
 	void SW_FLW_construct(void);
 #endif
 
-SW_OUTPUT SW_Output[SW_OUTNKEYS]; // need to store the filenames when created in the stat_Output_timestep_CSV_Summary functions for use in SW_Output.c
+SW_OUTPUT SW_Output_Files; // need to store the filenames when created in the stat_Output_timestep_CSV_Summary functions for use in SW_Output.c
 
 /* =================================================== */
 /*                Module-Level Declarations            */
@@ -134,33 +134,36 @@ void stat_Output_Daily_CSV_Summary()
 {
 	char buf[1024], tbuf[80];
 
-	printf("1\n");
-	SW_Output.fp_dy = OpenFile(SW_F_name(eOutputDaily), "w");
-	SW_Output.fp_dy_soil = OpenFile(SW_F_name(eOutputDaily_soil), "w");
-	printf("2\n");
+	SW_Output_Files.fp_dy = OpenFile(SW_F_name(eOutputDaily), "w");
+	SW_Output_Files.fp_dy_soil = OpenFile(SW_F_name(eOutputDaily_soil), "w");
 
-	/*FILE *f;
+
+	FILE *f;
 	FILE *f_soil;
 	Bool csv_summary = TRUE;
 	if (!csv_summary)
 		return;
 
 	f = OpenFile(SW_F_name(eOutputDaily), "w");
-	f_soil = OpenFile(SW_F_name(eOutputDaily_soil), "w");*/
+	f_soil = OpenFile(SW_F_name(eOutputDaily_soil), "w");
 
 	buf[0] = '\0';
 
 	*buf = '\0';
 
-	/*fprintf(f, "%s\n", buf);
+	fprintf(f, "%s\n", buf);
 	fprintf(f_soil, "%s\n", buf);
 	CloseFile(&f);
-	CloseFile(&f_soil);*/
+	CloseFile(&f_soil);
 
-	fprintf(SW_Output.fp_dy, "%s\n", buf);
-	fprintf(SW_Output.fp_dy_soil, "%s\n", buf);
-	CloseFile(&SW_Output.fp_dy);
-	CloseFile(&SW_Output.fp_dy_soil);
+	char *col1Head = "Variable";
+	char *col2Head = "Year";
+	char *col3Head = "Day";
+	//fprintf(SW_Output_Files.fp_dy, "%s\n", buf);
+	fprintf(SW_Output_Files.fp_dy, "%s,%s,%s\n", col1Head, col2Head, col3Head);
+	fprintf(SW_Output_Files.fp_dy_soil, "%s\n", buf);
+	//CloseFile(&SW_Output_Files.fp_dy);
+	//CloseFile(&SW_Output_Files.fp_dy_soil);
 
 }
 
@@ -220,6 +223,10 @@ void stat_Output_Monthly_CSV_Summary()
 /***********************************************************/
 void stat_Output_Yearly_CSV_Summary()
 {
+
+	SW_Output_Files.fp_yr = OpenFile(SW_F_name(eOutputYearly), "w");
+	SW_Output_Files.fp_yr_soil = OpenFile(SW_F_name(eOutputYearly_soil), "w");
+
 	char buf[1024], tbuf[80];
 
 	FILE *f;
@@ -240,6 +247,8 @@ void stat_Output_Yearly_CSV_Summary()
 	CloseFile(&f);
 	CloseFile(&f_soil);
 
+	fprintf(SW_Output_Files.fp_yr, "%s\n", buf);
+	fprintf(SW_Output_Files.fp_yr_soil, "%s\n", buf);
 }
 
 static void _begin_year(void) {

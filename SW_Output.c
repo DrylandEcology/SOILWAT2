@@ -199,6 +199,7 @@ extern Bool EchoInits;
 #define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
 
 SW_OUTPUT SW_Output[SW_OUTNKEYS]; /* declared here, externed elsewhere */
+SW_OUTPUT SW_Output_Files; // need to store the filenames when created in the stat_Output_timestep_CSV_Summary functions for use in SW_Output.c
 
 #ifdef RSOILWAT
 extern RealD *p_Raet_yr, *p_Rdeep_drain_yr, *p_Restabs_yr, *p_Revap_soil_yr, *p_Revap_surface_yr, *p_Rhydred_yr, *p_Rinfiltration_yr, *p_Rinterception_yr, *p_Rpercolation_yr,
@@ -1046,6 +1047,13 @@ void SW_OUT_close_files(void)
 					switch (timeSteps[k][i])
 					{ /*depending on iteration through loop, will close one of the time step files */
 					case eSW_Day:
+						// close timestep file
+						if(k==1){
+							CloseFile(&SW_Output_Files.fp_dy);
+							CloseFile(&SW_Output_Files.fp_dy_soil);
+							CloseFile(&SW_Output_Files.fp_yr);
+							CloseFile(&SW_Output_Files.fp_yr_soil);
+						}
 						CloseFile(&SW_Output[k].fp_dy);
 						break;
 					case eSW_Week:
@@ -1248,6 +1256,7 @@ void SW_OUT_write_today(void)
 	TimeInt t = 0xffff;
 	OutKey k;
 	Bool writeit;
+	char *newoutStr;
 	int i;
 
 
@@ -1255,15 +1264,12 @@ void SW_OUT_write_today(void)
 	{
 		for (i = 0; i < numPeriods; i++)
 		{ /* will run through this loop for as many periods are being used */
-
-			//printf("timeSteps in func: %d\n", timeSteps[k][i]);
 			if (!SW_Output[k].use)
 				continue;
 			if (timeSteps[k][i] < 4)
 			{
 				writeit = TRUE;
 				SW_Output[k].period = timeSteps[k][i]; /* set the desired period based on the iteration */
-				//printf("SW_Output[k].period: %d\n", SW_Output[k].period);
 				switch (SW_Output[k].period)
 				{
 				case eSW_Day:
@@ -1289,27 +1295,28 @@ void SW_OUT_write_today(void)
 					continue;
 				((void (*)(void)) SW_Output[k].pfunc)();
 #if !defined(STEPWAT) && !defined(RSOILWAT)
-				FILE *tempFile;
 				switch (timeSteps[k][i])
 				{ // based on iteration of for loop, determines which file to output to
 				case eSW_Day:
 
-				//||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-				// working here at end of day
-				//||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-					tempFile = OpenFile("Output/csv/daily.csv", "w");
-					fprintf(tempFile, "%s\n", outstr);
-					//fprintf("Output/csv/daily.csv", "%s\n", outstr);
+					//fprintf(SW_Output_Files.fp_dy_soil, "%s,%s\n", key2str[k], outstr);
+
+					// check if not a soil variable (has no layers)
+					if(strcmp(key2str[k], "TEMP")==0 || strcmp(key2str[k], "WTHR")==0 || strcmp(key2str[k], "PRECIP")==0
+						|| strcmp(key2str[k], "SOILINFILT")==0 || strcmp(key2str[k], "RUNOFF")==0) fprintf(SW_Output_Files.fp_dy, "%s,%s\n", key2str[k], outstr);
+
+					else fprintf(SW_Output_Files.fp_dy_soil, "%s,%s\n", key2str[k], outstr);
 					break;
 				case eSW_Week:
-					fprintf("Output/csv/weekly.csv", "%s\n", outstr);
+					//fprintf("Output/csv/weekly.csv", "%s\n", outstr);
 					break;
 				case eSW_Month:
 					// fprintf(SW_Output[k].fp_wk, "%s\n", outstr)
-					fprintf("Output/csv/monthly.csv", "%s\n", outstr);
+					//fprintf("Output/csv/monthly.csv", "%s\n", outstr);
 					break;
 				case eSW_Year:
-					fprintf("Output/csv/yearly.csv", "%s\n", outstr);
+					//fprintf("Output/csv/yearly.csv", "%s\n", outstr);
+					fprintf(SW_Output_Files.fp_yr, "%s,%s\n", key2str[k], outstr);
 					break;
 				}
 #elif defined(STEPWAT)
@@ -1364,14 +1371,14 @@ static void get_outstrleader(TimeInt pd)
 	switch (pd)
 	{
 	case eSW_Day:
-		sprintf(outstr, "%d%c%d", SW_Model.year, _Sep, SW_Model.doy);
+		sprintf(outstr, "%d,%d", SW_Model.year, SW_Model.doy);
 		break;
 	case eSW_Week:
-		sprintf(outstr, "%d%c%d", SW_Model.year, _Sep,
+		sprintf(outstr, "%d,%c,%d", SW_Model.year, _Sep,
 				(SW_Model.week + 1) - tOffset);
 		break;
 	case eSW_Month:
-		sprintf(outstr, "%d%c%d", SW_Model.year, _Sep,
+		sprintf(outstr, "%d,%c,%d", SW_Model.year, _Sep,
 				(SW_Model.month + 1) - tOffset);
 		break;
 	case eSW_Year:
@@ -1421,7 +1428,7 @@ static void get_estab(void)
 	for (i = 0; i < v->count; i++)
 	{
 #ifndef RSOILWAT
-		sprintf(str, "%c%d", _Sep, v->parms[i]->estab_doy);
+		sprintf(str, "%d", v->parms[i]->estab_doy);
 		strcat(outstr, str);
 #else
 		switch(pd)
@@ -1560,7 +1567,7 @@ static void get_temp(void)
 	}
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, v_max, _Sep, v_min, _Sep,
+	sprintf(str, "%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f", _Sep, v_max, _Sep, v_min, _Sep,
 			v_avg, _Sep, surfaceTempVal);
 	strcat(outstr, str);
 #elif defined(STEPWAT)
@@ -1697,7 +1704,7 @@ for(switchCounter=0;switchCounter<4;switchCounter++){
 }
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
+	sprintf(str, "%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f", _Sep, val_ppt, _Sep,
 			val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
 	strcat(outstr, str);
 #elif defined(STEPWAT)
@@ -1789,7 +1796,7 @@ static void get_vwcBulk(void)
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	ForEachSoilLayer(i)
 	{
-		sprintf(str, "%c%7.6f", _Sep, val[i]);
+		sprintf(str, "%c,%7.6f", _Sep, val[i]);
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
@@ -1916,7 +1923,7 @@ static void get_vwcMatric(void)
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	ForEachSoilLayer(i)
 	{
-		sprintf(str, "%c%7.6f", _Sep, val[i]);
+		sprintf(str, "%c,%7.6f", _Sep, val[i]);
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
@@ -1978,7 +1985,7 @@ static void get_swcBulk(void)
 			val = v->yravg.swcBulk[i];
 			break;
 		}
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
 #elif defined(RSOILWAT)
@@ -2113,8 +2120,8 @@ static void get_swcBulk(void)
 			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
 
 			// printing out values
-			//if(SW_Model.year < 1986) printf("%d        %d        %d        %f        %f        %f        %f        %f\n", SW_Model.year, i, p, SXW.SWCoriginal[p][i], SXW.SWAbulk_forb[p][i],
-				//SXW.SWAbulk_tree[p][i], SXW.SWAbulk_shrub[p][i], SXW.SWAbulk_grass[p][i]);
+			if(SW_Model.year < 1986) printf("%d        %d        %d        %f        %f        %f        %f        %f\n", SW_Model.year, i, p, SXW.SWCoriginal[p][i], SXW.SWAbulk_forb[p][i],
+				SXW.SWAbulk_tree[p][i], SXW.SWAbulk_shrub[p][i], SXW.SWAbulk_grass[p][i]);
 		}
 	}
 
@@ -2164,7 +2171,7 @@ static void get_swpMatric(void)
 		}
 
 
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
 #else
@@ -2231,7 +2238,7 @@ static void get_swaBulk(void)
 			break;
 		}
 
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
 #else
@@ -2297,7 +2304,7 @@ static void get_swaMatric(void)
 			val = v->yravg.swaMatric[i] * convert;
 			break;
 		}
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
 #else
@@ -2370,7 +2377,7 @@ static void get_surfaceWater(void)
 		val_surfacewater = v->yravg.surfaceWater;
 		break;
 	}
-	sprintf(str, "%c%7.6f", _Sep, val_surfacewater);
+	sprintf(str, "%c,%7.6f", _Sep, val_surfacewater);
 	strcat(outstr, str);
 #else
 	switch (pd)
@@ -2434,7 +2441,7 @@ static void get_runoff(void)
 		break;
 	}
 	val_totalRunoff = val_surfaceRunoff + val_snowRunoff;
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f", _Sep, val_totalRunoff, _Sep, val_surfaceRunoff, _Sep, val_snowRunoff);
+	sprintf(str, "%c,%7.6f,%c,%7.6f,%c,%7.6f", _Sep, val_totalRunoff, _Sep, val_surfaceRunoff, _Sep, val_snowRunoff);
 	strcat(outstr, str);
 #else
 	switch (pd)
@@ -2561,7 +2568,7 @@ static void get_transp(void)
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	ForEachSoilLayer(i)
 	{
-		sprintf(str, "%c%7.6f", _Sep, val[i]);
+		sprintf(str, "%c,%7.6f", _Sep, val[i]);
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
@@ -2638,7 +2645,7 @@ static void get_transp(void)
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	ForEachSoilLayer(i)
 	{
-		sprintf(str, "%c%7.6f", _Sep, val[i]);
+		sprintf(str, "%c,%7.6f", _Sep, val[i]);
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
@@ -2712,7 +2719,7 @@ static void get_transp(void)
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	ForEachSoilLayer(i)
 	{
-		sprintf(str, "%c%7.6f", _Sep, val[i]);
+		sprintf(str, "%c,%7.6f", _Sep, val[i]);
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
@@ -2786,7 +2793,7 @@ static void get_transp(void)
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	ForEachSoilLayer(i)
 	{
-		sprintf(str, "%c%7.6f", _Sep, val[i]);
+		sprintf(str, "%c,%7.6f", _Sep, val[i]);
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
@@ -2865,7 +2872,7 @@ static void get_transp(void)
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	ForEachSoilLayer(i)
 	{
-		sprintf(str, "%c%7.6f", _Sep, val[i]);
+		sprintf(str, "%c,%7.6f", _Sep, val[i]);
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
@@ -2925,7 +2932,7 @@ static void get_evapSoil(void)
 			val = v->yravg.evap[i];
 			break;
 		}
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
 #else
@@ -3013,7 +3020,7 @@ static void get_evapSurface(void)
 		val_water = v->yravg.surfaceWater_evap;
 		break;
 	}
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_tot, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass, _Sep, val_litter, _Sep, val_water);
+	sprintf(str, "%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f", _Sep, val_tot, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass, _Sep, val_litter, _Sep, val_water);
 	strcat(outstr, str);
 #else
 	switch (pd)
@@ -3116,7 +3123,7 @@ static void get_interception(void)
 		val_litter = v->yravg.litter_int;
 		break;
 	}
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_tot, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass, _Sep, val_litter);
+	sprintf(str, "%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f", _Sep, val_tot, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass, _Sep, val_litter);
 	strcat(outstr, str);
 #else
 	switch (pd)
@@ -3195,7 +3202,7 @@ static void get_soilinf(void)
 		val_inf = v->yravg.soil_inf;
 		break;
 	}
-	sprintf(str, "%c%7.6f", _Sep, val_inf);
+	sprintf(str, "%c,%7.6f", _Sep, val_inf);
 	strcat(outstr, str);
 #else
 	switch (pd)
@@ -3255,7 +3262,7 @@ static void get_lyrdrain(void)
 			val = v->yravg.lyrdrain[i];
 			break;
 		}
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
 #else
@@ -3329,7 +3336,7 @@ static void get_hydred(void)
 			break;
 		}
 
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
 	/* tree output */ForEachSoilLayer(i)
@@ -3350,7 +3357,7 @@ static void get_hydred(void)
 			break;
 		}
 
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
 	/* shrub output */ForEachSoilLayer(i)
@@ -3371,7 +3378,7 @@ static void get_hydred(void)
 			break;
 		}
 
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
 	/* forb output */ForEachSoilLayer(i)
@@ -3392,7 +3399,7 @@ static void get_hydred(void)
 			break;
 		}
 
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
 	/* grass output */
@@ -3414,7 +3421,7 @@ static void get_hydred(void)
 			break;
 		}
 
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
 #else
@@ -3608,7 +3615,7 @@ static void get_aet(void)
 #endif
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
-	sprintf(str, "%c%7.6f", _Sep, val);
+	sprintf(str, "%c,%7.6f", _Sep, val);
 	strcat(outstr, str);
 #elif defined(STEPWAT)
 	if (isPartialSoilwatOutput == FALSE)
@@ -3647,7 +3654,7 @@ static void get_pet(void)
 		val = v->yravg.pet;
 		break;
 	}
-	sprintf(str, "%c%7.6f", _Sep, val);
+	sprintf(str, "%c,%7.6f", _Sep, val);
 	strcat(outstr, str);
 #else
 	switch (pd)
@@ -3706,7 +3713,7 @@ static void get_wetdays(void)
 			val = (int) v->yravg.wetdays[i];
 			break;
 		}
-		sprintf(str, "%c%i", _Sep, val);
+		sprintf(str, "%c,%i", _Sep, val);
 		strcat(outstr, str);
 	}
 #else
@@ -3779,7 +3786,7 @@ static void get_snowpack(void)
 		val_depth = v->yravg.snowdepth;
 		break;
 	}
-	sprintf(str, "%c%7.6f%c%7.6f", _Sep, val_swe, _Sep, val_depth);
+	sprintf(str, "%c,%7.6f,%c,%7.6f", _Sep, val_swe, _Sep, val_depth);
 	strcat(outstr, str);
 #else
 	switch (pd)
@@ -3839,7 +3846,7 @@ static void get_deepswc(void)
 		val = v->yravg.deep;
 		break;
 	}
-	sprintf(str, "%c%7.6f", _Sep, val);
+	sprintf(str, "%c,%7.6f", _Sep, val);
 	strcat(outstr, str);
 #else
 	switch (pd)
@@ -3898,7 +3905,7 @@ static void get_soiltemp(void)
 			val = v->yravg.sTemp[i];
 			break;
 		}
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
 #else
