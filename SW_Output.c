@@ -1255,10 +1255,16 @@ void SW_OUT_write_today(void)
 	 */
 	TimeInt t = 0xffff;
 	OutKey k;
+	OutKey colHeadersLoop;
 	Bool writeit;
-	char *newoutStr;
 	int i;
 
+	// timestep output vars
+	char *newoutStr;
+	char *colHeaders[500];
+	char *colHeadersSoil[500];
+	char *soil_file_vals[500]; // store
+	char *reg_file_vals[500]; // store
 
 	ForEachOutKey(k)
 	{
@@ -1295,17 +1301,65 @@ void SW_OUT_write_today(void)
 					continue;
 				((void (*)(void)) SW_Output[k].pfunc)();
 #if !defined(STEPWAT) && !defined(RSOILWAT)
+				// go through and create the headers for the timestep output files
+				if(colHeaders[0] == 0){ // check that hasnt been done yet
+					ForEachOutKey(colHeadersLoop)
+					{
+						if(strcmp(key2str[colHeadersLoop], "VWCBULK")==0 || strcmp(key2str[colHeadersLoop], "VWCMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWCBULK")==0
+							|| strcmp(key2str[colHeadersLoop], "SWABULK")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0 || strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0
+							|| strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0 || strcmp(key2str[colHeadersLoop], "HYDRED")==0 || strcmp(key2str[colHeadersLoop], "SOILTEMP")==0
+							|| strcmp(key2str[colHeadersLoop], "SWAMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWPMATRIC")==0)
+						{
+							strcat(colHeadersSoil, key2str[colHeadersLoop]); // concatenate variable to string
+							strcat(colHeadersSoil, ",");
+						}
+
+						else
+						{
+							strcat(colHeaders, key2str[colHeadersLoop]); // concatenate variable to string
+							strcat(colHeaders, ",");
+						}
+					}
+					printf("colHeaders: %s\n", colHeaders);
+					printf("\ncolHeadersSoil: %s\n", colHeadersSoil);
+					char *col1Head = "Year";
+					char *col2Head = "Day";
+
+					fprintf(SW_Output_Files.fp_dy_soil, "%s,%s,%s\n", col1Head, col2Head, colHeadersSoil); // write columns to file
+					fprintf(SW_Output_Files.fp_dy, "%s,%s,%s\n", col1Head, col2Head, colHeaders); // write columns to file
+				}
+
 				switch (timeSteps[k][i])
 				{ // based on iteration of for loop, determines which file to output to
 				case eSW_Day:
-
-					//fprintf(SW_Output_Files.fp_dy_soil, "%s,%s\n", key2str[k], outstr);
+					// check if k = 0 and create strings
+					if(k == 1){
+						//printf("k is 1\n");
+						if(reg_file_vals[0] != 0){ // write to file
+							//printf("soil_file_vals is not empty so need to write to file!\n");
+							//printf("%d, %d\n", SW_Model.year, SW_Model.doy);
+							fprintf(SW_Output_Files.fp_dy, "%s\n", reg_file_vals);
+						}
+						// reset arrays to null
+						memset(&soil_file_vals[0], 0, sizeof(soil_file_vals));
+						memset(&reg_file_vals[0], 0, sizeof(reg_file_vals));
+					}
 
 					// check if not a soil variable (has no layers)
-					if(strcmp(key2str[k], "TEMP")==0 || strcmp(key2str[k], "WTHR")==0 || strcmp(key2str[k], "PRECIP")==0
-						|| strcmp(key2str[k], "SOILINFILT")==0 || strcmp(key2str[k], "RUNOFF")==0) fprintf(SW_Output_Files.fp_dy, "%s,%s\n", key2str[k], outstr);
+					if(strcmp(key2str[k], "VWCBULK")==0 || strcmp(key2str[k], "VWCMATRIC")==0 || strcmp(key2str[k], "SWCBULK")==0
+						|| strcmp(key2str[k], "SWABULK")==0 || strcmp(key2str[k], "TRANSP")==0 || strcmp(key2str[k], "EVAPSOIL")==0
+						|| strcmp(key2str[k], "LYRDRAIN")==0 || strcmp(key2str[k], "HYDRED")==0 || strcmp(key2str[k], "SOILTEMP")==0
+						|| strcmp(key2str[k], "SWAMATRIC")==0 || strcmp(key2str[k], "SWPMATRIC")==0)
+					{
+						fprintf(SW_Output_Files.fp_dy_soil, "%s,%s\n", key2str[k], outstr);
+					}
 
-					else fprintf(SW_Output_Files.fp_dy_soil, "%s,%s\n", key2str[k], outstr);
+					else
+					{
+						strcat(reg_file_vals, outstr);
+						strcat(reg_file_vals, ",");
+						//fprintf(SW_Output_Files.fp_dy, "%s, %s\n", key2str[k],outstr);
+					}
 					break;
 				case eSW_Week:
 					//fprintf("Output/csv/weekly.csv", "%s\n", outstr);
