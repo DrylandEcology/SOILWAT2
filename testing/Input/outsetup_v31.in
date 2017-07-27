@@ -51,6 +51,7 @@ VWCMATRIC		avg		YR		1		end		vwc_matric		/* matric volumetric soilwater (cm / lay
 SWCBULK			avg		DY		1		end		swc_bulk		/* bulk soilwater content (cm / cm layer); swc.l1(today) = swc.l1(yesterday)+inf_soil-lyrdrain.l1-transp.l1-evap_soil.l1; swc.li(today) = swc.li(yesterday)+lyrdrain.l(i-1)-lyrdrain.li-transp.li-evap_soil.li; swc.llast(today) = swc.llast(yesterday)+lyrdrain.l(last-1)-deepswc-transp.llast-evap_soil.llast  */
 SWABULK			avg		MO		1		end		swa_bulk		/* bulk available soil water (cm/layer) = swc - wilting point */
 SWAMATRIC		avg		YR		1		end		swa_matric		/* matric available soil water (cm/layer) = swc - wilting point */
+SWA			avg		DY		1		end		swa			/* soil water available per layer (calculated for STEPPE) */
 SWPMATRIC		avg		WK		1		end		swp_matric		/* matric soilwater potential (-bars) */
 SURFACEWATER		avg		DY		1		end		surface_water		/* surface water (cm)   */
 TRANSP			sum		YR		1		end		transp			/* transpiration from each soil layer (cm): total, trees, shrubs, forbs, grasses     */

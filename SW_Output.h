@@ -53,6 +53,7 @@
 #define SW_VWCMATRIC	"VWCMATRIC"		//7		4		2
 #define SW_SWCBULK    	"SWCBULK"		//8		4		2
 #define SW_SWABULK	 	"SWABULK"		//9		4		2
+#define SW_SWA				"SWA"
 #define SW_SWAMATRIC	"SWAMATRIC"		//10	4		2
 #define SW_SWPMATRIC    "SWPMATRIC"		//11	4		2
 #define SW_SURFACEW		"SURFACEWATER"	//12	4		2
@@ -72,7 +73,7 @@
 #define SW_ALLVEG		"ALLVEG"		//26	5		0/* position and variable marker, not an output key */
 #define SW_ESTAB		"ESTABL"		//27	5		0
 
-#define SW_OUTNKEYS 28 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
+#define SW_OUTNKEYS 29 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
 
 /* these are the code analog of the above */
 /* see also key2str[] in Output.c */
@@ -92,6 +93,7 @@ typedef enum {
 	eSW_SWCBulk,
 	eSW_SWABulk,
 	eSW_SWAMatric,
+	eSW_SWA,
 	eSW_SWPMatric,
 	eSW_SurfaceWater,
 	eSW_Transp,

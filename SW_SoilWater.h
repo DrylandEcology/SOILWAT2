@@ -34,6 +34,7 @@
  modified the use of these variables throughout the rest of the code.
  07/09/2013	(clk)	Added the variables transp_forb, forb_evap, hydred_forb, and forb_int to SW_SOILWAT_OUTPUTS
  Added the variables transpiration_forb, hydred_forb, forb_evap, and forb_int to SW_SOILWAT
+ 07/27/2017 Added variables for swa conversion, originally only calculated for STEPPE
  */
 /********************************************************/
 /********************************************************/
@@ -72,7 +73,8 @@ typedef struct {
 	vwcMatric[MAX_LAYERS], swcBulk[MAX_LAYERS], /* soil water content cm/layer */
 	swpMatric[MAX_LAYERS], /* soil water potential */
 	swaBulk[MAX_LAYERS], /* available soil water cm/layer, swc-(wilting point) */
-	swaMatric[MAX_LAYERS], transp_total[MAX_LAYERS], transp_tree[MAX_LAYERS], transp_forb[MAX_LAYERS], transp_shrub[MAX_LAYERS], transp_grass[MAX_LAYERS], evap[MAX_LAYERS],
+	swaMatric[MAX_LAYERS], swa_forb[MAX_LAYERS], swa_tree[MAX_LAYERS], swa_shrub[MAX_LAYERS], swa_grass[MAX_LAYERS],
+	 		transp_total[MAX_LAYERS], transp_tree[MAX_LAYERS], transp_forb[MAX_LAYERS], transp_shrub[MAX_LAYERS], transp_grass[MAX_LAYERS], evap[MAX_LAYERS],
 			lyrdrain[MAX_LAYERS], hydred_total[MAX_LAYERS], hydred_tree[MAX_LAYERS], /* hydraulic redistribution cm/layer */
 			hydred_forb[MAX_LAYERS], hydred_shrub[MAX_LAYERS], hydred_grass[MAX_LAYERS], surfaceWater, total_evap, surfaceWater_evap, tree_evap, forb_evap, shrub_evap,
 			grass_evap,

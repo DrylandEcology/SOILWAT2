@@ -242,7 +242,7 @@ static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period
  * SW_Output.h */
 static char *key2str[] =
 { SW_WETHR, SW_TEMP, SW_PRECIP, SW_SOILINF, SW_RUNOFF, SW_ALLH2O, SW_VWCBULK,
-		SW_VWCMATRIC, SW_SWCBULK, SW_SWABULK, SW_SWAMATRIC, SW_SWPMATRIC,
+		SW_VWCMATRIC, SW_SWCBULK, SW_SWABULK, SW_SWAMATRIC, SW_SWA, SW_SWPMATRIC,
 		SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE, SW_INTERCEPTION,
 		SW_LYRDRAIN, SW_HYDRED, SW_ET, SW_AET, SW_PET, SW_WETDAY, SW_SNOWPACK,
 		SW_DEEPSWC, SW_SOILTEMP,
@@ -251,7 +251,7 @@ static char *key2str[] =
 /* or object type. see SW_Output.h for OutKey order.         */
 /* MUST be SW_OUTNKEYS of these */
 static ObjType key2obj[] =
-{ eWTH, eWTH, eWTH, eWTH, eWTH, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
+{ eWTH, eWTH, eWTH, eWTH, eWTH, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
 		eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
 		eSWC, eVES, eVES };
 static char *pd2str[] =
@@ -1306,12 +1306,29 @@ void SW_OUT_write_today(void)
 					ForEachOutKey(colHeadersLoop)
 					{
 						if(strcmp(key2str[colHeadersLoop], "VWCBULK")==0 || strcmp(key2str[colHeadersLoop], "VWCMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWCBULK")==0
-							|| strcmp(key2str[colHeadersLoop], "SWABULK")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0 || strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0
-							|| strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0 || strcmp(key2str[colHeadersLoop], "HYDRED")==0 || strcmp(key2str[colHeadersLoop], "SOILTEMP")==0
-							|| strcmp(key2str[colHeadersLoop], "SWAMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWPMATRIC")==0)
+							|| strcmp(key2str[colHeadersLoop], "SWABULK")==0 || strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0
+							|| strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0 || strcmp(key2str[colHeadersLoop], "SOILTEMP")==0
+							|| strcmp(key2str[colHeadersLoop], "SWAMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWA")==0 || strcmp(key2str[colHeadersLoop], "SWPMATRIC")==0)
 						{
-							strcat(colHeadersSoil, key2str[colHeadersLoop]); // concatenate variable to string
-							strcat(colHeadersSoil, ",");
+							int q;
+							char convertq[10];
+							char storeCol[100];
+							// make variable header for each layer possible
+							for(q=1; q<=SW_Site.n_layers; q++){
+								sprintf(convertq, "%d", q); // cast q to string
+								strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+								// concatenate layer number
+								strcat(storeCol, "_");
+								strcat(storeCol, convertq);
+								strcat(storeCol, ",");
+							}
+							printf("%s\n", storeCol);
+							strcat(colHeadersSoil, storeCol); // concatenate variable to string
+
+							// resetting arrays for use in next loop
+							memset(convertq, 0, sizeof(convertq));
+							memset(storeCol, 0, sizeof(storeCol));
+							printf("after memset: %s\n", storeCol);
 						}
 
 						else
@@ -1320,8 +1337,8 @@ void SW_OUT_write_today(void)
 							strcat(colHeaders, ",");
 						}
 					}
-					printf("colHeaders: %s\n", colHeaders);
-					printf("\ncolHeadersSoil: %s\n", colHeadersSoil);
+					//printf("colHeaders: %s\n", colHeaders);
+					//printf("\ncolHeadersSoil: %s\n", colHeadersSoil);
 					char *col1Head = "Year";
 					char *col2Head = "Day";
 
@@ -1334,12 +1351,13 @@ void SW_OUT_write_today(void)
 				case eSW_Day:
 					// check if k = 0 and create strings
 					if(k == 1){
-						//printf("k is 1\n");
-						if(reg_file_vals[0] != 0){ // write to file
-							//printf("soil_file_vals is not empty so need to write to file!\n");
-							//printf("%d, %d\n", SW_Model.year, SW_Model.doy);
+						if(reg_file_vals[0] != 0){ // if not empty, write to file
 							fprintf(SW_Output_Files.fp_dy, "%s\n", reg_file_vals);
 						}
+						if(soil_file_vals[0] != 0){ // if not empty, write to file
+							fprintf(SW_Output_Files.fp_dy_soil, "%s\n", soil_file_vals);
+						}
+
 						// reset arrays to null
 						memset(&soil_file_vals[0], 0, sizeof(soil_file_vals));
 						memset(&reg_file_vals[0], 0, sizeof(reg_file_vals));
@@ -1347,11 +1365,13 @@ void SW_OUT_write_today(void)
 
 					// check if not a soil variable (has no layers)
 					if(strcmp(key2str[k], "VWCBULK")==0 || strcmp(key2str[k], "VWCMATRIC")==0 || strcmp(key2str[k], "SWCBULK")==0
-						|| strcmp(key2str[k], "SWABULK")==0 || strcmp(key2str[k], "TRANSP")==0 || strcmp(key2str[k], "EVAPSOIL")==0
-						|| strcmp(key2str[k], "LYRDRAIN")==0 || strcmp(key2str[k], "HYDRED")==0 || strcmp(key2str[k], "SOILTEMP")==0
-						|| strcmp(key2str[k], "SWAMATRIC")==0 || strcmp(key2str[k], "SWPMATRIC")==0)
+						|| strcmp(key2str[k], "SWABULK")==0 || strcmp(key2str[k], "EVAPSOIL")==0 //strcmp(key2str[k], "TRANSP")==0 ||
+						|| strcmp(key2str[k], "LYRDRAIN")==0 || strcmp(key2str[k], "SOILTEMP")==0 //strcmp(key2str[k], "HYDRED")==0 ||
+						|| strcmp(key2str[k], "SWAMATRIC")==0 || strcmp(key2str[k], "SWPMATRIC")==0 || strcmp(key2str[k], "SWA")==0)
 					{
-						fprintf(SW_Output_Files.fp_dy_soil, "%s,%s\n", key2str[k], outstr);
+						//fprintf(SW_Output_Files.fp_dy_soil, "%s,%s\n", key2str[k],outstr);
+						strcat(soil_file_vals, outstr);
+						strcat(soil_file_vals, ",");
 					}
 
 					else
@@ -2006,6 +2026,303 @@ static void get_vwcMatric(void)
 	free(val);
 }
 
+static void get_swa(void)
+{
+	LyrIndex i;
+	SW_SOILWAT *v = &SW_Soilwat;
+	OutPeriod pd = SW_Output[eSW_SWA].period;
+	RealD *val = malloc(sizeof(RealD) * SW_Site.n_layers);
+#if !defined(STEPWAT) && !defined(RSOILWAT)
+	char str[OUTSTRLEN];
+#elif defined(STEPWAT)
+	char str[OUTSTRLEN];
+	TimeInt p;
+	SW_MODEL *t = &SW_Model;
+#endif
+	ForEachSoilLayer(i)
+		val[i] = 0;
+
+#ifndef RSOILWAT
+	get_outstrleader(pd);
+	/* total transpiration */
+	ForEachSoilLayer(i)
+	{
+		switch (pd)
+		{
+		case eSW_Day:
+			val[i] = v->dysum.swa_tree[i];
+			break;
+		case eSW_Week:
+			val[i] = v->wkavg.swa_tree[i];
+			break;
+		case eSW_Month:
+			val[i] = v->moavg.swa_tree[i];
+			break;
+		case eSW_Year:
+			val[i] = v->yravg.swa_tree[i];
+			break;
+		}
+	}
+#endif
+
+#if !defined(STEPWAT) && !defined(RSOILWAT)
+	ForEachSoilLayer(i)
+	{
+		sprintf(str, "%c,%7.6f", _Sep, val[i]);
+		strcat(outstr, str);
+	}
+#elif defined(STEPWAT)
+
+	if (isPartialSoilwatOutput == FALSE)
+	{
+		ForEachSoilLayer(i)
+		{
+			sprintf(str, "%c%7.6f", _Sep, val[i]);
+			strcat(outstr, str);
+		}
+	}
+	else
+	{
+
+		ForEachSoilLayer(i)
+		{
+			switch (pd)
+			{
+				case eSW_Day: p = t->doy-1; break; /* print current but as index */
+				case eSW_Week: p = t->week-1; break; /* print previous to current */
+				case eSW_Month: p = t->month-1; break; /* print previous to current */
+				/* YEAR should never be used with STEPWAT */
+			}
+			if (bFlush) p++;
+			SXW.transpTotal[Ilp(i,p)] = val[i];
+			//if(SXW.transpTotal[Ilp(i,p)] >= 2)
+				//printf("transpTotal value in SW_Output.c: %f\n", SXW.transpTotal[Ilp(i,p)]);
+		}
+	}
+#endif
+
+#ifndef RSOILWAT
+	/* tree-component transpiration */ForEachSoilLayer(i)
+	{
+		switch (pd)
+		{
+		case eSW_Day:
+			val[i] = v->dysum.transp_tree[i];
+			break;
+		case eSW_Week:
+			val[i] = v->wkavg.transp_tree[i];
+			break;
+		case eSW_Month:
+			val[i] = v->moavg.transp_tree[i];
+			break;
+		case eSW_Year:
+			val[i] = v->yravg.transp_tree[i];
+			break;
+		}
+	}
+
+#endif
+
+#if !defined(STEPWAT) && !defined(RSOILWAT)
+	ForEachSoilLayer(i)
+	{
+		sprintf(str, "%c,%7.6f", _Sep, val[i]);
+		strcat(outstr, str);
+	}
+#elif defined(STEPWAT)
+	if (isPartialSoilwatOutput == FALSE)
+	{
+		ForEachSoilLayer(i)
+		{
+			sprintf(str, "%c%7.6f", _Sep, val[i]);
+			strcat(outstr, str);
+		}
+	}
+	else
+	{
+
+		ForEachSoilLayer(i)
+		{
+			switch (pd)
+			{
+				case eSW_Day: p = t->doy-1; break; /* print current but as index */
+				case eSW_Week: p = t->week-1; break; /* print previous to current */
+				case eSW_Month: p = t->month-1; break; /* print previous to current */
+				/* YEAR should never be used with STEPWAT */
+			}
+			if (bFlush) p++;
+			SXW.transpTrees[Ilp(i,p)] = val[i];
+		}
+	}
+#endif
+
+#ifndef RSOILWAT
+	/* shrub-component transpiration */ForEachSoilLayer(i)
+	{
+		switch (pd)
+		{
+		case eSW_Day:
+			val[i] = v->dysum.transp_shrub[i];
+			break;
+		case eSW_Week:
+			val[i] = v->wkavg.transp_shrub[i];
+			break;
+		case eSW_Month:
+			val[i] = v->moavg.transp_shrub[i];
+			break;
+		case eSW_Year:
+			val[i] = v->yravg.transp_shrub[i];
+			break;
+		}
+	}
+#endif
+
+#if !defined(STEPWAT) && !defined(RSOILWAT)
+	ForEachSoilLayer(i)
+	{
+		sprintf(str, "%c,%7.6f", _Sep, val[i]);
+		strcat(outstr, str);
+	}
+#elif defined(STEPWAT)
+	if (isPartialSoilwatOutput == FALSE)
+	{
+		ForEachSoilLayer(i)
+		{
+			sprintf(str, "%c%7.6f", _Sep, val[i]);
+			strcat(outstr, str);
+		}
+	}
+	else
+	{
+
+		ForEachSoilLayer(i)
+		{
+			switch (pd)
+			{
+				case eSW_Day: p = t->doy-1; break; /* print current but as index */
+				case eSW_Week: p = t->week-1; break; /* print previous to current */
+				case eSW_Month: p = t->month-1; break; /* print previous to current */
+				/* YEAR should never be used with STEPWAT */
+			}
+			if (bFlush) p++;
+			SXW.transpShrubs[Ilp(i,p)] = val[i];
+		}
+	}
+#endif
+
+#ifndef RSOILWAT
+	/* forb-component transpiration */ForEachSoilLayer(i)
+	{
+		switch (pd)
+		{
+		case eSW_Day:
+			val[i] = v->dysum.transp_forb[i];
+			break;
+		case eSW_Week:
+			val[i] = v->wkavg.transp_forb[i];
+			break;
+		case eSW_Month:
+			val[i] = v->moavg.transp_forb[i];
+			break;
+		case eSW_Year:
+			val[i] = v->yravg.transp_forb[i];
+			break;
+		}
+	}
+#endif
+
+#if !defined(STEPWAT) && !defined(RSOILWAT)
+	ForEachSoilLayer(i)
+	{
+		sprintf(str, "%c,%7.6f", _Sep, val[i]);
+		strcat(outstr, str);
+	}
+#elif defined(STEPWAT)
+	if (isPartialSoilwatOutput == FALSE)
+	{
+		ForEachSoilLayer(i)
+		{
+			sprintf(str, "%c%7.6f", _Sep, val[i]);
+			strcat(outstr, str);
+		}
+	}
+	else
+	{
+
+		ForEachSoilLayer(i)
+		{
+			switch (pd)
+			{
+				case eSW_Day: p = t->doy-1; break; /* print current but as index */
+				case eSW_Week: p = t->week-1; break; /* print previous to current */
+				case eSW_Month: p = t->month-1; break; /* print previous to current */
+				/* YEAR should never be used with STEPWAT */
+			}
+			if (bFlush) p++;
+			SXW.transpForbs[Ilp(i,p)] = val[i];
+		}
+	}
+#endif
+
+#ifndef RSOILWAT
+	/* grass-component transpiration */
+	ForEachSoilLayer(i)
+	{
+		switch (pd)
+		{
+		case eSW_Day:
+			val[i] = v->dysum.transp_grass[i];
+			break;
+		case eSW_Week:
+			val[i] = v->wkavg.transp_grass[i];
+			break;
+		case eSW_Month:
+			val[i] = v->moavg.transp_grass[i];
+			break;
+		case eSW_Year:
+			val[i] = v->yravg.transp_grass[i];
+			break;
+		}
+	}
+#endif
+
+#if !defined(STEPWAT) && !defined(RSOILWAT)
+	ForEachSoilLayer(i)
+	{
+		sprintf(str, "%c,%7.6f", _Sep, val[i]);
+		strcat(outstr, str);
+	}
+#elif defined(STEPWAT)
+	if (isPartialSoilwatOutput == FALSE)
+	{
+		ForEachSoilLayer(i)
+		{
+			sprintf(str, "%c%7.6f", _Sep, val[i]);
+			strcat(outstr, str);
+		}
+	}
+	else
+	{
+
+		ForEachSoilLayer(i)
+		{
+			switch (pd)
+			{
+				case eSW_Day: p = t->doy-1; break; /* print current but as index */
+				case eSW_Week: p = t->week-1; break; /* print previous to current */
+				case eSW_Month: p = t->month-1; break; /* print previous to current */
+				/* YEAR should never be used with STEPWAT */
+			}
+			if (bFlush) p++;
+			SXW.transpGrasses[Ilp(i,p)] = val[i];
+		}
+	}
+#endif
+	free(val);
+}
+
+
+
 static void get_swcBulk(void)
 {
 	/* --------------------------------------------------- */
@@ -2041,6 +2358,7 @@ static void get_swcBulk(void)
 		}
 		sprintf(str, "%c,%7.6f", _Sep, val);
 		strcat(outstr, str);
+		float tempSWA = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
 	}
 #elif defined(RSOILWAT)
 	switch (pd)
@@ -2078,7 +2396,7 @@ static void get_swcBulk(void)
 	char str[OUTSTRLEN];
 
 	// get the SWCbulk values. amount is number of layers * number of critical values. only run once
-	if(SXW.SWCbulk[0][0] == 0){
+	/*if(SXW.SWCbulk[0][0] == 0){
 		int layerCount;
 		int j;
 
@@ -2099,7 +2417,7 @@ static void get_swcBulk(void)
 			//printf("forb_crit::shrub_crit || %f::%f\n",SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_forb, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_shrub);
 			printf("forb::shrub || %f::%f\n",SXW.SWCbulk[0][layerCount], SXW.SWCbulk[2][layerCount]);
 		}
-	}
+	}*/
 
 	if (isPartialSoilwatOutput == FALSE)
 	{
@@ -4099,6 +4417,9 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 					v->swcBulk[Today][i] - SW_Site.lyr[i]->swcBulk_wiltpt, 0.);
 		break;
 
+	case eSW_SWA: /* get swaBulk and convert later */
+		break;
+
 	case eSW_SurfaceWater:
 		s->surfaceWater += v->surfaceWater;
 		break;
@@ -4360,6 +4681,9 @@ static void average_for(ObjType otyp, OutPeriod pd)
 										ssumof->swaMatric[i] / div;
 					break;
 
+				case eSW_SWA: /* get swaBulk and convert later */
+					break;
+
 				case eSW_DeepSWC:
 					savg->deep =
 							(SW_Output[k].sumtype == eSW_Fnl) ?
@@ -4444,7 +4768,6 @@ static void average_for(ObjType otyp, OutPeriod pd)
 					break;
 
 				default:
-
 					LogError(stderr, LOGFATAL, "PGMR: Invalid key in average_for(%s)", key2str[k]);
 				}
 			}
