@@ -276,6 +276,7 @@ static void get_swcBulk(void);
 static void get_swpMatric(void);
 static void get_swaBulk(void);
 static void get_swaMatric(void);
+static void get_swa(void);
 static void get_surfaceWater(void);
 static void get_runoff(void);
 static void get_transp(void);
@@ -400,6 +401,9 @@ void SW_OUT_construct(void)
 			break;
 		case eSW_SWAMatric:
 			SW_Output[k].pfunc = (void (*)(void)) get_swaMatric;
+			break;
+		case eSW_SWA:
+			SW_Output[k].pfunc = (void (*)(void)) get_swa;
 			break;
 		case eSW_SurfaceWater:
 			SW_Output[k].pfunc = (void (*)(void)) get_surfaceWater;
@@ -744,7 +748,6 @@ void SW_OUT_read(void)
 #elif defined(STEPWAT)
 					if (isPartialSoilwatOutput == FALSE)
 					{
-						printf("is partial is false\n");
 						SW_OutputPrefix(prefix);
 						strcpy(str, prefix);
 						strcat(str, outfile);
@@ -1070,10 +1073,8 @@ void SW_OUT_close_files(void)
 			}
 	}
 #elif defined(STEPWAT)
-	printf("defined\n");
 	if (isPartialSoilwatOutput == FALSE)
 	{
-		printf("in if\n");
 		OutKey k;
 		int i;
 		ForEachOutKey(k)
@@ -2028,297 +2029,137 @@ static void get_vwcMatric(void)
 
 static void get_swa(void)
 {
-	LyrIndex i;
-	SW_SOILWAT *v = &SW_Soilwat;
-	OutPeriod pd = SW_Output[eSW_SWA].period;
-	RealD *val = malloc(sizeof(RealD) * SW_Site.n_layers);
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-	char str[OUTSTRLEN];
-#elif defined(STEPWAT)
-	char str[OUTSTRLEN];
-	TimeInt p;
-	SW_MODEL *t = &SW_Model;
-#endif
-	ForEachSoilLayer(i)
-		val[i] = 0;
+	/* --------------------------------------------------- */
+	/* added 21-Oct-03, cwb */
+	printf("in get_swa\n");
+	#ifdef STEPWAT
+		TimeInt p;
+		SW_MODEL *t = &SW_Model;
 
-#ifndef RSOILWAT
-	get_outstrleader(pd);
-	/* total transpiration */
-	ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val[i] = v->dysum.swa_tree[i];
-			break;
-		case eSW_Week:
-			val[i] = v->wkavg.swa_tree[i];
-			break;
-		case eSW_Month:
-			val[i] = v->moavg.swa_tree[i];
-			break;
-		case eSW_Year:
-			val[i] = v->yravg.swa_tree[i];
-			break;
-		}
-	}
-#endif
-
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-	ForEachSoilLayer(i)
-	{
-		sprintf(str, "%c,%7.6f", _Sep, val[i]);
-		strcat(outstr, str);
-	}
-#elif defined(STEPWAT)
-
-	if (isPartialSoilwatOutput == FALSE)
-	{
-		ForEachSoilLayer(i)
-		{
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
-			strcat(outstr, str);
-		}
-	}
-	else
-	{
-
+	#endif
+		LyrIndex i;
+		SW_SOILWAT *v = &SW_Soilwat;
+		OutPeriod pd = SW_Output[eSW_SWCBulk].period;
+		RealD val = SW_MISSING;
+		RealD val_forb = SW_MISSING;
+		RealD val_tree = SW_MISSING;
+		RealD val_shrub = SW_MISSING;
+		RealD val_grass = SW_MISSING;
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		char str[OUTSTRLEN];
+		get_outstrleader(pd);
 		ForEachSoilLayer(i)
 		{
 			switch (pd)
 			{
-				case eSW_Day: p = t->doy-1; break; /* print current but as index */
-				case eSW_Week: p = t->week-1; break; /* print previous to current */
-				case eSW_Month: p = t->month-1; break; /* print previous to current */
-				/* YEAR should never be used with STEPWAT */
+			case eSW_Day:
+				val = v->dysum.swcBulk[i];
+				break;
+			case eSW_Week:
+				val = v->wkavg.swcBulk[i];
+				break;
+			case eSW_Month: // the one interested in for now
+				val = v->moavg.swcBulk[i];
+				break;
+			case eSW_Year:
+				val = v->yravg.swcBulk[i];
+				break;
 			}
-			if (bFlush) p++;
-			SXW.transpTotal[Ilp(i,p)] = val[i];
-			//if(SXW.transpTotal[Ilp(i,p)] >= 2)
-				//printf("transpTotal value in SW_Output.c: %f\n", SXW.transpTotal[Ilp(i,p)]);
-		}
-	}
-#endif
-
-#ifndef RSOILWAT
-	/* tree-component transpiration */ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val[i] = v->dysum.transp_tree[i];
-			break;
-		case eSW_Week:
-			val[i] = v->wkavg.transp_tree[i];
-			break;
-		case eSW_Month:
-			val[i] = v->moavg.transp_tree[i];
-			break;
-		case eSW_Year:
-			val[i] = v->yravg.transp_tree[i];
-			break;
-		}
-	}
-
-#endif
-
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-	ForEachSoilLayer(i)
-	{
-		sprintf(str, "%c,%7.6f", _Sep, val[i]);
-		strcat(outstr, str);
-	}
-#elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE)
-	{
-		ForEachSoilLayer(i)
-		{
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
+			///sprintf(str, "%c,%7.6f", _Sep, val);
+			//strcat(outstr, str);
+			// TODO: put swa calculation here
+			val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+			val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+			val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+			val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+			sprintf(str, "%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f", _Sep, val_forb,_Sep, val_tree,_Sep, val_shrub,_Sep, val_grass);
 			strcat(outstr, str);
+			printf("val_forb[%d]: %f\n", i, val_forb);
 		}
-	}
-	else
-	{
+	#elif defined(STEPWAT)
+		char str[OUTSTRLEN];
 
-		ForEachSoilLayer(i)
+		if (isPartialSoilwatOutput == FALSE)
 		{
-			switch (pd)
+			//printf("in ispartial\n");
+			get_outstrleader(pd);
+			ForEachSoilLayer(i)
 			{
-				case eSW_Day: p = t->doy-1; break; /* print current but as index */
-				case eSW_Week: p = t->week-1; break; /* print previous to current */
-				case eSW_Month: p = t->month-1; break; /* print previous to current */
-				/* YEAR should never be used with STEPWAT */
+				switch (pd)
+				{
+					case eSW_Day:
+					val = v->dysum.swcBulk[i];
+					break;
+					case eSW_Week:
+					val = v->wkavg.swcBulk[i];
+					break;
+					case eSW_Month:
+					val = v->moavg.swcBulk[i];
+					break;
+					case eSW_Year:
+					val = v->yravg.swcBulk[i];
+					break;
+				}
+				//sprintf(str, "%c%7.6f", _Sep, val);
+				//strcat(outstr, str);
+
+				// store swc values
+				//SXW.swc[Ilp(i,p)] = val; // i:layer p: year
+				//SXW.SWCoriginal[p][i] = val; // i:layer p: timestep (day, week, month)
+
+				// TODO: set these to values in SOILWAT2 and then pass to STEPPE
+				SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+				SXW.SWAbulk_tree[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+				SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+				SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+
+				//printf("SXW.SWCbulk[0][%d]: %f\n",layerCount, SXW.SWCbulk[0][layerCount]);
 			}
-			if (bFlush) p++;
-			SXW.transpTrees[Ilp(i,p)] = val[i];
-		}
-	}
-#endif
 
-#ifndef RSOILWAT
-	/* shrub-component transpiration */ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val[i] = v->dysum.transp_shrub[i];
-			break;
-		case eSW_Week:
-			val[i] = v->wkavg.transp_shrub[i];
-			break;
-		case eSW_Month:
-			val[i] = v->moavg.transp_shrub[i];
-			break;
-		case eSW_Year:
-			val[i] = v->yravg.transp_shrub[i];
-			break;
 		}
-	}
-#endif
-
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-	ForEachSoilLayer(i)
-	{
-		sprintf(str, "%c,%7.6f", _Sep, val[i]);
-		strcat(outstr, str);
-	}
-#elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE)
-	{
-		ForEachSoilLayer(i)
+		else
 		{
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
-			strcat(outstr, str);
-		}
-	}
-	else
-	{
-
-		ForEachSoilLayer(i)
-		{
-			switch (pd)
+			//pd = 0;
+			ForEachSoilLayer(i)
 			{
-				case eSW_Day: p = t->doy-1; break; /* print current but as index */
-				case eSW_Week: p = t->week-1; break; /* print previous to current */
-				case eSW_Month: p = t->month-1; break; /* print previous to current */
-				/* YEAR should never be used with STEPWAT */
+
+				switch (pd)
+				{
+					case eSW_Day:
+						p = t->doy-1;
+						val = v->dysum.swcBulk[i];
+						break; // print current but as index
+					case eSW_Week:
+						p = t->week-1;
+						val = v->wkavg.swcBulk[i];
+						printf("eSW_Week\n");
+						break;// print previous to current
+					case eSW_Month:
+						p = t->month-1;
+						val = v->moavg.swcBulk[i];
+						break;// print previous to current
+					// YEAR should never be used with STEPWAT
+				}
+				if (bFlush) p++;
+
+				// store swc values
+				SXW.swc[Ilp(i,p)] = val;
+				SXW.SWCoriginal[p][i] = val; // i:layer p: timestep (day, week, month)
+
+				// convert SWCbulk to SWAbulk (not done in SWAbulk since that is not called from STEPPE)
+				SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+				SXW.SWAbulk_tree[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+				SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+				SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+
+				printf("SXW.SWAbulk_forb[p][%d]: %f\n", i, SXW.SWAbulk_forb[p][i]);
+				// printing out values
+				//if(SW_Model.year < 1986) printf("%d        %d        %d        %f        %f        %f        %f        %f\n", SW_Model.year, i, p, SXW.SWCoriginal[p][i], SXW.SWAbulk_forb[p][i],
+					//SXW.SWAbulk_tree[p][i], SXW.SWAbulk_shrub[p][i], SXW.SWAbulk_grass[p][i]);
 			}
-			if (bFlush) p++;
-			SXW.transpShrubs[Ilp(i,p)] = val[i];
 		}
-	}
-#endif
 
-#ifndef RSOILWAT
-	/* forb-component transpiration */ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val[i] = v->dysum.transp_forb[i];
-			break;
-		case eSW_Week:
-			val[i] = v->wkavg.transp_forb[i];
-			break;
-		case eSW_Month:
-			val[i] = v->moavg.transp_forb[i];
-			break;
-		case eSW_Year:
-			val[i] = v->yravg.transp_forb[i];
-			break;
-		}
-	}
-#endif
-
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-	ForEachSoilLayer(i)
-	{
-		sprintf(str, "%c,%7.6f", _Sep, val[i]);
-		strcat(outstr, str);
-	}
-#elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE)
-	{
-		ForEachSoilLayer(i)
-		{
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
-			strcat(outstr, str);
-		}
-	}
-	else
-	{
-
-		ForEachSoilLayer(i)
-		{
-			switch (pd)
-			{
-				case eSW_Day: p = t->doy-1; break; /* print current but as index */
-				case eSW_Week: p = t->week-1; break; /* print previous to current */
-				case eSW_Month: p = t->month-1; break; /* print previous to current */
-				/* YEAR should never be used with STEPWAT */
-			}
-			if (bFlush) p++;
-			SXW.transpForbs[Ilp(i,p)] = val[i];
-		}
-	}
-#endif
-
-#ifndef RSOILWAT
-	/* grass-component transpiration */
-	ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val[i] = v->dysum.transp_grass[i];
-			break;
-		case eSW_Week:
-			val[i] = v->wkavg.transp_grass[i];
-			break;
-		case eSW_Month:
-			val[i] = v->moavg.transp_grass[i];
-			break;
-		case eSW_Year:
-			val[i] = v->yravg.transp_grass[i];
-			break;
-		}
-	}
-#endif
-
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-	ForEachSoilLayer(i)
-	{
-		sprintf(str, "%c,%7.6f", _Sep, val[i]);
-		strcat(outstr, str);
-	}
-#elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE)
-	{
-		ForEachSoilLayer(i)
-		{
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
-			strcat(outstr, str);
-		}
-	}
-	else
-	{
-
-		ForEachSoilLayer(i)
-		{
-			switch (pd)
-			{
-				case eSW_Day: p = t->doy-1; break; /* print current but as index */
-				case eSW_Week: p = t->week-1; break; /* print previous to current */
-				case eSW_Month: p = t->month-1; break; /* print previous to current */
-				/* YEAR should never be used with STEPWAT */
-			}
-			if (bFlush) p++;
-			SXW.transpGrasses[Ilp(i,p)] = val[i];
-		}
-	}
-#endif
-	free(val);
+	#endif
 }
 
 
@@ -2492,8 +2333,8 @@ static void get_swcBulk(void)
 			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
 
 			// printing out values
-			if(SW_Model.year < 1986) printf("%d        %d        %d        %f        %f        %f        %f        %f\n", SW_Model.year, i, p, SXW.SWCoriginal[p][i], SXW.SWAbulk_forb[p][i],
-				SXW.SWAbulk_tree[p][i], SXW.SWAbulk_shrub[p][i], SXW.SWAbulk_grass[p][i]);
+			//if(SW_Model.year < 1986) printf("%d        %d        %d        %f        %f        %f        %f        %f\n", SW_Model.year, i, p, SXW.SWCoriginal[p][i], SXW.SWAbulk_forb[p][i],
+				//SXW.SWAbulk_tree[p][i], SXW.SWAbulk_shrub[p][i], SXW.SWAbulk_grass[p][i]);
 		}
 	}
 
