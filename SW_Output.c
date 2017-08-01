@@ -529,18 +529,6 @@ void SW_OUT_read(void)
 	f = OpenFile(MyFileName, "r");
 	itemno = 0;
 
-	// printing out file contents
-	/*FILE *zq;
-	zq = fopen(MyFileName, "r");
-	int c;
-	if(zq){
-		printf("\n reading %s to check values.\n", MyFileName);
-		while((c=getc(zq)) != EOF){
-			putchar(c);
-		}
-		fclose(zq);
-	}*/
-
 	_Sep = '\t'; /* default in case it doesn't show up in the file */
 	while (GetALine(f, inbuf))
 	{
@@ -556,7 +544,6 @@ void SW_OUT_read(void)
 					timeStep[1], timeStep[2], timeStep[3]);	// need to rescan the line because you are looking for all strings, unlike the original scan
 			numPeriod--;// decrement the count to make sure to not count keyname in the number of periods
 			useTimeStep = 1;
-			//printf("timestep: %s %s %s %s\n", timeStep[0], timeStep[1], timeStep[2], timeStep[3]);
 			printf("%s\n", inbuf);
 
 			// Create Timestep files defined in outsetup.in
@@ -582,7 +569,6 @@ void SW_OUT_read(void)
 		}
 		else
 		{ // If the line TIMESTEP is present, only need to read in five variables not six, so re read line.
-			//printf("period2: %s\n", period);
 			if (x < 6)
 			{
 				if (Str_CompareI(keyname, "OUTSEP") == 0)
@@ -648,7 +634,7 @@ void SW_OUT_read(void)
 		if (SW_Output[k].sumtype == eSW_Fnl
 				&& !(k == eSW_VWCBulk || k == eSW_VWCMatric
 						|| k == eSW_SWPMatric || k == eSW_SWCBulk
-						|| k == eSW_SWABulk || k == eSW_SWAMatric
+						|| k == eSW_SWABulk || k == eSW_SWA || k == eSW_SWAMatric
 						|| k == eSW_DeepSWC))
 		{
 			LogError(logfp, LOGWARN, "%s : Summary Type FIN with key %s is meaningless.\n" "  Using type AVG instead.", MyFileName, key2str[k]);
@@ -801,8 +787,6 @@ void SW_OUT_read(void)
 		}
 
 	}
-
-	//printf("timeSteps[1][0]: %d\n", timeSteps[1][0]);
 	CloseFile(&f);
 
 	if (EchoInits)
@@ -1252,7 +1236,7 @@ void SW_OUT_write_today(void)
 	 */
 	/* 10-May-02 (cwb) Added conditional to interface with STEPPE.
 	 *           We want no output if running from STEPPE.
-	 * July 12, 2017: Added functionality for writing outputs for STEPPE and SOILWAT since we now do want output for STEPPE
+	 * July 12, 2017: Added functionality for writing outputs for STEPPE and SOILWAT since we now want output for STEPPE
 	 */
 	TimeInt t = 0xffff;
 	OutKey k;
@@ -1263,7 +1247,7 @@ void SW_OUT_write_today(void)
 	// timestep output vars
 	char *newoutStr;
 	char *colHeaders[500];
-	char *colHeadersSoil[500];
+	char *colHeadersSoil[500]; // might need to make this bigger for runs that have close to max layer size
 	char *soil_file_vals[500]; // store
 	char *reg_file_vals[500]; // store
 
@@ -1300,6 +1284,7 @@ void SW_OUT_write_today(void)
 				}
 				if (!writeit || t < SW_Output[k].first || t > SW_Output[k].last)
 					continue;
+				//printf("%s\n", key2str[k]);
 				((void (*)(void)) SW_Output[k].pfunc)();
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 				// go through and create the headers for the timestep output files
@@ -1307,42 +1292,157 @@ void SW_OUT_write_today(void)
 					ForEachOutKey(colHeadersLoop)
 					{
 						if(strcmp(key2str[colHeadersLoop], "VWCBULK")==0 || strcmp(key2str[colHeadersLoop], "VWCMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWCBULK")==0
-							|| strcmp(key2str[colHeadersLoop], "SWABULK")==0 || strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0
-							|| strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0 || strcmp(key2str[colHeadersLoop], "SOILTEMP")==0
+							|| strcmp(key2str[colHeadersLoop], "SWABULK")==0 || strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0
+							|| strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0 || strcmp(key2str[colHeadersLoop], "SOILTEMP")==0 || strcmp(key2str[colHeadersLoop], "HYDRED")==0
 							|| strcmp(key2str[colHeadersLoop], "SWAMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWA")==0 || strcmp(key2str[colHeadersLoop], "SWPMATRIC")==0)
 						{
 							int q;
-							char convertq[10];
-							char storeCol[100];
-							// make variable header for each layer possible
-							for(q=1; q<=SW_Site.n_layers; q++){
-								sprintf(convertq, "%d", q); // cast q to string
-								strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
-								// concatenate layer number
-								strcat(storeCol, "_");
-								strcat(storeCol, convertq);
-								strcat(storeCol, ",");
+							char convertq[10] = {0};
+							char storeCol[600] = {0}; // need to make this a pretty large file to accomadate all the header names up to max layer size
+
+							// check if swa (need 4 headers instead of 1 for swa)
+							if(strcmp(key2str[colHeadersLoop], "SWA")==0)
+							{
+								for(q=1; q<=SW_Site.n_layers; q++){
+									sprintf(convertq, "%d", q); // cast q to string
+
+									strcat(storeCol, "swaForb_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+
+									strcat(storeCol, "swaTree_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+
+									strcat(storeCol, "swaShrub_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+
+									strcat(storeCol, "swaGrass_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+								}
 							}
-							printf("%s\n", storeCol);
+							else if(strcmp(key2str[colHeadersLoop], "HYDRED")==0){
+								for(q=1; q<=SW_Site.n_layers; q++){
+									sprintf(convertq, "%d", q); // cast q to string
+
+									strcat(storeCol, "HydredTotal_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+
+									strcat(storeCol, "HydredTree_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+
+									strcat(storeCol, "HydredShrubs_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+
+									strcat(storeCol, "HydredForbs_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+
+									strcat(storeCol, "HydredGrass_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+								}
+							}
+							else if(strcmp(key2str[colHeadersLoop], "TRANSP")==0){
+								for(q=1; q<=SW_Site.n_layers; q++){
+									sprintf(convertq, "%d", q); // cast q to string
+
+									strcat(storeCol, "TranspTotal_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+
+									strcat(storeCol, "TranspTree_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+
+									strcat(storeCol, "TranspShrubs_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+
+									strcat(storeCol, "TranspForbs_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+
+									strcat(storeCol, "TranspGrass_"); // store value name in new string
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+								}
+							}
+							else{
+								// make variable header for each layer possible
+								for(q=1; q<=SW_Site.n_layers; q++){
+									sprintf(convertq, "%d", q); // cast q to string
+									strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+									// concatenate layer number
+									strcat(storeCol, "_");
+									strcat(storeCol, convertq);
+									strcat(storeCol, ",");
+								}
+							}
 							strcat(colHeadersSoil, storeCol); // concatenate variable to string
 
-							// resetting arrays for use in next loop
-							memset(convertq, 0, sizeof(convertq));
-							memset(storeCol, 0, sizeof(storeCol));
-							printf("after memset: %s\n", storeCol);
 						}
 
 						else
 						{
-							strcat(colHeaders, key2str[colHeadersLoop]); // concatenate variable to string
-							strcat(colHeaders, ",");
+							if(strcmp(key2str[colHeadersLoop], "TEMP")==0){
+								strcat(colHeaders, "Temp_max,");
+								strcat(colHeaders, "Temp_min,");
+								strcat(colHeaders, "Temp_avg_air_temp,");
+								strcat(colHeaders, "Temp_soil_surface_temp,");
+							}
+							else if(strcmp(key2str[colHeadersLoop], "PRECIP")==0){
+								strcat(colHeaders, "Precip_sum,");
+								strcat(colHeaders, "Precip_rain,");
+								strcat(colHeaders, "Precip_snow_fall,");
+								strcat(colHeaders, "Precip_snowmelt,");
+								strcat(colHeaders, "Precip_snowloss,");
+							}
+							else if(strcmp(key2str[colHeadersLoop], "SOILINFILT")==0){
+								strcat(colHeaders, "Soilinfilt_top_layer,");
+								strcat(colHeaders, "Soilinfilt_runoff,");
+							}
+							else if(strcmp(key2str[colHeadersLoop], "RUNOFF")==0){
+								strcat(colHeaders, "Runoff_total,");
+								strcat(colHeaders, "Runoff_ponded_water,");
+								strcat(colHeaders, "Runoff_snowmelt,");
+							}
+							else if(strcmp(key2str[colHeadersLoop], "EVAPSURFACE")==0){
+								strcat(colHeaders, "Evapsurface_total,");
+								strcat(colHeaders, "Evapsurface_trees,");
+								strcat(colHeaders, "Evapsurface_shrubs,");
+								strcat(colHeaders, "Evapsurface_forbs,");
+								strcat(colHeaders, "Evapsurface_grasses,");
+								strcat(colHeaders, "Evapsurface_litter,");
+								strcat(colHeaders, "Evapsurface_surface_water,");
+							}
+							else if(strcmp(key2str[colHeadersLoop], "INTERCEPTION")==0){
+								strcat(colHeaders, "Interception_total,");
+								strcat(colHeaders, "Interception_trees,");
+								strcat(colHeaders, "Interception_shrubs,");
+								strcat(colHeaders, "Interception_forbs,");
+								strcat(colHeaders, "Interception_grasses,");
+								strcat(colHeaders, "Interception_litter,");
+							}
+							else if(strcmp(key2str[colHeadersLoop], "SNOWPACK")==0){
+								strcat(colHeaders, "Snowpack_water_eqv,");
+								strcat(colHeaders, "Snowpack_snowdepth,");
+								strcat(colHeaders, "Snowpack_summed,");
+							}
+							else{
+								strcat(colHeaders, key2str[colHeadersLoop]); // concatenate variable to string
+								strcat(colHeaders, ",");
+							}
 						}
 					}
-					//printf("colHeaders: %s\n", colHeaders);
-					//printf("\ncolHeadersSoil: %s\n", colHeadersSoil);
+					// TODO(OUTPUT): write the column names to all timesteps defined (currently only day)
 					char *col1Head = "Year";
-					char *col2Head = "Day";
-
+					char *col2Head = "Day"; //TODO: have col 2 for proper timestep, not hardcoded to day
 					fprintf(SW_Output_Files.fp_dy_soil, "%s,%s,%s\n", col1Head, col2Head, colHeadersSoil); // write columns to file
 					fprintf(SW_Output_Files.fp_dy, "%s,%s,%s\n", col1Head, col2Head, colHeaders); // write columns to file
 				}
@@ -1350,7 +1450,6 @@ void SW_OUT_write_today(void)
 				switch (timeSteps[k][i])
 				{ // based on iteration of for loop, determines which file to output to
 				case eSW_Day:
-					// check if k = 0 and create strings
 					if(k == 1){
 						if(reg_file_vals[0] != 0){ // if not empty, write to file
 							fprintf(SW_Output_Files.fp_dy, "%s\n", reg_file_vals);
@@ -1364,13 +1463,12 @@ void SW_OUT_write_today(void)
 						memset(&reg_file_vals[0], 0, sizeof(reg_file_vals));
 					}
 
-					// check if not a soil variable (has no layers)
+					// check if a soil variable (has layers)
 					if(strcmp(key2str[k], "VWCBULK")==0 || strcmp(key2str[k], "VWCMATRIC")==0 || strcmp(key2str[k], "SWCBULK")==0
-						|| strcmp(key2str[k], "SWABULK")==0 || strcmp(key2str[k], "EVAPSOIL")==0 //strcmp(key2str[k], "TRANSP")==0 ||
-						|| strcmp(key2str[k], "LYRDRAIN")==0 || strcmp(key2str[k], "SOILTEMP")==0 //strcmp(key2str[k], "HYDRED")==0 ||
+						|| strcmp(key2str[k], "SWABULK")==0 || strcmp(key2str[k], "EVAPSOIL")==0 || strcmp(key2str[k], "TRANSP")==0
+						|| strcmp(key2str[k], "LYRDRAIN")==0 || strcmp(key2str[k], "SOILTEMP")==0 || strcmp(key2str[k], "HYDRED")==0
 						|| strcmp(key2str[k], "SWAMATRIC")==0 || strcmp(key2str[k], "SWPMATRIC")==0 || strcmp(key2str[k], "SWA")==0)
 					{
-						//fprintf(SW_Output_Files.fp_dy_soil, "%s,%s\n", key2str[k],outstr);
 						strcat(soil_file_vals, outstr);
 						strcat(soil_file_vals, ",");
 					}
@@ -1417,7 +1515,6 @@ void SW_OUT_write_today(void)
 			}
 		}
 	}
-
 }
 
 static void get_none(void)
@@ -1565,7 +1662,9 @@ static void get_temp(void)
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
+	if(SW_Model.year == 2012)printf("prior:       %s\n", outstr);
 	get_outstrleader(pd);
+	if(SW_Model.year == 2012)printf("post:        %s\n", outstr);
 #elif defined(STEPWAT)
 	char str[OUTSTRLEN];
 	if (isPartialSoilwatOutput == FALSE)
@@ -2031,15 +2130,15 @@ static void get_swa(void)
 {
 	/* --------------------------------------------------- */
 	/* added 21-Oct-03, cwb */
-	printf("in get_swa\n");
-	#ifdef STEPWAT
+	//#ifdef STEPWAT
+	#ifndef RSOILWAT
 		TimeInt p;
 		SW_MODEL *t = &SW_Model;
 
 	#endif
 		LyrIndex i;
 		SW_SOILWAT *v = &SW_Soilwat;
-		OutPeriod pd = SW_Output[eSW_SWCBulk].period;
+		OutPeriod pd = SW_Output[eSW_SWA].period;
 		RealD val = SW_MISSING;
 		RealD val_forb = SW_MISSING;
 		RealD val_tree = SW_MISSING;
@@ -2053,35 +2152,41 @@ static void get_swa(void)
 			switch (pd)
 			{
 			case eSW_Day:
+				p = SW_Model.doy-1;
 				val = v->dysum.swcBulk[i];
 				break;
 			case eSW_Week:
+				p = SW_Model.week-1;
 				val = v->wkavg.swcBulk[i];
 				break;
 			case eSW_Month: // the one interested in for now
+				p = SW_Model.month-1;
 				val = v->moavg.swcBulk[i];
 				break;
 			case eSW_Year:
+				p = SW_Model.year-1;
 				val = v->yravg.swcBulk[i];
 				break;
 			}
-			///sprintf(str, "%c,%7.6f", _Sep, val);
-			//strcat(outstr, str);
-			// TODO: put swa calculation here
+			// calculate the SWA values
 			val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
 			val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
 			val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
 			val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+
+			// write values to string
 			sprintf(str, "%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f", _Sep, val_forb,_Sep, val_tree,_Sep, val_shrub,_Sep, val_grass);
 			strcat(outstr, str);
-			printf("val_forb[%d]: %f\n", i, val_forb);
+
+			// print values
+			//if(SW_Model.year < 1986) printf("%d        %d        %d        %f        %f        %f        %f        %f\n", SW_Model.year, p, i, val, val_forb,
+				//val_tree, val_shrub, val_grass);
 		}
 	#elif defined(STEPWAT)
 		char str[OUTSTRLEN];
 
-		if (isPartialSoilwatOutput == FALSE)
+		if (isPartialSoilwatOutput == FALSE) // TODO: set this to the same exact code as for "#if !defined(STEPWAT) && !defined(RSOILWAT)"
 		{
-			//printf("in ispartial\n");
 			get_outstrleader(pd);
 			ForEachSoilLayer(i)
 			{
@@ -2100,20 +2205,15 @@ static void get_swa(void)
 					val = v->yravg.swcBulk[i];
 					break;
 				}
-				//sprintf(str, "%c%7.6f", _Sep, val);
-				//strcat(outstr, str);
+				val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+				val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+				val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+				val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+				sprintf(str, "%c,%7.6f,%c,%7.6f,%c,%7.6f,%c,%7.6f", _Sep, val_forb,_Sep, val_tree,_Sep, val_shrub,_Sep, val_grass);
+				strcat(outstr, str);
+				if(SW_Model.year < 1986) printf("%d        %d        %f        %f        %f        %f        %f\n", SW_Model.year, i, val, val_forb,
+					val_tree, val_shrub, val_grass);
 
-				// store swc values
-				//SXW.swc[Ilp(i,p)] = val; // i:layer p: year
-				//SXW.SWCoriginal[p][i] = val; // i:layer p: timestep (day, week, month)
-
-				// TODO: set these to values in SOILWAT2 and then pass to STEPPE
-				SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
-				SXW.SWAbulk_tree[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-				SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-				SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
-
-				//printf("SXW.SWCbulk[0][%d]: %f\n",layerCount, SXW.SWCbulk[0][layerCount]);
 			}
 
 		}
@@ -2132,7 +2232,6 @@ static void get_swa(void)
 					case eSW_Week:
 						p = t->week-1;
 						val = v->wkavg.swcBulk[i];
-						printf("eSW_Week\n");
 						break;// print previous to current
 					case eSW_Month:
 						p = t->month-1;
@@ -2147,12 +2246,11 @@ static void get_swa(void)
 				SXW.SWCoriginal[p][i] = val; // i:layer p: timestep (day, week, month)
 
 				// convert SWCbulk to SWAbulk (not done in SWAbulk since that is not called from STEPPE)
-				SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
-				SXW.SWAbulk_tree[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-				SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-				SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+				SXW.SWAbulk_forb[p][i] = val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+				SXW.SWAbulk_tree[p][i] = val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+				SXW.SWAbulk_shrub[p][i] = val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+				SXW.SWAbulk_grass[p][i] = val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
 
-				printf("SXW.SWAbulk_forb[p][%d]: %f\n", i, SXW.SWAbulk_forb[p][i]);
 				// printing out values
 				//if(SW_Model.year < 1986) printf("%d        %d        %d        %f        %f        %f        %f        %f\n", SW_Model.year, i, p, SXW.SWCoriginal[p][i], SXW.SWAbulk_forb[p][i],
 					//SXW.SWAbulk_tree[p][i], SXW.SWAbulk_shrub[p][i], SXW.SWAbulk_grass[p][i]);
@@ -2205,60 +2303,36 @@ static void get_swcBulk(void)
 	switch (pd)
 	{
 		case eSW_Day:
-		p_RswcBulk_dy[SW_Output[eSW_SWCBulk].dy_row + dy_nrow * 0] = SW_Model.year;
-		p_RswcBulk_dy[SW_Output[eSW_SWCBulk].dy_row + dy_nrow * 1] = SW_Model.doy;
-		ForEachSoilLayer(i)
-		p_RswcBulk_dy[SW_Output[eSW_SWCBulk].dy_row + dy_nrow * (i + 2)] = v->dysum.swcBulk[i];
-		SW_Output[eSW_SWCBulk].dy_row++;
-		break;
+			p_RswcBulk_dy[SW_Output[eSW_SWCBulk].dy_row + dy_nrow * 0] = SW_Model.year;
+			p_RswcBulk_dy[SW_Output[eSW_SWCBulk].dy_row + dy_nrow * 1] = SW_Model.doy;
+			ForEachSoilLayer(i)
+			p_RswcBulk_dy[SW_Output[eSW_SWCBulk].dy_row + dy_nrow * (i + 2)] = v->dysum.swcBulk[i];
+			SW_Output[eSW_SWCBulk].dy_row++;
+			break;
 		case eSW_Week:
-		p_RswcBulk_wk[SW_Output[eSW_SWCBulk].wk_row + wk_nrow * 0] = SW_Model.year;
-		p_RswcBulk_wk[SW_Output[eSW_SWCBulk].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
-		ForEachSoilLayer(i)
-		p_RswcBulk_wk[SW_Output[eSW_SWCBulk].wk_row + wk_nrow * (i + 2)] = v->wkavg.swcBulk[i];
-		SW_Output[eSW_SWCBulk].wk_row++;
-		break;
+			p_RswcBulk_wk[SW_Output[eSW_SWCBulk].wk_row + wk_nrow * 0] = SW_Model.year;
+			p_RswcBulk_wk[SW_Output[eSW_SWCBulk].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
+			ForEachSoilLayer(i)
+			p_RswcBulk_wk[SW_Output[eSW_SWCBulk].wk_row + wk_nrow * (i + 2)] = v->wkavg.swcBulk[i];
+			SW_Output[eSW_SWCBulk].wk_row++;
+			break;
 		case eSW_Month:
-		p_RswcBulk_mo[SW_Output[eSW_SWCBulk].mo_row + mo_nrow * 0] = SW_Model.year;
-		p_RswcBulk_mo[SW_Output[eSW_SWCBulk].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
-		ForEachSoilLayer(i)
-		p_RswcBulk_mo[SW_Output[eSW_SWCBulk].mo_row + mo_nrow * (i + 2)] = v->moavg.swcBulk[i];
-		SW_Output[eSW_SWCBulk].mo_row++;
-		break;
+			p_RswcBulk_mo[SW_Output[eSW_SWCBulk].mo_row + mo_nrow * 0] = SW_Model.year;
+			p_RswcBulk_mo[SW_Output[eSW_SWCBulk].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
+			ForEachSoilLayer(i)
+			p_RswcBulk_mo[SW_Output[eSW_SWCBulk].mo_row + mo_nrow * (i + 2)] = v->moavg.swcBulk[i];
+			SW_Output[eSW_SWCBulk].mo_row++;
+			break;
 		case eSW_Year:
-		p_RswcBulk_yr[SW_Output[eSW_SWCBulk].yr_row + yr_nrow * 0] = SW_Model.year;
-		ForEachSoilLayer(i)
-		p_RswcBulk_yr[SW_Output[eSW_SWCBulk].yr_row + yr_nrow * (i + 1)] = v->yravg.swcBulk[i];
-		SW_Output[eSW_SWCBulk].yr_row++;
-		break;
+			p_RswcBulk_yr[SW_Output[eSW_SWCBulk].yr_row + yr_nrow * 0] = SW_Model.year;
+			ForEachSoilLayer(i)
+			p_RswcBulk_yr[SW_Output[eSW_SWCBulk].yr_row + yr_nrow * (i + 1)] = v->yravg.swcBulk[i];
+			SW_Output[eSW_SWCBulk].yr_row++;
+			break;
 	}
 #elif defined(STEPWAT)
 	//printf("SXW.curInterval: %d\n", SXW.curInterval++);
 	char str[OUTSTRLEN];
-
-	// get the SWCbulk values. amount is number of layers * number of critical values. only run once
-	/*if(SXW.SWCbulk[0][0] == 0){
-		int layerCount;
-		int j;
-
-
-		for(layerCount=0; layerCount<SW_Site.n_layers; layerCount++)
-		{
-			SXW.SWCbulk[0][layerCount] = SW_SWPmatric2VWCBulk(
-				SW_Site.lyr[layerCount]->fractionVolBulk_gravel, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_forb, layerCount) * SW_Site.lyr[layerCount]->width;
-
-			SXW.SWCbulk[1][layerCount] = SW_SWPmatric2VWCBulk(
-				SW_Site.lyr[layerCount]->fractionVolBulk_gravel, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_tree, layerCount) * SW_Site.lyr[layerCount]->width;
-
-			SXW.SWCbulk[2][layerCount] = SW_SWPmatric2VWCBulk(
-				SW_Site.lyr[layerCount]->fractionVolBulk_gravel, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_shrub, layerCount) * SW_Site.lyr[layerCount]->width;
-
-			SXW.SWCbulk[3][layerCount] = SW_SWPmatric2VWCBulk(
-				SW_Site.lyr[layerCount]->fractionVolBulk_gravel, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_grass, layerCount) * SW_Site.lyr[layerCount]->width;
-			//printf("forb_crit::shrub_crit || %f::%f\n",SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_forb, SW_Site.lyr[layerCount]->swcBulk_atSWPcrit_shrub);
-			printf("forb::shrub || %f::%f\n",SXW.SWCbulk[0][layerCount], SXW.SWCbulk[2][layerCount]);
-		}
-	}*/
 
 	if (isPartialSoilwatOutput == FALSE)
 	{
@@ -2283,23 +2357,11 @@ static void get_swcBulk(void)
 			}
 			sprintf(str, "%c%7.6f", _Sep, val);
 			strcat(outstr, str);
-
-			// store swc values
-			SXW.swc[Ilp(i,p)] = val; // i:layer p: year
-			SXW.SWCoriginal[p][i] = val; // i:layer p: timestep (day, week, month)
-
-			SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
-			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
-
-			//printf("SXW.SWCbulk[0][%d]: %f\n",layerCount, SXW.SWCbulk[0][layerCount]);
 		}
 
 	}
 	else
 	{
-		//pd = 0;
 		ForEachSoilLayer(i)
 		{
 
@@ -2312,7 +2374,6 @@ static void get_swcBulk(void)
 				case eSW_Week:
 					p = t->week-1;
 					val = v->wkavg.swcBulk[i];
-					printf("eSW_Week\n");
 					break;// print previous to current
 				case eSW_Month:
 					p = t->month-1;
@@ -2324,17 +2385,6 @@ static void get_swcBulk(void)
 
 			// store swc values
 			SXW.swc[Ilp(i,p)] = val;
-			SXW.SWCoriginal[p][i] = val; // i:layer p: timestep (day, week, month)
-
-			// convert SWCbulk to SWAbulk (not done in SWAbulk since that is not called from STEPPE)
-			SXW.SWAbulk_forb[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
-			SXW.SWAbulk_tree[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-			SXW.SWAbulk_shrub[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-			SXW.SWAbulk_grass[p][i] = fmax(0., SXW.SWCoriginal[p][i] - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
-
-			// printing out values
-			//if(SW_Model.year < 1986) printf("%d        %d        %d        %f        %f        %f        %f        %f\n", SW_Model.year, i, p, SXW.SWCoriginal[p][i], SXW.SWAbulk_forb[p][i],
-				//SXW.SWAbulk_tree[p][i], SXW.SWAbulk_shrub[p][i], SXW.SWAbulk_grass[p][i]);
 		}
 	}
 
