@@ -132,90 +132,24 @@ void SW_CTL_run_current_year(void) {
 /***********************************************************/
 void stat_Output_Daily_CSV_Summary()
 {
-	char buf[1024], tbuf[80];
-
 	SW_Output_Files.fp_dy = OpenFile(SW_F_name(eOutputDaily), "w");
 	SW_Output_Files.fp_dy_soil = OpenFile(SW_F_name(eOutputDaily_soil), "w");
-
-
-	FILE *f;
-	FILE *f_soil;
-	Bool csv_summary = TRUE;
-	if (!csv_summary)
-		return;
-
-	f = OpenFile(SW_F_name(eOutputDaily), "w");
-	f_soil = OpenFile(SW_F_name(eOutputDaily_soil), "w");
-
-	buf[0] = '\0';
-
-	*buf = '\0';
-
-	fprintf(f, "%s\n", buf);
-	fprintf(f_soil, "%s\n", buf);
-	CloseFile(&f);
-	CloseFile(&f_soil);
-
-	char *col1Head = "Variable";
-	char *col2Head = "Year";
-	char *col3Head = "Day";
-	//fprintf(SW_Output_Files.fp_dy, "%s\n", buf);
-	fprintf(SW_Output_Files.fp_dy, "%s,%s,%s\n", col1Head, col2Head, col3Head);
-	fprintf(SW_Output_Files.fp_dy_soil, "%s\n", buf);
-	//CloseFile(&SW_Output_Files.fp_dy);
-	//CloseFile(&SW_Output_Files.fp_dy_soil);
-
 }
 
 //This function will create Weekly
 /***********************************************************/
 void stat_Output_Weekly_CSV_Summary()
 {
-	char buf[1024], tbuf[80];
-
-	FILE *f;
-	FILE *f_soil;
-	Bool csv_summary = TRUE;
-	if (!csv_summary)
-		return;
-
-	f = OpenFile(SW_F_name(eOutputWeekly), "w");
-	f_soil = OpenFile(SW_F_name(eOutputWeekly_soil), "w");
-
-	buf[0] = '\0';
-
-	*buf = '\0';
-
-	fprintf(f, "%s\n", buf);
-	fprintf(f_soil, "%s\n", buf);
-	CloseFile(&f);
-	CloseFile(&f_soil);
-
+	SW_Output_Files.fp_wk = OpenFile(SW_F_name(eOutputWeekly), "w");
+	SW_Output_Files.fp_wk_soil = OpenFile(SW_F_name(eOutputWeekly_soil), "w");
 }
 
 //This function will create Monthly
 /***********************************************************/
 void stat_Output_Monthly_CSV_Summary()
 {
-	char buf[1024], tbuf[80];
-
-	FILE *f;
-	FILE *f_soil;
-	Bool csv_summary = TRUE;
-	if (!csv_summary)
-		return;
-
-	f = OpenFile(SW_F_name(eOutputMonthly), "w");
-	f_soil = OpenFile(SW_F_name(eOutputMonthly_soil), "w");
-
-	buf[0] = '\0';
-
-	*buf = '\0';
-
-	fprintf(f, "%s\n", buf);
-	fprintf(f_soil, "%s\n", buf);
-	CloseFile(&f);
-	CloseFile(&f_soil);
+	SW_Output_Files.fp_mo = OpenFile(SW_F_name(eOutputMonthly), "w");
+	SW_Output_Files.fp_mo_soil = OpenFile(SW_F_name(eOutputMonthly_soil), "w");
 
 }
 
@@ -223,32 +157,8 @@ void stat_Output_Monthly_CSV_Summary()
 /***********************************************************/
 void stat_Output_Yearly_CSV_Summary()
 {
-
 	SW_Output_Files.fp_yr = OpenFile(SW_F_name(eOutputYearly), "w");
 	SW_Output_Files.fp_yr_soil = OpenFile(SW_F_name(eOutputYearly_soil), "w");
-
-	char buf[1024], tbuf[80];
-
-	FILE *f;
-	FILE *f_soil;
-	Bool csv_summary = TRUE;
-	if (!csv_summary)
-		return;
-
-	f = OpenFile(SW_F_name(eOutputYearly), "w");
-	f_soil = OpenFile(SW_F_name(eOutputYearly_soil), "w");
-
-	buf[0] = '\0';
-
-	*buf = '\0';
-
-	fprintf(f, "%s\n", buf);
-	fprintf(f_soil, "%s\n", buf);
-	CloseFile(&f);
-	CloseFile(&f_soil);
-
-	fprintf(SW_Output_Files.fp_yr, "%s\n", buf);
-	fprintf(SW_Output_Files.fp_yr_soil, "%s\n", buf);
 }
 
 static void _begin_year(void) {
