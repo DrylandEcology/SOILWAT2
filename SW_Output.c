@@ -2082,15 +2082,13 @@ static void get_swa(void)
 				}
 				if (bFlush) p++;
 
-				// store swc values
-				SXW.swc[Ilp(i,p)] = val;
-				SXW.SWCoriginal[p][i] = val; // i:layer p: timestep (day, week, month)
-
 				// convert SWCbulk to SWAbulk (not done in SWAbulk since that is not called from STEPPE)
-				SXW.SWAbulk_forb[p][i] = val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
-				SXW.SWAbulk_tree[p][i] = val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-				SXW.SWAbulk_shrub[p][i] = val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-				SXW.SWAbulk_grass[p][i] = val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+				SXW.SWAbulk_forb[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
+				SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+				SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+				SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+				sprintf(str, ",%7.6f,%7.6f,%7.6f,%7.6f",SXW.SWAbulk_forb[p][i], SXW.SWAbulk_tree[p][i], SXW.SWAbulk_shrub[p][i], SXW.SWAbulk_grass[p][i]);
+				strcat(outstr, str);
 			}
 		}
 
@@ -2753,7 +2751,7 @@ static void get_transp(void)
 	{
 		ForEachSoilLayer(i)
 		{
-			sprintf(str, ",%7.6f", val[i])
+			sprintf(str, ",%7.6f", val[i]);
 			strcat(outstr, str);
 		}
 	}
@@ -2827,7 +2825,7 @@ static void get_transp(void)
 	{
 		ForEachSoilLayer(i)
 		{
-			sprintf(str, ",%7.6f", val[i])
+			sprintf(str, ",%7.6f", val[i]);
 			strcat(outstr, str);
 		}
 	}
@@ -2901,7 +2899,7 @@ static void get_transp(void)
 	{
 		ForEachSoilLayer(i)
 		{
-			sprintf(str, ",%7.6f", val[i])
+			sprintf(str, ",%7.6f", val[i]);
 			strcat(outstr, str);
 		}
 	}
@@ -2981,7 +2979,7 @@ static void get_transp(void)
 	{
 		ForEachSoilLayer(i)
 		{
-			sprintf(str, ",%7.6f", val[i])
+			sprintf(str, ",%7.6f", val[i]);
 			strcat(outstr, str);
 		}
 	}
