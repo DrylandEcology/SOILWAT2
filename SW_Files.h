@@ -16,7 +16,7 @@
 #ifndef SW_FILES_H
 	#define SW_FILES_H
 
-#define SW_NFILES 19
+#define SW_NFILES 23
 #ifdef RSOILWAT
 	#include <R.h>
 #include <Rdefines.h>

@@ -96,15 +96,6 @@ void SW_CTL_init_model(const char *firstfile) {
 
 	_read_inputs();
 
-	// creating files here instead of in SW_CTL_run_current_year because this is only run once and wont overwrite
-	// also only checking for RSOILWAT and not STEPWAT since STEPWAT does not use this function and creates these files itself
-	/*#ifndef RSOILWAT
-	 stat_Output_Daily_CSV_Summary();
-	 stat_Output_Weekly_CSV_Summary();
-	 stat_Output_Monthly_CSV_Summary();
-	 stat_Output_Yearly_CSV_Summary();
- #endif*/
-
 }
 
 void SW_CTL_run_current_year(void) {
@@ -130,35 +121,88 @@ void SW_CTL_run_current_year(void) {
 
 //This function will create daily
 /***********************************************************/
-void stat_Output_Daily_CSV_Summary()
+void stat_Output_Daily_CSV_Summary(char fileType)
 {
-	SW_Output_Files.fp_dy = OpenFile(SW_F_name(eOutputDaily), "w");
-	SW_Output_Files.fp_dy_soil = OpenFile(SW_F_name(eOutputDaily_soil), "w");
+	// get file name as string
+	char *newFile = SW_F_name(eOutputDaily);
+	char *newFileSoil = SW_F_name(eOutputDaily_soil);
+
+	// give file proper extension
+	if(fileType == ','){
+		strcat(newFile, ".csv");
+		strcat(newFileSoil, ".csv");
+	}
+	else{
+		strcat(newFile, ".txt");
+		strcat(newFileSoil, ".txt");
+	}
+
+	// open file and save it in structure
+	SW_Output_Files.fp_dy = OpenFile(newFile, "w");
+	SW_Output_Files.fp_dy_soil = OpenFile(newFileSoil, "w");
 }
 
 //This function will create Weekly
 /***********************************************************/
-void stat_Output_Weekly_CSV_Summary()
+void stat_Output_Weekly_CSV_Summary(char fileType)
 {
-	SW_Output_Files.fp_wk = OpenFile(SW_F_name(eOutputWeekly), "w");
-	SW_Output_Files.fp_wk_soil = OpenFile(SW_F_name(eOutputWeekly_soil), "w");
+	char *newFile = SW_F_name(eOutputWeekly);
+	char *newFileSoil = SW_F_name(eOutputWeekly_soil);
+
+	if(fileType == ','){
+		strcat(newFile, ".csv");
+		strcat(newFileSoil, ".csv");
+	}
+	else{
+		strcat(newFile, ".txt");
+		strcat(newFileSoil, ".txt");
+	}
+
+	SW_Output_Files.fp_wk = OpenFile(newFile, "w");
+	SW_Output_Files.fp_wk_soil = OpenFile(newFileSoil, "w");
 }
 
 //This function will create Monthly
 /***********************************************************/
-void stat_Output_Monthly_CSV_Summary()
+void stat_Output_Monthly_CSV_Summary(char fileType)
 {
-	SW_Output_Files.fp_mo = OpenFile(SW_F_name(eOutputMonthly), "w");
-	SW_Output_Files.fp_mo_soil = OpenFile(SW_F_name(eOutputMonthly_soil), "w");
+	char *newFile = SW_F_name(eOutputMonthly);
+	char *newFileSoil = SW_F_name(eOutputMonthly_soil);
+
+	if(fileType == ','){
+		strcat(newFile, ".csv");
+		strcat(newFileSoil, ".csv");
+	}
+	else{
+		strcat(newFile, ".txt");
+		strcat(newFileSoil, ".txt");
+	}
+
+	SW_Output_Files.fp_mo = OpenFile(newFile, "w");
+	SW_Output_Files.fp_mo_soil = OpenFile(newFileSoil, "w");
 
 }
 
 //This function will create Yearly
 /***********************************************************/
-void stat_Output_Yearly_CSV_Summary()
+void stat_Output_Yearly_CSV_Summary(char fileType)
 {
+	/*char *newFile2 = SW_F_name(eOutputYearly);
+	char *newFileSoil2 = SW_F_name(eOutputYearly_soil);
+
+	if(fileType == ','){
+		strcat(newFile2, ".csv");
+		strcat(newFileSoil2, ".csv");
+	}
+	else{
+		strcat(newFile2, ".txt");
+		strcat(newFileSoil2, ".txt");
+	}*/
+
 	SW_Output_Files.fp_yr = OpenFile(SW_F_name(eOutputYearly), "w");
 	SW_Output_Files.fp_yr_soil = OpenFile(SW_F_name(eOutputYearly_soil), "w");
+	//SW_Output_Files.fp_yr = OpenFile(newFile2, "w");
+	//SW_Output_Files.fp_yr_soil = OpenFile(newFileSoil2, "w");
 }
 
 static void _begin_year(void) {
