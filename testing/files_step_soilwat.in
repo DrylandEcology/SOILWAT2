@@ -24,5 +24,15 @@ Input/estab_v32.in	# plant establishment start file
 Input/swcsetup.in	# params for handling measured swc
 
 #Output
-../../sw_src/testing/Output/	# 'relative' path for output files: / for same directory, or e.g., Output/
+Output/	# 'relative' path for output files: / for same directory, or e.g., Output/
 Input/outsetup_v31.in	# define output quantities
+Output/soilwat_csv/daily.csv	#output
+Output/soilwat_csv/weekly.csv	#output
+Output/soilwat_csv/monthly.csv	#output
+Output/soilwat_csv/yearly.csv	#output
+
+Output/soilwat_csv/daily_soil.csv	#output
+Output/soilwat_csv/weekly_soil.csv	#output
+Output/soilwat_csv/monthly_soil.csv	#output
+Output/soilwat_csv/yearly_soil.csv	#output
+
