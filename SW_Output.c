@@ -734,7 +734,7 @@ void SW_OUT_read(void)
 						break;
 					}
 					strcat(str, Str_ToLower(period, ext));
-					SW_Output[k].outfile = (char *) Str_Dup(str);
+					//SW_Output[k].outfile = (char *) Str_Dup(str); // dont need since not writing to these files anymore
 
 #elif defined(STEPWAT)
 					if (isPartialSoilwatOutput == FALSE)
@@ -767,7 +767,7 @@ void SW_OUT_read(void)
 							break;
 						}
 						strcat(str, Str_ToLower(period, ext));
-						SW_Output[k].outfile = (char *) Str_Dup(str);
+						//SW_Output[k].outfile = (char *) Str_Dup(str);
 					}
 #endif
 				}
