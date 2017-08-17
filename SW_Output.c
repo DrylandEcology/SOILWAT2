@@ -220,9 +220,10 @@ extern unsigned int yr_nrow, mo_nrow, wk_nrow, dy_nrow;
 #ifdef STEPWAT
 #include "../sxw.h"
 extern SXW_t SXW; // structure to store values in and pass back to STEPPE
+Bool isPartialSoilwatOutput = FALSE;
 #endif
 
-Bool isPartialSoilwatOutput = FALSE;
+//Bool isPartialSoilwatOutput = FALSE;
 
 /* =================================================== */
 /*                Module-Level Variables               */
@@ -540,8 +541,6 @@ void SW_OUT_read(void)
 		x = sscanf(inbuf, "%s %s %s %d %s %s", keyname, sumtype, period, &first,
 				last, outfile);
 
-
-
 		if (Str_CompareI(keyname, "TIMESTEP") == 0)	// condition to read in the TIMESTEP line in outsetup.in
 		{
 			numPeriod = sscanf(inbuf, "%s %s %s %s %s", keyname, timeStep[0],
@@ -560,33 +559,37 @@ void SW_OUT_read(void)
 
 				// create file for defined timesteps
 				if(dayCheck != NULL)
-					stat_Output_Daily_CSV_Summary(_Sep);
+					stat_Output_Daily_CSV_Summary();
 				if(weekCheck != NULL)
-				 	stat_Output_Weekly_CSV_Summary(_Sep);
+				 	stat_Output_Weekly_CSV_Summary();
 				if(monthCheck != NULL)
-					stat_Output_Monthly_CSV_Summary(_Sep);
-				if(monthCheck != NULL)
-					stat_Output_Yearly_CSV_Summary(_Sep);
+					stat_Output_Monthly_CSV_Summary();
+				if(yearCheck != NULL)
+					stat_Output_Yearly_CSV_Summary();
 
 			#elif defined(STEPWAT)
-								if (isPartialSoilwatOutput == FALSE)
-								{
-									// check if these timesteps are defined (strstr checks for substrings)
-									char *dayCheck = strstr(inbuf, "dy");
-									char *weekCheck = strstr(inbuf, "wk");
-									char *monthCheck = strstr(inbuf, "mo");
-									char *yearCheck = strstr(inbuf, "yr");
+				if (isPartialSoilwatOutput == FALSE)
+				{
+					SXW.tempInt++;
+					//printf("SXW.tempInt: %d\n", SXW.tempInt);
+					if(SXW.tempInt == 1){
+						// check if these timesteps are defined (strstr checks for substrings)
+						char *dayCheck = strstr(inbuf, "dy");
+						char *weekCheck = strstr(inbuf, "wk");
+						char *monthCheck = strstr(inbuf, "mo");
+						char *yearCheck = strstr(inbuf, "yr");
 
-									// create file for defined timesteps
-									if(dayCheck != NULL)
-										stat_Output_Daily_CSV_Summary(_Sep);
-									if(weekCheck != NULL)
-									 	stat_Output_Weekly_CSV_Summary(_Sep);
-									if(monthCheck != NULL)
-										stat_Output_Monthly_CSV_Summary(_Sep);
-									if(monthCheck != NULL)
-										stat_Output_Yearly_CSV_Summary(_Sep);
-								}
+						// create file for defined timesteps
+						if(dayCheck != NULL)
+							stat_Output_Daily_CSV_Summary();
+						if(weekCheck != NULL)
+						 	stat_Output_Weekly_CSV_Summary();
+						if(monthCheck != NULL)
+							stat_Output_Monthly_CSV_Summary();
+						if(yearCheck != NULL)
+							stat_Output_Yearly_CSV_Summary();
+					}
+				}
 			#endif
 
 			continue;
@@ -695,85 +698,6 @@ void SW_OUT_read(void)
 #ifdef RSOILWAT
 		SW_Output[k].outfile = (char *) Str_Dup(outfile); //not really applicable
 #endif
-		for (i = 0; i < numPeriods; i++)
-		{ /* for loop to create files for all the periods that are being used */
-			/* prepare the remaining structure if use==true */
-			if (SW_Output[k].use)
-			{
-				if (timeSteps[k][i] < 4)
-				{
-				//	printf( "inside Soilwat SW_Output.c : isPartialSoilwatOutput=%d \n", isPartialSoilwatOutput);
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-					SW_OutputPrefix(prefix);
-					//printf("outfile: %s\n", outfile);
-					strcpy(str, prefix);
-					strcat(str, outfile);
-					strcat(str, ".");
-					// without this switch statement the only files created are the ones strictly defined in the outsetup.in file with the timestep provided under the PERIOD column
-					switch (timeSteps[k][i])
-					{ //depending on iteration through, will determine what period to use from the array of period
-					case eSW_Day:
-						period[0] = 'd';
-						period[1] = 'y';
-						period[2] = '\0';
-						break;
-					case eSW_Week:
-						period[0] = 'w';
-						period[1] = 'k';
-						period[2] = '\0';
-						break;
-					case eSW_Month:
-						period[0] = 'm';
-						period[1] = 'o';
-						period[2] = '\0';
-						break;
-					case eSW_Year:
-						period[0] = 'y';
-						period[1] = 'r';
-						period[2] = '\0';
-						break;
-					}
-					strcat(str, Str_ToLower(period, ext));
-					//SW_Output[k].outfile = (char *) Str_Dup(str); // dont need since not writing to these files anymore
-
-#elif defined(STEPWAT)
-					if (isPartialSoilwatOutput == FALSE)
-					{
-						SW_OutputPrefix(prefix);
-						strcpy(str, prefix);
-						strcat(str, outfile);
-						strcat(str, ".");
-						switch (timeSteps[k][i])
-						{ // depending on iteration through, will determine what period to use from the array of period
-							case eSW_Day:
-							period[0] = 'd';
-							period[1] = 'y';
-							period[2] = '\0';
-							break;
-							case eSW_Week:
-							period[0] = 'w';
-							period[1] = 'k';
-							period[2] = '\0';
-							break;
-							case eSW_Month:
-							period[0] = 'm';
-							period[1] = 'o';
-							period[2] = '\0';
-							break;
-							case eSW_Year:
-							period[0] = 'y';
-							period[1] = 'r';
-							period[2] = '\0';
-							break;
-						}
-						strcat(str, Str_ToLower(period, ext));
-						//SW_Output[k].outfile = (char *) Str_Dup(str);
-					}
-#endif
-				}
-			}
-		}
-
 	}
 	CloseFile(&f);
 
@@ -2118,23 +2042,32 @@ static void get_swa(void)
 				switch (pd)
 				{
 					case eSW_Day:
-					val = v->dysum.swcBulk[i];
-					break;
+						p = t->doy-1;
+						val = v->dysum.swcBulk[i];
+						break;
 					case eSW_Week:
-					val = v->wkavg.swcBulk[i];
-					break;
+						p = t->week-1;
+						val = v->wkavg.swcBulk[i];
+						break;
 					case eSW_Month:
-					val = v->moavg.swcBulk[i];
-					break;
-					case eSW_Year:
-					val = v->yravg.swcBulk[i];
-					break;
+						p = t->month-1;
+						val = v->moavg.swcBulk[i];
+						break;
+					/*case eSW_Year:
+						val = v->yravg.swcBulk[i];
+						break;*/
 				}
-				val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+				SXW.SWAbulk_forb[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
+				SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+				SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+				SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+
+				/*val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
 				val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
 				val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-				val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
-				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, val_forb, _Sep, val_tree, _Sep, val_shrub, _Sep, val_grass);
+				val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);*/
+				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_forb[p][i], _Sep, SXW.SWAbulk_tree[p][i], _Sep,
+				 SXW.SWAbulk_shrub[p][i], _Sep, SXW.SWAbulk_grass[p][i]);
 				strcat(outstr, str);
 			}
 
@@ -2167,9 +2100,6 @@ static void get_swa(void)
 				SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
 				SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
 				SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
-				SXW.SWATotal[p][i] += (SXW.SWAbulk_forb[p][i] + SXW.SWAbulk_tree[p][i] + SXW.SWAbulk_shrub[p][i] + SXW.SWAbulk_grass[p][i]);
-				//sprintf(str, ",%7.6f,%7.6f,%7.6f,%7.6f",SXW.SWAbulk_forb[p][i], SXW.SWAbulk_tree[p][i], SXW.SWAbulk_shrub[p][i], SXW.SWAbulk_grass[p][i]);
-				//strcat(outstr, str);
 			}
 		}
 
