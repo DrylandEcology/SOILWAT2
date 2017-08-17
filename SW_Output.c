@@ -223,8 +223,6 @@ extern SXW_t SXW; // structure to store values in and pass back to STEPPE
 Bool isPartialSoilwatOutput = FALSE;
 #endif
 
-//Bool isPartialSoilwatOutput = FALSE;
-
 /* =================================================== */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
@@ -548,6 +546,7 @@ void SW_OUT_read(void)
 			numPeriod--;// decrement the count to make sure to not count keyname in the number of periods
 			useTimeStep = 1;
 
+
 			// Create Timestep files defined in outsetup.in
 			//#ifndef RSOILWAT
 			#if !defined(STEPWAT) && !defined(RSOILWAT)
@@ -570,9 +569,8 @@ void SW_OUT_read(void)
 			#elif defined(STEPWAT)
 				if (isPartialSoilwatOutput == FALSE)
 				{
-					SXW.tempInt++;
-					//printf("SXW.tempInt: %d\n", SXW.tempInt);
-					if(SXW.tempInt == 1){
+					//SXW.tempInt++;
+					//if(SXW.tempInt != 1){ // only want to create files one time, not every iteration
 						// check if these timesteps are defined (strstr checks for substrings)
 						char *dayCheck = strstr(inbuf, "dy");
 						char *weekCheck = strstr(inbuf, "wk");
@@ -588,7 +586,7 @@ void SW_OUT_read(void)
 							stat_Output_Monthly_CSV_Summary();
 						if(yearCheck != NULL)
 							stat_Output_Yearly_CSV_Summary();
-					}
+					//}
 				}
 			#endif
 
@@ -628,6 +626,7 @@ void SW_OUT_read(void)
 			k = str2key(Str_ToUpper(keyname, upkey));
 			for (i = 0; i < numPeriods; i++)
 			{
+				//printf("timeSteps[%d][%d]: %d\n", k,i,timeSteps[k][i]);
 				if (i < 1 && !useTimeStep)
 				{
 					int prd = str2period(Str_ToUpper(period, ext));
@@ -968,6 +967,7 @@ void SW_OUT_close_files(void)
 		int i;
 		for (i = 0; i < numPeriods; i++) /*will loop through for as many periods are being used*/
 		{
+			//printf("timeSteps[%d][%d]: %d\n", k,i,timeSteps[k][i]);
 			if (timeSteps[k][i] < 4)
 			{
 				switch (timeSteps[k][i])
@@ -1299,6 +1299,9 @@ void SW_OUT_write_today(void)
 				}
 
 #elif defined(STEPWAT)
+				// problem with this is that it checks if(k+1 == SW_OUTNKEYS) and thats when it writes the output
+				// K is referencing the variables that are set to be used so only the 6 variables in the outsetup file
+				// need to loop through these and then check if it is on the last variable before starting over (in this case SWA)
 				if (isPartialSoilwatOutput == FALSE)
 				{
 					switch (timeSteps[k][i])
