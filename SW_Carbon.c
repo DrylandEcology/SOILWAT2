@@ -44,6 +44,28 @@ SW_VEGPROD SW_VegProd;  // Declared here, externed elsewhere
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
 
+/**
+ * Initializes the multiplier values in the SW_CARBON structure
+ * @note The spin-up year has been known to have the multipliers equal
+ *       to 0 without this constructor
+ */
+void SW_CBN_construct(void)
+{
+	memset(&SW_Carbon, 0, sizeof(SW_Carbon));
+
+	SW_CARBON *c = &SW_Carbon;
+	int i;
+	
+	for (i = 0; i < MAX_CO2_YEAR; i++)
+	{
+		c->co2_multipliers[0][i] = 1.0;
+		c->co2_multipliers[1][i] = 1.0;
+	}
+	
+	c->co2_biomass_mult = 1.0;
+	c->co2_wue_mult = 1.0;
+}
+
 /* A description on how these 'onGet' and 'onSet' functions work...
  * Summary: onGet instantiates the 'swCarbon' class and returns the object, and is only used once
  *          onSet extracts the value of the given object, and is used on both calls to SOILWAT2
@@ -79,8 +101,7 @@ void onSet_swCarbon(SEXP object) {
   strcpy(c->scenario, CHAR(STRING_ELT(GET_SLOT(object, install("Scenario")), 0)));  // e.g. c->scenario = "RCP85"
 }
 #endif
-
-
+		
 /**
  * Calculates the multipliers for biomass and the transpiration
  * equation. If a multiplier is disabled, its value is set to 1. All the years
@@ -88,6 +109,7 @@ void onSet_swCarbon(SEXP object) {
  * SOILWAT will read siteparam.in for settings.
  */
 void calculate_CO2_multipliers(void) {
+  int i;
   FILE *f;
   char scenario[64];
   double ppm;
@@ -98,31 +120,26 @@ void calculate_CO2_multipliers(void) {
   MyFileName     = SW_F_name(eCarbon);
   f              = OpenFile(MyFileName, "r");
 
-  // Read carbon.in
+  /* Calculate multipliers by reading carbon.in */
   while (GetALine(f, inbuf)) {
-	// Scan for the year first, because if the year is 0 it marks a change in the scenario
+	// Read the year standalone because if it's 0 it marks a change in the scenario,
+	// in which case we'll need to read in a string instead of an int
 	sscanf(inbuf, "%d", &year);
-	  
-	// We found a scenario, do we want this one?
+	
+	// Find scenario
 	if (year == 0)
 	{
       sscanf(inbuf, "%d %63s", &year, scenario);
-	  continue;
+	  continue;  // Skip to the PPM values
 	}
-
-	// NO, keep searching
 	if (strcmp(scenario, c->scenario) != 0)
-	  continue;
+	  continue;  // Keep searching for the right scenario
   
-	// YES, calculate multipliers
-	sscanf(inbuf, "%d %lf", &year, &ppm);
-    c->co2_multipliers[0][year] = 1.0;
-    c->co2_multipliers[1][year] = 1.0;
+    sscanf(inbuf, "%d %lf", &year, &ppm);
 	if (c->use_bio_mult) c->co2_multipliers[0][year] = v->co2_biomass_1  * pow(ppm, v->co2_biomass_2);
 	if (c->use_sto_mult) c->co2_multipliers[1][year] = v->co2_stomatal_1 * pow(ppm, v->co2_stomatal_2);
   }
 }
-
 
 /**
  * Applies CO2 effects to supplied biomass data. Two parameters are needed so that
@@ -134,7 +151,6 @@ void apply_CO2(double new_biomass[], double biomass[]) {
   int i;
   SW_CARBON  *c  = &SW_Carbon;
 
-  if (c->co2_biomass_mult == 0) c->co2_biomass_mult = 1.0;  // The start-up year has a multiplier of 0 since it has not calculated the multipliers yet
   for (i = 0; i < 12; i++) {
     new_biomass[i] = (biomass[i] * c->co2_biomass_mult);
   }

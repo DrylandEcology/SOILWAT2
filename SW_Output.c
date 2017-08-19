@@ -1209,7 +1209,7 @@ void SW_OUT_write_today(void)
 	int i;
 	
 	// Adjust the model year to match simulation years for the output
-  SW_Model.year += SW_Carbon.addtl_yr;
+    SW_Model.year += SW_Carbon.addtl_yr;
   
 	ForEachOutKey(k)
 	{

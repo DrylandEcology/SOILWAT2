@@ -8,21 +8,22 @@
  */
 #ifndef CARBON
   #define CARBON
-
-  typedef struct {
+  #define MAX_CO2_YEAR 3000  // Include all years that our PPM sources might provide data for
+  
+  typedef struct {	
     int
-    addtl_yr,                  // Added to SW_Model.year to get the future year we're simulating
-    use_sto_mult,              // Determine which multipliers we will be calculating...
+    addtl_yr,                          // Added to SW_Model.year to get the future year we're simulating
+    use_sto_mult,                      // Determine which multipliers we will be calculating...
     use_bio_mult;
 
     double
-    carbon[2],                 // Hold misc. data
-    co2_biomass_mult,          // The biomass multiplier (yearly)
-    co2_wue_mult,              // The stomatal multiplier (yearly)
-    co2_multipliers[2][3000];  // Holds the above multipliers for every year, accessed directly (e.g. biomass multiplier for 1982 is co2_multipliers[1][1982])
-
+    carbon[2],                         // Hold misc. data
+    co2_multipliers[2][MAX_CO2_YEAR],  // Holds the above multipliers for every year, accessed directly (e.g. biomass multiplier for 1982 is co2_multipliers[1][1982])
+	co2_biomass_mult,                  // The biomass multiplier (yearly)
+    co2_wue_mult;                      // The stomatal multiplier (yearly)
+	
 	char
-	scenario[64];              // The scenario we are extracting PPM from
+	scenario[64];                      // The scenario we are extracting PPM from
   } SW_CARBON;
 
   /* Function Declarations */
@@ -31,7 +32,7 @@
     void onSet_swCarbon(SEXP object);
 
   #endif
-
+  void SW_CBN_construct(void);
   void apply_CO2(double* new_biomass, double *biomass);
   void calculate_CO2_multipliers(void);
 

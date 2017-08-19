@@ -95,6 +95,7 @@ void SW_CTL_init_model(const char *firstfile) {
 	SW_OUT_construct();
 	SW_SWC_construct();
 	SW_FLW_construct();
+	SW_CBN_construct();
 
 	_read_inputs();
 
@@ -200,8 +201,8 @@ static void _read_inputs(void) {
 		//Rprintf("swOutput\n");
 		onSet_SW_SWC(GET_SLOT(InputData,install("swc")));
 		//Rprintf("swSWC\n");
-    onSet_swCarbon(GET_SLOT(InputData, install("carbon")));
-    //Rprintf("swCarbon\n");
+		onSet_swCarbon(GET_SLOT(InputData, install("carbon")));
+		//Rprintf("swCarbon\n");
 	}
 #endif
   // This will work in both RSOILWAT and SOILWAT

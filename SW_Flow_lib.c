@@ -853,8 +853,6 @@ void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, 
 			shadeaf = 1.0;
 		}
 
-		if (c->co2_wue_mult == 0) c->co2_wue_mult = 1.0;  // The start-up year has a multiplier of 0 since it has not calculated the multipliers yet
-
 		*bstrate = watrate(swpavg, petday, swp_shift, swp_shape,
 							   swp_inflec, swp_range) * shadeaf * petday * fbst * c->co2_wue_mult;
 	}
