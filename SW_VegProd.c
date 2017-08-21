@@ -1214,7 +1214,7 @@ void SW_VPD_init(void) {
 	/* Apply this year's CO2 effects */
 	year = m->year + c->addtl_yr;
 	c->co2_biomass_mult = c->co2_multipliers[0][year];
-	c->co2_wue_mult     = c->co2_multipliers[1][year];
+	c->co2_wue_mult = c->co2_multipliers[1][year];
 
 	if (GT(v->fractionGrass, 0.)) {
 	  apply_CO2(v->grass.CO2_biomass, v->grass.biomass);

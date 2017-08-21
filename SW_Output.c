@@ -1341,81 +1341,145 @@ void get_co2effects(void) {
 	// Define variables
 	SW_CARBON *c = &SW_Carbon;
 	int i, month;
-	RealD grass, shrub, tree, forb, total, BIO_mult, WUE_mult;
-	grass = shrub = tree = forb = total = BIO_mult = WUE_mult = SW_MISSING;
-  #ifndef RSOILWAT
-    char str[OUTSTRLEN];
-    get_outstrleader(pd);
-  #endif	
+	RealD grassBiomass, shrubBiomass, treeBiomass, forbBiomass, totalBiomass;
+	RealD grassBiolive, shrubBiolive, treeBiolive, forbBiolive, totalBiolive;
+	RealD BIO_mult, WUE_mult;
+	grassBiomass = shrubBiomass = treeBiomass = forbBiomass = totalBiomass = 0;
+	grassBiolive = shrubBiolive = treeBiolive = forbBiolive = totalBiolive = 0;
+	BIO_mult = WUE_mult = 0;
+	
+	#ifndef RSOILWAT
+		char str[OUTSTRLEN];
+		get_outstrleader(pd);
+	#endif	
 
 	switch(pd) {
 		case eSW_Month:
-		  month = (SW_Model.month) - tOffset;
-		  grass = SW_VegProd.grass.CO2_biomass[month];
-		  shrub = SW_VegProd.shrub.CO2_biomass[month];
-		  tree = SW_VegProd.tree.CO2_pct_live[month];  // Only pct live is affected
-		  forb = SW_VegProd.forb.CO2_biomass[month];
-		  BIO_mult = c->co2_biomass_mult;
-		  WUE_mult = c->co2_wue_mult;
-		  total = grass + shrub + forb;
+			month = (SW_Model.month) - tOffset;
+			if (GT(SW_VegProd.fractionGrass, 0.))
+			{
+				grassBiomass = SW_VegProd.grass.CO2_biomass[month];
+				grassBiolive = grassBiomass * SW_VegProd.grass.pct_live[month];
+			}
+			if (GT(SW_VegProd.fractionShrub, 0.))
+			{
+				shrubBiomass = SW_VegProd.shrub.CO2_biomass[month];
+				shrubBiolive = shrubBiomass * SW_VegProd.shrub.pct_live[month];
+			}
+			if (GT(SW_VegProd.fractionTree, 0.))
+			{
+				treeBiomass = SW_VegProd.tree.biomass[month];
+				treeBiolive = treeBiomass * SW_VegProd.tree.CO2_pct_live[month];
+			}
+			if (GT(SW_VegProd.fractionForb, 0.))
+			{
+				forbBiomass = SW_VegProd.forb.CO2_biomass[month];
+				forbBiolive = forbBiomass * SW_VegProd.forb.pct_live[month];
+			}
+
+			totalBiomass = grassBiomass + shrubBiomass + treeBiomass + forbBiomass;
+			totalBiolive = grassBiolive + shrubBiolive + treeBiolive + forbBiolive;
+			BIO_mult = c->co2_biomass_mult;
+			WUE_mult = c->co2_wue_mult;
 		  
 			#ifdef RSOILWAT
 				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 0] = SW_Model.year;
 				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 1] = month + 1;
-				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 2] = grass;
-				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 3] = shrub;
-				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 4] = tree;
-				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 5] = forb;
-				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 6] = total;
-				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 7] = BIO_mult;
-				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 8] = WUE_mult;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 2] = grassBiomass;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 3] = shrubBiomass;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 4] = treeBiomass;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 5] = forbBiomass;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 6] = totalBiomass;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 7] = grassBiolive;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 8] = shrubBiolive;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 9] = treeBiolive;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 10] = forbBiolive;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 11] = totalBiolive;				
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 12] = BIO_mult;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 13] = WUE_mult;
 				SW_Output[eSW_CO2Effects].mo_row++;
 			#endif
 			break;
 
-  	case eSW_Year:
-  	  // Year avg could be done elsewhere, but it is only used in output so let's compute it here
-  	  grass = 0;
-  	  shrub = 0;
-  	  tree = 0;
-  	  forb = 0;
-  	  for (i = 0; i < 12; i++) {
-  	    grass += SW_VegProd.grass.CO2_biomass[i];
-  	    shrub += SW_VegProd.shrub.CO2_biomass[i];
-  	    tree += SW_VegProd.tree.CO2_pct_live[i];  // Only pct live is affected
-  	    forb += SW_VegProd.forb.CO2_biomass[i];
-  	  }
-  	  grass /= 12;
-  	  shrub /= 12;
-  	  tree  /= 12;
-  	  forb  /= 12;
-  	  total = grass + shrub + forb;
-  	  BIO_mult = c->co2_biomass_mult;
-  	  WUE_mult = c->co2_wue_mult;
-  	  
-      #ifdef RSOILWAT
-    	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 0] = SW_Model.year;
-    	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 1] = grass;
-    	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 2] = shrub;
-    	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 3] = tree;
-    	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 4] = forb;
-    	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 5] = total;
-    	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 6] = BIO_mult;
-    	  p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 7] = WUE_mult;
-    	  SW_Output[eSW_CO2Effects].yr_row++;
-      #endif
-  	  break;
+		case eSW_Year:
+			// Year avg could be done elsewhere, but it is only used in output so let's compute it here
+			for (i = 0; i < 12; i++) {
+				if (GT(SW_VegProd.fractionGrass, 0.))
+				{
+					grassBiomass += SW_VegProd.grass.CO2_biomass[i];
+					grassBiolive += grassBiomass * SW_VegProd.grass.pct_live[i];
+				}
+				if (GT(SW_VegProd.fractionShrub, 0.))
+				{
+					shrubBiomass += SW_VegProd.shrub.CO2_biomass[i];
+					shrubBiolive += shrubBiomass * SW_VegProd.shrub.pct_live[i];
+				}
+				if (GT(SW_VegProd.fractionTree, 0.))
+				{
+				  treeBiomass += SW_VegProd.tree.biomass[i];
+				  treeBiolive += treeBiomass * SW_VegProd.tree.CO2_pct_live[i];
+				}
+				if (GT(SW_VegProd.fractionForb, 0.))
+				{
+					forbBiomass += SW_VegProd.forb.CO2_biomass[i];
+					forbBiolive += forbBiomass * SW_VegProd.forb.pct_live[i];
+				}
+			}
+			
+			grassBiomass /= 12;
+			shrubBiomass /= 12;
+			treeBiomass  /= 12;
+			forbBiomass  /= 12;
+			grassBiolive /= 12;
+			shrubBiolive /= 12;
+			treeBiolive /= 12;
+			forbBiolive /= 12;
+			totalBiomass = grassBiomass + shrubBiomass + treeBiomass + forbBiomass;
+			totalBiolive = grassBiolive + shrubBiolive + treeBiolive + forbBiolive;
+			BIO_mult = c->co2_biomass_mult;
+			WUE_mult = c->co2_wue_mult;
+		  
+			#ifdef RSOILWAT
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 0] = SW_Model.year;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 1] = grassBiomass;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 2] = shrubBiomass;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 3] = treeBiomass;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 4] = forbBiomass;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 5] = totalBiomass;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 6] = grassBiolive;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 7] = shrubBiolive;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 8] = treeBiolive;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 9] = forbBiolive;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 10] = totalBiolive;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 11] = BIO_mult;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 12] = WUE_mult;
+				SW_Output[eSW_CO2Effects].yr_row++;
+			#endif
+			break;
 
 		// We are not interested in other results as they are just derivations and can be determined outside SOILWAT
 		case eSW_Day:
 			break;
 		case eSW_Week:
 			break;
-		}
-  #ifndef RSOILWAT
-    sprintf(str, "%c%f%c%f%c%f%c%f%c%f%c%f%c%f", _Sep, grass, _Sep, shrub, _Sep, tree, _Sep, forb, _Sep, total, _Sep, BIO_mult, _Sep, WUE_mult);
-	  strcat(outstr, str);
-  #endif
+	}
+	
+	#ifndef RSOILWAT
+		sprintf(str, "%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f", 
+		_Sep, grassBiomass, 
+		_Sep, shrubBiomass, 
+		_Sep, treeBiomass, 
+		_Sep, forbBiomass, 
+		_Sep, totalBiomass,
+		_Sep, grassBiolive,
+		_Sep, shrubBiolive,
+		_Sep, treeBiolive,
+		_Sep, forbBiolive,
+		_Sep, totalBiolive,
+		_Sep, BIO_mult, 
+		_Sep, WUE_mult);
+		strcat(outstr, str);
+	#endif
 }
 
 static void get_estab(void)

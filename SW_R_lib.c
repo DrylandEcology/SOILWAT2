@@ -552,7 +552,7 @@ SEXP onGetOutput(SEXP inputData) {
 	Rsoil_temp_columns = tLayers;
 	Rallveg_columns = 0;
 	Restabs_columns = tVegEstabCount;
-	Rco2effects_columns = 7;
+	Rco2effects_columns = 12;
 	PROTECT(swOutput = MAKE_CLASS("swOutput"));
 	PROTECT(swOutput_Object = NEW_OBJECT(swOutput));
 
@@ -2745,11 +2745,16 @@ SEXP onGetOutput(SEXP inputData) {
 		SET_STRING_ELT(Rco2effects_names_y_mo, 1, mkChar("Month"));
 		SET_STRING_ELT(Rco2effects_names_y_mo, 2, mkChar("GrassBiomass"));
 		SET_STRING_ELT(Rco2effects_names_y_mo, 3, mkChar("ShrubBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 4, mkChar("TreePctLive"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 4, mkChar("TreeBiomass"));
 		SET_STRING_ELT(Rco2effects_names_y_mo, 5, mkChar("ForbBiomass"));
 		SET_STRING_ELT(Rco2effects_names_y_mo, 6, mkChar("TotalBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 7, mkChar("BiomassMultiplier"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 8, mkChar("WUEMultiplier"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 7, mkChar("GrassBiolive"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 8, mkChar("ShrubBiolive"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 9, mkChar("TreeBiolive"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 10, mkChar("ForbBiolive"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 11, mkChar("TotalBiolive"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 12, mkChar("BiomassMultiplier"));
+		SET_STRING_ELT(Rco2effects_names_y_mo, 13, mkChar("WUEMultiplier"));
 		SET_VECTOR_ELT(Rco2effects_names_mo, 1, Rco2effects_names_y_mo);
 		// Initialize to 0; allocMatrix does not initialize
 		for (k = 0; k < mo_nrow * (Rco2effects_columns + 2); k++)
@@ -2764,11 +2769,16 @@ SEXP onGetOutput(SEXP inputData) {
 		SET_STRING_ELT(Rco2effects_names_y_yr, 0, mkChar("Year"));
 		SET_STRING_ELT(Rco2effects_names_y_yr, 1, mkChar("GrassBiomass"));
 		SET_STRING_ELT(Rco2effects_names_y_yr, 2, mkChar("ShrubBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 3, mkChar("TreePctLive"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 3, mkChar("TreeBiomass"));
 		SET_STRING_ELT(Rco2effects_names_y_yr, 4, mkChar("ForbBiomass"));
 		SET_STRING_ELT(Rco2effects_names_y_yr, 5, mkChar("TotalBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 6, mkChar("BiomassMultiplier"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 7, mkChar("WUEMultiplier"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 6, mkChar("GrassBiolive"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 7, mkChar("ShrubBiolive"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 8, mkChar("TreeBiolive"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 9, mkChar("ForbBiolive"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 10, mkChar("TotalBiolive"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 11, mkChar("BiomassMultiplier"));
+		SET_STRING_ELT(Rco2effects_names_y_yr, 12, mkChar("WUEMultiplier"));
 		SET_VECTOR_ELT(Rco2effects_names_yr, 1, Rco2effects_names_y_yr);
 		// Initialize to 0; allocMatrix does not initialize
 		for (k = 0; k < yr_nrow * (Rco2effects_columns + 1); k++)
