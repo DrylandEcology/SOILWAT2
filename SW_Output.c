@@ -219,6 +219,7 @@ extern unsigned int yr_nrow, mo_nrow, wk_nrow, dy_nrow;
 
 #ifdef STEPWAT
 #include "../sxw.h"
+#include "../ST_globals.h"
 extern SXW_t SXW; // structure to store values in and pass back to STEPPE
 Bool isPartialSoilwatOutput = FALSE;
 #endif
@@ -505,6 +506,7 @@ void SW_OUT_read(void)
 	 *             so the code to open the file is blocked out.
 	 *             In fact, the only keys to process are
 	 *             TRANSP, PRECIP, and TEMP.
+	 * 22-August-17 - for STEPPE want to process TRANSP, PRECIP, TEMP, SWA, and (if debug on) AET and SWCBULK
 	 */
 	FILE *f;
 	OutKey k;
@@ -567,27 +569,26 @@ void SW_OUT_read(void)
 					stat_Output_Yearly_CSV_Summary();
 
 			#elif defined(STEPWAT)
+				//printf("Globals.currIter: %d\n", Globals.currIter);
 				if (isPartialSoilwatOutput == FALSE)
 				{
-					//SXW.tempInt++;
-					//if(SXW.tempInt != 1){ // only want to create files one time, not every iteration
-						// check if these timesteps are defined (strstr checks for substrings)
-						char *dayCheck = strstr(inbuf, "dy");
-						char *weekCheck = strstr(inbuf, "wk");
-						char *monthCheck = strstr(inbuf, "mo");
-						char *yearCheck = strstr(inbuf, "yr");
+					char *dayCheck = strstr(inbuf, "dy");
+					char *weekCheck = strstr(inbuf, "wk");
+					char *monthCheck = strstr(inbuf, "mo");
+					char *yearCheck = strstr(inbuf, "yr");
 
-						// create file for defined timesteps
-						if(dayCheck != NULL)
-							stat_Output_Daily_CSV_Summary();
-						if(weekCheck != NULL)
-						 	stat_Output_Weekly_CSV_Summary();
-						if(monthCheck != NULL)
-							stat_Output_Monthly_CSV_Summary();
-						if(yearCheck != NULL)
-							stat_Output_Yearly_CSV_Summary();
-					//}
+					// create file for defined timesteps
+					if(dayCheck != NULL)
+						stat_Output_Daily_CSV_Summary();
+					if(weekCheck != NULL)
+					 	stat_Output_Weekly_CSV_Summary();
+					if(monthCheck != NULL)
+						stat_Output_Monthly_CSV_Summary();
+					if(yearCheck != NULL)
+						stat_Output_Yearly_CSV_Summary();
 				}
+				else
+					useTimeStep = 0; // dont want to use the TIMESTEP if user doesnt ask for output
 			#endif
 
 			continue;
@@ -626,7 +627,6 @@ void SW_OUT_read(void)
 			k = str2key(Str_ToUpper(keyname, upkey));
 			for (i = 0; i < numPeriods; i++)
 			{
-				//printf("timeSteps[%d][%d]: %d\n", k,i,timeSteps[k][i]);
 				if (i < 1 && !useTimeStep)
 				{
 					int prd = str2period(Str_ToUpper(period, ext));
@@ -939,59 +939,71 @@ void SW_OUT_close_files(void)
 	{
 		if (timeSteps[k][i] < 4)
 		{
-			switch (timeSteps[k][i])
+			//switch (timeSteps[k][i])
+			switch(i)
 			{ /*depending on iteration through loop, will close one of the time step files */
-			case eSW_Day:
-				CloseFile(&SW_Output_Files.fp_dy);
-				CloseFile(&SW_Output_Files.fp_dy_soil);
-				break;
-			case eSW_Week:
-				CloseFile(&SW_Output_Files.fp_wk);
-				CloseFile(&SW_Output_Files.fp_wk_soil);
-				break;
-			case eSW_Month:
-				CloseFile(&SW_Output_Files.fp_mo);
-				CloseFile(&SW_Output_Files.fp_mo_soil);
-				break;
-			case eSW_Year:
-				CloseFile(&SW_Output_Files.fp_yr);
-				CloseFile(&SW_Output_Files.fp_yr_soil);
-				break;
+				case eSW_Day:
+					printf("closing day\n");
+					CloseFile(&SW_Output_Files.fp_dy);
+					CloseFile(&SW_Output_Files.fp_dy_soil);
+					break;
+				case eSW_Week:
+					printf("closing week\n");
+					CloseFile(&SW_Output_Files.fp_wk);
+					CloseFile(&SW_Output_Files.fp_wk_soil);
+					break;
+				case eSW_Month:
+					printf("closing month\n");
+					CloseFile(&SW_Output_Files.fp_mo);
+					CloseFile(&SW_Output_Files.fp_mo_soil);
+					break;
+				case eSW_Year:
+					printf("closing year\n");
+					CloseFile(&SW_Output_Files.fp_yr);
+					CloseFile(&SW_Output_Files.fp_yr_soil);
+					break;
 			}
 		}
 	}
 #elif defined(STEPWAT)
 	if (isPartialSoilwatOutput == FALSE)
 	{
-		OutKey k;
-		int i;
-		for (i = 0; i < numPeriods; i++) /*will loop through for as many periods are being used*/
+		if(Globals.currIter == Globals.runModelIterations) // only want to close at end of last iteration
 		{
-			//printf("timeSteps[%d][%d]: %d\n", k,i,timeSteps[k][i]);
-			if (timeSteps[k][i] < 4)
+			OutKey k;
+			int i;
+			for (i = 0; i < numPeriods; i++) /*will loop through for as many periods are being used*/
 			{
-				switch (timeSteps[k][i])
-				{ /*depending on iteration through loop, will close one of the time step files */
-				case eSW_Day:
-					CloseFile(&SW_Output_Files.fp_dy);
-					CloseFile(&SW_Output_Files.fp_dy_soil);
-					break;
-				case eSW_Week:
-					CloseFile(&SW_Output_Files.fp_wk);
-					CloseFile(&SW_Output_Files.fp_wk_soil);
-					break;
-				case eSW_Month:
-					CloseFile(&SW_Output_Files.fp_mo);
-					CloseFile(&SW_Output_Files.fp_mo_soil);
-					break;
-				case eSW_Year:
-					CloseFile(&SW_Output_Files.fp_yr);
-					CloseFile(&SW_Output_Files.fp_yr_soil);
-					break;
+				if (timeSteps[k][i] < 4)
+				{
+					//switch (timeSteps[k][i])
+					switch(i)
+					{ /*depending on iteration through loop, will close one of the time step files */
+					case eSW_Day:
+						printf("closing day\n");
+						CloseFile(&SW_Output_Files.fp_dy);
+						CloseFile(&SW_Output_Files.fp_dy_soil);
+						break;
+					case eSW_Week:
+						printf("closing week\n");
+						CloseFile(&SW_Output_Files.fp_wk);
+						CloseFile(&SW_Output_Files.fp_wk_soil);
+						break;
+					case eSW_Month:
+						printf("closing month\n");
+						CloseFile(&SW_Output_Files.fp_mo);
+						CloseFile(&SW_Output_Files.fp_mo_soil);
+						break;
+					case eSW_Year:
+						printf("closing year\n");
+						CloseFile(&SW_Output_Files.fp_yr);
+						CloseFile(&SW_Output_Files.fp_yr_soil);
+						break;
+					}
 				}
 			}
-		}
 	}
+}
 #endif
 }
 
@@ -1146,6 +1158,7 @@ void SW_OUT_write_today(void)
 	OutKey k;
 	Bool writeit;
 	int i;
+	int repeatValue = -1;
 
 	// timestep output vars
 	char *newoutStr;
@@ -1167,6 +1180,11 @@ void SW_OUT_write_today(void)
 		{ /* will run through this loop for as many periods are being used */
 			if (!SW_Output[k].use)
 				continue;
+
+			if(repeatValue == -1){
+				repeatValue = k;
+			}
+
 			if (timeSteps[k][i] < 4)
 			{
 				writeit = TRUE;
@@ -1364,9 +1382,7 @@ void SW_OUT_write_today(void)
 							col_status_mo++;
 						}
 
-						populate_output_values(reg_file_vals_month, soil_file_vals_month, k, 3);
-
-						if(k+1 == SW_OUTNKEYS){
+						if(k == repeatValue){
 							if(soil_file_vals_month[0] != 0){
 								fprintf(SW_Output_Files.fp_mo_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
 								memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
@@ -1376,6 +1392,19 @@ void SW_OUT_write_today(void)
 								memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
 							}
 						}
+
+						populate_output_values(reg_file_vals_month, soil_file_vals_month, k, 3);
+
+						/*if(k+1 == SW_OUTNKEYS){
+							if(soil_file_vals_month[0] != 0){
+								fprintf(SW_Output_Files.fp_mo_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
+								memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
+							}
+							if(reg_file_vals_month[0] != 0){
+								fprintf(SW_Output_Files.fp_mo, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, reg_file_vals_month);
+								memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
+							}
+						}*/
 						break;
 
 					case eSW_Year:
@@ -2064,6 +2093,7 @@ static void get_swa(void)
 				SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
 				SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
 				SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+
 
 				/*val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
 				val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
