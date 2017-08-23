@@ -239,6 +239,7 @@ int col_status_dy = 0;
 int col_status_wk = 0;
 int col_status_mo = 0;
 int col_status_yr = 0;
+int finalValue = 0;
 
 static Bool bFlush; /* process partial period ? */
 static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
@@ -348,7 +349,6 @@ void SW_OUT_construct(void)
 {
 	/* =================================================== */
 	OutKey k;
-
 	/* note that an initializer that is called during
 	 * execution (better called clean() or something)
 	 * will need to free all allocated memory first
@@ -489,7 +489,6 @@ void SW_OUT_new_year(void)
 			SW_Output[k].last = SW_Model.lastdoy;
 		else
 			SW_Output[k].last = SW_Output[k].last_orig;
-
 	}
 
 }
@@ -533,7 +532,7 @@ void SW_OUT_read(void)
 	f = OpenFile(MyFileName, "r");
 	itemno = 0;
 
-	_Sep = 'c'; /* default in case it doesn't show up in the file */
+	_Sep = ','; /* default in case it doesn't show up in the file */
 	while (GetALine(f, inbuf))
 	{
 		itemno++; /* note extra lines will cause an error */
@@ -569,8 +568,8 @@ void SW_OUT_read(void)
 					stat_Output_Yearly_CSV_Summary();
 
 			#elif defined(STEPWAT)
-				//printf("Globals.currIter: %d\n", Globals.currIter);
-				if (isPartialSoilwatOutput == FALSE)
+				//printf("Globals.currIter start: %d\n", Globals.currIter);
+				if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations-1)
 				{
 					char *dayCheck = strstr(inbuf, "dy");
 					char *weekCheck = strstr(inbuf, "wk");
@@ -966,10 +965,10 @@ void SW_OUT_close_files(void)
 		}
 	}
 #elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE)
+	if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
 	{
-		if(Globals.currIter == Globals.runModelIterations) // only want to close at end of last iteration
-		{
+		//if(Globals.currIter == Globals.runModelIterations) // only want to close at end of last iteration
+		//{
 			OutKey k;
 			int i;
 			for (i = 0; i < numPeriods; i++) /*will loop through for as many periods are being used*/
@@ -1002,7 +1001,7 @@ void SW_OUT_close_files(void)
 					}
 				}
 			}
-	}
+	//}
 }
 #endif
 }
@@ -1158,7 +1157,6 @@ void SW_OUT_write_today(void)
 	OutKey k;
 	Bool writeit;
 	int i;
-	int repeatValue = -1;
 
 	// timestep output vars
 	char *newoutStr;
@@ -1174,16 +1172,22 @@ void SW_OUT_write_today(void)
 	char *soil_file_vals_year[500]; // store
 	char *reg_file_vals_year[500]; // store
 
+	// get final value to be used
+	if(finalValue == 0){
+		ForEachOutKey(k){
+			if(SW_Output[k].use)
+				if(k>finalValue)
+					finalValue = k;
+		}
+	}
+	printf("finalValue: %d\n", finalValue);
+
 	ForEachOutKey(k)
 	{
 		for (i = 0; i < numPeriods; i++)
 		{ /* will run through this loop for as many periods are being used */
 			if (!SW_Output[k].use)
 				continue;
-
-			if(repeatValue == -1){
-				repeatValue = k;
-			}
 
 			if (timeSteps[k][i] < 4)
 			{
@@ -1317,10 +1321,7 @@ void SW_OUT_write_today(void)
 				}
 
 #elif defined(STEPWAT)
-				// problem with this is that it checks if(k+1 == SW_OUTNKEYS) and thats when it writes the output
-				// K is referencing the variables that are set to be used so only the 6 variables in the outsetup file
-				// need to loop through these and then check if it is on the last variable before starting over (in this case SWA)
-				if (isPartialSoilwatOutput == FALSE)
+				if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
 				{
 					switch (timeSteps[k][i])
 					{ // based on iteration of for loop, determines which file to output to
@@ -1336,7 +1337,7 @@ void SW_OUT_write_today(void)
 
 						populate_output_values(reg_file_vals_day, soil_file_vals_day, k, 1);
 
-						if(k+1 == SW_OUTNKEYS){
+						if(k == finalValue){
 							if(reg_file_vals_day[0] != 0){
 								fprintf(SW_Output_Files.fp_dy, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, reg_file_vals_day);
 								memset(&reg_file_vals_day[0], 0, sizeof(reg_file_vals_day));
@@ -1360,7 +1361,7 @@ void SW_OUT_write_today(void)
 
 						populate_output_values(reg_file_vals_week, soil_file_vals_week, k, 2);
 
-						if(k+1 == SW_OUTNKEYS){
+						if(k == finalValue){
 							if(soil_file_vals_week[0] != 0){
 								fprintf(SW_Output_Files.fp_wk_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, soil_file_vals_week);
 								memset(&soil_file_vals_week[0], 0, sizeof(soil_file_vals_week));
@@ -1382,7 +1383,9 @@ void SW_OUT_write_today(void)
 							col_status_mo++;
 						}
 
-						if(k == repeatValue){
+						populate_output_values(reg_file_vals_month, soil_file_vals_month, k, 3);
+
+						if(k == finalValue){
 							if(soil_file_vals_month[0] != 0){
 								fprintf(SW_Output_Files.fp_mo_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
 								memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
@@ -1392,19 +1395,6 @@ void SW_OUT_write_today(void)
 								memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
 							}
 						}
-
-						populate_output_values(reg_file_vals_month, soil_file_vals_month, k, 3);
-
-						/*if(k+1 == SW_OUTNKEYS){
-							if(soil_file_vals_month[0] != 0){
-								fprintf(SW_Output_Files.fp_mo_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
-								memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
-							}
-							if(reg_file_vals_month[0] != 0){
-								fprintf(SW_Output_Files.fp_mo, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, reg_file_vals_month);
-								memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
-							}
-						}*/
 						break;
 
 					case eSW_Year:
@@ -1419,7 +1409,7 @@ void SW_OUT_write_today(void)
 
 						populate_output_values(reg_file_vals_year, soil_file_vals_year, k, 4);
 
-						if(k+1 == SW_OUTNKEYS){
+						if(k == finalValue){
 							if(soil_file_vals_year[0] != 0){
 								fprintf(SW_Output_Files.fp_yr_soil, "%d%c%s\n", SW_Model.year, _Sep, soil_file_vals_year);
 								memset(&soil_file_vals_year[0], 0, sizeof(soil_file_vals_year));
@@ -4742,235 +4732,239 @@ void create_col_headers(int outFileTimestep){
 
 	ForEachOutKey(colHeadersLoop)
 	{
-		if(strcmp(key2str[colHeadersLoop], "VWCBULK")==0 || strcmp(key2str[colHeadersLoop], "VWCMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWCBULK")==0
-			|| strcmp(key2str[colHeadersLoop], "SWABULK")==0 || strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0
-			|| strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0 || strcmp(key2str[colHeadersLoop], "SOILTEMP")==0 || strcmp(key2str[colHeadersLoop], "HYDRED")==0
-			|| strcmp(key2str[colHeadersLoop], "SWAMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWA")==0 || strcmp(key2str[colHeadersLoop], "SWPMATRIC")==0
-			|| strcmp(key2str[colHeadersLoop], "WETDAY")==0)
+		if(SW_Output[colHeadersLoop].use)
 		{
-			int q;
-			char convertq[10] = {0};
-			char storeCol[600] = {0}; // need to make this a pretty large file to accomadate all the header names up to max layer size
-
-			// check if swa (need 4 headers instead of 1 for swa)
-			if(strcmp(key2str[colHeadersLoop], "SWA")==0)
+			if(strcmp(key2str[colHeadersLoop], "VWCBULK")==0 || strcmp(key2str[colHeadersLoop], "VWCMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWCBULK")==0
+				|| strcmp(key2str[colHeadersLoop], "SWABULK")==0 || strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0
+				|| strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0 || strcmp(key2str[colHeadersLoop], "SOILTEMP")==0 || strcmp(key2str[colHeadersLoop], "HYDRED")==0
+				|| strcmp(key2str[colHeadersLoop], "SWAMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWA")==0 || strcmp(key2str[colHeadersLoop], "SWPMATRIC")==0
+				|| strcmp(key2str[colHeadersLoop], "WETDAY")==0)
 			{
-				for(q=1; q<=SW_Site.n_layers; q++){
-					sprintf(convertq, "%d", q); // cast q to string
+				int q;
+				char convertq[10] = {0};
+				char storeCol[600] = {0}; // need to make this a pretty large file to accomadate all the header names up to max layer size
 
-					strcat(storeCol, "swaForb_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+				// check if swa (need 4 headers instead of 1 for swa)
+				if(strcmp(key2str[colHeadersLoop], "SWA")==0)
+				{
+					for(q=1; q<=SW_Site.n_layers; q++){
+						sprintf(convertq, "%d", q); // cast q to string
 
-					strcat(storeCol, "swaTree_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "swaForb_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
 
-					strcat(storeCol, "swaShrub_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "swaTree_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
 
-					strcat(storeCol, "swaGrass_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "swaShrub_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
+
+						strcat(storeCol, "swaGrass_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
+					}
 				}
-			}
-			else if(strcmp(key2str[colHeadersLoop], "HYDRED")==0){
-				for(q=1; q<=SW_Site.n_layers; q++){
-					sprintf(convertq, "%d", q); // cast q to string
+				else if(strcmp(key2str[colHeadersLoop], "HYDRED")==0){
+					for(q=1; q<=SW_Site.n_layers; q++){
+						sprintf(convertq, "%d", q); // cast q to string
 
-					strcat(storeCol, "HydredTotal_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "HydredTotal_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
 
-					strcat(storeCol, "HydredTree_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "HydredTree_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
 
-					strcat(storeCol, "HydredShrubs_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "HydredShrubs_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
 
-					strcat(storeCol, "HydredForbs_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "HydredForbs_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
 
-					strcat(storeCol, "HydredGrass_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "HydredGrass_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
+					}
 				}
-			}
-			else if(strcmp(key2str[colHeadersLoop], "TRANSP")==0){
-				for(q=1; q<=SW_Site.n_layers; q++){
-					sprintf(convertq, "%d", q); // cast q to string
+				else if(strcmp(key2str[colHeadersLoop], "TRANSP")==0){
+					for(q=1; q<=SW_Site.n_layers; q++){
+						sprintf(convertq, "%d", q); // cast q to string
 
-					strcat(storeCol, "TranspTotal_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "TranspTotal_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
 
-					strcat(storeCol, "TranspTree_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "TranspTree_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
 
-					strcat(storeCol, "TranspShrubs_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "TranspShrubs_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
 
-					strcat(storeCol, "TranspForbs_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "TranspForbs_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
 
-					strcat(storeCol, "TranspGrass_"); // store value name in new string
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+						strcat(storeCol, "TranspGrass_"); // store value name in new string
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
+					}
 				}
-			}
-			else if(strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0){
-				ForEachEvapLayer(evap_loop){
-					sprintf(convertq, "%d", evap_loop); // cast q to string
-					strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
-					// concatenate layer number
-					strcat(storeCol, "_");
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+				else if(strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0){
+					ForEachEvapLayer(evap_loop){
+						sprintf(convertq, "%d", evap_loop); // cast q to string
+						strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+						// concatenate layer number
+						strcat(storeCol, "_");
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
+					}
 				}
-			}
-			else if(strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0){
-				for(q=1; q<SW_Site.n_layers; q++){
-					sprintf(convertq, "%d", q); // cast q to string
-					strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
-					// concatenate layer number
-					strcat(storeCol, "_");
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+				else if(strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0){
+					for(q=1; q<SW_Site.n_layers; q++){
+						sprintf(convertq, "%d", q); // cast q to string
+						strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+						// concatenate layer number
+						strcat(storeCol, "_");
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
+					}
 				}
-			}
-			else{
-				// make variable header for each layer possible
-				for(q=1; q<=SW_Site.n_layers; q++){
-					sprintf(convertq, "%d", q); // cast q to string
-					strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
-					// concatenate layer number
-					strcat(storeCol, "_");
-					strcat(storeCol, convertq);
-					strcat(storeCol, _SepSplit);
+				else{
+					// make variable header for each layer possible
+					for(q=1; q<=SW_Site.n_layers; q++){
+						sprintf(convertq, "%d", q); // cast q to string
+						strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+						// concatenate layer number
+						strcat(storeCol, "_");
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
+					}
 				}
+				strcat(colHeadersSoil, storeCol); // concatenate variable to string
 			}
-			strcat(colHeadersSoil, storeCol); // concatenate variable to string
-		}
 
-		else
-		{
-			char storeRegCol[600] = {0};
-			if(strcmp(key2str[colHeadersLoop], "TEMP")==0){
-				strcat(storeRegCol, "Temp_max");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Temp_min");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Temp_avg_air_temp");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Temp_soil_surface_temp");
-				strcat(storeRegCol, _SepSplit);
-			}
-			else if(strcmp(key2str[colHeadersLoop], "PRECIP")==0){
-				strcat(storeRegCol, "Precip_sum");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Precip_rain");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Precip_snow_fall");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Precip_snowmelt");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Precip_snowloss");
-				strcat(storeRegCol, _SepSplit);
-			}
-			/*else if(strcmp(key2str[colHeadersLoop], "SOILINFILT")==0){
-				strcat(storeRegCol, "Soilinfilt_top_layer,");
-				strcat(storeRegCol, "Soilinfilt_runoff,");
-			}*/
-			else if(strcmp(key2str[colHeadersLoop], "RUNOFF")==0){
-				strcat(storeRegCol, "Runoff_total");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Runoff_ponded_water");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Runoff_snowmelt");
-				strcat(storeRegCol, _SepSplit);
-			}
-			else if(strcmp(key2str[colHeadersLoop], "EVAPSURFACE")==0){
-				strcat(storeRegCol, "Evapsurface_total");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Evapsurface_trees");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Evapsurface_shrubs");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Evapsurface_forbs");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Evapsurface_grasses");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Evapsurface_litter");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Evapsurface_surface_water");
-				strcat(storeRegCol, _SepSplit);
-			}
-			else if(strcmp(key2str[colHeadersLoop], "INTERCEPTION")==0){
-				strcat(storeRegCol, "Interception_total");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Interception_trees");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Interception_shrubs");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Interception_forbs");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Interception_grasses");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Interception_litter");
-				strcat(storeRegCol, _SepSplit);
-			}
-			else if(strcmp(key2str[colHeadersLoop], "SNOWPACK")==0){
-				strcat(storeRegCol, "Snowpack_water_eqv");
-				strcat(storeRegCol, _SepSplit);
-				strcat(storeRegCol, "Snowpack_snowdepth");
-				strcat(storeRegCol, _SepSplit);
-				//strcat(storeRegCol, "Snowpack_summed,");
-			}
-			else if (strcmp(key2str[colHeadersLoop], "WTHR")==0 ||  strcmp(key2str[colHeadersLoop], "ALLH2O")==0
-							|| strcmp(key2str[colHeadersLoop], "ET")==0 || strcmp(key2str[colHeadersLoop], "ALLVEG")==0)
+			else
 			{
-				continue;
+				char storeRegCol[600] = {0};
+				if(strcmp(key2str[colHeadersLoop], "TEMP")==0){
+					strcat(storeRegCol, "Temp_max");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Temp_min");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Temp_avg_air_temp");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Temp_soil_surface_temp");
+					strcat(storeRegCol, _SepSplit);
+				}
+				else if(strcmp(key2str[colHeadersLoop], "PRECIP")==0){
+					strcat(storeRegCol, "Precip_sum");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Precip_rain");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Precip_snow_fall");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Precip_snowmelt");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Precip_snowloss");
+					strcat(storeRegCol, _SepSplit);
+				}
+				/*else if(strcmp(key2str[colHeadersLoop], "SOILINFILT")==0){
+					strcat(storeRegCol, "Soilinfilt_top_layer,");
+					strcat(storeRegCol, "Soilinfilt_runoff,");
+				}*/
+				else if(strcmp(key2str[colHeadersLoop], "RUNOFF")==0){
+					strcat(storeRegCol, "Runoff_total");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Runoff_ponded_water");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Runoff_snowmelt");
+					strcat(storeRegCol, _SepSplit);
+				}
+				else if(strcmp(key2str[colHeadersLoop], "EVAPSURFACE")==0){
+					strcat(storeRegCol, "Evapsurface_total");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Evapsurface_trees");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Evapsurface_shrubs");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Evapsurface_forbs");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Evapsurface_grasses");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Evapsurface_litter");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Evapsurface_surface_water");
+					strcat(storeRegCol, _SepSplit);
+				}
+				else if(strcmp(key2str[colHeadersLoop], "INTERCEPTION")==0){
+					strcat(storeRegCol, "Interception_total");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Interception_trees");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Interception_shrubs");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Interception_forbs");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Interception_grasses");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Interception_litter");
+					strcat(storeRegCol, _SepSplit);
+				}
+				else if(strcmp(key2str[colHeadersLoop], "SNOWPACK")==0){
+					strcat(storeRegCol, "Snowpack_water_eqv");
+					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, "Snowpack_snowdepth");
+					strcat(storeRegCol, _SepSplit);
+					//strcat(storeRegCol, "Snowpack_summed,");
+				}
+				else if (strcmp(key2str[colHeadersLoop], "WTHR")==0 ||  strcmp(key2str[colHeadersLoop], "ALLH2O")==0
+								|| strcmp(key2str[colHeadersLoop], "ET")==0 || strcmp(key2str[colHeadersLoop], "ALLVEG")==0)
+				{
+					continue;
+				}
+				else{
+					strcat(storeRegCol, key2str[colHeadersLoop]); // concatenate variable to string
+					strcat(storeRegCol, _SepSplit);
+				}
+				strcat(colHeaders, storeRegCol); // concatenate variable to string
 			}
-			else{
-				strcat(storeRegCol, key2str[colHeadersLoop]); // concatenate variable to string
-				strcat(storeRegCol, _SepSplit);
-			}
-			strcat(colHeaders, storeRegCol); // concatenate variable to string
 		}
 	}
-	switch(outFileTimestep)
-	{
-		case(1):
-			col1Head = "Year";
-			col2Head = "Day"; //TODO: have col 2 for proper timestep, not hardcoded to day
-			fprintf(SW_Output_Files.fp_dy_soil, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
-			fprintf(SW_Output_Files.fp_dy, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
-			break;
-		case(2):
-			col1Head = "Year";
-			col2Head = "Week"; //TODO: have col 2 for proper timestep, not hardcoded to day
-			fprintf(SW_Output_Files.fp_wk_soil, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
-			fprintf(SW_Output_Files.fp_wk, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
-			break;
-		case(3):
-			col1Head = "Year";
-			col2Head = "Month"; //TODO: have col 2 for proper timestep, not hardcoded to day
-			fprintf(SW_Output_Files.fp_mo_soil, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
-			fprintf(SW_Output_Files.fp_mo, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
-			break;
-		case(4):
-			col1Head = "Year";
-			fprintf(SW_Output_Files.fp_yr_soil, "%s%c%s\n", col1Head, _Sep, colHeadersSoil); // write columns to file
-			fprintf(SW_Output_Files.fp_yr, "%s%c%s\n", col1Head, _Sep, colHeaders); // write columns to file
-			break;
-	}
+		switch(outFileTimestep)
+		{
+			case(1):
+				col1Head = "Year";
+				col2Head = "Day"; //TODO: have col 2 for proper timestep, not hardcoded to day
+				fprintf(SW_Output_Files.fp_dy_soil, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
+				fprintf(SW_Output_Files.fp_dy, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
+				break;
+			case(2):
+				col1Head = "Year";
+				col2Head = "Week"; //TODO: have col 2 for proper timestep, not hardcoded to day
+				fprintf(SW_Output_Files.fp_wk_soil, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
+				fprintf(SW_Output_Files.fp_wk, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
+				break;
+			case(3):
+				col1Head = "Year";
+				col2Head = "Month"; //TODO: have col 2 for proper timestep, not hardcoded to day
+				fprintf(SW_Output_Files.fp_mo_soil, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
+				fprintf(SW_Output_Files.fp_mo, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
+				break;
+			case(4):
+				col1Head = "Year";
+				fprintf(SW_Output_Files.fp_yr_soil, "%s%c%s\n", col1Head, _Sep, colHeadersSoil); // write columns to file
+				fprintf(SW_Output_Files.fp_yr, "%s%c%s\n", col1Head, _Sep, colHeaders); // write columns to file
+				break;
+		}
+
 }
 
 #ifdef DEBUG_MEM
