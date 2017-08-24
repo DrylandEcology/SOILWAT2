@@ -569,6 +569,7 @@ void SW_OUT_read(void)
 
 			#elif defined(STEPWAT)
 				//printf("Globals.currIter start: %d\n", Globals.currIter);
+				 // -1 since this is run before the others so its one ahead of the body functions in terms of iterations (dont Know why)
 				if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations-1)
 				{
 					char *dayCheck = strstr(inbuf, "dy");
@@ -1180,7 +1181,6 @@ void SW_OUT_write_today(void)
 					finalValue = k;
 		}
 	}
-	printf("finalValue: %d\n", finalValue);
 
 	ForEachOutKey(k)
 	{
@@ -2077,18 +2077,16 @@ static void get_swa(void)
 						break;
 					/*case eSW_Year:
 						val = v->yravg.swcBulk[i];
-						break;*/
+						break; */
 				}
 				SXW.SWAbulk_forb[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
 				SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
 				SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
 				SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
 
+				//if(SW_Model.year == 1980 && i == 0)
+					//printf("SXW.SWAbulk_forb[0][0]: %f\n", SXW.SWAbulk_forb[0][0]);
 
-				/*val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
-				val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-				val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-				val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);*/
 				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_forb[p][i], _Sep, SXW.SWAbulk_tree[p][i], _Sep,
 				 SXW.SWAbulk_shrub[p][i], _Sep, SXW.SWAbulk_grass[p][i]);
 				strcat(outstr, str);
