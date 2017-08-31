@@ -300,6 +300,8 @@ static void get_deepswc(void);
 static void get_estab(void);
 static void get_soiltemp(void);
 static void get_none(void); /* default until defined */
+void populate_output_values(char *reg_file_array, char *soil_file_array, int output_var, int year_out);
+void create_col_headers(int outFileTimestep);
 
 static void collect_sums(ObjType otyp, OutPeriod op);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
