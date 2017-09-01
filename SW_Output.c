@@ -239,6 +239,8 @@ int col_status_dy = 0;
 int col_status_wk = 0;
 int col_status_mo = 0;
 int col_status_yr = 0;
+int lastMonth = 0;
+int lastWeek = 0;
 int finalValue = 0;
 
 static Bool bFlush; /* process partial period ? */
@@ -1262,6 +1264,12 @@ void SW_OUT_write_today(void)
 					populate_output_values(reg_file_vals_week, soil_file_vals_week, k, 2);
 
 					if(k+1 == SW_OUTNKEYS){
+						if(SW_Model.week == 52 && lastWeek == 1){
+							SW_Model.week = 53;
+							lastWeek = 0;
+						}
+						else if(SW_Model.week == 52 && lastWeek == 0) lastWeek = 1;
+
 						if(soil_file_vals_week[0] != 0){
 							fprintf(SW_Output_Files.fp_wk_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, soil_file_vals_week);
 							memset(&soil_file_vals_week[0], 0, sizeof(soil_file_vals_week));
@@ -1286,11 +1294,19 @@ void SW_OUT_write_today(void)
 					populate_output_values(reg_file_vals_month, soil_file_vals_month, k, 3);
 
 					if(k+1 == SW_OUTNKEYS){
+						if(SW_Model.month == 11 && lastMonth == 1){
+							SW_Model.month = 12;
+							lastMonth = 0;
+						}
+						else if(SW_Model.month == 11 && lastMonth == 0) lastMonth = 1;
+						//printf("month: %d\n", SW_Model.month);
+
 						if(soil_file_vals_month[0] != 0){
 							fprintf(SW_Output_Files.fp_mo_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
 							memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
 						}
 						if(reg_file_vals_month[0] != 0){
+							//if(SW_Model.year == 1980)printf("%s\n\n",reg_file_vals_month);
 							fprintf(SW_Output_Files.fp_mo, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, reg_file_vals_month);
 							memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
 						}
@@ -1364,6 +1380,11 @@ void SW_OUT_write_today(void)
 						populate_output_values(reg_file_vals_week, soil_file_vals_week, k, 2);
 
 						if(k == finalValue){
+							if(SW_Model.week == 52 && lastWeek == 1){
+								SW_Model.week = 53;
+								lastWeek = 0;
+							}
+							else if(SW_Model.week == 52 && lastWeek == 0) lastWeek = 1;
 							if(soil_file_vals_week[0] != 0){
 								fprintf(SW_Output_Files.fp_wk_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, soil_file_vals_week);
 								memset(&soil_file_vals_week[0], 0, sizeof(soil_file_vals_week));
@@ -1388,6 +1409,12 @@ void SW_OUT_write_today(void)
 						populate_output_values(reg_file_vals_month, soil_file_vals_month, k, 3);
 
 						if(k == finalValue){
+							if(SW_Model.month == 11 && lastMonth == 1){
+								SW_Model.month = 12;
+								lastMonth = 0;
+							}
+							else if(SW_Model.month == 11 && lastMonth == 0) lastMonth = 1;
+
 							if(soil_file_vals_month[0] != 0){
 								fprintf(SW_Output_Files.fp_mo_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
 								memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
@@ -1740,7 +1767,7 @@ for(switchCounter=0;switchCounter<4;switchCounter++){
 
 #ifndef RSOILWAT
 		val_ppt = v->moavg.ppt;
-
+		//if(SW_Model.year == 1980) printf("val_ppt month: %f\n", val_ppt);
 		val_rain = v->moavg.rain;
 		val_snow = v->moavg.snow;
 		val_snowmelt = v->moavg.snowmelt;
@@ -1777,6 +1804,7 @@ for(switchCounter=0;switchCounter<4;switchCounter++){
 }
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
+	//if(SW_Model.year == 1980) printf("val_ppt month: %f\n", val_ppt);
 	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
 		val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
 	strcat(outstr, str);
@@ -4658,10 +4686,9 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 
 	// check if a soil variable (has layers)
 	if(strcmp(key2str[output_var], "VWCBULK")==0 || strcmp(key2str[output_var], "VWCMATRIC")==0 || strcmp(key2str[output_var], "SWCBULK")==0
-		|| strcmp(key2str[output_var], "SWABULK")==0 || strcmp(key2str[output_var], "EVAPSOIL")==0 || strcmp(key2str[output_var], "TRANSP")==0
+		|| strcmp(key2str[output_var], "EVAPSOIL")==0 || strcmp(key2str[output_var], "TRANSP")==0 || strcmp(key2str[output_var], "WETDAY")==0
 		|| strcmp(key2str[output_var], "LYRDRAIN")==0 || strcmp(key2str[output_var], "SOILTEMP")==0 || strcmp(key2str[output_var], "HYDRED")==0
-		|| strcmp(key2str[output_var], "SWAMATRIC")==0 || strcmp(key2str[output_var], "SWPMATRIC")==0 || strcmp(key2str[output_var], "SWA")==0
-		|| strcmp(key2str[output_var], "WETDAY")==0)
+		|| strcmp(key2str[output_var], "SWAMATRIC")==0 || strcmp(key2str[output_var], "SWPMATRIC")==0 || strcmp(key2str[output_var], "SWA")==0)
 	{
 		char *pt;
 		int counter = 0;
@@ -4684,7 +4711,8 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 		}
 	}
 	else if (strcmp(key2str[output_var], "WTHR")==0 ||  strcmp(key2str[output_var], "ALLH2O")==0
-					|| strcmp(key2str[output_var], "ET")==0 || strcmp(key2str[output_var], "ALLVEG")==0)
+					|| strcmp(key2str[output_var], "SWABULK")==0 || strcmp(key2str[output_var], "ET")==0
+					|| strcmp(key2str[output_var], "ALLVEG")==0)
 	{
 		// do nothing since these values are not defined
 	}
@@ -4735,7 +4763,7 @@ void create_col_headers(int outFileTimestep){
 		if(SW_Output[colHeadersLoop].use)
 		{
 			if(strcmp(key2str[colHeadersLoop], "VWCBULK")==0 || strcmp(key2str[colHeadersLoop], "VWCMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWCBULK")==0
-				|| strcmp(key2str[colHeadersLoop], "SWABULK")==0 || strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0
+				|| strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0
 				|| strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0 || strcmp(key2str[colHeadersLoop], "SOILTEMP")==0 || strcmp(key2str[colHeadersLoop], "HYDRED")==0
 				|| strcmp(key2str[colHeadersLoop], "SWAMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWA")==0 || strcmp(key2str[colHeadersLoop], "SWPMATRIC")==0
 				|| strcmp(key2str[colHeadersLoop], "WETDAY")==0)
@@ -4926,9 +4954,10 @@ void create_col_headers(int outFileTimestep){
 					//strcat(storeRegCol, "Snowpack_summed,");
 				}
 				else if (strcmp(key2str[colHeadersLoop], "WTHR")==0 ||  strcmp(key2str[colHeadersLoop], "ALLH2O")==0
-								|| strcmp(key2str[colHeadersLoop], "ET")==0 || strcmp(key2str[colHeadersLoop], "ALLVEG")==0)
+								|| strcmp(key2str[colHeadersLoop], "SWABULK")==0 || strcmp(key2str[colHeadersLoop], "ET")==0
+								|| strcmp(key2str[colHeadersLoop], "ALLVEG")==0)
 				{
-					continue;
+					continue; // dont do anything for these values
 				}
 				else{
 					strcat(storeRegCol, key2str[colHeadersLoop]); // concatenate variable to string
