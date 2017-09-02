@@ -98,7 +98,7 @@ typedef struct {
 
 	RealD bareGround_albedo; /* create this here instead of creating a bareGround VegType, because it only needs albedo and no other data member */
 
-	RealD co2_biomass_1, co2_biomass_2, co2_stomatal_1, co2_stomatal_2;
+	RealD co2_bio_coeff1, co2_bio_coeff2, co2_wue_coeff1, co2_wue_coeff2;
 
 } SW_VEGPROD;
 

@@ -320,7 +320,7 @@ void SW_SIT_read(void) {
 			break;
 		case 37:
 			x = sscanf(inbuf, "%d", &temp);
-			c->use_sto_mult = temp;
+			c->use_wue_mult = temp;
 			break;
 		case 38:
 			x = sscanf(inbuf, "%63s", c->scenario);

@@ -1343,10 +1343,10 @@ void get_co2effects(void) {
 	int i, month;
 	RealD grassBiomass, shrubBiomass, treeBiomass, forbBiomass, totalBiomass;
 	RealD grassBiolive, shrubBiolive, treeBiolive, forbBiolive, totalBiolive;
-	RealD BIO_mult, WUE_mult;
+	RealD bioMult, wueMult;
 	grassBiomass = shrubBiomass = treeBiomass = forbBiomass = totalBiomass = 0;
 	grassBiolive = shrubBiolive = treeBiolive = forbBiolive = totalBiolive = 0;
-	BIO_mult = WUE_mult = 0;
+	bioMult = wueMult = 0;
 	
 	#ifndef RSOILWAT
 		char str[OUTSTRLEN];
@@ -1379,8 +1379,8 @@ void get_co2effects(void) {
 
 			totalBiomass = grassBiomass + shrubBiomass + treeBiomass + forbBiomass;
 			totalBiolive = grassBiolive + shrubBiolive + treeBiolive + forbBiolive;
-			BIO_mult = c->co2_biomass_mult;
-			WUE_mult = c->co2_wue_mult;
+			bioMult = c->co2_bio_mult;
+			wueMult = c->co2_wue_mult;
 		  
 			#ifdef RSOILWAT
 				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 0] = SW_Model.year;
@@ -1395,8 +1395,8 @@ void get_co2effects(void) {
 				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 9] = treeBiolive;
 				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 10] = forbBiolive;
 				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 11] = totalBiolive;				
-				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 12] = BIO_mult;
-				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 13] = WUE_mult;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 12] = bioMult;
+				p_Rco2effects_mo[SW_Output[eSW_CO2Effects].mo_row + mo_nrow * 13] = wueMult;
 				SW_Output[eSW_CO2Effects].mo_row++;
 			#endif
 			break;
@@ -1436,8 +1436,8 @@ void get_co2effects(void) {
 			forbBiolive /= 12;
 			totalBiomass = grassBiomass + shrubBiomass + treeBiomass + forbBiomass;
 			totalBiolive = grassBiolive + shrubBiolive + treeBiolive + forbBiolive;
-			BIO_mult = c->co2_biomass_mult;
-			WUE_mult = c->co2_wue_mult;
+			bioMult = c->co2_bio_mult;
+			wueMult = c->co2_wue_mult;
 		  
 			#ifdef RSOILWAT
 				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 0] = SW_Model.year;
@@ -1451,8 +1451,8 @@ void get_co2effects(void) {
 				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 8] = treeBiolive;
 				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 9] = forbBiolive;
 				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 10] = totalBiolive;
-				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 11] = BIO_mult;
-				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 12] = WUE_mult;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 11] = bioMult;
+				p_Rco2effects_yr[SW_Output[eSW_CO2Effects].yr_row + yr_nrow * 12] = wueMult;
 				SW_Output[eSW_CO2Effects].yr_row++;
 			#endif
 			break;
@@ -1476,8 +1476,8 @@ void get_co2effects(void) {
 		_Sep, treeBiolive,
 		_Sep, forbBiolive,
 		_Sep, totalBiolive,
-		_Sep, BIO_mult, 
-		_Sep, WUE_mult);
+		_Sep, bioMult, 
+		_Sep, wueMult);
 		strcat(outstr, str);
 	#endif
 }

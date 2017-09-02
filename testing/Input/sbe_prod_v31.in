@@ -77,7 +77,7 @@
 # Biomass
 # Coeff1 Coeff2
   0.127 0.3501 0. 0.
-# Stomatal conductance
+# WUE
 # Coeff1 Coeff2
   22.464 -0.531 0. 0.
 

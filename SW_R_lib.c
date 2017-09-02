@@ -63,7 +63,6 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	SEXP SW_DataList;
 	SEXP swLog;
 	SEXP oRlogfile;
-	char *ListNames[] = {"files.in", "years.in", "weathersetup.in", "prod.in", "site.in","estab.in","outsetup.in","swcsetup.in","LogFile"};
 
 	logged = FALSE;
 	logfp = stdout;
@@ -92,6 +91,7 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	SW_OUT_construct();
 	SW_SWC_construct();
 	SW_FLW_construct();
+	SW_CBN_construct();
 	//Rprintf("Construct\n");
 	SW_F_read(NULL);
 	//Rprintf("FilesRead\n");

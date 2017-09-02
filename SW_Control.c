@@ -205,8 +205,9 @@ static void _read_inputs(void) {
 		//Rprintf("swCarbon\n");
 	}
 #endif
-  // This will work in both RSOILWAT and SOILWAT
-  // There is no SW_CARBON_READ function because the settings are stored in already read-in files
+  // This will work in both RSOILWAT2 and SOILWAT2
+  // There is no SW_CBN_READ function because the settings are stored in already read-in files
+  // See rSOILWAT2 issue #50 if you experience issues with not finding carbon.in
   calculate_CO2_multipliers();
 
 }

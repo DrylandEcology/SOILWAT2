@@ -92,7 +92,7 @@ void SW_VPD_read(void) {
 	Months mon = Jan;
 	int x, lineno = 0;
 	const int line_help = 31;
-	RealF help_grass, help_shrub, help_tree, help_forb, help_bareGround, litt, biom, pctl, laic, co2_biomass_1, co2_biomass_2, co2_stomatal_1, co2_stomatal_2;
+	RealF help_grass, help_shrub, help_tree, help_forb, help_bareGround, litt, biom, pctl, laic, co2_bio_coeff1, co2_bio_coeff2, co2_wue_coeff1, co2_wue_coeff2;
 	RealD fraction_sum = 0.;
 
 	MyFileName = SW_F_name(eVegProd);
@@ -475,26 +475,26 @@ void SW_VPD_read(void) {
 
 			/* CO2 Biomass Power Equation */
 			case 30:
-			x = sscanf(inbuf, "%f %f", &co2_biomass_1, &co2_biomass_2);
+			x = sscanf(inbuf, "%f %f", &co2_bio_coeff1, &co2_bio_coeff2);
 			if (x < 2) {
 				sprintf(errstr, "ERROR: Not enough arguments for the CO2 Biomass Power Equation in %s\n", MyFileName);
 				CloseFile(&f);
 				LogError(logfp, LOGFATAL, errstr);
 			}
-			v->co2_biomass_1 = co2_biomass_1;
-			v->co2_biomass_2 = co2_biomass_2;
+			v->co2_bio_coeff1 = co2_bio_coeff1;
+			v->co2_bio_coeff2 = co2_bio_coeff2;
 			break;
 
 			/* CO2 Stomatal Power Equation */
 			case 31:
-			x = sscanf(inbuf, "%f %f", &co2_stomatal_1, &co2_stomatal_2);
+			x = sscanf(inbuf, "%f %f", &co2_wue_coeff1, &co2_wue_coeff2);
 			if (x < 2) {
-				sprintf(errstr, "ERROR: Not enough arguments for the CO2 Stomatal Power Equation in %s\n", MyFileName);
+				sprintf(errstr, "ERROR: Not enough arguments for the CO2 WUE Power Equation in %s\n", MyFileName);
 				CloseFile(&f);
 				LogError(logfp, LOGFATAL, errstr);
 			}
-			v->co2_stomatal_1 = co2_stomatal_1;
-			v->co2_stomatal_2 = co2_stomatal_2;
+			v->co2_wue_coeff1 = co2_wue_coeff1;
+			v->co2_wue_coeff2 = co2_wue_coeff2;
 			break;
 
 			default:
@@ -631,10 +631,10 @@ SEXP onGet_SW_VPD() {
 	// Create matrix containing the multipliers
 	PROTECT(CO2Coefficients = allocMatrix(REALSXP, 2, 2));
 	p_CO2Coefficients = REAL(CO2Coefficients);
-	p_CO2Coefficients[0] = v->co2_biomass_1;
-	p_CO2Coefficients[1] = v->co2_biomass_2;
-	p_CO2Coefficients[2] = v->co2_stomatal_1;
-	p_CO2Coefficients[3] = v->co2_stomatal_2;
+	p_CO2Coefficients[0] = v->co2_bio_coeff1;
+	p_CO2Coefficients[1] = v->co2_bio_coeff2;
+	p_CO2Coefficients[2] = v->co2_wue_coeff1;
+	p_CO2Coefficients[3] = v->co2_wue_coeff2;
 	PROTECT(CO2_names = allocVector(VECSXP, 2));
 	SET_VECTOR_ELT(CO2_names, 1, CO2_col_names);
 	SET_VECTOR_ELT(CO2_names, 0, CO2_row_names);
@@ -1146,10 +1146,10 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	}
 
 	PROTECT(CO2Coefficients = GET_SLOT(SW_VPD, install(cVegProd_names[16])));
-	v->co2_biomass_1 = REAL(CO2Coefficients)[0];
-	v->co2_biomass_2 = REAL(CO2Coefficients)[1];
-	v->co2_stomatal_1 = REAL(CO2Coefficients)[2];
-	v->co2_stomatal_2 = REAL(CO2Coefficients)[3];
+	v->co2_bio_coeff1 = REAL(CO2Coefficients)[0];
+	v->co2_bio_coeff2 = REAL(CO2Coefficients)[1];
+	v->co2_wue_coeff1 = REAL(CO2Coefficients)[2];
+	v->co2_wue_coeff2 = REAL(CO2Coefficients)[3];
 
 	fraction_sum = v->fractionGrass + v->fractionShrub + v->fractionTree + v->fractionForb + v->fractionBareGround;
 	if (!EQ(fraction_sum, 1.0)) {
@@ -1213,8 +1213,8 @@ void SW_VPD_init(void) {
 
 	/* Apply this year's CO2 effects */
 	year = m->year + c->addtl_yr;
-	c->co2_biomass_mult = c->co2_multipliers[0][year];
-	c->co2_wue_mult = c->co2_multipliers[1][year];
+	c->co2_bio_mult = c->co2_multipliers[BIO_INDEX][year];
+	c->co2_wue_mult = c->co2_multipliers[WUE_INDEX][year];
 
 	if (GT(v->fractionGrass, 0.)) {
 	  apply_CO2(v->grass.CO2_biomass, v->grass.biomass);

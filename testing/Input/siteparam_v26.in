@@ -63,9 +63,9 @@
 0			# flag, 1 to calculate soil_temperature, 0 to not calculate soil_temperature
 
 # ---- CO2 Settings ----
-# Use biomass
+# Use biomass multiplier
 1
-# Use stomatal
+# Use water-usage efficiency multiplier
 1
 # Scenario
 RCP85
