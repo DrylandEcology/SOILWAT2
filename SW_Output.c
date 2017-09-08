@@ -1400,8 +1400,8 @@ void SW_OUT_write_today(void)
 						if(col_status_mo == 0)
 						{
 							printf("Creating column labels for month output file...\n");
-							memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
-							memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
+							memset(&reg_file_vals_month, 0, sizeof(reg_file_vals_month));
+							memset(&soil_file_vals_month, 0, sizeof(soil_file_vals_month));
 							create_col_headers(3);
 							col_status_mo++;
 						}
@@ -1409,7 +1409,7 @@ void SW_OUT_write_today(void)
 						populate_output_values(reg_file_vals_month, soil_file_vals_month, k, 3);
 
 						if(k == finalValue){
-							if(SW_Model.month == 11 && lastMonth == 1){
+							if(SW_Model.month == 11 && lastMonth == 1){ // adjusting for bug in base code that does not allow for time to hit last element
 								SW_Model.month = 12;
 								lastMonth = 0;
 							}
@@ -1417,11 +1417,11 @@ void SW_OUT_write_today(void)
 
 							if(soil_file_vals_month[0] != 0){
 								fprintf(SW_Output_Files.fp_mo_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
-								memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
+								memset(&soil_file_vals_month, 0, sizeof(soil_file_vals_month));
 							}
 							if(reg_file_vals_month[0] != 0){
 								fprintf(SW_Output_Files.fp_mo, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, reg_file_vals_month);
-								memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
+								memset(&reg_file_vals_month, 0, sizeof(reg_file_vals_month));
 							}
 						}
 						break;
@@ -1804,9 +1804,9 @@ for(switchCounter=0;switchCounter<4;switchCounter++){
 }
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
-	//if(SW_Model.year == 1980) printf("val_ppt month: %f\n", val_ppt);
 	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
 		val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
+
 	strcat(outstr, str);
 #elif defined(STEPWAT)
 	if (isPartialSoilwatOutput == FALSE)
@@ -1821,7 +1821,6 @@ for(switchCounter=0;switchCounter<4;switchCounter++){
 		if (pd != eSW_Year)
 		LogError(logfp, LOGFATAL, "Invalid output period for PRECIP; should be YR, %7.6f,%7.6f,%7.6f,%7.6f", val_snowloss, val_snowmelt, val_snow, val_rain); //added extra for compiler
 		SXW.ppt = val_ppt; // ORIGINAL - DONT ALTER
-
 		SXW.PPTVal[SXW.yearInterval] = val_ppt; // these are all the same values for the most part
 		SXW.yearInterval++;
 	}

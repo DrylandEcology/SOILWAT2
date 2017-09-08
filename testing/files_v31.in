@@ -26,12 +26,12 @@ Input/swcsetup.in	# params for handling measured swc
 #Output
 Output/	# 'relative' path for output files: / for same directory, or e.g., Output/
 Input/outsetup_v31.in	# define output quantities
-Output/daily.csv	#output
-Output/weekly.csv	#output
-Output/monthly.csv	#output
-Output/yearly.csv	#output
+Output/sw2_daily.csv	#output
+Output/sw2_weekly.csv	#output
+Output/sw2_monthly.csv	#output
+Output/sw2_yearly.csv	#output
 
-Output/daily_soil.csv	#output
-Output/weekly_soil.csv	#output
-Output/monthly_soil.csv	#output
-Output/yearly_soil.csv	#output
+Output/sw2_daily_slyrs.csv	#output
+Output/sw2_weekly_slyrs.csv	#output
+Output/sw2_monthly_slyrs.csv	#output
+Output/sw2_yearly_slyrs.csv	#output
