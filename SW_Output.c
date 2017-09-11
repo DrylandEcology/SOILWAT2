@@ -178,6 +178,7 @@
 #include "SW_Output.h"
 #include "SW_Weather.h"
 #include "SW_VegEstab.h"
+#include "SW_VegProd.h"
 
 #ifdef RSOILWAT
 #include "R.h"
@@ -194,6 +195,7 @@ extern SW_SOILWAT SW_Soilwat;
 extern SW_MODEL SW_Model;
 extern SW_WEATHER SW_Weather;
 extern SW_VEGESTAB SW_VegEstab;
+extern SW_VEGPROD SW_VegProd;
 extern Bool EchoInits;
 
 #define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
@@ -222,6 +224,7 @@ extern unsigned int yr_nrow, mo_nrow, wk_nrow, dy_nrow;
 #include "../ST_globals.h"
 extern SXW_t SXW; // structure to store values in and pass back to STEPPE
 Bool isPartialSoilwatOutput = FALSE;
+Bool storeAllIterations = TRUE;
 #endif
 
 /* =================================================== */
@@ -391,7 +394,6 @@ void SW_OUT_construct(void)
 			SW_Output[k].pfunc = (void (*)(void)) get_precip;
 			break;
 		case eSW_VWCBulk:
-
 			SW_Output[k].pfunc = (void (*)(void)) get_vwcBulk;
 			break;
 		case eSW_VWCMatric:
@@ -2108,14 +2110,33 @@ static void get_swa(void)
 						val = v->yravg.swcBulk[i];
 						break; */
 				}
+				//if (GT(SW_VegProd.fractionTree, 0.)) printf("TREES!!!!!!!!!\n");
+				/*if(SW_VegProd.fractionForb == 0)
+				 SXW.SWAbulk_forb[p][i] = 0.;
+				else
+					SXW.SWAbulk_forb[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
+
+				if(SW_VegProd.fractionTree == 0)
+				 SXW.SWAbulk_tree[p][i] = 0.;
+			 	else
+					SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+
+				if(SW_VegProd.fractionShrub == 0)
+				 SXW.SWAbulk_shrub[p][i] = 0.;
+			 	else
+					SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+
+				if(SW_VegProd.fractionGrass == 0)
+				 SXW.SWAbulk_grass[p][i] = 0.;
+			 	else
+					SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);*/
+
 				SXW.SWAbulk_forb[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
 				SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
 				SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
 				SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
 
-				//if(SW_Model.year == 1980 && i == 0)
-					//printf("SXW.SWAbulk_forb[0][0]: %f\n", SXW.SWAbulk_forb[0][0]);
-
+				//stat_Average_SOILWAT_vars(SXW.SWAbulk_forb, SXW.SWAbulk_forb_avg);
 				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_forb[p][i], _Sep, SXW.SWAbulk_tree[p][i], _Sep,
 				 SXW.SWAbulk_shrub[p][i], _Sep, SXW.SWAbulk_grass[p][i]);
 				strcat(outstr, str);
