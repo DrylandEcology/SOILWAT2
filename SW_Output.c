@@ -683,8 +683,13 @@ void SW_OUT_read(void)
 			LogError(logfp, LOGWARN, "%s : DEEPSWC cannot be output if flag not set in %s.", MyFileName, SW_F_name(eOutput));
 			continue;
 		}
-		//Set the values
+		//Set the values to be used
 		SW_Output[k].use = (SW_Output[k].sumtype == eSW_Off) ? FALSE : TRUE;
+
+		/*#ifdef STEPWAT
+		if(Globals.currIter == 1) printf("sw_output[k].use = %d\n", k);
+		#endif*/
+
 		if (SW_Output[k].use)
 		{
 			SW_Output[k].mykey = k;
@@ -2087,93 +2092,58 @@ static void get_swa(void)
 	#elif defined(STEPWAT)
 		char str[OUTSTRLEN];
 
-		if (isPartialSoilwatOutput == FALSE)
+		get_outstrleader(pd);
+		ForEachSoilLayer(i)
 		{
-			get_outstrleader(pd);
-			ForEachSoilLayer(i)
+			switch (pd)
 			{
-				switch (pd)
-				{
-					case eSW_Day:
-						p = t->doy-1;
-						val = v->dysum.swcBulk[i];
-						break;
-					case eSW_Week:
-						p = t->week-1;
-						val = v->wkavg.swcBulk[i];
-						break;
-					case eSW_Month:
-						p = t->month-1;
-						val = v->moavg.swcBulk[i];
-						break;
-					/*case eSW_Year:
-						val = v->yravg.swcBulk[i];
-						break; */
-				}
-				//if (GT(SW_VegProd.fractionTree, 0.)) printf("TREES!!!!!!!!!\n");
-				/*if(SW_VegProd.fractionForb == 0)
-				 SXW.SWAbulk_forb[p][i] = 0.;
-				else
-					SXW.SWAbulk_forb[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
-
-				if(SW_VegProd.fractionTree == 0)
-				 SXW.SWAbulk_tree[p][i] = 0.;
-			 	else
-					SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-
-				if(SW_VegProd.fractionShrub == 0)
-				 SXW.SWAbulk_shrub[p][i] = 0.;
-			 	else
-					SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-
-				if(SW_VegProd.fractionGrass == 0)
-				 SXW.SWAbulk_grass[p][i] = 0.;
-			 	else
-					SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);*/
-
+				case eSW_Day:
+					p = t->doy-1;
+					val = v->dysum.swcBulk[i];
+					break;
+				case eSW_Week:
+					p = t->week-1;
+					val = v->wkavg.swcBulk[i];
+					break;
+				case eSW_Month:
+					p = t->month-1;
+					val = v->moavg.swcBulk[i];
+					break;
+			}
+			//if (GT(SW_VegProd.fractionTree, 0.)) printf("TREES!!!!!!!!!\n");
+			/*if(SW_VegProd.fractionForb == 0)
+			 SXW.SWAbulk_forb[p][i] = 0.;
+			else
 				SXW.SWAbulk_forb[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
-				SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-				SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-				SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
 
-				//stat_Average_SOILWAT_vars(SXW.SWAbulk_forb, SXW.SWAbulk_forb_avg);
+			if(SW_VegProd.fractionTree == 0)
+			 SXW.SWAbulk_tree[p][i] = 0.;
+		 	else
+				SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+
+			if(SW_VegProd.fractionShrub == 0)
+			 SXW.SWAbulk_shrub[p][i] = 0.;
+		 	else
+				SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+
+			if(SW_VegProd.fractionGrass == 0)
+			 SXW.SWAbulk_grass[p][i] = 0.;
+		 	else
+				SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);*/
+
+			SXW.SWAbulk_forb[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
+			SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+			SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+			SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+
+			//stat_Average_SOILWAT_vars(SXW.SWAbulk_forb, SXW.SWAbulk_forb_avg);
+			if (isPartialSoilwatOutput == FALSE)
+			{
 				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_forb[p][i], _Sep, SXW.SWAbulk_tree[p][i], _Sep,
 				 SXW.SWAbulk_shrub[p][i], _Sep, SXW.SWAbulk_grass[p][i]);
 				strcat(outstr, str);
 			}
-
 		}
-		else
-		{
-			ForEachSoilLayer(i)
-			{
-
-				switch (pd)
-				{
-					case eSW_Day:
-						p = t->doy-1;
-						val = v->dysum.swcBulk[i];
-						break; // print current but as index
-					case eSW_Week:
-						p = t->week-1;
-						val = v->wkavg.swcBulk[i];
-						break;// print previous to current
-					case eSW_Month:
-						p = t->month-1;
-						val = v->moavg.swcBulk[i];
-						break;// print previous to current
-					// YEAR should never be used with STEPWAT
-				}
-				if (bFlush) p++;
-
-				// convert SWCbulk to SWAbulk (not done in SWAbulk since that is not called from STEPPE)
-				SXW.SWAbulk_forb[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
-				SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-				SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-				SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
-			}
-		}
-
 	#endif
 }
 
@@ -2836,6 +2806,7 @@ static void get_transp(void)
 		{
 			sprintf(str, "%c%7.6f", _Sep, val[i]);
 			strcat(outstr, str);
+			//if(val[i] != 0)printf("transpTrees: %f\n", val[i]);
 		}
 	}
 	else
@@ -2911,6 +2882,7 @@ static void get_transp(void)
 		{
 			sprintf(str, "%c%7.6f", _Sep, val[i]);
 			strcat(outstr, str);
+			//if(Globals.currIter == Globals.runModelIterations && p == 115) printf("transpShrubs[%d,%d]: %f\n", i,p,val[i]);
 		}
 	}
 	else
@@ -2986,6 +2958,7 @@ static void get_transp(void)
 		{
 			sprintf(str, "%c%7.6f", _Sep, val[i]);
 			strcat(outstr, str);
+			//if(Globals.currIter == Globals.runModelIterations) printf("transpShrubs[%d,%d]: %f\n", i,p,val[i]);
 		}
 	}
 	else
@@ -4841,24 +4814,38 @@ void create_col_headers(int outFileTimestep){
 					}
 				}
 				else if(strcmp(key2str[colHeadersLoop], "TRANSP")==0){
+					// get_transp function writes all layers each time so need col headers to be in form of:
+					// transp_total1...transp_totalmaxlayers transp_tree1...transp_treemaxlayers
 					for(q=1; q<=SW_Site.n_layers; q++){
 						sprintf(convertq, "%d", q); // cast q to string
 
 						strcat(storeCol, "TranspTotal_"); // store value name in new string
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
+					}
+					for(q=1; q<=SW_Site.n_layers; q++){
+						sprintf(convertq, "%d", q); // cast q to string
 
 						strcat(storeCol, "TranspTree_"); // store value name in new string
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
+					}
+					for(q=1; q<=SW_Site.n_layers; q++){
+						sprintf(convertq, "%d", q); // cast q to string
 
 						strcat(storeCol, "TranspShrubs_"); // store value name in new string
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
+					}
+					for(q=1; q<=SW_Site.n_layers; q++){
+						sprintf(convertq, "%d", q); // cast q to string
 
 						strcat(storeCol, "TranspForbs_"); // store value name in new string
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
+					}
+					for(q=1; q<=SW_Site.n_layers; q++){
+						sprintf(convertq, "%d", q); // cast q to string
 
 						strcat(storeCol, "TranspGrass_"); // store value name in new string
 						strcat(storeCol, convertq);
