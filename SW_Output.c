@@ -1734,102 +1734,111 @@ int switchCounter;
 for(switchCounter=0;switchCounter<4;switchCounter++){
 	switch(switchLoop[switchCounter])
 	{
-	case eSW_Day:
-#ifndef RSOILWAT
-		val_ppt = v->dysum.ppt;
-		val_rain = v->dysum.rain;
-		val_snow = v->dysum.snow;
-		val_snowmelt = v->dysum.snowmelt;
-		val_snowloss = v->dysum.snowloss;
-#else
-		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 0] = SW_Model.year;
-		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 1] = SW_Model.doy;
-		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 2] = v->dysum.ppt;
-		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 3] = v->dysum.rain;
-		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 4] = v->dysum.snow;
-		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 5] = v->dysum.snowmelt;
-		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 6] = v->dysum.snowloss;
-		SW_Output[eSW_Precip].dy_row++;
-#endif
-		break;
-	case eSW_Week:
-#ifndef RSOILWAT
-		val_ppt = v->wkavg.ppt;
-		val_rain = v->wkavg.rain;
-		val_snow = v->wkavg.snow;
-		val_snowmelt = v->wkavg.snowmelt;
-		val_snowloss = v->wkavg.snowloss;
-#else
-		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 0] = SW_Model.year;
-		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
-		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 2] = v->wkavg.ppt;
-		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 3] = v->wkavg.rain;
-		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 4] = v->wkavg.snow;
-		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 5] = v->wkavg.snowmelt;
-		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 6] = v->wkavg.snowloss;
-		SW_Output[eSW_Precip].wk_row++;
-#endif
-		break;
-	case eSW_Month:
+		case eSW_Day:
+	#ifndef RSOILWAT
+			val_ppt = v->dysum.ppt;
+			//printf("ppt day: %f\n", val_ppt);
+			val_rain = v->dysum.rain;
+			val_snow = v->dysum.snow;
+			val_snowmelt = v->dysum.snowmelt;
+			val_snowloss = v->dysum.snowloss;
+	#else
+			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 0] = SW_Model.year;
+			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 1] = SW_Model.doy;
+			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 2] = v->dysum.ppt;
+			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 3] = v->dysum.rain;
+			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 4] = v->dysum.snow;
+			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 5] = v->dysum.snowmelt;
+			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 6] = v->dysum.snowloss;
+			SW_Output[eSW_Precip].dy_row++;
+	#endif
+			break;
+		case eSW_Week:
+	#ifndef RSOILWAT
+			val_ppt = v->wkavg.ppt;
+			//printf("ppt week: %f\n", val_ppt);
+			val_rain = v->wkavg.rain;
+			val_snow = v->wkavg.snow;
+			val_snowmelt = v->wkavg.snowmelt;
+			val_snowloss = v->wkavg.snowloss;
+	#else
+			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 0] = SW_Model.year;
+			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
+			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 2] = v->wkavg.ppt;
+			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 3] = v->wkavg.rain;
+			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 4] = v->wkavg.snow;
+			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 5] = v->wkavg.snowmelt;
+			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 6] = v->wkavg.snowloss;
+			SW_Output[eSW_Precip].wk_row++;
+	#endif
+			break;
+		case eSW_Month:
 
-#ifndef RSOILWAT
-		val_ppt = v->moavg.ppt;
-		//if(SW_Model.year == 1980) printf("val_ppt month: %f\n", val_ppt);
-		val_rain = v->moavg.rain;
-		val_snow = v->moavg.snow;
-		val_snowmelt = v->moavg.snowmelt;
-		val_snowloss = v->moavg.snowloss;
-#else
-		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 0] = SW_Model.year;
-		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
-		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 2] = v->moavg.ppt;
-		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 3] = v->moavg.rain;
-		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 4] = v->moavg.snow;
-		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 5] = v->moavg.snowmelt;
-		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 6] = v->moavg.snowloss;
-		SW_Output[eSW_Precip].mo_row++;
-#endif
-		break;
-	case eSW_Year:
-#ifndef RSOILWAT
-		val_ppt = v->yravg.ppt;
-		val_rain = v->yravg.rain;
-		val_snow = v->yravg.snow;
-		val_snowmelt = v->yravg.snowmelt;
-		val_snowloss = v->yravg.snowloss;
-		break;
-#else
-		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 0] = SW_Model.year;
-		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 1] = v->yravg.ppt;
-		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 2] = v->yravg.rain;
-		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 3] = v->yravg.snow;
-		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 4] = v->yravg.snowmelt;
-		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 5] = v->yravg.snowloss;
-		SW_Output[eSW_Precip].yr_row++;
-#endif
+	#ifndef RSOILWAT
+			val_ppt = v->moavg.ppt;
+			//printf("ppt month: %f\n", val_ppt);
+			val_rain = v->moavg.rain;
+			val_snow = v->moavg.snow;
+			val_snowmelt = v->moavg.snowmelt;
+			val_snowloss = v->moavg.snowloss;
+	#else
+			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 0] = SW_Model.year;
+			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
+			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 2] = v->moavg.ppt;
+			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 3] = v->moavg.rain;
+			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 4] = v->moavg.snow;
+			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 5] = v->moavg.snowmelt;
+			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 6] = v->moavg.snowloss;
+			SW_Output[eSW_Precip].mo_row++;
+	#endif
+			break;
+		case eSW_Year:
+	#ifndef RSOILWAT
+			val_ppt = v->yravg.ppt;
+			//printf("ppt year: %f\n", val_ppt);
+			val_rain = v->yravg.rain;
+			val_snow = v->yravg.snow;
+			val_snowmelt = v->yravg.snowmelt;
+			val_snowloss = v->yravg.snowloss;
+			break;
+	#else
+			p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 0] = SW_Model.year;
+			p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 1] = v->yravg.ppt;
+			p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 2] = v->yravg.rain;
+			p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 3] = v->yravg.snow;
+			p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 4] = v->yravg.snowmelt;
+			p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 5] = v->yravg.snowloss;
+			SW_Output[eSW_Precip].yr_row++;
+	#endif
 	}
 }
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
 		val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
-
 	strcat(outstr, str);
+
 #elif defined(STEPWAT)
 	if (isPartialSoilwatOutput == FALSE)
 	{
 		sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
 			val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
 		strcat(outstr, str);
+		SXW.ppt = val_ppt;
+		//printf("val_ppt: %f\n", val_ppt);
+		//if(SW_Model.year == 1980) printf("%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f\n", _Sep, val_ppt, _Sep,
+			//val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
 	}
 	else
 	{
-
 		if (pd != eSW_Year)
 		LogError(logfp, LOGFATAL, "Invalid output period for PRECIP; should be YR, %7.6f,%7.6f,%7.6f,%7.6f", val_snowloss, val_snowmelt, val_snow, val_rain); //added extra for compiler
 		SXW.ppt = val_ppt; // ORIGINAL - DONT ALTER
 		SXW.PPTVal[SXW.yearInterval] = val_ppt; // these are all the same values for the most part
 		SXW.yearInterval++;
+		//printf("val_ppt: %f\n", val_ppt);
+		//if(SW_Model.year == 1980) printf("%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f\n", _Sep, val_ppt, _Sep,
+			//val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
 	}
 #endif
 }
@@ -2729,13 +2738,22 @@ static void get_transp(void)
 	{
 		ForEachSoilLayer(i)
 		{
+			switch (pd)
+			{
+				case eSW_Day: p = t->doy-1; break; /* print current but as index */
+				case eSW_Week: p = t->week-1; break; /* print previous to current */
+				case eSW_Month: p = t->month-1; break; /* print previous to current */
+				/* YEAR should never be used with STEPWAT */
+			}
 			sprintf(str, "%c%7.6f", _Sep, val[i]);
 			strcat(outstr, str);
+
+			SXW.transpTotal[Ilp(i,p)] = val[i];
+			//if(SW_Model.year == 1980) printf("SXW.transpTotal[Ilp(%d,%d)]: %f\n", i, p, SXW.transpTotal[Ilp(i,p)]);
 		}
 	}
 	else
 	{
-
 		ForEachSoilLayer(i)
 		{
 			switch (pd)
@@ -2747,6 +2765,7 @@ static void get_transp(void)
 			}
 			if (bFlush) p++;
 			SXW.transpTotal[Ilp(i,p)] = val[i];
+			//printf("SXW.transpTotal[Ilp(%d,%d)]: %f\n", i, p, SXW.transpTotal[Ilp(i,p)]);
 		}
 	}
 #endif
@@ -2775,21 +2794,21 @@ static void get_transp(void)
 	switch (pd)
 	{
 		case eSW_Day:
-		ForEachSoilLayer(i)
-		p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 1)] = v->dysum.transp_tree[i];
-		break;
+			ForEachSoilLayer(i)
+			p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 1)] = v->dysum.transp_tree[i];
+			break;
 		case eSW_Week:
-		ForEachSoilLayer(i)
-		p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 1)] = v->wkavg.transp_tree[i];
-		break;
+			ForEachSoilLayer(i)
+			p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 1)] = v->wkavg.transp_tree[i];
+			break;
 		case eSW_Month:
-		ForEachSoilLayer(i)
-		p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 1)] = v->moavg.transp_tree[i];
-		break;
+			ForEachSoilLayer(i)
+			p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 1)] = v->moavg.transp_tree[i];
+			break;
 		case eSW_Year:
-		ForEachSoilLayer(i)
-		p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 1)] = v->yravg.transp_tree[i];
-		break;
+			ForEachSoilLayer(i)
+			p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 1)] = v->yravg.transp_tree[i];
+			break;
 	}
 #endif
 
@@ -2806,7 +2825,6 @@ static void get_transp(void)
 		{
 			sprintf(str, "%c%7.6f", _Sep, val[i]);
 			strcat(outstr, str);
-			//if(val[i] != 0)printf("transpTrees: %f\n", val[i]);
 		}
 	}
 	else
@@ -4686,6 +4704,22 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 		char *pt;
 		int counter = 0;
 		pt = strtok (outstr, _SepSplit);
+
+		// algorithm to get every nth value for tranps so we can go back to the better output format
+		// this will get the values as 0,8,16... so we have total_1 trees_1 etc
+		/*if(strcmp(key2str[output_var], "TRANSP")==0){
+			int i,j;
+	    int layers = 8;
+	    int values = 5;
+
+	    for(i=0;i<layers;i++){
+	        printf("%f\n",soil_file_array[i]);
+	        for(j=0;j<values-1;j++){
+	            printf("%f\n",soil_file_array[layers+i]);
+	        }
+	    }
+		}*/
+
 		while (pt != NULL) {
 			if(year_out == 4){
 				if(counter >=1 ){
