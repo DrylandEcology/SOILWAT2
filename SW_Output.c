@@ -224,7 +224,7 @@ extern unsigned int yr_nrow, mo_nrow, wk_nrow, dy_nrow;
 #include "../ST_globals.h"
 extern SXW_t SXW; // structure to store values in and pass back to STEPPE
 Bool isPartialSoilwatOutput = FALSE;
-Bool storeAllIterations = TRUE;
+//Bool storeAllIterations = TRUE;
 #endif
 
 /* =================================================== */
