@@ -235,7 +235,6 @@ void SW_FLW_construct(void) {
 /*            The Water Flow                           */
 /* --------------------------------------------------- */
 void SW_Water_Flow(void) {
-
 	RealD swpot_avg_forb, swpot_avg_tree, swpot_avg_shrub, swpot_avg_grass, soil_evap_forb, soil_evap_tree, soil_evap_shrub, soil_evap_grass, soil_evap_rate_forb = 1.,
 			soil_evap_rate_tree = 1., soil_evap_rate_shrub = 1., soil_evap_rate_grass = 1., soil_evap_rate_bs = 1., transp_forb, transp_tree, transp_shrub, transp_grass,
 			transp_rate_forb = 1., transp_rate_tree = 1., transp_rate_shrub = 1., transp_rate_grass = 1., snow_evap_rate, surface_evap_forb_rate, surface_evap_tree_rate,

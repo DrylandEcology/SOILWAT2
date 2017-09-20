@@ -379,5 +379,4 @@ void SW_MDL_new_day(void) {
 		_prevweek = SW_Model.week;
 	} else
 		SW_Model.newweek = FALSE;
-
 }

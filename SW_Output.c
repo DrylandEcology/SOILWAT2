@@ -577,6 +577,7 @@ void SW_OUT_read(void)
 				//printf("Globals.currIter start: %d\n", Globals.currIter);
 				 // -1 since this is run before the others so its one ahead of the body functions in terms of iterations (dont Know why)
 				if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations-1)
+				//if (isPartialSoilwatOutput == FALSE)
 				{
 					char *dayCheck = strstr(inbuf, "dy");
 					char *weekCheck = strstr(inbuf, "wk");
@@ -1347,6 +1348,7 @@ void SW_OUT_write_today(void)
 
 #elif defined(STEPWAT)
 				if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
+				//if (isPartialSoilwatOutput == FALSE)
 				{
 					switch (timeSteps[k][i])
 					{ // based on iteration of for loop, determines which file to output to
@@ -2051,7 +2053,7 @@ static void get_swa(void)
 {
 	/* --------------------------------------------------- */
 	/* added 21-Oct-03, cwb */
-	#ifndef RSOILWAT
+	#ifdef STEPWAT
 		TimeInt p;
 		SW_MODEL *t = &SW_Model;
 
@@ -2072,19 +2074,19 @@ static void get_swa(void)
 			switch (pd)
 			{
 			case eSW_Day:
-				p = SW_Model.doy-1;
+				//p = SW_Model.doy-1;
 				val = v->dysum.swcBulk[i];
 				break;
 			case eSW_Week:
-				p = SW_Model.week-1;
+				//p = SW_Model.week-1;
 				val = v->wkavg.swcBulk[i];
 				break;
 			case eSW_Month:
-				p = SW_Model.month-1;
+				//p = SW_Model.month-1;
 				val = v->moavg.swcBulk[i];
 				break;
 			case eSW_Year:
-				p = SW_Model.year-1;
+				//p = SW_Model.year-1;
 				val = v->yravg.swcBulk[i];
 				break;
 			}
@@ -2116,7 +2118,9 @@ static void get_swa(void)
 					break;
 				case eSW_Month:
 					p = t->month-1;
+					//p = SW_Model.month;
 					val = v->moavg.swcBulk[i];
+					//printf("p: %d\n", p);
 					break;
 			}
 			//if (GT(SW_VegProd.fractionTree, 0.)) printf("TREES!!!!!!!!!\n");
@@ -2148,8 +2152,22 @@ static void get_swa(void)
 			//stat_Average_SOILWAT_vars(SXW.SWAbulk_forb, SXW.SWAbulk_forb_avg);
 			if (isPartialSoilwatOutput == FALSE)
 			{
-				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_forb[p][i], _Sep, SXW.SWAbulk_tree[p][i], _Sep,
-				 SXW.SWAbulk_shrub[p][i], _Sep, SXW.SWAbulk_grass[p][i]);
+				SXW.SWAbulk_forb_avg[p][i] += SXW.SWAbulk_forb[p][i];
+				SXW.SWAbulk_tree_avg[p][i] += SXW.SWAbulk_tree[p][i];
+				SXW.SWAbulk_shrub_avg[p][i] += SXW.SWAbulk_shrub[p][i];
+				SXW.SWAbulk_grass_avg[p][i] += SXW.SWAbulk_grass[p][i];
+
+				if(Globals.currIter == Globals.runModelIterations){
+					SXW.SWAbulk_forb_avg[p][i] /= Globals.runModelIterations;
+					SXW.SWAbulk_tree_avg[p][i] /= Globals.runModelIterations;
+					SXW.SWAbulk_shrub_avg[p][i] /= Globals.runModelIterations;
+					SXW.SWAbulk_grass_avg[p][i] /= Globals.runModelIterations;
+					//printf("SXW.SWAbulk_forb[%d][%d] = %f\n", p,i,SXW.SWAbulk_forb[p][i]);
+					//printf("SXW.SWAbulk_forb_avg[%d][%d] = %f\n\n", p,i,SXW.SWAbulk_forb_avg[p][i]);
+				}
+
+				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_forb_avg[p][i], _Sep, SXW.SWAbulk_tree_avg[p][i], _Sep,
+				 SXW.SWAbulk_shrub_avg[p][i], _Sep, SXW.SWAbulk_grass_avg[p][i]);
 				strcat(outstr, str);
 			}
 		}
@@ -2733,39 +2751,27 @@ static void get_transp(void)
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
-
-	if (isPartialSoilwatOutput == FALSE)
+	ForEachSoilLayer(i)
 	{
-		ForEachSoilLayer(i)
+		switch (pd)
 		{
-			switch (pd)
-			{
-				case eSW_Day: p = t->doy-1; break; /* print current but as index */
-				case eSW_Week: p = t->week-1; break; /* print previous to current */
-				case eSW_Month: p = t->month-1; break; /* print previous to current */
-				/* YEAR should never be used with STEPWAT */
-			}
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
-			strcat(outstr, str);
-
-			SXW.transpTotal[Ilp(i,p)] = val[i];
-			//if(SW_Model.year == 1980) printf("SXW.transpTotal[Ilp(%d,%d)]: %f\n", i, p, SXW.transpTotal[Ilp(i,p)]);
+			case eSW_Day: p = t->doy-1; break; /* print current but as index */
+			case eSW_Week: p = t->week-1; break; /* print previous to current */
+			case eSW_Month: p = t->month-1; break; /* print previous to current */
+			/* YEAR should never be used with STEPWAT */
 		}
-	}
-	else
-	{
-		ForEachSoilLayer(i)
-		{
-			switch (pd)
-			{
-				case eSW_Day: p = t->doy-1; break; /* print current but as index */
-				case eSW_Week: p = t->week-1; break; /* print previous to current */
-				case eSW_Month: p = t->month-1; break; /* print previous to current */
-				/* YEAR should never be used with STEPWAT */
+		if(bFlush) p++;
+
+		SXW.transpTotal[Ilp(i,p)] = val[i];
+
+		if (isPartialSoilwatOutput == FALSE){
+			SXW.transpTotal_avg[p][i] += val[i]; // get average over all iterations
+
+			if(Globals.currIter == Globals.runModelIterations){
+				SXW.transpTotal_avg[p][i] /= Globals.runModelIterations;
 			}
-			if (bFlush) p++;
-			SXW.transpTotal[Ilp(i,p)] = val[i];
-			//printf("SXW.transpTotal[Ilp(%d,%d)]: %f\n", i, p, SXW.transpTotal[Ilp(i,p)]);
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpTotal_avg[p][i]);
+			strcat(outstr, str);
 		}
 	}
 #endif
@@ -2819,30 +2825,30 @@ static void get_transp(void)
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE)
+	ForEachSoilLayer(i)
 	{
-		ForEachSoilLayer(i)
+		switch (pd)
 		{
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
+			case eSW_Day: p = t->doy-1; break; /* print current but as index */
+			case eSW_Week: p = t->week-1; break; /* print previous to current */
+			case eSW_Month: p = t->month-1; break; /* print previous to current */
+			/* YEAR should never be used with STEPWAT */
+		}
+		if (bFlush) p++;
+		SXW.transpTrees[Ilp(i,p)] = val[i];
+
+		if (isPartialSoilwatOutput == FALSE)
+		{
+			SXW.transpTrees_avg[p][i] += SXW.transpTrees[Ilp(i,p)]; // get average over all iterations
+
+			if(Globals.currIter == Globals.runModelIterations){
+				SXW.transpTrees_avg[p][i] /= Globals.runModelIterations;
+			}
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees_avg[p][i]);
 			strcat(outstr, str);
 		}
 	}
-	else
-	{
 
-		ForEachSoilLayer(i)
-		{
-			switch (pd)
-			{
-				case eSW_Day: p = t->doy-1; break; /* print current but as index */
-				case eSW_Week: p = t->week-1; break; /* print previous to current */
-				case eSW_Month: p = t->month-1; break; /* print previous to current */
-				/* YEAR should never be used with STEPWAT */
-			}
-			if (bFlush) p++;
-			SXW.transpTrees[Ilp(i,p)] = val[i];
-		}
-	}
 #endif
 
 #ifndef RSOILWAT
@@ -2894,31 +2900,31 @@ static void get_transp(void)
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE)
+	ForEachSoilLayer(i)
 	{
-		ForEachSoilLayer(i)
+		switch (pd)
 		{
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
-			strcat(outstr, str);
-			//if(Globals.currIter == Globals.runModelIterations && p == 115) printf("transpShrubs[%d,%d]: %f\n", i,p,val[i]);
+			case eSW_Day: p = t->doy-1; break; /* print current but as index */
+			case eSW_Week: p = t->week-1; break; /* print previous to current */
+			case eSW_Month: p = t->month-1; break; /* print previous to current */
+			/* YEAR should never be used with STEPWAT */
 		}
-	}
-	else
-	{
+		if (bFlush) p++;
+		SXW.transpShrubs[Ilp(i,p)] = val[i];
 
-		ForEachSoilLayer(i)
+		if (isPartialSoilwatOutput == FALSE)
 		{
-			switch (pd)
-			{
-				case eSW_Day: p = t->doy-1; break; /* print current but as index */
-				case eSW_Week: p = t->week-1; break; /* print previous to current */
-				case eSW_Month: p = t->month-1; break; /* print previous to current */
-				/* YEAR should never be used with STEPWAT */
+			SXW.transpShrubs_avg[p][i] += SXW.transpShrubs[Ilp(i,p)]; // get average over all iterations
+
+			if(Globals.currIter == Globals.runModelIterations){
+				SXW.transpShrubs_avg[p][i] /= Globals.runModelIterations;
 			}
-			if (bFlush) p++;
-			SXW.transpShrubs[Ilp(i,p)] = val[i];
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs_avg[p][i]);
+			strcat(outstr, str);
 		}
 	}
+
+
 #endif
 
 #ifndef RSOILWAT
@@ -2970,28 +2976,27 @@ static void get_transp(void)
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE)
+	ForEachSoilLayer(i)
 	{
-		ForEachSoilLayer(i)
+		switch (pd)
 		{
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
-			strcat(outstr, str);
-			//if(Globals.currIter == Globals.runModelIterations) printf("transpShrubs[%d,%d]: %f\n", i,p,val[i]);
+			case eSW_Day: p = t->doy-1; break; /* print current but as index */
+			case eSW_Week: p = t->week-1; break; /* print previous to current */
+			case eSW_Month: p = t->month-1; break; /* print previous to current */
+			/* YEAR should never be used with STEPWAT */
 		}
-	}
-	else
-	{
-		ForEachSoilLayer(i)
+		if (bFlush) p++;
+		SXW.transpForbs[Ilp(i,p)] = val[i];
+
+		if (isPartialSoilwatOutput == FALSE)
 		{
-			switch (pd)
-			{
-				case eSW_Day: p = t->doy-1; break; /* print current but as index */
-				case eSW_Week: p = t->week-1; break; /* print previous to current */
-				case eSW_Month: p = t->month-1; break; /* print previous to current */
-				/* YEAR should never be used with STEPWAT */
+			SXW.transpForbs_avg[p][i] += SXW.transpForbs[Ilp(i,p)]; // get average over all iterations
+
+			if(Globals.currIter == Globals.runModelIterations){
+				SXW.transpForbs_avg[p][i] /= Globals.runModelIterations;
 			}
-			if (bFlush) p++;
-			SXW.transpForbs[Ilp(i,p)] = val[i];
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs_avg[p][i]);
+			strcat(outstr, str);
 		}
 	}
 #endif
@@ -3050,30 +3055,30 @@ static void get_transp(void)
 	}
 	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("transp: %s\n", outstr);
 #elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE)
+	ForEachSoilLayer(i)
 	{
-		ForEachSoilLayer(i)
+		switch (pd)
 		{
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
+			case eSW_Day: p = t->doy-1; break; /* print current but as index */
+			case eSW_Week: p = t->week-1; break; /* print previous to current */
+			case eSW_Month: p = t->month-1; break; /* print previous to current */
+			/* YEAR should never be used with STEPWAT */
+		}
+		if (bFlush) p++;
+		SXW.transpGrasses[Ilp(i,p)] = val[i];
+
+		if (isPartialSoilwatOutput == FALSE)
+		{
+			SXW.transpGrasses_avg[p][i] += SXW.transpGrasses[Ilp(i,p)]; // get average over all iterations
+
+			if(Globals.currIter == Globals.runModelIterations){
+				SXW.transpGrasses_avg[p][i] /= Globals.runModelIterations;
+			}
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses_avg[p][i]);
 			strcat(outstr, str);
 		}
 	}
-	else
-	{
 
-		ForEachSoilLayer(i)
-		{
-			switch (pd)
-			{
-				case eSW_Day: p = t->doy-1; break; /* print current but as index */
-				case eSW_Week: p = t->week-1; break; /* print previous to current */
-				case eSW_Month: p = t->month-1; break; /* print previous to current */
-				/* YEAR should never be used with STEPWAT */
-			}
-			if (bFlush) p++;
-			SXW.transpGrasses[Ilp(i,p)] = val[i];
-		}
-	}
 #endif
 	free(val);
 }
