@@ -1695,13 +1695,24 @@ static void get_temp(void)
 
 	if (isPartialSoilwatOutput == FALSE)
 	{
-		sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, v_max, _Sep, v_min, _Sep,
-			v_avg, _Sep, surfaceTempVal);
+		SXW.tempMax_avg += v_max;
+		SXW.tempMin_avg += v_min;
+		SXW.tempAvgAir_avg += v_avg;
+		SXW.tempSoilSurfaceTemp_avg += surfaceTempVal;
+
+		if(Globals.currIter == Globals.runModelIterations){
+			SXW.tempMax_avg /= Globals.runModelIterations;
+			SXW.tempMin_avg /= Globals.runModelIterations;
+			SXW.tempAvgAir_avg /= Globals.runModelIterations;
+			SXW.tempSoilSurfaceTemp_avg /= Globals.runModelIterations;
+		}
+
+		sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW.tempMax_avg, _Sep, SXW.tempMin_avg, _Sep,
+			SXW.tempAvgAir_avg, _Sep, SXW.tempSoilSurfaceTemp_avg);
 		strcat(outstr, str);
 	}
 	else
 	{
-
 		if (pd != eSW_Year)
 			LogError(logfp, LOGFATAL, "Invalid output period for TEMP; should be YR %7.6f, %7.6f",v_max, v_min); //added v_max, v_min for compiler
 		SXW.temp = v_avg;
@@ -2295,8 +2306,6 @@ static void get_swcBulk(void)
 				// YEAR should never be used with STEPWAT
 			}
 			if (bFlush) p++;
-
-			// store swc values
 			SXW.swc[Ilp(i,p)] = val;
 		}
 	}
