@@ -687,10 +687,6 @@ void SW_OUT_read(void)
 		//Set the values to be used
 		SW_Output[k].use = (SW_Output[k].sumtype == eSW_Off) ? FALSE : TRUE;
 
-		/*#ifdef STEPWAT
-		if(Globals.currIter == 1) printf("sw_output[k].use = %d\n", k);
-		#endif*/
-
 		if (SW_Output[k].use)
 		{
 			SW_Output[k].mykey = k;
@@ -1348,7 +1344,6 @@ void SW_OUT_write_today(void)
 
 #elif defined(STEPWAT)
 				if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
-				//if (isPartialSoilwatOutput == FALSE)
 				{
 					switch (timeSteps[k][i])
 					{ // based on iteration of for loop, determines which file to output to
@@ -1747,82 +1742,79 @@ int switchCounter;
 for(switchCounter=0;switchCounter<4;switchCounter++){
 	switch(switchLoop[switchCounter])
 	{
-		case eSW_Day:
-	#ifndef RSOILWAT
-			val_ppt = v->dysum.ppt;
-			//printf("ppt day: %f\n", val_ppt);
-			val_rain = v->dysum.rain;
-			val_snow = v->dysum.snow;
-			val_snowmelt = v->dysum.snowmelt;
-			val_snowloss = v->dysum.snowloss;
-	#else
-			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 0] = SW_Model.year;
-			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 1] = SW_Model.doy;
-			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 2] = v->dysum.ppt;
-			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 3] = v->dysum.rain;
-			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 4] = v->dysum.snow;
-			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 5] = v->dysum.snowmelt;
-			p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 6] = v->dysum.snowloss;
-			SW_Output[eSW_Precip].dy_row++;
-	#endif
-			break;
-		case eSW_Week:
-	#ifndef RSOILWAT
-			val_ppt = v->wkavg.ppt;
-			//printf("ppt week: %f\n", val_ppt);
-			val_rain = v->wkavg.rain;
-			val_snow = v->wkavg.snow;
-			val_snowmelt = v->wkavg.snowmelt;
-			val_snowloss = v->wkavg.snowloss;
-	#else
-			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 0] = SW_Model.year;
-			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
-			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 2] = v->wkavg.ppt;
-			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 3] = v->wkavg.rain;
-			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 4] = v->wkavg.snow;
-			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 5] = v->wkavg.snowmelt;
-			p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 6] = v->wkavg.snowloss;
-			SW_Output[eSW_Precip].wk_row++;
-	#endif
-			break;
-		case eSW_Month:
+	case eSW_Day:
+#ifndef RSOILWAT
+		val_ppt = v->dysum.ppt;
+		val_rain = v->dysum.rain;
+		val_snow = v->dysum.snow;
+		val_snowmelt = v->dysum.snowmelt;
+		val_snowloss = v->dysum.snowloss;
+#else
+		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 0] = SW_Model.year;
+		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 1] = SW_Model.doy;
+		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 2] = v->dysum.ppt;
+		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 3] = v->dysum.rain;
+		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 4] = v->dysum.snow;
+		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 5] = v->dysum.snowmelt;
+		p_Rprecip_dy[SW_Output[eSW_Precip].dy_row + dy_nrow * 6] = v->dysum.snowloss;
+		SW_Output[eSW_Precip].dy_row++;
+#endif
+		break;
+	case eSW_Week:
+#ifndef RSOILWAT
+		val_ppt = v->wkavg.ppt;
+		val_rain = v->wkavg.rain;
+		val_snow = v->wkavg.snow;
+		val_snowmelt = v->wkavg.snowmelt;
+		val_snowloss = v->wkavg.snowloss;
+#else
+		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 0] = SW_Model.year;
+		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
+		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 2] = v->wkavg.ppt;
+		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 3] = v->wkavg.rain;
+		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 4] = v->wkavg.snow;
+		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 5] = v->wkavg.snowmelt;
+		p_Rprecip_wk[SW_Output[eSW_Precip].wk_row + wk_nrow * 6] = v->wkavg.snowloss;
+		SW_Output[eSW_Precip].wk_row++;
+#endif
+		break;
+	case eSW_Month:
 
-	#ifndef RSOILWAT
-			val_ppt = v->moavg.ppt;
-			//printf("ppt month: %f\n", val_ppt);
-			val_rain = v->moavg.rain;
-			val_snow = v->moavg.snow;
-			val_snowmelt = v->moavg.snowmelt;
-			val_snowloss = v->moavg.snowloss;
-	#else
-			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 0] = SW_Model.year;
-			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
-			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 2] = v->moavg.ppt;
-			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 3] = v->moavg.rain;
-			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 4] = v->moavg.snow;
-			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 5] = v->moavg.snowmelt;
-			p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 6] = v->moavg.snowloss;
-			SW_Output[eSW_Precip].mo_row++;
-	#endif
-			break;
-		case eSW_Year:
-	#ifndef RSOILWAT
-			val_ppt = v->yravg.ppt;
-			//printf("ppt year: %f\n", val_ppt);
-			val_rain = v->yravg.rain;
-			val_snow = v->yravg.snow;
-			val_snowmelt = v->yravg.snowmelt;
-			val_snowloss = v->yravg.snowloss;
-			break;
-	#else
-			p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 0] = SW_Model.year;
-			p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 1] = v->yravg.ppt;
-			p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 2] = v->yravg.rain;
-			p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 3] = v->yravg.snow;
-			p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 4] = v->yravg.snowmelt;
-			p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 5] = v->yravg.snowloss;
-			SW_Output[eSW_Precip].yr_row++;
-	#endif
+#ifndef RSOILWAT
+		val_ppt = v->moavg.ppt;
+		//if(SW_Model.year == 1980) printf("val_ppt month: %f\n", val_ppt);
+		val_rain = v->moavg.rain;
+		val_snow = v->moavg.snow;
+		val_snowmelt = v->moavg.snowmelt;
+		val_snowloss = v->moavg.snowloss;
+#else
+		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 0] = SW_Model.year;
+		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
+		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 2] = v->moavg.ppt;
+		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 3] = v->moavg.rain;
+		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 4] = v->moavg.snow;
+		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 5] = v->moavg.snowmelt;
+		p_Rprecip_mo[SW_Output[eSW_Precip].mo_row + mo_nrow * 6] = v->moavg.snowloss;
+		SW_Output[eSW_Precip].mo_row++;
+#endif
+		break;
+	case eSW_Year:
+#ifndef RSOILWAT
+		val_ppt = v->yravg.ppt;
+		val_rain = v->yravg.rain;
+		val_snow = v->yravg.snow;
+		val_snowmelt = v->yravg.snowmelt;
+		val_snowloss = v->yravg.snowloss;
+		break;
+#else
+		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 0] = SW_Model.year;
+		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 1] = v->yravg.ppt;
+		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 2] = v->yravg.rain;
+		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 3] = v->yravg.snow;
+		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 4] = v->yravg.snowmelt;
+		p_Rprecip_yr[SW_Output[eSW_Precip].yr_row + yr_nrow * 5] = v->yravg.snowloss;
+		SW_Output[eSW_Precip].yr_row++;
+#endif
 	}
 }
 
@@ -1849,9 +1841,6 @@ for(switchCounter=0;switchCounter<4;switchCounter++){
 		SXW.ppt = val_ppt; // ORIGINAL - DONT ALTER
 		SXW.PPTVal[SXW.yearInterval] = val_ppt; // these are all the same values for the most part
 		SXW.yearInterval++;
-		//printf("val_ppt: %f\n", val_ppt);
-		//if(SW_Model.year == 1980) printf("%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f\n", _Sep, val_ppt, _Sep,
-			//val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
 	}
 #endif
 }
@@ -2073,12 +2062,13 @@ static void get_swa(void)
 		SW_SOILWAT *v = &SW_Soilwat;
 		OutPeriod pd = SW_Output[eSW_SWA].period;
 		RealD val = SW_MISSING;
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		char str[OUTSTRLEN];
 		RealD val_forb = SW_MISSING;
 		RealD val_tree = SW_MISSING;
 		RealD val_shrub = SW_MISSING;
 		RealD val_grass = SW_MISSING;
-	#if !defined(STEPWAT) && !defined(RSOILWAT)
-		char str[OUTSTRLEN];
+
 		get_outstrleader(pd);
 		ForEachSoilLayer(i)
 		{
@@ -2134,54 +2124,36 @@ static void get_swa(void)
 					//printf("p: %d\n", p);
 					break;
 			}
-			//if (GT(SW_VegProd.fractionTree, 0.)) printf("TREES!!!!!!!!!\n");
-			/*if(SW_VegProd.fractionForb == 0)
-			 SXW.SWAbulk_forb[p][i] = 0.;
-			else
-				SXW.SWAbulk_forb[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
 
-			if(SW_VegProd.fractionTree == 0)
-			 SXW.SWAbulk_tree[p][i] = 0.;
-		 	else
-				SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-
-			if(SW_VegProd.fractionShrub == 0)
-			 SXW.SWAbulk_shrub[p][i] = 0.;
-		 	else
-				SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-
-			if(SW_VegProd.fractionGrass == 0)
-			 SXW.SWAbulk_grass[p][i] = 0.;
-		 	else
-				SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);*/
-
-			SXW.SWAbulk_forb[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
-			SXW.SWAbulk_tree[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-			SXW.SWAbulk_shrub[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-			SXW.SWAbulk_grass[p][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+			SXW.SWAbulk_forb[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
+			SXW.SWAbulk_tree[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+			SXW.SWAbulk_shrub[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+			SXW.SWAbulk_grass[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
 
 			//stat_Average_SOILWAT_vars(SXW.SWAbulk_forb, SXW.SWAbulk_forb_avg);
 			if (isPartialSoilwatOutput == FALSE)
 			{
-				SXW.SWAbulk_forb_avg[p][i] += SXW.SWAbulk_forb[p][i];
-				SXW.SWAbulk_tree_avg[p][i] += SXW.SWAbulk_tree[p][i];
-				SXW.SWAbulk_shrub_avg[p][i] += SXW.SWAbulk_shrub[p][i];
-				SXW.SWAbulk_grass_avg[p][i] += SXW.SWAbulk_grass[p][i];
+				// get average over all iterations
+				SXW.SWAbulk_forb_avg[Ilp(i,p)] += SXW.SWAbulk_forb[Ilp(i,p)];
+				SXW.SWAbulk_tree_avg[Ilp(i,p)] += SXW.SWAbulk_tree[Ilp(i,p)];
+				SXW.SWAbulk_shrub_avg[Ilp(i,p)] += SXW.SWAbulk_shrub[Ilp(i,p)];
+				SXW.SWAbulk_grass_avg[Ilp(i,p)] += SXW.SWAbulk_grass[Ilp(i,p)];
 
+				// divide by number of iterations at end to store average
 				if(Globals.currIter == Globals.runModelIterations){
-					SXW.SWAbulk_forb_avg[p][i] /= Globals.runModelIterations;
-					SXW.SWAbulk_tree_avg[p][i] /= Globals.runModelIterations;
-					SXW.SWAbulk_shrub_avg[p][i] /= Globals.runModelIterations;
-					SXW.SWAbulk_grass_avg[p][i] /= Globals.runModelIterations;
-					//printf("SXW.SWAbulk_forb[%d][%d] = %f\n", p,i,SXW.SWAbulk_forb[p][i]);
-					//printf("SXW.SWAbulk_forb_avg[%d][%d] = %f\n\n", p,i,SXW.SWAbulk_forb_avg[p][i]);
+					SXW.SWAbulk_forb_avg[Ilp(i,p)] /= Globals.runModelIterations;
+					SXW.SWAbulk_tree_avg[Ilp(i,p)] /= Globals.runModelIterations;
+					SXW.SWAbulk_shrub_avg[Ilp(i,p)] /= Globals.runModelIterations;
+					SXW.SWAbulk_grass_avg[Ilp(i,p)] /= Globals.runModelIterations;
 				}
+				if (bFlush) p++;
 
-				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_forb_avg[p][i], _Sep, SXW.SWAbulk_tree_avg[p][i], _Sep,
-				 SXW.SWAbulk_shrub_avg[p][i], _Sep, SXW.SWAbulk_grass_avg[p][i]);
+				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_forb_avg[Ilp(i,p)], _Sep, SXW.SWAbulk_tree_avg[Ilp(i,p)], _Sep,
+				 SXW.SWAbulk_shrub_avg[Ilp(i,p)], _Sep, SXW.SWAbulk_grass_avg[Ilp(i,p)]);
 				strcat(outstr, str);
 			}
 		}
+
 	#endif
 }
 
@@ -2774,12 +2746,12 @@ static void get_transp(void)
 		SXW.transpTotal[Ilp(i,p)] = val[i];
 
 		if (isPartialSoilwatOutput == FALSE){
-			SXW.transpTotal_avg[p][i] += val[i]; // get average over all iterations
+			SXW.transpTotal_avg[Ilp(i,p)] += val[i]; // get average over all iterations
 
 			if(Globals.currIter == Globals.runModelIterations){
-				SXW.transpTotal_avg[p][i] /= Globals.runModelIterations;
+				SXW.transpTotal_avg[Ilp(i,p)] /= Globals.runModelIterations;
 			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpTotal_avg[p][i]);
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpTotal_avg[Ilp(i,p)]);
 			strcat(outstr, str);
 		}
 	}
@@ -2848,16 +2820,15 @@ static void get_transp(void)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			SXW.transpTrees_avg[p][i] += SXW.transpTrees[Ilp(i,p)]; // get average over all iterations
+			SXW.transpTrees_avg[Ilp(i,p)] += SXW.transpTrees[Ilp(i,p)]; // get average over all iterations
 
 			if(Globals.currIter == Globals.runModelIterations){
-				SXW.transpTrees_avg[p][i] /= Globals.runModelIterations;
+				SXW.transpTrees_avg[Ilp(i,p)] /= Globals.runModelIterations;
 			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees_avg[p][i]);
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees_avg[Ilp(i,p)]);
 			strcat(outstr, str);
 		}
 	}
-
 #endif
 
 #ifndef RSOILWAT
@@ -2923,17 +2894,15 @@ static void get_transp(void)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			SXW.transpShrubs_avg[p][i] += SXW.transpShrubs[Ilp(i,p)]; // get average over all iterations
+			SXW.transpShrubs_avg[Ilp(i,p)] += SXW.transpShrubs[Ilp(i,p)]; // get average over all iterations
 
 			if(Globals.currIter == Globals.runModelIterations){
-				SXW.transpShrubs_avg[p][i] /= Globals.runModelIterations;
+				SXW.transpShrubs_avg[Ilp(i,p)] /= Globals.runModelIterations;
 			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs_avg[p][i]);
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs_avg[Ilp(i,p)]);
 			strcat(outstr, str);
 		}
 	}
-
-
 #endif
 
 #ifndef RSOILWAT
@@ -2999,12 +2968,12 @@ static void get_transp(void)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			SXW.transpForbs_avg[p][i] += SXW.transpForbs[Ilp(i,p)]; // get average over all iterations
+			SXW.transpForbs_avg[Ilp(i,p)] += SXW.transpForbs[Ilp(i,p)]; // get average over all iterations
 
 			if(Globals.currIter == Globals.runModelIterations){
-				SXW.transpForbs_avg[p][i] /= Globals.runModelIterations;
+				SXW.transpForbs_avg[Ilp(i,p)] /= Globals.runModelIterations;
 			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs_avg[p][i]);
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs_avg[Ilp(i,p)]);
 			strcat(outstr, str);
 		}
 	}
@@ -3078,16 +3047,15 @@ static void get_transp(void)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			SXW.transpGrasses_avg[p][i] += SXW.transpGrasses[Ilp(i,p)]; // get average over all iterations
+			SXW.transpGrasses_avg[Ilp(i,p)] += SXW.transpGrasses[Ilp(i,p)]; // get average over all iterations
 
 			if(Globals.currIter == Globals.runModelIterations){
-				SXW.transpGrasses_avg[p][i] /= Globals.runModelIterations;
+				SXW.transpGrasses_avg[Ilp(i,p)] /= Globals.runModelIterations;
 			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses_avg[p][i]);
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses_avg[Ilp(i,p)]);
 			strcat(outstr, str);
 		}
 	}
-
 #endif
 	free(val);
 }
