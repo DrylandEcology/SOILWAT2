@@ -2750,9 +2750,11 @@ static void get_transp(void)
 
 			if(Globals.currIter == Globals.runModelIterations){
 				SXW.transpTotal_avg[Ilp(i,p)] /= Globals.runModelIterations;
+				sprintf(str, "%c%7.6f", _Sep, SXW.transpTotal_avg[Ilp(i,p)]);
+				strcat(outstr, str);
 			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpTotal_avg[Ilp(i,p)]);
-			strcat(outstr, str);
+			//sprintf(str, "%c%7.6f", _Sep, SXW.transpTotal_avg[Ilp(i,p)]);
+			//strcat(outstr, str);
 		}
 	}
 #endif
@@ -2824,9 +2826,11 @@ static void get_transp(void)
 
 			if(Globals.currIter == Globals.runModelIterations){
 				SXW.transpTrees_avg[Ilp(i,p)] /= Globals.runModelIterations;
+				sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees_avg[Ilp(i,p)]);
+				strcat(outstr, str);
 			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees_avg[Ilp(i,p)]);
-			strcat(outstr, str);
+			//sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees_avg[Ilp(i,p)]);
+			//strcat(outstr, str);
 		}
 	}
 #endif
@@ -2898,9 +2902,11 @@ static void get_transp(void)
 
 			if(Globals.currIter == Globals.runModelIterations){
 				SXW.transpShrubs_avg[Ilp(i,p)] /= Globals.runModelIterations;
+				sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs_avg[Ilp(i,p)]);
+				strcat(outstr, str);
 			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs_avg[Ilp(i,p)]);
-			strcat(outstr, str);
+			//sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs_avg[Ilp(i,p)]);
+			//strcat(outstr, str);
 		}
 	}
 #endif
@@ -2972,9 +2978,11 @@ static void get_transp(void)
 
 			if(Globals.currIter == Globals.runModelIterations){
 				SXW.transpForbs_avg[Ilp(i,p)] /= Globals.runModelIterations;
+				sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs_avg[Ilp(i,p)]);
+				strcat(outstr, str);
 			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs_avg[Ilp(i,p)]);
-			strcat(outstr, str);
+			//sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs_avg[Ilp(i,p)]);
+			//strcat(outstr, str);
 		}
 	}
 #endif
@@ -3051,9 +3059,11 @@ static void get_transp(void)
 
 			if(Globals.currIter == Globals.runModelIterations){
 				SXW.transpGrasses_avg[Ilp(i,p)] /= Globals.runModelIterations;
+				sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses_avg[Ilp(i,p)]);
+				strcat(outstr, str);
 			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses_avg[Ilp(i,p)]);
-			strcat(outstr, str);
+			//sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses_avg[Ilp(i,p)]);
+			//strcat(outstr, str);
 		}
 	}
 #endif
