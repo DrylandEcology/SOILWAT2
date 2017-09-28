@@ -7,5 +7,5 @@ matrix:
 
 # to run your custom scripts instead of automatic MSBuild
 build_script:
-  - set HOME=c:\cygwin\home\appveyor
-  - c:\cygwin\bin\make compile
+  - set PATH=%PATH%;c:\cygwin\bin
+  - make compile
