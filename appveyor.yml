@@ -1,0 +1,10 @@
+platform:
+  - x86
+  - Any CPU
+
+matrix:
+  fast_finish: true
+
+# to run your custom scripts instead of automatic MSBuild
+build_script:
+  make compile
