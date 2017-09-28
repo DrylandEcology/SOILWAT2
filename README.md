@@ -1,4 +1,20 @@
-[![Travis-CI Build Status](https://travis-ci.org/Burke-Lauenroth-Lab/SOILWAT2.svg?branch=master)](https://travis-ci.org/Burke-Lauenroth-Lab/SOILWAT2)
+| Unix | Windows | Release | License | Coverage | Downloads |
+| :---- | :---- | :---- | :---- | :---- | :---- |
+[ ![Travis build status][1]][2] | [![Appveyor build status][3]][4] | [ ![github release][5]][6] | [![license][7]][8] | [![codecov status][9]][10] | [![github downloads][11]][12] |
+
+[1]: https://travis-ci.org/Burke-Lauenroth-Lab/SOILWAT2.svg?branch=master
+[2]: https://travis-ci.org/Burke-Lauenroth-Lab/SOILWAT2
+[3]: https://ci.appveyor.com/api/projects/status/noes9lralyjhen3t/branch/master?svg=true
+[4]: https://ci.appveyor.com/project/dschlaep/soilwat2/branch/master
+[5]: https://img.shields.io/github/release/Burke-Lauenroth-Lab/SOILWAT2.svg?label=current+release
+[6]: https://github.com/Burke-Lauenroth-Lab/SOILWAT2/releases
+[7]: https://img.shields.io/github/license/Burke-Lauenroth-Lab/SOILWAT2.svg
+[8]: https://www.gnu.org/licenses/gpl.html
+[9]: https://codecov.io/gh/Burke-Lauenroth-Lab/SOILWAT2/branch/master/graph/badge.svg
+[10]: https://codecov.io/gh/Burke-Lauenroth-Lab/SOILWAT2
+[11]: https://img.shields.io/github/downloads/Burke-Lauenroth-Lab/SOILWAT2/total.svg
+[12]: https://github.com/Burke-Lauenroth-Lab/SOILWAT2
+
 
 # SOILWAT2
 
