@@ -19,3 +19,4 @@
 # Google unit test output
 gtest-*.o
 libgtest.a
+sw_test
