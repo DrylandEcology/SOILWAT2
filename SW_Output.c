@@ -2125,19 +2125,23 @@ static void get_swa(void)
 					break;
 			}
 
-			SXW.SWAbulk_forb[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
+			/*SXW.SWAbulk_forb[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
 			SXW.SWAbulk_tree[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
 			SXW.SWAbulk_shrub[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-			SXW.SWAbulk_grass[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+			SXW.SWAbulk_grass[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);*/
 
-			//stat_Average_SOILWAT_vars(SXW.SWAbulk_forb, SXW.SWAbulk_forb_avg);
+			SXW.SWA_master[Itlp(0,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree); // Itlp(veg_type, timeperiod, layer)
+			SXW.SWA_master[Itlp(1,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+			SXW.SWA_master[Itlp(2,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+			SXW.SWA_master[Itlp(3,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+
 			if (isPartialSoilwatOutput == FALSE)
 			{
 				// get average over all iterations
-				SXW.SWAbulk_forb_avg[Ilp(i,p)] += SXW.SWAbulk_forb[Ilp(i,p)];
-				SXW.SWAbulk_tree_avg[Ilp(i,p)] += SXW.SWAbulk_tree[Ilp(i,p)];
-				SXW.SWAbulk_shrub_avg[Ilp(i,p)] += SXW.SWAbulk_shrub[Ilp(i,p)];
-				SXW.SWAbulk_grass_avg[Ilp(i,p)] += SXW.SWAbulk_grass[Ilp(i,p)];
+				SXW.SWAbulk_forb_avg[Ilp(i,p)] += SXW.SWA_master[Itlp(3,i,p)];
+				SXW.SWAbulk_tree_avg[Ilp(i,p)] += SXW.SWA_master[Itlp(0,i,p)];
+				SXW.SWAbulk_shrub_avg[Ilp(i,p)] += SXW.SWA_master[Itlp(1,i,p)];
+				SXW.SWAbulk_grass_avg[Ilp(i,p)] += SXW.SWA_master[Itlp(2,i,p)];
 
 				// divide by number of iterations at end to store average
 				if(Globals.currIter == Globals.runModelIterations){
@@ -2260,7 +2264,6 @@ static void get_swcBulk(void)
 	{
 		ForEachSoilLayer(i)
 		{
-
 			switch (pd)
 			{
 				case eSW_Day:
@@ -3791,7 +3794,6 @@ static void get_aet(void)
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	sprintf(str, "%c%7.6f", _Sep, val);
 	strcat(outstr, str);
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("AET: %s\n", outstr);
 #elif defined(STEPWAT)
 	if (isPartialSoilwatOutput == FALSE)
 	{
