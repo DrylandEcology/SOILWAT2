@@ -1,0 +1,25 @@
+var annotated_dup =
+[
+    [ "BLOCKINFO", "struct_b_l_o_c_k_i_n_f_o.html", "struct_b_l_o_c_k_i_n_f_o" ],
+    [ "ST_RGR_VALUES", "struct_s_t___r_g_r___v_a_l_u_e_s.html", "struct_s_t___r_g_r___v_a_l_u_e_s" ],
+    [ "SW_LAYER_INFO", "struct_s_w___l_a_y_e_r___i_n_f_o.html", "struct_s_w___l_a_y_e_r___i_n_f_o" ],
+    [ "SW_MARKOV", "struct_s_w___m_a_r_k_o_v.html", "struct_s_w___m_a_r_k_o_v" ],
+    [ "SW_MODEL", "struct_s_w___m_o_d_e_l.html", "struct_s_w___m_o_d_e_l" ],
+    [ "SW_OUTPUT", "struct_s_w___o_u_t_p_u_t.html", "struct_s_w___o_u_t_p_u_t" ],
+    [ "SW_SITE", "struct_s_w___s_i_t_e.html", "struct_s_w___s_i_t_e" ],
+    [ "SW_SKY", "struct_s_w___s_k_y.html", "struct_s_w___s_k_y" ],
+    [ "SW_SOILWAT", "struct_s_w___s_o_i_l_w_a_t.html", "struct_s_w___s_o_i_l_w_a_t" ],
+    [ "SW_SOILWAT_HIST", "struct_s_w___s_o_i_l_w_a_t___h_i_s_t.html", "struct_s_w___s_o_i_l_w_a_t___h_i_s_t" ],
+    [ "SW_SOILWAT_OUTPUTS", "struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s.html", "struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s" ],
+    [ "SW_TIMES", "struct_s_w___t_i_m_e_s.html", "struct_s_w___t_i_m_e_s" ],
+    [ "SW_VEGESTAB", "struct_s_w___v_e_g_e_s_t_a_b.html", "struct_s_w___v_e_g_e_s_t_a_b" ],
+    [ "SW_VEGESTAB_INFO", "struct_s_w___v_e_g_e_s_t_a_b___i_n_f_o.html", "struct_s_w___v_e_g_e_s_t_a_b___i_n_f_o" ],
+    [ "SW_VEGESTAB_OUTPUTS", "struct_s_w___v_e_g_e_s_t_a_b___o_u_t_p_u_t_s.html", "struct_s_w___v_e_g_e_s_t_a_b___o_u_t_p_u_t_s" ],
+    [ "SW_VEGPROD", "struct_s_w___v_e_g_p_r_o_d.html", "struct_s_w___v_e_g_p_r_o_d" ],
+    [ "SW_WEATHER", "struct_s_w___w_e_a_t_h_e_r.html", "struct_s_w___w_e_a_t_h_e_r" ],
+    [ "SW_WEATHER_2DAYS", "struct_s_w___w_e_a_t_h_e_r__2_d_a_y_s.html", "struct_s_w___w_e_a_t_h_e_r__2_d_a_y_s" ],
+    [ "SW_WEATHER_HIST", "struct_s_w___w_e_a_t_h_e_r___h_i_s_t.html", "struct_s_w___w_e_a_t_h_e_r___h_i_s_t" ],
+    [ "SW_WEATHER_OUTPUTS", "struct_s_w___w_e_a_t_h_e_r___o_u_t_p_u_t_s.html", "struct_s_w___w_e_a_t_h_e_r___o_u_t_p_u_t_s" ],
+    [ "tanfunc_t", "structtanfunc__t.html", "structtanfunc__t" ],
+    [ "VegType", "struct_veg_type.html", "struct_veg_type" ]
+];
