@@ -224,7 +224,7 @@ extern unsigned int yr_nrow, mo_nrow, wk_nrow, dy_nrow;
 #include "../ST_globals.h"
 extern SXW_t SXW; // structure to store values in and pass back to STEPPE
 Bool isPartialSoilwatOutput = FALSE;
-//Bool storeAllIterations = TRUE;
+Bool storeAllIterations = TRUE;
 #endif
 
 /* =================================================== */
@@ -565,13 +565,13 @@ void SW_OUT_read(void)
 
 				// create file for defined timesteps
 				if(dayCheck != NULL)
-					stat_Output_Daily_CSV_Summary();
+					stat_Output_Daily_CSV_Summary(-1);
 				if(weekCheck != NULL)
-				 	stat_Output_Weekly_CSV_Summary();
+				 	stat_Output_Weekly_CSV_Summary(-1);
 				if(monthCheck != NULL)
-					stat_Output_Monthly_CSV_Summary();
+					stat_Output_Monthly_CSV_Summary(-1);
 				if(yearCheck != NULL)
-					stat_Output_Yearly_CSV_Summary();
+					stat_Output_Yearly_CSV_Summary(-1);
 
 			#elif defined(STEPWAT)
 				//printf("Globals.currIter start: %d\n", Globals.currIter);
@@ -586,13 +586,29 @@ void SW_OUT_read(void)
 
 					// create file for defined timesteps
 					if(dayCheck != NULL)
-						stat_Output_Daily_CSV_Summary();
+						stat_Output_Daily_CSV_Summary(-1);
 					if(weekCheck != NULL)
-					 	stat_Output_Weekly_CSV_Summary();
+					 	stat_Output_Weekly_CSV_Summary(-1);
 					if(monthCheck != NULL)
-						stat_Output_Monthly_CSV_Summary();
+						stat_Output_Monthly_CSV_Summary(-1);
 					if(yearCheck != NULL)
-						stat_Output_Yearly_CSV_Summary();
+						stat_Output_Yearly_CSV_Summary(-1);
+				}
+				else if(storeAllIterations){
+					char *dayCheck = strstr(inbuf, "dy");
+					char *weekCheck = strstr(inbuf, "wk");
+					char *monthCheck = strstr(inbuf, "mo");
+					char *yearCheck = strstr(inbuf, "yr");
+
+					// create file for defined timesteps
+					if(dayCheck != NULL)
+						stat_Output_Daily_CSV_Summary(Globals.currIter+1);
+					if(weekCheck != NULL)
+					 	stat_Output_Weekly_CSV_Summary(Globals.currIter+1);
+					if(monthCheck != NULL)
+						stat_Output_Monthly_CSV_Summary(Globals.currIter+1);
+					if(yearCheck != NULL)
+						stat_Output_Yearly_CSV_Summary(Globals.currIter+1);
 				}
 				else
 					useTimeStep = 0; // dont want to use the TIMESTEP if user doesnt ask for output
@@ -974,7 +990,7 @@ void SW_OUT_close_files(void)
 		}
 	}
 #elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
+	if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 	{
 		//if(Globals.currIter == Globals.runModelIterations) // only want to close at end of last iteration
 		//{
@@ -1234,7 +1250,7 @@ void SW_OUT_write_today(void)
 				case eSW_Day:
 					if(col_status_dy == 0)
 					{
-						printf("Creating column labels for day output file...\n");
+						//printf("Creating column labels for day output file...\n");
 						memset(&reg_file_vals_day[0], 0, sizeof(reg_file_vals_day));
 						memset(&soil_file_vals_day[0], 0, sizeof(soil_file_vals_day));
 						create_col_headers(1);
@@ -1258,7 +1274,7 @@ void SW_OUT_write_today(void)
 				case eSW_Week:
 					if(col_status_wk == 0)
 					{
-						printf("Creating column labels for week output file...\n");
+						//printf("Creating column labels for week output file...\n");
 						memset(&reg_file_vals_week[0], 0, sizeof(reg_file_vals_week));
 						memset(&soil_file_vals_week[0], 0, sizeof(soil_file_vals_week));
 						create_col_headers(2);
@@ -1288,7 +1304,7 @@ void SW_OUT_write_today(void)
 				case eSW_Month:
 					if(col_status_mo == 0)
 					{
-						printf("Creating column labels for month output file...\n");
+						//printf("Creating column labels for month output file...\n");
 						memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
 						memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
 						create_col_headers(3);
@@ -1303,14 +1319,12 @@ void SW_OUT_write_today(void)
 							lastMonth = 0;
 						}
 						else if(SW_Model.month == 11 && lastMonth == 0) lastMonth = 1;
-						//printf("month: %d\n", SW_Model.month);
 
 						if(soil_file_vals_month[0] != 0){
 							fprintf(SW_Output_Files.fp_mo_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
 							memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
 						}
 						if(reg_file_vals_month[0] != 0){
-							//if(SW_Model.year == 1980)printf("%s\n\n",reg_file_vals_month);
 							fprintf(SW_Output_Files.fp_mo, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, reg_file_vals_month);
 							memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
 						}
@@ -1320,7 +1334,7 @@ void SW_OUT_write_today(void)
 				case eSW_Year:
 					if(col_status_yr == 0)
 					{
-						printf("Creating column labels for year output file...\n");
+						//printf("Creating column labels for year output file...\n");
 						memset(&reg_file_vals_year[0], 0, sizeof(reg_file_vals_year));
 						memset(&soil_file_vals_year[0], 0, sizeof(soil_file_vals_year));
 						create_col_headers(4);
@@ -1343,18 +1357,18 @@ void SW_OUT_write_today(void)
 				}
 
 #elif defined(STEPWAT)
-				if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
+				if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 				{
 					switch (timeSteps[k][i])
 					{ // based on iteration of for loop, determines which file to output to
 					case eSW_Day:
-						if(col_status_dy == 0)
+						if(SXW.col_status_dy == 0)
 						{
-							printf("Creating column labels for day output file...\n");
+							//printf("Creating column labels for day output file...\n");
 							memset(&reg_file_vals_day[0], 0, sizeof(reg_file_vals_day));
 							memset(&soil_file_vals_day[0], 0, sizeof(soil_file_vals_day));
 							create_col_headers(1);
-							col_status_dy++;
+							SXW.col_status_dy++;
 						}
 
 						populate_output_values(reg_file_vals_day, soil_file_vals_day, k, 1);
@@ -1372,13 +1386,13 @@ void SW_OUT_write_today(void)
 						break;
 
 					case eSW_Week:
-						if(col_status_wk == 0)
+						if(SXW.col_status_wk == 0)
 						{
-							printf("Creating column labels for week output file...\n");
+							//printf("Creating column labels for week output file...\n");
 							memset(&reg_file_vals_week[0], 0, sizeof(reg_file_vals_week));
 							memset(&soil_file_vals_week[0], 0, sizeof(soil_file_vals_week));
 							create_col_headers(2);
-							col_status_wk++;
+							SXW.col_status_wk++;
 						}
 
 						populate_output_values(reg_file_vals_week, soil_file_vals_week, k, 2);
@@ -1401,13 +1415,13 @@ void SW_OUT_write_today(void)
 						break;
 
 					case eSW_Month:
-						if(col_status_mo == 0)
+						if(SXW.col_status_mo == 0)
 						{
-							printf("Creating column labels for month output file...\n");
+							//printf("Creating column labels for month output file...\n");
 							memset(&reg_file_vals_month, 0, sizeof(reg_file_vals_month));
 							memset(&soil_file_vals_month, 0, sizeof(soil_file_vals_month));
 							create_col_headers(3);
-							col_status_mo++;
+							SXW.col_status_mo++;
 						}
 
 						populate_output_values(reg_file_vals_month, soil_file_vals_month, k, 3);
@@ -1431,13 +1445,13 @@ void SW_OUT_write_today(void)
 						break;
 
 					case eSW_Year:
-						if(col_status_yr == 0)
+						if(SXW.col_status_yr == 0)
 						{
-							printf("Creating column labels for year output file...\n");
+							//printf("Creating column labels for year output file...\n");
 							memset(&reg_file_vals_year[0], 0, sizeof(reg_file_vals_year));
 							memset(&soil_file_vals_year[0], 0, sizeof(soil_file_vals_year));
 							create_col_headers(4);
-							col_status_yr++;
+							SXW.col_status_yr++;
 						}
 
 						populate_output_values(reg_file_vals_year, soil_file_vals_year, k, 4);
@@ -1609,7 +1623,7 @@ static void get_temp(void)
 	get_outstrleader(pd);
 #elif defined(STEPWAT)
 	char str[OUTSTRLEN];
-	if (isPartialSoilwatOutput == FALSE)
+	if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 	{
 		get_outstrleader(pd);
 	}
@@ -1688,7 +1702,7 @@ static void get_temp(void)
 	strcat(outstr, str);
 #elif defined(STEPWAT)
 
-	if (isPartialSoilwatOutput == FALSE)
+	if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 	{
 		SXW.tempMax_avg += v_max;
 		SXW.tempMin_avg += v_min;
@@ -1731,7 +1745,7 @@ static void get_precip(void)
 
 #elif defined(STEPWAT)
 	char str[OUTSTRLEN];
-	if (isPartialSoilwatOutput == FALSE)
+	if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 	{
 		get_outstrleader(pd);
 	}
@@ -1824,7 +1838,7 @@ for(switchCounter=0;switchCounter<4;switchCounter++){
 	strcat(outstr, str);
 
 #elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE)
+	if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 	{
 		sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
 			val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
@@ -1920,7 +1934,7 @@ static void get_vwcBulk(void)
 	}
 #elif defined(STEPWAT)
 
-	if (isPartialSoilwatOutput == FALSE)
+	if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 	{
 		ForEachSoilLayer(i)
 			{
@@ -2036,7 +2050,7 @@ static void get_vwcMatric(void)
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE)
+	if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 	{
 		ForEachSoilLayer(i)
 		{
@@ -2135,7 +2149,7 @@ static void get_swa(void)
 			SXW.SWA_master[Itlp(2,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
 			SXW.SWA_master[Itlp(3,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
 
-			if (isPartialSoilwatOutput == FALSE)
+			if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 			{
 				// get average over all iterations
 				SXW.SWAbulk_forb_avg[Ilp(i,p)] += SXW.SWA_master[Itlp(3,i,p)];
@@ -2235,7 +2249,7 @@ static void get_swcBulk(void)
 #elif defined(STEPWAT)
 	char str[OUTSTRLEN];
 
-	if (isPartialSoilwatOutput == FALSE)
+	if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 	{
 		get_outstrleader(pd);
 		ForEachSoilLayer(i)
@@ -2756,8 +2770,10 @@ static void get_transp(void)
 				sprintf(str, "%c%7.6f", _Sep, SXW.transpTotal_avg[Ilp(i,p)]);
 				strcat(outstr, str);
 			}
-			//sprintf(str, "%c%7.6f", _Sep, SXW.transpTotal_avg[Ilp(i,p)]);
-			//strcat(outstr, str);
+		}
+		if(storeAllIterations){
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpTotal[Ilp(i,p)]);
+			strcat(outstr, str);
 		}
 	}
 #endif
@@ -2835,6 +2851,10 @@ static void get_transp(void)
 			//sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees_avg[Ilp(i,p)]);
 			//strcat(outstr, str);
 		}
+		if(storeAllIterations){
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees[Ilp(i,p)]);
+			strcat(outstr, str);
+		}
 	}
 #endif
 
@@ -2911,6 +2931,10 @@ static void get_transp(void)
 			//sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs_avg[Ilp(i,p)]);
 			//strcat(outstr, str);
 		}
+		if(storeAllIterations){
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs[Ilp(i,p)]);
+			strcat(outstr, str);
+		}
 	}
 #endif
 
@@ -2986,6 +3010,10 @@ static void get_transp(void)
 			}
 			//sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs_avg[Ilp(i,p)]);
 			//strcat(outstr, str);
+		}
+		if(storeAllIterations){
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs[Ilp(i,p)]);
+			strcat(outstr, str);
 		}
 	}
 #endif
@@ -3067,6 +3095,10 @@ static void get_transp(void)
 			}
 			//sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses_avg[Ilp(i,p)]);
 			//strcat(outstr, str);
+		}
+		if(storeAllIterations){
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses[Ilp(i,p)]);
+			strcat(outstr, str);
 		}
 	}
 #endif
@@ -3795,7 +3827,7 @@ static void get_aet(void)
 	sprintf(str, "%c%7.6f", _Sep, val);
 	strcat(outstr, str);
 #elif defined(STEPWAT)
-	if (isPartialSoilwatOutput == FALSE)
+	if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 	{
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(outstr, str);
