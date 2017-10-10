@@ -1,4 +1,14 @@
-# To insert another scenario, simply use the same pattern as below
+# This file holds atmospheric CO2 concentrations in PPM per scenario.
+# The data is organized by year, with each year having a concentration value.
+
+# The number of years depends on what data is available. Only a reasonable
+# range of years is needed (e.g. 1900-2150), though adding a few hundred in either
+# direction will not noticeably hurt performance.
+
+# New scenarios are appended to this file. To do so, follow the existing pattern
+#    e.g. Scenario starts at year 0, then year/PPM combination begins after that
+
+# Note: If a SOILWAT2 run cannot find a requested year here, the program will exit
 
 # Placeholder Scenario
 0             RCP85
