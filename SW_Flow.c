@@ -128,7 +128,8 @@ extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
 extern SW_WEATHER SW_Weather;
 extern SW_VEGPROD SW_VegProd;
-extern SW_SKY SW_Sky; //
+extern SW_SKY SW_Sky;
+SW_CARBON SW_Carbon;  // Externed elsewhere
 
 extern unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 extern unsigned int soil_temp_init; // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
@@ -235,6 +236,7 @@ void SW_FLW_construct(void) {
 /*            The Water Flow                           */
 /* --------------------------------------------------- */
 void SW_Water_Flow(void) {
+	SW_CARBON  *c = &SW_Carbon;
 
 	RealD swpot_avg_forb, swpot_avg_tree, swpot_avg_shrub, swpot_avg_grass, soil_evap_forb, soil_evap_tree, soil_evap_shrub, soil_evap_grass, soil_evap_rate_forb = 1.,
 			soil_evap_rate_tree = 1., soil_evap_rate_shrub = 1., soil_evap_rate_grass = 1., soil_evap_rate_bs = 1., transp_forb, transp_tree, transp_shrub, transp_grass,
@@ -418,7 +420,7 @@ void SW_Water_Flow(void) {
 		pot_transp(&transp_rate_tree, swpot_avg_tree, SW_VegProd.tree.biolive_daily[doy], SW_VegProd.tree.biodead_daily[doy], transp_tree, SW_Soilwat.pet,
 				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range, SW_VegProd.tree.shade_scale, SW_VegProd.tree.shade_deadmax,
 				SW_VegProd.tree.tr_shade_effects.xinflec, SW_VegProd.tree.tr_shade_effects.slope, SW_VegProd.tree.tr_shade_effects.yinflec,
-				SW_VegProd.tree.tr_shade_effects.range);
+				SW_VegProd.tree.tr_shade_effects.range, c->co2_wue_mult.tree);
 		transp_rate_tree *= snowdepth_scale_tree * SW_VegProd.fractionTree;
 	} else {
 		soil_evap_rate_tree = 0.;
@@ -442,7 +444,7 @@ void SW_Water_Flow(void) {
 		pot_transp(&transp_rate_shrub, swpot_avg_shrub, SW_VegProd.shrub.biolive_daily[doy], SW_VegProd.shrub.biodead_daily[doy], transp_shrub, SW_Soilwat.pet,
 				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range, SW_VegProd.shrub.shade_scale, SW_VegProd.shrub.shade_deadmax,
 				SW_VegProd.shrub.tr_shade_effects.xinflec, SW_VegProd.shrub.tr_shade_effects.slope, SW_VegProd.shrub.tr_shade_effects.yinflec,
-				SW_VegProd.shrub.tr_shade_effects.range);
+				SW_VegProd.shrub.tr_shade_effects.range, c->co2_wue_mult.shrub);
 		transp_rate_shrub *= snowdepth_scale_shrub * SW_VegProd.fractionShrub;
 
 	} else {
@@ -467,7 +469,7 @@ void SW_Water_Flow(void) {
 		pot_transp(&transp_rate_forb, swpot_avg_forb, SW_VegProd.forb.biolive_daily[doy], SW_VegProd.forb.biodead_daily[doy], transp_forb, SW_Soilwat.pet,
 				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range, SW_VegProd.forb.shade_scale, SW_VegProd.forb.shade_deadmax,
 				SW_VegProd.forb.tr_shade_effects.xinflec, SW_VegProd.forb.tr_shade_effects.slope, SW_VegProd.forb.tr_shade_effects.yinflec,
-				SW_VegProd.forb.tr_shade_effects.range);
+				SW_VegProd.forb.tr_shade_effects.range, c->co2_wue_mult.forb);
 		transp_rate_forb *= snowdepth_scale_forb * SW_VegProd.fractionForb;
 
 	} else {
@@ -492,7 +494,7 @@ void SW_Water_Flow(void) {
 		pot_transp(&transp_rate_grass, swpot_avg_grass, SW_VegProd.grass.biolive_daily[doy], SW_VegProd.grass.biodead_daily[doy], transp_grass, SW_Soilwat.pet,
 				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range, SW_VegProd.grass.shade_scale, SW_VegProd.grass.shade_deadmax,
 				SW_VegProd.grass.tr_shade_effects.xinflec, SW_VegProd.grass.tr_shade_effects.slope, SW_VegProd.grass.tr_shade_effects.yinflec,
-				SW_VegProd.grass.tr_shade_effects.range);
+				SW_VegProd.grass.tr_shade_effects.range, c->co2_wue_mult.grass);
 		transp_rate_grass *= snowdepth_scale_grass * SW_VegProd.fractionGrass;
 	} else {
 		soil_evap_rate_grass = 0.;

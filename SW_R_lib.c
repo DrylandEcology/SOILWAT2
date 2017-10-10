@@ -36,10 +36,10 @@ RealD *p_Raet_mo, *p_Rdeep_drain_mo, *p_Restabs_mo, *p_Revap_soil_mo, *p_Revap_s
 		*p_RswaBulk_mo, *p_RswaMatric_mo, *p_Rtemp_mo, *p_Rtransp_mo, *p_Rwetdays_mo, *p_Rco2effects_mo;
 RealD *p_Raet_wk, *p_Rdeep_drain_wk, *p_Restabs_wk, *p_Revap_soil_wk, *p_Revap_surface_wk, *p_Rhydred_wk, *p_Rinfiltration_wk, *p_Rinterception_wk, *p_Rpercolation_wk,
 		*p_Rpet_wk, *p_Rprecip_wk, *p_Rrunoff_wk, *p_Rsnowpack_wk, *p_Rsoil_temp_wk, *p_Rsurface_water_wk, *p_RvwcBulk_wk, *p_RvwcMatric_wk, *p_RswcBulk_wk, *p_RswpMatric_wk,
-		*p_RswaBulk_wk, *p_RswaMatric_wk, *p_Rtemp_wk, *p_Rtransp_wk, *p_Rwetdays_wk;
+		*p_RswaBulk_wk, *p_RswaMatric_wk, *p_Rtemp_wk, *p_Rtransp_wk, *p_Rwetdays_wk, *p_Rco2effects_wk;
 RealD *p_Raet_dy, *p_Rdeep_drain_dy, *p_Restabs_dy, *p_Revap_soil_dy, *p_Revap_surface_dy, *p_Rhydred_dy, *p_Rinfiltration_dy, *p_Rinterception_dy, *p_Rpercolation_dy,
 		*p_Rpet_dy, *p_Rprecip_dy, *p_Rrunoff_dy, *p_Rsnowpack_dy, *p_Rsoil_temp_dy, *p_Rsurface_water_dy, *p_RvwcBulk_dy, *p_RvwcMatric_dy, *p_RswcBulk_dy, *p_RswpMatric_dy,
-		*p_RswaBulk_dy, *p_RswaMatric_dy, *p_Rtemp_dy, *p_Rtransp_dy, *p_Rwetdays_dy;
+		*p_RswaBulk_dy, *p_RswaMatric_dy, *p_Rtemp_dy, *p_Rtransp_dy, *p_Rwetdays_dy, *p_Rco2effects_dy;
 unsigned int yr_nrow = 0, mo_nrow = 0, wk_nrow = 0, dy_nrow = 0;
 
 extern char _firstfile[1024];
@@ -48,7 +48,7 @@ extern char _firstfile[1024];
 extern SW_MODEL SW_Model;
 //extern SW_SITE SW_Site;
 extern SW_VEGESTAB SW_VegEstab;
-static   int periodUse[28][4];
+static   int periodUse[29][4];
 unsigned int addtl_yr = 0; /* Used to calculate the actual year being modeled */
 
 /* =================================================== */
@@ -202,8 +202,10 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	dy_nrow = INTEGER(GET_SLOT(outputData, install("dy_nrow")))[0];
 
 	// Get the pointers to the pre configured output data setup. These are used in output.c
-	p_Rco2effects_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("CO2EFFECTS")), install("Year")));
-	p_Rco2effects_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("CO2EFFECTS")), install("Month")));
+	if(periodUse[eSW_CO2Effects][3]) p_Rco2effects_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("CO2EFFECTS")), install("Year")));
+	if(periodUse[eSW_CO2Effects][2]) p_Rco2effects_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("CO2EFFECTS")), install("Month")));
+	if(periodUse[eSW_CO2Effects][1]) p_Rco2effects_wk = REAL(GET_SLOT(GET_SLOT(outputData, install("CO2EFFECTS")), install("Week")));
+	if(periodUse[eSW_CO2Effects][0]) p_Rco2effects_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("CO2EFFECTS")), install("Day")));
 
 	if(periodUse[eSW_Temp][3]) p_Rtemp_yr = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Year")));
 	if(periodUse[eSW_Temp][2]) p_Rtemp_mo = REAL(GET_SLOT(GET_SLOT(outputData, install("TEMP")),install("Month")));
@@ -377,10 +379,10 @@ SEXP onGetOutput(SEXP inputData) {
 			RswaBulk_mo, RswaMatric_mo, Rtemp_mo, Rtransp_mo, Rwetdays_mo, Rco2effects_mo;
 	SEXP Rallveg_wk, Ret_wk, RallH2O_wk, Rwthr_wk, Raet_wk, Rdeedrain_wk, Restabs_wk, Revasoil_wk, Revasurface_wk, Rhydred_wk, Rinfiltration_wk, Rinterception_wk, Rpercolation_wk,
 			Rpet_wk, Rprecip_wk, Rrunoff_wk, Rsnowpack_wk, Rsoil_temp_wk, Rsurface_water_wk, RvwcBulk_wk, RvwcMatric_wk, RswcBulk_wk, RswpMatric_wk,
-			RswaBulk_wk, RswaMatric_wk, Rtemp_wk, Rtransp_wk, Rwetdays_wk;
+			RswaBulk_wk, RswaMatric_wk, Rtemp_wk, Rtransp_wk, Rwetdays_wk, Rco2effects_wk;
 	SEXP Rallveg_dy, Ret_dy, RallH2O_dy, Rwthr_dy, Raet_dy, Rdeedrain_dy, Restabs_dy, Revasoil_dy, Revasurface_dy, Rhydred_dy, Rinfiltration_dy, Rinterception_dy, Rpercolation_dy,
 			Rpet_dy, Rprecip_dy, Rrunoff_dy, Rsnowpack_dy, Rsoil_temp_dy, Rsurface_water_dy, RvwcBulk_dy, RvwcMatric_dy, RswcBulk_dy, RswpMatric_dy,
-			RswaBulk_dy, RswaMatric_dy, Rtemp_dy, Rtransp_dy, Rwetdays_dy;
+			RswaBulk_dy, RswaMatric_dy, Rtemp_dy, Rtransp_dy, Rwetdays_dy, Rco2effects_dy;
 
 	/************ NAMES ****************/
 	SEXP Ret_names_yr, Ret_names_y_yr, Raet_names_yr, Raet_names_y_yr, Rdeep_drain_names_yr, Rdeep_drain_names_y_yr, Restabs_names_yr, Restabs_names_y_yr, Revap_soil_names_yr, Revap_soil_names_y_yr,
@@ -404,14 +406,16 @@ SEXP onGetOutput(SEXP inputData) {
 	Rinterception_names_y_wk, Rpercolation_names_wk, Rpercolation_names_y_wk, Rpet_names_wk, Rpet_names_y_wk, Rprecip_names_wk, Rprecip_names_y_wk, Rrunoff_names_wk,
 	Rrunoff_names_y_wk, Rsnowpack_names_wk, Rsnowpack_names_y_wk, Rsoil_temp_names_wk, Rsoil_temp_names_y_wk, Rsurface_water_names_wk, Rsurface_water_names_y_wk,
 	Rsw_pot_names_wk, Rsw_pot_names_y_wk, RswaBulk_names_wk, RswaBulk_names_y_wk, RswaMatric_names_wk, RswaMatric_names_y_wk, RswcBulk_names_wk, RswcBulk_names_y_wk, Rtemp_names_wk, Rtemp_names_y_wk, Rtransp_names_wk,
-	Rtransp_names_y_wk, RvwcBulk_names_wk, RvwcBulk_names_y_wk, RvwcMatric_names_wk, RvwcMatric_names_y_wk, Rwetdays_names_wk, Rwetdays_names_y_wk, RswpMatric_names_wk, RswpMatric_names_y_wk;
+	Rtransp_names_y_wk, RvwcBulk_names_wk, RvwcBulk_names_y_wk, RvwcMatric_names_wk, RvwcMatric_names_y_wk, Rwetdays_names_wk, Rwetdays_names_y_wk, RswpMatric_names_wk, RswpMatric_names_y_wk,
+	Rco2effects_names_y_wk, Rco2effects_names_wk;
 
 	SEXP Ret_names_dy, Ret_names_y_dy, Raet_names_dy, Raet_names_y_dy, Rdeep_drain_names_dy, Rdeep_drain_names_y_dy, Restabs_names_dy, Restabs_names_y_dy, Revap_soil_names_dy, Revap_soil_names_y_dy,
 	Revap_surface_names_dy, Revap_surface_names_y_dy, Rhydred_names_dy, Rhydred_names_y_dy, Rinfiltration_names_dy, Rinfiltration_names_y_dy, Rinterception_names_dy,
 	Rinterception_names_y_dy, Rpercolation_names_dy, Rpercolation_names_y_dy, Rpet_names_dy, Rpet_names_y_dy, Rprecip_names_dy, Rprecip_names_y_dy, Rrunoff_names_dy,
 	Rrunoff_names_y_dy, Rsnowpack_names_dy, Rsnowpack_names_y_dy, Rsoil_temp_names_dy, Rsoil_temp_names_y_dy, Rsurface_water_names_dy, Rsurface_water_names_y_dy,
 	Rsw_pot_names_dy, Rsw_pot_names_y_dy, RswaBulk_names_dy, RswaBulk_names_y_dy, RswaMatric_names_dy, RswaMatric_names_y_dy, RswcBulk_names_dy, RswcBulk_names_y_dy, Rtemp_names_dy, Rtemp_names_y_dy, Rtransp_names_dy,
-	Rtransp_names_y_dy, RvwcBulk_names_dy, RvwcBulk_names_y_dy, RvwcMatric_names_dy, RvwcMatric_names_y_dy, Rwetdays_names_dy, Rwetdays_names_y_dy, RswpMatric_names_dy, RswpMatric_names_y_dy;
+	Rtransp_names_y_dy, RvwcBulk_names_dy, RvwcBulk_names_y_dy, RvwcMatric_names_dy, RvwcMatric_names_y_dy, Rwetdays_names_dy, Rwetdays_names_y_dy, RswpMatric_names_dy, RswpMatric_names_y_dy,
+	Rco2effects_names_y_dy, Rco2effects_names_dy;
 
 	char *Layers_names[] = { "Lyr_1", "Lyr_2", "Lyr_3", "Lyr_4", "Lyr_5", "Lyr_6", "Lyr_7", "Lyr_8", "Lyr_9", "Lyr_10", "Lyr_11", "Lyr_12", "Lyr_13", "Lyr_14", "Lyr_15",
 	                         "Lyr_16", "Lyr_17", "Lyr_18", "Lyr_19", "Lyr_20", "Lyr_21", "Lyr_22", "Lyr_23", "Lyr_24", "Lyr_25", "Lyr_26", "Lyr_27", "Lyr_28", "Lyr_29", "Lyr_30" };
@@ -467,7 +471,7 @@ SEXP onGetOutput(SEXP inputData) {
 		}
 	} else {
 		PROTECT(Periods = GET_SLOT(GET_SLOT(inputData, install("output")),install("period")));
-		for(i=0; i<28; i++) {
+		for(i=0; i<29; i++) {
 			switch (INTEGER(Periods)[i]) {
 				case eSW_Day:
 				pDayUse = 1;
@@ -510,7 +514,7 @@ SEXP onGetOutput(SEXP inputData) {
 
 	if(debug) Rprintf("Year Rows: %d, Month Rows: %d, Week Rows: %d, Day Rows: %d\n",yr_nrow, mo_nrow, wk_nrow, dy_nrow);
 
-	for(i=0; i<28; i++) {
+	for(i=0; i<29; i++) {
 		periodUse[i][0]=periodUse[i][1]=periodUse[i][2]=periodUse[i][3]=0;
 		if(useTimeStep) {
 			for(j=0; j<length(Periods); j++) {
@@ -552,7 +556,7 @@ SEXP onGetOutput(SEXP inputData) {
 	Rsoil_temp_columns = tLayers;
 	Rallveg_columns = 0;
 	Restabs_columns = tVegEstabCount;
-	Rco2effects_columns = 12;
+	Rco2effects_columns = 18;
 	PROTECT(swOutput = MAKE_CLASS("swOutput"));
 	PROTECT(swOutput_Object = NEW_OBJECT(swOutput));
 
@@ -2722,78 +2726,192 @@ SEXP onGetOutput(SEXP inputData) {
 		UNPROTECT(3);
 	}
 
-	// Establish co2effects as an output to Rsoilwat
+	// Establish CO2EFFECTS as an output to rSOILWAT2
 	if (use[28]) {
 		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[28]);
 
-		// Construct the co2effects output key with title and time step
+		/* Construct the CO2EFFECTS output key with title and time step */
 		PROTECT(swOutput_KEY_CO2EFFECTS = NEW_OBJECT(swOutput_KEY));
+
+		// Construct the title
 		PROTECT(r_CO2EFFECTS_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_CO2EFFECTS_NAME, 0, mkChar(cSWoutput_KEY_Titles[28]));
 		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Title"), r_CO2EFFECTS_NAME);
 
-		// Construct the time step for the output key
-		PROTECT(r_CO2EFFECTS_PERIOD = NEW_INTEGER(1));
-		INTEGER(r_CO2EFFECTS_PERIOD)[0] = 2;
-		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("TimeStep"), r_CO2EFFECTS_PERIOD);
+		// Construct the time step
+		/*PROTECT(r_CO2EFFECTS_PERIOD = NEW_INTEGER(1));
+		INTEGER(r_CO2EFFECTS_PERIOD)[0] = 4;  // was 2
+		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("TimeStep"), r_CO2EFFECTS_PERIOD);*/
 
-		/* Construct the monthly output structure */
-		PROTECT(Rco2effects_mo = allocMatrix(REALSXP, mo_nrow, Rco2effects_columns + 2));
-		PROTECT(Rco2effects_names_mo = allocVector(VECSXP, 2));
-		PROTECT(Rco2effects_names_y_mo = allocVector(STRSXP, Rco2effects_columns + 2));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 0, mkChar("Year"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 1, mkChar("Month"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 2, mkChar("GrassBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 3, mkChar("ShrubBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 4, mkChar("TreeBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 5, mkChar("ForbBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 6, mkChar("TotalBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 7, mkChar("GrassBiolive"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 8, mkChar("ShrubBiolive"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 9, mkChar("TreeBiolive"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 10, mkChar("ForbBiolive"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 11, mkChar("TotalBiolive"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 12, mkChar("BiomassMultiplier"));
-		SET_STRING_ELT(Rco2effects_names_y_mo, 13, mkChar("WUEMultiplier"));
-		SET_VECTOR_ELT(Rco2effects_names_mo, 1, Rco2effects_names_y_mo);
-		// Initialize to 0; allocMatrix does not initialize
-		for (k = 0; k < mo_nrow * (Rco2effects_columns + 2); k++)
-			REAL(Rco2effects_mo)[k] = 0.;
-		setAttrib(Rco2effects_mo, R_DimNamesSymbol, Rco2effects_names_mo);
-		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Month"), Rco2effects_mo);
-		
-		/* Construct the yearly output structure */
-		PROTECT(Rco2effects_yr = allocMatrix(REALSXP, yr_nrow, Rco2effects_columns + 1));
-		PROTECT(Rco2effects_names_yr = allocVector(VECSXP, 2));
-		PROTECT(Rco2effects_names_y_yr = allocVector(STRSXP, Rco2effects_columns + 1));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 0, mkChar("Year"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 1, mkChar("GrassBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 2, mkChar("ShrubBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 3, mkChar("TreeBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 4, mkChar("ForbBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 5, mkChar("TotalBiomass"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 6, mkChar("GrassBiolive"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 7, mkChar("ShrubBiolive"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 8, mkChar("TreeBiolive"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 9, mkChar("ForbBiolive"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 10, mkChar("TotalBiolive"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 11, mkChar("BiomassMultiplier"));
-		SET_STRING_ELT(Rco2effects_names_y_yr, 12, mkChar("WUEMultiplier"));
-		SET_VECTOR_ELT(Rco2effects_names_yr, 1, Rco2effects_names_y_yr);
-		// Initialize to 0; allocMatrix does not initialize
-		for (k = 0; k < yr_nrow * (Rco2effects_columns + 1); k++)
-		  REAL(Rco2effects_yr)[k] = 0.;
-		setAttrib(Rco2effects_yr, R_DimNamesSymbol, Rco2effects_names_yr);
-		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Year"), Rco2effects_yr);
+		if (useTimeStep) {
+			PROTECT(r_CO2EFFECTS_PERIOD = NEW_INTEGER(length(Periods)));
+			for(i=0; i<length(Periods); i++)
+				INTEGER(r_CO2EFFECTS_PERIOD)[i]=INTEGER(Periods)[i];
+			SET_SLOT(swOutput_KEY_CO2EFFECTS, install("TimeStep"), r_CO2EFFECTS_PERIOD);
+			UNPROTECT(1);
+		} else {
+			PROTECT(r_ESTABL_PERIOD = NEW_INTEGER(1));
+			INTEGER(r_ESTABL_PERIOD)[0]=INTEGER(Periods)[28];
+			SET_SLOT(swOutput_KEY_CO2EFFECTS, install("TimeStep"), r_CO2EFFECTS_PERIOD);
+			UNPROTECT(1);
+		}
 
-		// Add co2effects to the output class
+		/* Allocate outputs per time period */
+		if (periodUse[28][0])
+		{
+			/* Construct the daily output structure */
+			PROTECT(Rco2effects_dy = allocMatrix(REALSXP, dy_nrow, Rco2effects_columns + 2));
+			PROTECT(Rco2effects_names_dy = allocVector(VECSXP, 2));
+			PROTECT(Rco2effects_names_y_dy = allocVector(STRSXP, Rco2effects_columns + 2));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 0, mkChar("Year"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 1, mkChar("Week"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 2, mkChar("GrassBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 3, mkChar("ShrubBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 4, mkChar("TreeBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 5, mkChar("ForbBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 6, mkChar("TotalBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 7, mkChar("GrassBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 8, mkChar("ShrubBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 9, mkChar("TreeBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 10, mkChar("ForbBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 11, mkChar("TotalBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 12, mkChar("GrassBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 13, mkChar("ShrubBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 14, mkChar("TreeBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 15, mkChar("ForbBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 16, mkChar("GrassWUEMult"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 17, mkChar("ShrubWUEMult"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 18, mkChar("TreeWUEMult"));
+			SET_STRING_ELT(Rco2effects_names_y_dy, 19, mkChar("ForbWUEMult"));
+			SET_VECTOR_ELT(Rco2effects_names_dy, 1, Rco2effects_names_y_dy);
+
+			// Initialize to 0; allocMatrix does not initialize
+			for (k = 0; k < dy_nrow * (Rco2effects_columns + 2); k++)
+				REAL(Rco2effects_dy)[k] = 0.;
+			setAttrib(Rco2effects_dy, R_DimNamesSymbol, Rco2effects_names_dy);
+			SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Day"), Rco2effects_dy);
+
+			UNPROTECT(3);
+		}
+
+		if (periodUse[28][1])
+		{
+			/* Construct the weekly output structure */
+			PROTECT(Rco2effects_wk = allocMatrix(REALSXP, wk_nrow, Rco2effects_columns + 2));
+			PROTECT(Rco2effects_names_wk = allocVector(VECSXP, 2));
+			PROTECT(Rco2effects_names_y_wk = allocVector(STRSXP, Rco2effects_columns + 2));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 0, mkChar("Year"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 1, mkChar("Week"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 2, mkChar("GrassBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 3, mkChar("ShrubBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 4, mkChar("TreeBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 5, mkChar("ForbBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 6, mkChar("TotalBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 7, mkChar("GrassBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 8, mkChar("ShrubBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 9, mkChar("TreeBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 10, mkChar("ForbBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 11, mkChar("TotalBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 12, mkChar("GrassBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 13, mkChar("ShrubBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 14, mkChar("TreeBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 15, mkChar("ForbBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 16, mkChar("GrassWUEMult"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 17, mkChar("ShrubWUEMult"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 18, mkChar("TreeWUEMult"));
+			SET_STRING_ELT(Rco2effects_names_y_wk, 19, mkChar("ForbWUEMult"));
+			SET_VECTOR_ELT(Rco2effects_names_wk, 1, Rco2effects_names_y_wk);
+
+			// Initialize to 0; allocMatrix does not initialize
+			for (k = 0; k < wk_nrow * (Rco2effects_columns + 2); k++)
+				REAL(Rco2effects_wk)[k] = 0.;
+			setAttrib(Rco2effects_wk, R_DimNamesSymbol, Rco2effects_names_wk);
+			SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Week"), Rco2effects_wk);
+
+			UNPROTECT(3);
+		}
+
+		if (periodUse[28][2])
+		{
+			/* Construct the monthly output structure */
+			PROTECT(Rco2effects_mo = allocMatrix(REALSXP, mo_nrow, Rco2effects_columns + 2));
+			PROTECT(Rco2effects_names_mo = allocVector(VECSXP, 2));
+			PROTECT(Rco2effects_names_y_mo = allocVector(STRSXP, Rco2effects_columns + 2));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 0, mkChar("Year"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 1, mkChar("Month"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 2, mkChar("GrassBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 3, mkChar("ShrubBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 4, mkChar("TreeBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 5, mkChar("ForbBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 6, mkChar("TotalBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 7, mkChar("GrassBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 8, mkChar("ShrubBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 9, mkChar("TreeBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 10, mkChar("ForbBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 11, mkChar("TotalBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 12, mkChar("GrassBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 13, mkChar("ShrubBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 14, mkChar("TreeBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 15, mkChar("ForbBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 16, mkChar("GrassWUEMult"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 17, mkChar("ShrubWUEMult"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 18, mkChar("TreeWUEMult"));
+			SET_STRING_ELT(Rco2effects_names_y_mo, 19, mkChar("ForbWUEMult"));
+			SET_VECTOR_ELT(Rco2effects_names_mo, 1, Rco2effects_names_y_mo);
+
+			// Initialize to 0; allocMatrix does not initialize
+			for (k = 0; k < mo_nrow * (Rco2effects_columns + 2); k++)
+				REAL(Rco2effects_mo)[k] = 0.;
+			setAttrib(Rco2effects_mo, R_DimNamesSymbol, Rco2effects_names_mo);
+			SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Month"), Rco2effects_mo);
+
+			UNPROTECT(3);
+		}
+
+		if (periodUse[28][3])
+		{
+			/* Construct the yearly output structure */
+			PROTECT(Rco2effects_yr = allocMatrix(REALSXP, yr_nrow, Rco2effects_columns + 1));
+			PROTECT(Rco2effects_names_yr = allocVector(VECSXP, 2));
+			PROTECT(Rco2effects_names_y_yr = allocVector(STRSXP, Rco2effects_columns + 1));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 0, mkChar("Year"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 1, mkChar("GrassBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 2, mkChar("ShrubBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 3, mkChar("TreeBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 4, mkChar("ForbBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 5, mkChar("TotalBiomass"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 6, mkChar("GrassBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 7, mkChar("ShrubBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 8, mkChar("TreeBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 9, mkChar("ForbBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 10, mkChar("TotalBiolive"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 11, mkChar("GrassBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 12, mkChar("ShrubBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 13, mkChar("TreeBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 14, mkChar("ForbBioMult"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 15, mkChar("GrassWUEMult"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 16, mkChar("ShrubWUEMult"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 17, mkChar("TreeWUEMult"));
+			SET_STRING_ELT(Rco2effects_names_y_yr, 18, mkChar("ForbWUEMult"));
+			SET_VECTOR_ELT(Rco2effects_names_yr, 1, Rco2effects_names_y_yr);
+
+			// Initialize to 0; allocMatrix does not initialize
+			for (k = 0; k < yr_nrow * (Rco2effects_columns + 1); k++)
+			  REAL(Rco2effects_yr)[k] = 0.;
+			setAttrib(Rco2effects_yr, R_DimNamesSymbol, Rco2effects_names_yr);
+			SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Year"), Rco2effects_yr);
+
+			UNPROTECT(3);
+		}
+
+		// Add CO2EFFECTS to the output class
 		PROTECT(r_CO2EFFECTS_COLUMNS = NEW_INTEGER(1));
 		INTEGER(r_CO2EFFECTS_COLUMNS)[0] = Rco2effects_columns;
 		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Columns"), r_CO2EFFECTS_COLUMNS);
 		SET_SLOT(swOutput_Object, install(cSWoutput_Names[32]), swOutput_KEY_CO2EFFECTS);
 
 		// Free protected data as they are no longer needed
-		UNPROTECT(10);
+		UNPROTECT(3);
 	}
 
 

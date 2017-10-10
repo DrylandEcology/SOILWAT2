@@ -35,6 +35,8 @@
 #define SW_VEGPROD_H
 
 #include "SW_Defines.h"    /* for MAX_MONTHS and tanfunc_t*/
+#include "SW_Carbon.h"     /* for PFTs structure */
+
 #ifdef RSOILWAT
 #include <R.h>
 #include <Rdefines.h>
@@ -98,7 +100,7 @@ typedef struct {
 
 	RealD bareGround_albedo; /* create this here instead of creating a bareGround VegType, because it only needs albedo and no other data member */
 
-	RealD co2_bio_coeff1, co2_bio_coeff2, co2_wue_coeff1, co2_wue_coeff2;
+	PFTs co2_bio_coeff1, co2_bio_coeff2, co2_wue_coeff1, co2_wue_coeff2;
 
 } SW_VEGPROD;
 

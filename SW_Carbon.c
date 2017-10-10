@@ -55,15 +55,18 @@ void SW_CBN_construct(void)
 
   SW_CARBON *c = &SW_Carbon;
   int year;
-  
+
+  PFTs default_values;
+  default_values.grass = default_values.shrub = default_values.tree = default_values.forb = 1.0;
+
   for (year = 0; year < MAX_CO2_YEAR; year++)
   {
-    c->co2_multipliers[BIO_INDEX][year] = 1.0;
-    c->co2_multipliers[WUE_INDEX][year] = 1.0;
+    c->co2_multipliers[BIO_INDEX][year] = default_values;
+    c->co2_multipliers[WUE_INDEX][year] = default_values;
   }
-  
-  c->co2_bio_mult = 1.0;
-  c->co2_wue_mult = 1.0;
+
+  c->co2_bio_mult = default_values;
+  c->co2_wue_mult = default_values;
 }
 
 /* A description on how these 'onGet' and 'onSet' functions work...
@@ -88,7 +91,7 @@ SEXP onGet_SW_CARBON(void) {
   onSet_swCarbon(object);
 
   UNPROTECT(2);
-  
+
   return object;
 }
 
@@ -102,9 +105,9 @@ void onSet_swCarbon(SEXP object) {
   strcpy(c->scenario, CHAR(STRING_ELT(GET_SLOT(object, install("Scenario")), 0)));  // e.g. c->scenario = "RCP85"
 }
 #endif
-    
+
 /**
- * Calculates the multipliers for biomass and Water-use efficiency. 
+ * Calculates the multipliers for biomass and Water-use efficiency.
  * If a multiplier is disabled, its value is set to 1. All the years
  * in carbon.in are calculated. rSOILWAT2 will pass in the settings directly.
  * SOILWAT2 will read siteparam.in for settings.
@@ -119,13 +122,20 @@ void calculate_CO2_multipliers(void) {
   SW_VEGPROD *v  = &SW_VegProd;
   MyFileName     = SW_F_name(eCarbon);
   f              = OpenFile(MyFileName, "r");
-  
+
+  // For efficiency, don't read carbon.in if neither multiplier is being used
+  // We can do this because SW_CBN_CONSTRUCT already populated the multipliers with default values
+  if (!c->use_bio_mult && !c->use_wue_mult)
+  {
+    return;
+  }
+
   /* Calculate multipliers by reading carbon.in */
   while (GetALine(f, inbuf)) {
     // Read the year standalone because if it's 0 it marks a change in the scenario,
     // in which case we'll need to read in a string instead of an int
     sscanf(inbuf, "%d", &year);
-    
+
     // Find scenario
     if (year == 0)
     {
@@ -134,10 +144,24 @@ void calculate_CO2_multipliers(void) {
     }
     if (strcmp(scenario, c->scenario) != 0)
       continue;  // Keep searching for the right scenario
-    
+
     sscanf(inbuf, "%d %lf", &year, &ppm);
-    if (c->use_bio_mult) c->co2_multipliers[BIO_INDEX][year] = v->co2_bio_coeff1  * pow(ppm, v->co2_bio_coeff2);
-    if (c->use_wue_mult) c->co2_multipliers[WUE_INDEX][year] = v->co2_wue_coeff1 * pow(ppm, v->co2_wue_coeff2);
+
+    // Per PFT
+    if (c->use_bio_mult)
+    {
+      c->co2_multipliers[BIO_INDEX][year].grass = v->co2_bio_coeff1.grass * pow(ppm, v->co2_bio_coeff2.grass);
+      c->co2_multipliers[BIO_INDEX][year].shrub = v->co2_bio_coeff1.shrub * pow(ppm, v->co2_bio_coeff2.shrub);
+      c->co2_multipliers[BIO_INDEX][year].tree = v->co2_bio_coeff1.tree * pow(ppm, v->co2_bio_coeff2.tree);
+      c->co2_multipliers[BIO_INDEX][year].forb = v->co2_bio_coeff1.forb * pow(ppm, v->co2_bio_coeff2.forb);
+    }
+    if (c->use_wue_mult)
+    {
+      c->co2_multipliers[WUE_INDEX][year].grass = v->co2_wue_coeff1.grass * pow(ppm, v->co2_wue_coeff2.grass);
+      c->co2_multipliers[WUE_INDEX][year].shrub = v->co2_wue_coeff1.shrub * pow(ppm, v->co2_wue_coeff2.shrub);
+      c->co2_multipliers[WUE_INDEX][year].tree = v->co2_wue_coeff1.tree * pow(ppm, v->co2_wue_coeff2.tree);
+      c->co2_multipliers[WUE_INDEX][year].forb = v->co2_wue_coeff1.forb * pow(ppm, v->co2_wue_coeff2.forb);
+    }
   }
 }
 
@@ -146,10 +170,9 @@ void calculate_CO2_multipliers(void) {
  * we do not have a compound effect on the biomass.
  * @param new_biomass  the resulting biomass after CO2 effects calculated
  * @param biomass      the biomass to be modified
+ * @param multiplier   the biomass multiplier for this PFT
  */
-void apply_CO2(double new_biomass[], double biomass[]) {
+void apply_CO2(double new_biomass[], double biomass[], double multiplier) {
   int i;
-  SW_CARBON  *c  = &SW_Carbon;
-
-  for (i = 0; i < 12; i++) new_biomass[i] = (biomass[i] * c->co2_bio_mult);
+  for (i = 0; i < 12; i++) new_biomass[i] = (biomass[i] * multiplier);
 }
