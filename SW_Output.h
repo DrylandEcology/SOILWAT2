@@ -157,6 +157,15 @@ typedef struct {
 	FILE *fp_wk_soil; /* opened output file pointer for week*/
 	FILE *fp_mo_soil; /* opened output file pointer for month*/
 	FILE *fp_yr_soil; /* opened output file pointer for year*/
+
+	FILE *fp_dy_avg; /* opened output file pointer for day*/
+	FILE *fp_wk_avg; /* opened output file pointer for week*/
+	FILE *fp_mo_avg; /* opened output file pointer for month*/
+	FILE *fp_yr_avg; /* opened output file pointer for year*/
+	FILE *fp_dy_soil_avg; /* opened output file pointer for day*/
+	FILE *fp_wk_soil_avg; /* opened output file pointer for week*/
+	FILE *fp_mo_soil_avg; /* opened output file pointer for month*/
+	FILE *fp_yr_soil_avg; /* opened output file pointer for year*/
 	void (*pfunc)(void); /* pointer to output routine */
 } SW_OUTPUT;
 

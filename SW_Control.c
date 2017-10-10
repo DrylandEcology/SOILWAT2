@@ -124,9 +124,9 @@ void SW_CTL_run_current_year(void) {
 /***********************************************************/
 void stat_Output_Daily_CSV_Summary(int iteration)
 {
-	if(iteration == -1){ // just storing average values over all iterations
-		SW_Output_Files.fp_dy = OpenFile(SW_F_name(eOutputDaily), "w");
-		SW_Output_Files.fp_dy_soil = OpenFile(SW_F_name(eOutputDaily_soil), "w");
+	if(iteration == -1){ // just storing average values over all iterations or soilwat standalone
+		SW_Output_Files.fp_dy_avg = OpenFile(SW_F_name(eOutputDaily), "w");
+		SW_Output_Files.fp_dy_soil_avg = OpenFile(SW_F_name(eOutputDaily_soil), "w");
 	}
 	else{ // storing values for every iteration
 		char *newFile; // new file to create
@@ -167,8 +167,8 @@ void stat_Output_Daily_CSV_Summary(int iteration)
 void stat_Output_Weekly_CSV_Summary(int iteration)
 {
 	if(iteration == -1){ // just storing average values over all iterations
-		SW_Output_Files.fp_wk = OpenFile(SW_F_name(eOutputWeekly), "w");
-		SW_Output_Files.fp_wk_soil = OpenFile(SW_F_name(eOutputWeekly_soil), "w");
+		SW_Output_Files.fp_wk_avg = OpenFile(SW_F_name(eOutputWeekly), "w");
+		SW_Output_Files.fp_wk_soil_avg = OpenFile(SW_F_name(eOutputWeekly_soil), "w");
 	}
 	else{ // storing values for every iteration
 		char *newFile; // new file to create
@@ -209,8 +209,8 @@ void stat_Output_Weekly_CSV_Summary(int iteration)
 void stat_Output_Monthly_CSV_Summary(int iteration)
 {
 	if(iteration == -1){ // just storing average values over all iterations
-		SW_Output_Files.fp_mo = OpenFile(SW_F_name(eOutputMonthly), "w");
-		SW_Output_Files.fp_mo_soil = OpenFile(SW_F_name(eOutputMonthly_soil), "w");
+		SW_Output_Files.fp_mo_avg = OpenFile(SW_F_name(eOutputMonthly), "w");
+		SW_Output_Files.fp_mo_soil_avg = OpenFile(SW_F_name(eOutputMonthly_soil), "w");
 	}
 	else{ // storing values for every iteration
 		char *newFile; // new file to create
@@ -236,8 +236,6 @@ void stat_Output_Monthly_CSV_Summary(int iteration)
 
 		newFile_soil = strtok(SW_F_name(eOutputMonthly_soil), "."); // get filename up to but not including ".csv"
 		strcat(newFile_soil, "_");
-		strcat(newFile_soil, iterationToString);
-		strcat(newFile_soil, ".");
 		strcat(newFile_soil, extension);
 		SW_Output_Files.fp_mo_soil = OpenFile(newFile_soil, "w"); // open new file
 
@@ -251,8 +249,8 @@ void stat_Output_Monthly_CSV_Summary(int iteration)
 void stat_Output_Yearly_CSV_Summary(int iteration)
 {
 	if(iteration == -1){ // just storing average values over all iterations
-		SW_Output_Files.fp_yr = OpenFile(SW_F_name(eOutputYearly), "w");
-		SW_Output_Files.fp_yr_soil = OpenFile(SW_F_name(eOutputYearly_soil), "w");
+		SW_Output_Files.fp_yr_avg = OpenFile(SW_F_name(eOutputYearly), "w");
+		SW_Output_Files.fp_yr_soil_avg = OpenFile(SW_F_name(eOutputYearly_soil), "w");
 	}
 	else{ // storing values for every iteration
 		char *newFile; // new file to create

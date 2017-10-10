@@ -238,10 +238,12 @@ static int numPeriod;// variable to keep track of the number of periods that are
 static int numPeriods = 4;// the total number of periods that can be used in the code
 static int timeSteps[SW_OUTNKEYS][4];// array to keep track of the periods that will be used for each output
 
+// used for soilwat (STEPPE uses its own value stored in struct [sxw.h])
 int col_status_dy = 0;
 int col_status_wk = 0;
 int col_status_mo = 0;
 int col_status_yr = 0;
+
 int lastMonth = 0;
 int lastWeek = 0;
 int finalValue = 0;
@@ -288,6 +290,7 @@ static void get_swpMatric(void);
 static void get_swaBulk(void);
 static void get_swaMatric(void);
 static void get_swa(void);
+static void get_dSWAbulk(void);
 static void get_surfaceWater(void);
 static void get_runoff(void);
 static void get_transp(void);
@@ -306,7 +309,7 @@ static void get_estab(void);
 static void get_soiltemp(void);
 static void get_none(void); /* default until defined */
 void populate_output_values(char *reg_file_array, char *soil_file_array, int output_var, int year_out);
-void create_col_headers(int outFileTimestep);
+void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file);
 
 static void collect_sums(ObjType otyp, OutPeriod op);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
@@ -968,23 +971,23 @@ void SW_OUT_close_files(void)
 			{ /*depending on iteration through loop, will close one of the time step files */
 				case eSW_Day:
 					printf("closing day\n");
-					CloseFile(&SW_Output_Files.fp_dy);
-					CloseFile(&SW_Output_Files.fp_dy_soil);
+					CloseFile(&SW_Output_Files.fp_dy_avg);
+					CloseFile(&SW_Output_Files.fp_dy_soil_avg);
 					break;
 				case eSW_Week:
 					printf("closing week\n");
-					CloseFile(&SW_Output_Files.fp_wk);
-					CloseFile(&SW_Output_Files.fp_wk_soil);
+					CloseFile(&SW_Output_Files.fp_wk_avg);
+					CloseFile(&SW_Output_Files.fp_wk_soil_avg);
 					break;
 				case eSW_Month:
 					printf("closing month\n");
-					CloseFile(&SW_Output_Files.fp_mo);
-					CloseFile(&SW_Output_Files.fp_mo_soil);
+					CloseFile(&SW_Output_Files.fp_mo_avg);
+					CloseFile(&SW_Output_Files.fp_mo_soil_avg);
 					break;
 				case eSW_Year:
 					printf("closing year\n");
-					CloseFile(&SW_Output_Files.fp_yr);
-					CloseFile(&SW_Output_Files.fp_yr_soil);
+					CloseFile(&SW_Output_Files.fp_yr_avg);
+					CloseFile(&SW_Output_Files.fp_yr_soil_avg);
 					break;
 			}
 		}
@@ -1253,7 +1256,7 @@ void SW_OUT_write_today(void)
 						//printf("Creating column labels for day output file...\n");
 						memset(&reg_file_vals_day[0], 0, sizeof(reg_file_vals_day));
 						memset(&soil_file_vals_day[0], 0, sizeof(soil_file_vals_day));
-						create_col_headers(1);
+						create_col_headers(1, SW_Output_Files.fp_dy_avg, SW_Output_Files.fp_dy_soil_avg);
 						col_status_dy++;
 					}
 
@@ -1261,11 +1264,11 @@ void SW_OUT_write_today(void)
 
 					if(k+1 == SW_OUTNKEYS){
 						if(reg_file_vals_day[0] != 0){
-							fprintf(SW_Output_Files.fp_dy, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, reg_file_vals_day);
+							fprintf(SW_Output_Files.fp_dy_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, reg_file_vals_day);
 							memset(&reg_file_vals_day[0], 0, sizeof(reg_file_vals_day));
 						}
 						if(soil_file_vals_day[0] != 0){
-							fprintf(SW_Output_Files.fp_dy_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, soil_file_vals_day);
+							fprintf(SW_Output_Files.fp_dy_soil_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, soil_file_vals_day);
 							memset(&soil_file_vals_day[0], 0, sizeof(soil_file_vals_day));
 						}
 					}
@@ -1277,7 +1280,7 @@ void SW_OUT_write_today(void)
 						//printf("Creating column labels for week output file...\n");
 						memset(&reg_file_vals_week[0], 0, sizeof(reg_file_vals_week));
 						memset(&soil_file_vals_week[0], 0, sizeof(soil_file_vals_week));
-						create_col_headers(2);
+						create_col_headers(2, SW_Output_Files.fp_wk_avg, SW_Output_Files.fp_wk_soil_avg);
 						col_status_wk++;
 					}
 
@@ -1291,11 +1294,11 @@ void SW_OUT_write_today(void)
 						else if(SW_Model.week == 52 && lastWeek == 0) lastWeek = 1;
 
 						if(soil_file_vals_week[0] != 0){
-							fprintf(SW_Output_Files.fp_wk_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, soil_file_vals_week);
+							fprintf(SW_Output_Files.fp_wk_soil_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, soil_file_vals_week);
 							memset(&soil_file_vals_week[0], 0, sizeof(soil_file_vals_week));
 						}
 						if(reg_file_vals_week[0] != 0){
-							fprintf(SW_Output_Files.fp_wk, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, reg_file_vals_week);
+							fprintf(SW_Output_Files.fp_wk_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, reg_file_vals_week);
 							memset(&reg_file_vals_week[0], 0, sizeof(reg_file_vals_week));
 						}
 					}
@@ -1307,7 +1310,7 @@ void SW_OUT_write_today(void)
 						//printf("Creating column labels for month output file...\n");
 						memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
 						memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
-						create_col_headers(3);
+						create_col_headers(3, SW_Output_Files.fp_mo_avg, SW_Output_Files.fp_mo_soil_avg);
 						col_status_mo++;
 					}
 
@@ -1321,11 +1324,11 @@ void SW_OUT_write_today(void)
 						else if(SW_Model.month == 11 && lastMonth == 0) lastMonth = 1;
 
 						if(soil_file_vals_month[0] != 0){
-							fprintf(SW_Output_Files.fp_mo_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
+							fprintf(SW_Output_Files.fp_mo_soil_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
 							memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
 						}
 						if(reg_file_vals_month[0] != 0){
-							fprintf(SW_Output_Files.fp_mo, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, reg_file_vals_month);
+							fprintf(SW_Output_Files.fp_mo_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, reg_file_vals_month);
 							memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
 						}
 					}
@@ -1337,7 +1340,7 @@ void SW_OUT_write_today(void)
 						//printf("Creating column labels for year output file...\n");
 						memset(&reg_file_vals_year[0], 0, sizeof(reg_file_vals_year));
 						memset(&soil_file_vals_year[0], 0, sizeof(soil_file_vals_year));
-						create_col_headers(4);
+						create_col_headers(4, SW_Output_Files.fp_yr_avg, SW_Output_Files.fp_yr_soil_avg);
 						col_status_yr++;
 					}
 
@@ -1345,11 +1348,11 @@ void SW_OUT_write_today(void)
 
 					if(k+1 == SW_OUTNKEYS){
 						if(soil_file_vals_year[0] != 0){
-							fprintf(SW_Output_Files.fp_yr_soil, "%d%c%s\n", SW_Model.year, _Sep, soil_file_vals_year);
+							fprintf(SW_Output_Files.fp_yr_soil_avg, "%d%c%s\n", SW_Model.year, _Sep, soil_file_vals_year);
 							memset(&soil_file_vals_year[0], 0, sizeof(soil_file_vals_year));
 						}
 						if(reg_file_vals_year[0] != 0){
-							fprintf(SW_Output_Files.fp_yr, "%d%c%s\n", SW_Model.year, _Sep, reg_file_vals_year);
+							fprintf(SW_Output_Files.fp_yr_avg, "%d%c%s\n", SW_Model.year, _Sep, reg_file_vals_year);
 							memset(&reg_file_vals_year[0], 0, sizeof(reg_file_vals_year));
 						}
 					}
@@ -1367,7 +1370,10 @@ void SW_OUT_write_today(void)
 							//printf("Creating column labels for day output file...\n");
 							memset(&reg_file_vals_day[0], 0, sizeof(reg_file_vals_day));
 							memset(&soil_file_vals_day[0], 0, sizeof(soil_file_vals_day));
-							create_col_headers(1);
+							if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
+								create_col_headers(1, SW_Output_Files.fp_dy_avg, SW_Output_Files.fp_dy_soil_avg);
+							if(storeAllIterations)
+								create_col_headers(1, SW_Output_Files.fp_dy, SW_Output_Files.fp_dy_soil);
 							SXW.col_status_dy++;
 						}
 
@@ -1375,11 +1381,22 @@ void SW_OUT_write_today(void)
 
 						if(k == finalValue){
 							if(reg_file_vals_day[0] != 0){
-								fprintf(SW_Output_Files.fp_dy, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, reg_file_vals_day);
+								if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
+									fprintf(SW_Output_Files.fp_dy_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, reg_file_vals_day);
+								}
+								if(storeAllIterations){
+									fprintf(SW_Output_Files.fp_dy, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, reg_file_vals_day);
+								}
 								memset(&reg_file_vals_day[0], 0, sizeof(reg_file_vals_day));
 							}
 							if(soil_file_vals_day[0] != 0){
-								fprintf(SW_Output_Files.fp_dy_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, soil_file_vals_day);
+								if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
+									fprintf(SW_Output_Files.fp_dy_soil_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, soil_file_vals_day);
+
+								}
+								if(storeAllIterations){
+									fprintf(SW_Output_Files.fp_dy_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, soil_file_vals_day);
+								}
 								memset(&soil_file_vals_day[0], 0, sizeof(soil_file_vals_day));
 							}
 						}
@@ -1391,7 +1408,10 @@ void SW_OUT_write_today(void)
 							//printf("Creating column labels for week output file...\n");
 							memset(&reg_file_vals_week[0], 0, sizeof(reg_file_vals_week));
 							memset(&soil_file_vals_week[0], 0, sizeof(soil_file_vals_week));
-							create_col_headers(2);
+							if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
+								create_col_headers(2, SW_Output_Files.fp_wk_avg, SW_Output_Files.fp_wk_soil_avg);
+							if(storeAllIterations)
+								create_col_headers(2, SW_Output_Files.fp_wk, SW_Output_Files.fp_wk_soil);
 							SXW.col_status_wk++;
 						}
 
@@ -1404,11 +1424,21 @@ void SW_OUT_write_today(void)
 							}
 							else if(SW_Model.week == 52 && lastWeek == 0) lastWeek = 1;
 							if(soil_file_vals_week[0] != 0){
-								fprintf(SW_Output_Files.fp_wk_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, soil_file_vals_week);
+								if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
+									fprintf(SW_Output_Files.fp_wk_soil_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, soil_file_vals_week);
+								}
+								if(storeAllIterations){
+									fprintf(SW_Output_Files.fp_wk_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, soil_file_vals_week);
+								}
 								memset(&soil_file_vals_week[0], 0, sizeof(soil_file_vals_week));
 							}
 							if(reg_file_vals_week[0] != 0){
-								fprintf(SW_Output_Files.fp_wk, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, reg_file_vals_week);
+								if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
+									fprintf(SW_Output_Files.fp_wk_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, reg_file_vals_week);
+								}
+								if(storeAllIterations){
+									fprintf(SW_Output_Files.fp_wk, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.week, _Sep, reg_file_vals_week);
+								}
 								memset(&reg_file_vals_week[0], 0, sizeof(reg_file_vals_week));
 							}
 						}
@@ -1420,7 +1450,10 @@ void SW_OUT_write_today(void)
 							//printf("Creating column labels for month output file...\n");
 							memset(&reg_file_vals_month, 0, sizeof(reg_file_vals_month));
 							memset(&soil_file_vals_month, 0, sizeof(soil_file_vals_month));
-							create_col_headers(3);
+							if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
+								create_col_headers(3, SW_Output_Files.fp_mo_avg, SW_Output_Files.fp_mo_soil_avg);
+							if(storeAllIterations)
+								create_col_headers(3, SW_Output_Files.fp_mo, SW_Output_Files.fp_mo_soil);
 							SXW.col_status_mo++;
 						}
 
@@ -1434,11 +1467,21 @@ void SW_OUT_write_today(void)
 							else if(SW_Model.month == 11 && lastMonth == 0) lastMonth = 1;
 
 							if(soil_file_vals_month[0] != 0){
-								fprintf(SW_Output_Files.fp_mo_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
+								if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
+									fprintf(SW_Output_Files.fp_mo_soil_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
+								}
+								if(storeAllIterations){
+									fprintf(SW_Output_Files.fp_mo_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, soil_file_vals_month);
+								}
 								memset(&soil_file_vals_month, 0, sizeof(soil_file_vals_month));
 							}
 							if(reg_file_vals_month[0] != 0){
-								fprintf(SW_Output_Files.fp_mo, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, reg_file_vals_month);
+								if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
+									fprintf(SW_Output_Files.fp_mo_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, reg_file_vals_month);
+								}
+								if(storeAllIterations){
+									fprintf(SW_Output_Files.fp_mo, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.month, _Sep, reg_file_vals_month);
+								}
 								memset(&reg_file_vals_month, 0, sizeof(reg_file_vals_month));
 							}
 						}
@@ -1450,7 +1493,10 @@ void SW_OUT_write_today(void)
 							//printf("Creating column labels for year output file...\n");
 							memset(&reg_file_vals_year[0], 0, sizeof(reg_file_vals_year));
 							memset(&soil_file_vals_year[0], 0, sizeof(soil_file_vals_year));
-							create_col_headers(4);
+							if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
+								create_col_headers(4, SW_Output_Files.fp_yr_avg, SW_Output_Files.fp_yr_soil_avg);
+							if(storeAllIterations)
+								create_col_headers(4, SW_Output_Files.fp_yr, SW_Output_Files.fp_yr_soil);
 							SXW.col_status_yr++;
 						}
 
@@ -1458,11 +1504,21 @@ void SW_OUT_write_today(void)
 
 						if(k == finalValue){
 							if(soil_file_vals_year[0] != 0){
-								fprintf(SW_Output_Files.fp_yr_soil, "%d%c%s\n", SW_Model.year, _Sep, soil_file_vals_year);
+								if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
+									fprintf(SW_Output_Files.fp_yr_soil_avg, "%d%c%s\n", SW_Model.year, _Sep, soil_file_vals_year);
+								}
+								if(storeAllIterations){
+									fprintf(SW_Output_Files.fp_yr_soil, "%d%c%s\n", SW_Model.year, _Sep, soil_file_vals_year);
+								}
 								memset(&soil_file_vals_year[0], 0, sizeof(soil_file_vals_year));
 							}
 							if(reg_file_vals_year[0] != 0){
-								fprintf(SW_Output_Files.fp_yr, "%d%c%s\n", SW_Model.year, _Sep, reg_file_vals_year);
+								if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
+									fprintf(SW_Output_Files.fp_yr_avg, "%d%c%s\n", SW_Model.year, _Sep, reg_file_vals_year);
+								}
+								if(storeAllIterations){
+									fprintf(SW_Output_Files.fp_yr, "%d%c%s\n", SW_Model.year, _Sep, reg_file_vals_year);
+								}
 								memset(&reg_file_vals_year[0], 0, sizeof(reg_file_vals_year));
 							}
 						}
@@ -2144,7 +2200,7 @@ static void get_swa(void)
 			SXW.SWAbulk_shrub[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
 			SXW.SWAbulk_grass[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);*/
 
-			SXW.SWA_master[Itlp(0,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree); // Itlp(veg_type, timeperiod, layer)
+			SXW.SWA_master[Itlp(0,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree); // Itlp(veg_type, layer, timeperiod)
 			SXW.SWA_master[Itlp(1,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
 			SXW.SWA_master[Itlp(2,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
 			SXW.SWA_master[Itlp(3,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
@@ -2171,11 +2227,53 @@ static void get_swa(void)
 				strcat(outstr, str);
 			}
 		}
-
 	#endif
+	get_dSWAbulk(); // need to call this function to calculate correct amount of SWA
 }
 
+// function to calculate the correct amount of SWA
+static void get_dSWAbulk(void){
+	#ifdef STEPWAT
+		TimeInt p;
+		SW_MODEL *t = &SW_Model;
+	#endif
 
+	int i,kv,id_prev_veg;
+	OutPeriod pd = SW_Output[eSW_SWA].period; //
+	LyrIndex l;
+	RealD val = SW_MISSING;
+	int index_sw_veg_types[4] = {1, 2, 3, 4}; // temp array for veg_types (need to find actual array where this info is stored) [might not need at all]
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		// TODO: do SOILWAT stuff
+
+	#elif defined(STEPWAT)
+		get_outstrleader(pd);
+		ForEachSoilLayer(i)
+		{
+			switch (pd)
+			{
+				case eSW_Day:
+					p = t->doy-1;
+					break;
+				case eSW_Week:
+					p = t->week-1;
+					break;
+				case eSW_Month:
+					p = t->month-1;
+					break;
+			}
+		// loop through each veg type to get dSWAbulk
+		for(kv=0; kv<4; kv++){
+			id_prev_veg = SXW.rank_SWPcrits[kv+1]; // get prev veg type
+			//printf("SXW.SWA_master[Itlp(%d,%d,%d)]: %f\n", kv,i,p,SXW.SWA_master[Itlp(kv,i,p)]);
+			//printf("SXW.SWA_master[Itlp(%d,%d,%d)]: %f\n", id_prev_veg,i,p,SXW.SWA_master[Itlp(id_prev_veg,i,p)]);
+			SXW.dSWAbulk[Itlp(kv,i,p)] = SXW.SWA_master[Itlp(kv,i,p)]-SXW.SWA_master[Itlp(id_prev_veg,i,p)]; //Itlp(veg_type, layer, timeperiod)
+			//printf("SXW.dSWAbulk[Iglp(kv,p,i)]: %f\n\n", SXW.dSWAbulk[Iglp(kv,p,i)]); // what should the dSWAbulk values look like?
+		}
+	}
+	#endif
+}
 
 static void get_swcBulk(void)
 {
@@ -4795,7 +4893,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 	return;
 }
 
-void create_col_headers(int outFileTimestep){
+void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file){
 	OutKey colHeadersLoop;
 	LyrIndex evap_loop;
 	char *colHeaders[500];
@@ -5039,25 +5137,25 @@ void create_col_headers(int outFileTimestep){
 			case(1):
 				col1Head = "Year";
 				col2Head = "Day"; //TODO: have col 2 for proper timestep, not hardcoded to day
-				fprintf(SW_Output_Files.fp_dy_soil, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
-				fprintf(SW_Output_Files.fp_dy, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
+				fprintf(soil_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
+				fprintf(regular_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
 				break;
 			case(2):
 				col1Head = "Year";
 				col2Head = "Week"; //TODO: have col 2 for proper timestep, not hardcoded to day
-				fprintf(SW_Output_Files.fp_wk_soil, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
-				fprintf(SW_Output_Files.fp_wk, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
+				fprintf(soil_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
+				fprintf(regular_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
 				break;
 			case(3):
 				col1Head = "Year";
 				col2Head = "Month"; //TODO: have col 2 for proper timestep, not hardcoded to day
-				fprintf(SW_Output_Files.fp_mo_soil, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
-				fprintf(SW_Output_Files.fp_mo, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
+				fprintf(soil_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
+				fprintf(regular_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
 				break;
 			case(4):
 				col1Head = "Year";
-				fprintf(SW_Output_Files.fp_yr_soil, "%s%c%s\n", col1Head, _Sep, colHeadersSoil); // write columns to file
-				fprintf(SW_Output_Files.fp_yr, "%s%c%s\n", col1Head, _Sep, colHeaders); // write columns to file
+				fprintf(soil_file, "%s%c%s\n", col1Head, _Sep, colHeadersSoil); // write columns to file
+				fprintf(regular_file, "%s%c%s\n", col1Head, _Sep, colHeaders); // write columns to file
 				break;
 		}
 
