@@ -2195,15 +2195,47 @@ static void get_swa(void)
 					break;
 			}
 
-			/*SXW.SWAbulk_forb[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb); // p:timeperiod i:layer
-			SXW.SWAbulk_tree[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-			SXW.SWAbulk_shrub[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-			SXW.SWAbulk_grass[Ilp(i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);*/
+			// #####################################################################
+			// Getting values for SWA_master at each critical value it has acess to
+			// #####################################################################
+			/* how much water available for trees at -2.0 and above
+			* Itclp(veg_type, crit_value, layer, timeperiod)
+			* in SWA_master index for both veg_type and crit_value [0=tree, 1=shrub, 2=grass, 3=forb]
+			*/
 
-			SXW.SWA_master[Itlp(0,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree); // Itlp(veg_type, layer, timeperiod)
-			SXW.SWA_master[Itlp(1,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-			SXW.SWA_master[Itlp(2,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
-			SXW.SWA_master[Itlp(3,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+			// first set each veg type to its crit value defined by inputs
+			SXW.SWA_master[Itclp(0,0,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+			SXW.SWA_master[Itclp(1,1,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+			SXW.SWA_master[Itclp(2,2,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+			SXW.SWA_master[Itclp(3,3,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+
+			// need to check which other critical value each veg_type has access to aside from its own
+			//(i.e. if shrub=-3.9 then it also has access to -3.5 and -2.0)
+			int j,k;
+			float curr_crit_val, new_crit_val;
+			// go through each veg type
+			for(j=0; j<4; j++){
+				curr_crit_val = SXW.critSoilWater[j]; // get critical value for current veg type
+				// go through each critical value to see which ones need to be set for each veg_type
+				for(k=0; k<4; k++){
+					if(k == j){
+						// dont need to check for its own critical value
+					}
+					else{
+						new_crit_val = SXW.critSoilWater[k];
+
+						if(curr_crit_val < new_crit_val){ // need to store this value since it has access to it
+							SXW.SWA_master[Itclp(j,k,i,p)] = SXW.SWA_master[Itclp(k,k,i,p)]; // itclp(veg_type, new_critical_value, layer, timeperiod)
+						}
+						if(curr_crit_val > new_crit_val){ // need to set this value to 0 since it does not have access to it
+							SXW.SWA_master[Itclp(j,k,i,p)] = 0.; // itclp(veg_type, new_critical_value, layer, timeperiod)
+						}
+					}
+				}
+			}
+			// ######################################################
+			//           done with calculating SWA_master
+			// ######################################################
 
 			if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 			{
@@ -2219,6 +2251,22 @@ static void get_swa(void)
 					SXW.SWAbulk_tree_avg[Ilp(i,p)] /= Globals.runModelIterations;
 					SXW.SWAbulk_shrub_avg[Ilp(i,p)] /= Globals.runModelIterations;
 					SXW.SWAbulk_grass_avg[Ilp(i,p)] /= Globals.runModelIterations;
+
+					/*printf("crit val at 0: %f\n", SXW.critSoilWater[0]);
+					printf("crit val at 1: %f\n", SXW.critSoilWater[1]);
+					printf("crit val at 2: %f\n", SXW.critSoilWater[2]);
+					printf("crit val at 3: %f\n", SXW.critSoilWater[3]);
+
+					printf("shrub[1,0]: %f\n", SXW.SWA_master[Itclp(1,0,i,p)]);
+					printf("shrub[1,1]: %f\n", SXW.SWA_master[Itclp(1,1,i,p)]);
+					printf("shrub[1,2]: %f\n", SXW.SWA_master[Itclp(1,2,i,p)]);
+					printf("shrub[1,3]: %f\n\n", SXW.SWA_master[Itclp(1,3,i,p)]);
+
+					printf("forb[3,0]: %f\n", SXW.SWA_master[Itclp(3,0,i,p)]);
+					printf("forb[3,1]: %f\n", SXW.SWA_master[Itclp(3,1,i,p)]);
+					printf("forb[3,2]: %f\n", SXW.SWA_master[Itclp(3,2,i,p)]);
+					printf("forb[3,3]: %f\n", SXW.SWA_master[Itclp(3,3,i,p)]);
+					printf("---------------------\n\n");*/
 				}
 				if (bFlush) p++;
 
@@ -2232,6 +2280,7 @@ static void get_swa(void)
 }
 
 // function to calculate the correct amount of SWA
+// TODO: need to redo entire function based on new SWA_master
 static void get_dSWAbulk(void){
 	#ifdef STEPWAT
 		TimeInt p;
@@ -2268,7 +2317,7 @@ static void get_dSWAbulk(void){
 			id_prev_veg = SXW.rank_SWPcrits[kv+1]; // get prev veg type
 			//printf("SXW.SWA_master[Itlp(%d,%d,%d)]: %f\n", kv,i,p,SXW.SWA_master[Itlp(kv,i,p)]);
 			//printf("SXW.SWA_master[Itlp(%d,%d,%d)]: %f\n", id_prev_veg,i,p,SXW.SWA_master[Itlp(id_prev_veg,i,p)]);
-			SXW.dSWAbulk[Itlp(kv,i,p)] = SXW.SWA_master[Itlp(kv,i,p)]-SXW.SWA_master[Itlp(id_prev_veg,i,p)]; //Itlp(veg_type, layer, timeperiod)
+			SXW.dSWAbulk[Itclp(kv,0,i,p)] = SXW.SWA_master[Itclp(kv,0,i,p)]-SXW.SWA_master[Itclp(id_prev_veg,0,i,p)]; //Itlp(veg_type, layer, timeperiod)
 			//printf("SXW.dSWAbulk[Iglp(kv,p,i)]: %f\n\n", SXW.dSWAbulk[Iglp(kv,p,i)]); // what should the dSWAbulk values look like?
 		}
 	}
