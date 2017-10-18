@@ -1909,8 +1909,8 @@ for(switchCounter=0;switchCounter<4;switchCounter++){
 		if (pd != eSW_Year)
 		LogError(logfp, LOGFATAL, "Invalid output period for PRECIP; should be YR, %7.6f,%7.6f,%7.6f,%7.6f", val_snowloss, val_snowmelt, val_snow, val_rain); //added extra for compiler
 		SXW.ppt = val_ppt; // ORIGINAL - DONT ALTER
-		SXW.PPTVal[SXW.yearInterval] = val_ppt; // these are all the same values for the most part
-		SXW.yearInterval++;
+		//SXW.PPTVal[SXW.yearInterval] = val_ppt; // these are all the same values for the most part
+		//SXW.yearInterval++;
 	}
 #endif
 }
@@ -2743,6 +2743,7 @@ static void get_runoff(void)
 			val_snowRunoff = SW_MISSING;
 #ifndef RSOILWAT
 	char str[OUTSTRLEN];
+	//printf("outstrlen: %f\n", OUTSTRLEN);
 	get_outstrleader(pd);
 	switch (pd)
 	{
@@ -2814,7 +2815,7 @@ static void get_transp(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_Transp].period;
-	RealD *val = malloc(sizeof(RealD) * SW_Site.n_layers);
+	RealF *val = malloc(sizeof(RealF) * SW_Site.n_layers);
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
 #elif defined(STEPWAT)
@@ -2919,7 +2920,7 @@ static void get_transp(void)
 			}
 		}
 		if(storeAllIterations){
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpTotal[Ilp(i,p)]);
+			sprintf(str, "%c%7.6f", _Sep, val[i]);
 			strcat(outstr, str);
 		}
 	}
@@ -2999,7 +3000,7 @@ static void get_transp(void)
 			//strcat(outstr, str);
 		}
 		if(storeAllIterations){
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees[Ilp(i,p)]);
+			sprintf(str, "%c%7.6f", _Sep, val[i]);
 			strcat(outstr, str);
 		}
 	}
@@ -3079,7 +3080,7 @@ static void get_transp(void)
 			//strcat(outstr, str);
 		}
 		if(storeAllIterations){
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs[Ilp(i,p)]);
+			sprintf(str, "%c%7.6f", _Sep, val[i]);
 			strcat(outstr, str);
 		}
 	}
@@ -3159,7 +3160,7 @@ static void get_transp(void)
 			//strcat(outstr, str);
 		}
 		if(storeAllIterations){
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs[Ilp(i,p)]);
+			sprintf(str, "%c%7.6f", _Sep, val[i]);
 			strcat(outstr, str);
 		}
 	}
@@ -3244,7 +3245,7 @@ static void get_transp(void)
 			//strcat(outstr, str);
 		}
 		if(storeAllIterations){
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses[Ilp(i,p)]);
+			sprintf(str, "%c%7.6f", _Sep, val[i]);
 			strcat(outstr, str);
 		}
 	}
