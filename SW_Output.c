@@ -2265,7 +2265,12 @@ static void get_swa(void)
 					printf("forb[3,0]: %f\n", SXW.SWA_master[Itclp(3,0,i,p)]);
 					printf("forb[3,1]: %f\n", SXW.SWA_master[Itclp(3,1,i,p)]);
 					printf("forb[3,2]: %f\n", SXW.SWA_master[Itclp(3,2,i,p)]);
-					printf("forb[3,3]: %f\n", SXW.SWA_master[Itclp(3,3,i,p)]);
+					printf("forb[3,3]: %f\n\n", SXW.SWA_master[Itclp(3,3,i,p)]);
+
+					printf("grass[2,0]: %f\n", SXW.SWA_master[Itclp(2,0,i,p)]);
+					printf("grass[2,1]: %f\n", SXW.SWA_master[Itclp(2,1,i,p)]);
+					printf("grass[2,2]: %f\n", SXW.SWA_master[Itclp(2,2,i,p)]);
+					printf("grass[2,3]: %f\n", SXW.SWA_master[Itclp(2,3,i,p)]);
 					printf("---------------------\n\n");*/
 				}
 				if (bFlush) p++;
@@ -2908,10 +2913,13 @@ static void get_transp(void)
 		}
 		if(bFlush) p++;
 
-		SXW.transpTotal[Ilp(i,p)] = val[i];
+		//SXW.transpTotal[Ilp(i,p)] = val[i];
 
 		if (isPartialSoilwatOutput == FALSE){
-			SXW.transpTotal_avg[Ilp(i,p)] += val[i]; // get average over all iterations
+			float transpTotal_avg_temp = val[i] + SXW.transpTotal[Ilp(i,p)]; // add val + last transpTotal value
+			//printf("size of transpTotal_avg_temp: %f\n", sizeof(transpTotal_avg_temp));
+			//printf("size of transpTotal_avg: %f\n", sizeof(SXW.transpTotal_avg[Ilp(i,p)]));
+			SXW.transpTotal_avg[Ilp(i,p)] = val[i] + SXW.transpTotal[Ilp(i,p)]; // adding val plus the last transpTotal;
 
 			if(Globals.currIter == Globals.runModelIterations){
 				SXW.transpTotal_avg[Ilp(i,p)] /= Globals.runModelIterations;
@@ -2923,6 +2931,7 @@ static void get_transp(void)
 			sprintf(str, "%c%7.6f", _Sep, val[i]);
 			strcat(outstr, str);
 		}
+		SXW.transpTotal[Ilp(i,p)] = val[i];
 	}
 #endif
 
