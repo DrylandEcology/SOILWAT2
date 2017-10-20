@@ -2195,9 +2195,9 @@ static void get_swa(void)
 					break;
 			}
 
-			// #####################################################################
-			// Getting values for SWA_master at each critical value it has acess to
-			// #####################################################################
+			// ########################################################################
+			// # Getting values for SWA_master at each critical value it has acess to #
+			// ########################################################################
 			/* how much water available for trees at -2.0 and above
 			* Itclp(veg_type, crit_value, layer, timeperiod)
 			* in SWA_master index for both veg_type and crit_value [0=tree, 1=shrub, 2=grass, 3=forb]
@@ -2223,7 +2223,6 @@ static void get_swa(void)
 					}
 					else{
 						new_crit_val = SXW.critSoilWater[k];
-
 						if(curr_crit_val < new_crit_val){ // need to store this value since it has access to it
 							SXW.SWA_master[Itclp(j,k,i,p)] = SXW.SWA_master[Itclp(k,k,i,p)]; // itclp(veg_type, new_critical_value, layer, timeperiod)
 						}
@@ -2317,14 +2316,19 @@ static void get_dSWAbulk(void){
 					p = t->month-1;
 					break;
 			}
+
+
 		// loop through each veg type to get dSWAbulk
-		for(kv=0; kv<4; kv++){
-			id_prev_veg = SXW.rank_SWPcrits[kv+1]; // get prev veg type
+		/*for(kv=0; kv<4; kv++){
+			id_prev_veg = SXW.rank_SWPcrits[kv]-1; // get prev veg type
 			//printf("SXW.SWA_master[Itlp(%d,%d,%d)]: %f\n", kv,i,p,SXW.SWA_master[Itlp(kv,i,p)]);
 			//printf("SXW.SWA_master[Itlp(%d,%d,%d)]: %f\n", id_prev_veg,i,p,SXW.SWA_master[Itlp(id_prev_veg,i,p)]);
-			SXW.dSWAbulk[Itclp(kv,0,i,p)] = SXW.SWA_master[Itclp(kv,0,i,p)]-SXW.SWA_master[Itclp(id_prev_veg,0,i,p)]; //Itlp(veg_type, layer, timeperiod)
-			//printf("SXW.dSWAbulk[Iglp(kv,p,i)]: %f\n\n", SXW.dSWAbulk[Iglp(kv,p,i)]); // what should the dSWAbulk values look like?
-		}
+			printf("SXW.SWA_master[Itclp(kv,kv,i,p)]: %f\n\n", SXW.SWA_master[Itclp(kv,kv,i,p)]); // what should the dSWAbulk values look like?
+			printf("SXW.SWA_master[Itclp(id_prev_veg,id_prev_veg,i,p)]: %f\n\n", SXW.SWA_master[Itclp(id_prev_veg,id_prev_veg,i,p)]); // what should the dSWAbulk values look like?
+			SXW.dSWAbulk[Itclp(kv,kv,i,p)] = SXW.SWA_master[Itclp(kv,kv,i,p)]-SXW.SWA_master[Itclp(id_prev_veg,id_prev_veg,i,p)]; //Itclp(veg_type, crit_value, layer, timeperiod)
+			printf("SXW.dSWAbulk[Itclp(kv,kv,p,i)]: %f\n\n", SXW.dSWAbulk[Itclp(kv,kv,i,p)]); // what should the dSWAbulk values look like?
+			printf("################3\n");
+		}*/
 	}
 	#endif
 }
@@ -2994,19 +2998,27 @@ static void get_transp(void)
 			/* YEAR should never be used with STEPWAT */
 		}
 		if (bFlush) p++;
-		SXW.transpTrees[Ilp(i,p)] = val[i];
+		if(SW_VegProd.fractionTree == 0)
+			SXW.transpTrees[Ilp(i,p)] = 0.;
+		else
+			SXW.transpTrees[Ilp(i,p)] = val[i];
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			SXW.transpTrees_avg[Ilp(i,p)] += SXW.transpTrees[Ilp(i,p)]; // get average over all iterations
+			if(SW_VegProd.fractionTree == 0)
+				SXW.transpTrees_avg[Ilp(i,p)] = 0.;
+			else
+				SXW.transpTrees_avg[Ilp(i,p)] += SXW.transpTrees[Ilp(i,p)]; // get average over all iterations
 
 			if(Globals.currIter == Globals.runModelIterations){
 				SXW.transpTrees_avg[Ilp(i,p)] /= Globals.runModelIterations;
 				sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees_avg[Ilp(i,p)]);
 				strcat(outstr, str);
+				//printf("str transp_tree: %s\n", str);
+				//printf("transp_tree: %f\n", SXW.transpTrees_avg[Ilp(i,p)]);
 			}
-			//sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees_avg[Ilp(i,p)]);
-			//strcat(outstr, str);
+			sprintf(str, "%c%7.6f", _Sep, val[i]);
+			strcat(outstr, str);
 		}
 		if(storeAllIterations){
 			sprintf(str, "%c%7.6f", _Sep, val[i]);
@@ -3085,8 +3097,8 @@ static void get_transp(void)
 				sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs_avg[Ilp(i,p)]);
 				strcat(outstr, str);
 			}
-			//sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs_avg[Ilp(i,p)]);
-			//strcat(outstr, str);
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs_avg[Ilp(i,p)]);
+			strcat(outstr, str);
 		}
 		if(storeAllIterations){
 			sprintf(str, "%c%7.6f", _Sep, val[i]);
@@ -3165,8 +3177,8 @@ static void get_transp(void)
 				sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs_avg[Ilp(i,p)]);
 				strcat(outstr, str);
 			}
-			//sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs_avg[Ilp(i,p)]);
-			//strcat(outstr, str);
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs_avg[Ilp(i,p)]);
+			strcat(outstr, str);
 		}
 		if(storeAllIterations){
 			sprintf(str, "%c%7.6f", _Sep, val[i]);
@@ -3250,8 +3262,8 @@ static void get_transp(void)
 				sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses_avg[Ilp(i,p)]);
 				strcat(outstr, str);
 			}
-			//sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses_avg[Ilp(i,p)]);
-			//strcat(outstr, str);
+			sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses_avg[Ilp(i,p)]);
+			strcat(outstr, str);
 		}
 		if(storeAllIterations){
 			sprintf(str, "%c%7.6f", _Sep, val[i]);
