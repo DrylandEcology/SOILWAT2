@@ -116,6 +116,14 @@ void SW_VPD_read(void) {
 				v->fractionTree = help_tree;
 				v->fractionForb = help_forb;
 				v->fractionBareGround = help_bareGround;
+
+				#ifdef STEPWAT
+					SXW.useVegType[0] = help_tree;
+					SXW.useVegType[1] = help_shrub;
+					SXW.useVegType[2] = help_grass;
+					SXW.useVegType[3] = help_forb;
+				#endif
+
 				break;
 
 				/* albedo */

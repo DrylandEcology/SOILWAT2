@@ -2239,10 +2239,10 @@ static void get_swa(void)
 			if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 			{
 				// get average over all iterations
-				SXW.SWAbulk_forb_avg[Ilp(i,p)] += SXW.SWA_master[Itlp(3,i,p)];
-				SXW.SWAbulk_tree_avg[Ilp(i,p)] += SXW.SWA_master[Itlp(0,i,p)];
-				SXW.SWAbulk_shrub_avg[Ilp(i,p)] += SXW.SWA_master[Itlp(1,i,p)];
-				SXW.SWAbulk_grass_avg[Ilp(i,p)] += SXW.SWA_master[Itlp(2,i,p)];
+				SXW.SWAbulk_forb_avg[Ilp(i,p)] += SXW.SWA_master[Itclp(3,3,i,p)];
+				SXW.SWAbulk_tree_avg[Ilp(i,p)] += SXW.SWA_master[Itclp(0,0,i,p)];
+				SXW.SWAbulk_shrub_avg[Ilp(i,p)] += SXW.SWA_master[Itclp(1,1,i,p)];
+				SXW.SWAbulk_grass_avg[Ilp(i,p)] += SXW.SWA_master[Itclp(2,2,i,p)];
 
 				// divide by number of iterations at end to store average
 				if(Globals.currIter == Globals.runModelIterations){
@@ -2281,6 +2281,7 @@ static void get_swa(void)
 		}
 	#endif
 	get_dSWAbulk(); // need to call this function to calculate correct amount of SWA
+									// not sure if need this for RSOILWAT or not
 }
 
 // function to calculate the correct amount of SWA
@@ -2291,8 +2292,9 @@ static void get_dSWAbulk(void){
 		SW_MODEL *t = &SW_Model;
 	#endif
 
-	int i,kv,id_prev_veg;
-	OutPeriod pd = SW_Output[eSW_SWA].period; //
+	int i,kv,id_prev_veg,curr_vegType,curr_crit_rank_index;
+	float crit_val,prev_crit_val;
+	OutPeriod pd = SW_Output[eSW_SWA].period;
 	LyrIndex l;
 	RealD val = SW_MISSING;
 	int index_sw_veg_types[4] = {1, 2, 3, 4}; // temp array for veg_types (need to find actual array where this info is stored) [might not need at all]
@@ -2317,18 +2319,59 @@ static void get_dSWAbulk(void){
 					break;
 			}
 
-
+		/*	description and example for below loops
+		*		first loop gets veg_type with smallest critical value
+		* 	second loop goes through all critical values larger than the original veg_type and subtracts
+		* 	EX: veg_type = shrub (shrub is 1 in veg_type array)
+		* 			curr_vegType = 1
+						curr_crit_rank_index = 3 // since shrub has smallest crit vale (-3.9) it is at last position in rank array since has access to all others
+							2nd loop iteration 1
+								kv = 3 //first time through loop its set to the current veg types rank index
+								crit_val = -3.9 //critical value for shrub
+								prev_crit_val = -3.5
+								SXW.useVegType[1] != 0 since shrubs are turned on in input files so continue on
+								-3.9 < -3.5
+									dSWAbulk[curr_vegType,kv] = SWA_master[curr_vegType,kv] - SWA_master[curr_vegType,kv-1]
+							2nd loop iteration 2
+								kv = 2 // go down to next index in rank to recalculate SWA at -3.5 - -2.0
+								crit_val = -3.5 //critical value for shrub
+								prev_crit_val = -2.0
+								SXW.useVegType[1] != 0 since shrubs are turned on in input files so continue on
+								-3.5 < -2.0
+									dSWAbulk[curr_vegType,kv] = SWA_master[curr_vegType,kv] - SWA_master[curr_vegType,kv-1]
+							2nd loop iteration 3
+								kv = 1 // go down to next index in rank to recalculate SWA at -3.5 - -2.0
+								crit_val = -2.0 //critical value for shrub
+								prev_crit_val = -2.0
+								SXW.useVegType[1] != 0 since shrubs are turned on in input files so continue on
+								-2.0 !< -2.0 // since not less than we are done because dont need to recalculate if crit value is the same
+		*/
 		// loop through each veg type to get dSWAbulk
-		/*for(kv=0; kv<4; kv++){
-			id_prev_veg = SXW.rank_SWPcrits[kv]-1; // get prev veg type
-			//printf("SXW.SWA_master[Itlp(%d,%d,%d)]: %f\n", kv,i,p,SXW.SWA_master[Itlp(kv,i,p)]);
-			//printf("SXW.SWA_master[Itlp(%d,%d,%d)]: %f\n", id_prev_veg,i,p,SXW.SWA_master[Itlp(id_prev_veg,i,p)]);
-			printf("SXW.SWA_master[Itclp(kv,kv,i,p)]: %f\n\n", SXW.SWA_master[Itclp(kv,kv,i,p)]); // what should the dSWAbulk values look like?
-			printf("SXW.SWA_master[Itclp(id_prev_veg,id_prev_veg,i,p)]: %f\n\n", SXW.SWA_master[Itclp(id_prev_veg,id_prev_veg,i,p)]); // what should the dSWAbulk values look like?
-			SXW.dSWAbulk[Itclp(kv,kv,i,p)] = SXW.SWA_master[Itclp(kv,kv,i,p)]-SXW.SWA_master[Itclp(id_prev_veg,id_prev_veg,i,p)]; //Itclp(veg_type, crit_value, layer, timeperiod)
-			printf("SXW.dSWAbulk[Itclp(kv,kv,p,i)]: %f\n\n", SXW.dSWAbulk[Itclp(kv,kv,i,p)]); // what should the dSWAbulk values look like?
-			printf("################3\n");
-		}*/
+		for(curr_vegType = 3; curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary starting at largest
+			curr_crit_rank_index = SXW.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
+			for(kv=curr_crit_rank_index; kv>0; kv--){ // dont need to go to last one since will never have to recalculate smallest value
+				crit_val = SXW.critSoilWater[SXW.rank_SWPcrits[kv]]; // get crit value at current index
+				prev_crit_val = SXW.critSoilWater[SXW.rank_SWPcrits[kv-1]]; // get crit value for index lower
+				if(SXW.useVegType[curr_vegType] == 0){
+					// do nothing since veg type is turned off
+				}
+				else{ // check if need to recalculate for veg types in use
+					if(crit_val < prev_crit_val){ // if true then we need to recalculate
+						SXW.dSWAbulk[Itclp(curr_vegType,kv,i,p)] = SXW.SWA_master[Itclp(curr_vegType,kv,i,p)]-SXW.SWA_master[Itclp(curr_vegType,kv-1,i,p)];
+						if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 1980){
+							printf("for veg_type 0=tree, 1=shrub, 2=grass, 3=forb\n");
+							printf("veg_type: %d\n", curr_vegType);
+							printf("curr_crit_rank_index (3 is smallest (-3.9) 0 is largest (-2.0)): %d\n", curr_crit_rank_index);
+							printf("crit_val,prev_crit_val || %f,%f\n\n", crit_val,prev_crit_val);
+							printf("Current value of SXW.SWA_master[Itclp(%d,%d,%d,%d)]: %f\n", curr_vegType, kv, i, p, SXW.SWA_master[Itclp(curr_vegType,kv,i,p)]);
+							printf("Value to be substracted of SXW.SWA_master[Itclp(%d,%d,%d,%d)]: %f\n\n", curr_vegType, kv-1, i, p, SXW.SWA_master[Itclp(curr_vegType,kv-1,i,p)]);
+							printf("refactored value of dSWAbulk: %f\n\n", SXW.dSWAbulk[Itclp(curr_vegType,kv,i,p)]);
+							printf("################\n\n");
+						}
+					}
+				}
+			}
+		}
 	}
 	#endif
 }
@@ -2998,7 +3041,7 @@ static void get_transp(void)
 			/* YEAR should never be used with STEPWAT */
 		}
 		if (bFlush) p++;
-		if(SW_VegProd.fractionTree == 0)
+		if(SW_VegProd.fractionTree == 0) // if value is turned off in .in files then make sure values set to 0
 			SXW.transpTrees[Ilp(i,p)] = 0.;
 		else
 			SXW.transpTrees[Ilp(i,p)] = val[i];
