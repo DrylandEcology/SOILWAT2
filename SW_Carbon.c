@@ -19,6 +19,7 @@
 #include "SW_Carbon.h"
 #include "SW_Site.h"
 #include "SW_VegProd.h"
+#include "SW_Model.h"
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -32,6 +33,7 @@
 static char *MyFileName;
 SW_CARBON SW_Carbon;    // Declared here, externed elsewhere
 SW_VEGPROD SW_VegProd;  // Declared here, externed elsewhere
+SW_MODEL SW_Model;      // Declared here, externed elsewhere
 
 
 /* =================================================== */
@@ -115,8 +117,9 @@ void onSet_swCarbon(SEXP object) {
 void calculate_CO2_multipliers(void) {
   FILE *f;
   char scenario[64];
-  double ppm;
-  int year;
+  double ppm = -1;
+  int year = -1;
+  int existing_years[MAX_CO2_YEAR] = { 0 };
 
   SW_CARBON  *c  = &SW_Carbon;
   SW_VEGPROD *v  = &SW_VegProd;
@@ -131,6 +134,7 @@ void calculate_CO2_multipliers(void) {
   }
 
   /* Calculate multipliers by reading carbon.in */
+
   while (GetALine(f, inbuf)) {
     // Read the year standalone because if it's 0 it marks a change in the scenario,
     // in which case we'll need to read in a string instead of an int
@@ -140,12 +144,25 @@ void calculate_CO2_multipliers(void) {
     if (year == 0)
     {
       sscanf(inbuf, "%d %63s", &year, scenario);
-      continue;  // Skip to the PPM values
+      continue;  // Skip to the ppm values
     }
     if (strcmp(scenario, c->scenario) != 0)
       continue;  // Keep searching for the right scenario
 
     sscanf(inbuf, "%d %lf", &year, &ppm);
+
+    /* Has this year already been calculated?
+       If yes: Do NOT overwrite values, fail the run instead
+
+       Use a simple binary system with the year as the index, which avoids using a loop.
+       We cannot simply check if co2_multipliers[0 or 1][year].grass != 1.0, due to floating point precision
+       and the chance that a multiplier of 1.0 was actually calculated */
+    if (existing_years[year] != 0)
+    {
+      sprintf(errstr, "(SW_Carbon) Year %d in scenario '%s' is entered more than once; only one entry is allowed.\n", year, c->scenario);
+      LogError(logfp, LOGFATAL, errstr);
+    }
+    existing_years[year] = 1;
 
     // Per PFT
     if (c->use_bio_mult)
@@ -161,6 +178,32 @@ void calculate_CO2_multipliers(void) {
       c->co2_multipliers[WUE_INDEX][year].shrub = v->co2_wue_coeff1.shrub * pow(ppm, v->co2_wue_coeff2.shrub);
       c->co2_multipliers[WUE_INDEX][year].tree = v->co2_wue_coeff1.tree * pow(ppm, v->co2_wue_coeff2.tree);
       c->co2_multipliers[WUE_INDEX][year].forb = v->co2_wue_coeff1.forb * pow(ppm, v->co2_wue_coeff2.forb);
+    }
+  }
+
+  /* Error checking */
+
+  // Must check if the file was empty before checking if the scneario was found,
+  // otherwise the empty file will be masked as not being able to find the scenario
+  if (year == -1)  // If the loop was entered at least once, year will have a positive value
+  {
+    sprintf(errstr, "(SW_Carbon) carbon.in was empty; for debugging purposes, SOILWAT2 read in file '%s'\n", MyFileName);
+    LogError(logfp, LOGFATAL, errstr);
+  }
+
+  if (ppm == -1)  // A scenario must be found in order for ppm to have a positive value
+  {
+    sprintf(errstr, "(SW_Carbon) The scenario '%s' was not found in carbon.in\n", c->scenario);
+    LogError(logfp, LOGFATAL, errstr);
+  }
+
+  // Ensure that the desired years were calculated
+  for (year = (int) SW_Model.startyr + c->addtl_yr; year <= (int) SW_Model.endyr + c->addtl_yr; year++)
+  {
+    if (existing_years[year] == 0)
+    {
+      sprintf(errstr, "(SW_Carbon) CO2 multiplier(s) for year %d were not calculated; ensure that ppm values for this year exist in scenario '%s'\n", year, c->scenario);
+      LogError(logfp, LOGFATAL, errstr);
     }
   }
 }
