@@ -657,8 +657,8 @@ SEXP onGet_SW_VPD() {
 	RealD *p_CO2Coefficients;
 
 	// Create row and column names
-	char *cCO2_col_names[] = { "Grass", "Shrub", "Tree", "Forb" };
-	char *cCO2_row_names[] = { "Biomass Coeff1", "Biomass Coeff2", "WUE Coeff1", "WUE Coeff2" };
+	char *cCO2_row_names[] = { "Grasses", "Shrubs", "Trees", "Forbs" };
+	char *cCO2_col_names[] = { "Biomass Coeff1", "Biomass Coeff2", "WUE Coeff1", "WUE Coeff2" };
 	PROTECT(CO2_col_names = allocVector(STRSXP, 4));
 	for (i = 0; i < 4; i++)
 		SET_STRING_ELT(CO2_col_names, i, mkChar(cCO2_col_names[i]));
