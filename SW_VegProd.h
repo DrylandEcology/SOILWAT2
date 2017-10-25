@@ -34,7 +34,8 @@
 #ifndef SW_VEGPROD_H
 #define SW_VEGPROD_H
 
-#include "SW_Defines.h"    /* for MAX_MONTHS and tanfunc_t*/
+#include "SW_Defines.h"    /* for tanfunc_t*/
+#include "Times.h" 				// for MAX_MONTHS
 #ifdef RSOILWAT
 #include <R.h>
 #include <Rdefines.h>
@@ -89,10 +90,13 @@ typedef struct {
 	VegType grass, shrub, tree, forb;
 
 	RealD fractionGrass, /* grass component fraction of total vegetation */
-	fractionShrub, /* shrub component fraction of total vegetation */
-	fractionTree, /* tree component fraction of total vegetation */
-	fractionForb, /* forb component fraction of total vegetation */
-	fractionBareGround; /* bare ground component fraction of total vegetation */
+				fractionShrub, /* shrub component fraction of total vegetation */
+				fractionTree, /* tree component fraction of total vegetation */
+				fractionForb, /* forb component fraction of total vegetation */
+				fractionBareGround; /* bare ground component fraction of total vegetation */
+
+	RealD critSoilWater[4]; // storing values in same order as defined in rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
+	RealD useVegType[4]; // storing which veg types are set to be used
 
 	RealD bareGround_albedo; /* create this here instead of creating a bareGround VegType, because it only needs albedo and no other data member */
 

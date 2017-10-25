@@ -1760,21 +1760,28 @@ static void get_temp(void)
 
 	if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 	{
-		SXW.tempMax_avg += v_max;
-		SXW.tempMin_avg += v_min;
-		SXW.tempAvgAir_avg += v_avg;
-		SXW.tempSoilSurfaceTemp_avg += surfaceTempVal;
+			if (isPartialSoilwatOutput == FALSE){
+			SXW.tempMax_avg += v_max;
+			SXW.tempMin_avg += v_min;
+			SXW.tempAvgAir_avg += v_avg;
+			SXW.tempSoilSurfaceTemp_avg += surfaceTempVal;
 
-		if(Globals.currIter == Globals.runModelIterations){
-			SXW.tempMax_avg /= Globals.runModelIterations;
-			SXW.tempMin_avg /= Globals.runModelIterations;
-			SXW.tempAvgAir_avg /= Globals.runModelIterations;
-			SXW.tempSoilSurfaceTemp_avg /= Globals.runModelIterations;
+			if(Globals.currIter == Globals.runModelIterations){
+				SXW.tempMax_avg /= Globals.runModelIterations;
+				SXW.tempMin_avg /= Globals.runModelIterations;
+				SXW.tempAvgAir_avg /= Globals.runModelIterations;
+				SXW.tempSoilSurfaceTemp_avg /= Globals.runModelIterations;
+			}
+
+			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW.tempMax_avg, _Sep, SXW.tempMin_avg, _Sep,
+				SXW.tempAvgAir_avg, _Sep, SXW.tempSoilSurfaceTemp_avg);
+			strcat(outstr, str);
 		}
-
-		sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW.tempMax_avg, _Sep, SXW.tempMin_avg, _Sep,
-			SXW.tempAvgAir_avg, _Sep, SXW.tempSoilSurfaceTemp_avg);
-		strcat(outstr, str);
+		else{
+			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, v_max, _Sep, v_min, _Sep,
+				v_avg, _Sep, surfaceTempVal);
+			strcat(outstr, str);
+		}
 	}
 	else
 	{
@@ -2215,14 +2222,14 @@ static void get_swa(void)
 			float curr_crit_val, new_crit_val;
 			// go through each veg type
 			for(j=0; j<4; j++){
-				curr_crit_val = SXW.critSoilWater[j]; // get critical value for current veg type
+				curr_crit_val = SW_VegProd.critSoilWater[j]; // get critical value for current veg type
 				// go through each critical value to see which ones need to be set for each veg_type
 				for(k=0; k<4; k++){
 					if(k == j){
 						// dont need to check for its own critical value
 					}
 					else{
-						new_crit_val = SXW.critSoilWater[k];
+						new_crit_val = SW_VegProd.critSoilWater[k];
 						if(curr_crit_val < new_crit_val){ // need to store this value since it has access to it
 							SXW.SWA_master[Itclp(j,k,i,p)] = SXW.SWA_master[Itclp(k,k,i,p)]; // itclp(veg_type, new_critical_value, layer, timeperiod)
 						}
@@ -2236,7 +2243,7 @@ static void get_swa(void)
 			//           done with calculating SWA_master
 			// ######################################################
 
-			if (isPartialSoilwatOutput == FALSE || storeAllIterations)
+			if (isPartialSoilwatOutput == FALSE)
 			{
 				// get average over all iterations
 				SXW.SWAbulk_forb_avg[Ilp(i,p)] += SXW.SWA_master[Itclp(3,3,i,p)];
@@ -2276,6 +2283,11 @@ static void get_swa(void)
 
 				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_forb_avg[Ilp(i,p)], _Sep, SXW.SWAbulk_tree_avg[Ilp(i,p)], _Sep,
 				 SXW.SWAbulk_shrub_avg[Ilp(i,p)], _Sep, SXW.SWAbulk_grass_avg[Ilp(i,p)]);
+				strcat(outstr, str);
+			}
+			if(storeAllIterations){
+				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWA_master[Itclp(3,3,i,p)], _Sep, SXW.SWA_master[Itclp(0,0,i,p)], _Sep,
+				 SXW.SWA_master[Itclp(1,1,i,p)], _Sep, SXW.SWA_master[Itclp(2,2,i,p)]);
 				strcat(outstr, str);
 			}
 		}
@@ -2329,36 +2341,36 @@ static void get_dSWAbulk(void){
 								kv = 3 //first time through loop its set to the current veg types rank index
 								crit_val = -3.9 //critical value for shrub
 								prev_crit_val = -3.5
-								SXW.useVegType[1] != 0 since shrubs are turned on in input files so continue on
+								SW_VegProd.useVegType[1] != 0 since shrubs are turned on in input files so continue on
 								-3.9 < -3.5
 									dSWAbulk[curr_vegType,kv] = SWA_master[curr_vegType,kv] - SWA_master[curr_vegType,kv-1]
 							2nd loop iteration 2
 								kv = 2 // go down to next index in rank to recalculate SWA at -3.5 - -2.0
 								crit_val = -3.5 //critical value for shrub
 								prev_crit_val = -2.0
-								SXW.useVegType[1] != 0 since shrubs are turned on in input files so continue on
+								SW_VegProd.useVegType[1] != 0 since shrubs are turned on in input files so continue on
 								-3.5 < -2.0
 									dSWAbulk[curr_vegType,kv] = SWA_master[curr_vegType,kv] - SWA_master[curr_vegType,kv-1]
 							2nd loop iteration 3
 								kv = 1 // go down to next index in rank to recalculate SWA at -3.5 - -2.0
 								crit_val = -2.0 //critical value for shrub
 								prev_crit_val = -2.0
-								SXW.useVegType[1] != 0 since shrubs are turned on in input files so continue on
+								SW_VegProd.useVegType[1] != 0 since shrubs are turned on in input files so continue on
 								-2.0 !< -2.0 // since not less than we are done because dont need to recalculate if crit value is the same
 		*/
 		// loop through each veg type to get dSWAbulk
 		for(curr_vegType = 3; curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary starting at largest
 			curr_crit_rank_index = SXW.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
 			for(kv=curr_crit_rank_index; kv>0; kv--){ // dont need to go to last one since will never have to recalculate smallest value
-				crit_val = SXW.critSoilWater[SXW.rank_SWPcrits[kv]]; // get crit value at current index
-				prev_crit_val = SXW.critSoilWater[SXW.rank_SWPcrits[kv-1]]; // get crit value for index lower
-				if(SXW.useVegType[curr_vegType] == 0){
+				crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv]]; // get crit value at current index
+				prev_crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv-1]]; // get crit value for index lower
+				if(SW_VegProd.useVegType[curr_vegType] == 0){
 					// do nothing since veg type is turned off
 				}
 				else{ // check if need to recalculate for veg types in use
 					if(crit_val < prev_crit_val){ // if true then we need to recalculate
 						SXW.dSWAbulk[Itclp(curr_vegType,kv,i,p)] = SXW.SWA_master[Itclp(curr_vegType,kv,i,p)]-SXW.SWA_master[Itclp(curr_vegType,kv-1,i,p)];
-						if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 1980){
+						/*if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 1980){
 							printf("for veg_type 0=tree, 1=shrub, 2=grass, 3=forb\n");
 							printf("veg_type: %d\n", curr_vegType);
 							printf("curr_crit_rank_index (3 is smallest (-3.9) 0 is largest (-2.0)): %d\n", curr_crit_rank_index);
@@ -2367,7 +2379,7 @@ static void get_dSWAbulk(void){
 							printf("Value to be substracted of SXW.SWA_master[Itclp(%d,%d,%d,%d)]: %f\n\n", curr_vegType, kv-1, i, p, SXW.SWA_master[Itclp(curr_vegType,kv-1,i,p)]);
 							printf("refactored value of dSWAbulk: %f\n\n", SXW.dSWAbulk[Itclp(curr_vegType,kv,i,p)]);
 							printf("################\n\n");
-						}
+						}*/
 					}
 				}
 			}

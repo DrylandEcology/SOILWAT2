@@ -117,12 +117,10 @@ void SW_VPD_read(void) {
 				v->fractionForb = help_forb;
 				v->fractionBareGround = help_bareGround;
 
-				#ifdef STEPWAT
-					SXW.useVegType[0] = help_tree;
-					SXW.useVegType[1] = help_shrub;
-					SXW.useVegType[2] = help_grass;
-					SXW.useVegType[3] = help_forb;
-				#endif
+				SW_VegProd.useVegType[0] = help_tree;
+				SW_VegProd.useVegType[1] = help_shrub;
+				SW_VegProd.useVegType[2] = help_grass;
+				SW_VegProd.useVegType[3] = help_forb;
 
 				break;
 
@@ -477,12 +475,16 @@ void SW_VPD_read(void) {
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				#ifdef STEPWAT
+				/*#ifdef STEPWAT
 					SXW.critSoilWater[0] = help_tree;
 					SXW.critSoilWater[1] = help_shrub;
 					SXW.critSoilWater[2] = help_grass;
 					SXW.critSoilWater[3] = help_forb;
-				#endif
+				#endif*/
+				SW_VegProd.critSoilWater[0] = help_tree;
+				SW_VegProd.critSoilWater[1] = help_shrub;
+				SW_VegProd.critSoilWater[2] = help_grass;
+				SW_VegProd.critSoilWater[3] = help_forb;
 
 				v->grass.SWPcrit = -10. * help_grass;
 				v->shrub.SWPcrit = -10. * help_shrub;
