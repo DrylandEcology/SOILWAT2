@@ -2268,26 +2268,6 @@ static void get_swa(void)
 					SXW.SWAbulk_shrub_avg[Ilp(i,p)] /= Globals.runModelIterations;
 					SXW.SWAbulk_grass_avg[Ilp(i,p)] /= Globals.runModelIterations;
 
-					/*printf("crit val at 0: %f\n", SW_VegProd.critSoilWater[0]);
-					printf("crit val at 1: %f\n", SW_VegProd.critSoilWater[1]);
-					printf("crit val at 2: %f\n", SW_VegProd.critSoilWater[2]);
-					printf("crit val at 3: %f\n\n", SW_VegProd.critSoilWater[3]);
-
-					printf("shrub[1,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,0,i,p)]);
-					printf("shrub[1,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,1,i,p)]);
-					printf("shrub[1,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,2,i,p)]);
-					printf("shrub[1,3,%d,%d]: %f\n\n", i,p,SXW.SWA_master[Itclp(1,3,i,p)]);
-
-					printf("forb[3,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(3,0,i,p)]);
-					printf("forb[3,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(3,1,i,p)]);
-					printf("forb[3,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(3,2,i,p)]);
-					printf("forb[3,3,%d,%d]: %f\n\n", i,p,SXW.SWA_master[Itclp(3,3,i,p)]);
-
-					printf("grass[2,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,0,i,p)]);
-					printf("grass[2,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,1,i,p)]);
-					printf("grass[2,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,2,i,p)]);
-					printf("grass[2,3,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,3,i,p)]);
-					printf("---------------------\n\n");*/
 				}
 				if (bFlush) p++;
 
@@ -2315,7 +2295,8 @@ static void get_dSWAbulk(void){
 	#endif
 
 	int i,j,kv,id_prev_veg,curr_vegType,curr_crit_rank_index,kv_veg_type,prev_crit_veg_type,greater_veg_type;
-	float crit_val,prev_crit_val;
+	float crit_val, prev_crit_val, smallestCritVal, largestCritVal, vegFractionSum, newFraction;
+
 	OutPeriod pd = SW_Output[eSW_SWA].period;
 	LyrIndex l;
 	RealD val = SW_MISSING;
@@ -2324,6 +2305,8 @@ static void get_dSWAbulk(void){
 		// TODO: do SOILWAT stuff
 
 	#elif defined(STEPWAT)
+		smallestCritVal = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[0]];
+		largestCritVal = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[3]];
 		get_outstrleader(pd);
 		ForEachSoilLayer(i)
 		{
@@ -2370,11 +2353,14 @@ static void get_dSWAbulk(void){
 								prev_crit_val = -2.0
 								SW_VegProd.useVegType[1] != 0 since shrubs are turned on in input files so continue on
 								-2.0 !< -2.0 // since not less than we are done because dont need to recalculate if crit value is the same
+						[second nested loop]
+						j = 4 // since this not less than 4 will not enter loop. dont need to enter loop since this veg type has the largest crit val and nothing needs to be set 0
+
 		*/
 		// loop through each veg type to get dSWAbulk
 		for(curr_vegType = 3; curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
 			curr_crit_rank_index = SXW.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
-			for(kv=curr_vegType; kv>=0; kv--){ // dont need to go to last one since will never have to recalculate smallest value
+			for(kv=curr_vegType; kv>=0; kv--){
 				crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv]]; // get crit value at current index
 				prev_crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv-1]]; // get crit value for index lower
 				kv_veg_type = SXW.rank_SWPcrits[kv]; // get index for veg_type. dont want to access swa_master at rank_SWPcrits index
@@ -2392,25 +2378,50 @@ static void get_dSWAbulk(void){
 								SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)]-SXW.SWA_master[Itclp(curr_crit_rank_index,prev_crit_veg_type,i,p)];
 							}
 					}
-				else if(crit_val == prev_crit_val){ // critical values equal just set to itself
-					SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)];
+					else if(crit_val == prev_crit_val){ // critical values equal just set to itself
+						SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)];
+					}
+					else{
+						// do nothing if crit val >. this will be handled later
+					}
+					/* ##############################################################
+						below if else blocks are for redistributing dSWAbulk values
+					############################################################## */
+					if(curr_vegType == 3 && kv == 3 && prev_crit_val != crit_val) // if largest critical value and only veg type with that value just set it to dSWAbulk
+						SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)];
+					else{ // all values other than largest well need repartitioning
+						if(crit_val == smallestCritVal){ // if smallest value then all veg_types have access to it so just need to multiply by its fraction
+							SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] =
+								SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] * SW_VegProd.useVegType[curr_vegType];
+						}
+						else{ // critical values that more than one veg type have access to but less than all veg types
+							vegFractionSum = 0; // set to 0 each time to make sure it gets correct value
+							// need to calculute new fraction for these since sum of them no longer adds up to 1. do this by adding fractions values
+							// of veg types who have access and then dividing these fraction values by the total sum. keeps the ratio and adds up to 1
+							for(j=3;j>=0;j--){ // go through all critical values and sum the fractions of the veg types who have access
+								if(SW_VegProd.critSoilWater[j] <= crit_val)
+									vegFractionSum += SW_VegProd.useVegType[j];
+							}
+							newFraction = SW_VegProd.useVegType[curr_crit_rank_index] / vegFractionSum; // divide veg fraction by sum to get new fraction value
+							SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] =
+								SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] * newFraction; // get repartioned soilwater using new fraction value
+						}
+					}
 				}
 			}
-		}
 		// setting all the veg types above current to 0 since they do not have access to those
 		// ex: if forb=-2.0 grass=-3.5 & shrub=-3.9 then need to set grass and shrub to 0 for forb
 		for(j=curr_vegType+1; j<4; j++){
 			greater_veg_type = SXW.rank_SWPcrits[j];
-			SXW.dSWAbulk[Itclp(curr_crit_rank_index,greater_veg_type,i,p)] = 0.;
+			//printf("(%d) current, greater: %f, %f\n", j, SW_VegProd.critSoilWater[SXW.rank_SWPcrits[j-1]],SW_VegProd.critSoilWater[SXW.rank_SWPcrits[j]]);
+			if(SW_VegProd.critSoilWater[SXW.rank_SWPcrits[j-1]] > SW_VegProd.critSoilWater[SXW.rank_SWPcrits[j]]){
+				SXW.dSWAbulk[Itclp(curr_crit_rank_index,greater_veg_type,i,p)] = 0.;
+				SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,greater_veg_type,i,p)] = 0.;
+			}
 		}
 	}
 
 	if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 2000 && i == 5 && p < 6){
-		/*printf("crit val at 0: %f\n", SW_VegProd.critSoilWater[0]);
-		printf("crit val at 1: %f\n", SW_VegProd.critSoilWater[1]);
-		printf("crit val at 2: %f\n", SW_VegProd.critSoilWater[2]);
-		printf("crit val at 3: %f\n\n", SW_VegProd.critSoilWater[3]);*/
-
 		printf("shrub[1,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,0,i,p)]);
 		printf("shrub[1,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,1,i,p)]);
 		printf("shrub[1,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,2,i,p)]);
@@ -2420,6 +2431,11 @@ static void get_dSWAbulk(void){
 		printf("dSWAbulk shrub[1,1,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(1,1,i,p)]);
 		printf("dSWAbulk shrub[1,2,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(1,2,i,p)]);
 		printf("dSWAbulk shrub[1,3,%d,%d]: %f\n\n", i,p,SXW.dSWAbulk[Itclp(1,3,i,p)]);
+
+		printf("dSWAbulk_repartition shrub[1,0,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(1,0,i,p)]);
+		printf("dSWAbulk_repartition shrub[1,1,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(1,1,i,p)]);
+		printf("dSWAbulk_repartition shrub[1,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(1,2,i,p)]);
+		printf("dSWAbulk_repartition shrub[1,3,%d,%d]: %f\n\n", i,p,SXW.dSWA_repartitioned[Itclp(1,3,i,p)]);
 
 		printf("forb[3,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(3,0,i,p)]);
 		printf("forb[3,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(3,1,i,p)]);
@@ -2431,6 +2447,11 @@ static void get_dSWAbulk(void){
 		printf("dSWAbulk forb[3,2,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(3,2,i,p)]);
 		printf("dSWAbulk forb[3,3,%d,%d]: %f\n\n", i,p,SXW.dSWAbulk[Itclp(3,3,i,p)]);
 
+		printf("dSWAbulk_repartition forb[3,0,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(3,0,i,p)]);
+		printf("dSWAbulk_repartition forb[3,1,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(3,1,i,p)]);
+		printf("dSWAbulk_repartition forb[3,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(3,2,i,p)]);
+		printf("dSWAbulk_repartition forb[3,3,%d,%d]: %f\n\n", i,p,SXW.dSWA_repartitioned[Itclp(3,3,i,p)]);
+
 		printf("grass[2,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,0,i,p)]);
 		printf("grass[2,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,1,i,p)]);
 		printf("grass[2,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,2,i,p)]);
@@ -2439,23 +2460,14 @@ static void get_dSWAbulk(void){
 		printf("dSWAbulk grass[2,0,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,0,i,p)]);
 		printf("dSWAbulk grass[2,1,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,1,i,p)]);
 		printf("dSWAbulk grass[2,2,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,2,i,p)]);
-		printf("dSWAbulk grass[2,3,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,3,i,p)]);
+		printf("dSWAbulk grass[2,3,%d,%d]: %f\n\n", i,p,SXW.dSWAbulk[Itclp(2,3,i,p)]);
+
+		printf("dSWAbulk_repartition grass[2,0,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,0,i,p)]);
+		printf("dSWAbulk_repartition grass[2,1,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,1,i,p)]);
+		printf("dSWAbulk_repartition grass[2,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,2,i,p)]);
+		printf("dSWAbulk_repartition grass[2,3,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,3,i,p)]);
 
 		printf("---------------------\n\n");
-
-		/*printf("forb[3,0,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(3,0,i,p)]);
-		printf("forb[3,1,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(3,1,i,p)]);
-		printf("forb[3,2,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(3,2,i,p)]);
-		printf("forb[3,3,%d,%d]: %f\n\n", i,p,SXW.dSWAbulk[Itclp(3,3,i,p)]);
-
-		printf("grass[2,0,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,0,i,p)]);
-		printf("grass[2,1,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,1,i,p)]);
-		printf("grass[2,2,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,2,i,p)]);
-		printf("grass[2,3,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,3,i,p)]);
-		//printf("swa_master[Itclp(1,1,1,0)]: %f\n", SXW.SWA_master[Itclp(1,1,1,0)]);
-		//printf("swa_master[Itclp(1,0,1,0)]: %f\n", SXW.SWA_master[Itclp(1,0,1,0)]);
-		//printf("dSWAbulk[Itclp(1,1,1,0)]: %f\n", SXW.dSWAbulk[Itclp(1,1,1,0)]);
-		printf("---------------------\n\n");*/
 	}
 }
 	#endif
@@ -2496,9 +2508,7 @@ static void get_swcBulk(void)
 		}
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(outstr, str);
-		//float tempSWA = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
 	}
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("swcbulk: %s\n", outstr);
 #elif defined(RSOILWAT)
 	switch (pd)
 	{
@@ -2632,7 +2642,6 @@ static void get_swpMatric(void)
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("swpmatric: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -2675,7 +2684,6 @@ static void get_swaBulk(void)
 	OutPeriod pd = SW_Output[eSW_SWABulk].period;
 	RealD val = SW_MISSING;
 #ifndef RSOILWAT
-	//printf("here");
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 	ForEachSoilLayer(i)
@@ -2699,7 +2707,6 @@ static void get_swaBulk(void)
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("swabulk: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -2765,7 +2772,6 @@ static void get_swaMatric(void)
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("swaMatric: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -2838,7 +2844,6 @@ static void get_surfaceWater(void)
 	}
 	sprintf(str, "%c%7.6f", _Sep, val_surfacewater);
 	strcat(outstr, str);
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("surfaceWater: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -2880,7 +2885,6 @@ static void get_runoff(void)
 			val_snowRunoff = SW_MISSING;
 #ifndef RSOILWAT
 	char str[OUTSTRLEN];
-	//printf("outstrlen: %f\n", OUTSTRLEN);
 	get_outstrleader(pd);
 	switch (pd)
 	{
@@ -2904,7 +2908,6 @@ static void get_runoff(void)
 	val_totalRunoff = val_surfaceRunoff + val_snowRunoff;
 	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f", _Sep, val_totalRunoff, _Sep, val_surfaceRunoff, _Sep, val_snowRunoff);
 	strcat(outstr, str);
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("runoff: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -3045,12 +3048,8 @@ static void get_transp(void)
 		}
 		if(bFlush) p++;
 
-		//SXW.transpTotal[Ilp(i,p)] = val[i];
-
 		if (isPartialSoilwatOutput == FALSE){
 			float transpTotal_avg_temp = val[i] + SXW.transpTotal[Ilp(i,p)]; // add val + last transpTotal value
-			//printf("size of transpTotal_avg_temp: %f\n", sizeof(transpTotal_avg_temp));
-			//printf("size of transpTotal_avg: %f\n", sizeof(SXW.transpTotal_avg[Ilp(i,p)]));
 			SXW.transpTotal_avg[Ilp(i,p)] = val[i] + SXW.transpTotal[Ilp(i,p)]; // adding val plus the last transpTotal;
 
 			if(Globals.currIter == Globals.runModelIterations){
@@ -3142,8 +3141,6 @@ static void get_transp(void)
 				SXW.transpTrees_avg[Ilp(i,p)] /= Globals.runModelIterations;
 				sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees_avg[Ilp(i,p)]);
 				strcat(outstr, str);
-				//printf("str transp_tree: %s\n", str);
-				//printf("transp_tree: %f\n", SXW.transpTrees_avg[Ilp(i,p)]);
 			}
 			sprintf(str, "%c%7.6f", _Sep, val[i]);
 			strcat(outstr, str);
@@ -3367,7 +3364,6 @@ static void get_transp(void)
 		sprintf(str, "%c%7.6f", _Sep, val[i]);
 		strcat(outstr, str);
 	}
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("transp: %s\n", outstr);
 #elif defined(STEPWAT)
 	ForEachSoilLayer(i)
 	{
@@ -3433,7 +3429,6 @@ static void get_evapSoil(void)
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("evapsoil: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -3522,7 +3517,6 @@ static void get_evapSurface(void)
 	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
 		_Sep, val_tot, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass, _Sep, val_litter, _Sep, val_water);
 	strcat(outstr, str);
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("EvapSurface: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -3626,7 +3620,6 @@ static void get_interception(void)
 	}
 	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_tot, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass, _Sep, val_litter);
 	strcat(outstr, str);
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("interception: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -3706,7 +3699,6 @@ static void get_soilinf(void)
 	}
 	sprintf(str, "%c%7.6f", _Sep, val_inf);
 	strcat(outstr, str);
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("SOILINFILT: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -3768,7 +3760,6 @@ static void get_lyrdrain(void)
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("lyrdrain: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -3929,7 +3920,6 @@ static void get_hydred(void)
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("hydred: %s\n", outstr);
 #else
 	/* Date Info output */
 	switch (pd)
@@ -4162,7 +4152,6 @@ static void get_pet(void)
 	}
 	sprintf(str, "%c%7.6f", _Sep, val);
 	strcat(outstr, str);
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("PET: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -4223,7 +4212,6 @@ static void get_wetdays(void)
 		sprintf(str, "%c%i", _Sep, val);
 		strcat(outstr, str);
 	}
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("wetdays: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -4296,7 +4284,6 @@ static void get_snowpack(void)
 	}
 	sprintf(str, "%c%7.6f%c%7.6f", _Sep, val_swe, _Sep, val_depth);
 	strcat(outstr, str);
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("snowpack: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -4357,7 +4344,6 @@ static void get_deepswc(void)
 	}
 	sprintf(str, "%c%7.6f", _Sep, val);
 	strcat(outstr, str);
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("deepswc: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -4418,7 +4404,6 @@ static void get_soiltemp(void)
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
-	//if(SW_Model.year == 1980 && SW_Model.doy == 8) printf("soiltemp: %s\n", outstr);
 #else
 	switch (pd)
 	{
@@ -4547,7 +4532,6 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		ForEachSoilLayer(i)
 			s->swaBulk[i] += fmax(
 					v->swcBulk[Today][i] - SW_Site.lyr[i]->swcBulk_wiltpt, 0.);
-			//printf("%f\n", s->swaBulk[i]);
 		break;
 
 	case eSW_SWAMatric: /* get swaBulk and convert later */

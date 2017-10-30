@@ -475,12 +475,7 @@ void SW_VPD_read(void) {
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				/*#ifdef STEPWAT
-					SXW.critSoilWater[0] = help_tree;
-					SXW.critSoilWater[1] = help_shrub;
-					SXW.critSoilWater[2] = help_grass;
-					SXW.critSoilWater[3] = help_forb;
-				#endif*/
+
 				SW_VegProd.critSoilWater[0] = help_tree;
 				SW_VegProd.critSoilWater[1] = help_shrub;
 				SW_VegProd.critSoilWater[2] = help_grass;
