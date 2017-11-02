@@ -1365,7 +1365,7 @@ void SW_OUT_write_today(void)
 					switch (timeSteps[k][i])
 					{ // based on iteration of for loop, determines which file to output to
 					case eSW_Day:
-						if(SXW.col_status_dy == 0)
+						if(SXW.col_status_dy == 0) // if first run through need to make column headers
 						{
 							//printf("Creating column labels for day output file...\n");
 							memset(&reg_file_vals_day[0], 0, sizeof(reg_file_vals_day));
@@ -1377,22 +1377,22 @@ void SW_OUT_write_today(void)
 							SXW.col_status_dy++;
 						}
 
-						populate_output_values(reg_file_vals_day, soil_file_vals_day, k, 1);
+						populate_output_values(reg_file_vals_day, soil_file_vals_day, k, 1); // function to put all the values together for output
 
-						if(k == finalValue){
-							if(reg_file_vals_day[0] != 0){
+						if(k == finalValue){ // if last value to be used then write to files
+							if(reg_file_vals_day[0] != 0){ // check to make sure not empty
 								if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
 									fprintf(SW_Output_Files.fp_dy_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, reg_file_vals_day);
 								}
 								if(storeAllIterations){
 									fprintf(SW_Output_Files.fp_dy, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, reg_file_vals_day);
 								}
-								memset(&reg_file_vals_day[0], 0, sizeof(reg_file_vals_day));
+								memset(&reg_file_vals_day[0], 0, sizeof(reg_file_vals_day)); // set arrays to empty
 							}
 							if(soil_file_vals_day[0] != 0){
 								if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
 									fprintf(SW_Output_Files.fp_dy_soil_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, soil_file_vals_day);
-
+									//if(SW_Model.year == 1980)printf("daily soil %d %d: %s\n\n", SW_Model.year, SW_Model.doy, soil_file_vals_day);
 								}
 								if(storeAllIterations){
 									fprintf(SW_Output_Files.fp_dy_soil, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, soil_file_vals_day);
@@ -1760,22 +1760,16 @@ static void get_temp(void)
 
 	if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 	{
-			if (isPartialSoilwatOutput == FALSE){
-			SXW.tempMax_avg += v_max;
-			SXW.tempMin_avg += v_min;
-			SXW.tempAvgAir_avg += v_avg;
-			SXW.tempSoilSurfaceTemp_avg += surfaceTempVal;
+			if (isPartialSoilwatOutput == FALSE){ // dont need to average temperature since it will not change over iteration
+				if(Globals.currIter == Globals.runModelIterations){
+					sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, v_max, _Sep, v_min, _Sep,
+						v_avg, _Sep, surfaceTempVal);
+					strcat(outstr, str);
+				}
 
-			if(Globals.currIter == Globals.runModelIterations){
-				SXW.tempMax_avg /= Globals.runModelIterations;
-				SXW.tempMin_avg /= Globals.runModelIterations;
-				SXW.tempAvgAir_avg /= Globals.runModelIterations;
-				SXW.tempSoilSurfaceTemp_avg /= Globals.runModelIterations;
-			}
-
-			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW.tempMax_avg, _Sep, SXW.tempMin_avg, _Sep,
+			/*sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW.tempMax_avg, _Sep, SXW.tempMin_avg, _Sep,
 				SXW.tempAvgAir_avg, _Sep, SXW.tempSoilSurfaceTemp_avg);
-			strcat(outstr, str);
+			strcat(outstr, str);*/
 		}
 		else{
 			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, v_max, _Sep, v_min, _Sep,
@@ -2262,18 +2256,21 @@ static void get_swa(void)
 				SXW.SWAbulk_grass_avg[Ilp(i,p)] += SXW.SWA_master[Itclp(2,2,i,p)];
 
 				// divide by number of iterations at end to store average
-				if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 1980 && i == 1 && p < 20){
+				if(Globals.currIter == Globals.runModelIterations){
 					SXW.SWAbulk_forb_avg[Ilp(i,p)] /= Globals.runModelIterations;
 					SXW.SWAbulk_tree_avg[Ilp(i,p)] /= Globals.runModelIterations;
 					SXW.SWAbulk_shrub_avg[Ilp(i,p)] /= Globals.runModelIterations;
 					SXW.SWAbulk_grass_avg[Ilp(i,p)] /= Globals.runModelIterations;
 
+					sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWA_master[Itclp(3,3,i,p)], _Sep, SXW.SWA_master[Itclp(0,0,i,p)], _Sep,
+					 SXW.SWA_master[Itclp(1,1,i,p)], _Sep, SXW.SWA_master[Itclp(2,2,i,p)]);
+					strcat(outstr, str);
+					/*if(SW_Model.year == 1980){
+						printf("swa str: %s\n\n", str);
+						printf("swa outstr: %s\n\n#####\n", outstr);
+					}*/
 				}
 				if (bFlush) p++;
-
-				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_forb_avg[Ilp(i,p)], _Sep, SXW.SWAbulk_tree_avg[Ilp(i,p)], _Sep,
-				 SXW.SWAbulk_shrub_avg[Ilp(i,p)], _Sep, SXW.SWAbulk_grass_avg[Ilp(i,p)]);
-				strcat(outstr, str);
 			}
 			if(storeAllIterations){
 				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWA_master[Itclp(3,3,i,p)], _Sep, SXW.SWA_master[Itclp(0,0,i,p)], _Sep,
@@ -2287,7 +2284,6 @@ static void get_swa(void)
 }
 
 // function to calculate the correct amount of SWA
-// TODO: need to redo entire function based on new SWA_master
 static void get_dSWAbulk(void){
 	#ifdef STEPWAT
 		TimeInt p;
@@ -2421,7 +2417,7 @@ static void get_dSWAbulk(void){
 		}
 	}
 
-	if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 2000 && i == 5 && p < 6){
+	/*if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 2000 && i == 5 && p < 6){
 		printf("shrub[1,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,0,i,p)]);
 		printf("shrub[1,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,1,i,p)]);
 		printf("shrub[1,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,2,i,p)]);
@@ -2468,7 +2464,7 @@ static void get_dSWAbulk(void){
 		printf("dSWAbulk_repartition grass[2,3,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,3,i,p)]);
 
 		printf("---------------------\n\n");
-	}
+	}*/
 }
 	#endif
 }
@@ -2565,8 +2561,9 @@ static void get_swcBulk(void)
 			}
 			sprintf(str, "%c%7.6f", _Sep, val);
 			strcat(outstr, str);
+			//if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 1980)
+				//printf("swcbulk: %s\n", str);
 		}
-
 	}
 	else
 	{
@@ -2955,7 +2952,11 @@ static void get_transp(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_Transp].period;
-	RealF *val = malloc(sizeof(RealF) * SW_Site.n_layers);
+	RealD *val_total = malloc(sizeof(RealD) * SW_Site.n_layers);
+	RealD *val_tree = malloc(sizeof(RealD) * SW_Site.n_layers);
+	RealD *val_forb = malloc(sizeof(RealD) * SW_Site.n_layers);
+	RealD *val_grass = malloc(sizeof(RealD) * SW_Site.n_layers);
+	RealD *val_shrub = malloc(sizeof(RealD) * SW_Site.n_layers);
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
 #elif defined(STEPWAT)
@@ -2963,48 +2964,68 @@ static void get_transp(void)
 	TimeInt p;
 	SW_MODEL *t = &SW_Model;
 #endif
-	ForEachSoilLayer(i)
-		val[i] = 0;
+	ForEachSoilLayer(i){
+		val_total[i] = 0;
+		val_tree[i] = 0;
+		val_forb[i] = 0;
+		val_grass[i] = 0;
+		val_shrub[i] = 0;
+	}
 
 #ifdef RSOILWAT
 	switch (pd)
 	{
 		case eSW_Day:
-		p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * 0] = SW_Model.year;
-		p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * 1] = SW_Model.doy;
-		break;
+			p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * 0] = SW_Model.year;
+			p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * 1] = SW_Model.doy;
+			break;
 		case eSW_Week:
-		p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * 0] = SW_Model.year;
-		p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
-		break;
+			p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * 0] = SW_Model.year;
+			p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
+			break;
 		case eSW_Month:
-		p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * 0] = SW_Model.year;
-		p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
-		break;
+			p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * 0] = SW_Model.year;
+			p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
+			break;
 		case eSW_Year:
-		p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * 0] = SW_Model.year;
-		break;
+			p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * 0] = SW_Model.year;
+			break;
 	}
 #endif
 
 #ifndef RSOILWAT
 	get_outstrleader(pd);
-	/* total transpiration */
 	ForEachSoilLayer(i)
 	{
 		switch (pd)
 		{
 		case eSW_Day:
-			val[i] = v->dysum.transp_total[i];
+			val_total[i] = v->dysum.transp_total[i];
+			val_tree[i] = v->dysum.transp_tree[i];
+			val_grass[i] = v->dysum.transp_grass[i];
+			val_shrub[i] = v->dysum.transp_shrub[i];
+			val_forb[i] = v->dysum.transp_forb[i];
 			break;
 		case eSW_Week:
-			val[i] = v->wkavg.transp_total[i];
+			val_total[i] = v->wkavg.transp_total[i];
+			val_tree[i] = v->wkavg.transp_tree[i];
+			val_grass[i] = v->wkavg.transp_grass[i];
+			val_shrub[i] = v->wkavg.transp_shrub[i];
+			val_forb[i] = v->wkavg.transp_forb[i];
 			break;
 		case eSW_Month:
-			val[i] = v->moavg.transp_total[i];
+			val_total[i] = v->moavg.transp_total[i];
+			val_tree[i] = v->moavg.transp_tree[i];
+			val_grass[i] = v->moavg.transp_grass[i];
+			val_shrub[i] = v->moavg.transp_shrub[i];
+			val_forb[i] = v->moavg.transp_forb[i];
 			break;
 		case eSW_Year:
-			val[i] = v->yravg.transp_total[i];
+			val_total[i] = v->yravg.transp_total[i];
+			val_tree[i] = v->yravg.transp_tree[i];
+			val_grass[i] = v->yravg.transp_grass[i];
+			val_shrub[i] = v->yravg.transp_shrub[i];
+			val_forb[i] = v->yravg.transp_forb[i];
 			break;
 		}
 	}
@@ -3012,98 +3033,40 @@ static void get_transp(void)
 	switch (pd)
 	{
 		case eSW_Day:
-		ForEachSoilLayer(i)
-		p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2)] = v->dysum.transp_total[i];
-		break;
-		case eSW_Week:
-		ForEachSoilLayer(i)
-		p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2)] = v->wkavg.transp_total[i];
-		break;
-		case eSW_Month:
-		ForEachSoilLayer(i)
-		p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2)] = v->moavg.transp_total[i];
-		break;
-		case eSW_Year:
-		ForEachSoilLayer(i)
-		p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1)] = v->yravg.transp_total[i];
-		break;
-	}
-#endif
-
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-	ForEachSoilLayer(i)
-	{
-		sprintf(str, "%c%7.6f", _Sep, val[i]);
-		strcat(outstr, str);
-	}
-#elif defined(STEPWAT)
-	ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-			case eSW_Day: p = t->doy-1; break; /* print current but as index */
-			case eSW_Week: p = t->week-1; break; /* print previous to current */
-			case eSW_Month: p = t->month-1; break; /* print previous to current */
-			/* YEAR should never be used with STEPWAT */
-		}
-		if(bFlush) p++;
-
-		if (isPartialSoilwatOutput == FALSE){
-			float transpTotal_avg_temp = val[i] + SXW.transpTotal[Ilp(i,p)]; // add val + last transpTotal value
-			SXW.transpTotal_avg[Ilp(i,p)] = val[i] + SXW.transpTotal[Ilp(i,p)]; // adding val plus the last transpTotal;
-
-			if(Globals.currIter == Globals.runModelIterations){
-				SXW.transpTotal_avg[Ilp(i,p)] /= Globals.runModelIterations;
-				sprintf(str, "%c%7.6f", _Sep, SXW.transpTotal_avg[Ilp(i,p)]);
-				strcat(outstr, str);
+			ForEachSoilLayer(i){
+				p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2)] = v->dysum.transp_total[i];
+				p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 1)] = v->dysum.transp_tree[i];
+				p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 2)] = v->dysum.transp_shrub[i];
+				p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 3)] = v->dysum.transp_forb[i];
+				p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 4)] = v->dysum.transp_grass[i];
 			}
-		}
-		if(storeAllIterations){
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
-			strcat(outstr, str);
-		}
-		SXW.transpTotal[Ilp(i,p)] = val[i];
-	}
-#endif
-
-#ifndef RSOILWAT
-	/* tree-component transpiration */
-	ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val[i] = v->dysum.transp_tree[i];
 			break;
 		case eSW_Week:
-			val[i] = v->wkavg.transp_tree[i];
+			ForEachSoilLayer(i){
+				p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2)] = v->wkavg.transp_total[i];
+				p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 2)] = v->wkavg.transp_shrub[i];
+				p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 2)] = v->wkavg.transp_shrub[i];
+				p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 3)] = v->wkavg.transp_forb[i];
+				p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 4)] = v->wkavg.transp_grass[i];
+			}
 			break;
 		case eSW_Month:
-			val[i] = v->moavg.transp_tree[i];
+			ForEachSoilLayer(i){
+				p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2)] = v->moavg.transp_total[i];
+				p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 2)] = v->moavg.transp_shrub[i];
+				p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 2)] = v->moavg.transp_shrub[i];
+				p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 3)] = v->moavg.transp_forb[i];
+				p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 4)] = v->moavg.transp_grass[i];
+			}
 			break;
 		case eSW_Year:
-			val[i] = v->yravg.transp_tree[i];
-			break;
-		}
-	}
-#else
-	switch (pd)
-	{
-		case eSW_Day:
-			ForEachSoilLayer(i)
-			p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 1)] = v->dysum.transp_tree[i];
-			break;
-		case eSW_Week:
-			ForEachSoilLayer(i)
-			p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 1)] = v->wkavg.transp_tree[i];
-			break;
-		case eSW_Month:
-			ForEachSoilLayer(i)
-			p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 1)] = v->moavg.transp_tree[i];
-			break;
-		case eSW_Year:
-			ForEachSoilLayer(i)
-			p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 1)] = v->yravg.transp_tree[i];
+			ForEachSoilLayer(i){
+				p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1)] = v->yravg.transp_total[i];
+				p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 2) + (yr_nrow * SW_Site.n_layers * 2)] = v->yravg.transp_shrub[i];
+				p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 2) + (yr_nrow * SW_Site.n_layers * 2)] = v->yravg.transp_shrub[i];
+				p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 2) + (yr_nrow * SW_Site.n_layers * 3)] = v->yravg.transp_forb[i];
+				p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 2) + (yr_nrow * SW_Site.n_layers * 4)] = v->yravg.transp_grass[i];
+			}
 			break;
 	}
 #endif
@@ -3111,7 +3074,8 @@ static void get_transp(void)
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	ForEachSoilLayer(i)
 	{
-		sprintf(str, "%c%7.6f", _Sep, val[i]);
+		sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
+			_Sep, val_total[i], _Sep, val_tree[i], _Sep, val_shrub[i], _Sep, val_forb[i], _Sep, val_grass[i]);
 		strcat(outstr, str);
 	}
 #elif defined(STEPWAT)
@@ -3125,277 +3089,59 @@ static void get_transp(void)
 			/* YEAR should never be used with STEPWAT */
 		}
 		if (bFlush) p++;
-		if(SW_VegProd.fractionTree == 0) // if value is turned off in .in files then make sure values set to 0
-			SXW.transpTrees[Ilp(i,p)] = 0.;
-		else
-			SXW.transpTrees[Ilp(i,p)] = val[i];
+
+		SXW.transpTotal[Ilp(i,p)] = val_total[i];
+		SXW.transpTrees[Ilp(i,p)] = val_tree[i];
+		SXW.transpShrubs[Ilp(i,p)] = val_shrub[i];
+		SXW.transpForbs[Ilp(i,p)] = val_forb[i];
+		SXW.transpGrasses[Ilp(i,p)] = val_grass[i];
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
+			SXW.transpTotal_avg[Ilp(i,p)] += SXW.transpTotal[Ilp(i,p)]; // adding val plus the last transpTotal;
 			if(SW_VegProd.fractionTree == 0)
 				SXW.transpTrees_avg[Ilp(i,p)] = 0.;
 			else
 				SXW.transpTrees_avg[Ilp(i,p)] += SXW.transpTrees[Ilp(i,p)]; // get average over all iterations
-
-			if(Globals.currIter == Globals.runModelIterations){
-				SXW.transpTrees_avg[Ilp(i,p)] /= Globals.runModelIterations;
-				sprintf(str, "%c%7.6f", _Sep, SXW.transpTrees_avg[Ilp(i,p)]);
-				strcat(outstr, str);
-			}
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
-			strcat(outstr, str);
-		}
-		if(storeAllIterations){
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
-			strcat(outstr, str);
-		}
-	}
-#endif
-
-#ifndef RSOILWAT
-	/* shrub-component transpiration */
-	ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val[i] = v->dysum.transp_shrub[i];
-			break;
-		case eSW_Week:
-			val[i] = v->wkavg.transp_shrub[i];
-			break;
-		case eSW_Month:
-			val[i] = v->moavg.transp_shrub[i];
-			break;
-		case eSW_Year:
-			val[i] = v->yravg.transp_shrub[i];
-			break;
-		}
-	}
-#else
-	switch (pd)
-	{
-		case eSW_Day:
-		ForEachSoilLayer(i)
-		p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 2)] = v->dysum.transp_shrub[i];
-		break;
-		case eSW_Week:
-		ForEachSoilLayer(i)
-		p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 2)] = v->wkavg.transp_shrub[i];
-		break;
-		case eSW_Month:
-		ForEachSoilLayer(i)
-		p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 2)] = v->moavg.transp_shrub[i];
-		break;
-		case eSW_Year:
-		ForEachSoilLayer(i)
-		p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 2)] = v->yravg.transp_shrub[i];
-		break;
-	}
-#endif
-
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-	ForEachSoilLayer(i)
-	{
-		sprintf(str, "%c%7.6f", _Sep, val[i]);
-		strcat(outstr, str);
-	}
-#elif defined(STEPWAT)
-	ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-			case eSW_Day: p = t->doy-1; break; /* print current but as index */
-			case eSW_Week: p = t->week-1; break; /* print previous to current */
-			case eSW_Month: p = t->month-1; break; /* print previous to current */
-			/* YEAR should never be used with STEPWAT */
-		}
-		if (bFlush) p++;
-		SXW.transpShrubs[Ilp(i,p)] = val[i];
-
-		if (isPartialSoilwatOutput == FALSE)
-		{
 			SXW.transpShrubs_avg[Ilp(i,p)] += SXW.transpShrubs[Ilp(i,p)]; // get average over all iterations
+			SXW.transpForbs_avg[Ilp(i,p)] += SXW.transpForbs[Ilp(i,p)];
+			SXW.transpGrasses_avg[Ilp(i,p)] += SXW.transpGrasses[Ilp(i,p)];
 
 			if(Globals.currIter == Globals.runModelIterations){
+				SXW.transpTotal_avg[Ilp(i,p)] /= Globals.runModelIterations;
+				if(SW_VegProd.fractionTree == 0){
+					SXW.transpTrees_avg[Ilp(i,p)] = 0.;
+				}
+				else
+					SXW.transpTrees_avg[Ilp(i,p)] /= Globals.runModelIterations;
 				SXW.transpShrubs_avg[Ilp(i,p)] /= Globals.runModelIterations;
-				sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs_avg[Ilp(i,p)]);
-				strcat(outstr, str);
-			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpShrubs_avg[Ilp(i,p)]);
-			strcat(outstr, str);
-		}
-		if(storeAllIterations){
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
-			strcat(outstr, str);
-		}
-	}
-#endif
-
-#ifndef RSOILWAT
-	/* forb-component transpiration */
-	ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val[i] = v->dysum.transp_forb[i];
-			break;
-		case eSW_Week:
-			val[i] = v->wkavg.transp_forb[i];
-			break;
-		case eSW_Month:
-			val[i] = v->moavg.transp_forb[i];
-			break;
-		case eSW_Year:
-			val[i] = v->yravg.transp_forb[i];
-			break;
-		}
-	}
-#else
-	switch (pd)
-	{
-		case eSW_Day:
-		ForEachSoilLayer(i)
-		p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 3)] = v->dysum.transp_forb[i];
-		break;
-		case eSW_Week:
-		ForEachSoilLayer(i)
-		p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 3)] = v->wkavg.transp_forb[i];
-		break;
-		case eSW_Month:
-		ForEachSoilLayer(i)
-		p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 3)] = v->moavg.transp_forb[i];
-		break;
-		case eSW_Year:
-		ForEachSoilLayer(i)
-		p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 3)] = v->yravg.transp_forb[i];
-		break;
-	}
-#endif
-
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-	ForEachSoilLayer(i)
-	{
-		sprintf(str, "%c%7.6f", _Sep, val[i]);
-		strcat(outstr, str);
-	}
-#elif defined(STEPWAT)
-	ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-			case eSW_Day: p = t->doy-1; break; /* print current but as index */
-			case eSW_Week: p = t->week-1; break; /* print previous to current */
-			case eSW_Month: p = t->month-1; break; /* print previous to current */
-			/* YEAR should never be used with STEPWAT */
-		}
-		if (bFlush) p++;
-		SXW.transpForbs[Ilp(i,p)] = val[i];
-
-		if (isPartialSoilwatOutput == FALSE)
-		{
-			SXW.transpForbs_avg[Ilp(i,p)] += SXW.transpForbs[Ilp(i,p)]; // get average over all iterations
-
-			if(Globals.currIter == Globals.runModelIterations){
 				SXW.transpForbs_avg[Ilp(i,p)] /= Globals.runModelIterations;
-				sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs_avg[Ilp(i,p)]);
-				strcat(outstr, str);
-			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpForbs_avg[Ilp(i,p)]);
-			strcat(outstr, str);
-		}
-		if(storeAllIterations){
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
-			strcat(outstr, str);
-		}
-	}
-#endif
-
-#ifndef RSOILWAT
-	/* grass-component transpiration */
-	ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val[i] = v->dysum.transp_grass[i];
-			break;
-		case eSW_Week:
-			val[i] = v->wkavg.transp_grass[i];
-			break;
-		case eSW_Month:
-			val[i] = v->moavg.transp_grass[i];
-			break;
-		case eSW_Year:
-			val[i] = v->yravg.transp_grass[i];
-			break;
-		}
-	}
-#else
-	switch (pd)
-	{
-		case eSW_Day:
-		ForEachSoilLayer(i)
-		p_Rtransp_dy[SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 4)] = v->dysum.transp_grass[i];
-		SW_Output[eSW_Transp].dy_row++;
-		break;
-		case eSW_Week:
-		ForEachSoilLayer(i)
-		p_Rtransp_wk[SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 4)] = v->wkavg.transp_grass[i];
-		SW_Output[eSW_Transp].wk_row++;
-		break;
-		case eSW_Month:
-		ForEachSoilLayer(i)
-		p_Rtransp_mo[SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 4)] = v->moavg.transp_grass[i];
-		SW_Output[eSW_Transp].mo_row++;
-		break;
-		case eSW_Year:
-		ForEachSoilLayer(i)
-		p_Rtransp_yr[SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 4)] = v->yravg.transp_grass[i];
-		SW_Output[eSW_Transp].yr_row++;
-		break;
-	}
-#endif
-
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-	ForEachSoilLayer(i)
-	{
-		sprintf(str, "%c%7.6f", _Sep, val[i]);
-		strcat(outstr, str);
-	}
-#elif defined(STEPWAT)
-	ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-			case eSW_Day: p = t->doy-1; break; /* print current but as index */
-			case eSW_Week: p = t->week-1; break; /* print previous to current */
-			case eSW_Month: p = t->month-1; break; /* print previous to current */
-			/* YEAR should never be used with STEPWAT */
-		}
-		if (bFlush) p++;
-		SXW.transpGrasses[Ilp(i,p)] = val[i];
-
-		if (isPartialSoilwatOutput == FALSE)
-		{
-			SXW.transpGrasses_avg[Ilp(i,p)] += SXW.transpGrasses[Ilp(i,p)]; // get average over all iterations
-
-			if(Globals.currIter == Globals.runModelIterations){
 				SXW.transpGrasses_avg[Ilp(i,p)] /= Globals.runModelIterations;
-				sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses_avg[Ilp(i,p)]);
+
+				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
+					_Sep, SXW.transpTotal[Ilp(i,p)], _Sep, SXW.transpTrees[Ilp(i,p)], _Sep, SXW.transpShrubs[Ilp(i,p)]
+					, _Sep, SXW.transpForbs[Ilp(i,p)], _Sep, SXW.transpGrasses[Ilp(i,p)]);
 				strcat(outstr, str);
+
+				//if(SW_Model.year == 2000)
+					//printf("transp: %s\n", str);
 			}
-			sprintf(str, "%c%7.6f", _Sep, SXW.transpGrasses_avg[Ilp(i,p)]);
-			strcat(outstr, str);
+			//printf("transp_tree: %f\n", SXW.transpTrees_avg[Ilp(i,p)]);
 		}
+
 		if(storeAllIterations){
-			sprintf(str, "%c%7.6f", _Sep, val[i]);
+			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
+				_Sep, val_total[i], _Sep, val_tree[i], _Sep, val_shrub[i], _Sep, val_forb[i], _Sep, val_grass[i]);
 			strcat(outstr, str);
 		}
 	}
+
 #endif
-	free(val);
+	free(val_total);
+	free(val_tree);
+	free(val_grass);
+	free(val_shrub);
+	free(val_forb);
 }
 
 static void get_evapSoil(void)
@@ -5035,7 +4781,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 				}
 			}
 			else{
-					if(counter >= 2 ){
+					if(counter >= 2 ){ // dont want to parse year and timeperiod
 						strcat(soil_file_array, pt);
 						strcat(soil_file_array, _SepSplit);
 					}
@@ -5043,6 +4789,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 				pt = strtok (NULL, _SepSplit);
 				counter++;
 		}
+
 	}
 	else if (strcmp(key2str[output_var], "WTHR")==0 ||  strcmp(key2str[output_var], "ALLH2O")==0
 					|| strcmp(key2str[output_var], "SWABULK")==0 || strcmp(key2str[output_var], "ET")==0
