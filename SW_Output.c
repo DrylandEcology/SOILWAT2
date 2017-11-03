@@ -2303,7 +2303,6 @@ static void get_dSWAbulk(void){
 	#elif defined(STEPWAT)
 		smallestCritVal = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[0]];
 		largestCritVal = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[3]];
-		get_outstrleader(pd);
 		ForEachSoilLayer(i)
 		{
 			switch (pd)
@@ -2356,7 +2355,7 @@ static void get_dSWAbulk(void){
 		// loop through each veg type to get dSWAbulk
 		for(curr_vegType = 3; curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
 			curr_crit_rank_index = SXW.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
-			for(kv=curr_vegType; kv>=0; kv--){
+			for(kv=curr_vegType; kv>0; kv--){
 				crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv]]; // get crit value at current index
 				prev_crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv-1]]; // get crit value for index lower
 				kv_veg_type = SXW.rank_SWPcrits[kv]; // get index for veg_type. dont want to access swa_master at rank_SWPcrits index
