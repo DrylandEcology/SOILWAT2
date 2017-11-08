@@ -6,4 +6,4 @@ script:
   - make compilel
   - make gtest
   - ./sw_test
-  - make gtest_clean cleaner
+  - make cleaner

@@ -17,7 +17,7 @@
 #include "../generic.h"
 #include "../generic.c"
 #include "../myMemory.h"
-#include "../myMemory.c"
+#include "../mymemory.c"
 #include "../filefuncs.h"
 #include "../filefuncs.c"
 #include "../rands.h"
