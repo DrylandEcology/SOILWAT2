@@ -13,5 +13,5 @@ build_script:
   - set PATH=%PATH%;c:\cygwin\bin
   - make compile
   - make gtest
-  - ./sw_test.exe
+  - sw_test.exe
   - make gtest_clean cleaner
