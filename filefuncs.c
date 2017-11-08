@@ -54,8 +54,8 @@ char *DirName(const char *p) {
 	int l;
 
 	*s = '\0';
-	if (!(c = strrchr(p, '/')))
-		c = strrchr(p, '\\');
+	if (!(c = strrchr(p, "/")))
+		c = strrchr(p, "\\");
 
 	if (c) {
 		l = c - p + 1;
@@ -71,8 +71,8 @@ const char *BaseName(const char *p) {
 	/* Doesn't modify the string, but you'll probably want to
 	 * copy the result to a stable buffer. */
 	char *c;
-	if (!(c = strrchr(p, '/')))
-		c = strrchr(p, '\\');
+	if (!(c = strrchr(p, "/")))
+		c = strrchr(p, "\\");
 
 	return ((c != NULL )? c+1 : p);
 }
@@ -313,4 +313,3 @@ char **getfiles(const char *fspec, int *nfound) {
 
 	return flist;
 }
-
