@@ -9,3 +9,6 @@ matrix:
 build_script:
   - set PATH=%PATH%;c:\cygwin\bin
   - make compile
+  - make gtest
+  - ./sw_test
+  - make gtest_clean cleaner
