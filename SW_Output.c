@@ -2243,6 +2243,32 @@ static void get_swa(void)
 					}
 				}
 			}
+
+			/*if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 2000 && SXW.SWA_master[Itclp(0,3,i,p)] != 0){
+				printf("shrub[1,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,0,i,p)]);
+				printf("shrub[1,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,1,i,p)]);
+				printf("shrub[1,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,2,i,p)]);
+				printf("shrub[1,3,%d,%d]: %f\n\n", i,p,SXW.SWA_master[Itclp(1,3,i,p)]);
+
+				printf("forb[3,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(3,0,i,p)]);
+				printf("forb[3,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(3,1,i,p)]);
+				printf("forb[3,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(3,2,i,p)]);
+				printf("forb[3,3,%d,%d]: %f\n\n", i,p,SXW.SWA_master[Itclp(3,3,i,p)]);
+
+				printf("grass[2,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,0,i,p)]);
+				printf("grass[2,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,1,i,p)]);
+				printf("grass[2,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,2,i,p)]);
+				printf("grass[2,3,%d,%d]: %f\n\n", i,p,SXW.SWA_master[Itclp(2,3,i,p)]);
+
+
+				printf("tree[0,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(0,0,i,p)]);
+				printf("tree[0,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(0,1,i,p)]);
+				printf("tree[0,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(0,2,i,p)]);
+				printf("tree[0,3,%d,%d]: %f\n\n", i,p,SXW.SWA_master[Itclp(0,3,i,p)]);
+
+				printf("---------------------\n\n");
+			}*/
+
 			// ######################################################
 			//           done with calculating SWA_master
 			// ######################################################
@@ -2265,10 +2291,6 @@ static void get_swa(void)
 					sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWA_master[Itclp(3,3,i,p)], _Sep, SXW.SWA_master[Itclp(0,0,i,p)], _Sep,
 					 SXW.SWA_master[Itclp(1,1,i,p)], _Sep, SXW.SWA_master[Itclp(2,2,i,p)]);
 					strcat(outstr, str);
-					/*if(SW_Model.year == 1980){
-						printf("swa str: %s\n\n", str);
-						printf("swa outstr: %s\n\n#####\n", outstr);
-					}*/
 				}
 				if (bFlush) p++;
 			}
@@ -2355,13 +2377,23 @@ static void get_dSWAbulk(void){
 		// loop through each veg type to get dSWAbulk
 		for(curr_vegType = 3; curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
 			curr_crit_rank_index = SXW.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
-			for(kv=curr_vegType; kv>0; kv--){
+			for(kv=curr_vegType; kv>=0; kv--){
 				crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv]]; // get crit value at current index
 				prev_crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv-1]]; // get crit value for index lower
 				kv_veg_type = SXW.rank_SWPcrits[kv]; // get index for veg_type. dont want to access swa_master at rank_SWPcrits index
-				prev_crit_veg_type = SXW.rank_SWPcrits[kv-1]; // get veg type that belongs to the corresponding critical value
+				if(kv!=0)
+					prev_crit_veg_type = SXW.rank_SWPcrits[kv-1]; // get veg type that belongs to the corresponding critical value
+				else
+					prev_crit_veg_type = SXW.rank_SWPcrits[kv]; // set prev to itself since smallest type. if == then will just set values to itself
+
+					//printf("%f,%f\n\n", crit_val, prev_crit_val);
+
 				if(SW_VegProd.useVegType[curr_crit_rank_index] == 0){ // [0=tree(-2.0,off), 1=shrub(-3.9,on), 2=grass(-3.5,on), 3=forb(-2.0,on)]
 					// do nothing since veg type is turned off
+					//printf("%d,%d\n", curr_crit_rank_index, kv_veg_type);
+					SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
+					SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
+					SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
 				}
 				else{ // check if need to recalculate for veg types in use
 					if(crit_val < prev_crit_val){ // if true then we need to recalculate
@@ -2375,6 +2407,7 @@ static void get_dSWAbulk(void){
 					}
 					else if(crit_val == prev_crit_val){ // critical values equal just set to itself
 						SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)];
+						//printf("%f,%f\n\n", crit_val, prev_crit_val);
 					}
 					else{
 						// do nothing if crit val >. this will be handled later
@@ -2387,7 +2420,8 @@ static void get_dSWAbulk(void){
 					else{ // all values other than largest well need repartitioning
 						if(crit_val == smallestCritVal){ // if smallest value then all veg_types have access to it so just need to multiply by its fraction
 							SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] =
-								SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] * SW_VegProd.useVegType[curr_vegType];
+								SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] * SW_VegProd.useVegType[curr_crit_rank_index];
+								// multiply by fraction for index of curr_vegType not kv
 						}
 						else{ // critical values that more than one veg type have access to but less than all veg types
 							vegFractionSum = 0; // set to 0 each time to make sure it gets correct value
@@ -2408,7 +2442,6 @@ static void get_dSWAbulk(void){
 		// ex: if forb=-2.0 grass=-3.5 & shrub=-3.9 then need to set grass and shrub to 0 for forb
 		for(j=curr_vegType+1; j<4; j++){
 			greater_veg_type = SXW.rank_SWPcrits[j];
-			//printf("(%d) current, greater: %f, %f\n", j, SW_VegProd.critSoilWater[SXW.rank_SWPcrits[j-1]],SW_VegProd.critSoilWater[SXW.rank_SWPcrits[j]]);
 			if(SW_VegProd.critSoilWater[SXW.rank_SWPcrits[j-1]] > SW_VegProd.critSoilWater[SXW.rank_SWPcrits[j]]){
 				SXW.dSWAbulk[Itclp(curr_crit_rank_index,greater_veg_type,i,p)] = 0.;
 				SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,greater_veg_type,i,p)] = 0.;
@@ -2416,7 +2449,7 @@ static void get_dSWAbulk(void){
 		}
 	}
 
-	/*if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 2000 && i == 5 && p < 6){
+	if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 2000 && SXW.SWA_master[Itclp(3,3,i,p)] != 0 && i == 7 && p == 17){
 		printf("shrub[1,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,0,i,p)]);
 		printf("shrub[1,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,1,i,p)]);
 		printf("shrub[1,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,2,i,p)]);
@@ -2431,6 +2464,21 @@ static void get_dSWAbulk(void){
 		printf("dSWAbulk_repartition shrub[1,1,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(1,1,i,p)]);
 		printf("dSWAbulk_repartition shrub[1,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(1,2,i,p)]);
 		printf("dSWAbulk_repartition shrub[1,3,%d,%d]: %f\n\n", i,p,SXW.dSWA_repartitioned[Itclp(1,3,i,p)]);
+
+		printf("grass[2,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,0,i,p)]);
+		printf("grass[2,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,1,i,p)]);
+		printf("grass[2,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,2,i,p)]);
+		printf("grass[2,3,%d,%d]: %f\n\n", i,p,SXW.SWA_master[Itclp(2,3,i,p)]);
+
+		printf("dSWAbulk grass[2,0,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,0,i,p)]);
+		printf("dSWAbulk grass[2,1,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,1,i,p)]);
+		printf("dSWAbulk grass[2,2,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,2,i,p)]);
+		printf("dSWAbulk grass[2,3,%d,%d]: %f\n\n", i,p,SXW.dSWAbulk[Itclp(2,3,i,p)]);
+
+		printf("dSWAbulk_repartition grass[2,0,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,0,i,p)]);
+		printf("dSWAbulk_repartition grass[2,1,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,1,i,p)]);
+		printf("dSWAbulk_repartition grass[2,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,2,i,p)]);
+		printf("dSWAbulk_repartition grass[2,3,%d,%d]: %f\n\n", i,p,SXW.dSWA_repartitioned[Itclp(2,3,i,p)]);
 
 		printf("forb[3,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(3,0,i,p)]);
 		printf("forb[3,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(3,1,i,p)]);
@@ -2447,23 +2495,23 @@ static void get_dSWAbulk(void){
 		printf("dSWAbulk_repartition forb[3,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(3,2,i,p)]);
 		printf("dSWAbulk_repartition forb[3,3,%d,%d]: %f\n\n", i,p,SXW.dSWA_repartitioned[Itclp(3,3,i,p)]);
 
-		printf("grass[2,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,0,i,p)]);
-		printf("grass[2,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,1,i,p)]);
-		printf("grass[2,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,2,i,p)]);
-		printf("grass[2,3,%d,%d]: %f\n\n", i,p,SXW.SWA_master[Itclp(2,3,i,p)]);
+		printf("tree[0,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(0,0,i,p)]);
+		printf("tree[0,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(0,1,i,p)]);
+		printf("tree[0,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(0,2,i,p)]);
+		printf("tree[0,3,%d,%d]: %f\n\n", i,p,SXW.SWA_master[Itclp(0,3,i,p)]);
 
-		printf("dSWAbulk grass[2,0,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,0,i,p)]);
-		printf("dSWAbulk grass[2,1,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,1,i,p)]);
-		printf("dSWAbulk grass[2,2,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(2,2,i,p)]);
-		printf("dSWAbulk grass[2,3,%d,%d]: %f\n\n", i,p,SXW.dSWAbulk[Itclp(2,3,i,p)]);
+		printf("dSWAbulk tree[0,0,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(0,0,i,p)]);
+		printf("dSWAbulk tree[0,1,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(0,1,i,p)]);
+		printf("dSWAbulk tree[0,2,%d,%d]: %f\n", i,p,SXW.dSWAbulk[Itclp(0,2,i,p)]);
+		printf("dSWAbulk tree[0,3,%d,%d]: %f\n\n", i,p,SXW.dSWAbulk[Itclp(0,3,i,p)]);
 
-		printf("dSWAbulk_repartition grass[2,0,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,0,i,p)]);
-		printf("dSWAbulk_repartition grass[2,1,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,1,i,p)]);
-		printf("dSWAbulk_repartition grass[2,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,2,i,p)]);
-		printf("dSWAbulk_repartition grass[2,3,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,3,i,p)]);
+		printf("dSWAbulk_repartition tree[0,0,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(0,0,i,p)]);
+		printf("dSWAbulk_repartition tree[0,1,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(0,1,i,p)]);
+		printf("dSWAbulk_repartition tree[0,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(0,2,i,p)]);
+		printf("dSWAbulk_repartition tree[0,3,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(0,3,i,p)]);
 
 		printf("---------------------\n\n");
-	}*/
+	}
 }
 	#endif
 }
