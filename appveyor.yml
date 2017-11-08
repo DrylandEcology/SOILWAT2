@@ -7,11 +7,11 @@ matrix:
 
 install:
   - git submodule update --init --recursive
-  
+
 # to run your custom scripts instead of automatic MSBuild
 build_script:
   - set PATH=%PATH%;c:\cygwin\bin
   - make compile
   - make gtest
-  - ./sw_test
+  - ./sw_test.exe
   - make gtest_clean cleaner
