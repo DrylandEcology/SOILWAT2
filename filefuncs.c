@@ -246,7 +246,7 @@ Bool RemoveFiles(const char *fspec) {
 		Mem_Free(flist[i]);
 	Mem_Free(flist);
 
-	return result;
+	return (Bool) result;
 }
 
 /**************************************************************/

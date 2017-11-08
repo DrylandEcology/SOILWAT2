@@ -1,20 +1,46 @@
 #include "gtest/gtest.h"
+#include <assert.h>
+#include <ctype.h>
+#include <dirent.h>
+#include <errno.h>
+#include <float.h>
+#include <math.h>
+#include <memory.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
+#include "../generic.h"
+#include "../generic.c"
+#include "../myMemory.h"
+#include "../myMemory.c"
+#include "../filefuncs.h"
+#include "../filefuncs.c"
 #include "../rands.h"
+#include "../rands.c"
+
+char errstr[MAX_ERROR]; /* used to compose an error msg    */
+FILE *logfp; /* file handle for logging messages */
+int logged; /* boolean: true = we logged a msg */
+
 
 namespace {
   // This test belongs to the beta random number generator
-  TEST(BetaGenerator, ZeroToOneOutput) {
+  TEST(BetaGeneratorTest, ZeroToOneOutput) {
     EXPECT_LT(genbet(0.5, 2), 1);
     EXPECT_LT(genbet(1, 3), 1);
     EXPECT_GT(genbet(1, 4), 0);
     EXPECT_GT(genbet(0.25, 1), 0);
-
   }
 
-  TEST(BetaGenerator, Errors) {
-    EXPECT_ANY_THROW(genbet(-0.5, 2));
-    EXPECT_ANY_THROW(genbet(1, -3));
-    EXPECT_ANY_THROW(genbet(-1, -3));
+  TEST(BetaGeneratorDeathTest, Errors) {
+    EXPECT_DEATH(genbet(-0.5, 2), "AA <= 0.0");
+    EXPECT_DEATH(genbet(1, -3), "BB <= 0.0");
+    EXPECT_DEATH(genbet(-1, -3), "AA <= 0.0");
   }
 
 
