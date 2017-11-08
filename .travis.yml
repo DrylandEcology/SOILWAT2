@@ -3,7 +3,7 @@ compiler:
   - clang
   - gcc
 script:
-  make compilel
-  make gtest
-  ./sw_test
-  make gtest_clean cleaner
+  - make compilel
+  - make gtest
+  - ./sw_test
+  - make gtest_clean cleaner
