@@ -31,16 +31,16 @@ int logged; /* boolean: true = we logged a msg */
 namespace {
   // This test belongs to the beta random number generator
   TEST(BetaGeneratorTest, ZeroToOneOutput) {
-    EXPECT_LT(genbet(0.5, 2), 1);
-    EXPECT_LT(genbet(1, 3), 1);
-    EXPECT_GT(genbet(1, 4), 0);
-    EXPECT_GT(genbet(0.25, 1), 0);
+    EXPECT_LT(RandBeta(0.5, 2), 1);
+    EXPECT_LT(RandBeta(1, 3), 1);
+    EXPECT_GT(RandBeta(1, 4), 0);
+    EXPECT_GT(RandBeta(0.25, 1), 0);
   }
 
   TEST(BetaGeneratorDeathTest, Errors) {
-    EXPECT_DEATH(genbet(-0.5, 2), "AA <= 0.0");
-    EXPECT_DEATH(genbet(1, -3), "BB <= 0.0");
-    EXPECT_DEATH(genbet(-1, -3), "AA <= 0.0");
+    EXPECT_DEATH(RandBeta(-0.5, 2), "AA <= 0.0");
+    EXPECT_DEATH(RandBeta(1, -3), "BB <= 0.0");
+    EXPECT_DEATH(RandBeta(-1, -3), "AA <= 0.0");
   }
 
 
