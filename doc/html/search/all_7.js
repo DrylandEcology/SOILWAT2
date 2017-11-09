@@ -1,7 +1,7 @@
 var searchData=
 [
   ['ge',['GE',['../generic_8h.html#a14e32c27dc9b188856093ae003f78b5c',1,'generic.h']]],
-  ['genbet',['genbet',['../rands_8c.html#a7c113f4c25479e9dd7b60b2c382258fb',1,'genbet(float aa, float bb):&#160;rands.c'],['../rands_8h.html#a7c113f4c25479e9dd7b60b2c382258fb',1,'genbet(float aa, float bb):&#160;rands.c']]],
+  ['genbet',['genbet',['../rands_8h.html#a7c113f4c25479e9dd7b60b2c382258fb',1,'rands.h']]],
   ['generic_2ec',['generic.c',['../generic_8c.html',1,'']]],
   ['generic_2eh',['generic.h',['../generic_8h.html',1,'']]],
   ['generic_5fh',['GENERIC_H',['../generic_8h.html#a5863b1da36cc637653e94892978b74ad',1,'generic.h']]],
