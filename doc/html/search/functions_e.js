@@ -1,6 +1,7 @@
 var searchData=
 [
   ['r_5finit_5frsoilwat2',['R_init_rSOILWAT2',['../_s_w___r__init_8c.html#a48cfcac76cca8ad995276bac0f160cbc',1,'SW_R_init.c']]],
+  ['randbeta',['RandBeta',['../rands_8c.html#aeecd655ab3f03f24d50688e6776586b3',1,'rands.c']]],
   ['randnorm',['RandNorm',['../rands_8c.html#a360602f9de1bde286cb454a0e07c2808',1,'RandNorm(double mean, double stddev):&#160;rands.c'],['../rands_8h.html#a360602f9de1bde286cb454a0e07c2808',1,'RandNorm(double mean, double stddev):&#160;rands.c']]],
   ['randseed',['RandSeed',['../rands_8c.html#ad17d320703c92d263551310bab8aedb5',1,'RandSeed(signed long seed):&#160;rands.c'],['../rands_8h.html#ad17d320703c92d263551310bab8aedb5',1,'RandSeed(signed long seed):&#160;rands.c']]],
   ['randuni_5ffast',['RandUni_fast',['../rands_8c.html#a76d078c2fef9e6b9d163f000d11c9346',1,'RandUni_fast(void):&#160;rands.c'],['../rands_8h.html#a76d078c2fef9e6b9d163f000d11c9346',1,'RandUni_fast(void):&#160;rands.c']]],
