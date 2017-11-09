@@ -99,26 +99,31 @@ double RandUni_fast(void) {
 }
 
 /*****************************************************/
+/**
+\fn double RandUni_good(void)
+\brief Generate a uniform random variate.
+
+ return a random number from
+ uniform distribution
+ if upper is 0, result is between 0 and 1
+ otherwise, result is a whole number
+ between 0 and upper inclusive.  This routine
+ is adapted from FUNCTION RAN1 in
+ Press, et al., 1986, Numerical Recipes,
+ p196, Press Syndicate, NY.
+ To reset the random number sequence,
+ set _randseed to any negative number
+ prior to calling this function, or one
+ that depends on it (eg, RandNorm()).
+
+ This code is preferable in terms of portability
+ as well as consistency across compilers.
+
+ cwb - 6/20/00
+
+*/
 double RandUni_good(void) {
-	/*-------------------------------------------
-	 return a random number from
-	 uniform distribution
-	 if upper is 0, result is between 0 and 1
-	 otherwise, result is a whole number
-	 between 0 and upper inclusive.  This routine
-	 is adapted from FUNCTION RAN1 in
-	 Press, et al., 1986, Numerical Recipes,
-	 p196, Press Syndicate, NY.
-	 To reset the random number sequence,
-	 set _randseed to any negative number
-	 prior to calling this function, or one
-	 that depends on it (eg, RandNorm()).
 
-	 This code is preferable in terms of portability
-	 as well as consistency across compilers.
-
-	 cwb - 6/20/00
-	 -------------------------------------------*/
 
 	long i;
 	static short first_time = 1;
