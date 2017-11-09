@@ -11,20 +11,24 @@
 long _randseed = 0L;
 
 /*****************************************************/
-void RandSeed(signed long seed) {
-	/*-------------------------------------------
-	 Resets the random number seed.  The
-	 seed is set to negative when this routine
-	 is called, so the generator routines
-	 ( eg, RandUni()) can tell that it has
-	 changed.  If called with seed==0,
-	 _randseed is reset from process time.
-	 '% 0xffff' is due to a bug in RandUni()
-	 that conks if seed is too large; should
-	 be removed in the near future.
+/**
+  \fn void RandSeed(signed long seed)
+  \brief Resets the random number seed.
 
-	 cwb - 6/27/00
-	 -------------------------------------------*/
+ The seed is set to negative when this routine
+ is called, so the generator routines
+ ( eg, RandUni()) can tell that it has
+ changed.  If called with seed==0,
+ _randseed is reset from process time.
+ '% 0xffff' is due to a bug in RandUni()
+ that conks if seed is too large; should
+ be removed in the near future.
+
+ \param seed The seed.
+
+ cwb - 6/27/00
+*/
+void RandSeed(signed long seed) {
 
 	if (seed == 0L) {
 		_randseed = ((long) time(NULL ));
@@ -54,22 +58,25 @@ void RandSeed(signed long seed) {
 #define BUCKETSIZE 97
 
 /*****************************************************/
+/**
+  \fn double RandUni_fast(void)
+  \brief Generate a uniform random variate.
+
+  "fast" because it
+  utilizes the system rand() but shuffles the results
+  to make a less correlated sequence.  This code is
+  based on FUNCTION RAN0 in Press, et al., 1986,
+  Numerical Recipes, p196, Press Syndicate, NY.
+
+  Of course, just how fast is "fast" depends on the
+  implementation of the compiler.  Some older generators
+  may be quite simple, and so would be faster than
+  a more complicated algorithm.  Newer rand()'s
+  are often fast and good.
+
+  cwb 18-Dec-02
+*/
 double RandUni_fast(void) {
-	/*-------------------------------------------
-	 return a uniform random variate.  "fast" because it
-	 utilizes the system rand() but shuffles the results
-	 to make a less correlated sequence.  This code is
-	 based on FUNCTION RAN0 in Press, et al., 1986,
-	 Numerical Recipes, p196, Press Syndicate, NY.
-
-	 Of course, just how fast is "fast" depends on the
-	 implementation of the compiler.  Some older generators
-	 may be quite simple, and so would be faster than
-	 a more complicated algorithm.  Newer rand()'s
-	 are often fast and good.
-
-	 cwb 18-Dec-02
-	 -------------------------------------------*/
 	static short first_time = 1;
 	static int bucket[BUCKETSIZE];
 	static double y, rmax = RAND_MAX;
@@ -371,7 +378,7 @@ float genbet ( float aa, float bb )
     exit ( 1 );
   }
 
-  if ( bb <= 0.0 ) 
+  if ( bb <= 0.0 )
   {
     fprintf ( stderr, "\n" );
     fprintf ( stderr, "GENBET - Fatal error!\n" );
@@ -430,7 +437,7 @@ float genbet ( float aa, float bb )
     alpha = a + b;
     beta = 1.0 / b;
     delta = 1.0 + a - b;
-    k1 = delta * ( 1.0 / 72.0 + b / 24.0 ) 
+    k1 = delta * ( 1.0 / 72.0 + b / 24.0 )
       / ( a / b - 7.0 / 9.0 );
     k2 = 0.25 + ( 0.5 + 0.25 / delta ) * b;
 

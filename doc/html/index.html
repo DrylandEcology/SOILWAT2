@@ -84,7 +84,12 @@ $(document).ready(function(){initNavTree('index.html','');});
 <div class="title">SOILWAT2 Documentation</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a href="https://travis-ci.org/Burke-Lauenroth-Lab/SOILWAT2"></a></p>
+<div class="textblock"><table class="doxtable">
+<tr>
+<th align="left">Unix </th><th align="left">Windows </th><th align="left">Release </th><th align="left">License </th><th align="left">Coverage </th><th align="left">Downloads  </th></tr>
+<tr>
+<td align="left"><a href="https://travis-ci.org/Burke-Lauenroth-Lab/SOILWAT2"></a> </td><td align="left"><a href="https://ci.appveyor.com/project/dschlaep/soilwat2/branch/master"></a> </td><td align="left"><a href="https://github.com/Burke-Lauenroth-Lab/SOILWAT2/releases"></a> </td><td align="left"><a href="https://www.gnu.org/licenses/gpl.html"></a> </td><td align="left"><a href="https://codecov.io/gh/Burke-Lauenroth-Lab/SOILWAT2"></a> </td><td align="left"><a href="https://github.com/Burke-Lauenroth-Lab/SOILWAT2"></a> </td></tr>
+</table>
 <h1>SOILWAT2</h1>
 <p>This version of SoilWat brings new features. This is the same code that is used by <a href="https://github.com/Burke-Lauenroth-Lab/rSOILWAT2">rSOILWAT2</a> and <a href="https://github.com/Burke-Lauenroth-Lab/STEPWAT2">STEPWAT2</a>.</p>
 <p>If you make use of this model, please cite appropriate references, and we would like to hear about your particular study (especially a copy of any published paper).</p>
@@ -94,20 +99,33 @@ $(document).ready(function(){initNavTree('index.html','');});
 <li>Palmquist, K.A., Schlaepfer, D.R., Bradford, J.B., and Lauenroth, W.K. 2016. Mid-latitude shrub steppe plant communities: climate change consequences for soil water resources. Ecology 97:2342–2354.</li>
 <li>Schlaepfer, D. R., W. K. Lauenroth, and J. B. Bradford. 2012. Ecohydrological niche of sagebrush ecosystems. Ecohydrology 5:453-466.</li>
 </ul>
-<h2>For code contributors only</h2>
-<ul>
-<li>The files 'Makevars', '<a class="el" href="_s_w___r__lib_8c.html">SW_R_lib.c</a>' and '<a class="el" href="_s_w___r__lib_8h.html">SW_R_lib.h</a>' are used when compiling for <a href="https://github.com/Burke-Lauenroth-Lab/rSOILWAT2">rSOILWAT2</a> and ignored otherwise.</li>
-<li>The file '<a class="el" href="_s_w___main___function_8c.html">SW_Main_Function.c</a>' is used when compiling with <a href="https://github.com/Burke-Lauenroth-Lab/STEPWAT2">STEPWAT2</a> and ignored otherwise.</li>
-</ul>
-<h3>Version numbers</h3>
-<p>We attempt to follow guidelines of <a href="http://semver.org/">semantic versioning</a> with version numbers of MAJOR.MINOR.PATCH.</p>
-<h3>How to contribute</h3>
+<h2>How to contribute</h2>
 <p>You can help us in different ways:</p>
 <ol type="1">
 <li>Reporting <a href="https://github.com/Burke-Lauenroth-Lab/SOILWAT2/issues">issues</a></li>
 <li>Contributing code and sending a <a href="https://github.com/Burke-Lauenroth-Lab/SOILWAT2/pulls">pull request</a></li>
 </ol>
-<h1>Notes</h1>
+<p><b>SOILWAT2 code is used as part of three applications</b>: stand-alone, as part of <a href="https://github.com/Burke-Lauenroth-Lab/STEPWAT2">STEPWAT2</a>, and as part of the R package <a href="https://github.com/Burke-Lauenroth-Lab/rSOILWAT2">rSOILWAT2</a></p><ul>
+<li>The files 'Makevars', '<a class="el" href="_s_w___r__lib_8c.html">SW_R_lib.c</a>' and '<a class="el" href="_s_w___r__lib_8h.html">SW_R_lib.h</a>' are used when compiling for <a href="https://github.com/Burke-Lauenroth-Lab/rSOILWAT2">rSOILWAT2</a> and ignored otherwise.</li>
+<li>The file '<a class="el" href="_s_w___main___function_8c.html">SW_Main_Function.c</a>' is used when compiling with <a href="https://github.com/Burke-Lauenroth-Lab/STEPWAT2">STEPWAT2</a> and ignored otherwise.</li>
+</ul>
+<p><b>Follow our guidelines</b> as detailed <a href="https://github.com/Burke-Lauenroth-Lab/workflow_guidelines">here</a></p>
+<p><b>Tests, documentation, and code</b> form a trinity</p><ul>
+<li>Code documentation<ul>
+<li>Use <a href="http://www.stack.nl/~dimitri/doxygen/">doxygen</a> to write inline code documentation</li>
+<li>Update help pages on the command-line with <code>doxygen Doxyfile</code></li>
+</ul>
+</li>
+<li>Code tests<ul>
+<li>Use https://github.com/google/googletest/blob/master/googletest/docs/Documentation.md "GoogleTest" to add unit tests to the existing framework</li>
+<li>Run unit tests locally on the command-line with ``` make gtest ./sw_test make gtest_clean ```</li>
+<li>We plan to update the continuous integration frameworks 'travis' and 'appveyor' to run these tests as well when commits are pushed</li>
+<li>Development/feature branches can only be merged into master if they pass all checks</li>
+</ul>
+</li>
+</ul>
+<p><b>Version numbers</b></p>
+<p>We attempt to follow guidelines of <a href="http://semver.org/">semantic versioning</a> with version numbers of MAJOR.MINOR.PATCH.</p>
 <p><b>Repository renamed from SOILWAT to SOILWAT2 on Feb 23, 2017</b></p>
 <p>All existing information should <a href="https://help.github.com/articles/renaming-a-repository/">automatically be redirected</a> to the new name.</p>
 <p>Contributors are encouraged, however, to update local clones to <a href="https://help.github.com/articles/changing-a-remote-s-url/">point to the new URL</a>, i.e., </p><div class="fragment"><div class="line">git remote set-url origin https://github.com/Burke-Lauenroth-Lab/SOILWAT2.git</div></div><!-- fragment --> </div></div><!-- contents -->
