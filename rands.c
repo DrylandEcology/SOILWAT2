@@ -62,7 +62,7 @@ void RandSeed(signed long seed) {
   \fn double RandUni_fast(void)
   \brief Generate a uniform random variate.
 
-  "fast" because it
+  "Fast" because it
   utilizes the system rand() but shuffles the results
   to make a less correlated sequence.  This code is
   based on FUNCTION RAN0 in Press, et al., 1986,
@@ -75,6 +75,8 @@ void RandSeed(signed long seed) {
   are often fast and good.
 
   cwb 18-Dec-02
+
+	\return double. A value between 0 and 1.
 */
 double RandUni_fast(void) {
 	static short first_time = 1;
@@ -100,26 +102,26 @@ double RandUni_fast(void) {
 
 /*****************************************************/
 /**
-\fn double RandUni_good(void)
-\brief Generate a uniform random variate.
+	\fn double RandUni_good(void)
+	\brief Generate a uniform random variate.
 
- return a random number from
- uniform distribution
- if upper is 0, result is between 0 and 1
- otherwise, result is a whole number
- between 0 and upper inclusive.  This routine
- is adapted from FUNCTION RAN1 in
- Press, et al., 1986, Numerical Recipes,
- p196, Press Syndicate, NY.
- To reset the random number sequence,
- set _randseed to any negative number
- prior to calling this function, or one
- that depends on it (eg, RandNorm()).
+	Return a random number from
+	uniform distribution.
+	Result is between 0 and 1. This routine
+	is adapted from FUNCTION RAN1 in
+	Press, et al., 1986, Numerical Recipes,
+	p196, Press Syndicate, NY.
+	To reset the random number sequence,
+	set _randseed to any negative number
+	prior to calling this function, or one
+	that depends on it (eg, RandNorm()).
 
- This code is preferable in terms of portability
- as well as consistency across compilers.
+	This code is preferable in terms of portability
+	as well as consistency across compilers.
 
- cwb - 6/20/00
+	cwb - 6/20/00
+
+ 	\return double. A value between 0 and 1.
 
 */
 double RandUni_good(void) {
@@ -128,9 +130,10 @@ double RandUni_good(void) {
 	long i;
 	static short first_time = 1;
 	static double bucket[BUCKETSIZE], y;
-	static const long im1 = 259200, ia1 = 7141, ic1 = 54773, im2 = 134456, ia2 = 8121, ic2 = 28411, im3 = 243000, ia3 = 4561, ic3 = 51349;
+	static const long im1 = 259200, ia1 = 7141, ic1 = 54773, im2 = 134456,
+		ia2 = 8121, ic2 = 28411, im3 = 243000, ia3 = 4561, ic3 = 51349;
 	static const double rm1 = 3.8580247e-6, /* 1/im1 */
-	rm2 = 7.4373773e-6; /* 1/im2 */
+		rm2 = 7.4373773e-6; /* 1/im2 */
 
 	static long ix1, ix2, ix3;
 
@@ -178,21 +181,33 @@ double RandUni_good(void) {
 }
 
 /*****************************************************/
-int RandUniRange(const long first, const long last) {
-	/*-------------------------------------------
-	 return a randomly selected integer between
-	 first and last, inclusive.
+/**
+	\fn int RandUniRange(const long first, const long last)
+	\brief Generate a random integer between two numbers.
 
-	 cwb - 12/5/00
-	 cwb - 12/8/03 - just noticed that the previous
-	 version only worked with positive numbers
-	 and when first < last.  Now it works with
-	 negative numbers as well as reversed order.
-	 Examples:
-	 first = 1, last = 10, rand=.5, result = 6
-	 first = 5, last = -1, rand=.5, result = 2
-	 first = -5, last = 5, rand=.5, result = 0
-	 -------------------------------------------*/
+	Return a randomly selected integer between
+	first and last, inclusive.
+
+	cwb - 12/5/00
+
+	cwb - 12/8/03 - just noticed that the previous
+	version only worked with positive numbers
+	and when first < last.  Now it works with
+	negative numbers as well as reversed order.
+
+	Examples:
+	- first = 1, last = 10, result = 6
+	- first = 5, last = -1, result = 2
+	- first = -5, last = 5, result = 0
+
+	\param first. One bound of the range between two numbers. A const long argument.
+	\param last. One bound of the range between two numbers. A const long argument.
+
+	\return integer. Random number between the two bounds defined.
+
+*/
+int RandUniRange(const long first, const long last) {
+
 
 	long f, l, r;
 
