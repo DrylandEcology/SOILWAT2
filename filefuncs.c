@@ -52,11 +52,11 @@ char *DirName(const char *p) {
 	static char s[FILENAME_MAX];
 	char *c;
 	int l;
-	char * sep1 = '/', sep2 = '\\';
+	char sep1 = '/', sep2 = '\\';
 
 	*s = '\0';
-	if (!(c = strrchr(p, sep1)))
-		c = strrchr(p, sep2);
+	if (!(c = strrchr(p, (int) sep1)))
+		c = strrchr(p, (int) sep2);
 
 	if (c) {
 		l = c - p + 1;
@@ -72,10 +72,10 @@ const char *BaseName(const char *p) {
 	/* Doesn't modify the string, but you'll probably want to
 	 * copy the result to a stable buffer. */
 	char *c;
-	char * sep1 = '/', sep2 = '\\';
+	char sep1 = '/', sep2 = '\\';
 
-	if (!(c = strrchr(p, sep1)))
-		c = strrchr(p, sep2);
+	if (!(c = strrchr(p, (int) sep1)))
+		c = strrchr(p, (int) sep2);
 
 	return ((c != NULL )? c+1 : p);
 }
