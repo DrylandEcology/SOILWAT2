@@ -344,30 +344,22 @@ double RandNorm(double mean, double stddev) {
 
 	return mean + gasdev * stddev;
 }
-float genbet ( float aa, float bb )
 
-/******************************************************************************/
-/*
-  Purpose:
+/**
+  \fn float RandBeta ( float aa, float bb )
+  \brief Generates a beta random variate.
 
-    GENBET generates a beta random deviate.
-
-  Discussion:
-
-    This procedure returns a single random deviate from the beta distribution
-    with parameters A and B.  The density is
-
+  RandBeta returns a single random variate from the beta distribution
+  with shape parameters a and b. The density is
       x^(a-1) * (1-x)^(b-1) / Beta(a,b) for 0 < x < 1
-  Parameters:
 
-    Input, float AA, the first parameter of the beta distribution.
-    0.0 < AA.
+  TODO: Provide appropriate reference(s) and license statements for the 'GENBET' algorithm.
 
-    Input, float BB, the second parameter of the beta distribution.
-    0.0 < BB.
-
-    Output, float GENBET, a beta random variate.
+  \param aa. The first shape parameter of the beta distribution with 0.0 < aa.
+  \param bb. The second shape parameter of the beta distribution with 0.0 < bb.
+  \return A random variate of a beta distribution.
 */
+float RandBeta ( float aa, float bb )
 {
   float a;
   float alpha;

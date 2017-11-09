@@ -1,7 +1,7 @@
 var rands_8c =
 [
     [ "BUCKETSIZE", "rands_8c.html#a1697ba8bc67aab0eb972da5596ee5cc9", null ],
-    [ "genbet", "rands_8c.html#a7c113f4c25479e9dd7b60b2c382258fb", null ],
+    [ "RandBeta", "rands_8c.html#aeecd655ab3f03f24d50688e6776586b3", null ],
     [ "RandNorm", "rands_8c.html#a360602f9de1bde286cb454a0e07c2808", null ],
     [ "RandSeed", "rands_8c.html#ad17d320703c92d263551310bab8aedb5", null ],
     [ "RandUni_fast", "rands_8c.html#a76d078c2fef9e6b9d163f000d11c9346", null ],
