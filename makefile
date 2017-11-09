@@ -53,6 +53,7 @@ gtest_clean :
 cleaner :
 		@rm -f $(OBJECTS) $(target_exe) $(pkg).so $(pkg).dll
 		@rm -f testing/test
+		@rm -f testing/Output/*
 		@rm -f libgtest.a gtest-all.o sw_test
 
 .PHONY : compile
