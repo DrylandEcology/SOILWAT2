@@ -55,8 +55,8 @@ char *DirName(const char *p) {
 	char sep1 = '/', sep2 = '\\';
 
 	*s = '\0';
-	if (!(c = strrchr(p, (int) sep1)))
-		c = strrchr(p, (int) sep2);
+	if (!(c = (char*) strrchr(p, (int) sep1)))
+		c = (char*) strrchr(p, (int) sep2);
 
 	if (c) {
 		l = c - p + 1;
@@ -74,8 +74,8 @@ const char *BaseName(const char *p) {
 	char *c;
 	char sep1 = '/', sep2 = '\\';
 
-	if (!(c = strrchr(p, (int) sep1)))
-		c = strrchr(p, (int) sep2);
+	if (!(c = (char*) strrchr(p, (int) sep1)))
+		c = (char*) strrchr(p, (int) sep2);
 
 	return ((c != NULL )? c+1 : p);
 }
