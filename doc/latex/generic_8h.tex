@@ -1,0 +1,647 @@
+\hypertarget{generic_8h}{}\section{generic.\+h File Reference}
+\label{generic_8h}\index{generic.\+h@{generic.\+h}}
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$float.\+h$>$}\newline
+{\ttfamily \#include $<$math.\+h$>$}\newline
+{\ttfamily \#include $<$assert.\+h$>$}\newline
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{generic_8h_a7c6368cf7d9d669e63321edc4f8929e1}{itob}(i)~((i)?T\+R\+U\+E\+:\+F\+A\+L\+SE)
+\item 
+\#define \hyperlink{generic_8h_affe776513b24d84b39af8ab0930fef7f}{max}(a,  b)~(((a) $>$ (b)) ? (a) \+: (b))
+\item 
+\#define \hyperlink{generic_8h_ac6afabdc09a49a433ee19d8a9486056d}{min}(a,  b)~(((a) $<$ (b)) ? (a) \+: (b))
+\item 
+\#define \hyperlink{generic_8h_ae55bc5afe1eabd76592c8e7a0c7b089c}{fmax}(a,  b)~( ( \hyperlink{generic_8h_a8df7ad109bbbe1c1278157e968aecc1d}{GT}((a),(b)) ) ? (a) \+: (b))
+\item 
+\#define \hyperlink{generic_8h_a3a446ef14fca6cda41a6634efdecdde6}{fmin}(a,  b)~( ( \hyperlink{generic_8h_a375b5090161790d5783d4bdd92f3f750}{LT}((a),(b)) ) ? (a) \+: (b))
+\item 
+\#define \hyperlink{generic_8h_a6a010865b10e541735fa2da8f3cd062d}{abs}(a)~( ( \hyperlink{generic_8h_a375b5090161790d5783d4bdd92f3f750}{LT}(a, 0.\+00) ) ? (-\/a) \+: (a) )
+\item 
+\#define \hyperlink{generic_8h_ac4acb71b4114d72176466f9b52bf72ac}{sqrt}(x)~((sizeof(x)==sizeof(float)) ? sqrtf(x) \+: sqrt(x))
+\item 
+\#define \hyperlink{generic_8h_aa1ff32598cc88bb9fc8bab0a24369ff3}{isnull}(a)~(N\+U\+LL == (a))
+\item 
+\#define \hyperlink{generic_8h_a3da15c8b6dfbf1176ddeb33d5e40d3f9}{Year\+To4\+Digit}(y)
+\item 
+\#define \hyperlink{generic_8h_aac1dbe1371c37f4c0d743a77108bb06e}{W\+E\+E\+K\+D\+A\+YS}~7
+\item 
+\#define \hyperlink{generic_8h_a48da69c89756b1a25e3a7c618696fac9}{Doy2\+Week}(d)~((\hyperlink{_times_8h_a25ac787161a5cad0e3fdfe5a5aeb3236}{Time\+Int})(((d)-\/1) /\hyperlink{generic_8h_aac1dbe1371c37f4c0d743a77108bb06e}{W\+E\+E\+K\+D\+A\+YS}))
+\item 
+\#define \hyperlink{generic_8h_ae9894b66cd216d8ad25902a11ad2f941}{L\+O\+G\+N\+O\+TE}~0x01
+\item 
+\#define \hyperlink{generic_8h_a4233bfd6249e6e43650106c6043808bb}{L\+O\+G\+W\+A\+RN}~0x02
+\item 
+\#define \hyperlink{generic_8h_a29b9525322b08a5b2bb7fa30ebc48214}{L\+O\+G\+E\+R\+R\+OR}~0x04
+\item 
+\#define \hyperlink{generic_8h_aa207fc3bd77ff692557b29468a5ca305}{L\+O\+G\+E\+X\+IT}~0x08
+\item 
+\#define \hyperlink{generic_8h_ac082a1f175ecd155ccd9ee4bfafacb4a}{L\+O\+G\+F\+A\+T\+AL}~0x0c  /$\ast$ L\+O\+G\+E\+X\+I\+T $\vert$ L\+O\+G\+E\+R\+R\+O\+R $\ast$/
+\item 
+\#define \hyperlink{generic_8h_a7c213cc89d01ec9cdbaa3356698a86ce}{M\+A\+X\+\_\+\+E\+R\+R\+OR}~4096
+\item 
+\#define \hyperlink{generic_8h_a0985d386e5604b94460bb60ac639d383}{F\+\_\+\+D\+E\+L\+TA}~(10$\ast$F\+L\+T\+\_\+\+E\+P\+S\+I\+L\+ON)
+\item 
+\#define \hyperlink{generic_8h_a5c3660640cebde8a951b74d847b3dfeb}{D\+\_\+\+D\+E\+L\+TA}~(10$\ast$D\+B\+L\+\_\+\+E\+P\+S\+I\+L\+ON)
+\item 
+\#define \hyperlink{generic_8h_a66785db10ccce58e71eb3555c09188b0}{G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA}(x,  y)~( (sizeof(x) == sizeof(float)) ? (\hyperlink{generic_8h_affe776513b24d84b39af8ab0930fef7f}{max}(\hyperlink{generic_8h_a0985d386e5604b94460bb60ac639d383}{F\+\_\+\+D\+E\+L\+TA}, F\+L\+T\+\_\+\+E\+P\+S\+I\+L\+ON $\ast$ \hyperlink{generic_8h_affe776513b24d84b39af8ab0930fef7f}{max}(fabs(x), fabs(y)))) \+: (\hyperlink{generic_8h_affe776513b24d84b39af8ab0930fef7f}{max}(\hyperlink{generic_8h_a5c3660640cebde8a951b74d847b3dfeb}{D\+\_\+\+D\+E\+L\+TA}, D\+B\+L\+\_\+\+E\+P\+S\+I\+L\+ON $\ast$ \hyperlink{generic_8h_affe776513b24d84b39af8ab0930fef7f}{max}(fabs(x), fabs(y)))) )
+\item 
+\#define \hyperlink{generic_8h_a10f769903592548e508a283bc2b31d42}{isless2}(x,  y)~((x) $<$ ((y) -\/ \hyperlink{generic_8h_a66785db10ccce58e71eb3555c09188b0}{G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA}(x, y)))
+\item 
+\#define \hyperlink{generic_8h_a88093fead5165843ef0498d47e621636}{ismore}(x,  y)~((x) $>$ ((y) + \hyperlink{generic_8h_a66785db10ccce58e71eb3555c09188b0}{G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA}(x, y)))
+\item 
+\#define \hyperlink{generic_8h_a25b8e4edb1775b70059a1a980aff6746}{iszero}(x)~( (sizeof(x) == sizeof(float)) ? (fabs(x) $<$= \hyperlink{generic_8h_a0985d386e5604b94460bb60ac639d383}{F\+\_\+\+D\+E\+L\+TA}) \+: (fabs(x) $<$= \hyperlink{generic_8h_a5c3660640cebde8a951b74d847b3dfeb}{D\+\_\+\+D\+E\+L\+TA}) )
+\item 
+\#define \hyperlink{generic_8h_a04d96a713785d741faaa620a475b745c}{isequal}(x,  y)~(fabs((x) -\/ (y)) $<$= \hyperlink{generic_8h_a66785db10ccce58e71eb3555c09188b0}{G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA}(x, y))
+\item 
+\#define \hyperlink{generic_8h_a9983412618e748f0ed750611860a2583}{Z\+RO}(x)~\hyperlink{generic_8h_a25b8e4edb1775b70059a1a980aff6746}{iszero}(x)
+\item 
+\#define \hyperlink{generic_8h_a67a26698612a951cb54a963f77cee538}{EQ}(x,  y)~\hyperlink{generic_8h_a04d96a713785d741faaa620a475b745c}{isequal}(x,y)
+\item 
+\#define \hyperlink{generic_8h_a375b5090161790d5783d4bdd92f3f750}{LT}(x,  y)~\hyperlink{generic_8h_a10f769903592548e508a283bc2b31d42}{isless2}(x,y)
+\item 
+\#define \hyperlink{generic_8h_a8df7ad109bbbe1c1278157e968aecc1d}{GT}(x,  y)~\hyperlink{generic_8h_a88093fead5165843ef0498d47e621636}{ismore}(x,y)
+\item 
+\#define \hyperlink{generic_8h_a2196b2e9c04f037b20b9c064276ee7c9}{LE}(x,  y)~((x) $<$ (y) $\vert$$\vert$ \hyperlink{generic_8h_a67a26698612a951cb54a963f77cee538}{EQ}(x,y))
+\item 
+\#define \hyperlink{generic_8h_a14e32c27dc9b188856093ae003f78b5c}{GE}(x,  y)~((x) $>$ (y) $\vert$$\vert$ \hyperlink{generic_8h_a67a26698612a951cb54a963f77cee538}{EQ}(x,y))
+\item 
+\#define \hyperlink{generic_8h_a547f3a33e6f36307e6b78d512e7ae8cb}{powe}(x,  y)~(exp((y) $\ast$ log(x)))
+\item 
+\#define \hyperlink{generic_8h_afbc7bc3d4affbba50477d4c7fb06cccd}{squared}(x)~\hyperlink{generic_8h_a547f3a33e6f36307e6b78d512e7ae8cb}{powe}(fabs(x), 2.\+0)
+\item 
+\#define \hyperlink{generic_8h_a5863b1da36cc637653e94892978b74ad}{G\+E\+N\+E\+R\+I\+C\+\_\+H}
+\end{DoxyCompactItemize}
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef float \hyperlink{generic_8h_a94d667c93da0511f21142d988f67674f}{RealF}
+\item 
+typedef double \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}
+\item 
+typedef int \hyperlink{generic_8h_a7cc214a236ad3bb6ad435bdcf5262a3f}{Int}
+\item 
+typedef unsigned int \hyperlink{generic_8h_a9c7b81b51177020e4735ba49298cf62b}{IntU}
+\item 
+typedef short int \hyperlink{generic_8h_ad391d97dda769e4d573afb05c6196e70}{IntS}
+\item 
+typedef unsigned short \hyperlink{generic_8h_a313988f3499dfdc18733ae046e2371dc}{Int\+US}
+\item 
+typedef long \hyperlink{generic_8h_a0f993b6970226fa174326c1db4d0be0e}{IntL}
+\item 
+typedef unsigned char \hyperlink{generic_8h_a0c8186d9b9b7880309c27230bbb5e69d}{byte}
+\end{DoxyCompactItemize}
+\subsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \hyperlink{generic_8h_a39db6982619d623273fad8a383489309}{Bool} \{ \hyperlink{generic_8h_a39db6982619d623273fad8a383489309aa1e095cc966dbecf6a0d8aad75348d1a}{F\+A\+L\+SE} = (1 != 1), 
+\hyperlink{generic_8h_a39db6982619d623273fad8a383489309aa82764c3079aea4e60c80e45befbb839}{T\+R\+UE} = (1 == 1)
+ \}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+char $\ast$ \hyperlink{generic_8h_a3156a3189c9286cf2c56384b9d4f00ba}{Str\+\_\+\+Trim\+Right} (char $\ast$s)
+\item 
+char $\ast$ \hyperlink{generic_8h_a6150637c525c3ca076ca7cc755e29db2}{Str\+\_\+\+Trim\+Left} (char $\ast$s)
+\item 
+char $\ast$ \hyperlink{generic_8h_a9dd2b923dbcf0dcda1a436a5be02c09b}{Str\+\_\+\+Trim\+LeftQ} (char $\ast$s)
+\item 
+char $\ast$ \hyperlink{generic_8h_ae76330d47526d546ea89a384fe788732}{Str\+\_\+\+To\+Upper} (char $\ast$s, char $\ast$r)
+\item 
+char $\ast$ \hyperlink{generic_8h_a9e6077882ab6b9ddbe0532b293a2ccf4}{Str\+\_\+\+To\+Lower} (char $\ast$s, char $\ast$r)
+\item 
+int \hyperlink{generic_8h_af36c688653758da1ec0e97b2f8ad02a9}{Str\+\_\+\+CompareI} (char $\ast$t, char $\ast$s)
+\item 
+void \hyperlink{generic_8h_a4ad34bbb851d33a77269262427d3b072}{Un\+Comment} (char $\ast$s)
+\item 
+void \hyperlink{generic_8h_a11003199b3d2783daca30d6c3110973b}{Log\+Error} (F\+I\+LE $\ast$fp, const int mode, const char $\ast$fmt,...)
+\item 
+\hyperlink{generic_8h_a39db6982619d623273fad8a383489309}{Bool} \hyperlink{generic_8h_a1b59895791915578f7b7f96aa7f8e7c4}{Is\+\_\+\+Leap\+Year} (int yr)
+\item 
+double \hyperlink{generic_8h_ac88c9c5fc37398d47ba569ca8149fe41}{interpolation} (double x1, double x2, double y1, double y2, double deltaX)
+\item 
+void \hyperlink{generic_8h_a42c27317771c079928bf61523b38adfa}{st\+\_\+get\+Bounds} (unsigned int $\ast$x1, unsigned int $\ast$x2, unsigned int $\ast$equal, unsigned int size, double depth, double bounds\mbox{[}$\,$\mbox{]})
+\item 
+double \hyperlink{generic_8h_a3b620cbbbff502ed6c23af6cb3fc46b2}{lobfM} (double xs\mbox{[}$\,$\mbox{]}, double ys\mbox{[}$\,$\mbox{]}, unsigned int n)
+\item 
+double \hyperlink{generic_8h_a5dbdc3cf42590d2c34e896c3d8b80b43}{lobfB} (double xs\mbox{[}$\,$\mbox{]}, double ys\mbox{[}$\,$\mbox{]}, unsigned int n)
+\item 
+void \hyperlink{generic_8h_ad5a5ff1aa26b8bf3e12f3f1170b73f62}{lobf} (double $\ast$m, double $\ast$b, double xs\mbox{[}$\,$\mbox{]}, double ys\mbox{[}$\,$\mbox{]}, unsigned int size)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+F\+I\+LE $\ast$ \hyperlink{generic_8h_ac16dab5cefce6fed135c20d1bae372a5}{logfp}
+\item 
+char \hyperlink{generic_8h_afafc43142ae143f6f7a354ef676f24a2}{errstr} \mbox{[}$\,$\mbox{]}
+\item 
+int \hyperlink{generic_8h_ada051a4499e33e1d0fe82eeeee6d1699}{logged}
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\mbox{\Hypertarget{generic_8h_a6a010865b10e541735fa2da8f3cd062d}\label{generic_8h_a6a010865b10e541735fa2da8f3cd062d}} 
+\index{generic.\+h@{generic.\+h}!abs@{abs}}
+\index{abs@{abs}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{abs}{abs}}
+{\footnotesize\ttfamily \#define abs(\begin{DoxyParamCaption}\item[{}]{a }\end{DoxyParamCaption})~( ( \hyperlink{generic_8h_a375b5090161790d5783d4bdd92f3f750}{LT}(a, 0.\+00) ) ? (-\/a) \+: (a) )}
+
+
+
+Referenced by Rand\+Seed(), and Rand\+Uni\+\_\+good().
+
+\mbox{\Hypertarget{generic_8h_a5c3660640cebde8a951b74d847b3dfeb}\label{generic_8h_a5c3660640cebde8a951b74d847b3dfeb}} 
+\index{generic.\+h@{generic.\+h}!D\+\_\+\+D\+E\+L\+TA@{D\+\_\+\+D\+E\+L\+TA}}
+\index{D\+\_\+\+D\+E\+L\+TA@{D\+\_\+\+D\+E\+L\+TA}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{D\+\_\+\+D\+E\+L\+TA}{D\_DELTA}}
+{\footnotesize\ttfamily \#define D\+\_\+\+D\+E\+L\+TA~(10$\ast$D\+B\+L\+\_\+\+E\+P\+S\+I\+L\+ON)}
+
+\mbox{\Hypertarget{generic_8h_a48da69c89756b1a25e3a7c618696fac9}\label{generic_8h_a48da69c89756b1a25e3a7c618696fac9}} 
+\index{generic.\+h@{generic.\+h}!Doy2\+Week@{Doy2\+Week}}
+\index{Doy2\+Week@{Doy2\+Week}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Doy2\+Week}{Doy2Week}}
+{\footnotesize\ttfamily \#define Doy2\+Week(\begin{DoxyParamCaption}\item[{}]{d }\end{DoxyParamCaption})~((\hyperlink{_times_8h_a25ac787161a5cad0e3fdfe5a5aeb3236}{Time\+Int})(((d)-\/1) /\hyperlink{generic_8h_aac1dbe1371c37f4c0d743a77108bb06e}{W\+E\+E\+K\+D\+A\+YS}))}
+
+
+
+Referenced by S\+W\+\_\+\+M\+K\+V\+\_\+today().
+
+\mbox{\Hypertarget{generic_8h_a67a26698612a951cb54a963f77cee538}\label{generic_8h_a67a26698612a951cb54a963f77cee538}} 
+\index{generic.\+h@{generic.\+h}!EQ@{EQ}}
+\index{EQ@{EQ}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{EQ}{EQ}}
+{\footnotesize\ttfamily \#define EQ(\begin{DoxyParamCaption}\item[{}]{x,  }\item[{}]{y }\end{DoxyParamCaption})~\hyperlink{generic_8h_a04d96a713785d741faaa620a475b745c}{isequal}(x,y)}
+
+
+
+Referenced by lyr\+Temp\+\_\+to\+\_\+lyr\+Soil\+\_\+temperature(), st\+\_\+get\+Bounds(), and S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric().
+
+\mbox{\Hypertarget{generic_8h_a0985d386e5604b94460bb60ac639d383}\label{generic_8h_a0985d386e5604b94460bb60ac639d383}} 
+\index{generic.\+h@{generic.\+h}!F\+\_\+\+D\+E\+L\+TA@{F\+\_\+\+D\+E\+L\+TA}}
+\index{F\+\_\+\+D\+E\+L\+TA@{F\+\_\+\+D\+E\+L\+TA}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{F\+\_\+\+D\+E\+L\+TA}{F\_DELTA}}
+{\footnotesize\ttfamily \#define F\+\_\+\+D\+E\+L\+TA~(10$\ast$F\+L\+T\+\_\+\+E\+P\+S\+I\+L\+ON)}
+
+\mbox{\Hypertarget{generic_8h_ae55bc5afe1eabd76592c8e7a0c7b089c}\label{generic_8h_ae55bc5afe1eabd76592c8e7a0c7b089c}} 
+\index{generic.\+h@{generic.\+h}!fmax@{fmax}}
+\index{fmax@{fmax}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{fmax}{fmax}}
+{\footnotesize\ttfamily \#define fmax(\begin{DoxyParamCaption}\item[{}]{a,  }\item[{}]{b }\end{DoxyParamCaption})~( ( \hyperlink{generic_8h_a8df7ad109bbbe1c1278157e968aecc1d}{GT}((a),(b)) ) ? (a) \+: (b))}
+
+
+
+Referenced by forb\+\_\+intercepted\+\_\+water(), grass\+\_\+intercepted\+\_\+water(), litter\+\_\+intercepted\+\_\+water(), petfunc(), shrub\+\_\+intercepted\+\_\+water(), surface\+\_\+temperature\+\_\+under\+\_\+snow(), S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+snow(), S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc(), S\+W\+\_\+\+V\+W\+C\+Bulk\+Res(), tree\+\_\+intercepted\+\_\+water(), and watrate().
+
+\mbox{\Hypertarget{generic_8h_a3a446ef14fca6cda41a6634efdecdde6}\label{generic_8h_a3a446ef14fca6cda41a6634efdecdde6}} 
+\index{generic.\+h@{generic.\+h}!fmin@{fmin}}
+\index{fmin@{fmin}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{fmin}{fmin}}
+{\footnotesize\ttfamily \#define fmin(\begin{DoxyParamCaption}\item[{}]{a,  }\item[{}]{b }\end{DoxyParamCaption})~( ( \hyperlink{generic_8h_a375b5090161790d5783d4bdd92f3f750}{LT}((a),(b)) ) ? (a) \+: (b))}
+
+
+
+Referenced by forb\+\_\+\+Es\+T\+\_\+partitioning(), forb\+\_\+intercepted\+\_\+water(), grass\+\_\+\+Es\+T\+\_\+partitioning(), grass\+\_\+intercepted\+\_\+water(), litter\+\_\+intercepted\+\_\+water(), pot\+\_\+transp(), shrub\+\_\+\+Es\+T\+\_\+partitioning(), shrub\+\_\+intercepted\+\_\+water(), transp\+\_\+weighted\+\_\+avg(), tree\+\_\+\+Es\+T\+\_\+partitioning(), tree\+\_\+intercepted\+\_\+water(), and watrate().
+
+\mbox{\Hypertarget{generic_8h_a14e32c27dc9b188856093ae003f78b5c}\label{generic_8h_a14e32c27dc9b188856093ae003f78b5c}} 
+\index{generic.\+h@{generic.\+h}!GE@{GE}}
+\index{GE@{GE}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{GE}{GE}}
+{\footnotesize\ttfamily \#define GE(\begin{DoxyParamCaption}\item[{}]{x,  }\item[{}]{y }\end{DoxyParamCaption})~((x) $>$ (y) $\vert$$\vert$ \hyperlink{generic_8h_a67a26698612a951cb54a963f77cee538}{EQ}(x,y))}
+
+
+
+Referenced by lyr\+Soil\+\_\+to\+\_\+lyr\+Temp(), pot\+\_\+soil\+\_\+evap(), pot\+\_\+transp(), st\+\_\+get\+Bounds(), and S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow().
+
+\mbox{\Hypertarget{generic_8h_a5863b1da36cc637653e94892978b74ad}\label{generic_8h_a5863b1da36cc637653e94892978b74ad}} 
+\index{generic.\+h@{generic.\+h}!G\+E\+N\+E\+R\+I\+C\+\_\+H@{G\+E\+N\+E\+R\+I\+C\+\_\+H}}
+\index{G\+E\+N\+E\+R\+I\+C\+\_\+H@{G\+E\+N\+E\+R\+I\+C\+\_\+H}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{G\+E\+N\+E\+R\+I\+C\+\_\+H}{GENERIC\_H}}
+{\footnotesize\ttfamily \#define G\+E\+N\+E\+R\+I\+C\+\_\+H}
+
+\mbox{\Hypertarget{generic_8h_a66785db10ccce58e71eb3555c09188b0}\label{generic_8h_a66785db10ccce58e71eb3555c09188b0}} 
+\index{generic.\+h@{generic.\+h}!G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA@{G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA}}
+\index{G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA@{G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA}{GET\_F\_DELTA}}
+{\footnotesize\ttfamily \#define G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA(\begin{DoxyParamCaption}\item[{}]{x,  }\item[{}]{y }\end{DoxyParamCaption})~( (sizeof(x) == sizeof(float)) ? (\hyperlink{generic_8h_affe776513b24d84b39af8ab0930fef7f}{max}(\hyperlink{generic_8h_a0985d386e5604b94460bb60ac639d383}{F\+\_\+\+D\+E\+L\+TA}, F\+L\+T\+\_\+\+E\+P\+S\+I\+L\+ON $\ast$ \hyperlink{generic_8h_affe776513b24d84b39af8ab0930fef7f}{max}(fabs(x), fabs(y)))) \+: (\hyperlink{generic_8h_affe776513b24d84b39af8ab0930fef7f}{max}(\hyperlink{generic_8h_a5c3660640cebde8a951b74d847b3dfeb}{D\+\_\+\+D\+E\+L\+TA}, D\+B\+L\+\_\+\+E\+P\+S\+I\+L\+ON $\ast$ \hyperlink{generic_8h_affe776513b24d84b39af8ab0930fef7f}{max}(fabs(x), fabs(y)))) )}
+
+\mbox{\Hypertarget{generic_8h_a8df7ad109bbbe1c1278157e968aecc1d}\label{generic_8h_a8df7ad109bbbe1c1278157e968aecc1d}} 
+\index{generic.\+h@{generic.\+h}!GT@{GT}}
+\index{GT@{GT}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{GT}{GT}}
+{\footnotesize\ttfamily \#define GT(\begin{DoxyParamCaption}\item[{}]{x,  }\item[{}]{y }\end{DoxyParamCaption})~\hyperlink{generic_8h_a88093fead5165843ef0498d47e621636}{ismore}(x,y)}
+
+
+
+Referenced by evap\+\_\+from\+Surface(), forb\+\_\+intercepted\+\_\+water(), grass\+\_\+intercepted\+\_\+water(), litter\+\_\+intercepted\+\_\+water(), lyr\+Temp\+\_\+to\+\_\+lyr\+Soil\+\_\+temperature(), shrub\+\_\+intercepted\+\_\+water(), st\+\_\+get\+Bounds(), S\+W\+\_\+\+M\+K\+V\+\_\+today(), S\+W\+\_\+\+Snow\+Depth(), S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc(), S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric(), S\+W\+\_\+\+V\+P\+D\+\_\+init(), transp\+\_\+weighted\+\_\+avg(), and tree\+\_\+intercepted\+\_\+water().
+
+\mbox{\Hypertarget{generic_8h_a04d96a713785d741faaa620a475b745c}\label{generic_8h_a04d96a713785d741faaa620a475b745c}} 
+\index{generic.\+h@{generic.\+h}!isequal@{isequal}}
+\index{isequal@{isequal}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{isequal}{isequal}}
+{\footnotesize\ttfamily \#define isequal(\begin{DoxyParamCaption}\item[{}]{x,  }\item[{}]{y }\end{DoxyParamCaption})~(fabs((x) -\/ (y)) $<$= \hyperlink{generic_8h_a66785db10ccce58e71eb3555c09188b0}{G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA}(x, y))}
+
+\mbox{\Hypertarget{generic_8h_a10f769903592548e508a283bc2b31d42}\label{generic_8h_a10f769903592548e508a283bc2b31d42}} 
+\index{generic.\+h@{generic.\+h}!isless2@{isless2}}
+\index{isless2@{isless2}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{isless2}{isless2}}
+{\footnotesize\ttfamily \#define isless2(\begin{DoxyParamCaption}\item[{}]{x,  }\item[{}]{y }\end{DoxyParamCaption})~((x) $<$ ((y) -\/ \hyperlink{generic_8h_a66785db10ccce58e71eb3555c09188b0}{G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA}(x, y)))}
+
+\mbox{\Hypertarget{generic_8h_a88093fead5165843ef0498d47e621636}\label{generic_8h_a88093fead5165843ef0498d47e621636}} 
+\index{generic.\+h@{generic.\+h}!ismore@{ismore}}
+\index{ismore@{ismore}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{ismore}{ismore}}
+{\footnotesize\ttfamily \#define ismore(\begin{DoxyParamCaption}\item[{}]{x,  }\item[{}]{y }\end{DoxyParamCaption})~((x) $>$ ((y) + \hyperlink{generic_8h_a66785db10ccce58e71eb3555c09188b0}{G\+E\+T\+\_\+\+F\+\_\+\+D\+E\+L\+TA}(x, y)))}
+
+\mbox{\Hypertarget{generic_8h_aa1ff32598cc88bb9fc8bab0a24369ff3}\label{generic_8h_aa1ff32598cc88bb9fc8bab0a24369ff3}} 
+\index{generic.\+h@{generic.\+h}!isnull@{isnull}}
+\index{isnull@{isnull}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{isnull}{isnull}}
+{\footnotesize\ttfamily \#define isnull(\begin{DoxyParamCaption}\item[{}]{a }\end{DoxyParamCaption})~(N\+U\+LL == (a))}
+
+
+
+Referenced by Get\+A\+Line(), Mk\+Dir(), Open\+File(), S\+W\+\_\+\+F\+\_\+read(), and S\+W\+\_\+\+O\+U\+T\+\_\+construct().
+
+\mbox{\Hypertarget{generic_8h_a25b8e4edb1775b70059a1a980aff6746}\label{generic_8h_a25b8e4edb1775b70059a1a980aff6746}} 
+\index{generic.\+h@{generic.\+h}!iszero@{iszero}}
+\index{iszero@{iszero}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{iszero}{iszero}}
+{\footnotesize\ttfamily \#define iszero(\begin{DoxyParamCaption}\item[{}]{x }\end{DoxyParamCaption})~( (sizeof(x) == sizeof(float)) ? (fabs(x) $<$= \hyperlink{generic_8h_a0985d386e5604b94460bb60ac639d383}{F\+\_\+\+D\+E\+L\+TA}) \+: (fabs(x) $<$= \hyperlink{generic_8h_a5c3660640cebde8a951b74d847b3dfeb}{D\+\_\+\+D\+E\+L\+TA}) )}
+
+\mbox{\Hypertarget{generic_8h_a7c6368cf7d9d669e63321edc4f8929e1}\label{generic_8h_a7c6368cf7d9d669e63321edc4f8929e1}} 
+\index{generic.\+h@{generic.\+h}!itob@{itob}}
+\index{itob@{itob}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{itob}{itob}}
+{\footnotesize\ttfamily \#define itob(\begin{DoxyParamCaption}\item[{}]{i }\end{DoxyParamCaption})~((i)?T\+R\+U\+E\+:\+F\+A\+L\+SE)}
+
+\mbox{\Hypertarget{generic_8h_a2196b2e9c04f037b20b9c064276ee7c9}\label{generic_8h_a2196b2e9c04f037b20b9c064276ee7c9}} 
+\index{generic.\+h@{generic.\+h}!LE@{LE}}
+\index{LE@{LE}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{LE}{LE}}
+{\footnotesize\ttfamily \#define LE(\begin{DoxyParamCaption}\item[{}]{x,  }\item[{}]{y }\end{DoxyParamCaption})~((x) $<$ (y) $\vert$$\vert$ \hyperlink{generic_8h_a67a26698612a951cb54a963f77cee538}{EQ}(x,y))}
+
+
+
+Referenced by lyr\+Soil\+\_\+to\+\_\+lyr\+Temp\+\_\+temperature(), pot\+\_\+transp(), st\+\_\+get\+Bounds(), S\+W\+\_\+\+M\+K\+V\+\_\+today(), and S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+snow().
+
+\mbox{\Hypertarget{generic_8h_a29b9525322b08a5b2bb7fa30ebc48214}\label{generic_8h_a29b9525322b08a5b2bb7fa30ebc48214}} 
+\index{generic.\+h@{generic.\+h}!L\+O\+G\+E\+R\+R\+OR@{L\+O\+G\+E\+R\+R\+OR}}
+\index{L\+O\+G\+E\+R\+R\+OR@{L\+O\+G\+E\+R\+R\+OR}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{L\+O\+G\+E\+R\+R\+OR}{LOGERROR}}
+{\footnotesize\ttfamily \#define L\+O\+G\+E\+R\+R\+OR~0x04}
+
+
+
+Referenced by Log\+Error(), and Open\+File().
+
+\mbox{\Hypertarget{generic_8h_aa207fc3bd77ff692557b29468a5ca305}\label{generic_8h_aa207fc3bd77ff692557b29468a5ca305}} 
+\index{generic.\+h@{generic.\+h}!L\+O\+G\+E\+X\+IT@{L\+O\+G\+E\+X\+IT}}
+\index{L\+O\+G\+E\+X\+IT@{L\+O\+G\+E\+X\+IT}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{L\+O\+G\+E\+X\+IT}{LOGEXIT}}
+{\footnotesize\ttfamily \#define L\+O\+G\+E\+X\+IT~0x08}
+
+
+
+Referenced by Log\+Error(), and Open\+File().
+
+\mbox{\Hypertarget{generic_8h_ac082a1f175ecd155ccd9ee4bfafacb4a}\label{generic_8h_ac082a1f175ecd155ccd9ee4bfafacb4a}} 
+\index{generic.\+h@{generic.\+h}!L\+O\+G\+F\+A\+T\+AL@{L\+O\+G\+F\+A\+T\+AL}}
+\index{L\+O\+G\+F\+A\+T\+AL@{L\+O\+G\+F\+A\+T\+AL}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{L\+O\+G\+F\+A\+T\+AL}{LOGFATAL}}
+{\footnotesize\ttfamily \#define L\+O\+G\+F\+A\+T\+AL~0x0c  /$\ast$ L\+O\+G\+E\+X\+I\+T $\vert$ L\+O\+G\+E\+R\+R\+O\+R $\ast$/}
+
+
+
+Referenced by Mem\+\_\+\+Free(), Mem\+\_\+\+Malloc(), Mem\+\_\+\+Re\+Alloc(), S\+W\+\_\+\+O\+U\+T\+\_\+sum\+\_\+today(), S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc(), S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric(), and water\+\_\+eqn().
+
+\mbox{\Hypertarget{generic_8h_ae9894b66cd216d8ad25902a11ad2f941}\label{generic_8h_ae9894b66cd216d8ad25902a11ad2f941}} 
+\index{generic.\+h@{generic.\+h}!L\+O\+G\+N\+O\+TE@{L\+O\+G\+N\+O\+TE}}
+\index{L\+O\+G\+N\+O\+TE@{L\+O\+G\+N\+O\+TE}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{L\+O\+G\+N\+O\+TE}{LOGNOTE}}
+{\footnotesize\ttfamily \#define L\+O\+G\+N\+O\+TE~0x01}
+
+
+
+Referenced by Log\+Error().
+
+\mbox{\Hypertarget{generic_8h_a4233bfd6249e6e43650106c6043808bb}\label{generic_8h_a4233bfd6249e6e43650106c6043808bb}} 
+\index{generic.\+h@{generic.\+h}!L\+O\+G\+W\+A\+RN@{L\+O\+G\+W\+A\+RN}}
+\index{L\+O\+G\+W\+A\+RN@{L\+O\+G\+W\+A\+RN}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{L\+O\+G\+W\+A\+RN}{LOGWARN}}
+{\footnotesize\ttfamily \#define L\+O\+G\+W\+A\+RN~0x02}
+
+
+
+Referenced by Log\+Error(), and S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow().
+
+\mbox{\Hypertarget{generic_8h_a375b5090161790d5783d4bdd92f3f750}\label{generic_8h_a375b5090161790d5783d4bdd92f3f750}} 
+\index{generic.\+h@{generic.\+h}!LT@{LT}}
+\index{LT@{LT}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{LT}{LT}}
+{\footnotesize\ttfamily \#define LT(\begin{DoxyParamCaption}\item[{}]{x,  }\item[{}]{y }\end{DoxyParamCaption})~\hyperlink{generic_8h_a10f769903592548e508a283bc2b31d42}{isless2}(x,y)}
+
+
+
+Referenced by lyr\+Soil\+\_\+to\+\_\+lyr\+Temp(), lyr\+Soil\+\_\+to\+\_\+lyr\+Temp\+\_\+temperature(), lyr\+Temp\+\_\+to\+\_\+lyr\+Soil\+\_\+temperature(), st\+\_\+get\+Bounds(), S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc(), and watrate().
+
+\mbox{\Hypertarget{generic_8h_affe776513b24d84b39af8ab0930fef7f}\label{generic_8h_affe776513b24d84b39af8ab0930fef7f}} 
+\index{generic.\+h@{generic.\+h}!max@{max}}
+\index{max@{max}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{max}{max}}
+{\footnotesize\ttfamily \#define max(\begin{DoxyParamCaption}\item[{}]{a,  }\item[{}]{b }\end{DoxyParamCaption})~(((a) $>$ (b)) ? (a) \+: (b))}
+
+
+
+Referenced by Rand\+Beta(), Rand\+Uni\+\_\+fast(), Rand\+Uni\+\_\+good(), S\+W\+\_\+\+M\+K\+V\+\_\+today(), and S\+W\+\_\+\+S\+K\+Y\+\_\+init().
+
+\mbox{\Hypertarget{generic_8h_a7c213cc89d01ec9cdbaa3356698a86ce}\label{generic_8h_a7c213cc89d01ec9cdbaa3356698a86ce}} 
+\index{generic.\+h@{generic.\+h}!M\+A\+X\+\_\+\+E\+R\+R\+OR@{M\+A\+X\+\_\+\+E\+R\+R\+OR}}
+\index{M\+A\+X\+\_\+\+E\+R\+R\+OR@{M\+A\+X\+\_\+\+E\+R\+R\+OR}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{M\+A\+X\+\_\+\+E\+R\+R\+OR}{MAX\_ERROR}}
+{\footnotesize\ttfamily \#define M\+A\+X\+\_\+\+E\+R\+R\+OR~4096}
+
+\mbox{\Hypertarget{generic_8h_ac6afabdc09a49a433ee19d8a9486056d}\label{generic_8h_ac6afabdc09a49a433ee19d8a9486056d}} 
+\index{generic.\+h@{generic.\+h}!min@{min}}
+\index{min@{min}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{min}{min}}
+{\footnotesize\ttfamily \#define min(\begin{DoxyParamCaption}\item[{}]{a,  }\item[{}]{b }\end{DoxyParamCaption})~(((a) $<$ (b)) ? (a) \+: (b))}
+
+
+
+Referenced by Rand\+Beta(), Rand\+Uni\+\_\+fast(), Rand\+Uni\+\_\+good(), and S\+W\+\_\+\+S\+K\+Y\+\_\+init().
+
+\mbox{\Hypertarget{generic_8h_a547f3a33e6f36307e6b78d512e7ae8cb}\label{generic_8h_a547f3a33e6f36307e6b78d512e7ae8cb}} 
+\index{generic.\+h@{generic.\+h}!powe@{powe}}
+\index{powe@{powe}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{powe}{powe}}
+{\footnotesize\ttfamily \#define powe(\begin{DoxyParamCaption}\item[{}]{x,  }\item[{}]{y }\end{DoxyParamCaption})~(exp((y) $\ast$ log(x)))}
+
+
+
+Referenced by petfunc(), S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric(), S\+W\+\_\+\+S\+W\+Pmatric2\+V\+W\+C\+Bulk(), and water\+\_\+eqn().
+
+\mbox{\Hypertarget{generic_8h_ac4acb71b4114d72176466f9b52bf72ac}\label{generic_8h_ac4acb71b4114d72176466f9b52bf72ac}} 
+\index{generic.\+h@{generic.\+h}!sqrt@{sqrt}}
+\index{sqrt@{sqrt}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{sqrt}{sqrt}}
+{\footnotesize\ttfamily \#define sqrt(\begin{DoxyParamCaption}\item[{}]{x }\end{DoxyParamCaption})~((sizeof(x)==sizeof(float)) ? sqrtf(x) \+: sqrt(x))}
+
+
+
+Referenced by petfunc(), Rand\+Beta(), and Rand\+Norm().
+
+\mbox{\Hypertarget{generic_8h_afbc7bc3d4affbba50477d4c7fb06cccd}\label{generic_8h_afbc7bc3d4affbba50477d4c7fb06cccd}} 
+\index{generic.\+h@{generic.\+h}!squared@{squared}}
+\index{squared@{squared}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{squared}{squared}}
+{\footnotesize\ttfamily \#define squared(\begin{DoxyParamCaption}\item[{}]{x }\end{DoxyParamCaption})~\hyperlink{generic_8h_a547f3a33e6f36307e6b78d512e7ae8cb}{powe}(fabs(x), 2.\+0)}
+
+
+
+Referenced by lobf\+M(), and S\+W\+\_\+\+V\+W\+C\+Bulk\+Res().
+
+\mbox{\Hypertarget{generic_8h_aac1dbe1371c37f4c0d743a77108bb06e}\label{generic_8h_aac1dbe1371c37f4c0d743a77108bb06e}} 
+\index{generic.\+h@{generic.\+h}!W\+E\+E\+K\+D\+A\+YS@{W\+E\+E\+K\+D\+A\+YS}}
+\index{W\+E\+E\+K\+D\+A\+YS@{W\+E\+E\+K\+D\+A\+YS}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{W\+E\+E\+K\+D\+A\+YS}{WEEKDAYS}}
+{\footnotesize\ttfamily \#define W\+E\+E\+K\+D\+A\+YS~7}
+
+\mbox{\Hypertarget{generic_8h_a3da15c8b6dfbf1176ddeb33d5e40d3f9}\label{generic_8h_a3da15c8b6dfbf1176ddeb33d5e40d3f9}} 
+\index{generic.\+h@{generic.\+h}!Year\+To4\+Digit@{Year\+To4\+Digit}}
+\index{Year\+To4\+Digit@{Year\+To4\+Digit}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Year\+To4\+Digit}{YearTo4Digit}}
+{\footnotesize\ttfamily \#define Year\+To4\+Digit(\begin{DoxyParamCaption}\item[{}]{y }\end{DoxyParamCaption})}
+
+{\bfseries Value\+:}
+\begin{DoxyCode}
+((\hyperlink{_times_8h_a25ac787161a5cad0e3fdfe5a5aeb3236}{TimeInt})(( (y) > 100)  \(\backslash\)
+                      ? (y)                      \(\backslash\)
+                      : ((y)<50) ? 2000+(y)      \(\backslash\)
+                                    : 1900+(y) ) )
+\end{DoxyCode}
+\mbox{\Hypertarget{generic_8h_a9983412618e748f0ed750611860a2583}\label{generic_8h_a9983412618e748f0ed750611860a2583}} 
+\index{generic.\+h@{generic.\+h}!Z\+RO@{Z\+RO}}
+\index{Z\+RO@{Z\+RO}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Z\+RO}{ZRO}}
+{\footnotesize\ttfamily \#define Z\+RO(\begin{DoxyParamCaption}\item[{}]{x }\end{DoxyParamCaption})~\hyperlink{generic_8h_a25b8e4edb1775b70059a1a980aff6746}{iszero}(x)}
+
+
+
+Referenced by litter\+\_\+intercepted\+\_\+water(), S\+W\+\_\+\+M\+K\+V\+\_\+today(), S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric(), and water\+\_\+eqn().
+
+
+
+\subsection{Typedef Documentation}
+\mbox{\Hypertarget{generic_8h_a0c8186d9b9b7880309c27230bbb5e69d}\label{generic_8h_a0c8186d9b9b7880309c27230bbb5e69d}} 
+\index{generic.\+h@{generic.\+h}!byte@{byte}}
+\index{byte@{byte}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{byte}{byte}}
+{\footnotesize\ttfamily typedef unsigned char \hyperlink{generic_8h_a0c8186d9b9b7880309c27230bbb5e69d}{byte}}
+
+\mbox{\Hypertarget{generic_8h_a7cc214a236ad3bb6ad435bdcf5262a3f}\label{generic_8h_a7cc214a236ad3bb6ad435bdcf5262a3f}} 
+\index{generic.\+h@{generic.\+h}!Int@{Int}}
+\index{Int@{Int}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Int}{Int}}
+{\footnotesize\ttfamily typedef int \hyperlink{generic_8h_a7cc214a236ad3bb6ad435bdcf5262a3f}{Int}}
+
+\mbox{\Hypertarget{generic_8h_a0f993b6970226fa174326c1db4d0be0e}\label{generic_8h_a0f993b6970226fa174326c1db4d0be0e}} 
+\index{generic.\+h@{generic.\+h}!IntL@{IntL}}
+\index{IntL@{IntL}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{IntL}{IntL}}
+{\footnotesize\ttfamily typedef long \hyperlink{generic_8h_a0f993b6970226fa174326c1db4d0be0e}{IntL}}
+
+\mbox{\Hypertarget{generic_8h_ad391d97dda769e4d573afb05c6196e70}\label{generic_8h_ad391d97dda769e4d573afb05c6196e70}} 
+\index{generic.\+h@{generic.\+h}!IntS@{IntS}}
+\index{IntS@{IntS}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{IntS}{IntS}}
+{\footnotesize\ttfamily typedef short int \hyperlink{generic_8h_ad391d97dda769e4d573afb05c6196e70}{IntS}}
+
+\mbox{\Hypertarget{generic_8h_a9c7b81b51177020e4735ba49298cf62b}\label{generic_8h_a9c7b81b51177020e4735ba49298cf62b}} 
+\index{generic.\+h@{generic.\+h}!IntU@{IntU}}
+\index{IntU@{IntU}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{IntU}{IntU}}
+{\footnotesize\ttfamily typedef unsigned int \hyperlink{generic_8h_a9c7b81b51177020e4735ba49298cf62b}{IntU}}
+
+\mbox{\Hypertarget{generic_8h_a313988f3499dfdc18733ae046e2371dc}\label{generic_8h_a313988f3499dfdc18733ae046e2371dc}} 
+\index{generic.\+h@{generic.\+h}!Int\+US@{Int\+US}}
+\index{Int\+US@{Int\+US}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Int\+US}{IntUS}}
+{\footnotesize\ttfamily typedef unsigned short \hyperlink{generic_8h_a313988f3499dfdc18733ae046e2371dc}{Int\+US}}
+
+\mbox{\Hypertarget{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}\label{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}} 
+\index{generic.\+h@{generic.\+h}!RealD@{RealD}}
+\index{RealD@{RealD}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{RealD}{RealD}}
+{\footnotesize\ttfamily typedef double \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}
+
+\mbox{\Hypertarget{generic_8h_a94d667c93da0511f21142d988f67674f}\label{generic_8h_a94d667c93da0511f21142d988f67674f}} 
+\index{generic.\+h@{generic.\+h}!RealF@{RealF}}
+\index{RealF@{RealF}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{RealF}{RealF}}
+{\footnotesize\ttfamily typedef float \hyperlink{generic_8h_a94d667c93da0511f21142d988f67674f}{RealF}}
+
+
+
+\subsection{Enumeration Type Documentation}
+\mbox{\Hypertarget{generic_8h_a39db6982619d623273fad8a383489309}\label{generic_8h_a39db6982619d623273fad8a383489309}} 
+\index{generic.\+h@{generic.\+h}!Bool@{Bool}}
+\index{Bool@{Bool}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Bool}{Bool}}
+{\footnotesize\ttfamily enum \hyperlink{generic_8h_a39db6982619d623273fad8a383489309}{Bool}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{F\+A\+L\+SE@{F\+A\+L\+SE}!generic.\+h@{generic.\+h}}\index{generic.\+h@{generic.\+h}!F\+A\+L\+SE@{F\+A\+L\+SE}}}\mbox{\Hypertarget{generic_8h_a39db6982619d623273fad8a383489309aa1e095cc966dbecf6a0d8aad75348d1a}\label{generic_8h_a39db6982619d623273fad8a383489309aa1e095cc966dbecf6a0d8aad75348d1a}} 
+F\+A\+L\+SE&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{T\+R\+UE@{T\+R\+UE}!generic.\+h@{generic.\+h}}\index{generic.\+h@{generic.\+h}!T\+R\+UE@{T\+R\+UE}}}\mbox{\Hypertarget{generic_8h_a39db6982619d623273fad8a383489309aa82764c3079aea4e60c80e45befbb839}\label{generic_8h_a39db6982619d623273fad8a383489309aa82764c3079aea4e60c80e45befbb839}} 
+T\+R\+UE&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\subsection{Function Documentation}
+\mbox{\Hypertarget{generic_8h_ac88c9c5fc37398d47ba569ca8149fe41}\label{generic_8h_ac88c9c5fc37398d47ba569ca8149fe41}} 
+\index{generic.\+h@{generic.\+h}!interpolation@{interpolation}}
+\index{interpolation@{interpolation}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{interpolation()}{interpolation()}}
+{\footnotesize\ttfamily double interpolation (\begin{DoxyParamCaption}\item[{double}]{x1,  }\item[{double}]{x2,  }\item[{double}]{y1,  }\item[{double}]{y2,  }\item[{double}]{deltaX }\end{DoxyParamCaption})}
+
+
+
+Referenced by lyr\+Soil\+\_\+to\+\_\+lyr\+Temp\+\_\+temperature(), and lyr\+Temp\+\_\+to\+\_\+lyr\+Soil\+\_\+temperature().
+
+\mbox{\Hypertarget{generic_8h_a1b59895791915578f7b7f96aa7f8e7c4}\label{generic_8h_a1b59895791915578f7b7f96aa7f8e7c4}} 
+\index{generic.\+h@{generic.\+h}!Is\+\_\+\+Leap\+Year@{Is\+\_\+\+Leap\+Year}}
+\index{Is\+\_\+\+Leap\+Year@{Is\+\_\+\+Leap\+Year}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Is\+\_\+\+Leap\+Year()}{Is\_LeapYear()}}
+{\footnotesize\ttfamily \hyperlink{generic_8h_a39db6982619d623273fad8a383489309}{Bool} Is\+\_\+\+Leap\+Year (\begin{DoxyParamCaption}\item[{int}]{yr }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{generic_8h_ad5a5ff1aa26b8bf3e12f3f1170b73f62}\label{generic_8h_ad5a5ff1aa26b8bf3e12f3f1170b73f62}} 
+\index{generic.\+h@{generic.\+h}!lobf@{lobf}}
+\index{lobf@{lobf}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{lobf()}{lobf()}}
+{\footnotesize\ttfamily void lobf (\begin{DoxyParamCaption}\item[{double $\ast$}]{m,  }\item[{double $\ast$}]{b,  }\item[{double}]{xs\mbox{[}$\,$\mbox{]},  }\item[{double}]{ys\mbox{[}$\,$\mbox{]},  }\item[{unsigned int}]{size }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{generic_8h_a5dbdc3cf42590d2c34e896c3d8b80b43}\label{generic_8h_a5dbdc3cf42590d2c34e896c3d8b80b43}} 
+\index{generic.\+h@{generic.\+h}!lobfB@{lobfB}}
+\index{lobfB@{lobfB}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{lobf\+B()}{lobfB()}}
+{\footnotesize\ttfamily double lobfB (\begin{DoxyParamCaption}\item[{double}]{xs\mbox{[}$\,$\mbox{]},  }\item[{double}]{ys\mbox{[}$\,$\mbox{]},  }\item[{unsigned int}]{n }\end{DoxyParamCaption})}
+
+
+
+Referenced by lobf().
+
+\mbox{\Hypertarget{generic_8h_a3b620cbbbff502ed6c23af6cb3fc46b2}\label{generic_8h_a3b620cbbbff502ed6c23af6cb3fc46b2}} 
+\index{generic.\+h@{generic.\+h}!lobfM@{lobfM}}
+\index{lobfM@{lobfM}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{lobf\+M()}{lobfM()}}
+{\footnotesize\ttfamily double lobfM (\begin{DoxyParamCaption}\item[{double}]{xs\mbox{[}$\,$\mbox{]},  }\item[{double}]{ys\mbox{[}$\,$\mbox{]},  }\item[{unsigned int}]{n }\end{DoxyParamCaption})}
+
+
+
+Referenced by lobf(), and lobf\+B().
+
+\mbox{\Hypertarget{generic_8h_a11003199b3d2783daca30d6c3110973b}\label{generic_8h_a11003199b3d2783daca30d6c3110973b}} 
+\index{generic.\+h@{generic.\+h}!Log\+Error@{Log\+Error}}
+\index{Log\+Error@{Log\+Error}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Log\+Error()}{LogError()}}
+{\footnotesize\ttfamily void Log\+Error (\begin{DoxyParamCaption}\item[{F\+I\+LE $\ast$}]{fp,  }\item[{const int}]{mode,  }\item[{const char $\ast$}]{fmt,  }\item[{}]{... }\end{DoxyParamCaption})}
+
+
+
+Referenced by Mem\+\_\+\+Free(), Mem\+\_\+\+Malloc(), Mem\+\_\+\+Re\+Alloc(), Open\+File(), S\+W\+\_\+\+O\+U\+T\+\_\+sum\+\_\+today(), S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc(), S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow(), S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric(), and water\+\_\+eqn().
+
+\mbox{\Hypertarget{generic_8h_a42c27317771c079928bf61523b38adfa}\label{generic_8h_a42c27317771c079928bf61523b38adfa}} 
+\index{generic.\+h@{generic.\+h}!st\+\_\+get\+Bounds@{st\+\_\+get\+Bounds}}
+\index{st\+\_\+get\+Bounds@{st\+\_\+get\+Bounds}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{st\+\_\+get\+Bounds()}{st\_getBounds()}}
+{\footnotesize\ttfamily void st\+\_\+get\+Bounds (\begin{DoxyParamCaption}\item[{unsigned int $\ast$}]{x1,  }\item[{unsigned int $\ast$}]{x2,  }\item[{unsigned int $\ast$}]{equal,  }\item[{unsigned int}]{size,  }\item[{double}]{depth,  }\item[{double}]{bounds\mbox{[}$\,$\mbox{]} }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{generic_8h_af36c688653758da1ec0e97b2f8ad02a9}\label{generic_8h_af36c688653758da1ec0e97b2f8ad02a9}} 
+\index{generic.\+h@{generic.\+h}!Str\+\_\+\+CompareI@{Str\+\_\+\+CompareI}}
+\index{Str\+\_\+\+CompareI@{Str\+\_\+\+CompareI}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Str\+\_\+\+Compare\+I()}{Str\_CompareI()}}
+{\footnotesize\ttfamily int Str\+\_\+\+CompareI (\begin{DoxyParamCaption}\item[{char $\ast$}]{t,  }\item[{char $\ast$}]{s }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{generic_8h_a9e6077882ab6b9ddbe0532b293a2ccf4}\label{generic_8h_a9e6077882ab6b9ddbe0532b293a2ccf4}} 
+\index{generic.\+h@{generic.\+h}!Str\+\_\+\+To\+Lower@{Str\+\_\+\+To\+Lower}}
+\index{Str\+\_\+\+To\+Lower@{Str\+\_\+\+To\+Lower}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Str\+\_\+\+To\+Lower()}{Str\_ToLower()}}
+{\footnotesize\ttfamily char$\ast$ Str\+\_\+\+To\+Lower (\begin{DoxyParamCaption}\item[{char $\ast$}]{s,  }\item[{char $\ast$}]{r }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{generic_8h_ae76330d47526d546ea89a384fe788732}\label{generic_8h_ae76330d47526d546ea89a384fe788732}} 
+\index{generic.\+h@{generic.\+h}!Str\+\_\+\+To\+Upper@{Str\+\_\+\+To\+Upper}}
+\index{Str\+\_\+\+To\+Upper@{Str\+\_\+\+To\+Upper}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Str\+\_\+\+To\+Upper()}{Str\_ToUpper()}}
+{\footnotesize\ttfamily char$\ast$ Str\+\_\+\+To\+Upper (\begin{DoxyParamCaption}\item[{char $\ast$}]{s,  }\item[{char $\ast$}]{r }\end{DoxyParamCaption})}
+
+
+
+Referenced by Str\+\_\+\+Compare\+I().
+
+\mbox{\Hypertarget{generic_8h_a6150637c525c3ca076ca7cc755e29db2}\label{generic_8h_a6150637c525c3ca076ca7cc755e29db2}} 
+\index{generic.\+h@{generic.\+h}!Str\+\_\+\+Trim\+Left@{Str\+\_\+\+Trim\+Left}}
+\index{Str\+\_\+\+Trim\+Left@{Str\+\_\+\+Trim\+Left}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Str\+\_\+\+Trim\+Left()}{Str\_TrimLeft()}}
+{\footnotesize\ttfamily char$\ast$ Str\+\_\+\+Trim\+Left (\begin{DoxyParamCaption}\item[{char $\ast$}]{s }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{generic_8h_a9dd2b923dbcf0dcda1a436a5be02c09b}\label{generic_8h_a9dd2b923dbcf0dcda1a436a5be02c09b}} 
+\index{generic.\+h@{generic.\+h}!Str\+\_\+\+Trim\+LeftQ@{Str\+\_\+\+Trim\+LeftQ}}
+\index{Str\+\_\+\+Trim\+LeftQ@{Str\+\_\+\+Trim\+LeftQ}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Str\+\_\+\+Trim\+Left\+Q()}{Str\_TrimLeftQ()}}
+{\footnotesize\ttfamily char$\ast$ Str\+\_\+\+Trim\+LeftQ (\begin{DoxyParamCaption}\item[{char $\ast$}]{s }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{generic_8h_a3156a3189c9286cf2c56384b9d4f00ba}\label{generic_8h_a3156a3189c9286cf2c56384b9d4f00ba}} 
+\index{generic.\+h@{generic.\+h}!Str\+\_\+\+Trim\+Right@{Str\+\_\+\+Trim\+Right}}
+\index{Str\+\_\+\+Trim\+Right@{Str\+\_\+\+Trim\+Right}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Str\+\_\+\+Trim\+Right()}{Str\_TrimRight()}}
+{\footnotesize\ttfamily char$\ast$ Str\+\_\+\+Trim\+Right (\begin{DoxyParamCaption}\item[{char $\ast$}]{s }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{generic_8h_a4ad34bbb851d33a77269262427d3b072}\label{generic_8h_a4ad34bbb851d33a77269262427d3b072}} 
+\index{generic.\+h@{generic.\+h}!Un\+Comment@{Un\+Comment}}
+\index{Un\+Comment@{Un\+Comment}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{Un\+Comment()}{UnComment()}}
+{\footnotesize\ttfamily void Un\+Comment (\begin{DoxyParamCaption}\item[{char $\ast$}]{s }\end{DoxyParamCaption})}
+
+
+
+Referenced by Get\+A\+Line().
+
+
+
+\subsection{Variable Documentation}
+\mbox{\Hypertarget{generic_8h_afafc43142ae143f6f7a354ef676f24a2}\label{generic_8h_afafc43142ae143f6f7a354ef676f24a2}} 
+\index{generic.\+h@{generic.\+h}!errstr@{errstr}}
+\index{errstr@{errstr}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{errstr}{errstr}}
+{\footnotesize\ttfamily char errstr\mbox{[}$\,$\mbox{]}}
+
+
+
+Referenced by Mk\+Dir().
+
+\mbox{\Hypertarget{generic_8h_ac16dab5cefce6fed135c20d1bae372a5}\label{generic_8h_ac16dab5cefce6fed135c20d1bae372a5}} 
+\index{generic.\+h@{generic.\+h}!logfp@{logfp}}
+\index{logfp@{logfp}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{logfp}{logfp}}
+{\footnotesize\ttfamily F\+I\+LE$\ast$ logfp}
+
+
+
+Referenced by Close\+File(), S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc(), S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow(), and S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric().
+
+\mbox{\Hypertarget{generic_8h_ada051a4499e33e1d0fe82eeeee6d1699}\label{generic_8h_ada051a4499e33e1d0fe82eeeee6d1699}} 
+\index{generic.\+h@{generic.\+h}!logged@{logged}}
+\index{logged@{logged}!generic.\+h@{generic.\+h}}
+\subsubsection{\texorpdfstring{logged}{logged}}
+{\footnotesize\ttfamily int logged}
+
+
+
+Referenced by Log\+Error(), and main().
+

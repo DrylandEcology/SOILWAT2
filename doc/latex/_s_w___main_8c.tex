@@ -1,0 +1,120 @@
+\hypertarget{_s_w___main_8c}{}\section{S\+W\+\_\+\+Main.\+c File Reference}
+\label{_s_w___main_8c}\index{S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}}
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$string.\+h$>$}\newline
+{\ttfamily \#include $<$stdlib.\+h$>$}\newline
+{\ttfamily \#include $<$unistd.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}generic.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}filefuncs.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Defines.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Control.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Site.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Weather.\+h\char`\"{}}\newline
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{_s_w___main_8c_a562be42d6e61053fb27a605579e50c22}{init\+\_\+args} (int argc, char $\ast$$\ast$argv)
+\item 
+int \hyperlink{_s_w___main_8c_a3c04138a5bfe5d72780bb7e82a18e627}{main} (int argc, char $\ast$$\ast$argv)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+char \hyperlink{_s_w___main_8c_a3db696ae82419b92cd8d064375e3ceaa}{inbuf} \mbox{[}1024\mbox{]}
+\item 
+char \hyperlink{_s_w___main_8c_a00d494d2df26cd46f3f793b34d4c1741}{errstr} \mbox{[}\hyperlink{generic_8h_a7c213cc89d01ec9cdbaa3356698a86ce}{M\+A\+X\+\_\+\+E\+R\+R\+OR}\mbox{]}
+\item 
+F\+I\+LE $\ast$ \hyperlink{_s_w___main_8c_ac16dab5cefce6fed135c20d1bae372a5}{logfp}
+\item 
+int \hyperlink{_s_w___main_8c_ada051a4499e33e1d0fe82eeeee6d1699}{logged}
+\item 
+\hyperlink{generic_8h_a39db6982619d623273fad8a383489309}{Bool} \hyperlink{_s_w___main_8c_a89d055087b91bee4772110f089a82eb3}{Quiet\+Mode}
+\item 
+\hyperlink{generic_8h_a39db6982619d623273fad8a383489309}{Bool} \hyperlink{_s_w___main_8c_a46e5208554b79bebc83a481785e273c6}{Echo\+Inits}
+\item 
+char \hyperlink{_s_w___main_8c_a4c51093e2a76fe0f02e21a6c1e6d9062}{\+\_\+firstfile} \mbox{[}1024\mbox{]}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\mbox{\Hypertarget{_s_w___main_8c_a562be42d6e61053fb27a605579e50c22}\label{_s_w___main_8c_a562be42d6e61053fb27a605579e50c22}} 
+\index{S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}!init\+\_\+args@{init\+\_\+args}}
+\index{init\+\_\+args@{init\+\_\+args}!S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}}
+\subsubsection{\texorpdfstring{init\+\_\+args()}{init\_args()}}
+{\footnotesize\ttfamily void init\+\_\+args (\begin{DoxyParamCaption}\item[{int}]{argc,  }\item[{char $\ast$$\ast$}]{argv }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___main_8c_a3c04138a5bfe5d72780bb7e82a18e627}\label{_s_w___main_8c_a3c04138a5bfe5d72780bb7e82a18e627}} 
+\index{S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}!main@{main}}
+\index{main@{main}!S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}}
+\subsubsection{\texorpdfstring{main()}{main()}}
+{\footnotesize\ttfamily int main (\begin{DoxyParamCaption}\item[{int}]{argc,  }\item[{char $\ast$$\ast$}]{argv }\end{DoxyParamCaption})}
+
+
+
+\subsection{Variable Documentation}
+\mbox{\Hypertarget{_s_w___main_8c_a4c51093e2a76fe0f02e21a6c1e6d9062}\label{_s_w___main_8c_a4c51093e2a76fe0f02e21a6c1e6d9062}} 
+\index{S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}!\+\_\+firstfile@{\+\_\+firstfile}}
+\index{\+\_\+firstfile@{\+\_\+firstfile}!S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}}
+\subsubsection{\texorpdfstring{\+\_\+firstfile}{\_firstfile}}
+{\footnotesize\ttfamily char \+\_\+firstfile\mbox{[}1024\mbox{]}}
+
+
+
+Referenced by init\+\_\+args().
+
+\mbox{\Hypertarget{_s_w___main_8c_a46e5208554b79bebc83a481785e273c6}\label{_s_w___main_8c_a46e5208554b79bebc83a481785e273c6}} 
+\index{S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}!Echo\+Inits@{Echo\+Inits}}
+\index{Echo\+Inits@{Echo\+Inits}!S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}}
+\subsubsection{\texorpdfstring{Echo\+Inits}{EchoInits}}
+{\footnotesize\ttfamily \hyperlink{generic_8h_a39db6982619d623273fad8a383489309}{Bool} Echo\+Inits}
+
+
+
+Referenced by init\+\_\+args().
+
+\mbox{\Hypertarget{_s_w___main_8c_a00d494d2df26cd46f3f793b34d4c1741}\label{_s_w___main_8c_a00d494d2df26cd46f3f793b34d4c1741}} 
+\index{S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}!errstr@{errstr}}
+\index{errstr@{errstr}!S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}}
+\subsubsection{\texorpdfstring{errstr}{errstr}}
+{\footnotesize\ttfamily char errstr\mbox{[}\hyperlink{generic_8h_a7c213cc89d01ec9cdbaa3356698a86ce}{M\+A\+X\+\_\+\+E\+R\+R\+OR}\mbox{]}}
+
+
+
+Referenced by Mk\+Dir().
+
+\mbox{\Hypertarget{_s_w___main_8c_a3db696ae82419b92cd8d064375e3ceaa}\label{_s_w___main_8c_a3db696ae82419b92cd8d064375e3ceaa}} 
+\index{S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}!inbuf@{inbuf}}
+\index{inbuf@{inbuf}!S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}}
+\subsubsection{\texorpdfstring{inbuf}{inbuf}}
+{\footnotesize\ttfamily char inbuf\mbox{[}1024\mbox{]}}
+
+\mbox{\Hypertarget{_s_w___main_8c_ac16dab5cefce6fed135c20d1bae372a5}\label{_s_w___main_8c_ac16dab5cefce6fed135c20d1bae372a5}} 
+\index{S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}!logfp@{logfp}}
+\index{logfp@{logfp}!S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}}
+\subsubsection{\texorpdfstring{logfp}{logfp}}
+{\footnotesize\ttfamily F\+I\+LE$\ast$ logfp}
+
+
+
+Referenced by Close\+File(), S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc(), S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow(), and S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric().
+
+\mbox{\Hypertarget{_s_w___main_8c_ada051a4499e33e1d0fe82eeeee6d1699}\label{_s_w___main_8c_ada051a4499e33e1d0fe82eeeee6d1699}} 
+\index{S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}!logged@{logged}}
+\index{logged@{logged}!S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}}
+\subsubsection{\texorpdfstring{logged}{logged}}
+{\footnotesize\ttfamily int logged}
+
+
+
+Referenced by Log\+Error(), and main().
+
+\mbox{\Hypertarget{_s_w___main_8c_a89d055087b91bee4772110f089a82eb3}\label{_s_w___main_8c_a89d055087b91bee4772110f089a82eb3}} 
+\index{S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}!Quiet\+Mode@{Quiet\+Mode}}
+\index{Quiet\+Mode@{Quiet\+Mode}!S\+W\+\_\+\+Main.\+c@{S\+W\+\_\+\+Main.\+c}}
+\subsubsection{\texorpdfstring{Quiet\+Mode}{QuietMode}}
+{\footnotesize\ttfamily \hyperlink{generic_8h_a39db6982619d623273fad8a383489309}{Bool} Quiet\+Mode}
+
+
+
+Referenced by init\+\_\+args().
+

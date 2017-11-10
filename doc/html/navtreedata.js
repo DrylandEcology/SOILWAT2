@@ -1,6 +1,7 @@
 var NAVTREE =
 [
   [ "SOILWAT2", "index.html", [
+    [ "Bibliography", "citelist.html", null ],
     [ "Data Structures", "annotated.html", [
       [ "Data Structures", "annotated.html", "annotated_dup" ],
       [ "Data Structure Index", "classes.html", null ],
@@ -30,7 +31,7 @@ var NAVTREEINDEX =
 "_s_w___output_8c.html#a46e5208554b79bebc83a481785e273c6",
 "_times_8c.html#a39bfa4779cc42a48e9a8de936ad48a44",
 "globals_func.html",
-"struct_s_w___s_o_i_l_w_a_t.html#a5daee6e2e1a9137b841071b737e91774"
+"struct_s_w___s_o_i_l_w_a_t.html#a5d20e6c7bcc97871d0a6c45d85f1310e"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

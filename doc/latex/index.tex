@@ -1,0 +1,76 @@
+\tabulinesep=1mm
+\begin{longtabu} spread 0pt [c]{*{6}{|X[-1]}|}
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ Unix }&\textbf{ Windows }&\textbf{ Release }&\textbf{ License }&\textbf{ Coverage }&\textbf{ Downloads  }\\\cline{1-6}
+\endfirsthead
+\hline
+\endfoot
+\hline
+\rowcolor{\tableheadbgcolor}\textbf{ Unix }&\textbf{ Windows }&\textbf{ Release }&\textbf{ License }&\textbf{ Coverage }&\textbf{ Downloads  }\\\cline{1-6}
+\endhead
+\href{https://travis-ci.org/Burke-Lauenroth-Lab/SOILWAT2}{\tt } &\href{https://ci.appveyor.com/project/dschlaep/soilwat2/branch/master}{\tt } &\href{https://github.com/Burke-Lauenroth-Lab/SOILWAT2/releases}{\tt } &\href{https://www.gnu.org/licenses/gpl.html}{\tt } &\href{https://codecov.io/gh/Burke-Lauenroth-Lab/SOILWAT2}{\tt } &\href{https://github.com/Burke-Lauenroth-Lab/SOILWAT2}{\tt } \\\cline{1-6}
+\end{longtabu}
+
+
+\section*{S\+O\+I\+L\+W\+A\+T2}
+
+This version of Soil\+Wat brings new features. This is the same code that is used by \href{https://github.com/Burke-Lauenroth-Lab/rSOILWAT2}{\tt r\+S\+O\+I\+L\+W\+A\+T2} and \href{https://github.com/Burke-Lauenroth-Lab/STEPWAT2}{\tt S\+T\+E\+P\+W\+A\+T2}.
+
+If you make use of this model, please cite appropriate references, and we would like to hear about your particular study (especially a copy of any published paper).
+
+Some recent references
+
+
+\begin{DoxyItemize}
+\item Bradford, J. B., D. R. Schlaepfer, and W. K. Lauenroth. 2014. Ecohydrology of adjacent sagebrush and lodgepole pine ecosystems\+: The consequences of climate change and disturbance. Ecosystems 17\+:590-\/605.
+\item Palmquist, K.\+A., Schlaepfer, D.\+R., Bradford, J.\+B., and Lauenroth, W.\+K. 2016. Mid-\/latitude shrub steppe plant communities\+: climate change consequences for soil water resources. Ecology 97\+:2342–2354.
+\item Schlaepfer, D. R., W. K. Lauenroth, and J. B. Bradford. 2012. Ecohydrological niche of sagebrush ecosystems. Ecohydrology 5\+:453-\/466.
+\end{DoxyItemize}
+
+\subsection*{How to contribute}
+
+You can help us in different ways\+:
+
+
+\begin{DoxyEnumerate}
+\item Reporting \href{https://github.com/Burke-Lauenroth-Lab/SOILWAT2/issues}{\tt issues}
+\item Contributing code and sending a \href{https://github.com/Burke-Lauenroth-Lab/SOILWAT2/pulls}{\tt pull request}
+\end{DoxyEnumerate}
+
+{\bfseries S\+O\+I\+L\+W\+A\+T2 code is used as part of three applications}\+: stand-\/alone, as part of \href{https://github.com/Burke-Lauenroth-Lab/STEPWAT2}{\tt S\+T\+E\+P\+W\+A\+T2}, and as part of the R package \href{https://github.com/Burke-Lauenroth-Lab/rSOILWAT2}{\tt r\+S\+O\+I\+L\+W\+A\+T2}
+\begin{DoxyItemize}
+\item The files \textquotesingle{}Makevars\textquotesingle{}, \textquotesingle{}\hyperlink{_s_w___r__lib_8c}{S\+W\+\_\+\+R\+\_\+lib.\+c}\textquotesingle{} and \textquotesingle{}\hyperlink{_s_w___r__lib_8h}{S\+W\+\_\+\+R\+\_\+lib.\+h}\textquotesingle{} are used when compiling for \href{https://github.com/Burke-Lauenroth-Lab/rSOILWAT2}{\tt r\+S\+O\+I\+L\+W\+A\+T2} and ignored otherwise.
+\item The file \textquotesingle{}\hyperlink{_s_w___main___function_8c}{S\+W\+\_\+\+Main\+\_\+\+Function.\+c}\textquotesingle{} is used when compiling with \href{https://github.com/Burke-Lauenroth-Lab/STEPWAT2}{\tt S\+T\+E\+P\+W\+A\+T2} and ignored otherwise.
+\end{DoxyItemize}
+
+{\bfseries Follow our guidelines} as detailed \href{https://github.com/Burke-Lauenroth-Lab/workflow_guidelines}{\tt here}
+
+{\bfseries Tests, documentation, and code} form a trinity
+\begin{DoxyItemize}
+\item Code documentation
+\begin{DoxyItemize}
+\item Use \href{http://www.stack.nl/~dimitri/doxygen/}{\tt doxygen} to write inline code documentation
+\item Update help pages on the command-\/line with {\ttfamily doxygen Doxyfile}
+\end{DoxyItemize}
+\item Code tests
+\begin{DoxyItemize}
+\item Use https\+://github.com/google/googletest/blob/master/googletest/docs/\+Documentation.\+md \char`\"{}\+Google\+Test\char`\"{} to add unit tests to the existing framework
+\item Run unit tests locally on the command-\/line with ``` make gtest ./sw\+\_\+test make gtest\+\_\+clean ```
+\item We plan to update the continuous integration frameworks \textquotesingle{}travis\textquotesingle{} and \textquotesingle{}appveyor\textquotesingle{} to run these tests as well when commits are pushed
+\item Development/feature branches can only be merged into master if they pass all checks
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+{\bfseries Version numbers}
+
+We attempt to follow guidelines of \href{http://semver.org/}{\tt semantic versioning} with version numbers of M\+A\+J\+O\+R.\+M\+I\+N\+O\+R.\+P\+A\+T\+CH.
+
+{\bfseries Repository renamed from S\+O\+I\+L\+W\+AT to S\+O\+I\+L\+W\+A\+T2 on Feb 23, 2017}
+
+All existing information should \href{https://help.github.com/articles/renaming-a-repository/}{\tt automatically be redirected} to the new name.
+
+Contributors are encouraged, however, to update local clones to \href{https://help.github.com/articles/changing-a-remote-s-url/}{\tt point to the new U\+RL}, i.\+e., 
+\begin{DoxyCode}
+git remote set-url origin https://github.com/Burke-Lauenroth-Lab/SOILWAT2.git
+\end{DoxyCode}
+ 
