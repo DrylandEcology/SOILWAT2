@@ -30,7 +30,9 @@
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
 
+#ifndef RSOILWAT
 static char *MyFileName;
+#endif
 SW_CARBON SW_Carbon;    // Declared here, externed elsewhere
 SW_VEGPROD SW_VegProd;  // Declared here, externed elsewhere
 SW_MODEL SW_Model;      // Declared here, externed elsewhere
@@ -100,31 +102,49 @@ SEXP onGet_SW_CARBON(void) {
 void onSet_swCarbon(SEXP object) {
   SW_CARBON *c = &SW_Carbon;
 
-  // Extract the slots from our object into our structure
+  // Extract the REQUIRED slots from our object into our structure
   c->use_bio_mult = INTEGER(GET_SLOT(object, install("CarbonUseBio")))[0];
   c->use_wue_mult = INTEGER(GET_SLOT(object, install("CarbonUseWUE")))[0];
-  c->addtl_yr = INTEGER(GET_SLOT(object, install("DeltaYear")))[0];
-  strcpy(c->scenario, CHAR(STRING_ELT(GET_SLOT(object, install("Scenario")), 0)));  // e.g. c->scenario = "RCP85"
+  c->addtl_yr = INTEGER(GET_SLOT(object, install("DeltaYear")))[0];  // This is needed for output 100% of the time
+
+  // If CO2 is not being used, we can run without extracting ppm data
+  if (!c->use_bio_mult && !c->use_wue_mult)
+  {
+    return;
+  }
+
+  // Only extract the ppm values that will be used
+  TimeInt year;
+  for (year = SW_Model.startyr + c->addtl_yr; year <= SW_Model.endyr + c->addtl_yr; year++)
+  {
+    c->ppm[year] = REAL(GET_SLOT(object, install("CO2ppm")))[year - 1];  // R's index is 1-based
+  }
 }
 #endif
 
+#ifndef RSOILWAT
 /**
  * Calculates the multipliers for biomass and Water-use efficiency.
  * If a multiplier is disabled, its value is set to 1. All the years
- * in carbon.in are calculated. rSOILWAT2 will pass in the settings directly.
- * SOILWAT2 will read siteparam.in for settings.
+ * in carbon.in are calculated. The settings are read in from siteparam.in.
+ *
+ * rSOILWAT2 has its own version of this function. We cannot simply use its approach,
+ * because it relies on the provider of the input data to do error checking.
  */
 void calculate_CO2_multipliers(void) {
   FILE *f;
   char scenario[64];
-  double ppm = -1;
-  int year = -1;
-  int existing_years[MAX_CO2_YEAR] = { 0 };
+  TimeInt year;
 
-  SW_CARBON  *c  = &SW_Carbon;
-  SW_VEGPROD *v  = &SW_VegProd;
-  MyFileName     = SW_F_name(eCarbon);
-  f              = OpenFile(MyFileName, "r");
+  // The following variables must be initialized to show if they've been changed or not
+  double ppm = -1.0;
+  int existing_years[MAX_CO2_YEAR] = { 0 };
+  short fileWasEmpty = 1;
+
+  SW_CARBON  *c   = &SW_Carbon;
+  SW_VEGPROD *v   = &SW_VegProd;
+  MyFileName      = SW_F_name(eCarbon);
+  f               = OpenFile(MyFileName, "r");
 
   // For efficiency, don't read carbon.in if neither multiplier is being used
   // We can do this because SW_CBN_CONSTRUCT already populated the multipliers with default values
@@ -136,6 +156,8 @@ void calculate_CO2_multipliers(void) {
   /* Calculate multipliers by reading carbon.in */
 
   while (GetALine(f, inbuf)) {
+    fileWasEmpty = 0;
+
     // Read the year standalone because if it's 0 it marks a change in the scenario,
     // in which case we'll need to read in a string instead of an int
     sscanf(inbuf, "%d", &year);
@@ -147,7 +169,13 @@ void calculate_CO2_multipliers(void) {
       continue;  // Skip to the ppm values
     }
     if (strcmp(scenario, c->scenario) != 0)
+    {
       continue;  // Keep searching for the right scenario
+    }
+    if ((year < SW_Model.startyr + c->addtl_yr) ||  (year > SW_Model.endyr + c->addtl_yr))
+    {
+      continue; // We aren't using this year
+    }
 
     sscanf(inbuf, "%d %lf", &year, &ppm);
 
@@ -185,7 +213,7 @@ void calculate_CO2_multipliers(void) {
 
   // Must check if the file was empty before checking if the scneario was found,
   // otherwise the empty file will be masked as not being able to find the scenario
-  if (year == -1)  // If the loop was entered at least once, year will have a positive value
+  if (fileWasEmpty == 1)
   {
     sprintf(errstr, "(SW_Carbon) carbon.in was empty; for debugging purposes, SOILWAT2 read in file '%s'\n", MyFileName);
     LogError(logfp, LOGFATAL, errstr);
@@ -198,7 +226,7 @@ void calculate_CO2_multipliers(void) {
   }
 
   // Ensure that the desired years were calculated
-  for (year = (int) SW_Model.startyr + c->addtl_yr; year <= (int) SW_Model.endyr + c->addtl_yr; year++)
+  for (year = SW_Model.startyr + c->addtl_yr; year <= SW_Model.endyr + c->addtl_yr; year++)
   {
     if (existing_years[year] == 0)
     {
@@ -207,6 +235,57 @@ void calculate_CO2_multipliers(void) {
     }
   }
 }
+#endif
+
+#ifdef RSOILWAT
+/* In this variation, an array of doubles is provided by swCarbon.
+ * The approach to handle this is too different than reading in carbon.in,
+ * so a new function is needed. The specific differences we need to account for are:
+ *  1) We do not need to read in a file (which is where most of the logic is in the other function)
+ *  2) We do not need to search for a scenario (we are provided with the correct values for the scenario)
+ *  3) We do not have explicit years (index = year)
+ */
+void calculate_CO2_multipliers (void) {
+  TimeInt year;
+  double ppm;
+  SW_CARBON  *c  = &SW_Carbon;
+  SW_VEGPROD *v  = &SW_VegProd;
+
+  if (!c->use_bio_mult && !c->use_wue_mult)
+  {
+    return;
+  }
+
+  // Only iterate through the years that we know will be used
+  for (year = SW_Model.startyr + c->addtl_yr; year <= SW_Model.endyr + c->addtl_yr; year++)
+  {
+    ppm = c->ppm[year];
+
+    if (ppm < 0.1 && ppm > -0.1)  // 0 is the default value when a year doesn't have ppm data; add a huge range for float precision
+    {
+      sprintf(errstr, "(SW_Carbon) No CO2 ppm data was provided for year %d\n", year);
+      LogError(logfp, LOGFATAL, errstr);
+    }
+
+    // Calculate multipliers per PFT
+    if (c->use_bio_mult)
+    {
+      c->co2_multipliers[BIO_INDEX][year].grass = v->co2_bio_coeff1.grass * pow(ppm, v->co2_bio_coeff2.grass);
+      c->co2_multipliers[BIO_INDEX][year].shrub = v->co2_bio_coeff1.shrub * pow(ppm, v->co2_bio_coeff2.shrub);
+      c->co2_multipliers[BIO_INDEX][year].tree = v->co2_bio_coeff1.tree * pow(ppm, v->co2_bio_coeff2.tree);
+      c->co2_multipliers[BIO_INDEX][year].forb = v->co2_bio_coeff1.forb * pow(ppm, v->co2_bio_coeff2.forb);
+    }
+    if (c->use_wue_mult)
+    {
+      c->co2_multipliers[WUE_INDEX][year].grass = v->co2_wue_coeff1.grass * pow(ppm, v->co2_wue_coeff2.grass);
+      c->co2_multipliers[WUE_INDEX][year].shrub = v->co2_wue_coeff1.shrub * pow(ppm, v->co2_wue_coeff2.shrub);
+      c->co2_multipliers[WUE_INDEX][year].tree = v->co2_wue_coeff1.tree * pow(ppm, v->co2_wue_coeff2.tree);
+      c->co2_multipliers[WUE_INDEX][year].forb = v->co2_wue_coeff1.forb * pow(ppm, v->co2_wue_coeff2.forb);
+    }
+  }
+}
+#endif
+
 
 /**
  * Applies CO2 effects to supplied biomass data. Two parameters are needed so that

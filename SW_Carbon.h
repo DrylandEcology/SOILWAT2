@@ -8,8 +8,8 @@
  */
 #ifndef CARBON
   #define CARBON
-  #define MAX_CO2_YEAR 3000            // Max integer year that is supported; arbitrary
-  #define BIO_INDEX 0                  // Use these indices to access the respective values
+  #define MAX_CO2_YEAR 2500              // Max integer year that is supported; arbitrary
+  #define BIO_INDEX 0                    // Use these indices to access the respective values
   #define WUE_INDEX 1
 
   /* Helper structures */
@@ -25,17 +25,20 @@
   /* Main structure */
   typedef struct {
     int
-      addtl_yr,                          // Added to SW_Model.year to get the future year we're simulating
       use_wue_mult,                      // Determine which multipliers we will be calculating...
-      use_bio_mult;
+      use_bio_mult,
+      addtl_yr;                          // Added to SW_Model.(start/end)yr to get the future year we're simulating
 
     char
       scenario[64];                      // The scenario we are extracting ppm from
 
-	PFTs
+    PFTs
       co2_bio_mult,                      // The biomass multiplier (yearly), which for tree is instead applied to the percent live
       co2_wue_mult,                      // The Water-use efficiency multiplier (yearly)
-      co2_multipliers[2][MAX_CO2_YEAR];  // Holds 2 multipliers for each PFT per year
+      co2_multipliers[2][MAX_CO2_YEAR];  // Holds 2 multipliers for each PFT per year; indexed with BIO.WUE_INDEX
+
+    double
+      ppm[MAX_CO2_YEAR];                 // Holds ppm data communicated from rSOILWAT2
 
   } SW_CARBON;
 

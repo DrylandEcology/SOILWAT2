@@ -2739,10 +2739,6 @@ SEXP onGetOutput(SEXP inputData) {
 		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("Title"), r_CO2EFFECTS_NAME);
 
 		// Construct the time step
-		/*PROTECT(r_CO2EFFECTS_PERIOD = NEW_INTEGER(1));
-		INTEGER(r_CO2EFFECTS_PERIOD)[0] = 4;  // was 2
-		SET_SLOT(swOutput_KEY_CO2EFFECTS, install("TimeStep"), r_CO2EFFECTS_PERIOD);*/
-
 		if (useTimeStep) {
 			PROTECT(r_CO2EFFECTS_PERIOD = NEW_INTEGER(length(Periods)));
 			for(i=0; i<length(Periods); i++)
@@ -2750,8 +2746,8 @@ SEXP onGetOutput(SEXP inputData) {
 			SET_SLOT(swOutput_KEY_CO2EFFECTS, install("TimeStep"), r_CO2EFFECTS_PERIOD);
 			UNPROTECT(1);
 		} else {
-			PROTECT(r_ESTABL_PERIOD = NEW_INTEGER(1));
-			INTEGER(r_ESTABL_PERIOD)[0]=INTEGER(Periods)[28];
+			PROTECT(r_CO2EFFECTS_PERIOD = NEW_INTEGER(1));
+			INTEGER(r_CO2EFFECTS_PERIOD)[0]=INTEGER(Periods)[28];
 			SET_SLOT(swOutput_KEY_CO2EFFECTS, install("TimeStep"), r_CO2EFFECTS_PERIOD);
 			UNPROTECT(1);
 		}
