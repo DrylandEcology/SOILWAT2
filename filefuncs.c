@@ -52,10 +52,11 @@ char *DirName(const char *p) {
 	static char s[FILENAME_MAX];
 	char *c;
 	int l;
+	char sep1 = '/', sep2 = '\\';
 
 	*s = '\0';
-	if (!(c = strrchr(p, '/')))
-		c = strrchr(p, '\\');
+	if (!(c = (char*) strrchr(p, (int) sep1)))
+		c = (char*) strrchr(p, (int) sep2);
 
 	if (c) {
 		l = c - p + 1;
@@ -71,8 +72,10 @@ const char *BaseName(const char *p) {
 	/* Doesn't modify the string, but you'll probably want to
 	 * copy the result to a stable buffer. */
 	char *c;
-	if (!(c = strrchr(p, '/')))
-		c = strrchr(p, '\\');
+	char sep1 = '/', sep2 = '\\';
+
+	if (!(c = (char*) strrchr(p, (int) sep1)))
+		c = (char*) strrchr(p, (int) sep2);
 
 	return ((c != NULL )? c+1 : p);
 }
@@ -146,7 +149,9 @@ Bool ChDir(const char *dname) {
 /**************************************************************/
 /* Mapping mdir() function to OS specific version */
 
-#ifdef _WIN32 || _WIN64                /* 32- and 64-bit Windows OS: Windows XP, Vista, 7, 8 */
+#ifdef _WIN32  /* 32- and 64-bit Windows OS: Windows XP, Vista, 7, 8 */
+#define mkdir(d, m) mkdir(d)
+#elif _WIN64
 #define mkdir(d, m) mkdir(d)
 #elif __linux__                        /* linux: Centos, Debian, Fedora, OpenSUSE, RedHat, Ubuntu */
 #define mkdir(d, m) mkdir(d, m)
@@ -247,7 +252,7 @@ Bool RemoveFiles(const char *fspec) {
 		Mem_Free(flist[i]);
 	Mem_Free(flist);
 
-	return result;
+	return (Bool) result;
 }
 
 /**************************************************************/
