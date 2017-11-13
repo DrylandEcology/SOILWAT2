@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
 
 	SW_CTL_init_model(_firstfile);
 
+
 	SW_CTL_main();
 	SW_SIT_clear_layers();
 	SW_WTH_clear_runavg_list();

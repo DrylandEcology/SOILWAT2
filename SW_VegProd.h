@@ -98,6 +98,8 @@ typedef struct {
 	RealD critSoilWater[4]; // storing values in same order as defined in rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
 	RealD useVegType[4]; // storing which veg types are set to be used and the fraction applied to them
 
+	int rank_SWPcrits[5]; // array to store the SWP crits in order of lest negative to most negative (used in sxw_resource)
+
 	RealD bareGround_albedo; /* create this here instead of creating a bareGround VegType, because it only needs albedo and no other data member */
 
 } SW_VEGPROD;

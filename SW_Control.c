@@ -43,6 +43,7 @@
 /* --------------------------------------------------- */
 extern SW_MODEL SW_Model;
 extern SW_VEGESTAB SW_VegEstab;
+extern SW_VEGPROD SW_VegProd;
 #ifdef RSOILWAT
 	extern Bool useFiles;
 	extern SEXP InputData;
@@ -69,6 +70,54 @@ void SW_FLW_construct(void);
 
 void SW_CTL_main(void) {
 	TimeInt *cur_yr = &SW_Model.year;
+
+	/*----------------------------------------------------------
+    Get proper order for rank_SWPcrits
+  ----------------------------------------------------------*/
+  int outerLoop, innerLoop;
+  float key;
+
+  RealF tempArray[4], tempArrayUnsorted[4]; // need two temp arrays equal to critSoilWater since we dont want to alter the original at all
+  tempArray[0] = SW_VegProd.critSoilWater[0];
+  tempArray[1] = SW_VegProd.critSoilWater[1];
+  tempArray[2] = SW_VegProd.critSoilWater[2];
+  tempArray[3] = SW_VegProd.critSoilWater[3];
+  tempArrayUnsorted[0] = SW_VegProd.critSoilWater[0];
+  tempArrayUnsorted[1] = SW_VegProd.critSoilWater[1];
+  tempArrayUnsorted[2] = SW_VegProd.critSoilWater[2];
+  tempArrayUnsorted[3] = SW_VegProd.critSoilWater[3];
+
+  // insertion sort to rank the veg types and store them in their proper order
+  for (outerLoop = 1; outerLoop < 4; outerLoop++)
+   {
+       key = tempArray[outerLoop]; // set key equal to critical value
+       innerLoop = outerLoop-1;
+       while (innerLoop >= 0 && tempArray[innerLoop] < key)
+       {
+         // code to switch values
+         tempArray[innerLoop+1] = tempArray[innerLoop];
+         innerLoop = innerLoop-1;
+       }
+       tempArray[innerLoop+1] = key;
+   }
+
+   // loops to compare sorted v unsorted array and find proper index
+   for(outerLoop = 0; outerLoop < 4; outerLoop++){
+     for(innerLoop = 0; innerLoop < 4; innerLoop++){
+       if(tempArray[outerLoop] == tempArrayUnsorted[innerLoop]){
+         SW_VegProd.rank_SWPcrits[outerLoop] = innerLoop;
+         tempArrayUnsorted[innerLoop] = 100; // set value to something impossible so if a duplicate a different index is picked next
+         break;
+       }
+     }
+   }
+	 /*printf("%d = %f\n", SW_VegProd.rank_SWPcrits[0], SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[0]]);
+   printf("%d = %f\n", SW_VegProd.rank_SWPcrits[1], SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[1]]);
+   printf("%d = %f\n", SW_VegProd.rank_SWPcrits[2], SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[2]]);
+   printf("%d = %f\n\n", SW_VegProd.rank_SWPcrits[3], SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[3]]);*/
+   /*----------------------------------------------------------
+     End of rank_SWPcrits
+   ----------------------------------------------------------*/
 
 	for (*cur_yr = SW_Model.startyr; *cur_yr <= SW_Model.endyr; (*cur_yr)++) {
 		SW_CTL_run_current_year();
