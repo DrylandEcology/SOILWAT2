@@ -2379,12 +2379,15 @@ static void get_dSWAbulk(void){
 			curr_crit_rank_index = SXW.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
 			for(kv=curr_vegType; kv>=0; kv--){
 				crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv]]; // get crit value at current index
-				prev_crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv-1]]; // get crit value for index lower
 				kv_veg_type = SXW.rank_SWPcrits[kv]; // get index for veg_type. dont want to access swa_master at rank_SWPcrits index
-				if(kv!=0)
+				if(kv!=0){
 					prev_crit_veg_type = SXW.rank_SWPcrits[kv-1]; // get veg type that belongs to the corresponding critical value
-				else
+					prev_crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv-1]]; // get crit value for index lower
+				}
+				else{
 					prev_crit_veg_type = SXW.rank_SWPcrits[kv]; // set prev to itself since smallest type. if == then will just set values to itself
+					prev_crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv]]; // get crit value for index lower
+				}
 
 					//printf("%f,%f\n\n", crit_val, prev_crit_val);
 
