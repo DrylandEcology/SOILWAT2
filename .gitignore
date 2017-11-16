@@ -12,3 +12,11 @@
 # Example code in package build process
 *-Ex.R
 /Debug/
+
+# Test project output
+/testing/Output/*
+
+# Google unit test output
+gtest-*.o
+libgtest.a
+sw_test

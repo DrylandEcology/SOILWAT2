@@ -1,4 +1,20 @@
-[![Travis-CI Build Status](https://travis-ci.org/Burke-Lauenroth-Lab/SOILWAT2.svg?branch=master)](https://travis-ci.org/Burke-Lauenroth-Lab/SOILWAT2)
+| Unix | Windows | Release | License | Coverage | Downloads |
+| :---- | :---- | :---- | :---- | :---- | :---- |
+[ ![Travis build status][1]][2] | [![Appveyor build status][3]][4] | [ ![github release][5]][6] | [![license][7]][8] | [![codecov status][9]][10] | [![github downloads][11]][12] |
+
+[1]: https://travis-ci.org/Burke-Lauenroth-Lab/SOILWAT2.svg?branch=master
+[2]: https://travis-ci.org/Burke-Lauenroth-Lab/SOILWAT2
+[3]: https://ci.appveyor.com/api/projects/status/noes9lralyjhen3t/branch/master?svg=true
+[4]: https://ci.appveyor.com/project/dschlaep/soilwat2/branch/master
+[5]: https://img.shields.io/github/release/Burke-Lauenroth-Lab/SOILWAT2.svg?label=current+release
+[6]: https://github.com/Burke-Lauenroth-Lab/SOILWAT2/releases
+[7]: https://img.shields.io/github/license/Burke-Lauenroth-Lab/SOILWAT2.svg
+[8]: https://www.gnu.org/licenses/gpl.html
+[9]: https://codecov.io/gh/Burke-Lauenroth-Lab/SOILWAT2/branch/master/graph/badge.svg
+[10]: https://codecov.io/gh/Burke-Lauenroth-Lab/SOILWAT2
+[11]: https://img.shields.io/github/downloads/Burke-Lauenroth-Lab/SOILWAT2/total.svg
+[12]: https://github.com/Burke-Lauenroth-Lab/SOILWAT2
+
 
 # SOILWAT2
 
@@ -22,28 +38,44 @@ Some recent references
   sagebrush ecosystems. Ecohydrology 5:453-466.
 
 
-## For code contributors only
-
-* The files 'Makevars', 'SW_R_lib.c' and 'SW_R_lib.h' are used when compiling for
-  [rSOILWAT2](https://github.com/Burke-Lauenroth-Lab/rSOILWAT2) and ignored otherwise.
-* The file 'SW_Main_Function.c' is used when compiling with
-  [STEPWAT2](https://github.com/Burke-Lauenroth-Lab/STEPWAT2) and ignored otherwise.
-
-
-### Version numbers
-
-We attempt to follow guidelines of [semantic versioning](http://semver.org/) with version
-numbers of MAJOR.MINOR.PATCH.
-
-
-### How to contribute
+## How to contribute
 You can help us in different ways:
 
 1. Reporting [issues](https://github.com/Burke-Lauenroth-Lab/SOILWAT2/issues)
 2. Contributing code and sending a [pull request](https://github.com/Burke-Lauenroth-Lab/SOILWAT2/pulls)
 
+__SOILWAT2 code is used as part of three applications__: stand-alone, as part of [STEPWAT2](https://github.com/Burke-Lauenroth-Lab/STEPWAT2),
+and as part of the R package [rSOILWAT2](https://github.com/Burke-Lauenroth-Lab/rSOILWAT2)
+* The files 'Makevars', 'SW_R_lib.c' and 'SW_R_lib.h' are used when compiling for
+  [rSOILWAT2](https://github.com/Burke-Lauenroth-Lab/rSOILWAT2) and ignored otherwise.
+* The file 'SW_Main_Function.c' is used when compiling with
+  [STEPWAT2](https://github.com/Burke-Lauenroth-Lab/STEPWAT2) and ignored otherwise.
 
-# Notes
+__Follow our guidelines__ as detailed [here](https://github.com/Burke-Lauenroth-Lab/workflow_guidelines)
+
+__Tests, documentation, and code__ form a trinity
+- Code documentation
+  * Use [doxygen](http://www.stack.nl/~dimitri/doxygen/) to write inline code documentation
+  * Update help pages on the command-line with `doxygen Doxyfile`
+- Code tests
+  * Use [GoogleTest](https://github.com/google/googletest/blob/master/googletest/docs/Documentation.md)
+  to add unit tests to the existing framework
+  * Run unit tests locally on the command-line with
+    ```
+    make gtest
+    ./sw_test
+    make gtest_clean
+    ```
+  * We plan to update the continuous integration frameworks 'travis' and 'appveyor' to
+    run these tests as well when commits are pushed
+  * Development/feature branches can only be merged into master if they pass all checks
+
+
+__Version numbers__
+
+We attempt to follow guidelines of [semantic versioning](http://semver.org/) with version
+numbers of MAJOR.MINOR.PATCH.
+
 
 __Repository renamed from SOILWAT to SOILWAT2 on Feb 23, 2017__
 
