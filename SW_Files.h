@@ -44,6 +44,7 @@ void SW_F_construct(const char *firstfile);
 #endif
 void SW_WeatherPrefix(char prefix[]);
 void SW_OutputPrefix(char prefix[]);
+void SW_CSV_F_INIT(const char *s);
 
 #ifdef DEBUG_MEM
 void SW_F_SetMemoryRefs(void);

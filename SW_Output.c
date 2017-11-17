@@ -519,9 +519,6 @@ void SW_OUT_read(void)
 	FILE *f;
 	OutKey k;
 	int x, i, itemno;
-#ifndef RSOILWAT
-	char str[MAX_FILENAMESIZE];
-#endif
 	char ext[10];
 
 	/* these dims come from the orig format str */
@@ -531,9 +528,6 @@ void SW_OUT_read(void)
 			sumtype[4], upsum[4], period[10], /* should be 2 chars, but we don't want overflow from user typos */
 			last[4], /* last doy for output, if "end", ==366 */
 			outfile[MAX_FILENAMESIZE];
-#ifndef RSOILWAT
-	char prefix[MAX_FILENAMESIZE];
-#endif
 	int first; /* first doy for output */
 	int useTimeStep = 0; /* flag to determine whether or not the line TIMESTEP exists */
 
@@ -730,6 +724,7 @@ void SW_OUT_read(void)
 	if (EchoInits)
 		_echo_outputs();
 }
+
 #ifdef RSOILWAT
 void onSet_SW_OUT(SEXP OUT)
 {

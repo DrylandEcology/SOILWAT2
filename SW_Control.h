@@ -22,6 +22,11 @@ void SW_CTL_init_model(const char *firstfile);
 void SW_CTL_main(void); /* main controlling loop for SOILWAT  */
 void SW_CTL_run_current_year(void);
 
+void stat_Output_Daily_CSV_Summary(int iteration);
+void stat_Output_Weekly_CSV_Summary(int iteration);
+void stat_Output_Monthly_CSV_Summary(int iteration);
+void stat_Output_Yearly_CSV_Summary(int iteration);
+
 #ifdef DEBUG_MEM
 void SW_CTL_SetMemoryRefs(void);
 #endif
