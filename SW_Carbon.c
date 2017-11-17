@@ -117,7 +117,7 @@ void onSet_swCarbon(SEXP object) {
   unsigned int i = 1, n;
 
   year = SW_Model.startyr + c->addtl_yr;
-  n = nrow(GET_SLOT(object, install("CO2ppm")));
+  n = LENGTH(GET_SLOT(object, install("CO2ppm")));
 
   // Locate index of first year for which we need CO2 data
   while (i <= n)
@@ -136,7 +136,7 @@ void onSet_swCarbon(SEXP object) {
   }
 
   // Copy CO2 concentration values to SOILWAT variable
-  for (i; i <= c->addtl_yr; i++)
+  for (; i <= c->addtl_yr; i++)
   {
     c->ppm[year++] = REAL(GET_SLOT(GET_SLOT(object, install("CO2ppm")), install("CO2ppm")))[i - 1];  // R's index is 1-based
   }
