@@ -94,6 +94,7 @@ $(document).ready(function(){initNavTree('_s_w___flow__lib_8c.html','');});
 <code>#include &quot;<a class="el" href="_s_w___defines_8h_source.html">SW_Defines.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_s_w___flow__lib_8h_source.html">SW_Flow_lib.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_s_w___flow__subs_8h_source.html">SW_Flow_subs.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="_s_w___carbon_8h_source.html">SW_Carbon.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_times_8h_source.html">Times.h</a>&quot;</code><br />
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
@@ -128,8 +129,8 @@ Functions</h2></td></tr>
 <tr class="separator:a12dc2157867a28f063bac79338e32daf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a889cfc64aa918959e6c331b23c56ab"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___flow__lib_8c.html#a3a889cfc64aa918959e6c331b23c56ab">pot_soil_evap_bs</a> (double *bserate, unsigned int nelyrs, double ecoeff[], double petday, double shift, double shape, double inflec, double range, double width[], double swc[])</td></tr>
 <tr class="separator:a3a889cfc64aa918959e6c331b23c56ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1bd1c1f3527cbe8b6bb9aac1bc737809"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___flow__lib_8c.html#a1bd1c1f3527cbe8b6bb9aac1bc737809">pot_transp</a> (double *bstrate, double swpavg, double biolive, double biodead, double fbst, double petday, double swp_shift, double swp_shape, double swp_inflec, double swp_range, double shade_scale, double shade_deadmax, double shade_xinflex, double shade_slope, double shade_yinflex, double shade_range)</td></tr>
-<tr class="separator:a1bd1c1f3527cbe8b6bb9aac1bc737809"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c460feb6dbfd44baffda96f5fbae549"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___flow__lib_8c.html#a7c460feb6dbfd44baffda96f5fbae549">pot_transp</a> (double *bstrate, double swpavg, double biolive, double biodead, double fbst, double petday, double swp_shift, double swp_shape, double swp_inflec, double swp_range, double shade_scale, double shade_deadmax, double shade_xinflex, double shade_slope, double shade_yinflex, double shade_range, double co2_wue_multiplier)</td></tr>
+<tr class="separator:a7c460feb6dbfd44baffda96f5fbae549"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d2e41ea50a7a1771d0c6273e857b5be"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___flow__lib_8c.html#a2d2e41ea50a7a1771d0c6273e857b5be">watrate</a> (double swp, double petday, double shift, double shape, double inflec, double range)</td></tr>
 <tr class="separator:a2d2e41ea50a7a1771d0c6273e857b5be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a41552e80ab8d387b43a80fef49b4d808"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___flow__lib_8c.html#a41552e80ab8d387b43a80fef49b4d808">evap_fromSurface</a> (double *water_pool, double *evap_rate, double *aet)</td></tr>
@@ -165,6 +166,8 @@ Variables</h2></td></tr>
 <tr class="separator:a11bcfe9d5a1ea9a25df26589c9e904f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afdb8ced0825a798336ba061396f7016c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_s_w___s_o_i_l_w_a_t.html">SW_SOILWAT</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___flow__lib_8c.html#afdb8ced0825a798336ba061396f7016c">SW_Soilwat</a></td></tr>
 <tr class="separator:afdb8ced0825a798336ba061396f7016c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfabcd0c83d2d4583dc420c02188ad6f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_s_w___c_a_r_b_o_n.html">SW_CARBON</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___flow__lib_8c.html#adfabcd0c83d2d4583dc420c02188ad6f">SW_Carbon</a></td></tr>
+<tr class="separator:adfabcd0c83d2d4583dc420c02188ad6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a04e8d1631a4a59d1e6b0a19a378d9a58"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___flow__lib_8c.html#a04e8d1631a4a59d1e6b0a19a378d9a58">soil_temp_error</a></td></tr>
 <tr class="separator:a04e8d1631a4a59d1e6b0a19a378d9a58"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace889dddadc2b4542b04b1b131df57ab"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___flow__lib_8c.html#ace889dddadc2b4542b04b1b131df57ab">soil_temp_init</a></td></tr>
@@ -1237,8 +1240,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a1bd1c1f3527cbe8b6bb9aac1bc737809"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1bd1c1f3527cbe8b6bb9aac1bc737809">&#9670;&nbsp;</a></span>pot_transp()</h2>
+<a id="a7c460feb6dbfd44baffda96f5fbae549"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c460feb6dbfd44baffda96f5fbae549">&#9670;&nbsp;</a></span>pot_transp()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1337,7 +1340,13 @@ Variables</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>shade_range</em>&#160;</td>
+          <td class="paramname"><em>shade_range</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>co2_wue_multiplier</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -2105,7 +2114,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="reference">Referenced by <a class="el" href="_s_w___flow__lib_8h.html#a12dc2157867a28f063bac79338e32daf">pot_soil_evap()</a>, <a class="el" href="_s_w___flow__lib_8h.html#a3a889cfc64aa918959e6c331b23c56ab">pot_soil_evap_bs()</a>, and <a class="el" href="_s_w___flow__lib_8h.html#a1bd1c1f3527cbe8b6bb9aac1bc737809">pot_transp()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_s_w___flow__lib_8h.html#a12dc2157867a28f063bac79338e32daf">pot_soil_evap()</a>, <a class="el" href="_s_w___flow__lib_8h.html#a3a889cfc64aa918959e6c331b23c56ab">pot_soil_evap_bs()</a>, and <a class="el" href="_s_w___flow__lib_8h.html#a7c460feb6dbfd44baffda96f5fbae549">pot_transp()</a>.</p>
 
 </div>
 </div>
@@ -2155,6 +2164,20 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="reference">Referenced by <a class="el" href="_s_w___flow_8c.html#aff0bb7870fbf9020899035540e606250">SW_FLW_construct()</a>.</p>
+
+</div>
+</div>
+<a id="adfabcd0c83d2d4583dc420c02188ad6f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adfabcd0c83d2d4583dc420c02188ad6f">&#9670;&nbsp;</a></span>SW_Carbon</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_s_w___c_a_r_b_o_n.html">SW_CARBON</a> SW_Carbon</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>

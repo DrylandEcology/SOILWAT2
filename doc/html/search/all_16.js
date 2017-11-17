@@ -15,5 +15,6 @@ var searchData=
   ['wkdays',['WKDAYS',['../_times_8h.html#a2a7cd45ad028f22074bb745387bbc1c2',1,'Times.h']]],
   ['wksum',['wksum',['../struct_s_w___s_o_i_l_w_a_t.html#a50c9180d0925a21ae999cf82a90281f3',1,'SW_SOILWAT::wksum()'],['../struct_s_w___w_e_a_t_h_e_r.html#ae5d8febadccca16df669d1ca8b12041a',1,'SW_WEATHER::wksum()']]],
   ['wpr',['wpR',['../struct_s_t___r_g_r___v_a_l_u_e_s.html#a8373aee16290423cf2592a1a015c5dec',1,'ST_RGR_VALUES']]],
-  ['wth_5fmissing',['WTH_MISSING',['../_s_w___weather_8h.html#a7d7a48bfc425c34e26ea6ec16aa8478e',1,'SW_Weather.h']]]
+  ['wth_5fmissing',['WTH_MISSING',['../_s_w___weather_8h.html#a7d7a48bfc425c34e26ea6ec16aa8478e',1,'SW_Weather.h']]],
+  ['wue_5findex',['WUE_INDEX',['../_s_w___carbon_8h.html#a625a40516817a9d5ec160805972555a8',1,'SW_Carbon.h']]]
 ];

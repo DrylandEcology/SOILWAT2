@@ -7,6 +7,8 @@ var struct_veg_type =
     [ "biomass_daily", "struct_veg_type.html#aec9201d5b43b152d86a0450b757d0f97", null ],
     [ "canopy_height_constant", "struct_veg_type.html#a386cea6b73513d17ac0b87354922fd08", null ],
     [ "cnpy", "struct_veg_type.html#aac40e85a764b5b1efca9b21a8de7332a", null ],
+    [ "CO2_biomass", "struct_veg_type.html#abcd8900218c870630e4f29bfab3ec0d2", null ],
+    [ "CO2_pct_live", "struct_veg_type.html#af6c76467ce693454ffef588fa9518567", null ],
     [ "conv_stcr", "struct_veg_type.html#a5046a57c5d9c224a683182ee4c2997c4", null ],
     [ "Es_param_limit", "struct_veg_type.html#ac93ec2505d567932f523ec92b793920f", null ],
     [ "EsTpartitioning_param", "struct_veg_type.html#a9a14971307084c7b7d2ae702cf9f7a7b", null ],

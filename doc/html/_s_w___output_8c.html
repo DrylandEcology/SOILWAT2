@@ -97,6 +97,7 @@ $(document).ready(function(){initNavTree('_s_w___output_8c.html','');});
 <code>#include &quot;<a class="el" href="filefuncs_8h_source.html">filefuncs.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="my_memory_8h_source.html">myMemory.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_times_8h_source.html">Times.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="_s_w___carbon_8h_source.html">SW_Carbon.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_s_w___defines_8h_source.html">SW_Defines.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_s_w___files_8h_source.html">SW_Files.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_s_w___model_8h_source.html">SW_Model.h</a>&quot;</code><br />
@@ -106,6 +107,7 @@ $(document).ready(function(){initNavTree('_s_w___output_8c.html','');});
 <code>#include &quot;<a class="el" href="_s_w___output_8h_source.html">SW_Output.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_s_w___weather_8h_source.html">SW_Weather.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_s_w___veg_estab_8h_source.html">SW_VegEstab.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="_s_w___veg_prod_8h_source.html">SW_VegProd.h</a>&quot;</code><br />
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
@@ -114,6 +116,8 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:ac59d38d88fc9b741ce8c9fb0161e0480"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___output_8c.html#ac59d38d88fc9b741ce8c9fb0161e0480">get_co2effects</a> (void)</td></tr>
+<tr class="separator:ac59d38d88fc9b741ce8c9fb0161e0480"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae06df802aa17b479cb10172f7d1903f2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___output_8c.html#ae06df802aa17b479cb10172f7d1903f2">SW_OUT_construct</a> (void)</td></tr>
 <tr class="separator:ae06df802aa17b479cb10172f7d1903f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a288bfdd3a3a04a61564b9cad8ef08a1f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___output_8c.html#a288bfdd3a3a04a61564b9cad8ef08a1f">SW_OUT_new_year</a> (void)</td></tr>
@@ -139,10 +143,14 @@ Variables</h2></td></tr>
 <tr class="separator:a7fe95d8828eeecd4a64b5a230bedea66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ec3b7159a2fccc79f5fa31d8f40c224"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_s_w___w_e_a_t_h_e_r.html">SW_WEATHER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___output_8c.html#a5ec3b7159a2fccc79f5fa31d8f40c224">SW_Weather</a></td></tr>
 <tr class="separator:a5ec3b7159a2fccc79f5fa31d8f40c224"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f9709f4f153a6d19d922c1896a1e2a3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_s_w___v_e_g_p_r_o_d.html">SW_VEGPROD</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___output_8c.html#a8f9709f4f153a6d19d922c1896a1e2a3">SW_VegProd</a></td></tr>
+<tr class="separator:a8f9709f4f153a6d19d922c1896a1e2a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b2149c2e1b77da676359b0bc64b1710"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_s_w___v_e_g_e_s_t_a_b.html">SW_VEGESTAB</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___output_8c.html#a4b2149c2e1b77da676359b0bc64b1710">SW_VegEstab</a></td></tr>
 <tr class="separator:a4b2149c2e1b77da676359b0bc64b1710"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46e5208554b79bebc83a481785e273c6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="generic_8h.html#a39db6982619d623273fad8a383489309">Bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___output_8c.html#a46e5208554b79bebc83a481785e273c6">EchoInits</a></td></tr>
 <tr class="separator:a46e5208554b79bebc83a481785e273c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfabcd0c83d2d4583dc420c02188ad6f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_s_w___c_a_r_b_o_n.html">SW_CARBON</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___output_8c.html#adfabcd0c83d2d4583dc420c02188ad6f">SW_Carbon</a></td></tr>
+<tr class="separator:adfabcd0c83d2d4583dc420c02188ad6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0403c81a40f6c4b5a34be286fb003019"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_s_w___o_u_t_p_u_t.html">SW_OUTPUT</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___output_8c.html#a0403c81a40f6c4b5a34be286fb003019">SW_Output</a> [<a class="el" href="_s_w___output_8h.html#a531e27bc55c78f5134678d0623c697b1">SW_OUTNKEYS</a>]</td></tr>
 <tr class="separator:a0403c81a40f6c4b5a34be286fb003019"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a758ba563f989ca4584558dfd664c613f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="generic_8h.html#a39db6982619d623273fad8a383489309">Bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_s_w___output_8c.html#a758ba563f989ca4584558dfd664c613f">isPartialSoilwatOutput</a> =<a class="el" href="generic_8h.html#a39db6982619d623273fad8a383489309aa1e095cc966dbecf6a0d8aad75348d1a">FALSE</a></td></tr>
@@ -161,9 +169,29 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p class="reference">Referenced by <a class="el" href="_s_w___output_8c.html#ac59d38d88fc9b741ce8c9fb0161e0480">get_co2effects()</a>.</p>
+
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="ac59d38d88fc9b741ce8c9fb0161e0480"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac59d38d88fc9b741ce8c9fb0161e0480">&#9670;&nbsp;</a></span>get_co2effects()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void get_co2effects </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a53bb40694dbd09aee64905841fa711d4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a53bb40694dbd09aee64905841fa711d4">&#9670;&nbsp;</a></span>SW_OUT_close_files()</h2>
 
@@ -323,6 +351,22 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="adfabcd0c83d2d4583dc420c02188ad6f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adfabcd0c83d2d4583dc420c02188ad6f">&#9670;&nbsp;</a></span>SW_Carbon</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_s_w___c_a_r_b_o_n.html">SW_CARBON</a> SW_Carbon</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="reference">Referenced by <a class="el" href="_s_w___carbon_8h.html#a86b75ba4cc1cb8e932278bd5d559aadc">calculate_CO2_multipliers()</a>, <a class="el" href="_s_w___output_8c.html#ac59d38d88fc9b741ce8c9fb0161e0480">get_co2effects()</a>, <a class="el" href="_s_w___carbon_8h.html#a2937d538ad21ad0ccfa2ea5040cdfee5">SW_CBN_construct()</a>, <a class="el" href="_s_w___carbon_8h.html#ac22e0a0f898a8521aacfd1a1b9294fca">SW_CBN_read()</a>, <a class="el" href="_s_w___site_8h.html#ac9740b7b813c160d7172364950a115bc">SW_SIT_read()</a>, <a class="el" href="_s_w___veg_prod_8h.html#a637e8e57ca98f424e3e782d499f19368">SW_VPD_init()</a>, and <a class="el" href="_s_w___soil_water_8c.html#a6a9d5dbcefaf72eece66ed219bcd749f">SW_Water_Flow()</a>.</p>
+
+</div>
+</div>
 <a id="a7fe95d8828eeecd4a64b5a230bedea66"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7fe95d8828eeecd4a64b5a230bedea66">&#9670;&nbsp;</a></span>SW_Model</h2>
 
@@ -389,6 +433,20 @@ Variables</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="struct_s_w___v_e_g_e_s_t_a_b.html">SW_VEGESTAB</a> SW_VegEstab</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8f9709f4f153a6d19d922c1896a1e2a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f9709f4f153a6d19d922c1896a1e2a3">&#9670;&nbsp;</a></span>SW_VegProd</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_s_w___v_e_g_p_r_o_d.html">SW_VEGPROD</a> SW_VegProd</td>
         </tr>
       </table>
 </div><div class="memdoc">

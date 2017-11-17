@@ -5,5 +5,7 @@ var _s_w___veg_prod_8c =
     [ "SW_VPD_read", "_s_w___veg_prod_8c.html#a78fcfdb968b2355eee5a8f61bbd01270", null ],
     [ "EchoInits", "_s_w___veg_prod_8c.html#a46e5208554b79bebc83a481785e273c6", null ],
     [ "Old_SW_VegProd", "_s_w___veg_prod_8c.html#a2ad9757141b05a2db17a8ff34467fb85", null ],
+    [ "SW_Carbon", "_s_w___veg_prod_8c.html#adfabcd0c83d2d4583dc420c02188ad6f", null ],
+    [ "SW_Model", "_s_w___veg_prod_8c.html#a7fe95d8828eeecd4a64b5a230bedea66", null ],
     [ "SW_VegProd", "_s_w___veg_prod_8c.html#a8f9709f4f153a6d19d922c1896a1e2a3", null ]
 ];

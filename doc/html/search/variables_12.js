@@ -35,7 +35,7 @@ var searchData=
   ['transpiration_5fgrass',['transpiration_grass',['../struct_s_w___s_o_i_l_w_a_t.html#a9d390d06432096765fa4ccee86c0d52c',1,'SW_SOILWAT']]],
   ['transpiration_5fshrub',['transpiration_shrub',['../struct_s_w___s_o_i_l_w_a_t.html#afa1a05309f50aed97ddc45eb681cd64c',1,'SW_SOILWAT']]],
   ['transpiration_5ftree',['transpiration_tree',['../struct_s_w___s_o_i_l_w_a_t.html#a5daee6e2e1a9137b841071b737e91774',1,'SW_SOILWAT']]],
-  ['tree',['tree',['../struct_s_w___v_e_g_p_r_o_d.html#af9b2985ddc2863ecc84e1abb6585ac47',1,'SW_VEGPROD']]],
+  ['tree',['tree',['../struct_p_f_ts.html#a74950aace8b726538f80b0ea331156d0',1,'PFTs::tree()'],['../struct_s_w___v_e_g_p_r_o_d.html#af9b2985ddc2863ecc84e1abb6585ac47',1,'SW_VEGPROD::tree()']]],
   ['tree_5fevap',['tree_evap',['../struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s.html#a5256e09ef6e0a304a1edd408ca13f9ec',1,'SW_SOILWAT_OUTPUTS::tree_evap()'],['../struct_s_w___s_o_i_l_w_a_t.html#ae5711cd9496256efc48dedec4cc1290b',1,'SW_SOILWAT::tree_evap()']]],
   ['tree_5fint',['tree_int',['../struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s.html#a95adc0361480da9fc7bf8d21db69eea8',1,'SW_SOILWAT_OUTPUTS::tree_int()'],['../struct_s_w___s_o_i_l_w_a_t.html#a8c46d477811011c64adff79397b09cf4',1,'SW_SOILWAT::tree_int()']]]
 ];

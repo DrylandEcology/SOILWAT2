@@ -9,6 +9,8 @@ var files =
     [ "myMemory.h", "my_memory_8h.html", "my_memory_8h" ],
     [ "rands.c", "rands_8c.html", "rands_8c" ],
     [ "rands.h", "rands_8h.html", "rands_8h" ],
+    [ "SW_Carbon.c", "_s_w___carbon_8c.html", "_s_w___carbon_8c" ],
+    [ "SW_Carbon.h", "_s_w___carbon_8h.html", "_s_w___carbon_8h" ],
     [ "SW_Control.c", "_s_w___control_8c.html", "_s_w___control_8c" ],
     [ "SW_Control.h", "_s_w___control_8h.html", "_s_w___control_8h" ],
     [ "SW_Defines.h", "_s_w___defines_8h.html", "_s_w___defines_8h" ],

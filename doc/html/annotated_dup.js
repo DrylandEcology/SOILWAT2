@@ -1,7 +1,9 @@
 var annotated_dup =
 [
     [ "BLOCKINFO", "struct_b_l_o_c_k_i_n_f_o.html", "struct_b_l_o_c_k_i_n_f_o" ],
+    [ "PFTs", "struct_p_f_ts.html", "struct_p_f_ts" ],
     [ "ST_RGR_VALUES", "struct_s_t___r_g_r___v_a_l_u_e_s.html", "struct_s_t___r_g_r___v_a_l_u_e_s" ],
+    [ "SW_CARBON", "struct_s_w___c_a_r_b_o_n.html", "struct_s_w___c_a_r_b_o_n" ],
     [ "SW_LAYER_INFO", "struct_s_w___l_a_y_e_r___i_n_f_o.html", "struct_s_w___l_a_y_e_r___i_n_f_o" ],
     [ "SW_MARKOV", "struct_s_w___m_a_r_k_o_v.html", "struct_s_w___m_a_r_k_o_v" ],
     [ "SW_MODEL", "struct_s_w___m_o_d_e_l.html", "struct_s_w___m_o_d_e_l" ],

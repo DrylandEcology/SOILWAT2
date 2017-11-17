@@ -49,6 +49,7 @@ var _s_w___flow_8c =
     [ "lyrWidths", "_s_w___flow_8c.html#ac94101fc6a0cba1725b24a67f300f293", null ],
     [ "soil_temp_error", "_s_w___flow_8c.html#a04e8d1631a4a59d1e6b0a19a378d9a58", null ],
     [ "soil_temp_init", "_s_w___flow_8c.html#ace889dddadc2b4542b04b1b131df57ab", null ],
+    [ "SW_Carbon", "_s_w___flow_8c.html#adfabcd0c83d2d4583dc420c02188ad6f", null ],
     [ "SW_Model", "_s_w___flow_8c.html#a7fe95d8828eeecd4a64b5a230bedea66", null ],
     [ "SW_Site", "_s_w___flow_8c.html#a11bcfe9d5a1ea9a25df26589c9e904f3", null ],
     [ "SW_Sky", "_s_w___flow_8c.html#a4ae75944adbc3d91fdf8ee7c9acdd875", null ],

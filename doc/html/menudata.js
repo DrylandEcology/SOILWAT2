@@ -101,6 +101,7 @@ var menudata={children:[
 {text:"y",url:"globals_func_y.html#index_y"}]},
 {text:"Variables",url:"globals_vars.html",children:[
 {text:"_",url:"globals_vars.html#index__"},
+{text:"a",url:"globals_vars.html#index_a"},
 {text:"d",url:"globals_vars.html#index_d"},
 {text:"e",url:"globals_vars.html#index_e"},
 {text:"f",url:"globals_vars.html#index_f"},

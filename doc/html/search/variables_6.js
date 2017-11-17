@@ -6,7 +6,7 @@ var searchData=
   ['first_5forig',['first_orig',['../struct_s_w___o_u_t_p_u_t.html#a28a2b9c7bfdb4e5a8078386212e91545',1,'SW_OUTPUT']]],
   ['firstdoy',['firstdoy',['../struct_s_w___m_o_d_e_l.html#a4dcb1794a7e84fad27c836311346dd6c',1,'SW_MODEL']]],
   ['flaghydraulicredistribution',['flagHydraulicRedistribution',['../struct_veg_type.html#a83b9fc0e45b383d631fabbe83316fb41',1,'VegType']]],
-  ['forb',['forb',['../struct_s_w___v_e_g_p_r_o_d.html#ab824467c4d0162c7388953956f15345d',1,'SW_VEGPROD']]],
+  ['forb',['forb',['../struct_p_f_ts.html#a5cab33bd8b0003045d49e95caa3962ad',1,'PFTs::forb()'],['../struct_s_w___v_e_g_p_r_o_d.html#ab824467c4d0162c7388953956f15345d',1,'SW_VEGPROD::forb()']]],
   ['forb_5fevap',['forb_evap',['../struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s.html#a71af23e7901f350e959255b51e567d72',1,'SW_SOILWAT_OUTPUTS::forb_evap()'],['../struct_s_w___s_o_i_l_w_a_t.html#a8f2a8306199efda056e5ba7d4a7cd139',1,'SW_SOILWAT::forb_evap()']]],
   ['forb_5fint',['forb_int',['../struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s.html#a7c78a083211cc7cd32de4f43b5abb794',1,'SW_SOILWAT_OUTPUTS::forb_int()'],['../struct_s_w___s_o_i_l_w_a_t.html#a03e041ce5230b534301d052d6e372a6f',1,'SW_SOILWAT::forb_int()']]],
   ['fp_5fdy',['fp_dy',['../struct_s_w___o_u_t_p_u_t.html#aabb6232e4d83770f0d1c46010ade9dc5',1,'SW_OUTPUT']]],

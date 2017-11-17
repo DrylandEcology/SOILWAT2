@@ -9,6 +9,7 @@ var _s_w___output_8h =
     [ "SW_AET", "_s_w___output_8h.html#aac824d412892327b84b19939751e9bf3", null ],
     [ "SW_ALLH2O", "_s_w___output_8h.html#ad85a058f65275eee148281c9dbbfab80", null ],
     [ "SW_ALLVEG", "_s_w___output_8h.html#ac5ac3f49cc9add8082bddf0536f8f238", null ],
+    [ "SW_CO2EFFECTS", "_s_w___output_8h.html#a83bb760f77ea0b2498b0d509f7597653", null ],
     [ "SW_DAY", "_s_w___output_8h.html#a8444ee195d17de7e758028d4187d26a5", null ],
     [ "SW_DEEPSWC", "_s_w___output_8h.html#abbd7520834a88ae3bdf12ad4812525b1", null ],
     [ "SW_ESTAB", "_s_w___output_8h.html#a79f8f7f406db4e0d528440c6870081f7", null ],
@@ -75,6 +76,7 @@ var _s_w___output_8h =
       [ "eSW_SoilTemp", "_s_w___output_8h.html#a02baefdececdc5dc8b1b48f924a03d73a978fe191b559abd08d8a85642d344ae7", null ],
       [ "eSW_AllVeg", "_s_w___output_8h.html#a02baefdececdc5dc8b1b48f924a03d73af3fda3a057e856b2dd9766ec88676bb5", null ],
       [ "eSW_Estab", "_s_w___output_8h.html#a02baefdececdc5dc8b1b48f924a03d73a586415b671b52a5f9fb3aa8a9e7192f7", null ],
+      [ "eSW_CO2Effects", "_s_w___output_8h.html#a02baefdececdc5dc8b1b48f924a03d73a1f7a63c8ad5734978f2ef9bdbe266873", null ],
       [ "eSW_LastKey", "_s_w___output_8h.html#a02baefdececdc5dc8b1b48f924a03d73a95615635e897244d492145c0f6605f45", null ]
     ] ],
     [ "OutPeriod", "_s_w___output_8h.html#ad4bca29edbc3cfff634f5c23d1cefb1c", [

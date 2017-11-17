@@ -8,6 +8,7 @@ var searchData=
   ['sw_5fallh2o',['SW_ALLH2O',['../_s_w___output_8h.html#ad85a058f65275eee148281c9dbbfab80',1,'SW_Output.h']]],
   ['sw_5fallveg',['SW_ALLVEG',['../_s_w___output_8h.html#ac5ac3f49cc9add8082bddf0536f8f238',1,'SW_Output.h']]],
   ['sw_5fbot',['SW_BOT',['../_s_w___defines_8h.html#a0447f3a618dcfd1c743a500795198f7e',1,'SW_Defines.h']]],
+  ['sw_5fco2effects',['SW_CO2EFFECTS',['../_s_w___output_8h.html#a83bb760f77ea0b2498b0d509f7597653',1,'SW_Output.h']]],
   ['sw_5fday',['SW_DAY',['../_s_w___output_8h.html#a8444ee195d17de7e758028d4187d26a5',1,'SW_Output.h']]],
   ['sw_5fdeepswc',['SW_DEEPSWC',['../_s_w___output_8h.html#abbd7520834a88ae3bdf12ad4812525b1',1,'SW_Output.h']]],
   ['sw_5festab',['SW_ESTAB',['../_s_w___output_8h.html#a79f8f7f406db4e0d528440c6870081f7',1,'SW_Output.h']]],

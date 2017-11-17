@@ -17,7 +17,7 @@ var _s_w___flow__lib_8c =
     [ "petfunc", "_s_w___flow__lib_8c.html#a3bdea7cd6604199ad49673c073470038", null ],
     [ "pot_soil_evap", "_s_w___flow__lib_8c.html#a12dc2157867a28f063bac79338e32daf", null ],
     [ "pot_soil_evap_bs", "_s_w___flow__lib_8c.html#a3a889cfc64aa918959e6c331b23c56ab", null ],
-    [ "pot_transp", "_s_w___flow__lib_8c.html#a1bd1c1f3527cbe8b6bb9aac1bc737809", null ],
+    [ "pot_transp", "_s_w___flow__lib_8c.html#a7c460feb6dbfd44baffda96f5fbae549", null ],
     [ "remove_from_soil", "_s_w___flow__lib_8c.html#a3a09cb656bc69c7373a2d01cb06b0700", null ],
     [ "set_frozen_unfrozen", "_s_w___flow__lib_8c.html#a921d6c39af0fc6fd7b284db250488500", null ],
     [ "shrub_EsT_partitioning", "_s_w___flow__lib_8c.html#a07b599ca60ae18b36154e117789b4ba1", null ],
@@ -33,6 +33,7 @@ var _s_w___flow__lib_8c =
     [ "fusion_pool_init", "_s_w___flow__lib_8c.html#a6fd11ca6c2749216e3c8f343528a1043", null ],
     [ "soil_temp_error", "_s_w___flow__lib_8c.html#a04e8d1631a4a59d1e6b0a19a378d9a58", null ],
     [ "soil_temp_init", "_s_w___flow__lib_8c.html#ace889dddadc2b4542b04b1b131df57ab", null ],
+    [ "SW_Carbon", "_s_w___flow__lib_8c.html#adfabcd0c83d2d4583dc420c02188ad6f", null ],
     [ "SW_Site", "_s_w___flow__lib_8c.html#a11bcfe9d5a1ea9a25df26589c9e904f3", null ],
     [ "SW_Soilwat", "_s_w___flow__lib_8c.html#afdb8ced0825a798336ba061396f7016c", null ]
 ];

@@ -1,6 +1,7 @@
 var struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s =
 [
     [ "aet", "struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s.html#a2b09b224849349194f1a28bdb472abb9", null ],
+    [ "biomass", "struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s.html#afbc7f8e465d750aa756a69fcef7ffd3f", null ],
     [ "deep", "struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s.html#a1c3b9354318089b7c00350220e3418d7", null ],
     [ "et", "struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s.html#a7148ed89deb427e158c522ce00803942", null ],
     [ "evap", "struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s.html#ae667fb63cc3c443bb163e5be66f04cda", null ],

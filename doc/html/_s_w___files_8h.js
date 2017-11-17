@@ -14,6 +14,7 @@ var _s_w___files_8h =
       [ "eSky", "_s_w___files_8h.html#af7f6cfbda641102716f82e7eada0c171a70ef1b08d71eb895ac7fbe6a2db43c20", null ],
       [ "eVegProd", "_s_w___files_8h.html#af7f6cfbda641102716f82e7eada0c171a06fc98429781eabd0a612ee1dd5cffee", null ],
       [ "eVegEstab", "_s_w___files_8h.html#af7f6cfbda641102716f82e7eada0c171ac8fcaa3ebfe01b11bc6647793ecfdd65", null ],
+      [ "eCarbon", "_s_w___files_8h.html#af7f6cfbda641102716f82e7eada0c171a8c15e368bbcd9556176893b2b56b4714", null ],
       [ "eSoilwat", "_s_w___files_8h.html#af7f6cfbda641102716f82e7eada0c171ad892014c992361811c630b4078ce0a97", null ],
       [ "eOutput", "_s_w___files_8h.html#af7f6cfbda641102716f82e7eada0c171a228828433281dbcfc65eca579d61e919", null ],
       [ "eEndFile", "_s_w___files_8h.html#af7f6cfbda641102716f82e7eada0c171a95aca4e9d78e9f76c8b63e5f79e80a9a", null ]

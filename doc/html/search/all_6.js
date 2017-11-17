@@ -17,7 +17,7 @@ var searchData=
   ['flaghydraulicredistribution',['flagHydraulicRedistribution',['../struct_veg_type.html#a83b9fc0e45b383d631fabbe83316fb41',1,'VegType']]],
   ['fmax',['fmax',['../generic_8h.html#ae55bc5afe1eabd76592c8e7a0c7b089c',1,'generic.h']]],
   ['fmin',['fmin',['../generic_8h.html#a3a446ef14fca6cda41a6634efdecdde6',1,'generic.h']]],
-  ['forb',['forb',['../struct_s_w___v_e_g_p_r_o_d.html#ab824467c4d0162c7388953956f15345d',1,'SW_VEGPROD']]],
+  ['forb',['forb',['../struct_p_f_ts.html#a5cab33bd8b0003045d49e95caa3962ad',1,'PFTs::forb()'],['../struct_s_w___v_e_g_p_r_o_d.html#ab824467c4d0162c7388953956f15345d',1,'SW_VEGPROD::forb()']]],
   ['forb_5fest_5fpartitioning',['forb_EsT_partitioning',['../_s_w___flow__lib_8c.html#ad06cdd37a42a5f79b86c25c8e90de0c3',1,'forb_EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param):&#160;SW_Flow_lib.c'],['../_s_w___flow__lib_8h.html#ad06cdd37a42a5f79b86c25c8e90de0c3',1,'forb_EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param):&#160;SW_Flow_lib.c']]],
   ['forb_5fevap',['forb_evap',['../struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s.html#a71af23e7901f350e959255b51e567d72',1,'SW_SOILWAT_OUTPUTS::forb_evap()'],['../struct_s_w___s_o_i_l_w_a_t.html#a8f2a8306199efda056e5ba7d4a7cd139',1,'SW_SOILWAT::forb_evap()']]],
   ['forb_5fint',['forb_int',['../struct_s_w___s_o_i_l_w_a_t___o_u_t_p_u_t_s.html#a7c78a083211cc7cd32de4f43b5abb794',1,'SW_SOILWAT_OUTPUTS::forb_int()'],['../struct_s_w___s_o_i_l_w_a_t.html#a03e041ce5230b534301d052d6e372a6f',1,'SW_SOILWAT::forb_int()']]],
