@@ -174,6 +174,8 @@ static void _read_inputs(void) {
 	SW_VES_read();
 	SW_OUT_read();
 	SW_SWC_read();
+	SW_CBN_read();
+
 #else
 	if (useFiles) { //Read in the data and set it
 		SW_F_read(NULL );
@@ -184,6 +186,8 @@ static void _read_inputs(void) {
 		SW_VES_read();
 		SW_OUT_read();
 		SW_SWC_read();
+		SW_CBN_read();
+
 	} else { //Use R data to set the data
 		onSet_SW_F(GET_SLOT(InputData,install("files")));
 		//Rprintf("swFiles\n");

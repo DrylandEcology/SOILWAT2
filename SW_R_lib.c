@@ -58,7 +58,7 @@ unsigned int addtl_yr = 0; /* Used to calculate the actual year being modeled */
 void SW_FLW_construct(void);
 
 SEXP onGetInputDataFromFiles(SEXP inputOptions) {
-	int i;
+	int i, debug = 0;
 	SEXP swInputData;
 	SEXP SW_DataList;
 	SEXP swLog;
@@ -69,6 +69,8 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	int argc = length(inputOptions);
 	char *argv[7];
 	collectInData = TRUE;
+
+	if (debug) Rprintf("Set args\n");
 	PROTECT(inputOptions = AS_CHARACTER(inputOptions));
 	for (i = 0; i < argc; i++) {
 		argv[i] = R_alloc(strlen(CHAR(STRING_ELT(inputOptions, i))), sizeof(char));
@@ -76,11 +78,13 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	for (i = 0; i < argc; i++) {
 		strcpy(argv[i], CHAR(STRING_ELT(inputOptions, i)));
 	}
-	//Rprintf("set Args\n");
+
+	if (debug) Rprintf("Set log\n");
 	PROTECT(swLog = MAKE_CLASS("swLog"));
 	PROTECT(oRlogfile = NEW_OBJECT(swLog));
 	PROTECT(Rlogfile = GET_SLOT(oRlogfile,install("LogData")));
-	//Rprintf("swLog\n");
+
+	if (debug) Rprintf("Construct variables\n");
 	init_args(argc, argv);
 	SW_F_construct(_firstfile);
 	SW_MDL_construct();
@@ -92,53 +96,46 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	SW_SWC_construct();
 	SW_FLW_construct();
 	SW_CBN_construct();
-	//Rprintf("Construct\n");
+
+	if (debug) Rprintf("Read input from disk:");
 	SW_F_read(NULL);
-	//Rprintf("FilesRead\n");
+	if (debug) Rprintf(" 'files'");
 	SW_MDL_read();
-	//Rprintf("mdlRead\n");
+	if (debug) Rprintf(" > 'model'");
 	SW_WTH_read();
-	//Rprintf("wthRead\n");
+	if (debug) Rprintf(" > 'weather'");
 	SW_VPD_read();
-	//Rprintf("vpdRead\n");
+	if (debug) Rprintf(" > 'veg'");
 	SW_SIT_read();
-	//Rprintf("sitRead\n");
+	if (debug) Rprintf(" > 'site'");
 	SW_VES_read();
-	//Rprintf("vesRead\n");
+	if (debug) Rprintf(" > 'establishment'");
 	SW_OUT_read();
-	//Rprintf("outRead\n");
+	if (debug) Rprintf(" > 'ouput'");
+	SW_CBN_read();
+	if (debug) Rprintf(" > 'CO2'");
 	SW_SWC_read();
-	//Rprintf("Read\n");
+	if (debug) Rprintf(" > 'swc'");
+	if (debug) Rprintf(" completed.\n");
+
+	if (debug) Rprintf("Copy data to classes\n");
 	PROTECT(swInputData = MAKE_CLASS("swInputData"));
 	PROTECT(SW_DataList = NEW_OBJECT(swInputData));
 	SET_SLOT(SW_DataList, install("files"), onGet_SW_F());
-	//Rprintf("swFiles\n");
 	SET_SLOT(SW_DataList, install("years"), onGet_SW_MDL());
-	//Rprintf("swYears\n");
 	SET_SLOT(SW_DataList, install("weather"), onGet_SW_WTH());
-	//Rprintf("swWeather\n");
 	SET_SLOT(SW_DataList, install("cloud"), onGet_SW_SKY());
-	//Rprintf("swSky\n");
 	SET_SLOT(SW_DataList, install("weatherHistory"), onGet_WTH_DATA());
-	//Rprintf("swWeatherHistory\n");
 	if (LOGICAL(GET_SLOT(GET_SLOT(SW_DataList, install("weather")), install("use_Markov")))[0]) {
 		SET_SLOT(SW_DataList, install("markov"), onGet_MKV());
-		//Rprintf("swMarkov\n");
 	}
 	SET_SLOT(SW_DataList,install("prod"),onGet_SW_VPD());
-	//Rprintf("swProd\n");
 	SET_SLOT(SW_DataList,install("site"),onGet_SW_SIT());
-	//Rprintf("swSite\n");
 	SET_SLOT(SW_DataList,install("soils"),onGet_SW_LYR());
-	//Rprintf("swSoils\n");
 	SET_SLOT(SW_DataList,install("estab"),onGet_SW_VES());
-	//Rprintf("swEstab\n");
 	SET_SLOT(SW_DataList,install("carbon"),onGet_SW_CARBON());
-	//Rprintf("swCarbon\n");
 	SET_SLOT(SW_DataList,install("output"), onGet_SW_OUT());
-	//Rprintf("swOUT\n");
 	SET_SLOT(SW_DataList,install("swc"),onGet_SW_SWC());
-	//Rprintf("swSWC\n");
 	SET_SLOT(SW_DataList,install("log"),oRlogfile);
 
 	SW_SIT_clear_layers();

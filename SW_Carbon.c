@@ -73,6 +73,19 @@ void SW_CBN_construct(void)
   c->co2_wue_mult = default_values;
 }
 
+/**
+ * Reads yearly carbon data from disk file 'Input/carbon.in'
+ */
+void SW_CBN_read(void)
+{
+  SW_CARBON *c = &SW_Carbon;
+  int year;
+
+  // currently a mock function
+  // TODO: code functionality
+}
+
+
 /* A description on how these 'onGet' and 'onSet' functions work...
  * Summary: onGet instantiates the 'swCarbon' class and returns the object, and is only used once
  *          onSet extracts the value of the given object, and is used on both calls to SOILWAT2

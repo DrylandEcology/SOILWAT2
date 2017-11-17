@@ -49,6 +49,7 @@
   #endif
 
   void SW_CBN_construct(void);
+  void SW_CBN_read(void);
   void apply_CO2(double* new_biomass, double *biomass, double multiplier);
   void calculate_CO2_multipliers(void);
 #endif
