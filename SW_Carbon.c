@@ -30,9 +30,7 @@
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
 
-#ifndef RSOILWAT
 static char *MyFileName;
-#endif
 SW_CARBON SW_Carbon;    // Declared here, externed elsewhere
 SW_VEGPROD SW_VegProd;  // Declared here, externed elsewhere
 SW_MODEL SW_Model;      // Declared here, externed elsewhere
