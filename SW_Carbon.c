@@ -1,8 +1,12 @@
 /**
  * @file   SW_Carbon.c
  * @author Zachary Kramer
- * @brief  Contains functions, constants, and variables that deal with the
- *         effect of CO2 on transpiration and biomass.
+ * @brief  Contains functions, constants, and variables that deal with the effect of CO2 on transpiration and biomass.
+ *
+ * Atmospheric carbon dioxide has been observed to affect Water-use efficiency
+ * and biomass, which is what this code attempts to simulate. The effects can
+ * be varied by plant functional type. Most usages of the functions here are
+ * in @f SW_VegProd.c and @f SW_Flow_lib.c.
  *
  * @date   7 February 2017
  */
@@ -47,9 +51,9 @@ SW_MODEL SW_Model;      // Declared here, externed elsewhere
 /* --------------------------------------------------- */
 
 /**
- * Initializes the multiplier values in the SW_CARBON structure
+ * @brief Initializes the multipliers of the SW_CARBON structure.
  * @note The spin-up year has been known to have the multipliers equal
- *       to 0 without this constructor
+ *       to 0 without this constructor.
  */
 void SW_CBN_construct(void)
 {
@@ -77,11 +81,16 @@ void SW_CBN_construct(void)
  *          onSet extracts the value of the given object, and is used on both calls to SOILWAT2
  * 1) An S4 class is described and generated in rSOILWAT2/R
  * 2) This class needs to be instantiatied, which is done here
- * 3) The object that gets returned here eventually gets inserted into swRunScenariosData[[1]]
+ * 3) The object that gets returned here eventually gets inserted into swRunScenariosData
  * 4) Data of the object is then modified with class functions in R (e.g. rSOILWAT2::swCarbon_Scenario(swRUnScenariosData[[1]]) <- "RCP85")
  * 5) The 'onSet' function is used to extract the latest data of the object (e.g. when SOILWAT2 begins modeling the real years)
  */
 #ifdef RSOILWAT
+
+/**
+ * @brief Instantiate the swCarbon class.
+ * @return An instance of the swCarbon class.
+ */
 SEXP onGet_SW_CARBON(void) {
   // Create access variables
   SEXP class, object;
@@ -94,10 +103,25 @@ SEXP onGet_SW_CARBON(void) {
   onSet_swCarbon(object);
 
   UNPROTECT(2);
-
   return object;
 }
 
+
+/**
+ * @brief Populate the SW_CARBON structure with the values of swCarbon.
+ *
+ * Extract four slots of the swCarbon class:
+ *   1. CarbonUseBio - Whether or not to use the biomass multiplier.
+ *   2. CarbonUseWUE - Whether or not to use the WUE multiplier.
+ *   3. DeltaYear - How many years in the future we are simulating.
+ *   4. CO2ppm - a vector of length 2 where the first element is the vector of
+ *               years and the second element is the CO2 values.
+ *
+ * Slot "Scenario" also exists, but it has no functional purpose at this point in
+ * the code, so there is no need to extract it.
+ *
+ * @param object An instance of the swCarbon class.
+ */
 void onSet_swCarbon(SEXP object) {
   SW_CARBON *c = &SW_Carbon;
 
@@ -142,8 +166,15 @@ void onSet_swCarbon(SEXP object) {
 }
 #endif
 
+
 /**
- * Reads yearly carbon data from disk file 'Input/carbon.in'
+ * @brief Reads yearly carbon data from disk file 'Input/carbon.in'
+ *
+ * Additionally, check for the following issues:
+ *   1. Duplicate entries.
+ *   2. Empty file.
+ *   3. Missing scenario.
+ *   4. Missing year.
  */
 void SW_CBN_read(void)
 {
@@ -235,8 +266,14 @@ void SW_CBN_read(void)
 }
 
 
-/* Calculates the multipliers for biomass and Water-use efficiency.
- * If a multiplier is disabled, its value is set to 1.
+/**
+ * @brief Calculates the multipliers for biomass and Water-use efficiency.
+ *
+ * Multipliers are calculated per year with the equation: Coeff1 * ppm^Coeff2
+ * Where Coeff1 and Coeff2 are provided by the VegProd input. Each PFT has its
+ * own set of coefficients. If a multiplier is disabled, its value is kept at the
+ * default value of 1.0. Multipliers are only calculated for the years that will
+ * be simulated.
  */
 void calculate_CO2_multipliers(void) {
   TimeInt year;
@@ -279,13 +316,16 @@ void calculate_CO2_multipliers(void) {
 }
 
 
-
 /**
- * Applies CO2 effects to supplied biomass data. Two parameters are needed so that
- * we do not have a compound effect on the biomass.
- * @param new_biomass  the resulting biomass after CO2 effects calculated
- * @param biomass      the biomass to be modified
- * @param multiplier   the biomass multiplier for this PFT
+ * @brief Applies CO2 effects to supplied biomass data.
+ *
+ * Two biomass parameters are needed so that we do not have a compound effect
+ * on the biomass.
+ *
+ * @param new_biomass  The resulting biomass after applying the multiplier.
+ * @param biomass      The biomass to be modified.
+ * @param multiplier   The biomass multiplier for this PFT.
+ * @note Does not return a value, @p new_biomass is directly modified.
  */
 void apply_CO2(double new_biomass[], double biomass[], double multiplier) {
   int i;
