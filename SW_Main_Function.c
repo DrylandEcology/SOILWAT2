@@ -107,6 +107,7 @@ void  main_function(int argc, char **argv) {
 	printf("inside soilwat main: init_args successful \n" );
 
 	SW_CTL_init_model(_firstfile);
+	SW_CTL_obtain_inputs();
 	printf("inside soilwat main: SW_CTL_init_model successful _firstfile=%s \n",_firstfile );
 
 	SW_CTL_main();

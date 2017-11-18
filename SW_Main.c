@@ -69,6 +69,7 @@ int main(int argc, char **argv) {
 	init_args(argc, argv);
 
 	SW_CTL_init_model(_firstfile);
+	SW_CTL_obtain_inputs();
 
 	SW_CTL_main();
 	SW_SIT_clear_layers();

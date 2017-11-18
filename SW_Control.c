@@ -43,15 +43,18 @@
 /* --------------------------------------------------- */
 extern SW_MODEL SW_Model;
 extern SW_VEGESTAB SW_VegEstab;
+extern SW_SITE SW_Site;
+extern SW_VEGPROD SW_VegProd;
 #ifdef RSOILWAT
 	extern Bool useFiles;
 	extern SEXP InputData;
 	void SW_FLW_construct(void);
 #endif
+
+
 /* =================================================== */
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
-static void _read_inputs(void);
 static void _begin_year(void);
 static void _begin_day(void);
 static void _end_day(void);
@@ -90,9 +93,6 @@ void SW_CTL_init_model(const char *firstfile) {
 	SW_OUT_construct();
 	SW_SWC_construct();
 	SW_FLW_construct();
-
-	_read_inputs();
-
 }
 
 void SW_CTL_run_current_year(void) {
@@ -154,44 +154,77 @@ static void _collect_values(void) {
 
 }
 
-static void _read_inputs(void) {
+void SW_CTL_read_inputs_from_disk(void) {
+  int debug = 0;
+
+  if (debug) swprintf("'SW_CTL_read_inputs_from_disk': Read input from disk:");
+  SW_F_read(NULL);
+  if (debug) swprintf(" 'files'");
+
+  SW_MDL_read();
+  if (debug) swprintf(" > 'model'");
+
+  SW_WTH_read();
+  if (debug) swprintf(" > 'weather'");
+
+  SW_VPD_read();
+  if (debug) swprintf(" > 'veg'");
+
+  SW_SIT_read();
+  if (debug) swprintf(" > 'site'");
+
+  SW_VES_read();
+  if (debug) swprintf(" > 'establishment'");
+
+  SW_OUT_read();
+  if (debug) swprintf(" > 'ouput'");
+
+  SW_SWC_read();
+  if (debug) swprintf(" > 'swc'");
+  if (debug) swprintf(" completed.\n");
+}
+
+
+void SW_CTL_obtain_inputs(void) {
 	/*=======================================================*/
+	int debug = 0;
+
 #ifndef RSOILWAT
-	SW_F_read(NULL );
-	SW_MDL_read();
-	SW_WTH_read();
-	SW_VPD_read();
-	SW_SIT_read();
-	SW_VES_read();
-	SW_OUT_read();
-	SW_SWC_read();
+  SW_CTL_read_inputs_from_disk();
+
 #else
-	if (useFiles) { //Read in the data and set it
-		SW_F_read(NULL );
-		SW_MDL_read();
-		SW_WTH_read();
-		SW_VPD_read();
-		SW_SIT_read();
-		SW_VES_read();
-		SW_OUT_read();
-		SW_SWC_read();
+	if (useFiles) {
+    SW_CTL_read_inputs_from_disk();
+
 	} else { //Use R data to set the data
-		onSet_SW_F(GET_SLOT(InputData,install("files")));
-		//Rprintf("swFiles\n");
-		onSet_SW_MDL(GET_SLOT(InputData,install("years")));
-		//Rprintf("swYears\n");
-		onSet_SW_WTH(GET_SLOT(InputData,install("weather")));
-		//Rprintf("swWeather\n");
-		onSet_SW_VPD(GET_SLOT(InputData,install("prod")));
-		//Rprintf("swProd\n");
-		onSet_SW_SIT(GET_SLOT(InputData,install("site")));
-		//Rprintf("swSite\n");
-		onSet_SW_VES(GET_SLOT(InputData,install("estab")));
-		//Rprintf("swEstab\n");
-		onSet_SW_OUT(GET_SLOT(InputData,install("output")));
-		//Rprintf("swOutput\n");
-		onSet_SW_SWC(GET_SLOT(InputData,install("swc")));
-		//Rprintf("swSWC\n");
+    if (debug) swprintf("'SW_CTL_obtain_inputs': Copy input from 'InputData':");
+
+		onSet_SW_F(GET_SLOT(InputData, install("files")));
+    if (debug) swprintf(" 'files'");
+
+		onSet_SW_MDL(GET_SLOT(InputData, install("years")));
+    if (debug) swprintf(" > 'model'");
+
+		onSet_SW_WTH(GET_SLOT(InputData, install("weather")));
+    if (debug) swprintf(" > 'weather'");
+
+		onSet_SW_VPD(GET_SLOT(InputData, install("prod")));
+    if (debug) swprintf(" > 'veg'");
+
+		onSet_SW_SIT(GET_SLOT(InputData, install("site")));
+    if (debug) swprintf(" > 'site'");
+
+		onSet_SW_VES(GET_SLOT(InputData, install("estab")));
+    if (debug) swprintf(" > 'establishment'");
+
+		onSet_SW_OUT(GET_SLOT(InputData, install("output")));
+    if (debug) swprintf(" > 'ouput'");
+
+
+
+		onSet_SW_SWC(GET_SLOT(InputData, install("swc")));
+    if (debug) swprintf(" > 'swc'");
+    if (debug) swprintf(" completed.\n");
 	}
 #endif
 }

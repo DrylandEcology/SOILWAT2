@@ -9,6 +9,7 @@
 
 #include "SW_R_lib.h"
 #include "SW_Files.h"
+#include "generic.h"
 
 /* =================================================== */
 /*                  Global Declarations                */
@@ -57,7 +58,7 @@ static int periodUse[28][4];
 void SW_FLW_construct(void);
 
 SEXP onGetInputDataFromFiles(SEXP inputOptions) {
-	int i;
+	int i, debug = 0;
 	SEXP swInputData;
 	SEXP SW_DataList;
 	SEXP swLog;
@@ -69,6 +70,7 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	int argc = length(inputOptions);
 	char *argv[7];
 	collectInData = TRUE;
+	if (debug) swprintf("Set args\n");
 	PROTECT(inputOptions = AS_CHARACTER(inputOptions));
 	for (i = 0; i < argc; i++) {
 		argv[i] = R_alloc(strlen(CHAR(STRING_ELT(inputOptions, i))), sizeof(char));
@@ -76,66 +78,34 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	for (i = 0; i < argc; i++) {
 		strcpy(argv[i], CHAR(STRING_ELT(inputOptions, i)));
 	}
-	//Rprintf("set Args\n");
+
+	if (debug) swprintf("Set log\n");
 	PROTECT(swLog = MAKE_CLASS("swLog"));
 	PROTECT(oRlogfile = NEW_OBJECT(swLog));
 	PROTECT(Rlogfile = GET_SLOT(oRlogfile,install("LogData")));
-	//Rprintf("swLog\n");
+
+	if (debug) swprintf("Construct variables\n");
 	init_args(argc, argv);
-	SW_F_construct(_firstfile);
-	SW_MDL_construct();
-	SW_WTH_construct();
-	SW_SIT_construct();
-	SW_VES_construct();
-	SW_VPD_construct();
-	SW_OUT_construct();
-	SW_SWC_construct();
-	SW_FLW_construct();
-	//Rprintf("Construct\n");
-	SW_F_read(NULL);
-	//Rprintf("FilesRead\n");
-	SW_MDL_read();
-	//Rprintf("mdlRead\n");
-	SW_WTH_read();
-	//Rprintf("wthRead\n");
-	SW_VPD_read();
-	//Rprintf("vpdRead\n");
-	SW_SIT_read();
-	//Rprintf("sitRead\n");
-	SW_VES_read();
-	//Rprintf("vesRead\n");
-	SW_OUT_read();
-	//Rprintf("outRead\n");
-	SW_SWC_read();
-	//Rprintf("Read\n");
+	SW_CTL_init_model(_firstfile);
+	SW_CTL_read_inputs_from_disk();
+  if (debug) swprintf("Copy data to classes\n");
 	PROTECT(swInputData = MAKE_CLASS("swInputData"));
 	PROTECT(SW_DataList = NEW_OBJECT(swInputData));
 	SET_SLOT(SW_DataList, install("files"), onGet_SW_F());
-	//Rprintf("swFiles\n");
 	SET_SLOT(SW_DataList, install("years"), onGet_SW_MDL());
-	//Rprintf("swYears\n");
 	SET_SLOT(SW_DataList, install("weather"), onGet_SW_WTH());
-	//Rprintf("swWeather\n");
 	SET_SLOT(SW_DataList, install("cloud"), onGet_SW_SKY());
-	//Rprintf("swSky\n");
 	SET_SLOT(SW_DataList, install("weatherHistory"), onGet_WTH_DATA());
-	//Rprintf("swWeatherHistory\n");
 	if (LOGICAL(GET_SLOT(GET_SLOT(SW_DataList, install("weather")), install("use_Markov")))[0]) {
 		SET_SLOT(SW_DataList, install("markov"), onGet_MKV());
-		//Rprintf("swMarkov\n");
 	}
 	SET_SLOT(SW_DataList,install("prod"),onGet_SW_VPD());
-	//Rprintf("swProd\n");
 	SET_SLOT(SW_DataList,install("site"),onGet_SW_SIT());
-	//Rprintf("swSite\n");
 	SET_SLOT(SW_DataList,install("soils"),onGet_SW_LYR());
-	//Rprintf("swSoils\n");
 	SET_SLOT(SW_DataList,install("estab"),onGet_SW_VES());
-	//Rprintf("swEstab\n");
+
 	SET_SLOT(SW_DataList,install("output"), onGet_SW_OUT());
-	//Rprintf("swOUT\n");
 	SET_SLOT(SW_DataList,install("swc"),onGet_SW_SWC());
-	//Rprintf("swSWC\n");
 	SET_SLOT(SW_DataList,install("log"),oRlogfile);
 
 	SW_SIT_clear_layers();
@@ -190,6 +160,7 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	//Set the input data either from files or from memory
 	init_args(argc, argv);
 	SW_CTL_init_model(_firstfile);
+	SW_CTL_obtain_inputs();
 
 	PROTECT(outputData = onGetOutput(inputData));
 
