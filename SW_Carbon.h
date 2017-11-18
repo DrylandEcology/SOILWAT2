@@ -45,7 +45,7 @@
       co2_multipliers[2][MAX_CO2_YEAR];  /**< A 2D array of PFT structures. Column BIO_INDEX holds biomass multipliers. Column WUE_INDEX holds WUE multipliers. Rows represent years. */
 
     double
-      ppm[MAX_CO2_YEAR];                 /**< A 1D array holding ppm values that are indexed by year. Is typically only populated for the years that are being simulated. */
+      ppm[MAX_CO2_YEAR];                 /**< A 1D array holding ppm values that are indexed by year. Is typically only populated for the years that are being simulated. `ppm[index]` is the CO2 value for the calendar year `index + 1` */
 
   } SW_CARBON;
 
