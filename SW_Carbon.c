@@ -97,16 +97,55 @@ void SW_CBN_construct(void)
  */
 SEXP onGet_SW_CARBON(void) {
   // Create access variables
-  SEXP class, object;
+  SEXP class, object,
+    CarbonUseBio, CarbonUseWUE, Scenario, DeltaYear, CO2ppm, CO2ppm_Names,
+    cCO2ppm_Names;
+  char *cCO2ppm[] = {"Year", "COppm"};
+  char *cSW_CARBON[] = {"CarbonUseBio", "CarbonUseWUE", "Scenario", "DeltaYear", "CO2ppm"};
+  int i, year, n_sim;
+  double *vCO2ppm;
+
+  SW_CARBON *c = &SW_Carbon;
 
   // Grab our S4 carbon class as an object
   PROTECT(class  = MAKE_CLASS("swCarbon"));
   PROTECT(object = NEW_OBJECT(class));
 
-  // Extract the values to our global structure
-  onSet_swCarbon(object);
+  // Copy values from C object 'SW_Carbon' into new S4 object
+  PROTECT(CarbonUseBio = NEW_INTEGER(1));
+  INTEGER(CarbonUseBio)[0] = c->use_bio_mult;
+  SET_SLOT(object, install(cSW_CARBON[0]), CarbonUseBio);
 
-  UNPROTECT(2);
+  PROTECT(CarbonUseWUE = NEW_INTEGER(1));
+  INTEGER(CarbonUseWUE)[0] = c->use_wue_mult;
+  SET_SLOT(object, install(cSW_CARBON[1]), CarbonUseWUE);
+
+  PROTECT(Scenario = NEW_STRING(1));
+  SET_STRING_ELT(Scenario, 0, mkChar(c->scenario));
+  SET_SLOT(object, install(cSW_CARBON[2]), Scenario);
+
+  PROTECT(DeltaYear = NEW_INTEGER(1));
+  INTEGER(DeltaYear)[0] = c->addtl_yr;
+  SET_SLOT(object, install(cSW_CARBON[3]), DeltaYear);
+
+  n_sim = SW_Model.endyr - SW_Model.startyr + 1;
+  PROTECT(CO2ppm = allocMatrix(REALSXP, n_sim, 2));
+  vCO2ppm = REAL(CO2ppm);
+  for (i = 0, year = SW_Model.startyr; i < n_sim; i++, year++)
+  {
+    vCO2ppm[i + n_sim * 0] = year;
+    vCO2ppm[i + n_sim * 1] = c->ppm[year];
+  }
+  PROTECT(CO2ppm_Names = allocVector(VECSXP, 2));
+  PROTECT(cCO2ppm_Names = allocVector(STRSXP, 2));
+  for (i = 0; i < 2; i++)
+    SET_STRING_ELT(cCO2ppm_Names, i, mkChar(cCO2ppm[i]));
+  SET_VECTOR_ELT(CO2ppm_Names, 1, cCO2ppm_Names);
+  setAttrib(CO2ppm, R_DimNamesSymbol, CO2ppm_Names);
+  SET_SLOT(object, install(cSW_CARBON[4]), CO2ppm);
+
+  UNPROTECT(9);
+
   return object;
 }
 
@@ -129,7 +168,7 @@ SEXP onGet_SW_CARBON(void) {
 void onSet_swCarbon(SEXP object) {
   SW_CARBON *c = &SW_Carbon;
 
-  // Extract the REQUIRED slots from our object into our structure
+  // Extract the slots from our object into our structure
   c->use_bio_mult = INTEGER(GET_SLOT(object, install("CarbonUseBio")))[0];
   c->use_wue_mult = INTEGER(GET_SLOT(object, install("CarbonUseWUE")))[0];
   c->addtl_yr = INTEGER(GET_SLOT(object, install("DeltaYear")))[0];  // This is needed for output 100% of the time
@@ -177,7 +216,7 @@ void onSet_swCarbon(SEXP object) {
   CO2ppm = REAL(tmp);
   UNPROTECT(1);
 
-  for (; i <= n_input, year < MAX_CO2_YEAR; i++, year++)
+  for (; i <= n_input && year < MAX_CO2_YEAR; i++, year++)
   {
     c->ppm[year] = CO2ppm[i - 1];  // R's index is 1-based
   }
