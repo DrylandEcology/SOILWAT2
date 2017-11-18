@@ -10,6 +10,7 @@
 #include "SW_R_lib.h"
 #include "SW_Files.h"
 #include "SW_Carbon.h"
+#include "generic.h"
 
 /* =================================================== */
 /*                  Global Declarations                */
@@ -70,7 +71,7 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	char *argv[7];
 	collectInData = TRUE;
 
-	if (debug) Rprintf("Set args\n");
+	if (debug) swprintf("Set args\n");
 	PROTECT(inputOptions = AS_CHARACTER(inputOptions));
 	for (i = 0; i < argc; i++) {
 		argv[i] = R_alloc(strlen(CHAR(STRING_ELT(inputOptions, i))), sizeof(char));
@@ -79,46 +80,18 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 		strcpy(argv[i], CHAR(STRING_ELT(inputOptions, i)));
 	}
 
-	if (debug) Rprintf("Set log\n");
+	if (debug) swprintf("Set log\n");
 	PROTECT(swLog = MAKE_CLASS("swLog"));
 	PROTECT(oRlogfile = NEW_OBJECT(swLog));
 	PROTECT(Rlogfile = GET_SLOT(oRlogfile,install("LogData")));
 
-	if (debug) Rprintf("Construct variables\n");
+	if (debug) swprintf("Construct variables\n");
 	init_args(argc, argv);
-	SW_F_construct(_firstfile);
-	SW_MDL_construct();
-	SW_WTH_construct();
-	SW_SIT_construct();
-	SW_VES_construct();
-	SW_VPD_construct();
-	SW_OUT_construct();
-	SW_SWC_construct();
-	SW_FLW_construct();
-	SW_CBN_construct();
+	SW_CTL_init_model(_firstfile);
 
-	if (debug) Rprintf("Read input from disk:");
-	SW_F_read(NULL);
-	if (debug) Rprintf(" 'files'");
-	SW_MDL_read();
-	if (debug) Rprintf(" > 'model'");
-	SW_WTH_read();
-	if (debug) Rprintf(" > 'weather'");
-	SW_VPD_read();
-	if (debug) Rprintf(" > 'veg'");
-	SW_SIT_read();
-	if (debug) Rprintf(" > 'site'");
-	SW_VES_read();
-	if (debug) Rprintf(" > 'establishment'");
-	SW_OUT_read();
-	if (debug) Rprintf(" > 'ouput'");
-	SW_CBN_read();
-	if (debug) Rprintf(" > 'CO2'");
-	SW_SWC_read();
-	if (debug) Rprintf(" > 'swc'");
-	if (debug) Rprintf(" completed.\n");
+	SW_CTL_read_inputs_from_disk();
 
-	if (debug) Rprintf("Copy data to classes\n");
+  if (debug) swprintf("Copy data to classes\n");
 	PROTECT(swInputData = MAKE_CLASS("swInputData"));
 	PROTECT(SW_DataList = NEW_OBJECT(swInputData));
 	SET_SLOT(SW_DataList, install("files"), onGet_SW_F());
@@ -190,6 +163,7 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	//Set the input data either from files or from memory
 	init_args(argc, argv);
 	SW_CTL_init_model(_firstfile);
+	SW_CTL_obtain_inputs();
 
 	PROTECT(outputData = onGetOutput(inputData));
 
