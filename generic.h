@@ -90,6 +90,12 @@ typedef unsigned char byte;
 /* --------------------------------------------------*/
 /* These are facilities for logging errors.          */
 
+#ifdef RSOILWAT
+  #define swprintf Rprintf
+#else
+  #define swprintf printf
+#endif
+
 /* constants for LogError() mode */
 #define LOGNOTE  0x01
 #define LOGWARN  0x02
