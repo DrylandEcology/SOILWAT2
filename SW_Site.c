@@ -193,7 +193,7 @@ void SW_SIT_read(void) {
 	SW_SITE *v = &SW_Site;
 	SW_CARBON *c = &SW_Carbon;
 	FILE *f;
-	int lineno = 0, x, temp;
+	int lineno = 0, x, debug = 0;
 	LyrIndex r, region, /* transp region definition number */
 	rgnlow; /* lower layer of region */
 	Bool too_many_regions = FALSE;
@@ -315,15 +315,16 @@ void SW_SIT_read(void) {
 			v->use_soil_temp = itob(atoi(inbuf));
 			break;
 		case 36:
-			x = sscanf(inbuf, "%d", &temp);
-			c->use_bio_mult = temp;
+			c->use_bio_mult = itob(atoi(inbuf));
+			if (debug) swprintf("'SW_SIT_read': use_bio_mult = %d\n", c->use_bio_mult);
 			break;
 		case 37:
-			x = sscanf(inbuf, "%d", &temp);
-			c->use_wue_mult = temp;
+			c->use_wue_mult = itob(atoi(inbuf));
+			if (debug) swprintf("'SW_SIT_read': use_wue_mult = %d\n", c->use_wue_mult);
 			break;
 		case 38:
-			x = sscanf(inbuf, "%63s", c->scenario);
+			strcpy(c->scenario, inbuf);
+			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", c->scenario);
 			c->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
 			break;
 		default:
