@@ -81,8 +81,8 @@ void SW_CBN_construct(void)
 
 
 /* A description on how these 'onGet' and 'onSet' functions work...
- * Summary: onGet instantiates the 'swCarbon' class and returns the object, and is only used once
- *          onSet extracts the value of the given object, and is used on both calls to SOILWAT2
+ * Summary: onGet instantiates the S4 'swCarbon' class and copies the values of the C variable 'SW_Carbon' into a R variable of the S4 'swCarbon' class.
+ *          onSet copies the values of the R variable (of the S4 'swCarbon' class) into the C variable 'SW_Carbon'
  * 1) An S4 class is described and generated in rSOILWAT2/R
  * 2) This class needs to be instantiatied, which is done here
  * 3) The object that gets returned here eventually gets inserted into swRunScenariosData
@@ -100,7 +100,7 @@ SEXP onGet_SW_CARBON(void) {
   SEXP class, object,
     CarbonUseBio, CarbonUseWUE, Scenario, DeltaYear, CO2ppm, CO2ppm_Names,
     cCO2ppm_Names;
-  char *cCO2ppm[] = {"Year", "COppm"};
+  char *cCO2ppm[] = {"Year", "CO2ppm"};
   char *cSW_CARBON[] = {"CarbonUseBio", "CarbonUseWUE", "Scenario", "DeltaYear", "CO2ppm"};
   int i, year, n_sim;
   double *vCO2ppm;
@@ -172,6 +172,7 @@ void onSet_swCarbon(SEXP object) {
   c->use_bio_mult = INTEGER(GET_SLOT(object, install("CarbonUseBio")))[0];
   c->use_wue_mult = INTEGER(GET_SLOT(object, install("CarbonUseWUE")))[0];
   c->addtl_yr = INTEGER(GET_SLOT(object, install("DeltaYear")))[0];  // This is needed for output 100% of the time
+  strcpy(c->scenario, CHAR(STRING_ELT(GET_SLOT(object, install("Scenario")), 0)));
 
   // If CO2 is not being used, we can run without extracting ppm data
   if (!c->use_bio_mult && !c->use_wue_mult)
@@ -179,47 +180,35 @@ void onSet_swCarbon(SEXP object) {
     return;
   }
 
-  // Only extract the ppm values that will be used
+  // Only extract the CO2 values that will be used
   TimeInt year;
-  unsigned int i = 1, n_input, n_sim;
+  unsigned int i, n_input, n_sim;
 
-  SEXP tmp;
-  int *years;
-  double *CO2ppm;
+  SEXP CO2ppm;
+  double *values;
 
   year = SW_Model.startyr + c->addtl_yr; // real calendar year when simulation begins
   n_sim = SW_Model.endyr - SW_Model.startyr + 1;
-  n_input = LENGTH(VECTOR_ELT(GET_SLOT(object, install("CO2ppm")), 0));
+  PROTECT(CO2ppm = GET_SLOT(object, install("CO2ppm")));
+  n_input = nrows(CO2ppm);
+  values = REAL(CO2ppm);
 
   // Locate index of first year for which we need CO2 data
-  tmp = PROTECT(coerceVector(VECTOR_ELT(GET_SLOT(object, install("CO2ppm")), 0), INTSXP));
-  years = INTEGER(tmp);
-  UNPROTECT(1);
-
-  while (i <= n_input)
-  {
-    if (year == years[i - 1])
-    {
-      break; // we found the index
-    }
-    i++;
-  }
+  for (i = 1; year != (unsigned int) values[i - 1 + n_input * 0]; i++) {}
 
   // Check that we have enough data
-  if (i + n_sim > n_input)
+  if (i - 1 + n_sim > n_input)
   {
     LogError(logfp, LOGFATAL, "%s : CO2ppm object does not contain data for every year");
   }
 
   // Copy CO2 concentration values to SOILWAT variable
-  tmp = PROTECT(coerceVector(VECTOR_ELT(GET_SLOT(object, install("CO2ppm")), 1), REALSXP));
-  CO2ppm = REAL(tmp);
-  UNPROTECT(1);
-
   for (; i <= n_input && year < MAX_CO2_YEAR; i++, year++)
   {
-    c->ppm[year] = CO2ppm[i - 1];  // R's index is 1-based
+    c->ppm[year] = values[i - 1 + n_input * 1];  // R's index is 1-based
   }
+
+  UNPROTECT(1);
 }
 #endif
 
