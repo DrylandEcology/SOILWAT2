@@ -90,6 +90,12 @@ typedef unsigned char byte;
 /* --------------------------------------------------*/
 /* These are facilities for logging errors.          */
 
+#ifdef RSOILWAT
+  #define swprintf Rprintf
+#else
+  #define swprintf printf
+#endif
+
 /* constants for LogError() mode */
 #define LOGNOTE  0x01
 #define LOGWARN  0x02
@@ -180,7 +186,7 @@ extern int logged; /* REQUIRED */
 #define EQ(x,y)  isequal(x,y)
 #define LT(x,y)  isless2(x,y)
 #define GT(x,y)  ismore(x,y)
-#define LE(x,y) ((x) < (y) || EQ(x,y)) //changed from "(LT(x,y)||EQ(x,y))" because it evaluates to the same result (since EQ is already doing the checking for precision errors so use < instead of LT to avoid checking for precision errors twice) and this version is faster by avoiding the expensive LT() call.  
+#define LE(x,y) ((x) < (y) || EQ(x,y)) //changed from "(LT(x,y)||EQ(x,y))" because it evaluates to the same result (since EQ is already doing the checking for precision errors so use < instead of LT to avoid checking for precision errors twice) and this version is faster by avoiding the expensive LT() call.
 #define GE(x,y) ((x) > (y) || EQ(x,y))
 
 // 06/26/2013 (dlm)	powe(): an alternate definition of pow(x, y) for x>0... this is faster (ca. 20%) then the one in math.h, but comes with a cost as the precision is slightly lower.  The measured precision drop I was getting was at max a relative error of about 100 billion percent (12 places after the decimal point) per calculation though so I don't think it's a big deal... (though it's hard to even accurately tell)
