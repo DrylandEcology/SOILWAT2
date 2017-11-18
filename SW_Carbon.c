@@ -113,17 +113,16 @@ void onSet_swCarbon(SEXP object) {
   }
 
   // Only extract the ppm values that will be used
-  TimeInt year, x;
+  TimeInt year;
   unsigned int i = 1, n;
 
   year = SW_Model.startyr + c->addtl_yr;
-  n = LENGTH(GET_SLOT(object, install("CO2ppm")));
+  n = LENGTH(VECTOR_ELT(GET_SLOT(object, install("CO2ppm")), 1));
 
   // Locate index of first year for which we need CO2 data
   while (i <= n)
   {
-    x = INTEGER(GET_SLOT(GET_SLOT(object, install("CO2ppm")), install("Year")))[i - 1]; // R's index is 1-based
-    if (year == x)
+    if (year == *INTEGER(VECTOR_ELT(GET_SLOT(object, install("CO2ppm")), 1))[i - 1])
     {
       continue; // we found the index
     }
@@ -138,7 +137,7 @@ void onSet_swCarbon(SEXP object) {
   // Copy CO2 concentration values to SOILWAT variable
   for (; i <= c->addtl_yr; i++)
   {
-    c->ppm[year++] = REAL(GET_SLOT(GET_SLOT(object, install("CO2ppm")), install("CO2ppm")))[i - 1];  // R's index is 1-based
+    c->ppm[year++] = REAL(VECTOR_ELT(GET_SLOT(object, install("CO2ppm")), 2))[i - 1];  // R's index is 1-based
   }
 }
 #endif
