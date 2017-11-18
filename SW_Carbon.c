@@ -24,6 +24,10 @@
 #include "SW_Site.h"
 #include "SW_VegProd.h"
 #include "SW_Model.h"
+#ifdef RSOILWAT
+  #include <R.h>
+  #include <Rinternals.h>
+#endif
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -138,30 +142,44 @@ void onSet_swCarbon(SEXP object) {
 
   // Only extract the ppm values that will be used
   TimeInt year;
-  unsigned int i = 1, n;
+  unsigned int i = 1, n_input, n_sim;
 
-  year = SW_Model.startyr + c->addtl_yr;
-  n = LENGTH(VECTOR_ELT(GET_SLOT(object, install("CO2ppm")), 1));
+  SEXP tmp;
+  int *years;
+  double *CO2ppm;
+
+  year = SW_Model.startyr + c->addtl_yr; // real calendar year when simulation begins
+  n_sim = SW_Model.endyr - SW_Model.startyr + 1;
+  n_input = LENGTH(VECTOR_ELT(GET_SLOT(object, install("CO2ppm")), 0));
 
   // Locate index of first year for which we need CO2 data
-  while (i <= n)
+  tmp = PROTECT(coerceVector(VECTOR_ELT(GET_SLOT(object, install("CO2ppm")), 0), INTSXP));
+  years = INTEGER(tmp);
+  UNPROTECT(1);
+
+  while (i <= n_input)
   {
-    if (year == *INTEGER(VECTOR_ELT(GET_SLOT(object, install("CO2ppm")), 1))[i - 1])
+    if (year == years[i - 1])
     {
-      continue; // we found the index
+      break; // we found the index
     }
+    i++;
   }
 
   // Check that we have enough data
-  if (i + c->addtl_yr > n)
+  if (i + n_sim > n_input)
   {
     LogError(logfp, LOGFATAL, "%s : CO2ppm object does not contain data for every year");
   }
 
   // Copy CO2 concentration values to SOILWAT variable
-  for (; i <= c->addtl_yr; i++)
+  tmp = PROTECT(coerceVector(VECTOR_ELT(GET_SLOT(object, install("CO2ppm")), 1), REALSXP));
+  CO2ppm = REAL(tmp);
+  UNPROTECT(1);
+
+  for (; i <= n_input, year < MAX_CO2_YEAR; i++, year++)
   {
-    c->ppm[year++] = REAL(VECTOR_ELT(GET_SLOT(object, install("CO2ppm")), 2))[i - 1];  // R's index is 1-based
+    c->ppm[year] = CO2ppm[i - 1];  // R's index is 1-based
   }
 }
 #endif
