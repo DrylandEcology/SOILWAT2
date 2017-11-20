@@ -2,8 +2,6 @@ platform:
   - x86
   - Any CPU
 
-matrix:
-  fast_finish: false
 
 install:
   - git submodule update --init --recursive
@@ -12,9 +10,10 @@ install:
 build_script:
   - set PATH=%PATH%;c:\cygwin\bin
   - make bin
-  - make test test_runWin
+  - make test
   - ls -alp
-  - sw_test
   - sw_test.exe
+  - sw_test
   - make test_run
+  - make test_runWin
   - make cleaner
