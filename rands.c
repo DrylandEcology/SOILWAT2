@@ -353,7 +353,15 @@ double RandNorm(double mean, double stddev) {
   with shape parameters a and b. The density is
       x^(a-1) * (1-x)^(b-1) / Beta(a,b) for 0 < x < 1
 
-  TODO: Provide appropriate reference(s) and license statements for the 'GENBET' algorithm.
+	The code for RandBeta was taken from ranlib, a FORTRAN77 library. Original
+	FORTRAN77 version by Barry Brown, James Lovato. C version by John Burkardt.
+	\cite Cheng1978
+
+	This code is distributed under the GNU LGPL license.
+
+  [More info can be found here](http://people.sc.fsu.edu/~jburkardt/f77_src/ranlib/ranlib.html)
+
+
 
   \param aa. The first shape parameter of the beta distribution with 0.0 < aa.
   \param bb. The second shape parameter of the beta distribution with 0.0 < bb.
