@@ -14,8 +14,6 @@
 #                  output against GCC's libmath library)
 # make test        compile unit tests in 'test/ folder with googletest
 # make test_run    run unit tests (in a previous step compiled with 'make test')
-# make test_runWin run unit tests on a Windows OS (in a previous step compiled with
-#                  'make test')
 # make test_clean  delete test files and libraries
 # make clean       delete all of the o files
 # make cleaner     delete all of the o files, the shared object file(s), test files and
@@ -72,9 +70,6 @@ test : $(GTEST_SRCS_)
 
 test_run :
 		./$(bin_test)
-
-test_runWin :
-		$(bin_test).exe
 
 
 .PHONY : clean clean2 test_clean cleaner
