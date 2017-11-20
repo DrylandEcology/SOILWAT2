@@ -6,7 +6,7 @@
  */
 #ifndef CARBON
   #define CARBON             /**< A macro that only lets the variables in @f SW_Carbon.h be defined once. */
-  #define MAX_CO2_YEAR 2500  /**< An integer representing the max year that is supported. The number just needs to be reasonable, it is an artifical limit. */
+  #define MAX_CO2_YEAR 2500  /**< An integer representing the max calendar year that is supported. The number just needs to be reasonable, it is an artifical limit. */
   #define BIO_INDEX 0        /**< An integer representing the index of the biomass multipliers in the SW_CARBON#co2_multipliers 2D array. */
   #define WUE_INDEX 1        /**< An integer representing the index of the WUE multipliers in the SW_CARBON#co2_multipliers 2D array. */
 
@@ -34,18 +34,18 @@
     int
       use_wue_mult,                      /**< A boolean integer indicating if WUE multipliers should be calculated. */
       use_bio_mult,                      /**< A boolean integer indicating if biomass multipliers should be calculated. */
-      addtl_yr;                          /**< An integer representing how many years in the future we are simulating. */
+      addtl_yr;                          /**< An integer representing how many years in the future we are simulating. Currently, only used to support rSFSW2 functionality where scenario runs are based on an 'ambient' run plus number of years in the future*/
 
     char
-      scenario[64];                      /**< A 64-char array holding the scenario we are extracting ppm from. */
+      scenario[64];                      /**< A 64-char array holding the scenario name for which we are extracting CO2 data from the carbon.in file. */
 
     PFTs
       co2_bio_mult,                      /**< A PFT struct that gets overridden yearly to hold the current biomass multiplier, which for tree is instead applied to the percent live. */
-      co2_wue_mult,                      /**< A PFT struct that gets overridden yearly to hold the current Water-use efficiency multiplier. */
+      co2_wue_mult,                      /**< A PFT struct that gets overridden yearly to hold the current water-use efficiency multiplier. */
       co2_multipliers[2][MAX_CO2_YEAR];  /**< A 2D array of PFT structures. Column BIO_INDEX holds biomass multipliers. Column WUE_INDEX holds WUE multipliers. Rows represent years. */
 
     double
-      ppm[MAX_CO2_YEAR];                 /**< A 1D array holding ppm values that are indexed by year. Is typically only populated for the years that are being simulated. `ppm[index]` is the CO2 value for the calendar year `index + 1` */
+      ppm[MAX_CO2_YEAR];                 /**< A 1D array holding atmospheric CO2 concentration values (units ppm) that are indexed by calendar year. Is typically only populated for the years that are being simulated. `ppm[index]` is the CO2 value for the calendar year `index + 1` */
 
   } SW_CARBON;
 

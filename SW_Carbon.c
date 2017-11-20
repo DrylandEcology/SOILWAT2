@@ -3,7 +3,7 @@
  * @author Zachary Kramer
  * @brief  Contains functions, constants, and variables that deal with the effect of CO2 on transpiration and biomass.
  *
- * Atmospheric carbon dioxide has been observed to affect Water-use efficiency
+ * Atmospheric carbon dioxide has been observed to affect water-use efficiency
  * and biomass, which is what this code attempts to simulate. The effects can
  * be varied by plant functional type. Most usages of the functions here are
  * in @f SW_VegProd.c and @f SW_Flow_lib.c.
@@ -92,7 +92,8 @@ void SW_CBN_construct(void)
 #ifdef RSOILWAT
 
 /**
- * @brief Instantiate the swCarbon class.
+ * @brief Instantiate the 'swCarbon' class and copies the values of the C variable
+ * 'SW_Carbon' into a R variable of the S4 'swCarbon' class.
  * @return An instance of the swCarbon class.
  */
 SEXP onGet_SW_CARBON(void) {
@@ -153,15 +154,13 @@ SEXP onGet_SW_CARBON(void) {
 /**
  * @brief Populate the SW_CARBON structure with the values of swCarbon.
  *
- * Extract four slots of the swCarbon class:
+ * Extract slots of the swCarbon class:
  *   1. CarbonUseBio - Whether or not to use the biomass multiplier.
  *   2. CarbonUseWUE - Whether or not to use the WUE multiplier.
  *   3. DeltaYear - How many years in the future we are simulating.
- *   4. CO2ppm - a vector of length 2 where the first element is the vector of
+ *   4. Scenario - Scenario name of the CO2 concentration time series.
+ *   5. CO2ppm - a vector of length 2 where the first element is the vector of
  *               years and the second element is the CO2 values.
- *
- * Slot "Scenario" also exists, but it has no functional purpose at this point in
- * the code, so there is no need to extract it.
  *
  * @param object An instance of the swCarbon class.
  */
@@ -313,7 +312,7 @@ void SW_CBN_read(void)
 
 
 /**
- * @brief Calculates the multipliers for biomass and Water-use efficiency.
+ * @brief Calculates the multipliers of the CO2-effect for biomass and water-use efficiency.
  *
  * Multipliers are calculated per year with the equation: Coeff1 * ppm^Coeff2
  * Where Coeff1 and Coeff2 are provided by the VegProd input. Coefficients assume that
@@ -370,7 +369,8 @@ void calculate_CO2_multipliers(void) {
  * on the biomass.
  *
  * @param new_biomass  The resulting biomass after applying the multiplier.
- * @param biomass      The biomass to be modified.
+ * @param biomass      The biomass to be modified (representing the value under reference
+ *                     conditions (i.e., 360 ppm CO2, currently).
  * @param multiplier   The biomass multiplier for this PFT.
  * @note Does not return a value, @p new_biomass is directly modified.
  */
