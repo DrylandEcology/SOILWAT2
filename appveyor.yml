@@ -3,7 +3,7 @@ platform:
   - Any CPU
 
 matrix:
-  fast_finish: true
+  fast_finish: false
 
 install:
   - git submodule update --init --recursive
