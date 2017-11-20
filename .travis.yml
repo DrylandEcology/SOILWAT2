@@ -3,6 +3,6 @@ compiler:
   - clang
   - gcc
 script:
-  - make bin
+  - make binl
   - make test test_run
   - make cleaner
