@@ -13,4 +13,8 @@ build_script:
   - set PATH=%PATH%;c:\cygwin\bin
   - make bin
   - make test test_runWin
+  - ls -alp
+  - sw_test
+  - sw_test.exe
+  - make test_run
   - make cleaner
