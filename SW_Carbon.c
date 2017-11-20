@@ -316,8 +316,9 @@ void SW_CBN_read(void)
  * @brief Calculates the multipliers for biomass and Water-use efficiency.
  *
  * Multipliers are calculated per year with the equation: Coeff1 * ppm^Coeff2
- * Where Coeff1 and Coeff2 are provided by the VegProd input. Each PFT has its
- * own set of coefficients. If a multiplier is disabled, its value is kept at the
+ * Where Coeff1 and Coeff2 are provided by the VegProd input. Coefficients assume that
+ * monthly biomass reflect values for atmospheric conditions at 360 ppm CO2. Each PFT has
+ * its own set of coefficients. If a multiplier is disabled, its value is kept at the
  * default value of 1.0. Multipliers are only calculated for the years that will
  * be simulated.
  */
