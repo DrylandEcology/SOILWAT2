@@ -22,9 +22,9 @@
 uname_m = $(shell uname -m)
 
 CC = gcc
-CFLAGS = -O3 -Wall -Wextra -arch $(uname_m)
+CFLAGS = -O3 -Wall -Wextra
 CXX = g++
-CXXFLAGS = -Wall -Wextra -arch $(uname_m)
+CXXFLAGS = -Wall -Wextra
 LDLIBS = -lm
 
 sources = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
