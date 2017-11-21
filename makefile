@@ -40,7 +40,7 @@ lib_target = lib$(target).a
 SHLIB = r$(target)$(SHLIB_EXT)
 
 gtest = gtest
-lib_gtest = lib$(gtest)
+lib_gtest = lib$(gtest).a
 GTEST_DIR = googletest/googletest
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
@@ -83,8 +83,8 @@ $(lib_gtest) :
 			-pthread -c ${GTEST_DIR}/src/gtest-all.cc
 		ar -rv $(lib_gtest) gtest-all.o
 
-test : $(lib_gtest)
-		g++ -isystem ${GTEST_DIR}/include -pthread test/*.cc $(lib_gtest) \
+test : $(lib_gtest) $(lib_target)
+		g++ -isystem ${GTEST_DIR}/include -pthread $(lib_gtest) $(lib_target) test/*.cc \
 			-o $(bin_test)
 
 test_run :

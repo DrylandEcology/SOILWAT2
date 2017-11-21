@@ -15,13 +15,10 @@
 #include <time.h>
 #include <unistd.h>
 #include "../generic.h"
-#include "../generic.c"
 #include "../myMemory.h"
-#include "../mymemory.c"
 #include "../filefuncs.h"
-#include "../filefuncs.c"
 #include "../rands.h"
-#include "../rands.c"
+
 
 namespace {
   // This tests the beta random number generator
