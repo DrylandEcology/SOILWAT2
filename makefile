@@ -10,8 +10,6 @@
 # make bin         compile the binary executable using optimizations
 # make bint        same as 'make bin' plus moves a copy of the binary to the
 #                  'testing/' folder
-# make binl        same as 'make bin', but for compiling on Linux (i.e., explicitly link
-#                  output against GCC's libmath library)
 # make lib         create SOILWAT2 library
 # make test        compile unit tests in 'test/ folder with googletest
 # make test_run    run unit tests (in a previous step compiled with 'make test')
@@ -21,6 +19,13 @@
 #                  libraries, and the binary exe
 #-----------------------------------------------------------------------------------
 
+uname_m = $(shell uname -m)
+
+CC = gcc
+CFLAGS = -O3 -Wall -Wextra -arch $(uname_m)
+CXX = g++
+CXXFLAGS = -Wall -Wextra -arch $(uname_m)
+LDLIBS = -lm
 
 sources = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 					rands.c Times.c mymemory.c filefuncs.c \
@@ -47,6 +52,7 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
 
 
+
 all: $(SHLIB)
 $(SHLIB) :
 		R CMD SHLIB -o $(SHLIB) $(Rpkg_objects)
@@ -56,20 +62,18 @@ $(SHLIB) :
 .PHONY : lib bin bint binl
 lib : $(lib_target)
 
-$(lib_target):
-		gcc -O3 -Wall -Wextra -c $(sources)
+$(lib_target) :
+		$(CC) $(CFLAGS) -c $(sources)
 		ar -ruv $(lib_target) $(objects)
 		@rm -f $(objects)
 
-bin : $(lib_target)
-		gcc -O3 -Wall -Wextra -o $(target) $(lib_target) $(bin_sources)
+bin : $(target)
 
-bint : $(lib_target)
-		gcc -O3 -Wall -Wextra -o $(target) $(lib_target) $(bin_sources)
+$(target) : $(lib_target)
+		$(CC) $(CFLAGS) -o $(target) $(lib_target) $(bin_sources) $(LDLIBS)
+
+bint : $(target)
 		cp $(target) testing/$(target)
-
-binl :
-		gcc -O3 -Wall -Wextra -o $(target) $(sources) $(bin_sources) -lm
 
 
 .PHONY : test_lib test test_run
@@ -79,13 +83,13 @@ binl :
 lib_test : $(lib_gtest)
 
 $(lib_gtest) :
-		g++ -isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
+		$(CXX) $(CXXFLAGS) -isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
 			-pthread -c ${GTEST_DIR}/src/gtest-all.cc
 		ar -rv $(lib_gtest) gtest-all.o
 
 test : $(lib_gtest) $(lib_target)
-		g++ -isystem ${GTEST_DIR}/include -pthread $(lib_gtest) $(lib_target) test/*.cc \
-			-o $(bin_test)
+		$(CXX) $(CXXFLAGS) -isystem ${GTEST_DIR}/include -pthread \
+				$(lib_gtest) $(lib_target) test/*.cc -o $(bin_test) $(LDLIBS)
 
 test_run :
 		./$(bin_test)
