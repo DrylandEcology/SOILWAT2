@@ -96,7 +96,7 @@ char _firstfile[1024];
 void  main_function(int argc, char **argv) {
 	/* =================================================== */
 
-	printf("inside soilwat main: argc=%d argv[0]=%s ,argv[1]=%s,argv[2]=%s \n ",argc,argv[0],argv[1],argv[2]);
+	swprintf("inside soilwat main: argc=%d argv[0]=%s ,argv[1]=%s,argv[2]=%s \n ",argc,argv[0],argv[1],argv[2]);
 	logged = FALSE;
 	//atexit(check_log);
 	logfp = stdout; /* provides a way to inform user that something */
@@ -104,20 +104,20 @@ void  main_function(int argc, char **argv) {
 	/* but must be set before init_args().  see generic.h */
 
 	init_args(argc, argv);
-	printf("inside soilwat main: init_args successful \n" );
+	swprintf("inside soilwat main: init_args successful \n" );
 
 	SW_CTL_init_model(_firstfile);
 	SW_CTL_obtain_inputs();
-	printf("inside soilwat main: SW_CTL_init_model successful _firstfile=%s \n",_firstfile );
+	swprintf("inside soilwat main: SW_CTL_init_model successful _firstfile=%s \n",_firstfile );
 
 	SW_CTL_main();
-	printf("inside soilwat main: SW_CTL_main successful \n" );
+	swprintf("inside soilwat main: SW_CTL_main successful \n" );
 
 	SW_SIT_clear_layers();
-	printf("inside soilwat main: SW_SIT_clear_layers successful \n" );
+	swprintf("inside soilwat main: SW_SIT_clear_layers successful \n" );
 
 	SW_WTH_clear_runavg_list();
-	printf("inside soilwat main: SW_WTH_clear_runavg_list successful exit main \n" );
+	swprintf("inside soilwat main: SW_WTH_clear_runavg_list successful exit main \n" );
 
 }
 /*********** End of Main() *******************/

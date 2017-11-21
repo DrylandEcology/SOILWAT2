@@ -187,7 +187,6 @@ void SW_CTL_read_inputs_from_disk(void) {
 
 void SW_CTL_obtain_inputs(void) {
 	/*=======================================================*/
-	int debug = 0;
 
 #ifndef RSOILWAT
   SW_CTL_read_inputs_from_disk();
@@ -197,6 +196,8 @@ void SW_CTL_obtain_inputs(void) {
     SW_CTL_read_inputs_from_disk();
 
 	} else { //Use R data to set the data
+	  int debug = 0;
+
     if (debug) swprintf("'SW_CTL_obtain_inputs': Copy input from 'InputData':");
 
 		onSet_SW_F(GET_SLOT(InputData, install("files")));

@@ -645,7 +645,7 @@ void SW_OUT_read(void)
 			{
 				if (timeSteps[k][i] < 4)
 				{
-				//	printf( "inside Soilwat SW_Output.c : isPartialSoilwatOutput=%d \n", isPartialSoilwatOutput);
+				//	swprintf( "inside Soilwat SW_Output.c : isPartialSoilwatOutput=%d \n", isPartialSoilwatOutput);
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 					SW_OutputPrefix(prefix);
 					strcpy(str, prefix);
@@ -869,7 +869,7 @@ SEXP onGet_SW_OUT(void)
 	char *cKEY[] =
 	{	"mykey", "myobj", "period", "sumtype", "use", "first", "last", "first_orig", "last_orig", "outfile"};
 
-	if(debug) Rprintf("onGet_SW_OUT begin\n");
+	if (debug) swprintf("onGet_SW_OUT begin\n");
 
 	PROTECT(swOUT = MAKE_CLASS("swOUT"));
 	PROTECT(OUT = NEW_OBJECT(swOUT));
@@ -878,21 +878,21 @@ SEXP onGet_SW_OUT(void)
 	SET_STRING_ELT(sep, 0, mkCharLen(&_Sep,1));
 	SET_SLOT(OUT, install("outputSeparator"), sep);
 
-	if(debug) Rprintf("useTimeStep before assignment = %d\n", useTimeStep);
+	if (debug) swprintf("useTimeStep before assignment = %d\n", useTimeStep);
 	PROTECT(useTimeStep = NEW_LOGICAL(1));
 	if(numPeriod == 0)
-	LOGICAL(useTimeStep)[0] = FALSE;
+		LOGICAL(useTimeStep)[0] = FALSE;
 	else
-	LOGICAL(useTimeStep)[0] = TRUE;
-	if(debug)
-	{
-		Rprintf("useTimeStep after assignment = %d\n", useTimeStep);
-		Rprintf("	- type of slot (10 = 'logical') %d\n", TYPEOF(useTimeStep));
-		Rprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(useTimeStep));
-		if( 10 == TYPEOF(useTimeStep) )
-		Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(useTimeStep));
+		LOGICAL(useTimeStep)[0] = TRUE;
+
+	if (debug) {
+		swprintf("useTimeStep after assignment = %d\n", useTimeStep);
+		swprintf("	- type of slot (10 = 'logical') %d\n", TYPEOF(useTimeStep));
+		swprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(useTimeStep));
+		if ( 10 == TYPEOF(useTimeStep) )
+			swprintf("	- logdata of slot %d\n", LOGICAL_DATA(useTimeStep));
 		else
-		Rprintf("	- logdata of slot not available because not of type 'logical'\n");
+			swprintf("	- logdata of slot not available because not of type 'logical'\n");
 	}
 	PROTECT(timestep = NEW_INTEGER(numPeriod));
 
@@ -911,13 +911,13 @@ SEXP onGet_SW_OUT(void)
 	{
 		if(useTimeStep && SW_Output[k].use && !doOnce)
 		{
-			if(debug) Rprintf("length(timestep) = %d, numPeriod = %d\n", GET_LENGTH(timestep), numPeriod);
+			if (debug) swprintf("length(timestep) = %d, numPeriod = %d\n", GET_LENGTH(timestep), numPeriod);
 			for (i = 0; i < numPeriod; i++)
 			{
-				if(debug) Rprintf("timestep, timestep[%d], and timeSteps[%d][%d] before %d assignment = %d, %d, %d\n",
+				if (debug) swprintf("timestep, timestep[%d], and timeSteps[%d][%d] before %d assignment = %d, %d, %d\n",
 						i, i, k, k, timestep, INTEGER(timestep)[i], timeSteps[k][i]);
 				INTEGER(timestep)[i] = timeSteps[k][i];
-				if(debug) Rprintf("timestep, timestep[%d], and timeSteps[%d][%d] after %d assignment = %d, %d, %d\n",
+				if (debug) swprintf("timestep, timestep[%d], and timeSteps[%d][%d] after %d assignment = %d, %d, %d\n",
 						i, i, k, k, timestep, INTEGER(timestep)[i], timeSteps[k][i]);
 			}
 			doOnce=TRUE;
@@ -943,24 +943,24 @@ SEXP onGet_SW_OUT(void)
 
 	if(debug)
 	{
-		Rprintf("useTimeStep slot of OUT before assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
-		Rprintf("	- type of slot %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
-		Rprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(GET_SLOT(OUT, install("useTimeStep"))));
+		swprintf("useTimeStep slot of OUT before assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
+		swprintf("	- type of slot %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
+		swprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(GET_SLOT(OUT, install("useTimeStep"))));
 		if( 10 == TYPEOF(GET_SLOT(OUT, install("useTimeStep"))) )
-		Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
+		swprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
 		else
-		Rprintf("	- logdata of slot not available because not of type 'logical'\n");
+		swprintf("	- logdata of slot not available because not of type 'logical'\n");
 	}
 	SET_SLOT(OUT, install("useTimeStep"), useTimeStep);
 	if(debug)
 	{
-		Rprintf("useTimeStep slot of OUT after assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
-		Rprintf("	- type of slot (4 = 'environments') %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
-		Rprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(GET_SLOT(OUT, install("useTimeStep"))));
+		swprintf("useTimeStep slot of OUT after assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
+		swprintf("	- type of slot (4 = 'environments') %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
+		swprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(GET_SLOT(OUT, install("useTimeStep"))));
 		if( 10 == TYPEOF(GET_SLOT(OUT, install("useTimeStep"))) )
-		Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
+		swprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
 		else
-		Rprintf("	- logdata of slot not available because not of type 'logical'\n");
+		swprintf("	- logdata of slot not available because not of type 'logical'\n");
 	}
 
 	SET_SLOT(OUT, install(cKEY[0]), mykey);
@@ -975,7 +975,7 @@ SEXP onGet_SW_OUT(void)
 	SET_SLOT(OUT, install(cKEY[9]), outfile);
 
 	UNPROTECT(15);
-	if(debug) Rprintf("onGet_SW_OUT end\n");
+	if(debug) swprintf("onGet_SW_OUT end\n");
 	return OUT;
 }
 #endif

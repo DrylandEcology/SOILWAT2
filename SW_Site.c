@@ -397,17 +397,12 @@ static void _read_layers(void) {
 			fail = TRUE;
 			fval = f_gravel;
 			errtype = Str_Dup("gravel content");
-#ifndef RSOILWAT
-			printf("\nGravel content is either too HIGH (> 0.5), or too LOW (<0.0): %0.3f", f_gravel);
-			printf("\nParameterization for Brooks-Corey equation may fall outside of valid range.");
-			printf("\nThis can cause implausible SWP values.");
-			printf("\nConsider setting SWC minimum in siteparam.in file.");
-#else
-			Rprintf("\nGravel content is either too HIGH (> 0.5), or too LOW (<0.0).");
-			Rprintf("\nParameterization for Brooks-Corey equation may fall outside of valid range.");
-			Rprintf("\nThis can cause implausible SWP values.");
-			Rprintf("\nConsider setting SWC minimum in siteparam.in file.");
-#endif
+
+			swprintf("\nGravel content is either too HIGH (> 0.5), or too LOW (<0.0): %0.3f", f_gravel);
+			swprintf("\nParameterization for Brooks-Corey equation may fall outside of valid range.");
+			swprintf("\nThis can cause implausible SWP values.");
+			swprintf("\nConsider setting SWC minimum in siteparam.in file.");
+
 		} else if (LE(psand,0.)) {
 			fail = TRUE;
 			fval = psand;

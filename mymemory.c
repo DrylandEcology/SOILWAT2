@@ -564,7 +564,7 @@ void CheckMemoryRefs(void) {
 #ifndef RSOILWAT
 		assert(pbi->pb != NULL && pbi->size > 0);
 #endif
-		/* printf("i=%d, size=%d, p=%p\n", ++i, pbi->size, pbi->pb); */
+		/* swprintf("i=%d, size=%d, p=%p\n", ++i, pbi->size, pbi->pb); */
 
 		/* A check for lost or leaky memory.  if this assert
 		 * fires, it means that the app has either lost track
