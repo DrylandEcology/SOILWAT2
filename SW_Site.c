@@ -116,7 +116,7 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 	SW_Site.lyr[n]->bMatric = -0.3 * sand + 15.7 * clay + 3.10;
 
 	if (ZRO(SW_Site.lyr[n]->bMatric)) {
-		LogError(stdout, LOGFATAL, "Value of beta in SW_SIT_read() = %f\n"
+		LogError(logfp, LOGFATAL, "Value of beta in SW_SIT_read() = %f\n"
 				"Possible division by zero.  Exiting", SW_Site.lyr[n]->bMatric);
 	}
 

@@ -136,7 +136,7 @@ void init_args(int argc, char **argv) {
 		switch (op) {
 		case 0: /* -d */
 			if (!ChDir(str)) {
-				LogError(stderr, LOGFATAL, "Invalid project directory (%s)", str);
+				LogError(logfp, LOGFATAL, "Invalid project directory (%s)", str);
 			}
 			break;
 		case 1:

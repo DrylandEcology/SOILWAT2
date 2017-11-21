@@ -50,7 +50,7 @@ static void check_log(void) {
 	 */
 	if (logfp != stdout && logfp != stderr) {
 		if (logged && !QuietMode)
-			fprintf(stderr, "\nCheck logfile for error or status messages.\n");
+			sw_error(0, "\nCheck logfile for error or status messages.\n");
 		CloseFile(&logfp);
 	}
 

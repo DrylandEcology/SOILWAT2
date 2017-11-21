@@ -147,7 +147,7 @@ double RandUni_good(void) {
 	#else
 		long i;
 		static short first_time = 1;
-		static double bucket[BUCKETSIZE], y;
+		static double bucket[BUCKETSIZE];
 		static const long im1 = 259200, ia1 = 7141, ic1 = 54773, im2 = 134456,
 			ia2 = 8121, ic2 = 28411, im3 = 243000, ia3 = 4561, ic3 = 51349;
 		static const double rm1 = 3.8580247e-6, /* 1/im1 */

@@ -1097,7 +1097,7 @@ void SW_OUT_sum_today(ObjType otyp)
 	case eVES:
 		return; /* a stub; we don't do anything with ves until get_() */
 	default:
-		LogError(stdout, LOGFATAL,
+		LogError(logfp, LOGFATAL,
 				"Invalid object type in SW_OUT_sum_today().");
 	}
 
@@ -1228,7 +1228,7 @@ void SW_OUT_write_today(void)
 					t = SW_Output[k].first; /* always output this period */
 					break;
 				default:
-					LogError(stdout, LOGFATAL,
+					LogError(logfp, LOGFATAL,
 							"Invalid period in SW_OUT_write_today().");
 				}
 				if (!writeit || t < SW_Output[k].first || t > SW_Output[k].last)
@@ -3850,7 +3850,7 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 		s->surfaceRunoff += v->surfaceRunoff;
 		break;
 	default:
-		LogError(stderr, LOGFATAL, "PGMR: Invalid key in sumof_wth(%s)", key2str[k]);
+		LogError(logfp, LOGFATAL, "PGMR: Invalid key in sumof_wth(%s)", key2str[k]);
 	}
 
 }
@@ -3984,7 +3984,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	default:
-		LogError(stderr, LOGFATAL, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
+		LogError(logfp, LOGFATAL, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
 	}
 }
 
@@ -4008,7 +4008,7 @@ static void average_for(ObjType otyp, OutPeriod pd)
 	int j;
 
 	if (!(otyp == eSWC || otyp == eWTH))
-		LogError(stdout, LOGFATAL, "Invalid object type in OUT_averagefor().");
+		LogError(logfp, LOGFATAL, "Invalid object type in OUT_averagefor().");
 
 	ForEachOutKey(k)
 	{
@@ -4049,7 +4049,7 @@ static void average_for(ObjType otyp, OutPeriod pd)
 					break;
 
 				default:
-					LogError(stdout, LOGFATAL, "Programmer: Invalid period in average_for().");
+					LogError(logfp, LOGFATAL, "Programmer: Invalid period in average_for().");
 				} /* end switch(pd) */
 
 				if (SW_Output[k].period != pd || SW_Output[k].myobj != otyp
@@ -4239,7 +4239,7 @@ static void average_for(ObjType otyp, OutPeriod pd)
 
 				default:
 
-					LogError(stderr, LOGFATAL, "PGMR: Invalid key in average_for(%s)", key2str[k]);
+					LogError(logfp, LOGFATAL, "PGMR: Invalid key in average_for(%s)", key2str[k]);
 				}
 			}
 		} /* end of for loop */

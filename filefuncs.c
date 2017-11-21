@@ -30,7 +30,7 @@ char **getfiles(const char *fspec, int *nfound);
  *
  * @param code The error/warning code. If `code` is not 0, then it is passed to `exit`
  *  (SOILWAT2) / `error` (rSOILWAT2). If `code` is 0, then it is passed to
- *  `exit` (SOILWAT2) / `warning` (rSOILWAT2), respectively.
+ *  `warning` (rSOILWAT2), respectively.
  * @param format The character string with formatting (as for `printf`).
  * @param ... Variables to be printed.
  */
@@ -45,15 +45,18 @@ void sw_error(int code, const char *format, ...)
 #endif
   va_end(ap);
 
-#ifdef RSOILWAT
   if (code == 0) {
-    warning("Warning: %d\n", code);
+    #ifdef RSOILWAT
+      warning("Warning: %d\n", code);
+    #endif
+
   } else {
-    error("exit %d\n", code);
+    #ifdef RSOILWAT
+      error("exit %d\n", code);
+    #else
+      exit(code);
+    #endif
   }
-#else
-  exit(code);
-#endif
 }
 
 
@@ -122,7 +125,7 @@ FILE * OpenFile(const char *name, const char *mode) {
 
 	fp = fopen(name, mode);
 	if (isnull(fp))
-		LogError(stdout, LOGERROR | LOGEXIT, "Cannot open file %s: %s", name, strerror(errno));
+		LogError(logfp, LOGERROR | LOGEXIT, "Cannot open file %s: %s", name, strerror(errno));
 	return (fp);
 }
 

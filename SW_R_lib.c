@@ -65,7 +65,7 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	char *ListNames[] = {"files.in", "years.in", "weathersetup.in", "prod.in", "site.in","estab.in","outsetup.in","swcsetup.in","LogFile"};
 
 	logged = FALSE;
-	logfp = stdout;
+	logfp = NULL;
 	int argc = length(inputOptions);
 	char *argv[7];
 	collectInData = TRUE;
@@ -156,7 +156,7 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	SEXP oRlogfile;
 
 	logged = FALSE;
-	logfp = stdout;
+	logfp = NULL;
 	int argc = length(inputOptions);
 	char *argv[7];
 	collectInData = FALSE;

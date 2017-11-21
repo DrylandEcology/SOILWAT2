@@ -94,7 +94,7 @@ void *Mem_Malloc(size_t size, const char *funcname) {
 #ifdef DEBUG_MEM
 	{
 		if (size == 0)
-		LogError(stderr, LOGFATAL,"Programmer Error: "
+		LogError(logfp, LOGFATAL, "Programmer Error: "
 				"size == 0 in MallocErr()");
 
 	}
@@ -114,7 +114,7 @@ void *Mem_Malloc(size_t size, const char *funcname) {
 #endif
 
 	if (p == NULL )
-		LogError(stderr, LOGFATAL, "Out of memory in %s()", funcname);
+		LogError(logfp, LOGFATAL, "Out of memory in %s()", funcname);
 
 #ifdef DEBUG_MEM
 	{
@@ -231,7 +231,7 @@ void *Mem_ReAlloc(void *block, size_t sizeNew) {
 
 		p = pNew;
 	} else
-		LogError(stderr, LOGFATAL, "realloc failed in Mem_ReAlloc()");
+		LogError(logfp, LOGFATAL, "realloc failed in Mem_ReAlloc()");
 
 	return p;
 }
@@ -248,7 +248,7 @@ void Mem_Free(void *block) {
 #ifdef DEBUG_MEM_X
 	{
 		if (mem_SizeOf(block) > SizeOfMalloc)
-		LogError(stderr, LOGFATAL,"Mem: Inconsistency in SizeOfMalloc");
+		LogError(logfp, LOGFATAL,"Mem: Inconsistency in SizeOfMalloc");
 
 		mem_DelNode(block);
 	}

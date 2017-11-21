@@ -199,13 +199,10 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 
 	char outfmt[50 + strlen(fmt)]; /* to prepend err type str */
 	va_list args;
-#ifdef RSOILWAT
-	char *message;
-	message = R_alloc(strlen(fmt) + 121, sizeof(char));
-#endif
+	int check_eof;
 
 	va_start(args, fmt);
-#ifndef RSOILWAT
+
 	if (LOGNOTE & mode)
 		strcpy(outfmt, "NOTE: ");
 	else if (LOGWARN & mode)
@@ -216,46 +213,26 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 	strcat(outfmt, fmt);
 	strcat(outfmt, "\n");
 
-	if (EOF == vfprintf(fp, outfmt, args))
-		fprintf(stderr, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
-	fflush(fp);
-#else
-	if (RlogIndex == 150) {
-			Rprintf("Error Log Full. Increase limit from %i", RlogIndex);
-	} else {
-		if ((LOGNOTE & mode) && logNote) {
-			strcpy(outfmt, "NOTE: ");
-			strcat(outfmt, fmt);
-			strcat(outfmt, "\n");
-			vsnprintf(message, 120 + strlen(fmt), outfmt, args);
-			SET_STRING_ELT(Rlogfile, RlogIndex, mkChar(message));
-			RlogIndex++;
-		} else if ((LOGWARN & mode) && logWarn) {
-			strcpy(outfmt, "WARNING: ");
-			strcat(outfmt, fmt);
-			strcat(outfmt, "\n");
-			vsnprintf(message, 120 + strlen(fmt), outfmt, args);
-			SET_STRING_ELT(Rlogfile, RlogIndex, mkChar(message));
-			RlogIndex++;
-		} else if ((LOGERROR & mode) && logFatl) {
-			strcpy(outfmt, "ERROR: ");
-			strcat(outfmt, fmt);
-			strcat(outfmt, "\n");
-			vsnprintf(message, 120 + strlen(fmt), outfmt, args);
-			SET_STRING_ELT(Rlogfile, RlogIndex, mkChar(message));
-			RlogIndex++;
-		}
-	}
-#endif
+	#ifdef RSOILWAT
+		check_eof = TRUE;
+		REvprintf(outfmt, args);
+	#else
+		check_eof = (EOF == vfprintf(fp, outfmt, args));
+	#endif
+
+	if (check_eof)
+		sw_error(0, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
+
+	#ifndef RSOILWAT
+		fflush(fp);
+	#endif
 
 	logged = TRUE;
-
 	va_end(args);
 
 	if (LOGEXIT & mode) {
 		sw_error(-1, "@ generic.c LogError");
 	}
-
 }
 
 /**************************************************************/

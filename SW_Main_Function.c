@@ -129,7 +129,7 @@ static void check_log(void) {
 	 */
 	if (logfp != stdout && logfp != stderr) {
 		if (logged && !QuietMode)
-			fprintf(stderr, "\nCheck logfile for error or status messages.\n");
+			sw_error(0, "\nCheck logfile for error or status messages.\n");
 		CloseFile(&logfp);
 	}
 
@@ -197,7 +197,7 @@ void init_args(int argc, char **argv) {
 		switch (op) {
 		case 0: /* -d */
 			if (!ChDir(str)) {
-				LogError(stderr, LOGFATAL, "Invalid project directory (%s)", str);
+				LogError(logfp, LOGFATAL, "Invalid project directory (%s)", str);
 			}
 			break;
 		case 1:

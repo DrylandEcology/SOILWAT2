@@ -121,7 +121,7 @@ void SW_F_read(const char *s) {
 
 	if (fileno < eEndFile - 1) {
 		CloseFile(&f);
-		LogError(stdout, LOGFATAL, "Too few files (%d) in %s", fileno, MyFileName);
+		LogError(logfp, LOGFATAL, "Too few files (%d) in %s", fileno, MyFileName);
 	}
 
 	CloseFile(&f);
