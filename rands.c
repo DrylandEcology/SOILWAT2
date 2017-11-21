@@ -7,6 +7,7 @@
 #include "generic.h"
 #include "rands.h"
 #include "myMemory.h"
+#include "filefuncs.h"
 
 long _randseed = 0L;
 
@@ -33,15 +34,7 @@ void RandSeed(signed long seed) {
 	if (seed == 0L) {
 		_randseed = ((long) time(NULL ));
 		if (_randseed == -1) {
-#ifndef RSOILWAT
-			fprintf(stderr, "ERROR: RandSeed(0) called, "
-					"but time() not available\n");
-			exit(-1);
-#else
-			Rprintf("ERROR: RandSeed(0) called, but time() not available\n");
-     		Rprintf("EXIT -1");
-     		error("@ RandSeed");
-#endif
+      sw_error(-1, "ERROR: RandSeed(0) called, but time() not available\n");
 		}
 		/*    _randseed %= 0xffff; */
 		_randseed *= -1;
@@ -138,14 +131,7 @@ double RandUni_good(void) {
 	static long ix1, ix2, ix3;
 
 	if (_randseed == 0L) {
-#ifndef RSOILWAT
-		fprintf(stderr, "RandUni() error: seed not set\n");
-		exit(-1);
-#else
-		Rprintf("RandUni() error: seed not set\n");
-		Rprintf("EXIT -1");
-		error("@ _randseed==0L");
-#endif
+    sw_error(-1, "RandUni() error: seed not set\n");
 	}
 	if (first_time || _randseed < 0) {
 		first_time = 0;
@@ -246,15 +232,7 @@ void RandUniList(long count, long first, long last, RandListType list[]) {
 	range = last - first + 1;
 
 	if (count > range || range <= 0) {
-#ifndef RSOILWAT
-		fprintf(stderr, "Programmer error in RandUniList: "
-				"count > range || range <= 0\n");
-		exit(-1);
-#else
-		Rprintf("Programmer error in RandUniList: "
-            "count > range || range <= 0\n");
-		Rprintf("EXIT -1 RandUniList");
-#endif
+    sw_error(-1, "Programmer error in RandUniList: count > range || range <= 0\n");
 	}
 
 	/* if count == range for some weird reason, just
@@ -392,18 +370,12 @@ float RandBeta ( float aa, float bb )
 
   if ( aa <= 0.0 )
   {
-    fprintf ( stderr, "\n" );
-    fprintf ( stderr, "GENBET - Fatal error!\n" );
-    fprintf ( stderr, "  AA <= 0.0\n" );
-    exit ( 1 );
+    sw_error(1, "GENBET - Fatal error: AA <= 0.0\n");
   }
 
   if ( bb <= 0.0 )
   {
-    fprintf ( stderr, "\n" );
-    fprintf ( stderr, "GENBET - Fatal error!\n" );
-    fprintf ( stderr, "  BB <= 0.0\n" );
-    exit ( 1 );
+    sw_error(1, "GENBET - Fatal error: BB <= 0.0\n");
   }
 /*
   Algorithm BB

@@ -30,6 +30,8 @@
 	extern int RlogIndex;
 #endif
 
+
+
 static void uncomment_cstyle(char *p) {
 	/*-------------------------------------------
 	 overwrite chars in a string pointed to by p with
@@ -251,15 +253,7 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 	va_end(args);
 
 	if (LOGEXIT & mode) {
-#ifndef RSOILWAT
-		exit(-1);
-#else
-		//strcpy(outfmt, "ERROR: ");
-		//strcat(outfmt, fmt);
-		//vsnprintf(message, 80 + strlen(fmt), outfmt, args);
-		Rprintf("Exit.. %s",message);
-		error("@ generic.c LogError");
-#endif
+		sw_error(-1, "@ generic.c LogError");
 	}
 
 }

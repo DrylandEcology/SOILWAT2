@@ -104,19 +104,12 @@ void *Mem_Malloc(size_t size, const char *funcname) {
 
 #ifdef DEBUG_MEM_LOG
 	if( NULL==(f=fopen("memory.log","a")) ) {
-#ifndef RSOILWAT
-		fprintf(stderr, "Can't open memory.log for errors\n");
-		exit(-1);
-#else
-		Rprintf("Can't open memory.log for errors\n");
-		error("mymemory.c NULL==(f=fopen(");
-#endif
+    sw_error(-1, "Can't open memory.log for errors\n");
 	}
+	swprintf("%s: %d: %p\n", funcname, size, p);
 #ifndef RSOILWAT
 	fprintf(f,"%s: %d: %p\n", funcname, size, p);
 	fclose(f);
-#else
-	Rprintf("%s: %d: %p\n", funcname, size, p);
 #endif
 #endif
 

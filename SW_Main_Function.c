@@ -86,15 +86,7 @@ static void usage(void) {
 			"       a preceeding path applies to all input files\n"
 			"  -e : echo initial values from site and estab to logfile\n"
 			"  -q : quiet mode, don't print message to check logfile.\n";
-#ifndef RSOILWAT
-	fprintf(stderr, "%s", s1);
-	exit(0);
-#else
-	Rprintf("%s", s1);
-	Rprintf("EXIT 0");
-	warning("");
-	//exit(0);
-#endif
+  sw_error(0, "%s", s1);
 }
 
 char _firstfile[1024];
@@ -181,16 +173,8 @@ void init_args(int argc, char **argv) {
 				break; /* found it, move on */
 		}
 		if (op == nopts) {
-#ifndef RSOILWAT
-			fprintf(stderr, "Invalid option %s\n", argv[a]);
-			usage();
-			exit(-1);
-#else
-			Rprintf("Invalid option %s\n", argv[a]);
-			usage();
-			Rprintf("EXIT -1");
-			error("options");
-#endif
+      usage();
+      sw_error(-1, "Invalid option %s\n", argv[a]);
 		}
 
 		*str = '\0';
@@ -203,16 +187,8 @@ void init_args(int argc, char **argv) {
 				strcpy(str, argv[++a]);
 
 			} else if (0 < valopts[op]) { /* required opt-val not found */
-#ifndef RSOILWAT
-				fprintf(stderr, "Incomplete option %s\n", opts[op]);
-				usage();
-				exit(-1);
-#else
-				Rprintf("Incomplete option %s\n", opts[op]);
-				usage();
-				Rprintf("EXIT -1");
-				error("options");
-#endif
+        usage();
+        sw_error(-1, "Incomplete option %s\n", opts[op]);
 			} /* opt-val not required */
 		}
 

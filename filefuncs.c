@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -21,6 +22,41 @@
  */
 
 char **getfiles(const char *fspec, int *nfound);
+
+
+/**
+ * @brief Prints an error message and throws an error or warning. Works both for rSOILWAT2
+ *  and SOILWAT2-standalone.
+ *
+ * @param code The error/warning code. If `code` is not 0, then it is passed to `exit`
+ *  (SOILWAT2) / `error` (rSOILWAT2). If `code` is 0, then it is passed to
+ *  `exit` (SOILWAT2) / `warning` (rSOILWAT2), respectively.
+ * @param format The character string with formatting (as for `printf`).
+ * @param ... Variables to be printed.
+ */
+void sw_error(int code, const char *format, ...)
+{
+  va_list(ap);
+  va_start(ap, format);
+#ifdef RSOILWAT
+  REvprintf(format, ap);
+#else
+  vfprintf(stderr, format, ap);
+#endif
+  va_end(ap);
+
+#ifdef RSOILWAT
+  if (code == 0) {
+    warning("Warning: %d\n", code);
+  } else {
+    error("exit %d\n", code);
+  }
+#else
+  exit(code);
+#endif
+}
+
+
 
 /**************************************************************/
 Bool GetALine(FILE *f, char buf[]) {
@@ -187,8 +223,7 @@ Bool MkDir(const char *dname) {
 		return FALSE;
 
 	if (NULL == (c = strdup(dname))) {
-		fprintf(stderr, "Out of memory making string in MkDir()");
-		exit(-1);
+		sw_error(-1, "Out of memory making string in MkDir()");
 	}
 
 	n = 0;

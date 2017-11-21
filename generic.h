@@ -90,11 +90,13 @@ typedef unsigned char byte;
 /* --------------------------------------------------*/
 /* These are facilities for logging errors.          */
 
+/**< Print macro that can be used both for rSOILWAT2 and for SOILWAT2-standalone. Use instead of (R)printf */
 #ifdef RSOILWAT
   #define swprintf Rprintf
 #else
   #define swprintf printf
 #endif
+
 
 /* constants for LogError() mode */
 #define LOGNOTE  0x01

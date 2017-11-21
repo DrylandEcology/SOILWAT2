@@ -92,6 +92,7 @@
 #include <stdlib.h>
 
 #include "generic.h"
+#include "filefuncs.h"
 #include "SW_Defines.h"
 #include "SW_Flow_lib.h"
 #include "SW_Flow_subs.h"
@@ -1868,12 +1869,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	}
 
 	if (toDebug) {
-		#ifndef RSOILWAT
-			exit(0); // terminates the program, make sure to take this out later
-		#else
-			Rprintf("\nEXIT DEBUG IS ON IN SOIL TEMPERATURE. CONSIDER TURNING OFF.\n");
-			//exit(0); // terminates the program, make sure to take this out later
-			error("@ SW_Flow_lib.c function soil_temperature");
-		#endif
+    sw_error(0, "EXIT DEBUG IS ON IN SOIL TEMPERATURE. CONSIDER TURNING OFF.\n");
 	}
 }

@@ -29,6 +29,8 @@ Bool DirExists(const char *d);
 Bool ChDir(const char *d);
 Bool MkDir(const char *d);
 Bool RemoveFiles(const char *fspec);
+void sw_error(int errorcode, const char *format, ...);
+
 
 extern char inbuf[]; /* declare in main, use anywhere */
 
