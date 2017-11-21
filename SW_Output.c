@@ -303,7 +303,7 @@ static OutPeriod str2period(char *s)
 	IntUS pd;
 	for (pd = 0; Str_CompareI(s, pd2str[pd]) && pd < SW_OUTNPERIODS; pd++) ;
 
-	return pd;
+	return (OutPeriod) pd;
 }
 
 static OutKey str2key(char *s)
@@ -316,7 +316,7 @@ static OutKey str2key(char *s)
 	{
 		LogError(logfp, LOGFATAL, "%s : Invalid key (%s) in %s", SW_F_name(eOutput), s);
 	}
-	return key;
+	return (OutKey) key;
 }
 
 static OutSum str2stype(char *s)
@@ -329,7 +329,7 @@ static OutSum str2stype(char *s)
 	{
 		LogError(logfp, LOGFATAL, "%s : Invalid summary type (%s)\n", SW_F_name(eOutput), s);
 	}
-	return styp;
+	return (OutSum) styp;
 }
 
 /* =================================================== */
@@ -1216,15 +1216,15 @@ void SW_OUT_write_today(void)
 					t = SW_Model.doy;
 					break;
 				case eSW_Week:
-					writeit = (SW_Model.newweek || bFlush);
+					writeit = (Bool) (SW_Model.newweek || bFlush);
 					t = (SW_Model.week + 1) - tOffset;
 					break;
 				case eSW_Month:
-					writeit = (SW_Model.newmonth || bFlush);
+					writeit = (Bool) (SW_Model.newmonth || bFlush);
 					t = (SW_Model.month + 1) - tOffset;
 					break;
 				case eSW_Year:
-					writeit = (SW_Model.newyear || bFlush);
+					writeit = (Bool) (SW_Model.newyear || bFlush);
 					t = SW_Output[k].first; /* always output this period */
 					break;
 				default:
