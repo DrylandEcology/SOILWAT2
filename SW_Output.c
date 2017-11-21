@@ -322,7 +322,7 @@ static OutKey str2key(char *s)
 static OutSum str2stype(char *s)
 {
 	/* --------------------------------------------------- */
-	OutSum styp;
+	IntUS styp;
 
 	for (styp = eSW_Off; styp < SW_NSUMTYPES && Str_CompareI(s, styp2str[styp]); styp++) ;
 	if (styp == SW_NSUMTYPES)

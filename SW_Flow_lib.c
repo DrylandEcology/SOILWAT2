@@ -1323,7 +1323,7 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
  */
 double surface_temperature_under_snow(double airTempAvg, double snow){
   double kSnow; /** the effect of snow based on swe */
-  double tSoilAvg; /** the average temeperature of the soil surface */
+  double tSoilAvg = 0.0; /** the average temeperature of the soil surface */
 	/** Parton et al. 1998. Equation 6. */
   if (snow == 0){
     return 0.0;
@@ -1515,14 +1515,23 @@ void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[], doubl
 }
 
 
-unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTemp[], double shParam, unsigned int nlyrs, double vwc[], double bDensity[]){
+unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTemp[],
+	double shParam, unsigned int nlyrs, double vwc[], double bDensity[]){
 // Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
 // based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 
 // NOTE: THIS FUNCTION IS CURRENTLY NOT OPERATIONAL: DESCRIPTION BY EITZINGER ET AL. 2000 SEEMS INSUFFICIENT
+// To avoid compiler warnings 'unused parameter' until function is operational:
+oldsTemp[0] = 0.0;
+sTemp[0] = 0.0;
+shParam = 0.0;
+nlyrs = 0;
+vwc[0] = 0.0;
+bDensity[0] = 0.0;
+//	double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
+// end avoid compiler warnings
 
 	unsigned int i, sFadjusted_sTemp;
-	double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
 
 	/* local variables explained:
 	 toDebug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.

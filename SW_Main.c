@@ -39,6 +39,23 @@
 
 
 #ifndef RSOILWAT
+static void check_log(void);
+
+
+static void check_log(void) {
+	/* =================================================== */
+	/* function to be called by atexit() so it's the last
+	 * to execute before termination.  This is the place to
+	 * do any cleanup or progress reporting.
+	 */
+	if (logfp != stdout && logfp != stderr) {
+		if (logged && !QuietMode)
+			fprintf(stderr, "\nCheck logfile for error or status messages.\n");
+		CloseFile(&logfp);
+	}
+
+}
+
 /************  Main() ************************/
 int main(int argc, char **argv) {
 	/* =================================================== */

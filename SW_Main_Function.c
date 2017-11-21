@@ -157,7 +157,8 @@ void init_args(int argc, char **argv) {
 	 *                -q=quiet, don't print "Check logfile"
 	 *                   at end of program.
 	 */
-	char str[1024], *opts[] = { "-d", "-f", "-e", "-q" }; /* valid options */
+	char str[1024]
+	const char *opts[] = { "-d", "-f", "-e", "-q" }; /* valid options */
 	int valopts[] = { 1, 1, 0, 0 }; /* indicates options with values */
 	/* 0=none, 1=required, -1=optional */
 	int i, /* looper through all cmdline arguments */

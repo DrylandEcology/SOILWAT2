@@ -40,7 +40,7 @@
 #define fmax(a,b) ( ( GT((a),(b)) ) ? (a) : (b))
 #define fmin(a,b) ( ( LT((a),(b)) ) ? (a) : (b))
 /* absolute value for floating point values */
-#define abs(a)  ( ( LT(a, 0.00) ) ? (-a) : (a) )
+#define abs(a)  ( ((a) < 0) ? (-a) : (a) )
 /* redefine sqrt for double (default) or float */
 #ifdef NO_SQRTF
 /* the case for Borland's compiler */
@@ -146,46 +146,27 @@ extern int logged; /* REQUIRED */
 #define F_DELTA (10*FLT_EPSILON)
 #define D_DELTA (10*DBL_EPSILON)
 
-/*#define iszero(x) \
-( (sizeof(x) == sizeof(float)) \
-  ? ((x)>-( max( 10.*FLT_EPSILON, FLT_EPSILON*pow(10., ceil(log10(max(fabs(x),FLT_EPSILON)+1.)) ) ) ) && (x)<( max( 10.*FLT_EPSILON, FLT_EPSILON*pow(10., ceil(log10(max(fabs(x),FLT_EPSILON)+1.)) ) ) )) \
-  : ((x)>-( max( 10.*DBL_EPSILON, DBL_EPSILON*pow(10., ceil(log10(max(fabs(x),DBL_EPSILON)+1.)) ) ) ) && (x)<( max( 10.*DBL_EPSILON, DBL_EPSILON*pow(10., ceil(log10(max(fabs(x),DBL_EPSILON)+1.)) ) ) )) )
-
- #define isequal(x,y) \
-( (sizeof(x) == sizeof(float)) \
-  ? ((x)>(y)-( max( 10.*FLT_EPSILON, FLT_EPSILON*pow(10., ceil(log10(max(fabs(x),max(fabs(y), FLT_EPSILON))+1.)) ) ) ) && (x)<(y)+( max( 10.*FLT_EPSILON, FLT_EPSILON*pow(10., ceil(log10(max(fabs(x),max(fabs(y), FLT_EPSILON))+1.)) ) ) )) \
-  : ((x)>(y)-( max( 10.*DBL_EPSILON, DBL_EPSILON*pow(10., ceil(log10(max(fabs(x),max(fabs(y), DBL_EPSILON))+1.)) ) ) ) && (x)<(y)+( max( 10.*DBL_EPSILON, DBL_EPSILON*pow(10., ceil(log10(max(fabs(x),max(fabs(y), DBL_EPSILON))+1.)) ) ) )) )
-
-
- #define isless2(x,y) \
-( (sizeof(x) == sizeof(float)) \
-  ? ((x)<(y)-( max( 10.*FLT_EPSILON, FLT_EPSILON*pow(10., ceil(log10(max(fabs(x),max(fabs(y), FLT_EPSILON))+1.)) ) ) )) \
-  : ((x)<(y)-( max( 10.*DBL_EPSILON, DBL_EPSILON*pow(10., ceil(log10(max(fabs(x),max(fabs(y), DBL_EPSILON))+1.)) ) ) )) )
-
- #define ismore(x,y) \
-( (sizeof(x) == sizeof(float)) \
-  ? ((x)>(y)+( max( 10.*FLT_EPSILON, FLT_EPSILON*pow(10., ceil(log10(max(fabs(x),max(fabs(y), FLT_EPSILON))+1.)) ) ) )) \
-  : ((x)>(y)+( max( 10.*DBL_EPSILON, DBL_EPSILON*pow(10., ceil(log10(max(fabs(x),max(fabs(y), DBL_EPSILON))+1.)) ) ) )) )*/
 
 // new definitions for these four macros (MUCH MUCH faster, by a factor of about 4)... just trying them out for now.  The idea behind how these work is that both an absolute error and relative error check are being used in conjunction with one another.  In this for now I'm using F_DELTA for the amount of absolute error allowed and FLT_EPSILON for the amount of relative error allowed.
 #define GET_F_DELTA(x, y) ( (sizeof(x) == sizeof(float)) ? (max(F_DELTA, FLT_EPSILON * max(fabs(x), fabs(y)))) : (max(D_DELTA, DBL_EPSILON * max(fabs(x), fabs(y)))) )
 
-#define isless2(x, y) ((x) < ((y) - GET_F_DELTA(x, y)))
-#define ismore(x, y) ((x) > ((y) + GET_F_DELTA(x, y)))
-#define iszero(x) ( (sizeof(x) == sizeof(float)) ? (fabs(x) <= F_DELTA) : (fabs(x) <= D_DELTA) ) //for iszero(x) we just use an absolute error check, because a relative error check doesn't make sense for any number close enough to zero to be considered equal... it would be a waste of time.
-#define isequal(x, y) (fabs((x) - (y)) <= GET_F_DELTA(x, y))
-
-/* some simpler invocations */
-#define ZRO(x)   iszero(x)
-#define EQ(x,y)  isequal(x,y)
-#define LT(x,y)  isless2(x,y)
-#define GT(x,y)  ismore(x,y)
-#define LE(x,y) ((x) < (y) || EQ(x,y)) //changed from "(LT(x,y)||EQ(x,y))" because it evaluates to the same result (since EQ is already doing the checking for precision errors so use < instead of LT to avoid checking for precision errors twice) and this version is faster by avoiding the expensive LT() call.  
+/**< LT tests whether x is less than y while accounting for floating-point arithmetic */
+#define LT(x, y) ((x) < ((y) - GET_F_DELTA(x, y)))
+/**< GT tests whether x is greater than y while accounting for floating-point arithmetic */
+#define GT(x, y) ((x) > ((y) + GET_F_DELTA(x, y)))
+/**< ZRO tests whether x is equal to zero while accounting for floating-point arithmetic */
+#define ZRO(x) ( (sizeof(x) == sizeof(float)) ? (fabs(x) <= F_DELTA) : (fabs(x) <= D_DELTA) ) //for iszero(x) we just use an absolute error check, because a relative error check doesn't make sense for any number close enough to zero to be considered equal... it would be a waste of time.
+/**< EQ tests whether x and y are equal while accounting for floating-point arithmetic */
+#define EQ(x, y) (fabs((x) - (y)) <= GET_F_DELTA(x, y))
+/**< LE tests whether x is less than or equal to y while accounting for floating-point arithmetic */
+#define LE(x,y) ((x) < (y) || EQ(x,y)) //changed from "(LT(x,y)||EQ(x,y))" because it evaluates to the same result (since EQ is already doing the checking for precision errors so use < instead of LT to avoid checking for precision errors twice) and this version is faster by avoiding the expensive LT() call.
+/**< LE tests whether x is greater than or equal to y while accounting for floating-point arithmetic */
 #define GE(x,y) ((x) > (y) || EQ(x,y))
 
 // 06/26/2013 (dlm)	powe(): an alternate definition of pow(x, y) for x>0... this is faster (ca. 20%) then the one in math.h, but comes with a cost as the precision is slightly lower.  The measured precision drop I was getting was at max a relative error of about 100 billion percent (12 places after the decimal point) per calculation though so I don't think it's a big deal... (though it's hard to even accurately tell)
 #define powe(x, y) (exp((y) * log(x))) //x^y == exponential(y * ln(x)) or e^(y * ln(x)).  NOTE: this will only work when x > 0 I believe
 #define squared(x) powe(fabs(x), 2.0) // added for convenience
+
 /***************************************************
  * Function definitions
  ***************************************************/

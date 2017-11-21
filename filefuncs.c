@@ -180,8 +180,8 @@ Bool MkDir(const char *dname) {
 	int r, i, n;
 	Bool result = TRUE;
 	char *a[256] = { 0 }, /* points to each path element for mkdir -p behavior */
-	*delim = "\\/", /* path separators */
-	*c; /* duplicate of dname so we don't change it */
+		*c; /* duplicate of dname so we don't change it */
+	const char *delim = "\\/"; /* path separators */
 
 	if (isnull(dname))
 		return FALSE;

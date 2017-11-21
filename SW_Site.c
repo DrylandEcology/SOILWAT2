@@ -372,7 +372,7 @@ static void _read_layers(void) {
 	fail = FALSE;
 	LyrIndex lyrno;
 	int x;
-	char *errtype = '\0';
+	const char *errtype = "\0";
 	RealF dmin = 0.0, dmax, evco, trco_forb, trco_tree, trco_shrub, trco_grass, psand, pclay, matricd, imperm, soiltemp, fval = 0, f_gravel;
 
 	/* note that Files.read() must be called prior to this. */
@@ -558,7 +558,7 @@ void onSet_SW_LYR(SEXP SW_SOILS) {
 	fail = FALSE;
 	LyrIndex lyrno;
 	int x, i, j, columns;
-	char *errtype = '\0';
+	const char *errtype = "\0";
 	RealF dmin = 0.0, dmax, evco, trco_forb, trco_tree, trco_shrub, trco_grass, psand, pclay, matricd, imperm, soiltemp, fval = 0, f_gravel;
 	RealD *p_Layers;
 	SEXP SW_LYR;
@@ -1009,7 +1009,7 @@ void init_site_info(void) {
 			}
 		}
 
-		if (curregion || ZRO(_TranspRgnBounds[curregion])) {
+		if (curregion || _TranspRgnBounds[curregion] == 0) {
 			LogError(logfp, LOGNOTE, "  Layer %d : curregion %d _TranspRgnBounds %d", s + 1, curregion, _TranspRgnBounds[curregion]);
 			lyr->my_transp_rgn_forb = curregion;
 			sp->n_transp_lyrs_forb = max(sp->n_transp_lyrs_forb, s);
@@ -1036,7 +1036,7 @@ void init_site_info(void) {
 			}
 		}
 
-		if (curregion || ZRO(_TranspRgnBounds[curregion])) {
+		if (curregion || _TranspRgnBounds[curregion] == 0) {
 			lyr->my_transp_rgn_tree = curregion;
 			sp->n_transp_lyrs_tree = max(sp->n_transp_lyrs_tree, s);
 
@@ -1062,7 +1062,7 @@ void init_site_info(void) {
 			}
 		}
 
-		if (curregion || ZRO(_TranspRgnBounds[curregion])) {
+		if (curregion || _TranspRgnBounds[curregion] == 0) {
 			lyr->my_transp_rgn_shrub = curregion;
 			sp->n_transp_lyrs_shrub = max(sp->n_transp_lyrs_shrub, s);
 
@@ -1087,7 +1087,7 @@ void init_site_info(void) {
 			}
 		}
 
-		if (curregion || ZRO(_TranspRgnBounds[curregion])) {
+		if (curregion || _TranspRgnBounds[curregion] == 0) {
 			lyr->my_transp_rgn_grass = curregion;
 			sp->n_transp_lyrs_grass = max(sp->n_transp_lyrs_grass, s);
 

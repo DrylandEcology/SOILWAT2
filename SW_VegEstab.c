@@ -526,9 +526,9 @@ static void _sanity_check(unsigned int sppnum) {
 	/* =================================================== */
 	SW_LAYER_INFO **lyr = SW_Site.lyr;
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
-	double min_transp_lyrs;
+	LyrIndex min_transp_lyrs;
 
-	min_transp_lyrs = fmin(SW_Site.n_transp_lyrs_tree, fmin(SW_Site.n_transp_lyrs_forb, fmin(SW_Site.n_transp_lyrs_shrub, SW_Site.n_transp_lyrs_grass)));
+	min_transp_lyrs = min(SW_Site.n_transp_lyrs_tree, min(SW_Site.n_transp_lyrs_forb, min(SW_Site.n_transp_lyrs_shrub, SW_Site.n_transp_lyrs_grass)));
 
 	if (v->estab_lyrs > min_transp_lyrs) {
 		LogError(logfp, LOGFATAL, "%s : Layers requested (estab_lyrs) > (# transpiration layers=%d).", MyFileName, min_transp_lyrs);
@@ -560,7 +560,7 @@ static unsigned int _new_species(void) {
 	 not initialized yet, malloc() required.  For each
 	 species thereafter realloc() is called.
 	 */
-	char *me = "SW_VegEstab_newspecies()";
+	const char *me = "SW_VegEstab_newspecies()";
 	SW_VEGESTAB *v = &SW_VegEstab;
 
 	v->parms =

@@ -58,9 +58,9 @@ void init_args(int argc, char **argv);
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
 
-static void check_log(void);
 static void usage(void) {
-	char *s1 = "Soil water model version 2.2a (SGS-LTER Oct-2003).\n"
+	const char *s1 = "Ecosystem water simulation model SOILWAT2\n"
+			"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
 			"Usage: soilwat [-d startdir] [-f files.in] [-e] [-q]\n"
 			"  -d : operate (chdir) in startdir (default=.)\n"
 			"  -f : supply list of input files (default=files.in)\n"
@@ -82,19 +82,6 @@ char _firstfile[1024];
 
 #ifndef RSOILWAT
 
-static void check_log(void) {
-	/* =================================================== */
-	/* function to be called by atexit() so it's the last
-	 * to execute before termination.  This is the place to
-	 * do any cleanup or progress reporting.
-	 */
-	if (logfp != stdout && logfp != stderr) {
-		if (logged && !QuietMode)
-			fprintf(stderr, "\nCheck logfile for error or status messages.\n");
-		CloseFile(&logfp);
-	}
-
-}
 #endif
 void init_args(int argc, char **argv) {
 	/* =================================================== */
