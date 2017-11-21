@@ -15,9 +15,13 @@
 #include <time.h>
 #include <unistd.h>
 #include "../generic.h"
+#include "../generic.c"
 #include "../myMemory.h"
+#include "../myMemory.c"
 #include "../filefuncs.h"
+#include "../filefuncs.c"
 #include "../rands.h"
+#include "../rands.c"
 
 
 namespace {
