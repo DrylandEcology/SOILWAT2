@@ -10,6 +10,7 @@
 # make bin         compile the binary executable using optimizations
 # make bint        same as 'make bin' plus moves a copy of the binary to the
 #                  'testing/' folder
+# make bint_run    same as 'make bint' plus executes the binary in the testing/ folder
 # make lib         create SOILWAT2 library
 # make test        compile unit tests in 'test/ folder with googletest
 # make test_run    run unit tests (in a previous step compiled with 'make test')
@@ -60,7 +61,6 @@ $(SHLIB) :
 		@rm -f $(Rpkg_objects)
 
 
-.PHONY : lib bin bint binl
 lib : $(lib_target)
 
 $(lib_target) :
@@ -73,14 +73,19 @@ bin : $(target)
 $(target) : $(lib_target)
 		$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) $(bin_sources) $(LDLIBS)
 
+.PHONY : bint
 bint : $(target)
 		cp $(target) testing/$(target)
 
+.PHONY : bint_run
+bint_run : bint
+		./testing/$(target) -d ./testing -f files_v31.in
 
-.PHONY : test_lib test test_run
-		# based on section 'Generic Build Instructions' in https://github.com/google/googletest/tree/master/googletest)
-		#   1) build googletest library
-		#   2) compile SOILWAT2 test source file
+
+# GoogleTest:
+# based on section 'Generic Build Instructions' in https://github.com/google/googletest/tree/master/googletest)
+#   1) build googletest library
+#   2) compile SOILWAT2 test source file
 lib_test : $(lib_gtest)
 
 $(lib_gtest) :
@@ -96,16 +101,19 @@ test_run :
 		./$(bin_test)
 
 
-.PHONY : clean clean2 test_clean cleaner
+.PHONY : clean
 clean :
 		@rm -f $(objects) $(bin_objects)
 
+.PHONY : clean2
 clean2 :
 		@rm -f $(target) $(SHLIB) $(lib_target)
 		@rm -f testing/$(target)
 		@rm -f testing/Output/*
 
+.PHONY : test_clean
 test_clean :
 		@rm -f gtest-all.o $(lib_gtest) $(bin_test)
 
+.PHONY : cleaner
 cleaner : clean clean2 test_clean
