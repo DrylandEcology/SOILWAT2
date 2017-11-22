@@ -166,7 +166,7 @@ TimeInt Time_lastDOY(void) {
 	return cum_monthdays[Dec];
 }
 
-TimeInt Time_days_in_month(Months month) {
+TimeInt Time_days_in_month(TimeInt month) {
 	/* =================================================== */
 
 	return days_in_month[month];

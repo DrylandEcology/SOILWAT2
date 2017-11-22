@@ -240,7 +240,7 @@ static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period
 
 /* These MUST be in the same order as enum OutKey in
  * SW_Output.h */
-static char *key2str[] =
+static char const *key2str[] =
 { SW_WETHR, SW_TEMP, SW_PRECIP, SW_SOILINF, SW_RUNOFF, SW_ALLH2O, SW_VWCBULK,
 		SW_VWCMATRIC, SW_SWCBULK, SW_SWABULK, SW_SWAMATRIC, SW_SWPMATRIC,
 		SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE, SW_INTERCEPTION,
@@ -254,10 +254,9 @@ static ObjType key2obj[] =
 { eWTH, eWTH, eWTH, eWTH, eWTH, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
 		eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
 		eSWC, eVES, eVES, eVES };
-
-static char *pd2str[] =
+static char const *pd2str[] =
 { SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR };
-static char *styp2str[] =
+static char const *styp2str[] =
 { SW_SUM_OFF, SW_SUM_SUM, SW_SUM_AVG, SW_SUM_FNL };
 
 /* =================================================== */
@@ -305,9 +304,9 @@ static OutPeriod str2period(char *s)
 {
 	/* --------------------------------------------------- */
 	IntUS pd;
-	for (pd = 0; Str_CompareI(s, pd2str[pd]) && pd < SW_OUTNPERIODS; pd++) ;
+	for (pd = 0; Str_CompareI(s, (char *)pd2str[pd]) && pd < SW_OUTNPERIODS; pd++) ;
 
-	return pd;
+	return (OutPeriod) pd;
 }
 
 static OutKey str2key(char *s)
@@ -315,25 +314,25 @@ static OutKey str2key(char *s)
 	/* --------------------------------------------------- */
 	IntUS key;
 
-	for (key = 0; key < SW_OUTNKEYS && Str_CompareI(s, key2str[key]); key++) ;
+	for (key = 0; key < SW_OUTNKEYS && Str_CompareI(s, (char *)key2str[key]); key++) ;
 	if (key == SW_OUTNKEYS)
 	{
 		LogError(logfp, LOGFATAL, "%s : Invalid key (%s) in %s", SW_F_name(eOutput), s);
 	}
-	return key;
+	return (OutKey) key;
 }
 
 static OutSum str2stype(char *s)
 {
 	/* --------------------------------------------------- */
-	OutSum styp;
+	IntUS styp;
 
-	for (styp = eSW_Off; styp < SW_NSUMTYPES && Str_CompareI(s, styp2str[styp]); styp++) ;
+	for (styp = eSW_Off; styp < SW_NSUMTYPES && Str_CompareI(s, (char *)styp2str[styp]); styp++) ;
 	if (styp == SW_NSUMTYPES)
 	{
 		LogError(logfp, LOGFATAL, "%s : Invalid summary type (%s)\n", SW_F_name(eOutput), s);
 	}
-	return styp;
+	return (OutSum) styp;
 }
 
 /* =================================================== */
@@ -536,7 +535,7 @@ void SW_OUT_read(void)
 
 		x = sscanf(inbuf, "%s %s %s %d %s %s", keyname, sumtype, period, &first,
 				last, outfile);
-		if (Str_CompareI(keyname, "TIMESTEP") == 0)	// condition to read in the TIMESTEP line in outsetup.in
+		if (Str_CompareI(keyname, (char *)"TIMESTEP") == 0)	// condition to read in the TIMESTEP line in outsetup.in
 		{
 			numPeriod = sscanf(inbuf, "%s %s %s %s %s", keyname, timeStep[0],
 					timeStep[1], timeStep[2], timeStep[3]);	// need to rescan the line because you are looking for all strings, unlike the original scan
@@ -549,7 +548,7 @@ void SW_OUT_read(void)
 		{ // If the line TIMESTEP is present, only need to read in five variables not six, so re read line.
 			if (x < 6)
 			{
-				if (Str_CompareI(keyname, "OUTSEP") == 0)
+				if (Str_CompareI(keyname, (char *)"OUTSEP") == 0)
 				{
 					switch ((int) *sumtype)
 					{
@@ -635,7 +634,7 @@ void SW_OUT_read(void)
 			SW_Output[k].period = str2period(Str_ToUpper(period, ext));
 			SW_Output[k].first_orig = first;
 			SW_Output[k].last_orig =
-					!Str_CompareI("END", last) ? 366 : atoi(last);
+					!Str_CompareI("END", (char *)last) ? 366 : atoi(last);
 			if (SW_Output[k].last_orig == 0)
 			{
 				CloseFile(&f);
@@ -653,7 +652,7 @@ void SW_OUT_read(void)
 			{
 				if (timeSteps[k][i] < 4)
 				{
-				//	printf( "inside Soilwat SW_Output.c : isPartialSoilwatOutput=%d \n", isPartialSoilwatOutput);
+				//	swprintf( "inside Soilwat SW_Output.c : isPartialSoilwatOutput=%d \n", isPartialSoilwatOutput);
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 					SW_OutputPrefix(prefix);
 					strcpy(str, prefix);
@@ -877,7 +876,7 @@ SEXP onGet_SW_OUT(void)
 	char *cKEY[] =
 	{	"mykey", "myobj", "period", "sumtype", "use", "first", "last", "first_orig", "last_orig", "outfile"};
 
-	if(debug) Rprintf("onGet_SW_OUT begin\n");
+	if (debug) swprintf("onGet_SW_OUT begin\n");
 
 	PROTECT(swOUT = MAKE_CLASS("swOUT"));
 	PROTECT(OUT = NEW_OBJECT(swOUT));
@@ -886,21 +885,21 @@ SEXP onGet_SW_OUT(void)
 	SET_STRING_ELT(sep, 0, mkCharLen(&_Sep,1));
 	SET_SLOT(OUT, install("outputSeparator"), sep);
 
-	if(debug) Rprintf("useTimeStep before assignment = %d\n", useTimeStep);
+	if (debug) swprintf("useTimeStep before assignment = %d\n", useTimeStep);
 	PROTECT(useTimeStep = NEW_LOGICAL(1));
 	if(numPeriod == 0)
-	LOGICAL(useTimeStep)[0] = FALSE;
+		LOGICAL(useTimeStep)[0] = FALSE;
 	else
-	LOGICAL(useTimeStep)[0] = TRUE;
-	if(debug)
-	{
-		Rprintf("useTimeStep after assignment = %d\n", useTimeStep);
-		Rprintf("	- type of slot (10 = 'logical') %d\n", TYPEOF(useTimeStep));
-		Rprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(useTimeStep));
-		if( 10 == TYPEOF(useTimeStep) )
-		Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(useTimeStep));
+		LOGICAL(useTimeStep)[0] = TRUE;
+
+	if (debug) {
+		swprintf("useTimeStep after assignment = %d\n", useTimeStep);
+		swprintf("	- type of slot (10 = 'logical') %d\n", TYPEOF(useTimeStep));
+		swprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(useTimeStep));
+		if ( 10 == TYPEOF(useTimeStep) )
+			swprintf("	- logdata of slot %d\n", LOGICAL_DATA(useTimeStep));
 		else
-		Rprintf("	- logdata of slot not available because not of type 'logical'\n");
+			swprintf("	- logdata of slot not available because not of type 'logical'\n");
 	}
 	PROTECT(timestep = NEW_INTEGER(numPeriod));
 
@@ -919,13 +918,13 @@ SEXP onGet_SW_OUT(void)
 	{
 		if(useTimeStep && SW_Output[k].use && !doOnce)
 		{
-			if(debug) Rprintf("length(timestep) = %d, numPeriod = %d\n", GET_LENGTH(timestep), numPeriod);
+			if (debug) swprintf("length(timestep) = %d, numPeriod = %d\n", GET_LENGTH(timestep), numPeriod);
 			for (i = 0; i < numPeriod; i++)
 			{
-				if(debug) Rprintf("timestep, timestep[%d], and timeSteps[%d][%d] before %d assignment = %d, %d, %d\n",
+				if (debug) swprintf("timestep, timestep[%d], and timeSteps[%d][%d] before %d assignment = %d, %d, %d\n",
 						i, i, k, k, timestep, INTEGER(timestep)[i], timeSteps[k][i]);
 				INTEGER(timestep)[i] = timeSteps[k][i];
-				if(debug) Rprintf("timestep, timestep[%d], and timeSteps[%d][%d] after %d assignment = %d, %d, %d\n",
+				if (debug) swprintf("timestep, timestep[%d], and timeSteps[%d][%d] after %d assignment = %d, %d, %d\n",
 						i, i, k, k, timestep, INTEGER(timestep)[i], timeSteps[k][i]);
 			}
 			doOnce=TRUE;
@@ -951,24 +950,24 @@ SEXP onGet_SW_OUT(void)
 
 	if(debug)
 	{
-		Rprintf("useTimeStep slot of OUT before assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
-		Rprintf("	- type of slot %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
-		Rprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(GET_SLOT(OUT, install("useTimeStep"))));
+		swprintf("useTimeStep slot of OUT before assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
+		swprintf("	- type of slot %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
+		swprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(GET_SLOT(OUT, install("useTimeStep"))));
 		if( 10 == TYPEOF(GET_SLOT(OUT, install("useTimeStep"))) )
-		Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
+		swprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
 		else
-		Rprintf("	- logdata of slot not available because not of type 'logical'\n");
+		swprintf("	- logdata of slot not available because not of type 'logical'\n");
 	}
 	SET_SLOT(OUT, install("useTimeStep"), useTimeStep);
 	if(debug)
 	{
-		Rprintf("useTimeStep slot of OUT after assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
-		Rprintf("	- type of slot (4 = 'environments') %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
-		Rprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(GET_SLOT(OUT, install("useTimeStep"))));
+		swprintf("useTimeStep slot of OUT after assignment = %d\n", GET_SLOT(OUT, install("useTimeStep")));
+		swprintf("	- type of slot (4 = 'environments') %d\n", TYPEOF(GET_SLOT(OUT, install("useTimeStep"))));
+		swprintf("	- logvalue of slot %d\n", LOGICAL_VALUE(GET_SLOT(OUT, install("useTimeStep"))));
 		if( 10 == TYPEOF(GET_SLOT(OUT, install("useTimeStep"))) )
-		Rprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
+		swprintf("	- logdata of slot %d\n", LOGICAL_DATA(GET_SLOT(OUT, install("useTimeStep"))));
 		else
-		Rprintf("	- logdata of slot not available because not of type 'logical'\n");
+		swprintf("	- logdata of slot not available because not of type 'logical'\n");
 	}
 
 	SET_SLOT(OUT, install(cKEY[0]), mykey);
@@ -983,7 +982,7 @@ SEXP onGet_SW_OUT(void)
 	SET_SLOT(OUT, install(cKEY[9]), outfile);
 
 	UNPROTECT(15);
-	if(debug) Rprintf("onGet_SW_OUT end\n");
+	if(debug) swprintf("onGet_SW_OUT end\n");
 	return OUT;
 }
 #endif
@@ -1105,7 +1104,7 @@ void SW_OUT_sum_today(ObjType otyp)
 	case eVES:
 		return; /* a stub; we don't do anything with ves until get_() */
 	default:
-		LogError(stdout, LOGFATAL,
+		LogError(logfp, LOGFATAL,
 				"Invalid object type in SW_OUT_sum_today().");
 	}
 
@@ -1227,19 +1226,19 @@ void SW_OUT_write_today(void)
 					t = SW_Model.doy;
 					break;
 				case eSW_Week:
-					writeit = (SW_Model.newweek || bFlush);
+					writeit = (Bool) (SW_Model.newweek || bFlush);
 					t = (SW_Model.week + 1) - tOffset;
 					break;
 				case eSW_Month:
-					writeit = (SW_Model.newmonth || bFlush);
+					writeit = (Bool) (SW_Model.newmonth || bFlush);
 					t = (SW_Model.month + 1) - tOffset;
 					break;
 				case eSW_Year:
-					writeit = (SW_Model.newyear || bFlush);
+					writeit = (Bool) (SW_Model.newyear || bFlush);
 					t = SW_Output[k].first; /* always output this period */
 					break;
 				default:
-					LogError(stdout, LOGFATAL,
+					LogError(logfp, LOGFATAL,
 							"Invalid period in SW_OUT_write_today().");
 				}
 				if (!writeit || t < SW_Output[k].first || t > SW_Output[k].last)
@@ -1949,7 +1948,7 @@ static void get_vwcBulk(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_VWCBulk].period;
-	RealD *val = malloc(sizeof(RealD) * SW_Site.n_layers);
+	RealD *val = (RealD *) malloc(sizeof(RealD) * SW_Site.n_layers);
 	ForEachSoilLayer(i)
 		val[i] = SW_MISSING;
 
@@ -2047,7 +2046,7 @@ static void get_vwcMatric(void)
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_VWCMatric].period;
 	RealD convert;
-	RealD *val = malloc(sizeof(RealD) * SW_Site.n_layers);
+	RealD *val = (RealD *) malloc(sizeof(RealD) * SW_Site.n_layers);
 	ForEachSoilLayer(i)
 		val[i] = SW_MISSING;
 
@@ -2650,7 +2649,7 @@ static void get_transp(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_Transp].period;
-	RealD *val = malloc(sizeof(RealD) * SW_Site.n_layers);
+	RealD *val = (RealD *) malloc(sizeof(RealD) * SW_Site.n_layers);
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
 #elif defined(STEPWAT)
@@ -4119,12 +4118,15 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
 	 * establishment variables.
 	 */
 
-// just a few lines of nonsense to supress the compile warnings, doesn't actually do anything
-	if (&v == &v)
-		if (&s == &s)
-			if (k != 0)
-				return;
+// just a few lines of nonsense to supress the compile warnings
+  int tmp1;
+  TimeInt tmp2;
 
+  tmp1 = (int) v->count + (int) k;
+  tmp1 += tmp1;
+  tmp2 = (TimeInt) s->days;
+  tmp2 += tmp2;
+  return;
 }
 
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
@@ -4157,7 +4159,7 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 		s->surfaceRunoff += v->surfaceRunoff;
 		break;
 	default:
-		LogError(stderr, LOGFATAL, "PGMR: Invalid key in sumof_wth(%s)", key2str[k]);
+		LogError(logfp, LOGFATAL, "PGMR: Invalid key in sumof_wth(%s)", key2str[k]);
 	}
 
 }
@@ -4291,7 +4293,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	default:
-		LogError(stderr, LOGFATAL, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
+		LogError(logfp, LOGFATAL, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
 	}
 }
 
@@ -4315,7 +4317,7 @@ static void average_for(ObjType otyp, OutPeriod pd)
 	int j;
 
 	if (!(otyp == eSWC || otyp == eWTH))
-		LogError(stdout, LOGFATAL, "Invalid object type in OUT_averagefor().");
+		LogError(logfp, LOGFATAL, "Invalid object type in OUT_averagefor().");
 
 	ForEachOutKey(k)
 	{
@@ -4356,7 +4358,7 @@ static void average_for(ObjType otyp, OutPeriod pd)
 					break;
 
 				default:
-					LogError(stdout, LOGFATAL, "Programmer: Invalid period in average_for().");
+					LogError(logfp, LOGFATAL, "Programmer: Invalid period in average_for().");
 				} /* end switch(pd) */
 
 				if (SW_Output[k].period != pd || SW_Output[k].myobj != otyp
@@ -4549,7 +4551,7 @@ static void average_for(ObjType otyp, OutPeriod pd)
 
 				default:
 
-					LogError(stderr, LOGFATAL, "PGMR: Invalid key in average_for(%s)", key2str[k]);
+					LogError(logfp, LOGFATAL, "PGMR: Invalid key in average_for(%s)", key2str[k]);
 				}
 			}
 		} /* end of for loop */

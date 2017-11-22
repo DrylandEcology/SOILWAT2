@@ -89,7 +89,7 @@ void SW_VPD_read(void) {
 	/* =================================================== */
 	SW_VEGPROD *v = &SW_VegProd;
 	FILE *f;
-	Months mon = Jan;
+	TimeInt mon = Jan;
 	int x, lineno = 0;
 	const int line_help = 33;
 	RealF help_grass, help_shrub, help_tree, help_forb, help_bareGround, litt, biom, pctl, laic, co2_coeff_grass, co2_coeff_shrub, co2_coeff_tree, co2_coeff_forb;
@@ -417,10 +417,10 @@ void SW_VPD_read(void) {
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.flagHydraulicRedistribution = help_grass;
-				v->shrub.flagHydraulicRedistribution = help_shrub;
-				v->tree.flagHydraulicRedistribution = help_tree;
-				v->forb.flagHydraulicRedistribution = help_forb;
+				v->grass.flagHydraulicRedistribution = (Bool) help_grass;
+				v->shrub.flagHydraulicRedistribution = (Bool) help_shrub;
+				v->tree.flagHydraulicRedistribution = (Bool) help_tree;
+				v->forb.flagHydraulicRedistribution = (Bool) help_forb;
 				break;
 			case 26:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);

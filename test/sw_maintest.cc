@@ -24,6 +24,9 @@ int logged; /* boolean: true = we logged a msg */
 
 
 int main(int argc, char **argv) {
+  logged = FALSE;
+  logfp = stdout;
+
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

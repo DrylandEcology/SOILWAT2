@@ -48,9 +48,22 @@
 #define MAX_WEEKS 53
 #define MAX_DAYS 366
 
-typedef enum {
-	Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec, NoMonth
-} Months; /* note base0 */
+/* constants for each month; this was previously a typedef enum.
+ * Note: this has to be base0 and continuous. */
+#define Jan 0
+#define Feb 1
+#define Mar 2
+#define Apr 3
+#define May 4
+#define Jun 5
+#define Jul 6
+#define Aug 7
+#define Sep 8
+#define Oct 9
+#define Nov 10
+#define Dec 11
+#define NoMonth 12
+
 
 typedef unsigned int TimeInt;
 
@@ -74,7 +87,7 @@ void Time_set_mday(const TimeInt day);
 void Time_set_month(const TimeInt mon);
 time_t Time_timestamp(void);
 time_t Time_timestamp_now(void);
-TimeInt Time_days_in_month(Months month);
+TimeInt Time_days_in_month(TimeInt month);
 TimeInt Time_lastDOY(void);
 
 char *Time_printtime(void);

@@ -151,7 +151,7 @@ void SW_MDL_read(void) {
 	while (GetALine(f, inbuf)) {
 		cnt++;
 		if (isalpha(*inbuf) && strcmp(inbuf, "end")) { /* get hemisphere */
-			m->isnorth = (toupper((int) *inbuf) == 'N');
+			m->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
 			fhemi = TRUE;
 			break;
 		}//TODO: SHOULDN'T WE SKIP THIS BELOW IF ABOVE IS TRUE
@@ -170,7 +170,7 @@ void SW_MDL_read(void) {
 			fenddy = TRUE;
 			break;
 		case 3:
-			m->isnorth = (toupper((int) *inbuf) == 'N');
+			m->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
 			fhemi = TRUE;
 			break;
 		default:

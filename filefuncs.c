@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -13,6 +14,7 @@
 #endif
 
 #include "filefuncs.h"
+#include "generic.h"
 #include "myMemory.h"
 
 /* Note that errstr[] is externed in generic.h via filefuncs.h */
@@ -21,6 +23,44 @@
  */
 
 char **getfiles(const char *fspec, int *nfound);
+
+
+/**
+ * @brief Prints an error message and throws an error or warning. Works both for rSOILWAT2
+ *  and SOILWAT2-standalone.
+ *
+ * @param code The error/warning code. If `code` is not 0, then it is passed to `exit`
+ *  (SOILWAT2) / `error` (rSOILWAT2). If `code` is 0, then it is passed to
+ *  `warning` (rSOILWAT2), respectively.
+ * @param format The character string with formatting (as for `printf`).
+ * @param ... Variables to be printed.
+ */
+void sw_error(int code, const char *format, ...)
+{
+  va_list(ap);
+  va_start(ap, format);
+#ifdef RSOILWAT
+  REvprintf(format, ap);
+#else
+  vfprintf(stderr, format, ap);
+#endif
+  va_end(ap);
+
+  if (code == 0) {
+    #ifdef RSOILWAT
+      warning("Warning: %d\n", code);
+    #endif
+
+  } else {
+    #ifdef RSOILWAT
+      error("exit %d\n", code);
+    #else
+      exit(code);
+    #endif
+  }
+}
+
+
 
 /**************************************************************/
 Bool GetALine(FILE *f, char buf[]) {
@@ -86,7 +126,7 @@ FILE * OpenFile(const char *name, const char *mode) {
 
 	fp = fopen(name, mode);
 	if (isnull(fp))
-		LogError(stdout, LOGERROR | LOGEXIT, "Cannot open file %s: %s", name, strerror(errno));
+		LogError(logfp, LOGERROR | LOGEXIT, "Cannot open file %s: %s", name, strerror(errno));
 	return (fp);
 }
 
@@ -117,7 +157,7 @@ Bool FileExists(const char *name) {
 	Bool result = FALSE;
 
 	if (0 == stat(name, &statbuf))
-		result = (statbuf.st_mode & S_IFREG) ? TRUE : FALSE;
+		result = S_ISREG(statbuf.st_mode) ? TRUE : FALSE;
 
 	return (result);
 }
@@ -132,7 +172,7 @@ Bool DirExists(const char *dname) {
 	Bool result = FALSE;
 
 	if (0 == stat(dname, &statbuf))
-		result = (statbuf.st_mode & S_IFDIR) ? TRUE : FALSE;
+		result = S_ISDIR(statbuf.st_mode) ? TRUE : FALSE;
 
 	return (result);
 }
@@ -180,15 +220,14 @@ Bool MkDir(const char *dname) {
 	int r, i, n;
 	Bool result = TRUE;
 	char *a[256] = { 0 }, /* points to each path element for mkdir -p behavior */
-	*delim = "\\/", /* path separators */
-	*c; /* duplicate of dname so we don't change it */
+		*c; /* duplicate of dname so we don't change it */
+	const char *delim = "\\/"; /* path separators */
 
 	if (isnull(dname))
 		return FALSE;
 
 	if (NULL == (c = strdup(dname))) {
-		fprintf(stderr, "Out of memory making string in MkDir()");
-		exit(-1);
+		sw_error(-1, "Out of memory making string in MkDir()");
 	}
 
 	n = 0;

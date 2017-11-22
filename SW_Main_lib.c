@@ -58,43 +58,22 @@ void init_args(int argc, char **argv);
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
 
-static void check_log(void);
 static void usage(void) {
-	char *s1 = "Soil water model version 2.2a (SGS-LTER Oct-2003).\n"
+	const char *s1 = "Ecosystem water simulation model SOILWAT2\n"
+			"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
 			"Usage: soilwat [-d startdir] [-f files.in] [-e] [-q]\n"
 			"  -d : operate (chdir) in startdir (default=.)\n"
 			"  -f : supply list of input files (default=files.in)\n"
 			"       a preceeding path applies to all input files\n"
 			"  -e : echo initial values from site and estab to logfile\n"
 			"  -q : quiet mode, don't print message to check logfile.\n";
-#ifndef RSOILWAT
-	fprintf(stderr, "%s", s1);
-	exit(0);
-#else
-	Rprintf("%s", s1);
-	Rprintf("EXIT 0");
-	warning("");
-	//exit(0);
-#endif
+  sw_error(0, "%s", s1);
 }
 
 char _firstfile[1024];
 
 #ifndef RSOILWAT
 
-static void check_log(void) {
-	/* =================================================== */
-	/* function to be called by atexit() so it's the last
-	 * to execute before termination.  This is the place to
-	 * do any cleanup or progress reporting.
-	 */
-	if (logfp != stdout && logfp != stderr) {
-		if (logged && !QuietMode)
-			fprintf(stderr, "\nCheck logfile for error or status messages.\n");
-		CloseFile(&logfp);
-	}
-
-}
 #endif
 void init_args(int argc, char **argv) {
 	/* =================================================== */
@@ -110,7 +89,8 @@ void init_args(int argc, char **argv) {
 	 *                -q=quiet, don't print "Check logfile"
 	 *                   at end of program.
 	 */
-	char str[1024], *opts[] = { "-d", "-f", "-e", "-q" }; /* valid options */
+	char str[1024];
+	char const *opts[] = { "-d", "-f", "-e", "-q" }; /* valid options */
 	int valopts[] = { 1, 1, 0, 0 }; /* indicates options with values */
 	/* 0=none, 1=required, -1=optional */
 	int i, /* looper through all cmdline arguments */
@@ -133,16 +113,8 @@ void init_args(int argc, char **argv) {
 				break; /* found it, move on */
 		}
 		if (op == nopts) {
-#ifndef RSOILWAT
-			fprintf(stderr, "Invalid option %s\n", argv[a]);
-			usage();
-			exit(-1);
-#else
-			Rprintf("Invalid option %s\n", argv[a]);
-			usage();
-			Rprintf("EXIT -1");
-			error("options");
-#endif
+      usage();
+      sw_error(-1, "Invalid option %s\n", argv[a]);
 		}
 
 		*str = '\0';
@@ -155,16 +127,8 @@ void init_args(int argc, char **argv) {
 				strcpy(str, argv[++a]);
 
 			} else if (0 < valopts[op]) { /* required opt-val not found */
-#ifndef RSOILWAT
-				fprintf(stderr, "Incomplete option %s\n", opts[op]);
-				usage();
-				exit(-1);
-#else
-				Rprintf("Incomplete option %s\n", opts[op]);
-				usage();
-				Rprintf("EXIT -1");
-				error("options");
-#endif
+        usage();
+        sw_error(-1, "Incomplete option %s\n", opts[op]);
 			} /* opt-val not required */
 		}
 
@@ -173,7 +137,7 @@ void init_args(int argc, char **argv) {
 		switch (op) {
 		case 0: /* -d */
 			if (!ChDir(str)) {
-				LogError(stderr, LOGFATAL, "Invalid project directory (%s)", str);
+				LogError(logfp, LOGFATAL, "Invalid project directory (%s)", str);
 			}
 			break;
 		case 1:

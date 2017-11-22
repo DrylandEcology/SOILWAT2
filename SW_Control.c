@@ -195,16 +195,18 @@ void SW_CTL_read_inputs_from_disk(void) {
 
 void SW_CTL_obtain_inputs(void) {
 	/*=======================================================*/
-	int debug = 0;
 
 #ifndef RSOILWAT
   SW_CTL_read_inputs_from_disk();
+
 
 #else
 	if (useFiles) {
     SW_CTL_read_inputs_from_disk();
 
 	} else { //Use R data to set the data
+	  int debug = 0;
+
     if (debug) swprintf("'SW_CTL_obtain_inputs': Copy input from 'InputData':");
 
 		onSet_SW_F(GET_SLOT(InputData, install("files")));
@@ -236,11 +238,6 @@ void SW_CTL_obtain_inputs(void) {
     if (debug) swprintf(" completed.\n");
 	}
 #endif
-  // This will work in both RSOILWAT2 and SOILWAT2
-  // There is no SW_CBN_READ function because the settings are stored in already read-in files
-  // See rSOILWAT2 issue #50 if you experience issues with not finding carbon.in
-  calculate_CO2_multipliers();
-
 }
 
 #ifdef DEBUG_MEM
