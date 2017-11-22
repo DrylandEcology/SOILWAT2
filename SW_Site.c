@@ -116,7 +116,7 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 	SW_Site.lyr[n]->bMatric = -0.3 * sand + 15.7 * clay + 3.10;
 
 	if (ZRO(SW_Site.lyr[n]->bMatric)) {
-		LogError(stdout, LOGFATAL, "Value of beta in SW_SIT_read() = %f\n"
+		LogError(logfp, LOGFATAL, "Value of beta in SW_SIT_read() = %f\n"
 				"Possible division by zero.  Exiting", SW_Site.lyr[n]->bMatric);
 	}
 
@@ -190,9 +190,10 @@ void SW_SIT_read(void) {
 	 */
 	SW_SITE *v = &SW_Site;
 	FILE *f;
-	int lineno = 0, x;
-	LyrIndex r, region, /* transp region definition number */
-	rgnlow; /* lower layer of region */
+	int lineno = 0, x,
+		rgnlow, /* lower layer of region */
+		region; /* transp region definition number */
+	LyrIndex r;
 	Bool too_many_regions = FALSE;
 
 	/* note that Files.read() must be called prior to this. */
@@ -320,11 +321,11 @@ void SW_SIT_read(void) {
 				goto Label_End_Read;
 			}
 			x = sscanf(inbuf, "%d %d", &region, &rgnlow);
-			if (x < 2) {
+			if (x < 2 || region < 1 || rgnlow < 1) {
 				CloseFile(&f);
 				LogError(logfp, LOGFATAL, "%s : Bad record %d.\n", MyFileName, lineno);
 			}
-			_TranspRgnBounds[region - 1] = rgnlow - 1;
+			_TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
 			v->n_transp_rgn++;
 		}
 
@@ -372,7 +373,7 @@ static void _read_layers(void) {
 	fail = FALSE;
 	LyrIndex lyrno;
 	int x;
-	char *errtype = '\0';
+	const char *errtype = "\0";
 	RealF dmin = 0.0, dmax, evco, trco_forb, trco_tree, trco_shrub, trco_grass, psand, pclay, matricd, imperm, soiltemp, fval = 0, f_gravel;
 
 	/* note that Files.read() must be called prior to this. */
@@ -397,17 +398,12 @@ static void _read_layers(void) {
 			fail = TRUE;
 			fval = f_gravel;
 			errtype = Str_Dup("gravel content");
-#ifndef RSOILWAT
-			printf("\nGravel content is either too HIGH (> 0.5), or too LOW (<0.0): %0.3f", f_gravel);
-			printf("\nParameterization for Brooks-Corey equation may fall outside of valid range.");
-			printf("\nThis can cause implausible SWP values.");
-			printf("\nConsider setting SWC minimum in siteparam.in file.");
-#else
-			Rprintf("\nGravel content is either too HIGH (> 0.5), or too LOW (<0.0).");
-			Rprintf("\nParameterization for Brooks-Corey equation may fall outside of valid range.");
-			Rprintf("\nThis can cause implausible SWP values.");
-			Rprintf("\nConsider setting SWC minimum in siteparam.in file.");
-#endif
+
+			swprintf("\nGravel content is either too HIGH (> 0.5), or too LOW (<0.0): %0.3f", f_gravel);
+			swprintf("\nParameterization for Brooks-Corey equation may fall outside of valid range.");
+			swprintf("\nThis can cause implausible SWP values.");
+			swprintf("\nConsider setting SWC minimum in siteparam.in file.");
+
 		} else if (LE(psand,0.)) {
 			fail = TRUE;
 			fval = psand;
@@ -558,7 +554,7 @@ void onSet_SW_LYR(SEXP SW_SOILS) {
 	fail = FALSE;
 	LyrIndex lyrno;
 	int x, i, j, columns;
-	char *errtype = '\0';
+	const char *errtype = "\0";
 	RealF dmin = 0.0, dmax, evco, trco_forb, trco_tree, trco_shrub, trco_grass, psand, pclay, matricd, imperm, soiltemp, fval = 0, f_gravel;
 	RealD *p_Layers;
 	SEXP SW_LYR;
@@ -1009,7 +1005,7 @@ void init_site_info(void) {
 			}
 		}
 
-		if (curregion || ZRO(_TranspRgnBounds[curregion])) {
+		if (curregion || _TranspRgnBounds[curregion] == 0) {
 			LogError(logfp, LOGNOTE, "  Layer %d : curregion %d _TranspRgnBounds %d", s + 1, curregion, _TranspRgnBounds[curregion]);
 			lyr->my_transp_rgn_forb = curregion;
 			sp->n_transp_lyrs_forb = max(sp->n_transp_lyrs_forb, s);
@@ -1036,7 +1032,7 @@ void init_site_info(void) {
 			}
 		}
 
-		if (curregion || ZRO(_TranspRgnBounds[curregion])) {
+		if (curregion || _TranspRgnBounds[curregion] == 0) {
 			lyr->my_transp_rgn_tree = curregion;
 			sp->n_transp_lyrs_tree = max(sp->n_transp_lyrs_tree, s);
 
@@ -1062,7 +1058,7 @@ void init_site_info(void) {
 			}
 		}
 
-		if (curregion || ZRO(_TranspRgnBounds[curregion])) {
+		if (curregion || _TranspRgnBounds[curregion] == 0) {
 			lyr->my_transp_rgn_shrub = curregion;
 			sp->n_transp_lyrs_shrub = max(sp->n_transp_lyrs_shrub, s);
 
@@ -1087,7 +1083,7 @@ void init_site_info(void) {
 			}
 		}
 
-		if (curregion || ZRO(_TranspRgnBounds[curregion])) {
+		if (curregion || _TranspRgnBounds[curregion] == 0) {
 			lyr->my_transp_rgn_grass = curregion;
 			sp->n_transp_lyrs_grass = max(sp->n_transp_lyrs_grass, s);
 

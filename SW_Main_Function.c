@@ -86,15 +86,7 @@ static void usage(void) {
 			"       a preceeding path applies to all input files\n"
 			"  -e : echo initial values from site and estab to logfile\n"
 			"  -q : quiet mode, don't print message to check logfile.\n";
-#ifndef RSOILWAT
-	fprintf(stderr, "%s", s1);
-	exit(0);
-#else
-	Rprintf("%s", s1);
-	Rprintf("EXIT 0");
-	warning("");
-	//exit(0);
-#endif
+  sw_error(0, "%s", s1);
 }
 
 char _firstfile[1024];
@@ -104,7 +96,7 @@ char _firstfile[1024];
 void  main_function(int argc, char **argv) {
 	/* =================================================== */
 
-	printf("inside soilwat main: argc=%d argv[0]=%s ,argv[1]=%s,argv[2]=%s \n ",argc,argv[0],argv[1],argv[2]);
+	swprintf("inside soilwat main: argc=%d argv[0]=%s ,argv[1]=%s,argv[2]=%s \n ",argc,argv[0],argv[1],argv[2]);
 	logged = FALSE;
 	//atexit(check_log);
 	logfp = stdout; /* provides a way to inform user that something */
@@ -112,19 +104,20 @@ void  main_function(int argc, char **argv) {
 	/* but must be set before init_args().  see generic.h */
 
 	init_args(argc, argv);
-	printf("inside soilwat main: init_args successful \n" );
+	swprintf("inside soilwat main: init_args successful \n" );
 
 	SW_CTL_init_model(_firstfile);
-	printf("inside soilwat main: SW_CTL_init_model successful _firstfile=%s \n",_firstfile );
+	SW_CTL_obtain_inputs();
+	swprintf("inside soilwat main: SW_CTL_init_model successful _firstfile=%s \n",_firstfile );
 
 	SW_CTL_main();
-	printf("inside soilwat main: SW_CTL_main successful \n" );
+	swprintf("inside soilwat main: SW_CTL_main successful \n" );
 
 	SW_SIT_clear_layers();
-	printf("inside soilwat main: SW_SIT_clear_layers successful \n" );
+	swprintf("inside soilwat main: SW_SIT_clear_layers successful \n" );
 
 	SW_WTH_clear_runavg_list();
-	printf("inside soilwat main: SW_WTH_clear_runavg_list successful exit main \n" );
+	swprintf("inside soilwat main: SW_WTH_clear_runavg_list successful exit main \n" );
 
 }
 /*********** End of Main() *******************/
@@ -137,7 +130,7 @@ static void check_log(void) {
 	 */
 	if (logfp != stdout && logfp != stderr) {
 		if (logged && !QuietMode)
-			fprintf(stderr, "\nCheck logfile for error or status messages.\n");
+			sw_error(0, "\nCheck logfile for error or status messages.\n");
 		CloseFile(&logfp);
 	}
 
@@ -157,7 +150,8 @@ void init_args(int argc, char **argv) {
 	 *                -q=quiet, don't print "Check logfile"
 	 *                   at end of program.
 	 */
-	char str[1024], *opts[] = { "-d", "-f", "-e", "-q" }; /* valid options */
+	char str[1024]
+	const char *opts[] = { "-d", "-f", "-e", "-q" }; /* valid options */
 	int valopts[] = { 1, 1, 0, 0 }; /* indicates options with values */
 	/* 0=none, 1=required, -1=optional */
 	int i, /* looper through all cmdline arguments */
@@ -180,16 +174,8 @@ void init_args(int argc, char **argv) {
 				break; /* found it, move on */
 		}
 		if (op == nopts) {
-#ifndef RSOILWAT
-			fprintf(stderr, "Invalid option %s\n", argv[a]);
-			usage();
-			exit(-1);
-#else
-			Rprintf("Invalid option %s\n", argv[a]);
-			usage();
-			Rprintf("EXIT -1");
-			error("options");
-#endif
+      usage();
+      sw_error(-1, "Invalid option %s\n", argv[a]);
 		}
 
 		*str = '\0';
@@ -202,16 +188,8 @@ void init_args(int argc, char **argv) {
 				strcpy(str, argv[++a]);
 
 			} else if (0 < valopts[op]) { /* required opt-val not found */
-#ifndef RSOILWAT
-				fprintf(stderr, "Incomplete option %s\n", opts[op]);
-				usage();
-				exit(-1);
-#else
-				Rprintf("Incomplete option %s\n", opts[op]);
-				usage();
-				Rprintf("EXIT -1");
-				error("options");
-#endif
+        usage();
+        sw_error(-1, "Incomplete option %s\n", opts[op]);
 			} /* opt-val not required */
 		}
 
@@ -220,7 +198,7 @@ void init_args(int argc, char **argv) {
 		switch (op) {
 		case 0: /* -d */
 			if (!ChDir(str)) {
-				LogError(stderr, LOGFATAL, "Invalid project directory (%s)", str);
+				LogError(logfp, LOGFATAL, "Invalid project directory (%s)", str);
 			}
 			break;
 		case 1:

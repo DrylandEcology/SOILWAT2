@@ -1,0 +1,171 @@
+\hypertarget{_s_w___soil_water_8c}{}\section{S\+W\+\_\+\+Soil\+Water.\+c File Reference}
+\label{_s_w___soil_water_8c}\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$stdlib.\+h$>$}\newline
+{\ttfamily \#include $<$string.\+h$>$}\newline
+{\ttfamily \#include $<$math.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}generic.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}filefuncs.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}my\+Memory.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Defines.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Files.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Model.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Site.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Soil\+Water.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Output.\+h\char`\"{}}\newline
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{_s_w___soil_water_8c_a6a9d5dbcefaf72eece66ed219bcd749f}{S\+W\+\_\+\+Water\+\_\+\+Flow} (void)
+\item 
+void \hyperlink{_s_w___soil_water_8c_ad62fe931e2c8b2075d1d5a4df4b87151}{S\+W\+\_\+\+S\+W\+C\+\_\+construct} (void)
+\item 
+void \hyperlink{_s_w___soil_water_8c_a15e0502fb9c5356bc78240f3240c42aa}{S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow} (void)
+\item 
+void \hyperlink{_s_w___soil_water_8c_ac5e856e2b9ce7f50bf80a4b68990cdc3}{S\+W\+\_\+\+S\+W\+C\+\_\+end\+\_\+day} (void)
+\item 
+void \hyperlink{_s_w___soil_water_8c_a27c49934c33e702aa2d942d7eed1b841}{S\+W\+\_\+\+S\+W\+C\+\_\+new\+\_\+year} (void)
+\item 
+void \hyperlink{_s_w___soil_water_8c_ac0531314f7790b2c914bbe38cf51f04c}{S\+W\+\_\+\+S\+W\+C\+\_\+read} (void)
+\item 
+void \hyperlink{_s_w___soil_water_8c_aad28c324317c639162dc02a9ca41b050}{S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc} (\hyperlink{_times_8h_a25ac787161a5cad0e3fdfe5a5aeb3236}{Time\+Int} doy)
+\item 
+void \hyperlink{_s_w___soil_water_8c_ad186322d66e90e3b398c571d5f51b306}{S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+snow} (\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} temp\+\_\+min, \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} temp\+\_\+max, \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} ppt, \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} $\ast$rain, \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} $\ast$snow, \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} $\ast$snowmelt, \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} $\ast$snowloss)
+\item 
+\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} \hyperlink{_s_w___soil_water_8c_aa6a58fb26f7ae185badd11539fc175d7}{S\+W\+\_\+\+Snow\+Depth} (\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} S\+WE, \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} snowdensity)
+\item 
+\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} \hyperlink{_s_w___soil_water_8c_a67d7bd8d16c69d650ade7002b6d07750}{S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric} (\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} fraction\+Gravel, \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} swc\+Bulk, \hyperlink{_s_w___site_8h_a6fece0d49f08459808b94a38696a4180}{Lyr\+Index} n)
+\item 
+\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} \hyperlink{_s_w___soil_water_8c_a105a153ddf27179bbccb86c288926d4e}{S\+W\+\_\+\+S\+W\+Pmatric2\+V\+W\+C\+Bulk} (\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} fraction\+Gravel, \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} swp\+Matric, \hyperlink{_s_w___site_8h_a6fece0d49f08459808b94a38696a4180}{Lyr\+Index} n)
+\item 
+\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} \hyperlink{_s_w___soil_water_8c_a98f205f5217dcb6a4ad1535ac3ebc79e}{S\+W\+\_\+\+V\+W\+C\+Bulk\+Res} (\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} fraction\+Gravel, \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} sand, \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} clay, \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} porosity)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{struct_s_w___m_o_d_e_l}{S\+W\+\_\+\+M\+O\+D\+EL} \hyperlink{_s_w___soil_water_8c_a7fe95d8828eeecd4a64b5a230bedea66}{S\+W\+\_\+\+Model}
+\item 
+\hyperlink{struct_s_w___s_i_t_e}{S\+W\+\_\+\+S\+I\+TE} \hyperlink{_s_w___soil_water_8c_a11bcfe9d5a1ea9a25df26589c9e904f3}{S\+W\+\_\+\+Site}
+\item 
+\hyperlink{struct_s_w___s_o_i_l_w_a_t}{S\+W\+\_\+\+S\+O\+I\+L\+W\+AT} \hyperlink{_s_w___soil_water_8c_afdb8ced0825a798336ba061396f7016c}{S\+W\+\_\+\+Soilwat}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\mbox{\Hypertarget{_s_w___soil_water_8c_aa6a58fb26f7ae185badd11539fc175d7}\label{_s_w___soil_water_8c_aa6a58fb26f7ae185badd11539fc175d7}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+Snow\+Depth@{S\+W\+\_\+\+Snow\+Depth}}
+\index{S\+W\+\_\+\+Snow\+Depth@{S\+W\+\_\+\+Snow\+Depth}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+Snow\+Depth()}{SW\_SnowDepth()}}
+{\footnotesize\ttfamily \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} S\+W\+\_\+\+Snow\+Depth (\begin{DoxyParamCaption}\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{S\+WE,  }\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{snowdensity }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_ad186322d66e90e3b398c571d5f51b306}\label{_s_w___soil_water_8c_ad186322d66e90e3b398c571d5f51b306}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+snow@{S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+snow}}
+\index{S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+snow@{S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+snow}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+snow()}{SW\_SWC\_adjust\_snow()}}
+{\footnotesize\ttfamily void S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+snow (\begin{DoxyParamCaption}\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{temp\+\_\+min,  }\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{temp\+\_\+max,  }\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{ppt,  }\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} $\ast$}]{rain,  }\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} $\ast$}]{snow,  }\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} $\ast$}]{snowmelt,  }\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} $\ast$}]{snowloss }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_aad28c324317c639162dc02a9ca41b050}\label{_s_w___soil_water_8c_aad28c324317c639162dc02a9ca41b050}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc@{S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc}}
+\index{S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc@{S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc()}{SW\_SWC\_adjust\_swc()}}
+{\footnotesize\ttfamily void S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc (\begin{DoxyParamCaption}\item[{\hyperlink{_times_8h_a25ac787161a5cad0e3fdfe5a5aeb3236}{Time\+Int}}]{doy }\end{DoxyParamCaption})}
+
+
+
+Referenced by S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow().
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_ad62fe931e2c8b2075d1d5a4df4b87151}\label{_s_w___soil_water_8c_ad62fe931e2c8b2075d1d5a4df4b87151}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+S\+W\+C\+\_\+construct@{S\+W\+\_\+\+S\+W\+C\+\_\+construct}}
+\index{S\+W\+\_\+\+S\+W\+C\+\_\+construct@{S\+W\+\_\+\+S\+W\+C\+\_\+construct}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+S\+W\+C\+\_\+construct()}{SW\_SWC\_construct()}}
+{\footnotesize\ttfamily void S\+W\+\_\+\+S\+W\+C\+\_\+construct (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+
+
+Referenced by S\+W\+\_\+\+C\+T\+L\+\_\+init\+\_\+model().
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_ac5e856e2b9ce7f50bf80a4b68990cdc3}\label{_s_w___soil_water_8c_ac5e856e2b9ce7f50bf80a4b68990cdc3}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+S\+W\+C\+\_\+end\+\_\+day@{S\+W\+\_\+\+S\+W\+C\+\_\+end\+\_\+day}}
+\index{S\+W\+\_\+\+S\+W\+C\+\_\+end\+\_\+day@{S\+W\+\_\+\+S\+W\+C\+\_\+end\+\_\+day}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+S\+W\+C\+\_\+end\+\_\+day()}{SW\_SWC\_end\_day()}}
+{\footnotesize\ttfamily void S\+W\+\_\+\+S\+W\+C\+\_\+end\+\_\+day (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_a27c49934c33e702aa2d942d7eed1b841}\label{_s_w___soil_water_8c_a27c49934c33e702aa2d942d7eed1b841}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+S\+W\+C\+\_\+new\+\_\+year@{S\+W\+\_\+\+S\+W\+C\+\_\+new\+\_\+year}}
+\index{S\+W\+\_\+\+S\+W\+C\+\_\+new\+\_\+year@{S\+W\+\_\+\+S\+W\+C\+\_\+new\+\_\+year}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+S\+W\+C\+\_\+new\+\_\+year()}{SW\_SWC\_new\_year()}}
+{\footnotesize\ttfamily void S\+W\+\_\+\+S\+W\+C\+\_\+new\+\_\+year (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_ac0531314f7790b2c914bbe38cf51f04c}\label{_s_w___soil_water_8c_ac0531314f7790b2c914bbe38cf51f04c}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+S\+W\+C\+\_\+read@{S\+W\+\_\+\+S\+W\+C\+\_\+read}}
+\index{S\+W\+\_\+\+S\+W\+C\+\_\+read@{S\+W\+\_\+\+S\+W\+C\+\_\+read}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+S\+W\+C\+\_\+read()}{SW\_SWC\_read()}}
+{\footnotesize\ttfamily void S\+W\+\_\+\+S\+W\+C\+\_\+read (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_a15e0502fb9c5356bc78240f3240c42aa}\label{_s_w___soil_water_8c_a15e0502fb9c5356bc78240f3240c42aa}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow@{S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow}}
+\index{S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow@{S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow()}{SW\_SWC\_water\_flow()}}
+{\footnotesize\ttfamily void S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_a67d7bd8d16c69d650ade7002b6d07750}\label{_s_w___soil_water_8c_a67d7bd8d16c69d650ade7002b6d07750}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric@{S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric}}
+\index{S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric@{S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric()}{SW\_SWCbulk2SWPmatric()}}
+{\footnotesize\ttfamily \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} S\+W\+\_\+\+S\+W\+Cbulk2\+S\+W\+Pmatric (\begin{DoxyParamCaption}\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{fraction\+Gravel,  }\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{swc\+Bulk,  }\item[{\hyperlink{_s_w___site_8h_a6fece0d49f08459808b94a38696a4180}{Lyr\+Index}}]{n }\end{DoxyParamCaption})}
+
+
+
+Referenced by S\+W\+Cbulk2\+S\+W\+Pmatric().
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_a105a153ddf27179bbccb86c288926d4e}\label{_s_w___soil_water_8c_a105a153ddf27179bbccb86c288926d4e}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+S\+W\+Pmatric2\+V\+W\+C\+Bulk@{S\+W\+\_\+\+S\+W\+Pmatric2\+V\+W\+C\+Bulk}}
+\index{S\+W\+\_\+\+S\+W\+Pmatric2\+V\+W\+C\+Bulk@{S\+W\+\_\+\+S\+W\+Pmatric2\+V\+W\+C\+Bulk}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+S\+W\+Pmatric2\+V\+W\+C\+Bulk()}{SW\_SWPmatric2VWCBulk()}}
+{\footnotesize\ttfamily \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} S\+W\+\_\+\+S\+W\+Pmatric2\+V\+W\+C\+Bulk (\begin{DoxyParamCaption}\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{fraction\+Gravel,  }\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{swp\+Matric,  }\item[{\hyperlink{_s_w___site_8h_a6fece0d49f08459808b94a38696a4180}{Lyr\+Index}}]{n }\end{DoxyParamCaption})}
+
+
+
+Referenced by init\+\_\+site\+\_\+info().
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_a98f205f5217dcb6a4ad1535ac3ebc79e}\label{_s_w___soil_water_8c_a98f205f5217dcb6a4ad1535ac3ebc79e}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+V\+W\+C\+Bulk\+Res@{S\+W\+\_\+\+V\+W\+C\+Bulk\+Res}}
+\index{S\+W\+\_\+\+V\+W\+C\+Bulk\+Res@{S\+W\+\_\+\+V\+W\+C\+Bulk\+Res}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+V\+W\+C\+Bulk\+Res()}{SW\_VWCBulkRes()}}
+{\footnotesize\ttfamily \hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD} S\+W\+\_\+\+V\+W\+C\+Bulk\+Res (\begin{DoxyParamCaption}\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{fraction\+Gravel,  }\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{sand,  }\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{clay,  }\item[{\hyperlink{generic_8h_af1c105fd5732f70b91ddaeda0cc340e3}{RealD}}]{porosity }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_a6a9d5dbcefaf72eece66ed219bcd749f}\label{_s_w___soil_water_8c_a6a9d5dbcefaf72eece66ed219bcd749f}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+Water\+\_\+\+Flow@{S\+W\+\_\+\+Water\+\_\+\+Flow}}
+\index{S\+W\+\_\+\+Water\+\_\+\+Flow@{S\+W\+\_\+\+Water\+\_\+\+Flow}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+Water\+\_\+\+Flow()}{SW\_Water\_Flow()}}
+{\footnotesize\ttfamily void S\+W\+\_\+\+Water\+\_\+\+Flow (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+
+
+Referenced by S\+W\+\_\+\+S\+W\+C\+\_\+water\+\_\+flow().
+
+
+
+\subsection{Variable Documentation}
+\mbox{\Hypertarget{_s_w___soil_water_8c_a7fe95d8828eeecd4a64b5a230bedea66}\label{_s_w___soil_water_8c_a7fe95d8828eeecd4a64b5a230bedea66}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+Model@{S\+W\+\_\+\+Model}}
+\index{S\+W\+\_\+\+Model@{S\+W\+\_\+\+Model}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+Model}{SW\_Model}}
+{\footnotesize\ttfamily \hyperlink{struct_s_w___m_o_d_e_l}{S\+W\+\_\+\+M\+O\+D\+EL} S\+W\+\_\+\+Model}
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_a11bcfe9d5a1ea9a25df26589c9e904f3}\label{_s_w___soil_water_8c_a11bcfe9d5a1ea9a25df26589c9e904f3}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+Site@{S\+W\+\_\+\+Site}}
+\index{S\+W\+\_\+\+Site@{S\+W\+\_\+\+Site}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+Site}{SW\_Site}}
+{\footnotesize\ttfamily \hyperlink{struct_s_w___s_i_t_e}{S\+W\+\_\+\+S\+I\+TE} S\+W\+\_\+\+Site}
+
+\mbox{\Hypertarget{_s_w___soil_water_8c_afdb8ced0825a798336ba061396f7016c}\label{_s_w___soil_water_8c_afdb8ced0825a798336ba061396f7016c}} 
+\index{S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}!S\+W\+\_\+\+Soilwat@{S\+W\+\_\+\+Soilwat}}
+\index{S\+W\+\_\+\+Soilwat@{S\+W\+\_\+\+Soilwat}!S\+W\+\_\+\+Soil\+Water.\+c@{S\+W\+\_\+\+Soil\+Water.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+Soilwat}{SW\_Soilwat}}
+{\footnotesize\ttfamily \hyperlink{struct_s_w___s_o_i_l_w_a_t}{S\+W\+\_\+\+S\+O\+I\+L\+W\+AT} S\+W\+\_\+\+Soilwat}
+
+
+
+Referenced by S\+W\+\_\+\+O\+U\+T\+\_\+sum\+\_\+today(), S\+W\+\_\+\+S\+W\+C\+\_\+adjust\+\_\+swc(), S\+W\+\_\+\+S\+W\+C\+\_\+end\+\_\+day(), and S\+W\+\_\+\+S\+W\+C\+\_\+read().
+

@@ -90,13 +90,14 @@ typedef struct {
 typedef struct {
 
 	Bool reset_yr, /* 1: reset values at start of each year */
-	deepdrain, /* 1: allow drainage into deepest layer  */
-	use_soil_temp; /* whether or not to do soil_temperature calculations */
+		deepdrain, /* 1: allow drainage into deepest layer  */
+		use_soil_temp; /* whether or not to do soil_temperature calculations */
+
 	LyrIndex n_layers, /* total number of soil layers */
-	n_transp_rgn, /* soil layers are grouped into n transp. regions */
-	n_evap_lyrs, /* number of layers in which evap is possible */
-	n_transp_lyrs_forb, n_transp_lyrs_tree, n_transp_lyrs_shrub, n_transp_lyrs_grass, /* layer index of deepest transp. region       */
-	deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
+		n_transp_rgn, /* soil layers are grouped into n transp. regions */
+		n_evap_lyrs, /* number of layers in which evap is possible */
+		n_transp_lyrs_forb, n_transp_lyrs_tree, n_transp_lyrs_shrub, n_transp_lyrs_grass, /* layer index of deepest transp. region       */
+		deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
 	RealD slow_drain_coeff, /* low soil water drainage coefficient   */
 		pet_scale,	/* changes relative effect of PET calculation */
 		latitude,	/* latitude of the site (radians)        */

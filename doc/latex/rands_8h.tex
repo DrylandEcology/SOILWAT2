@@ -1,0 +1,190 @@
+\hypertarget{rands_8h}{}\section{rands.\+h File Reference}
+\label{rands_8h}\index{rands.\+h@{rands.\+h}}
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$float.\+h$>$}\newline
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{rands_8h_ad66856cf13352818eefa117fb3376660}{R\+A\+N\+D\+\_\+\+F\+A\+ST}~1
+\item 
+\#define \hyperlink{rands_8h_a1455ba7faeab85f64b601634591b83de}{Rand\+Uni}~\hyperlink{rands_8h_a76d078c2fef9e6b9d163f000d11c9346}{Rand\+Uni\+\_\+fast}
+\item 
+\#define \hyperlink{rands_8h_a264e95ffa78bb52b335b4ccce1228840}{R\+A\+N\+D\+S\+\_\+H}
+\end{DoxyCompactItemize}
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef long \hyperlink{rands_8h_af3c4c74d79e1f731f27b6edb3d0f3a49}{Rand\+List\+Type}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{rands_8h_ad17d320703c92d263551310bab8aedb5}{Rand\+Seed} (signed long seed)
+\begin{DoxyCompactList}\small\item\em Resets the random number seed. \end{DoxyCompactList}\item 
+double \hyperlink{rands_8h_a6b2c3e2421d50b10f64a632c56f3cdaa}{Rand\+Uni\+\_\+good} (void)
+\begin{DoxyCompactList}\small\item\em Generate a uniform random variate. \end{DoxyCompactList}\item 
+double \hyperlink{rands_8h_a76d078c2fef9e6b9d163f000d11c9346}{Rand\+Uni\+\_\+fast} (void)
+\begin{DoxyCompactList}\small\item\em Generate a uniform random variate. \end{DoxyCompactList}\item 
+int \hyperlink{rands_8h_a5b70649d47341d10706e3a587294d589}{Rand\+Uni\+Range} (const long first, const long last)
+\begin{DoxyCompactList}\small\item\em Generate a random integer between two numbers. \end{DoxyCompactList}\item 
+double \hyperlink{rands_8h_a360602f9de1bde286cb454a0e07c2808}{Rand\+Norm} (double mean, double stddev)
+\item 
+void \hyperlink{rands_8h_ac710bab1ea1ca04eb37a4095cebe1450}{Rand\+Uni\+List} (long, long, long, \hyperlink{rands_8h_af3c4c74d79e1f731f27b6edb3d0f3a49}{Rand\+List\+Type}\mbox{[}$\,$\mbox{]})
+\item 
+float \hyperlink{rands_8h_a7c113f4c25479e9dd7b60b2c382258fb}{genbet} (float aa, float bb)
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\mbox{\Hypertarget{rands_8h_ad66856cf13352818eefa117fb3376660}\label{rands_8h_ad66856cf13352818eefa117fb3376660}} 
+\index{rands.\+h@{rands.\+h}!R\+A\+N\+D\+\_\+\+F\+A\+ST@{R\+A\+N\+D\+\_\+\+F\+A\+ST}}
+\index{R\+A\+N\+D\+\_\+\+F\+A\+ST@{R\+A\+N\+D\+\_\+\+F\+A\+ST}!rands.\+h@{rands.\+h}}
+\subsubsection{\texorpdfstring{R\+A\+N\+D\+\_\+\+F\+A\+ST}{RAND\_FAST}}
+{\footnotesize\ttfamily \#define R\+A\+N\+D\+\_\+\+F\+A\+ST~1}
+
+\mbox{\Hypertarget{rands_8h_a264e95ffa78bb52b335b4ccce1228840}\label{rands_8h_a264e95ffa78bb52b335b4ccce1228840}} 
+\index{rands.\+h@{rands.\+h}!R\+A\+N\+D\+S\+\_\+H@{R\+A\+N\+D\+S\+\_\+H}}
+\index{R\+A\+N\+D\+S\+\_\+H@{R\+A\+N\+D\+S\+\_\+H}!rands.\+h@{rands.\+h}}
+\subsubsection{\texorpdfstring{R\+A\+N\+D\+S\+\_\+H}{RANDS\_H}}
+{\footnotesize\ttfamily \#define R\+A\+N\+D\+S\+\_\+H}
+
+\mbox{\Hypertarget{rands_8h_a1455ba7faeab85f64b601634591b83de}\label{rands_8h_a1455ba7faeab85f64b601634591b83de}} 
+\index{rands.\+h@{rands.\+h}!Rand\+Uni@{Rand\+Uni}}
+\index{Rand\+Uni@{Rand\+Uni}!rands.\+h@{rands.\+h}}
+\subsubsection{\texorpdfstring{Rand\+Uni}{RandUni}}
+{\footnotesize\ttfamily \#define Rand\+Uni~\hyperlink{rands_8h_a76d078c2fef9e6b9d163f000d11c9346}{Rand\+Uni\+\_\+fast}}
+
+
+
+Referenced by Rand\+Beta(), Rand\+Norm(), Rand\+Uni\+Range(), and S\+W\+\_\+\+M\+K\+V\+\_\+today().
+
+
+
+\subsection{Typedef Documentation}
+\mbox{\Hypertarget{rands_8h_af3c4c74d79e1f731f27b6edb3d0f3a49}\label{rands_8h_af3c4c74d79e1f731f27b6edb3d0f3a49}} 
+\index{rands.\+h@{rands.\+h}!Rand\+List\+Type@{Rand\+List\+Type}}
+\index{Rand\+List\+Type@{Rand\+List\+Type}!rands.\+h@{rands.\+h}}
+\subsubsection{\texorpdfstring{Rand\+List\+Type}{RandListType}}
+{\footnotesize\ttfamily typedef long \hyperlink{rands_8h_af3c4c74d79e1f731f27b6edb3d0f3a49}{Rand\+List\+Type}}
+
+
+
+\subsection{Function Documentation}
+\mbox{\Hypertarget{rands_8h_a7c113f4c25479e9dd7b60b2c382258fb}\label{rands_8h_a7c113f4c25479e9dd7b60b2c382258fb}} 
+\index{rands.\+h@{rands.\+h}!genbet@{genbet}}
+\index{genbet@{genbet}!rands.\+h@{rands.\+h}}
+\subsubsection{\texorpdfstring{genbet()}{genbet()}}
+{\footnotesize\ttfamily float genbet (\begin{DoxyParamCaption}\item[{float}]{aa,  }\item[{float}]{bb }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{rands_8h_a360602f9de1bde286cb454a0e07c2808}\label{rands_8h_a360602f9de1bde286cb454a0e07c2808}} 
+\index{rands.\+h@{rands.\+h}!Rand\+Norm@{Rand\+Norm}}
+\index{Rand\+Norm@{Rand\+Norm}!rands.\+h@{rands.\+h}}
+\subsubsection{\texorpdfstring{Rand\+Norm()}{RandNorm()}}
+{\footnotesize\ttfamily double Rand\+Norm (\begin{DoxyParamCaption}\item[{double}]{mean,  }\item[{double}]{stddev }\end{DoxyParamCaption})}
+
+
+
+Referenced by S\+W\+\_\+\+M\+K\+V\+\_\+today().
+
+\mbox{\Hypertarget{rands_8h_ad17d320703c92d263551310bab8aedb5}\label{rands_8h_ad17d320703c92d263551310bab8aedb5}} 
+\index{rands.\+h@{rands.\+h}!Rand\+Seed@{Rand\+Seed}}
+\index{Rand\+Seed@{Rand\+Seed}!rands.\+h@{rands.\+h}}
+\subsubsection{\texorpdfstring{Rand\+Seed()}{RandSeed()}}
+{\footnotesize\ttfamily void Rand\+Seed (\begin{DoxyParamCaption}\item[{signed long}]{seed }\end{DoxyParamCaption})}
+
+
+
+Resets the random number seed. 
+
+The seed is set to negative when this routine is called, so the generator routines ( eg, \hyperlink{rands_8h_a1455ba7faeab85f64b601634591b83de}{Rand\+Uni()}) can tell that it has changed. If called with seed==0, \+\_\+randseed is reset from process time. \textquotesingle{}\% 0xffff\textquotesingle{} is due to a bug in \hyperlink{rands_8h_a1455ba7faeab85f64b601634591b83de}{Rand\+Uni()} that conks if seed is too large; should be removed in the near future.
+
+
+\begin{DoxyParams}{Parameters}
+{\em seed} & The seed.\\
+\hline
+\end{DoxyParams}
+cwb -\/ 6/27/00 
+
+Referenced by S\+W\+\_\+\+M\+D\+L\+\_\+construct().
+
+\mbox{\Hypertarget{rands_8h_a76d078c2fef9e6b9d163f000d11c9346}\label{rands_8h_a76d078c2fef9e6b9d163f000d11c9346}} 
+\index{rands.\+h@{rands.\+h}!Rand\+Uni\+\_\+fast@{Rand\+Uni\+\_\+fast}}
+\index{Rand\+Uni\+\_\+fast@{Rand\+Uni\+\_\+fast}!rands.\+h@{rands.\+h}}
+\subsubsection{\texorpdfstring{Rand\+Uni\+\_\+fast()}{RandUni\_fast()}}
+{\footnotesize\ttfamily double Rand\+Uni\+\_\+fast (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+
+
+Generate a uniform random variate. 
+
+\char`\"{}\+Fast\char`\"{} because it utilizes the system rand() but shuffles the results to make a less correlated sequence. This code is based on F\+U\+N\+C\+T\+I\+ON R\+A\+N0 in Press, et al., 1986, Numerical Recipes, p196, Press Syndicate, NY.
+
+Of course, just how fast is \char`\"{}fast\char`\"{} depends on the implementation of the compiler. Some older generators may be quite simple, and so would be faster than a more complicated algorithm. Newer rand()\textquotesingle{}s are often fast and good.
+
+cwb 18-\/\+Dec-\/02
+
+\begin{DoxyReturn}{Returns}
+double. A value between 0 and 1. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{rands_8h_a6b2c3e2421d50b10f64a632c56f3cdaa}\label{rands_8h_a6b2c3e2421d50b10f64a632c56f3cdaa}} 
+\index{rands.\+h@{rands.\+h}!Rand\+Uni\+\_\+good@{Rand\+Uni\+\_\+good}}
+\index{Rand\+Uni\+\_\+good@{Rand\+Uni\+\_\+good}!rands.\+h@{rands.\+h}}
+\subsubsection{\texorpdfstring{Rand\+Uni\+\_\+good()}{RandUni\_good()}}
+{\footnotesize\ttfamily double Rand\+Uni\+\_\+good (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+
+
+Generate a uniform random variate. 
+
+Return a random number from uniform distribution. Result is between 0 and 1. This routine is adapted from F\+U\+N\+C\+T\+I\+ON R\+A\+N1 in Press, et al., 1986, Numerical Recipes, p196, Press Syndicate, NY. To reset the random number sequence, set \+\_\+randseed to any negative number prior to calling this function, or one that depends on it (eg, \hyperlink{rands_8c_a360602f9de1bde286cb454a0e07c2808}{Rand\+Norm()}).
+
+This code is preferable in terms of portability as well as consistency across compilers.
+
+cwb -\/ 6/20/00
+
+\begin{DoxyReturn}{Returns}
+double. A value between 0 and 1. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{rands_8h_ac710bab1ea1ca04eb37a4095cebe1450}\label{rands_8h_ac710bab1ea1ca04eb37a4095cebe1450}} 
+\index{rands.\+h@{rands.\+h}!Rand\+Uni\+List@{Rand\+Uni\+List}}
+\index{Rand\+Uni\+List@{Rand\+Uni\+List}!rands.\+h@{rands.\+h}}
+\subsubsection{\texorpdfstring{Rand\+Uni\+List()}{RandUniList()}}
+{\footnotesize\ttfamily void Rand\+Uni\+List (\begin{DoxyParamCaption}\item[{long}]{,  }\item[{long}]{,  }\item[{long}]{,  }\item[{\hyperlink{rands_8h_af3c4c74d79e1f731f27b6edb3d0f3a49}{Rand\+List\+Type}}]{\mbox{[}$\,$\mbox{]} }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{rands_8h_a5b70649d47341d10706e3a587294d589}\label{rands_8h_a5b70649d47341d10706e3a587294d589}} 
+\index{rands.\+h@{rands.\+h}!Rand\+Uni\+Range@{Rand\+Uni\+Range}}
+\index{Rand\+Uni\+Range@{Rand\+Uni\+Range}!rands.\+h@{rands.\+h}}
+\subsubsection{\texorpdfstring{Rand\+Uni\+Range()}{RandUniRange()}}
+{\footnotesize\ttfamily int Rand\+Uni\+Range (\begin{DoxyParamCaption}\item[{const long}]{first,  }\item[{const long}]{last }\end{DoxyParamCaption})}
+
+
+
+Generate a random integer between two numbers. 
+
+Return a randomly selected integer between first and last, inclusive.
+
+cwb -\/ 12/5/00
+
+cwb -\/ 12/8/03 -\/ just noticed that the previous version only worked with positive numbers and when first $<$ last. Now it works with negative numbers as well as reversed order.
+
+Examples\+:
+\begin{DoxyItemize}
+\item first = 1, last = 10, result = 6
+\item first = 5, last = -\/1, result = 2
+\item first = -\/5, last = 5, result = 0
+\end{DoxyItemize}
+
+
+\begin{DoxyParams}{Parameters}
+{\em first.} & One bound of the range between two numbers. A const long argument. \\
+\hline
+{\em last.} & One bound of the range between two numbers. A const long argument.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer. Random number between the two bounds defined. 
+\end{DoxyReturn}
+
+
+Referenced by Rand\+Uni\+List().
+

@@ -7,8 +7,14 @@
 #include "generic.h"
 #include "rands.h"
 #include "myMemory.h"
+#include "filefuncs.h"
 
 long _randseed = 0L;
+
+#ifdef RSOILWAT
+  #include <R_ext/Random.h> // for the random number generators
+#endif
+
 
 /*****************************************************/
 /**
@@ -33,15 +39,7 @@ void RandSeed(signed long seed) {
 	if (seed == 0L) {
 		_randseed = ((long) time(NULL ));
 		if (_randseed == -1) {
-#ifndef RSOILWAT
-			fprintf(stderr, "ERROR: RandSeed(0) called, "
-					"but time() not available\n");
-			exit(-1);
-#else
-			Rprintf("ERROR: RandSeed(0) called, but time() not available\n");
-     		Rprintf("EXIT -1");
-     		error("@ RandSeed");
-#endif
+      sw_error(-1, "ERROR: RandSeed(0) called, but time() not available\n");
 		}
 		/*    _randseed %= 0xffff; */
 		_randseed *= -1;
@@ -49,8 +47,10 @@ void RandSeed(signed long seed) {
 		_randseed = abs(seed) * -1;
 	}
 
+#ifndef RSOILWAT
 #if RAND_FAST
 	srand(abs(_randseed));
+#endif
 #endif
 
 }
@@ -79,23 +79,35 @@ void RandSeed(signed long seed) {
 	\return double. A value between 0 and 1.
 */
 double RandUni_fast(void) {
-	static short first_time = 1;
-	static int bucket[BUCKETSIZE];
-	static double y, rmax = RAND_MAX;
-	int i, j;
+	static double y;
 
-	if (first_time) {
-		first_time = 0;
-		for (j = 0; j < BUCKETSIZE; j++)
-			rand();
-		for (j = 0; j < BUCKETSIZE; j++)
-			bucket[j] = rand();
-		y = rand() / rmax;
-	}
-	i = 1 + (int) ((double) BUCKETSIZE * y);
-	i = max(BUCKETSIZE -1, min(i,0));
-	y = bucket[i] / rmax;
-	bucket[i] = rand();
+	#ifdef RSOILWAT
+		GetRNGstate();
+		y = unif_rand();
+		PutRNGstate();
+
+	#else
+		static short first_time = 1;
+		static int bucket[BUCKETSIZE];
+		static double rmax = RAND_MAX;
+		int i, j;
+
+
+		if (first_time) {
+			first_time = 0;
+			for (j = 0; j < BUCKETSIZE; j++) {
+				rand();
+			}
+			for (j = 0; j < BUCKETSIZE; j++) {
+				bucket[j] = rand();
+			}
+			y = rand() / rmax;
+		}
+		i = 1 + (int) ((double) BUCKETSIZE * y);
+		i = max(BUCKETSIZE -1, min(i,0));
+		y = bucket[i] / rmax;
+		bucket[i] = rand();
+	#endif
 
 	return y;
 }
@@ -125,57 +137,57 @@ double RandUni_fast(void) {
 
 */
 double RandUni_good(void) {
+	static double y;
 
+	#ifdef RSOILWAT
+		GetRNGstate();
+		y = unif_rand();
+		PutRNGstate();
 
-	long i;
-	static short first_time = 1;
-	static double bucket[BUCKETSIZE], y;
-	static const long im1 = 259200, ia1 = 7141, ic1 = 54773, im2 = 134456,
-		ia2 = 8121, ic2 = 28411, im3 = 243000, ia3 = 4561, ic3 = 51349;
-	static const double rm1 = 3.8580247e-6, /* 1/im1 */
-		rm2 = 7.4373773e-6; /* 1/im2 */
+	#else
+		long i;
+		static short first_time = 1;
+		static double bucket[BUCKETSIZE];
+		static const long im1 = 259200, ia1 = 7141, ic1 = 54773, im2 = 134456,
+			ia2 = 8121, ic2 = 28411, im3 = 243000, ia3 = 4561, ic3 = 51349;
+		static const double rm1 = 3.8580247e-6, /* 1/im1 */
+			rm2 = 7.4373773e-6; /* 1/im2 */
 
-	static long ix1, ix2, ix3;
+		static long ix1, ix2, ix3;
 
-	if (_randseed == 0L) {
-#ifndef RSOILWAT
-		fprintf(stderr, "RandUni() error: seed not set\n");
-		exit(-1);
-#else
-		Rprintf("RandUni() error: seed not set\n");
-		Rprintf("EXIT -1");
-		error("@ _randseed==0L");
-#endif
-	}
-	if (first_time || _randseed < 0) {
-		first_time = 0;
-		ix1 = abs(ic1 - abs(_randseed)) % im1;
-		ix1 = (ia1 * ix1 + ic1) % im1;
-		ix2 = ix1 % im2;
-		ix2 = (ia2 * ix2 + ic2) % im2; /* looks like a typo in the book */
-		ix3 = ix1 % im3;
-		for (i = 0; i < BUCKETSIZE; i++) {
-			ix1 = (ia1 * ix1 + ic1) % im1;
-			ix2 = (ia2 * ix2 + ic2) % im2;
-			bucket[i] = ((double) ix1 + (double) ix2 * rm2) * rm1;
+		if (_randseed == 0L) {
+			sw_error(-1, "RandUni() error: seed not set\n");
 		}
-		_randseed = 1;
-	}
+		if (first_time || _randseed < 0) {
+			first_time = 0;
+			ix1 = abs(ic1 - abs(_randseed)) % im1;
+			ix1 = (ia1 * ix1 + ic1) % im1;
+			ix2 = ix1 % im2;
+			ix2 = (ia2 * ix2 + ic2) % im2; /* looks like a typo in the book */
+			ix3 = ix1 % im3;
+			for (i = 0; i < BUCKETSIZE; i++) {
+				ix1 = (ia1 * ix1 + ic1) % im1;
+				ix2 = (ia2 * ix2 + ic2) % im2;
+				bucket[i] = ((double) ix1 + (double) ix2 * rm2) * rm1;
+			}
+			_randseed = 1;
+		}
 
-	/* start here if not initializing, */
-	/* and make the numbers happen     */
-	ix1 = (ia1 * ix1 + ic1) % im1;
-	ix2 = (ia2 * ix2 + ic2) % im2;
-	ix3 = (ia3 * ix3 + ic3) % im3;
+		/* start here if not initializing, */
+		/* and make the numbers happen     */
+		ix1 = (ia1 * ix1 + ic1) % im1;
+		ix2 = (ia2 * ix2 + ic2) % im2;
+		ix3 = (ia3 * ix3 + ic3) % im3;
 
-	/* get a random index into the bucket */
-	i = 1 + (ix3 * BUCKETSIZE) / im3;
-	i = max(BUCKETSIZE -1, min( i,0));
-	/*  i = (i > BUCKETSIZE -1 ) ? BUCKETSIZE -1 : i; */
+		/* get a random index into the bucket */
+		i = 1 + (ix3 * BUCKETSIZE) / im3;
+		i = max(BUCKETSIZE -1, min( i,0));
+		/*  i = (i > BUCKETSIZE -1 ) ? BUCKETSIZE -1 : i; */
 
-	/* snatch a random number and replace it */
-	y = bucket[i];
-	bucket[i] = ((double) ix1 + (double) ix2 * rm2) * rm1;
+		/* snatch a random number and replace it */
+		y = bucket[i];
+		bucket[i] = ((double) ix1 + (double) ix2 * rm2) * rm1;
+	#endif
 
 	return y;
 }
@@ -207,8 +219,6 @@ double RandUni_good(void) {
 
 */
 int RandUniRange(const long first, const long last) {
-
-
 	long f, l, r;
 
 	if (first == last)
@@ -224,7 +234,6 @@ int RandUniRange(const long first, const long last) {
 
 	r = l - f + 1;
 	return (long) (RandUni() * r) + f;
-
 }
 
 /*****************************************************/
@@ -246,15 +255,7 @@ void RandUniList(long count, long first, long last, RandListType list[]) {
 	range = last - first + 1;
 
 	if (count > range || range <= 0) {
-#ifndef RSOILWAT
-		fprintf(stderr, "Programmer error in RandUniList: "
-				"count > range || range <= 0\n");
-		exit(-1);
-#else
-		Rprintf("Programmer error in RandUniList: "
-            "count > range || range <= 0\n");
-		Rprintf("EXIT -1 RandUniList");
-#endif
+    sw_error(-1, "Programmer error in RandUniList: count > range || range <= 0\n");
 	}
 
 	/* if count == range for some weird reason, just
@@ -323,26 +324,37 @@ double RandNorm(double mean, double stddev) {
 	 gasdev and gset have to be static!
 	 might as well set the others.
 	 -------------------------------------------*/
-	static short set = 0;
+	double y;
 
-	static double v1, v2, r, fac, gset, gasdev;
+	#ifdef RSOILWAT
+		GetRNGstate();
+		y = norm_rand();
+		PutRNGstate();
 
-	if (!set) {
-		do {
-			v1 = 2.0 * RandUni() - 1.0;
-			v2 = 2.0 * RandUni() - 1.0;
-			r = v1 * v1 + v2 * v2;
-		} while (r >= 1.0);
-		fac = sqrt(-2.0 *log(r)/r);
-		gset = v1 * fac;
-		gasdev = v2 * fac;
-		set = 1;
-	} else {
-		gasdev = gset;
-		set = 0;
-	}
+	#else
+		static short set = 0;
 
-	return mean + gasdev * stddev;
+		static double v1, v2, r, fac, gset, gasdev;
+
+		if (!set) {
+			do {
+				v1 = 2.0 * RandUni() - 1.0;
+				v2 = 2.0 * RandUni() - 1.0;
+				r = v1 * v1 + v2 * v2;
+			} while (r >= 1.0);
+			fac = sqrt(-2.0 *log(r)/r);
+			gset = v1 * fac;
+			gasdev = v2 * fac;
+			set = 1;
+		} else {
+			gasdev = gset;
+			set = 0;
+		}
+
+		y = mean + gasdev * stddev;
+	#endif
+
+	return y;
 }
 
 /**
@@ -353,7 +365,15 @@ double RandNorm(double mean, double stddev) {
   with shape parameters a and b. The density is
       x^(a-1) * (1-x)^(b-1) / Beta(a,b) for 0 < x < 1
 
-  TODO: Provide appropriate reference(s) and license statements for the 'GENBET' algorithm.
+	The code for RandBeta was taken from ranlib, a FORTRAN77 library. Original
+	FORTRAN77 version by Barry Brown, James Lovato. C version by John Burkardt.
+	\cite Cheng1978
+
+	This code is distributed under the GNU LGPL license.
+
+  [More info can be found here](http://people.sc.fsu.edu/~jburkardt/f77_src/ranlib/ranlib.html)
+
+
 
   \param aa. The first shape parameter of the beta distribution with 0.0 < aa.
   \param bb. The second shape parameter of the beta distribution with 0.0 < bb.
@@ -384,18 +404,12 @@ float RandBeta ( float aa, float bb )
 
   if ( aa <= 0.0 )
   {
-    fprintf ( stderr, "\n" );
-    fprintf ( stderr, "GENBET - Fatal error!\n" );
-    fprintf ( stderr, "  AA <= 0.0\n" );
-    exit ( 1 );
+    sw_error(1, "GENBET - Fatal error: AA <= 0.0\n");
   }
 
   if ( bb <= 0.0 )
   {
-    fprintf ( stderr, "\n" );
-    fprintf ( stderr, "GENBET - Fatal error!\n" );
-    fprintf ( stderr, "  BB <= 0.0\n" );
-    exit ( 1 );
+    sw_error(1, "GENBET - Fatal error: BB <= 0.0\n");
   }
 /*
   Algorithm BB

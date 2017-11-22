@@ -4,9 +4,6 @@
 #include <R_ext/Rdynload.h>
 
 /* .C calls */
-static const R_CallMethodDef CEntries[] = {
-  {NULL, NULL, 0, NULL}
-};
 
 /* .Call calls */
 extern SEXP start(SEXP, SEXP, SEXP);
@@ -24,7 +21,7 @@ static const R_CallMethodDef CallEntries[] = {
 
 /* Register package calls with R */
 void R_init_rSOILWAT2(DllInfo *dll) {
-  R_registerRoutines(dll, CEntries, CallEntries, NULL, NULL);
+  R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
   R_useDynamicSymbols(dll, FALSE);
   R_forceSymbols(dll, TRUE);
 }

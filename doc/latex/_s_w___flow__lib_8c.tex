@@ -1,0 +1,369 @@
+\hypertarget{_s_w___flow__lib_8c}{}\section{S\+W\+\_\+\+Flow\+\_\+lib.\+c File Reference}
+\label{_s_w___flow__lib_8c}\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+{\ttfamily \#include $<$math.\+h$>$}\newline
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$stdlib.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}generic.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Defines.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Flow\+\_\+lib.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}S\+W\+\_\+\+Flow\+\_\+subs.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Times.\+h\char`\"{}}\newline
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{_s_w___flow__lib_8c_af96898fb97d62e17b02d0c6f719151ce}{grass\+\_\+intercepted\+\_\+water} (double $\ast$pptleft, double $\ast$wintgrass, double ppt, double vegcov, double scale, double a, double b, double c, double d)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_acc1aee51b5bbcb1380efeb93b025f0ad}{shrub\+\_\+intercepted\+\_\+water} (double $\ast$pptleft, double $\ast$wintshrub, double ppt, double vegcov, double scale, double a, double b, double c, double d)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_af6e4f9a8a045eb85be00fa075a38e784}{tree\+\_\+intercepted\+\_\+water} (double $\ast$pptleft, double $\ast$wintfor, double ppt, double L\+AI, double scale, double a, double b, double c, double d)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a1465316e765759db20d065ace8d0d88e}{forb\+\_\+intercepted\+\_\+water} (double $\ast$pptleft, double $\ast$wintforb, double ppt, double vegcov, double scale, double a, double b, double c, double d)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a58d72436d25f98e09dfe7dad4876e033}{litter\+\_\+intercepted\+\_\+water} (double $\ast$pptleft, double $\ast$wintlit, double blitter, double scale, double a, double b, double c, double d)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a877c3d07d472ef356509efb287e89478}{infiltrate\+\_\+water\+\_\+high} (double swc\mbox{[}$\,$\mbox{]}, double drain\mbox{[}$\,$\mbox{]}, double $\ast$\hyperlink{_s_w___flow_8c_a4106901c0198609299d856b2b1f88304}{drainout}, double pptleft, unsigned int nlyrs, double swcfc\mbox{[}$\,$\mbox{]}, double swcsat\mbox{[}$\,$\mbox{]}, double impermeability\mbox{[}$\,$\mbox{]}, double $\ast$standing\+Water)
+\item 
+double \hyperlink{_s_w___flow__lib_8c_a3bdea7cd6604199ad49673c073470038}{petfunc} (unsigned int doy, double avgtemp, double rlat, double elev, double slope, double aspect, double reflec, double humid, double windsp, double cloudcov, double transcoeff)
+\item 
+double \hyperlink{_s_w___flow__lib_8c_aa86991fe46bc4a9b6bff3a175064464a}{svapor} (double temp)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a7293b4daefd4b3104a2d6422c80fe187}{transp\+\_\+weighted\+\_\+avg} (double $\ast$swp\+\_\+avg, unsigned int n\+\_\+tr\+\_\+rgns, unsigned int n\+\_\+layers, unsigned int tr\+\_\+regions\mbox{[}$\,$\mbox{]}, double tr\+\_\+coeff\mbox{[}$\,$\mbox{]}, double swc\mbox{[}$\,$\mbox{]})
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a509909394ec87616d70b0f98ff790bb6}{grass\+\_\+\+Es\+T\+\_\+partitioning} (double $\ast$fbse, double $\ast$fbst, double blivelai, double lai\+\_\+param)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a07b599ca60ae18b36154e117789b4ba1}{shrub\+\_\+\+Es\+T\+\_\+partitioning} (double $\ast$fbse, double $\ast$fbst, double blivelai, double lai\+\_\+param)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a17210cb66ba3a806d36a1ee36819ae09}{tree\+\_\+\+Es\+T\+\_\+partitioning} (double $\ast$fbse, double $\ast$fbst, double blivelai, double lai\+\_\+param)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_ad06cdd37a42a5f79b86c25c8e90de0c3}{forb\+\_\+\+Es\+T\+\_\+partitioning} (double $\ast$fbse, double $\ast$fbst, double blivelai, double lai\+\_\+param)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a12dc2157867a28f063bac79338e32daf}{pot\+\_\+soil\+\_\+evap} (double $\ast$bserate, unsigned int nelyrs, double ecoeff\mbox{[}$\,$\mbox{]}, double totagb, double fbse, double petday, double shift, double shape, double inflec, double range, double width\mbox{[}$\,$\mbox{]}, double swc\mbox{[}$\,$\mbox{]}, double Es\+\_\+param\+\_\+limit)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a3a889cfc64aa918959e6c331b23c56ab}{pot\+\_\+soil\+\_\+evap\+\_\+bs} (double $\ast$bserate, unsigned int nelyrs, double ecoeff\mbox{[}$\,$\mbox{]}, double petday, double shift, double shape, double inflec, double range, double width\mbox{[}$\,$\mbox{]}, double swc\mbox{[}$\,$\mbox{]})
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a1bd1c1f3527cbe8b6bb9aac1bc737809}{pot\+\_\+transp} (double $\ast$bstrate, double swpavg, double biolive, double biodead, double fbst, double petday, double swp\+\_\+shift, double swp\+\_\+shape, double swp\+\_\+inflec, double swp\+\_\+range, double shade\+\_\+scale, double shade\+\_\+deadmax, double shade\+\_\+xinflex, double shade\+\_\+slope, double shade\+\_\+yinflex, double shade\+\_\+range)
+\item 
+double \hyperlink{_s_w___flow__lib_8c_a2d2e41ea50a7a1771d0c6273e857b5be}{watrate} (double swp, double petday, double shift, double shape, double inflec, double range)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a41552e80ab8d387b43a80fef49b4d808}{evap\+\_\+from\+Surface} (double $\ast$water\+\_\+pool, double $\ast$evap\+\_\+rate, double $\ast$aet)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a3a09cb656bc69c7373a2d01cb06b0700}{remove\+\_\+from\+\_\+soil} (double swc\mbox{[}$\,$\mbox{]}, double qty\mbox{[}$\,$\mbox{]}, double $\ast$aet, unsigned int nlyrs, double coeff\mbox{[}$\,$\mbox{]}, double rate, double swcmin\mbox{[}$\,$\mbox{]})
+\item 
+void \hyperlink{_s_w___flow__lib_8c_ade5212bfa19c58306595cafe95df820c}{infiltrate\+\_\+water\+\_\+low} (double swc\mbox{[}$\,$\mbox{]}, double drain\mbox{[}$\,$\mbox{]}, double $\ast$\hyperlink{_s_w___flow_8c_a4106901c0198609299d856b2b1f88304}{drainout}, unsigned int nlyrs, double sdrainpar, double sdraindpth, double swcfc\mbox{[}$\,$\mbox{]}, double width\mbox{[}$\,$\mbox{]}, double swcmin\mbox{[}$\,$\mbox{]}, double swcsat\mbox{[}$\,$\mbox{]}, double impermeability\mbox{[}$\,$\mbox{]}, double $\ast$standing\+Water)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_aa9a45f022035636fd97bd9e01dd3b640}{hydraulic\+\_\+redistribution} (double swc\mbox{[}$\,$\mbox{]}, double swcwp\mbox{[}$\,$\mbox{]}, double lyr\+Root\+Co\mbox{[}$\,$\mbox{]}, double hydred\mbox{[}$\,$\mbox{]}, unsigned int nlyrs, double max\+Condroot, double swp50, double shape\+Cond, double scale)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_aad3e73859c6192bacd4ef31615b28c55}{lyr\+Temp\+\_\+to\+\_\+lyr\+Soil\+\_\+temperature} (double cor\mbox{[}\hyperlink{_s_w___defines_8h_a30b7d70368683bce332d0cda6571adec}{M\+A\+X\+\_\+\+S\+T\+\_\+\+R\+GR}+1\mbox{]}\mbox{[}\hyperlink{_s_w___defines_8h_ade9d4b2ac5f29fe89ffea40e7c58c9d6}{M\+A\+X\+\_\+\+L\+A\+Y\+E\+RS}+1\mbox{]}, unsigned int nlyr\+Temp, double depth\+\_\+\+Temp\mbox{[}$\,$\mbox{]}, double s\+TempR\mbox{[}$\,$\mbox{]}, unsigned int nlyr\+Soil, double depth\+\_\+\+Soil\mbox{[}$\,$\mbox{]}, double width\+\_\+\+Soil\mbox{[}$\,$\mbox{]}, double s\+Temp\mbox{[}$\,$\mbox{]})
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a03df632357244d21459a7680fe167dcc}{lyr\+Soil\+\_\+to\+\_\+lyr\+Temp\+\_\+temperature} (unsigned int nlyr\+Soil, double depth\+\_\+\+Soil\mbox{[}$\,$\mbox{]}, double s\+Temp\mbox{[}$\,$\mbox{]}, double end\+Temp, unsigned int nlyr\+Temp, double depth\+\_\+\+Temp\mbox{[}$\,$\mbox{]}, double max\+Temp\+Depth, double s\+TempR\mbox{[}$\,$\mbox{]})
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a3b87733156e9a39648e59c7ad1754f96}{lyr\+Soil\+\_\+to\+\_\+lyr\+Temp} (double cor\mbox{[}\hyperlink{_s_w___defines_8h_a30b7d70368683bce332d0cda6571adec}{M\+A\+X\+\_\+\+S\+T\+\_\+\+R\+GR}+1\mbox{]}\mbox{[}\hyperlink{_s_w___defines_8h_ade9d4b2ac5f29fe89ffea40e7c58c9d6}{M\+A\+X\+\_\+\+L\+A\+Y\+E\+RS}+1\mbox{]}, unsigned int nlyr\+Soil, double width\+\_\+\+Soil\mbox{[}$\,$\mbox{]}, double var\mbox{[}$\,$\mbox{]}, unsigned int nlyr\+Temp, double width\+\_\+\+Temp, double res\mbox{[}$\,$\mbox{]})
+\item 
+double \hyperlink{_s_w___flow__lib_8c_a5246f7d7fc66d00706dcd395e355aae3}{surface\+\_\+temperature\+\_\+under\+\_\+snow} (double air\+Temp\+Avg, double snow)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_add74b9b9112cbea66a065aed2a3c77b8}{soil\+\_\+temperature\+\_\+init} (double b\+Density\mbox{[}$\,$\mbox{]}, double width\mbox{[}$\,$\mbox{]}, double surface\+Temp, double olds\+Temp\mbox{[}$\,$\mbox{]}, double mean\+Air\+Temp, unsigned int nlyrs, double fc\mbox{[}$\,$\mbox{]}, double wp\mbox{[}$\,$\mbox{]}, double deltaX, double the\+Max\+Depth, unsigned int n\+Rgr)
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a921d6c39af0fc6fd7b284db250488500}{set\+\_\+frozen\+\_\+unfrozen} (unsigned int nlyrs, double s\+Temp\mbox{[}$\,$\mbox{]}, double swc\mbox{[}$\,$\mbox{]}, double swc\+\_\+sat\mbox{[}$\,$\mbox{]}, double width\mbox{[}$\,$\mbox{]})
+\item 
+unsigned int \hyperlink{_s_w___flow__lib_8c_a7570bfc44a681654eea14bc9336f2689}{adjust\+\_\+\+Tsoil\+\_\+by\+\_\+freezing\+\_\+and\+\_\+thawing} (double olds\+Temp\mbox{[}$\,$\mbox{]}, double s\+Temp\mbox{[}$\,$\mbox{]}, double sh\+Param, unsigned int nlyrs, double vwc\mbox{[}$\,$\mbox{]}, double b\+Density\mbox{[}$\,$\mbox{]})
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a2bb21c147c1a560a90c765e619297b4c}{end\+Calculations} ()
+\item 
+void \hyperlink{_s_w___flow__lib_8c_a2da161c71736e111d04ff43e5955366e}{soil\+\_\+temperature} (double air\+Temp, double pet, double aet, double biomass, double swc\mbox{[}$\,$\mbox{]}, double swc\+\_\+sat\mbox{[}$\,$\mbox{]}, double b\+Density\mbox{[}$\,$\mbox{]}, double width\mbox{[}$\,$\mbox{]}, double olds\+Temp\mbox{[}$\,$\mbox{]}, double s\+Temp\mbox{[}$\,$\mbox{]}, double surface\+Temp\mbox{[}2\mbox{]}, unsigned int nlyrs, double fc\mbox{[}$\,$\mbox{]}, double wp\mbox{[}$\,$\mbox{]}, double bm\+Limiter, double t1\+Param1, double t1\+Param2, double t1\+Param3, double cs\+Param1, double cs\+Param2, double sh\+Param, double snowdepth, double mean\+Air\+Temp, double deltaX, double the\+Max\+Depth, unsigned int n\+Rgr, double snow)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{struct_s_w___s_i_t_e}{S\+W\+\_\+\+S\+I\+TE} \hyperlink{_s_w___flow__lib_8c_a11bcfe9d5a1ea9a25df26589c9e904f3}{S\+W\+\_\+\+Site}
+\item 
+\hyperlink{struct_s_w___s_o_i_l_w_a_t}{S\+W\+\_\+\+S\+O\+I\+L\+W\+AT} \hyperlink{_s_w___flow__lib_8c_afdb8ced0825a798336ba061396f7016c}{S\+W\+\_\+\+Soilwat}
+\item 
+unsigned int \hyperlink{_s_w___flow__lib_8c_a04e8d1631a4a59d1e6b0a19a378d9a58}{soil\+\_\+temp\+\_\+error}
+\item 
+unsigned int \hyperlink{_s_w___flow__lib_8c_ace889dddadc2b4542b04b1b131df57ab}{soil\+\_\+temp\+\_\+init}
+\item 
+unsigned int \hyperlink{_s_w___flow__lib_8c_a6fd11ca6c2749216e3c8f343528a1043}{fusion\+\_\+pool\+\_\+init}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a7570bfc44a681654eea14bc9336f2689}\label{_s_w___flow__lib_8c_a7570bfc44a681654eea14bc9336f2689}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!adjust\+\_\+\+Tsoil\+\_\+by\+\_\+freezing\+\_\+and\+\_\+thawing@{adjust\+\_\+\+Tsoil\+\_\+by\+\_\+freezing\+\_\+and\+\_\+thawing}}
+\index{adjust\+\_\+\+Tsoil\+\_\+by\+\_\+freezing\+\_\+and\+\_\+thawing@{adjust\+\_\+\+Tsoil\+\_\+by\+\_\+freezing\+\_\+and\+\_\+thawing}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{adjust\+\_\+\+Tsoil\+\_\+by\+\_\+freezing\+\_\+and\+\_\+thawing()}{adjust\_Tsoil\_by\_freezing\_and\_thawing()}}
+{\footnotesize\ttfamily unsigned int adjust\+\_\+\+Tsoil\+\_\+by\+\_\+freezing\+\_\+and\+\_\+thawing (\begin{DoxyParamCaption}\item[{double}]{olds\+Temp\mbox{[}$\,$\mbox{]},  }\item[{double}]{s\+Temp\mbox{[}$\,$\mbox{]},  }\item[{double}]{sh\+Param,  }\item[{unsigned int}]{nlyrs,  }\item[{double}]{vwc\mbox{[}$\,$\mbox{]},  }\item[{double}]{b\+Density\mbox{[}$\,$\mbox{]} }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a2bb21c147c1a560a90c765e619297b4c}\label{_s_w___flow__lib_8c_a2bb21c147c1a560a90c765e619297b4c}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!end\+Calculations@{end\+Calculations}}
+\index{end\+Calculations@{end\+Calculations}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{end\+Calculations()}{endCalculations()}}
+{\footnotesize\ttfamily void end\+Calculations (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a41552e80ab8d387b43a80fef49b4d808}\label{_s_w___flow__lib_8c_a41552e80ab8d387b43a80fef49b4d808}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!evap\+\_\+from\+Surface@{evap\+\_\+from\+Surface}}
+\index{evap\+\_\+from\+Surface@{evap\+\_\+from\+Surface}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{evap\+\_\+from\+Surface()}{evap\_fromSurface()}}
+{\footnotesize\ttfamily void evap\+\_\+from\+Surface (\begin{DoxyParamCaption}\item[{double $\ast$}]{water\+\_\+pool,  }\item[{double $\ast$}]{evap\+\_\+rate,  }\item[{double $\ast$}]{aet }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_ad06cdd37a42a5f79b86c25c8e90de0c3}\label{_s_w___flow__lib_8c_ad06cdd37a42a5f79b86c25c8e90de0c3}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!forb\+\_\+\+Es\+T\+\_\+partitioning@{forb\+\_\+\+Es\+T\+\_\+partitioning}}
+\index{forb\+\_\+\+Es\+T\+\_\+partitioning@{forb\+\_\+\+Es\+T\+\_\+partitioning}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{forb\+\_\+\+Es\+T\+\_\+partitioning()}{forb\_EsT\_partitioning()}}
+{\footnotesize\ttfamily void forb\+\_\+\+Es\+T\+\_\+partitioning (\begin{DoxyParamCaption}\item[{double $\ast$}]{fbse,  }\item[{double $\ast$}]{fbst,  }\item[{double}]{blivelai,  }\item[{double}]{lai\+\_\+param }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a1465316e765759db20d065ace8d0d88e}\label{_s_w___flow__lib_8c_a1465316e765759db20d065ace8d0d88e}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!forb\+\_\+intercepted\+\_\+water@{forb\+\_\+intercepted\+\_\+water}}
+\index{forb\+\_\+intercepted\+\_\+water@{forb\+\_\+intercepted\+\_\+water}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{forb\+\_\+intercepted\+\_\+water()}{forb\_intercepted\_water()}}
+{\footnotesize\ttfamily void forb\+\_\+intercepted\+\_\+water (\begin{DoxyParamCaption}\item[{double $\ast$}]{pptleft,  }\item[{double $\ast$}]{wintforb,  }\item[{double}]{ppt,  }\item[{double}]{vegcov,  }\item[{double}]{scale,  }\item[{double}]{a,  }\item[{double}]{b,  }\item[{double}]{c,  }\item[{double}]{d }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a509909394ec87616d70b0f98ff790bb6}\label{_s_w___flow__lib_8c_a509909394ec87616d70b0f98ff790bb6}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!grass\+\_\+\+Es\+T\+\_\+partitioning@{grass\+\_\+\+Es\+T\+\_\+partitioning}}
+\index{grass\+\_\+\+Es\+T\+\_\+partitioning@{grass\+\_\+\+Es\+T\+\_\+partitioning}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{grass\+\_\+\+Es\+T\+\_\+partitioning()}{grass\_EsT\_partitioning()}}
+{\footnotesize\ttfamily void grass\+\_\+\+Es\+T\+\_\+partitioning (\begin{DoxyParamCaption}\item[{double $\ast$}]{fbse,  }\item[{double $\ast$}]{fbst,  }\item[{double}]{blivelai,  }\item[{double}]{lai\+\_\+param }\end{DoxyParamCaption})}
+
+calculates the fraction of water lost from bare soil
+
+\begin{DoxyAuthor}{Author}
+S\+LC
+\end{DoxyAuthor}
+
+\begin{DoxyParams}{Parameters}
+{\em fbse} & the fraction of water loss from bare soil evaporation \\
+\hline
+{\em fbst} & the fraction of water loss from bare soil transpiration \\
+\hline
+{\em blivelai} & the live biomass leaf area index \\
+\hline
+{\em lai\+\_\+param} & \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{_s_w___flow__lib_8c_af96898fb97d62e17b02d0c6f719151ce}\label{_s_w___flow__lib_8c_af96898fb97d62e17b02d0c6f719151ce}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!grass\+\_\+intercepted\+\_\+water@{grass\+\_\+intercepted\+\_\+water}}
+\index{grass\+\_\+intercepted\+\_\+water@{grass\+\_\+intercepted\+\_\+water}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{grass\+\_\+intercepted\+\_\+water()}{grass\_intercepted\_water()}}
+{\footnotesize\ttfamily void grass\+\_\+intercepted\+\_\+water (\begin{DoxyParamCaption}\item[{double $\ast$}]{pptleft,  }\item[{double $\ast$}]{wintgrass,  }\item[{double}]{ppt,  }\item[{double}]{vegcov,  }\item[{double}]{scale,  }\item[{double}]{a,  }\item[{double}]{b,  }\item[{double}]{c,  }\item[{double}]{d }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_aa9a45f022035636fd97bd9e01dd3b640}\label{_s_w___flow__lib_8c_aa9a45f022035636fd97bd9e01dd3b640}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!hydraulic\+\_\+redistribution@{hydraulic\+\_\+redistribution}}
+\index{hydraulic\+\_\+redistribution@{hydraulic\+\_\+redistribution}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{hydraulic\+\_\+redistribution()}{hydraulic\_redistribution()}}
+{\footnotesize\ttfamily void hydraulic\+\_\+redistribution (\begin{DoxyParamCaption}\item[{double}]{swc\mbox{[}$\,$\mbox{]},  }\item[{double}]{swcwp\mbox{[}$\,$\mbox{]},  }\item[{double}]{lyr\+Root\+Co\mbox{[}$\,$\mbox{]},  }\item[{double}]{hydred\mbox{[}$\,$\mbox{]},  }\item[{unsigned int}]{nlyrs,  }\item[{double}]{max\+Condroot,  }\item[{double}]{swp50,  }\item[{double}]{shape\+Cond,  }\item[{double}]{scale }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a877c3d07d472ef356509efb287e89478}\label{_s_w___flow__lib_8c_a877c3d07d472ef356509efb287e89478}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!infiltrate\+\_\+water\+\_\+high@{infiltrate\+\_\+water\+\_\+high}}
+\index{infiltrate\+\_\+water\+\_\+high@{infiltrate\+\_\+water\+\_\+high}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{infiltrate\+\_\+water\+\_\+high()}{infiltrate\_water\_high()}}
+{\footnotesize\ttfamily void infiltrate\+\_\+water\+\_\+high (\begin{DoxyParamCaption}\item[{double}]{swc\mbox{[}$\,$\mbox{]},  }\item[{double}]{drain\mbox{[}$\,$\mbox{]},  }\item[{double $\ast$}]{drainout,  }\item[{double}]{pptleft,  }\item[{unsigned int}]{nlyrs,  }\item[{double}]{swcfc\mbox{[}$\,$\mbox{]},  }\item[{double}]{swcsat\mbox{[}$\,$\mbox{]},  }\item[{double}]{impermeability\mbox{[}$\,$\mbox{]},  }\item[{double $\ast$}]{standing\+Water }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_ade5212bfa19c58306595cafe95df820c}\label{_s_w___flow__lib_8c_ade5212bfa19c58306595cafe95df820c}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!infiltrate\+\_\+water\+\_\+low@{infiltrate\+\_\+water\+\_\+low}}
+\index{infiltrate\+\_\+water\+\_\+low@{infiltrate\+\_\+water\+\_\+low}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{infiltrate\+\_\+water\+\_\+low()}{infiltrate\_water\_low()}}
+{\footnotesize\ttfamily void infiltrate\+\_\+water\+\_\+low (\begin{DoxyParamCaption}\item[{double}]{swc\mbox{[}$\,$\mbox{]},  }\item[{double}]{drain\mbox{[}$\,$\mbox{]},  }\item[{double $\ast$}]{drainout,  }\item[{unsigned int}]{nlyrs,  }\item[{double}]{sdrainpar,  }\item[{double}]{sdraindpth,  }\item[{double}]{swcfc\mbox{[}$\,$\mbox{]},  }\item[{double}]{width\mbox{[}$\,$\mbox{]},  }\item[{double}]{swcmin\mbox{[}$\,$\mbox{]},  }\item[{double}]{swcsat\mbox{[}$\,$\mbox{]},  }\item[{double}]{impermeability\mbox{[}$\,$\mbox{]},  }\item[{double $\ast$}]{standing\+Water }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a58d72436d25f98e09dfe7dad4876e033}\label{_s_w___flow__lib_8c_a58d72436d25f98e09dfe7dad4876e033}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!litter\+\_\+intercepted\+\_\+water@{litter\+\_\+intercepted\+\_\+water}}
+\index{litter\+\_\+intercepted\+\_\+water@{litter\+\_\+intercepted\+\_\+water}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{litter\+\_\+intercepted\+\_\+water()}{litter\_intercepted\_water()}}
+{\footnotesize\ttfamily void litter\+\_\+intercepted\+\_\+water (\begin{DoxyParamCaption}\item[{double $\ast$}]{pptleft,  }\item[{double $\ast$}]{wintlit,  }\item[{double}]{blitter,  }\item[{double}]{scale,  }\item[{double}]{a,  }\item[{double}]{b,  }\item[{double}]{c,  }\item[{double}]{d }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a3b87733156e9a39648e59c7ad1754f96}\label{_s_w___flow__lib_8c_a3b87733156e9a39648e59c7ad1754f96}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!lyr\+Soil\+\_\+to\+\_\+lyr\+Temp@{lyr\+Soil\+\_\+to\+\_\+lyr\+Temp}}
+\index{lyr\+Soil\+\_\+to\+\_\+lyr\+Temp@{lyr\+Soil\+\_\+to\+\_\+lyr\+Temp}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{lyr\+Soil\+\_\+to\+\_\+lyr\+Temp()}{lyrSoil\_to\_lyrTemp()}}
+{\footnotesize\ttfamily void lyr\+Soil\+\_\+to\+\_\+lyr\+Temp (\begin{DoxyParamCaption}\item[{double}]{cor\mbox{[}\+M\+A\+X\+\_\+\+S\+T\+\_\+\+R\+G\+R+1\mbox{]}\mbox{[}\+M\+A\+X\+\_\+\+L\+A\+Y\+E\+R\+S+1\mbox{]},  }\item[{unsigned int}]{nlyr\+Soil,  }\item[{double}]{width\+\_\+\+Soil\mbox{[}$\,$\mbox{]},  }\item[{double}]{var\mbox{[}$\,$\mbox{]},  }\item[{unsigned int}]{nlyr\+Temp,  }\item[{double}]{width\+\_\+\+Temp,  }\item[{double}]{res\mbox{[}$\,$\mbox{]} }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a03df632357244d21459a7680fe167dcc}\label{_s_w___flow__lib_8c_a03df632357244d21459a7680fe167dcc}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!lyr\+Soil\+\_\+to\+\_\+lyr\+Temp\+\_\+temperature@{lyr\+Soil\+\_\+to\+\_\+lyr\+Temp\+\_\+temperature}}
+\index{lyr\+Soil\+\_\+to\+\_\+lyr\+Temp\+\_\+temperature@{lyr\+Soil\+\_\+to\+\_\+lyr\+Temp\+\_\+temperature}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{lyr\+Soil\+\_\+to\+\_\+lyr\+Temp\+\_\+temperature()}{lyrSoil\_to\_lyrTemp\_temperature()}}
+{\footnotesize\ttfamily void lyr\+Soil\+\_\+to\+\_\+lyr\+Temp\+\_\+temperature (\begin{DoxyParamCaption}\item[{unsigned int}]{nlyr\+Soil,  }\item[{double}]{depth\+\_\+\+Soil\mbox{[}$\,$\mbox{]},  }\item[{double}]{s\+Temp\mbox{[}$\,$\mbox{]},  }\item[{double}]{end\+Temp,  }\item[{unsigned int}]{nlyr\+Temp,  }\item[{double}]{depth\+\_\+\+Temp\mbox{[}$\,$\mbox{]},  }\item[{double}]{max\+Temp\+Depth,  }\item[{double}]{s\+TempR\mbox{[}$\,$\mbox{]} }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_aad3e73859c6192bacd4ef31615b28c55}\label{_s_w___flow__lib_8c_aad3e73859c6192bacd4ef31615b28c55}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!lyr\+Temp\+\_\+to\+\_\+lyr\+Soil\+\_\+temperature@{lyr\+Temp\+\_\+to\+\_\+lyr\+Soil\+\_\+temperature}}
+\index{lyr\+Temp\+\_\+to\+\_\+lyr\+Soil\+\_\+temperature@{lyr\+Temp\+\_\+to\+\_\+lyr\+Soil\+\_\+temperature}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{lyr\+Temp\+\_\+to\+\_\+lyr\+Soil\+\_\+temperature()}{lyrTemp\_to\_lyrSoil\_temperature()}}
+{\footnotesize\ttfamily void lyr\+Temp\+\_\+to\+\_\+lyr\+Soil\+\_\+temperature (\begin{DoxyParamCaption}\item[{double}]{cor\mbox{[}\+M\+A\+X\+\_\+\+S\+T\+\_\+\+R\+G\+R+1\mbox{]}\mbox{[}\+M\+A\+X\+\_\+\+L\+A\+Y\+E\+R\+S+1\mbox{]},  }\item[{unsigned int}]{nlyr\+Temp,  }\item[{double}]{depth\+\_\+\+Temp\mbox{[}$\,$\mbox{]},  }\item[{double}]{s\+TempR\mbox{[}$\,$\mbox{]},  }\item[{unsigned int}]{nlyr\+Soil,  }\item[{double}]{depth\+\_\+\+Soil\mbox{[}$\,$\mbox{]},  }\item[{double}]{width\+\_\+\+Soil\mbox{[}$\,$\mbox{]},  }\item[{double}]{s\+Temp\mbox{[}$\,$\mbox{]} }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a3bdea7cd6604199ad49673c073470038}\label{_s_w___flow__lib_8c_a3bdea7cd6604199ad49673c073470038}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!petfunc@{petfunc}}
+\index{petfunc@{petfunc}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{petfunc()}{petfunc()}}
+{\footnotesize\ttfamily double petfunc (\begin{DoxyParamCaption}\item[{unsigned int}]{doy,  }\item[{double}]{avgtemp,  }\item[{double}]{rlat,  }\item[{double}]{elev,  }\item[{double}]{slope,  }\item[{double}]{aspect,  }\item[{double}]{reflec,  }\item[{double}]{humid,  }\item[{double}]{windsp,  }\item[{double}]{cloudcov,  }\item[{double}]{transcoeff }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a12dc2157867a28f063bac79338e32daf}\label{_s_w___flow__lib_8c_a12dc2157867a28f063bac79338e32daf}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!pot\+\_\+soil\+\_\+evap@{pot\+\_\+soil\+\_\+evap}}
+\index{pot\+\_\+soil\+\_\+evap@{pot\+\_\+soil\+\_\+evap}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{pot\+\_\+soil\+\_\+evap()}{pot\_soil\_evap()}}
+{\footnotesize\ttfamily void pot\+\_\+soil\+\_\+evap (\begin{DoxyParamCaption}\item[{double $\ast$}]{bserate,  }\item[{unsigned int}]{nelyrs,  }\item[{double}]{ecoeff\mbox{[}$\,$\mbox{]},  }\item[{double}]{totagb,  }\item[{double}]{fbse,  }\item[{double}]{petday,  }\item[{double}]{shift,  }\item[{double}]{shape,  }\item[{double}]{inflec,  }\item[{double}]{range,  }\item[{double}]{width\mbox{[}$\,$\mbox{]},  }\item[{double}]{swc\mbox{[}$\,$\mbox{]},  }\item[{double}]{Es\+\_\+param\+\_\+limit }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a3a889cfc64aa918959e6c331b23c56ab}\label{_s_w___flow__lib_8c_a3a889cfc64aa918959e6c331b23c56ab}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!pot\+\_\+soil\+\_\+evap\+\_\+bs@{pot\+\_\+soil\+\_\+evap\+\_\+bs}}
+\index{pot\+\_\+soil\+\_\+evap\+\_\+bs@{pot\+\_\+soil\+\_\+evap\+\_\+bs}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{pot\+\_\+soil\+\_\+evap\+\_\+bs()}{pot\_soil\_evap\_bs()}}
+{\footnotesize\ttfamily void pot\+\_\+soil\+\_\+evap\+\_\+bs (\begin{DoxyParamCaption}\item[{double $\ast$}]{bserate,  }\item[{unsigned int}]{nelyrs,  }\item[{double}]{ecoeff\mbox{[}$\,$\mbox{]},  }\item[{double}]{petday,  }\item[{double}]{shift,  }\item[{double}]{shape,  }\item[{double}]{inflec,  }\item[{double}]{range,  }\item[{double}]{width\mbox{[}$\,$\mbox{]},  }\item[{double}]{swc\mbox{[}$\,$\mbox{]} }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a1bd1c1f3527cbe8b6bb9aac1bc737809}\label{_s_w___flow__lib_8c_a1bd1c1f3527cbe8b6bb9aac1bc737809}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!pot\+\_\+transp@{pot\+\_\+transp}}
+\index{pot\+\_\+transp@{pot\+\_\+transp}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{pot\+\_\+transp()}{pot\_transp()}}
+{\footnotesize\ttfamily void pot\+\_\+transp (\begin{DoxyParamCaption}\item[{double $\ast$}]{bstrate,  }\item[{double}]{swpavg,  }\item[{double}]{biolive,  }\item[{double}]{biodead,  }\item[{double}]{fbst,  }\item[{double}]{petday,  }\item[{double}]{swp\+\_\+shift,  }\item[{double}]{swp\+\_\+shape,  }\item[{double}]{swp\+\_\+inflec,  }\item[{double}]{swp\+\_\+range,  }\item[{double}]{shade\+\_\+scale,  }\item[{double}]{shade\+\_\+deadmax,  }\item[{double}]{shade\+\_\+xinflex,  }\item[{double}]{shade\+\_\+slope,  }\item[{double}]{shade\+\_\+yinflex,  }\item[{double}]{shade\+\_\+range }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a3a09cb656bc69c7373a2d01cb06b0700}\label{_s_w___flow__lib_8c_a3a09cb656bc69c7373a2d01cb06b0700}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!remove\+\_\+from\+\_\+soil@{remove\+\_\+from\+\_\+soil}}
+\index{remove\+\_\+from\+\_\+soil@{remove\+\_\+from\+\_\+soil}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{remove\+\_\+from\+\_\+soil()}{remove\_from\_soil()}}
+{\footnotesize\ttfamily void remove\+\_\+from\+\_\+soil (\begin{DoxyParamCaption}\item[{double}]{swc\mbox{[}$\,$\mbox{]},  }\item[{double}]{qty\mbox{[}$\,$\mbox{]},  }\item[{double $\ast$}]{aet,  }\item[{unsigned int}]{nlyrs,  }\item[{double}]{coeff\mbox{[}$\,$\mbox{]},  }\item[{double}]{rate,  }\item[{double}]{swcmin\mbox{[}$\,$\mbox{]} }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a921d6c39af0fc6fd7b284db250488500}\label{_s_w___flow__lib_8c_a921d6c39af0fc6fd7b284db250488500}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!set\+\_\+frozen\+\_\+unfrozen@{set\+\_\+frozen\+\_\+unfrozen}}
+\index{set\+\_\+frozen\+\_\+unfrozen@{set\+\_\+frozen\+\_\+unfrozen}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{set\+\_\+frozen\+\_\+unfrozen()}{set\_frozen\_unfrozen()}}
+{\footnotesize\ttfamily void set\+\_\+frozen\+\_\+unfrozen (\begin{DoxyParamCaption}\item[{unsigned int}]{nlyrs,  }\item[{double}]{s\+Temp\mbox{[}$\,$\mbox{]},  }\item[{double}]{swc\mbox{[}$\,$\mbox{]},  }\item[{double}]{swc\+\_\+sat\mbox{[}$\,$\mbox{]},  }\item[{double}]{width\mbox{[}$\,$\mbox{]} }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a07b599ca60ae18b36154e117789b4ba1}\label{_s_w___flow__lib_8c_a07b599ca60ae18b36154e117789b4ba1}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!shrub\+\_\+\+Es\+T\+\_\+partitioning@{shrub\+\_\+\+Es\+T\+\_\+partitioning}}
+\index{shrub\+\_\+\+Es\+T\+\_\+partitioning@{shrub\+\_\+\+Es\+T\+\_\+partitioning}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{shrub\+\_\+\+Es\+T\+\_\+partitioning()}{shrub\_EsT\_partitioning()}}
+{\footnotesize\ttfamily void shrub\+\_\+\+Es\+T\+\_\+partitioning (\begin{DoxyParamCaption}\item[{double $\ast$}]{fbse,  }\item[{double $\ast$}]{fbst,  }\item[{double}]{blivelai,  }\item[{double}]{lai\+\_\+param }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_acc1aee51b5bbcb1380efeb93b025f0ad}\label{_s_w___flow__lib_8c_acc1aee51b5bbcb1380efeb93b025f0ad}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!shrub\+\_\+intercepted\+\_\+water@{shrub\+\_\+intercepted\+\_\+water}}
+\index{shrub\+\_\+intercepted\+\_\+water@{shrub\+\_\+intercepted\+\_\+water}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{shrub\+\_\+intercepted\+\_\+water()}{shrub\_intercepted\_water()}}
+{\footnotesize\ttfamily void shrub\+\_\+intercepted\+\_\+water (\begin{DoxyParamCaption}\item[{double $\ast$}]{pptleft,  }\item[{double $\ast$}]{wintshrub,  }\item[{double}]{ppt,  }\item[{double}]{vegcov,  }\item[{double}]{scale,  }\item[{double}]{a,  }\item[{double}]{b,  }\item[{double}]{c,  }\item[{double}]{d }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a2da161c71736e111d04ff43e5955366e}\label{_s_w___flow__lib_8c_a2da161c71736e111d04ff43e5955366e}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!soil\+\_\+temperature@{soil\+\_\+temperature}}
+\index{soil\+\_\+temperature@{soil\+\_\+temperature}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{soil\+\_\+temperature()}{soil\_temperature()}}
+{\footnotesize\ttfamily void soil\+\_\+temperature (\begin{DoxyParamCaption}\item[{double}]{air\+Temp,  }\item[{double}]{pet,  }\item[{double}]{aet,  }\item[{double}]{biomass,  }\item[{double}]{swc\mbox{[}$\,$\mbox{]},  }\item[{double}]{swc\+\_\+sat\mbox{[}$\,$\mbox{]},  }\item[{double}]{b\+Density\mbox{[}$\,$\mbox{]},  }\item[{double}]{width\mbox{[}$\,$\mbox{]},  }\item[{double}]{olds\+Temp\mbox{[}$\,$\mbox{]},  }\item[{double}]{s\+Temp\mbox{[}$\,$\mbox{]},  }\item[{double}]{surface\+Temp\mbox{[}2\mbox{]},  }\item[{unsigned int}]{nlyrs,  }\item[{double}]{fc\mbox{[}$\,$\mbox{]},  }\item[{double}]{wp\mbox{[}$\,$\mbox{]},  }\item[{double}]{bm\+Limiter,  }\item[{double}]{t1\+Param1,  }\item[{double}]{t1\+Param2,  }\item[{double}]{t1\+Param3,  }\item[{double}]{cs\+Param1,  }\item[{double}]{cs\+Param2,  }\item[{double}]{sh\+Param,  }\item[{double}]{snowdepth,  }\item[{double}]{mean\+Air\+Temp,  }\item[{double}]{deltaX,  }\item[{double}]{the\+Max\+Depth,  }\item[{unsigned int}]{n\+Rgr,  }\item[{double}]{snow }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_add74b9b9112cbea66a065aed2a3c77b8}\label{_s_w___flow__lib_8c_add74b9b9112cbea66a065aed2a3c77b8}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!soil\+\_\+temperature\+\_\+init@{soil\+\_\+temperature\+\_\+init}}
+\index{soil\+\_\+temperature\+\_\+init@{soil\+\_\+temperature\+\_\+init}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{soil\+\_\+temperature\+\_\+init()}{soil\_temperature\_init()}}
+{\footnotesize\ttfamily void soil\+\_\+temperature\+\_\+init (\begin{DoxyParamCaption}\item[{double}]{b\+Density\mbox{[}$\,$\mbox{]},  }\item[{double}]{width\mbox{[}$\,$\mbox{]},  }\item[{double}]{surface\+Temp,  }\item[{double}]{olds\+Temp\mbox{[}$\,$\mbox{]},  }\item[{double}]{mean\+Air\+Temp,  }\item[{unsigned int}]{nlyrs,  }\item[{double}]{fc\mbox{[}$\,$\mbox{]},  }\item[{double}]{wp\mbox{[}$\,$\mbox{]},  }\item[{double}]{deltaX,  }\item[{double}]{the\+Max\+Depth,  }\item[{unsigned int}]{n\+Rgr }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a5246f7d7fc66d00706dcd395e355aae3}\label{_s_w___flow__lib_8c_a5246f7d7fc66d00706dcd395e355aae3}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!surface\+\_\+temperature\+\_\+under\+\_\+snow@{surface\+\_\+temperature\+\_\+under\+\_\+snow}}
+\index{surface\+\_\+temperature\+\_\+under\+\_\+snow@{surface\+\_\+temperature\+\_\+under\+\_\+snow}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{surface\+\_\+temperature\+\_\+under\+\_\+snow()}{surface\_temperature\_under\_snow()}}
+{\footnotesize\ttfamily double surface\+\_\+temperature\+\_\+under\+\_\+snow (\begin{DoxyParamCaption}\item[{double}]{air\+Temp\+Avg,  }\item[{double}]{snow }\end{DoxyParamCaption})}
+
+Determines the average temperature of the soil surface under snow. Based upon Parton et al. 1998. Equations 5 \& 6.
+
+
+\begin{DoxyParams}{Parameters}
+{\em air\+Temp\+Avg} & the average air temperature of the area, in Celsius \\
+\hline
+{\em snow} & the snow-\/water-\/equivalent of the area, in cm \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the modified, average temperature of the soil surface 
+\end{DoxyReturn}
+the effect of snow based on swe
+
+the average temeperature of the soil surface
+
+Parton et al. 1998. Equation 6.
+
+Parton et al. 1998. Equation 5. \mbox{\Hypertarget{_s_w___flow__lib_8c_aa86991fe46bc4a9b6bff3a175064464a}\label{_s_w___flow__lib_8c_aa86991fe46bc4a9b6bff3a175064464a}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!svapor@{svapor}}
+\index{svapor@{svapor}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{svapor()}{svapor()}}
+{\footnotesize\ttfamily double svapor (\begin{DoxyParamCaption}\item[{double}]{temp }\end{DoxyParamCaption})}
+
+calculates the saturation vapor pressure of water
+
+\begin{DoxyAuthor}{Author}
+S\+LC
+\end{DoxyAuthor}
+
+\begin{DoxyParams}{Parameters}
+{\em temp} & the average temperature for the day \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+svapor the saturation vapor pressure (mm of hg) 
+\end{DoxyReturn}
+
+
+Referenced by petfunc().
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a7293b4daefd4b3104a2d6422c80fe187}\label{_s_w___flow__lib_8c_a7293b4daefd4b3104a2d6422c80fe187}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!transp\+\_\+weighted\+\_\+avg@{transp\+\_\+weighted\+\_\+avg}}
+\index{transp\+\_\+weighted\+\_\+avg@{transp\+\_\+weighted\+\_\+avg}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{transp\+\_\+weighted\+\_\+avg()}{transp\_weighted\_avg()}}
+{\footnotesize\ttfamily void transp\+\_\+weighted\+\_\+avg (\begin{DoxyParamCaption}\item[{double $\ast$}]{swp\+\_\+avg,  }\item[{unsigned int}]{n\+\_\+tr\+\_\+rgns,  }\item[{unsigned int}]{n\+\_\+layers,  }\item[{unsigned int}]{tr\+\_\+regions\mbox{[}$\,$\mbox{]},  }\item[{double}]{tr\+\_\+coeff\mbox{[}$\,$\mbox{]},  }\item[{double}]{swc\mbox{[}$\,$\mbox{]} }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a17210cb66ba3a806d36a1ee36819ae09}\label{_s_w___flow__lib_8c_a17210cb66ba3a806d36a1ee36819ae09}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!tree\+\_\+\+Es\+T\+\_\+partitioning@{tree\+\_\+\+Es\+T\+\_\+partitioning}}
+\index{tree\+\_\+\+Es\+T\+\_\+partitioning@{tree\+\_\+\+Es\+T\+\_\+partitioning}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{tree\+\_\+\+Es\+T\+\_\+partitioning()}{tree\_EsT\_partitioning()}}
+{\footnotesize\ttfamily void tree\+\_\+\+Es\+T\+\_\+partitioning (\begin{DoxyParamCaption}\item[{double $\ast$}]{fbse,  }\item[{double $\ast$}]{fbst,  }\item[{double}]{blivelai,  }\item[{double}]{lai\+\_\+param }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_af6e4f9a8a045eb85be00fa075a38e784}\label{_s_w___flow__lib_8c_af6e4f9a8a045eb85be00fa075a38e784}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!tree\+\_\+intercepted\+\_\+water@{tree\+\_\+intercepted\+\_\+water}}
+\index{tree\+\_\+intercepted\+\_\+water@{tree\+\_\+intercepted\+\_\+water}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{tree\+\_\+intercepted\+\_\+water()}{tree\_intercepted\_water()}}
+{\footnotesize\ttfamily void tree\+\_\+intercepted\+\_\+water (\begin{DoxyParamCaption}\item[{double $\ast$}]{pptleft,  }\item[{double $\ast$}]{wintfor,  }\item[{double}]{ppt,  }\item[{double}]{L\+AI,  }\item[{double}]{scale,  }\item[{double}]{a,  }\item[{double}]{b,  }\item[{double}]{c,  }\item[{double}]{d }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a2d2e41ea50a7a1771d0c6273e857b5be}\label{_s_w___flow__lib_8c_a2d2e41ea50a7a1771d0c6273e857b5be}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!watrate@{watrate}}
+\index{watrate@{watrate}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{watrate()}{watrate()}}
+{\footnotesize\ttfamily double watrate (\begin{DoxyParamCaption}\item[{double}]{swp,  }\item[{double}]{petday,  }\item[{double}]{shift,  }\item[{double}]{shape,  }\item[{double}]{inflec,  }\item[{double}]{range }\end{DoxyParamCaption})}
+
+
+
+Referenced by pot\+\_\+soil\+\_\+evap(), pot\+\_\+soil\+\_\+evap\+\_\+bs(), and pot\+\_\+transp().
+
+
+
+\subsection{Variable Documentation}
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a6fd11ca6c2749216e3c8f343528a1043}\label{_s_w___flow__lib_8c_a6fd11ca6c2749216e3c8f343528a1043}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!fusion\+\_\+pool\+\_\+init@{fusion\+\_\+pool\+\_\+init}}
+\index{fusion\+\_\+pool\+\_\+init@{fusion\+\_\+pool\+\_\+init}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{fusion\+\_\+pool\+\_\+init}{fusion\_pool\_init}}
+{\footnotesize\ttfamily unsigned int fusion\+\_\+pool\+\_\+init}
+
+
+
+Referenced by S\+W\+\_\+\+F\+L\+W\+\_\+construct().
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a04e8d1631a4a59d1e6b0a19a378d9a58}\label{_s_w___flow__lib_8c_a04e8d1631a4a59d1e6b0a19a378d9a58}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!soil\+\_\+temp\+\_\+error@{soil\+\_\+temp\+\_\+error}}
+\index{soil\+\_\+temp\+\_\+error@{soil\+\_\+temp\+\_\+error}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{soil\+\_\+temp\+\_\+error}{soil\_temp\_error}}
+{\footnotesize\ttfamily unsigned int soil\+\_\+temp\+\_\+error}
+
+
+
+Referenced by end\+Calculations(), and S\+W\+\_\+\+F\+L\+W\+\_\+construct().
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_ace889dddadc2b4542b04b1b131df57ab}\label{_s_w___flow__lib_8c_ace889dddadc2b4542b04b1b131df57ab}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!soil\+\_\+temp\+\_\+init@{soil\+\_\+temp\+\_\+init}}
+\index{soil\+\_\+temp\+\_\+init@{soil\+\_\+temp\+\_\+init}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{soil\+\_\+temp\+\_\+init}{soil\_temp\_init}}
+{\footnotesize\ttfamily unsigned int soil\+\_\+temp\+\_\+init}
+
+
+
+Referenced by S\+W\+\_\+\+F\+L\+W\+\_\+construct().
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_a11bcfe9d5a1ea9a25df26589c9e904f3}\label{_s_w___flow__lib_8c_a11bcfe9d5a1ea9a25df26589c9e904f3}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!S\+W\+\_\+\+Site@{S\+W\+\_\+\+Site}}
+\index{S\+W\+\_\+\+Site@{S\+W\+\_\+\+Site}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+Site}{SW\_Site}}
+{\footnotesize\ttfamily \hyperlink{struct_s_w___s_i_t_e}{S\+W\+\_\+\+S\+I\+TE} S\+W\+\_\+\+Site}
+
+\mbox{\Hypertarget{_s_w___flow__lib_8c_afdb8ced0825a798336ba061396f7016c}\label{_s_w___flow__lib_8c_afdb8ced0825a798336ba061396f7016c}} 
+\index{S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}!S\+W\+\_\+\+Soilwat@{S\+W\+\_\+\+Soilwat}}
+\index{S\+W\+\_\+\+Soilwat@{S\+W\+\_\+\+Soilwat}!S\+W\+\_\+\+Flow\+\_\+lib.\+c@{S\+W\+\_\+\+Flow\+\_\+lib.\+c}}
+\subsubsection{\texorpdfstring{S\+W\+\_\+\+Soilwat}{SW\_Soilwat}}
+{\footnotesize\ttfamily \hyperlink{struct_s_w___s_o_i_l_w_a_t}{S\+W\+\_\+\+S\+O\+I\+L\+W\+AT} S\+W\+\_\+\+Soilwat}
+

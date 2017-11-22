@@ -9,6 +9,7 @@
 
 #include "SW_R_lib.h"
 #include "SW_Files.h"
+#include "generic.h"
 
 /* =================================================== */
 /*                  Global Declarations                */
@@ -57,7 +58,7 @@ static int periodUse[28][4];
 void SW_FLW_construct(void);
 
 SEXP onGetInputDataFromFiles(SEXP inputOptions) {
-	int i;
+	int i, debug = 0;
 	SEXP swInputData;
 	SEXP SW_DataList;
 	SEXP swLog;
@@ -65,10 +66,11 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	char *ListNames[] = {"files.in", "years.in", "weathersetup.in", "prod.in", "site.in","estab.in","outsetup.in","swcsetup.in","LogFile"};
 
 	logged = FALSE;
-	logfp = stdout;
+	logfp = NULL;
 	int argc = length(inputOptions);
 	char *argv[7];
 	collectInData = TRUE;
+	if (debug) swprintf("Set args\n");
 	PROTECT(inputOptions = AS_CHARACTER(inputOptions));
 	for (i = 0; i < argc; i++) {
 		argv[i] = R_alloc(strlen(CHAR(STRING_ELT(inputOptions, i))), sizeof(char));
@@ -76,66 +78,34 @@ SEXP onGetInputDataFromFiles(SEXP inputOptions) {
 	for (i = 0; i < argc; i++) {
 		strcpy(argv[i], CHAR(STRING_ELT(inputOptions, i)));
 	}
-	//Rprintf("set Args\n");
+
+	if (debug) swprintf("Set log\n");
 	PROTECT(swLog = MAKE_CLASS("swLog"));
 	PROTECT(oRlogfile = NEW_OBJECT(swLog));
 	PROTECT(Rlogfile = GET_SLOT(oRlogfile,install("LogData")));
-	//Rprintf("swLog\n");
+
+	if (debug) swprintf("Construct variables\n");
 	init_args(argc, argv);
-	SW_F_construct(_firstfile);
-	SW_MDL_construct();
-	SW_WTH_construct();
-	SW_SIT_construct();
-	SW_VES_construct();
-	SW_VPD_construct();
-	SW_OUT_construct();
-	SW_SWC_construct();
-	SW_FLW_construct();
-	//Rprintf("Construct\n");
-	SW_F_read(NULL);
-	//Rprintf("FilesRead\n");
-	SW_MDL_read();
-	//Rprintf("mdlRead\n");
-	SW_WTH_read();
-	//Rprintf("wthRead\n");
-	SW_VPD_read();
-	//Rprintf("vpdRead\n");
-	SW_SIT_read();
-	//Rprintf("sitRead\n");
-	SW_VES_read();
-	//Rprintf("vesRead\n");
-	SW_OUT_read();
-	//Rprintf("outRead\n");
-	SW_SWC_read();
-	//Rprintf("Read\n");
+	SW_CTL_init_model(_firstfile);
+	SW_CTL_read_inputs_from_disk();
+  if (debug) swprintf("Copy data to classes\n");
 	PROTECT(swInputData = MAKE_CLASS("swInputData"));
 	PROTECT(SW_DataList = NEW_OBJECT(swInputData));
 	SET_SLOT(SW_DataList, install("files"), onGet_SW_F());
-	//Rprintf("swFiles\n");
 	SET_SLOT(SW_DataList, install("years"), onGet_SW_MDL());
-	//Rprintf("swYears\n");
 	SET_SLOT(SW_DataList, install("weather"), onGet_SW_WTH());
-	//Rprintf("swWeather\n");
 	SET_SLOT(SW_DataList, install("cloud"), onGet_SW_SKY());
-	//Rprintf("swSky\n");
 	SET_SLOT(SW_DataList, install("weatherHistory"), onGet_WTH_DATA());
-	//Rprintf("swWeatherHistory\n");
 	if (LOGICAL(GET_SLOT(GET_SLOT(SW_DataList, install("weather")), install("use_Markov")))[0]) {
 		SET_SLOT(SW_DataList, install("markov"), onGet_MKV());
-		//Rprintf("swMarkov\n");
 	}
 	SET_SLOT(SW_DataList,install("prod"),onGet_SW_VPD());
-	//Rprintf("swProd\n");
 	SET_SLOT(SW_DataList,install("site"),onGet_SW_SIT());
-	//Rprintf("swSite\n");
 	SET_SLOT(SW_DataList,install("soils"),onGet_SW_LYR());
-	//Rprintf("swSoils\n");
 	SET_SLOT(SW_DataList,install("estab"),onGet_SW_VES());
-	//Rprintf("swEstab\n");
+
 	SET_SLOT(SW_DataList,install("output"), onGet_SW_OUT());
-	//Rprintf("swOUT\n");
 	SET_SLOT(SW_DataList,install("swc"),onGet_SW_SWC());
-	//Rprintf("swSWC\n");
 	SET_SLOT(SW_DataList,install("log"),oRlogfile);
 
 	SW_SIT_clear_layers();
@@ -156,7 +126,7 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	SEXP oRlogfile;
 
 	logged = FALSE;
-	logfp = stdout;
+	logfp = NULL;
 	int argc = length(inputOptions);
 	char *argv[7];
 	collectInData = FALSE;
@@ -190,6 +160,7 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	//Set the input data either from files or from memory
 	init_args(argc, argv);
 	SW_CTL_init_model(_firstfile);
+	SW_CTL_obtain_inputs();
 
 	PROTECT(outputData = onGetOutput(inputData));
 
@@ -320,7 +291,6 @@ SEXP start(SEXP inputOptions, SEXP inputData, SEXP weatherList) {
 	if(periodUse[eSW_WetDays][0]) p_Rwetdays_dy = REAL(GET_SLOT(GET_SLOT(outputData, install("WETDAY")),install("Day")));
 
 
-	//Rprintf("Day Pointers Set\n");
 	SW_CTL_main();
 
 	SW_SIT_clear_layers();
@@ -431,7 +401,7 @@ SEXP onGetOutput(SEXP inputData) {
 			tevapLayers++;
 	}
 
-	if(debug) Rprintf("tYears: %d, tLayers: %d, tEvapLayers: %d \n", tYears, tLayers, tevapLayers);
+	if(debug) swprintf("tYears: %d, tLayers: %d, tEvapLayers: %d \n", tYears, tLayers, tevapLayers);
 
 	PROTECT(TimeSteps = GET_SLOT(GET_SLOT(inputData, install("output")),install("timePeriods")));
 	useTimeStep = LOGICAL(GET_SLOT(GET_SLOT(inputData, install("output")),install("useTimeStep")))[0];
@@ -485,18 +455,18 @@ SEXP onGetOutput(SEXP inputData) {
 		for (i = INTEGER(GET_SLOT(GET_SLOT(inputData, install("years")), install("StartYear")))[0]; i <= INTEGER(GET_SLOT(GET_SLOT(inputData, install("years")), install("EndYear")))[0]; i++) {
 			if(i==0) {//Need to calculate the starting first day of first year
 				dy_nrow += Time_get_lastdoy_y(i) - INTEGER(GET_SLOT(GET_SLOT(inputData, install("years")), install("FDOFY")))[0] + 1;
-				if(debug) Rprintf("Year: %d DAYSINYEAR: %d\n",i,Time_get_lastdoy_y(i) - INTEGER(GET_SLOT(GET_SLOT(inputData, install("years")), install("FDOFY")))[0] + 1);
+				if(debug) swprintf("Year: %d DAYSINYEAR: %d\n",i,Time_get_lastdoy_y(i) - INTEGER(GET_SLOT(GET_SLOT(inputData, install("years")), install("FDOFY")))[0] + 1);
 			} else if(i==(tYears-1)) {//and last day of last year.
 				dy_nrow += INTEGER(GET_SLOT(GET_SLOT(inputData, install("years")), install("EDOEY")))[0];
-				if(debug) Rprintf("Year: %d DAYSINYEAR: %d\n",i,INTEGER(GET_SLOT(GET_SLOT(inputData, install("years")), install("EDOEY")))[0]);
+				if(debug) swprintf("Year: %d DAYSINYEAR: %d\n",i,INTEGER(GET_SLOT(GET_SLOT(inputData, install("years")), install("EDOEY")))[0]);
 			} else {
 				dy_nrow += Time_get_lastdoy_y(i);
-				if(debug) Rprintf("Year: %d DAYSINYEAR: %d\n",i,Time_get_lastdoy_y(i));
+				if(debug) swprintf("Year: %d DAYSINYEAR: %d\n",i,Time_get_lastdoy_y(i));
 			}
 		}
 	}
 
-	if(debug) Rprintf("Year Rows: %d, Month Rows: %d, Week Rows: %d, Day Rows: %d\n",yr_nrow, mo_nrow, wk_nrow, dy_nrow);
+	if(debug) swprintf("Year Rows: %d, Month Rows: %d, Week Rows: %d, Day Rows: %d\n",yr_nrow, mo_nrow, wk_nrow, dy_nrow);
 
 	for(i=0; i<28; i++) {
 		periodUse[i][0]=periodUse[i][1]=periodUse[i][2]=periodUse[i][3]=0;
@@ -564,7 +534,7 @@ SEXP onGetOutput(SEXP inputData) {
 	pCount+=9;
 	//WTHR - NOTUSED
 	if(use[0]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[0]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[0]);
 		PROTECT(swOutput_KEY_WTHR = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_WTHR_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_WTHR_NAME, 0, mkChar(cSWoutput_KEY_Titles[0]));
@@ -610,7 +580,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//TEMP
 	if(use[1]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[1]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[1]);
 		PROTECT(swOutput_KEY_TEMP = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_TEMP_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_TEMP_NAME, 0, mkChar(cSWoutput_KEY_Titles[1]));
@@ -628,7 +598,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[1][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rtemp_dy = allocMatrix(REALSXP, dy_nrow, Rtemp_columns+2));
 			PROTECT(Rtemp_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rtemp_names_y_dy = allocVector(STRSXP, Rtemp_columns + 2));
@@ -642,7 +612,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[1][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rtemp_wk = allocMatrix(REALSXP, wk_nrow, Rtemp_columns+2));
 			PROTECT(Rtemp_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rtemp_names_y_wk = allocVector(STRSXP, Rtemp_columns + 2));
@@ -656,7 +626,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[1][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rtemp_mo = allocMatrix(REALSXP, mo_nrow, Rtemp_columns+2));
 			PROTECT(Rtemp_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rtemp_names_y_mo = allocVector(STRSXP, Rtemp_columns + 2));
@@ -670,7 +640,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[1][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rtemp_yr = allocMatrix(REALSXP, yr_nrow, Rtemp_columns+1));
 			PROTECT(Rtemp_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rtemp_names_y_yr = allocVector(STRSXP, Rtemp_columns + 1));
@@ -690,7 +660,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//PRECIP
 	if(use[2]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[2]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[2]);
 		PROTECT(swOutput_KEY_PRECIP = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_PRECIP_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_PRECIP_NAME, 0, mkChar(cSWoutput_KEY_Titles[2]));
@@ -708,7 +678,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[2][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rprecip_dy = allocMatrix(REALSXP, dy_nrow, Rprecip_columns+2));
 			PROTECT(Rprecip_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rprecip_names_y_dy = allocVector(STRSXP, Rprecip_columns + 2));
@@ -722,7 +692,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[2][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rprecip_wk = allocMatrix(REALSXP, wk_nrow, Rprecip_columns+2));
 			PROTECT(Rprecip_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rprecip_names_y_wk = allocVector(STRSXP, Rprecip_columns + 2));
@@ -736,7 +706,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[2][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rprecip_mo = allocMatrix(REALSXP, mo_nrow, Rprecip_columns+2));
 			PROTECT(Rprecip_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rprecip_names_y_mo = allocVector(STRSXP, Rprecip_columns + 2));
@@ -750,7 +720,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[2][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rprecip_yr = allocMatrix(REALSXP, yr_nrow, Rprecip_columns+1));
 			PROTECT(Rprecip_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rprecip_names_y_yr = allocVector(STRSXP, Rprecip_columns + 1));
@@ -770,7 +740,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//SoilInf
 	if(use[3]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[3]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[3]);
 		PROTECT(swOutput_KEY_SOILINFILT = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_SOILINFILT_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_SOILINFILT_NAME, 0, mkChar(cSWoutput_KEY_Titles[3]));
@@ -788,7 +758,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[3][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rinfiltration_dy = allocMatrix(REALSXP, dy_nrow, Rinfiltration_columns+2));
 			PROTECT(Rinfiltration_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rinfiltration_names_y_dy = allocVector(STRSXP, Rinfiltration_columns + 2));
@@ -801,7 +771,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[3][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rinfiltration_wk = allocMatrix(REALSXP, wk_nrow, Rinfiltration_columns+2));
 			PROTECT(Rinfiltration_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rinfiltration_names_y_wk = allocVector(STRSXP, Rinfiltration_columns + 2));
@@ -814,7 +784,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[3][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rinfiltration_mo = allocMatrix(REALSXP, mo_nrow, Rinfiltration_columns+2));
 			PROTECT(Rinfiltration_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rinfiltration_names_y_mo = allocVector(STRSXP, Rinfiltration_columns + 2));
@@ -827,7 +797,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[3][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rinfiltration_yr = allocMatrix(REALSXP, yr_nrow, Rinfiltration_columns+1));
 			PROTECT(Rinfiltration_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rinfiltration_names_y_yr = allocVector(STRSXP, Rinfiltration_columns + 1));
@@ -846,7 +816,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//Runoff
 	if(use[4]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[4]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[4]);
 		PROTECT(swOutput_KEY_RUNOFF = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_RUNOFF_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_RUNOFF_NAME, 0, mkChar(cSWoutput_KEY_Titles[4]));
@@ -864,7 +834,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[4][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rrunoff_dy = allocMatrix(REALSXP, dy_nrow, Rrunoff_columns+2));
 			PROTECT(Rrunoff_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rrunoff_names_y_dy = allocVector(STRSXP, Rrunoff_columns + 2));
@@ -878,7 +848,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[4][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rrunoff_wk = allocMatrix(REALSXP, wk_nrow, Rrunoff_columns+2));
 			PROTECT(Rrunoff_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rrunoff_names_y_wk = allocVector(STRSXP, Rrunoff_columns + 2));
@@ -892,7 +862,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[4][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rrunoff_mo = allocMatrix(REALSXP, mo_nrow, Rrunoff_columns+2));
 			PROTECT(Rrunoff_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rrunoff_names_y_mo = allocVector(STRSXP, Rrunoff_columns + 2));
@@ -906,7 +876,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[4][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rrunoff_yr = allocMatrix(REALSXP, yr_nrow, Rrunoff_columns+1));
 			PROTECT(Rrunoff_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rrunoff_names_y_yr = allocVector(STRSXP, Rrunoff_columns + 1));
@@ -926,7 +896,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//AllH2O - NOT USED
 	if(use[5]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[5]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[5]);
 		PROTECT(swOutput_KEY_ALLH2O = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_ALLH2O_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_ALLH2O_NAME, 0, mkChar(cSWoutput_KEY_Titles[5]));
@@ -971,7 +941,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//VWCBulk
 	if(use[6]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[6]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[6]);
 		PROTECT(swOutput_KEY_VWCBULK = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_VWCBULK_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_VWCBULK_NAME, 0, mkChar(cSWoutput_KEY_Titles[6]));
@@ -989,7 +959,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[6][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(RvwcBulk_dy = allocMatrix(REALSXP, dy_nrow, RvwcBulk_columns+2));
 			PROTECT(RvwcBulk_names_dy = allocVector(VECSXP, 2));
 			PROTECT(RvwcBulk_names_y_dy = allocVector(STRSXP, RvwcBulk_columns + 2));
@@ -1003,7 +973,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[6][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(RvwcBulk_wk = allocMatrix(REALSXP, wk_nrow, RvwcBulk_columns+2));
 			PROTECT(RvwcBulk_names_wk = allocVector(VECSXP, 2));
 			PROTECT(RvwcBulk_names_y_wk = allocVector(STRSXP, RvwcBulk_columns + 2));
@@ -1017,7 +987,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[6][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(RvwcBulk_mo = allocMatrix(REALSXP, mo_nrow, RvwcBulk_columns+2));
 			PROTECT(RvwcBulk_names_mo = allocVector(VECSXP, 2));
 			PROTECT(RvwcBulk_names_y_mo = allocVector(STRSXP, RvwcBulk_columns + 2));
@@ -1031,7 +1001,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[6][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(RvwcBulk_yr = allocMatrix(REALSXP, yr_nrow, RvwcBulk_columns+1));
 			PROTECT(RvwcBulk_names_yr = allocVector(VECSXP, 2));
 			PROTECT(RvwcBulk_names_y_yr = allocVector(STRSXP, RvwcBulk_columns + 1));
@@ -1051,7 +1021,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//VWCMatrix
 	if(use[7]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[7]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[7]);
 		PROTECT(swOutput_KEY_VWCMATRIC = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_VWCMATRIC_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_VWCMATRIC_NAME, 0, mkChar(cSWoutput_KEY_Titles[7]));
@@ -1069,7 +1039,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[7][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(RvwcMatric_dy = allocMatrix(REALSXP, dy_nrow, RvwcMatric_columns+2));
 			PROTECT(RvwcMatric_names_dy = allocVector(VECSXP, 2));
 			PROTECT(RvwcMatric_names_y_dy = allocVector(STRSXP, RvwcMatric_columns + 2));
@@ -1083,7 +1053,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[7][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(RvwcMatric_wk = allocMatrix(REALSXP, wk_nrow, RvwcMatric_columns+2));
 			PROTECT(RvwcMatric_names_wk = allocVector(VECSXP, 2));
 			PROTECT(RvwcMatric_names_y_wk = allocVector(STRSXP, RvwcMatric_columns + 2));
@@ -1097,7 +1067,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[7][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(RvwcMatric_mo = allocMatrix(REALSXP, mo_nrow, RvwcMatric_columns+2));
 			PROTECT(RvwcMatric_names_mo = allocVector(VECSXP, 2));
 			PROTECT(RvwcMatric_names_y_mo = allocVector(STRSXP, RvwcMatric_columns + 2));
@@ -1111,7 +1081,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[7][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(RvwcMatric_yr = allocMatrix(REALSXP, yr_nrow, RvwcMatric_columns+1));
 			PROTECT(RvwcMatric_names_yr = allocVector(VECSXP, 2));
 			PROTECT(RvwcMatric_names_y_yr = allocVector(STRSXP, RvwcMatric_columns + 1));
@@ -1131,7 +1101,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//SWCBulk
 	if(use[8]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[8]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[8]);
 		PROTECT(swOutput_KEY_SWCBULK = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_SWCBULK_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_SWCBULK_NAME, 0, mkChar(cSWoutput_KEY_Titles[8]));
@@ -1149,7 +1119,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[8][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(RswcBulk_dy = allocMatrix(REALSXP, dy_nrow, RswcBulk_columns+2));
 			PROTECT(RswcBulk_names_dy = allocVector(VECSXP, 2));
 			PROTECT(RswcBulk_names_y_dy = allocVector(STRSXP, RswcBulk_columns + 2));
@@ -1163,7 +1133,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[8][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(RswcBulk_wk = allocMatrix(REALSXP, wk_nrow, RswcBulk_columns+2));
 			PROTECT(RswcBulk_names_wk = allocVector(VECSXP, 2));
 			PROTECT(RswcBulk_names_y_wk = allocVector(STRSXP, RswcBulk_columns + 2));
@@ -1177,7 +1147,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[8][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(RswcBulk_mo = allocMatrix(REALSXP, mo_nrow, RswcBulk_columns+2));
 			PROTECT(RswcBulk_names_mo = allocVector(VECSXP, 2));
 			PROTECT(RswcBulk_names_y_mo = allocVector(STRSXP, RswcBulk_columns + 2));
@@ -1191,7 +1161,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[8][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(RswcBulk_yr = allocMatrix(REALSXP, yr_nrow, RswcBulk_columns+1));
 			PROTECT(RswcBulk_names_yr = allocVector(VECSXP, 2));
 			PROTECT(RswcBulk_names_y_yr = allocVector(STRSXP, RswcBulk_columns + 1));
@@ -1211,7 +1181,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//SWABULK
 	if(use[9]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[9]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[9]);
 		PROTECT(swOutput_KEY_SWABULK = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_SWABULK_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_SWABULK_NAME, 0, mkChar(cSWoutput_KEY_Titles[9]));
@@ -1229,7 +1199,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[9][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(RswaBulk_dy = allocMatrix(REALSXP, dy_nrow, RswaBulk_columns+2));
 			PROTECT(RswaBulk_names_dy = allocVector(VECSXP, 2));
 			PROTECT(RswaBulk_names_y_dy = allocVector(STRSXP, RswaBulk_columns + 2));
@@ -1243,7 +1213,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[9][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(RswaBulk_wk = allocMatrix(REALSXP, wk_nrow, RswaBulk_columns+2));
 			PROTECT(RswaBulk_names_wk = allocVector(VECSXP, 2));
 			PROTECT(RswaBulk_names_y_wk = allocVector(STRSXP, RswaBulk_columns + 2));
@@ -1257,7 +1227,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[9][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(RswaBulk_mo = allocMatrix(REALSXP, mo_nrow, RswaBulk_columns+2));
 			PROTECT(RswaBulk_names_mo = allocVector(VECSXP, 2));
 			PROTECT(RswaBulk_names_y_mo = allocVector(STRSXP, RswaBulk_columns + 2));
@@ -1271,7 +1241,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[9][3]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(RswaBulk_yr = allocMatrix(REALSXP, yr_nrow, RswaBulk_columns+1));
 			PROTECT(RswaBulk_names_yr = allocVector(VECSXP, 2));
 			PROTECT(RswaBulk_names_y_yr = allocVector(STRSXP, RswaBulk_columns + 1));
@@ -1291,7 +1261,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//SWAMATRIC
 	if(use[10]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[10]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[10]);
 		PROTECT(swOutput_KEY_SWAMATRIC = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_SWAMATRIC_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_SWAMATRIC_NAME, 0, mkChar(cSWoutput_KEY_Titles[10]));
@@ -1309,7 +1279,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[10][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(RswaMatric_dy = allocMatrix(REALSXP, dy_nrow, RswaMatric_columns+2));
 			PROTECT(RswaMatric_names_dy = allocVector(VECSXP, 2));
 			PROTECT(RswaMatric_names_y_dy = allocVector(STRSXP, RswaMatric_columns + 2));
@@ -1323,7 +1293,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[10][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(RswaMatric_wk = allocMatrix(REALSXP, wk_nrow, RswaMatric_columns+2));
 			PROTECT(RswaMatric_names_wk = allocVector(VECSXP, 2));
 			PROTECT(RswaMatric_names_y_wk = allocVector(STRSXP, RswaMatric_columns + 2));
@@ -1337,7 +1307,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[10][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(RswaMatric_mo = allocMatrix(REALSXP, mo_nrow, RswaMatric_columns+2));
 			PROTECT(RswaMatric_names_mo = allocVector(VECSXP, 2));
 			PROTECT(RswaMatric_names_y_mo = allocVector(STRSXP, RswaMatric_columns + 2));
@@ -1351,7 +1321,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[10][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(RswaMatric_yr = allocMatrix(REALSXP, yr_nrow, RswaMatric_columns+1));
 			PROTECT(RswaMatric_names_yr = allocVector(VECSXP, 2));
 			PROTECT(RswaMatric_names_y_yr = allocVector(STRSXP, RswaMatric_columns + 1));
@@ -1371,28 +1341,28 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//SWP Matric
 	if(use[11]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[11]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[11]);
 		PROTECT(swOutput_KEY_SWPMATRIC = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_SWPMATRIC_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_SWPMATRIC_NAME, 0, mkChar(cSWoutput_KEY_Titles[11]));
 		SET_SLOT(swOutput_KEY_SWPMATRIC, install("Title"), r_SWPMATRIC_NAME);
 		if (useTimeStep) {
-			if(debug) Rprintf("\tUseTimeStep - %d\n", length(Periods));
+			if(debug) swprintf("\tUseTimeStep - %d\n", length(Periods));
 			PROTECT(r_SWPMATRIC_PERIOD = NEW_INTEGER(length(Periods)));
-			if(debug) Rprintf("\tr_SWPMATRIC_PERIOD - %d\n", length(r_SWPMATRIC_PERIOD));
+			if(debug) swprintf("\tr_SWPMATRIC_PERIOD - %d\n", length(r_SWPMATRIC_PERIOD));
 			for(i=0; i<length(Periods); i++)
 				INTEGER(r_SWPMATRIC_PERIOD)[i]=INTEGER(Periods)[i];
 			SET_SLOT(swOutput_KEY_SWPMATRIC, install("TimeStep"), r_SWPMATRIC_PERIOD);
 			UNPROTECT(1);
 		} else {
-			if(debug) Rprintf("\t ! UseTimeStep\n");
+			if(debug) swprintf("\t ! UseTimeStep\n");
 			PROTECT(r_SWPMATRIC_PERIOD = NEW_INTEGER(1));
 			INTEGER(r_SWPMATRIC_PERIOD)[0]=INTEGER(Periods)[9];
 			SET_SLOT(swOutput_KEY_SWPMATRIC, install("TimeStep"), r_SWPMATRIC_PERIOD);
 			UNPROTECT(1);
 		}
 		if(periodUse[11][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(RswpMatric_dy = allocMatrix(REALSXP, dy_nrow, RswpMatric_columns+2));
 			PROTECT(RswpMatric_names_dy = allocVector(VECSXP, 2));
 			PROTECT(RswpMatric_names_y_dy = allocVector(STRSXP, RswpMatric_columns + 2));
@@ -1406,7 +1376,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[11][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(RswpMatric_wk = allocMatrix(REALSXP, wk_nrow, RswpMatric_columns+2));
 			PROTECT(RswpMatric_names_wk = allocVector(VECSXP, 2));
 			PROTECT(RswpMatric_names_y_wk = allocVector(STRSXP, RswpMatric_columns + 2));
@@ -1420,7 +1390,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[11][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(RswpMatric_mo = allocMatrix(REALSXP, mo_nrow, RswpMatric_columns+2));
 			PROTECT(RswpMatric_names_mo = allocVector(VECSXP, 2));
 			PROTECT(RswpMatric_names_y_mo = allocVector(STRSXP, RswpMatric_columns + 2));
@@ -1434,7 +1404,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[11][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(RswpMatric_yr = allocMatrix(REALSXP, yr_nrow, RswpMatric_columns+1));
 			PROTECT(RswpMatric_names_yr = allocVector(VECSXP, 2));
 			PROTECT(RswpMatric_names_y_yr = allocVector(STRSXP, RswpMatric_columns + 1));
@@ -1454,7 +1424,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//SURFACE WATER
 	if(use[12]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[12]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[12]);
 		PROTECT(swOutput_KEY_SURFACEWATER = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_SURFACEWATER_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_SURFACEWATER_NAME, 0, mkChar(cSWoutput_KEY_Titles[12]));
@@ -1472,7 +1442,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[12][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rsurface_water_dy = allocMatrix(REALSXP, dy_nrow, Rsurface_water_columns+2));
 			PROTECT(Rsurface_water_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rsurface_water_names_y_dy = allocVector(STRSXP, Rsurface_water_columns + 2));
@@ -1485,7 +1455,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[12][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rsurface_water_wk = allocMatrix(REALSXP, wk_nrow, Rsurface_water_columns+2));
 			PROTECT(Rsurface_water_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rsurface_water_names_y_wk = allocVector(STRSXP, Rsurface_water_columns + 2));
@@ -1498,7 +1468,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[12][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rsurface_water_mo = allocMatrix(REALSXP, mo_nrow, Rsurface_water_columns+2));
 			PROTECT(Rsurface_water_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rsurface_water_names_y_mo = allocVector(STRSXP, Rsurface_water_columns + 2));
@@ -1511,7 +1481,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[12][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rsurface_water_yr = allocMatrix(REALSXP, yr_nrow, Rsurface_water_columns+1));
 			PROTECT(Rsurface_water_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rsurface_water_names_y_yr = allocVector(STRSXP, Rsurface_water_columns + 1));
@@ -1530,7 +1500,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//TRANSP
 	if(use[13]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[13]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[13]);
 		PROTECT(swOutput_KEY_TRANSP = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_TRANSP_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_TRANSP_NAME, 0, mkChar(cSWoutput_KEY_Titles[13]));
@@ -1548,7 +1518,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[13][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rtransp_dy = allocMatrix(REALSXP, dy_nrow, Rtransp_columns+2));
 			PROTECT(Rtransp_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rtransp_names_y_dy = allocVector(STRSXP, Rtransp_columns + 2));
@@ -1567,7 +1537,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[13][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rtransp_wk = allocMatrix(REALSXP, wk_nrow, Rtransp_columns+2));
 			PROTECT(Rtransp_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rtransp_names_y_wk = allocVector(STRSXP, Rtransp_columns + 2));
@@ -1586,7 +1556,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[13][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rtransp_mo = allocMatrix(REALSXP, mo_nrow, Rtransp_columns+2));
 			PROTECT(Rtransp_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rtransp_names_y_mo = allocVector(STRSXP, Rtransp_columns + 2));
@@ -1605,7 +1575,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[13][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rtransp_yr = allocMatrix(REALSXP, yr_nrow, Rtransp_columns+1));
 			PROTECT(Rtransp_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rtransp_names_y_yr = allocVector(STRSXP, Rtransp_columns + 1));
@@ -1630,7 +1600,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//EVAP SOIL
 	if(use[14]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[14]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[14]);
 		PROTECT(swOutput_KEY_EVAPSOIL = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_EVAPSOIL_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_EVAPSOIL_NAME , 0, mkChar(cSWoutput_KEY_Titles[14]));
@@ -1648,7 +1618,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[14][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Revasoil_dy = allocMatrix(REALSXP, dy_nrow, Revasoil_columns+2));
 			PROTECT(Revap_soil_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Revap_soil_names_y_dy = allocVector(STRSXP, Revasoil_columns + 2));
@@ -1662,7 +1632,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[14][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Revasoil_wk = allocMatrix(REALSXP, wk_nrow, Revasoil_columns+2));
 			PROTECT(Revap_soil_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Revap_soil_names_y_wk = allocVector(STRSXP, Revasoil_columns + 2));
@@ -1676,7 +1646,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[14][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Revasoil_mo = allocMatrix(REALSXP, mo_nrow, Revasoil_columns+2));
 			PROTECT(Revap_soil_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Revap_soil_names_y_mo = allocVector(STRSXP, Revasoil_columns + 2));
@@ -1690,7 +1660,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[14][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Revasoil_yr = allocMatrix(REALSXP, yr_nrow, Revasoil_columns+1));
 			PROTECT(Revap_soil_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Revap_soil_names_y_yr = allocVector(STRSXP, Revasoil_columns + 1));
@@ -1710,7 +1680,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//EVAP SURFACE
 	if(use[15]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[15]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[15]);
 		PROTECT(swOutput_KEY_EVAPSURFACE = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_EVAPSURFACE_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_EVAPSURFACE_NAME, 0, mkChar(cSWoutput_KEY_Titles[15]));
@@ -1728,7 +1698,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[15][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Revasurface_dy = allocMatrix(REALSXP, dy_nrow, Revasurface_columns+2));
 			PROTECT(Revap_surface_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Revap_surface_names_y_dy = allocVector(STRSXP, Revasurface_columns + 2));
@@ -1742,7 +1712,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[15][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Revasurface_wk = allocMatrix(REALSXP, wk_nrow, Revasurface_columns+2));
 			PROTECT(Revap_surface_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Revap_surface_names_y_wk = allocVector(STRSXP, Revasurface_columns + 2));
@@ -1756,7 +1726,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[15][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Revasurface_mo = allocMatrix(REALSXP, mo_nrow, Revasurface_columns+2));
 			PROTECT(Revap_surface_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Revap_surface_names_y_mo = allocVector(STRSXP, Revasurface_columns + 2));
@@ -1770,7 +1740,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[15][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Revasurface_yr = allocMatrix(REALSXP, yr_nrow, Revasurface_columns+1));
 			PROTECT(Revap_surface_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Revap_surface_names_y_yr = allocVector(STRSXP, Revasurface_columns + 1));
@@ -1791,7 +1761,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//SOIL INTERCEPTION
 	if(use[16]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[16]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[16]);
 		PROTECT(swOutput_KEY_INTERCEPTION = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_INTERCEPTION_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_INTERCEPTION_NAME, 0, mkChar(cSWoutput_KEY_Titles[16]));
@@ -1809,7 +1779,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[16][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rinterception_dy = allocMatrix(REALSXP, dy_nrow, Rinterception_columns+2));
 			PROTECT(Rinterception_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rinterception_names_y_dy = allocVector(STRSXP, Rinterception_columns + 2));
@@ -1823,7 +1793,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[16][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rinterception_wk = allocMatrix(REALSXP, wk_nrow, Rinterception_columns+2));
 			PROTECT(Rinterception_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rinterception_names_y_wk = allocVector(STRSXP, Rinterception_columns + 2));
@@ -1837,7 +1807,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[16][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rinterception_mo = allocMatrix(REALSXP, mo_nrow, Rinterception_columns+2));
 			PROTECT(Rinterception_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rinterception_names_y_mo = allocVector(STRSXP, Rinterception_columns + 2));
@@ -1851,7 +1821,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[16][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rinterception_yr = allocMatrix(REALSXP, yr_nrow, Rinterception_columns+1));
 			PROTECT(Rinterception_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rinterception_names_y_yr = allocVector(STRSXP, Rinterception_columns + 1));
@@ -1871,7 +1841,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//Percolation
 	if(use[17]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[17]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[17]);
 		PROTECT(swOutput_KEY_LYRDRAIN = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_LYRDRAIN_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_LYRDRAIN_NAME, 0, mkChar(cSWoutput_KEY_Titles[17]));
@@ -1889,7 +1859,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[17][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rpercolation_dy = allocMatrix(REALSXP, dy_nrow, Rpercolation_columns+2));
 			PROTECT(Rpercolation_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rpercolation_names_y_dy = allocVector(STRSXP, Rpercolation_columns + 2));
@@ -1903,7 +1873,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[17][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rpercolation_wk = allocMatrix(REALSXP, wk_nrow, Rpercolation_columns+2));
 			PROTECT(Rpercolation_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rpercolation_names_y_wk = allocVector(STRSXP, Rpercolation_columns + 2));
@@ -1917,7 +1887,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[17][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rpercolation_mo = allocMatrix(REALSXP, mo_nrow, Rpercolation_columns+2));
 			PROTECT(Rpercolation_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rpercolation_names_y_mo = allocVector(STRSXP, Rpercolation_columns + 2));
@@ -1931,7 +1901,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[17][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rpercolation_yr = allocMatrix(REALSXP, yr_nrow, Rpercolation_columns+1));
 			PROTECT(Rpercolation_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rpercolation_names_y_yr = allocVector(STRSXP, Rpercolation_columns + 1));
@@ -1951,7 +1921,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//Hydred
 	if(use[18]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[18]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[18]);
 		PROTECT(swOutput_KEY_HYDRED = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_HYDRED_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_HYDRED_NAME, 0, mkChar(cSWoutput_KEY_Titles[18]));
@@ -1969,8 +1939,8 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[18][0]) {
-			if(debug) Rprintf("\tdy\n");
-			if(debug) Rprintf("\tRows dy_nrow %d Columns %d \n", dy_nrow, Rhydred_columns + 2);
+			if(debug) swprintf("\tdy\n");
+			if(debug) swprintf("\tRows dy_nrow %d Columns %d \n", dy_nrow, Rhydred_columns + 2);
 			PROTECT(Rhydred_dy = allocMatrix(REALSXP, dy_nrow, Rhydred_columns+2));
 			PROTECT(Rhydred_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rhydred_names_y_dy = allocVector(STRSXP, Rhydred_columns + 2));
@@ -1989,7 +1959,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[18][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rhydred_wk = allocMatrix(REALSXP, wk_nrow, Rhydred_columns+2));
 			PROTECT(Rhydred_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rhydred_names_y_wk = allocVector(STRSXP, Rhydred_columns + 2));
@@ -2008,7 +1978,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[18][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rhydred_mo = allocMatrix(REALSXP, mo_nrow, Rhydred_columns+2));
 			PROTECT(Rhydred_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rhydred_names_y_mo = allocVector(STRSXP, Rhydred_columns + 2));
@@ -2027,7 +1997,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[18][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rhydred_yr = allocMatrix(REALSXP, yr_nrow, Rhydred_columns+1));
 			PROTECT(Rhydred_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rhydred_names_y_yr = allocVector(STRSXP, Rhydred_columns + 1));
@@ -2052,7 +2022,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//ET - NOT USED
 	if(use[19]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[19]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[19]);
 		PROTECT(swOutput_KEY_ET = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_ET_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_ET_NAME, 0, mkChar(cSWoutput_KEY_Titles[19]));
@@ -2105,7 +2075,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//AET
 	if(use[20]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[20]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[20]);
 		PROTECT(swOutput_KEY_AET = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_AET_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_AET_NAME, 0, mkChar(cSWoutput_KEY_Titles[20]));
@@ -2123,7 +2093,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[20][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Raet_dy = allocMatrix(REALSXP, dy_nrow, Raet_columns+2));
 			PROTECT(Raet_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Raet_names_y_dy = allocVector(STRSXP, Raet_columns + 2));
@@ -2136,7 +2106,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[20][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Raet_wk = allocMatrix(REALSXP, wk_nrow, Raet_columns+2));
 			PROTECT(Raet_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Raet_names_y_wk = allocVector(STRSXP, Raet_columns + 2));
@@ -2149,7 +2119,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[20][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Raet_mo = allocMatrix(REALSXP, mo_nrow, Raet_columns+2));
 			PROTECT(Raet_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Raet_names_y_mo = allocVector(STRSXP, Raet_columns + 2));
@@ -2162,7 +2132,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[20][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Raet_yr = allocMatrix(REALSXP, yr_nrow, Raet_columns+1));
 			PROTECT(Raet_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Raet_names_y_yr = allocVector(STRSXP, Raet_columns + 1));
@@ -2181,7 +2151,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//PET
 	if(use[21]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[21]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[21]);
 		PROTECT(swOutput_KEY_PET = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_PET_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_PET_NAME, 0, mkChar(cSWoutput_KEY_Titles[21]));
@@ -2199,7 +2169,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[21][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rpet_dy = allocMatrix(REALSXP, dy_nrow, Rpet_columns+2));
 			PROTECT(Rpet_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rpet_names_y_dy = allocVector(STRSXP, Rpet_columns + 2));
@@ -2212,7 +2182,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[21][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rpet_wk = allocMatrix(REALSXP, wk_nrow, Rpet_columns+2));
 			PROTECT(Rpet_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rpet_names_y_wk = allocVector(STRSXP, Rpet_columns + 2));
@@ -2225,7 +2195,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[21][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rpet_mo = allocMatrix(REALSXP, mo_nrow, Rpet_columns+2));
 			PROTECT(Rpet_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rpet_names_y_mo = allocVector(STRSXP, Rpet_columns + 2));
@@ -2238,7 +2208,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[21][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rpet_yr = allocMatrix(REALSXP, yr_nrow, Rpet_columns+1));
 			PROTECT(Rpet_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rpet_names_y_yr = allocVector(STRSXP, Rpet_columns + 1));
@@ -2257,7 +2227,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//WET DAYS
 	if(use[22]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[22]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[22]);
 		PROTECT(swOutput_KEY_WETDAY = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_WETDAY_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_WETDAY_NAME, 0, mkChar(cSWoutput_KEY_Titles[22]));
@@ -2275,7 +2245,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[22][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rwetdays_dy = allocMatrix(REALSXP, dy_nrow, Rwetdays_columns+2));
 			PROTECT(Rwetdays_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rwetdays_names_y_dy = allocVector(STRSXP, Rwetdays_columns + 2));
@@ -2289,7 +2259,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[22][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rwetdays_wk = allocMatrix(REALSXP, wk_nrow, Rwetdays_columns+2));
 			PROTECT(Rwetdays_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rwetdays_names_y_wk = allocVector(STRSXP, Rwetdays_columns + 2));
@@ -2303,7 +2273,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[22][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rwetdays_mo = allocMatrix(REALSXP, mo_nrow, Rwetdays_columns+2));
 			PROTECT(Rwetdays_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rwetdays_names_y_mo = allocVector(STRSXP, Rwetdays_columns + 2));
@@ -2317,7 +2287,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[22][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rwetdays_yr = allocMatrix(REALSXP, yr_nrow, Rwetdays_columns+1));
 			PROTECT(Rwetdays_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rwetdays_names_y_yr = allocVector(STRSXP, Rwetdays_columns + 1));
@@ -2337,7 +2307,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//SNOW PACK
 	if(use[23]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[23]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[23]);
 		PROTECT(swOutput_KEY_SNOWPACK = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_SNOWPACK_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_SNOWPACK_NAME, 0, mkChar(cSWoutput_KEY_Titles[23]));
@@ -2355,7 +2325,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[23][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rsnowpack_dy = allocMatrix(REALSXP, dy_nrow, Rsnowpack_columns+2));
 			PROTECT(Rsnowpack_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rsnowpack_names_y_dy = allocVector(STRSXP, Rsnowpack_columns + 2));
@@ -2369,7 +2339,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[23][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rsnowpack_wk = allocMatrix(REALSXP, wk_nrow, Rsnowpack_columns+2));
 			PROTECT(Rsnowpack_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rsnowpack_names_y_wk = allocVector(STRSXP, Rsnowpack_columns + 2));
@@ -2383,7 +2353,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[23][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rsnowpack_mo = allocMatrix(REALSXP, mo_nrow, Rsnowpack_columns+2));
 			PROTECT(Rsnowpack_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rsnowpack_names_y_mo = allocVector(STRSXP, Rsnowpack_columns + 2));
@@ -2397,7 +2367,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[23][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rsnowpack_yr = allocMatrix(REALSXP, yr_nrow, Rsnowpack_columns+1));
 			PROTECT(Rsnowpack_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rsnowpack_names_y_yr = allocVector(STRSXP, Rsnowpack_columns + 1));
@@ -2417,7 +2387,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//DEEP SWC
 	if(use[24]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[24]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[24]);
 		PROTECT(swOutput_KEY_DEEPSWC = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_DEEPSWC_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_DEEPSWC_NAME, 0, mkChar(cSWoutput_KEY_Titles[24]));
@@ -2435,7 +2405,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[24][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rdeedrain_dy = allocMatrix(REALSXP, dy_nrow, Rdeedrain_columns+2));
 			PROTECT(Rdeep_drain_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rdeep_drain_names_y_dy = allocVector(STRSXP, Rdeedrain_columns + 2));
@@ -2448,7 +2418,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[24][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rdeedrain_wk = allocMatrix(REALSXP, wk_nrow, Rdeedrain_columns+2));
 			PROTECT(Rdeep_drain_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rdeep_drain_names_y_wk = allocVector(STRSXP, Rdeedrain_columns + 2));
@@ -2461,7 +2431,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[24][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rdeedrain_mo = allocMatrix(REALSXP, mo_nrow, Rdeedrain_columns+2));
 			PROTECT(Rdeep_drain_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rdeep_drain_names_y_mo = allocVector(STRSXP, Rdeedrain_columns + 2));
@@ -2474,7 +2444,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[24][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rdeedrain_yr = allocMatrix(REALSXP, yr_nrow, Rdeedrain_columns+1));
 			PROTECT(Rdeep_drain_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rdeep_drain_names_y_yr = allocVector(STRSXP, Rdeedrain_columns + 1));
@@ -2493,7 +2463,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//Soil Temp
 	if(use[25]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[25]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[25]);
 		PROTECT(swOutput_KEY_SOILTEMP = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_SOILTEMP_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_SOILTEMP_NAME, 0, mkChar(cSWoutput_KEY_Titles[25]));
@@ -2511,7 +2481,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[25][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Rsoil_temp_dy = allocMatrix(REALSXP, dy_nrow, Rsoil_temp_columns+2));
 			PROTECT(Rsoil_temp_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Rsoil_temp_names_y_dy = allocVector(STRSXP, Rsoil_temp_columns + 2));
@@ -2525,7 +2495,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[25][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Rsoil_temp_wk = allocMatrix(REALSXP, wk_nrow, Rsoil_temp_columns+2));
 			PROTECT(Rsoil_temp_names_wk = allocVector(VECSXP, 2));
 			PROTECT(Rsoil_temp_names_y_wk = allocVector(STRSXP, Rsoil_temp_columns + 2));
@@ -2539,7 +2509,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[25][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Rsoil_temp_mo = allocMatrix(REALSXP, mo_nrow, Rsoil_temp_columns+2));
 			PROTECT(Rsoil_temp_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Rsoil_temp_names_y_mo = allocVector(STRSXP, Rsoil_temp_columns + 2));
@@ -2553,7 +2523,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[25][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Rsoil_temp_yr = allocMatrix(REALSXP, yr_nrow, Rsoil_temp_columns+1));
 			PROTECT(Rsoil_temp_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Rsoil_temp_names_y_yr = allocVector(STRSXP, Rsoil_temp_columns + 1));
@@ -2574,7 +2544,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//ALL VEG
 	if(use[26]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[26]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[26]);
 		PROTECT(swOutput_KEY_ALLVEG = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_ALLVEG_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_ALLVEG_NAME, 0, mkChar(cSWoutput_KEY_Titles[26]));
@@ -2623,7 +2593,7 @@ SEXP onGetOutput(SEXP inputData) {
 	}
 	//ESTABL
 	if(use[27]) {
-		if(debug) Rprintf("%s\n",cSWoutput_KEY_Titles[27]);
+		if(debug) swprintf("%s\n",cSWoutput_KEY_Titles[27]);
 		PROTECT(swOutput_KEY_ESTABL = NEW_OBJECT(swOutput_KEY));
 		PROTECT(r_ESTABL_NAME = NEW_STRING(1));
 		SET_STRING_ELT(r_ESTABL_NAME, 0, mkChar(cSWoutput_KEY_Titles[27]));
@@ -2641,7 +2611,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(1);
 		}
 		if(periodUse[27][0]) {
-			if(debug) Rprintf("\tdy\n");
+			if(debug) swprintf("\tdy\n");
 			PROTECT(Restabs_dy = allocMatrix(REALSXP, dy_nrow, Restabs_columns+2));
 			PROTECT(Restabs_names_dy = allocVector(VECSXP, 2));
 			PROTECT(Restabs_names_y_dy = allocVector(STRSXP, Restabs_columns+2));
@@ -2657,7 +2627,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[27][1]) {
-			if(debug) Rprintf("\twk\n");
+			if(debug) swprintf("\twk\n");
 			PROTECT(Restabs_wk = allocMatrix(REALSXP, wk_nrow, Restabs_columns+2));
 			 PROTECT(Restabs_names_wk = allocVector(VECSXP, 2));
 			 PROTECT(Restabs_names_y_wk = allocVector(STRSXP, Restabs_columns+2));
@@ -2673,7 +2643,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[27][2]) {
-			if(debug) Rprintf("\tmo\n");
+			if(debug) swprintf("\tmo\n");
 			PROTECT(Restabs_mo = allocMatrix(REALSXP, mo_nrow, Restabs_columns+2));
 			PROTECT(Restabs_names_mo = allocVector(VECSXP, 2));
 			PROTECT(Restabs_names_y_mo = allocVector(STRSXP, Restabs_columns+2));
@@ -2689,7 +2659,7 @@ SEXP onGetOutput(SEXP inputData) {
 			UNPROTECT(3);
 		}
 		if(periodUse[27][3]) {
-			if(debug) Rprintf("\tyr\n");
+			if(debug) swprintf("\tyr\n");
 			PROTECT(Restabs_yr = allocMatrix(REALSXP, yr_nrow, Restabs_columns+1));
 			PROTECT(Restabs_names_yr = allocVector(VECSXP, 2));
 			PROTECT(Restabs_names_y_yr = allocVector(STRSXP, Restabs_columns+1));

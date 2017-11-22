@@ -145,7 +145,7 @@ void SW_SWC_water_flow(void) {
 	}
 
 	ForEachSoilLayer(i)
-		SW_Soilwat.is_wet[i] = (GE( SW_Soilwat.swcBulk[Today][i],
+		SW_Soilwat.is_wet[i] = (Bool) (GE( SW_Soilwat.swcBulk[Today][i],
 				SW_Site.lyr[i]->swcBulk_wet));
 }
 
@@ -170,7 +170,7 @@ void SW_SWC_new_year(void) {
 
 	LyrIndex lyr;
 	TimeInt year = SW_Model.year;
-	Bool reset = (SW_Site.reset_yr || SW_Model.year == SW_Model.startyr);
+	Bool reset = (Bool) (SW_Site.reset_yr || SW_Model.year == SW_Model.startyr);
 
 	memset(&SW_Soilwat.yrsum, 0, sizeof(SW_SOILWAT_OUTPUTS));
 
@@ -373,8 +373,7 @@ static void _read_hist(TimeInt year) {
 	 */
 	SW_SOILWAT *v = &SW_Soilwat;
 	FILE *f;
-	TimeInt doy;
-	int x, lyr, recno = 0;
+	int x, lyr, recno = 0, doy;
 	RealF swc, st_err;
 	char fname[MAX_FILENAMESIZE];
 

@@ -538,7 +538,7 @@ SEXP onGet_WTH_DATA(void) {
 
 	PROTECT(WTH_DATA = allocVector(VECSXP,nWeathData));
 	PROTECT(WTH_DATA_names = allocVector(STRSXP,nWeathData));
-	
+
 	if (nWeathData > 0){
 		weth_found = TRUE;
 		for (year = SW_Model.startyr; year <= SW_Model.endyr; year++) {
@@ -704,9 +704,8 @@ static Bool _read_hist(TimeInt year) {
 
 	SW_WEATHER_HIST *wh = &SW_Weather.hist;
 	FILE *f;
-	int x, lineno = 0, k = 0, i, j;
+	int x, lineno = 0, k = 0, i, j, doy;
 	RealF tmpmax, tmpmin, ppt, acc = 0.0;
-	TimeInt doy;
 
 	char fname[MAX_FILENAMESIZE];
 

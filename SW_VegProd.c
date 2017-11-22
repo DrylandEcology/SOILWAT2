@@ -85,7 +85,7 @@ void SW_VPD_read(void) {
 	/* =================================================== */
 	SW_VEGPROD *v = &SW_VegProd;
 	FILE *f;
-	Months mon = Jan;
+	TimeInt mon = Jan;
 	int x, lineno = 0;
 	const int line_help = 29;
 	RealF help_grass, help_shrub, help_tree, help_forb, help_bareGround, litt, biom, pctl, laic;
@@ -413,10 +413,10 @@ void SW_VPD_read(void) {
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.flagHydraulicRedistribution = help_grass;
-				v->shrub.flagHydraulicRedistribution = help_shrub;
-				v->tree.flagHydraulicRedistribution = help_tree;
-				v->forb.flagHydraulicRedistribution = help_forb;
+				v->grass.flagHydraulicRedistribution = (Bool) help_grass;
+				v->shrub.flagHydraulicRedistribution = (Bool) help_shrub;
+				v->tree.flagHydraulicRedistribution = (Bool) help_tree;
+				v->forb.flagHydraulicRedistribution = (Bool) help_forb;
 				break;
 			case 26:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
@@ -534,7 +534,7 @@ void SW_VPD_read(void) {
 	#ifdef RSOILWAT
 		if (!collectInData)
 	#endif
-		
+
 	SW_VPD_init();
 
 	if (EchoInits)
@@ -600,7 +600,7 @@ SEXP onGet_SW_VPD() {
 	REAL(VegComp)[2] = v->fractionTree; //Tree
 	REAL(VegComp)[3] = v->fractionForb; //forb
 	REAL(VegComp)[4] = v->fractionBareGround; //Bare Ground
-	
+
 	PROTECT(VegComp_names = allocVector(STRSXP, 5));
 	SET_STRING_ELT(VegComp_names, 0, mkChar("Grasses"));
 	SET_STRING_ELT(VegComp_names, 1, mkChar("Shrubs"));
@@ -622,7 +622,7 @@ SEXP onGet_SW_VPD() {
 	REAL(conv_stcr)[1] = v->shrub.conv_stcr; //Shrub
 	REAL(conv_stcr)[2] = v->tree.conv_stcr; //Tree
 	REAL(conv_stcr)[3] = v->forb.conv_stcr; //forb
-	
+
 	PROTECT(col_names = allocVector(STRSXP, 4));
 	SET_STRING_ELT(col_names, 0, mkChar("Grasses"));
 	SET_STRING_ELT(col_names, 1, mkChar("Shrubs"));
@@ -842,7 +842,7 @@ SEXP onGet_SW_VPD() {
 	SET_VECTOR_ELT(Forest_names, 0, MonthlyProductionValues_Row_names);
 	SET_VECTOR_ELT(Forest_names, 1, MonthlyProductionValues_Column_names);
 	setAttrib(Forest, R_DimNamesSymbol, Forest_names);
-	
+
 	PROTECT(Forb = allocMatrix(REALSXP, 12, 4));
 	p_Forb = REAL(Forb);
 	for (i = 0; i < 12; i++) {
@@ -951,7 +951,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	v->forb.cnpy.range = p_Canopy[17];
 	v->forb.cnpy.slope = p_Canopy[18];
 	v->forb.canopy_height_constant = p_Canopy[19];
-	
+
 	PROTECT(VegInterception = GET_SLOT(SW_VPD, install(cVegProd_names[4])));
 	p_VegInterception = REAL(VegInterception);
 	v->grass.veg_intPPT_a = p_VegInterception[0];
@@ -970,7 +970,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	v->forb.veg_intPPT_b = p_VegInterception[13];
 	v->forb.veg_intPPT_c = p_VegInterception[14];
 	v->forb.veg_intPPT_d = p_VegInterception[15];
-	
+
 	PROTECT(LitterInterception = GET_SLOT(SW_VPD, install(cVegProd_names[5])));
 	p_LitterInterception = REAL(LitterInterception);
 	v->grass.litt_intPPT_a = p_LitterInterception[0];
@@ -989,7 +989,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	v->forb.litt_intPPT_b = p_LitterInterception[13];
 	v->forb.litt_intPPT_c = p_LitterInterception[14];
 	v->forb.litt_intPPT_d = p_LitterInterception[15];
-	
+
 	PROTECT(EsTpartitioning_param = GET_SLOT(SW_VPD, install(cVegProd_names[6])));
 	v->grass.EsTpartitioning_param = REAL(EsTpartitioning_param)[0]; //Grass
 	v->shrub.EsTpartitioning_param = REAL(EsTpartitioning_param)[1]; //Shrub
@@ -1028,7 +1028,7 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	v->forb.tr_shade_effects.yinflec = p_Shade[21];
 	v->forb.tr_shade_effects.range = p_Shade[22];
 	v->forb.tr_shade_effects.slope = p_Shade[23];
-	
+
 	PROTECT(Hydraulic_flag = GET_SLOT(SW_VPD, install(cVegProd_names[9])));
 	PROTECT(Hydraulic = GET_SLOT(SW_VPD, install(cVegProd_names[10])));
 	v->grass.flagHydraulicRedistribution = LOGICAL_POINTER(Hydraulic_flag)[0]; //Grass
