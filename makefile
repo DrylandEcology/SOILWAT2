@@ -25,7 +25,7 @@ uname_m = $(shell uname -m)
 # CC = gcc
 # CXX = g++
 CFLAGS = -O3 -Wall -Wextra -pedantic -std=c11
-CXXFLAGS = -Wall -Wextra -std=c++11
+CXXFLAGS = -Wall -Wextra -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
 LDFLAGS = -L.
 LDLIBS = -l$(target) -lm						# order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 gtest_ldlibs = $(LDLIBS) -l$(gtest)
