@@ -3813,9 +3813,13 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
 	 */
 
 // just a few lines of nonsense to supress the compile warnings
-  int temp;
-  temp = (int) v->count + (int) s->days + (int) k;
+  int tmp1;
+  TimeInt tmp2;
 
+  tmp1 = (int) v->count + (int) k;
+  tmp1 += tmp1;
+  tmp2 = (TimeInt) s->days;
+  tmp2 += tmp2;
   return;
 }
 
