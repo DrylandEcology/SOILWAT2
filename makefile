@@ -27,7 +27,7 @@ uname_m = $(shell uname -m)
 CFLAGS = -O3 -Wall -Wextra -pedantic -std=c11
 CXXFLAGS = -Wall -Wextra -std=c++11
 LDFLAGS = -L.
-LDLIBS = -lm -l$(target)
+LDLIBS = -l$(target) -lm						# order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 gtest_ldlibs = $(LDLIBS) -l$(gtest)
 
 sources = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
