@@ -36,6 +36,17 @@ sources = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 					SW_VegProd.c SW_Flow_lib.c SW_Flow.c
 objects = $(sources:.c=.o)
 
+# Unfortunately, we cannot include 'SW_Output.c' currently because
+#  - cannot increment expression of enum type (e.g., OutKey, OutPeriod)
+#  - assigning to 'OutKey' from incompatible type 'int'
+sources_tests = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
+					rands.c Times.c mymemory.c filefuncs.c \
+					SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c \
+					SW_Markov.c SW_Weather.c SW_Sky.c\
+					SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+objects_tests = $(sources_tests:.c=.o)
+
+
 bin_sources = SW_Main.c
 bin_objects = $(bin_sources:.c=.o)
 
@@ -70,8 +81,8 @@ $(lib_target) :
 		@rm -f $(objects)
 
 $(lib_target++) :
-		$(CXX) $(CXXFLAGS) -c $(sources)
-		ar -rcsu $(lib_target++) $(objects)
+		$(CXX) $(CXXFLAGS) -c $(sources_tests)
+		ar -rcsu $(lib_target++) $(objects_tests)
 		@rm -f $(objects)
 
 
@@ -81,7 +92,7 @@ $(target) : $(lib_target)
 		$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) $(bin_sources) $(LDLIBS)
 
 .PHONY : bint
-bint : $(target)
+bint : bin
 		cp $(target) testing/$(target)
 
 .PHONY : bint_run
@@ -104,7 +115,7 @@ test : $(lib_gtest) $(lib_target++)
 		$(CXX) $(CXXFLAGS) $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
 				test/*.cc -o $(bin_test) $(gtest_LDLIBS)
 
-test_run :
+test_run : test
 		./$(bin_test)
 
 
