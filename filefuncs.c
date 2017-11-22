@@ -156,7 +156,7 @@ Bool FileExists(const char *name) {
 	Bool result = FALSE;
 
 	if (0 == stat(name, &statbuf))
-		result = (statbuf.st_mode & S_IFREG) ? TRUE : FALSE;
+		result = S_ISREG(statbuf.st_mode) ? TRUE : FALSE;
 
 	return (result);
 }
@@ -171,7 +171,7 @@ Bool DirExists(const char *dname) {
 	Bool result = FALSE;
 
 	if (0 == stat(dname, &statbuf))
-		result = (statbuf.st_mode & S_IFDIR) ? TRUE : FALSE;
+		result = S_ISDIR(statbuf.st_mode) ? TRUE : FALSE;
 
 	return (result);
 }
