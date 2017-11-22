@@ -85,7 +85,7 @@ void SW_VPD_read(void) {
 	/* =================================================== */
 	SW_VEGPROD *v = &SW_VegProd;
 	FILE *f;
-	Months mon = Jan;
+	TimeInt mon = Jan;
 	int x, lineno = 0;
 	const int line_help = 29;
 	RealF help_grass, help_shrub, help_tree, help_forb, help_bareGround, litt, biom, pctl, laic;

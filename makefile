@@ -28,7 +28,6 @@ CFLAGS = -O3 -Wall -Wextra -pedantic -std=c11
 CXXFLAGS = -Wall -Wextra -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
 LDFLAGS = -L.
 LDLIBS = -l$(target) -lm						# order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
-gtest_ldlibs = $(LDLIBS) -l$(gtest)
 
 sources = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 					rands.c Times.c mymemory.c filefuncs.c \
@@ -45,6 +44,7 @@ Rpkg_objects = $(objects) SW_R_lib.o SW_R_init.o
 target = SOILWAT2
 bin_test = sw_test
 lib_target = lib$(target).a
+lib_target++ = lib$(target)++.a
 SHLIB = r$(target)$(SHLIB_EXT)
 
 gtest = gtest
@@ -53,7 +53,7 @@ GTEST_DIR = googletest/googletest
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
-
+gtest_LDLIBS = -l$(gtest) -l$(target)++ -lm
 
 
 all: $(SHLIB)
@@ -68,6 +68,12 @@ $(lib_target) :
 		$(CC) $(CFLAGS) -c $(sources)
 		ar -rcsu $(lib_target) $(objects)
 		@rm -f $(objects)
+
+$(lib_target++) :
+		$(CXX) $(CXXFLAGS) -c $(sources)
+		ar -rcsu $(lib_target++) $(objects)
+		@rm -f $(objects)
+
 
 bin : $(target)
 
@@ -94,9 +100,9 @@ $(lib_gtest) :
 			-pthread -c ${GTEST_DIR}/src/gtest-all.cc
 		ar -r $(lib_gtest) gtest-all.o
 
-test : $(lib_gtest) $(lib_target)
+test : $(lib_gtest) $(lib_target++)
 		$(CXX) $(CXXFLAGS) $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
-				test/*.cc -o $(bin_test) $(gtest_ldlibs)
+				test/*.cc -o $(bin_test) $(gtest_LDLIBS)
 
 test_run :
 		./$(bin_test)
@@ -108,7 +114,7 @@ clean :
 
 .PHONY : clean2
 clean2 :
-		@rm -f $(target) $(SHLIB) $(lib_target)
+		@rm -f $(target) $(SHLIB) $(lib_target) $(lib_target++)
 		@rm -f testing/$(target)
 		@rm -f testing/Output/*
 
