@@ -3812,12 +3812,11 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
 	 * establishment variables.
 	 */
 
-// just a few lines of nonsense to supress the compile warnings, doesn't actually do anything
-	if (&v == &v)
-		if (&s == &s)
-			if (k != 0)
-				return;
+// just a few lines of nonsense to supress the compile warnings
+  int temp;
+  temp = (int) v->count + (int) s->days + (int) k;
 
+  return;
 }
 
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)

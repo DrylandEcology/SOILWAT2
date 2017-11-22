@@ -373,8 +373,7 @@ static void _read_hist(TimeInt year) {
 	 */
 	SW_SOILWAT *v = &SW_Soilwat;
 	FILE *f;
-	TimeInt doy;
-	int x, lyr, recno = 0;
+	int x, lyr, recno = 0, doy;
 	RealF swc, st_err;
 	char fname[MAX_FILENAMESIZE];
 

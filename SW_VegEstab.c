@@ -324,7 +324,9 @@ static void _read_spp(const char *infile) {
 
 	f = OpenFile(infile, "r");
 
-	unsigned int count = _new_species();
+	unsigned int count;
+
+	count = _new_species();
 	v = SW_VegEstab.parms[count];
 
 	strcpy(v->sppFileName, inbuf); //have to copy before the pointer infile gets reset below by getAline
@@ -465,7 +467,9 @@ void onSet_SW_VES_spp(SEXP SPP, IntU i) {
 	SEXP fileName, Name;
 	int lineno = 0;
 	char name[80]; /* only allow 4 char sppnames */
-	unsigned int count = _new_species();
+	unsigned int count;
+
+	count = _new_species();
 	v = SW_VegEstab.parms[count];
 
 	v->estab_lyrs = INTEGER(GET_SLOT(SPP, install("estab_lyrs")))[i];
@@ -595,9 +599,12 @@ static void _echo_inits(void) {
 				"\tMaximum temperature : %.1f\n"
 				"\tFirst possible day  : %d\n"
 				"\tLast  possible day  : %d\n"
-				"\tMinimum consecutive wet days (after first possible day): %d\n"
+				"\tMinimum consecutive wet days (after first possible day): %d\n",
+				v[i]->sppname, v[i]->bars[SW_GERM_BARS], v[i]->min_swc_germ / lyr[0]->width,
+				v[i]->min_swc_germ, v[i]->min_temp_germ, v[i]->max_temp_germ,
+				v[i]->min_pregerm_days, v[i]->max_pregerm_days, v[i]->min_wetdays_for_germ);
 
-				"Establishment parameters:\n"
+		sprintf(errstr, "Establishment parameters:\n"
 				"\tNumber of layers affecting successful establishment: %d\n"
 				"\tMinimum SWP (bars) : -%.4f\n"
 				"\tMinimum SWC (cm/layer) averaged across top %d layers: %.4f\n"
@@ -608,14 +615,11 @@ static void _echo_inits(void) {
 				"\tMinimum consecutive wet days after germination: %d\n"
 				"\tMaximum consecutive dry days after germination: %d\n"
 				"---------------------------------------------------------------\n\n",
+				v[i]->estab_lyrs, v[i]->bars[SW_ESTAB_BARS], v[i]->estab_lyrs,
+				v[i]->min_swc_estab, v[i]->min_temp_estab, v[i]->max_temp_estab,
+				v[i]->min_days_germ2estab, v[i]->max_days_germ2estab, v[i]->min_wetdays_for_estab,
+				v[i]->max_drydays_postgerm);
 
-		v[i]->sppname, v[i]->bars[SW_GERM_BARS], v[i]->min_swc_germ / lyr[0]->width, v[i]->min_swc_germ, v[i]->min_temp_germ, v[i]->max_temp_germ, v[i]->min_pregerm_days,
-				v[i]->max_pregerm_days, v[i]->min_wetdays_for_germ,
-
-				v[i]->estab_lyrs, v[i]->bars[SW_ESTAB_BARS], v[i]->estab_lyrs, v[i]->min_swc_estab, v[i]->min_temp_estab, v[i]->max_temp_estab, v[i]->min_days_germ2estab,
-				v[i]->max_days_germ2estab, v[i]->min_wetdays_for_estab, v[i]->max_drydays_postgerm
-
-				);
 		strcat(outstr, errstr);
 	}
 	strcat(outstr, "\n-----------------  End of Establishment Parameters ------------\n");

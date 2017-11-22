@@ -23,8 +23,8 @@ uname_m = $(shell uname -m)
 
 # CC = gcc
 # CXX = g++
-CFLAGS = -O3 -Wall -Wextra -pedantic
-CXXFLAGS = -Wall -Wextra
+CFLAGS = -O3 -Wall -Wextra -pedantic -std=c11
+CXXFLAGS = -Wall -Wextra -std=c++11
 LDFLAGS = -L.
 LDLIBS = -lm -l$(target)
 

@@ -190,9 +190,10 @@ void SW_SIT_read(void) {
 	 */
 	SW_SITE *v = &SW_Site;
 	FILE *f;
-	int lineno = 0, x;
-	LyrIndex r, region, /* transp region definition number */
-	rgnlow; /* lower layer of region */
+	int lineno = 0, x,
+		rgnlow, /* lower layer of region */
+		region; /* transp region definition number */
+	LyrIndex r;
 	Bool too_many_regions = FALSE;
 
 	/* note that Files.read() must be called prior to this. */
@@ -320,11 +321,11 @@ void SW_SIT_read(void) {
 				goto Label_End_Read;
 			}
 			x = sscanf(inbuf, "%d %d", &region, &rgnlow);
-			if (x < 2) {
+			if (x < 2 || region < 1 || rgnlow < 1) {
 				CloseFile(&f);
 				LogError(logfp, LOGFATAL, "%s : Bad record %d.\n", MyFileName, lineno);
 			}
-			_TranspRgnBounds[region - 1] = rgnlow - 1;
+			_TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
 			v->n_transp_rgn++;
 		}
 
