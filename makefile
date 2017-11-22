@@ -21,11 +21,12 @@
 
 uname_m = $(shell uname -m)
 
-CC = gcc
-CFLAGS = -O3 -Wall -Wextra
-CXX = g++
+# CC = gcc
+# CXX = g++
+CFLAGS = -O3 -Wall -Wextra -pedantic
 CXXFLAGS = -Wall -Wextra
-LDLIBS = -lm
+LDFLAGS = -L.
+LDLIBS = -lm -l$(target)
 
 sources = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 					rands.c Times.c mymemory.c filefuncs.c \
@@ -64,13 +65,13 @@ lib : $(lib_target)
 
 $(lib_target) :
 		$(CC) $(CFLAGS) -c $(sources)
-		ar -ruv $(lib_target) $(objects)
+		ar -rcsu $(lib_target) $(objects)
 		@rm -f $(objects)
 
 bin : $(target)
 
 $(target) : $(lib_target)
-		$(CC) $(CFLAGS) -o $(target) $(lib_target) $(bin_sources) $(LDLIBS)
+		$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) $(bin_sources) $(LDLIBS)
 
 bint : $(target)
 		cp $(target) testing/$(target)
@@ -85,11 +86,11 @@ lib_test : $(lib_gtest)
 $(lib_gtest) :
 		$(CXX) $(CXXFLAGS) -isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
 			-pthread -c ${GTEST_DIR}/src/gtest-all.cc
-		ar -rv $(lib_gtest) gtest-all.o
+		ar -r $(lib_gtest) gtest-all.o
 
 test : $(lib_gtest) $(lib_target)
-		$(CXX) $(CXXFLAGS) -isystem ${GTEST_DIR}/include -pthread \
-				$(lib_gtest) $(lib_target) test/*.cc -o $(bin_test) $(LDLIBS)
+		$(CXX) $(CXXFLAGS)  $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
+				$(lib_gtest) test/*.cc -o $(bin_test) $(LDLIBS)
 
 test_run :
 		./$(bin_test)

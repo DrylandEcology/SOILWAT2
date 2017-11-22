@@ -1481,6 +1481,10 @@ nlyrs = 0;
 vwc[0] = 0.0;
 bDensity[0] = 0.0;
 //	double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
+// To avoid compiler warnings "warning: parameter set but not used"
+double temp;
+temp = oldsTemp[0] + sTemp[0] + shParam + nlyrs + vwc[0] + bDensity[0];
+temp += temp;
 // end avoid compiler warnings
 
 	unsigned int i, sFadjusted_sTemp;
