@@ -28,6 +28,7 @@ CFLAGS = -O3 -Wall -Wextra -pedantic -std=c11
 CXXFLAGS = -Wall -Wextra -std=c++11
 LDFLAGS = -L.
 LDLIBS = -lm -l$(target)
+gtest_ldlibs = $(LDLIBS) -l$(gtest)
 
 sources = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 					rands.c Times.c mymemory.c filefuncs.c \
@@ -94,8 +95,8 @@ $(lib_gtest) :
 		ar -r $(lib_gtest) gtest-all.o
 
 test : $(lib_gtest) $(lib_target)
-		$(CXX) $(CXXFLAGS)  $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
-				$(lib_gtest) test/*.cc -o $(bin_test) $(LDLIBS)
+		$(CXX) $(CXXFLAGS) $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
+				test/*.cc -o $(bin_test) $(gtest_ldlibs)
 
 test_run :
 		./$(bin_test)
