@@ -1,6 +1,8 @@
 var _s_w___output_8c =
 [
     [ "OUTSTRLEN", "_s_w___output_8c.html#a3fa5549d021cf21378728eca2ebf91c4", null ],
+    [ "create_col_headers", "_s_w___output_8c.html#ab61e8a5e4974fb3737bf66ba92dc6dd3", null ],
+    [ "populate_output_values", "_s_w___output_8c.html#a37e8ee7986fc8626fa2103c4b66b16bd", null ],
     [ "SW_OUT_close_files", "_s_w___output_8c.html#a53bb40694dbd09aee64905841fa711d4", null ],
     [ "SW_OUT_construct", "_s_w___output_8c.html#ae06df802aa17b479cb10172f7d1903f2", null ],
     [ "SW_OUT_flush", "_s_w___output_8c.html#af0d316dbb4870395564ef5530adc3f93", null ],
@@ -8,12 +10,20 @@ var _s_w___output_8c =
     [ "SW_OUT_read", "_s_w___output_8c.html#a74b456e0f4eb9664213e6f7745c6edde", null ],
     [ "SW_OUT_sum_today", "_s_w___output_8c.html#a6926e3bfd4bd7577bcedd48b7ed78e03", null ],
     [ "SW_OUT_write_today", "_s_w___output_8c.html#a93912f54cea8b60d2fda279448ca8449", null ],
+    [ "col_status_dy", "_s_w___output_8c.html#a877479a3d6a275aa8dfa02b6333ceed9", null ],
+    [ "col_status_mo", "_s_w___output_8c.html#acabaff8fd402357c8d5b24980e70b5e9", null ],
+    [ "col_status_wk", "_s_w___output_8c.html#a9432f08d70bcfda824ab6c5d1e3dde62", null ],
+    [ "col_status_yr", "_s_w___output_8c.html#a0894bf94d2fe14bba97ed152e09d7a0c", null ],
     [ "EchoInits", "_s_w___output_8c.html#a46e5208554b79bebc83a481785e273c6", null ],
-    [ "isPartialSoilwatOutput", "_s_w___output_8c.html#a758ba563f989ca4584558dfd664c613f", null ],
+    [ "finalValue", "_s_w___output_8c.html#a1f9734656a10da183fb8cbb14cbbcc30", null ],
+    [ "lastMonth", "_s_w___output_8c.html#abeaaebb919c849b6e9433ca3b44dfe8a", null ],
+    [ "lastWeek", "_s_w___output_8c.html#abeb4076b8ab7cbdee5b39b44c183ba09", null ],
     [ "SW_Model", "_s_w___output_8c.html#a7fe95d8828eeecd4a64b5a230bedea66", null ],
     [ "SW_Output", "_s_w___output_8c.html#a0403c81a40f6c4b5a34be286fb003019", null ],
+    [ "SW_Output_Files", "_s_w___output_8c.html#abd43d2c98b7b59784b34acc6dc44826e", null ],
     [ "SW_Site", "_s_w___output_8c.html#a11bcfe9d5a1ea9a25df26589c9e904f3", null ],
     [ "SW_Soilwat", "_s_w___output_8c.html#afdb8ced0825a798336ba061396f7016c", null ],
     [ "SW_VegEstab", "_s_w___output_8c.html#a4b2149c2e1b77da676359b0bc64b1710", null ],
+    [ "SW_VegProd", "_s_w___output_8c.html#a8f9709f4f153a6d19d922c1896a1e2a3", null ],
     [ "SW_Weather", "_s_w___output_8c.html#a5ec3b7159a2fccc79f5fa31d8f40c224", null ]
 ];

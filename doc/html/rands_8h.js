@@ -5,6 +5,7 @@ var rands_8h =
     [ "RandUni", "rands_8h.html#a1455ba7faeab85f64b601634591b83de", null ],
     [ "RandListType", "rands_8h.html#af3c4c74d79e1f731f27b6edb3d0f3a49", null ],
     [ "genbet", "rands_8h.html#a7c113f4c25479e9dd7b60b2c382258fb", null ],
+    [ "RandBeta", "rands_8h.html#aeecd655ab3f03f24d50688e6776586b3", null ],
     [ "RandNorm", "rands_8h.html#a360602f9de1bde286cb454a0e07c2808", null ],
     [ "RandSeed", "rands_8h.html#ad17d320703c92d263551310bab8aedb5", null ],
     [ "RandUni_fast", "rands_8h.html#a76d078c2fef9e6b9d163f000d11c9346", null ],

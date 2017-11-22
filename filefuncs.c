@@ -83,8 +83,6 @@ const char *BaseName(const char *p) {
 /**************************************************************/
 FILE * OpenFile(const char *name, const char *mode) {
 	FILE *fp;
-	//printf("name: %s\n", name);
-
 	fp = fopen(name, mode);
 	if (isnull(fp))
 		LogError(stdout, LOGERROR | LOGEXIT, "Cannot open file %s: %s", name, strerror(errno));

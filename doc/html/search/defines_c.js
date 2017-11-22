@@ -38,6 +38,7 @@ var searchData=
   ['sw_5fsum_5foff',['SW_SUM_OFF',['../_s_w___output_8h.html#aa836896b52395cd9870b09631dc1bf8e',1,'SW_Output.h']]],
   ['sw_5fsum_5fsum',['SW_SUM_SUM',['../_s_w___output_8h.html#aa15c450a518e7144ebeb43a510e99576',1,'SW_Output.h']]],
   ['sw_5fsurfacew',['SW_SURFACEW',['../_s_w___output_8h.html#acf7157dffdc51401199c2cdd656dbaf5',1,'SW_Output.h']]],
+  ['sw_5fswa',['SW_SWA',['../_s_w___output_8h.html#a19400af6f7e8b036d8ab2a47917e50f4',1,'SW_Output.h']]],
   ['sw_5fswabulk',['SW_SWABULK',['../_s_w___output_8h.html#aa7612da2dd2e721ba9f48f23f26cf0bd',1,'SW_Output.h']]],
   ['sw_5fswamatric',['SW_SWAMATRIC',['../_s_w___output_8h.html#ab1394321bd8d71aed0690eed159ebdf2',1,'SW_Output.h']]],
   ['sw_5fswcbulk',['SW_SWCBULK',['../_s_w___output_8h.html#a8f91b3cf767f6f8e8f593b447a6cbbc7',1,'SW_Output.h']]],

@@ -169,6 +169,15 @@ void SW_CTL_run_current_year(void) {
 
 }
 
+/**
+  \fn void stat_Output_Daily_CSV_Summary(int iteration)
+  \brief Creates daily files
+
+  Creates daily files for SOILWAT standalone and for STEPWAT depending on defined flags
+	for STEPWAT if -i flag is used it creates file for each iteration naming file based on iteration
+
+  \param iteration. Current iteration for file name if -i flag used in STEPWAT
+*/
 ///This function will create daily
 /***********************************************************/
 void stat_Output_Daily_CSV_Summary(int iteration)
@@ -211,6 +220,15 @@ void stat_Output_Daily_CSV_Summary(int iteration)
 	}
 }
 
+/**
+  \fn void stat_Output_Weekly_CSV_Summary(int iteration)
+  \brief Creates weekly files
+
+  Creates weekly files for SOILWAT standalone and for STEPWAT depending on defined flags
+	for STEPWAT if -i flag is used it creates file for each iteration naming file based on iteration
+
+  \param iteration. Current iteration for file name if -i flag used in STEPWAT
+*/
 //This function will create Weekly
 /***********************************************************/
 void stat_Output_Weekly_CSV_Summary(int iteration)
@@ -253,6 +271,15 @@ void stat_Output_Weekly_CSV_Summary(int iteration)
 	}
 }
 
+/**
+  \fn void stat_Output_Monthly_CSV_Summary(int iteration)
+  \brief Creates montly files
+
+  Creates monthly files for SOILWAT standalone and for STEPWAT depending on defined flags
+	for STEPWAT if -i flag is used it creates file for each iteration naming file based on iteration
+
+  \param iteration. Current iteration for file name if -i flag used in STEPWAT
+*/
 //This function will create Monthly
 /***********************************************************/
 void stat_Output_Monthly_CSV_Summary(int iteration)
@@ -293,6 +320,15 @@ void stat_Output_Monthly_CSV_Summary(int iteration)
 	}
 }
 
+/**
+  \fn void stat_Output_Yearly_CSV_Summary(int iteration)
+  \brief Creates yearly files
+
+  Creates yearly files for SOILWAT standalone and for STEPWAT depending on defined flags
+	for STEPWAT if -i flag is used it creates file for each iteration naming file based on iteration
+
+  \param iteration. Current iteration for file name if -i flag used in STEPWAT
+*/
 //This function will create Yearly
 /***********************************************************/
 void stat_Output_Yearly_CSV_Summary(int iteration)
