@@ -368,3 +368,17 @@ void lobf(double *m, double *b, double xs[], double ys[], unsigned int n) {
 	*b = lobfB(xs, ys, n); // b = y-intercept
 }
 
+/** @brief Duplicate strings. Used if `strdup` is not available.
+
+    `strdup` is not a ISO C standard, but included in the POSIX standard. That means that
+    it is not available on some compilers, e.g., travis-ci with -std=c11 flag set.
+
+    Code from https://stackoverflow.com/questions/482375/strdup-function
+*/
+char * sw_strdup(const char * s)
+{
+  size_t len = 1 + strlen(s);
+  char *p = (char*) malloc(len); // explicit cast necessary for c++ compiler when unit testing against googletest
+
+  return p ? (char*) memcpy(p, s, len) : NULL;
+}

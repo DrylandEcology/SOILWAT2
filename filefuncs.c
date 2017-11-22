@@ -14,6 +14,7 @@
 #endif
 
 #include "filefuncs.h"
+#include "generic.h"
 #include "myMemory.h"
 
 /* Note that errstr[] is externed in generic.h via filefuncs.h */
