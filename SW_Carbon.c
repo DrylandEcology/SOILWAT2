@@ -196,6 +196,7 @@ void onSet_swCarbon(SEXP object) {
   for (i = 1; year != (unsigned int) values[i - 1 + n_input * 0]; i++) {}
 
   // Check that we have enough data
+  // TODO: Figure out why i is over 180,000
   if (i - 1 + n_sim > n_input)
   {
     LogError(logfp, LOGFATAL, "%s : CO2ppm object does not contain data for every year");
@@ -314,6 +315,7 @@ void SW_CBN_read(void)
 /**
  * @brief Calculates the multipliers of the CO2-effect for biomass and water-use efficiency.
  *
+ * @description
  * Multipliers are calculated per year with the equation: Coeff1 * ppm^Coeff2
  * Where Coeff1 and Coeff2 are provided by the VegProd input. Coefficients assume that
  * monthly biomass reflect values for atmospheric conditions at 360 ppm CO2. Each PFT has

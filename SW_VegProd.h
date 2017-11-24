@@ -90,6 +90,10 @@ typedef struct {
 } VegType;
 
 typedef struct {
+	PFTs biomass, biolive;  // Only biomass and biolive need to be tracked because the other carbon outputs do not require summing or averaging
+} SW_VEGPROD_OUTPUTS;
+
+typedef struct {
 	VegType grass, shrub, tree, forb;
 
 	RealD fractionGrass, /* grass component fraction of total vegetation */
@@ -101,6 +105,10 @@ typedef struct {
 	RealD bareGround_albedo; /* create this here instead of creating a bareGround VegType, because it only needs albedo and no other data member */
 
 	PFTs co2_bio_coeff1, co2_bio_coeff2, co2_wue_coeff1, co2_wue_coeff2;
+
+	SW_VEGPROD_OUTPUTS dysum, /* helpful placeholder */
+	wksum, mosum, yrsum, /* accumulators for *avg */
+	wkavg, moavg, yravg; /* averages or sums as appropriate */
 
 } SW_VEGPROD;
 
