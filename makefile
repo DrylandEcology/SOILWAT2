@@ -39,11 +39,12 @@ objects = $(sources:.c=.o)
 # Unfortunately, we cannot include 'SW_Output.c' currently because
 #  - cannot increment expression of enum type (e.g., OutKey, OutPeriod)
 #  - assigning to 'OutKey' from incompatible type 'int'
+# ==> instead, we use 'SW_Output_mock.c' which provides mock versions of the public functions (but will result in some compiler warnings)
 sources_tests = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 					rands.c Times.c mymemory.c filefuncs.c \
 					SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c \
-					SW_Markov.c SW_Weather.c SW_Sky.c\
-					SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+					SW_Markov.c SW_Weather.c SW_Sky.c SW_Output_mock.c\
+					SW_VegProd.c SW_Flow_lib.c SW_Flow.c SW_Carbon.c
 objects_tests = $(sources_tests:.c=.o)
 
 
@@ -83,7 +84,7 @@ $(lib_target) :
 $(lib_target++) :
 		$(CXX) $(CXXFLAGS) -c $(sources_tests)
 		ar -rcsu $(lib_target++) $(objects_tests)
-		@rm -f $(objects)
+		@rm -f $(objects_tests)
 
 
 bin : $(target)
