@@ -129,7 +129,7 @@ extern SW_SOILWAT SW_Soilwat;
 extern SW_WEATHER SW_Weather;
 extern SW_VEGPROD SW_VegProd;
 extern SW_SKY SW_Sky;
-SW_CARBON SW_Carbon;  // Externed elsewhere
+extern SW_CARBON SW_Carbon;
 
 extern unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 extern unsigned int soil_temp_init; // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.

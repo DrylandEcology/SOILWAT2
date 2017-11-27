@@ -105,7 +105,7 @@
 /* --------------------------------------------------- */
 extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
-SW_CARBON SW_Carbon;
+extern SW_CARBON SW_Carbon;
 unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.

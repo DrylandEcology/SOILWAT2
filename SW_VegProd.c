@@ -64,7 +64,7 @@ extern Bool collectInData;
 #endif
 SW_VEGPROD SW_VegProd; /* declared here, externed elsewhere */
 SW_VEGPROD Old_SW_VegProd; /* declared here for reading old value of file sbe_prod_v31, externed elsewhere */
-SW_CARBON  SW_Carbon; /* declared here, externed elsewhere */
+extern SW_CARBON  SW_Carbon;
 
 /* =================================================== */
 /*                Module-Level Variables               */

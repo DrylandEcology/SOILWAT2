@@ -75,7 +75,7 @@
 /* --------------------------------------------------- */
 
 extern SW_VEGPROD SW_VegProd;
-SW_CARBON SW_Carbon;
+extern SW_CARBON SW_Carbon;
 #ifdef RSOILWAT
 extern Bool collectInData;
 extern SEXP InputData;
