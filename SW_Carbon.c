@@ -181,7 +181,7 @@ void onSet_swCarbon(SEXP object) {
 
   // Only extract the CO2 values that will be used
   TimeInt year;
-  unsigned int i, n_input, n_sim;
+  unsigned int i, n_input, n_sim, debug = 0;
 
   SEXP CO2ppm;
   double *values;
@@ -195,6 +195,11 @@ void onSet_swCarbon(SEXP object) {
   // Locate index of first year for which we need CO2 data
   for (i = 1; year != (unsigned int) values[i - 1 + n_input * 0]; i++) {}
 
+  if (debug) {
+    swprintf("'onSet_swCarbon': year = %d, n_sim = %d, n_input = %d, i = %d\n",
+      year, n_sim, n_input, i);
+  }
+
   // Check that we have enough data
   // TODO: Figure out why i is over 180,000
   if (i - 1 + n_sim > n_input)
@@ -206,6 +211,11 @@ void onSet_swCarbon(SEXP object) {
   for (; i <= n_input && year < MAX_CO2_YEAR; i++, year++)
   {
     c->ppm[year] = values[i - 1 + n_input * 1];  // R's index is 1-based
+
+    if (debug) {
+      swprintf("ppm[year = %d] = %3.2f <-> S4[i = %d] = %3.2f\n",
+        year, c->ppm[year], i, values[i - 1 + n_input * 1]);
+    }
   }
 
   UNPROTECT(1);
