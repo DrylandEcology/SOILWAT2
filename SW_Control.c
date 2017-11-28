@@ -312,7 +312,10 @@ void stat_Output_Monthly_CSV_Summary(int iteration)
 
 		newFile_soil = strtok(SW_F_name(eOutputMonthly_soil), "."); // get filename up to but not including ".csv"
 		strcat(newFile_soil, "_");
+		strcat(newFile_soil, iterationToString);
+		strcat(newFile_soil, ".");
 		strcat(newFile_soil, extension);
+		printf("new file soil: %s\n", newFile_soil);
 		SW_Output_Files.fp_mo_soil = OpenFile(newFile_soil, "w"); // open new file
 
 		free(fileDup);
