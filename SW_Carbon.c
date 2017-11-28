@@ -234,28 +234,39 @@ void onSet_swCarbon(SEXP object) {
  */
 void SW_CBN_read(void)
 {
-  FILE *f;
-  char scenario[64];
-  TimeInt year;
-
-  // The following variables must be initialized to show if they've been changed or not
-  double ppm = -1.0;
-  int existing_years[MAX_CO2_YEAR] = { 0 };
-  short fileWasEmpty = 1;
-
+  short debug = 0;
   SW_CARBON  *c   = &SW_Carbon;
-  MyFileName      = SW_F_name(eCarbon);
-  f               = OpenFile(MyFileName, "r");
 
   // For efficiency, don't read carbon.in if neither multiplier is being used
   // We can do this because SW_CBN_CONSTRUCT already populated the multipliers with default values
   if (!c->use_bio_mult && !c->use_wue_mult)
   {
+    if (debug) {
+      swprintf("'SW_CBN_read': CO2-effects are turned off; don't read CO2-concentration data from file.\n");
+    }
     return;
   }
 
   /* Reading carbon.in */
+  FILE *f;
+  char scenario[64];
+  TimeInt year;
+
+  // The following variables must be initialized to show if they've been changed or not
+  double ppm = 1.;
+  int existing_years[MAX_CO2_YEAR] = {0};
+  short fileWasEmpty = 1;
+
+  MyFileName = SW_F_name(eCarbon);
+  f = OpenFile(MyFileName, "r");
+
+  if (debug) {
+    swprintf("'SW_CBN_read': start reading CO2-concentration data from file.\n");
+  }
+
   while (GetALine(f, inbuf)) {
+    if (debug) swprintf("\ninbuf = %s", inbuf);
+
     fileWasEmpty = 0;
 
     // Read the year standalone because if it's 0 it marks a change in the scenario,
@@ -279,6 +290,7 @@ void SW_CBN_read(void)
 
     sscanf(inbuf, "%d %lf", &year, &ppm);
     c->ppm[year] = ppm;
+    if (debug) swprintf("  ==> c->ppm[%d] = %3.2f", year, c->ppm[year]);
 
     /* Has this year already been calculated?
        If yes: Do NOT overwrite values, fail the run instead
@@ -288,11 +300,15 @@ void SW_CBN_read(void)
        and the chance that a multiplier of 1.0 was actually calculated */
     if (existing_years[year] != 0)
     {
+      CloseFile(&f);
       sprintf(errstr, "(SW_Carbon) Year %d in scenario '%s' is entered more than once; only one entry is allowed.\n", year, c->scenario);
       LogError(logfp, LOGFATAL, errstr);
     }
     existing_years[year] = 1;
   }
+
+  CloseFile(&f);
+
 
   /* Error checking */
 
@@ -304,7 +320,7 @@ void SW_CBN_read(void)
     LogError(logfp, LOGFATAL, errstr);
   }
 
-  if (ppm == -1)  // A scenario must be found in order for ppm to have a positive value
+  if (EQ(ppm, -1.))  // A scenario must be found in order for ppm to have a positive value
   {
     sprintf(errstr, "(SW_Carbon) The scenario '%s' was not found in carbon.in\n", c->scenario);
     LogError(logfp, LOGFATAL, errstr);
