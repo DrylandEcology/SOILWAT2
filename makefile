@@ -124,7 +124,7 @@ test : $(lib_gtest) $(lib_target++)
 				test/*.cc -o $(bin_test) $(gtest_LDLIBS)
 
 .PHONY : test_run
-test_run : test
+test_run :
 		./$(bin_test)
 
 cov : cov_clean $(lib_gtest) $(lib_covtarget++)
