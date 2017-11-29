@@ -45,6 +45,7 @@ extern SW_VEGPROD SW_VegProd;
 namespace {
   SW_CARBON *c = &SW_Carbon;
   SW_VEGPROD *v  = &SW_VegProd;
+  TimeInt simendyr = SW_Model.endyr + SW_Model.addtl_yr;
 
 
   // Test the SW_Carbon constructor 'SW_CBN_construct'
@@ -61,8 +62,7 @@ namespace {
 
   // Test reading yearly CO2 data from disk file
   TEST(CarbonTest, ReadInputFile) {
-    TimeInt year,
-      simendyr = SW_Model.endyr + SW_Model.addtl_yr;
+    TimeInt year;
     double sum_CO2;
 
     // Test if CO2-effects are turned off -> no CO2 concentration data are read from file
@@ -95,8 +95,7 @@ namespace {
 
   // Test the calculation of CO2-effect multipliers
   TEST(CarbonTest, CO2multipliers) {
-    TimeInt year,
-      simendyr = SW_Model.endyr + SW_Model.addtl_yr;
+    TimeInt year;
 
     SW_CBN_construct();
     strcpy(c->scenario, "RCP85");

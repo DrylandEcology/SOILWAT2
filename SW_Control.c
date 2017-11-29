@@ -238,6 +238,9 @@ void SW_CTL_obtain_inputs(void) {
     if (debug) swprintf(" completed.\n");
 	}
 #endif
+
+  calculate_CO2_multipliers()
+
 }
 
 #ifdef DEBUG_MEM
