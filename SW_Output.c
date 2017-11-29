@@ -572,8 +572,9 @@ void SW_OUT_read(void)
 				// create output files if flag turned on and only for last iteration
 				if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 				{
-					if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations-1){
-						//if(Globals.currIter == Globals.runModelIterations-1){
+					//if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations-1){
+					if(isPartialSoilwatOutput == FALSE){
+						if(Globals.currIter == Globals.runModelIterations-1){
 							char *dayCheck = strstr(inbuf, "dy");
 							char *weekCheck = strstr(inbuf, "wk");
 							char *monthCheck = strstr(inbuf, "mo");
@@ -587,9 +588,9 @@ void SW_OUT_read(void)
 								stat_Output_Monthly_CSV_Summary(-1);
 							if(yearCheck != NULL)
 								stat_Output_Yearly_CSV_Summary(-1);
-							//}
-						//else
-							//useTimeStep = 0; // dont want to use the TIMESTEP if user doesnt ask for output
+							}
+							//else
+								//useTimeStep = 0; // dont want to use the TIMESTEP if user doesnt ask for output
 					}
 					if(storeAllIterations){
 						char *dayCheck = strstr(inbuf, "dy");
@@ -608,7 +609,7 @@ void SW_OUT_read(void)
 							stat_Output_Yearly_CSV_Summary(Globals.currIter+1);
 					}
 				}
-				else
+				//else
 					useTimeStep = 0; // dont want to use the TIMESTEP if user doesnt ask for output
 			#endif
 
@@ -1509,6 +1510,11 @@ void SW_OUT_write_today(void)
 						break;
 					}
 				}
+				if (isPartialSoilwatOutput == FALSE && Globals.currIter != Globals.runModelIterations){
+        	memset(&reg_file_vals_year[0], 0, sizeof(reg_file_vals_year));
+          memset(&soil_file_vals_year[0], 0, sizeof(soil_file_vals_year));
+       }
+
 #endif
 			}
 		}
@@ -1744,17 +1750,12 @@ static void get_temp(void)
 
 	if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 	{
-		if (isPartialSoilwatOutput == FALSE){ // dont need to average temperature since it will not change over iteration
-			if(Globals.currIter == Globals.runModelIterations){
-				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, v_max, _Sep, v_min, _Sep,
-					v_avg, _Sep, surfaceTempVal);
-				strcat(outstr, str);
-			}
-			else{
-				SXW.temp = v_avg;
-				SXW.surfaceTemp = surfaceTempVal;
-			}
-		}
+		// dont need to average temperature since it will not change over iteration
+   if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
+	   sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, v_max, _Sep, v_min, _Sep,
+	           v_avg, _Sep, surfaceTempVal);
+	   strcat(outstr, str);
+    }
 		if(storeAllIterations){
 			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, v_max, _Sep, v_min, _Sep,
 				v_avg, _Sep, surfaceTempVal);
@@ -1765,9 +1766,9 @@ static void get_temp(void)
 	{
 		if (pd != eSW_Year)
 			LogError(logfp, LOGFATAL, "Invalid output period for TEMP; should be YR %7.6f, %7.6f",v_max, v_min); //added v_max, v_min for compiler
-		SXW.temp = v_avg;
-		SXW.surfaceTemp = surfaceTempVal;
 	}
+	SXW.temp = v_avg;
+	SXW.surfaceTemp = surfaceTempVal;
 #endif
 }
 
@@ -1910,11 +1911,18 @@ static void get_vwcBulk(void)
 	ForEachSoilLayer(i)
 		val[i] = SW_MISSING;
 
-#ifndef RSOILWAT
-	char str[OUTSTRLEN];
-#endif
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+	  char str[OUTSTRLEN];
+	  get_outstrleader(pd);
 
-	get_outstrleader(pd);
+	#elif defined(STEPWAT)
+	  char str[OUTSTRLEN];
+	  if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+	  {
+	  	get_outstrleader(pd);
+	  }
+	#endif
+
 	switch (pd)
 	{ /* vwcBulk at this point is identical to swcBulk */
 	case eSW_Day:
@@ -1996,11 +2004,18 @@ static void get_vwcMatric(void)
 	ForEachSoilLayer(i)
 		val[i] = SW_MISSING;
 
-#ifndef RSOILWAT
-	char str[OUTSTRLEN];
-#endif
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		char str[OUTSTRLEN];
+		get_outstrleader(pd);
 
-	get_outstrleader(pd);
+	#elif defined(STEPWAT)
+		char str[OUTSTRLEN];
+		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+		{
+			get_outstrleader(pd);
+		}
+	#endif
+
 	/* vwcMatric at this point is identical to swcBulk */
 	switch (pd)
 	{
@@ -2219,7 +2234,9 @@ static void get_swa(void)
 	#elif defined(STEPWAT)
 		char str[OUTSTRLEN];
 
-		get_outstrleader(pd);
+		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+			get_outstrleader(pd);
+
 		ForEachSoilLayer(i)
 		{
 			switch (pd)
@@ -2741,7 +2758,10 @@ static void get_swcBulk(void)
 	}
 #elif defined(STEPWAT)
 	char str[OUTSTRLEN];
-	get_outstrleader(pd);
+
+	if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+		get_outstrleader(pd);
+
 	ForEachSoilLayer(i)
 	{
 		switch (pd)
@@ -3146,10 +3166,15 @@ static void get_transp(void)
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
+	get_outstrleader(pd);
+
 #elif defined(STEPWAT)
 	char str[OUTSTRLEN];
 	TimeInt p;
 	SW_MODEL *t = &SW_Model;
+	if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+		get_outstrleader(pd);
+
 #endif
 	ForEachSoilLayer(i){
 		val_total[i] = 0;
@@ -3181,7 +3206,6 @@ static void get_transp(void)
 #endif
 
 #ifndef RSOILWAT
-	get_outstrleader(pd);
 	ForEachSoilLayer(i)
 	{
 		switch (pd)
@@ -4002,12 +4026,16 @@ static void get_aet(void)
 	RealD val = SW_MISSING;
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[20];
+	get_outstrleader(pd);
+
 #elif defined(STEPWAT)
 	char str[20];
+	if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+		get_outstrleader(pd);
+
 #endif
 
 #ifndef RSOILWAT
-	get_outstrleader(pd);
 	switch (pd)
 	{
 	case eSW_Day:
