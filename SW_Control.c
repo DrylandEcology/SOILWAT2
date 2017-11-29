@@ -315,7 +315,6 @@ void stat_Output_Monthly_CSV_Summary(int iteration)
 		strcat(newFile_soil, iterationToString);
 		strcat(newFile_soil, ".");
 		strcat(newFile_soil, extension);
-		printf("new file soil: %s\n", newFile_soil);
 		SW_Output_Files.fp_mo_soil = OpenFile(newFile_soil, "w"); // open new file
 
 		free(fileDup);

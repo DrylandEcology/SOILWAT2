@@ -572,23 +572,25 @@ void SW_OUT_read(void)
 				// create output files if flag turned on and only for last iteration
 				if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 				{
-					if(Globals.currIter == Globals.runModelIterations-1){
-						char *dayCheck = strstr(inbuf, "dy");
-						char *weekCheck = strstr(inbuf, "wk");
-						char *monthCheck = strstr(inbuf, "mo");
-						char *yearCheck = strstr(inbuf, "yr");
-						// create file for defined timesteps
-						if(dayCheck != NULL)
-							stat_Output_Daily_CSV_Summary(-1);
-						if(weekCheck != NULL)
-						 	stat_Output_Weekly_CSV_Summary(-1);
-						if(monthCheck != NULL)
-							stat_Output_Monthly_CSV_Summary(-1);
-						if(yearCheck != NULL)
-							stat_Output_Yearly_CSV_Summary(-1);
+					if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations-1){
+						//if(Globals.currIter == Globals.runModelIterations-1){
+							char *dayCheck = strstr(inbuf, "dy");
+							char *weekCheck = strstr(inbuf, "wk");
+							char *monthCheck = strstr(inbuf, "mo");
+							char *yearCheck = strstr(inbuf, "yr");
+							// create file for defined timesteps
+							if(dayCheck != NULL)
+								stat_Output_Daily_CSV_Summary(-1);
+							if(weekCheck != NULL)
+							 	stat_Output_Weekly_CSV_Summary(-1);
+							if(monthCheck != NULL)
+								stat_Output_Monthly_CSV_Summary(-1);
+							if(yearCheck != NULL)
+								stat_Output_Yearly_CSV_Summary(-1);
+							//}
+						//else
+							//useTimeStep = 0; // dont want to use the TIMESTEP if user doesnt ask for output
 					}
-					else
-						useTimeStep = 0; // dont want to use the TIMESTEP if user doesnt ask for output
 					if(storeAllIterations){
 						char *dayCheck = strstr(inbuf, "dy");
 						char *weekCheck = strstr(inbuf, "wk");
@@ -1876,11 +1878,18 @@ for(switchCounter=0;switchCounter<4;switchCounter++){
 	strcat(outstr, str);
 
 #elif defined(STEPWAT)
-	if((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+	if(isPartialSoilwatOutput == FALSE || storeAllIterations)
 	{
-		sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
-			val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
-		strcat(outstr, str);
+		if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
+			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
+				val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
+			strcat(outstr, str);
+		}
+		if(storeAllIterations){
+			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
+				val_rain, _Sep, val_snow, _Sep, val_snowmelt, _Sep, val_snowloss);
+			strcat(outstr, str);
+		}
 	}
 	else
 	{
