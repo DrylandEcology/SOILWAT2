@@ -239,7 +239,7 @@ void SW_CTL_obtain_inputs(void) {
 	}
 #endif
 
-  calculate_CO2_multipliers()
+  calculate_CO2_multipliers();
 
 }
 
