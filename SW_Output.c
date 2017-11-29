@@ -246,7 +246,10 @@ int col_status_yr = 0;
 
 int lastMonth = 0;
 int lastWeek = 0;
-int finalValue = 0;
+int finalValue_dy = -1,
+		finalValue_wk = -1,
+		finalValue_mo = -1,
+		finalValue_yr = -1;
 
 static Bool bFlush; /* process partial period ? */
 static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
@@ -1194,12 +1197,32 @@ void SW_OUT_write_today(void)
 	char *reg_file_vals_year[500]; // store
 
 
-	// get final value to be used
-	if(finalValue == 0){
+	// get final value to be used for each timeperiod
+	if(finalValue_mo == -1){
+		finalValue_dy = finalValue_wk = finalValue_mo = finalValue_yr = -2;
 		ForEachOutKey(k){
-			if(SW_Output[k].use)
-				if(k>finalValue)
-					finalValue = k;
+				if(SW_Output[k].use){
+					if(SW_Output[k].period == 0){
+						if(k > finalValue_dy){
+							finalValue_dy = k;
+					}
+				}
+					if(SW_Output[k].period == 1){
+						if(k > finalValue_wk){
+							finalValue_wk = k;
+					}
+				}
+					if(SW_Output[k].period == 2){
+						if(k > finalValue_mo){
+							finalValue_mo = k;
+					}
+				}
+					if(SW_Output[k].period == 3){
+						if(k > finalValue_yr){
+							finalValue_yr = k;
+					}
+				}
+			}
 		}
 	}
 
@@ -1368,7 +1391,7 @@ void SW_OUT_write_today(void)
 
 						populate_output_values(reg_file_vals_day, soil_file_vals_day, k, 1); // function to put all the values together for output
 
-						if(k == finalValue){ // if last value to be used then write to files
+						if(k == finalValue_dy){ // if last value to be used then write to files
 							if(reg_file_vals_day[0] != 0){ // check to make sure not empty
 								if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
 									fprintf(SW_Output_Files.fp_dy_avg, "%d%c%d%c%s\n", SW_Model.year, _Sep, SW_Model.doy, _Sep, reg_file_vals_day);
@@ -1404,7 +1427,7 @@ void SW_OUT_write_today(void)
 
 						populate_output_values(reg_file_vals_week, soil_file_vals_week, k, 2);
 
-						if(k == finalValue){
+						if(k == finalValue_wk){
 							if(SW_Model.week == 52 && lastWeek == 1){
 								SW_Model.week = 53;
 								lastWeek = 0;
@@ -1432,6 +1455,7 @@ void SW_OUT_write_today(void)
 						break;
 
 					case eSW_Month:
+						//printf("%d\n", SW_Output[k].period);
 						if(SXW.col_status_mo == 0)
 						{
 							memset(&reg_file_vals_month, 0, sizeof(reg_file_vals_month));
@@ -1445,7 +1469,7 @@ void SW_OUT_write_today(void)
 
 						populate_output_values(reg_file_vals_month, soil_file_vals_month, k, 3);
 
-						if(k == finalValue){
+						if(k == finalValue_mo){
 							if(SW_Model.month == 11 && lastMonth == 1){ // adjusting for bug in base code that does not allow for time to hit last element
 								SW_Model.month = 12;
 								lastMonth = 0;
@@ -1487,7 +1511,7 @@ void SW_OUT_write_today(void)
 
 						populate_output_values(reg_file_vals_year, soil_file_vals_year, k, 4);
 
-						if(k == finalValue){
+						if(k == finalValue_yr){
 							if(soil_file_vals_year[0] != 0){
 								if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
 									fprintf(SW_Output_Files.fp_yr_soil_avg, "%d%c%s\n", SW_Model.year, _Sep, soil_file_vals_year);
@@ -4990,10 +5014,11 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 	else strcpy(_SepSplit, "\t");
 
 	// check if a soil variable (has layers)
-	if(strcmp(key2str[output_var], "VWCBULK")==0 || strcmp(key2str[output_var], "VWCMATRIC")==0 || strcmp(key2str[output_var], "SWCBULK")==0
+	if((strcmp(key2str[output_var], "VWCBULK")==0 || strcmp(key2str[output_var], "VWCMATRIC")==0 || strcmp(key2str[output_var], "SWCBULK")==0
 		|| strcmp(key2str[output_var], "EVAPSOIL")==0 || strcmp(key2str[output_var], "TRANSP")==0 || strcmp(key2str[output_var], "WETDAY")==0
 		|| strcmp(key2str[output_var], "LYRDRAIN")==0 || strcmp(key2str[output_var], "SOILTEMP")==0 || strcmp(key2str[output_var], "HYDRED")==0
 		|| strcmp(key2str[output_var], "SWAMATRIC")==0 || strcmp(key2str[output_var], "SWPMATRIC")==0 || strcmp(key2str[output_var], "SWA")==0)
+		&& SW_Output[output_var].period == year_out-1)
 	{
 		char *pt;
 		int counter = 0;
@@ -5041,24 +5066,26 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 
 	else
 	{
-		char *reg_pt;
-		int reg_counter = 0;
-		reg_pt = strtok (outstr,_SepSplit);
-		while (reg_pt != NULL) {
-			if(year_out == 4){
-				if(reg_counter >=1 ){
-					strcat(reg_file_array, reg_pt);
-					strcat(reg_file_array, _SepSplit);
-				}
-			}
-			else{
-					if(reg_counter >= 2 ){
+		if(SW_Output[output_var].period == year_out-1){
+			char *reg_pt;
+			int reg_counter = 0;
+			reg_pt = strtok (outstr,_SepSplit);
+			while (reg_pt != NULL) {
+				if(year_out == 4){
+					if(reg_counter >=1 ){
 						strcat(reg_file_array, reg_pt);
 						strcat(reg_file_array, _SepSplit);
 					}
+				}
+				else{
+						if(reg_counter >= 2 ){
+							strcat(reg_file_array, reg_pt);
+							strcat(reg_file_array, _SepSplit);
+						}
+				}
+					reg_pt = strtok (NULL, _SepSplit);
+					reg_counter++;
 			}
-				reg_pt = strtok (NULL, _SepSplit);
-				reg_counter++;
 		}
 	}
 	return;
@@ -5095,7 +5122,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 
 	ForEachOutKey(colHeadersLoop)
 	{
-		if(SW_Output[colHeadersLoop].use)
+		if(SW_Output[colHeadersLoop].use && SW_Output[colHeadersLoop].period == outFileTimestep-1)
 		{
 			if(strcmp(key2str[colHeadersLoop], "VWCBULK")==0 || strcmp(key2str[colHeadersLoop], "VWCMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWCBULK")==0
 				|| strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0
