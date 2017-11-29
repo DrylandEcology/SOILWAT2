@@ -50,7 +50,7 @@ extern SW_MODEL SW_Model;
 //extern SW_SITE SW_Site;
 extern SW_VEGESTAB SW_VegEstab;
 static   int periodUse[29][4];
-unsigned int addtl_yr = 0; /* Used to calculate the actual year being modeled */
+
 
 /* =================================================== */
 /*                Module-Level Declarations            */

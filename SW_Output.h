@@ -110,9 +110,9 @@ typedef enum {
 	eSW_SoilTemp,
 	/* vegetation quantities */
 	eSW_AllVeg,
-	eSW_Estab, /* make sure this is the last one */
+	eSW_Estab,
 	eSW_CO2Effects,
-	eSW_LastKey
+	eSW_LastKey /* make sure this is the last one */
 } OutKey;
 
 /* output period specifiers found in input file */

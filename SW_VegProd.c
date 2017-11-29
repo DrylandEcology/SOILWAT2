@@ -29,10 +29,10 @@ increased length of char outstr[1000] to outstr[1500] because of increased echo
 02/04/2012	(drs) 	added input in SW_VPD_read() of RealD SWPcrit
 01/29/2013	(clk)	changed the read in to account for the extra fractional component in total vegetation, bare ground
 added the variable RealF help_bareGround as a place holder for the sscanf call.
-01/31/2013	(clk)	changed the read in to account for the albedo for bare ground, storing the input in bareGround_albedo
+01/31/2013	(clk)	changed the read in to account for the albedo for bare ground, storing the input in bare_cov.albedo
 changed _echo_inits() to now display the bare ground components in logfile.log
 06/27/2013	(drs)	closed open files if LogError() with LOGFATAL is called in SW_VPD_read()
-07/09/2013	(clk)	added initialization of all the values of the new vegtype variable forb and fractionForb
+07/09/2013	(clk)	added initialization of all the values of the new vegtype variable forb and forb.cov.fCover
 */
 /********************************************************/
 /********************************************************/
@@ -51,7 +51,6 @@ changed _echo_inits() to now display the bare ground components in logfile.log
 #include "SW_Files.h"
 #include "SW_Times.h"
 #include "SW_VegProd.h"
-#include "SW_Carbon.h"
 #include "SW_Model.h"
 
 /* =================================================== */
@@ -64,7 +63,6 @@ extern Bool collectInData;
 #endif
 SW_VEGPROD SW_VegProd; /* declared here, externed elsewhere */
 SW_VEGPROD Old_SW_VegProd; /* declared here for reading old value of file sbe_prod_v31, externed elsewhere */
-extern SW_CARBON  SW_Carbon;
 
 /* =================================================== */
 /*                Module-Level Variables               */
@@ -109,11 +107,11 @@ void SW_VPD_read(void) {
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->fractionGrass = help_grass;
-				v->fractionShrub = help_shrub;
-				v->fractionTree = help_tree;
-				v->fractionForb = help_forb;
-				v->fractionBareGround = help_bareGround;
+				v->grass.cov.fCover = help_grass;
+				v->shrub.cov.fCover = help_shrub;
+				v->tree.cov.fCover = help_tree;
+				v->forb.cov.fCover = help_forb;
+				v->bare_cov.fCover = help_bareGround;
 				break;
 
 			/* albedo */
@@ -124,11 +122,11 @@ void SW_VPD_read(void) {
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.albedo = help_grass;
-				v->shrub.albedo = help_shrub;
-				v->tree.albedo = help_tree;
-				v->forb.albedo = help_forb;
-				v->bareGround_albedo = help_bareGround;
+				v->grass.cov.albedo = help_grass;
+				v->shrub.cov.albedo = help_shrub;
+				v->tree.cov.albedo = help_tree;
+				v->forb.cov.albedo = help_forb;
+				v->bare_cov.albedo = help_bareGround;
 				break;
 
 			/* LAI converter for % cover */
@@ -482,10 +480,10 @@ void SW_VPD_read(void) {
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->co2_bio_coeff1.grass = co2_coeff_grass;
-				v->co2_bio_coeff1.shrub = co2_coeff_shrub;
-				v->co2_bio_coeff1.tree = co2_coeff_tree;
-				v->co2_bio_coeff1.forb = co2_coeff_forb;
+				v->grass.co2_bio_coeff1 = co2_coeff_grass;
+				v->shrub.co2_bio_coeff1 = co2_coeff_shrub;
+				v->tree.co2_bio_coeff1 = co2_coeff_tree;
+				v->forb.co2_bio_coeff1 = co2_coeff_forb;
 				break;
 			// Coefficient 2
 			case 31:
@@ -495,10 +493,10 @@ void SW_VPD_read(void) {
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->co2_bio_coeff2.grass = co2_coeff_grass;
-				v->co2_bio_coeff2.shrub = co2_coeff_shrub;
-				v->co2_bio_coeff2.tree = co2_coeff_tree;
-				v->co2_bio_coeff2.forb = co2_coeff_forb;
+				v->grass.co2_bio_coeff2 = co2_coeff_grass;
+				v->shrub.co2_bio_coeff2 = co2_coeff_shrub;
+				v->tree.co2_bio_coeff2 = co2_coeff_tree;
+				v->forb.co2_bio_coeff2 = co2_coeff_forb;
 				break;
 
 			/* CO2 WUE Power Equation */
@@ -510,10 +508,10 @@ void SW_VPD_read(void) {
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->co2_wue_coeff1.grass = co2_coeff_grass;
-				v->co2_wue_coeff1.shrub = co2_coeff_shrub;
-				v->co2_wue_coeff1.tree = co2_coeff_tree;
-				v->co2_wue_coeff1.forb = co2_coeff_forb;
+				v->grass.co2_wue_coeff1 = co2_coeff_grass;
+				v->shrub.co2_wue_coeff1 = co2_coeff_shrub;
+				v->tree.co2_wue_coeff1 = co2_coeff_tree;
+				v->forb.co2_wue_coeff1 = co2_coeff_forb;
 				break;
 			// Coefficient 2
 			case 33:
@@ -523,10 +521,10 @@ void SW_VPD_read(void) {
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->co2_wue_coeff2.grass = co2_coeff_grass;
-				v->co2_wue_coeff2.shrub = co2_coeff_shrub;
-				v->co2_wue_coeff2.tree = co2_coeff_tree;
-				v->co2_wue_coeff2.forb = co2_coeff_forb;
+				v->grass.co2_wue_coeff2 = co2_coeff_grass;
+				v->shrub.co2_wue_coeff2 = co2_coeff_shrub;
+				v->tree.co2_wue_coeff2 = co2_coeff_tree;
+				v->forb.co2_wue_coeff2 = co2_coeff_forb;
 				break;
 
 			default:
@@ -578,20 +576,20 @@ void SW_VPD_read(void) {
 		LogError(logfp, LOGWARN, errstr);
 	}
 
-	fraction_sum = v->fractionGrass + v->fractionShrub + v->fractionTree + v->fractionForb + v->fractionBareGround;
+	fraction_sum = v->grass.cov.fCover + v->shrub.cov.fCover + v->tree.cov.fCover + v->forb.cov.fCover + v->bare_cov.fCover;
 	if (!EQ(fraction_sum, 1.0)) {
 		LogError(logfp, LOGWARN, "%s : Fractions of vegetation components were normalized, "
 			"sum of fractions (%5.4f) != 1.0.\nNew coefficients are:", MyFileName, fraction_sum);
-		v->fractionGrass /= fraction_sum;
-		v->fractionShrub /= fraction_sum;
-		v->fractionTree /= fraction_sum;
-		v->fractionBareGround /= fraction_sum;
-		v->fractionForb /= fraction_sum;
-		LogError(logfp, LOGWARN, "  Grassland fraction : %5.4f", v->fractionGrass);
-		LogError(logfp, LOGWARN, "  Shrubland fraction : %5.4f", v->fractionShrub);
-		LogError(logfp, LOGWARN, "  Forest/tree fraction : %5.4f", v->fractionTree);
-		LogError(logfp, LOGWARN, "  FORB fraction : %5.4f", v->fractionForb);
-		LogError(logfp, LOGWARN, "  Bare Ground fraction : %5.4f", v->fractionBareGround);
+		v->grass.cov.fCover /= fraction_sum;
+		v->shrub.cov.fCover /= fraction_sum;
+		v->tree.cov.fCover /= fraction_sum;
+		v->bare_cov.fCover /= fraction_sum;
+		v->forb.cov.fCover /= fraction_sum;
+		LogError(logfp, LOGWARN, "  Grassland fraction : %5.4f", v->grass.cov.fCover);
+		LogError(logfp, LOGWARN, "  Shrubland fraction : %5.4f", v->shrub.cov.fCover);
+		LogError(logfp, LOGWARN, "  Forest/tree fraction : %5.4f", v->tree.cov.fCover);
+		LogError(logfp, LOGWARN, "  FORB fraction : %5.4f", v->forb.cov.fCover);
+		LogError(logfp, LOGWARN, "  Bare Ground fraction : %5.4f", v->bare_cov.fCover);
 	}
 
 	CloseFile(&f);
@@ -669,22 +667,22 @@ SEXP onGet_SW_VPD() {
 	// Create matrix containing the multipliers
 	PROTECT(CO2Coefficients = allocMatrix(REALSXP, 4, 4));
 	p_CO2Coefficients = REAL(CO2Coefficients);
-	p_CO2Coefficients[0] = v->co2_bio_coeff1.grass;
-	p_CO2Coefficients[1] = v->co2_bio_coeff1.shrub;
-	p_CO2Coefficients[2] = v->co2_bio_coeff1.tree;
-	p_CO2Coefficients[3] = v->co2_bio_coeff1.forb;
-	p_CO2Coefficients[4] = v->co2_bio_coeff2.grass;
-	p_CO2Coefficients[5] = v->co2_bio_coeff2.shrub;
-	p_CO2Coefficients[6] = v->co2_bio_coeff2.tree;
-	p_CO2Coefficients[7] = v->co2_bio_coeff2.forb;
-	p_CO2Coefficients[8] = v->co2_wue_coeff1.grass;
-	p_CO2Coefficients[9] = v->co2_wue_coeff1.shrub;
-	p_CO2Coefficients[10] = v->co2_wue_coeff1.tree;
-	p_CO2Coefficients[11] = v->co2_wue_coeff1.forb;
-	p_CO2Coefficients[12] = v->co2_wue_coeff2.grass;
-	p_CO2Coefficients[13] = v->co2_wue_coeff2.shrub;
-	p_CO2Coefficients[14] = v->co2_wue_coeff2.tree;
-	p_CO2Coefficients[15] = v->co2_wue_coeff2.forb;
+	p_CO2Coefficients[0] = v->grass.co2_bio_coeff1;
+	p_CO2Coefficients[1] = v->shrub.co2_bio_coeff1;
+	p_CO2Coefficients[2] = v->tree.co2_bio_coeff1;
+	p_CO2Coefficients[3] = v->forb.co2_bio_coeff1;
+	p_CO2Coefficients[4] = v->grass.co2_bio_coeff2;
+	p_CO2Coefficients[5] = v->shrub.co2_bio_coeff2;
+	p_CO2Coefficients[6] = v->tree.co2_bio_coeff2;
+	p_CO2Coefficients[7] = v->forb.co2_bio_coeff2;
+	p_CO2Coefficients[8] = v->grass.co2_wue_coeff1;
+	p_CO2Coefficients[9] = v->shrub.co2_wue_coeff1;
+	p_CO2Coefficients[10] = v->tree.co2_wue_coeff1;
+	p_CO2Coefficients[11] = v->forb.co2_wue_coeff1;
+	p_CO2Coefficients[12] = v->grass.co2_wue_coeff2;
+	p_CO2Coefficients[13] = v->shrub.co2_wue_coeff2;
+	p_CO2Coefficients[14] = v->tree.co2_wue_coeff2;
+	p_CO2Coefficients[15] = v->forb.co2_wue_coeff2;
 
 	// Integrate values with names
 	PROTECT(CO2_names = allocVector(VECSXP, 2));
@@ -701,11 +699,11 @@ SEXP onGet_SW_VPD() {
 	PROTECT(VegProd = NEW_OBJECT(swProd));
 
 	PROTECT(VegComp = allocVector(REALSXP, 5));
-	REAL(VegComp)[0] = v->fractionGrass; //Grass
-	REAL(VegComp)[1] = v->fractionShrub; //Shrub
-	REAL(VegComp)[2] = v->fractionTree; //Tree
-	REAL(VegComp)[3] = v->fractionForb; //forb
-	REAL(VegComp)[4] = v->fractionBareGround; //Bare Ground
+	REAL(VegComp)[0] = v->grass.cov.fCover; //Grass
+	REAL(VegComp)[1] = v->shrub.cov.fCover; //Shrub
+	REAL(VegComp)[2] = v->tree.cov.fCover; //Tree
+	REAL(VegComp)[3] = v->forb.cov.fCover; //forb
+	REAL(VegComp)[4] = v->bare_cov.fCover; //Bare Ground
 
 	PROTECT(VegComp_names = allocVector(STRSXP, 5));
 	SET_STRING_ELT(VegComp_names, 0, mkChar("Grasses"));
@@ -716,11 +714,11 @@ SEXP onGet_SW_VPD() {
 	setAttrib(VegComp, R_NamesSymbol, VegComp_names);
 
 	PROTECT(Albedo = allocVector(REALSXP, 5));
-	REAL(Albedo)[0] = v->grass.albedo; //Grass
-	REAL(Albedo)[1] = v->shrub.albedo; //Shrub
-	REAL(Albedo)[2] = v->tree.albedo; //Tree
-	REAL(Albedo)[3] = v->forb.albedo; //forb
-	REAL(Albedo)[4] = v->bareGround_albedo; //bare ground
+	REAL(Albedo)[0] = v->grass.cov.albedo; //Grass
+	REAL(Albedo)[1] = v->shrub.cov.albedo; //Shrub
+	REAL(Albedo)[2] = v->tree.cov.albedo; //Tree
+	REAL(Albedo)[3] = v->forb.cov.albedo; //forb
+	REAL(Albedo)[4] = v->bare_cov.albedo; //bare ground
 	setAttrib(Albedo, R_NamesSymbol, VegComp_names);
 
 	PROTECT(conv_stcr = allocVector(REALSXP, 4));
@@ -1018,18 +1016,18 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	MyFileName = SW_F_name(eVegProd);
 
 	PROTECT(VegComp = GET_SLOT(SW_VPD, install(cVegProd_names[0])));
-	v->fractionGrass = REAL(VegComp)[0]; //Grass
-	v->fractionShrub = REAL(VegComp)[1]; //Shrub
-	v->fractionTree = REAL(VegComp)[2]; //Tree
-	v->fractionForb = REAL(VegComp)[3]; //Forb
-	v->fractionBareGround = REAL(VegComp)[4]; //Bare Ground
+	v->grass.cov.fCover = REAL(VegComp)[0]; //Grass
+	v->shrub.cov.fCover = REAL(VegComp)[1]; //Shrub
+	v->tree.cov.fCover = REAL(VegComp)[2]; //Tree
+	v->forb.cov.fCover = REAL(VegComp)[3]; //Forb
+	v->bare_cov.fCover = REAL(VegComp)[4]; //Bare Ground
 
 	PROTECT(Albedo = GET_SLOT(SW_VPD, install(cVegProd_names[1])));
-	v->grass.albedo = REAL(Albedo)[0]; //Grass
-	v->shrub.albedo = REAL(Albedo)[1]; //Shrub
-	v->tree.albedo = REAL(Albedo)[2]; //Tree
-	v->forb.albedo = REAL(Albedo)[3]; //Forb
-	v->bareGround_albedo = REAL(Albedo)[4]; //Bare Ground
+	v->grass.cov.albedo = REAL(Albedo)[0]; //Grass
+	v->shrub.cov.albedo = REAL(Albedo)[1]; //Shrub
+	v->tree.cov.albedo = REAL(Albedo)[2]; //Tree
+	v->forb.cov.albedo = REAL(Albedo)[3]; //Forb
+	v->bare_cov.albedo = REAL(Albedo)[4]; //Bare Ground
 
 	PROTECT(conv_stcr = GET_SLOT(SW_VPD, install(cVegProd_names[2])));
 	v->grass.conv_stcr = REAL(conv_stcr)[0]; //Grass
@@ -1197,38 +1195,38 @@ void onSet_SW_VPD(SEXP SW_VPD) {
 	}
 
 	PROTECT(CO2Coefficients = GET_SLOT(SW_VPD, install(cVegProd_names[16])));
-	v->co2_bio_coeff1.grass = REAL(CO2Coefficients)[0];
-	v->co2_bio_coeff1.shrub = REAL(CO2Coefficients)[1];
-	v->co2_bio_coeff1.tree = REAL(CO2Coefficients)[2];
-	v->co2_bio_coeff1.forb = REAL(CO2Coefficients)[3];
-	v->co2_bio_coeff2.grass = REAL(CO2Coefficients)[4];
-	v->co2_bio_coeff2.shrub = REAL(CO2Coefficients)[5];
-	v->co2_bio_coeff2.tree = REAL(CO2Coefficients)[6];
-	v->co2_bio_coeff2.forb = REAL(CO2Coefficients)[7];
-	v->co2_wue_coeff1.grass = REAL(CO2Coefficients)[8];
-	v->co2_wue_coeff1.shrub = REAL(CO2Coefficients)[9];
-	v->co2_wue_coeff1.tree = REAL(CO2Coefficients)[10];
-	v->co2_wue_coeff1.forb = REAL(CO2Coefficients)[11];
-	v->co2_wue_coeff2.grass = REAL(CO2Coefficients)[12];
-	v->co2_wue_coeff2.shrub = REAL(CO2Coefficients)[13];
-	v->co2_wue_coeff2.tree = REAL(CO2Coefficients)[14];
-	v->co2_wue_coeff2.forb = REAL(CO2Coefficients)[15];
+	v->grass.co2_bio_coeff1 = REAL(CO2Coefficients)[0];
+	v->shrub.co2_bio_coeff1 = REAL(CO2Coefficients)[1];
+	v->tree.co2_bio_coeff1 = REAL(CO2Coefficients)[2];
+	v->forb.co2_bio_coeff1 = REAL(CO2Coefficients)[3];
+	v->grass.co2_bio_coeff2 = REAL(CO2Coefficients)[4];
+	v->shrub.co2_bio_coeff2 = REAL(CO2Coefficients)[5];
+	v->tree.co2_bio_coeff2 = REAL(CO2Coefficients)[6];
+	v->forb.co2_bio_coeff2 = REAL(CO2Coefficients)[7];
+	v->grass.co2_wue_coeff1 = REAL(CO2Coefficients)[8];
+	v->shrub.co2_wue_coeff1 = REAL(CO2Coefficients)[9];
+	v->tree.co2_wue_coeff1 = REAL(CO2Coefficients)[10];
+	v->forb.co2_wue_coeff1 = REAL(CO2Coefficients)[11];
+	v->grass.co2_wue_coeff2 = REAL(CO2Coefficients)[12];
+	v->shrub.co2_wue_coeff2 = REAL(CO2Coefficients)[13];
+	v->tree.co2_wue_coeff2 = REAL(CO2Coefficients)[14];
+	v->forb.co2_wue_coeff2 = REAL(CO2Coefficients)[15];
 
 
-	fraction_sum = v->fractionGrass + v->fractionShrub + v->fractionTree + v->fractionForb + v->fractionBareGround;
+	fraction_sum = v->grass.cov.fCover + v->shrub.cov.fCover + v->tree.cov.fCover + v->forb.cov.fCover + v->bare_cov.fCover;
 	if (!EQ(fraction_sum, 1.0)) {
 		LogError(logfp, LOGWARN, "%s : Fractions of vegetation components were normalized, "
 			"sum of fractions (%5.4f) != 1.0.\nNew coefficients are:", MyFileName, fraction_sum);
-		v->fractionGrass /= fraction_sum;
-		v->fractionShrub /= fraction_sum;
-		v->fractionTree /= fraction_sum;
-		v->fractionBareGround /= fraction_sum;
-		v->fractionForb /= fraction_sum;
-		LogError(logfp, LOGWARN, "  Grassland fraction : %5.4f", v->fractionGrass);
-		LogError(logfp, LOGWARN, "  Shrubland fraction : %5.4f", v->fractionShrub);
-		LogError(logfp, LOGWARN, "  Forest/tree fraction : %5.4f", v->fractionTree);
-		LogError(logfp, LOGWARN, "  FORB fraction : %5.4f", v->fractionForb);
-		LogError(logfp, LOGWARN, "  Bare Ground fraction : %5.4f", v->fractionBareGround);
+		v->grass.cov.fCover /= fraction_sum;
+		v->shrub.cov.fCover /= fraction_sum;
+		v->tree.cov.fCover /= fraction_sum;
+		v->bare_cov.fCover /= fraction_sum;
+		v->forb.cov.fCover /= fraction_sum;
+		LogError(logfp, LOGWARN, "  Grassland fraction : %5.4f", v->grass.cov.fCover);
+		LogError(logfp, LOGWARN, "  Shrubland fraction : %5.4f", v->shrub.cov.fCover);
+		LogError(logfp, LOGWARN, "  Forest/tree fraction : %5.4f", v->tree.cov.fCover);
+		LogError(logfp, LOGWARN, "  FORB fraction : %5.4f", v->forb.cov.fCover);
+		LogError(logfp, LOGWARN, "  Bare Ground fraction : %5.4f", v->bare_cov.fCover);
 	}
 
 	SW_VPD_init();
@@ -1244,6 +1242,40 @@ void SW_VPD_construct(void) {
 
 	memset(&SW_VegProd, 0, sizeof(SW_VegProd));
 
+
+  SW_VEGPROD *v = &SW_VegProd;
+  int year;
+
+  for (year = 0; year < MAX_NYEAR; year++)
+  {
+    v->grass.co2_multipliers[BIO_INDEX][year] = 1.;
+    v->grass.co2_multipliers[WUE_INDEX][year] = 1.;
+    v->shrub.co2_multipliers[BIO_INDEX][year] = 1.;
+    v->shrub.co2_multipliers[WUE_INDEX][year] = 1.;
+    v->tree.co2_multipliers[BIO_INDEX][year] = 1.;
+    v->tree.co2_multipliers[WUE_INDEX][year] = 1.;
+    v->forb.co2_multipliers[BIO_INDEX][year] = 1.;
+    v->forb.co2_multipliers[WUE_INDEX][year] = 1.;
+  }
+
+}
+
+
+/**
+ * @brief Applies CO2 effects to supplied biomass data.
+ *
+ * Two biomass parameters are needed so that we do not have a compound effect
+ * on the biomass.
+ *
+ * @param new_biomass  The resulting biomass after applying the multiplier.
+ * @param biomass      The biomass to be modified (representing the value under reference
+ *                     conditions (i.e., 360 ppm CO2, currently).
+ * @param multiplier   The biomass multiplier for this PFT.
+ * @note Does not return a value, @p new_biomass is directly modified.
+ */
+void apply_biomassCO2effect(double new_biomass[], double biomass[], double multiplier) {
+  int i;
+  for (i = 0; i < 12; i++) new_biomass[i] = (biomass[i] * multiplier);
 }
 
 
@@ -1270,19 +1302,13 @@ void SW_VPD_init(void) {
 	*/
 
 	SW_VEGPROD *v = &SW_VegProd; /* convenience */
-	SW_CARBON  *c = &SW_Carbon;
-	SW_MODEL   *m = &SW_Model;
 	TimeInt doy; /* base1 */
-	TimeInt year;
 
 	// Grab the real year so we can access CO2 data
-	year = m->year + c->addtl_yr;  // addtl_yr will be 0 unless we are running a future scenario
-	c->co2_bio_mult = c->co2_multipliers[BIO_INDEX][year];
-	c->co2_wue_mult = c->co2_multipliers[WUE_INDEX][year];
 
-	if (GT(v->fractionGrass, 0.)) {
+	if (GT(v->grass.cov.fCover, 0.)) {
 		// CO2
-		apply_CO2(v->grass.CO2_biomass, v->grass.biomass, c->co2_bio_mult.grass);
+		apply_biomassCO2effect(v->grass.CO2_biomass, v->grass.biomass, v->grass.co2_multipliers[BIO_INDEX][SW_Model.simyear]);
 
 		// Interpolation
 		interpolate_monthlyValues(v->grass.litter, v->grass.litter_daily);
@@ -1291,9 +1317,9 @@ void SW_VPD_init(void) {
 		interpolate_monthlyValues(v->grass.lai_conv, v->grass.lai_conv_daily);
 	}
 
-	if (GT(v->fractionShrub, 0.)) {
+	if (GT(v->shrub.cov.fCover, 0.)) {
 		// CO2
-		apply_CO2(v->shrub.CO2_biomass, v->shrub.biomass, c->co2_bio_mult.shrub);
+		apply_biomassCO2effect(v->shrub.CO2_biomass, v->shrub.biomass, v->shrub.co2_multipliers[BIO_INDEX][SW_Model.simyear]);
 
 		// Interpolation
 		interpolate_monthlyValues(v->shrub.litter, v->shrub.litter_daily);
@@ -1302,9 +1328,9 @@ void SW_VPD_init(void) {
 		interpolate_monthlyValues(v->shrub.lai_conv, v->shrub.lai_conv_daily);
 	}
 
-	if (GT(v->fractionTree, 0.)) {
+	if (GT(v->tree.cov.fCover, 0.)) {
 		// CO2
-		apply_CO2(v->tree.CO2_pct_live, v->tree.pct_live, c->co2_bio_mult.tree);
+		apply_biomassCO2effect(v->tree.CO2_pct_live, v->tree.pct_live, v->tree.co2_multipliers[BIO_INDEX][SW_Model.simyear]);
 
 		// Interpolation
 		interpolate_monthlyValues(v->tree.litter, v->tree.litter_daily);
@@ -1313,9 +1339,9 @@ void SW_VPD_init(void) {
 		interpolate_monthlyValues(v->tree.lai_conv, v->tree.lai_conv_daily);
 	}
 
-	if (GT(v->fractionForb, 0.)) {
+	if (GT(v->forb.cov.fCover, 0.)) {
 		// CO2
-		apply_CO2(v->forb.CO2_biomass, v->forb.biomass, c->co2_bio_mult.forb);
+		apply_biomassCO2effect(v->forb.CO2_biomass, v->forb.biomass, v->forb.co2_multipliers[BIO_INDEX][SW_Model.simyear]);
 
 		// Interpolation
 		interpolate_monthlyValues(v->forb.litter, v->forb.litter_daily);
@@ -1325,7 +1351,7 @@ void SW_VPD_init(void) {
 	}
 
 	for (doy = 1; doy <= MAX_DAYS; doy++) {
-		if (GT(v->fractionGrass, 0.)) {
+		if (GT(v->grass.cov.fCover, 0.)) {
 			lai_standing = v->grass.biomass_daily[doy] / v->grass.lai_conv_daily[doy];
 			v->grass.pct_cover_daily[doy] = lai_standing / v->grass.conv_stcr;
 			if (GT(v->grass.canopy_height_constant, 0.)) {
@@ -1352,7 +1378,7 @@ void SW_VPD_init(void) {
 			v->grass.total_agb_daily[doy] = 0.;
 		}
 
-		if (GT(v->fractionShrub, 0.)) {
+		if (GT(v->shrub.cov.fCover, 0.)) {
 			lai_standing = v->shrub.biomass_daily[doy] / v->shrub.lai_conv_daily[doy];
 			v->shrub.pct_cover_daily[doy] = lai_standing / v->shrub.conv_stcr;
 			if (GT(v->shrub.canopy_height_constant, 0.)) {
@@ -1379,7 +1405,7 @@ void SW_VPD_init(void) {
 			v->shrub.total_agb_daily[doy] = 0.;
 		}
 
-		if (GT(v->fractionTree, 0.)) {
+		if (GT(v->tree.cov.fCover, 0.)) {
 			lai_standing = v->tree.biomass_daily[doy] / v->tree.lai_conv_daily[doy];
 			v->tree.pct_cover_daily[doy] = lai_standing / v->tree.conv_stcr;
 			if (GT(v->tree.canopy_height_constant, 0.)) {
@@ -1406,7 +1432,7 @@ void SW_VPD_init(void) {
 			v->tree.total_agb_daily[doy] = 0.;
 		}
 
-		if (GT(v->fractionForb, 0.)) {
+		if (GT(v->forb.cov.fCover, 0.)) {
 			lai_standing = v->forb.biomass_daily[doy] / v->forb.lai_conv_daily[doy];
 			v->forb.pct_cover_daily[doy] = lai_standing / v->forb.conv_stcr;
 			if (GT(v->forb.canopy_height_constant, 0.)) {
@@ -1448,30 +1474,30 @@ static void _echo_inits(void) {
 
 	sprintf(errstr, "Grassland component\t= %1.2f\n"
 		"\tAlbedo\t= %1.2f\n"
-		"\tHydraulic redistribution flag\t= %d\n", v->fractionGrass, v->grass.albedo, v->grass.flagHydraulicRedistribution);
+		"\tHydraulic redistribution flag\t= %d\n", v->grass.cov.fCover, v->grass.cov.albedo, v->grass.flagHydraulicRedistribution);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
 
 	sprintf(errstr, "Shrubland component\t= %1.2f\n"
 		"\tAlbedo\t= %1.2f\n"
-		"\tHydraulic redistribution flag\t= %d\n", v->fractionShrub, v->shrub.albedo, v->shrub.flagHydraulicRedistribution);
+		"\tHydraulic redistribution flag\t= %d\n", v->shrub.cov.fCover, v->shrub.cov.albedo, v->shrub.flagHydraulicRedistribution);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
 
 	sprintf(errstr, "Forest-Tree component\t= %1.2f\n"
 		"\tAlbedo\t= %1.2f\n"
-		"\tHydraulic redistribution flag\t= %d\n", v->fractionTree, v->tree.albedo, v->tree.flagHydraulicRedistribution);
+		"\tHydraulic redistribution flag\t= %d\n", v->tree.cov.fCover, v->tree.cov.albedo, v->tree.flagHydraulicRedistribution);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
 
 	sprintf(errstr, "FORB component\t= %1.2f\n"
 		"\tAlbedo\t= %1.2f\n"
-		"\tHydraulic redistribution flag\t= %d\n", v->fractionForb, v->forb.albedo, v->forb.flagHydraulicRedistribution);
+		"\tHydraulic redistribution flag\t= %d\n", v->forb.cov.fCover, v->forb.cov.albedo, v->forb.flagHydraulicRedistribution);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
 
 	sprintf(errstr, "Bare Ground component\t= %1.2f\n"
-		"\tAlbedo\t= %1.2f\n", v->fractionBareGround, v->bareGround_albedo);
+		"\tAlbedo\t= %1.2f\n", v->bare_cov.fCover, v->bare_cov.albedo);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
 }

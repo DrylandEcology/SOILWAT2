@@ -62,21 +62,6 @@ extern SW_MODEL SW_Model;
 void SW_CBN_construct(void)
 {
   memset(&SW_Carbon, 0, sizeof(SW_Carbon));
-
-  SW_CARBON *c = &SW_Carbon;
-  int year;
-
-  PFTs default_values;
-  default_values.grass = default_values.shrub = default_values.tree = default_values.forb = 1.0;
-
-  for (year = 0; year < MAX_CO2_YEAR; year++)
-  {
-    c->co2_multipliers[BIO_INDEX][year] = default_values;
-    c->co2_multipliers[WUE_INDEX][year] = default_values;
-  }
-
-  c->co2_bio_mult = default_values;
-  c->co2_wue_mult = default_values;
 }
 
 
@@ -126,7 +111,7 @@ SEXP onGet_SW_CARBON(void) {
   SET_SLOT(object, install(cSW_CARBON[2]), Scenario);
 
   PROTECT(DeltaYear = NEW_INTEGER(1));
-  INTEGER(DeltaYear)[0] = c->addtl_yr;
+  INTEGER(DeltaYear)[0] = SW_Model.addtl_yr;
   SET_SLOT(object, install(cSW_CARBON[3]), DeltaYear);
 
   n_sim = SW_Model.endyr - SW_Model.startyr + 1;
@@ -170,7 +155,7 @@ void onSet_swCarbon(SEXP object) {
   // Extract the slots from our object into our structure
   c->use_bio_mult = INTEGER(GET_SLOT(object, install("CarbonUseBio")))[0];
   c->use_wue_mult = INTEGER(GET_SLOT(object, install("CarbonUseWUE")))[0];
-  c->addtl_yr = INTEGER(GET_SLOT(object, install("DeltaYear")))[0];  // This is needed for output 100% of the time
+  SW_Model.addtl_yr = INTEGER(GET_SLOT(object, install("DeltaYear")))[0];  // This is needed for output 100% of the time
   strcpy(c->scenario, CHAR(STRING_ELT(GET_SLOT(object, install("Scenario")), 0)));
 
   // If CO2 is not being used, we can run without extracting ppm data
@@ -186,7 +171,7 @@ void onSet_swCarbon(SEXP object) {
   SEXP CO2ppm;
   double *values;
 
-  year = SW_Model.startyr + c->addtl_yr; // real calendar year when simulation begins
+  year = SW_Model.startyr + SW_Model.addtl_yr; // real calendar year when simulation begins
   n_sim = SW_Model.endyr - SW_Model.startyr + 1;
   PROTECT(CO2ppm = GET_SLOT(object, install("CO2ppm")));
   n_input = nrows(CO2ppm);
@@ -208,7 +193,7 @@ void onSet_swCarbon(SEXP object) {
   }
 
   // Copy CO2 concentration values to SOILWAT variable
-  for (; i <= n_input && year < MAX_CO2_YEAR; i++, year++)
+  for (; i <= n_input && year < MAX_NYEAR; i++, year++)
   {
     c->ppm[year] = values[i - 1 + n_input * 1];  // R's index is 1-based
 
@@ -254,7 +239,7 @@ void SW_CBN_read(void)
 
   // The following variables must be initialized to show if they've been changed or not
   double ppm = 1.;
-  int existing_years[MAX_CO2_YEAR] = {0};
+  int existing_years[MAX_NYEAR] = {0};
   short fileWasEmpty = 1;
 
   MyFileName = SW_F_name(eCarbon);
@@ -283,7 +268,7 @@ void SW_CBN_read(void)
     {
       continue;  // Keep searching for the right scenario
     }
-    if ((year < SW_Model.startyr + c->addtl_yr) ||  (year > SW_Model.endyr + c->addtl_yr))
+    if ((year < SW_Model.startyr + SW_Model.addtl_yr) ||  (year > SW_Model.endyr + SW_Model.addtl_yr))
     {
       continue; // We aren't using this year
     }
@@ -327,7 +312,7 @@ void SW_CBN_read(void)
   }
 
   // Ensure that the desired years were calculated
-  for (year = SW_Model.startyr + c->addtl_yr; year <= SW_Model.endyr + c->addtl_yr; year++)
+  for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= SW_Model.endyr + SW_Model.addtl_yr; year++)
   {
     if (existing_years[year] == 0)
     {
@@ -361,7 +346,7 @@ void calculate_CO2_multipliers(void) {
   }
 
   // Only iterate through the years that we know will be used
-  for (year = SW_Model.startyr + c->addtl_yr; year <= SW_Model.endyr + c->addtl_yr; year++)
+  for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= SW_Model.endyr + SW_Model.addtl_yr; year++)
   {
     ppm = c->ppm[year];
 
@@ -374,35 +359,17 @@ void calculate_CO2_multipliers(void) {
     // Calculate multipliers per PFT
     if (c->use_bio_mult)
     {
-      c->co2_multipliers[BIO_INDEX][year].grass = v->co2_bio_coeff1.grass * pow(ppm, v->co2_bio_coeff2.grass);
-      c->co2_multipliers[BIO_INDEX][year].shrub = v->co2_bio_coeff1.shrub * pow(ppm, v->co2_bio_coeff2.shrub);
-      c->co2_multipliers[BIO_INDEX][year].tree = v->co2_bio_coeff1.tree * pow(ppm, v->co2_bio_coeff2.tree);
-      c->co2_multipliers[BIO_INDEX][year].forb = v->co2_bio_coeff1.forb * pow(ppm, v->co2_bio_coeff2.forb);
+      v->grass.co2_multipliers[BIO_INDEX][year] = v->grass.co2_bio_coeff1 * pow(ppm, v->grass.co2_bio_coeff2);
+      v->shrub.co2_multipliers[BIO_INDEX][year] = v->shrub.co2_bio_coeff1 * pow(ppm, v->shrub.co2_bio_coeff2);
+      v->tree.co2_multipliers[BIO_INDEX][year] = v->tree.co2_bio_coeff1 * pow(ppm, v->tree.co2_bio_coeff2);
+      v->forb.co2_multipliers[BIO_INDEX][year] = v->forb.co2_bio_coeff1 * pow(ppm, v->forb.co2_bio_coeff2);
     }
     if (c->use_wue_mult)
     {
-      c->co2_multipliers[WUE_INDEX][year].grass = v->co2_wue_coeff1.grass * pow(ppm, v->co2_wue_coeff2.grass);
-      c->co2_multipliers[WUE_INDEX][year].shrub = v->co2_wue_coeff1.shrub * pow(ppm, v->co2_wue_coeff2.shrub);
-      c->co2_multipliers[WUE_INDEX][year].tree = v->co2_wue_coeff1.tree * pow(ppm, v->co2_wue_coeff2.tree);
-      c->co2_multipliers[WUE_INDEX][year].forb = v->co2_wue_coeff1.forb * pow(ppm, v->co2_wue_coeff2.forb);
+      v->grass.co2_multipliers[WUE_INDEX][year] = v->grass.co2_wue_coeff1 * pow(ppm, v->grass.co2_wue_coeff2);
+      v->shrub.co2_multipliers[WUE_INDEX][year] = v->shrub.co2_wue_coeff1 * pow(ppm, v->shrub.co2_wue_coeff2);
+      v->tree.co2_multipliers[WUE_INDEX][year] = v->tree.co2_wue_coeff1 * pow(ppm, v->tree.co2_wue_coeff2);
+      v->forb.co2_multipliers[WUE_INDEX][year] = v->forb.co2_wue_coeff1 * pow(ppm, v->forb.co2_wue_coeff2);
     }
   }
-}
-
-
-/**
- * @brief Applies CO2 effects to supplied biomass data.
- *
- * Two biomass parameters are needed so that we do not have a compound effect
- * on the biomass.
- *
- * @param new_biomass  The resulting biomass after applying the multiplier.
- * @param biomass      The biomass to be modified (representing the value under reference
- *                     conditions (i.e., 360 ppm CO2, currently).
- * @param multiplier   The biomass multiplier for this PFT.
- * @note Does not return a value, @p new_biomass is directly modified.
- */
-void apply_CO2(double new_biomass[], double biomass[], double multiplier) {
-  int i;
-  for (i = 0; i < 12; i++) new_biomass[i] = (biomass[i] * multiplier);
 }

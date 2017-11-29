@@ -37,8 +37,6 @@
 #include "SW_Weather.h"
 #include "SW_Main_lib.c"
 
-int addtl_yr;
-
 
 #ifndef RSOILWAT
 static void check_log(void);
@@ -63,7 +61,6 @@ int main(int argc, char **argv) {
 	/* =================================================== */
 
 	logged = FALSE;
-	addtl_yr = 0;
 	atexit(check_log);
 	logfp = stdout; /* provides a way to inform user that something */
 	/* was logged.  can be changed by code (eg init file */

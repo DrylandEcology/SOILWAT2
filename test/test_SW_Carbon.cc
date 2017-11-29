@@ -15,6 +15,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <typeinfo>  // for 'typeid'
+
 #include "../generic.h"
 #include "../myMemory.h"
 #include "../filefuncs.h"
@@ -36,42 +38,24 @@
 
 extern SW_CARBON SW_Carbon;
 extern SW_MODEL SW_Model;
+extern SW_VEGPROD SW_VegProd;
 
 
 
 namespace {
   SW_CARBON *c = &SW_Carbon;
+  SW_VEGPROD *v  = &SW_VegProd;
+
 
   // Test the SW_Carbon constructor 'SW_CBN_construct'
   TEST(CarbonTest, Constructor) {
+    int x;
+
     SW_CBN_construct();
 
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[BIO_INDEX][0].grass);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[BIO_INDEX][0].shrub);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[BIO_INDEX][0].tree);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[BIO_INDEX][0].forb);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[BIO_INDEX][MAX_CO2_YEAR - 1].grass);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[BIO_INDEX][MAX_CO2_YEAR - 1].shrub);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[BIO_INDEX][MAX_CO2_YEAR - 1].tree);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[BIO_INDEX][MAX_CO2_YEAR - 1].forb);
-
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[WUE_INDEX][0].grass);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[WUE_INDEX][0].shrub);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[WUE_INDEX][0].tree);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[WUE_INDEX][0].forb);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[WUE_INDEX][MAX_CO2_YEAR - 1].grass);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[WUE_INDEX][MAX_CO2_YEAR - 1].shrub);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[WUE_INDEX][MAX_CO2_YEAR - 1].tree);
-    EXPECT_DOUBLE_EQ(1., c->co2_multipliers[WUE_INDEX][MAX_CO2_YEAR - 1].forb);
-
-    EXPECT_DOUBLE_EQ(1., c->co2_bio_mult.grass);
-    EXPECT_DOUBLE_EQ(1., c->co2_bio_mult.shrub);
-    EXPECT_DOUBLE_EQ(1., c->co2_bio_mult.tree);
-    EXPECT_DOUBLE_EQ(1., c->co2_bio_mult.forb);
-    EXPECT_DOUBLE_EQ(1., c->co2_wue_mult.grass);
-    EXPECT_DOUBLE_EQ(1., c->co2_wue_mult.shrub);
-    EXPECT_DOUBLE_EQ(1., c->co2_wue_mult.tree);
-    EXPECT_DOUBLE_EQ(1., c->co2_wue_mult.forb);
+    // Test type (and existence)
+    EXPECT_EQ(typeid(x), typeid(c->use_wue_mult));
+    EXPECT_EQ(typeid(x), typeid(c->use_bio_mult));
   }
 
 
@@ -88,7 +72,7 @@ namespace {
     SW_CBN_read();
 
     sum_CO2 = 0.;
-    for (year = 0; year < MAX_CO2_YEAR; year++) {
+    for (year = 0; year < MAX_NYEAR; year++) {
       sum_CO2 += c->ppm[year];
     }
     EXPECT_DOUBLE_EQ(sum_CO2, 0.);
@@ -98,11 +82,11 @@ namespace {
     strcpy(c->scenario, "RCP85");
     c->use_wue_mult = 1;
     c->use_bio_mult = 1;
-    c->addtl_yr = 0;
+    SW_Model.addtl_yr = 0;
 
     SW_CBN_read();
 
-    for (year = SW_Model.startyr + c->addtl_yr; year <= SW_Model.endyr + c->addtl_yr; year++) {
+    for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= SW_Model.endyr + SW_Model.addtl_yr; year++) {
       EXPECT_GT(c->ppm[year], 0.);
     }
   }
@@ -116,50 +100,21 @@ namespace {
     strcpy(c->scenario, "RCP85");
     c->use_wue_mult = 1;
     c->use_bio_mult = 1;
-    c->addtl_yr = 0;
+    SW_Model.addtl_yr = 0;
 
     SW_CBN_read();
     calculate_CO2_multipliers();
 
-    for (year = SW_Model.startyr + c->addtl_yr; year <= SW_Model.endyr + c->addtl_yr; year++) {
-      EXPECT_GT(c->co2_multipliers[BIO_INDEX][year].forb, 0.);
-      EXPECT_GT(c->co2_multipliers[BIO_INDEX][year].grass, 0.);
-      EXPECT_GT(c->co2_multipliers[BIO_INDEX][year].shrub, 0.);
-      EXPECT_GT(c->co2_multipliers[BIO_INDEX][year].tree, 0.);
+    for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= SW_Model.endyr + SW_Model.addtl_yr; year++) {
+      EXPECT_GT(v->forb.co2_multipliers[BIO_INDEX][year], 0.);
+      EXPECT_GT(v->grass.co2_multipliers[BIO_INDEX][year], 0.);
+      EXPECT_GT(v->shrub.co2_multipliers[BIO_INDEX][year], 0.);
+      EXPECT_GT(v->tree.co2_multipliers[BIO_INDEX][year], 0.);
 
-      EXPECT_GT(c->co2_multipliers[WUE_INDEX][year].forb, 0.);
-      EXPECT_GT(c->co2_multipliers[WUE_INDEX][year].grass, 0.);
-      EXPECT_GT(c->co2_multipliers[WUE_INDEX][year].shrub, 0.);
-      EXPECT_GT(c->co2_multipliers[WUE_INDEX][year].tree, 0.);
-    }
-  }
-
-
-  // Test the application of the biomass CO2-effect
-  TEST(CarbonTest, BiomassCO2effect) {
-    int i;
-    double x;
-    double biom1[12], biom2[12];
-
-    for (i = 0; i < 12; i++) {
-      biom1[i] = i + 1.;
-    }
-
-    SW_CBN_construct();
-    strcpy(c->scenario, "RCP85");
-    c->use_wue_mult = 1;
-    c->use_bio_mult = 1;
-    c->addtl_yr = 0;
-
-    SW_CBN_read();
-    calculate_CO2_multipliers();
-
-    // One example
-    x = c->co2_multipliers[BIO_INDEX][SW_Model.startyr + c->addtl_yr].grass;
-    apply_CO2(biom2, biom1, x);
-
-    for (i = 0; i < 12; i++) {
-      EXPECT_DOUBLE_EQ(biom2[i], biom1[i] * x);
+      EXPECT_GT(v->forb.co2_multipliers[WUE_INDEX][year], 0.);
+      EXPECT_GT(v->grass.co2_multipliers[WUE_INDEX][year], 0.);
+      EXPECT_GT(v->shrub.co2_multipliers[WUE_INDEX][year], 0.);
+      EXPECT_GT(v->tree.co2_multipliers[WUE_INDEX][year], 0.);
     }
   }
 

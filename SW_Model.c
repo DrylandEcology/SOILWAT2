@@ -124,6 +124,7 @@ void SW_MDL_read(void) {
 		LogError(logfp, LOGFATAL, "%s: Negative start year (%d)", MyFileName, y);
 	}
 	m->startyr = yearto4digit((TimeInt) y);
+	m->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
 
 	/* ----- ending year */
 	if (!GetALine(f, inbuf)) {
@@ -346,6 +347,7 @@ void SW_MDL_new_year() {
 	_prevweek = _prevmonth = _prevyear = _notime;
 
 	Time_new_year(year);
+	SW_Model.simyear = SW_Model.year + SW_Model.addtl_yr;
 
 	m->firstdoy = (year == m->startyr) ? m->startstart : 1;
 	m->lastdoy = (year == m->endyr) ? m->endend : Time_lastDOY();

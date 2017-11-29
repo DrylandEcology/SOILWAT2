@@ -326,7 +326,6 @@ void SW_SIT_read(void) {
 		case 38:
 			strcpy(c->scenario, inbuf);
 			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", c->scenario);
-			c->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
 			break;
 		default:
 			if (lineno > 38 + MAX_TRANSP_REGIONS)
