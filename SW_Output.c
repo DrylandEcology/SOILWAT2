@@ -1352,9 +1352,9 @@ void get_co2effects(void) {
 
 	SW_VEGPROD *v = &SW_VegProd;
 
-	RealD biomass_total, biolive_total;
-	RealD biomass_grass, biomass_shrub, biomass_tree, biomass_forb;
-	RealD biolive_grass, biolive_shrub, biolive_tree, biolive_forb;
+	RealD biomass_total = 0., biolive_total = 0.;
+	RealD biomass_grass = 0., biomass_shrub = 0., biomass_tree = 0., biomass_forb = 0.;
+	RealD biolive_grass = 0., biolive_shrub = 0., biolive_tree = 0., biolive_forb = 0.;
 
 	// Grab the multipliers that were just used
 	// No averaging or summing required
@@ -4064,7 +4064,7 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
 
   tmp1 = (int) v->count + (int) k;
   tmp1 += tmp1;
-  tmp2 = (TimeInt) s->days;
+  tmp2 = s->days;
   tmp2 += tmp2;
   return;
 }

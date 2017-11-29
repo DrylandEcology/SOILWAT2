@@ -216,6 +216,7 @@ void onSet_swCarbon(SEXP object) {
  *   2. Empty file.
  *   3. Missing scenario.
  *   4. Missing year.
+ *   5. Negative year.
  */
 void SW_CBN_read(void)
 {
@@ -235,7 +236,7 @@ void SW_CBN_read(void)
   /* Reading carbon.in */
   FILE *f;
   char scenario[64];
-  TimeInt year;
+  int year;
 
   // The following variables must be initialized to show if they've been changed or not
   double ppm = 1.;
@@ -274,6 +275,14 @@ void SW_CBN_read(void)
     }
 
     sscanf(inbuf, "%d %lf", &year, &ppm);
+
+    if (year < 0)
+    {
+      CloseFile(&f);
+      sprintf(errstr, "(SW_Carbon) Year %d in scenario '%s' is negative; only positive values are allowed.\n", year, c->scenario);
+      LogError(logfp, LOGFATAL, errstr);
+    }
+
     c->ppm[year] = ppm;
     if (debug) swprintf("  ==> c->ppm[%d] = %3.2f", year, c->ppm[year]);
 
