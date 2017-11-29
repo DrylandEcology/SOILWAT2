@@ -20,3 +20,6 @@
 gtest-*.o
 libgtest.a
 sw_test
+
+# Doxygen documentation files: they should be produced locally
+doc/html/*
