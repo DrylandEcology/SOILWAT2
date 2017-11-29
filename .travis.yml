@@ -2,7 +2,10 @@ language: c
 compiler:
   - clang
   - gcc
+
 script:
   - make bin
-  - make test test_run
-  - make cleaner
+  - make cov cov_run
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"

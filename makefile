@@ -1,8 +1,4 @@
 #-----------------------------------------------------------------------------------
-# 05/24/2012 (DLM)
-# 07/14/2017 (drs)
-# for use in terminal while in the project source directory to make compiling easier
-#-----------------------------------------------------------------------------------
 # commands          explanations
 #-----------------------------------------------------------------------------------
 # make all         creates a shared object for use in rSOILWAT2 ('all' target is required
@@ -14,8 +10,12 @@
 # make lib         create SOILWAT2 library
 # make test        compile unit tests in 'test/ folder with googletest
 # make test_run    run unit tests (in a previous step compiled with 'make test')
-# make test_clean  delete test files and libraries
+# make cov         same as 'make test' but with code coverage support
+# make cov_run     run unit tests and gcov on each source file (in a previous step
+#                  compiled with 'make cov')
 # make clean       delete all of the o files
+# make test_clean  delete test files and libraries
+# make cov_clean   delete files associated with code coverage
 # make cleaner     delete all of the o files, the shared object file(s), test files and
 #                  libraries, and the binary exe
 #-----------------------------------------------------------------------------------
@@ -26,6 +26,7 @@ uname_m = $(shell uname -m)
 # CXX = g++
 CFLAGS = -O3 -Wall -Wextra -pedantic -std=c11
 CXXFLAGS = -Wall -Wextra -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
+CovFlags = -coverage -g -O0
 LDFLAGS = -L.
 LDLIBS = -l$(target) -lm						# order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 
@@ -57,6 +58,7 @@ target = SOILWAT2
 bin_test = sw_test
 lib_target = lib$(target).a
 lib_target++ = lib$(target)++.a
+lib_covtarget++ = libcov$(target)++.a
 SHLIB = r$(target)$(SHLIB_EXT)
 
 gtest = gtest
@@ -66,6 +68,7 @@ GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
 gtest_LDLIBS = -l$(gtest) -l$(target)++ -lm
+cov_LDLIBS = -l$(gtest) -lcov$(target)++ -lm
 
 
 all: $(SHLIB)
@@ -86,6 +89,10 @@ $(lib_target++) :
 		ar -rcsu $(lib_target++) $(objects_tests)
 		@rm -f $(objects_tests)
 
+$(lib_covtarget++) :
+		$(CXX) $(CXXFLAGS) $(CovFlags) -c $(sources_tests)
+		ar -rcsu $(lib_covtarget++) $(objects_tests)
+		@rm -f $(objects_tests)
 
 bin : $(target)
 
@@ -116,8 +123,18 @@ test : $(lib_gtest) $(lib_target++)
 		$(CXX) $(CXXFLAGS) $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
 				test/*.cc -o $(bin_test) $(gtest_LDLIBS)
 
+.PHONY : test_run
 test_run : test
 		./$(bin_test)
+
+cov : cov_clean $(lib_gtest) $(lib_covtarget++)
+		$(CXX) $(CXXFLAGS) $(CovFlags) $(LDFLAGS) -isystem ${GTEST_DIR}/include \
+			-pthread test/*.cc -o $(bin_test) $(cov_LDLIBS)
+
+.PHONY : cov_run
+cov_run : cov
+		./$(bin_test)
+		./run_gcov.sh
 
 
 .PHONY : clean
@@ -134,5 +151,10 @@ clean2 :
 test_clean :
 		@rm -f gtest-all.o $(lib_gtest) $(bin_test)
 
+.PHONY : cov_clean
+cov_clean :
+		@rm -f $(lib_covtarget++) *.gcda *.gcno *.gcov
+		@rm -fr *.dSYM
+
 .PHONY : cleaner
-cleaner : clean clean2 test_clean
+cleaner : clean clean2 test_clean cov_clean
