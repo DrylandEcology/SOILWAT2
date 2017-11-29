@@ -4059,14 +4059,9 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
 	 */
 
 // just a few lines of nonsense to supress the compile warnings
-  int tmp1;
-  TimeInt tmp2;
-
-  tmp1 = (int) v->count + (int) k;
-  tmp1 += tmp1;
-  tmp2 = s->days;
-  tmp2 += tmp2;
-  return;
+  if ((int)k == 1) {}
+  if (0 == v->count) {}
+  if (0 == s->days) {}
 }
 
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)

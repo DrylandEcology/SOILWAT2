@@ -236,7 +236,9 @@ void SW_CBN_read(void)
   /* Reading carbon.in */
   FILE *f;
   char scenario[64];
-  int year;
+  int year,
+    simstartyr = (int) SW_Model.startyr + SW_Model.addtl_yr,
+    simendyr = (int) SW_Model.endyr + SW_Model.addtl_yr;
 
   // The following variables must be initialized to show if they've been changed or not
   double ppm = 1.;
@@ -269,7 +271,7 @@ void SW_CBN_read(void)
     {
       continue;  // Keep searching for the right scenario
     }
-    if ((year < SW_Model.startyr + SW_Model.addtl_yr) ||  (year > SW_Model.endyr + SW_Model.addtl_yr))
+    if ((year < simstartyr) || (year > simendyr))
     {
       continue; // We aren't using this year
     }
@@ -321,7 +323,7 @@ void SW_CBN_read(void)
   }
 
   // Ensure that the desired years were calculated
-  for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= SW_Model.endyr + SW_Model.addtl_yr; year++)
+  for (year = simstartyr; year <= simendyr; year++)
   {
     if (existing_years[year] == 0)
     {
@@ -344,10 +346,12 @@ void SW_CBN_read(void)
  * be simulated.
  */
 void calculate_CO2_multipliers(void) {
-  TimeInt year;
+  TimeInt year,
+    simendyr = SW_Model.endyr + SW_Model.addtl_yr;
   double ppm;
   SW_CARBON  *c  = &SW_Carbon;
   SW_VEGPROD *v  = &SW_VegProd;
+  short debug = 1;
 
   if (!c->use_bio_mult && !c->use_wue_mult)
   {
@@ -355,7 +359,7 @@ void calculate_CO2_multipliers(void) {
   }
 
   // Only iterate through the years that we know will be used
-  for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= SW_Model.endyr + SW_Model.addtl_yr; year++)
+  for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= simendyr; year++)
   {
     ppm = c->ppm[year];
 
@@ -373,6 +377,13 @@ void calculate_CO2_multipliers(void) {
       v->tree.co2_multipliers[BIO_INDEX][year] = v->tree.co2_bio_coeff1 * pow(ppm, v->tree.co2_bio_coeff2);
       v->forb.co2_multipliers[BIO_INDEX][year] = v->forb.co2_bio_coeff1 * pow(ppm, v->forb.co2_bio_coeff2);
     }
+
+    if (debug) {
+      swprintf("Shrub: use%d: bio_mult[%d] = %1.3f / coeff1 = %1.3f / coeff2 = %1.3f / ppm = %3.2f\n",
+        c->use_bio_mult, year, v->shrub.co2_multipliers[BIO_INDEX][year],
+        v->shrub.co2_bio_coeff1, v->shrub.co2_bio_coeff2, ppm);
+    }
+
     if (c->use_wue_mult)
     {
       v->grass.co2_multipliers[WUE_INDEX][year] = v->grass.co2_wue_coeff1 * pow(ppm, v->grass.co2_wue_coeff2);

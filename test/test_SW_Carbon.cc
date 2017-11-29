@@ -61,7 +61,8 @@ namespace {
 
   // Test reading yearly CO2 data from disk file
   TEST(CarbonTest, ReadInputFile) {
-    TimeInt year;
+    TimeInt year,
+      simendyr = SW_Model.endyr + SW_Model.addtl_yr;
     double sum_CO2;
 
     // Test if CO2-effects are turned off -> no CO2 concentration data are read from file
@@ -86,7 +87,7 @@ namespace {
 
     SW_CBN_read();
 
-    for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= SW_Model.endyr + SW_Model.addtl_yr; year++) {
+    for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= simendyr; year++) {
       EXPECT_GT(c->ppm[year], 0.);
     }
   }
@@ -94,7 +95,8 @@ namespace {
 
   // Test the calculation of CO2-effect multipliers
   TEST(CarbonTest, CO2multipliers) {
-    TimeInt year;
+    TimeInt year,
+      simendyr = SW_Model.endyr + SW_Model.addtl_yr;
 
     SW_CBN_construct();
     strcpy(c->scenario, "RCP85");
@@ -105,7 +107,7 @@ namespace {
     SW_CBN_read();
     calculate_CO2_multipliers();
 
-    for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= SW_Model.endyr + SW_Model.addtl_yr; year++) {
+    for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= simendyr; year++) {
       EXPECT_GT(v->forb.co2_multipliers[BIO_INDEX][year], 0.);
       EXPECT_GT(v->grass.co2_multipliers[BIO_INDEX][year], 0.);
       EXPECT_GT(v->shrub.co2_multipliers[BIO_INDEX][year], 0.);

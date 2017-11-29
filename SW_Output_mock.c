@@ -161,9 +161,7 @@ static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
 {
-  OutKey x = k;
-  if ((int)x == 1) {}
-
+  if ((int)k == 1) {}
   if (0 == v->count) {}
   if (0 == s->days) {}
 }
