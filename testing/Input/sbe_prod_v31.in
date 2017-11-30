@@ -3,7 +3,7 @@
 
 # ---- Composition of vegetation type components (0-1; must add up to 1)
 # Grasses	Shrubs		Trees		Forbs		Bare Ground
-0.0			0.0			0.0			1.0			0.0
+0.2			0.2			0.2			0.2			0.2
 
 
 # ---- Albedo
