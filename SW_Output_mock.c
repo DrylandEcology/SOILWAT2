@@ -229,14 +229,14 @@ static void _echo_outputs(void)
   get_co2effects();
 
   OutKey k = eSW_NoKey;
-  SW_VEGPROD *vveg = nullptr;
-  SW_VEGPROD_OUTPUTS *sveg = nullptr;
-  SW_VEGESTAB *vestab = nullptr;
-  SW_VEGESTAB_OUTPUTS *sestab = nullptr;
-  SW_WEATHER *vweath = nullptr;
-  SW_WEATHER_OUTPUTS *sweath = nullptr;
-  SW_SOILWAT *vswc = nullptr;
-  SW_SOILWAT_OUTPUTS *sswc = nullptr;
+  SW_VEGPROD *vveg = NULL;
+  SW_VEGPROD_OUTPUTS *sveg = NULL;
+  SW_VEGESTAB *vestab = NULL;
+  SW_VEGESTAB_OUTPUTS *sestab = NULL;
+  SW_WEATHER *vweath = NULL;
+  SW_WEATHER_OUTPUTS *sweath = NULL;
+  SW_SOILWAT *vswc = NULL;
+  SW_SOILWAT_OUTPUTS *sswc = NULL;
 
   sumof_vpd(vveg, sveg, k);
   sumof_ves(vestab, sestab, k);
