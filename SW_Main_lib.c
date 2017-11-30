@@ -72,9 +72,6 @@ static void usage(void) {
 
 char _firstfile[1024];
 
-#ifndef RSOILWAT
-
-#endif
 void init_args(int argc, char **argv) {
 	/* =================================================== */
 	/* to add an option:
