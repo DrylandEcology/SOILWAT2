@@ -4043,7 +4043,7 @@ static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 			break;
 
 		default:
-			LogError(stderr, LOGFATAL, "PGMR: Invalid key in sumof_vpd(%s)", key2str[k]);
+			LogError(logfp, LOGFATAL, "PGMR: Invalid key in sumof_vpd(%s)", key2str[k]);
 	}
 }
 
