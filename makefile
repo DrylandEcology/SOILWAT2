@@ -59,7 +59,6 @@ bin_test = sw_test
 lib_target = lib$(target).a
 lib_target++ = lib$(target)++.a
 lib_covtarget++ = libcov$(target)++.a
-SHLIB = r$(target)$(SHLIB_EXT)
 
 gtest = gtest
 lib_gtest = lib$(gtest).a
@@ -71,11 +70,26 @@ gtest_LDLIBS = -l$(gtest) -l$(target)++ -lm
 cov_LDLIBS = -l$(gtest) -lcov$(target)++ -lm
 
 
-all: $(SHLIB)
-$(SHLIB) :
-		R CMD SHLIB -o $(SHLIB) $(Rpkg_objects)
-		@rm -f $(Rpkg_objects)
+# Target for rSOILWAT2
+#   - move to 'Makevars' once SOILWAT2 source code organized in sub-directories and this
+#     'makefile' is no longer visibly located at rSOILWAT2/src/
+#   - see https://cran.r-project.org/doc/manuals/R-exts.html#Compiling-in-sub_002ddirectories
+SHLIB = r$(target)$(SHLIB_EXT)
+SOURCES = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
+					rands.c Times.c mymemory.c filefuncs.c \
+					SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c \
+					SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c \
+					SW_VegProd.c SW_Flow_lib.c SW_Flow.c SW_Carbon.c \
+					SW_R_lib.c SW_R_init.c
+OBJECTS = $(SOURCES:.c=.o)
+shlib_target = libr$(target).a
 
+.PHONY : all
+all : $(SHLIB)
+$(SHLIB) :
+		R CMD SHLIB -o $(SHLIB) $(OBJECTS)
+		@rm -f $(OBJECTS)
+# end rSOILWAT2
 
 lib : $(lib_target)
 
@@ -143,7 +157,7 @@ clean :
 
 .PHONY : clean2
 clean2 :
-		@rm -f $(target) $(SHLIB) $(lib_target) $(lib_target++)
+		@rm -f $(target) $(lib_target) $(lib_target++) $(SHLIB) $(shlib_target)
 		@rm -f testing/$(target)
 		@rm -f testing/Output/*
 
