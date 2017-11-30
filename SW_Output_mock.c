@@ -75,7 +75,7 @@ static void get_outstrleader(TimeInt pd)
   if (x == 1) {}
 }
 
-void get_co2effects(void)
+static void get_co2effects(void)
 {}
 
 static void get_estab(void)
@@ -226,6 +226,7 @@ static void _echo_outputs(void)
   get_snowpack();
   get_deepswc();
   get_soiltemp();
+  get_co2effects();
 
   OutKey k = eSW_NoKey;
   SW_VEGPROD *vveg = nullptr;

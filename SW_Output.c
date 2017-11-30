@@ -240,23 +240,24 @@ static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period
 
 /* These MUST be in the same order as enum OutKey in
  * SW_Output.h */
-static char const *key2str[] =
-{ SW_WETHR, SW_TEMP, SW_PRECIP, SW_SOILINF, SW_RUNOFF, SW_ALLH2O, SW_VWCBULK,
-		SW_VWCMATRIC, SW_SWCBULK, SW_SWABULK, SW_SWAMATRIC, SW_SWPMATRIC,
-		SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE, SW_INTERCEPTION,
-		SW_LYRDRAIN, SW_HYDRED, SW_ET, SW_AET, SW_PET, SW_WETDAY, SW_SNOWPACK,
-		SW_DEEPSWC, SW_SOILTEMP,
-		SW_ALLVEG, SW_ESTAB, SW_CO2EFFECTS };
+static char const *key2str[] = {
+  SW_WETHR, SW_TEMP, SW_PRECIP, SW_SOILINF, SW_RUNOFF,
+  SW_ALLH2O, SW_VWCBULK, SW_VWCMATRIC, SW_SWCBULK, SW_SWABULK, SW_SWAMATRIC, SW_SWPMATRIC,
+    SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE, SW_INTERCEPTION, SW_LYRDRAIN,
+    SW_HYDRED, SW_ET, SW_AET, SW_PET, SW_WETDAY, SW_SNOWPACK, SW_DEEPSWC, SW_SOILTEMP,
+  SW_ALLVEG, SW_ESTAB,
+  SW_CO2EFFECTS
+};
 /* converts an enum output key (OutKey type) to a module  */
 /* or object type. see SW_Output.h for OutKey order.         */
 /* MUST be SW_OUTNKEYS of these */
-static ObjType key2obj[] =
-{
+static ObjType key2obj[] = {
   eWTH, eWTH, eWTH, eWTH, eWTH,
   eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
     eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
   eVES, eVES,
-  eVPD };
+  eVPD
+};
 
 static char const *pd2str[] =
 { SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR };
@@ -296,7 +297,7 @@ static void get_snowpack(void);
 static void get_deepswc(void);
 static void get_estab(void);
 static void get_soiltemp(void);
-void get_co2effects(void); // Uses Carbon.h
+static void get_co2effects(void);
 static void get_none(void); /* default until defined */
 
 static void collect_sums(ObjType otyp, OutPeriod op);
@@ -1072,6 +1073,7 @@ void SW_OUT_flush(void)
 	SW_OUT_sum_today(eSWC);
 	SW_OUT_sum_today(eWTH);
 	SW_OUT_sum_today(eVES);
+	SW_OUT_sum_today(eVPD);
 	SW_OUT_write_today();
 
 	bFlush = FALSE;
@@ -1346,15 +1348,17 @@ static void get_outstrleader(TimeInt pd)
 #endif
 }
 
-void get_co2effects(void) {
+static void get_co2effects(void) {
 	// Get the current period
 	OutPeriod pd = SW_Output[eSW_CO2Effects].period;
 
 	SW_VEGPROD *v = &SW_VegProd;
 
-	RealD biomass_total = 0., biolive_total = 0.;
-	RealD biomass_grass = 0., biomass_shrub = 0., biomass_tree = 0., biomass_forb = 0.;
-	RealD biolive_grass = 0., biolive_shrub = 0., biolive_tree = 0., biolive_forb = 0.;
+	RealD biomass_total = SW_MISSING, biolive_total = SW_MISSING;
+	RealD biomass_grass = SW_MISSING, biomass_shrub = SW_MISSING,
+		biomass_tree = SW_MISSING, biomass_forb = SW_MISSING;
+	RealD biolive_grass = SW_MISSING, biolive_shrub = SW_MISSING,
+		biolive_tree = SW_MISSING, biolive_forb = SW_MISSING;
 
 	// Grab the multipliers that were just used
 	// No averaging or summing required
@@ -4032,14 +4036,14 @@ static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 	switch (k)
 	{
 		case eSW_CO2Effects:
-			s->grass.biomass += v->grass.biomass_daily[Today];
-			s->shrub.biomass += v->shrub.biomass_daily[Today];
-			s->tree.biomass += v->tree.biomass_daily[Today];
-			s->forb.biomass += v->forb.biomass_daily[Today];
-			s->grass.biolive += v->grass.biolive_daily[Today];
-			s->shrub.biolive += v->shrub.biolive_daily[Today];
-			s->tree.biolive += v->tree.biolive_daily[Today];
-			s->forb.biolive += v->forb.biolive_daily[Today];
+			s->grass.biomass += v->grass.biomass_daily[SW_Model.doy];
+			s->shrub.biomass += v->shrub.biomass_daily[SW_Model.doy];
+			s->tree.biomass += v->tree.biomass_daily[SW_Model.doy];
+			s->forb.biomass += v->forb.biomass_daily[SW_Model.doy];
+			s->grass.biolive += v->grass.biolive_daily[SW_Model.doy];
+			s->shrub.biolive += v->shrub.biolive_daily[SW_Model.doy];
+			s->tree.biolive += v->tree.biolive_daily[SW_Model.doy];
+			s->forb.biolive += v->forb.biolive_daily[SW_Model.doy];
 			break;
 
 		default:
@@ -4252,8 +4256,8 @@ static void average_for(ObjType otyp, OutPeriod pd)
 	LyrIndex i;
 	int j;
 
-	if (!(otyp == eSWC || otyp == eWTH))
-		LogError(logfp, LOGFATAL, "Invalid object type in OUT_averagefor().");
+	if (otyp == eVES)
+		LogError(logfp, LOGFATAL, "Invalid object type 'eVES' in 'average_for()'.");
 
 	ForEachOutKey(k)
 	{

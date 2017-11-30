@@ -154,6 +154,7 @@ static void _collect_values(void) {
 	SW_OUT_sum_today(eSWC);
 	SW_OUT_sum_today(eWTH);
 	SW_OUT_sum_today(eVES);
+	SW_OUT_sum_today(eVPD);
 
 	SW_OUT_write_today();
 
