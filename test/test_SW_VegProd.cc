@@ -39,7 +39,7 @@ extern SW_VEGPROD SW_VegProd;
 
 
 namespace {
-  SW_VEGPROD *v  = &SW_VegProd;
+  SW_VEGPROD *v = &SW_VegProd;
 
   // Test the SW_VEGPROD constructor 'SW_VPD_construct'
   TEST(VegTest, Constructor) {
@@ -62,6 +62,11 @@ namespace {
     EXPECT_DOUBLE_EQ(1., v->shrub.co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
     EXPECT_DOUBLE_EQ(1., v->tree.co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
     EXPECT_DOUBLE_EQ(1., v->forb.co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
+
+    // Reset to previous global state
+    SW_VPD_construct();
+    SW_VPD_read();
+    calculate_CO2_multipliers();
   }
 
 
