@@ -351,7 +351,7 @@ void calculate_CO2_multipliers(void) {
   double ppm;
   SW_CARBON  *c  = &SW_Carbon;
   SW_VEGPROD *v  = &SW_VegProd;
-  short debug = 1;
+  short debug = 0;
 
   if (!c->use_bio_mult && !c->use_wue_mult)
   {
