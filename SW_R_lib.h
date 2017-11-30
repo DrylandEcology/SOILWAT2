@@ -27,7 +27,6 @@
 
 void init_args(int argc, char **argv);
 void usage(void);
-void init_args(int argc, char **argv);
 void SW_CTL_main(void);
 void SW_CTL_init_model(const char *firstfile);
 void SW_CTL_obtain_inputs(void);
