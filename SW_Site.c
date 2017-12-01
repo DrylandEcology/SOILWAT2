@@ -751,11 +751,11 @@ SEXP onGet_SW_SIT() {
 		SET_STRING_ELT(ModelFlags_names,i,mkChar(cModelFlags[i]));
 	setAttrib(ModelFlags, R_NamesSymbol, ModelFlags_names);
 
-	PROTECT(ModelCoefficients = NEW_NUMERIC(2));
+	PROTECT(ModelCoefficients = NEW_NUMERIC(3));
 	REAL(ModelCoefficients)[0] = v->pet_scale;
 	REAL(ModelCoefficients)[1] = v->percentRunoff;
 	REAL(ModelCoefficients)[2] = v->percentRunon;
-	PROTECT(ModelCoefficients_names = allocVector(STRSXP, 2));
+	PROTECT(ModelCoefficients_names = allocVector(STRSXP, 3));
 	for (i = 0; i < 3; i++)
 		SET_STRING_ELT(ModelCoefficients_names, i, mkChar(cModelCoefficients[i]));
 	setAttrib(ModelCoefficients, R_NamesSymbol, ModelCoefficients_names);
