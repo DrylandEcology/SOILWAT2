@@ -226,94 +226,97 @@ void SW_SIT_read(void) {
 			v->percentRunoff = atof(inbuf);
 			break;
 		case 7:
-			v->TminAccu2 = atof(inbuf);
+			v->percentRunon = atof(inbuf);
 			break;
 		case 8:
-			v->TmaxCrit = atof(inbuf);
+			v->TminAccu2 = atof(inbuf);
 			break;
 		case 9:
-			v->lambdasnow = atof(inbuf);
+			v->TmaxCrit = atof(inbuf);
 			break;
 		case 10:
-			v->RmeltMin = atof(inbuf);
+			v->lambdasnow = atof(inbuf);
 			break;
 		case 11:
-			v->RmeltMax = atof(inbuf);
+			v->RmeltMin = atof(inbuf);
 			break;
 		case 12:
-			v->slow_drain_coeff = atof(inbuf);
+			v->RmeltMax = atof(inbuf);
 			break;
 		case 13:
-			v->evap.xinflec = atof(inbuf);
+			v->slow_drain_coeff = atof(inbuf);
 			break;
 		case 14:
-			v->evap.slope = atof(inbuf);
+			v->evap.xinflec = atof(inbuf);
 			break;
 		case 15:
-			v->evap.yinflec = atof(inbuf);
+			v->evap.slope = atof(inbuf);
 			break;
 		case 16:
-			v->evap.range = atof(inbuf);
+			v->evap.yinflec = atof(inbuf);
 			break;
 		case 17:
-			v->transp.xinflec = atof(inbuf);
+			v->evap.range = atof(inbuf);
 			break;
 		case 18:
-			v->transp.slope = atof(inbuf);
+			v->transp.xinflec = atof(inbuf);
 			break;
 		case 19:
-			v->transp.yinflec = atof(inbuf);
+			v->transp.slope = atof(inbuf);
 			break;
 		case 20:
-			v->transp.range = atof(inbuf);
+			v->transp.yinflec = atof(inbuf);
 			break;
 		case 21:
-			v->latitude = atof(inbuf);
+			v->transp.range = atof(inbuf);
 			break;
 		case 22:
-			v->altitude = atof(inbuf);
+			v->latitude = atof(inbuf);
 			break;
 		case 23:
-			v->slope = atof(inbuf);
+			v->altitude = atof(inbuf);
 			break;
 		case 24:
-			v->aspect = atof(inbuf);
+			v->slope = atof(inbuf);
 			break;
 		case 25:
-			v->bmLimiter = atof(inbuf);
+			v->aspect = atof(inbuf);
 			break;
 		case 26:
-			v->t1Param1 = atof(inbuf);
+			v->bmLimiter = atof(inbuf);
 			break;
 		case 27:
-			v->t1Param2 = atof(inbuf);
+			v->t1Param1 = atof(inbuf);
 			break;
 		case 28:
-			v->t1Param3 = atof(inbuf);
+			v->t1Param2 = atof(inbuf);
 			break;
 		case 29:
-			v->csParam1 = atof(inbuf);
+			v->t1Param3 = atof(inbuf);
 			break;
 		case 30:
-			v->csParam2 = atof(inbuf);
+			v->csParam1 = atof(inbuf);
 			break;
 		case 31:
-			v->shParam = atof(inbuf);
+			v->csParam2 = atof(inbuf);
 			break;
 		case 32:
-			v->meanAirTemp = atof(inbuf);
+			v->shParam = atof(inbuf);
 			break;
 		case 33:
-			v->stDeltaX = atof(inbuf);
+			v->meanAirTemp = atof(inbuf);
 			break;
 		case 34:
-			v->stMaxDepth = atof(inbuf);
+			v->stDeltaX = atof(inbuf);
 			break;
 		case 35:
+			v->stMaxDepth = atof(inbuf);
+			break;
+		case 36:
 			v->use_soil_temp = itob(atoi(inbuf));
 			break;
 		default:
-			if (lineno > 35 + MAX_TRANSP_REGIONS)
+			if (lineno > 36 + MAX_TRANSP_REGIONS)
 				break; /* skip extra lines */
 
 			if (MAX_TRANSP_REGIONS < v->n_transp_rgn) {
@@ -335,6 +338,16 @@ void SW_SIT_read(void) {
 	Label_End_Read:
 
 	CloseFile(&f);
+
+	if (LT(v->percentRunoff, 0.) || GT(v->percentRunoff, 1.)) {
+		LogError(logfp, LOGFATAL, "%s : proportion of ponded surface water removed as daily"
+		  "runoff = %f (value ranges between 0 and 1)\n", MyFileName, v->percentRunoff);
+	}
+
+	if (LT(v->percentRunon, 0.)) {
+		LogError(logfp, LOGFATAL, "%s : proportion of water that arrives at surface added "
+		  "as daily runon = %f (value ranges between 0 and +inf)\n", MyFileName, v->percentRunon);
+	}
 
 	if (too_many_regions) {
 		LogError(logfp, LOGFATAL, "%s : Number of transpiration regions"
@@ -691,7 +704,7 @@ SEXP onGet_SW_SIT() {
 
 	SEXP ModelFlags, ModelCoefficients, ModelFlags_names, ModelCoefficients_names;
 	char *cModelFlags[] = { "Reset", "DeepDrain" };
-	char *cModelCoefficients[] = {"PETmultiplier", "DailyRunoff" };
+	char *cModelCoefficients[] = {"PETmultiplier", "DailyRunoff", "DailyRunon" };
 
 	SEXP SnowSimulationParameters, SnowSimulationParameters_names;
 	char *cSnowSimulationParameters[] = { "TminAccu2", "TmaxCrit", "lambdaSnow", "RmeltMin", "RmeltMax" };
@@ -741,8 +754,9 @@ SEXP onGet_SW_SIT() {
 	PROTECT(ModelCoefficients = NEW_NUMERIC(2));
 	REAL(ModelCoefficients)[0] = v->pet_scale;
 	REAL(ModelCoefficients)[1] = v->percentRunoff;
+	REAL(ModelCoefficients)[2] = v->percentRunon;
 	PROTECT(ModelCoefficients_names = allocVector(STRSXP, 2));
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < 3; i++)
 		SET_STRING_ELT(ModelCoefficients_names, i, mkChar(cModelCoefficients[i]));
 	setAttrib(ModelCoefficients, R_NamesSymbol, ModelCoefficients_names);
 
@@ -876,6 +890,7 @@ void onSet_SW_SIT(SEXP SW_SIT) {
 	PROTECT(ModelCoefficients = GET_SLOT(SW_SIT, install("ModelCoefficients")));
 	v->pet_scale = REAL(ModelCoefficients)[0];
 	v->percentRunoff = REAL(ModelCoefficients)[1];
+	v->percentRunon = REAL(ModelCoefficients)[2];
 
 	PROTECT(SnowSimulationParameters = GET_SLOT(SW_SIT, install("SnowSimulationParameters")));
 	v->TminAccu2 = REAL(SnowSimulationParameters)[0];
@@ -1246,7 +1261,8 @@ static void _echo_inputs(void) {
 	LogError(logfp, LOGNOTE, "  Use deep drainage reservoir: %s\n", (s->deepdrain) ? "TRUE" : "FALSE");
 	LogError(logfp, LOGNOTE, "  Slow Drain Coefficient: %5.4f\n", s->slow_drain_coeff);
 	LogError(logfp, LOGNOTE, "  PET Scale: %5.4f\n", s->pet_scale);
-	LogError(logfp, LOGNOTE, "  Proportion of surface water lost: %5.4f\n", s->percentRunoff);
+	LogError(logfp, LOGNOTE, "  Runoff: proportion of surface water lost: %5.4f\n", s->percentRunoff);
+	LogError(logfp, LOGNOTE, "  Runon: proportion of new surface water gained: %5.4f\n", s->percentRunon);
 	LogError(logfp, LOGNOTE, "  Latitude (radians): %4.2f\n", s->latitude);
 	LogError(logfp, LOGNOTE, "  Altitude (m a.s.l.): %4.2f \n", s->altitude);
 	LogError(logfp, LOGNOTE, "  Slope (degrees): %4.2f\n", s->slope);
