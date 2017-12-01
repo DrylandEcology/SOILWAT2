@@ -74,8 +74,9 @@
 -3.5		-3.9		-2.0		-2.0
 
 
-# ---- CO2 Coefficients: Coeff1 * ppm^Coeff2
-# Coefficients assume that monthly biomass reflect values for conditions at 360 ppm CO2
+# ---- CO2 Coefficients: multiplier = Coeff1 * x^Coeff2
+# Coefficients assume that monthly biomass inputs reflect values for conditions at
+# 360 ppm CO2, i.e., multiplier = 1 for x = 360 ppm CO2
 # Grasses  Shrubs  Trees  Forbs
   0.1319  0.1319  0.1319 0.1319  # Biomass Coeff1
   0.3442  0.3442  0.3442 0.3442  # Biomass Coeff2
