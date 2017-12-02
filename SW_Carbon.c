@@ -178,7 +178,7 @@ void onSet_swCarbon(SEXP object) {
   values = REAL(CO2ppm);
 
   // Locate index of first year for which we need CO2 data
-  for (i = 1; year != (unsigned int) values[i - 1 + n_input * 0]; i++) {}
+  for (i = 1; year != (unsigned int) values[i - 1 + n_input * 0] && i < MAX_NYEAR; i++) {}
 
   if (debug) {
     swprintf("'onSet_swCarbon': year = %d, n_sim = %d, n_input = %d, i = %d\n",
