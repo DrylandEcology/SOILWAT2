@@ -186,10 +186,9 @@ void onSet_swCarbon(SEXP object) {
   }
 
   // Check that we have enough data
-  // TODO: Figure out why i is over 180,000
   if (i - 1 + n_sim > n_input)
   {
-    LogError(logfp, LOGFATAL, "%s : CO2ppm object does not contain data for every year");
+    LogError(logfp, LOGFATAL, "CO2ppm object does not contain data for every year");
   }
 
   // Copy CO2 concentration values to SOILWAT variable
