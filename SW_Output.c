@@ -2657,8 +2657,8 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
 		}
 	}
 
-	/*if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 2000 && SXW.SWA_master[Itclp(3,3,i,p)] != 0 && i == 7 && p == 17){
-		printf("%d = %f\n", SXW.rank_SWPcrits[0], SWSXW.dSWA_repartitioned_sum[Itlp(0,i,p)] = 0.;_VegProd.critSoilWater[SXW.rank_SWPcrits[0]]);
+	if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 2000){
+		printf("%d = %f\n", SXW.rank_SWPcrits[0], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[0]]);
     printf("%d = %f\n", SXW.rank_SWPcrits[1], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[1]]);
     printf("%d = %f\n", SXW.rank_SWPcrits[2], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[2]]);
     printf("%d = %f\n\n", SXW.rank_SWPcrits[3], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[3]]);
@@ -2724,7 +2724,7 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
 		printf("dSWAbulk_repartition tree[0,3,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(0,3,i,p)]);
 
 		printf("---------------------\n\n");
-	}*/
+	}
 }
 
 	#endif
