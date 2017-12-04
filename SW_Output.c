@@ -2153,7 +2153,6 @@ static void get_swa(void)
 	/* added 21-Oct-03, cwb */
 	#ifdef STEPWAT
 		TimeInt p;
-		SW_MODEL *t = &SW_Model;
 	#endif
 
 		LyrIndex i;
@@ -2272,15 +2271,16 @@ static void get_swa(void)
 			switch (pd)
 			{
 				case eSW_Day:
-					p = t->doy-1;
+					p = SW_Model.doy-1;
+					printf("doy: %d\n", p);
 					val = v->dysum.swcBulk[i];
 					break;
 				case eSW_Week:
-					p = t->week-1;
+					p = SW_Model.week-tOffset;
 					val = v->wkavg.swcBulk[i];
 					break;
 				case eSW_Month:
-					p = t->month-1;
+					p = SW_Model.month-tOffset;
 					val = v->moavg.swcBulk[i];
 					break;
 			}
@@ -2391,7 +2391,6 @@ static void get_swa(void)
 static void get_dSWAbulk(RealF swa_master[16][16]){
 	#ifdef STEPWAT
 		TimeInt p;
-		SW_MODEL *t = &SW_Model;
 		memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
 	#endif
 
@@ -2528,13 +2527,13 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
 			switch (pd)
 			{
 				case eSW_Day:
-					p = t->doy-1;
+					p = SW_Model.doy - 1;
 					break;
 				case eSW_Week:
-					p = t->week-1;
+					p = SW_Model.week - tOffset;
 					break;
 				case eSW_Month:
-					p = t->month-1;
+					p = SW_Model.month - tOffset;
 					break;
 			}
 
@@ -2665,7 +2664,7 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
     printf("%d = %f\n", SXW.rank_SWPcrits[2], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[2]]);
     printf("%d = %f\n\n", SXW.rank_SWPcrits[3], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[3]]);*/
 
-		printf("shrub[1,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,0,i,p)]);
+		/*printf("shrub[1,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,0,i,p)]);
 		printf("shrub[1,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,1,i,p)]);
 		printf("shrub[1,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,2,i,p)]);
 		printf("shrub[1,3,%d,%d]: %f\n\n", i,p,SXW.SWA_master[Itclp(1,3,i,p)]);
@@ -2680,7 +2679,7 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
 		printf("dSWAbulk_repartition shrub[1,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(1,2,i,p)]);
 		printf("dSWAbulk_repartition shrub[1,3,%d,%d]: %f\n\n", i,p,SXW.dSWA_repartitioned[Itclp(1,3,i,p)]);
 
-		printf("sum_dSWA_repartitioned shrub[1,0,%d,%d]: %f\n", i,p,SXW.sum_dSWA_repartitioned[1][i][p]);
+		printf("sum_dSWA_repartitioned shrub[1,0,%d,%d]: %f\n", i,p,SXW.sum_dSWA_repartitioned[1][i][p]);*/
 
 		/*printf("grass[2,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,0,i,p)]);
 		printf("grass[2,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,1,i,p)]);
@@ -2733,7 +2732,7 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
 
 		printf("sum_dSWA_repartitioned tree[0,3,%d,%d]: %f\n\n", i,p,SXW.sum_dSWA_repartitioned[0][i][p]);*/
 
-		printf("---------------------\n\n");
+		//printf("---------------------\n\n");
 	}
 }
 
@@ -2746,7 +2745,6 @@ static void get_swcBulk(void)
 	/* added 21-Oct-03, cwb */
 #ifdef STEPWAT
 	TimeInt p;
-	SW_MODEL *t = &SW_Model;
 
 #endif
 	LyrIndex i;
@@ -2818,16 +2816,14 @@ static void get_swcBulk(void)
 		switch (pd)
 		{
 			case eSW_Day:
-				p = t->doy-1;
+				p = SW_Model.doy - 1;
 				val = v->dysum.swcBulk[i];
 				break; // print current but as index
 			case eSW_Week:
-				//p = t->week-1;
 				p = SW_Model.week - tOffset;
 				val = v->wkavg.swcBulk[i];
 				break;// print previous to current
 			case eSW_Month:
-				//p = t->month-1;
 				p = SW_Model.month-tOffset;
 				val = v->moavg.swcBulk[i];
 				break;// print previous to current
@@ -3228,7 +3224,6 @@ static void get_transp(void)
 #elif defined(STEPWAT)
 	char str[OUTSTRLEN];
 	TimeInt p;
-	SW_MODEL *t = &SW_Model;
 	if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		get_outstrleader(pd);
 
@@ -3351,9 +3346,15 @@ static void get_transp(void)
 	{
 		switch (pd)
 		{
-			case eSW_Day: p = t->doy-1; break; /* print current but as index */
-			case eSW_Week: p = t->week-1; break; /* print previous to current */
-			case eSW_Month: p = t->month-1; break; /* print previous to current */
+			case eSW_Day:
+			 	p = p = SW_Model.week - 1;
+			 	break; /* print current but as index */
+			case eSW_Week:
+			 	p = SW_Model.week - tOffset;
+			 	break; /* print previous to current */
+			case eSW_Month:
+				p = SW_Model.month - tOffset;
+				break; /* print previous to current */
 			/* YEAR should never be used with STEPWAT */
 		}
 		//printf("year i, p: %d %d, %d\n", SW_Model.year, i,p);
