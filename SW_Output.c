@@ -2658,10 +2658,10 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
 	}
 
 	if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 2000){
-		printf("%d = %f\n", SXW.rank_SWPcrits[0], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[0]]);
+		/*printf("%d = %f\n", SXW.rank_SWPcrits[0], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[0]]);
     printf("%d = %f\n", SXW.rank_SWPcrits[1], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[1]]);
     printf("%d = %f\n", SXW.rank_SWPcrits[2], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[2]]);
-    printf("%d = %f\n\n", SXW.rank_SWPcrits[3], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[3]]);
+    printf("%d = %f\n\n", SXW.rank_SWPcrits[3], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[3]]);*/
 
 		printf("shrub[1,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,0,i,p)]);
 		printf("shrub[1,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(1,1,i,p)]);
@@ -2678,7 +2678,9 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
 		printf("dSWAbulk_repartition shrub[1,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(1,2,i,p)]);
 		printf("dSWAbulk_repartition shrub[1,3,%d,%d]: %f\n\n", i,p,SXW.dSWA_repartitioned[Itclp(1,3,i,p)]);
 
-		printf("grass[2,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,0,i,p)]);
+		printf("sum_dSWA_repartitioned shrub[1,0,%d,%d]: %f\n", i,p,SXW.sum_dSWA_repartitioned[1][i][p]);
+
+		/*printf("grass[2,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,0,i,p)]);
 		printf("grass[2,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,1,i,p)]);
 		printf("grass[2,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(2,2,i,p)]);
 		printf("grass[2,3,%d,%d]: %f\n\n", i,p,SXW.SWA_master[Itclp(2,3,i,p)]);
@@ -2692,6 +2694,8 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
 		printf("dSWAbulk_repartition grass[2,1,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,1,i,p)]);
 		printf("dSWAbulk_repartition grass[2,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(2,2,i,p)]);
 		printf("dSWAbulk_repartition grass[2,3,%d,%d]: %f\n\n", i,p,SXW.dSWA_repartitioned[Itclp(2,3,i,p)]);
+
+		printf("sum_dSWA_repartitioned grass[2,0,%d,%d]: %f\n\n", i,p,SXW.sum_dSWA_repartitioned[2][i][p]);
 
 		printf("forb[3,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(3,0,i,p)]);
 		printf("forb[3,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(3,1,i,p)]);
@@ -2708,6 +2712,8 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
 		printf("dSWAbulk_repartition forb[3,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(3,2,i,p)]);
 		printf("dSWAbulk_repartition forb[3,3,%d,%d]: %f\n\n", i,p,SXW.dSWA_repartitioned[Itclp(3,3,i,p)]);
 
+		printf("sum_dSWA_repartitioned forb[3,0,%d,%d]: %f\n\n", i,p,SXW.sum_dSWA_repartitioned[3][i][p]);
+
 		printf("tree[0,0,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(0,0,i,p)]);
 		printf("tree[0,1,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(0,1,i,p)]);
 		printf("tree[0,2,%d,%d]: %f\n", i,p,SXW.SWA_master[Itclp(0,2,i,p)]);
@@ -2721,7 +2727,9 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
 		printf("dSWAbulk_repartition tree[0,0,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(0,0,i,p)]);
 		printf("dSWAbulk_repartition tree[0,1,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(0,1,i,p)]);
 		printf("dSWAbulk_repartition tree[0,2,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(0,2,i,p)]);
-		printf("dSWAbulk_repartition tree[0,3,%d,%d]: %f\n", i,p,SXW.dSWA_repartitioned[Itclp(0,3,i,p)]);
+		printf("dSWAbulk_repartition tree[0,3,%d,%d]: %f\n\n", i,p,SXW.dSWA_repartitioned[Itclp(0,3,i,p)]);
+
+		printf("sum_dSWA_repartitioned tree[0,3,%d,%d]: %f\n\n", i,p,SXW.sum_dSWA_repartitioned[0][i][p]);*/
 
 		printf("---------------------\n\n");
 	}
