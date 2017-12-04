@@ -592,8 +592,6 @@ void SW_OUT_read(void)
 							if(yearCheck != NULL)
 								stat_Output_Yearly_CSV_Summary(-1);
 							}
-							//else
-								//useTimeStep = 0; // dont want to use the TIMESTEP if user doesnt ask for output
 					}
 					if(storeAllIterations){
 						char *dayCheck = strstr(inbuf, "dy");
@@ -613,7 +611,8 @@ void SW_OUT_read(void)
 					}
 				}
 				//else
-					useTimeStep = 0; // dont want to use the TIMESTEP if user doesnt ask for output
+					useTimeStep = 0; // setting timestep to 0 since we only wanted the values for creating files.
+													// only using the timeperiod defined for each individual variable
 			#endif
 
 			continue;
@@ -2393,6 +2392,7 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
 	#ifdef STEPWAT
 		TimeInt p;
 		SW_MODEL *t = &SW_Model;
+		memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
 	#endif
 
 	int i,j,kv,id_prev_veg,curr_vegType,curr_crit_rank_index,kv_veg_type,prev_crit_veg_type,greater_veg_type;
@@ -2653,11 +2653,13 @@ static void get_dSWAbulk(RealF swa_master[16][16]){
 	for(curr_vegType = 0; curr_vegType < 4; curr_vegType++){
 		for(kv = 0; kv < 4; kv++){
 			SXW.sum_dSWA_repartitioned[curr_vegType][i][p] += SXW.dSWA_repartitioned[Itclp(curr_vegType,kv,i,p)];
+			//if(Globals.currIter == 1)
+				//printf("%d, %d, %d, %d, %d\n", SW_Model.year, curr_vegType, kv, i, p);
 			//SXW.sum_dSWA_repartitioned[Ivlp(curr_vegType,i,p)] += SXW.dSWA_repartitioned[Itclp(curr_vegType,kv,i,p)];
 		}
 	}
 
-	if(Globals.currIter == Globals.runModelIterations && SW_Model.year == 2000){
+	if(Globals.currIter == 1 && SW_Model.year < 2000){
 		/*printf("%d = %f\n", SXW.rank_SWPcrits[0], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[0]]);
     printf("%d = %f\n", SXW.rank_SWPcrits[1], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[1]]);
     printf("%d = %f\n", SXW.rank_SWPcrits[2], SW_VegProd.critSoilWater[SXW.rank_SWPcrits[2]]);
@@ -2820,28 +2822,23 @@ static void get_swcBulk(void)
 				val = v->dysum.swcBulk[i];
 				break; // print current but as index
 			case eSW_Week:
-				p = t->week-1;
+				//p = t->week-1;
+				p = SW_Model.week - tOffset;
 				val = v->wkavg.swcBulk[i];
 				break;// print previous to current
 			case eSW_Month:
-				p = t->month-1;
+				//p = t->month-1;
+				p = SW_Model.month-tOffset;
 				val = v->moavg.swcBulk[i];
 				break;// print previous to current
 			// YEAR should never be used with STEPWAT
 		}
-		//if(SW_Model.year == 1980 && i == 0 && p == 4)
-			//printf("(iteration %d) [%d, %d, %d] %f\n", Globals.currIter, Globals.currYear, i, p, val);
 		if (isPartialSoilwatOutput == FALSE)
 		{
 			SXW.swc_avg[Iylp(Globals.currYear,i,p)] += val;
 
-			//if(SW_Model.year == 1980 && i == 0 && p == 4)
-			//	printf("(iteration %d) [%d, %d, %d] %f | %f\n", Globals.currIter, Globals.currYear, i, p, val, SXW.swc_avg[Iylp(Globals.currYear,i,p)]);
-
 			if(Globals.currIter == Globals.runModelIterations){
 				SXW.swc_avg[Iylp(Globals.currYear,i,p)] /= Globals.runModelIterations;
-				//if(SW_Model.year == 1980 && i == 0 && p == 4)
-					//printf("AVG (iteration %d) [%d, %d, %d] %f | %f\n", Globals.currIter, Globals.currYear, i, p, val, SXW.swc_avg[Iylp(Globals.currYear,i,p)]);
 
 				sprintf(str, "%c%7.6f", _Sep, SXW.swc_avg[Iylp(Globals.currYear,i,p)]);
 				strcat(outstr, str);
@@ -2854,6 +2851,7 @@ static void get_swcBulk(void)
 		if (bFlush) p++;
 		SXW.swc[Ilp(i,p)] = val; // SXW.swc[Ilp(layer,timeperiod)]
 	}
+
 
 #endif
 }
