@@ -65,7 +65,6 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
 gtest_LDLIBS = -l$(gtest) -l$(target)++ -lm
 cov_LDLIBS = -l$(gtest) -lcov$(target)++ -lm
 
-
 lib : $(lib_target)
 
 $(lib_target) :
@@ -125,6 +124,8 @@ cov : cov_clean $(lib_gtest) $(lib_covtarget++)
 cov_run : cov
 		./$(bin_test)
 		./run_gcov.sh
+
+
 
 
 .PHONY : clean1
