@@ -3829,8 +3829,8 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
 
   tmp1 = (int) v->count + (int) k;
   tmp1 += tmp1;
-  tmp2 = (TimeInt) s->days;
-  tmp2 += tmp2;
+  tmp2 = *(s->days);
+  tmp2 = tmp2;
   return;
 }
 
