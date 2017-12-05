@@ -11,7 +11,6 @@
 #include "myMemory.h"
 #include "Times.h"
 
-#include "SW_Carbon.h"
 #include "SW_Defines.h"
 #include "SW_Files.h"
 #include "SW_Model.h"
@@ -31,7 +30,6 @@ extern SW_WEATHER SW_Weather;
 extern SW_VEGPROD SW_VegProd;
 extern SW_VEGESTAB SW_VegEstab;
 extern Bool EchoInits;
-extern SW_CARBON SW_Carbon;
 
 #define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
 
@@ -150,15 +148,6 @@ static void get_deepswc(void)
 static void get_soiltemp(void)
 {}
 
-static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
-{
-  OutKey x = k;
-  if ((int)x == 1) {}
-
-  if (EQ(0., v->fractionBareGround)) {}
-  if (EQ(0., s->biomass.grass)) {}
-}
-
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
 {
   OutKey x = k;
@@ -230,8 +219,6 @@ static void _echo_outputs(void)
   get_soiltemp();
 
   OutKey k = eSW_NoKey;
-  SW_VEGPROD *vveg = nullptr;
-  SW_VEGPROD_OUTPUTS *sveg = nullptr;
   SW_VEGESTAB *vestab = nullptr;
   SW_VEGESTAB_OUTPUTS *sestab = nullptr;
   SW_WEATHER *vweath = nullptr;
@@ -239,7 +226,6 @@ static void _echo_outputs(void)
   SW_SOILWAT *vswc = nullptr;
   SW_SOILWAT_OUTPUTS *sswc = nullptr;
 
-  sumof_vpd(vveg, sveg, k);
   sumof_ves(vestab, sestab, k);
   sumof_wth(vweath, sweath, k);
   sumof_swc(vswc, sswc, k);
