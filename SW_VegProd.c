@@ -60,7 +60,6 @@ extern Bool EchoInits;
 extern Bool collectInData;
 #endif
 SW_VEGPROD SW_VegProd; /* declared here, externed elsewhere */
-SW_VEGPROD Old_SW_VegProd; /* declared here for reading old value of file sbe_prod_v31, externed elsewhere */
 
 /* =================================================== */
 /*                Module-Level Variables               */
@@ -539,9 +538,8 @@ void SW_VPD_read(void) {
 
 	if (EchoInits)
 		_echo_inits();
-	//save original  copy of SW_VegProd at oldSW_VegProd before it getting updated in code flow
-	Old_SW_VegProd  = SW_VegProd;
 }
+
 #ifdef RSOILWAT
 SEXP onGet_SW_VPD() {
 	int i;
