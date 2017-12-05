@@ -62,12 +62,10 @@ __Tests, documentation, and code__ form a trinity
   to add unit tests to the existing framework
   * Run unit tests locally on the command-line with
     ```
-    make gtest
-    ./sw_test
-    make gtest_clean
+    make test     # compiles the unit-test binary/executable
+    make test_run # executes the unit-test binary
+    make cleaner
     ```
-  * We plan to update the continuous integration frameworks 'travis' and 'appveyor' to
-    run these tests as well when commits are pushed
   * Development/feature branches can only be merged into master if they pass all checks
 
 
