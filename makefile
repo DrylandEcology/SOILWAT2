@@ -3,10 +3,8 @@
 # 07/14/2017 (drs)
 # for use in terminal while in the project source directory to make compiling easier
 #-----------------------------------------------------------------------------------
-# commands          explanations
+# commands         explanations
 #-----------------------------------------------------------------------------------
-# make all         creates a shared object for use in rSOILWAT2 ('all' target is required
-#                  by R CMD)
 # make bin         compile the binary executable using optimizations
 # make bint        same as 'make bin' plus moves a copy of the binary to the
 #                  'testing/' folder
@@ -14,16 +12,15 @@
 # make lib         create SOILWAT2 library
 # make test        compile unit tests in 'test/ folder with googletest
 # make test_run    run unit tests (in a previous step compiled with 'make test')
+# make cleaner     delete all of the o files, test files, libraries, and the binary exe
 # make test_clean  delete test files and libraries
-# make clean       delete all of the o files
-# make cleaner     delete all of the o files, the shared object file(s), test files and
-#                  libraries, and the binary exe
 #-----------------------------------------------------------------------------------
 
 uname_m = $(shell uname -m)
 
 # CC = gcc
 # CXX = g++
+# AR = ar
 CFLAGS = -O3 -Wall -Wextra -pedantic -std=c11
 CXXFLAGS = -Wall -Wextra -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
 LDFLAGS = -L.
@@ -39,10 +36,11 @@ objects = $(sources:.c=.o)
 # Unfortunately, we cannot include 'SW_Output.c' currently because
 #  - cannot increment expression of enum type (e.g., OutKey, OutPeriod)
 #  - assigning to 'OutKey' from incompatible type 'int'
+# ==> instead, we use 'SW_Output_mock.c' which provides mock versions of the public functions (but will result in some compiler warnings)
 sources_tests = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 					rands.c Times.c mymemory.c filefuncs.c \
 					SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c \
-					SW_Markov.c SW_Weather.c SW_Sky.c\
+					SW_Markov.c SW_Weather.c SW_Sky.c SW_Output_mock.c\
 					SW_VegProd.c SW_Flow_lib.c SW_Flow.c
 objects_tests = $(sources_tests:.c=.o)
 
@@ -50,13 +48,11 @@ objects_tests = $(sources_tests:.c=.o)
 bin_sources = SW_Main.c
 bin_objects = $(bin_sources:.c=.o)
 
-Rpkg_objects = $(objects) SW_R_lib.o SW_R_init.o
 
 target = SOILWAT2
 bin_test = sw_test
 lib_target = lib$(target).a
 lib_target++ = lib$(target)++.a
-SHLIB = r$(target)$(SHLIB_EXT)
 
 gtest = gtest
 lib_gtest = lib$(gtest).a
@@ -67,29 +63,24 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
 gtest_LDLIBS = -l$(gtest) -l$(target)++ -lm
 
 
-all: $(SHLIB)
-$(SHLIB) :
-		R CMD SHLIB -o $(SHLIB) $(Rpkg_objects)
-		@rm -f $(Rpkg_objects)
-
-
 lib : $(lib_target)
 
 $(lib_target) :
-		$(CC) $(CFLAGS) -c $(sources)
-		ar -rcsu $(lib_target) $(objects)
+		$(CC) $(CPPFLAGS) $(CFLAGS) -c $(sources)
+		@rm -f $(lib_target)
+		$(AR) -rcs $(lib_target) $(objects)
 		@rm -f $(objects)
 
 $(lib_target++) :
-		$(CXX) $(CXXFLAGS) -c $(sources_tests)
-		ar -rcsu $(lib_target++) $(objects_tests)
-		@rm -f $(objects)
+		$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(sources_tests)
+		$(AR) -rcsu $(lib_target++) $(objects_tests)
+		@rm -f $(objects_tests)
 
 
 bin : $(target)
 
 $(target) : $(lib_target)
-		$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) $(bin_sources) $(LDLIBS)
+		$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $(target) $(bin_sources) $(LDLIBS)
 
 .PHONY : bint
 bint : bin
@@ -107,25 +98,28 @@ bint_run : bint
 lib_test : $(lib_gtest)
 
 $(lib_gtest) :
-		$(CXX) $(CXXFLAGS) -isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
+		$(CXX) $(CPPFLAGS) $(CXXFLAGS) -isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
 			-pthread -c ${GTEST_DIR}/src/gtest-all.cc
-		ar -r $(lib_gtest) gtest-all.o
+		$(AR) -r $(lib_gtest) gtest-all.o
 
 test : $(lib_gtest) $(lib_target++)
-		$(CXX) $(CXXFLAGS) $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
+		$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
 				test/*.cc -o $(bin_test) $(gtest_LDLIBS)
 
-test_run : test
+.PHONY : test_run
+test_run :
 		./$(bin_test)
 
 
-.PHONY : clean
-clean :
+
+
+.PHONY : clean1
+clean1 :
 		@rm -f $(objects) $(bin_objects)
 
 .PHONY : clean2
 clean2 :
-		@rm -f $(target) $(SHLIB) $(lib_target) $(lib_target++)
+		@rm -f $(target) $(lib_target) $(lib_target++)
 		@rm -f testing/$(target)
 		@rm -f testing/Output/*
 
@@ -134,4 +128,4 @@ test_clean :
 		@rm -f gtest-all.o $(lib_gtest) $(bin_test)
 
 .PHONY : cleaner
-cleaner : clean clean2 test_clean
+cleaner : clean1 clean2 test_clean
