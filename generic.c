@@ -199,7 +199,7 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 
 	char outfmt[50 + strlen(fmt)]; /* to prepend err type str */
 	va_list args;
-	int check_eof;
+	int check_eof = 0;
 
 	va_start(args, fmt);
 
@@ -214,18 +214,18 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 	strcat(outfmt, "\n");
 
 	#ifdef RSOILWAT
-		check_eof = TRUE;
-		REvprintf(outfmt, args);
+		if (fp != NULL) {
+			REvprintf(outfmt, args);
+		}
+
 	#else
 		check_eof = (EOF == vfprintf(fp, outfmt, args));
-	#endif
 
-	if (check_eof)
-		sw_error(0, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
-
-	#ifndef RSOILWAT
+		if (check_eof)
+			sw_error(0, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
 		fflush(fp);
 	#endif
+
 
 	logged = TRUE;
 	va_end(args);
