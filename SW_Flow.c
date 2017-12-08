@@ -154,6 +154,11 @@ RealD lyrSWCBulk[MAX_LAYERS], lyrDrain[MAX_LAYERS], lyrTransp_Forb[MAX_LAYERS], 
 
 RealD drainout; /* h2o drained out of deepest layer */
 
+// variables to help calculate runon from a (hypothetical) upslope neighboring (UpNeigh) site
+RealD UpNeigh_lyrSWCBulk[MAX_LAYERS], UpNeigh_lyrDrain[MAX_LAYERS], UpNeigh_drainout,
+	UpNeigh_standingWater;
+
+
 static RealD surfaceTemp[TWO_DAYS], forb_h2o_qum[TWO_DAYS], tree_h2o_qum[TWO_DAYS], shrub_h2o_qum[TWO_DAYS], grass_h2o_qum[TWO_DAYS], litter_h2o_qum[TWO_DAYS], standingWater[TWO_DAYS]; /* water on soil surface if layer below is saturated */
 
 
@@ -240,10 +245,11 @@ void SW_Water_Flow(void) {
 			soil_evap_rate_tree = 1., soil_evap_rate_shrub = 1., soil_evap_rate_grass = 1., soil_evap_rate_bs = 1., transp_forb, transp_tree, transp_shrub, transp_grass,
 			transp_rate_forb = 1., transp_rate_tree = 1., transp_rate_shrub = 1., transp_rate_grass = 1., snow_evap_rate, surface_evap_forb_rate, surface_evap_tree_rate,
 			surface_evap_shrub_rate, surface_evap_grass_rate, surface_evap_litter_rate, surface_evap_standingWater_rate, grass_h2o, shrub_h2o, tree_h2o, forb_h2o, litter_h2o,
-			litter_h2o_help, surface_h2o, h2o_for_soil = 0., ppt_toUse, snowmelt, snowdepth_scale_grass = 1., snowdepth_scale_shrub = 1., snowdepth_scale_tree = 1.,
+			litter_h2o_help, h2o_for_soil = 0., ppt_toUse, snowmelt, snowdepth_scale_grass = 1., snowdepth_scale_shrub = 1., snowdepth_scale_tree = 1.,
 			snowdepth_scale_forb = 1., rate_help;
 
 	int doy;
+	LyrIndex i;
 
 	doy = SW_Model.doy; /* base1 */
 	/*	month = SW_Model.month;*//* base0 */
@@ -361,28 +367,68 @@ void SW_Water_Flow(void) {
 	litter_h2o_qum[Today] = litter_h2o_qum[Yesterday] + litter_h2o;
 	/* End Interception */
 
+
 	/* Surface water */
 	standingWater[Today] = standingWater[Yesterday];
 
-	/* Soil infiltration = rain+snowmelt - interception, but should be = rain+snowmelt - interception + (throughfall+stemflow) */
-	surface_h2o = standingWater[Today];
-	snowmelt = SW_Weather.now.snowmelt[Today];
-	snowmelt = fmax( 0., snowmelt * (1. - SW_Weather.pct_snowRunoff/100.) ); /* amount of snowmelt is changed by runon/off as percentage */
+	/* Soil infiltration = rain+snowmelt - interception, but should be
+		infiltration = rain+snowmelt - interception + (throughfall+stemflow) */
+
+	/* Snow melt infiltrates un-intercepted */
+	snowmelt = fmax( 0., SW_Weather.now.snowmelt[Today] * (1. - SW_Weather.pct_snowRunoff/100.) ); /* amount of snowmelt is changed by runon/off as percentage */
 	SW_Weather.snowRunoff = SW_Weather.now.snowmelt[Today] - snowmelt;
-	h2o_for_soil += snowmelt; /* if there is snowmelt, it goes un-intercepted to the soil */
-	h2o_for_soil += surface_h2o;
-	SW_Weather.soil_inf = h2o_for_soil;
+	h2o_for_soil += snowmelt;
 
-	/* Percolation for saturated soil conditions */
-	infiltrate_water_high(lyrSWCBulk, lyrDrain, &drainout, h2o_for_soil, SW_Site.n_layers, lyrSWCBulk_FieldCaps, lyrSWCBulk_Saturated, lyrImpermeability,
-			&standingWater[Today]);
+	/** @brief Surface water runon:
+			Proportion of water that arrives at surface added as daily runon from a hypothetical
+				identical neighboring upslope site.
+			@param percentRunon Value ranges between 0 and +inf; 0 = no runon,
+				>0 runon is occurring.
+	*/
+	if (GT(SW_Site.percentRunon, 0.)) {
+		// Calculate 'rain + snowmelt - interception - infiltration' for upslope neighbor
+		// Copy values to simulate identical upslope neighbor site
+		ForEachSoilLayer(i) {
+			UpNeigh_lyrSWCBulk[i] = lyrSWCBulk[i];
+			UpNeigh_lyrDrain[i] = lyrDrain[i];
+		}
+		UpNeigh_drainout = drainout;
+		UpNeigh_standingWater = standingWater[Today];
 
-	SW_Weather.soil_inf -= standingWater[Today]; /* adjust soil_infiltration for pushed back or infiltrated surface water */
+		// Infiltrate for upslope neighbor under saturated soil conditions
+		infiltrate_water_high(UpNeigh_lyrSWCBulk, UpNeigh_lyrDrain, &UpNeigh_drainout,
+			h2o_for_soil, SW_Site.n_layers, lyrSWCBulk_FieldCaps, lyrSWCBulk_Saturated,
+			lyrImpermeability, &UpNeigh_standingWater);
 
-	/* Surface water runoff */
-	SW_Weather.surfaceRunoff = standingWater[Today] * SW_Site.percentRunoff;
-	standingWater[Today] = fmax(0.0, (standingWater[Today] - SW_Weather.surfaceRunoff));
-	surface_h2o = standingWater[Today];
+		// Runon as percentage from today's surface water addition on upslope neighbor
+		SW_Weather.surfaceRunon = fmax(0., (UpNeigh_standingWater - standingWater[Yesterday]) * SW_Site.percentRunon);
+		standingWater[Today] += SW_Weather.surfaceRunon;
+
+	} else {
+		SW_Weather.surfaceRunon = 0.;
+	}
+
+	/* Percolation under saturated soil conditions */
+	infiltrate_water_high(lyrSWCBulk, lyrDrain, &drainout, h2o_for_soil, SW_Site.n_layers,
+		lyrSWCBulk_FieldCaps, lyrSWCBulk_Saturated, lyrImpermeability, &standingWater[Today]);
+
+	SW_Weather.soil_inf = h2o_for_soil - standingWater[Today]; /* adjust soil_infiltration for pushed back or infiltrated surface water */
+
+	/** @brief Surface water runoff:
+			Proportion of ponded surface water removed as daily runoff.
+			@param percentRunoff Value ranges between 0 and 1; 0 = no loss of surface water,
+			1 = all ponded water lost via runoff.
+	*/
+	if (GT(SW_Site.percentRunoff, 0.)) {
+		SW_Weather.surfaceRunoff = standingWater[Today] * SW_Site.percentRunoff;
+		standingWater[Today] = fmax(0.0, (standingWater[Today] - SW_Weather.surfaceRunoff));
+
+	} else {
+		SW_Weather.surfaceRunoff = 0.;
+	}
+
+	// end surface water and infiltration
+
 
 	/* PET */
 	SW_Soilwat.pet = SW_Site.pet_scale

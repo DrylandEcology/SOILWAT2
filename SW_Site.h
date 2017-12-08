@@ -120,7 +120,8 @@ typedef struct {
 		meanAirTemp, 	/* meanAirTemp is the mean air temperature for last year, it's a constant read in from the siteparams.in file used in soil_temperature function */
 		stDeltaX,		/* for the soil_temperature function, deltaX is the distance between profile points (default: 15) */
 		stMaxDepth,		/* for the soil_temperature function, the maxDepth of the interpolation function */
-		percentRunoff;	/* the percentage of surface water lost daily */
+		percentRunoff,	/* the percentage of surface water lost daily */
+		percentRunon;	/* the percentage of water that is added to surface gained daily */
 
 	unsigned int stNRGR; /* number of interpolations, for the soil_temperature function */
 	/* params for tanfunc rate calculations for evap and transp. */

@@ -214,7 +214,9 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 	strcat(outfmt, "\n");
 
 	#ifdef RSOILWAT
-		REvprintf(outfmt, args);
+		if (fp != NULL) {
+			REvprintf(outfmt, args);
+		}
 
 	#else
 		check_eof = (EOF == vfprintf(fp, outfmt, args));

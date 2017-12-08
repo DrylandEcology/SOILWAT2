@@ -301,8 +301,9 @@ void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, 
 	}
 }
 
-void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft, unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
-		double *standingWater) {
+void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft,
+	unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
+	double *standingWater) {
 			/**********************************************************************
 			 PURPOSE: Infilitrate water into soil layers under high water
 			 conditions.
@@ -321,7 +322,9 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 
 			 OUTPUTS:
 			 drain  - drainage from layers
-			 swc_local - soilwater content after water has been drained
+			 swc - soilwater content after water has been drained
+			 standingWater
+			 drainout
 			 **********************************************************************/
 	unsigned int i;
 	int j;
@@ -331,7 +334,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 	ST_RGR_VALUES *st = &stValues;
 
 	// Infiltration
-	swc[0] += pptleft;
+	swc[0] += pptleft + *standingWater;
 	(*standingWater) = 0.;
 
 	// Saturated percolation

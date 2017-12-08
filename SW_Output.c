@@ -105,7 +105,7 @@
  07/02/2012  (DLM) updated # of chars in keyname & upkey arrays in SW_OUT_READ() function to account for longer keynames... for some reason it would still read them in correctly on OS X without an error, but wouldn't on JANUS.
  11/30/2012	(clk)	changed get_surfaceWater() to ouput amound of surface water, surface runoff, and snowmelt runoff, respectively.
  12/13/2012	(clk, drs)	changed get_surfaceWater() to output amount of surface water
- added get_runoff() to output surface runoff, and snowmelt runoff, respectively, in a separate file -> new version of outsetupin;
+ added get_runoffrunon() to output surface runoff, and snowmelt runoff, respectively, in a separate file -> new version of outsetupin;
  updated key2str and OutKey
  12/14/2012 (drs)	changed OUTSTRLEN from 2000 to 3000 to prevent 'Abort trap: 6' at runtime
  01/10/2013	(clk)	in function SW_OUT_read, when creating the output files, needed to loop through this four times
@@ -282,7 +282,7 @@ static void get_swpMatric(void);
 static void get_swaBulk(void);
 static void get_swaMatric(void);
 static void get_surfaceWater(void);
-static void get_runoff(void);
+static void get_runoffrunon(void);
 static void get_transp(void);
 static void get_evapSoil(void);
 static void get_evapSurface(void);
@@ -409,7 +409,7 @@ void SW_OUT_construct(void)
 			SW_Output[k].pfunc = (void (*)(void)) get_surfaceWater;
 			break;
 		case eSW_Runoff:
-			SW_Output[k].pfunc = (void (*)(void)) get_runoff;
+			SW_Output[k].pfunc = (void (*)(void)) get_runoffrunon;
 			break;
 		case eSW_Transp:
 			SW_Output[k].pfunc = (void (*)(void)) get_transp;
@@ -2492,76 +2492,87 @@ static void get_surfaceWater(void)
 #endif
 }
 
-static void get_runoff(void)
-{
-	/* --------------------------------------------------- */
-	/* (12/13/2012) (clk) Added function to output runoff variables */
+static void get_runoffrunon(void) {
+  /* --------------------------------------------------- */
+  /* (12/13/2012) (clk) Added function to output runoff variables */
 
-	SW_WEATHER *w = &SW_Weather;
-	OutPeriod pd = SW_Output[eSW_Runoff].period;
-	RealD val_totalRunoff = SW_MISSING, val_surfaceRunoff = SW_MISSING,
-			val_snowRunoff = SW_MISSING;
-#ifndef RSOILWAT
-	char str[OUTSTRLEN];
-	get_outstrleader(pd);
-	switch (pd)
-	{
-	case eSW_Day:
-		val_surfaceRunoff = w->dysum.surfaceRunoff;
-		val_snowRunoff = w->dysum.snowRunoff;
-		break;
-	case eSW_Week:
-		val_surfaceRunoff = w->wkavg.surfaceRunoff;
-		val_snowRunoff = w->wkavg.snowRunoff;
-		break;
-	case eSW_Month:
-		val_surfaceRunoff = w->moavg.surfaceRunoff;
-		val_snowRunoff = w->moavg.snowRunoff;
-		break;
-	case eSW_Year:
-		val_surfaceRunoff = w->yravg.surfaceRunoff;
-		val_snowRunoff = w->yravg.snowRunoff;
-		break;
-	}
-	val_totalRunoff = val_surfaceRunoff + val_snowRunoff;
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f", _Sep, val_totalRunoff, _Sep, val_surfaceRunoff, _Sep, val_snowRunoff);
-	strcat(outstr, str);
-#else
-	switch (pd)
-	{
-		case eSW_Day:
-		p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 0] = SW_Model.simyear;
-		p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 1] = SW_Model.doy;
-		p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 2] = (w->dysum.surfaceRunoff + w->dysum.snowRunoff);
-		p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 3] = w->dysum.surfaceRunoff;
-		p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 4] = w->dysum.snowRunoff;
-		SW_Output[eSW_Runoff].dy_row++;
-		break;
-		case eSW_Week:
-		p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 0] = SW_Model.simyear;
-		p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
-		p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 2] = (w->wkavg.surfaceRunoff + w->wkavg.snowRunoff);
-		p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 3] = w->wkavg.surfaceRunoff;
-		p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 4] = w->wkavg.snowRunoff;
-		SW_Output[eSW_Runoff].wk_row++;
-		break;
-		case eSW_Month:
-		p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 0] = SW_Model.simyear;
-		p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
-		p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 2] = (w->moavg.surfaceRunoff + w->moavg.snowRunoff);
-		p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 3] = w->moavg.surfaceRunoff;
-		p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 4] = w->moavg.snowRunoff;
-		SW_Output[eSW_Runoff].mo_row++;
-		break;
-		case eSW_Year:
-		p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 0] = SW_Model.simyear;
-		p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 1] = (w->yravg.surfaceRunoff + w->yravg.snowRunoff);
-		p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 2] = w->yravg.surfaceRunoff;
-		p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 3] = w->yravg.snowRunoff;
-		SW_Output[eSW_Runoff].yr_row++;
-		break;
-	}
-#endif
+  SW_WEATHER *w = &SW_Weather;
+  OutPeriod pd = SW_Output[eSW_Runoff].period;
+  RealD val_netRunoff = SW_MISSING, val_surfaceRunoff = SW_MISSING,
+      val_surfaceRunon = SW_MISSING, val_snowRunoff = SW_MISSING;
+
+  char str[OUTSTRLEN];
+  get_outstrleader(pd);
+
+  switch (pd) {
+    case eSW_Day:
+      val_surfaceRunoff = w->dysum.surfaceRunoff;
+      val_surfaceRunon = w->dysum.surfaceRunon;
+      val_snowRunoff = w->dysum.snowRunoff;
+      break;
+    case eSW_Week:
+      val_surfaceRunoff = w->wkavg.surfaceRunoff;
+      val_surfaceRunon = w->wkavg.surfaceRunon;
+      val_snowRunoff = w->wkavg.snowRunoff;
+      break;
+    case eSW_Month:
+      val_surfaceRunoff = w->moavg.surfaceRunoff;
+      val_surfaceRunon = w->moavg.surfaceRunon;
+      val_snowRunoff = w->moavg.snowRunoff;
+      break;
+    case eSW_Year:
+      val_surfaceRunoff = w->yravg.surfaceRunoff;
+      val_surfaceRunon = w->yravg.surfaceRunon;
+      val_snowRunoff = w->yravg.snowRunoff;
+      break;
+  }
+
+  val_netRunoff = val_surfaceRunoff + val_snowRunoff - val_surfaceRunon;
+
+  #ifndef RSOILWAT
+    sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_netRunoff,
+      _Sep, val_surfaceRunoff, _Sep, val_snowRunoff, _Sep, val_surfaceRunon);
+    strcat(outstr, str);
+
+  #else
+    switch (pd) {
+      case eSW_Day:
+        p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 0] = SW_Model.simyear;
+        p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 1] = SW_Model.doy;
+        p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 2] = val_netRunoff;
+        p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 3] = val_surfaceRunoff;
+        p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 4] = val_snowRunoff;
+        p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 5] = val_surfaceRunon;
+        SW_Output[eSW_Runoff].dy_row++;
+        break;
+      case eSW_Week:
+        p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 0] = SW_Model.simyear;
+        p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
+        p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 2] = val_netRunoff;
+        p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 3] = val_surfaceRunoff;
+        p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 4] = val_snowRunoff;
+        p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 5] = val_surfaceRunon;
+        SW_Output[eSW_Runoff].wk_row++;
+        break;
+      case eSW_Month:
+        p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 0] = SW_Model.simyear;
+        p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
+        p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 2] = val_netRunoff;
+        p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 3] = val_surfaceRunoff;
+        p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 4] = val_snowRunoff;
+        p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 5] = val_surfaceRunon;
+        SW_Output[eSW_Runoff].mo_row++;
+        break;
+      case eSW_Year:
+        p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 0] = SW_Model.simyear;
+        p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 1] = val_netRunoff;
+        p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 2] = val_surfaceRunoff;
+        p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 3] = val_snowRunoff;
+        p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 4] = val_surfaceRunon;
+        SW_Output[eSW_Runoff].yr_row++;
+        break;
+    }
+  #endif
 }
 
 static void get_transp(void)
@@ -3261,7 +3272,7 @@ static void get_soilinf(void)
 	/* --------------------------------------------------- */
 	/* 20100202 (drs) added */
 	/* 20110219 (drs) added runoff */
-	/* 12/13/2012	(clk)	moved runoff, now named snowRunoff, to get_runoff(); */
+	/* 12/13/2012	(clk)	moved runoff, now named snowRunoff, to get_runoffrunon(); */
 	SW_WEATHER *v = &SW_Weather;
 	OutPeriod pd = SW_Output[eSW_SoilInf].period;
 	RealD val_inf = SW_MISSING;
@@ -4096,6 +4107,7 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 	case eSW_Runoff:
 		s->snowRunoff += v->snowRunoff;
 		s->surfaceRunoff += v->surfaceRunoff;
+		s->surfaceRunon += v->surfaceRunon;
 		break;
 	default:
 		LogError(logfp, LOGFATAL, "PGMR: Invalid key in sumof_wth(%s)", key2str[k]);
@@ -4342,6 +4354,7 @@ static void average_for(ObjType otyp, OutPeriod pd)
 				case eSW_Runoff:
 					wavg->snowRunoff = wsumof->snowRunoff / div;
 					wavg->surfaceRunoff = wsumof->surfaceRunoff / div;
+					wavg->surfaceRunon = wsumof->surfaceRunon / div;
 					break;
 
 				case eSW_SoilTemp:
