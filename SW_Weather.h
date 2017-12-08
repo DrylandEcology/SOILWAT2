@@ -59,7 +59,7 @@ typedef struct {
 /* current period's values (eg, weekly or monthly) */
 typedef struct {
 	RealD temp_max, temp_min, temp_avg, ppt, rain, snow, snowmelt, snowloss, /* 20091015 (drs) ppt is divided into rain and snow */
-	snowRunoff, surfaceRunoff, soil_inf, et, aet, pet,surfaceTemp;
+	snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, et, aet, pet,surfaceTemp;
 } SW_WEATHER_OUTPUTS;
 
 typedef struct {
@@ -74,7 +74,7 @@ typedef struct {
 	RealD scale_precip[MAX_MONTHS], scale_temp_max[MAX_MONTHS], scale_temp_min[MAX_MONTHS],
 		scale_skyCover[MAX_MONTHS], scale_wind[MAX_MONTHS], scale_rH[MAX_MONTHS], scale_transmissivity[MAX_MONTHS];
 	char name_prefix[MAX_FILENAMESIZE];
-	RealD snowRunoff, surfaceRunoff, soil_inf,surfaceTemp;
+	RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf,surfaceTemp;
 
 	/* This section is required for computing the output quantities.  */
 	SW_WEATHER_OUTPUTS dysum, /* helpful placeholder */

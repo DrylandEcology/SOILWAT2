@@ -225,7 +225,7 @@ void SW_WTH_new_year(void) {
 	if (!weth_found && firsttime) {
 		wn->temp_max[Today] = wn->temp_min[Today] = wn->ppt[Today] = wn->rain[Today] = wn->snow[Today] = wn->snowmelt[Today] = wn->snowloss[Today] = wn->gsppt = 0.;
 
-		SW_Weather.snowRunoff = SW_Weather.surfaceRunoff = SW_Weather.soil_inf = 0.;
+		SW_Weather.snowRunoff = SW_Weather.surfaceRunoff = SW_Weather.surfaceRunon = SW_Weather.soil_inf = 0.;
 	}
 
 	firsttime = FALSE;
@@ -279,7 +279,7 @@ void SW_WTH_new_day(void) {
 
 	wn->ppt[Today] = wn->rain[Today] = ppt;
 	wn->snowmelt[Today] = wn->snowloss[Today] = wn->snow[Today] = 0.;
-	w->snowRunoff = w->surfaceRunoff = w->soil_inf = 0.;
+	w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
 
 	if (w->use_snow)
 		SW_SWC_adjust_snow(wn->temp_min[Today], wn->temp_max[Today], wn->ppt[Today], &wn->rain[Today], &wn->snow[Today], &wn->snowmelt[Today], &wn->snowloss[Today]);
