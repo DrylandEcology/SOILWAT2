@@ -44,7 +44,7 @@
    of the SOILWAT2 repository
 */
 const char * dir_test = "./testing";
-const char * masterfile_test = "files_v31.in"; // relative to 'dir_test'
+const char * masterfile_test = "files.in"; // relative to 'dir_test'
 
 
 // Global variables which are defined in SW_Main_lib.c:
