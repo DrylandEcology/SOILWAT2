@@ -88,7 +88,7 @@ bint : bin
 
 .PHONY : bint_run
 bint_run : bint
-		./testing/$(target) -d ./testing -f files_v31.in
+		./testing/$(target) -d ./testing -f files.in
 
 
 # GoogleTest:
@@ -121,6 +121,9 @@ clean1 :
 clean2 :
 		@rm -f $(target) $(lib_target) $(lib_target++)
 		@rm -f testing/$(target)
+
+.PHONY : bint_clean
+bint_clean :
 		@rm -f testing/Output/*
 
 .PHONY : test_clean
@@ -128,4 +131,4 @@ test_clean :
 		@rm -f gtest-all.o $(lib_gtest) $(bin_test)
 
 .PHONY : cleaner
-cleaner : clean1 clean2 test_clean
+cleaner : clean1 clean2 bint_clean test_clean
