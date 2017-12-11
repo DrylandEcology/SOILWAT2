@@ -581,7 +581,7 @@ void onSet_SW_LYR(SEXP SW_SOILS) {
 	transp_ok_grass = TRUE, /* same for transpiration coefficients */
 	fail = FALSE;
 	LyrIndex lyrno;
-	int x, i, j, columns;
+	int i, j, columns;
 	const char *errtype = "\0";
 	RealF dmin = 0.0, dmax, evco, trco_forb, trco_tree, trco_shrub, trco_grass, psand, pclay, matricd, imperm, soiltemp, fval = 0, f_gravel;
 	RealD *p_Layers;
@@ -738,7 +738,6 @@ SEXP onGet_SW_SIT() {
 	SEXP SoilTemperatureConstants_use, SoilTemperatureConstants, SoilTemperatureConstants_names;
 	char *cSoilTempValues[] = { "BiomassLimiter_g/m^2", "T1constant_a", "T1constant_b","T1constant_c", "cs_constant_SoilThermCondct", "cs_constant", "sh_constant_SpecificHeatCapacity",
 			"ConstMeanAirTemp", "deltaX_Param", "MaxDepth" };
-	char *cSoilTemperatureConstants[] = { "Values", "CalcSoilTemp" };
 
 	SEXP TranspirationRegions, TranspirationRegions_names, TranspirationRegions_names_y;
 	char *cTranspirationRegions[] = { "ndx", "layer" };
@@ -889,9 +888,7 @@ void onSet_SW_SIT(SEXP SW_SIT) {
 
 	MyFileName = SW_F_name(eSite);
 
-	int lineno = 0, x;
-	LyrIndex r, region, /* transp region definition number */
-	rgnlow; /* lower layer of region */
+	LyrIndex r; /* transp region definition number */
 	Bool too_many_regions = FALSE;
 
 	PROTECT(SWClimits = GET_SLOT(SW_SIT, install("SWClimits")));

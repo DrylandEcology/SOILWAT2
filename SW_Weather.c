@@ -391,7 +391,7 @@ SEXP onGet_SW_WTH() {
 	SW_WEATHER *w = &SW_Weather;
 
 	SEXP swWeather;
-	SEXP SW_WTH, SW_WTH_names;
+	SEXP SW_WTH;
 
 	SEXP use_snow, pct_snowdrift, pct_snowRunoff, use_markov, yr_first, days_in_runavg;
 	SEXP MonthlyScalingParams, MonthlyScalingParams_names, MonthlyScalingParams_names_x, MonthlyScalingParams_names_y;
@@ -524,8 +524,7 @@ SEXP onGet_WTH_DATA(void) {
 	char cYear[5];
 	char fname[MAX_FILENAMESIZE];
 	FILE *f;
-	int nWeathData = 0;
-	int years = ((SW_Model.endyr + 1) - SW_Model.startyr), i = 0;
+	int nWeathData = 0, i;
 
 	for (year = SW_Model.startyr; year <= SW_Model.endyr; year++) {
 		sprintf(fname, "%s.%4d", SW_Weather.name_prefix, year);
@@ -541,7 +540,7 @@ SEXP onGet_WTH_DATA(void) {
 
 	if (nWeathData > 0){
 		weth_found = TRUE;
-		for (year = SW_Model.startyr; year <= SW_Model.endyr; year++) {
+		for (year = SW_Model.startyr, i = 0; year <= SW_Model.endyr; year++, i++) {
 			if (year < SW_Weather.yr.first) {
 				weth_found = FALSE;
 			} else {
@@ -555,7 +554,6 @@ SEXP onGet_WTH_DATA(void) {
 			if (!weth_found && !SW_Weather.use_markov) {
 				LogError(logfp, LOGFATAL, "Markov Simulator turned off and weather file found not for year %d", year);
 			}
-			i++;
 		}
 	} else {
 		weth_found = FALSE;
@@ -611,10 +609,9 @@ SEXP onGet_WTH_DATA_YEAR(TimeInt year) {
 }
 Bool onSet_WTH_DATA(SEXP WTH_DATA_YEAR, TimeInt year) {
 	SW_WEATHER_HIST *wh = &SW_Weather.hist;
-	//SEXP dim;
 	int x, lineno = 0, k = 0, i, j,days;
 	RealD *p_WTH_DATA;
-	RealF tmpmax, tmpmin, ppt, acc = 0.0;
+	RealF tmpmax = SW_MISSING, tmpmin = SW_MISSING, ppt = SW_MISSING, acc = 0.0;
 	TimeInt doy;
 
 	//dim = getAttrib(WTH_DATA_YEAR, R_DimSymbol);

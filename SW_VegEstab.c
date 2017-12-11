@@ -171,7 +171,7 @@ void onSet_SW_VES(SEXP VES) {
 	IntU i;
 	int nSPPS;
 	SW_VegEstab.use = TRUE;
-	SEXP use, count, SPPS;
+	SEXP use, count;
 	MyFileName = SW_F_name(eVegEstab);
 
 	PROTECT(use = GET_SLOT(VES,install("useEstab")));
@@ -463,10 +463,7 @@ void onGet_SW_VES_spps(SEXP SPP) {
 }
 void onSet_SW_VES_spp(SEXP SPP, IntU i) {
 	SW_VEGESTAB_INFO *v;
-	const int nitems = 15;
 	SEXP fileName, Name;
-	int lineno = 0;
-	char name[80]; /* only allow 4 char sppnames */
 	unsigned int count;
 
 	count = _new_species();

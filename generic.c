@@ -199,7 +199,6 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 
 	char outfmt[50 + strlen(fmt)]; /* to prepend err type str */
 	va_list args;
-	int check_eof = 0;
 
 	va_start(args, fmt);
 
@@ -219,6 +218,7 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 		}
 
 	#else
+		int check_eof;
 		check_eof = (EOF == vfprintf(fp, outfmt, args));
 
 		if (check_eof)

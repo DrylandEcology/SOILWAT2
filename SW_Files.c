@@ -171,7 +171,7 @@ void SW_F_construct(const char *firstfile) {
 }
 #ifdef RSOILWAT
 SEXP onGet_SW_F() {
-	int i = 0, j = 0;
+	int i = 0;
 
 	SEXP swFiles;
 	SEXP SW_F_construct; //, SW_F_construct_names;

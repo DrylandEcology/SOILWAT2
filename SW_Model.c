@@ -212,7 +212,6 @@ void SW_MDL_read(void) {
 
 #ifdef RSOILWAT
 SEXP onGet_SW_MDL() {
-	int i;
 	SW_MODEL *m = &SW_Model;
 
 	SEXP swYears;
