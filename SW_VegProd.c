@@ -545,7 +545,7 @@ SEXP onGet_SW_VPD() {
 	int i;
 	SW_VEGPROD *v = &SW_VegProd;
 	SEXP swProd;
-	SEXP VegProd, VegProd_names;
+	SEXP VegProd;
 	char *cVegProd_names[] = { "Composition", "Albedo", "Cover_stcr", "CanopyHeight", "VegetationInterceptionParameters", "LitterInterceptionParameters",
 			"EsTpartitioning_param", "Es_param_limit", "Shade", "HydraulicRedistribution_use", "HydraulicRedistribution", "CriticalSoilWaterPotential",
 			"MonthlyProductionValues_grass", "MonthlyProductionValues_shrub", "MonthlyProductionValues_tree", "MonthlyProductionValues_forb" };

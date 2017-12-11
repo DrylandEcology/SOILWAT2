@@ -52,25 +52,25 @@ static RealD _vcov[2][2], _ucov[2];
 /* --------------------------------------------------- */
 
 static void temp_correct(TimeInt doy,RealD *tmax, RealD *tmin, RealD *rain) {
-    
+
     RealD tx, tn,cfxw,cfxd,cfnw,cfnd,rn;
-    
+
     rn = *rain;
     cfxw = SW_Markov.cfxw[doy];
     cfnw = SW_Markov.cfnw[doy];
     cfxd = SW_Markov.cfxd[doy];
     cfnd = SW_Markov.cfnd[doy];
     tx = *tmax;
-    tn = *tmin; 
-    
+    tn = *tmin;
+
     if (rn > 0.) {
             if (tx < 0. ) { //if temp is less than 0 special case
                 tx = tx*((1.0 - cfxw)+1.0);
             }
             else { tx = tx*cfxw;
             }
-            
-            
+
+
             if (tn < 0) {//if temp is less than 0 special case
                 tn = tn*((1.0 - cfnw)+1.0);
             }
@@ -78,7 +78,7 @@ static void temp_correct(TimeInt doy,RealD *tmax, RealD *tmin, RealD *rain) {
             tn = tn*cfnw;
             }
     }
-        
+
  //apply correction factor to temperature
         if (rn <= 0.) {
             if (tx < 0. ) {//if temp is less than 0 special case
@@ -87,7 +87,7 @@ static void temp_correct(TimeInt doy,RealD *tmax, RealD *tmin, RealD *rain) {
             else {
                 tx = tx*cfxd;
             }
-            
+
             if (tn < 0.) { //if temp is less than 0 special case
                 tn = tn*((1.0 - cfnd)+1.0);
             }
@@ -95,11 +95,11 @@ static void temp_correct(TimeInt doy,RealD *tmax, RealD *tmin, RealD *rain) {
             tn = tn*cfnd;
            }
         }
-        
-        
+
+
         *tmin = tn;
         *tmax = tx;
-        
+
 }
 
 static void mvnorm(RealD *tmax, RealD *tmin) {
@@ -120,7 +120,7 @@ static void mvnorm(RealD *tmax, RealD *tmin) {
 	 *       C converts the floats transparently.
 	 */
 	RealD s, z1, z2, vc00 = _vcov[0][0], vc10 = _vcov[1][0], vc11 = _vcov[1][1];
-        
+
 	vc00 = sqrt(vc00);
 	vc10 = (GT(vc00, 0.)) ? vc10 / vc00 : 0;
 	s = vc10 * vc10;
@@ -128,8 +128,8 @@ static void mvnorm(RealD *tmax, RealD *tmin) {
 		LogError(logfp, LOGFATAL, "\nBad covariance matrix in mvnorm()");
 	vc11 = (EQ(vc11, s)) ? 0. : sqrt(vc11 -s);
 
-	z1 = RandNorm(0., 3.5);  
-	z2 = RandNorm(0., 3.5);   
+	z1 = RandNorm(0., 3.5);
+	z2 = RandNorm(0., 3.5);
 	*tmin = (vc10 * z1) + (vc11 * z2) + _ucov[1];
 	*tmax = vc00 * z1 + _ucov[0];
 
@@ -183,7 +183,7 @@ void SW_MKV_today(TimeInt doy, RealD *tmax, RealD *tmin, RealD *rain) {
 	_ucov[0] = SW_Markov.u_cov[week][0];
 	_ucov[1] = SW_Markov.u_cov[week][1];
 	mvnorm(tmax, tmin);
-    temp_correct(doy,tmax,tmin,rain);        
+    temp_correct(doy,tmax,tmin,rain);
 }
 
 Bool SW_MKV_read_prob(void) {
@@ -204,7 +204,7 @@ Bool SW_MKV_read_prob(void) {
 		if (++lineno == MAX_DAYS)
 			break; /* skip extra lines */
 
-		x = sscanf(inbuf, "%d %f %f %f %f %f %f %f %f", &day, &wet, &dry, &avg, &std, &cfxw, &cfxd, &cfnw, &cfnd);               
+		x = sscanf(inbuf, "%d %f %f %f %f %f %f %f %f", &day, &wet, &dry, &avg, &std, &cfxw, &cfxd, &cfnw, &cfnd);
 		if (x < nitems) {
 			CloseFile(&f);
 			LogError(logfp, LOGFATAL, "\nToo few values in line %d file %s\n", lineno, MyFileName);
@@ -273,7 +273,6 @@ Bool onSet_MKV_prob(SEXP MKV_prob) {
 	SW_MARKOV *v = &SW_Markov;
 	const int nitems = 5;
 	int i;
-	RealF wet, dry, avg, std;
 	RealD *p_MKV_prob;
 
 	MyFileName = SW_F_name(eMarkovProb);
@@ -361,7 +360,6 @@ Bool onSet_MKV_conv(SEXP MKV_conv) {
 	const int nitems = 7;
 	int i;
 	RealD *p_MKV_conv;
-	SEXP dim;
 
 	MyFileName = SW_F_name(eMarkovCov);
 

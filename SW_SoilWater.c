@@ -269,10 +269,9 @@ void SW_SWC_read(void) {
 }
 #ifdef RSOILWAT
 SEXP onGet_SW_SWC() {
-	int i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	SEXP swSWC;
-	SEXP SWC, SWC_names;
+	SEXP SWC;
 	char *cSWC[] = { "UseSWCHistoricData", "DataFilePrefix", "FirstYear", "Method", "History" };
 	SEXP swcUseData;
 	SEXP swcFilePrefix;
@@ -440,7 +439,9 @@ SEXP onGet_SW_SWC_hists() {
 }
 
 SEXP onGet_SW_SWC_hist(TimeInt year) {
-	int i, j;
+  sw_error(-1, "'onGet_SW_SWC_hist' is currently not functional.\n");
+
+	int i, j = 0;
 	SW_SOILWAT *v = &SW_Soilwat;
 	SEXP swSWC_hist;
 	SEXP hist;
@@ -454,6 +455,7 @@ SEXP onGet_SW_SWC_hist(TimeInt year) {
 	PROTECT(lyrs = allocMatrix(REALSXP, MAX_LAYERS*MAX_DAYS, 4));
 	p_lyrs = REAL(lyrs);
 
+  //TODO: variable j is used as index but not incremented
 	for (i = 0; i < MAX_DAYS * MAX_LAYERS; i++) {
 		p_lyrs[i + MAX_DAYS * MAX_LAYERS * 0] = (int) (i / MAX_LAYERS);
 		p_lyrs[i + MAX_DAYS * MAX_LAYERS * 1] = (int) (j % MAX_LAYERS);
@@ -474,11 +476,14 @@ SEXP onGet_SW_SWC_hist(TimeInt year) {
 }
 
 void onSet_SW_SWC_hist(SEXP lyrs) {
-	int i, j;
+  sw_error(-1, "'onSet_SW_SWC_hist' is currently not functional.\n");
+
+	int i, j = 0;
 	SW_SOILWAT *v = &SW_Soilwat;
 	RealD *p_lyrs;
 
 	p_lyrs = REAL(lyrs);
+  //TODO: variable j is used as index but not incremented
 	for (i = 0; i < MAX_DAYS * MAX_LAYERS; i++) {
 		v->hist.swc[(int) (i / MAX_LAYERS)][(int) (j % MAX_LAYERS)] = p_lyrs[i + MAX_DAYS * MAX_LAYERS * 2];
 		v->hist.std_err[(int) (i / MAX_LAYERS)][(int) (j % MAX_LAYERS)] = p_lyrs[i + MAX_DAYS * MAX_LAYERS * 3];
