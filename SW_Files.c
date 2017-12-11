@@ -86,7 +86,7 @@ void SW_F_read(const char *s) {
 	 */
 
 	FILE *f;
-	int lineno = 0, fileno = 0;
+	int lineno = 0, fileno = 0, debug = 0;
 	char buf[FILENAME_MAX];
 
 	if (!isnull(s))
@@ -96,6 +96,8 @@ void SW_F_read(const char *s) {
 	f = OpenFile(MyFileName, "r");
 
 	while (GetALine(f, inbuf)) {
+
+    if (debug) swprintf("'SW_F_read': line = %d/%d: %s\n", lineno, eEndFile, inbuf);
 
 		switch (lineno) {
 		case 5:
@@ -111,6 +113,7 @@ void SW_F_read(const char *s) {
 
 			if (!isnull(InFiles[fileno]))
 				Mem_Free(InFiles[fileno]);
+
 			strcpy(buf, _ProjDir);
 			strcat(buf, inbuf);
 			InFiles[fileno] = Str_Dup(buf);
@@ -182,7 +185,7 @@ SEXP onGet_SW_F() {
 	PROTECT(SW_F_construct = NEW_OBJECT(swFiles));
 	PROTECT(ProjDir = allocVector(STRSXP, 1));
 	SET_STRING_ELT(ProjDir, 0, mkChar(_ProjDir));
-	
+
 	PROTECT(FilesIn = allocVector(STRSXP, SW_NFILES));
 	for (i = 0; i < SW_NFILES; i++) {
 		if (InFiles[i] != NULL ) {
