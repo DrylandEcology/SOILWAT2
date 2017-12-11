@@ -168,7 +168,7 @@ void SW_F_construct(const char *firstfile) {
 }
 #ifdef RSOILWAT
 SEXP onGet_SW_F() {
-	int i = 0, j = 0;
+	int i = 0;
 
 	SEXP swFiles;
 	SEXP SW_F_construct; //, SW_F_construct_names;
@@ -182,7 +182,7 @@ SEXP onGet_SW_F() {
 	PROTECT(SW_F_construct = NEW_OBJECT(swFiles));
 	PROTECT(ProjDir = allocVector(STRSXP, 1));
 	SET_STRING_ELT(ProjDir, 0, mkChar(_ProjDir));
-	
+
 	PROTECT(FilesIn = allocVector(STRSXP, SW_NFILES));
 	for (i = 0; i < SW_NFILES; i++) {
 		if (InFiles[i] != NULL ) {

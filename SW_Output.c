@@ -761,9 +761,8 @@ void SW_OUT_read(void)
 void onSet_SW_OUT(SEXP OUT)
 {
 	int i;
-	char ext[10];
 	OutKey k;
-	SEXP sep, timestep,useTimeStep, KEY;
+	SEXP sep, timestep,useTimeStep;
 	Bool continue1;
 	SEXP mykey, myobj, period, sumtype, use, first, last, first_orig, last_orig, outfile;
 
@@ -878,7 +877,6 @@ SEXP onGet_SW_OUT(void)
 	SET_STRING_ELT(sep, 0, mkCharLen(&_Sep,1));
 	SET_SLOT(OUT, install("outputSeparator"), sep);
 
-	if (debug) swprintf("useTimeStep before assignment = %d\n", useTimeStep);
 	PROTECT(useTimeStep = NEW_LOGICAL(1));
 	if(numPeriod == 0)
 		LOGICAL(useTimeStep)[0] = FALSE;
@@ -1334,8 +1332,8 @@ static void get_estab(void)
 	SW_VEGESTAB *v = &SW_VegEstab;
 	OutPeriod pd = SW_Output[eSW_Estab].period;
 	IntU i;
-	char str[10];
 #ifndef RSOILWAT
+	char str[10];
 	get_outstrleader(pd);
 #else
 	switch(pd)
@@ -1416,9 +1414,11 @@ static void get_temp(void)
 	 */
 	SW_WEATHER *v = &SW_Weather;
 	OutPeriod pd = SW_Output[eSW_Temp].period;
+#ifndef RSOILWAT
 	RealD v_avg = SW_MISSING;
 	RealD v_min = SW_MISSING, v_max = SW_MISSING;
 	RealD surfaceTempVal = SW_MISSING;
+#endif
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
@@ -1526,8 +1526,10 @@ static void get_precip(void)
 	/* 	20091015 (drs) ppt is divided into rain and snow and all three values are output into precip */
 	SW_WEATHER *v = &SW_Weather;
 	OutPeriod pd = SW_Output[eSW_Precip].period;
+#ifndef RSOILWAT
 	RealD val_ppt = SW_MISSING, val_rain = SW_MISSING, val_snow = SW_MISSING,
 			val_snowmelt = SW_MISSING, val_snowloss = SW_MISSING;
+#endif
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
@@ -1874,9 +1876,12 @@ static void get_swcBulk(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_SWCBulk].period;
+#ifndef RSOILWAT
 	RealD val = SW_MISSING;
-#if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
+#endif
+
+#if !defined(STEPWAT) && !defined(RSOILWAT)
 	get_outstrleader(pd);
 	ForEachSoilLayer(i)
 	{
@@ -1930,7 +1935,6 @@ static void get_swcBulk(void)
 		break;
 	}
 #elif defined(STEPWAT)
-	char str[OUTSTRLEN];
 	if (isPartialSoilwatOutput == FALSE)
 	{
 		get_outstrleader(pd);
@@ -1998,8 +2002,8 @@ static void get_swpMatric(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_SWPMatric].period;
-	RealD val = SW_MISSING;
 #ifndef RSOILWAT
+	RealD val = SW_MISSING;
 	char str[OUTSTRLEN];
 
 	get_outstrleader(pd);
@@ -2069,8 +2073,8 @@ static void get_swaBulk(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_SWABulk].period;
-	RealD val = SW_MISSING;
 #ifndef RSOILWAT
+	RealD val = SW_MISSING;
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 	ForEachSoilLayer(i)
@@ -2135,8 +2139,9 @@ static void get_swaMatric(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_SWAMatric].period;
-	RealD val = SW_MISSING, convert;
+	RealD convert;
 #ifndef RSOILWAT
+	RealD val = SW_MISSING;
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 	ForEachSoilLayer(i)
@@ -2211,8 +2216,8 @@ static void get_surfaceWater(void)
 	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_SurfaceWater].period;
-	RealD val_surfacewater = SW_MISSING;
 #ifndef RSOILWAT
+	RealD val_surfacewater = SW_MISSING;
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 	switch (pd)
@@ -2271,7 +2276,6 @@ static void get_runoffrunon(void) {
   RealD val_netRunoff = SW_MISSING, val_surfaceRunoff = SW_MISSING,
       val_surfaceRunon = SW_MISSING, val_snowRunoff = SW_MISSING;
 
-  char str[OUTSTRLEN];
   get_outstrleader(pd);
 
   switch (pd) {
@@ -2300,6 +2304,8 @@ static void get_runoffrunon(void) {
   val_netRunoff = val_surfaceRunoff + val_snowRunoff - val_surfaceRunon;
 
   #ifndef RSOILWAT
+    char str[OUTSTRLEN];
+
     sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_netRunoff,
       _Sep, val_surfaceRunoff, _Sep, val_snowRunoff, _Sep, val_surfaceRunon);
     strcat(outstr, str);
@@ -2772,9 +2778,9 @@ static void get_evapSoil(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_EvapSoil].period;
-	RealD val = SW_MISSING;
 
 #ifndef RSOILWAT
+	RealD val = SW_MISSING;
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 	ForEachEvapLayer(i)
@@ -2836,11 +2842,11 @@ static void get_evapSurface(void)
 	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_EvapSurface].period;
+
+#ifndef RSOILWAT
 	RealD val_tot = SW_MISSING, val_tree = SW_MISSING, val_forb = SW_MISSING,
 			val_shrub = SW_MISSING, val_grass = SW_MISSING, val_litter =
 					SW_MISSING, val_water = SW_MISSING;
-
-#ifndef RSOILWAT
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 	switch (pd)
@@ -2943,11 +2949,11 @@ static void get_interception(void)
 	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_Interception].period;
+
+#ifndef RSOILWAT
 	RealD val_tot = SW_MISSING, val_tree = SW_MISSING, val_forb = SW_MISSING,
 			val_shrub = SW_MISSING, val_grass = SW_MISSING, val_litter =
 					SW_MISSING;
-
-#ifndef RSOILWAT
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 	switch (pd)
@@ -3045,8 +3051,8 @@ static void get_soilinf(void)
 	/* 12/13/2012	(clk)	moved runoff, now named snowRunoff, to get_runoffrunon(); */
 	SW_WEATHER *v = &SW_Weather;
 	OutPeriod pd = SW_Output[eSW_SoilInf].period;
-	RealD val_inf = SW_MISSING;
 #ifndef RSOILWAT
+	RealD val_inf = SW_MISSING;
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 	switch (pd)
@@ -3103,8 +3109,8 @@ static void get_lyrdrain(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_LyrDrain].period;
-	RealD val = SW_MISSING;
 #ifndef RSOILWAT
+	RealD val = SW_MISSING;
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 	for (i = 0; i < SW_Site.n_layers - 1; i++)
@@ -3176,9 +3182,10 @@ static void get_hydred(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_HydRed].period;
-	RealD val = SW_MISSING;
 #ifndef RSOILWAT
+	RealD val = SW_MISSING;
 	char str[OUTSTRLEN];
+
 	get_outstrleader(pd);
 	/* total output */ForEachSoilLayer(i)
 	{
@@ -3423,14 +3430,11 @@ static void get_aet(void)
 	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_AET].period;
-	RealD val = SW_MISSING;
-#if !defined(STEPWAT) && !defined(RSOILWAT)
-	char str[20];
-#elif defined(STEPWAT)
-	char str[20];
-#endif
 
 #ifndef RSOILWAT
+	RealD val = SW_MISSING;
+	char str[20];
+
 	get_outstrleader(pd);
 	switch (pd)
 	{
@@ -3497,8 +3501,8 @@ static void get_pet(void)
 	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_PET].period;
-	RealD val = SW_MISSING;
 #ifndef RSOILWAT
+	RealD val = SW_MISSING;
 	char str[20];
 	get_outstrleader(pd);
 	switch (pd)
@@ -3830,7 +3834,7 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
   tmp1 = (int) v->count + (int) k;
   tmp1 += tmp1;
   tmp2 = *(s->days);
-  tmp2 = tmp2;
+  tmp2 = tmp2 + 1;
   return;
 }
 
