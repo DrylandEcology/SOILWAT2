@@ -537,14 +537,12 @@ SEXP onGet_SW_LYR() {
 	char *cLayers[] = { "depth_cm", "bulkDensity_g/cm^3", "gravel_content", "EvapBareSoil_frac", "transpGrass_frac", "transpShrub_frac",
 			"transpTree_frac", "transpForb_frac", "sand_frac", "clay_frac", "impermeability_frac", "soilTemp_c" };
 	RealD *p_Layers;
-	RealD temp;
 
 	PROTECT(swSoils = MAKE_CLASS("swSoils"));
 	PROTECT(SW_SOILS = NEW_OBJECT(swSoils));
 	PROTECT(Layers = allocMatrix(REALSXP,v->n_layers,12));
 	p_Layers = REAL(Layers);
 	for (i = 0; i < (v->n_layers); i++) {
-		temp = v->lyr[i]->width;
 		p_Layers[i + (v->n_layers) * 0] = dmax = v->lyr[i]->width + dmax;
 		p_Layers[i + (v->n_layers) * 1] = v->lyr[i]->soilMatric_density;
 		p_Layers[i + (v->n_layers) * 2] = v->lyr[i]->fractionVolBulk_gravel;
