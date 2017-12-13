@@ -53,6 +53,9 @@
 #include "SW_Weather.h"
 #include "SW_Markov.h"
 #include "SW_Sky.h"
+#ifdef RSOILWAT
+  #include <R_ext/Arith.h> // for the ISNA macro
+#endif
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -607,20 +610,21 @@ SEXP onGet_WTH_DATA_YEAR(TimeInt year) {
 	UNPROTECT(6);
 	return WeatherData;
 }
+
 Bool onSet_WTH_DATA(SEXP WTH_DATA_YEAR, TimeInt year) {
 	SW_WEATHER_HIST *wh = &SW_Weather.hist;
-	int x, lineno = 0, k = 0, i, j,days;
+	int x, lineno = 0, k = 0, i, j, days;
 	RealD *p_WTH_DATA;
-	RealF tmpmax = SW_MISSING, tmpmin = SW_MISSING, ppt = SW_MISSING, acc = 0.0;
+	RealF acc = 0.0;
 	TimeInt doy;
 
-	//dim = getAttrib(WTH_DATA_YEAR, R_DimSymbol);
 	days = Time_get_lastdoy_y(year);
 
 	if (nrows(WTH_DATA_YEAR) != days || ncols(WTH_DATA_YEAR) != 4) {
 		LogError(logfp, LOGFATAL, "weath.%4d : Wrong number of days or columns in data. Expected rows %d had %d. Expected columns 4 had %d.", year, days,nrows(WTH_DATA_YEAR),ncols(WTH_DATA_YEAR));
 		return FALSE;
 	}
+
 	p_WTH_DATA = REAL(WTH_DATA_YEAR);
 	_clear_hist_weather();
 
@@ -629,34 +633,42 @@ Bool onSet_WTH_DATA(SEXP WTH_DATA_YEAR, TimeInt year) {
 		if (doy < 1 || doy > days) {
 			LogError(logfp, LOGFATAL, "weath.%4d : Day of year out of range, line %d.", year, lineno);
 		}
-		//MAX_DAYS; //?
+
 		/* --- Make the assignments ---- */
 		doy--;
-		wh->temp_max[doy] = p_WTH_DATA[i + days * 1];
-		wh->temp_min[doy] = p_WTH_DATA[i + days * 2];
-		wh->temp_avg[doy] = (p_WTH_DATA[i + days * 1] + p_WTH_DATA[i + days * 2]) / 2.0;
-		wh->ppt[doy] = p_WTH_DATA[i + days * 3];
 
 		/* Reassign if invalid values are found.  The values are
 		 * either valid or WTH_MISSING.  If they were not
 		 * present in the file, we wouldn't get this far because
 		 * sscanf() would return too few items.
 		 */
-		if (missing(tmpmax)) {
+		j = i + days * 1;
+		if (p_WTH_DATA[j] == SW_MISSING || p_WTH_DATA[j] == WTH_MISSING || ISNA(p_WTH_DATA[j])) {
 			wh->temp_max[doy] = WTH_MISSING;
 			LogError(logfp, LOGWARN, "weath.%4d : Missing max temp on doy=%d.", year, doy + 1);
-		}
-		if (missing(tmpmin)) {
-			wh->temp_min[doy] = WTH_MISSING;
-			LogError(logfp, LOGWARN, "weath.%4d : Missing min temp on doy=%d.", year, doy + 1);
-		}
-		if (missing(ppt)) {
-			wh->ppt[doy] = 0.;
-			LogError(logfp, LOGWARN, "weath.%4d : Missing PPT on doy=%d.", year, doy + 1);
+		} else {
+			wh->temp_max[doy] = p_WTH_DATA[j];
 		}
 
-		if (!missing(tmpmax) && !missing(tmpmin)) {
+		j = i + days * 2;
+		if (p_WTH_DATA[j] == SW_MISSING || p_WTH_DATA[j] == WTH_MISSING || ISNA(p_WTH_DATA[j])) {
+			wh->temp_min[doy] = WTH_MISSING;
+			LogError(logfp, LOGWARN, "weath.%4d : Missing min temp on doy=%d.", year, doy + 1);
+		} else {
+			wh->temp_min[doy] = p_WTH_DATA[j];
+		}
+
+		j = i + days * 3;
+		if (p_WTH_DATA[j] == SW_MISSING || p_WTH_DATA[j] == WTH_MISSING || ISNA(p_WTH_DATA[j])) {
+			wh->ppt[doy] = 0.;
+			LogError(logfp, LOGWARN, "weath.%4d : Missing PPT on doy=%d.", year, doy + 1);
+		} else {
+			wh->ppt[doy] = p_WTH_DATA[j];
+		}
+
+		if (wh->temp_max[doy] != WTH_MISSING && wh->temp_min[doy] != WTH_MISSING) {
 			k++;
+			wh->temp_avg[doy] = (wh->temp_max[doy] + wh->temp_min[doy]) / 2.0;
 			acc += wh->temp_avg[doy];
 		}
 	} /* end of input lines */
@@ -674,8 +686,9 @@ Bool onSet_WTH_DATA(SEXP WTH_DATA_YEAR, TimeInt year) {
 			k = 29;
 		}
 		acc = 0.0;
-		for (j = 0; j < k; j++)
-		acc += wh->temp_avg[j + x];
+		for (j = 0; j < k; j++) {
+		  acc += wh->temp_avg[j + x];
+		}
 		wh->temp_month_avg[i] = acc / (k + 0.0);
 		x += k;
 	}
