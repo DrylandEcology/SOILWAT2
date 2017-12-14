@@ -63,6 +63,7 @@
 #include "myMemory.h"
 #include "SW_Defines.h"
 
+#include "SW_Carbon.h"
 #include "SW_Files.h"
 #include "SW_Site.h"
 #include "SW_SoilWater.h"
@@ -74,6 +75,7 @@
 /* --------------------------------------------------- */
 
 extern SW_VEGPROD SW_VegProd;
+extern SW_CARBON SW_Carbon;
 #ifdef RSOILWAT
 extern Bool collectInData;
 extern SEXP InputData;
@@ -189,8 +191,9 @@ void SW_SIT_read(void) {
 	 *    transpiration regions section of input
 	 */
 	SW_SITE *v = &SW_Site;
+	SW_CARBON *c = &SW_Carbon;
 	FILE *f;
-	int lineno = 0, x,
+	int lineno = 0, x, debug = 0,
 		rgnlow, /* lower layer of region */
 		region; /* transp region definition number */
 	LyrIndex r;
@@ -315,8 +318,20 @@ void SW_SIT_read(void) {
 		case 36:
 			v->use_soil_temp = itob(atoi(inbuf));
 			break;
+		case 37:
+			c->use_bio_mult = itob(atoi(inbuf));
+			if (debug) swprintf("'SW_SIT_read': use_bio_mult = %d\n", c->use_bio_mult);
+			break;
+		case 38:
+			c->use_wue_mult = itob(atoi(inbuf));
+			if (debug) swprintf("'SW_SIT_read': use_wue_mult = %d\n", c->use_wue_mult);
+			break;
+		case 39:
+			strcpy(c->scenario, inbuf);
+			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", c->scenario);
+			break;
 		default:
-			if (lineno > 36 + MAX_TRANSP_REGIONS)
+			if (lineno > 39 + MAX_TRANSP_REGIONS)
 				break; /* skip extra lines */
 
 			if (MAX_TRANSP_REGIONS < v->n_transp_rgn) {
@@ -522,14 +537,12 @@ SEXP onGet_SW_LYR() {
 	char *cLayers[] = { "depth_cm", "bulkDensity_g/cm^3", "gravel_content", "EvapBareSoil_frac", "transpGrass_frac", "transpShrub_frac",
 			"transpTree_frac", "transpForb_frac", "sand_frac", "clay_frac", "impermeability_frac", "soilTemp_c" };
 	RealD *p_Layers;
-	RealD temp;
 
 	PROTECT(swSoils = MAKE_CLASS("swSoils"));
 	PROTECT(SW_SOILS = NEW_OBJECT(swSoils));
 	PROTECT(Layers = allocMatrix(REALSXP,v->n_layers,12));
 	p_Layers = REAL(Layers);
 	for (i = 0; i < (v->n_layers); i++) {
-		temp = v->lyr[i]->width;
 		p_Layers[i + (v->n_layers) * 0] = dmax = v->lyr[i]->width + dmax;
 		p_Layers[i + (v->n_layers) * 1] = v->lyr[i]->soilMatric_density;
 		p_Layers[i + (v->n_layers) * 2] = v->lyr[i]->fractionVolBulk_gravel;

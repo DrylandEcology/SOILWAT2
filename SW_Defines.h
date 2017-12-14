@@ -38,6 +38,8 @@
 #define MAX_TRANSP_REGIONS 4
 #define MAX_ST_RGR 100
 
+#define MAX_NYEAR 2500  /**< An integer representing the max calendar year that is supported. The number just needs to be reasonable, it is an artifical limit. */
+
 #define SW_MISSING     999.     /* value to use as MISSING */
 #ifndef PI
 	#define PI          3.141592653589793238462643383279502884197169399375

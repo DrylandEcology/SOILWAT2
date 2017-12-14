@@ -1,8 +1,4 @@
 #-----------------------------------------------------------------------------------
-# 05/24/2012 (DLM)
-# 07/14/2017 (drs)
-# for use in terminal while in the project source directory to make compiling easier
-#-----------------------------------------------------------------------------------
 # commands         explanations
 #-----------------------------------------------------------------------------------
 # make bin         compile the binary executable using optimizations
@@ -12,8 +8,12 @@
 # make lib         create SOILWAT2 library
 # make test        compile unit tests in 'test/ folder with googletest
 # make test_run    run unit tests (in a previous step compiled with 'make test')
+# make cov         same as 'make test' but with code coverage support
+# make cov_run     run unit tests and gcov on each source file (in a previous step
+#                  compiled with 'make cov')
 # make cleaner     delete all of the o files, test files, libraries, and the binary exe
 # make test_clean  delete test files and libraries
+# make cov_clean   delete files associated with code coverage
 #-----------------------------------------------------------------------------------
 
 uname_m = $(shell uname -m)
@@ -23,6 +23,7 @@ uname_m = $(shell uname -m)
 # AR = ar
 CFLAGS = -O3 -Wall -Wextra -pedantic -std=c11
 CXXFLAGS = -Wall -Wextra -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
+CovFlags = -coverage -g -O0
 LDFLAGS = -L.
 LDLIBS = -l$(target) -lm						# order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 
@@ -30,7 +31,7 @@ sources = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 					rands.c Times.c mymemory.c filefuncs.c \
 					SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c \
 					SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c \
-					SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+					SW_VegProd.c SW_Flow_lib.c SW_Flow.c SW_Carbon.c
 objects = $(sources:.c=.o)
 
 # Unfortunately, we cannot include 'SW_Output.c' currently because
@@ -41,7 +42,7 @@ sources_tests = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 					rands.c Times.c mymemory.c filefuncs.c \
 					SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c \
 					SW_Markov.c SW_Weather.c SW_Sky.c SW_Output_mock.c\
-					SW_VegProd.c SW_Flow_lib.c SW_Flow.c
+					SW_VegProd.c SW_Flow_lib.c SW_Flow.c SW_Carbon.c
 objects_tests = $(sources_tests:.c=.o)
 
 
@@ -53,6 +54,7 @@ target = SOILWAT2
 bin_test = sw_test
 lib_target = lib$(target).a
 lib_target++ = lib$(target)++.a
+lib_covtarget++ = libcov$(target)++.a
 
 gtest = gtest
 lib_gtest = lib$(gtest).a
@@ -61,7 +63,7 @@ GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
 gtest_LDLIBS = -l$(gtest) -l$(target)++ -lm
-
+cov_LDLIBS = -l$(gtest) -lcov$(target)++ -lm
 
 lib : $(lib_target)
 
@@ -76,6 +78,10 @@ $(lib_target++) :
 		$(AR) -rcsu $(lib_target++) $(objects_tests)
 		@rm -f $(objects_tests)
 
+$(lib_covtarget++) :
+		$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CovFlags) -c $(sources_tests)
+		$(AR) -rcsu $(lib_covtarget++) $(objects_tests)
+		@rm -f $(objects_tests)
 
 bin : $(target)
 
@@ -110,6 +116,15 @@ test : $(lib_gtest) $(lib_target++)
 test_run :
 		./$(bin_test)
 
+cov : cov_clean $(lib_gtest) $(lib_covtarget++)
+		$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CovFlags) $(LDFLAGS) -isystem ${GTEST_DIR}/include \
+			-pthread test/*.cc -o $(bin_test) $(cov_LDLIBS)
+
+.PHONY : cov_run
+cov_run : cov
+		./$(bin_test)
+		./run_gcov.sh
+
 
 
 
@@ -130,5 +145,10 @@ bint_clean :
 test_clean :
 		@rm -f gtest-all.o $(lib_gtest) $(bin_test)
 
+.PHONY : cov_clean
+cov_clean :
+		@rm -f $(lib_covtarget++) *.gcda *.gcno *.gcov
+		@rm -fr *.dSYM
+
 .PHONY : cleaner
-cleaner : clean1 clean2 bint_clean test_clean
+cleaner : clean1 clean2 bint_clean test_clean cov_clean

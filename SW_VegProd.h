@@ -24,9 +24,9 @@
  09/26/2011	(dsr)	removed monthly variables RealD veg_height, lai_live, pct_cover, vegcov, biolive, biodead, total_agb each [MAX_MONTHS] from struct VegType because replaced with daily records
  02/04/2012	(drs)	added variable RealD SWPcrit to struct VegType: critical soil water potential below which vegetation cannot sustain transpiration
  01/29/2013	(clk) added variable RealD fractionBareGround to now allow for bare ground as a part of the total vegetation.
- 01/31/2013	(clk)	added varilabe RealD bareGround_albedo instead of creating a bareGround VegType, because only need albedo and not the other data members
+ 01/31/2013	(clk)	added varilabe RealD bare_cov.albedo instead of creating a bare_cov VegType, because only need albedo and not the other data members
  04/09/2013	(clk) changed the variable name swp50 to swpMatric50. Therefore also updated the use of swp50 to swpMatric50 in SW_VegProd.c and SW_Flow.c.
- 07/09/2013	(clk)	add the variables forb and fractionForb to SW_VEGPROD
+ 07/09/2013	(clk)	add the variables forb and forb.cov.fCover to SW_VEGPROD
  */
 /********************************************************/
 /********************************************************/
@@ -35,6 +35,7 @@
 #define SW_VEGPROD_H
 
 #include "SW_Defines.h"    /* for MAX_MONTHS and tanfunc_t*/
+
 #ifdef RSOILWAT
 #include <R.h>
 #include <Rdefines.h>
@@ -42,7 +43,19 @@
 #include <Rinternals.h>
 #endif
 
+#define BIO_INDEX 0        /**< An integer representing the index of the biomass multipliers in the VegType#co2_multipliers 2D array. */
+#define WUE_INDEX 1        /**< An integer representing the index of the WUE multipliers in the VegType#co2_multipliers 2D array. */
+
+
 typedef struct {
+	RealD fCover,         /* cover component (fraction) of total plot */
+	  albedo;             /* surface albedo */
+} CoverType;
+
+
+typedef struct {
+  CoverType cov;
+
 	RealD conv_stcr; /* divisor for lai_standing gives pct_cover */
 	tanfunc_t cnpy, /* canopy height based on biomass */
 	tr_shade_effects; /* shading effect on transpiration based on live and dead biomass */
@@ -51,11 +64,11 @@ typedef struct {
 	RealD shade_scale, /* scaling of live and dead biomass shading effects */
 	shade_deadmax; /* maximal dead biomass for shading effects */
 
-	RealD albedo;
-
 	RealD litter[MAX_MONTHS], /* monthly litter values (g/m**2)    */
 	biomass[MAX_MONTHS], /* monthly aboveground biomass (g/m**2) */
+	CO2_biomass[MAX_MONTHS], /* monthly aboveground biomass after CO2 effects */
 	pct_live[MAX_MONTHS], /* monthly live biomass in percent   */
+	CO2_pct_live[MAX_MONTHS], /* monthly live biomass in percent after CO2 effects */
 	lai_conv[MAX_MONTHS]; /* monthly amount of biomass   needed to produce lai=1 (g/m**2)      */
 
 	RealD litter_daily[MAX_DAYS + 1], /* daily interpolation of monthly litter values (g/m**2)    */
@@ -83,24 +96,37 @@ typedef struct {
 
 	RealD Es_param_limit; /* parameter for scaling and limiting bare soil evaporation rate */
 
+	RealD co2_bio_coeff1, co2_bio_coeff2, co2_wue_coeff1, co2_wue_coeff2; /* Coefficients for CO2-effects; used by 'calculate_CO2_multipliers()' for biomass and WUE effects */
+  RealD co2_multipliers[2][MAX_NYEAR];  /**< A 2D array of PFT structures. Column BIO_INDEX holds biomass multipliers. Column WUE_INDEX holds WUE multipliers. Rows represent years. */
+
 } VegType;
+
+
+typedef struct {
+  RealD biomass, biolive;
+} VegTypeOut;
+
+
+typedef struct {
+	VegTypeOut grass, shrub, tree, forb;
+} SW_VEGPROD_OUTPUTS;
+
 
 typedef struct {
 	VegType grass, shrub, tree, forb;
+	CoverType bare_cov;   /* bare ground cover of plot */
 
-	RealD fractionGrass, /* grass component fraction of total vegetation */
-	fractionShrub, /* shrub component fraction of total vegetation */
-	fractionTree, /* tree component fraction of total vegetation */
-	fractionForb, /* forb component fraction of total vegetation */
-	fractionBareGround; /* bare ground component fraction of total vegetation */
-
-	RealD bareGround_albedo; /* create this here instead of creating a bareGround VegType, because it only needs albedo and no other data member */
+	SW_VEGPROD_OUTPUTS dysum, /* helpful placeholder */
+		wksum, mosum, yrsum, /* accumulators for *avg */
+		wkavg, moavg, yravg; /* averages or sums as appropriate */
 
 } SW_VEGPROD;
+
 
 void SW_VPD_read(void);
 void SW_VPD_init(void);
 void SW_VPD_construct(void);
+void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
 
 #ifdef RSOILWAT
 SEXP onGet_SW_VPD();

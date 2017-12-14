@@ -37,6 +37,7 @@
 #include "SW_VegEstab.h"
 #include "SW_VegProd.h"
 #include "SW_Weather.h"
+#include "SW_Carbon.h"
 
 /* =================================================== */
 /*                  Global Declarations                */
@@ -93,6 +94,7 @@ void SW_CTL_init_model(const char *firstfile) {
 	SW_OUT_construct();
 	SW_SWC_construct();
 	SW_FLW_construct();
+	SW_CBN_construct();
 }
 
 void SW_CTL_run_current_year(void) {
@@ -119,11 +121,14 @@ static void _begin_year(void) {
 	/* in addition to the timekeeper (Model), usually only
 	 * modules that read input yearly or produce output need
 	 * to have this call */
-	SW_MDL_new_year();
-	SW_WTH_new_year();
-	SW_SWC_new_year();
-	SW_VES_new_year();
-	SW_OUT_new_year();
+	 SW_MDL_new_year();
+	 SW_WTH_new_year();
+	 SW_SWC_new_year();
+	 SW_VES_new_year();
+	 SW_OUT_new_year();
+
+	 // Dynamic CO2 effects
+	 SW_VPD_init();
 
 }
 
@@ -149,6 +154,7 @@ static void _collect_values(void) {
 	SW_OUT_sum_today(eSWC);
 	SW_OUT_sum_today(eWTH);
 	SW_OUT_sum_today(eVES);
+	SW_OUT_sum_today(eVPD);
 
 	SW_OUT_write_today();
 
@@ -179,6 +185,9 @@ void SW_CTL_read_inputs_from_disk(void) {
   SW_OUT_read();
   if (debug) swprintf(" > 'ouput'");
 
+  SW_CBN_read();
+  if (debug) swprintf(" > 'CO2'");
+
   SW_SWC_read();
   if (debug) swprintf(" > 'swc'");
   if (debug) swprintf(" completed.\n");
@@ -190,6 +199,7 @@ void SW_CTL_obtain_inputs(void) {
 
 #ifndef RSOILWAT
   SW_CTL_read_inputs_from_disk();
+
 
 #else
 	if (useFiles) {
@@ -221,13 +231,17 @@ void SW_CTL_obtain_inputs(void) {
 		onSet_SW_OUT(GET_SLOT(InputData, install("output")));
     if (debug) swprintf(" > 'ouput'");
 
-
+		onSet_swCarbon(GET_SLOT(InputData, install("carbon")));
+    if (debug) swprintf(" > 'CO2'");
 
 		onSet_SW_SWC(GET_SLOT(InputData, install("swc")));
     if (debug) swprintf(" > 'swc'");
     if (debug) swprintf(" completed.\n");
 	}
 #endif
+
+  calculate_CO2_multipliers();
+
 }
 
 #ifdef DEBUG_MEM

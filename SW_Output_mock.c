@@ -11,6 +11,7 @@
 #include "myMemory.h"
 #include "Times.h"
 
+#include "SW_Carbon.h"
 #include "SW_Defines.h"
 #include "SW_Files.h"
 #include "SW_Model.h"
@@ -30,6 +31,7 @@ extern SW_WEATHER SW_Weather;
 extern SW_VEGPROD SW_VegProd;
 extern SW_VEGESTAB SW_VegEstab;
 extern Bool EchoInits;
+extern SW_CARBON SW_Carbon;
 
 #define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
 
@@ -73,7 +75,7 @@ static void get_outstrleader(TimeInt pd)
   if (x == 1) {}
 }
 
-void get_co2effects(void)
+static void get_co2effects(void)
 {}
 
 static void get_estab(void)
@@ -148,11 +150,18 @@ static void get_deepswc(void)
 static void get_soiltemp(void)
 {}
 
-static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
+static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 {
   OutKey x = k;
   if ((int)x == 1) {}
 
+  if (EQ(0., v->bare_cov.fCover)) {}
+  if (EQ(0., s->grass.biomass)) {}
+}
+
+static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
+{
+  if ((int)k == 1) {}
   if (0 == v->count) {}
   if (0 == s->days) {}
 }
@@ -217,15 +226,19 @@ static void _echo_outputs(void)
   get_snowpack();
   get_deepswc();
   get_soiltemp();
+  get_co2effects();
 
   OutKey k = eSW_NoKey;
-  SW_VEGESTAB *vestab = nullptr;
-  SW_VEGESTAB_OUTPUTS *sestab = nullptr;
-  SW_WEATHER *vweath = nullptr;
-  SW_WEATHER_OUTPUTS *sweath = nullptr;
-  SW_SOILWAT *vswc = nullptr;
-  SW_SOILWAT_OUTPUTS *sswc = nullptr;
+  SW_VEGPROD *vveg = NULL;
+  SW_VEGPROD_OUTPUTS *sveg = NULL;
+  SW_VEGESTAB *vestab = NULL;
+  SW_VEGESTAB_OUTPUTS *sestab = NULL;
+  SW_WEATHER *vweath = NULL;
+  SW_WEATHER_OUTPUTS *sweath = NULL;
+  SW_SOILWAT *vswc = NULL;
+  SW_SOILWAT_OUTPUTS *sswc = NULL;
 
+  sumof_vpd(vveg, sveg, k);
   sumof_ves(vestab, sestab, k);
   sumof_wth(vweath, sweath, k);
   sumof_swc(vswc, sswc, k);

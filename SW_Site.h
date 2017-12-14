@@ -124,7 +124,6 @@ typedef struct {
 		percentRunon;	/* the percentage of water that is added to surface gained daily */
 
 	unsigned int stNRGR; /* number of interpolations, for the soil_temperature function */
-
 	/* params for tanfunc rate calculations for evap and transp. */
 	/* tanfunc() creates a logistic-type graph if shift is positive,
 	 * the graph has a negative slope, if shift is 0, slope is positive.

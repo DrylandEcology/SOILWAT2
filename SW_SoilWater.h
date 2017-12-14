@@ -1,4 +1,4 @@
-/********************************************************/
+﻿/********************************************************/
 /********************************************************/
 /*	Source file: SW_SoilWater.h
  Type: header
@@ -91,7 +91,7 @@ typedef struct {
 			deep,
 			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
 			surfaceTemp, // soil surface temperature
-			partsError; // soil temperature error indicator
+			partsError;  // soil temperature error indicator
 } SW_SOILWAT_OUTPUTS;
 
 typedef struct {

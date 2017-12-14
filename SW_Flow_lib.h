@@ -112,7 +112,7 @@ void pot_soil_evap_bs(double *bserate, unsigned int nelyrs, double ecoeff[], dou
 		double swc[]);
 
 void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, double fbst, double petday, double swp_shift, double swp_shape, double swp_inflec,
-		double swp_range, double shade_scale, double shade_deadmax, double shade_xinflex, double shade_slope, double shade_yinflex, double shade_range);
+		double swp_range, double shade_scale, double shade_deadmax, double shade_xinflex, double shade_slope, double shade_yinflex, double shade_range, double co2_wue_multiplier);
 
 double watrate(double swp, double petday, double shift, double shape, double inflec, double range);
 

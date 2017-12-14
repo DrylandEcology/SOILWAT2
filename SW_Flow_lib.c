@@ -96,6 +96,7 @@
 #include "SW_Defines.h"
 #include "SW_Flow_lib.h"
 #include "SW_Flow_subs.h"
+#include "SW_Carbon.h"
 #include "Times.h"
 
 
@@ -104,6 +105,7 @@
 /* --------------------------------------------------- */
 extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
+extern SW_CARBON SW_Carbon;
 unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
@@ -800,7 +802,7 @@ void pot_soil_evap_bs(double *bserate, unsigned int nelyrs, double ecoeff[], dou
 }
 
 void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, double fbst, double petday, double swp_shift, double swp_shape, double swp_inflec,
-		double swp_range, double shade_scale, double shade_deadmax, double shade_xinflex, double shade_slope, double shade_yinflex, double shade_range) {
+		double swp_range, double shade_scale, double shade_deadmax, double shade_xinflex, double shade_slope, double shade_yinflex, double shade_range, double co2_wue_multiplier) {
 	/**********************************************************************
 	 PURPOSE: Calculate potential transpiration rate.
 	 See 2.11 in ELM doc.
@@ -824,6 +826,7 @@ void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, 
 	 biodead   - biomass of dead
 	 fbst      - fraction of water loss from transpiration
 	 petday       - potential evapotranspiration
+	 co2_wue_multiplier - water-usage efficiency multiplier calculated from CO2 ppm
 
 	 LOCAL VARIABLES:
 	 shadeaf - shade affect on transpiration rate
@@ -854,7 +857,8 @@ void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, 
 			shadeaf = 1.0;
 		}
 
-		*bstrate = watrate(swpavg, petday, swp_shift, swp_shape, swp_inflec, swp_range) * shadeaf * petday * fbst;
+		*bstrate = watrate(swpavg, petday, swp_shift, swp_shape,
+							   swp_inflec, swp_range) * shadeaf * petday * fbst * co2_wue_multiplier;
 	}
 }
 
