@@ -2871,7 +2871,8 @@ static void get_swcBulk(void)
 		}
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val = SXW.swc_avg[Iylp(Globals.currYear,i,p,0)];
+			float old_val = 0.;
+			old_val = SXW.swc_avg[Iylp(Globals.currYear,i,p,0)];
 
 			SXW.swc_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW.swc_avg[Iylp(Globals.currYear,i,p,0)], val);
 			SXW.swc_avg[Iylp(Globals.currYear,i,p,1)] += get_running_sqr(old_val, val, SXW.swc_avg[Iylp(Globals.currYear,i,p,0)]);
