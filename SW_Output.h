@@ -54,24 +54,24 @@
 #define SW_SWCBULK    	"SWCBULK"		//8		4		2
 #define SW_SWABULK	 	"SWABULK"		//9		4		2
 #define SW_SWAMATRIC	"SWAMATRIC"		//10	4		2
-#define SW_SWA				"SWA"
-#define SW_SWPMATRIC    "SWPMATRIC"		//11	4		2
-#define SW_SURFACEW		"SURFACEWATER"	//12	4		2
-#define SW_TRANSP		"TRANSP"		//13	4		1
-#define SW_EVAPSOIL		"EVAPSOIL"		//14	4		1
-#define SW_EVAPSURFACE	"EVAPSURFACE"	//15	4		1
-#define SW_INTERCEPTION	"INTERCEPTION"	//16	4		1
-#define SW_LYRDRAIN		"LYRDRAIN"		//17	4		1
-#define SW_HYDRED		"HYDRED"		//18	4		1
-#define SW_ET			"ET"			//19	4		0/* position and variable marker, not an output key */
-#define SW_AET			"AET"			//20	4		1
-#define SW_PET			"PET"			//21	4		1
-#define SW_WETDAY		"WETDAY"		//22	4		1
-#define SW_SNOWPACK		"SNOWPACK"		//23	4		2
-#define SW_DEEPSWC		"DEEPSWC"		//24	4		1
-#define SW_SOILTEMP		"SOILTEMP"		//25	4		2
-#define SW_ALLVEG		"ALLVEG"		//26	5		0/* position and variable marker, not an output key */
-#define SW_ESTAB		"ESTABL"		//27	5		0
+#define SW_SWA				"SWA"        //11
+#define SW_SWPMATRIC    "SWPMATRIC"		//12	4		2
+#define SW_SURFACEW		"SURFACEWATER"	//13	4		2
+#define SW_TRANSP		"TRANSP"		//14	4		1
+#define SW_EVAPSOIL		"EVAPSOIL"		//15	4		1
+#define SW_EVAPSURFACE	"EVAPSURFACE"	//16	4		1
+#define SW_INTERCEPTION	"INTERCEPTION"	//17	4		1
+#define SW_LYRDRAIN		"LYRDRAIN"		//18	4		1
+#define SW_HYDRED		"HYDRED"		//19	4		1
+#define SW_ET			"ET"			//20	4		0/* position and variable marker, not an output key */
+#define SW_AET			"AET"			//21	4		1
+#define SW_PET			"PET"			//22	4		1
+#define SW_WETDAY		"WETDAY"		//23	4		1
+#define SW_SNOWPACK		"SNOWPACK"		//24	4		2
+#define SW_DEEPSWC		"DEEPSWC"		//25	4		1
+#define SW_SOILTEMP		"SOILTEMP"		//26	4		2
+#define SW_ALLVEG		"ALLVEG"		//27	5		0/* position and variable marker, not an output key */
+#define SW_ESTAB		"ESTABL"		//28	5		0
 
 #define SW_OUTNKEYS 29 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
 
