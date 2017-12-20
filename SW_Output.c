@@ -314,7 +314,7 @@ static void get_estab(void);
 static void get_soiltemp(void);
 static void get_none(void); /* default until defined */
 void populate_output_values(char *reg_file_array, char *soil_file_array, int output_var, int year_out, int outstr_file);
-void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file);
+void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers);
 
 static void collect_sums(ObjType otyp, OutPeriod op);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
@@ -1292,7 +1292,7 @@ void SW_OUT_write_today(void)
 					{
 						memset(&reg_file_vals_day[0], 0, sizeof(reg_file_vals_day));
 						memset(&soil_file_vals_day[0], 0, sizeof(soil_file_vals_day));
-						create_col_headers(1, SW_Output_Files.fp_dy_avg, SW_Output_Files.fp_dy_soil_avg);
+						create_col_headers(1, SW_Output_Files.fp_dy_avg, SW_Output_Files.fp_dy_soil_avg, 0);
 						col_status_dy++;
 					}
 
@@ -1315,7 +1315,7 @@ void SW_OUT_write_today(void)
 					{
 						memset(&reg_file_vals_week[0], 0, sizeof(reg_file_vals_week));
 						memset(&soil_file_vals_week[0], 0, sizeof(soil_file_vals_week));
-						create_col_headers(2, SW_Output_Files.fp_wk_avg, SW_Output_Files.fp_wk_soil_avg);
+						create_col_headers(2, SW_Output_Files.fp_wk_avg, SW_Output_Files.fp_wk_soil_avg, 0);
 						col_status_wk++;
 					}
 
@@ -1344,7 +1344,7 @@ void SW_OUT_write_today(void)
 					{
 						memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
 						memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
-						create_col_headers(3, SW_Output_Files.fp_mo_avg, SW_Output_Files.fp_mo_soil_avg);
+						create_col_headers(3, SW_Output_Files.fp_mo_avg, SW_Output_Files.fp_mo_soil_avg, 0);
 						col_status_mo++;
 					}
 
@@ -1373,7 +1373,7 @@ void SW_OUT_write_today(void)
 					{
 						memset(&reg_file_vals_year[0], 0, sizeof(reg_file_vals_year));
 						memset(&soil_file_vals_year[0], 0, sizeof(soil_file_vals_year));
-						create_col_headers(4, SW_Output_Files.fp_yr_avg, SW_Output_Files.fp_yr_soil_avg);
+						create_col_headers(4, SW_Output_Files.fp_yr_avg, SW_Output_Files.fp_yr_soil_avg, 0);
 						col_status_yr++;
 					}
 
@@ -1406,9 +1406,9 @@ void SW_OUT_write_today(void)
 					memset(&soil_file_vals_day_iters[0], 0, sizeof(soil_file_vals_day_iters));
 				}
 				if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
-					create_col_headers(1, SW_Output_Files.fp_dy_avg, SW_Output_Files.fp_dy_soil_avg);
+					create_col_headers(1, SW_Output_Files.fp_dy_avg, SW_Output_Files.fp_dy_soil_avg, 1);
 				if(storeAllIterations)
-					create_col_headers(1, SW_Output_Files.fp_dy, SW_Output_Files.fp_dy_soil);
+					create_col_headers(1, SW_Output_Files.fp_dy, SW_Output_Files.fp_dy_soil, 0);
 				SXW.col_status_dy++;
 			}
 
@@ -1448,9 +1448,9 @@ void SW_OUT_write_today(void)
 					memset(&soil_file_vals_week_iters[0], 0, sizeof(soil_file_vals_week_iters));
 				}
 				if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
-					create_col_headers(2, SW_Output_Files.fp_wk_avg, SW_Output_Files.fp_wk_soil_avg);
+					create_col_headers(2, SW_Output_Files.fp_wk_avg, SW_Output_Files.fp_wk_soil_avg, 1);
 				if(storeAllIterations)
-					create_col_headers(2, SW_Output_Files.fp_wk, SW_Output_Files.fp_wk_soil);
+					create_col_headers(2, SW_Output_Files.fp_wk, SW_Output_Files.fp_wk_soil, 0);
 				SXW.col_status_wk++;
 			}
 
@@ -1490,9 +1490,9 @@ void SW_OUT_write_today(void)
 					memset(&reg_file_vals_month_iters[0], 0, sizeof(reg_file_vals_month_iters));
 				}
 				if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
-					create_col_headers(3, SW_Output_Files.fp_mo_avg, SW_Output_Files.fp_mo_soil_avg);
+					create_col_headers(3, SW_Output_Files.fp_mo_avg, SW_Output_Files.fp_mo_soil_avg, 1);
 				if(storeAllIterations)
-					create_col_headers(3, SW_Output_Files.fp_mo, SW_Output_Files.fp_mo_soil);
+					create_col_headers(3, SW_Output_Files.fp_mo, SW_Output_Files.fp_mo_soil, 0);
 				SXW.col_status_mo++;
 			}
 
@@ -1532,9 +1532,9 @@ void SW_OUT_write_today(void)
 					memset(&soil_file_vals_year_iters[0], 0, sizeof(soil_file_vals_year_iters));
 				}
 				if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
-					create_col_headers(4, SW_Output_Files.fp_yr_avg, SW_Output_Files.fp_yr_soil_avg);
+					create_col_headers(4, SW_Output_Files.fp_yr_avg, SW_Output_Files.fp_yr_soil_avg, 1);
 				if(storeAllIterations)
-					create_col_headers(4, SW_Output_Files.fp_yr, SW_Output_Files.fp_yr_soil);
+					create_col_headers(4, SW_Output_Files.fp_yr, SW_Output_Files.fp_yr_soil, 0);
 				SXW.col_status_yr++;
 			}
 
@@ -3067,6 +3067,7 @@ static void get_swpMatric(void)
 
 		if(Globals.currIter == Globals.runModelIterations){
 			float std = sqrt(SXW_AVG.swpmatric_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+
 			sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.swpmatric_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std);
 			strcat(outstr, str);
 			//if(Globals.currYear == 1 && p == 1 && i == 1)
@@ -4308,7 +4309,6 @@ static void get_interception(void)
 
 			if (isPartialSoilwatOutput == FALSE)
 			{
-				//printf("yr, p: %d, %d\n", Globals.currYear, p);
 				float old_val_total = SXW_AVG.interception_total_avg[Iypc(Globals.currYear,p,0)];
 				float old_val_tree = SXW_AVG.interception_tree_avg[Iypc(Globals.currYear,p,0)];
 				float old_val_forb = SXW_AVG.interception_shrub_avg[Iypc(Globals.currYear,p,0)];
@@ -4334,8 +4334,8 @@ static void get_interception(void)
 				SXW_AVG.interception_litter_avg[Iypc(Globals.currYear,p,0)] = get_running_avg(SXW_AVG.interception_litter_avg[Iypc(Globals.currYear,p,0)], val_litter);
 				SXW_AVG.interception_litter_avg[Iypc(Globals.currYear,p,1)] += get_running_sqr(old_val_litter, val_litter, SXW_AVG.interception_litter_avg[Iypc(Globals.currYear,p,0)]);
 
-				//if(Globals.currYear == 1 && p == 1)
-					//printf("surfacewater_avg[%d, %d, %d], current avg: %f, %f\n", Globals.currYear,p, val_surfacewater, SXW_AVG.surfacewater_avg[Iypc(Globals.currYear,p,0)]);
+				//if(Globals.currYear == 1 && p < 5)
+					//printf("interception_forb_avg[%d, %d], current avg: %f, %f\n", Globals.currYear,p, val_forb, SXW_AVG.interception_forb_avg[Iypc(Globals.currYear,p,0)]);
 
 				if(Globals.currIter == Globals.runModelIterations){
 					float std_total = sqrt(SXW_AVG.interception_total_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
@@ -4420,9 +4420,22 @@ static void get_soilinf(void)
 	SW_WEATHER *v = &SW_Weather;
 	OutPeriod pd = SW_Output[eSW_SoilInf].period;
 	RealD val_inf = SW_MISSING;
-#ifndef RSOILWAT
-	char str[OUTSTRLEN];
-	get_outstrleader(pd);
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		char str[OUTSTRLEN];
+		get_outstrleader(pd);
+
+	#elif defined(STEPWAT)
+		char str[OUTSTRLEN];
+		char str_iters[OUTSTRLEN];
+		TimeInt p = 0;
+		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+		{
+			get_outstrleader(pd);
+		}
+	#endif
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
 	switch (pd)
 	{
 	case eSW_Day:
@@ -4440,6 +4453,51 @@ static void get_soilinf(void)
 	}
 	sprintf(str, "%c%7.6f", _Sep, val_inf);
 	strcat(outstr, str);
+
+	#elif defined(STEPWAT)
+
+		switch (pd)
+		{
+			case eSW_Day:
+				p = SW_Model.doy-1;
+				val_inf = v->dysum.soil_inf;
+				break;
+			case eSW_Week:
+				val_inf = v->wkavg.soil_inf;
+				p = SW_Model.week-tOffset;
+				break;
+			case eSW_Month:
+				p = SW_Model.month-tOffset;
+				val_inf = v->moavg.soil_inf;
+				break;
+			case eSW_Year:
+				val_inf = v->yravg.soil_inf;
+				break;
+		}
+
+		if (isPartialSoilwatOutput == FALSE)
+		{
+			//printf("yr, p: %d, %d\n", Globals.currYear, p);
+			float old_val = SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear,p,0)];
+
+			SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear,p,0)] = get_running_avg(SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear,p,0)], val_inf);
+			SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear,p,1)] += get_running_sqr(old_val, val_inf, SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear,p,0)]);
+
+			//if(Globals.currYear == 1)
+				//printf("soilinfilt_avg[%d, %d], current avg: %f, %f\n", Globals.currYear,p, val_inf, SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear,p,0)]);
+
+			if(Globals.currIter == Globals.runModelIterations){
+				float std = sqrt(SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
+
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear,p,0)], _Sep, std);
+				strcat(outstr, str);
+			}
+		}
+		if(storeAllIterations){
+			sprintf(str_iters, "%c%7.6f", _Sep, val_inf);
+			strcat(outstr_all_iters, str_iters);
+		}
+
 #else
 	switch (pd)
 	{
@@ -4478,9 +4536,22 @@ static void get_lyrdrain(void)
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_LyrDrain].period;
 	RealD val = SW_MISSING;
-#ifndef RSOILWAT
-	char str[OUTSTRLEN];
-	get_outstrleader(pd);
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		char str[OUTSTRLEN];
+		get_outstrleader(pd);
+
+	#elif defined(STEPWAT)
+		char str[OUTSTRLEN];
+		char str_iters[OUTSTRLEN];
+		TimeInt p = 0;
+		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+		{
+			get_outstrleader(pd);
+		}
+	#endif
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
 	for (i = 0; i < SW_Site.n_layers - 1; i++)
 	{
 		switch (pd)
@@ -4501,6 +4572,51 @@ static void get_lyrdrain(void)
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
+
+	#elif defined(STEPWAT)
+	ForEachSoilLayer(i)
+	{
+		switch (pd)
+		{
+			case eSW_Day:
+				p = SW_Model.doy-1;
+				val = v->dysum.lyrdrain[i];
+				break;
+			case eSW_Week:
+				val = v->wkavg.lyrdrain[i];
+				p = SW_Model.week-tOffset;
+				break;
+			case eSW_Month:
+				val = v->moavg.lyrdrain[i];
+				p = SW_Model.month-tOffset;
+				break;
+			case eSW_Year:
+				val = v->yravg.lyrdrain[i];
+				break;
+		}
+		if (isPartialSoilwatOutput == FALSE)
+		{
+			float old_val = SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear,i,p,0)];
+
+			SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear,i,p,0)], val);
+			SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear,i,p,1)] += get_running_sqr(old_val, val, SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear,i,p,0)]);
+			//if(Globals.currYear == 1 && i == 1)
+				//printf("swamatric_avg[%d, %d, %d], current avg: %f, %f\n", Globals.currYear,i,p, val, SXW_AVG.swamatric_avg[Iylp(Globals.currYear,i,p,0)]);
+
+
+			if(Globals.currIter == Globals.runModelIterations){
+				float std = sqrt(SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std);
+				strcat(outstr, str);
+			}
+		}
+		if(storeAllIterations){
+			sprintf(str_iters, "%c%7.6f", _Sep, val);
+			strcat(outstr_all_iters, str_iters);
+		}
+	}
+
 #else
 	switch (pd)
 	{
@@ -4550,117 +4666,152 @@ static void get_hydred(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_HydRed].period;
-	RealD val = SW_MISSING;
-#ifndef RSOILWAT
-	char str[OUTSTRLEN];
-	get_outstrleader(pd);
+	RealD val_total = SW_MISSING;
+	RealD val_tree = SW_MISSING;
+	RealD val_shrub = SW_MISSING;
+	RealD val_forb = SW_MISSING;
+	RealD val_grass = SW_MISSING;
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		char str[OUTSTRLEN];
+		get_outstrleader(pd);
+
+	#elif defined(STEPWAT)
+		char str[OUTSTRLEN];
+		char str_iters[OUTSTRLEN];
+		TimeInt p = 0;
+		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+		{
+			get_outstrleader(pd);
+		}
+	#endif
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
 	/* total output */
 	ForEachSoilLayer(i)
 	{
 		switch (pd)
 		{
 		case eSW_Day:
-			val = v->dysum.hydred_total[i];
+			val_total = v->dysum.hydred_total[i];
+			val_tree = v->dysum.hydred_tree[i];
+			val_shrub = v->dysum.hydred_shrub[i];
+			val_grass = v->dysum.hydred_grass[i];
+			val_forb = v->dysum.hydred_forb[i];
 			break;
 		case eSW_Week:
-			val = v->wkavg.hydred_total[i];
+			val_total = v->wkavg.hydred_total[i];
+			val_tree = v->wkavg.hydred_tree[i];
+			val_shrub = v->wkavg.hydred_shrub[i];
+			val_grass = v->wkavg.hydred_grass[i];
+			val_forb = v->wkavg.hydred_forb[i];
 			break;
 		case eSW_Month:
-			val = v->moavg.hydred_total[i];
+			val_total = v->moavg.hydred_total[i];
+			val_tree = v->moavg.hydred_tree[i];
+			val_shrub = v->moavg.hydred_shrub[i];
+			val_grass = v->moavg.hydred_grass[i];
+			val_forb = v->moavg.hydred_forb[i];
 			break;
 		case eSW_Year:
-			val = v->yravg.hydred_total[i];
+			val_total = v->yravg.hydred_total[i];
+			val_tree = v->yravg.hydred_tree[i];
+			val_shrub = v->yravg.hydred_shrub[i];
+			val_grass = v->yravg.hydred_grass[i];
+			val_forb = v->yravg.hydred_forb[i];
 			break;
 		}
 
-		sprintf(str, "%c%7.6f", _Sep, val);
+		sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_total, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass);
 		strcat(outstr, str);
 	}
-	/* tree output */ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val = v->dysum.hydred_tree[i];
-			break;
-		case eSW_Week:
-			val = v->wkavg.hydred_tree[i];
-			break;
-		case eSW_Month:
-			val = v->moavg.hydred_tree[i];
-			break;
-		case eSW_Year:
-			val = v->yravg.hydred_tree[i];
-			break;
-		}
 
-		sprintf(str, "%c%7.6f", _Sep, val);
-		strcat(outstr, str);
-	}
-	/* shrub output */ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val = v->dysum.hydred_shrub[i];
-			break;
-		case eSW_Week:
-			val = v->wkavg.hydred_shrub[i];
-			break;
-		case eSW_Month:
-			val = v->moavg.hydred_shrub[i];
-			break;
-		case eSW_Year:
-			val = v->yravg.hydred_shrub[i];
-			break;
-		}
-
-		sprintf(str, "%c%7.6f", _Sep, val);
-		strcat(outstr, str);
-	}
-	/* forb output */ForEachSoilLayer(i)
-	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val = v->dysum.hydred_forb[i];
-			break;
-		case eSW_Week:
-			val = v->wkavg.hydred_forb[i];
-			break;
-		case eSW_Month:
-			val = v->moavg.hydred_forb[i];
-			break;
-		case eSW_Year:
-			val = v->yravg.hydred_forb[i];
-			break;
-		}
-
-		sprintf(str, "%c%7.6f", _Sep, val);
-		strcat(outstr, str);
-	}
-	/* grass output */
+	#elif defined(STEPWAT)
 	ForEachSoilLayer(i)
 	{
-		switch (pd)
-		{
-		case eSW_Day:
-			val = v->dysum.hydred_grass[i];
-			break;
-		case eSW_Week:
-			val = v->wkavg.hydred_grass[i];
-			break;
-		case eSW_Month:
-			val = v->moavg.hydred_grass[i];
-			break;
-		case eSW_Year:
-			val = v->yravg.hydred_grass[i];
-			break;
-		}
 
-		sprintf(str, "%c%7.6f", _Sep, val);
-		strcat(outstr, str);
+			switch (pd)
+			{
+			case eSW_Day:
+				val_total = v->dysum.hydred_total[i];
+				val_tree = v->dysum.hydred_tree[i];
+				val_shrub = v->dysum.hydred_shrub[i];
+				val_grass = v->dysum.hydred_grass[i];
+				val_forb = v->dysum.hydred_forb[i];
+				p = SW_Model.doy-1;
+				break;
+			case eSW_Week:
+				val_total = v->wkavg.hydred_total[i];
+				val_tree = v->wkavg.hydred_tree[i];
+				val_shrub = v->wkavg.hydred_shrub[i];
+				val_grass = v->wkavg.hydred_grass[i];
+				val_forb = v->wkavg.hydred_forb[i];
+				p = SW_Model.week-tOffset;
+				break;
+			case eSW_Month:
+				val_total = v->moavg.hydred_total[i];
+				val_tree = v->moavg.hydred_tree[i];
+				val_shrub = v->moavg.hydred_shrub[i];
+				val_grass = v->moavg.hydred_grass[i];
+				val_forb = v->moavg.hydred_forb[i];
+				p = SW_Model.month-tOffset;
+				break;
+			case eSW_Year:
+				val_total = v->yravg.hydred_total[i];
+				val_tree = v->yravg.hydred_tree[i];
+				val_shrub = v->yravg.hydred_shrub[i];
+				val_grass = v->yravg.hydred_grass[i];
+				val_forb = v->yravg.hydred_forb[i];
+				break;
+			}
+		if (isPartialSoilwatOutput == FALSE)
+		{
+			float old_val_total = SXW_AVG.hydred_total_avg[Iylp(Globals.currYear,i,p,0)];
+			float old_val_tree = SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear,i,p,0)];
+			float old_val_forb = SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear,i,p,0)];
+			float old_val_shrub = SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear,i,p,0)];
+			float old_val_grass = SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear,i,p,0)];
+
+
+			SXW_AVG.hydred_total_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW_AVG.hydred_total_avg[Iylp(Globals.currYear,i,p,0)], val_total);
+			SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear,i,p,0)], val_tree);
+			SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear,i,p,0)], val_shrub);
+			SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear,i,p,0)], val_grass);
+			SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear,i,p,0)], val_forb);
+
+			SXW_AVG.hydred_total_avg[Iylp(Globals.currYear,i,p,1)] += get_running_sqr(old_val_total, val_total, SXW_AVG.hydred_total_avg[Iylp(Globals.currYear,i,p,0)]);
+			SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear,i,p,1)] += get_running_sqr(old_val_tree, val_tree, SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear,i,p,0)]);
+			SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear,i,p,1)] += get_running_sqr(old_val_shrub, val_shrub, SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear,i,p,0)]);
+			SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear,i,p,1)] += get_running_sqr(old_val_forb, val_forb, SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear,i,p,0)]);
+			SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear,i,p,1)] += get_running_sqr(old_val_grass, val_grass, SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear,i,p,0)]);
+			//if(Globals.currYear == 1 && i == 1 && p == 1)
+				//printf("hydred_total_avg[%d, %d, %d], current avg: %f, %f\n", Globals.currYear,i,p, val_total, SXW_AVG.hydred_total_avg[Iylp(Globals.currYear,i,p,0)]);
+
+
+			if(Globals.currIter == Globals.runModelIterations){
+				float std_total = sqrt(SXW_AVG.hydred_total_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+				float std_tree = sqrt(SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+				float std_forb = sqrt(SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+				float std_shrub = sqrt(SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+				float std_grass = sqrt(SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+
+
+				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
+								_Sep, SXW_AVG.hydred_total_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_total,
+								_Sep, SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_tree,
+								_Sep, SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_shrub,
+								_Sep, SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_forb,
+								_Sep, SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_grass
+							);
+				strcat(outstr, str);
+			}
+		}
+		if(storeAllIterations){
+			sprintf(str_iters, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_total, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass);
+			strcat(outstr_all_iters, str_iters);
+		}
 	}
+
 #else
 	/* Date Info output */
 	switch (pd)
@@ -4899,9 +5050,22 @@ static void get_pet(void)
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_PET].period;
 	RealD val = SW_MISSING;
-#ifndef RSOILWAT
-	char str[20];
-	get_outstrleader(pd);
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		char str[OUTSTRLEN];
+		get_outstrleader(pd);
+
+	#elif defined(STEPWAT)
+		char str[OUTSTRLEN];
+		char str_iters[OUTSTRLEN];
+		TimeInt p = 0;
+		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+		{
+			get_outstrleader(pd);
+		}
+	#endif
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
 	switch (pd)
 	{
 	case eSW_Day:
@@ -4919,6 +5083,50 @@ static void get_pet(void)
 	}
 	sprintf(str, "%c%7.6f", _Sep, val);
 	strcat(outstr, str);
+
+	#elif defined(STEPWAT)
+		switch (pd)
+		{
+			case eSW_Day:
+				p = SW_Model.doy-1;
+				val = v->dysum.pet;
+				break;
+			case eSW_Week:
+				val = v->wkavg.pet;
+				p = SW_Model.week-tOffset;
+				break;
+			case eSW_Month:
+				p = SW_Model.month-tOffset;
+				val = v->moavg.pet;
+				break;
+			case eSW_Year:
+				val = v->yravg.pet;
+				break;
+		}
+
+		if (isPartialSoilwatOutput == FALSE)
+		{
+			//printf("yr, p: %d, %d\n", Globals.currYear, p);
+			float old_val = SXW_AVG.pet_avg[Iypc(Globals.currYear,p,0)];
+
+			SXW_AVG.pet_avg[Iypc(Globals.currYear,p,0)] = get_running_avg(SXW_AVG.pet_avg[Iypc(Globals.currYear,p,0)], val);
+			SXW_AVG.pet_avg[Iypc(Globals.currYear,p,1)] += get_running_sqr(old_val, val, SXW_AVG.pet_avg[Iypc(Globals.currYear,p,0)]);
+
+			//if(Globals.currYear == 1 && p == 1)
+				//printf("pet_avg[%d, %d], current avg: %f, %f\n", Globals.currYear,p, val, SXW_AVG.pet_avg[Iypc(Globals.currYear,p,0)]);
+
+			if(Globals.currIter == Globals.runModelIterations){
+				float std = sqrt(SXW_AVG.pet_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
+
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.pet_avg[Iypc(Globals.currYear,p,0)], _Sep, std);
+				strcat(outstr, str);
+			}
+		}
+		if(storeAllIterations){
+			sprintf(str_iters, "%c%7.6f", _Sep, val);
+			strcat(outstr_all_iters, str_iters);
+		}
+
 #else
 	switch (pd)
 	{
@@ -4955,10 +5163,23 @@ static void get_wetdays(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_WetDays].period;
-#ifndef RSOILWAT
-	char str[OUTSTRLEN];
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		char str[OUTSTRLEN];
+		get_outstrleader(pd);
+
+	#elif defined(STEPWAT)
+		char str[OUTSTRLEN];
+		char str_iters[OUTSTRLEN];
+		TimeInt p = 0;
+		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+		{
+			get_outstrleader(pd);
+		}
+	#endif
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
 	int val = 99;
-	get_outstrleader(pd);
 	ForEachSoilLayer(i)
 	{
 		switch (pd)
@@ -4979,6 +5200,54 @@ static void get_wetdays(void)
 		sprintf(str, "%c%i", _Sep, val);
 		strcat(outstr, str);
 	}
+
+	#elif defined(STEPWAT)
+	int val = 99;
+	ForEachSoilLayer(i){
+		switch (pd)
+		{
+			case eSW_Day:
+				p = SW_Model.doy-1;
+				val = (v->is_wet[i]) ? 1 : 0;
+				break;
+			case eSW_Week:
+				val = (int) v->wkavg.wetdays[i];
+				p = SW_Model.week-tOffset;
+				break;
+			case eSW_Month:
+				p = SW_Model.month-tOffset;
+				val = (int) v->moavg.wetdays[i];
+				break;
+			case eSW_Year:
+				val = (int) v->yravg.wetdays[i];
+				break;
+		}
+
+		if (isPartialSoilwatOutput == FALSE)
+		{
+			float old_val = SXW_AVG.wetday_avg[Iylp(Globals.currYear,i,p,0)];
+
+			SXW_AVG.wetday_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW_AVG.wetday_avg[Iylp(Globals.currYear,i,p,0)], val);
+			SXW_AVG.wetday_avg[Iylp(Globals.currYear,i,p,1)] += get_running_sqr(old_val, val, SXW_AVG.wetday_avg[Iylp(Globals.currYear,i,p,0)]);
+
+			/*if(Globals.currYear == 1 && p == 1 && i == 1){
+				printf("old val: %f\n", old_val);
+				printf("pet_avg[%d, %d], current avg: %f, %f\n", Globals.currYear,p, val, SXW_AVG.wetday_avg[Iylp(Globals.currYear,i,p,0)]);
+			}*/
+
+			if(Globals.currIter == Globals.runModelIterations){
+				float std = sqrt(SXW_AVG.wetday_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.wetday_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std);
+				strcat(outstr, str);
+			}
+		}
+		if(storeAllIterations){
+			sprintf(str_iters, "%c%i", _Sep, val);
+			strcat(outstr_all_iters, str_iters);
+		}
+	}
+
 #else
 	switch (pd)
 	{
@@ -5026,31 +5295,99 @@ static void get_snowpack(void)
 	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_SnowPack].period;
-#ifndef RSOILWAT
-	char str[OUTSTRLEN];
-	RealD val_swe = SW_MISSING, val_depth = SW_MISSING;
-	get_outstrleader(pd);
-	switch (pd)
-	{
-	case eSW_Day:
-		val_swe = v->dysum.snowpack;
-		val_depth = v->dysum.snowdepth;
-		break;
-	case eSW_Week:
-		val_swe = v->wkavg.snowpack;
-		val_depth = v->wkavg.snowdepth;
-		break;
-	case eSW_Month:
-		val_swe = v->moavg.snowpack;
-		val_depth = v->moavg.snowdepth;
-		break;
-	case eSW_Year:
-		val_swe = v->yravg.snowpack;
-		val_depth = v->yravg.snowdepth;
-		break;
-	}
-	sprintf(str, "%c%7.6f%c%7.6f", _Sep, val_swe, _Sep, val_depth);
-	strcat(outstr, str);
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		char str[OUTSTRLEN];
+		RealD val_swe = SW_MISSING, val_depth = SW_MISSING;
+		get_outstrleader(pd);
+
+	#elif defined(STEPWAT)
+		char str[OUTSTRLEN];
+		char str_iters[OUTSTRLEN];
+		RealD val_swe = SW_MISSING, val_depth = SW_MISSING;
+		TimeInt p = 0;
+		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+		{
+			get_outstrleader(pd);
+		}
+	#endif
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		switch (pd)
+		{
+		case eSW_Day:
+			val_swe = v->dysum.snowpack;
+			val_depth = v->dysum.snowdepth;
+			break;
+		case eSW_Week:
+			val_swe = v->wkavg.snowpack;
+			val_depth = v->wkavg.snowdepth;
+			break;
+		case eSW_Month:
+			val_swe = v->moavg.snowpack;
+			val_depth = v->moavg.snowdepth;
+			break;
+		case eSW_Year:
+			val_swe = v->yravg.snowpack;
+			val_depth = v->yravg.snowdepth;
+			break;
+		}
+		sprintf(str, "%c%7.6f%c%7.6f", _Sep, val_swe, _Sep, val_depth);
+		strcat(outstr, str);
+
+	#elif defined(STEPWAT)
+		switch (pd)
+		{
+			case eSW_Day:
+				p = SW_Model.doy-1;
+				val_swe = v->dysum.snowpack;
+				val_depth = v->dysum.snowdepth;
+				break;
+			case eSW_Week:
+				val_swe = v->wkavg.snowpack;
+				val_depth = v->wkavg.snowdepth;
+				p = SW_Model.week-tOffset;
+				break;
+			case eSW_Month:
+				p = SW_Model.month-tOffset;
+				val_swe = v->moavg.snowpack;
+				val_depth = v->moavg.snowdepth;
+				break;
+			case eSW_Year:
+				val_swe = v->yravg.snowpack;
+				val_depth = v->yravg.snowdepth;
+				break;
+		}
+
+		if (isPartialSoilwatOutput == FALSE)
+		{
+			//printf("yr, p: %d, %d\n", Globals.currYear, p);
+			float old_val_swe = SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear,p,0)];
+			float old_val_depth = SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear,p,0)];
+
+			SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear,p,0)] = get_running_avg(SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear,p,0)], val_swe);
+			SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear,p,1)] += get_running_sqr(old_val_swe, val_swe, SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear,p,0)]);
+
+			SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear,p,0)] = get_running_avg(SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear,p,0)], val_depth);
+			SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear,p,1)] += get_running_sqr(old_val_depth, val_depth, SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear,p,0)]);
+
+			//if(Globals.currYear == 1 && p == 1)
+				//printf("snowpack_water_eqv_avg[%d, %d], current avg: %f, %f\n", Globals.currYear,p, val_swe, SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear,p,0)]);
+
+			if(Globals.currIter == Globals.runModelIterations){
+				float std_swe = sqrt(SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
+				float std_depth = sqrt(SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
+
+				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear,p,0)], _Sep, std_swe,
+								_Sep, SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear,p,0)], _Sep, std_depth);
+				strcat(outstr, str);
+			}
+		}
+		if(storeAllIterations){
+			sprintf(str_iters, "%c%7.6f%c%7.6f", _Sep, val_swe, _Sep, val_depth);
+			strcat(outstr_all_iters, str_iters);
+		}
+
 #else
 	switch (pd)
 	{
@@ -5090,10 +5427,25 @@ static void get_deepswc(void)
 	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_DeepSWC].period;
-#ifndef RSOILWAT
-	char str[OUTSTRLEN];
-	RealD val = SW_MISSING;
-	get_outstrleader(pd);
+
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		char str[OUTSTRLEN];
+		RealD val = SW_MISSING;
+		get_outstrleader(pd);
+
+	#elif defined(STEPWAT)
+		char str[OUTSTRLEN];
+		char str_iters[OUTSTRLEN];
+		RealD val = SW_MISSING;
+		TimeInt p = 0;
+		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+		{
+			get_outstrleader(pd);
+		}
+	#endif
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
 	switch (pd)
 	{
 	case eSW_Day:
@@ -5111,6 +5463,49 @@ static void get_deepswc(void)
 	}
 	sprintf(str, "%c%7.6f", _Sep, val);
 	strcat(outstr, str);
+
+	#elif defined(STEPWAT)
+		switch (pd)
+		{
+			case eSW_Day:
+				p = SW_Model.doy-1;
+				val = v->dysum.deep;
+				break;
+			case eSW_Week:
+				val = v->wkavg.deep;
+				p = SW_Model.week-tOffset;
+				break;
+			case eSW_Month:
+				p = SW_Model.month-tOffset;
+				val = v->moavg.pet;
+				break;
+			case eSW_Year:
+				val = v->yravg.deep;
+				break;
+		}
+
+		if (isPartialSoilwatOutput == FALSE)
+		{
+			float old_val = SXW_AVG.deepswc_avg[Iypc(Globals.currYear,p,0)];
+
+			SXW_AVG.deepswc_avg[Iypc(Globals.currYear,p,0)] = get_running_avg(SXW_AVG.deepswc_avg[Iypc(Globals.currYear,p,0)], val);
+			SXW_AVG.deepswc_avg[Iypc(Globals.currYear,p,1)] += get_running_sqr(old_val, val, SXW_AVG.deepswc_avg[Iypc(Globals.currYear,p,0)]);
+
+			//if(Globals.currYear == 1 && p == 1)
+				//printf("deepswc_avg[%d, %d], current avg: %f, %f\n", Globals.currYear,p, val, SXW_AVG.deepswc_avg[Iypc(Globals.currYear,p,0)]);
+
+			if(Globals.currIter == Globals.runModelIterations){
+				float std = sqrt(SXW_AVG.deepswc_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
+
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.deepswc_avg[Iypc(Globals.currYear,p,0)], _Sep, std);
+				strcat(outstr, str);
+			}
+		}
+		if(storeAllIterations){
+			sprintf(str_iters, "%c%7.6f", _Sep, val);
+			strcat(outstr_all_iters, str_iters);
+		}
+
 #else
 	switch (pd)
 	{
@@ -5147,10 +5542,24 @@ static void get_soiltemp(void)
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	OutPeriod pd = SW_Output[eSW_SoilTemp].period;
-#ifndef RSOILWAT
-	RealD val = SW_MISSING;
-	char str[OUTSTRLEN];
-	get_outstrleader(pd);
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		char str[OUTSTRLEN];
+		RealD val = SW_MISSING;
+		get_outstrleader(pd);
+
+	#elif defined(STEPWAT)
+		char str[OUTSTRLEN];
+		char str_iters[OUTSTRLEN];
+		RealD val = SW_MISSING;
+		TimeInt p = 0;
+		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+		{
+			get_outstrleader(pd);
+		}
+	#endif
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
 	ForEachSoilLayer(i)
 	{
 		switch (pd)
@@ -5171,6 +5580,48 @@ static void get_soiltemp(void)
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(outstr, str);
 	}
+
+	#elif defined(STEPWAT)
+	ForEachSoilLayer(i){
+		switch (pd)
+		{
+			case eSW_Day:
+				p = SW_Model.doy-1;
+				val = v->dysum.sTemp[i];
+				break;
+			case eSW_Week:
+				val = v->wkavg.sTemp[i];
+				p = SW_Model.week-tOffset;
+				break;
+			case eSW_Month:
+				p = SW_Model.month-tOffset;
+				val = v->moavg.sTemp[i];
+				break;
+			case eSW_Year:
+				val = v->yravg.sTemp[i];
+				break;
+		}
+
+		if (isPartialSoilwatOutput == FALSE)
+		{
+			float old_val = SXW_AVG.soiltemp_avg[Iylp(Globals.currYear,i,p,0)];
+
+			SXW_AVG.soiltemp_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW_AVG.soiltemp_avg[Iylp(Globals.currYear,i,p,0)], val);
+			SXW_AVG.soiltemp_avg[Iylp(Globals.currYear,i,p,1)] += get_running_sqr(old_val, val, SXW_AVG.soiltemp_avg[Iylp(Globals.currYear,i,p,0)]);
+
+			if(Globals.currIter == Globals.runModelIterations){
+				float std = sqrt(SXW_AVG.soiltemp_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.soiltemp_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std);
+				strcat(outstr, str);
+			}
+		}
+		if(storeAllIterations){
+			sprintf(str_iters, "%c%7.6f", _Sep, val);
+			strcat(outstr_all_iters, str_iters);
+		}
+	}
+
 #else
 	switch (pd)
 	{
@@ -5872,7 +6323,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 
   \return void.
 */
-void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file){
+void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers){
 	OutKey colHeadersLoop;
 	LyrIndex evap_loop;
 	char *colHeaders[500];
@@ -5890,7 +6341,11 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 
 	ForEachOutKey(colHeadersLoop)
 	{
-		if(SW_Output[colHeadersLoop].use && SW_Output[colHeadersLoop].period == outFileTimestep-1)
+		#if !defined(STEPWAT) && !defined (RSOILWAT)
+			if(SW_Output[colHeadersLoop].use)
+		#else
+			if(SW_Output[colHeadersLoop].use && SW_Output[colHeadersLoop].period == outFileTimestep-1)
+		#endif
 		{
 			if(strcmp(key2str[colHeadersLoop], "VWCBULK")==0 || strcmp(key2str[colHeadersLoop], "VWCMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWCBULK")==0
 				|| strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0 || strcmp(key2str[colHeadersLoop], "SWABULK")==0
@@ -5912,7 +6367,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
 						#ifdef STEPWAT
-							if(isPartialSoilwatOutput == FALSE){
+							if(std_headers){
 								strcat(storeCol, "swaForb_STD_"); // store value name in new string
 								strcat(storeCol, convertq);
 								strcat(storeCol, _SepSplit);
@@ -5923,7 +6378,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
 						#ifdef STEPWAT
-							if(isPartialSoilwatOutput == FALSE){
+							if(std_headers){
 								strcat(storeCol, "swaTree_STD_"); // store value name in new string
 								strcat(storeCol, convertq);
 								strcat(storeCol, _SepSplit);
@@ -5934,7 +6389,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
 						#ifdef STEPWAT
-							if(isPartialSoilwatOutput == FALSE){
+							if(std_headers){
 								strcat(storeCol, "swaShrub_STD_"); // store value name in new string
 								strcat(storeCol, convertq);
 								strcat(storeCol, _SepSplit);
@@ -5945,7 +6400,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
 						#ifdef STEPWAT
-							if(isPartialSoilwatOutput == FALSE){
+							if(std_headers){
 								strcat(storeCol, "swaGrass_STD_"); // store value name in new string
 								strcat(storeCol, convertq);
 								strcat(storeCol, _SepSplit);
@@ -5960,22 +6415,57 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, "HydredTotal_"); // store value name in new string
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeCol, "HydredTotal_STD_"); // store value name in new string
+								strcat(storeCol, convertq);
+								strcat(storeCol, _SepSplit);
+							}
+						#endif
 
 						strcat(storeCol, "HydredTree_"); // store value name in new string
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeCol, "HydredTree_STD_"); // store value name in new string
+								strcat(storeCol, convertq);
+								strcat(storeCol, _SepSplit);
+							}
+						#endif
 
 						strcat(storeCol, "HydredShrubs_"); // store value name in new string
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeCol, "HydredShrubs_STD_"); // store value name in new string
+								strcat(storeCol, convertq);
+								strcat(storeCol, _SepSplit);
+							}
+						#endif
 
 						strcat(storeCol, "HydredForbs_"); // store value name in new string
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeCol, "HydredForbs_STD_"); // store value name in new string
+								strcat(storeCol, convertq);
+								strcat(storeCol, _SepSplit);
+							}
+						#endif
 
 						strcat(storeCol, "HydredGrass_"); // store value name in new string
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeCol, "HydredGrass_STD_"); // store value name in new string
+								strcat(storeCol, convertq);
+								strcat(storeCol, _SepSplit);
+							}
+						#endif
 					}
 				}
 				else if(strcmp(key2str[colHeadersLoop], "TRANSP")==0){
@@ -5986,7 +6476,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
 						#ifdef STEPWAT
-							if(isPartialSoilwatOutput == FALSE){
+							if(std_headers){
 								strcat(storeCol, "TranspTotal_STD_"); // store value name in new string
 								strcat(storeCol, convertq);
 								strcat(storeCol, _SepSplit);
@@ -5997,7 +6487,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
 						#ifdef STEPWAT
-							if(isPartialSoilwatOutput == FALSE){
+							if(std_headers){
 								strcat(storeCol, "TranspTree_STD_"); // store value name in new string
 								strcat(storeCol, convertq);
 								strcat(storeCol, _SepSplit);
@@ -6008,7 +6498,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
 						#ifdef STEPWAT
-							if(isPartialSoilwatOutput == FALSE){
+							if(std_headers){
 								strcat(storeCol, "TranspShrubs_STD_"); // store value name in new string
 								strcat(storeCol, convertq);
 								strcat(storeCol, _SepSplit);
@@ -6019,7 +6509,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
 						#ifdef STEPWAT
-							if(isPartialSoilwatOutput == FALSE){
+							if(std_headers){
 								strcat(storeCol, "TranspForbs_STD_"); // store value name in new string
 								strcat(storeCol, convertq);
 								strcat(storeCol, _SepSplit);
@@ -6030,7 +6520,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
 						#ifdef STEPWAT
-							if(isPartialSoilwatOutput == FALSE){
+							if(std_headers){
 								strcat(storeCol, "TranspGrass_STD_"); // store value name in new string
 								strcat(storeCol, convertq);
 								strcat(storeCol, _SepSplit);
@@ -6047,7 +6537,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
 						#ifdef STEPWAT
-							if(isPartialSoilwatOutput == FALSE){
+							if(std_headers){
 								strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
 								strcat(storeCol, "_STD_");
 								strcat(storeCol, convertq);
@@ -6056,7 +6546,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						#endif
 					}
 				}
-				else if(strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0){
+				/*else if(strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0){
 					for(q=1; q<SW_Site.n_layers; q++){
 						sprintf(convertq, "%d", q); // cast q to string
 						strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
@@ -6065,7 +6555,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
 					}
-				}
+				}*/
 				else{
 					// make variable header for each layer possible
 					for(q=1; q<=SW_Site.n_layers; q++){
@@ -6076,7 +6566,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeCol, convertq);
 						strcat(storeCol, _SepSplit);
 						#ifdef STEPWAT
-							if(isPartialSoilwatOutput == FALSE){
+							if(std_headers){
 								strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
 								strcat(storeCol, "_STD_");
 								strcat(storeCol, convertq);
@@ -6111,7 +6601,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Precip_snowmelt");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Precip_snowmelt_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6119,7 +6609,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Precip_snowloss");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Precip_snowloss_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6133,7 +6623,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Runoff_total");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Runoff_total_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6141,7 +6631,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Runoff_surface");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Runoff_surface_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6149,7 +6639,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Runoff_snowmelt");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Runoff_snowmelt_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6159,7 +6649,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "AET");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "AET_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6169,7 +6659,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Evapsurface_total");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Evapsurface_total_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6177,7 +6667,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Evapsurface_trees");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Evapsurface_trees_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6185,7 +6675,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Evapsurface_shrubs");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Evapsurface_shrubs_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6193,7 +6683,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Evapsurface_forbs");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Evapsurface_forbs_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6201,7 +6691,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Evapsurface_grasses");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Evapsurface_grasses_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6209,7 +6699,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Evapsurface_litter");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Evapsurface_litter_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6217,7 +6707,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Evapsurface_water");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Evapsurface_water_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6227,7 +6717,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Interception_total");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Interception_total_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6235,7 +6725,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Interception_trees");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Interception_trees_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6243,7 +6733,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Interception_shrubs");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Interception_shrubs_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6251,7 +6741,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Interception_forbs");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Interception_forbs_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6259,7 +6749,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Interception_grasses");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Interception_grasses_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6267,7 +6757,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, "Interception_litter");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, "Interception_litter_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
@@ -6276,9 +6766,20 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 				else if(strcmp(key2str[colHeadersLoop], "SNOWPACK")==0){
 					strcat(storeRegCol, "Snowpack_water_eqv");
 					strcat(storeRegCol, _SepSplit);
-					strcat(storeRegCol, "Snowpack_snowdepth");
+					#ifdef STEPWAT
+						if(std_headers){
+							strcat(storeRegCol, "Snowpack_water_eqv_STD"); // store value name in new string
+							strcat(storeRegCol, _SepSplit);
+						}
+					#endif
+					strcat(storeRegCol, "Snowpack_depth");
 					strcat(storeRegCol, _SepSplit);
-					//strcat(storeRegCol, "Snowpack_summed,");
+					#ifdef STEPWAT
+						if(std_headers){
+							strcat(storeRegCol, "Snowpack_depth_STD"); // store value name in new string
+							strcat(storeRegCol, _SepSplit);
+						}
+					#endif
 				}
 				/*else if (strcmp(key2str[colHeadersLoop], "WTHR")==0 ||  strcmp(key2str[colHeadersLoop], "ALLH2O")==0
 								|| strcmp(key2str[colHeadersLoop], "SWABULK")==0 || strcmp(key2str[colHeadersLoop], "ET")==0
@@ -6290,7 +6791,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					strcat(storeRegCol, key2str[colHeadersLoop]); // concatenate variable to string
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
-						if(isPartialSoilwatOutput == FALSE){
+						if(std_headers){
 							strcat(storeRegCol, key2str[colHeadersLoop]); // store value name in new string
 							strcat(storeRegCol, "_STD");
 							strcat(storeRegCol, _SepSplit);
