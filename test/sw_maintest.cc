@@ -35,7 +35,7 @@
 
 #include "../SW_Control.h"
 
-
+#include "sw_testhelpers.h"
 
 
 /* The unit test code is using the SOILWAT2-standalone input files from testing/ as
@@ -55,9 +55,9 @@ extern Bool QuietMode, EchoInits;
 extern char _firstfile[];
 
 
+
 int main(int argc, char **argv) {
   int res;
-
   /*--- Imitate 'SW_Main.c/main()': we need to initialize and take down SOILWAT2 variables
     because SOILWAT2 uses (global) states. This is otherwise not comptable with the c++
     approach used by googletest.
@@ -74,8 +74,7 @@ int main(int argc, char **argv) {
   EchoInits = FALSE;
 
   // Initialize SOILWAT2 variables and read values from example input file
-	SW_CTL_init_model(_firstfile);
-	SW_CTL_obtain_inputs();
+  Reset_SOILWAT2_after_UnitTest();
 
   //--- Setup and call unit tests
   ::testing::InitGoogleTest(&argc, argv);

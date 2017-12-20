@@ -33,6 +33,8 @@
 #include "../SW_Markov.h"
 #include "../SW_Sky.h"
 
+#include "sw_testhelpers.h"
+
 
 extern SW_MODEL SW_Model;
 extern SW_VEGPROD SW_VegProd;
@@ -64,9 +66,7 @@ namespace {
     EXPECT_DOUBLE_EQ(1., v->forb.co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
 
     // Reset to previous global state
-    SW_VPD_construct();
-    SW_VPD_read();
-    calculate_CO2_multipliers();
+    Reset_SOILWAT2_after_UnitTest();
   }
 
 

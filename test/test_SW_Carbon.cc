@@ -35,6 +35,8 @@
 #include "../SW_Markov.h"
 #include "../SW_Sky.h"
 
+#include "sw_testhelpers.h"
+
 
 extern SW_CARBON SW_Carbon;
 extern SW_MODEL SW_Model;
@@ -58,8 +60,7 @@ namespace {
     EXPECT_EQ(typeid(x), typeid(c->use_bio_mult));
 
     // Reset to previous global state
-    SW_CBN_read();
-    calculate_CO2_multipliers();
+    Reset_SOILWAT2_after_UnitTest();
   }
 
 
@@ -95,9 +96,7 @@ namespace {
     }
 
     // Reset to previous global state
-    SW_CBN_construct();
-    SW_CBN_read();
-    calculate_CO2_multipliers();
+    Reset_SOILWAT2_after_UnitTest();
   }
 
 
@@ -126,15 +125,8 @@ namespace {
       EXPECT_GT(v->tree.co2_multipliers[WUE_INDEX][year], 0.);
     }
 
-
     // Reset to previous global states
-    SW_CBN_construct();
-    SW_VPD_construct();
-
-    SW_CBN_read();
-    SW_VPD_read();
-
-    calculate_CO2_multipliers();
+    Reset_SOILWAT2_after_UnitTest();
   }
 
 } // namespace
