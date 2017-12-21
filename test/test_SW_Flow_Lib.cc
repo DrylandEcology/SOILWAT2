@@ -62,7 +62,6 @@ namespace {
     EXPECT_EQ(0, wintgrass);
     EXPECT_EQ(pptleft, ppt);
 
-
     // Test expectations when ppt is 0
     ppt = 0.0, vegcov = 5.0;
 
@@ -114,6 +113,8 @@ namespace {
 
     EXPECT_EQ(0, drain[MIN_LAYERS]);
 
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
@@ -152,6 +153,8 @@ namespace {
       EXPECT_EQ(0, drain2[i]);
     }
 
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
   }
 
 }
