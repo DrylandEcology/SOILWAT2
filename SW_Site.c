@@ -108,6 +108,23 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n);
 static void _read_layers(void);
 static void _echo_inputs(void);
 
+/**
+	\fn void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n)
+	\brief Calculate saturated soil water content value for each layer.
+
+	Calculated using equations found in Saxton and Rawls (2006). \cite Saxton2006
+
+	sand + clay + silt must equal one. Fraction silt is calculated: 1 - (sand + clay).
+
+	\param fractionGravel. The fraction of gravel in a layer by volume.
+	\param sand. The fraction of sand in a layer by weight.
+	\param clay. The fraction of clay in a layer by weight.
+	\param n. Soil layer index.
+
+	\return swcBulk_saturated. The saturated soil water content for the given bulk density (cm/layer).
+
+*/
+
 //STEPWAT calls this function so no longer private
 void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 	/* --------------------------------------------------- */

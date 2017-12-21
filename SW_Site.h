@@ -137,6 +137,7 @@ typedef struct {
 
 void SW_SIT_read(void);
 void SW_SIT_construct(void);
+void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n);
 
 /* these used to be in Layers */
 void SW_SIT_clear_layers(void);

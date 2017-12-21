@@ -41,10 +41,30 @@
 extern SW_CARBON SW_Carbon;
 extern SW_MODEL SW_Model;
 extern SW_VEGPROD SW_VegProd;
-
+extern SW_SITE SW_Site;
 
 
 namespace {
+
+  // Test the water equation function 'water_eqn'
+  TEST(SWSiteTest, WaterEquation) {
+
+    //declare inputs
+    RealD fractionGravel = 0.1, sand = .33, clay =.33;
+    LyrIndex n = 1;
+
+    water_eqn(fractionGravel, sand, clay, n);
+
+    EXPECT_GT(SW_Site.lyr[n]->swcBulk_saturated, 0);
+    EXPECT_LT(SW_Site.lyr[n]->swcBulk_saturated, SW_Site.lyr[n]->width);
+
+
+    // Test that error will be logged when b_matric is 0
+    sand = 10. + 1./3.; // So that bmatric will equal 0, even though this is a very irrealistic value
+    clay = 0;
+
+    // water_eqn(fractionGravel, sand, clay, n);
+     EXPECT_DEATH(water_eqn(fractionGravel, sand, clay, n), "@ generic.c LogError");
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
