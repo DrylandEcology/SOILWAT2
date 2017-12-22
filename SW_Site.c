@@ -112,7 +112,9 @@ static void _echo_inputs(void);
 	\fn void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n)
 	\brief Calculate saturated soil water content value for each layer.
 
-	Calculated using equations found in Saxton and Rawls (2006). \cite Saxton2006
+	thetasMatric, psisMatric, and psisMatric calculated using equations found in
+	Cosby et al. (1984). \cite Cosby1984
+	swcBulk_saturated is calculated using equations found in Saxton and Rawls (2006). \cite Saxton2006
 
 	sand + clay + silt must equal one. Fraction silt is calculated: 1 - (sand + clay).
 
@@ -121,6 +123,9 @@ static void _echo_inputs(void);
 	\param clay. The fraction of clay in a layer by weight.
 	\param n. Soil layer index.
 
+	\return thetasMatric.
+	\return psisMatric.
+	\return psisMatric.
 	\return swcBulk_saturated. The saturated soil water content for the given bulk density (cm/layer).
 
 */

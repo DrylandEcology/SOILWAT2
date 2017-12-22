@@ -55,9 +55,24 @@ namespace {
 
     water_eqn(fractionGravel, sand, clay, n);
 
-    EXPECT_GT(SW_Site.lyr[n]->swcBulk_saturated, 0);
-    EXPECT_LT(SW_Site.lyr[n]->swcBulk_saturated, SW_Site.lyr[n]->width);
+    // Test swcBulk_saturated
+    EXPECT_GT(SW_Site.lyr[n]->swcBulk_saturated, 0.); // The swcBulk_saturated should be greater than 0
+    EXPECT_LT(SW_Site.lyr[n]->swcBulk_saturated, SW_Site.lyr[n]->width); // The swcBulk_saturated can't be greater than the width of the layer
 
+    // Test thetasMatric
+    EXPECT_GT(SW_Site.lyr[n]->thetasMatric, 30.); // Value should always be greater than 30
+    EXPECT_LT(SW_Site.lyr[n]->thetasMatric, 60.); // Value should always be greater than 60
+    EXPECT_DOUBLE_EQ(SW_Site.lyr[n]->thetasMatric,  44.593); // If sand is .33 and clay is .33, thetasMatric should be this value
+
+    // Test psisMatric
+    EXPECT_GT(SW_Site.lyr[n]->psisMatric, 0.); // Value should always be greater than 0
+    EXPECT_LT(SW_Site.lyr[n]->psisMatric, 150.); // Value should always be greater than 150
+    EXPECT_DOUBLE_EQ(SW_Site.lyr[n]->psisMatric, 27.586715750763947); // If sand is .33 and clay is .33, thetasMatric should be this value
+
+    // Test bMatric
+    EXPECT_GT(SW_Site.lyr[n]->bMatric, 2.); // Value should always be greater than 0
+    EXPECT_LT(SW_Site.lyr[n]->bMatric, 200.); // Value should always be greater than 150
+    EXPECT_DOUBLE_EQ(SW_Site.lyr[n]->bMatric, 8.182); // If sand is .33 and clay is .33, thetasMatric should be this value
 
     // Test that error will be logged when b_matric is 0
     sand = 10. + 1./3.; // So that bmatric will equal 0, even though this is a very irrealistic value
