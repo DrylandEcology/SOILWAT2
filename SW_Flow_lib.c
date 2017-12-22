@@ -317,8 +317,8 @@ void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, 
 	unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
 	double *standingWater)
 
-	\brief Infiltrate water into soil layers under high water conditions. Otherwise
-	known as saturated percolation.
+	\brief Satured percolation function.Infiltrate water into soil layers under high
+	water conditions.
 
 	\param swc.  An array of doubles. Soilwater content in each layer before drainage.
 	\param swcfc. An array of doubles. Soilwater content in each layer at field capacity.
