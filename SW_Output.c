@@ -4309,12 +4309,14 @@ static void get_interception(void)
 
 			if (isPartialSoilwatOutput == FALSE)
 			{
-				float old_val_total = SXW_AVG.interception_total_avg[Iypc(Globals.currYear,p,0)];
-				float old_val_tree = SXW_AVG.interception_tree_avg[Iypc(Globals.currYear,p,0)];
-				float old_val_forb = SXW_AVG.interception_shrub_avg[Iypc(Globals.currYear,p,0)];
-				float old_val_shrub = SXW_AVG.interception_forb_avg[Iypc(Globals.currYear,p,0)];
-				float old_val_grass = SXW_AVG.interception_grass_avg[Iypc(Globals.currYear,p,0)];
-				float old_val_litter = SXW_AVG.interception_litter_avg[Iypc(Globals.currYear,p,0)];
+				float old_val_total, old_val_tree, old_val_forb, old_val_shrub, old_val_grass, old_val_litter = 0.;
+
+				old_val_total = SXW_AVG.interception_total_avg[Iypc(Globals.currYear,p,0)];
+				old_val_tree = SXW_AVG.interception_tree_avg[Iypc(Globals.currYear,p,0)];
+				old_val_shrub = SXW_AVG.interception_shrub_avg[Iypc(Globals.currYear,p,0)];
+				old_val_forb = SXW_AVG.interception_forb_avg[Iypc(Globals.currYear,p,0)];
+				old_val_grass = SXW_AVG.interception_grass_avg[Iypc(Globals.currYear,p,0)];
+				old_val_litter = SXW_AVG.interception_litter_avg[Iypc(Globals.currYear,p,0)];
 
 				SXW_AVG.interception_total_avg[Iypc(Globals.currYear,p,0)] = get_running_avg(SXW_AVG.interception_total_avg[Iypc(Globals.currYear,p,0)], val_tot);
 				SXW_AVG.interception_total_avg[Iypc(Globals.currYear,p,1)] += get_running_sqr(old_val_total, val_tot, SXW_AVG.interception_total_avg[Iypc(Globals.currYear,p,0)]);
@@ -4338,12 +4340,14 @@ static void get_interception(void)
 					//printf("interception_forb_avg[%d, %d], current avg: %f, %f\n", Globals.currYear,p, val_forb, SXW_AVG.interception_forb_avg[Iypc(Globals.currYear,p,0)]);
 
 				if(Globals.currIter == Globals.runModelIterations){
-					float std_total = sqrt(SXW_AVG.interception_total_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
-					float std_tree = sqrt(SXW_AVG.interception_tree_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
-					float std_forb = sqrt(SXW_AVG.interception_forb_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
-					float std_shrub = sqrt(SXW_AVG.interception_shrub_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
-					float std_grass = sqrt(SXW_AVG.interception_grass_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
-					float std_litter = sqrt(SXW_AVG.interception_litter_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
+					float std_total = 0., std_tree = 0., std_forb = 0., std_shrub = 0., std_grass = 0., std_litter = 0.;
+
+					std_total = sqrt(SXW_AVG.interception_total_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
+					std_tree = sqrt(SXW_AVG.interception_tree_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
+					std_forb = sqrt(SXW_AVG.interception_forb_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
+					std_shrub = sqrt(SXW_AVG.interception_shrub_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
+					std_grass = sqrt(SXW_AVG.interception_grass_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
+					std_litter = sqrt(SXW_AVG.interception_litter_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
 
 					sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
 					 				_Sep, SXW_AVG.interception_total_avg[Iypc(Globals.currYear,p,0)], _Sep, std_total,
