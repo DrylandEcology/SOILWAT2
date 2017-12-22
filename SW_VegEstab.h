@@ -6,7 +6,7 @@
 	Purpose: Supports Veg_Estab.c routines.
 	History:
 	(8/28/01) -- INITIAL CODING - cwb
-	
+
 	currently not used.
 */
 /********************************************************/
@@ -17,12 +17,6 @@
 
 #include "SW_Defines.h"
 #include "SW_Times.h"
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 #ifdef STEPWAT
 	#include "../ST_defines.h"
 #endif
@@ -42,7 +36,7 @@ typedef struct {
 			wetdays_for_germ, /* keep track of consecutive wet days */
 			wetdays_for_estab;
 	Bool germd, /* has this plant germinated yet?  */
-		no_estab; /* if TRUE, can't attempt estab for remainder of year */
+		no_estab; /* if swTRUE, can't attempt estab for remainder of year */
 
 	/* THESE VARIABLES DO NOT CHANGE DURING THE NORMAL MODEL RUN */
 	char sppFileName[MAX_FILENAMESIZE]; /* Store the file Name and Path, Mostly for Rsoilwat */
@@ -96,13 +90,10 @@ void SW_VES_clear(void);
 void SW_VES_init(void);
 void SW_VES_checkestab(void);
 void SW_VES_new_year(void);
+void _spp_init(unsigned int sppnum);
+unsigned int _new_species(void);
+void _echo_VegEstab(void);
 
-#ifdef RSOILWAT
-SEXP onGet_SW_VES(void);
-void onSet_SW_VES(SEXP VES);
-void onGet_SW_VES_spps(SEXP SPP);
-void onSet_SW_VES_spp(SEXP SPP, IntU i);
-#endif
 
 /* COMMENT-1
  * There are a lot of things to keep track of during the period of

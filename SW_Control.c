@@ -46,11 +46,7 @@ extern SW_MODEL SW_Model;
 extern SW_VEGESTAB SW_VegEstab;
 extern SW_SITE SW_Site;
 extern SW_VEGPROD SW_VegProd;
-#ifdef RSOILWAT
-	extern Bool useFiles;
-	extern SEXP InputData;
-	void SW_FLW_construct(void);
-#endif
+
 
 
 /* =================================================== */
@@ -59,7 +55,6 @@ extern SW_VEGPROD SW_VegProd;
 static void _begin_year(void);
 static void _begin_day(void);
 static void _end_day(void);
-static void _collect_values(void);
 
 /* Dummy declaration for Flow constructor defined in SW_Flow.c */
 void SW_FLW_construct(void);
@@ -68,16 +63,14 @@ void SW_FLW_construct(void);
 /***************** Begin Main Code *********************/
 
 void SW_CTL_main(void) {
+  int debug = 0;
 
 	TimeInt *cur_yr = &SW_Model.year;
 
 	for (*cur_yr = SW_Model.startyr; *cur_yr <= SW_Model.endyr; (*cur_yr)++) {
+		if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
 		SW_CTL_run_current_year();
 	}
-
-#ifndef RSOILWAT
-	SW_OUT_close_files();
-#endif
 } /******* End Main Loop *********/
 /*******************************************************/
 
@@ -100,20 +93,29 @@ void SW_CTL_init_model(const char *firstfile) {
 void SW_CTL_run_current_year(void) {
 	/*=======================================================*/
 	TimeInt *doy = &SW_Model.doy;
+	int debug = 0;
 
+	if (debug) swprintf("\n'SW_CTL_run_current_year': begin new year\n");
 	_begin_year();
 
 	for (*doy = SW_Model.firstdoy; *doy <= SW_Model.lastdoy; (*doy)++) {
+		if (debug) swprintf("\t: begin doy = %d ... ", *doy);
 		_begin_day();
 
+		if (debug) swprintf("simulate water ... ");
 		SW_SWC_water_flow();
 
 		if (SW_VegEstab.use)
 			SW_VES_checkestab();
 
+		if (debug) swprintf("ending day ... ");
 		_end_day();
+		if (debug) swprintf("doy = %d completed.\n", *doy);
 	}
+
+	if (debug) swprintf("'SW_CTL_run_current_year': flush output\n");
 	SW_OUT_flush();
+	if (debug) swprintf("'SW_CTL_run_current_year': completed.\n");
 }
 
 static void _begin_year(void) {
@@ -145,19 +147,6 @@ static void _end_day(void) {
 	_collect_values();
 	SW_WTH_end_day();
 	SW_SWC_end_day();
-
-}
-
-static void _collect_values(void) {
-	/*=======================================================*/
-
-	SW_OUT_sum_today(eSWC);
-	SW_OUT_sum_today(eWTH);
-	SW_OUT_sum_today(eVES);
-	SW_OUT_sum_today(eVPD);
-
-	SW_OUT_write_today();
-
 }
 
 void SW_CTL_read_inputs_from_disk(void) {
@@ -195,54 +184,10 @@ void SW_CTL_read_inputs_from_disk(void) {
 
 
 void SW_CTL_obtain_inputs(void) {
-	/*=======================================================*/
-
-#ifndef RSOILWAT
   SW_CTL_read_inputs_from_disk();
-
-
-#else
-	if (useFiles) {
-    SW_CTL_read_inputs_from_disk();
-
-	} else { //Use R data to set the data
-	  int debug = 0;
-
-    if (debug) swprintf("'SW_CTL_obtain_inputs': Copy input from 'InputData':");
-
-		onSet_SW_F(GET_SLOT(InputData, install("files")));
-    if (debug) swprintf(" 'files'");
-
-		onSet_SW_MDL(GET_SLOT(InputData, install("years")));
-    if (debug) swprintf(" > 'model'");
-
-		onSet_SW_WTH(GET_SLOT(InputData, install("weather")));
-    if (debug) swprintf(" > 'weather'");
-
-		onSet_SW_VPD(GET_SLOT(InputData, install("prod")));
-    if (debug) swprintf(" > 'veg'");
-
-		onSet_SW_SIT(GET_SLOT(InputData, install("site")));
-    if (debug) swprintf(" > 'site'");
-
-		onSet_SW_VES(GET_SLOT(InputData, install("estab")));
-    if (debug) swprintf(" > 'establishment'");
-
-		onSet_SW_OUT(GET_SLOT(InputData, install("output")));
-    if (debug) swprintf(" > 'ouput'");
-
-		onSet_swCarbon(GET_SLOT(InputData, install("carbon")));
-    if (debug) swprintf(" > 'CO2'");
-
-		onSet_SW_SWC(GET_SLOT(InputData, install("swc")));
-    if (debug) swprintf(" > 'swc'");
-    if (debug) swprintf(" completed.\n");
-	}
-#endif
-
   calculate_CO2_multipliers();
-
 }
+
 
 #ifdef DEBUG_MEM
 #include "SW_Markov.h"  /* for setmemrefs function */

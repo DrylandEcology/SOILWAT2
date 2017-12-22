@@ -31,12 +31,6 @@
 #ifndef SW_OUTPUT_H
 #define SW_OUTPUT_H
 
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 
 /* These are the keywords to be found in the output setup file */
 /* some of them are from the old fortran model and are no longer */
@@ -174,10 +168,9 @@ void SW_OUT_write_today(void);
 void SW_OUT_write_year(void);
 void SW_OUT_close_files(void);
 void SW_OUT_flush(void);
-#ifdef RSOILWAT
-	SEXP onGet_SW_OUT(void);
-	void onSet_SW_OUT(SEXP OUT);
-#endif
+void _collect_values(void);
+void _echo_outputs(void);
+
 #ifdef DEBUG_MEM
 	void SW_OUT_SetMemoryRefs(void);
 #endif

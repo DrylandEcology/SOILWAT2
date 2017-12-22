@@ -95,7 +95,7 @@
 #include "filefuncs.h"
 #include "SW_Defines.h"
 #include "SW_Flow_lib.h"
-#include "SW_Flow_subs.h"
+#include "SW_SoilWater.h"
 #include "SW_Carbon.h"
 #include "Times.h"
 
@@ -106,7 +106,6 @@
 extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
 extern SW_CARBON SW_Carbon;
-unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
 /* *************************************************** */
@@ -594,7 +593,7 @@ void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n
 
 		for (i = 0; i < n_layers; i++) {
 			if (tr_regions[i] == r) {
-				swp += tr_coeff[i] * SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+				swp += tr_coeff[i] * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
 				sumco += tr_coeff[i];
 			}
 		}
@@ -741,7 +740,7 @@ void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double
 	for (i = 0; i < nelyrs; i++) {
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
-		avswp += x * SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		avswp += x * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
 	}
 
 	avswp /= sumwidth;
@@ -792,7 +791,7 @@ void pot_soil_evap_bs(double *bserate, unsigned int nelyrs, double ecoeff[], dou
 	for (i = 0; i < nelyrs; i++) {
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
-		avswp += x * SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		avswp += x * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
 	}
 
 	avswp /= sumwidth;
@@ -1007,7 +1006,7 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	ST_RGR_VALUES *st = &stValues;
 
 	for (i = 0; i < nlyrs; i++) {
-		swpfrac[i] = coeff[i] / SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		swpfrac[i] = coeff[i] / SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
 		sumswp += swpfrac[i];
 	}
 
@@ -1144,9 +1143,9 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 	ST_RGR_VALUES *st = &stValues;
 
 	for (i = 0; i < nlyrs; i++) {
-		swp[i] = SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		swp[i] = SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
 		relCondroot[i] = fmin( 1., fmax(0., 1./(1. + powe(swp[i]/swp50, shapeCond) ) ) );
-		swpwp[i] = SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swcwp[i], i);
+		swpwp[i] = SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swcwp[i], i);
 
 		hydredmat[0][i] = hydredmat[i][0] = 0.; /* no hydred in top layer */
 	}
@@ -1366,11 +1365,11 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
 	// if soil temperature max depth is less than soil layer depth then quit
 	if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
-		if (!soil_temp_error) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
+		if (!SW_Soilwat.partsError) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
 
 			swprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 
-			soil_temp_error = 1;
+			SW_Soilwat.partsError = 1;
 		}
 		return; // exits the function
 	}
@@ -1566,7 +1565,7 @@ temp += temp;
 
 void endCalculations()
 {
-	soil_temp_error = 1;
+	SW_Soilwat.partsError = 1;
 	// return;  //Exits the Function
 }
 
@@ -1663,7 +1662,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		soil_temperature_init(bDensity, width, surfaceTemp[Today], oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
 	}
 
-	// if (soil_temp_error) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
+	// if (SW_Soilwat.partsError) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
 	// 	return;
 
 
@@ -1725,13 +1724,9 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		/*Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
 		VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)*/
 		if (GE(parts, 1.0)){
-			#ifndef RSOILWAT
 				swprintf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
-				soil_temp_error = 1;
-			#else
-			  /* Flag that an error has occurred for use in RSoilwat */
+			  /* Flag that an error has occurred */
 				SW_Soilwat.partsError = 1;
-			#endif
 			// return;  //Exits the Function
 		}
 

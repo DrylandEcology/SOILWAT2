@@ -36,13 +36,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
-
 #ifdef __BCC__
 #include <dir.h>
 #else
@@ -54,6 +47,7 @@
 #include "SW_Control.h"
 #include "SW_Site.h"
 #include "SW_Weather.h"
+#include "SW_Output.h"
 
 /* =================================================== */
 /*                  Global Declarations                */
@@ -66,9 +60,7 @@ char errstr[MAX_ERROR]; /* used to compose an error msg    */
 FILE *logfp; /* file handle for logging messages */
 int logged; /* boolean: true = we logged a msg */
 /* if true, write indicator to stderr */
-#ifdef RSOILWAT
-extern int logFatl;
-#endif
+
 Bool QuietMode, EchoInits; /* if true, echo inits to logfile */
 //function
 void init_args(int argc, char **argv);
@@ -91,13 +83,12 @@ static void usage(void) {
 
 char _firstfile[1024];
 
-#ifndef RSOILWAT
 /************  Main() ************************/
 void  main_function(int argc, char **argv) {
 	/* =================================================== */
 
 	swprintf("inside soilwat main: argc=%d argv[0]=%s ,argv[1]=%s,argv[2]=%s \n ",argc,argv[0],argv[1],argv[2]);
-	logged = FALSE;
+	logged = swFALSE;
 	//atexit(check_log);
 	logfp = stdout; /* provides a way to inform user that something */
 	/* was logged.  can be changed by code (eg init file */
@@ -111,6 +102,7 @@ void  main_function(int argc, char **argv) {
 	swprintf("inside soilwat main: SW_CTL_init_model successful _firstfile=%s \n",_firstfile );
 
 	SW_CTL_main();
+	SW_OUT_close_files(); // close output files
 	swprintf("inside soilwat main: SW_CTL_main successful \n" );
 
 	SW_SIT_clear_layers();
@@ -135,7 +127,8 @@ static void check_log(void) {
 	}
 
 }
-#endif
+
+
 void init_args(int argc, char **argv) {
 	/* =================================================== */
 	/* to add an option:
@@ -161,7 +154,7 @@ void init_args(int argc, char **argv) {
 
 	/* Defaults */
 	strcpy(_firstfile, DFLT_FIRSTFILE);
-	QuietMode = EchoInits = FALSE;
+	QuietMode = EchoInits = swFALSE;
 
 	a = 1;
 	for (i = 1; i <= nopts; i++) {
@@ -205,10 +198,10 @@ void init_args(int argc, char **argv) {
 			strcpy(_firstfile, str);
 			break; /* -f */
 		case 2:
-			EchoInits = TRUE;
+			EchoInits = swTRUE;
 			break; /* -e */
 		case 3:
-			QuietMode = TRUE;
+			QuietMode = swTRUE;
 			break; /* -q */
 		default:
 			LogError(logfp, LOGFATAL, "Programmer: bad option in main:init_args:switch");

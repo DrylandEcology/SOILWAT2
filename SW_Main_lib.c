@@ -17,12 +17,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 
 #ifdef __BCC__
 #include <dir.h>
@@ -47,9 +41,7 @@ char errstr[MAX_ERROR]; /* used to compose an error msg    */
 FILE *logfp; /* file handle for logging messages */
 int logged; /* boolean: true = we logged a msg */
 /* if true, write indicator to stderr */
-#ifdef RSOILWAT
-extern int logFatl;
-#endif
+
 Bool QuietMode, EchoInits; /* if true, echo inits to logfile */
 //function
 void init_args(int argc, char **argv);
@@ -97,7 +89,7 @@ void init_args(int argc, char **argv) {
 
 	/* Defaults */
 	strcpy(_firstfile, DFLT_FIRSTFILE);
-	QuietMode = EchoInits = FALSE;
+	QuietMode = EchoInits = swFALSE;
 
 	a = 1;
 	for (i = 1; i <= nopts; i++) {
@@ -141,10 +133,10 @@ void init_args(int argc, char **argv) {
 			strcpy(_firstfile, str);
 			break; /* -f */
 		case 2:
-			EchoInits = TRUE;
+			EchoInits = swTRUE;
 			break; /* -e */
 		case 3:
-			QuietMode = TRUE;
+			QuietMode = swTRUE;
 			break; /* -q */
 		default:
 			LogError(logfp, LOGFATAL, "Programmer: bad option in main:init_args:switch");

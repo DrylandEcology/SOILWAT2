@@ -20,12 +20,6 @@
 #ifndef SW_MODEL_H
 #define SW_MODEL_H
 
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 #include "Times.h"
 
 typedef struct {
@@ -57,10 +51,5 @@ void SW_MDL_read(void);
 void SW_MDL_construct(void);
 void SW_MDL_new_year(void);
 void SW_MDL_new_day(void);
-
-#ifdef RSOILWAT
-SEXP onGet_SW_MDL();
-void onSet_SW_MDL(SEXP SW_MDL);
-#endif
 
 #endif

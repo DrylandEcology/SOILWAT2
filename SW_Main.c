@@ -17,12 +17,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 
 #ifdef __BCC__
 #include <dir.h>
@@ -35,10 +29,11 @@
 #include "SW_Control.h"
 #include "SW_Site.h"
 #include "SW_Weather.h"
+#include "SW_Output.h"
 #include "SW_Main_lib.c"
 
 
-#ifndef RSOILWAT
+
 static void check_log(void);
 
 
@@ -60,7 +55,7 @@ static void check_log(void) {
 int main(int argc, char **argv) {
 	/* =================================================== */
 
-	logged = FALSE;
+	logged = swFALSE;
 	atexit(check_log);
 	logfp = stdout; /* provides a way to inform user that something */
 	/* was logged.  can be changed by code (eg init file */
@@ -72,10 +67,12 @@ int main(int argc, char **argv) {
 	SW_CTL_obtain_inputs();
 
 	SW_CTL_main();
+
+	SW_OUT_close_files(); // close output files
 	SW_SIT_clear_layers();
 	SW_WTH_clear_runavg_list();
 
 	return 0;
 }
 /*********** End of Main() *******************/
-#endif
+

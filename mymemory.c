@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include "filefuncs.h"
 #include "generic.h"
 #include "myMemory.h"
 
@@ -107,10 +108,7 @@ void *Mem_Malloc(size_t size, const char *funcname) {
     sw_error(-1, "Can't open memory.log for errors\n");
 	}
 	swprintf("%s: %d: %p\n", funcname, size, p);
-#ifndef RSOILWAT
-	fprintf(f,"%s: %d: %p\n", funcname, size, p);
 	fclose(f);
-#endif
 #endif
 
 	if (p == NULL )
@@ -190,7 +188,7 @@ void *Mem_ReAlloc(void *block, size_t sizeNew) {
 	assert(p != NULL && sizeNew > 0);
 #else
 	if(p == NULL || sizeNew == 0)
-		error("assert failed in ReAlloc");
+		sw_error(-1, "assert failed in ReAlloc");
 #endif
 
 #ifdef DEBUG_MEM
@@ -520,7 +518,7 @@ void ClearMemoryRefs(void) {
 	blockinfo *pbi;
 	int i = 0;
 	for ( pbi = pbiHead; pbi != NULL; pbi = pbi->pbiNext) {
-		pbi->fReferenced = FALSE;
+		pbi->fReferenced = swFALSE;
 		i++;
 	}
 
@@ -538,7 +536,7 @@ void NoteMemoryRef(void *pv) {
 	blockinfo *pbi;
 
 	pbi = pbiGetBlockInfo((byte *)pv);
-	pbi->fReferenced = TRUE;
+	pbi->fReferenced = swTRUE;
 
 }
 
@@ -607,7 +605,7 @@ flag fValidPointer(void *pv, size_t size) {
 	/* size isn't valid if pb+size overflows the block */
 	assert(fPtrLessEq(pb+size, pbi->pb + pbi->size));
 #endif
-	return(TRUE);
+	return(swTRUE);
 }
 
 #endif
