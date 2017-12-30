@@ -134,20 +134,17 @@ typedef enum {
 typedef struct {
 	OutKey mykey;
 	ObjType myobj;
-	OutPeriod period;
 	OutSum sumtype;
 	Bool use;
 	TimeInt first, last, 			/* updated for each year */
 			first_orig, last_orig;
-#ifdef RSOILWAT
 	int yr_row, mo_row, wk_row, dy_row;
-#endif
 	char *outfile; /* point to name of output file */
 	FILE *fp_dy; /* opened output file pointer for day*/
 	FILE *fp_wk; /* opened output file pointer for week*/
 	FILE *fp_mo; /* opened output file pointer for month*/
 	FILE *fp_yr; /* opened output file pointer for year*/
-	void (*pfunc)(void); /* pointer to output routine */
+	void (*pfunc)(OutPeriod); /* pointer to output routine */
 } SW_OUTPUT;
 
 /* convenience loops for consistency.
