@@ -198,7 +198,8 @@ void shrub_intercepted_water(double *pptleft, double *wintshrub, double ppt, dou
 	}
 }
 
-void tree_intercepted_water(double *pptleft, double *wintfor, double ppt, double LAI, double scale, double a, double b, double c, double d) {
+void tree_intercepted_water(double *pptleft, double *wintfor, double ppt, double LAI,
+	double scale, double a, double b, double c, double d) {
 	/**********************************************************************
 	 PURPOSE: Calculate water intercepted by forests
 
@@ -217,6 +218,7 @@ void tree_intercepted_water(double *pptleft, double *wintfor, double ppt, double
 	double intcpt, slope;
 
 	if (GT(LAI, 0.) && GT(ppt, 0.)) {
+
 		intcpt = b * LAI + a;
 		slope = d * LAI + c;
 
@@ -317,7 +319,7 @@ void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, 
 	unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
 	double *standingWater)
 
-	\brief Satured percolation function.Infiltrate water into soil layers under high
+	\brief Satured percolation function. Infiltrate water into soil layers under high
 	water conditions.
 
 	\param swc.  An array of doubles. Soilwater content in each layer before drainage.
@@ -376,6 +378,8 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 			(*drainout) = d[i];
 			swc[i] -= (*drainout);
 		}
+		// swprintf("\ndrain in layer %f\n", drain[i]);
+		// swprintf("\ndrainout %f\n", drainout[i]);
 	}
 
 	/* adjust (i.e., push water upwards) if water content of a layer is now above saturated water content */
@@ -390,6 +394,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 				(*standingWater) = push;
 			}
 		}
+
 	}
 }
 
