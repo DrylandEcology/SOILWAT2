@@ -33,6 +33,7 @@
 #define MAX_LAYERS  25
 #define MAX_TRANSP_REGIONS 4
 #define MAX_ST_RGR 100
+#define NVEGTYPES 4
 
 #define MAX_NYEAR 2500  /**< An integer representing the max calendar year that is supported. The number just needs to be reasonable, it is an artifical limit. */
 
