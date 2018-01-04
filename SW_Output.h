@@ -159,6 +159,8 @@ typedef struct {
 #define ForEachOutPeriod(k)  for((k)=eSW_Day;     (k)<=eSW_Year;     (k)++)
 
 void SW_OUT_construct(void);
+void SW_OUT_set_ncol(void);
+void SW_OUT_set_colnames(void);
 void SW_OUT_new_year(void);
 void SW_OUT_read(void);
 void SW_OUT_sum_today(ObjType otyp);
