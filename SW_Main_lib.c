@@ -50,7 +50,7 @@ void init_args(int argc, char **argv);
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
 
-static void usage(void) {
+void usage(void) {
 	const char *s1 = "Ecosystem water simulation model SOILWAT2\n"
 			"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
 			"Usage: soilwat [-d startdir] [-f files.in] [-e] [-q]\n"
