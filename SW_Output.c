@@ -225,6 +225,10 @@ extern SXW_t SXW;
 Bool isPartialSoilwatOutput =swFALSE;
 
 char _Sep; /* output delimiter */
+int useTimeStep; /* flag to determine whether or not the line TIMESTEP exists */
+int used_OUTNPERIODS; // number of different time steps/periods that are used/requested
+OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];// array to keep track of the periods that will be used for each output
+
 
 
 /* =================================================== */
@@ -232,9 +236,6 @@ char _Sep; /* output delimiter */
 /* --------------------------------------------------- */
 static char *MyFileName;
 static char outstr[OUTSTRLEN];
-
-static int used_OUTNPERIODS; // number of different time steps/periods that are used/requested
-static OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];// array to keep track of the periods that will be used for each output
 
 static Bool bFlush; /* process partial period ? */
 static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
@@ -540,7 +541,6 @@ void SW_OUT_read(void)
 			last[4], /* last doy for output, if "end", ==366 */
 			outfile[MAX_FILENAMESIZE];
 	int first; /* first doy for output */
-	int useTimeStep = 0; /* flag to determine whether or not the line TIMESTEP exists */
 
 	MyFileName = SW_F_name(eOutput);
 	f = OpenFile(MyFileName, "r");
@@ -548,6 +548,7 @@ void SW_OUT_read(void)
 
 	_Sep = '\t'; // default value in case 'OUTSEP' is not specified in input file
 	used_OUTNPERIODS = 1; // if 'TIMESTEP' is not specified in input file, then only one time step = period can be specified
+  useTimeStep = 0;
 
 	while (GetALine(f, inbuf))
 	{

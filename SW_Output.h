@@ -31,6 +31,7 @@
 #ifndef SW_OUTPUT_H
 #define SW_OUTPUT_H
 
+#include "Times.h"
 
 /* These are the keywords to be found in the output setup file */
 /* some of them are from the old fortran model and are no longer */
