@@ -16,7 +16,7 @@
 #ifndef SW_FILES_H
 	#define SW_FILES_H
 
-#define SW_NFILES 16
+#define SW_NFILES 14
 
 /* The number of enum elements between eNoFile and
  * eEndFile (not inclusive) must match SW_NFILES.

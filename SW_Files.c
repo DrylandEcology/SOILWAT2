@@ -57,7 +57,7 @@ static void init(const char *s) {
 	char fname[MAX_FILENAMESIZE] = { '\0' };
 
 	if (NULL == InFiles[eFirst])
-		strcpy(fname, (s ? s : "files.in"));
+		strcpy(fname, (s ? s : DFLT_FIRSTFILE));
 	else if (s && strcmp(s, InFiles[eFirst]))
 		strcpy(fname, s);
 
@@ -74,17 +74,22 @@ static void init(const char *s) {
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
 
-void SW_F_read(const char *s) {
-	/* =================================================== */
-	/* enter with the name of the first file to read for
-	 * the filenames, or NULL.  If null, then read files.in
-	 * or whichever filename was set previously. see init().
-	 *
-	 * 1/24/02 - replaced [re]alloc with StrDup()
-	 *         - added facility for log-to-file. logfp depends
-	 *             on having executed SW_F_read().
-	 */
+/** Read `first` input file `eFirst` that contains names of the remaining input files.
 
+    @param s Name of the first file to read for filenames, or NULL. If NULL, then read
+      from DFLT_FIRSTFILE or whichever filename was set previously.
+
+    @note If input file `eFirst` changes, particularly if the locations of the
+      `weather_prefix` and/or `output_prefix` change; then update the hard-coded line
+      numbers.
+
+    @sideeffect Update values of global variables:
+      - `weather_prefix`
+      - `output_prefix`
+      - `InFiles`
+      - `logfp` for SOILWAT2-standalone
+  */
+void SW_F_read(const char *s) {
 	FILE *f;
 	int lineno = 0, fileno = 0, debug = 0;
 	char buf[FILENAME_MAX];
