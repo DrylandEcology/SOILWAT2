@@ -187,7 +187,7 @@ void SW_Water_Flow(void);
 void SW_FLW_construct(void) {
 	/* 06/26/2013	(rjm) added function SW_FLW_construct() to init global variables between consecutive calls to SoilWat as dynamic library */
 	int i=0;
-	SW_Soilwat.partsError = 0;
+	SW_Soilwat.partsError = swFALSE;
 	soil_temp_init = 0;
 	fusion_pool_init = 0;
 	//These only have to be cleared if a loop is wrong in the code.

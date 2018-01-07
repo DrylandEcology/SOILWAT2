@@ -1369,7 +1369,7 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
 			swprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 
-			SW_Soilwat.partsError = 1;
+			SW_Soilwat.partsError = swTRUE;
 		}
 		return; // exits the function
 	}
@@ -1565,7 +1565,7 @@ temp += temp;
 
 void endCalculations()
 {
-	SW_Soilwat.partsError = 1;
+	SW_Soilwat.partsError = swTRUE;
 	// return;  //Exits the Function
 }
 
@@ -1723,10 +1723,10 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 		/*Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
 		VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)*/
-		if (GE(parts, 1.0)){
+		if (GE(parts, 1.0) && !SW_Soilwat.partsError) {
 				swprintf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
 			  /* Flag that an error has occurred */
-				SW_Soilwat.partsError = 1;
+				SW_Soilwat.partsError = swTRUE;
 			// return;  //Exits the Function
 		}
 

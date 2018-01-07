@@ -84,8 +84,9 @@ typedef struct {
 			pet,
 			deep,
 			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
-			surfaceTemp, // soil surface temperature
-			partsError;  // soil temperature error indicator
+			surfaceTemp; // soil surface temperature
+
+	Bool partsError;  // soil temperature error indicator
 } SW_SOILWAT_OUTPUTS;
 
 typedef struct {
@@ -104,8 +105,9 @@ typedef struct {
 			shrub_int,
 			grass_int,
 			sTemp[MAX_LAYERS],
-			surfaceTemp, // soil surface temperature
-			partsError; // soil temperature error indicator
+			surfaceTemp; // soil surface temperature
+
+	Bool partsError; // soil temperature error indicator
 
 	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */
 	wksum, mosum, yrsum, /* accumulators for *avg */
