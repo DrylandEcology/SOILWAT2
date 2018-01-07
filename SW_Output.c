@@ -500,9 +500,10 @@ void SW_OUT_set_ncol(void) {
 
 
 void SW_OUT_set_colnames(void) {
-	int i, j, tLayers = SW_Site.n_layers;
+	int i, j, debug = 0,
+		tLayers = SW_Site.n_layers;
 
-	char *ctemp = NULL;
+	char ctemp[50];
 	const char *Layers_names[MAX_LAYERS] = { "Lyr_1", "Lyr_2", "Lyr_3", "Lyr_4", "Lyr_5",
 		"Lyr_6", "Lyr_7", "Lyr_8", "Lyr_9", "Lyr_10", "Lyr_11", "Lyr_12", "Lyr_13", "Lyr_14",
 		"Lyr_15", "Lyr_16", "Lyr_17", "Lyr_18", "Lyr_19", "Lyr_20", "Lyr_21", "Lyr_22",
@@ -527,50 +528,62 @@ void SW_OUT_set_colnames(void) {
 		"GrassWUEMult", "ShrubWUEMult", "TreeWUEMult", "ForbWUEMult" };
 
 
+	if (debug) swprintf("SW_OUT_set_colnames: set columns for 'eSW_Temp' ...");
 	for (i = 0; i < ncol_OUT[eSW_Temp]; i++) {
-		strcpy(colnames_OUT[eSW_Temp][i], cnames_eSW_Temp[i]);
+		colnames_OUT[eSW_Temp][i] = Str_Dup(cnames_eSW_Temp[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_Precip' ...");
 	for (i = 0; i < ncol_OUT[eSW_Precip]; i++) {
-		strcpy(colnames_OUT[eSW_Precip][i], cnames_eSW_Precip[i]);
+		colnames_OUT[eSW_Precip][i] = Str_Dup(cnames_eSW_Precip[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_SoilInf' ...");
 	for (i = 0; i < ncol_OUT[eSW_SoilInf]; i++) {
-		strcpy(colnames_OUT[eSW_SoilInf][i], cnames_eSW_SoilInf[i]);
+		colnames_OUT[eSW_SoilInf][i] = Str_Dup(cnames_eSW_SoilInf[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_Runoff' ...");
 	for (i = 0; i < ncol_OUT[eSW_Runoff]; i++) {
-		strcpy(colnames_OUT[eSW_Runoff][i], cnames_eSW_Runoff[i]);
+		colnames_OUT[eSW_Runoff][i] = Str_Dup(cnames_eSW_Runoff[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_VWCBulk' ...");
 	for (i = 0; i < ncol_OUT[eSW_VWCBulk]; i++) {
-		strcpy(colnames_OUT[eSW_VWCBulk][i], Layers_names[i]);
+		colnames_OUT[eSW_VWCBulk][i] = Str_Dup(Layers_names[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_VWCMatric' ...");
 	for (i = 0; i < ncol_OUT[eSW_VWCMatric]; i++) {
-		strcpy(colnames_OUT[eSW_VWCMatric][i], Layers_names[i]);
+		colnames_OUT[eSW_VWCMatric][i] = Str_Dup(Layers_names[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_SWCBulk' ...");
 	for (i = 0; i < ncol_OUT[eSW_SWCBulk]; i++) {
-		strcpy(colnames_OUT[eSW_SWCBulk][i], Layers_names[i]);
+		colnames_OUT[eSW_SWCBulk][i] = Str_Dup(Layers_names[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_SWABulk' ...");
 	for (i = 0; i < ncol_OUT[eSW_SWABulk]; i++) {
-		strcpy(colnames_OUT[eSW_SWABulk][i], Layers_names[i]);
+		colnames_OUT[eSW_SWABulk][i] = Str_Dup(Layers_names[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_SWAMatric' ...");
 	for (i = 0; i < ncol_OUT[eSW_SWAMatric]; i++) {
-		strcpy(colnames_OUT[eSW_SWAMatric][i], Layers_names[i]);
+		colnames_OUT[eSW_SWAMatric][i] = Str_Dup(Layers_names[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_SWPMatric' ...");
 	for (i = 0; i < ncol_OUT[eSW_SWPMatric]; i++) {
-		strcpy(colnames_OUT[eSW_SWPMatric][i], Layers_names[i]);
+		colnames_OUT[eSW_SWPMatric][i] = Str_Dup(Layers_names[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_SurfaceWater' ...");
 	for (i = 0; i < ncol_OUT[eSW_SurfaceWater]; i++) {
-		strcpy(colnames_OUT[eSW_SurfaceWater][i], cnames_eSW_SurfaceWater[i]);
+		colnames_OUT[eSW_SurfaceWater][i] = Str_Dup(cnames_eSW_SurfaceWater[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_Transp' ...");
 	for (i = 0; i < tLayers; i++) {
 		for (j = 0; j < NVEGTYPES + 1; j++) {
 			strcpy(ctemp, "transp_");
@@ -578,74 +591,88 @@ void SW_OUT_set_colnames(void) {
 			strcat(ctemp, "_");
 			strcat(ctemp, Layers_names[i]);
 
-			strcpy(colnames_OUT[eSW_Transp][i + j * tLayers], ctemp);
+			colnames_OUT[eSW_Transp][i + j * tLayers] = Str_Dup(ctemp);
 		}
 	}
 
+	if (debug) swprintf(" 'eSW_EvapSoil' ...");
 	for (i = 0; i < ncol_OUT[eSW_EvapSoil]; i++) {
-		strcpy(colnames_OUT[eSW_EvapSoil][i], Layers_names[i]);
+		colnames_OUT[eSW_EvapSoil][i] = Str_Dup(Layers_names[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_EvapSurface' ...");
 	for (i = 0; i < NVEGTYPES + 2; i++) {
 		strcpy(ctemp, "evap_");
 		strcat(ctemp, cnames_VegTypes[i]);
-		strcpy(colnames_OUT[eSW_EvapSurface][i], ctemp);
+		colnames_OUT[eSW_EvapSurface][i] = Str_Dup(ctemp);
 	}
 	for (i = 0; i < ncol_OUT[eSW_EvapSurface] - (NVEGTYPES + 2); i++) {
-		strcpy(colnames_OUT[eSW_EvapSurface][NVEGTYPES + 2 + i], cnames_add_eSW_EvapSurface[i]);
+		colnames_OUT[eSW_EvapSurface][NVEGTYPES + 2 + i] = Str_Dup(cnames_add_eSW_EvapSurface[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_Interception' ...");
 	for (i = 0; i < NVEGTYPES + 2; i++) {
 		strcpy(ctemp, "int_");
 		strcat(ctemp, cnames_VegTypes[i]);
-		strcpy(colnames_OUT[eSW_Interception][i], ctemp);
+		colnames_OUT[eSW_Interception][i] = Str_Dup(ctemp);
 	}
 
+	if (debug) swprintf(" 'eSW_LyrDrain' ...");
 	for (i = 0; i < ncol_OUT[eSW_LyrDrain]; i++) {
-		strcpy(colnames_OUT[eSW_LyrDrain][i], Layers_names[i]);
+		colnames_OUT[eSW_LyrDrain][i] = Str_Dup(Layers_names[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_HydRed' ...");
 	for (i = 0; i < tLayers; i++) {
 		for (j = 0; j < NVEGTYPES + 1; j++) {
 			strcpy(ctemp, cnames_VegTypes[j]);
 			strcat(ctemp, "_");
 			strcat(ctemp, Layers_names[i]);
-			strcpy(colnames_OUT[eSW_HydRed][i + j * tLayers], ctemp);
+			colnames_OUT[eSW_HydRed][i + j * tLayers] = Str_Dup(ctemp);
 		}
 	}
 
+	if (debug) swprintf(" 'eSW_AET' ...");
 	for (i = 0; i < ncol_OUT[eSW_AET]; i++) {
-		strcpy(colnames_OUT[eSW_AET][i], cnames_eSW_AET[i]);
+		colnames_OUT[eSW_AET][i] = Str_Dup(cnames_eSW_AET[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_PET' ...");
 	for (i = 0; i < ncol_OUT[eSW_PET]; i++) {
-		strcpy(colnames_OUT[eSW_PET][i], cnames_eSW_PET[i]);
+		colnames_OUT[eSW_PET][i] = Str_Dup(cnames_eSW_PET[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_WetDays' ...");
 	for (i = 0; i < ncol_OUT[eSW_WetDays]; i++) {
-		strcpy(colnames_OUT[eSW_WetDays][i], Layers_names[i]);
+		colnames_OUT[eSW_WetDays][i] = Str_Dup(Layers_names[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_SnowPack' ...");
 	for (i = 0; i < ncol_OUT[eSW_SnowPack]; i++) {
-		strcpy(colnames_OUT[eSW_SnowPack][i], cnames_eSW_SnowPack[i]);
+		colnames_OUT[eSW_SnowPack][i] = Str_Dup(cnames_eSW_SnowPack[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_DeepSWC' ...");
 	for (i = 0; i < ncol_OUT[eSW_DeepSWC]; i++) {
-		strcpy(colnames_OUT[eSW_DeepSWC][i], cnames_eSW_DeepSWC[i]);
+		colnames_OUT[eSW_DeepSWC][i] = Str_Dup(cnames_eSW_DeepSWC[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_SoilTemp' ...");
 	for (i = 0; i < ncol_OUT[eSW_SoilTemp]; i++) {
-		strcpy(colnames_OUT[eSW_SoilTemp][i], Layers_names[i]);
+		colnames_OUT[eSW_SoilTemp][i] = Str_Dup(Layers_names[i]);
 	}
 
+	if (debug) swprintf(" 'eSW_Estab' ...");
 	for (i = 0; i < ncol_OUT[eSW_Estab]; i++) {
-		strcpy(colnames_OUT[eSW_Estab][i], SW_VegEstab.parms[i]->sppname);
+		colnames_OUT[eSW_Estab][i] = Str_Dup(SW_VegEstab.parms[i]->sppname);
 	}
 
+	if (debug) swprintf(" 'eSW_CO2Effects' ...");
 	for (i = 0; i < ncol_OUT[eSW_CO2Effects]; i++) {
-		strcpy(colnames_OUT[eSW_CO2Effects][i], cnames_eSW_CO2Effects[i]);
+		colnames_OUT[eSW_CO2Effects][i] = Str_Dup(cnames_eSW_CO2Effects[i]);
 	}
 
+	if (debug) swprintf(" completed.\n");
 }
 
 

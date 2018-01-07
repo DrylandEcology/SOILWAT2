@@ -99,6 +99,8 @@ void  main_function(int argc, char **argv) {
 
 	SW_CTL_init_model(_firstfile);
 	SW_CTL_obtain_inputs();
+	SW_OUT_set_ncol(); // as of yet not used in SOILWAT2-standalone
+	SW_OUT_set_colnames(); // as of yet not used in SOILWAT2-standalone
 	swprintf("inside soilwat main: SW_CTL_init_model successful _firstfile=%s \n",_firstfile );
 
 	SW_CTL_main();
