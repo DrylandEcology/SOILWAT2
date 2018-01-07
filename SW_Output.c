@@ -808,12 +808,10 @@ void SW_OUT_read(void)
 			if (useTimeStep) {
 				for (i = 0; i < used_OUTNPERIODS; i++) {
 					timeSteps[k][i] = str2period(Str_ToUpper(timeStep[i], ext));
-swprintf("useTS: timeSteps[%d][%d] = %d = %s\n", k, i, timeSteps[k][i], timeStep[i]);
 				}
 
 			} else {
 				timeSteps[k][0] = str2period(Str_ToUpper(period, ext));
-swprintf("!useTS: timeSteps[%d][%d] = %d = %s\n", k, 0, timeSteps[k][0], period);
 			}
 
 			/* Check validity of output key */
@@ -1164,19 +1162,23 @@ void SW_OUT_write_today(void)
 	TimeInt t = 0xffff;
 	OutKey k;
 	Bool writeit;
-	int i, debug = 1;
+	int i, debug = 0;
 
   if (debug) swprintf("'SW_OUT_write_today': %dyr-%dmon-%dwk-%ddoy: ",
     SW_Model.year, SW_Model.month, SW_Model.week, SW_Model.doy);
 
 	ForEachOutKey(k)
 	{
+		if (debug) swprintf("key=%d=%s: ", k, key2str[k]);
+
 		if (!SW_Output[k].use) {
 			continue;
 		}
 
 		for (i = 0; i < used_OUTNPERIODS; i++)
 		{
+			if (debug) swprintf("/%d=%s", timeSteps[k][i], pd2str[timeSteps[k][i]]);
+
 			writeit = swTRUE;
 			switch (timeSteps[k][i])
 			{
@@ -1195,17 +1197,23 @@ void SW_OUT_write_today(void)
 				writeit = (Bool) (SW_Model.newyear || bFlush);
 				t = SW_Output[k].first; /* always output this period */
 				break;
-			default:
-				LogError(logfp, LOGFATAL,
-						"Invalid period in SW_OUT_write_today().");
+			default: // e.g., SW_MISSING
+				LogError(logfp, LOGWARN,
+					"'SW_OUT_write_today': Invalid period = %d for key = %s",
+					timeSteps[k][i], key2str[k]);
+				continue;
 			}
+
+			if (debug) swprintf("-t=%d", t);
 
 			if (!writeit || t < SW_Output[k].first || t > SW_Output[k].last)
 				continue;
 
-if (debug && k == 1) swprintf("%s/%d=%s-%d | ", key2str[k], timeSteps[k][i], pd2str[timeSteps[k][i]], t);
+			if (debug) swprintf(" call pfunc");
 
 			((void (*)(OutPeriod)) SW_Output[k].pfunc)(timeSteps[k][i]);
+
+			if (debug) swprintf(" ... ok");
 
 #ifndef RSOILWAT
 #ifdef STEPWAT
@@ -1232,7 +1240,10 @@ if (debug && k == 1) swprintf("%s/%d=%s-%d | ", key2str[k], timeSteps[k][i], pd2
 #endif
 #endif
 
+		if (debug) swprintf(" ... i=%d done", i);
 		}
+
+		if (debug) swprintf(" ... k=%d done\n", k);
 	}
 
   if (debug) swprintf("'SW_OUT_write_today': completed\n");
@@ -1588,7 +1599,7 @@ static void get_temp(OutPeriod pd)
 	 * 05-Mar-03 (cwb) Added code for max,min,avg. Previously, only avg was output.
 	 * 22 June-15 (akt)  Added code for adding surfaceTemp at output
 	 */
-	int debug = 1;
+	int debug = 0;
 	#ifdef RSOILWAT
 		int delta;
 		RealD *p;
@@ -4216,10 +4227,6 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 		s->temp_avg += v->now.temp_avg[Today];
 		//added surfaceTemp for sum
 		s->surfaceTemp += v->surfaceTemp;
-swprintf("'sumof_wth': doy=%d/k=%d=eSW_Temp: sum(tmax) = %f -- today's tmax = %f\n",
-	SW_Model.doy, k, s->temp_max, v->now.temp_max[Today]);
-swprintf("\t: dysum(tmax)=%f, wksum(tmax)=%f, mosum(tmax)=%f, yrsum(tmax)=%f\n",
-	v->dysum.temp_max, v->wksum.temp_max, v->mosum.temp_max, v->yrsum.temp_max);
 		break;
 	case eSW_Precip:
 		s->ppt += v->now.ppt[Today];
@@ -4460,8 +4467,6 @@ static void average_for(ObjType otyp, OutPeriod pd)
 			wavg->temp_avg = wsumof->temp_avg / div;
 			//added surfaceTemp for avg operation
 			wavg->surfaceTemp = wsumof->surfaceTemp / div;
-swprintf("'average_for': doy=%d; eSW_Temp: avg(temp_max) = %f -- summed temp_max = %f\n",
-SW_Model.doy, wavg->temp_max, wsumof->temp_max);
 			break;
 
 		case eSW_Precip:
@@ -4738,7 +4743,6 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 						wsum = &w->yrsum;
 						break;
 				}
-swprintf("collect_sums calling 'sumof_wth': otyp=%d, op=%d, k=%d\n", otyp, op, k);
 				sumof_wth(w, wsum, k);
 				break;
 
