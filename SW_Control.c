@@ -187,6 +187,10 @@ void stat_Output_Daily_CSV_Summary(int iteration)
 		SW_Output_Files.fp_dy_soil_avg = OpenFile(SW_F_name(eOutputDaily_soil), "w");
 	}
 	else{ // storing values for every iteration
+		if(iteration > 1){
+			CloseFile(&SW_Output_Files.fp_dy);
+			CloseFile(&SW_Output_Files.fp_dy_soil);
+		}
 		char *newFile_split; // new file to create
 		char *newFile_soil_split;
 		char newFile_soil[80];
@@ -242,6 +246,10 @@ void stat_Output_Weekly_CSV_Summary(int iteration)
 		SW_Output_Files.fp_wk_soil_avg = OpenFile(SW_F_name(eOutputWeekly_soil), "w");
 	}
 	else{ // storing values for every iteration
+		if(iteration > 1){
+			CloseFile(&SW_Output_Files.fp_wk);
+			CloseFile(&SW_Output_Files.fp_wk_soil);
+		}
 		char *newFile_split; // new file to create
 		char *newFile_soil_split;
 		char newFile_soil[80];
@@ -297,6 +305,10 @@ void stat_Output_Monthly_CSV_Summary(int iteration)
 		SW_Output_Files.fp_mo_soil_avg = OpenFile(SW_F_name(eOutputMonthly_soil), "w");
 	}
 	else{ // storing values for every iteration
+		if(iteration > 1){
+			CloseFile(&SW_Output_Files.fp_mo);
+			CloseFile(&SW_Output_Files.fp_mo_soil);
+		}
 		char *newFile_split; // new file to create
 		char *newFile_soil_split;
 		char newFile_soil[80];
@@ -352,6 +364,10 @@ void stat_Output_Yearly_CSV_Summary(int iteration)
 		SW_Output_Files.fp_yr_soil_avg = OpenFile(SW_F_name(eOutputYearly_soil), "w");
 	}
 	else{ // storing values for every iteration
+		if(iteration > 1){
+			CloseFile(&SW_Output_Files.fp_yr);
+			CloseFile(&SW_Output_Files.fp_yr_soil);
+		}
 		char *newFile_split; // new file to create
 		char *newFile_soil_split;
 		char newFile_soil[80];
