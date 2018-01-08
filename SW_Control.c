@@ -187,8 +187,10 @@ void stat_Output_Daily_CSV_Summary(int iteration)
 		SW_Output_Files.fp_dy_soil_avg = OpenFile(SW_F_name(eOutputDaily_soil), "w");
 	}
 	else{ // storing values for every iteration
-		char *newFile; // new file to create
-		char * newFile_soil;
+		char *newFile_split; // new file to create
+		char *newFile_soil_split;
+		char newFile_soil[80];
+		char newFile[80];
 		char *extension; // extension to add to end of file
 		char *fileDup = malloc(strlen(SW_F_name(eOutputDaily))+1);
 		char *fileDup_soil = malloc(strlen(SW_F_name(eOutputDaily_soil))+1);
@@ -201,14 +203,16 @@ void stat_Output_Daily_CSV_Summary(int iteration)
 		extension = strtok(fileDup, ".");
 		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
 
-		newFile = strtok(SW_F_name(eOutputDaily), "."); // get filename up to but not including ".csv"
+		newFile_split = strtok(SW_F_name(eOutputDaily), "."); // get filename up to but not including ".csv"
+		strcpy(newFile, newFile_split);
 		strcat(newFile, "_");
 		strcat(newFile, iterationToString);
 		strcat(newFile, ".");
 		strcat(newFile, extension);
 		SW_Output_Files.fp_dy = OpenFile(newFile, "w"); // open new file
 
-		newFile_soil = strtok(SW_F_name(eOutputDaily_soil), "."); // get filename up to but not including ".csv"
+		newFile_soil_split = strtok(SW_F_name(eOutputDaily_soil), "."); // get filename up to but not including ".csv"
+		strcpy(newFile_soil, newFile_soil_split);
 		strcat(newFile_soil, "_");
 		strcat(newFile_soil, iterationToString);
 		strcat(newFile_soil, ".");
@@ -238,8 +242,10 @@ void stat_Output_Weekly_CSV_Summary(int iteration)
 		SW_Output_Files.fp_wk_soil_avg = OpenFile(SW_F_name(eOutputWeekly_soil), "w");
 	}
 	else{ // storing values for every iteration
-		char *newFile; // new file to create
-		char * newFile_soil;
+		char *newFile_split; // new file to create
+		char *newFile_soil_split;
+		char newFile_soil[80];
+		char newFile[80];
 		char *extension; // extension to add to end of file
 		char *fileDup = malloc(strlen(SW_F_name(eOutputWeekly))+1);
 		char *fileDup_soil = malloc(strlen(SW_F_name(eOutputWeekly_soil))+1);
@@ -252,14 +258,16 @@ void stat_Output_Weekly_CSV_Summary(int iteration)
 		extension = strtok(fileDup, ".");
 		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
 
-		newFile = strtok(SW_F_name(eOutputWeekly), "."); // get filename up to but not including ".csv"
+		newFile_split = strtok(SW_F_name(eOutputWeekly), "."); // get filename up to but not including ".csv"
+		strcpy(newFile, newFile_split);
 		strcat(newFile, "_");
 		strcat(newFile, iterationToString);
 		strcat(newFile, ".");
 		strcat(newFile, extension);
 		SW_Output_Files.fp_wk = OpenFile(newFile, "w"); // open new file
 
-		newFile_soil = strtok(SW_F_name(eOutputWeekly_soil), "."); // get filename up to but not including ".csv"
+		newFile_soil_split = strtok(SW_F_name(eOutputWeekly_soil), "."); // get filename up to but not including ".csv"
+		strcpy(newFile_soil, newFile_soil_split);
 		strcat(newFile_soil, "_");
 		strcat(newFile_soil, iterationToString);
 		strcat(newFile_soil, ".");
@@ -289,8 +297,10 @@ void stat_Output_Monthly_CSV_Summary(int iteration)
 		SW_Output_Files.fp_mo_soil_avg = OpenFile(SW_F_name(eOutputMonthly_soil), "w");
 	}
 	else{ // storing values for every iteration
-		char *newFile; // new file to create
-		char * newFile_soil;
+		char *newFile_split; // new file to create
+		char *newFile_soil_split;
+		char newFile_soil[80];
+		char newFile[80];
 		char *extension; // extension to add to end of file
 		char *fileDup = malloc(strlen(SW_F_name(eOutputMonthly))+1);
 		char *fileDup_soil = malloc(strlen(SW_F_name(eOutputMonthly_soil))+1);
@@ -303,14 +313,16 @@ void stat_Output_Monthly_CSV_Summary(int iteration)
 		extension = strtok(fileDup, ".");
 		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
 
-		newFile = strtok(SW_F_name(eOutputMonthly), "."); // get filename up to but not including ".csv"
+		newFile_split = strtok(SW_F_name(eOutputMonthly), "."); // get filename up to but not including ".csv"
+		strcpy(newFile, newFile_split);
 		strcat(newFile, "_");
 		strcat(newFile, iterationToString);
 		strcat(newFile, ".");
 		strcat(newFile, extension);
 		SW_Output_Files.fp_mo = OpenFile(newFile, "w"); // open new file
 
-		newFile_soil = strtok(SW_F_name(eOutputMonthly_soil), "."); // get filename up to but not including ".csv"
+		newFile_soil_split = strtok(SW_F_name(eOutputMonthly_soil), "."); // get filename up to but not including ".csv"
+		strcpy(newFile_soil, newFile_soil_split);
 		strcat(newFile_soil, "_");
 		strcat(newFile_soil, iterationToString);
 		strcat(newFile_soil, ".");
@@ -340,8 +352,10 @@ void stat_Output_Yearly_CSV_Summary(int iteration)
 		SW_Output_Files.fp_yr_soil_avg = OpenFile(SW_F_name(eOutputYearly_soil), "w");
 	}
 	else{ // storing values for every iteration
-		char *newFile; // new file to create
-		char * newFile_soil;
+		char *newFile_split; // new file to create
+		char *newFile_soil_split;
+		char newFile_soil[80];
+		char newFile[80];
 		char *extension; // extension to add to end of file
 		char *fileDup = malloc(strlen(SW_F_name(eOutputYearly))+1);
 		char *fileDup_soil = malloc(strlen(SW_F_name(eOutputYearly_soil))+1);
@@ -354,14 +368,16 @@ void stat_Output_Yearly_CSV_Summary(int iteration)
 		extension = strtok(fileDup, ".");
 		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
 
-		newFile = strtok(SW_F_name(eOutputYearly), "."); // get filename up to but not including ".csv"
+		newFile_split = strtok(SW_F_name(eOutputYearly), "."); // get filename up to but not including ".csv"
+		strcpy(newFile, newFile_split);
 		strcat(newFile, "_");
 		strcat(newFile, iterationToString);
 		strcat(newFile, ".");
 		strcat(newFile, extension);
 		SW_Output_Files.fp_yr = OpenFile(newFile, "w"); // open new file
 
-		newFile_soil = strtok(SW_F_name(eOutputYearly_soil), "."); // get filename up to but not including ".csv"
+		newFile_soil_split = strtok(SW_F_name(eOutputYearly_soil), "."); // get filename up to but not including ".csv"
+		strcpy(newFile_soil, newFile_soil_split);
 		strcat(newFile_soil, "_");
 		strcat(newFile_soil, iterationToString);
 		strcat(newFile_soil, ".");
