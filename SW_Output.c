@@ -1661,7 +1661,7 @@ static void get_estab(void)
 
 	#elif defined(STEPWAT)
 		char str_iters[20];
-		TimeInt p;
+		TimeInt p = 0;
 		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 			get_outstrleader(pd);
 
@@ -1927,6 +1927,7 @@ static void get_precip(void)
 	get_outstrleader(pd);
 
 #elif defined(STEPWAT)
+	TimeInt p = 0;
 	char str[OUTSTRLEN];
 	char str_iters[OUTSTRLEN];
 	if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
@@ -2021,24 +2022,36 @@ for(switchCounter=0;switchCounter<4;switchCounter++){
 	strcat(outstr, str);
 
 #elif defined(STEPWAT)
+	switch (pd)
+	{
+		case eSW_Day:
+			p = SW_Model.doy-1;
+			break;
+		case eSW_Week:
+			p = SW_Model.week-tOffset;
+			break;
+		case eSW_Month:
+			p = SW_Model.month-tOffset;
+			break;
+	}
 	if(isPartialSoilwatOutput == FALSE)
 	{
-		float old_snowmelt = SXW.val_snowmelt_avg[Globals.currYear][0];
-		float old_snowloss = SXW.val_snowloss_avg[Globals.currYear][0];
+		float old_snowmelt = SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear,p,0)];
+		float old_snowloss = SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear,p,0)];
 		// only snowmelt and snowloss change over iterations so only need to average those two
 
-		SXW.val_snowmelt_avg[Globals.currYear][0] = get_running_avg(SXW.val_snowmelt_avg[Globals.currYear][0], val_snowmelt);
-		SXW.val_snowloss_avg[Globals.currYear][0] = get_running_avg(SXW.val_snowloss_avg[Globals.currYear][0], val_snowloss);
+		SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear,p,0)] = get_running_avg(SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear,p,0)], val_snowmelt);
+		SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear,p,0)] = get_running_avg(SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear,p,0)], val_snowloss);
 
-		SXW.val_snowmelt_avg[Globals.currYear][1] += get_running_sqr(old_snowmelt, val_snowmelt, SXW.val_snowmelt_avg[Globals.currYear][0]);
-		SXW.val_snowloss_avg[Globals.currYear][1] += get_running_sqr(old_snowloss, val_snowloss, SXW.val_snowloss_avg[Globals.currYear][0]);
+		SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear,p,1)] += get_running_sqr(old_snowmelt, val_snowmelt, SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear,p,0)]);
+		SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear,p,1)] += get_running_sqr(old_snowloss, val_snowloss, SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear,p,0)]);
 
 		if(Globals.currIter == Globals.runModelIterations){
-			float std_snowmelt = sqrt(SXW.val_snowmelt_avg[Globals.currYear][1] / Globals.currIter);
-			float std_snowloss = sqrt(SXW.val_snowloss_avg[Globals.currYear][1] / Globals.currIter);
+			float std_snowmelt = sqrt(SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
+			float std_snowloss = sqrt(SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
 
 			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
-				val_rain, _Sep, val_snow, _Sep, SXW.val_snowmelt_avg[Globals.currYear][0], _Sep, std_snowmelt, _Sep, SXW.val_snowloss_avg[Globals.currYear][0], _Sep, std_snowloss);
+				val_rain, _Sep, val_snow, _Sep, SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear,p,0)], _Sep, std_snowmelt, _Sep, SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear,p,0)], _Sep, std_snowloss);
 			strcat(outstr, str);
 		}
 	}
@@ -2322,7 +2335,7 @@ static void get_swa(void)
 	/* added 21-Oct-03, cwb */
 	#ifdef STEPWAT
 		TimeInt p = 0;
-		memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
+
 		RealD val_forb = SW_MISSING;
 		RealD val_tree = SW_MISSING;
 		RealD val_shrub = SW_MISSING;
@@ -2440,16 +2453,28 @@ static void get_swa(void)
 			{
 				case eSW_Day:
 					p = SW_Model.doy-1;
+					if(p == 0)
+						memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
 					val = v->dysum.swcBulk[i];
 					break;
 				case eSW_Week:
 					p = SW_Model.week-tOffset;
+					if(p == 0)
+						memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
 					val = v->wkavg.swcBulk[i];
 					break;
 				case eSW_Month:
 					p = SW_Model.month-tOffset;
+					if(p == 0)
+						memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
 					val = v->moavg.swcBulk[i];
 					break;
+				/*case eSW_Year:
+					p = SW_Model.year;
+					//if(p == 0)
+						//memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
+					val = v->yravg.swcBulk[i];
+					break;*/
 			}
 
 			// first set each veg type to its crit value defined by inputs
@@ -2547,10 +2572,6 @@ static void get_swa(void)
 					float std_tree = sqrt(SXW.SWAbulk_tree_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
 					float std_shrub = sqrt(SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
 					float std_grass = sqrt(SXW.SWAbulk_grass_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
-
-					/*if(SW_Model.year == 1980 && i == 0 && p == 4)
-						printf("AVG (iteration %d) [%d, %d, %d] %f | %f\n", Globals.currIter, Globals.currYear, i, p, SXW.sum_dSWA_repartitioned[3][i][p],
-						 SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p)]);*/
 
 					sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_forb_avg[Iylp(Globals.currYear,i,p,0)],
 					 	_Sep, std_forb, _Sep, SXW.SWAbulk_tree_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_tree, _Sep, SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p,0)],
@@ -2939,7 +2960,7 @@ static void get_swcBulk(void)
 	/* --------------------------------------------------- */
 	/* added 21-Oct-03, cwb */
 #ifdef STEPWAT
-	TimeInt p;
+	TimeInt p = 0;
 
 #endif
 	LyrIndex i;
@@ -4995,6 +5016,7 @@ static void get_aet(void)
 #elif defined(STEPWAT)
 	char str[20];
 	char str_iters[20];
+	TimeInt p = 0;
 	if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		get_outstrleader(pd);
 
@@ -5049,27 +5071,32 @@ static void get_aet(void)
 	sprintf(str, "%c%7.6f", _Sep, val);
 	strcat(outstr, str);
 #elif defined(STEPWAT)
+	switch (pd)
+	{
+		case eSW_Day:
+			p = SW_Model.doy-1;
+			break;
+		case eSW_Week:
+			p = SW_Model.week-tOffset;
+			break;
+		case eSW_Month:
+			p = SW_Model.month-tOffset;
+			break;
+	}
+
 	if (isPartialSoilwatOutput == FALSE)
 	{
-		float old_val = SXW.aet_avg[Globals.currYear][0];
+		float old_val = SXW_AVG.aet_avg[Iypc(Globals.currYear,p,0)];
 
 		//running aet_avg
-		SXW.aet_avg[Globals.currYear][0] = get_running_avg(SXW.aet_avg[Globals.currYear][0], val);
+		SXW_AVG.aet_avg[Iypc(Globals.currYear,p,0)] = get_running_avg(SXW_AVG.aet_avg[Iypc(Globals.currYear,p,0)], val);
 
-		SXW.aet_avg[Globals.currYear][1] += get_running_sqr(old_val, val, SXW.aet_avg[Globals.currYear][0]);
-		/*if(SW_Model.year == 1980){
-			printf("aet: %f\n", val);
-		}*/
+		SXW_AVG.aet_avg[Iypc(Globals.currYear,p,1)] += get_running_sqr(old_val, val, SXW_AVG.aet_avg[Iypc(Globals.currYear,p,0)]);
 
 		if(Globals.currIter == Globals.runModelIterations){
-			float std_aet = sqrt(SXW.aet_avg[Globals.currYear][1] / Globals.currIter);
+			float std_aet = sqrt(SXW_AVG.aet_avg[Iypc(Globals.currYear,p,1)] / Globals.currIter);
 
-			/*if(SW_Model.year == 1980){
-				printf("std: %f\n", std_aet);
-				printf("avg: %f\n", SXW.aet_avg[Globals.currYear][0]);
-			}*/
-
-			sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW.aet_avg[Globals.currYear][0], _Sep, std_aet);
+			sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.aet_avg[Iypc(Globals.currYear,p,0)], _Sep, std_aet);
 			strcat(outstr, str);
 		}
 	}
