@@ -117,11 +117,6 @@ void SW_VPD_read(void) {
 				v->fractionForb = help_forb;
 				v->fractionBareGround = help_bareGround;
 
-				SW_VegProd.useVegType[0][0] = help_tree;
-				SW_VegProd.useVegType[1][0] = help_shrub;
-				SW_VegProd.useVegType[2][0] = help_grass;
-				SW_VegProd.useVegType[3][0] = help_forb;
-
 				break;
 
 				/* albedo */

@@ -2316,6 +2316,10 @@ static void get_swa(void)
 	#ifdef STEPWAT
 		TimeInt p;
 		memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
+		RealD val_forb = SW_MISSING;
+		RealD val_tree = SW_MISSING;
+		RealD val_shrub = SW_MISSING;
+		RealD val_grass = SW_MISSING;
 	#endif
 
 		LyrIndex i;
@@ -2391,27 +2395,19 @@ static void get_swa(void)
 					curr_crit_val = SW_VegProd.critSoilWater[j]; // get critical value for current veg type
 					// go through each critical value to see which ones need to be set for each veg_type
 					for(k=0; k<4; k++){
-						if(SW_VegProd.useVegType[j][0] == 0){ // set anything that is at a value not set to 0
-							swa_master[j][k][i] = 0.;
-						}
-						else if(SW_VegProd.useVegType[k][0] == 0){
-							swa_master[j][k][i] = 0.;
+						if(k == j){
+							// dont need to check for its own critical value
 						}
 						else{
-							if(k == j){
-								// dont need to check for its own critical value
+							new_crit_val = SW_VegProd.critSoilWater[k];
+							if(curr_crit_val < new_crit_val){ // need to store this value since it has access to it
+								swa_master[j][k][i] = swa_master[k][k][i]; // itclp(veg_type, new_critical_value, layer, timeperiod)
 							}
-							else{
-								new_crit_val = SW_VegProd.critSoilWater[k];
-								if(curr_crit_val < new_crit_val){ // need to store this value since it has access to it
-									swa_master[j][k][i] = swa_master[k][k][i]; // itclp(veg_type, new_critical_value, layer, timeperiod)
-								}
-								if(curr_crit_val > new_crit_val){ // need to set this value to 0 since it does not have access to it
-									swa_master[j][k][i] = 0.; // itclp(veg_type, new_critical_value, layer, timeperiod)
-								}
-								if(curr_crit_val == new_crit_val){
-									// do nothing, dont want to swap values
-								}
+							if(curr_crit_val > new_crit_val){ // need to set this value to 0 since it does not have access to it
+								swa_master[j][k][i] = 0.; // itclp(veg_type, new_critical_value, layer, timeperiod)
+							}
+							if(curr_crit_val == new_crit_val){
+								// do nothing, dont want to swap values
 							}
 						}
 					}
@@ -2449,6 +2445,26 @@ static void get_swa(void)
 					break;
 			}
 
+			// first set each veg type to its crit value defined by inputs
+			// calculate the SWA values
+			// for all veg types checking to see if set to be used or not in the .in files
+			if(SW_VegProd.fractionTree != 0)
+				val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+			else
+				val_tree = 0.;
+			if(SW_VegProd.fractionShrub != 0)
+				val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+			else
+				val_shrub = 0.;
+			if(SW_VegProd.fractionGrass != 0)
+				val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+			else
+				val_grass = 0.;
+			if(SW_VegProd.fractionForb != 0)
+				val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+			else
+				val_forb = 0.;
+
 			// ########################################################################
 			// # Getting values for SWA_master at each critical value it has acess to #
 			// ########################################################################
@@ -2458,10 +2474,10 @@ static void get_swa(void)
 			*/
 			//yesterday_swa = SXW.SWA_master[Itclp(1,1,i,p)];
 			// first set each veg type to its crit value defined by inputs
-			SXW.SWA_master[Itclp(0,0,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
-			SXW.SWA_master[Itclp(1,1,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
-			SXW.SWA_master[Itclp(2,2,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
-			SXW.SWA_master[Itclp(3,3,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+			SXW.SWA_master[Itclp(0,0,i,p)] = val_tree;
+			SXW.SWA_master[Itclp(1,1,i,p)] = val_shrub;
+			SXW.SWA_master[Itclp(2,2,i,p)] = val_grass;
+			SXW.SWA_master[Itclp(3,3,i,p)] = val_forb;
 
 			// need to check which other critical value each veg_type has access to aside from its own
 			//(i.e. if shrub=-3.9 then it also has access to -3.5 and -2.0)
@@ -2473,27 +2489,19 @@ static void get_swa(void)
 				curr_crit_val = SW_VegProd.critSoilWater[j]; // get critical value for current veg type
 				// go through each critical value to see which ones need to be set for each veg_type
 				for(k=0; k<4; k++){
-					if(SW_VegProd.useVegType[j][0] == 0){ // set anything that is at a value not set to 0
-						SXW.SWA_master[Itclp(j,k,i,p)] = 0.;
-					}
-					else if(SW_VegProd.useVegType[k][0] == 0){
-						SXW.SWA_master[Itclp(j,k,i,p)] = 0.;
+					if(k == j){
+						// dont need to check for its own critical value
 					}
 					else{
-						if(k == j){
-							// dont need to check for its own critical value
+						new_crit_val = SW_VegProd.critSoilWater[k];
+						if(curr_crit_val < new_crit_val){ // need to store this value since it has access to it
+							SXW.SWA_master[Itclp(j,k,i,p)] = SXW.SWA_master[Itclp(k,k,i,p)]; // itclp(veg_type, new_critical_value, layer, timeperiod)
 						}
-						else{
-							new_crit_val = SW_VegProd.critSoilWater[k];
-							if(curr_crit_val < new_crit_val){ // need to store this value since it has access to it
-								SXW.SWA_master[Itclp(j,k,i,p)] = SXW.SWA_master[Itclp(k,k,i,p)]; // itclp(veg_type, new_critical_value, layer, timeperiod)
-							}
-							if(curr_crit_val > new_crit_val){ // need to set this value to 0 since it does not have access to it
-								SXW.SWA_master[Itclp(j,k,i,p)] = 0.; // itclp(veg_type, new_critical_value, layer, timeperiod)
-							}
-							if(curr_crit_val == new_crit_val){
-								// do nothing, dont want to swap values
-							}
+						if(curr_crit_val > new_crit_val){ // need to set this value to 0 since it does not have access to it
+							SXW.SWA_master[Itclp(j,k,i,p)] = 0.; // itclp(veg_type, new_critical_value, layer, timeperiod)
+						}
+						if(curr_crit_val == new_crit_val){
+							// do nothing, dont want to swap values
 						}
 					}
 				}
@@ -2573,14 +2581,27 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p){
 	RealD val = SW_MISSING;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		float veg_type_in_use; // set to current veg type fraction value to avoid multiple if loops. should just need 1 instead of 3 now.
+		float inner_loop_veg_type; // set to inner loop veg type
 		smallestCritVal = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[0]];
 		largestCritVal = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[3]];
 		RealF dSWA_bulk[16][16][20];
 		RealF dSWA_bulk_repartioned[16][16][20];
 		RealF dSWA_repartitioned_sum[16][16];
+
 		// loop through each veg type to get dSWAbulk
 		for(curr_vegType = 3; curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
 			curr_crit_rank_index = SW_VegProd.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
+			// set veg type fraction here
+			if(curr_crit_rank_index == 0)
+				veg_type_in_use = SW_VegProd.fractionTree;
+			else if(curr_crit_rank_index == 1)
+				veg_type_in_use = SW_VegProd.fractionShrub;
+			else if(curr_crit_rank_index == 2)
+				veg_type_in_use = SW_VegProd.fractionGrass;
+			else
+				veg_type_in_use = SW_VegProd.fractionForb;
+
 			for(kv=curr_vegType; kv>=0; kv--){
 				crit_val = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[kv]]; // get crit value at current index
 				kv_veg_type = SW_VegProd.rank_SWPcrits[kv]; // get index for veg_type. dont want to access swa_master at rank_SWPcrits index
@@ -2592,7 +2613,7 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p){
 					prev_crit_val = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[kv]]; // get crit value for index lower
 					prev_crit_veg_type = SW_VegProd.rank_SWPcrits[kv]; // get veg type that belongs to the corresponding critical value
 				}
-				if(SW_VegProd.useVegType[curr_crit_rank_index][0] == 0){ // [0=tree(-2.0,off), 1=shrub(-3.9,on), 2=grass(-3.5,on), 3=forb(-2.0,on)]
+				if(veg_type_in_use == 0){ // [0=tree(-2.0,off), 1=shrub(-3.9,on), 2=grass(-3.5,on), 3=forb(-2.0,on)]
 					dSWA_bulk[curr_crit_rank_index][kv_veg_type][i] = 0.; // set to 0 to ensure no absent values
 					swa_master[curr_crit_rank_index][kv_veg_type][i] = 0.;
 					dSWA_bulk_repartioned[curr_crit_rank_index][kv_veg_type][i] = 0.;
@@ -2622,7 +2643,7 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p){
 					else{ // all values other than largest well need repartitioning
 						if(crit_val == smallestCritVal){ // if smallest value then all veg_types have access to it so just need to multiply by its fraction
 							dSWA_bulk_repartioned[curr_crit_rank_index][kv_veg_type][i] =
-								dSWA_bulk[curr_crit_rank_index][kv_veg_type][i] * SW_VegProd.useVegType[curr_crit_rank_index][1];
+								dSWA_bulk[curr_crit_rank_index][kv_veg_type][i] * veg_type_in_use;
 								// multiply by fraction for index of curr_vegType not kv
 						}
 						else{ // critical values that more than one veg type have access to but less than all veg types
@@ -2630,10 +2651,20 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p){
 							// need to calculute new fraction for these since sum of them no longer adds up to 1. do this by adding fractions values
 							// of veg types who have access and then dividing these fraction values by the total sum. keeps the ratio and adds up to 1
 							for(j=3;j>=0;j--){ // go through all critical values and sum the fractions of the veg types who have access
+								// set veg type fraction here
+								if(j == 0)
+									inner_loop_veg_type = SW_VegProd.fractionTree;
+								else if(j == 1)
+									inner_loop_veg_type = SW_VegProd.fractionShrub;
+								else if(j == 2)
+									inner_loop_veg_type = SW_VegProd.fractionGrass;
+								else
+									inner_loop_veg_type = SW_VegProd.fractionForb;
+
 								if(SW_VegProd.critSoilWater[j] <= crit_val)
-									vegFractionSum += SW_VegProd.useVegType[j][1];
+									vegFractionSum += inner_loop_veg_type;
 							}
-							newFraction = SW_VegProd.useVegType[curr_crit_rank_index][1] / vegFractionSum; // divide veg fraction by sum to get new fraction value
+							newFraction = veg_type_in_use / vegFractionSum; // divide veg fraction by sum to get new fraction value
 							dSWA_bulk_repartioned[curr_crit_rank_index][kv_veg_type][i] =
 								dSWA_bulk[curr_crit_rank_index][kv_veg_type][i] * newFraction;
 						}
@@ -2667,6 +2698,8 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p){
 			printf("---------------------\n\n");*/
 
 	#elif defined(STEPWAT)
+		float veg_type_in_use; // set to current veg type fraction value to avoid multiple if loops. should just need 1 instead of 3 now.
+		float inner_loop_veg_type; // set to inner loop veg type
 		smallestCritVal = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[0]];
 		largestCritVal = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[3]];
 
@@ -2708,6 +2741,17 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p){
 		// loop through each veg type to get dSWAbulk
 		for(curr_vegType = 3; curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
 			curr_crit_rank_index = SXW.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
+
+			// set veg type fraction here
+			if(curr_crit_rank_index == 0)
+				veg_type_in_use = SW_VegProd.fractionTree;
+			else if(curr_crit_rank_index == 1)
+				veg_type_in_use = SW_VegProd.fractionShrub;
+			else if(curr_crit_rank_index == 2)
+				veg_type_in_use = SW_VegProd.fractionGrass;
+			else
+				veg_type_in_use = SW_VegProd.fractionForb;
+
 			for(kv=curr_vegType; kv>=0; kv--){
 				crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv]]; // get crit value at current index
 				kv_veg_type = SXW.rank_SWPcrits[kv]; // get index for veg_type. dont want to access swa_master at rank_SWPcrits index
@@ -2722,30 +2766,30 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p){
 
 					//printf("%f,%f\n\n", crit_val, prev_crit_val);
 
-				if(SW_VegProd.useVegType[curr_crit_rank_index][0] == 0){ // [0=tree(-2.0,off), 1=shrub(-3.9,on), 2=grass(-3.5,on), 3=forb(-2.0,on)]
-					// do nothing since veg type is turned off
-					//printf("%d,%d\n", curr_crit_rank_index, kv_veg_type);
-					SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
-					SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
-					SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
-				}
-				else{ // check if need to recalculate for veg types in use
-					if(crit_val < prev_crit_val){ // if true then we need to recalculate
-						if(SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] == 0){
-							SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
+					if(veg_type_in_use == 0){ // [0=tree(-2.0,off), 1=shrub(-3.9,on), 2=grass(-3.5,on), 3=forb(-2.0,on)]
+						// do nothing since veg type is turned off
+						//printf("%d,%d\n", curr_crit_rank_index, kv_veg_type);
+						SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
+						SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
+						SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
+					}
+					else{ // check if need to recalculate for veg types in use
+						if(crit_val < prev_crit_val){ // if true then we need to recalculate
+							if(SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] == 0){
+								SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
+							}
+							else{
+								SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] =
+									SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)]-SXW.SWA_master[Itclp(curr_crit_rank_index,prev_crit_veg_type,i,p)];
+								}
+						}
+						else if(crit_val == prev_crit_val){ // critical values equal just set to itself
+							SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)];
+							//printf("%f,%f\n\n", crit_val, prev_crit_val);
 						}
 						else{
-							SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] =
-								SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)]-SXW.SWA_master[Itclp(curr_crit_rank_index,prev_crit_veg_type,i,p)];
-							}
-					}
-					else if(crit_val == prev_crit_val){ // critical values equal just set to itself
-						SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)];
-						//printf("%f,%f\n\n", crit_val, prev_crit_val);
-					}
-					else{
-						// do nothing if crit val >. this will be handled later
-					}
+							// do nothing if crit val >. this will be handled later
+						}
 					/* ##############################################################
 						below if else blocks are for redistributing dSWAbulk values
 					############################################################## */
@@ -2754,7 +2798,7 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p){
 					else{ // all values other than largest well need repartitioning
 						if(crit_val == smallestCritVal){ // if smallest value then all veg_types have access to it so just need to multiply by its fraction
 							SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] =
-								SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] * SW_VegProd.useVegType[curr_crit_rank_index][1];
+								SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] * veg_type_in_use;
 								// multiply by fraction for index of curr_vegType not kv
 						}
 						else{ // critical values that more than one veg type have access to but less than all veg types
@@ -2762,10 +2806,20 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p){
 							// need to calculute new fraction for these since sum of them no longer adds up to 1. do this by adding fractions values
 							// of veg types who have access and then dividing these fraction values by the total sum. keeps the ratio and adds up to 1
 							for(j=3;j>=0;j--){ // go through all critical values and sum the fractions of the veg types who have access
+								// set veg type fraction here
+								if(j == 0)
+									inner_loop_veg_type = SW_VegProd.fractionTree;
+								else if(j == 1)
+									inner_loop_veg_type = SW_VegProd.fractionShrub;
+								else if(j == 2)
+									inner_loop_veg_type = SW_VegProd.fractionGrass;
+								else
+									inner_loop_veg_type = SW_VegProd.fractionForb;
+
 								if(SW_VegProd.critSoilWater[j] <= crit_val)
-									vegFractionSum += SW_VegProd.useVegType[j][1];
+									vegFractionSum += inner_loop_veg_type;
 							}
-							newFraction = SW_VegProd.useVegType[curr_crit_rank_index][1] / vegFractionSum; // divide veg fraction by sum to get new fraction value
+							newFraction = veg_type_in_use / vegFractionSum; // divide veg fraction by sum to get new fraction value
 							SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] =
 								SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] * newFraction; // get repartioned soilwater using new fraction value
 						}
