@@ -256,6 +256,8 @@ int finalValue_dy = -1,
 static Bool bFlush; /* process partial period ? */
 static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
 
+int useTimeStep = 0; /* flag to determine whether or not the line TIMESTEP exists */
+
 /* These MUST be in the same order as enum OutKey in
  * SW_Output.h */
 static char *key2str[] =
@@ -538,7 +540,6 @@ void SW_OUT_read(void)
 			last[4], /* last doy for output, if "end", ==366 */
 			outfile[MAX_FILENAMESIZE];
 	int first; /* first doy for output */
-	int useTimeStep = 0; /* flag to determine whether or not the line TIMESTEP exists */
 
 	MyFileName = SW_F_name(eOutput);
 	f = OpenFile(MyFileName, "r");
@@ -552,22 +553,32 @@ void SW_OUT_read(void)
 		x = sscanf(inbuf, "%s %s %s %d %s %s", keyname, sumtype, period, &first,
 				last, outfile);
 
+		#ifdef STEPWAT
+			// checking weather to use timestep or not
+			if (Str_CompareI(keyname, "USE_TIMESTEP") == 0){
+				numPeriod = sscanf(inbuf, "%s %s", keyname, timeStep[0]);
+				if(strcmp(timeStep[0], "0")==0)
+					useTimeStep = 0;
+				else
+					useTimeStep = 1;
+	 		 	continue;
+		 	}
+		#endif
+
 		if (Str_CompareI(keyname, "TIMESTEP") == 0)	// condition to read in the TIMESTEP line in outsetup.in
 		{
 			numPeriod = sscanf(inbuf, "%s %s %s %s %s", keyname, timeStep[0],
 					timeStep[1], timeStep[2], timeStep[3]);	// need to rescan the line because you are looking for all strings, unlike the original scan
 			numPeriod--;// decrement the count to make sure to not count keyname in the number of periods
-			useTimeStep = 1;
 
+			char *dayCheck = strstr(inbuf, "dy");
+			char *weekCheck = strstr(inbuf, "wk");
+			char *monthCheck = strstr(inbuf, "mo");
+			char *yearCheck = strstr(inbuf, "yr");
 
 			// Create Timestep files defined in outsetup.in
 			#if !defined(STEPWAT) && !defined(RSOILWAT)
-				// check if these timesteps are defined (strstr checks for substrings)
-				char *dayCheck = strstr(inbuf, "dy");
-				char *weekCheck = strstr(inbuf, "wk");
-				char *monthCheck = strstr(inbuf, "mo");
-				char *yearCheck = strstr(inbuf, "yr");
-
+				useTimeStep = 1;
 				// create file for defined timesteps
 				if(dayCheck != NULL)
 					stat_Output_Daily_CSV_Summary(-1);
@@ -582,10 +593,6 @@ void SW_OUT_read(void)
 				// create output files if flag turned on and only for last iteration
 				if (isPartialSoilwatOutput == FALSE || storeAllIterations)
 				{
-					char *dayCheck = strstr(inbuf, "dy");
-					char *weekCheck = strstr(inbuf, "wk");
-					char *monthCheck = strstr(inbuf, "mo");
-					char *yearCheck = strstr(inbuf, "yr");
 					//if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations-1){
 					if(isPartialSoilwatOutput == FALSE){
 						if(Globals.currIter == Globals.runModelIterations-1){
@@ -613,7 +620,7 @@ void SW_OUT_read(void)
 					}
 				}
 				//else
-					useTimeStep = 0; // setting timestep to 0 since we only wanted the values for creating files.
+					//useTimeStep = 0; // setting timestep to 0 since we only wanted the values for creating files.
 													// only using the timeperiod defined for each individual variable
 			#endif
 
@@ -2314,7 +2321,7 @@ static void get_swa(void)
 	/* --------------------------------------------------- */
 	/* added 21-Oct-03, cwb */
 	#ifdef STEPWAT
-		TimeInt p;
+		TimeInt p = 0;
 		memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
 		RealD val_forb = SW_MISSING;
 		RealD val_tree = SW_MISSING;
@@ -2481,7 +2488,7 @@ static void get_swa(void)
 
 			// need to check which other critical value each veg_type has access to aside from its own
 			//(i.e. if shrub=-3.9 then it also has access to -3.5 and -2.0)
-			int j, k, curr_crit_rank_index;
+			int j = 0, k = 0, curr_crit_rank_index = 0;
 			float curr_crit_val, new_crit_val;
 
 			// go through each veg type
@@ -6357,8 +6364,8 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers){
 	OutKey colHeadersLoop;
 	LyrIndex evap_loop;
-	char *colHeaders[500];
-	char *colHeadersSoil[500]; // might need to make this bigger for runs that have close to max layer size
+	char *colHeaders[5000];
+	char *colHeadersSoil[5000]; // might need to make this bigger for runs that have close to max layer size
 	memset(&colHeaders, 0, sizeof(colHeaders));
 	memset(&colHeadersSoil, 0, sizeof(colHeadersSoil));
 
@@ -6375,7 +6382,8 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 		#if !defined(STEPWAT) && !defined (RSOILWAT)
 			if(SW_Output[colHeadersLoop].use)
 		#else
-			if(SW_Output[colHeadersLoop].use && SW_Output[colHeadersLoop].period == outFileTimestep-1)
+			//if(SW_Output[colHeadersLoop].use && SW_Output[colHeadersLoop].period == outFileTimestep-1)
+			if((SW_Output[colHeadersLoop].use && useTimeStep == 0 && SW_Output[colHeadersLoop].period == outFileTimestep-1) || (SW_Output[colHeadersLoop].use && useTimeStep == 1))
 		#endif
 		{
 			if(strcmp(key2str[colHeadersLoop], "VWCBULK")==0 || strcmp(key2str[colHeadersLoop], "VWCMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWCBULK")==0
