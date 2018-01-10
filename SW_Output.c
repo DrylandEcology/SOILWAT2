@@ -2335,6 +2335,8 @@ static void get_swa(void)
 	/* added 21-Oct-03, cwb */
 	#ifdef STEPWAT
 		TimeInt p = 0;
+		char str[OUTSTRLEN];
+		char str_iters[OUTSTRLEN];
 
 		RealD val_forb = SW_MISSING;
 		RealD val_tree = SW_MISSING;
@@ -2440,8 +2442,6 @@ static void get_swa(void)
 				strcat(outstr, str);
 		}
 	#elif defined(STEPWAT)
-		char str[OUTSTRLEN];
-		char str_iters[OUTSTRLEN];
 		//float yesterday_swa, rvariance;
 
 		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
@@ -2469,12 +2469,12 @@ static void get_swa(void)
 						memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
 					val = v->moavg.swcBulk[i];
 					break;
-				/*case eSW_Year:
+				case eSW_Year:
 					p = SW_Model.year;
 					//if(p == 0)
 						//memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
 					val = v->yravg.swcBulk[i];
-					break;*/
+					break;
 			}
 
 			// first set each veg type to its crit value defined by inputs
@@ -3044,6 +3044,10 @@ static void get_swcBulk(void)
 				p = SW_Model.month-tOffset;
 				val = v->moavg.swcBulk[i];
 				break;// print previous to current
+			case eSW_Year:
+				p = SW_Model.year;
+				val = v->yravg.swcBulk[i];
+				break;
 			// YEAR should never be used with STEPWAT
 		}
 		if (isPartialSoilwatOutput == FALSE)
@@ -4480,7 +4484,6 @@ static void get_interception(void)
 #endif
 }
 
-// TODO: on soilinfilt
 static void get_soilinf(void)
 {
 	/* --------------------------------------------------- */
@@ -6896,19 +6899,19 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 		{
 			case(1):
 				col1Head = "Year";
-				col2Head = "Day"; //TODO: have col 2 for proper timestep, not hardcoded to day
+				col2Head = "Day";
 				fprintf(soil_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
 				fprintf(regular_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
 				break;
 			case(2):
 				col1Head = "Year";
-				col2Head = "Week"; //TODO: have col 2 for proper timestep, not hardcoded to day
+				col2Head = "Week";
 				fprintf(soil_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
 				fprintf(regular_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
 				break;
 			case(3):
 				col1Head = "Year";
-				col2Head = "Month"; //TODO: have col 2 for proper timestep, not hardcoded to day
+				col2Head = "Month";
 				fprintf(soil_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeadersSoil); // write columns to file
 				fprintf(regular_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, colHeaders); // write columns to file
 				break;
