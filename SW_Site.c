@@ -107,6 +107,35 @@ static char *MyFileName;
 static void _read_layers(void);
 
 
+/**
+	\fn void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n)
+	\brief Calculate soil moisture characteristics for each layer.
+
+  Saturated moisture content for matric density (thetasMatric), saturation matric
+	potential (psisMatric), and the slope of the retention curve (bMatric) for each
+	layer are calculated using equations found in Cosby et al. (1984). \cite Cosby1984
+	The saturated moisture content in the bulk density for each layer (swcBulk_saturated)
+	is calculated using equations found in Saxton and Rawls (2006; Equations 2, 3 & 5).
+	\cite Saxton2006
+
+	Return from the function is void. Calculated values stored in SW_Site object.
+
+	Bulk density is matric density plus gravel.
+
+	sand + clay + silt must equal one. Fraction silt is calculated: 1 - (sand + clay).
+
+	\param fractionGravel. The fraction of gravel in a layer by volume.
+	\param sand. The fraction of sand in a layer by weight.
+	\param clay. The fraction of clay in a layer by weight.
+	\param n. Soil layer index.
+
+	\return thetasMatric. Saturated water content for soil matrix volume (m^3/m^3).
+	\return psisMatric. Saturation matric potential (MPa).
+	\return bMatric. Slope of the linear log-log retention curve (unitless).
+	\return swcBulk_saturated. The saturated water content for given bulk density (cm/layer).
+
+*/
+
 //STEPWAT calls this function so no longer private
 void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 	/* --------------------------------------------------- */

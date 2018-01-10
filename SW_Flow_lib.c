@@ -119,9 +119,29 @@ static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 /*              Local Function Definitions             */
 /* --------------------------------------------------- */
 
-/**********************************************************************
- PURPOSE: Calculate the water intercepted by grasses.
+/**
+	\fn void grass_intercepted_water(double *pptleft, double *wintgrass, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
+	\brief Calculate the water intercepted by grasses.
 
+	Equations based on Corbet and Crouse (1968). \cite Corbett1968
+
+  \param pptleft.
+	\param wintgrass.
+	\param ppt. daily precipitation
+	\param vegcov. vegetation cover of grass for the day (based on monthly biomass
+  values, see the routine "initprod").
+	\param scale. Scale paramater. Used to represent snow depth.
+	\param a. a parameter for intercept of grass interception equation.
+	\param b. b parameter for intercept of grass interception equation.
+	\param c. c parameter for slope of grass interception equation.
+	\param d. d parameter for slope of grass interception equation.
+
+	\return pptleft. Amount of precipitation left after interception.
+	\return wintgrass. Amount of precipitation interception by grass.
+*/
+
+
+/**********************************************************************
  HISTORY:
  4/30/92  (SLC)
  7/1/92   (SLC) Reset pptleft to 0 if less than 0 (due to round off)
@@ -137,15 +157,6 @@ static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
  *wintstcr = par1 * .026 * ppt + 0.094 * par2;
 
  21-Oct-03 (cwb) added MAX_WINTLIT line
-
- INPUTS:
- ppt     - precip. for the day
- vegcov  - vegetation cover for the day (based on monthly biomass
- values, see the routine "initprod")
-
- OUTPUT:
- pptleft -  precip. left after interception by standing crop.
- wintstcr - amount of water intercepted by standing crop.
  **********************************************************************/
 void grass_intercepted_water(double *pptleft, double *wintgrass, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
 	double intcpt, slope;
@@ -300,31 +311,40 @@ void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, 
 	}
 }
 
+/**
+	\fn void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft,
+	unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
+	double *standingWater)
+
+	\brief Infiltrate water into soil layers under high water conditions. Otherwise
+	known as saturated percolation.
+
+	\param swc.  An array of doubles. Soilwater content in each layer before drainage.
+	\param swcfc. An array of doubles. Soilwater content in each layer at field capacity.
+	\param swcsat. An array of doubles. Soilwater content in each layer at saturation.
+
+	\param impermeability. An array of doubles. Impermeability measures for each layer.
+	\param pptleft. Daily precipitation available to the soil.
+	\param nlyrs. Number of layers to drain from.
+
+	\return drain An array of doubles. Drainage amount in each layer
+	\return swc. An array of doubles. Soilwater content in each layer after drainage.
+	\return standingWater. A double. Remaining water on surface.
+	\return drainout. A double. Drainage from last layer.
+
+*/
+/**********************************************************************
+ HISTORY:
+ 4/30/92  (SLC)
+ 1/14/02 - (cwb) fixed off by one error in loop.
+ 10/20/03 - (cwb) added drainout variable to return drainage
+ out of lowest layer
+ **********************************************************************/
+
 void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft,
 	unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
 	double *standingWater) {
-			/**********************************************************************
-			 PURPOSE: Infilitrate water into soil layers under high water
-			 conditions.
 
-			 HISTORY:
-			 4/30/92  (SLC)
-			 1/14/02 - (cwb) fixed off by one error in loop.
-			 10/20/03 - (cwb) added drainout variable to return drainage
-			 out of lowest layer
-
-			 INPUTS:
-			 swc - soilwater content before drainage.
-			 swcfc    - soilwater content at field capacity.
-			 pptleft  - precip. available to the soil.
-			 nlyrs - number of layers to drain from
-
-			 OUTPUTS:
-			 drain  - drainage from layers
-			 swc - soilwater content after water has been drained
-			 standingWater
-			 drainout
-			 **********************************************************************/
 	unsigned int i;
 	int j;
 	double d[nlyrs];
