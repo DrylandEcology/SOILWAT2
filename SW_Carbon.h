@@ -27,11 +27,6 @@
   } SW_CARBON;
 
   /* Function Declarations */
-  #ifdef RSOILWAT
-    SEXP onGet_SW_CARBON(void);
-    void onSet_swCarbon(SEXP object);
-  #endif
-
   void SW_CBN_construct(void);
   void SW_CBN_read(void);
   void calculate_CO2_multipliers(void);

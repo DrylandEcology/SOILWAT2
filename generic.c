@@ -9,7 +9,6 @@
 /* so we can't make it Bool.  But we don't have to explicitly */
 /* extern it in each module, just include generic.h. */
 /* Just be sure to set logged = FALSE as the first step in main(). */
-/* See also LogError() below.  */
 
 /*
  History:
@@ -21,15 +20,6 @@
 
 #include "generic.h"
 #include "filefuncs.h"
-
-#ifdef RSOILWAT
-	extern int logNote;
-	extern int logWarn;
-	extern int logFatl;
-	extern SEXP Rlogfile;
-	extern int RlogIndex;
-#endif
-
 
 
 static void uncomment_cstyle(char *p) {
@@ -187,53 +177,6 @@ void UnComment(char *s) {
 	Str_TrimRight(s);
 }
 
-/**************************************************************/
-void LogError(FILE *fp, const int mode, const char *fmt, ...) {
-	/* uses global variable logged to indicate that a log message
-	 * was sent to output, which can be used to inform user, etc.
-	 *
-	 *  9-Dec-03 (cwb) Modified to accept argument list similar
-	 *           to fprintf() so sprintf(errstr...) doesn't need
-	 *           to be called each time replacement args occur.
-	 */
-
-	char outfmt[50 + strlen(fmt)]; /* to prepend err type str */
-	va_list args;
-
-	va_start(args, fmt);
-
-	if (LOGNOTE & mode)
-		strcpy(outfmt, "NOTE: ");
-	else if (LOGWARN & mode)
-		strcpy(outfmt, "WARNING: ");
-	else if (LOGERROR & mode)
-		strcpy(outfmt, "ERROR: ");
-
-	strcat(outfmt, fmt);
-	strcat(outfmt, "\n");
-
-	#ifdef RSOILWAT
-		if (fp != NULL) {
-			REvprintf(outfmt, args);
-		}
-
-	#else
-		int check_eof;
-		check_eof = (EOF == vfprintf(fp, outfmt, args));
-
-		if (check_eof)
-			sw_error(0, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
-		fflush(fp);
-	#endif
-
-
-	logged = TRUE;
-	va_end(args);
-
-	if (LOGEXIT & mode) {
-		sw_error(-1, "@ generic.c LogError");
-	}
-}
 
 /**************************************************************/
 Bool Is_LeapYear(int yr) {

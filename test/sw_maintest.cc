@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
     because SOILWAT2 uses (global) states. This is otherwise not comptable with the c++
     approach used by googletest.
   */
-  logged = FALSE;
+  logged = swFALSE;
   logfp = stdout;
 
   // Emulate 'init_args()'
@@ -70,8 +70,8 @@ int main(int argc, char **argv) {
     swprintf("Invalid project directory (%s)", dir_test);
   }
   strcpy(_firstfile, masterfile_test);
-  QuietMode = TRUE;
-  EchoInits = FALSE;
+  QuietMode = swTRUE;
+  EchoInits = swFALSE;
 
   // Initialize SOILWAT2 variables and read values from example input file
   Reset_SOILWAT2_after_UnitTest();

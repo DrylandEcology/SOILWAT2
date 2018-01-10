@@ -26,25 +26,44 @@
 #include <math.h>
 #include <assert.h>
 
+#ifdef RSOILWAT
+  #include <R_ext/Print.h>
+#endif
+
 /***************************************************
  * Basic definitions
  ***************************************************/
 
 /* ------ Convenience macros. ------ */
 /* integer to boolean */
-#define itob(i) ((i)?TRUE:FALSE)
+#define itob(i) ((i)?swTRUE:swFALSE)
+
 /* integer versions */
-#define max(a,b) (((a) > (b)) ? (a) : (b))
-#define min(a,b) (((a) < (b)) ? (a) : (b))
+#ifndef max
+  #define max(a,b) (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef min
+  #define min(a,b) (((a) < (b)) ? (a) : (b))
+#endif
+
 /* floating point versions work for float or double */
-#define fmax(a,b) ( ( GT((a),(b)) ) ? (a) : (b))
-#define fmin(a,b) ( ( LT((a),(b)) ) ? (a) : (b))
+#ifndef fmax
+  #define fmax(a,b) ( ( GT((a),(b)) ) ? (a) : (b))
+#endif
+
+#ifndef fmin
+  #define fmin(a,b) ( ( LT((a),(b)) ) ? (a) : (b))
+#endif
+
 /* absolute value for floating point values */
-#define abs(a)  ( ((a) < 0) ? (-a) : (a) )
+#if !defined(RSOILWAT) && !defined(abs)
+  #define abs(a)  ( ((a) < 0) ? (-a) : (a) )
+#endif
+
 /* redefine sqrt for double (default) or float */
-#ifdef NO_SQRTF
-/* the case for Borland's compiler */
-#define sqrtf sqrt
+#ifdef NO_SQRTF /* the case for Borland's compiler */
+  #define sqrtf sqrt
 #endif
 
 #define sqrt(x) ((sizeof(x)==sizeof(float)) ? sqrtf(x) : sqrt(x))
@@ -67,13 +86,11 @@ typedef unsigned int IntU;
 typedef short int IntS;
 typedef unsigned short IntUS;
 typedef long IntL;
-#ifndef RSOILWAT
+
 typedef enum {
-	FALSE = (1 != 1), TRUE = (1 == 1)
+  swFALSE = (1 != 1), swTRUE = (1 == 1) //cannot use 'TRUE' and 'FALSE' because they are defined by R
 } Bool;
-#else
-typedef int Bool;
-#endif
+
 typedef unsigned char byte;
 
 /* an attempt to facilitate integer implementation of real */
@@ -193,7 +210,6 @@ char *Str_ToUpper(char *s, char *r);
 char *Str_ToLower(char *s, char *r);
 int Str_CompareI(char *t, char *s);
 void UnComment(char *s);
-void LogError(FILE *fp, const int mode, const char *fmt, ...);
 Bool Is_LeapYear(int yr);
 double interpolation(double x1, double x2, double y1, double y2, double deltaX);
 void st_getBounds(unsigned int *x1, unsigned int *x2, unsigned int *equal, unsigned int size, double depth, double bounds[]);

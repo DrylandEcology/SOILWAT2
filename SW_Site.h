@@ -48,12 +48,7 @@
 #define SW_SITE_H
 
 #include "SW_Defines.h"
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
+
 
 typedef unsigned int LyrIndex;
 
@@ -135,17 +130,19 @@ typedef struct {
 
 } SW_SITE;
 
+
+void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n);
+void calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel, LyrIndex n);
+
+void init_site_info(void);
 void SW_SIT_read(void);
 void SW_SIT_construct(void);
-void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n);
+void _echo_inputs(void);
 
 /* these used to be in Layers */
 void SW_SIT_clear_layers(void);
-#ifdef RSOILWAT
-	SEXP onGet_SW_SIT();
-	void onSet_SW_SIT(SEXP SW_SIT);
-	SEXP onGet_SW_LYR();
-#endif
+LyrIndex _newlayer(void);
+
 #ifdef DEBUG_MEM
 	void SW_SIT_SetMemoryRefs(void);
 #endif
