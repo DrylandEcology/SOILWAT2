@@ -43,4 +43,8 @@ extern char _firstfile[];
 void Reset_SOILWAT2_after_UnitTest(void) {
   SW_CTL_init_model(_firstfile);
   SW_CTL_obtain_inputs();
+
+  // Next two function calls will require SW_Output.c (see issue #85 'Make SW_Output.c comptabile with c++ to include in unit testing code')
+  // SW_OUT_set_ncol(); // as of yet not used in SOILWAT2-standalone
+  // SW_OUT_set_colnames(); // as of yet not used in SOILWAT2-standalone
 }

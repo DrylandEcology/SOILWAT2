@@ -44,12 +44,12 @@ void RandSeed(signed long seed) {
 		/*    _randseed %= 0xffff; */
 		_randseed *= -1;
 	} else {
-		_randseed = abs(seed) * -1;
+		_randseed = labs(seed) * -1;
 	}
 
 #ifndef RSOILWAT
 #if RAND_FAST
-	srand(abs(_randseed));
+	srand(labs(_randseed));
 #endif
 #endif
 

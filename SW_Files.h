@@ -16,13 +16,7 @@
 #ifndef SW_FILES_H
 	#define SW_FILES_H
 
-#define SW_NFILES 16
-#ifdef RSOILWAT
-	#include <R.h>
-	#include <Rdefines.h>
-	#include <Rconfig.h>
-	#include <Rinternals.h>
-#endif
+#define SW_NFILES 14
 
 /* The number of enum elements between eNoFile and
  * eEndFile (not inclusive) must match SW_NFILES.
@@ -30,16 +24,13 @@
  * input from files.in.
  */
 typedef enum {
-	eNoFile = -1, eFirst = 0, eModel, eLog, eSite, eLayers, eWeather, eMarkovProb, eMarkovCov, eSky, eVegProd, eVegEstab, eCarbon, eSoilwat, eOutput, eEndFile,
+	eNoFile = -1, eFirst = 0, eModel, eLog, eSite, eLayers, eWeather, eMarkovProb,
+	eMarkovCov, eSky, eVegProd, eVegEstab, eCarbon, eSoilwat, eOutput, eEndFile,
 } SW_FileIndex;
 
 void SW_F_read(const char *s);
 char *SW_F_name(SW_FileIndex i);
 void SW_F_construct(const char *firstfile);
-#ifdef RSOILWAT
-	SEXP onGet_SW_F();
-	void onSet_SW_F(SEXP SW_F_construct);
-#endif
 void SW_WeatherPrefix(char prefix[]);
 void SW_OutputPrefix(char prefix[]);
 

@@ -13,12 +13,6 @@
 #include <stdio.h>
 #include <float.h>
 
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 
 /***************************************************
  * Basic definitions

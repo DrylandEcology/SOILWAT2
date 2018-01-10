@@ -68,12 +68,9 @@ static char *MyFileName;
 /*             Private Function Declarations           */
 /* --------------------------------------------------- */
 static void _sanity_check(unsigned int sppnum);
-static void _spp_init(unsigned int sppnum);
 static void _read_spp(const char *infile);
 static void _checkit(TimeInt doy, unsigned int sppnum);
 static void _zero_state(unsigned int sppnum);
-static unsigned int _new_species(void);
-static void _echo_inits(void);
 
 /* =================================================== */
 /* =================================================== */
@@ -126,12 +123,12 @@ void SW_VES_read(void) {
 
 	MyFileName = SW_F_name(eVegEstab);
 	f = OpenFile(MyFileName, "r");
-	SW_VegEstab.use = TRUE;
+	SW_VegEstab.use = swTRUE;
 
 	/* if data file empty or useflag=0, assume no
 	 * establishment checks and just continue the model run. */
 	if (!GetALine(f, inbuf) || *inbuf == '0') {
-		SW_VegEstab.use = FALSE;
+		SW_VegEstab.use = swFALSE;
 		if (EchoInits)
 			LogError(logfp, LOGNOTE, "Establishment not used.\n");
 		CloseFile(&f);
@@ -147,63 +144,10 @@ void SW_VES_read(void) {
 	if (SW_VegEstab.count > 0)
 		SW_VegEstab.yrsum.days = (TimeInt *) Mem_Calloc(SW_VegEstab.count, sizeof(TimeInt), "SW_VES_read()");
 	if (EchoInits)
-		_echo_inits();
+		_echo_VegEstab();
 }
-#ifdef RSOILWAT
-SEXP onGet_SW_VES(void) {
-	SEXP swEstab;
-	SEXP VES;
-	SEXP use;
-	SEXP count;
-	PROTECT(swEstab = MAKE_CLASS("swEstab"));
-	PROTECT(VES = NEW_OBJECT(swEstab));
-	PROTECT(use = NEW_LOGICAL(1));
-	PROTECT(count = NEW_INTEGER(1));
-	INTEGER(count)[0] = SW_VegEstab.count;
-	LOGICAL(use)[0] = SW_VegEstab.use;
-	SET_SLOT(VES, install("useEstab"), use);
-	if (SW_VegEstab.use)
-		onGet_SW_VES_spps(VES);
-	UNPROTECT(4);
-	return VES;
-}
-void onSet_SW_VES(SEXP VES) {
-	IntU i;
-	int nSPPS;
-	SW_VegEstab.use = TRUE;
-	SEXP use, count;
-	MyFileName = SW_F_name(eVegEstab);
 
-	PROTECT(use = GET_SLOT(VES,install("useEstab")));
-	PROTECT(count = GET_SLOT(VES,install("count")));
-	if (LOGICAL(use)[0] == FALSE) {
-		//LogError(logfp, LOGNOTE, "Establishment not used.\n");
-		SW_VegEstab.use = FALSE;
-	} else {
-		nSPPS = INTEGER(count)[0];
-		if (nSPPS == 0) {
-			LogError(logfp, LOGWARN, "Establishment is TRUE but no data. Setting False.");
-			SW_VegEstab.use = FALSE;
-		} else {
-			SW_VegEstab.use = TRUE;
-			for (i = 0; i < nSPPS; i++)
-				onSet_SW_VES_spp(VES, i);
-		}
-	}
 
-	if (EchoInits)
-		LogError(logfp, LOGNOTE, "Establishment not used.\n");
-
-	for (i = 0; i < SW_VegEstab.count; i++)
-		_spp_init(i);
-
-	if (SW_VegEstab.count > 0)
-		SW_VegEstab.yrsum.days = (TimeInt *) Mem_Calloc(SW_VegEstab.count, sizeof(TimeInt), "SW_VES_read()");
-	if (EchoInits)
-		_echo_inits();
-	UNPROTECT(2);
-}
-#endif
 void SW_VES_checkestab(void) {
 	/* =================================================== */
 	IntUS i;
@@ -250,14 +194,14 @@ static void _checkit(TimeInt doy, unsigned int sppnum) {
 		if (doy < v->min_pregerm_days)
 			goto LBL_Normal_Exit;
 		if (doy > v->max_pregerm_days) {
-			v->no_estab = TRUE;
+			v->no_estab = swTRUE;
 			goto LBL_Normal_Exit;
 		}
 		/* temp doesn't affect wetdays */
 		if (LT(avgtemp, v->min_temp_germ) || GT(avgtemp, v->max_temp_germ))
 			goto LBL_Normal_Exit;
 
-		v->germd = TRUE;
+		v->germd = swTRUE;
 		goto LBL_Normal_Exit;
 
 	} else { /* continue monitoring sprout's progress */
@@ -298,7 +242,7 @@ static void _checkit(TimeInt doy, unsigned int sppnum) {
 	/* allows us to try again if not too late */
 	v->wetdays_for_estab = 0;
 	v->germ_days = 0;
-	v->germd = FALSE;
+	v->germd = swFALSE;
 
 	LBL_Normal_Exit: return;
 }
@@ -309,7 +253,7 @@ static void _zero_state(unsigned int sppnum) {
 
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
 
-	v->no_estab = v->germd = FALSE;
+	v->no_estab = v->germd = swFALSE;
 	v->estab_doy = v->germ_days = v->drydays_postgerm = 0;
 	v->wetdays_for_germ = v->wetdays_for_estab = 0;
 }
@@ -399,105 +343,9 @@ static void _read_spp(const char *infile) {
 
 	CloseFile(&f);
 }
-#ifdef RSOILWAT
-void onGet_SW_VES_spps(SEXP SPP) {
-	int i;
-	SW_VEGESTAB_INFO *v;
-	SEXP fileName, name, estab_lyrs, barsGERM, barsESTAB, min_pregerm_days, max_pregerm_days, min_wetdays_for_germ, max_drydays_postgerm, min_wetdays_for_estab, min_days_germ2estab,
-			max_days_germ2estab, min_temp_germ, max_temp_germ, min_temp_estab, max_temp_estab;
 
-	PROTECT(fileName = allocVector(STRSXP,SW_VegEstab.count));
-	PROTECT(name = allocVector(STRSXP,SW_VegEstab.count));
-	PROTECT(estab_lyrs = NEW_INTEGER(SW_VegEstab.count));
-	PROTECT(barsGERM = allocVector(REALSXP,SW_VegEstab.count));
-	PROTECT(barsESTAB = allocVector(REALSXP,SW_VegEstab.count));
-	PROTECT(min_pregerm_days = NEW_INTEGER(SW_VegEstab.count));
-	PROTECT(max_pregerm_days = NEW_INTEGER(SW_VegEstab.count));
-	PROTECT(min_wetdays_for_germ = NEW_INTEGER(SW_VegEstab.count));
-	PROTECT(max_drydays_postgerm = NEW_INTEGER(SW_VegEstab.count));
-	PROTECT(min_wetdays_for_estab = NEW_INTEGER(SW_VegEstab.count));
-	PROTECT(min_days_germ2estab = NEW_INTEGER(SW_VegEstab.count));
-	PROTECT(max_days_germ2estab = NEW_INTEGER(SW_VegEstab.count));
-	PROTECT(min_temp_germ = NEW_NUMERIC(SW_VegEstab.count));
-	PROTECT(max_temp_germ = NEW_NUMERIC(SW_VegEstab.count));
-	PROTECT(min_temp_estab = NEW_NUMERIC(SW_VegEstab.count));
-	PROTECT(max_temp_estab = NEW_NUMERIC(SW_VegEstab.count));
 
-	for (i = 0; i < SW_VegEstab.count; i++) {
-		v = SW_VegEstab.parms[i];
-		SET_STRING_ELT(fileName, i, mkChar(v->sppFileName));
-		SET_STRING_ELT(name, i, mkChar(v->sppname));
-		INTEGER(estab_lyrs)[i] = v->estab_lyrs;
-		REAL(barsGERM)[i] = v->bars[0];
-		REAL(barsESTAB)[i] = v->bars[1];
-		INTEGER(min_pregerm_days)[i] = v->min_pregerm_days;
-		INTEGER(max_pregerm_days)[i] = v->max_pregerm_days;
-		INTEGER(min_wetdays_for_germ)[i] = v->min_wetdays_for_germ;
-		INTEGER(max_drydays_postgerm)[i] = v->max_drydays_postgerm;
-		INTEGER(min_wetdays_for_estab)[i] = v->min_wetdays_for_estab;
-		INTEGER(min_days_germ2estab)[i] = v->min_days_germ2estab;
-		INTEGER(max_days_germ2estab)[i] = v->max_days_germ2estab;
-		REAL(min_temp_germ)[i] = v->min_temp_germ;
-		REAL(max_temp_germ)[i] = v->max_temp_germ;
-		REAL(min_temp_estab)[i] = v->min_temp_estab;
-		REAL(max_temp_estab)[i] = v->max_temp_estab;
-	}
-	SET_SLOT(SPP, install("fileName"), fileName);
-	SET_SLOT(SPP, install("Name"), name);
-	SET_SLOT(SPP, install("estab_lyrs"), estab_lyrs);
-	SET_SLOT(SPP, install("barsGERM"), barsGERM);
-	SET_SLOT(SPP, install("barsESTAB"), barsESTAB);
-	SET_SLOT(SPP, install("min_pregerm_days"), min_pregerm_days);
-	SET_SLOT(SPP, install("max_pregerm_days"), max_pregerm_days);
-	SET_SLOT(SPP, install("min_wetdays_for_germ"), min_wetdays_for_germ);
-	SET_SLOT(SPP, install("max_drydays_postgerm"), max_drydays_postgerm);
-	SET_SLOT(SPP, install("min_wetdays_for_estab"), min_wetdays_for_estab);
-	SET_SLOT(SPP, install("min_days_germ2estab"), min_days_germ2estab);
-	SET_SLOT(SPP, install("max_days_germ2estab"), max_days_germ2estab);
-	SET_SLOT(SPP, install("min_temp_germ"), min_temp_germ);
-	SET_SLOT(SPP, install("max_temp_germ"), max_temp_germ);
-	SET_SLOT(SPP, install("min_temp_estab"), min_temp_estab);
-	SET_SLOT(SPP, install("max_temp_estab"), max_temp_estab);
-
-	UNPROTECT(16);
-}
-void onSet_SW_VES_spp(SEXP SPP, IntU i) {
-	SW_VEGESTAB_INFO *v;
-	SEXP fileName, Name;
-	unsigned int count;
-
-	count = _new_species();
-	v = SW_VegEstab.parms[count];
-
-	v->estab_lyrs = INTEGER(GET_SLOT(SPP, install("estab_lyrs")))[i];
-	v->bars[SW_GERM_BARS] = REAL(GET_SLOT(SPP, install("barsGERM")))[i];
-	v->bars[SW_ESTAB_BARS] = REAL(GET_SLOT(SPP, install("barsESTAB")))[i];
-	v->min_pregerm_days = INTEGER(GET_SLOT(SPP, install("min_pregerm_days")))[i];
-	v->max_pregerm_days = INTEGER(GET_SLOT(SPP, install("max_pregerm_days")))[i];
-	v->min_wetdays_for_germ = INTEGER(GET_SLOT(SPP, install("min_wetdays_for_germ")))[i];
-	v->max_drydays_postgerm = INTEGER(GET_SLOT(SPP, install("max_drydays_postgerm")))[i];
-	v->min_wetdays_for_estab = INTEGER(GET_SLOT(SPP, install("min_wetdays_for_estab")))[i];
-	v->min_days_germ2estab = INTEGER(GET_SLOT(SPP, install("min_days_germ2estab")))[i];
-	v->max_days_germ2estab = INTEGER(GET_SLOT(SPP, install("max_days_germ2estab")))[i];
-	v->min_temp_germ = REAL(GET_SLOT(SPP, install("min_temp_germ")))[i];
-	v->max_temp_germ = REAL(GET_SLOT(SPP, install("max_temp_germ")))[i];
-	v->min_temp_estab = REAL(GET_SLOT(SPP, install("min_temp_estab")))[i];
-	v->max_temp_estab = REAL(GET_SLOT(SPP, install("max_temp_estab")))[i];
-
-	PROTECT(fileName = GET_SLOT(SPP, install("fileName")));
-	PROTECT(Name = GET_SLOT(SPP, install("Name")));
-
-	strcpy(v->sppFileName, CHAR(STRING_ELT(fileName,i)) );
-	/* check for valid name first */
-	if (strlen(CHAR(STRING_ELT(Name,i))) > MAX_SPECIESNAMELEN) {
-		LogError(logfp, LOGFATAL, "Species name too long (> 4 chars).\n\tTry again.\n");
-	} else {
-		strcpy(v->sppname, CHAR(STRING_ELT(Name,i)) );
-	}
-	UNPROTECT(2);
-}
-#endif
-static void _spp_init(unsigned int sppnum) {
+void _spp_init(unsigned int sppnum) {
 	/* =================================================== */
 	/* initializations performed after acquiring parameters
 	 * after read() or some other function call.
@@ -554,7 +402,7 @@ static void _sanity_check(unsigned int sppnum) {
 
 }
 
-static unsigned int _new_species(void) {
+unsigned int _new_species(void) {
 	/* --------------------------------------------------- */
 	/* first time called with no species defined so
 	 SW_VegEstab.count==0 and SW_VegEstab.parms is
@@ -573,7 +421,7 @@ static unsigned int _new_species(void) {
 	return (++v->count) - 1;
 }
 
-static void _echo_inits(void) {
+void _echo_VegEstab(void) {
 	/* --------------------------------------------------- */
 	SW_VEGESTAB_INFO **v = SW_VegEstab.parms;
 	SW_LAYER_INFO **lyr = SW_Site.lyr;

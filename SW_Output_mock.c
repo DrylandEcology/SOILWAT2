@@ -54,8 +54,13 @@ void SW_OUT_read(void)
 void SW_OUT_close_files(void)
 {}
 
-void SW_OUT_flush(void)
+void _collect_values(void)
 {}
+
+void SW_OUT_flush(void)
+{
+  _collect_values();
+}
 
 void SW_OUT_sum_today(ObjType otyp)
 {
@@ -199,7 +204,7 @@ static void collect_sums(ObjType otyp, OutPeriod op)
   get_outstrleader(op);
 }
 
-static void _echo_outputs(void)
+void _echo_outputs(void)
 {
   get_none();
   get_estab();

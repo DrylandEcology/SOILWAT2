@@ -36,12 +36,6 @@
 
 #include "SW_Defines.h"    /* for MAX_MONTHS and tanfunc_t*/
 
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 
 #define BIO_INDEX 0        /**< An integer representing the index of the biomass multipliers in the VegType#co2_multipliers 2D array. */
 #define WUE_INDEX 1        /**< An integer representing the index of the WUE multipliers in the VegType#co2_multipliers 2D array. */
@@ -127,10 +121,6 @@ void SW_VPD_read(void);
 void SW_VPD_init(void);
 void SW_VPD_construct(void);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
-
-#ifdef RSOILWAT
-SEXP onGet_SW_VPD();
-void onSet_SW_VPD(SEXP SW_VPD);
-#endif
+void _echo_VegProd(void);
 
 #endif

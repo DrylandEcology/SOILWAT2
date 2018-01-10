@@ -130,7 +130,6 @@ extern SW_WEATHER SW_Weather;
 extern SW_VEGPROD SW_VegProd;
 extern SW_SKY SW_Sky;
 
-extern unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
 extern unsigned int soil_temp_init; // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 extern unsigned int fusion_pool_init;
 
@@ -169,30 +168,7 @@ static RealD surfaceTemp[TWO_DAYS], forb_h2o_qum[TWO_DAYS], tree_h2o_qum[TWO_DAY
 static void records2arrays(void);
 static void arrays2records(void);
 
-/* =================================================== */
-/*                RSOILWAT						                 */
-/* --------------------------------------------------- */
-#ifdef RSOILWAT
-/**
- * Determines if a constant in the Parton equation 2.21 is invalid and would
- * thus cause extreme soil temperature values (see SW_Flow_lib.c ~1770)
- *
- * @param  none
- * @return an R boolean that denotes an error (TRUE) or lack of (FALSE)
- *
- */
-SEXP tempError() {
-	SEXP swR_temp_error;
-	PROTECT(swR_temp_error = NEW_LOGICAL(1));
-	if (SW_Soilwat.partsError == 1) {
-		LOGICAL_POINTER(swR_temp_error)[0] = TRUE;
-	} else {
-		LOGICAL_POINTER(swR_temp_error)[0] = FALSE;
-	}
-	UNPROTECT(1);
-	return swR_temp_error;
-}
-#endif
+
 
 /* *************************************************** */
 /* *************************************************** */
@@ -211,7 +187,7 @@ void SW_Water_Flow(void);
 void SW_FLW_construct(void) {
 	/* 06/26/2013	(rjm) added function SW_FLW_construct() to init global variables between consecutive calls to SoilWat as dynamic library */
 	int i=0;
-	soil_temp_error = 0;
+	SW_Soilwat.partsError = swFALSE;
 	soil_temp_init = 0;
 	fusion_pool_init = 0;
 	//These only have to be cleared if a loop is wrong in the code.

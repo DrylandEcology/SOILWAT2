@@ -41,12 +41,6 @@
 #ifndef SW_SOILWATER_H
 #define SW_SOILWATER_H
 
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 #include "generic.h"
 #include "SW_Defines.h"
 #include "SW_Times.h"
@@ -90,8 +84,9 @@ typedef struct {
 			pet,
 			deep,
 			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
-			surfaceTemp, // soil surface temperature
-			partsError;  // soil temperature error indicator
+			surfaceTemp; // soil surface temperature
+
+	Bool partsError;  // soil temperature error indicator
 } SW_SOILWAT_OUTPUTS;
 
 typedef struct {
@@ -110,8 +105,9 @@ typedef struct {
 			shrub_int,
 			grass_int,
 			sTemp[MAX_LAYERS],
-			surfaceTemp, // soil surface temperature
-			partsError; // soil temperature error indicator
+			surfaceTemp; // soil surface temperature
+
+	Bool partsError; // soil temperature error indicator
 
 	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */
 	wksum, mosum, yrsum, /* accumulators for *avg */
@@ -124,6 +120,7 @@ typedef struct {
 void SW_SWC_construct(void);
 void SW_SWC_new_year(void);
 void SW_SWC_read(void);
+void _read_swc_hist(TimeInt year);
 void SW_SWC_water_flow(void);
 void SW_SWC_adjust_swc(TimeInt doy);
 void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain, RealD *snow, RealD *snowmelt, RealD *snowloss);
@@ -132,14 +129,6 @@ void SW_SWC_end_day(void);
 RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n);
 RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n);
 RealD SW_VWCBulkRes(RealD fractionGravel, RealD sand, RealD clay, RealD porosity);
-
-#ifdef RSOILWAT
-SEXP onGet_SW_SWC();
-void onSet_SW_SWC(SEXP SWC);
-SEXP onGet_SW_SWC_hists();
-SEXP onGet_SW_SWC_hist(TimeInt year);
-void onSet_SW_SWC_hist(SEXP lyrs);
-#endif
 
 #ifdef DEBUG_MEM
 void SW_SWC_SetMemoryRefs(void);

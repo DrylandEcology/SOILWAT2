@@ -18,13 +18,9 @@
 
 #ifndef SOILW_DEF_H
 	#define SOILW_DEF_H
-#ifdef RSOILWAT
-	#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
+
 #include <math.h>  /* for atan() in tanfunc() below */
+#include "generic.h"
 
 /* Not sure if this parameter is variable or a consequence of algebra,
  * but it's different in the FORTRAN version than in the ELM doc.
@@ -37,14 +33,13 @@
 #define MAX_LAYERS  25
 #define MAX_TRANSP_REGIONS 4
 #define MAX_ST_RGR 100
+#define NVEGTYPES 4
 
 #define MAX_NYEAR 2500  /**< An integer representing the max calendar year that is supported. The number just needs to be reasonable, it is an artifical limit. */
 
 #define SW_MISSING     999.     /* value to use as MISSING */
-#ifndef PI
-	#define PI          3.141592653589793238462643383279502884197169399375
-#endif
-#define PI2         6.28318530717958
+#define swPI          3.141592653589793238462643383279502884197169399375
+#define swPI2         6.28318530717958
 #define BARCONV     1024.
 #define SEC_PER_DAY	86400. // the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400 seconds)
 
@@ -98,7 +93,7 @@
  *   c - step size (diff of max point to min point)
  *   d - slope of line at inflection point
  */
-#define tanfunc(z,a,b,c,d)  ((b)+((c)/PI)*atan(PI*(d)*((z)-(a))) )
+#define tanfunc(z,a,b,c,d)  ((b)+((c)/swPI)*atan(swPI*(d)*((z)-(a))) )
 
 /* To facilitate providing parameters to tanfunc() from the model,
  * this typedef can be used.  The parameters are analagous to a-d
