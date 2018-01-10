@@ -5014,8 +5014,8 @@ static void get_aet(void)
 	get_outstrleader(pd);
 
 #elif defined(STEPWAT)
-	char str[20];
-	char str_iters[20];
+	char str[OUTSTRLEN];
+	char str_iters[OUTSTRLEN];
 	TimeInt p = 0;
 	if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		get_outstrleader(pd);
