@@ -1221,32 +1221,42 @@ void SW_OUT_write_today(void)
 
 	// get final value to be used for each timeperiod
 	if(finalValue_mo == -1){
-		finalValue_dy = finalValue_wk = finalValue_mo = finalValue_yr = -2;
+		finalValue_dy = finalValue_wk = finalValue_mo = finalValue_yr = -2; // set to -2 so dont redo this check
 		ForEachOutKey(k){
 				if(SW_Output[k].use){
-					if(SW_Output[k].period == 0){
-						if(k > finalValue_dy){
-							finalValue_dy = k;
+					if(useTimeStep == 0){
+						if(SW_Output[k].period == 0){
+							if(k > finalValue_dy){
+								finalValue_dy = k;
+						}
+					}
+						if(SW_Output[k].period == 1){
+							if(k > finalValue_wk){
+								finalValue_wk = k;
+						}
+					}
+						if(SW_Output[k].period == 2){
+							if(k > finalValue_mo){
+								finalValue_mo = k;
+						}
+					}
+						if(SW_Output[k].period == 3){
+							if(k > finalValue_yr){
+								finalValue_yr = k;
+						}
 					}
 				}
-					if(SW_Output[k].period == 1){
-						if(k > finalValue_wk){
-							finalValue_wk = k;
-					}
-				}
-					if(SW_Output[k].period == 2){
-						if(k > finalValue_mo){
-							finalValue_mo = k;
-					}
-				}
-					if(SW_Output[k].period == 3){
-						if(k > finalValue_yr){
-							finalValue_yr = k;
-					}
+				else{
+					if(k > finalValue_dy){
+						finalValue_dy = k;
+						finalValue_wk = k;
+						finalValue_mo = k;
+						finalValue_yr = k;
 				}
 			}
-		}
+		}}
 	}
+
 
 	ForEachOutKey(k)
 	{
@@ -1414,8 +1424,10 @@ void SW_OUT_write_today(void)
 				SXW.col_status_dy++;
 			}
 
-			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
+			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
 				populate_output_values(reg_file_vals_day, soil_file_vals_day, k, 1, 0); // function to put all the values together for output
+				//printf("%s\n", reg_file_vals_day);
+			}
 			if(storeAllIterations)
 				populate_output_values(reg_file_vals_day_iters, soil_file_vals_day_iters, k, 1, 1); // function to put all the values together for output
 
@@ -1774,6 +1786,7 @@ static void get_temp(void)
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
+
 #elif defined(STEPWAT)
 	char str[OUTSTRLEN];
 	char str_iters[OUTSTRLEN];
