@@ -577,7 +577,7 @@ void SW_OUT_read(void)
 	char timeStep[4][10], // matrix to capture all the periods entered in outsetup.in
 			keyname[50], upkey[50], /* space for uppercase conversion */
 			sumtype[4], upsum[4], period[10], /* should be 2 chars, but we don't want overflow from user typos */
-			last[4], /* last doy for output, if "end", ==366 */
+			last[4], /* last doy for output, if "end", == 366 */
 			outfile[MAX_FILENAMESIZE];
 	int first; /* first doy for output */
 
@@ -659,15 +659,12 @@ void SW_OUT_read(void)
 							stat_Output_Yearly_CSV_Summary(Globals.currIter+1);
 					}
 				}
-				//else
-					//useTimeStep = 0; // setting timestep to 0 since we only wanted the values for creating files.
-													// only using the timeperiod defined for each individual variable
 			#endif
 
 			continue;
 		}
 		else
-		{ // If the line TIMESTEP is not present, only need to read in five variables not six, so re read line.
+		{ // If the line TIMESTEP is NOT present, only need to read in five variables not six, so re read line.
 			if (x < 6)
 			{
 				if (Str_CompareI(keyname, "OUTSEP") == 0)
@@ -1286,7 +1283,7 @@ void SW_OUT_write_today(void)
 						}
 					}
 				}
-				else{
+				else{ // final value of all if using timestep
 					if(k > finalValue_dy){
 						finalValue_dy = k;
 						finalValue_wk = k;
@@ -6396,9 +6393,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 				pt = strtok (NULL, _SepSplit);
 				counter++;
 		}
-
 	}
-
 	else
 	{
 		if(SW_Output[output_var].period == year_out-1){
@@ -6440,8 +6435,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
   \return void.
 */
 void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers){
-	int i, j, debug = 0,
-		tLayers = SW_Site.n_layers;
+	int i, j, tLayers = SW_Site.n_layers;
 
 	char ctemp[50];
 	OutKey colHeadersLoop;
