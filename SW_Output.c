@@ -258,6 +258,11 @@ static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period
 
 int useTimeStep = 0; /* flag to determine whether or not the line TIMESTEP exists */
 
+int NVEGTYPES = 4;
+
+int ncol_OUT[SW_OUTNKEYS]; // number of output columns for each output key
+
+
 /* These MUST be in the same order as enum OutKey in
  * SW_Output.h */
 static char *key2str[] =
@@ -483,10 +488,45 @@ void SW_OUT_construct(void)
 
 		}
 	}
+	SW_OUT_set_ncol();
 
 	bFlush = FALSE;
 	tOffset = 1;
+}
 
+
+void SW_OUT_set_ncol(void) {
+	int tLayers = SW_Site.n_layers;
+
+	ncol_OUT[eSW_AllWthr] = 0;
+	ncol_OUT[eSW_Temp] = 4;
+	ncol_OUT[eSW_Precip] = 5;
+	ncol_OUT[eSW_SoilInf] = 1;
+	ncol_OUT[eSW_Runoff] = 3;
+	ncol_OUT[eSW_AllH2O] = 0;
+	ncol_OUT[eSW_VWCBulk] = tLayers;
+	ncol_OUT[eSW_VWCMatric] = tLayers;
+	ncol_OUT[eSW_SWCBulk] = tLayers;
+	ncol_OUT[eSW_SWABulk] = tLayers;
+	ncol_OUT[eSW_SWAMatric] = tLayers;
+	ncol_OUT[eSW_SWA] = tLayers;
+	ncol_OUT[eSW_SWPMatric] = tLayers;
+	ncol_OUT[eSW_SurfaceWater] = 1;
+	ncol_OUT[eSW_Transp] = tLayers * (NVEGTYPES + 1); // NVEGTYPES plus totals
+	ncol_OUT[eSW_EvapSoil] = SW_Site.n_evap_lyrs;
+	ncol_OUT[eSW_EvapSurface] = NVEGTYPES + 3; // NVEGTYPES plus totals, litter, surface water
+	ncol_OUT[eSW_Interception] = NVEGTYPES + 2; // NVEGTYPES plus totals, litter
+	ncol_OUT[eSW_LyrDrain] = tLayers - 1;
+	ncol_OUT[eSW_HydRed] = tLayers * (NVEGTYPES + 1); // NVEGTYPES plus totals
+	ncol_OUT[eSW_ET] = 0;
+	ncol_OUT[eSW_AET] = 1;
+	ncol_OUT[eSW_PET] = 1;
+	ncol_OUT[eSW_WetDays] = tLayers;
+	ncol_OUT[eSW_SnowPack] = 2;
+	ncol_OUT[eSW_DeepSWC] = 1;
+	ncol_OUT[eSW_SoilTemp] = tLayers;
+	ncol_OUT[eSW_AllVeg] = 0;
+	ncol_OUT[eSW_Estab] = SW_VegEstab.count;
 }
 
 void SW_OUT_new_year(void)
@@ -525,7 +565,7 @@ void SW_OUT_read(void)
 	 *             so the code to open the file is blocked out.
 	 *             In fact, the only keys to process are
 	 *             TRANSP, PRECIP, and TEMP.
-	 * 22-August-17 - for STEPPE want to process TRANSP, PRECIP, TEMP, SWA, and (if debug on) AET and SWCBULK
+	 * 22-August-17 - for STEPPE want to process TRANSP, PRECIP, TEMP, SWA, AET, and SWCBULK
 	 */
 	FILE *f;
 	OutKey k;
@@ -554,7 +594,7 @@ void SW_OUT_read(void)
 				last, outfile);
 
 		#ifdef STEPWAT
-			// checking weather to use timestep or not
+			// checking weather to use timestep or not with STEPWAT
 			if (Str_CompareI(keyname, "USE_TIMESTEP") == 0){
 				numPeriod = sscanf(inbuf, "%s %s", keyname, timeStep[0]);
 				if(strcmp(timeStep[0], "0") == 0)
@@ -1884,6 +1924,7 @@ static void get_temp(void)
 			p = Globals.currYear-1;
 			break;
 	}
+	//printf("pd: %d\n", pd);
 
 	if (isPartialSoilwatOutput == FALSE)
 	{
@@ -2453,7 +2494,7 @@ static void get_swa(void)
 				// not using p for SOILWAT (only for STEPPE) so just passing -1 so it does not get used
 
 				// write values to string
-				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, val_forb, _Sep, val_tree, _Sep, val_shrub, _Sep, val_grass);
+				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass);
 				strcat(outstr, str);
 		}
 	#elif defined(STEPWAT)
@@ -2486,8 +2527,6 @@ static void get_swa(void)
 					break;
 				case eSW_Year:
 					p = Globals.currYear - 1;
-					//if(p == 0)
-						//memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
 					val = v->yravg.swcBulk[i];
 					break;
 			}
@@ -2588,16 +2627,16 @@ static void get_swa(void)
 					float std_shrub = sqrt(SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
 					float std_grass = sqrt(SXW.SWAbulk_grass_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
 
-					sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_forb_avg[Iylp(Globals.currYear,i,p,0)],
-					 	_Sep, std_forb, _Sep, SXW.SWAbulk_tree_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_tree, _Sep, SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p,0)],
-						_Sep, std_shrub, _Sep, SXW.SWAbulk_grass_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_grass);
+					sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_tree_avg[Iylp(Globals.currYear,i,p,0)],
+					 	_Sep, std_tree, _Sep, SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_shrub, _Sep, SXW.SWAbulk_forb_avg[Iylp(Globals.currYear,i,p,0)],
+						_Sep, std_forb, _Sep, SXW.SWAbulk_grass_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_grass);
 					strcat(outstr, str);
 				}
 				if (bFlush) p++;
 			}
 			if(storeAllIterations){
-				sprintf(str_iters, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW.sum_dSWA_repartitioned[3][i][p], _Sep, SXW.sum_dSWA_repartitioned[0][i][p], _Sep,
-				 SXW.sum_dSWA_repartitioned[1][i][p], _Sep, SXW.sum_dSWA_repartitioned[2][i][p]);
+				sprintf(str_iters, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW.sum_dSWA_repartitioned[0][i][p], _Sep, SXW.sum_dSWA_repartitioned[1][i][p], _Sep,
+				 SXW.sum_dSWA_repartitioned[3][i][p], _Sep, SXW.sum_dSWA_repartitioned[2][i][p]);
 				strcat(outstr_all_iters, str_iters);
 			}
 		}
@@ -6359,12 +6398,6 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 		}
 
 	}
-	/*else if (strcmp(key2str[output_var], "WTHR")==0 ||  strcmp(key2str[output_var], "ALLH2O")==0
-					|| strcmp(key2str[output_var], "SWABULK")==0 || strcmp(key2str[output_var], "ET")==0
-					|| strcmp(key2str[output_var], "ALLVEG")==0)
-	{
-		// do nothing since these values are not defined
-	}*/
 
 	else
 	{
@@ -6407,10 +6440,14 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
   \return void.
 */
 void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers){
+	int i, j, debug = 0,
+		tLayers = SW_Site.n_layers;
+
+	char ctemp[50];
 	OutKey colHeadersLoop;
 	LyrIndex evap_loop;
 	char *colHeaders[5000];
-	char *colHeadersSoil[5000]; // might need to make this bigger for runs that have close to max layer size
+	char *colHeadersSoil[5000];
 	memset(&colHeaders, 0, sizeof(colHeaders));
 	memset(&colHeadersSoil, 0, sizeof(colHeadersSoil));
 
@@ -6422,12 +6459,31 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 	char *col1Head;
 	char *col2Head;
 
+	const char *Layers_names[MAX_LAYERS] = { "Lyr_1", "Lyr_2", "Lyr_3", "Lyr_4", "Lyr_5",
+		"Lyr_6", "Lyr_7", "Lyr_8", "Lyr_9", "Lyr_10", "Lyr_11", "Lyr_12", "Lyr_13", "Lyr_14",
+		"Lyr_15", "Lyr_16", "Lyr_17", "Lyr_18", "Lyr_19", "Lyr_20", "Lyr_21", "Lyr_22",
+		"Lyr_23", "Lyr_24", "Lyr_25"};
+	const char *cnames_VegTypes[6] = { "Total", "Tree", "Shrub", "Forbs",
+		"Grass", "Litter" };
+
+	const char *cnames_eSW_Temp[] = { "Temp_max", "Temp_min", "Temp_avg", "SurfaceTemp" };
+	const char *cnames_eSW_Precip[] = { "ppt", "rain", "snow_fall", "snowmelt", "snowloss" };
+	const char *cnames_eSW_SoilInf[] = { "soil_inf" };
+	const char *cnames_eSW_Runoff[] = { "Total_Runoff", "Surface_Runoff", "Snowmelt_Runoff"};
+	const char *cnames_eSW_SurfaceWater[] = { "surfaceWater_cm" };
+	const char *cnames_add_eSW_EvapSurface[] = { "evap_surfaceWater" };
+	const char *cnames_eSW_AET[] = { "evapotr_cm" };
+	const char *cnames_eSW_PET[] = { "pet_cm" };
+	const char *cnames_eSW_SnowPack[] = { "snowpackWaterEquivalent_cm", "snowdepth_cm" };
+	const char *cnames_eSW_DeepSWC[] = { "lowLayerDrain_cm" };
+
 	ForEachOutKey(colHeadersLoop)
 	{
 		#if !defined(STEPWAT) && !defined (RSOILWAT)
 			if(SW_Output[colHeadersLoop].use)
 		#else
 			//if(SW_Output[colHeadersLoop].use && SW_Output[colHeadersLoop].period == outFileTimestep-1)
+			// if timestep = 0 then only create for right period. if timestep = 1 create for all periods
 			if((SW_Output[colHeadersLoop].use && useTimeStep == 0 && SW_Output[colHeadersLoop].period == outFileTimestep-1) || (SW_Output[colHeadersLoop].use && useTimeStep == 1))
 		#endif
 		{
@@ -6439,177 +6495,35 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 			{
 				int q;
 				char convertq[10] = {0};
-				char storeCol[5000] = {0}; // need to make this a pretty large file to accomadate all the header names up to max layer size
+				char storeCol[5000] = {0}; // need to make this a pretty large file to accommodate all the header names up to max layer size
 
-				// check if swa (need 4 headers instead of 1 for swa)
-				if(strcmp(key2str[colHeadersLoop], "SWA")==0)
+				// swa, trasp, and hydred are all the same col headers algorithm just need different index for swa
+				if(strcmp(key2str[colHeadersLoop], "SWA")==0 || strcmp(key2str[colHeadersLoop], "HYDRED")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0)
 				{
-					for(q=1; q<=SW_Site.n_layers; q++){
-						sprintf(convertq, "%d", q); // cast q to string
-
-						strcat(storeCol, "swaForb_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "swaForb_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-
-						strcat(storeCol, "swaTree_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "swaTree_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-
-						strcat(storeCol, "swaShrub_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "swaShrub_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-
-						strcat(storeCol, "swaGrass_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "swaGrass_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-					}
-				}
-				else if(strcmp(key2str[colHeadersLoop], "HYDRED")==0){
-					for(q=1; q<=SW_Site.n_layers; q++){
-						sprintf(convertq, "%d", q); // cast q to string
-
-						strcat(storeCol, "HydredTotal_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "HydredTotal_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-
-						strcat(storeCol, "HydredTree_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "HydredTree_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-
-						strcat(storeCol, "HydredShrubs_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "HydredShrubs_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-
-						strcat(storeCol, "HydredForbs_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "HydredForbs_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-
-						strcat(storeCol, "HydredGrass_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "HydredGrass_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-					}
-				}
-				else if(strcmp(key2str[colHeadersLoop], "TRANSP")==0){
-					for(q=1; q<=SW_Site.n_layers; q++){
-						sprintf(convertq, "%d", q); // cast q to string
-
-						strcat(storeCol, "TranspTotal_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "TranspTotal_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-
-						strcat(storeCol, "TranspTree_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "TranspTree_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-
-						strcat(storeCol, "TranspShrubs_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "TranspShrubs_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-
-						strcat(storeCol, "TranspForbs_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "TranspForbs_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
-
-						strcat(storeCol, "TranspGrass_"); // store value name in new string
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-						#ifdef STEPWAT
-							if(std_headers){
-								strcat(storeCol, "TranspGrass_STD_"); // store value name in new string
-								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
-							}
-						#endif
+					int start_index;
+					if(strcmp(key2str[colHeadersLoop], "SWA")==0)
+						start_index = 1;
+					else
+						start_index = 0;
+					for (i = 0; i < tLayers; i++) {
+						for (j = start_index; j < NVEGTYPES + 1; j++) { // only want the veg types, dont need 'total' or 'litter'
+							strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+							strcat(storeCol, "_");
+							strcat(storeCol, cnames_VegTypes[j]);
+							strcat(storeCol, "_");
+							strcat(storeCol,  Layers_names[i]);
+							strcat(storeCol, _SepSplit);
+							#ifdef STEPWAT
+								if(std_headers){
+									strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+									strcat(storeCol, "_");
+									strcat(storeCol, cnames_VegTypes[j]);
+									strcat(storeCol, "_STD_");
+									strcat(storeCol,  Layers_names[i]);
+									strcat(storeCol, _SepSplit);
+								}
+							#endif
+						}
 					}
 				}
 				else if(strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0){
@@ -6630,16 +6544,6 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						#endif
 					}
 				}
-				/*else if(strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0){
-					for(q=1; q<SW_Site.n_layers; q++){
-						sprintf(convertq, "%d", q); // cast q to string
-						strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
-						// concatenate layer number
-						strcat(storeCol, "_");
-						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
-					}
-				}*/
 				else{
 					// make variable header for each layer possible
 					for(q=1; q<=SW_Site.n_layers; q++){
@@ -6666,235 +6570,110 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 			{
 				char storeRegCol[2000] = {0};
 				if(strcmp(key2str[colHeadersLoop], "TEMP")==0){
-					strcat(storeRegCol, "Temp_max");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Temp_max_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Temp_min");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Temp_min_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Temp_avg_air_temp");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Temp_avg_air_temp_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Temp_soil_surface_temp");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Temp_soil_surface_temp_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
+					for (i = 0; i < ncol_OUT[eSW_Temp]; i++) {
+						strcat(storeRegCol, cnames_eSW_Temp[i]);
+						strcat(storeRegCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeRegCol, cnames_eSW_Temp[i]);
+								strcat(storeRegCol, "_STD");
+								strcat(storeRegCol, _SepSplit);
+							}
+						#endif
+					}
 				}
 				else if(strcmp(key2str[colHeadersLoop], "PRECIP")==0){
-					strcat(storeRegCol, "Precip_sum");
-					strcat(storeRegCol, _SepSplit);
-					strcat(storeRegCol, "Precip_rain");
-					strcat(storeRegCol, _SepSplit);
-					strcat(storeRegCol, "Precip_snow_fall");
-					strcat(storeRegCol, _SepSplit);
-					strcat(storeRegCol, "Precip_snowmelt");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Precip_snowmelt_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Precip_snowloss");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Precip_snowloss_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
+					for (i = 0; i < ncol_OUT[eSW_Precip]; i++) {
+						strcat(storeRegCol, cnames_eSW_Precip[i]);
+						strcat(storeRegCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								if(i == 3 || i == 4){ // only STD for snowmelt and snowloss
+									strcat(storeRegCol, cnames_eSW_Precip[i]);
+									strcat(storeRegCol, "_STD");
+									strcat(storeRegCol, _SepSplit);
+								}
+							}
+						#endif
+					}
 				}
-				/*else if(strcmp(key2str[colHeadersLoop], "SOILINFILT")==0){
-					strcat(storeRegCol, "Soilinfilt_top_layer,");
-					strcat(storeRegCol, "Soilinfilt_runoff,");
-				}*/
 				else if(strcmp(key2str[colHeadersLoop], "RUNOFF")==0){
-					strcat(storeRegCol, "Runoff_total");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Runoff_total_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Runoff_surface");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Runoff_surface_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Runoff_snowmelt");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Runoff_snowmelt_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
+					for (i = 0; i < ncol_OUT[eSW_Runoff]; i++) {
+						strcat(storeRegCol, cnames_eSW_Runoff[i]);
+						strcat(storeRegCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeRegCol, cnames_eSW_Runoff[i]);
+								strcat(storeRegCol, "_STD");
+								strcat(storeRegCol, _SepSplit);
+							}
+						#endif
+					}
 				}
 				else if(strcmp(key2str[colHeadersLoop], "AET")==0){
-					strcat(storeRegCol, "AET");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "AET_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
+					for (i = 0; i < ncol_OUT[eSW_AET]; i++) {
+						strcat(storeRegCol, cnames_eSW_AET[i]);
+						strcat(storeRegCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeRegCol, cnames_eSW_AET[i]); // store value name in new string
+								strcat(storeRegCol, "_STD");
+								strcat(storeRegCol, _SepSplit);
+							}
+						#endif
+					}
 				}
 				else if(strcmp(key2str[colHeadersLoop], "EVAPSURFACE")==0){
-					strcat(storeRegCol, "Evapsurface_total");
+					for (i = 0; i < NVEGTYPES + 2; i++){
+						strcat(storeRegCol, "EvapSurface_");
+						strcat(storeRegCol, cnames_VegTypes[i]);
+						strcat(storeRegCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeRegCol, "EvapSurface_"); // store value name in new string
+								strcat(storeRegCol, cnames_VegTypes[i]);
+								strcat(storeRegCol, "_STD");
+								strcat(storeRegCol, _SepSplit);
+							}
+						#endif
+					}
+					strcat(storeRegCol, "EvapSurface_Water");
 					strcat(storeRegCol, _SepSplit);
 					#ifdef STEPWAT
 						if(std_headers){
-							strcat(storeRegCol, "Evapsurface_total_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Evapsurface_trees");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Evapsurface_trees_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Evapsurface_shrubs");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Evapsurface_shrubs_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Evapsurface_forbs");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Evapsurface_forbs_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Evapsurface_grasses");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Evapsurface_grasses_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Evapsurface_litter");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Evapsurface_litter_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Evapsurface_water");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Evapsurface_water_STD"); // store value name in new string
+							strcat(storeRegCol, "EvapSurface_Water_STD"); // store value name in new string
 							strcat(storeRegCol, _SepSplit);
 						}
 					#endif
 				}
 				else if(strcmp(key2str[colHeadersLoop], "INTERCEPTION")==0){
-					strcat(storeRegCol, "Interception_total");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Interception_total_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Interception_trees");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Interception_trees_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Interception_shrubs");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Interception_shrubs_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Interception_forbs");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Interception_forbs_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Interception_grasses");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Interception_grasses_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Interception_litter");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Interception_litter_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
+					for (i = 0; i < NVEGTYPES + 2; i++){
+						strcat(storeRegCol, "Interception_");
+						strcat(storeRegCol, cnames_VegTypes[i]);
+						strcat(storeRegCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeRegCol, "Interception_"); // store value name in new string
+								strcat(storeRegCol, cnames_VegTypes[i]);
+								strcat(storeRegCol, "_STD");
+								strcat(storeRegCol, _SepSplit);
+							}
+						#endif
+					}
 				}
 				else if(strcmp(key2str[colHeadersLoop], "SNOWPACK")==0){
-					strcat(storeRegCol, "Snowpack_water_eqv");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Snowpack_water_eqv_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
-					strcat(storeRegCol, "Snowpack_depth");
-					strcat(storeRegCol, _SepSplit);
-					#ifdef STEPWAT
-						if(std_headers){
-							strcat(storeRegCol, "Snowpack_depth_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
-						}
-					#endif
+					for (i = 0; i < ncol_OUT[eSW_SnowPack]; i++) {
+						strcat(storeRegCol, cnames_eSW_SnowPack[i]);
+						strcat(storeRegCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeRegCol, cnames_eSW_SnowPack[i]); // store value name in new string
+								strcat(storeRegCol, "_STD");
+								strcat(storeRegCol, _SepSplit);
+							}
+						#endif
+					}
 				}
-				/*else if (strcmp(key2str[colHeadersLoop], "WTHR")==0 ||  strcmp(key2str[colHeadersLoop], "ALLH2O")==0
-								|| strcmp(key2str[colHeadersLoop], "SWABULK")==0 || strcmp(key2str[colHeadersLoop], "ET")==0
-								|| strcmp(key2str[colHeadersLoop], "ALLVEG")==0)
-				{
-					continue; // dont do anything for these values
-				}*/
 				else{
 					strcat(storeRegCol, key2str[colHeadersLoop]); // concatenate variable to string
 					strcat(storeRegCol, _SepSplit);
