@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -13,7 +14,13 @@
 #endif
 
 #include "filefuncs.h"
+#include "generic.h"
 #include "myMemory.h"
+
+#ifdef RSOILWAT
+  #include <R.h>    // for REvprintf(), error(), and warning()
+#endif
+
 
 /* Note that errstr[] is externed in generic.h via filefuncs.h */
 /* 01/05/2011	(drs) removed unused variable *p from MkDir()
@@ -22,6 +29,91 @@
 
 char **getfiles(const char *fspec, int *nfound);
 
+
+/**
+ * @brief Prints an error message and throws an error or warning. Works both for rSOILWAT2
+ *  and SOILWAT2-standalone.
+ *
+ * @param code The error/warning code. If `code` is not 0, then it is passed to `exit`
+ *  (SOILWAT2) / `error` (rSOILWAT2). If `code` is 0, then it is passed to
+ *  `warning` (rSOILWAT2), respectively.
+ * @param format The character string with formatting (as for `printf`).
+ * @param ... Variables to be printed.
+ */
+void sw_error(int code, const char *format, ...)
+{
+  va_list(ap);
+  va_start(ap, format);
+#ifdef RSOILWAT
+  REvprintf(format, ap);
+#else
+  vfprintf(stderr, format, ap);
+#endif
+  va_end(ap);
+
+  if (code == 0) {
+    #ifdef RSOILWAT
+      warning("Warning: %d\n", code);
+    #endif
+
+  } else {
+    #ifdef RSOILWAT
+      error("exit %d\n", code);
+    #else
+      exit(code);
+    #endif
+  }
+}
+
+/**************************************************************/
+void LogError(FILE *fp, const int mode, const char *fmt, ...) {
+	/* uses global variable logged to indicate that a log message
+	 * was sent to output, which can be used to inform user, etc.
+	 *
+	 *  9-Dec-03 (cwb) Modified to accept argument list similar
+	 *           to fprintf() so sprintf(errstr...) doesn't need
+	 *           to be called each time replacement args occur.
+	 */
+
+	char outfmt[50 + strlen(fmt)]; /* to prepend err type str */
+	va_list args;
+
+	va_start(args, fmt);
+
+	if (LOGNOTE & mode)
+		strcpy(outfmt, "NOTE: ");
+	else if (LOGWARN & mode)
+		strcpy(outfmt, "WARNING: ");
+	else if (LOGERROR & mode)
+		strcpy(outfmt, "ERROR: ");
+
+	strcat(outfmt, fmt);
+	strcat(outfmt, "\n");
+
+	#ifdef RSOILWAT
+		if (fp != NULL) {
+			REvprintf(outfmt, args);
+		}
+
+	#else
+		int check_eof;
+		check_eof = (EOF == vfprintf(fp, outfmt, args));
+
+		if (check_eof)
+			sw_error(0, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
+		fflush(fp);
+	#endif
+
+
+	logged = swTRUE;
+	va_end(args);
+
+	if (LOGEXIT & mode) {
+		sw_error(-1, "@ generic.c LogError");
+	}
+}
+
+
 /**************************************************************/
 Bool GetALine(FILE *f, char buf[]) {
 	/* Read a line of possibly commented input from the file *f.
@@ -29,14 +121,14 @@ Bool GetALine(FILE *f, char buf[]) {
 	 * line are removed and trailing whitespace is removed.
 	 */
 	char *p;
-	Bool not_eof = FALSE;
+	Bool not_eof = swFALSE;
 	while (!isnull( fgets(buf, 1024, f) )) {
 		if (!isnull( p=strchr(buf, (int) '\n')))
 			*p = '\0';
 
 		UnComment(buf);
 		if (*buf != '\0') {
-			not_eof = TRUE;
+			not_eof = swTRUE;
 			break;
 		}
 	}
@@ -85,7 +177,7 @@ FILE * OpenFile(const char *name, const char *mode) {
 	FILE *fp;
 	fp = fopen(name, mode);
 	if (isnull(fp))
-		LogError(stdout, LOGERROR | LOGEXIT, "Cannot open file %s: %s", name, strerror(errno));
+		LogError(logfp, LOGERROR | LOGEXIT, "Cannot open file %s: %s", name, strerror(errno));
 	return (fp);
 }
 
@@ -109,14 +201,14 @@ void CloseFile(FILE **f) {
 
 /**************************************************************/
 Bool FileExists(const char *name) {
-	/* return FALSE if name is not a regular file
+	/* return swFALSE if name is not a regular file
 	 * eg, directory, pipe, etc.
 	 */
 	struct stat statbuf;
-	Bool result = FALSE;
+	Bool result = swFALSE;
 
 	if (0 == stat(name, &statbuf))
-		result = (statbuf.st_mode & S_IFREG) ? TRUE : FALSE;
+		result = S_ISREG(statbuf.st_mode) ? swTRUE : swFALSE;
 
 	return (result);
 }
@@ -128,10 +220,10 @@ Bool DirExists(const char *dname) {
 	 */
 
 	struct stat statbuf;
-	Bool result = FALSE;
+	Bool result = swFALSE;
 
 	if (0 == stat(dname, &statbuf))
-		result = (statbuf.st_mode & S_IFDIR) ? TRUE : FALSE;
+		result = S_ISDIR(statbuf.st_mode) ? swTRUE : swFALSE;
 
 	return (result);
 }
@@ -140,7 +232,7 @@ Bool DirExists(const char *dname) {
 Bool ChDir(const char *dname) {
 	/* wrapper in case portability problems come up */
 
-	return (chdir(dname) == 0) ? TRUE : FALSE;
+	return (chdir(dname) == 0) ? swTRUE : swFALSE;
 
 }
 
@@ -177,17 +269,16 @@ Bool MkDir(const char *dname) {
 	 */
 
 	int r, i, n;
-	Bool result = TRUE;
+	Bool result = swTRUE;
 	char *a[256] = { 0 }, /* points to each path element for mkdir -p behavior */
-	*delim = "\\/", /* path separators */
-	*c; /* duplicate of dname so we don't change it */
+		*c; /* duplicate of dname so we don't change it */
+	const char *delim = "\\/"; /* path separators */
 
 	if (isnull(dname))
-		return FALSE;
+		return swFALSE;
 
 	if (NULL == (c = strdup(dname))) {
-		fprintf(stderr, "Out of memory making string in MkDir()");
-		exit(-1);
+		sw_error(-1, "Out of memory making string in MkDir()");
 	}
 
 	n = 0;
@@ -201,7 +292,7 @@ Bool MkDir(const char *dname) {
 		if (!DirExists(errstr)) {
 			if (0 != (r = mkdir(errstr, 0777))) {
 				if (errno == EACCES) {
-					result = FALSE;
+					result = swFALSE;
 					break;
 				}
 			}
@@ -229,10 +320,10 @@ Bool RemoveFiles(const char *fspec) {
 	 */
 
 	char **flist, fname[1024];
-	int i, nfiles, dlen, result = TRUE;
+	int i, nfiles, dlen, result = swTRUE;
 
 	if (fspec == NULL )
-		return TRUE;
+		return swTRUE;
 
 	if ((flist = getfiles(fspec, &nfiles))) {
 		strcpy(fname, DirName(fspec));
@@ -240,7 +331,7 @@ Bool RemoveFiles(const char *fspec) {
 		for (i = 0; i < nfiles; i++) {
 			strcpy(fname + dlen, flist[i]);
 			if (0 != remove(fname)) {
-				result = FALSE;
+				result = swFALSE;
 				break;
 			}
 		}
@@ -265,7 +356,7 @@ char **getfiles(const char *fspec, int *nfound) {
 	char **flist = NULL, *dname, *fname, *fn1, *fn2, *p2;
 
 	int len1, len2;
-	Bool match, alloc = FALSE;
+	Bool match, alloc = swFALSE;
 
 	DIR *dir;
 	struct dirent *ent;
@@ -291,12 +382,12 @@ char **getfiles(const char *fspec, int *nfound) {
 		return NULL ;
 
 	while ((ent = readdir(dir)) != NULL ) {
-		match = TRUE;
+		match = swTRUE;
 		if (fn1)
-			match = (0 == strncmp(ent->d_name, fn1, len1)) ? TRUE : FALSE;
+			match = (0 == strncmp(ent->d_name, fn1, len1)) ? swTRUE : swFALSE;
 		if (match && fn2) {
 			p2 = ent->d_name + (strlen(ent->d_name) - len2);
-			match = (0 == strcmp(fn2, p2)) ? TRUE : FALSE;
+			match = (0 == strcmp(fn2, p2)) ? swTRUE : swFALSE;
 		}
 
 		if (match) {
@@ -305,7 +396,7 @@ char **getfiles(const char *fspec, int *nfound) {
 				flist = (char **) Mem_ReAlloc(flist, sizeof(char *) * (*nfound));
 			} else {
 				flist = (char **) Mem_Malloc(sizeof(char *) * (*nfound), "getfiles");
-				alloc = TRUE;
+				alloc = swTRUE;
 			}
 			flist[(*nfound) - 1] = Str_Dup(ent->d_name);
 		}

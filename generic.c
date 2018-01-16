@@ -9,7 +9,6 @@
 /* so we can't make it Bool.  But we don't have to explicitly */
 /* extern it in each module, just include generic.h. */
 /* Just be sure to set logged = FALSE as the first step in main(). */
-/* See also LogError() below.  */
 
 /*
  History:
@@ -22,13 +21,6 @@
 #include "generic.h"
 #include "filefuncs.h"
 
-#ifdef RSOILWAT
-	extern int logNote;
-	extern int logWarn;
-	extern int logFatl;
-	extern SEXP Rlogfile;
-	extern int RlogIndex;
-#endif
 
 static void uncomment_cstyle(char *p) {
 	/*-------------------------------------------
@@ -185,84 +177,6 @@ void UnComment(char *s) {
 	Str_TrimRight(s);
 }
 
-/**************************************************************/
-void LogError(FILE *fp, const int mode, const char *fmt, ...) {
-	/* uses global variable logged to indicate that a log message
-	 * was sent to output, which can be used to inform user, etc.
-	 *
-	 *  9-Dec-03 (cwb) Modified to accept argument list similar
-	 *           to fprintf() so sprintf(errstr...) doesn't need
-	 *           to be called each time replacement args occur.
-	 */
-
-	char outfmt[50 + strlen(fmt)]; /* to prepend err type str */
-	va_list args;
-#ifdef RSOILWAT
-	char *message;
-	message = R_alloc(strlen(fmt) + 121, sizeof(char));
-#endif
-
-	va_start(args, fmt);
-#ifndef RSOILWAT
-	if (LOGNOTE & mode)
-		strcpy(outfmt, "NOTE: ");
-	else if (LOGWARN & mode)
-		strcpy(outfmt, "WARNING: ");
-	else if (LOGERROR & mode)
-		strcpy(outfmt, "ERROR: ");
-
-	strcat(outfmt, fmt);
-	strcat(outfmt, "\n");
-
-	if (EOF == vfprintf(fp, outfmt, args))
-		fprintf(stderr, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
-	fflush(fp);
-#else
-	if (RlogIndex == 150) {
-			Rprintf("Error Log Full. Increase limit from %i", RlogIndex);
-	} else {
-		if ((LOGNOTE & mode) && logNote) {
-			strcpy(outfmt, "NOTE: ");
-			strcat(outfmt, fmt);
-			strcat(outfmt, "\n");
-			vsnprintf(message, 120 + strlen(fmt), outfmt, args);
-			SET_STRING_ELT(Rlogfile, RlogIndex, mkChar(message));
-			RlogIndex++;
-		} else if ((LOGWARN & mode) && logWarn) {
-			strcpy(outfmt, "WARNING: ");
-			strcat(outfmt, fmt);
-			strcat(outfmt, "\n");
-			vsnprintf(message, 120 + strlen(fmt), outfmt, args);
-			SET_STRING_ELT(Rlogfile, RlogIndex, mkChar(message));
-			RlogIndex++;
-		} else if ((LOGERROR & mode) && logFatl) {
-			strcpy(outfmt, "ERROR: ");
-			strcat(outfmt, fmt);
-			strcat(outfmt, "\n");
-			vsnprintf(message, 120 + strlen(fmt), outfmt, args);
-			SET_STRING_ELT(Rlogfile, RlogIndex, mkChar(message));
-			RlogIndex++;
-		}
-	}
-#endif
-
-	logged = TRUE;
-
-	va_end(args);
-
-	if (LOGEXIT & mode) {
-#ifndef RSOILWAT
-		exit(-1);
-#else
-		//strcpy(outfmt, "ERROR: ");
-		//strcat(outfmt, fmt);
-		//vsnprintf(message, 80 + strlen(fmt), outfmt, args);
-		Rprintf("Exit.. %s",message);
-		error("@ generic.c LogError");
-#endif
-	}
-
-}
 
 /**************************************************************/
 Bool Is_LeapYear(int yr) {
@@ -372,7 +286,6 @@ double lobfM(double xs[], double ys[], unsigned int n) {
  **************************************************************************************************************************************/
 double lobfB(double xs[], double ys[], unsigned int n) {
 	double sumX, sumY, temp;
-	;
 	unsigned int i;
 
 	sumX = sumY = 0.0;
@@ -398,3 +311,17 @@ void lobf(double *m, double *b, double xs[], double ys[], unsigned int n) {
 	*b = lobfB(xs, ys, n); // b = y-intercept
 }
 
+/** @brief Duplicate strings. Used if `strdup` is not available.
+
+    `strdup` is not a ISO C standard, but included in the POSIX standard. That means that
+    it is not available on some compilers, e.g., travis-ci with -std=c11 flag set.
+
+    Code from https://stackoverflow.com/questions/482375/strdup-function
+*/
+char * sw_strdup(const char * s)
+{
+  size_t len = 1 + strlen(s);
+  char *p = (char*) malloc(len); // explicit cast necessary for c++ compiler when unit testing against googletest
+
+  return p ? (char*) memcpy(p, s, len) : NULL;
+}

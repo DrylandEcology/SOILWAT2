@@ -12,13 +12,7 @@
 /********************************************************/
 #ifndef SW_MARKOV_H
 #define SW_MARKOV_H
-#ifdef RSOILWAT
-#include "SW_Times.h"
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
+
 typedef struct {
 
 	/* pointers to arrays of probabilities for each day saves some space */
@@ -42,14 +36,6 @@ void SW_MKV_construct(void);
 Bool SW_MKV_read_prob(void);
 Bool SW_MKV_read_cov(void);
 void SW_MKV_today(TimeInt doy, RealD *tmax, RealD *tmin, RealD *rain);
-
-#ifdef RSOILWAT
-SEXP onGet_MKV(void);
-SEXP onGet_MKV_prob(void);
-Bool onSet_MKV_prob(SEXP MKV_prob);
-SEXP onGet_MKV_conv(void);
-Bool onSet_MKV_conv(SEXP MKV_conv);
-#endif
 
 #ifdef DEBUG_MEM
 void SW_MKV_SetMemoryRefs( void);

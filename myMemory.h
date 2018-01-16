@@ -7,12 +7,7 @@
 
 #include <memory.h>
 #include "generic.h"
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
+
 
 #ifdef DEBUG_MEM
 #include "memblock.h"

@@ -20,12 +20,6 @@
 #ifndef SW_MODEL_H
 #define SW_MODEL_H
 
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 #include "Times.h"
 
 typedef struct {
@@ -38,10 +32,13 @@ typedef struct {
 	/* current year dates */
 	firstdoy, /* start day for this year */
 	lastdoy, /* 366 if leapyear or endend if endyr */
-	doy, week, month, year; /* current model time */
+	doy, week, month, year, simyear; /* current model time */
 	/* however, week and month are base0 because they
 	 * are used as array indices, so take care.
 	 * doy and year are base1. */
+	/* simyear = year + addtl_yr */
+
+  int addtl_yr; /**< An integer representing how many years in the future we are simulating. Currently, only used to support rSFSW2 functionality where scenario runs are based on an 'ambient' run plus number of years in the future*/
 
 	/* first day of new week/month is checked for
 	 * printing and summing weekly/monthly values */
@@ -54,10 +51,5 @@ void SW_MDL_read(void);
 void SW_MDL_construct(void);
 void SW_MDL_new_year(void);
 void SW_MDL_new_day(void);
-
-#ifdef RSOILWAT
-SEXP onGet_SW_MDL();
-void onSet_SW_MDL(SEXP SW_MDL);
-#endif
 
 #endif

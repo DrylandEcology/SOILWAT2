@@ -33,15 +33,11 @@
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-
-/* =================================================== */
-/*                Module-Level Variables               */
-/* --------------------------------------------------- */
-static char *MyFileName;
-static char *InFiles[SW_NFILES];
-static char _ProjDir[FILENAME_MAX];
-static char weather_prefix[FILENAME_MAX];
-static char output_prefix[FILENAME_MAX];
+char *MyFileName;
+char *InFiles[SW_NFILES];
+char _ProjDir[FILENAME_MAX];
+char weather_prefix[FILENAME_MAX];
+char output_prefix[FILENAME_MAX];
 
 /* =================================================== */
 /* =================================================== */
@@ -57,7 +53,7 @@ static void init(const char *s) {
 	char fname[MAX_FILENAMESIZE] = { '\0' };
 
 	if (NULL == InFiles[eFirst])
-		strcpy(fname, (s ? s : "files.in"));
+		strcpy(fname, (s ? s : DFLT_FIRSTFILE));
 	else if (s && strcmp(s, InFiles[eFirst]))
 		strcpy(fname, s);
 
@@ -73,7 +69,6 @@ static void init(const char *s) {
 /* =================================================== */
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
-
 void SW_CSV_F_INIT(const char *s)
 {
 	/* AKT 08/28/2016
@@ -96,19 +91,25 @@ void SW_CSV_F_INIT(const char *s)
 	}
 }
 
-void SW_F_read(const char *s) {
-	/* =================================================== */
-	/* enter with the name of the first file to read for
-	 * the filenames, or NULL.  If null, then read files.in
-	 * or whichever filename was set previously. see init().
-	 *
-	 * 1/24/02 - replaced [re]alloc with StrDup()
-	 *         - added facility for log-to-file. logfp depends
-	 *             on having executed SW_F_read().
-	 */
 
+/** Read `first` input file `eFirst` that contains names of the remaining input files.
+
+    @param s Name of the first file to read for filenames, or NULL. If NULL, then read
+      from DFLT_FIRSTFILE or whichever filename was set previously.
+
+    @note If input file `eFirst` changes, particularly if the locations of the
+      `weather_prefix` and/or `output_prefix` change; then update the hard-coded line
+      numbers.
+
+    @sideeffect Update values of global variables:
+      - `weather_prefix`
+      - `output_prefix`
+      - `InFiles`
+      - `logfp` for SOILWAT2-standalone
+  */
+void SW_F_read(const char *s) {
 	FILE *f;
-	int lineno = 0, fileno = 0;
+	int lineno = 0, fileno = 0, debug = 0;
 	char buf[FILENAME_MAX];
 
 	if (!isnull(s))
@@ -119,60 +120,59 @@ void SW_F_read(const char *s) {
 
 	while (GetALine(f, inbuf)) {
 
+    if (debug) swprintf("'SW_F_read': line = %d/%d: %s\n", lineno, eEndFile, inbuf);
+
 		switch (lineno) {
 		case 5:
 			strcpy(weather_prefix, inbuf);
 			break;
-		case 12:
+		case 13:
 			strcpy(output_prefix, inbuf);
 			break;
-		case 14:
+		case 15:
 			InFiles[eOutputDaily] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputDaily]);
-			//printf("filename: %s \n",InFiles[eOutputDaily]);
 			break;
-		case 15:
+		case 16:
 			InFiles[eOutputWeekly] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputWeekly]);
 			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
-		case 16:
+		case 17:
 			InFiles[eOutputMonthly] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputMonthly]);
 			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
-		case 17:
+		case 18:
 			InFiles[eOutputYearly] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputYearly]);
-			//printf("filename: %s \n",InFiles[eOutputYearly]);
 			break;
-		case 18:
+		case 19:
 			InFiles[eOutputDaily_soil] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputDaily_soil]);
 			//printf("filename: %s \n",InFiles[eOutputDaily]);
 			break;
-		case 19:
+		case 20:
 			InFiles[eOutputWeekly_soil] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputWeekly_soil]);
 			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
-		case 20:
+		case 21:
 			InFiles[eOutputMonthly_soil] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputMonthly_soil]);
 			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
-		case 21:
+		case 22:
 			InFiles[eOutputYearly_soil] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputYearly_soil]);
-			//printf("filename: %s \n",InFiles[eOutputYearly]);
 			break;
 
 		default:
@@ -181,6 +181,7 @@ void SW_F_read(const char *s) {
 
 			if (!isnull(InFiles[fileno]))
 				Mem_Free(InFiles[fileno]);
+
 			strcpy(buf, _ProjDir);
 			strcat(buf, inbuf);
 			InFiles[fileno] = Str_Dup(buf);
@@ -191,7 +192,7 @@ void SW_F_read(const char *s) {
 
 	if (fileno < eEndFile - 1) {
 		CloseFile(&f);
-		LogError(stdout, LOGFATAL, "Too few files (%d) in %s", fileno, MyFileName);
+		LogError(logfp, LOGFATAL, "Too few files (%d) in %s", fileno, MyFileName);
 	}
 
 	CloseFile(&f);
@@ -236,79 +237,8 @@ void SW_F_construct(const char *firstfile) {
 		_ProjDir[0] = '\0';
 
 }
-#ifdef RSOILWAT
-SEXP onGet_SW_F() {
-	int i = 0, j = 0;
 
-	SEXP swFiles;
-	SEXP SW_F_construct; //, SW_F_construct_names;
-	SEXP ProjDir;
-	SEXP FilesIn;
-	SEXP Rweather_prefix;
-	SEXP Routput_prefix;
-	char *cSW_F_construct_names[] = { "ProjDir", "InFiles", "WeatherPrefix", "OutputPrefix" };
 
-	PROTECT(swFiles = MAKE_CLASS("swFiles"));
-	PROTECT(SW_F_construct = NEW_OBJECT(swFiles));
-	PROTECT(ProjDir = allocVector(STRSXP, 1));
-	SET_STRING_ELT(ProjDir, 0, mkChar(_ProjDir));
-
-	PROTECT(FilesIn = allocVector(STRSXP, SW_NFILES));
-	for (i = 0; i < SW_NFILES; i++) {
-		if (InFiles[i] != NULL ) {
-			SET_STRING_ELT(FilesIn, i, mkChar(InFiles[i]));
-		}
-	}
-
-	PROTECT(Rweather_prefix = allocVector(STRSXP, 1));
-	SET_STRING_ELT(Rweather_prefix, 0, mkChar(weather_prefix));
-	PROTECT(Routput_prefix = allocVector(STRSXP, 1));
-	SET_STRING_ELT(Routput_prefix, 0, mkChar(output_prefix));
-	// attaching main's elements
-	SET_SLOT(SW_F_construct, install(cSW_F_construct_names[0]), ProjDir);
-	SET_SLOT(SW_F_construct, install(cSW_F_construct_names[1]), FilesIn);
-	SET_SLOT(SW_F_construct, install(cSW_F_construct_names[2]), Rweather_prefix);
-	SET_SLOT(SW_F_construct, install(cSW_F_construct_names[3]), Routput_prefix);
-	//PROTECT(SW_F_construct_names = allocVector(STRSXP, 4));
-	//for (i = 0; i < 4; i++)
-	//	SET_STRING_ELT(SW_F_construct_names, i, mkChar(cSW_F_construct_names[i]));
-	//setAttrib(SW_F_construct, R_NamesSymbol, SW_F_construct_names);
-
-	UNPROTECT(6);
-	return SW_F_construct;
-}
-
-void onSet_SW_F(SEXP SW_F_construct) {
-	int i, j;
-	SEXP ProjDir;
-	SEXP FilesIn;
-	SEXP Rweather_prefix;
-	SEXP Routput_prefix;
-
-	PROTECT(ProjDir = GET_SLOT(SW_F_construct, install("ProjDir")));
-	//_ProjDir = R_alloc(strlen(CHAR(STRING_ELT(ProjDir,0))));
-	strcpy(_ProjDir, CHAR(STRING_ELT(ProjDir,0)));
-
-	PROTECT(FilesIn = GET_SLOT(SW_F_construct, install("InFiles")));
-	j = LENGTH(FilesIn);
-	for(i=0;i<SW_NFILES;i++)
-		if (!isnull(InFiles[i])) {
-			Mem_Free(InFiles[i]);
-		}
-	for (i = 0; i < j; i++) {
-		InFiles[i] = Str_Dup(CHAR(STRING_ELT(FilesIn,i)));
-	}
-
-	PROTECT(Rweather_prefix = GET_SLOT(SW_F_construct, install("WeatherPrefix")));
-	//weather_prefix = R_alloc(strlen(CHAR(STRING_ELT(Rweather_prefix,0))));
-	strcpy(weather_prefix, CHAR(STRING_ELT(Rweather_prefix,0)));
-
-	PROTECT(Routput_prefix = GET_SLOT(SW_F_construct, install("OutputPrefix")));
-	//output_prefix = R_alloc(strlen(CHAR(STRING_ELT(Routput_prefix,0))));
-	strcpy(output_prefix, CHAR(STRING_ELT(Routput_prefix,0)));
-	UNPROTECT(4);
-}
-#endif
 void SW_WeatherPrefix(char prefix[]) {
 	strcpy(prefix, weather_prefix);
 }

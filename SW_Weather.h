@@ -25,12 +25,6 @@
 #define SW_WEATHER_H
 
 #include "SW_Times.h"
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 
 /* missing values may be different than with other things */
 #define WTH_MISSING   999.
@@ -59,22 +53,22 @@ typedef struct {
 /* current period's values (eg, weekly or monthly) */
 typedef struct {
 	RealD temp_max, temp_min, temp_avg, ppt, rain, snow, snowmelt, snowloss, /* 20091015 (drs) ppt is divided into rain and snow */
-	snowRunoff, surfaceRunoff, soil_inf, et, aet, pet,surfaceTemp;
+	snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, et, aet, pet,surfaceTemp;
 } SW_WEATHER_OUTPUTS;
 
 typedef struct {
 
-	Bool use_markov, /* TRUE=use markov for any year missing a weather */
+	Bool use_markov, /* swTRUE=use markov for any year missing a weather */
 	/*      file, which means markov must be initialized */
-	/* FALSE = fail if any weather file is missing.  */
+	/* swFALSE = fail if any weather file is missing.  */
 	use_snow;
 	RealD pct_snowdrift, pct_snowRunoff;
 	TimeInt days_in_runavg;
 	SW_TIMES yr;
 	RealD scale_precip[MAX_MONTHS], scale_temp_max[MAX_MONTHS], scale_temp_min[MAX_MONTHS],
 		scale_skyCover[MAX_MONTHS], scale_wind[MAX_MONTHS], scale_rH[MAX_MONTHS], scale_transmissivity[MAX_MONTHS];
-	char name_prefix[MAX_FILENAMESIZE];
-	RealD snowRunoff, surfaceRunoff, soil_inf,surfaceTemp;
+	char name_prefix[MAX_FILENAMESIZE - 5]; // subtract 4-digit 'year' file type extension
+	RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf,surfaceTemp;
 
 	/* This section is required for computing the output quantities.  */
 	SW_WEATHER_OUTPUTS dysum, /* helpful placeholder */
@@ -86,6 +80,8 @@ typedef struct {
 } SW_WEATHER;
 
 void SW_WTH_read(void);
+Bool _read_weather_hist(TimeInt year);
+void _clear_hist_weather(void);
 void SW_WTH_init(void);
 void SW_WTH_construct(void);
 void SW_WTH_new_day(void);
@@ -94,13 +90,6 @@ void SW_WTH_sum_today(void);
 void SW_WTH_end_day(void);
 void SW_WTH_clear_runavg_list(void);
 
-#ifdef RSOILWAT
-	SEXP onGet_SW_WTH();
-	void onSet_SW_WTH(SEXP SW_WTH);
-	SEXP onGet_WTH_DATA(void);
-	SEXP onGet_WTH_DATA_YEAR(TimeInt year);
-	Bool onSet_WTH_DATA(SEXP WTH_DATA_YEAR, TimeInt year);
-#endif
 
 #ifdef DEBUG_MEM
 void SW_WTH_SetMemoryRefs(void);

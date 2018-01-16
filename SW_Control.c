@@ -37,12 +37,14 @@
 #include "SW_VegEstab.h"
 #include "SW_VegProd.h"
 #include "SW_Weather.h"
+#include "SW_Carbon.h"
 
 /* =================================================== */
 /*                  Global Declarations                */
 /* --------------------------------------------------- */
 extern SW_MODEL SW_Model;
 extern SW_VEGESTAB SW_VegEstab;
+extern SW_SITE SW_Site;
 extern SW_VEGPROD SW_VegProd;
 #ifdef RSOILWAT
 	extern Bool useFiles;
@@ -51,16 +53,13 @@ extern SW_VEGPROD SW_VegProd;
 #endif
 
 SW_OUTPUT SW_Output_Files; // need to store the filenames when created in the stat_Output_timestep_CSV_Summary functions for use in SW_Output.c
-char *InFiles[SW_NFILES];
 
 /* =================================================== */
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
-static void _read_inputs(void);
 static void _begin_year(void);
 static void _begin_day(void);
 static void _end_day(void);
-static void _collect_values(void);
 
 /* Dummy declaration for Flow constructor defined in SW_Flow.c */
 void SW_FLW_construct(void);
@@ -69,6 +68,8 @@ void SW_FLW_construct(void);
 /***************** Begin Main Code *********************/
 
 void SW_CTL_main(void) {
+  int debug = 0;
+
 	TimeInt *cur_yr = &SW_Model.year;
 
 	/*----------------------------------------------------------
@@ -116,6 +117,7 @@ void SW_CTL_main(void) {
    ----------------------------------------------------------*/
 
 	for (*cur_yr = SW_Model.startyr; *cur_yr <= SW_Model.endyr; (*cur_yr)++) {
+		if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
 		SW_CTL_run_current_year();
 	}
 
@@ -129,7 +131,6 @@ void SW_CTL_init_model(const char *firstfile) {
 	/*=======================================================*/
 	/* initialize all structures, simulating
 	 * a constructor call */
-
 	SW_F_construct(firstfile);
 	SW_MDL_construct();
 	SW_WTH_construct();
@@ -139,17 +140,15 @@ void SW_CTL_init_model(const char *firstfile) {
 	SW_OUT_construct();
 	SW_SWC_construct();
 	SW_FLW_construct();
-
-	_read_inputs();
-
+	SW_CBN_construct();
 }
 
 void SW_CTL_run_current_year(void) {
 	/*=======================================================*/
+	/*=======================================================*/
 	TimeInt *doy = &SW_Model.doy;
 
 	_begin_year();
-
 	for (*doy = SW_Model.firstdoy; *doy <= SW_Model.lastdoy; (*doy)++) {
 		_begin_day();
 
@@ -162,16 +161,13 @@ void SW_CTL_run_current_year(void) {
 	}
 	SW_OUT_flush();
 
-
 }
 
 /**
   \fn void stat_Output_Daily_CSV_Summary(int iteration)
   \brief Creates daily files
-
   Creates daily files for SOILWAT standalone and for STEPWAT depending on defined flags
 	for STEPWAT if -i flag is used it creates file for each iteration naming file based on iteration
-
   \param iteration. Current iteration for file name if -i flag used in STEPWAT
 */
 ///This function will create daily
@@ -192,8 +188,8 @@ void stat_Output_Daily_CSV_Summary(int iteration)
 		char newFile_soil[80];
 		char newFile[80];
 		char *extension; // extension to add to end of file
-		char *fileDup = malloc(strlen(SW_F_name(eOutputDaily))+1);
-		char *fileDup_soil = malloc(strlen(SW_F_name(eOutputDaily_soil))+1);
+		char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputDaily))+1);
+		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputDaily_soil))+1);
 		char iterationToString[10];
 
 		strcpy(fileDup, SW_F_name(eOutputDaily)); // copy file name to new variable
@@ -227,10 +223,8 @@ void stat_Output_Daily_CSV_Summary(int iteration)
 /**
   \fn void stat_Output_Weekly_CSV_Summary(int iteration)
   \brief Creates weekly files
-
   Creates weekly files for SOILWAT standalone and for STEPWAT depending on defined flags
 	for STEPWAT if -i flag is used it creates file for each iteration naming file based on iteration
-
   \param iteration. Current iteration for file name if -i flag used in STEPWAT
 */
 //This function will create Weekly
@@ -251,8 +245,8 @@ void stat_Output_Weekly_CSV_Summary(int iteration)
 		char newFile_soil[80];
 		char newFile[80];
 		char *extension; // extension to add to end of file
-		char *fileDup = malloc(strlen(SW_F_name(eOutputWeekly))+1);
-		char *fileDup_soil = malloc(strlen(SW_F_name(eOutputWeekly_soil))+1);
+		char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputWeekly))+1);
+		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputWeekly_soil))+1);
 		char iterationToString[10];
 
 		strcpy(fileDup, SW_F_name(eOutputWeekly)); // copy file name to new variable
@@ -286,10 +280,8 @@ void stat_Output_Weekly_CSV_Summary(int iteration)
 /**
   \fn void stat_Output_Monthly_CSV_Summary(int iteration)
   \brief Creates montly files
-
   Creates monthly files for SOILWAT standalone and for STEPWAT depending on defined flags
 	for STEPWAT if -i flag is used it creates file for each iteration naming file based on iteration
-
   \param iteration. Current iteration for file name if -i flag used in STEPWAT
 */
 //This function will create Monthly
@@ -310,8 +302,8 @@ void stat_Output_Monthly_CSV_Summary(int iteration)
 		char newFile_soil[80];
 		char newFile[80];
 		char *extension; // extension to add to end of file
-		char *fileDup = malloc(strlen(SW_F_name(eOutputMonthly))+1);
-		char *fileDup_soil = malloc(strlen(SW_F_name(eOutputMonthly_soil))+1);
+		char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputMonthly))+1);
+		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputMonthly_soil))+1);
 		char iterationToString[10];
 
 		strcpy(fileDup, SW_F_name(eOutputMonthly)); // copy file name to new variable
@@ -345,10 +337,8 @@ void stat_Output_Monthly_CSV_Summary(int iteration)
 /**
   \fn void stat_Output_Yearly_CSV_Summary(int iteration)
   \brief Creates yearly files
-
   Creates yearly files for SOILWAT standalone and for STEPWAT depending on defined flags
 	for STEPWAT if -i flag is used it creates file for each iteration naming file based on iteration
-
   \param iteration. Current iteration for file name if -i flag used in STEPWAT
 */
 //This function will create Yearly
@@ -369,8 +359,8 @@ void stat_Output_Yearly_CSV_Summary(int iteration)
 		char newFile_soil[80];
 		char newFile[80];
 		char *extension; // extension to add to end of file
-		char *fileDup = malloc(strlen(SW_F_name(eOutputYearly))+1);
-		char *fileDup_soil = malloc(strlen(SW_F_name(eOutputYearly_soil))+1);
+		char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputYearly))+1);
+		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputYearly_soil))+1);
 		char iterationToString[10];
 
 		strcpy(fileDup, SW_F_name(eOutputYearly)); // copy file name to new variable
@@ -401,16 +391,20 @@ void stat_Output_Yearly_CSV_Summary(int iteration)
 	}
 }
 
+
 static void _begin_year(void) {
 	/*=======================================================*/
 	/* in addition to the timekeeper (Model), usually only
 	 * modules that read input yearly or produce output need
 	 * to have this call */
-	SW_MDL_new_year();
-	SW_WTH_new_year();
-	SW_SWC_new_year();
-	SW_VES_new_year();
-	SW_OUT_new_year();
+	 SW_MDL_new_year();
+	 SW_WTH_new_year();
+	 SW_SWC_new_year();
+	 SW_VES_new_year();
+	 SW_OUT_new_year();
+
+	 // Dynamic CO2 effects
+	 SW_VPD_init();
 
 }
 
@@ -427,60 +421,45 @@ static void _end_day(void) {
 	_collect_values();
 	SW_WTH_end_day();
 	SW_SWC_end_day();
-
 }
 
-static void _collect_values(void) {
-	/*=======================================================*/
+void SW_CTL_read_inputs_from_disk(void) {
+  int debug = 0;
 
-	SW_OUT_sum_today(eSWC);
-	SW_OUT_sum_today(eWTH);
-	SW_OUT_sum_today(eVES);
+  if (debug) swprintf("'SW_CTL_read_inputs_from_disk': Read input from disk:");
+  SW_F_read(NULL);
+  if (debug) swprintf(" 'files'");
 
-	SW_OUT_write_today();
+  SW_MDL_read();
+  if (debug) swprintf(" > 'model'");
 
+  SW_WTH_read();
+  if (debug) swprintf(" > 'weather'");
+
+  SW_VPD_read();
+  if (debug) swprintf(" > 'veg'");
+
+  SW_SIT_read();
+  if (debug) swprintf(" > 'site'");
+
+  SW_VES_read();
+  if (debug) swprintf(" > 'establishment'");
+
+  SW_OUT_read();
+  if (debug) swprintf(" > 'ouput'");
+
+  SW_CBN_read();
+  if (debug) swprintf(" > 'CO2'");
+
+  SW_SWC_read();
+  if (debug) swprintf(" > 'swc'");
+  if (debug) swprintf(" completed.\n");
 }
 
-static void _read_inputs(void) {
-	/*=======================================================*/
-#ifndef RSOILWAT
-	SW_F_read(NULL );
-	SW_MDL_read();
-	SW_WTH_read();
-	SW_VPD_read();
-	SW_SIT_read();
-	SW_VES_read();
-	SW_OUT_read();
-	SW_SWC_read();
-#else
-	if (useFiles) { //Read in the data and set it
-		SW_F_read(NULL );
-		SW_MDL_read();
-		SW_WTH_read();
-		SW_VPD_read();
-		SW_SIT_read();
-		SW_VES_read();
-		SW_OUT_read();
-		SW_SWC_read();
-	} else { //Use R data to set the data
-		onSet_SW_F(GET_SLOT(InputData,install("files")));
-		//Rprintf("swFiles\n");
-		onSet_SW_MDL(GET_SLOT(InputData,install("years")));
-		//Rprintf("swYears\n");
-		onSet_SW_WTH(GET_SLOT(InputData,install("weather")));
-		//Rprintf("swWeather\n");
-		onSet_SW_VPD(GET_SLOT(InputData,install("prod")));
-		//Rprintf("swProd\n");
-		onSet_SW_SIT(GET_SLOT(InputData,install("site")));
-		//Rprintf("swSite\n");
-		onSet_SW_VES(GET_SLOT(InputData,install("estab")));
-		//Rprintf("swEstab\n");
-		onSet_SW_OUT(GET_SLOT(InputData,install("output")));
-		//Rprintf("swOutput\n");
-		onSet_SW_SWC(GET_SLOT(InputData,install("swc")));
-		//Rprintf("swSWC\n");
-	}
-#endif
+
+void SW_CTL_obtain_inputs(void) {
+  SW_CTL_read_inputs_from_disk();
+  calculate_CO2_multipliers();
 }
 
 #ifdef DEBUG_MEM

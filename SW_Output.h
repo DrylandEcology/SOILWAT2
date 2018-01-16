@@ -31,6 +31,8 @@
 #ifndef SW_OUTPUT_H
 #define SW_OUTPUT_H
 
+#include "Times.h"
+
 #ifdef RSOILWAT
 #include <R.h>
 #include <Rdefines.h>
@@ -72,8 +74,9 @@
 #define SW_SOILTEMP		"SOILTEMP"		//26	4		2
 #define SW_ALLVEG		"ALLVEG"		//27	5		0/* position and variable marker, not an output key */
 #define SW_ESTAB		"ESTABL"		//28	5		0
+#define SW_CO2EFFECTS		"CO2EFFECTS"		//29	?		?
 
-#define SW_OUTNKEYS 29 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
+#define SW_OUTNKEYS 30 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
 
 /* these are the code analog of the above */
 /* see also key2str[] in Output.c */
@@ -111,8 +114,9 @@ typedef enum {
 	eSW_SoilTemp,
 	/* vegetation quantities */
 	eSW_AllVeg,
-	eSW_Estab, /* make sure this is the last one */
-	eSW_LastKey
+	eSW_Estab,
+	eSW_CO2Effects,
+	eSW_LastKey /* make sure this is the last one */
 } OutKey;
 
 /* output period specifiers found in input file */
@@ -145,9 +149,7 @@ typedef struct {
 	Bool use;
 	TimeInt first, last, 			/* updated for each year */
 			first_orig, last_orig;
-#ifdef RSOILWAT
 	int yr_row, mo_row, wk_row, dy_row;
-#endif
 	char *outfile; /* point to name of output file */
 	FILE *fp_dy; /* opened output file pointer for day*/
 	FILE *fp_wk; /* opened output file pointer for week*/
@@ -166,7 +168,7 @@ typedef struct {
 	FILE *fp_wk_soil_avg; /* opened output file pointer for week*/
 	FILE *fp_mo_soil_avg; /* opened output file pointer for month*/
 	FILE *fp_yr_soil_avg; /* opened output file pointer for year*/
-	void (*pfunc)(void); /* pointer to output routine */
+	void (*pfunc)(OutPeriod); /* pointer to output routine */
 } SW_OUTPUT;
 
 /* convenience loops for consistency.
@@ -188,10 +190,9 @@ void SW_OUT_write_today(void);
 void SW_OUT_write_year(void);
 void SW_OUT_close_files(void);
 void SW_OUT_flush(void);
-#ifdef RSOILWAT
-	SEXP onGet_SW_OUT(void);
-	void onSet_SW_OUT(SEXP OUT);
-#endif
+void _collect_values(void);
+void _echo_outputs(void);
+
 #ifdef DEBUG_MEM
 	void SW_OUT_SetMemoryRefs(void);
 #endif

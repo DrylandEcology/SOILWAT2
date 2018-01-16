@@ -81,7 +81,7 @@ void SW_MDL_construct(void) {
 	SW_MODEL *m = &SW_Model;
 
 	Time_init();
-	m->newweek = m->newmonth = m->newyear = FALSE;
+	m->newweek = m->newmonth = m->newyear = swFALSE;
 
 #ifndef STEPWAT
 	/* already set by user-provided seed in steppe */
@@ -108,7 +108,7 @@ void SW_MDL_read(void) {
 	int y, cnt;
 	TimeInt d;
 	char *p, enddyval[6];
-	Bool fstartdy = FALSE, fenddy = FALSE, fhemi = FALSE;
+	Bool fstartdy = swFALSE, fenddy = swFALSE, fhemi = swFALSE;
 
 	MyFileName = SW_F_name(eModel);
 	f = OpenFile(MyFileName, "r");
@@ -124,6 +124,7 @@ void SW_MDL_read(void) {
 		LogError(logfp, LOGFATAL, "%s: Negative start year (%d)", MyFileName, y);
 	}
 	m->startyr = yearto4digit((TimeInt) y);
+	m->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
 
 	/* ----- ending year */
 	if (!GetALine(f, inbuf)) {
@@ -151,14 +152,14 @@ void SW_MDL_read(void) {
 	while (GetALine(f, inbuf)) {
 		cnt++;
 		if (isalpha(*inbuf) && strcmp(inbuf, "end")) { /* get hemisphere */
-			m->isnorth = (toupper((int) *inbuf) == 'N');
-			fhemi = TRUE;
+			m->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
+			fhemi = swTRUE;
 			break;
-		}//TODO: SHOULDN'T WE SKIP THIS BELOW IF ABOVE IS TRUE
+		}//TODO: SHOULDN'T WE SKIP THIS BELOW IF ABOVE IS swTRUE
 		switch (cnt) {
 		case 1:
 			m->startstart = atoi(inbuf);
-			fstartdy = TRUE;
+			fstartdy = swTRUE;
 			break;
 		case 2:
 			p = inbuf;
@@ -167,11 +168,11 @@ void SW_MDL_read(void) {
 				enddyval[cnt++] = tolower((int) *(p++));
 			}
 			enddyval[cnt] = enddyval[5] = '\0';
-			fenddy = TRUE;
+			fenddy = swTRUE;
 			break;
 		case 3:
-			m->isnorth = (toupper((int) *inbuf) == 'N');
-			fhemi = TRUE;
+			m->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
+			fhemi = swTRUE;
 			break;
 		default:
 			break; /* skip any extra lines */
@@ -190,7 +191,7 @@ void SW_MDL_read(void) {
 		}
 		if (!fhemi) {
 			strcat(errstr, "\tHemisphere - using \"N\"\n");
-			m->isnorth = TRUE;
+			m->isnorth = swTRUE;
 		}
 		strcat(errstr, "Continuing.\n");
 		LogError(logfp, LOGWARN, errstr);
@@ -209,128 +210,6 @@ void SW_MDL_read(void) {
 
 }
 
-#ifdef RSOILWAT
-SEXP onGet_SW_MDL() {
-	int i;
-	SW_MODEL *m = &SW_Model;
-
-	SEXP swYears;
-	SEXP SW_MDL;//, SW_MDL_names;
-	SEXP StartYear;
-	SEXP EndYear;
-	SEXP StartStart;
-	SEXP EndEnd;
-	//SEXP DayMid;
-	SEXP North;
-	char *cSW_MDL_names[] = { "StartYear", "EndYear", "FDOFY", "EDOEY", "isNorth" };//"daymid"
-
-	PROTECT(swYears = MAKE_CLASS("swYears"));
-	PROTECT(SW_MDL = NEW_OBJECT(swYears));
-
-	PROTECT(StartYear = NEW_INTEGER(1));
-	INTEGER_POINTER(StartYear)[0] = m->startyr;
-	PROTECT(EndYear = NEW_INTEGER(1));
-	INTEGER_POINTER(EndYear)[0] = m->endyr;
-	PROTECT(StartStart = NEW_INTEGER(1));
-	INTEGER_POINTER(StartStart)[0] = m->startstart;
-	PROTECT(EndEnd = NEW_INTEGER(1));
-	INTEGER_POINTER(EndEnd)[0] = m->endend;
-	//PROTECT(DayMid = NEW_INTEGER(1));
-	//INTEGER_POINTER(DayMid)[0] = m->daymid;
-	PROTECT(North = NEW_LOGICAL(1));
-	LOGICAL_POINTER(North)[0] = m->isnorth;
-
-	// attaching main's elements
-	SET_SLOT(SW_MDL, install(cSW_MDL_names[0]), StartYear);
-	SET_SLOT(SW_MDL, install(cSW_MDL_names[1]), EndYear);
-	SET_SLOT(SW_MDL, install(cSW_MDL_names[2]), StartStart);
-	SET_SLOT(SW_MDL, install(cSW_MDL_names[3]), EndEnd);
-	SET_SLOT(SW_MDL, install(cSW_MDL_names[4]), North);
-
-	UNPROTECT(7);
-	return SW_MDL;
-}
-
-void onSet_SW_MDL(SEXP SW_MDL) {
-	SW_MODEL *m = &SW_Model;
-
-	SEXP StartYear;
-	SEXP EndYear;
-	SEXP StartStart;
-	SEXP EndEnd;
-	//SEXP DayMid;
-	SEXP North;
-	Bool fstartdy = FALSE, fenddy = FALSE, fhemi = FALSE;
-	TimeInt d;
-	char enddyval[6];
-
-	MyFileName = SW_F_name(eModel);
-
-	if (!IS_S4_OBJECT(SW_MDL)) {
-		LogError(logfp, LOGFATAL, "%s: No input.", MyFileName);
-	}
-
-	PROTECT(StartYear = GET_SLOT(SW_MDL, install("StartYear")));
-	if (INTEGER(StartYear)[0] < 0) {
-		LogError(logfp, LOGFATAL, "%s: Negative start year (%d)", MyFileName, INTEGER(StartYear)[0]);
-	}
-	m->startyr = INTEGER(StartYear)[0];
-	PROTECT(EndYear = GET_SLOT(SW_MDL, install("EndYear")));
-	if (isNull(EndYear) || INTEGER(EndYear)[0] == NA_INTEGER) {
-		LogError(logfp, LOGFATAL, "%s: Ending year not found.", MyFileName);
-	}
-	if (INTEGER(EndYear)[0] < 0) {
-		LogError(logfp, LOGFATAL, "%s: Negative ending year (%d)", MyFileName, INTEGER(EndYear)[0]);
-	}
-	m->endyr = INTEGER(EndYear)[0];
-	if (m->endyr < m->startyr) {
-		LogError(logfp, LOGFATAL, "%s: Start Year > End Year", MyFileName);
-	}
-
-	PROTECT(StartStart = GET_SLOT(SW_MDL, install("FDOFY")));
-	m->startstart = INTEGER(StartStart)[0];
-	fstartdy = TRUE;
-	PROTECT(EndEnd = GET_SLOT(SW_MDL, install("EDOEY")));
-
-	d = INTEGER(EndEnd)[0];
-	fenddy = TRUE;
-
-	//PROTECT(DayMid = VECTOR_ELT(SW_MDL, 4));
-	//m->daymid = INTEGER(DayMid)[0];
-	PROTECT(North = GET_SLOT(SW_MDL, install("isNorth")));
-	m->isnorth = (Bool)LOGICAL(North)[0];
-	fhemi = TRUE;
-
-	if (!(fstartdy && fenddy && fhemi)) {
-		sprintf(errstr, "\nNot found in %s:\n", MyFileName);
-		if (!fstartdy) {
-			strcat(errstr, "\tStart Day  - using 1\n");
-			m->startstart = 1;
-		}
-		if (!fenddy) {
-			strcat(errstr, "\tEnd Day    - using \"end\"\n");
-			strcpy(enddyval, "end");
-		}
-		if (!fhemi) {
-			strcat(errstr, "\tHemisphere - using \"N\"\n");
-			m->isnorth = TRUE;
-		}
-		strcat(errstr, "Continuing.\n");
-		LogError(logfp, LOGWARN, errstr);
-	}
-
-	m->startstart += ((m->isnorth) ? DAYFIRST_NORTH : DAYFIRST_SOUTH) - 1;
-	//if (strcmp(enddyval, "end") == 0) {
-		//m->endend = (m->isnorth) ? Time_get_lastdoy_y(m->endyr) : DAYLAST_SOUTH;
-	//} else {
-	m->endend = (d == 365) ? Time_get_lastdoy_y(m->endyr) : 365;
-	//}
-
-	m->daymid = (m->isnorth) ? DAYMID_NORTH : DAYMID_SOUTH;
-
-	UNPROTECT(5);
-}
-#endif
 
 void SW_MDL_new_year() {
 	/* =================================================== */
@@ -346,6 +225,7 @@ void SW_MDL_new_year() {
 	_prevweek = _prevmonth = _prevyear = _notime;
 
 	Time_new_year(year);
+	SW_Model.simyear = SW_Model.year + SW_Model.addtl_yr;
 
 	m->firstdoy = (year == m->startyr) ? m->startstart : 1;
 	m->lastdoy = (year == m->endyr) ? m->endend : Time_lastDOY();
@@ -363,20 +243,21 @@ void SW_MDL_new_day(void) {
 	/* in this case, we've finished the daily loop and are about
 	 * to flush the output */
 	if (SW_Model.doy > SW_Model.lastdoy) {
-		SW_Model.newyear = SW_Model.newmonth = SW_Model.newweek = TRUE;
+		SW_Model.newyear = SW_Model.newmonth = SW_Model.newweek = swTRUE;
 		return;
 	}
 
 	if (SW_Model.month != _prevmonth) {
-		SW_Model.newmonth = (_prevmonth != _notime) ? TRUE : FALSE;
+		SW_Model.newmonth = (_prevmonth != _notime) ? swTRUE : swFALSE;
 		_prevmonth = SW_Model.month;
 	} else
-		SW_Model.newmonth = FALSE;
+		SW_Model.newmonth = swFALSE;
 
 	/*  if (SW_Model.week != _prevweek || SW_Model.month == NoMonth) { */
 	if (SW_Model.week != _prevweek) {
-		SW_Model.newweek = (_prevweek != _notime) ? TRUE : FALSE;
+		SW_Model.newweek = (_prevweek != _notime) ? swTRUE : swFALSE;
 		_prevweek = SW_Model.week;
 	} else
-		SW_Model.newweek = FALSE;
+		SW_Model.newweek = swFALSE;
+
 }

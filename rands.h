@@ -52,8 +52,7 @@ double RandUni_fast(void);
 int RandUniRange(const long first, const long last);
 double RandNorm(double mean, double stddev);
 void RandUniList(long, long, long, RandListType[]);
-float genbet ( float aa, float bb );
-float RandBeta ( float aa, float bb );
+float RandBeta(float aa, float bb);
 #if RAND_FAST
 #define RandUni RandUni_fast
 #else

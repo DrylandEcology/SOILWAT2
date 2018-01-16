@@ -48,12 +48,7 @@
 #define SW_SITE_H
 
 #include "SW_Defines.h"
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
+
 
 typedef unsigned int LyrIndex;
 
@@ -90,13 +85,14 @@ typedef struct {
 typedef struct {
 
 	Bool reset_yr, /* 1: reset values at start of each year */
-	deepdrain, /* 1: allow drainage into deepest layer  */
-	use_soil_temp; /* whether or not to do soil_temperature calculations */
+		deepdrain, /* 1: allow drainage into deepest layer  */
+		use_soil_temp; /* whether or not to do soil_temperature calculations */
+
 	LyrIndex n_layers, /* total number of soil layers */
-	n_transp_rgn, /* soil layers are grouped into n transp. regions */
-	n_evap_lyrs, /* number of layers in which evap is possible */
-	n_transp_lyrs_forb, n_transp_lyrs_tree, n_transp_lyrs_shrub, n_transp_lyrs_grass, /* layer index of deepest transp. region       */
-	deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
+		n_transp_rgn, /* soil layers are grouped into n transp. regions */
+		n_evap_lyrs, /* number of layers in which evap is possible */
+		n_transp_lyrs_forb, n_transp_lyrs_tree, n_transp_lyrs_shrub, n_transp_lyrs_grass, /* layer index of deepest transp. region       */
+		deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
 	RealD slow_drain_coeff, /* low soil water drainage coefficient   */
 		pet_scale,	/* changes relative effect of PET calculation */
 		latitude,	/* latitude of the site (radians)        */
@@ -119,10 +115,10 @@ typedef struct {
 		meanAirTemp, 	/* meanAirTemp is the mean air temperature for last year, it's a constant read in from the siteparams.in file used in soil_temperature function */
 		stDeltaX,		/* for the soil_temperature function, deltaX is the distance between profile points (default: 15) */
 		stMaxDepth,		/* for the soil_temperature function, the maxDepth of the interpolation function */
-		percentRunoff;	/* the percentage of surface water lost daily */
+		percentRunoff,	/* the percentage of surface water lost daily */
+		percentRunon;	/* the percentage of water that is added to surface gained daily */
 
 	unsigned int stNRGR; /* number of interpolations, for the soil_temperature function */
-
 	/* params for tanfunc rate calculations for evap and transp. */
 	/* tanfunc() creates a logistic-type graph if shift is positive,
 	 * the graph has a negative slope, if shift is 0, slope is positive.
@@ -134,16 +130,19 @@ typedef struct {
 
 } SW_SITE;
 
+
+void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n);
+void calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel, LyrIndex n);
+
+void init_site_info(void);
 void SW_SIT_read(void);
 void SW_SIT_construct(void);
+void _echo_inputs(void);
 
 /* these used to be in Layers */
 void SW_SIT_clear_layers(void);
-#ifdef RSOILWAT
-	SEXP onGet_SW_SIT();
-	void onSet_SW_SIT(SEXP SW_SIT);
-	SEXP onGet_SW_LYR();
-#endif
+LyrIndex _newlayer(void);
+
 #ifdef DEBUG_MEM
 	void SW_SIT_SetMemoryRefs(void);
 #endif

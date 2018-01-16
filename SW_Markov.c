@@ -52,25 +52,25 @@ static RealD _vcov[2][2], _ucov[2];
 /* --------------------------------------------------- */
 
 static void temp_correct(TimeInt doy,RealD *tmax, RealD *tmin, RealD *rain) {
-    
+
     RealD tx, tn,cfxw,cfxd,cfnw,cfnd,rn;
-    
+
     rn = *rain;
     cfxw = SW_Markov.cfxw[doy];
     cfnw = SW_Markov.cfnw[doy];
     cfxd = SW_Markov.cfxd[doy];
     cfnd = SW_Markov.cfnd[doy];
     tx = *tmax;
-    tn = *tmin; 
-    
+    tn = *tmin;
+
     if (rn > 0.) {
             if (tx < 0. ) { //if temp is less than 0 special case
                 tx = tx*((1.0 - cfxw)+1.0);
             }
             else { tx = tx*cfxw;
             }
-            
-            
+
+
             if (tn < 0) {//if temp is less than 0 special case
                 tn = tn*((1.0 - cfnw)+1.0);
             }
@@ -78,7 +78,7 @@ static void temp_correct(TimeInt doy,RealD *tmax, RealD *tmin, RealD *rain) {
             tn = tn*cfnw;
             }
     }
-        
+
  //apply correction factor to temperature
         if (rn <= 0.) {
             if (tx < 0. ) {//if temp is less than 0 special case
@@ -87,7 +87,7 @@ static void temp_correct(TimeInt doy,RealD *tmax, RealD *tmin, RealD *rain) {
             else {
                 tx = tx*cfxd;
             }
-            
+
             if (tn < 0.) { //if temp is less than 0 special case
                 tn = tn*((1.0 - cfnd)+1.0);
             }
@@ -95,11 +95,11 @@ static void temp_correct(TimeInt doy,RealD *tmax, RealD *tmin, RealD *rain) {
             tn = tn*cfnd;
            }
         }
-        
-        
+
+
         *tmin = tn;
         *tmax = tx;
-        
+
 }
 
 static void mvnorm(RealD *tmax, RealD *tmin) {
@@ -120,7 +120,7 @@ static void mvnorm(RealD *tmax, RealD *tmin) {
 	 *       C converts the floats transparently.
 	 */
 	RealD s, z1, z2, vc00 = _vcov[0][0], vc10 = _vcov[1][0], vc11 = _vcov[1][1];
-        
+
 	vc00 = sqrt(vc00);
 	vc10 = (GT(vc00, 0.)) ? vc10 / vc00 : 0;
 	s = vc10 * vc10;
@@ -128,8 +128,8 @@ static void mvnorm(RealD *tmax, RealD *tmin) {
 		LogError(logfp, LOGFATAL, "\nBad covariance matrix in mvnorm()");
 	vc11 = (EQ(vc11, s)) ? 0. : sqrt(vc11 -s);
 
-	z1 = RandNorm(0., 3.5);  
-	z2 = RandNorm(0., 3.5);   
+	z1 = RandNorm(0., 3.5);
+	z2 = RandNorm(0., 3.5);
 	*tmin = (vc10 * z1) + (vc11 * z2) + _ucov[1];
 	*tmax = vc00 * z1 + _ucov[0];
 
@@ -183,7 +183,7 @@ void SW_MKV_today(TimeInt doy, RealD *tmax, RealD *tmin, RealD *rain) {
 	_ucov[0] = SW_Markov.u_cov[week][0];
 	_ucov[1] = SW_Markov.u_cov[week][1];
 	mvnorm(tmax, tmin);
-    temp_correct(doy,tmax,tmin,rain);        
+    temp_correct(doy,tmax,tmin,rain);
 }
 
 Bool SW_MKV_read_prob(void) {
@@ -198,13 +198,13 @@ Bool SW_MKV_read_prob(void) {
 	MyFileName = SW_F_name(eMarkovProb);
 
 	if (NULL == (f = fopen(MyFileName, "r")))
-		return FALSE;
+		return swFALSE;
 
 	while (GetALine(f, inbuf)) {
 		if (++lineno == MAX_DAYS)
 			break; /* skip extra lines */
 
-		x = sscanf(inbuf, "%d %f %f %f %f %f %f %f %f", &day, &wet, &dry, &avg, &std, &cfxw, &cfxd, &cfnw, &cfnd);               
+		x = sscanf(inbuf, "%d %f %f %f %f %f %f %f %f", &day, &wet, &dry, &avg, &std, &cfxw, &cfxd, &cfnw, &cfnd);
 		if (x < nitems) {
 			CloseFile(&f);
 			LogError(logfp, LOGFATAL, "\nToo few values in line %d file %s\n", lineno, MyFileName);
@@ -222,75 +222,9 @@ Bool SW_MKV_read_prob(void) {
 	}
 	CloseFile(&f);
 
-	return TRUE;
+	return swTRUE;
 }
 
-#ifdef RSOILWAT
-SEXP onGet_MKV(void) {
-	SEXP swMarkov;
-	SEXP MKV;//, MKV_names;
-
-	PROTECT(swMarkov = MAKE_CLASS("swMarkov"));
-	PROTECT(MKV = NEW_OBJECT(swMarkov));
-	SET_SLOT(MKV,install("Prob"),onGet_MKV_prob());
-	SET_SLOT(MKV,install("Conv"),onGet_MKV_conv());
-	//PROTECT(MKV_names = allocVector(STRSXP,2));
-	//SET_STRING_ELT(MKV_names,0,mkChar("Prob"));
-	//SET_STRING_ELT(MKV_names,1,mkChar("Conv"));
-	//setAttrib(MKV,R_NamesSymbol,MKV_names);
-	UNPROTECT(2);
-	return MKV;
-}
-
-SEXP onGet_MKV_prob(void) {
-	int i;
-	SW_MARKOV *v = &SW_Markov;
-	SEXP MKV_prob, MKV_prob_names, MKV_prob_names_y;
-	RealD *p_MKV_prob;
-	char *cMKC_prob[] = { "day", "wet", "dry", "avg_ppt", "std_ppt" };
-
-	PROTECT(MKV_prob = allocMatrix(REALSXP,MAX_DAYS,5));
-	p_MKV_prob = REAL(MKV_prob);
-	for (i = 0; i < MAX_DAYS; i++) {
-		p_MKV_prob[i + MAX_DAYS * 0] = (i + 1);
-		p_MKV_prob[i + MAX_DAYS * 1] = v->wetprob[i];
-		p_MKV_prob[i + MAX_DAYS * 2] = v->dryprob[i];
-		p_MKV_prob[i + MAX_DAYS * 3] = v->avg_ppt[i];
-		p_MKV_prob[i + MAX_DAYS * 4] = v->std_ppt[i];
-	}
-	PROTECT(MKV_prob_names = allocVector(VECSXP,2));
-	PROTECT(MKV_prob_names_y = allocVector(STRSXP,5));
-	for (i = 0; i < 5; i++)
-		SET_STRING_ELT(MKV_prob_names_y, i, mkChar(cMKC_prob[i]));
-	SET_VECTOR_ELT(MKV_prob_names, 1, MKV_prob_names_y);
-	setAttrib(MKV_prob, R_DimNamesSymbol, MKV_prob_names);
-
-	UNPROTECT(3);
-	return MKV_prob;
-}
-
-Bool onSet_MKV_prob(SEXP MKV_prob) {
-	SW_MARKOV *v = &SW_Markov;
-	const int nitems = 5;
-	int i;
-	RealF wet, dry, avg, std;
-	RealD *p_MKV_prob;
-
-	MyFileName = SW_F_name(eMarkovProb);
-
-	if (nrows(MKV_prob) != MAX_DAYS && ncols(MKV_prob) != nitems)
-		return FALSE;
-	p_MKV_prob = REAL(MKV_prob);
-
-	for (i = 0; i < MAX_DAYS; i++) {
-		v->wetprob[i] = p_MKV_prob[i + MAX_DAYS * 1];
-		v->dryprob[i] = p_MKV_prob[i + MAX_DAYS * 2];
-		v->avg_ppt[i] = p_MKV_prob[i + MAX_DAYS * 3];
-		v->std_ppt[i] = p_MKV_prob[i + MAX_DAYS * 4];
-	}
-	return TRUE;
-}
-#endif
 
 Bool SW_MKV_read_cov(void) {
 	/* =================================================== */
@@ -303,7 +237,7 @@ Bool SW_MKV_read_cov(void) {
 	MyFileName = SW_F_name(eMarkovCov);
 
 	if (NULL == (f = fopen(MyFileName, "r")))
-		return FALSE;
+		return swFALSE;
 
 	while (GetALine(f, inbuf)) {
 		if (++lineno == MAX_WEEKS)
@@ -324,61 +258,9 @@ Bool SW_MKV_read_cov(void) {
 	}
 	CloseFile(&f);
 
-	return TRUE;
+	return swTRUE;
 }
 
-#ifdef RSOILWAT
-SEXP onGet_MKV_conv(void) {
-	int i;
-	SW_MARKOV *v = &SW_Markov;
-	SEXP MKV_conv, MKV_conv_names, MKV_conv_names_y;
-	RealD *p_MKV_conv;
-	char *cMKV_conv[] = { "week", "t1", "t2", "t3", "t4", "t5", "t6" };
-
-	PROTECT(MKV_conv = allocMatrix(REALSXP, MAX_WEEKS, 7));
-	p_MKV_conv = REAL(MKV_conv);
-	for (i = 0; i < MAX_WEEKS; i++) {
-		p_MKV_conv[i + MAX_WEEKS * 0] = (i + 1);
-		p_MKV_conv[i + MAX_WEEKS * 1] = v->u_cov[i][0];
-		p_MKV_conv[i + MAX_WEEKS * 2] = v->u_cov[i][1];
-		p_MKV_conv[i + MAX_WEEKS * 3] = v->v_cov[i][0][0];
-		p_MKV_conv[i + MAX_WEEKS * 4] = v->v_cov[i][0][1];
-		p_MKV_conv[i + MAX_WEEKS * 5] = v->v_cov[i][1][0];
-		p_MKV_conv[i + MAX_WEEKS * 6] = v->v_cov[i][1][1];
-	}
-	PROTECT(MKV_conv_names = allocVector(VECSXP,2));
-	PROTECT(MKV_conv_names_y = allocVector(STRSXP,7));
-	for (i = 0; i < 7; i++)
-		SET_STRING_ELT(MKV_conv_names_y, i, mkChar(cMKV_conv[i]));
-	SET_VECTOR_ELT(MKV_conv_names, 1, MKV_conv_names_y);
-	setAttrib(MKV_conv, R_DimNamesSymbol, MKV_conv_names);
-
-	UNPROTECT(3);
-	return MKV_conv;
-}
-Bool onSet_MKV_conv(SEXP MKV_conv) {
-	SW_MARKOV *v = &SW_Markov;
-	const int nitems = 7;
-	int i;
-	RealD *p_MKV_conv;
-	SEXP dim;
-
-	MyFileName = SW_F_name(eMarkovCov);
-
-	if ((nrows(MKV_conv) != MAX_WEEKS) && (ncols(MKV_conv) != nitems))
-		return FALSE;
-	p_MKV_conv = REAL(MKV_conv);
-	for (i = 0; i < MAX_WEEKS; i++) {
-		p_MKV_conv[i + MAX_WEEKS * 1] = v->u_cov[i][0];
-		p_MKV_conv[i + MAX_WEEKS * 2] = v->u_cov[i][1];
-		p_MKV_conv[i + MAX_WEEKS * 3] = v->v_cov[i][0][0];
-		p_MKV_conv[i + MAX_WEEKS * 4] = v->v_cov[i][0][1];
-		p_MKV_conv[i + MAX_WEEKS * 5] = v->v_cov[i][1][0];
-		p_MKV_conv[i + MAX_WEEKS * 6] = v->v_cov[i][1][1];
-	}
-	return TRUE;
-}
-#endif
 
 #ifdef DEBUG_MEM
 #include "myMemory.h"

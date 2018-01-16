@@ -92,9 +92,11 @@
 #include <stdlib.h>
 
 #include "generic.h"
+#include "filefuncs.h"
 #include "SW_Defines.h"
 #include "SW_Flow_lib.h"
-#include "SW_Flow_subs.h"
+#include "SW_SoilWater.h"
+#include "SW_Carbon.h"
 #include "Times.h"
 
 
@@ -103,7 +105,7 @@
 /* --------------------------------------------------- */
 extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
-unsigned int soil_temp_error;  // simply keeps track of whether or not an error has been reported in the soil_temperature function.  0 for no, 1 for yes.
+extern SW_CARBON SW_Carbon;
 unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
 /* *************************************************** */
@@ -117,9 +119,29 @@ static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 /*              Local Function Definitions             */
 /* --------------------------------------------------- */
 
-/**********************************************************************
- PURPOSE: Calculate the water intercepted by grasses.
+/**
+	\fn void grass_intercepted_water(double *pptleft, double *wintgrass, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
+	\brief Calculate the water intercepted by grasses.
 
+	Equations based on Corbet and Crouse (1968). \cite Corbett1968
+
+  \param pptleft.
+	\param wintgrass.
+	\param ppt. daily precipitation
+	\param vegcov. vegetation cover of grass for the day (based on monthly biomass
+  values, see the routine "initprod").
+	\param scale. Scale paramater. Used to represent snow depth.
+	\param a. a parameter for intercept of grass interception equation.
+	\param b. b parameter for intercept of grass interception equation.
+	\param c. c parameter for slope of grass interception equation.
+	\param d. d parameter for slope of grass interception equation.
+
+	\return pptleft. Amount of precipitation left after interception.
+	\return wintgrass. Amount of precipitation interception by grass.
+*/
+
+
+/**********************************************************************
  HISTORY:
  4/30/92  (SLC)
  7/1/92   (SLC) Reset pptleft to 0 if less than 0 (due to round off)
@@ -135,15 +157,6 @@ static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
  *wintstcr = par1 * .026 * ppt + 0.094 * par2;
 
  21-Oct-03 (cwb) added MAX_WINTLIT line
-
- INPUTS:
- ppt     - precip. for the day
- vegcov  - vegetation cover for the day (based on monthly biomass
- values, see the routine "initprod")
-
- OUTPUT:
- pptleft -  precip. left after interception by standing crop.
- wintstcr - amount of water intercepted by standing crop.
  **********************************************************************/
 void grass_intercepted_water(double *pptleft, double *wintgrass, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
 	double intcpt, slope;
@@ -298,28 +311,40 @@ void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, 
 	}
 }
 
-void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft, unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
-		double *standingWater) {
-			/**********************************************************************
-			 PURPOSE: Infilitrate water into soil layers under high water
-			 conditions.
+/**
+	\fn void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft,
+	unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
+	double *standingWater)
 
-			 HISTORY:
-			 4/30/92  (SLC)
-			 1/14/02 - (cwb) fixed off by one error in loop.
-			 10/20/03 - (cwb) added drainout variable to return drainage
-			 out of lowest layer
+	\brief Infiltrate water into soil layers under high water conditions. Otherwise
+	known as saturated percolation.
 
-			 INPUTS:
-			 swc - soilwater content before drainage.
-			 swcfc    - soilwater content at field capacity.
-			 pptleft  - precip. available to the soil.
-			 nlyrs - number of layers to drain from
+	\param swc.  An array of doubles. Soilwater content in each layer before drainage.
+	\param swcfc. An array of doubles. Soilwater content in each layer at field capacity.
+	\param swcsat. An array of doubles. Soilwater content in each layer at saturation.
 
-			 OUTPUTS:
-			 drain  - drainage from layers
-			 swc_local - soilwater content after water has been drained
-			 **********************************************************************/
+	\param impermeability. An array of doubles. Impermeability measures for each layer.
+	\param pptleft. Daily precipitation available to the soil.
+	\param nlyrs. Number of layers to drain from.
+
+	\return drain An array of doubles. Drainage amount in each layer
+	\return swc. An array of doubles. Soilwater content in each layer after drainage.
+	\return standingWater. A double. Remaining water on surface.
+	\return drainout. A double. Drainage from last layer.
+
+*/
+/**********************************************************************
+ HISTORY:
+ 4/30/92  (SLC)
+ 1/14/02 - (cwb) fixed off by one error in loop.
+ 10/20/03 - (cwb) added drainout variable to return drainage
+ out of lowest layer
+ **********************************************************************/
+
+void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft,
+	unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
+	double *standingWater) {
+
 	unsigned int i;
 	int j;
 	double d[nlyrs];
@@ -328,7 +353,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 	ST_RGR_VALUES *st = &stValues;
 
 	// Infiltration
-	swc[0] += pptleft;
+	swc[0] += pptleft + *standingWater;
 	(*standingWater) = 0.;
 
 	// Saturated percolation
@@ -588,7 +613,7 @@ void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n
 
 		for (i = 0; i < n_layers; i++) {
 			if (tr_regions[i] == r) {
-				swp += tr_coeff[i] * SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+				swp += tr_coeff[i] * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
 				sumco += tr_coeff[i];
 			}
 		}
@@ -735,7 +760,7 @@ void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double
 	for (i = 0; i < nelyrs; i++) {
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
-		avswp += x * SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		avswp += x * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
 	}
 
 	avswp /= sumwidth;
@@ -786,7 +811,7 @@ void pot_soil_evap_bs(double *bserate, unsigned int nelyrs, double ecoeff[], dou
 	for (i = 0; i < nelyrs; i++) {
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
-		avswp += x * SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		avswp += x * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
 	}
 
 	avswp /= sumwidth;
@@ -796,7 +821,7 @@ void pot_soil_evap_bs(double *bserate, unsigned int nelyrs, double ecoeff[], dou
 }
 
 void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, double fbst, double petday, double swp_shift, double swp_shape, double swp_inflec,
-		double swp_range, double shade_scale, double shade_deadmax, double shade_xinflex, double shade_slope, double shade_yinflex, double shade_range) {
+		double swp_range, double shade_scale, double shade_deadmax, double shade_xinflex, double shade_slope, double shade_yinflex, double shade_range, double co2_wue_multiplier) {
 	/**********************************************************************
 	 PURPOSE: Calculate potential transpiration rate.
 	 See 2.11 in ELM doc.
@@ -820,6 +845,7 @@ void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, 
 	 biodead   - biomass of dead
 	 fbst      - fraction of water loss from transpiration
 	 petday       - potential evapotranspiration
+	 co2_wue_multiplier - water-usage efficiency multiplier calculated from CO2 ppm
 
 	 LOCAL VARIABLES:
 	 shadeaf - shade affect on transpiration rate
@@ -850,7 +876,8 @@ void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, 
 			shadeaf = 1.0;
 		}
 
-		*bstrate = watrate(swpavg, petday, swp_shift, swp_shape, swp_inflec, swp_range) * shadeaf * petday * fbst;
+		*bstrate = watrate(swpavg, petday, swp_shift, swp_shape,
+							   swp_inflec, swp_range) * shadeaf * petday * fbst * co2_wue_multiplier;
 	}
 }
 
@@ -999,7 +1026,7 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	ST_RGR_VALUES *st = &stValues;
 
 	for (i = 0; i < nlyrs; i++) {
-		swpfrac[i] = coeff[i] / SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		swpfrac[i] = coeff[i] / SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
 		sumswp += swpfrac[i];
 	}
 
@@ -1136,9 +1163,9 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 	ST_RGR_VALUES *st = &stValues;
 
 	for (i = 0; i < nlyrs; i++) {
-		swp[i] = SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		swp[i] = SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
 		relCondroot[i] = fmin( 1., fmax(0., 1./(1. + powe(swp[i]/swp50, shapeCond) ) ) );
-		swpwp[i] = SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swcwp[i], i);
+		swpwp[i] = SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swcwp[i], i);
 
 		hydredmat[0][i] = hydredmat[i][0] = 0.; /* no hydred in top layer */
 	}
@@ -1224,12 +1251,7 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], 
 			sTemp[j] = sTemp[j] / n;
 
 		if (toDebug)
-			#ifndef RSOILWAT
-				printf("\nConf T : i=%i, j=%i, n=%i, sTemp[%i]=%2.2f, acc=%2.2f", i, j, n, j, sTemp[j], acc);
-			#else
-				Rprintf("\nConf T : i=%i, j=%i, n=%i, sTemp[%i]=%2.2f, acc=%2.2f", i, j, n, j, sTemp[j], acc);
-			#endif
-
+			swprintf("\nConf T : i=%i, j=%i, n=%i, sTemp[%i]=%2.2f, acc=%2.2f", i, j, n, j, sTemp[j], acc);
 	}
 }
 
@@ -1258,22 +1280,12 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[], 
 		sTempR[i + 1] = interpolation(depth_Soil2[j1], depth_Soil2[j2], sTemp2[j1], sTemp2[j2], depth_Temp[i]);
 
 		if (toDebug)
-			#ifndef RSOILWAT
-				printf("\nConf T: i=%i, j1=%i, j2=%i, sTempR[%i]=%2.2f, sTemp2[%i]=%2.2f, sTemp2[%i]=%2.2f, depthT[%i]=%2.2f, depthS2[%i]=%2.2f, depthS2[%i]=%2.2f", i, j1, j2, i, sTempR[i], j1, sTemp2[j1], j2, sTemp2[j2], i, depth_Temp[i], j1, depth_Soil2[j1], j2, depth_Soil2[j2]);
-			#else
-				Rprintf("\nConf T: i=%i, j1=%i, j2=%i, sTempR[%i]=%2.2f, sTemp2[%i]=%2.2f, sTemp2[%i]=%2.2f, depthT[%i]=%2.2f, depthS2[%i]=%2.2f, depthS2[%i]=%2.2f", i, j1, j2, i, sTempR[i], j1, sTemp2[j1], j2, sTemp2[j2], i, depth_Temp[i], j1, depth_Soil2[j1], j2, depth_Soil2[j2]);
-			#endif
-
+			swprintf("\nConf T: i=%i, j1=%i, j2=%i, sTempR[%i]=%2.2f, sTemp2[%i]=%2.2f, sTemp2[%i]=%2.2f, depthT[%i]=%2.2f, depthS2[%i]=%2.2f, depthS2[%i]=%2.2f", i, j1, j2, i, sTempR[i], j1, sTemp2[j1], j2, sTemp2[j2], i, depth_Temp[i], j1, depth_Soil2[j1], j2, depth_Soil2[j2]);
 	}
 	sTempR[nlyrTemp + 1] = endTemp;
 
 	if (toDebug)
-		#ifndef RSOILWAT
-			printf("\nConf T: sTempR[%i]=%2.2f, sTempR[%i]=%2.2f", i, sTempR[i], i+1, sTempR[i+1]);
-		#else
-			Rprintf("\nConf T: sTempR[%i]=%2.2f, sTempR[%i]=%2.2f", i, sTempR[i], i+1, sTempR[i+1]);
-		#endif
-
+		swprintf("\nConf T: sTempR[%i]=%2.2f, sTempR[%i]=%2.2f", i, sTempR[i], i+1, sTempR[i+1]);
 }
 
 void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrSoil, double width_Soil[], double var[], unsigned int nlyrTemp, double width_Temp, double res[]){
@@ -1302,12 +1314,7 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
 		res[i] = res[i] / sum;
 
 		if (toDebug)
-			#ifndef RSOILWAT
-				printf("\nConf A: acc=%2.2f, sum=%2.2f, res[%i]=%2.2f, var[%i]=%2.2f, [%i]=%2.2f, cor[%i][%i]=%2.2f, width_Soil[%i]=%2.2f, [%i]=%2.2f", acc, sum, i, res[i], j, var[j], j-1, var[j-1], i, j, cor[i][j], j, width_Soil[j], j-1, width_Soil[j-1]);
-			#else
-				Rprintf("\nConf A: acc=%2.2f, sum=%2.2f, res[%i]=%2.2f, var[%i]=%2.2f, [%i]=%2.2f, cor[%i][%i]=%2.2f, width_Soil[%i]=%2.2f, [%i]=%2.2f", acc, sum, i, res[i], j, var[j], j-1, var[j-1], i, j, cor[i][j], j, width_Soil[j], j-1, width_Soil[j-1]);
-			#endif
-
+			swprintf("\nConf A: acc=%2.2f, sum=%2.2f, res[%i]=%2.2f, var[%i]=%2.2f, [%i]=%2.2f, cor[%i][%i]=%2.2f, width_Soil[%i]=%2.2f, [%i]=%2.2f", acc, sum, i, res[i], j, var[j], j-1, var[j-1], i, j, cor[i][j], j, width_Soil[j], j-1, width_Soil[j-1]);
 
 	}
 }
@@ -1323,7 +1330,7 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
  */
 double surface_temperature_under_snow(double airTempAvg, double snow){
   double kSnow; /** the effect of snow based on swe */
-  double tSoilAvg; /** the average temeperature of the soil surface */
+  double tSoilAvg = 0.0; /** the average temeperature of the soil surface */
 	/** Parton et al. 1998. Equation 6. */
   if (snow == 0){
     return 0.0;
@@ -1350,11 +1357,7 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
 
 	if (toDebug)
-		#ifndef RSOILWAT
-			printf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
-		#else
-			Rprintf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
-		#endif
+		swprintf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
 
 
 	// init st
@@ -1382,15 +1385,11 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
 	// if soil temperature max depth is less than soil layer depth then quit
 	if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
-		if (!soil_temp_error) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
+		if (!SW_Soilwat.partsError) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
 
-		#ifndef RSOILWAT
-			printf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
-		#else
-			Rprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
-		#endif
+			swprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 
-			soil_temp_error = 1;
+			SW_Soilwat.partsError = swTRUE;
 		}
 		return; // exits the function
 	}
@@ -1434,18 +1433,9 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
 	if (toDebug) {
 		for (i = 0; i < nRgr + 1; i++) {
-			#ifndef RSOILWAT
-				 printf("\ntl_by_sl");
-					for (j = 0; j < nlyrs + 1; j++)
-					   printf("[%i,%i]=%3.2f ", i, j, st->tlyrs_by_slyrs[i][j]);
-
-			#else
-				  Rprintf("\ntl_by_sl");
-					for (j = 0; j < nlyrs + 1; j++)
-					   Rprintf("[%i,%i]=%3.2f ", i, j, st->tlyrs_by_slyrs[i][j]);
-			#endif
-
-
+			swprintf("\ntl_by_sl");
+				for (j = 0; j < nlyrs + 1; j++)
+					swprintf("[%i,%i]=%3.2f ", i, j, st->tlyrs_by_slyrs[i][j]);
 		}
 	}
 
@@ -1462,30 +1452,18 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
 	// st->oldsTempR: index 0 is surface temperature
 	if (toDebug){
-
-		#ifndef RSOILWAT
-			 for (j = 0; j < nlyrs; j++)
-						printf("\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, oldT=%2.2f",
-							j, st->depths[j], fc[j], wp[j], bDensity[j], oldsTemp[j]);
-					printf("\nConv ST oldSurfaceTR=%2.2f", st->oldsTempR[0]);
-					for (i = 0; i < nRgr + 1; i++)
-					   printf("\nConv ST depth[%i]=%2.2f, fcR=%2.2f, wpR=%2.2f, bDensR=%2.2f, oldTR=%2.2f",
-							i, st->depthsR[i], st->fcR[i], st->wpR[i], st->bDensityR[i], st->oldsTempR[i+1]);
-
-
-		#else
-			 for (j = 0; j < nlyrs; j++)
-					Rprintf("\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, oldT=%2.2f",
-							j, st->depths[j], fc[j], wp[j], bDensity[j], oldsTemp[j]);
-				Rprintf("\nConv ST oldSurfaceTR=%2.2f", st->oldsTempR[0]);
-					for (i = 0; i < nRgr + 1; i++)
-						Rprintf("\nConv ST depth[%i]=%2.2f, fcR=%2.2f, wpR=%2.2f, bDensR=%2.2f, oldTR=%2.2f",
-							i, st->depthsR[i], st->fcR[i], st->wpR[i], st->bDensityR[i], st->oldsTempR[i+1]);
-
-		#endif
-
-
+		for (j = 0; j < nlyrs; j++) {
+			swprintf("\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, oldT=%2.2f",
+				j, st->depths[j], fc[j], wp[j], bDensity[j], oldsTemp[j]);
 		}
+
+		swprintf("\nConv ST oldSurfaceTR=%2.2f", st->oldsTempR[0]);
+
+		for (i = 0; i < nRgr + 1; i++) {
+			swprintf("\nConv ST depth[%i]=%2.2f, fcR=%2.2f, wpR=%2.2f, bDensR=%2.2f, oldTR=%2.2f",
+				i, st->depthsR[i], st->fcR[i], st->wpR[i], st->bDensityR[i], st->oldsTempR[i+1]);
+		}
+	}
 }
 
 void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[], double swc_sat[], double width[]){
@@ -1515,14 +1493,27 @@ void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[], doubl
 }
 
 
-unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTemp[], double shParam, unsigned int nlyrs, double vwc[], double bDensity[]){
+unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTemp[],
+	double shParam, unsigned int nlyrs, double vwc[], double bDensity[]){
 // Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
 // based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 
 // NOTE: THIS FUNCTION IS CURRENTLY NOT OPERATIONAL: DESCRIPTION BY EITZINGER ET AL. 2000 SEEMS INSUFFICIENT
+// To avoid compiler warnings 'unused parameter' until function is operational:
+oldsTemp[0] = 0.0;
+sTemp[0] = 0.0;
+shParam = 0.0;
+nlyrs = 0;
+vwc[0] = 0.0;
+bDensity[0] = 0.0;
+//	double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
+// To avoid compiler warnings "warning: parameter set but not used"
+double temp;
+temp = oldsTemp[0] + sTemp[0] + shParam + nlyrs + vwc[0] + bDensity[0];
+temp += temp;
+// end avoid compiler warnings
 
 	unsigned int i, sFadjusted_sTemp;
-	double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
 
 	/* local variables explained:
 	 toDebug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
@@ -1594,7 +1585,7 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTem
 
 void endCalculations()
 {
-	soil_temp_error = 1;
+	SW_Soilwat.partsError = swTRUE;
 	// return;  //Exits the Function
 }
 
@@ -1676,22 +1667,14 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	 depths[nlyrs] - the depths of each layer of soil, calculated in the function
 	 vwcR[], sTempR[] - anything with a R at the end of the variable name stands for the interpolation of that array
 	 */
-	if (toDebug){
-		#ifndef RSOILWAT
-			printf("\n\nNew call to soil_temperature()");
-		#else
-			Rprintf("\n\nNew call to soil_temperature()");
-		#endif
+	if (toDebug) {
+		swprintf("\n\nNew call to soil_temperature()");
 	}
 
 
 	if (!soil_temp_init) {
 		if (toDebug) {
-			#ifndef RSOILWAT
-				printf("\nCalling soil_temperature_init\n");
-			#else
-				Rprintf("\nCalling soil_temperature_init\n");
-			#endif
+			swprintf("\nCalling soil_temperature_init\n");
 		}
 
 		surfaceTemp[Today] = airTemp;
@@ -1699,7 +1682,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		soil_temperature_init(bDensity, width, surfaceTemp[Today], oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
 	}
 
-	// if (soil_temp_error) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
+	// if (SW_Soilwat.partsError) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
 	// 	return;
 
 
@@ -1708,27 +1691,20 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	// calculating T1, the average daily soil surface temperature
 	if(GT(snowdepth, 0.0)) {
 		T1 = surface_temperature_under_snow(airTemp, snow);
-		if(toDebug) printf("\nThere is snow on the ground, T1=%5.4f calculated using new equation from Parton 1998\n", T1);
+		if (toDebug) swprintf("\nThere is snow on the ground, T1=%5.4f calculated using new equation from Parton 1998\n", T1);
+
 	} else {
 		if (LE(biomass, bmLimiter)) { // bmLimiter = 300
 			T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
 			if (toDebug) {
-				#ifndef RSOILWAT
-					printf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
-						   airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
-				#else
-					Rprintf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
-							airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
-				#endif
+				swprintf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
+					airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
 			}
 		} else {
 			T1 = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
 			if (toDebug){
-				#ifndef RSOILWAT
-					printf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
-				#else
-					Rprintf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)", airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
-				#endif
+				swprintf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)",
+					airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
 			}
 		}
 	}
@@ -1738,23 +1714,17 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, vwc, nRgr, deltaX, vwcR);
 
 	if (toDebug) {
-		#ifndef RSOILWAT
-			printf("\nregression values:");
-				for (i = 0; i < nRgr; i++)
-					printf("\nk %2d width %5.4f depth %5.4f vwcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f", i, deltaX, st->depthsR[i], vwcR[i], st->fcR[i], st->wpR[i], st->oldsTempR[i], st->bDensityR[i]);
+		swprintf("\nregression values:");
+		for (i = 0; i < nRgr; i++) {
+			swprintf("\nk %2d width %5.4f depth %5.4f vwcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f",
+			 i, deltaX, st->depthsR[i], vwcR[i], st->fcR[i], st->wpR[i], st->oldsTempR[i], st->bDensityR[i]);
+		}
 
-			printf("\nlayer values:");
-				for (i = 0; i < nlyrs; i++)
-					printf("\ni %2d width %5.4f depth %5.4f vwc %5.4f fc %5.4f wp %5.4f oldsTemp %5.4f bDensity %5.4f", i, width[i], st->depths[i], vwc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
-		#else
-			Rprintf("\nregression values:");
-				for (i = 0; i < nRgr; i++)
-					Rprintf("\nk %2d width %5.4f depth %5.4f vwcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f", i, deltaX, st->depthsR[i], vwcR[i], st->fcR[i], st->wpR[i], st->oldsTempR[i], st->bDensityR[i]);
-
-			Rprintf("\nlayer values:");
-				for (i = 0; i < nlyrs; i++)
-					Rprintf("\ni %2d width %5.4f depth %5.4f vwc %5.4f fc %5.4f wp %5.4f oldsTemp %5.4f bDensity %5.4f", i, width[i], st->depths[i], vwc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
-		#endif
+		swprintf("\nlayer values:");
+		for (i = 0; i < nlyrs; i++) {
+			swprintf("\ni %2d width %5.4f depth %5.4f vwc %5.4f fc %5.4f wp %5.4f oldsTemp %5.4f bDensity %5.4f",
+			i, width[i], st->depths[i], vwc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
+		}
 	}
 
 	// calculate the new soil temperature for each layer
@@ -1773,14 +1743,10 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 		/*Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
 		VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)*/
-		if (GE(parts, 1.0)){
-			#ifndef RSOILWAT
-				printf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
-				soil_temp_error = 1;
-			#else
-			  /* Flag that an error has occurred for use in RSoilwat */
-				SW_Soilwat.partsError = 1;
-			#endif
+		if (GE(parts, 1.0) && !SW_Soilwat.partsError) {
+				swprintf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
+			  /* Flag that an error has occurred */
+				SW_Soilwat.partsError = swTRUE;
 			// return;  //Exits the Function
 		}
 
@@ -1788,26 +1754,19 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		sTempR[i] = st->oldsTempR[i] + parts * part2; // Parton (1978) eq. 2.21
 
 		if (toDebug) {
-			#ifndef RSOILWAT
-				printf("\nk %d cs %5.4f sh %5.4f p1 %5.4f ps %5.4f p2 %5.4f p %5.4f", k, cs, sh, part1, parts, part2, parts * part2);
-			#else
-				Rprintf("\nk %d cs %5.4f sh %5.4f p1 %5.4f ps %5.4f p2 %5.4f p %5.4f", k, cs, sh, part1, parts, part2, parts * part2);
-			#endif
+			swprintf("\nk %d cs %5.4f sh %5.4f p1 %5.4f ps %5.4f p2 %5.4f p %5.4f",
+				k, cs, sh, part1, parts, part2, parts * part2);
 		}
 	}
 
 	sTempR[nRgr + 1] = meanAirTemp; // again... the last layer of the interpolation is set to the constant meanAirTemp
 
 	if (toDebug) {
-		#ifndef RSOILWAT
-			printf("\nSoil temperature profile values:");
-			for (i = 0; i <= nRgr + 1; i++)
-				printf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
-		#else
-			Rprintf("\nSoil temperature profile values:");
-			for (i = 0; i <= nRgr + 1; i++)
-				Rprintf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
-		#endif
+		swprintf("\nSoil temperature profile values:");
+		for (i = 0; i <= nRgr + 1; i++) {
+			swprintf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f",
+				i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
+		}
 	}
 
 
@@ -1830,27 +1789,20 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 
 	if (toDebug) {
-		#ifndef RSOILWAT
-			printf("\nsTemp %5.4f surface; soil temperature adjusted by freeze/thaw: %i", surfaceTemp[Today], sFadjusted_sTemp);
+		swprintf("\nsTemp %5.4f surface; soil temperature adjusted by freeze/thaw: %i",
+			surfaceTemp[Today], sFadjusted_sTemp);
 
-			printf("\nSoil temperature profile values:");
-			for (i = 0; i <= nRgr + 1; i++)
-				printf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
+		swprintf("\nSoil temperature profile values:");
+		for (i = 0; i <= nRgr + 1; i++) {
+			swprintf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f",
+				i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
+		}
 
-			printf("\nSoil profile layer temperatures:");
-			for (i = 0; i < nlyrs; i++)
-				printf("\ni %d oldTemp %5.4f sTemp %5.4f depth %5.4f frozen %d", i, oldsTemp[i], sTemp[i], st->depths[i], st->lyrFrozen[i]);
-		#else
-			Rprintf("\nsTemp %5.4f surface; soil temperature adjusted by freeze/thaw: %i", surfaceTemp[Today], sFadjusted_sTemp);
-
-			Rprintf("\nSoil temperature profile values:");
-			for (i = 0; i <= nRgr + 1; i++)
-				Rprintf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f", i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
-
-			Rprintf("\nSoil profile layer temperatures:");
-			for (i = 0; i < nlyrs; i++)
-				Rprintf("\ni %d oldTemp %5.4f sTemp %5.4f depth %5.4f frozen %d", i, oldsTemp[i], sTemp[i], st->depths[i], st->lyrFrozen[i]);
-		#endif
+		swprintf("\nSoil profile layer temperatures:");
+		for (i = 0; i < nlyrs; i++) {
+			swprintf("\ni %d oldTemp %5.4f sTemp %5.4f depth %5.4f frozen %d",
+				i, oldsTemp[i], sTemp[i], st->depths[i], st->lyrFrozen[i]);
+		}
 	}
 
 	// updating the values of yesterdays temperature for the next time the function is called...
@@ -1859,12 +1811,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	}
 
 	if (toDebug) {
-		#ifndef RSOILWAT
-			exit(0); // terminates the program, make sure to take this out later
-		#else
-			Rprintf("\nEXIT DEBUG IS ON IN SOIL TEMPERATURE. CONSIDER TURNING OFF.\n");
-			//exit(0); // terminates the program, make sure to take this out later
-			error("@ SW_Flow_lib.c function soil_temperature");
-		#endif
+    sw_error(0, "EXIT DEBUG IS ON IN SOIL TEMPERATURE. CONSIDER TURNING OFF.\n");
 	}
 }

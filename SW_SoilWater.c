@@ -49,7 +49,9 @@
 #include "SW_Model.h"
 #include "SW_Site.h"
 #include "SW_SoilWater.h"
-#include "SW_Output.h"
+#ifdef RSOILWAT
+  #include "../rSW_SoilWater.h" // for onSet_SW_SWC_hist()
+#endif
 
 void SW_Water_Flow(void); /* see Water_Flow.c */
 
@@ -61,26 +63,22 @@ extern SW_MODEL SW_Model;
 extern SW_SITE SW_Site;
 #ifdef RSOILWAT
 	extern Bool useFiles;
-	extern SEXP InputData;
 #endif
-//extern SW_OUTPUT SW_Output[];
+
 SW_SOILWAT SW_Soilwat; /* declared here, externed elsewhere */
+
 
 /* =================================================== */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
 static char *MyFileName;
 static RealD temp_snow;
-#ifdef RSOILWAT
-	static int swcdataIndex;
-#endif
+
 
 /* =================================================== */
 /* =================================================== */
 /*             Private Function Definitions            */
 /* --------------------------------------------------- */
-
-static void _read_hist(TimeInt year);
 
 static void _clear_hist(void) {
 	/* --------------------------------------------------- */
@@ -108,9 +106,6 @@ void SW_SWC_construct(void) {
 		SW_Soilwat.hist.file_prefix = NULL;
 	}
 	memset(&SW_Soilwat, 0, sizeof(SW_SOILWAT));
-	#ifdef RSOILWAT
-		swcdataIndex = 0;
-	#endif
 }
 
 void SW_SWC_water_flow(void) {
@@ -121,6 +116,7 @@ void SW_SWC_water_flow(void) {
 	 */
 
 	LyrIndex i;
+	int debug = 0;
 
 	/* if there's no swc observation for today,
 	 * it shows up as SW_MISSING.  The input must
@@ -134,6 +130,7 @@ void SW_SWC_water_flow(void) {
 
 		if (!(SW_Model.doy == SW_Model.startstart && SW_Model.year == SW_Model.startyr)) {
 
+			if (debug) swprintf("\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n");
 			SW_SWC_adjust_swc(SW_Model.doy);
 
 		} else {
@@ -141,11 +138,13 @@ void SW_SWC_water_flow(void) {
 		}
 
 	} else {
+		if (debug) swprintf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
 		SW_Water_Flow();
 	}
 
+	if (debug) swprintf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
 	ForEachSoilLayer(i)
-		SW_Soilwat.is_wet[i] = (GE( SW_Soilwat.swcBulk[Today][i],
+		SW_Soilwat.is_wet[i] = (Bool) (GE( SW_Soilwat.swcBulk[Today][i],
 				SW_Site.lyr[i]->swcBulk_wet));
 }
 
@@ -170,7 +169,7 @@ void SW_SWC_new_year(void) {
 
 	LyrIndex lyr;
 	TimeInt year = SW_Model.year;
-	Bool reset = (SW_Site.reset_yr || SW_Model.year == SW_Model.startyr);
+	Bool reset = (Bool) (SW_Site.reset_yr || SW_Model.year == SW_Model.startyr);
 
 	memset(&SW_Soilwat.yrsum, 0, sizeof(SW_SOILWAT_OUTPUTS));
 
@@ -195,13 +194,12 @@ void SW_SWC_new_year(void) {
 	/* reset the historical (measured) values, if needed */
 	if (SW_Soilwat.hist_use && year >= SW_Soilwat.hist.yr.first) {
 		#ifndef RSOILWAT
-			_read_hist(year);
+			_read_swc_hist(year);
 		#else
 			if(useFiles) {
-				_read_hist(year);
+				_read_swc_hist(year);
 			} else {
-				onSet_SW_SWC_hist(VECTOR_ELT(VECTOR_ELT(VECTOR_ELT(InputData,7),4),swcdataIndex));
-				swcdataIndex++;
+				onSet_SW_SWC_hist();
 			}
 		#endif
 	}
@@ -213,7 +211,7 @@ void SW_SWC_new_year(void) {
 void SW_SWC_read(void) {
 	/* =================================================== */
 	/* Like all of the other "objects", read() reads in the
-	 * setup parameters.  See _read_hist() for reading
+	 * setup parameters.  See _read_swc_hist() for reading
 	 * historical files.
 	 *
 	 *  1/25/02 - cwb - removed unused records of logfile and
@@ -237,7 +235,7 @@ void SW_SWC_read(void) {
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
 		case 0:
-			v->hist_use = (atoi(inbuf)) ? TRUE : FALSE;
+			v->hist_use = (atoi(inbuf)) ? swTRUE : swFALSE;
 			break;
 		case 1:
 			v->hist.file_prefix = (char *) Str_Dup(inbuf);
@@ -267,82 +265,9 @@ void SW_SWC_read(void) {
 	v->hist.yr.total = v->hist.yr.last - v->hist.yr.first + 1;
 	CloseFile(&f);
 }
-#ifdef RSOILWAT
-SEXP onGet_SW_SWC() {
-	int i;
-	SW_SOILWAT *v = &SW_Soilwat;
-	SEXP swSWC;
-	SEXP SWC, SWC_names;
-	char *cSWC[] = { "UseSWCHistoricData", "DataFilePrefix", "FirstYear", "Method", "History" };
-	SEXP swcUseData;
-	SEXP swcFilePrefix;
-	SEXP swcFirstYear;
-	SEXP swcMethod;
 
-	PROTECT(swSWC = MAKE_CLASS("swSWC"));
-	PROTECT(SWC = NEW_OBJECT(swSWC));
 
-	PROTECT(swcUseData = NEW_LOGICAL(1));
-	LOGICAL(swcUseData)[0] = v->hist_use;
-	SET_SLOT(SWC, install(cSWC[0]), swcUseData);
-
-	PROTECT(swcFilePrefix = NEW_CHARACTER(1));
-	SET_STRING_ELT(swcFilePrefix, 0, mkChar("swcdata"));//v->hist.file_prefix)
-	SET_SLOT(SWC, install(cSWC[1]), swcFilePrefix);
-
-	PROTECT(swcFirstYear = NEW_INTEGER(1));
-	INTEGER(swcFirstYear)[0] = v->hist.yr.first;
-	SET_SLOT(SWC, install(cSWC[2]), swcFirstYear);
-
-	PROTECT(swcMethod = NEW_INTEGER(1));
-	INTEGER(swcMethod)[0] = v->hist.method;
-	SET_SLOT(SWC, install(cSWC[3]), swcMethod);
-
-	if(v->hist_use)
-		SET_SLOT(SWC,install(cSWC[4]),onGet_SW_SWC_hists());
-	else
-		SET_SLOT(SWC,install(cSWC[4]),NEW_LIST(0));
-
-	UNPROTECT(6);
-	return SWC;
-}
-
-void onSet_SW_SWC(SEXP SWC) {
-	SW_SOILWAT *v = &SW_Soilwat;
-	SEXP swcUseData;
-	SEXP swcFilePrefix;
-	SEXP swcFirstYear;
-	SEXP swcMethod;
-
-	MyFileName = SW_F_name(eSoilwat);
-	v->surfaceTemp = 0;
-	LyrIndex i;
-	ForEachSoilLayer(i)
-		v->sTemp[i] = SW_Site.lyr[i]->sTemp;
-
-	PROTECT(swcUseData = GET_SLOT(SWC, install("UseSWCHistoricData")));
-	PROTECT(swcFilePrefix = GET_SLOT(SWC, install("DataFilePrefix")));
-	PROTECT(swcFirstYear = GET_SLOT(SWC, install("FirstYear")));
-	PROTECT(swcMethod = GET_SLOT(SWC, install("Method")));
-
-	v->hist_use = LOGICAL(swcUseData)[0];
-	//if (!isnull(v->hist.file_prefix)) {//Clear memory before setting it
-	//	Mem_Free(v->hist.file_prefix);
-	//}
-	v->hist.file_prefix = (char *) Str_Dup(CHAR(STRING_ELT(swcFilePrefix,0)));
-	v->hist.yr.first = INTEGER(swcFirstYear)[0];
-	v->hist.method = INTEGER(swcMethod)[0];
-
-	if (v->hist.method < 1 || v->hist.method > 2) {
-		LogError(logfp, LOGFATAL, "swcsetup.in : Invalid swc adjustment method.");
-	}
-	v->hist.yr.last = SW_Model.endyr;
-	v->hist.yr.total = v->hist.yr.last - v->hist.yr.first + 1;
-	UNPROTECT(4);
-}
-#endif
-
-static void _read_hist(TimeInt year) {
+void _read_swc_hist(TimeInt year) {
 	/* =================================================== */
 	/* read a file containing historical swc measurements.
 	 * Enter with year a four digit year number.  This is
@@ -373,8 +298,7 @@ static void _read_hist(TimeInt year) {
 	 */
 	SW_SOILWAT *v = &SW_Soilwat;
 	FILE *f;
-	TimeInt doy;
-	int x, lyr, recno = 0;
+	int x, lyr, recno = 0, doy;
 	RealF swc, st_err;
 	char fname[MAX_FILENAMESIZE];
 
@@ -416,76 +340,6 @@ static void _read_hist(TimeInt year) {
 	CloseFile(&f);
 }
 
-#ifdef RSOILWAT
-SEXP onGet_SW_SWC_hists() {
-	TimeInt year;
-	SEXP SWC_hists, SWC_hists_names;
-	int years = ((SW_Model.endyr + 1) - SW_Model.startyr), i = 0;
-	char cYear[5];
-
-	PROTECT(SWC_hists_names = allocVector(STRSXP, years));
-	PROTECT(SWC_hists = allocVector(VECSXP,years));
-
-	for (year = SW_Model.startyr; year <= SW_Model.endyr; year++) {
-		if (SW_Soilwat.hist_use && year >= SW_Soilwat.hist.yr.first) {
-			_read_hist(year);
-			SET_VECTOR_ELT(SWC_hists, i, onGet_SW_SWC_hist(year));
-			sprintf(cYear, "%4d", year);
-			SET_STRING_ELT(SWC_hists_names, i, mkChar(cYear));
-		}
-		i++;
-	}
-
-	UNPROTECT(2);
-	return SWC_hists;
-}
-
-SEXP onGet_SW_SWC_hist(TimeInt year) {
-	int i, j;
-	SW_SOILWAT *v = &SW_Soilwat;
-	SEXP swSWC_hist;
-	SEXP hist;
-	char *cSWC_hist[] = { "doy", "lyr", "swc", "st_err" };
-	SEXP lyrs, lyrs_names, lyrs_names_y;
-	RealD *p_lyrs;
-
-	PROTECT(swSWC_hist = MAKE_CLASS("swSWC_hist"));
-	PROTECT(hist = NEW_OBJECT(swSWC_hist));
-
-	PROTECT(lyrs = allocMatrix(REALSXP, MAX_LAYERS*MAX_DAYS, 4));
-	p_lyrs = REAL(lyrs);
-
-	for (i = 0; i < MAX_DAYS * MAX_LAYERS; i++) {
-		p_lyrs[i + MAX_DAYS * MAX_LAYERS * 0] = (int) (i / MAX_LAYERS);
-		p_lyrs[i + MAX_DAYS * MAX_LAYERS * 1] = (int) (j % MAX_LAYERS);
-		p_lyrs[i + MAX_DAYS * MAX_LAYERS * 2] = v->hist.swc[(int) (i / MAX_LAYERS)][(int) (j % MAX_LAYERS)];
-		p_lyrs[i + MAX_DAYS * MAX_LAYERS * 3] = v->hist.std_err[(int) (i / MAX_LAYERS)][(int) (j % MAX_LAYERS)];
-	}
-	PROTECT(lyrs_names = allocVector(VECSXP,2));
-	PROTECT(lyrs_names_y = allocVector(STRSXP,4));
-	for (i = 0; i < 4; i++)
-		SET_STRING_ELT(lyrs_names_y, i, mkChar(cSWC_hist[i]));
-	SET_VECTOR_ELT(lyrs_names, 1, lyrs_names_y);
-	setAttrib(lyrs, R_DimNamesSymbol, lyrs_names);
-
-	SET_SLOT(hist,install("data"),lyrs);
-
-	UNPROTECT(5);
-	return lyrs;
-}
-
-void onSet_SW_SWC_hist(SEXP lyrs) {
-	int i, j;
-	SW_SOILWAT *v = &SW_Soilwat;
-	RealD *p_lyrs;
-
-	p_lyrs = REAL(lyrs);
-	for (i = 0; i < MAX_DAYS * MAX_LAYERS; i++) {
-		v->hist.swc[(int) (i / MAX_LAYERS)][(int) (j % MAX_LAYERS)] = p_lyrs[i + MAX_DAYS * MAX_LAYERS * 2];
-		v->hist.std_err[(int) (i / MAX_LAYERS)][(int) (j % MAX_LAYERS)] = p_lyrs[i + MAX_DAYS * MAX_LAYERS * 3];
-	}
-}
-#endif
 
 void SW_SWC_adjust_swc(TimeInt doy) {
 	/* =================================================== */
@@ -636,9 +490,9 @@ RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n) {
 
 	 OUTPUTS:
 	 swpotentl - soilwater potential of the current layer
-	 (if swflag=TRUE)
+	 (if swflag=swTRUE)
 	 or
-	 soilwater content (if swflag=FALSE)
+	 soilwater content (if swflag=swFALSE)
 
 	 DESCRIPTION: The equation and its coefficients are based on a
 	 paper by Cosby,Hornberger,Clapp,Ginn,  in WATER RESOURCES RESEARCH

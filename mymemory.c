@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include "filefuncs.h"
 #include "generic.h"
 #include "myMemory.h"
 
@@ -94,7 +95,7 @@ void *Mem_Malloc(size_t size, const char *funcname) {
 #ifdef DEBUG_MEM
 	{
 		if (size == 0)
-		LogError(stderr, LOGFATAL,"Programmer Error: "
+		LogError(logfp, LOGFATAL, "Programmer Error: "
 				"size == 0 in MallocErr()");
 
 	}
@@ -104,24 +105,14 @@ void *Mem_Malloc(size_t size, const char *funcname) {
 
 #ifdef DEBUG_MEM_LOG
 	if( NULL==(f=fopen("memory.log","a")) ) {
-#ifndef RSOILWAT
-		fprintf(stderr, "Can't open memory.log for errors\n");
-		exit(-1);
-#else
-		Rprintf("Can't open memory.log for errors\n");
-		error("mymemory.c NULL==(f=fopen(");
-#endif
+    sw_error(-1, "Can't open memory.log for errors\n");
 	}
-#ifndef RSOILWAT
-	fprintf(f,"%s: %d: %p\n", funcname, size, p);
+	swprintf("%s: %d: %p\n", funcname, size, p);
 	fclose(f);
-#else
-	Rprintf("%s: %d: %p\n", funcname, size, p);
-#endif
 #endif
 
 	if (p == NULL )
-		LogError(stderr, LOGFATAL, "Out of memory in %s()", funcname);
+		LogError(logfp, LOGFATAL, "Out of memory in %s()", funcname);
 
 #ifdef DEBUG_MEM
 	{
@@ -197,7 +188,7 @@ void *Mem_ReAlloc(void *block, size_t sizeNew) {
 	assert(p != NULL && sizeNew > 0);
 #else
 	if(p == NULL || sizeNew == 0)
-		error("assert failed in ReAlloc");
+		sw_error(-1, "assert failed in ReAlloc");
 #endif
 
 #ifdef DEBUG_MEM
@@ -238,7 +229,7 @@ void *Mem_ReAlloc(void *block, size_t sizeNew) {
 
 		p = pNew;
 	} else
-		LogError(stderr, LOGFATAL, "realloc failed in Mem_ReAlloc()");
+		LogError(logfp, LOGFATAL, "realloc failed in Mem_ReAlloc()");
 
 	return p;
 }
@@ -255,7 +246,7 @@ void Mem_Free(void *block) {
 #ifdef DEBUG_MEM_X
 	{
 		if (mem_SizeOf(block) > SizeOfMalloc)
-		LogError(stderr, LOGFATAL,"Mem: Inconsistency in SizeOfMalloc");
+		LogError(logfp, LOGFATAL,"Mem: Inconsistency in SizeOfMalloc");
 
 		mem_DelNode(block);
 	}
@@ -527,7 +518,7 @@ void ClearMemoryRefs(void) {
 	blockinfo *pbi;
 	int i = 0;
 	for ( pbi = pbiHead; pbi != NULL; pbi = pbi->pbiNext) {
-		pbi->fReferenced = FALSE;
+		pbi->fReferenced = swFALSE;
 		i++;
 	}
 
@@ -545,7 +536,7 @@ void NoteMemoryRef(void *pv) {
 	blockinfo *pbi;
 
 	pbi = pbiGetBlockInfo((byte *)pv);
-	pbi->fReferenced = TRUE;
+	pbi->fReferenced = swTRUE;
 
 }
 
@@ -571,7 +562,7 @@ void CheckMemoryRefs(void) {
 #ifndef RSOILWAT
 		assert(pbi->pb != NULL && pbi->size > 0);
 #endif
-		/* printf("i=%d, size=%d, p=%p\n", ++i, pbi->size, pbi->pb); */
+		/* swprintf("i=%d, size=%d, p=%p\n", ++i, pbi->size, pbi->pb); */
 
 		/* A check for lost or leaky memory.  if this assert
 		 * fires, it means that the app has either lost track
@@ -614,7 +605,7 @@ flag fValidPointer(void *pv, size_t size) {
 	/* size isn't valid if pb+size overflows the block */
 	assert(fPtrLessEq(pb+size, pbi->pb + pbi->size));
 #endif
-	return(TRUE);
+	return(swTRUE);
 }
 
 #endif
