@@ -215,7 +215,7 @@ extern unsigned int yr_nrow, mo_nrow, wk_nrow, dy_nrow;
 extern SXW_t SXW; // structure to store values in and pass back to STEPPE
 extern SXW_avg SXW_AVG;
 Bool isPartialSoilwatOutput = swFALSE;
-Bool storeAllIterations = TRUE;
+Bool storeAllIterations = swTRUE;
 static char outstr_all_iters[OUTSTRLEN];
 #endif
 
@@ -480,7 +480,6 @@ void SW_OUT_construct(void)
 
 		}
 	}
-	//SW_OUT_set_ncol();
 
 	bFlush = swFALSE;
 	tOffset = 1;
@@ -713,6 +712,7 @@ void SW_OUT_read(void)
 			}
 
 			k = str2key(Str_ToUpper(keyname, upkey));
+
 			if (useTimeStep) {
 				for (i = 0; i < used_OUTNPERIODS; i++) {
 					timeSteps[k][i] = str2period(Str_ToUpper(timeStep[i], ext));
@@ -1533,10 +1533,18 @@ static void get_co2effects(OutPeriod pd) {
 	RealD wue_mult_tree = v->tree.co2_multipliers[WUE_INDEX][SW_Model.simyear];
 	RealD wue_mult_forb = v->forb.co2_multipliers[WUE_INDEX][SW_Model.simyear];
 
-	#ifndef RSOILWAT
+
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
+	char str[OUTSTRLEN];
+	get_outstrleader(pd);
+
+	#elif defined(STEPWAT)
 		char str[OUTSTRLEN];
-		get_outstrleader(pd);
-	#endif
+		char str_iters[OUTSTRLEN];
+		TimeInt p = 0;
+		if ((isPartialSoilwatOutput == swFALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+			get_outstrleader(pd);
+#endif
 
 	switch(pd) {
 		case eSW_Day:
@@ -1695,7 +1703,7 @@ static void get_co2effects(OutPeriod pd) {
 			break;
 	}
 
-	#ifndef RSOILWAT
+	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		sprintf(str, "%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f",
 		_Sep, biomass_grass,
 		_Sep, biomass_shrub,
@@ -1716,6 +1724,162 @@ static void get_co2effects(OutPeriod pd) {
 		_Sep, wue_mult_tree,
 		_Sep, wue_mult_forb);
 		strcat(outstr, str);
+
+	#elif defined(STEPWAT)
+		switch (pd)
+		{
+			case eSW_Day:
+				p = SW_Model.doy-1;
+				break;
+			case eSW_Week:
+				p = SW_Model.week-tOffset;
+				break;
+			case eSW_Month:
+				p = SW_Model.month-tOffset;
+				break;
+			case eSW_Year:
+				p = Globals.currYear-1;
+				break;
+		}
+
+		if (isPartialSoilwatOutput == swFALSE)
+		{
+			float old_biomass_grass = SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_biomass_shrub = SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_biomass_tree = SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_biomass_forb = SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_biomass_total = SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,0,pd)];
+
+			float old_biolive_grass = SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_biolive_shrub = SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_biolive_tree = SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_biolive_forb = SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_biolive_total = SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,0,pd)];
+
+			float old_bio_mult_grass = SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_bio_mult_shrub = SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_bio_mult_tree = SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_bio_mult_forb = SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)];
+
+			float old_wue_mult_grass = SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_wue_mult_shrub = SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_wue_mult_tree = SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_wue_mult_forb = SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)];
+
+			SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_grass);
+			SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_shrub);
+			SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_tree);
+			SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_forb);
+			SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_total);
+
+			SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], biolive_grass);
+			SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], biolive_shrub);
+			SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], biolive_tree);
+			SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], biolive_forb);
+			SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,0,pd)], biolive_total);
+
+			SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], bio_mult_grass);
+			SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], bio_mult_shrub);
+			SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], bio_mult_tree);
+			SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], bio_mult_forb);
+
+			SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], wue_mult_grass);
+			SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], wue_mult_shrub);
+			SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], wue_mult_tree);
+			SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], wue_mult_forb);
+
+			// ---------------------------
+
+			SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biomass_grass, biomass_grass, SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biomass_shrub, biomass_shrub, SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biomass_tree, biomass_tree, SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biomass_forb, biomass_forb, SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biomass_total, biomass_total, SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+
+			SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biolive_grass, biolive_grass, SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biolive_shrub, biolive_shrub, SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biolive_tree, biolive_tree, SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biolive_forb, biolive_forb, SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biolive_total, biolive_total, SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+
+			SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_bio_mult_grass, bio_mult_grass, SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_bio_mult_shrub, bio_mult_shrub, SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_bio_mult_tree, bio_mult_tree, SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_bio_mult_forb, bio_mult_forb, SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+
+			SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_wue_mult_grass, wue_mult_grass, SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_wue_mult_shrub, wue_mult_shrub, SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_wue_mult_tree, wue_mult_tree, SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_wue_mult_forb, wue_mult_forb, SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+
+
+			if(Globals.currIter == Globals.runModelIterations){
+				float std_biomass_grass = sqrt(SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_biomass_shrub = sqrt(SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_biomass_tree = sqrt(SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_biomass_forb = sqrt(SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_biomass_total = sqrt(SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+
+				float std_biolive_grass = sqrt(SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_biolive_shrub = sqrt(SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_biolive_tree = sqrt(SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_biolive_forb = sqrt(SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_biolive_total = sqrt(SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+
+				float std_bio_mult_grass = sqrt(SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_bio_mult_shrub = sqrt(SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_bio_mult_tree = sqrt(SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_bio_mult_forb = sqrt(SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+
+				float std_wue_mult_grass = sqrt(SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_wue_mult_shrub = sqrt(SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_wue_mult_tree = sqrt(SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_wue_mult_forb = sqrt(SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+
+				sprintf(str, "%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f",
+				_Sep, SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biomass_grass,
+				_Sep, SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biomass_shrub,
+				_Sep, SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biomass_tree,
+				_Sep, SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biomass_forb,
+				_Sep, SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biomass_total,
+				_Sep, SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biolive_grass,
+				_Sep, SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biolive_shrub,
+				_Sep, SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biolive_tree,
+				_Sep, SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biolive_forb,
+				_Sep, SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biolive_total,
+				_Sep, SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_bio_mult_grass,
+				_Sep, SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_bio_mult_shrub,
+				_Sep, SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_bio_mult_tree,
+				_Sep, SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_bio_mult_forb,
+				_Sep, SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_wue_mult_grass,
+				_Sep, SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_wue_mult_shrub,
+				_Sep, SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_wue_mult_tree,
+				_Sep, SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_wue_mult_forb);
+				strcat(outstr, str);
+			}
+		}
+		if(storeAllIterations){
+			sprintf(str_iters, "%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f",
+			_Sep, biomass_grass,
+			_Sep, biomass_shrub,
+			_Sep, biomass_tree,
+			_Sep, biomass_forb,
+			_Sep, biomass_total,
+			_Sep, biolive_grass,
+			_Sep, biolive_shrub,
+			_Sep, biolive_tree,
+			_Sep, biolive_forb,
+			_Sep, biolive_total,
+			_Sep, bio_mult_grass,
+			_Sep, bio_mult_shrub,
+			_Sep, bio_mult_tree,
+			_Sep, bio_mult_forb,
+			_Sep, wue_mult_grass,
+			_Sep, wue_mult_shrub,
+			_Sep, wue_mult_tree,
+			_Sep, wue_mult_forb);
+			strcat(outstr_all_iters, str_iters);
+		}
 	#endif
 }
 
@@ -1739,7 +1903,7 @@ static void get_estab(OutPeriod pd)
 	get_outstrleader(pd);
 
 	#elif defined(STEPWAT)
-		char str_iters[20];
+		char str_iters[OUTSTRLEN];
 		TimeInt p = 0;
 		if ((isPartialSoilwatOutput == swFALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 			get_outstrleader(pd);
@@ -6634,32 +6798,39 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 		|| strcmp(key2str[output_var], "EVAPSOIL")==0 || strcmp(key2str[output_var], "TRANSP")==0 || strcmp(key2str[output_var], "WETDAY")==0
 		|| strcmp(key2str[output_var], "LYRDRAIN")==0 || strcmp(key2str[output_var], "SOILTEMP")==0 || strcmp(key2str[output_var], "HYDRED")==0
 		|| strcmp(key2str[output_var], "SWAMATRIC")==0 || strcmp(key2str[output_var], "SWPMATRIC")==0 || strcmp(key2str[output_var], "SWA")==0))
-		//&& SW_Output[output_var].period == year_out-1)
 	{
-		char *pt;
-		int counter = 0;
-		pt = strtok (read_data, _SepSplit);
+		#ifdef STEPWAT
+		if((useTimeStep == 0 && SW_Output[output_var].period == year_out-1) || useTimeStep == 1){
+		#endif
+			char *pt;
+			int counter = 0;
+			pt = strtok (read_data, _SepSplit);
 
-		while (pt != NULL) {
-			if(year_out == 4){
-				if(counter >=1 ){
-					strcat(soil_file_array, pt);
-					strcat(soil_file_array, _SepSplit);
-				}
-			}
-			else{
-					if(counter >= 2 ){ // dont want to parse year and timeperiod
+			while (pt != NULL) {
+				if(year_out == 4){
+					if(counter >=1 ){
 						strcat(soil_file_array, pt);
 						strcat(soil_file_array, _SepSplit);
 					}
+				}
+				else{
+						if(counter >= 2 ){ // dont want to parse year and timeperiod
+							strcat(soil_file_array, pt);
+							strcat(soil_file_array, _SepSplit);
+						}
+				}
+					pt = strtok (NULL, _SepSplit);
+					counter++;
 			}
-				pt = strtok (NULL, _SepSplit);
-				counter++;
+		#ifdef STEPWAT
 		}
+		#endif
 	}
 	else
 	{
-		//if(SW_Output[output_var].period == year_out-1){
+		#ifdef STEPWAT
+		if((useTimeStep == 0 && SW_Output[output_var].period == year_out-1) || useTimeStep == 1){
+		#endif
 			char *reg_pt;
 			int reg_counter = 0;
 			reg_pt = strtok (read_data,_SepSplit);
@@ -6679,7 +6850,9 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 					reg_pt = strtok (NULL, _SepSplit);
 					reg_counter++;
 			}
-		//}
+		#ifdef STEPWAT
+		}
+		#endif
 	}
 	return;
 }
@@ -6733,6 +6906,12 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 	const char *cnames_eSW_PET[] = { "pet_cm" };
 	const char *cnames_eSW_SnowPack[] = { "snowpackWaterEquivalent_cm", "snowdepth_cm" };
 	const char *cnames_eSW_DeepSWC[] = { "lowLayerDrain_cm" };
+	const char *cnames_eSW_CO2Effects[] = { // uses different order of vegtypes than others ...
+		"GrassBiomass", "ShrubBiomass", "TreeBiomass", "ForbBiomass", "TotalBiomass",
+		"GrassBiolive", "ShrubBiolive", "TreeBiolive", "ForbBiolive", "TotalBiolive",
+		"GrassBioMult", "ShrubBioMult", "TreeBioMult", "ForbBioMult",
+		"GrassWUEMult", "ShrubWUEMult", "TreeWUEMult", "ForbWUEMult" };
+
 
 	ForEachOutKey(colHeadersLoop)
 	{
@@ -6740,7 +6919,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 			if(SW_Output[colHeadersLoop].use)
 		#else
 			//if(SW_Output[colHeadersLoop].use && SW_Output[colHeadersLoop].period == outFileTimestep-1)
-			// if timestep = 0 then only create for right period. if timestep = 1 create for all periods
+			//if timestep = 0 then only create for right period. if timestep = 1 create for all periods
 			if((SW_Output[colHeadersLoop].use && useTimeStep == 0 && SW_Output[colHeadersLoop].period == outFileTimestep-1) || (SW_Output[colHeadersLoop].use && useTimeStep == 1))
 		#endif
 		{
@@ -6925,6 +7104,19 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						#ifdef STEPWAT
 							if(std_headers){
 								strcat(storeRegCol, cnames_eSW_SnowPack[i]); // store value name in new string
+								strcat(storeRegCol, "_STD");
+								strcat(storeRegCol, _SepSplit);
+							}
+						#endif
+					}
+				}
+				else if(strcmp(key2str[colHeadersLoop], "CO2EFFECTS")==0){
+					for (i = 0; i < ncol_OUT[eSW_CO2Effects]; i++) {
+						strcat(storeRegCol, cnames_eSW_CO2Effects[i]);
+						strcat(storeRegCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeRegCol, cnames_eSW_CO2Effects[i]); // store value name in new string
 								strcat(storeRegCol, "_STD");
 								strcat(storeRegCol, _SepSplit);
 							}
