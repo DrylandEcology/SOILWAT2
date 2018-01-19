@@ -223,6 +223,9 @@ char _Sep; /* output delimiter */
 int used_OUTNPERIODS; // number of different time steps/periods that are used/requested
 OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];// array to keep track of the periods that will be used for each output
 int ncol_OUT[SW_OUTNKEYS]; // number of output columns for each output key
+#ifdef RSOILWAT
+char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS]; // names of output columns for each output key; number is an expensive guess
+#endif
 
 
 
@@ -252,7 +255,7 @@ static int useTimeStep; /* flag to determine whether or not the line TIMESTEP ex
 
 /* These MUST be in the same order as enum OutKey in
  * SW_Output.h */
-static const char *key2str[] =
+char const *key2str[] =
 { SW_WETHR, SW_TEMP, SW_PRECIP, SW_SOILINF, SW_RUNOFF, SW_ALLH2O, SW_VWCBULK,
 		SW_VWCMATRIC, SW_SWCBULK, SW_SWABULK, SW_SWAMATRIC, SW_SWA, SW_SWPMATRIC,
 		SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE, SW_INTERCEPTION,
@@ -346,7 +349,7 @@ static OutKey str2key(char *s)
 static OutSum str2stype(char *s)
 {
 	/* --------------------------------------------------- */
-	OutSum styp;
+	IntUS styp;
 
 	for (styp = eSW_Off; styp < SW_NSUMTYPES && Str_CompareI(s, (char *)styp2str[styp]); styp++) ;
 	if (styp == SW_NSUMTYPES)
@@ -494,7 +497,7 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_Temp] = 4;
 	ncol_OUT[eSW_Precip] = 5;
 	ncol_OUT[eSW_SoilInf] = 1;
-	ncol_OUT[eSW_Runoff] = 3;
+	ncol_OUT[eSW_Runoff] = 4;
 	ncol_OUT[eSW_AllH2O] = 0;
 	ncol_OUT[eSW_VWCBulk] = tLayers;
 	ncol_OUT[eSW_VWCMatric] = tLayers;
@@ -522,6 +525,184 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_CO2Effects] = 2 * (NVEGTYPES + 1) + 2 * NVEGTYPES;
 
 }
+
+#ifdef RSOILWAT
+void SW_OUT_set_colnames(void) {
+	int i, j, debug = 0,
+		tLayers = SW_Site.n_layers;
+
+	char ctemp[50];
+	const char *Layers_names[MAX_LAYERS] = { "Lyr_1", "Lyr_2", "Lyr_3", "Lyr_4", "Lyr_5",
+		"Lyr_6", "Lyr_7", "Lyr_8", "Lyr_9", "Lyr_10", "Lyr_11", "Lyr_12", "Lyr_13", "Lyr_14",
+		"Lyr_15", "Lyr_16", "Lyr_17", "Lyr_18", "Lyr_19", "Lyr_20", "Lyr_21", "Lyr_22",
+		"Lyr_23", "Lyr_24", "Lyr_25"};
+	const char *cnames_VegTypes[NVEGTYPES + 2] = { "total", "tree", "shrub", "forbs",
+		"grass", "litter" };
+
+	const char *cnames_eSW_Temp[] = { "max_C", "min_C", "avg_C", "surfaceTemp_C" };
+	const char *cnames_eSW_Precip[] = { "ppt", "rain", "snow_fall", "snowmelt", "snowloss" };
+	const char *cnames_eSW_SoilInf[] = { "soil_inf" };
+	const char *cnames_eSW_Runoff[] = { "net", "ponded_runoff", "snowmelt_runoff", "ponded_runon" };
+	const char *cnames_eSW_SurfaceWater[] = { "surfaceWater_cm" };
+	const char *cnames_add_eSW_EvapSurface[] = { "evap_surfaceWater" };
+	const char *cnames_eSW_AET[] = { "evapotr_cm" };
+	const char *cnames_eSW_PET[] = { "pet_cm" };
+	const char *cnames_eSW_SnowPack[] = { "snowpackWaterEquivalent_cm", "snowdepth_cm" };
+	const char *cnames_eSW_DeepSWC[] = { "lowLayerDrain_cm" };
+	const char *cnames_eSW_CO2Effects[] = { // uses different order of vegtypes than others ...
+		"GrassBiomass", "ShrubBiomass", "TreeBiomass", "ForbBiomass", "TotalBiomass",
+		"GrassBiolive", "ShrubBiolive", "TreeBiolive", "ForbBiolive", "TotalBiolive",
+		"GrassBioMult", "ShrubBioMult", "TreeBioMult", "ForbBioMult",
+		"GrassWUEMult", "ShrubWUEMult", "TreeWUEMult", "ForbWUEMult" };
+
+
+	if (debug) swprintf("SW_OUT_set_colnames: set columns for 'eSW_Temp' ...");
+	for (i = 0; i < ncol_OUT[eSW_Temp]; i++) {
+		colnames_OUT[eSW_Temp][i] = Str_Dup(cnames_eSW_Temp[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_Precip' ...");
+	for (i = 0; i < ncol_OUT[eSW_Precip]; i++) {
+		colnames_OUT[eSW_Precip][i] = Str_Dup(cnames_eSW_Precip[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_SoilInf' ...");
+	for (i = 0; i < ncol_OUT[eSW_SoilInf]; i++) {
+		colnames_OUT[eSW_SoilInf][i] = Str_Dup(cnames_eSW_SoilInf[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_Runoff' ...");
+	for (i = 0; i < ncol_OUT[eSW_Runoff]; i++) {
+		colnames_OUT[eSW_Runoff][i] = Str_Dup(cnames_eSW_Runoff[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_VWCBulk' ...");
+	for (i = 0; i < ncol_OUT[eSW_VWCBulk]; i++) {
+		colnames_OUT[eSW_VWCBulk][i] = Str_Dup(Layers_names[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_VWCMatric' ...");
+	for (i = 0; i < ncol_OUT[eSW_VWCMatric]; i++) {
+		colnames_OUT[eSW_VWCMatric][i] = Str_Dup(Layers_names[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_SWCBulk' ...");
+	for (i = 0; i < ncol_OUT[eSW_SWCBulk]; i++) {
+		colnames_OUT[eSW_SWCBulk][i] = Str_Dup(Layers_names[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_SWABulk' ...");
+	for (i = 0; i < ncol_OUT[eSW_SWABulk]; i++) {
+		colnames_OUT[eSW_SWABulk][i] = Str_Dup(Layers_names[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_SWAMatric' ...");
+	for (i = 0; i < ncol_OUT[eSW_SWAMatric]; i++) {
+		colnames_OUT[eSW_SWAMatric][i] = Str_Dup(Layers_names[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_SWPMatric' ...");
+	for (i = 0; i < ncol_OUT[eSW_SWPMatric]; i++) {
+		colnames_OUT[eSW_SWPMatric][i] = Str_Dup(Layers_names[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_SurfaceWater' ...");
+	for (i = 0; i < ncol_OUT[eSW_SurfaceWater]; i++) {
+		colnames_OUT[eSW_SurfaceWater][i] = Str_Dup(cnames_eSW_SurfaceWater[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_Transp' ...");
+	for (i = 0; i < tLayers; i++) {
+		for (j = 0; j < NVEGTYPES + 1; j++) {
+			strcpy(ctemp, "transp_");
+			strcat(ctemp, cnames_VegTypes[j]);
+			strcat(ctemp, "_");
+			strcat(ctemp, Layers_names[i]);
+
+			colnames_OUT[eSW_Transp][i + j * tLayers] = Str_Dup(ctemp);
+		}
+	}
+
+	if (debug) swprintf(" 'eSW_EvapSoil' ...");
+	for (i = 0; i < ncol_OUT[eSW_EvapSoil]; i++) {
+		colnames_OUT[eSW_EvapSoil][i] = Str_Dup(Layers_names[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_EvapSurface' ...");
+	for (i = 0; i < NVEGTYPES + 2; i++) {
+		strcpy(ctemp, "evap_");
+		strcat(ctemp, cnames_VegTypes[i]);
+		colnames_OUT[eSW_EvapSurface][i] = Str_Dup(ctemp);
+	}
+	for (i = 0; i < ncol_OUT[eSW_EvapSurface] - (NVEGTYPES + 2); i++) {
+		colnames_OUT[eSW_EvapSurface][NVEGTYPES + 2 + i] = Str_Dup(cnames_add_eSW_EvapSurface[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_Interception' ...");
+	for (i = 0; i < NVEGTYPES + 2; i++) {
+		strcpy(ctemp, "int_");
+		strcat(ctemp, cnames_VegTypes[i]);
+		colnames_OUT[eSW_Interception][i] = Str_Dup(ctemp);
+	}
+
+	if (debug) swprintf(" 'eSW_LyrDrain' ...");
+	for (i = 0; i < ncol_OUT[eSW_LyrDrain]; i++) {
+		colnames_OUT[eSW_LyrDrain][i] = Str_Dup(Layers_names[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_HydRed' ...");
+	for (i = 0; i < tLayers; i++) {
+		for (j = 0; j < NVEGTYPES + 1; j++) {
+			strcpy(ctemp, cnames_VegTypes[j]);
+			strcat(ctemp, "_");
+			strcat(ctemp, Layers_names[i]);
+			colnames_OUT[eSW_HydRed][i + j * tLayers] = Str_Dup(ctemp);
+		}
+	}
+
+	if (debug) swprintf(" 'eSW_AET' ...");
+	for (i = 0; i < ncol_OUT[eSW_AET]; i++) {
+		colnames_OUT[eSW_AET][i] = Str_Dup(cnames_eSW_AET[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_PET' ...");
+	for (i = 0; i < ncol_OUT[eSW_PET]; i++) {
+		colnames_OUT[eSW_PET][i] = Str_Dup(cnames_eSW_PET[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_WetDays' ...");
+	for (i = 0; i < ncol_OUT[eSW_WetDays]; i++) {
+		colnames_OUT[eSW_WetDays][i] = Str_Dup(Layers_names[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_SnowPack' ...");
+	for (i = 0; i < ncol_OUT[eSW_SnowPack]; i++) {
+		colnames_OUT[eSW_SnowPack][i] = Str_Dup(cnames_eSW_SnowPack[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_DeepSWC' ...");
+	for (i = 0; i < ncol_OUT[eSW_DeepSWC]; i++) {
+		colnames_OUT[eSW_DeepSWC][i] = Str_Dup(cnames_eSW_DeepSWC[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_SoilTemp' ...");
+	for (i = 0; i < ncol_OUT[eSW_SoilTemp]; i++) {
+		colnames_OUT[eSW_SoilTemp][i] = Str_Dup(Layers_names[i]);
+	}
+
+	if (debug) swprintf(" 'eSW_Estab' ...");
+	for (i = 0; i < ncol_OUT[eSW_Estab]; i++) {
+		colnames_OUT[eSW_Estab][i] = Str_Dup(SW_VegEstab.parms[i]->sppname);
+	}
+
+	if (debug) swprintf(" 'eSW_CO2Effects' ...");
+	for (i = 0; i < ncol_OUT[eSW_CO2Effects]; i++) {
+		colnames_OUT[eSW_CO2Effects][i] = Str_Dup(cnames_eSW_CO2Effects[i]);
+	}
+
+	if (debug) swprintf(" completed.\n");
+}
+#endif
 
 void SW_OUT_new_year(void)
 {
@@ -716,9 +897,11 @@ void SW_OUT_read(void)
 			if (useTimeStep) {
 				for (i = 0; i < used_OUTNPERIODS; i++) {
 					timeSteps[k][i] = str2period(Str_ToUpper(timeStep[i], ext));
+					//printf("timesteps[%d][%d]: %d\n", k, i, timeSteps[k][i]);
 				}
 			} else {
 				timeSteps[k][0] = str2period(Str_ToUpper(period, ext));
+				//printf("timesteps[%d][0]: %d\n", k, timeSteps[k][0]);
 			}
 		}
 
@@ -764,7 +947,6 @@ void SW_OUT_read(void)
 		{
 			SW_Output[k].mykey = k;
 			SW_Output[k].myobj = key2obj[k];
-			SW_Output[k].period = str2period(Str_ToUpper(period, ext));
 			SW_Output[k].first_orig = first;
 			SW_Output[k].last_orig =
 					!Str_CompareI("END", last) ? 366 : atoi(last);
@@ -796,30 +978,39 @@ void SW_OUT_close_files(void)
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	OutKey k;
 	int i;
+
+	// only want to check 1 value if timestep used since all values have same period
+	if(useTimeStep == 1){
+		ForEachOutKey(k){
+			if (SW_Output[k].use){
+				break;
+			}
+		}
+	}
 	for (i = 0; i < used_OUTNPERIODS; i++) /*will loop through for as many periods are being used*/
 	{
-		if (timeSteps[k][i] < 4)
-		{
-			//switch (timeSteps[k][i])
-			/*switch(timeSteps[k][i])
-			{ //depending on iteration through loop, will close one of the time step files
-				case eSW_Day:
-					CloseFile(&SW_Output_Files.fp_dy_avg);
-					CloseFile(&SW_Output_Files.fp_dy_soil_avg);
-					break;
-				case eSW_Week:
-					CloseFile(&SW_Output_Files.fp_wk_avg);
-					CloseFile(&SW_Output_Files.fp_wk_soil_avg);
-					break;
-				case eSW_Month:
-					CloseFile(&SW_Output_Files.fp_mo_avg);
-					CloseFile(&SW_Output_Files.fp_mo_soil_avg);
-					break;
-				case eSW_Year:
-					CloseFile(&SW_Output_Files.fp_yr_avg);
-					CloseFile(&SW_Output_Files.fp_yr_soil_avg);
-					break;
-			}*/
+		switch(timeSteps[k][i])
+		{ //depending on iteration through loop, will close one of the time step files
+			case eSW_Day:
+				printf("close day\n");
+				CloseFile(&SW_Output_Files.fp_dy_avg);
+				CloseFile(&SW_Output_Files.fp_dy_soil_avg);
+				break;
+			case eSW_Week:
+				printf("close week\n");
+				CloseFile(&SW_Output_Files.fp_wk_avg);
+				CloseFile(&SW_Output_Files.fp_wk_soil_avg);
+				break;
+			case eSW_Month:
+				printf("close month\n");
+				CloseFile(&SW_Output_Files.fp_mo_avg);
+				CloseFile(&SW_Output_Files.fp_mo_soil_avg);
+				break;
+			case eSW_Year:
+				printf("close years\n");
+				CloseFile(&SW_Output_Files.fp_yr_avg);
+				CloseFile(&SW_Output_Files.fp_yr_soil_avg);
+				break;
 		}
 	}
 #elif defined(STEPWAT)
@@ -829,36 +1020,32 @@ void SW_OUT_close_files(void)
 		int i;
 		for (i = 0; i < used_OUTNPERIODS; i++) /*will loop through for as many periods are being used*/
 		{
-			if (timeSteps[k][i] < 4)
-			{
-				//switch (timeSteps[k][i])
-				switch(i)
-				{ /*depending on iteration through loop, will close one of the time step files */
-				case eSW_Day:
-					CloseFile(&SW_Output_Files.fp_dy);
-					CloseFile(&SW_Output_Files.fp_dy_soil);
-					CloseFile(&SW_Output_Files.fp_dy_avg);
-					CloseFile(&SW_Output_Files.fp_dy_soil_avg);
-					break;
-				case eSW_Week:
-					CloseFile(&SW_Output_Files.fp_wk);
-					CloseFile(&SW_Output_Files.fp_wk_soil);
-					CloseFile(&SW_Output_Files.fp_wk_avg);
-					CloseFile(&SW_Output_Files.fp_wk_soil_avg);
-					break;
-				case eSW_Month:
-					CloseFile(&SW_Output_Files.fp_mo);
-					CloseFile(&SW_Output_Files.fp_mo_soil);
-					CloseFile(&SW_Output_Files.fp_mo_avg);
-					CloseFile(&SW_Output_Files.fp_mo_soil_avg);
-					break;
-				case eSW_Year:
-					CloseFile(&SW_Output_Files.fp_yr);
-					CloseFile(&SW_Output_Files.fp_yr_soil);
-					CloseFile(&SW_Output_Files.fp_yr_avg);
-					CloseFile(&SW_Output_Files.fp_yr_soil_avg);
-					break;
-				}
+			switch(timeSteps[k][i])
+			{ /*depending on iteration through loop, will close one of the time step files */
+			case eSW_Day:
+				CloseFile(&SW_Output_Files.fp_dy);
+				CloseFile(&SW_Output_Files.fp_dy_soil);
+				CloseFile(&SW_Output_Files.fp_dy_avg);
+				CloseFile(&SW_Output_Files.fp_dy_soil_avg);
+				break;
+			case eSW_Week:
+				CloseFile(&SW_Output_Files.fp_wk);
+				CloseFile(&SW_Output_Files.fp_wk_soil);
+				CloseFile(&SW_Output_Files.fp_wk_avg);
+				CloseFile(&SW_Output_Files.fp_wk_soil_avg);
+				break;
+			case eSW_Month:
+				CloseFile(&SW_Output_Files.fp_mo);
+				CloseFile(&SW_Output_Files.fp_mo_soil);
+				CloseFile(&SW_Output_Files.fp_mo_avg);
+				CloseFile(&SW_Output_Files.fp_mo_soil_avg);
+				break;
+			case eSW_Year:
+				CloseFile(&SW_Output_Files.fp_yr);
+				CloseFile(&SW_Output_Files.fp_yr_soil);
+				CloseFile(&SW_Output_Files.fp_yr_avg);
+				CloseFile(&SW_Output_Files.fp_yr_soil_avg);
+				break;
 			}
 		}
 	}
@@ -1077,22 +1264,22 @@ void SW_OUT_write_today(void)
 		ForEachOutKey(k){
 				if(SW_Output[k].use){
 					if(useTimeStep == 0){
-						if(SW_Output[k].period == 0){
+						if(timeSteps[k][0] == 0){ // change from period to timesteps
 							if(k > finalValue_dy){
 								finalValue_dy = k;
 						}
 					}
-						if(SW_Output[k].period == 1){
+						if(timeSteps[k][0] == 1){
 							if(k > finalValue_wk){
 								finalValue_wk = k;
 						}
 					}
-						if(SW_Output[k].period == 2){
+						if(timeSteps[k][0] == 2){
 							if(k > finalValue_mo){
 								finalValue_mo = k;
 						}
 					}
-						if(SW_Output[k].period == 3){
+						if(timeSteps[k][0] == 3){
 							if(k > finalValue_yr){
 								finalValue_yr = k;
 						}
@@ -1108,19 +1295,20 @@ void SW_OUT_write_today(void)
 			}
 		}
 	}
-	}
+	/*printf("day final: %d\n", finalValue_dy);
+	printf("wk final: %d\n", finalValue_wk);
+	printf("mo final: %d\n", finalValue_mo);
+	printf("yr final: %d\n", finalValue_yr);*/
+}
 
 
 	ForEachOutKey(k)
 	{
 		if (!SW_Output[k].use)
 			continue;
-			//if (timeSteps[k][i] < 4)
-			//{
 			for (i = 0; i < used_OUTNPERIODS; i++)
 			{ /* will run through this loop for as many periods are being used */
 				writeit = swTRUE;
-				//SW_Output[k].period = timeSteps[k][i]; /* set the desired period based on the iteration */
 
 				switch (timeSteps[k][i])
 				{
@@ -3941,8 +4129,9 @@ static void get_runoffrunon(OutPeriod pd) {
 	}
 	val_netRunoff = val_surfaceRunoff + val_snowRunoff - val_surfaceRunon;
 
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f", _Sep, val_netRunoff, _Sep, val_surfaceRunoff, _Sep, val_snowRunoff);
-	strcat(outstr, str);
+	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_netRunoff,
+      _Sep, val_surfaceRunoff, _Sep, val_snowRunoff, _Sep, val_surfaceRunon);
+    strcat(outstr, str);
 
 	#elif defined(STEPWAT)
 		switch (pd)
@@ -3950,20 +4139,25 @@ static void get_runoffrunon(OutPeriod pd) {
 			case eSW_Day:
 				p = SW_Model.doy-1;
 				val_surfaceRunoff = w->dysum.surfaceRunoff;
+				val_surfaceRunon = w->dysum.surfaceRunon;
 				val_snowRunoff = w->dysum.snowRunoff;
 				break;
 			case eSW_Week:
 				val_surfaceRunoff = w->wkavg.surfaceRunoff;
+				val_surfaceRunon = w->wkavg.surfaceRunon;
 				val_snowRunoff = w->wkavg.snowRunoff;
 				p = SW_Model.week-tOffset;
 				break;
 			case eSW_Month:
 				p = SW_Model.month-tOffset;
 				val_surfaceRunoff = w->moavg.surfaceRunoff;
+				val_surfaceRunon = w->moavg.surfaceRunon;
 				val_snowRunoff = w->moavg.snowRunoff;
 				break;
 			case eSW_Year:
+				p = Globals.currYear-1;
 				val_surfaceRunoff = w->yravg.surfaceRunoff;
+				val_surfaceRunon = w->yravg.surfaceRunon;
 				val_snowRunoff = w->yravg.snowRunoff;
 				break;
 		}
@@ -3973,14 +4167,19 @@ static void get_runoffrunon(OutPeriod pd) {
 		{
 			//printf("yr, p: %d, %d\n", Globals.currYear, p);
 			float old_val_total = SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_val_surface = SXW_AVG.runoff_surface_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_val_surface_runoff = SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_val_surface_runon = SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,0,pd)];
 			float old_val_snow = SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
 			SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)], val_netRunoff);
 			SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_total, val_netRunoff, SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
-			SXW_AVG.runoff_surface_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.runoff_surface_avg[Iypc(Globals.currYear-1,p,0,pd)], val_surfaceRunoff);
-			SXW_AVG.runoff_surface_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_surface, val_surfaceRunoff, SXW_AVG.runoff_surface_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,0,pd)], val_surfaceRunoff);
+			SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_surface_runoff, val_surfaceRunoff, SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+
+			SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,0,pd)], val_surfaceRunon);
+			SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_surface_runon, val_surfaceRunon, SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+
 
 			SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)], val_snowRunoff);
 			SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_snow, val_snowRunoff, SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)]);
@@ -3991,17 +4190,20 @@ static void get_runoffrunon(OutPeriod pd) {
 
 			if(Globals.currIter == Globals.runModelIterations){
 				float std_total = sqrt(SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_surface = sqrt(SXW_AVG.runoff_surface_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_surface_runoff = sqrt(SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_surface_runon = sqrt(SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
 				float std_snow = sqrt(SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_total,
-								_Sep, SXW_AVG.runoff_surface_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_surface,
-								_Sep, SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_snow);
+				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c", _Sep, SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_total,
+								_Sep, SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_surface_runoff,
+								_Sep, SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_snow,
+								_Sep, SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_surface_runon);
 				strcat(outstr, str);
 			}
 		}
 		if(storeAllIterations){
-			sprintf(str_iters, "%c%7.6f%c%7.6f%c%7.6f", _Sep, val_netRunoff, _Sep, val_surfaceRunoff, _Sep, val_snowRunoff);
+			sprintf(str_iters, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_netRunoff,
+		      _Sep, val_surfaceRunoff, _Sep, val_snowRunoff, _Sep, val_surfaceRunon);
 			strcat(outstr_all_iters, str_iters);
 		}
 
@@ -6800,6 +7002,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 		|| strcmp(key2str[output_var], "SWAMATRIC")==0 || strcmp(key2str[output_var], "SWPMATRIC")==0 || strcmp(key2str[output_var], "SWA")==0))
 	{
 		#ifdef STEPWAT
+		// if usetimestep == 0 then need to check period for output files
 		if((useTimeStep == 0 && SW_Output[output_var].period == year_out-1) || useTimeStep == 1){
 		#endif
 			char *pt;
@@ -6808,13 +7011,13 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 
 			while (pt != NULL) {
 				if(year_out == 4){
-					if(counter >=1 ){
+					if(counter >= 1){
 						strcat(soil_file_array, pt);
 						strcat(soil_file_array, _SepSplit);
 					}
 				}
 				else{
-						if(counter >= 2 ){ // dont want to parse year and timeperiod
+						if(counter >= 2){ // dont want to parse year and timeperiod
 							strcat(soil_file_array, pt);
 							strcat(soil_file_array, _SepSplit);
 						}
@@ -6836,7 +7039,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 			reg_pt = strtok (read_data,_SepSplit);
 			while (reg_pt != NULL) {
 				if(year_out == 4){
-					if(reg_counter >=1 ){
+					if(reg_counter >= 1){
 						strcat(reg_file_array, reg_pt);
 						strcat(reg_file_array, _SepSplit);
 					}
@@ -6893,13 +7096,14 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 		"Lyr_6", "Lyr_7", "Lyr_8", "Lyr_9", "Lyr_10", "Lyr_11", "Lyr_12", "Lyr_13", "Lyr_14",
 		"Lyr_15", "Lyr_16", "Lyr_17", "Lyr_18", "Lyr_19", "Lyr_20", "Lyr_21", "Lyr_22",
 		"Lyr_23", "Lyr_24", "Lyr_25"};
+
 	const char *cnames_VegTypes[6] = { "Total", "Tree", "Shrub", "Forbs",
 		"Grass", "Litter" };
 
 	const char *cnames_eSW_Temp[] = { "Temp_max", "Temp_min", "Temp_avg", "SurfaceTemp" };
 	const char *cnames_eSW_Precip[] = { "ppt", "rain", "snow_fall", "snowmelt", "snowloss" };
 	const char *cnames_eSW_SoilInf[] = { "soil_inf" };
-	const char *cnames_eSW_Runoff[] = { "Total_Runoff", "Surface_Runoff", "Snowmelt_Runoff"};
+	const char *cnames_eSW_Runoff[] = { "net", "ponded_runoff", "snowmelt_runoff", "ponded_runon" };
 	const char *cnames_eSW_SurfaceWater[] = { "surfaceWater_cm" };
 	const char *cnames_add_eSW_EvapSurface[] = { "evap_surfaceWater" };
 	const char *cnames_eSW_AET[] = { "evapotr_cm" };
@@ -6910,7 +7114,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 		"GrassBiomass", "ShrubBiomass", "TreeBiomass", "ForbBiomass", "TotalBiomass",
 		"GrassBiolive", "ShrubBiolive", "TreeBiolive", "ForbBiolive", "TotalBiolive",
 		"GrassBioMult", "ShrubBioMult", "TreeBioMult", "ForbBioMult",
-		"GrassWUEMult", "ShrubWUEMult", "TreeWUEMult", "ForbWUEMult" };
+		"GrassWUEMult", "ShrubWUEMult", "TreeWUEMult", "ForbWUEMult"};
 
 
 	ForEachOutKey(colHeadersLoop)
