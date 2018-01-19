@@ -144,7 +144,6 @@ typedef enum {
 typedef struct {
 	OutKey mykey;
 	ObjType myobj;
-	OutPeriod period;
 	OutSum sumtype;
 	Bool use;
 	TimeInt first, last, 			/* updated for each year */

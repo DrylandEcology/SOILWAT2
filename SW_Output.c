@@ -808,6 +808,7 @@ void SW_OUT_read(void)
 					timeStep[1], timeStep[2], timeStep[3]);	// maximum number of possible timeStep is SW_OUTNPERIODS
 			used_OUTNPERIODS--; // decrement the count to make sure to not count keyname in the number of periods
 
+
 			char *dayCheck = strstr(inbuf, "dy");
 			char *weekCheck = strstr(inbuf, "wk");
 			char *monthCheck = strstr(inbuf, "mo");
@@ -1308,8 +1309,8 @@ void SW_OUT_write_today(void)
 			continue;
 			for (i = 0; i < used_OUTNPERIODS; i++)
 			{ /* will run through this loop for as many periods are being used */
+				//printf("timesteps[%d][%d]: %d\n", k, i, timeSteps[k][0]);
 				writeit = swTRUE;
-
 				switch (timeSteps[k][i])
 				{
 				case eSW_Day:
@@ -1449,6 +1450,7 @@ void SW_OUT_write_today(void)
 #elif defined(STEPWAT)
 	if ((isPartialSoilwatOutput == swFALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 	{
+		//printf("timesteps[%d][%d]: %d\n", k, i, timeSteps[k][0]);
 		switch (timeSteps[k][i])
 		{ // based on iteration of for loop, determines which file to output to
 		case eSW_Day:
@@ -1469,7 +1471,7 @@ void SW_OUT_write_today(void)
 
 			if(isPartialSoilwatOutput == swFALSE && Globals.currIter == Globals.runModelIterations){
 				populate_output_values(reg_file_vals_day, soil_file_vals_day, k, 1, 0); // function to put all the values together for output
-				//printf("%s\n", reg_file_vals_day);
+				//printf("day:\n %s\n", soil_file_vals_day);
 			}
 			if(storeAllIterations)
 				populate_output_values(reg_file_vals_day_iters, soil_file_vals_day_iters, k, 1, 1); // function to put all the values together for output
@@ -1597,6 +1599,7 @@ void SW_OUT_write_today(void)
 
 			if(isPartialSoilwatOutput == swFALSE && Globals.currIter == Globals.runModelIterations)
 				populate_output_values(reg_file_vals_year, soil_file_vals_year, k, 4, 0);
+				//printf("year:\n %s\n", reg_file_vals_year);
 			if(storeAllIterations)
 				populate_output_values(reg_file_vals_year_iters, soil_file_vals_year_iters, k, 4, 1);
 
@@ -7003,7 +7006,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 	{
 		#ifdef STEPWAT
 		// if usetimestep == 0 then need to check period for output files
-		if((useTimeStep == 0 && SW_Output[output_var].period == year_out-1) || useTimeStep == 1){
+		if((useTimeStep == 0 && timeSteps[output_var][0] == year_out-1) || useTimeStep == 1){
 		#endif
 			char *pt;
 			int counter = 0;
@@ -7032,7 +7035,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 	else
 	{
 		#ifdef STEPWAT
-		if((useTimeStep == 0 && SW_Output[output_var].period == year_out-1) || useTimeStep == 1){
+		if((useTimeStep == 0 && timeSteps[output_var][0] == year_out-1) || useTimeStep == 1){
 		#endif
 			char *reg_pt;
 			int reg_counter = 0;
@@ -7124,7 +7127,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 		#else
 			//if(SW_Output[colHeadersLoop].use && SW_Output[colHeadersLoop].period == outFileTimestep-1)
 			//if timestep = 0 then only create for right period. if timestep = 1 create for all periods
-			if((SW_Output[colHeadersLoop].use && useTimeStep == 0 && SW_Output[colHeadersLoop].period == outFileTimestep-1) || (SW_Output[colHeadersLoop].use && useTimeStep == 1))
+			if((SW_Output[colHeadersLoop].use && useTimeStep == 0 && timeSteps[colHeadersLoop][0] == outFileTimestep-1) || (SW_Output[colHeadersLoop].use && useTimeStep == 1))
 		#endif
 		{
 			if(strcmp(key2str[colHeadersLoop], "VWCBULK")==0 || strcmp(key2str[colHeadersLoop], "VWCMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWCBULK")==0
