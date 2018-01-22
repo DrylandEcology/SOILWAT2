@@ -18,6 +18,17 @@
  06/26/2013 (dlm)	powe(): an alternate definition of pow(x, y) for x>0... this is faster (ca. 20%) then the one in math.h, but comes with a cost as the precision is slightly lower.  The measured precision drop I was getting was at max a relative error of about 100 billion percent (12 places after the decimal point) per calculation though so I don't think it's a big deal... (though it's hard to even accurately tell)
  */
 
+
+#ifdef NDEBUG
+  #undef SWDEBUG
+#endif
+
+#ifdef DEBUG
+  #def SWDEBUG
+#endif
+
+
+
 #ifndef GENERIC_H
 #define GENERIC_H
 

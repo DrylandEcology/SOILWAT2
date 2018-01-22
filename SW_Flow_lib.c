@@ -1225,7 +1225,10 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
  OUTPUT: none, but places the interpolation values in stValues struct for use in the soil_temperature function later
  **********************************************************************/
 void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrTemp, double depth_Temp[], double sTempR[], unsigned int nlyrSoil, double depth_Soil[], double width_Soil[], double sTemp[]){
-	unsigned int i = 0, j, n, toDebug = 0;
+	unsigned int i = 0, j, n;
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
 	double acc;
 
 	// interpolate soil temperature values for depth of soil profile layers
@@ -1250,13 +1253,18 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], 
 		if(n > 0)
 			sTemp[j] = sTemp[j] / n;
 
-		if (toDebug)
-			swprintf("\nConf T : i=%i, j=%i, n=%i, sTemp[%i]=%2.2f, acc=%2.2f", i, j, n, j, sTemp[j], acc);
+    #ifdef SWDEBUG
+    if (debug)
+      swprintf("\nConf T : i=%i, j=%i, n=%i, sTemp[%i]=%2.2f, acc=%2.2f", i, j, n, j, sTemp[j], acc);
+    #endif
 	}
 }
 
 void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[], double sTemp[], double endTemp, unsigned int nlyrTemp, double depth_Temp[], double maxTempDepth, double sTempR[]){
-	unsigned int i, j1=0, j2, toDebug = 0;
+	unsigned int i, j1=0, j2;
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
 	double depth_Soil2[nlyrSoil + 1], sTemp2[nlyrSoil + 1];
 
 	//transfer data to include bottom conditions; do not include surface temperature in interpolations
@@ -1279,17 +1287,24 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[], 
 
 		sTempR[i + 1] = interpolation(depth_Soil2[j1], depth_Soil2[j2], sTemp2[j1], sTemp2[j2], depth_Temp[i]);
 
-		if (toDebug)
+		#ifdef SWDEBUG
+		if (debug)
 			swprintf("\nConf T: i=%i, j1=%i, j2=%i, sTempR[%i]=%2.2f, sTemp2[%i]=%2.2f, sTemp2[%i]=%2.2f, depthT[%i]=%2.2f, depthS2[%i]=%2.2f, depthS2[%i]=%2.2f", i, j1, j2, i, sTempR[i], j1, sTemp2[j1], j2, sTemp2[j2], i, depth_Temp[i], j1, depth_Soil2[j1], j2, depth_Soil2[j2]);
+		#endif
 	}
 	sTempR[nlyrTemp + 1] = endTemp;
 
-	if (toDebug)
+	#ifdef SWDEBUG
+	if (debug)
 		swprintf("\nConf T: sTempR[%i]=%2.2f, sTempR[%i]=%2.2f", i, sTempR[i], i+1, sTempR[i+1]);
+	#endif
 }
 
 void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrSoil, double width_Soil[], double var[], unsigned int nlyrTemp, double width_Temp, double res[]){
-	unsigned int i, j = 0, toDebug = 0;
+	unsigned int i, j = 0;
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
 	double acc, ratio, sum;
 
 	for (i = 0; i < nlyrTemp + 1; i++) {
@@ -1313,8 +1328,10 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
 		}
 		res[i] = res[i] / sum;
 
-		if (toDebug)
+		#ifdef SWDEBUG
+		if (debug)
 			swprintf("\nConf A: acc=%2.2f, sum=%2.2f, res[%i]=%2.2f, var[%i]=%2.2f, [%i]=%2.2f, cor[%i][%i]=%2.2f, width_Soil[%i]=%2.2f, [%i]=%2.2f", acc, sum, i, res[i], j, var[j], j-1, var[j-1], i, j, cor[i][j], j, width_Soil[j], j-1, width_Soil[j-1]);
+		#endif
 
 	}
 }
@@ -1347,7 +1364,10 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 
 void soil_temperature_init(double bDensity[], double width[], double surfaceTemp, double oldsTemp[], double meanAirTemp, unsigned int nlyrs, double fc[], double wp[], double deltaX, double theMaxDepth,unsigned int nRgr) {
 	// local vars
-	unsigned int x1 = 0, x2 = 0, j = 0, i, toDebug = 0;
+	unsigned int x1 = 0, x2 = 0, j = 0, i;
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
 	double d1 = 0.0, d2 = 0.0, acc = 0.0;
 	double fc_vwc[nlyrs], wp_vwc[nlyrs];
 	// pointers
@@ -1356,8 +1376,10 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 	soil_temp_init = 1; // make this value 1 to make sure that this function isn't called more than once... (b/c it doesn't need to be)
 
 
-	if (toDebug)
+	#ifdef SWDEBUG
+	if (debug)
 		swprintf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
+	#endif
 
 
 	// init st
@@ -1431,13 +1453,15 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 		}
 	}
 
-	if (toDebug) {
+	#ifdef SWDEBUG
+	if (debug) {
 		for (i = 0; i < nRgr + 1; i++) {
 			swprintf("\ntl_by_sl");
 				for (j = 0; j < nlyrs + 1; j++)
 					swprintf("[%i,%i]=%3.2f ", i, j, st->tlyrs_by_slyrs[i][j]);
 		}
 	}
+	#endif
 
 	// calculate volumetric field capacity, volumetric wilting point, bulk density, and initial soil temperature for layers of the soil temperature profile
 	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, bDensity, nRgr, deltaX, st->bDensityR);
@@ -1451,7 +1475,8 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, wp_vwc, nRgr, deltaX, st->wpR);
 
 	// st->oldsTempR: index 0 is surface temperature
-	if (toDebug){
+	#ifdef SWDEBUG
+	if (debug) {
 		for (j = 0; j < nlyrs; j++) {
 			swprintf("\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, oldT=%2.2f",
 				j, st->depths[j], fc[j], wp[j], bDensity[j], oldsTemp[j]);
@@ -1464,6 +1489,7 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 				i, st->depthsR[i], st->fcR[i], st->wpR[i], st->bDensityR[i], st->oldsTempR[i+1]);
 		}
 	}
+  #endif
 }
 
 void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[], double swc_sat[], double width[]){
@@ -1516,7 +1542,7 @@ temp += temp;
 	unsigned int i, sFadjusted_sTemp;
 
 	/* local variables explained:
-	 toDebug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
+	 debug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
 	 deltaTemp - the change in temperature for each day
 	 Cis - heat capacity of the i-th non-frozen soil layer (cal cm-3 K-1)
 	 sFusionPool[] - the fusion pool for each soil layer
@@ -1649,14 +1675,17 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		unsigned int nlyrs, double fc[], double wp[], double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1, double csParam2, double shParam,
 		double snowdepth, double meanAirTemp, double deltaX, double theMaxDepth, unsigned int nRgr, double snow) {
 
-	unsigned int i, k, toDebug = 0, sFadjusted_sTemp;
+	unsigned int i, k, sFadjusted_sTemp;
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
 	double T1, cs, sh, pe, parts, part1, part2, vwc[nlyrs], vwcR[nRgr], sTempR[nRgr + 1];
 
 	for (i = 0; i < nlyrs; i++)
 		vwc[i] = swc[i] / width[i];
 
 	/* local variables explained:
-	 toDebug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
+	 debug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
 	 T1 - the average daily temperature at the top of the soil in celsius
 	 vwc - volumetric soil-water content
 	 pe - ratio of the difference between volumetric soil-water content & soil-water content
@@ -1667,15 +1696,19 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	 depths[nlyrs] - the depths of each layer of soil, calculated in the function
 	 vwcR[], sTempR[] - anything with a R at the end of the variable name stands for the interpolation of that array
 	 */
-	if (toDebug) {
+	#ifdef SWDEBUG
+	if (debug) {
 		swprintf("\n\nNew call to soil_temperature()");
 	}
+	#endif
 
 
 	if (!soil_temp_init) {
-		if (toDebug) {
+		#ifdef SWDEBUG
+		if (debug) {
 			swprintf("\nCalling soil_temperature_init\n");
 		}
+		#endif
 
 		surfaceTemp[Today] = airTemp;
 		set_frozen_unfrozen(nlyrs, oldsTemp, swc, swc_sat, width);
@@ -1691,21 +1724,28 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	// calculating T1, the average daily soil surface temperature
 	if(GT(snowdepth, 0.0)) {
 		T1 = surface_temperature_under_snow(airTemp, snow);
-		if (toDebug) swprintf("\nThere is snow on the ground, T1=%5.4f calculated using new equation from Parton 1998\n", T1);
+		#ifdef SWDEBUG
+		if (debug) swprintf("\nThere is snow on the ground, T1=%5.4f calculated using new equation from Parton 1998\n", T1);
+		#endif
 
 	} else {
 		if (LE(biomass, bmLimiter)) { // bmLimiter = 300
 			T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
-			if (toDebug) {
+			#ifdef SWDEBUG
+			if (debug) {
 				swprintf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
 					airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
 			}
+			#endif
+
 		} else {
 			T1 = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
-			if (toDebug){
+			#ifdef SWDEBUG
+			if (debug){
 				swprintf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)",
 					airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
 			}
+			#endif
 		}
 	}
 
@@ -1713,7 +1753,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	// calculate volumetric soil water content for soil temperature layers
 	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, vwc, nRgr, deltaX, vwcR);
 
-	if (toDebug) {
+  #ifdef SWDEBUG
+	if (debug) {
 		swprintf("\nregression values:");
 		for (i = 0; i < nRgr; i++) {
 			swprintf("\nk %2d width %5.4f depth %5.4f vwcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f",
@@ -1726,6 +1767,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 			i, width[i], st->depths[i], vwc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
 		}
 	}
+	#endif
 
 	// calculate the new soil temperature for each layer
 
@@ -1753,21 +1795,25 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 		sTempR[i] = st->oldsTempR[i] + parts * part2; // Parton (1978) eq. 2.21
 
-		if (toDebug) {
+		#ifdef SWDEBUG
+		if (debug) {
 			swprintf("\nk %d cs %5.4f sh %5.4f p1 %5.4f ps %5.4f p2 %5.4f p %5.4f",
 				k, cs, sh, part1, parts, part2, parts * part2);
 		}
+		#endif
 	}
 
 	sTempR[nRgr + 1] = meanAirTemp; // again... the last layer of the interpolation is set to the constant meanAirTemp
 
-	if (toDebug) {
+	#ifdef SWDEBUG
+	if (debug) {
 		swprintf("\nSoil temperature profile values:");
 		for (i = 0; i <= nRgr + 1; i++) {
 			swprintf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f",
 				i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
 		}
 	}
+	#endif
 
 
 	// convert soil temperature of soil temperature profile 'sTempR' to soil profile layers 'sTemp'
@@ -1788,7 +1834,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	set_frozen_unfrozen(nlyrs, sTemp, swc, swc_sat, width);
 
 
-	if (toDebug) {
+	#ifdef SWDEBUG
+	if (debug) {
 		swprintf("\nsTemp %5.4f surface; soil temperature adjusted by freeze/thaw: %i",
 			surfaceTemp[Today], sFadjusted_sTemp);
 
@@ -1804,13 +1851,16 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 				i, oldsTemp[i], sTemp[i], st->depths[i], st->lyrFrozen[i]);
 		}
 	}
+	#endif
 
 	// updating the values of yesterdays temperature for the next time the function is called...
 	for (i = 0; i <= nRgr + 1; i++){
 		st->oldsTempR[i] = sTempR[i];
 	}
 
-	if (toDebug) {
+	#ifdef SWDEBUG
+	if (debug) {
     sw_error(0, "EXIT DEBUG IS ON IN SOIL TEMPERATURE. CONSIDER TURNING OFF.\n");
 	}
+	#endif
 }

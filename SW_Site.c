@@ -221,9 +221,12 @@ void SW_SIT_read(void) {
 	SW_SITE *v = &SW_Site;
 	SW_CARBON *c = &SW_Carbon;
 	FILE *f;
-	int lineno = 0, x, debug = 0,
+	int lineno = 0, x,
 		rgnlow, /* lower layer of region */
 		region; /* transp region definition number */
+	#ifdef SWDEBUG
+	int debug = 0;
+	#endif
 	LyrIndex r;
 	Bool too_many_regions = swFALSE;
 
@@ -348,15 +351,21 @@ void SW_SIT_read(void) {
 			break;
 		case 37:
 			c->use_bio_mult = itob(atoi(inbuf));
+			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': use_bio_mult = %d\n", c->use_bio_mult);
+			#endif
 			break;
 		case 38:
 			c->use_wue_mult = itob(atoi(inbuf));
+			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': use_wue_mult = %d\n", c->use_wue_mult);
+			#endif
 			break;
 		case 39:
 			strcpy(c->scenario, inbuf);
+			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", c->scenario);
+			#endif
 			break;
 		default:
 			if (lineno > 39 + MAX_TRANSP_REGIONS)

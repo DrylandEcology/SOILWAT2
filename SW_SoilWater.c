@@ -116,7 +116,9 @@ void SW_SWC_water_flow(void) {
 	 */
 
 	LyrIndex i;
-	int debug = 0;
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
 
 	/* if there's no swc observation for today,
 	 * it shows up as SW_MISSING.  The input must
@@ -130,19 +132,25 @@ void SW_SWC_water_flow(void) {
 
 		if (!(SW_Model.doy == SW_Model.startstart && SW_Model.year == SW_Model.startyr)) {
 
-			if (debug) swprintf("\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n");
-			SW_SWC_adjust_swc(SW_Model.doy);
+      #ifdef SWDEBUG
+      if (debug) swprintf("\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n");
+      #endif
+      SW_SWC_adjust_swc(SW_Model.doy);
 
 		} else {
 			LogError(logfp, LOGWARN, "Attempt to set SWC on start day of first year of simulation disallowed.");
 		}
 
 	} else {
-		if (debug) swprintf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
+    #ifdef SWDEBUG
+    if (debug) swprintf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
+    #endif
 		SW_Water_Flow();
 	}
 
-	if (debug) swprintf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
+  #ifdef SWDEBUG
+  if (debug) swprintf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
+  #endif
 	ForEachSoilLayer(i)
 		SW_Soilwat.is_wet[i] = (Bool) (GE( SW_Soilwat.swcBulk[Today][i],
 				SW_Site.lyr[i]->swcBulk_wet));

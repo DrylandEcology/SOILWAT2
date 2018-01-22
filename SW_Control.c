@@ -63,14 +63,19 @@ void SW_FLW_construct(void);
 /***************** Begin Main Code *********************/
 
 void SW_CTL_main(void) {
+  #ifdef SWDEBUG
   int debug = 0;
+  #endif
 
-	TimeInt *cur_yr = &SW_Model.year;
+  TimeInt *cur_yr = &SW_Model.year;
 
-	for (*cur_yr = SW_Model.startyr; *cur_yr <= SW_Model.endyr; (*cur_yr)++) {
-		if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
-		SW_CTL_run_current_year();
-	}
+  for (*cur_yr = SW_Model.startyr; *cur_yr <= SW_Model.endyr; (*cur_yr)++) {
+    #ifdef SWDEBUG
+    if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
+    #endif
+
+    SW_CTL_run_current_year();
+  }
 } /******* End Main Loop *********/
 /*******************************************************/
 
@@ -91,31 +96,49 @@ void SW_CTL_init_model(const char *firstfile) {
 }
 
 void SW_CTL_run_current_year(void) {
-	/*=======================================================*/
-	TimeInt *doy = &SW_Model.doy;
-	int debug = 0;
+  /*=======================================================*/
+  TimeInt *doy = &SW_Model.doy;
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
 
-	if (debug) swprintf("\n'SW_CTL_run_current_year': begin new year\n");
-	_begin_year();
+  #ifdef SWDEBUG
+  if (debug) swprintf("\n'SW_CTL_run_current_year': begin new year\n");
+  #endif
+  _begin_year();
 
-	for (*doy = SW_Model.firstdoy; *doy <= SW_Model.lastdoy; (*doy)++) {
-		if (debug) swprintf("\t: begin doy = %d ... ", *doy);
-		_begin_day();
+  for (*doy = SW_Model.firstdoy; *doy <= SW_Model.lastdoy; (*doy)++) {
+    #ifdef SWDEBUG
+    if (debug) swprintf("\t: begin doy = %d ... ", *doy);
+    #endif
+    _begin_day();
 
-		if (debug) swprintf("simulate water ... ");
-		SW_SWC_water_flow();
+    #ifdef SWDEBUG
+    if (debug) swprintf("simulate water ... ");
+    #endif
+    SW_SWC_water_flow();
 
-		if (SW_VegEstab.use)
-			SW_VES_checkestab();
+    if (SW_VegEstab.use)
+      SW_VES_checkestab();
 
-		if (debug) swprintf("ending day ... ");
-		_end_day();
-		if (debug) swprintf("doy = %d completed.\n", *doy);
-	}
+    #ifdef SWDEBUG
+    if (debug) swprintf("ending day ... ");
+    #endif
+    _end_day();
 
-	if (debug) swprintf("'SW_CTL_run_current_year': flush output\n");
-	SW_OUT_flush();
-	if (debug) swprintf("'SW_CTL_run_current_year': completed.\n");
+    #ifdef SWDEBUG
+    if (debug) swprintf("doy = %d completed.\n", *doy);
+    #endif
+  }
+
+  #ifdef SWDEBUG
+  if (debug) swprintf("'SW_CTL_run_current_year': flush output\n");
+  #endif
+  SW_OUT_flush();
+
+  #ifdef SWDEBUG
+  if (debug) swprintf("'SW_CTL_run_current_year': completed.\n");
+  #endif
 }
 
 static void _begin_year(void) {
@@ -150,36 +173,59 @@ static void _end_day(void) {
 }
 
 void SW_CTL_read_inputs_from_disk(void) {
+  #ifdef SWDEBUG
   int debug = 0;
+  #endif
 
+  #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_read_inputs_from_disk': Read input from disk:");
+  #endif
+
   SW_F_read(NULL);
+  #ifdef SWDEBUG
   if (debug) swprintf(" 'files'");
+  #endif
 
   SW_MDL_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'model'");
+  #endif
 
   SW_WTH_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather'");
+  #endif
 
   SW_VPD_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'veg'");
+  #endif
 
   SW_SIT_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'site'");
+  #endif
 
   SW_VES_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'establishment'");
+  #endif
 
   SW_OUT_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'ouput'");
+  #endif
 
   SW_CBN_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'CO2'");
+  #endif
 
   SW_SWC_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'swc'");
   if (debug) swprintf(" completed.\n");
+  #endif
 }
 
 
