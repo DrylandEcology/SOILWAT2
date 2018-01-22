@@ -54,7 +54,7 @@ namespace {
     SW_CTL_main();
 
     // Collect and output from daily checks
-    EXPECT_EQ(0, SW_Soilwat.waterBalanceError);
+    EXPECT_EQ(0, SW_Soilwat.wbError);
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();

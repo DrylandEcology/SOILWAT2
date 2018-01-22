@@ -93,8 +93,60 @@ static void _clear_hist(void) {
 	}
 }
 
-void SW_WaterBalance_Checks(void) {
 
+void SW_WaterBalance_Checks(void) {
+  SW_SOILWAT *sw = &SW_Soilwat;
+
+  int i;
+  RealD Etotal = 0., Ttotal = 0.,
+    Tvegi[NVEGTYPES] = {0.};
+
+  // Get variables
+  ForEachSoilLayer(i) {
+    Etotal += ;
+    Ttotal += ;
+  }
+
+
+  //--- Water balance checks
+  // AET <= PET
+  sw.wbError += LE(sw.aet, sw.pet)? 0: 1;
+
+  // AET == E(total) + T(total)
+  sw.wbError += EQ(sw.aet, Etotal + Ttotal)? 0: 1;
+
+  // T(total) = sum of T(veg-type i from soil layer j)
+  expect_equal(Ttotal, apply(sapply(Tvegij, function(x) apply(x, 1, sum)), 1, sum),
+    info = info2)
+
+  // E(total) = E(total bare-soil) + E(ponded water) + E(total litter-intercepted) +
+  //            + E(total veg-intercepted) + E(snow sublimation)
+  expect_equal(Etotal, Esoil + Eponded + Eveg + Elitter + Esnow, info = info2)
+
+  // E(total surface) = E(ponded water) + E(total litter-intercepted) +
+  //                    + E(total veg-intercepted)
+  expect_equal(Etotalsurf, Eponded + Eveg + Elitter, info = info2)
+
+
+  //--- Water cycling checks
+  // infiltration = [rain + snowmelt + runon] - (runoff + E(total intercepted)
+  expect_equal(infiltration, arriving_water - (runoff + Etotalint), info = info2)
+
+  // AET - E(snow sublimation) = [rain + snowmelt + runon] -
+  //   [runoff + delta(intercepted-water) + deepDrainage + delta(swc)]
+  expect_equal(aet[idelta2] - Esnow[idelta2],
+    arriving_water[idelta2] - (runoff[idelta2] + delta_intercepted +
+    deepDrainage[idelta2] + apply(delta_swcj, 1, sum)), info = info2)
+
+  // for every soil layer j: delta(swc) =
+  //   = infiltration/percolationIn + hydraulicRedistribution -
+  //     (percolationOut/deepDrainage + transpiration + evaporation)
+  for (j in seq_len(n_soillayers)) {
+    expect_equal(delta_swcj[, j],
+      percolationIn[idelta2, j] + hydraulicRedistribution[idelta2, j] -
+      (percolationOut[idelta2, j] + Ttotalj[idelta2, j] + Esoilj[idelta2, j]),
+      info = paste(info2, "/ soil layer:", j))
+  }
 }
 
 
