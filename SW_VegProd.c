@@ -25,7 +25,7 @@ increased length of char outstr[1000] to outstr[1500] because of increased echo
 09/13/2011	(drs) added input in SW_VPD_read() of RealD canopy_height_constant and updated SW_VPD_init() (as option: if > 0 then constant canopy height (cm) and overriding cnpy-tangens=f(biomass))
 09/15/2011	(drs) added input in SW_VPD_read() of RealD albedo
 09/26/2011	(drs)	added calls to Times.c:interpolate_monthlyValues() in SW_VPD_init() for each monthly input variable; replaced monthly loop with a daily loop for additional daily variables; adjusted _echo_inits()
-10/17/2011	(drs)	in SW_VPD_init(): v->tree.total_agb_daily[doy] = v->tree.litter_daily[doy] + v->tree.biolive_daily[doy] instead of = v->tree.litter_daily[doy] + v->tree.biomass_daily[doy] to adjust for better scaling of potential bare-soil evaporation
+10/17/2011	(drs)	in SW_VPD_init(): v->veg[SW_TREES].total_agb_daily[doy] = v->veg[SW_TREES].litter_daily[doy] + v->veg[SW_TREES].biolive_daily[doy] instead of = v->veg[SW_TREES].litter_daily[doy] + v->veg[SW_TREES].biomass_daily[doy] to adjust for better scaling of potential bare-soil evaporation
 02/04/2012	(drs) 	added input in SW_VPD_read() of RealD SWPcrit
 01/29/2013	(clk)	changed the read in to account for the extra fractional component in total vegetation, bare ground
 added the variable RealF help_bareGround as a place holder for the sscanf call.
@@ -86,9 +86,10 @@ void SW_VPD_read(void) {
 	SW_VEGPROD *v = &SW_VegProd;
 	FILE *f;
 	TimeInt mon = Jan;
-	int x, lineno = 0;
+	int x, k, lineno = 0;
 	const int line_help = 33;
-	RealF help_grass, help_shrub, help_tree, help_forb, help_bareGround, litt, biom, pctl, laic, co2_coeff_grass, co2_coeff_shrub, co2_coeff_tree, co2_coeff_forb;
+	RealF help_grass, help_shrub, help_tree, help_forb, help_bareGround,
+		litt, biom, pctl, laic, co2_coeff_grass, co2_coeff_shrub, co2_coeff_tree, co2_coeff_forb;
 	RealD fraction_sum = 0.;
 
 	MyFileName = SW_F_name(eVegProd);
@@ -100,429 +101,429 @@ void SW_VPD_read(void) {
 			/* fractions of vegetation types */
 			case 1:
 				x = sscanf(inbuf, "%f %f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb, &help_bareGround);
-				if (x < 5) {
+				if (x < NVEGTYPES + 1) {
 					sprintf(errstr, "ERROR: invalid record in vegetation type components in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.cov.fCover = help_grass;
-				v->shrub.cov.fCover = help_shrub;
-				v->tree.cov.fCover = help_tree;
-				v->forb.cov.fCover = help_forb;
+				v->veg[SW_GRASS].cov.fCover = help_grass;
+				v->veg[SW_SHRUB].cov.fCover = help_shrub;
+				v->veg[SW_TREES].cov.fCover = help_tree;
+				v->veg[SW_FORBS].cov.fCover = help_forb;
 				v->bare_cov.fCover = help_bareGround;
 				break;
 
 			/* albedo */
 			case 2:
 				x = sscanf(inbuf, "%f %f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb, &help_bareGround);
-				if (x < 5) {
+				if (x < NVEGTYPES + 1) {
 					sprintf(errstr, "ERROR: invalid record in albedo values in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.cov.albedo = help_grass;
-				v->shrub.cov.albedo = help_shrub;
-				v->tree.cov.albedo = help_tree;
-				v->forb.cov.albedo = help_forb;
+				v->veg[SW_GRASS].cov.albedo = help_grass;
+				v->veg[SW_SHRUB].cov.albedo = help_shrub;
+				v->veg[SW_TREES].cov.albedo = help_tree;
+				v->veg[SW_FORBS].cov.albedo = help_forb;
 				v->bare_cov.albedo = help_bareGround;
 				break;
 
 			/* LAI converter for % cover */
 			case 3:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in percent cover converting in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.conv_stcr = help_grass;
-				v->shrub.conv_stcr = help_shrub;
-				v->tree.conv_stcr = help_tree;
-				v->forb.conv_stcr = help_forb;
+				v->veg[SW_GRASS].conv_stcr = help_grass;
+				v->veg[SW_SHRUB].conv_stcr = help_shrub;
+				v->veg[SW_TREES].conv_stcr = help_tree;
+				v->veg[SW_FORBS].conv_stcr = help_forb;
 				break;
 
 			/* canopy height */
 			case 4:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in canopy xinflec in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.cnpy.xinflec = help_grass;
-				v->shrub.cnpy.xinflec = help_shrub;
-				v->tree.cnpy.xinflec = help_tree;
-				v->forb.cnpy.xinflec = help_forb;
+				v->veg[SW_GRASS].cnpy.xinflec = help_grass;
+				v->veg[SW_SHRUB].cnpy.xinflec = help_shrub;
+				v->veg[SW_TREES].cnpy.xinflec = help_tree;
+				v->veg[SW_FORBS].cnpy.xinflec = help_forb;
 				break;
 			case 5:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in canopy yinflec in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.cnpy.yinflec = help_grass;
-				v->shrub.cnpy.yinflec = help_shrub;
-				v->tree.cnpy.yinflec = help_tree;
-				v->forb.cnpy.yinflec = help_forb;
+				v->veg[SW_GRASS].cnpy.yinflec = help_grass;
+				v->veg[SW_SHRUB].cnpy.yinflec = help_shrub;
+				v->veg[SW_TREES].cnpy.yinflec = help_tree;
+				v->veg[SW_FORBS].cnpy.yinflec = help_forb;
 				break;
 			case 6:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in canopy range in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.cnpy.range = help_grass;
-				v->shrub.cnpy.range = help_shrub;
-				v->tree.cnpy.range = help_tree;
-				v->forb.cnpy.range = help_forb;
+				v->veg[SW_GRASS].cnpy.range = help_grass;
+				v->veg[SW_SHRUB].cnpy.range = help_shrub;
+				v->veg[SW_TREES].cnpy.range = help_tree;
+				v->veg[SW_FORBS].cnpy.range = help_forb;
 				break;
 			case 7:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in canopy slope in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.cnpy.slope = help_grass;
-				v->shrub.cnpy.slope = help_shrub;
-				v->tree.cnpy.slope = help_tree;
-				v->forb.cnpy.slope = help_forb;
+				v->veg[SW_GRASS].cnpy.slope = help_grass;
+				v->veg[SW_SHRUB].cnpy.slope = help_shrub;
+				v->veg[SW_TREES].cnpy.slope = help_tree;
+				v->veg[SW_FORBS].cnpy.slope = help_forb;
 				break;
 			case 8:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in canopy height constant option in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.canopy_height_constant = help_grass;
-				v->shrub.canopy_height_constant = help_shrub;
-				v->tree.canopy_height_constant = help_tree;
-				v->forb.canopy_height_constant = help_forb;
+				v->veg[SW_GRASS].canopy_height_constant = help_grass;
+				v->veg[SW_SHRUB].canopy_height_constant = help_shrub;
+				v->veg[SW_TREES].canopy_height_constant = help_tree;
+				v->veg[SW_FORBS].canopy_height_constant = help_forb;
 				break;
 
 			/* vegetation interception parameters */
 			case 9:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in interception parameter a in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.veg_intPPT_a = help_grass;
-				v->shrub.veg_intPPT_a = help_shrub;
-				v->tree.veg_intPPT_a = help_tree;
-				v->forb.veg_intPPT_a = help_forb;
+				v->veg[SW_GRASS].veg_intPPT_a = help_grass;
+				v->veg[SW_SHRUB].veg_intPPT_a = help_shrub;
+				v->veg[SW_TREES].veg_intPPT_a = help_tree;
+				v->veg[SW_FORBS].veg_intPPT_a = help_forb;
 				break;
 			case 10:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in interception parameter b in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.veg_intPPT_b = help_grass;
-				v->shrub.veg_intPPT_b = help_shrub;
-				v->tree.veg_intPPT_b = help_tree;
-				v->forb.veg_intPPT_b = help_forb;
+				v->veg[SW_GRASS].veg_intPPT_b = help_grass;
+				v->veg[SW_SHRUB].veg_intPPT_b = help_shrub;
+				v->veg[SW_TREES].veg_intPPT_b = help_tree;
+				v->veg[SW_FORBS].veg_intPPT_b = help_forb;
 				break;
 			case 11:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in interception parameter c in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.veg_intPPT_c = help_grass;
-				v->shrub.veg_intPPT_c = help_shrub;
-				v->tree.veg_intPPT_c = help_tree;
-				v->forb.veg_intPPT_c = help_forb;
+				v->veg[SW_GRASS].veg_intPPT_c = help_grass;
+				v->veg[SW_SHRUB].veg_intPPT_c = help_shrub;
+				v->veg[SW_TREES].veg_intPPT_c = help_tree;
+				v->veg[SW_FORBS].veg_intPPT_c = help_forb;
 				break;
 			case 12:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in interception parameter d in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.veg_intPPT_d = help_grass;
-				v->shrub.veg_intPPT_d = help_shrub;
-				v->tree.veg_intPPT_d = help_tree;
-				v->forb.veg_intPPT_d = help_forb;
+				v->veg[SW_GRASS].veg_intPPT_d = help_grass;
+				v->veg[SW_SHRUB].veg_intPPT_d = help_shrub;
+				v->veg[SW_TREES].veg_intPPT_d = help_tree;
+				v->veg[SW_FORBS].veg_intPPT_d = help_forb;
 				break;
 
 			/* litter interception parameters */
 			case 13:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in litter interception parameter a in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.litt_intPPT_a = help_grass;
-				v->shrub.litt_intPPT_a = help_shrub;
-				v->tree.litt_intPPT_a = help_tree;
-				v->forb.litt_intPPT_a = help_forb;
+				v->veg[SW_GRASS].litt_intPPT_a = help_grass;
+				v->veg[SW_SHRUB].litt_intPPT_a = help_shrub;
+				v->veg[SW_TREES].litt_intPPT_a = help_tree;
+				v->veg[SW_FORBS].litt_intPPT_a = help_forb;
 				break;
 			case 14:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in litter interception parameter b in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.litt_intPPT_b = help_grass;
-				v->shrub.litt_intPPT_b = help_shrub;
-				v->tree.litt_intPPT_b = help_tree;
-				v->forb.litt_intPPT_b = help_forb;
+				v->veg[SW_GRASS].litt_intPPT_b = help_grass;
+				v->veg[SW_SHRUB].litt_intPPT_b = help_shrub;
+				v->veg[SW_TREES].litt_intPPT_b = help_tree;
+				v->veg[SW_FORBS].litt_intPPT_b = help_forb;
 				break;
 			case 15:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in litter interception parameter c in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.litt_intPPT_c = help_grass;
-				v->shrub.litt_intPPT_c = help_shrub;
-				v->tree.litt_intPPT_c = help_tree;
-				v->forb.litt_intPPT_c = help_forb;
+				v->veg[SW_GRASS].litt_intPPT_c = help_grass;
+				v->veg[SW_SHRUB].litt_intPPT_c = help_shrub;
+				v->veg[SW_TREES].litt_intPPT_c = help_tree;
+				v->veg[SW_FORBS].litt_intPPT_c = help_forb;
 				break;
 			case 16:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in litter interception parameter d in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.litt_intPPT_d = help_grass;
-				v->shrub.litt_intPPT_d = help_shrub;
-				v->tree.litt_intPPT_d = help_tree;
-				v->forb.litt_intPPT_d = help_forb;
+				v->veg[SW_GRASS].litt_intPPT_d = help_grass;
+				v->veg[SW_SHRUB].litt_intPPT_d = help_shrub;
+				v->veg[SW_TREES].litt_intPPT_d = help_tree;
+				v->veg[SW_FORBS].litt_intPPT_d = help_forb;
 				break;
 
 			/* parameter for partitioning of bare-soil evaporation and transpiration */
 			case 17:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in parameter for partitioning of bare-soil evaporation and transpiration in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.EsTpartitioning_param = help_grass;
-				v->shrub.EsTpartitioning_param = help_shrub;
-				v->tree.EsTpartitioning_param = help_tree;
-				v->forb.EsTpartitioning_param = help_forb;
+				v->veg[SW_GRASS].EsTpartitioning_param = help_grass;
+				v->veg[SW_SHRUB].EsTpartitioning_param = help_shrub;
+				v->veg[SW_TREES].EsTpartitioning_param = help_tree;
+				v->veg[SW_FORBS].EsTpartitioning_param = help_forb;
 				break;
 
 			/* Parameter for scaling and limiting bare soil evaporation rate */
 			case 18:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in parameter for Parameter for scaling and limiting bare soil evaporation rate in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.Es_param_limit = help_grass;
-				v->shrub.Es_param_limit = help_shrub;
-				v->tree.Es_param_limit = help_tree;
-				v->forb.Es_param_limit = help_forb;
+				v->veg[SW_GRASS].Es_param_limit = help_grass;
+				v->veg[SW_SHRUB].Es_param_limit = help_shrub;
+				v->veg[SW_TREES].Es_param_limit = help_tree;
+				v->veg[SW_FORBS].Es_param_limit = help_forb;
 				break;
 
 			/* shade effects */
 			case 19:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in shade scale in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.shade_scale = help_grass;
-				v->shrub.shade_scale = help_shrub;
-				v->tree.shade_scale = help_tree;
-				v->forb.shade_scale = help_forb;
+				v->veg[SW_GRASS].shade_scale = help_grass;
+				v->veg[SW_SHRUB].shade_scale = help_shrub;
+				v->veg[SW_TREES].shade_scale = help_tree;
+				v->veg[SW_FORBS].shade_scale = help_forb;
 				break;
 			case 20:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in shade max dead biomass in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.shade_deadmax = help_grass;
-				v->shrub.shade_deadmax = help_shrub;
-				v->tree.shade_deadmax = help_tree;
-				v->forb.shade_deadmax = help_forb;
+				v->veg[SW_GRASS].shade_deadmax = help_grass;
+				v->veg[SW_SHRUB].shade_deadmax = help_shrub;
+				v->veg[SW_TREES].shade_deadmax = help_tree;
+				v->veg[SW_FORBS].shade_deadmax = help_forb;
 				break;
 			case 21:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in shade xinflec in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.tr_shade_effects.xinflec = help_grass;
-				v->shrub.tr_shade_effects.xinflec = help_shrub;
-				v->tree.tr_shade_effects.xinflec = help_tree;
-				v->forb.tr_shade_effects.xinflec = help_forb;
+				v->veg[SW_GRASS].tr_shade_effects.xinflec = help_grass;
+				v->veg[SW_SHRUB].tr_shade_effects.xinflec = help_shrub;
+				v->veg[SW_TREES].tr_shade_effects.xinflec = help_tree;
+				v->veg[SW_FORBS].tr_shade_effects.xinflec = help_forb;
 				break;
 			case 22:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in shade yinflec in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.tr_shade_effects.yinflec = help_grass;
-				v->shrub.tr_shade_effects.yinflec = help_shrub;
-				v->tree.tr_shade_effects.yinflec = help_tree;
-				v->forb.tr_shade_effects.yinflec = help_forb;
+				v->veg[SW_GRASS].tr_shade_effects.yinflec = help_grass;
+				v->veg[SW_SHRUB].tr_shade_effects.yinflec = help_shrub;
+				v->veg[SW_TREES].tr_shade_effects.yinflec = help_tree;
+				v->veg[SW_FORBS].tr_shade_effects.yinflec = help_forb;
 				break;
 			case 23:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in shade range in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.tr_shade_effects.range = help_grass;
-				v->shrub.tr_shade_effects.range = help_shrub;
-				v->tree.tr_shade_effects.range = help_tree;
-				v->forb.tr_shade_effects.range = help_forb;
+				v->veg[SW_GRASS].tr_shade_effects.range = help_grass;
+				v->veg[SW_SHRUB].tr_shade_effects.range = help_shrub;
+				v->veg[SW_TREES].tr_shade_effects.range = help_tree;
+				v->veg[SW_FORBS].tr_shade_effects.range = help_forb;
 				break;
 			case 24:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in shade slope in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.tr_shade_effects.slope = help_grass;
-				v->shrub.tr_shade_effects.slope = help_shrub;
-				v->tree.tr_shade_effects.slope = help_tree;
-				v->forb.tr_shade_effects.slope = help_forb;
+				v->veg[SW_GRASS].tr_shade_effects.slope = help_grass;
+				v->veg[SW_SHRUB].tr_shade_effects.slope = help_shrub;
+				v->veg[SW_TREES].tr_shade_effects.slope = help_tree;
+				v->veg[SW_FORBS].tr_shade_effects.slope = help_forb;
 				break;
 
 			/* Hydraulic redistribution */
 			case 25:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in hydraulic redistribution: flag in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.flagHydraulicRedistribution = (Bool) help_grass;
-				v->shrub.flagHydraulicRedistribution = (Bool) help_shrub;
-				v->tree.flagHydraulicRedistribution = (Bool) help_tree;
-				v->forb.flagHydraulicRedistribution = (Bool) help_forb;
+				v->veg[SW_GRASS].flagHydraulicRedistribution = (Bool) help_grass;
+				v->veg[SW_SHRUB].flagHydraulicRedistribution = (Bool) help_shrub;
+				v->veg[SW_TREES].flagHydraulicRedistribution = (Bool) help_tree;
+				v->veg[SW_FORBS].flagHydraulicRedistribution = (Bool) help_forb;
 				break;
 			case 26:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in hydraulic redistribution: maxCondroot in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.maxCondroot = help_grass;
-				v->shrub.maxCondroot = help_shrub;
-				v->tree.maxCondroot = help_tree;
-				v->forb.maxCondroot = help_forb;
+				v->veg[SW_GRASS].maxCondroot = help_grass;
+				v->veg[SW_SHRUB].maxCondroot = help_shrub;
+				v->veg[SW_TREES].maxCondroot = help_tree;
+				v->veg[SW_FORBS].maxCondroot = help_forb;
 				break;
 			case 27:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in hydraulic redistribution: swpMatric50 in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.swpMatric50 = help_grass;
-				v->shrub.swpMatric50 = help_shrub;
-				v->tree.swpMatric50 = help_tree;
-				v->forb.swpMatric50 = help_forb;
+				v->veg[SW_GRASS].swpMatric50 = help_grass;
+				v->veg[SW_SHRUB].swpMatric50 = help_shrub;
+				v->veg[SW_TREES].swpMatric50 = help_tree;
+				v->veg[SW_FORBS].swpMatric50 = help_forb;
 				break;
 			case 28:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in hydraulic redistribution: shapeCond in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.shapeCond = help_grass;
-				v->shrub.shapeCond = help_shrub;
-				v->tree.shapeCond = help_tree;
-				v->forb.shapeCond = help_forb;
+				v->veg[SW_GRASS].shapeCond = help_grass;
+				v->veg[SW_SHRUB].shapeCond = help_shrub;
+				v->veg[SW_TREES].shapeCond = help_tree;
+				v->veg[SW_FORBS].shapeCond = help_forb;
 				break;
 
 			/* Critical soil water potential */
 			case 29:
 				x = sscanf(inbuf, "%f %f %f %f", &help_grass, &help_shrub, &help_tree, &help_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: invalid record in critical soil water potentials: flag in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.SWPcrit = -10. * help_grass;
-				v->shrub.SWPcrit = -10. * help_shrub;
-				v->tree.SWPcrit = -10. * help_tree;
-				v->forb.SWPcrit = -10. * help_forb;
+				v->veg[SW_GRASS].SWPcrit = -10. * help_grass;
+				v->veg[SW_SHRUB].SWPcrit = -10. * help_shrub;
+				v->veg[SW_TREES].SWPcrit = -10. * help_tree;
+				v->veg[SW_FORBS].SWPcrit = -10. * help_forb;
 				break;
 
 			/* CO2 Biomass Power Equation */
 			// Coefficient 1
 			case 30:
 				x = sscanf(inbuf, "%f %f %f %f", &co2_coeff_grass, &co2_coeff_shrub, &co2_coeff_tree, &co2_coeff_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: Not enough arguments for CO2 Biomass Coefficient 1 in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.co2_bio_coeff1 = co2_coeff_grass;
-				v->shrub.co2_bio_coeff1 = co2_coeff_shrub;
-				v->tree.co2_bio_coeff1 = co2_coeff_tree;
-				v->forb.co2_bio_coeff1 = co2_coeff_forb;
+				v->veg[SW_GRASS].co2_bio_coeff1 = co2_coeff_grass;
+				v->veg[SW_SHRUB].co2_bio_coeff1 = co2_coeff_shrub;
+				v->veg[SW_TREES].co2_bio_coeff1 = co2_coeff_tree;
+				v->veg[SW_FORBS].co2_bio_coeff1 = co2_coeff_forb;
 				break;
 			// Coefficient 2
 			case 31:
 				x = sscanf(inbuf, "%f %f %f %f", &co2_coeff_grass, &co2_coeff_shrub, &co2_coeff_tree, &co2_coeff_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: Not enough arguments for CO2 Biomass Coefficient 2 in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.co2_bio_coeff2 = co2_coeff_grass;
-				v->shrub.co2_bio_coeff2 = co2_coeff_shrub;
-				v->tree.co2_bio_coeff2 = co2_coeff_tree;
-				v->forb.co2_bio_coeff2 = co2_coeff_forb;
+				v->veg[SW_GRASS].co2_bio_coeff2 = co2_coeff_grass;
+				v->veg[SW_SHRUB].co2_bio_coeff2 = co2_coeff_shrub;
+				v->veg[SW_TREES].co2_bio_coeff2 = co2_coeff_tree;
+				v->veg[SW_FORBS].co2_bio_coeff2 = co2_coeff_forb;
 				break;
 
 			/* CO2 WUE Power Equation */
 			// Coefficient 1
 			case 32:
 				x = sscanf(inbuf, "%f %f %f %f", &co2_coeff_grass, &co2_coeff_shrub, &co2_coeff_tree, &co2_coeff_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: Not enough arguments for CO2 WUE Coefficient 1 in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.co2_wue_coeff1 = co2_coeff_grass;
-				v->shrub.co2_wue_coeff1 = co2_coeff_shrub;
-				v->tree.co2_wue_coeff1 = co2_coeff_tree;
-				v->forb.co2_wue_coeff1 = co2_coeff_forb;
+				v->veg[SW_GRASS].co2_wue_coeff1 = co2_coeff_grass;
+				v->veg[SW_SHRUB].co2_wue_coeff1 = co2_coeff_shrub;
+				v->veg[SW_TREES].co2_wue_coeff1 = co2_coeff_tree;
+				v->veg[SW_FORBS].co2_wue_coeff1 = co2_coeff_forb;
 				break;
 			// Coefficient 2
 			case 33:
 				x = sscanf(inbuf, "%f %f %f %f", &co2_coeff_grass, &co2_coeff_shrub, &co2_coeff_tree, &co2_coeff_forb);
-				if (x < 4) {
+				if (x < NVEGTYPES) {
 					sprintf(errstr, "ERROR: Not enough arguments for CO2 WUE Coefficient 2 in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
-				v->grass.co2_wue_coeff2 = co2_coeff_grass;
-				v->shrub.co2_wue_coeff2 = co2_coeff_shrub;
-				v->tree.co2_wue_coeff2 = co2_coeff_tree;
-				v->forb.co2_wue_coeff2 = co2_coeff_forb;
+				v->veg[SW_GRASS].co2_wue_coeff2 = co2_coeff_grass;
+				v->veg[SW_SHRUB].co2_wue_coeff2 = co2_coeff_shrub;
+				v->veg[SW_TREES].co2_wue_coeff2 = co2_coeff_tree;
+				v->veg[SW_FORBS].co2_wue_coeff2 = co2_coeff_forb;
 				break;
 
 			default:
@@ -534,34 +535,34 @@ void SW_VPD_read(void) {
 				mon = Jan;
 
 			x = sscanf(inbuf, "%f %f %f %f", &litt, &biom, &pctl, &laic);
-			if (x < 4) {
+			if (x < NVEGTYPES) {
 				sprintf(errstr, "ERROR: invalid record %d in %s\n", mon + 1, MyFileName);
 				CloseFile(&f);
 				LogError(logfp, LOGFATAL, errstr);
 			}
 			if (lineno > line_help + 12 * 3 && lineno <= line_help + 12 * 4) {
-				v->forb.litter[mon] = litt;
-				v->forb.biomass[mon] = biom;
-				v->forb.pct_live[mon] = pctl;
-				v->forb.lai_conv[mon] = laic;
+				v->veg[SW_FORBS].litter[mon] = litt;
+				v->veg[SW_FORBS].biomass[mon] = biom;
+				v->veg[SW_FORBS].pct_live[mon] = pctl;
+				v->veg[SW_FORBS].lai_conv[mon] = laic;
 			}
 			else if (lineno > line_help + 12 * 2 && lineno <= line_help + 12 * 3) {
-				v->tree.litter[mon] = litt;
-				v->tree.biomass[mon] = biom;
-				v->tree.pct_live[mon] = pctl;
-				v->tree.lai_conv[mon] = laic;
+				v->veg[SW_TREES].litter[mon] = litt;
+				v->veg[SW_TREES].biomass[mon] = biom;
+				v->veg[SW_TREES].pct_live[mon] = pctl;
+				v->veg[SW_TREES].lai_conv[mon] = laic;
 			}
 			else if (lineno > line_help + 12 && lineno <= line_help + 12 * 2) {
-				v->shrub.litter[mon] = litt;
-				v->shrub.biomass[mon] = biom;
-				v->shrub.pct_live[mon] = pctl;
-				v->shrub.lai_conv[mon] = laic;
+				v->veg[SW_SHRUB].litter[mon] = litt;
+				v->veg[SW_SHRUB].biomass[mon] = biom;
+				v->veg[SW_SHRUB].pct_live[mon] = pctl;
+				v->veg[SW_SHRUB].lai_conv[mon] = laic;
 			}
 			else if (lineno > line_help && lineno <= line_help + 12) {
-				v->grass.litter[mon] = litt;
-				v->grass.biomass[mon] = biom;
-				v->grass.pct_live[mon] = pctl;
-				v->grass.lai_conv[mon] = laic;
+				v->veg[SW_GRASS].litter[mon] = litt;
+				v->veg[SW_GRASS].biomass[mon] = biom;
+				v->veg[SW_GRASS].pct_live[mon] = pctl;
+				v->veg[SW_GRASS].lai_conv[mon] = laic;
 			}
 
 			mon++;
@@ -574,20 +575,22 @@ void SW_VPD_read(void) {
 		LogError(logfp, LOGWARN, errstr);
 	}
 
-	fraction_sum = v->grass.cov.fCover + v->shrub.cov.fCover + v->tree.cov.fCover + v->forb.cov.fCover + v->bare_cov.fCover;
+	fraction_sum = v->bare_cov.fCover;
+	ForEachVegType(k) {
+		fraction_sum += v->veg[k].cov.fCover;
+	}
+
 	if (!EQ(fraction_sum, 1.0)) {
 		LogError(logfp, LOGWARN, "%s : Fractions of vegetation components were normalized, "
 			"sum of fractions (%5.4f) != 1.0.\nNew coefficients are:", MyFileName, fraction_sum);
-		v->grass.cov.fCover /= fraction_sum;
-		v->shrub.cov.fCover /= fraction_sum;
-		v->tree.cov.fCover /= fraction_sum;
+
 		v->bare_cov.fCover /= fraction_sum;
-		v->forb.cov.fCover /= fraction_sum;
-		LogError(logfp, LOGWARN, "  Grassland fraction : %5.4f", v->grass.cov.fCover);
-		LogError(logfp, LOGWARN, "  Shrubland fraction : %5.4f", v->shrub.cov.fCover);
-		LogError(logfp, LOGWARN, "  Forest/tree fraction : %5.4f", v->tree.cov.fCover);
-		LogError(logfp, LOGWARN, "  FORB fraction : %5.4f", v->forb.cov.fCover);
 		LogError(logfp, LOGWARN, "  Bare Ground fraction : %5.4f", v->bare_cov.fCover);
+
+		ForEachVegType(k) {
+			v->veg[k].cov.fCover /= fraction_sum;
+			LogError(logfp, LOGWARN, " %d fraction : %5.4f", k, v->veg[k].cov.fCover);
+		}
 	}
 
 	CloseFile(&f);
@@ -609,18 +612,15 @@ void SW_VPD_construct(void) {
 
 
   SW_VEGPROD *v = &SW_VegProd;
-  int year;
+  int year, k;
 
   for (year = 0; year < MAX_NYEAR; year++)
   {
-    v->grass.co2_multipliers[BIO_INDEX][year] = 1.;
-    v->grass.co2_multipliers[WUE_INDEX][year] = 1.;
-    v->shrub.co2_multipliers[BIO_INDEX][year] = 1.;
-    v->shrub.co2_multipliers[WUE_INDEX][year] = 1.;
-    v->tree.co2_multipliers[BIO_INDEX][year] = 1.;
-    v->tree.co2_multipliers[WUE_INDEX][year] = 1.;
-    v->forb.co2_multipliers[BIO_INDEX][year] = 1.;
-    v->forb.co2_multipliers[WUE_INDEX][year] = 1.;
+    ForEachVegType(k)
+    {
+      v->veg[k].co2_multipliers[BIO_INDEX][year] = 1.;
+      v->veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
+    }
   }
 
 }
@@ -668,162 +668,71 @@ void SW_VPD_init(void) {
 
 	SW_VEGPROD *v = &SW_VegProd; /* convenience */
 	TimeInt doy; /* base1 */
+	int k;
 
 	// Grab the real year so we can access CO2 data
-
-	if (GT(v->grass.cov.fCover, 0.)) {
-		// CO2
-		apply_biomassCO2effect(v->grass.CO2_biomass, v->grass.biomass, v->grass.co2_multipliers[BIO_INDEX][SW_Model.simyear]);
-
-		// Interpolation
-		interpolate_monthlyValues(v->grass.litter, v->grass.litter_daily);
-		interpolate_monthlyValues(v->grass.CO2_biomass, v->grass.biomass_daily);
-		interpolate_monthlyValues(v->grass.pct_live, v->grass.pct_live_daily);
-		interpolate_monthlyValues(v->grass.lai_conv, v->grass.lai_conv_daily);
-	}
-
-	if (GT(v->shrub.cov.fCover, 0.)) {
-		// CO2
-		apply_biomassCO2effect(v->shrub.CO2_biomass, v->shrub.biomass, v->shrub.co2_multipliers[BIO_INDEX][SW_Model.simyear]);
-
-		// Interpolation
-		interpolate_monthlyValues(v->shrub.litter, v->shrub.litter_daily);
-		interpolate_monthlyValues(v->shrub.CO2_biomass, v->shrub.biomass_daily);
-		interpolate_monthlyValues(v->shrub.pct_live, v->shrub.pct_live_daily);
-		interpolate_monthlyValues(v->shrub.lai_conv, v->shrub.lai_conv_daily);
-	}
-
-	if (GT(v->tree.cov.fCover, 0.)) {
-		// CO2
-		apply_biomassCO2effect(v->tree.CO2_pct_live, v->tree.pct_live, v->tree.co2_multipliers[BIO_INDEX][SW_Model.simyear]);
-
-		// Interpolation
-		interpolate_monthlyValues(v->tree.litter, v->tree.litter_daily);
-		interpolate_monthlyValues(v->tree.biomass, v->tree.biomass_daily);
-		interpolate_monthlyValues(v->tree.CO2_pct_live, v->tree.pct_live_daily);
-		interpolate_monthlyValues(v->tree.lai_conv, v->tree.lai_conv_daily);
-	}
-
-	if (GT(v->forb.cov.fCover, 0.)) {
-		// CO2
-		apply_biomassCO2effect(v->forb.CO2_biomass, v->forb.biomass, v->forb.co2_multipliers[BIO_INDEX][SW_Model.simyear]);
-
-		// Interpolation
-		interpolate_monthlyValues(v->forb.litter, v->forb.litter_daily);
-		interpolate_monthlyValues(v->forb.CO2_biomass, v->forb.biomass_daily);
-		interpolate_monthlyValues(v->forb.pct_live, v->forb.pct_live_daily);
-		interpolate_monthlyValues(v->forb.lai_conv, v->forb.lai_conv_daily);
-	}
-
-	for (doy = 1; doy <= MAX_DAYS; doy++) {
-		if (GT(v->grass.cov.fCover, 0.)) {
-			lai_standing = v->grass.biomass_daily[doy] / v->grass.lai_conv_daily[doy];
-			v->grass.pct_cover_daily[doy] = lai_standing / v->grass.conv_stcr;
-			if (GT(v->grass.canopy_height_constant, 0.)) {
-				v->grass.veg_height_daily[doy] = v->grass.canopy_height_constant;
+	ForEachVegType(k)
+	{
+		if (GT(v->veg[k].cov.fCover, 0.))
+		{
+			// CO2
+			if (k == SW_TREES)
+			{
+				apply_biomassCO2effect(v->veg[k].CO2_pct_live, v->veg[k].pct_live,
+					v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
+			} else {
+				apply_biomassCO2effect(v->veg[k].CO2_biomass, v->veg[k].biomass,
+					v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
 			}
-			else {
-				v->grass.veg_height_daily[doy] = tanfunc(v->grass.biomass_daily[doy],
-					v->grass.cnpy.xinflec,
-					v->grass.cnpy.yinflec,
-					v->grass.cnpy.range,
-					v->grass.cnpy.slope); /* used for vegcov and for snowdepth_scale */
-			}
-			v->grass.lai_live_daily[doy] = lai_standing * v->grass.pct_live_daily[doy];
-			v->grass.vegcov_daily[doy] = v->grass.pct_cover_daily[doy] * v->grass.veg_height_daily[doy]; /* used for vegetation interception */
-			v->grass.biolive_daily[doy] = v->grass.biomass_daily[doy] * v->grass.pct_live_daily[doy];
-			v->grass.biodead_daily[doy] = v->grass.biomass_daily[doy] - v->grass.biolive_daily[doy]; /* used for transpiration */
-			v->grass.total_agb_daily[doy] = v->grass.litter_daily[doy] + v->grass.biomass_daily[doy]; /* used for bare-soil evaporation */
-		}
-		else {
-			v->grass.lai_live_daily[doy] = 0.;
-			v->grass.vegcov_daily[doy] = 0.;
-			v->grass.biolive_daily[doy] = 0.;
-			v->grass.biodead_daily[doy] = 0.;
-			v->grass.total_agb_daily[doy] = 0.;
-		}
 
-		if (GT(v->shrub.cov.fCover, 0.)) {
-			lai_standing = v->shrub.biomass_daily[doy] / v->shrub.lai_conv_daily[doy];
-			v->shrub.pct_cover_daily[doy] = lai_standing / v->shrub.conv_stcr;
-			if (GT(v->shrub.canopy_height_constant, 0.)) {
-				v->shrub.veg_height_daily[doy] = v->shrub.canopy_height_constant;
-			}
-			else {
-				v->shrub.veg_height_daily[doy] = tanfunc(v->shrub.biomass_daily[doy],
-					v->shrub.cnpy.xinflec,
-					v->shrub.cnpy.yinflec,
-					v->shrub.cnpy.range,
-					v->shrub.cnpy.slope); /* used for vegcov and for snowdepth_scale */
-			}
-			v->shrub.lai_live_daily[doy] = lai_standing * v->shrub.pct_live_daily[doy];
-			v->shrub.vegcov_daily[doy] = v->shrub.pct_cover_daily[doy] * v->shrub.veg_height_daily[doy]; /* used for vegetation interception */
-			v->shrub.biolive_daily[doy] = v->shrub.biomass_daily[doy] * v->shrub.pct_live_daily[doy];
-			v->shrub.biodead_daily[doy] = v->shrub.biomass_daily[doy] - v->shrub.biolive_daily[doy]; /* used for transpiration */
-			v->shrub.total_agb_daily[doy] = v->shrub.litter_daily[doy] + v->shrub.biomass_daily[doy]; /* used for bare-soil evaporation */
-		}
-		else {
-			v->shrub.lai_live_daily[doy] = 0.;
-			v->shrub.vegcov_daily[doy] = 0.;
-			v->shrub.biolive_daily[doy] = 0.;
-			v->shrub.biodead_daily[doy] = 0.;
-			v->shrub.total_agb_daily[doy] = 0.;
-		}
-
-		if (GT(v->tree.cov.fCover, 0.)) {
-			lai_standing = v->tree.biomass_daily[doy] / v->tree.lai_conv_daily[doy];
-			v->tree.pct_cover_daily[doy] = lai_standing / v->tree.conv_stcr;
-			if (GT(v->tree.canopy_height_constant, 0.)) {
-				v->tree.veg_height_daily[doy] = v->tree.canopy_height_constant;
-			}
-			else {
-				v->tree.veg_height_daily[doy] = tanfunc(v->tree.biomass_daily[doy],
-					v->tree.cnpy.xinflec,
-					v->tree.cnpy.yinflec,
-					v->tree.cnpy.range,
-					v->tree.cnpy.slope); /* used for vegcov and for snowdepth_scale */
-			}
-			v->tree.lai_live_daily[doy] = lai_standing * v->tree.pct_live_daily[doy]; /* used for vegetation interception */
-			v->tree.vegcov_daily[doy] = v->tree.pct_cover_daily[doy] * v->tree.veg_height_daily[doy];
-			v->tree.biolive_daily[doy] = v->tree.biomass_daily[doy] * v->tree.pct_live_daily[doy];
-			v->tree.biodead_daily[doy] = v->tree.biomass_daily[doy] - v->tree.biolive_daily[doy]; /* used for transpiration */
-			v->tree.total_agb_daily[doy] = v->tree.litter_daily[doy] + v->tree.biolive_daily[doy]; /* used for bare-soil evaporation */
-		}
-		else {
-			v->tree.lai_live_daily[doy] = 0.;
-			v->tree.vegcov_daily[doy] = 0.;
-			v->tree.biolive_daily[doy] = 0.;
-			v->tree.biodead_daily[doy] = 0.;
-			v->tree.total_agb_daily[doy] = 0.;
-		}
-
-		if (GT(v->forb.cov.fCover, 0.)) {
-			lai_standing = v->forb.biomass_daily[doy] / v->forb.lai_conv_daily[doy];
-			v->forb.pct_cover_daily[doy] = lai_standing / v->forb.conv_stcr;
-			if (GT(v->forb.canopy_height_constant, 0.)) {
-				v->forb.veg_height_daily[doy] = v->forb.canopy_height_constant;
-			}
-			else {
-				v->forb.veg_height_daily[doy] = tanfunc(v->forb.biomass_daily[doy],
-					v->forb.cnpy.xinflec,
-					v->forb.cnpy.yinflec,
-					v->forb.cnpy.range,
-					v->forb.cnpy.slope); /* used for vegcov and for snowdepth_scale */
-			}
-			v->forb.lai_live_daily[doy] = lai_standing * v->forb.pct_live_daily[doy]; /* used for vegetation interception */
-			v->forb.vegcov_daily[doy] = v->forb.pct_cover_daily[doy] * v->forb.veg_height_daily[doy];
-			v->forb.biolive_daily[doy] = v->forb.biomass_daily[doy] * v->forb.pct_live_daily[doy];
-			v->forb.biodead_daily[doy] = v->forb.biomass_daily[doy] - v->forb.biolive_daily[doy]; /* used for transpiration */
-			v->forb.total_agb_daily[doy] = v->forb.litter_daily[doy] + v->forb.biolive_daily[doy]; /* used for bare-soil evaporation */
-		}
-		else {
-			v->forb.lai_live_daily[doy] = 0.;
-			v->forb.vegcov_daily[doy] = 0.;
-			v->forb.biolive_daily[doy] = 0.;
-			v->forb.biodead_daily[doy] = 0.;
-			v->forb.total_agb_daily[doy] = 0.;
+			// Interpolation
+			interpolate_monthlyValues(v->veg[k].litter, v->veg[k].litter_daily);
+			interpolate_monthlyValues(v->veg[k].CO2_biomass, v->veg[k].biomass_daily);
+			interpolate_monthlyValues(v->veg[k].pct_live, v->veg[k].pct_live_daily);
+			interpolate_monthlyValues(v->veg[k].lai_conv, v->veg[k].lai_conv_daily);
 		}
 	}
+
+	for (doy = 1; doy <= MAX_DAYS; doy++)
+	{
+		ForEachVegType(k)
+			if (GT(v->veg[k].cov.fCover, 0.))
+			{
+				lai_standing = v->veg[k].biomass_daily[doy] / v->veg[k].lai_conv_daily[doy];
+				v->veg[k].pct_cover_daily[doy] = lai_standing / v->veg[k].conv_stcr;
+
+				if (GT(v->veg[k].canopy_height_constant, 0.))
+				{
+					v->veg[k].veg_height_daily[doy] = v->veg[k].canopy_height_constant;
+
+				} else {
+					v->veg[k].veg_height_daily[doy] = tanfunc(v->veg[k].biomass_daily[doy],
+						v->veg[k].cnpy.xinflec,
+						v->veg[k].cnpy.yinflec,
+						v->veg[k].cnpy.range,
+						v->veg[k].cnpy.slope); /* used for vegcov and for snowdepth_scale */
+				}
+
+				v->veg[k].lai_live_daily[doy] = lai_standing * v->veg[k].pct_live_daily[doy];
+				v->veg[k].vegcov_daily[doy] = v->veg[k].pct_cover_daily[doy] * v->veg[k].veg_height_daily[doy]; /* used for vegetation interception */
+				v->veg[k].biolive_daily[doy] = v->veg[k].biomass_daily[doy] * v->veg[k].pct_live_daily[doy];
+				v->veg[k].biodead_daily[doy] = v->veg[k].biomass_daily[doy] - v->veg[k].biolive_daily[doy]; /* used for transpiration */
+
+				if (k == SW_TREES)
+				{
+					v->veg[k].total_agb_daily[doy] = v->veg[k].litter_daily[doy] + v->veg[k].biolive_daily[doy];
+				} else {
+					v->veg[k].total_agb_daily[doy] = v->veg[k].litter_daily[doy] + v->veg[k].biomass_daily[doy]; /* used for bare-soil evaporation */
+				}
+
+			} else {
+				v->veg[k].lai_live_daily[doy] = 0.;
+				v->veg[k].vegcov_daily[doy] = 0.;
+				v->veg[k].biolive_daily[doy] = 0.;
+				v->veg[k].biodead_daily[doy] = 0.;
+				v->veg[k].total_agb_daily[doy] = 0.;
+			}
+		}
 }
 
 void _echo_VegProd(void) {
@@ -839,25 +748,25 @@ void _echo_VegProd(void) {
 
 	sprintf(errstr, "Grassland component\t= %1.2f\n"
 		"\tAlbedo\t= %1.2f\n"
-		"\tHydraulic redistribution flag\t= %d\n", v->grass.cov.fCover, v->grass.cov.albedo, v->grass.flagHydraulicRedistribution);
+		"\tHydraulic redistribution flag\t= %d\n", v->veg[SW_GRASS].cov.fCover, v->veg[SW_GRASS].cov.albedo, v->veg[SW_GRASS].flagHydraulicRedistribution);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
 
 	sprintf(errstr, "Shrubland component\t= %1.2f\n"
 		"\tAlbedo\t= %1.2f\n"
-		"\tHydraulic redistribution flag\t= %d\n", v->shrub.cov.fCover, v->shrub.cov.albedo, v->shrub.flagHydraulicRedistribution);
+		"\tHydraulic redistribution flag\t= %d\n", v->veg[SW_SHRUB].cov.fCover, v->veg[SW_SHRUB].cov.albedo, v->veg[SW_SHRUB].flagHydraulicRedistribution);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
 
 	sprintf(errstr, "Forest-Tree component\t= %1.2f\n"
 		"\tAlbedo\t= %1.2f\n"
-		"\tHydraulic redistribution flag\t= %d\n", v->tree.cov.fCover, v->tree.cov.albedo, v->tree.flagHydraulicRedistribution);
+		"\tHydraulic redistribution flag\t= %d\n", v->veg[SW_TREES].cov.fCover, v->veg[SW_TREES].cov.albedo, v->veg[SW_TREES].flagHydraulicRedistribution);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
 
 	sprintf(errstr, "FORB component\t= %1.2f\n"
 		"\tAlbedo\t= %1.2f\n"
-		"\tHydraulic redistribution flag\t= %d\n", v->forb.cov.fCover, v->forb.cov.albedo, v->forb.flagHydraulicRedistribution);
+		"\tHydraulic redistribution flag\t= %d\n", v->veg[SW_FORBS].cov.fCover, v->veg[SW_FORBS].cov.albedo, v->veg[SW_FORBS].flagHydraulicRedistribution);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
 

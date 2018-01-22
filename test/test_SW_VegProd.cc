@@ -42,28 +42,19 @@ extern SW_VEGPROD SW_VegProd;
 
 namespace {
   SW_VEGPROD *v = &SW_VegProd;
+  int k;
 
   // Test the SW_VEGPROD constructor 'SW_VPD_construct'
   TEST(VegTest, Constructor) {
     SW_VPD_construct();
 
-    EXPECT_DOUBLE_EQ(1., v->grass.co2_multipliers[BIO_INDEX][0]);
-    EXPECT_DOUBLE_EQ(1., v->shrub.co2_multipliers[BIO_INDEX][0]);
-    EXPECT_DOUBLE_EQ(1., v->tree.co2_multipliers[BIO_INDEX][0]);
-    EXPECT_DOUBLE_EQ(1., v->forb.co2_multipliers[BIO_INDEX][0]);
-    EXPECT_DOUBLE_EQ(1., v->grass.co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]);
-    EXPECT_DOUBLE_EQ(1., v->shrub.co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]);
-    EXPECT_DOUBLE_EQ(1., v->tree.co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]);
-    EXPECT_DOUBLE_EQ(1., v->forb.co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]);
+    ForEachVegType(k) {
+      EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[BIO_INDEX][0]);
+      EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]);
 
-    EXPECT_DOUBLE_EQ(1., v->grass.co2_multipliers[WUE_INDEX][0]);
-    EXPECT_DOUBLE_EQ(1., v->shrub.co2_multipliers[WUE_INDEX][0]);
-    EXPECT_DOUBLE_EQ(1., v->tree.co2_multipliers[WUE_INDEX][0]);
-    EXPECT_DOUBLE_EQ(1., v->forb.co2_multipliers[WUE_INDEX][0]);
-    EXPECT_DOUBLE_EQ(1., v->grass.co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
-    EXPECT_DOUBLE_EQ(1., v->shrub.co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
-    EXPECT_DOUBLE_EQ(1., v->tree.co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
-    EXPECT_DOUBLE_EQ(1., v->forb.co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
+      EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[WUE_INDEX][0]);
+      EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
+    }
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
@@ -81,7 +72,7 @@ namespace {
     }
 
     // One example
-    x = v->grass.co2_multipliers[BIO_INDEX][SW_Model.startyr + SW_Model.addtl_yr];
+    x = v->veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_Model.startyr + SW_Model.addtl_yr];
     apply_biomassCO2effect(biom2, biom1, x);
 
     for (i = 0; i < 12; i++) {

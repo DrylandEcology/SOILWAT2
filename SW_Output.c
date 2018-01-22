@@ -1355,14 +1355,14 @@ static void get_co2effects(OutPeriod pd) {
 
 	// Grab the multipliers that were just used
 	// No averaging or summing required
-	RealD bio_mult_grass = v->grass.co2_multipliers[BIO_INDEX][SW_Model.simyear];
-	RealD bio_mult_shrub = v->shrub.co2_multipliers[BIO_INDEX][SW_Model.simyear];
-	RealD bio_mult_tree = v->tree.co2_multipliers[BIO_INDEX][SW_Model.simyear];
-	RealD bio_mult_forb = v->forb.co2_multipliers[BIO_INDEX][SW_Model.simyear];
-	RealD wue_mult_grass = v->grass.co2_multipliers[WUE_INDEX][SW_Model.simyear];
-	RealD wue_mult_shrub = v->shrub.co2_multipliers[WUE_INDEX][SW_Model.simyear];
-	RealD wue_mult_tree = v->tree.co2_multipliers[WUE_INDEX][SW_Model.simyear];
-	RealD wue_mult_forb = v->forb.co2_multipliers[WUE_INDEX][SW_Model.simyear];
+	RealD bio_mult_grass = v->veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_Model.simyear];
+	RealD bio_mult_shrub = v->veg[SW_SHRUB].co2_multipliers[BIO_INDEX][SW_Model.simyear];
+	RealD bio_mult_tree = v->veg[SW_TREES].co2_multipliers[BIO_INDEX][SW_Model.simyear];
+	RealD bio_mult_forb = v->veg[SW_FORBS].co2_multipliers[BIO_INDEX][SW_Model.simyear];
+	RealD wue_mult_grass = v->veg[SW_GRASS].co2_multipliers[WUE_INDEX][SW_Model.simyear];
+	RealD wue_mult_shrub = v->veg[SW_SHRUB].co2_multipliers[WUE_INDEX][SW_Model.simyear];
+	RealD wue_mult_tree = v->veg[SW_TREES].co2_multipliers[WUE_INDEX][SW_Model.simyear];
+	RealD wue_mult_forb = v->veg[SW_FORBS].co2_multipliers[WUE_INDEX][SW_Model.simyear];
 
 	#ifndef RSOILWAT
 		char str[OUTSTRLEN];
@@ -1371,14 +1371,14 @@ static void get_co2effects(OutPeriod pd) {
 
 	switch(pd) {
 		case eSW_Day:
-			biomass_grass = v->dysum.grass.biomass;
-			biomass_shrub = v->dysum.shrub.biomass;
-			biomass_tree = v->dysum.tree.biomass;
-			biomass_forb = v->dysum.forb.biomass;
-			biolive_grass = v->dysum.grass.biolive;
-			biolive_shrub = v->dysum.shrub.biolive;
-			biolive_tree = v->dysum.tree.biolive;
-			biolive_forb = v->dysum.forb.biolive;
+			biomass_grass = v->dysum.veg[SW_GRASS].biomass;
+			biomass_shrub = v->dysum.veg[SW_SHRUB].biomass;
+			biomass_tree = v->dysum.veg[SW_TREES].biomass;
+			biomass_forb = v->dysum.veg[SW_FORBS].biomass;
+			biolive_grass = v->dysum.veg[SW_GRASS].biolive;
+			biolive_shrub = v->dysum.veg[SW_SHRUB].biolive;
+			biolive_tree = v->dysum.veg[SW_TREES].biolive;
+			biolive_forb = v->dysum.veg[SW_FORBS].biolive;
 			biomass_total = biomass_grass + biomass_shrub + biomass_tree + biomass_forb;
 			biolive_total = biolive_grass + biolive_shrub + biolive_tree + biolive_forb;
 
@@ -1410,14 +1410,14 @@ static void get_co2effects(OutPeriod pd) {
 			break;
 
 		case eSW_Week:
-			biomass_grass = v->wkavg.grass.biomass;
-			biomass_shrub = v->wkavg.shrub.biomass;
-			biomass_tree = v->wkavg.tree.biomass;
-			biomass_forb = v->wkavg.forb.biomass;
-			biolive_grass = v->wkavg.grass.biolive;
-			biolive_shrub = v->wkavg.shrub.biolive;
-			biolive_tree = v->wkavg.tree.biolive;
-			biolive_forb = v->wkavg.forb.biolive;
+			biomass_grass = v->wkavg.veg[SW_GRASS].biomass;
+			biomass_shrub = v->wkavg.veg[SW_SHRUB].biomass;
+			biomass_tree = v->wkavg.veg[SW_TREES].biomass;
+			biomass_forb = v->wkavg.veg[SW_FORBS].biomass;
+			biolive_grass = v->wkavg.veg[SW_GRASS].biolive;
+			biolive_shrub = v->wkavg.veg[SW_SHRUB].biolive;
+			biolive_tree = v->wkavg.veg[SW_TREES].biolive;
+			biolive_forb = v->wkavg.veg[SW_FORBS].biolive;
 			biomass_total = biomass_grass + biomass_shrub + biomass_tree + biomass_forb;
 			biolive_total = biolive_grass + biolive_shrub + biolive_tree + biolive_forb;
 
@@ -1449,14 +1449,14 @@ static void get_co2effects(OutPeriod pd) {
 			break;
 
 		case eSW_Month:
-			biomass_grass = v->moavg.grass.biomass;
-			biomass_shrub = v->moavg.shrub.biomass;
-			biomass_tree = v->moavg.tree.biomass;
-			biomass_forb = v->moavg.forb.biomass;
-			biolive_grass = v->moavg.grass.biolive;
-			biolive_shrub = v->moavg.shrub.biolive;
-			biolive_tree = v->moavg.tree.biolive;
-			biolive_forb = v->moavg.forb.biolive;
+			biomass_grass = v->moavg.veg[SW_GRASS].biomass;
+			biomass_shrub = v->moavg.veg[SW_SHRUB].biomass;
+			biomass_tree = v->moavg.veg[SW_TREES].biomass;
+			biomass_forb = v->moavg.veg[SW_FORBS].biomass;
+			biolive_grass = v->moavg.veg[SW_GRASS].biolive;
+			biolive_shrub = v->moavg.veg[SW_SHRUB].biolive;
+			biolive_tree = v->moavg.veg[SW_TREES].biolive;
+			biolive_forb = v->moavg.veg[SW_FORBS].biolive;
 			biomass_total = biomass_grass + biomass_shrub + biomass_tree + biomass_forb;
 			biolive_total = biolive_grass + biolive_shrub + biolive_tree + biolive_forb;
 
@@ -1488,14 +1488,14 @@ static void get_co2effects(OutPeriod pd) {
 			break;
 
 		case eSW_Year:
-			biomass_grass = v->yravg.grass.biomass;
-			biomass_shrub = v->yravg.shrub.biomass;
-			biomass_tree = v->yravg.tree.biomass;
-			biomass_forb = v->yravg.forb.biomass;
-			biolive_grass = v->yravg.grass.biolive;
-			biolive_shrub = v->yravg.shrub.biolive;
-			biolive_tree = v->yravg.tree.biolive;
-			biolive_forb = v->yravg.forb.biolive;
+			biomass_grass = v->yravg.veg[SW_GRASS].biomass;
+			biomass_shrub = v->yravg.veg[SW_SHRUB].biomass;
+			biomass_tree = v->yravg.veg[SW_TREES].biomass;
+			biomass_forb = v->yravg.veg[SW_FORBS].biomass;
+			biolive_grass = v->yravg.veg[SW_GRASS].biolive;
+			biolive_shrub = v->yravg.veg[SW_SHRUB].biolive;
+			biolive_tree = v->yravg.veg[SW_TREES].biolive;
+			biolive_forb = v->yravg.veg[SW_FORBS].biolive;
 			biomass_total = biomass_grass + biomass_shrub + biomass_tree + biomass_forb;
 			biolive_total = biolive_grass + biolive_shrub + biolive_tree + biolive_forb;
 
@@ -4239,17 +4239,15 @@ static void get_soiltemp(OutPeriod pd)
 
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 {
+	int ik;
+
 	switch (k)
 	{
 		case eSW_CO2Effects:
-			s->grass.biomass += v->grass.biomass_daily[SW_Model.doy];
-			s->shrub.biomass += v->shrub.biomass_daily[SW_Model.doy];
-			s->tree.biomass += v->tree.biomass_daily[SW_Model.doy];
-			s->forb.biomass += v->forb.biomass_daily[SW_Model.doy];
-			s->grass.biolive += v->grass.biolive_daily[SW_Model.doy];
-			s->shrub.biolive += v->shrub.biolive_daily[SW_Model.doy];
-			s->tree.biolive += v->tree.biolive_daily[SW_Model.doy];
-			s->forb.biolive += v->forb.biolive_daily[SW_Model.doy];
+			ForEachVegType(ik) {
+				s->veg[ik].biomass += v->veg[ik].biomass_daily[SW_Model.doy];
+				s->veg[ik].biolive += v->veg[ik].biolive_daily[SW_Model.doy];
+			}
 			break;
 
 		default:
@@ -4697,14 +4695,10 @@ static void average_for(ObjType otyp, OutPeriod pd)
 			break;
 
 		case eSW_CO2Effects:
-			vpavg->grass.biomass = vpsumof->grass.biomass / div;
-			vpavg->shrub.biomass = vpsumof->shrub.biomass / div;
-			vpavg->tree.biomass = vpsumof->tree.biomass / div;
-			vpavg->forb.biomass = vpsumof->forb.biomass / div;
-			vpavg->grass.biolive = vpsumof->grass.biolive / div;
-			vpavg->shrub.biolive = vpsumof->shrub.biolive / div;
-			vpavg->tree.biolive = vpsumof->tree.biolive / div;
-			vpavg->forb.biolive = vpsumof->forb.biolive / div;
+			ForEachVegType(i) {
+				vpavg->veg[i].biomass = vpsumof->veg[i].biomass / div;
+				vpavg->veg[i].biolive = vpsumof->veg[i].biolive / div;
+			}
 			break;
 
 		default:

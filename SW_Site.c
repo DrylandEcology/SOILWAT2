@@ -578,7 +578,7 @@ void init_site_info(void) {
 	SW_SITE *sp = &SW_Site;
 	SW_LAYER_INFO *lyr;
 	LyrIndex s, r, curregion;
-	int wiltminflag = 0, initminflag = 0;
+	int k, wiltminflag = 0, initminflag = 0;
 	RealD evsum = 0., trsum_forb = 0., trsum_tree = 0., trsum_shrub = 0., trsum_grass = 0., swcmin_help1, swcmin_help2;
 
 	/* sp->deepdrain indicates an extra (dummy) layer for deep drainage
@@ -600,10 +600,10 @@ void init_site_info(void) {
 		trsum_grass += lyr->transp_coeff[SW_GRASS];
 
 		/* calculate soil water content at SWPcrit for each vegetation type */
-		lyr->swcBulk_atSWPcrit[SW_FORBS] = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, SW_VegProd.forb.SWPcrit, s) * lyr->width;
-		lyr->swcBulk_atSWPcrit[SW_TREES] = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, SW_VegProd.tree.SWPcrit, s) * lyr->width;
-		lyr->swcBulk_atSWPcrit[SW_SHRUB] = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, SW_VegProd.shrub.SWPcrit, s) * lyr->width;
-		lyr->swcBulk_atSWPcrit[SW_GRASS] = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, SW_VegProd.grass.SWPcrit, s) * lyr->width;
+		ForEachVegType(k) {
+			lyr->swcBulk_atSWPcrit[k] = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel,
+				SW_VegProd.veg[k].SWPcrit, s) * lyr->width;
+		}
 
 		/* Find which transpiration region the current soil layer
 		 * is in and check validity of result. Region bounds are
