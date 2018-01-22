@@ -62,6 +62,7 @@ GTEST_DIR = googletest/googletest
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
+gtest_CPPFLAGS = $(CPPFLAGS) -DSWDEBUG
 gtest_LDLIBS = -l$(gtest) -l$(target)++ -lm
 cov_LDLIBS = -l$(gtest) -lcov$(target)++ -lm
 
@@ -74,12 +75,12 @@ $(lib_target) :
 		@rm -f $(objects)
 
 $(lib_target++) :
-		$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(sources_tests)
+		$(CXX) $(gtest_CPPFLAGS) $(CXXFLAGS) -c $(sources_tests)
 		$(AR) -rcsu $(lib_target++) $(objects_tests)
 		@rm -f $(objects_tests)
 
 $(lib_covtarget++) :
-		$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CovFlags) -c $(sources_tests)
+		$(CXX) $(gtest_CPPFLAGS) $(CXXFLAGS) $(CovFlags) -c $(sources_tests)
 		$(AR) -rcsu $(lib_covtarget++) $(objects_tests)
 		@rm -f $(objects_tests)
 
@@ -109,7 +110,7 @@ $(lib_gtest) :
 		$(AR) -r $(lib_gtest) gtest-all.o
 
 test : $(lib_gtest) $(lib_target++)
-		$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
+		$(CXX) $(gtest_CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
 				test/*.cc -o $(bin_test) $(gtest_LDLIBS)
 
 .PHONY : test_run
@@ -117,7 +118,7 @@ test_run :
 		./$(bin_test)
 
 cov : cov_clean $(lib_gtest) $(lib_covtarget++)
-		$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CovFlags) $(LDFLAGS) -isystem ${GTEST_DIR}/include \
+		$(CXX) $(gtest_CPPFLAGS) $(CXXFLAGS) $(CovFlags) $(LDFLAGS) -isystem ${GTEST_DIR}/include \
 			-pthread test/*.cc -o $(bin_test) $(cov_LDLIBS)
 
 .PHONY : cov_run
