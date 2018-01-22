@@ -33,7 +33,6 @@
 #define MAX_LAYERS  25
 #define MAX_TRANSP_REGIONS 4
 #define MAX_ST_RGR 100
-#define NVEGTYPES 4
 
 #define MAX_NYEAR 2500  /**< An integer representing the max calendar year that is supported. The number just needs to be reasonable, it is an artifical limit. */
 
@@ -64,16 +63,24 @@
 #define SW_MIN 0
 #define SW_MAX 1
 
+/* indices to vegetation types */
+#define NVEGTYPES 4
+#define SW_TREES 0
+#define SW_SHRUB 1
+#define SW_FORBS 2
+#define SW_GRASS 3
+
+
 
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */
 /* Note the loop var must be declared as LyrIndex */
 #define ForEachSoilLayer(i)     for((i)=0; (i) < SW_Site.n_layers;      (i)++)
 #define ForEachEvapLayer(i)     for((i)=0; (i) < SW_Site.n_evap_lyrs;   (i)++)
-#define ForEachTreeTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs_tree; (i)++)
-#define ForEachShrubTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs_shrub; (i)++)
-#define ForEachGrassTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs_grass; (i)++)
-#define ForEachForbTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs_forb; (i)++)
+#define ForEachTreeTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_TREES]; (i)++)
+#define ForEachShrubTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_SHRUB]; (i)++)
+#define ForEachGrassTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_GRASS]; (i)++)
+#define ForEachForbTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_FORBS]; (i)++)
 #define ForEachTranspRegion(r)  for((r)=0; (r) < SW_Site.n_transp_rgn;  (r)++)
 /* define m as Months */
 #define ForEachMonth(m)         for((m)=Jan; (m) <= Dec;  (m)++)

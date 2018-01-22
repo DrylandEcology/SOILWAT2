@@ -330,10 +330,10 @@ void SW_Water_Flow(void) {
 	}
 
 	/* Sum cumulative intercepted components */
-	SW_Soilwat.tree_int = tree_h2o;
-	SW_Soilwat.shrub_int = shrub_h2o;
-	SW_Soilwat.forb_int = forb_h2o;
-	SW_Soilwat.grass_int = grass_h2o;
+	SW_Soilwat.int_veg[SW_TREES] = tree_h2o;
+	SW_Soilwat.int_veg[SW_SHRUB] = shrub_h2o;
+	SW_Soilwat.int_veg[SW_FORBS] = forb_h2o;
+	SW_Soilwat.int_veg[SW_GRASS] = grass_h2o;
 	SW_Soilwat.litter_int = litter_h2o;
 
 	tree_h2o_qum[Today] = tree_h2o_qum[Yesterday] + tree_h2o;
@@ -435,7 +435,7 @@ void SW_Water_Flow(void) {
 			soil_evap_rate_tree = 0.;
 		}
 
-		transp_weighted_avg(&swpot_avg_tree, SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs_tree, lyrTrRegions_Tree, lyrTranspCo_Tree, lyrSWCBulk);
+		transp_weighted_avg(&swpot_avg_tree, SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs[SW_TREES], lyrTrRegions_Tree, lyrTranspCo_Tree, lyrSWCBulk);
 
 		pot_transp(&transp_rate_tree, swpot_avg_tree, SW_VegProd.tree.biolive_daily[doy], SW_VegProd.tree.biodead_daily[doy], transp_tree, SW_Soilwat.pet,
 				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range, SW_VegProd.tree.shade_scale, SW_VegProd.tree.shade_deadmax,
@@ -459,7 +459,7 @@ void SW_Water_Flow(void) {
 			soil_evap_rate_shrub = 0.;
 		}
 
-		transp_weighted_avg(&swpot_avg_shrub, SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs_shrub, lyrTrRegions_Shrub, lyrTranspCo_Shrub, lyrSWCBulk);
+		transp_weighted_avg(&swpot_avg_shrub, SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs[SW_SHRUB], lyrTrRegions_Shrub, lyrTranspCo_Shrub, lyrSWCBulk);
 
 		pot_transp(&transp_rate_shrub, swpot_avg_shrub, SW_VegProd.shrub.biolive_daily[doy], SW_VegProd.shrub.biodead_daily[doy], transp_shrub, SW_Soilwat.pet,
 				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range, SW_VegProd.shrub.shade_scale, SW_VegProd.shrub.shade_deadmax,
@@ -484,7 +484,7 @@ void SW_Water_Flow(void) {
 			soil_evap_rate_forb = 0.;
 		}
 
-		transp_weighted_avg(&swpot_avg_forb, SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs_forb, lyrTrRegions_Forb, lyrTranspCo_Forb, lyrSWCBulk);
+		transp_weighted_avg(&swpot_avg_forb, SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs[SW_FORBS], lyrTrRegions_Forb, lyrTranspCo_Forb, lyrSWCBulk);
 
 		pot_transp(&transp_rate_forb, swpot_avg_forb, SW_VegProd.forb.biolive_daily[doy], SW_VegProd.forb.biodead_daily[doy], transp_forb, SW_Soilwat.pet,
 				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range, SW_VegProd.forb.shade_scale, SW_VegProd.forb.shade_deadmax,
@@ -509,7 +509,7 @@ void SW_Water_Flow(void) {
 			soil_evap_rate_grass = 0.;
 		}
 
-		transp_weighted_avg(&swpot_avg_grass, SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs_grass, lyrTrRegions_Grass, lyrTranspCo_Grass, lyrSWCBulk);
+		transp_weighted_avg(&swpot_avg_grass, SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs[SW_GRASS], lyrTrRegions_Grass, lyrTranspCo_Grass, lyrSWCBulk);
 
 		pot_transp(&transp_rate_grass, swpot_avg_grass, SW_VegProd.grass.biolive_daily[doy], SW_VegProd.grass.biodead_daily[doy], transp_grass, SW_Soilwat.pet,
 				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range, SW_VegProd.grass.shade_scale, SW_VegProd.grass.shade_deadmax,
@@ -567,10 +567,10 @@ void SW_Water_Flow(void) {
 	evap_fromSurface(&litter_h2o_qum[Today], &surface_evap_litter_rate, &SW_Soilwat.aet);
 	evap_fromSurface(&standingWater[Today], &surface_evap_standingWater_rate, &SW_Soilwat.aet);
 
-	SW_Soilwat.tree_evap = surface_evap_tree_rate;
-	SW_Soilwat.shrub_evap = surface_evap_shrub_rate;
-	SW_Soilwat.forb_evap = surface_evap_forb_rate;
-	SW_Soilwat.grass_evap = surface_evap_grass_rate;
+	SW_Soilwat.evap_veg[SW_TREES] = surface_evap_tree_rate;
+	SW_Soilwat.evap_veg[SW_SHRUB] = surface_evap_shrub_rate;
+	SW_Soilwat.evap_veg[SW_FORBS] = surface_evap_forb_rate;
+	SW_Soilwat.evap_veg[SW_GRASS] = surface_evap_grass_rate;
 	SW_Soilwat.litter_evap = surface_evap_litter_rate;
 	SW_Soilwat.surfaceWater_evap = surface_evap_standingWater_rate;
 
@@ -591,13 +591,13 @@ void SW_Water_Flow(void) {
 		remove_from_soil(lyrSWCBulk, lyrEvap_Tree, &SW_Soilwat.aet, SW_Site.n_evap_lyrs, lyrEvapCo, soil_evap_rate_tree, lyrSWCBulk_HalfWiltpts);
 
 		/* remove transp from swc */
-		remove_from_soil(lyrSWCBulk, lyrTransp_Tree, &SW_Soilwat.aet, SW_Site.n_transp_lyrs_tree, lyrTranspCo_Tree, transp_rate_tree, lyrSWCBulk_atSWPcrit_Tree);
+		remove_from_soil(lyrSWCBulk, lyrTransp_Tree, &SW_Soilwat.aet, SW_Site.n_transp_lyrs[SW_TREES], lyrTranspCo_Tree, transp_rate_tree, lyrSWCBulk_atSWPcrit_Tree);
 	} else {
 		/* Set daily array to zero, no evaporation or transpiration */
 		LyrIndex i;
 		for (i = 0; i < SW_Site.n_evap_lyrs;)
 			lyrEvap_Tree[i++] = 0.;
-		for (i = 0; i < SW_Site.n_transp_lyrs_tree;)
+		for (i = 0; i < SW_Site.n_transp_lyrs[SW_TREES];)
 			lyrTransp_Tree[i++] = 0.;
 	}
 
@@ -607,13 +607,13 @@ void SW_Water_Flow(void) {
 		remove_from_soil(lyrSWCBulk, lyrEvap_Shrub, &SW_Soilwat.aet, SW_Site.n_evap_lyrs, lyrEvapCo, soil_evap_rate_shrub, lyrSWCBulk_HalfWiltpts);
 
 		/* remove transp from swc */
-		remove_from_soil(lyrSWCBulk, lyrTransp_Shrub, &SW_Soilwat.aet, SW_Site.n_transp_lyrs_shrub, lyrTranspCo_Shrub, transp_rate_shrub, lyrSWCBulk_atSWPcrit_Shrub);
+		remove_from_soil(lyrSWCBulk, lyrTransp_Shrub, &SW_Soilwat.aet, SW_Site.n_transp_lyrs[SW_SHRUB], lyrTranspCo_Shrub, transp_rate_shrub, lyrSWCBulk_atSWPcrit_Shrub);
 	} else {
 		/* Set daily array to zero, no evaporation or transpiration */
 		LyrIndex i;
 		for (i = 0; i < SW_Site.n_evap_lyrs;)
 			lyrEvap_Shrub[i++] = 0.;
-		for (i = 0; i < SW_Site.n_transp_lyrs_shrub;)
+		for (i = 0; i < SW_Site.n_transp_lyrs[SW_SHRUB];)
 			lyrTransp_Shrub[i++] = 0.;
 	}
 
@@ -623,13 +623,13 @@ void SW_Water_Flow(void) {
 		remove_from_soil(lyrSWCBulk, lyrEvap_Forb, &SW_Soilwat.aet, SW_Site.n_evap_lyrs, lyrEvapCo, soil_evap_rate_forb, lyrSWCBulk_HalfWiltpts);
 
 		/* remove transp from swc */
-		remove_from_soil(lyrSWCBulk, lyrTransp_Forb, &SW_Soilwat.aet, SW_Site.n_transp_lyrs_forb, lyrTranspCo_Forb, transp_rate_forb, lyrSWCBulk_atSWPcrit_Forb);
+		remove_from_soil(lyrSWCBulk, lyrTransp_Forb, &SW_Soilwat.aet, SW_Site.n_transp_lyrs[SW_FORBS], lyrTranspCo_Forb, transp_rate_forb, lyrSWCBulk_atSWPcrit_Forb);
 	} else {
 		/* Set daily array to zero, no evaporation or transpiration */
 		LyrIndex i;
 		for (i = 0; i < SW_Site.n_evap_lyrs;)
 			lyrEvap_Forb[i++] = 0.;
-		for (i = 0; i < SW_Site.n_transp_lyrs_forb;)
+		for (i = 0; i < SW_Site.n_transp_lyrs[SW_FORBS];)
 			lyrTransp_Forb[i++] = 0.;
 	}
 
@@ -639,13 +639,13 @@ void SW_Water_Flow(void) {
 		remove_from_soil(lyrSWCBulk, lyrEvap_Grass, &SW_Soilwat.aet, SW_Site.n_evap_lyrs, lyrEvapCo, soil_evap_rate_grass, lyrSWCBulk_HalfWiltpts);
 
 		/* remove transp from swc */
-		remove_from_soil(lyrSWCBulk, lyrTransp_Grass, &SW_Soilwat.aet, SW_Site.n_transp_lyrs_grass, lyrTranspCo_Grass, transp_rate_grass, lyrSWCBulk_atSWPcrit_Grass);
+		remove_from_soil(lyrSWCBulk, lyrTransp_Grass, &SW_Soilwat.aet, SW_Site.n_transp_lyrs[SW_GRASS], lyrTranspCo_Grass, transp_rate_grass, lyrSWCBulk_atSWPcrit_Grass);
 	} else {
 		/* Set daily array to zero, no evaporation or transpiration */
 		LyrIndex i;
 		for (i = 0; i < SW_Site.n_evap_lyrs;)
 			lyrEvap_Grass[i++] = 0.;
-		for (i = 0; i < SW_Site.n_transp_lyrs_grass;)
+		for (i = 0; i < SW_Site.n_transp_lyrs[SW_GRASS];)
 			lyrTransp_Grass[i++] = 0.;
 	}
 
@@ -729,18 +729,18 @@ static void records2arrays(void) {
 	if (SW_Model.doy == SW_Model.firstdoy) {
 		ForEachSoilLayer(i)
 		{
-			lyrTrRegions_Tree[i] = SW_Site.lyr[i]->my_transp_rgn_tree;
-			lyrTrRegions_Forb[i] = SW_Site.lyr[i]->my_transp_rgn_forb;
-			lyrTrRegions_Shrub[i] = SW_Site.lyr[i]->my_transp_rgn_shrub;
-			lyrTrRegions_Grass[i] = SW_Site.lyr[i]->my_transp_rgn_grass;
+			lyrTrRegions_Tree[i] = SW_Site.lyr[i]->my_transp_rgn[SW_TREES];
+			lyrTrRegions_Forb[i] = SW_Site.lyr[i]->my_transp_rgn[SW_FORBS];
+			lyrTrRegions_Shrub[i] = SW_Site.lyr[i]->my_transp_rgn[SW_SHRUB];
+			lyrTrRegions_Grass[i] = SW_Site.lyr[i]->my_transp_rgn[SW_GRASS];
 			lyrSWCBulk_FieldCaps[i] = SW_Site.lyr[i]->swcBulk_fieldcap;
 			lyrWidths[i] = SW_Site.lyr[i]->width;
 			lyrSWCBulk_Wiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt;
 			lyrSWCBulk_HalfWiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt / 2.;
-			lyrSWCBulk_atSWPcrit_Tree[i] = SW_Site.lyr[i]->swcBulk_atSWPcrit_tree;
-			lyrSWCBulk_atSWPcrit_Forb[i] = SW_Site.lyr[i]->swcBulk_atSWPcrit_forb;
-			lyrSWCBulk_atSWPcrit_Shrub[i] = SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub;
-			lyrSWCBulk_atSWPcrit_Grass[i] = SW_Site.lyr[i]->swcBulk_atSWPcrit_grass;
+			lyrSWCBulk_atSWPcrit_Tree[i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[SW_TREES];
+			lyrSWCBulk_atSWPcrit_Forb[i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[SW_FORBS];
+			lyrSWCBulk_atSWPcrit_Shrub[i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[SW_SHRUB];
+			lyrSWCBulk_atSWPcrit_Grass[i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[SW_GRASS];
 			lyrSWCBulk_Mins[i] = SW_Site.lyr[i]->swcBulk_min;
 			lyrpsisMatric[i] = SW_Site.lyr[i]->psisMatric;
 			lyrthetasMatric[i] = SW_Site.lyr[i]->thetasMatric;
@@ -759,22 +759,22 @@ static void records2arrays(void) {
 
 		ForEachTreeTranspLayer(i)
 		{
-			lyrTranspCo_Tree[i] = SW_Site.lyr[i]->transp_coeff_tree;
+			lyrTranspCo_Tree[i] = SW_Site.lyr[i]->transp_coeff[SW_TREES];
 		}
 
 		ForEachShrubTranspLayer(i)
 		{
-			lyrTranspCo_Shrub[i] = SW_Site.lyr[i]->transp_coeff_shrub;
+			lyrTranspCo_Shrub[i] = SW_Site.lyr[i]->transp_coeff[SW_SHRUB];
 		}
 
 		ForEachForbTranspLayer(i)
 		{
-			lyrTranspCo_Forb[i] = SW_Site.lyr[i]->transp_coeff_forb;
+			lyrTranspCo_Forb[i] = SW_Site.lyr[i]->transp_coeff[SW_FORBS];
 		}
 
 		ForEachGrassTranspLayer(i)
 		{
-			lyrTranspCo_Grass[i] = SW_Site.lyr[i]->transp_coeff_grass;
+			lyrTranspCo_Grass[i] = SW_Site.lyr[i]->transp_coeff[SW_GRASS];
 		}
 
 		ForEachEvapLayer(i)
@@ -794,10 +794,10 @@ static void arrays2records(void) {
 	{
 		SW_Soilwat.swcBulk[Today][i] = lyrSWCBulk[i];
 		SW_Soilwat.drain[i] = lyrDrain[i];
-		SW_Soilwat.hydred_tree[i] = lyrHydRed_Tree[i];
-		SW_Soilwat.hydred_shrub[i] = lyrHydRed_Shrub[i];
-		SW_Soilwat.hydred_forb[i] = lyrHydRed_Forb[i];
-		SW_Soilwat.hydred_grass[i] = lyrHydRed_Grass[i];
+		SW_Soilwat.hydred[SW_TREES][i] = lyrHydRed_Tree[i];
+		SW_Soilwat.hydred[SW_SHRUB][i] = lyrHydRed_Shrub[i];
+		SW_Soilwat.hydred[SW_FORBS][i] = lyrHydRed_Forb[i];
+		SW_Soilwat.hydred[SW_GRASS][i] = lyrHydRed_Grass[i];
 		SW_Soilwat.sTemp[i] = lyrsTemp[i];
 	}
 	SW_Soilwat.surfaceTemp = surfaceTemp[Today];
@@ -808,22 +808,22 @@ static void arrays2records(void) {
 
 	ForEachTreeTranspLayer(i)
 	{
-		SW_Soilwat.transpiration_tree[i] = lyrTransp_Tree[i];
+		SW_Soilwat.transpiration[SW_TREES][i] = lyrTransp_Tree[i];
 	}
 
 	ForEachShrubTranspLayer(i)
 	{
-		SW_Soilwat.transpiration_shrub[i] = lyrTransp_Shrub[i];
+		SW_Soilwat.transpiration[SW_SHRUB][i] = lyrTransp_Shrub[i];
 	}
 
 	ForEachForbTranspLayer(i)
 	{
-		SW_Soilwat.transpiration_forb[i] = lyrTransp_Forb[i];
+		SW_Soilwat.transpiration[SW_FORBS][i] = lyrTransp_Forb[i];
 	}
 
 	ForEachGrassTranspLayer(i)
 	{
-		SW_Soilwat.transpiration_grass[i] = lyrTransp_Grass[i];
+		SW_Soilwat.transpiration[SW_GRASS][i] = lyrTransp_Grass[i];
 	}
 
 	ForEachEvapLayer(i)
