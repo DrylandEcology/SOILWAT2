@@ -70,6 +70,9 @@ static char *MyFileName;
 
 static RealD lai_standing; /*standing crop lai (g/m**2)     */
 
+// key2veg must be in the same order as the indices to vegetation types defined in SW_Defines.h
+char const *key2veg[] = {"Trees", "Shrubs", "Forbs", "Grasses"};
+
 /* =================================================== */
 /* =================================================== */
 /*             Private Function Definitions            */
@@ -589,7 +592,7 @@ void SW_VPD_read(void) {
 
 		ForEachVegType(k) {
 			v->veg[k].cov.fCover /= fraction_sum;
-			LogError(logfp, LOGWARN, " %d fraction : %5.4f", k, v->veg[k].cov.fCover);
+			LogError(logfp, LOGWARN, " %d fraction : %5.4f", key2veg[k], v->veg[k].cov.fCover);
 		}
 	}
 
@@ -740,35 +743,25 @@ void _echo_VegProd(void) {
 
 	SW_VEGPROD *v = &SW_VegProd; /* convenience */
 	char outstr[1500];
+	int k;
 
 	sprintf(errstr, "\n==============================================\n"
 		"Vegetation Production Parameters\n\n");
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
 
-	sprintf(errstr, "Grassland component\t= %1.2f\n"
-		"\tAlbedo\t= %1.2f\n"
-		"\tHydraulic redistribution flag\t= %d\n", v->veg[SW_GRASS].cov.fCover, v->veg[SW_GRASS].cov.albedo, v->veg[SW_GRASS].flagHydraulicRedistribution);
-	strcpy(outstr, errstr);
-	LogError(logfp, LOGNOTE, outstr);
+	ForEachVegType(k) {
+		sprintf(errstr,
+			"%s component\t= %1.2f\n"
+			"\tAlbedo\t= %1.2f\n"
+			"\tHydraulic redistribution flag\t= %d\n",
+			key2veg[k], v->veg[SW_GRASS].cov.fCover,
+			v->veg[SW_GRASS].cov.albedo,
+			v->veg[SW_GRASS].flagHydraulicRedistribution);
+		strcpy(outstr, errstr);
+		LogError(logfp, LOGNOTE, outstr);
+	}
 
-	sprintf(errstr, "Shrubland component\t= %1.2f\n"
-		"\tAlbedo\t= %1.2f\n"
-		"\tHydraulic redistribution flag\t= %d\n", v->veg[SW_SHRUB].cov.fCover, v->veg[SW_SHRUB].cov.albedo, v->veg[SW_SHRUB].flagHydraulicRedistribution);
-	strcpy(outstr, errstr);
-	LogError(logfp, LOGNOTE, outstr);
-
-	sprintf(errstr, "Forest-Tree component\t= %1.2f\n"
-		"\tAlbedo\t= %1.2f\n"
-		"\tHydraulic redistribution flag\t= %d\n", v->veg[SW_TREES].cov.fCover, v->veg[SW_TREES].cov.albedo, v->veg[SW_TREES].flagHydraulicRedistribution);
-	strcpy(outstr, errstr);
-	LogError(logfp, LOGNOTE, outstr);
-
-	sprintf(errstr, "FORB component\t= %1.2f\n"
-		"\tAlbedo\t= %1.2f\n"
-		"\tHydraulic redistribution flag\t= %d\n", v->veg[SW_FORBS].cov.fCover, v->veg[SW_FORBS].cov.albedo, v->veg[SW_FORBS].flagHydraulicRedistribution);
-	strcpy(outstr, errstr);
-	LogError(logfp, LOGNOTE, outstr);
 
 	sprintf(errstr, "Bare Ground component\t= %1.2f\n"
 		"\tAlbedo\t= %1.2f\n", v->bare_cov.fCover, v->bare_cov.albedo);
