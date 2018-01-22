@@ -93,6 +93,11 @@ static void _clear_hist(void) {
 	}
 }
 
+void SW_WaterBalance_Checks(void) {
+
+}
+
+
 /* =================================================== */
 /* =================================================== */
 /*             Public Function Definitions             */
@@ -100,8 +105,14 @@ static void _clear_hist(void) {
 
 void SW_SWC_construct(void) {
 	/* =================================================== */
+
+	SW_Soilwat.partsError = swFALSE;
+	SW_Soilwat.waterBalanceError = 0;
+
 	temp_snow = 0.;
-	if (!isnull(SW_Soilwat.hist.file_prefix)) {//Clear memory before setting it
+
+	//Clear memory before setting it
+	if (!isnull(SW_Soilwat.hist.file_prefix)) {
 		Mem_Free(SW_Soilwat.hist.file_prefix);
 		SW_Soilwat.hist.file_prefix = NULL;
 	}
@@ -149,6 +160,9 @@ void SW_SWC_water_flow(void) {
 	}
 
   #ifdef SWDEBUG
+  if (debug) swprintf("\n'SW_SWC_water_flow': check water balance.\n");
+  SW_WaterBalance_Checks();
+
   if (debug) swprintf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
   #endif
 	ForEachSoilLayer(i)

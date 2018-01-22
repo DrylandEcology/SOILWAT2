@@ -186,10 +186,11 @@ void SW_Water_Flow(void);
 
 void SW_FLW_construct(void) {
 	/* 06/26/2013	(rjm) added function SW_FLW_construct() to init global variables between consecutive calls to SoilWat as dynamic library */
-	int i=0;
-	SW_Soilwat.partsError = swFALSE;
+	int i = 0;
+
 	soil_temp_init = 0;
 	fusion_pool_init = 0;
+
 	//These only have to be cleared if a loop is wrong in the code.
 	for (i = 0; i < MAX_LAYERS; i++) {
 		lyrTrRegions_Forb[i] = lyrTrRegions_Tree[i] = lyrTrRegions_Shrub[i] = lyrTrRegions_Grass[i] = 0;
@@ -204,6 +205,7 @@ void SW_FLW_construct(void) {
 	}
 	for(i=0; i<= MAX_TRANSP_REGIONS; i++)
 		lyrSumTrCo[i] = 0;
+
 	//When running as a library make sure these are set to zero.
 	drainout = 0;
 	surfaceTemp[0] = surfaceTemp[1] = 0.0;

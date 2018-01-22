@@ -37,21 +37,16 @@
 #include "sw_testhelpers.h"
 
 
-extern SW_CARBON SW_Carbon;
-extern SW_MODEL SW_Model;
-extern SW_VEGPROD SW_VegProd;
+extern SW_SOILWAT SW_Soilwat;
 
 
 
 namespace {
-  SW_CARBON *c = &SW_Carbon;
-  SW_VEGPROD *v  = &SW_VegProd;
-
   /* Test daily water balance and water cycling:
        i) Call function 'SW_CTL_main' which calls 'SW_CTL_run_current_year' for each year
           which calls 'SW_SWC_water_flow' for each day
       ii) Summarize checks added to debugging code of 'SW_SWC_water_flow' (which is
-          compiled if flag 'DEBUG' is defined)
+          compiled if flag 'SWDEBUG' is defined)
   */
   TEST(ConsistencyTests, WaterBalance) {
 
@@ -59,7 +54,7 @@ namespace {
     SW_CTL_main();
 
     // Collect and output from daily checks
-    EXPECT_EQ(0, 0);
+    EXPECT_EQ(0, SW_Soilwat.waterBalanceError);
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
