@@ -161,7 +161,7 @@ static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
   if ((int)x == 1) {}
 
   if (EQ(0., v->bare_cov.fCover)) {}
-  if (EQ(0., s->grass.biomass)) {}
+  if (EQ(0., s->veg[SW_GRASS].biomass)) {}
 }
 
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)

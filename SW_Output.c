@@ -1778,14 +1778,14 @@ static void get_co2effects(OutPeriod pd) {
 
 	// Grab the multipliers that were just used
 	// No averaging or summing required
-	RealD bio_mult_grass = v->grass.co2_multipliers[BIO_INDEX][SW_Model.simyear];
-	RealD bio_mult_shrub = v->shrub.co2_multipliers[BIO_INDEX][SW_Model.simyear];
-	RealD bio_mult_tree = v->tree.co2_multipliers[BIO_INDEX][SW_Model.simyear];
-	RealD bio_mult_forb = v->forb.co2_multipliers[BIO_INDEX][SW_Model.simyear];
-	RealD wue_mult_grass = v->grass.co2_multipliers[WUE_INDEX][SW_Model.simyear];
-	RealD wue_mult_shrub = v->shrub.co2_multipliers[WUE_INDEX][SW_Model.simyear];
-	RealD wue_mult_tree = v->tree.co2_multipliers[WUE_INDEX][SW_Model.simyear];
-	RealD wue_mult_forb = v->forb.co2_multipliers[WUE_INDEX][SW_Model.simyear];
+	RealD bio_mult_grass = v->veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_Model.simyear];
+	RealD bio_mult_shrub = v->veg[SW_SHRUB].co2_multipliers[BIO_INDEX][SW_Model.simyear];
+	RealD bio_mult_tree = v->veg[SW_TREES].co2_multipliers[BIO_INDEX][SW_Model.simyear];
+	RealD bio_mult_forb = v->veg[SW_FORBS].co2_multipliers[BIO_INDEX][SW_Model.simyear];
+	RealD wue_mult_grass = v->veg[SW_GRASS].co2_multipliers[WUE_INDEX][SW_Model.simyear];
+	RealD wue_mult_shrub = v->veg[SW_SHRUB].co2_multipliers[WUE_INDEX][SW_Model.simyear];
+	RealD wue_mult_tree = v->veg[SW_TREES].co2_multipliers[WUE_INDEX][SW_Model.simyear];
+	RealD wue_mult_forb = v->veg[SW_FORBS].co2_multipliers[WUE_INDEX][SW_Model.simyear];
 
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
@@ -1802,14 +1802,14 @@ static void get_co2effects(OutPeriod pd) {
 
 	switch(pd) {
 		case eSW_Day:
-			biomass_grass = v->dysum.grass.biomass;
-			biomass_shrub = v->dysum.shrub.biomass;
-			biomass_tree = v->dysum.tree.biomass;
-			biomass_forb = v->dysum.forb.biomass;
-			biolive_grass = v->dysum.grass.biolive;
-			biolive_shrub = v->dysum.shrub.biolive;
-			biolive_tree = v->dysum.tree.biolive;
-			biolive_forb = v->dysum.forb.biolive;
+			biomass_grass = v->dysum.veg[SW_GRASS].biomass;
+			biomass_shrub = v->dysum.veg[SW_SHRUB].biomass;
+			biomass_tree = v->dysum.veg[SW_TREES].biomass;
+			biomass_forb = v->dysum.veg[SW_FORBS].biomass;
+			biolive_grass = v->dysum.veg[SW_GRASS].biolive;
+			biolive_shrub = v->dysum.veg[SW_SHRUB].biolive;
+			biolive_tree = v->dysum.veg[SW_TREES].biolive;
+			biolive_forb = v->dysum.veg[SW_FORBS].biolive;
 			biomass_total = biomass_grass + biomass_shrub + biomass_tree + biomass_forb;
 			biolive_total = biolive_grass + biolive_shrub + biolive_tree + biolive_forb;
 
@@ -1841,14 +1841,14 @@ static void get_co2effects(OutPeriod pd) {
 			break;
 
 		case eSW_Week:
-			biomass_grass = v->wkavg.grass.biomass;
-			biomass_shrub = v->wkavg.shrub.biomass;
-			biomass_tree = v->wkavg.tree.biomass;
-			biomass_forb = v->wkavg.forb.biomass;
-			biolive_grass = v->wkavg.grass.biolive;
-			biolive_shrub = v->wkavg.shrub.biolive;
-			biolive_tree = v->wkavg.tree.biolive;
-			biolive_forb = v->wkavg.forb.biolive;
+			biomass_grass = v->wkavg.veg[SW_GRASS].biomass;
+			biomass_shrub = v->wkavg.veg[SW_SHRUB].biomass;
+			biomass_tree = v->wkavg.veg[SW_TREES].biomass;
+			biomass_forb = v->wkavg.veg[SW_FORBS].biomass;
+			biolive_grass = v->wkavg.veg[SW_GRASS].biolive;
+			biolive_shrub = v->wkavg.veg[SW_SHRUB].biolive;
+			biolive_tree = v->wkavg.veg[SW_TREES].biolive;
+			biolive_forb = v->wkavg.veg[SW_FORBS].biolive;
 			biomass_total = biomass_grass + biomass_shrub + biomass_tree + biomass_forb;
 			biolive_total = biolive_grass + biolive_shrub + biolive_tree + biolive_forb;
 
@@ -1880,14 +1880,14 @@ static void get_co2effects(OutPeriod pd) {
 			break;
 
 		case eSW_Month:
-			biomass_grass = v->moavg.grass.biomass;
-			biomass_shrub = v->moavg.shrub.biomass;
-			biomass_tree = v->moavg.tree.biomass;
-			biomass_forb = v->moavg.forb.biomass;
-			biolive_grass = v->moavg.grass.biolive;
-			biolive_shrub = v->moavg.shrub.biolive;
-			biolive_tree = v->moavg.tree.biolive;
-			biolive_forb = v->moavg.forb.biolive;
+			biomass_grass = v->moavg.veg[SW_GRASS].biomass;
+			biomass_shrub = v->moavg.veg[SW_SHRUB].biomass;
+			biomass_tree = v->moavg.veg[SW_TREES].biomass;
+			biomass_forb = v->moavg.veg[SW_FORBS].biomass;
+			biolive_grass = v->moavg.veg[SW_GRASS].biolive;
+			biolive_shrub = v->moavg.veg[SW_SHRUB].biolive;
+			biolive_tree = v->moavg.veg[SW_TREES].biolive;
+			biolive_forb = v->moavg.veg[SW_FORBS].biolive;
 			biomass_total = biomass_grass + biomass_shrub + biomass_tree + biomass_forb;
 			biolive_total = biolive_grass + biolive_shrub + biolive_tree + biolive_forb;
 
@@ -1919,14 +1919,14 @@ static void get_co2effects(OutPeriod pd) {
 			break;
 
 		case eSW_Year:
-			biomass_grass = v->yravg.grass.biomass;
-			biomass_shrub = v->yravg.shrub.biomass;
-			biomass_tree = v->yravg.tree.biomass;
-			biomass_forb = v->yravg.forb.biomass;
-			biolive_grass = v->yravg.grass.biolive;
-			biolive_shrub = v->yravg.shrub.biolive;
-			biolive_tree = v->yravg.tree.biolive;
-			biolive_forb = v->yravg.forb.biolive;
+			biomass_grass = v->yravg.veg[SW_GRASS].biomass;
+			biomass_shrub = v->yravg.veg[SW_SHRUB].biomass;
+			biomass_tree = v->yravg.veg[SW_TREES].biomass;
+			biomass_forb = v->yravg.veg[SW_FORBS].biomass;
+			biolive_grass = v->yravg.veg[SW_GRASS].biolive;
+			biolive_shrub = v->yravg.veg[SW_SHRUB].biolive;
+			biolive_tree = v->yravg.veg[SW_TREES].biolive;
+			biolive_forb = v->yravg.veg[SW_FORBS].biolive;
 			biomass_total = biomass_grass + biomass_shrub + biomass_tree + biomass_forb;
 			biolive_total = biolive_grass + biolive_shrub + biolive_tree + biolive_forb;
 
@@ -2222,6 +2222,22 @@ static void get_estab(OutPeriod pd)
 				sprintf(str_iters, "%c%7.6f", _Sep, v->parms[i]->estab_doy);
 				strcat(outstr_all_iters, str_iters);
 			}
+		#else
+		switch(pd)
+		{
+			case eSW_Day:
+			p_rOUT[eSW_Estab][eSW_Day][SW_Output[eSW_Estab].dy_row + dy_nrow * (i + 2)] = v->parms[i]->estab_doy;
+			break;
+			case eSW_Week:
+			p_rOUT[eSW_Estab][eSW_Week][SW_Output[eSW_Estab].wk_row + wk_nrow * (i + 2)] = v->parms[i]->estab_doy;
+			break;
+			case eSW_Month:
+			p_rOUT[eSW_Estab][eSW_Month][SW_Output[eSW_Estab].mo_row + mo_nrow * (i + 2)] = v->parms[i]->estab_doy;
+			break;
+			case eSW_Year:
+			p_rOUT[eSW_Estab][eSW_Year][SW_Output[eSW_Estab].yr_row + yr_nrow * (i + 1)] = v->parms[i]->estab_doy;
+			break;
+		}
 		#endif
 	}
 #ifdef RSOILWAT
@@ -2947,20 +2963,20 @@ static void get_swa(OutPeriod pd)
 			// first set each veg type to its crit value defined by inputs
 			// calculate the SWA values
 			// for all veg types checking to see if set to be used or not in the .in files
-			if(SW_VegProd.tree.cov.fCover != 0)
-				val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+			if(SW_VegProd.veg[0].cov.fCover != 0)
+				val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[0]);
 			else
 				val_tree = 0.;
-			if(SW_VegProd.shrub.cov.fCover != 0)
-				val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+			if(SW_VegProd.veg[1].cov.fCover != 0)
+				val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[1]);
 			else
 				val_shrub = 0.;
-			if(SW_VegProd.grass.cov.fCover != 0)
-				val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+			if(SW_VegProd.veg[3].cov.fCover != 0)
+				val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[3]);
 			else
 				val_grass = 0.;
-			if(SW_VegProd.forb.cov.fCover != 0)
-				val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+			if(SW_VegProd.veg[2].cov.fCover != 0)
+				val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[2]);
 			else
 				val_forb = 0.;
 
@@ -2979,10 +2995,10 @@ static void get_swa(OutPeriod pd)
 				float curr_crit_val, new_crit_val;
 
 				// go through each veg type
-				for(j=0; j<4; j++){
+				for(j=0; j<NVEGTYPES; j++){
 					curr_crit_val = SW_VegProd.critSoilWater[j]; // get critical value for current veg type
 					// go through each critical value to see which ones need to be set for each veg_type
-					for(k=0; k<4; k++){
+					for(k=0; k<NVEGTYPES; k++){
 						if(k == j){
 							// dont need to check for its own critical value
 						}
@@ -3044,20 +3060,20 @@ static void get_swa(OutPeriod pd)
 			// first set each veg type to its crit value defined by inputs
 			// calculate the SWA values
 			// for all veg types checking to see if set to be used or not in the .in files
-			if(SW_VegProd.tree.cov.fCover != 0)
-				val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_tree);
+			if(SW_VegProd.veg[0].cov.fCover != 0)
+				val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[0]);
 			else
 				val_tree = 0.;
-			if(SW_VegProd.shrub.cov.fCover != 0)
-				val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_shrub);
+			if(SW_VegProd.veg[1].cov.fCover != 0)
+				val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[1]);
 			else
 				val_shrub = 0.;
-			if(SW_VegProd.grass.cov.fCover != 0)
-				val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_grass);
+			if(SW_VegProd.veg[3].cov.fCover != 0)
+				val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[3]);
 			else
 				val_grass = 0.;
-			if(SW_VegProd.forb.cov.fCover != 0)
-				val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit_forb);
+			if(SW_VegProd.veg[2].cov.fCover != 0)
+				val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[2]);
 			else
 				val_forb = 0.;
 
@@ -3184,13 +3200,13 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 			curr_crit_rank_index = SW_VegProd.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
 			// set veg type fraction here
 			if(curr_crit_rank_index == 0)
-				veg_type_in_use = SW_VegProd.tree.cov.fCover;
+				veg_type_in_use = SW_VegProd.veg[0].cov.fCover;
 			else if(curr_crit_rank_index == 1)
-				veg_type_in_use = SW_VegProd.shrub.cov.fCover;
+				veg_type_in_use = SW_VegProd.veg[1].cov.fCover;
 			else if(curr_crit_rank_index == 2)
-				veg_type_in_use = SW_VegProd.grass.cov.fCover;
+				veg_type_in_use = SW_VegProd.veg[3].cov.fCover; // index is different
 			else
-				veg_type_in_use = SW_VegProd.forb.cov.fCover;
+				veg_type_in_use = SW_VegProd.veg[2].cov.fCover;
 
 			for(kv=curr_vegType; kv>=0; kv--){
 				crit_val = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[kv]]; // get crit value at current index
@@ -3243,13 +3259,13 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 							for(j=3;j>=0;j--){ // go through all critical values and sum the fractions of the veg types who have access
 								// set veg type fraction here
 								if(j == 0)
-									inner_loop_veg_type = SW_VegProd.tree.cov.fCover;
+									inner_loop_veg_type = SW_VegProd.veg[0].cov.fCover;
 								else if(j == 1)
-									inner_loop_veg_type = SW_VegProd.shrub.cov.fCover;
+									inner_loop_veg_type = SW_VegProd.veg[1].cov.fCover;
 								else if(j == 2)
-									inner_loop_veg_type = SW_VegProd.grass.cov.fCover;
+									inner_loop_veg_type = SW_VegProd.veg[3].cov.fCover;
 								else
-									inner_loop_veg_type = SW_VegProd.forb.cov.fCover;
+									inner_loop_veg_type = SW_VegProd.veg[2].cov.fCover;
 
 								if(SW_VegProd.critSoilWater[j] <= crit_val)
 									vegFractionSum += inner_loop_veg_type;
@@ -3334,13 +3350,13 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 
 			// set veg type fraction here
 			if(curr_crit_rank_index == 0)
-				veg_type_in_use = SW_VegProd.tree.cov.fCover;
+				veg_type_in_use = SW_VegProd.veg[0].cov.fCover;
 			else if(curr_crit_rank_index == 1)
-				veg_type_in_use = SW_VegProd.shrub.cov.fCover;
+				veg_type_in_use = SW_VegProd.veg[1].cov.fCover;
 			else if(curr_crit_rank_index == 2)
-				veg_type_in_use = SW_VegProd.grass.cov.fCover;
+				veg_type_in_use = SW_VegProd.veg[3].cov.fCover; // index is different
 			else
-				veg_type_in_use = SW_VegProd.forb.cov.fCover;
+				veg_type_in_use = SW_VegProd.veg[2].cov.fCover;
 
 			for(kv=curr_vegType; kv>=0; kv--){
 				crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv]]; // get crit value at current index
@@ -3398,13 +3414,13 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 							for(j=3;j>=0;j--){ // go through all critical values and sum the fractions of the veg types who have access
 								// set veg type fraction here
 								if(j == 0)
-									inner_loop_veg_type = SW_VegProd.tree.cov.fCover;
+									inner_loop_veg_type = SW_VegProd.veg[0].cov.fCover;
 								else if(j == 1)
-									inner_loop_veg_type = SW_VegProd.shrub.cov.fCover;
+									inner_loop_veg_type = SW_VegProd.veg[1].cov.fCover;
 								else if(j == 2)
-									inner_loop_veg_type = SW_VegProd.grass.cov.fCover;
+									inner_loop_veg_type = SW_VegProd.veg[3].cov.fCover;
 								else
-									inner_loop_veg_type = SW_VegProd.forb.cov.fCover;
+									inner_loop_veg_type = SW_VegProd.veg[2].cov.fCover;
 
 								if(SW_VegProd.critSoilWater[j] <= crit_val)
 									vegFractionSum += inner_loop_veg_type;
@@ -3612,11 +3628,11 @@ static void get_swcBulk(OutPeriod pd)
 				val = v->dysum.swcBulk[i];
 				break; // print current but as index
 			case eSW_Week:
-				p = SW_Model.week - tOffset;
+				p = SW_Model.week - 1;
 				val = v->wkavg.swcBulk[i];
 				break;// print previous to current
 			case eSW_Month:
-				p = SW_Model.month-tOffset;
+				p = SW_Model.month-1;
 				val = v->moavg.swcBulk[i];
 				break;// print previous to current
 			case eSW_Year:
@@ -4317,41 +4333,54 @@ static void get_runoffrunon(OutPeriod pd) {
 		}
 
 #else
-	switch (pd)
-	{
-		case eSW_Day:
-		p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 0] = SW_Model.simyear;
-		p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 1] = SW_Model.doy;
-		p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 2] = (w->dysum.surfaceRunoff + w->dysum.snowRunoff);
-		p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 3] = w->dysum.surfaceRunoff;
-		p_Rrunoff_dy[SW_Output[eSW_Runoff].dy_row + dy_nrow * 4] = w->dysum.snowRunoff;
-		SW_Output[eSW_Runoff].dy_row++;
-		break;
-		case eSW_Week:
-		p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 0] = SW_Model.simyear;
-		p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
-		p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 2] = (w->wkavg.surfaceRunoff + w->wkavg.snowRunoff);
-		p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 3] = w->wkavg.surfaceRunoff;
-		p_Rrunoff_wk[SW_Output[eSW_Runoff].wk_row + wk_nrow * 4] = w->wkavg.snowRunoff;
-		SW_Output[eSW_Runoff].wk_row++;
-		break;
-		case eSW_Month:
-		p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 0] = SW_Model.simyear;
-		p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
-		p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 2] = (w->moavg.surfaceRunoff + w->moavg.snowRunoff);
-		p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 3] = w->moavg.surfaceRunoff;
-		p_Rrunoff_mo[SW_Output[eSW_Runoff].mo_row + mo_nrow * 4] = w->moavg.snowRunoff;
-		SW_Output[eSW_Runoff].mo_row++;
-		break;
-		case eSW_Year:
-		p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 0] = SW_Model.simyear;
-		p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 1] = (w->yravg.surfaceRunoff + w->yravg.snowRunoff);
-		p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 2] = w->yravg.surfaceRunoff;
-		p_Rrunoff_yr[SW_Output[eSW_Runoff].yr_row + yr_nrow * 3] = w->yravg.snowRunoff;
-		SW_Output[eSW_Runoff].yr_row++;
-		break;
-	}
-#endif
+	int delta;
+	RealD *p;
+	switch (pd) {
+      case eSW_Day:
+        delta = SW_Output[eSW_Runoff].dy_row;
+        p = p_rOUT[eSW_Runoff][eSW_Day]; // set shorthand copy of 'p_rOUT' pointer
+        p[delta + dy_nrow * 0] = SW_Model.simyear;
+        p[delta + dy_nrow * 1] = SW_Model.doy;
+        p[delta + dy_nrow * 2] = val_netRunoff;
+        p[delta + dy_nrow * 3] = val_surfaceRunoff;
+        p[delta + dy_nrow * 4] = val_snowRunoff;
+        p[delta + dy_nrow * 5] = val_surfaceRunon;
+        SW_Output[eSW_Runoff].dy_row++;
+        break;
+      case eSW_Week:
+        delta = SW_Output[eSW_Runoff].wk_row;
+        p = p_rOUT[eSW_Runoff][eSW_Week]; // set shorthand copy of 'p_rOUT' pointer
+        p[delta + wk_nrow * 0] = SW_Model.simyear;
+        p[delta + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
+        p[delta + wk_nrow * 2] = val_netRunoff;
+        p[delta + wk_nrow * 3] = val_surfaceRunoff;
+        p[delta + wk_nrow * 4] = val_snowRunoff;
+        p[delta + wk_nrow * 5] = val_surfaceRunon;
+        SW_Output[eSW_Runoff].wk_row++;
+        break;
+      case eSW_Month:
+        delta = SW_Output[eSW_Runoff].mo_row;
+        p = p_rOUT[eSW_Runoff][eSW_Month]; // set shorthand copy of 'p_rOUT' pointer
+        p[delta + mo_nrow * 0] = SW_Model.simyear;
+        p[delta + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
+        p[delta + mo_nrow * 2] = val_netRunoff;
+        p[delta + mo_nrow * 3] = val_surfaceRunoff;
+        p[delta + mo_nrow * 4] = val_snowRunoff;
+        p[delta + mo_nrow * 5] = val_surfaceRunon;
+        SW_Output[eSW_Runoff].mo_row++;
+        break;
+      case eSW_Year:
+        delta = SW_Output[eSW_Runoff].yr_row;
+        p = p_rOUT[eSW_Runoff][eSW_Year]; // set shorthand copy of 'p_rOUT' pointer
+        p[delta + yr_nrow * 0] = SW_Model.simyear;
+        p[delta + yr_nrow * 1] = val_netRunoff;
+        p[delta + yr_nrow * 2] = val_surfaceRunoff;
+        p[delta + yr_nrow * 3] = val_snowRunoff;
+        p[delta + yr_nrow * 4] = val_surfaceRunon;
+        SW_Output[eSW_Runoff].yr_row++;
+        break;
+    }
+  #endif
 }
 
 static void get_transp(OutPeriod pd)
@@ -4416,31 +4445,31 @@ static void get_transp(OutPeriod pd)
 		{
 		case eSW_Day:
 			val_total[i] = v->dysum.transp_total[i];
-			val_tree[i] = v->dysum.transp_tree[i];
-			val_grass[i] = v->dysum.transp_grass[i];
-			val_shrub[i] = v->dysum.transp_shrub[i];
-			val_forb[i] = v->dysum.transp_forb[i];
+			val_tree[i] = v->dysum.transp[SW_TREES][i];
+			val_grass[i] = v->dysum.transp[SW_GRASS][i];
+			val_shrub[i] = v->dysum.transp[SW_SHRUB][i];
+			val_forb[i] = v->dysum.transp[SW_FORBS][i];
 			break;
 		case eSW_Week:
 			val_total[i] = v->wkavg.transp_total[i];
-			val_tree[i] = v->wkavg.transp_tree[i];
-			val_grass[i] = v->wkavg.transp_grass[i];
-			val_shrub[i] = v->wkavg.transp_shrub[i];
-			val_forb[i] = v->wkavg.transp_forb[i];
+			val_tree[i] = v->wkavg.transp[SW_TREES][i];
+			val_grass[i] = v->wkavg.transp[SW_GRASS][i];
+			val_shrub[i] = v->wkavg.transp[SW_SHRUB][i];
+			val_forb[i] = v->wkavg.transp[SW_FORBS][i];
 			break;
 		case eSW_Month:
 			val_total[i] = v->moavg.transp_total[i];
-			val_tree[i] = v->moavg.transp_tree[i];
-			val_grass[i] = v->moavg.transp_grass[i];
-			val_shrub[i] = v->moavg.transp_shrub[i];
-			val_forb[i] = v->moavg.transp_forb[i];
+			val_tree[i] = v->moavg.transp[SW_TREES][i];
+			val_grass[i] = v->moavg.transp[SW_GRASS][i];
+			val_shrub[i] = v->moavg.transp[SW_SHRUB][i];
+			val_forb[i] = v->moavg.transp[SW_FORBS][i];
 			break;
 		case eSW_Year:
 			val_total[i] = v->yravg.transp_total[i];
-			val_tree[i] = v->yravg.transp_tree[i];
-			val_grass[i] = v->yravg.transp_grass[i];
-			val_shrub[i] = v->yravg.transp_shrub[i];
-			val_forb[i] = v->yravg.transp_forb[i];
+			val_tree[i] = v->yravg.transp[SW_TREES][i];
+			val_grass[i] = v->yravg.transp[SW_GRASS][i];
+			val_shrub[i] = v->yravg.transp[SW_SHRUB][i];
+			val_forb[i] = v->yravg.transp[SW_FORBS][i];
 			break;
 		}
 	}
@@ -4720,37 +4749,37 @@ static void get_evapSurface(OutPeriod pd)
 	{
 	case eSW_Day:
 		val_tot = v->dysum.total_evap;
-		val_tree = v->dysum.tree_evap;
-		val_forb = v->dysum.forb_evap;
-		val_shrub = v->dysum.shrub_evap;
-		val_grass = v->dysum.grass_evap;
+		val_tree = v->dysum.evap_veg[SW_TREES];
+		val_forb = v->dysum.evap_veg[SW_FORBS];
+		val_shrub = v->dysum.evap_veg[SW_SHRUB];
+		val_grass = v->dysum.evap_veg[SW_GRASS];
 		val_litter = v->dysum.litter_evap;
 		val_water = v->dysum.surfaceWater_evap;
 		break;
 	case eSW_Week:
 		val_tot = v->wkavg.total_evap;
-		val_tree = v->wkavg.tree_evap;
-		val_forb = v->wkavg.forb_evap;
-		val_shrub = v->wkavg.shrub_evap;
-		val_grass = v->wkavg.grass_evap;
+		val_tree = v->wkavg.evap_veg[SW_TREES];
+		val_forb = v->wkavg.evap_veg[SW_FORBS];
+		val_shrub = v->wkavg.evap_veg[SW_SHRUB];
+		val_grass = v->wkavg.evap_veg[SW_GRASS];
 		val_litter = v->wkavg.litter_evap;
 		val_water = v->wkavg.surfaceWater_evap;
 		break;
 	case eSW_Month:
 		val_tot = v->moavg.total_evap;
-		val_tree = v->moavg.tree_evap;
-		val_forb = v->moavg.forb_evap;
-		val_shrub = v->moavg.shrub_evap;
-		val_grass = v->moavg.grass_evap;
+		val_tree = v->moavg.evap_veg[SW_TREES];
+		val_forb = v->moavg.evap_veg[SW_FORBS];
+		val_shrub = v->moavg.evap_veg[SW_SHRUB];
+		val_grass = v->moavg.evap_veg[SW_GRASS];
 		val_litter = v->moavg.litter_evap;
 		val_water = v->moavg.surfaceWater_evap;
 		break;
 	case eSW_Year:
 		val_tot = v->yravg.total_evap;
-		val_tree = v->yravg.tree_evap;
-		val_forb = v->yravg.forb_evap;
-		val_shrub = v->yravg.shrub_evap;
-		val_grass = v->yravg.grass_evap;
+		val_tree = v->yravg.evap_veg[SW_TREES];
+		val_forb = v->yravg.evap_veg[SW_FORBS];
+		val_shrub = v->yravg.evap_veg[SW_SHRUB];
+		val_grass = v->yravg.evap_veg[SW_GRASS];
 		val_litter = v->yravg.litter_evap;
 		val_water = v->yravg.surfaceWater_evap;
 		break;
@@ -4765,39 +4794,39 @@ static void get_evapSurface(OutPeriod pd)
 			case eSW_Day:
 				p = SW_Model.doy-1;
 				val_tot = v->dysum.total_evap;
-				val_tree = v->dysum.tree_evap;
-				val_forb = v->dysum.forb_evap;
-				val_shrub = v->dysum.shrub_evap;
-				val_grass = v->dysum.grass_evap;
+				val_tree = v->dysum.evap_veg[SW_TREES];
+				val_forb = v->dysum.evap_veg[SW_FORBS];
+				val_shrub = v->dysum.evap_veg[SW_SHRUB];
+				val_grass = v->dysum.evap_veg[SW_GRASS];
 				val_litter = v->dysum.litter_evap;
 				val_water = v->dysum.surfaceWater_evap;
 				break;
 			case eSW_Week:
+				p = SW_Model.week-tOffset;
 				val_tot = v->wkavg.total_evap;
-				val_tree = v->wkavg.tree_evap;
-				val_forb = v->wkavg.forb_evap;
-				val_shrub = v->wkavg.shrub_evap;
-				val_grass = v->wkavg.grass_evap;
+				val_tree = v->wkavg.evap_veg[SW_TREES];
+				val_forb = v->wkavg.evap_veg[SW_FORBS];
+				val_shrub = v->wkavg.evap_veg[SW_SHRUB];
+				val_grass = v->wkavg.evap_veg[SW_GRASS];
 				val_litter = v->wkavg.litter_evap;
 				val_water = v->wkavg.surfaceWater_evap;
-				p = SW_Model.week-tOffset;
 				break;
 			case eSW_Month:
 				p = SW_Model.month-tOffset;
 				val_tot = v->moavg.total_evap;
-				val_tree = v->moavg.tree_evap;
-				val_forb = v->moavg.forb_evap;
-				val_shrub = v->moavg.shrub_evap;
-				val_grass = v->moavg.grass_evap;
+				val_tree = v->moavg.evap_veg[SW_TREES];
+				val_forb = v->moavg.evap_veg[SW_FORBS];
+				val_shrub = v->moavg.evap_veg[SW_SHRUB];
+				val_grass = v->moavg.evap_veg[SW_GRASS];
 				val_litter = v->moavg.litter_evap;
 				val_water = v->moavg.surfaceWater_evap;
 				break;
 			case eSW_Year:
 				val_tot = v->yravg.total_evap;
-				val_tree = v->yravg.tree_evap;
-				val_forb = v->yravg.forb_evap;
-				val_shrub = v->yravg.shrub_evap;
-				val_grass = v->yravg.grass_evap;
+				val_tree = v->yravg.evap_veg[SW_TREES];
+				val_forb = v->yravg.evap_veg[SW_FORBS];
+				val_shrub = v->yravg.evap_veg[SW_SHRUB];
+				val_grass = v->yravg.evap_veg[SW_GRASS];
 				val_litter = v->yravg.litter_evap;
 				val_water = v->yravg.surfaceWater_evap;
 				break;
@@ -4872,10 +4901,10 @@ static void get_evapSurface(OutPeriod pd)
 		p[delta + dy_nrow * 0] = SW_Model.simyear;
 		p[delta + dy_nrow * 1] = SW_Model.doy;
 		p[delta + dy_nrow * 2] = v->dysum.total_evap;
-		p[delta + dy_nrow * 3] = v->dysum.tree_evap;
-		p[delta + dy_nrow * 4] = v->dysum.shrub_evap;
-		p[delta + dy_nrow * 5] = v->dysum.forb_evap;
-		p[delta + dy_nrow * 6] = v->dysum.grass_evap;
+		p[delta + dy_nrow * 3] = v->dysum.evap_veg[SW_TREES];
+		p[delta + dy_nrow * 4] = v->dysum.evap_veg[SW_SHRUB];
+		p[delta + dy_nrow * 5] = v->dysum.evap_veg[SW_FORBS];
+		p[delta + dy_nrow * 6] = v->dysum.evap_veg[SW_GRASS];
 		p[delta + dy_nrow * 7] = v->dysum.litter_evap;
 		p[delta + dy_nrow * 8] = v->dysum.surfaceWater_evap;
 		SW_Output[eSW_EvapSurface].dy_row++;
@@ -4886,10 +4915,10 @@ static void get_evapSurface(OutPeriod pd)
 		p[delta + wk_nrow * 0] = SW_Model.simyear;
 		p[delta + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
 		p[delta + wk_nrow * 2] = v->wkavg.total_evap;
-		p[delta + wk_nrow * 3] = v->wkavg.tree_evap;
-		p[delta + wk_nrow * 4] = v->wkavg.shrub_evap;
-		p[delta + wk_nrow * 5] = v->wkavg.forb_evap;
-		p[delta + wk_nrow * 6] = v->wkavg.grass_evap;
+		p[delta + wk_nrow * 3] = v->wkavg.evap_veg[SW_TREES];
+		p[delta + wk_nrow * 4] = v->wkavg.evap_veg[SW_SHRUB];
+		p[delta + wk_nrow * 5] = v->wkavg.evap_veg[SW_FORBS];
+		p[delta + wk_nrow * 6] = v->wkavg.evap_veg[SW_GRASS];
 		p[delta + wk_nrow * 7] = v->wkavg.litter_evap;
 		p[delta + wk_nrow * 8] = v->wkavg.surfaceWater_evap;
 		SW_Output[eSW_EvapSurface].wk_row++;
@@ -4900,10 +4929,10 @@ static void get_evapSurface(OutPeriod pd)
 		p[delta + mo_nrow * 0] = SW_Model.simyear;
 		p[delta + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
 		p[delta + mo_nrow * 2] = v->moavg.total_evap;
-		p[delta + mo_nrow * 3] = v->moavg.tree_evap;
-		p[delta + mo_nrow * 4] = v->moavg.shrub_evap;
-		p[delta + mo_nrow * 5] = v->moavg.forb_evap;
-		p[delta + mo_nrow * 6] = v->moavg.grass_evap;
+		p[delta + mo_nrow * 3] = v->moavg.evap_veg[SW_TREES];
+		p[delta + mo_nrow * 4] = v->moavg.evap_veg[SW_SHRUB];
+		p[delta + mo_nrow * 5] = v->moavg.evap_veg[SW_FORBS];
+		p[delta + mo_nrow * 6] = v->moavg.evap_veg[SW_GRASS];
 		p[delta + mo_nrow * 7] = v->moavg.litter_evap;
 		p[delta + mo_nrow * 8] = v->moavg.surfaceWater_evap;
 		SW_Output[eSW_EvapSurface].mo_row++;
@@ -4913,10 +4942,10 @@ static void get_evapSurface(OutPeriod pd)
 		p = p_rOUT[eSW_EvapSurface][eSW_Year]; // set shorthand copy of 'p_rOUT' pointer
 		p[delta + yr_nrow * 0] = SW_Model.simyear;
 		p[delta + yr_nrow * 1] = v->yravg.total_evap;
-		p[delta + yr_nrow * 2] = v->yravg.tree_evap;
-		p[delta + yr_nrow * 3] = v->yravg.shrub_evap;
-		p[delta + yr_nrow * 4] = v->yravg.forb_evap;
-		p[delta + yr_nrow * 5] = v->yravg.grass_evap;
+		p[delta + yr_nrow * 2] = v->yravg.evap_veg[SW_TREES];
+		p[delta + yr_nrow * 3] = v->yravg.evap_veg[SW_SHRUB];
+		p[delta + yr_nrow * 4] = v->yravg.evap_veg[SW_FORBS];
+		p[delta + yr_nrow * 5] = v->yravg.evap_veg[SW_GRASS];
 		p[delta + yr_nrow * 6] = v->yravg.litter_evap;
 		p[delta + yr_nrow * 7] = v->yravg.surfaceWater_evap;
 		SW_Output[eSW_EvapSurface].yr_row++;
@@ -4952,34 +4981,34 @@ static void get_interception(OutPeriod pd)
 	{
 	case eSW_Day:
 		val_tot = v->dysum.total_int;
-		val_tree = v->dysum.tree_int;
-		val_forb = v->dysum.forb_int;
-		val_shrub = v->dysum.shrub_int;
-		val_grass = v->dysum.grass_int;
+		val_tree = v->dysum.int_veg[SW_TREES];
+		val_forb = v->dysum.int_veg[SW_FORBS];
+		val_shrub = v->dysum.int_veg[SW_SHRUB];
+		val_grass = v->dysum.int_veg[SW_GRASS];
 		val_litter = v->dysum.litter_int;
 		break;
 	case eSW_Week:
 		val_tot = v->wkavg.total_int;
-		val_tree = v->wkavg.tree_int;
-		val_forb = v->wkavg.forb_int;
-		val_shrub = v->wkavg.shrub_int;
-		val_grass = v->wkavg.grass_int;
+		val_tree = v->wkavg.int_veg[SW_TREES];
+		val_forb = v->wkavg.int_veg[SW_FORBS];
+		val_shrub = v->wkavg.int_veg[SW_SHRUB];
+		val_grass = v->wkavg.int_veg[SW_GRASS];
 		val_litter = v->wkavg.litter_int;
 		break;
 	case eSW_Month:
 		val_tot = v->moavg.total_int;
-		val_tree = v->moavg.tree_int;
-		val_forb = v->moavg.forb_int;
-		val_shrub = v->moavg.shrub_int;
-		val_grass = v->moavg.grass_int;
+		val_tree = v->moavg.int_veg[SW_TREES];
+		val_forb = v->moavg.int_veg[SW_FORBS];
+		val_shrub = v->moavg.int_veg[SW_SHRUB];
+		val_grass = v->moavg.int_veg[SW_GRASS];
 		val_litter = v->moavg.litter_int;
 		break;
 	case eSW_Year:
 		val_tot = v->yravg.total_int;
-		val_tree = v->yravg.tree_int;
-		val_forb = v->yravg.forb_int;
-		val_shrub = v->yravg.shrub_int;
-		val_grass = v->yravg.grass_int;
+		val_tree = v->yravg.int_veg[SW_TREES];
+		val_forb = v->yravg.int_veg[SW_FORBS];
+		val_shrub = v->yravg.int_veg[SW_SHRUB];
+		val_grass = v->yravg.int_veg[SW_GRASS];
 		val_litter = v->yravg.litter_int;
 		break;
 	}
@@ -4992,36 +5021,36 @@ static void get_interception(OutPeriod pd)
 				case eSW_Day:
 					p = SW_Model.doy-1;
 					val_tot = v->dysum.total_int;
-					val_tree = v->dysum.tree_int;
-					val_forb = v->dysum.forb_int;
-					val_shrub = v->dysum.shrub_int;
-					val_grass = v->dysum.grass_int;
+					val_tree = v->dysum.int_veg[SW_TREES];
+					val_forb = v->dysum.int_veg[SW_FORBS];
+					val_shrub = v->dysum.int_veg[SW_SHRUB];
+					val_grass = v->dysum.int_veg[SW_GRASS];
 					val_litter = v->dysum.litter_int;
 					break;
 				case eSW_Week:
-					val_tot = v->wkavg.total_int;
-					val_tree = v->wkavg.tree_int;
-					val_forb = v->wkavg.forb_int;
-					val_shrub = v->wkavg.shrub_int;
-					val_grass = v->wkavg.grass_int;
-					val_litter = v->wkavg.litter_int;
 					p = SW_Model.week-tOffset;
+					val_tot = v->wkavg.total_int;
+					val_tree = v->wkavg.int_veg[SW_TREES];
+					val_forb = v->wkavg.int_veg[SW_FORBS];
+					val_shrub = v->wkavg.int_veg[SW_SHRUB];
+					val_grass = v->wkavg.int_veg[SW_GRASS];
+					val_litter = v->wkavg.litter_int;
 					break;
 				case eSW_Month:
 					p = SW_Model.month-tOffset;
 					val_tot = v->moavg.total_int;
-					val_tree = v->moavg.tree_int;
-					val_forb = v->moavg.forb_int;
-					val_shrub = v->moavg.shrub_int;
-					val_grass = v->moavg.grass_int;
+					val_tree = v->moavg.int_veg[SW_TREES];
+					val_forb = v->moavg.int_veg[SW_FORBS];
+					val_shrub = v->moavg.int_veg[SW_SHRUB];
+					val_grass = v->moavg.int_veg[SW_GRASS];
 					val_litter = v->moavg.litter_int;
 					break;
 				case eSW_Year:
 					val_tot = v->yravg.total_int;
-					val_tree = v->yravg.tree_int;
-					val_forb = v->yravg.forb_int;
-					val_shrub = v->yravg.shrub_int;
-					val_grass = v->yravg.grass_int;
+					val_tree = v->yravg.int_veg[SW_TREES];
+					val_forb = v->yravg.int_veg[SW_FORBS];
+					val_shrub = v->yravg.int_veg[SW_SHRUB];
+					val_grass = v->yravg.int_veg[SW_GRASS];
 					val_litter = v->yravg.litter_int;
 					break;
 			}
@@ -5092,10 +5121,10 @@ static void get_interception(OutPeriod pd)
 		p[delta + dy_nrow * 0] = SW_Model.simyear;
 		p[delta + dy_nrow * 1] = SW_Model.doy;
 		p[delta + dy_nrow * 2] = v->dysum.total_int;
-		p[delta + dy_nrow * 3] = v->dysum.tree_int;
-		p[delta + dy_nrow * 4] = v->dysum.shrub_int;
-		p[delta + dy_nrow * 5] = v->dysum.forb_int;
-		p[delta + dy_nrow * 6] = v->dysum.grass_int;
+		p[delta + dy_nrow * 3] = v->dysum.int_veg[SW_TREES];
+		p[delta + dy_nrow * 4] = v->dysum.int_veg[SW_SHRUB];
+		p[delta + dy_nrow * 5] = v->dysum.int_veg[SW_FORBS];
+		p[delta + dy_nrow * 6] = v->dysum.int_veg[SW_GRASS];
 		p[delta + dy_nrow * 7] = v->dysum.litter_int;
 		SW_Output[eSW_Interception].dy_row++;
 		break;
@@ -5105,10 +5134,10 @@ static void get_interception(OutPeriod pd)
 		p[delta + wk_nrow * 0] = SW_Model.simyear;
 		p[delta + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
 		p[delta + wk_nrow * 2] = v->wkavg.total_int;
-		p[delta + wk_nrow * 3] = v->wkavg.tree_int;
-		p[delta + wk_nrow * 4] = v->wkavg.shrub_int;
-		p[delta + wk_nrow * 5] = v->wkavg.forb_int;
-		p[delta + wk_nrow * 6] = v->wkavg.grass_int;
+		p[delta + wk_nrow * 3] = v->wkavg.int_veg[SW_TREES];
+		p[delta + wk_nrow * 4] = v->wkavg.int_veg[SW_SHRUB];
+		p[delta + wk_nrow * 5] = v->wkavg.int_veg[SW_FORBS];
+		p[delta + wk_nrow * 6] = v->wkavg.int_veg[SW_GRASS];
 		p[delta + wk_nrow * 7] = v->wkavg.litter_int;
 		SW_Output[eSW_Interception].wk_row++;
 		break;
@@ -5118,10 +5147,10 @@ static void get_interception(OutPeriod pd)
 		p[delta + mo_nrow * 0] = SW_Model.simyear;
 		p[delta + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
 		p[delta + mo_nrow * 2] = v->moavg.total_int;
-		p[delta + mo_nrow * 3] = v->moavg.tree_int;
-		p[delta + mo_nrow * 4] = v->moavg.shrub_int;
-		p[delta + mo_nrow * 5] = v->moavg.forb_int;
-		p[delta + mo_nrow * 6] = v->moavg.grass_int;
+		p[delta + mo_nrow * 3] = v->moavg.int_veg[SW_TREES];
+		p[delta + mo_nrow * 4] = v->moavg.int_veg[SW_SHRUB];
+		p[delta + mo_nrow * 5] = v->moavg.int_veg[SW_FORBS];
+		p[delta + mo_nrow * 6] = v->moavg.int_veg[SW_GRASS];
 		p[delta + mo_nrow * 7] = v->moavg.litter_int;
 		SW_Output[eSW_Interception].mo_row++;
 		break;
@@ -5130,10 +5159,10 @@ static void get_interception(OutPeriod pd)
 		p = p_rOUT[eSW_Interception][eSW_Year]; // set shorthand copy of 'p_rOUT' pointer
 		p[delta + yr_nrow * 0] = SW_Model.simyear;
 		p[delta + yr_nrow * 1] = v->yravg.total_int;
-		p[delta + yr_nrow * 2] = v->yravg.tree_int;
-		p[delta + yr_nrow * 3] = v->yravg.shrub_int;
-		p[delta + yr_nrow * 4] = v->yravg.forb_int;
-		p[delta + yr_nrow * 5] = v->yravg.grass_int;
+		p[delta + yr_nrow * 2] = v->yravg.int_veg[SW_TREES];
+		p[delta + yr_nrow * 3] = v->yravg.int_veg[SW_SHRUB];
+		p[delta + yr_nrow * 4] = v->yravg.int_veg[SW_FORBS];
+		p[delta + yr_nrow * 5] = v->yravg.int_veg[SW_GRASS];
 		p[delta + yr_nrow * 6] = v->yravg.litter_int;
 		SW_Output[eSW_Interception].yr_row++;
 		break;
@@ -5435,31 +5464,31 @@ static void get_hydred(OutPeriod pd)
 		{
 		case eSW_Day:
 			val_total = v->dysum.hydred_total[i];
-			val_tree = v->dysum.hydred_tree[i];
-			val_shrub = v->dysum.hydred_shrub[i];
-			val_grass = v->dysum.hydred_grass[i];
-			val_forb = v->dysum.hydred_forb[i];
+			val_tree = v->dysum.hydred[SW_TREES][i];
+			val_shrub = v->dysum.hydred[SW_SHRUB][i];
+			val_grass = v->dysum.hydred[SW_GRASS][i];
+			val_forb = v->dysum.hydred[SW_FORBS][i];
 			break;
 		case eSW_Week:
 			val_total = v->wkavg.hydred_total[i];
-			val_tree = v->wkavg.hydred_tree[i];
-			val_shrub = v->wkavg.hydred_shrub[i];
-			val_grass = v->wkavg.hydred_grass[i];
-			val_forb = v->wkavg.hydred_forb[i];
+			val_tree = v->wkavg.hydred[SW_TREES][i];
+			val_shrub = v->wkavg.hydred[SW_SHRUB][i];
+			val_grass = v->wkavg.hydred[SW_GRASS][i];
+			val_forb = v->wkavg.hydred[SW_FORBS][i];
 			break;
 		case eSW_Month:
 			val_total = v->moavg.hydred_total[i];
-			val_tree = v->moavg.hydred_tree[i];
-			val_shrub = v->moavg.hydred_shrub[i];
-			val_grass = v->moavg.hydred_grass[i];
-			val_forb = v->moavg.hydred_forb[i];
+			val_tree = v->moavg.hydred[SW_TREES][i];
+			val_shrub = v->moavg.hydred[SW_SHRUB][i];
+			val_grass = v->moavg.hydred[SW_GRASS][i];
+			val_forb = v->moavg.hydred[SW_FORBS][i];
 			break;
 		case eSW_Year:
 			val_total = v->yravg.hydred_total[i];
-			val_tree = v->yravg.hydred_tree[i];
-			val_shrub = v->yravg.hydred_shrub[i];
-			val_grass = v->yravg.hydred_grass[i];
-			val_forb = v->yravg.hydred_forb[i];
+			val_tree = v->yravg.hydred[SW_TREES][i];
+			val_shrub = v->yravg.hydred[SW_SHRUB][i];
+			val_grass = v->yravg.hydred[SW_GRASS][i];
+			val_forb = v->yravg.hydred[SW_FORBS][i];
 			break;
 		}
 
@@ -5475,34 +5504,34 @@ static void get_hydred(OutPeriod pd)
 			{
 			case eSW_Day:
 				val_total = v->dysum.hydred_total[i];
-				val_tree = v->dysum.hydred_tree[i];
-				val_shrub = v->dysum.hydred_shrub[i];
-				val_grass = v->dysum.hydred_grass[i];
-				val_forb = v->dysum.hydred_forb[i];
+				val_tree = v->dysum.hydred[SW_TREES][i];
+				val_shrub = v->dysum.hydred[SW_SHRUB][i];
+				val_grass = v->dysum.hydred[SW_GRASS][i];
+				val_forb = v->dysum.hydred[SW_FORBS][i];
 				p = SW_Model.doy-1;
 				break;
 			case eSW_Week:
 				val_total = v->wkavg.hydred_total[i];
-				val_tree = v->wkavg.hydred_tree[i];
-				val_shrub = v->wkavg.hydred_shrub[i];
-				val_grass = v->wkavg.hydred_grass[i];
-				val_forb = v->wkavg.hydred_forb[i];
+				val_tree = v->wkavg.hydred[SW_TREES][i];
+				val_shrub = v->wkavg.hydred[SW_SHRUB][i];
+				val_grass = v->wkavg.hydred[SW_GRASS][i];
+				val_forb = v->wkavg.hydred[SW_FORBS][i];
 				p = SW_Model.week-tOffset;
 				break;
 			case eSW_Month:
 				val_total = v->moavg.hydred_total[i];
-				val_tree = v->moavg.hydred_tree[i];
-				val_shrub = v->moavg.hydred_shrub[i];
-				val_grass = v->moavg.hydred_grass[i];
-				val_forb = v->moavg.hydred_forb[i];
+				val_tree = v->moavg.hydred[SW_TREES][i];
+				val_shrub = v->moavg.hydred[SW_SHRUB][i];
+				val_grass = v->moavg.hydred[SW_GRASS][i];
+				val_forb = v->moavg.hydred[SW_FORBS][i];
 				p = SW_Model.month-tOffset;
 				break;
 			case eSW_Year:
 				val_total = v->yravg.hydred_total[i];
-				val_tree = v->yravg.hydred_tree[i];
-				val_shrub = v->yravg.hydred_shrub[i];
-				val_grass = v->yravg.hydred_grass[i];
-				val_forb = v->yravg.hydred_forb[i];
+				val_tree = v->yravg.hydred[SW_TREES][i];
+				val_shrub = v->yravg.hydred[SW_SHRUB][i];
+				val_grass = v->yravg.hydred[SW_GRASS][i];
+				val_forb = v->yravg.hydred[SW_FORBS][i];
 				break;
 			}
 		if (isPartialSoilwatOutput == swFALSE)
@@ -5607,19 +5636,19 @@ static void get_hydred(OutPeriod pd)
 	{
 		case eSW_Day:
 		ForEachSoilLayer(i)
-		p[delta + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 1)] = v->dysum.hydred_tree[i];
+		p[delta + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 1)] = v->dysum.hydred[SW_TREES][i];
 		break;
 		case eSW_Week:
 		ForEachSoilLayer(i)
-		p[delta + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 1)] = v->wkavg.hydred_tree[i];
+		p[delta + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 1)] = v->wkavg.hydred[SW_TREES][i];
 		break;
 		case eSW_Month:
 		ForEachSoilLayer(i)
-		p[delta + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 1)] = v->moavg.hydred_tree[i];
+		p[delta + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 1)] = v->moavg.hydred[SW_TREES][i];
 		break;
 		case eSW_Year:
 		ForEachSoilLayer(i)
-		p[delta + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 1)] = v->yravg.hydred_tree[i];
+		p[delta + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 1)] = v->yravg.hydred[SW_TREES][i];
 		break;
 	}
 
@@ -5628,19 +5657,19 @@ static void get_hydred(OutPeriod pd)
 	{
 		case eSW_Day:
 		ForEachSoilLayer(i)
-		p[delta + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 2)] = v->dysum.hydred_shrub[i];
+		p[delta + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 2)] = v->dysum.hydred[SW_SHRUB][i];
 		break;
 		case eSW_Week:
 		ForEachSoilLayer(i)
-		p[delta + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 2)] = v->wkavg.hydred_shrub[i];
+		p[delta + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 2)] = v->wkavg.hydred[SW_SHRUB][i];
 		break;
 		case eSW_Month:
 		ForEachSoilLayer(i)
-		p[delta + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 2)] = v->moavg.hydred_shrub[i];
+		p[delta + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 2)] = v->moavg.hydred[SW_SHRUB][i];
 		break;
 		case eSW_Year:
 		ForEachSoilLayer(i)
-		p[delta + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 2)] = v->yravg.hydred_shrub[i];
+		p[delta + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 2)] = v->yravg.hydred[SW_SHRUB][i];
 		break;
 	}
 
@@ -5649,19 +5678,19 @@ static void get_hydred(OutPeriod pd)
 	{
 		case eSW_Day:
 		ForEachSoilLayer(i)
-		p[delta + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 3)] = v->dysum.hydred_forb[i];
+		p[delta + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 3)] = v->dysum.hydred[SW_FORBS][i];
 		break;
 		case eSW_Week:
 		ForEachSoilLayer(i)
-		p[delta + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 3)] = v->wkavg.hydred_forb[i];
+		p[delta + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 3)] = v->wkavg.hydred[SW_FORBS][i];
 		break;
 		case eSW_Month:
 		ForEachSoilLayer(i)
-		p[delta + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 3)] = v->moavg.hydred_forb[i];
+		p[delta + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 3)] = v->moavg.hydred[SW_FORBS][i];
 		break;
 		case eSW_Year:
 		ForEachSoilLayer(i)
-		p[delta + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 3)] = v->yravg.hydred_forb[i];
+		p[delta + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 3)] = v->yravg.hydred[SW_FORBS][i];
 		break;
 	}
 
@@ -5670,22 +5699,22 @@ static void get_hydred(OutPeriod pd)
 	{
 		case eSW_Day:
 		ForEachSoilLayer(i)
-		p[delta + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 4)] = v->dysum.hydred_grass[i];
+		p[delta + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 4)] = v->dysum.hydred[SW_GRASS][i];
 		SW_Output[eSW_HydRed].dy_row++;
 		break;
 		case eSW_Week:
 		ForEachSoilLayer(i)
-		p[delta + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 4)] = v->wkavg.hydred_grass[i];
+		p[delta + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 4)] = v->wkavg.hydred[SW_GRASS][i];
 		SW_Output[eSW_HydRed].wk_row++;
 		break;
 		case eSW_Month:
 		ForEachSoilLayer(i)
-		p[delta + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 4)] = v->moavg.hydred_grass[i];
+		p[delta + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 4)] = v->moavg.hydred[SW_GRASS][i];
 		SW_Output[eSW_HydRed].mo_row++;
 		break;
 		case eSW_Year:
 		ForEachSoilLayer(i)
-		p[delta + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 4)] = v->yravg.hydred_grass[i];
+		p[delta + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 4)] = v->yravg.hydred[SW_GRASS][i];
 		SW_Output[eSW_HydRed].yr_row++;
 		break;
 	}
@@ -5698,7 +5727,7 @@ static void get_aet(OutPeriod pd)
 	SW_SOILWAT *v = &SW_Soilwat;
 	RealD val = SW_MISSING;
 #if !defined(STEPWAT) && !defined(RSOILWAT)
-	char str[20];
+	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 
 #elif defined(STEPWAT)
@@ -6427,17 +6456,15 @@ static void get_soiltemp(OutPeriod pd)
 
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 {
+	int ik;
+
 	switch (k)
 	{
 		case eSW_CO2Effects:
-			s->grass.biomass += v->grass.biomass_daily[SW_Model.doy];
-			s->shrub.biomass += v->shrub.biomass_daily[SW_Model.doy];
-			s->tree.biomass += v->tree.biomass_daily[SW_Model.doy];
-			s->forb.biomass += v->forb.biomass_daily[SW_Model.doy];
-			s->grass.biolive += v->grass.biolive_daily[SW_Model.doy];
-			s->shrub.biolive += v->shrub.biolive_daily[SW_Model.doy];
-			s->tree.biolive += v->tree.biolive_daily[SW_Model.doy];
-			s->forb.biolive += v->forb.biolive_daily[SW_Model.doy];
+			ForEachVegType(ik) {
+				s->veg[ik].biomass += v->veg[ik].biomass_daily[SW_Model.doy];
+				s->veg[ik].biolive += v->veg[ik].biolive_daily[SW_Model.doy];
+			}
 			break;
 
 		default:
@@ -6548,13 +6575,13 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 	case eSW_Transp:
 		ForEachSoilLayer(i)
 		{
-			s->transp_total[i] += v->transpiration_tree[i]
-					+ v->transpiration_forb[i] + v->transpiration_shrub[i]
-					+ v->transpiration_grass[i];
-			s->transp_tree[i] += v->transpiration_tree[i];
-			s->transp_shrub[i] += v->transpiration_shrub[i];
-			s->transp_forb[i] += v->transpiration_forb[i];
-			s->transp_grass[i] += v->transpiration_grass[i];
+			s->transp_total[i] += v->transpiration[SW_TREES][i]
+					+ v->transpiration[SW_SHRUB][i] + v->transpiration[SW_FORBS][i]
+					+ v->transpiration[SW_GRASS][i];
+			s->transp[SW_TREES][i] += v->transpiration[SW_TREES][i];
+			s->transp[SW_SHRUB][i] += v->transpiration[SW_SHRUB][i];
+			s->transp[SW_FORBS][i] += v->transpiration[SW_FORBS][i];
+			s->transp[SW_GRASS][i] += v->transpiration[SW_GRASS][i];
 		}
 		break;
 
@@ -6564,23 +6591,23 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	case eSW_EvapSurface:
-		s->total_evap += v->tree_evap + v->forb_evap + v->shrub_evap
-				+ v->grass_evap + v->litter_evap + v->surfaceWater_evap;
-		s->tree_evap += v->tree_evap;
-		s->shrub_evap += v->shrub_evap;
-		s->forb_evap += v->forb_evap;
-		s->grass_evap += v->grass_evap;
+		s->total_evap += v->evap_veg[SW_TREES] + v->evap_veg[SW_FORBS] + v->evap_veg[SW_SHRUB]
+				+ v->evap_veg[SW_GRASS] + v->litter_evap + v->surfaceWater_evap;
+		s->evap_veg[SW_TREES] += v->evap_veg[SW_TREES];
+		s->evap_veg[SW_SHRUB] += v->evap_veg[SW_SHRUB];
+		s->evap_veg[SW_FORBS] += v->evap_veg[SW_FORBS];
+		s->evap_veg[SW_GRASS] += v->evap_veg[SW_GRASS];
 		s->litter_evap += v->litter_evap;
 		s->surfaceWater_evap += v->surfaceWater_evap;
 		break;
 
 	case eSW_Interception:
-		s->total_int += v->tree_int + v->forb_int + v->shrub_int + v->grass_int
+		s->total_int += v->int_veg[SW_TREES] + v->int_veg[SW_FORBS] + v->int_veg[SW_SHRUB] + v->int_veg[SW_GRASS]
 				+ v->litter_int;
-		s->tree_int += v->tree_int;
-		s->shrub_int += v->shrub_int;
-		s->forb_int += v->forb_int;
-		s->grass_int += v->grass_int;
+		s->int_veg[SW_TREES] += v->int_veg[SW_TREES];
+		s->int_veg[SW_SHRUB] += v->int_veg[SW_SHRUB];
+		s->int_veg[SW_FORBS] += v->int_veg[SW_FORBS];
+		s->int_veg[SW_GRASS] += v->int_veg[SW_GRASS];
 		s->litter_int += v->litter_int;
 		break;
 
@@ -6592,12 +6619,12 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 	case eSW_HydRed:
 		ForEachSoilLayer(i)
 		{
-			s->hydred_total[i] += v->hydred_tree[i] + v->hydred_forb[i]
-					+ v->hydred_shrub[i] + v->hydred_grass[i];
-			s->hydred_tree[i] += v->hydred_tree[i];
-			s->hydred_shrub[i] += v->hydred_shrub[i];
-			s->hydred_forb[i] += v->hydred_forb[i];
-			s->hydred_grass[i] += v->hydred_grass[i];
+			s->hydred_total[i] += v->hydred[SW_TREES][i] + v->hydred[SW_FORBS][i]
+					+ v->hydred[SW_SHRUB][i] + v->hydred[SW_GRASS][i];
+			s->hydred[SW_TREES][i] += v->hydred[SW_TREES][i];
+			s->hydred[SW_SHRUB][i] += v->hydred[SW_SHRUB][i];
+			s->hydred[SW_FORBS][i] += v->hydred[SW_FORBS][i];
+			s->hydred[SW_GRASS][i] += v->hydred[SW_GRASS][i];
 		}
 		break;
 
@@ -6823,10 +6850,10 @@ static void average_for(ObjType otyp, OutPeriod pd)
 			ForEachSoilLayer(i)
 			{
 				savg->transp_total[i] = ssumof->transp_total[i] / div;
-				savg->transp_tree[i] = ssumof->transp_tree[i] / div;
-				savg->transp_shrub[i] = ssumof->transp_shrub[i] / div;
-				savg->transp_forb[i] = ssumof->transp_forb[i] / div;
-				savg->transp_grass[i] = ssumof->transp_grass[i] / div;
+				savg->transp[SW_TREES][i] = ssumof->transp[SW_TREES][i] / div;
+				savg->transp[SW_SHRUB][i] = ssumof->transp[SW_SHRUB][i] / div;
+				savg->transp[SW_FORBS][i] = ssumof->transp[SW_FORBS][i] / div;
+				savg->transp[SW_GRASS][i] = ssumof->transp[SW_GRASS][i] / div;
 			}
 			break;
 
@@ -6837,20 +6864,20 @@ static void average_for(ObjType otyp, OutPeriod pd)
 
 		case eSW_EvapSurface:
 			savg->total_evap = ssumof->total_evap / div;
-			savg->tree_evap = ssumof->tree_evap / div;
-			savg->shrub_evap = ssumof->shrub_evap / div;
-			savg->forb_evap = ssumof->forb_evap / div;
-			savg->grass_evap = ssumof->grass_evap / div;
+			savg->evap_veg[SW_TREES] = ssumof->evap_veg[SW_TREES] / div;
+			savg->evap_veg[SW_SHRUB] = ssumof->evap_veg[SW_SHRUB] / div;
+			savg->evap_veg[SW_FORBS] = ssumof->evap_veg[SW_FORBS] / div;
+			savg->evap_veg[SW_GRASS] = ssumof->evap_veg[SW_GRASS] / div;
 			savg->litter_evap = ssumof->litter_evap / div;
 			savg->surfaceWater_evap = ssumof->surfaceWater_evap / div;
 			break;
 
 		case eSW_Interception:
 			savg->total_int = ssumof->total_int / div;
-			savg->tree_int = ssumof->tree_int / div;
-			savg->shrub_int = ssumof->shrub_int / div;
-			savg->forb_int = ssumof->forb_int / div;
-			savg->grass_int = ssumof->grass_int / div;
+			savg->int_veg[SW_TREES] = ssumof->int_veg[SW_TREES] / div;
+			savg->int_veg[SW_SHRUB] = ssumof->int_veg[SW_SHRUB] / div;
+			savg->int_veg[SW_FORBS] = ssumof->int_veg[SW_FORBS] / div;
+			savg->int_veg[SW_GRASS] = ssumof->int_veg[SW_GRASS] / div;
 			savg->litter_int = ssumof->litter_int / div;
 			break;
 
@@ -6867,10 +6894,10 @@ static void average_for(ObjType otyp, OutPeriod pd)
 			ForEachSoilLayer(i)
 			{
 				savg->hydred_total[i] = ssumof->hydred_total[i] / div;
-				savg->hydred_tree[i] = ssumof->hydred_tree[i] / div;
-				savg->hydred_shrub[i] = ssumof->hydred_shrub[i] / div;
-				savg->hydred_forb[i] = ssumof->hydred_forb[i] / div;
-				savg->hydred_grass[i] = ssumof->hydred_grass[i] / div;
+				savg->hydred[SW_TREES][i] = ssumof->hydred[SW_TREES][i] / div;
+				savg->hydred[SW_SHRUB][i] = ssumof->hydred[SW_SHRUB][i] / div;
+				savg->hydred[SW_FORBS][i] = ssumof->hydred[SW_FORBS][i] / div;
+				savg->hydred[SW_GRASS][i] = ssumof->hydred[SW_GRASS][i] / div;
 			}
 			break;
 
@@ -6892,14 +6919,10 @@ static void average_for(ObjType otyp, OutPeriod pd)
 			break;
 
 		case eSW_CO2Effects:
-			vpavg->grass.biomass = vpsumof->grass.biomass / div;
-			vpavg->shrub.biomass = vpsumof->shrub.biomass / div;
-			vpavg->tree.biomass = vpsumof->tree.biomass / div;
-			vpavg->forb.biomass = vpsumof->forb.biomass / div;
-			vpavg->grass.biolive = vpsumof->grass.biolive / div;
-			vpavg->shrub.biolive = vpsumof->shrub.biolive / div;
-			vpavg->tree.biolive = vpsumof->tree.biolive / div;
-			vpavg->forb.biolive = vpsumof->forb.biolive / div;
+			ForEachVegType(i) {
+				vpavg->veg[i].biomass = vpsumof->veg[i].biomass / div;
+				vpavg->veg[i].biolive = vpsumof->veg[i].biolive / div;
+			}
 			break;
 
 		default:

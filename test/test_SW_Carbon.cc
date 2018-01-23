@@ -103,6 +103,7 @@ namespace {
   // Test the calculation of CO2-effect multipliers
   TEST(CarbonTest, CO2multipliers) {
     TimeInt year;
+    int k;
 
     SW_CBN_construct();
     strcpy(c->scenario, "RCP85");
@@ -114,15 +115,10 @@ namespace {
     calculate_CO2_multipliers();
 
     for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= simendyr; year++) {
-      EXPECT_GT(v->forb.co2_multipliers[BIO_INDEX][year], 0.);
-      EXPECT_GT(v->grass.co2_multipliers[BIO_INDEX][year], 0.);
-      EXPECT_GT(v->shrub.co2_multipliers[BIO_INDEX][year], 0.);
-      EXPECT_GT(v->tree.co2_multipliers[BIO_INDEX][year], 0.);
-
-      EXPECT_GT(v->forb.co2_multipliers[WUE_INDEX][year], 0.);
-      EXPECT_GT(v->grass.co2_multipliers[WUE_INDEX][year], 0.);
-      EXPECT_GT(v->shrub.co2_multipliers[WUE_INDEX][year], 0.);
-      EXPECT_GT(v->tree.co2_multipliers[WUE_INDEX][year], 0.);
+      ForEachVegType(k) {
+        EXPECT_GT(v->veg[k].co2_multipliers[BIO_INDEX][year], 0.);
+        EXPECT_GT(v->veg[k].co2_multipliers[WUE_INDEX][year], 0.);
+      }
     }
 
     // Reset to previous global states

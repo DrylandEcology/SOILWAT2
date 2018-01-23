@@ -23,8 +23,8 @@
  02/19/2011	(drs) moved soil_inf from SW_SOILWAT and SW_SOILWAT_OUTPUTS to SW_WEATHER and SW_WEATHER_OUTPUTS
  07/22/2011	(drs) added for saturated conditions: surfaceWater and surfaceWater_evap to SW_SOILWAT_OUTPUTS and SW_SOILWAT
  08/22/2011	(drs) added function RealD SW_SnowDepth( RealD SWE, RealD snowdensity)
- 09/08/2011	(drs) replaced in both struct SW_SOILWAT_OUTPUTS and SW_SOILWAT RealD crop_int, forest_int with RealD tree_int, shrub_int, grass_int
- 09/09/2011	(drs) replaced in both struct SW_SOILWAT_OUTPUTS and SW_SOILWAT RealD veg_evap with RealD tree_evap, shrub_evap, grass_evap
+ 09/08/2011	(drs) replaced in both struct SW_SOILWAT_OUTPUTS and SW_SOILWAT RealD crop_int, forest_int with RealD int_veg[SW_TREES], int_veg[SW_SHRUB], int_veg[SW_GRASS]
+ 09/09/2011	(drs) replaced in both struct SW_SOILWAT_OUTPUTS and SW_SOILWAT RealD veg_evap with RealD evap_veg[SW_TREES], evap_veg[SW_SHRUB], evap_veg[SW_GRASS]
  09/09/2011	(drs) replaced in both struct SW_SOILWAT_OUTPUTS and SW_SOILWAT RealD transpiration and hydred with RealD transpiration_xx, hydred_xx for each vegetation type (tree, shrub, grass)
  09/12/2011	(drs) added RealD snowdepth [TWO_DAYS] to struct SW_SOILWAT_OUTPUTS and SW_SOILWAT
  02/03/2012	(drs)	added function 'RealD SW_SWC_SWCres(RealD sand, RealD clay, RealD porosity)': which calculates 'Brooks-Corey' residual volumetric soil water based on Rawls & Brakensiek (1985)
@@ -32,9 +32,8 @@
  04/16/2013	(clk)	Added the variables vwcMatric, and swaMatric to SW_SOILWAT_OUTPUTS
  Also, renamed a few of the other variables to better reflect MATRIC vs BULK values and SWC vs VWC.
  modified the use of these variables throughout the rest of the code.
- 07/09/2013	(clk)	Added the variables transp_forb, forb_evap, hydred_forb, and forb_int to SW_SOILWAT_OUTPUTS
- Added the variables transpiration_forb, hydred_forb, forb_evap, and forb_int to SW_SOILWAT
- 07/27/2017 Added variables for swa conversion, originally only calculated for STEPPE
+ 07/09/2013	(clk)	Added the variables transp_forb, evap_veg[SW_FORBS], hydred[SW_FORBS], and int_veg[SW_FORBS] to SW_SOILWAT_OUTPUTS
+ Added the variables transpiration_forb, hydred[SW_FORBS], evap_veg[SW_FORBS], and int_veg[SW_FORBS] to SW_SOILWAT
  */
 /********************************************************/
 /********************************************************/
@@ -67,18 +66,15 @@ typedef struct {
 	vwcMatric[MAX_LAYERS], swcBulk[MAX_LAYERS], /* soil water content cm/layer */
 	swpMatric[MAX_LAYERS], /* soil water potential */
 	swaBulk[MAX_LAYERS], /* available soil water cm/layer, swc-(wilting point) */
-	swaMatric[MAX_LAYERS], swa_forb[MAX_LAYERS], swa_tree[MAX_LAYERS], swa_shrub[MAX_LAYERS], swa_grass[MAX_LAYERS],
-	 		transp_total[MAX_LAYERS], transp_tree[MAX_LAYERS], transp_forb[MAX_LAYERS], transp_shrub[MAX_LAYERS], transp_grass[MAX_LAYERS], evap[MAX_LAYERS],
-			lyrdrain[MAX_LAYERS], hydred_total[MAX_LAYERS], hydred_tree[MAX_LAYERS], /* hydraulic redistribution cm/layer */
-			hydred_forb[MAX_LAYERS], hydred_shrub[MAX_LAYERS], hydred_grass[MAX_LAYERS], surfaceWater, total_evap, surfaceWater_evap, tree_evap, forb_evap, shrub_evap,
-			grass_evap,
-			litter_evap,
-			total_int,
-			tree_int,
-			forb_int,
-			shrub_int,
-			grass_int,
-			litter_int,
+	swaMatric[MAX_LAYERS],
+	transp_total[MAX_LAYERS], transp[NVEGTYPES][MAX_LAYERS],
+	evap[MAX_LAYERS],
+	lyrdrain[MAX_LAYERS],
+	hydred_total[MAX_LAYERS], hydred[NVEGTYPES][MAX_LAYERS], /* hydraulic redistribution cm/layer */
+	surfaceWater, surfaceWater_evap,
+	total_evap, evap_veg[NVEGTYPES],
+	litter_evap,
+	total_int, int_veg[NVEGTYPES], litter_int,
 			snowpack,
 			snowdepth,
 			et,
@@ -95,19 +91,19 @@ typedef struct {
 
 	/* current daily soil water related values */
 	Bool is_wet[MAX_LAYERS]; /* swc sufficient to count as wet today */
-	RealD swcBulk[TWO_DAYS][MAX_LAYERS], snowpack[TWO_DAYS], /* swe of snowpack, if accumulation flag set */
-	snowdepth, transpiration_tree[MAX_LAYERS], transpiration_forb[MAX_LAYERS], transpiration_shrub[MAX_LAYERS], transpiration_grass[MAX_LAYERS], evaporation[MAX_LAYERS],
-			drain[MAX_LAYERS], /* amt of swc able to drain from curr layer to next */
-			hydred_tree[MAX_LAYERS], /* hydraulic redistribution cm/layer */
-			hydred_forb[MAX_LAYERS], hydred_shrub[MAX_LAYERS], hydred_grass[MAX_LAYERS], surfaceWater, surfaceWater_evap, pet, aet, litter_evap, tree_evap, forb_evap,
-			shrub_evap, grass_evap,
-			litter_int,
-			tree_int,
-			forb_int,
-			shrub_int,
-			grass_int,
-			sTemp[MAX_LAYERS],
-			surfaceTemp; // soil surface temperature
+	RealD swcBulk[TWO_DAYS][MAX_LAYERS],
+		snowpack[TWO_DAYS], /* swe of snowpack, if accumulation flag set */
+		snowdepth,
+		transpiration[NVEGTYPES][MAX_LAYERS],
+		evaporation[MAX_LAYERS],
+		drain[MAX_LAYERS], /* amt of swc able to drain from curr layer to next */
+		hydred[NVEGTYPES][MAX_LAYERS], /* hydraulic redistribution cm/layer */
+		surfaceWater, surfaceWater_evap,
+		pet, aet,
+		litter_evap, evap_veg[NVEGTYPES],
+		litter_int, int_veg[NVEGTYPES],
+		sTemp[MAX_LAYERS],
+		surfaceTemp; // soil surface temperature
 
 	Bool partsError; // soil temperature error indicator
 

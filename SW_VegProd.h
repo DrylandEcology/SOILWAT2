@@ -110,12 +110,12 @@ typedef struct {
 
 
 typedef struct {
-	VegTypeOut grass, shrub, tree, forb;
+	VegTypeOut veg[NVEGTYPES]; // used to be: grass, shrub, tree, forb;
 } SW_VEGPROD_OUTPUTS;
 
 
 typedef struct {
-	VegType grass, shrub, tree, forb;
+	VegType veg[NVEGTYPES]; // used to be: grass, shrub, tree, forb;
 	CoverType bare_cov;   /* bare ground cover of plot */
 
 	RealD critSoilWater[4]; // storing values in same order as defined in rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
