@@ -677,20 +677,26 @@ void SW_VPD_init(void) {
 	{
 		if (GT(v->veg[k].cov.fCover, 0.))
 		{
-			// CO2
 			if (k == SW_TREES)
 			{
+				// CO2 effects on biomass restricted to percent live biomass
 				apply_biomassCO2effect(v->veg[k].CO2_pct_live, v->veg[k].pct_live,
 					v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
+
+				interpolate_monthlyValues(v->veg[k].CO2_pct_live, v->veg[k].pct_live_daily);
+				interpolate_monthlyValues(v->veg[k].biomass, v->veg[k].biomass_daily);
+
 			} else {
+				// CO2 effects on biomass applied to total biomass
 				apply_biomassCO2effect(v->veg[k].CO2_biomass, v->veg[k].biomass,
 					v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
+
+				interpolate_monthlyValues(v->veg[k].CO2_biomass, v->veg[k].biomass_daily);
+				interpolate_monthlyValues(v->veg[k].pct_live, v->veg[k].pct_live_daily);
 			}
 
-			// Interpolation
+			// Interpolation of remaining variables from monthly to daily values
 			interpolate_monthlyValues(v->veg[k].litter, v->veg[k].litter_daily);
-			interpolate_monthlyValues(v->veg[k].CO2_biomass, v->veg[k].biomass_daily);
-			interpolate_monthlyValues(v->veg[k].pct_live, v->veg[k].pct_live_daily);
 			interpolate_monthlyValues(v->veg[k].lai_conv, v->veg[k].lai_conv_daily);
 		}
 	}
