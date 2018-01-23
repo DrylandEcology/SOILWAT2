@@ -223,10 +223,7 @@ char _Sep; /* output delimiter */
 int used_OUTNPERIODS; // number of different time steps/periods that are used/requested
 OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];// array to keep track of the periods that will be used for each output
 int ncol_OUT[SW_OUTNKEYS]; // number of output columns for each output key
-#ifdef RSOILWAT
 char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS]; // names of output columns for each output key; number is an expensive guess
-#endif
-
 
 
 /* =================================================== */
@@ -356,7 +353,7 @@ static OutSum str2stype(char *s)
 	{
 		LogError(logfp, LOGFATAL, "%s : Invalid summary type (%s)\n", SW_F_name(eOutput), s);
 	}
-	return styp;
+	return (OutSum) styp;
 }
 
 /* =================================================== */
@@ -528,8 +525,11 @@ void SW_OUT_set_ncol(void) {
 
 #ifdef RSOILWAT
 void SW_OUT_set_colnames(void) {
-	int i, j, debug = 0,
-		tLayers = SW_Site.n_layers;
+	int i, j, tLayers = SW_Site.n_layers;
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
+
 
 	char ctemp[50];
 	const char *Layers_names[MAX_LAYERS] = { "Lyr_1", "Lyr_2", "Lyr_3", "Lyr_4", "Lyr_5",
@@ -555,63 +555,75 @@ void SW_OUT_set_colnames(void) {
 		"GrassBioMult", "ShrubBioMult", "TreeBioMult", "ForbBioMult",
 		"GrassWUEMult", "ShrubWUEMult", "TreeWUEMult", "ForbWUEMult" };
 
-
+	#ifdef SWDEBUG
 	if (debug) swprintf("SW_OUT_set_colnames: set columns for 'eSW_Temp' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_Temp]; i++) {
 		colnames_OUT[eSW_Temp][i] = Str_Dup(cnames_eSW_Temp[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Precip' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_Precip]; i++) {
 		colnames_OUT[eSW_Precip][i] = Str_Dup(cnames_eSW_Precip[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SoilInf' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_SoilInf]; i++) {
 		colnames_OUT[eSW_SoilInf][i] = Str_Dup(cnames_eSW_SoilInf[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Runoff' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_Runoff]; i++) {
 		colnames_OUT[eSW_Runoff][i] = Str_Dup(cnames_eSW_Runoff[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_VWCBulk' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_VWCBulk]; i++) {
 		colnames_OUT[eSW_VWCBulk][i] = Str_Dup(Layers_names[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_VWCMatric' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_VWCMatric]; i++) {
 		colnames_OUT[eSW_VWCMatric][i] = Str_Dup(Layers_names[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWCBulk' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_SWCBulk]; i++) {
 		colnames_OUT[eSW_SWCBulk][i] = Str_Dup(Layers_names[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWABulk' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_SWABulk]; i++) {
 		colnames_OUT[eSW_SWABulk][i] = Str_Dup(Layers_names[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWAMatric' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_SWAMatric]; i++) {
 		colnames_OUT[eSW_SWAMatric][i] = Str_Dup(Layers_names[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWPMatric' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_SWPMatric]; i++) {
 		colnames_OUT[eSW_SWPMatric][i] = Str_Dup(Layers_names[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SurfaceWater' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_SurfaceWater]; i++) {
 		colnames_OUT[eSW_SurfaceWater][i] = Str_Dup(cnames_eSW_SurfaceWater[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Transp' ...");
+	#endif
 	for (i = 0; i < tLayers; i++) {
 		for (j = 0; j < NVEGTYPES + 1; j++) {
 			strcpy(ctemp, "transp_");
@@ -622,13 +634,15 @@ void SW_OUT_set_colnames(void) {
 			colnames_OUT[eSW_Transp][i + j * tLayers] = Str_Dup(ctemp);
 		}
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_EvapSoil' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_EvapSoil]; i++) {
 		colnames_OUT[eSW_EvapSoil][i] = Str_Dup(Layers_names[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_EvapSurface' ...");
+	#endif
 	for (i = 0; i < NVEGTYPES + 2; i++) {
 		strcpy(ctemp, "evap_");
 		strcat(ctemp, cnames_VegTypes[i]);
@@ -637,20 +651,23 @@ void SW_OUT_set_colnames(void) {
 	for (i = 0; i < ncol_OUT[eSW_EvapSurface] - (NVEGTYPES + 2); i++) {
 		colnames_OUT[eSW_EvapSurface][NVEGTYPES + 2 + i] = Str_Dup(cnames_add_eSW_EvapSurface[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Interception' ...");
+	#endif
 	for (i = 0; i < NVEGTYPES + 2; i++) {
 		strcpy(ctemp, "int_");
 		strcat(ctemp, cnames_VegTypes[i]);
 		colnames_OUT[eSW_Interception][i] = Str_Dup(ctemp);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_LyrDrain' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_LyrDrain]; i++) {
 		colnames_OUT[eSW_LyrDrain][i] = Str_Dup(Layers_names[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_HydRed' ...");
+	#endif
 	for (i = 0; i < tLayers; i++) {
 		for (j = 0; j < NVEGTYPES + 1; j++) {
 			strcpy(ctemp, cnames_VegTypes[j]);
@@ -659,48 +676,57 @@ void SW_OUT_set_colnames(void) {
 			colnames_OUT[eSW_HydRed][i + j * tLayers] = Str_Dup(ctemp);
 		}
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_AET' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_AET]; i++) {
 		colnames_OUT[eSW_AET][i] = Str_Dup(cnames_eSW_AET[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_PET' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_PET]; i++) {
 		colnames_OUT[eSW_PET][i] = Str_Dup(cnames_eSW_PET[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_WetDays' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_WetDays]; i++) {
 		colnames_OUT[eSW_WetDays][i] = Str_Dup(Layers_names[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SnowPack' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_SnowPack]; i++) {
 		colnames_OUT[eSW_SnowPack][i] = Str_Dup(cnames_eSW_SnowPack[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_DeepSWC' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_DeepSWC]; i++) {
 		colnames_OUT[eSW_DeepSWC][i] = Str_Dup(cnames_eSW_DeepSWC[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SoilTemp' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_SoilTemp]; i++) {
 		colnames_OUT[eSW_SoilTemp][i] = Str_Dup(Layers_names[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Estab' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_Estab]; i++) {
 		colnames_OUT[eSW_Estab][i] = Str_Dup(SW_VegEstab.parms[i]->sppname);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_CO2Effects' ...");
+	#endif
 	for (i = 0; i < ncol_OUT[eSW_CO2Effects]; i++) {
 		colnames_OUT[eSW_CO2Effects][i] = Str_Dup(cnames_eSW_CO2Effects[i]);
 	}
-
+	#ifdef SWDEBUG
 	if (debug) swprintf(" completed.\n");
+	#endif
 }
 #endif
 
@@ -756,7 +782,6 @@ void SW_OUT_read(void)
 	 *             so the code to open the file is blocked out.
 	 *             In fact, the only keys to process are
 	 *             TRANSP, PRECIP, and TEMP.
-	 * 22-August-17 - for STEPPE want to process TRANSP, PRECIP, TEMP, SWA, AET, and SWCBULK
 	 */
 	FILE *f;
 	OutKey k;
@@ -782,6 +807,7 @@ void SW_OUT_read(void)
 	itemno = 0;
 
 	_Sep = ','; /* default in case it doesn't show up in the file */
+	used_OUTNPERIODS = 1; // if 'TIMESTEP' is not specified in input file, then only one time step = period can be specified
 	while (GetALine(f, inbuf))
 	{
 		itemno++; /* note extra lines will cause an error */
@@ -801,7 +827,8 @@ void SW_OUT_read(void)
 		 	}
 		#endif
 
-		if (Str_CompareI(keyname, "TIMESTEP") == 0)	// condition to read in the TIMESTEP line in outsetup.in
+		// condition to read in the TIMESTEP line in outsetup.in
+		if (Str_CompareI(keyname, (char *)"TIMESTEP") == 0)
 		{
 			// need to rescan the line because you are looking for all strings, unlike the original scan
 			used_OUTNPERIODS = sscanf(inbuf, "%s %s %s %s %s", keyname, timeStep[0],
@@ -898,11 +925,10 @@ void SW_OUT_read(void)
 			if (useTimeStep) {
 				for (i = 0; i < used_OUTNPERIODS; i++) {
 					timeSteps[k][i] = str2period(Str_ToUpper(timeStep[i], ext));
-					//printf("timesteps[%d][%d]: %d\n", k, i, timeSteps[k][i]);
 				}
+
 			} else {
 				timeSteps[k][0] = str2period(Str_ToUpper(period, ext));
-				//printf("timesteps[%d][0]: %d\n", k, timeSteps[k][0]);
 			}
 		}
 
@@ -935,39 +961,41 @@ void SW_OUT_read(void)
 			}
 
 			/* verify deep drainage parameters */
-		if (k == eSW_DeepSWC && SW_Output[k].sumtype != eSW_Off
-				&& !SW_Site.deepdrain)
-		{
-			LogError(logfp, LOGWARN, "%s : DEEPSWC cannot be output if flag not set in %s.", MyFileName, SW_F_name(eOutput));
-			continue;
-		}
-		//Set the values to be used
-		SW_Output[k].use = (SW_Output[k].sumtype == eSW_Off) ? swFALSE : swTRUE;
-
-		if (SW_Output[k].use)
-		{
-			SW_Output[k].mykey = k;
-			SW_Output[k].myobj = key2obj[k];
-			SW_Output[k].first_orig = first;
-			SW_Output[k].last_orig =
-					!Str_CompareI("END", last) ? 366 : atoi(last);
-			if (SW_Output[k].last_orig == 0)
+			if (k == eSW_DeepSWC && SW_Output[k].sumtype != eSW_Off
+					&& !SW_Site.deepdrain)
 			{
-				CloseFile(&f);
-				LogError(logfp, LOGFATAL, "%s : Invalid ending day (%s), key=%s.", MyFileName, last, keyname);
+				LogError(logfp, LOGWARN, "%s : DEEPSWC cannot be output if flag not set in %s.", MyFileName, SW_F_name(eOutput));
+				continue;
 			}
-		}
-		//Set the outputs for the Periods
+
+			//Set the values
+			SW_Output[k].use = (SW_Output[k].sumtype == eSW_Off) ? swFALSE : swTRUE;
+			if (SW_Output[k].use)
+			{
+				SW_Output[k].mykey = k;
+				SW_Output[k].myobj = key2obj[k];
+				SW_Output[k].first_orig = first;
+				SW_Output[k].last_orig =
+						!Str_CompareI("END", (char *)last) ? 366 : atoi(last);
+				if (SW_Output[k].last_orig == 0)
+				{
+					CloseFile(&f);
+					LogError(logfp, LOGFATAL, "%s : Invalid ending day (%s), key=%s.", MyFileName, last, keyname);
+				}
+			}
+
+			//Set the outputs for the Periods
 #ifdef RSOILWAT
 		SW_Output[k].outfile = (char *) Str_Dup(outfile); //not really applicable
 #endif
+			
 	}
+
 	CloseFile(&f);
 
 	if (EchoInits)
 		_echo_outputs();
 }
-
 
 
 void SW_OUT_close_files(void)
@@ -1050,6 +1078,7 @@ void SW_OUT_close_files(void)
 			}
 		}
 	}
+
 #endif
 }
 
@@ -1229,9 +1258,12 @@ void SW_OUT_write_today(void)
 	TimeInt t = 0xffff;
 	OutKey k;
 	Bool writeit;
-	int i, debug = 0;
+	int i;
+	#ifdef SWDEBUG
+  int debug = 0;
+  #endif
 
-	// timestep output vars
+// timestep output vars
 	char *soil_file_vals_day[500]; // store
 	char *reg_file_vals_day[500]; // store
 
@@ -1301,6 +1333,66 @@ void SW_OUT_write_today(void)
 	printf("mo final: %d\n", finalValue_mo);
 	printf("yr final: %d\n", finalValue_yr);*/
 }
+
+ #ifdef SWDEBUG
+  if (debug) swprintf("'SW_OUT_write_today': %dyr-%dmon-%dwk-%ddoy: ",
+    SW_Model.year, SW_Model.month, SW_Model.week, SW_Model.doy);
+  #endif
+
+	ForEachOutKey(k)
+	{
+		#ifdef SWDEBUG
+		if (debug) swprintf("key=%d=%s: ", k, key2str[k]);
+		#endif
+
+		if (!SW_Output[k].use) {
+			continue;
+		}
+
+		for (i = 0; i < used_OUTNPERIODS; i++)
+		{
+			#ifdef SWDEBUG
+			if (debug) swprintf("/%d=%s", timeSteps[k][i], pd2str[timeSteps[k][i]]);
+			#endif
+
+			writeit = swTRUE;
+			switch (timeSteps[k][i])
+			{
+			case eSW_Day:
+				t = SW_Model.doy;
+				break;
+			case eSW_Week:
+				writeit = (Bool) (SW_Model.newweek || bFlush);
+				t = (SW_Model.week + 1) - tOffset;
+				break;
+			case eSW_Month:
+				writeit = (Bool) (SW_Model.newmonth || bFlush);
+				t = (SW_Model.month + 1) - tOffset;
+				break;
+			case eSW_Year:
+				writeit = (Bool) (SW_Model.newyear || bFlush);
+				t = SW_Output[k].first; /* always output this period */
+				break;
+			default: // e.g., SW_MISSING
+				LogError(logfp, LOGWARN,
+					"'SW_OUT_write_today': Invalid period = %d for key = %s",
+					timeSteps[k][i], key2str[k]);
+				continue;
+			}
+			#ifdef SWDEBUG
+			if (debug) swprintf("-t=%d", t);
+			#endif
+
+			if (!writeit || t < SW_Output[k].first || t > SW_Output[k].last)
+				continue;
+			#ifdef SWDEBUG
+			if (debug) swprintf(" call pfunc");
+			#endif
+
+			((void (*)(OutPeriod)) SW_Output[k].pfunc)(timeSteps[k][i]);
+			#ifdef SWDEBUG
+			if (debug) swprintf(" ... ok");
+			#endif
 
 
 	ForEachOutKey(k)
@@ -1624,7 +1716,8 @@ void SW_OUT_write_today(void)
 			}
 			break;
 		}
-	}
+
+		}
 	/*if (isPartialSoilwatOutput == swFALSE && Globals.currIter != Globals.runModelIterations){
 		memset(&reg_file_vals_year[0], 0, sizeof(reg_file_vals_year));
 		memset(&soil_file_vals_year[0], 0, sizeof(soil_file_vals_year));
@@ -1634,6 +1727,9 @@ void SW_OUT_write_today(void)
 		}
 	}
 
+  #ifdef SWDEBUG
+  if (debug) swprintf("'SW_OUT_write_today': completed\n");
+  #endif
 }
 
 static void get_none(OutPeriod pd)
@@ -1644,7 +1740,7 @@ static void get_none(OutPeriod pd)
 	 * rather than an empty pointer.
 	 */
 	outstr[0] = '\0';
-	if(pd){}
+	if (pd) {}
 }
 
 static void get_outstrleader(TimeInt pd)
@@ -2196,12 +2292,20 @@ static void get_temp(OutPeriod pd)
 	 * 22 June-15 (akt)  Added code for adding surfaceTemp at output
 	 */
 
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
+
 	#ifdef RSOILWAT
 		int delta;
 		RealD *p;
 	#endif
 
 	SW_WEATHER *v = &SW_Weather;
+
+  #ifdef SWDEBUG
+  if (debug) swprintf("'get_temp': start for %s ... ", pd2str[pd]);
+  #endif
 
 #ifndef RSOILWAT
 	RealD v_avg = SW_MISSING;
@@ -2226,6 +2330,9 @@ static void get_temp(OutPeriod pd)
 	switch (pd)
 	{
 	case eSW_Day:
+		#ifdef SWDEBUG
+		if (debug) swprintf("%ddoy ... ", SW_Model.doy);
+		#endif
 #ifndef RSOILWAT
 		v_max = v->dysum.temp_max;
 		v_min = v->dysum.temp_min;
@@ -2244,6 +2351,9 @@ static void get_temp(OutPeriod pd)
 #endif
 		break;
 	case eSW_Week:
+		#ifdef SWDEBUG
+		if (debug) swprintf("%dwk ... ", (SW_Model.week + 1) - tOffset);
+		#endif
 #ifndef RSOILWAT
 		v_max = v->wkavg.temp_max;
 		v_min = v->wkavg.temp_min;
@@ -2262,6 +2372,9 @@ static void get_temp(OutPeriod pd)
 #endif
 		break;
 	case eSW_Month:
+		#ifdef SWDEBUG
+		if (debug) swprintf("%dmon ... ", (SW_Model.month + 1) - tOffset);
+		#endif
 #ifndef RSOILWAT
 		v_max = v->moavg.temp_max;
 		v_min = v->moavg.temp_min;
@@ -2280,6 +2393,9 @@ static void get_temp(OutPeriod pd)
 #endif
 		break;
 	case eSW_Year:
+		#ifdef SWDEBUG
+		if (debug) swprintf("%dyr ... ", SW_Model.simyear);
+		#endif
 #ifndef RSOILWAT
 		v_max = v->yravg.temp_max;
 		v_min = v->yravg.temp_min;
@@ -2360,6 +2476,9 @@ static void get_temp(OutPeriod pd)
 	SXW.temp = v_avg;
 	SXW.surfaceTemp = surfaceTempVal;
 #endif
+
+	if (debug) swprintf("completed\n");
+	#endif
 }
 
 static void get_precip(OutPeriod pd)
@@ -2371,17 +2490,15 @@ static void get_precip(OutPeriod pd)
 #ifndef RSOILWAT
 	RealD val_ppt = SW_MISSING, val_rain = SW_MISSING, val_snow = SW_MISSING,
 			val_snowmelt = SW_MISSING, val_snowloss = SW_MISSING;
-#else
+#endif
+	#ifdef RSOILWAT
 		int delta;
 		RealD *p;
 	#endif
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
-	//printf("pd %s\n", OutPeriod.pd);
-	//printf("pre %s\n", outstr);
 	get_outstrleader(pd);
-	//printf("post %s\n", outstr);
 
 #elif defined(STEPWAT)
 	TimeInt p = 0;
@@ -2546,6 +2663,10 @@ static void get_vwcBulk(OutPeriod pd)
 	  	get_outstrleader(pd);
 	  }
 	#endif
+	#ifdef RSOILWAT
+		int delta;
+		RealD *p;
+	#endif
 
 	switch (pd)
 	{ /* vwcBulk at this point is identical to swcBulk */
@@ -2644,7 +2765,7 @@ ForEachSoilLayer(i){
 			strcat(outstr_all_iters, str_iters);
 		}
 	}
-
+	
 #endif
 	free(val);
 }
@@ -2671,6 +2792,10 @@ static void get_vwcMatric(OutPeriod pd)
 		{
 			get_outstrleader(pd);
 		}
+	#endif
+	#ifdef RSOILWAT
+		int delta;
+		RealD *p;
 	#endif
 
 	/* vwcMatric at this point is identical to swcBulk */
@@ -3433,6 +3558,11 @@ static void get_swcBulk(OutPeriod pd)
 	TimeInt p = 0;
 
 #endif
+
+#ifdef RSOILWAT
+		int delta;
+		RealD *p;
+	#endif
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	RealD val = SW_MISSING;
@@ -3504,6 +3634,7 @@ static void get_swcBulk(OutPeriod pd)
 
 	if ((isPartialSoilwatOutput == swFALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		get_outstrleader(pd);
+		
 
 	ForEachSoilLayer(i)
 	{
@@ -3541,6 +3672,7 @@ static void get_swcBulk(OutPeriod pd)
 				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW.swc_avg[Iylp(Globals.currYear,i,p,0)], _Sep, swc_std);
 				strcat(outstr, str);
 			}
+
 		}
 		if(storeAllIterations){
 			sprintf(str_iters, "%c%7.6f", _Sep, val);
@@ -3549,7 +3681,6 @@ static void get_swcBulk(OutPeriod pd)
 		if (bFlush) p++;
 		SXW.swc[Ilp(i,p)] = val; // SXW.swc[Ilp(layer,timeperiod)]
 	}
-
 
 #endif
 }
@@ -3658,6 +3789,9 @@ static void get_swpMatric(OutPeriod pd)
 }
 
 #else
+	int delta;
+	RealD *p;
+
 	switch (pd)
 	{
 		case eSW_Day:
@@ -3785,6 +3919,9 @@ static void get_swaBulk(OutPeriod pd)
 
 	}
 #else
+	int delta;
+	RealD *p;
+
 	switch (pd)
 	{
 		case eSW_Day:
@@ -3914,6 +4051,7 @@ static void get_swaMatric(OutPeriod pd)
 #else
 	int delta;
 	RealD *p;
+
 	switch (pd)
 	{
 		case eSW_Day:
@@ -4047,6 +4185,7 @@ static void get_surfaceWater(OutPeriod pd)
 #else
 	int delta;
 	RealD *p;
+
 	switch (pd)
 	{
 		case eSW_Day:
@@ -4088,8 +4227,8 @@ static void get_runoffrunon(OutPeriod pd) {
   /* --------------------------------------------------- */
   /* (12/13/2012) (clk) Added function to output runoff variables */
 
-	SW_WEATHER *w = &SW_Weather;
-	RealD val_netRunoff = SW_MISSING, val_surfaceRunoff = SW_MISSING,
+  SW_WEATHER *w = &SW_Weather;
+  RealD val_netRunoff = SW_MISSING, val_surfaceRunoff = SW_MISSING,
       val_surfaceRunon = SW_MISSING, val_snowRunoff = SW_MISSING;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
@@ -4977,6 +5116,7 @@ static void get_interception(OutPeriod pd)
 #else
 	int delta;
 	RealD *p;
+
 	switch (pd)
 	{
 		case eSW_Day:
@@ -5039,7 +5179,7 @@ static void get_soilinf(OutPeriod pd)
 	/* --------------------------------------------------- */
 	/* 20100202 (drs) added */
 	/* 20110219 (drs) added runoff */
-	/* 12/13/2012	(clk)	moved runoff, now named snowRunoff, to get_runoff(); */
+	/* 12/13/2012	(clk)	moved runoff, now named snowRunoff, to get_runoffrunon(); */
 	SW_WEATHER *v = &SW_Weather;
 	RealD val_inf = SW_MISSING;
 
@@ -5119,6 +5259,7 @@ static void get_soilinf(OutPeriod pd)
 #else
 	int delta;
 	RealD *p;
+
 	switch (pd)
 	{
 		case eSW_Day:
@@ -5243,6 +5384,7 @@ static void get_lyrdrain(OutPeriod pd)
 #else
 	int delta;
 	RealD *p;
+
 	switch (pd)
 	{
 		case eSW_Day:
@@ -5685,6 +5827,7 @@ static void get_aet(OutPeriod pd)
 		strcat(outstr_all_iters, str_iters);
 	}
 		SXW.aet += val;
+
 #endif
 }
 
@@ -6033,6 +6176,7 @@ static void get_snowpack(OutPeriod pd)
 #else
 	int delta;
 	RealD *p;
+
 	switch (pd)
 	{
 		case eSW_Day:

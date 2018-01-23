@@ -68,6 +68,16 @@ __Tests, documentation, and code__ form a trinity
     ```
   * Development/feature branches can only be merged into master if they pass all checks
 
+- Debugging is controlled at two levels:
+  * at the preprocessor (pass -DSWDEBUG): all debug code is wrapped by this flag
+  * in functions with local variables (int debug = 1;): debug code can be conditional on
+    such a variable, e.g.,
+    ```
+    #ifdef SWDEBUG
+    if (debug) swprintf("hello, this is debugging code\n");
+    ...
+    #endif
+    ```
 
 ## Note
 

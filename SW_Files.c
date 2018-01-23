@@ -109,8 +109,12 @@ void SW_CSV_F_INIT(const char *s)
   */
 void SW_F_read(const char *s) {
 	FILE *f;
-	int lineno = 0, fileno = 0, debug = 0;
+	int lineno = 0, fileno = 0;
 	char buf[FILENAME_MAX];
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
+
 
 	if (!isnull(s))
 		init(s); /* init should be run by SW_F_Construct() */
@@ -120,7 +124,9 @@ void SW_F_read(const char *s) {
 
 	while (GetALine(f, inbuf)) {
 
+    #ifdef SWDEBUG
     if (debug) swprintf("'SW_F_read': line = %d/%d: %s\n", lineno, eEndFile, inbuf);
+    #endif
 
 		switch (lineno) {
 		case 5:

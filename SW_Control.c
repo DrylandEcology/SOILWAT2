@@ -46,11 +46,6 @@ extern SW_MODEL SW_Model;
 extern SW_VEGESTAB SW_VegEstab;
 extern SW_SITE SW_Site;
 extern SW_VEGPROD SW_VegProd;
-#ifdef RSOILWAT
-	extern Bool useFiles;
-	extern SEXP InputData;
-	void SW_FLW_construct(void);
-#endif
 
 SW_OUTPUT SW_Output_Files; // need to store the filenames when created in the stat_Output_timestep_CSV_Summary functions for use in SW_Output.c
 
@@ -68,9 +63,16 @@ void SW_FLW_construct(void);
 /***************** Begin Main Code *********************/
 
 void SW_CTL_main(void) {
+  #ifdef SWDEBUG
   int debug = 0;
+  #endif
 
-	TimeInt *cur_yr = &SW_Model.year;
+  TimeInt *cur_yr = &SW_Model.year;
+
+  for (*cur_yr = SW_Model.startyr; *cur_yr <= SW_Model.endyr; (*cur_yr)++) {
+    #ifdef SWDEBUG
+    if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
+    #endif
 
 	/*----------------------------------------------------------
     Get proper order for rank_SWPcrits
@@ -116,14 +118,8 @@ void SW_CTL_main(void) {
      End of rank_SWPcrits
    ----------------------------------------------------------*/
 
-	for (*cur_yr = SW_Model.startyr; *cur_yr <= SW_Model.endyr; (*cur_yr)++) {
-		if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
-		SW_CTL_run_current_year();
-	}
-
-#ifndef RSOILWAT
-	SW_OUT_close_files();
-#endif
+    SW_CTL_run_current_year();
+  }
 } /******* End Main Loop *********/
 /*******************************************************/
 
@@ -144,23 +140,49 @@ void SW_CTL_init_model(const char *firstfile) {
 }
 
 void SW_CTL_run_current_year(void) {
-	/*=======================================================*/
-	/*=======================================================*/
-	TimeInt *doy = &SW_Model.doy;
+  /*=======================================================*/
+  TimeInt *doy = &SW_Model.doy;
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
 
-	_begin_year();
-	for (*doy = SW_Model.firstdoy; *doy <= SW_Model.lastdoy; (*doy)++) {
-		_begin_day();
+  #ifdef SWDEBUG
+  if (debug) swprintf("\n'SW_CTL_run_current_year': begin new year\n");
+  #endif
+  _begin_year();
 
-		SW_SWC_water_flow();
+  for (*doy = SW_Model.firstdoy; *doy <= SW_Model.lastdoy; (*doy)++) {
+    #ifdef SWDEBUG
+    if (debug) swprintf("\t: begin doy = %d ... ", *doy);
+    #endif
+    _begin_day();
 
-		if (SW_VegEstab.use)
-			SW_VES_checkestab();
+    #ifdef SWDEBUG
+    if (debug) swprintf("simulate water ... ");
+    #endif
+    SW_SWC_water_flow();
 
-		_end_day();
-	}
-	SW_OUT_flush();
+    if (SW_VegEstab.use)
+      SW_VES_checkestab();
 
+    #ifdef SWDEBUG
+    if (debug) swprintf("ending day ... ");
+    #endif
+    _end_day();
+
+    #ifdef SWDEBUG
+    if (debug) swprintf("doy = %d completed.\n", *doy);
+    #endif
+  }
+
+  #ifdef SWDEBUG
+  if (debug) swprintf("'SW_CTL_run_current_year': flush output\n");
+  #endif
+  SW_OUT_flush();
+
+  #ifdef SWDEBUG
+  if (debug) swprintf("'SW_CTL_run_current_year': completed.\n");
+  #endif
 }
 
 /**
@@ -392,6 +414,7 @@ void stat_Output_Yearly_CSV_Summary(int iteration)
 }
 
 
+
 static void _begin_year(void) {
 	/*=======================================================*/
 	/* in addition to the timekeeper (Model), usually only
@@ -424,36 +447,59 @@ static void _end_day(void) {
 }
 
 void SW_CTL_read_inputs_from_disk(void) {
+  #ifdef SWDEBUG
   int debug = 0;
+  #endif
 
+  #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_read_inputs_from_disk': Read input from disk:");
+  #endif
+
   SW_F_read(NULL);
+  #ifdef SWDEBUG
   if (debug) swprintf(" 'files'");
+  #endif
 
   SW_MDL_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'model'");
+  #endif
 
   SW_WTH_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather'");
+  #endif
 
   SW_VPD_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'veg'");
+  #endif
 
   SW_SIT_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'site'");
+  #endif
 
   SW_VES_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'establishment'");
+  #endif
 
   SW_OUT_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'ouput'");
+  #endif
 
   SW_CBN_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'CO2'");
+  #endif
 
   SW_SWC_read();
+  #ifdef SWDEBUG
   if (debug) swprintf(" > 'swc'");
   if (debug) swprintf(" completed.\n");
+  #endif
 }
 
 
@@ -461,6 +507,7 @@ void SW_CTL_obtain_inputs(void) {
   SW_CTL_read_inputs_from_disk();
   calculate_CO2_multipliers();
 }
+
 
 #ifdef DEBUG_MEM
 #include "SW_Markov.h"  /* for setmemrefs function */
