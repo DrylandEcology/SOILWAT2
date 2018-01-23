@@ -988,7 +988,7 @@ void SW_OUT_read(void)
 #ifdef RSOILWAT
 		SW_Output[k].outfile = (char *) Str_Dup(outfile); //not really applicable
 #endif
-			
+
 	}
 
 	CloseFile(&f);
@@ -1394,39 +1394,6 @@ void SW_OUT_write_today(void)
 			if (debug) swprintf(" ... ok");
 			#endif
 
-
-	ForEachOutKey(k)
-	{
-		if (!SW_Output[k].use)
-			continue;
-			for (i = 0; i < used_OUTNPERIODS; i++)
-			{ /* will run through this loop for as many periods are being used */
-				//printf("timesteps[%d][%d]: %d\n", k, i, timeSteps[k][0]);
-				writeit = swTRUE;
-				switch (timeSteps[k][i])
-				{
-				case eSW_Day:
-					t = SW_Model.doy;
-					break;
-				case eSW_Week:
-					writeit = (Bool) (SW_Model.newweek || bFlush);
-					t = (SW_Model.week + 1) - tOffset;
-					break;
-				case eSW_Month:
-					writeit = (Bool) (SW_Model.newmonth || bFlush);
-					t = (SW_Model.month + 1) - tOffset;
-					break;
-				case eSW_Year:
-					writeit = (Bool) (SW_Model.newyear || bFlush);
-					t = SW_Output[k].first; /* always output this period */
-					break;
-				default:
-					LogError(stdout, LOGFATAL,
-							"Invalid period in SW_OUT_write_today().");
-				}
-				if (!writeit || t < SW_Output[k].first || t > SW_Output[k].last)
-					continue;
-				((void (*)(OutPeriod)) SW_Output[k].pfunc)(timeSteps[k][i]);
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 				/*-----------------------------------------------------------
 				writing values to output files
@@ -1717,7 +1684,7 @@ void SW_OUT_write_today(void)
 			break;
 		}
 
-		}
+	}
 	/*if (isPartialSoilwatOutput == swFALSE && Globals.currIter != Globals.runModelIterations){
 		memset(&reg_file_vals_year[0], 0, sizeof(reg_file_vals_year));
 		memset(&soil_file_vals_year[0], 0, sizeof(soil_file_vals_year));
@@ -2476,8 +2443,8 @@ static void get_temp(OutPeriod pd)
 	SXW.temp = v_avg;
 	SXW.surfaceTemp = surfaceTempVal;
 #endif
-
-	if (debug) swprintf("completed\n");
+	#ifdef SWDEBUG
+		if (debug) swprintf("completed\n");
 	#endif
 }
 
@@ -2765,7 +2732,7 @@ ForEachSoilLayer(i){
 			strcat(outstr_all_iters, str_iters);
 		}
 	}
-	
+
 #endif
 	free(val);
 }
@@ -3634,7 +3601,7 @@ static void get_swcBulk(OutPeriod pd)
 
 	if ((isPartialSoilwatOutput == swFALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		get_outstrleader(pd);
-		
+
 
 	ForEachSoilLayer(i)
 	{
@@ -7298,7 +7265,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 							strcat(storeCol, "_");
 							strcat(storeCol, cnames_VegTypes[j]);
 							strcat(storeCol, "_");
-							strcat(storeCol,  Layers_names[i]);
+							strcat(storeCol, Layers_names[i]);
 							strcat(storeCol, _SepSplit);
 							#ifdef STEPWAT
 								if(std_headers){
@@ -7306,7 +7273,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 									strcat(storeCol, "_");
 									strcat(storeCol, cnames_VegTypes[j]);
 									strcat(storeCol, "_STD_");
-									strcat(storeCol,  Layers_names[i]);
+									strcat(storeCol, Layers_names[i]);
 									strcat(storeCol, _SepSplit);
 								}
 							#endif
