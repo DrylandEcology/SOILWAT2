@@ -141,15 +141,25 @@ extern unsigned int fusion_pool_init;
  * array indexing in those routines will be from
  * zero rather than 1.  see records2arrays().
  */
-IntU lyrTrRegions_Forb[MAX_LAYERS], lyrTrRegions_Tree[MAX_LAYERS], lyrTrRegions_Shrub[MAX_LAYERS], lyrTrRegions_Grass[MAX_LAYERS];
-RealD lyrSWCBulk[MAX_LAYERS], lyrDrain[MAX_LAYERS], lyrTransp_Forb[MAX_LAYERS], lyrTransp_Tree[MAX_LAYERS], lyrTransp_Shrub[MAX_LAYERS], lyrTransp_Grass[MAX_LAYERS],
-		lyrTranspCo_Forb[MAX_LAYERS], lyrTranspCo_Tree[MAX_LAYERS], lyrTranspCo_Shrub[MAX_LAYERS], lyrTranspCo_Grass[MAX_LAYERS], lyrEvap_BareGround[MAX_LAYERS],
-		lyrEvap_Forb[MAX_LAYERS], lyrEvap_Tree[MAX_LAYERS], lyrEvap_Shrub[MAX_LAYERS], lyrEvap_Grass[MAX_LAYERS], lyrEvapCo[MAX_LAYERS], lyrSWCBulk_FieldCaps[MAX_LAYERS],
-		lyrWidths[MAX_LAYERS], lyrSWCBulk_Wiltpts[MAX_LAYERS], lyrSWCBulk_HalfWiltpts[MAX_LAYERS], lyrSWCBulk_Mins[MAX_LAYERS], lyrSWCBulk_atSWPcrit_Forb[MAX_LAYERS],
-		lyrSWCBulk_atSWPcrit_Tree[MAX_LAYERS], lyrSWCBulk_atSWPcrit_Shrub[MAX_LAYERS], lyrSWCBulk_atSWPcrit_Grass[MAX_LAYERS], lyrpsisMatric[MAX_LAYERS],
-		lyrthetasMatric[MAX_LAYERS], lyrBetasMatric[MAX_LAYERS], lyrBetaInvMatric[MAX_LAYERS], lyrSumTrCo[MAX_TRANSP_REGIONS + 1], lyrHydRed_Forb[MAX_LAYERS],
-		lyrHydRed_Tree[MAX_LAYERS], lyrHydRed_Shrub[MAX_LAYERS], lyrHydRed_Grass[MAX_LAYERS], lyrImpermeability[MAX_LAYERS], lyrSWCBulk_Saturated[MAX_LAYERS],
-		lyroldsTemp[MAX_LAYERS], lyrsTemp[MAX_LAYERS], lyrbDensity[MAX_LAYERS];
+IntU lyrTrRegions[NVEGTYPES][MAX_LAYERS];
+
+RealD lyrSWCBulk[MAX_LAYERS], lyrDrain[MAX_LAYERS],
+
+	lyrTransp[NVEGTYPES][MAX_LAYERS], lyrTranspCo[NVEGTYPES][MAX_LAYERS],
+	lyrEvap[NVEGTYPES][MAX_LAYERS], lyrEvap_BareGround[MAX_LAYERS],
+	lyrSWCBulk_atSWPcrit[NVEGTYPES][MAX_LAYERS], lyrHydRed[NVEGTYPES][MAX_LAYERS],
+	lyrHydRed[NVEGTYPES][MAX_LAYERS],
+
+	lyrbDensity[MAX_LAYERS], lyrWidths[MAX_LAYERS],
+	lyrEvapCo[MAX_LAYERS], lyrSumTrCo[MAX_TRANSP_REGIONS + 1],
+	lyrImpermeability[MAX_LAYERS],
+	lyrSWCBulk_FieldCaps[MAX_LAYERS], lyrSWCBulk_Saturated[MAX_LAYERS],
+	lyrSWCBulk_Wiltpts[MAX_LAYERS], lyrSWCBulk_HalfWiltpts[MAX_LAYERS],
+	lyrSWCBulk_Mins[MAX_LAYERS],
+	lyrpsisMatric[MAX_LAYERS], lyrthetasMatric[MAX_LAYERS],
+	lyrBetasMatric[MAX_LAYERS], lyrBetaInvMatric[MAX_LAYERS],
+
+	lyroldsTemp[MAX_LAYERS], lyrsTemp[MAX_LAYERS];
 
 RealD drainout; /* h2o drained out of deepest layer */
 
@@ -158,7 +168,9 @@ RealD UpNeigh_lyrSWCBulk[MAX_LAYERS], UpNeigh_lyrDrain[MAX_LAYERS], UpNeigh_drai
 	UpNeigh_standingWater;
 
 
-static RealD surfaceTemp[TWO_DAYS], forb_h2o_qum[TWO_DAYS], tree_h2o_qum[TWO_DAYS], shrub_h2o_qum[TWO_DAYS], grass_h2o_qum[TWO_DAYS], litter_h2o_qum[TWO_DAYS], standingWater[TWO_DAYS]; /* water on soil surface if layer below is saturated */
+static RealD surfaceTemp[TWO_DAYS],
+	veg_h2o_qum[NVEGTYPES][TWO_DAYS], litter_h2o_qum[TWO_DAYS],
+	standingWater[TWO_DAYS]; /* water on soil surface if layer below is saturated */
 
 
 /* *************************************************** */
@@ -186,21 +198,29 @@ void SW_Water_Flow(void);
 
 void SW_FLW_construct(void) {
 	/* 06/26/2013	(rjm) added function SW_FLW_construct() to init global variables between consecutive calls to SoilWat as dynamic library */
-	int i=0;
+	int i, k;
 	SW_Soilwat.partsError = swFALSE;
 	soil_temp_init = 0;
 	fusion_pool_init = 0;
 
 	//These only have to be cleared if a loop is wrong in the code.
 	for (i = 0; i < MAX_LAYERS; i++) {
-		lyrTrRegions_Forb[i] = lyrTrRegions_Tree[i] = lyrTrRegions_Shrub[i] = lyrTrRegions_Grass[i] = 0;
-		lyrSWCBulk[i] = lyrDrain[i] = lyrTransp_Forb[i] = lyrTransp_Tree[i] = lyrTransp_Shrub[i] = lyrTransp_Grass[i] = 0;
-		lyrTranspCo_Forb[i] = lyrTranspCo_Tree[i] = lyrTranspCo_Shrub[i] = lyrTranspCo_Grass[i] = lyrEvap_BareGround[i] = 0;
-		lyrEvap_Forb[i] = lyrEvap_Tree[i] = lyrEvap_Shrub[i] = lyrEvap_Grass[i] = lyrEvapCo[i] = lyrSWCBulk_FieldCaps[i] = 0;
-		lyrWidths[i] = lyrSWCBulk_Wiltpts[i] = lyrSWCBulk_HalfWiltpts[i] = lyrSWCBulk_Mins[i] = lyrSWCBulk_atSWPcrit_Forb[i] = 0;
-		lyrSWCBulk_atSWPcrit_Tree[i] = lyrSWCBulk_atSWPcrit_Shrub[i] = lyrSWCBulk_atSWPcrit_Grass[i] = lyrpsisMatric[i] = 0;
-		lyrthetasMatric[i] = lyrBetasMatric[i] = lyrBetaInvMatric[i] = lyrHydRed_Forb[i] = 0;
-		lyrHydRed_Tree[i] = lyrHydRed_Shrub[i] = lyrHydRed_Grass[i] = lyrImpermeability[i] = lyrSWCBulk_Saturated[i] = 0;
+		ForEachVegType(k) {
+			lyrTrRegions[k][i] = 0;
+			lyrTransp[k][i] = 0.;
+			lyrTranspCo[k][i] = 0.;
+			lyrEvap[k][i] = 0.;
+			lyrSWCBulk_atSWPcrit[k][i] = 0.;
+			lyrHydRed[k][i] = 0;
+		}
+
+		lyrSWCBulk[i] = lyrDrain[i] = 0.;
+		lyrEvap_BareGround[i] = 0;
+		lyrEvapCo[i] = lyrSWCBulk_FieldCaps[i] = 0;
+		lyrWidths[i] = lyrSWCBulk_Wiltpts[i] = lyrSWCBulk_HalfWiltpts[i] = 0;
+		lyrSWCBulk_Mins[i] = lyrpsisMatric[i] = 0;
+		lyrthetasMatric[i] = lyrBetasMatric[i] = lyrBetaInvMatric[i] = 0;
+		lyrImpermeability[i] = lyrSWCBulk_Saturated[i] = 0;
 		lyroldsTemp[i] = lyrsTemp[i] = lyrbDensity[i] = 0;
 	}
 
@@ -209,9 +229,13 @@ void SW_FLW_construct(void) {
 
 	//When running as a library make sure these are set to zero.
 	drainout = 0;
-	surfaceTemp[0] = surfaceTemp[1] = 0.0;
-	forb_h2o_qum[0]=tree_h2o_qum[0]=shrub_h2o_qum[0]=grass_h2o_qum[0]=litter_h2o_qum[0]=standingWater[0]=0;
-	forb_h2o_qum[1]=tree_h2o_qum[1]=shrub_h2o_qum[1]=grass_h2o_qum[1]=litter_h2o_qum[1]=standingWater[1]=0;
+	surfaceTemp[0] = surfaceTemp[1] = 0.;
+	standingWater[0] = standingWater[1] = 0.;
+	litter_h2o_qum[0] = litter_h2o_qum[1] = 0.;
+
+	ForEachVegType(k) {
+		veg_h2o_qum[k][0] = veg_h2o_qum[k][0] = 0.;
+	}
 }
 
 /* *************************************************** */
@@ -223,14 +247,18 @@ void SW_Water_Flow(void) {
   SW_VEGPROD *v = &SW_VegProd;
   SW_SOILWAT *sw = &SW_Soilwat;
 
-	RealD swpot_avg_forb, swpot_avg_tree, swpot_avg_shrub, swpot_avg_grass, soil_evap_forb, soil_evap_tree, soil_evap_shrub, soil_evap_grass, soil_evap_rate_forb = 1.,
-			soil_evap_rate_tree = 1., soil_evap_rate_shrub = 1., soil_evap_rate_grass = 1., soil_evap_rate_bs = 1., transp_forb, transp_tree, transp_shrub, transp_grass,
-			transp_rate_forb = 1., transp_rate_tree = 1., transp_rate_shrub = 1., transp_rate_grass = 1., snow_evap_rate, surface_evap_forb_rate, surface_evap_tree_rate,
-			surface_evap_shrub_rate, surface_evap_grass_rate, surface_evap_litter_rate, surface_evap_standingWater_rate, grass_h2o, shrub_h2o, tree_h2o, forb_h2o, litter_h2o,
-			litter_h2o_help, h2o_for_soil = 0., ppt_toUse, snowmelt, snowdepth_scale_grass = 1., snowdepth_scale_shrub = 1., snowdepth_scale_tree = 1.,
-			snowdepth_scale_forb = 1., rate_help;
+	RealD swpot_avg[NVEGTYPES],
+		transp_veg[NVEGTYPES], transp_rate[NVEGTYPES] = {1.},
+		soil_evap[NVEGTYPES], soil_evap_rate[NVEGTYPES] = {1.}, soil_evap_rate_bs = 1.,
+		surface_evap_veg_rate[NVEGTYPES] = {1.},
+		surface_evap_litter_rate = 1., surface_evap_standingWater_rate = 1.,
+		snow_evap_rate = 1.,
+		veg_h2o[NVEGTYPES], litter_h2o,
+		litter_h2o_help, h2o_for_soil = 0., ppt_toUse, snowmelt,
+		snowdepth_scale_veg[NVEGTYPES] = {1.},
+		rate_help, x;
 
-	int doy;
+	int doy, k;
 	LyrIndex i;
 
 	doy = SW_Model.doy; /* base1 */
@@ -247,87 +275,56 @@ void SW_Water_Flow(void) {
 	 - infiltrate water high
 	 - infiltrate water low */
 
-	if (GT(v->veg[SW_GRASS].veg_height_daily[doy], 0.)) {
-		snowdepth_scale_grass = 1. - sw->snowdepth / v->veg[SW_GRASS].veg_height_daily[doy];
-	} else {
-		snowdepth_scale_grass = 1.;
-	}
-	if (GT(v->veg[SW_FORBS].veg_height_daily[doy], 0.)) {
-		snowdepth_scale_forb = 1. - sw->snowdepth / v->veg[SW_FORBS].veg_height_daily[doy];
-	} else {
-		snowdepth_scale_forb = 1.;
-	}
-	if (GT(v->veg[SW_SHRUB].veg_height_daily[doy], 0.)) {
-		snowdepth_scale_shrub = 1. - sw->snowdepth / v->veg[SW_SHRUB].veg_height_daily[doy];
-	} else {
-		snowdepth_scale_shrub = 1.;
-	}
-	if (GT(v->veg[SW_TREES].veg_height_daily[doy], 0.)) {
-		snowdepth_scale_tree = 1. - sw->snowdepth / v->veg[SW_TREES].veg_height_daily[doy];
-	} else {
-		snowdepth_scale_tree = 1.;
+	ForEachVegType(k)
+	{
+		if (GT(v->veg[k].veg_height_daily[doy], 0.)) {
+			snowdepth_scale_veg[k] = 1. - sw->snowdepth / v->veg[k].veg_height_daily[doy];
+		} else {
+			snowdepth_scale_veg[k] = 1.;
+		}
 	}
 
 	/* Interception */
 	ppt_toUse = SW_Weather.now.rain[Today]; /* ppt is partioned into ppt = snow + rain */
-	if (GT(v->veg[SW_TREES].cov.fCover, 0.) && GT(snowdepth_scale_tree, 0.)) { /* trees present AND trees not fully covered in snow */
-		tree_intercepted_water(&h2o_for_soil, &tree_h2o, ppt_toUse, v->veg[SW_TREES].lai_live_daily[doy], snowdepth_scale_tree * v->veg[SW_TREES].cov.fCover,
-				v->veg[SW_TREES].veg_intPPT_a, v->veg[SW_TREES].veg_intPPT_b, v->veg[SW_TREES].veg_intPPT_c, v->veg[SW_TREES].veg_intPPT_d);
-		ppt_toUse = h2o_for_soil; /* amount of rain that is not intercepted by the forest canopy */
-	} else { /* snow depth is more than vegetation height  */
-		h2o_for_soil = ppt_toUse;
-		tree_h2o = 0.;
-	} /* end forest interception */
 
-	if (GT(v->veg[SW_SHRUB].cov.fCover, 0.) && GT(snowdepth_scale_shrub, 0.)) {
-		shrub_intercepted_water(&h2o_for_soil, &shrub_h2o, ppt_toUse, v->veg[SW_SHRUB].vegcov_daily[doy], snowdepth_scale_shrub * v->veg[SW_SHRUB].cov.fCover,
-				v->veg[SW_SHRUB].veg_intPPT_a, v->veg[SW_SHRUB].veg_intPPT_b, v->veg[SW_SHRUB].veg_intPPT_c, v->veg[SW_SHRUB].veg_intPPT_d);
-		ppt_toUse = h2o_for_soil; /* amount of rain that is not intercepted by the shrub canopy */
-	} else {
-		shrub_h2o = 0.;
-	} /* end shrub interception */
+	ForEachVegType(k)
+	{
+		if (GT(v->veg[k].cov.fCover, 0.) && GT(snowdepth_scale_veg[k], 0.))
+		{
+			/* veg type k present AND veg not fully covered in snow */
+			if (k == SW_TREES) {
+				x = v->veg[k].lai_live_daily[doy];
+			} else {
+				x = v->veg[k].vegcov_daily[doy];
+			}
 
-	if (GT(v->veg[SW_FORBS].cov.fCover, 0.) && GT(snowdepth_scale_forb, 0.)) { /* forbs present AND not fully covered in snow */
-		forb_intercepted_water(&h2o_for_soil, &forb_h2o, ppt_toUse, v->veg[SW_FORBS].vegcov_daily[doy], snowdepth_scale_forb * v->veg[SW_FORBS].cov.fCover,
-				v->veg[SW_FORBS].veg_intPPT_a, v->veg[SW_FORBS].veg_intPPT_b, v->veg[SW_FORBS].veg_intPPT_c, v->veg[SW_FORBS].veg_intPPT_d);
-		ppt_toUse = h2o_for_soil; /* amount of rain that is not intercepted by the forbs */
-	} else { /* snow depth is more than vegetation height  */
-		forb_h2o = 0.;
+			veg_intercepted_water(&h2o_for_soil, &veg_h2o[k], ppt_toUse, x,
+				snowdepth_scale_veg[k] * v->veg[k].cov.fCover,
+				v->veg[k].veg_intPPT_a, v->veg[k].veg_intPPT_b,
+				v->veg[k].veg_intPPT_c, v->veg[k].veg_intPPT_d);
 
-	} /* end forb interception */
+			/* amount of rain that is not intercepted by the canopy */
+			ppt_toUse = h2o_for_soil;
 
-	if (GT(v->veg[SW_GRASS].cov.fCover, 0.) && GT(snowdepth_scale_grass, 0.)) {
-		grass_intercepted_water(&h2o_for_soil, &grass_h2o, ppt_toUse, v->veg[SW_GRASS].vegcov_daily[doy], snowdepth_scale_grass * v->veg[SW_GRASS].cov.fCover,
-				v->veg[SW_GRASS].veg_intPPT_a, v->veg[SW_GRASS].veg_intPPT_b, v->veg[SW_GRASS].veg_intPPT_c, v->veg[SW_GRASS].veg_intPPT_d);
-	} else {
-		grass_h2o = 0.;
-	} /* end grass interception */
+		} else {
+			/* snow depth is more than vegetation height  */
+			h2o_for_soil = ppt_toUse;
+			veg_h2o[k] = 0.;
+		} /* end interception */
+	}
 
 	if (EQ(sw->snowpack[Today], 0.)) { /* litter interception only when no snow */
 		litter_h2o_help = 0.;
 
-		if (GT(v->veg[SW_TREES].cov.fCover, 0.)) {
-			litter_intercepted_water(&h2o_for_soil, &litter_h2o, v->veg[SW_TREES].litter_daily[doy], v->veg[SW_TREES].cov.fCover, v->veg[SW_TREES].litt_intPPT_a,
-					v->veg[SW_TREES].litt_intPPT_b, v->veg[SW_TREES].litt_intPPT_c, v->veg[SW_TREES].litt_intPPT_d);
-			litter_h2o_help += litter_h2o;
-		}
+		ForEachVegType(k)
+		{
+			if (GT(v->veg[k].cov.fCover, 0.)) {
+				litter_intercepted_water(&h2o_for_soil, &litter_h2o, v->veg[k].litter_daily[doy],
+					v->veg[k].cov.fCover, v->veg[k].litt_intPPT_a, v->veg[k].litt_intPPT_b,
+					v->veg[k].litt_intPPT_c, v->veg[k].litt_intPPT_d);
 
-		if (GT(v->veg[SW_SHRUB].cov.fCover, 0.)) {
-			litter_intercepted_water(&h2o_for_soil, &litter_h2o, v->veg[SW_SHRUB].litter_daily[doy], v->veg[SW_SHRUB].cov.fCover, v->veg[SW_SHRUB].litt_intPPT_a,
-					v->veg[SW_SHRUB].litt_intPPT_b, v->veg[SW_SHRUB].litt_intPPT_c, v->veg[SW_SHRUB].litt_intPPT_d);
-			litter_h2o_help += litter_h2o;
-		}
-
-		if (GT(v->veg[SW_FORBS].cov.fCover, 0.)) {
-			litter_intercepted_water(&h2o_for_soil, &litter_h2o, v->veg[SW_FORBS].litter_daily[doy], v->veg[SW_FORBS].cov.fCover, v->veg[SW_FORBS].litt_intPPT_a,
-					v->veg[SW_FORBS].litt_intPPT_b, v->veg[SW_FORBS].litt_intPPT_c, v->veg[SW_FORBS].litt_intPPT_d);
-			litter_h2o_help += litter_h2o;
-		}
-
-		if (GT(v->veg[SW_GRASS].cov.fCover, 0.)) {
-			litter_intercepted_water(&h2o_for_soil, &litter_h2o, v->veg[SW_GRASS].litter_daily[doy], v->veg[SW_GRASS].cov.fCover, v->veg[SW_GRASS].litt_intPPT_a,
-					v->veg[SW_GRASS].litt_intPPT_b, v->veg[SW_GRASS].litt_intPPT_c, v->veg[SW_GRASS].litt_intPPT_d);
-			litter_h2o_help += litter_h2o;
+				litter_h2o_help += litter_h2o;
+			}
 		}
 
 		litter_h2o = litter_h2o_help;
@@ -336,16 +333,13 @@ void SW_Water_Flow(void) {
 	}
 
 	/* Sum cumulative intercepted components */
-	sw->int_veg[SW_TREES] = tree_h2o;
-	sw->int_veg[SW_SHRUB] = shrub_h2o;
-	sw->int_veg[SW_FORBS] = forb_h2o;
-	sw->int_veg[SW_GRASS] = grass_h2o;
-	sw->litter_int = litter_h2o;
+	ForEachVegType(k)
+	{
+		sw->int_veg[k] = veg_h2o[k];
+		veg_h2o_qum[k][Today] = veg_h2o_qum[k][Yesterday] + veg_h2o[k];
+	}
 
-	tree_h2o_qum[Today] = tree_h2o_qum[Yesterday] + tree_h2o;
-	shrub_h2o_qum[Today] = shrub_h2o_qum[Yesterday] + shrub_h2o;
-	forb_h2o_qum[Today] = forb_h2o_qum[Yesterday] + forb_h2o;
-	grass_h2o_qum[Today] = grass_h2o_qum[Yesterday] + grass_h2o;
+	sw->litter_int = litter_h2o;
 	litter_h2o_qum[Today] = litter_h2o_qum[Yesterday] + litter_h2o;
 	/* End Interception */
 
@@ -413,151 +407,100 @@ void SW_Water_Flow(void) {
 
 
 	/* PET */
-	sw->pet = SW_Site.pet_scale
-			* petfunc(doy, SW_Weather.now.temp_avg[Today], SW_Site.latitude, SW_Site.altitude, SW_Site.slope, SW_Site.aspect,
-					v->veg[SW_GRASS].cov.albedo * v->veg[SW_GRASS].cov.fCover + v->veg[SW_SHRUB].cov.albedo * v->veg[SW_SHRUB].cov.fCover + v->veg[SW_FORBS].cov.albedo * v->veg[SW_FORBS].cov.fCover
-							+ v->veg[SW_TREES].cov.albedo * v->veg[SW_TREES].cov.fCover + v->bare_cov.albedo * v->bare_cov.fCover, SW_Sky.r_humidity_daily[doy],
-					SW_Sky.windspeed_daily[doy], SW_Sky.cloudcov_daily[doy], SW_Sky.transmission_daily[doy]);
+	x = v->bare_cov.albedo * v->bare_cov.fCover;
+	ForEachVegType(k)
+	{
+		x += v->veg[k].cov.albedo * v->veg[k].cov.fCover;
+	}
+
+	sw->pet = SW_Site.pet_scale;
+	sw->pet *= petfunc(doy, SW_Weather.now.temp_avg[Today], SW_Site.latitude,
+		SW_Site.altitude, SW_Site.slope, SW_Site.aspect, x, SW_Sky.r_humidity_daily[doy],
+		SW_Sky.windspeed_daily[doy], SW_Sky.cloudcov_daily[doy], SW_Sky.transmission_daily[doy]);
+
 
 	/* Bare-soil evaporation rates */
 	if (GT(v->bare_cov.fCover, 0.) && EQ(sw->snowpack[Today], 0.)) /* bare ground present AND no snow on ground */
 	{
-		pot_soil_evap_bs(&soil_evap_rate_bs, SW_Site.n_evap_lyrs, lyrEvapCo, sw->pet, SW_Site.evap.xinflec, SW_Site.evap.slope, SW_Site.evap.yinflec,
-				SW_Site.evap.range, lyrWidths, lyrSWCBulk);
+		pot_soil_evap_bs(&soil_evap_rate_bs, SW_Site.n_evap_lyrs, lyrEvapCo, sw->pet,
+			SW_Site.evap.xinflec, SW_Site.evap.slope, SW_Site.evap.yinflec,
+			SW_Site.evap.range, lyrWidths, lyrSWCBulk);
 		soil_evap_rate_bs *= v->bare_cov.fCover;
+
 	} else {
 		soil_evap_rate_bs = 0;
 	}
 
-	/* Tree transpiration & bare-soil evaporation rates */
-	if (GT(v->veg[SW_TREES].cov.fCover, 0.) && GT(snowdepth_scale_tree, 0.)) { /* trees present AND trees not fully covered in snow */
-		tree_EsT_partitioning(&soil_evap_tree, &transp_tree, v->veg[SW_TREES].lai_live_daily[doy], v->veg[SW_TREES].EsTpartitioning_param);
+	/* Potential transpiration & bare-soil evaporation rates */
+	ForEachVegType(k)
+	{
+		if (GT(v->veg[k].cov.fCover, 0.) && GT(snowdepth_scale_veg[k], 0.)) {
+			/* vegetation type k present AND not fully covered in snow */
+			EsT_partitioning(&soil_evap[k], &transp_veg[k], v->veg[k].lai_live_daily[doy],
+				v->veg[k].EsTpartitioning_param);
 
-		if (EQ(sw->snowpack[Today], 0.)) { /* bare-soil evaporation only when no snow */
-			pot_soil_evap(&soil_evap_rate_tree, SW_Site.n_evap_lyrs, lyrEvapCo, v->veg[SW_TREES].total_agb_daily[doy], soil_evap_tree, sw->pet, SW_Site.evap.xinflec,
-					SW_Site.evap.slope, SW_Site.evap.yinflec, SW_Site.evap.range, lyrWidths, lyrSWCBulk, v->veg[SW_TREES].Es_param_limit);
-			soil_evap_rate_tree *= v->veg[SW_TREES].cov.fCover;
+			if (EQ(sw->snowpack[Today], 0.)) { /* bare-soil evaporation only when no snow */
+				pot_soil_evap(&soil_evap_rate[k], SW_Site.n_evap_lyrs, lyrEvapCo,
+					v->veg[k].total_agb_daily[doy], soil_evap[k], sw->pet,
+					SW_Site.evap.xinflec, SW_Site.evap.slope, SW_Site.evap.yinflec, SW_Site.evap.range,
+					lyrWidths, lyrSWCBulk, v->veg[k].Es_param_limit);
+
+				soil_evap_rate[k] *= v->veg[k].cov.fCover;
+
+			} else {
+				soil_evap_rate[k] = 0.;
+			}
+
+			transp_weighted_avg(&swpot_avg[k], SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs[k],
+				lyrTrRegions[k], lyrTranspCo[k], lyrSWCBulk);
+
+			pot_transp(&transp_rate[k], swpot_avg[k],
+				v->veg[k].biolive_daily[doy], v->veg[k].biodead_daily[doy],
+				transp_veg[k], sw->pet,
+				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range,
+				v->veg[k].shade_scale, v->veg[k].shade_deadmax,
+				v->veg[k].tr_shade_effects.xinflec, v->veg[k].tr_shade_effects.slope,
+				v->veg[k].tr_shade_effects.yinflec, v->veg[k].tr_shade_effects.range,
+				v->veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
+
+			transp_rate[k] *= snowdepth_scale_veg[k] * v->veg[k].cov.fCover;
+
 		} else {
-			soil_evap_rate_tree = 0.;
+			soil_evap_rate[k] = 0.;
+			transp_rate[k] = 0.;
 		}
-
-		transp_weighted_avg(&swpot_avg_tree, SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs[SW_TREES], lyrTrRegions_Tree, lyrTranspCo_Tree, lyrSWCBulk);
-
-		pot_transp(&transp_rate_tree, swpot_avg_tree, v->veg[SW_TREES].biolive_daily[doy], v->veg[SW_TREES].biodead_daily[doy], transp_tree, sw->pet,
-				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range, v->veg[SW_TREES].shade_scale, v->veg[SW_TREES].shade_deadmax,
-				v->veg[SW_TREES].tr_shade_effects.xinflec, v->veg[SW_TREES].tr_shade_effects.slope, v->veg[SW_TREES].tr_shade_effects.yinflec,
-				v->veg[SW_TREES].tr_shade_effects.range, v->veg[SW_TREES].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
-		transp_rate_tree *= snowdepth_scale_tree * v->veg[SW_TREES].cov.fCover;
-	} else {
-		soil_evap_rate_tree = 0.;
-		transp_rate_tree = 0.;
 	}
 
-	/* Shrub transpiration & bare-soil evaporation rates */
-	if (GT(v->veg[SW_SHRUB].cov.fCover, 0.) && GT(snowdepth_scale_shrub, 0.)) { /* shrubs present AND shrubs not fully covered in snow */
-		shrub_EsT_partitioning(&soil_evap_shrub, &transp_shrub, v->veg[SW_SHRUB].lai_live_daily[doy], v->veg[SW_SHRUB].EsTpartitioning_param);
-
-		if (EQ(sw->snowpack[Today], 0.)) { /* bare-soil evaporation only when no snow */
-			pot_soil_evap(&soil_evap_rate_shrub, SW_Site.n_evap_lyrs, lyrEvapCo, v->veg[SW_SHRUB].total_agb_daily[doy], soil_evap_shrub, sw->pet, SW_Site.evap.xinflec,
-					SW_Site.evap.slope, SW_Site.evap.yinflec, SW_Site.evap.range, lyrWidths, lyrSWCBulk, v->veg[SW_SHRUB].Es_param_limit);
-			soil_evap_rate_shrub *= v->veg[SW_SHRUB].cov.fCover;
-		} else {
-			soil_evap_rate_shrub = 0.;
-		}
-
-		transp_weighted_avg(&swpot_avg_shrub, SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs[SW_SHRUB], lyrTrRegions_Shrub, lyrTranspCo_Shrub, lyrSWCBulk);
-
-		pot_transp(&transp_rate_shrub, swpot_avg_shrub, v->veg[SW_SHRUB].biolive_daily[doy], v->veg[SW_SHRUB].biodead_daily[doy], transp_shrub, sw->pet,
-				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range, v->veg[SW_SHRUB].shade_scale, v->veg[SW_SHRUB].shade_deadmax,
-				v->veg[SW_SHRUB].tr_shade_effects.xinflec, v->veg[SW_SHRUB].tr_shade_effects.slope, v->veg[SW_SHRUB].tr_shade_effects.yinflec,
-				v->veg[SW_SHRUB].tr_shade_effects.range, v->veg[SW_SHRUB].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
-		transp_rate_shrub *= snowdepth_scale_shrub * v->veg[SW_SHRUB].cov.fCover;
-
-	} else {
-		soil_evap_rate_shrub = 0.;
-		transp_rate_shrub = 0.;
-	}
-
-	/* Forb transpiration & bare-soil evaporation rates */
-	if (GT(v->veg[SW_FORBS].cov.fCover, 0.) && GT(snowdepth_scale_forb, 0.)) { /* forbs present AND forbs not fully covered in snow */
-		forb_EsT_partitioning(&soil_evap_forb, &transp_forb, v->veg[SW_FORBS].lai_live_daily[doy], v->veg[SW_FORBS].EsTpartitioning_param);
-
-		if (EQ(sw->snowpack[Today], 0.)) { /* bare-soil evaporation only when no snow */
-			pot_soil_evap(&soil_evap_rate_forb, SW_Site.n_evap_lyrs, lyrEvapCo, v->veg[SW_FORBS].total_agb_daily[doy], soil_evap_forb, sw->pet, SW_Site.evap.xinflec,
-					SW_Site.evap.slope, SW_Site.evap.yinflec, SW_Site.evap.range, lyrWidths, lyrSWCBulk, v->veg[SW_FORBS].Es_param_limit);
-			soil_evap_rate_forb *= v->veg[SW_FORBS].cov.fCover;
-		} else {
-			soil_evap_rate_forb = 0.;
-		}
-
-		transp_weighted_avg(&swpot_avg_forb, SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs[SW_FORBS], lyrTrRegions_Forb, lyrTranspCo_Forb, lyrSWCBulk);
-
-		pot_transp(&transp_rate_forb, swpot_avg_forb, v->veg[SW_FORBS].biolive_daily[doy], v->veg[SW_FORBS].biodead_daily[doy], transp_forb, sw->pet,
-				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range, v->veg[SW_FORBS].shade_scale, v->veg[SW_FORBS].shade_deadmax,
-				v->veg[SW_FORBS].tr_shade_effects.xinflec, v->veg[SW_FORBS].tr_shade_effects.slope, v->veg[SW_FORBS].tr_shade_effects.yinflec,
-				v->veg[SW_FORBS].tr_shade_effects.range, v->veg[SW_FORBS].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
-		transp_rate_forb *= snowdepth_scale_forb * v->veg[SW_FORBS].cov.fCover;
-
-	} else {
-		soil_evap_rate_forb = 0.;
-		transp_rate_forb = 0.;
-	}
-
-	/* Grass transpiration & bare-soil evaporation rates */
-	if (GT(v->veg[SW_GRASS].cov.fCover, 0.) && GT(snowdepth_scale_grass, 0.)) { /* grasses present AND grasses not fully covered in snow */
-		grass_EsT_partitioning(&soil_evap_grass, &transp_grass, v->veg[SW_GRASS].lai_live_daily[doy], v->veg[SW_GRASS].EsTpartitioning_param);
-
-		if (EQ(sw->snowpack[Today], 0.)) { /* bare-soil evaporation only when no snow */
-			pot_soil_evap(&soil_evap_rate_grass, SW_Site.n_evap_lyrs, lyrEvapCo, v->veg[SW_GRASS].total_agb_daily[doy], soil_evap_grass, sw->pet, SW_Site.evap.xinflec,
-					SW_Site.evap.slope, SW_Site.evap.yinflec, SW_Site.evap.range, lyrWidths, lyrSWCBulk, v->veg[SW_GRASS].Es_param_limit);
-			soil_evap_rate_grass *= v->veg[SW_GRASS].cov.fCover;
-		} else {
-			soil_evap_rate_grass = 0.;
-		}
-
-		transp_weighted_avg(&swpot_avg_grass, SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs[SW_GRASS], lyrTrRegions_Grass, lyrTranspCo_Grass, lyrSWCBulk);
-
-		pot_transp(&transp_rate_grass, swpot_avg_grass, v->veg[SW_GRASS].biolive_daily[doy], v->veg[SW_GRASS].biodead_daily[doy], transp_grass, sw->pet,
-				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range, v->veg[SW_GRASS].shade_scale, v->veg[SW_GRASS].shade_deadmax,
-				v->veg[SW_GRASS].tr_shade_effects.xinflec, v->veg[SW_GRASS].tr_shade_effects.slope, v->veg[SW_GRASS].tr_shade_effects.yinflec,
-				v->veg[SW_GRASS].tr_shade_effects.range, v->veg[SW_GRASS].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
-		transp_rate_grass *= snowdepth_scale_grass * v->veg[SW_GRASS].cov.fCover;
-	} else {
-		soil_evap_rate_grass = 0.;
-		transp_rate_grass = 0.;
-	}
 
 	/* Potential evaporation rates of intercepted and surface water */
-	surface_evap_tree_rate = tree_h2o_qum[Today];
-	surface_evap_shrub_rate = shrub_h2o_qum[Today];
-	surface_evap_forb_rate = forb_h2o_qum[Today];
-	surface_evap_grass_rate = grass_h2o_qum[Today];
+	ForEachVegType(k) {
+		surface_evap_veg_rate[k] = veg_h2o_qum[k][Today];
+	}
+
 	surface_evap_litter_rate = litter_h2o_qum[Today];
 	surface_evap_standingWater_rate = standingWater[Today];
 	snow_evap_rate = SW_Weather.now.snowloss[Today]; /* but this is fixed and can also include snow redistribution etc., so don't scale to PET */
 
 	/* Scale all (potential) evaporation and transpiration flux rates to PET */
-	rate_help = surface_evap_tree_rate + surface_evap_forb_rate + surface_evap_shrub_rate + surface_evap_grass_rate + surface_evap_litter_rate
-			+ surface_evap_standingWater_rate + soil_evap_rate_tree + transp_rate_tree + soil_evap_rate_forb + transp_rate_forb + soil_evap_rate_shrub + transp_rate_shrub
-			+ soil_evap_rate_grass + transp_rate_grass + soil_evap_rate_bs;
+	rate_help = surface_evap_litter_rate + surface_evap_standingWater_rate +
+		soil_evap_rate_bs;
+	ForEachVegType(k) {
+		rate_help += surface_evap_veg_rate[k] + soil_evap_rate[k] + transp_rate[k];
+	}
+
 
 	if (GT(rate_help, sw->pet)) {
 		rate_help = sw->pet / rate_help;
 
-		surface_evap_tree_rate *= rate_help;
-		surface_evap_forb_rate *= rate_help;
-		surface_evap_shrub_rate *= rate_help;
-		surface_evap_grass_rate *= rate_help;
+		ForEachVegType(k)
+		{
+			surface_evap_veg_rate[k] *= rate_help;
+			soil_evap_rate[k] *= rate_help;
+			transp_rate[k] *= rate_help;
+		}
+
 		surface_evap_litter_rate *= rate_help;
 		surface_evap_standingWater_rate *= rate_help;
-		soil_evap_rate_tree *= rate_help;
-		transp_rate_tree *= rate_help;
-		soil_evap_rate_forb *= rate_help;
-		transp_rate_forb *= rate_help;
-		soil_evap_rate_shrub *= rate_help;
-		transp_rate_shrub *= rate_help;
-		soil_evap_rate_grass *= rate_help;
-		transp_rate_grass *= rate_help;
 		soil_evap_rate_bs *= rate_help;
 	}
 
@@ -566,134 +509,98 @@ void SW_Water_Flow(void) {
 	sw->aet += snow_evap_rate;
 
 	/* Evaporation of intercepted and surface water */
-	evap_fromSurface(&tree_h2o_qum[Today], &surface_evap_tree_rate, &sw->aet);
-	evap_fromSurface(&shrub_h2o_qum[Today], &surface_evap_shrub_rate, &sw->aet);
-	evap_fromSurface(&forb_h2o_qum[Today], &surface_evap_forb_rate, &sw->aet);
-	evap_fromSurface(&grass_h2o_qum[Today], &surface_evap_grass_rate, &sw->aet);
+	ForEachVegType(k)
+	{
+		evap_fromSurface(&veg_h2o_qum[k][Today], &surface_evap_veg_rate[k], &sw->aet);
+		sw->evap_veg[k] = surface_evap_veg_rate[k];
+	}
+
 	evap_fromSurface(&litter_h2o_qum[Today], &surface_evap_litter_rate, &sw->aet);
 	evap_fromSurface(&standingWater[Today], &surface_evap_standingWater_rate, &sw->aet);
 
-	sw->evap_veg[SW_TREES] = surface_evap_tree_rate;
-	sw->evap_veg[SW_SHRUB] = surface_evap_shrub_rate;
-	sw->evap_veg[SW_FORBS] = surface_evap_forb_rate;
-	sw->evap_veg[SW_GRASS] = surface_evap_grass_rate;
 	sw->litter_evap = surface_evap_litter_rate;
 	sw->surfaceWater_evap = surface_evap_standingWater_rate;
 
 	/* bare-soil evaporation */
 	if (GT(v->bare_cov.fCover, 0.) && EQ(sw->snowpack[Today], 0.)) {
 		/* remove bare-soil evap from swv */
-		remove_from_soil(lyrSWCBulk, lyrEvap_BareGround, &sw->aet, SW_Site.n_evap_lyrs, lyrEvapCo, soil_evap_rate_bs, lyrSWCBulk_HalfWiltpts);
+		remove_from_soil(lyrSWCBulk, lyrEvap_BareGround, &sw->aet, SW_Site.n_evap_lyrs,
+			lyrEvapCo, soil_evap_rate_bs, lyrSWCBulk_HalfWiltpts);
+
 	} else {
 		/* Set daily array to zero, no evaporation */
-		LyrIndex i;
-		for (i = 0; i < SW_Site.n_evap_lyrs;)
-			lyrEvap_BareGround[i++] = 0.;
+		ForEachEvapLayer(i) {
+			lyrEvap_BareGround[i] = 0.;
+		}
 	}
 
-	/* Tree transpiration and bare-soil evaporation */
-	if (GT(v->veg[SW_TREES].cov.fCover, 0.) && GT(snowdepth_scale_tree, 0.)) {
-		/* remove bare-soil evap from swc */
-		remove_from_soil(lyrSWCBulk, lyrEvap_Tree, &sw->aet, SW_Site.n_evap_lyrs, lyrEvapCo, soil_evap_rate_tree, lyrSWCBulk_HalfWiltpts);
+	/* Vegetation transpiration and bare-soil evaporation */
+	ForEachVegType(k)
+	{
+		if (GT(v->veg[k].cov.fCover, 0.) && GT(snowdepth_scale_veg[k], 0.)) {
+			/* remove bare-soil evap from swc */
+			remove_from_soil(lyrSWCBulk, lyrEvap[k], &sw->aet, SW_Site.n_evap_lyrs,
+				lyrEvapCo, soil_evap_rate[k], lyrSWCBulk_HalfWiltpts);
 
-		/* remove transp from swc */
-		remove_from_soil(lyrSWCBulk, lyrTransp_Tree, &sw->aet, SW_Site.n_transp_lyrs[SW_TREES], lyrTranspCo_Tree, transp_rate_tree, lyrSWCBulk_atSWPcrit_Tree);
-	} else {
-		/* Set daily array to zero, no evaporation or transpiration */
-		LyrIndex i;
-		for (i = 0; i < SW_Site.n_evap_lyrs;)
-			lyrEvap_Tree[i++] = 0.;
-		for (i = 0; i < SW_Site.n_transp_lyrs[SW_TREES];)
-			lyrTransp_Tree[i++] = 0.;
+			/* remove transp from swc */
+			remove_from_soil(lyrSWCBulk, lyrTransp[k], &sw->aet, SW_Site.n_transp_lyrs[k],
+				lyrTranspCo[k], transp_rate[k], lyrSWCBulk_atSWPcrit[k]);
+
+		} else {
+			/* Set daily array to zero, no evaporation or transpiration */
+			ForEachSoilLayer(i) {
+				lyrTransp[k][i] = lyrEvap[k][i] = 0.;
+			}
+		}
 	}
 
-	/* Shrub transpiration and bare-soil evaporation */
-	if (GT(v->veg[SW_SHRUB].cov.fCover, 0.) && GT(snowdepth_scale_shrub, 0.)) {
-		/* remove bare-soil evap from swc */
-		remove_from_soil(lyrSWCBulk, lyrEvap_Shrub, &sw->aet, SW_Site.n_evap_lyrs, lyrEvapCo, soil_evap_rate_shrub, lyrSWCBulk_HalfWiltpts);
-
-		/* remove transp from swc */
-		remove_from_soil(lyrSWCBulk, lyrTransp_Shrub, &sw->aet, SW_Site.n_transp_lyrs[SW_SHRUB], lyrTranspCo_Shrub, transp_rate_shrub, lyrSWCBulk_atSWPcrit_Shrub);
-	} else {
-		/* Set daily array to zero, no evaporation or transpiration */
-		LyrIndex i;
-		for (i = 0; i < SW_Site.n_evap_lyrs;)
-			lyrEvap_Shrub[i++] = 0.;
-		for (i = 0; i < SW_Site.n_transp_lyrs[SW_SHRUB];)
-			lyrTransp_Shrub[i++] = 0.;
-	}
-
-	/* Forb transpiration and bare-soil evaporation */
-	if (GT(v->veg[SW_FORBS].cov.fCover, 0.) && GT(snowdepth_scale_forb, 0.)) {
-		/* remove bare-soil evap from swc */
-		remove_from_soil(lyrSWCBulk, lyrEvap_Forb, &sw->aet, SW_Site.n_evap_lyrs, lyrEvapCo, soil_evap_rate_forb, lyrSWCBulk_HalfWiltpts);
-
-		/* remove transp from swc */
-		remove_from_soil(lyrSWCBulk, lyrTransp_Forb, &sw->aet, SW_Site.n_transp_lyrs[SW_FORBS], lyrTranspCo_Forb, transp_rate_forb, lyrSWCBulk_atSWPcrit_Forb);
-	} else {
-		/* Set daily array to zero, no evaporation or transpiration */
-		LyrIndex i;
-		for (i = 0; i < SW_Site.n_evap_lyrs;)
-			lyrEvap_Forb[i++] = 0.;
-		for (i = 0; i < SW_Site.n_transp_lyrs[SW_FORBS];)
-			lyrTransp_Forb[i++] = 0.;
-	}
-
-	/* Grass transpiration & bare-soil evaporation */
-	if (GT(v->veg[SW_GRASS].cov.fCover, 0.) && GT(snowdepth_scale_grass, 0.)) {
-		/* remove bare-soil evap from swc */
-		remove_from_soil(lyrSWCBulk, lyrEvap_Grass, &sw->aet, SW_Site.n_evap_lyrs, lyrEvapCo, soil_evap_rate_grass, lyrSWCBulk_HalfWiltpts);
-
-		/* remove transp from swc */
-		remove_from_soil(lyrSWCBulk, lyrTransp_Grass, &sw->aet, SW_Site.n_transp_lyrs[SW_GRASS], lyrTranspCo_Grass, transp_rate_grass, lyrSWCBulk_atSWPcrit_Grass);
-	} else {
-		/* Set daily array to zero, no evaporation or transpiration */
-		LyrIndex i;
-		for (i = 0; i < SW_Site.n_evap_lyrs;)
-			lyrEvap_Grass[i++] = 0.;
-		for (i = 0; i < SW_Site.n_transp_lyrs[SW_GRASS];)
-			lyrTransp_Grass[i++] = 0.;
-	}
 
 	/* Hydraulic redistribution */
-	if (v->veg[SW_GRASS].flagHydraulicRedistribution && GT(v->veg[SW_GRASS].cov.fCover, 0.) && GT(v->veg[SW_GRASS].biolive_daily[doy], 0.)) {
-		hydraulic_redistribution(lyrSWCBulk, lyrSWCBulk_Wiltpts, lyrTranspCo_Grass, lyrHydRed_Grass, SW_Site.n_layers, v->veg[SW_GRASS].maxCondroot,
-				v->veg[SW_GRASS].swpMatric50, v->veg[SW_GRASS].shapeCond, v->veg[SW_GRASS].cov.fCover);
+	ForEachVegTypeBottomUp(k) {
+		if (v->veg[k].flagHydraulicRedistribution && GT(v->veg[k].cov.fCover, 0.) &&
+			GT(v->veg[k].biolive_daily[doy], 0.)) {
+
+			hydraulic_redistribution(lyrSWCBulk, lyrSWCBulk_Wiltpts, lyrTranspCo[k],
+				lyrHydRed[k], SW_Site.n_layers, v->veg[k].maxCondroot, v->veg[k].swpMatric50,
+				v->veg[k].shapeCond, v->veg[k].cov.fCover);
+		}
 	}
-	if (v->veg[SW_FORBS].flagHydraulicRedistribution && GT(v->veg[SW_FORBS].cov.fCover, 0.) && GT(v->veg[SW_FORBS].biolive_daily[doy], 0.)) {
-		hydraulic_redistribution(lyrSWCBulk, lyrSWCBulk_Wiltpts, lyrTranspCo_Forb, lyrHydRed_Forb, SW_Site.n_layers, v->veg[SW_FORBS].maxCondroot, v->veg[SW_FORBS].swpMatric50,
-				v->veg[SW_FORBS].shapeCond, v->veg[SW_FORBS].cov.fCover);
-	}
-	if (v->veg[SW_SHRUB].flagHydraulicRedistribution && GT(v->veg[SW_SHRUB].cov.fCover, 0.) && GT(v->veg[SW_SHRUB].biolive_daily[doy], 0.)) {
-		hydraulic_redistribution(lyrSWCBulk, lyrSWCBulk_Wiltpts, lyrTranspCo_Shrub, lyrHydRed_Shrub, SW_Site.n_layers, v->veg[SW_SHRUB].maxCondroot,
-				v->veg[SW_SHRUB].swpMatric50, v->veg[SW_SHRUB].shapeCond, v->veg[SW_SHRUB].cov.fCover);
-	}
-	if (v->veg[SW_TREES].flagHydraulicRedistribution && GT(v->veg[SW_TREES].cov.fCover, 0.) && GT(v->veg[SW_TREES].biolive_daily[doy], 0.)) {
-		hydraulic_redistribution(lyrSWCBulk, lyrSWCBulk_Wiltpts, lyrTranspCo_Tree, lyrHydRed_Tree, SW_Site.n_layers, v->veg[SW_TREES].maxCondroot, v->veg[SW_TREES].swpMatric50,
-				v->veg[SW_TREES].shapeCond, v->veg[SW_TREES].cov.fCover);
-	}
+
 
 	/* Calculate percolation for unsaturated soil water conditions. */
 	/* 01/06/2011	(drs) call to infiltrate_water_low() has to be the last swc affecting calculation */
 
-	infiltrate_water_low(lyrSWCBulk, lyrDrain, &drainout, SW_Site.n_layers, SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH, lyrSWCBulk_FieldCaps, lyrWidths, lyrSWCBulk_Mins,
-			lyrSWCBulk_Saturated, lyrImpermeability, &standingWater[Today]);
+	infiltrate_water_low(lyrSWCBulk, lyrDrain, &drainout, SW_Site.n_layers,
+		SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH, lyrSWCBulk_FieldCaps, lyrWidths,
+		lyrSWCBulk_Mins, lyrSWCBulk_Saturated, lyrImpermeability, &standingWater[Today]);
 
 	sw->surfaceWater = standingWater[Today];
 
+
 	/* Soil Temperature starts here */
 
-	double biomass; // computing the live biomass real quickly to condense the call to soil_temperature
-biomass = v->veg[SW_GRASS].biomass_daily[doy] * v->veg[SW_GRASS].cov.fCover + v->veg[SW_SHRUB].biolive_daily[doy] * v->veg[SW_SHRUB].cov.fCover
-		+ v->veg[SW_FORBS].biomass_daily[doy] * v->veg[SW_FORBS].cov.fCover + v->veg[SW_TREES].biolive_daily[doy] * v->veg[SW_TREES].cov.fCover; // changed to exclude tree biomass, bMatric/c it was breaking the soil_temperature function
+	// computing the live biomass real quickly to condense the call to soil_temperature
+	x = 0.;
+	ForEachVegType(k)
+	{
+		if (k == SW_TREES || k == SW_SHRUB) {
+			// changed to exclude tree biomass, bMatric/c it was breaking the soil_temperature function
+			x += v->veg[k].biolive_daily[doy] * v->veg[k].cov.fCover;
+		} else {
+			x += v->veg[k].biomass_daily[doy] * v->veg[k].cov.fCover;
+		}
+	}
 
-			// soil_temperature function computes the soil temp for each layer and stores it in lyrsTemp
-			// doesn't affect SWC at all, but needs it for the calculation, so therefore the temperature is the last calculation done
-	if (SW_Site.use_soil_temp)
-		soil_temperature(SW_Weather.now.temp_avg[Today], sw->pet, sw->aet, biomass, lyrSWCBulk, lyrSWCBulk_Saturated, lyrbDensity, lyrWidths, lyroldsTemp, lyrsTemp,surfaceTemp, SW_Site.n_layers,
-				lyrSWCBulk_FieldCaps, lyrSWCBulk_Wiltpts, SW_Site.bmLimiter, SW_Site.t1Param1, SW_Site.t1Param2, SW_Site.t1Param3, SW_Site.csParam1, SW_Site.csParam2,
-				SW_Site.shParam, sw->snowdepth, SW_Site.meanAirTemp, SW_Site.stDeltaX, SW_Site.stMaxDepth, SW_Site.stNRGR, sw->snowpack[Today]);
-
+	// soil_temperature function computes the soil temp for each layer and stores it in lyrsTemp
+	// doesn't affect SWC at all (yet), but needs it for the calculation, so therefore the temperature is the last calculation done
+	if (SW_Site.use_soil_temp) {
+		soil_temperature(SW_Weather.now.temp_avg[Today], sw->pet, sw->aet, x, lyrSWCBulk,
+			lyrSWCBulk_Saturated, lyrbDensity, lyrWidths, lyroldsTemp, lyrsTemp,surfaceTemp,
+			SW_Site.n_layers, lyrSWCBulk_FieldCaps, lyrSWCBulk_Wiltpts, SW_Site.bmLimiter,
+			SW_Site.t1Param1, SW_Site.t1Param2, SW_Site.t1Param3, SW_Site.csParam1,
+			SW_Site.csParam2, SW_Site.shParam, sw->snowdepth, SW_Site.meanAirTemp,
+			SW_Site.stDeltaX, SW_Site.stMaxDepth, SW_Site.stNRGR, sw->snowpack[Today]);
+	}
 
 	/* Soil Temperature ends here */
 
@@ -702,10 +609,9 @@ biomass = v->veg[SW_GRASS].biomass_daily[doy] * v->veg[SW_GRASS].cov.fCover + v-
 
 	standingWater[Yesterday] = standingWater[Today];
 	litter_h2o_qum[Yesterday] = litter_h2o_qum[Today];
-	tree_h2o_qum[Yesterday] = tree_h2o_qum[Today];
-	shrub_h2o_qum[Yesterday] = shrub_h2o_qum[Today];
-	forb_h2o_qum[Yesterday] = forb_h2o_qum[Today];
-	grass_h2o_qum[Yesterday] = grass_h2o_qum[Today];
+	ForEachVegType(k) {
+		veg_h2o_qum[k][Yesterday] = veg_h2o_qum[k][Today];
+	}
 
 } /* END OF WATERFLOW */
 
@@ -725,6 +631,7 @@ static void records2arrays(void) {
 	 *       see also Site.c.
 	 */
 	LyrIndex i;
+	int k;
 
 	ForEachSoilLayer(i)
 	{
@@ -735,18 +642,10 @@ static void records2arrays(void) {
 	if (SW_Model.doy == SW_Model.firstdoy) {
 		ForEachSoilLayer(i)
 		{
-			lyrTrRegions_Tree[i] = SW_Site.lyr[i]->my_transp_rgn[SW_TREES];
-			lyrTrRegions_Forb[i] = SW_Site.lyr[i]->my_transp_rgn[SW_FORBS];
-			lyrTrRegions_Shrub[i] = SW_Site.lyr[i]->my_transp_rgn[SW_SHRUB];
-			lyrTrRegions_Grass[i] = SW_Site.lyr[i]->my_transp_rgn[SW_GRASS];
 			lyrSWCBulk_FieldCaps[i] = SW_Site.lyr[i]->swcBulk_fieldcap;
 			lyrWidths[i] = SW_Site.lyr[i]->width;
 			lyrSWCBulk_Wiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt;
 			lyrSWCBulk_HalfWiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt / 2.;
-			lyrSWCBulk_atSWPcrit_Tree[i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[SW_TREES];
-			lyrSWCBulk_atSWPcrit_Forb[i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[SW_FORBS];
-			lyrSWCBulk_atSWPcrit_Shrub[i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[SW_SHRUB];
-			lyrSWCBulk_atSWPcrit_Grass[i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[SW_GRASS];
 			lyrSWCBulk_Mins[i] = SW_Site.lyr[i]->swcBulk_min;
 			lyrpsisMatric[i] = SW_Site.lyr[i]->psisMatric;
 			lyrthetasMatric[i] = SW_Site.lyr[i]->thetasMatric;
@@ -756,31 +655,13 @@ static void records2arrays(void) {
 			lyrSWCBulk_Saturated[i] = SW_Site.lyr[i]->swcBulk_saturated;
 			lyrbDensity[i] = SW_Site.lyr[i]->soilBulk_density;
 
-			/*Init hydraulic redistribution to zero */
-			lyrHydRed_Tree[i] = 0.;
-			lyrHydRed_Shrub[i] = 0.;
-			lyrHydRed_Forb[i] = 0.;
-			lyrHydRed_Grass[i] = 0.;
-		}
-
-		ForEachTreeTranspLayer(i)
-		{
-			lyrTranspCo_Tree[i] = SW_Site.lyr[i]->transp_coeff[SW_TREES];
-		}
-
-		ForEachShrubTranspLayer(i)
-		{
-			lyrTranspCo_Shrub[i] = SW_Site.lyr[i]->transp_coeff[SW_SHRUB];
-		}
-
-		ForEachForbTranspLayer(i)
-		{
-			lyrTranspCo_Forb[i] = SW_Site.lyr[i]->transp_coeff[SW_FORBS];
-		}
-
-		ForEachGrassTranspLayer(i)
-		{
-			lyrTranspCo_Grass[i] = SW_Site.lyr[i]->transp_coeff[SW_GRASS];
+			ForEachVegType(k)
+			{
+				lyrTrRegions[k][i] = SW_Site.lyr[i]->my_transp_rgn[k];
+				lyrSWCBulk_atSWPcrit[k][i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[k];
+				lyrHydRed[k][i] = 0.; // Init hydraulic redistribution to zero
+				lyrTranspCo[k][i] = SW_Site.lyr[i]->transp_coeff[k];
+			}
 		}
 
 		ForEachEvapLayer(i)
@@ -795,16 +676,18 @@ static void arrays2records(void) {
 	 * the appropriate records.
 	 */
 	LyrIndex i;
+	int k;
 
 	ForEachSoilLayer(i)
 	{
 		SW_Soilwat.swcBulk[Today][i] = lyrSWCBulk[i];
 		SW_Soilwat.drain[i] = lyrDrain[i];
-		SW_Soilwat.hydred[SW_TREES][i] = lyrHydRed_Tree[i];
-		SW_Soilwat.hydred[SW_SHRUB][i] = lyrHydRed_Shrub[i];
-		SW_Soilwat.hydred[SW_FORBS][i] = lyrHydRed_Forb[i];
-		SW_Soilwat.hydred[SW_GRASS][i] = lyrHydRed_Grass[i];
 		SW_Soilwat.sTemp[i] = lyrsTemp[i];
+		ForEachVegType(k)
+		{
+			SW_Soilwat.hydred[k][i] = lyrHydRed[k][i];
+			SW_Soilwat.transpiration[k][i] = lyrTransp[k][i];
+		}
 	}
 	SW_Soilwat.surfaceTemp = surfaceTemp[Today];
 	SW_Weather.surfaceTemp = surfaceTemp[Today];
@@ -812,29 +695,14 @@ static void arrays2records(void) {
 	if (SW_Site.deepdrain)
 		SW_Soilwat.swcBulk[Today][SW_Site.deep_lyr] = drainout;
 
-	ForEachTreeTranspLayer(i)
-	{
-		SW_Soilwat.transpiration[SW_TREES][i] = lyrTransp_Tree[i];
-	}
-
-	ForEachShrubTranspLayer(i)
-	{
-		SW_Soilwat.transpiration[SW_SHRUB][i] = lyrTransp_Shrub[i];
-	}
-
-	ForEachForbTranspLayer(i)
-	{
-		SW_Soilwat.transpiration[SW_FORBS][i] = lyrTransp_Forb[i];
-	}
-
-	ForEachGrassTranspLayer(i)
-	{
-		SW_Soilwat.transpiration[SW_GRASS][i] = lyrTransp_Grass[i];
-	}
 
 	ForEachEvapLayer(i)
 	{
-		SW_Soilwat.evaporation[i] = lyrEvap_BareGround[i] + lyrEvap_Tree[i] + lyrEvap_Forb[i] + lyrEvap_Shrub[i] + lyrEvap_Grass[i];
+		SW_Soilwat.evaporation[i] = lyrEvap_BareGround[i];
+		ForEachVegType(k)
+		{
+			SW_Soilwat.evaporation[i] += lyrEvap[k][i];
+		}
 	}
 
 }

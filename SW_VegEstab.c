@@ -376,10 +376,12 @@ static void _sanity_check(unsigned int sppnum) {
 	SW_LAYER_INFO **lyr = SW_Site.lyr;
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
 	LyrIndex min_transp_lyrs;
+	int k;
 
-	min_transp_lyrs = min(SW_Site.n_transp_lyrs[SW_TREES],
-	  min(SW_Site.n_transp_lyrs[SW_SHRUB], min(SW_Site.n_transp_lyrs[SW_FORBS],
-	  SW_Site.n_transp_lyrs[SW_GRASS])));
+	min_transp_lyrs = SW_Site.n_transp_lyrs[SW_TREES];
+	ForEachVegType(k) {
+		min_transp_lyrs = min(min_transp_lyrs, SW_Site.n_transp_lyrs[k]);
+	}
 
 	if (v->estab_lyrs > min_transp_lyrs) {
 		LogError(logfp, LOGFATAL, "%s : Layers requested (estab_lyrs) > (# transpiration layers=%d).", MyFileName, min_transp_lyrs);

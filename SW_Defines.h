@@ -83,6 +83,7 @@
 #define ForEachForbTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_FORBS]; (i)++)
 #define ForEachTranspRegion(r)  for((r)=0; (r) < SW_Site.n_transp_rgn;  (r)++)
 #define ForEachVegType(k)  for ((k) = 0; (k) < NVEGTYPES; (k)++)
+#define ForEachVegTypeBottomUp(k)  for ((k) = NVEGTYPES - 1; (k) >= 0; (k)--)
 /* define m as Months */
 #define ForEachMonth(m)         for((m)=Jan; (m) <= Dec;  (m)++)
 
