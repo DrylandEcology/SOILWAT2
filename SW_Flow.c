@@ -234,7 +234,7 @@ void SW_FLW_construct(void) {
 	litter_h2o_qum[0] = litter_h2o_qum[1] = 0.;
 
 	ForEachVegType(k) {
-		veg_h2o_qum[k][0] = veg_h2o_qum[k][0] = 0.;
+		veg_h2o_qum[k][0] = veg_h2o_qum[k][1] = 0.;
 	}
 }
 

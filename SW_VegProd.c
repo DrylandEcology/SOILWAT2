@@ -418,7 +418,7 @@ void SW_VPD_read(void) {
 					LogError(logfp, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
-					v->veg[k].flagHydraulicRedistribution = help_veg[k];
+					v->veg[k].flagHydraulicRedistribution = (Bool) EQ(help_veg[k], 1.);
 				}
 				break;
 			case 26:
