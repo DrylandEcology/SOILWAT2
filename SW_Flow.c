@@ -132,6 +132,7 @@ extern SW_SKY SW_Sky;
 
 extern unsigned int soil_temp_init; // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 extern unsigned int fusion_pool_init;
+extern char const *key2veg[];
 
 /* *************************************************** */
 /*                Module-Level Variables               */
@@ -148,7 +149,6 @@ RealD lyrSWCBulk[MAX_LAYERS], lyrDrain[MAX_LAYERS],
 	lyrTransp[NVEGTYPES][MAX_LAYERS], lyrTranspCo[NVEGTYPES][MAX_LAYERS],
 	lyrEvap[NVEGTYPES][MAX_LAYERS], lyrEvap_BareGround[MAX_LAYERS],
 	lyrSWCBulk_atSWPcrit[NVEGTYPES][MAX_LAYERS], lyrHydRed[NVEGTYPES][MAX_LAYERS],
-	lyrHydRed[NVEGTYPES][MAX_LAYERS],
 
 	lyrbDensity[MAX_LAYERS], lyrWidths[MAX_LAYERS],
 	lyrEvapCo[MAX_LAYERS], lyrSumTrCo[MAX_TRANSP_REGIONS + 1],
@@ -248,14 +248,14 @@ void SW_Water_Flow(void) {
   SW_SOILWAT *sw = &SW_Soilwat;
 
 	RealD swpot_avg[NVEGTYPES],
-		transp_veg[NVEGTYPES], transp_rate[NVEGTYPES] = {1.},
-		soil_evap[NVEGTYPES], soil_evap_rate[NVEGTYPES] = {1.}, soil_evap_rate_bs = 1.,
-		surface_evap_veg_rate[NVEGTYPES] = {1.},
+		transp_veg[NVEGTYPES], transp_rate[NVEGTYPES],
+		soil_evap[NVEGTYPES], soil_evap_rate[NVEGTYPES], soil_evap_rate_bs = 1.,
+		surface_evap_veg_rate[NVEGTYPES],
 		surface_evap_litter_rate = 1., surface_evap_standingWater_rate = 1.,
 		snow_evap_rate = 1.,
 		veg_h2o[NVEGTYPES], litter_h2o,
 		litter_h2o_help, h2o_for_soil = 0., ppt_toUse, snowmelt,
-		snowdepth_scale_veg[NVEGTYPES] = {1.},
+		snowdepth_scale_veg[NVEGTYPES],
 		rate_help, x;
 
 	int doy, k;

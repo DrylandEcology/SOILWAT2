@@ -433,13 +433,18 @@ static void _read_layers(void) {
 	SW_SITE *v = &SW_Site;
 	FILE *f;
 	Bool evap_ok = swTRUE, /* mitigate gaps in layers' evap coeffs */
-		transp_ok_veg[NVEGTYPES] = {swTRUE}, /* same for transpiration coefficients */
+		transp_ok_veg[NVEGTYPES], /* same for transpiration coefficients */
 		fail = swFALSE;
 		LyrIndex lyrno;
 	int x, k;
 	const char *errtype = "\0";
 	RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay, matricd, imperm,
 		soiltemp, fval = 0, f_gravel;
+
+	// Initialize
+	ForEachVegType(k) {
+		transp_ok_veg[k] = swTRUE;
+	}
 
 	/* note that Files.read() must be called prior to this. */
 	MyFileName = SW_F_name(eLayers);
