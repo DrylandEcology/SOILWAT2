@@ -102,12 +102,12 @@ typedef struct {
 
 
 typedef struct {
-	VegTypeOut grass, shrub, tree, forb;
+	VegTypeOut veg[NVEGTYPES]; // used to be: grass, shrub, tree, forb;
 } SW_VEGPROD_OUTPUTS;
 
 
 typedef struct {
-	VegType grass, shrub, tree, forb;
+	VegType veg[NVEGTYPES]; // used to be: grass, shrub, tree, forb;
 	CoverType bare_cov;   /* bare ground cover of plot */
 
 	SW_VEGPROD_OUTPUTS dysum, /* helpful placeholder */

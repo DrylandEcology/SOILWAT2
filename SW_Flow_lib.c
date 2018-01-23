@@ -120,24 +120,24 @@ static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 /* --------------------------------------------------- */
 
 /**
-	\fn void grass_intercepted_water(double *pptleft, double *wintgrass, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
-	\brief Calculate the water intercepted by grasses.
+	\fn void veg_intercepted_water(double *pptleft, double *wintgrass, double ppt, double x, double scale, double a, double b, double c, double d) {
+	\brief Calculate the water intercepted by vegetation.
 
 	Equations based on Corbet and Crouse (1968). \cite Corbett1968
 
-  \param pptleft.
-	\param wintgrass.
-	\param ppt. daily precipitation
-	\param vegcov. vegetation cover of grass for the day (based on monthly biomass
-  values, see the routine "initprod").
-	\param scale. Scale paramater. Used to represent snow depth.
-	\param a. a parameter for intercept of grass interception equation.
-	\param b. b parameter for intercept of grass interception equation.
-	\param c. c parameter for slope of grass interception equation.
-	\param d. d parameter for slope of grass interception equation.
+  \param pptleft
+	\param wintgrass
+	\param ppt daily precipitation
+	\param x vegetation cover or LAI for the day (based on monthly biomass
+	       values, see the routine "initprod").
+	\param scale Scale paramater. Used to represent snow depth.
+	\param a a parameter for intercept of grass interception equation.
+	\param b b parameter for intercept of grass interception equation.
+	\param c c parameter for slope of grass interception equation.
+	\param d d parameter for slope of grass interception equation.
 
-	\return pptleft. Amount of precipitation left after interception.
-	\return wintgrass. Amount of precipitation interception by grass.
+	\return pptleft Amount of precipitation left after interception.
+	\return wintgrass Amount of precipitation interception by grass.
 */
 
 
@@ -158,112 +158,25 @@ static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 
  21-Oct-03 (cwb) added MAX_WINTLIT line
  **********************************************************************/
-void grass_intercepted_water(double *pptleft, double *wintgrass, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
+void veg_intercepted_water(double *pptleft, double *wintveg, double ppt, double x,
+  double scale, double a, double b, double c, double d)
+{
 	double intcpt, slope;
 
-	if (GT(vegcov, 0.) && GT(ppt, 0.)) {
-		intcpt = b * vegcov + a;
-		slope = d * vegcov + c;
+	if (GT(x, 0.) && GT(ppt, 0.)) {
+		intcpt = b * x + a;
+		slope = d * x + c;
 
-		*wintgrass = (intcpt + slope * ppt) * scale;
+		*wintveg = (intcpt + slope * ppt) * scale;
 
-		*wintgrass = fmin(*wintgrass, ppt);
-		*wintgrass = fmin(*wintgrass, MAX_WINTSTCR);
-		*pptleft = fmax( ppt - *wintgrass, 0.0);
-	} else { /*  no precip., so obviously nothing is intercepted by standing crop. */
+		*wintveg = fmin(*wintveg, ppt);
+		*wintveg = fmin(*wintveg, MAX_WINTSTCR(x));
+		*pptleft = fmax(ppt - *wintveg, 0.0);
+
+	} else {
+	  /*  no precip. or no biomass, so obviously nothing is intercepted by standing crop. */
 		*pptleft = ppt;
-		*wintgrass = 0.0;
-	}
-}
-
-void shrub_intercepted_water(double *pptleft, double *wintshrub, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
-	/**********************************************************************
-	 PURPOSE: Calculate the water intercepted by shrubs
-	 **********************************************************************/
-	double intcpt, slope;
-
-	if (GT(vegcov, 0.) && GT(ppt, 0.)) {
-		intcpt = b * vegcov + a;
-		slope = d * vegcov + c;
-
-		*wintshrub = (intcpt + slope * ppt) * scale;
-
-		*wintshrub = fmin(*wintshrub, ppt);
-		*wintshrub = fmin(*wintshrub, MAX_WINTSTCR);
-		*pptleft = fmax( ppt - *wintshrub, 0.0);
-	} else { /*  no precip., so obviously nothing is intercepted by standing crop. */
-		*pptleft = ppt;
-		*wintshrub = 0.0;
-	}
-}
-
-void tree_intercepted_water(double *pptleft, double *wintfor, double ppt, double LAI, double scale, double a, double b, double c, double d) {
-	/**********************************************************************
-	 PURPOSE: Calculate water intercepted by forests
-
-	 HISTORY:
-	 11/16/2010	(drs)
-
-	 INPUTS:
-	 ppt     - precip. for the day in cm
-	 LAI	- forest LAI in cm/cm
-	 scale - scale interception with fraction of tree vegetation component or with snowdepth-scaler
-
-	 OUTPUT:
-	 pptleft -  precip. left after interception by forest in cm.
-	 wintfor - amount of water intercepted by forest in cm.
-	 **********************************************************************/
-	double intcpt, slope;
-
-	if (GT(LAI, 0.) && GT(ppt, 0.)) {
-		intcpt = b * LAI + a;
-		slope = d * LAI + c;
-
-		*wintfor = (intcpt + slope * ppt) * scale;
-
-		*wintfor = fmin(*wintfor, ppt);
-		*wintfor = fmin(*wintfor, MAX_WINTFOR);
-		*pptleft = fmax( ppt - *wintfor, 0.0);
-	} else { /*  no precip., so obviously nothing is intercepted by forest. */
-		*pptleft = ppt;
-		*wintfor = 0.0;
-	}
-}
-
-void forb_intercepted_water(double *pptleft, double *wintforb, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
-	/**********************************************************************
-	 PURPOSE: Calculate water intercepted by forbs
-
-
-	 HISTORY:
-	 07/09/2013	(clk)
-
-	 INPUTS:
-
-	 ppt     - precip. for the day in cm
-	 vegcov	- vegetation cover for the day (based on monthly biomass
-	 values, see the routine "initprod")
-	 scale - scale interception with fraction of forb vegetation component or with snowdepth-scaler
-
-	 OUTPUT:
-
-	 pptleft -  precip. left after interception by forb in cm.
-	 wintforb - amount of water intercepted by forb in cm.
-	 **********************************************************************/
-	double intcpt, slope;
-
-	if (GT(vegcov, 0.) && GT(ppt, 0.)) {
-		intcpt = b * vegcov + a;
-		slope = d * vegcov + c;
-
-		*wintforb = (intcpt + slope * ppt) * scale;
-
-		*wintforb = fmin(*wintforb, ppt);
-		*wintforb = fmin(*wintforb, MAX_WINTSTCR);
-		*pptleft = fmax( ppt - *wintforb, 0.0);
-	} else { /*  no precip., so obviously nothing is intercepted by forest. */
-		*pptleft = ppt;
-		*wintforb = 0.0;
+		*wintveg = 0.0;
 	}
 }
 
@@ -636,7 +549,7 @@ void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n
 	* @param blivelai the live biomass leaf area index
 	* @param lai_param
 	*/
-void grass_EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param) {
+void EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param) {
 	/**********************************************************************
 	 PURPOSE: Calculate fraction of water loss from bare soil
 	 evaporation and transpiration
@@ -645,6 +558,10 @@ void grass_EsT_partitioning(double *fbse, double *fbst, double blivelai, double 
 	 4/30/92  (SLC)
 	 24-Oct-03 (cwb) changed exp(-blivelai*bsepar1) + bsepar2;
 	 to exp(-blivelai);
+	 08/22/2011	(drs)	For trees: according to a regression based on a review by
+	  Daikoku, K., S. Hattori, A. Deguchi, Y. Aoki, M. Miyashita, K. Matsumoto, J. Akiyama,
+	  S. Iida, T. Toba, Y. Fujita, and T. Ohta. 2008. Influence of evaporation from the
+	  forest floor on evapotranspiration from the dry canopy. Hydrological Processes 22:4083-4096.
 
 	 INPUTS:
 	 blivelai - live biomass leaf area index
@@ -666,50 +583,6 @@ void grass_EsT_partitioning(double *fbse, double *fbst, double blivelai, double 
 	*fbst = 1. - (*fbse);
 }
 
-void shrub_EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param) {
-	/**********************************************************************
-	 PURPOSE: Calculate fraction of water loss from bare soil
-	 evaporation and transpiration
-	 **********************************************************************/
-
-	double bsemax = 0.995;
-
-	*fbse = exp(-lai_param * blivelai);
-
-	*fbse = fmin(*fbse, bsemax);
-	*fbst = 1. - (*fbse);
-}
-
-void tree_EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param) {
-	/**********************************************************************
-	 PURPOSE: Calculate fraction of water loss from bare soil
-	 evaporation and transpiration
-
-	 08/22/2011	(drs)	According to a regression based on a review by Daikoku, K., S. Hattori, A. Deguchi, Y. Aoki, M. Miyashita, K. Matsumoto, J. Akiyama, S. Iida, T. Toba, Y. Fujita, and T. Ohta. 2008. Influence of evaporation from the forest floor on evapotranspiration from the dry canopy. Hydrological Processes 22:4083-4096.
-	 **********************************************************************/
-
-	double bsemax = 0.995;
-
-	*fbse = exp(-lai_param * blivelai);
-
-	*fbse = fmin(*fbse, bsemax);
-	*fbst = 1. - (*fbse);
-}
-
-void forb_EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param) {
-	/**********************************************************************
-	 PURPOSE: Calculate fraction of water loss from bare soil
-	 evaporation and transpiration
-
-	 **********************************************************************/
-
-	double bsemax = 0.995;
-
-	*fbse = exp(-lai_param * blivelai);
-
-	*fbse = fmin(*fbse, bsemax);
-	*fbst = 1. - (*fbse);
-}
 
 void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double totagb, double fbse, double petday, double shift, double shape, double inflec, double range,
 		double width[], double swc[], double Es_param_limit) {
