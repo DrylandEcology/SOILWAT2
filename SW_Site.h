@@ -39,7 +39,7 @@
 						fractionVolBulk_gravel is the gravel content as a fraction of the bulk soil
 						renamed many of the of the variables in SW_LAYER_INFO to better reflect BULK and MATRIC values
  						due to the renaming, also had to update the use of these variables in the other files.
-	07/09/2013	(clk)	added the variables transp_coeff_forb, swcBulk_atSWPcrit_forb, and my_transp_rgn_forb to SW_LAYER_INFO
+	07/09/2013	(clk)	added the variables transp_coeff[SW_FORBS], swcBulk_atSWPcrit[SW_FORBS], and my_transp_rgn[SW_FORBS] to SW_LAYER_INFO
 	07/09/2013	(clk)	added the variable n_transp_lyrs_forb to SW_SITE
 */
 /********************************************************/
@@ -57,7 +57,7 @@ typedef struct {
 	RealD width, /* width of the soil layer (cm) */
 		soilBulk_density, /* bulk soil density, i.e., including gravel component, (g/cm3) */
 		evap_coeff, /* prop. of total soil evap from this layer */
-		transp_coeff_forb, transp_coeff_tree, transp_coeff_shrub, transp_coeff_grass, /* prop. of total transp from this layer    */
+		transp_coeff[NVEGTYPES], /* prop. of total transp from this layer    */
 		soilMatric_density, /* matric soil density, i.e., gravel component excluded, (g/cm3) */
 		fractionVolBulk_gravel, /* gravel content (> 2 mm) as volume-fraction of bulk soil (g/cm3) */
 		fractionWeightMatric_sand, /* sand content (< 2 mm & > . mm) as weight-fraction of matric soil (g/g) */
@@ -69,7 +69,7 @@ typedef struct {
 		swcBulk_min, /* swc cannot go below this (cm) *width     */
 		swcBulk_saturated, /* saturated soil water content (cm) * width */
 		impermeability, /* fraction of how impermeable a layer is (0=permeable, 1=impermeable)    */
-		swcBulk_atSWPcrit_forb, swcBulk_atSWPcrit_tree, swcBulk_atSWPcrit_shrub, swcBulk_atSWPcrit_grass, /* swc at the critical soil water potential */
+		swcBulk_atSWPcrit[NVEGTYPES], /* swc at the critical soil water potential */
 
 		thetasMatric, /* This group is parameters for */
 		psisMatric, /* Cosby et al. (1982) SWC <-> SWP */
@@ -78,9 +78,9 @@ typedef struct {
 
 		sTemp; /* initial soil temperature for each soil layer */
 
-	LyrIndex my_transp_rgn_forb, my_transp_rgn_tree, my_transp_rgn_shrub, my_transp_rgn_grass; /* which transp zones from Site am I in? */
-
+	LyrIndex my_transp_rgn[NVEGTYPES]; /* which transp zones from Site am I in? */
 } SW_LAYER_INFO;
+
 
 typedef struct {
 
@@ -91,8 +91,9 @@ typedef struct {
 	LyrIndex n_layers, /* total number of soil layers */
 		n_transp_rgn, /* soil layers are grouped into n transp. regions */
 		n_evap_lyrs, /* number of layers in which evap is possible */
-		n_transp_lyrs_forb, n_transp_lyrs_tree, n_transp_lyrs_shrub, n_transp_lyrs_grass, /* layer index of deepest transp. region       */
+		n_transp_lyrs[NVEGTYPES], /* layer index of deepest transp. region       */
 		deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
+
 	RealD slow_drain_coeff, /* low soil water drainage coefficient   */
 		pet_scale,	/* changes relative effect of PET calculation */
 		latitude,	/* latitude of the site (radians)        */

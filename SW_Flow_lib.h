@@ -40,7 +40,7 @@
 /* Standing crop can only intercept so much precip
  * This is the limiter used inside stdcrop_intercepted()
  */
-#define MAX_WINTSTCR (vegcov * .1)
+#define MAX_WINTSTCR(x) ((x) * .1)
 #define MAX_WINTFOR (ppt)
 
 /* Litter can only intercept so much precip.
@@ -80,13 +80,9 @@ typedef struct {
 /* =================================================== */
 /*                Function Definitions                 */
 /* --------------------------------------------------- */
-void grass_intercepted_water(double *pptleft, double *wintgrass, double ppt, double vegcov, double scale, double a, double b, double c, double d);
 
-void shrub_intercepted_water(double *pptleft, double *wintshrub, double ppt, double vegcov, double scale, double a, double b, double c, double d);
-
-void tree_intercepted_water(double *pptleft, double *wintfor, double ppt, double LAI, double scale, double a, double b, double c, double d);
-
-void forb_intercepted_water(double *pptleft, double *wintforb, double ppt, double vegcov, double scale, double a, double b, double c, double d);
+void veg_intercepted_water(double *pptleft, double *wintveg, double ppt, double x,
+  double scale, double a, double b, double c, double d);
 
 void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, double scale, double a, double b, double c, double d);
 
@@ -100,10 +96,7 @@ double svapor(double temp);
 
 void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n_layers, unsigned int tr_regions[], double tr_coeff[], double swc[]);
 
-void grass_EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param);
-void shrub_EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param);
-void tree_EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param);
-void forb_EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param);
+void EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param);
 
 void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double totagb, double fbse, double petday, double shift, double shape, double inflec, double range,
 		double width[], double swc[], double Es_param_limit);

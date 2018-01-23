@@ -209,6 +209,7 @@ void SW_CBN_read(void)
  * be simulated.
  */
 void calculate_CO2_multipliers(void) {
+  int k;
   TimeInt year,
     simendyr = SW_Model.endyr + SW_Model.addtl_yr;
   double ppm;
@@ -235,28 +236,25 @@ void calculate_CO2_multipliers(void) {
     }
 
     // Calculate multipliers per PFT
-    if (c->use_bio_mult)
-    {
-      v->grass.co2_multipliers[BIO_INDEX][year] = v->grass.co2_bio_coeff1 * pow(ppm, v->grass.co2_bio_coeff2);
-      v->shrub.co2_multipliers[BIO_INDEX][year] = v->shrub.co2_bio_coeff1 * pow(ppm, v->shrub.co2_bio_coeff2);
-      v->tree.co2_multipliers[BIO_INDEX][year] = v->tree.co2_bio_coeff1 * pow(ppm, v->tree.co2_bio_coeff2);
-      v->forb.co2_multipliers[BIO_INDEX][year] = v->forb.co2_bio_coeff1 * pow(ppm, v->forb.co2_bio_coeff2);
+    if (c->use_bio_mult) {
+      ForEachVegType(k) {
+        v->veg[k].co2_multipliers[BIO_INDEX][year] = v->veg[k].co2_bio_coeff1 * pow(ppm, v->veg[k].co2_bio_coeff2);
+      }
     }
 
     #ifdef SWDEBUG
     if (debug) {
       swprintf("Shrub: use%d: bio_mult[%d] = %1.3f / coeff1 = %1.3f / coeff2 = %1.3f / ppm = %3.2f\n",
-        c->use_bio_mult, year, v->shrub.co2_multipliers[BIO_INDEX][year],
-        v->shrub.co2_bio_coeff1, v->shrub.co2_bio_coeff2, ppm);
+        c->use_bio_mult, year, v->veg[SW_SHRUB].co2_multipliers[BIO_INDEX][year],
+        v->veg[SW_SHRUB].co2_bio_coeff1, v->veg[SW_SHRUB].co2_bio_coeff2, ppm);
     }
     #endif
 
-    if (c->use_wue_mult)
-    {
-      v->grass.co2_multipliers[WUE_INDEX][year] = v->grass.co2_wue_coeff1 * pow(ppm, v->grass.co2_wue_coeff2);
-      v->shrub.co2_multipliers[WUE_INDEX][year] = v->shrub.co2_wue_coeff1 * pow(ppm, v->shrub.co2_wue_coeff2);
-      v->tree.co2_multipliers[WUE_INDEX][year] = v->tree.co2_wue_coeff1 * pow(ppm, v->tree.co2_wue_coeff2);
-      v->forb.co2_multipliers[WUE_INDEX][year] = v->forb.co2_wue_coeff1 * pow(ppm, v->forb.co2_wue_coeff2);
+    if (c->use_wue_mult) {
+      ForEachVegType(k) {
+        v->veg[k].co2_multipliers[WUE_INDEX][year] = v->veg[k].co2_wue_coeff1 *
+          pow(ppm, v->veg[k].co2_wue_coeff2);
+      }
     }
   }
 }
