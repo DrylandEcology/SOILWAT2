@@ -49,12 +49,15 @@ namespace {
           compiled if flag 'SWDEBUG' is defined)
   */
   TEST(ConsistencyTests, WaterBalance) {
+    int i;
 
     // Run the simulation
     SW_CTL_main();
 
     // Collect and output from daily checks
-    EXPECT_EQ(0, SW_Soilwat.wbError);
+    for (i = 0; i < 8; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error: " << SW_Soilwat.wbErrorNames[i];
+    }
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();

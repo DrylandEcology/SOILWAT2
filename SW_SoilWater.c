@@ -49,6 +49,9 @@
 #include "SW_Model.h"
 #include "SW_Site.h"
 #include "SW_SoilWater.h"
+#ifdef SWDEBUG
+  #include "SW_Weather.h"
+#endif
 #ifdef RSOILWAT
   #include "../rSW_SoilWater.h" // for onSet_SW_SWC_hist()
 #endif
@@ -66,6 +69,9 @@ extern SW_SITE SW_Site;
 #endif
 
 SW_SOILWAT SW_Soilwat; /* declared here, externed elsewhere */
+#ifdef SWDEBUG
+  extern SW_WEATHER SW_Weather;
+#endif
 
 
 /* =================================================== */
@@ -93,61 +99,175 @@ static void _clear_hist(void) {
 	}
 }
 
-
-void SW_WaterBalance_Checks(void) {
+#ifdef SWDEBUG
+void SW_WaterBalance_Checks(void)
+{
   SW_SOILWAT *sw = &SW_Soilwat;
+	SW_WEATHER *w = &SW_Weather;
 
-  int i;
-  RealD Etotal = 0., Ttotal = 0.,
-    Tvegi[NVEGTYPES] = {0.};
+  IntUS i, k, debug = 1;
+  char flag[15];
+  RealD
+    Etotal, Etotalsurf, Etotalint, Eponded, Elitter, Esnow, Esoil = 0., Eveg = 0.,
+    Ttotal = 0., Ttotalj[MAX_LAYERS],
+    percolationIn[MAX_LAYERS + 1], percolationOut[MAX_LAYERS + 1],
+    hydraulicRedistribution[MAX_LAYERS],
+    infiltration, deepDrainage, runoff, runon, snowmelt, rain, arriving_water,
+    int_veg_total = 0., intercepted, delta_intercepted,
+    delta_swc_total = 0., delta_swcj[MAX_LAYERS];
 
-  // Get variables
-  ForEachSoilLayer(i) {
-    Etotal += ;
-    Ttotal += ;
+  static RealD intercepted_yesterday = 0.;
+  static Bool add_names = swTRUE;
+
+
+  // Sum up variables
+  ForEachSoilLayer(i)
+  {
+    percolationIn[i + 1] = sw->drain[i];
+    percolationOut[i] = sw->drain[i];
+
+    delta_swcj[i] = sw->swcBulk[Today][i] - sw->swcBulk[Yesterday][i];
+    delta_swc_total += delta_swcj[i];
+
+    ForEachVegType(k) {
+      Ttotal += sw->transpiration[k][i];
+      Ttotalj[i] += sw->transpiration[k][i];
+      hydraulicRedistribution[i] += sw->hydred[k][i];
+    }
   }
+
+  ForEachEvapLayer(i)
+  {
+    Esoil += sw->evaporation[i];
+  }
+
+  ForEachVegType(k)
+  {
+    Eveg += sw->evap_veg[k];
+    int_veg_total += sw->int_veg[k];
+  }
+
+  // Get evaporation values
+  Elitter = sw->litter_evap;
+  Eponded = sw->surfaceWater_evap;
+  Esnow = w->now.snowloss[Today];
+  Etotalint = Eveg + Elitter;
+  Etotalsurf = Etotalint + Eponded;
+  Etotal = Etotalsurf + Esoil + Esnow;
+
+  // Get other water flux values
+  infiltration = w->soil_inf;
+  deepDrainage = sw->swcBulk[Today][SW_Site.deep_lyr]; // see issue #137
+
+  percolationIn[0] = infiltration;
+  percolationOut[SW_Site.n_layers] = deepDrainage;
+
+  runoff = w->snowRunoff + w->surfaceRunoff;
+  runon = w->surfaceRunon;
+  snowmelt = w->now.snowmelt[Today];
+  rain = w->now.rain[Today];
+
+  arriving_water = rain + snowmelt + runon;
+
+  // Get state change values
+  intercepted = sw->litter_int + int_veg_total;
+  delta_intercepted = intercepted - intercepted_yesterday;
+  intercepted_yesterday = intercepted;
+
 
 
   //--- Water balance checks
+  if (debug) {
+    sprintf(flag, "WB (%d-%d)", SW_Model.year, SW_Model.doy);
+  }
+
   // AET <= PET
-  sw.wbError += LE(sw.aet, sw.pet)? 0: 1;
+  if (add_names) sw->wbErrorNames[0] = Str_Dup("AET <= PET");
+  if (!LE(sw->aet, sw->pet))
+  {
+    sw->wbError[0]++;
+    if (debug) swprintf("%s %s: aet=%f, pet=%f\n",
+      flag, sw->wbErrorNames[0], sw->aet, sw->pet);
+  }
 
   // AET == E(total) + T(total)
-  sw.wbError += EQ(sw.aet, Etotal + Ttotal)? 0: 1;
+  if (add_names) sw->wbErrorNames[1] = Str_Dup("AET == Etotal + Ttotal");
+  if (!EQ(sw->aet, Etotal + Ttotal))
+  {
+    sw->wbError[1]++;
+    if (debug) swprintf("%s %s: aet=%f, Etotal=%f, Ttotal=%f\n",
+      flag, sw->wbErrorNames[1], sw->aet, Etotal, Ttotal);
+  }
 
   // T(total) = sum of T(veg-type i from soil layer j)
-  expect_equal(Ttotal, apply(sapply(Tvegij, function(x) apply(x, 1, sum)), 1, sum),
-    info = info2)
+  // doesn't make sense here because Ttotal is the sum of Tvegij
+  if (add_names) sw->wbErrorNames[2] = Str_Dup("T(total) = sum of T(veg-type i from soil layer j)");
+  sw->wbError[2] += 0;
 
   // E(total) = E(total bare-soil) + E(ponded water) + E(total litter-intercepted) +
   //            + E(total veg-intercepted) + E(snow sublimation)
-  expect_equal(Etotal, Esoil + Eponded + Eveg + Elitter + Esnow, info = info2)
+  if (add_names) sw->wbErrorNames[3] = Str_Dup("Etotal == Esoil + Eponded + Eveg + Elitter + Esnow");
+  if (!EQ(Etotal, Esoil + Eponded + Eveg + Elitter + Esnow))
+  {
+    sw->wbError[3]++;
+    if (debug) swprintf("%s %s: Etotal=%f, Esoil=%f, Eponded=%f, Eveg=%f, Elitter=%f, Esnow=%f\n",
+      flag, sw->wbErrorNames[3], Etotal, Esoil, Eponded, Eveg, Elitter, Esnow);
+  }
 
   // E(total surface) = E(ponded water) + E(total litter-intercepted) +
   //                    + E(total veg-intercepted)
-  expect_equal(Etotalsurf, Eponded + Eveg + Elitter, info = info2)
+  if (add_names) sw->wbErrorNames[4] = Str_Dup("Esurf == Eponded + Eveg + Elitter");
+  if (!EQ(Etotalsurf, Eponded + Eveg + Elitter))
+  {
+    sw->wbError[4]++;
+    if (debug) swprintf("%s %s: Etotalsurf=%f, Eponded=%f, Eveg=%f, Elitter=%f\n",
+      flag, sw->wbErrorNames[4], Etotalsurf, Eponded, Eveg, Elitter);
+  }
 
 
   //--- Water cycling checks
   // infiltration = [rain + snowmelt + runon] - (runoff + E(total intercepted)
-  expect_equal(infiltration, arriving_water - (runoff + Etotalint), info = info2)
+  if (add_names) sw->wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + Eint)");
+  if (!EQ(infiltration, arriving_water - (runoff + Etotalint)))
+  {
+    sw->wbError[5]++;
+    if (debug) swprintf("%s %s: inf=%f, rain=%f, snowmelt=%f, runon=%f, runoff=%f, Eint=%f\n",
+      flag, sw->wbErrorNames[5], infiltration, rain, snowmelt, runon, runoff, Etotalint);
+  }
 
   // AET - E(snow sublimation) = [rain + snowmelt + runon] -
   //   [runoff + delta(intercepted-water) + deepDrainage + delta(swc)]
-  expect_equal(aet[idelta2] - Esnow[idelta2],
-    arriving_water[idelta2] - (runoff[idelta2] + delta_intercepted +
-    deepDrainage[idelta2] + apply(delta_swcj, 1, sum)), info = info2)
+  if (add_names) sw->wbErrorNames[6] = Str_Dup("AET - Esnow == rain + snowmelt + runon - (runoff + delta_intercepted + deepDrainage + delta_swc)");
+  if (!EQ(sw->aet - Esnow, arriving_water -
+    (runoff + delta_intercepted + deepDrainage + delta_swc_total)))
+  {
+    sw->wbError[6]++;
+    if (debug) swprintf("%s %s: aet=%f, Esnow=%f, rain=%f, snowmelt=%f, runon=%f, "
+      "runoff=%f, delta_intercepted=%f, deepDrainage=%f, delta_swc_total=%f\n",
+      flag, sw->wbErrorNames[6], sw->aet, Esnow, rain, snowmelt, runon, runoff,
+      delta_intercepted, deepDrainage, delta_swc_total);
+  }
 
   // for every soil layer j: delta(swc) =
   //   = infiltration/percolationIn + hydraulicRedistribution -
   //     (percolationOut/deepDrainage + transpiration + evaporation)
-  for (j in seq_len(n_soillayers)) {
-    expect_equal(delta_swcj[, j],
-      percolationIn[idelta2, j] + hydraulicRedistribution[idelta2, j] -
-      (percolationOut[idelta2, j] + Ttotalj[idelta2, j] + Esoilj[idelta2, j]),
-      info = paste(info2, "/ soil layer:", j))
+  if (add_names) sw->wbErrorNames[7] = Str_Dup("delta_swc[i] == perc_in[i] + hydred[i] - (perc_out[i] + Ttot[i] + Esoil[i]))");
+  ForEachSoilLayer(i)
+  {
+    if (!EQ(delta_swcj[i], percolationIn[i] + hydraulicRedistribution[i] -
+      (percolationOut[i] + Ttotalj[i] + sw->evaporation[i])))
+    {
+      sw->wbError[7]++;
+      if (debug) swprintf("%s %s sl=%d: delta_swc=%f, perc_in=%f, hydred=%f, perc_out=%f, Ttot=%f, Esoil=%f\n",
+        flag, sw->wbErrorNames[7], i, delta_swcj[i], percolationIn[i],
+        hydraulicRedistribution[i], percolationOut[i], Ttotalj[i], sw->evaporation[i]);
+    }
   }
+
+  // Add names only once
+  if (add_names) add_names = swFALSE;
 }
+#endif
 
 
 /* =================================================== */
@@ -159,7 +279,6 @@ void SW_SWC_construct(void) {
 	/* =================================================== */
 
 	SW_Soilwat.partsError = swFALSE;
-	SW_Soilwat.waterBalanceError = 0;
 
 	temp_snow = 0.;
 

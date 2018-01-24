@@ -106,8 +106,11 @@ typedef struct {
 		surfaceTemp; // soil surface temperature
 
 	Bool partsError; // soil temperature error indicator
-	int wbError; /* water balance and water cycling error indicator
+	#ifdef SWDEBUG
+	int wbError[8]; /* water balance and water cycling error indicators (currently 8)
 	    0, no error detected; > 0, number of errors detected */
+  char *wbErrorNames[8];
+  #endif
 
 	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */
 	wksum, mosum, yrsum, /* accumulators for *avg */
