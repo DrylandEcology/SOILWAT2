@@ -114,6 +114,7 @@ void SW_WTH_clear_runavg_list(void) {
 	runavg_list = NULL;
 }
 
+#ifdef STEPWAT
 static RealD _runavg_temp(RealD avg) {
 	/* --------------------------------------------------- */
 	int i, cnt, numdays;
@@ -130,6 +131,7 @@ static RealD _runavg_temp(RealD avg) {
 	tail = (tail < (SW_Weather.days_in_runavg - 1)) ? tail + 1 : 0;
 	return ((cnt) ? sum / cnt : WTH_MISSING);
 }
+#endif
 
 static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
 	/* --------------------------------------------------- */

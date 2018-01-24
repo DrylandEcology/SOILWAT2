@@ -253,11 +253,10 @@ void SW_Water_Flow(void) {
 		soil_evap[NVEGTYPES], soil_evap_rate[NVEGTYPES], soil_evap_rate_bs = 1.,
 		surface_evap_veg_rate[NVEGTYPES],
 		surface_evap_litter_rate = 1., surface_evap_standingWater_rate = 1.,
-		snow_evap_rate = 1.,
 		veg_h2o[NVEGTYPES], litter_h2o,
 		litter_h2o_help, h2o_for_soil = 0., ppt_toUse, snowmelt,
 		snowdepth_scale_veg[NVEGTYPES],
-		rate_help, x;
+		pet2, rate_help, x;
 
 	int doy, k;
 	LyrIndex i;
@@ -480,18 +479,19 @@ void SW_Water_Flow(void) {
 
 	surface_evap_litter_rate = litter_h2o_qum[Today];
 	surface_evap_standingWater_rate = standingWater[Today];
-	snow_evap_rate = w->snowloss; /* but this is fixed and can also include snow redistribution etc., so don't scale to PET */
 
-	/* Scale all (potential) evaporation and transpiration flux rates to PET */
+	/* Snow sublimation takes precedence over other ET fluxes: see function `SW_SWC_adjust_snow` */
+	pet2 = fmax(0., sw->pet - w->snowloss);
+
+	/* Scale all (potential) evaporation and transpiration flux rates to (PET - Esnow) */
 	rate_help = surface_evap_litter_rate + surface_evap_standingWater_rate +
 		soil_evap_rate_bs;
 	ForEachVegType(k) {
 		rate_help += surface_evap_veg_rate[k] + soil_evap_rate[k] + transp_rate[k];
 	}
 
-
-	if (GT(rate_help, sw->pet)) {
-		rate_help = sw->pet / rate_help;
+	if (GT(rate_help, pet2)) {
+		rate_help = pet2 / rate_help;
 
 		ForEachVegType(k)
 		{
@@ -506,8 +506,7 @@ void SW_Water_Flow(void) {
 	}
 
 	/* Start adding components to AET */
-	sw->aet = 0.; /* init aet for the day */
-	sw->aet += snow_evap_rate;
+	sw->aet = w->snowloss; /* init aet for the day */
 
 	/* Evaporation of intercepted and surface water */
 	ForEachVegType(k)
@@ -691,7 +690,7 @@ static void arrays2records(void) {
 		}
 	}
 	SW_Soilwat.surfaceTemp = surfaceTemp[Today];
-	w->surfaceTemp = surfaceTemp[Today];
+	SW_Weather.surfaceTemp = surfaceTemp[Today];
 
 	if (SW_Site.deepdrain)
 		SW_Soilwat.swcBulk[Today][SW_Site.deep_lyr] = drainout;
