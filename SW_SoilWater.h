@@ -130,7 +130,9 @@ void SW_SWC_read(void);
 void _read_swc_hist(TimeInt year);
 void SW_SWC_water_flow(void);
 void SW_SWC_adjust_swc(TimeInt doy);
-void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain, RealD *snow, RealD *snowmelt, RealD *snowloss);
+void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
+  RealD *snow, RealD *snowmelt);
+RealD SW_SWC_snowloss(RealD pet, RealD *snowpack);
 RealD SW_SnowDepth(RealD SWE, RealD snowdensity);
 void SW_SWC_end_day(void);
 RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n);

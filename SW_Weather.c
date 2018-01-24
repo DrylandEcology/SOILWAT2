@@ -274,7 +274,7 @@ void SW_WTH_new_day(void) {
 	if (w->use_snow)
 	{
 		SW_SWC_adjust_snow(wn->temp_min[Today], wn->temp_max[Today], wn->ppt[Today],
-		  &wn->rain[Today], &w->snow, &w->snowmelt, &w->snowloss);
+		  &wn->rain[Today], &w->snow, &w->snowmelt);
   }
 
 #ifdef STEPWAT

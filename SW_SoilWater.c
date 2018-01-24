@@ -586,7 +586,9 @@ void SW_SWC_adjust_swc(TimeInt doy) {
 
 }
 
-void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain, RealD *snow, RealD *snowmelt, RealD *snowloss) {
+void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
+	RealD *snow, RealD *snowmelt) {
+
 	/*---------------------
 	 10/04/2010	(drs) added snowMAUS snow accumulation, sublimation and melt algorithm: Trnka, M., Kocmánková, E., Balek, J., Eitzinger, J., Ruget, F., Formayer, H., Hlavinka, P., Schaumberger, A., Horáková, V., Mozny, M. & Zalud, Z. (2010) Simple snow cover model for agrometeorological applications. Agricultural and Forest Meteorology, 150, 1115-1127.
 	 replaced SW_SWC_snow_accumulation, SW_SWC_snow_sublimation, and SW_SWC_snow_melt with SW_SWC_adjust_snow
@@ -602,11 +604,10 @@ void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain, 
 		doy = SW_Model.doy,
 		temp_ave, Rmelt, SnowAccu = 0., SnowMelt = 0.;
 
-	static RealD
-		snow_cov = 1.,
-		cov_soil = 0.5;
+	static RealD snow_cov = 1.;
 
 	temp_ave = (temp_min + temp_max) / 2.;
+
 	/* snow accumulation */
 	if (LE(temp_ave, SW_Site.TminAccu2)) {
 		SnowAccu = ppt;
@@ -631,16 +632,27 @@ void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain, 
 	} else {
 		*snowmelt = 0.;
 	}
+}
 
-	/* snow loss through sublimation and other processes */
+/** Snow loss through sublimation and other processes
+	 10/19/2010	(drs) based on Neitsch S, Arnold J, Kiniry J, Williams J. 2005. Soil and
+	 water assessment tool (SWAT) theoretical documentation. version 2005. Blackland
+	 Research Center, Texas Agricultural Experiment Station: Temple, TX.
+	*/
+RealD SW_SWC_snowloss(RealD pet, RealD *snowpack) {
+	RealD snowloss;
+	static RealD cov_soil = 0.5;
+
 	if (GT(*snowpack, 0.)) {
-		*snowloss = fmax(0., fmin(*snowpack, cov_soil * SW_Soilwat.pet));
-		*snowpack = fmax(0., *snowpack - *snowloss);
+		snowloss = fmax(0., fmin(*snowpack, cov_soil * pet));
+		*snowpack = fmax(0., *snowpack - snowloss);
 	} else {
-		*snowloss = 0.;
+		snowloss = 0.;
 	}
 
+	return snowloss;
 }
+
 
 RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
 	/*---------------------

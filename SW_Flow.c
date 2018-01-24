@@ -480,7 +480,9 @@ void SW_Water_Flow(void) {
 	surface_evap_litter_rate = litter_h2o_qum[Today];
 	surface_evap_standingWater_rate = standingWater[Today];
 
-	/* Snow sublimation takes precedence over other ET fluxes: see function `SW_SWC_adjust_snow` */
+	/* Snow sublimation takes precedence over other ET fluxes:
+		see functions `SW_SWC_adjust_snow` and `SW_SWC_snowloss`*/
+	w->snowloss = SW_SWC_snowloss(sw->pet, &sw->snowpack[Today]);
 	pet2 = fmax(0., sw->pet - w->snowloss);
 
 	/* Scale all (potential) evaporation and transpiration flux rates to (PET - Esnow) */
