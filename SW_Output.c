@@ -4290,9 +4290,9 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 	case eSW_Precip:
 		s->ppt += v->now.ppt[Today];
 		s->rain += v->now.rain[Today];
-		s->snow += v->now.snow[Today];
-		s->snowmelt += v->now.snowmelt[Today];
-		s->snowloss += v->now.snowloss[Today];
+		s->snow += v->snow;
+		s->snowmelt += v->snowmelt;
+		s->snowloss += v->snowloss;
 		break;
 	case eSW_SoilInf:
 		s->soil_inf += v->soil_inf;
