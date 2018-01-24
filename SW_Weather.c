@@ -180,6 +180,7 @@ void SW_WTH_init(void) {
 
 void SW_WTH_new_year(void) {
 	/* =================================================== */
+	SW_WEATHER *w = &SW_Weather;
 	SW_WEATHER_2DAYS *wn = &SW_Weather.now;
 	TimeInt year = SW_Model.year;
 
@@ -209,9 +210,11 @@ void SW_WTH_new_year(void) {
 	 * and with ppt=0 there's nothing to freeze.
 	 */
 	if (!weth_found && firsttime) {
-		wn->temp_max[Today] = wn->temp_min[Today] = wn->ppt[Today] = wn->rain[Today] = wn->snow[Today] = wn->snowmelt[Today] = wn->snowloss[Today] = wn->gsppt = 0.;
+		wn->temp_max[Today] = wn->temp_min[Today] = wn->ppt[Today] = wn->rain[Today] = 0.;
+		w->snow = w->snowmelt = w->snowloss = 0.;
+		// wn->gsppt = 0.;
 
-		SW_Weather.snowRunoff = SW_Weather.surfaceRunoff = SW_Weather.surfaceRunon = SW_Weather.soil_inf = 0.;
+		w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
 	}
 
 	firsttime = swFALSE;
@@ -256,19 +259,22 @@ void SW_WTH_new_day(void) {
 	/* scale the weather according to monthly factors */
 	wn->temp_max[Today] = tmpmax + w->scale_temp_max[month];
 	wn->temp_min[Today] = tmpmin + w->scale_temp_min[month];
-	wn->ppt_actual[Today] = ppt;
 
 	wn->temp_avg[Today] = (wn->temp_max[Today] + wn->temp_min[Today]) / 2.;
-	wn->temp_run_avg[Today] = _runavg_temp(wn->temp_avg[Today]);
+	// wn->temp_run_avg[Today] = _runavg_temp(wn->temp_avg[Today]);
 
 	ppt *= w->scale_precip[month];
 
 	wn->ppt[Today] = wn->rain[Today] = ppt;
-	wn->snowmelt[Today] = wn->snowloss[Today] = wn->snow[Today] = 0.;
+	w->snow = w->snowmelt = w->snowloss = 0.;
 	w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
 
 	if (w->use_snow)
-		SW_SWC_adjust_snow(wn->temp_min[Today], wn->temp_max[Today], wn->ppt[Today], &wn->rain[Today], &wn->snow[Today], &wn->snowmelt[Today], &wn->snowloss[Today]);
+	{
+		SW_SWC_adjust_snow(wn->temp_min[Today], wn->temp_max[Today], wn->ppt[Today],
+		  &wn->rain[Today], &w->snow, &w->snowmelt, &w->snowloss);
+  }
+
 #ifdef STEPWAT
 	/* This is a nice idea but doesn't work as I'd like, so
 	 * I'll go back to letting STEPPE handle it for now.
@@ -484,15 +490,10 @@ static void _update_yesterday(void) {
 	wn->temp_max[Yesterday] = wn->temp_max[Today];
 	wn->temp_min[Yesterday] = wn->temp_min[Today];
 	wn->temp_avg[Yesterday] = wn->temp_avg[Today];
-	wn->temp_run_avg[Yesterday] = wn->temp_run_avg[Today];
+	// wn->temp_run_avg[Yesterday] = wn->temp_run_avg[Today];
 
-	wn->ppt_actual[Yesterday] = wn->ppt_actual[Today];
 	wn->ppt[Yesterday] = wn->ppt[Today];
-	wn->snow[Yesterday] = wn->snow[Today];
 	wn->rain[Yesterday] = wn->rain[Today];
-	wn->snowmelt[Yesterday] = wn->snowmelt[Today];
-	wn->snowloss[Yesterday] = wn->snowloss[Today];
-
 }
 
 #ifdef DEBUG_MEM
