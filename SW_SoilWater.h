@@ -87,8 +87,12 @@ typedef struct {
 	Bool partsError;  // soil temperature error indicator
 } SW_SOILWAT_OUTPUTS;
 
-typedef struct {
 
+#ifdef SWDEBUG
+  #define N_WBCHECKS 8 // number of water balance checks
+#endif
+
+typedef struct {
 	/* current daily soil water related values */
 	Bool is_wet[MAX_LAYERS]; /* swc sufficient to count as wet today */
 	RealD swcBulk[TWO_DAYS][MAX_LAYERS],
@@ -107,9 +111,9 @@ typedef struct {
 
 	Bool partsError; // soil temperature error indicator
 	#ifdef SWDEBUG
-	int wbError[8]; /* water balance and water cycling error indicators (currently 8)
+	int wbError[N_WBCHECKS]; /* water balance and water cycling error indicators (currently 8)
 	    0, no error detected; > 0, number of errors detected */
-  char *wbErrorNames[8];
+  char *wbErrorNames[N_WBCHECKS];
   #endif
 
 	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */
