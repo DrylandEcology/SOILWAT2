@@ -114,10 +114,13 @@ void SW_WaterBalance_Checks(void)
     percolationIn[MAX_LAYERS + 1], percolationOut[MAX_LAYERS + 1],
     hydraulicRedistribution[MAX_LAYERS],
     infiltration, deepDrainage, runoff, runon, snowmelt, rain, arriving_water,
+    delta_surfaceWater,
     int_veg_total = 0., intercepted, delta_intercepted,
     delta_swc_total = 0., delta_swcj[MAX_LAYERS];
+  RealD lhs, rhs;
 
   static RealD intercepted_yesterday = 0.;
+  static RealD surfaceWater_yesterday = 0.;
   static Bool do_once = swTRUE;
   static Bool debug = swFALSE;
 
@@ -176,6 +179,8 @@ void SW_WaterBalance_Checks(void)
   delta_intercepted = intercepted - intercepted_yesterday;
   intercepted_yesterday = intercepted;
 
+  delta_surfaceWater = sw->surfaceWater - surfaceWater_yesterday;
+  surfaceWater_yesterday = sw->surfaceWater;
 
 
   //--- Water balance checks (there are # checks n = N_WBCHECKS)
@@ -195,17 +200,18 @@ void SW_WaterBalance_Checks(void)
   if (!LE(sw->aet, sw->pet))
   {
     sw->wbError[0]++;
-    if (debugi[0]) swprintf("%s %s: aet=%f, pet=%f\n",
-      flag, sw->wbErrorNames[0], sw->aet, sw->pet);
+    if (debugi[0]) swprintf("%s: aet=%f, pet=%f\n",
+      flag, sw->aet, sw->pet);
   }
 
   // AET == E(total) + T(total)
   if (do_once) sw->wbErrorNames[1] = Str_Dup("AET == Etotal + Ttotal");
-  if (!EQ(sw->aet, Etotal + Ttotal))
+  rhs = Etotal + Ttotal;
+  if (!EQ(sw->aet, rhs))
   {
     sw->wbError[1]++;
-    if (debugi[1]) swprintf("%s %s: aet=%f, Etotal=%f, Ttotal=%f\n",
-      flag, sw->wbErrorNames[1], sw->aet, Etotal, Ttotal);
+    if (debugi[1]) swprintf("%s: AET(%f) == %f == Etotal(%f) + Ttotal(%f)\n",
+      flag, sw->aet, rhs, Etotal, Ttotal);
   }
 
   // T(total) = sum of T(veg-type i from soil layer j)
@@ -216,45 +222,48 @@ void SW_WaterBalance_Checks(void)
   // E(total) = E(total bare-soil) + E(ponded water) + E(total litter-intercepted) +
   //            + E(total veg-intercepted) + E(snow sublimation)
   if (do_once) sw->wbErrorNames[3] = Str_Dup("Etotal == Esoil + Eponded + Eveg + Elitter + Esnow");
-  if (!EQ(Etotal, Esoil + Eponded + Eveg + Elitter + Esnow))
+  rhs = Esoil + Eponded + Eveg + Elitter + Esnow;
+  if (!EQ(Etotal, rhs))
   {
     sw->wbError[3]++;
-    if (debugi[3]) swprintf("%s %s: Etotal=%f, Esoil=%f, Eponded=%f, Eveg=%f, Elitter=%f, Esnow=%f\n",
-      flag, sw->wbErrorNames[3], Etotal, Esoil, Eponded, Eveg, Elitter, Esnow);
+    if (debugi[3]) swprintf("%s: Etotal(%f) == %f == Esoil(%f) + Eponded(%f) + Eveg(%f) + Elitter(%f) + Esnow(%f)\n",
+      flag, Etotal, rhs, Esoil, Eponded, Eveg, Elitter, Esnow);
   }
 
   // E(total surface) = E(ponded water) + E(total litter-intercepted) +
   //                    + E(total veg-intercepted)
   if (do_once) sw->wbErrorNames[4] = Str_Dup("Esurf == Eponded + Eveg + Elitter");
-  if (!EQ(Etotalsurf, Eponded + Eveg + Elitter))
+  rhs = Eponded + Eveg + Elitter;
+  if (!EQ(Etotalsurf, rhs))
   {
     sw->wbError[4]++;
-    if (debugi[4]) swprintf("%s %s: Etotalsurf=%f, Eponded=%f, Eveg=%f, Elitter=%f\n",
-      flag, sw->wbErrorNames[4], Etotalsurf, Eponded, Eveg, Elitter);
+    if (debugi[4]) swprintf("%s: Esurf(%f) == %f == Eponded(%f) + Eveg(%f) + Elitter(%f)\n",
+      flag, Etotalsurf, rhs, Eponded, Eveg, Elitter);
   }
 
 
   //--- Water cycling checks
-  // infiltration = [rain + snowmelt + runon] - (runoff + intercepted)
-  if (do_once) sw->wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + intercepted)");
-  if (!EQ(infiltration, arriving_water - (runoff + intercepted)))
+  // infiltration = [rain + snowmelt + runon] - (runoff + intercepted + delta_surfaceWater + Eponded)
+  if (do_once) sw->wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + intercepted + delta_surfaceWater + Eponded)");
+  rhs = arriving_water - (runoff + intercepted + delta_surfaceWater + Eponded);
+  if (!EQ(infiltration, rhs))
   {
     sw->wbError[5]++;
-    if (debugi[5]) swprintf("%s %s: inf=%f, rain=%f, snowmelt=%f, runon=%f, runoff=%f, Eint=%f\n",
-      flag, sw->wbErrorNames[5], infiltration, rain, snowmelt, runon, runoff, Etotalint);
+    if (debugi[5]) swprintf("%s: inf(%f) == %f == rain(%f) + snowmelt(%f) + runon(%f) - (runoff(%f) + intercepted(%f) + delta_surfaceWater(%f) + Eponded(%f))\n",
+      flag, infiltration, rhs, rain, snowmelt, runon, runoff, intercepted, delta_surfaceWater, Eponded);
   }
 
   // AET - E(snow sublimation) = [rain + snowmelt + runon] -
   //   [runoff + delta(intercepted-water) + deepDrainage + delta(swc)]
   if (do_once) sw->wbErrorNames[6] = Str_Dup("AET - Esnow == rain + snowmelt + runon - (runoff + delta_intercepted + deepDrainage + delta_swc)");
-  if (!EQ(sw->aet - Esnow, arriving_water -
-    (runoff + delta_intercepted + deepDrainage + delta_swc_total)))
+  lhs = sw->aet - Esnow;
+  rhs = arriving_water - (runoff + delta_intercepted + deepDrainage + delta_swc_total);
+  if (!EQ(lhs, rhs))
   {
     sw->wbError[6]++;
-    if (debugi[6]) swprintf("%s %s: aet=%f, Esnow=%f, rain=%f, snowmelt=%f, runon=%f, "
-      "runoff=%f, delta_intercepted=%f, deepDrainage=%f, delta_swc_total=%f\n",
-      flag, sw->wbErrorNames[6], sw->aet, Esnow, rain, snowmelt, runon, runoff,
-      delta_intercepted, deepDrainage, delta_swc_total);
+    if (debugi[6]) swprintf("%s: AET(%f) - Esnow(%f) == %f == %f == rain(%f) + snowmelt(%f) + runon(%f) - (runoff(%f) + delta_intercepted(%f) + deepDrainage(%f) + delta_swc(%f))\n",
+      flag, sw->aet, Esnow, lhs, rhs, rain, snowmelt, runon, runoff, delta_intercepted,
+      deepDrainage, delta_swc_total);
   }
 
   // for every soil layer j: delta(swc) =
@@ -263,14 +272,14 @@ void SW_WaterBalance_Checks(void)
   if (do_once) sw->wbErrorNames[7] = Str_Dup("delta_swc[i] == perc_in[i] + hydred[i] - (perc_out[i] + Ttot[i] + Esoil[i]))");
   ForEachSoilLayer(i)
   {
-    if (!EQ(delta_swcj[i], percolationIn[i] + hydraulicRedistribution[i] -
-      (percolationOut[i] + Ttotalj[i] + sw->evaporation[i])))
+    rhs = percolationIn[i] + hydraulicRedistribution[i] -
+      (percolationOut[i] + Ttotalj[i] + sw->evaporation[i]);
+    if (!EQ(delta_swcj[i], rhs))
     {
       sw->wbError[7]++;
-      if (debugi[7]) swprintf("%s %s sl=%d: delta_swc=%f, perc_in=%f, hydred=%f, perc_out=%f, Ttot=%f, Esoil=%f\n",
-        flag, sw->wbErrorNames[7], i, delta_swcj[i], percolationIn[i],
-        hydraulicRedistribution[i], percolationOut[i], Ttotalj[i], sw->evaporation[i]);
-
+      if (debugi[7]) swprintf("%s sl=%d: delta_swc(%f) == %f == perc_in(%f) + hydred(%f) - (perc_out(%f) + Ttot(%f) + Esoil(%f))\n",
+        flag, i, delta_swcj[i], rhs, percolationIn[i], hydraulicRedistribution[i],
+        percolationOut[i], Ttotalj[i], sw->evaporation[i]);
     }
   }
 

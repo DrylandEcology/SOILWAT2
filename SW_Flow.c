@@ -347,9 +347,6 @@ void SW_Water_Flow(void) {
 	/* Surface water */
 	standingWater[Today] = standingWater[Yesterday];
 
-	/* Soil infiltration = rain+snowmelt - interception, but should be
-		infiltration = rain+snowmelt - interception + (throughfall+stemflow) */
-
 	/* Snow melt infiltrates un-intercepted */
 	snowmelt = fmax( 0., w->snowmelt * (1. - w->pct_snowRunoff/100.) ); /* amount of snowmelt is changed by runon/off as percentage */
 	w->snowRunoff = w->snowmelt - snowmelt;
@@ -384,11 +381,14 @@ void SW_Water_Flow(void) {
 		w->surfaceRunon = 0.;
 	}
 
+	/* Soil infiltration */
+	w->soil_inf = h2o_for_soil;
+
 	/* Percolation under saturated soil conditions */
+	w->soil_inf += standingWater[Today];
 	infiltrate_water_high(lyrSWCBulk, lyrDrain, &drainout, h2o_for_soil, SW_Site.n_layers,
 		lyrSWCBulk_FieldCaps, lyrSWCBulk_Saturated, lyrImpermeability, &standingWater[Today]);
-
-	w->soil_inf = h2o_for_soil - standingWater[Today]; /* adjust soil_infiltration for pushed back or infiltrated surface water */
+	w->soil_inf -= standingWater[Today]; // adjust soil_infiltration for not infiltrated surface water
 
 	/** @brief Surface water runoff:
 			Proportion of ponded surface water removed as daily runoff.
@@ -572,9 +572,11 @@ void SW_Water_Flow(void) {
 	/* Calculate percolation for unsaturated soil water conditions. */
 	/* 01/06/2011	(drs) call to infiltrate_water_low() has to be the last swc affecting calculation */
 
+	w->soil_inf += standingWater[Today];
 	infiltrate_water_low(lyrSWCBulk, lyrDrain, &drainout, SW_Site.n_layers,
 		SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH, lyrSWCBulk_FieldCaps, lyrWidths,
 		lyrSWCBulk_Mins, lyrSWCBulk_Saturated, lyrImpermeability, &standingWater[Today]);
+	w->soil_inf -= standingWater[Today]; // adjust soil_infiltration for water pushed back to surface
 
 	sw->surfaceWater = standingWater[Today];
 
