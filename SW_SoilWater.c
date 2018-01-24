@@ -100,6 +100,8 @@ static void _clear_hist(void) {
 }
 
 #ifdef SWDEBUG
+#define EQ_w_tol(x, y) (fabs((x) - (y)) <= 1e-9)
+
 void SW_WaterBalance_Checks(void)
 {
   SW_SOILWAT *sw = &SW_Soilwat;
@@ -246,7 +248,7 @@ void SW_WaterBalance_Checks(void)
   // infiltration = [rain + snowmelt + runon] - (runoff + intercepted + delta_surfaceWater + Eponded)
   if (do_once) sw->wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + intercepted + delta_surfaceWater + Eponded)");
   rhs = arriving_water - (runoff + intercepted + delta_surfaceWater + Eponded);
-  if (!EQ(infiltration, rhs))
+  if (!EQ_w_tol(infiltration, rhs))
   {
     sw->wbError[5]++;
     if (debugi[5]) swprintf("%s: inf(%f) == %f == rain(%f) + snowmelt(%f) + runon(%f) - (runoff(%f) + intercepted(%f) + delta_surfaceWater(%f) + Eponded(%f))\n",
