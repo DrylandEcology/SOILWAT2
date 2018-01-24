@@ -106,7 +106,7 @@ void SW_WaterBalance_Checks(void)
 	SW_WEATHER *w = &SW_Weather;
 
   IntUS i, k;
-  int debugi[N_WBCHECKS] = {1, 0, 0, 0, 0, 0, 0, 0}; // print output for each check yes/no
+  int debugi[N_WBCHECKS] = {1, 1, 1, 1, 1, 1, 0, 0}; // print output for each check yes/no
   char flag[15];
   RealD
     Etotal, Etotalsurf, Etotalint, Eponded, Elitter, Esnow, Esoil = 0., Eveg = 0.,
@@ -235,9 +235,9 @@ void SW_WaterBalance_Checks(void)
 
 
   //--- Water cycling checks
-  // infiltration = [rain + snowmelt + runon] - (runoff + E(total intercepted)
-  if (do_once) sw->wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + Eint)");
-  if (!EQ(infiltration, arriving_water - (runoff + Etotalint)))
+  // infiltration = [rain + snowmelt + runon] - (runoff + intercepted)
+  if (do_once) sw->wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + intercepted)");
+  if (!EQ(infiltration, arriving_water - (runoff + intercepted)))
   {
     sw->wbError[5]++;
     if (debugi[5]) swprintf("%s %s: inf=%f, rain=%f, snowmelt=%f, runon=%f, runoff=%f, Eint=%f\n",
