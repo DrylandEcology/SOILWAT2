@@ -125,8 +125,8 @@ static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 
 	Equations based on Corbet and Crouse (1968). \cite Corbett1968
 
-  \param pptleft
-	\param wintgrass
+  \param pptleft Amount of precipitation left after interception.
+	\param wintveg Amount of precipitation interception by veg.
 	\param ppt daily precipitation
 	\param x vegetation cover or LAI for the day (based on monthly biomass
 	       values, see the routine "initprod").
@@ -136,8 +136,9 @@ static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 	\param c c parameter for slope of grass interception equation.
 	\param d d parameter for slope of grass interception equation.
 
-	\return pptleft Amount of precipitation left after interception.
-	\return wintgrass Amount of precipitation interception by grass.
+  \sideeffect Update values of global variables:
+  - pptleft Amount of precipitation left after interception.
+  - wintveg Amount of precipitation interception by veg.
 */
 
 
@@ -184,12 +185,12 @@ void veg_intercepted_water(double *pptleft, double *wintveg, double ppt, double 
 	\fn void litter_intercepted_water(double *pptleft, double *wintlit, double blitter,
     double scale, double a, double b, double c, double d)
 
-    brief Calculate the water intercepted by litter.
+    \brief Calculate the water intercepted by litter.
 
 	Equations based on Corbet and Crouse (1968). \cite Corbett1968
 
-  \param pptleft
-	\param wintlit
+  \param pptleft Amount of precipitation left after interception.
+	\param wintlit Amount of precipitation intercepted by litter.
   \param blitter biomass of litter for the day
 	\param scale Scale paramater. Fraction cover of vegtype.
 	\param a a parameter for intercept of litter interception equation.
@@ -197,8 +198,9 @@ void veg_intercepted_water(double *pptleft, double *wintveg, double ppt, double 
 	\param c c parameter for slope of litter interception equation.
 	\param d d parameter for slope of litter interception equation.
 
-	\return pptleft Amount of precipitation left after interception.
-	\return wintlit Amount of precipitation intercepted by litter.
+	\sideeffect Update values of global variables:
+  - pptleft Amount of precipitation left after interception.
+  - wintlit Amount of precipitation intercepted by litter.
 */
 
 /**********************************************************************
