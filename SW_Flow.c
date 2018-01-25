@@ -244,7 +244,7 @@ void SW_FLW_construct(void) {
 /* --------------------------------------------------- */
 void SW_Water_Flow(void) {
 	#ifdef SWDEBUG
-	IntUS debug = 1, debug_year = 1980, debug_doy = 350;
+	IntUS debug = 0, debug_year = 1980, debug_doy = 350;
 	double Eveg, Tveg, HRveg;
 	#endif
 
@@ -627,6 +627,12 @@ void SW_Water_Flow(void) {
 			hydraulic_redistribution(lyrSWCBulk, lyrSWCBulk_Wiltpts, lyrTranspCo[k],
 				lyrHydRed[k], SW_Site.n_layers, v->veg[k].maxCondroot, v->veg[k].swpMatric50,
 				v->veg[k].shapeCond, v->veg[k].cov.fCover);
+
+		} else {
+			/* Set daily array to zero */
+			ForEachSoilLayer(i) {
+				lyrHydRed[k][i] = 0.;
+			}
 		}
 	}
 
@@ -757,7 +763,6 @@ static void records2arrays(void) {
 			{
 				lyrTrRegions[k][i] = SW_Site.lyr[i]->my_transp_rgn[k];
 				lyrSWCBulk_atSWPcrit[k][i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[k];
-				lyrHydRed[k][i] = 0.; // Init hydraulic redistribution to zero
 				lyrTranspCo[k][i] = SW_Site.lyr[i]->transp_coeff[k];
 			}
 		}
