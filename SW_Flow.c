@@ -243,6 +243,10 @@ void SW_FLW_construct(void) {
 /*            The Water Flow                           */
 /* --------------------------------------------------- */
 void SW_Water_Flow(void) {
+	#ifdef SWDEBUG
+	IntUS debug = 1, debug_year = 1980, debug_doy = 350;
+	double Eveg, Tveg, HRveg;
+	#endif
 
   SW_VEGPROD *v = &SW_VegProd;
   SW_SOILWAT *sw = &SW_Soilwat;
@@ -265,6 +269,16 @@ void SW_Water_Flow(void) {
 	/*	month = SW_Model.month;*//* base0 */
 
 	records2arrays();
+
+	#ifdef SWDEBUG
+	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {
+		swprintf("Flow (%d-%d): start:", SW_Model.year, SW_Model.doy);
+		ForEachSoilLayer(i) {
+			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
+		}
+		swprintf("\n");
+	}
+	#endif
 
 	/* snowdepth scaling */
 	sw->snowdepth = SW_SnowDepth(sw->snowpack[Today], SW_Sky.snow_density_daily[doy]);
@@ -390,6 +404,20 @@ void SW_Water_Flow(void) {
 		lyrSWCBulk_FieldCaps, lyrSWCBulk_Saturated, lyrImpermeability, &standingWater[Today]);
 	w->soil_inf -= standingWater[Today]; // adjust soil_infiltration for not infiltrated surface water
 
+	#ifdef SWDEBUG
+	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {
+		swprintf("Flow (%d-%d): satperc:", SW_Model.year, SW_Model.doy);
+		ForEachSoilLayer(i) {
+			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
+		}
+		swprintf("\n              : satperc:");
+		ForEachSoilLayer(i) {
+			swprintf(" perc[%d]=%1.3f", i, lyrDrain[i]);
+		}
+		swprintf("\n");
+	}
+	#endif
+
 	/** @brief Surface water runoff:
 			Proportion of ponded surface water removed as daily runoff.
 			@param percentRunoff Value ranges between 0 and 1; 0 = no loss of surface water,
@@ -419,7 +447,7 @@ void SW_Water_Flow(void) {
 		SW_Sky.windspeed_daily[doy], SW_Sky.cloudcov_daily[doy], SW_Sky.transmission_daily[doy]);
 
 
-	/* Bare-soil evaporation rates */
+	/* Potential bare-soil evaporation rates */
 	if (GT(v->bare_cov.fCover, 0.) && EQ(sw->snowpack[Today], 0.)) /* bare ground present AND no snow on ground */
 	{
 		pot_soil_evap_bs(&soil_evap_rate_bs, SW_Site.n_evap_lyrs, lyrEvapCo, sw->pet,
@@ -430,6 +458,7 @@ void SW_Water_Flow(void) {
 	} else {
 		soil_evap_rate_bs = 0;
 	}
+
 
 	/* Potential transpiration & bare-soil evaporation rates */
 	ForEachVegType(k)
@@ -536,6 +565,20 @@ void SW_Water_Flow(void) {
 		}
 	}
 
+	#ifdef SWDEBUG
+	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {
+		swprintf("Flow (%d-%d): Esoil:", SW_Model.year, SW_Model.doy);
+		ForEachSoilLayer(i) {
+			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
+		}
+		swprintf("\n              : Esoil:");
+		ForEachSoilLayer(i) {
+			swprintf(" Esoil[%d]=%1.3f", i, lyrEvap_BareGround[i]);
+		}
+		swprintf("\n");
+	}
+	#endif
+
 	/* Vegetation transpiration and bare-soil evaporation */
 	ForEachVegType(k)
 	{
@@ -556,6 +599,25 @@ void SW_Water_Flow(void) {
 		}
 	}
 
+	#ifdef SWDEBUG
+	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {
+		swprintf("Flow (%d-%d): ETveg:", SW_Model.year, SW_Model.doy);
+		ForEachSoilLayer(i) {
+			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
+		}
+		swprintf("\n              : ETveg:");
+		ForEachSoilLayer(i) {
+			Eveg = Tveg = 0.;
+			ForEachVegType(k) {
+				Eveg += lyrEvap[k][i];
+				Tveg += lyrTransp[k][i];
+			}
+			swprintf(" Tveg[%d]=%1.3f/Eveg=%1.3f", i, Tveg, Eveg);
+		}
+		swprintf("\n");
+	}
+	#endif
+
 
 	/* Hydraulic redistribution */
 	ForEachVegTypeBottomUp(k) {
@@ -568,6 +630,24 @@ void SW_Water_Flow(void) {
 		}
 	}
 
+	#ifdef SWDEBUG
+	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {
+		swprintf("Flow (%d-%d): HR:", SW_Model.year, SW_Model.doy);
+		ForEachSoilLayer(i) {
+			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
+		}
+		swprintf("\n              : HR:");
+		ForEachSoilLayer(i) {
+			HRveg = 0.;
+			ForEachVegType(k) {
+				HRveg += lyrHydRed[k][i];
+			}
+			swprintf(" HRveg[%d]=%1.3f", i, HRveg);
+		}
+		swprintf("\n");
+	}
+	#endif
+
 
 	/* Calculate percolation for unsaturated soil water conditions. */
 	/* 01/06/2011	(drs) call to infiltrate_water_low() has to be the last swc affecting calculation */
@@ -579,6 +659,20 @@ void SW_Water_Flow(void) {
 	w->soil_inf -= standingWater[Today]; // adjust soil_infiltration for water pushed back to surface
 
 	sw->surfaceWater = standingWater[Today];
+
+	#ifdef SWDEBUG
+	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {
+		swprintf("Flow (%d-%d): unsatperc:", SW_Model.year, SW_Model.doy);
+		ForEachSoilLayer(i) {
+			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
+		}
+		swprintf("\n              : satperc:");
+		ForEachSoilLayer(i) {
+			swprintf(" perc[%d]=%1.3f", i, lyrDrain[i]);
+		}
+		swprintf("\n");
+	}
+	#endif
 
 
 	/* Soil Temperature starts here */
