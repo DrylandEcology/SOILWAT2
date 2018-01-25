@@ -49,6 +49,9 @@
 #include "SW_Model.h"
 #include "SW_Site.h"
 #include "SW_SoilWater.h"
+#ifdef SWDEBUG
+  #include "SW_Weather.h"
+#endif
 #ifdef RSOILWAT
   #include "../rSW_SoilWater.h" // for onSet_SW_SWC_hist()
 #endif
@@ -66,6 +69,9 @@ extern SW_SITE SW_Site;
 #endif
 
 SW_SOILWAT SW_Soilwat; /* declared here, externed elsewhere */
+#ifdef SWDEBUG
+  extern SW_WEATHER SW_Weather;
+#endif
 
 
 /* =================================================== */
@@ -93,6 +99,195 @@ static void _clear_hist(void) {
 	}
 }
 
+#ifdef SWDEBUG
+#define EQ_w_tol(x, y) (fabs((x) - (y)) <= 1e-9)
+
+void SW_WaterBalance_Checks(void)
+{
+  SW_SOILWAT *sw = &SW_Soilwat;
+	SW_WEATHER *w = &SW_Weather;
+
+  IntUS i, k;
+  int debugi[N_WBCHECKS] = {1, 1, 1, 1, 1, 1, 1, 1}; // print output for each check yes/no
+  char flag[15];
+  RealD
+    Etotal, Etotalsurf, Etotalint, Eponded, Elitter, Esnow, Esoil = 0., Eveg = 0.,
+    Ttotal = 0., Ttotalj[MAX_LAYERS],
+    percolationIn[MAX_LAYERS + 1], percolationOut[MAX_LAYERS + 1],
+    hydraulicRedistribution[MAX_LAYERS],
+    infiltration, deepDrainage, runoff, runon, snowmelt, rain, arriving_water,
+    intercepted, int_veg_total = 0.,
+    delta_surfaceWater,
+    delta_swc_total = 0., delta_swcj[MAX_LAYERS];
+  RealD lhs, rhs;
+
+  static RealD surfaceWater_yesterday = 0.;
+  static Bool do_once = swTRUE;
+  static Bool debug = swFALSE;
+
+
+  // Sum up variables
+  ForEachSoilLayer(i)
+  {
+    percolationIn[i + 1] = sw->drain[i];
+    percolationOut[i] = sw->drain[i];
+
+    delta_swcj[i] = sw->swcBulk[Today][i] - sw->swcBulk[Yesterday][i];
+    delta_swc_total += delta_swcj[i];
+
+    Ttotalj[i] = hydraulicRedistribution[i] = 0.; // init
+
+    ForEachVegType(k) {
+      Ttotal += sw->transpiration[k][i];
+      Ttotalj[i] += sw->transpiration[k][i];
+      hydraulicRedistribution[i] += sw->hydred[k][i];
+    }
+  }
+
+  ForEachEvapLayer(i)
+  {
+    Esoil += sw->evaporation[i];
+  }
+
+  ForEachVegType(k)
+  {
+    Eveg += sw->evap_veg[k];
+    int_veg_total += sw->int_veg[k];
+  }
+
+  // Get evaporation values
+  Elitter = sw->litter_evap;
+  Eponded = sw->surfaceWater_evap;
+  Esnow = w->snowloss;
+  Etotalint = Eveg + Elitter;
+  Etotalsurf = Etotalint + Eponded;
+  Etotal = Etotalsurf + Esoil + Esnow;
+
+  // Get other water flux values
+  infiltration = w->soil_inf;
+  deepDrainage = sw->swcBulk[Today][SW_Site.deep_lyr]; // see issue #137
+
+  percolationIn[0] = infiltration;
+  percolationOut[SW_Site.n_layers] = deepDrainage;
+
+  runoff = w->snowRunoff + w->surfaceRunoff;
+  runon = w->surfaceRunon;
+  snowmelt = w->snowmelt;
+  rain = w->now.rain[Today];
+
+  arriving_water = rain + snowmelt + runon;
+
+  // Get state change values
+  intercepted = sw->litter_int + int_veg_total;
+
+  delta_surfaceWater = sw->surfaceWater - surfaceWater_yesterday;
+  surfaceWater_yesterday = sw->surfaceWater;
+
+
+  //--- Water balance checks (there are # checks n = N_WBCHECKS)
+  if (do_once) {
+    for (i = 0; i < N_WBCHECKS; i++) {
+      debug = (debug || debugi[i])? swTRUE: swFALSE;
+    }
+  }
+
+  if (debug) {
+    sprintf(flag, "WB (%d-%d)", SW_Model.year, SW_Model.doy);
+  }
+
+
+  // AET <= PET
+  if (do_once) sw->wbErrorNames[0] = Str_Dup("AET <= PET");
+  if (!LE(sw->aet, sw->pet))
+  {
+    sw->wbError[0]++;
+    if (debugi[0]) swprintf("%s: aet=%f, pet=%f\n",
+      flag, sw->aet, sw->pet);
+  }
+
+  // AET == E(total) + T(total)
+  if (do_once) sw->wbErrorNames[1] = Str_Dup("AET == Etotal + Ttotal");
+  rhs = Etotal + Ttotal;
+  if (!EQ_w_tol(sw->aet, rhs))
+  {
+    sw->wbError[1]++;
+    if (debugi[1]) swprintf("%s: AET(%f) == %f == Etotal(%f) + Ttotal(%f)\n",
+      flag, sw->aet, rhs, Etotal, Ttotal);
+  }
+
+  // T(total) = sum of T(veg-type i from soil layer j)
+  // doesn't make sense here because Ttotal is the sum of Tvegij
+  if (do_once) sw->wbErrorNames[2] = Str_Dup("T(total) = sum of T(veg-type i from soil layer j)");
+  sw->wbError[2] += 0;
+
+  // E(total) = E(total bare-soil) + E(ponded water) + E(total litter-intercepted) +
+  //            + E(total veg-intercepted) + E(snow sublimation)
+  if (do_once) sw->wbErrorNames[3] = Str_Dup("Etotal == Esoil + Eponded + Eveg + Elitter + Esnow");
+  rhs = Esoil + Eponded + Eveg + Elitter + Esnow;
+  if (!EQ_w_tol(Etotal, rhs))
+  {
+    sw->wbError[3]++;
+    if (debugi[3]) swprintf("%s: Etotal(%f) == %f == Esoil(%f) + Eponded(%f) + Eveg(%f) + Elitter(%f) + Esnow(%f)\n",
+      flag, Etotal, rhs, Esoil, Eponded, Eveg, Elitter, Esnow);
+  }
+
+  // E(total surface) = E(ponded water) + E(total litter-intercepted) +
+  //                    + E(total veg-intercepted)
+  if (do_once) sw->wbErrorNames[4] = Str_Dup("Esurf == Eponded + Eveg + Elitter");
+  rhs = Eponded + Eveg + Elitter;
+  if (!EQ_w_tol(Etotalsurf, rhs))
+  {
+    sw->wbError[4]++;
+    if (debugi[4]) swprintf("%s: Esurf(%f) == %f == Eponded(%f) + Eveg(%f) + Elitter(%f)\n",
+      flag, Etotalsurf, rhs, Eponded, Eveg, Elitter);
+  }
+
+
+  //--- Water cycling checks
+  // infiltration = [rain + snowmelt + runon] - (runoff + intercepted + delta_surfaceWater + Eponded)
+  if (do_once) sw->wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + intercepted + delta_surfaceWater + Eponded)");
+  rhs = arriving_water - (runoff + intercepted + delta_surfaceWater + Eponded);
+  if (!EQ_w_tol(infiltration, rhs))
+  {
+    sw->wbError[5]++;
+    if (debugi[5]) swprintf("%s: inf(%f) == %f == rain(%f) + snowmelt(%f) + runon(%f) - (runoff(%f) + intercepted(%f) + delta_surfaceWater(%f) + Eponded(%f))\n",
+      flag, infiltration, rhs, rain, snowmelt, runon, runoff, intercepted, delta_surfaceWater, Eponded);
+  }
+
+  // E(soil) + Ttotal = infiltration - (deepDrainage + delta(swc))
+  if (do_once) sw->wbErrorNames[6] = Str_Dup("Ttotal + Esoil = inf - (deepDrainage + delta_swc)");
+  lhs = Ttotal + Esoil;
+  rhs = infiltration - (deepDrainage + delta_swc_total);
+  if (!EQ_w_tol(lhs, rhs))
+  {
+    sw->wbError[6]++;
+    if (debugi[6]) swprintf("%s: Ttotal(%f) + Esoil(%f) == %f == %f == inf(%f) - (deepDrainage(%f) + delta_swc(%f))\n",
+      flag, Ttotal, Esoil, lhs, rhs, infiltration, deepDrainage, delta_swc_total);
+  }
+
+  // for every soil layer j: delta(swc) =
+  //   = infiltration/percolationIn + hydraulicRedistribution -
+  //     (percolationOut/deepDrainage + transpiration + evaporation)
+  if (do_once) sw->wbErrorNames[7] = Str_Dup("delta_swc[i] == perc_in[i] + hydred[i] - (perc_out[i] + Ttot[i] + Esoil[i]))");
+  ForEachSoilLayer(i)
+  {
+    rhs = percolationIn[i] + hydraulicRedistribution[i] -
+      (percolationOut[i] + Ttotalj[i] + sw->evaporation[i]);
+    if (!EQ_w_tol(delta_swcj[i], rhs))
+    {
+      sw->wbError[7]++;
+      if (debugi[7]) swprintf("%s sl=%d: delta_swc(%f) == %f == perc_in(%f) + hydred(%f) - (perc_out(%f) + Ttot(%f) + Esoil(%f))\n",
+        flag, i, delta_swcj[i], rhs, percolationIn[i], hydraulicRedistribution[i],
+        percolationOut[i], Ttotalj[i], sw->evaporation[i]);
+    }
+  }
+
+  // Add names only once
+  if (do_once) do_once = swFALSE;
+}
+#endif
+
+
 /* =================================================== */
 /* =================================================== */
 /*             Public Function Definitions             */
@@ -100,8 +295,13 @@ static void _clear_hist(void) {
 
 void SW_SWC_construct(void) {
 	/* =================================================== */
+
+	SW_Soilwat.partsError = swFALSE;
+
 	temp_snow = 0.;
-	if (!isnull(SW_Soilwat.hist.file_prefix)) {//Clear memory before setting it
+
+	//Clear memory before setting it
+	if (!isnull(SW_Soilwat.hist.file_prefix)) {
 		Mem_Free(SW_Soilwat.hist.file_prefix);
 		SW_Soilwat.hist.file_prefix = NULL;
 	}
@@ -116,7 +316,9 @@ void SW_SWC_water_flow(void) {
 	 */
 
 	LyrIndex i;
-	int debug = 0;
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
 
 	/* if there's no swc observation for today,
 	 * it shows up as SW_MISSING.  The input must
@@ -130,19 +332,28 @@ void SW_SWC_water_flow(void) {
 
 		if (!(SW_Model.doy == SW_Model.startstart && SW_Model.year == SW_Model.startyr)) {
 
-			if (debug) swprintf("\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n");
-			SW_SWC_adjust_swc(SW_Model.doy);
+      #ifdef SWDEBUG
+      if (debug) swprintf("\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n");
+      #endif
+      SW_SWC_adjust_swc(SW_Model.doy);
 
 		} else {
 			LogError(logfp, LOGWARN, "Attempt to set SWC on start day of first year of simulation disallowed.");
 		}
 
 	} else {
-		if (debug) swprintf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
+    #ifdef SWDEBUG
+    if (debug) swprintf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
+    #endif
 		SW_Water_Flow();
 	}
 
-	if (debug) swprintf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
+  #ifdef SWDEBUG
+  if (debug) swprintf("\n'SW_SWC_water_flow': check water balance.\n");
+  SW_WaterBalance_Checks();
+
+  if (debug) swprintf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
+  #endif
 	ForEachSoilLayer(i)
 		SW_Soilwat.is_wet[i] = (Bool) (GE( SW_Soilwat.swcBulk[Today][i],
 				SW_Site.lyr[i]->swcBulk_wet));
@@ -383,7 +594,9 @@ void SW_SWC_adjust_swc(TimeInt doy) {
 
 }
 
-void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain, RealD *snow, RealD *snowmelt, RealD *snowloss) {
+void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
+	RealD *snow, RealD *snowmelt) {
+
 	/*---------------------
 	 10/04/2010	(drs) added snowMAUS snow accumulation, sublimation and melt algorithm: Trnka, M., Kocmánková, E., Balek, J., Eitzinger, J., Ruget, F., Formayer, H., Hlavinka, P., Schaumberger, A., Horáková, V., Mozny, M. & Zalud, Z. (2010) Simple snow cover model for agrometeorological applications. Agricultural and Forest Meteorology, 150, 1115-1127.
 	 replaced SW_SWC_snow_accumulation, SW_SWC_snow_sublimation, and SW_SWC_snow_melt with SW_SWC_adjust_snow
@@ -395,9 +608,14 @@ void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain, 
 	 Outputs:	snowpack[Today], partitioning of ppt into rain and snow, snowmelt and snowloss
 	 ---------------------*/
 
-	RealD *snowpack = &SW_Soilwat.snowpack[Today], doy = SW_Model.doy, temp_ave, Rmelt, snow_cov = 1., cov_soil = 0.5, SnowAccu = 0., SnowMelt = 0., SnowLoss = 0.;
+	RealD *snowpack = &SW_Soilwat.snowpack[Today],
+		doy = SW_Model.doy,
+		temp_ave, Rmelt, SnowAccu = 0., SnowMelt = 0.;
+
+	static RealD snow_cov = 1.;
 
 	temp_ave = (temp_min + temp_max) / 2.;
+
 	/* snow accumulation */
 	if (LE(temp_ave, SW_Site.TminAccu2)) {
 		SnowAccu = ppt;
@@ -422,17 +640,27 @@ void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain, 
 	} else {
 		*snowmelt = 0.;
 	}
+}
 
-	/* snow loss through sublimation and other processes */
-	SnowLoss = fmin( *snowpack, cov_soil * SW_Soilwat.pet );
+/** Snow loss through sublimation and other processes
+	 10/19/2010	(drs) based on Neitsch S, Arnold J, Kiniry J, Williams J. 2005. Soil and
+	 water assessment tool (SWAT) theoretical documentation. version 2005. Blackland
+	 Research Center, Texas Agricultural Experiment Station: Temple, TX.
+	*/
+RealD SW_SWC_snowloss(RealD pet, RealD *snowpack) {
+	RealD snowloss;
+	static RealD cov_soil = 0.5;
+
 	if (GT(*snowpack, 0.)) {
-		*snowloss = fmax(0., SnowLoss);
-		*snowpack = fmax(0., *snowpack - *snowloss );
+		snowloss = fmax(0., fmin(*snowpack, cov_soil * pet));
+		*snowpack = fmax(0., *snowpack - snowloss);
 	} else {
-		*snowloss = 0.;
+		snowloss = 0.;
 	}
 
+	return snowloss;
 }
+
 
 RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
 	/*---------------------

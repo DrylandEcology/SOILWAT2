@@ -80,6 +80,7 @@ extern SW_CARBON SW_Carbon;
 SW_SITE SW_Site; /* declared here, externed elsewhere */
 
 extern Bool EchoInits;
+extern char const *key2veg[];
 
 #ifdef RSOILWAT
 extern Bool collectInData;
@@ -221,9 +222,12 @@ void SW_SIT_read(void) {
 	SW_SITE *v = &SW_Site;
 	SW_CARBON *c = &SW_Carbon;
 	FILE *f;
-	int lineno = 0, x, debug = 0,
+	int lineno = 0, x,
 		rgnlow, /* lower layer of region */
 		region; /* transp region definition number */
+	#ifdef SWDEBUG
+	int debug = 0;
+	#endif
 	LyrIndex r;
 	Bool too_many_regions = swFALSE;
 
@@ -348,15 +352,21 @@ void SW_SIT_read(void) {
 			break;
 		case 37:
 			c->use_bio_mult = itob(atoi(inbuf));
+			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': use_bio_mult = %d\n", c->use_bio_mult);
+			#endif
 			break;
 		case 38:
 			c->use_wue_mult = itob(atoi(inbuf));
+			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': use_wue_mult = %d\n", c->use_wue_mult);
+			#endif
 			break;
 		case 39:
 			strcpy(c->scenario, inbuf);
+			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", c->scenario);
+			#endif
 			break;
 		default:
 			if (lineno > 39 + MAX_TRANSP_REGIONS)
@@ -423,14 +433,18 @@ static void _read_layers(void) {
 	SW_SITE *v = &SW_Site;
 	FILE *f;
 	Bool evap_ok = swTRUE, /* mitigate gaps in layers' evap coeffs */
-	transp_ok_forb = swTRUE, transp_ok_tree = swTRUE, /* same for transpiration coefficients */
-	transp_ok_shrub = swTRUE, /* same for transpiration coefficients */
-	transp_ok_grass = swTRUE, /* same for transpiration coefficients */
-	fail = swFALSE;
-	LyrIndex lyrno;
-	int x;
+		transp_ok_veg[NVEGTYPES], /* same for transpiration coefficients */
+		fail = swFALSE;
+		LyrIndex lyrno;
+	int x, k;
 	const char *errtype = "\0";
-	RealF dmin = 0.0, dmax, evco, trco_forb, trco_tree, trco_shrub, trco_grass, psand, pclay, matricd, imperm, soiltemp, fval = 0, f_gravel;
+	RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay, matricd, imperm,
+		soiltemp, fval = 0, f_gravel;
+
+	// Initialize
+	ForEachVegType(k) {
+		transp_ok_veg[k] = swTRUE;
+	}
 
 	/* note that Files.read() must be called prior to this. */
 	MyFileName = SW_F_name(eLayers);
@@ -440,8 +454,9 @@ static void _read_layers(void) {
 	while (GetALine(f, inbuf)) {
 		lyrno = _newlayer();
 
-		x = sscanf(inbuf, "%f %f %f %f %f %f %f %f %f %f %f %f", &dmax, &matricd, &f_gravel, &evco, &trco_grass, &trco_shrub, &trco_tree, &trco_forb, &psand, &pclay, &imperm,
-				&soiltemp);
+		x = sscanf(inbuf, "%f %f %f %f %f %f %f %f %f %f %f %f", &dmax, &matricd, &f_gravel,
+			&evco, &trco_veg[SW_GRASS], &trco_veg[SW_SHRUB], &trco_veg[SW_TREES],
+			&trco_veg[SW_FORBS], &psand, &pclay, &imperm, &soiltemp);
 		if (x < 10) {
 			CloseFile(&f);
 			LogError(logfp, LOGFATAL, "%s : Incomplete record %d.\n", MyFileName, lyrno + 1);
@@ -483,17 +498,14 @@ static void _read_layers(void) {
 		v->lyr[lyrno]->soilMatric_density = matricd;
 		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel;
 		v->lyr[lyrno]->evap_coeff = evco;
-		v->lyr[lyrno]->transp_coeff_forb = trco_forb;
-		v->lyr[lyrno]->transp_coeff_tree = trco_tree;
-		v->lyr[lyrno]->transp_coeff_shrub = trco_shrub;
-		v->lyr[lyrno]->transp_coeff_grass = trco_grass;
+		ForEachVegType(k)
+		{
+			v->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
+			v->lyr[lyrno]->my_transp_rgn[k] = 0;
+		}
 		v->lyr[lyrno]->fractionWeightMatric_sand = psand;
 		v->lyr[lyrno]->fractionWeightMatric_clay = pclay;
 		v->lyr[lyrno]->impermeability = imperm;
-		v->lyr[lyrno]->my_transp_rgn_tree = 0;
-		v->lyr[lyrno]->my_transp_rgn_forb = 0;
-		v->lyr[lyrno]->my_transp_rgn_shrub = 0;
-		v->lyr[lyrno]->my_transp_rgn_grass = 0;
 		v->lyr[lyrno]->sTemp = soiltemp;
 
 		if (evap_ok) {
@@ -502,29 +514,15 @@ static void _read_layers(void) {
 			} else
 				evap_ok = swFALSE;
 		}
-		if (transp_ok_forb) {
-			if (GT(v->lyr[lyrno]->transp_coeff_forb, 0.0)) {
-				v->n_transp_lyrs_forb++;
-			} else
-				transp_ok_forb = swFALSE;
-		}
-		if (transp_ok_tree) {
-			if (GT(v->lyr[lyrno]->transp_coeff_tree, 0.0)) {
-				v->n_transp_lyrs_tree++;
-			} else
-				transp_ok_tree = swFALSE;
-		}
-		if (transp_ok_shrub) {
-			if (GT(v->lyr[lyrno]->transp_coeff_shrub, 0.0)) {
-				v->n_transp_lyrs_shrub++;
-			} else
-				transp_ok_shrub = swFALSE;
-		}
-		if (transp_ok_grass) {
-			if (GT(v->lyr[lyrno]->transp_coeff_grass, 0.0)) {
-				v->n_transp_lyrs_grass++;
-			} else
-				transp_ok_grass = swFALSE;
+
+		ForEachVegType(k)
+		{
+			if (transp_ok_veg[k]) {
+				if (GT(v->lyr[lyrno]->transp_coeff[k], 0.0)) {
+					v->n_transp_lyrs[k]++;
+				} else
+					transp_ok_veg[k] = swFALSE;
+			}
 		}
 
 		water_eqn(f_gravel, psand, pclay, lyrno);
@@ -569,8 +567,8 @@ void init_site_info(void) {
 	SW_SITE *sp = &SW_Site;
 	SW_LAYER_INFO *lyr;
 	LyrIndex s, r, curregion;
-	int wiltminflag = 0, initminflag = 0;
-	RealD evsum = 0., trsum_forb = 0., trsum_tree = 0., trsum_shrub = 0., trsum_grass = 0., swcmin_help1, swcmin_help2;
+	int k, wiltminflag = 0, initminflag = 0;
+	RealD evsum = 0., trsum_veg[NVEGTYPES] = {0.}, swcmin_help1, swcmin_help2;
 
 	/* sp->deepdrain indicates an extra (dummy) layer for deep drainage
 	 * has been added, so n_layers really should be n_layers -1
@@ -585,123 +583,42 @@ void init_site_info(void) {
 		lyr = sp->lyr[s];
 		/* sum ev and tr coefficients for later */
 		evsum += lyr->evap_coeff;
-		trsum_forb += lyr->transp_coeff_forb;
-		trsum_tree += lyr->transp_coeff_tree;
-		trsum_shrub += lyr->transp_coeff_shrub;
-		trsum_grass += lyr->transp_coeff_grass;
-
-		/* calculate soil water content at SWPcrit for each vegetation type */
-		lyr->swcBulk_atSWPcrit_forb = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, SW_VegProd.forb.SWPcrit, s) * lyr->width;
-		lyr->swcBulk_atSWPcrit_tree = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, SW_VegProd.tree.SWPcrit, s) * lyr->width;
-		lyr->swcBulk_atSWPcrit_shrub = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, SW_VegProd.shrub.SWPcrit, s) * lyr->width;
-		lyr->swcBulk_atSWPcrit_grass = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, SW_VegProd.grass.SWPcrit, s) * lyr->width;
-
-		/* Find which transpiration region the current soil layer
-		 * is in and check validity of result. Region bounds are
-		 * base1 but s is base0.
-		 */
-		/* for forbs */
-		curregion = 0;
-		ForEachTranspRegion(r)
+		ForEachVegType(k)
 		{
-			if (s < _TranspRgnBounds[r]) {
-				if (ZRO(lyr->transp_coeff_forb))
-					break; /* end of transpiring layers */
-				curregion = r + 1;
-				break;
+			trsum_veg[k] += lyr->transp_coeff[k];
+
+			/* calculate soil water content at SWPcrit for each vegetation type */
+			lyr->swcBulk_atSWPcrit[k] = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel,
+				SW_VegProd.veg[k].SWPcrit, s) * lyr->width;
+
+			/* Find which transpiration region the current soil layer
+			 * is in and check validity of result. Region bounds are
+			 * base1 but s is base0.*/
+			curregion = 0;
+			ForEachTranspRegion(r)
+			{
+				if (s < _TranspRgnBounds[r]) {
+					if (ZRO(lyr->transp_coeff[k]))
+						break; /* end of transpiring layers */
+					curregion = r + 1;
+					break;
+				}
 			}
-		}
 
-		if (curregion || _TranspRgnBounds[curregion] == 0) {
-			LogError(logfp, LOGNOTE, "  Layer %d : curregion %d _TranspRgnBounds %d", s + 1, curregion, _TranspRgnBounds[curregion]);
-			lyr->my_transp_rgn_forb = curregion;
-			sp->n_transp_lyrs_forb = max(sp->n_transp_lyrs_forb, s);
+			if (curregion || _TranspRgnBounds[curregion] == 0) {
+				lyr->my_transp_rgn[k] = curregion;
+				sp->n_transp_lyrs[k] = max(sp->n_transp_lyrs[k], s);
 
-		} else if (s == 0) {
-			LogError(logfp, LOGFATAL, "%s : Top soil layer must be included\n"
-					"  in your forb tranpiration regions.\n", SW_F_name(eSite));
-		} else if (r < sp->n_transp_rgn) {
-			LogError(logfp, LOGFATAL, "%s : Transpiration region %d \n"
-					"  is deeper than the deepest layer with a\n"
-					"  forb transpiration coefficient > 0 (%d) in '%s'.\n"
-					"  Please fix the discrepancy and try again.\n", SW_F_name(eSite), r + 1, s, SW_F_name(eLayers));
-		}
-
-		/* for trees */
-		curregion = 0;
-		ForEachTranspRegion(r)
-		{
-			if (s < _TranspRgnBounds[r]) {
-				if (ZRO(lyr->transp_coeff_tree))
-					break; /* end of transpiring layers */
-				curregion = r + 1;
-				break;
+			} else if (s == 0) {
+				LogError(logfp, LOGFATAL, "%s : Top soil layer must be included\n"
+						"  in %s tranpiration regions.\n", SW_F_name(eSite), key2veg[k]);
+			} else if (r < sp->n_transp_rgn) {
+				LogError(logfp, LOGFATAL, "%s : Transpiration region %d \n"
+						"  is deeper than the deepest layer with a\n"
+						"  %s transpiration coefficient > 0 (%d) in '%s'.\n"
+						"  Please fix the discrepancy and try again.\n",
+						SW_F_name(eSite), r + 1, key2veg[k], s, SW_F_name(eLayers));
 			}
-		}
-
-		if (curregion || _TranspRgnBounds[curregion] == 0) {
-			lyr->my_transp_rgn_tree = curregion;
-			sp->n_transp_lyrs_tree = max(sp->n_transp_lyrs_tree, s);
-
-		} else if (s == 0) {
-			LogError(logfp, LOGFATAL, "%s : Top soil layer must be included\n"
-					"  in your tree tranpiration regions.\n", SW_F_name(eSite));
-		} else if (r < sp->n_transp_rgn) {
-			LogError(logfp, LOGFATAL, "%s : Transpiration region %d \n"
-					"  is deeper than the deepest layer with a\n"
-					"  tree transpiration coefficient > 0 (%d) in '%s'.\n"
-					"  Please fix the discrepancy and try again.\n", SW_F_name(eSite), r + 1, s, SW_F_name(eLayers));
-		}
-
-		/* for shrubs */
-		curregion = 0;
-		ForEachTranspRegion(r)
-		{
-			if (s < _TranspRgnBounds[r]) {
-				if (ZRO(lyr->transp_coeff_shrub))
-					break; /* end of transpiring layers */
-				curregion = r + 1;
-				break;
-			}
-		}
-
-		if (curregion || _TranspRgnBounds[curregion] == 0) {
-			lyr->my_transp_rgn_shrub = curregion;
-			sp->n_transp_lyrs_shrub = max(sp->n_transp_lyrs_shrub, s);
-
-		} else if (s == 0) {
-			LogError(logfp, LOGFATAL, "%s : Top soil layer must be included\n"
-					"  in your shrub tranpiration regions.\n", SW_F_name(eSite));
-		} else if (r < sp->n_transp_rgn) {
-			LogError(logfp, LOGFATAL, "%s : Transpiration region %d \n"
-					"  is deeper than the deepest layer with a\n"
-					"  shrub transpiration coefficient > 0 (%d) in '%s'.\n"
-					"  Please fix the discrepancy and try again.\n", SW_F_name(eSite), r + 1, s, SW_F_name(eLayers));
-		}
-		/* for grasses */
-		curregion = 0;
-		ForEachTranspRegion(r)
-		{
-			if (s < _TranspRgnBounds[r]) {
-				if (ZRO(lyr->transp_coeff_grass))
-					break; /* end of transpiring layers */
-				curregion = r + 1;
-				break;
-			}
-		}
-
-		if (curregion || _TranspRgnBounds[curregion] == 0) {
-			lyr->my_transp_rgn_grass = curregion;
-			sp->n_transp_lyrs_grass = max(sp->n_transp_lyrs_grass, s);
-
-		} else if (s == 0) {
-			LogError(logfp, LOGFATAL, "%s : Top soil layer must be included\n"
-					"  in your grass tranpiration regions.\n", SW_F_name(eSite));
-		} else if (r < sp->n_transp_rgn) {
-			LogError(logfp, LOGFATAL, "%s : Transpiration region %d \n"
-					"  is deeper than the deepest layer with a\n"
-					"  grass transpiration coefficient > 0 (%d) in '%s'.\n"
-					"  Please fix the discrepancy and try again.\n", SW_F_name(eSite), r + 1, s, SW_F_name(eLayers));
 		}
 
 		/* Compute swc wet and dry limits and init value */
@@ -756,40 +673,22 @@ void init_site_info(void) {
 			LogError(logfp, LOGNOTE, "  Layer %d : %5.4f", s + 1, SW_Site.lyr[s]->evap_coeff);
 		}
 	}
-	if (!EQ(trsum_forb, 1.0)) {
-		LogError(logfp, LOGWARN, "%s : Transp coefficients for forbs were normalized, "
-				"tr_co_forb sum (%5.4f) != 1.0.\nNew Coefficients are:", MyFileName, trsum_forb);
-		ForEachForbTranspLayer(s)
-		{
-			SW_Site.lyr[s]->transp_coeff_forb /= trsum_forb;
-			LogError(logfp, LOGNOTE, "  Layer %d : %5.4f", s + 1, SW_Site.lyr[s]->transp_coeff_forb);
-		}
-	}
-	if (!EQ(trsum_tree, 1.0)) {
-		LogError(logfp, LOGWARN, "%s : Transp coefficients for trees were normalized, "
-				"tr_co_tree sum (%5.4f) != 1.0.\nNew coefficients are:", MyFileName, trsum_tree);
-		ForEachTreeTranspLayer(s)
-		{
-			SW_Site.lyr[s]->transp_coeff_tree /= trsum_tree;
-			LogError(logfp, LOGNOTE, "  Layer %d : %5.4f", s + 1, SW_Site.lyr[s]->transp_coeff_tree);
-		}
-	}
-	if (!EQ(trsum_shrub, 1.0)) {
-		LogError(logfp, LOGWARN, "%s : Transp coefficients for shrubs were normalized, "
-				"tr_co_shrub sum (%5.4f) != 1.0.\nNew coefficients are:", MyFileName, trsum_shrub);
-		ForEachShrubTranspLayer(s)
-		{
-			SW_Site.lyr[s]->transp_coeff_shrub /= trsum_shrub;
-			LogError(logfp, LOGNOTE, "  Layer %d : %5.4f", s + 1, SW_Site.lyr[s]->transp_coeff_shrub);
-		}
-	}
-	if (!EQ(trsum_grass, 1.0)) {
-		LogError(logfp, LOGWARN, "%s : Transp coefficients for grasses were normalized, "
-				"tr_co_grass sum (%5.4f) != 1.0.\nNew coefficients are:", MyFileName, trsum_grass);
-		ForEachGrassTranspLayer(s)
-		{
-			SW_Site.lyr[s]->transp_coeff_grass /= trsum_grass;
-			LogError(logfp, LOGNOTE, "  Layer %d : %5.4f", s + 1, SW_Site.lyr[s]->transp_coeff_grass);
+
+	ForEachVegType(k)
+	{
+		if (!EQ(trsum_veg[k], 1.0)) {
+			LogError(logfp, LOGWARN, "%s : Transp coefficients for %s were normalized, "
+				"tr_co_forb sum (%5.4f) != 1.0.\nNew Coefficients are:",
+				MyFileName, key2veg[k], trsum_veg[k]);
+
+			ForEachSoilLayer(s)
+			{
+				if (GT(SW_Site.lyr[s]->transp_coeff[k], 0.))
+				{
+					SW_Site.lyr[s]->transp_coeff[k] /= trsum_veg[k];
+					LogError(logfp, LOGNOTE, "  Layer %d : %5.4f", s + 1, SW_Site.lyr[s]->transp_coeff[k]);
+				}
+			}
 		}
 	}
 
@@ -885,10 +784,10 @@ void _echo_inputs(void) {
 	LogError(logfp, LOGNOTE, "  Soils File: %s\n", SW_F_name(eLayers));
 	LogError(logfp, LOGNOTE, "  Number of soil layers: %d\n", s->n_layers);
 	LogError(logfp, LOGNOTE, "  Number of evaporation layers: %d\n", s->n_evap_lyrs);
-	LogError(logfp, LOGNOTE, "  Number of forb transpiration layers: %d\n", s->n_transp_lyrs_forb);
-	LogError(logfp, LOGNOTE, "  Number of tree transpiration layers: %d\n", s->n_transp_lyrs_tree);
-	LogError(logfp, LOGNOTE, "  Number of shrub transpiration layers: %d\n", s->n_transp_lyrs_shrub);
-	LogError(logfp, LOGNOTE, "  Number of grass transpiration layers: %d\n", s->n_transp_lyrs_grass);
+	LogError(logfp, LOGNOTE, "  Number of forb transpiration layers: %d\n", s->n_transp_lyrs[SW_FORBS]);
+	LogError(logfp, LOGNOTE, "  Number of tree transpiration layers: %d\n", s->n_transp_lyrs[SW_TREES]);
+	LogError(logfp, LOGNOTE, "  Number of shrub transpiration layers: %d\n", s->n_transp_lyrs[SW_SHRUB]);
+	LogError(logfp, LOGNOTE, "  Number of grass transpiration layers: %d\n", s->n_transp_lyrs[SW_GRASS]);
 	LogError(logfp, LOGNOTE, "  Number of transpiration regions: %d\n", s->n_transp_rgn);
 
 	LogError(logfp, LOGNOTE, "\nLayer Specific Values:\n----------------------\n");
@@ -905,10 +804,10 @@ void _echo_inputs(void) {
 				"  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f %9.2f %9.2f %9.2f %9.2f %9.2f %10d %10d %15d %15d %15.4f %9.4f %9.4f %9.4f %9.4f\n",
 				i + 1, s->lyr[i]->width, s->lyr[i]->soilBulk_density, s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_fieldcap / s->lyr[i]->width,
 				s->lyr[i]->swcBulk_wiltpt / s->lyr[i]->width, s->lyr[i]->fractionWeightMatric_sand, s->lyr[i]->fractionWeightMatric_clay,
-				s->lyr[i]->swcBulk_atSWPcrit_forb / s->lyr[i]->width, s->lyr[i]->swcBulk_atSWPcrit_tree / s->lyr[i]->width,
-				s->lyr[i]->swcBulk_atSWPcrit_shrub / s->lyr[i]->width, s->lyr[i]->swcBulk_atSWPcrit_grass / s->lyr[i]->width, s->lyr[i]->evap_coeff,
-				s->lyr[i]->transp_coeff_forb, s->lyr[i]->transp_coeff_tree, s->lyr[i]->transp_coeff_shrub, s->lyr[i]->transp_coeff_grass, s->lyr[i]->my_transp_rgn_forb,
-				s->lyr[i]->my_transp_rgn_tree, s->lyr[i]->my_transp_rgn_shrub, s->lyr[i]->my_transp_rgn_grass, s->lyr[i]->swcBulk_wet / s->lyr[i]->width,
+				s->lyr[i]->swcBulk_atSWPcrit[SW_FORBS] / s->lyr[i]->width, s->lyr[i]->swcBulk_atSWPcrit[SW_TREES] / s->lyr[i]->width,
+				s->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB] / s->lyr[i]->width, s->lyr[i]->swcBulk_atSWPcrit[SW_GRASS] / s->lyr[i]->width, s->lyr[i]->evap_coeff,
+				s->lyr[i]->transp_coeff[SW_FORBS], s->lyr[i]->transp_coeff[SW_TREES], s->lyr[i]->transp_coeff[SW_SHRUB], s->lyr[i]->transp_coeff[SW_GRASS], s->lyr[i]->my_transp_rgn[SW_FORBS],
+				s->lyr[i]->my_transp_rgn[SW_TREES], s->lyr[i]->my_transp_rgn[SW_SHRUB], s->lyr[i]->my_transp_rgn[SW_GRASS], s->lyr[i]->swcBulk_wet / s->lyr[i]->width,
 				s->lyr[i]->swcBulk_min / s->lyr[i]->width, s->lyr[i]->swcBulk_init / s->lyr[i]->width, s->lyr[i]->swcBulk_saturated / s->lyr[i]->width,
 				s->lyr[i]->impermeability);
 
@@ -925,8 +824,8 @@ void _echo_inputs(void) {
 	{
 		LogError(logfp, LOGNOTE, "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %8.4f %7.4f %5.4f\n", i + 1, s->lyr[i]->width,
 				s->lyr[i]->soilBulk_density, s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_fieldcap, s->lyr[i]->swcBulk_wiltpt, s->lyr[i]->fractionWeightMatric_sand,
-				s->lyr[i]->fractionWeightMatric_clay, s->lyr[i]->swcBulk_atSWPcrit_forb, s->lyr[i]->swcBulk_atSWPcrit_tree, s->lyr[i]->swcBulk_atSWPcrit_shrub,
-				s->lyr[i]->swcBulk_atSWPcrit_grass, s->lyr[i]->swcBulk_wet, s->lyr[i]->swcBulk_min, s->lyr[i]->swcBulk_init, s->lyr[i]->swcBulk_saturated, s->lyr[i]->sTemp);
+				s->lyr[i]->fractionWeightMatric_clay, s->lyr[i]->swcBulk_atSWPcrit[SW_FORBS], s->lyr[i]->swcBulk_atSWPcrit[SW_TREES], s->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB],
+				s->lyr[i]->swcBulk_atSWPcrit[SW_GRASS], s->lyr[i]->swcBulk_wet, s->lyr[i]->swcBulk_min, s->lyr[i]->swcBulk_init, s->lyr[i]->swcBulk_saturated, s->lyr[i]->sTemp);
 	}
 
 	LogError(logfp, LOGNOTE, "\n  Water Potential values:\n");
@@ -941,10 +840,10 @@ void _echo_inputs(void) {
 		LogError(logfp, LOGNOTE, "  %3d   %15.4f   %15.4f  %15.4f %15.4f  %15.4f  %15.4f  %15.4f   %15.4f   %15.4f\n", i + 1,
 				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_fieldcap, i),
 				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_wiltpt, i),
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_atSWPcrit_forb, i),
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_atSWPcrit_tree, i),
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_atSWPcrit_shrub, i),
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_atSWPcrit_grass, i),
+				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_atSWPcrit[SW_FORBS], i),
+				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_atSWPcrit[SW_TREES], i),
+				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB], i),
+				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_atSWPcrit[SW_GRASS], i),
 				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_wet, i),
 				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_min, i),
 				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_init, i));

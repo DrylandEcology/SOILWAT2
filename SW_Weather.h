@@ -37,16 +37,15 @@
 
 typedef struct {
 	/* comes from markov weather day-to-day */
-	RealD temp_avg[TWO_DAYS], temp_run_avg[TWO_DAYS], temp_yr_avg, /* year's avg for STEPPE */
-	temp_max[TWO_DAYS], temp_min[TWO_DAYS], ppt[TWO_DAYS], /* 20091015 (drs) ppt is divided into rain and snow */
-	rain[TWO_DAYS], snow[TWO_DAYS], snowmelt[TWO_DAYS], snowloss[TWO_DAYS], ppt_actual[TWO_DAYS], /* 20091015 (drs) was here previously, but not used in code as of today */
-	gsppt; /* gr. season ppt only needs one day */
-
+	RealD temp_avg[TWO_DAYS], temp_max[TWO_DAYS], temp_min[TWO_DAYS],
+	// currently commented out: temp_run_avg[TWO_DAYS], temp_yr_avg, gsppt, /* year's avg and growing season ppt for STEPPE */
+	ppt[TWO_DAYS], rain[TWO_DAYS];
 } SW_WEATHER_2DAYS;
 
 typedef struct {
 	/* comes from historical weather files */
-	RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS], ppt[MAX_DAYS], temp_month_avg[MAX_MONTHS], temp_year_avg;
+	RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS], ppt[MAX_DAYS],
+	temp_month_avg[MAX_MONTHS], temp_year_avg;
 } SW_WEATHER_HIST;
 
 /* accumulators for output values hold only the */
@@ -68,7 +67,8 @@ typedef struct {
 	RealD scale_precip[MAX_MONTHS], scale_temp_max[MAX_MONTHS], scale_temp_min[MAX_MONTHS],
 		scale_skyCover[MAX_MONTHS], scale_wind[MAX_MONTHS], scale_rH[MAX_MONTHS], scale_transmissivity[MAX_MONTHS];
 	char name_prefix[MAX_FILENAMESIZE - 5]; // subtract 4-digit 'year' file type extension
-	RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf,surfaceTemp;
+	RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceTemp;
+	RealD snow, snowmelt, snowloss;
 
 	/* This section is required for computing the output quantities.  */
 	SW_WEATHER_OUTPUTS dysum, /* helpful placeholder */

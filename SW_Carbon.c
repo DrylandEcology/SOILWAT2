@@ -73,16 +73,20 @@ void SW_CBN_construct(void)
  */
 void SW_CBN_read(void)
 {
+  #ifdef SWDEBUG
   short debug = 0;
+  #endif
   SW_CARBON  *c   = &SW_Carbon;
 
   // For efficiency, don't read carbon.in if neither multiplier is being used
   // We can do this because SW_CBN_CONSTRUCT already populated the multipliers with default values
   if (!c->use_bio_mult && !c->use_wue_mult)
   {
+    #ifdef SWDEBUG
     if (debug) {
       swprintf("'SW_CBN_read': CO2-effects are turned off; don't read CO2-concentration data from file.\n");
     }
+    #endif
     return;
   }
 
@@ -101,12 +105,16 @@ void SW_CBN_read(void)
   MyFileName = SW_F_name(eCarbon);
   f = OpenFile(MyFileName, "r");
 
+  #ifdef SWDEBUG
   if (debug) {
     swprintf("'SW_CBN_read': start reading CO2-concentration data from file.\n");
   }
+  #endif
 
   while (GetALine(f, inbuf)) {
+    #ifdef SWDEBUG
     if (debug) swprintf("\ninbuf = %s", inbuf);
+    #endif
 
     fileWasEmpty = 0;
 
@@ -139,7 +147,9 @@ void SW_CBN_read(void)
     }
 
     c->ppm[year] = ppm;
+    #ifdef SWDEBUG
     if (debug) swprintf("  ==> c->ppm[%d] = %3.2f", year, c->ppm[year]);
+    #endif
 
     /* Has this year already been calculated?
        If yes: Do NOT overwrite values, fail the run instead
@@ -199,12 +209,15 @@ void SW_CBN_read(void)
  * be simulated.
  */
 void calculate_CO2_multipliers(void) {
+  int k;
   TimeInt year,
     simendyr = SW_Model.endyr + SW_Model.addtl_yr;
   double ppm;
   SW_CARBON  *c  = &SW_Carbon;
   SW_VEGPROD *v  = &SW_VegProd;
+  #ifdef SWDEBUG
   short debug = 0;
+  #endif
 
   if (!c->use_bio_mult && !c->use_wue_mult)
   {
@@ -223,26 +236,25 @@ void calculate_CO2_multipliers(void) {
     }
 
     // Calculate multipliers per PFT
-    if (c->use_bio_mult)
-    {
-      v->grass.co2_multipliers[BIO_INDEX][year] = v->grass.co2_bio_coeff1 * pow(ppm, v->grass.co2_bio_coeff2);
-      v->shrub.co2_multipliers[BIO_INDEX][year] = v->shrub.co2_bio_coeff1 * pow(ppm, v->shrub.co2_bio_coeff2);
-      v->tree.co2_multipliers[BIO_INDEX][year] = v->tree.co2_bio_coeff1 * pow(ppm, v->tree.co2_bio_coeff2);
-      v->forb.co2_multipliers[BIO_INDEX][year] = v->forb.co2_bio_coeff1 * pow(ppm, v->forb.co2_bio_coeff2);
+    if (c->use_bio_mult) {
+      ForEachVegType(k) {
+        v->veg[k].co2_multipliers[BIO_INDEX][year] = v->veg[k].co2_bio_coeff1 * pow(ppm, v->veg[k].co2_bio_coeff2);
+      }
     }
 
+    #ifdef SWDEBUG
     if (debug) {
       swprintf("Shrub: use%d: bio_mult[%d] = %1.3f / coeff1 = %1.3f / coeff2 = %1.3f / ppm = %3.2f\n",
-        c->use_bio_mult, year, v->shrub.co2_multipliers[BIO_INDEX][year],
-        v->shrub.co2_bio_coeff1, v->shrub.co2_bio_coeff2, ppm);
+        c->use_bio_mult, year, v->veg[SW_SHRUB].co2_multipliers[BIO_INDEX][year],
+        v->veg[SW_SHRUB].co2_bio_coeff1, v->veg[SW_SHRUB].co2_bio_coeff2, ppm);
     }
+    #endif
 
-    if (c->use_wue_mult)
-    {
-      v->grass.co2_multipliers[WUE_INDEX][year] = v->grass.co2_wue_coeff1 * pow(ppm, v->grass.co2_wue_coeff2);
-      v->shrub.co2_multipliers[WUE_INDEX][year] = v->shrub.co2_wue_coeff1 * pow(ppm, v->shrub.co2_wue_coeff2);
-      v->tree.co2_multipliers[WUE_INDEX][year] = v->tree.co2_wue_coeff1 * pow(ppm, v->tree.co2_wue_coeff2);
-      v->forb.co2_multipliers[WUE_INDEX][year] = v->forb.co2_wue_coeff1 * pow(ppm, v->forb.co2_wue_coeff2);
+    if (c->use_wue_mult) {
+      ForEachVegType(k) {
+        v->veg[k].co2_multipliers[WUE_INDEX][year] = v->veg[k].co2_wue_coeff1 *
+          pow(ppm, v->veg[k].co2_wue_coeff2);
+      }
     }
   }
 }
