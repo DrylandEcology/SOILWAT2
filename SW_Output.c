@@ -316,10 +316,6 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
 static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k);
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k);
-#ifdef STEPWAT
-float get_running_avg(float old_val, float val_to_add);
-float get_running_sqr(float old_val, float val_to_add, float run_avg);
-#endif
 
 static OutPeriod str2period(char *s)
 {
@@ -3025,7 +3021,6 @@ static void get_swa(OutPeriod pd)
 		}
 	#elif defined(STEPWAT)
 		//float yesterday_swa, rvariance;
-
 		if ((isPartialSoilwatOutput == swFALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 			get_outstrleader(pd);
 
@@ -3095,6 +3090,7 @@ static void get_swa(OutPeriod pd)
 			//(i.e. if shrub=-3.9 then it also has access to -3.5 and -2.0)
 			int j = 0, k = 0, curr_crit_rank_index = 0;
 			float curr_crit_val, new_crit_val;
+
 
 			// go through each veg type
 			for(j=0; j<4; j++){
@@ -3309,7 +3305,6 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 		smallestCritVal = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[0]];
 		largestCritVal = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[3]];
 
-
 		/*	description and example for below loops
 		*		first loop gets veg_type with smallest critical value
 		* 	second loop goes through all critical values larger than the original veg_type and subtracts
@@ -3342,8 +3337,8 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 								-2.0 !< -2.0 // since not less than we are done because dont need to recalculate if crit value is the same
 						[second nested loop]
 						j = 4 // since this not less than 4 will not enter loop. dont need to enter loop since this veg type has the largest crit val and nothing needs to be set 0
-
 		*/
+
 		// loop through each veg type to get dSWAbulk
 		for(curr_vegType = 3; curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
 			curr_crit_rank_index = SXW.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
@@ -3370,11 +3365,8 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 					prev_crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv]]; // get crit value for index lower
 				}
 
-					//printf("%f,%f\n\n", crit_val, prev_crit_val);
-
 					if(veg_type_in_use == 0){ // [0=tree(-2.0,off), 1=shrub(-3.9,on), 2=grass(-3.5,on), 3=forb(-2.0,on)]
 						// do nothing since veg type is turned off
-						//printf("%d,%d\n", curr_crit_rank_index, kv_veg_type);
 						SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
 						SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
 						SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = 0.;
@@ -3391,7 +3383,6 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 						}
 						else if(crit_val == prev_crit_val){ // critical values equal just set to itself
 							SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = SXW.SWA_master[Itclp(curr_crit_rank_index,kv_veg_type,i,p)];
-							//printf("%f,%f\n\n", crit_val, prev_crit_val);
 						}
 						else{
 							// do nothing if crit val >. this will be handled later
@@ -3446,10 +3437,7 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 	for(curr_vegType = 0; curr_vegType < 4; curr_vegType++){
 		for(kv = 0; kv < 4; kv++){
 			SXW.sum_dSWA_repartitioned[curr_vegType][i][p] += SXW.dSWA_repartitioned[Itclp(curr_vegType,kv,i,p)];
-			//if(Globals.currIter == 1)
-				//printf("%d, %d, %d, %d, %d\n", SW_Model.simyear, curr_vegType, kv, i, p);
-			//SXW.sum_dSWA_repartitioned[Ivlp(curr_vegType,i,p)] += SXW.dSWA_repartitioned[Itclp(curr_vegType,kv,i,p)];
-		}
+			}
 	}
 
 	if(Globals.currIter == 1 && SW_Model.simyear < 2000){
@@ -3528,7 +3516,6 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 
 		//printf("---------------------\n\n");
 	}
-//}
 
 	#endif
 }
@@ -7506,21 +7493,6 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 				break;
 		}
 }
-
-#ifdef STEPWAT
-float get_running_avg(float old_val, float val_to_add){
-	float new_avg;
-	new_avg = old_val + (val_to_add - old_val) / Globals.currIter;
-	return new_avg;
-}
-
-float get_running_sqr(float old_val, float val_to_add, float run_avg){
-	float run_sqr;
-	run_sqr = (val_to_add-old_val) * (val_to_add-run_avg);
-
-	return run_sqr;
-}
-#endif
 
 #ifdef DEBUG_MEM
 #include "myMemory.h"
