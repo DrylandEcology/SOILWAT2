@@ -108,7 +108,7 @@ void SW_WaterBalance_Checks(void)
 	SW_WEATHER *w = &SW_Weather;
 
   IntUS i, k;
-  int debugi[N_WBCHECKS] = {1, 1, 1, 1, 1, 1, 1, 0}; // print output for each check yes/no
+  int debugi[N_WBCHECKS] = {1, 1, 1, 1, 1, 1, 1, 1}; // print output for each check yes/no
   char flag[15];
   RealD
     Etotal, Etotalsurf, Etotalint, Eponded, Elitter, Esnow, Esoil = 0., Eveg = 0.,
@@ -116,12 +116,11 @@ void SW_WaterBalance_Checks(void)
     percolationIn[MAX_LAYERS + 1], percolationOut[MAX_LAYERS + 1],
     hydraulicRedistribution[MAX_LAYERS],
     infiltration, deepDrainage, runoff, runon, snowmelt, rain, arriving_water,
+    intercepted, int_veg_total = 0.,
     delta_surfaceWater,
-    int_veg_total = 0., intercepted, delta_intercepted,
     delta_swc_total = 0., delta_swcj[MAX_LAYERS];
   RealD lhs, rhs;
 
-  static RealD intercepted_yesterday = 0.;
   static RealD surfaceWater_yesterday = 0.;
   static Bool do_once = swTRUE;
   static Bool debug = swFALSE;
@@ -135,6 +134,8 @@ void SW_WaterBalance_Checks(void)
 
     delta_swcj[i] = sw->swcBulk[Today][i] - sw->swcBulk[Yesterday][i];
     delta_swc_total += delta_swcj[i];
+
+    Ttotalj[i] = hydraulicRedistribution[i] = 0.; // init
 
     ForEachVegType(k) {
       Ttotal += sw->transpiration[k][i];
@@ -178,8 +179,6 @@ void SW_WaterBalance_Checks(void)
 
   // Get state change values
   intercepted = sw->litter_int + int_veg_total;
-  delta_intercepted = intercepted - intercepted_yesterday;
-  intercepted_yesterday = intercepted;
 
   delta_surfaceWater = sw->surfaceWater - surfaceWater_yesterday;
   surfaceWater_yesterday = sw->surfaceWater;
