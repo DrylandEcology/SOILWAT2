@@ -41,140 +41,110 @@
 
 extern SW_MODEL SW_Model;
 extern SW_VEGPROD SW_VegProd;
+SW_VEGPROD *v = &SW_VegProd;
+int k;
 
 
 namespace {
 
-  // Test the grass interception function 'grass_intercepted_water'
-  TEST(SWFlowTest, GrassInterceptedWater) {
+  // Test the veg interception function 'veg_intercepted_water'
+  TEST(SWFlowTest, VegInterceptedWater) {
 
+    ForEachVegType(k)
+    {
     // declare inputs
-    double vegcov;
+    double x;
     double ppt = 5.0, scale = 1.0;
-    double pptleft = 5.0, wintgrass = 0.0;
-    double a = 0.0182, b = 0.0065, c = 0.0019, d = 0.0054; /* parameters from
-    veg.in file */
+    double pptleft = 5.0, wintveg = 0.0;
+    double a = v -> veg[k].veg_intPPT_a, b = v -> veg[k].veg_intPPT_b,
+    c = v -> veg[k].veg_intPPT_c, d = v -> veg[k].veg_intPPT_d;
 
-    // Test expectation when grass veg cov is zero
-    vegcov = 0.0;
+    // Test expectation when x("vegcov") is zero
+    x = 0.0;
 
-    grass_intercepted_water(&pptleft, &wintgrass, ppt, vegcov, scale, a, b, c, d);
+    veg_intercepted_water(&pptleft, &wintveg, ppt, x, scale, a, b, c, d);
 
-    EXPECT_EQ(0, wintgrass); // When there is no veg, interception should be 0
+    EXPECT_EQ(0, wintveg); // When there is no veg, interception should be 0
     EXPECT_EQ(pptleft, ppt); /* When there is no interception, ppt before interception
     should equal ppt left after interception */
 
     // Test expectations when ppt is 0
-    ppt = 0.0, vegcov = 5.0;
+    ppt = 0.0, x = 5.0;
 
-    grass_intercepted_water(&pptleft, &wintgrass, ppt, vegcov, scale, a, b, c, d);
+    veg_intercepted_water(&pptleft, &wintveg, ppt, x, scale, a, b, c, d);
 
-    EXPECT_EQ(0, wintgrass);  // When there is no ppt, interception should be 0
+    EXPECT_EQ(0, wintveg);  // When there is no ppt, interception should be 0
     EXPECT_EQ(pptleft, ppt); /* When there is no interception, ppt before interception
     should equal ppt left after interception */
 
 
-    // Test expectations when there is both grass cover and precipitation
-    ppt = 5.0, vegcov = 5.0;
+    // Test expectations when there is both veg cover and precipitation
+    ppt = 5.0, x = 5.0;
 
-    grass_intercepted_water(&pptleft, &wintgrass, ppt, vegcov, scale, a, b, c, d);
+    veg_intercepted_water(&pptleft, &wintveg, ppt, x, scale, a, b, c, d);
 
-    EXPECT_GT(wintgrass, 0); // interception by grass should be greater than 0
-    EXPECT_LE(wintgrass, MAX_WINTSTCR); // interception by grass should be less than or equal to MAX_WINTSTCR (vegcov * .1)
-    EXPECT_LE(wintgrass, ppt); // interception by grass should be less than or equal to ppt
+    EXPECT_GT(wintveg, 0); // interception by veg should be greater than 0
+    EXPECT_LE(wintveg, MAX_WINTSTCR(x)); // interception by veg should be less than or equal to MAX_WINTSTCR (vegcov * .1)
+    EXPECT_LE(wintveg, ppt); // interception by veg should be less than or equal to ppt
     EXPECT_GE(pptleft, 0); // The pptleft (for soil) should be greater than or equal to 0
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
+  }
 }
 
-// Test the shrub interception function 'shrub_intercepted_water'
-TEST(SWFlowTest, ShrubInterceptedWater) {
+// Test the litter interception function 'litter_intercepted_water'
+TEST(SWFlowTest, LitterInterceptedWater) {
 
+  ForEachVegType(k)
+  {
   // declare inputs
-  double vegcov;
-  double ppt = 5.0, scale = 1.0;
-  double pptleft = 5.0, wintshrub = 0.0;
-  double a = 0.0, b = 0.0026, c = 0.0, d = 0.0033; /* parameters from
-  veg.in file */
+  double scale, blitter,pptleft = 5.0;
+  double wintlit;
+  double a = v->veg[k].litt_intPPT_a, b = v->veg[k].litt_intPPT_b,
+  c = v->veg[k].litt_intPPT_c, d = v->veg[k].litt_intPPT_d;
 
-  // Test expectation when shrub veg cov is zero
-  vegcov = 0.0;
+  // Test expectation when scale (cover) is zero
+  pptleft = 5.0, scale = 0.0, blitter = 5.0;
 
-  shrub_intercepted_water(&pptleft, &wintshrub, ppt, vegcov, scale, a, b, c, d);
+  litter_intercepted_water(&pptleft, &wintlit, blitter, scale, a, b, c, d);
 
-  EXPECT_EQ(0, wintshrub); // When there is no veg, interception should be 0
-  EXPECT_EQ(pptleft, ppt); /* When there is no interception, ppt before interception
-  should equal ppt left after interception */
+  EXPECT_EQ(0, wintlit); // When scale is 0, interception should be 0
 
 
-  // Test expectations when ppt is 0
-  ppt = 0.0, vegcov = 14.5;
+  // Test expectations when blitter is 0
+  pptleft = 5.0, scale = 0.5, blitter = 0.0;
 
-  shrub_intercepted_water(&pptleft, &wintshrub, ppt, vegcov, scale, a, b, c, d);
+  litter_intercepted_water(&pptleft, &wintlit, blitter, scale, a, b, c, d);
 
-  EXPECT_EQ(0, wintshrub); // When there is no ppt, interception should be 0
-  EXPECT_EQ(pptleft, ppt); /* When there is no interception, ppt before interception
-  should equal ppt left after interception */
+  EXPECT_EQ(0, wintlit); // When there is no blitter, interception should be 0
 
-  // Test expectations when there is both shrub cover and precipitation
-  ppt = 5.0, vegcov = 14.5;
 
-  shrub_intercepted_water(&pptleft, &wintshrub, ppt, vegcov, scale, a, b, c, d);
+  // Test expectations when pptleft is 0
+  pptleft = 0.0, scale = 0.5, blitter = 5.0;
 
-  EXPECT_GT(wintshrub, 0); // interception by shrub should be greater than 0
-  EXPECT_LE(wintshrub, MAX_WINTSTCR); /* interception by shrub should be less than
-  or equal to MAX_WINTSTCR (vegcov * .1) */
-  EXPECT_LE(wintshrub, ppt); // interception by shrub should be less than or equal to ppt
+  litter_intercepted_water(&pptleft, &wintlit, blitter, scale, a, b, c, d);
+
+  EXPECT_EQ(0, pptleft); // When there is no ppt, pptleft should be 0
+  EXPECT_EQ(0, wintlit); // When there is no blitter, interception should be 0
+
+
+  // Test expectations when there pptleft, scale, and blitter are greater than 0
+  pptleft = 5.0, scale = 0.5, blitter = 5.0;
+
+  litter_intercepted_water(&pptleft, &wintlit, blitter, scale, a, b, c, d);
+
+  EXPECT_GT(wintlit, 0); // interception by litter should be greater than 0
+  EXPECT_LE(wintlit, pptleft); // interception by lit should be less than or equal to ppt
+  EXPECT_LE(wintlit, MAX_WINTLIT); /* interception by lit should be less than
+  or equal to MAX_WINTLIT (blitter * .2) */
   EXPECT_GE(pptleft, 0); // The pptleft (for soil) should be greater than or equal to 0
 
   // Reset to previous global state
   Reset_SOILWAT2_after_UnitTest();
+  }
 }
 
-// Test the tree interception function 'tree_intercepted_water'
-TEST(SWFlowTest, TreeInterceptedWater) {
-
-  // declare inputs
-  double LAI;
-  double ppt = 5.0, scale = 1.0;
-  double pptleft = 5.0, wintfor = 0.0;
-  double a = 0.00461, b = 0.01405, c = 0.0383, d = 0.0337; /* parameters from
-  veg.in file */
-
-  // Test expectation when tree LAI is zero
-  LAI = 0.0;
-
-  tree_intercepted_water(&pptleft, &wintfor, ppt, LAI, scale, a, b, c, d);
-
-  EXPECT_EQ(0, wintfor); // When there is no veg, interception should be 0
-  EXPECT_EQ(pptleft, ppt); /* When there is no interception, ppt before interception
-  should equal ppt left after interception */
-
-
-  // Test expectations when ppt is 0
-  ppt = 0.0, LAI = 2.6;
-
-  tree_intercepted_water(&pptleft, &wintfor, ppt, LAI, scale, a, b, c, d);
-
-  EXPECT_EQ(0, wintfor); // When there is no ppt, interception should be 0
-  EXPECT_EQ(pptleft, ppt); /* When there is no interception, ppt before interception
-  should equal ppt left after interception */
-
-  // Test expectations when there is both tree cover and precipitation
-  ppt = 5.0, LAI = 2.6;
-
-  tree_intercepted_water(&pptleft, &wintfor, ppt, LAI, scale, a, b, c, d);
-
-  EXPECT_GT(wintfor, 0); // interception by tree should be greater than 0
-  EXPECT_LE(wintfor, MAX_WINTFOR); /* interception by tree should be less than
-  or equal to MAX_WINTFOR (MAX_WINTFOR = ppt) */
-  EXPECT_LE(wintfor, ppt); // interception by tree should be less than or equal to ppt
-  EXPECT_GE(pptleft, 0); // The pptleft (for soil) should be greater than or equal to 0
-
-  // Reset to previous global state
-  Reset_SOILWAT2_after_UnitTest();
-}
 
 
 // Test infiltration under high water function, 'infiltrate_water_high'

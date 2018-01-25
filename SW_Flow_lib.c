@@ -130,7 +130,7 @@ static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 	\param ppt daily precipitation
 	\param x vegetation cover or LAI for the day (based on monthly biomass
 	       values, see the routine "initprod").
-	\param scale Scale paramater. Used to represent snow depth.
+	\param scale Scale paramater. Used to represent snow depth and fraction cover of vegtype.
 	\param a a parameter for intercept of grass interception equation.
 	\param b b parameter for intercept of grass interception equation.
 	\param c c parameter for slope of grass interception equation.
@@ -158,206 +158,14 @@ static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 
  21-Oct-03 (cwb) added MAX_WINTLIT line
  **********************************************************************/
-<<<<<<< HEAD
-void grass_intercepted_water(double *pptleft, double *wintgrass, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
-	double intcpt, slope;
-
-	if (GT(vegcov, 0.) && GT(ppt, 0.)) {
-		intcpt = b * vegcov + a;
-		slope = d * vegcov + c;
-
-		*wintgrass = (intcpt + slope * ppt) * scale;
-
-		*wintgrass = fmin(*wintgrass, ppt);
-		*wintgrass = fmin(*wintgrass, MAX_WINTSTCR);
-		*pptleft = fmax( ppt - *wintgrass, 0.0);
-	} else { /*  no precip., so obviously nothing is intercepted by standing crop. */
-		*pptleft = ppt;
-		*wintgrass = 0.0;
-	}
-}
-
-void shrub_intercepted_water(double *pptleft, double *wintshrub, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
-	/**********************************************************************
-	 PURPOSE: Calculate the water intercepted by shrubs
-	 **********************************************************************/
-	double intcpt, slope;
-
-	if (GT(vegcov, 0.) && GT(ppt, 0.)) {
-		intcpt = b * vegcov + a;
-		slope = d * vegcov + c;
-
-		*wintshrub = (intcpt + slope * ppt) * scale;
-
-		*wintshrub = fmin(*wintshrub, ppt);
-		*wintshrub = fmin(*wintshrub, MAX_WINTSTCR);
-		*pptleft = fmax( ppt - *wintshrub, 0.0);
-	} else { /*  no precip., so obviously nothing is intercepted by standing crop. */
-		*pptleft = ppt;
-		*wintshrub = 0.0;
-	}
-}
-
-void tree_intercepted_water(double *pptleft, double *wintfor, double ppt, double LAI,
-	double scale, double a, double b, double c, double d) {
-	/**********************************************************************
-	 PURPOSE: Calculate water intercepted by forests
-
-	 HISTORY:
-	 11/16/2010	(drs)
-
-	 INPUTS:
-	 ppt     - precip. for the day in cm
-	 LAI	- forest LAI in cm/cm
-	 scale - scale interception with fraction of tree vegetation component or with snowdepth-scaler
-
-	 OUTPUT:
-	 pptleft -  precip. left after interception by forest in cm.
-	 wintfor - amount of water intercepted by forest in cm.
-	 **********************************************************************/
-||||||| merged common ancestors
-void grass_intercepted_water(double *pptleft, double *wintgrass, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
-	double intcpt, slope;
-
-	if (GT(vegcov, 0.) && GT(ppt, 0.)) {
-		intcpt = b * vegcov + a;
-		slope = d * vegcov + c;
-
-		*wintgrass = (intcpt + slope * ppt) * scale;
-
-		*wintgrass = fmin(*wintgrass, ppt);
-		*wintgrass = fmin(*wintgrass, MAX_WINTSTCR);
-		*pptleft = fmax( ppt - *wintgrass, 0.0);
-	} else { /*  no precip., so obviously nothing is intercepted by standing crop. */
-		*pptleft = ppt;
-		*wintgrass = 0.0;
-	}
-}
-
-void shrub_intercepted_water(double *pptleft, double *wintshrub, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
-	/**********************************************************************
-	 PURPOSE: Calculate the water intercepted by shrubs
-	 **********************************************************************/
-	double intcpt, slope;
-
-	if (GT(vegcov, 0.) && GT(ppt, 0.)) {
-		intcpt = b * vegcov + a;
-		slope = d * vegcov + c;
-
-		*wintshrub = (intcpt + slope * ppt) * scale;
-
-		*wintshrub = fmin(*wintshrub, ppt);
-		*wintshrub = fmin(*wintshrub, MAX_WINTSTCR);
-		*pptleft = fmax( ppt - *wintshrub, 0.0);
-	} else { /*  no precip., so obviously nothing is intercepted by standing crop. */
-		*pptleft = ppt;
-		*wintshrub = 0.0;
-	}
-}
-
-void tree_intercepted_water(double *pptleft, double *wintfor, double ppt, double LAI, double scale, double a, double b, double c, double d) {
-	/**********************************************************************
-	 PURPOSE: Calculate water intercepted by forests
-
-	 HISTORY:
-	 11/16/2010	(drs)
-
-	 INPUTS:
-	 ppt     - precip. for the day in cm
-	 LAI	- forest LAI in cm/cm
-	 scale - scale interception with fraction of tree vegetation component or with snowdepth-scaler
-
-	 OUTPUT:
-	 pptleft -  precip. left after interception by forest in cm.
-	 wintfor - amount of water intercepted by forest in cm.
-	 **********************************************************************/
-=======
 void veg_intercepted_water(double *pptleft, double *wintveg, double ppt, double x,
   double scale, double a, double b, double c, double d)
 {
->>>>>>> master
 	double intcpt, slope;
 
-<<<<<<< HEAD
-	if (GT(LAI, 0.) && GT(ppt, 0.)) {
-
-		intcpt = b * LAI + a;
-		slope = d * LAI + c;
-
-		*wintfor = (intcpt + slope * ppt) * scale;
-
-		*wintfor = fmin(*wintfor, ppt);
-		*wintfor = fmin(*wintfor, MAX_WINTFOR);
-		*pptleft = fmax( ppt - *wintfor, 0.0);
-	} else { /*  no precip., so obviously nothing is intercepted by forest. */
-		*pptleft = ppt;
-		*wintfor = 0.0;
-	}
-}
-
-void forb_intercepted_water(double *pptleft, double *wintforb, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
-	/**********************************************************************
-	 PURPOSE: Calculate water intercepted by forbs
-
-
-	 HISTORY:
-	 07/09/2013	(clk)
-
-	 INPUTS:
-
-	 ppt     - precip. for the day in cm
-	 vegcov	- vegetation cover for the day (based on monthly biomass
-	 values, see the routine "initprod")
-	 scale - scale interception with fraction of forb vegetation component or with snowdepth-scaler
-
-	 OUTPUT:
-
-	 pptleft -  precip. left after interception by forb in cm.
-	 wintforb - amount of water intercepted by forb in cm.
-	 **********************************************************************/
-	double intcpt, slope;
-||||||| merged common ancestors
-	if (GT(LAI, 0.) && GT(ppt, 0.)) {
-		intcpt = b * LAI + a;
-		slope = d * LAI + c;
-
-		*wintfor = (intcpt + slope * ppt) * scale;
-
-		*wintfor = fmin(*wintfor, ppt);
-		*wintfor = fmin(*wintfor, MAX_WINTFOR);
-		*pptleft = fmax( ppt - *wintfor, 0.0);
-	} else { /*  no precip., so obviously nothing is intercepted by forest. */
-		*pptleft = ppt;
-		*wintfor = 0.0;
-	}
-}
-
-void forb_intercepted_water(double *pptleft, double *wintforb, double ppt, double vegcov, double scale, double a, double b, double c, double d) {
-	/**********************************************************************
-	 PURPOSE: Calculate water intercepted by forbs
-
-
-	 HISTORY:
-	 07/09/2013	(clk)
-
-	 INPUTS:
-
-	 ppt     - precip. for the day in cm
-	 vegcov	- vegetation cover for the day (based on monthly biomass
-	 values, see the routine "initprod")
-	 scale - scale interception with fraction of forb vegetation component or with snowdepth-scaler
-
-	 OUTPUT:
-
-	 pptleft -  precip. left after interception by forb in cm.
-	 wintforb - amount of water intercepted by forb in cm.
-	 **********************************************************************/
-	double intcpt, slope;
-=======
 	if (GT(x, 0.) && GT(ppt, 0.)) {
 		intcpt = b * x + a;
 		slope = d * x + c;
->>>>>>> master
 
 		*wintveg = (intcpt + slope * ppt) * scale;
 
@@ -372,29 +180,45 @@ void forb_intercepted_water(double *pptleft, double *wintforb, double ppt, doubl
 	}
 }
 
-void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, double scale, double a, double b, double c, double d) {
-	/**********************************************************************
-	 PURPOSE: Calculate water intercepted by litter
+/**
+	\fn void litter_intercepted_water(double *pptleft, double *wintlit, double blitter,
+    double scale, double a, double b, double c, double d)
 
-	 HISTORY:
-	 4/30/92  (SLC)
-	 7/1/92   (SLC) Reset pptleft to 0 if less than 0 (due to round off)
-	 6-Oct-03 (cwb) wintlit = 0 if no litter.
-	 15-Oct-03 (cwb) replaced Parton's original equations with new ones
-	 developed by John Bradford based on Corbet and Crouse, 1968.
-	 Replaced the following code:
-	 par1 = exp((-1. + .45 * log10(blitter+1.)) * log(10.));
-	 *wintlit = (.015 * (*pptleft) + .0635) * exp(par1);
+    brief Calculate the water intercepted by litter.
 
-	 21-Oct-03 (cwb) added MAX_WINTLIT line
+	Equations based on Corbet and Crouse (1968). \cite Corbett1968
 
-	 INPUTS:
-	 blitter - biomass of litter for the day
+  \param pptleft
+	\param wintlit
+  \param blitter biomass of litter for the day
+	\param scale Scale paramater. Fraction cover of vegtype.
+	\param a a parameter for intercept of litter interception equation.
+	\param b b parameter for intercept of litter interception equation.
+	\param c c parameter for slope of litter interception equation.
+	\param d d parameter for slope of litter interception equation.
 
-	 OUTPUTS:
-	 pptleft -  precip. left after interception by litter.
-	 wintlit  - amount of water intercepted by litter .
-	 **********************************************************************/
+	\return pptleft Amount of precipitation left after interception.
+	\return wintlit Amount of precipitation intercepted by litter.
+*/
+
+/**********************************************************************
+ PURPOSE: Calculate water intercepted by litter
+
+ HISTORY:
+ 4/30/92  (SLC)
+ 7/1/92   (SLC) Reset pptleft to 0 if less than 0 (due to round off)
+ 6-Oct-03 (cwb) wintlit = 0 if no litter.
+ 15-Oct-03 (cwb) replaced Parton's original equations with new ones
+ developed by John Bradford based on Corbet and Crouse, 1968.
+ Replaced the following code:
+ par1 = exp((-1. + .45 * log10(blitter+1.)) * log(10.));
+ *wintlit = (.015 * (*pptleft) + .0635) * exp(par1);
+
+ 21-Oct-03 (cwb) added MAX_WINTLIT line
+ **********************************************************************/
+
+void litter_intercepted_water(double *pptleft, double *wintlit, double blitter,
+  double scale, double a, double b, double c, double d) {
 	double intcpt, slope;
 
 	if (ZRO(blitter)) {
