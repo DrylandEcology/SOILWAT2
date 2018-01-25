@@ -87,8 +87,12 @@ typedef struct {
 	Bool partsError;  // soil temperature error indicator
 } SW_SOILWAT_OUTPUTS;
 
-typedef struct {
 
+#ifdef SWDEBUG
+  #define N_WBCHECKS 8 // number of water balance checks
+#endif
+
+typedef struct {
 	/* current daily soil water related values */
 	Bool is_wet[MAX_LAYERS]; /* swc sufficient to count as wet today */
 	RealD swcBulk[TWO_DAYS][MAX_LAYERS],
@@ -106,6 +110,11 @@ typedef struct {
 		surfaceTemp; // soil surface temperature
 
 	Bool partsError; // soil temperature error indicator
+	#ifdef SWDEBUG
+	int wbError[N_WBCHECKS]; /* water balance and water cycling error indicators (currently 8)
+	    0, no error detected; > 0, number of errors detected */
+  char *wbErrorNames[N_WBCHECKS];
+  #endif
 
 	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */
 	wksum, mosum, yrsum, /* accumulators for *avg */
@@ -121,7 +130,9 @@ void SW_SWC_read(void);
 void _read_swc_hist(TimeInt year);
 void SW_SWC_water_flow(void);
 void SW_SWC_adjust_swc(TimeInt doy);
-void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain, RealD *snow, RealD *snowmelt, RealD *snowloss);
+void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
+  RealD *snow, RealD *snowmelt);
+RealD SW_SWC_snowloss(RealD pet, RealD *snowpack);
 RealD SW_SnowDepth(RealD SWE, RealD snowdensity);
 void SW_SWC_end_day(void);
 RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n);
