@@ -1029,9 +1029,9 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 	 **********************************************************************/
 
 	unsigned int i, j;
-	double swp[nlyrs], swpwp[nlyrs], relCondroot[nlyrs], hydredmat[nlyrs][nlyrs], Rx, swa, hydred_sum;
+	double swp[nlyrs], swpwp[nlyrs], relCondroot[nlyrs], hydredmat[nlyrs][nlyrs], Rx, swa,
+		hydred_sum, x;
 
-	hydred[0] = 0.; /* no hydred in top layer */
 
 	ST_RGR_VALUES *st = &stValues;
 
@@ -1044,18 +1044,19 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 	}
 
 	for (i = 1; i < nlyrs; i++) {
-		hydred[i] = hydredmat[i][i] = 0.; /* no hydred within any layer */
+		hydredmat[i][i] = 0.; /* init */
 
 		for (j = i + 1; j < nlyrs; j++) {
 
 			if ((LT(swp[i], swpwp[i]) || LT(swp[j], swpwp[j])) && (st->lyrFrozen[i] == 0) && (st->lyrFrozen[j] == 0)) { /* hydred occurs only if at least one soil layer's swp is above wilting point and both soil layers are not frozen */
-				if (GT(swc[i], swc[j])) {
-					Rx = lyrRootCo[i];
+				if (GT(swp[i], swp[j])) {
+					Rx = lyrRootCo[j]; // layer j has more water than i
 				} else {
-					Rx = lyrRootCo[j];
+					Rx = lyrRootCo[i];
 				}
 
-				hydredmat[i][j] = maxCondroot * 10. / 24. * (swp[j] - swp[i]) * fmax(relCondroot[i], relCondroot[j]) * (lyrRootCo[i] * lyrRootCo[j] / (1. - Rx)); /* assuming a 10-hour night */
+				hydredmat[i][j] = maxCondroot * 10. / 24. * (swp[j] - swp[i]) *
+					fmax(relCondroot[i], relCondroot[j]) * (lyrRootCo[i] * lyrRootCo[j] / (1. - Rx)); /* assuming a 10-hour night */
 				hydredmat[j][i] = -hydredmat[i][j];
 			} else {
 				hydredmat[i][j] = hydredmat[j][i] = 0.;
@@ -1071,21 +1072,27 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 
 		swa = fmax( 0., swc[i] - swcwp[i] );
 		if (LT(hydred_sum, 0.) && GT( -hydred_sum, swa)) {
+			x = swa / -hydred_sum;
 			for (j = 0; j < nlyrs; j++) {
-				hydredmat[i][j] *= (swa / -hydred_sum);
-				hydredmat[j][i] *= (swa / -hydred_sum);
+				hydredmat[i][j] *= x;
+				hydredmat[j][i] *= x;
 			}
 		}
 	}
 
-	for (i = 0; i < nlyrs; i++) {
-		for (j = 0; j < nlyrs; j++) {
-			hydred[i] += hydredmat[i][j] * scale;
+	hydred[0] = 0.; /* no hydred in top layer */
+
+	for (i = 1; i < nlyrs; i++) {
+		hydred[i] = 0.; //init
+		for (j = 1; j < nlyrs; j++) {
+			hydred[i] += hydredmat[i][j];
 		}
+
+		hydred[i] *= scale;
 		swc[i] += hydred[i];
 	}
-
 }
+
 
 /**********************************************************************
  PURPOSE: Initialize soil temperature values, only needs to be called once (ie the first time the soil_temperature function is called).  this is not included in the header file since it is NOT an external function
