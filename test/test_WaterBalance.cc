@@ -38,6 +38,7 @@
 
 
 extern SW_SOILWAT SW_Soilwat;
+extern SW_SITE SW_Site;
 
 
 
@@ -48,7 +49,7 @@ namespace {
       ii) Summarize checks added to debugging code of 'SW_SWC_water_flow' (which is
           compiled if flag 'SWDEBUG' is defined)
   */
-  TEST(ConsistencyTests, WaterBalance) {
+  TEST(WaterBalance, Example1) { // default run == 'testing' example1
     int i;
 
     // Run the simulation
@@ -62,5 +63,27 @@ namespace {
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
   }
+
+
+  TEST(WaterBalance, WithPondedWaterRunonRunoff) {
+    int i;
+
+    // Turn on impermeability of first soil layer, runon, and runoff
+    SW_Site.lyr[0]->impermeability = 0.95;
+    SW_Site.percentRunoff = 0.5;
+    SW_Site.percentRunon = 1.25;
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error: " << SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
 
 } // namespace
