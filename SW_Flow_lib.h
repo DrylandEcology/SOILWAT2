@@ -67,7 +67,7 @@ typedef struct {
 		   oldsFusionPool_actual[MAX_LAYERS],
 		   oldsTempR[MAX_ST_RGR + 1];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
 
-	int lyrFrozen[MAX_LAYERS];
+	Bool lyrFrozen[MAX_LAYERS];
 	double tlyrs_by_slyrs[MAX_ST_RGR + 1][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers
 
 	/*unsigned int x1BoundsR[MAX_ST_RGR],
