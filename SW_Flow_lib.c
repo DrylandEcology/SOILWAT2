@@ -1295,11 +1295,11 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
 	// if soil temperature max depth is less than soil layer depth then quit
 	if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
-		if (!SW_Soilwat.partsError) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
+		if (!SW_Soilwat.soiltempError) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
 
 			swprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 
-			SW_Soilwat.partsError = swTRUE;
+			SW_Soilwat.soiltempError = swTRUE;
 		}
 		return; // exits the function
 	}
@@ -1497,11 +1497,7 @@ temp += temp;
 	return sFadjusted_sTemp;
 }
 
-void endCalculations()
-{
-	SW_Soilwat.partsError = swTRUE;
-	// return;  //Exits the Function
-}
+
 
 /**********************************************************************
  PURPOSE: Calculate soil temperature for each layer as described in Parton 1978, ch. 2.2.2 Temperature-profile Submodel, interpolation values are gotten from a mixture of interpolation & extrapolation
@@ -1569,8 +1565,11 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
   #endif
 	double T1, cs, sh, pe, parts, part1, part2, vwc[nlyrs], vwcR[nRgr], sTempR[nRgr + 1];
 
-	for (i = 0; i < nlyrs; i++)
+	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
+
+	ForEachSoilLayer(i) {
 		vwc[i] = swc[i] / width[i];
+	}
 
 	/* local variables explained:
 	 debug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
@@ -1603,14 +1602,9 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		soil_temperature_init(bDensity, width, surfaceTemp[Today], oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
 	}
 
-	// if (SW_Soilwat.partsError) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
-	// 	return;
-
-
-	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
 	// calculating T1, the average daily soil surface temperature
-	if(GT(snowdepth, 0.0)) {
+	if (GT(snowdepth, 0.0)) {
 		T1 = surface_temperature_under_snow(airTemp, snow);
 		#ifdef SWDEBUG
 		if (debug) swprintf("\nThere is snow on the ground, T1=%5.4f calculated using new equation from Parton 1998\n", T1);
@@ -1636,6 +1630,12 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 			#endif
 		}
 	}
+
+	surfaceTemp[Yesterday] = surfaceTemp[Today];
+	surfaceTemp[Today] = T1;
+
+	// if (SW_Soilwat.soiltempError) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
+	// 	return;
 
 
 	// calculate volumetric soil water content for soil temperature layers
@@ -1669,17 +1669,18 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 			// TODO: adjust thermal conductivity and heat capacity if layer is frozen
 		parts = part1 * cs / (sh * st->bDensityR[k]);
 
-		part2 = sTempR[i - 1] - 2 * st->oldsTempR[i] + st->oldsTempR[i + 1];
-
 		/*Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
 		VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)*/
-		if (GE(parts, 1.0) && !SW_Soilwat.partsError) {
-				swprintf("\n SOILWAT has encountered an ERROR: Parts Exceeds 1.0 and May Produce Extreme Values");
-			  /* Flag that an error has occurred */
-				SW_Soilwat.partsError = swTRUE;
+		if (GE(parts, 1.0) && !SW_Soilwat.soiltempError) {
+				swprintf("\n SOILWAT2 ERROR in soil temperature module: "
+					"stability criterion failed (%f >= 1.0); soil temperature is being turned off "
+					"it may produce extreme values otherwise\n", parts);
+
+				SW_Soilwat.soiltempError = swTRUE; /* Flag that an error has occurred */
 			// return;  //Exits the Function
 		}
 
+		part2 = sTempR[i - 1] - 2 * st->oldsTempR[i] + st->oldsTempR[i + 1];
 
 		sTempR[i] = st->oldsTempR[i] + parts * part2; // Parton (1978) eq. 2.21
 
@@ -1705,8 +1706,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 
 	// convert soil temperature of soil temperature profile 'sTempR' to soil profile layers 'sTemp'
-	surfaceTemp[Yesterday] = surfaceTemp[Today];
-	surfaceTemp[Today] = T1;
 	lyrTemp_to_lyrSoil_temperature(st->tlyrs_by_slyrs, nRgr, st->depthsR, sTempR, nlyrs, st->depths, width, sTemp);
 
 
