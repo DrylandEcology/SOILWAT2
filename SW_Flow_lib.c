@@ -1295,12 +1295,15 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
 	// if soil temperature max depth is less than soil layer depth then quit
 	if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
-		if (!SW_Soilwat.soiltempError) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
-
-			swprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
-
+		if (!SW_Soilwat.soiltempError) {
 			SW_Soilwat.soiltempError = swTRUE;
+
+			// if the error hasn't been reported yet... print an error to the stderr and one to the logfile
+			swprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must "
+				"be more than soil layer depth (%5.2f cm)... soil temperature will NOT be "
+				"calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 		}
+
 		return; // exits the function
 	}
 
@@ -1564,6 +1567,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
   int debug = 0;
   #endif
 	double T1, cs, sh, pe, parts, part1, part2, vwc[nlyrs], vwcR[nRgr], sTempR[nRgr + 1];
+	static Bool do_once_at_soiltempError = swTRUE;
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
@@ -1634,8 +1638,20 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	surfaceTemp[Yesterday] = surfaceTemp[Today];
 	surfaceTemp[Today] = T1;
 
-	// if (SW_Soilwat.soiltempError) // if there is an error found in the soil_temperature_init function, return so that the function doesn't blow up later
-	// 	return;
+	if (SW_Soilwat.soiltempError) {
+		/* we return early (but after calculating surface temperature) and
+				without attempt to calculate soil temperature again */
+		if (do_once_at_soiltempError) {
+			// make sure that no soil layer is stuck in frozen status
+			ForEachSoilLayer(i) {
+				st->lyrFrozen[i] = swFALSE;
+			}
+
+			do_once_at_soiltempError = swFALSE;
+		}
+
+		return;
+	}
 
 
 	// calculate volumetric soil water content for soil temperature layers
@@ -1713,7 +1729,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 	sFadjusted_sTemp = adjust_Tsoil_by_freezing_and_thawing(oldsTemp, sTemp, shParam, nlyrs, vwc, bDensity);
 
 	// update sTempR if sTemp were changed due to soil freezing/thawing
-	if(sFadjusted_sTemp){
+	if (sFadjusted_sTemp){
 		lyrSoil_to_lyrTemp_temperature(nlyrs, st->depths, sTemp, meanAirTemp, nRgr, st->depthsR, theMaxDepth, sTempR);
 	}
 
