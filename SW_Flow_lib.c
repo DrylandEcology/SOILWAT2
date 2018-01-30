@@ -277,7 +277,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 	double *standingWater) {
 
 	unsigned int i;
-	int j;
+	unsigned int j;
 	double d[nlyrs];
 	double push, ksat_rel;
 
@@ -306,12 +306,10 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 			(*drainout) = d[i];
 			swc[i] -= (*drainout);
 		}
-		// swprintf("\ndrain in layer %f\n", drain[i]);
-		// swprintf("\ndrainout %f\n", drainout[i]);
 	}
 
 	/* adjust (i.e., push water upwards) if water content of a layer is now above saturated water content */
-	for (j = nlyrs; j >= 0; j--) {
+	for (j = nlyrs - 1; j > 0; j--) {
 		if (GT(swc[j], swcsat[j])) {
 			push = swc[j] - swcsat[j];
 			swc[j] -= push;
@@ -322,7 +320,6 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 				(*standingWater) = push;
 			}
 		}
-
 	}
 }
 
@@ -1238,18 +1235,22 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
 }
 
 /**
- * Determines the average temperature of the soil surface under snow. Based upon
- 	 Parton et al. 1998. Equations 5 & 6.
- *
- *
- * @param airTempAvg the average air temperature of the area, in Celsius
- * @param snow the snow-water-equivalent of the area, in cm
- * @return the modified, average temperature of the soil surface
- */
+	\fn double surface_temperature_under_snow(double airTempAvg, double snow)
+
+  \brief Determine the average temperature of the soil surface under snow.
+
+    Based on Equations 5 & 6 in Parton et al. 1998. \cite Parton1998
+
+    \param airTempAvg the average air temperature of the area, in Celsius
+    \param snow the snow-water-equivalent of the area, in cm
+
+    \return tSoilAvg The modified, average temperature of the soil surface
+*/
+
 double surface_temperature_under_snow(double airTempAvg, double snow){
-  double kSnow; /** the effect of snow based on swe */
-  double tSoilAvg = 0.0; /** the average temeperature of the soil surface */
-	/** Parton et al. 1998. Equation 6. */
+  double kSnow; // the effect of snow based on swe
+  double tSoilAvg = 0.0; // the average temeperature of the soil surface
+	// Parton et al. 1998. Equation 6.
   if (snow == 0){
     return 0.0;
   }
@@ -1257,13 +1258,16 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
     tSoilAvg = -2.0;
   }
   else if (snow > 0 && airTempAvg < 0){
-    kSnow = fmax((-0.15 * snow + 1.0), 0.0); /** Parton et al. 1998. Equation 5. */
+    kSnow = fmax((-0.15 * snow + 1.0), 0.0); // Parton et al. 1998. Equation 5.
     tSoilAvg = 0.3 * airTempAvg * kSnow + -2.0;
   }
 	return tSoilAvg;
 }
 
-void soil_temperature_init(double bDensity[], double width[], double surfaceTemp, double oldsTemp[], double meanAirTemp, unsigned int nlyrs, double fc[], double wp[], double deltaX, double theMaxDepth,unsigned int nRgr) {
+
+void soil_temperature_init(double bDensity[], double width[], double surfaceTemp,
+   double oldsTemp[], double meanAirTemp, unsigned int nlyrs, double fc[], double wp[],
+   double deltaX, double theMaxDepth,unsigned int nRgr) {
 	// local vars
 	unsigned int x1 = 0, x2 = 0, j = 0, i;
   #ifdef SWDEBUG
@@ -1276,11 +1280,13 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
 	soil_temp_init = 1; // make this value 1 to make sure that this function isn't called more than once... (b/c it doesn't need to be)
 
-
 	#ifdef SWDEBUG
 	if (debug)
 		swprintf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
-	#endif
+  /*  for(int z = 0; z < nlyrs; z++){
+    swprintf("\nInit soil layer profile: fc=%f, wp=%f, oldsTemp=%f;", fc[z], wp[z], oldsTemp[z]);
+  } */
+  #endif
 
 
 	// init st
@@ -1602,7 +1608,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 		swprintf("\n\nNew call to soil_temperature()");
 	}
 	#endif
-
 
 	if (!soil_temp_init) {
 		#ifdef SWDEBUG
