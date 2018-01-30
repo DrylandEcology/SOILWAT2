@@ -496,7 +496,7 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_SWCBulk] = tLayers;
 	ncol_OUT[eSW_SWABulk] = tLayers;
 	ncol_OUT[eSW_SWAMatric] = tLayers;
-	ncol_OUT[eSW_SWA] = tLayers;
+	ncol_OUT[eSW_SWA] = tLayers * (NVEGTYPES);
 	ncol_OUT[eSW_SWPMatric] = tLayers;
 	ncol_OUT[eSW_SurfaceWater] = 1;
 	ncol_OUT[eSW_Transp] = tLayers * (NVEGTYPES + 1); // NVEGTYPES plus totals
@@ -524,7 +524,6 @@ void SW_OUT_set_colnames(void) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
-
 
 	char ctemp[50];
 	const char *Layers_names[MAX_LAYERS] = { "Lyr_1", "Lyr_2", "Lyr_3", "Lyr_4", "Lyr_5",
@@ -803,6 +802,8 @@ void SW_OUT_read(void)
 
 	_Sep = ','; /* default in case it doesn't show up in the file */
 	used_OUTNPERIODS = 1; // if 'TIMESTEP' is not specified in input file, then only one time step = period can be specified
+	useTimeStep = 0;
+
 	while (GetALine(f, inbuf))
 	{
 		itemno++; /* note extra lines will cause an error */
@@ -2131,7 +2132,7 @@ static void get_estab(OutPeriod pd)
 	char str[OUTSTRLEN];
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
-	get_outstrleader(pd);
+		get_outstrleader(pd);
 
 	#elif defined(STEPWAT)
 		char str_iters[OUTSTRLEN];
@@ -2166,6 +2167,7 @@ static void get_estab(OutPeriod pd)
 		#if !defined(STEPWAT) && !defined(RSOILWAT)
 			sprintf(str, "%c%d", _Sep, v->parms[i]->estab_doy);
 			strcat(outstr, str);
+			printf("%s\n", outstr);
 
 		#elif defined(STEPWAT)
 			switch (pd)
@@ -3163,18 +3165,19 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		float veg_type_in_use; // set to current veg type fraction value to avoid multiple if loops. should just need 1 instead of 3 now.
 		float inner_loop_veg_type; // set to inner loop veg type
+		int array_size = NVEGTYPES * NVEGTYPES;
 		smallestCritVal = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[0]];
-		largestCritVal = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[3]];
-		RealF dSWA_bulk[16][16][20];
-		RealF dSWA_bulk_repartioned[16][16][20];
-		RealF dSWA_repartitioned_sum[16][16];
+		largestCritVal = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[NVEGTYPES-1]]; // largest index
+		RealF dSWA_bulk[array_size][array_size][array_size + NVEGTYPES];
+		RealF dSWA_bulk_repartioned[array_size][array_size][array_size + NVEGTYPES];
+		RealF dSWA_repartitioned_sum[array_size][array_size];
 
 		// loop through each veg type to get dSWAbulk
-		for(curr_vegType = 3; curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
+		for(curr_vegType = (NVEGTYPES - 1); curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
 			curr_crit_rank_index = SW_VegProd.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
 			veg_type_in_use = SW_VegProd.veg[curr_crit_rank_index].cov.fCover; // set veg type fraction here
 
-			for(kv=curr_vegType; kv>=0; kv--){
+			for(kv = curr_vegType; kv>=0; kv--){
 				crit_val = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[kv]]; // get crit value at current index
 				kv_veg_type = SW_VegProd.rank_SWPcrits[kv]; // get index for veg_type. dont want to access swa_master at rank_SWPcrits index
 				if(kv != 0){
@@ -3209,7 +3212,7 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 					/* ##############################################################
 						below if else blocks are for redistributing dSWAbulk values
 					############################################################## */
-					if(curr_vegType == 3 && kv == 3 && prev_crit_val != crit_val) // if largest critical value and only veg type with that value just set it to dSWAbulk
+					if(curr_vegType == (NVEGTYPES - 1) && kv == (NVEGTYPES - 1) && prev_crit_val != crit_val) // if largest critical value and only veg type with that value just set it to dSWAbulk
 						dSWA_bulk_repartioned[curr_crit_rank_index][kv_veg_type][i] = dSWA_bulk[curr_crit_rank_index][kv_veg_type][i];
 					else{ // all values other than largest well need repartitioning
 						if(crit_val == smallestCritVal){ // if smallest value then all veg_types have access to it so just need to multiply by its fraction
@@ -3221,7 +3224,7 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 							vegFractionSum = 0; // set to 0 each time to make sure it gets correct value
 							// need to calculute new fraction for these since sum of them no longer adds up to 1. do this by adding fractions values
 							// of veg types who have access and then dividing these fraction values by the total sum. keeps the ratio and adds up to 1
-							for(j=3;j>=0;j--){ // go through all critical values and sum the fractions of the veg types who have access
+							for(j = (NVEGTYPES - 1); j >= 0; j--){ // go through all critical values and sum the fractions of the veg types who have access
 								inner_loop_veg_type = SW_VegProd.veg[j].cov.fCover; // set veg type fraction here
 
 								if(SW_VegProd.critSoilWater[j] <= crit_val)
@@ -3236,7 +3239,7 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 			}
 			// setting all the veg types above current to 0 since they do not have access to those
 			// ex: if forb=-2.0 grass=-3.5 & shrub=-3.9 then need to set grass and shrub to 0 for forb
-			for(j=curr_vegType+1; j<4; j++){
+			for(j = curr_vegType + 1; j < 4; j++){
 				greater_veg_type = SW_VegProd.rank_SWPcrits[j];
 				if(SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[j-1]] > SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[j]]){
 					dSWA_bulk[curr_crit_rank_index][greater_veg_type][i] = 0.;
@@ -3245,8 +3248,8 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 			}
 		}
 
-		for(curr_vegType = 0; curr_vegType < 4; curr_vegType++){
-			for(kv = 0; kv < 4; kv++){
+		for(curr_vegType = 0; curr_vegType < NVEGTYPES; curr_vegType++){
+			for(kv = 0; kv < NVEGTYPES; kv++){
 				if(SW_VegProd.veg[curr_vegType].cov.fCover == 0.)
 					dSWA_repartitioned_sum[curr_vegType][i] = 0.;
 				else
@@ -3267,7 +3270,7 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 		float veg_type_in_use; // set to current veg type fraction value to avoid multiple if loops. should just need 1 instead of 3 now.
 		float inner_loop_veg_type; // set to inner loop veg type
 		smallestCritVal = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[0]];
-		largestCritVal = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[3]];
+		largestCritVal = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[NVEGTYPES-1]];
 
 		/*	description and example for below loops
 		*		first loop gets veg_type with smallest critical value
@@ -3303,14 +3306,14 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 						j = 4 // since this not less than 4 will not enter loop. dont need to enter loop since this veg type has the largest crit val and nothing needs to be set 0
 		*/
 		// loop through each veg type to get dSWAbulk
-		for(curr_vegType = 3; curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
+		for(curr_vegType = (NVEGTYPES - 1); curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
 			curr_crit_rank_index = SXW.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
 			veg_type_in_use = SW_VegProd.veg[curr_crit_rank_index].cov.fCover; // set veg type fraction here
 
-			for(kv=curr_vegType; kv>=0; kv--){
+			for(kv = curr_vegType; kv >= 0; kv--){
 				crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv]]; // get crit value at current index
 				kv_veg_type = SXW.rank_SWPcrits[kv]; // get index for veg_type. dont want to access swa_master at rank_SWPcrits index
-				if(kv!=0){
+				if(kv != 0){
 					prev_crit_veg_type = SXW.rank_SWPcrits[kv-1]; // get veg type that belongs to the corresponding critical value
 					prev_crit_val = SW_VegProd.critSoilWater[SXW.rank_SWPcrits[kv-1]]; // get crit value for index lower
 				}
@@ -3344,7 +3347,7 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 					/* ##############################################################
 						below if else blocks are for redistributing dSWAbulk values
 					############################################################## */
-					if(curr_vegType == 3 && kv == 3 && prev_crit_val != crit_val) // if largest critical value and only veg type with that value just set it to dSWAbulk
+					if(curr_vegType == (NVEGTYPES - 1) && kv == (NVEGTYPES - 1) && prev_crit_val != crit_val) // if largest critical value and only veg type with that value just set it to dSWAbulk
 						SXW.dSWA_repartitioned[Itclp(curr_crit_rank_index,kv_veg_type,i,p)] = SXW.dSWAbulk[Itclp(curr_crit_rank_index,kv_veg_type,i,p)];
 					else{ // all values other than largest well need repartitioning
 						if(crit_val == smallestCritVal){ // if smallest value then all veg_types have access to it so just need to multiply by its fraction
@@ -3356,7 +3359,7 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 							vegFractionSum = 0; // set to 0 each time to make sure it gets correct value
 							// need to calculute new fraction for these since sum of them no longer adds up to 1. do this by adding fractions values
 							// of veg types who have access and then dividing these fraction values by the total sum. keeps the ratio and adds up to 1
-							for(j=3;j>=0;j--){ // go through all critical values and sum the fractions of the veg types who have access
+							for(j = (NVEGTYPES - 1); j >= 0; j--){ // go through all critical values and sum the fractions of the veg types who have access
 								// set veg type fraction here
 								inner_loop_veg_type = SW_VegProd.veg[j].cov.fCover;
 
@@ -3372,7 +3375,7 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 			}
 		// setting all the veg types above current to 0 since they do not have access to those
 		// ex: if forb=-2.0 grass=-3.5 & shrub=-3.9 then need to set grass and shrub to 0 for forb
-		for(j=curr_vegType+1; j<4; j++){
+		for(j = curr_vegType + 1; j < 4; j++){
 			greater_veg_type = SXW.rank_SWPcrits[j];
 			if(SW_VegProd.critSoilWater[SXW.rank_SWPcrits[j-1]] > SW_VegProd.critSoilWater[SXW.rank_SWPcrits[j]]){
 				SXW.dSWAbulk[Itclp(curr_crit_rank_index,greater_veg_type,i,p)] = 0.;
@@ -3381,8 +3384,8 @@ static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod p
 		}
 	}
 
-	for(curr_vegType = 0; curr_vegType < 4; curr_vegType++){
-		for(kv = 0; kv < 4; kv++){
+	for(curr_vegType = 0; curr_vegType < NVEGTYPES; curr_vegType++){
+		for(kv = 0; kv < NVEGTYPES; kv++){
 			// need to ensure veg types that are turned off are not being propagated
 			if(SW_VegProd.veg[curr_vegType].cov.fCover == 0.)
 				SXW.sum_dSWA_repartitioned[curr_vegType][i][p] = 0.;
@@ -7150,6 +7153,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 */
 void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers){
 	int i, j, tLayers = SW_Site.n_layers;
+	SW_VEGESTAB *v = &SW_VegEstab; // for use to check estab
 
 	char ctemp[50];
 	OutKey colHeadersLoop;
@@ -7223,7 +7227,6 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					for (i = 0; i < tLayers; i++) {
 						for (j = start_index; j < NVEGTYPES + 1; j++) { // only want the veg types, dont need 'total' or 'litter'
 							strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
-							strcat(storeCol, "_");
 							strcat(storeCol, cnames_VegTypes[j]);
 							strcat(storeCol, "_");
 							strcat(storeCol, Layers_names[i]);
@@ -7231,7 +7234,6 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 							#ifdef STEPWAT
 								if(std_headers){
 									strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
-									strcat(storeCol, "_");
 									strcat(storeCol, cnames_VegTypes[j]);
 									strcat(storeCol, "_STD_");
 									strcat(storeCol, Layers_names[i]);
@@ -7242,8 +7244,26 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					}
 				}
 				else if(strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0){
-					ForEachEvapLayer(evap_loop){
-						sprintf(convertq, "%d", evap_loop); // cast q to string
+					for (i = 0; i < ncol_OUT[eSW_EvapSoil]; i++) {
+						sprintf(convertq, "%d", i); // cast q to string
+						strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+						// concatenate layer number
+						strcat(storeCol, "_");
+						strcat(storeCol, convertq);
+						strcat(storeCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+								strcat(storeCol, "_STD_");
+								strcat(storeCol, convertq);
+								strcat(storeCol, _SepSplit);
+							}
+						#endif
+					}
+				}
+				else if(strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0){
+					for (i = 0; i < ncol_OUT[eSW_LyrDrain]; i++) {
+						sprintf(convertq, "%d", i); // cast q to string
 						strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
 						// concatenate layer number
 						strcat(storeCol, "_");
@@ -7308,6 +7328,20 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 									strcat(storeRegCol, "_STD");
 									strcat(storeRegCol, _SepSplit);
 								}
+							}
+						#endif
+					}
+				}
+				else if(strcmp(key2str[colHeadersLoop], "ESTABL")==0){
+					if(v->count > 0){
+						printf("estab header\n");
+						strcat(storeRegCol, key2str[colHeadersLoop]); // concatenate variable to string
+						strcat(storeRegCol, _SepSplit);
+						#ifdef STEPWAT
+							if(std_headers){
+								strcat(storeRegCol, key2str[colHeadersLoop]); // store value name in new string
+								strcat(storeRegCol, "_STD");
+								strcat(storeRegCol, _SepSplit);
 							}
 						#endif
 					}

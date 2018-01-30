@@ -65,7 +65,8 @@ int main(int argc, char **argv) {
 	SW_CTL_init_model(_firstfile);
 	SW_CTL_obtain_inputs();
 
-	SW_OUT_set_ncol(); // as of yet not used in SOILWAT2-standalone
+	SW_OUT_set_ncol();
+	//SW_OUT_set_colnames(); // only using with rSOILWAT2
 
 	SW_CTL_main();
 

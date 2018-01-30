@@ -118,9 +118,9 @@ typedef struct {
 	VegType veg[NVEGTYPES]; // used to be: grass, shrub, tree, forb;
 	CoverType bare_cov;   /* bare ground cover of plot */
 
-	RealD critSoilWater[4]; // storing values in same order as defined in rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
+	RealD critSoilWater[NVEGTYPES]; // storing values in same order as defined in rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
 
-	int rank_SWPcrits[5]; // array to store the SWP crits in order of lest negative to most negative (used in sxw_resource)
+	int rank_SWPcrits[NVEGTYPES]; // array to store the SWP crits in order of lest negative to most negative (used in sxw_resource)
 
 	RealD bareGround_albedo; /* create this here instead of creating a bareGround VegType, because it only needs albedo and no other data member */
 
@@ -136,5 +136,6 @@ void SW_VPD_init(void);
 void SW_VPD_construct(void);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
 void _echo_VegProd(void);
+void get_critical_rank(void);
 
 #endif

@@ -477,6 +477,7 @@ void SW_VPD_read(void) {
 					v->veg[k].SWPcrit = -10. * help_veg[k];
 					SW_VegProd.critSoilWater[k] = help_veg[k]; // for use with get_swa for properly partitioning available soilwater
 				}
+				get_critical_rank();
 
 				break;
 
@@ -779,4 +780,53 @@ void _echo_VegProd(void) {
 		"\tAlbedo\t= %1.2f\n", v->bare_cov.fCover, v->bare_cov.albedo);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
+}
+
+
+// get the rank of the critical values for use with soilwater calculations
+void get_critical_rank(void){
+	/*----------------------------------------------------------
+		Get proper order for rank_SWPcrits
+	----------------------------------------------------------*/
+	int i, outerLoop, innerLoop;
+	float key;
+
+	RealF tempArray[NVEGTYPES], tempArrayUnsorted[NVEGTYPES]; // need two temp arrays equal to critSoilWater since we dont want to alter the original at all
+
+	ForEachVegType(i){
+		tempArray[i] = SW_VegProd.critSoilWater[i];
+		tempArrayUnsorted[i] = SW_VegProd.critSoilWater[i];
+	}
+
+	// insertion sort to rank the veg types and store them in their proper order
+	for (outerLoop = 1; outerLoop < NVEGTYPES; outerLoop++)
+	 {
+			 key = tempArray[outerLoop]; // set key equal to critical value
+			 innerLoop = outerLoop-1;
+			 while (innerLoop >= 0 && tempArray[innerLoop] < key)
+			 {
+				 // code to switch values
+				 tempArray[innerLoop+1] = tempArray[innerLoop];
+				 innerLoop = innerLoop-1;
+			 }
+			 tempArray[innerLoop+1] = key;
+	 }
+
+	 // loops to compare sorted v unsorted array and find proper index
+	 for(outerLoop = 0; outerLoop < NVEGTYPES; outerLoop++){
+		 for(innerLoop = 0; innerLoop < NVEGTYPES; innerLoop++){
+			 if(tempArray[outerLoop] == tempArrayUnsorted[innerLoop]){
+				 SW_VegProd.rank_SWPcrits[outerLoop] = innerLoop;
+				 tempArrayUnsorted[innerLoop] = SW_MISSING; // set value to something impossible so if a duplicate a different index is picked next
+				 break;
+			 }
+		 }
+	 }
+	 /*printf("%d = %f\n", SW_VegProd.rank_SWPcrits[0], SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[0]]);
+	 printf("%d = %f\n", SW_VegProd.rank_SWPcrits[1], SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[1]]);
+	 printf("%d = %f\n", SW_VegProd.rank_SWPcrits[2], SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[2]]);
+	 printf("%d = %f\n\n", SW_VegProd.rank_SWPcrits[3], SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[3]]);*/
+	 /*----------------------------------------------------------
+		 End of rank_SWPcrits
+	 ----------------------------------------------------------*/
 }

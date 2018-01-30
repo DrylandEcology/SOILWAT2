@@ -28,6 +28,11 @@ Bool RemoveFiles(const char *fspec);
 void sw_error(int errorcode, const char *format, ...);
 void LogError(FILE *fp, const int mode, const char *fmt, ...);
 
+void stat_Output_Daily_CSV_Summary(int iteration);
+void stat_Output_Weekly_CSV_Summary(int iteration);
+void stat_Output_Monthly_CSV_Summary(int iteration);
+void stat_Output_Yearly_CSV_Summary(int iteration);
+
 
 extern char inbuf[]; /* declare in main, use anywhere */
 

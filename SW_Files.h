@@ -17,12 +17,6 @@
 	#define SW_FILES_H
 
 #define SW_NFILES 23
-#ifdef RSOILWAT
-	#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 
 /* The number of enum elements between eNoFile and
  * eEndFile (not inclusive) must match SW_NFILES.
