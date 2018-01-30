@@ -271,7 +271,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 
 	// Saturated percolation
 	for (i = 0; i < nlyrs; i++) {
-		if (st->lyrFrozen[i] == 1) {
+		if (st->lyrFrozen[i]) {
 			ksat_rel = 0.01; // roughly estimated from Parton et al. 1998 GCB
 		} else {
 			ksat_rel = 1.;
@@ -907,7 +907,11 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 		return;
 
 	for (i = 0; i < nlyrs; i++) {
-		if (st->lyrFrozen[i] == 0) { // no evaporation and transpiration from frozen soil layer
+		if (st->lyrFrozen[i]) {
+			// no water extraction, i.e., evaporation and transpiration, from a frozen soil layer
+			qty[i] = 0.;
+
+		} else {
 			q = (swpfrac[i] / sumswp) * rate;
 			swc_avail = fmax(0., swc[i] - swcmin[i]);
 			qty[i] = fmin( q, swc_avail);
@@ -966,7 +970,7 @@ void infiltrate_water_low(double swc[], double drain[], double *drainout, unsign
 		if (LE(swc[i], swcmin[i])) { /* in original code was !GT(swc[i], swcwp[i]) equivalent to LE(swc[i], swcwp[i]), but then water is drained to swcmin nevertheless - maybe should be LE(swc[i], swcmin[i]) */
 			d[i] = 0.;
 		} else {
-			if (st->lyrFrozen[i] == 1) {
+			if (st->lyrFrozen[i]) {
 				kunsat_rel = 0.01; // roughly estimated from Parton et al. 1998 GCB
 			} else {
 				kunsat_rel = 1.;
@@ -1048,7 +1052,11 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 
 		for (j = i + 1; j < nlyrs; j++) {
 
-			if ((LT(swp[i], swpwp[i]) || LT(swp[j], swpwp[j])) && (st->lyrFrozen[i] == 0) && (st->lyrFrozen[j] == 0)) { /* hydred occurs only if at least one soil layer's swp is above wilting point and both soil layers are not frozen */
+			if ((LT(swp[i], swpwp[i]) || LT(swp[j], swpwp[j])) &&
+				(st->lyrFrozen[i] == swFALSE) && (st->lyrFrozen[j] == swFALSE)) {
+				/* hydred occurs only if at least one soil layer's swp is above wilting point
+				and both soil layers are not frozen */
+
 				if (GT(swp[i], swp[j])) {
 					Rx = lyrRootCo[j]; // layer j has more water than i
 				} else {
@@ -1390,9 +1398,9 @@ void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[], doubl
 
 	for (i = 0; i < nlyrs; i++){
 		if (LE(sTemp[i], FREEZING_TEMP_C) && GT(swc[i], swc_sat[i] - width[i] * MIN_VWC_TO_FREEZE) ){
-			st->lyrFrozen[i] = 1;
+			st->lyrFrozen[i] = swTRUE;
 		} else {
-			st->lyrFrozen[i] = 0;
+			st->lyrFrozen[i] = swFALSE;
 		}
 	}
 
