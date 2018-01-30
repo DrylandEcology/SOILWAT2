@@ -155,7 +155,7 @@ TEST(SWFlowTest, LitterInterceptedWater) {
 
     // ***** Tests when nlyrs = 1 ***** //
     ///  provide inputs
-    unsigned int nlyrs = 1;
+    int nlyrs = 1;
     double swc[1] = {0.8}, swcfc[1] = {1.1}, swcsat[1] = {1.6}, impermeability[1] = {0.}, drain[1] = {0.};
 
     infiltrate_water_high(swc, drain, &drainout, pptleft, nlyrs, swcfc, swcsat,
@@ -184,8 +184,8 @@ TEST(SWFlowTest, LitterInterceptedWater) {
           impermeability, &standingWater);
 
     EXPECT_DOUBLE_EQ(0., drain[0]); //When impermeability is 1, drainage should be 0
-    EXPECT_DOUBLE_EQ(swc[0], pptleft + 0.8); /* When impermeability is 1, swc[0]
-     should be equivalent to standingWater + pptLeft + swc[0] (greater than PPT)*/
+    EXPECT_DOUBLE_EQ(standingWater, (pptleft + 0.8) - swcsat[0]); /* When impermeability is 1,
+     standingWater should be equivalent to  pptLeft + swc[0] - swcsat[0]) */
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -247,13 +247,13 @@ TEST(SWFlowTest, LitterInterceptedWater) {
       impermeability4[i] = 1.0;
       drain4[i] = 0.0;
     }
-    swc4[0] = 0.8;
+    swc4[0] = 0.8; // Need to hard code this value because swc4 is altered by function
 
     infiltrate_water_high(swc4, drain4, &drainout, pptleft, nlyrs, swcfc4, swcsat4,
                impermeability4, &standingWater);
 
-    EXPECT_DOUBLE_EQ(swc4[0], pptleft + 0.8); /* When impermeability is 1, swc[0]
-     should be equivalent to standingWater + pptLeft + swc[0] */
+    EXPECT_DOUBLE_EQ(standingWater, (pptleft + 0.8) - swcsat4[0]); /* When impermeability is 1,
+     standingWater should be equivalent to  pptLeft + swc[0] - swcsat[0]) */
 
     for (i = 0; i < MAX_LAYERS; i++) {
       EXPECT_DOUBLE_EQ(0, drain4[i]); //When impermeability is 1, drainage should be 0
@@ -264,22 +264,24 @@ TEST(SWFlowTest, LitterInterceptedWater) {
     pptleft = 5.0;
 
     for (i = 0; i < MAX_LAYERS; i++) {
-      swc5[i] = RandNorm(1.,0.5);
-      swcfc5[i] = swc5[i] - .4; // too much swx
+      swc5[i] = RandNorm(1.2,0.5);
+      swcfc5[i] = swc5[i] - .4; // set up conditions for excess SWC
       swcsat5[i] = swcfc5[i] + .1; // swcsat will always be greater than swcfc in each layer
       impermeability5[i] = 1.0;
       drain5[i] = 0.0;
     }
 
-
     infiltrate_water_high(swc5, drain5, &drainout, pptleft, nlyrs, swcfc5, swcsat5,
                impermeability5, &standingWater);
 
-    for (i = 1; i < MAX_LAYERS; i++) {
-      swc5[i] = (int)(swc5[i] * 10000000 + 0.5)/ 10000000;
-      swcsat5[i] = (int)(swcsat5[i] * 10000000 + 0.5)/ 10000000;
-      EXPECT_DOUBLE_EQ(swc5[i], swcsat5[i]); // test that swc is now equal to or below swcsat in all layers but the top
+    for (i = 0; i < MAX_LAYERS; i++) {
+        swc5[i] = (int)(swc5[i] * 10000000 + 0.5)/ 10000000; // need to round for unit test, despite using EXPECT_DOUBLE_EQ
+        swcsat5[i] = (int)(swcsat5[i] * 10000000 + 0.5)/ 10000000; // need to round for unit test, despite using EXPECT_DOUBLE_EQ
+        EXPECT_DOUBLE_EQ(swc5[i], swcsat5[i]); // test that swc is now equal to or below swcsat in all layers but the top
     }
+
+    EXPECT_GT(standingWater, 0); // standingWater should be above 0
+
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();

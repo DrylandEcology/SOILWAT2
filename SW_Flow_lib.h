@@ -86,7 +86,7 @@ void veg_intercepted_water(double *pptleft, double *wintveg, double ppt, double 
 
 void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, double scale, double a, double b, double c, double d);
 
-void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft, unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
+void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft, int nlyrs, double swcfc[], double swcsat[], double impermeability[],
 		double *standingWater);
 
 double petfunc(unsigned int doy, double avgtemp, double rlat, double elev, double slope, double aspect, double reflec, double humid, double windsp, double cloudcov,

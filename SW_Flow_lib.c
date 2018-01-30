@@ -273,11 +273,11 @@ void litter_intercepted_water(double *pptleft, double *wintlit, double blitter,
  **********************************************************************/
 
 void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft,
-	unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
+	int nlyrs, double swcfc[], double swcsat[], double impermeability[],
 	double *standingWater) {
 
-	unsigned int i;
-	unsigned int j;
+	int i;
+	int j;
 	double d[nlyrs];
 	double push, ksat_rel;
 
@@ -309,7 +309,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 	}
 
 	/* adjust (i.e., push water upwards) if water content of a layer is now above saturated water content */
-	for (j = nlyrs - 1; j > 0; j--) {
+	for (j = nlyrs - 1; j >= 0; j--) {
 		if (GT(swc[j], swcsat[j])) {
 			push = swc[j] - swcsat[j];
 			swc[j] -= push;

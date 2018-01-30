@@ -87,4 +87,3 @@ int main(int argc, char **argv) {
   //--- Return output of 'RUN_ALL_TESTS()', see https://github.com/google/googletest/blob/master/googletest/docs/FAQ.md#my-compiler-complains-about-ignoring-return-value-when-i-call-run_all_tests-why
   return res;
 }
-
