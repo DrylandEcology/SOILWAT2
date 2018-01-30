@@ -290,7 +290,7 @@ static void get_swpMatric(OutPeriod pd);
 static void get_swaBulk(OutPeriod pd);
 static void get_swaMatric(OutPeriod pd);
 static void get_swa(OutPeriod pd);
-static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod pd);
+static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p);
 static void get_surfaceWater(OutPeriod pd);
 static void get_runoffrunon(OutPeriod pd);
 static void get_transp(OutPeriod pd);
@@ -781,11 +781,6 @@ void SW_OUT_read(void)
 	OutKey k;
 	int x, i, itemno;
 
-#ifndef RSOILWAT
-	char str[MAX_FILENAMESIZE];
-	char prefix[MAX_FILENAMESIZE];
-#endif
-
 	/* these dims come from the orig format str */
 	/* except for the uppercase space. */
 	char ext[10];
@@ -811,17 +806,15 @@ void SW_OUT_read(void)
 		x = sscanf(inbuf, "%s %s %s %d %s %s", keyname, sumtype, period, &first,
 				last, outfile);
 
-		#ifdef STEPWAT
-			// checking weather to use timestep or not with STEPWAT
-			if (Str_CompareI(keyname, "USE_TIMESTEP") == 0){
-				used_OUTNPERIODS = sscanf(inbuf, "%s %s", keyname, timeStep[0]);
-				if(strcmp(timeStep[0], "0") == 0)
-					useTimeStep = 0;
-				else
-					useTimeStep = 1;
-	 		 	continue;
-		 	}
-		#endif
+		// checking weather to use timestep or not with STEPWAT
+		if (Str_CompareI(keyname, "USE_TIMESTEP") == 0){
+			used_OUTNPERIODS = sscanf(inbuf, "%s %s", keyname, timeStep[0]);
+			if(strcmp(timeStep[0], "0") == 0)
+				useTimeStep = 0;
+			else
+				useTimeStep = 1;
+ 		 	continue;
+	 	}
 
 		// condition to read in the TIMESTEP line in outsetup.in
 		if (Str_CompareI(keyname, (char *)"TIMESTEP") == 0)
@@ -831,6 +824,9 @@ void SW_OUT_read(void)
 					timeStep[1], timeStep[2], timeStep[3]);	// maximum number of possible timeStep is SW_OUTNPERIODS
 			used_OUTNPERIODS--; // decrement the count to make sure to not count keyname in the number of periods
 
+			// only do 1 period if not using timestep
+			if(useTimeStep == 0)
+				used_OUTNPERIODS = 1;
 
 			char *dayCheck = strstr(inbuf, "dy");
 			char *weekCheck = strstr(inbuf, "wk");
@@ -839,7 +835,7 @@ void SW_OUT_read(void)
 
 			// Create Timestep files defined in outsetup.in
 			#if !defined(STEPWAT) && !defined(RSOILWAT)
-				useTimeStep = 1;
+				//useTimeStep = 1;
 				// create file for defined timesteps
 				if(dayCheck != NULL)
 					stat_Output_Daily_CSV_Summary(-1);
@@ -1000,9 +996,9 @@ void SW_OUT_close_files(void)
 	/* close all of the user-specified output files.
 	 * call this routine at the end of the program run.
 	 */
-#if !defined(STEPWAT) && !defined(RSOILWAT)
 	OutKey k;
-	int i;
+ 	int i;
+#if !defined(STEPWAT) && !defined(RSOILWAT)
 
 	// only want to check 1 value if timestep used since all values have same period
 	if(useTimeStep == 1){
@@ -1037,8 +1033,6 @@ void SW_OUT_close_files(void)
 #elif defined(STEPWAT)
 	if ((isPartialSoilwatOutput == swFALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 	{
-		OutKey k;
-		int i;
 		for (i = 0; i < used_OUTNPERIODS; i++) /*will loop through for as many periods are being used*/
 		{
 			switch(timeSteps[k][i])
@@ -1397,7 +1391,7 @@ void SW_OUT_write_today(void)
 						col_status_dy++;
 					}
 
-					populate_output_values(reg_file_vals_day, soil_file_vals_day, k, 1, 0);
+					populate_output_values((char*)reg_file_vals_day, (char*)soil_file_vals_day, k, 1, 0);
 
 					if(k == finalValue_dy){
 						if(reg_file_vals_day[0] != 0){
@@ -1420,7 +1414,7 @@ void SW_OUT_write_today(void)
 						col_status_wk++;
 					}
 
-					populate_output_values(reg_file_vals_week, soil_file_vals_week, k, 2, 0);
+					populate_output_values((char*)reg_file_vals_week, (char*)soil_file_vals_week, k, 2, 0);
 
 					if(k == finalValue_wk){
 						if(SW_Model.week == 52 && lastWeek == 1){
@@ -1449,7 +1443,7 @@ void SW_OUT_write_today(void)
 						col_status_mo++;
 					}
 
-					populate_output_values(reg_file_vals_month, soil_file_vals_month, k, 3, 0);
+					populate_output_values((char*)reg_file_vals_month, (char*)soil_file_vals_month, k, 3, 0);
 
 					if(k == finalValue_mo){
 						if(SW_Model.month == 11 && lastMonth == 1){
@@ -1478,7 +1472,7 @@ void SW_OUT_write_today(void)
 						col_status_yr++;
 					}
 
-					populate_output_values(reg_file_vals_year, soil_file_vals_year, k, 4, 0);
+					populate_output_values((char*)reg_file_vals_year, (char*)soil_file_vals_year, k, 4, 0);
 
 					if(k == finalValue_yr){
 						if(soil_file_vals_year[0] != 0){
@@ -1518,6 +1512,7 @@ void SW_OUT_write_today(void)
 			}
 			if(storeAllIterations)
 				populate_output_values(reg_file_vals_day_iters, soil_file_vals_day_iters, k, 1, 1); // function to put all the values together for output
+
 
 			if(k == finalValue_dy){ // if last value to be used then write to files
 				if(isPartialSoilwatOutput == swFALSE && Globals.currIter == Globals.runModelIterations && reg_file_vals_day[0] != 0){
@@ -2896,6 +2891,7 @@ static void get_swa(OutPeriod pd)
 	/* added 21-Oct-03, cwb */
 	#ifdef STEPWAT
 		TimeInt p = 0;
+		int curr_crit_rank_index;
 		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
 
@@ -2969,7 +2965,7 @@ static void get_swa(OutPeriod pd)
 
 				// need to check which other critical value each veg_type has access to aside from its own
 				//(i.e. if shrub=-3.9 then it also has access to -3.5 and -2.0)
-				int j, k, curr_crit_rank_index;
+				int j, k;
 				float curr_crit_val, new_crit_val;
 
 				// go through each veg type
@@ -2994,7 +2990,7 @@ static void get_swa(OutPeriod pd)
 						}
 					}
 				}
-				get_dSWAbulk(swa_master, i, -1, pd); // call function to get repartioned swa values
+				get_dSWAbulk(swa_master, i, -1); // call function to get repartioned swa values
 				// not using p for SOILWAT (only for STEPPE) so just passing -1 so it does not get used
 
 				// write values to string
@@ -3097,7 +3093,7 @@ static void get_swa(OutPeriod pd)
 			// ######################################################
 			//           done with calculating SWA_master
 			// ######################################################
-			get_dSWAbulk(NULL, i, p, pd); // need to call this function to calculate correct amount of SWA
+			get_dSWAbulk(NULL, i, p); // need to call this function to calculate correct amount of SWA
 			// values calculated here will be stored in output file
 
 			if (isPartialSoilwatOutput == swFALSE)
@@ -3155,12 +3151,9 @@ static void get_swa(OutPeriod pd)
   \param swa_master. Takes in 2D array. This is specifically for SOILWAT standalone. STEPWAT passes in NULL since its values
 	are stored in struct
 */
-static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p, OutPeriod pd){
-	int j,kv,id_prev_veg,sum_loop,curr_vegType,curr_crit_rank_index,kv_veg_type,prev_crit_veg_type,greater_veg_type;
+static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p){
+	int j,kv,curr_vegType,curr_crit_rank_index,kv_veg_type,prev_crit_veg_type,greater_veg_type;
 	float crit_val, prev_crit_val, smallestCritVal, largestCritVal, vegFractionSum, newFraction;
-
-	LyrIndex l;
-	RealD val = SW_MISSING;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		float veg_type_in_use; // set to current veg type fraction value to avoid multiple if loops. should just need 1 instead of 3 now.
@@ -6620,7 +6613,6 @@ static void average_for(ObjType otyp, OutPeriod pd)
 	RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
 	OutKey k;
 	LyrIndex i;
-	int j;
 
 	if (otyp == eVES)
 		LogError(logfp, LOGFATAL, "Invalid object type 'eVES' in 'average_for()'.");
@@ -7067,9 +7059,10 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 		read_data[destination_size-1] = '\0'; // null terminate so no memory problem
 	}
 	#ifdef STEPWAT
-		if(outstr_file == 1)
+		if(outstr_file == 1){
 			strncpy(read_data, outstr_all_iters, destination_size);
 			read_data[destination_size-1] = '\0'; // null terminate so no memory problem
+		}
 	#endif
 
 	// check if a soil variable (has layers)
@@ -7079,10 +7072,8 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 		|| strcmp(key2str[output_var], "LYRDRAIN")==0 || strcmp(key2str[output_var], "SOILTEMP")==0 || strcmp(key2str[output_var], "HYDRED")==0
 		|| strcmp(key2str[output_var], "SWAMATRIC")==0 || strcmp(key2str[output_var], "SWPMATRIC")==0 || strcmp(key2str[output_var], "SWA")==0))
 	{
-		#ifdef STEPWAT
 		// if usetimestep == 0 then need to check period for output files
 		if((useTimeStep == 0 && timeSteps[output_var][0] == year_out-1) || useTimeStep == 1){
-		#endif
 			char *pt;
 			int counter = 0;
 			pt = strtok (read_data, _SepSplit);
@@ -7103,15 +7094,11 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 					pt = strtok (NULL, _SepSplit);
 					counter++;
 			}
-		#ifdef STEPWAT
 		}
-		#endif
 	}
 	else
 	{
-		#ifdef STEPWAT
 		if((useTimeStep == 0 && timeSteps[output_var][0] == year_out-1) || useTimeStep == 1){
-		#endif
 			char *reg_pt;
 			int reg_counter = 0;
 			reg_pt = strtok (read_data,_SepSplit);
@@ -7131,9 +7118,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 					reg_pt = strtok (NULL, _SepSplit);
 					reg_counter++;
 			}
-		#ifdef STEPWAT
 		}
-		#endif
 	}
 	return;
 }
@@ -7155,9 +7140,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 	int i, j, tLayers = SW_Site.n_layers;
 	SW_VEGESTAB *v = &SW_VegEstab; // for use to check estab
 
-	char ctemp[50];
 	OutKey colHeadersLoop;
-	LyrIndex evap_loop;
 	char *colHeaders[5000];
 	char *colHeadersSoil[5000];
 	memset(&colHeaders, 0, sizeof(colHeaders));
@@ -7198,13 +7181,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 
 	ForEachOutKey(colHeadersLoop)
 	{
-		#if !defined(STEPWAT) && !defined (RSOILWAT)
-			if(SW_Output[colHeadersLoop].use)
-		#else
-			//if(SW_Output[colHeadersLoop].use && SW_Output[colHeadersLoop].period == outFileTimestep-1)
-			//if timestep = 0 then only create for right period. if timestep = 1 create for all periods
 			if((SW_Output[colHeadersLoop].use && useTimeStep == 0 && timeSteps[colHeadersLoop][0] == outFileTimestep-1) || (SW_Output[colHeadersLoop].use && useTimeStep == 1))
-		#endif
 		{
 			if(strcmp(key2str[colHeadersLoop], "VWCBULK")==0 || strcmp(key2str[colHeadersLoop], "VWCMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWCBULK")==0
 				|| strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0 || strcmp(key2str[colHeadersLoop], "SWABULK")==0
@@ -7333,8 +7310,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 					}
 				}
 				else if(strcmp(key2str[colHeadersLoop], "ESTABL")==0){
-					if(v->count > 0){
-						printf("estab header\n");
+					if(v->count > 0){ // only create col if estab has values
 						strcat(storeRegCol, key2str[colHeadersLoop]); // concatenate variable to string
 						strcat(storeRegCol, _SepSplit);
 						#ifdef STEPWAT
