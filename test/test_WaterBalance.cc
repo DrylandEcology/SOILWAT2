@@ -65,6 +65,25 @@ namespace {
   }
 
 
+  TEST(WaterBalance, WithSoilTemperature) {
+    int i;
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Turn on soil temperature simulations
+    SW_Site.use_soil_temp = swTRUE;
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error: " << SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
   TEST(WaterBalance, WithPondedWaterRunonRunoff) {
     int i;
 
