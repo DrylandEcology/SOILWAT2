@@ -108,6 +108,7 @@ extern SW_SOILWAT SW_Soilwat;
 extern SW_CARBON SW_Carbon;
 unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
+
 /* *************************************************** */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
@@ -1275,7 +1276,7 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 
 void soil_temperature_init(double bDensity[], double width[], double surfaceTemp,
    double oldsTemp[], double meanAirTemp, unsigned int nlyrs, double fc[], double wp[],
-   double deltaX, double theMaxDepth,unsigned int nRgr) {
+   double deltaX, double theMaxDepth, unsigned int nRgr) {
 	// local vars
 	unsigned int x1 = 0, x2 = 0, j = 0, i;
   #ifdef SWDEBUG
@@ -1291,9 +1292,6 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 	#ifdef SWDEBUG
 	if (debug)
 		swprintf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
-  /*  for(int z = 0; z < nlyrs; z++){
-    swprintf("\nInit soil layer profile: fc=%f, wp=%f, oldsTemp=%f;", fc[z], wp[z], oldsTemp[z]);
-  } */
   #endif
 
 
@@ -1308,25 +1306,34 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 	}
 
 	// copy depths of soil layer profile
-	for (j = 0; j < nlyrs + 1; j++) {
+	for (j = 0; j < nlyrs; j++) {
 		acc += width[j];
 		st->depths[j] = acc;
+    #ifdef SWDEBUG
+    if (debug)
+      swprintf("\n j=%u, depths = %f", j, st->depths[j]);
+    #endif
 	}
+
 	// calculate evenly spaced depths of soil temperature profile
 	acc = 0.0;
 	for (i = 0; i < nRgr + 1; i++) {
 		acc += deltaX;
 		st->depthsR[i] = acc;
+    #ifdef SWDEBUG
+    if (debug)
+      swprintf("\n i=%u, depthsR = %f", i, st->depthsR[i]);
+    #endif
 	}
-
 
 	// if soil temperature max depth is less than soil layer depth then quit
 	if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
 		if (!SW_Soilwat.partsError) { // if the error hasn't been reported yet... print an error to the stderr and one to the logfile
 
-			swprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
-
+      swprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 			SW_Soilwat.partsError = swTRUE;
+
+      LogError(logfp, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 		}
 		return; // exits the function
 	}

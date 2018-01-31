@@ -61,11 +61,11 @@ typedef struct {
 
 	double depths[MAX_LAYERS],  //soil layer depths of SoilWat soil
 	       depthsR[MAX_ST_RGR + 1],//evenly spaced soil layer depths for soil temperature calculations
-		   fcR[MAX_ST_RGR],//field capacity of soil layers for soil temperature calculations
-		   wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
-		   bDensityR[MAX_ST_RGR],//bulk density of soil layers for soil temperature calculations
-		   oldsFusionPool_actual[MAX_LAYERS],
-		   oldsTempR[MAX_ST_RGR + 1];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
+		   	 fcR[MAX_ST_RGR],//field capacity of soil layers for soil temperature calculations
+		   	 wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
+		   	 bDensityR[MAX_ST_RGR],//bulk density of soil layers for soil temperature calculations
+		   	 oldsFusionPool_actual[MAX_LAYERS],
+		   	 oldsTempR[MAX_ST_RGR + 1];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
 
 	Bool lyrFrozen[MAX_LAYERS];
 	double tlyrs_by_slyrs[MAX_ST_RGR + 1][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers

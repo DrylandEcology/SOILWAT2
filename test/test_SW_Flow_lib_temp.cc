@@ -44,6 +44,8 @@
 extern SW_MODEL SW_Model;
 extern SW_VEGPROD SW_VegProd;
 
+extern ST_RGR_VALUES stValues;
+
 namespace {
 
   // Test the veg interception function 'surface_temperature_under_snow'
@@ -96,20 +98,35 @@ namespace {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
-    int i;
-    nlyrs = MAX_LAYERS;
+    unsigned int i;
+    //nlyrs = MAX_LAYERS;
+    nlyrs = 8;
+    double width[] = {5, 5, 5, 10, 10, 10, 20, 20};
+    double oldsTemp[] = {1, 1, 1, 2, 2, 2, 3, 3};
     double bDensity[nlyrs], fc[nlyrs], wp[nlyrs];
-    double width[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20, 20};
-    double oldsTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    //double width[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    //double oldsTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
 
-    for (i = 0; i < MAX_LAYERS; i++) {
+    for (i = 0; i < nlyrs; i++) {
       bDensity[i] = RandNorm(1.,0.5);
       fc[i] = RandNorm(1.5, 0.5);
       wp[i] = fc[i] - 0.6; // wp will always be less than fc
     }
 
+    /// test standard conditions
     soil_temperature_init(bDensity, width, surfaceTemp, oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
-    
+
+    EXPECT_EQ(stValues.depths[nlyrs - 1], 85); // sum of inputs width = maximum depth = 85
+    EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
+
+    /// test when theMaxDepth is less than soil layer depth
+    theMaxDepth = 70.0;
+
+    //soil_temperature_init(bDensity, width, surfaceTemp, oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
+    //EXPECT_EQ(SW_Soilwat.partsError, 1);
+
+    EXPECT_DEATH(soil_temperature_init(bDensity, width, surfaceTemp, oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr),
+     "@ generic.c LogError");
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
