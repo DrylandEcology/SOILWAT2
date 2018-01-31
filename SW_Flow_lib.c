@@ -1508,7 +1508,7 @@ temp += temp;
 
 		The algorithm selects a shorter time step if required for a stable solution.
 
-		@param delta_time An array of length two. Yesterday's and today's time step in seconds.
+		@param ptr_dTime Yesterday's successful time step in seconds.
 		@param deltaX The depth increment for the soil temperature (regression) calculations.
 		@param sT1 The soil surface temperature as upper boundary condition.
 		@param sTconst The soil temperature at a soil depth where it stays constant as
@@ -1517,7 +1517,7 @@ temp += temp;
 		@param oldsTempR An array of yesterday's (regression)-layer soil temperature values.
 
 		@return Updated soil temperature values in array of sTempR.
-		@return Realized time step for today in array of delta_time.
+		@return Realized time step for today in updated value of ptr_dTime.
 		@return Updated status of soil temperature error in *ptr_stError.
 
 		@reference Parton, W. J. 1978. Abiotic section of ELM. Pages 31–53 in G. S. Innis,
@@ -1525,81 +1525,101 @@ temp += temp;
 		@reference Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe.
 			Soil Science 138:93-101.
 	*/
-void soil_temperature_today(double delta_time[], double deltaX, double sT1, double sTconst,
+void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
 	int nRgr, double sTempR[], double oldsTempR[], double vwcR[], double wpR[], double fcR[],
 	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError) {
 
-	int i, k;
-	double dTime, pe, cs, sh, part1, parts, part2;
+	int i, k, m, Nsteps_per_day = 1;
+	double pe, cs, sh, part1, parts, part2;
+	double oldsTempR2[MAX_ST_RGR + 1];
   #ifdef SWDEBUG
-  int debug = 1;
+  int debug = 0;
   #endif
 
 
 	sTempR[0] = sT1; //upper boundary condition; index 0 indicates surface and not first layer
-	dTime = delta_time[1];
+	sTempR[nRgr + 1] = sTconst; // lower boundary condition; assuming that lowest layer is the depth of constant soil temperature
 
-	part1 = dTime / squared(deltaX);
+	do {
+		/* loop through today's timesteps and soil layers to calculate soil temperature;
+			shorten time step if calculation is not stable (but break and error out if more
+			than 16 sub-time steps were required) */
 
-	for (i = 1; i < nRgr + 1; i++) {
-		// goes to nRgr, because the soil temp of the last interpolation layer (nRgr) is the sTconst
-		k = i - 1;
-		pe = (vwcR[k] - wpR[k]) / (fcR[k] - wpR[k]); // the units are volumetric!
-		cs = csParam1 + (pe * csParam2); // Parton (1978) eq. 2.22: soil thermal conductivity; csParam1 = 0.0007, csParam2 = 0.0003
-		sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
-			// TODO: adjust thermal conductivity and heat capacity if layer is frozen
-		parts = part1 * cs / (sh * bDensityR[k]);
+		part1 = *ptr_dTime / squared(deltaX);
+		Nsteps_per_day = SEC_PER_DAY / *ptr_dTime;
 
-		/* Check that approximation is stable
-			- Derivation to confirm Parton 1984: alpha * K * deltaT / deltaX ^ 2 <= 0.5
-			- Let f be a continuously differentiable function with attractive fixpoint f(a) = a;
-				then, for x elements of basin of attraction:
-					iteration x[n+1] = f(x[n]) is stable if spectral radius rho(f) < 1
-				with
-					rho(f) = max(abs(eigenvalues(iteration matrix)))
-			- Function f is here, x[i; t+1] = f(x[i; t]) =
-					= x[i; t] + parts * (str[i-1; t+1] - 2 * x[i; t] + str[i+1; t]) =
-					= x[i; t] * (1 - 2 * parts) + parts * (str[i-1; t+1] + str[i+1; t])
-			- Fixpoint a is then, using f(a) = a,
-					a = a * (1 - 2 * parts) + parts * (str[i-1; t+1] + str[i+1; t])
-					==> a = parts * (str[i-1; t+1] + str[i+1; t]) / (2 * parts) =
-								= (str[i-1; t+1] + str[i+1; t]) / 2
-			- Homogenous recurrence form of function f is then here, (x[i; t+1] - a) =
-					= (x[i; t] - a) * (1 - 2 * parts)
-			- Iteration matrix is here C = (1 - 2 * parts) with eigenvalue lambda from
-					det(C - lambda * 1) = 0 ==> lambda = C
-			- Thus, iteration is stable if abs(lambda) < 1, here
-					abs(1 - 2 * parts) < 1 ==> abs(parts) < 1/2
-		*/
-		if (GE(parts, 0.5) && !(*ptr_stError)) {
-			swprintf("\n SOILWAT2 ERROR in soil temperature module: "
-				"stability criterion failed (%f < 0.5); soil temperature is being turned off\n",
-				parts);
-
-			(*ptr_stError) = swTRUE; /* Flag that an error has occurred */
-			// return;  //Exits the Function
+		// reset previous soil temperature values to yesterday's
+		for (i = 0; i < nRgr + 1; i++) {
+			oldsTempR2[i] = oldsTempR[i];
 		}
 
-		part2 = sTempR[i - 1] - 2 * oldsTempR[i] + oldsTempR[i + 1];
+		for (m = 0; m < Nsteps_per_day; m++) {
+			for (i = 1; i < nRgr + 1; i++) {
+				// goes to nRgr, because the soil temp of the last interpolation layer (nRgr) is the sTconst
+				k = i - 1;
+				pe = (vwcR[k] - wpR[k]) / (fcR[k] - wpR[k]); // the units are volumetric!
+				cs = csParam1 + (pe * csParam2); // Parton (1978) eq. 2.22: soil thermal conductivity; csParam1 = 0.0007, csParam2 = 0.0003
+				sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
+					// TODO: adjust thermal conductivity and heat capacity if layer is frozen
+				parts = part1 * cs / (sh * bDensityR[k]);
 
-		sTempR[i] = oldsTempR[i] + parts * part2; // Parton (1978) eq. 2.21
+				/* Check that approximation is stable
+					- Derivation to confirm Parton 1984: alpha * K * deltaT / deltaX ^ 2 <= 0.5
+					- Let f be a continuously differentiable function with attractive fixpoint f(a) = a;
+						then, for x elements of basin of attraction:
+							iteration x[n+1] = f(x[n]) is stable if spectral radius rho(f) < 1
+						with
+							rho(f) = max(abs(eigenvalues(iteration matrix)))
+					- Function f is here, x[i; t+1] = f(x[i; t]) =
+							= x[i; t] + parts * (str[i-1; t+1] - 2 * x[i; t] + str[i+1; t]) =
+							= x[i; t] * (1 - 2 * parts) + parts * (str[i-1; t+1] + str[i+1; t])
+					- Fixpoint a is then, using f(a) = a,
+							a = a * (1 - 2 * parts) + parts * (str[i-1; t+1] + str[i+1; t])
+							==> a = parts * (str[i-1; t+1] + str[i+1; t]) / (2 * parts) =
+										= (str[i-1; t+1] + str[i+1; t]) / 2
+					- Homogenous recurrence form of function f is then here, (x[i; t+1] - a) =
+							= (x[i; t] - a) * (1 - 2 * parts)
+					- Iteration matrix is here C = (1 - 2 * parts) with eigenvalue lambda from
+							det(C - lambda * 1) = 0 ==> lambda = C
+					- Thus, iteration is stable if abs(lambda) < 1, here
+							abs(1 - 2 * parts) < 1 ==> abs(parts) < 1/2
+				*/
+				(*ptr_stError) = GE(parts, 0.5)? swTRUE: swFALSE; /* Flag whether an error has occurred */
+				if (*ptr_stError) {
+					*ptr_dTime = *ptr_dTime / 2;
+					/* step out of for-loop through regression soil layers and re-start with adjusted dTime */
+					break;
+				}
 
-		#ifdef SWDEBUG
-		if (debug) {
-			swprintf("d(Tsoil[%d]) = %.2f from p1 = %.1f = dt(%.0f) / dX^2(%.0f) and "
-				"ps = %.2f = p1 * cs(%f) / (sh(%.3f) * rho[%d](%.2f))\n",
-				k, parts * part2, part1, dTime, squared(deltaX), parts, cs, sh,
-				k, bDensityR[k]);
+				part2 = sTempR[i - 1] - 2 * oldsTempR2[i] + oldsTempR2[i + 1];
+
+				sTempR[i] = oldsTempR2[i] + parts * part2; // Parton (1978) eq. 2.21
+
+				#ifdef SWDEBUG
+				if (debug) {
+					swprintf("step=%d/%d: d(Tsoil[%d]) = %.2f from p1 = %.1f = dt(%.0f) / dX^2(%.0f) and "
+						"ps = %.2f = p1 * cs(%f) / (sh(%.3f) * rho(%.2f))\n",
+						m, Nsteps_per_day, i, parts * part2, part1, *ptr_dTime, squared(deltaX),
+						parts, cs, sh, bDensityR[k]);
+					swprintf("  Tsoil[%d; now]=%.2f Tsoil[prev]=%.2f Tsoil[yesterday]=%.2f\n",
+						i, sTempR[i],  oldsTempR2[i], oldsTempR[i]);
+				}
+				#endif
+			}
+
+			if (*ptr_stError) {
+				/* step out of for-loop through sub-timesteps */
+				break;
+			}
+
+			// updating the values of soil temperature for the next sub-time step
+			for (i = 0; i < nRgr + 1; i++) {
+				oldsTempR2[i] = sTempR[i];
+			}
 		}
-		#endif
-	}
 
-	// lower boundary condition
-	sTempR[nRgr + 1] = sTconst;
+	} while ((*ptr_stError) && Nsteps_per_day <= 16);
 
-	// update time step
-	delta_time[0] = delta_time[1];
-	delta_time[1] = dTime;
 }
 
 
@@ -1679,11 +1699,11 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 	unsigned int i, sFadjusted_sTemp;
   #ifdef SWDEBUG
-  int debug = 1;
+  int debug = 0;
   #endif
 	double T1, vwc[nlyrs], vwcR[nRgr], sTempR[nRgr + 1];
 	static Bool do_once_at_soiltempError = swTRUE;
-	static double delta_time[2] = {SEC_PER_DAY, SEC_PER_DAY}; // yesterdays and todays time step in seconds; start out with 1 day
+	static double delta_time = SEC_PER_DAY; // last successful time step in seconds; start out with 1 day
 
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
@@ -1794,9 +1814,16 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	#endif
 
 	// calculate the new soil temperature for each layer
-	soil_temperature_today(delta_time, deltaX, T1, meanAirTemp, nRgr, sTempR, st->oldsTempR,
+	soil_temperature_today(&delta_time, deltaX, T1, meanAirTemp, nRgr, sTempR, st->oldsTempR,
 		vwcR, st->wpR, st->fcR, st->bDensityR, csParam1, csParam2, shParam, ptr_stError);
 
+	// question: should we ever reset delta_time to SEC_PER_DAY?
+
+	if (*ptr_stError) {
+		LogError(logfp, LOGWARN, "SOILWAT2 ERROR in soil temperature module: "
+			"stability criterion failed despite reduced time step = %f seconds; "
+			"soil temperature is being turned off\n", delta_time);
+	}
 
 	#ifdef SWDEBUG
 	if (debug) {
@@ -1848,10 +1875,4 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	for (i = 0; i <= nRgr + 1; i++){
 		st->oldsTempR[i] = sTempR[i];
 	}
-
-	#ifdef SWDEBUG
-	if (debug) {
-    sw_error(0, "EXIT DEBUG IS ON IN SOIL TEMPERATURE. CONSIDER TURNING OFF.\n");
-	}
-	#endif
 }
