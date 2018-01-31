@@ -1250,9 +1250,9 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 	return tSoilAvg;
 }
 
-void soil_temperature_init(double bDensity[], double width[], double surfaceTemp,
-	double oldsTemp[], double meanAirTemp, unsigned int nlyrs, double fc[], double wp[],
-	double deltaX, double theMaxDepth, unsigned int nRgr, Bool *ptr_stError) {
+void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
+	double sTconst, unsigned int nlyrs, double fc[], double wp[], double deltaX,
+	double theMaxDepth, unsigned int nRgr, Bool *ptr_stError) {
 
 	// local vars
 	unsigned int x1 = 0, x2 = 0, j = 0, i;
@@ -1261,6 +1261,7 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
   #endif
 	double d1 = 0.0, d2 = 0.0, acc = 0.0;
 	double fc_vwc[nlyrs], wp_vwc[nlyrs];
+
 	// pointers
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
@@ -1269,7 +1270,9 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
 	#ifdef SWDEBUG
 	if (debug)
-		swprintf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
+		swprintf("\nInit soil layer profile: nlyrs=%i, sTconst=%2.2F;"
+			"\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n",
+			nlyrs, sTconst, deltaX, theMaxDepth, nRgr);
 	#endif
 
 
@@ -1357,14 +1360,19 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 	}
 	#endif
 
-	// calculate volumetric field capacity, volumetric wilting point, bulk density, and initial soil temperature for layers of the soil temperature profile
-	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, bDensity, nRgr, deltaX, st->bDensityR);
-	lyrSoil_to_lyrTemp_temperature(nlyrs, st->depths, oldsTemp, meanAirTemp, nRgr, st->depthsR, theMaxDepth, st->oldsTempR);
+	// calculate volumetric field capacity, volumetric wilting point, bulk density, and
+	// initial soil temperature for layers of the soil temperature profile
+	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, bDensity, nRgr, deltaX,
+		st->bDensityR);
+	lyrSoil_to_lyrTemp_temperature(nlyrs, st->depths, oldsTemp, sTconst, nRgr,
+		st->depthsR, theMaxDepth, st->oldsTempR);
+
 	// units of fc and wp are [cm H2O]; units of fcR and wpR are [m3/m3]
 	for (i = 0; i < nlyrs; i++){
 		fc_vwc[i] = fc[i] / width[i];
 		wp_vwc[i] = wp[i] / width[i];
 	}
+
 	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, fc_vwc, nRgr, deltaX, st->fcR);
 	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, wp_vwc, nRgr, deltaX, st->wpR);
 
@@ -1386,15 +1394,14 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
   #endif
 }
 
-void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[], double swc_sat[], double width[]){
+void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[],
+	double swc_sat[], double width[]){
 /*	01/06/2016 (drs)	function to determine if a soil layer is frozen or not
 
 	Parton, W. J., M. Hartman, D. Ojima, and D. Schimel. 1998. DAYCENT and its land surface submodel: description and testing. Global and Planetary Change 19:35-48.
 	A layer was considered frozen if its average soil temperature was below the freezing temperature (-1C), and theta(sat) - theta(cur) < 0.13,
 	where theta(sat) was the saturated volumetric wetness of the layer and theta(cur) was the simulated volumetric wetness (Flerchinger and Saxton, 1989).
 	The hydraulic conductivity of a frozen layer was reduced to 0.00001 cm/s.
-
-
 */
 
 // 	TODO: freeze surfaceWater and restrict infiltration
@@ -1674,7 +1681,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
  shParam - constant for the specific heat capacity equation (0.18)
  sh -  specific heat capacity equation
  snowdepth - the depth of snow cover (cm)
- meanAirTemp - the avg air temperature for the month in celsius
+ sTconst - the constant soil temperature in celsius
  deltaX - the distance between profile points (default is 15 from Parton's equation, wouldn't recommend changing the value from that).  180 must be evenly divisible by this number.
  theMaxDepth - the lower bound of the equation (default is 180 from Parton's equation, wouldn't recommend changing the value from that).
  nRgr - the number of regressions (1 extra value is needed for the sTempR and oldsTempR for the last layer
@@ -1688,7 +1695,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	double swc[], double swc_sat[], double bDensity[], double width[], double oldsTemp[],
 	double sTemp[], double surfaceTemp[2], unsigned int nlyrs, double fc[], double wp[],
 	double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1,
-	double csParam2, double shParam, double snowdepth, double meanAirTemp, double deltaX,
+	double csParam2, double shParam, double snowdepth, double sTconst, double deltaX,
 	double theMaxDepth, unsigned int nRgr, double snow, Bool *ptr_stError) {
 
 	unsigned int i, sFadjusted_sTemp;
@@ -1734,8 +1741,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 		surfaceTemp[Today] = airTemp;
 		set_frozen_unfrozen(nlyrs, oldsTemp, swc, swc_sat, width);
-		soil_temperature_init(bDensity, width, surfaceTemp[Today], oldsTemp, meanAirTemp,
-			nlyrs, fc, wp, deltaX, theMaxDepth, nRgr, ptr_stError);
+		soil_temperature_init(bDensity, width, oldsTemp, sTconst, nlyrs, fc, wp, deltaX,
+			theMaxDepth, nRgr, ptr_stError);
 	}
 
 
@@ -1808,7 +1815,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	#endif
 
 	// calculate the new soil temperature for each layer
-	soil_temperature_today(&delta_time, deltaX, T1, meanAirTemp, nRgr, sTempR, st->oldsTempR,
+	soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR, st->oldsTempR,
 		vwcR, st->wpR, st->fcR, st->bDensityR, csParam1, csParam2, shParam, ptr_stError);
 
 	// question: should we ever reset delta_time to SEC_PER_DAY?
@@ -1830,14 +1837,17 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	#endif
 
 	// convert soil temperature of soil temperature profile 'sTempR' to soil profile layers 'sTemp'
-	lyrTemp_to_lyrSoil_temperature(st->tlyrs_by_slyrs, nRgr, st->depthsR, sTempR, nlyrs, st->depths, width, sTemp);
+	lyrTemp_to_lyrSoil_temperature(st->tlyrs_by_slyrs, nRgr, st->depthsR, sTempR, nlyrs,
+		st->depths, width, sTemp);
 
 	// Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
-	sFadjusted_sTemp = adjust_Tsoil_by_freezing_and_thawing(oldsTemp, sTemp, shParam, nlyrs, vwc, bDensity);
+	sFadjusted_sTemp = adjust_Tsoil_by_freezing_and_thawing(oldsTemp, sTemp, shParam,
+		nlyrs, vwc, bDensity);
 
 	// update sTempR if sTemp were changed due to soil freezing/thawing
-	if (sFadjusted_sTemp){
-		lyrSoil_to_lyrTemp_temperature(nlyrs, st->depths, sTemp, meanAirTemp, nRgr, st->depthsR, theMaxDepth, sTempR);
+	if (sFadjusted_sTemp) {
+		lyrSoil_to_lyrTemp_temperature(nlyrs, st->depths, sTemp, sTconst, nRgr, st->depthsR,
+			theMaxDepth, sTempR);
 	}
 
 	// determine frozen/unfrozen status of soil layers
