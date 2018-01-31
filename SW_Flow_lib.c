@@ -1506,6 +1506,8 @@ temp += temp;
  PURPOSE: Calculate soil temperature for each layer as described in Parton 1978, ch. 2.2.2 Temperature-profile Submodel, interpolation values are gotten from a mixture of interpolation & extrapolation
 // soil freezing based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 
+	@reference Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
+
  *NOTE* There will be some degree of error because the original equation is written for soil layers of 15 cm.  if soil layers aren't all 15 cm then linear regressions are used to estimate the values (error should be relatively small though).
  *NOTE* Function might not work correctly if the maxDepth of the soil is > 180 cm, since Parton's equation goes only to 180 cm
  *NOTE* Function will run if maxLyrDepth > maxDepth of the equation, but the results might be slightly off...
@@ -1558,9 +1560,12 @@ temp += temp;
  sTemp - soil layer temperatures in celsius
  **********************************************************************/
 
-void soil_temperature(double airTemp, double pet, double aet, double biomass, double swc[], double swc_sat[], double bDensity[], double width[], double oldsTemp[], double sTemp[], double surfaceTemp[2],
-		unsigned int nlyrs, double fc[], double wp[], double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1, double csParam2, double shParam,
-		double snowdepth, double meanAirTemp, double deltaX, double theMaxDepth, unsigned int nRgr, double snow) {
+void soil_temperature(double airTemp, double pet, double aet, double biomass,
+	double swc[], double swc_sat[], double bDensity[], double width[], double oldsTemp[],
+	double sTemp[], double surfaceTemp[2], unsigned int nlyrs, double fc[], double wp[],
+	double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1,
+	double csParam2, double shParam, double snowdepth, double meanAirTemp, double deltaX,
+	double theMaxDepth, unsigned int nRgr, double snow) {
 
 	unsigned int i, k, sFadjusted_sTemp;
   #ifdef SWDEBUG
@@ -1571,7 +1576,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
-	ForEachSoilLayer(i) {
+	for (i = 0; i < nlyrs; i++) {
 		vwc[i] = swc[i] / width[i];
 	}
 
@@ -1685,14 +1690,33 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass, do
 			// TODO: adjust thermal conductivity and heat capacity if layer is frozen
 		parts = part1 * cs / (sh * st->bDensityR[k]);
 
-		/*Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
-		VWCnew: why 0.5 and not 1? and they use a fixed alpha * K whereas here it is 1/(cs * sh)*/
-		if (GE(parts, 1.0) && !SW_Soilwat.soiltempError) {
-				swprintf("\n SOILWAT2 ERROR in soil temperature module: "
-					"stability criterion failed (%f >= 1.0); soil temperature is being turned off "
-					"it may produce extreme values otherwise\n", parts);
+		/* Check that approximation is stable
+			- Derivation to confirm Parton 1984: alpha * K * deltaT / deltaX ^ 2 <= 0.5
+			- Let f be a continuously differentiable function with attractive fixpoint f(a) = a;
+				then, for x elements of basin of attraction:
+					iteration x[n+1] = f(x[n]) is stable if spectral radius rho(f) < 1
+				with
+					rho(f) = max(abs(eigenvalues(iteration matrix)))
+			- Function f is here, x[i; t+1] = f(x[i; t]) =
+					= x[i; t] + parts * (str[i-1; t+1] - 2 * x[i; t] + str[i+1; t]) =
+					= x[i; t] * (1 - 2 * parts) + parts * (str[i-1; t+1] + str[i+1; t])
+			- Fixpoint a is then, using f(a) = a,
+					a = a * (1 - 2 * parts) + parts * (str[i-1; t+1] + str[i+1; t])
+					==> a = parts * (str[i-1; t+1] + str[i+1; t]) / (2 * parts) =
+								= (str[i-1; t+1] + str[i+1; t]) / 2
+			- Homogenous recurrence form of function f is then here, (x[i; t+1] - a) =
+					= (x[i; t] - a) * (1 - 2 * parts)
+			- Iteration matrix is here C = (1 - 2 * parts) with eigenvalue lambda from
+					det(C - lambda * 1) = 0 ==> lambda = C
+			- Thus, iteration is stable if abs(lambda) < 1, here
+					abs(1 - 2 * parts) < 1 ==> abs(parts) < 1/2
+		*/
+		if (GE(parts, 0.5) && !SW_Soilwat.soiltempError) {
+			swprintf("\n SOILWAT2 ERROR in soil temperature module: "
+				"stability criterion failed (%f < 0.5); soil temperature is being turned off\n",
+				parts);
 
-				SW_Soilwat.soiltempError = swTRUE; /* Flag that an error has occurred */
+			SW_Soilwat.soiltempError = swTRUE; /* Flag that an error has occurred */
 			// return;  //Exits the Function
 		}
 
