@@ -1419,13 +1419,7 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTem
 // based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 
 // NOTE: THIS FUNCTION IS CURRENTLY NOT OPERATIONAL: DESCRIPTION BY EITZINGER ET AL. 2000 SEEMS INSUFFICIENT
-// To avoid compiler warnings 'unused parameter' until function is operational:
-oldsTemp[0] = 0.0;
-sTemp[0] = 0.0;
-shParam = 0.0;
-nlyrs = 0;
-vwc[0] = 0.0;
-bDensity[0] = 0.0;
+
 //	double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
 // To avoid compiler warnings "warning: parameter set but not used"
 double temp;
@@ -1835,10 +1829,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	}
 	#endif
 
-
 	// convert soil temperature of soil temperature profile 'sTempR' to soil profile layers 'sTemp'
 	lyrTemp_to_lyrSoil_temperature(st->tlyrs_by_slyrs, nRgr, st->depthsR, sTempR, nlyrs, st->depths, width, sTemp);
-
 
 	// Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
 	sFadjusted_sTemp = adjust_Tsoil_by_freezing_and_thawing(oldsTemp, sTemp, shParam, nlyrs, vwc, bDensity);
@@ -1875,4 +1867,10 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	for (i = 0; i <= nRgr + 1; i++){
 		st->oldsTempR[i] = sTempR[i];
 	}
+
+	#ifdef SWDEBUG
+	if (debug) {
+		// sw_error(-1, "Stop at end of soil temperature calculations");
+	}
+	#endif
 }
