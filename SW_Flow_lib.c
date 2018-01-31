@@ -1250,7 +1250,10 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 	return tSoilAvg;
 }
 
-void soil_temperature_init(double bDensity[], double width[], double surfaceTemp, double oldsTemp[], double meanAirTemp, unsigned int nlyrs, double fc[], double wp[], double deltaX, double theMaxDepth,unsigned int nRgr) {
+void soil_temperature_init(double bDensity[], double width[], double surfaceTemp,
+	double oldsTemp[], double meanAirTemp, unsigned int nlyrs, double fc[], double wp[],
+	double deltaX, double theMaxDepth, unsigned int nRgr, Bool *ptr_stError) {
+
 	// local vars
 	unsigned int x1 = 0, x2 = 0, j = 0, i;
   #ifdef SWDEBUG
@@ -1295,8 +1298,8 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 
 	// if soil temperature max depth is less than soil layer depth then quit
 	if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
-		if (!SW_Soilwat.soiltempError) {
-			SW_Soilwat.soiltempError = swTRUE;
+		if (!(*ptr_stError)) {
+			(*ptr_stError) = swTRUE;
 
 			// if the error hasn't been reported yet... print an error to the stderr and one to the logfile
 			swprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must "
@@ -1501,12 +1504,119 @@ temp += temp;
 }
 
 
+/** @brief Calculate today's soil temperature for each layer
+
+		The algorithm selects a shorter time step if required for a stable solution.
+
+		@param delta_time An array of length two. Yesterday's and today's time step in seconds.
+		@param deltaX The depth increment for the soil temperature (regression) calculations.
+		@param sT1 The soil surface temperature as upper boundary condition.
+		@param sTconst The soil temperature at a soil depth where it stays constant as
+			lower boundary condition.
+		@param sTempR An array of today's (regression)-layer soil temperature values.
+		@param oldsTempR An array of yesterday's (regression)-layer soil temperature values.
+
+		@return Updated soil temperature values in array of sTempR.
+		@return Realized time step for today in array of delta_time.
+		@return Updated status of soil temperature error in *ptr_stError.
+
+		@reference Parton, W. J. 1978. Abiotic section of ELM. Pages 31–53 in G. S. Innis,
+			editor. Grassland simulation model. Springer, New York, NY.
+		@reference Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe.
+			Soil Science 138:93-101.
+	*/
+void soil_temperature_today(double delta_time[], double deltaX, double sT1, double sTconst,
+	int nRgr, double sTempR[], double oldsTempR[], double vwcR[], double wpR[], double fcR[],
+	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError) {
+
+	int i, k;
+	double dTime, pe, cs, sh, part1, parts, part2;
+  #ifdef SWDEBUG
+  int debug = 1;
+  #endif
+
+
+	sTempR[0] = sT1; //upper boundary condition; index 0 indicates surface and not first layer
+	dTime = delta_time[1];
+
+	part1 = dTime / squared(deltaX);
+
+	for (i = 1; i < nRgr + 1; i++) {
+		// goes to nRgr, because the soil temp of the last interpolation layer (nRgr) is the sTconst
+		k = i - 1;
+		pe = (vwcR[k] - wpR[k]) / (fcR[k] - wpR[k]); // the units are volumetric!
+		cs = csParam1 + (pe * csParam2); // Parton (1978) eq. 2.22: soil thermal conductivity; csParam1 = 0.0007, csParam2 = 0.0003
+		sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
+			// TODO: adjust thermal conductivity and heat capacity if layer is frozen
+		parts = part1 * cs / (sh * bDensityR[k]);
+
+		/* Check that approximation is stable
+			- Derivation to confirm Parton 1984: alpha * K * deltaT / deltaX ^ 2 <= 0.5
+			- Let f be a continuously differentiable function with attractive fixpoint f(a) = a;
+				then, for x elements of basin of attraction:
+					iteration x[n+1] = f(x[n]) is stable if spectral radius rho(f) < 1
+				with
+					rho(f) = max(abs(eigenvalues(iteration matrix)))
+			- Function f is here, x[i; t+1] = f(x[i; t]) =
+					= x[i; t] + parts * (str[i-1; t+1] - 2 * x[i; t] + str[i+1; t]) =
+					= x[i; t] * (1 - 2 * parts) + parts * (str[i-1; t+1] + str[i+1; t])
+			- Fixpoint a is then, using f(a) = a,
+					a = a * (1 - 2 * parts) + parts * (str[i-1; t+1] + str[i+1; t])
+					==> a = parts * (str[i-1; t+1] + str[i+1; t]) / (2 * parts) =
+								= (str[i-1; t+1] + str[i+1; t]) / 2
+			- Homogenous recurrence form of function f is then here, (x[i; t+1] - a) =
+					= (x[i; t] - a) * (1 - 2 * parts)
+			- Iteration matrix is here C = (1 - 2 * parts) with eigenvalue lambda from
+					det(C - lambda * 1) = 0 ==> lambda = C
+			- Thus, iteration is stable if abs(lambda) < 1, here
+					abs(1 - 2 * parts) < 1 ==> abs(parts) < 1/2
+		*/
+		if (GE(parts, 0.5) && !(*ptr_stError)) {
+			swprintf("\n SOILWAT2 ERROR in soil temperature module: "
+				"stability criterion failed (%f < 0.5); soil temperature is being turned off\n",
+				parts);
+
+			(*ptr_stError) = swTRUE; /* Flag that an error has occurred */
+			// return;  //Exits the Function
+		}
+
+		part2 = sTempR[i - 1] - 2 * oldsTempR[i] + oldsTempR[i + 1];
+
+		sTempR[i] = oldsTempR[i] + parts * part2; // Parton (1978) eq. 2.21
+
+		#ifdef SWDEBUG
+		if (debug) {
+			swprintf("d(Tsoil[%d]) = %.2f from p1 = %.1f = dt(%.0f) / dX^2(%.0f) and "
+				"ps = %.2f = p1 * cs(%f) / (sh(%.3f) * rho[%d](%.2f))\n",
+				k, parts * part2, part1, dTime, squared(deltaX), parts, cs, sh,
+				k, bDensityR[k]);
+		}
+		#endif
+	}
+
+	// lower boundary condition
+	sTempR[nRgr + 1] = sTconst;
+
+	// update time step
+	delta_time[0] = delta_time[1];
+	delta_time[1] = dTime;
+}
+
+
 
 /**********************************************************************
- PURPOSE: Calculate soil temperature for each layer as described in Parton 1978, ch. 2.2.2 Temperature-profile Submodel, interpolation values are gotten from a mixture of interpolation & extrapolation
-// soil freezing based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
+ PURPOSE: Calculate soil temperature for each layer
+	* based on Parton 1978, ch. 2.2.2 Temperature-profile Submodel
+	* interpolation values are gotten from a mixture of interpolation & extrapolation
+	* soil freezing based on Eitzinger et al. 2000
 
-	@reference Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe. Soil Science 138:93-101.
+	@reference Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation
+		of A Daily Soil Temperature Submodel for Freezing/Thawing Periods.
+		Soil Science 165:525-534.
+	@reference Parton, W. J. 1978. Abiotic section of ELM. Pages 31–53 in G. S. Innis,
+		editor. Grassland simulation model. Springer, New York, NY.
+	@reference Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe.
+		Soil Science 138:93-101.
 
  *NOTE* There will be some degree of error because the original equation is written for soil layers of 15 cm.  if soil layers aren't all 15 cm then linear regressions are used to estimate the values (error should be relatively small though).
  *NOTE* Function might not work correctly if the maxDepth of the soil is > 180 cm, since Parton's equation goes only to 180 cm
@@ -1565,14 +1675,16 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	double sTemp[], double surfaceTemp[2], unsigned int nlyrs, double fc[], double wp[],
 	double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1,
 	double csParam2, double shParam, double snowdepth, double meanAirTemp, double deltaX,
-	double theMaxDepth, unsigned int nRgr, double snow) {
+	double theMaxDepth, unsigned int nRgr, double snow, Bool *ptr_stError) {
 
-	unsigned int i, k, sFadjusted_sTemp;
+	unsigned int i, sFadjusted_sTemp;
   #ifdef SWDEBUG
-  int debug = 0;
+  int debug = 1;
   #endif
-	double T1, cs, sh, pe, parts, part1, part2, vwc[nlyrs], vwcR[nRgr], sTempR[nRgr + 1];
+	double T1, vwc[nlyrs], vwcR[nRgr], sTempR[nRgr + 1];
 	static Bool do_once_at_soiltempError = swTRUE;
+	static double delta_time[2] = {SEC_PER_DAY, SEC_PER_DAY}; // yesterdays and todays time step in seconds; start out with 1 day
+
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
@@ -1608,7 +1720,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 		surfaceTemp[Today] = airTemp;
 		set_frozen_unfrozen(nlyrs, oldsTemp, swc, swc_sat, width);
-		soil_temperature_init(bDensity, width, surfaceTemp[Today], oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
+		soil_temperature_init(bDensity, width, surfaceTemp[Today], oldsTemp, meanAirTemp,
+			nlyrs, fc, wp, deltaX, theMaxDepth, nRgr, ptr_stError);
 	}
 
 
@@ -1616,7 +1729,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	if (GT(snowdepth, 0.0)) {
 		T1 = surface_temperature_under_snow(airTemp, snow);
 		#ifdef SWDEBUG
-		if (debug) swprintf("\nThere is snow on the ground, T1=%5.4f calculated using new equation from Parton 1998\n", T1);
+		if (debug) swprintf("\nThere is snow on the ground, T1=%f calculated using new equation from Parton 1998\n", T1);
 		#endif
 
 	} else {
@@ -1624,7 +1737,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 			T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
 			#ifdef SWDEBUG
 			if (debug) {
-				swprintf("\nT1 = %5.4f = %5.4f + (%5.4f * %5.4f * (1 - (%5.4f / %5.4f)) * (1 - (%5.4f / %5.4f)) ) )",
+				swprintf("\nT1 = %f = %f + (%f * %f * (1 - (%f / %f)) * (1 - (%f / %f)) ) )",
 					airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
 			}
 			#endif
@@ -1633,7 +1746,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 			T1 = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
 			#ifdef SWDEBUG
 			if (debug){
-				swprintf("\nT1 = %5.4f = %5.4f + ((%5.4f * (%5.4f - %5.4f)) / %5.4f)",
+				swprintf("\nT1 = %f = %f + ((%f * (%f - %f)) / %f)",
 					airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
 			}
 			#endif
@@ -1643,12 +1756,14 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	surfaceTemp[Yesterday] = surfaceTemp[Today];
 	surfaceTemp[Today] = T1;
 
-	if (SW_Soilwat.soiltempError) {
+	if (*ptr_stError) {
 		/* we return early (but after calculating surface temperature) and
 				without attempt to calculate soil temperature again */
 		if (do_once_at_soiltempError) {
-			// make sure that no soil layer is stuck in frozen status
-			ForEachSoilLayer(i) {
+			for (i = 0; i < nlyrs; i++) {
+				// reset soil temperature values
+				sTemp[i] = SW_MISSING;
+				// make sure that no soil layer is stuck in frozen status
 				st->lyrFrozen[i] = swFALSE;
 			}
 
@@ -1666,79 +1781,28 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	if (debug) {
 		swprintf("\nregression values:");
 		for (i = 0; i < nRgr; i++) {
-			swprintf("\nk %2d width %5.4f depth %5.4f vwcR %5.4f fcR %5.4f wpR %5.4f oldsTempR %5.4f bDensityR %5.4f",
+			swprintf("\nk %2d width %f depth %f vwcR %f fcR %f wpR %f oldsTempR %f bDensityR %f",
 			 i, deltaX, st->depthsR[i], vwcR[i], st->fcR[i], st->wpR[i], st->oldsTempR[i], st->bDensityR[i]);
 		}
 
 		swprintf("\nlayer values:");
 		for (i = 0; i < nlyrs; i++) {
-			swprintf("\ni %2d width %5.4f depth %5.4f vwc %5.4f fc %5.4f wp %5.4f oldsTemp %5.4f bDensity %5.4f",
+			swprintf("\ni %2d width %f depth %f vwc %f fc %f wp %f oldsTemp %f bDensity %f",
 			i, width[i], st->depths[i], vwc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
 		}
 	}
 	#endif
 
 	// calculate the new soil temperature for each layer
+	soil_temperature_today(delta_time, deltaX, T1, meanAirTemp, nRgr, sTempR, st->oldsTempR,
+		vwcR, st->wpR, st->fcR, st->bDensityR, csParam1, csParam2, shParam, ptr_stError);
 
-	sTempR[0] = T1; //index 0 indicates surface and not first layer
-	part1 = SEC_PER_DAY / squared(deltaX);
-	for (i = 1; i < nRgr + 1; i++) { // goes to nRgr, because the soil temp of the last interpolation layer (nRgr) is the meanAirTemp
-		k = i - 1;
-		pe = (vwcR[k] - st->wpR[k]) / (st->fcR[k] - st->wpR[k]); // the units are volumetric!
-		cs = csParam1 + (pe * csParam2); // Parton (1978) eq. 2.22: soil thermal conductivity; csParam1 = 0.0007, csParam2 = 0.0003
-		sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
-			// TODO: adjust thermal conductivity and heat capacity if layer is frozen
-		parts = part1 * cs / (sh * st->bDensityR[k]);
-
-		/* Check that approximation is stable
-			- Derivation to confirm Parton 1984: alpha * K * deltaT / deltaX ^ 2 <= 0.5
-			- Let f be a continuously differentiable function with attractive fixpoint f(a) = a;
-				then, for x elements of basin of attraction:
-					iteration x[n+1] = f(x[n]) is stable if spectral radius rho(f) < 1
-				with
-					rho(f) = max(abs(eigenvalues(iteration matrix)))
-			- Function f is here, x[i; t+1] = f(x[i; t]) =
-					= x[i; t] + parts * (str[i-1; t+1] - 2 * x[i; t] + str[i+1; t]) =
-					= x[i; t] * (1 - 2 * parts) + parts * (str[i-1; t+1] + str[i+1; t])
-			- Fixpoint a is then, using f(a) = a,
-					a = a * (1 - 2 * parts) + parts * (str[i-1; t+1] + str[i+1; t])
-					==> a = parts * (str[i-1; t+1] + str[i+1; t]) / (2 * parts) =
-								= (str[i-1; t+1] + str[i+1; t]) / 2
-			- Homogenous recurrence form of function f is then here, (x[i; t+1] - a) =
-					= (x[i; t] - a) * (1 - 2 * parts)
-			- Iteration matrix is here C = (1 - 2 * parts) with eigenvalue lambda from
-					det(C - lambda * 1) = 0 ==> lambda = C
-			- Thus, iteration is stable if abs(lambda) < 1, here
-					abs(1 - 2 * parts) < 1 ==> abs(parts) < 1/2
-		*/
-		if (GE(parts, 0.5) && !SW_Soilwat.soiltempError) {
-			swprintf("\n SOILWAT2 ERROR in soil temperature module: "
-				"stability criterion failed (%f < 0.5); soil temperature is being turned off\n",
-				parts);
-
-			SW_Soilwat.soiltempError = swTRUE; /* Flag that an error has occurred */
-			// return;  //Exits the Function
-		}
-
-		part2 = sTempR[i - 1] - 2 * st->oldsTempR[i] + st->oldsTempR[i + 1];
-
-		sTempR[i] = st->oldsTempR[i] + parts * part2; // Parton (1978) eq. 2.21
-
-		#ifdef SWDEBUG
-		if (debug) {
-			swprintf("\nk %d cs %5.4f sh %5.4f p1 %5.4f ps %5.4f p2 %5.4f p %5.4f",
-				k, cs, sh, part1, parts, part2, parts * part2);
-		}
-		#endif
-	}
-
-	sTempR[nRgr + 1] = meanAirTemp; // again... the last layer of the interpolation is set to the constant meanAirTemp
 
 	#ifdef SWDEBUG
 	if (debug) {
 		swprintf("\nSoil temperature profile values:");
 		for (i = 0; i <= nRgr + 1; i++) {
-			swprintf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f",
+			swprintf("\nk %d oldsTempR %f sTempR %f depth %f",
 				i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
 		}
 	}
@@ -1763,18 +1827,18 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 	#ifdef SWDEBUG
 	if (debug) {
-		swprintf("\nsTemp %5.4f surface; soil temperature adjusted by freeze/thaw: %i",
+		swprintf("\nsTemp %f surface; soil temperature adjusted by freeze/thaw: %i",
 			surfaceTemp[Today], sFadjusted_sTemp);
 
 		swprintf("\nSoil temperature profile values:");
 		for (i = 0; i <= nRgr + 1; i++) {
-			swprintf("\nk %d oldsTempR %5.4f sTempR %5.4f depth %5.4f",
+			swprintf("\nk %d oldsTempR %f sTempR %f depth %f",
 				i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
 		}
 
 		swprintf("\nSoil profile layer temperatures:");
 		for (i = 0; i < nlyrs; i++) {
-			swprintf("\ni %d oldTemp %5.4f sTemp %5.4f depth %5.4f frozen %d",
+			swprintf("\ni %d oldTemp %f sTemp %f depth %f frozen %d",
 				i, oldsTemp[i], sTemp[i], st->depths[i], st->lyrFrozen[i]);
 		}
 	}

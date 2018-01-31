@@ -147,6 +147,7 @@ void soil_temperature(double airTemp,
 					  double deltaX,
 					  double theMaxDepth,
 					  unsigned int nRgr,
-						double snow);
+						double snow,
+						Bool *ptr_stError);
 
 #endif
