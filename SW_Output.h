@@ -170,6 +170,23 @@ typedef struct {
 	void (*pfunc)(OutPeriod); /* pointer to output routine */
 } SW_OUTPUT;
 
+typedef struct {
+	// used in SW_Output.c for creating column headers
+	int col_status_dy,
+			col_status_wk,
+			col_status_mo,
+			col_status_yr;
+
+	int lastMonth,
+			lastWeek;
+
+	int finalValue_dy,
+			finalValue_wk,
+			finalValue_mo,
+			finalValue_yr;
+
+} SW_FILE_STATUS;
+
 /* convenience loops for consistency.
  * k must be a defined variable, either of OutKey type
  * or int (IntU is better).
