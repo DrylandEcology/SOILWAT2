@@ -1294,7 +1294,6 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 		swprintf("\nInit soil layer profile: nlyrs=%i, surfaceTemp=%2.2f, meanAirTemp=%2.2F;\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n", nlyrs, surfaceTemp, meanAirTemp, deltaX, theMaxDepth, nRgr);
   #endif
 
-
 	// init st
 	for (i = 0; i < nRgr + 1; i++) {
 		st->fcR[i] = 0.0;
@@ -1306,7 +1305,7 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 	}
 
 	// copy depths of soil layer profile
-	for (j = 0; j < nlyrs; j++) {
+	for (j = 0; j < nlyrs ; j++) {
 		acc += width[j];
 		st->depths[j] = acc;
     #ifdef SWDEBUG
@@ -1342,8 +1341,8 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 	for (i = 0; i < nRgr + 1; i++) {
 		acc = 0.0; // cumulative sum towards deltaX
 		while (x2 < nlyrs && acc < deltaX) { // there are soil layers to add
-			// add from previous (x1) soil layer
 			if (GT(d1, 0.0)) {
+        // add from previous (x1) soil layer
 				j = x1;
 				if (GT(d1, deltaX)) { // soil temperatur layer ends within x1-th soil layer
 					d2 = deltaX;
@@ -1374,7 +1373,6 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 			st->tlyrs_by_slyrs[i][x2] = -(deltaX - acc);
 		}
 	}
-
 	#ifdef SWDEBUG
 	if (debug) {
 		for (i = 0; i < nRgr + 1; i++) {
@@ -1384,7 +1382,6 @@ void soil_temperature_init(double bDensity[], double width[], double surfaceTemp
 		}
 	}
 	#endif
-
 	// calculate volumetric field capacity, volumetric wilting point, bulk density, and initial soil temperature for layers of the soil temperature profile
 	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, bDensity, nRgr, deltaX, st->bDensityR);
 	lyrSoil_to_lyrTemp_temperature(nlyrs, st->depths, oldsTemp, meanAirTemp, nRgr, st->depthsR, theMaxDepth, st->oldsTempR);

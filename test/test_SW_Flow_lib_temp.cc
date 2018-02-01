@@ -96,36 +96,89 @@ namespace {
     double surfaceTemp = 2.0, meanAirTemp = 5.0, deltaX = 15.0, theMaxDepth = 990.0;
     unsigned int nlyrs, nRgr = 65;
 
-    // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
-    /// generate inputs using a for loop
-    unsigned int i;
-    //nlyrs = MAX_LAYERS;
-    nlyrs = 8;
-    double width[] = {5, 5, 5, 10, 10, 10, 20, 20};
-    double oldsTemp[] = {1, 1, 1, 2, 2, 2, 3, 3};
-    double bDensity[nlyrs], fc[nlyrs], wp[nlyrs];
-    //double width[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    //double oldsTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-
-    for (i = 0; i < nlyrs; i++) {
-      bDensity[i] = RandNorm(1.,0.5);
-      fc[i] = RandNorm(1.5, 0.5);
-      wp[i] = fc[i] - 0.6; // wp will always be less than fc
-    }
+    // *****  Test when nlyrs = 1  ***** //
+    unsigned int i =0.;
+    nlyrs = 1;
+    double width[] = {20}, oldsTemp[] = {1};
+    double bDensity[] = {RandNorm(1.,0.5)}, fc[] = {RandNorm(1.5, 0.5)};
+    double wp[1];
+    wp[0]= fc[0] - 0.6; // wp will always be less than fc
 
     /// test standard conditions
     soil_temperature_init(bDensity, width, surfaceTemp, oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
 
-    EXPECT_EQ(stValues.depths[nlyrs - 1], 85); // sum of inputs width = maximum depth = 85
+    //Structure Tests
+    EXPECT_EQ(sizeof(stValues.tlyrs_by_slyrs), 21008.);//Is the structure the expected size? - This value is static.
+
+    for(unsigned int i = ceil(stValues.depths[nlyrs - 1]/deltaX); i < nRgr + 1; i++){
+        EXPECT_EQ(stValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
+        //Values should be equal to -deltaX when i > the depth of the soil profile/deltaX and j is == nlyrs
+    }
+
+    double acc = 0.0;
+    for (i = 0; i < nRgr + 1; i++) {
+      for (unsigned int j = 0; j < MAX_LAYERS + 1; j++) {
+        if (stValues.tlyrs_by_slyrs[i][j] >=0 ) {
+          acc += stValues.tlyrs_by_slyrs[i][j];
+        }
+      }
+    }
+    EXPECT_EQ(acc, stValues.depths[nlyrs - 1]); //The sum of all positive values should equal the maximum depth
+
+    // Other init test
+    EXPECT_EQ(stValues.depths[nlyrs - 1], 20); // sum of inputs width = maximum depth; in my example 295
     EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+
+
+    // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
+    /// generate inputs using a for loop
+    /* nlyrs = 8;
+    double width[] = {5, 5, 5, 10, 10, 10, 20, 20};
+    double oldsTemp[] = {1, 1, 1, 2, 2, 2, 3, 3};
+    double bDensity[nlyrs], fc[nlyrs], wp[nlyrs]; */
+    nlyrs = MAX_LAYERS;
+    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
+
+    for (i = 0; i < nlyrs; i++) {
+      bDensity2[i] = RandNorm(1.,0.5);
+      fc2[i] = RandNorm(1.5, 0.5);
+      wp2[i] = fc2[i] - 0.6; // wp will always be less than fc
+    }
+
+    soil_temperature_init(bDensity2, width2, surfaceTemp, oldsTemp2, meanAirTemp, nlyrs, fc2, wp2, deltaX, theMaxDepth, nRgr);
+
+    //Structure Tests
+    EXPECT_EQ(sizeof(stValues.tlyrs_by_slyrs), 21008.);//Is the structure the expected size? - This value is static.
+
+    for(unsigned int i = ceil(stValues.depths[nlyrs - 1]/deltaX); i < nRgr + 1; i++){
+        EXPECT_EQ(stValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
+        //Values should be equal to -deltaX when i > the depth of the soil profile/deltaX and j is == nlyrs
+    }
+
+    acc = 0.0;
+    for (unsigned int i = 0; i < nRgr + 1; i++) {
+      for (unsigned int j = 0; j < MAX_LAYERS + 1; j++) {
+        if (stValues.tlyrs_by_slyrs[i][j] >=0 ) {
+          acc += stValues.tlyrs_by_slyrs[i][j];
+        }
+      }
+    }
+    EXPECT_EQ(acc, stValues.depths[nlyrs - 1]); //The sum of all positive values should equal the maximum depth
+
+    // Other init test
+    EXPECT_EQ(stValues.depths[nlyrs - 1], 295); // sum of inputs width = maximum depth; in my example 295
+    EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
+
 
     /// test when theMaxDepth is less than soil layer depth
     theMaxDepth = 70.0;
 
-    //soil_temperature_init(bDensity, width, surfaceTemp, oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
-    //EXPECT_EQ(SW_Soilwat.partsError, 1);
-
-    EXPECT_DEATH(soil_temperature_init(bDensity, width, surfaceTemp, oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr),
+    EXPECT_DEATH(soil_temperature_init(bDensity2, width2, surfaceTemp, oldsTemp2, meanAirTemp, nlyrs, fc2, wp2, deltaX, theMaxDepth, nRgr),
      "@ generic.c LogError");
 
     // Reset to previous global state
