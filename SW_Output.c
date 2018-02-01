@@ -198,11 +198,11 @@ extern SW_VEGPROD SW_VegProd;
 extern SW_VEGESTAB SW_VegEstab;
 extern Bool EchoInits;
 extern SW_CARBON SW_Carbon;
+extern SW_FILE_STATUS Sw_File_Status; // use this to check if columns created and if first time in file (structure variable defined in SW_Control.c)
 #define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
 
 SW_OUTPUT SW_Output[SW_OUTNKEYS]; /* declared here, externed elsewhere */
 SW_OUTPUT SW_Output_Files; // need to store the filenames when created in the stat_Output_timestep_CSV_Summary functions for use in SW_Output.c
-SW_FILE_STATUS Sw_File_Status; // use this to check if columns created and if first time in file
 
 #ifdef RSOILWAT
 extern RealD *p_rOUT[SW_OUTNKEYS][SW_OUTNPERIODS];

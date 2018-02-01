@@ -46,7 +46,7 @@ extern SW_MODEL SW_Model;
 extern SW_VEGESTAB SW_VegEstab;
 extern SW_SITE SW_Site;
 extern SW_VEGPROD SW_VegProd;
-extern SW_FILE_STATUS Sw_File_Status;
+SW_FILE_STATUS Sw_File_Status; // structure created in SW_Output.h but created here since variables are first used in this file
 
 /* =================================================== */
 /*                Module-Level Declarations            */
