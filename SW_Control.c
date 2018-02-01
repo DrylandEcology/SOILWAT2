@@ -46,7 +46,7 @@ extern SW_MODEL SW_Model;
 extern SW_VEGESTAB SW_VegEstab;
 extern SW_SITE SW_Site;
 extern SW_VEGPROD SW_VegProd;
-SW_FILE_STATUS Sw_File_Status; // structure created in SW_Output.h but created here since variables are first used in this file
+SW_FILE_STATUS SW_File_Status; // structure created in SW_Output.h but created here since variables are first used in this file
 
 /* =================================================== */
 /*                Module-Level Declarations            */
@@ -69,13 +69,13 @@ void SW_CTL_main(void) {
   TimeInt *cur_yr = &SW_Model.year;
 
   // for use in SW_Output.c
-  Sw_File_Status.finalValue_dy = -1;
-  Sw_File_Status.finalValue_wk = -1;
-  Sw_File_Status.finalValue_mo = -1;
-  Sw_File_Status.finalValue_yr = -1;
+  SW_File_Status.finalValue_dy = -1;
+  SW_File_Status.finalValue_wk = -1;
+  SW_File_Status.finalValue_mo = -1;
+  SW_File_Status.finalValue_yr = -1;
 
-  Sw_File_Status.lastMonth = 0;
-  Sw_File_Status.lastWeek = 0;
+  SW_File_Status.lastMonth = 0;
+  SW_File_Status.lastWeek = 0;
 
   for (*cur_yr = SW_Model.startyr; *cur_yr <= SW_Model.endyr; (*cur_yr)++) {
     #ifdef SWDEBUG
