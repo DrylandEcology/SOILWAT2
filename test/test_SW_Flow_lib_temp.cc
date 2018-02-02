@@ -89,7 +89,7 @@ namespace {
     Reset_SOILWAT2_after_UnitTest();
   }
 
-  // Test the veg interception function 'soil_temperature_init'
+  // Test the soil temperature initialization function 'soil_temperature_init'
   TEST(SWFlowTempTest, SoilTemperatureInit) {
 
     // declare inputs and output
@@ -135,10 +135,6 @@ namespace {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
-    /* nlyrs = 8;
-    double width[] = {5, 5, 5, 10, 10, 10, 20, 20};
-    double oldsTemp[] = {1, 1, 1, 2, 2, 2, 3, 3};
-    double bDensity[nlyrs], fc[nlyrs], wp[nlyrs]; */
     nlyrs = MAX_LAYERS;
     double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
@@ -185,4 +181,89 @@ namespace {
     Reset_SOILWAT2_after_UnitTest();
   }
 
+  // Test lyrSoil_to_lyrTemp, lyrSoil_to_lyrTemp_temperature via
+  // soil_temperature_init & soil_temperature functions
+  TEST(SWFlowTempTest, SoilLayerInterpolationFunctions) {
+
+    // declare inputs and output
+    double surfaceTemp = 2.0, meanAirTemp = 5.0, deltaX = 15.0, theMaxDepth = 990.0;
+    unsigned int nlyrs, nRgr = 65;
+
+    // *****  Test when nlyrs = 1  ***** //
+    unsigned int i =0.;
+    nlyrs = 1;
+    double width[] = {20}, oldsTemp[] = {1};
+    double bDensity[] = {RandNorm(1.,0.5)}, fc[] = {RandNorm(1.5, 0.5)};
+    double wp[1];
+    wp[0]= fc[0] - 0.6; // wp will always be less than fc
+
+    soil_temperature_init(bDensity, width, surfaceTemp, oldsTemp, meanAirTemp, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr);
+
+    // lyrSoil_to_lyrTemp tests
+    for (i = 0; i < nRgr + 1; i++) {  // all Values should be greater than 0
+      EXPECT_GT(stValues.bDensityR[i], 0);
+      EXPECT_GT(stValues.fcR[i], 0);
+      EXPECT_GT(stValues.wpR[i], 0);
+    }
+
+    for (i = ceil(stValues.depths[nlyrs - 1]/deltaX) + 1; i < nRgr + 1; i++) {
+      //The TempLayer values that are at depths greater than the max SoilLayer depth should be uniform
+      EXPECT_EQ(stValues.bDensityR[i], stValues.bDensityR[i - 1]);
+      EXPECT_EQ(stValues.fcR[i], stValues.fcR[i - 1]);
+      EXPECT_EQ(stValues.wpR[i], stValues.wpR[i - 1]);
+      }
+
+    // lyrSoil_to_lyrTemp_temperature tests
+      double maxvalR = 0.;
+      for (i = 0; i < nRgr + 1; i++) {
+        EXPECT_GT(stValues.oldsTempR[i], -200); //Values interpolated into oldsTempR should be realistic
+        EXPECT_LT(stValues.oldsTempR[i], 200); //Values interpolated into oldsTempR should be realistic
+        if(GT(stValues.oldsTempR[i], maxvalR)) {
+          maxvalR = stValues.oldsTempR[i];
+        }
+      }
+      EXPECT_LE(maxvalR, meanAirTemp);//Maximum interpolated oldsTempR value should be less than or equal to maximum in oldsTemp2 (meanAirTemp = last layer)
+      EXPECT_EQ(stValues.oldsTempR[nRgr + 1], meanAirTemp); //Temperature in last interpolated layer should equal meanAirTemp
+
+    // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
+    /// generate inputs using a for loop
+    nlyrs = MAX_LAYERS;
+    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
+
+    for (i = 0; i < nlyrs; i++) {
+      bDensity2[i] = RandNorm(1.,0.5);
+      fc2[i] = RandNorm(1.5, 0.5);
+      wp2[i] = fc2[i] - 0.6; // wp will always be less than fc
+    }
+
+    soil_temperature_init(bDensity2, width2, surfaceTemp, oldsTemp2, meanAirTemp, nlyrs, fc2, wp2, deltaX, theMaxDepth, nRgr);
+
+    // lyrSoil_to_lyrTemp tests
+    for (i = 0; i < nRgr + 1; i++) {  // all Values should be greater than 0
+      EXPECT_GT(stValues.bDensityR[i], 0);
+      EXPECT_GT(stValues.fcR[i], 0);
+      EXPECT_GT(stValues.wpR[i], 0);
+    }
+
+    for (i = ceil(stValues.depths[nlyrs - 1]/deltaX) + 1; i < nRgr + 1; i++) {
+      //The TempLayer values that are at depths greater than the max SoilLayer depth should be uniform
+      EXPECT_EQ(stValues.bDensityR[i], stValues.bDensityR[i - 1]);
+      EXPECT_EQ(stValues.fcR[i], stValues.fcR[i - 1]);
+      EXPECT_EQ(stValues.wpR[i], stValues.wpR[i - 1]);
+      }
+
+    // lyrSoil_to_lyrTemp_temperature tests
+      maxvalR = 0.;
+      for (i = 0; i < nRgr + 1; i++) {
+        EXPECT_GT(stValues.oldsTempR[i], -200); //Values interpolated into oldsTempR should be realistic
+        EXPECT_LT(stValues.oldsTempR[i], 200); //Values interpolated into oldsTempR should be realistic
+        if(GT(stValues.oldsTempR[i], maxvalR)) {
+          maxvalR = stValues.oldsTempR[i];
+        }
+      }
+      EXPECT_LE(maxvalR, meanAirTemp);//Maximum interpolated oldsTempR value should be less than or equal to maximum in oldsTemp2 (meanAirTemp = last layer)
+      EXPECT_EQ(stValues.oldsTempR[nRgr + 1], meanAirTemp); //Temperature in last interpolated layer should equal meanAirTemp
+  }
 }
