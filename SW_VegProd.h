@@ -36,12 +36,6 @@
 
 #include "SW_Defines.h"    /* for tanfunc_t*/
 #include "Times.h" 				// for MAX_MONTHS
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 
 #define BIO_INDEX 0        /**< An integer representing the index of the biomass multipliers in the VegType#co2_multipliers 2D array. */
 #define WUE_INDEX 1        /**< An integer representing the index of the WUE multipliers in the VegType#co2_multipliers 2D array. */
@@ -63,8 +57,6 @@ typedef struct {
 
 	RealD shade_scale, /* scaling of live and dead biomass shading effects */
 	shade_deadmax; /* maximal dead biomass for shading effects */
-
-	RealD albedo;
 
 	RealD litter[MAX_MONTHS], /* monthly litter values (g/m**2)    */
 	biomass[MAX_MONTHS], /* monthly aboveground biomass (g/m**2) */
@@ -121,8 +113,6 @@ typedef struct {
 	RealD critSoilWater[NVEGTYPES]; // storing values in same order as defined in rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
 
 	int rank_SWPcrits[NVEGTYPES]; // array to store the SWP crits in order of lest negative to most negative (used in sxw_resource)
-
-	RealD bareGround_albedo; /* create this here instead of creating a bareGround VegType, because it only needs albedo and no other data member */
 
 	SW_VEGPROD_OUTPUTS dysum, /* helpful placeholder */
 		wksum, mosum, yrsum, /* accumulators for *avg */

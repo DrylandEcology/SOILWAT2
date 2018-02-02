@@ -33,12 +33,6 @@
 
 #include "Times.h"
 
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rconfig.h>
-#include <Rinternals.h>
-#endif
 
 /* These are the keywords to be found in the output setup file */
 /* some of them are from the old fortran model and are no longer */

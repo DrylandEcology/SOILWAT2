@@ -238,6 +238,8 @@ static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period
 
 static int useTimeStep; /* flag to determine whether or not the line TIMESTEP exists */
 
+const int array_size_veg_type = NVEGTYPES * NVEGTYPES;
+
 /* These MUST be in the same order as enum OutKey in
  * SW_Output.h */
 char const *key2str[] =
@@ -277,7 +279,7 @@ static void get_swpMatric(OutPeriod pd);
 static void get_swaBulk(OutPeriod pd);
 static void get_swaMatric(OutPeriod pd);
 static void get_swa(OutPeriod pd);
-static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p);
+static void get_dSWAbulk(RealF swa_master[array_size_veg_type][array_size_veg_type][MAX_LAYERS], int i, int p);
 static void get_surfaceWater(OutPeriod pd);
 static void get_runoffrunon(OutPeriod pd);
 static void get_transp(OutPeriod pd);
@@ -2889,6 +2891,7 @@ static void get_swa(OutPeriod pd)
 	#endif
 
 		LyrIndex i;
+		int j=0, k=0;
 		SW_SOILWAT *v = &SW_Soilwat;
 		RealD val = SW_MISSING;
 
@@ -2900,7 +2903,8 @@ static void get_swa(OutPeriod pd)
 		RealD val_shrub = SW_MISSING;
 		RealD val_grass = SW_MISSING;
 
-		RealF swa_master[16][16][20]; // veg_type, crit_val, layer (16x16 so we have room for all 4 crit values for all 4 veg types)
+		int array_size = NVEGTYPES * NVEGTYPES;
+		RealF swa_master[array_size][array_size][MAX_LAYERS]; // veg_type, crit_val, layer (16x16 so we have room for all 4 crit values for all 4 veg types)
 
 		get_outstrleader(pd);
 		ForEachSoilLayer(i)
@@ -2921,38 +2925,15 @@ static void get_swa(OutPeriod pd)
 				break;
 			}
 
-			// first set each veg type to its crit value defined by inputs
-			// calculate the SWA values
-			// for all veg types checking to see if set to be used or not in the .in files
-			if(SW_VegProd.veg[0].cov.fCover != 0)
-				val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[0]);
-			else
-				val_tree = 0.;
-			if(SW_VegProd.veg[1].cov.fCover != 0)
-				val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[1]);
-			else
-				val_shrub = 0.;
-			if(SW_VegProd.veg[3].cov.fCover != 0)
-				val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[3]);
-			else
-				val_grass = 0.;
-			if(SW_VegProd.veg[2].cov.fCover != 0)
-				val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[2]);
-			else
-				val_forb = 0.;
-
-				/*
-				// calculate swa available at all critical values for each veg type
-				*/
-				//swa_master [0=tree, 1=shrub, 2=grass, 3=forb]
-				swa_master[0][0][i] = val_tree;
-				swa_master[1][1][i] = val_shrub;
-				swa_master[2][2][i] = val_forb;
-				swa_master[3][3][i] = val_grass;
+			ForEachVegType(j){
+				if(SW_VegProd.veg[j].cov.fCover != 0)
+					swa_master[j][j][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[j]);
+				else
+					swa_master[j][j][i] = 0.;
+			}
 
 				// need to check which other critical value each veg_type has access to aside from its own
 				//(i.e. if shrub=-3.9 then it also has access to -3.5 and -2.0)
-				int j, k;
 				float curr_crit_val, new_crit_val;
 
 				// go through each veg type
@@ -2977,11 +2958,13 @@ static void get_swa(OutPeriod pd)
 						}
 					}
 				}
+				//int array_size = NVEGTYPES * NVEGTYPES;
+				//RealF dSWA_repartitioned_sum[array_size][array_size];
 				get_dSWAbulk(swa_master, i, -1); // call function to get repartioned swa values
 				// not using p for SOILWAT (only for STEPPE) so just passing -1 so it does not get used
 
 				// write values to string
-				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass);
+				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, swa_master[0][0][i], _Sep, swa_master[1][1][i], _Sep, swa_master[2][2][i], _Sep, swa_master[3][3][i]);
 				strcat(outstr, str);
 		}
 	#elif defined(STEPWAT)
@@ -3016,26 +2999,6 @@ static void get_swa(OutPeriod pd)
 					break;
 			}
 
-			// first set each veg type to its crit value defined by inputs
-			// calculate the SWA values
-			// for all veg types checking to see if set to be used or not in the .in files
-			if(SW_VegProd.veg[0].cov.fCover != 0)
-				val_tree = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[0]);
-			else
-				val_tree = 0.;
-			if(SW_VegProd.veg[1].cov.fCover != 0)
-				val_shrub = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[1]);
-			else
-				val_shrub = 0.;
-			if(SW_VegProd.veg[3].cov.fCover != 0)
-				val_grass = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[3]);
-			else
-				val_grass = 0.;
-			if(SW_VegProd.veg[2].cov.fCover != 0)
-				val_forb = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[2]);
-			else
-				val_forb = 0.;
-
 			// ########################################################################
 			// # Getting values for SWA_master at each critical value it has acess to #
 			// ########################################################################
@@ -3043,16 +3006,17 @@ static void get_swa(OutPeriod pd)
 			* Itclp(veg_type, crit_value, layer, timeperiod)
 			* in SWA_master index for both veg_type and crit_value [0=tree, 1=shrub, 2=grass, 3=forb]
 			*/
-			//yesterday_swa = SXW.SWA_master[Itclp(1,1,i,p)];
-			// first set each veg type to its crit value defined by inputs
-			SXW.SWA_master[Itclp(0,0,i,p)] = val_tree;
-			SXW.SWA_master[Itclp(1,1,i,p)] = val_shrub;
-			SXW.SWA_master[Itclp(2,2,i,p)] = val_forb;
-			SXW.SWA_master[Itclp(3,3,i,p)] = val_grass;
+
+			ForEachVegType(j){
+				if(SW_VegProd.veg[j].cov.fCover != 0)
+					SXW.SWA_master[Itclp(j,j,i,p)] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[j]);
+				else
+					SXW.SWA_master[Itclp(j,j,i,p)] = 0.;
+			}
 
 			// need to check which other critical value each veg_type has access to aside from its own
 			//(i.e. if shrub=-3.9 then it also has access to -3.5 and -2.0)
-			int j = 0, k = 0, curr_crit_rank_index = 0;
+			int curr_crit_rank_index = 0;
 			float curr_crit_val, new_crit_val;
 
 			// go through each veg type
@@ -3086,35 +3050,35 @@ static void get_swa(OutPeriod pd)
 			if (isPartialSoilwatOutput == FALSE)
 			{
 				// get old average for use in running square
-				float old_forb = SXW.SWAbulk_forb_avg[Iylp(Globals.currYear,i,p,0)];
-				float old_tree = SXW.SWAbulk_tree_avg[Iylp(Globals.currYear,i,p,0)];
-				float old_shrub = SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p,0)];
-				float old_grass = SXW.SWAbulk_grass_avg[Iylp(Globals.currYear,i,p,0)];
+				float old_forb = SXW.SWA_forb_avg[Iylp(Globals.currYear,i,p,0)];
+				float old_tree = SXW.SWA_tree_avg[Iylp(Globals.currYear,i,p,0)];
+				float old_shrub = SXW.SWA_shrub_avg[Iylp(Globals.currYear,i,p,0)];
+				float old_grass = SXW.SWA_grass_avg[Iylp(Globals.currYear,i,p,0)];
 
 				// get running average over all iterations
-				SXW.SWAbulk_forb_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW.SWAbulk_forb_avg[Iylp(Globals.currYear,i,p,0)], SXW.sum_dSWA_repartitioned[Ivlp(2,i,p)]);
-				SXW.SWAbulk_tree_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW.SWAbulk_tree_avg[Iylp(Globals.currYear,i,p,0)], SXW.sum_dSWA_repartitioned[Ivlp(0,i,p)]);
-				SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p,0)], SXW.sum_dSWA_repartitioned[Ivlp(1,i,p)]);
-				SXW.SWAbulk_grass_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW.SWAbulk_grass_avg[Iylp(Globals.currYear,i,p,0)], SXW.sum_dSWA_repartitioned[Ivlp(3,i,p)]);
+				SXW.SWA_forb_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW.SWA_forb_avg[Iylp(Globals.currYear,i,p,0)], SXW.sum_dSWA_repartitioned[Ivlp(2,i,p)]);
+				SXW.SWA_tree_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW.SWA_tree_avg[Iylp(Globals.currYear,i,p,0)], SXW.sum_dSWA_repartitioned[Ivlp(0,i,p)]);
+				SXW.SWA_shrub_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW.SWA_shrub_avg[Iylp(Globals.currYear,i,p,0)], SXW.sum_dSWA_repartitioned[Ivlp(1,i,p)]);
+				SXW.SWA_grass_avg[Iylp(Globals.currYear,i,p,0)] = get_running_avg(SXW.SWA_grass_avg[Iylp(Globals.currYear,i,p,0)], SXW.sum_dSWA_repartitioned[Ivlp(3,i,p)]);
 
 				// get running square over all iterations. Going to be used to get standard deviation
-				SXW.SWAbulk_forb_avg[Iylp(Globals.currYear,i,p,1)] = get_running_sqr(old_forb, SXW.sum_dSWA_repartitioned[Ivlp(2,i,p)], SXW.SWAbulk_forb_avg[Iylp(Globals.currYear,i,p,0)]);
-				SXW.SWAbulk_tree_avg[Iylp(Globals.currYear,i,p,1)] = get_running_sqr(old_tree, SXW.sum_dSWA_repartitioned[Ivlp(0,i,p)], SXW.SWAbulk_tree_avg[Iylp(Globals.currYear,i,p,0)]);
-				SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p,1)] = get_running_sqr(old_shrub, SXW.sum_dSWA_repartitioned[Ivlp(1,i,p)], SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p,0)]);
-				SXW.SWAbulk_grass_avg[Iylp(Globals.currYear,i,p,1)] = get_running_sqr(old_grass, SXW.sum_dSWA_repartitioned[Ivlp(2,i,p)], SXW.SWAbulk_grass_avg[Iylp(Globals.currYear,i,p,0)]);
+				SXW.SWA_forb_avg[Iylp(Globals.currYear,i,p,1)] = get_running_sqr(old_forb, SXW.sum_dSWA_repartitioned[Ivlp(2,i,p)], SXW.SWA_forb_avg[Iylp(Globals.currYear,i,p,0)]);
+				SXW.SWA_tree_avg[Iylp(Globals.currYear,i,p,1)] = get_running_sqr(old_tree, SXW.sum_dSWA_repartitioned[Ivlp(0,i,p)], SXW.SWA_tree_avg[Iylp(Globals.currYear,i,p,0)]);
+				SXW.SWA_shrub_avg[Iylp(Globals.currYear,i,p,1)] = get_running_sqr(old_shrub, SXW.sum_dSWA_repartitioned[Ivlp(1,i,p)], SXW.SWA_shrub_avg[Iylp(Globals.currYear,i,p,0)]);
+				SXW.SWA_grass_avg[Iylp(Globals.currYear,i,p,1)] = get_running_sqr(old_grass, SXW.sum_dSWA_repartitioned[Ivlp(2,i,p)], SXW.SWA_grass_avg[Iylp(Globals.currYear,i,p,0)]);
 
 
 				// divide by number of iterations at end to store average
 				if(Globals.currIter == Globals.runModelIterations){
 					// get standard deviation
-					float std_forb = sqrt(SXW.SWAbulk_forb_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
-					float std_tree = sqrt(SXW.SWAbulk_tree_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
-					float std_shrub = sqrt(SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
-					float std_grass = sqrt(SXW.SWAbulk_grass_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+					float std_forb = sqrt(SXW.SWA_forb_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+					float std_tree = sqrt(SXW.SWA_tree_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+					float std_shrub = sqrt(SXW.SWA_shrub_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
+					float std_grass = sqrt(SXW.SWA_grass_avg[Iylp(Globals.currYear,i,p,1)] / Globals.currIter);
 
-					sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWAbulk_tree_avg[Iylp(Globals.currYear,i,p,0)],
-					 	_Sep, std_tree, _Sep, SXW.SWAbulk_shrub_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_shrub, _Sep, SXW.SWAbulk_forb_avg[Iylp(Globals.currYear,i,p,0)],
-						_Sep, std_forb, _Sep, SXW.SWAbulk_grass_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_grass);
+					sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWA_tree_avg[Iylp(Globals.currYear,i,p,0)],
+					 	_Sep, std_tree, _Sep, SXW.SWA_shrub_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_shrub, _Sep, SXW.SWA_forb_avg[Iylp(Globals.currYear,i,p,0)],
+						_Sep, std_forb, _Sep, SXW.SWA_grass_avg[Iylp(Globals.currYear,i,p,0)], _Sep, std_grass);
 					strcat(outstr, str);
 				}
 				if (bFlush) p++;
@@ -3138,7 +3102,8 @@ static void get_swa(OutPeriod pd)
   \param swa_master. Takes in 2D array. This is specifically for SOILWAT standalone. STEPWAT passes in NULL since its values
 	are stored in struct
 */
-static void get_dSWAbulk(RealF swa_master[16][16][20], int i, int p){
+static void get_dSWAbulk(RealF swa_master[array_size_veg_type][array_size_veg_type][MAX_LAYERS], int i, int p){
+
 	int j,kv,curr_vegType,curr_crit_rank_index,kv_veg_type,prev_crit_veg_type,greater_veg_type;
 	float crit_val, prev_crit_val, smallestCritVal, largestCritVal, vegFractionSum, newFraction;
 
