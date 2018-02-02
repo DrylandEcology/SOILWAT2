@@ -1191,7 +1191,10 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[], 
 	#endif
 }
 
-void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrSoil, double width_Soil[], double var[], unsigned int nlyrTemp, double width_Temp, double res[]){
+void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrSoil,
+	double width_Soil[], double var[], unsigned int nlyrTemp, double width_Temp,
+	double res[]) {
+
 	unsigned int i, j = 0;
   #ifdef SWDEBUG
   int debug = 0;
@@ -1541,7 +1544,6 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
   int debug = 1;
   #endif
 
-
 	sTempR[0] = sT1; //upper boundary condition; index 0 indicates surface and not first layer
 	sTempR[nRgr + 1] = sTconst; // lower boundary condition; assuming that lowest layer is the depth of constant soil temperature
 
@@ -1566,6 +1568,20 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 				cs = csParam1 + (pe * csParam2); // Parton (1978) eq. 2.22: soil thermal conductivity; csParam1 = 0.0007, csParam2 = 0.0003
 				sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
 					// TODO: adjust thermal conductivity and heat capacity if layer is frozen
+
+				#ifdef SWDEBUG
+				if (debug) {
+					swprintf("step=%d/%d, sl=%d/%d: \n"
+						"\t* pe(%.3f) = (%.3f) / (%.3f) = (vwcR(%.3f) - wpR(%.3f)) / (fcR(%.3f) - wpR(%.3f));\n"
+						"\t* cs(%.3f) = csParam1(%.3f) + (pe * csParam2(%.5f))(%.3f);\n"
+						"\t* sh(%.3f) = vwcR + shParam(%.3f) * (1. - vwcR)(%.3f);\n",
+						m, Nsteps_per_day, i, k,
+						pe, vwcR[k] - wpR[k], fcR[k] - wpR[k], vwcR[k], wpR[k], fcR[k], wpR[k],
+						cs, csParam1, csParam2, pe * csParam2,
+						sh, shParam, 1. - vwcR[k]);
+				}
+				#endif
+
 				parts = part1 * cs / (sh * bDensityR[k]);
 
 				/* Check that approximation is stable
@@ -1713,16 +1729,12 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
   #ifdef SWDEBUG
   int debug = 1;
   #endif
-	double T1, vwc[nlyrs], vwcR[nRgr], sTempR[nRgr + 1];
+	double T1, vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], sTempR[MAX_ST_RGR + 1];
 	static Bool do_once_at_soiltempError = swTRUE;
 	static double delta_time = SEC_PER_DAY; // last successful time step in seconds; start out with 1 day
 
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
-
-	for (i = 0; i < nlyrs; i++) {
-		vwc[i] = swc[i] / width[i];
-	}
 
 	/* local variables explained:
 	 debug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
@@ -1807,6 +1819,10 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 
 	// calculate volumetric soil water content for soil temperature layers
+	for (i = 0; i < nlyrs; i++) {
+		vwc[i] = swc[i] / width[i];
+	}
+
 	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, vwc, nRgr, deltaX, vwcR);
 
   #ifdef SWDEBUG
@@ -1822,6 +1838,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 			swprintf("\ni %2d width %f depth %f vwc %f fc %f wp %f oldsTemp %f bDensity %f",
 			i, width[i], st->depths[i], vwc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
 		}
+		swprintf("\n");
 	}
 	#endif
 
