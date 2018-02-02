@@ -1535,7 +1535,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 	double oldsTempR2[MAX_ST_RGR + 1];
 	Bool Tsoil_not_exploided = swTRUE;
   #ifdef SWDEBUG
-  int debug = 1;
+  int debug = 0;
   #endif
 
 
