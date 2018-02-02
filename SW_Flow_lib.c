@@ -100,9 +100,6 @@
 #include "Times.h"
 
 
-#include "SW_Model.h"
-extern SW_MODEL SW_Model;
-
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
@@ -1541,7 +1538,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 	double oldsTempR2[MAX_ST_RGR + 1];
 	Bool Tsoil_not_exploided = swTRUE;
   #ifdef SWDEBUG
-  int debug = 1;
+  int debug = 0;
   #endif
 
 	sTempR[0] = sT1; //upper boundary condition; index 0 indicates surface and not first layer
@@ -1727,7 +1724,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 	unsigned int i, sFadjusted_sTemp;
   #ifdef SWDEBUG
-  int debug = 1;
+  int debug = 0;
   #endif
 	double T1, vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], sTempR[MAX_ST_RGR + 1];
 	static Bool do_once_at_soiltempError = swTRUE;
@@ -1907,7 +1904,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	}
 
 	#ifdef SWDEBUG
-	if (SW_Model.doy >= 10) {
+	if (debug) {
 		sw_error(-1, "Stop at end of soil temperature calculations");
 	}
 	#endif
