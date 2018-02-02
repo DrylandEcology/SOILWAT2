@@ -144,23 +144,6 @@ typedef struct {
 			first_orig, last_orig;
 	int yr_row, mo_row, wk_row, dy_row;
 	char *outfile; /* point to name of output file */
-	FILE *fp_dy; /* opened output file pointer for day*/
-	FILE *fp_wk; /* opened output file pointer for week*/
-	FILE *fp_mo; /* opened output file pointer for month*/
-	FILE *fp_yr; /* opened output file pointer for year*/
-	FILE *fp_dy_soil; /* opened output file pointer for day*/
-	FILE *fp_wk_soil; /* opened output file pointer for week*/
-	FILE *fp_mo_soil; /* opened output file pointer for month*/
-	FILE *fp_yr_soil; /* opened output file pointer for year*/
-
-	FILE *fp_dy_avg; /* opened output file pointer for day*/
-	FILE *fp_wk_avg; /* opened output file pointer for week*/
-	FILE *fp_mo_avg; /* opened output file pointer for month*/
-	FILE *fp_yr_avg; /* opened output file pointer for year*/
-	FILE *fp_dy_soil_avg; /* opened output file pointer for day*/
-	FILE *fp_wk_soil_avg; /* opened output file pointer for week*/
-	FILE *fp_mo_soil_avg; /* opened output file pointer for month*/
-	FILE *fp_yr_soil_avg; /* opened output file pointer for year*/
 	void (*pfunc)(OutPeriod); /* pointer to output routine */
 } SW_OUTPUT;
 
@@ -178,6 +161,24 @@ typedef struct {
 			finalValue_wk,
 			finalValue_mo,
 			finalValue_yr;
+
+	FILE *fp_dy; /* opened output file pointer for day*/
+	FILE *fp_wk; /* opened output file pointer for week*/
+	FILE *fp_mo; /* opened output file pointer for month*/
+	FILE *fp_yr; /* opened output file pointer for year*/
+	FILE *fp_dy_soil; /* opened output file pointer for day*/
+	FILE *fp_wk_soil; /* opened output file pointer for week*/
+	FILE *fp_mo_soil; /* opened output file pointer for month*/
+	FILE *fp_yr_soil; /* opened output file pointer for year*/
+
+	FILE *fp_dy_avg; /* opened output file pointer for day*/
+	FILE *fp_wk_avg; /* opened output file pointer for week*/
+	FILE *fp_mo_avg; /* opened output file pointer for month*/
+	FILE *fp_yr_avg; /* opened output file pointer for year*/
+	FILE *fp_dy_soil_avg; /* opened output file pointer for day*/
+	FILE *fp_wk_soil_avg; /* opened output file pointer for week*/
+	FILE *fp_mo_soil_avg; /* opened output file pointer for month*/
+	FILE *fp_yr_soil_avg; /* opened output file pointer for year*/
 
 } SW_FILE_STATUS;
 
