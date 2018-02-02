@@ -1237,7 +1237,6 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
 
 		#ifdef SWDEBUG
 		if (debug)
-			swprintf("\nConf A: acc=%2.2f, sum=%2.2f, res[%i]=%2.2f, var[%i]=%2.2f, [%i]=%2.2f, cor[%i][%i]=%2.2f, width_Soil[%i]=%2.2f, [%i]=%2.2f", acc, sum, i, res[i], j, var[j], j-1, var[j-1], i, j, cor[i][j], j, width_Soil[j], j-1, width_Soil[j-1]);
        swprintf("\n i = %u, j = %u, tempLyrVal=%2.2f,  soilLyrVal = %2.2f, cor[i][j] = %2.2f, ratio = %2.2f, acc=%2.2f,sum=%2.2f", i, j, res[i], var[j], cor[i][j], ratio, acc, sum);
 		#endif
 
