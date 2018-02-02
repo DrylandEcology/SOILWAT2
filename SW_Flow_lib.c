@@ -1533,8 +1533,9 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 	int i, k, m, Nsteps_per_day = 1;
 	double pe, cs, sh, part1, parts, part2;
 	double oldsTempR2[MAX_ST_RGR + 1];
+	Bool Tsoil_not_exploided = swTRUE;
   #ifdef SWDEBUG
-  int debug = 0;
+  int debug = 1;
   #endif
 
 
@@ -1544,7 +1545,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 	do {
 		/* loop through today's timesteps and soil layers to calculate soil temperature;
 			shorten time step if calculation is not stable (but break and error out if more
-			than 16 sub-time steps were required) */
+			than 16 sub-time steps were required or if soil temperature go beyond ± 100 C) */
 
 		part1 = *ptr_dTime / squared(deltaX);
 		Nsteps_per_day = SEC_PER_DAY / *ptr_dTime;
@@ -1606,6 +1607,13 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 						i, sTempR[i],  oldsTempR2[i], oldsTempR[i]);
 				}
 				#endif
+
+				// Sensibility check to cut-short exploding soil temperature values
+				if (GT(sTempR[i], 100.) || LT(sTempR[i], -100.)) {
+					Tsoil_not_exploided = swFALSE;
+					*ptr_stError = swTRUE;
+					break;
+				}
 			}
 
 			if (*ptr_stError) {
@@ -1619,7 +1627,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 			}
 		}
 
-	} while ((*ptr_stError) && Nsteps_per_day <= 16);
+	} while ((*ptr_stError) && Tsoil_not_exploided && Nsteps_per_day <= 16);
 
 }
 
