@@ -100,6 +100,9 @@
 #include "Times.h"
 
 
+#include "SW_Model.h"
+extern SW_MODEL SW_Model;
+
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
@@ -1708,7 +1711,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 	unsigned int i, sFadjusted_sTemp;
   #ifdef SWDEBUG
-  int debug = 0;
+  int debug = 1;
   #endif
 	double T1, vwc[nlyrs], vwcR[nRgr], sTempR[nRgr + 1];
 	static Bool do_once_at_soiltempError = swTRUE;
@@ -1887,8 +1890,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	}
 
 	#ifdef SWDEBUG
-	if (debug) {
-		// sw_error(-1, "Stop at end of soil temperature calculations");
+	if (SW_Model.doy >= 10) {
+		sw_error(-1, "Stop at end of soil temperature calculations");
 	}
 	#endif
 }
