@@ -1291,6 +1291,7 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 		for (j = 0; j < nlyrs + 1; j++) // last column is used for soil temperature layers that are deeper than the deepest soil profile layer
 			st->tlyrs_by_slyrs[i][j] = 0.0;
 	}
+	st->oldsTempR[nRgr + 1] = 0.0;
 
 	// copy depths of soil layer profile
 	for (j = 0; j < nlyrs + 1; j++) {
@@ -1559,7 +1560,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 		Nsteps_per_day = SEC_PER_DAY / *ptr_dTime;
 
 		// reset previous soil temperature values to yesterday's
-		for (i = 0; i < nRgr + 1; i++) {
+		for (i = 0; i <= nRgr + 1; i++) {
 			oldsTempR2[i] = oldsTempR[i];
 		}
 
