@@ -66,6 +66,7 @@ typedef struct {
 	vwcMatric[MAX_LAYERS], swcBulk[MAX_LAYERS], /* soil water content cm/layer */
 	swpMatric[MAX_LAYERS], /* soil water potential */
 	swaBulk[MAX_LAYERS], /* available soil water cm/layer, swc-(wilting point) */
+	SWA_VegType[NVEGTYPES][MAX_LAYERS],
 	swaMatric[MAX_LAYERS],
 	transp_total[MAX_LAYERS], transp[NVEGTYPES][MAX_LAYERS],
 	evap[MAX_LAYERS],

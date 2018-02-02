@@ -39,18 +39,10 @@
 # 'wk' for week, 'mo' for month, and 'yr' for year after TIMESTEP
 # in any order. For example: 'TIMESTEP mo wk' will output for month and week
 #
-# (1/9/2018) USE_TIMESTEP: this determines if the TIMESTEP or PERIOD is used to define time periods for each individual output variable.
-# If "USE_TIMESTEP = 0", then the time period for each output variable listed below will be determined by the PERIOD column. Note only 1 time period can be listed for each output variable using this option. 
-# Also note that all of the time periods specified in the PERIOD column must be listed after TIMESTEP, so the correct output files are generated.   
-# EX: if only using TRANSP and PRECIP and the periods are MO for TRANSP and DY for PRECIP TIMESTEP needs to be "TIMESTEP dy mo" so program knows to create day and month output files
-# If "USE_TIMESTEP = 1", then all output variables listed below will be outputted for the time periods specified after TIMESTEP (e.g. dy, yr). Note, this option allows for output variables to be generated for multiple time periods.
-# Also note that when using this option, each variable must only be listed once in the Table below. The PERIOD column is ignored with "USE_TIMESTEP = 1".
-#
 # To generate SWA output, the SWCBULK variable must also be requested.
 
 OUTSEP c
-USE_TIMESTEP 1
-TIMESTEP dy yr
+TIMESTEP dy yr # must be lowercase
 
 #      key     SUMTYPE   PERIOD   start    end    filename_prefix   comment
          TEMP     AVG       WK       1     end        temp_air      /* max., min, average temperature (C) */

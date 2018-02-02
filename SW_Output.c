@@ -350,7 +350,7 @@ void SW_OUT_construct(void)
 	/* =================================================== */
 	OutKey k;
 
-	// for use in SW_Output.c
+	// for use in creating the column headers for the output files
   SW_File_Status.finalValue_dy = -1;
   SW_File_Status.finalValue_wk = -1;
   SW_File_Status.finalValue_mo = -1;
@@ -358,6 +358,11 @@ void SW_OUT_construct(void)
 
   SW_File_Status.lastMonth = 0;
   SW_File_Status.lastWeek = 0;
+
+	SW_File_Status.col_status_dy = 0;
+	SW_File_Status.col_status_wk = 0;
+	SW_File_Status.col_status_mo = 0;
+	SW_File_Status.col_status_yr = 0;
 
 	/* note that an initializer that is called during
 	 * execution (better called clean() or something)
@@ -786,6 +791,7 @@ void SW_OUT_read(void)
 			sumtype[4], upsum[4], period[10], /* should be 2 chars, but we don't want overflow from user typos */
 			last[4], /* last doy for output, if "end", ==366 */
 			outfile[MAX_FILENAMESIZE];
+	int outfile_periods[4] = {0};
 	int first; /* first doy for output */
 
 	MyFileName = SW_F_name(eOutput);
@@ -803,15 +809,18 @@ void SW_OUT_read(void)
 		x = sscanf(inbuf, "%s %s %s %d %s %s", keyname, sumtype, period, &first,
 				last, outfile);
 
-		// checking weather to use timestep or not
-		if (Str_CompareI(keyname, "USE_TIMESTEP") == 0){
-			used_OUTNPERIODS = sscanf(inbuf, "%s %s", keyname, timeStep[0]);
-			if(strcmp(timeStep[0], "0") == 0)
-				useTimeStep = 0;
-			else
-				useTimeStep = 1;
- 		 	continue;
-	 	}
+		if((Str_CompareI(period, "DY") == 0) && outfile_periods[0] == 0){
+			outfile_periods[0] = 1;
+		}
+		if((Str_CompareI(period, "WK") == 0) && outfile_periods[1] == 0){
+			outfile_periods[1] = 1;
+		}
+		if((Str_CompareI(period, "MO") == 0) && outfile_periods[2] == 0){
+			outfile_periods[2] = 1;
+		}
+		if((Str_CompareI(period, "YR") == 0) && outfile_periods[3] == 0){
+			outfile_periods[3] = 1;
+		}
 
 		// condition to read in the TIMESTEP line in outsetup.in
 		if (Str_CompareI(keyname, (char *)"TIMESTEP") == 0)
@@ -821,9 +830,7 @@ void SW_OUT_read(void)
 					timeStep[1], timeStep[2], timeStep[3]);	// maximum number of possible timeStep is SW_OUTNPERIODS
 			used_OUTNPERIODS--; // decrement the count to make sure to not count keyname in the number of periods
 
-			// only do 1 period if not using timestep
-			if(useTimeStep == 0)
-				used_OUTNPERIODS = 1;
+			useTimeStep = 1;
 
 			char *dayCheck = strstr(inbuf, "dy");
 			char *weekCheck = strstr(inbuf, "wk");
@@ -832,7 +839,6 @@ void SW_OUT_read(void)
 
 			// Create Timestep files defined in outsetup.in
 			#if !defined(STEPWAT) && !defined(RSOILWAT)
-				//useTimeStep = 1;
 				// create file for defined timesteps
 				if(dayCheck != NULL)
 					stat_Output_Daily_CSV_Summary(-1);
@@ -976,6 +982,49 @@ void SW_OUT_read(void)
 		SW_Output[k].outfile = (char *) Str_Dup(outfile); //not really applicable
 #endif
 
+	}
+
+	// if usetimestep == 0 then create the files for the timeperiods defined
+	if(useTimeStep == 0){
+		used_OUTNPERIODS = 1;
+		#if !defined(STEPWAT) && !defined(RSOILWAT)
+			if(outfile_periods[0] == 1)
+				stat_Output_Daily_CSV_Summary(-1);
+			if(outfile_periods[1] == 1)
+				stat_Output_Weekly_CSV_Summary(-1);
+			if(outfile_periods[2] == 1)
+				stat_Output_Monthly_CSV_Summary(-1);
+			if(outfile_periods[3] == 1)
+				stat_Output_Yearly_CSV_Summary(-1);
+		#elif defined(STEPWAT)
+			// create output files if flag turned on and only for last iteration
+			if (isPartialSoilwatOutput == FALSE || storeAllIterations)
+			{
+				if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations-1)
+				{
+					// create file for defined timesteps
+					if(outfile_periods[0] == 1)
+						stat_Output_Daily_CSV_Summary(-1);
+					if(outfile_periods[1] == 1)
+						stat_Output_Weekly_CSV_Summary(-1);
+					if(outfile_periods[2] == 1)
+						stat_Output_Monthly_CSV_Summary(-1);
+					if(outfile_periods[3] == 1)
+						stat_Output_Yearly_CSV_Summary(-1);
+				}
+				if(storeAllIterations){
+					// create file for defined timesteps
+					if(outfile_periods[0] == 1)
+						stat_Output_Daily_CSV_Summary(Globals.currIter+1);
+					if(outfile_periods[1] == 1)
+						stat_Output_Weekly_CSV_Summary(Globals.currIter+1);
+					if(outfile_periods[2] == 1)
+						stat_Output_Monthly_CSV_Summary(Globals.currIter+1);
+					if(outfile_periods[3] == 1)
+						stat_Output_Yearly_CSV_Summary(Globals.currIter+1);
+				}
+			}
+		#endif
 	}
 
 	CloseFile(&f);
