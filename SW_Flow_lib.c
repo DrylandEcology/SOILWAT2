@@ -100,9 +100,6 @@
 #include "Times.h"
 
 
-#include "SW_Model.h"
-extern SW_MODEL SW_Model;
-
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
@@ -1543,9 +1540,6 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 	Bool Tsoil_not_exploided = swTRUE;
   #ifdef SWDEBUG
   int debug = 0;
-  if (SW_Model.year == 1980 && SW_Model.doy < 10) {
-    debug = 1;
-  }
   #endif
 
 	sTempR[0] = sT1; //upper boundary condition; index 0 indicates surface and not first layer
