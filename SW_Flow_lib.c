@@ -1291,7 +1291,7 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 	st->oldsTempR[nRgr + 1] = 0.0;
 
 	// copy depths of soil layer profile
-	for (j = 0; j < nlyrs + 1; j++) {
+	for (j = 0; j < nlyrs; j++) {
 		acc += width[j];
 		st->depths[j] = acc;
 	}
