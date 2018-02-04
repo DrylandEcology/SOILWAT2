@@ -1014,7 +1014,7 @@ void infiltrate_water_low(double swc[], double drain[], double *drainout, unsign
 	}
 
 	/* adjust (i.e., push water upwards) if water content of a layer is now above saturated water content */
-	for (j = nlyrs; j >= 0; j--) {
+	for (j = nlyrs - 1; j >= 0; j--) {
 		if (GT(swc[j], swcsat[j])) {
 			push = swc[j] - swcsat[j];
 			swc[j] -= push;
