@@ -79,7 +79,7 @@ void SW_CBN_read(void)
   SW_CARBON  *c   = &SW_Carbon;
 
   // For efficiency, don't read carbon.in if neither multiplier is being used
-  // We can do this because SW_CBN_CONSTRUCT already populated the multipliers with default values
+  // We can do this because SW_VPD_construct already populated the multipliers with default values
   if (!c->use_bio_mult && !c->use_wue_mult)
   {
     #ifdef SWDEBUG
