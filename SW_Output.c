@@ -237,8 +237,6 @@ static TimeInt tOffset; /* 1 or 0 means we're writing previous or current period
 
 static int useTimeStep; /* flag to determine whether or not the line TIMESTEP exists */
 
-const int array_size_veg_type = NVEGTYPES * NVEGTYPES;
-
 /* These MUST be in the same order as enum OutKey in
  * SW_Output.h */
 char const *key2str[] =
@@ -278,7 +276,7 @@ static void get_swpMatric(OutPeriod pd);
 static void get_swaBulk(OutPeriod pd);
 static void get_swaMatric(OutPeriod pd);
 static void get_swa(OutPeriod pd);
-static void get_dSWAbulk(RealF swa_master[array_size_veg_type][array_size_veg_type][MAX_LAYERS], int i, int p);
+static void get_dSWAbulk(RealF swa_master[NVEGTYPES][NVEGTYPES][MAX_LAYERS], int i, int p);
 static void get_surfaceWater(OutPeriod pd);
 static void get_runoffrunon(OutPeriod pd);
 static void get_transp(OutPeriod pd);
@@ -2960,8 +2958,7 @@ static void get_swa(OutPeriod pd)
 		RealD val_shrub = SW_MISSING;
 		RealD val_grass = SW_MISSING;
 
-		int array_size = NVEGTYPES * NVEGTYPES;
-		RealF swa_master[array_size][array_size][MAX_LAYERS]; // veg_type, crit_val, layer (16x16 so we have room for all 4 crit values for all 4 veg types)
+		RealF swa_master[NVEGTYPES][NVEGTYPES][MAX_LAYERS]; // veg_type, crit_val, layer
 
 		get_outstrleader(pd);
 		ForEachSoilLayer(i)
@@ -3159,7 +3156,7 @@ static void get_swa(OutPeriod pd)
   \param swa_master. Takes in 2D array. This is specifically for SOILWAT standalone. STEPWAT passes in NULL since its values
 	are stored in struct
 */
-static void get_dSWAbulk(RealF swa_master[array_size_veg_type][array_size_veg_type][MAX_LAYERS], int i, int p){
+static void get_dSWAbulk(RealF swa_master[NVEGTYPES][NVEGTYPES][MAX_LAYERS], int i, int p){
 
 	int j,kv,curr_vegType,curr_crit_rank_index,kv_veg_type,prev_crit_veg_type,greater_veg_type;
 	float crit_val, prev_crit_val, smallestCritVal, largestCritVal, vegFractionSum, newFraction;
@@ -3170,8 +3167,8 @@ static void get_dSWAbulk(RealF swa_master[array_size_veg_type][array_size_veg_ty
 		int array_size = NVEGTYPES * NVEGTYPES;
 		smallestCritVal = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[0]];
 		largestCritVal = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[NVEGTYPES-1]]; // largest index
-		RealF dSWA_bulk[array_size][array_size][array_size + NVEGTYPES];
-		RealF dSWA_bulk_repartioned[array_size][array_size][array_size + NVEGTYPES];
+		RealF dSWA_bulk[array_size][array_size][MAX_LAYERS];
+		RealF dSWA_bulk_repartioned[array_size][array_size][MAX_LAYERS];
 		RealF dSWA_repartitioned_sum[array_size][array_size];
 
 		// loop through each veg type to get dSWAbulk
