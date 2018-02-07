@@ -208,7 +208,7 @@ extern int logged; /* REQUIRED */
 
 // 06/26/2013 (dlm)	powe(): an alternate definition of pow(x, y) for x>0... this is faster (ca. 20%) then the one in math.h, but comes with a cost as the precision is slightly lower.  The measured precision drop I was getting was at max a relative error of about 100 billion percent (12 places after the decimal point) per calculation though so I don't think it's a big deal... (though it's hard to even accurately tell)
 #define powe(x, y) (exp((y) * log(x))) //x^y == exponential(y * ln(x)) or e^(y * ln(x)).  NOTE: this will only work when x > 0 I believe
-#define squared(x) (x) * (x) // added for convenience
+#define squared(x) ((x) * (x)) // added for convenience
 
 /***************************************************
  * Function definitions
