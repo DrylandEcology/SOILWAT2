@@ -66,7 +66,7 @@ typedef struct {
 	vwcMatric[MAX_LAYERS], swcBulk[MAX_LAYERS], /* soil water content cm/layer */
 	swpMatric[MAX_LAYERS], /* soil water potential */
 	swaBulk[MAX_LAYERS], /* available soil water cm/layer, swc-(wilting point) */
-	SWA_VegType[NVEGTYPES][MAX_LAYERS],
+	SWA_VegType[MAX_LAYERS],
 	swaMatric[MAX_LAYERS],
 	transp_total[MAX_LAYERS], transp[NVEGTYPES][MAX_LAYERS],
 	evap[MAX_LAYERS],
@@ -95,6 +95,7 @@ typedef struct {
 	/* current daily soil water related values */
 	Bool is_wet[MAX_LAYERS]; /* swc sufficient to count as wet today */
 	RealD swcBulk[TWO_DAYS][MAX_LAYERS],
+		SWA_VegType[TWO_DAYS][MAX_LAYERS],
 		snowpack[TWO_DAYS], /* swe of snowpack, if accumulation flag set */
 		snowdepth,
 		transpiration[NVEGTYPES][MAX_LAYERS],

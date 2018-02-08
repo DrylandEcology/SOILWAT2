@@ -1681,8 +1681,9 @@ void SW_OUT_write_today(void)
 
 			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
 				populate_output_values(reg_file_vals_year, soil_file_vals_year, k, 4, 0);
-			if(storeAllIterations)
+			if(storeAllIterations){
 				populate_output_values(reg_file_vals_year_iters, soil_file_vals_year_iters, k, 4, 1);
+			}
 
 			if(k == SW_File_Status.finalValue_yr){
 				if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations && soil_file_vals_year[0] != 0){
@@ -2953,11 +2954,6 @@ static void get_swa(OutPeriod pd)
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		char str[OUTSTRLEN];
 
-		RealD val_forb = SW_MISSING;
-		RealD val_tree = SW_MISSING;
-		RealD val_shrub = SW_MISSING;
-		RealD val_grass = SW_MISSING;
-
 		RealF swa_master[NVEGTYPES][NVEGTYPES][MAX_LAYERS]; // veg_type, crit_val, layer
 
 		get_outstrleader(pd);
@@ -2966,16 +2962,20 @@ static void get_swa(OutPeriod pd)
 			switch (pd)
 			{
 			case eSW_Day:
-				val = v->dysum.swcBulk[i];
+				val = v->dysum.SWA_VegType[i];
+				//val = v->dysum.swcBulk[i];
 				break;
 			case eSW_Week:
-				val = v->wkavg.swcBulk[i];
+				//val = v->wkavg.swcBulk[i];
+				val = v->wkavg.SWA_VegType[i];
 				break;
 			case eSW_Month:
-				val = v->moavg.swcBulk[i];
+				//val = v->moavg.swcBulk[i];
+				val = v->moavg.SWA_VegType[i];
 				break;
 			case eSW_Year:
-				val = v->yravg.swcBulk[i];
+				//val = v->yravg.swcBulk[i];
+				val = v->yravg.SWA_VegType[i];
 				break;
 			}
 
@@ -3033,23 +3033,25 @@ static void get_swa(OutPeriod pd)
 					p = SW_Model.doy-1;
 					if(p == 0)
 						memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
-					val = v->dysum.swcBulk[i];
+					//val = v->dysum.swcBulk[i];
+					val = v->dysum.SWA_VegType[i];
 					break;
 				case eSW_Week:
 					p = SW_Model.week-tOffset;
 					if(p == 0)
 						memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
-					val = v->wkavg.swcBulk[i];
+					val = v->wkavg.SWA_VegType[i];
 					break;
 				case eSW_Month:
 					p = SW_Model.month-tOffset;
 					if(p == 0)
 						memset(SXW.sum_dSWA_repartitioned, 0, sizeof(SXW.sum_dSWA_repartitioned)); // need to reset sum_dSWA_repartitioned each year
-					val = v->moavg.swcBulk[i];
+					val = v->moavg.SWA_VegType[i];
 					break;
 				case eSW_Year:
 					p = Globals.currYear - 1;
-					val = v->yravg.swcBulk[i];
+					val = v->yravg.SWA_VegType[i];
+					//val = v->yravg.SWA_VegType[i];
 					break;
 			}
 
@@ -3101,6 +3103,12 @@ static void get_swa(OutPeriod pd)
 			get_dSWAbulk(NULL, i, p); // need to call this function to calculate correct amount of SWA
 			// values calculated here will be stored in output file
 
+			if(storeAllIterations){
+				sprintf(str_iters, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW.sum_dSWA_repartitioned[Ivlp(0,i,p)], _Sep, SXW.sum_dSWA_repartitioned[Ivlp(1,i,p)], _Sep,
+				 SXW.sum_dSWA_repartitioned[Ivlp(2,i,p)], _Sep, SXW.sum_dSWA_repartitioned[Ivlp(3,i,p)]);
+				strcat(outstr_all_iters, str_iters);
+			}
+
 			if (isPartialSoilwatOutput == FALSE)
 			{
 				// get old average for use in running square
@@ -3136,11 +3144,6 @@ static void get_swa(OutPeriod pd)
 					strcat(outstr, str);
 				}
 				if (bFlush) p++;
-			}
-			if(storeAllIterations){
-				sprintf(str_iters, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW.sum_dSWA_repartitioned[Ivlp(0,i,p)], _Sep, SXW.sum_dSWA_repartitioned[Ivlp(1,i,p)], _Sep,
-				 SXW.sum_dSWA_repartitioned[Ivlp(2,i,p)], _Sep, SXW.sum_dSWA_repartitioned[Ivlp(3,i,p)]);
-				strcat(outstr_all_iters, str_iters);
 			}
 		}
 	#endif
@@ -6500,6 +6503,8 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	case eSW_SWA: /* get swaBulk and convert later */
+		ForEachSoilLayer(i)
+			s->SWA_VegType[i] += v->swcBulk[Today][i];
 		break;
 
 	case eSW_SurfaceWater:
@@ -6766,6 +6771,11 @@ static void average_for(ObjType otyp, OutPeriod pd)
 			break;
 
 		case eSW_SWA:
+			ForEachSoilLayer(i)
+				savg->SWA_VegType[i] =
+						(SW_Output[k].sumtype == eSW_Fnl) ?
+								SW_Soilwat.swcBulk[Yesterday][i] :
+								ssumof->swcBulk[i] / div;
 			break;
 
 		case eSW_DeepSWC:
