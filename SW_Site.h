@@ -113,7 +113,7 @@ typedef struct {
 		csParam2,
 		shParam,	/* shParam is the parameter for the specific heat capacity equation */
 		bmLimiter,	/* bmLimiter is the biomass limiter constant, for use in the T1 equation */
-		meanAirTemp, 	/* meanAirTemp is the mean air temperature for last year, it's a constant read in from the siteparams.in file used in soil_temperature function */
+		Tsoil_constant, 	/* soil temperature at a depth where soil temperature is (mostly) constant in time; for instance, approximated as the mean air temperature */
 		stDeltaX,		/* for the soil_temperature function, deltaX is the distance between profile points (default: 15) */
 		stMaxDepth,		/* for the soil_temperature function, the maxDepth of the interpolation function */
 		percentRunoff,	/* the percentage of surface water lost daily */

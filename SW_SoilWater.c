@@ -296,7 +296,7 @@ void SW_WaterBalance_Checks(void)
 void SW_SWC_construct(void) {
 	/* =================================================== */
 
-	SW_Soilwat.partsError = swFALSE;
+	SW_Soilwat.soiltempError = swFALSE;
 
 	temp_snow = 0.;
 

@@ -84,8 +84,6 @@ typedef struct {
 			deep,
 			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
 			surfaceTemp; // soil surface temperature
-
-	Bool partsError;  // soil temperature error indicator
 } SW_SOILWAT_OUTPUTS;
 
 
@@ -110,7 +108,7 @@ typedef struct {
 		sTemp[MAX_LAYERS],
 		surfaceTemp; // soil surface temperature
 
-	Bool partsError; // soil temperature error indicator
+	Bool soiltempError; // soil temperature error indicator
 	#ifdef SWDEBUG
 	int wbError[N_WBCHECKS]; /* water balance and water cycling error indicators (currently 8)
 	    0, no error detected; > 0, number of errors detected */

@@ -143,10 +143,11 @@ void soil_temperature(double airTemp,
 					  double csParam2,
 					  double shParam,
 		              double snowdepth,
-					  double meanAirTemp,
+					  double sTconst,
 					  double deltaX,
 					  double theMaxDepth,
 					  unsigned int nRgr,
-						double snow);
+						double snow,
+						Bool *ptr_stError);
 
 #endif

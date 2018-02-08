@@ -339,7 +339,7 @@ void SW_SIT_read(void) {
 			v->shParam = atof(inbuf);
 			break;
 		case 33:
-			v->meanAirTemp = atof(inbuf);
+			v->Tsoil_constant = atof(inbuf);
 			break;
 		case 34:
 			v->stDeltaX = atof(inbuf);
@@ -774,7 +774,7 @@ void _echo_inputs(void) {
 	LogError(logfp, LOGNOTE, "  csParam1: %5.4f\n", s->csParam1);
 	LogError(logfp, LOGNOTE, "  csParam2: %5.4f\n", s->csParam2);
 	LogError(logfp, LOGNOTE, "  shParam: %5.4f\n", s->shParam);
-	LogError(logfp, LOGNOTE, "  meanAirTemp: %5.4f\n", s->meanAirTemp);
+	LogError(logfp, LOGNOTE, "  Tsoil_constant: %5.4f\n", s->Tsoil_constant);
 	LogError(logfp, LOGNOTE, "  deltaX: %5.4f\n", s->stDeltaX);
 	LogError(logfp, LOGNOTE, "  max depth: %5.4f\n", s->stMaxDepth);
 	LogError(logfp, LOGNOTE, "  Make soil temperature calculations: %s\n", (s->use_soil_temp) ? "swTRUE" : "swFALSE");
