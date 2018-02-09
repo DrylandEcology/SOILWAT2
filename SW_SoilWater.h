@@ -66,7 +66,7 @@ typedef struct {
 	vwcMatric[MAX_LAYERS], swcBulk[MAX_LAYERS], /* soil water content cm/layer */
 	swpMatric[MAX_LAYERS], /* soil water potential */
 	swaBulk[MAX_LAYERS], /* available soil water cm/layer, swc-(wilting point) */
-	SWA_VegType[MAX_LAYERS],
+	SWA_VegType[NVEGTYPES][MAX_LAYERS],
 	swaMatric[MAX_LAYERS],
 	transp_total[MAX_LAYERS], transp[NVEGTYPES][MAX_LAYERS],
 	evap[MAX_LAYERS],
@@ -109,6 +109,9 @@ typedef struct {
 		sTemp[MAX_LAYERS],
 		surfaceTemp; // soil surface temperature
 
+	RealF swa_master[NVEGTYPES][NVEGTYPES][MAX_LAYERS]; // veg_type, crit_val, layer
+	RealF dSWA_repartitioned_sum[NVEGTYPES][MAX_LAYERS];
+
 	Bool soiltempError; // soil temperature error indicator
 	#ifdef SWDEBUG
 	int wbError[N_WBCHECKS]; /* water balance and water cycling error indicators (currently 8)
@@ -129,6 +132,7 @@ void SW_SWC_new_year(void);
 void SW_SWC_read(void);
 void _read_swc_hist(TimeInt year);
 void SW_SWC_water_flow(void);
+void calculate_repartitioned_soilwater(void);
 void SW_SWC_adjust_swc(TimeInt doy);
 void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
   RealD *snow, RealD *snowmelt);
@@ -138,6 +142,7 @@ void SW_SWC_end_day(void);
 RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n);
 RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n);
 RealD SW_VWCBulkRes(RealD fractionGravel, RealD sand, RealD clay, RealD porosity);
+void get_dSWAbulk2(int i);
 
 #ifdef DEBUG_MEM
 void SW_SWC_SetMemoryRefs(void);
