@@ -16,6 +16,7 @@
 #include "filefuncs.h"
 #include "generic.h"
 #include "myMemory.h"
+
 #include "SW_Defines.h"
 #include "SW_Files.h"
 #include "SW_Output.h"
@@ -427,48 +428,64 @@ char **getfiles(const char *fspec, int *nfound) {
 void stat_Output_Daily_CSV_Summary(int iteration)
 {
 	if(iteration == -1){ // just storing average values over all iterations or soilwat standalone
-		SW_File_Status.fp_dy_avg = OpenFile(SW_F_name(eOutputDaily), "w");
-		SW_File_Status.fp_dy_soil_avg = OpenFile(SW_F_name(eOutputDaily_soil), "w");
+    if(SW_File_Status.make_regular)
+      SW_File_Status.fp_dy_avg = OpenFile(SW_F_name(eOutputDaily), "w");
+    if(SW_File_Status.make_soil)
+      SW_File_Status.fp_dy_soil_avg = OpenFile(SW_F_name(eOutputDaily_soil), "w");
 	}
 	else{ // storing values for every iteration
 		if(iteration > 1){
-			CloseFile(&SW_File_Status.fp_dy);
-			CloseFile(&SW_File_Status.fp_dy_soil);
+      if(SW_File_Status.make_regular)
+			   CloseFile(&SW_File_Status.fp_dy);
+      if(SW_File_Status.make_soil)
+			   CloseFile(&SW_File_Status.fp_dy_soil);
 		}
-		char *newFile_split; // new file to create
-		char *newFile_soil_split;
-		char newFile_soil[80];
-		char newFile[80];
-		char *extension; // extension to add to end of file
-		char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputDaily))+1);
-		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputDaily_soil))+1);
-		char iterationToString[10];
 
-		strcpy(fileDup, SW_F_name(eOutputDaily)); // copy file name to new variable
-		strcpy(fileDup_soil, SW_F_name(eOutputDaily_soil)); // copy file name to new variable
+    char *extension; // extension to add to end of file
+    char iterationToString[10];
 
-		sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
-		extension = strtok(fileDup, ".");
-		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
+    if(SW_File_Status.make_regular){
+        char *newFile_split; // new file to create
+        char newFile[80];
+        char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputDaily))+1);
 
-		newFile_split = strtok(SW_F_name(eOutputDaily), "."); // get filename up to but not including ".csv"
-		strcpy(newFile, newFile_split);
-		strcat(newFile, "_");
-		strcat(newFile, iterationToString);
-		strcat(newFile, ".");
-		strcat(newFile, extension);
-		SW_File_Status.fp_dy = OpenFile(newFile, "w"); // open new file
+        strcpy(fileDup, SW_F_name(eOutputDaily)); // copy file name to new variable
 
-		newFile_soil_split = strtok(SW_F_name(eOutputDaily_soil), "."); // get filename up to but not including ".csv"
-		strcpy(newFile_soil, newFile_soil_split);
-		strcat(newFile_soil, "_");
-		strcat(newFile_soil, iterationToString);
-		strcat(newFile_soil, ".");
-		strcat(newFile_soil, extension);
-		SW_File_Status.fp_dy_soil = OpenFile(newFile_soil, "w"); // open new file
+        sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
+    		extension = strtok(fileDup, ".");
+    		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
 
-		free(fileDup);
-		free(fileDup_soil);
+    		newFile_split = strtok(SW_F_name(eOutputDaily), "."); // get filename up to but not including ".csv"
+    		strcpy(newFile, newFile_split);
+    		strcat(newFile, "_");
+    		strcat(newFile, iterationToString);
+    		strcat(newFile, ".");
+    		strcat(newFile, extension);
+    		SW_File_Status.fp_dy = OpenFile(newFile, "w"); // open new file
+
+        free(fileDup);
+    }
+    if(SW_File_Status.make_soil){
+  		char *newFile_soil_split;
+  		char newFile_soil[80];
+  		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputDaily_soil))+1);
+
+  		strcpy(fileDup_soil, SW_F_name(eOutputDaily_soil)); // copy file name to new variable
+
+  		sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
+  		extension = strtok(fileDup_soil, ".");
+  		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
+
+  		newFile_soil_split = strtok(SW_F_name(eOutputDaily_soil), "."); // get filename up to but not including ".csv"
+  		strcpy(newFile_soil, newFile_soil_split);
+  		strcat(newFile_soil, "_");
+  		strcat(newFile_soil, iterationToString);
+  		strcat(newFile_soil, ".");
+  		strcat(newFile_soil, extension);
+  		SW_File_Status.fp_dy_soil = OpenFile(newFile_soil, "w"); // open new file
+
+  		free(fileDup_soil);
+    }
 	}
 }
 
@@ -484,48 +501,65 @@ void stat_Output_Daily_CSV_Summary(int iteration)
 void stat_Output_Weekly_CSV_Summary(int iteration)
 {
 	if(iteration == -1){ // just storing average values over all iterations
-		SW_File_Status.fp_wk_avg = OpenFile(SW_F_name(eOutputWeekly), "w");
-		SW_File_Status.fp_wk_soil_avg = OpenFile(SW_F_name(eOutputWeekly_soil), "w");
+    if(SW_File_Status.make_regular)
+		  SW_File_Status.fp_wk_avg = OpenFile(SW_F_name(eOutputWeekly), "w");
+    if(SW_File_Status.make_soil)
+		  SW_File_Status.fp_wk_soil_avg = OpenFile(SW_F_name(eOutputWeekly_soil), "w");
 	}
 	else{ // storing values for every iteration
 		if(iteration > 1){
-			CloseFile(&SW_File_Status.fp_wk);
-			CloseFile(&SW_File_Status.fp_wk_soil);
+      if(SW_File_Status.make_regular)
+			   CloseFile(&SW_File_Status.fp_wk);
+      if(SW_File_Status.make_soil)
+        CloseFile(&SW_File_Status.fp_wk_soil);
 		}
-		char *newFile_split; // new file to create
-		char *newFile_soil_split;
-		char newFile_soil[80];
-		char newFile[80];
-		char *extension; // extension to add to end of file
-		char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputWeekly))+1);
-		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputWeekly_soil))+1);
-		char iterationToString[10];
 
-		strcpy(fileDup, SW_F_name(eOutputWeekly)); // copy file name to new variable
-		strcpy(fileDup_soil, SW_F_name(eOutputWeekly_soil)); // copy file name to new variable
+    char *extension; // extension to add to end of file
+    char iterationToString[10];
 
-		sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
-		extension = strtok(fileDup, ".");
-		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
+    if(SW_File_Status.make_regular){
+        char *newFile_split; // new file to create
+        char newFile[80];
+        char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputWeekly))+1);
+        strcpy(fileDup, SW_F_name(eOutputWeekly)); // copy file name to new variable
 
-		newFile_split = strtok(SW_F_name(eOutputWeekly), "."); // get filename up to but not including ".csv"
-		strcpy(newFile, newFile_split);
-		strcat(newFile, "_");
-		strcat(newFile, iterationToString);
-		strcat(newFile, ".");
-		strcat(newFile, extension);
-		SW_File_Status.fp_wk = OpenFile(newFile, "w"); // open new file
+        sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
+    		extension = strtok(fileDup, ".");
+    		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
 
-		newFile_soil_split = strtok(SW_F_name(eOutputWeekly_soil), "."); // get filename up to but not including ".csv"
-		strcpy(newFile_soil, newFile_soil_split);
-		strcat(newFile_soil, "_");
-		strcat(newFile_soil, iterationToString);
-		strcat(newFile_soil, ".");
-		strcat(newFile_soil, extension);
-		SW_File_Status.fp_wk_soil = OpenFile(newFile_soil, "w"); // open new file
+        newFile_split = strtok(SW_F_name(eOutputWeekly), "."); // get filename up to but not including ".csv"
+    		strcpy(newFile, newFile_split);
+    		strcat(newFile, "_");
+    		strcat(newFile, iterationToString);
+    		strcat(newFile, ".");
+    		strcat(newFile, extension);
+    		SW_File_Status.fp_wk = OpenFile(newFile, "w"); // open new file
 
-		free(fileDup);
-		free(fileDup_soil);
+        free(fileDup);
+    }
+
+    if(SW_File_Status.make_soil){
+  		char *newFile_soil_split;
+  		char newFile_soil[80];
+
+  		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputWeekly_soil))+1);
+
+  		strcpy(fileDup_soil, SW_F_name(eOutputWeekly_soil)); // copy file name to new variable
+
+  		sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
+  		extension = strtok(fileDup_soil, ".");
+  		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
+
+  		newFile_soil_split = strtok(SW_F_name(eOutputWeekly_soil), "."); // get filename up to but not including ".csv"
+  		strcpy(newFile_soil, newFile_soil_split);
+  		strcat(newFile_soil, "_");
+  		strcat(newFile_soil, iterationToString);
+  		strcat(newFile_soil, ".");
+  		strcat(newFile_soil, extension);
+  		SW_File_Status.fp_wk_soil = OpenFile(newFile_soil, "w"); // open new file
+
+  		free(fileDup_soil);
+    }
 	}
 }
 
@@ -541,48 +575,63 @@ void stat_Output_Weekly_CSV_Summary(int iteration)
 void stat_Output_Monthly_CSV_Summary(int iteration)
 {
 	if(iteration == -1){ // just storing average values over all iterations
-		SW_File_Status.fp_mo_avg = OpenFile(SW_F_name(eOutputMonthly), "w");
-		SW_File_Status.fp_mo_soil_avg = OpenFile(SW_F_name(eOutputMonthly_soil), "w");
+    if(SW_File_Status.make_regular)
+		  SW_File_Status.fp_mo_avg = OpenFile(SW_F_name(eOutputMonthly), "w");
+    if(SW_File_Status.make_soil)
+		  SW_File_Status.fp_mo_soil_avg = OpenFile(SW_F_name(eOutputMonthly_soil), "w");
 	}
 	else{ // storing values for every iteration
 		if(iteration > 1){
-			CloseFile(&SW_File_Status.fp_mo);
-			CloseFile(&SW_File_Status.fp_mo_soil);
+      if(SW_File_Status.make_regular)
+			   CloseFile(&SW_File_Status.fp_mo);
+      if(SW_File_Status.make_soil)
+			   CloseFile(&SW_File_Status.fp_mo_soil);
 		}
-		char *newFile_split; // new file to create
-		char *newFile_soil_split;
-		char newFile_soil[80];
-		char newFile[80];
-		char *extension; // extension to add to end of file
-		char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputMonthly))+1);
-		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputMonthly_soil))+1);
-		char iterationToString[10];
 
-		strcpy(fileDup, SW_F_name(eOutputMonthly)); // copy file name to new variable
-		strcpy(fileDup_soil, SW_F_name(eOutputMonthly_soil)); // copy file name to new variable
+    char *extension; // extension to add to end of file
+    char iterationToString[10];
 
-		sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
-		extension = strtok(fileDup, ".");
-		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
+    if(SW_File_Status.make_regular){
+      char *newFile_split; // new file to create
+      char newFile[80];
+      char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputMonthly))+1);
 
-		newFile_split = strtok(SW_F_name(eOutputMonthly), "."); // get filename up to but not including ".csv"
-		strcpy(newFile, newFile_split);
-		strcat(newFile, "_");
-		strcat(newFile, iterationToString);
-		strcat(newFile, ".");
-		strcat(newFile, extension);
-		SW_File_Status.fp_mo = OpenFile(newFile, "w"); // open new file
+      strcpy(fileDup, SW_F_name(eOutputMonthly)); // copy file name to new variable
+      sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
+  		extension = strtok(fileDup, ".");
+  		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
 
-		newFile_soil_split = strtok(SW_F_name(eOutputMonthly_soil), "."); // get filename up to but not including ".csv"
-		strcpy(newFile_soil, newFile_soil_split);
-		strcat(newFile_soil, "_");
-		strcat(newFile_soil, iterationToString);
-		strcat(newFile_soil, ".");
-		strcat(newFile_soil, extension);
-		SW_File_Status.fp_mo_soil = OpenFile(newFile_soil, "w"); // open new file
+      newFile_split = strtok(SW_F_name(eOutputMonthly), "."); // get filename up to but not including ".csv"
+  		strcpy(newFile, newFile_split);
+  		strcat(newFile, "_");
+  		strcat(newFile, iterationToString);
+  		strcat(newFile, ".");
+  		strcat(newFile, extension);
+  		SW_File_Status.fp_mo = OpenFile(newFile, "w"); // open new file
 
-		free(fileDup);
-		free(fileDup_soil);
+      free(fileDup);
+    }
+    if(SW_File_Status.make_soil){
+  		char *newFile_soil_split;
+  		char newFile_soil[80];
+  		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputMonthly_soil))+1);
+
+  		strcpy(fileDup_soil, SW_F_name(eOutputMonthly_soil)); // copy file name to new variable
+  		sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
+
+  		extension = strtok(fileDup_soil, ".");
+  		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
+
+  		newFile_soil_split = strtok(SW_F_name(eOutputMonthly_soil), "."); // get filename up to but not including ".csv"
+  		strcpy(newFile_soil, newFile_soil_split);
+  		strcat(newFile_soil, "_");
+  		strcat(newFile_soil, iterationToString);
+  		strcat(newFile_soil, ".");
+  		strcat(newFile_soil, extension);
+  		SW_File_Status.fp_mo_soil = OpenFile(newFile_soil, "w"); // open new file
+
+  		free(fileDup_soil);
+    }
 	}
 }
 
@@ -598,47 +647,64 @@ void stat_Output_Monthly_CSV_Summary(int iteration)
 void stat_Output_Yearly_CSV_Summary(int iteration)
 {
 	if(iteration == -1){ // just storing average values over all iterations
-		SW_File_Status.fp_yr_avg = OpenFile(SW_F_name(eOutputYearly), "w");
-		SW_File_Status.fp_yr_soil_avg = OpenFile(SW_F_name(eOutputYearly_soil), "w");
+    if(SW_File_Status.make_regular)
+		  SW_File_Status.fp_yr_avg = OpenFile(SW_F_name(eOutputYearly), "w");
+    if(SW_File_Status.make_soil)
+      SW_File_Status.fp_yr_soil_avg = OpenFile(SW_F_name(eOutputYearly_soil), "w");
 	}
 	else{ // storing values for every iteration
 		if(iteration > 1){
-			CloseFile(&SW_File_Status.fp_yr);
-			CloseFile(&SW_File_Status.fp_yr_soil);
+      if(SW_File_Status.make_regular)
+			   CloseFile(&SW_File_Status.fp_yr);
+      if(SW_File_Status.make_soil)
+        CloseFile(&SW_File_Status.fp_yr_soil);
 		}
-		char *newFile_split; // new file to create
-		char *newFile_soil_split;
-		char newFile_soil[80];
-		char newFile[80];
-		char *extension; // extension to add to end of file
-		char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputYearly))+1);
-		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputYearly_soil))+1);
-		char iterationToString[10];
 
-		strcpy(fileDup, SW_F_name(eOutputYearly)); // copy file name to new variable
-		strcpy(fileDup_soil, SW_F_name(eOutputYearly_soil)); // copy file name to new variable
+    char *extension; // extension to add to end of file
+    char iterationToString[10];
 
-		sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
-		extension = strtok(fileDup, ".");
-		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
+    if(SW_File_Status.make_regular){
+      char *newFile_split; // new file to create
+      char newFile[80];
+      char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputYearly))+1);
 
-		newFile_split = strtok(SW_F_name(eOutputYearly), "."); // get filename up to but not including ".csv"
-		strcpy(newFile, newFile_split);
-		strcat(newFile, "_");
-		strcat(newFile, iterationToString);
-		strcat(newFile, ".");
-		strcat(newFile, extension);
-		SW_File_Status.fp_yr = OpenFile(newFile, "w"); // open new file
+      strcpy(fileDup, SW_F_name(eOutputYearly)); // copy file name to new variable
+      sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
 
-		newFile_soil_split = strtok(SW_F_name(eOutputYearly_soil), "."); // get filename up to but not including ".csv"
-		strcpy(newFile_soil, newFile_soil_split);
-		strcat(newFile_soil, "_");
-		strcat(newFile_soil, iterationToString);
-		strcat(newFile_soil, ".");
-		strcat(newFile_soil, extension);
-		SW_File_Status.fp_yr_soil = OpenFile(newFile_soil, "w"); // open new file
+      extension = strtok(fileDup, ".");
+  		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
 
-		free(fileDup);
-		free(fileDup_soil);
+  		newFile_split = strtok(SW_F_name(eOutputYearly), "."); // get filename up to but not including ".csv"
+  		strcpy(newFile, newFile_split);
+  		strcat(newFile, "_");
+  		strcat(newFile, iterationToString);
+  		strcat(newFile, ".");
+  		strcat(newFile, extension);
+  		SW_File_Status.fp_yr = OpenFile(newFile, "w"); // open new file
+
+      free(fileDup);
+    }
+
+    if(SW_File_Status.make_soil){
+  		char *newFile_soil_split;
+  		char newFile_soil[80];
+  		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputYearly_soil))+1);
+
+  		strcpy(fileDup_soil, SW_F_name(eOutputYearly_soil)); // copy file name to new variable
+  		sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
+
+      extension = strtok(fileDup_soil, ".");
+      extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
+
+  		newFile_soil_split = strtok(SW_F_name(eOutputYearly_soil), "."); // get filename up to but not including ".csv"
+  		strcpy(newFile_soil, newFile_soil_split);
+  		strcat(newFile_soil, "_");
+  		strcat(newFile_soil, iterationToString);
+  		strcat(newFile_soil, ".");
+  		strcat(newFile_soil, extension);
+  		SW_File_Status.fp_yr_soil = OpenFile(newFile_soil, "w"); // open new file
+
+  		free(fileDup_soil);
+    }
 	}
 }

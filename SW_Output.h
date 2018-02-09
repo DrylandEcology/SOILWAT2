@@ -162,6 +162,9 @@ typedef struct {
 			finalValue_mo,
 			finalValue_yr;
 
+	int make_soil,
+			make_regular;
+
 	FILE *fp_dy; /* opened output file pointer for day*/
 	FILE *fp_wk; /* opened output file pointer for week*/
 	FILE *fp_mo; /* opened output file pointer for month*/
