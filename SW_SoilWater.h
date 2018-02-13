@@ -142,7 +142,7 @@ void SW_SWC_end_day(void);
 RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n);
 RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n);
 RealD SW_VWCBulkRes(RealD fractionGravel, RealD sand, RealD clay, RealD porosity);
-void get_dSWAbulk2(int i);
+void get_dSWAbulk(int i);
 
 #ifdef DEBUG_MEM
 void SW_SWC_SetMemoryRefs(void);

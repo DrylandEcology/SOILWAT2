@@ -3025,12 +3025,11 @@ static void get_swa(OutPeriod pd)
 						//val = v->yravg.SWA_VegType[i];
 						break;
 				}
+
+				SXW.sum_dSWA_repartitioned[Ivlp(j,i,p)] = val[j][i];
 			}
 
 			if(storeAllIterations){
-				/*sprintf(str_iters, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW.sum_dSWA_repartitioned[Ivlp(0,i,p)], _Sep, SXW.sum_dSWA_repartitioned[Ivlp(1,i,p)], _Sep,
-				 SXW.sum_dSWA_repartitioned[Ivlp(2,i,p)], _Sep, SXW.sum_dSWA_repartitioned[Ivlp(3,i,p)]);
-				strcat(outstr_all_iters, str_iters);*/
 				sprintf(str_iters, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, val[0][i], _Sep, val[1][i], _Sep, val[2][i], _Sep, val[3][i]);
 				strcat(outstr_all_iters, str_iters);
 			}
