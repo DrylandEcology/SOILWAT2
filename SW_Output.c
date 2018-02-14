@@ -2957,7 +2957,7 @@ static void get_swa(OutPeriod pd)
 	#endif
 
 		LyrIndex i;
-		int j=0, k=0;
+		int j = 0, k = 0;
 		SW_SOILWAT *v = &SW_Soilwat;
 		RealF val[NVEGTYPES][MAX_LAYERS]; // need 2D array for values
 
@@ -3089,7 +3089,7 @@ static void get_swcBulk(OutPeriod pd)
 #ifdef RSOILWAT
 		int delta;
 		RealD *p;
-	#endif
+#endif
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	RealD val = SW_MISSING;
