@@ -2971,7 +2971,7 @@ static void get_swa(OutPeriod pd)
 				switch (pd)
 				{
 				case eSW_Day:
-					val[j][i] = v->dysum.SWA_VegType[0][i];
+					val[j][i] = v->dysum.SWA_VegType[j][i];
 					//printf("v->dysum.SWA_VegType[0][i]: %f\n", v->dysum.SWA_VegType[0][i]);
 					//val[j][i] = v->dysum.swcBulk[i];
 					//printf("val: %f\n", val);
@@ -3006,18 +3006,18 @@ static void get_swa(OutPeriod pd)
 				{
 					case eSW_Day:
 						p = SW_Model.doy-1;
-						//val = v->dysum.SWA_VegType[i];
-						val[j][i] = v->dysum.swcBulk[i];
+						val[j][i] = v->dysum.SWA_VegType[j][i];
+						//val[j][i] = v->dysum.swcBulk[i];
 						break;
 					case eSW_Week:
 						p = SW_Model.week-tOffset;
-						val[j][i] = v->wkavg.swcBulk[i];
-						//val = v->wkavg.SWA_VegType[i];
+						//val[j][i] = v->wkavg.swcBulk[i];
+						val[j][i] = v->wkavg.SWA_VegType[j][i];
 						break;
 					case eSW_Month:
 						p = SW_Model.month-tOffset;
-						val[j][i] = v->moavg.swcBulk[i];
-						//val = v->moavg.SWA_VegType[i];
+						//val[j][i] = v->moavg.swcBulk[i];
+						val[j][i] = v->moavg.SWA_VegType[j][i];
 						break;
 					case eSW_Year:
 						p = Globals.currYear - 1;
@@ -4023,40 +4023,40 @@ static void get_transp(OutPeriod pd)
 		case eSW_Day:
 			ForEachSoilLayer(i){
 				p_rOUT[eSW_Transp][eSW_Day][SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2)] = v->dysum.transp_total[i];
-				p_rOUT[eSW_Transp][eSW_Day][SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 1)] = v->dysum.transp_tree[i];
-				p_rOUT[eSW_Transp][eSW_Day][SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 2)] = v->dysum.transp_shrub[i];
-				p_rOUT[eSW_Transp][eSW_Day][SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 3)] = v->dysum.transp_forb[i];
-				p_rOUT[eSW_Transp][eSW_Day][SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 4)] = v->dysum.transp_grass[i];
+				p_rOUT[eSW_Transp][eSW_Day][SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 1)] = v->dysum.transp[SW_TREES][i];
+				p_rOUT[eSW_Transp][eSW_Day][SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 2)] = v->dysum.transp[SW_SHRUB][i];
+				p_rOUT[eSW_Transp][eSW_Day][SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 3)] = v->dysum.transp[SW_FORBS][i];
+				p_rOUT[eSW_Transp][eSW_Day][SW_Output[eSW_Transp].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 4)] = v->dysum.transp[SW_GRASS][i];
 					SW_Output[eSW_Transp].dy_row++;
 			}
 			break;
 		case eSW_Week:
 			ForEachSoilLayer(i){
 				p_rOUT[eSW_Transp][eSW_Week][SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2)] = v->wkavg.transp_total[i];
-				p_rOUT[eSW_Transp][eSW_Week][SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 1)] = v->wkavg.transp_tree[i];
-				p_rOUT[eSW_Transp][eSW_Week][SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 2)] = v->wkavg.transp_shrub[i];
-				p_rOUT[eSW_Transp][eSW_Week][SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 3)] = v->wkavg.transp_forb[i];
-				p_rOUT[eSW_Transp][eSW_Week][SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 4)] = v->wkavg.transp_grass[i];
+				p_rOUT[eSW_Transp][eSW_Week][SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 1)] = v->wkavg.transp[SW_TREES][i];
+				p_rOUT[eSW_Transp][eSW_Week][SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 2)] = v->wkavg.transp[SW_SHRUB][i];
+				p_rOUT[eSW_Transp][eSW_Week][SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 3)] = v->wkavg.transp[SW_FORBS][i];
+				p_rOUT[eSW_Transp][eSW_Week][SW_Output[eSW_Transp].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 4)] = v->wkavg.transp[SW_GRASS][i];
 					SW_Output[eSW_Transp].wk_row++;
 			}
 			break;
 		case eSW_Month:
 			ForEachSoilLayer(i){
 				p_rOUT[eSW_Transp][eSW_Month][SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2)] = v->moavg.transp_total[i];
-				p_rOUT[eSW_Transp][eSW_Month][SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 1)] = v->moavg.transp_tree[i];
-				p_rOUT[eSW_Transp][eSW_Month][SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 2)] = v->moavg.transp_shrub[i];
-				p_rOUT[eSW_Transp][eSW_Month][SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 3)] = v->moavg.transp_forb[i];
-				p_rOUT[eSW_Transp][eSW_Month][SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 4)] = v->moavg.transp_grass[i];
+				p_rOUT[eSW_Transp][eSW_Month][SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 1)] = v->moavg.transp[SW_TREES][i];
+				p_rOUT[eSW_Transp][eSW_Month][SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 2)] = v->moavg.transp[SW_SHRUB][i];
+				p_rOUT[eSW_Transp][eSW_Month][SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 3)] = v->moavg.transp[SW_FORBS][i];
+				p_rOUT[eSW_Transp][eSW_Month][SW_Output[eSW_Transp].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 4)] = v->moavg.transp[SW_GRASS][i];
 					SW_Output[eSW_Transp].mo_row++;
 			}
 			break;
 		case eSW_Year:
 			ForEachSoilLayer(i){
 				p_rOUT[eSW_Transp][eSW_Year][SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1)] = v->yravg.transp_total[i];
-				p_rOUT[eSW_Transp][eSW_Year][SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 1)] = v->yravg.transp_tree[i];
-				p_rOUT[eSW_Transp][eSW_Year][SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 2)] = v->yravg.transp_shrub[i];
-				p_rOUT[eSW_Transp][eSW_Year][SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 3)] = v->yravg.transp_forb[i];
-				p_rOUT[eSW_Transp][eSW_Year][SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 4)] = v->yravg.transp_grass[i];
+				p_rOUT[eSW_Transp][eSW_Year][SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 1)] = v->yravg.transp[SW_TREES][i];
+				p_rOUT[eSW_Transp][eSW_Year][SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 2)] = v->yravg.transp[SW_SHRUB][i];
+				p_rOUT[eSW_Transp][eSW_Year][SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 3)] = v->yravg.transp[SW_FORBS][i];
+				p_rOUT[eSW_Transp][eSW_Year][SW_Output[eSW_Transp].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 4)] = v->yravg.transp[SW_GRASS][i];
 					SW_Output[eSW_Transp].yr_row++;
 			}
 			break;

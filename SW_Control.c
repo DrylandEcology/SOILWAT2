@@ -116,9 +116,7 @@ void SW_CTL_run_current_year(void) {
     #endif
     SW_SWC_water_flow();
 
-    calculate_repartitioned_soilwater();
-
-    // TODO: swcbulk values available at this point so put SWA calculations here.
+    calculate_repartitioned_soilwater(); // new function to calculate the repartioned soilwater values (SWA). Needs to be called after SW_SWC_water_flow so other values are calculated
 
     if (SW_VegEstab.use)
       SW_VES_checkestab();

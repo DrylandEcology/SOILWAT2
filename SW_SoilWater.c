@@ -431,43 +431,11 @@ void get_dSWAbulk(int i){
 	RealF dSWA_bulk[array_size][array_size][MAX_LAYERS];
 	RealF dSWA_bulk_repartioned[array_size][array_size][MAX_LAYERS];
 
-  /*	description and example for below loops
-  *		first loop gets veg_type with smallest critical value
-  * 	second loop goes through all critical values larger than the original veg_type and subtracts
-  * 	EX: veg_type = shrub (shrub is 1 in veg_type array)
-  * 			curr_vegType = 3
-          curr_crit_rank_index = 1 // since shrub has smallest crit vale (-3.9) it is at last position in rank array since has access to all others
-            2nd loop iteration 1
-              kv = 3 //first time through loop its set to the current veg types rank index
-              crit_val = -3.9 //critical value for shrub
-              prev_crit_val = -3.5
-              kv_veg_type = 1 // first time its on its own veg_type so shrub
-              prev_crit_val = 2 // -3.5 corresponds to grasses
-              SW_VegProd.useVegType[1] != 0 since shrubs are turned on in input files so continue on
-              -3.9 < -3.5
-                dSWAbulk[curr_crit_rank_index,kv_veg_type] = SWA_master[curr_crit_rank_index,kv_veg_type] - SWA_master[curr_crit_rank_index,prev_crit_val]
-            2nd loop iteration 2
-              kv = 2 // go down to next index in rank to recalculate SWA at -3.5 - -2.0
-              crit_val = -3.5 //critical value for shrub
-              prev_crit_val = -2.0
-              kv_veg_type = 2 // next smallest so grasses
-              prev_crit_val = 3 // -2.0 corresponds to forbs
-              SW_VegProd.useVegType[1] != 0 since shrubs are turned on in input files so continue on
-              -3.5 < -2.0
-                dSWAbulk[curr_crit_rank_index,kv_veg_type] = SWA_master[curr_crit_rank_index,kv_veg_type] - SWA_master[curr_crit_rank_index,prev_crit_val]
-            2nd loop iteration 3
-              kv = 1 // go down to next index in rank to recalculate SWA at -3.5 - -2.0
-              crit_val = -2.0 //critical value for shrub
-              prev_crit_val = -2.0
-              SW_VegProd.useVegType[1] != 0 since shrubs are turned on in input files so continue on
-              -2.0 !< -2.0 // since not less than we are done because dont need to recalculate if crit value is the same
-          [second nested loop]
-          j = 4 // since this not less than 4 will not enter loop. dont need to enter loop since this veg type has the largest crit val and nothing needs to be set 0
-  */
-
 	// loop through each veg type to get dSWAbulk
 	for(curr_vegType = (NVEGTYPES - 1); curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
-		curr_crit_rank_index = SW_VegProd.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
+    v->dSWA_repartitioned_sum[curr_vegType][i] = 0.;
+    //printf("%f\n", v->dSWA_repartitioned_sum[curr_vegType][i]);
+    curr_crit_rank_index = SW_VegProd.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
 		veg_type_in_use = SW_VegProd.veg[curr_crit_rank_index].cov.fCover; // set veg type fraction here
 
 		for(kv = curr_vegType; kv>=0; kv--){
