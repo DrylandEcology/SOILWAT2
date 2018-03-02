@@ -1409,11 +1409,11 @@ void SW_OUT_write_today(void)
 				writeit = (Bool) (SW_Model.newyear || bFlush);
 				t = SW_Output[k].first; /* always output this period */
 				break;
-			default: // e.g., SW_MISSING
+			/*default: // e.g., SW_MISSING
 				LogError(logfp, LOGWARN,
 					"'SW_OUT_write_today': Invalid period = %d for key = %s",
 					timeSteps[k][i], key2str[k]);
-				continue;
+				continue;*/
 			}
 			#ifdef SWDEBUG
 			if (debug) swprintf("-t=%d", t);
