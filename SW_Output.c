@@ -346,6 +346,8 @@ void SW_OUT_construct(void)
 {
 	/* =================================================== */
 	OutKey k;
+	SW_SOILWAT_OUTPUTS *s;
+	int i, j;
 
 	// for use in creating the column headers for the output files
   SW_File_Status.finalValue_dy = -1;
@@ -363,6 +365,10 @@ void SW_OUT_construct(void)
 	SW_File_Status.col_status_wk = 0;
 	SW_File_Status.col_status_mo = 0;
 	SW_File_Status.col_status_yr = 0;
+
+	ForEachSoilLayer(i)
+		ForEachVegType(j)
+			s->SWA_VegType[j][i] = 0.;
 
 	/* note that an initializer that is called during
 	 * execution (better called clean() or something)
@@ -2985,21 +2991,14 @@ static void get_swa(OutPeriod pd)
 				{
 				case eSW_Day:
 					val[j][i] = v->dysum.SWA_VegType[j][i];
-					//printf("v->dysum.SWA_VegType[0][i]: %f\n", v->dysum.SWA_VegType[0][i]);
-					//val[j][i] = v->dysum.swcBulk[i];
-					//printf("val: %f\n", val);
 					break;
 				case eSW_Week:
-					//val[j][i] = v->wkavg.swcBulk[i];
 					val[j][i] = v->wkavg.SWA_VegType[j][i];
 					break;
 				case eSW_Month:
 					val[j][i] = v->moavg.SWA_VegType[j][i];
 					break;
 				case eSW_Year:
-					//printf("v->yravg.SWA_VegType[0][i]: %f\n", v->yravg.SWA_VegType[0][i]);
-					//val = v->yravg.swcBulk[i];
-					//printf("val: %f\n", val);
 					val[j][i] = v->yravg.SWA_VegType[j][i];
 					break;
 				}
@@ -3065,22 +3064,18 @@ static void get_swa(OutPeriod pd)
 					case eSW_Day:
 						p = SW_Model.doy-1;
 						val[j][i] = v->dysum.SWA_VegType[j][i];
-						//val[j][i] = v->dysum.swcBulk[i];
 						break;
 					case eSW_Week:
 						p = SW_Model.week-tOffset;
-						//val[j][i] = v->wkavg.swcBulk[i];
 						val[j][i] = v->wkavg.SWA_VegType[j][i];
 						break;
 					case eSW_Month:
 						p = SW_Model.month-tOffset;
-						//val[j][i] = v->moavg.swcBulk[i];
 						val[j][i] = v->moavg.SWA_VegType[j][i];
 						break;
 					case eSW_Year:
 						p = Globals.currYear - 1;
 						val[j][i] = v->yravg.SWA_VegType[j][i];
-						//val = v->yravg.SWA_VegType[i];
 						break;
 				}
 
@@ -6356,7 +6351,8 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 	case eSW_SWA: /* get swaBulk and convert later */
 		ForEachSoilLayer(i)
 			ForEachVegType(j)
-				s->SWA_VegType[j][i] += SW_Soilwat.dSWA_repartitioned_sum[j][i];
+				//s->SWA_VegType[j][i] += v->SWA_VegType[j][i];
+				s->SWA_VegType[j][i] += v->dSWA_repartitioned_sum[j][i];
 		break;
 
 	case eSW_SurfaceWater:
@@ -6759,7 +6755,11 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 		pd = SW_Model.month + 1;
 		break;
 	case eSW_Year:
-		pd = SW_Model.doy;
+		#ifndef STEPWAT
+			pd = SW_Model.doy;
+		#else
+			pd = Globals.currYear - 1; // cant have pd = SW_Model.doy for STEPWAT since that will overwrite daily
+		#endif
 		break;
 	default:
 		LogError(logfp, LOGFATAL, "PGMR: Invalid outperiod in collect_sums()");
