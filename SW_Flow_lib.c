@@ -1279,6 +1279,24 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 	return tSoilAvg;
 }
 
+/** @brief Initialize soil structure and properties for soil temperature simulation
+
+    @param bDensity An array of the bulk density of the soil layers.
+    @param width The width of the layers.
+    @param oldsTemp An array of yesterday's temperature values in Celsius.
+    @param sTconst The soil temperature at a soil depth where it stays constant as
+			lower boundary condition.
+    @param nlyrs The number of layers in the soil profile
+    @param fc An array of the field capacity of the soil layers.
+    @param wp An array of the wilting point of the soil layers.
+    @param deltaX The depth increment for the soil temperature calculations.
+    @param theMaxDepth the lower bound of the equation.
+    @param nRgr the number of regressions (1 extra value is needed for the sTempR).
+
+    @param ptr_stError Updated status of soil temperature error in *ptr_stError.
+    @return tSoilAvg The modified, average temperature of the soil surface.
+*/
+
 void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 	double sTconst, unsigned int nlyrs, double fc[], double wp[], double deltaX,
 	double theMaxDepth, unsigned int nRgr, Bool *ptr_stError) {
