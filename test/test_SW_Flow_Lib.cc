@@ -281,6 +281,7 @@ TEST(SWFlowTest, LitterInterceptedWater) {
     }
 
     EXPECT_GT(standingWater, 0); // standingWater should be above 0
+    
 
 
     // Reset to previous global states
