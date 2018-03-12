@@ -211,7 +211,7 @@ TEST(SWFlowTest, LitterInterceptedWater) {
     equal in the last layer */
 
     for (i = 0; i < MAX_LAYERS; i++) {
-      EXPECT_LE(swc2[i], swcsat2[i]); // swc should be less than or equal to swcsat
+      EXPECT_LT(swc2[i], swcsat2[i]); // swc should be less than or equal to swcsat
       EXPECT_GE(drain2[i], -1./100000000.); /*  drainage should be greater than or
       equal to 0 or a very small value like 0 */
     }
@@ -281,7 +281,7 @@ TEST(SWFlowTest, LitterInterceptedWater) {
     }
 
     EXPECT_GT(standingWater, 0); // standingWater should be above 0
-    
+
 
 
     // Reset to previous global states
