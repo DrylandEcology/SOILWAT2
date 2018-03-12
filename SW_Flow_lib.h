@@ -61,11 +61,11 @@ typedef struct {
 
 	double depths[MAX_LAYERS],  //soil layer depths of SoilWat soil
 	       depthsR[MAX_ST_RGR + 1],//evenly spaced soil layer depths for soil temperature calculations
-		   fcR[MAX_ST_RGR],//field capacity of soil layers for soil temperature calculations
-		   wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
-		   bDensityR[MAX_ST_RGR],//bulk density of soil layers for soil temperature calculations
-		   oldsFusionPool_actual[MAX_LAYERS],
-		   oldsTempR[MAX_ST_RGR + 1];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
+		   	 fcR[MAX_ST_RGR],//field capacity of soil layers for soil temperature calculations
+		   	 wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
+		   	 bDensityR[MAX_ST_RGR],//bulk density of soil layers for soil temperature calculations
+		   	 oldsFusionPool_actual[MAX_LAYERS],
+		   	 oldsTempR[MAX_ST_RGR + 1];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
 
 	Bool lyrFrozen[MAX_LAYERS];
 	double tlyrs_by_slyrs[MAX_ST_RGR + 1][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers
@@ -86,7 +86,7 @@ void veg_intercepted_water(double *pptleft, double *wintveg, double ppt, double 
 
 void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, double scale, double a, double b, double c, double d);
 
-void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft, unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
+void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft, int nlyrs, double swcfc[], double swcsat[], double impermeability[],
 		double *standingWater);
 
 double petfunc(unsigned int doy, double avgtemp, double rlat, double elev, double slope, double aspect, double reflec, double humid, double windsp, double cloudcov,
