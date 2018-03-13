@@ -569,6 +569,9 @@ void init_site_info(void) {
 	LyrIndex s, r, curregion;
 	int k, wiltminflag = 0, initminflag = 0;
 	RealD evsum = 0., trsum_veg[NVEGTYPES] = {0.}, swcmin_help1, swcmin_help2;
+	#ifdef SWDEBUG
+	int debug = 0;
+	#endif
 
 	/* sp->deepdrain indicates an extra (dummy) layer for deep drainage
 	 * has been added, so n_layers really should be n_layers -1
@@ -633,6 +636,15 @@ void init_site_info(void) {
 		} else { /* assume that unit(_SWCMinVal) == cm/cm */
 			lyr->swcBulk_min = _SWCMinVal * lyr->width;
 		}
+
+		#ifdef SWDEBUG
+		if (debug) {
+			swprintf("swcmin[%d]=%f = swpmin=%f\n", s, lyr->swcBulk_min,
+				SW_SWCbulk2SWPmatric(lyr->fractionVolBulk_gravel, lyr->swcBulk_min, s));
+			swprintf("SWC(HalfWiltpt)[%d]=%f = swp(hw)=%f\n", s, lyr->swcBulk_wiltpt / 2,
+				SW_SWCbulk2SWPmatric(lyr->fractionVolBulk_gravel, lyr->swcBulk_wiltpt / 2, s));
+		}
+		#endif
 
 		lyr->swcBulk_wet = GE(_SWCWetVal, 1.0) ? SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCWetVal, s) * lyr->width : _SWCWetVal * lyr->width;
 		lyr->swcBulk_init = GE(_SWCInitVal, 1.0) ? SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCInitVal, s) * lyr->width : _SWCInitVal * lyr->width;

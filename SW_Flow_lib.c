@@ -100,6 +100,9 @@
 #include "Times.h"
 
 
+#include "SW_Model.h"
+extern SW_MODEL SW_Model;
+
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
@@ -108,6 +111,7 @@ extern SW_SOILWAT SW_Soilwat;
 extern SW_CARBON SW_Carbon;
 unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
 unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
+
 /* *************************************************** */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
@@ -125,19 +129,20 @@ static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 
 	Equations based on Corbet and Crouse (1968). \cite Corbett1968
 
-  \param pptleft
-	\param wintgrass
+  \param pptleft Amount of precipitation left after interception.
+	\param wintveg Amount of precipitation interception by veg.
 	\param ppt daily precipitation
 	\param x vegetation cover or LAI for the day (based on monthly biomass
 	       values, see the routine "initprod").
-	\param scale Scale paramater. Used to represent snow depth.
+	\param scale Scale paramater. Used to represent snow depth and fraction cover of vegtype.
 	\param a a parameter for intercept of grass interception equation.
 	\param b b parameter for intercept of grass interception equation.
 	\param c c parameter for slope of grass interception equation.
 	\param d d parameter for slope of grass interception equation.
 
-	\return pptleft Amount of precipitation left after interception.
-	\return wintgrass Amount of precipitation interception by grass.
+  \sideeffect Update values of global variables:
+  - pptleft Amount of precipitation left after interception.
+  - wintveg Amount of precipitation interception by veg.
 */
 
 
@@ -180,29 +185,46 @@ void veg_intercepted_water(double *pptleft, double *wintveg, double ppt, double 
 	}
 }
 
-void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, double scale, double a, double b, double c, double d) {
-	/**********************************************************************
-	 PURPOSE: Calculate water intercepted by litter
+/**
+	\fn void litter_intercepted_water(double *pptleft, double *wintlit, double blitter,
+    double scale, double a, double b, double c, double d)
 
-	 HISTORY:
-	 4/30/92  (SLC)
-	 7/1/92   (SLC) Reset pptleft to 0 if less than 0 (due to round off)
-	 6-Oct-03 (cwb) wintlit = 0 if no litter.
-	 15-Oct-03 (cwb) replaced Parton's original equations with new ones
-	 developed by John Bradford based on Corbet and Crouse, 1968.
-	 Replaced the following code:
-	 par1 = exp((-1. + .45 * log10(blitter+1.)) * log(10.));
-	 *wintlit = (.015 * (*pptleft) + .0635) * exp(par1);
+    \brief Calculate the water intercepted by litter.
 
-	 21-Oct-03 (cwb) added MAX_WINTLIT line
+	Equations based on Corbet and Crouse (1968). \cite Corbett1968
 
-	 INPUTS:
-	 blitter - biomass of litter for the day
+  \param pptleft Amount of precipitation left after interception.
+	\param wintlit Amount of precipitation intercepted by litter.
+  \param blitter biomass of litter for the day
+	\param scale Scale paramater. Fraction cover of vegtype.
+	\param a a parameter for intercept of litter interception equation.
+	\param b b parameter for intercept of litter interception equation.
+	\param c c parameter for slope of litter interception equation.
+	\param d d parameter for slope of litter interception equation.
 
-	 OUTPUTS:
-	 pptleft -  precip. left after interception by litter.
-	 wintlit  - amount of water intercepted by litter .
-	 **********************************************************************/
+	\sideeffect Update values of global variables:
+  - pptleft Amount of precipitation left after interception.
+  - wintlit Amount of precipitation intercepted by litter.
+*/
+
+/**********************************************************************
+ PURPOSE: Calculate water intercepted by litter
+
+ HISTORY:
+ 4/30/92  (SLC)
+ 7/1/92   (SLC) Reset pptleft to 0 if less than 0 (due to round off)
+ 6-Oct-03 (cwb) wintlit = 0 if no litter.
+ 15-Oct-03 (cwb) replaced Parton's original equations with new ones
+ developed by John Bradford based on Corbet and Crouse, 1968.
+ Replaced the following code:
+ par1 = exp((-1. + .45 * log10(blitter+1.)) * log(10.));
+ *wintlit = (.015 * (*pptleft) + .0635) * exp(par1);
+
+ 21-Oct-03 (cwb) added MAX_WINTLIT line
+ **********************************************************************/
+
+void litter_intercepted_water(double *pptleft, double *wintlit, double blitter,
+  double scale, double a, double b, double c, double d) {
 	double intcpt, slope;
 
 	if (ZRO(blitter)) {
@@ -229,8 +251,8 @@ void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, 
 	unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
 	double *standingWater)
 
-	\brief Infiltrate water into soil layers under high water conditions. Otherwise
-	known as saturated percolation.
+	\brief Satured percolation function. Infiltrate water into soil layers under high
+	water conditions.
 
 	\param swc.  An array of doubles. Soilwater content in each layer before drainage.
 	\param swcfc. An array of doubles. Soilwater content in each layer at field capacity.
@@ -255,10 +277,10 @@ void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, 
  **********************************************************************/
 
 void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft,
-	unsigned int nlyrs, double swcfc[], double swcsat[], double impermeability[],
+	int nlyrs, double swcfc[], double swcsat[], double impermeability[],
 	double *standingWater) {
 
-	unsigned int i;
+	int i;
 	int j;
 	double d[nlyrs];
 	double push, ksat_rel;
@@ -291,7 +313,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 	}
 
 	/* adjust (i.e., push water upwards) if water content of a layer is now above saturated water content */
-	for (j = nlyrs; j >= 0; j--) {
+	for (j = nlyrs - 1; j >= 0; j--) {
 		if (GT(swc[j], swcsat[j])) {
 			push = swc[j] - swcsat[j];
 			swc[j] -= push;
@@ -992,7 +1014,7 @@ void infiltrate_water_low(double swc[], double drain[], double *drainout, unsign
 	}
 
 	/* adjust (i.e., push water upwards) if water content of a layer is now above saturated water content */
-	for (j = nlyrs; j >= 0; j--) {
+	for (j = nlyrs - 1; j >= 0; j--) {
 		if (GT(swc[j], swcsat[j])) {
 			push = swc[j] - swcsat[j];
 			swc[j] -= push;
@@ -1221,25 +1243,29 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
 
 		#ifdef SWDEBUG
 		if (debug)
-			swprintf("\nConf A: acc=%2.2f, sum=%2.2f, res[%i]=%2.2f, var[%i]=%2.2f, [%i]=%2.2f, cor[%i][%i]=%2.2f, width_Soil[%i]=%2.2f, [%i]=%2.2f", acc, sum, i, res[i], j, var[j], j-1, var[j-1], i, j, cor[i][j], j, width_Soil[j], j-1, width_Soil[j-1]);
+       swprintf("\n i = %u, j = %u, tempLyrVal=%2.2f,  soilLyrVal = %2.2f, cor[i][j] = %2.2f, ratio = %2.2f, acc=%2.2f,sum=%2.2f", i, j, res[i], var[j], cor[i][j], ratio, acc, sum);
 		#endif
 
 	}
 }
 
 /**
- * Determines the average temperature of the soil surface under snow. Based upon
- 	 Parton et al. 1998. Equations 5 & 6.
- *
- *
- * @param airTempAvg the average air temperature of the area, in Celsius
- * @param snow the snow-water-equivalent of the area, in cm
- * @return the modified, average temperature of the soil surface
- */
+	\fn double surface_temperature_under_snow(double airTempAvg, double snow)
+
+  \brief Determine the average temperature of the soil surface under snow.
+
+    Based on Equations 5 & 6 in Parton et al. 1998. \cite Parton1998
+
+    \param airTempAvg the average air temperature of the area, in Celsius
+    \param snow the snow-water-equivalent of the area, in cm
+
+    \return tSoilAvg The modified, average temperature of the soil surface
+*/
+
 double surface_temperature_under_snow(double airTempAvg, double snow){
-  double kSnow; /** the effect of snow based on swe */
-  double tSoilAvg = 0.0; /** the average temeperature of the soil surface */
-	/** Parton et al. 1998. Equation 6. */
+  double kSnow; // the effect of snow based on swe
+  double tSoilAvg = 0.0; // the average temeperature of the soil surface
+	// Parton et al. 1998. Equation 6.
   if (snow == 0){
     return 0.0;
   }
@@ -1247,11 +1273,29 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
     tSoilAvg = -2.0;
   }
   else if (snow > 0 && airTempAvg < 0){
-    kSnow = fmax((-0.15 * snow + 1.0), 0.0); /** Parton et al. 1998. Equation 5. */
+    kSnow = fmax((-0.15 * snow + 1.0), 0.0); // Parton et al. 1998. Equation 5.
     tSoilAvg = 0.3 * airTempAvg * kSnow + -2.0;
   }
 	return tSoilAvg;
 }
+
+/** @brief Initialize soil structure and properties for soil temperature simulation
+
+    @param bDensity An array of the bulk density of the soil layers.
+    @param width The width of the layers.
+    @param oldsTemp An array of yesterday's temperature values in Celsius.
+    @param sTconst The soil temperature at a soil depth where it stays constant as
+			lower boundary condition.
+    @param nlyrs The number of layers in the soil profile
+    @param fc An array of the field capacity of the soil layers.
+    @param wp An array of the wilting point of the soil layers.
+    @param deltaX The depth increment for the soil temperature calculations.
+    @param theMaxDepth the lower bound of the equation.
+    @param nRgr the number of regressions (1 extra value is needed for the sTempR).
+
+    @param ptr_stError Updated status of soil temperature error in *ptr_stError.
+    @return tSoilAvg The modified, average temperature of the soil surface.
+*/
 
 void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 	double sTconst, unsigned int nlyrs, double fc[], double wp[], double deltaX,
@@ -1269,7 +1313,6 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
 	soil_temp_init = 1; // make this value 1 to make sure that this function isn't called more than once... (b/c it doesn't need to be)
-
 
 	#ifdef SWDEBUG
 	if (debug)
@@ -1294,14 +1337,22 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 	for (j = 0; j < nlyrs; j++) {
 		acc += width[j];
 		st->depths[j] = acc;
+    #ifdef SWDEBUG
+    if (debug)
+      swprintf("\n j=%u, depths = %f", j, st->depths[j]);
+    #endif
 	}
+
 	// calculate evenly spaced depths of soil temperature profile
 	acc = 0.0;
 	for (i = 0; i < nRgr + 1; i++) {
 		acc += deltaX;
 		st->depthsR[i] = acc;
+    #ifdef SWDEBUG
+    if (debug)
+      swprintf("\n i=%u, depthsR = %f", i, st->depthsR[i]);
+    #endif
 	}
-
 
 	// if soil temperature max depth is less than soil layer depth then quit
 	if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
@@ -1312,6 +1363,9 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 			swprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must "
 				"be more than soil layer depth (%5.2f cm)... soil temperature will NOT be "
 				"calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
+
+        LogError(logfp, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
+
 		}
 
 		return; // exits the function
@@ -1321,8 +1375,8 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 	for (i = 0; i < nRgr + 1; i++) {
 		acc = 0.0; // cumulative sum towards deltaX
 		while (x2 < nlyrs && acc < deltaX) { // there are soil layers to add
-			// add from previous (x1) soil layer
 			if (GT(d1, 0.0)) {
+        // add from previous (x1) soil layer
 				j = x1;
 				if (GT(d1, deltaX)) { // soil temperatur layer ends within x1-th soil layer
 					d2 = deltaX;
@@ -1353,7 +1407,6 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 			st->tlyrs_by_slyrs[i][x2] = -(deltaX - acc);
 		}
 	}
-
 	#ifdef SWDEBUG
 	if (debug) {
 		for (i = 0; i < nRgr + 1; i++) {
@@ -1540,6 +1593,9 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 	Bool Tsoil_not_exploided = swTRUE;
   #ifdef SWDEBUG
   int debug = 0;
+  if (SW_Model.year == 1980 && SW_Model.doy < 10) {
+    debug = 1;
+  }
   #endif
 
 	sTempR[0] = sT1; //upper boundary condition; index 0 indicates surface and not first layer
@@ -1751,7 +1807,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 		swprintf("\n\nNew call to soil_temperature()");
 	}
 	#endif
-
 
 	if (!soil_temp_init) {
 		#ifdef SWDEBUG
