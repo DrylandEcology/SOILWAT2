@@ -114,25 +114,6 @@ void SW_WTH_clear_runavg_list(void) {
 	runavg_list = NULL;
 }
 
-#ifdef STEPWAT
-static RealD _runavg_temp(RealD avg) {
-	/* --------------------------------------------------- */
-	int i, cnt, numdays;
-	RealD sum = 0.;
-
-	runavg_list[tail] = avg;
-	numdays = (SW_Model.doy < SW_Weather.days_in_runavg) ? SW_Model.doy : SW_Weather.days_in_runavg;
-
-	for (i = 0, cnt = 0; i < numdays; i++, cnt++) {
-		if (!missing(runavg_list[i])) {
-			sum += runavg_list[i];
-		}
-	}
-	tail = (tail < (SW_Weather.days_in_runavg - 1)) ? tail + 1 : 0;
-	return ((cnt) ? sum / cnt : WTH_MISSING);
-}
-#endif
-
 static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
 	/* --------------------------------------------------- */
 	/* If use_markov=swFALSE and no weather file found, we won't

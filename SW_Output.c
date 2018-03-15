@@ -295,7 +295,9 @@ static void get_soiltemp(OutPeriod pd);
 static void get_co2effects(OutPeriod pd);
 static void get_none(OutPeriod pd); /* default until defined */
 void populate_output_values(char *reg_file_array, char *soil_file_array, int output_var, int year_out, int outstr_file);
+#ifndef RSOILWAT
 void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers);
+#endif
 
 static void collect_sums(ObjType otyp, OutPeriod op);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
@@ -1415,11 +1417,11 @@ void SW_OUT_write_today(void)
 				writeit = (Bool) (SW_Model.newyear || bFlush);
 				t = SW_Output[k].first; /* always output this period */
 				break;
-			/*default: // e.g., SW_MISSING
+			default: // e.g., SW_MISSING
 				LogError(logfp, LOGWARN,
 					"'SW_OUT_write_today': Invalid period = %d for key = %s",
 					timeSteps[k][i], key2str[k]);
-				continue;*/
+				continue;
 			}
 			#ifdef SWDEBUG
 			if (debug) swprintf("-t=%d", t);
@@ -2965,18 +2967,13 @@ static void get_swa(OutPeriod pd)
 	/* added 21-Oct-03, cwb */
 	#ifdef STEPWAT
 		TimeInt p = 0;
-		int curr_crit_rank_index;
 		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
 
-		RealD val_forb = SW_MISSING;
-		RealD val_tree = SW_MISSING;
-		RealD val_shrub = SW_MISSING;
-		RealD val_grass = SW_MISSING;
 	#endif
 
 		LyrIndex i;
-		int j = 0, k = 0;
+		int j = 0;
 		SW_SOILWAT *v = &SW_Soilwat;
 		RealF val[NVEGTYPES][MAX_LAYERS]; // need 2D array for values
 
@@ -6999,12 +6996,13 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 
   \return void.
 */
+#ifndef RSOILWAT // function not for use with RSOILWAT since RSOILWAT has its own column header function. Planning on combining the two functions at a later date.
 void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers){
 	int i, j, tLayers = SW_Site.n_layers;
 	SW_VEGESTAB *v = &SW_VegEstab; // for use to check estab
 
 	OutKey colHeadersLoop;
-	char *colHeaders[5000];
+	char *colHeaders[5000]; // generous estimation of max size
 	char *colHeadersSoil[5000];
 	memset(&colHeaders, 0, sizeof(colHeaders));
 	memset(&colHeadersSoil, 0, sizeof(colHeadersSoil));
@@ -7323,7 +7321,7 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 				break;
 		}
 }
-
+#endif
 /**
   \fn void stat_Output_Daily_CSV_Summary(int iteration)
   \brief Creates daily files
