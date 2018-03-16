@@ -1417,11 +1417,13 @@ void SW_OUT_write_today(void)
 				writeit = (Bool) (SW_Model.newyear || bFlush);
 				t = SW_Output[k].first; /* always output this period */
 				break;
+			#ifndef RSOILWAT // RSOILWAT sets off variables to SW_missing so this is not invalid for rSOILWAT2
 			default: // e.g., SW_MISSING
 				LogError(logfp, LOGWARN,
 					"'SW_OUT_write_today': Invalid period = %d for key = %s",
 					timeSteps[k][i], key2str[k]);
 				continue;
+			#endif
 			}
 			#ifdef SWDEBUG
 			if (debug) swprintf("-t=%d", t);
@@ -2646,22 +2648,37 @@ static void get_precip(OutPeriod pd)
 	}
 	if(isPartialSoilwatOutput == FALSE)
 	{
+		float old_ppt = SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,0,pd)];
+		float old_rain = SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,0,pd)];
+		float old_snow = SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)];
 		float old_snowmelt = SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,0,pd)];
 		float old_snowloss = SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,0,pd)];
 		// only snowmelt and snowloss change over iterations so only need to average those two
 
+		SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,0,pd)], val_ppt);
+		SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,0,pd)], val_rain);
+		SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)], val_snow);
 		SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,0,pd)], val_snowmelt);
 		SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,0,pd)], val_snowloss);
 
+		SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_ppt, val_ppt, SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+		SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_rain, val_rain, SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+		SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_snow, val_snow, SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 		SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_snowmelt, val_snowmelt, SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 		SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_snowloss, val_snowloss, SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
 		if(Globals.currIter == Globals.runModelIterations){
+			float std_ppt = sqrt(SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+			float std_rain = sqrt(SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+			float std_snow = sqrt(SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
 			float std_snowmelt = sqrt(SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
 			float std_snowloss = sqrt(SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
 
-			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, val_ppt, _Sep,
-				val_rain, _Sep, val_snow, _Sep, SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_snowmelt, _Sep, SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_snowloss);
+			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
+			  _Sep, SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_ppt, _Sep,
+				SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_rain, _Sep, SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_snow,
+				_Sep, SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,0,pd)],
+				_Sep, std_snowmelt, _Sep, SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_snowloss);
 			strcat(outstr, str);
 		}
 	}
@@ -7159,11 +7176,9 @@ void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file
 						strcat(storeRegCol, _SepSplit);
 						#ifdef STEPWAT
 							if(std_headers){
-								if(i == 3 || i == 4){ // only STD for snowmelt and snowloss
-									strcat(storeRegCol, cnames_eSW_Precip[i]);
-									strcat(storeRegCol, "_STD");
-									strcat(storeRegCol, _SepSplit);
-								}
+								strcat(storeRegCol, cnames_eSW_Precip[i]);
+								strcat(storeRegCol, "_STD");
+								strcat(storeRegCol, _SepSplit);
 							}
 						#endif
 					}
