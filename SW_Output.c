@@ -1340,7 +1340,7 @@ void SW_OUT_write_today(void)
 
 
 	// get final value to be used for each timeperiod
-	if(SW_File_Status.finalValue_mo == -1){
+	if(SW_File_Status.finalValue_dy == -1){
 		SW_File_Status.finalValue_dy = SW_File_Status.finalValue_wk = SW_File_Status.finalValue_mo = SW_File_Status.finalValue_yr = -2; // set to -2 so dont redo this check
 		ForEachOutKey(k){
 				if(SW_Output[k].use){
@@ -1573,10 +1573,10 @@ void SW_OUT_write_today(void)
 			}
 
 			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
-				populate_output_values(reg_file_vals_day, soil_file_vals_day, k, 1, 0); // function to put all the values together for output
+				populate_output_values((char*)reg_file_vals_day, (char*)soil_file_vals_day, k, 1, 0); // function to put all the values together for output
 			}
 			if(storeAllIterations)
-				populate_output_values(reg_file_vals_day_iters, soil_file_vals_day_iters, k, 1, 1); // function to put all the values together for output
+				populate_output_values((char*)reg_file_vals_day_iters, (char*)soil_file_vals_day_iters, k, 1, 1); // function to put all the values together for output
 
 
 			if(k == SW_File_Status.finalValue_dy){ // if last value to be used then write to files
@@ -1620,9 +1620,9 @@ void SW_OUT_write_today(void)
 			}
 
 			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
-				populate_output_values(reg_file_vals_week, soil_file_vals_week, k, 2, 0);
+				populate_output_values((char*)reg_file_vals_week, (char*)soil_file_vals_week, k, 2, 0);
 			if(storeAllIterations)
-				populate_output_values(reg_file_vals_week_iters, soil_file_vals_week_iters, k, 2, 1);
+				populate_output_values((char*)reg_file_vals_week_iters, (char*)soil_file_vals_week_iters, k, 2, 1);
 
 			if(k == SW_File_Status.finalValue_wk){
 				if(SW_File_Status.make_soil){
@@ -1665,9 +1665,9 @@ void SW_OUT_write_today(void)
 			}
 
 			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
-				populate_output_values(reg_file_vals_month, soil_file_vals_month, k, 3, 0);
+				populate_output_values((char*)reg_file_vals_month, (char*)soil_file_vals_month, k, 3, 0);
 			if(storeAllIterations)
-				populate_output_values(reg_file_vals_month_iters, soil_file_vals_month_iters, k, 3, 1);
+				populate_output_values((char*)reg_file_vals_month_iters, (char*)soil_file_vals_month_iters, k, 3, 1);
 
 			if(k == SW_File_Status.finalValue_mo){
 				if(SW_File_Status.make_soil){
@@ -1710,9 +1710,9 @@ void SW_OUT_write_today(void)
 			}
 
 			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
-				populate_output_values(reg_file_vals_year, soil_file_vals_year, k, 4, 0);
+				populate_output_values((char*)reg_file_vals_year, (char*)soil_file_vals_year, k, 4, 0);
 			if(storeAllIterations){
-				populate_output_values(reg_file_vals_year_iters, soil_file_vals_year_iters, k, 4, 1);
+				populate_output_values((char*)reg_file_vals_year_iters, (char*)soil_file_vals_year_iters, k, 4, 1);
 			}
 
 			if(k == SW_File_Status.finalValue_yr){
@@ -3093,6 +3093,11 @@ static void get_swa(OutPeriod pd)
 						break;
 				}
 
+				/*
+				case eSW_Year:
+					p = Globals.currYear - 1;
+					break;
+				*/
 				SXW.sum_dSWA_repartitioned[Ivlp(j,i,p)] = val[j][i];
 			}
 
@@ -3356,6 +3361,7 @@ static void get_swpMatric(OutPeriod pd)
 				v->moavg.swpMatric[i], i);
 		break;
 	case eSW_Year:
+		p = Globals.currYear - 1;
 		val = SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel,
 				v->yravg.swpMatric[i], i);
 		break;
@@ -3488,6 +3494,7 @@ static void get_swaBulk(OutPeriod pd)
 				break;
 			case eSW_Year:
 				val = v->yravg.swaBulk[i];
+				p = Globals.currYear - 1;
 				break;
 		}
 		if (isPartialSoilwatOutput == FALSE)
@@ -3620,6 +3627,7 @@ static void get_swaMatric(OutPeriod pd)
 				break;
 			case eSW_Year:
 				val = v->yravg.swaMatric[i] * convert;
+				p = Globals.currYear - 1;
 				break;
 		}
 		if (isPartialSoilwatOutput == FALSE)
@@ -3753,6 +3761,7 @@ static void get_surfaceWater(OutPeriod pd)
 				break;
 			case eSW_Year:
 				val_surfacewater = v->yravg.surfaceWater;
+				p = Globals.currYear - 1;
 				break;
 		}
 
@@ -4468,6 +4477,7 @@ static void get_evapSoil(OutPeriod pd)
 				break;
 			case eSW_Year:
 				val = v->yravg.evap[i];
+				p = Globals.currYear - 1;
 				break;
 		}
 		if (isPartialSoilwatOutput == FALSE)
@@ -4624,6 +4634,7 @@ static void get_evapSurface(OutPeriod pd)
 				val_water = v->moavg.surfaceWater_evap;
 				break;
 			case eSW_Year:
+				p = Globals.currYear - 1;
 				val_tot = v->yravg.total_evap;
 				val_tree = v->yravg.evap_veg[SW_TREES];
 				val_forb = v->yravg.evap_veg[SW_FORBS];
@@ -5031,6 +5042,7 @@ static void get_soilinf(OutPeriod pd)
 				val_inf = v->moavg.soil_inf;
 				break;
 			case eSW_Year:
+				p = Globals.currYear - 1;
 				val_inf = v->yravg.soil_inf;
 				break;
 		}
@@ -5156,6 +5168,7 @@ static void get_lyrdrain(OutPeriod pd)
 				p = SW_Model.month-tOffset;
 				break;
 			case eSW_Year:
+				p = Globals.currYear - 1;
 				val = v->yravg.lyrdrain[i];
 				break;
 		}
@@ -5334,6 +5347,7 @@ static void get_hydred(OutPeriod pd)
 				val_shrub = v->yravg.hydred[SW_SHRUB][i];
 				val_grass = v->yravg.hydred[SW_GRASS][i];
 				val_forb = v->yravg.hydred[SW_FORBS][i];
+				p = Globals.currYear - 1;
 				break;
 			}
 		if (isPartialSoilwatOutput == FALSE)
@@ -5600,6 +5614,9 @@ static void get_aet(OutPeriod pd)
 		case eSW_Month:
 			p = SW_Model.month-tOffset;
 			break;
+		case eSW_Year:
+			p = Globals.currYear - 1;
+			break;
 	}
 
 	if (isPartialSoilwatOutput == FALSE)
@@ -5685,6 +5702,7 @@ static void get_pet(OutPeriod pd)
 				break;
 			case eSW_Year:
 				val = v->yravg.pet;
+				p = Globals.currYear-1;
 				break;
 		}
 
@@ -5803,6 +5821,7 @@ static void get_wetdays(OutPeriod pd)
 				break;
 			case eSW_Year:
 				val = (int) v->yravg.wetdays[i];
+				p = Globals.currYear - 1;
 				break;
 		}
 
@@ -5933,6 +5952,7 @@ static void get_snowpack(OutPeriod pd)
 			case eSW_Year:
 				val_swe = v->yravg.snowpack;
 				val_depth = v->yravg.snowdepth;
+				p = Globals.currYear - 1;
 				break;
 		}
 
@@ -6068,6 +6088,7 @@ static void get_deepswc(OutPeriod pd)
 				break;
 			case eSW_Year:
 				val = v->yravg.deep;
+				p = Globals.currYear - 1;
 				break;
 		}
 
@@ -6185,6 +6206,7 @@ static void get_soiltemp(OutPeriod pd)
 				break;
 			case eSW_Year:
 				val = v->yravg.sTemp[i];
+				p = Globals.currYear - 1;
 				break;
 		}
 
@@ -6957,7 +6979,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 
 			while (pt != NULL) {
 				if(year_out == 4){
-					if(counter >= 1){
+					if(counter >= 1){ // want to skip year string
 						strcat(soil_file_array, pt);
 						strcat(soil_file_array, _SepSplit);
 					}

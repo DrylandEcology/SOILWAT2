@@ -80,4 +80,17 @@ namespace {
     }
   }
 
+  // check the rank function to ensure properly ordering critical values
+  TEST(VegTest, rank){
+    int k;
+    get_critical_rank(); // function to put critical values in order
+
+    // check to make sure ranked in proper order, largest to smallest. (ex: -2.0, -2.0, -3.5, -3.9)
+    for(k = NVEGTYPES; k < NVEGTYPES; k++){
+        ASSERT_GE(SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[k]], SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[k+1]]);
+    }
+
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
 } // namespace
