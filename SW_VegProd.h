@@ -110,9 +110,9 @@ typedef struct {
 	VegType veg[NVEGTYPES]; // used to be: grass, shrub, tree, forb;
 	CoverType bare_cov;   /* bare ground cover of plot */
 
-	RealD critSoilWater[NVEGTYPES]; // storing values in same order as defined in rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
+	RealD critSoilWater[NVEGTYPES]; // storing values in same order as defined in STEPWAT2/rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
 
-	int rank_SWPcrits[NVEGTYPES]; // array to store the SWP crits in order of lest negative to most negative (used in sxw_resource)
+	int rank_SWPcrits[NVEGTYPES]; // array to store the SWP crits in order of lest negative to most negative (used in STEPWAT2/sxw_resource)
 
 	SW_VEGPROD_OUTPUTS dysum, /* helpful placeholder */
 		wksum, mosum, yrsum, /* accumulators for *avg */
