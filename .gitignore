@@ -21,5 +21,18 @@ gtest-*.o
 libgtest.a
 sw_test
 
+# Coverage files
+*.gcda
+*.gcno
+*.gcov
+*.dSYM
+
 # Doxygen documentation files: they should be produced locally
 doc/html/*
+
+# Binary files
+SOILWAT2
+testing/SOILWAT2
+libSOILWAT2.a
+libSOILWAT2++.a
+libcovSOILWAT2++.a
