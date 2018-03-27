@@ -118,7 +118,7 @@ typedef struct {
 		wksum, mosum, yrsum, /* accumulators for *avg */
 		wkavg, moavg, yravg; /* averages or sums as appropriate */
 
-
+	Bool use_SWA;
 } SW_VEGPROD;
 
 void SW_VPD_read(void);

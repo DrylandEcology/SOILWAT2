@@ -422,12 +422,11 @@ void calculate_repartitioned_soilwater(void){
 void get_dSWAbulk(int i){
   SW_SOILWAT *v = &SW_Soilwat;
 	int j,kv,curr_vegType,curr_crit_rank_index,kv_veg_type,prev_crit_veg_type,greater_veg_type;
-	float crit_val, prev_crit_val, smallestCritVal, largestCritVal, vegFractionSum, newFraction;
+	float crit_val, prev_crit_val, smallestCritVal, vegFractionSum, newFraction;
 	float veg_type_in_use; // set to current veg type fraction value to avoid multiple if loops. should just need 1 instead of 3 now.
 	float inner_loop_veg_type; // set to inner loop veg type
 	int array_size = NVEGTYPES * NVEGTYPES;
 	smallestCritVal = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[0]];
-	largestCritVal = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[NVEGTYPES-1]]; // largest index
 	RealF dSWA_bulk[array_size][array_size][MAX_LAYERS];
 	RealF dSWA_bulk_repartioned[array_size][array_size][MAX_LAYERS];
 

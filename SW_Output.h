@@ -165,6 +165,11 @@ typedef struct {
 	int make_soil,
 			make_regular;
 
+	Bool use_Day,
+			 use_Week,
+			 use_Month,
+			 use_Year;
+
 	FILE *fp_dy; /* opened output file pointer for day*/
 	FILE *fp_wk; /* opened output file pointer for week*/
 	FILE *fp_mo; /* opened output file pointer for month*/
