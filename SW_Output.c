@@ -2092,6 +2092,8 @@ static void get_co2effects(OutPeriod pd) {
 			float old_wue_mult_tree = SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)];
 			float old_wue_mult_forb = SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
+
+			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_grass);
 			SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_shrub);
 			SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_tree);
@@ -2280,6 +2282,7 @@ static void get_estab(OutPeriod pd)
 			{
 				float old_val = SXW_AVG.estab_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
+				// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 				SXW_AVG.estab_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.estab_avg[Iypc(Globals.currYear-1,p,0,pd)], v->parms[i]->estab_doy);
 
 				SXW_AVG.estab_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val, v->parms[i]->estab_doy, SXW_AVG.estab_avg[Iypc(Globals.currYear-1,p,0,pd)]);
@@ -2497,6 +2500,7 @@ static void get_temp(OutPeriod pd)
 		float old_val_temp_avg = SXW_AVG.avg_temp_avg[Iypc(Globals.currYear-1,p,0,pd)];
 		int old_val_surface = SXW_AVG.surfaceTemp_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
+		// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 		SXW_AVG.max_temp_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.max_temp_avg[Iypc(Globals.currYear-1,p,0,pd)], v_max);
 		SXW_AVG.min_temp_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.min_temp_avg[Iypc(Globals.currYear-1,p,0,pd)], v_min);
 		SXW_AVG.avg_temp_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.avg_temp_avg[Iypc(Globals.currYear-1,p,0,pd)], v_avg);
@@ -2673,8 +2677,8 @@ static void get_precip(OutPeriod pd)
 		float old_snow = SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)];
 		float old_snowmelt = SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,0,pd)];
 		float old_snowloss = SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,0,pd)];
-		// only snowmelt and snowloss change over iterations so only need to average those two
 
+		// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 		SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,0,pd)], val_ppt);
 		SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,0,pd)], val_rain);
 		SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)], val_snow);
@@ -2820,6 +2824,7 @@ ForEachSoilLayer(i){
 		{
 			float old_val = SXW_AVG.vwcbulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 
+			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.vwcbulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.vwcbulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val[i]);
 			SXW_AVG.vwcbulk_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val[i], SXW_AVG.vwcbulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
 
@@ -2978,6 +2983,7 @@ ForEachSoilLayer(i){
 	{
 		float old_val = SXW_AVG.vwcmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 
+		// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 		SXW_AVG.vwcmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.vwcmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val[i]);
 		SXW_AVG.vwcmatric_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val[i], SXW_AVG.vwcmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
 
@@ -3126,6 +3132,7 @@ static void get_swa(OutPeriod pd)
 				float old_grass = SXW.SWA_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 
 				// get running average over all iterations
+				// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 				SXW.SWA_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.SWA_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val[0][i]);
 				SXW.SWA_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.SWA_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val[1][i]);
 				SXW.SWA_forb_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.SWA_forb_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val[2][i]);
@@ -3265,7 +3272,6 @@ static void get_swcBulk(OutPeriod pd)
 				p = Globals.currYear - 1;
 				val = v->yravg.swcBulk[i];
 				break;
-			// YEAR should never be used with STEPWAT
 		}
 		if(storeAllIterations){
 			sprintf(str_iters, "%c%7.6f", _Sep, val);
@@ -3276,6 +3282,7 @@ static void get_swcBulk(OutPeriod pd)
 			float old_val = 0.;
 			old_val = SXW_AVG.swc_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 
+			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.swc_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.swc_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
 			SXW_AVG.swc_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.swc_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
 
@@ -3382,6 +3389,7 @@ static void get_swpMatric(OutPeriod pd)
 
 		float old_val = SXW_AVG.swpmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 
+		// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 		SXW_AVG.swpmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.swpmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
 		SXW_AVG.swpmatric_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.swpmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
 
@@ -3512,9 +3520,9 @@ static void get_swaBulk(OutPeriod pd)
 		{
 			float old_val = SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 
+			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
 			SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
-
 
 			if(Globals.currIter == Globals.runModelIterations){
 				float std = sqrt(SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
@@ -3645,6 +3653,7 @@ static void get_swaMatric(OutPeriod pd)
 		{
 			float old_val = SXW_AVG.swamatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 
+			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.swamatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.swamatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
 			SXW_AVG.swamatric_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.swamatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
 
@@ -3780,6 +3789,7 @@ static void get_surfaceWater(OutPeriod pd)
 		{
 			float old_val = SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
+			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,0,pd)], val_surfacewater);
 			SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val, val_surfacewater, SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
@@ -3922,12 +3932,12 @@ static void get_runoffrunon(OutPeriod pd) {
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			//printf("yr, p: %d, %d\n", Globals.currYear, p);
 			float old_val_total = SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)];
 			float old_val_surface_runoff = SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,0,pd)];
 			float old_val_surface_runon = SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,0,pd)];
 			float old_val_snow = SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
+			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)], val_netRunoff);
 			SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_total, val_netRunoff, SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
@@ -3940,10 +3950,6 @@ static void get_runoffrunon(OutPeriod pd) {
 
 			SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)], val_snowRunoff);
 			SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_snow, val_snowRunoff, SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-
-
-			//if(Globals.currYear == 1 && p == 1)
-				//printf("surfacewater_avg[%d, %d, %d], current avg: %f, %f\n", Globals.currYear,p, val_surfacewater, SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
 			if(Globals.currIter == Globals.runModelIterations){
 				float std_total = sqrt(SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
@@ -4363,7 +4369,6 @@ ForEachSoilLayer(i)
 			break; /* print previous to current */
 		/* YEAR should never be used with STEPWAT */
 	}
-	//printf("year i, p: %d %d, %d\n", SW_Model.simyear, i,p);
 	if (bFlush) p++;
 
 	SXW.transpTotal[Ilp(i,p)] = val_total[i];
@@ -4382,6 +4387,7 @@ ForEachSoilLayer(i)
 
 		// for the average over iteration we need to include year too so values are not overlapping.
 		// [Iylp(Globals.currYear-1,i,p)] is a new macro defined in sxw.h that represents year, layer, timeperiod
+		// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 		SXW.transpTotal_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.transpTotal_avg[Iylp(Globals.currYear-1,i,p,pd,0)], SXW.transpTotal[Ilp(i,p)]);
 		SXW.transpTrees_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.transpTrees_avg[Iylp(Globals.currYear-1,i,p,pd,0)], SXW.transpTrees[Ilp(i,p)]);
 		SXW.transpShrubs_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.transpShrubs_avg[Iylp(Globals.currYear-1,i,p,pd,0)], SXW.transpShrubs[Ilp(i,p)]);
@@ -4495,6 +4501,7 @@ static void get_evapSoil(OutPeriod pd)
 		{
 			float old_val = SXW_AVG.evapsoil_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 
+			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.evapsoil_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.evapsoil_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
 			SXW_AVG.evapsoil_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.evapsoil_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
 
@@ -4666,6 +4673,8 @@ static void get_evapSurface(OutPeriod pd)
 			float old_val_litter = SXW_AVG.evapsurface_litter_avg[Iypc(Globals.currYear-1,p,0,pd)];
 			float old_val_water = SXW_AVG.evapsurface_water_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
+
+			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.evapsurface_total_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.evapsurface_total_avg[Iypc(Globals.currYear-1,p,0,pd)], val_tot);
 			SXW_AVG.evapsurface_total_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_total, val_tot, SXW_AVG.evapsurface_total_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
@@ -4890,6 +4899,7 @@ static void get_interception(OutPeriod pd)
 				old_val_grass = SXW_AVG.interception_grass_avg[Iypc(Globals.currYear-1,p,0,pd)];
 				old_val_litter = SXW_AVG.interception_litter_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
+				// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 				SXW_AVG.interception_total_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.interception_total_avg[Iypc(Globals.currYear-1,p,0,pd)], val_tot);
 				SXW_AVG.interception_total_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_total, val_tot, SXW_AVG.interception_total_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
@@ -5062,6 +5072,7 @@ static void get_soilinf(OutPeriod pd)
 		{
 			float old_val = SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
+			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear-1,p,0,pd)], val_inf);
 			SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val, val_inf, SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
@@ -5187,6 +5198,7 @@ static void get_lyrdrain(OutPeriod pd)
 		{
 			float old_val = SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 
+			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
 			SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
 
@@ -5322,7 +5334,6 @@ static void get_hydred(OutPeriod pd)
 		strcat(outstr, str);
 	}
 
-
 	#elif defined(STEPWAT)
 	ForEachSoilLayer(i)
 	{
@@ -5369,6 +5380,7 @@ static void get_hydred(OutPeriod pd)
 			float old_val_shrub = SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 			float old_val_grass = SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 
+			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.hydred_total_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.hydred_total_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val_total);
 			SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val_tree);
 			SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val_shrub);
@@ -5635,8 +5647,8 @@ static void get_aet(OutPeriod pd)
 		float old_val = SXW_AVG.aet_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
 		//running aet_avg
+		// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 		SXW_AVG.aet_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.aet_avg[Iypc(Globals.currYear-1,p,0,pd)], val);
-
 		SXW_AVG.aet_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val, val, SXW_AVG.aet_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
 		if(Globals.currIter == Globals.runModelIterations){
@@ -5719,14 +5731,11 @@ static void get_pet(OutPeriod pd)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			//printf("yr, p: %d, %d\n", Globals.currYear, p);
 			float old_val = SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
+			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,0,pd)], val);
 			SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val, val, SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-
-			//if(Globals.currYear == 1 && p == 1)
-				//printf("pet_avg[%d, %d], current avg: %f, %f\n", Globals.currYear,p, val, SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
 			if(Globals.currIter == Globals.runModelIterations){
 				float std = sqrt(SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
@@ -5840,6 +5849,7 @@ static void get_wetdays(OutPeriod pd)
 		{
 			float old_val = SXW_AVG.wetday_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 
+			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.wetday_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.wetday_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
 			SXW_AVG.wetday_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.wetday_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
 
@@ -5969,18 +5979,15 @@ static void get_snowpack(OutPeriod pd)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			//printf("yr, p: %d, %d\n", Globals.currYear, p);
 			float old_val_swe = SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,0,pd)];
 			float old_val_depth = SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
+			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,0,pd)], val_swe);
 			SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_swe, val_swe, SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
 			SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear-1,p,0,pd)], val_depth);
 			SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_depth, val_depth, SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-
-			//if(Globals.currYear == 1 && p == 1)
-				//printf("snowpack_water_eqv_avg[%d, %d], current avg: %f, %f\n", Globals.currYear,p, val_swe, SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
 			if(Globals.currIter == Globals.runModelIterations){
 				float std_swe = sqrt(SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
@@ -6107,11 +6114,9 @@ static void get_deepswc(OutPeriod pd)
 		{
 			float old_val = SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,0,pd)];
 
+			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,0,pd)], val);
 			SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val, val, SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-
-			//if(Globals.currYear == 1 && p == 1)
-				//printf("deepswc_avg[%d, %d], current avg: %f, %f\n", Globals.currYear,p, val, SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,0,pd)]);
 
 			if(Globals.currIter == Globals.runModelIterations){
 				float std = sqrt(SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
@@ -6225,6 +6230,7 @@ static void get_soiltemp(OutPeriod pd)
 		{
 			float old_val = SXW_AVG.soiltemp_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
 
+			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
 			SXW_AVG.soiltemp_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.soiltemp_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
 			SXW_AVG.soiltemp_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.soiltemp_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
 
@@ -7787,6 +7793,24 @@ void SW_OUT_SetMemoryRefs( void)
  key.
  - Add new code to the switch statement in average_for() to do the
  summarizing.
+ - Add new code to create_col_headers to make proper columns for new value
+ - if variable is a soil variable (has layers) add name to SW_OUT_read, create_col_headers
+ 		and populate_output_values in the if block checking for SOIL variables
+		looks like below code
+		if((strcmp(key2str[output_var], "VWCBULK")==0 || strcmp(key2str[output_var], "VWCMATRIC")==0 || strcmp(key2str[output_var], "SWCBULK")==0
+			|| strcmp(key2str[output_var], "SWABULK")==0
+			|| strcmp(key2str[output_var], "EVAPSOIL")==0 || strcmp(key2str[output_var], "TRANSP")==0 || strcmp(key2str[output_var], "WETDAY")==0
+			|| strcmp(key2str[output_var], "LYRDRAIN")==0 || strcmp(key2str[output_var], "SOILTEMP")==0 || strcmp(key2str[output_var], "HYDRED")==0
+			|| strcmp(key2str[output_var], "SWAMATRIC")==0 || strcmp(key2str[output_var], "SWPMATRIC")==0 || strcmp(key2str[output_var], "SWA")==0))
+		{
+	----------------------------
+	To make new values work with STEPWAT do the following
+	- add average storage variable to sxw.h in the soilwat_average structure
+	- add memory allocation to _make_soil_arrays function in sxw.c
+	- add call to mem_Free for variable in free_all_sxw_memory in sxw.c
+	- add #ifdef STEPWAT code to the get_* function that calculates the average over iterations
+
+
 
  That should do it.  However, new code is about to be added to Output.c
  and outsetup.in that will allow quantities to be summarized by summing
