@@ -1332,18 +1332,20 @@ void SW_OUT_write_today(void)
   int debug = 0;
   #endif
 
-// timestep output vars
-	char *soil_file_vals_day[500]; // store
-	char *reg_file_vals_day[500]; // store
+	#ifndef rSOILWAT2
+		// timestep output vars
+		char *soil_file_vals_day[500]; // store
+		char *reg_file_vals_day[500]; // store
 
-	char *soil_file_vals_week[500]; // store
-	char *reg_file_vals_week[500]; // store
+		char *soil_file_vals_week[500]; // store
+		char *reg_file_vals_week[500]; // store
 
-	char *soil_file_vals_month[500]; // store
-	char *reg_file_vals_month[500]; // store
+		char *soil_file_vals_month[500]; // store
+		char *reg_file_vals_month[500]; // store
 
-	char *soil_file_vals_year[500]; // store
-	char *reg_file_vals_year[500]; // store
+		char *soil_file_vals_year[500]; // store
+		char *reg_file_vals_year[500]; // store
+	#endif
 
 	#ifdef STEPWAT
 		char *soil_file_vals_day_iters[500]; // store
@@ -1782,6 +1784,7 @@ static void get_none(OutPeriod pd)
 	if (pd) {}
 }
 
+#ifndef RSOILWAT
 static void get_outstrleader(TimeInt pd)
 {
 	/* --------------------------------------------------- */
@@ -1794,7 +1797,6 @@ static void get_outstrleader(TimeInt pd)
 	 * Also, see note on test value in _write_today() for
 	 * explanation of the +1.
 	 */
-#ifndef RSOILWAT
 	switch (pd)
 	{
 	case eSW_Day:
@@ -1831,8 +1833,8 @@ static void get_outstrleader(TimeInt pd)
 		#endif
 		break;
 	}
-#endif
 }
+#endif
 
 static void get_co2effects(OutPeriod pd) {
 	SW_VEGPROD *v = &SW_VegProd;
@@ -2225,12 +2227,13 @@ static void get_estab(OutPeriod pd)
 	 */
 	SW_VEGESTAB *v = &SW_VegEstab;
 	IntU i;
-	char str[OUTSTRLEN];
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		get_outstrleader(pd);
+		char str[OUTSTRLEN];
 
 	#elif defined(STEPWAT)
+		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
 		TimeInt p = 0;
 		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
@@ -3010,16 +3013,18 @@ static void get_swa(OutPeriod pd)
 	/* added 21-Oct-03, cwb */
 	#ifdef STEPWAT
 		TimeInt p = 0;
+		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
+		RealF val[NVEGTYPES][MAX_LAYERS]; // need 2D array for values
 	#endif
 
-	char str[OUTSTRLEN];
 	LyrIndex i;
 	int j = 0;
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealF val[NVEGTYPES][MAX_LAYERS]; // need 2D array for values
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		RealF val[NVEGTYPES][MAX_LAYERS]; // need 2D array for values
+		char str[OUTSTRLEN];
 		get_outstrleader(pd);
 		ForEachSoilLayer(i)
 		{
@@ -3173,6 +3178,7 @@ static void get_swcBulk(OutPeriod pd)
 	/* added 21-Oct-03, cwb */
 #ifdef STEPWAT
 	TimeInt p = 0;
+	RealD val = SW_MISSING;
 #endif
 
 #ifdef RSOILWAT
@@ -3181,8 +3187,8 @@ static void get_swcBulk(OutPeriod pd)
 #endif
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealD val = SW_MISSING;
 #if !defined(STEPWAT) && !defined(RSOILWAT)
+	RealD val = SW_MISSING;
 	char str[OUTSTRLEN];
 	get_outstrleader(pd);
 	ForEachSoilLayer(i)
@@ -3315,15 +3321,16 @@ static void get_swpMatric(OutPeriod pd)
 
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealD val = SW_MISSING;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 	  char str[OUTSTRLEN];
+		RealD val = SW_MISSING;
 	  get_outstrleader(pd);
 
 	#elif defined(STEPWAT)
 	  char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
+		RealD val = SW_MISSING;
 		TimeInt p = 0;
 	  if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 	  {
@@ -3457,12 +3464,13 @@ static void get_swaBulk(OutPeriod pd)
 
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealD val = SW_MISSING;
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 	  char str[OUTSTRLEN];
+		RealD val = SW_MISSING;
 	  get_outstrleader(pd);
 
 	#elif defined(STEPWAT)
+		RealD val = SW_MISSING;
 	  char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
 		TimeInt p = 0;
@@ -3588,15 +3596,17 @@ static void get_swaMatric(OutPeriod pd)
 
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealD val = SW_MISSING, convert;
+	RealD convert;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 	  char str[OUTSTRLEN];
+		RealD val = SW_MISSING;
 	  get_outstrleader(pd);
 
 	#elif defined(STEPWAT)
 	  char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
+		RealD val = SW_MISSING;
 		TimeInt p = 0;
 	  if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 	  {
@@ -3730,14 +3740,15 @@ static void get_surfaceWater(OutPeriod pd)
 {
 	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealD val_surfacewater = SW_MISSING;
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		char str[OUTSTRLEN];
+		RealD val_surfacewater = SW_MISSING;
 		get_outstrleader(pd);
 
 	#elif defined(STEPWAT)
 		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
+		RealD val_surfacewater = SW_MISSING;
 		TimeInt p = 0;
 		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		{
@@ -4437,15 +4448,16 @@ static void get_evapSoil(OutPeriod pd)
 	/* --------------------------------------------------- */
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealD val = SW_MISSING;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		char str[OUTSTRLEN];
+		RealD val = SW_MISSING;
 		get_outstrleader(pd);
 
 	#elif defined(STEPWAT)
 		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
+		RealD val = SW_MISSING;
 		TimeInt p = 0;
 		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		{
@@ -4556,17 +4568,20 @@ static void get_evapSurface(OutPeriod pd)
 {
 	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealD val_tot = SW_MISSING, val_tree = SW_MISSING, val_forb = SW_MISSING,
-			val_shrub = SW_MISSING, val_grass = SW_MISSING, val_litter =
-					SW_MISSING, val_water = SW_MISSING;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		char str[OUTSTRLEN];
+		RealD val_tot = SW_MISSING, val_tree = SW_MISSING, val_forb = SW_MISSING,
+				val_shrub = SW_MISSING, val_grass = SW_MISSING, val_litter =
+						SW_MISSING, val_water = SW_MISSING;
 		get_outstrleader(pd);
 
 	#elif defined(STEPWAT)
 		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
+		RealD val_tot = SW_MISSING, val_tree = SW_MISSING, val_forb = SW_MISSING,
+				val_shrub = SW_MISSING, val_grass = SW_MISSING, val_litter =
+						SW_MISSING, val_water = SW_MISSING;
 		TimeInt p = 0;
 		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		{
@@ -4791,17 +4806,20 @@ static void get_interception(OutPeriod pd)
 {
 	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealD val_tot = SW_MISSING, val_tree = SW_MISSING, val_forb = SW_MISSING,
-			val_shrub = SW_MISSING, val_grass = SW_MISSING, val_litter =
-					SW_MISSING;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		char str[OUTSTRLEN];
+		RealD val_tot = SW_MISSING, val_tree = SW_MISSING, val_forb = SW_MISSING,
+				val_shrub = SW_MISSING, val_grass = SW_MISSING, val_litter =
+						SW_MISSING;
 		get_outstrleader(pd);
 
 	#elif defined(STEPWAT)
 		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
+		RealD val_tot = SW_MISSING, val_tree = SW_MISSING, val_forb = SW_MISSING,
+				val_shrub = SW_MISSING, val_grass = SW_MISSING, val_litter =
+						SW_MISSING;
 		TimeInt p = 0;
 		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		{
@@ -5011,15 +5029,16 @@ static void get_soilinf(OutPeriod pd)
 	/* 20110219 (drs) added runoff */
 	/* 12/13/2012	(clk)	moved runoff, now named snowRunoff, to get_runoffrunon(); */
 	SW_WEATHER *v = &SW_Weather;
-	RealD val_inf = SW_MISSING;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		char str[OUTSTRLEN];
+		RealD val_inf = SW_MISSING;
 		get_outstrleader(pd);
 
 	#elif defined(STEPWAT)
 		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
+		RealD val_inf = SW_MISSING;
 		TimeInt p = 0;
 		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		{
@@ -5134,15 +5153,16 @@ static void get_lyrdrain(OutPeriod pd)
 	/* 20100202 (drs) added */
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealD val = SW_MISSING;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		char str[OUTSTRLEN];
+		RealD val = SW_MISSING;
 		get_outstrleader(pd);
 
 	#elif defined(STEPWAT)
 		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
+		RealD val = SW_MISSING;
 		TimeInt p = 0;
 		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		{
@@ -5274,19 +5294,24 @@ static void get_hydred(OutPeriod pd)
 	/* 20101020 (drs) added */
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealD val_total = SW_MISSING;
-	RealD val_tree = SW_MISSING;
-	RealD val_shrub = SW_MISSING;
-	RealD val_forb = SW_MISSING;
-	RealD val_grass = SW_MISSING;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		char str[OUTSTRLEN];
+		RealD val_total = SW_MISSING;
+		RealD val_tree = SW_MISSING;
+		RealD val_shrub = SW_MISSING;
+		RealD val_forb = SW_MISSING;
+		RealD val_grass = SW_MISSING;
 		get_outstrleader(pd);
 
 	#elif defined(STEPWAT)
 		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
+		RealD val_total = SW_MISSING;
+		RealD val_tree = SW_MISSING;
+		RealD val_shrub = SW_MISSING;
+		RealD val_forb = SW_MISSING;
+		RealD val_grass = SW_MISSING;
 		TimeInt p = 0;
 		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		{
@@ -5563,14 +5588,15 @@ static void get_aet(OutPeriod pd)
 {
 	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealD val = SW_MISSING;
 #if !defined(STEPWAT) && !defined(RSOILWAT)
 	char str[OUTSTRLEN];
+	RealD val = SW_MISSING;
 	get_outstrleader(pd);
 
 #elif defined(STEPWAT)
 	char str[OUTSTRLEN];
 	char str_iters[OUTSTRLEN];
+	RealD val = SW_MISSING;
 	TimeInt p = 0;
 	if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		get_outstrleader(pd);
@@ -5672,16 +5698,17 @@ static void get_pet(OutPeriod pd)
 {
 	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealD val = SW_MISSING;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
 		char str[OUTSTRLEN];
+		RealD val = SW_MISSING;
 		get_outstrleader(pd);
 
 
 	#elif defined(STEPWAT)
 		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
+		RealD val = SW_MISSING;
 		TimeInt p = 0;
 		if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 		{
