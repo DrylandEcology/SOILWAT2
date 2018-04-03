@@ -507,7 +507,7 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_SWCBulk] = tLayers;
 	ncol_OUT[eSW_SWABulk] = tLayers;
 	ncol_OUT[eSW_SWAMatric] = tLayers;
-	ncol_OUT[eSW_SWA] = tLayers * (NVEGTYPES);
+	ncol_OUT[eSW_SWA] = tLayers * NVEGTYPES;
 	ncol_OUT[eSW_SWPMatric] = tLayers;
 	ncol_OUT[eSW_SurfaceWater] = 1;
 	ncol_OUT[eSW_Transp] = tLayers * (NVEGTYPES + 1); // NVEGTYPES plus totals
@@ -612,9 +612,9 @@ void SW_OUT_set_colnames(void) {
 	if (debug) swprintf(" 'eSW_SWA' ...");
 	#endif
 	for (i = 0; i < tLayers; i++) {
-		for (j = 0; j < NVEGTYPES + 1; j++) {
+		for (j = 0; j < NVEGTYPES; j++) {
 			strcpy(ctemp, "swa_");
-			strcat(ctemp, cnames_VegTypes[j]);
+			strcat(ctemp, cnames_VegTypes[j+1]); // j+1 since no total column for swa.
 			strcat(ctemp, "_");
 			strcat(ctemp, Layers_names[i]);
 
@@ -7407,12 +7407,11 @@ void create_col_headers(IntU outFileTimestep, FILE *regular_file, FILE *soil_fil
 #endif
 /**
   \fn void stat_Output_Daily_CSV_Summary(int iteration)
-  \brief Creates daily files
   Creates daily files for SOILWAT standalone and for STEPWAT depending on defined flags
-	for STEPWAT if -i flag is used it creates file for each iteration naming file based on iteration
+	for STEPWAT. If -i flag is used it creates file for each iteration naming file based on iteration.
+	If -o flag is used then only 1 set of files is created, not individual iterations.
   \param iteration. Current iteration for file name if -i flag used in STEPWAT
 */
-///This function will create daily
 /***********************************************************/
 void stat_Output_Daily_CSV_Summary(int iteration)
 {
@@ -7482,12 +7481,11 @@ void stat_Output_Daily_CSV_Summary(int iteration)
 
 /**
   \fn void stat_Output_Weekly_CSV_Summary(int iteration)
-  \brief Creates weekly files
   Creates weekly files for SOILWAT standalone and for STEPWAT depending on defined flags
-	for STEPWAT if -i flag is used it creates file for each iteration naming file based on iteration
+	for STEPWAT. If -i flag is used it creates file for each iteration naming file based on iteration.
+	If -o flag is used then only 1 set of files is created, not individual iterations.
   \param iteration. Current iteration for file name if -i flag used in STEPWAT
 */
-//This function will create Weekly
 /***********************************************************/
 void stat_Output_Weekly_CSV_Summary(int iteration)
 {
@@ -7557,12 +7555,11 @@ void stat_Output_Weekly_CSV_Summary(int iteration)
 
 /**
   \fn void stat_Output_Monthly_CSV_Summary(int iteration)
-  \brief Creates montly files
   Creates monthly files for SOILWAT standalone and for STEPWAT depending on defined flags
-	for STEPWAT if -i flag is used it creates file for each iteration naming file based on iteration
+	for STEPWAT. If -i flag is used it creates file for each iteration naming file based on iteration.
+	If -o flag is used then only 1 set of files is created, not individual iterations.
   \param iteration. Current iteration for file name if -i flag used in STEPWAT
 */
-//This function will create Monthly
 /***********************************************************/
 void stat_Output_Monthly_CSV_Summary(int iteration)
 {
@@ -7630,12 +7627,11 @@ void stat_Output_Monthly_CSV_Summary(int iteration)
 
 /**
   \fn void stat_Output_Yearly_CSV_Summary(int iteration)
-  \brief Creates yearly files
   Creates yearly files for SOILWAT standalone and for STEPWAT depending on defined flags
-	for STEPWAT if -i flag is used it creates file for each iteration naming file based on iteration
+	for STEPWAT. If -i flag is used it creates file for each iteration naming file based on iteration.
+	If -o flag is used then only 1 set of files is created, not individual iterations.
   \param iteration. Current iteration for file name if -i flag used in STEPWAT
 */
-//This function will create Yearly
 /***********************************************************/
 void stat_Output_Yearly_CSV_Summary(int iteration)
 {

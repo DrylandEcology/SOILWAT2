@@ -361,6 +361,11 @@ void SW_SWC_water_flow(void) {
 				SW_Site.lyr[i]->swcBulk_wet));
 }
 
+/**
+  \fn void calculate_repartitioned_soilwater(void)
+  Sets up the structures that will hold the repartitioned soilwater and propagate the swa_master structure for use in get_dSWAbulk().
+*/
+/***********************************************************/
 void calculate_repartitioned_soilwater(void){
   // this will run for every day of every year
   SW_SOILWAT *v = &SW_Soilwat;
@@ -376,7 +381,6 @@ void calculate_repartitioned_soilwater(void){
         v->swa_master[j][j][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[j]);
       else
         v->swa_master[j][j][i] = 0.;
-      //printf("swa_master[%d][%d][%d]: %f\n", j, j, i, v->swa_master[j][j][i]);
       v->dSWA_repartitioned_sum[j][i] = 0.; // need to reset to 0 each time
     }
 
@@ -410,15 +414,14 @@ void calculate_repartitioned_soilwater(void){
 
 
 /**
-  \fn static void get_dSWAbulk(RealF swa_master[16][16])
-  \brief Calculates actual swa available for each veg type.
-
-  get_dSWAbulk goes through each vegtype and calculates what amount
-	of soilwater is available at each critical value
-
-  \param swa_master. Takes in 2D array. This is specifically for SOILWAT standalone. STEPWAT passes in NULL since its values
-	are stored in struct
+  \fn get_dSWAbulk(int i)
+  This function calculates the repartioned soilwater.
+  soilwater for each vegtype is calculated based on size of the critical soilwater based on the input files.
+  This goes through the ranked critical values, starting at the deepest and moving up
+  The deepest veg type has access to the available soilwater of each veg type above so start at bottom move up.
+  \param i. soil layer
 */
+/***********************************************************/
 void get_dSWAbulk(int i){
   SW_SOILWAT *v = &SW_Soilwat;
 	int j,kv,curr_vegType,curr_crit_rank_index,kv_veg_type,prev_crit_veg_type,greater_veg_type;
