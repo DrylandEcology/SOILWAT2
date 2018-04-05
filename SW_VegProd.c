@@ -633,7 +633,6 @@ void SW_VPD_construct(void) {
       v->veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
     }
   }
-
 }
 
 
@@ -680,6 +679,7 @@ void SW_VPD_init(void) {
 	SW_VEGPROD *v = &SW_VegProd; /* convenience */
 	TimeInt doy; /* base1 */
 	int k;
+
 
 	// Grab the real year so we can access CO2 data
 	ForEachVegType(k)
@@ -750,6 +750,12 @@ void SW_VPD_init(void) {
 				v->veg[k].total_agb_daily[doy] = 0.;
 			}
 		}
+		// function called here for rSOILWAT since the SW_VPD_read() function not called when rSOILWAT2 run
+		#ifdef RSOILWAT
+			// Only want to call function once, only checking that 2 are 0 because before function is run all == 0 but after run only 1 value will be 0.
+			if(SW_VegProd.rank_SWPcrits[0] == 0 && SW_VegProd.rank_SWPcrits[1] == 0)
+				get_critical_rank();
+		#endif
 }
 
 void _echo_VegProd(void) {

@@ -369,9 +369,11 @@ void SW_OUT_construct(void)
 	SW_File_Status.col_status_mo = 0;
 	SW_File_Status.col_status_yr = 0;
 
-	ForEachSoilLayer(i)
-		ForEachVegType(j)
+	ForEachSoilLayer(i){
+		ForEachVegType(j){
 			s->SWA_VegType[j][i] = 0.;
+		}
+	}
 
 	/* note that an initializer that is called during
 	 * execution (better called clean() or something)
@@ -3052,45 +3054,116 @@ static void get_swa(OutPeriod pd)
 	#elif defined(RSOILWAT)
 		int delta;
 		RealD *p;
+
 		switch (pd)
 		{
 			case eSW_Day:
-			delta = SW_Output[eSW_SWA].dy_row;
-			p = p_rOUT[eSW_SWA][eSW_Day]; // set shorthand copy of 'p_rOUT' pointer
-			p[delta + dy_nrow * 0] = SW_Model.simyear;
-			p[delta + dy_nrow * 1] = SW_Model.doy;
+			p_rOUT[eSW_SWA][eSW_Day][SW_Output[eSW_SWA].dy_row + dy_nrow * 0] = SW_Model.simyear;
+			p_rOUT[eSW_SWA][eSW_Day][SW_Output[eSW_SWA].dy_row + dy_nrow * 1] = SW_Model.doy;
+			break;
+			case eSW_Week:
+			p_rOUT[eSW_SWA][eSW_Week][SW_Output[eSW_SWA].wk_row + wk_nrow * 0] = SW_Model.simyear;
+			p_rOUT[eSW_SWA][eSW_Week][SW_Output[eSW_SWA].wk_row + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
+			break;
+			case eSW_Month:
+			p_rOUT[eSW_SWA][eSW_Month][SW_Output[eSW_SWA].mo_row + mo_nrow * 0] = SW_Model.simyear;
+			p_rOUT[eSW_SWA][eSW_Month][SW_Output[eSW_SWA].mo_row + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
+			break;
+			case eSW_Year:
+			p_rOUT[eSW_SWA][eSW_Year][SW_Output[eSW_SWA].yr_row + yr_nrow * 0] = SW_Model.simyear;
+			break;
+		}
+		switch (pd)
+		{
+			// tree
+			case eSW_Day:
+			ForEachSoilLayer(i){
+				p_rOUT[eSW_SWA][eSW_Day][SW_Output[eSW_SWA].dy_row + dy_nrow * (i + 2)] = v->dysum.SWA_VegType[0][i];
+				//printf("tree: %f\n", v->dysum.SWA_VegType[0][i]);
+			}
+			break;
+			case eSW_Week:
 			ForEachSoilLayer(i)
-				ForEachVegType(j)
-					p[delta + dy_nrow * (i + 2)] = v->dysum.SWA_VegType[j][i];
+				p_rOUT[eSW_SWA][eSW_Week][SW_Output[eSW_SWA].wk_row + wk_nrow * (i + 2)] = v->wkavg.SWA_VegType[0][i];
+			break;
+			case eSW_Month:
+			ForEachSoilLayer(i)
+				p_rOUT[eSW_SWA][eSW_Month][SW_Output[eSW_SWA].mo_row + mo_nrow * (i + 2)] = v->moavg.SWA_VegType[0][i];
+			break;
+			case eSW_Year:
+			ForEachSoilLayer(i)
+				p_rOUT[eSW_SWA][eSW_Year][SW_Output[eSW_SWA].yr_row + yr_nrow * (i + 1)] = v->yravg.SWA_VegType[0][i];
+			break;
+		}
+		switch (pd)
+		{
+			// shrub
+			case eSW_Day:
+			ForEachSoilLayer(i){
+			p_rOUT[eSW_SWA][eSW_Day][SW_Output[eSW_SWA].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 1)] = v->dysum.SWA_VegType[1][i];
+				//printf("shrub: %f\n", v->dysum.SWA_VegType[1][i]);
+			}
+			break;
+			case eSW_Week:
+			ForEachSoilLayer(i)
+			p_rOUT[eSW_SWA][eSW_Week][SW_Output[eSW_SWA].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 1)] = v->wkavg.SWA_VegType[1][i];
+			break;
+			case eSW_Month:
+			ForEachSoilLayer(i)
+			p_rOUT[eSW_SWA][eSW_Month][SW_Output[eSW_SWA].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 1)] = v->moavg.SWA_VegType[1][i];
+			break;
+			case eSW_Year:
+			ForEachSoilLayer(i)
+			p_rOUT[eSW_SWA][eSW_Year][SW_Output[eSW_SWA].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 1)] = v->yravg.SWA_VegType[1][i];
+			break;
+		}
+		switch (pd)
+		{
+			// forbs
+			case eSW_Day:
+			ForEachSoilLayer(i){
+				p_rOUT[eSW_SWA][eSW_Day][SW_Output[eSW_SWA].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 2)] = v->dysum.SWA_VegType[2][i];
+				//printf("v->dysum.SWA_VegType[2][%d]: %f\n", i, v->dysum.SWA_VegType[2][i]);
+				//printf("p_rOUT[eSW_SWA][eSW_Day][SW_Output[eSW_SWA].dy_row + dy_nrow * (%d) + (%d)]: %f\n", i + 2, (dy_nrow * SW_Site.n_layers * 2), p_rOUT[eSW_SWA][eSW_Day][SW_Output[eSW_SWA].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 2)]);
+				//printf("2: %f\n",v->dysum.SWA_VegType[2][i]);
+			}
+			break;
+			case eSW_Week:
+			ForEachSoilLayer(i)
+			p_rOUT[eSW_SWA][eSW_Week][SW_Output[eSW_SWA].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 2)] = v->wkavg.SWA_VegType[2][i];
+			break;
+			case eSW_Month:
+			ForEachSoilLayer(i)
+			p_rOUT[eSW_SWA][eSW_Month][SW_Output[eSW_SWA].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 2)] = v->moavg.SWA_VegType[2][i];
+			break;
+			case eSW_Year:
+			ForEachSoilLayer(i)
+			p_rOUT[eSW_SWA][eSW_Year][SW_Output[eSW_SWA].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 2)] = v->yravg.SWA_VegType[2][i];
+			break;
+		}
+		switch (pd)
+		{
+			// grass
+			case eSW_Day:
+			ForEachSoilLayer(i){
+			p_rOUT[eSW_SWA][eSW_Day][SW_Output[eSW_SWA].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 3)] = v->dysum.SWA_VegType[3][i];
+			//printf("grass: %f\n", p_rOUT[eSW_SWA][eSW_Day][SW_Output[eSW_SWA].dy_row + dy_nrow * (i + 2) + (dy_nrow * SW_Site.n_layers * 3)]);
+			}
 			SW_Output[eSW_SWA].dy_row++;
 			break;
 			case eSW_Week:
-			delta = SW_Output[eSW_SWA].wk_row;
-			p = p_rOUT[eSW_SWA][eSW_Week]; // set shorthand copy of 'p_rOUT' pointer
-			p[delta + wk_nrow * 0] = SW_Model.simyear;
-			p[delta + wk_nrow * 1] = (SW_Model.week + 1) - tOffset;
 			ForEachSoilLayer(i)
-				ForEachVegType(j)
-					p[delta + wk_nrow * (i + 2)] = v->wkavg.SWA_VegType[j][i];
+			p_rOUT[eSW_SWA][eSW_Week][SW_Output[eSW_SWA].wk_row + wk_nrow * (i + 2) + (wk_nrow * SW_Site.n_layers * 3)] = v->wkavg.SWA_VegType[3][i];
 			SW_Output[eSW_SWA].wk_row++;
 			break;
 			case eSW_Month:
-			delta = SW_Output[eSW_SWA].mo_row;
-			p = p_rOUT[eSW_SWA][eSW_Month]; // set shorthand copy of 'p_rOUT' pointer
-			p[delta + mo_nrow * 0] = SW_Model.simyear;
-			p[delta + mo_nrow * 1] = (SW_Model.month + 1) - tOffset;
 			ForEachSoilLayer(i)
-				ForEachVegType(j)
-					p[delta + mo_nrow * (i + 2)] = v->moavg.SWA_VegType[j][i];
+			p_rOUT[eSW_SWA][eSW_Month][SW_Output[eSW_SWA].mo_row + mo_nrow * (i + 2) + (mo_nrow * SW_Site.n_layers * 3)] = v->moavg.SWA_VegType[3][i];
 			SW_Output[eSW_SWA].mo_row++;
 			break;
 			case eSW_Year:
-			delta = SW_Output[eSW_SWA].yr_row;
-			p = p_rOUT[eSW_SWA][eSW_Year]; // set shorthand copy of 'p_rOUT' pointer
-			p[delta + yr_nrow * 0] = SW_Model.simyear;
 			ForEachSoilLayer(i)
-				ForEachVegType(j)
-					p[delta + yr_nrow * (i + 1)] = v->yravg.SWA_VegType[j][i];
+			p_rOUT[eSW_SWA][eSW_Year][SW_Output[eSW_SWA].yr_row + yr_nrow * (i + 1) + (yr_nrow * SW_Site.n_layers * 3)] = v->yravg.SWA_VegType[3][i];
 			SW_Output[eSW_SWA].yr_row++;
 			break;
 		}
@@ -6429,9 +6502,12 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	case eSW_SWA: /* get swaBulk and convert later */
-		ForEachSoilLayer(i)
-			ForEachVegType(j)
+		ForEachSoilLayer(i){
+			ForEachVegType(j){
 				s->SWA_VegType[j][i] += v->dSWA_repartitioned_sum[j][i];
+				//printf("sum swa %f\n", s->SWA_VegType[j][i]);
+			}
+		}
 		break;
 
 	case eSW_SurfaceWater:
@@ -6699,12 +6775,15 @@ static void average_for(ObjType otyp, OutPeriod pd)
 			break;
 
 		case eSW_SWA:
-			ForEachSoilLayer(i)
-				ForEachVegType(j)
+			ForEachSoilLayer(i){
+				ForEachVegType(j){
 					savg->SWA_VegType[j][i] =
 							(SW_Output[k].sumtype == eSW_Fnl) ?
 									SW_Soilwat.dSWA_repartitioned_sum[j][i] :
 									ssumof->SWA_VegType[j][i] / div;
+					//printf("swa: %f\n", savg->SWA_VegType[j][i]);
+				}
+			}
 			break;
 
 		case eSW_DeepSWC:

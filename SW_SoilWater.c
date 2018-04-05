@@ -433,10 +433,17 @@ void get_dSWAbulk(int i){
 	RealF dSWA_bulk[array_size][array_size][MAX_LAYERS];
 	RealF dSWA_bulk_repartioned[array_size][array_size][MAX_LAYERS];
 
+  // need to initialize to 0
+  for(curr_vegType = 0; curr_vegType < NVEGTYPES; curr_vegType++){
+		for(kv = 0; kv < NVEGTYPES; kv++){
+      dSWA_bulk_repartioned[curr_vegType][kv][i] = 0.;
+      dSWA_bulk[curr_vegType][kv][i] = 0.;
+    }
+  }
+
 	// loop through each veg type to get dSWAbulk
 	for(curr_vegType = (NVEGTYPES - 1); curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
     v->dSWA_repartitioned_sum[curr_vegType][i] = 0.;
-    //printf("%f\n", v->dSWA_repartitioned_sum[curr_vegType][i]);
     curr_crit_rank_index = SW_VegProd.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
 		veg_type_in_use = SW_VegProd.veg[curr_crit_rank_index].cov.fCover; // set veg type fraction here
 
@@ -463,7 +470,7 @@ void get_dSWAbulk(int i){
 					}
 					else{
 						dSWA_bulk[curr_crit_rank_index][kv_veg_type][i] =
-							v->swa_master[curr_crit_rank_index][kv_veg_type][i]-v->swa_master[curr_crit_rank_index][prev_crit_veg_type][i];
+							v->swa_master[curr_crit_rank_index][kv_veg_type][i] - v->swa_master[curr_crit_rank_index][prev_crit_veg_type][i];
 						}
 				}
 				else if(crit_val == prev_crit_val){ // critical values equal just set to itself
@@ -520,11 +527,12 @@ void get_dSWAbulk(int i){
 		}
 	}
 
-		/*printf("dSWAbulk_repartition forb[1,0,%d]: %f\n",i,dSWA_bulk_repartioned[3][0][i]);
-		printf("dSWAbulk_repartition forb[1,1,%d]: %f\n",i,dSWA_bulk_repartioned[3][1][i]);
-		printf("dSWAbulk_repartition forb[1,2,%d]: %f\n",i,dSWA_bulk_repartioned[3][2][i]);
-		printf("dSWAbulk_repartition forb[1,3,%d]: %f\n\n",i,dSWA_bulk_repartioned[3][3][i]);
-		printf("dSWA_repartitioned_sum[1][%d]: %f\n\n", i, v->dSWA_repartitioned_sum[3][i]);
+    /*int x = 0;
+		printf("dSWAbulk_repartition forb[%d,0,%d]: %f\n",x,i,dSWA_bulk_repartioned[x][0][i]);
+		printf("dSWAbulk_repartition forb[%d,1,%d]: %f\n",x,i,dSWA_bulk_repartioned[x][1][i]);
+		printf("dSWAbulk_repartition forb[%d,2,%d]: %f\n",x,i,dSWA_bulk_repartioned[x][2][i]);
+		printf("dSWAbulk_repartition forb[%d,3,%d]: %f\n\n",x,i,dSWA_bulk_repartioned[x][3][i]);
+		printf("dSWA_repartitioned_sum[%d][%d]: %f\n\n", x,i, v->dSWA_repartitioned_sum[x][i]);
 
 
 		printf("---------------------\n\n");*/
