@@ -150,4 +150,33 @@ void soil_temperature(double airTemp,
 						double snow,
 						Bool *ptr_stError);
 
+void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1],
+	 unsigned int nlyrTemp, double depth_Temp[],
+	 double sTempR[], unsigned int nlyrSoil, double depth_Soil[],
+	 double width_Soil[], double sTemp[]);
+
+void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
+	double sTemp[], double endTemp, unsigned int nlyrTemp,
+	double depth_Temp[], double maxTempDepth, double sTempR[]);
+
+void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrSoil,
+		double width_Soil[], double var[], unsigned int nlyrTemp, double width_Temp,
+		double res[]);
+
+double surface_temperature_under_snow(double airTempAvg, double snow);
+
+void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
+	double sTconst, unsigned int nlyrs, double fc[], double wp[], double deltaX,
+	double theMaxDepth, unsigned int nRgr, Bool *ptr_stError);
+
+void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[],
+		double swc_sat[], double width[]);
+
+unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTemp[],
+		double shParam, unsigned int nlyrs, double vwc[], double bDensity[]);
+
+void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
+	int nRgr, double sTempR[], double oldsTempR[], double vwcR[], double wpR[], double fcR[],
+	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError);
+
 #endif

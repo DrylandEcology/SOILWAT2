@@ -47,8 +47,6 @@ extern SW_VEGESTAB SW_VegEstab;
 extern SW_SITE SW_Site;
 extern SW_VEGPROD SW_VegProd;
 
-
-
 /* =================================================== */
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
@@ -117,6 +115,14 @@ void SW_CTL_run_current_year(void) {
     if (debug) swprintf("simulate water ... ");
     #endif
     SW_SWC_water_flow();
+
+    #ifdef RSOILWAT
+      calculate_repartitioned_soilwater();
+    #else
+    // Only run this function id SWA is asked for
+    if(SW_VegProd.use_SWA)
+      calculate_repartitioned_soilwater(); // new function to calculate the repartioned soilwater values (SWA). Needs to be called after SW_SWC_water_flow so other values are calculated
+    #endif
 
     if (SW_VegEstab.use)
       SW_VES_checkestab();

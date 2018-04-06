@@ -78,6 +78,35 @@ namespace {
     for (i = 0; i < 12; i++) {
       EXPECT_DOUBLE_EQ(biom2[i], biom1[i] * x);
     }
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+  // check the rank function to ensure properly ordering critical values
+  TEST(VegTest, rank){
+    int k;
+    get_critical_rank(); // function to put critical values in order
+
+    // check to make sure ranked in proper order, largest to smallest. (ex: -2.0, -2.0, -3.5, -3.9)
+    ForEachVegType(k) {
+        if(k != NVEGTYPES-1){ // dont want to check the last round since the below test does k+1 if we checked the last loop it would fail.
+          ASSERT_GE(SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[k]], SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[k+1]]);
+       }
+    }
+
+
+    ForEachVegType(k){ // test when all input vals are the same
+  		SW_VegProd.critSoilWater[k] = SW_VegProd.critSoilWater[0]; // set all crit values to be the same
+  	}
+
+    get_critical_rank(); // re-run function with same critical value inputs to ensure it works when all values the same.
+
+    ForEachVegType(k) {
+        if(k != NVEGTYPES-1){ // dont want to check the last round since the below test does k+1 if we checked the last loop it would fail.
+          ASSERT_GE(SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[k]], SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[k+1]]);
+       }
+    }
+
+    Reset_SOILWAT2_after_UnitTest();
   }
 
 } // namespace
