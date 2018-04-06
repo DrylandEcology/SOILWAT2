@@ -1334,7 +1334,7 @@ void SW_OUT_write_today(void)
   int debug = 0;
   #endif
 
-	#ifndef rSOILWAT2
+	#ifndef RSOILWAT
 		// timestep output vars
 		char *soil_file_vals_day[500]; // store
 		char *reg_file_vals_day[500]; // store
@@ -3015,16 +3015,17 @@ static void get_swa(OutPeriod pd)
 	/* added 21-Oct-03, cwb */
 	#ifdef STEPWAT
 		TimeInt p = 0;
+		int j = 0;
 		char str[OUTSTRLEN];
 		char str_iters[OUTSTRLEN];
 		RealF val[NVEGTYPES][MAX_LAYERS]; // need 2D array for values
 	#endif
 
 	LyrIndex i;
-	int j = 0;
 	SW_SOILWAT *v = &SW_Soilwat;
 
 	#if !defined(STEPWAT) && !defined(RSOILWAT)
+		int j = 0;
 		RealF val[NVEGTYPES][MAX_LAYERS]; // need 2D array for values
 		char str[OUTSTRLEN];
 		get_outstrleader(pd);
@@ -3052,9 +3053,6 @@ static void get_swa(OutPeriod pd)
 				strcat(outstr, str);
 		}
 	#elif defined(RSOILWAT)
-		int delta;
-		RealD *p;
-
 		switch (pd)
 		{
 			case eSW_Day:
