@@ -33,7 +33,6 @@
 #include "SW_Main_lib.c"
 
 
-
 static void check_log(void);
 
 
@@ -66,16 +65,15 @@ int main(int argc, char **argv) {
 	SW_CTL_init_model(_firstfile);
 	SW_CTL_obtain_inputs();
 
-	SW_OUT_set_ncol(); // as of yet not used in SOILWAT2-standalone
-	SW_OUT_set_colnames(); // as of yet not used in SOILWAT2-standalone
+	SW_OUT_set_ncol();
+	//SW_OUT_set_colnames(); // only using with rSOILWAT2
 
 	SW_CTL_main();
 
-	SW_OUT_close_files(); // close output files
 	SW_SIT_clear_layers();
 	SW_WTH_clear_runavg_list();
+	SW_OUT_close_files();
 
 	return 0;
 }
 /*********** End of Main() *******************/
-

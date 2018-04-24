@@ -33,6 +33,7 @@
 
 #include "Times.h"
 
+
 /* These are the keywords to be found in the output setup file */
 /* some of them are from the old fortran model and are no longer */
 /* implemented, but are retained for some tiny measure of backward */
@@ -49,26 +50,27 @@
 #define SW_SWCBULK    	"SWCBULK"		//8		4		2
 #define SW_SWABULK	 	"SWABULK"		//9		4		2
 #define SW_SWAMATRIC	"SWAMATRIC"		//10	4		2
-#define SW_SWPMATRIC    "SWPMATRIC"		//11	4		2
-#define SW_SURFACEW		"SURFACEWATER"	//12	4		2
-#define SW_TRANSP		"TRANSP"		//13	4		1
-#define SW_EVAPSOIL		"EVAPSOIL"		//14	4		1
-#define SW_EVAPSURFACE	"EVAPSURFACE"	//15	4		1
-#define SW_INTERCEPTION	"INTERCEPTION"	//16	4		1
-#define SW_LYRDRAIN		"LYRDRAIN"		//17	4		1
-#define SW_HYDRED		"HYDRED"		//18	4		1
-#define SW_ET			"ET"			//19	4		0/* position and variable marker, not an output key */
-#define SW_AET			"AET"			//20	4		1
-#define SW_PET			"PET"			//21	4		1
-#define SW_WETDAY		"WETDAY"		//22	4		1
-#define SW_SNOWPACK		"SNOWPACK"		//23	4		2
-#define SW_DEEPSWC		"DEEPSWC"		//24	4		1
-#define SW_SOILTEMP		"SOILTEMP"		//25	4		2
-#define SW_ALLVEG		"ALLVEG"		//26	5		0/* position and variable marker, not an output key */
-#define SW_ESTAB		"ESTABL"		//27	5		0
-#define SW_CO2EFFECTS		"CO2EFFECTS"		//28	?		?
+#define SW_SWA				"SWA"        //11
+#define SW_SWPMATRIC    "SWPMATRIC"		//12	4		2
+#define SW_SURFACEW		"SURFACEWATER"	//13	4		2
+#define SW_TRANSP		"TRANSP"		//14	4		1
+#define SW_EVAPSOIL		"EVAPSOIL"		//15	4		1
+#define SW_EVAPSURFACE	"EVAPSURFACE"	//16	4		1
+#define SW_INTERCEPTION	"INTERCEPTION"	//17	4		1
+#define SW_LYRDRAIN		"LYRDRAIN"		//18	4		1
+#define SW_HYDRED		"HYDRED"		//19	4		1
+#define SW_ET			"ET"			//20	4		0/* position and variable marker, not an output key */
+#define SW_AET			"AET"			//21	4		1
+#define SW_PET			"PET"			//22	4		1
+#define SW_WETDAY		"WETDAY"		//23	4		1
+#define SW_SNOWPACK		"SNOWPACK"		//24	4		2
+#define SW_DEEPSWC		"DEEPSWC"		//25	4		1
+#define SW_SOILTEMP		"SOILTEMP"		//26	4		2
+#define SW_ALLVEG		"ALLVEG"		//27	5		0/* position and variable marker, not an output key */
+#define SW_ESTAB		"ESTABL"		//28	5		0
+#define SW_CO2EFFECTS		"CO2EFFECTS"		//29	?		?
 
-#define SW_OUTNKEYS 29 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
+#define SW_OUTNKEYS 30 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
 
 /* these are the code analog of the above */
 /* see also key2str[] in Output.c */
@@ -88,6 +90,7 @@ typedef enum {
 	eSW_SWCBulk,
 	eSW_SWABulk,
 	eSW_SWAMatric,
+	eSW_SWA,
 	eSW_SWPMatric,
 	eSW_SurfaceWater,
 	eSW_Transp,
@@ -141,12 +144,51 @@ typedef struct {
 			first_orig, last_orig;
 	int yr_row, mo_row, wk_row, dy_row;
 	char *outfile; /* point to name of output file */
+	void (*pfunc)(OutPeriod); /* pointer to output routine */
+} SW_OUTPUT;
+
+typedef struct {
+	// used in SW_Output.c for creating column headers
+	int col_status_dy,
+			col_status_wk,
+			col_status_mo,
+			col_status_yr;
+
+	int lastMonth,
+			lastWeek;
+
+	int finalValue_dy,
+			finalValue_wk,
+			finalValue_mo,
+			finalValue_yr;
+
+	int make_soil,
+			make_regular;
+
+	Bool use_Day,
+			 use_Week,
+			 use_Month,
+			 use_Year;
+
 	FILE *fp_dy; /* opened output file pointer for day*/
 	FILE *fp_wk; /* opened output file pointer for week*/
 	FILE *fp_mo; /* opened output file pointer for month*/
 	FILE *fp_yr; /* opened output file pointer for year*/
-	void (*pfunc)(OutPeriod); /* pointer to output routine */
-} SW_OUTPUT;
+	FILE *fp_dy_soil; /* opened output file pointer for day*/
+	FILE *fp_wk_soil; /* opened output file pointer for week*/
+	FILE *fp_mo_soil; /* opened output file pointer for month*/
+	FILE *fp_yr_soil; /* opened output file pointer for year*/
+
+	FILE *fp_dy_avg; /* opened output file pointer for day*/
+	FILE *fp_wk_avg; /* opened output file pointer for week*/
+	FILE *fp_mo_avg; /* opened output file pointer for month*/
+	FILE *fp_yr_avg; /* opened output file pointer for year*/
+	FILE *fp_dy_soil_avg; /* opened output file pointer for day*/
+	FILE *fp_wk_soil_avg; /* opened output file pointer for week*/
+	FILE *fp_mo_soil_avg; /* opened output file pointer for month*/
+	FILE *fp_yr_soil_avg; /* opened output file pointer for year*/
+
+} SW_FILE_STATUS;
 
 /* convenience loops for consistency.
  * k must be a defined variable, either of OutKey type
@@ -160,7 +202,9 @@ typedef struct {
 
 void SW_OUT_construct(void);
 void SW_OUT_set_ncol(void);
+#ifdef RSOILWAT
 void SW_OUT_set_colnames(void);
+#endif
 void SW_OUT_new_year(void);
 void SW_OUT_read(void);
 void SW_OUT_sum_today(ObjType otyp);
@@ -170,6 +214,12 @@ void SW_OUT_close_files(void);
 void SW_OUT_flush(void);
 void _collect_values(void);
 void _echo_outputs(void);
+
+// file creation functions
+void stat_Output_Daily_CSV_Summary(int iteration);
+void stat_Output_Weekly_CSV_Summary(int iteration);
+void stat_Output_Monthly_CSV_Summary(int iteration);
+void stat_Output_Yearly_CSV_Summary(int iteration);
 
 #ifdef DEBUG_MEM
 	void SW_OUT_SetMemoryRefs(void);

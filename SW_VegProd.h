@@ -23,7 +23,7 @@
  09/26/2011	(drs)	added a daily variable for each monthly input in struct VegType: RealD litter_daily, biomass_daily, pct_live_daily, veg_height_daily, lai_conv_daily, lai_conv_daily, lai_live_daily, pct_cover_daily, vegcov_daily, biolive_daily, biodead_daily, total_agb_daily each of [MAX_DAYS]
  09/26/2011	(dsr)	removed monthly variables RealD veg_height, lai_live, pct_cover, vegcov, biolive, biodead, total_agb each [MAX_MONTHS] from struct VegType because replaced with daily records
  02/04/2012	(drs)	added variable RealD SWPcrit to struct VegType: critical soil water potential below which vegetation cannot sustain transpiration
- 01/29/2013	(clk) added variable RealD fractionBareGround to now allow for bare ground as a part of the total vegetation.
+ 01/29/2013	(clk) added variable RealD bare_cov.fCover to now allow for bare ground as a part of the total vegetation.
  01/31/2013	(clk)	added varilabe RealD bare_cov.albedo instead of creating a bare_cov VegType, because only need albedo and not the other data members
  04/09/2013	(clk) changed the variable name swp50 to swpMatric50. Therefore also updated the use of swp50 to swpMatric50 in SW_VegProd.c and SW_Flow.c.
  07/09/2013	(clk)	add the variables forb and forb.cov.fCover to SW_VEGPROD
@@ -34,8 +34,8 @@
 #ifndef SW_VEGPROD_H
 #define SW_VEGPROD_H
 
-#include "SW_Defines.h"    /* for MAX_MONTHS and tanfunc_t*/
-
+#include "SW_Defines.h"    /* for tanfunc_t*/
+#include "Times.h" 				// for MAX_MONTHS
 
 #define BIO_INDEX 0        /**< An integer representing the index of the biomass multipliers in the VegType#co2_multipliers 2D array. */
 #define WUE_INDEX 1        /**< An integer representing the index of the WUE multipliers in the VegType#co2_multipliers 2D array. */
@@ -110,17 +110,22 @@ typedef struct {
 	VegType veg[NVEGTYPES]; // used to be: grass, shrub, tree, forb;
 	CoverType bare_cov;   /* bare ground cover of plot */
 
+	RealD critSoilWater[NVEGTYPES]; // storing values in same order as defined in STEPWAT2/rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
+
+	int rank_SWPcrits[NVEGTYPES]; // array to store the SWP crits in order of lest negative to most negative (used in STEPWAT2/sxw_resource)
+
 	SW_VEGPROD_OUTPUTS dysum, /* helpful placeholder */
 		wksum, mosum, yrsum, /* accumulators for *avg */
 		wkavg, moavg, yravg; /* averages or sums as appropriate */
 
+	Bool use_SWA;
 } SW_VEGPROD;
-
 
 void SW_VPD_read(void);
 void SW_VPD_init(void);
 void SW_VPD_construct(void);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
 void _echo_VegProd(void);
+void get_critical_rank(void);
 
 #endif

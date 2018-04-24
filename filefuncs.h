@@ -28,7 +28,6 @@ Bool RemoveFiles(const char *fspec);
 void sw_error(int errorcode, const char *format, ...);
 void LogError(FILE *fp, const int mode, const char *fmt, ...);
 
-
 extern char inbuf[]; /* declare in main, use anywhere */
 
 #endif

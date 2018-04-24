@@ -40,10 +40,6 @@ char weather_prefix[FILENAME_MAX];
 char output_prefix[FILENAME_MAX];
 
 /* =================================================== */
-/*                Module-Level Variables               */
-/* --------------------------------------------------- */
-
-/* =================================================== */
 /* =================================================== */
 /*             Private Function Definitions            */
 /* --------------------------------------------------- */
@@ -73,6 +69,28 @@ static void init(const char *s) {
 /* =================================================== */
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
+void SW_CSV_F_INIT(const char *s)
+{
+	/* AKT 08/28/2016
+	 *  remove old output and/or create the output directories if needed */
+	/* borrow inbuf for filenames */
+
+	if (DirExists(DirName(s)))
+	{
+		strcpy(inbuf, s);
+		if (!RemoveFiles(inbuf))
+		{
+			LogError(logfp, LOGWARN, "Can't remove old csv output file: %s\n", s);
+			printf("Can't remove old csv output file: %s\n", s);
+		}
+	}
+	else if (!MkDir(DirName(s)))
+	{
+		LogError(logfp, LOGFATAL, "Can't make output path for csv file: %s\n", DirName(s));
+		printf("Can't make output path for csv file: %s\n", DirName(s));
+	}
+}
+
 
 /** Read `first` input file `eFirst` that contains names of the remaining input files.
 
@@ -116,6 +134,51 @@ void SW_F_read(const char *s) {
 			break;
 		case 13:
 			strcpy(output_prefix, inbuf);
+			break;
+		case 15:
+			InFiles[eOutputDaily] = Str_Dup(inbuf);
+			++fileno;
+			SW_CSV_F_INIT(InFiles[eOutputDaily]);
+			break;
+		case 16:
+			InFiles[eOutputWeekly] = Str_Dup(inbuf);
+			++fileno;
+			SW_CSV_F_INIT(InFiles[eOutputWeekly]);
+			//printf("filename: %s \n",InFiles[eOutputWeekly]);
+			break;
+		case 17:
+			InFiles[eOutputMonthly] = Str_Dup(inbuf);
+			++fileno;
+			SW_CSV_F_INIT(InFiles[eOutputMonthly]);
+			//printf("filename: %s \n",InFiles[eOutputMonthly]);
+			break;
+		case 18:
+			InFiles[eOutputYearly] = Str_Dup(inbuf);
+			++fileno;
+			SW_CSV_F_INIT(InFiles[eOutputYearly]);
+			break;
+		case 19:
+			InFiles[eOutputDaily_soil] = Str_Dup(inbuf);
+			++fileno;
+			SW_CSV_F_INIT(InFiles[eOutputDaily_soil]);
+			//printf("filename: %s \n",InFiles[eOutputDaily]);
+			break;
+		case 20:
+			InFiles[eOutputWeekly_soil] = Str_Dup(inbuf);
+			++fileno;
+			SW_CSV_F_INIT(InFiles[eOutputWeekly_soil]);
+			//printf("filename: %s \n",InFiles[eOutputWeekly]);
+			break;
+		case 21:
+			InFiles[eOutputMonthly_soil] = Str_Dup(inbuf);
+			++fileno;
+			SW_CSV_F_INIT(InFiles[eOutputMonthly_soil]);
+			//printf("filename: %s \n",InFiles[eOutputMonthly]);
+			break;
+		case 22:
+			InFiles[eOutputYearly_soil] = Str_Dup(inbuf);
+			++fileno;
+			SW_CSV_F_INIT(InFiles[eOutputYearly_soil]);
 			break;
 
 		default:

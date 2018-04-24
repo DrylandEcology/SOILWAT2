@@ -175,7 +175,6 @@ const char *BaseName(const char *p) {
 /**************************************************************/
 FILE * OpenFile(const char *name, const char *mode) {
 	FILE *fp;
-
 	fp = fopen(name, mode);
 	if (isnull(fp))
 		LogError(logfp, LOGERROR | LOGEXIT, "Cannot open file %s: %s", name, strerror(errno));
