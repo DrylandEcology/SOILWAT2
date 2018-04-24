@@ -195,7 +195,7 @@ namespace {
     Bool ptr_stError = swFALSE;
 
     // *****  Test when nlyrs = 1  ***** //
-    unsigned int i =0.;
+    unsigned int i = 0.;
     nlyrs = 1;
     double width[] = {20}, oldsTemp[] = {1};
     double bDensity[] = {RandNorm(1.,0.5)}, fc[] = {RandNorm(1.5, 0.5)};
@@ -205,7 +205,9 @@ namespace {
     soil_temperature_init(bDensity, width, oldsTemp, sTconst, nlyrs,
       fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError);
 
-    // lyrSoil_to_lyrTemp tests
+    // lyrSoil_to_lyrTemp tests: This function is used in soil_temperature_init
+    // to transfer the soil layer values of bdensity, fc, and wp, to the "temperature layer"
+    // which are contained in bdensityR, fcR, and wpR. Thus we check these values.
     for (i = 0; i < nRgr + 1; i++) {  // all Values should be greater than 0
       EXPECT_GT(stValues.bDensityR[i], 0);
       EXPECT_GT(stValues.fcR[i], 0);
@@ -275,4 +277,6 @@ namespace {
 
 
   }
+
+
 }

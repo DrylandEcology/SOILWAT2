@@ -1123,18 +1123,22 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 	}
 }
 
+ /**
+     @brief Interpolate soil temperature layer temperature values to
+     soil profile depths / layers.
 
-/**********************************************************************
- PURPOSE: Initialize soil temperature values, only needs to be called once (ie the first time the soil_temperature function is called).  this is not included in the header file since it is NOT an external function
-
- HISTORY:
- 05/31/2012 (DLM) initial coding
-
- INPUTS: they are all defined in the soil_temperature function, so go look there to see their meaning as it would be redundant to explain them all here as well.
-
- OUTPUT: none, but places the interpolation values in stValues struct for use in the soil_temperature function later
- **********************************************************************/
-void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrTemp, double depth_Temp[], double sTempR[], unsigned int nlyrSoil, double depth_Soil[], double width_Soil[], double sTemp[]){
+     @param cor[MAX_ST_RGR + 1][MAX_LAYERS + 1]
+     @param nlyrTemp
+     @param depth_Temp
+     @param sTempR
+     @param nlyrSoil
+     @param depth_Soil
+     @param width_Soil
+     @param sTemp
+ */
+void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1],
+  unsigned int nlyrTemp, double depth_Temp[], double sTempR[], unsigned int nlyrSoil,
+  double depth_Soil[], double width_Soil[], double sTemp[]){
 	unsigned int i = 0, j, n;
   #ifdef SWDEBUG
   int debug = 0;
@@ -1170,8 +1174,28 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], 
 	}
 }
 
-void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[], double sTemp[], double endTemp, unsigned int nlyrTemp, double depth_Temp[], double maxTempDepth, double sTempR[]){
-	unsigned int i, j1=0, j2;
+/**
+    @brief Interpolate soil layer temperature values to soil temperature profile
+     depths / layers.
+
+     There are outputs for this function.
+
+    @param nlyrSoil
+    @param depth_Soil
+    @param sTemp
+    @param endTemp
+    @param nlyrTemp
+    @param depth_Temp
+    @param maxTempDepth
+    @param sTempR
+
+*/
+
+void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
+   double sTemp[], double endTemp, unsigned int nlyrTemp, double depth_Temp[],
+   double maxTempDepth, double sTempR[]){
+
+  unsigned int i, j1=0, j2;
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -1209,6 +1233,21 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[], 
 		swprintf("\nConf T: sTempR[%i]=%2.2f, sTempR[%i]=%2.2f", i, sTempR[i], i+1, sTempR[i+1]);
 	#endif
 }
+
+/**
+    @brief Initialize soil temperature layer values by transfering soil layer values
+    to soil temperature layer values.
+
+    @param cor[MAX_ST_RGR + 1][MAX_LAYERS + 1]
+    @param nlyrSoil The number of soil layers.
+    @param width_Soil The width of the soil layers.
+    @param var The soil layer values to be interpolated.
+    @param nlyrTemp The number of soil temperature layers.
+    @param width_Temp The width of the soil temperature layers.
+    @param res The values interpolated to soil temperature depths.
+
+    @return res os updated and reflects new values.
+*/
 
 void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrSoil,
 	double width_Soil[], double var[], unsigned int nlyrTemp, double width_Temp,
@@ -1252,14 +1291,14 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
 /**
 	\fn double surface_temperature_under_snow(double airTempAvg, double snow)
 
-  \brief Determine the average temperature of the soil surface under snow.
+    @brief Determine the average temperature of the soil surface under snow.
 
     Based on Equations 5 & 6 in Parton et al. 1998. \cite Parton1998
 
-    \param airTempAvg the average air temperature of the area, in Celsius
-    \param snow the snow-water-equivalent of the area, in cm
+    @param airTempAvg the average air temperature of the area, in Celsius
+    @param snow the snow-water-equivalent of the area, in cm
 
-    \return tSoilAvg The modified, average temperature of the soil surface
+    @return tSoilAvg The modified, average temperature of the soil surface
 */
 
 double surface_temperature_under_snow(double airTempAvg, double snow){
