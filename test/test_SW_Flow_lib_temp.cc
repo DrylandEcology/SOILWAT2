@@ -48,7 +48,7 @@ extern ST_RGR_VALUES stValues;
 
 namespace {
 
-  // Test the veg interception function 'surface_temperature_under_snow'
+  // Test the function 'surface_temperature_under_snow'
   TEST(SWFlowTempTest, SurfaceTemperatureUnderSnow) {
 
     // declare inputs and output
@@ -174,10 +174,10 @@ namespace {
     EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
 
     /// test when theMaxDepth is less than soil layer depth
-    theMaxDepth = 70.0;
+    //theMaxDepth = 70.0;
 
-    soil_temperature_init(bDensity, width, oldsTemp, sTconst, nlyrs,
-         fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError);
+    //soil_temperature_init(bDensity, width, oldsTemp, sTconst, nlyrs,
+    //     fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError);
 
     //EXPECT_EQ(swTRUE, &ptr_stError); // ptr_stError should be True since the MaxDepth is less than soil layer depth
     // Reset to previous global state
@@ -186,7 +186,7 @@ namespace {
 
 
   // Test lyrSoil_to_lyrTemp, lyrSoil_to_lyrTemp_temperature via
-  // soil_temperature_init & soil_temperature functions
+  // soil_temperature_init function
   TEST(SWFlowTempTest, SoilLayerInterpolationFunctions) {
 
     // declare inputs and output
@@ -278,5 +278,66 @@ namespace {
 
   }
 
+  // Test set layer to frozen or unfrozen 'set_frozen_unfrozen'
+  TEST(SWFlowTempTest, SetFrozenUnfrozen){
+
+    // declare inputs and output
+    // *****  Test when nlyrs = 1  ***** //
+    /// ***** Test that soil freezes ***** ///
+    unsigned int nlyrs = 1;
+    double sTemp[] = {-5}, swc[] = {1.5}, swc_sat[] = {1.8}, width[] = {5};
+
+    set_frozen_unfrozen(nlyrs, sTemp, swc, swc_sat, width);
+
+    EXPECT_EQ(1,stValues.lyrFrozen[0]); // Soil should freeze when sTemp is <= -1
+    // AND swc is > swc_sat - width * .13
+
+    /// ***** Test that soil does not freeze ***** ///
+    double sTemp2[] = {0};
+
+    set_frozen_unfrozen(nlyrs, sTemp2, swc, swc_sat, width);
+
+    EXPECT_EQ(0,stValues.lyrFrozen[0]); // Soil should NOT freeze when sTemp is > -1
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+
+    // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
+    nlyrs = MAX_LAYERS;
+    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double sTemp3[nlyrs], sTemp4[nlyrs],swc2[nlyrs], swc_sat2[nlyrs];
+
+    unsigned int i = 0.;
+    for (i = 0; i < nlyrs; i++) {
+      sTemp3[i] = -5;
+      sTemp4[i] = 0;
+      swc2[i] = 5; // set swc to a high value so will be > swc_sat - width * .13
+      swc_sat2[i] = 1;
+      // run
+      set_frozen_unfrozen(nlyrs, sTemp3, swc2, swc_sat2, width2);
+      // Test
+      EXPECT_EQ(1,stValues.lyrFrozen[i]);
+      // run
+      set_frozen_unfrozen(nlyrs, sTemp4, swc2, swc_sat2, width2);
+      // Test
+      EXPECT_EQ(0,stValues.lyrFrozen[i]);
+
+      // Reset to previous global state
+      Reset_SOILWAT2_after_UnitTest();
+    }
+
+  }
+
+  // Test soil temperature today function 'soil_temperature_today'
+  TEST(SWFlowTempTest, SoilTemperatureTodayFunction){
+
+  }
+
+  // Test main soil temperature function 'soil_temperature'
+  // AND lyrTemp_to_lyrSoil_temperature as this function
+  // is only called in the soil_temperature function
+  TEST(SWFlowTempTest, MainSoilTemperatureFunction){
+
+  }
 
 }

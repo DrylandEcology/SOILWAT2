@@ -1029,7 +1029,8 @@ void infiltrate_water_low(double swc[], double drain[], double *drainout, unsign
 
 }
 
-void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], double hydred[], unsigned int nlyrs, double maxCondroot, double swp50, double shapeCond,
+void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[],
+  double hydred[], unsigned int nlyrs, double maxCondroot, double swp50, double shapeCond,
 		double scale) {
 	/**********************************************************************
 	 PURPOSE:Calculate hydraulic redistribution according to Ryel, Ryel R, Caldwell, Caldwell M, Yoder, Yoder C, Or, Or D, Leffler, Leffler A. 2002. Hydraulic redistribution in a stand of Artemisia tridentata: evaluation of benefits to transpiration assessed with a simulation model. Oecologia 130: 173-184.
@@ -1125,7 +1126,7 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 
  /**
      @brief Interpolate soil temperature layer temperature values to
-     soil profile depths / layers.
+     input soil profile depths/layers.
 
      @param cor[MAX_ST_RGR + 1][MAX_LAYERS + 1]
      @param nlyrTemp
@@ -1136,6 +1137,7 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
      @param width_Soil
      @param sTemp
  */
+
 void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1],
   unsigned int nlyrTemp, double depth_Temp[], double sTempR[], unsigned int nlyrSoil,
   double depth_Soil[], double width_Soil[], double sTemp[]){
@@ -1176,7 +1178,7 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1],
 
 /**
     @brief Interpolate soil layer temperature values to soil temperature profile
-     depths / layers.
+     depths/layers.
 
      There are outputs for this function.
 
@@ -1318,7 +1320,7 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 	return tSoilAvg;
 }
 
-/** @brief Initialize soil structure and properties for soil temperature simulation
+/** @brief Initialize soil structure and properties for soil temperature simulation.
 
     @param bDensity An array of the bulk density of the soil layers.
     @param width The width of the layers.
@@ -1490,15 +1492,28 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
   #endif
 }
 
+/** @brief Function to determine if a soil layer is frozen or not. \cite Parton1998
+
+  A layer was considered frozen if its average soil temperature was below the freezing
+  temperature (-1C), and theta(sat) - theta(cur) < 0.13,
+  where theta(sat) was the saturated volumetric wetness of the layer and theta(cur)
+  was the simulated volumetric wetness (Flerchinger and Saxton, 1989).
+  The hydraulic conductivity of a frozen layer was reduced to 0.00001 cm/s.
+
+    @param nlyrs The number of layers.
+    @param sTemp The temperature of the soil layers (C).
+    @param swc The soil water content of the soil layers (cm/cm).
+    @param swc_sat The satured soil water content of the soil layers (cm/cm).
+    @param width The width of them soil layers (cm).
+
+    @sideeffect update module level variable ST_RGR_VALUES.lyrFrozen. lyrFrozen
+    is a Boolean (0 for not frozen, 1 for frozen)
+
+*/
+
+
 void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[],
 	double swc_sat[], double width[]){
-/*	01/06/2016 (drs)	function to determine if a soil layer is frozen or not
-
-	Parton, W. J., M. Hartman, D. Ojima, and D. Schimel. 1998. DAYCENT and its land surface submodel: description and testing. Global and Planetary Change 19:35-48.
-	A layer was considered frozen if its average soil temperature was below the freezing temperature (-1C), and theta(sat) - theta(cur) < 0.13,
-	where theta(sat) was the saturated volumetric wetness of the layer and theta(cur) was the simulated volumetric wetness (Flerchinger and Saxton, 1989).
-	The hydraulic conductivity of a frozen layer was reduced to 0.00001 cm/s.
-*/
 
 // 	TODO: freeze surfaceWater and restrict infiltration
 
@@ -1512,7 +1527,6 @@ void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[],
 			st->lyrFrozen[i] = swFALSE;
 		}
 	}
-
 }
 
 
@@ -1605,7 +1619,7 @@ temp += temp;
 
 		The algorithm selects a shorter time step if required for a stable solution.
 
-		@param ptr_dTime Yesterday's successful time step in seconds.
+		@param ptr_d Time Yesterday's successful time step in seconds.
 		@param deltaX The depth increment for the soil temperature (regression) calculations.
 		@param sT1 The soil surface temperature as upper boundary condition.
 		@param sTconst The soil temperature at a soil depth where it stays constant as
@@ -1622,6 +1636,7 @@ temp += temp;
 		@reference Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe.
 			Soil Science 138:93-101.
 	*/
+
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
 	int nRgr, double sTempR[], double oldsTempR[], double vwcR[], double wpR[], double fcR[],
 	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError) {
@@ -1841,6 +1856,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	 depths[nlyrs] - the depths of each layer of soil, calculated in the function
 	 vwcR[], sTempR[] - anything with a R at the end of the variable name stands for the interpolation of that array
 	 */
+
 	#ifdef SWDEBUG
 	if (debug) {
 		swprintf("\n\nNew call to soil_temperature()");
@@ -1973,7 +1989,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	// determine frozen/unfrozen status of soil layers
 	set_frozen_unfrozen(nlyrs, sTemp, swc, swc_sat, width);
 
-
 	#ifdef SWDEBUG
 	if (debug) {
 		swprintf("\nsTemp %f surface; soil temperature adjusted by freeze/thaw: %i",
@@ -1987,8 +2002,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 		swprintf("\nSoil profile layer temperatures:");
 		for (i = 0; i < nlyrs; i++) {
-			swprintf("\ni %d oldTemp %f sTemp %f depth %f frozen %d",
-				i, oldsTemp[i], sTemp[i], st->depths[i], st->lyrFrozen[i]);
+			swprintf("\ni %d oldTemp %f sTemp %f swc %f, swc_sat %f depth %f frozen %d",
+				i, oldsTemp[i], sTemp[i], swc[i], swc_sat[i], st->depths[i], st->lyrFrozen[i]);
 		}
 	}
 	#endif
