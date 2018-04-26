@@ -471,14 +471,14 @@ namespace {
     unsigned int nlyrs2 = MAX_LAYERS;
     double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double oldsTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double sTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     ptr_stError = swFALSE;
-    double swc2[nlyrs2], swc_sat2[nlyrs2], bDensity2[nlyrs2], sTemp3[nlyrs2], fc2[nlyrs2], wp2[nlyrs2];
+    double swc2[nlyrs2], swc_sat2[nlyrs2], bDensity2[nlyrs2], fc2[nlyrs2], wp2[nlyrs2];
 
     for (i = 0; i < nlyrs2; i++) {
         swc2[i] =  fmaxf(RandNorm(1.,0.5), 0.1);;
         swc_sat2[i] = swc2[i] + 0.5;
         bDensity2[i] = fmaxf(RandNorm(1.,0.5), 0.1);
-        sTemp3[i] = RandNorm(5.,10.);
         fc2[i] = fmaxf(RandNorm(1.5, 0.5), 0.1);
         wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp will always be less than fc
       }
@@ -530,7 +530,7 @@ namespace {
      EXPECT_EQ(0, ptr_stError); // ptr_stError should be 0
 
      for(k = 1; k < nRgr +1; k++) {
-       printf("\n k %u sTemp3 %f , newoldtemp %f,OLDSTEMPS2 %f", k, sTemp[k], stValues.oldsTempR[k],OLDTEMPS2[k] );
+       printf("\n k %u sTemp3 %f , newoldtemp %f,OLDSTEMPS2 %f", k, sTemp[k], stValues.oldsTempR[k], OLDTEMPS2[k] );
        EXPECT_GT(sTemp3[k], -100); // Sense check
        EXPECT_LT(sTemp3[k], 100); // Sense check
        // Test that oldsTempR is updated to sTempR for the next day
@@ -568,6 +568,6 @@ namespace {
       EXPECT_EQ(ptr_stError, 1);
 
       //Reset to global state
-      Reset_SOILWAT2_after_UnitTest(); 
+      Reset_SOILWAT2_after_UnitTest();
    }
 }
