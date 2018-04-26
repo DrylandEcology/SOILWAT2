@@ -181,8 +181,6 @@ namespace {
     EXPECT_DEATH(soil_temperature_init(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
         fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError),"@ generic.c LogError"); // We expect death when max depth < last layer
 
-    EXPECT_EQ(0, ptr_stError); // ptr_stError should be True since the MaxDepth is less than soil layer depth
-
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -281,6 +279,8 @@ namespace {
         EXPECT_LE(maxvalR, sTconst);//Maximum interpolated oldsTempR value should be less than or equal to maximum in oldsTemp2 (sTconst = last layer)
         EXPECT_EQ(stValues.oldsTempR[nRgr + 1], sTconst); //Temperature in last interpolated layer should equal sTconst
 
+        //Reset to global state
+        Reset_SOILWAT2_after_UnitTest();
 
   }
 
@@ -315,21 +315,21 @@ namespace {
 
     unsigned int i = 0.;
     for (i = 0; i < nlyrs; i++) {
-      sTemp3[i] = -5;
-      sTemp4[i] = 0;
-      swc2[i] = 5; // set swc to a high value so will be > swc_sat - width * .13
-      swc_sat2[i] = 1;
-      // run
-      set_frozen_unfrozen(nlyrs, sTemp3, swc2, swc_sat2, width2);
-      // Test
-      EXPECT_EQ(1,stValues.lyrFrozen[i]);
-      // run
-      set_frozen_unfrozen(nlyrs, sTemp4, swc2, swc_sat2, width2);
-      // Test
-      EXPECT_EQ(0,stValues.lyrFrozen[i]);
+    sTemp3[i] = -5;
+    sTemp4[i] = 0;
+    swc2[i] = 5; // set swc to a high value so will be > swc_sat - width * .13
+    swc_sat2[i] = 1;
+    // run
+    set_frozen_unfrozen(nlyrs, sTemp3, swc2, swc_sat2, width2);
+    // Test
+    EXPECT_EQ(1,stValues.lyrFrozen[i]);
+    // run
+    set_frozen_unfrozen(nlyrs, sTemp4, swc2, swc_sat2, width2);
+    // Test
+    EXPECT_EQ(0,stValues.lyrFrozen[i]);
 
-      // Reset to previous global state
-      Reset_SOILWAT2_after_UnitTest();
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
     }
 
   }
@@ -360,11 +360,11 @@ namespace {
     }
 
     soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR, oldsTempR,
-  		vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError);
+    	vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError);
 
     // Check that values that are set, are set right.
     EXPECT_EQ(sTempR[0], T1);
-  	EXPECT_EQ(sTempR[nRgr + 1], sTconst);
+    EXPECT_EQ(sTempR[nRgr + 1], sTconst);
 
     //Check that ptr_stError is FALSE
     EXPECT_EQ(ptr_stError, 0);
@@ -373,24 +373,24 @@ namespace {
     for (i = 0; i < nRgr + 1; i++) {
     EXPECT_LT(sTempR[i], 100);
     EXPECT_GT(sTempR[i], -100);
-  }
+    }
 
-  // test that the ptr_stError is FALSE when it is supposed to
-  double sTempR2[nRgr + 1], oldsTempR3[nRgr + 1]; //fcR2[nRgr +1], wpR2[nRgr +1], vwcR2[nRgr +1], bDensityR2[nRgr +1];
+    // test that the ptr_stError is FALSE when it is supposed to
+    double sTempR2[nRgr + 1], oldsTempR3[nRgr + 1];
 
-  for (i = 0; i < nRgr + 1; i++) {
+    for (i = 0; i < nRgr + 1; i++) {
     sTempR2[i] = RandNorm(150, 1);
     oldsTempR3[i] = RandNorm(150, 1);
-  }
+    }
 
-  soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR2, oldsTempR3,
-		vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError);
+    soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR2, oldsTempR3,
+    vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError);
 
-  //Check that ptr_stError is FALSE
-  EXPECT_EQ(ptr_stError, 1);
+    //Check that ptr_stError is TRUE
+    EXPECT_EQ(ptr_stError, 1);
 
-  // Reset to previous global state
-  Reset_SOILWAT2_after_UnitTest();
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
   }
 
   // Test main soil temperature function 'soil_temperature'
@@ -409,70 +409,165 @@ namespace {
     double swc[] = {1.0}, swc_sat[] = {1.5}, bDensity[] = {1.8}, width[] = {20},
     oldsTemp[] = {5.0}, sTemp[] = {4.0}, fc[] = {2.6}, wp[] = {1.0};
 
-    //double OLDTEMPS = *stValues.oldsTempR;
-    //swprintf("%f", OLDTEMPS[0]);
+    // copy initital oldsTempR values so we can check they have been updated
+    double OLDTEMPS[nRgr + 1];
+    memcpy(OLDTEMPS, stValues.oldsTempR, sizeof(OLDTEMPS));
 
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-      oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
-      t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-       nRgr, snow, &ptr_stError);
+    oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+    t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
+    nRgr, snow, &ptr_stError);
 
-      // Test surface temp equals surface_temperature_under_snow() because snow > 0
-       EXPECT_EQ(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
-       EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
-       EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
+    // Test surface temp equals surface_temperature_under_snow() because snow > 0
+    EXPECT_EQ(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
+    EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
+    EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
 
-      //Test surface temp equals equatin when biomass < blimititer
-      snowdepth = 0;
+    //Test surface temp equals equatin when biomass < blimititer & snow = 0
+    snowdepth = 0;
 
-      soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-        oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
-        t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-         nRgr, snow, &ptr_stError);
+    soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
+    oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+    t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
+    nRgr, snow, &ptr_stError);
 
-      EXPECT_EQ(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
-      EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
-      EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
+    EXPECT_EQ(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
+    EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
+    EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
 
-      //Test surface temp equals equation when biomass < blimititer
-      biomass = 305;
+    //Test surface temp equals equation when biomass < blimititer & snow = 0
+    biomass = 305;
 
-      soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-        oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
-        t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-         nRgr, snow, &ptr_stError);
+    soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
+    oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+    t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
+    nRgr, snow, &ptr_stError);
 
-      EXPECT_EQ(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
-      EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
-      EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
+    EXPECT_EQ(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
+    EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
+    EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
 
+    // checks for  lyrTemp_to_lyrSoil_temperature
+    int resultValue = sizeof(sTemp) / sizeof(sTemp[0]);
+    EXPECT_EQ(1, resultValue); // when the number of soil layers is 1, sTemp should be 1
+    EXPECT_GT(sTemp[0], -100); // Sense check
+    EXPECT_LT(sTemp[0], 100); // Sense check
+    EXPECT_EQ(0, ptr_stError); // ptr_stError should be 1
 
+    // Test that oldsTempR is updated to sTempR for the next day
+    unsigned int k = 0;
+    for(k = 0; k < nRgr +1; k++) {
+    //  printf("\n k %u sTemp %f , newoldtemp %f,OLDSTEMPS %f", k, sTemp[k], stValues.oldsTempR[k],OLDTEMPS[k] );
+    EXPECT_NE(stValues.oldsTempR[k], OLDTEMPS[k]);
+    }
 
-       // checks for  lyrTemp_to_lyrSoil_temperature
-       int resultValue = sizeof(sTemp) / sizeof(sTemp[0]);
-       EXPECT_EQ(1, resultValue); // when the number of soil layers is 1, sTemp should be 1
-       EXPECT_GT(sTemp[0], -100); // Sense check
-       EXPECT_LT(sTemp[0], 100); // Sense check
+    //Reset to global state
+    Reset_SOILWAT2_after_UnitTest();
+    unsigned int i = 0;
 
+    // *****  Test when nlyrs = MAX_LAYERS  ***** //
+
+    // intialize values
+    unsigned int nlyrs2 = MAX_LAYERS;
+    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    ptr_stError = swFALSE;
+    double swc2[nlyrs2], swc_sat2[nlyrs2], bDensity2[nlyrs2], sTemp3[nlyrs2], fc2[nlyrs2], wp2[nlyrs2];
+
+    for (i = 0; i < nlyrs2; i++) {
+        swc2[i] =  fmaxf(RandNorm(1.,0.5), 0.1);;
+        swc_sat2[i] = swc2[i] + 0.5;
+        bDensity2[i] = fmaxf(RandNorm(1.,0.5), 0.1);
+        sTemp3[i] = RandNorm(5.,10.);
+        fc2[i] = fmaxf(RandNorm(1.5, 0.5), 0.1);
+        wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp will always be less than fc
+      }
+
+    // copy initital oldsTempR values so we can check they have been updated
+    double OLDTEMPS2[nRgr + 1];
+    memcpy(OLDTEMPS2, stValues.oldsTempR, sizeof(OLDTEMPS2));
+
+    // Test surface temp equals surface_temperature_under_snow() because snow > 0
+    snowdepth = 5;
+
+    soil_temperature(airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
+    oldsTemp3, sTemp3, surfaceTemp, nlyrs2, fc2, wp2, bmLimiter, t1Param1, t1Param2,
+    t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
+     nRgr, snow, &ptr_stError);
+
+    EXPECT_EQ(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
+    EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
+    EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
+
+    //Test surface temp equals equatin when biomass < blimititer & snow = 0
+    snowdepth = 0;
+    biomass = 100;
+
+    soil_temperature(airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
+    oldsTemp3, sTemp3, surfaceTemp, nlyrs2, fc2, wp2, bmLimiter, t1Param1, t1Param2,
+    t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
+    nRgr, snow, &ptr_stError);
+
+    EXPECT_EQ(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
+    EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
+    EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
+
+    //Test surface temp equals equation when biomass < blimititer & snow = 0
+    biomass = 305;
+
+    soil_temperature(airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
+    oldsTemp3, sTemp3, surfaceTemp, nlyrs2, fc2, wp2, bmLimiter, t1Param1, t1Param2,
+    t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
+    nRgr, snow, &ptr_stError);
+
+    EXPECT_EQ(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
+    EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
+    EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
+
+     // checks for  lyrTemp_to_lyrSoil_temperature
+     int resultValue2 = sizeof(sTemp3) / sizeof(sTemp3[0]);
+     EXPECT_EQ(MAX_LAYERS, resultValue2); // when the number of soil layers is MAX_LAYERS, sTemp should be MAX_LAYERS
+     EXPECT_EQ(0, ptr_stError); // ptr_stError should be 0
+
+     for(k = 1; k < nRgr +1; k++) {
+       printf("\n k %u sTemp3 %f , newoldtemp %f,OLDSTEMPS2 %f", k, sTemp[k], stValues.oldsTempR[k],OLDTEMPS2[k] );
+       EXPECT_GT(sTemp3[k], -100); // Sense check
+       EXPECT_LT(sTemp3[k], 100); // Sense check
        // Test that oldsTempR is updated to sTempR for the next day
-       unsigned int k = 0;
-       for(k = 0; k < nRgr +1; k++) {
-       //EXPECT_NE(stValues.oldsTempR[k], OLDTEMPS[k]);
+       EXPECT_NE(stValues.oldsTempR[k], OLDTEMPS2[k]);
      }
 
-       // Test that function stps is ptr_stError is swTRUE incident1 & 2
 
+     //Reset to global state
+     Reset_SOILWAT2_after_UnitTest();
 
-  /*  for (i = 0; i < nlyrs; i++) {
-      bDensity2[i] = fmaxf(RandNorm(1.,0.5), 0.1);
-      fc2[i] = fmaxf(RandNorm(1.5, 0.5), 0.1);
-      wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp will always be less than fc
-      EXPECT_GT(bDensity2[i], 0);
-      EXPECT_GT(fc2[i], 0);
-      EXPECT_GT(wp2[i], 0);
-    } */
+     // Test that function stops or throws an error when it is supposed to.
 
+     // Should fail when soil_temperature_init fails - i.e. when theMaxDepth < depth of nlyrs
 
+     double theMaxDepth2 = 10;
 
+     EXPECT_DEATH(soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
+     oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+     t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth2,
+     nRgr, snow, &ptr_stError), "@ generic.c LogError");
+
+     // ptr_stError should be set to TRUE if soil_temperature_today fails (i.e. unrealistic temp values)
+     double sTemp2[nlyrs], oldsTemp2[nlyrs];
+     for (i = 0; i < nlyrs; i++) {
+     sTemp2[i] = RandNorm(150, 1);
+     oldsTemp2[i] = RandNorm(150, 1);
      }
+
+     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
+     oldsTemp2, sTemp2, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+     t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
+      nRgr, snow, &ptr_stError);
+
+      // Check that ptr_stError is TRUE
+      EXPECT_EQ(ptr_stError, 1);
+
+      //Reset to global state
+      Reset_SOILWAT2_after_UnitTest(); 
+   }
 }
