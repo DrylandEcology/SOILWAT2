@@ -1129,13 +1129,16 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[],
      input soil profile depths/layers.
 
      @param cor[MAX_ST_RGR + 1][MAX_LAYERS + 1]
-     @param nlyrTemp
-     @param depth_Temp
-     @param sTempR
-     @param nlyrSoil
-     @param depth_Soil
-     @param width_Soil
-     @param sTemp
+     @param nlyrTemp The number of soil temperature layers.
+     @param depth_Temp Depths of soil temperature layers (cm).
+     @param sTempR Temperature values of soil temperature layers (C).
+     @param nlyrSoil The number of soil layer.
+     @param depth_Soil Depths of soil layers (cm).
+     @param width_Soil Witdths of soil layers (cm).
+     @param sTemp Temperatature values soil layers (C).
+
+     \sideeffect
+     * sTemp Updated temperatature values soil layers (C)
  */
 
 void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1],
