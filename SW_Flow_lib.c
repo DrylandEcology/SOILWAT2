@@ -1322,20 +1322,20 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 
 /** @brief Initialize soil structure and properties for soil temperature simulation.
 
-    @param bDensity An array of the bulk density of the soil layers.
-    @param width The width of the layers.
-    @param oldsTemp An array of yesterday's temperature values in Celsius.
+    @param bDensity An array of the bulk density of the soil layers (g/cm^3).
+    @param width The width of the layers (cm).
+    @param oldsTemp An array of yesterday's temperature values (C).
     @param sTconst The soil temperature at a soil depth where it stays constant as
-			lower boundary condition.
-    @param nlyrs The number of layers in the soil profile
-    @param fc An array of the field capacity of the soil layers.
-    @param wp An array of the wilting point of the soil layers.
-    @param deltaX The depth increment for the soil temperature calculations.
-    @param theMaxDepth the lower bound of the equation.
+			lower boundary condition (C).
+    @param nlyrs The number of layers in the soil profile.
+    @param fc An array of the field capacity of the soil layers (cm/layer).
+    @param wp An array of the wilting point of the soil layers (cm/layer).
+    @param deltaX The depth increment for the soil temperature calculations (cm).
+    @param theMaxDepth the lower bound of the equation (cm).
     @param nRgr the number of regressions (1 extra value is needed for the sTempR).
 
-    @param ptr_stError Updated status of soil temperature error in *ptr_stError.
-    @return tSoilAvg The modified, average temperature of the soil surface.
+    @param ptr_stError Updated booleans status of soil temperature error in *ptr_stError.
+    @return tSoilAvg The modified, average temperature of the soil surface (C).
 */
 
 void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
@@ -1396,7 +1396,7 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 	}
 
 	// if soil temperature max depth is less than soil layer depth then quit
-	if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
+  if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
 		if (!(*ptr_stError)) {
 			(*ptr_stError) = swTRUE;
 
@@ -1494,11 +1494,11 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 
 /** @brief Function to determine if a soil layer is frozen or not. \cite Parton1998
 
-  A layer was considered frozen if its average soil temperature was below the freezing
-  temperature (-1C), and theta(sat) - theta(cur) < 0.13,
-  where theta(sat) was the saturated volumetric wetness of the layer and theta(cur)
-  was the simulated volumetric wetness (Flerchinger and Saxton, 1989).
-  The hydraulic conductivity of a frozen layer was reduced to 0.00001 cm/s.
+    A layer was considered frozen if its average soil temperature was below the freezing
+    temperature (-1C), and theta(sat) - theta(cur) < 0.13,
+    where theta(sat) was the saturated volumetric wetness of the layer and theta(cur)
+    was the simulated volumetric wetness (Flerchinger and Saxton, 1989).
+    The hydraulic conductivity of a frozen layer was reduced to 0.00001 cm/s.
 
     @param nlyrs The number of layers.
     @param sTemp The temperature of the soil layers (C).
@@ -1528,7 +1528,6 @@ void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[],
 		}
 	}
 }
-
 
 unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTemp[],
 	double shParam, unsigned int nlyrs, double vwc[], double bDensity[]){
@@ -1615,26 +1614,34 @@ temp += temp;
 }
 
 
-/** @brief Calculate today's soil temperature for each layer
+/** @brief Calculate today's soil temperature for each layer.
 
-		The algorithm selects a shorter time step if required for a stable solution.
+		The algorithm selects a shorter time step if required for a stable solution
+    		(@cite Parton1978,@cite Parton1984).
 
 		@param ptr_d Time Yesterday's successful time step in seconds.
-		@param deltaX The depth increment for the soil temperature (regression) calculations.
-		@param sT1 The soil surface temperature as upper boundary condition.
+		@param deltaX The depth increment for the soil temperature (regression) calculations (cm).
+		@param sT1 The soil surface temperature as upper boundary condition (C).
 		@param sTconst The soil temperature at a soil depth where it stays constant as
-			lower boundary condition.
-		@param sTempR An array of today's (regression)-layer soil temperature values.
-		@param oldsTempR An array of yesterday's (regression)-layer soil temperature values.
+			lower boundary condition (C).
+    @param nRgr The number of regressions (1 extra value is needed for the sTempR and oldsTempR for the last layer).
+		@param sTempR An array of today's (regression)-layer soil temperature values (C).
+		@param oldsTempR An array of yesterday's (regression)-layer soil temperature value (C).
+    @param vwcR An array of temperature-layer VWC values (cm/layer).
+    @param wpR An array of temperature-layer wilting point values (cm/layer).
+    @param fcR An array of temperature-layer field capacity values (cm/layer).
+    @param bDensityR temperature-layer bulk density values (g/cm^3).
+    @param csParam1 A constant for the soil thermal conductivity equation.
+    @param csParam2 A constant for the soil thermal conductivity equation.
+    @param shParam A constant for specific heat capacity equation.
+    @param *ptr_stError - A boolean indicating whether there was an error.
 
-		@return Updated soil temperature values in array of sTempR.
-		@return Realized time step for today in updated value of ptr_dTime.
-		@return Updated status of soil temperature error in *ptr_stError.
 
-		@reference Parton, W. J. 1978. Abiotic section of ELM. Pages 31–53 in G. S. Innis,
-			editor. Grassland simulation model. Springer, New York, NY.
-		@reference Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe.
-			Soil Science 138:93-101.
+    \sideeffect
+    - Updated soil temperature values in array of sTempR (C).
+		- Realized time step for today in updated value of ptr_dTime (seconds).
+		- Updated status of soil temperature error in *ptr_stError.
+
 	*/
 
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
@@ -1644,7 +1651,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 	int i, k, m, Nsteps_per_day = 1;
 	double pe, cs, sh, part1, parts, part2;
 	double oldsTempR2[MAX_ST_RGR + 1];
-	Bool Tsoil_not_exploided = swTRUE;
+	Bool Tsoil_not_exploded = swTRUE;
   #ifdef SWDEBUG
   int debug = 0;
   if (SW_Model.year == 1980 && SW_Model.doy < 10) {
@@ -1720,7 +1727,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 					break;
 				}
 
-				part2 = sTempR[i - 1] - 2 * oldsTempR2[i] + oldsTempR2[i + 1];
+				part2 = sTempR[ i - 1] - 2 * oldsTempR2[i] + oldsTempR2[i + 1];
 
 				sTempR[i] = oldsTempR2[i] + parts * part2; // Parton (1978) eq. 2.21
 
@@ -1737,7 +1744,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 
 				// Sensibility check to cut-short exploding soil temperature values
 				if (GT(sTempR[i], 100.) || LT(sTempR[i], -100.)) {
-					Tsoil_not_exploided = swFALSE;
+					Tsoil_not_exploded = swFALSE;
 					*ptr_stError = swTRUE;
 					break;
 				}
@@ -1754,11 +1761,9 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 			}
 		}
 
-	} while ((*ptr_stError) && Tsoil_not_exploided && Nsteps_per_day <= 16);
+	} while ((*ptr_stError) && Tsoil_not_exploded && Nsteps_per_day <= 16);
 
 }
-
-
 
 /**********************************************************************
  PURPOSE: Calculate soil temperature for each layer

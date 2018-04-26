@@ -84,7 +84,6 @@ namespace {
 
     EXPECT_EQ(-2.0, tSoilAvg); // When there is snow > 6.665 and airTemp >= 0, the return is -2.0
 
-
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -173,13 +172,17 @@ namespace {
     EXPECT_EQ(stValues.depths[nlyrs - 1], 295); // sum of inputs width = maximum depth; in my example 295
     EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
 
-    /// test when theMaxDepth is less than soil layer depth
-    //theMaxDepth = 70.0;
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
 
-    //soil_temperature_init(bDensity, width, oldsTemp, sTconst, nlyrs,
-    //     fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError);
+    /// test when theMaxDepth is less than soil layer depth - function should fail
+    double theMaxDepth2 = 70.0;
 
-    //EXPECT_EQ(swTRUE, &ptr_stError); // ptr_stError should be True since the MaxDepth is less than soil layer depth
+    EXPECT_DEATH(soil_temperature_init(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
+        fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError),"@ generic.c LogError"); // We expect death when max depth < last layer
+
+    EXPECT_EQ(0, ptr_stError); // ptr_stError should be True since the MaxDepth is less than soil layer depth
+
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -198,9 +201,9 @@ namespace {
     unsigned int i = 0.;
     nlyrs = 1;
     double width[] = {20}, oldsTemp[] = {1};
-    double bDensity[] = {RandNorm(1.,0.5)}, fc[] = {RandNorm(1.5, 0.5)};
+    double bDensity[] = {fmaxf(RandNorm(1.5,0.5), 0.1)}, fc[] = {fmaxf(RandNorm(1.5, 0.5), 0.1)};
     double wp[1];
-    wp[0]= fc[0] - 0.6; // wp will always be less than fc
+    wp[0]= fmax(fc[0] - 0.6, .1); // wp will always be less than fc
 
     soil_temperature_init(bDensity, width, oldsTemp, sTconst, nlyrs,
       fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError);
@@ -241,9 +244,12 @@ namespace {
       double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
 
       for (i = 0; i < nlyrs; i++) {
-        bDensity2[i] = RandNorm(1.,0.5);
-        fc2[i] = RandNorm(1.5, 0.5);
-        wp2[i] = fc2[i] - 0.6; // wp will always be less than fc
+        bDensity2[i] = fmaxf(RandNorm(1.,0.5), 0.1);
+        fc2[i] = fmaxf(RandNorm(1.5, 0.5), 0.1);
+        wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp will always be less than fc
+        EXPECT_GT(bDensity2[i], 0);
+        EXPECT_GT(fc2[i], 0);
+        EXPECT_GT(wp2[i], 0);
       }
 
       soil_temperature_init(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
@@ -330,6 +336,65 @@ namespace {
 
   // Test soil temperature today function 'soil_temperature_today'
   TEST(SWFlowTempTest, SoilTemperatureTodayFunction){
+
+    // declare inputs and output
+    double delta_time = 43200., deltaX = 15.0, T1 = 20.0, sTconst = 4.16, csParam1 = 0.00070,
+    csParam2 = 0.000030, shParam = 0.18;
+    int nRgr =65;
+    Bool ptr_stError = swFALSE;
+
+    // declare input in for loop for non-error causing conditions;
+    /// don't use RandNorm for fcR, wpR, vwcR, and bDensityR because will trigger
+    /// error causing condtions
+
+    double sTempR[nRgr + 1], oldsTempR[nRgr + 1], wpR[nRgr + 1], fcR[nRgr + 1],
+    vwcR[nRgr + 1], bDensityR[nRgr + 1];
+    int i = 0.;
+    for (i = 0; i < nRgr + 1; i++) {
+      sTempR[i] = RandNorm(1.5, 1);
+      oldsTempR[i] = RandNorm(1.5, 1);
+      fcR[i] = 2.1;
+      wpR[i] = 1.5; // wp will always be less than fc
+      vwcR[i] = 1.6;
+      bDensityR[i] = 1.5;
+    }
+
+    soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR, oldsTempR,
+  		vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError);
+
+    // Check that values that are set, are set right.
+    EXPECT_EQ(sTempR[0], T1);
+  	EXPECT_EQ(sTempR[nRgr + 1], sTconst);
+
+    //Check that ptr_stError is FALSE
+    EXPECT_EQ(ptr_stError, 0);
+
+    //Check that sTempR values are realisitic and pass check in code (between -100 and 100)
+    for (i = 0; i < nRgr + 1; i++) {
+    EXPECT_LT(sTempR[i], 100);
+    EXPECT_GT(sTempR[i], -100);
+  }
+
+  // Reset to previous global state
+  Reset_SOILWAT2_after_UnitTest();
+
+  // test that theptr_stError is FALSE when it is supposed to
+  double sTempR2[nRgr + 1], oldsTempR3[nRgr + 1]; //fcR2[nRgr +1], wpR2[nRgr +1], vwcR2[nRgr +1], bDensityR2[nRgr +1];
+
+  for (i = 0; i < nRgr + 1; i++) {
+    sTempR2[i] = RandNorm(150, 1);
+    oldsTempR3[i] = RandNorm(150, 1);
+  }
+
+  soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR2, oldsTempR3,
+		vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError);
+
+  //Check that ptr_stError is FALSE
+  EXPECT_EQ(ptr_stError, 1);
+
+  // Reset to previous global state
+  Reset_SOILWAT2_after_UnitTest();
+
 
   }
 
