@@ -119,11 +119,14 @@ namespace {
     double acc = 0.0;
     for (i = 0; i < nRgr + 1; i++) {
       for (unsigned int j = 0; j < MAX_LAYERS + 1; j++) {
-        if (stValues.tlyrs_by_slyrs[i][j] >=0 ) {
+        if (stValues.tlyrs_by_slyrs[i][j] >= 0 ) {
           acc += stValues.tlyrs_by_slyrs[i][j];
         }
       }
     }
+    swprintf("\n %f", acc);
+    swprintf("\n %f", stValues.depths[nlyrs - 1]);
+
     EXPECT_EQ(acc, stValues.depths[nlyrs - 1]); //The sum of all positive values should equal the maximum depth
 
     // Other init test
@@ -162,10 +165,13 @@ namespace {
     for (unsigned int i = 0; i < nRgr + 1; i++) {
       for (unsigned int j = 0; j < MAX_LAYERS + 1; j++) {
         if (stValues.tlyrs_by_slyrs[i][j] >=0 ) {
+          //swprintf("\n %f", acc);
           acc += stValues.tlyrs_by_slyrs[i][j];
         }
       }
     }
+    swprintf("\n %f", acc);
+    swprintf("\n %f", stValues.depths[nlyrs - 1]);
     EXPECT_EQ(acc, stValues.depths[nlyrs - 1]); //The sum of all positive values should equal the maximum depth
 
     // Other init test
@@ -530,7 +536,7 @@ namespace {
      EXPECT_EQ(0, ptr_stError); // ptr_stError should be 0
 
      for(k = 1; k < nRgr +1; k++) {
-       printf("\n k %u sTemp3 %f , newoldtemp %f,OLDSTEMPS2 %f", k, sTemp[k], stValues.oldsTempR[k], OLDTEMPS2[k] );
+       //printf("\n k %u sTemp3 %f , newoldtemp %f,OLDSTEMPS2 %f", k, sTemp[k], stValues.oldsTempR[k], OLDTEMPS2[k] );
        EXPECT_GT(sTemp3[k], -100); // Sense check
        EXPECT_LT(sTemp3[k], 100); // Sense check
        // Test that oldsTempR is updated to sTempR for the next day
@@ -538,7 +544,7 @@ namespace {
      }
 
 
-     //Reset to global state
+     // Reset to global state
      Reset_SOILWAT2_after_UnitTest();
 
      // Test that function stops or throws an error when it is supposed to.
