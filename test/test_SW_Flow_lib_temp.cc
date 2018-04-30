@@ -116,15 +116,18 @@ namespace {
         //Values should be equal to -deltaX when i > the depth of the soil profile/deltaX and j is == nlyrs
     }
 
+    Reset_SOILWAT2_after_UnitTest();
     double acc = 0.0;
     for (i = 0; i < nRgr + 1; i++) {
       for (unsigned int j = 0; j < MAX_LAYERS + 1; j++) {
         if (stValues.tlyrs_by_slyrs[i][j] >= 0 ) {
+          swprintf("\n acc loop %f", acc);
+
           acc += stValues.tlyrs_by_slyrs[i][j];
         }
       }
     }
-    swprintf("\n %f", acc);
+    swprintf("\n acc final %f", acc);
     swprintf("\n %f", stValues.depths[nlyrs - 1]);
 
     EXPECT_EQ(acc, stValues.depths[nlyrs - 1]); //The sum of all positive values should equal the maximum depth
