@@ -527,6 +527,7 @@ namespace {
      // Should fail when soil_temperature_init fails - i.e. when theMaxDepth < depth of nlyrs
 
      double theMaxDepth2 = 10;
+     swprintf("\n Depth of Layers %f, MaxDepth %f",  width[nlyrs - 1], theMaxDepth2);
 
      EXPECT_DEATH(soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
      oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
