@@ -507,14 +507,15 @@ namespace {
      // checks for  lyrTemp_to_lyrSoil_temperature
      int resultValue2 = sizeof(sTemp3) / sizeof(sTemp3[0]);
      EXPECT_EQ(MAX_LAYERS, resultValue2); // when the number of soil layers is MAX_LAYERS, sTemp should be MAX_LAYERS
-     EXPECT_EQ(0, ptr_stError); // ptr_stError should be 0
 
      for(k = 1; k < nRgr +1; k++) {
-       //printf("\n k %u sTemp3 %f , newoldtemp %f,OLDSTEMPS2 %f", k, sTemp[k], stValues.oldsTempR[k], OLDTEMPS2[k] );
-       EXPECT_GT(sTemp3[k], -100); // Sense check
-       EXPECT_LT(sTemp3[k], 100); // Sense check
-       // Test that oldsTempR is updated to sTempR for the next day
-       EXPECT_NE(stValues.oldsTempR[k], OLDTEMPS2[k]);
+       if (ptr_stError == 0) {
+         //printf("\n k %u sTemp3 %f , newoldtemp %f,OLDSTEMPS2 %f", k, sTemp[k], stValues.oldsTempR[k], OLDTEMPS2[k] );
+         EXPECT_GT(sTemp3[k], -100); // Sense check
+         EXPECT_LT(sTemp3[k], 100); // Sense check
+         // Test that oldsTempR is updated to sTempR for the next day
+         EXPECT_NE(stValues.oldsTempR[k], OLDTEMPS2[k]);
+       }
      }
 
 
