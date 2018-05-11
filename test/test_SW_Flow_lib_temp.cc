@@ -116,24 +116,8 @@ namespace {
         //Values should be equal to -deltaX when i > the depth of the soil profile/deltaX and j is == nlyrs
     }
 
-    Reset_SOILWAT2_after_UnitTest();
-    double acc = 0.0;
-    for (i = 0; i < nRgr + 1; i++) {
-      for (unsigned int j = 0; j < MAX_LAYERS + 1; j++) {
-        if (stValues.tlyrs_by_slyrs[i][j] >= 0 ) {
-          swprintf("\n acc loop %f", acc);
-
-          acc += stValues.tlyrs_by_slyrs[i][j];
-        }
-      }
-    }
-    swprintf("\n acc final %f", acc);
-    swprintf("\n %f", stValues.depths[nlyrs - 1]);
-
-    EXPECT_EQ(acc, stValues.depths[nlyrs - 1]); //The sum of all positive values should equal the maximum depth
-
     // Other init test
-    EXPECT_EQ(stValues.depths[nlyrs - 1], 20); // sum of inputs width = maximum depth; in my example 295
+    EXPECT_EQ(stValues.depths[nlyrs - 1], 20); // sum of inputs width = maximum depth; in my example 20
     EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
 
     // Reset to previous global state
@@ -163,19 +147,6 @@ namespace {
         EXPECT_EQ(stValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
         //Values should be equal to -deltaX when i > the depth of the soil profile/deltaX and j is == nlyrs
     }
-
-    acc = 0.0;
-    for (unsigned int i = 0; i < nRgr + 1; i++) {
-      for (unsigned int j = 0; j < MAX_LAYERS + 1; j++) {
-        if (stValues.tlyrs_by_slyrs[i][j] >=0 ) {
-          //swprintf("\n %f", acc);
-          acc += stValues.tlyrs_by_slyrs[i][j];
-        }
-      }
-    }
-    swprintf("\n %f", acc);
-    swprintf("\n %f", stValues.depths[nlyrs - 1]);
-    EXPECT_EQ(acc, stValues.depths[nlyrs - 1]); //The sum of all positive values should equal the maximum depth
 
     // Other init test
     EXPECT_EQ(stValues.depths[nlyrs - 1], 295); // sum of inputs width = maximum depth; in my example 295
