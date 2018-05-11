@@ -1029,7 +1029,8 @@ void infiltrate_water_low(double swc[], double drain[], double *drainout, unsign
 
 }
 
-void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], double hydred[], unsigned int nlyrs, double maxCondroot, double swp50, double shapeCond,
+void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[],
+  double hydred[], unsigned int nlyrs, double maxCondroot, double swp50, double shapeCond,
 		double scale) {
 	/**********************************************************************
 	 PURPOSE:Calculate hydraulic redistribution according to Ryel, Ryel R, Caldwell, Caldwell M, Yoder, Yoder C, Or, Or D, Leffler, Leffler A. 2002. Hydraulic redistribution in a stand of Artemisia tridentata: evaluation of benefits to transpiration assessed with a simulation model. Oecologia 130: 173-184.
@@ -1123,18 +1124,26 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 	}
 }
 
+ /**
+     @brief Interpolate soil temperature layer temperature values to
+     input soil profile depths/layers.
 
-/**********************************************************************
- PURPOSE: Initialize soil temperature values, only needs to be called once (ie the first time the soil_temperature function is called).  this is not included in the header file since it is NOT an external function
+     @param cor[MAX_ST_RGR + 1][MAX_LAYERS + 1]
+     @param nlyrTemp The number of soil temperature layers.
+     @param depth_Temp Depths of soil temperature layers (cm).
+     @param sTempR Temperature values of soil temperature layers (C).
+     @param nlyrSoil The number of soil layer.
+     @param depth_Soil Depths of soil layers (cm).
+     @param width_Soil Witdths of soil layers (cm).
+     @param sTemp Temperatature values soil layers (C).
 
- HISTORY:
- 05/31/2012 (DLM) initial coding
+     \sideeffect
+     * sTemp Updated temperatature values soil layers (C)
+ */
 
- INPUTS: they are all defined in the soil_temperature function, so go look there to see their meaning as it would be redundant to explain them all here as well.
-
- OUTPUT: none, but places the interpolation values in stValues struct for use in the soil_temperature function later
- **********************************************************************/
-void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrTemp, double depth_Temp[], double sTempR[], unsigned int nlyrSoil, double depth_Soil[], double width_Soil[], double sTemp[]){
+void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1],
+  unsigned int nlyrTemp, double depth_Temp[], double sTempR[], unsigned int nlyrSoil,
+  double depth_Soil[], double width_Soil[], double sTemp[]){
 	unsigned int i = 0, j, n;
   #ifdef SWDEBUG
   int debug = 0;
@@ -1170,8 +1179,28 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], 
 	}
 }
 
-void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[], double sTemp[], double endTemp, unsigned int nlyrTemp, double depth_Temp[], double maxTempDepth, double sTempR[]){
-	unsigned int i, j1=0, j2;
+/**
+    @brief Interpolate soil layer temperature values to soil temperature profile
+     depths/layers.
+
+     There are outputs for this function.
+
+    @param nlyrSoil
+    @param depth_Soil
+    @param sTemp
+    @param endTemp
+    @param nlyrTemp
+    @param depth_Temp
+    @param maxTempDepth
+    @param sTempR
+
+*/
+
+void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
+   double sTemp[], double endTemp, unsigned int nlyrTemp, double depth_Temp[],
+   double maxTempDepth, double sTempR[]){
+
+  unsigned int i, j1=0, j2;
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -1209,6 +1238,21 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[], 
 		swprintf("\nConf T: sTempR[%i]=%2.2f, sTempR[%i]=%2.2f", i, sTempR[i], i+1, sTempR[i+1]);
 	#endif
 }
+
+/**
+    @brief Initialize soil temperature layer values by transfering soil layer values
+    to soil temperature layer values.
+
+    @param cor[MAX_ST_RGR + 1][MAX_LAYERS + 1]
+    @param nlyrSoil The number of soil layers.
+    @param width_Soil The width of the soil layers.
+    @param var The soil layer values to be interpolated.
+    @param nlyrTemp The number of soil temperature layers.
+    @param width_Temp The width of the soil temperature layers.
+    @param res The values interpolated to soil temperature depths.
+
+    @return res os updated and reflects new values.
+*/
 
 void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrSoil,
 	double width_Soil[], double var[], unsigned int nlyrTemp, double width_Temp,
@@ -1252,14 +1296,14 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int
 /**
 	\fn double surface_temperature_under_snow(double airTempAvg, double snow)
 
-  \brief Determine the average temperature of the soil surface under snow.
+    @brief Determine the average temperature of the soil surface under snow.
 
     Based on Equations 5 & 6 in Parton et al. 1998. \cite Parton1998
 
-    \param airTempAvg the average air temperature of the area, in Celsius
-    \param snow the snow-water-equivalent of the area, in cm
+    @param airTempAvg the average air temperature of the area, in Celsius
+    @param snow the snow-water-equivalent of the area, in cm
 
-    \return tSoilAvg The modified, average temperature of the soil surface
+    @return tSoilAvg The modified, average temperature of the soil surface
 */
 
 double surface_temperature_under_snow(double airTempAvg, double snow){
@@ -1279,22 +1323,22 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 	return tSoilAvg;
 }
 
-/** @brief Initialize soil structure and properties for soil temperature simulation
+/** @brief Initialize soil structure and properties for soil temperature simulation.
 
-    @param bDensity An array of the bulk density of the soil layers.
-    @param width The width of the layers.
-    @param oldsTemp An array of yesterday's temperature values in Celsius.
+    @param bDensity An array of the bulk density of the soil layers (g/cm^3).
+    @param width The width of the layers (cm).
+    @param oldsTemp An array of yesterday's temperature values (C).
     @param sTconst The soil temperature at a soil depth where it stays constant as
-			lower boundary condition.
-    @param nlyrs The number of layers in the soil profile
-    @param fc An array of the field capacity of the soil layers.
-    @param wp An array of the wilting point of the soil layers.
-    @param deltaX The depth increment for the soil temperature calculations.
-    @param theMaxDepth the lower bound of the equation.
+			lower boundary condition (C).
+    @param nlyrs The number of layers in the soil profile.
+    @param fc An array of the field capacity of the soil layers (cm/layer).
+    @param wp An array of the wilting point of the soil layers (cm/layer).
+    @param deltaX The depth increment for the soil temperature calculations (cm).
+    @param theMaxDepth the lower bound of the equation (cm).
     @param nRgr the number of regressions (1 extra value is needed for the sTempR).
 
-    @param ptr_stError Updated status of soil temperature error in *ptr_stError.
-    @return tSoilAvg The modified, average temperature of the soil surface.
+    @param ptr_stError Updated booleans status of soil temperature error in *ptr_stError.
+    @return tSoilAvg The modified, average temperature of the soil surface (C).
 */
 
 void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
@@ -1355,7 +1399,7 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 	}
 
 	// if soil temperature max depth is less than soil layer depth then quit
-	if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
+  if (LT(theMaxDepth, st->depths[nlyrs - 1])) {
 		if (!(*ptr_stError)) {
 			(*ptr_stError) = swTRUE;
 
@@ -1365,9 +1409,7 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 				"calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 
         LogError(logfp, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
-
 		}
-
 		return; // exits the function
 	}
 
@@ -1451,15 +1493,28 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
   #endif
 }
 
+/** @brief Function to determine if a soil layer is frozen or not. \cite Parton1998
+
+    A layer was considered frozen if its average soil temperature was below the freezing
+    temperature (-1C), and theta(sat) - theta(cur) < 0.13,
+    where theta(sat) was the saturated volumetric wetness of the layer and theta(cur)
+    was the simulated volumetric wetness (Flerchinger and Saxton, 1989).
+    The hydraulic conductivity of a frozen layer was reduced to 0.00001 cm/s.
+
+    @param nlyrs The number of layers.
+    @param sTemp The temperature of the soil layers (C).
+    @param swc The soil water content of the soil layers (cm/cm).
+    @param swc_sat The satured soil water content of the soil layers (cm/cm).
+    @param width The width of them soil layers (cm).
+
+    @sideeffect update module level variable ST_RGR_VALUES.lyrFrozen. lyrFrozen
+    is a Boolean (0 for not frozen, 1 for frozen)
+
+*/
+
+
 void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[],
 	double swc_sat[], double width[]){
-/*	01/06/2016 (drs)	function to determine if a soil layer is frozen or not
-
-	Parton, W. J., M. Hartman, D. Ojima, and D. Schimel. 1998. DAYCENT and its land surface submodel: description and testing. Global and Planetary Change 19:35-48.
-	A layer was considered frozen if its average soil temperature was below the freezing temperature (-1C), and theta(sat) - theta(cur) < 0.13,
-	where theta(sat) was the saturated volumetric wetness of the layer and theta(cur) was the simulated volumetric wetness (Flerchinger and Saxton, 1989).
-	The hydraulic conductivity of a frozen layer was reduced to 0.00001 cm/s.
-*/
 
 // 	TODO: freeze surfaceWater and restrict infiltration
 
@@ -1473,9 +1528,7 @@ void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[],
 			st->lyrFrozen[i] = swFALSE;
 		}
 	}
-
 }
-
 
 unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTemp[],
 	double shParam, unsigned int nlyrs, double vwc[], double bDensity[]){
@@ -1562,27 +1615,36 @@ temp += temp;
 }
 
 
-/** @brief Calculate today's soil temperature for each layer
+/** @brief Calculate today's soil temperature for each layer.
 
-		The algorithm selects a shorter time step if required for a stable solution.
+		The algorithm selects a shorter time step if required for a stable solution
+    		(@cite Parton1978,@cite Parton1984).
 
-		@param ptr_dTime Yesterday's successful time step in seconds.
-		@param deltaX The depth increment for the soil temperature (regression) calculations.
-		@param sT1 The soil surface temperature as upper boundary condition.
+		@param ptr_d Time Yesterday's successful time step in seconds.
+		@param deltaX The depth increment for the soil temperature (regression) calculations (cm).
+		@param sT1 The soil surface temperature as upper boundary condition (C).
 		@param sTconst The soil temperature at a soil depth where it stays constant as
-			lower boundary condition.
-		@param sTempR An array of today's (regression)-layer soil temperature values.
-		@param oldsTempR An array of yesterday's (regression)-layer soil temperature values.
+			lower boundary condition (C).
+    @param nRgr The number of regressions (1 extra value is needed for the sTempR and oldsTempR for the last layer).
+		@param sTempR An array of today's (regression)-layer soil temperature values (C).
+		@param oldsTempR An array of yesterday's (regression)-layer soil temperature value (C).
+    @param vwcR An array of temperature-layer VWC values (cm/layer).
+    @param wpR An array of temperature-layer wilting point values (cm/layer).
+    @param fcR An array of temperature-layer field capacity values (cm/layer).
+    @param bDensityR temperature-layer bulk density values (g/cm^3).
+    @param csParam1 A constant for the soil thermal conductivity equation.
+    @param csParam2 A constant for the soil thermal conductivity equation.
+    @param shParam A constant for specific heat capacity equation.
+    @param *ptr_stError - A boolean indicating whether there was an error.
 
-		@return Updated soil temperature values in array of sTempR.
-		@return Realized time step for today in updated value of ptr_dTime.
-		@return Updated status of soil temperature error in *ptr_stError.
 
-		@reference Parton, W. J. 1978. Abiotic section of ELM. Pages 31–53 in G. S. Innis,
-			editor. Grassland simulation model. Springer, New York, NY.
-		@reference Parton, W. J. 1984. Predicting Soil Temperatures in A Shortgrass Steppe.
-			Soil Science 138:93-101.
+    \sideeffect
+    - Updated soil temperature values in array of sTempR (C).
+		- Realized time step for today in updated value of ptr_dTime (seconds).
+		- Updated status of soil temperature error in *ptr_stError.
+
 	*/
+
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
 	int nRgr, double sTempR[], double oldsTempR[], double vwcR[], double wpR[], double fcR[],
 	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError) {
@@ -1590,7 +1652,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 	int i, k, m, Nsteps_per_day = 1;
 	double pe, cs, sh, part1, parts, part2;
 	double oldsTempR2[MAX_ST_RGR + 1];
-	Bool Tsoil_not_exploided = swTRUE;
+	Bool Tsoil_not_exploded = swTRUE;
   #ifdef SWDEBUG
   int debug = 0;
   if (SW_Model.year == 1980 && SW_Model.doy < 10) {
@@ -1666,7 +1728,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 					break;
 				}
 
-				part2 = sTempR[i - 1] - 2 * oldsTempR2[i] + oldsTempR2[i + 1];
+				part2 = sTempR[ i - 1] - 2 * oldsTempR2[i] + oldsTempR2[i + 1];
 
 				sTempR[i] = oldsTempR2[i] + parts * part2; // Parton (1978) eq. 2.21
 
@@ -1683,7 +1745,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 
 				// Sensibility check to cut-short exploding soil temperature values
 				if (GT(sTempR[i], 100.) || LT(sTempR[i], -100.)) {
-					Tsoil_not_exploided = swFALSE;
+					Tsoil_not_exploded = swFALSE;
 					*ptr_stError = swTRUE;
 					break;
 				}
@@ -1700,11 +1762,9 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 			}
 		}
 
-	} while ((*ptr_stError) && Tsoil_not_exploided && Nsteps_per_day <= 16);
+	} while ((*ptr_stError) && Tsoil_not_exploded && Nsteps_per_day <= 16);
 
 }
-
-
 
 /**********************************************************************
  PURPOSE: Calculate soil temperature for each layer
@@ -1802,6 +1862,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	 depths[nlyrs] - the depths of each layer of soil, calculated in the function
 	 vwcR[], sTempR[] - anything with a R at the end of the variable name stands for the interpolation of that array
 	 */
+
 	#ifdef SWDEBUG
 	if (debug) {
 		swprintf("\n\nNew call to soil_temperature()");
@@ -1934,7 +1995,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	// determine frozen/unfrozen status of soil layers
 	set_frozen_unfrozen(nlyrs, sTemp, swc, swc_sat, width);
 
-
 	#ifdef SWDEBUG
 	if (debug) {
 		swprintf("\nsTemp %f surface; soil temperature adjusted by freeze/thaw: %i",
@@ -1948,8 +2008,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 		swprintf("\nSoil profile layer temperatures:");
 		for (i = 0; i < nlyrs; i++) {
-			swprintf("\ni %d oldTemp %f sTemp %f depth %f frozen %d",
-				i, oldsTemp[i], sTemp[i], st->depths[i], st->lyrFrozen[i]);
+			swprintf("\ni %d oldTemp %f sTemp %f swc %f, swc_sat %f depth %f frozen %d",
+				i, oldsTemp[i], sTemp[i], swc[i], swc_sat[i], st->depths[i], st->lyrFrozen[i]);
 		}
 	}
 	#endif
