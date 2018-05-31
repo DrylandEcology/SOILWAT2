@@ -4458,7 +4458,10 @@ ForEachSoilLayer(i)
 ForEachSoilLayer(i)
 {
 	val_grass[i] = val[i];
+}
+#endif
 
+#if defined(STEPWAT)
 	switch (pd)
 	{
 		case eSW_Day:
@@ -4474,11 +4477,21 @@ ForEachSoilLayer(i)
 	}
 	if (bFlush) p++;
 
-	SXW.transpTotal[Ilp(i,p)] = val_total[i];
-	SXW.transpTrees[Ilp(i,p)] = val_tree[i];
-	SXW.transpShrubs[Ilp(i,p)] = val_shrub[i];
-	SXW.transpForbs[Ilp(i,p)] = val_forb[i];
-	SXW.transpGrasses[Ilp(i,p)] = val_grass[i];
+ForEachSoilLayer(i)
+{
+
+  /* Pass monthly transpiration values to STEPWAT2 as resources: the
+     function `_transp_contribution_by_group` deals with these monthly x layer
+     values */
+  if (pd == eSW_Month) {
+    SXW.transpTotal[Ilp(i,p)] = val_total[i];
+    SXW.transpTrees[Ilp(i,p)] = val_tree[i];
+    SXW.transpShrubs[Ilp(i,p)] = val_shrub[i];
+    SXW.transpForbs[Ilp(i,p)] = val_forb[i];
+    SXW.transpGrasses[Ilp(i,p)] = val_grass[i];
+
+    //printf("Tshrubs: bFlush=%d pd=%d t=%d lyr=%d ilp=%d T=%.3f\n", bFlush, pd, p, i, Ilp(i,p), SXW.transpShrubs[Ilp(i,p)]);
+  }
 
 	if (isPartialSoilwatOutput == FALSE)
 	{
