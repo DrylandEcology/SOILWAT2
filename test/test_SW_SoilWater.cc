@@ -85,9 +85,32 @@ namespace{
 
   // Test the 'SW_SoilWater' function 'SW_SWPmatric2VWCBulk'
   TEST(SWSoilWaterTest, SWSWPmatric2VWCBulk){
-    // TODO, lacking info
+    // set up mock variables
+    double fractionGravel = .1;
+    double swpMatric = 15.0;
+    double p;
+    double tExpect;
+    double t;
+    double actualExpectDiff;
+    double psisMatric = 18.608013;
+    double binverseMatric = 0.188608;
+    double thetaMatric = 41.37;
+    double testNumber;
+    LyrIndex n = 0;
 
 
+    // run tests for gravel fractions on the interval [.05, .8], step .05
+    for(testNumber = 1; testNumber <= 16; testNumber++){
+      fractionGravel = (testNumber / 20);
+      p = powe(psisMatric / (swpMatric * BARCONV), binverseMatric);
+      tExpect = thetaMatric * p * 0.01 * (1 - fractionGravel);
+      t = SW_SWPmatric2VWCBulk(fractionGravel, swpMatric, n);
+      actualExpectDiff = fabs(t - tExpect);
+
+      // [Can be adjusted] tolerance for error since division with RealD introcuces
+      // some error. Lowest tolerance for error this works on is .004 but this
+      // could be made better with additional knowledge of the base code
+      EXPECT_LT(actualExpectDiff, 0.004);
+    }
   }
-
 }
