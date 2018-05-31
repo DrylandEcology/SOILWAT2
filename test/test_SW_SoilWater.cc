@@ -97,6 +97,9 @@ namespace{
     double thetaMatric = 41.37;
     double testNumber;
     LyrIndex n = 0;
+    SW_Site.lyr[n]->thetasMatric = thetaMatric;
+  	SW_Site.lyr[n]->psisMatric = psisMatric;
+  	SW_Site.lyr[n]->bMatric = binverseMatric;
 
 
     // run tests for gravel fractions on the interval [.05, .8], step .05
@@ -108,9 +111,10 @@ namespace{
       actualExpectDiff = fabs(t - tExpect);
 
       // [Can be adjusted] tolerance for error since division with RealD introcuces
-      // some error. Lowest tolerance for error this works on is .004 but this
-      // could be made better with additional knowledge of the base code
-      EXPECT_LT(actualExpectDiff, 0.004);
+      // some error
+      EXPECT_LT(actualExpectDiff, 0.0000001);
+
     }
+    Reset_SOILWAT2_after_UnitTest();
   }
 }
