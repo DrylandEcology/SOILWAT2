@@ -998,7 +998,7 @@ RealD SW_VWCBulkRes(RealD fractionGravel, RealD sand, RealD clay, RealD porosity
   }
   else{
     //LogError(logfp, LOGWARN, "Sand and/or clay values out of valid range.");
-    return 99999999.9;
+    return SW_MISSING;
   }
 }
 

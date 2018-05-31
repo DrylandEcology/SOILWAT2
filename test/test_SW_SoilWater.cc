@@ -24,7 +24,6 @@ extern SW_VEGPROD SW_VegProd;
 namespace{
   // Test the 'SW_SoilWater' function 'SW_VWCBulkRes'
   TEST(SWSoilWaterTest, SWVWCBulkRes){
-    printf("GOT HERE 7\n");
     //declare mock INPUTS
     RealD fractionGravel = .1;
     RealD clay = .7;
@@ -33,7 +32,7 @@ namespace{
 
     // test clay > .6
     RealD res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    EXPECT_DOUBLE_EQ(res, 99999999.9);
+    EXPECT_DOUBLE_EQ(res, SW_MISSING);
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -42,7 +41,7 @@ namespace{
     sand = .04;
     // test sand < .05
     res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    EXPECT_DOUBLE_EQ(res, 99999999.9);
+    EXPECT_DOUBLE_EQ(res, SW_MISSING);
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -119,8 +118,7 @@ namespace{
       t = SW_SWPmatric2VWCBulk(fractionGravel, swpMatric, n);
       actualExpectDiff = fabs(t - tExpect);
 
-      // [Can be adjusted] tolerance for error since division with RealD introcuces
-      // some error
+      // Tolerance for error since division with RealD introcuces some error
       EXPECT_LT(actualExpectDiff, 0.0000001);
 
     }
