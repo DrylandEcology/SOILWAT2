@@ -80,7 +80,17 @@ namespace{
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
+
+    // test swp val
     swcBulk = 4;
+    SW_Site.lyr[n] -> width = 1;
+    SW_Site.lyr[n] -> psisMatric = 1;
+    SW_Site.lyr[n] -> thetasMatric = 1;
+    SW_Site.lyr[n] -> bMatric = 1;
+    res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
+    double resExpect = .00013310902; // did math by hand to get this value
+    double actualExpectDiff = fabs(res - resExpect);
+    EXPECT_LT(actualExpectDiff, .0002);
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWPmatric2VWCBulk'
@@ -100,7 +110,6 @@ namespace{
     SW_Site.lyr[n]->thetasMatric = thetaMatric;
   	SW_Site.lyr[n]->psisMatric = psisMatric;
   	SW_Site.lyr[n]->bMatric = binverseMatric;
-
 
     // run tests for gravel fractions on the interval [.05, .8], step .05
     for(testNumber = 1; testNumber <= 16; testNumber++){
