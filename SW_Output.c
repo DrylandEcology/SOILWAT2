@@ -1004,6 +1004,27 @@ void SW_OUT_read(void)
 #endif
 
 	}
+
+
+  #ifdef STEPWAT
+  /* Check that STEPWAT2 receives monthly transpiration */
+  Bool has_monT = swFALSE;
+
+  for (i = 0; i < used_OUTNPERIODS; i++) {
+    if (timeSteps[eSW_Transp][i] == eSW_Month) {
+      has_monT = swTRUE;
+      break;
+    }
+  }
+
+  if (!has_monT) {
+    CloseFile(&f);
+    LogError(logfp, LOGFATAL, "STEPWAT2 requires monthly transpiration, " \
+      "but this is currently turned off.");
+  }
+  #endif
+
+
 	//printf("make soil: %d\n", make_soil);
 	//printf("make regular: %d\n", make_regular);
 
