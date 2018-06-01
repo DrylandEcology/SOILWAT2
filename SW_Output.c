@@ -2302,6 +2302,9 @@ static void get_estab(OutPeriod pd)
 				case eSW_Month:
 					p = SW_Model.month-tOffset;
 					break;
+				case eSW_Year:
+					p = 0; // Iypc requires 0 for yearly timeperiod
+					break;
 			}
 
 			if (isPartialSoilwatOutput == FALSE)
@@ -2695,6 +2698,9 @@ static void get_precip(OutPeriod pd)
 		case eSW_Month:
 			p = SW_Model.month-tOffset;
 			break;
+		case eSW_Year:
+			p = 0; // Iypc requires 0 for yearly timeperiod
+			break;
 	}
 	if(isPartialSoilwatOutput == FALSE)
 	{
@@ -2844,6 +2850,9 @@ ForEachSoilLayer(i){
 			break;
 		case eSW_Month:
 			p = SW_Model.month-tOffset;
+			break;
+		case eSW_Year:
+			p = 0; // Iypc requires 0 for yearly timeperiod
 			break;
 	}
 		if (isPartialSoilwatOutput == FALSE)
@@ -3002,6 +3011,9 @@ switch (pd)
 		break;
 	case eSW_Month:
 		p = SW_Model.month-tOffset;
+		break;
+	case eSW_Year:
+		p = 0; // Iypc requires 0 for yearly timeperiod
 		break;
 }
 ForEachSoilLayer(i){
@@ -4473,13 +4485,14 @@ ForEachSoilLayer(i)
 		case eSW_Month:
 			p = SW_Model.month - tOffset;
 			break; /* print previous to current */
-		/* YEAR should never be used with STEPWAT */
+		case eSW_Year:
+			p = 0; // Iypc requires 0 for yearly timeperiod
+			break;
 	}
 	if (bFlush) p++;
 
-ForEachSoilLayer(i)
-{
-
+  ForEachSoilLayer(i)
+  {
   /* Pass monthly transpiration values to STEPWAT2 as resources: the
      function `_transp_contribution_by_group` deals with these monthly x layer
      values */
