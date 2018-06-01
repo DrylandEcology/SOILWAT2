@@ -271,6 +271,8 @@ TimeInt Time_get_lastdoy_y(TimeInt year) {
  * pretty independent of the current time, so I'm
  * removing the preceeding Time_ to shorten the calls in
  * the code
+ *
+ * @returns the month the given day falls under
  */
 TimeInt doy2month(const TimeInt doy) {
 	/* =================================================== */
@@ -334,7 +336,7 @@ Bool isleapyear(const TimeInt year) {
 
 }
 
-void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
+double* interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
 	/**********************************************************************
 	 PURPOSE: linear interpolation of monthly value; monthly values are assumed to representative for the 15th of a month
 
@@ -369,6 +371,7 @@ void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
 			dailyValues[doy] = monthlyValues[month] + sign * (monthlyValues[month2] - monthlyValues[month]) / (monthdays[month]) * (mday - 15.);
 		}
 	}
+	return dailyValues;
 }
 
 /* =================================================== */

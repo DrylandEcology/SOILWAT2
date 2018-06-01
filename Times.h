@@ -116,6 +116,6 @@ TimeInt yearto4digit(TimeInt yr);
 Bool isleapyear_now(void);
 Bool isleapyear(const TimeInt year);
 
-void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]);
+double* interpolate_monthlyValues(double monthlyValues[], double dailyValues[]);
 
 #endif
