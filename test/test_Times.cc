@@ -27,15 +27,19 @@ namespace{
     // day in the month the day falls under
     // example: day = 32 means that mday would be 1 for febuary 1st
     TimeInt mday = doy2mday(day);
-    double monthlyValues[12];
+    double monthlyValues[30];
     double dailyValues[MAX_DAYS + 1];
+
     int i;
-    for (i = 0; i < 11; i++){
-
+    //printf("monthly vals length: %d\n",length(monthlyValues) );
+    for (i = 0; i < length(monthlyValues); i++){
+      monthlyValues[i] = 10;
     }
-    printf("month: %d\n", month);
-    printf("mday: %d\n", mday);
-
+    double* res = interpolate_monthlyValues(monthlyValues, dailyValues);
+    //printf("dailyValues: ");
+    //for(i = 1; i <= MAX_DAYS; i++){
+    //  printf("%d, ", doy2mday(i));
+    //}
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
   }
