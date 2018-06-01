@@ -988,7 +988,7 @@ RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n) {
 RealD SW_VWCBulkRes(RealD fractionGravel, RealD sand, RealD clay, RealD porosity) {
 
   if (clay < .05 || clay > .6 || sand < .05 || sand > .7){
-    //LogError(logfp, LOGWARN, "Sand and/or clay values out of valid range.");
+    LogError(logfp, LOGWARN, "Sand and/or clay values out of valid range, simulation outputs may differ.");
     return SW_MISSING;
   }
   else{
