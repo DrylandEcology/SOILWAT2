@@ -71,88 +71,88 @@ void SW_OUT_sum_today(ObjType otyp)
 void SW_OUT_write_today(void)
 {}
 
-static void get_none(void)
+void get_none(void)
 {}
 
-static void get_outstrleader(TimeInt pd)
+void get_outstrleader(TimeInt pd)
 {
   TimeInt x = pd;
   if (x == 1) {}
 }
 
-static void get_co2effects(void)
+void get_co2effects(void)
 {}
 
-static void get_estab(void)
+void get_estab(void)
 {}
 
-static void get_temp(void)
+void get_temp(void)
 {}
 
-static void get_precip(void)
+void get_precip(void)
 {}
 
-static void get_vwcBulk(void)
+void get_vwcBulk(void)
 {}
 
-static void get_vwcMatric(void)
+void get_vwcMatric(void)
 {}
 
-static void get_swcBulk(void)
+void get_swcBulk(void)
 {}
 
-static void get_swpMatric(void)
+void get_swpMatric(void)
 {}
 
-static void get_swaBulk(void)
+void get_swaBulk(void)
 {}
 
-static void get_swaMatric(void)
+void get_swaMatric(void)
 {}
 
-static void get_surfaceWater(void)
+void get_surfaceWater(void)
 {}
 
-static void get_runoff(void)
+void get_runoff(void)
 {}
 
-static void get_transp(void)
+void get_transp(void)
 {}
 
-static void get_evapSoil(void)
+void get_evapSoil(void)
 {}
 
-static void get_evapSurface(void)
+void get_evapSurface(void)
 {}
 
-static void get_interception(void)
+void get_interception(void)
 {}
 
-static void get_soilinf(void)
+void get_soilinf(void)
 {}
 
-static void get_lyrdrain(void)
+void get_lyrdrain(void)
 {}
 
-static void get_hydred(void)
+void get_hydred(void)
 {}
 
-static void get_aet(void)
+void get_aet(void)
 {}
 
-static void get_pet(void)
+void get_pet(void)
 {}
 
-static void get_wetdays(void)
+void get_wetdays(void)
 {}
 
-static void get_snowpack(void)
+void get_snowpack(void)
 {}
 
-static void get_deepswc(void)
+void get_deepswc(void)
 {}
 
-static void get_soiltemp(void)
+void get_soiltemp(void)
 {}
 
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
