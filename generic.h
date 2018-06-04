@@ -24,11 +24,11 @@
 #endif
 
 #ifdef DEBUG
-  #def SWDEBUG
+  #define SWDEBUG
 #endif
 
 #if !defined(STEPWAT) && !defined(RSOILWAT)
-  #def SOILWAT // SOILWAT2-standalone
+  #define SOILWAT // SOILWAT2-standalone
 #endif
 
 
