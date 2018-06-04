@@ -27,6 +27,9 @@
   #def SWDEBUG
 #endif
 
+#if !defined(STEPWAT) && !defined(RSOILWAT)
+  #def SOILWAT // SOILWAT2-standalone
+#endif
 
 
 #ifndef GENERIC_H

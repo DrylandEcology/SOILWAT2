@@ -203,7 +203,7 @@ void SW_F_read(const char *s) {
 
 	CloseFile(&f);
 
-#if !defined(STEPWAT) && !defined(RSOILWAT)
+#ifdef SOILWAT
 	if (0 == strcmp(InFiles[eLog], "stdout")) {
 		logfp = stdout;
 	} else if (0 == strcmp(InFiles[eLog], "stderr")) {
