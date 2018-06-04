@@ -230,6 +230,18 @@ void get_outstrleader(TimeInt pd);
 #endif
 
 // Functions that format the output in `sw_outstr` for printing
+/* --------------------------------------------------- */
+/* each of these get_<envparm> -type funcs return a
+ * formatted string of the appropriate type and are
+ * pointed to by SW_Output[k].pfunc so they can be called
+ * anonymously by looping over the Output[k] list
+ * (see _output_today() for usage.)
+ * they all use the global-level string sw_outstr[].
+ */
+/* 10-May-02 (cwb) Added conditionals for interfacing with STEPPE
+ * 05-Mar-03 (cwb) Added code for max,min,avg. Previously, only avg was output.
+ * 22 June-15 (akt)  Added code for adding surfaceTemp at output
+ */
 void get_none(OutPeriod pd); /* default until defined */
 void get_temp(OutPeriod pd);
 void get_precip(OutPeriod pd);
