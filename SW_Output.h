@@ -33,6 +33,8 @@
 
 #include "Times.h"
 
+#define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
+
 
 /* These are the keywords to be found in the output setup file */
 /* some of them are from the old fortran model and are no longer */
@@ -200,6 +202,8 @@ typedef struct {
 #define ForEachVES_OutKey(k) for((k)=eSW_AllVeg;  (k)<=eSW_Estab;    (k)++)
 #define ForEachOutPeriod(k)  for((k)=eSW_Day;     (k)<=eSW_Year;     (k)++)
 
+
+// Function declarations
 void SW_OUT_construct(void);
 void SW_OUT_set_ncol(void);
 #ifdef RSOILWAT
@@ -220,6 +224,40 @@ void stat_Output_Daily_CSV_Summary(int iteration);
 void stat_Output_Weekly_CSV_Summary(int iteration);
 void stat_Output_Monthly_CSV_Summary(int iteration);
 void stat_Output_Yearly_CSV_Summary(int iteration);
+
+#ifndef RSOILWAT
+void get_outstrleader(TimeInt pd);
+#endif
+
+// Functions that format the output in `sw_outstr` for printing
+void get_none(OutPeriod pd); /* default until defined */
+void get_temp(OutPeriod pd);
+void get_precip(OutPeriod pd);
+void get_vwcBulk(OutPeriod pd);
+void get_vwcMatric(OutPeriod pd);
+void get_swcBulk(OutPeriod pd);
+void get_swpMatric(OutPeriod pd);
+void get_swaBulk(OutPeriod pd);
+void get_swaMatric(OutPeriod pd);
+void get_swa(OutPeriod pd);
+void get_surfaceWater(OutPeriod pd);
+void get_runoffrunon(OutPeriod pd);
+void get_transp(OutPeriod pd);
+void get_evapSoil(OutPeriod pd);
+void get_evapSurface(OutPeriod pd);
+void get_interception(OutPeriod pd);
+void get_soilinf(OutPeriod pd);
+void get_lyrdrain(OutPeriod pd);
+void get_hydred(OutPeriod pd);
+void get_aet(OutPeriod pd);
+void get_pet(OutPeriod pd);
+void get_wetdays(OutPeriod pd);
+void get_snowpack(OutPeriod pd);
+void get_deepswc(OutPeriod pd);
+void get_estab(OutPeriod pd);
+void get_soiltemp(OutPeriod pd);
+void get_co2effects(OutPeriod pd);
+
 
 #ifdef DEBUG_MEM
 	void SW_OUT_SetMemoryRefs(void);
