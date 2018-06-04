@@ -1004,6 +1004,27 @@ void SW_OUT_read(void)
 #endif
 
 	}
+
+
+  #ifdef STEPWAT
+  /* Check that STEPWAT2 receives monthly transpiration */
+  Bool has_monT = swFALSE;
+
+  for (i = 0; i < used_OUTNPERIODS; i++) {
+    if (timeSteps[eSW_Transp][i] == eSW_Month) {
+      has_monT = swTRUE;
+      break;
+    }
+  }
+
+  if (!has_monT) {
+    CloseFile(&f);
+    LogError(logfp, LOGFATAL, "STEPWAT2 requires monthly transpiration, " \
+      "but this is currently turned off.");
+  }
+  #endif
+
+
 	//printf("make soil: %d\n", make_soil);
 	//printf("make regular: %d\n", make_regular);
 
@@ -2074,119 +2095,122 @@ static void get_co2effects(OutPeriod pd) {
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_biomass_grass = SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_biomass_shrub = SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_biomass_tree = SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_biomass_forb = SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_biomass_total = SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			int
+				ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+				ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
 
-			float old_biolive_grass = SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_biolive_shrub = SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_biolive_tree = SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_biolive_forb = SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_biolive_total = SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_biomass_grass = SXW_AVG.biomass_grass_avg[ind0];
+			float old_biomass_shrub = SXW_AVG.biomass_shrub_avg[ind0];
+			float old_biomass_tree = SXW_AVG.biomass_tree_avg[ind0];
+			float old_biomass_forb = SXW_AVG.biomass_forb_avg[ind0];
+			float old_biomass_total = SXW_AVG.biomass_total_avg[ind0];
 
-			float old_bio_mult_grass = SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_bio_mult_shrub = SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_bio_mult_tree = SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_bio_mult_forb = SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_biolive_grass = SXW_AVG.biolive_grass_avg[ind0];
+			float old_biolive_shrub = SXW_AVG.biolive_shrub_avg[ind0];
+			float old_biolive_tree = SXW_AVG.biolive_tree_avg[ind0];
+			float old_biolive_forb = SXW_AVG.biolive_forb_avg[ind0];
+			float old_biolive_total = SXW_AVG.biolive_total_avg[ind0];
 
-			float old_wue_mult_grass = SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_wue_mult_shrub = SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_wue_mult_tree = SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_wue_mult_forb = SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			float old_bio_mult_grass = SXW_AVG.bio_mult_grass_avg[ind0];
+			float old_bio_mult_shrub = SXW_AVG.bio_mult_shrub_avg[ind0];
+			float old_bio_mult_tree = SXW_AVG.bio_mult_tree_avg[ind0];
+			float old_bio_mult_forb = SXW_AVG.bio_mult_forb_avg[ind0];
+
+			float old_wue_mult_grass = SXW_AVG.wue_mult_grass_avg[ind0];
+			float old_wue_mult_shrub = SXW_AVG.wue_mult_shrub_avg[ind0];
+			float old_wue_mult_tree = SXW_AVG.wue_mult_tree_avg[ind0];
+			float old_wue_mult_forb = SXW_AVG.wue_mult_forb_avg[ind0];
 
 
-			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_grass);
-			SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_shrub);
-			SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_tree);
-			SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_forb);
-			SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,0,pd)], biomass_total);
+			SXW_AVG.biomass_grass_avg[ind0] = get_running_avg(SXW_AVG.biomass_grass_avg[ind0], biomass_grass);
+			SXW_AVG.biomass_shrub_avg[ind0] = get_running_avg(SXW_AVG.biomass_shrub_avg[ind0], biomass_shrub);
+			SXW_AVG.biomass_tree_avg[ind0] = get_running_avg(SXW_AVG.biomass_tree_avg[ind0], biomass_tree);
+			SXW_AVG.biomass_forb_avg[ind0] = get_running_avg(SXW_AVG.biomass_forb_avg[ind0], biomass_forb);
+			SXW_AVG.biomass_total_avg[ind0] = get_running_avg(SXW_AVG.biomass_total_avg[ind0], biomass_total);
 
-			SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], biolive_grass);
-			SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], biolive_shrub);
-			SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], biolive_tree);
-			SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], biolive_forb);
-			SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,0,pd)], biolive_total);
+			SXW_AVG.biolive_grass_avg[ind0] = get_running_avg(SXW_AVG.biolive_grass_avg[ind0], biolive_grass);
+			SXW_AVG.biolive_shrub_avg[ind0] = get_running_avg(SXW_AVG.biolive_shrub_avg[ind0], biolive_shrub);
+			SXW_AVG.biolive_tree_avg[ind0] = get_running_avg(SXW_AVG.biolive_tree_avg[ind0], biolive_tree);
+			SXW_AVG.biolive_forb_avg[ind0] = get_running_avg(SXW_AVG.biolive_forb_avg[ind0], biolive_forb);
+			SXW_AVG.biolive_total_avg[ind0] = get_running_avg(SXW_AVG.biolive_total_avg[ind0], biolive_total);
 
-			SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], bio_mult_grass);
-			SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], bio_mult_shrub);
-			SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], bio_mult_tree);
-			SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], bio_mult_forb);
+			SXW_AVG.bio_mult_grass_avg[ind0] = get_running_avg(SXW_AVG.bio_mult_grass_avg[ind0], bio_mult_grass);
+			SXW_AVG.bio_mult_shrub_avg[ind0] = get_running_avg(SXW_AVG.bio_mult_shrub_avg[ind0], bio_mult_shrub);
+			SXW_AVG.bio_mult_tree_avg[ind0] = get_running_avg(SXW_AVG.bio_mult_tree_avg[ind0], bio_mult_tree);
+			SXW_AVG.bio_mult_forb_avg[ind0] = get_running_avg(SXW_AVG.bio_mult_forb_avg[ind0], bio_mult_forb);
 
-			SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], wue_mult_grass);
-			SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], wue_mult_shrub);
-			SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], wue_mult_tree);
-			SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], wue_mult_forb);
+			SXW_AVG.wue_mult_grass_avg[ind0] = get_running_avg(SXW_AVG.wue_mult_grass_avg[ind0], wue_mult_grass);
+			SXW_AVG.wue_mult_shrub_avg[ind0] = get_running_avg(SXW_AVG.wue_mult_shrub_avg[ind0], wue_mult_shrub);
+			SXW_AVG.wue_mult_tree_avg[ind0] = get_running_avg(SXW_AVG.wue_mult_tree_avg[ind0], wue_mult_tree);
+			SXW_AVG.wue_mult_forb_avg[ind0] = get_running_avg(SXW_AVG.wue_mult_forb_avg[ind0], wue_mult_forb);
 
 			// ---------------------------
 
-			SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biomass_grass, biomass_grass, SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biomass_shrub, biomass_shrub, SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biomass_tree, biomass_tree, SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biomass_forb, biomass_forb, SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biomass_total, biomass_total, SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.biomass_grass_avg[ind1] += get_running_sqr(old_biomass_grass, biomass_grass, SXW_AVG.biomass_grass_avg[ind0]);
+			SXW_AVG.biomass_shrub_avg[ind1] += get_running_sqr(old_biomass_shrub, biomass_shrub, SXW_AVG.biomass_shrub_avg[ind0]);
+			SXW_AVG.biomass_tree_avg[ind1] += get_running_sqr(old_biomass_tree, biomass_tree, SXW_AVG.biomass_tree_avg[ind0]);
+			SXW_AVG.biomass_forb_avg[ind1] += get_running_sqr(old_biomass_forb, biomass_forb, SXW_AVG.biomass_forb_avg[ind0]);
+			SXW_AVG.biomass_total_avg[ind1] += get_running_sqr(old_biomass_total, biomass_total, SXW_AVG.biomass_total_avg[ind0]);
 
-			SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biolive_grass, biolive_grass, SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biolive_shrub, biolive_shrub, SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biolive_tree, biolive_tree, SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biolive_forb, biolive_forb, SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_biolive_total, biolive_total, SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.biolive_grass_avg[ind1] += get_running_sqr(old_biolive_grass, biolive_grass, SXW_AVG.biolive_grass_avg[ind0]);
+			SXW_AVG.biolive_shrub_avg[ind1] += get_running_sqr(old_biolive_shrub, biolive_shrub, SXW_AVG.biolive_shrub_avg[ind0]);
+			SXW_AVG.biolive_tree_avg[ind1] += get_running_sqr(old_biolive_tree, biolive_tree, SXW_AVG.biolive_tree_avg[ind0]);
+			SXW_AVG.biolive_forb_avg[ind1] += get_running_sqr(old_biolive_forb, biolive_forb, SXW_AVG.biolive_forb_avg[ind0]);
+			SXW_AVG.biolive_total_avg[ind1] += get_running_sqr(old_biolive_total, biolive_total, SXW_AVG.biolive_total_avg[ind0]);
 
-			SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_bio_mult_grass, bio_mult_grass, SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_bio_mult_shrub, bio_mult_shrub, SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_bio_mult_tree, bio_mult_tree, SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_bio_mult_forb, bio_mult_forb, SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.bio_mult_grass_avg[ind1] += get_running_sqr(old_bio_mult_grass, bio_mult_grass, SXW_AVG.bio_mult_grass_avg[ind0]);
+			SXW_AVG.bio_mult_shrub_avg[ind1] += get_running_sqr(old_bio_mult_shrub, bio_mult_shrub, SXW_AVG.bio_mult_shrub_avg[ind0]);
+			SXW_AVG.bio_mult_tree_avg[ind1] += get_running_sqr(old_bio_mult_tree, bio_mult_tree, SXW_AVG.bio_mult_tree_avg[ind0]);
+			SXW_AVG.bio_mult_forb_avg[ind1] += get_running_sqr(old_bio_mult_forb, bio_mult_forb, SXW_AVG.bio_mult_forb_avg[ind0]);
 
-			SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_wue_mult_grass, wue_mult_grass, SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_wue_mult_shrub, wue_mult_shrub, SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_wue_mult_tree, wue_mult_tree, SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-			SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_wue_mult_forb, wue_mult_forb, SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.wue_mult_grass_avg[ind1] += get_running_sqr(old_wue_mult_grass, wue_mult_grass, SXW_AVG.wue_mult_grass_avg[ind0]);
+			SXW_AVG.wue_mult_shrub_avg[ind1] += get_running_sqr(old_wue_mult_shrub, wue_mult_shrub, SXW_AVG.wue_mult_shrub_avg[ind0]);
+			SXW_AVG.wue_mult_tree_avg[ind1] += get_running_sqr(old_wue_mult_tree, wue_mult_tree, SXW_AVG.wue_mult_tree_avg[ind0]);
+			SXW_AVG.wue_mult_forb_avg[ind1] += get_running_sqr(old_wue_mult_forb, wue_mult_forb, SXW_AVG.wue_mult_forb_avg[ind0]);
 
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std_biomass_grass = sqrt(SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_biomass_shrub = sqrt(SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_biomass_tree = sqrt(SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_biomass_forb = sqrt(SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_biomass_total = sqrt(SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_biomass_grass = sqrt(SXW_AVG.biomass_grass_avg[ind1] / Globals.currIter);
+				float std_biomass_shrub = sqrt(SXW_AVG.biomass_shrub_avg[ind1] / Globals.currIter);
+				float std_biomass_tree = sqrt(SXW_AVG.biomass_tree_avg[ind1] / Globals.currIter);
+				float std_biomass_forb = sqrt(SXW_AVG.biomass_forb_avg[ind1] / Globals.currIter);
+				float std_biomass_total = sqrt(SXW_AVG.biomass_total_avg[ind1] / Globals.currIter);
 
-				float std_biolive_grass = sqrt(SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_biolive_shrub = sqrt(SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_biolive_tree = sqrt(SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_biolive_forb = sqrt(SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_biolive_total = sqrt(SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_biolive_grass = sqrt(SXW_AVG.biolive_grass_avg[ind1] / Globals.currIter);
+				float std_biolive_shrub = sqrt(SXW_AVG.biolive_shrub_avg[ind1] / Globals.currIter);
+				float std_biolive_tree = sqrt(SXW_AVG.biolive_tree_avg[ind1] / Globals.currIter);
+				float std_biolive_forb = sqrt(SXW_AVG.biolive_forb_avg[ind1] / Globals.currIter);
+				float std_biolive_total = sqrt(SXW_AVG.biolive_total_avg[ind1] / Globals.currIter);
 
-				float std_bio_mult_grass = sqrt(SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_bio_mult_shrub = sqrt(SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_bio_mult_tree = sqrt(SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_bio_mult_forb = sqrt(SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_bio_mult_grass = sqrt(SXW_AVG.bio_mult_grass_avg[ind1] / Globals.currIter);
+				float std_bio_mult_shrub = sqrt(SXW_AVG.bio_mult_shrub_avg[ind1] / Globals.currIter);
+				float std_bio_mult_tree = sqrt(SXW_AVG.bio_mult_tree_avg[ind1] / Globals.currIter);
+				float std_bio_mult_forb = sqrt(SXW_AVG.bio_mult_forb_avg[ind1] / Globals.currIter);
 
-				float std_wue_mult_grass = sqrt(SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_wue_mult_shrub = sqrt(SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_wue_mult_tree = sqrt(SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_wue_mult_forb = sqrt(SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_wue_mult_grass = sqrt(SXW_AVG.wue_mult_grass_avg[ind1] / Globals.currIter);
+				float std_wue_mult_shrub = sqrt(SXW_AVG.wue_mult_shrub_avg[ind1] / Globals.currIter);
+				float std_wue_mult_tree = sqrt(SXW_AVG.wue_mult_tree_avg[ind1] / Globals.currIter);
+				float std_wue_mult_forb = sqrt(SXW_AVG.wue_mult_forb_avg[ind1] / Globals.currIter);
 
 				sprintf(str, "%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f",
-				_Sep, SXW_AVG.biomass_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biomass_grass,
-				_Sep, SXW_AVG.biomass_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biomass_shrub,
-				_Sep, SXW_AVG.biomass_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biomass_tree,
-				_Sep, SXW_AVG.biomass_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biomass_forb,
-				_Sep, SXW_AVG.biomass_total_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biomass_total,
-				_Sep, SXW_AVG.biolive_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biolive_grass,
-				_Sep, SXW_AVG.biolive_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biolive_shrub,
-				_Sep, SXW_AVG.biolive_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biolive_tree,
-				_Sep, SXW_AVG.biolive_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biolive_forb,
-				_Sep, SXW_AVG.biolive_total_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_biolive_total,
-				_Sep, SXW_AVG.bio_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_bio_mult_grass,
-				_Sep, SXW_AVG.bio_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_bio_mult_shrub,
-				_Sep, SXW_AVG.bio_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_bio_mult_tree,
-				_Sep, SXW_AVG.bio_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_bio_mult_forb,
-				_Sep, SXW_AVG.wue_mult_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_wue_mult_grass,
-				_Sep, SXW_AVG.wue_mult_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_wue_mult_shrub,
-				_Sep, SXW_AVG.wue_mult_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_wue_mult_tree,
-				_Sep, SXW_AVG.wue_mult_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_wue_mult_forb);
+				_Sep, SXW_AVG.biomass_grass_avg[ind0], _Sep, std_biomass_grass,
+				_Sep, SXW_AVG.biomass_shrub_avg[ind0], _Sep, std_biomass_shrub,
+				_Sep, SXW_AVG.biomass_tree_avg[ind0], _Sep, std_biomass_tree,
+				_Sep, SXW_AVG.biomass_forb_avg[ind0], _Sep, std_biomass_forb,
+				_Sep, SXW_AVG.biomass_total_avg[ind0], _Sep, std_biomass_total,
+				_Sep, SXW_AVG.biolive_grass_avg[ind0], _Sep, std_biolive_grass,
+				_Sep, SXW_AVG.biolive_shrub_avg[ind0], _Sep, std_biolive_shrub,
+				_Sep, SXW_AVG.biolive_tree_avg[ind0], _Sep, std_biolive_tree,
+				_Sep, SXW_AVG.biolive_forb_avg[ind0], _Sep, std_biolive_forb,
+				_Sep, SXW_AVG.biolive_total_avg[ind0], _Sep, std_biolive_total,
+				_Sep, SXW_AVG.bio_mult_grass_avg[ind0], _Sep, std_bio_mult_grass,
+				_Sep, SXW_AVG.bio_mult_shrub_avg[ind0], _Sep, std_bio_mult_shrub,
+				_Sep, SXW_AVG.bio_mult_tree_avg[ind0], _Sep, std_bio_mult_tree,
+				_Sep, SXW_AVG.bio_mult_forb_avg[ind0], _Sep, std_bio_mult_forb,
+				_Sep, SXW_AVG.wue_mult_grass_avg[ind0], _Sep, std_wue_mult_grass,
+				_Sep, SXW_AVG.wue_mult_shrub_avg[ind0], _Sep, std_wue_mult_shrub,
+				_Sep, SXW_AVG.wue_mult_tree_avg[ind0], _Sep, std_wue_mult_tree,
+				_Sep, SXW_AVG.wue_mult_forb_avg[ind0], _Sep, std_wue_mult_forb);
 				strcat(outstr, str);
 			}
 		}
@@ -2281,20 +2305,25 @@ static void get_estab(OutPeriod pd)
 				case eSW_Month:
 					p = SW_Model.month-tOffset;
 					break;
+				case eSW_Year:
+					p = 0; // Iypc requires 0 for yearly timeperiod
+					break;
 			}
 
 			if (isPartialSoilwatOutput == FALSE)
 			{
-				float old_val = SXW_AVG.estab_avg[Iypc(Globals.currYear-1,p,0,pd)];
+				int
+					ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+					ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
+				float old_val = SXW_AVG.estab_avg[ind0];
 
-				// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-				SXW_AVG.estab_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.estab_avg[Iypc(Globals.currYear-1,p,0,pd)], v->parms[i]->estab_doy);
+				SXW_AVG.estab_avg[ind0] = get_running_avg(SXW_AVG.estab_avg[ind0], v->parms[i]->estab_doy);
 
-				SXW_AVG.estab_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val, v->parms[i]->estab_doy, SXW_AVG.estab_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+				SXW_AVG.estab_avg[ind1] += get_running_sqr(old_val, v->parms[i]->estab_doy, SXW_AVG.estab_avg[ind0]);
 				if(Globals.currIter == Globals.runModelIterations){
-					float std_estab = sqrt(SXW_AVG.estab_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+					float std_estab = sqrt(SXW_AVG.estab_avg[ind1] / Globals.currIter);
 
-					sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.estab_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_estab);
+					sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.estab_avg[ind0], _Sep, std_estab);
 					strcat(outstr, str);
 				}
 			}
@@ -2500,33 +2529,35 @@ static void get_temp(OutPeriod pd)
 
 	if (isPartialSoilwatOutput == FALSE)
 	{
-		float old_val_temp_max = SXW_AVG.max_temp_avg[Iypc(Globals.currYear-1,p,0,pd)];
-		float old_val_temp_min = SXW_AVG.min_temp_avg[Iypc(Globals.currYear-1,p,0,pd)];
-		float old_val_temp_avg = SXW_AVG.avg_temp_avg[Iypc(Globals.currYear-1,p,0,pd)];
-		int old_val_surface = SXW_AVG.surfaceTemp_avg[Iypc(Globals.currYear-1,p,0,pd)];
+		int
+			ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+			ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
+		float old_val_temp_max = SXW_AVG.max_temp_avg[ind0];
+		float old_val_temp_min = SXW_AVG.min_temp_avg[ind0];
+		float old_val_temp_avg = SXW_AVG.avg_temp_avg[ind0];
+		int old_val_surface = SXW_AVG.surfaceTemp_avg[ind0];
 
-		// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-		SXW_AVG.max_temp_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.max_temp_avg[Iypc(Globals.currYear-1,p,0,pd)], v_max);
-		SXW_AVG.min_temp_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.min_temp_avg[Iypc(Globals.currYear-1,p,0,pd)], v_min);
-		SXW_AVG.avg_temp_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.avg_temp_avg[Iypc(Globals.currYear-1,p,0,pd)], v_avg);
-		SXW_AVG.surfaceTemp_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.surfaceTemp_avg[Iypc(Globals.currYear-1,p,0,pd)], surfaceTempVal);
+		SXW_AVG.max_temp_avg[ind0] = get_running_avg(SXW_AVG.max_temp_avg[ind0], v_max);
+		SXW_AVG.min_temp_avg[ind0] = get_running_avg(SXW_AVG.min_temp_avg[ind0], v_min);
+		SXW_AVG.avg_temp_avg[ind0] = get_running_avg(SXW_AVG.avg_temp_avg[ind0], v_avg);
+		SXW_AVG.surfaceTemp_avg[ind0] = get_running_avg(SXW_AVG.surfaceTemp_avg[ind0], surfaceTempVal);
 
-		SXW_AVG.max_temp_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_temp_max, v_max, SXW_AVG.max_temp_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-		SXW_AVG.min_temp_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_temp_min, v_min, SXW_AVG.min_temp_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-		SXW_AVG.avg_temp_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_temp_avg, v_avg, SXW_AVG.avg_temp_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-		SXW_AVG.surfaceTemp_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_surface, surfaceTempVal, SXW_AVG.surfaceTemp_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+		SXW_AVG.max_temp_avg[ind1] += get_running_sqr(old_val_temp_max, v_max, SXW_AVG.max_temp_avg[ind0]);
+		SXW_AVG.min_temp_avg[ind1] += get_running_sqr(old_val_temp_min, v_min, SXW_AVG.min_temp_avg[ind0]);
+		SXW_AVG.avg_temp_avg[ind1] += get_running_sqr(old_val_temp_avg, v_avg, SXW_AVG.avg_temp_avg[ind0]);
+		SXW_AVG.surfaceTemp_avg[ind1] += get_running_sqr(old_val_surface, surfaceTempVal, SXW_AVG.surfaceTemp_avg[ind0]);
 
 
    if (Globals.currIter == Globals.runModelIterations){
-		 float std_temp_max = sqrt(SXW_AVG.max_temp_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-		 float std_temp_min = sqrt(SXW_AVG.min_temp_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-		 float std_temp_avg = sqrt(SXW_AVG.avg_temp_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-		 float std_surface = sqrt(SXW_AVG.surfaceTemp_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+		 float std_temp_max = sqrt(SXW_AVG.max_temp_avg[ind1] / Globals.currIter);
+		 float std_temp_min = sqrt(SXW_AVG.min_temp_avg[ind1] / Globals.currIter);
+		 float std_temp_avg = sqrt(SXW_AVG.avg_temp_avg[ind1] / Globals.currIter);
+		 float std_surface = sqrt(SXW_AVG.surfaceTemp_avg[ind1] / Globals.currIter);
 
-	   sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW_AVG.max_temp_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_temp_max,
-		 	_Sep, SXW_AVG.min_temp_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_temp_min,
-		  _Sep, SXW_AVG.avg_temp_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_temp_avg,
-			_Sep, SXW_AVG.surfaceTemp_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_surface);
+	   sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW_AVG.max_temp_avg[ind0], _Sep, std_temp_max,
+		 	_Sep, SXW_AVG.min_temp_avg[ind0], _Sep, std_temp_min,
+		  _Sep, SXW_AVG.avg_temp_avg[ind0], _Sep, std_temp_avg,
+			_Sep, SXW_AVG.surfaceTemp_avg[ind0], _Sep, std_surface);
 	   strcat(outstr, str);
     }
 	}
@@ -2674,40 +2705,45 @@ static void get_precip(OutPeriod pd)
 		case eSW_Month:
 			p = SW_Model.month-tOffset;
 			break;
+		case eSW_Year:
+			p = 0; // Iypc requires 0 for yearly timeperiod
+			break;
 	}
 	if(isPartialSoilwatOutput == FALSE)
 	{
-		float old_ppt = SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,0,pd)];
-		float old_rain = SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,0,pd)];
-		float old_snow = SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)];
-		float old_snowmelt = SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,0,pd)];
-		float old_snowloss = SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,0,pd)];
+		int
+			ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+			ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
+		float old_ppt = SXW_AVG.ppt_avg[ind0];
+		float old_rain = SXW_AVG.val_rain_avg[ind0];
+		float old_snow = SXW_AVG.val_snow_avg[ind0];
+		float old_snowmelt = SXW_AVG.val_snowmelt_avg[ind0];
+		float old_snowloss = SXW_AVG.val_snowloss_avg[ind0];
 
-		// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-		SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,0,pd)], val_ppt);
-		SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,0,pd)], val_rain);
-		SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)], val_snow);
-		SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,0,pd)], val_snowmelt);
-		SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,0,pd)], val_snowloss);
+		SXW_AVG.ppt_avg[ind0] = get_running_avg(SXW_AVG.ppt_avg[ind0], val_ppt);
+		SXW_AVG.val_rain_avg[ind0] = get_running_avg(SXW_AVG.val_rain_avg[ind0], val_rain);
+		SXW_AVG.val_snow_avg[ind0] = get_running_avg(SXW_AVG.val_snow_avg[ind0], val_snow);
+		SXW_AVG.val_snowmelt_avg[ind0] = get_running_avg(SXW_AVG.val_snowmelt_avg[ind0], val_snowmelt);
+		SXW_AVG.val_snowloss_avg[ind0] = get_running_avg(SXW_AVG.val_snowloss_avg[ind0], val_snowloss);
 
-		SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_ppt, val_ppt, SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-		SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_rain, val_rain, SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-		SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_snow, val_snow, SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-		SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_snowmelt, val_snowmelt, SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,0,pd)]);
-		SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_snowloss, val_snowloss, SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+		SXW_AVG.ppt_avg[ind1] += get_running_sqr(old_ppt, val_ppt, SXW_AVG.ppt_avg[ind0]);
+		SXW_AVG.val_rain_avg[ind1] += get_running_sqr(old_rain, val_rain, SXW_AVG.val_rain_avg[ind0]);
+		SXW_AVG.val_snow_avg[ind1] += get_running_sqr(old_snow, val_snow, SXW_AVG.val_snow_avg[ind0]);
+		SXW_AVG.val_snowmelt_avg[ind1] += get_running_sqr(old_snowmelt, val_snowmelt, SXW_AVG.val_snowmelt_avg[ind0]);
+		SXW_AVG.val_snowloss_avg[ind1] += get_running_sqr(old_snowloss, val_snowloss, SXW_AVG.val_snowloss_avg[ind0]);
 
 		if(Globals.currIter == Globals.runModelIterations){
-			float std_ppt = sqrt(SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-			float std_rain = sqrt(SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-			float std_snow = sqrt(SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-			float std_snowmelt = sqrt(SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-			float std_snowloss = sqrt(SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+			float std_ppt = sqrt(SXW_AVG.ppt_avg[ind1] / Globals.currIter);
+			float std_rain = sqrt(SXW_AVG.val_rain_avg[ind1] / Globals.currIter);
+			float std_snow = sqrt(SXW_AVG.val_snow_avg[ind1] / Globals.currIter);
+			float std_snowmelt = sqrt(SXW_AVG.val_snowmelt_avg[ind1] / Globals.currIter);
+			float std_snowloss = sqrt(SXW_AVG.val_snowloss_avg[ind1] / Globals.currIter);
 
 			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
-			  _Sep, SXW_AVG.ppt_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_ppt, _Sep,
-				SXW_AVG.val_rain_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_rain, _Sep, SXW_AVG.val_snow_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_snow,
-				_Sep, SXW_AVG.val_snowmelt_avg[Iypc(Globals.currYear-1,p,0,pd)],
-				_Sep, std_snowmelt, _Sep, SXW_AVG.val_snowloss_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_snowloss);
+			  _Sep, SXW_AVG.ppt_avg[ind0], _Sep, std_ppt, _Sep,
+				SXW_AVG.val_rain_avg[ind0], _Sep, std_rain, _Sep, SXW_AVG.val_snow_avg[ind0], _Sep, std_snow,
+				_Sep, SXW_AVG.val_snowmelt_avg[ind0],
+				_Sep, std_snowmelt, _Sep, SXW_AVG.val_snowloss_avg[ind0], _Sep, std_snowloss);
 			strcat(outstr, str);
 		}
 	}
@@ -2824,18 +2860,23 @@ ForEachSoilLayer(i){
 		case eSW_Month:
 			p = SW_Model.month-tOffset;
 			break;
+		case eSW_Year:
+			p = 0; // Iypc/Iylp require 0 for yearly timeperiod
+			break;
 	}
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val = SXW_AVG.vwcbulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
+			int
+				indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+				indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
+			float old_val = SXW_AVG.vwcbulk_avg[indl0];
 
-			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.vwcbulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.vwcbulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val[i]);
-			SXW_AVG.vwcbulk_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val[i], SXW_AVG.vwcbulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+			SXW_AVG.vwcbulk_avg[indl0] = get_running_avg(SXW_AVG.vwcbulk_avg[indl0], val[i]);
+			SXW_AVG.vwcbulk_avg[indl1] += get_running_sqr(old_val, val[i], SXW_AVG.vwcbulk_avg[indl0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std_vwcbulk = sqrt(SXW_AVG.vwcbulk_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.vwcbulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std_vwcbulk);
+				float std_vwcbulk = sqrt(SXW_AVG.vwcbulk_avg[indl1] / Globals.currIter);
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.vwcbulk_avg[indl0], _Sep, std_vwcbulk);
 				strcat(outstr, str);
 			}
 		}
@@ -2982,19 +3023,24 @@ switch (pd)
 	case eSW_Month:
 		p = SW_Model.month-tOffset;
 		break;
+	case eSW_Year:
+		p = 0; // Iypc requires 0 for yearly timeperiod
+		break;
 }
 ForEachSoilLayer(i){
 	if (isPartialSoilwatOutput == FALSE)
 	{
-		float old_val = SXW_AVG.vwcmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
+		int
+			indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+			indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
+		float old_val = SXW_AVG.vwcmatric_avg[indl0];
 
-		// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-		SXW_AVG.vwcmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.vwcmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val[i]);
-		SXW_AVG.vwcmatric_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val[i], SXW_AVG.vwcmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+		SXW_AVG.vwcmatric_avg[indl0] = get_running_avg(SXW_AVG.vwcmatric_avg[indl0], val[i]);
+		SXW_AVG.vwcmatric_avg[indl1] += get_running_sqr(old_val, val[i], SXW_AVG.vwcmatric_avg[indl0]);
 
 		if(Globals.currIter == Globals.runModelIterations){
-			float std_vwcmatric = sqrt(SXW_AVG.vwcmatric_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-			sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.vwcmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std_vwcmatric);
+			float std_vwcmatric = sqrt(SXW_AVG.vwcmatric_avg[indl1] / Globals.currIter);
+			sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.vwcmatric_avg[indl0], _Sep, std_vwcmatric);
 			strcat(outstr, str);
 		}
 	}
@@ -3201,39 +3247,41 @@ static void get_swa(OutPeriod pd)
 
 			if (isPartialSoilwatOutput == FALSE)
 			{
+				int
+					indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+					indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
 				// get old average for use in running square
-				float old_tree = SXW.SWA_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
-				float old_shrub = SXW.SWA_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
-				float old_forb = SXW.SWA_forb_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
-				float old_grass = SXW.SWA_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
+				float old_tree = SXW.SWA_tree_avg[indl0];
+				float old_shrub = SXW.SWA_shrub_avg[indl0];
+				float old_forb = SXW.SWA_forb_avg[indl0];
+				float old_grass = SXW.SWA_grass_avg[indl0];
 
 				// get running average over all iterations
-				// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-				SXW.SWA_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.SWA_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val[0][i]);
-				SXW.SWA_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.SWA_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val[1][i]);
-				SXW.SWA_forb_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.SWA_forb_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val[2][i]);
-				SXW.SWA_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.SWA_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val[3][i]);
+				SXW.SWA_tree_avg[indl0] = get_running_avg(SXW.SWA_tree_avg[indl0], val[0][i]);
+				SXW.SWA_shrub_avg[indl0] = get_running_avg(SXW.SWA_shrub_avg[indl0], val[1][i]);
+				SXW.SWA_forb_avg[indl0] = get_running_avg(SXW.SWA_forb_avg[indl0], val[2][i]);
+				SXW.SWA_grass_avg[indl0] = get_running_avg(SXW.SWA_grass_avg[indl0], val[3][i]);
 				//if(i == 7 && p == 0 && Globals.currYear-1 == 0)
 					//printf("SXW.sum_dSWA_repartitioned[Ivlp(3,i,p)]: %f\n", val[3][i]);
 				// get running square over all iterations. Going to be used to get standard deviation
-				SXW.SWA_tree_avg[Iylp(Globals.currYear-1,i,p,pd,1)] = get_running_sqr(old_tree, val[0][i], SXW.SWA_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
-				SXW.SWA_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,1)] = get_running_sqr(old_shrub, val[1][i], SXW.SWA_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
-				SXW.SWA_forb_avg[Iylp(Globals.currYear-1,i,p,pd,1)] = get_running_sqr(old_forb, val[2][i], SXW.SWA_forb_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
-				SXW.SWA_grass_avg[Iylp(Globals.currYear-1,i,p,pd,1)] = get_running_sqr(old_grass, val[3][i], SXW.SWA_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+				SXW.SWA_tree_avg[indl1] = get_running_sqr(old_tree, val[0][i], SXW.SWA_tree_avg[indl0]);
+				SXW.SWA_shrub_avg[indl1] = get_running_sqr(old_shrub, val[1][i], SXW.SWA_shrub_avg[indl0]);
+				SXW.SWA_forb_avg[indl1] = get_running_sqr(old_forb, val[2][i], SXW.SWA_forb_avg[indl0]);
+				SXW.SWA_grass_avg[indl1] = get_running_sqr(old_grass, val[3][i], SXW.SWA_grass_avg[indl0]);
 
 				// divide by number of iterations at end to store average
 				if(Globals.currIter == Globals.runModelIterations){
 					//if(i == 7 && p == 0 && Globals.currYear-1 == 0)
-						//printf("SXW.SWA_grass_avg[Iylp(%d,%d,%d,0)]: %f\n", Globals.currYear-1,i,p, SXW.SWA_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+						//printf("SXW.SWA_grass_avg[Iylp(%d,%d,%d,0)]: %f\n", Globals.currYear-1,i,p, SXW.SWA_grass_avg[indl0]);
 					// get standard deviation
-					float std_forb = sqrt(SXW.SWA_forb_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-					float std_tree = sqrt(SXW.SWA_tree_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-					float std_shrub = sqrt(SXW.SWA_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-					float std_grass = sqrt(SXW.SWA_grass_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
+					float std_forb = sqrt(SXW.SWA_forb_avg[indl1] / Globals.currIter);
+					float std_tree = sqrt(SXW.SWA_tree_avg[indl1] / Globals.currIter);
+					float std_shrub = sqrt(SXW.SWA_shrub_avg[indl1] / Globals.currIter);
+					float std_grass = sqrt(SXW.SWA_grass_avg[indl1] / Globals.currIter);
 
-					sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWA_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)],
-					 	_Sep, std_tree, _Sep, SXW.SWA_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std_shrub, _Sep, SXW.SWA_forb_avg[Iylp(Globals.currYear-1,i,p,pd,0)],
-						_Sep, std_forb, _Sep, SXW.SWA_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std_grass);
+					sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",_Sep, SXW.SWA_tree_avg[indl0],
+					 	_Sep, std_tree, _Sep, SXW.SWA_shrub_avg[indl0], _Sep, std_shrub, _Sep, SXW.SWA_forb_avg[indl0],
+						_Sep, std_forb, _Sep, SXW.SWA_grass_avg[indl0], _Sep, std_grass);
 					strcat(outstr, str);
 				}
 				if (bFlush) p++;
@@ -3356,17 +3404,19 @@ static void get_swcBulk(OutPeriod pd)
 		}
 		if (isPartialSoilwatOutput == FALSE)
 		{
+			int
+				indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+				indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
 			float old_val = 0.;
-			old_val = SXW_AVG.swc_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
+			old_val = SXW_AVG.swc_avg[indl0];
 
-			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.swc_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.swc_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
-			SXW_AVG.swc_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.swc_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+			SXW_AVG.swc_avg[indl0] = get_running_avg(SXW_AVG.swc_avg[indl0], val);
+			SXW_AVG.swc_avg[indl1] += get_running_sqr(old_val, val, SXW_AVG.swc_avg[indl0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float swc_std = sqrt(SXW_AVG.swc_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
+				float swc_std = sqrt(SXW_AVG.swc_avg[indl1] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.swc_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, swc_std);
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.swc_avg[indl0], _Sep, swc_std);
 				strcat(outstr, str);
 			}
 
@@ -3464,17 +3514,18 @@ static void get_swpMatric(OutPeriod pd)
 	}
 	if (isPartialSoilwatOutput == FALSE)
 	{
+		int
+			indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+			indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
+		float old_val = SXW_AVG.swpmatric_avg[indl0];
 
-		float old_val = SXW_AVG.swpmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
-
-		// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-		SXW_AVG.swpmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.swpmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
-		SXW_AVG.swpmatric_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.swpmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+		SXW_AVG.swpmatric_avg[indl0] = get_running_avg(SXW_AVG.swpmatric_avg[indl0], val);
+		SXW_AVG.swpmatric_avg[indl1] += get_running_sqr(old_val, val, SXW_AVG.swpmatric_avg[indl0]);
 
 		if(Globals.currIter == Globals.runModelIterations){
-			float std = sqrt(SXW_AVG.swpmatric_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
+			float std = sqrt(SXW_AVG.swpmatric_avg[indl1] / Globals.currIter);
 
-			sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.swpmatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std);
+			sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.swpmatric_avg[indl0], _Sep, std);
 			strcat(outstr, str);
 		}
 	}
@@ -3597,16 +3648,18 @@ static void get_swaBulk(OutPeriod pd)
 		}
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val = SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
+			int
+				indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+				indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
+			float old_val = SXW_AVG.swabulk_avg[indl0];
 
-			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
-			SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+			SXW_AVG.swabulk_avg[indl0] = get_running_avg(SXW_AVG.swabulk_avg[indl0], val);
+			SXW_AVG.swabulk_avg[indl1] += get_running_sqr(old_val, val, SXW_AVG.swabulk_avg[indl0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std = sqrt(SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
+				float std = sqrt(SXW_AVG.swabulk_avg[indl1] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.swabulk_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std);
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.swabulk_avg[indl0], _Sep, std);
 				strcat(outstr, str);
 			}
 		}
@@ -3732,16 +3785,18 @@ static void get_swaMatric(OutPeriod pd)
 		}
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val = SXW_AVG.swamatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
+			int
+				indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+				indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
+			float old_val = SXW_AVG.swamatric_avg[indl0];
 
-			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.swamatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.swamatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
-			SXW_AVG.swamatric_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.swamatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+			SXW_AVG.swamatric_avg[indl0] = get_running_avg(SXW_AVG.swamatric_avg[indl0], val);
+			SXW_AVG.swamatric_avg[indl1] += get_running_sqr(old_val, val, SXW_AVG.swamatric_avg[indl0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std = sqrt(SXW_AVG.swamatric_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
+				float std = sqrt(SXW_AVG.swamatric_avg[indl1] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.swamatric_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std);
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.swamatric_avg[indl0], _Sep, std);
 				strcat(outstr, str);
 			}
 		}
@@ -3869,16 +3924,18 @@ static void get_surfaceWater(OutPeriod pd)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val = SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			int
+				ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+				ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
+			float old_val = SXW_AVG.surfacewater_avg[ind0];
 
-			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,0,pd)], val_surfacewater);
-			SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val, val_surfacewater, SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.surfacewater_avg[ind0] = get_running_avg(SXW_AVG.surfacewater_avg[ind0], val_surfacewater);
+			SXW_AVG.surfacewater_avg[ind1] += get_running_sqr(old_val, val_surfacewater, SXW_AVG.surfacewater_avg[ind0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std = sqrt(SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std = sqrt(SXW_AVG.surfacewater_avg[ind1] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.surfacewater_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std);
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.surfacewater_avg[ind0], _Sep, std);
 				strcat(outstr, str);
 			}
 		}
@@ -4014,35 +4071,37 @@ static void get_runoffrunon(OutPeriod pd) {
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val_total = SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_val_surface_runoff = SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_val_surface_runon = SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_val_snow = SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			int
+				ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+				ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
+			float old_val_total = SXW_AVG.runoff_total_avg[ind0];
+			float old_val_surface_runoff = SXW_AVG.surface_runoff_avg[ind0];
+			float old_val_surface_runon = SXW_AVG.surface_runon_avg[ind0];
+			float old_val_snow = SXW_AVG.runoff_snow_avg[ind0];
 
-			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)], val_netRunoff);
-			SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_total, val_netRunoff, SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.runoff_total_avg[ind0] = get_running_avg(SXW_AVG.runoff_total_avg[ind0], val_netRunoff);
+			SXW_AVG.runoff_total_avg[ind1] += get_running_sqr(old_val_total, val_netRunoff, SXW_AVG.runoff_total_avg[ind0]);
 
-			SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,0,pd)], val_surfaceRunoff);
-			SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_surface_runoff, val_surfaceRunoff, SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.surface_runoff_avg[ind0] = get_running_avg(SXW_AVG.surface_runoff_avg[ind0], val_surfaceRunoff);
+			SXW_AVG.surface_runoff_avg[ind1] += get_running_sqr(old_val_surface_runoff, val_surfaceRunoff, SXW_AVG.surface_runoff_avg[ind0]);
 
-			SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,0,pd)], val_surfaceRunon);
-			SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_surface_runon, val_surfaceRunon, SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.surface_runon_avg[ind0] = get_running_avg(SXW_AVG.surface_runon_avg[ind0], val_surfaceRunon);
+			SXW_AVG.surface_runon_avg[ind1] += get_running_sqr(old_val_surface_runon, val_surfaceRunon, SXW_AVG.surface_runon_avg[ind0]);
 
 
-			SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)], val_snowRunoff);
-			SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_snow, val_snowRunoff, SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.runoff_snow_avg[ind0] = get_running_avg(SXW_AVG.runoff_snow_avg[ind0], val_snowRunoff);
+			SXW_AVG.runoff_snow_avg[ind1] += get_running_sqr(old_val_snow, val_snowRunoff, SXW_AVG.runoff_snow_avg[ind0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std_total = sqrt(SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_surface_runoff = sqrt(SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_surface_runon = sqrt(SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_snow = sqrt(SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_total = sqrt(SXW_AVG.runoff_total_avg[ind1] / Globals.currIter);
+				float std_surface_runoff = sqrt(SXW_AVG.surface_runoff_avg[ind1] / Globals.currIter);
+				float std_surface_runon = sqrt(SXW_AVG.surface_runon_avg[ind1] / Globals.currIter);
+				float std_snow = sqrt(SXW_AVG.runoff_snow_avg[ind1] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW_AVG.runoff_total_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_total,
-								_Sep, SXW_AVG.surface_runoff_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_surface_runoff,
-								_Sep, SXW_AVG.runoff_snow_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_snow,
-								_Sep, SXW_AVG.surface_runon_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_surface_runon);
+				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW_AVG.runoff_total_avg[ind0], _Sep, std_total,
+								_Sep, SXW_AVG.surface_runoff_avg[ind0], _Sep, std_surface_runoff,
+								_Sep, SXW_AVG.runoff_snow_avg[ind0], _Sep, std_snow,
+								_Sep, SXW_AVG.surface_runon_avg[ind0], _Sep, std_surface_runon);
 				strcat(outstr, str);
 			}
 		}
@@ -4437,7 +4496,10 @@ ForEachSoilLayer(i)
 ForEachSoilLayer(i)
 {
 	val_grass[i] = val[i];
+}
+#endif
 
+#if defined(STEPWAT)
 	switch (pd)
 	{
 		case eSW_Day:
@@ -4449,51 +4511,64 @@ ForEachSoilLayer(i)
 		case eSW_Month:
 			p = SW_Model.month - tOffset;
 			break; /* print previous to current */
-		/* YEAR should never be used with STEPWAT */
+		case eSW_Year:
+			p = 0; // Iypc requires 0 for yearly timeperiod
+			break;
 	}
 	if (bFlush) p++;
 
-	SXW.transpTotal[Ilp(i,p)] = val_total[i];
-	SXW.transpTrees[Ilp(i,p)] = val_tree[i];
-	SXW.transpShrubs[Ilp(i,p)] = val_shrub[i];
-	SXW.transpForbs[Ilp(i,p)] = val_forb[i];
-	SXW.transpGrasses[Ilp(i,p)] = val_grass[i];
+  ForEachSoilLayer(i)
+  {
+  /* Pass monthly transpiration values to STEPWAT2 as resources: the
+     function `_transp_contribution_by_group` deals with these monthly x layer
+     values */
+  if (pd == eSW_Month) {
+    SXW.transpTotal[Ilp(i,p)] = val_total[i];
+    SXW.transpTrees[Ilp(i,p)] = val_tree[i];
+    SXW.transpShrubs[Ilp(i,p)] = val_shrub[i];
+    SXW.transpForbs[Ilp(i,p)] = val_forb[i];
+    SXW.transpGrasses[Ilp(i,p)] = val_grass[i];
+
+    //printf("Tshrubs: bFlush=%d pd=%d t=%d lyr=%d ilp=%d T=%.3f\n", bFlush, pd, p, i, Ilp(i,p), SXW.transpShrubs[Ilp(i,p)]);
+  }
 
 	if (isPartialSoilwatOutput == FALSE)
 	{
-		float old_total = SXW.transpTotal_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
-		float old_tree = SXW.transpTrees_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
-		float old_shrub = SXW.transpShrubs_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
-		float old_forb = SXW.transpForbs_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
-		float old_grass = SXW.transpGrasses_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
+		int
+			indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+			indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
+		float old_total = SXW.transpTotal_avg[indl0];
+		float old_tree = SXW.transpTrees_avg[indl0];
+		float old_shrub = SXW.transpShrubs_avg[indl0];
+		float old_forb = SXW.transpForbs_avg[indl0];
+		float old_grass = SXW.transpGrasses_avg[indl0];
 
 		// for the average over iteration we need to include year too so values are not overlapping.
 		// [Iylp(Globals.currYear-1,i,p)] is a new macro defined in sxw.h that represents year, layer, timeperiod
-		// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-		SXW.transpTotal_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.transpTotal_avg[Iylp(Globals.currYear-1,i,p,pd,0)], SXW.transpTotal[Ilp(i,p)]);
-		SXW.transpTrees_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.transpTrees_avg[Iylp(Globals.currYear-1,i,p,pd,0)], SXW.transpTrees[Ilp(i,p)]);
-		SXW.transpShrubs_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.transpShrubs_avg[Iylp(Globals.currYear-1,i,p,pd,0)], SXW.transpShrubs[Ilp(i,p)]);
-		SXW.transpForbs_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.transpForbs_avg[Iylp(Globals.currYear-1,i,p,pd,0)], SXW.transpForbs[Ilp(i,p)]);
-		SXW.transpGrasses_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW.transpGrasses_avg[Iylp(Globals.currYear-1,i,p,pd,0)], SXW.transpGrasses[Ilp(i,p)]);
+		SXW.transpTotal_avg[indl0] = get_running_avg(SXW.transpTotal_avg[indl0], SXW.transpTotal[Ilp(i,p)]);
+		SXW.transpTrees_avg[indl0] = get_running_avg(SXW.transpTrees_avg[indl0], SXW.transpTrees[Ilp(i,p)]);
+		SXW.transpShrubs_avg[indl0] = get_running_avg(SXW.transpShrubs_avg[indl0], SXW.transpShrubs[Ilp(i,p)]);
+		SXW.transpForbs_avg[indl0] = get_running_avg(SXW.transpForbs_avg[indl0], SXW.transpForbs[Ilp(i,p)]);
+		SXW.transpGrasses_avg[indl0] = get_running_avg(SXW.transpGrasses_avg[indl0], SXW.transpGrasses[Ilp(i,p)]);
 
-		SXW.transpTotal_avg[Iylp(Globals.currYear-1,i,p,pd,1)] = get_running_sqr(old_total, SXW.transpTotal[Ilp(i,p)], SXW.transpTotal_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
-		SXW.transpTrees_avg[Iylp(Globals.currYear-1,i,p,pd,1)] = get_running_sqr(old_tree, SXW.transpTrees[Ilp(i,p)], SXW.transpTrees_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
-		SXW.transpShrubs_avg[Iylp(Globals.currYear-1,i,p,pd,1)] = get_running_sqr(old_shrub, SXW.transpShrubs[Ilp(i,p)], SXW.transpShrubs_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
-		SXW.transpForbs_avg[Iylp(Globals.currYear-1,i,p,pd,1)] = get_running_sqr(old_forb, SXW.transpForbs[Ilp(i,p)], SXW.transpForbs_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
-		SXW.transpGrasses_avg[Iylp(Globals.currYear-1,i,p,pd,1)] = get_running_sqr(old_grass, SXW.transpGrasses[Ilp(i,p)], SXW.transpGrasses_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+		SXW.transpTotal_avg[indl1] = get_running_sqr(old_total, SXW.transpTotal[Ilp(i,p)], SXW.transpTotal_avg[indl0]);
+		SXW.transpTrees_avg[indl1] = get_running_sqr(old_tree, SXW.transpTrees[Ilp(i,p)], SXW.transpTrees_avg[indl0]);
+		SXW.transpShrubs_avg[indl1] = get_running_sqr(old_shrub, SXW.transpShrubs[Ilp(i,p)], SXW.transpShrubs_avg[indl0]);
+		SXW.transpForbs_avg[indl1] = get_running_sqr(old_forb, SXW.transpForbs[Ilp(i,p)], SXW.transpForbs_avg[indl0]);
+		SXW.transpGrasses_avg[indl1] = get_running_sqr(old_grass, SXW.transpGrasses[Ilp(i,p)], SXW.transpGrasses_avg[indl0]);
 
 		// if last iteration need to divide by number of iterations to get average over all iterations
 		if(Globals.currIter == Globals.runModelIterations){
-			float std_total = sqrt(SXW.transpTotal_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-			float std_trees = sqrt(SXW.transpTrees_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-			float std_shrubs = sqrt(SXW.transpShrubs_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-			float std_forbs = sqrt(SXW.transpForbs_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-			float std_grasses = sqrt(SXW.transpGrasses_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
+			float std_total = sqrt(SXW.transpTotal_avg[indl1] / Globals.currIter);
+			float std_trees = sqrt(SXW.transpTrees_avg[indl1] / Globals.currIter);
+			float std_shrubs = sqrt(SXW.transpShrubs_avg[indl1] / Globals.currIter);
+			float std_forbs = sqrt(SXW.transpForbs_avg[indl1] / Globals.currIter);
+			float std_grasses = sqrt(SXW.transpGrasses_avg[indl1] / Globals.currIter);
 
 			sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
-				_Sep, SXW.transpTotal_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std_total, _Sep, SXW.transpTrees_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep,
-				std_trees, _Sep, SXW.transpShrubs_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std_shrubs, _Sep, SXW.transpForbs_avg[Iylp(Globals.currYear-1,i,p,pd,0)],
-				_Sep, std_forbs, _Sep, SXW.transpGrasses_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std_grasses);
+				_Sep, SXW.transpTotal_avg[indl0], _Sep, std_total, _Sep, SXW.transpTrees_avg[indl0], _Sep,
+				std_trees, _Sep, SXW.transpShrubs_avg[indl0], _Sep, std_shrubs, _Sep, SXW.transpForbs_avg[indl0],
+				_Sep, std_forbs, _Sep, SXW.transpGrasses_avg[indl0], _Sep, std_grasses);
 			strcat(outstr, str);
 		}
 	}
@@ -4582,16 +4657,18 @@ static void get_evapSoil(OutPeriod pd)
 		}
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val = SXW_AVG.evapsoil_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
+			int
+				indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+				indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
+			float old_val = SXW_AVG.evapsoil_avg[indl0];
 
-			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.evapsoil_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.evapsoil_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
-			SXW_AVG.evapsoil_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.evapsoil_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+			SXW_AVG.evapsoil_avg[indl0] = get_running_avg(SXW_AVG.evapsoil_avg[indl0], val);
+			SXW_AVG.evapsoil_avg[indl1] += get_running_sqr(old_val, val, SXW_AVG.evapsoil_avg[indl0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std = sqrt(SXW_AVG.evapsoil_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
+				float std = sqrt(SXW_AVG.evapsoil_avg[indl1] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.evapsoil_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std);
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.evapsoil_avg[indl0], _Sep, std);
 				strcat(outstr, str);
 			}
 		}
@@ -4751,54 +4828,56 @@ static void get_evapSurface(OutPeriod pd)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val_total = SXW_AVG.evapsurface_total_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_val_tree = SXW_AVG.evapsurface_tree_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_val_forb = SXW_AVG.evapsurface_forb_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_val_shrub = SXW_AVG.evapsurface_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_val_grass = SXW_AVG.evapsurface_grass_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_val_litter = SXW_AVG.evapsurface_litter_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_val_water = SXW_AVG.evapsurface_water_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			int
+				ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+				ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
+			float old_val_total = SXW_AVG.evapsurface_total_avg[ind0];
+			float old_val_tree = SXW_AVG.evapsurface_tree_avg[ind0];
+			float old_val_forb = SXW_AVG.evapsurface_forb_avg[ind0];
+			float old_val_shrub = SXW_AVG.evapsurface_shrub_avg[ind0];
+			float old_val_grass = SXW_AVG.evapsurface_grass_avg[ind0];
+			float old_val_litter = SXW_AVG.evapsurface_litter_avg[ind0];
+			float old_val_water = SXW_AVG.evapsurface_water_avg[ind0];
 
 
-			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.evapsurface_total_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.evapsurface_total_avg[Iypc(Globals.currYear-1,p,0,pd)], val_tot);
-			SXW_AVG.evapsurface_total_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_total, val_tot, SXW_AVG.evapsurface_total_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.evapsurface_total_avg[ind0] = get_running_avg(SXW_AVG.evapsurface_total_avg[ind0], val_tot);
+			SXW_AVG.evapsurface_total_avg[ind1] += get_running_sqr(old_val_total, val_tot, SXW_AVG.evapsurface_total_avg[ind0]);
 
-			SXW_AVG.evapsurface_tree_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.evapsurface_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], val_tree);
-			SXW_AVG.evapsurface_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_tree, val_tree, SXW_AVG.evapsurface_tree_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.evapsurface_tree_avg[ind0] = get_running_avg(SXW_AVG.evapsurface_tree_avg[ind0], val_tree);
+			SXW_AVG.evapsurface_tree_avg[ind1] += get_running_sqr(old_val_tree, val_tree, SXW_AVG.evapsurface_tree_avg[ind0]);
 
-			SXW_AVG.evapsurface_forb_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.evapsurface_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], val_forb);
-			SXW_AVG.evapsurface_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_forb, val_forb, SXW_AVG.evapsurface_forb_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.evapsurface_forb_avg[ind0] = get_running_avg(SXW_AVG.evapsurface_forb_avg[ind0], val_forb);
+			SXW_AVG.evapsurface_forb_avg[ind1] += get_running_sqr(old_val_forb, val_forb, SXW_AVG.evapsurface_forb_avg[ind0]);
 
-			SXW_AVG.evapsurface_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.evapsurface_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], val_shrub);
-			SXW_AVG.evapsurface_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_shrub, val_shrub, SXW_AVG.evapsurface_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.evapsurface_shrub_avg[ind0] = get_running_avg(SXW_AVG.evapsurface_shrub_avg[ind0], val_shrub);
+			SXW_AVG.evapsurface_shrub_avg[ind1] += get_running_sqr(old_val_shrub, val_shrub, SXW_AVG.evapsurface_shrub_avg[ind0]);
 
-			SXW_AVG.evapsurface_grass_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.evapsurface_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], val_grass);
-			SXW_AVG.evapsurface_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_grass, val_grass, SXW_AVG.evapsurface_grass_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.evapsurface_grass_avg[ind0] = get_running_avg(SXW_AVG.evapsurface_grass_avg[ind0], val_grass);
+			SXW_AVG.evapsurface_grass_avg[ind1] += get_running_sqr(old_val_grass, val_grass, SXW_AVG.evapsurface_grass_avg[ind0]);
 
-			SXW_AVG.evapsurface_litter_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.evapsurface_litter_avg[Iypc(Globals.currYear-1,p,0,pd)], val_litter);
-			SXW_AVG.evapsurface_litter_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_litter, val_litter, SXW_AVG.evapsurface_litter_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.evapsurface_litter_avg[ind0] = get_running_avg(SXW_AVG.evapsurface_litter_avg[ind0], val_litter);
+			SXW_AVG.evapsurface_litter_avg[ind1] += get_running_sqr(old_val_litter, val_litter, SXW_AVG.evapsurface_litter_avg[ind0]);
 
-			SXW_AVG.evapsurface_water_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.evapsurface_water_avg[Iypc(Globals.currYear-1,p,0,pd)], val_water);
-			SXW_AVG.evapsurface_water_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_water, val_water, SXW_AVG.evapsurface_water_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.evapsurface_water_avg[ind0] = get_running_avg(SXW_AVG.evapsurface_water_avg[ind0], val_water);
+			SXW_AVG.evapsurface_water_avg[ind1] += get_running_sqr(old_val_water, val_water, SXW_AVG.evapsurface_water_avg[ind0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std_total = sqrt(SXW_AVG.evapsurface_total_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_tree = sqrt(SXW_AVG.evapsurface_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_forb = sqrt(SXW_AVG.evapsurface_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_shrub = sqrt(SXW_AVG.evapsurface_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_grass = sqrt(SXW_AVG.evapsurface_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_litter = sqrt(SXW_AVG.evapsurface_litter_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_water = sqrt(SXW_AVG.evapsurface_water_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_total = sqrt(SXW_AVG.evapsurface_total_avg[ind1] / Globals.currIter);
+				float std_tree = sqrt(SXW_AVG.evapsurface_tree_avg[ind1] / Globals.currIter);
+				float std_forb = sqrt(SXW_AVG.evapsurface_forb_avg[ind1] / Globals.currIter);
+				float std_shrub = sqrt(SXW_AVG.evapsurface_shrub_avg[ind1] / Globals.currIter);
+				float std_grass = sqrt(SXW_AVG.evapsurface_grass_avg[ind1] / Globals.currIter);
+				float std_litter = sqrt(SXW_AVG.evapsurface_litter_avg[ind1] / Globals.currIter);
+				float std_water = sqrt(SXW_AVG.evapsurface_water_avg[ind1] / Globals.currIter);
 
 				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
-				 				_Sep, SXW_AVG.evapsurface_total_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_total,
-								_Sep, SXW_AVG.evapsurface_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_tree,
-								_Sep, SXW_AVG.evapsurface_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_shrub,
-								_Sep, SXW_AVG.evapsurface_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_forb,
-								_Sep, SXW_AVG.evapsurface_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_grass,
-								_Sep, SXW_AVG.evapsurface_litter_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_litter,
-								_Sep, SXW_AVG.evapsurface_water_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_water);
+				 				_Sep, SXW_AVG.evapsurface_total_avg[ind0], _Sep, std_total,
+								_Sep, SXW_AVG.evapsurface_tree_avg[ind0], _Sep, std_tree,
+								_Sep, SXW_AVG.evapsurface_shrub_avg[ind0], _Sep, std_shrub,
+								_Sep, SXW_AVG.evapsurface_forb_avg[ind0], _Sep, std_forb,
+								_Sep, SXW_AVG.evapsurface_grass_avg[ind0], _Sep, std_grass,
+								_Sep, SXW_AVG.evapsurface_litter_avg[ind0], _Sep, std_litter,
+								_Sep, SXW_AVG.evapsurface_water_avg[ind0], _Sep, std_water);
 				strcat(outstr, str);
 			}
 		}
@@ -4979,51 +5058,53 @@ static void get_interception(OutPeriod pd)
 
 			if (isPartialSoilwatOutput == FALSE)
 			{
+				int
+					ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+					ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
 				float old_val_total, old_val_tree, old_val_forb, old_val_shrub, old_val_grass, old_val_litter = 0.;
 
-				old_val_total = SXW_AVG.interception_total_avg[Iypc(Globals.currYear-1,p,0,pd)];
-				old_val_tree = SXW_AVG.interception_tree_avg[Iypc(Globals.currYear-1,p,0,pd)];
-				old_val_shrub = SXW_AVG.interception_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)];
-				old_val_forb = SXW_AVG.interception_forb_avg[Iypc(Globals.currYear-1,p,0,pd)];
-				old_val_grass = SXW_AVG.interception_grass_avg[Iypc(Globals.currYear-1,p,0,pd)];
-				old_val_litter = SXW_AVG.interception_litter_avg[Iypc(Globals.currYear-1,p,0,pd)];
+				old_val_total = SXW_AVG.interception_total_avg[ind0];
+				old_val_tree = SXW_AVG.interception_tree_avg[ind0];
+				old_val_shrub = SXW_AVG.interception_shrub_avg[ind0];
+				old_val_forb = SXW_AVG.interception_forb_avg[ind0];
+				old_val_grass = SXW_AVG.interception_grass_avg[ind0];
+				old_val_litter = SXW_AVG.interception_litter_avg[ind0];
 
-				// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-				SXW_AVG.interception_total_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.interception_total_avg[Iypc(Globals.currYear-1,p,0,pd)], val_tot);
-				SXW_AVG.interception_total_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_total, val_tot, SXW_AVG.interception_total_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+				SXW_AVG.interception_total_avg[ind0] = get_running_avg(SXW_AVG.interception_total_avg[ind0], val_tot);
+				SXW_AVG.interception_total_avg[ind1] += get_running_sqr(old_val_total, val_tot, SXW_AVG.interception_total_avg[ind0]);
 
-				SXW_AVG.interception_tree_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.interception_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], val_tree);
-				SXW_AVG.interception_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_tree, val_tree, SXW_AVG.interception_tree_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+				SXW_AVG.interception_tree_avg[ind0] = get_running_avg(SXW_AVG.interception_tree_avg[ind0], val_tree);
+				SXW_AVG.interception_tree_avg[ind1] += get_running_sqr(old_val_tree, val_tree, SXW_AVG.interception_tree_avg[ind0]);
 
-				SXW_AVG.interception_forb_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.interception_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], val_forb);
-				SXW_AVG.interception_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_forb, val_forb, SXW_AVG.interception_forb_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+				SXW_AVG.interception_forb_avg[ind0] = get_running_avg(SXW_AVG.interception_forb_avg[ind0], val_forb);
+				SXW_AVG.interception_forb_avg[ind1] += get_running_sqr(old_val_forb, val_forb, SXW_AVG.interception_forb_avg[ind0]);
 
-				SXW_AVG.interception_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.interception_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], val_shrub);
-				SXW_AVG.interception_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_shrub, val_shrub, SXW_AVG.interception_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+				SXW_AVG.interception_shrub_avg[ind0] = get_running_avg(SXW_AVG.interception_shrub_avg[ind0], val_shrub);
+				SXW_AVG.interception_shrub_avg[ind1] += get_running_sqr(old_val_shrub, val_shrub, SXW_AVG.interception_shrub_avg[ind0]);
 
-				SXW_AVG.interception_grass_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.interception_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], val_grass);
-				SXW_AVG.interception_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_grass, val_grass, SXW_AVG.interception_grass_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+				SXW_AVG.interception_grass_avg[ind0] = get_running_avg(SXW_AVG.interception_grass_avg[ind0], val_grass);
+				SXW_AVG.interception_grass_avg[ind1] += get_running_sqr(old_val_grass, val_grass, SXW_AVG.interception_grass_avg[ind0]);
 
-				SXW_AVG.interception_litter_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.interception_litter_avg[Iypc(Globals.currYear-1,p,0,pd)], val_litter);
-				SXW_AVG.interception_litter_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_litter, val_litter, SXW_AVG.interception_litter_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+				SXW_AVG.interception_litter_avg[ind0] = get_running_avg(SXW_AVG.interception_litter_avg[ind0], val_litter);
+				SXW_AVG.interception_litter_avg[ind1] += get_running_sqr(old_val_litter, val_litter, SXW_AVG.interception_litter_avg[ind0]);
 
 				if(Globals.currIter == Globals.runModelIterations){
 					float std_total = 0., std_tree = 0., std_forb = 0., std_shrub = 0., std_grass = 0., std_litter = 0.;
 
-					std_total = sqrt(SXW_AVG.interception_total_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-					std_tree = sqrt(SXW_AVG.interception_tree_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-					std_forb = sqrt(SXW_AVG.interception_forb_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-					std_shrub = sqrt(SXW_AVG.interception_shrub_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-					std_grass = sqrt(SXW_AVG.interception_grass_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-					std_litter = sqrt(SXW_AVG.interception_litter_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+					std_total = sqrt(SXW_AVG.interception_total_avg[ind1] / Globals.currIter);
+					std_tree = sqrt(SXW_AVG.interception_tree_avg[ind1] / Globals.currIter);
+					std_forb = sqrt(SXW_AVG.interception_forb_avg[ind1] / Globals.currIter);
+					std_shrub = sqrt(SXW_AVG.interception_shrub_avg[ind1] / Globals.currIter);
+					std_grass = sqrt(SXW_AVG.interception_grass_avg[ind1] / Globals.currIter);
+					std_litter = sqrt(SXW_AVG.interception_litter_avg[ind1] / Globals.currIter);
 
 					sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
-					 				_Sep, SXW_AVG.interception_total_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_total,
-									_Sep, SXW_AVG.interception_tree_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_tree,
-									_Sep, SXW_AVG.interception_shrub_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_shrub,
-									_Sep, SXW_AVG.interception_forb_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_forb,
-									_Sep, SXW_AVG.interception_grass_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_grass,
-									_Sep, SXW_AVG.interception_litter_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_litter);
+					 				_Sep, SXW_AVG.interception_total_avg[ind0], _Sep, std_total,
+									_Sep, SXW_AVG.interception_tree_avg[ind0], _Sep, std_tree,
+									_Sep, SXW_AVG.interception_shrub_avg[ind0], _Sep, std_shrub,
+									_Sep, SXW_AVG.interception_forb_avg[ind0], _Sep, std_forb,
+									_Sep, SXW_AVG.interception_grass_avg[ind0], _Sep, std_grass,
+									_Sep, SXW_AVG.interception_litter_avg[ind0], _Sep, std_litter);
 					strcat(outstr, str);
 				}
 			}
@@ -5160,16 +5241,18 @@ static void get_soilinf(OutPeriod pd)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val = SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			int
+				ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+				ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
+			float old_val = SXW_AVG.soilinfilt_avg[ind0];
 
-			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear-1,p,0,pd)], val_inf);
-			SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val, val_inf, SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.soilinfilt_avg[ind0] = get_running_avg(SXW_AVG.soilinfilt_avg[ind0], val_inf);
+			SXW_AVG.soilinfilt_avg[ind1] += get_running_sqr(old_val, val_inf, SXW_AVG.soilinfilt_avg[ind0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std = sqrt(SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std = sqrt(SXW_AVG.soilinfilt_avg[ind1] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.soilinfilt_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std);
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.soilinfilt_avg[ind0], _Sep, std);
 				strcat(outstr, str);
 			}
 		}
@@ -5287,16 +5370,18 @@ static void get_lyrdrain(OutPeriod pd)
 		}
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val = SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
+			int
+				indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+				indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
+			float old_val = SXW_AVG.lyrdrain_avg[indl0];
 
-			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
-			SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+			SXW_AVG.lyrdrain_avg[indl0] = get_running_avg(SXW_AVG.lyrdrain_avg[indl0], val);
+			SXW_AVG.lyrdrain_avg[indl1] += get_running_sqr(old_val, val, SXW_AVG.lyrdrain_avg[indl0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std = sqrt(SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
+				float std = sqrt(SXW_AVG.lyrdrain_avg[indl1] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.lyrdrain_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std);
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.lyrdrain_avg[indl0], _Sep, std);
 				strcat(outstr, str);
 			}
 		}
@@ -5470,39 +5555,41 @@ static void get_hydred(OutPeriod pd)
 			}
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val_total = SXW_AVG.hydred_total_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
-			float old_val_tree = SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
-			float old_val_forb = SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
-			float old_val_shrub = SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
-			float old_val_grass = SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
+			int
+				indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+				indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
+			float old_val_total = SXW_AVG.hydred_total_avg[indl0];
+			float old_val_tree = SXW_AVG.hydred_tree_avg[indl0];
+			float old_val_forb = SXW_AVG.hydred_forb_avg[indl0];
+			float old_val_shrub = SXW_AVG.hydred_shrub_avg[indl0];
+			float old_val_grass = SXW_AVG.hydred_grass_avg[indl0];
 
-			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.hydred_total_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.hydred_total_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val_total);
-			SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val_tree);
-			SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val_shrub);
-			SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val_forb);
-			SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val_grass);
+			SXW_AVG.hydred_total_avg[indl0] = get_running_avg(SXW_AVG.hydred_total_avg[indl0], val_total);
+			SXW_AVG.hydred_tree_avg[indl0] = get_running_avg(SXW_AVG.hydred_tree_avg[indl0], val_tree);
+			SXW_AVG.hydred_shrub_avg[indl0] = get_running_avg(SXW_AVG.hydred_shrub_avg[indl0], val_shrub);
+			SXW_AVG.hydred_forb_avg[indl0] = get_running_avg(SXW_AVG.hydred_forb_avg[indl0], val_forb);
+			SXW_AVG.hydred_grass_avg[indl0] = get_running_avg(SXW_AVG.hydred_grass_avg[indl0], val_grass);
 
-			SXW_AVG.hydred_total_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val_total, val_total, SXW_AVG.hydred_total_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
-			SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val_tree, val_tree, SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
-			SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val_shrub, val_shrub, SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
-			SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val_forb, val_forb, SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
-			SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val_grass, val_grass, SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+			SXW_AVG.hydred_total_avg[indl1] += get_running_sqr(old_val_total, val_total, SXW_AVG.hydred_total_avg[indl0]);
+			SXW_AVG.hydred_tree_avg[indl1] += get_running_sqr(old_val_tree, val_tree, SXW_AVG.hydred_tree_avg[indl0]);
+			SXW_AVG.hydred_shrub_avg[indl1] += get_running_sqr(old_val_shrub, val_shrub, SXW_AVG.hydred_shrub_avg[indl0]);
+			SXW_AVG.hydred_forb_avg[indl1] += get_running_sqr(old_val_forb, val_forb, SXW_AVG.hydred_forb_avg[indl0]);
+			SXW_AVG.hydred_grass_avg[indl1] += get_running_sqr(old_val_grass, val_grass, SXW_AVG.hydred_grass_avg[indl0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std_total = sqrt(SXW_AVG.hydred_total_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-				float std_tree = sqrt(SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-				float std_forb = sqrt(SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-				float std_shrub = sqrt(SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
-				float std_grass = sqrt(SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
+				float std_total = sqrt(SXW_AVG.hydred_total_avg[indl1] / Globals.currIter);
+				float std_tree = sqrt(SXW_AVG.hydred_tree_avg[indl1] / Globals.currIter);
+				float std_forb = sqrt(SXW_AVG.hydred_forb_avg[indl1] / Globals.currIter);
+				float std_shrub = sqrt(SXW_AVG.hydred_shrub_avg[indl1] / Globals.currIter);
+				float std_grass = sqrt(SXW_AVG.hydred_grass_avg[indl1] / Globals.currIter);
 
 
 				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
-								_Sep, SXW_AVG.hydred_total_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std_total,
-								_Sep, SXW_AVG.hydred_tree_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std_tree,
-								_Sep, SXW_AVG.hydred_shrub_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std_shrub,
-								_Sep, SXW_AVG.hydred_forb_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std_forb,
-								_Sep, SXW_AVG.hydred_grass_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std_grass
+								_Sep, SXW_AVG.hydred_total_avg[indl0], _Sep, std_total,
+								_Sep, SXW_AVG.hydred_tree_avg[indl0], _Sep, std_tree,
+								_Sep, SXW_AVG.hydred_shrub_avg[indl0], _Sep, std_shrub,
+								_Sep, SXW_AVG.hydred_forb_avg[indl0], _Sep, std_forb,
+								_Sep, SXW_AVG.hydred_grass_avg[indl0], _Sep, std_grass
 							);
 				strcat(outstr, str);
 			}
@@ -5741,17 +5828,19 @@ static void get_aet(OutPeriod pd)
 
 	if (isPartialSoilwatOutput == FALSE)
 	{
-		float old_val = SXW_AVG.aet_avg[Iypc(Globals.currYear-1,p,0,pd)];
+		int
+			ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+			ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
+		float old_val = SXW_AVG.aet_avg[ind0];
 
 		//running aet_avg
-		// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-		SXW_AVG.aet_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.aet_avg[Iypc(Globals.currYear-1,p,0,pd)], val);
-		SXW_AVG.aet_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val, val, SXW_AVG.aet_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+		SXW_AVG.aet_avg[ind0] = get_running_avg(SXW_AVG.aet_avg[ind0], val);
+		SXW_AVG.aet_avg[ind1] += get_running_sqr(old_val, val, SXW_AVG.aet_avg[ind0]);
 
 		if(Globals.currIter == Globals.runModelIterations){
-			float std_aet = sqrt(SXW_AVG.aet_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+			float std_aet = sqrt(SXW_AVG.aet_avg[ind1] / Globals.currIter);
 
-			sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.aet_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_aet);
+			sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.aet_avg[ind0], _Sep, std_aet);
 			strcat(outstr, str);
 		}
 	}
@@ -5829,16 +5918,18 @@ static void get_pet(OutPeriod pd)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val = SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			int
+				ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+				ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
+			float old_val = SXW_AVG.pet_avg[ind0];
 
-			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,0,pd)], val);
-			SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val, val, SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.pet_avg[ind0] = get_running_avg(SXW_AVG.pet_avg[ind0], val);
+			SXW_AVG.pet_avg[ind1] += get_running_sqr(old_val, val, SXW_AVG.pet_avg[ind0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std = sqrt(SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std = sqrt(SXW_AVG.pet_avg[ind1] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.pet_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std);
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.pet_avg[ind0], _Sep, std);
 				strcat(outstr, str);
 			}
 		}
@@ -5945,16 +6036,18 @@ static void get_wetdays(OutPeriod pd)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val = SXW_AVG.wetday_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
+			int
+				indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+				indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
+			float old_val = SXW_AVG.wetday_avg[indl0];
 
-			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.wetday_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.wetday_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
-			SXW_AVG.wetday_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.wetday_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+			SXW_AVG.wetday_avg[indl0] = get_running_avg(SXW_AVG.wetday_avg[indl0], val);
+			SXW_AVG.wetday_avg[indl1] += get_running_sqr(old_val, val, SXW_AVG.wetday_avg[indl0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std = sqrt(SXW_AVG.wetday_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
+				float std = sqrt(SXW_AVG.wetday_avg[indl1] / Globals.currIter);
 
-				sprintf(str, "%c%i%c%i", _Sep, (int)SXW_AVG.wetday_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, (int)std); // cast to int for proper output format
+				sprintf(str, "%c%i%c%i", _Sep, (int)SXW_AVG.wetday_avg[indl0], _Sep, (int)std); // cast to int for proper output format
 				strcat(outstr, str);
 			}
 		}
@@ -6077,22 +6170,24 @@ static void get_snowpack(OutPeriod pd)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val_swe = SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,0,pd)];
-			float old_val_depth = SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			int
+				ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+				ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
+			float old_val_swe = SXW_AVG.snowpack_water_eqv_avg[ind0];
+			float old_val_depth = SXW_AVG.snowpack_depth_avg[ind0];
 
-			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,0,pd)], val_swe);
-			SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_swe, val_swe, SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.snowpack_water_eqv_avg[ind0] = get_running_avg(SXW_AVG.snowpack_water_eqv_avg[ind0], val_swe);
+			SXW_AVG.snowpack_water_eqv_avg[ind1] += get_running_sqr(old_val_swe, val_swe, SXW_AVG.snowpack_water_eqv_avg[ind0]);
 
-			SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear-1,p,0,pd)], val_depth);
-			SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val_depth, val_depth, SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.snowpack_depth_avg[ind0] = get_running_avg(SXW_AVG.snowpack_depth_avg[ind0], val_depth);
+			SXW_AVG.snowpack_depth_avg[ind1] += get_running_sqr(old_val_depth, val_depth, SXW_AVG.snowpack_depth_avg[ind0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std_swe = sqrt(SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
-				float std_depth = sqrt(SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std_swe = sqrt(SXW_AVG.snowpack_water_eqv_avg[ind1] / Globals.currIter);
+				float std_depth = sqrt(SXW_AVG.snowpack_depth_avg[ind1] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW_AVG.snowpack_water_eqv_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_swe,
-								_Sep, SXW_AVG.snowpack_depth_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std_depth);
+				sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f", _Sep, SXW_AVG.snowpack_water_eqv_avg[ind0], _Sep, std_swe,
+								_Sep, SXW_AVG.snowpack_depth_avg[ind0], _Sep, std_depth);
 				strcat(outstr, str);
 			}
 		}
@@ -6210,16 +6305,18 @@ static void get_deepswc(OutPeriod pd)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val = SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,0,pd)];
+			int
+				ind0 = Iypc(Globals.currYear - 1, p, 0, pd), // index for mean
+				ind1 = Iypc(Globals.currYear - 1, p, 1, pd); // index for sd
+			float old_val = SXW_AVG.deepswc_avg[ind0];
 
-			// for Iypc the third argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,0,pd)] = get_running_avg(SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,0,pd)], val);
-			SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,1,pd)] += get_running_sqr(old_val, val, SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,0,pd)]);
+			SXW_AVG.deepswc_avg[ind0] = get_running_avg(SXW_AVG.deepswc_avg[ind0], val);
+			SXW_AVG.deepswc_avg[ind1] += get_running_sqr(old_val, val, SXW_AVG.deepswc_avg[ind0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std = sqrt(SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,1,pd)] / Globals.currIter);
+				float std = sqrt(SXW_AVG.deepswc_avg[ind1] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.deepswc_avg[Iypc(Globals.currYear-1,p,0,pd)], _Sep, std);
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.deepswc_avg[ind0], _Sep, std);
 				strcat(outstr, str);
 			}
 		}
@@ -6326,16 +6423,18 @@ static void get_soiltemp(OutPeriod pd)
 
 		if (isPartialSoilwatOutput == FALSE)
 		{
-			float old_val = SXW_AVG.soiltemp_avg[Iylp(Globals.currYear-1,i,p,pd,0)];
+			int
+				indl0 = Iylp(Globals.currYear - 1, i, p, pd, 0), // index for mean
+				indl1 = Iylp(Globals.currYear - 1, i, p, pd, 1); // index for sd
+			float old_val = SXW_AVG.soiltemp_avg[indl0];
 
-			// for Iylp the fifth argument is either 0 or 1. 0 is for average and 1 is for standard deviation
-			SXW_AVG.soiltemp_avg[Iylp(Globals.currYear-1,i,p,pd,0)] = get_running_avg(SXW_AVG.soiltemp_avg[Iylp(Globals.currYear-1,i,p,pd,0)], val);
-			SXW_AVG.soiltemp_avg[Iylp(Globals.currYear-1,i,p,pd,1)] += get_running_sqr(old_val, val, SXW_AVG.soiltemp_avg[Iylp(Globals.currYear-1,i,p,pd,0)]);
+			SXW_AVG.soiltemp_avg[indl0] = get_running_avg(SXW_AVG.soiltemp_avg[indl0], val);
+			SXW_AVG.soiltemp_avg[indl1] += get_running_sqr(old_val, val, SXW_AVG.soiltemp_avg[indl0]);
 
 			if(Globals.currIter == Globals.runModelIterations){
-				float std = sqrt(SXW_AVG.soiltemp_avg[Iylp(Globals.currYear-1,i,p,pd,1)] / Globals.currIter);
+				float std = sqrt(SXW_AVG.soiltemp_avg[indl1] / Globals.currIter);
 
-				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.soiltemp_avg[Iylp(Globals.currYear-1,i,p,pd,0)], _Sep, std);
+				sprintf(str, "%c%7.6f%c%7.6f", _Sep, SXW_AVG.soiltemp_avg[indl0], _Sep, std);
 				strcat(outstr, str);
 			}
 		}
