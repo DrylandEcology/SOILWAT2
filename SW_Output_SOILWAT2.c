@@ -696,8 +696,6 @@ void get_transp(OutPeriod pd)
 
 	get_outstrleader(pd);
 
-	get_outstrleader(pd);
-
 	/* total transpiration */
 	ForEachSoilLayer(i)
 	{
