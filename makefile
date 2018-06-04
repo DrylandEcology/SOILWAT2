@@ -46,7 +46,7 @@ sources_tests = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 objects_tests = $(sources_tests:.c=.o)
 
 
-bin_sources = SW_Main.c
+bin_sources = SW_Main.c SW_Output_SOILWAT2.c # SOILWAT2-standalone
 bin_objects = $(bin_sources:.c=.o)
 
 

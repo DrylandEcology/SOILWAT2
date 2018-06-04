@@ -182,29 +182,12 @@
 #include "SW_Output.h"
 
 /* Note: `get_XXX` functions are declared here for all and defined differently
-         in the program-specific files for the specific uses
+         in the program-specific files for the specific uses:
+    - for SOILWAT2-standalone: "../rSW_Output_rSOILWAT2.c"
+    - for rSOILWAT2: "SW_Output_SOILWAT2.c"
+    - for rSOILWAT2: "../rSW_Output_rSOILWAT2.c"
+    - for STEPWAT2: "../SW_Output_STEPWAT2.c"
 */
-
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rinternals.h>
-#include "../rSW_Output.h"
-// definitions of `get_XXX` functions for rSOILWAT2
-#include "../rSW_Output_rSOILWAT2.c"
-#endif
-
-#ifdef STEPWAT
-// definitions of `get_XXX` functions for STEPWAT2
-#include "../SW_Output_rSOILWAT2.c"
-#endif
-
-
-#ifdef SOILWAT
-// definitions of `get_XXX` functions for SOILWAT2-standalone
-#include "SW_Output_SOILWAT2.c"
-#endif
-
 
 
 /* =================================================== */
