@@ -181,12 +181,11 @@
 
 #include "SW_Output.h"
 
-/* Note: `get_XXX` functions are declared here for all and defined differently
-         in the program-specific files for the specific uses:
-    - for SOILWAT2-standalone: "../rSW_Output_rSOILWAT2.c"
-    - for rSOILWAT2: "SW_Output_SOILWAT2.c"
-    - for rSOILWAT2: "../rSW_Output_rSOILWAT2.c"
-    - for STEPWAT2: "../SW_Output_STEPWAT2.c"
+/* Note: `get_XXX` functions are declared in `SW_Output.h` for all
+    and defined/implemented in the program-specific files for the uses of:
+    - SOILWAT2-standalone: "../rSW_Output_rSOILWAT2.c"
+    - rSOILWAT2: "../rSW_Output_rSOILWAT2.c"
+    - STEPWAT2: "../sxw_Output_STEPWAT2.c"
 */
 
 
@@ -217,8 +216,13 @@ char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS]; // names of output 
 
 #ifdef STEPWAT
 extern ModelType Globals; // defined in `ST_Main.c`
+/* `isPartialSoilwatOutput` is set to FALSE if STEPWAT2 is called with `-o` flag
+    if FALSE, then calculate/write to disk the running mean and sd
+    across iterations/repeats */
 Bool isPartialSoilwatOutput = FALSE;
-Bool storeAllIterations = TRUE;
+/* `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
+   if TRUE, then write to disk the SOILWAT2 output
+   for each STEPWAT2 iteration/repeat to separate files */
 char outstr_all_iters[OUTSTRLEN];
 #endif
 
@@ -260,7 +264,9 @@ static char const *styp2str[] =
 /*             Private Function Declarations            */
 /* --------------------------------------------------- */
 
-void populate_output_values(char *reg_file_array, char *soil_file_array, int output_var, IntU year_out, int outstr_file);
+void populate_output_values(char *reg_file_array, char *soil_file_array,
+  int output_var, OutPeriod timep, int outstr_file);
+
 #ifndef RSOILWAT
 // the function `create_col_headers` should be really used by all applications for consistent naming of output
 void create_col_headers(IntU outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers);
@@ -2156,7 +2162,7 @@ void SW_OUT_write_today(void)
 						SW_File_Status.col_status_dy++;
 					}
 
-					populate_output_values((char*)reg_file_vals_day, (char*)soil_file_vals_day, k, 1, 0);
+					populate_output_values((char*)reg_file_vals_day, (char*)soil_file_vals_day, k, eSW_Day, 0);
 
 					if(k == SW_File_Status.finalValue_dy){
 						if(reg_file_vals_day[0] != 0 && SW_File_Status.make_regular){
@@ -2179,7 +2185,7 @@ void SW_OUT_write_today(void)
 						SW_File_Status.col_status_wk++;
 					}
 
-					populate_output_values((char*)reg_file_vals_week, (char*)soil_file_vals_week, k, 2, 0);
+					populate_output_values((char*)reg_file_vals_week, (char*)soil_file_vals_week, k, eSW_Week, 0);
 
 					if(k == SW_File_Status.finalValue_wk){
 						// need to check if repeat 52 since repeats 52 in output file.
@@ -2208,7 +2214,7 @@ void SW_OUT_write_today(void)
 						SW_File_Status.col_status_mo++;
 					}
 
-					populate_output_values((char*)reg_file_vals_month, (char*)soil_file_vals_month, k, 3, 0);
+					populate_output_values((char*)reg_file_vals_month, (char*)soil_file_vals_month, k, eSW_Month, 0);
 
 					if(k == SW_File_Status.finalValue_mo){
 						// need to check if repeat 11 since repeats 11 in output file.
@@ -2238,7 +2244,7 @@ void SW_OUT_write_today(void)
 						SW_File_Status.col_status_yr++;
 					}
 
-					populate_output_values((char*)reg_file_vals_year, (char*)soil_file_vals_year, k, 4, 0);
+					populate_output_values((char*)reg_file_vals_year, (char*)soil_file_vals_year, k, eSW_Year, 0);
 
 					if(k == SW_File_Status.finalValue_yr){
 						if(soil_file_vals_year[0] != 0 && SW_File_Status.make_soil){
@@ -2275,10 +2281,10 @@ void SW_OUT_write_today(void)
 			}
 
 			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations){
-				populate_output_values((char*)reg_file_vals_day, (char*)soil_file_vals_day, k, 1, 0); // function to put all the values together for output
+				populate_output_values((char*)reg_file_vals_day, (char*)soil_file_vals_day, k, eSW_Day, 0); // function to put all the values together for output
 			}
 			if(storeAllIterations)
-				populate_output_values((char*)reg_file_vals_day_iters, (char*)soil_file_vals_day_iters, k, 1, 1); // function to put all the values together for output
+				populate_output_values((char*)reg_file_vals_day_iters, (char*)soil_file_vals_day_iters, k, eSW_Day, 1); // function to put all the values together for output
 
 
 			if(k == SW_File_Status.finalValue_dy){ // if last value to be used then write to files
@@ -2322,9 +2328,9 @@ void SW_OUT_write_today(void)
 			}
 
 			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
-				populate_output_values((char*)reg_file_vals_week, (char*)soil_file_vals_week, k, 2, 0);
+				populate_output_values((char*)reg_file_vals_week, (char*)soil_file_vals_week, k, eSW_Week, 0);
 			if(storeAllIterations)
-				populate_output_values((char*)reg_file_vals_week_iters, (char*)soil_file_vals_week_iters, k, 2, 1);
+				populate_output_values((char*)reg_file_vals_week_iters, (char*)soil_file_vals_week_iters, k, eSW_Week, 1);
 
 			if(k == SW_File_Status.finalValue_wk){
 				if(SW_File_Status.make_soil){
@@ -2367,9 +2373,9 @@ void SW_OUT_write_today(void)
 			}
 
 			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
-				populate_output_values((char*)reg_file_vals_month, (char*)soil_file_vals_month, k, 3, 0);
+				populate_output_values((char*)reg_file_vals_month, (char*)soil_file_vals_month, k, eSW_Month, 0);
 			if(storeAllIterations)
-				populate_output_values((char*)reg_file_vals_month_iters, (char*)soil_file_vals_month_iters, k, 3, 1);
+				populate_output_values((char*)reg_file_vals_month_iters, (char*)soil_file_vals_month_iters, k, eSW_Month, 1);
 
 			if(k == SW_File_Status.finalValue_mo){
 				if(SW_File_Status.make_soil){
@@ -2412,9 +2418,9 @@ void SW_OUT_write_today(void)
 			}
 
 			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations)
-				populate_output_values((char*)reg_file_vals_year, (char*)soil_file_vals_year, k, 4, 0);
+				populate_output_values((char*)reg_file_vals_year, (char*)soil_file_vals_year, k, eSW_Year, 0);
 			if(storeAllIterations){
-				populate_output_values((char*)reg_file_vals_year_iters, (char*)soil_file_vals_year_iters, k, 4, 1);
+				populate_output_values((char*)reg_file_vals_year_iters, (char*)soil_file_vals_year_iters, k, eSW_Year, 1);
 			}
 
 			if(k == SW_File_Status.finalValue_yr){
@@ -2457,6 +2463,7 @@ void _echo_outputs(void)
 	/* --------------------------------------------------- */
 
 	OutKey k;
+	char str[OUTSTRLEN];
 
 	strcpy(errstr, "\n===============================================\n"
 			"  Output Configuration:\n");
@@ -2468,10 +2475,10 @@ void _echo_outputs(void)
 		strcat(errstr, key2str[k]);
 		strcat(errstr, "\n\tSummary Type: ");
 		strcat(errstr, styp2str[SW_Output[k].sumtype]);
-		sprintf(sw_outstr, "\n\tStart period: %d", SW_Output[k].first_orig);
-		strcat(errstr, sw_outstr);
-		sprintf(sw_outstr, "\n\tEnd period  : %d", SW_Output[k].last_orig);
-		strcat(errstr, sw_outstr);
+		sprintf(str, "\n\tStart period: %d", SW_Output[k].first_orig);
+		strcat(errstr, str);
+		sprintf(str, "\n\tEnd period  : %d", SW_Output[k].last_orig);
+		strcat(errstr, str);
 		strcat(errstr, "\n\tOutput File: ");
 		strcat(errstr, SW_Output[k].outfile);
 		strcat(errstr, "\n");
@@ -2483,7 +2490,7 @@ void _echo_outputs(void)
 }
 
 /**
-  \fn void populate_output_values(char *reg_file_array, char *soil_file_array, int output_var, int year_out)
+  \fn void populate_output_values(char *reg_file_array, char *soil_file_array, int output_var, OutPeriod timep)
   \brief Populates arrays with output in correct format.
 
   populate_output_values is called for all of the variables for each timeperiod and these values are parsed
@@ -2492,11 +2499,13 @@ void _echo_outputs(void)
   \param reg_file_array. stores output for non-soil variables.
   \param soil_file_array. stores output for variables with layers.
 	\param output_var. Tells function which value its using.
-	\param year_out. Tells us which timeperiod we are using for display purposes.
+	\param timep. Tells us which timeperiod we are using for display purposes.
 
   \return void.
 */
-void populate_output_values(char *reg_file_array, char *soil_file_array, int output_var, IntU year_out, int outstr_file){
+void populate_output_values(char *reg_file_array, char *soil_file_array,
+	int output_var, OutPeriod timep, int outstr_file) {
+
 	char  _SepSplit[5]; // store seperator to parse data correctly
 	char read_data[OUTSTRLEN];
 	size_t destination_size = sizeof(read_data);
@@ -2523,14 +2532,14 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 		|| strcmp(key2str[output_var], "SWAMATRIC")==0 || strcmp(key2str[output_var], "SWPMATRIC")==0 || strcmp(key2str[output_var], "SWA")==0))
 	{
 		// if usetimestep == 0 then need to check period for output files
-		if((useTimeStep == 0 && timeSteps[output_var][0] == year_out-1) || useTimeStep == 1){
+		if((useTimeStep == 0 && timeSteps[output_var][0] == timep) || useTimeStep == 1){
 			char *pt;
 			int counter = 0;
 			pt = strtok (read_data, _SepSplit);
 
 			while (pt != NULL) {
-				if(year_out == 4){
-					if(counter >= 1){ // want to skip year string
+				if (timep == eSW_Year) {
+					if (counter >= 1) { // want to skip year string
 						strcat(soil_file_array, pt);
 						strcat(soil_file_array, _SepSplit);
 					}
@@ -2548,12 +2557,12 @@ void populate_output_values(char *reg_file_array, char *soil_file_array, int out
 	}
 	else
 	{
-		if((useTimeStep == 0 && timeSteps[output_var][0] == year_out-1) || useTimeStep == 1){
+		if((useTimeStep == 0 && timeSteps[output_var][0] == timep) || useTimeStep == 1){
 			char *reg_pt;
 			int reg_counter = 0;
 			reg_pt = strtok (read_data,_SepSplit);
 			while (reg_pt != NULL) {
-				if(year_out == 4){
+				if (timep == eSW_Year) {
 					if(reg_counter >= 1){
 						strcat(reg_file_array, reg_pt);
 						strcat(reg_file_array, _SepSplit);
