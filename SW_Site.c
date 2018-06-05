@@ -676,7 +676,7 @@ void init_site_info(void) {
 
 	/* normalize the evap and transp coefficients separately
 	 * to avoid obfuscation in the above loop */
-	if (!EQ(evsum, 1.0)) {
+	if (!EQ_w_tol(evsum, 1.0, 1e-4)) { // inputs are not more precise than at most 3-4 digits
 		LogError(logfp, LOGWARN,
 			"%s : Evaporation coefficients were normalized:\n" \
 			"\tSum of coefficients was %.4f, but must be 1.0. " \
@@ -694,7 +694,7 @@ void init_site_info(void) {
 
 	ForEachVegType(k)
 	{
-		if (!EQ(trsum_veg[k], 1.0)) {
+		if (!EQ_w_tol(trsum_veg[k], 1.0, 1e-4)) { // inputs are not more precise than at most 3-4 digits
 			LogError(logfp, LOGWARN,
 				"%s : Transpiration coefficients were normalized for %s:\n" \
 				"\tSum of coefficients was %.4f, but must be 1.0. " \
