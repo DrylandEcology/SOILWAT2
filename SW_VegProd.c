@@ -591,7 +591,8 @@ void SW_VPD_read(void) {
 		fraction_sum += v->veg[k].cov.fCover;
 	}
 
-	if (!EQ(fraction_sum, 1.0)) {
+
+	if (!EQ_w_tol(fraction_sum, 1.0, 1e-4)) { // inputs are not more precise than at most 3-4 digits
 		LogError(logfp, LOGWARN,
 			"%s : Fractions of vegetation components were normalized:\n" \
 			"\tSum of fractions was %.4f, but must be 1.0. " \
