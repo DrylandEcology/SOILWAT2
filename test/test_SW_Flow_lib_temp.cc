@@ -528,29 +528,23 @@ namespace {
 
      double theMaxDepth2 = 1;
      //swprintf("\n Depth of Layers %f, MaxDepth %f",  width[nlyrs - 1], theMaxDepth2);
-     printf("GOT HERE\n");
      EXPECT_DEATH(soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
      oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
      t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth2,
      nRgr, snow, &ptr_stError), "@ generic.c LogError");
-     printf("GOT HERE 2\n");
      // ptr_stError should be set to TRUE if soil_temperature_today fails (i.e. unrealistic temp values)
      double sTemp2[nlyrs], oldsTemp2[nlyrs];
      for (i = 0; i < nlyrs; i++) {
        sTemp2[i] = RandNorm(150, 1);
        oldsTemp2[i] = RandNorm(150, 1);
      }
-     printf("GOT HERE 3\n");
      soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
      oldsTemp2, sTemp2, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
      t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
-      printf("GOT HERE 4\n");
       // Check that ptr_stError is TRUE
       EXPECT_EQ(ptr_stError, 1);
-      printf("GOT HERE 5\n");
       //Reset to global state
       Reset_SOILWAT2_after_UnitTest();
-      printf("GOT HERE 6\n");
    }
 }
