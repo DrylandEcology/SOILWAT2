@@ -216,6 +216,7 @@ int ncol_OUT[SW_OUTNKEYS]; // number of output columns for each output key
 char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS]; // names of output columns for each output key; number is an expensive guess
 
 #ifdef STEPWAT
+extern ModelType Globals; // defined in `ST_Main.c`
 Bool isPartialSoilwatOutput = FALSE;
 Bool storeAllIterations = TRUE;
 char outstr_all_iters[OUTSTRLEN];
