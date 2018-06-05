@@ -275,6 +275,7 @@ void create_col_headers(IntU outFileTimestep, FILE *regular_file, FILE *soil_fil
 static OutPeriod str2period(char *s);
 static OutKey str2key(char *s);
 static OutSum str2stype(char *s);
+static Bool has_soillayers(char *var);
 
 static void collect_sums(ObjType otyp, OutPeriod op);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
@@ -289,18 +290,20 @@ static void average_for(ObjType otyp, OutPeriod pd);
 /*             Private Function Definitions            */
 /* --------------------------------------------------- */
 
+/** Convert string representation of time period to `OutPeriod` value.
+*/
 static OutPeriod str2period(char *s)
 {
-	/* --------------------------------------------------- */
 	IntUS pd;
 	for (pd = 0; Str_CompareI(s, (char *)pd2str[pd]) && pd < SW_OUTNPERIODS; pd++);
 
 	return (OutPeriod) pd;
 }
 
+/** Convert string representation of output type to `OutKey` value.
+*/
 static OutKey str2key(char *s)
 {
-	/* --------------------------------------------------- */
 	IntUS key;
 
 	for (key = 0; key < SW_OUTNKEYS && Str_CompareI(s, (char *)key2str[key]); key++) ;
@@ -311,9 +314,10 @@ static OutKey str2key(char *s)
 	return (OutKey) key;
 }
 
+/** Convert string representation of output aggregation function to `OutSum` value.
+*/
 static OutSum str2stype(char *s)
 {
-	/* --------------------------------------------------- */
 	IntUS styp;
 
 	for (styp = eSW_Off; styp < SW_NSUMTYPES && Str_CompareI(s, (char *)styp2str[styp]); styp++) ;
@@ -323,6 +327,36 @@ static OutSum str2stype(char *s)
 	}
 	return (OutSum) styp;
 }
+
+
+/** Checks whether a output variable (key) comes with soil layer or not
+    \param var. The name of an output variable (key), i.e., one of `key2str`.
+
+    \return `TRUE` if `var` comes with soil layers; `FALSE` otherwise.
+*/
+static Bool has_soillayers(char *var) {
+	Bool has;
+
+	has = (
+			strcmp(var, SW_VWCBULK) == 0 ||
+			strcmp(var, SW_VWCMATRIC) == 0 ||
+			strcmp(var, SW_SWCBULK) == 0 ||
+			strcmp(var, SW_SWABULK) == 0 ||
+			strcmp(var, SW_SWAMATRIC) == 0 ||
+			strcmp(var, SW_SWA) == 0 ||
+			strcmp(var, SW_SWPMATRIC) == 0 ||
+			strcmp(var, SW_TRANSP) == 0 ||
+			strcmp(var, SW_EVAPSOIL) == 0 ||
+			strcmp(var, SW_LYRDRAIN) == 0 ||
+			strcmp(var, SW_HYDRED) == 0 ||
+			strcmp(var, SW_WETDAY) == 0 ||
+			strcmp(var, SW_SOILTEMP) == 0
+		) ? swTRUE : swFALSE;
+
+	return(has);
+}
+
+
 
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 {
@@ -361,9 +395,6 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
 
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 {
-	/* --------------------------------------------------- */
-	/* 	20091015 (drs) ppt is divided into rain and snow and all three values are output into precip */
-
 	switch (k)
 	{
 
@@ -397,7 +428,6 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 
 static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 {
-	/* --------------------------------------------------- */
 	LyrIndex i;
 	int j; // for use with ForEachVegType
 
@@ -538,17 +568,15 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 	}
 }
 
-static void average_for(ObjType otyp, OutPeriod pd)
-{
-	/* --------------------------------------------------- */
-	/* separates the task of obtaining a periodic average.
-	 * no need to average days, so this should never be
-	 * called with eSW_Day.
-	 * Enter this routine just after the summary period
-	 * is completed, so the current week and month will be
-	 * one greater than the period being summarized.
-	 */
-	/* 	20091015 (drs) ppt is divided into rain and snow and all three values are output into precip */
+
+/** separates the task of obtaining a periodic average.
+   no need to average days, so this should never be
+   called with eSW_Day.
+   Enter this routine just after the summary period
+   is completed, so the current week and month will be
+   one greater than the period being summarized.
+*/
+static void average_for(ObjType otyp, OutPeriod pd) {
 	SW_SOILWAT_OUTPUTS *savg = NULL, *ssumof = NULL;
 	SW_WEATHER_OUTPUTS *wavg = NULL, *wsumof = NULL;
 	SW_VEGPROD_OUTPUTS *vpavg = NULL, *vpsumof = NULL;
@@ -818,10 +846,9 @@ static void average_for(ObjType otyp, OutPeriod pd)
 	} /* end ForEachKey */
 }
 
+
 static void collect_sums(ObjType otyp, OutPeriod op)
 {
-	/* --------------------------------------------------- */
-
 	SW_SOILWAT *s = &SW_Soilwat;
 	SW_SOILWAT_OUTPUTS *ssum = NULL;
 	SW_WEATHER *w = &SW_Weather;
@@ -1445,6 +1472,7 @@ void SW_OUT_new_year(void)
 
 }
 
+
 /** Read output setup from file `outsetup.in`.
 
     Output can be generated for four different time steps: daily (DY), weekly (WK),
@@ -1504,25 +1532,24 @@ void SW_OUT_read(void)
 
 		// checking which files need to be created. If only soil values desired then dont want
 		// to create regular files with no values.
-		if((strcmp(keyname, "VWCBULK")==0 || strcmp(keyname, "VWCMATRIC")==0 || strcmp(keyname, "SWCBULK")==0
-			|| strcmp(keyname, "SWABULK")==0
-			|| strcmp(keyname, "EVAPSOIL")==0 || strcmp(keyname, "TRANSP")==0 || strcmp(keyname, "WETDAY")==0
-			|| strcmp(keyname, "LYRDRAIN")==0 || strcmp(keyname, "SOILTEMP")==0 || strcmp(keyname, "HYDRED")==0
-			|| strcmp(keyname, "SWAMATRIC")==0 || strcmp(keyname, "SWPMATRIC")==0 || strcmp(keyname, "SWA")==0))
+		if (has_soillayers(keyname))
 		{
 			SW_File_Status.make_soil = 1;
 
 			// set use_SWA to TRUE if defined.
 			// Used in SW_Control to run the functions to get the recalculated values only if SWA is used
 			// This function is run prior to the control functions so thats why it is here.
-			if(strcmp(keyname, "SWA")==0)
+			if (strcmp(keyname, SW_SWA) == 0) {
 				SW_VegProd.use_SWA = swTRUE;
-		}
-		else if (strcmp(keyname, "TIMESTEP")==0 || strcmp(keyname, "OUTSEP")==0){
+			}
 
-		}
-		else
+		} else if (strcmp(keyname, "TIMESTEP") == 0 || strcmp(keyname, "OUTSEP") == 0)
+		{
+
+		} else
+		{
 			SW_File_Status.make_regular = 1;
+		}
 
 		// condition to read in the TIMESTEP line in outsetup.in
 		if (Str_CompareI(keyname, (char *)"TIMESTEP") == 0)
@@ -1750,12 +1777,10 @@ void SW_OUT_read(void)
 }
 
 
-void SW_OUT_close_files(void)
-{
-	/* --------------------------------------------------- */
-	/* close all of the user-specified output files.
-	 * call this routine at the end of the program run.
-	 */
+/** close all of the user-specified output files.
+    call this routine at the end of the program run.
+*/
+void SW_OUT_close_files(void) {
 
 // check all timeperiods and which files created. only close created files.
 // no code for RSOILWAT (because no files)
@@ -1836,8 +1861,6 @@ void SW_OUT_close_files(void)
 
 
 void _collect_values(void) {
-	/*=======================================================*/
-
 	SW_OUT_sum_today(eSWC);
 	SW_OUT_sum_today(eWTH);
 	SW_OUT_sum_today(eVES);
@@ -1847,13 +1870,10 @@ void _collect_values(void) {
 }
 
 
-void SW_OUT_flush(void)
-{
-	/* --------------------------------------------------- */
-	/* called at year end to process the remainder of the output
-	 * period.  This sets two module-level flags: bFlush_output and
-	 * tOffset to be used in the appropriate subs.
-	 */
+/** called at year end to process the remainder of the output
+    period.  This sets two module-level flags: bFlush_output and
+    tOffset to be used in the appropriate subs.*/
+void SW_OUT_flush(void) {
 	bFlush_output = swTRUE;
 	tOffset = 0;
 
@@ -1863,17 +1883,16 @@ void SW_OUT_flush(void)
 	tOffset = 1;
 }
 
+/** adds today's output values to week, month and year
+    accumulators and puts today's values in yesterday's
+    registers. This is different from the Weather.c approach
+    which updates Yesterday's registers during the _new_day()
+    function. It's more logical to update yesterday just
+    prior to today's calculations, but there's no logical
+    need to perform _new_day() on the soilwater.
+*/
 void SW_OUT_sum_today(ObjType otyp)
 {
-	/* =================================================== */
-	/* adds today's output values to week, month and year
-	 * accumulators and puts today's values in yesterday's
-	 * registers. This is different from the Weather.c approach
-	 * which updates Yesterday's registers during the _new_day()
-	 * function. It's more logical to update yesterday just
-	 * prior to today's calculations, but there's no logical
-	 * need to perform _new_day() on the soilwater.
-	 */
 	SW_SOILWAT *s = &SW_Soilwat;
 	SW_WEATHER *w = &SW_Weather;
 	SW_VEGPROD *vp = &SW_VegProd;
@@ -2084,7 +2103,7 @@ void SW_OUT_write_today(void)
 	}
 }
 
- #ifdef SWDEBUG
+  #ifdef SWDEBUG
   if (debug) swprintf("'SW_OUT_write_today': %dyr-%dmon-%dwk-%ddoy: ",
     SW_Model.year, SW_Model.month, SW_Model.week, SW_Model.doy);
   #endif
@@ -2460,8 +2479,6 @@ void SW_OUT_write_today(void)
 
 void _echo_outputs(void)
 {
-	/* --------------------------------------------------- */
-
 	OutKey k;
 	char str[OUTSTRLEN];
 
@@ -2490,7 +2507,7 @@ void _echo_outputs(void)
 }
 
 /**
-  \fn void populate_output_values(char *reg_file_array, char *soil_file_array, int output_var, OutPeriod timep)
+  \fn void populate_output_values(char *reg_file_array, char *soil_file_array, int output_var, OutPeriod timep, int outstr_file)
   \brief Populates arrays with output in correct format.
 
   populate_output_values is called for all of the variables for each timeperiod and these values are parsed
@@ -2500,6 +2517,7 @@ void _echo_outputs(void)
   \param soil_file_array. stores output for variables with layers.
 	\param output_var. Tells function which value its using.
 	\param timep. Tells us which timeperiod we are using for display purposes.
+  \param outstr_file. If 0, then process `sw_outstr`; if 1, then process `outstr_all_iters`.
 
   \return void.
 */
@@ -2525,11 +2543,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array,
 	#endif
 
 	// check if a soil variable (has layers)
-	if((strcmp(key2str[output_var], "VWCBULK")==0 || strcmp(key2str[output_var], "VWCMATRIC")==0 || strcmp(key2str[output_var], "SWCBULK")==0
-		|| strcmp(key2str[output_var], "SWABULK")==0
-		|| strcmp(key2str[output_var], "EVAPSOIL")==0 || strcmp(key2str[output_var], "TRANSP")==0 || strcmp(key2str[output_var], "WETDAY")==0
-		|| strcmp(key2str[output_var], "LYRDRAIN")==0 || strcmp(key2str[output_var], "SOILTEMP")==0 || strcmp(key2str[output_var], "HYDRED")==0
-		|| strcmp(key2str[output_var], "SWAMATRIC")==0 || strcmp(key2str[output_var], "SWPMATRIC")==0 || strcmp(key2str[output_var], "SWA")==0))
+		if (has_soillayers((char *)key2str[output_var]))
 	{
 		// if usetimestep == 0 then need to check period for output files
 		if((useTimeStep == 0 && timeSteps[output_var][0] == timep) || useTimeStep == 1){
@@ -2649,11 +2663,7 @@ void create_col_headers(IntU outFileTimestep, FILE *regular_file, FILE *soil_fil
 	{
 			if((SW_Output[colHeadersLoop].use && useTimeStep == 0 && timeSteps[colHeadersLoop][0] == outFileTimestep-1) || (SW_Output[colHeadersLoop].use && useTimeStep == 1))
 		{
-			if(strcmp(key2str[colHeadersLoop], "VWCBULK")==0 || strcmp(key2str[colHeadersLoop], "VWCMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWCBULK")==0
-				|| strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0 || strcmp(key2str[colHeadersLoop], "SWABULK")==0
-				|| strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0 || strcmp(key2str[colHeadersLoop], "SOILTEMP")==0 || strcmp(key2str[colHeadersLoop], "HYDRED")==0
-				|| strcmp(key2str[colHeadersLoop], "SWAMATRIC")==0 || strcmp(key2str[colHeadersLoop], "SWA")==0 || strcmp(key2str[colHeadersLoop], "SWPMATRIC")==0
-				|| strcmp(key2str[colHeadersLoop], "WETDAY")==0)
+			if (has_soillayers((char *)key2str[colHeadersLoop]))
 			{
 				int q;
 				char convertq[10] = {0};
@@ -2927,10 +2937,17 @@ void create_col_headers(IntU outFileTimestep, FILE *regular_file, FILE *soil_fil
 #endif
 /**
   \fn void stat_Output_Daily_CSV_Summary(int iteration)
-  Creates daily files for SOILWAT standalone and for STEPWAT depending on defined flags
-	for STEPWAT. If -i flag is used it creates file for each iteration naming file based on iteration.
-	If -o flag is used then only 1 set of files is created, not individual iterations.
-  \param iteration. Current iteration for file name if -i flag used in STEPWAT
+
+  Creates daily output files for `SOILWAT2-standalone` and,
+  depending on `-o` and `-i` flags, for `STEPWAT2`.
+
+  If `-i` flag is used, then this function creates a file for each `iteration`
+  with the file name containing the value of `iteration`.
+
+  If `-o` flag is used, then this function creates only one set of output files.
+
+  \param iteration. Current iteration value that is used for the file name
+    if -i flag used in STEPWAT2. Set to a negative value otherwise.
 */
 /***********************************************************/
 void stat_Output_Daily_CSV_Summary(int iteration)
@@ -3339,13 +3356,7 @@ void SW_OUT_SetMemoryRefs( void)
  - Add new code to create_col_headers to make proper columns for new value
  - if variable is a soil variable (has layers) add name to SW_OUT_read, create_col_headers
  		and populate_output_values in the if block checking for SOIL variables
-		looks like below code
-		if((strcmp(key2str[output_var], "VWCBULK")==0 || strcmp(key2str[output_var], "VWCMATRIC")==0 || strcmp(key2str[output_var], "SWCBULK")==0
-			|| strcmp(key2str[output_var], "SWABULK")==0
-			|| strcmp(key2str[output_var], "EVAPSOIL")==0 || strcmp(key2str[output_var], "TRANSP")==0 || strcmp(key2str[output_var], "WETDAY")==0
-			|| strcmp(key2str[output_var], "LYRDRAIN")==0 || strcmp(key2str[output_var], "SOILTEMP")==0 || strcmp(key2str[output_var], "HYDRED")==0
-			|| strcmp(key2str[output_var], "SWAMATRIC")==0 || strcmp(key2str[output_var], "SWPMATRIC")==0 || strcmp(key2str[output_var], "SWA")==0))
-		{
+		looks like below code `if (has_soillayers(var)) {`
 	----------------------------
 	To make new values work with STEPWAT do the following
 	- add average storage variable to sxw.h in the soilwat_average structure
