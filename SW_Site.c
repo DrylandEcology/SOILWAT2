@@ -677,30 +677,40 @@ void init_site_info(void) {
 	/* normalize the evap and transp coefficients separately
 	 * to avoid obfuscation in the above loop */
 	if (!EQ(evsum, 1.0)) {
-		LogError(logfp, LOGWARN, "%s : Evap coefficients were normalized, "
-				"ev_co sum (%5.4f) != 1.0.\nNew coefficients are:", MyFileName, evsum);
+		LogError(logfp, LOGWARN,
+			"%s : Evaporation coefficients were normalized:\n" \
+			"\tSum of coefficients was %.4f, but must be 1.0. " \
+			"New coefficients are:", MyFileName, evsum);
+
 		ForEachEvapLayer(s)
 		{
 			SW_Site.lyr[s]->evap_coeff /= evsum;
-			LogError(logfp, LOGNOTE, "  Layer %d : %5.4f", s + 1, SW_Site.lyr[s]->evap_coeff);
+			LogError(logfp, LOGNOTE, "  Layer %2d : %.4f",
+				s + 1, SW_Site.lyr[s]->evap_coeff);
 		}
+
+		swfprintf(logfp, "\n");
 	}
 
 	ForEachVegType(k)
 	{
 		if (!EQ(trsum_veg[k], 1.0)) {
-			LogError(logfp, LOGWARN, "%s : Transp coefficients for %s were normalized, "
-				"tr_co_forb sum (%5.4f) != 1.0.\nNew Coefficients are:",
-				MyFileName, key2veg[k], trsum_veg[k]);
+			LogError(logfp, LOGWARN,
+				"%s : Transpiration coefficients were normalized for %s:\n" \
+				"\tSum of coefficients was %.4f, but must be 1.0. " \
+				"New coefficients are:", MyFileName, key2veg[k], trsum_veg[k]);
 
 			ForEachSoilLayer(s)
 			{
 				if (GT(SW_Site.lyr[s]->transp_coeff[k], 0.))
 				{
 					SW_Site.lyr[s]->transp_coeff[k] /= trsum_veg[k];
-					LogError(logfp, LOGNOTE, "  Layer %d : %5.4f", s + 1, SW_Site.lyr[s]->transp_coeff[k]);
+					LogError(logfp, LOGNOTE, "  Layer %2d : %.4f",
+						s + 1, SW_Site.lyr[s]->transp_coeff[k]);
 				}
 			}
+
+			swfprintf(logfp, "\n");
 		}
 	}
 
