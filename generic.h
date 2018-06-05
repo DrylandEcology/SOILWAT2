@@ -202,8 +202,10 @@ extern int logged; /* REQUIRED */
 #define GT(x, y) ((x) > ((y) + GET_F_DELTA(x, y)))
 /**< ZRO tests whether x is equal to zero while accounting for floating-point arithmetic */
 #define ZRO(x) ( (sizeof(x) == sizeof(float)) ? (fabs(x) <= F_DELTA) : (fabs(x) <= D_DELTA) ) //for iszero(x) we just use an absolute error check, because a relative error check doesn't make sense for any number close enough to zero to be considered equal... it would be a waste of time.
+/**< EQ tests whether x and y are equal based on a specified tolerance */
+#define EQ_w_tol(x, y, tol) (fabs((x) - (y)) <= tol)
 /**< EQ tests whether x and y are equal while accounting for floating-point arithmetic */
-#define EQ(x, y) (fabs((x) - (y)) <= GET_F_DELTA(x, y))
+#define EQ(x, y) (EQ_w_tol(x, y, GET_F_DELTA(x, y)))
 /**< LE tests whether x is less than or equal to y while accounting for floating-point arithmetic */
 #define LE(x,y) ((x) < (y) || EQ(x,y)) //changed from "(LT(x,y)||EQ(x,y))" because it evaluates to the same result (since EQ is already doing the checking for precision errors so use < instead of LT to avoid checking for precision errors twice) and this version is faster by avoiding the expensive LT() call.
 /**< LE tests whether x is greater than or equal to y while accounting for floating-point arithmetic */
