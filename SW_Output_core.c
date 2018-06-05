@@ -956,6 +956,40 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
 
+#ifndef RSOILWAT
+void get_outstrleader(TimeInt pd)
+{
+	/* --------------------------------------------------- */
+	/* this is called from each of the remaining get_ funcs
+	 * to set up the first (date) columns of the output
+	 * string.  It's the same for all and easier to put in
+	 * one place.
+	 * Periodic output for Month and/or Week are actually
+	 * printing for the PREVIOUS month or week.
+	 * Also, see note on test value in _write_today() for
+	 * explanation of the +1.
+	 */
+	switch (pd)
+	{
+	case eSW_Day:
+		sprintf(sw_outstr, "%d%c%d", SW_Model.simyear, _Sep, SW_Model.doy);
+		break;
+	case eSW_Week:
+		sprintf(sw_outstr, "%d%c%d", SW_Model.simyear, _Sep,
+				(SW_Model.week + 1) - tOffset);
+		break;
+	case eSW_Month:
+		sprintf(sw_outstr, "%d%c%d", SW_Model.simyear, _Sep,
+				(SW_Model.month + 1) - tOffset);
+		break;
+	case eSW_Year:
+		sprintf(sw_outstr, "%d", SW_Model.simyear);
+		break;
+	}
+}
+#endif
+
+
 void get_none(OutPeriod pd) // not static because other `get_XXX` are not
 {
 	/* --------------------------------------------------- */
