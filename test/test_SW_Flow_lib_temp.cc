@@ -590,17 +590,17 @@ namespace {
       wp[i] = fmaxf(fc[i] - 0.6, 0.1); // wp < fc
       }
 
-      // Should fail when soil_temperature_init fails - i.e. when theMaxDepth < depth of nlyrs
+     // Should fail when soil_temperature_init fails - i.e. when theMaxDepth < depth of nlyrs
 
-      double theMaxDepth = 70;
+     double theMaxDepth = 70;
 
-      EXPECT_DEATH_IF_SUPPORTED(soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-        oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
-        t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-        nRgr, snow, &ptr_stError), "@ generic.c LogError");
+     EXPECT_DEATH_IF_SUPPORTED(soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
+      oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+      t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
+      nRgr, snow, &ptr_stError), "@ generic.c LogError");
 
-      //Reset to global state
-      Reset_SOILWAT2_after_UnitTest();
+     //Reset to global state
+     Reset_SOILWAT2_after_UnitTest();
 
     }
   }
