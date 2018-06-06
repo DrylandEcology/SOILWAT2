@@ -201,11 +201,6 @@ void SW_OUT_flush(void);
 void _collect_values(void);
 void _echo_outputs(void);
 
-// file creation functions
-void stat_Output_Daily_CSV_Summary(int iteration);
-void stat_Output_Weekly_CSV_Summary(int iteration);
-void stat_Output_Monthly_CSV_Summary(int iteration);
-void stat_Output_Yearly_CSV_Summary(int iteration);
 
 // Functions that format the output in `sw_outstr` for printing
 /* --------------------------------------------------- */

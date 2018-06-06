@@ -267,11 +267,16 @@ static char const *styp2str[] =
 /*             Private Function Declarations            */
 /* --------------------------------------------------- */
 
-void populate_output_values(char *reg_file_array, char *soil_file_array,
-  int output_var, int outstr_file);
+#ifdef STEPWAT
+static void _create_filename_iter(char *str, int iteration, char *filename);
+#endif
 
 #ifndef RSOILWAT
-static void get_outstrleader(TimeInt pd, char *str);
+static void get_outstrleader(OutPeriod pd, char *str);
+static void populate_output_values(char *reg_file_array, char *soil_file_array,
+  int output_var, int outstr_file);
+static void _create_csv_file(int iteration, OutPeriod pd);
+
 // the function `create_col_headers` should be really used by all applications for consistent naming of output
 void create_col_headers(IntU outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers);
 #endif
@@ -295,7 +300,7 @@ static void average_for(ObjType otyp, OutPeriod pd);
 /* --------------------------------------------------- */
 
 #ifndef RSOILWAT
-static void get_outstrleader(TimeInt pd, char *str) {
+static void get_outstrleader(OutPeriod pd, char *str) {
 	/* Periodic output for Month and/or Week are actually
 	 * printing for the PREVIOUS month or week.
 	 * Also, see note on test value in _write_today() for
@@ -1695,22 +1700,11 @@ void SW_OUT_read(void)
 	// functions to make sure not trying to write to file not created
 
 	#if defined(SOILWAT)
-		/*
 		ForEachOutPeriod(p) {
 			if (use_OutPeriod[p]) {
-				stat_Output_CSV_Summary(-1, p);
+				_create_csv_file(-1, p);
 			}
 		}
-		*/
-
-		if (use_OutPeriod[eSW_Day])
-			stat_Output_Daily_CSV_Summary(-1);
-		if (use_OutPeriod[eSW_Week])
-			stat_Output_Weekly_CSV_Summary(-1);
-		if (use_OutPeriod[eSW_Month])
-			stat_Output_Monthly_CSV_Summary(-1);
-		if (use_OutPeriod[eSW_Year])
-			stat_Output_Yearly_CSV_Summary(-1);
 
 	#elif defined(STEPWAT)
 		// create output files if flag turned on and only for last iteration
@@ -1718,26 +1712,18 @@ void SW_OUT_read(void)
 		{
 			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations-1)
 			{
-				// create file for defined timesteps
-				if (use_OutPeriod[eSW_Day])
-					stat_Output_Daily_CSV_Summary(-1);
-				if (use_OutPeriod[eSW_Week])
-					stat_Output_Weekly_CSV_Summary(-1);
-				if (use_OutPeriod[eSW_Month])
-					stat_Output_Monthly_CSV_Summary(-1);
-				if (use_OutPeriod[eSW_Year])
-					stat_Output_Yearly_CSV_Summary(-1);
+				ForEachOutPeriod(p) {
+					if (use_OutPeriod[p]) {
+						_create_csv_file(-1, p);
+					}
+				}
 			}
-			if(storeAllIterations){
-				// create file for defined timesteps
-				if (use_OutPeriod[eSW_Day])
-					stat_Output_Daily_CSV_Summary(Globals.currIter+1);
-				if (use_OutPeriod[eSW_Week])
-					stat_Output_Weekly_CSV_Summary(Globals.currIter+1);
-				if (use_OutPeriod[eSW_Month])
-					stat_Output_Monthly_CSV_Summary(Globals.currIter+1);
-				if (use_OutPeriod[eSW_Year])
-					stat_Output_Yearly_CSV_Summary(Globals.currIter+1);
+			if (storeAllIterations) {
+				ForEachOutPeriod(p) {
+					if (use_OutPeriod[p]) {
+						_create_csv_file(Globals.currIter + 1, p);
+					}
+				}
 			}
 		}
 	#endif
@@ -2399,6 +2385,7 @@ void _echo_outputs(void)
 
 }
 
+#ifndef RSOILWAT
 /**
   \fn void populate_output_values(char *reg_file_array, char *soil_file_array, int output_var, int outstr_file)
   \brief Concatenates formatted output (for one time step)
@@ -2414,7 +2401,7 @@ void _echo_outputs(void)
 
   \return void.
 */
-void populate_output_values(char *reg_file_array, char *soil_file_array,
+static void populate_output_values(char *reg_file_array, char *soil_file_array,
 	int output_var, int outstr_file) {
 
 	if (has_soillayers((char *)key2str[output_var]))
@@ -2439,8 +2426,10 @@ void populate_output_values(char *reg_file_array, char *soil_file_array,
 		}
 	}
 }
+#endif
 
 
+#ifndef RSOILWAT // function not for use with RSOILWAT since RSOILWAT has its own column header function. Planning on combining the two functions at a later date.
 /**
   \fn void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file)
   \brief Creates column headers for output files
@@ -2454,7 +2443,6 @@ void populate_output_values(char *reg_file_array, char *soil_file_array,
 
   \return void.
 */
-#ifndef RSOILWAT // function not for use with RSOILWAT since RSOILWAT has its own column header function. Planning on combining the two functions at a later date.
 void create_col_headers(IntU outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers){
 	int i, j, tLayers = SW_Site.n_layers;
 	SW_VEGESTAB *v = &SW_VegEstab; // for use to check estab
@@ -2780,11 +2768,36 @@ void create_col_headers(IntU outFileTimestep, FILE *regular_file, FILE *soil_fil
 		}
 }
 #endif
-/**
-  \fn void stat_Output_Daily_CSV_Summary(int iteration)
 
-  Creates daily output files for `SOILWAT2-standalone` and,
-  depending on `-o` and `-i` flags, for `STEPWAT2`.
+#ifdef STEPWAT
+/** Splits a filename such as `name.ext` into its two parts `name` and `ext`;
+		appends `iteration` to `name` with `_` as separator; and returns the
+		full name concatenated
+
+		\return `name_iteration.ext`
+*/
+static void _create_filename_iter(char *str, int iteration, char *filename) {
+	char *basename;
+	char *ext;
+	char *fileDup = (char *)malloc(strlen(str) + 1);
+
+	// Determine basename and file extension
+	strcpy(fileDup, str); // copy file name to new variable
+	basename = strtok(fileDup, ".");
+	ext = strtok(NULL, ".");
+	free(fileDup);
+
+	// Put new file together
+	sprintf(filename, "%s_%d.%s", basename, iteration, ext);
+}
+#endif
+
+#ifndef RSOILWAT
+/**
+  \fn void _create_csv_file(int iteration, OutPeriod pd)
+
+  Creates `csv` output files for specified time step for `SOILWAT2-standalone`
+  and, depending on `-o` and `-i` flags, for `STEPWAT2`.
 
   If `-i` flag is used, then this function creates a file for each `iteration`
   with the file name containing the value of `iteration`.
@@ -2793,288 +2806,54 @@ void create_col_headers(IntU outFileTimestep, FILE *regular_file, FILE *soil_fil
 
   \param iteration. Current iteration value that is used for the file name
     if -i flag used in STEPWAT2. Set to a negative value otherwise.
+  \param pd. The output time step.
 */
 /***********************************************************/
-void stat_Output_Daily_CSV_Summary(int iteration)
+static void _create_csv_file(int iteration, OutPeriod pd)
 {
-	if(iteration == -1){ // just storing average values over all iterations or soilwat standalone
-    if(SW_File_Status.make_regular)
-      SW_File_Status.fp_avg[eSW_Day] = OpenFile(SW_F_name(eOutputDaily), "w");
-    if(SW_File_Status.make_soil)
-      SW_File_Status.fp_soil_avg[eSW_Day] = OpenFile(SW_F_name(eOutputDaily_soil), "w");
-	}
-	else{ // storing values for every iteration
-		if(iteration > 1){
-      if(SW_File_Status.make_regular)
-			   CloseFile(&SW_File_Status.fp_iter[eSW_Day]);
-      if(SW_File_Status.make_soil)
-			   CloseFile(&SW_File_Status.fp_soil_iter[eSW_Day]);
+	if (iteration <= 0)
+	{ // STEPWAT2: average values over all iterations or SOILWAT2-standalone
+		if (SW_File_Status.make_regular) {
+			// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
+			// a specific order of `SW_FileIndex` --> fix and create something that
+			// allows subsetting such as `eOutputFile[pd]` or append time period to
+			// a basename, etc.
+			SW_File_Status.fp_avg[pd] = OpenFile(SW_F_name(eOutputDaily + pd), "w");
 		}
 
-    char *extension; // extension to add to end of file
-    char iterationToString[10];
-
-    if(SW_File_Status.make_regular){
-        char *newFile_split; // new file to create
-        char newFile[80];
-        char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputDaily))+1);
-
-        strcpy(fileDup, SW_F_name(eOutputDaily)); // copy file name to new variable
-
-        sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
-    		extension = strtok(fileDup, ".");
-    		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
-
-    		newFile_split = strtok(SW_F_name(eOutputDaily), "."); // get filename up to but not including ".csv"
-    		strcpy(newFile, newFile_split);
-    		strcat(newFile, "_");
-    		strcat(newFile, iterationToString);
-    		strcat(newFile, ".");
-    		strcat(newFile, extension);
-    		SW_File_Status.fp_iter[eSW_Day] = OpenFile(newFile, "w"); // open new file
-
-        free(fileDup);
-    }
-    if(SW_File_Status.make_soil){
-  		char *newFile_soil_split;
-  		char newFile_soil[80];
-  		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputDaily_soil))+1);
-
-  		strcpy(fileDup_soil, SW_F_name(eOutputDaily_soil)); // copy file name to new variable
-
-  		sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
-  		extension = strtok(fileDup_soil, ".");
-  		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
-
-  		newFile_soil_split = strtok(SW_F_name(eOutputDaily_soil), "."); // get filename up to but not including ".csv"
-  		strcpy(newFile_soil, newFile_soil_split);
-  		strcat(newFile_soil, "_");
-  		strcat(newFile_soil, iterationToString);
-  		strcat(newFile_soil, ".");
-  		strcat(newFile_soil, extension);
-  		SW_File_Status.fp_soil_iter[eSW_Day] = OpenFile(newFile_soil, "w"); // open new file
-
-  		free(fileDup_soil);
-    }
+		if (SW_File_Status.make_soil) {
+			SW_File_Status.fp_soil_avg[pd] = OpenFile(SW_F_name(eOutputDaily_soil + pd), "w");
+		}
 	}
-}
+	#ifdef STEPWAT
+	else
+	{ // STEPWAT2: storing values for every iteration
+		char filename[FILENAME_MAX];
 
-/**
-  \fn void stat_Output_Weekly_CSV_Summary(int iteration)
-  Creates weekly files for SOILWAT standalone and for STEPWAT depending on defined flags
-	for STEPWAT. If -i flag is used it creates file for each iteration naming file based on iteration.
-	If -o flag is used then only 1 set of files is created, not individual iterations.
-  \param iteration. Current iteration for file name if -i flag used in STEPWAT
-*/
-/***********************************************************/
-void stat_Output_Weekly_CSV_Summary(int iteration)
-{
-	if(iteration == -1){ // just storing average values over all iterations
-    if(SW_File_Status.make_regular)
-		  SW_File_Status.fp_avg[eSW_Week] = OpenFile(SW_F_name(eOutputWeekly), "w");
-    if(SW_File_Status.make_soil)
-		  SW_File_Status.fp_soil_avg[eSW_Week] = OpenFile(SW_F_name(eOutputWeekly_soil), "w");
-	}
-	else{ // storing values for every iteration
-		if(iteration > 1){
-      if(SW_File_Status.make_regular)
-			   CloseFile(&SW_File_Status.fp_iter[eSW_Week]);
-      if(SW_File_Status.make_soil)
-        CloseFile(&SW_File_Status.fp_soil_iter[eSW_Week]);
+		if (iteration > 1) {
+			// close files
+			if (SW_File_Status.make_regular) {
+				CloseFile(&SW_File_Status.fp_iter[pd]);
+			}
+			if (SW_File_Status.make_soil) {
+				CloseFile(&SW_File_Status.fp_soil_iter[pd]);
+			}
 		}
 
-    char *extension; // extension to add to end of file
-    char iterationToString[10];
-
-    if(SW_File_Status.make_regular){
-        char *newFile_split; // new file to create
-        char newFile[80];
-        char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputWeekly))+1);
-        strcpy(fileDup, SW_F_name(eOutputWeekly)); // copy file name to new variable
-
-        sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
-    		extension = strtok(fileDup, ".");
-    		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
-
-        newFile_split = strtok(SW_F_name(eOutputWeekly), "."); // get filename up to but not including ".csv"
-    		strcpy(newFile, newFile_split);
-    		strcat(newFile, "_");
-    		strcat(newFile, iterationToString);
-    		strcat(newFile, ".");
-    		strcat(newFile, extension);
-    		SW_File_Status.fp_iter[eSW_Week] = OpenFile(newFile, "w"); // open new file
-
-        free(fileDup);
-    }
-
-    if(SW_File_Status.make_soil){
-  		char *newFile_soil_split;
-  		char newFile_soil[80];
-
-  		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputWeekly_soil))+1);
-
-  		strcpy(fileDup_soil, SW_F_name(eOutputWeekly_soil)); // copy file name to new variable
-
-  		sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
-  		extension = strtok(fileDup_soil, ".");
-  		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
-
-  		newFile_soil_split = strtok(SW_F_name(eOutputWeekly_soil), "."); // get filename up to but not including ".csv"
-  		strcpy(newFile_soil, newFile_soil_split);
-  		strcat(newFile_soil, "_");
-  		strcat(newFile_soil, iterationToString);
-  		strcat(newFile_soil, ".");
-  		strcat(newFile_soil, extension);
-  		SW_File_Status.fp_soil_iter[eSW_Week] = OpenFile(newFile_soil, "w"); // open new file
-
-  		free(fileDup_soil);
-    }
-	}
-}
-
-/**
-  \fn void stat_Output_Monthly_CSV_Summary(int iteration)
-  Creates monthly files for SOILWAT standalone and for STEPWAT depending on defined flags
-	for STEPWAT. If -i flag is used it creates file for each iteration naming file based on iteration.
-	If -o flag is used then only 1 set of files is created, not individual iterations.
-  \param iteration. Current iteration for file name if -i flag used in STEPWAT
-*/
-/***********************************************************/
-void stat_Output_Monthly_CSV_Summary(int iteration)
-{
-	if(iteration == -1){ // just storing average values over all iterations
-    if(SW_File_Status.make_regular)
-		  SW_File_Status.fp_avg[eSW_Month] = OpenFile(SW_F_name(eOutputMonthly), "w");
-    if(SW_File_Status.make_soil)
-		  SW_File_Status.fp_soil_avg[eSW_Month] = OpenFile(SW_F_name(eOutputMonthly_soil), "w");
-	}
-	else{ // storing values for every iteration
-		if(iteration > 1){
-      if(SW_File_Status.make_regular)
-			   CloseFile(&SW_File_Status.fp_iter[eSW_Month]);
-      if(SW_File_Status.make_soil)
-			   CloseFile(&SW_File_Status.fp_soil_iter[eSW_Month]);
+		if (SW_File_Status.make_regular) {
+			_create_filename_iter(SW_F_name(eOutputDaily + pd), iteration, filename);
+			SW_File_Status.fp_iter[pd] = OpenFile(filename, "w");
 		}
 
-    char *extension; // extension to add to end of file
-    char iterationToString[10];
-
-    if(SW_File_Status.make_regular){
-      char *newFile_split; // new file to create
-      char newFile[80];
-      char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputMonthly))+1);
-
-      strcpy(fileDup, SW_F_name(eOutputMonthly)); // copy file name to new variable
-      sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
-  		extension = strtok(fileDup, ".");
-  		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
-
-      newFile_split = strtok(SW_F_name(eOutputMonthly), "."); // get filename up to but not including ".csv"
-  		strcpy(newFile, newFile_split);
-  		strcat(newFile, "_");
-  		strcat(newFile, iterationToString);
-  		strcat(newFile, ".");
-  		strcat(newFile, extension);
-  		SW_File_Status.fp_iter[eSW_Month] = OpenFile(newFile, "w"); // open new file
-
-      free(fileDup);
-    }
-    if(SW_File_Status.make_soil){
-  		char *newFile_soil_split;
-  		char newFile_soil[80];
-  		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputMonthly_soil))+1);
-
-  		strcpy(fileDup_soil, SW_F_name(eOutputMonthly_soil)); // copy file name to new variable
-  		sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
-
-  		extension = strtok(fileDup_soil, ".");
-  		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
-
-  		newFile_soil_split = strtok(SW_F_name(eOutputMonthly_soil), "."); // get filename up to but not including ".csv"
-  		strcpy(newFile_soil, newFile_soil_split);
-  		strcat(newFile_soil, "_");
-  		strcat(newFile_soil, iterationToString);
-  		strcat(newFile_soil, ".");
-  		strcat(newFile_soil, extension);
-  		SW_File_Status.fp_soil_iter[eSW_Month] = OpenFile(newFile_soil, "w"); // open new file
-
-  		free(fileDup_soil);
-    }
-	}
-}
-
-/**
-  \fn void stat_Output_Yearly_CSV_Summary(int iteration)
-  Creates yearly files for SOILWAT standalone and for STEPWAT depending on defined flags
-	for STEPWAT. If -i flag is used it creates file for each iteration naming file based on iteration.
-	If -o flag is used then only 1 set of files is created, not individual iterations.
-  \param iteration. Current iteration for file name if -i flag used in STEPWAT
-*/
-/***********************************************************/
-void stat_Output_Yearly_CSV_Summary(int iteration)
-{
-	if(iteration == -1){ // just storing average values over all iterations
-    if(SW_File_Status.make_regular)
-		  SW_File_Status.fp_avg[eSW_Year] = OpenFile(SW_F_name(eOutputYearly), "w");
-    if(SW_File_Status.make_soil)
-      SW_File_Status.fp_soil_avg[eSW_Year] = OpenFile(SW_F_name(eOutputYearly_soil), "w");
-	}
-	else{ // storing values for every iteration
-		if(iteration > 1){
-      if(SW_File_Status.make_regular)
-			   CloseFile(&SW_File_Status.fp_iter[eSW_Year]);
-      if(SW_File_Status.make_soil)
-        CloseFile(&SW_File_Status.fp_soil_iter[eSW_Year]);
+		if (SW_File_Status.make_soil) {
+			_create_filename_iter(SW_F_name(eOutputDaily_soil + pd), iteration, filename);
+			SW_File_Status.fp_soil_iter[pd] = OpenFile(filename, "w");
 		}
-
-    char *extension; // extension to add to end of file
-    char iterationToString[10];
-
-    if(SW_File_Status.make_regular){
-      char *newFile_split; // new file to create
-      char newFile[80];
-      char *fileDup = (char *)malloc(strlen(SW_F_name(eOutputYearly))+1);
-
-      strcpy(fileDup, SW_F_name(eOutputYearly)); // copy file name to new variable
-      sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
-
-      extension = strtok(fileDup, ".");
-  		extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
-
-  		newFile_split = strtok(SW_F_name(eOutputYearly), "."); // get filename up to but not including ".csv"
-  		strcpy(newFile, newFile_split);
-  		strcat(newFile, "_");
-  		strcat(newFile, iterationToString);
-  		strcat(newFile, ".");
-  		strcat(newFile, extension);
-  		SW_File_Status.fp_iter[eSW_Year] = OpenFile(newFile, "w"); // open new file
-
-      free(fileDup);
-    }
-
-    if(SW_File_Status.make_soil){
-  		char *newFile_soil_split;
-  		char newFile_soil[80];
-  		char *fileDup_soil = (char *)malloc(strlen(SW_F_name(eOutputYearly_soil))+1);
-
-  		strcpy(fileDup_soil, SW_F_name(eOutputYearly_soil)); // copy file name to new variable
-  		sprintf(iterationToString, "%d", iteration); // convert iteration from int to string
-
-      extension = strtok(fileDup_soil, ".");
-      extension = strtok(NULL, "."); // get the extension to add to new file (not hardcoding since can have different extensions)
-
-  		newFile_soil_split = strtok(SW_F_name(eOutputYearly_soil), "."); // get filename up to but not including ".csv"
-  		strcpy(newFile_soil, newFile_soil_split);
-  		strcat(newFile_soil, "_");
-  		strcat(newFile_soil, iterationToString);
-  		strcat(newFile_soil, ".");
-  		strcat(newFile_soil, extension);
-  		SW_File_Status.fp_soil_iter[eSW_Year] = OpenFile(newFile_soil, "w"); // open new file
-
-  		free(fileDup_soil);
-    }
 	}
+	#endif
 }
+
+#endif
 
 
 #ifdef DEBUG_MEM
