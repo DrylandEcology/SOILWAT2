@@ -529,8 +529,8 @@ namespace {
      EXPECT_EQ(MAX_LAYERS, resultValue2); // when the number of soil layers is MAX_LAYERS, sTemp should be MAX_LAYERS
 
      for(k = 1; k < nRgr +1; k++) {
-       if (ptr_stError == 0) {
-         //printf("\n k %u sTemp3 %f , newoldtemp %f,OLDSTEMPS2 %f", k, sTemp[k], stValues.oldsTempR[k], OLDTEMPS2[k] );
+       if (ptr_stError == swFALSE) {
+         printf("\n k %u sTemp3 %f , newoldtemp %f,OLDSTEMPS2 %f", k, sTemp[k], stValues.oldsTempR[k], OLDTEMPS2[k] );
          EXPECT_GT(sTemp3[k], -100); // Sense check
          EXPECT_LT(sTemp3[k], 100); // Sense check
          // Test that oldsTempR is updated to sTempR for the next day

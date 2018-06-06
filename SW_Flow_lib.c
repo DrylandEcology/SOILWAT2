@@ -1404,9 +1404,12 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 			(*ptr_stError) = swTRUE;
 
 			// if the error hasn't been reported yet... print an error to the stderr and one to the logfile
+      #ifdef SWDEBUG
+      if (debug)
 			swprintf("\nSOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must "
 				"be more than soil layer depth (%5.2f cm)... soil temperature will NOT be "
 				"calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
+        #endif
 
         LogError(logfp, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, st->depths[nlyrs - 1]);
 		}
