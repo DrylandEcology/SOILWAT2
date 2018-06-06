@@ -83,15 +83,23 @@ namespace {
     EXPECT_DOUBLE_EQ(SW_Site.lyr[n]->bMatric, 8.182); /* If sand is .33 and clay is .33,
     thetasMatric should be 8.182 */
 
-    // Test that error will be logged when b_matric is 0
-    sand = 10. + 1./3.; // So that bmatric will equal 0, even though this is a very irrealistic value
-    clay = 0;
-
-    // water_eqn(fractionGravel, sand, clay, n);
-     EXPECT_DEATH(water_eqn(fractionGravel, sand, clay, n), "@ generic.c LogError");
-
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
+  }
+
+  // Test that water equation function 'water_eqn' fails
+  TEST(SWSiteTest, WaterEquationDeathTest) {
+
+    //declare inputs
+    RealD fractionGravel = 0.1;
+    LyrIndex n = 1;
+
+    // Test that error will be logged when b_matric is 0
+    RealD sand = 10. + 1./3.; // So that bmatric will equal 0, even though this is a very irrealistic value
+    RealD clay = 0;
+
+    EXPECT_DEATH_IF_SUPPORTED(water_eqn(fractionGravel, sand, clay, n), "@ generic.c LogError");
+
   }
 
 } // namespace
