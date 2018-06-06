@@ -1043,8 +1043,6 @@ void SW_OUT_construct(void)
 	int j;
 
 	// for use in creating the column headers for the output files
-  SW_File_Status.lastMonth = 0;
-  SW_File_Status.lastWeek = 0;
 
 	SW_File_Status.make_soil = 0;
   SW_File_Status.make_regular = 0;
