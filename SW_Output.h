@@ -159,11 +159,6 @@ typedef struct {
 	int lastMonth,
 			lastWeek;
 
-	int finalValue_dy,
-			finalValue_wk,
-			finalValue_mo,
-			finalValue_yr;
-
 	int make_soil,
 			make_regular;
 
