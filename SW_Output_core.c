@@ -268,6 +268,7 @@ void populate_output_values(char *reg_file_array, char *soil_file_array,
   int output_var, int outstr_file);
 
 #ifndef RSOILWAT
+static void get_outstrleader(TimeInt pd, char *str);
 // the function `create_col_headers` should be really used by all applications for consistent naming of output
 void create_col_headers(IntU outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers);
 #endif
@@ -289,6 +290,37 @@ static void average_for(ObjType otyp, OutPeriod pd);
 /* =================================================== */
 /*             Private Function Definitions            */
 /* --------------------------------------------------- */
+
+#ifndef RSOILWAT
+static void get_outstrleader(TimeInt pd, char *str) {
+	/* Periodic output for Month and/or Week are actually
+	 * printing for the PREVIOUS month or week.
+	 * Also, see note on test value in _write_today() for
+	 * explanation of the +1.
+	 */
+
+	switch (pd) {
+		case eSW_Day:
+			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep, SW_Model.doy);
+			break;
+
+		case eSW_Week:
+			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep,
+				(SW_Model.week + 1) - tOffset);
+			break;
+
+		case eSW_Month:
+			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep,
+				(SW_Model.month + 1) - tOffset);
+			break;
+
+		case eSW_Year:
+			sprintf(str, "%d", SW_Model.simyear);
+			break;
+	}
+}
+#endif
+
 
 /** Convert string representation of time period to `OutPeriod` value.
 */
@@ -989,39 +1021,6 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 /* =================================================== */
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
-
-#ifndef RSOILWAT
-static void get_outstrleader(TimeInt pd, char *str);
-
-static void get_outstrleader(TimeInt pd, char *str) {
-	/* Periodic output for Month and/or Week are actually
-	 * printing for the PREVIOUS month or week.
-	 * Also, see note on test value in _write_today() for
-	 * explanation of the +1.
-	 */
-
-	switch (pd) {
-		case eSW_Day:
-			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep, SW_Model.doy);
-			break;
-
-		case eSW_Week:
-			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep,
-				(SW_Model.week + 1) - tOffset);
-			break;
-
-		case eSW_Month:
-			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep,
-				(SW_Model.month + 1) - tOffset);
-			break;
-
-		case eSW_Year:
-			sprintf(str, "%d", SW_Model.simyear);
-			break;
-	}
-}
-#endif
-
 
 void get_none(OutPeriod pd) // not static because other `get_XXX` are not
 {
@@ -2030,6 +2029,8 @@ void SW_OUT_write_today(void)
 	OutKey k;
 	Bool writeit[SW_OUTNPERIODS];
 	int i;
+	char str_time[10]; // year and day/week/month header for each output row
+
 	#ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -2276,58 +2277,53 @@ void SW_OUT_write_today(void)
 	// Write one row of `csv`-output to disk file
 #if defined(SOILWAT)
 	if (SW_File_Status.use_Day && writeit[eSW_Day]) {
+		get_outstrleader(eSW_Day, str_time);
+
 		if(reg_file_vals_day[0] != 0 && SW_File_Status.make_regular){
-			fprintf(SW_File_Status.fp_dy_avg, "%d%c%d%s\n", SW_Model.simyear, _Sep, SW_Model.doy, (char*)reg_file_vals_day);
+			fprintf(SW_File_Status.fp_dy_avg, "%s%s\n", str_time, (char*)reg_file_vals_day);
 			memset(&reg_file_vals_day[0], 0, sizeof(reg_file_vals_day));
 		}
 		if(soil_file_vals_day[0] != 0 && SW_File_Status.make_soil){
-			fprintf(SW_File_Status.fp_dy_soil_avg, "%d%c%d%s\n", SW_Model.simyear, _Sep, SW_Model.doy, (char*)soil_file_vals_day);
+			fprintf(SW_File_Status.fp_dy_soil_avg, "%s%s\n", str_time, (char*)soil_file_vals_day);
 			memset(&soil_file_vals_day[0], 0, sizeof(soil_file_vals_day));
 		}
 	}
 
 	if (SW_File_Status.use_Week && writeit[eSW_Week]) {
-		// need to check if repeat 52 since repeats 52 in output file.
-		if(SW_Model.week == 52 && SW_File_Status.lastWeek == 1){
-			SW_Model.week = 53;
-			SW_File_Status.lastWeek = 0;
-		}
-		else if(SW_Model.week == 52 && SW_File_Status.lastWeek == 0) SW_File_Status.lastWeek = 1;
+		get_outstrleader(eSW_Week, str_time);
+
 		if(soil_file_vals_week[0] != 0 && SW_File_Status.make_soil){
-			fprintf(SW_File_Status.fp_wk_soil_avg, "%d%c%d%s\n", SW_Model.simyear, _Sep, SW_Model.week, (char*)soil_file_vals_week);
+			fprintf(SW_File_Status.fp_wk_soil_avg, "%s%s\n", str_time, (char*)soil_file_vals_week);
 			memset(&soil_file_vals_week[0], 0, sizeof(soil_file_vals_week));
 		}
 		if(reg_file_vals_week[0] != 0 && SW_File_Status.make_regular){
-			fprintf(SW_File_Status.fp_wk_avg, "%d%c%d%s\n", SW_Model.simyear, _Sep, SW_Model.week, (char*)reg_file_vals_week);
+			fprintf(SW_File_Status.fp_wk_avg, "%s%s\n", str_time, (char*)reg_file_vals_week);
 			memset(&reg_file_vals_week[0], 0, sizeof(reg_file_vals_week));
 		}
 	}
 
 	if (SW_File_Status.use_Month && writeit[eSW_Month]) {
-		// need to check if repeat 11 since repeats 11 in output file.
-		if(SW_Model.month == 11 && SW_File_Status.lastMonth == 1){
-			SW_Model.month = 12;
-			SW_File_Status.lastMonth = 0;
-		}
-		else if(SW_Model.month == 11 && SW_File_Status.lastMonth == 0) SW_File_Status.lastMonth = 1;
+		get_outstrleader(eSW_Month, str_time);
 
 		if(soil_file_vals_month[0] != 0 && SW_File_Status.make_soil){
-			fprintf(SW_File_Status.fp_mo_soil_avg, "%d%c%d%s\n", SW_Model.simyear, _Sep, SW_Model.month, (char*)soil_file_vals_month);
+			fprintf(SW_File_Status.fp_mo_soil_avg, "%s%s\n", str_time, (char*)soil_file_vals_month);
 			memset(&soil_file_vals_month[0], 0, sizeof(soil_file_vals_month));
 		}
 		if(reg_file_vals_month[0] != 0 && SW_File_Status.make_regular){
-			fprintf(SW_File_Status.fp_mo_avg, "%d%c%d%s\n", SW_Model.simyear, _Sep, SW_Model.month, (char*)reg_file_vals_month);
+			fprintf(SW_File_Status.fp_mo_avg, "%s%s\n", str_time, (char*)reg_file_vals_month);
 			memset(&reg_file_vals_month[0], 0, sizeof(reg_file_vals_month));
 		}
 	}
 
 	if (SW_File_Status.use_Year && writeit[eSW_Year]) {
+		get_outstrleader(eSW_Year, str_time);
+
 		if(soil_file_vals_year[0] != 0 && SW_File_Status.make_soil){
-			fprintf(SW_File_Status.fp_yr_soil_avg, "%d%s\n", SW_Model.simyear, (char*)soil_file_vals_year);
+			fprintf(SW_File_Status.fp_yr_soil_avg, "%s%s\n", str_time, (char*)soil_file_vals_year);
 			memset(&soil_file_vals_year[0], 0, sizeof(soil_file_vals_year));
 		}
 		if(reg_file_vals_year[0] != 0 && SW_File_Status.make_regular){
-			fprintf(SW_File_Status.fp_yr_avg, "%d%s\n", SW_Model.simyear, (char*)reg_file_vals_year);
+			fprintf(SW_File_Status.fp_yr_avg, "%s%s\n", str_time, (char*)reg_file_vals_year);
 			memset(&reg_file_vals_year[0], 0, sizeof(reg_file_vals_year));
 		}
 	}

@@ -156,9 +156,6 @@ typedef struct {
 			col_status_mo,
 			col_status_yr;
 
-	int lastMonth,
-			lastWeek;
-
 	int make_soil,
 			make_regular;
 
