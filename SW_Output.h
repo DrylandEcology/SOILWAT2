@@ -22,7 +22,7 @@
 	12/13/2012	(clk) added SW_RUNOFF, updated SW_OUTNKEYs to 29, added eSW_Runoff to enum
 	12/14/2012	(drs) updated SW_OUTNKEYs from 29 to 26 [incorrect number probably introduced 09/12/2011]
 	01/10/2013	(clk)	instead of using one FILE pointer named fp, created four new
-			FILE pointers; fp_dy, fp_wk, fp_mo, and fp_yr. This allows us to keep track
+			FILE pointers; fp_iter[eSW_Day], fp_iter[eSW_Week], fp_iter[eSW_Month], and fp_iter[eSW_Year]. This allows us to keep track
 			of all time steps for each OutKey.
 */
 /********************************************************/
@@ -145,42 +145,32 @@ typedef struct {
 	TimeInt first, last, 			/* updated for each year */
 			first_orig, last_orig;
 	int yr_row, mo_row, wk_row, dy_row;
-	char *outfile; /* point to name of output file */
+	#ifdef RSOILWAT
+	char *outfile; /* point to name of output file */ //could probably be removed
+	#endif
 	void (*pfunc)(OutPeriod); /* pointer to output routine */
 } SW_OUTPUT;
 
 typedef struct {
-	// used in SW_Output.c for creating column headers
-	int col_status_dy,
-			col_status_wk,
-			col_status_mo,
-			col_status_yr;
+	Bool col_status[SW_OUTNPERIODS]; // TRUE if column headers/names have been created
 
-	int make_soil,
+	Bool make_soil,
 			make_regular;
 
-	Bool use_Day,
-			 use_Week,
-			 use_Month,
-			 use_Year;
+	//#ifdef STEPWAT
+	// "regular" output file; new file for each iteration/repetition of STEPWAT
+	FILE *fp_iter[SW_OUTNPERIODS];
+	// output file for variables with values for each soil layer
+	// new file for each iteration/repetition of STEPWAT
+	FILE *fp_soil_iter[SW_OUTNPERIODS];
+	//#endif
 
-	FILE *fp_dy; /* opened output file pointer for day*/
-	FILE *fp_wk; /* opened output file pointer for week*/
-	FILE *fp_mo; /* opened output file pointer for month*/
-	FILE *fp_yr; /* opened output file pointer for year*/
-	FILE *fp_dy_soil; /* opened output file pointer for day*/
-	FILE *fp_wk_soil; /* opened output file pointer for week*/
-	FILE *fp_mo_soil; /* opened output file pointer for month*/
-	FILE *fp_yr_soil; /* opened output file pointer for year*/
-
-	FILE *fp_dy_avg; /* opened output file pointer for day*/
-	FILE *fp_wk_avg; /* opened output file pointer for week*/
-	FILE *fp_mo_avg; /* opened output file pointer for month*/
-	FILE *fp_yr_avg; /* opened output file pointer for year*/
-	FILE *fp_dy_soil_avg; /* opened output file pointer for day*/
-	FILE *fp_wk_soil_avg; /* opened output file pointer for week*/
-	FILE *fp_mo_soil_avg; /* opened output file pointer for month*/
-	FILE *fp_yr_soil_avg; /* opened output file pointer for year*/
+	// if SOILWAT: "regular" output file
+	// if STEPWAT: average/sd across iteration/repetitions
+	FILE *fp_avg[SW_OUTNPERIODS];
+	// if SOILWAT: output file for variables with values for each soil layer
+	// if STEPWAT: average/sd across iteration/repetitions
+	FILE *fp_soil_avg[SW_OUTNPERIODS];
 
 } SW_FILE_STATUS;
 
