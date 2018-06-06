@@ -209,9 +209,6 @@ void SW_OUT_set_ncol(void);
 #ifdef RSOILWAT
 void SW_OUT_set_colnames(void);
 #endif
-#ifndef RSOILWAT
-void get_outstrleader(TimeInt pd);
-#endif
 void SW_OUT_new_year(void);
 void SW_OUT_read(void);
 void SW_OUT_sum_today(ObjType otyp);

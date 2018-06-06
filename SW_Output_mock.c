@@ -74,12 +74,6 @@ void SW_OUT_write_today(void)
 void get_none(void)
 {}
 
-void get_outstrleader(TimeInt pd)
-{
-  TimeInt x = pd;
-  if (x == 1) {}
-}
-
 void get_co2effects(void)
 {}
 
@@ -195,13 +189,11 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 static void average_for(ObjType otyp, OutPeriod pd)
 {
   SW_OUT_sum_today(otyp);
-  get_outstrleader(pd);
 }
 
 static void collect_sums(ObjType otyp, OutPeriod op)
 {
   SW_OUT_sum_today(otyp);
-  get_outstrleader(op);
 }
 
 void _echo_outputs(void)

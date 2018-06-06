@@ -86,9 +86,6 @@ void get_co2effects(OutPeriod pd) {
 	RealD wue_mult_forb = v->veg[SW_FORBS].co2_multipliers[WUE_INDEX][SW_Model.simyear];
 
 
-	char str[OUTSTRLEN];
-	get_outstrleader(pd);
-
 	switch(pd) {
 		case eSW_Day:
 			biomass_grass = v->dysum.veg[SW_GRASS].biomass;
@@ -138,7 +135,8 @@ void get_co2effects(OutPeriod pd) {
 	biomass_total = biomass_grass + biomass_shrub + biomass_tree + biomass_forb;
 	biolive_total = biolive_grass + biolive_shrub + biolive_tree + biolive_forb;
 
-	sprintf(str, "%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f",
+	sw_outstr[0] = '\0';
+	sprintf(sw_outstr, "%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f%c%f",
 		_Sep, biomass_grass,
 		_Sep, biomass_shrub,
 		_Sep, biomass_tree,
@@ -157,8 +155,6 @@ void get_co2effects(OutPeriod pd) {
 		_Sep, wue_mult_shrub,
 		_Sep, wue_mult_tree,
 		_Sep, wue_mult_forb);
-
-	strcat(sw_outstr, str);
 }
 
 /* --------------------------------------------------- */
@@ -175,10 +171,11 @@ void get_estab(OutPeriod pd)
 {
 	SW_VEGESTAB *v = &SW_VegEstab;
 	IntU i;
-
-	get_outstrleader(pd);
 	char str[OUTSTRLEN];
 
+	i = (IntU) pd; // silence `-Wunused-parameter`
+
+	sw_outstr[0] = '\0';
 	for (i = 0; i < v->count; i++)
 	{
 		sprintf(str, "%c%d", _Sep, v->parms[i]->estab_doy);
@@ -192,7 +189,6 @@ void get_temp(OutPeriod pd)
 	RealD v_avg = SW_MISSING;
 	RealD v_min = SW_MISSING, v_max = SW_MISSING;
 	RealD surfaceTempVal = SW_MISSING;
-	char str[OUTSTRLEN];
 
   #ifdef SWDEBUG
   int debug = 0;
@@ -201,8 +197,6 @@ void get_temp(OutPeriod pd)
   #ifdef SWDEBUG
   if (debug) swprintf("'get_temp': start for %s ... ", pd);
   #endif
-
-	get_outstrleader(pd);
 
 	switch (pd)
 	{
@@ -247,9 +241,9 @@ void get_temp(OutPeriod pd)
 		break;
 	}
 
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
+	sw_outstr[0] = '\0';
+	sprintf(sw_outstr, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
 		_Sep, v_max, _Sep, v_min, _Sep, v_avg, _Sep, surfaceTempVal);
-	strcat(sw_outstr, str);
 
 	#ifdef SWDEBUG
 		if (debug) swprintf("completed\n");
@@ -258,14 +252,9 @@ void get_temp(OutPeriod pd)
 
 void get_precip(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
-	/* 	20091015 (drs) ppt is divided into rain and snow and all three values are output into precip */
 	SW_WEATHER *v = &SW_Weather;
 	RealD val_ppt = SW_MISSING, val_rain = SW_MISSING, val_snow = SW_MISSING,
 		val_snowmelt = SW_MISSING, val_snowloss = SW_MISSING;
-	char str[OUTSTRLEN];
-
-	get_outstrleader(pd);
 
 	switch(pd)
 	{
@@ -302,21 +291,20 @@ void get_precip(OutPeriod pd)
 		break;
 	}
 
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
+	sw_outstr[0] = '\0';
+	sprintf(sw_outstr, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
 		_Sep, val_ppt, _Sep, val_rain, _Sep, val_snow, _Sep, val_snowmelt,
 		_Sep, val_snowloss);
-	strcat(sw_outstr, str);
 }
 
 void get_vwcBulk(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	char str[OUTSTRLEN];
 	RealD val;
 
-	get_outstrleader(pd);
+	sw_outstr[0] = '\0';
 
 	ForEachSoilLayer(i) {
 		switch (pd)
@@ -348,13 +336,12 @@ void get_vwcBulk(OutPeriod pd)
 
 void get_vwcMatric(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	RealD val;
 	char str[OUTSTRLEN];
 
-	get_outstrleader(pd);
+	sw_outstr[0] = '\0';
 
 	ForEachSoilLayer(i) {
 		switch (pd)
@@ -387,7 +374,6 @@ void get_vwcMatric(OutPeriod pd)
 
 void get_swa(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	/* added 21-Oct-03, cwb */
 	LyrIndex i;
 	int k;
@@ -395,7 +381,7 @@ void get_swa(OutPeriod pd)
 	RealF val[NVEGTYPES];
 	char str[OUTSTRLEN];
 
-	get_outstrleader(pd);
+	sw_outstr[0] = '\0';
 
 	ForEachSoilLayer(i)
 	{
@@ -429,14 +415,13 @@ void get_swa(OutPeriod pd)
 
 void get_swcBulk(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	/* added 21-Oct-03, cwb */
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	RealD val = SW_MISSING;
 	char str[OUTSTRLEN];
 
-	get_outstrleader(pd);
+	sw_outstr[0] = '\0';
 
 	ForEachSoilLayer(i)
 	{
@@ -463,7 +448,6 @@ void get_swcBulk(OutPeriod pd)
 
 void get_swpMatric(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	/* can't take arithmetic average of swp because it's
 	 * exponential.  At this time (until I remember to look
 	 * up whether harmonic or some other average is better
@@ -475,10 +459,10 @@ void get_swpMatric(OutPeriod pd)
 
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
-
-	char str[OUTSTRLEN];
 	RealD val = SW_MISSING;
-	get_outstrleader(pd);
+	char str[OUTSTRLEN];
+
+	sw_outstr[0] = '\0';
 
 	ForEachSoilLayer(i)
 	{
@@ -508,14 +492,13 @@ void get_swpMatric(OutPeriod pd)
 
 void get_swaBulk(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	char str[OUTSTRLEN];
 	RealD val = SW_MISSING;
 
-	get_outstrleader(pd);
+	sw_outstr[0] = '\0';
 
 	ForEachSoilLayer(i)
 	{
@@ -542,14 +525,13 @@ void get_swaBulk(OutPeriod pd)
 
 void get_swaMatric(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	char str[OUTSTRLEN];
 	RealD val = SW_MISSING;
 
-	get_outstrleader(pd);
+	sw_outstr[0] = '\0';
 
 	ForEachSoilLayer(i)
 	{
@@ -579,12 +561,8 @@ void get_swaMatric(OutPeriod pd)
 
 void get_surfaceWater(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
-	char str[OUTSTRLEN];
 	RealD val_surfacewater = SW_MISSING;
-
-	get_outstrleader(pd);
 
 	switch (pd)
 	{
@@ -602,9 +580,8 @@ void get_surfaceWater(OutPeriod pd)
 			break;
 	}
 
-	sprintf(str, "%c%7.6f", _Sep, val_surfacewater);
-	strcat(sw_outstr, str);
-
+	sw_outstr[0] = '\0';
+	sprintf(sw_outstr, "%c%7.6f", _Sep, val_surfacewater);
 }
 
 void get_runoffrunon(OutPeriod pd) {
@@ -614,9 +591,6 @@ void get_runoffrunon(OutPeriod pd) {
   SW_WEATHER *w = &SW_Weather;
   RealD val_netRunoff = SW_MISSING, val_surfaceRunoff = SW_MISSING,
       val_surfaceRunon = SW_MISSING, val_snowRunoff = SW_MISSING;
-	char str[OUTSTRLEN];
-
-	get_outstrleader(pd);
 
 	switch (pd)
 	{
@@ -644,15 +618,14 @@ void get_runoffrunon(OutPeriod pd) {
 
 	val_netRunoff = val_surfaceRunoff + val_snowRunoff - val_surfaceRunon;
 
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
+	sw_outstr[0] = '\0';
+	sprintf(sw_outstr, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
 		_Sep, val_netRunoff, _Sep, val_surfaceRunoff, _Sep, val_snowRunoff,
 		_Sep, val_surfaceRunon);
-	strcat(sw_outstr, str);
 }
 
 void get_transp(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	/* 10-May-02 (cwb) Added conditional code to interface
 	 *           with STEPPE.
 	 */
@@ -662,7 +635,7 @@ void get_transp(OutPeriod pd)
 	RealF val;
 	char str[OUTSTRLEN];
 
-	get_outstrleader(pd);
+	sw_outstr[0] = '\0';
 
 	/* total transpiration */
 	ForEachSoilLayer(i)
@@ -717,13 +690,12 @@ void get_transp(OutPeriod pd)
 
 void get_evapSoil(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	char str[OUTSTRLEN];
 	RealD val = SW_MISSING;
 
-	get_outstrleader(pd);
+	sw_outstr[0] = '\0';
 
 	ForEachEvapLayer(i)
 	{
@@ -750,14 +722,10 @@ void get_evapSoil(OutPeriod pd)
 
 void get_evapSurface(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
-	char str[OUTSTRLEN];
 	RealD val_tot = SW_MISSING, val_tree = SW_MISSING, val_forb = SW_MISSING,
 		val_shrub = SW_MISSING, val_grass = SW_MISSING, val_litter =
 		SW_MISSING, val_water = SW_MISSING;
-
-	get_outstrleader(pd);
 
 	switch (pd)
 	{
@@ -799,22 +767,17 @@ void get_evapSurface(OutPeriod pd)
 			break;
 	}
 
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
+	sw_outstr[0] = '\0';
+	sprintf(sw_outstr, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
 		_Sep, val_tot, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb,
 		_Sep, val_grass, _Sep, val_litter, _Sep, val_water);
-	strcat(sw_outstr, str);
 }
 
 void get_interception(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
-	char str[OUTSTRLEN];
 	RealD val_tot = SW_MISSING, val_tree = SW_MISSING, val_forb = SW_MISSING,
-		val_shrub = SW_MISSING, val_grass = SW_MISSING, val_litter =
-				SW_MISSING;
-
-	get_outstrleader(pd);
+		val_shrub = SW_MISSING, val_grass = SW_MISSING, val_litter = SW_MISSING;
 
 	switch (pd)
 	{
@@ -852,23 +815,19 @@ void get_interception(OutPeriod pd)
 			break;
 	}
 
-	sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
+	sw_outstr[0] = '\0';
+	sprintf(sw_outstr, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
 		_Sep, val_tot, _Sep, val_tree, _Sep, val_shrub, _Sep, val_forb,
 		_Sep, val_grass, _Sep, val_litter);
-	strcat(sw_outstr, str);
 }
 
 void get_soilinf(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	/* 20100202 (drs) added */
 	/* 20110219 (drs) added runoff */
 	/* 12/13/2012	(clk)	moved runoff, now named snowRunoff, to get_runoffrunon(); */
 	SW_WEATHER *v = &SW_Weather;
-	char str[OUTSTRLEN];
 	RealD val_inf = SW_MISSING;
-
-	get_outstrleader(pd);
 
 	switch (pd)
 	{
@@ -886,20 +845,19 @@ void get_soilinf(OutPeriod pd)
 			break;
 	}
 
-	sprintf(str, "%c%7.6f", _Sep, val_inf);
-	strcat(sw_outstr, str);
+	sw_outstr[0] = '\0';
+	sprintf(sw_outstr, "%c%7.6f", _Sep, val_inf);
 }
 
 void get_lyrdrain(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	/* 20100202 (drs) added */
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	char str[OUTSTRLEN];
 	RealD val = SW_MISSING;
 
-	get_outstrleader(pd);
+	sw_outstr[0] = '\0';
 
 	for (i = 0; i < SW_Site.n_layers - 1; i++)
 	{
@@ -922,12 +880,10 @@ void get_lyrdrain(OutPeriod pd)
 		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(sw_outstr, str);
 	}
-
 }
 
 void get_hydred(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	/* 20101020 (drs) added */
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
@@ -938,7 +894,8 @@ void get_hydred(OutPeriod pd)
 	RealD val_shrub = SW_MISSING;
 	RealD val_forb = SW_MISSING;
 	RealD val_grass = SW_MISSING;
-	get_outstrleader(pd);
+
+	sw_outstr[0] = '\0';
 
 	ForEachSoilLayer(i)
 	{
@@ -983,12 +940,8 @@ void get_hydred(OutPeriod pd)
 
 void get_aet(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
-	char str[OUTSTRLEN];
 	RealD val = SW_MISSING;
-
-	get_outstrleader(pd);
 
 	switch (pd)
 	{
@@ -1006,18 +959,14 @@ void get_aet(OutPeriod pd)
 			break;
 	}
 
-	sprintf(str, "%c%7.6f", _Sep, val);
-	strcat(sw_outstr, str);
+	sw_outstr[0] = '\0';
+	sprintf(sw_outstr, "%c%7.6f", _Sep, val);
 }
 
 void get_pet(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
-	char str[OUTSTRLEN];
 	RealD val = SW_MISSING;
-
-	get_outstrleader(pd);
 
 	switch (pd)
 	{
@@ -1035,19 +984,18 @@ void get_pet(OutPeriod pd)
 			break;
 	}
 
-	sprintf(str, "%c%7.6f", _Sep, val);
-	strcat(sw_outstr, str);
+	sw_outstr[0] = '\0';
+	sprintf(sw_outstr, "%c%7.6f", _Sep, val);
 }
 
 void get_wetdays(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	LyrIndex i;
 	int val;
 	SW_SOILWAT *v = &SW_Soilwat;
 	char str[OUTSTRLEN];
 
-	get_outstrleader(pd);
+	sw_outstr[0] = '\0';
 
 	ForEachSoilLayer(i)
 	{
@@ -1077,12 +1025,8 @@ void get_wetdays(OutPeriod pd)
 
 void get_snowpack(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
-	char str[OUTSTRLEN];
 	RealD val_swe = SW_MISSING, val_depth = SW_MISSING;
-
-	get_outstrleader(pd);
 
 	switch (pd)
 	{
@@ -1104,19 +1048,14 @@ void get_snowpack(OutPeriod pd)
 			break;
 	}
 
-	sprintf(str, "%c%7.6f%c%7.6f",
-		_Sep, val_swe, _Sep, val_depth);
-	strcat(sw_outstr, str);
+	sw_outstr[0] = '\0';
+	sprintf(sw_outstr, "%c%7.6f%c%7.6f", _Sep, val_swe, _Sep, val_depth);
 }
 
 void get_deepswc(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	SW_SOILWAT *v = &SW_Soilwat;
-	char str[OUTSTRLEN];
 	RealD val = SW_MISSING;
-
-	get_outstrleader(pd);
 
 	switch (pd)
 	{
@@ -1134,19 +1073,18 @@ void get_deepswc(OutPeriod pd)
 			break;
 	}
 
-	sprintf(str, "%c%7.6f", _Sep, val);
-	strcat(sw_outstr, str);
+	sw_outstr[0] = '\0';
+	sprintf(sw_outstr, "%c%7.6f", _Sep, val);
 }
 
 void get_soiltemp(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
 	LyrIndex i;
 	SW_SOILWAT *v = &SW_Soilwat;
 	char str[OUTSTRLEN];
 	RealD val = SW_MISSING;
 
-	get_outstrleader(pd);
+	sw_outstr[0] = '\0';
 
 	ForEachSoilLayer(i)
 	{
