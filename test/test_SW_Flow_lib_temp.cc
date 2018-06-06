@@ -476,11 +476,15 @@ namespace {
     double swc2[nlyrs2], swc_sat2[nlyrs2], bDensity2[nlyrs2], fc2[nlyrs2], wp2[nlyrs2];
 
     for (i = 0; i < nlyrs2; i++) {
-        swc2[i] =  fmaxf(RandNorm(1.,0.5), 0.1);;
-        swc_sat2[i] = swc2[i] + 0.5;
-        bDensity2[i] = fmaxf(RandNorm(1.,0.5), 0.1);
-        fc2[i] = fmaxf(RandNorm(1.5, 0.5), 0.1);
-        wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp will always be less than fc
+        bDensity2[i] = fmaxf(RandNorm(1.,0.5), 0.1); // greater than 0.1
+
+        fc2[i] = fmaxf(RandNorm(1.5, 0.5), 0.1); // greater than 0.1
+        swc_sat2[i] = fc2[i] + 0.2; //swc_sat > fc2
+        swc2[i] =  swc_sat2[i] - 0.3; // swc_sat > swc
+        wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp < fc
+
+      //  swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
+      //   i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
       }
 
     // copy initital oldsTempR values so we can check they have been updated
@@ -530,7 +534,7 @@ namespace {
 
      for(k = 1; k < nRgr +1; k++) {
        if (ptr_stError == swFALSE) {
-         printf("\n k %u sTemp3 %f , newoldtemp %f,OLDSTEMPS2 %f", k, sTemp[k], stValues.oldsTempR[k], OLDTEMPS2[k] );
+         //swprintf("\n k %u, sTemp3 %f, newoldtemp %f ,OLDSTEMPS2 %f", k, sTemp3[k], stValues.oldsTempR[k], OLDTEMPS2[k] );
          EXPECT_GT(sTemp3[k], -100); // Sense check
          EXPECT_LT(sTemp3[k], 100); // Sense check
          // Test that oldsTempR is updated to sTempR for the next day
