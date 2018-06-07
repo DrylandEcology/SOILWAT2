@@ -274,9 +274,8 @@ static void _create_filename_iter(char *str, int iteration, char *filename);
 #ifndef RSOILWAT
 static void get_outstrleader(OutPeriod pd, char *str);
 static void _create_csv_file(int iteration, OutPeriod pd);
-
-// the function `create_col_headers` should be really used by all applications for consistent naming of output
-void create_col_headers(IntU outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers);
+static void create_col_headers(IntU outFileTimestep, FILE *regular_file,
+	FILE *soil_file, int std_headers);
 #endif
 
 static OutPeriod str2period(char *s);
@@ -505,10 +504,9 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	case eSW_SWA: /* get swaBulk and convert later */
-		ForEachSoilLayer(i){
-			ForEachVegType(j){
+		ForEachSoilLayer(i) {
+			ForEachVegType(j) {
 				s->SWA_VegType[j][i] += v->dSWA_repartitioned_sum[j][i];
-				//printf("sum swa %f\n", s->SWA_VegType[j][i]);
 			}
 		}
 		break;
@@ -518,15 +516,11 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	case eSW_Transp:
-		ForEachSoilLayer(i)
-		{
-			s->transp_total[i] += v->transpiration[SW_TREES][i]
-					+ v->transpiration[SW_SHRUB][i] + v->transpiration[SW_FORBS][i]
-					+ v->transpiration[SW_GRASS][i];
-			s->transp[SW_TREES][i] += v->transpiration[SW_TREES][i];
-			s->transp[SW_SHRUB][i] += v->transpiration[SW_SHRUB][i];
-			s->transp[SW_FORBS][i] += v->transpiration[SW_FORBS][i];
-			s->transp[SW_GRASS][i] += v->transpiration[SW_GRASS][i];
+		ForEachSoilLayer(i) {
+			ForEachVegType(j) {
+				s->transp_total[i] += v->transpiration[j][i];
+				s->transp[j][i] += v->transpiration[j][i];
+			}
 		}
 		break;
 
@@ -536,23 +530,21 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	case eSW_EvapSurface:
-		s->total_evap += v->evap_veg[SW_TREES] + v->evap_veg[SW_FORBS] + v->evap_veg[SW_SHRUB]
-				+ v->evap_veg[SW_GRASS] + v->litter_evap + v->surfaceWater_evap;
-		s->evap_veg[SW_TREES] += v->evap_veg[SW_TREES];
-		s->evap_veg[SW_SHRUB] += v->evap_veg[SW_SHRUB];
-		s->evap_veg[SW_FORBS] += v->evap_veg[SW_FORBS];
-		s->evap_veg[SW_GRASS] += v->evap_veg[SW_GRASS];
+		ForEachVegType(j) {
+			s->total_evap += v->evap_veg[j];
+			s->evap_veg[j] += v->evap_veg[j];
+		}
+		s->total_evap += v->litter_evap + v->surfaceWater_evap;
 		s->litter_evap += v->litter_evap;
 		s->surfaceWater_evap += v->surfaceWater_evap;
 		break;
 
 	case eSW_Interception:
-		s->total_int += v->int_veg[SW_TREES] + v->int_veg[SW_FORBS] + v->int_veg[SW_SHRUB] + v->int_veg[SW_GRASS]
-				+ v->litter_int;
-		s->int_veg[SW_TREES] += v->int_veg[SW_TREES];
-		s->int_veg[SW_SHRUB] += v->int_veg[SW_SHRUB];
-		s->int_veg[SW_FORBS] += v->int_veg[SW_FORBS];
-		s->int_veg[SW_GRASS] += v->int_veg[SW_GRASS];
+		ForEachVegType(j) {
+			s->total_int += v->int_veg[j];
+			s->int_veg[j] += v->int_veg[j];
+		}
+		s->total_int += v->litter_int;
 		s->litter_int += v->litter_int;
 		break;
 
@@ -562,14 +554,11 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	case eSW_HydRed:
-		ForEachSoilLayer(i)
-		{
-			s->hydred_total[i] += v->hydred[SW_TREES][i] + v->hydred[SW_FORBS][i]
-					+ v->hydred[SW_SHRUB][i] + v->hydred[SW_GRASS][i];
-			s->hydred[SW_TREES][i] += v->hydred[SW_TREES][i];
-			s->hydred[SW_SHRUB][i] += v->hydred[SW_SHRUB][i];
-			s->hydred[SW_FORBS][i] += v->hydred[SW_FORBS][i];
-			s->hydred[SW_GRASS][i] += v->hydred[SW_GRASS][i];
+		ForEachSoilLayer(i) {
+			ForEachVegType(j) {
+				s->hydred_total[i] += v->hydred[j][i];
+				s->hydred[j][i] += v->hydred[j][i];
+			}
 		}
 		break;
 
@@ -688,7 +677,6 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 			wavg->temp_max = wsumof->temp_max / div;
 			wavg->temp_min = wsumof->temp_min / div;
 			wavg->temp_avg = wsumof->temp_avg / div;
-			//added surfaceTemp for avg operation
 			wavg->surfaceTemp = wsumof->surfaceTemp / div;
 			break;
 
@@ -711,50 +699,55 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 			break;
 
 		case eSW_SoilTemp:
-			ForEachSoilLayer(i)
+			ForEachSoilLayer(i) {
 				savg->sTemp[i] =
 						(SW_Output[k].sumtype == eSW_Fnl) ?
 								SW_Soilwat.sTemp[i] :
 								ssumof->sTemp[i] / div;
+			}
 			break;
 
 		case eSW_VWCBulk:
-			ForEachSoilLayer(i)
+			ForEachSoilLayer(i) {
 				/* vwcBulk at this point is identical to swcBulk */
 				savg->vwcBulk[i] =
 						(SW_Output[k].sumtype == eSW_Fnl) ?
 								SW_Soilwat.swcBulk[Yesterday][i] :
 								ssumof->vwcBulk[i] / div;
+			}
 			break;
 
 		case eSW_VWCMatric:
-			ForEachSoilLayer(i)
+			ForEachSoilLayer(i) {
 				/* vwcMatric at this point is identical to swcBulk */
 				savg->vwcMatric[i] =
 						(SW_Output[k].sumtype == eSW_Fnl) ?
 								SW_Soilwat.swcBulk[Yesterday][i] :
 								ssumof->vwcMatric[i] / div;
+			}
 			break;
 
 		case eSW_SWCBulk:
-			ForEachSoilLayer(i)
+			ForEachSoilLayer(i) {
 				savg->swcBulk[i] =
 						(SW_Output[k].sumtype == eSW_Fnl) ?
 								SW_Soilwat.swcBulk[Yesterday][i] :
 								ssumof->swcBulk[i] / div;
+			}
 			break;
 
 		case eSW_SWPMatric:
-			ForEachSoilLayer(i)
+			ForEachSoilLayer(i) {
 				/* swpMatric at this point is identical to swcBulk */
 				savg->swpMatric[i] =
 						(SW_Output[k].sumtype == eSW_Fnl) ?
 								SW_Soilwat.swcBulk[Yesterday][i] :
 								ssumof->swpMatric[i] / div;
+			}
 			break;
 
 		case eSW_SWABulk:
-			ForEachSoilLayer(i)
+			ForEachSoilLayer(i) {
 				savg->swaBulk[i] =
 						(SW_Output[k].sumtype == eSW_Fnl) ?
 								fmax(
@@ -762,10 +755,11 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 												- SW_Site.lyr[i]->swcBulk_wiltpt,
 										0.) :
 								ssumof->swaBulk[i] / div;
+			}
 			break;
 
 		case eSW_SWAMatric: /* swaMatric at this point is identical to swaBulk */
-			ForEachSoilLayer(i)
+			ForEachSoilLayer(i) {
 				savg->swaMatric[i] =
 						(SW_Output[k].sumtype == eSW_Fnl) ?
 								fmax(
@@ -773,16 +767,16 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 												- SW_Site.lyr[i]->swcBulk_wiltpt,
 										0.) :
 								ssumof->swaMatric[i] / div;
+			}
 			break;
 
 		case eSW_SWA:
-			ForEachSoilLayer(i){
-				ForEachVegType(j){
+			ForEachSoilLayer(i) {
+				ForEachVegType(j) {
 					savg->SWA_VegType[j][i] =
 							(SW_Output[k].sumtype == eSW_Fnl) ?
 									SW_Soilwat.dSWA_repartitioned_sum[j][i] :
 									ssumof->SWA_VegType[j][i] / div;
-					//printf("swa: %f\n", savg->SWA_VegType[j][i]);
 				}
 			}
 			break;
@@ -802,10 +796,9 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 			ForEachSoilLayer(i)
 			{
 				savg->transp_total[i] = ssumof->transp_total[i] / div;
-				savg->transp[SW_TREES][i] = ssumof->transp[SW_TREES][i] / div;
-				savg->transp[SW_SHRUB][i] = ssumof->transp[SW_SHRUB][i] / div;
-				savg->transp[SW_FORBS][i] = ssumof->transp[SW_FORBS][i] / div;
-				savg->transp[SW_GRASS][i] = ssumof->transp[SW_GRASS][i] / div;
+				ForEachVegType(j) {
+					savg->transp[j][i] = ssumof->transp[j][i] / div;
+				}
 			}
 			break;
 
@@ -816,20 +809,18 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 
 		case eSW_EvapSurface:
 			savg->total_evap = ssumof->total_evap / div;
-			savg->evap_veg[SW_TREES] = ssumof->evap_veg[SW_TREES] / div;
-			savg->evap_veg[SW_SHRUB] = ssumof->evap_veg[SW_SHRUB] / div;
-			savg->evap_veg[SW_FORBS] = ssumof->evap_veg[SW_FORBS] / div;
-			savg->evap_veg[SW_GRASS] = ssumof->evap_veg[SW_GRASS] / div;
+			ForEachVegType(j) {
+				savg->evap_veg[j] = ssumof->evap_veg[j] / div;
+			}
 			savg->litter_evap = ssumof->litter_evap / div;
 			savg->surfaceWater_evap = ssumof->surfaceWater_evap / div;
 			break;
 
 		case eSW_Interception:
 			savg->total_int = ssumof->total_int / div;
-			savg->int_veg[SW_TREES] = ssumof->int_veg[SW_TREES] / div;
-			savg->int_veg[SW_SHRUB] = ssumof->int_veg[SW_SHRUB] / div;
-			savg->int_veg[SW_FORBS] = ssumof->int_veg[SW_FORBS] / div;
-			savg->int_veg[SW_GRASS] = ssumof->int_veg[SW_GRASS] / div;
+			ForEachVegType(j) {
+				savg->int_veg[j] = ssumof->int_veg[j] / div;
+			}
 			savg->litter_int = ssumof->litter_int / div;
 			break;
 
@@ -846,10 +837,9 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 			ForEachSoilLayer(i)
 			{
 				savg->hydred_total[i] = ssumof->hydred_total[i] / div;
-				savg->hydred[SW_TREES][i] = ssumof->hydred[SW_TREES][i] / div;
-				savg->hydred[SW_SHRUB][i] = ssumof->hydred[SW_SHRUB][i] / div;
-				savg->hydred[SW_FORBS][i] = ssumof->hydred[SW_FORBS][i] / div;
-				savg->hydred[SW_GRASS][i] = ssumof->hydred[SW_GRASS][i] / div;
+				ForEachVegType(j) {
+					savg->hydred[j][i] = ssumof->hydred[j][i] / div;
+				}
 			}
 			break;
 
@@ -1052,12 +1042,15 @@ void SW_OUT_construct(void)
 	SW_File_Status.make_soil = swFALSE;
   SW_File_Status.make_regular = swFALSE;
 
+	bFlush_output = swFALSE;
+	tOffset = 1;
+
 	ForEachOutPeriod(p) {
 		SW_File_Status.col_status[p] = swFALSE;
 	}
 
-	ForEachSoilLayer(i){
-		ForEachVegType(j){
+	ForEachSoilLayer(i) {
+		ForEachVegType(j) {
 			s->SWA_VegType[j][i] = 0.;
 		}
 	}
@@ -1076,15 +1069,14 @@ void SW_OUT_construct(void)
 	 * implemented and leave the default case for every
 	 * thing else.
 	 */
-
 	ForEachOutKey(k)
 	{
-#ifdef RSOILWAT
+		#ifdef RSOILWAT
 		SW_Output[k].yr_row = 0;
 		SW_Output[k].mo_row = 0;
 		SW_Output[k].wk_row = 0;
 		SW_Output[k].dy_row = 0;
-#endif
+		#endif
 
 		switch (k)
 		{
@@ -1171,9 +1163,8 @@ void SW_OUT_construct(void)
 			break;
 
 		}
-	}
-	bFlush_output = swFALSE;
-	tOffset = 1;
+	} // end of loop across output keys
+
 }
 
 
@@ -1214,7 +1205,8 @@ void SW_OUT_set_ncol(void) {
 }
 
 #ifdef RSOILWAT
-// this function should be really used by all applications for consistent naming of output
+// this function should be really used by all applications for consistent
+// naming of output
 void SW_OUT_set_colnames(void) {
 	int i, j, tLayers = SW_Site.n_layers;
   #ifdef SWDEBUG
@@ -1442,19 +1434,21 @@ void SW_OUT_new_year(void)
 
 	ForEachOutKey(k)
 	{
-		if (!SW_Output[k].use)
+		if (!SW_Output[k].use) {
 			continue;
+		}
 
-		if (SW_Output[k].first_orig <= SW_Model.firstdoy)
+		if (SW_Output[k].first_orig <= SW_Model.firstdoy) {
 			SW_Output[k].first = SW_Model.firstdoy;
-		else
+		} else {
 			SW_Output[k].first = SW_Output[k].first_orig;
+		}
 
-		if (SW_Output[k].last_orig >= SW_Model.lastdoy)
+		if (SW_Output[k].last_orig >= SW_Model.lastdoy) {
 			SW_Output[k].last = SW_Model.lastdoy;
-		else
+		} else {
 			SW_Output[k].last = SW_Output[k].last_orig;
-
+		}
 	}
 
 }
@@ -1728,6 +1722,7 @@ void SW_OUT_read(void)
 }
 
 
+#ifndef RSOILWAT
 /** close all of the user-specified output files.
     call this routine at the end of the program run.
 */
@@ -1736,10 +1731,8 @@ void SW_OUT_close_files(void) {
 // check all timeperiods and which files created. only close created files.
 // no code for RSOILWAT (because no files)
 
-#if defined(SOILWAT) || defined(STEPWAT)
   Bool close_regular, close_layers, close_AllIters;
   OutPeriod p;
-#endif
 
 #if defined(SOILWAT)
   close_regular = SW_File_Status.make_regular;
@@ -1752,7 +1745,6 @@ void SW_OUT_close_files(void) {
   close_AllIters = (Bool) (SW_File_Status.make_regular && storeAllIterations);
 #endif
 
-#if defined(SOILWAT) || defined(STEPWAT)
   ForEachOutPeriod(p) {
     if (use_OutPeriod[p]) {
       if (close_regular) {
@@ -1772,8 +1764,8 @@ void SW_OUT_close_files(void) {
       }
     }
   }
-#endif
 }
+#endif
 
 
 void _collect_values(void) {
@@ -1819,100 +1811,105 @@ void SW_OUT_sum_today(ObjType otyp)
 
 	switch (otyp)
 	{
-	case eSWC:
-		size = sizeof(SW_SOILWAT_OUTPUTS);
-		break;
-	case eWTH:
-		size = sizeof(SW_WEATHER_OUTPUTS);
-		break;
-	case eVES:
-		return; /* a stub; we don't do anything with ves until get_() */
-	case eVPD:
-		size = sizeof(SW_VEGPROD_OUTPUTS);
-		break;
-	default:
-		LogError(logfp, LOGFATAL,
-				"Invalid object type in SW_OUT_sum_today().");
+		case eSWC:
+			size = sizeof(SW_SOILWAT_OUTPUTS);
+			break;
+		case eWTH:
+			size = sizeof(SW_WEATHER_OUTPUTS);
+			break;
+		case eVES:
+			return; /* a stub; we don't do anything with ves until get_() */
+		case eVPD:
+			size = sizeof(SW_VEGPROD_OUTPUTS);
+			break;
+		default:
+			LogError(logfp, LOGFATAL,
+					"Invalid object type in SW_OUT_sum_today().");
 	}
 
 	/* do this every day (kinda expensive but more general than before)*/
 	switch (otyp)
 	{
-	case eSWC:
-		memset(&s->dysum, 0, size);
-		break;
-	case eWTH:
-		memset(&w->dysum, 0, size);
-		break;
-	case eVPD:
-		memset(&vp->dysum, 0, size);
-		break;
-	default:
-		break;
+		case eSWC:
+			memset(&s->dysum, 0, size);
+			break;
+		case eWTH:
+			memset(&w->dysum, 0, size);
+			break;
+		case eVPD:
+			memset(&vp->dysum, 0, size);
+			break;
+		default:
+			break;
 	}
 
 	/* the rest only get done if new period */
 	if (SW_Model.newweek || bFlush_output)
 	{
 		average_for(otyp, eSW_Week);
+
 		switch (otyp)
 		{
-		case eSWC:
-			memset(&s->wksum, 0, size);
-			break;
-		case eWTH:
-			memset(&w->wksum, 0, size);
-			break;
-		case eVPD:
-			memset(&vp->wksum, 0, size);
-			break;
-		default:
-			break;
+			case eSWC:
+				memset(&s->wksum, 0, size);
+				break;
+			case eWTH:
+				memset(&w->wksum, 0, size);
+				break;
+			case eVPD:
+				memset(&vp->wksum, 0, size);
+				break;
+			default:
+				break;
 		}
 	}
 
 	if (SW_Model.newmonth || bFlush_output)
 	{
 		average_for(otyp, eSW_Month);
+
 		switch (otyp)
 		{
-		case eSWC:
-			memset(&s->mosum, 0, size);
-			break;
-		case eWTH:
-			memset(&w->mosum, 0, size);
-			break;
-		case eVPD:
-			memset(&vp->mosum, 0, size);
-			break;
-		default:
-			break;
+			case eSWC:
+				memset(&s->mosum, 0, size);
+				break;
+			case eWTH:
+				memset(&w->mosum, 0, size);
+				break;
+			case eVPD:
+				memset(&vp->mosum, 0, size);
+				break;
+			default:
+				break;
 		}
 	}
 
 	if (SW_Model.newyear || bFlush_output)
 	{
 		average_for(otyp, eSW_Year);
+
 		switch (otyp)
 		{
-		case eSWC:
-			memset(&s->yrsum, 0, size);
-			break;
-		case eWTH:
-			memset(&w->yrsum, 0, size);
-			break;
-		case eVPD:
-			memset(&vp->yrsum, 0, size);
-			break;
-		default:
-			break;
+			case eSWC:
+				memset(&s->yrsum, 0, size);
+				break;
+			case eWTH:
+				memset(&w->yrsum, 0, size);
+				break;
+			case eVPD:
+				memset(&vp->yrsum, 0, size);
+				break;
+			default:
+				break;
 		}
 	}
 
 	if (!bFlush_output)
 	{
 		ForEachOutPeriod(pd)
+		{
 			collect_sums(otyp, pd);
+		}
 	}
 }
 
@@ -2017,8 +2014,9 @@ void SW_OUT_write_today(void)
 			}
 			#endif
 
-			if (!writeit[timeSteps[k][i]])
+			if (!writeit[timeSteps[k][i]]) {
 				continue;
+			}
 
 			#ifdef SWDEBUG
 			if (debug) swprintf(" call pfunc");
@@ -2184,7 +2182,9 @@ void _echo_outputs(void)
 }
 
 
-#ifndef RSOILWAT // function not for use with RSOILWAT since RSOILWAT has its own column header function. Planning on combining the two functions at a later date.
+#ifndef RSOILWAT
+// function not for use with RSOILWAT since RSOILWAT has its own column header function.
+// Planning on combining the two functions at a later date.
 /**
   \fn void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file)
   \brief Creates column headers for output files
@@ -2192,13 +2192,17 @@ void _echo_outputs(void)
   create_col_headers is called only once for each set of output files and it goes through
 	all values and if the value is defined to be used it creates the header in the output file
 
+	TODO: get output names from `SW_OUT_set_colnames`
+
   \param outFileTimestep. timeperiod so it can write headers to correct output file.
   \param regular_file. name of file.
 	\param soil_file. name of file.
 
   \return void.
 */
-void create_col_headers(IntU outFileTimestep, FILE *regular_file, FILE *soil_file, int std_headers){
+static void create_col_headers(IntU outFileTimestep, FILE *regular_file,
+	FILE *soil_file, int std_headers) {
+
 	int i, j, tLayers = SW_Site.n_layers;
 	SW_VEGESTAB *v = &SW_VegEstab; // for use to check estab
 
