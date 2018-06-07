@@ -273,8 +273,6 @@ static void _create_filename_iter(char *str, int iteration, char *filename);
 
 #ifndef RSOILWAT
 static void get_outstrleader(OutPeriod pd, char *str);
-static void populate_output_values(char *reg_outstr, char *soil_outstr,
-  int var, Bool has_iter);
 static void _create_csv_file(int iteration, OutPeriod pd);
 
 // the function `create_col_headers` should be really used by all applications for consistent naming of output
@@ -1694,10 +1692,6 @@ void SW_OUT_read(void)
 	//printf("make regular: %d\n", make_regular);
 
 	// creating files here instead of in loop so we can check periods
-	// Also check if need to create both soil and regular or just one
-	// TODO: make make_soil and make_regular global to check in col_header and populate_output_values
-	// functions to make sure not trying to write to file not created
-
 	#if defined(SOILWAT)
 		ForEachOutPeriod(p) {
 			if (use_OutPeriod[p]) {
@@ -2188,50 +2182,6 @@ void _echo_outputs(void)
 	LogError(logfp, LOGNOTE, errstr);
 
 }
-
-#ifndef RSOILWAT
-/**
-  \fn void populate_output_values(char *reg_outstr, char *soil_outstr, int var, int outstr_file)
-  \brief Concatenates formatted output (for one time step)
-
-  populate_output_values is called for all of the variables for one time period.
-  The concatenated and formatted output will become one row in the \
-  `csv`-output file for that time period.
-
-  \param reg_outstr. stores output for non-soil variables.
-  \param soil_outstr. stores output for variables with layers.
-  \param var. Tells function which value its using.
-  \param has_iter. If swFALSE, then process `sw_outstr`;
-    if swTRUE, then process `sw_outstr_iter` (only implemented for STEPWAT).
-
-  \return void.
-*/
-static void populate_output_values(char *reg_outstr, char *soil_outstr,
-	int var, Bool has_iter) {
-
-	if (has_soillayers((char *)key2str[var]))
-	{
-		if (!has_iter) {
-			strcat(soil_outstr, sw_outstr);
-		}
-		#ifdef STEPWAT
-		else {
-			strcat(soil_outstr, sw_outstr_iter);
-		}
-		#endif
-
-	} else {
-		if (!has_iter) {
-			strcat(reg_outstr, sw_outstr);
-		}
-		#ifdef STEPWAT
-		else {
-			strcat(reg_outstr, sw_outstr_iter);
-		}
-		#endif
-	}
-}
-#endif
 
 
 #ifndef RSOILWAT // function not for use with RSOILWAT since RSOILWAT has its own column header function. Planning on combining the two functions at a later date.
