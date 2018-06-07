@@ -240,20 +240,33 @@ static OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];// array to keep track o
 /* These MUST be in the same order as enum OutKey in
  * SW_Output.h */
 char const *key2str[] =
-{ SW_WETHR, SW_TEMP, SW_PRECIP, SW_SOILINF, SW_RUNOFF, SW_ALLH2O, SW_VWCBULK,
-		SW_VWCMATRIC, SW_SWCBULK, SW_SWABULK, SW_SWAMATRIC, SW_SWA, SW_SWPMATRIC,
-		SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE, SW_INTERCEPTION,
-		SW_LYRDRAIN, SW_HYDRED, SW_ET, SW_AET, SW_PET, SW_WETDAY, SW_SNOWPACK,
-		SW_DEEPSWC, SW_SOILTEMP,
-		SW_ALLVEG, SW_ESTAB, SW_CO2EFFECTS };
+{ // weather/atmospheric quantities:
+	SW_WETHR, SW_TEMP, SW_PRECIP, SW_SOILINF, SW_RUNOFF,
+	// soil related water quantities:
+	SW_ALLH2O, SW_VWCBULK, SW_VWCMATRIC, SW_SWCBULK, SW_SWABULK, SW_SWAMATRIC,
+		SW_SWA, SW_SWPMATRIC, SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE,
+		SW_INTERCEPTION, SW_LYRDRAIN, SW_HYDRED, SW_ET, SW_AET, SW_PET, SW_WETDAY,
+		SW_SNOWPACK, SW_DEEPSWC, SW_SOILTEMP,
+	// vegetation quantities:
+	SW_ALLVEG, SW_ESTAB,
+	// vegetation other:
+	SW_CO2EFFECTS
+};
+
 /* converts an enum output key (OutKey type) to a module  */
 /* or object type. see SW_Output.h for OutKey order.         */
 /* MUST be SW_OUTNKEYS of these */
-
 static ObjType key2obj[] =
-{ eWTH, eWTH, eWTH, eWTH, eWTH, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
-		eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
-		eSWC, eVES, eVES, eVPD };
+{ // weather/atmospheric quantities:
+	eWTH, eWTH, eWTH, eWTH, eWTH,
+	// soil related water quantities:
+	eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
+		eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
+	// vegetation quantities:
+	eVES, eVES,
+	// vegetation other:
+	eVPD
+};
 
 static char *pd2str[] =
 { SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR };
@@ -273,6 +286,7 @@ static void _create_filename_iter(char *str, int iteration, char *filename);
 
 #ifndef RSOILWAT
 static void get_outstrleader(OutPeriod pd, char *str);
+static void get_outstrheader(OutPeriod pd, char *str);
 static void _create_csv_file(int iteration, OutPeriod pd);
 static void create_col_headers(IntU outFileTimestep, FILE *regular_file,
 	FILE *soil_file, int std_headers);
@@ -297,13 +311,12 @@ static void average_for(ObjType otyp, OutPeriod pd);
 /* --------------------------------------------------- */
 
 #ifndef RSOILWAT
+/** Periodic output for Month and/or Week are actually
+		printing for the PREVIOUS month or week.
+		Also, see note on test value in _write_today() for
+		explanation of the +1.
+*/
 static void get_outstrleader(OutPeriod pd, char *str) {
-	/* Periodic output for Month and/or Week are actually
-	 * printing for the PREVIOUS month or week.
-	 * Also, see note on test value in _write_today() for
-	 * explanation of the +1.
-	 */
-
 	switch (pd) {
 		case eSW_Day:
 			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep, SW_Model.doy);
@@ -321,6 +334,26 @@ static void get_outstrleader(OutPeriod pd, char *str) {
 
 		case eSW_Year:
 			sprintf(str, "%d", SW_Model.simyear);
+			break;
+	}
+}
+
+static void get_outstrheader(OutPeriod pd, char *str) {
+	switch (pd) {
+		case eSW_Day:
+			sprintf(str, "%s%c%s", "Year", _Sep, "Day");
+			break;
+
+		case eSW_Week:
+			sprintf(str, "%s%c%s", "Year", _Sep, "Week");
+			break;
+
+		case eSW_Month:
+			sprintf(str, "%s%c%s", "Year", _Sep, "Month");
+			break;
+
+		case eSW_Year:
+			sprintf(str, "%s", "Year");
 			break;
 	}
 }
@@ -2031,7 +2064,10 @@ void SW_OUT_write_today(void)
 			/* concatenate formatted output for one row of `csv`- files */
 			if (!SW_File_Status.col_status[timeSteps[k][i]])
 			{
-				create_col_headers(timeSteps[k][i] + 1,
+printf("here1: year = %d day = %d k = %d i = %d\n",
+	SW_Model.simyear, SW_Model.doy, k, i);
+
+				create_col_headers(timeSteps[k][i],
 					SW_File_Status.fp_avg[timeSteps[k][i]],
 					SW_File_Status.fp_soil_avg[timeSteps[k][i]], 0);
 
@@ -2052,13 +2088,13 @@ void SW_OUT_write_today(void)
 				if (!SW_File_Status.col_status[timeSteps[k][i]])
 				{
 					if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) {
-						create_col_headers(timeSteps[k][i] + 1,
+						create_col_headers(timeSteps[k][i],
 							SW_File_Status.fp_avg[timeSteps[k][i]],
 							SW_File_Status.fp_soil_avg[timeSteps[k][i]], 1);
 					}
 
 					if (storeAllIterations) {
-						create_col_headers(timeSteps[k][i] + 1,
+						create_col_headers(timeSteps[k][i],
 							SW_File_Status.fp_iter[timeSteps[k][i]],
 							SW_File_Status.fp_soil_iter[timeSteps[k][i]], 0);
 					}
@@ -2194,13 +2230,13 @@ void _echo_outputs(void)
 
 	TODO: get output names from `SW_OUT_set_colnames`
 
-  \param outFileTimestep. timeperiod so it can write headers to correct output file.
+  \param pd. timeperiod so it can write headers to correct output file.
   \param regular_file. name of file.
 	\param soil_file. name of file.
 
   \return void.
 */
-static void create_col_headers(IntU outFileTimestep, FILE *regular_file,
+static void create_col_headers(OutPeriod pd, FILE *regular_file,
 	FILE *soil_file, int std_headers) {
 
 	int i, j, tLayers = SW_Site.n_layers;
@@ -2217,8 +2253,7 @@ static void create_col_headers(IntU outFileTimestep, FILE *regular_file,
 	if(_Sep == ',') strcpy(_SepSplit, ",");
 	else strcpy(_SepSplit, "\t");
 
-	char *col1Head;
-	char *col2Head;
+	char colHead[20];
 
 	#ifndef STEPWAT
 		if(std_headers != 0)
@@ -2253,7 +2288,7 @@ static void create_col_headers(IntU outFileTimestep, FILE *regular_file,
 
 	ForEachOutKey(colHeadersLoop)
 	{
-			if((SW_Output[colHeadersLoop].use && useTimeStep == 0 && timeSteps[colHeadersLoop][0] == outFileTimestep-1) || (SW_Output[colHeadersLoop].use && useTimeStep == 1))
+			if((SW_Output[colHeadersLoop].use && useTimeStep == 0 && timeSteps[colHeadersLoop][0] == pd) || (SW_Output[colHeadersLoop].use && useTimeStep == 1))
 		{
 			if (has_soillayers((char *)key2str[colHeadersLoop]))
 			{
@@ -2491,42 +2526,21 @@ static void create_col_headers(IntU outFileTimestep, FILE *regular_file,
 			}
 		}
 	}
-		switch(outFileTimestep)
-		{
-			case(1):
-				col1Head = "Year";
-				col2Head = "Day";
-				if(SW_File_Status.make_soil)
-					fprintf(soil_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, (char*)colHeadersSoil); // write columns to file
-				if(SW_File_Status.make_regular)
-					fprintf(regular_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, (char*)colHeaders); // write columns to file
-				break;
-			case(2):
-				col1Head = "Year";
-				col2Head = "Week";
-				if(SW_File_Status.make_soil)
-					fprintf(soil_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, (char*)colHeadersSoil); // write columns to file
-				if(SW_File_Status.make_regular)
-					fprintf(regular_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, (char*)colHeaders); // write columns to file
-				break;
-			case(3):
-				col1Head = "Year";
-				col2Head = "Month";
-				if(SW_File_Status.make_soil)
-					fprintf(soil_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, (char*)colHeadersSoil); // write columns to file
-				if(SW_File_Status.make_regular)
-					fprintf(regular_file, "%s%c%s%c%s\n", col1Head, _Sep, col2Head, _Sep, (char*)colHeaders); // write columns to file
-				break;
-			case(4):
-				col1Head = "Year";
-				if(SW_File_Status.make_soil)
-					fprintf(soil_file, "%s%c%s\n", col1Head, _Sep, (char*)colHeadersSoil); // write columns to file
-				if(SW_File_Status.make_regular)
-					fprintf(regular_file, "%s%c%s\n", col1Head, _Sep, (char*)colHeaders); // write columns to file
-				break;
-		}
+
+
+	// write columns to file
+	get_outstrheader(pd, colHead);
+
+	if (SW_File_Status.make_soil) {
+		fprintf(soil_file, "%s%c%s\n", colHead, _Sep, (char*)colHeadersSoil);
+	}
+
+	if(SW_File_Status.make_regular) {
+		fprintf(regular_file, "%s%c%s\n", colHead, _Sep, (char*)colHeaders);
+	}
 }
 #endif
+
 
 #ifdef STEPWAT
 /** Splits a filename such as `name.ext` into its two parts `name` and `ext`;

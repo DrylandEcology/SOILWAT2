@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 
 	SW_SIT_clear_layers();
 	SW_WTH_clear_runavg_list();
-	SW_OUT_close_files();
+	SW_OUT_close_files(); // not used with rSOILWAT2
 
 	return 0;
 }

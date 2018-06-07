@@ -51,8 +51,10 @@ void SW_OUT_new_year(void)
 void SW_OUT_read(void)
 {}
 
+#ifndef RSOILWAT
 void SW_OUT_close_files(void)
 {}
+#endif
 
 void _collect_values(void)
 {}
@@ -188,11 +190,13 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 
 static void average_for(ObjType otyp, OutPeriod pd)
 {
+  if (pd == eSW_Day) {}
   SW_OUT_sum_today(otyp);
 }
 
 static void collect_sums(ObjType otyp, OutPeriod op)
 {
+  if (op == eSW_Day) {}
   SW_OUT_sum_today(otyp);
 }
 

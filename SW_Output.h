@@ -111,6 +111,7 @@ typedef enum {
 	/* vegetation quantities */
 	eSW_AllVeg,
 	eSW_Estab,
+	// vegetation other */
 	eSW_CO2Effects,
 	eSW_LastKey /* make sure this is the last one */
 } OutKey;
@@ -201,7 +202,9 @@ void SW_OUT_read(void);
 void SW_OUT_sum_today(ObjType otyp);
 void SW_OUT_write_today(void);
 void SW_OUT_write_year(void);
+#ifndef RSOILWAT
 void SW_OUT_close_files(void);
+#endif
 void SW_OUT_flush(void);
 void _collect_values(void);
 void _echo_outputs(void);
