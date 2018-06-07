@@ -22,7 +22,7 @@
 	12/13/2012	(clk) added SW_RUNOFF, updated SW_OUTNKEYs to 29, added eSW_Runoff to enum
 	12/14/2012	(drs) updated SW_OUTNKEYs from 29 to 26 [incorrect number probably introduced 09/12/2011]
 	01/10/2013	(clk)	instead of using one FILE pointer named fp, created four new
-			FILE pointers; fp_iter[eSW_Day], fp_iter[eSW_Week], fp_iter[eSW_Month], and fp_iter[eSW_Year]. This allows us to keep track
+			FILE pointers; fp_reg_agg[eSW_Day], fp_reg_agg[eSW_Week], fp_reg_agg[eSW_Month], and fp_reg_agg[eSW_Year]. This allows us to keep track
 			of all time steps for each OutKey.
 */
 /********************************************************/
@@ -157,23 +157,22 @@ typedef struct {
 	Bool make_soil, make_regular;
 
 	//#ifdef STEPWAT
-	// "regular" output file; new file for each iteration/repetition of STEPWAT
-	FILE *fp_iter[SW_OUTNPERIODS];
-	char buf_iter[SW_OUTNPERIODS][OUTSTRLEN];
+	// average/sd across iteration/repetitions
+	FILE *fp_reg_agg[SW_OUTNPERIODS];
+	char buf_reg_agg[SW_OUTNPERIODS][OUTSTRLEN];
 	// output file for variables with values for each soil layer
-	// new file for each iteration/repetition of STEPWAT
-	FILE *fp_soil_iter[SW_OUTNPERIODS];
-	char buf_soil_iter[SW_OUTNPERIODS][OUTSTRLEN];
+	FILE *fp_soil_agg[SW_OUTNPERIODS];
+	char buf_soil_agg[SW_OUTNPERIODS][OUTSTRLEN];
 	//#endif
 
 	// if SOILWAT: "regular" output file
-	// if STEPWAT: average/sd across iteration/repetitions
-	FILE *fp_avg[SW_OUTNPERIODS];
-	char buf_avg[SW_OUTNPERIODS][OUTSTRLEN];
+	// if STEPWAT: "regular" output file; new file for each iteration/repetition
+	FILE *fp_reg[SW_OUTNPERIODS];
+	char buf_reg[SW_OUTNPERIODS][OUTSTRLEN];
 	// if SOILWAT: output file for variables with values for each soil layer
-	// if STEPWAT: average/sd across iteration/repetitions
-	FILE *fp_soil_avg[SW_OUTNPERIODS];
-	char buf_soil_avg[SW_OUTNPERIODS][OUTSTRLEN];
+	// if STEPWAT: new file for each iteration/repetition of STEPWAT
+	FILE *fp_soil[SW_OUTNPERIODS];
+	char buf_soil[SW_OUTNPERIODS][OUTSTRLEN];
 
 } SW_FILE_STATUS;
 
@@ -199,8 +198,15 @@ void SW_OUT_read(void);
 void SW_OUT_sum_today(ObjType otyp);
 void SW_OUT_write_today(void);
 void SW_OUT_write_year(void);
-#ifndef RSOILWAT
+#if defined(SOILWAT)
 void SW_OUT_create_files(void);
+#elif defined(STEPWAT)
+void SW_OUT_create_summary_files(void);
+void SW_OUT_create_iteration_files(void);
+#endif
+#ifndef RSOILWAT
+void create_col_headers(OutPeriod pd, FILE *regular_file,
+	FILE *soil_file, int std_headers);
 void SW_OUT_close_files(void);
 #endif
 void SW_OUT_flush(void);

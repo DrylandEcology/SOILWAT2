@@ -50,12 +50,50 @@ extern SW_WEATHER SW_Weather;
 extern SW_VEGPROD SW_VegProd;
 extern SW_VEGESTAB SW_VegEstab;
 extern SW_CARBON SW_Carbon;
-extern SW_OUTPUT SW_Output[SW_OUTNKEYS]; // defined in `SW_Output_core.c`
 
-extern char _Sep; // defined in `SW_Output_core.c`: output delimiter
-extern TimeInt tOffset; // defined in `SW_Output_core.c`: 1 or 0 means we're writing previous or current period
-extern Bool bFlush_output; // defined in `SW_Output_core.c`: process partial period ?
-extern char sw_outstr[OUTSTRLEN]; // defined in `SW_Output_core.c`: string with formatted output which is to be written to output files
+// defined in `SW_Output_core.c`:
+extern SW_OUTPUT SW_Output[SW_OUTNKEYS];
+extern SW_FILE_STATUS SW_OutFiles;
+
+extern char _Sep;
+extern TimeInt tOffset;
+extern Bool bFlush_output;
+extern char sw_outstr[OUTSTRLEN];
+extern Bool use_OutPeriod[SW_OUTNPERIODS];
+
+
+/* =================================================== */
+/* =================================================== */
+/*             Private Functions                       */
+/* --------------------------------------------------- */
+
+static void _create_csv_files(OutPeriod pd);
+
+/**
+  \fn static void _create_csv_files(OutPeriod pd)
+
+  Creates `csv` output files for specified time step
+
+  \param pd. The output time step.
+*/
+/***********************************************************/
+static void _create_csv_files(OutPeriod pd)
+{
+	// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
+	// a specific order of `SW_FileIndex` --> fix and create something that
+	// allows subsetting such as `eOutputFile[pd]` or append time period to
+	// a basename, etc.
+
+	if (SW_OutFiles.make_regular) {
+		SW_OutFiles.fp_reg[pd] = OpenFile(SW_F_name(eOutputDaily + pd), "w");
+	}
+
+	if (SW_OutFiles.make_soil) {
+		SW_OutFiles.fp_soil[pd] = OpenFile(SW_F_name(eOutputDaily_soil + pd), "w");
+	}
+}
+
+
 
 
 /* =================================================== */
@@ -63,6 +101,22 @@ extern char sw_outstr[OUTSTRLEN]; // defined in `SW_Output_core.c`: string with 
 /*             Function Definitions                    */
 /*             (declared in SW_Output.h)               */
 /* --------------------------------------------------- */
+
+/** create all of the user-specified output files.
+    call this routine at the beginning of the main program run, but
+    after `SW_OUT_read` which sets the global variable `use_OutPeriod`.
+*/
+void SW_OUT_create_files(void) {
+	OutPeriod p;
+
+	ForEachOutPeriod(p) {
+		if (use_OutPeriod[p]) {
+			_create_csv_files(p);
+
+			create_col_headers(p, SW_OutFiles.fp_reg[p], SW_OutFiles.fp_soil[p], 0);
+		}
+	}
+}
 
 
 void get_co2effects(OutPeriod pd) {
