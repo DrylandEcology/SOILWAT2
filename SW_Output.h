@@ -141,7 +141,8 @@ typedef struct {
 	OutKey mykey;
 	ObjType myobj;
 	OutSum sumtype;
-	Bool use;
+	Bool use,	// TRUE if output is requested
+		has_sl;	// TRUE if output key/type produces output for each soil layer
 	TimeInt first, last, 			/* updated for each year */
 			first_orig, last_orig;
 	int yr_row, mo_row, wk_row, dy_row;
@@ -160,17 +161,21 @@ typedef struct {
 	//#ifdef STEPWAT
 	// "regular" output file; new file for each iteration/repetition of STEPWAT
 	FILE *fp_iter[SW_OUTNPERIODS];
+	char buf_iter[SW_OUTNPERIODS][OUTSTRLEN];
 	// output file for variables with values for each soil layer
 	// new file for each iteration/repetition of STEPWAT
 	FILE *fp_soil_iter[SW_OUTNPERIODS];
+	char buf_soil_iter[SW_OUTNPERIODS][OUTSTRLEN];
 	//#endif
 
 	// if SOILWAT: "regular" output file
 	// if STEPWAT: average/sd across iteration/repetitions
 	FILE *fp_avg[SW_OUTNPERIODS];
+	char buf_avg[SW_OUTNPERIODS][OUTSTRLEN];
 	// if SOILWAT: output file for variables with values for each soil layer
 	// if STEPWAT: average/sd across iteration/repetitions
 	FILE *fp_soil_avg[SW_OUTNPERIODS];
+	char buf_soil_avg[SW_OUTNPERIODS][OUTSTRLEN];
 
 } SW_FILE_STATUS;
 
