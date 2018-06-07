@@ -113,7 +113,7 @@ void SW_OUT_create_files(void) {
 		if (use_OutPeriod[p]) {
 			_create_csv_files(p);
 
-			create_col_headers(p, SW_OutFiles.fp_reg[p], SW_OutFiles.fp_soil[p], 0);
+			write_headers_to_csv(p, SW_OutFiles.fp_reg[p], SW_OutFiles.fp_soil[p], swFALSE);
 		}
 	}
 }

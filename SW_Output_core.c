@@ -302,7 +302,7 @@ static void get_outstrheader(OutPeriod pd, char *str);
 static OutPeriod str2period(char *s);
 static OutKey str2key(char *s);
 static OutSum str2stype(char *s);
-static Bool has_soillayers(char *var);
+static Bool has_soillayers(const char *var);
 
 static void collect_sums(ObjType otyp, OutPeriod op);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
@@ -411,7 +411,7 @@ static OutSum str2stype(char *s)
 
     \return `TRUE` if `var` comes with soil layers; `FALSE` otherwise.
 */
-static Bool has_soillayers(char *var) {
+static Bool has_soillayers(const char *var) {
 	Bool has;
 
 	has = (
@@ -2167,29 +2167,12 @@ void _echo_outputs(void)
 
   \return void.
 */
-void create_col_headers(OutPeriod pd, FILE *regular_file,
-	FILE *soil_file, int std_headers) {
+static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil) {
 
 	int i, j, tLayers = SW_Site.n_layers;
 	SW_VEGESTAB *v = &SW_VegEstab; // for use to check estab
 
-	OutKey colHeadersLoop;
-	char *colHeaders[5000]; // generous estimation of max size
-	char *colHeadersSoil[5000];
-	memset(&colHeaders, 0, sizeof(colHeaders));
-	memset(&colHeadersSoil, 0, sizeof(colHeadersSoil));
-
-	char  _SepSplit[5];
-	if(_Sep == ' ') strcpy(_SepSplit, " ");
-	if(_Sep == ',') strcpy(_SepSplit, ",");
-	else strcpy(_SepSplit, "\t");
-
-	char colHead[20];
-
-	#ifndef STEPWAT
-		if(std_headers != 0)
-			std_headers = 0; // make sure set to 0 if not STEPWAT
-	#endif
+	OutKey k;
 
 	const char *Layers_names[MAX_LAYERS] = { "Lyr_1", "Lyr_2", "Lyr_3", "Lyr_4", "Lyr_5",
 		"Lyr_6", "Lyr_7", "Lyr_8", "Lyr_9", "Lyr_10", "Lyr_11", "Lyr_12", "Lyr_13", "Lyr_14",
@@ -2217,73 +2200,73 @@ void create_col_headers(OutPeriod pd, FILE *regular_file,
 		"GrassWUEMult", "ShrubWUEMult", "TreeWUEMult", "ForbWUEMult"};
 
 
-	ForEachOutKey(colHeadersLoop)
+	ForEachOutKey(k)
 	{
-		if((SW_Output[colHeadersLoop].use && useTimeStep == 0 && timeSteps[colHeadersLoop][0] == pd) || (SW_Output[colHeadersLoop].use && useTimeStep == 1))
+		if((SW_Output[k].use && useTimeStep == 0 && timeSteps[k][0] == pd) || (SW_Output[k].use && useTimeStep == 1))
 		{
-			if (has_soillayers((char *)key2str[colHeadersLoop]))
+			if (has_soillayers((char *)key2str[k]))
 			{
 				int q;
 				char convertq[10] = {0};
 				char storeCol[5000] = {0}; // need to make this a pretty large file to accommodate all the header names up to max layer size
 
 				// swa, trasp, and hydred are all the same col headers algorithm just need different index for swa
-				if(strcmp(key2str[colHeadersLoop], "SWA")==0 || strcmp(key2str[colHeadersLoop], "HYDRED")==0 || strcmp(key2str[colHeadersLoop], "TRANSP")==0)
+				if(strcmp(key2str[k], "SWA")==0 || strcmp(key2str[k], "HYDRED")==0 || strcmp(key2str[k], "TRANSP")==0)
 				{
 					int start_index;
-					if(strcmp(key2str[colHeadersLoop], "SWA")==0)
+					if(strcmp(key2str[k], "SWA")==0)
 						start_index = 1;
 					else
 						start_index = 0;
 					for (i = 0; i < tLayers; i++) {
 						for (j = start_index; j < NVEGTYPES + 1; j++) { // only want the veg types, dont need 'total' or 'litter'
-							strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+							strcat(storeCol, key2str[k]); // store value name in new string
 							strcat(storeCol, cnames_VegTypes[j]);
 							strcat(storeCol, "_");
 							strcat(storeCol, Layers_names[i]);
-							strcat(storeCol, _SepSplit);
+							strcat(storeCol, &_Sep);
 							#ifdef STEPWAT
 								if(std_headers){
-									strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+									strcat(storeCol, key2str[k]); // store value name in new string
 									strcat(storeCol, cnames_VegTypes[j]);
 									strcat(storeCol, "_STD_");
 									strcat(storeCol, Layers_names[i]);
-									strcat(storeCol, _SepSplit);
+									strcat(storeCol, &_Sep);
 								}
 							#endif
 						}
 					}
 				}
-				else if(strcmp(key2str[colHeadersLoop], "EVAPSOIL")==0){
+				else if(strcmp(key2str[k], "EVAPSOIL")==0){
 					for (i = 0; i < ncol_OUT[eSW_EvapSoil]; i++) {
-						strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+						strcat(storeCol, key2str[k]); // store value name in new string
 						// concatenate layer number
 						strcat(storeCol, "_");
 						strcat(storeCol, Layers_names[i]);
-						strcat(storeCol, _SepSplit);
+						strcat(storeCol, &_Sep);
 						#ifdef STEPWAT
 							if(std_headers){
-								strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+								strcat(storeCol, key2str[k]); // store value name in new string
 								strcat(storeCol, "_STD_");
 								strcat(storeCol, Layers_names[i]);
-								strcat(storeCol, _SepSplit);
+								strcat(storeCol, &_Sep);
 							}
 						#endif
 					}
 				}
-				else if(strcmp(key2str[colHeadersLoop], "LYRDRAIN")==0){
+				else if(strcmp(key2str[k], "LYRDRAIN")==0){
 					for (i = 0; i < ncol_OUT[eSW_LyrDrain]; i++) {
-						strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+						strcat(storeCol, key2str[k]); // store value name in new string
 						// concatenate layer number
 						strcat(storeCol, "_");
 						strcat(storeCol, Layers_names[i]);
-						strcat(storeCol, _SepSplit);
+						strcat(storeCol, &_Sep);
 						#ifdef STEPWAT
 							if(std_headers){
-								strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+								strcat(storeCol, key2str[k]); // store value name in new string
 								strcat(storeCol, "_STD_");
 								strcat(storeCol, Layers_names[i]);
-								strcat(storeCol, _SepSplit);
+								strcat(storeCol, &_Sep);
 							}
 						#endif
 					}
@@ -2292,182 +2275,206 @@ void create_col_headers(OutPeriod pd, FILE *regular_file,
 					// make variable header for each layer possible
 					for(q = 1; q <= (int)SW_Site.n_layers; q++){
 						sprintf(convertq, "%d", q); // cast q to string
-						strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+						strcat(storeCol, key2str[k]); // store value name in new string
 						// concatenate layer number
 						strcat(storeCol, "_");
 						strcat(storeCol, convertq);
-						strcat(storeCol, _SepSplit);
+						strcat(storeCol, &_Sep);
 						#ifdef STEPWAT
 							if(std_headers){
-								strcat(storeCol, key2str[colHeadersLoop]); // store value name in new string
+								strcat(storeCol, key2str[k]); // store value name in new string
 								strcat(storeCol, "_STD_");
 								strcat(storeCol, convertq);
-								strcat(storeCol, _SepSplit);
+								strcat(storeCol, &_Sep);
 							}
 						#endif
 					}
 				}
-				strcat((char*)colHeadersSoil, storeCol); // concatenate variable to string
+				strcat((char*)str_soil, storeCol); // concatenate variable to string
 			}
 
 			else
 			{
 				char storeRegCol[2000] = {0};
-				if(strcmp(key2str[colHeadersLoop], "TEMP")==0){
+				if(strcmp(key2str[k], "TEMP")==0){
 					for (i = 0; i < ncol_OUT[eSW_Temp]; i++) {
 						strcat(storeRegCol, cnames_eSW_Temp[i]);
-						strcat(storeRegCol, _SepSplit);
+						strcat(storeRegCol, &_Sep);
 						#ifdef STEPWAT
 							if(std_headers){
 								strcat(storeRegCol, cnames_eSW_Temp[i]);
 								strcat(storeRegCol, "_STD");
-								strcat(storeRegCol, _SepSplit);
+								strcat(storeRegCol, &_Sep);
 							}
 						#endif
 					}
 				}
-				else if(strcmp(key2str[colHeadersLoop], "PRECIP")==0){
+				else if(strcmp(key2str[k], "PRECIP")==0){
 					for (i = 0; i < ncol_OUT[eSW_Precip]; i++) {
 						strcat(storeRegCol, cnames_eSW_Precip[i]);
-						strcat(storeRegCol, _SepSplit);
+						strcat(storeRegCol, &_Sep);
 						#ifdef STEPWAT
 							if(std_headers){
 								strcat(storeRegCol, cnames_eSW_Precip[i]);
 								strcat(storeRegCol, "_STD");
-								strcat(storeRegCol, _SepSplit);
+								strcat(storeRegCol, &_Sep);
 							}
 						#endif
 					}
 				}
-				else if(strcmp(key2str[colHeadersLoop], "ESTABL")==0){
+				else if(strcmp(key2str[k], "ESTABL")==0){
 					if(v->count > 0){ // only create col if estab has values
-						strcat(storeRegCol, key2str[colHeadersLoop]); // concatenate variable to string
-						strcat(storeRegCol, _SepSplit);
+						strcat(storeRegCol, key2str[k]); // concatenate variable to string
+						strcat(storeRegCol, &_Sep);
 						#ifdef STEPWAT
 							if(std_headers){
-								strcat(storeRegCol, key2str[colHeadersLoop]); // store value name in new string
+								strcat(storeRegCol, key2str[k]); // store value name in new string
 								strcat(storeRegCol, "_STD");
-								strcat(storeRegCol, _SepSplit);
+								strcat(storeRegCol, &_Sep);
 							}
 						#endif
 					}
 				}
-				else if(strcmp(key2str[colHeadersLoop], "RUNOFF")==0){
+				else if(strcmp(key2str[k], "RUNOFF")==0){
 					for (i = 0; i < ncol_OUT[eSW_Runoff]; i++) {
 						strcat(storeRegCol, cnames_eSW_Runoff[i]);
-						strcat(storeRegCol, _SepSplit);
+						strcat(storeRegCol, &_Sep);
 						#ifdef STEPWAT
 							if(std_headers){
 								strcat(storeRegCol, cnames_eSW_Runoff[i]);
 								strcat(storeRegCol, "_STD");
-								strcat(storeRegCol, _SepSplit);
+								strcat(storeRegCol, &_Sep);
 							}
 						#endif
 					}
 				}
-				else if(strcmp(key2str[colHeadersLoop], "AET")==0){
+				else if(strcmp(key2str[k], "AET")==0){
 					for (i = 0; i < ncol_OUT[eSW_AET]; i++) {
 						strcat(storeRegCol, cnames_eSW_AET[i]);
-						strcat(storeRegCol, _SepSplit);
+						strcat(storeRegCol, &_Sep);
 						#ifdef STEPWAT
 							if(std_headers){
 								strcat(storeRegCol, cnames_eSW_AET[i]); // store value name in new string
 								strcat(storeRegCol, "_STD");
-								strcat(storeRegCol, _SepSplit);
+								strcat(storeRegCol, &_Sep);
 							}
 						#endif
 					}
 				}
-				else if(strcmp(key2str[colHeadersLoop], "EVAPSURFACE")==0){
+				else if(strcmp(key2str[k], "EVAPSURFACE")==0){
 					for (i = 0; i < NVEGTYPES + 2; i++){
 						strcat(storeRegCol, "EvapSurface_");
 						strcat(storeRegCol, cnames_VegTypes[i]);
-						strcat(storeRegCol, _SepSplit);
+						strcat(storeRegCol, &_Sep);
 						#ifdef STEPWAT
 							if(std_headers){
 								strcat(storeRegCol, "EvapSurface_"); // store value name in new string
 								strcat(storeRegCol, cnames_VegTypes[i]);
 								strcat(storeRegCol, "_STD");
-								strcat(storeRegCol, _SepSplit);
+								strcat(storeRegCol, &_Sep);
 							}
 						#endif
 					}
 					strcat(storeRegCol, "EvapSurface_Water");
-					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, &_Sep);
 					#ifdef STEPWAT
 						if(std_headers){
 							strcat(storeRegCol, "EvapSurface_Water_STD"); // store value name in new string
-							strcat(storeRegCol, _SepSplit);
+							strcat(storeRegCol, &_Sep);
 						}
 					#endif
 				}
-				else if(strcmp(key2str[colHeadersLoop], "INTERCEPTION")==0){
+				else if(strcmp(key2str[k], "INTERCEPTION")==0){
 					for (i = 0; i < NVEGTYPES + 2; i++){
 						strcat(storeRegCol, "Interception_");
 						strcat(storeRegCol, cnames_VegTypes[i]);
-						strcat(storeRegCol, _SepSplit);
+						strcat(storeRegCol, &_Sep);
 						#ifdef STEPWAT
 							if(std_headers){
 								strcat(storeRegCol, "Interception_"); // store value name in new string
 								strcat(storeRegCol, cnames_VegTypes[i]);
 								strcat(storeRegCol, "_STD");
-								strcat(storeRegCol, _SepSplit);
+								strcat(storeRegCol, &_Sep);
 							}
 						#endif
 					}
 				}
-				else if(strcmp(key2str[colHeadersLoop], "SNOWPACK")==0){
+				else if(strcmp(key2str[k], "SNOWPACK")==0){
 					for (i = 0; i < ncol_OUT[eSW_SnowPack]; i++) {
 						strcat(storeRegCol, cnames_eSW_SnowPack[i]);
-						strcat(storeRegCol, _SepSplit);
+						strcat(storeRegCol, &_Sep);
 						#ifdef STEPWAT
 							if(std_headers){
 								strcat(storeRegCol, cnames_eSW_SnowPack[i]); // store value name in new string
 								strcat(storeRegCol, "_STD");
-								strcat(storeRegCol, _SepSplit);
+								strcat(storeRegCol, &_Sep);
 							}
 						#endif
 					}
 				}
-				else if(strcmp(key2str[colHeadersLoop], "CO2EFFECTS")==0){
+				else if(strcmp(key2str[k], "CO2EFFECTS")==0){
 					for (i = 0; i < ncol_OUT[eSW_CO2Effects]; i++) {
 						strcat(storeRegCol, cnames_eSW_CO2Effects[i]);
-						strcat(storeRegCol, _SepSplit);
+						strcat(storeRegCol, &_Sep);
 						#ifdef STEPWAT
 							if(std_headers){
 								strcat(storeRegCol, cnames_eSW_CO2Effects[i]); // store value name in new string
 								strcat(storeRegCol, "_STD");
-								strcat(storeRegCol, _SepSplit);
+								strcat(storeRegCol, &_Sep);
 							}
 						#endif
 					}
 				}
 				else{
-					strcat(storeRegCol, key2str[colHeadersLoop]); // concatenate variable to string
-					strcat(storeRegCol, _SepSplit);
+					strcat(storeRegCol, key2str[k]); // concatenate variable to string
+					strcat(storeRegCol, &_Sep);
 					#ifdef STEPWAT
 						if(std_headers){
-							strcat(storeRegCol, key2str[colHeadersLoop]); // store value name in new string
+							strcat(storeRegCol, key2str[k]); // store value name in new string
 							strcat(storeRegCol, "_STD");
-							strcat(storeRegCol, _SepSplit);
+							strcat(storeRegCol, &_Sep);
 						}
 					#endif
 				}
-				strcat((char*)colHeaders, storeRegCol); // concatenate variable to string
+				strcat((char*)str_reg, storeRegCol); // concatenate variable to string
 			}
 		}
 	}
+}
 
+#ifdef STEPWAT
+static void _create_aggregation_csv_headers(OutPeriod pd, char *str_reg, char *str_soil) {
+}
+#endif
 
-	// write columns to file
-	get_outstrheader(pd, colHead);
+void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_agg) {
+	char str_time[20];
+	char header_reg[OUTSTRLEN], header_soil[2 * OUTSTRLEN];
 
-	if (SW_OutFiles.make_soil) {
-		fprintf(soil_file, "%s%c%s\n", colHead, _Sep, (char*)colHeadersSoil);
+	// Initialize headers because they grow
+	header_reg[0] = '\0';
+	header_soil[0] = '\0';
+
+	// Acquire headers
+	get_outstrheader(pd, str_time);
+	if (does_agg) {
+		#if defined(STEPWAT)
+		_create_aggregation_csv_headers(pd, header_reg, header_soil);
+		#elif defined(SOILWAT)
+		LogError(logfp, LOGFATAL, "'write_headers_to_csv': value TRUE for argument"\
+			"'does_agg' is not implemented for SOILWAT2-standalone.");
+		#endif
+	} else {
+		_create_csv_headers(pd, header_reg, header_soil);
 	}
 
-	if(SW_OutFiles.make_regular) {
-		fprintf(regular_file, "%s%c%s\n", colHead, _Sep, (char*)colHeaders);
+	// Write headers to files
+	if (SW_OutFiles.make_regular) {
+		fprintf(fp_reg, "%s%c%s\n", str_time, _Sep, header_reg);
+	}
+
+	if (SW_OutFiles.make_soil) {
+		fprintf(fp_soil, "%s%c%s\n", str_time, _Sep, header_soil);
 	}
 }
 #endif

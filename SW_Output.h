@@ -205,8 +205,7 @@ void SW_OUT_create_summary_files(void);
 void SW_OUT_create_iteration_files(void);
 #endif
 #ifndef RSOILWAT
-void create_col_headers(OutPeriod pd, FILE *regular_file,
-	FILE *soil_file, int std_headers);
+void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_agg);
 void SW_OUT_close_files(void);
 #endif
 void SW_OUT_flush(void);
