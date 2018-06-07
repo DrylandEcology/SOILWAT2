@@ -67,6 +67,7 @@ int main(int argc, char **argv) {
 
 	SW_OUT_set_ncol();
 	//SW_OUT_set_colnames(); // only using with rSOILWAT2
+	SW_OUT_create_files(); // only used with SOILWAT2
 
 	SW_CTL_main();
 

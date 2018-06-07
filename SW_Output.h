@@ -154,10 +154,7 @@ typedef struct {
 } SW_OUTPUT;
 
 typedef struct {
-	Bool col_status[SW_OUTNPERIODS]; // TRUE if column headers/names have been created
-
-	Bool make_soil,
-			make_regular;
+	Bool make_soil, make_regular;
 
 	//#ifdef STEPWAT
 	// "regular" output file; new file for each iteration/repetition of STEPWAT
@@ -203,6 +200,7 @@ void SW_OUT_sum_today(ObjType otyp);
 void SW_OUT_write_today(void);
 void SW_OUT_write_year(void);
 #ifndef RSOILWAT
+void SW_OUT_create_files(void);
 void SW_OUT_close_files(void);
 #endif
 void SW_OUT_flush(void);

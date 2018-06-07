@@ -1067,7 +1067,6 @@ void SW_OUT_construct(void)
 {
 	/* =================================================== */
 	OutKey k;
-	OutPeriod p;
 	SW_SOILWAT_OUTPUTS *s = NULL;
 	LyrIndex i;
 	int j;
@@ -1077,10 +1076,6 @@ void SW_OUT_construct(void)
 
 	bFlush_output = swFALSE;
 	tOffset = 1;
-
-	ForEachOutPeriod(p) {
-		SW_File_Status.col_status[p] = swFALSE;
-	}
 
 	ForEachSoilLayer(i) {
 		ForEachVegType(j) {
@@ -1714,46 +1709,30 @@ void SW_OUT_read(void)
   }
   #endif
 
-
-	//printf("make soil: %d\n", make_soil);
-	//printf("make regular: %d\n", make_regular);
-
-	// creating files here instead of in loop so we can check periods
-	#if defined(SOILWAT)
-		ForEachOutPeriod(p) {
-			if (use_OutPeriod[p]) {
-				_create_csv_file(-1, p);
-			}
-		}
-
-	#elif defined(STEPWAT)
-		// create output files if flag turned on and only for last iteration
-		if (isPartialSoilwatOutput == FALSE || storeAllIterations)
-		{
-			if(isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations-1)
-			{
-				ForEachOutPeriod(p) {
-					if (use_OutPeriod[p]) {
-						_create_csv_file(-1, p);
-					}
-				}
-			}
-			if (storeAllIterations) {
-				ForEachOutPeriod(p) {
-					if (use_OutPeriod[p]) {
-						_create_csv_file(Globals.currIter + 1, p);
-					}
-				}
-			}
-		}
-	#endif
-
 	CloseFile(&f);
 
 	if (EchoInits)
 		_echo_outputs();
 }
 
+
+#ifdef SOILWAT
+/** create all of the user-specified output files.
+    call this routine at the beginning of the program run.
+*/
+void SW_OUT_create_files(void) {
+	OutPeriod p;
+
+	ForEachOutPeriod(p) {
+		if (use_OutPeriod[p]) {
+			_create_csv_file(-1, p);
+
+			create_col_headers(p, SW_File_Status.fp_avg[p],
+				SW_File_Status.fp_soil_avg[p], 0);
+		}
+	}
+}
+#endif
 
 #ifndef RSOILWAT
 /** close all of the user-specified output files.
@@ -2060,67 +2039,30 @@ void SW_OUT_write_today(void)
 			if (debug) swprintf(" ... ok");
 			#endif
 
-			#if defined(SOILWAT)
 			/* concatenate formatted output for one row of `csv`- files */
-			if (!SW_File_Status.col_status[timeSteps[k][i]])
-			{
-printf("here1: year = %d day = %d k = %d i = %d\n",
-	SW_Model.simyear, SW_Model.doy, k, i);
-
-				create_col_headers(timeSteps[k][i],
-					SW_File_Status.fp_avg[timeSteps[k][i]],
-					SW_File_Status.fp_soil_avg[timeSteps[k][i]], 0);
-
-				SW_File_Status.col_status[timeSteps[k][i]] = swTRUE;
-			}
-
+			#if defined(SOILWAT)
 			if (SW_Output[k].has_sl) {
 				strcat(SW_File_Status.buf_soil_avg[timeSteps[k][i]], sw_outstr);
 			} else {
 				strcat(SW_File_Status.buf_avg[timeSteps[k][i]], sw_outstr);
 			}
 
-
 			#elif defined(STEPWAT)
 			if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
 			{
-				/* concatenate formatted output for one row of `csv`- files */
-				if (!SW_File_Status.col_status[timeSteps[k][i]])
-				{
-					if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) {
-						create_col_headers(timeSteps[k][i],
-							SW_File_Status.fp_avg[timeSteps[k][i]],
-							SW_File_Status.fp_soil_avg[timeSteps[k][i]], 1);
-					}
-
-					if (storeAllIterations) {
-						create_col_headers(timeSteps[k][i],
-							SW_File_Status.fp_iter[timeSteps[k][i]],
-							SW_File_Status.fp_soil_iter[timeSteps[k][i]], 0);
-					}
-
-					SW_File_Status.col_status[timeSteps[k][i]] = swTRUE;
-				}
-
-				if (SW_Output[k].has_sl) {
-					strcat(SW_File_Status.buf_soil_avg[timeSteps[k][i]], sw_outstr);
-				} else {
-					strcat(SW_File_Status.buf_avg[timeSteps[k][i]], sw_outstr);
-				}
-
 				if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) {
 					if (SW_Output[k].has_sl) {
-						strcat(SW_File_Status.buf_soil_avg[eSW_Day], sw_outstr);
+						strcat(SW_File_Status.buf_soil_avg[timeSteps[k][i]], sw_outstr);
 					} else {
-						strcat(SW_File_Status.buf_avg[eSW_Day], sw_outstr);
+						strcat(SW_File_Status.buf_avg[timeSteps[k][i]], sw_outstr);
 					}
 				}
 
 				if (storeAllIterations) {
 					if (SW_Output[k].has_sl) {
-						strcat(SW_File_Status.buf_soil_iter[eSW_Day], sw_outstr_iter);
+						strcat(SW_File_Status.buf_soil_iter[timeSteps[k][i]], sw_outstr_iter);
 					} else {
-						strcat(SW_File_Status.buf_iter[eSW_Day], sw_outstr_iter);
+						strcat(SW_File_Status.buf_iter[timeSteps[k][i]], sw_outstr_iter);
 					}
 				}
 			}
@@ -2226,7 +2168,10 @@ void _echo_outputs(void)
   \brief Creates column headers for output files
 
   create_col_headers is called only once for each set of output files and it goes through
-	all values and if the value is defined to be used it creates the header in the output file
+	all values and if the value is defined to be used it creates the header in the output file.
+
+	Note: `SW_OUT_set_ncol` must be called before `create_col_headers`; otherwise,
+		`ncol_OUT` are not set.
 
 	TODO: get output names from `SW_OUT_set_colnames`
 
@@ -2288,7 +2233,7 @@ static void create_col_headers(OutPeriod pd, FILE *regular_file,
 
 	ForEachOutKey(colHeadersLoop)
 	{
-			if((SW_Output[colHeadersLoop].use && useTimeStep == 0 && timeSteps[colHeadersLoop][0] == pd) || (SW_Output[colHeadersLoop].use && useTimeStep == 1))
+		if((SW_Output[colHeadersLoop].use && useTimeStep == 0 && timeSteps[colHeadersLoop][0] == pd) || (SW_Output[colHeadersLoop].use && useTimeStep == 1))
 		{
 			if (has_soillayers((char *)key2str[colHeadersLoop]))
 			{
