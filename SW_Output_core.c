@@ -202,7 +202,7 @@ extern Bool EchoInits;
 extern SW_CARBON SW_Carbon;
 
 SW_OUTPUT SW_Output[SW_OUTNKEYS]; /* defined here, externed in `SW_Output_ZZZ.c` */
-SW_FILE_STATUS SW_File_Status;
+SW_FILE_STATUS SW_OutFiles;
 
 char _Sep; /* output delimiter */
 TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
@@ -217,12 +217,15 @@ char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS]; // names of output 
 #ifdef STEPWAT
 extern ModelType Globals; // defined in `ST_Main.c`
 /* `isPartialSoilwatOutput` is set to FALSE if STEPWAT2 is called with `-o` flag
-    if FALSE, then calculate/write to disk the running mean and sd
-    across iterations/repeats */
-Bool isPartialSoilwatOutput = FALSE;
+      if FALSE, then calculate/write to disk the running mean and sd
+      across iterations/repeats
+    `print_IterationSummary is TRUE if STEPWAT2 is called with `-o` flag
+      and if STEPWAT2 is currently in its last iteration/repetition */
+Bool isPartialSoilwatOutput, print_IterationSummary;
 /* `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
    if TRUE, then write to disk the SOILWAT2 output
    for each STEPWAT2 iteration/repeat to separate files */
+Bool storeAllIterations;
 char sw_outstr_iter[OUTSTRLEN]; // formatted output as returned from `get_XXX` for single iteration/repeat
 #endif
 
@@ -1071,8 +1074,8 @@ void SW_OUT_construct(void)
 	LyrIndex i;
 	int j;
 
-	SW_File_Status.make_soil = swFALSE;
-  SW_File_Status.make_regular = swFALSE;
+	SW_OutFiles.make_soil = swFALSE;
+  SW_OutFiles.make_regular = swFALSE;
 
 	bFlush_output = swFALSE;
 	tOffset = 1;
@@ -1460,6 +1463,11 @@ void SW_OUT_new_year(void)
 
 	OutKey k;
 
+	#ifdef STEPWAT
+	print_IterationSummary = (Bool) (isPartialSoilwatOutput == swFALSE &&
+		Globals.currIter == Globals.runModelIterations);
+	#endif
+
 	ForEachOutKey(k)
 	{
 		if (!SW_Output[k].use) {
@@ -1616,10 +1624,10 @@ void SW_OUT_read(void)
 		// Check whether output per soil layer or 'regular' is requested
 		if (SW_Output[k].has_sl)
 		{
-			SW_File_Status.make_soil = swTRUE;
+			SW_OutFiles.make_soil = swTRUE;
 		} else
 		{
-			SW_File_Status.make_regular = swTRUE;
+			SW_OutFiles.make_regular = swTRUE;
 		}
 
 		// set use_SWA to TRUE if defined.
@@ -1727,8 +1735,8 @@ void SW_OUT_create_files(void) {
 		if (use_OutPeriod[p]) {
 			_create_csv_file(-1, p);
 
-			create_col_headers(p, SW_File_Status.fp_avg[p],
-				SW_File_Status.fp_soil_avg[p], 0);
+			create_col_headers(p, SW_OutFiles.fp_avg[p],
+				SW_OutFiles.fp_soil_avg[p], 0);
 		}
 	}
 }
@@ -1747,31 +1755,31 @@ void SW_OUT_close_files(void) {
   OutPeriod p;
 
 #if defined(SOILWAT)
-  close_regular = SW_File_Status.make_regular;
-  close_layers = SW_File_Status.make_soil;
+  close_regular = SW_OutFiles.make_regular;
+  close_layers = SW_OutFiles.make_soil;
   close_AllIters = swFALSE;
 
 #elif defined(STEPWAT)
-  close_regular = (Bool) (SW_File_Status.make_regular && !isPartialSoilwatOutput);
-  close_layers = (Bool) (SW_File_Status.make_soil && !isPartialSoilwatOutput);
-  close_AllIters = (Bool) (SW_File_Status.make_regular && storeAllIterations);
+  close_regular = (Bool) (SW_OutFiles.make_regular && !isPartialSoilwatOutput);
+  close_layers = (Bool) (SW_OutFiles.make_soil && !isPartialSoilwatOutput);
+  close_AllIters = (Bool) (SW_OutFiles.make_regular && storeAllIterations);
 #endif
 
   ForEachOutPeriod(p) {
     if (use_OutPeriod[p]) {
       if (close_regular) {
-        CloseFile(&SW_File_Status.fp_avg[p]);
+        CloseFile(&SW_OutFiles.fp_avg[p]);
       }
 
       if (close_layers) {
-        CloseFile(&SW_File_Status.fp_soil_avg[p]);
+        CloseFile(&SW_OutFiles.fp_soil_avg[p]);
       }
 
       if (close_AllIters) {
-        CloseFile(&SW_File_Status.fp_iter[p]);
+        CloseFile(&SW_OutFiles.fp_iter[p]);
 
         if (close_layers) {
-          CloseFile(&SW_File_Status.fp_soil_iter[p]);
+          CloseFile(&SW_OutFiles.fp_soil_iter[p]);
         }
       }
     }
@@ -1971,12 +1979,12 @@ void SW_OUT_write_today(void)
 	#ifndef RSOILWAT
 	ForEachOutPeriod(p)
 	{
-		SW_File_Status.buf_avg[p][0] = '\0';
-		SW_File_Status.buf_soil_avg[p][0] = '\0';
+		SW_OutFiles.buf_avg[p][0] = '\0';
+		SW_OutFiles.buf_soil_avg[p][0] = '\0';
 
 		#ifdef STEPWAT
-		SW_File_Status.buf_iter[p][0] = '\0';
-		SW_File_Status.buf_soil_iter[p][0] = '\0';
+		SW_OutFiles.buf_iter[p][0] = '\0';
+		SW_OutFiles.buf_soil_iter[p][0] = '\0';
 		#endif
 	}
 	#endif
@@ -2042,27 +2050,27 @@ void SW_OUT_write_today(void)
 			/* concatenate formatted output for one row of `csv`- files */
 			#if defined(SOILWAT)
 			if (SW_Output[k].has_sl) {
-				strcat(SW_File_Status.buf_soil_avg[timeSteps[k][i]], sw_outstr);
+				strcat(SW_OutFiles.buf_soil_avg[timeSteps[k][i]], sw_outstr);
 			} else {
-				strcat(SW_File_Status.buf_avg[timeSteps[k][i]], sw_outstr);
+				strcat(SW_OutFiles.buf_avg[timeSteps[k][i]], sw_outstr);
 			}
 
 			#elif defined(STEPWAT)
-			if ((isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) || storeAllIterations)
+			if (print_IterationSummary || storeAllIterations)
 			{
-				if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) {
+				if (print_IterationSummary) {
 					if (SW_Output[k].has_sl) {
-						strcat(SW_File_Status.buf_soil_avg[timeSteps[k][i]], sw_outstr);
+						strcat(SW_OutFiles.buf_soil_avg[timeSteps[k][i]], sw_outstr);
 					} else {
-						strcat(SW_File_Status.buf_avg[timeSteps[k][i]], sw_outstr);
+						strcat(SW_OutFiles.buf_avg[timeSteps[k][i]], sw_outstr);
 					}
 				}
 
 				if (storeAllIterations) {
 					if (SW_Output[k].has_sl) {
-						strcat(SW_File_Status.buf_soil_iter[timeSteps[k][i]], sw_outstr_iter);
+						strcat(SW_OutFiles.buf_soil_iter[timeSteps[k][i]], sw_outstr_iter);
 					} else {
-						strcat(SW_File_Status.buf_iter[timeSteps[k][i]], sw_outstr_iter);
+						strcat(SW_OutFiles.buf_iter[timeSteps[k][i]], sw_outstr_iter);
 					}
 				}
 			}
@@ -2077,16 +2085,16 @@ void SW_OUT_write_today(void)
 		{
 			get_outstrleader(p, str_time);
 
-			if (SW_File_Status.make_regular)
+			if (SW_OutFiles.make_regular)
 			{
-				fprintf(SW_File_Status.fp_avg[p], "%s%s\n",
-					str_time, SW_File_Status.buf_avg[p]);
+				fprintf(SW_OutFiles.fp_avg[p], "%s%s\n",
+					str_time, SW_OutFiles.buf_avg[p]);
 			}
 
-			if (SW_File_Status.make_soil)
+			if (SW_OutFiles.make_soil)
 			{
-				fprintf(SW_File_Status.fp_soil_avg[p], "%s%s\n",
-					str_time, SW_File_Status.buf_soil_avg[p]);
+				fprintf(SW_OutFiles.fp_soil_avg[p], "%s%s\n",
+					str_time, SW_OutFiles.buf_soil_avg[p]);
 			}
 		}
 	}
@@ -2098,29 +2106,29 @@ void SW_OUT_write_today(void)
 		{
 			get_outstrleader(p, str_time);
 
-			if (SW_File_Status.make_regular)
+			if (SW_OutFiles.make_regular)
 			{
-				if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) {
-					fprintf(SW_File_Status.fp_avg[p], "%s%s\n",
-						str_time, SW_File_Status.buf_avg[p]);
+				if (print_IterationSummary) {
+					fprintf(SW_OutFiles.fp_avg[p], "%s%s\n",
+						str_time, SW_OutFiles.buf_avg[p]);
 				}
 
 				if (storeAllIterations) {
-					fprintf(SW_File_Status.fp_avg_iter[p], "%s%s\n",
-						str_time, SW_File_Status.buf_avg_iter[p]);
+					fprintf(SW_OutFiles.fp_avg_iter[p], "%s%s\n",
+						str_time, SW_OutFiles.buf_avg_iter[p]);
 				}
 			}
 
-			if (SW_File_Status.make_soil)
+			if (SW_OutFiles.make_soil)
 			{
-				if (isPartialSoilwatOutput == FALSE && Globals.currIter == Globals.runModelIterations) {
-					fprintf(SW_File_Status.fp_soil_avg[p], "%s%s\n",
-						str_time, SW_File_Status.buf_soil_avg[p]);
+				if (print_IterationSummary) {
+					fprintf(SW_OutFiles.fp_soil_avg[p], "%s%s\n",
+						str_time, SW_OutFiles.buf_soil_avg[p]);
 				}
 
 				if (storeAllIterations) {
-					fprintf(SW_File_Status.fp_soil_iter[p], "%s%s\n",
-						str_time, SW_File_Status.buf_soil_iter[p]);
+					fprintf(SW_OutFiles.fp_soil_iter[p], "%s%s\n",
+						str_time, SW_OutFiles.buf_soil_iter[p]);
 				}
 			}
 		}
@@ -2476,11 +2484,11 @@ static void create_col_headers(OutPeriod pd, FILE *regular_file,
 	// write columns to file
 	get_outstrheader(pd, colHead);
 
-	if (SW_File_Status.make_soil) {
+	if (SW_OutFiles.make_soil) {
 		fprintf(soil_file, "%s%c%s\n", colHead, _Sep, (char*)colHeadersSoil);
 	}
 
-	if(SW_File_Status.make_regular) {
+	if(SW_OutFiles.make_regular) {
 		fprintf(regular_file, "%s%c%s\n", colHead, _Sep, (char*)colHeaders);
 	}
 }
@@ -2531,16 +2539,16 @@ static void _create_csv_file(int iteration, OutPeriod pd)
 {
 	if (iteration <= 0)
 	{ // STEPWAT2: average values over all iterations or SOILWAT2-standalone
-		if (SW_File_Status.make_regular) {
+		if (SW_OutFiles.make_regular) {
 			// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
 			// a specific order of `SW_FileIndex` --> fix and create something that
 			// allows subsetting such as `eOutputFile[pd]` or append time period to
 			// a basename, etc.
-			SW_File_Status.fp_avg[pd] = OpenFile(SW_F_name(eOutputDaily + pd), "w");
+			SW_OutFiles.fp_avg[pd] = OpenFile(SW_F_name(eOutputDaily + pd), "w");
 		}
 
-		if (SW_File_Status.make_soil) {
-			SW_File_Status.fp_soil_avg[pd] = OpenFile(SW_F_name(eOutputDaily_soil + pd), "w");
+		if (SW_OutFiles.make_soil) {
+			SW_OutFiles.fp_soil_avg[pd] = OpenFile(SW_F_name(eOutputDaily_soil + pd), "w");
 		}
 	}
 	#ifdef STEPWAT
@@ -2550,22 +2558,22 @@ static void _create_csv_file(int iteration, OutPeriod pd)
 
 		if (iteration > 1) {
 			// close files
-			if (SW_File_Status.make_regular) {
-				CloseFile(&SW_File_Status.fp_iter[pd]);
+			if (SW_OutFiles.make_regular) {
+				CloseFile(&SW_OutFiles.fp_iter[pd]);
 			}
-			if (SW_File_Status.make_soil) {
-				CloseFile(&SW_File_Status.fp_soil_iter[pd]);
+			if (SW_OutFiles.make_soil) {
+				CloseFile(&SW_OutFiles.fp_soil_iter[pd]);
 			}
 		}
 
-		if (SW_File_Status.make_regular) {
+		if (SW_OutFiles.make_regular) {
 			_create_filename_iter(SW_F_name(eOutputDaily + pd), iteration, filename);
-			SW_File_Status.fp_iter[pd] = OpenFile(filename, "w");
+			SW_OutFiles.fp_iter[pd] = OpenFile(filename, "w");
 		}
 
-		if (SW_File_Status.make_soil) {
+		if (SW_OutFiles.make_soil) {
 			_create_filename_iter(SW_F_name(eOutputDaily_soil + pd), iteration, filename);
-			SW_File_Status.fp_soil_iter[pd] = OpenFile(filename, "w");
+			SW_OutFiles.fp_soil_iter[pd] = OpenFile(filename, "w");
 		}
 	}
 	#endif
