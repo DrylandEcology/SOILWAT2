@@ -155,10 +155,30 @@ namespace {
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
 
+  }
+
+// Death tests for soil_temperature_init function
+  TEST(SWFlowTempTest, SoilTemperatureInitDeathTest) {
+
+    // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
+    double deltaX = 15.0, sTconst = 4.15;
+    unsigned int nlyrs, nRgr = 65, i =0.;
+    Bool ptr_stError = swFALSE;
+    nlyrs = MAX_LAYERS;
+    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
+
+    for (i = 0; i < nlyrs; i++) {
+      bDensity2[i] = RandNorm(1.,0.5);
+      fc2[i] = RandNorm(1.5, 0.5);
+      wp2[i] = fc2[i] - 0.6; // wp will always be less than fc
+    }
+
     /// test when theMaxDepth is less than soil layer depth - function should fail
     double theMaxDepth2 = 70.0;
 
-    EXPECT_DEATH(soil_temperature_init(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
+    EXPECT_DEATH_IF_SUPPORTED(soil_temperature_init(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
         fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError),"@ generic.c LogError"); // We expect death when max depth < last layer
 
     // Reset to previous global state
@@ -456,11 +476,13 @@ namespace {
     double swc2[nlyrs2], swc_sat2[nlyrs2], bDensity2[nlyrs2], fc2[nlyrs2], wp2[nlyrs2];
 
     for (i = 0; i < nlyrs2; i++) {
-        swc2[i] =  fmaxf(RandNorm(1.,0.5), 0.1);;
-        swc_sat2[i] = swc2[i] + 0.5;
-        bDensity2[i] = fmaxf(RandNorm(1.,0.5), 0.1);
-        fc2[i] = fmaxf(RandNorm(1.5, 0.5), 0.1);
-        wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp will always be less than fc
+        bDensity2[i] = fmaxf(RandNorm(1.,0.5), 0.1); // greater than 0.1
+        fc2[i] = fmaxf(RandNorm(1.5, 0.5), 0.1); // greater than 0.1
+        swc_sat2[i] = fc2[i] + 0.2; //swc_sat > fc2
+        swc2[i] =  swc_sat2[i] - 0.3; // swc_sat > swc
+        wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp < fc
+      //  swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
+      //   i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
       }
 
     // copy initital oldsTempR values so we can check they have been updated
@@ -504,47 +526,81 @@ namespace {
     EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
 
-     // checks for  lyrTemp_to_lyrSoil_temperature
-     int resultValue2 = sizeof(sTemp3) / sizeof(sTemp3[0]);
-     EXPECT_EQ(MAX_LAYERS, resultValue2); // when the number of soil layers is MAX_LAYERS, sTemp should be MAX_LAYERS
+    // checks for  lyrTemp_to_lyrSoil_temperature
+    int resultValue2 = sizeof(sTemp3) / sizeof(sTemp3[0]);
+    EXPECT_EQ(MAX_LAYERS, resultValue2); // when the number of soil layers is MAX_LAYERS, sTemp should be MAX_LAYERS
 
-     for(k = 1; k < nRgr +1; k++) {
-       if (ptr_stError == 0) {
-         //printf("\n k %u sTemp3 %f , newoldtemp %f,OLDSTEMPS2 %f", k, sTemp[k], stValues.oldsTempR[k], OLDTEMPS2[k] );
-         EXPECT_GT(sTemp3[k], -100); // Sense check
-         EXPECT_LT(sTemp3[k], 100); // Sense check
-         // Test that oldsTempR is updated to sTempR for the next day
-         EXPECT_NE(stValues.oldsTempR[k], OLDTEMPS2[k]);
-       }
+    for(k = 1; k < nRgr +1; k++) {
+     if (ptr_stError == swFALSE) {
+       //swprintf("\n k %u, sTemp3 %f, newoldtemp %f ,OLDSTEMPS2 %f", k, sTemp3[k], stValues.oldsTempR[k], OLDTEMPS2[k] );
+       EXPECT_GT(sTemp3[k], -100); // Sense check
+       EXPECT_LT(sTemp3[k], 100); // Sense check
+       // Test that oldsTempR is updated to sTempR for the next day
+       EXPECT_NE(stValues.oldsTempR[k], OLDTEMPS2[k]);
      }
+    }
+
+    // Reset to global state
+    Reset_SOILWAT2_after_UnitTest();
+
+    // ptr_stError should be set to TRUE if soil_temperature_today fails (i.e. unrealistic temp values)
+    double sTemp2[nlyrs], oldsTemp2[nlyrs];
+    for (i = 0; i < nlyrs; i++) {
+     sTemp2[i] = RandNorm(150, 1);
+     oldsTemp2[i] = RandNorm(150, 1);
+    }
+
+    soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
+    oldsTemp2, sTemp2, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+    t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
+    nRgr, snow, &ptr_stError);
+
+    // Check that ptr_stError is TRUE
+    EXPECT_EQ(ptr_stError, 1);
+
+    //Reset to global state
+    Reset_SOILWAT2_after_UnitTest();
+   }
 
 
-     // Reset to global state
-     Reset_SOILWAT2_after_UnitTest();
+  // Test that main soil temperature functions fails when it is supposed to
+  TEST(SWFlowTempTest, MainSoilTemperatureFunctionDeathTest) {
 
-     // Test that function stops or throws an error when it is supposed to.
+    // *****  Test when nlyrs = MAX_LAYERS  ***** //
+
+    // intialize values
+    unsigned int nRgr = 65, i = 0.;
+    double airTemp = 25.0, pet = 5.0, aet = 4.0, biomass = 100., surfaceTemp[] = {20.0, 15. ,14.},
+    bmLimiter = 300., t1Param1 = 15., t1Param2 = -4., t1Param3 = 600., csParam1 =0.00070,
+    csParam2 = 0.00030, shParam = 0.18, snowdepth = 5, sTconst = 4.15, deltaX = 15,
+    snow = 1;
+    Bool ptr_stError = swFALSE;
+
+    unsigned int nlyrs = MAX_LAYERS;
+    double width[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double sTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double swc[nlyrs], swc_sat[nlyrs], bDensity[nlyrs], fc[nlyrs], wp[nlyrs];
+
+    for (i = 0; i < nlyrs; i++) {
+      bDensity[i] = fmaxf(RandNorm(1.,0.5), 0.1); // greater than 0.1
+      fc[i] = fmaxf(RandNorm(1.5, 0.5), 0.1); // greater than 0.1
+      swc_sat[i] = fc[i] + 0.2; //swc_sat > fc2
+      swc[i] =  swc_sat[i] - 0.3; // swc_sat > swc
+      wp[i] = fmaxf(fc[i] - 0.6, 0.1); // wp < fc
+      }
 
      // Should fail when soil_temperature_init fails - i.e. when theMaxDepth < depth of nlyrs
 
-     double theMaxDepth2 = 1;
-     //swprintf("\n Depth of Layers %f, MaxDepth %f",  width[nlyrs - 1], theMaxDepth2);
-     EXPECT_DEATH(soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-     oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
-     t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth2,
-     nRgr, snow, &ptr_stError), "@ generic.c LogError");
-     // ptr_stError should be set to TRUE if soil_temperature_today fails (i.e. unrealistic temp values)
-     double sTemp2[nlyrs], oldsTemp2[nlyrs];
-     for (i = 0; i < nlyrs; i++) {
-       sTemp2[i] = RandNorm(150, 1);
-       oldsTemp2[i] = RandNorm(150, 1);
-     }
-     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-     oldsTemp2, sTemp2, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
-     t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-      nRgr, snow, &ptr_stError);
-      // Check that ptr_stError is TRUE
-      EXPECT_EQ(ptr_stError, 1);
-      //Reset to global state
-      Reset_SOILWAT2_after_UnitTest();
-   }
-}
+     double theMaxDepth = 70;
+
+     EXPECT_DEATH_IF_SUPPORTED(soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
+      oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+      t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
+      nRgr, snow, &ptr_stError), "@ generic.c LogError");
+
+     //Reset to global state
+     Reset_SOILWAT2_after_UnitTest();
+
+    }
+  }
