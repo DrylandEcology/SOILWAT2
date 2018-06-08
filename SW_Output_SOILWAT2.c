@@ -249,7 +249,7 @@ void get_temp(OutPeriod pd)
   #endif
 
   #ifdef SWDEBUG
-  if (debug) swprintf("'get_temp': start for %s ... ", pd);
+  if (debug) swprintf("'get_temp': start for %d ... ", pd);
   #endif
 
 	switch (pd)
@@ -432,37 +432,34 @@ void get_swa(OutPeriod pd)
 	LyrIndex i;
 	int k;
 	SW_SOILWAT *v = &SW_Soilwat;
-	RealF val[NVEGTYPES];
+	RealF val;
 	char str[OUTSTRLEN];
 
 	sw_outstr[0] = '\0';
 
-	ForEachSoilLayer(i)
+	ForEachVegType(k)
 	{
-		ForEachVegType(k) { // need to go over all veg types for each layer
+		ForEachSoilLayer(i)
+		{
 			switch (pd)
 			{
 			case eSW_Day:
-				val[k] = v->dysum.SWA_VegType[k][i];
+				val = v->dysum.SWA_VegType[k][i];
 				break;
 			case eSW_Week:
-				val[k] = v->wkavg.SWA_VegType[k][i];
+				val = v->wkavg.SWA_VegType[k][i];
 				break;
 			case eSW_Month:
-				val[k] = v->moavg.SWA_VegType[k][i];
+				val = v->moavg.SWA_VegType[k][i];
 				break;
 			case eSW_Year:
-				val[k] = v->yravg.SWA_VegType[k][i];
+				val = v->yravg.SWA_VegType[k][i];
 				break;
 			}
+
+			sprintf(str, "%c%7.6f", _Sep, val);
+			strcat(sw_outstr, str);
 		}
-
-		// write values to string
-		sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
-			_Sep, val[SW_TREES], _Sep, val[SW_SHRUB],
-			_Sep, val[SW_FORBS], _Sep, val[SW_GRASS]);
-
-		strcat(sw_outstr, str);
 	}
 }
 
@@ -940,55 +937,61 @@ void get_hydred(OutPeriod pd)
 {
 	/* 20101020 (drs) added */
 	LyrIndex i;
+	int k;
 	SW_SOILWAT *v = &SW_Soilwat;
 
 	char str[OUTSTRLEN];
-	RealD val_total = SW_MISSING;
-	RealD val_tree = SW_MISSING;
-	RealD val_shrub = SW_MISSING;
-	RealD val_forb = SW_MISSING;
-	RealD val_grass = SW_MISSING;
+	RealD val;
 
 	sw_outstr[0] = '\0';
 
+	/* total hydraulic redistribution */
 	ForEachSoilLayer(i)
 	{
 		switch (pd)
 		{
 			case eSW_Day:
-				val_total = v->dysum.hydred_total[i];
-				val_tree = v->dysum.hydred[SW_TREES][i];
-				val_shrub = v->dysum.hydred[SW_SHRUB][i];
-				val_grass = v->dysum.hydred[SW_GRASS][i];
-				val_forb = v->dysum.hydred[SW_FORBS][i];
+				val = v->dysum.hydred_total[i];
 				break;
 			case eSW_Week:
-				val_total = v->wkavg.hydred_total[i];
-				val_tree = v->wkavg.hydred[SW_TREES][i];
-				val_shrub = v->wkavg.hydred[SW_SHRUB][i];
-				val_grass = v->wkavg.hydred[SW_GRASS][i];
-				val_forb = v->wkavg.hydred[SW_FORBS][i];
+				val = v->wkavg.hydred_total[i];
 				break;
 			case eSW_Month:
-				val_total = v->moavg.hydred_total[i];
-				val_tree = v->moavg.hydred[SW_TREES][i];
-				val_shrub = v->moavg.hydred[SW_SHRUB][i];
-				val_grass = v->moavg.hydred[SW_GRASS][i];
-				val_forb = v->moavg.hydred[SW_FORBS][i];
+				val = v->moavg.hydred_total[i];
 				break;
 			case eSW_Year:
-				val_total = v->yravg.hydred_total[i];
-				val_tree = v->yravg.hydred[SW_TREES][i];
-				val_shrub = v->yravg.hydred[SW_SHRUB][i];
-				val_grass = v->yravg.hydred[SW_GRASS][i];
-				val_forb = v->yravg.hydred[SW_FORBS][i];
+				val = v->yravg.hydred_total[i];
 				break;
 		}
 
-		sprintf(str, "%c%7.6f%c%7.6f%c%7.6f%c%7.6f%c%7.6f",
-			_Sep, val_total,
-			_Sep, val_tree, _Sep, val_shrub, _Sep, val_forb, _Sep, val_grass);
+		sprintf(str, "%c%7.6f", _Sep, val);
 		strcat(sw_outstr, str);
+	}
+
+	/* hydraulic redistribution for each vegetation type */
+	ForEachVegType(k)
+	{
+		ForEachSoilLayer(i)
+		{
+			switch (pd)
+			{
+				case eSW_Day:
+					val = v->dysum.hydred[k][i];
+					break;
+				case eSW_Week:
+					val = v->wkavg.hydred[k][i];
+					break;
+				case eSW_Month:
+					val = v->moavg.hydred[k][i];
+					break;
+				case eSW_Year:
+					val = v->yravg.hydred[k][i];
+					break;
+			}
+
+			sprintf(str, "%c%7.6f", _Sep, val);
+			strcat(sw_outstr, str);
+		}
 	}
 }
 
