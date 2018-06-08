@@ -21,7 +21,7 @@
 namespace{
   // Test the 'Times.c' function 'interpolate_monthlyValues'
   TEST(TimesTest, interpolateMonthlyValues){
-    TimeInt day = 32;
+    TimeInt day = 16;
     // month which day falls under
     TimeInt month = doy2month(day);
     // day in the month the day falls under
@@ -30,12 +30,23 @@ namespace{
     double monthlyValues[30];
     double dailyValues[MAX_DAYS + 1];
 
-    int i;
-    //printf("monthly vals length: %d\n",length(monthlyValues) );
+    unsigned int i;
+    // function with monthlyValues all 10
     for (i = 0; i < length(monthlyValues); i++){
       monthlyValues[i] = 10;
     }
     double* res = interpolate_monthlyValues(monthlyValues, dailyValues);
+    // test final conditional
+    EXPECT_EQ(res[1], 10.0);
+    // should always be zero, regardless of input
+    EXPECT_EQ(res[0], 0.0);
+    // test top conditional
+    EXPECT_EQ(res[15], 10.0);
+    // test middle conditional
+    EXPECT_EQ(res[16], 10.0);
+
+    printf("month, mday: %d, %d\n", month, mday);
+    printf("dailyValues[15]: %f", res[15]);
     //printf("dailyValues: ");
     //for(i = 1; i <= MAX_DAYS; i++){
     //  printf("%d, ", doy2mday(i));

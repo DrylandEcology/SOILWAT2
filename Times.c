@@ -359,11 +359,13 @@ double* interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) 
 
 		if (mday == 15) {
 			dailyValues[doy] = monthlyValues[month];
-		} else {
+		}
+		else {
 			if (mday >= 15) {
 				month2 = (month == Dec) ? Jan : month + 1;
 				sign = 1;
-			} else {
+			}
+			else {
 				month2 = (month == Jan) ? Dec : month - 1;
 				sign = -1;
 			}
