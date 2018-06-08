@@ -215,6 +215,8 @@ Bool bFlush_output; /* process partial period ? */
 char sw_outstr[OUTSTRLEN];
 //#endif
 
+OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];// array to keep track of the periods that will be used for each output
+int used_OUTNPERIODS; // number of different time steps/periods that are used/requested
 int ncol_OUT[SW_OUTNKEYS]; // number of output columns for each output key
 char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS]; // names of output columns for each output key; number is an expensive guess
 
@@ -250,8 +252,6 @@ Bool print_IterationSummary, print_SW_Output;
 static char *MyFileName;
 
 static int useTimeStep; /* flag to determine whether or not the line TIMESTEP exists */
-static int used_OUTNPERIODS; // number of different time steps/periods that are used/requested
-static OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];// array to keep track of the periods that will be used for each output
 
 /* These MUST be in the same order as enum OutKey in
  * SW_Output.h */
@@ -1532,7 +1532,7 @@ int SW_OUT_read_onekey(OutKey *k, char keyname[], char sumtype[],
 	SW_Output[*k].use = (Bool) (SW_Output[*k].sumtype != eSW_Off);
 
 	#if defined(RSOILWAT)
-	SW_Output[k].outfile = (char *) Str_Dup(outfile);
+	SW_Output[*k].outfile = (char *) Str_Dup(outfile);
 	#else
 	outfile[0] = '\0';
 	#endif
@@ -1651,7 +1651,9 @@ void SW_OUT_read(void)
 	 */
 	FILE *f;
 	OutKey k;
+	#ifndef RSOILWAT
 	OutPeriod p;
+	#endif
 	int x, i, itemno, msg_type;
 
 	/* these dims come from the orig format str */
@@ -1755,6 +1757,7 @@ void SW_OUT_read(void)
 	} //end of while-loop
 
 
+	#ifndef RSOILWAT
 	// Tally for which output time periods at least one output key/type is active
 	ForEachOutPeriod(p) {
 		use_OutPeriod[p] = swFALSE;
@@ -1762,7 +1765,7 @@ void SW_OUT_read(void)
 	for (i = 0; i < used_OUTNPERIODS; i++) {
 		use_OutPeriod[timeSteps[k][i]] = swTRUE;
 	}
-
+	#endif
 
   #ifdef STEPWAT
   /* Check that STEPWAT2 receives monthly transpiration */
@@ -2014,16 +2017,17 @@ void SW_OUT_write_today(void)
 	 */
 	TimeInt t = 0xffff;
 	OutKey k;
-	OutPeriod p;
 	Bool writeit[SW_OUTNPERIODS];
 	int i;
-	char str_time[10]; // year and day/week/month header for each output row
 
 	#ifdef SWDEBUG
   int debug = 0;
   #endif
 
 	#ifndef RSOILWAT
+	OutPeriod p;
+	char str_time[10]; // year and day/week/month header for each output row
+
 	// We don't really need all of these buffers to init every day
 	ForEachOutPeriod(p)
 	{

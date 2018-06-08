@@ -128,13 +128,6 @@ typedef unsigned char byte;
   #define swprintf printf
 #endif
 
-/**< Print file macro that can be used both for rSOILWAT2 and for SOILWAT2-standalone. Use instead of (R)fprintf */
-#ifdef RSOILWAT
-  #define swfprintf Rfprintf
-#else
-  #define swfprintf fprintf
-#endif
-
 
 /* constants for LogError() mode */
 #define LOGNOTE  0x01

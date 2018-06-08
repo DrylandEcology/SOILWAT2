@@ -607,7 +607,7 @@ void SW_VPD_read(void) {
 				key2veg[k], v->veg[k].cov.fCover);
 		}
 
-		swfprintf(logfp, "\n");
+		fprintf(logfp, "\n");
 	}
 
 	CloseFile(&f);
