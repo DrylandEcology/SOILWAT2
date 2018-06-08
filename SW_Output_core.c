@@ -202,7 +202,9 @@ extern Bool EchoInits;
 extern SW_CARBON SW_Carbon;
 
 SW_OUTPUT SW_Output[SW_OUTNKEYS]; /* defined here, externed in `SW_Output_ZZZ.c` */
+#ifndef RSOILWAT
 SW_FILE_STATUS SW_OutFiles; /* defined here, externed in `SW_Output_ZZZ.c` */
+#endif
 
 char _Sep; /* output delimiter */
 TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
@@ -1087,8 +1089,10 @@ void SW_OUT_construct(void)
 	// `print_IterationSummary` is set by `SW_OUT_new_year`
 	#endif
 
+	#ifndef RSOILWAT
 	SW_OutFiles.make_soil = swFALSE;
-  SW_OutFiles.make_regular = swFALSE;
+	SW_OutFiles.make_regular = swFALSE;
+	#endif
 
 	bFlush_output = swFALSE;
 	tOffset = 1;
@@ -1512,6 +1516,112 @@ void SW_OUT_new_year(void)
 }
 
 
+
+int SW_OUT_read_onekey(OutKey *k, char keyname[], char sumtype[],
+	char period[], int first, char last[], char outfile[], char msg[])
+{
+	char upkey[50], upsum[4]; /* space for uppercase conversion */
+	int res = 0; // return value indicating type of message if any
+
+	MyFileName = SW_F_name(eOutput);
+	msg[0] = '\0';
+
+	// Convert strings to index numbers
+	*k = str2key(Str_ToUpper(keyname, upkey));
+	SW_Output[*k].sumtype = str2stype(Str_ToUpper(sumtype, upsum));
+	SW_Output[*k].use = (Bool) (SW_Output[*k].sumtype != eSW_Off);
+
+	#if defined(RSOILWAT)
+	SW_Output[k].outfile = (char *) Str_Dup(outfile);
+	#else
+	outfile[0] = '\0';
+	#endif
+
+	// Proceed to next line if output key/type is turned off
+	if (!SW_Output[*k].use)
+	{
+		return(-1); // return and read next line of `outsetup.in`
+	}
+
+	// Check whether output key/type generates output for each soil layers or not
+	SW_Output[*k].has_sl = has_soillayers(keyname);
+
+	/* check validity of summary type */
+	if (SW_Output[*k].sumtype == eSW_Fnl && !SW_Output[*k].has_sl)
+	{
+		SW_Output[*k].sumtype = eSW_Avg;
+
+		sprintf(msg, "%s : Summary Type FIN with key %s is meaningless.\n" \
+			"  Using type AVG instead.", MyFileName, keyname);
+		res = LOGWARN;
+	}
+
+	// Check whether output per soil layer or 'regular' is requested
+	#ifndef RSOILWAT
+	if (SW_Output[*k].has_sl)
+	{
+		SW_OutFiles.make_soil = swTRUE;
+	} else
+	{
+		SW_OutFiles.make_regular = swTRUE;
+	}
+	#endif
+
+	// set use_SWA to TRUE if defined.
+	// Used in SW_Control to run the functions to get the recalculated values only if SWA is used
+	// This function is run prior to the control functions so thats why it is here.
+	if (Str_CompareI(keyname, SW_SWA) == 0)
+	{
+		SW_VegProd.use_SWA = swTRUE;
+	}
+
+	/* Check validity of output key */
+	if (*k == eSW_Estab)
+	{
+		SW_Output[*k].sumtype = eSW_Sum;
+		first = 1;
+		strcpy(period, "YR");
+		strcpy(last, "end");
+
+	} else if ((*k == eSW_AllVeg || *k == eSW_ET || *k == eSW_AllWthr || *k == eSW_AllH2O))
+	{
+		SW_Output[*k].use = swFALSE;
+
+		sprintf(msg, "%s : Output key %s is currently unimplemented.",
+			MyFileName, keyname);
+		return(LOGNOTE);
+	}
+
+	/* verify deep drainage parameters */
+	if (*k == eSW_DeepSWC && SW_Output[*k].sumtype != eSW_Off && !SW_Site.deepdrain)
+	{
+		SW_Output[*k].use = swFALSE;
+
+		sprintf(msg, "%s : DEEPSWC cannot produce output if deep drainage is " \
+			"not simulated (flag not set in %s).",
+			MyFileName, SW_F_name(eSite));
+		return(LOGWARN);
+	}
+
+	// Set remaining values of `SW_Output[*k]`
+	SW_Output[*k].mykey = *k;
+	SW_Output[*k].myobj = key2obj[*k];
+	SW_Output[*k].first_orig = first;
+	SW_Output[*k].last_orig =
+		!Str_CompareI("END", (char *)last) ? 366 : atoi(last);
+
+	if (SW_Output[*k].last_orig == 0)
+	{
+		sprintf(msg, "%s : Invalid ending day (%s), key=%s.",
+			MyFileName, last, keyname);
+		return(LOGFATAL);
+	}
+
+	return(res);
+}
+
+
+
 /** Read output setup from file `outsetup.in`.
 
     Output can be generated for four different time steps: daily (DY), weekly (WK),
@@ -1542,16 +1652,18 @@ void SW_OUT_read(void)
 	FILE *f;
 	OutKey k;
 	OutPeriod p;
-	int x, i, itemno;
+	int x, i, itemno, msg_type;
 
 	/* these dims come from the orig format str */
 	/* except for the uppercase space. */
-	char ext[10];
 	char timeStep[SW_OUTNPERIODS][10], // matrix to capture all the periods entered in outsetup.in
-			keyname[50], upkey[50], /* space for uppercase conversion */
-			sumtype[4], upsum[4], period[10], /* should be 2 chars, but we don't want overflow from user typos */
+			keyname[50],
+			ext[10],
+			sumtype[4], /* should be 2 chars, but we don't want overflow from user typos */
+			period[10],
 			last[4], /* last doy for output, if "end", ==366 */
-			outfile[MAX_FILENAMESIZE];
+			outfile[MAX_FILENAMESIZE],
+			msg[200]; // message to print
 	int first; /* first doy for output */
 
 	MyFileName = SW_F_name(eOutput);
@@ -1615,89 +1727,19 @@ void SW_OUT_read(void)
 			continue; //read next line of `outsetup.in`
 		}
 
-		// Convert strings to index numbers
-		k = str2key(Str_ToUpper(keyname, upkey));
-		SW_Output[k].sumtype = str2stype(Str_ToUpper(sumtype, upsum));
-		SW_Output[k].use = (Bool) (SW_Output[k].sumtype != eSW_Off);
+		// Fill information into `SW_Output[k]`
+		msg_type = SW_OUT_read_onekey(&k, keyname, sumtype, period, first, last,
+			outfile, msg);
 
-		#ifdef RSOILWAT
-		SW_Output[k].outfile = (char *) Str_Dup(outfile);
-		#endif
+		if (msg_type != 0) {
+			if (msg_type > 0) {
+				if (msg_type == LOGFATAL) {
+					CloseFile(&f);
+				}
+				LogError(logfp, msg_type, "%s", msg);
+			}
 
-		// Proceed to next line if output key/type is turned off
-		if (!SW_Output[k].use)
-		{
-			continue; //read next line of `outsetup.in`
-		}
-
-		// Check whether output key/type generates output for each soil layers or not
-		SW_Output[k].has_sl = has_soillayers(keyname);
-
-		/* check validity of summary type */
-		if (SW_Output[k].sumtype == eSW_Fnl && !SW_Output[k].has_sl)
-		{
-			LogError(logfp, LOGWARN,
-				"%s : Summary Type FIN with key %s is meaningless.\n" \
-				"  Using type AVG instead.", MyFileName, key2str[k]);
-
-			SW_Output[k].sumtype = eSW_Avg;
-		}
-
-		// Check whether output per soil layer or 'regular' is requested
-		if (SW_Output[k].has_sl)
-		{
-			SW_OutFiles.make_soil = swTRUE;
-		} else
-		{
-			SW_OutFiles.make_regular = swTRUE;
-		}
-
-		// set use_SWA to TRUE if defined.
-		// Used in SW_Control to run the functions to get the recalculated values only if SWA is used
-		// This function is run prior to the control functions so thats why it is here.
-		if (Str_CompareI(keyname, SW_SWA) == 0)
-		{
-			SW_VegProd.use_SWA = swTRUE;
-		}
-
-		/* Check validity of output key */
-		if (k == eSW_Estab)
-		{
-			strcpy(sumtype, "SUM");
-			first = 1;
-			strcpy(period, "YR");
-			strcpy(last, "end");
-
-		} else if ((k == eSW_AllVeg || k == eSW_ET || k == eSW_AllWthr || k == eSW_AllH2O))
-		{
-			SW_Output[k].use = swFALSE;
-			LogError(logfp, LOGNOTE, "%s : Output key %s is currently unimplemented.",
-				MyFileName, key2str[k]);
 			continue;
-		}
-
-		/* verify deep drainage parameters */
-		if (k == eSW_DeepSWC && SW_Output[k].sumtype != eSW_Off && !SW_Site.deepdrain)
-		{
-			LogError(logfp, LOGWARN,
-				"%s : DEEPSWC cannot produce output if deep drainage is not " \
-				"simulated (flag not set in %s).",
-				MyFileName, SW_F_name(eOutput));
-			continue;
-		}
-
-		// Set remaining values of `SW_Output[k]`
-		SW_Output[k].mykey = k;
-		SW_Output[k].myobj = key2obj[k];
-		SW_Output[k].first_orig = first;
-		SW_Output[k].last_orig =
-				!Str_CompareI("END", (char *)last) ? 366 : atoi(last);
-
-		if (SW_Output[k].last_orig == 0)
-		{
-			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "%s : Invalid ending day (%s), key=%s.",
-				MyFileName, last, keyname);
 		}
 
 		// Specify which output time periods are requested for this output key/type
@@ -1711,6 +1753,7 @@ void SW_OUT_read(void)
 			timeSteps[k][0] = str2period(Str_ToUpper(period, ext));
 		}
 	} //end of while-loop
+
 
 	// Tally for which output time periods at least one output key/type is active
 	ForEachOutPeriod(p) {
@@ -1752,10 +1795,6 @@ void SW_OUT_read(void)
     call this routine at the end of the program run.
 */
 void SW_OUT_close_files(void) {
-
-// check all timeperiods and which files created. only close created files.
-// no code for RSOILWAT (because no files)
-
   Bool close_regular, close_layers, close_aggs;
   OutPeriod p;
 
@@ -1782,11 +1821,13 @@ void SW_OUT_close_files(void) {
       }
 
       if (close_aggs) {
+        #ifdef STEPWAT
         CloseFile(&SW_OutFiles.fp_reg_agg[p]);
 
         if (close_layers) {
           CloseFile(&SW_OutFiles.fp_soil_agg[p]);
         }
+        #endif
       }
     }
   }

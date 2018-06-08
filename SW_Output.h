@@ -153,17 +153,18 @@ typedef struct {
 	void (*pfunc)(OutPeriod); /* pointer to output routine */
 } SW_OUTPUT;
 
+#ifndef RSOILWAT
 typedef struct {
 	Bool make_soil, make_regular;
 
-	//#ifdef STEPWAT
+	#ifdef STEPWAT
 	// average/sd across iteration/repetitions
 	FILE *fp_reg_agg[SW_OUTNPERIODS];
 	char buf_reg_agg[SW_OUTNPERIODS][OUTSTRLEN];
 	// output file for variables with values for each soil layer
 	FILE *fp_soil_agg[SW_OUTNPERIODS];
 	char buf_soil_agg[SW_OUTNPERIODS][OUTSTRLEN];
-	//#endif
+	#endif
 
 	// if SOILWAT: "regular" output file
 	// if STEPWAT: "regular" output file; new file for each iteration/repetition
@@ -175,6 +176,7 @@ typedef struct {
 	char buf_soil[SW_OUTNPERIODS][OUTSTRLEN];
 
 } SW_FILE_STATUS;
+#endif
 
 /* convenience loops for consistency.
  * k must be a defined variable, either of OutKey type
@@ -192,6 +194,8 @@ void SW_OUT_construct(void);
 void SW_OUT_set_ncol(void);
 void SW_OUT_set_colnames(void);
 void SW_OUT_new_year(void);
+int SW_OUT_read_onekey(OutKey *k, char keyname[], char sumtype[],
+	char period[], int first, char last[], char outfile[], char msg[]);
 void SW_OUT_read(void);
 void SW_OUT_sum_today(ObjType otyp);
 void SW_OUT_write_today(void);
