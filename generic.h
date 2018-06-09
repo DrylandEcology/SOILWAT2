@@ -27,6 +27,11 @@
   #define SWDEBUG
 #endif
 
+#ifdef RSWDEBUG
+  #define SWDEBUG
+#endif
+
+
 #if !defined(STEPWAT) && !defined(RSOILWAT)
   #define SOILWAT // SOILWAT2-standalone
 #endif
