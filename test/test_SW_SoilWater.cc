@@ -59,7 +59,7 @@ namespace{
     RealD snowmelt = 1.2;
     // test 1, since TminAccu2 is < temp_ave, we expect SnowAccu to be 0 and thus rain is ppt - SnowAccu
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
-    EXPECT_EQ(rain, 1);
+    EXPECT_EQ(rain, ppt);
     EXPECT_EQ(snow, 0);
     Reset_SOILWAT2_after_UnitTest();
 
@@ -68,8 +68,8 @@ namespace{
   // Test the 'SW_SoilWater' function 'SW_SWCbulk2SWPmatric'
   TEST(SWSoilWaterTest, SWSWCbulk2SWPmatric){
     // TODO, lacking info
-    RealD fractionGravel = 0.2;
-    RealD swcBulk = 0;
+    double fractionGravel = 0.2;
+    double swcBulk = 0;
     LyrIndex n = 1;
     // test missing and 0 for swc
     double res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
@@ -87,9 +87,9 @@ namespace{
     SW_Site.lyr[n] -> thetasMatric = 1;
     SW_Site.lyr[n] -> bMatric = 1;
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
-    double resExpect = .00013310902; // did math by hand to get this value
+    double resExpect = .000001953; // value calculated in R
     double actualExpectDiff = fabs(res - resExpect);
-    EXPECT_LT(actualExpectDiff, .0002);
+    EXPECT_LT(actualExpectDiff, .0000002);
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWPmatric2VWCBulk'
