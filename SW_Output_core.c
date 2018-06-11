@@ -246,13 +246,7 @@ Bool print_IterationSummary, print_SW_Output;
 #endif
 
 
-/* =================================================== */
-/*                Module-Level Variables               */
-/* --------------------------------------------------- */
-static char *MyFileName;
-
-static int useTimeStep; /* flag to determine whether or not the line TIMESTEP exists */
-
+// Convert from IDs to strings
 /* These MUST be in the same order as enum OutKey in
  * SW_Output.h */
 char const *key2str[] =
@@ -272,7 +266,7 @@ char const *key2str[] =
 /* converts an enum output key (OutKey type) to a module  */
 /* or object type. see SW_Output.h for OutKey order.         */
 /* MUST be SW_OUTNKEYS of these */
-static ObjType key2obj[] =
+ObjType key2obj[] =
 { // weather/atmospheric quantities:
 	eWTH, eWTH, eWTH, eWTH, eWTH,
 	// soil related water quantities:
@@ -284,11 +278,22 @@ static ObjType key2obj[] =
 	eVPD
 };
 
-static char *pd2str[] =
-{ SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR };
+char const *pd2str[] =
+	{ SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR };
 
-static char const *styp2str[] =
+char const *pd2longstr[] =
+	{ SW_DAY_LONG, SW_WEEK_LONG, SW_MONTH_LONG, SW_YEAR_LONG };
+
+char const *styp2str[] =
 { SW_SUM_OFF, SW_SUM_SUM, SW_SUM_AVG, SW_SUM_FNL };
+
+
+/* =================================================== */
+/*                Module-Level Variables               */
+/* --------------------------------------------------- */
+static char *MyFileName;
+
+static int useTimeStep; /* flag to determine whether or not the line TIMESTEP exists */
 
 
 /* =================================================== */
@@ -350,15 +355,15 @@ static void get_outstrleader(OutPeriod pd, char *str) {
 static void get_outstrheader(OutPeriod pd, char *str) {
 	switch (pd) {
 		case eSW_Day:
-			sprintf(str, "%s%c%s", "Year", _Sep, "Day");
+			sprintf(str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Day]);
 			break;
 
 		case eSW_Week:
-			sprintf(str, "%s%c%s", "Year", _Sep, "Week");
+			sprintf(str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Week]);
 			break;
 
 		case eSW_Month:
-			sprintf(str, "%s%c%s", "Year", _Sep, "Month");
+			sprintf(str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Month]);
 			break;
 
 		case eSW_Year:

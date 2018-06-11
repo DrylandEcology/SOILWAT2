@@ -121,6 +121,12 @@ typedef enum {
 #define SW_WEEK  "WK"
 #define SW_MONTH "MO"
 #define SW_YEAR  "YR"
+
+#define SW_DAY_LONG   "Day"
+#define SW_WEEK_LONG  "Week"
+#define SW_MONTH_LONG "Month"
+#define SW_YEAR_LONG  "Year"
+
 #define SW_OUTNPERIODS 4  /* must match with enum */
 
 typedef enum {
