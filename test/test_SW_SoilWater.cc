@@ -45,6 +45,36 @@ namespace{
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
+
+    // test fmax returns 0 since these values yield res < 0
+    sand = .3;
+    fractionGravel = .1;
+    porosity = 1.2;
+    res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
+    EXPECT_DOUBLE_EQ(res, 0.);
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
+
+    // test fmax returns 0 since these values yield res < 0
+    porosity = .15;
+    res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
+    EXPECT_DOUBLE_EQ(res, 0.);
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
+
+    // test with valid inputs
+    fractionGravel = .1;
+    clay = .5;
+    sand = .2;
+    porosity = .35;
+    res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
+    clay *= 100;
+    sand *= 100;
+    RealD ans = (-0.0182482 + 0.00087269 * sand + 0.00513488 * clay + 0.02939286 * porosity - 0.00015395 * squared(clay) - 0.0010827 * sand * porosity
+  			- 0.00018233 * squared(clay) * squared(porosity) + 0.00030703 * squared(clay) * porosity - 0.0023584 * squared(porosity) * clay) * (1 - fractionGravel);
+    EXPECT_DOUBLE_EQ(res, ans);
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWC_adjust_snow'
