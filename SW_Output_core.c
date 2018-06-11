@@ -217,6 +217,7 @@ char sw_outstr[OUTSTRLEN];
 
 OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];// array to keep track of the periods that will be used for each output
 int used_OUTNPERIODS; // number of different time steps/periods that are used/requested
+Bool use_OutPeriod[SW_OUTNPERIODS]; // TRUE if time step/period is active for any output key
 int ncol_OUT[SW_OUTNKEYS]; // number of output columns for each output key
 char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS]; // names of output columns for each output key; number is an expensive guess
 
@@ -237,7 +238,6 @@ char sw_outstr_agg[OUTSTRLEN];
 #endif
 
 #ifndef RSOILWAT
-Bool use_OutPeriod[SW_OUTNPERIODS]; // TRUE if time step/period is active for any output key
 /* `print_IterationSummary is TRUE if STEPWAT2 is called with `-o` flag
       and if STEPWAT2 is currently in its last iteration/repetition
    `print_SW_Output is TRUE for SOILWAT2 and
@@ -305,7 +305,6 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil, Boo
 static OutPeriod str2period(char *s);
 static OutKey str2key(char *s);
 static OutSum str2stype(char *s);
-static Bool has_soillayers(const char *var);
 
 static void collect_sums(ObjType otyp, OutPeriod op);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
@@ -414,7 +413,7 @@ static OutSum str2stype(char *s)
 
     \return `TRUE` if `var` comes with soil layers; `FALSE` otherwise.
 */
-static Bool has_soillayers(const char *var) {
+Bool has_soillayers(const char *var) {
 	Bool has;
 
 	has = (
@@ -1622,6 +1621,27 @@ int SW_OUT_read_onekey(OutKey *k, char keyname[], char sumtype[],
 
 
 
+/** Tally for which output time periods at least one output key/type is active
+*/
+void find_OutPeriods_inUse(void)
+{
+	OutKey k;
+	OutPeriod p;
+	int i;
+
+	ForEachOutPeriod(p) {
+		use_OutPeriod[p] = swFALSE;
+	}
+
+	ForEachOutKey(k) {
+		for (i = 0; i < used_OUTNPERIODS; i++) {
+			use_OutPeriod[timeSteps[k][i]] = swTRUE;
+		}
+	}
+}
+
+
+
 /** Read output setup from file `outsetup.in`.
 
     Output can be generated for four different time steps: daily (DY), weekly (WK),
@@ -1651,9 +1671,6 @@ void SW_OUT_read(void)
 	 */
 	FILE *f;
 	OutKey k;
-	#ifndef RSOILWAT
-	OutPeriod p;
-	#endif
 	int x, i, itemno, msg_type;
 
 	/* these dims come from the orig format str */
@@ -1757,15 +1774,8 @@ void SW_OUT_read(void)
 	} //end of while-loop
 
 
-	#ifndef RSOILWAT
-	// Tally for which output time periods at least one output key/type is active
-	ForEachOutPeriod(p) {
-		use_OutPeriod[p] = swFALSE;
-	}
-	for (i = 0; i < used_OUTNPERIODS; i++) {
-		use_OutPeriod[timeSteps[k][i]] = swTRUE;
-	}
-	#endif
+	// Determine which output periods are turned on for at least one output key
+	find_OutPeriods_inUse();
 
   #ifdef STEPWAT
   /* Check that STEPWAT2 receives monthly transpiration */

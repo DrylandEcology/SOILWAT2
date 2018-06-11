@@ -196,6 +196,8 @@ void SW_OUT_set_colnames(void);
 void SW_OUT_new_year(void);
 int SW_OUT_read_onekey(OutKey *k, char keyname[], char sumtype[],
 	char period[], int first, char last[], char outfile[], char msg[]);
+void find_OutPeriods_inUse(void);
+Bool has_soillayers(const char *var);
 void SW_OUT_read(void);
 void SW_OUT_sum_today(ObjType otyp);
 void SW_OUT_write_today(void);
