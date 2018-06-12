@@ -67,16 +67,16 @@ namespace{
 
   // Test the 'SW_SoilWater' function 'SW_SWCbulk2SWPmatric'
   TEST(SWSoilWaterTest, SWSWCbulk2SWPmatric){
-    // TODO, lacking info
     double fractionGravel = 0.2;
     double swcBulk = 0;
     LyrIndex n = 1;
+
     // test missing and 0 for swc
     double res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
-    swcBulk = 999;
-    res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
+
+    res = SW_SWCbulk2SWPmatric(fractionGravel, SW_MISSING, n);
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
 
