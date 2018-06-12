@@ -152,7 +152,6 @@ typedef struct {
 		has_sl;	// TRUE if output key/type produces output for each soil layer
 	TimeInt first, last, 			/* updated for each year */
 			first_orig, last_orig;
-	int yr_row, mo_row, wk_row, dy_row;
 	#ifdef RSOILWAT
 	char *outfile; /* point to name of output file */ //could probably be removed
 	#endif

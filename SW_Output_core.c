@@ -245,6 +245,9 @@ char sw_outstr_agg[OUTSTRLEN];
 Bool print_IterationSummary, print_SW_Output;
 #endif
 
+#ifdef RSOILWAT
+extern unsigned int irow_OUT[SW_OUTNPERIODS]; // defined in `rSW_Output_rSOILWAT2.c`
+#endif
 
 // Convert from IDs to strings
 /* These MUST be in the same order as enum OutKey in
@@ -1123,13 +1126,6 @@ void SW_OUT_construct(void)
 	 */
 	ForEachOutKey(k)
 	{
-		#ifdef RSOILWAT
-		SW_Output[k].yr_row = 0;
-		SW_Output[k].mo_row = 0;
-		SW_Output[k].wk_row = 0;
-		SW_Output[k].dy_row = 0;
-		#endif
-
 		switch (k)
 		{
 		case eSW_Temp:
@@ -2032,6 +2028,7 @@ void SW_OUT_write_today(void)
 	 */
 	TimeInt t = 0xffff;
 	OutKey k;
+	OutPeriod p;
 	Bool writeit[SW_OUTNPERIODS];
 	int i;
 
@@ -2040,7 +2037,6 @@ void SW_OUT_write_today(void)
   #endif
 
 	#ifndef RSOILWAT
-	OutPeriod p;
 	char str_time[10]; // year and day/week/month header for each output row
 
 	// We don't really need all of these buffers to init every day
@@ -2178,6 +2174,17 @@ void SW_OUT_write_today(void)
 				#endif
 
 			}
+		}
+	}
+	#endif
+
+	#ifdef RSOILWAT
+	// increment row counts
+	ForEachOutPeriod(p)
+	{
+		if (use_OutPeriod[p] && writeit[p])
+		{
+			irow_OUT[p]++;
 		}
 	}
 	#endif
