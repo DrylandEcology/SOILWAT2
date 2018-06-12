@@ -32,9 +32,13 @@
 #define SW_OUTPUT_H
 
 #include "Times.h"
+#include "SW_SoilWater.h"
+#include "SW_Weather.h"
+#include "SW_VegProd.h"
+
 
 #define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
-
+#define OUT_DIGITS 6 // number of floating point decimal digits written to output files
 
 /* These are the keywords to be found in the output setup file */
 /* some of them are from the old fortran model and are no longer */
@@ -221,6 +225,9 @@ void SW_OUT_flush(void);
 void _collect_values(void);
 void _echo_outputs(void);
 
+void set_VEGPROD_aggslot(OutPeriod pd, SW_VEGPROD_OUTPUTS **pvo);
+void set_WEATHER_aggslot(OutPeriod pd, SW_WEATHER_OUTPUTS **pvo);
+void set_SOILWAT_aggslot(OutPeriod pd, SW_SOILWAT_OUTPUTS **pvo);
 
 // Functions that format the output in `sw_outstr` for printing
 /* --------------------------------------------------- */

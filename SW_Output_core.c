@@ -1068,6 +1068,69 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
 
+void set_VEGPROD_aggslot(OutPeriod pd, SW_VEGPROD_OUTPUTS **pvo) {
+	switch(pd) {
+		case eSW_Day:
+			*pvo = &SW_VegProd.dysum;
+			break;
+
+		case eSW_Week:
+			*pvo = &SW_VegProd.wkavg;
+			break;
+
+		case eSW_Month:
+			*pvo = &SW_VegProd.moavg;
+			break;
+
+		case eSW_Year:
+			*pvo = &SW_VegProd.yravg;
+			break;
+	}
+}
+
+
+void set_WEATHER_aggslot(OutPeriod pd, SW_WEATHER_OUTPUTS **pvo) {
+	switch(pd) {
+		case eSW_Day:
+			*pvo = &SW_Weather.dysum;
+			break;
+
+		case eSW_Week:
+			*pvo = &SW_Weather.wkavg;
+			break;
+
+		case eSW_Month:
+			*pvo = &SW_Weather.moavg;
+			break;
+
+		case eSW_Year:
+			*pvo = &SW_Weather.yravg;
+			break;
+	}
+}
+
+
+void set_SOILWAT_aggslot(OutPeriod pd, SW_SOILWAT_OUTPUTS **pvo) {
+	switch(pd) {
+		case eSW_Day:
+			*pvo = &SW_Soilwat.dysum;
+			break;
+
+		case eSW_Week:
+			*pvo = &SW_Soilwat.wkavg;
+			break;
+
+		case eSW_Month:
+			*pvo = &SW_Soilwat.moavg;
+			break;
+
+		case eSW_Year:
+			*pvo = &SW_Soilwat.yravg;
+			break;
+	}
+}
+
+
 void get_none(OutPeriod pd) // not static because other `get_XXX` are not
 {
 	/* --------------------------------------------------- */
