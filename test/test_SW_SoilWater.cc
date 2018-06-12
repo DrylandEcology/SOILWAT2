@@ -51,16 +51,18 @@ namespace{
   TEST(SWSoilWaterTest, SWSWCSdjustSnow){
     // setup mock variables
     SW_Site.TminAccu2 = 0;
-    RealD temp_min = 0;
-    RealD temp_max = 10;
-    RealD ppt = 1;
-    RealD rain = 1.5;
-    RealD snow = 1.5;
-    RealD snowmelt = 1.2;
-    // test 1, since TminAccu2 is < temp_ave, we expect SnowAccu to be 0 and thus rain is ppt - SnowAccu
+    double temp_min = 0;
+    double temp_max = 10;
+    double ppt = 1;
+    double rain = 1.5;
+    double snow = 1.5;
+    double snowmelt = 1.2;
+
+    // since TminAccu2 is < temp_ave, we expect SnowAccu to be 0 and thus rain is ppt - SnowAccu
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
     EXPECT_EQ(rain, ppt);
     EXPECT_EQ(snow, 0);
+    EXPECT_EQ(snowmelt, 0);
     Reset_SOILWAT2_after_UnitTest();
 
   }
