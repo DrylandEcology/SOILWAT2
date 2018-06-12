@@ -230,7 +230,7 @@ Bool storeAllIterations;
 /* `isPartialSoilwatOutput` is set to FALSE if STEPWAT2 is called with `-o` flag
       if FALSE, then calculate/write to disk the running mean and sd
       across iterations/repeats */
-Bool isPartialSoilwatOutput, print_IterationSummary;
+Bool isPartialSoilwatOutput;
 /* `sw_outstr_agg` holds the formatted output as returned from `get_XXX` for
      aggregated output across iterations/repeats;
      active if `print_IterationSummary` is TRUE */
@@ -943,23 +943,25 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 
 	switch (op)
 	{
-	case eSW_Day:
-		pd = SW_Model.doy;
-		break;
-	case eSW_Week:
-		pd = SW_Model.week + 1;
-		break;
-	case eSW_Month:
-		pd = SW_Model.month + 1;
-		break;
-	case eSW_Year:
-		pd = SW_Model.doy;
-		break;
-	default:
-		LogError(logfp, LOGFATAL, "PGMR: Invalid outperiod in collect_sums()");
+		case eSW_Day:
+			pd = SW_Model.doy;
+			break;
+		case eSW_Week:
+			pd = SW_Model.week + 1;
+			break;
+		case eSW_Month:
+			pd = SW_Model.month + 1;
+			break;
+		case eSW_Year:
+			pd = SW_Model.doy;
+			break;
+		default:
+			LogError(logfp, LOGFATAL, "PGMR: Invalid outperiod in collect_sums()");
 	}
 
 
+	// call `sumof_XXX` for each output key x output period combination
+	// for those output keys that belong to the output type `otyp` (eSWC, eWTH, eVES, eVPD)
 	ForEachOutKey(k)
 	{
 		if (otyp != SW_Output[k].myobj || !SW_Output[k].use)
