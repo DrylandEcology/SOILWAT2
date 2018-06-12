@@ -82,7 +82,7 @@ namespace{
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
 
-    // test swp val
+    // test swp val when second conditional is true but third is false
     swcBulk = 4;
     SW_Site.lyr[n] -> width = 1;
     SW_Site.lyr[n] -> psisMatric = 1;
@@ -92,6 +92,13 @@ namespace{
     double resExpect = .000001953; // value calculated in R
     double actualExpectDiff = fabs(res - resExpect);
     EXPECT_LT(actualExpectDiff, .0000002);
+    Reset_SOILWAT2_after_UnitTest();
+
+    // when second and third conditional are true
+    fractionGravel = 1;
+    res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
+    EXPECT_DOUBLE_EQ(res, INFINITY);
+
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWPmatric2VWCBulk'
@@ -126,4 +133,22 @@ namespace{
     }
     Reset_SOILWAT2_after_UnitTest();
   }
+
+  // Death tests for SW_SWCbulk2SWPmatric function
+    TEST(SWSoilWaterTest, SW_SWCbulk2SWPmatricDeathTest) {
+      // test when swcBulk < 0
+      LyrIndex n = 1;
+      double swcBulk = -1;
+      double fractionGravel = 1;
+      SW_Site.lyr[n] -> width = 1;
+      SW_Site.lyr[n] -> psisMatric = 1;
+      SW_Site.lyr[n] -> thetasMatric = 1;
+      SW_Site.lyr[n] -> bMatric = 1;
+
+      EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n),"@ generic.c LogError"); // We expect death when max depth < last layer
+
+      // Reset to previous global state
+      Reset_SOILWAT2_after_UnitTest();
+    }
+
 }
