@@ -336,7 +336,7 @@ Bool isleapyear(const TimeInt year) {
 
 }
 
-double* interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
+void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
 	/**********************************************************************
 	 PURPOSE: linear interpolation of monthly value; monthly values are assumed to representative for the 15th of a month
 
@@ -372,7 +372,6 @@ double* interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) 
 			dailyValues[doy] = monthlyValues[month] + sign * (monthlyValues[month2] - monthlyValues[month]) / (monthdays[month]) * (mday - 15.);
 		}
 	}
-	return dailyValues;
 }
 
 /* =================================================== */
