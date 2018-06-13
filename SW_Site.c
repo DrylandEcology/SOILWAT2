@@ -630,7 +630,13 @@ void init_site_info(void) {
 			swcmin_help1 = SW_VWCBulkRes(lyr->fractionVolBulk_gravel, lyr->fractionWeightMatric_sand, lyr->fractionWeightMatric_clay, lyr->swcBulk_saturated / lyr->width)
 					* lyr->width;
 			swcmin_help2 = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, 30., s) * lyr->width;
-			lyr->swcBulk_min = fmax(0., fmin(swcmin_help1, swcmin_help2));
+			// when SW_VWCBulkRes returns the macro SW_MISSING always use swcmin_help2
+			if(missing(swcmin_help1)){
+				lyr -> swcBulk_min = swcmin_help2;
+			}
+			else{
+				lyr->swcBulk_min = fmax(0., fmin(swcmin_help1, swcmin_help2));
+			}
 		} else if (GE(_SWCMinVal, 1.0)) { /* assume that unit(_SWCMinVal) == -bar */
 			lyr->swcBulk_min = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCMinVal, s) * lyr->width;
 		} else { /* assume that unit(_SWCMinVal) == cm/cm */
