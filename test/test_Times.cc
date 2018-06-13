@@ -22,12 +22,13 @@
 namespace{
   // Test the 'Times.c' function 'interpolate_monthlyValues'
   TEST(TimesTest, interpolateMonthlyValues){
+    // point to the structure that contains cloud coverage monthly values
     SW_SKY SW_Sky;
     SW_SKY *interpolate = &SW_Sky;
 
     unsigned int i;
 
-    // function with monthlyValues all 10
+    // set all monthlyValues all 10
     for (i = 0; i < length(interpolate -> cloudcov); i++){
       interpolate -> cloudcov[i] = 10;
     }
@@ -42,6 +43,17 @@ namespace{
     EXPECT_EQ(interpolate -> cloudcov_daily[15], 10.0);
     // test middle conditional
     EXPECT_EQ(interpolate -> cloudcov_daily[16], 10.0);
+
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
+
+    // change first value to 20 and test the changes
+    interpolate -> cloudcov[0] = 20;
+    interpolate_monthlyValues(interpolate -> cloudcov, interpolate -> cloudcov_daily);
+    // calculated by hand
+    EXPECT_EQ(interpolate -> cloudcov_daily[15], 20);
+    EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[14], 19.67741935483871);
+    EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[32], 15);
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
