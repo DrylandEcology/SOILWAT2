@@ -45,6 +45,14 @@ namespace{
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
+
+    // test using ideal inputs
+    clay = .1;
+    sand = .1;
+    porosity = .35;
+    res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
+    double expected = 0.03469862;
+    EXPECT_LT(fabs(res - expected), .00000001);
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWC_adjust_snow'
