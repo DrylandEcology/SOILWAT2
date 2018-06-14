@@ -32,7 +32,7 @@ namespace{
 
     // test clay > .6
     RealD res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    EXPECT_RealD_EQ(res, SW_MISSING);
+    EXPECT_DOUBLE_EQ(res, SW_MISSING);
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -41,18 +41,10 @@ namespace{
     sand = .04;
     // test sand < .05
     res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    EXPECT_RealD_EQ(res, SW_MISSING);
+    EXPECT_DOUBLE_EQ(res, SW_MISSING);
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
-
-    // test using ideal inputs
-    clay = .1;
-    sand = .1;
-    porosity = .35;
-    res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    RealD expected = 0.03469862;
-    EXPECT_LT(fabs(res - expected), .00000001);
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWC_adjust_snow'
@@ -65,12 +57,10 @@ namespace{
     RealD rain = 1.5;
     RealD snow = 1.5;
     RealD snowmelt = 1.2;
-
-    // since TminAccu2 is < temp_ave, we expect SnowAccu to be 0 and thus rain is ppt - SnowAccu
+    // test 1, since TminAccu2 is < temp_ave, we expect SnowAccu to be 0 and thus rain is ppt - SnowAccu
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
-    EXPECT_EQ(rain, ppt);
+    EXPECT_EQ(rain, 1);
     EXPECT_EQ(snow, 0);
-    EXPECT_EQ(snowmelt, 0);
     Reset_SOILWAT2_after_UnitTest();
 
   }
@@ -80,33 +70,25 @@ namespace{
     RealD fractionGravel = 0.2;
     RealD swcBulk = 0;
     LyrIndex n = 1;
-
     // test missing and 0 for swc
     RealD res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
-
-    res = SW_SWCbulk2SWPmatric(fractionGravel, SW_MISSING, n);
+    swcBulk = 999;
+    res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
 
-    // test swp val when second conditional is true but third is false
+    // test swp val
     swcBulk = 4;
     SW_Site.lyr[n] -> width = 1;
     SW_Site.lyr[n] -> psisMatric = 1;
     SW_Site.lyr[n] -> thetasMatric = 1;
     SW_Site.lyr[n] -> bMatric = 1;
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
-    RealD resExpect = .000001953; // value calculated in R
+    RealD resExpect = .00013310902; // did math by hand to get this value
     RealD actualExpectDiff = fabs(res - resExpect);
-    EXPECT_LT(actualExpectDiff, .0000002);
-    Reset_SOILWAT2_after_UnitTest();
-
-    // when second and third conditional are true
-    fractionGravel = 1;
-    res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
-    EXPECT_RealD_EQ(res, INFINITY);
-
+    EXPECT_LT(actualExpectDiff, .0002);
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWPmatric2VWCBulk'
@@ -137,26 +119,8 @@ namespace{
 
       // Tolerance for error since division with RealD introcuces some error
       EXPECT_LT(actualExpectDiff, 0.0000001);
-    }
 
+    }
     Reset_SOILWAT2_after_UnitTest();
   }
-
-  // Death tests for SW_SWCbulk2SWPmatric function
-    TEST(SWSoilWaterTest, SW_SWCbulk2SWPmatricDeathTest) {
-      // test when swcBulk < 0
-      LyrIndex n = 1;
-      RealD swcBulk = -1;
-      RealD fractionGravel = 1;
-      SW_Site.lyr[n] -> width = 1;
-      SW_Site.lyr[n] -> psisMatric = 1;
-      SW_Site.lyr[n] -> thetasMatric = 1;
-      SW_Site.lyr[n] -> bMatric = 1;
-
-      EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n),"@ generic.c LogError"); // We expect death when max depth < last layer
-
-      // Reset to previous global state
-      Reset_SOILWAT2_after_UnitTest();
-    }
-
 }
