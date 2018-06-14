@@ -32,7 +32,7 @@ namespace{
 
     // test clay > .6
     RealD res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    EXPECT_RealD_EQ(res, SW_MISSING);
+    EXPECT_DOUBLE_EQ(res, SW_MISSING);
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -41,7 +41,7 @@ namespace{
     sand = .04;
     // test sand < .05
     res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    EXPECT_RealD_EQ(res, SW_MISSING);
+    EXPECT_DOUBLE_EQ(res, SW_MISSING);
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
