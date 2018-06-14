@@ -32,7 +32,7 @@ namespace{
 
     // test clay > .6
     RealD res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    EXPECT_DOUBLE_EQ(res, SW_MISSING);
+    EXPECT_RealD_EQ(res, SW_MISSING);
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -41,7 +41,7 @@ namespace{
     sand = .04;
     // test sand < .05
     res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    EXPECT_DOUBLE_EQ(res, SW_MISSING);
+    EXPECT_RealD_EQ(res, SW_MISSING);
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -67,12 +67,11 @@ namespace{
 
   // Test the 'SW_SoilWater' function 'SW_SWCbulk2SWPmatric'
   TEST(SWSoilWaterTest, SWSWCbulk2SWPmatric){
-    // TODO, lacking info
     RealD fractionGravel = 0.2;
     RealD swcBulk = 0;
     LyrIndex n = 1;
     // test missing and 0 for swc
-    double res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
+    RealD res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
     swcBulk = 999;
@@ -87,24 +86,24 @@ namespace{
     SW_Site.lyr[n] -> thetasMatric = 1;
     SW_Site.lyr[n] -> bMatric = 1;
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
-    double resExpect = .00013310902; // did math by hand to get this value
-    double actualExpectDiff = fabs(res - resExpect);
+    RealD resExpect = .00013310902; // did math by hand to get this value
+    RealD actualExpectDiff = fabs(res - resExpect);
     EXPECT_LT(actualExpectDiff, .0002);
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWPmatric2VWCBulk'
   TEST(SWSoilWaterTest, SWSWPmatric2VWCBulk){
     // set up mock variables
-    double fractionGravel = .1;
-    double swpMatric = 15.0;
-    double p;
-    double tExpect;
-    double t;
-    double actualExpectDiff;
-    double psisMatric = 18.608013;
-    double binverseMatric = 0.188608;
-    double thetaMatric = 41.37;
-    double testNumber;
+    RealD fractionGravel = .1;
+    RealD swpMatric = 15.0;
+    RealD p;
+    RealD tExpect;
+    RealD t;
+    RealD actualExpectDiff;
+    RealD psisMatric = 18.608013;
+    RealD binverseMatric = 0.188608;
+    RealD thetaMatric = 41.37;
+    RealD testNumber;
     LyrIndex n = 0;
     SW_Site.lyr[n]->thetasMatric = thetaMatric;
   	SW_Site.lyr[n]->psisMatric = psisMatric;
