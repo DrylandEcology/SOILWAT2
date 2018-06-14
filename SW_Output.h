@@ -200,6 +200,9 @@ typedef struct {
 
 // Function declarations
 void SW_OUT_construct(void);
+#if defined(RSOILWAT) || defined(STEPWAT)
+void SW_OUT_set_nrow(void);
+#endif
 void SW_OUT_set_ncol(void);
 void SW_OUT_set_colnames(void);
 void SW_OUT_new_year(void);
