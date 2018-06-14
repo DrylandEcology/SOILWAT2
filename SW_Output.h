@@ -197,6 +197,21 @@ typedef struct {
 #define ForEachVES_OutKey(k) for((k)=eSW_AllVeg;  (k)<=eSW_Estab;    (k)++)
 #define ForEachOutPeriod(k)  for((k)=eSW_Day;     (k)<=eSW_Year;     (k)++)
 
+#if defined(RSOILWAT) || defined(STEPWAT)
+/** iOUT returns the index to the `i`-th column for time period `pd` in an
+  output array that is organized by columns where `i` is base0 and
+  `pd` is `OutType`
+*/
+#define iOUT(i, pd) (irow_OUT[(pd)] + nrow_OUT[(pd)] * (ncol_TimeOUT[(pd)] + (i)))
+
+/** iOUT2 returns the index to the `i`-th (soil layer) column
+  within the `k`-th (vegetation type) column block for time period `pd` in an
+  output array that is organized by columns where `i` and `k` are base0 and
+  `pd` is `OutType`
+*/
+#define iOUT2(i, k, pd) (irow_OUT[(pd)] + nrow_OUT[(pd)] * \
+	(ncol_TimeOUT[(pd)] + (i) + SW_Site.n_layers * ((k) + 1)))
+#endif
 
 // Function declarations
 void SW_OUT_construct(void);
