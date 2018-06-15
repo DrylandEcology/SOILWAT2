@@ -30,6 +30,7 @@
 #include "SW_Site.h"
 #include "SW_Weather.h"
 #include "SW_Output.h"
+#include "SW_Output_outtext.h"
 #include "SW_Main_lib.c"
 
 

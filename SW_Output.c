@@ -181,11 +181,18 @@
 
 #include "SW_Output.h"
 
-/* Note: `get_XXX` functions are declared in `SW_Output.h` for all
-    and defined/implemented in the program-specific files for the uses of:
-    - SOILWAT2-standalone: "../rSW_Output_rSOILWAT2.c"
-    - rSOILWAT2: "../rSW_Output_rSOILWAT2.c"
-    - STEPWAT2: "../sxw_Output_STEPWAT2.c"
+// Array-based output declarations:
+#if defined(RSOILWAT) || defined(STEPWAT)
+#include "SW_Output_outarray.h"
+#endif
+
+// Text-based output declarations:
+#ifndef RSOILWAT
+#include "SW_Output_outtext.h"
+#endif
+
+/* Note: `get_XXX` functions are declared in `SW_Output.h`
+    and defined/implemented in 'SW_Output_get_functions.c"
 */
 
 
@@ -201,56 +208,52 @@ extern SW_VEGESTAB SW_VegEstab;
 extern Bool EchoInits;
 extern SW_CARBON SW_Carbon;
 
-SW_OUTPUT SW_Output[SW_OUTNKEYS]; /* defined here, externed in `SW_Output_ZZZ.c` */
+SW_OUTPUT SW_Output[SW_OUTNKEYS];
 
 char _Sep; /* output delimiter */
 TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
-Bool bFlush_output; /* process partial period ? */
 
 
 // Global variables describing output periods:
 OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];// array to keep track of the periods that will be used for each output
-unsigned int used_OUTNPERIODS; // number of different time steps/periods that are used/requested
+IntUS used_OUTNPERIODS; // number of different time steps/periods that are used/requested
 Bool use_OutPeriod[SW_OUTNPERIODS]; // TRUE if time step/period is active for any output key
 
 
 // Global variables describing size and names of output
 char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS]; // names of output columns for each output key; number is an expensive guess
-unsigned int ncol_OUT[SW_OUTNKEYS]; // number of output columns for each output key
+IntUS ncol_OUT[SW_OUTNKEYS]; // number of output columns for each output key
+
+
+// Text-based output: defined in `SW_Output_outtext.c`:
+#ifndef RSOILWAT
+extern SW_FILE_STATUS SW_OutFiles;
+extern char sw_outstr[];
+extern Bool print_IterationSummary;
+extern Bool print_SW_Output;
+#endif
+
+
+// Array-based output: defined in `SW_Output_outarray.c`
 #if defined(RSOILWAT) || defined(STEPWAT)
-unsigned int nrow_OUT[SW_OUTNPERIODS]; // number of years/months/weeks/days
-unsigned int irow_OUT[SW_OUTNPERIODS]; // row index of current year/month/week/day output; incremented at end of each day
-const unsigned int ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time header columns for each output period
+extern IntUS ncol_TimeOUT[];
+extern IntUS nrow_OUT[];
+extern IntUS irow_OUT[];
 #endif
 
 
 #ifdef STEPWAT
 extern ModelType Globals; // defined in `ST_Main.c`
-/* `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
+
+/** `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
      if TRUE, then write to disk the SOILWAT2 output
      for each STEPWAT2 iteration/repeat to separate files */
 Bool storeAllIterations;
-/* `isPartialSoilwatOutput` is set to FALSE if STEPWAT2 is called with `-o` flag
+
+/** `isPartialSoilwatOutput` is set to FALSE if STEPWAT2 is called with `-o` flag
       if FALSE, then calculate/write to disk the running mean and sd
       across iterations/repeats */
 Bool isPartialSoilwatOutput;
-/* `sw_outstr_agg` holds the formatted output as returned from `get_XXX` for
-     aggregated output across iterations/repeats;
-     active if `print_IterationSummary` is TRUE */
-char sw_outstr_agg[OUTSTRLEN];
-#endif
-
-
-#ifndef RSOILWAT
-SW_FILE_STATUS SW_OutFiles;
-/* `sw_outstr` holds the formatted output as returned from `get_XXX` for
-      SOILWAT2-standalone and for a single iteration/repeat for STEPWAT2 */
-char sw_outstr[OUTSTRLEN];
-/* `print_IterationSummary is TRUE if STEPWAT2 is called with `-o` flag
-      and if STEPWAT2 is currently in its last iteration/repetition
-   `print_SW_Output is TRUE for SOILWAT2 and
-      if STEPWAT2 is called with `-i` flag`*/
-Bool print_IterationSummary, print_SW_Output;
 #endif
 
 
@@ -302,18 +305,13 @@ char const *styp2str[] =
 static char *MyFileName;
 
 static int useTimeStep; /* flag to determine whether or not the line TIMESTEP exists */
+static Bool bFlush_output; /* process partial period ? */
 
 
 /* =================================================== */
 /* =================================================== */
 /*             Private Function Declarations            */
 /* --------------------------------------------------- */
-
-#ifndef RSOILWAT
-static void get_outstrleader(OutPeriod pd, char *str);
-static void get_outstrheader(OutPeriod pd, char *str);
-static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil, Bool does_agg);
-#endif
 
 static OutPeriod str2period(char *s);
 static OutKey str2key(char *s);
@@ -331,56 +329,6 @@ static void average_for(ObjType otyp, OutPeriod pd);
 /* =================================================== */
 /*             Private Function Definitions            */
 /* --------------------------------------------------- */
-
-#ifndef RSOILWAT
-/** Periodic output for Month and/or Week are actually
-		printing for the PREVIOUS month or week.
-		Also, see note on test value in _write_today() for
-		explanation of the +1.
-*/
-static void get_outstrleader(OutPeriod pd, char *str) {
-	switch (pd) {
-		case eSW_Day:
-			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep, SW_Model.doy);
-			break;
-
-		case eSW_Week:
-			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep,
-				(SW_Model.week + 1) - tOffset);
-			break;
-
-		case eSW_Month:
-			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep,
-				(SW_Model.month + 1) - tOffset);
-			break;
-
-		case eSW_Year:
-			sprintf(str, "%d", SW_Model.simyear);
-			break;
-	}
-}
-
-static void get_outstrheader(OutPeriod pd, char *str) {
-	switch (pd) {
-		case eSW_Day:
-			sprintf(str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Day]);
-			break;
-
-		case eSW_Week:
-			sprintf(str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Week]);
-			break;
-
-		case eSW_Month:
-			sprintf(str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Month]);
-			break;
-
-		case eSW_Year:
-			sprintf(str, "%s", "Year");
-			break;
-	}
-}
-#endif
-
 
 /** Convert string representation of time period to `OutPeriod` value.
 */
@@ -943,7 +891,7 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 
 	TimeInt pd = 0;
 	OutKey k;
-	unsigned int i;
+	IntUS i;
 	Bool use_KeyPeriodCombo;
 
 	switch (op)
@@ -1138,16 +1086,6 @@ void set_SOILWAT_aggslot(OutPeriod pd, SW_SOILWAT_OUTPUTS **pvo) {
 }
 
 
-void get_none(OutPeriod pd) // not static because other `get_XXX` are not
-{
-	/* --------------------------------------------------- */
-	/* output routine for quantities that aren't yet implemented
-	 * this just gives the main output loop something to call,
-	 * rather than an empty pointer.
-	 */
-	if (pd) {}
-}
-
 
 void SW_OUT_construct(void)
 {
@@ -1296,57 +1234,6 @@ void SW_OUT_construct(void)
 }
 
 
-#if defined(RSOILWAT) || defined(STEPWAT)
-/** Determine number of used years/months/weeks/days in simulation period
-		@param SW_Model
-		@param use_OutPeriod
-		@sideeffects Set `nrow_OUT`
-*/
-void SW_OUT_set_nrow(void)
-{
-	int i, n_yrs = SW_Model.endyr - SW_Model.startyr + 1;
-	#ifdef SWDEBUG
-	int debug = 0;
-	#endif
-
-	nrow_OUT[eSW_Year] = n_yrs * use_OutPeriod[eSW_Year];
-	nrow_OUT[eSW_Month] = n_yrs * MAX_MONTHS * use_OutPeriod[eSW_Month];
-	nrow_OUT[eSW_Week] = n_yrs * MAX_WEEKS * use_OutPeriod[eSW_Week];
-
-	nrow_OUT[eSW_Day] = 0;
-
-	if (use_OutPeriod[eSW_Day])
-	{
-		if (SW_Model.startyr == SW_Model.endyr)
-		{
-			nrow_OUT[eSW_Day] = SW_Model.endend - SW_Model.startstart + 1;
-
-		} else
-		{
-			// Calculate the start day of first year
-			nrow_OUT[eSW_Day] = Time_get_lastdoy_y(SW_Model.startyr) -
-				SW_Model.startstart + 1;
-			// and last day of last year.
-			nrow_OUT[eSW_Day] += SW_Model.endend;
-
-			// Cumulate days of years between first and last year
-			for (i = SW_Model.startyr + 1; i < SW_Model.endyr; i++)
-			{
-				nrow_OUT[eSW_Day] += Time_get_lastdoy_y(i);
-			}
-		}
-	}
-
-	#ifdef SWDEBUG
-	if (debug) {
-		swprintf("n(year) = %d, n(month) = %d, n(week) = %d, n(day) = %d\n",
-			nrow_OUT[eSW_Year], nrow_OUT[eSW_Month], nrow_OUT[eSW_Week],
-			nrow_OUT[eSW_Day]);
-	}
-	#endif
-}
-#endif
-
 
 void SW_OUT_set_ncol(void) {
 	int tLayers = SW_Site.n_layers;
@@ -1396,7 +1283,7 @@ void SW_OUT_set_ncol(void) {
 		Ck_Lyr1, ..., Ck_LyrN`
 */
 void SW_OUT_set_colnames(void) {
-	unsigned int i, j;
+	IntUS i, j;
 	LyrIndex tLayers = SW_Site.n_layers;
   #ifdef SWDEBUG
   int debug = 0;
@@ -1764,7 +1651,7 @@ void find_OutPeriods_inUse(void)
 {
 	OutKey k;
 	OutPeriod p;
-	unsigned int i;
+	IntUS i;
 
 	ForEachOutPeriod(p) {
 		use_OutPeriod[p] = swFALSE;
@@ -1777,6 +1664,20 @@ void find_OutPeriods_inUse(void)
 	}
 }
 
+/** Determine whether output period `pd` is active for output key `k`
+*/
+Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k)
+{
+	int i;
+	Bool has_timeStep = swFALSE;
+
+	for (i = 0; i < used_OUTNPERIODS; i++)
+	{
+		has_timeStep = (Bool) has_timeStep || timeSteps[k][i] == pd;
+	}
+
+	return has_timeStep;
+}
 
 
 /** Read output setup from file `outsetup.in`.
@@ -1809,7 +1710,7 @@ void SW_OUT_read(void)
 	FILE *f;
 	OutKey k;
 	int x, itemno, msg_type;
-	unsigned int i;
+	IntUS i;
 
 	/* these dims come from the orig format str */
 	/* except for the uppercase space. */
@@ -1942,51 +1843,6 @@ void SW_OUT_read(void)
 		_echo_outputs();
 }
 
-
-
-#ifndef RSOILWAT
-/** close all of the user-specified output files.
-    call this routine at the end of the program run.
-*/
-void SW_OUT_close_files(void) {
-  Bool close_regular, close_layers, close_aggs;
-  OutPeriod p;
-
-	#if defined(SOILWAT)
-  close_regular = SW_OutFiles.make_regular;
-  close_layers = SW_OutFiles.make_soil;
-  close_aggs = swFALSE;
-
-	#elif defined(STEPWAT)
-  close_regular = (Bool) (SW_OutFiles.make_regular && storeAllIterations);
-  close_layers = (Bool) (SW_OutFiles.make_soil && storeAllIterations);
-  close_aggs = (Bool) ((SW_OutFiles.make_regular || SW_OutFiles.make_soil)
-    && !isPartialSoilwatOutput);
-	#endif
-
-  ForEachOutPeriod(p) {
-    if (use_OutPeriod[p]) {
-      if (close_regular) {
-        CloseFile(&SW_OutFiles.fp_reg[p]);
-      }
-
-      if (close_layers) {
-        CloseFile(&SW_OutFiles.fp_soil[p]);
-      }
-
-      if (close_aggs) {
-        #ifdef STEPWAT
-        CloseFile(&SW_OutFiles.fp_reg_agg[p]);
-
-        if (close_layers) {
-          CloseFile(&SW_OutFiles.fp_soil_agg[p]);
-        }
-        #endif
-      }
-    }
-  }
-}
-#endif
 
 
 void _collect_values(void) {
@@ -2170,7 +2026,7 @@ void SW_OUT_write_today(void)
 	OutKey k;
 	OutPeriod p;
 	Bool writeit[SW_OUTNPERIODS];
-	unsigned int i;
+	IntUS i;
 
 	#ifdef SWDEBUG
   int debug = 0;
@@ -2361,90 +2217,6 @@ void _echo_outputs(void)
 	LogError(logfp, LOGNOTE, errstr);
 
 }
-
-
-#ifndef RSOILWAT
-// function not for use with RSOILWAT since RSOILWAT has its own column header function.
-// Planning on combining the two functions at a later date.
-/**
-  \fn void create_col_headers(int outFileTimestep, FILE *regular_file, FILE *soil_file)
-  \brief Creates column headers for output files
-
-  create_col_headers is called only once for each set of output files and it goes through
-	all values and if the value is defined to be used it creates the header in the output file.
-
-	Note: `SW_OUT_set_ncol` and `SW_OUT_set_colnames` must be called before
-		`_create_csv_headers`; otherwise, `ncol_OUT` and `colnames_OUT` are not set.
-
-  \param pd. timeperiod so it can write headers to correct output file.
-  \param regular_file. name of file.
-	\param soil_file. name of file.
-
-  \return void.
-*/
-static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil, Bool does_agg) {
-	unsigned int i;
-	char key[50], str_help1[50], str_help2[OUTSTRLEN];
-	OutKey k;
-
-	// Initialize headers
-	str_reg[0] = (char)'\0';
-	str_soil[0] = (char)'\0';
-
-	#ifdef SOILWAT
-	if (does_agg) {
-		LogError(logfp, LOGFATAL, "'_create_csv_headers': value TRUE for "\
-			"argument 'does_agg' is not implemented for SOILWAT2-standalone.");
-	}
-	#endif
-
-	ForEachOutKey(k)
-	{
-		if ((SW_Output[k].use && useTimeStep == 0 && timeSteps[k][0] == pd) ||
-			(SW_Output[k].use && useTimeStep == 1))
-		{
-			strcpy(key, key2str[k]);
-			str_help2[0] = '\0';
-
-			for (i = 0; i < ncol_OUT[k]; i++) {
-				if (does_agg) {
-						sprintf(str_help1, "%c%s_%s_Mean%c%s_%s_SD",
-							_Sep, key, colnames_OUT[k][i], _Sep, key, colnames_OUT[k][i]);
-						strcat(str_help2, str_help1);
-				} else {
-					sprintf(str_help1, "%c%s_%s", _Sep, key, colnames_OUT[k][i]);
-					strcat(str_help2, str_help1);
-				}
-			}
-
-			if (SW_Output[k].has_sl) {
-				strcat((char*)str_soil, str_help2);
-			} else {
-				strcat((char*)str_reg, str_help2);
-			}
-		}
-	}
-}
-
-void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_agg) {
-	char str_time[20];
-	char header_reg[OUTSTRLEN], header_soil[2 * OUTSTRLEN];
-
-	// Acquire headers
-	get_outstrheader(pd, str_time);
-	_create_csv_headers(pd, header_reg, header_soil, does_agg);
-
-	// Write headers to files
-	if (SW_OutFiles.make_regular) {
-		fprintf(fp_reg, "%s%s\n", str_time, header_reg);
-	}
-
-	if (SW_OutFiles.make_soil) {
-		fprintf(fp_soil, "%s%s\n", str_time, header_soil);
-	}
-}
-#endif
-
 
 
 #ifdef DEBUG_MEM

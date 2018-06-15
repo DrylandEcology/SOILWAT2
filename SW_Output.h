@@ -3,7 +3,7 @@
 /*  Source file: SW_Output.h
 	Type: header
 	Application: SOILWAT - soilwater dynamics simulator
-	Purpose: Support for Output.c
+	Purpose: Support for SW_Output.c and SW_Output_get_functions.c
 	History:
 	(9/11/01) -- INITIAL CODING - cwb
 	2010/02/02	(drs) changed SW_CANOPY to SW_CANOPYEV and SW_LITTER to SW_LITTEREV
@@ -162,30 +162,6 @@ typedef struct {
 	void (*pfunc)(OutPeriod); /* pointer to output routine */
 } SW_OUTPUT;
 
-#ifndef RSOILWAT
-typedef struct {
-	Bool make_soil, make_regular;
-
-	#ifdef STEPWAT
-	// average/sd across iteration/repetitions
-	FILE *fp_reg_agg[SW_OUTNPERIODS];
-	char buf_reg_agg[SW_OUTNPERIODS][OUTSTRLEN];
-	// output file for variables with values for each soil layer
-	FILE *fp_soil_agg[SW_OUTNPERIODS];
-	char buf_soil_agg[SW_OUTNPERIODS][OUTSTRLEN];
-	#endif
-
-	// if SOILWAT: "regular" output file
-	// if STEPWAT: "regular" output file; new file for each iteration/repetition
-	FILE *fp_reg[SW_OUTNPERIODS];
-	char buf_reg[SW_OUTNPERIODS][OUTSTRLEN];
-	// if SOILWAT: output file for variables with values for each soil layer
-	// if STEPWAT: new file for each iteration/repetition of STEPWAT
-	FILE *fp_soil[SW_OUTNPERIODS];
-	char buf_soil[SW_OUTNPERIODS][OUTSTRLEN];
-
-} SW_FILE_STATUS;
-#endif
 
 /* convenience loops for consistency.
  * k must be a defined variable, either of OutKey type
@@ -197,54 +173,26 @@ typedef struct {
 #define ForEachVES_OutKey(k) for((k)=eSW_AllVeg;  (k)<=eSW_Estab;    (k)++)
 #define ForEachOutPeriod(k)  for((k)=eSW_Day;     (k)<=eSW_Year;     (k)++)
 
-#if defined(RSOILWAT) || defined(STEPWAT)
-/** iOUT returns the index to the `i`-th column for time period `pd` in an
-  output array that is organized by columns where `i` is base0 and
-  `pd` is `OutType`. The index order has to match up with column names as
-  defined by `SW_OUT_set_colnames`.
-*/
-#define iOUT(i, pd) (irow_OUT[(pd)] + nrow_OUT[(pd)] * (ncol_TimeOUT[(pd)] + (i)))
 
-/** iOUT2 returns the index to the `i`-th (soil layer) column
-  within the `k`-th (vegetation type) column block for time period `pd` in an
-  output array that is organized by columns where `i` and `k` are base0 and
-  `pd` is `OutType`. The index order has to match up with column names as
-  defined by `SW_OUT_set_colnames`.
-*/
-#define iOUT2(i, k, pd) (irow_OUT[(pd)] + nrow_OUT[(pd)] * \
-	(ncol_TimeOUT[(pd)] + (i) + SW_Site.n_layers * (k)))
-#endif
 
 // Function declarations
 void SW_OUT_construct(void);
-#if defined(RSOILWAT) || defined(STEPWAT)
-void SW_OUT_set_nrow(void);
-#endif
 void SW_OUT_set_ncol(void);
 void SW_OUT_set_colnames(void);
 void SW_OUT_new_year(void);
 int SW_OUT_read_onekey(OutKey *k, char keyname[], char sumtype[],
 	char period[], int first, char last[], char outfile[], char msg[]);
-void find_OutPeriods_inUse(void);
-Bool has_soillayers(const char *var);
 void SW_OUT_read(void);
 void SW_OUT_sum_today(ObjType otyp);
 void SW_OUT_write_today(void);
 void SW_OUT_write_year(void);
-#if defined(SOILWAT)
-void SW_OUT_create_files(void);
-#elif defined(STEPWAT)
-void SW_OUT_create_summary_files(void);
-void SW_OUT_create_iteration_files(void);
-#endif
-#ifndef RSOILWAT
-void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_agg);
-void SW_OUT_close_files(void);
-#endif
 void SW_OUT_flush(void);
 void _collect_values(void);
 void _echo_outputs(void);
 
+void find_OutPeriods_inUse(void);
+Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k);
+Bool has_soillayers(const char *var);
 void set_VEGPROD_aggslot(OutPeriod pd, SW_VEGPROD_OUTPUTS **pvo);
 void set_WEATHER_aggslot(OutPeriod pd, SW_WEATHER_OUTPUTS **pvo);
 void set_SOILWAT_aggslot(OutPeriod pd, SW_SOILWAT_OUTPUTS **pvo);
