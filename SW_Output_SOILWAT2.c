@@ -4,7 +4,7 @@
   Type: module
   Application: SOILWAT - soilwater dynamics simulator
   Purpose: define `get_XXX` functions for SOILWAT2-standalone
-    see SW_Output_core.c and SW_Output.h
+    see SW_Output.c and SW_Output.h
 
   History:
   2018 June 04 (drs) moved output formatter `get_XXX` functions from
@@ -51,7 +51,7 @@ extern SW_VEGPROD SW_VegProd;
 extern SW_VEGESTAB SW_VegEstab;
 extern SW_CARBON SW_Carbon;
 
-// defined in `SW_Output_core.c`:
+// defined in `SW_Output.c`:
 extern SW_OUTPUT SW_Output[SW_OUTNKEYS];
 extern SW_FILE_STATUS SW_OutFiles;
 
