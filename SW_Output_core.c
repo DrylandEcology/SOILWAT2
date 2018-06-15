@@ -1384,13 +1384,16 @@ void SW_OUT_set_ncol(void) {
 
 }
 
-/** Set column/variable names in global array `colnames_OUT`
-    Note: order of outputs must match up with all `get_XXX` functions;
-    particularly, output variables with values for each soil layers for
-    different (e.g., vegetation) components (e.g., transpiration, SWA, and
-    hydraulic redistribution) report based on a loop over components within
-    which a loop over soil layers is nested, e.g.,
-    `C1_Lyr1, C1_Lyr2, ..., C1_LyrN, C2_Lyr1, ..., C2_Lyr2, ..., Ck_LyrN`
+/** @brief Set column/variable names in global array `colnames_OUT`
+		@description
+		Order of outputs must match up with all `get_XXX` functions and with
+		indexing macros `iOUT` and `iOUT2`; particularly, output variables with
+		values for each of `N` soil layers for `k` different (e.g., vegetation)
+		components (e.g., transpiration, SWA, and hydraulic redistribution) report
+		based on a loop over components within
+		which a loop over soil layers is nested, e.g.,
+		`C1_Lyr1, C1_Lyr2, ..., C1_LyrN, C2_Lyr1, ..., C2_LyrN, ...,
+		Ck_Lyr1, ..., Ck_LyrN`
 */
 void SW_OUT_set_colnames(void) {
 	unsigned int i, j;

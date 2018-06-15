@@ -200,17 +200,19 @@ typedef struct {
 #if defined(RSOILWAT) || defined(STEPWAT)
 /** iOUT returns the index to the `i`-th column for time period `pd` in an
   output array that is organized by columns where `i` is base0 and
-  `pd` is `OutType`
+  `pd` is `OutType`. The index order has to match up with column names as
+  defined by `SW_OUT_set_colnames`.
 */
 #define iOUT(i, pd) (irow_OUT[(pd)] + nrow_OUT[(pd)] * (ncol_TimeOUT[(pd)] + (i)))
 
 /** iOUT2 returns the index to the `i`-th (soil layer) column
   within the `k`-th (vegetation type) column block for time period `pd` in an
   output array that is organized by columns where `i` and `k` are base0 and
-  `pd` is `OutType`
+  `pd` is `OutType`. The index order has to match up with column names as
+  defined by `SW_OUT_set_colnames`.
 */
 #define iOUT2(i, k, pd) (irow_OUT[(pd)] + nrow_OUT[(pd)] * \
-	(ncol_TimeOUT[(pd)] + (i) + SW_Site.n_layers * ((k) + 1)))
+	(ncol_TimeOUT[(pd)] + (i) + SW_Site.n_layers * (k)))
 #endif
 
 // Function declarations
