@@ -45,7 +45,6 @@ extern SW_SITE SW_Site;
 
 
 namespace {
-
   // Test the water equation function 'water_eqn'
   TEST(SWSiteTest, WaterEquation) {
 
