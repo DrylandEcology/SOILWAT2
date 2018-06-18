@@ -25,6 +25,7 @@
 #define SW_WEATHER_H
 
 #include "SW_Times.h"
+#include "SW_Defines.h"
 
 /* missing values may be different than with other things */
 #define WTH_MISSING   999.
@@ -71,9 +72,9 @@ typedef struct {
 	RealD snow, snowmelt, snowloss;
 
 	/* This section is required for computing the output quantities.  */
-	SW_WEATHER_OUTPUTS dysum, /* helpful placeholder */
-	wksum, mosum, yrsum, /* accumulators for *avg */
-	wkavg, moavg, yravg; /* averages or sums as appropriate*/
+	SW_WEATHER_OUTPUTS
+		accu[SW_OUTNPERIODS], // output accumulator: summed values
+		oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
 	SW_WEATHER_HIST hist;
 	SW_WEATHER_2DAYS now;
 

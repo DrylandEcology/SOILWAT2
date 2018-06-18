@@ -92,8 +92,8 @@ void SW_VES_construct(void) {
 void SW_VES_clear(void) {
 	unsigned int i;
 	if (SW_VegEstab.count > 0) {
-		free(SW_VegEstab.yrsum.days);
-		//free(SW_VegEstab.yravg.days);
+		free(SW_VegEstab.accu[eSW_Year].days);
+		//free(SW_VegEstab.oagg[eSW_Year].days);
 
 		for(i=0; i<SW_VegEstab.count; i++)
 		{
@@ -112,7 +112,8 @@ void SW_VES_new_year(void) {
 
 	if (0 == SW_VegEstab.count)
 		return;
-	Mem_Set(SW_VegEstab.yrsum.days, 0, SW_VegEstab.count);
+
+	Mem_Set(SW_VegEstab.accu[eSW_Year].days, 0, SW_VegEstab.count);
 
 }
 
@@ -142,7 +143,8 @@ void SW_VES_read(void) {
 		_spp_init(i);
 
 	if (SW_VegEstab.count > 0)
-		SW_VegEstab.yrsum.days = (TimeInt *) Mem_Calloc(SW_VegEstab.count, sizeof(TimeInt), "SW_VES_read()");
+		SW_VegEstab.accu[eSW_Year].days = (TimeInt *) Mem_Calloc(SW_VegEstab.count, sizeof(TimeInt), "SW_VES_read()");
+
 	if (EchoInits)
 		_echo_VegEstab();
 }

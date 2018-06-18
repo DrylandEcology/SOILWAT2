@@ -119,9 +119,9 @@ typedef struct {
   char *wbErrorNames[N_WBCHECKS];
   #endif
 
-	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */
-	wksum, mosum, yrsum, /* accumulators for *avg */
-	wkavg, moavg, yravg; /* averages or sums as appropriate */
+	SW_SOILWAT_OUTPUTS
+		accu[SW_OUTNPERIODS], // output accumulator: summed values
+		oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
 	Bool hist_use;
 	SW_SOILWAT_HIST hist;
 

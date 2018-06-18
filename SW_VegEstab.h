@@ -79,9 +79,10 @@ typedef struct {
   Bool use;      /* if swTRUE use establishment parms and chkestab() */
   IntU count;  /* number of species to check */
   SW_VEGESTAB_INFO **parms;  /* dynamic array of parms for each species */
-  SW_VEGESTAB_OUTPUTS yrsum,  /* conforms to the requirements of the output module */
-                      yravg;  /* note that there's only one period for output */
-                              /* see also the soilwater and weather modules */
+  SW_VEGESTAB_OUTPUTS  /* only yearly element will be used */
+		accu[SW_OUTNPERIODS], // output accumulator: summed values
+		oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
+
 } SW_VEGESTAB;
 
 void SW_VES_read(void);

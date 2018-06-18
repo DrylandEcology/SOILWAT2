@@ -632,34 +632,34 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 		{
 		case eSW_Week:
 			curr_pd = (SW_Model.week + 1) - tOffset;
-			savg = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.wkavg;
-			ssumof = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.wksum;
-			wavg = (SW_WEATHER_OUTPUTS *) &SW_Weather.wkavg;
-			wsumof = (SW_WEATHER_OUTPUTS *) &SW_Weather.wksum;
-			vpavg = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.wkavg;
-			vpsumof = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.wksum;
+			savg = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.oagg[eSW_Week];
+			ssumof = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.accu[eSW_Week];
+			wavg = (SW_WEATHER_OUTPUTS *) &SW_Weather.oagg[eSW_Week];
+			wsumof = (SW_WEATHER_OUTPUTS *) &SW_Weather.accu[eSW_Week];
+			vpavg = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.oagg[eSW_Week];
+			vpsumof = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.accu[eSW_Week];
 			div = (bFlush_output) ? SW_Model.lastdoy % WKDAYS : WKDAYS;
 			break;
 
 		case eSW_Month:
 			curr_pd = (SW_Model.month + 1) - tOffset;
-			savg = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.moavg;
-			ssumof = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.mosum;
-			wavg = (SW_WEATHER_OUTPUTS *) &SW_Weather.moavg;
-			wsumof = (SW_WEATHER_OUTPUTS *) &SW_Weather.mosum;
-			vpavg = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.moavg;
-			vpsumof = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.mosum;
+			savg = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.oagg[eSW_Month];
+			ssumof = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.accu[eSW_Month];
+			wavg = (SW_WEATHER_OUTPUTS *) &SW_Weather.oagg[eSW_Month];
+			wsumof = (SW_WEATHER_OUTPUTS *) &SW_Weather.accu[eSW_Month];
+			vpavg = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.oagg[eSW_Month];
+			vpsumof = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.accu[eSW_Month];
 			div = Time_days_in_month(SW_Model.month - tOffset);
 			break;
 
 		case eSW_Year:
 			curr_pd = SW_Output[k].first;
-			savg = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.yravg;
-			ssumof = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.yrsum;
-			wavg = (SW_WEATHER_OUTPUTS *) &SW_Weather.yravg;
-			wsumof = (SW_WEATHER_OUTPUTS *) &SW_Weather.yrsum;
-			vpavg = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.yravg;
-			vpsumof = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.yrsum;
+			savg = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.oagg[eSW_Year];
+			ssumof = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.accu[eSW_Year];
+			wavg = (SW_WEATHER_OUTPUTS *) &SW_Weather.oagg[eSW_Year];
+			wsumof = (SW_WEATHER_OUTPUTS *) &SW_Weather.accu[eSW_Year];
+			vpavg = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.oagg[eSW_Year];
+			vpsumof = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.accu[eSW_Year];
 			div = SW_Output[k].last - SW_Output[k].first + 1;
 			break;
 
@@ -941,16 +941,16 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 			case eSWC:
 				switch (op) {
 					case eSW_Day:
-						ssum = &s->dysum;
+						ssum = &s->accu[eSW_Day];
 						break;
 					case eSW_Week:
-						ssum = &s->wksum;
+						ssum = &s->accu[eSW_Week];
 						break;
 					case eSW_Month:
-						ssum = &s->mosum;
+						ssum = &s->accu[eSW_Month];
 						break;
 					case eSW_Year:
-						ssum = &s->yrsum;
+						ssum = &s->accu[eSW_Year];
 						break;
 				}
 				sumof_swc(s, ssum, k);
@@ -959,16 +959,16 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 			case eWTH:
 				switch (op) {
 					case eSW_Day:
-						wsum = &w->dysum;
+						wsum = &w->accu[eSW_Day];
 						break;
 					case eSW_Week:
-						wsum = &w->wksum;
+						wsum = &w->accu[eSW_Week];
 						break;
 					case eSW_Month:
-						wsum = &w->mosum;
+						wsum = &w->accu[eSW_Month];
 						break;
 					case eSW_Year:
-						wsum = &w->yrsum;
+						wsum = &w->accu[eSW_Year];
 						break;
 				}
 				sumof_wth(w, wsum, k);
@@ -986,7 +986,7 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 						vsum = NULL;
 						break;
 					case eSW_Year:
-						vsum = &v->yrsum; /* yearly, y'see */
+						vsum = &v->accu[eSW_Year]; /* yearly, y'see */
 						break;
 				}
 				sumof_ves(v, vsum, k);
@@ -995,16 +995,16 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 			case eVPD:
 				switch (op) {
 					case eSW_Day:
-						vpsum = &vp->dysum;
+						vpsum = &vp->accu[eSW_Day];
 						break;
 					case eSW_Week:
-						vpsum = &vp->wksum;
+						vpsum = &vp->accu[eSW_Week];
 						break;
 					case eSW_Month:
-						vpsum = &vp->mosum;
+						vpsum = &vp->accu[eSW_Month];
 						break;
 					case eSW_Year:
-						vpsum = &vp->yrsum;
+						vpsum = &vp->accu[eSW_Year];
 						break;
 				}
 				sumof_vpd(vp, vpsum, k);
@@ -1153,19 +1153,19 @@ Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k)
 void set_VEGPROD_aggslot(OutPeriod pd, SW_VEGPROD_OUTPUTS **pvo) {
 	switch(pd) {
 		case eSW_Day:
-			*pvo = &SW_VegProd.dysum;
+			*pvo = &SW_VegProd.accu[eSW_Day];
 			break;
 
 		case eSW_Week:
-			*pvo = &SW_VegProd.wkavg;
+			*pvo = &SW_VegProd.oagg[eSW_Week];
 			break;
 
 		case eSW_Month:
-			*pvo = &SW_VegProd.moavg;
+			*pvo = &SW_VegProd.oagg[eSW_Month];
 			break;
 
 		case eSW_Year:
-			*pvo = &SW_VegProd.yravg;
+			*pvo = &SW_VegProd.oagg[eSW_Year];
 			break;
 	}
 }
@@ -1174,19 +1174,19 @@ void set_VEGPROD_aggslot(OutPeriod pd, SW_VEGPROD_OUTPUTS **pvo) {
 void set_WEATHER_aggslot(OutPeriod pd, SW_WEATHER_OUTPUTS **pvo) {
 	switch(pd) {
 		case eSW_Day:
-			*pvo = &SW_Weather.dysum;
+			*pvo = &SW_Weather.accu[eSW_Day];
 			break;
 
 		case eSW_Week:
-			*pvo = &SW_Weather.wkavg;
+			*pvo = &SW_Weather.oagg[eSW_Week];
 			break;
 
 		case eSW_Month:
-			*pvo = &SW_Weather.moavg;
+			*pvo = &SW_Weather.oagg[eSW_Month];
 			break;
 
 		case eSW_Year:
-			*pvo = &SW_Weather.yravg;
+			*pvo = &SW_Weather.oagg[eSW_Year];
 			break;
 	}
 }
@@ -1195,19 +1195,19 @@ void set_WEATHER_aggslot(OutPeriod pd, SW_WEATHER_OUTPUTS **pvo) {
 void set_SOILWAT_aggslot(OutPeriod pd, SW_SOILWAT_OUTPUTS **pvo) {
 	switch(pd) {
 		case eSW_Day:
-			*pvo = &SW_Soilwat.dysum;
+			*pvo = &SW_Soilwat.accu[eSW_Day];
 			break;
 
 		case eSW_Week:
-			*pvo = &SW_Soilwat.wkavg;
+			*pvo = &SW_Soilwat.oagg[eSW_Week];
 			break;
 
 		case eSW_Month:
-			*pvo = &SW_Soilwat.moavg;
+			*pvo = &SW_Soilwat.oagg[eSW_Month];
 			break;
 
 		case eSW_Year:
-			*pvo = &SW_Soilwat.yravg;
+			*pvo = &SW_Soilwat.oagg[eSW_Year];
 			break;
 	}
 }
@@ -1994,13 +1994,13 @@ void SW_OUT_sum_today(ObjType otyp)
 	switch (otyp)
 	{
 		case eSWC:
-			memset(&s->dysum, 0, size);
+			memset(&s->accu[eSW_Day], 0, size);
 			break;
 		case eWTH:
-			memset(&w->dysum, 0, size);
+			memset(&w->accu[eSW_Day], 0, size);
 			break;
 		case eVPD:
-			memset(&vp->dysum, 0, size);
+			memset(&vp->accu[eSW_Day], 0, size);
 			break;
 		default:
 			break;
@@ -2014,13 +2014,13 @@ void SW_OUT_sum_today(ObjType otyp)
 		switch (otyp)
 		{
 			case eSWC:
-				memset(&s->wksum, 0, size);
+				memset(&s->accu[eSW_Week], 0, size);
 				break;
 			case eWTH:
-				memset(&w->wksum, 0, size);
+				memset(&w->accu[eSW_Week], 0, size);
 				break;
 			case eVPD:
-				memset(&vp->wksum, 0, size);
+				memset(&vp->accu[eSW_Week], 0, size);
 				break;
 			default:
 				break;
@@ -2034,13 +2034,13 @@ void SW_OUT_sum_today(ObjType otyp)
 		switch (otyp)
 		{
 			case eSWC:
-				memset(&s->mosum, 0, size);
+				memset(&s->accu[eSW_Month], 0, size);
 				break;
 			case eWTH:
-				memset(&w->mosum, 0, size);
+				memset(&w->accu[eSW_Month], 0, size);
 				break;
 			case eVPD:
-				memset(&vp->mosum, 0, size);
+				memset(&vp->accu[eSW_Month], 0, size);
 				break;
 			default:
 				break;
@@ -2054,13 +2054,13 @@ void SW_OUT_sum_today(ObjType otyp)
 		switch (otyp)
 		{
 			case eSWC:
-				memset(&s->yrsum, 0, size);
+				memset(&s->accu[eSW_Year], 0, size);
 				break;
 			case eWTH:
-				memset(&w->yrsum, 0, size);
+				memset(&w->accu[eSW_Year], 0, size);
 				break;
 			case eVPD:
-				memset(&vp->yrsum, 0, size);
+				memset(&vp->accu[eSW_Year], 0, size);
 				break;
 			default:
 				break;

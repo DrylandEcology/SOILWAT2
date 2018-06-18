@@ -71,6 +71,24 @@
 #define SW_GRASS 3
 
 
+/* output period specifiers */
+#define SW_DAY   "DY"
+#define SW_WEEK  "WK"
+#define SW_MONTH "MO"
+#define SW_YEAR  "YR"
+
+#define SW_DAY_LONG   "Day"
+#define SW_WEEK_LONG  "Week"
+#define SW_MONTH_LONG "Month"
+#define SW_YEAR_LONG  "Year"
+
+#define SW_OUTNPERIODS 4  /* must match with enum */
+
+typedef enum {
+	eSW_Day, eSW_Week, eSW_Month, eSW_Year
+} OutPeriod;
+
+
 
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */
@@ -86,6 +104,8 @@
 #define ForEachVegTypeBottomUp(k)  for ((k) = NVEGTYPES - 1; (k) >= 0; (k)--)
 /* define m as Months */
 #define ForEachMonth(m)         for((m)=Jan; (m) <= Dec;  (m)++)
+#define ForEachOutPeriod(k)  for((k)=eSW_Day;     (k)<=eSW_Year;     (k)++)
+
 
 /* The ARCTANGENT function req'd by the original fortran produces
  * a highly configurable logistic curve. It was unfortunately

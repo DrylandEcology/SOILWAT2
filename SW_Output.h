@@ -32,6 +32,7 @@
 #define SW_OUTPUT_H
 
 #include "Times.h"
+#include "SW_Defines.h"
 #include "SW_SoilWater.h"
 #include "SW_Weather.h"
 #include "SW_VegProd.h"
@@ -132,22 +133,6 @@ typedef enum {
 	eSW_LastKey /* make sure this is the last one */
 } OutKey;
 
-/* output period specifiers found in input file */
-#define SW_DAY   "DY"
-#define SW_WEEK  "WK"
-#define SW_MONTH "MO"
-#define SW_YEAR  "YR"
-
-#define SW_DAY_LONG   "Day"
-#define SW_WEEK_LONG  "Week"
-#define SW_MONTH_LONG "Month"
-#define SW_YEAR_LONG  "Year"
-
-#define SW_OUTNPERIODS 4  /* must match with enum */
-
-typedef enum {
-	eSW_Day, eSW_Week, eSW_Month, eSW_Year
-} OutPeriod;
 
 /* summary methods */
 #define SW_SUM_OFF "OFF"  /* don't output */
@@ -183,7 +168,6 @@ typedef struct {
 #define ForEachSWC_OutKey(k) for((k)=eSW_AllH2O;  (k)<=eSW_SnowPack; (k)++)
 #define ForEachWTH_OutKey(k) for((k)=eSW_AllWthr; (k)<=eSW_Precip;   (k)++)
 #define ForEachVES_OutKey(k) for((k)=eSW_AllVeg;  (k)<=eSW_Estab;    (k)++)
-#define ForEachOutPeriod(k)  for((k)=eSW_Day;     (k)<=eSW_Year;     (k)++)
 
 
 
