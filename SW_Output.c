@@ -182,12 +182,12 @@
 #include "SW_Output.h"
 
 // Array-based output declarations:
-#if defined(RSOILWAT) || defined(STEPWAT)
+#ifdef SW_OUTARRAY
 #include "SW_Output_outarray.h"
 #endif
 
 // Text-based output declarations:
-#ifndef RSOILWAT
+#ifdef SW_OUTTEXT
 #include "SW_Output_outtext.h"
 #endif
 
@@ -226,7 +226,7 @@ IntUS ncol_OUT[SW_OUTNKEYS]; // number of output columns for each output key
 
 
 // Text-based output: defined in `SW_Output_outtext.c`:
-#ifndef RSOILWAT
+#ifdef SW_OUTTEXT
 extern SW_FILE_STATUS SW_OutFiles;
 extern char sw_outstr[];
 extern Bool print_IterationSummary;
@@ -235,7 +235,7 @@ extern Bool print_SW_Output;
 
 
 // Array-based output: defined in `SW_Output_outarray.c`
-#if defined(RSOILWAT) || defined(STEPWAT)
+#ifdef SW_OUTARRAY
 extern IntUS ncol_TimeOUT[];
 extern IntUS nrow_OUT[];
 extern IntUS irow_OUT[];
@@ -1218,7 +1218,7 @@ void SW_OUT_construct(void)
 {
 	/* =================================================== */
 	OutKey k;
-	#if defined(RSOILWAT) || defined(STEPWAT)
+	#ifdef SW_OUTARRAY
 	OutPeriod p;
 	#endif
 	LyrIndex i;
@@ -1233,7 +1233,7 @@ void SW_OUT_construct(void)
 	// `print_IterationSummary` is set by `SW_OUT_new_year`
 	#endif
 
-	#ifndef RSOILWAT
+	#ifdef SW_OUTTEXT
 	SW_OutFiles.make_soil = swFALSE;
 	SW_OutFiles.make_regular = swFALSE;
 	#endif
@@ -1247,7 +1247,7 @@ void SW_OUT_construct(void)
 		}
 	}
 
-	#if defined(RSOILWAT) || defined(STEPWAT)
+	#ifdef SW_OUTARRAY
 	ForEachOutPeriod(p)
 	{
 		nrow_OUT[p] = 0;
@@ -1707,7 +1707,7 @@ int SW_OUT_read_onekey(OutKey *k, char keyname[], char sumtype[],
 	}
 
 	// Check whether output per soil layer or 'regular' is requested
-	#ifndef RSOILWAT
+	#ifdef SW_OUTTEXT
 	if (SW_Output[*k].has_sl)
 	{
 		SW_OutFiles.make_soil = swTRUE;
@@ -2118,7 +2118,7 @@ void SW_OUT_write_today(void)
   int debug = 0;
   #endif
 
-	#ifndef RSOILWAT
+	#ifdef SW_OUTTEXT
 	char str_time[10]; // year and day/week/month header for each output row
 
 	// We don't really need all of these buffers to init every day
@@ -2169,7 +2169,7 @@ void SW_OUT_write_today(void)
 			if (debug) swprintf("/%d=%s", timeSteps[k][i], pd2str[timeSteps[k][i]]);
 			#endif
 
-			#ifndef RSOILWAT
+			#ifdef SW_OUTTEXT
 			if (timeSteps[k][i] < eSW_Day || timeSteps[k][i] > eSW_Year) {
 				// RSOILWAT sets off variables to SW_missing so this is not invalid for rSOILWAT2
 				LogError(logfp, LOGWARN,
@@ -2192,7 +2192,7 @@ void SW_OUT_write_today(void)
 			if (debug) swprintf(" ... ok");
 			#endif
 
-			#ifndef RSOILWAT
+			#ifdef SW_OUTTEXT
 			/* concatenate formatted output for one row of `csv`- files */
 			if (print_SW_Output)
 			{
@@ -2218,7 +2218,7 @@ void SW_OUT_write_today(void)
 	} // end of loop across output keys
 
 
-	#ifndef RSOILWAT
+	#ifdef SW_OUTTEXT
 	// write formatted output to csv-files
 	ForEachOutPeriod(p)
 	{
@@ -2260,7 +2260,7 @@ void SW_OUT_write_today(void)
 	}
 	#endif
 
-	#if defined(RSOILWAT) || defined(STEPWAT)
+	#ifdef SW_OUTARRAY
 	// increment row counts
 	ForEachOutPeriod(p)
 	{

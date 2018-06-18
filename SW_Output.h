@@ -37,6 +37,18 @@
 #include "SW_VegProd.h"
 
 
+// Array-based output:
+#if defined(RSOILWAT) || defined(STEPWAT)
+#define SW_OUTARRAY
+#endif
+
+// Text-based output:
+#if defined(SOILWAT) || defined(STEPWAT)
+#define SW_OUTTEXT
+#endif
+
+
+
 #define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
 #define OUT_DIGITS 6 // number of floating point decimal digits written to output files
 
