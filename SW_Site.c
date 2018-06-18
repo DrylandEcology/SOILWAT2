@@ -624,14 +624,16 @@ void init_site_info(void) {
 			}
 		}
 
+
 		/* Compute swc wet and dry limits and init value */
 		if (LT(_SWCMinVal, 0.0)) { /* estimate swcBulk_min for each layer based on residual SWC from an equation in Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties for hydrological modeling. In Watershed management in the Eighties (eds Jones EB, Ward TJ), pp. 293-299. American Society of Civil Engineers, New York.
 		 or based on SWC at -3 MPa if smaller (= suction at residual SWC from Fredlund DG, Xing AQ (1994) EQUATIONS FOR THE SOIL-WATER CHARACTERISTIC CURVE. Canadian Geotechnical Journal, 31, 521-532.) */
 			swcmin_help1 = SW_VWCBulkRes(lyr->fractionVolBulk_gravel, lyr->fractionWeightMatric_sand, lyr->fractionWeightMatric_clay, lyr->swcBulk_saturated / lyr->width)
 					* lyr->width;
 			swcmin_help2 = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, 30., s) * lyr->width;
+
 			// when SW_VWCBulkRes returns the macro SW_MISSING always use swcmin_help2
-			if(missing(swcmin_help1)){
+			if(missing(swcmin_help1 / lyr -> width)){
 				lyr -> swcBulk_min = swcmin_help2;
 			}
 			else{
