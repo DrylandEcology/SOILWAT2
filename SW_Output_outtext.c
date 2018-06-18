@@ -70,7 +70,7 @@ char sw_outstr[OUTSTRLEN];
 
 #ifdef STEPWAT
 extern ModelType Globals; // defined in `ST_Main.c`
-
+extern Bool prepare_IterationSummary; // defined in `SW_Output.c`
 /** `sw_outstr_agg` holds the formatted output as returned from `get_XXX` for
      aggregated output across iterations/repeats;
      active if `print_IterationSummary` is TRUE */
@@ -298,7 +298,7 @@ void _create_csv_file_ST(int iteration, OutPeriod pd)
 void SW_OUT_create_summary_files(void) {
 	OutPeriod p;
 
-		if (!isPartialSoilwatOutput)
+		if (prepare_IterationSummary)
 		{
 			ForEachOutPeriod(p) {
 				if (use_OutPeriod[p]) {
@@ -410,7 +410,7 @@ void SW_OUT_close_files(void) {
   close_regular = (Bool) (SW_OutFiles.make_regular && storeAllIterations);
   close_layers = (Bool) (SW_OutFiles.make_soil && storeAllIterations);
   close_aggs = (Bool) ((SW_OutFiles.make_regular || SW_OutFiles.make_soil)
-    && !isPartialSoilwatOutput);
+    && prepare_IterationSummary);
 	#endif
 
   ForEachOutPeriod(p) {

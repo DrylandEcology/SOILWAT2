@@ -48,9 +48,15 @@ extern Bool use_OutPeriod[];
 // 2-dim array of pointers to 2-dim output arrays
 // `p_OUT` used by rSOILWAT2 for output and by STEPWAT2 for mean aggregation
 RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
+
 #ifdef STEPWAT
 // `p_OUTsd` used by STEPWAT2 for standard-deviation of mean aggregation
 RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
+/** `prepare_IterationSummary` is TRUE if STEPWAT2 is called with `-o` flag
+      and if STEPWAT2 is currently not in its last iteration/repetition.
+      Compare with `print_IterationSummary` defined in `SW_Output_outtext.c`
+*/
+Bool prepare_IterationSummary;
 #endif
 
 IntUS nrow_OUT[SW_OUTNPERIODS]; // number of years/months/weeks/days

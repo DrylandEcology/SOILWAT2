@@ -40,13 +40,16 @@
 
 #include "SW_Output.h"
 
-
 #ifdef RSOILWAT
 #include <R.h>
 #include <Rdefines.h>
 #include <Rinternals.h>
 #endif
 
+#ifdef STEPWAT
+#include "../sxw.h"
+#include "../ST_globals.h"
+#endif
 
 // Array-based output declarations:
 #if defined(RSOILWAT) || defined(STEPWAT)
@@ -54,7 +57,7 @@
 #endif
 
 // Text-based output declarations:
-#ifndef RSOILWAT
+#if defined(SOILWAT) || defined(STEPWAT)
 #include "SW_Output_outtext.h"
 #endif
 
@@ -72,6 +75,12 @@ extern SW_CARBON SW_Carbon;
 
 extern SW_OUTPUT SW_Output[];
 extern IntUS ncol_OUT[];
+
+#ifdef STEPWAT
+extern Bool prepare_IterationSummary;
+// structure to store values in and pass back to STEPPE
+extern SXW_t SXW;
+#endif
 
 // Text-based output: defined in `SW_Output_outtext.c`:
 #ifndef RSOILWAT
@@ -163,7 +172,6 @@ void get_co2effects(OutPeriod pd) {
 	#endif
 
 	#if defined(RSOILWAT) || defined(STEPWAT)
-	// NOTE: `get_co2effects` uses a different order of vegetation types than the rest of SoilWat!!!
 	p[iOUT(0, pd)] = vo->veg[SW_GRASS].biomass;
 	p[iOUT(1, pd)] = vo->veg[SW_SHRUB].biomass;
 	p[iOUT(2, pd)] = vo->veg[SW_TREES].biomass;
@@ -255,6 +263,13 @@ void get_temp(OutPeriod pd)
 	p[iOUT(2, pd)] = vo->temp_avg;
 	p[iOUT(3, pd)] = vo->surfaceTemp;
 	#endif
+
+	#if defined(STEPWAT)
+	if (pd == eSW_Year) {
+		// STEPWAT2 expects annual mean air temperature
+		SXW.temp = vo->temp_avg;
+	}
+	#endif
 }
 
 void get_precip(OutPeriod pd)
@@ -285,6 +300,16 @@ void get_precip(OutPeriod pd)
 	p[iOUT(2, pd)] = vo->snow;
 	p[iOUT(3, pd)] = vo->snowmelt;
 	p[iOUT(4, pd)] = vo->snowloss;
+	#endif
+
+	#if defined(STEPWAT)
+		// STEPWAT2 expects monthly and annual sum of precipitation
+	if (pd == eSW_Month) {
+		SXW.ppt_monthly[SW_Model.month - tOffset] = vo->ppt;
+	}
+	else if (pd == eSW_Year) {
+		SXW.ppt = vo->ppt;
+	}
 	#endif
 }
 
@@ -420,6 +445,13 @@ void get_swcBulk(OutPeriod pd)
 
 		#if defined(RSOILWAT) || defined(STEPWAT)
 		p[iOUT(i, pd)] = vo->swcBulk[i];
+		#endif
+
+		#if defined(STEPWAT)
+		if (pd == eSW_Month) {
+			// STEPWAT2 expects monthly mean SWCbulk by soil layer
+			SXW.swc[Ilp(i, SW_Model.month - tOffset)] = vo->swcBulk[i];
+		}
 		#endif
 	}
 }
@@ -619,6 +651,14 @@ void get_transp(OutPeriod pd)
 		#if defined(RSOILWAT) || defined(STEPWAT)
 		p[iOUT(i, pd)] = vo->transp_total[i];
 		#endif
+
+		#if defined(STEPWAT)
+		if (pd == eSW_Month) {
+			// STEPWAT2 expects monthly sum of transpiration by soil layer
+			// see function `_transp_contribution_by_group`
+			SXW.transpTotal[Ilp(i, SW_Model.month - tOffset)] = vo->transp_total[i];
+		}
+		#endif
 	}
 
 	/* transpiration for each vegetation type */
@@ -633,6 +673,14 @@ void get_transp(OutPeriod pd)
 
 			#if defined(RSOILWAT) || defined(STEPWAT)
 			p[iOUT2(i, k + 1, pd)] = vo->transp[k][i]; // k + 1 because of total transp.
+			#endif
+
+			#if defined(STEPWAT)
+			if (pd == eSW_Month) {
+				// STEPWAT2 expects monthly sum of transpiration by soil layer
+				// see function `_transp_contribution_by_group`
+				SXW.transpVeg[k][Ilp(i, SW_Model.month - tOffset)] = vo->transp[k][i];
+			}
 			#endif
 		}
 	}
@@ -893,6 +941,13 @@ void get_aet(OutPeriod pd)
 
 	#if defined(RSOILWAT) || defined(STEPWAT)
 	p[iOUT(0, pd)] = vo->aet;
+	#endif
+
+	#if defined(STEPWAT)
+	if (pd == eSW_Year) {
+		// STEPWAT2 expects annual sum of actual evapotranspiration
+		SXW.aet = vo->aet;
+	}
 	#endif
 }
 

@@ -250,10 +250,10 @@ extern ModelType Globals; // defined in `ST_Main.c`
      for each STEPWAT2 iteration/repeat to separate files */
 Bool storeAllIterations;
 
-/** `isPartialSoilwatOutput` is set to FALSE if STEPWAT2 is called with `-o` flag
-      if FALSE, then calculate/write to disk the running mean and sd
+/** `prepare_IterationSummary` is set to TRUE if STEPWAT2 is called with
+      `-o` flag; if TRUE, then calculate/write to disk the running mean and sd
       across iterations/repeats */
-Bool isPartialSoilwatOutput;
+Bool prepare_IterationSummary;
 #endif
 
 
@@ -324,6 +324,9 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k);
 static void average_for(ObjType otyp, OutPeriod pd);
 
+#ifdef STEPWAT
+static int check_STEPWAT2_output_requirements(char msg[]);
+#endif
 
 /* =================================================== */
 /* =================================================== */
@@ -1017,11 +1020,135 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 
 
 
+#ifdef STEPWAT
+/** @brief Check that STEPWAT2 will receive correct values in `SXW`
+		@description These tests must match with STEPWAT2's `struct stepwat_st`.
+			Currently implemented checks:
+			* monthly summed transpiration
+			* annual mean air temperature
+			* annual and monthly precipitation sum
+			* annual sum of AET
+*/
+static int check_STEPWAT2_output_requirements(char msg[])
+{
+	int i,
+			res = 0; // return value indicating type of message if any
+
+	msg[0] = '\0';
+
+	// Check that STEPWAT2 receives monthly summed transpiration
+	Bool has_monT = swFALSE;
+
+	for (i = 0; i < used_OUTNPERIODS; i++) {
+		if (timeSteps[eSW_Transp][i] == eSW_Month) {
+			has_monT = swTRUE;
+			break;
+		}
+	}
+
+	if (!(has_monT && SW_Output[eSW_Transp].sumtype == eSW_Sum)) {
+		sprintf(msg, "STEPWAT2 requires monthly transpiration sum, " \
+			"but this is currently turned off and/or not the sum.");
+		return(LOGFATAL);
+	}
+
+	// Check that STEPWAT2 receives annual mean air temperature
+	Bool has_annualTemp = swFALSE;
+
+	for (i = 0; i < used_OUTNPERIODS; i++) {
+		if (timeSteps[eSW_Temp][i] == eSW_Year) {
+			has_annualTemp = swTRUE;
+			break;
+		}
+	}
+
+	if (!(has_annualTemp && SW_Output[eSW_Temp].sumtype == eSW_Avg)) {
+		sprintf(msg, "STEPWAT2 requires annual mean air temperature, " \
+			"but this is currently turned off and/or not the mean.");
+		return(LOGFATAL);
+	}
+
+	// Check that STEPWAT2 receives annual and monthly precipitation sum
+	Bool has_annualPPT = swFALSE, has_monthlyPPT = swFALSE;
+
+	for (i = 0; i < used_OUTNPERIODS; i++) {
+		if (timeSteps[eSW_Precip][i] == eSW_Month) {
+			has_monthlyPPT = swTRUE;
+		}
+		if (timeSteps[eSW_Precip][i] == eSW_Year) {
+			has_annualPPT = swTRUE;
+		}
+	}
+
+	if (!(has_monthlyPPT && has_annualPPT && SW_Output[eSW_Precip].sumtype == eSW_Sum)) {
+		sprintf(msg, "STEPWAT2 requires monthly and annual " \
+			"precipitation sum, but these are currently turned off and/or not the sum.");
+		return(LOGFATAL);
+	}
+
+	// Check that STEPWAT2 receives annual sum of AET
+	Bool has_annualAET = swFALSE;
+
+	for (i = 0; i < used_OUTNPERIODS; i++) {
+		if (timeSteps[eSW_AET][i] == eSW_Year) {
+			has_annualAET = swTRUE;
+			break;
+		}
+	}
+
+	if (!(has_annualAET && SW_Output[eSW_AET].sumtype == eSW_Sum)) {
+		sprintf(msg, "STEPWAT2 requires annual AET sum, " \
+			"but this is currently turned off and/or not the sum.");
+		return(LOGFATAL);
+	}
+
+	return(res);
+}
+#endif
+
+
 
 /* =================================================== */
 /* =================================================== */
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
+
+
+
+/** Tally for which output time periods at least one output key/type is active
+*/
+void find_OutPeriods_inUse(void)
+{
+	OutKey k;
+	OutPeriod p;
+	IntUS i;
+
+	ForEachOutPeriod(p) {
+		use_OutPeriod[p] = swFALSE;
+	}
+
+	ForEachOutKey(k) {
+		for (i = 0; i < used_OUTNPERIODS; i++) {
+			use_OutPeriod[timeSteps[k][i]] = swTRUE;
+		}
+	}
+}
+
+/** Determine whether output period `pd` is active for output key `k`
+*/
+Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k)
+{
+	int i;
+	Bool has_timeStep = swFALSE;
+
+	for (i = 0; i < used_OUTNPERIODS; i++)
+	{
+		has_timeStep = (Bool) has_timeStep || timeSteps[k][i] == pd;
+	}
+
+	return has_timeStep;
+}
+
 
 void set_VEGPROD_aggslot(OutPeriod pd, SW_VEGPROD_OUTPUTS **pvo) {
 	switch(pd) {
@@ -1513,7 +1640,7 @@ void SW_OUT_new_year(void)
 	OutKey k;
 
 	#ifdef STEPWAT
-	print_IterationSummary = (Bool) (isPartialSoilwatOutput == swFALSE &&
+	print_IterationSummary = (Bool) (prepare_IterationSummary == swFALSE &&
 		Globals.currIter == Globals.runModelIterations);
 	#endif
 
@@ -1641,42 +1768,6 @@ int SW_OUT_read_onekey(OutKey *k, char keyname[], char sumtype[],
 	}
 
 	return(res);
-}
-
-
-
-/** Tally for which output time periods at least one output key/type is active
-*/
-void find_OutPeriods_inUse(void)
-{
-	OutKey k;
-	OutPeriod p;
-	IntUS i;
-
-	ForEachOutPeriod(p) {
-		use_OutPeriod[p] = swFALSE;
-	}
-
-	ForEachOutKey(k) {
-		for (i = 0; i < used_OUTNPERIODS; i++) {
-			use_OutPeriod[timeSteps[k][i]] = swTRUE;
-		}
-	}
-}
-
-/** Determine whether output period `pd` is active for output key `k`
-*/
-Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k)
-{
-	int i;
-	Bool has_timeStep = swFALSE;
-
-	for (i = 0; i < used_OUTNPERIODS; i++)
-	{
-		has_timeStep = (Bool) has_timeStep || timeSteps[k][i] == pd;
-	}
-
-	return has_timeStep;
 }
 
 
@@ -1816,26 +1907,21 @@ void SW_OUT_read(void)
 	// Determine which output periods are turned on for at least one output key
 	find_OutPeriods_inUse();
 
-  #ifdef STEPWAT
+	#ifdef STEPWAT
 	// Determine number of used years/months/weeks/days in simulation period
 	SW_OUT_set_nrow();
 
-  /* Check that STEPWAT2 receives monthly transpiration */
-  Bool has_monT = swFALSE;
+	// Check that STEPWAT2 will receive correct values in `SXW`
+	msg_type = check_STEPWAT2_output_requirements(msg);
 
-  for (i = 0; i < used_OUTNPERIODS; i++) {
-    if (timeSteps[eSW_Transp][i] == eSW_Month) {
-      has_monT = swTRUE;
-      break;
-    }
-  }
+	if (msg_type != 0) {
+		if (msg_type == LOGFATAL) {
+			CloseFile(&f);
+		}
 
-  if (!has_monT) {
-    CloseFile(&f);
-    LogError(logfp, LOGFATAL, "STEPWAT2 requires monthly transpiration, " \
-      "but this is currently turned off.");
-  }
-  #endif
+		LogError(logfp, msg_type, "%s", msg);
+	}
+	#endif
 
 	CloseFile(&f);
 
