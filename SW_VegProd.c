@@ -716,7 +716,7 @@ void SW_VPD_init(void) {
 		}
 	}
 
-	for (doy = 1; doy <= MAX_DAYS; doy++)
+	for (doy = 0; doy < MAX_DAYS; doy++)
 	{
 		ForEachVegType(k)
 			if (GT(v->veg[k].cov.fCover, 0.))
