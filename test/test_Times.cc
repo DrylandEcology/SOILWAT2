@@ -35,14 +35,11 @@ namespace{
     interpolate_monthlyValues(interpolate -> cloudcov, interpolate -> cloudcov_daily);
 
     // test final conditional
-    EXPECT_EQ(interpolate -> cloudcov_daily[1], 10.0);
-    // should always be zero, regardless of input since dailyValues is never
-    // changed
-    EXPECT_EQ(interpolate -> cloudcov_daily[0], 0.0);
+    EXPECT_EQ(interpolate -> cloudcov_daily[0], 10.0);
     // test top conditional
-    EXPECT_EQ(interpolate -> cloudcov_daily[15], 10.0);
+    EXPECT_EQ(interpolate -> cloudcov_daily[14], 10.0);
     // test middle conditional
-    EXPECT_EQ(interpolate -> cloudcov_daily[16], 10.0);
+    EXPECT_EQ(interpolate -> cloudcov_daily[15], 10.0);
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -51,9 +48,9 @@ namespace{
     interpolate -> cloudcov[0] = 20;
     interpolate_monthlyValues(interpolate -> cloudcov, interpolate -> cloudcov_daily);
     // calculated by hand
-    EXPECT_EQ(interpolate -> cloudcov_daily[15], 20);
-    EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[14], 19.67741935483871);
-    EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[32], 15);
+    EXPECT_EQ(interpolate -> cloudcov_daily[14], 20);
+    EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[13], 19.67741935483871);
+    EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[31], 15);
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();

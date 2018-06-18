@@ -271,8 +271,6 @@ TimeInt Time_get_lastdoy_y(TimeInt year) {
  * pretty independent of the current time, so I'm
  * removing the preceeding Time_ to shorten the calls in
  * the code
- *
- * @returns the month the given day falls under
  */
 TimeInt doy2month(const TimeInt doy) {
 	/* =================================================== */
@@ -353,22 +351,21 @@ void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
 	unsigned int doy, mday, month, month2 = NoMonth;
 	double sign = 1.;
 
-	for (doy = 1; doy <= MAX_DAYS; doy++) {
-		mday = doy2mday(doy);
-		month = doy2month(doy);
+	for (doy = 0; doy < MAX_DAYS; doy++) {
+		mday = doy2mday(doy + 1);
+		month = doy2month(doy + 1);
 
 		if (mday == 15) {
 			dailyValues[doy] = monthlyValues[month];
-		}
-		else {
+		} else {
 			if (mday >= 15) {
 				month2 = (month == Dec) ? Jan : month + 1;
 				sign = 1;
-			}
-			else {
+			} else {
 				month2 = (month == Jan) ? Dec : month - 1;
 				sign = -1;
 			}
+
 			dailyValues[doy] = monthlyValues[month] + sign * (monthlyValues[month2] - monthlyValues[month]) / (monthdays[month]) * (mday - 15.);
 		}
 	}
