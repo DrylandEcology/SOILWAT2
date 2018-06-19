@@ -181,13 +181,11 @@ LyrIndex _newlayer(void) {
 	v->n_layers++;
 
 	v->lyr = (!v->lyr) /* if not yet defined */
-	? (SW_LAYER_INFO **) /* malloc() it  */
-	Mem_Calloc(v->n_layers, sizeof(SW_LAYER_INFO *), "_newlayer()")
+		? (SW_LAYER_INFO **) Mem_Calloc(v->n_layers, sizeof(SW_LAYER_INFO *), "_newlayer()") /* malloc() it  */
+		: (SW_LAYER_INFO **) Mem_ReAlloc(v->lyr, sizeof(SW_LAYER_INFO *) * (v->n_layers)); /* else realloc() */
 
-	:
-		(SW_LAYER_INFO **) /* else realloc() */
-		Mem_ReAlloc(v->lyr, sizeof(SW_LAYER_INFO *) * (v->n_layers));
 	v->lyr[v->n_layers - 1] = (SW_LAYER_INFO *) Mem_Calloc(1, sizeof(SW_LAYER_INFO), "_newlayer()");
+
 	return v->n_layers - 1;
 }
 

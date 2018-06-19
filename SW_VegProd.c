@@ -47,6 +47,7 @@ changed _echo_inits() to now display the bare ground components in logfile.log
 #include <string.h>
 #include "generic.h"
 #include "filefuncs.h"
+#include "myMemory.h"
 #include "SW_Defines.h"
 #include "SW_Files.h"
 #include "SW_Times.h"
@@ -624,19 +625,34 @@ void SW_VPD_read(void) {
 
 void SW_VPD_construct(void) {
 	/* =================================================== */
+	int year, k;
+	OutPeriod pd;
 
+	// Clear the module structure:
 	memset(&SW_VegProd, 0, sizeof(SW_VegProd));
 
+	// Allocate output pointers: `array` of size SW_OUTNPERIODS
+	SW_VegProd.p_accu = (SW_VEGPROD_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
+		sizeof(SW_VEGPROD_OUTPUTS *), "SW_VPD_construct()");
+	SW_VegProd.p_oagg = (SW_VEGPROD_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
+		sizeof(SW_VEGPROD_OUTPUTS *), "SW_VPD_construct()");
 
-  SW_VEGPROD *v = &SW_VegProd;
-  int year, k;
+	// Allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_VegProd.p_accu[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
+			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()");
+		SW_VegProd.p_oagg[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
+			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()");
+	}
 
+	/* initialize the co2-multipliers */
   for (year = 0; year < MAX_NYEAR; year++)
   {
     ForEachVegType(k)
     {
-      v->veg[k].co2_multipliers[BIO_INDEX][year] = 1.;
-      v->veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
+      SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][year] = 1.;
+      SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
     }
   }
 }

@@ -92,15 +92,16 @@ void _clear_hist_weather(void) {
 	SW_WEATHER_HIST *wh = &SW_Weather.hist;
 	TimeInt d;
 	int i;
-	SW_WEATHER_OUTPUTS *wo[7] = { &SW_Weather.accu[eSW_Day],
-		&SW_Weather.accu[eSW_Week], &SW_Weather.accu[eSW_Month],
-		&SW_Weather.accu[eSW_Year], &SW_Weather.oagg[eSW_Week],
-		&SW_Weather.oagg[eSW_Month], &SW_Weather.oagg[eSW_Year] };
+	SW_WEATHER_OUTPUTS *wo[2 * SW_OUTNPERIODS] = {
+		SW_Weather.p_accu[eSW_Day],   SW_Weather.p_accu[eSW_Week],
+		SW_Weather.p_accu[eSW_Month], SW_Weather.p_accu[eSW_Year],
+		SW_Weather.p_oagg[eSW_Day],   SW_Weather.p_oagg[eSW_Week],
+		SW_Weather.p_oagg[eSW_Month], SW_Weather.p_oagg[eSW_Year] };
 
 	for (d = 0; d < MAX_DAYS; d++)
 		wh->ppt[d] = wh->temp_max[d] = wh->temp_min[d] = WTH_MISSING;
 
-	for (i = 0; i < 7; i++)
+	for (i = 0; i < 2 * SW_OUTNPERIODS; i++)
 		memset(wo[i], 0, sizeof(SW_WEATHER_OUTPUTS));
 }
 
@@ -151,10 +152,27 @@ void SW_WTH_construct(void) {
 	/* =================================================== */
 	tail = 0;
 	firsttime = swTRUE;
-	/* clear the module structure */
-	memset(&SW_Weather, 0, sizeof(SW_WEATHER));
 	SW_Markov.ppt_events = 0;
 	wthdataIndex = 0;
+	OutPeriod pd;
+
+	// Clear the module structure:
+	memset(&SW_Weather, 0, sizeof(SW_Weather));
+
+	// Allocate output pointers: `array` of size SW_OUTNPERIODS
+	SW_Weather.p_accu = (SW_WEATHER_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
+		sizeof(SW_WEATHER_OUTPUTS *), "SW_WTH_construct()");
+	SW_Weather.p_oagg = (SW_WEATHER_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
+		sizeof(SW_WEATHER_OUTPUTS *), "SW_WTH_construct()");
+
+	// Allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_Weather.p_accu[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
+			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()");
+		SW_Weather.p_oagg[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
+			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()");
+	}
 }
 
 void SW_WTH_init(void) {
@@ -171,18 +189,18 @@ void SW_WTH_new_year(void) {
 	TimeInt year = SW_Model.year;
 
 	_clear_runavg();
-	memset(&SW_Weather.accu[eSW_Year], 0, sizeof(SW_WEATHER_OUTPUTS));
+	memset(SW_Weather.p_accu[eSW_Year], 0, sizeof(SW_WEATHER_OUTPUTS));
 
 	if (year < SW_Weather.yr.first) {
 		weth_found = swFALSE;
 	} else {
-#ifdef RSOILWAT
+		#ifdef RSOILWAT
 		weth_found = swFALSE;
 		rSW_WTH_new_year2(year);
 		wthdataIndex++;
-#else
+		#else
 		weth_found = _read_weather_hist(year);
-#endif
+		#endif
 	}
 
 	if (!weth_found && !SW_Weather.use_markov) {

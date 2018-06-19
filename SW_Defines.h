@@ -83,12 +83,12 @@
 #define SW_YEAR_LONG  "Year"
 
 #define SW_OUTNPERIODS 4  /* must match with enum */
-
-typedef enum {
-	eSW_Day, eSW_Week, eSW_Month, eSW_Year
-} OutPeriod;
-
-
+#define eSW_Day 0
+#define eSW_Week 1
+#define eSW_Month 2
+#define eSW_Year 3
+// c++ doesn't support (pd)++ for pd as a typedef enum OutPeriod in macro `ForEachOutPeriod`
+typedef IntUS OutPeriod;
 
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */

@@ -78,10 +78,14 @@ void SW_MDL_construct(void) {
 	 * before clearing structure.
 	 *
 	 */
-	SW_MODEL *m = &SW_Model;
+	OutPeriod pd;
 
 	Time_init();
-	m->newweek = m->newmonth = m->newyear = swFALSE;
+	ForEachOutPeriod(pd)
+	{
+		SW_Model.newperiod[pd] = swFALSE;
+	}
+	SW_Model.newperiod[eSW_Day] = swTRUE; // every day is a new day
 
 #ifndef STEPWAT
 	/* already set by user-provided seed in steppe */
@@ -236,6 +240,7 @@ void SW_MDL_new_day(void) {
 	/* sets the output period elements of SW_Model
 	 * based on the current day.
 	 */
+	OutPeriod pd;
 
 	SW_Model.month = doy2month(SW_Model.doy);
 	SW_Model.week = doy2week(SW_Model.doy); /* more often an index */
@@ -243,21 +248,25 @@ void SW_MDL_new_day(void) {
 	/* in this case, we've finished the daily loop and are about
 	 * to flush the output */
 	if (SW_Model.doy > SW_Model.lastdoy) {
-		SW_Model.newyear = SW_Model.newmonth = SW_Model.newweek = swTRUE;
+		ForEachOutPeriod(pd)
+		{
+		SW_Model.newperiod[pd] = swTRUE;
+		}
+
 		return;
 	}
 
 	if (SW_Model.month != _prevmonth) {
-		SW_Model.newmonth = (_prevmonth != _notime) ? swTRUE : swFALSE;
+		SW_Model.newperiod[eSW_Month] = (_prevmonth != _notime) ? swTRUE : swFALSE;
 		_prevmonth = SW_Model.month;
 	} else
-		SW_Model.newmonth = swFALSE;
+		SW_Model.newperiod[eSW_Month] = swFALSE;
 
 	/*  if (SW_Model.week != _prevweek || SW_Model.month == NoMonth) { */
 	if (SW_Model.week != _prevweek) {
-		SW_Model.newweek = (_prevweek != _notime) ? swTRUE : swFALSE;
+		SW_Model.newperiod[eSW_Week] = (_prevweek != _notime) ? swTRUE : swFALSE;
 		_prevweek = SW_Model.week;
 	} else
-		SW_Model.newweek = swFALSE;
+		SW_Model.newperiod[eSW_Week] = swFALSE;
 
 }

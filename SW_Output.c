@@ -610,9 +610,9 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
    one greater than the period being summarized.
 */
 static void average_for(ObjType otyp, OutPeriod pd) {
-	SW_SOILWAT_OUTPUTS *savg = NULL, *ssumof = NULL;
-	SW_WEATHER_OUTPUTS *wavg = NULL, *wsumof = NULL;
-	SW_VEGPROD_OUTPUTS *vpavg = NULL, *vpsumof = NULL;
+	SW_SOILWAT *s = &SW_Soilwat;
+	SW_WEATHER *w = &SW_Weather;
+	SW_VEGPROD *vp = &SW_VegProd;
 	TimeInt curr_pd = 0;
 	RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
 	OutKey k;
@@ -620,277 +620,282 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 	int j;
 
 	if (otyp == eVES)
-		LogError(logfp, LOGFATAL, "Invalid object type 'eVES' in 'average_for()'.");
+		return;
 
-	ForEachOutKey(k)
+	if (pd == eSW_Day)
 	{
-		if (!SW_Output[k].use) {
-			continue;
+		// direct day-aggregation pointers to day-accumulators, instead of
+		// expensive copying as required for other time periods when possibly
+		// !EQ(div, 1.)
+		switch (otyp)
+		{
+			case eSWC:
+				s->p_oagg[pd] = s->p_accu[pd];
+				break;
+			case eWTH:
+				w->p_oagg[pd] = w->p_accu[pd];
+				break;
+			case eVPD:
+				vp->p_oagg[pd] = vp->p_accu[pd];
+				break;
+			case eVES:
+				break;
+			default:
+				LogError(logfp, LOGFATAL,
+						"Invalid object type in average_for().");
 		}
 
-		switch (pd)
+	}
+	else {
+		// carefully aggregate for specific time period and aggregation type (mean, sum, final value)
+		ForEachOutKey(k)
 		{
-		case eSW_Week:
-			curr_pd = (SW_Model.week + 1) - tOffset;
-			savg = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.oagg[eSW_Week];
-			ssumof = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.accu[eSW_Week];
-			wavg = (SW_WEATHER_OUTPUTS *) &SW_Weather.oagg[eSW_Week];
-			wsumof = (SW_WEATHER_OUTPUTS *) &SW_Weather.accu[eSW_Week];
-			vpavg = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.oagg[eSW_Week];
-			vpsumof = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.accu[eSW_Week];
-			div = (bFlush_output) ? SW_Model.lastdoy % WKDAYS : WKDAYS;
-			break;
-
-		case eSW_Month:
-			curr_pd = (SW_Model.month + 1) - tOffset;
-			savg = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.oagg[eSW_Month];
-			ssumof = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.accu[eSW_Month];
-			wavg = (SW_WEATHER_OUTPUTS *) &SW_Weather.oagg[eSW_Month];
-			wsumof = (SW_WEATHER_OUTPUTS *) &SW_Weather.accu[eSW_Month];
-			vpavg = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.oagg[eSW_Month];
-			vpsumof = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.accu[eSW_Month];
-			div = Time_days_in_month(SW_Model.month - tOffset);
-			break;
-
-		case eSW_Year:
-			curr_pd = SW_Output[k].first;
-			savg = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.oagg[eSW_Year];
-			ssumof = (SW_SOILWAT_OUTPUTS *) &SW_Soilwat.accu[eSW_Year];
-			wavg = (SW_WEATHER_OUTPUTS *) &SW_Weather.oagg[eSW_Year];
-			wsumof = (SW_WEATHER_OUTPUTS *) &SW_Weather.accu[eSW_Year];
-			vpavg = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.oagg[eSW_Year];
-			vpsumof = (SW_VEGPROD_OUTPUTS *) &SW_VegProd.accu[eSW_Year];
-			div = SW_Output[k].last - SW_Output[k].first + 1;
-			break;
-
-		default:
-			LogError(logfp, LOGFATAL, "Programmer: Invalid period in average_for().");
-		} /* end switch(pd) */
-
-		if (SW_Output[k].myobj != otyp
-				|| curr_pd < SW_Output[k].first
-				|| curr_pd > SW_Output[k].last)
-			continue;
-
-		if (SW_Output[k].sumtype == eSW_Sum)
-			div = 1.;
-
-		/* notice that all valid keys are in this switch */
-		switch (k)
-		{
-
-		case eSW_Temp:
-			wavg->temp_max = wsumof->temp_max / div;
-			wavg->temp_min = wsumof->temp_min / div;
-			wavg->temp_avg = wsumof->temp_avg / div;
-			wavg->surfaceTemp = wsumof->surfaceTemp / div;
-			break;
-
-		case eSW_Precip:
-			wavg->ppt = wsumof->ppt / div;
-			wavg->rain = wsumof->rain / div;
-			wavg->snow = wsumof->snow / div;
-			wavg->snowmelt = wsumof->snowmelt / div;
-			wavg->snowloss = wsumof->snowloss / div;
-			break;
-
-		case eSW_SoilInf:
-			wavg->soil_inf = wsumof->soil_inf / div;
-			break;
-
-		case eSW_Runoff:
-			wavg->snowRunoff = wsumof->snowRunoff / div;
-			wavg->surfaceRunoff = wsumof->surfaceRunoff / div;
-			wavg->surfaceRunon = wsumof->surfaceRunon / div;
-			break;
-
-		case eSW_SoilTemp:
-			ForEachSoilLayer(i) {
-				savg->sTemp[i] =
-						(SW_Output[k].sumtype == eSW_Fnl) ?
-								SW_Soilwat.sTemp[i] :
-								ssumof->sTemp[i] / div;
+			if (!SW_Output[k].use) {
+				continue;
 			}
-			break;
 
-		case eSW_VWCBulk:
-			ForEachSoilLayer(i) {
-				/* vwcBulk at this point is identical to swcBulk */
-				savg->vwcBulk[i] =
-						(SW_Output[k].sumtype == eSW_Fnl) ?
-								SW_Soilwat.swcBulk[Yesterday][i] :
-								ssumof->vwcBulk[i] / div;
-			}
-			break;
+			switch (pd)
+			{
+				case eSW_Week:
+					curr_pd = (SW_Model.week + 1) - tOffset;
+					div = (bFlush_output) ? SW_Model.lastdoy % WKDAYS : WKDAYS;
+					break;
 
-		case eSW_VWCMatric:
-			ForEachSoilLayer(i) {
-				/* vwcMatric at this point is identical to swcBulk */
-				savg->vwcMatric[i] =
-						(SW_Output[k].sumtype == eSW_Fnl) ?
-								SW_Soilwat.swcBulk[Yesterday][i] :
-								ssumof->vwcMatric[i] / div;
-			}
-			break;
+				case eSW_Month:
+					curr_pd = (SW_Model.month + 1) - tOffset;
+					div = Time_days_in_month(SW_Model.month - tOffset);
+					break;
 
-		case eSW_SWCBulk:
-			ForEachSoilLayer(i) {
-				savg->swcBulk[i] =
-						(SW_Output[k].sumtype == eSW_Fnl) ?
-								SW_Soilwat.swcBulk[Yesterday][i] :
-								ssumof->swcBulk[i] / div;
-			}
-			break;
+				case eSW_Year:
+					curr_pd = SW_Output[k].first;
+					div = SW_Output[k].last - SW_Output[k].first + 1;
+					break;
 
-		case eSW_SWPMatric:
-			ForEachSoilLayer(i) {
-				/* swpMatric at this point is identical to swcBulk */
-				savg->swpMatric[i] =
-						(SW_Output[k].sumtype == eSW_Fnl) ?
-								SW_Soilwat.swcBulk[Yesterday][i] :
-								ssumof->swpMatric[i] / div;
-			}
-			break;
+				default:
+					LogError(logfp, LOGFATAL, "Programmer: Invalid period in average_for().");
+			} /* end switch(pd) */
 
-		case eSW_SWABulk:
-			ForEachSoilLayer(i) {
-				savg->swaBulk[i] =
-						(SW_Output[k].sumtype == eSW_Fnl) ?
-								fmax(
-										SW_Soilwat.swcBulk[Yesterday][i]
-												- SW_Site.lyr[i]->swcBulk_wiltpt,
-										0.) :
-								ssumof->swaBulk[i] / div;
-			}
-			break;
+			if (SW_Output[k].myobj != otyp
+					|| curr_pd < SW_Output[k].first
+					|| curr_pd > SW_Output[k].last)
+				continue;
 
-		case eSW_SWAMatric: /* swaMatric at this point is identical to swaBulk */
-			ForEachSoilLayer(i) {
-				savg->swaMatric[i] =
-						(SW_Output[k].sumtype == eSW_Fnl) ?
-								fmax(
-										SW_Soilwat.swcBulk[Yesterday][i]
-												- SW_Site.lyr[i]->swcBulk_wiltpt,
-										0.) :
-								ssumof->swaMatric[i] / div;
-			}
-			break;
+			if (SW_Output[k].sumtype == eSW_Sum)
+				div = 1.;
 
-		case eSW_SWA:
-			ForEachSoilLayer(i) {
-				ForEachVegType(j) {
-					savg->SWA_VegType[j][i] =
+			/* notice that all valid keys are in this switch */
+			switch (k)
+			{
+
+			case eSW_Temp:
+				w->p_oagg[pd]->temp_max = w->p_accu[pd]->temp_max / div;
+				w->p_oagg[pd]->temp_min = w->p_accu[pd]->temp_min / div;
+				w->p_oagg[pd]->temp_avg = w->p_accu[pd]->temp_avg / div;
+				w->p_oagg[pd]->surfaceTemp = w->p_accu[pd]->surfaceTemp / div;
+				break;
+
+			case eSW_Precip:
+				w->p_oagg[pd]->ppt = w->p_accu[pd]->ppt / div;
+				w->p_oagg[pd]->rain = w->p_accu[pd]->rain / div;
+				w->p_oagg[pd]->snow = w->p_accu[pd]->snow / div;
+				w->p_oagg[pd]->snowmelt = w->p_accu[pd]->snowmelt / div;
+				w->p_oagg[pd]->snowloss = w->p_accu[pd]->snowloss / div;
+				break;
+
+			case eSW_SoilInf:
+				w->p_oagg[pd]->soil_inf = w->p_accu[pd]->soil_inf / div;
+				break;
+
+			case eSW_Runoff:
+				w->p_oagg[pd]->snowRunoff = w->p_accu[pd]->snowRunoff / div;
+				w->p_oagg[pd]->surfaceRunoff = w->p_accu[pd]->surfaceRunoff / div;
+				w->p_oagg[pd]->surfaceRunon = w->p_accu[pd]->surfaceRunon / div;
+				break;
+
+			case eSW_SoilTemp:
+				ForEachSoilLayer(i) {
+					s->p_oagg[pd]->sTemp[i] =
 							(SW_Output[k].sumtype == eSW_Fnl) ?
-									SW_Soilwat.dSWA_repartitioned_sum[j][i] :
-									ssumof->SWA_VegType[j][i] / div;
+									s->sTemp[i] :
+									s->p_accu[pd]->sTemp[i] / div;
 				}
-			}
-			break;
+				break;
 
-		case eSW_DeepSWC:
-			savg->deep =
-					(SW_Output[k].sumtype == eSW_Fnl) ?
-							SW_Soilwat.swcBulk[Yesterday][SW_Site.deep_lyr] :
-							ssumof->deep / div;
-			break;
+			case eSW_VWCBulk:
+				ForEachSoilLayer(i) {
+					/* vwcBulk at this point is identical to swcBulk */
+					s->p_oagg[pd]->vwcBulk[i] =
+							(SW_Output[k].sumtype == eSW_Fnl) ?
+									s->swcBulk[Yesterday][i] :
+									s->p_accu[pd]->vwcBulk[i] / div;
+				}
+				break;
 
-		case eSW_SurfaceWater:
-			savg->surfaceWater = ssumof->surfaceWater / div;
-			break;
+			case eSW_VWCMatric:
+				ForEachSoilLayer(i) {
+					/* vwcMatric at this point is identical to swcBulk */
+					s->p_oagg[pd]->vwcMatric[i] =
+							(SW_Output[k].sumtype == eSW_Fnl) ?
+									s->swcBulk[Yesterday][i] :
+									s->p_accu[pd]->vwcMatric[i] / div;
+				}
+				break;
 
-		case eSW_Transp:
-			ForEachSoilLayer(i)
-			{
-				savg->transp_total[i] = ssumof->transp_total[i] / div;
+			case eSW_SWCBulk:
+				ForEachSoilLayer(i) {
+					s->p_oagg[pd]->swcBulk[i] =
+							(SW_Output[k].sumtype == eSW_Fnl) ?
+									s->swcBulk[Yesterday][i] :
+									s->p_accu[pd]->swcBulk[i] / div;
+				}
+				break;
+
+			case eSW_SWPMatric:
+				ForEachSoilLayer(i) {
+					/* swpMatric at this point is identical to swcBulk */
+					s->p_oagg[pd]->swpMatric[i] =
+							(SW_Output[k].sumtype == eSW_Fnl) ?
+									s->swcBulk[Yesterday][i] :
+									s->p_accu[pd]->swpMatric[i] / div;
+				}
+				break;
+
+			case eSW_SWABulk:
+				ForEachSoilLayer(i) {
+					s->p_oagg[pd]->swaBulk[i] =
+							(SW_Output[k].sumtype == eSW_Fnl) ?
+									fmax(
+											s->swcBulk[Yesterday][i]
+													- SW_Site.lyr[i]->swcBulk_wiltpt,
+											0.) :
+									s->p_accu[pd]->swaBulk[i] / div;
+				}
+				break;
+
+			case eSW_SWAMatric: /* swaMatric at this point is identical to swaBulk */
+				ForEachSoilLayer(i) {
+					s->p_oagg[pd]->swaMatric[i] =
+							(SW_Output[k].sumtype == eSW_Fnl) ?
+									fmax(
+											s->swcBulk[Yesterday][i]
+													- SW_Site.lyr[i]->swcBulk_wiltpt,
+											0.) :
+									s->p_accu[pd]->swaMatric[i] / div;
+				}
+				break;
+
+			case eSW_SWA:
+				ForEachSoilLayer(i) {
+					ForEachVegType(j) {
+						s->p_oagg[pd]->SWA_VegType[j][i] =
+								(SW_Output[k].sumtype == eSW_Fnl) ?
+										s->dSWA_repartitioned_sum[j][i] :
+										s->p_accu[pd]->SWA_VegType[j][i] / div;
+					}
+				}
+				break;
+
+			case eSW_DeepSWC:
+				s->p_oagg[pd]->deep =
+						(SW_Output[k].sumtype == eSW_Fnl) ?
+								s->swcBulk[Yesterday][SW_Site.deep_lyr] :
+								s->p_accu[pd]->deep / div;
+				break;
+
+			case eSW_SurfaceWater:
+				s->p_oagg[pd]->surfaceWater = s->p_accu[pd]->surfaceWater / div;
+				break;
+
+			case eSW_Transp:
+				ForEachSoilLayer(i)
+				{
+					s->p_oagg[pd]->transp_total[i] = s->p_accu[pd]->transp_total[i] / div;
+					ForEachVegType(j) {
+						s->p_oagg[pd]->transp[j][i] = s->p_accu[pd]->transp[j][i] / div;
+					}
+				}
+				break;
+
+			case eSW_EvapSoil:
+				ForEachEvapLayer(i)
+					s->p_oagg[pd]->evap[i] = s->p_accu[pd]->evap[i] / div;
+				break;
+
+			case eSW_EvapSurface:
+				s->p_oagg[pd]->total_evap = s->p_accu[pd]->total_evap / div;
 				ForEachVegType(j) {
-					savg->transp[j][i] = ssumof->transp[j][i] / div;
+					s->p_oagg[pd]->evap_veg[j] = s->p_accu[pd]->evap_veg[j] / div;
 				}
-			}
-			break;
+				s->p_oagg[pd]->litter_evap = s->p_accu[pd]->litter_evap / div;
+				s->p_oagg[pd]->surfaceWater_evap = s->p_accu[pd]->surfaceWater_evap / div;
+				break;
 
-		case eSW_EvapSoil:
-			ForEachEvapLayer(i)
-				savg->evap[i] = ssumof->evap[i] / div;
-			break;
-
-		case eSW_EvapSurface:
-			savg->total_evap = ssumof->total_evap / div;
-			ForEachVegType(j) {
-				savg->evap_veg[j] = ssumof->evap_veg[j] / div;
-			}
-			savg->litter_evap = ssumof->litter_evap / div;
-			savg->surfaceWater_evap = ssumof->surfaceWater_evap / div;
-			break;
-
-		case eSW_Interception:
-			savg->total_int = ssumof->total_int / div;
-			ForEachVegType(j) {
-				savg->int_veg[j] = ssumof->int_veg[j] / div;
-			}
-			savg->litter_int = ssumof->litter_int / div;
-			break;
-
-		case eSW_AET:
-			savg->aet = ssumof->aet / div;
-			break;
-
-		case eSW_LyrDrain:
-			for (i = 0; i < SW_Site.n_layers - 1; i++)
-				savg->lyrdrain[i] = ssumof->lyrdrain[i] / div;
-			break;
-
-		case eSW_HydRed:
-			ForEachSoilLayer(i)
-			{
-				savg->hydred_total[i] = ssumof->hydred_total[i] / div;
+			case eSW_Interception:
+				s->p_oagg[pd]->total_int = s->p_accu[pd]->total_int / div;
 				ForEachVegType(j) {
-					savg->hydred[j][i] = ssumof->hydred[j][i] / div;
+					s->p_oagg[pd]->int_veg[j] = s->p_accu[pd]->int_veg[j] / div;
 				}
+				s->p_oagg[pd]->litter_int = s->p_accu[pd]->litter_int / div;
+				break;
+
+			case eSW_AET:
+				s->p_oagg[pd]->aet = s->p_accu[pd]->aet / div;
+				break;
+
+			case eSW_LyrDrain:
+				for (i = 0; i < SW_Site.n_layers - 1; i++)
+					s->p_oagg[pd]->lyrdrain[i] = s->p_accu[pd]->lyrdrain[i] / div;
+				break;
+
+			case eSW_HydRed:
+				ForEachSoilLayer(i)
+				{
+					s->p_oagg[pd]->hydred_total[i] = s->p_accu[pd]->hydred_total[i] / div;
+					ForEachVegType(j) {
+						s->p_oagg[pd]->hydred[j][i] = s->p_accu[pd]->hydred[j][i] / div;
+					}
+				}
+				break;
+
+			case eSW_PET:
+				s->p_oagg[pd]->pet = s->p_accu[pd]->pet / div;
+				break;
+
+			case eSW_WetDays:
+				ForEachSoilLayer(i)
+					s->p_oagg[pd]->wetdays[i] = s->p_accu[pd]->wetdays[i] / div;
+				break;
+
+			case eSW_SnowPack:
+				s->p_oagg[pd]->snowpack = s->p_accu[pd]->snowpack / div;
+				s->p_oagg[pd]->snowdepth = s->p_accu[pd]->snowdepth / div;
+				break;
+
+			case eSW_Estab: /* do nothing, no averaging required */
+				break;
+
+			case eSW_CO2Effects:
+				ForEachVegType(i) {
+					vp->p_oagg[pd]->veg[i].biomass = vp->p_accu[pd]->veg[i].biomass / div;
+					vp->p_oagg[pd]->veg[i].biolive = vp->p_accu[pd]->veg[i].biolive / div;
+				}
+				break;
+
+			default:
+				LogError(logfp, LOGFATAL, "PGMR: Invalid key in average_for(%s)", key2str[k]);
 			}
-			break;
 
-		case eSW_PET:
-			savg->pet = ssumof->pet / div;
-			break;
-
-		case eSW_WetDays:
-			ForEachSoilLayer(i)
-				savg->wetdays[i] = ssumof->wetdays[i] / div;
-			break;
-
-		case eSW_SnowPack:
-			savg->snowpack = ssumof->snowpack / div;
-			savg->snowdepth = ssumof->snowdepth / div;
-			break;
-
-		case eSW_Estab: /* do nothing, no averaging required */
-			break;
-
-		case eSW_CO2Effects:
-			ForEachVegType(i) {
-				vpavg->veg[i].biomass = vpsumof->veg[i].biomass / div;
-				vpavg->veg[i].biolive = vpsumof->veg[i].biolive / div;
-			}
-			break;
-
-		default:
-			LogError(logfp, LOGFATAL, "PGMR: Invalid key in average_for(%s)", key2str[k]);
-		}
-
-	} /* end ForEachKey */
+		} /* end ForEachKey */
+	}
 }
 
 
 static void collect_sums(ObjType otyp, OutPeriod op)
 {
 	SW_SOILWAT *s = &SW_Soilwat;
-	SW_SOILWAT_OUTPUTS *ssum = NULL;
 	SW_WEATHER *w = &SW_Weather;
-	SW_WEATHER_OUTPUTS *wsum = NULL;
-	SW_VEGESTAB *v = &SW_VegEstab; /* vegestab only gets summed yearly */
-	SW_VEGESTAB_OUTPUTS *vsum = NULL;
+	SW_VEGESTAB *v = &SW_VegEstab;
 	SW_VEGPROD *vp = &SW_VegProd;
-	SW_VEGPROD_OUTPUTS *vpsum = NULL;
 
 	TimeInt pd = 0;
 	OutKey k;
@@ -939,75 +944,21 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 			switch (otyp)
 			{
 			case eSWC:
-				switch (op) {
-					case eSW_Day:
-						ssum = &s->accu[eSW_Day];
-						break;
-					case eSW_Week:
-						ssum = &s->accu[eSW_Week];
-						break;
-					case eSW_Month:
-						ssum = &s->accu[eSW_Month];
-						break;
-					case eSW_Year:
-						ssum = &s->accu[eSW_Year];
-						break;
-				}
-				sumof_swc(s, ssum, k);
+				sumof_swc(s, s->p_accu[op], k);
 				break;
 
 			case eWTH:
-				switch (op) {
-					case eSW_Day:
-						wsum = &w->accu[eSW_Day];
-						break;
-					case eSW_Week:
-						wsum = &w->accu[eSW_Week];
-						break;
-					case eSW_Month:
-						wsum = &w->accu[eSW_Month];
-						break;
-					case eSW_Year:
-						wsum = &w->accu[eSW_Year];
-						break;
-				}
-				sumof_wth(w, wsum, k);
+				sumof_wth(w, w->p_accu[op], k);
 				break;
 
 			case eVES:
-				switch (op) {
-					case eSW_Day:
-						vsum = NULL;
-						break;
-					case eSW_Week:
-						vsum = NULL;
-						break;
-					case eSW_Month:
-						vsum = NULL;
-						break;
-					case eSW_Year:
-						vsum = &v->accu[eSW_Year]; /* yearly, y'see */
-						break;
+				if (op == eSW_Year) {
+					sumof_ves(v, v->p_accu[eSW_Year], k); /* yearly, y'see */
 				}
-				sumof_ves(v, vsum, k);
 				break;
 
 			case eVPD:
-				switch (op) {
-					case eSW_Day:
-						vpsum = &vp->accu[eSW_Day];
-						break;
-					case eSW_Week:
-						vpsum = &vp->accu[eSW_Week];
-						break;
-					case eSW_Month:
-						vpsum = &vp->accu[eSW_Month];
-						break;
-					case eSW_Year:
-						vpsum = &vp->accu[eSW_Year];
-						break;
-				}
-				sumof_vpd(vp, vpsum, k);
+				sumof_vpd(vp, vp->p_accu[op], k);
 				break;
 
 			default:
@@ -1147,69 +1098,6 @@ Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k)
 	}
 
 	return has_timeStep;
-}
-
-
-void set_VEGPROD_aggslot(OutPeriod pd, SW_VEGPROD_OUTPUTS **pvo) {
-	switch(pd) {
-		case eSW_Day:
-			*pvo = &SW_VegProd.accu[eSW_Day];
-			break;
-
-		case eSW_Week:
-			*pvo = &SW_VegProd.oagg[eSW_Week];
-			break;
-
-		case eSW_Month:
-			*pvo = &SW_VegProd.oagg[eSW_Month];
-			break;
-
-		case eSW_Year:
-			*pvo = &SW_VegProd.oagg[eSW_Year];
-			break;
-	}
-}
-
-
-void set_WEATHER_aggslot(OutPeriod pd, SW_WEATHER_OUTPUTS **pvo) {
-	switch(pd) {
-		case eSW_Day:
-			*pvo = &SW_Weather.accu[eSW_Day];
-			break;
-
-		case eSW_Week:
-			*pvo = &SW_Weather.oagg[eSW_Week];
-			break;
-
-		case eSW_Month:
-			*pvo = &SW_Weather.oagg[eSW_Month];
-			break;
-
-		case eSW_Year:
-			*pvo = &SW_Weather.oagg[eSW_Year];
-			break;
-	}
-}
-
-
-void set_SOILWAT_aggslot(OutPeriod pd, SW_SOILWAT_OUTPUTS **pvo) {
-	switch(pd) {
-		case eSW_Day:
-			*pvo = &SW_Soilwat.accu[eSW_Day];
-			break;
-
-		case eSW_Week:
-			*pvo = &SW_Soilwat.oagg[eSW_Week];
-			break;
-
-		case eSW_Month:
-			*pvo = &SW_Soilwat.oagg[eSW_Month];
-			break;
-
-		case eSW_Year:
-			*pvo = &SW_Soilwat.oagg[eSW_Year];
-			break;
-	}
 }
 
 
@@ -1970,100 +1858,30 @@ void SW_OUT_sum_today(ObjType otyp)
 	/*  SW_VEGESTAB *v = &SW_VegEstab;  -> we don't need to sum daily for this */
 
 	OutPeriod pd;
-	IntU size = 0;
 
-	switch (otyp)
+	ForEachOutPeriod(pd)
 	{
-		case eSWC:
-			size = sizeof(SW_SOILWAT_OUTPUTS);
-			break;
-		case eWTH:
-			size = sizeof(SW_WEATHER_OUTPUTS);
-			break;
-		case eVES:
-			return; /* a stub; we don't do anything with ves until get_() */
-		case eVPD:
-			size = sizeof(SW_VEGPROD_OUTPUTS);
-			break;
-		default:
-			LogError(logfp, LOGFATAL,
-					"Invalid object type in SW_OUT_sum_today().");
-	}
-
-	/* do this every day (kinda expensive but more general than before)*/
-	switch (otyp)
-	{
-		case eSWC:
-			memset(&s->accu[eSW_Day], 0, size);
-			break;
-		case eWTH:
-			memset(&w->accu[eSW_Day], 0, size);
-			break;
-		case eVPD:
-			memset(&vp->accu[eSW_Day], 0, size);
-			break;
-		default:
-			break;
-	}
-
-	/* the rest only get done if new period */
-	if (SW_Model.newweek || bFlush_output)
-	{
-		average_for(otyp, eSW_Week);
-
-		switch (otyp)
+		if (bFlush_output || SW_Model.newperiod[pd]) // `newperiod[eSW_Day]` is always TRUE
 		{
-			case eSWC:
-				memset(&s->accu[eSW_Week], 0, size);
-				break;
-			case eWTH:
-				memset(&w->accu[eSW_Week], 0, size);
-				break;
-			case eVPD:
-				memset(&vp->accu[eSW_Week], 0, size);
-				break;
-			default:
-				break;
-		}
-	}
+			average_for(otyp, pd);
 
-	if (SW_Model.newmonth || bFlush_output)
-	{
-		average_for(otyp, eSW_Month);
-
-		switch (otyp)
-		{
-			case eSWC:
-				memset(&s->accu[eSW_Month], 0, size);
-				break;
-			case eWTH:
-				memset(&w->accu[eSW_Month], 0, size);
-				break;
-			case eVPD:
-				memset(&vp->accu[eSW_Month], 0, size);
-				break;
-			default:
-				break;
-		}
-	}
-
-	if (SW_Model.newyear || bFlush_output)
-	{
-		average_for(otyp, eSW_Year);
-
-		switch (otyp)
-		{
-			case eSWC:
-				memset(&s->accu[eSW_Year], 0, size);
-				break;
-			case eWTH:
-				memset(&w->accu[eSW_Year], 0, size);
-				break;
-			case eVPD:
-				memset(&vp->accu[eSW_Year], 0, size);
-				break;
-			default:
-				break;
+			switch (otyp)
+			{
+				case eSWC:
+					memset(s->p_accu[pd], 0, sizeof(SW_SOILWAT_OUTPUTS));
+					break;
+				case eWTH:
+					memset(w->p_accu[pd], 0, sizeof(SW_WEATHER_OUTPUTS));
+					break;
+				case eVES:
+					break;
+				case eVPD:
+					memset(vp->p_accu[pd], 0, sizeof(SW_VEGPROD_OUTPUTS));
+					break;
+				default:
+					LogError(logfp, LOGFATAL,
+							"Invalid object type in SW_OUT_sum_today().");
+			}
 		}
 	}
 
@@ -2143,9 +1961,9 @@ void SW_OUT_write_today(void)
 	// Determine which output periods should get formatted and output (if they are active)
 	t = SW_Model.doy;
 	writeit[eSW_Day] = (Bool) (t < SW_Output[0].first || t > SW_Output[0].last); // `csv`-files assume anyhow that first/last are identical for every output type/key
-	writeit[eSW_Week] = (Bool) (writeit[eSW_Day] && (SW_Model.newweek || bFlush_output));
-	writeit[eSW_Month] = (Bool) (writeit[eSW_Day] && (SW_Model.newmonth || bFlush_output));
-	writeit[eSW_Year] = (Bool) (SW_Model.newyear || bFlush_output);
+	writeit[eSW_Week] = (Bool) (writeit[eSW_Day] && (SW_Model.newperiod[eSW_Week] || bFlush_output));
+	writeit[eSW_Month] = (Bool) (writeit[eSW_Day] && (SW_Model.newperiod[eSW_Month] || bFlush_output));
+	writeit[eSW_Year] = (Bool) (SW_Model.newperiod[eSW_Year] || bFlush_output);
 	// update daily: don't process daily output if `bFlush_output` is TRUE
 	// because `_end_day` was already called and produced daily output
 	writeit[eSW_Day] = (Bool) (writeit[eSW_Day] && !bFlush_output);

@@ -189,9 +189,7 @@ void _echo_outputs(void);
 void find_OutPeriods_inUse(void);
 Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k);
 Bool has_soillayers(const char *var);
-void set_VEGPROD_aggslot(OutPeriod pd, SW_VEGPROD_OUTPUTS **pvo);
-void set_WEATHER_aggslot(OutPeriod pd, SW_WEATHER_OUTPUTS **pvo);
-void set_SOILWAT_aggslot(OutPeriod pd, SW_SOILWAT_OUTPUTS **pvo);
+
 
 // Functions that format the output in `sw_outstr` for printing
 /* --------------------------------------------------- */

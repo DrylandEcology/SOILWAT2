@@ -84,16 +84,32 @@ void SW_VES_construct(void) {
 	 * will need to free all allocated memory first
 	 * before clearing structure.
 	 */
+	OutPeriod pd;
 
+	// Clear the module structure:
 	memset(&SW_VegEstab, 0, sizeof(SW_VegEstab));
 
+	// Allocate output pointers: `array` of size SW_OUTNPERIODS
+	SW_VegEstab.p_accu = (SW_VEGESTAB_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
+		sizeof(SW_VEGESTAB_OUTPUTS *), "SW_VES_construct()");
+	SW_VegEstab.p_oagg = (SW_VEGESTAB_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
+		sizeof(SW_VEGESTAB_OUTPUTS *), "SW_VES_construct()");
+
+	// Allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_VegEstab.p_accu[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(1,
+			sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_construct()");
+		SW_VegEstab.p_oagg[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(1,
+			sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_construct()");
+	}
 }
 
 void SW_VES_clear(void) {
 	unsigned int i;
 	if (SW_VegEstab.count > 0) {
-		free(SW_VegEstab.accu[eSW_Year].days);
-		//free(SW_VegEstab.oagg[eSW_Year].days);
+		free(SW_VegEstab.p_accu[eSW_Year]->days);
+		//free(SW_VegEstab.p_oagg[eSW_Year]->days);
 
 		for(i=0; i<SW_VegEstab.count; i++)
 		{
@@ -113,7 +129,7 @@ void SW_VES_new_year(void) {
 	if (0 == SW_VegEstab.count)
 		return;
 
-	Mem_Set(SW_VegEstab.accu[eSW_Year].days, 0, SW_VegEstab.count);
+	Mem_Set(SW_VegEstab.p_accu[eSW_Year]->days, 0, SW_VegEstab.count);
 
 }
 
@@ -143,7 +159,7 @@ void SW_VES_read(void) {
 		_spp_init(i);
 
 	if (SW_VegEstab.count > 0)
-		SW_VegEstab.accu[eSW_Year].days = (TimeInt *) Mem_Calloc(SW_VegEstab.count, sizeof(TimeInt), "SW_VES_read()");
+		SW_VegEstab.p_accu[eSW_Year]->days = (TimeInt *) Mem_Calloc(SW_VegEstab.count, sizeof(TimeInt), "SW_VES_read()");
 
 	if (EchoInits)
 		_echo_VegEstab();

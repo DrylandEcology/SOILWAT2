@@ -295,17 +295,34 @@ void SW_WaterBalance_Checks(void)
 
 void SW_SWC_construct(void) {
 	/* =================================================== */
+	OutPeriod pd;
 
 	SW_Soilwat.soiltempError = swFALSE;
-
 	temp_snow = 0.;
 
-	//Clear memory before setting it
+	// Clear memory before setting it
 	if (!isnull(SW_Soilwat.hist.file_prefix)) {
 		Mem_Free(SW_Soilwat.hist.file_prefix);
 		SW_Soilwat.hist.file_prefix = NULL;
 	}
+
+	// Clear the module structure:
 	memset(&SW_Soilwat, 0, sizeof(SW_SOILWAT));
+
+	// Allocate output pointers: `array` of size SW_OUTNPERIODS
+	SW_Soilwat.p_accu = (SW_SOILWAT_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
+		sizeof(SW_SOILWAT_OUTPUTS *), "SW_SWC_construct()");
+	SW_Soilwat.p_oagg = (SW_SOILWAT_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
+		sizeof(SW_SOILWAT_OUTPUTS *), "SW_SWC_construct()");
+
+	// Allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_Soilwat.p_accu[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
+			sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_construct()");
+		SW_Soilwat.p_oagg[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
+			sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_construct()");
+	}
 }
 
 void SW_SWC_water_flow(void) {
@@ -559,7 +576,7 @@ void SW_SWC_new_year(void) {
 	TimeInt year = SW_Model.year;
 	Bool reset = (Bool) (SW_Site.reset_yr || SW_Model.year == SW_Model.startyr);
 
-	memset(&SW_Soilwat.accu[eSW_Year], 0, sizeof(SW_SOILWAT_OUTPUTS));
+	memset(SW_Soilwat.p_accu[eSW_Year], 0, sizeof(SW_SOILWAT_OUTPUTS));
 
 	/* reset the swc */
 	ForEachSoilLayer(lyr)
