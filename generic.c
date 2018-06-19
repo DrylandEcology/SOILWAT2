@@ -325,3 +325,38 @@ char * sw_strdup(const char * s)
 
   return p ? (char*) memcpy(p, s, len) : NULL;
 }
+
+
+/** @brief Calculate running average online (in one pass)
+		@description Calculate average m across values x[k] with k = {0, ..., n}
+			using
+				m[n] = m[n - 1] + (x[n] - m[n - 1]) / n
+			based on Welford's algorithm
+		@return The running average at sequence position n, i.e., m[n]
+
+		@references https://www.johndcook.com/blog/standard_deviation/
+		@references https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online
+*/
+double get_running_mean(unsigned int n, double mean_prev, double val_to_add)
+{
+	return mean_prev + (val_to_add - mean_prev) / n;
+}
+
+/** @brief Calculate running standard deviation online (in one pass)
+		@description Calculate standard deviation S across values x[k] with
+			k = {0, ..., n} using
+				S[n] = S[n - 1] + ss[n]
+			where
+				ss[n] = (x[n] - m[n - 1]) * (x[n] - m[n])
+			and where m[n] is the running average from function `get_running_mean`.
+			based on Welford's algorithm
+		@return The summand ss[n] to calculate the running standard deviation at
+			sequence position n, i.e., sqrt(S[n] / (n - 1))
+
+		@references https://www.johndcook.com/blog/standard_deviation/
+		@references https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online
+*/
+double get_running_sqr(double mean_prev, double mean_current, double val_to_add)
+{
+	return (val_to_add - mean_prev) * (val_to_add - mean_current);
+}

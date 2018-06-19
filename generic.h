@@ -231,6 +231,10 @@ double lobfM(double xs[], double ys[], unsigned int n);
 double lobfB(double xs[], double ys[], unsigned int n);
 void lobf(double *m, double* b, double xs[], double ys[], unsigned int size);
 
+double get_running_mean(unsigned int n, double mean_prev, double val_to_add);
+double get_running_sqr(double mean_prev, double mean_current, double val_to_add);
+
+
 #ifdef DEBUG
 extern errstr[];
 #define LogError(fp, m, fmt, p1, p2, p3, p4, p5, p6, p7, p8, p9) \
