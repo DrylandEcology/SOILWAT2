@@ -37,6 +37,13 @@
 // Function declarations
 void SW_OUT_set_nrow(void);
 
-void get_outvalleader(OutKey k, OutPeriod pd);
+#ifdef RSOILWAT
+void get_outvalleader(RealD *p, OutPeriod pd);
+#endif
+
+#ifdef STEPWAT
+void do_running_agg(RealD *p, RealD *psd, IntUS k, IntUS n, RealD x);
+#endif
+
 
 #endif

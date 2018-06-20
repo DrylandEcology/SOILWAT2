@@ -135,28 +135,38 @@ void SW_OUT_set_nrow(void)
 }
 
 
+#ifdef RSOILWAT
 /** @brief Corresponds to function `get_outstrleader` of `SOILWAT2-standalone`
 */
-void get_outvalleader(OutKey k, OutPeriod pd) {
-	p_OUT[k][pd][irow_OUT[pd] + nrow_OUT[pd] * 0] = SW_Model.simyear;
+void get_outvalleader(RealD *p, OutPeriod pd) {
+	p[irow_OUT[pd] + nrow_OUT[pd] * 0] = SW_Model.simyear;
 
 	switch (pd) {
 		case eSW_Day:
-			p_OUT[k][pd][irow_OUT[eSW_Day] + nrow_OUT[eSW_Day] * 1] =
-				SW_Model.doy;
+			p[irow_OUT[eSW_Day] + nrow_OUT[eSW_Day] * 1] = SW_Model.doy;
 			break;
 
 		case eSW_Week:
-			p_OUT[k][pd][irow_OUT[eSW_Week] + nrow_OUT[eSW_Week] * 1] =
-				SW_Model.week + 1 - tOffset;
+			p[irow_OUT[eSW_Week] + nrow_OUT[eSW_Week] * 1] = SW_Model.week + 1 - tOffset;
 			break;
 
 		case eSW_Month:
-			p_OUT[k][pd][irow_OUT[eSW_Month] + nrow_OUT[eSW_Month] * 1] =
-				SW_Model.month + 1 - tOffset;
+			p[irow_OUT[eSW_Month] + nrow_OUT[eSW_Month] * 1] = SW_Model.month + 1 - tOffset;
 			break;
 
 		case eSW_Year:
 			break;
 	}
 }
+#endif
+
+
+#ifdef STEPWAT
+void do_running_agg(RealD *p, RealD *psd, IntUS k, IntUS n, RealD x)
+{
+	RealD prev_val = p[k];
+
+	p[k] = get_running_mean(n, prev_val, x);
+	psd[k] += get_running_sqr(prev_val, p[k], x);
+}
+#endif
