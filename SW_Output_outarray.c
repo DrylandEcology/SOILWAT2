@@ -41,6 +41,9 @@ extern SW_MODEL SW_Model;
 extern SW_OUTPUT SW_Output[];
 extern TimeInt tOffset;
 extern Bool use_OutPeriod[];
+extern IntUS used_OUTNPERIODS;
+extern IntUS ncol_OUT[];
+extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
 
 
 // defined here:
@@ -162,11 +165,46 @@ void get_outvalleader(RealD *p, OutPeriod pd) {
 
 
 #ifdef STEPWAT
-void do_running_agg(RealD *p, RealD *psd, IntUS k, IntUS n, RealD x)
+/** @brief Handle the cumulative running mean and standard deviation
+		@param k. The index (base0) for subsetting `p` and `psd`, e.g., as calculated by
+			macro `iOUT` or `iOUT2`.
+		@param n. The current iteration/repetition number (base1).
+		@param x. The new value.
+*/
+void do_running_agg(RealD *p, RealD *psd, IntU k, IntU n, RealD x)
 {
 	RealD prev_val = p[k];
 
 	p[k] = get_running_mean(n, prev_val, x);
 	psd[k] += get_running_sqr(prev_val, p[k], x);
 }
+
+
+/** Set global STEPWAT2 output variables that aggregate across iterations/repetitions
+
+		Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in `rSW_Output.c`
+
+		@sideeffects: `*p_OUT` and `*p_OUTsd` pointing to allocated arrays for
+			each output period and output key.
+	*/
+void setGlobalSTEPWAT2_OutputVariables(void)
+{
+	IntUS i;
+	IntU size;
+	OutKey k;
+
+	ForEachOutKey(k) {
+		for (i = 0; i < used_OUTNPERIODS; i++) {
+			size = nrow_OUT[timeSteps[k][i]] *
+				(ncol_OUT[k] + ncol_TimeOUT[timeSteps[k][i]]);
+
+			p_OUT[k][timeSteps[k][i]] = (RealD *) Mem_Calloc(size, sizeof(RealD *),
+				"setGlobalSTEPWAT2_OutputVariables()");
+
+			p_OUTsd[k][timeSteps[k][i]] = (RealD *) Mem_Calloc(size, sizeof(RealD *),
+				"setGlobalSTEPWAT2_OutputVariables()");
+		}
+	}
+}
+
 #endif

@@ -42,7 +42,8 @@ void get_outvalleader(RealD *p, OutPeriod pd);
 #endif
 
 #ifdef STEPWAT
-void do_running_agg(RealD *p, RealD *psd, IntUS k, IntUS n, RealD x);
+void do_running_agg(RealD *p, RealD *psd, IntU k, IntU n, RealD x);
+void setGlobalSTEPWAT2_OutputVariables(void);
 #endif
 
 
