@@ -128,9 +128,6 @@ void SW_VES_new_year(void) {
 
 	if (0 == SW_VegEstab.count)
 		return;
-
-	Mem_Set(SW_VegEstab.p_accu[eSW_Year]->days, 0, SW_VegEstab.count);
-
 }
 
 void SW_VES_read(void) {

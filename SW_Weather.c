@@ -91,18 +91,9 @@ void _clear_hist_weather(void) {
 	/* --------------------------------------------------- */
 	SW_WEATHER_HIST *wh = &SW_Weather.hist;
 	TimeInt d;
-	int i;
-	SW_WEATHER_OUTPUTS *wo[2 * SW_OUTNPERIODS] = {
-		SW_Weather.p_accu[eSW_Day],   SW_Weather.p_accu[eSW_Week],
-		SW_Weather.p_accu[eSW_Month], SW_Weather.p_accu[eSW_Year],
-		SW_Weather.p_oagg[eSW_Day],   SW_Weather.p_oagg[eSW_Week],
-		SW_Weather.p_oagg[eSW_Month], SW_Weather.p_oagg[eSW_Year] };
 
 	for (d = 0; d < MAX_DAYS; d++)
 		wh->ppt[d] = wh->temp_max[d] = wh->temp_min[d] = WTH_MISSING;
-
-	for (i = 0; i < 2 * SW_OUTNPERIODS; i++)
-		memset(wo[i], 0, sizeof(SW_WEATHER_OUTPUTS));
 }
 
 static void _clear_runavg(void) {
@@ -189,7 +180,6 @@ void SW_WTH_new_year(void) {
 	TimeInt year = SW_Model.year;
 
 	_clear_runavg();
-	memset(SW_Weather.p_accu[eSW_Year], 0, sizeof(SW_WEATHER_OUTPUTS));
 
 	if (year < SW_Weather.yr.first) {
 		weth_found = swFALSE;

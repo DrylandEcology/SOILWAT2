@@ -576,8 +576,6 @@ void SW_SWC_new_year(void) {
 	TimeInt year = SW_Model.year;
 	Bool reset = (Bool) (SW_Site.reset_yr || SW_Model.year == SW_Model.startyr);
 
-	memset(SW_Soilwat.p_accu[eSW_Year], 0, sizeof(SW_SOILWAT_OUTPUTS));
-
 	/* reset the swc */
 	ForEachSoilLayer(lyr)
 	{
