@@ -33,6 +33,9 @@
 #include "SW_Output.h"
 #include "SW_Output_outtext.h"
 
+#ifdef STEPWAT
+#include "../ST_defines.h"
+#endif
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -71,6 +74,7 @@ char sw_outstr[OUTSTRLEN];
 #ifdef STEPWAT
 extern ModelType Globals; // defined in `ST_Main.c`
 extern Bool prepare_IterationSummary; // defined in `SW_Output.c`
+extern Bool storeAllIterations; // defined in `SW_Output.c`
 /** `sw_outstr_agg` holds the formatted output as returned from `get_XXX` for
      aggregated output across iterations/repeats;
      active if `print_IterationSummary` is TRUE */
