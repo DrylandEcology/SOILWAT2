@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <math.h>
 
 /* int logged is to be declared in the main module of your program. */
 /* global variable indicates logfile used: externed via generic.h */
@@ -350,8 +351,8 @@ double get_running_mean(unsigned int n, double mean_prev, double val_to_add)
 				ss[n] = (x[n] - m[n - 1]) * (x[n] - m[n])
 			and where m[n] is the running average from function `get_running_mean`.
 			based on Welford's algorithm
-		@return The summand ss[n] to calculate the running standard deviation at
-			sequence position n, i.e., sqrt(S[n] / (n - 1))
+		@return The summand ss[n]. This can be used as input to function
+			`final_running_sd`.
 
 		@references https://www.johndcook.com/blog/standard_deviation/
 		@references https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online
@@ -359,4 +360,17 @@ double get_running_mean(unsigned int n, double mean_prev, double val_to_add)
 double get_running_sqr(double mean_prev, double mean_current, double val_to_add)
 {
 	return (val_to_add - mean_prev) * (val_to_add - mean_current);
+}
+
+/** @brief Finalize the running standard deviation calculation (in one pass)
+		@return The running standard deviation at sequence position n, i.e.,
+			sqrt(S[n] / (n - 1))
+		where S[n] has been calculated using function `get_running_sqr`.
+
+		@references https://www.johndcook.com/blog/standard_deviation/
+		@references https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online
+*/
+double final_running_sd(unsigned int n, double ssqr)
+{
+	return (n > 1) ? sqrt(ssqr / (n - 1)) : 0.;
 }

@@ -233,6 +233,7 @@ void lobf(double *m, double* b, double xs[], double ys[], unsigned int size);
 
 double get_running_mean(unsigned int n, double mean_prev, double val_to_add);
 double get_running_sqr(double mean_prev, double mean_current, double val_to_add);
+double final_running_sd(unsigned int n, double ssqr);
 
 
 #ifdef DEBUG
