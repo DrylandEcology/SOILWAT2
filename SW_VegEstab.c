@@ -136,7 +136,6 @@ void SW_VES_new_year(void) {
 void SW_VES_read(void) {
 	/* =================================================== */
 	FILE *f;
-	IntU i;
 
 	MyFileName = SW_F_name(eVegEstab);
 	f = OpenFile(MyFileName, "r");
@@ -151,18 +150,31 @@ void SW_VES_read(void) {
 		CloseFile(&f);
 		return;
 	}
+
 	while (GetALine(f, inbuf)) {
 		_read_spp(inbuf);
 	}
-	CloseFile(&f);
-	for (i = 0; i < SW_VegEstab.count; i++)
-		_spp_init(i);
 
-	if (SW_VegEstab.count > 0)
-		SW_VegEstab.p_accu[eSW_Year]->days = (TimeInt *) Mem_Calloc(SW_VegEstab.count, sizeof(TimeInt), "SW_VES_read()");
+	CloseFile(&f);
+
+	Init_SW_VegEstab();
 
 	if (EchoInits)
 		_echo_VegEstab();
+}
+
+
+void Init_SW_VegEstab(void)
+{
+	IntU i;
+
+	for (i = 0; i < SW_VegEstab.count; i++)
+		_spp_init(i);
+
+	if (SW_VegEstab.count > 0) {
+		SW_VegEstab.p_accu[eSW_Year]->days = (TimeInt *) Mem_Calloc(
+			SW_VegEstab.count, sizeof(TimeInt), "Init_SW_VegEstab()");
+	}
 }
 
 
