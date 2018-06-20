@@ -281,7 +281,7 @@ void _create_csv_file_ST(int iteration, OutPeriod pd)
 
 	} else
 	{ // STEPWAT2: storing values for every iteration
-		if (iteration > 1) {
+		if (iteration > 0) {
 			// close files from previous iteration
 			if (SW_OutFiles.make_regular) {
 				CloseFile(&SW_OutFiles.fp_reg[pd]);
@@ -325,7 +325,7 @@ void SW_OUT_create_iteration_files(void) {
 	if (storeAllIterations) {
 		ForEachOutPeriod(p) {
 			if (use_OutPeriod[p]) {
-				_create_csv_file_ST(Globals.currIter + 1, p);
+				_create_csv_file_ST(Globals.currIter, p); // `currIter` is base1
 
 				write_headers_to_csv(p, SW_OutFiles.fp_reg[p],
 					SW_OutFiles.fp_soil[p], swFALSE);
