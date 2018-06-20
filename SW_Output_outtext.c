@@ -98,7 +98,7 @@ static void get_outstrheader(OutPeriod pd, char *str);
 
 static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil, Bool does_agg) {
 	unsigned int i;
-	char key[50], str_help1[50], str_help2[OUTSTRLEN];
+	char key[50], str_help1[OUTSTRLEN], str_help2[OUTSTRLEN];
 	OutKey k;
 
 	// Initialize headers
@@ -260,7 +260,7 @@ void _create_csv_file_ST(int iteration, OutPeriod pd)
 	char filename[FILENAME_MAX];
 
 	if (iteration <= 0)
-	{ // STEPWAT2: aggregated values over all iterations or SOILWAT2-standalone
+	{ // STEPWAT2: aggregated values over all iterations
 		if (SW_OutFiles.make_regular) {
 			// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
 			// a specific order of `SW_FileIndex` --> fix and create something that
@@ -302,17 +302,17 @@ void _create_csv_file_ST(int iteration, OutPeriod pd)
 void SW_OUT_create_summary_files(void) {
 	OutPeriod p;
 
-		if (prepare_IterationSummary)
-		{
-			ForEachOutPeriod(p) {
-				if (use_OutPeriod[p]) {
-					_create_csv_file_ST(-1, p);
+	if (prepare_IterationSummary)
+	{
+		ForEachOutPeriod(p) {
+			if (use_OutPeriod[p]) {
+				_create_csv_file_ST(-1, p);
 
-					write_headers_to_csv(p, SW_OutFiles.fp_reg_agg[p],
-						SW_OutFiles.fp_soil_agg[p], swTRUE);
-				}
+				write_headers_to_csv(p, SW_OutFiles.fp_reg_agg[p],
+					SW_OutFiles.fp_soil_agg[p], swTRUE);
 			}
 		}
+	}
 }
 
 void SW_OUT_create_iteration_files(void) {
