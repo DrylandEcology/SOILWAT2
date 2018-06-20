@@ -29,6 +29,7 @@
 #include "SW_Defines.h"
 #include "SW_Files.h"
 #include "SW_Model.h"
+#include "SW_Site.h"
 
 #include "SW_Output.h"
 #include "SW_Output_outtext.h"
@@ -41,6 +42,7 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 extern SW_MODEL SW_Model;
+extern SW_SITE SW_Site;
 
 // defined in `SW_Output.c`
 extern SW_OUTPUT SW_Output[];
@@ -69,7 +71,7 @@ Bool print_IterationSummary, print_SW_Output;
 
 /** `sw_outstr` holds the formatted output as returned from `get_XXX` for
       SOILWAT2-standalone and for a single iteration/repeat for STEPWAT2 */
-char sw_outstr[OUTSTRLEN];
+char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 
 #ifdef STEPWAT
 extern ModelType Globals; // defined in `ST_Main.c`
@@ -78,7 +80,7 @@ extern Bool storeAllIterations; // defined in `SW_Output.c`
 /** `sw_outstr_agg` holds the formatted output as returned from `get_XXX` for
      aggregated output across iterations/repeats;
      active if `print_IterationSummary` is TRUE */
-char sw_outstr_agg[OUTSTRLEN];
+char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
 #endif
 
 
@@ -98,7 +100,9 @@ static void get_outstrheader(OutPeriod pd, char *str);
 
 static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil, Bool does_agg) {
 	unsigned int i;
-	char key[50], str_help1[OUTSTRLEN], str_help2[OUTSTRLEN];
+	char key[50],
+		str_help1[SW_Site.n_layers * OUTSTRLEN],
+		str_help2[SW_Site.n_layers * OUTSTRLEN];
 	OutKey k;
 
 	// Initialize headers
@@ -381,7 +385,11 @@ void get_outstrleader(OutPeriod pd, char *str) {
 */
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_agg) {
 	char str_time[20];
-	char header_reg[OUTSTRLEN], header_soil[2 * OUTSTRLEN];
+	char
+		// 2500 characters required for does_agg = TRUE
+		header_reg[OUTSTRLEN],
+		// 26500 characters required for 25 soil layers and does_agg = TRUE
+		header_soil[SW_Site.n_layers * OUTSTRLEN];
 
 	// Acquire headers
 	get_outstrheader(pd, str_time);
@@ -390,10 +398,12 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_a
 	// Write headers to files
 	if (SW_OutFiles.make_regular) {
 		fprintf(fp_reg, "%s%s\n", str_time, header_reg);
+		fflush(fp_reg);
 	}
 
 	if (SW_OutFiles.make_soil) {
 		fprintf(fp_soil, "%s%s\n", str_time, header_soil);
+		fflush(fp_soil);
 	}
 }
 

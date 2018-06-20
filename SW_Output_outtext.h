@@ -26,7 +26,7 @@ typedef struct {
 	char buf_reg_agg[SW_OUTNPERIODS][OUTSTRLEN];
 	// output file for variables with values for each soil layer
 	FILE *fp_soil_agg[SW_OUTNPERIODS];
-	char buf_soil_agg[SW_OUTNPERIODS][OUTSTRLEN];
+	char buf_soil_agg[SW_OUTNPERIODS][MAX_LAYERS * OUTSTRLEN];
 	#endif
 
 	// if SOILWAT: "regular" output file
@@ -36,7 +36,7 @@ typedef struct {
 	// if SOILWAT: output file for variables with values for each soil layer
 	// if STEPWAT: new file for each iteration/repetition of STEPWAT
 	FILE *fp_soil[SW_OUTNPERIODS];
-	char buf_soil[SW_OUTNPERIODS][OUTSTRLEN];
+	char buf_soil[SW_OUTNPERIODS][MAX_LAYERS * OUTSTRLEN];
 
 } SW_FILE_STATUS;
 
