@@ -2355,6 +2355,9 @@ void SW_OUT_write_today(void)
 				if (print_SW_Output) {
 					fprintf(SW_OutFiles.fp_reg[p], "%s%s\n",
 						str_time, SW_OutFiles.buf_reg[p]);
+					// TODO: STEPWAT2 needs a fflush for yearly output;
+					// other time steps, the soil-layer files, and SOILWAT2 work fine without it...
+					fflush(SW_OutFiles.fp_reg[p]);
 				}
 
 				#ifdef STEPWAT
