@@ -101,6 +101,12 @@ __Tests, documentation, and code__ form a trinity
     ```
     make cleaner bint_run CPPFLAGS=-DSWDEBUG
     ```
+  * The "makefile" also contains pre-configured debugging targets including
+    `bin_debug`, `bind`, and `bind_valgrind` (see description in `makefile`).
+    If **valgrind** is installed, then for example
+    ```
+    make cleaner bind_valgrind
+    ```
 
 ## Notes
 
