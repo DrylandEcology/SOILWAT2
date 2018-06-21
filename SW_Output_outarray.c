@@ -32,6 +32,11 @@
 #include "SW_Output.h"
 #include "SW_Output_outarray.h"
 
+#ifdef STEPWAT
+#include "../ST_defines.h"
+#endif
+
+
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
@@ -53,6 +58,7 @@ extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
 RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
 #ifdef STEPWAT
+extern ModelType Globals; // defined in `ST_Main.c`
 // `p_OUTsd` used by STEPWAT2 for standard-deviation of mean aggregation
 RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
 /** `prepare_IterationSummary` is TRUE if STEPWAT2 is called with `-o` flag
@@ -62,8 +68,8 @@ RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
 Bool prepare_IterationSummary;
 #endif
 
-IntUS nrow_OUT[SW_OUTNPERIODS]; // number of years/months/weeks/days
-IntUS irow_OUT[SW_OUTNPERIODS]; // row index of current year/month/week/day output; incremented at end of each day
+IntU nrow_OUT[SW_OUTNPERIODS]; // number of years/months/weeks/days
+IntU irow_OUT[SW_OUTNPERIODS]; // row index of current year/month/week/day output; incremented at end of each day
 const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time header columns for each output period
 
 
@@ -89,15 +95,27 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time hea
 /** @brief Determine number of used years/months/weeks/days in simulation period
 
 		@param SW_Model
+		@param Globals if compiled for STEPWAT2
 		@param use_OutPeriod
 		@sideeffects Set `nrow_OUT`
 */
 void SW_OUT_set_nrow(void)
 {
 	TimeInt i;
-	int n_yrs = SW_Model.endyr - SW_Model.startyr + 1;
+	IntU n_yrs, startyear, endyear;
 	#ifdef SWDEBUG
 	int debug = 0;
+	#endif
+
+	startyear = SW_Model.startyr;
+
+	#ifdef STEPWAT
+	n_yrs = Globals.runModelYears;
+	endyear = startyear + n_yrs + 1;
+
+	#else
+	n_yrs = SW_Model.endyr - SW_Model.startyr + 1;
+	endyear = SW_Model.endyr;
 	#endif
 
 	nrow_OUT[eSW_Year] = n_yrs * use_OutPeriod[eSW_Year];
@@ -108,20 +126,20 @@ void SW_OUT_set_nrow(void)
 
 	if (use_OutPeriod[eSW_Day])
 	{
-		if (SW_Model.startyr == SW_Model.endyr)
+		if (n_yrs == 1)
 		{
 			nrow_OUT[eSW_Day] = SW_Model.endend - SW_Model.startstart + 1;
 
 		} else
 		{
 			// Calculate the start day of first year
-			nrow_OUT[eSW_Day] = Time_get_lastdoy_y(SW_Model.startyr) -
+			nrow_OUT[eSW_Day] = Time_get_lastdoy_y(startyear) -
 				SW_Model.startstart + 1;
 			// and last day of last year.
 			nrow_OUT[eSW_Day] += SW_Model.endend;
 
 			// Cumulate days of years between first and last year
-			for (i = SW_Model.startyr + 1; i < SW_Model.endyr; i++)
+			for (i = startyear + 1; i < endyear; i++)
 			{
 				nrow_OUT[eSW_Day] += Time_get_lastdoy_y(i);
 			}

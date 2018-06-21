@@ -237,8 +237,8 @@ extern Bool print_SW_Output;
 // Array-based output: defined in `SW_Output_outarray.c`
 #ifdef SW_OUTARRAY
 extern IntUS ncol_TimeOUT[];
-extern IntUS nrow_OUT[];
-extern IntUS irow_OUT[];
+extern IntU nrow_OUT[];
+extern IntU irow_OUT[];
 #endif
 
 
