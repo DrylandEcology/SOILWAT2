@@ -132,7 +132,6 @@ static void format_IterationSummary(RealD *p, RealD *psd, OutPeriod pd, IntUS N)
 	IntU n;
 	RealD sd;
 	char str[OUTSTRLEN];
-	sw_outstr_agg[0] = '\0';
 
 	for (i = 0; i < N; i++)
 	{
@@ -152,7 +151,6 @@ static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
 	IntU n;
 	RealD sd;
 	char str[OUTSTRLEN];
-	sw_outstr_agg[0] = '\0';
 
 	for (k = 0; k < N1; k++)
 	{
@@ -311,6 +309,7 @@ void get_co2effects_agg(OutPeriod pd) {
 		v->veg[SW_FORBS].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, 17);
 	}
 }
@@ -379,6 +378,7 @@ void get_estab_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, v->count);
 	}
 }
@@ -429,6 +429,7 @@ void get_temp_agg(OutPeriod pd)
 	do_running_agg(p, psd, iOUT(3, pd), Globals.currIter, vo->surfaceTemp);
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, 4);
 	}
 }
@@ -492,6 +493,7 @@ void get_precip_agg(OutPeriod pd)
 	do_running_agg(p, psd, iOUT(4, pd), Globals.currIter, vo->snowloss);
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, 5);
 	}
 }
@@ -564,6 +566,7 @@ void get_vwcBulk_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
 	}
 }
@@ -629,6 +632,7 @@ void get_vwcMatric_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
 	}
 }
@@ -698,6 +702,7 @@ void get_swa_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary2(p, psd, pd, NVEGTYPES, SW_Site.n_layers, 0);
 	}
 }
@@ -754,6 +759,7 @@ void get_swcBulk_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
 	}
 }
@@ -843,6 +849,7 @@ void get_swpMatric_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
 	}
 }
@@ -898,6 +905,7 @@ void get_swaBulk_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
 	}
 }
@@ -964,6 +972,7 @@ void get_swaMatric_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
 	}
 }
@@ -1004,6 +1013,7 @@ void get_surfaceWater_agg(OutPeriod pd)
 	do_running_agg(p, psd, iOUT(0, pd), Globals.currIter, vo->surfaceWater);
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, 1);
 	}
 }
@@ -1063,6 +1073,7 @@ void get_runoffrunon_agg(OutPeriod pd)
 	do_running_agg(p, psd, iOUT(3, pd), Globals.currIter, vo->surfaceRunon);
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, 4);
 	}
 }
@@ -1143,6 +1154,7 @@ void get_transp_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
 	}
 
@@ -1239,6 +1251,7 @@ void get_evapSoil_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, SW_Site.n_evap_lyrs);
 	}
 }
@@ -1311,6 +1324,7 @@ void get_evapSurface_agg(OutPeriod pd)
 		vo->surfaceWater_evap);
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, NVEGTYPES + 3);
 	}
 }
@@ -1377,6 +1391,7 @@ void get_interception_agg(OutPeriod pd)
 		vo->litter_int);
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, NVEGTYPES + 2);
 	}
 }
@@ -1420,6 +1435,7 @@ void get_soilinf_agg(OutPeriod pd)
 	do_running_agg(p, psd, iOUT(0, pd), Globals.currIter, vo->soil_inf);
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, 1);
 	}
 }
@@ -1476,6 +1492,7 @@ void get_lyrdrain_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, SW_Site.n_layers - 1);
 	}
 }
@@ -1557,6 +1574,7 @@ void get_hydred_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
 	}
 
@@ -1612,6 +1630,7 @@ void get_aet_agg(OutPeriod pd)
 	do_running_agg(p, psd, iOUT(0, pd), Globals.currIter, vo->aet);
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, 1);
 	}
 }
@@ -1662,6 +1681,7 @@ void get_pet_agg(OutPeriod pd)
 	do_running_agg(p, psd, iOUT(0, pd), Globals.currIter, vo->pet);
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, 1);
 	}
 }
@@ -1746,6 +1766,7 @@ void get_wetdays_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
 	}
 }
@@ -1790,6 +1811,7 @@ void get_snowpack_agg(OutPeriod pd)
 	do_running_agg(p, psd, iOUT(1, pd), Globals.currIter, vo->snowdepth);
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, 2);
 	}
 }
@@ -1830,6 +1852,7 @@ void get_deepswc_agg(OutPeriod pd)
 	do_running_agg(p, psd, iOUT(0, pd), Globals.currIter, vo->deep);
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, 1);
 	}
 }
@@ -1885,6 +1908,7 @@ void get_soiltemp_agg(OutPeriod pd)
 	}
 
 	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
 	}
 }
