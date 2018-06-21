@@ -34,9 +34,7 @@
 #include "SW_Output.h"
 #include "SW_Output_outtext.h"
 
-#ifdef STEPWAT
-#include "../ST_defines.h"
-#endif
+
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -74,7 +72,6 @@ Bool print_IterationSummary, print_SW_Output;
 char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 
 #ifdef STEPWAT
-extern ModelType Globals; // defined in `ST_Main.c`
 extern Bool prepare_IterationSummary; // defined in `SW_Output.c`
 extern Bool storeAllIterations; // defined in `SW_Output.c`
 /** `sw_outstr_agg` holds the formatted output as returned from `get_XXX` for
@@ -306,30 +303,25 @@ void _create_csv_file_ST(int iteration, OutPeriod pd)
 void SW_OUT_create_summary_files(void) {
 	OutPeriod p;
 
-	if (prepare_IterationSummary)
-	{
-		ForEachOutPeriod(p) {
-			if (use_OutPeriod[p]) {
-				_create_csv_file_ST(-1, p);
+	ForEachOutPeriod(p) {
+		if (use_OutPeriod[p]) {
+			_create_csv_file_ST(-1, p);
 
-				write_headers_to_csv(p, SW_OutFiles.fp_reg_agg[p],
-					SW_OutFiles.fp_soil_agg[p], swTRUE);
-			}
+			write_headers_to_csv(p, SW_OutFiles.fp_reg_agg[p],
+				SW_OutFiles.fp_soil_agg[p], swTRUE);
 		}
 	}
 }
 
-void SW_OUT_create_iteration_files(void) {
+void SW_OUT_create_iteration_files(int iteration) {
 	OutPeriod p;
 
-	if (storeAllIterations) {
-		ForEachOutPeriod(p) {
-			if (use_OutPeriod[p]) {
-				_create_csv_file_ST(Globals.currIter, p); // `currIter` is base1
+	ForEachOutPeriod(p) {
+		if (use_OutPeriod[p]) {
+			_create_csv_file_ST(iteration, p);
 
-				write_headers_to_csv(p, SW_OutFiles.fp_reg[p],
-					SW_OutFiles.fp_soil[p], swFALSE);
-			}
+			write_headers_to_csv(p, SW_OutFiles.fp_reg[p],
+				SW_OutFiles.fp_soil[p], swFALSE);
 		}
 	}
 }

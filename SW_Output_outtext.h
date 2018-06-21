@@ -51,7 +51,7 @@ void SW_OUT_create_files(void);
 void _create_filename_ST(char *str, char *flag, int iteration, char *filename);
 void _create_csv_file_ST(int iteration, OutPeriod pd);
 void SW_OUT_create_summary_files(void);
-void SW_OUT_create_iteration_files(void);
+void SW_OUT_create_iteration_files(int iteration);
 #endif
 
 void get_outstrleader(OutPeriod pd, char *str);

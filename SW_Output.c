@@ -181,10 +181,6 @@
 
 #include "SW_Output.h"
 
-#ifdef STEPWAT
-#include "../ST_defines.h"
-#endif
-
 // Array-based output declarations:
 #ifdef SW_OUTARRAY
 #include "SW_Output_outarray.h"
@@ -247,7 +243,6 @@ extern IntUS irow_OUT[];
 
 
 #ifdef STEPWAT
-extern ModelType Globals; // defined in `ST_Main.c`
 extern char sw_outstr_agg[];
 
 /** `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
@@ -1153,7 +1148,7 @@ void SW_OUT_construct(void)
 	print_IterationSummary = swFALSE;
 	#elif defined(STEPWAT)
 	print_SW_Output = (Bool) storeAllIterations;
-	// `print_IterationSummary` is set by `SW_OUT_new_year`
+	// `print_IterationSummary` is set by STEPWAT2's `main` function
 	#endif
 
 	#ifdef SW_OUTTEXT
@@ -1825,11 +1820,6 @@ void SW_OUT_new_year(void)
 	/* reset the terminal output days each year  */
 
 	OutKey k;
-
-	#ifdef STEPWAT
-	print_IterationSummary = (Bool) (prepare_IterationSummary == swFALSE &&
-		Globals.currIter == Globals.runModelIterations);
-	#endif
 
 	ForEachOutKey(k)
 	{

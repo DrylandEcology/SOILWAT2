@@ -199,7 +199,7 @@ void do_running_agg(RealD *p, RealD *psd, IntU k, IntU n, RealD x)
 	RealD prev_val = p[k];
 
 	p[k] = get_running_mean(n, prev_val, x);
-	psd[k] += get_running_sqr(prev_val, p[k], x);
+	psd[k] = psd[k] + get_running_sqr(prev_val, p[k], x); // += didn't work with *psd
 }
 
 
