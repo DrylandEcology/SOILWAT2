@@ -556,8 +556,8 @@ void get_vwcBulk_agg(OutPeriod pd)
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
 
 	RealD
-		*p = p_OUT[eSW_SWCBulk][pd],
-		*psd = p_OUTsd[eSW_SWCBulk][pd];
+		*p = p_OUT[eSW_VWCBulk][pd],
+		*psd = p_OUTsd[eSW_VWCBulk][pd];
 
 	ForEachSoilLayer(i) {
 		/* vwcBulk at this point is identical to swcBulk */
