@@ -187,8 +187,8 @@ void SW_OUT_construct(void);
 void SW_OUT_set_ncol(void);
 void SW_OUT_set_colnames(void);
 void SW_OUT_new_year(void);
-int SW_OUT_read_onekey(OutKey *k, char keyname[], char sumtype[],
-	char period[], int first, char last[], char outfile[], char msg[]);
+int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
+	int last, char msg[]);
 void SW_OUT_read(void);
 void SW_OUT_sum_today(ObjType otyp);
 void SW_OUT_write_today(void);
@@ -199,7 +199,8 @@ void _echo_outputs(void);
 
 void find_OutPeriods_inUse(void);
 Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k);
-Bool has_soillayers(const char *var);
+Bool has_keyname_soillayers(const char *var);
+Bool has_key_soillayers(OutKey k);
 
 
 // Functions that format the output in `sw_outstr` for printing

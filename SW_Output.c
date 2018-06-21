@@ -377,12 +377,42 @@ static OutSum str2stype(char *s)
 }
 
 
-/** Checks whether a output variable (key) comes with soil layer or not
-    \param var. The name of an output variable (key), i.e., one of `key2str`.
+/** Checks whether a output variable (key) comes with soil layer or not.
+		See also function `has_keyname_soillayers`.
 
+    \param k. The key of output variable (key), i.e., one of `OutKey`.
     \return `TRUE` if `var` comes with soil layers; `FALSE` otherwise.
 */
-Bool has_soillayers(const char *var) {
+Bool has_key_soillayers(OutKey k) {
+	Bool has;
+
+	has = (
+			k == eSW_VWCBulk ||
+			k == eSW_VWCMatric ||
+			k == eSW_SWCBulk ||
+			k == eSW_SWABulk ||
+			k == eSW_SWAMatric ||
+			k == eSW_SWA ||
+			k == eSW_SWPMatric ||
+			k == eSW_Transp ||
+			k == eSW_EvapSoil ||
+			k == eSW_LyrDrain ||
+			k == eSW_HydRed ||
+			k == eSW_WetDays ||
+			k == eSW_SoilTemp
+		) ? swTRUE : swFALSE;
+
+	return(has);
+}
+
+
+/** Checks whether a output variable (key) comes with soil layer or not
+		See also function `has_key_soillayers`.
+
+    \param var. The name of an output variable (key), i.e., one of `key2str`.
+    \return `TRUE` if `var` comes with soil layers; `FALSE` otherwise.
+*/
+Bool has_keyname_soillayers(const char *var) {
 	Bool has;
 
 	has = (
@@ -1801,48 +1831,41 @@ void SW_OUT_new_year(void)
 
 
 
-int SW_OUT_read_onekey(OutKey *k, char keyname[], char sumtype[],
-	char period[], int first, char last[], char outfile[], char msg[])
+int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
+	int last, char msg[])
 {
-	char upkey[50], upsum[4]; /* space for uppercase conversion */
 	int res = 0; // return value indicating type of message if any
 
 	MyFileName = SW_F_name(eOutput);
 	msg[0] = '\0';
 
 	// Convert strings to index numbers
-	*k = str2key(Str_ToUpper(keyname, upkey));
-	SW_Output[*k].sumtype = str2stype(Str_ToUpper(sumtype, upsum));
-	SW_Output[*k].use = (Bool) (SW_Output[*k].sumtype != eSW_Off);
+	SW_Output[k].sumtype = sumtype;
 
-	#if defined(RSOILWAT)
-	SW_Output[*k].outfile = (char *) Str_Dup(outfile);
-	#else
-	outfile[0] = '\0';
-	#endif
+	SW_Output[k].use = (Bool) (sumtype != eSW_Off);
 
 	// Proceed to next line if output key/type is turned off
-	if (!SW_Output[*k].use)
+	if (!SW_Output[k].use)
 	{
 		return(-1); // return and read next line of `outsetup.in`
 	}
 
 	// Check whether output key/type generates output for each soil layers or not
-	SW_Output[*k].has_sl = has_soillayers(keyname);
+	SW_Output[k].has_sl = has_key_soillayers(k);
 
 	/* check validity of summary type */
-	if (SW_Output[*k].sumtype == eSW_Fnl && !SW_Output[*k].has_sl)
+	if (SW_Output[k].sumtype == eSW_Fnl && !SW_Output[k].has_sl)
 	{
-		SW_Output[*k].sumtype = eSW_Avg;
+		SW_Output[k].sumtype = eSW_Avg;
 
 		sprintf(msg, "%s : Summary Type FIN with key %s is meaningless.\n" \
-			"  Using type AVG instead.", MyFileName, keyname);
+			"  Using type AVG instead.", MyFileName, key2str[k]);
 		res = LOGWARN;
 	}
 
 	// Check whether output per soil layer or 'regular' is requested
 	#ifdef SW_OUTTEXT
-	if (SW_Output[*k].has_sl)
+	if (SW_Output[k].has_sl)
 	{
 		SW_OutFiles.make_soil = swTRUE;
 	} else
@@ -1854,32 +1877,32 @@ int SW_OUT_read_onekey(OutKey *k, char keyname[], char sumtype[],
 	// set use_SWA to TRUE if defined.
 	// Used in SW_Control to run the functions to get the recalculated values only if SWA is used
 	// This function is run prior to the control functions so thats why it is here.
-	if (Str_CompareI(keyname, SW_SWA) == 0)
-	{
+	if (k == eSW_SWA) {
 		SW_VegProd.use_SWA = swTRUE;
 	}
 
 	/* Check validity of output key */
-	if (*k == eSW_Estab)
-	{
-		SW_Output[*k].sumtype = eSW_Sum;
+	if (k == eSW_Estab) {
+		SW_Output[k].sumtype = eSW_Sum;
 		first = 1;
+		last = 366;
+		#ifndef RSOILWAT
 		strcpy(period, "YR");
-		strcpy(last, "end");
+		#endif
 
-	} else if ((*k == eSW_AllVeg || *k == eSW_ET || *k == eSW_AllWthr || *k == eSW_AllH2O))
+	} else if ((k == eSW_AllVeg || k == eSW_ET || k == eSW_AllWthr || k == eSW_AllH2O))
 	{
-		SW_Output[*k].use = swFALSE;
+		SW_Output[k].use = swFALSE;
 
 		sprintf(msg, "%s : Output key %s is currently unimplemented.",
-			MyFileName, keyname);
+			MyFileName, key2str[k]);
 		return(LOGNOTE);
 	}
 
 	/* verify deep drainage parameters */
-	if (*k == eSW_DeepSWC && SW_Output[*k].sumtype != eSW_Off && !SW_Site.deepdrain)
+	if (k == eSW_DeepSWC && SW_Output[k].sumtype != eSW_Off && !SW_Site.deepdrain)
 	{
-		SW_Output[*k].use = swFALSE;
+		SW_Output[k].use = swFALSE;
 
 		sprintf(msg, "%s : DEEPSWC cannot produce output if deep drainage is " \
 			"not simulated (flag not set in %s).",
@@ -1887,17 +1910,16 @@ int SW_OUT_read_onekey(OutKey *k, char keyname[], char sumtype[],
 		return(LOGWARN);
 	}
 
-	// Set remaining values of `SW_Output[*k]`
-	SW_Output[*k].mykey = *k;
-	SW_Output[*k].myobj = key2obj[*k];
-	SW_Output[*k].first_orig = first;
-	SW_Output[*k].last_orig =
-		!Str_CompareI("END", (char *)last) ? 366 : atoi(last);
+	// Set remaining values of `SW_Output[k]`
+	SW_Output[k].mykey = k;
+	SW_Output[k].myobj = key2obj[k];
+	SW_Output[k].first_orig = first;
+	SW_Output[k].last_orig = last;
 
-	if (SW_Output[*k].last_orig == 0)
+	if (SW_Output[k].last_orig == 0)
 	{
-		sprintf(msg, "%s : Invalid ending day (%s), key=%s.",
-			MyFileName, last, keyname);
+		sprintf(msg, "%s : Invalid ending day (%d), key=%s.",
+			MyFileName, last, key2str[k]);
 		return(LOGFATAL);
 	}
 
@@ -1946,7 +1968,8 @@ void SW_OUT_read(void)
 			period[10],
 			last[4], /* last doy for output, if "end", ==366 */
 			outfile[MAX_FILENAMESIZE],
-			msg[200]; // message to print
+			msg[200], // message to print
+			upkey[50], upsum[4]; /* space for uppercase conversion */
 	int first; /* first doy for output */
 
 	MyFileName = SW_F_name(eOutput);
@@ -2010,9 +2033,14 @@ void SW_OUT_read(void)
 			continue; //read next line of `outsetup.in`
 		}
 
+		// Convert strings to index numbers
+		k = str2key(Str_ToUpper(keyname, upkey));
+
 		// Fill information into `SW_Output[k]`
-		msg_type = SW_OUT_read_onekey(&k, keyname, sumtype, period, first, last,
-			outfile, msg);
+		msg_type = SW_OUT_read_onekey(k,
+			str2stype(Str_ToUpper(sumtype, upsum)),
+			period, first, !Str_CompareI("END", (char *)last) ? 366 : atoi(last),
+			msg);
 
 		if (msg_type != 0) {
 			if (msg_type > 0) {
@@ -2507,7 +2535,7 @@ void SW_OUT_SetMemoryRefs( void)
  - Add new code to create_col_headers to make proper columns for new value
  - if variable is a soil variable (has layers) add name to SW_OUT_read, create_col_headers
  		and populate_output_values in the if block checking for SOIL variables
-		looks like below code `if (has_soillayers(var)) {`
+		looks like below code `if (has_key_soillayers(key)) {`
 	----------------------------
 	To make new values work with STEPWAT do the following
 	- add average storage variable to sxw.h in the soilwat_average structure
