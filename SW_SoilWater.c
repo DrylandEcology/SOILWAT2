@@ -378,7 +378,10 @@ void SW_SWC_water_flow(void) {
 
 /**
   \fn void calculate_repartitioned_soilwater(void)
-  Sets up the structures that will hold the repartitioned soilwater and propagate the swa_master structure for use in get_dSWAbulk().
+  Sets up the structures that will hold the available soil water partitioned
+  among vegetation types and propagate the swa_master structure for
+  use in get_dSWAbulk().
+  Must be call after `SW_SWC_water_flow()` is executed.
 */
 /***********************************************************/
 void calculate_repartitioned_soilwater(void){

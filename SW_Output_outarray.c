@@ -146,15 +146,15 @@ void get_outvalleader(RealD *p, OutPeriod pd) {
 
 	switch (pd) {
 		case eSW_Day:
-			p[irow_OUT[eSW_Day] + nrow_OUT[eSW_Day] * 1] = SW_Model.doy;
+			p[irow_OUT[eSW_Day] + nrow_OUT[eSW_Day] * 1] = SW_Model.doy; //base1
 			break;
 
 		case eSW_Week:
-			p[irow_OUT[eSW_Week] + nrow_OUT[eSW_Week] * 1] = SW_Model.week + 1 - tOffset;
+			p[irow_OUT[eSW_Week] + nrow_OUT[eSW_Week] * 1] = SW_Model.week + 1 - tOffset; // base0
 			break;
 
 		case eSW_Month:
-			p[irow_OUT[eSW_Month] + nrow_OUT[eSW_Month] * 1] = SW_Model.month + 1 - tOffset;
+			p[irow_OUT[eSW_Month] + nrow_OUT[eSW_Month] * 1] = SW_Model.month + 1 - tOffset; // base0
 			break;
 
 		case eSW_Year:

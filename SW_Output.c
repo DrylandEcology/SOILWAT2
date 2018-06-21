@@ -2260,7 +2260,6 @@ void SW_OUT_write_today(void)
 			#elif defined(STEPWAT)
 			((void (*)(OutPeriod)) SW_Output[k].pfunc_SXW)(timeSteps[k][i]);
 
-			// `pfunc_array_agg` must be called prior to `pfunc_text`
 			if (prepare_IterationSummary)
 			{
 				((void (*)(OutPeriod)) SW_Output[k].pfunc_agg)(timeSteps[k][i]);

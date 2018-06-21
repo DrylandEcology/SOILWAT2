@@ -95,7 +95,7 @@ void SW_CTL_init_model(const char *firstfile) {
 
 void SW_CTL_run_current_year(void) {
   /*=======================================================*/
-  TimeInt *doy = &SW_Model.doy;
+  TimeInt *doy = &SW_Model.doy; // base1
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -116,16 +116,14 @@ void SW_CTL_run_current_year(void) {
     #endif
     SW_SWC_water_flow();
 
-    #ifdef RSOILWAT
+    // Only run this function if SWA output is asked for
+    if (SW_VegProd.use_SWA) {
       calculate_repartitioned_soilwater();
-    #else
-    // Only run this function id SWA is asked for
-    if(SW_VegProd.use_SWA)
-      calculate_repartitioned_soilwater(); // new function to calculate the repartioned soilwater values (SWA). Needs to be called after SW_SWC_water_flow so other values are calculated
-    #endif
+    }
 
-    if (SW_VegEstab.use)
+    if (SW_VegEstab.use) {
       SW_VES_checkestab();
+    }
 
     #ifdef SWDEBUG
     if (debug) swprintf("ending day ... ");
