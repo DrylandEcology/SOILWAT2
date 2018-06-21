@@ -1525,6 +1525,29 @@ void SW_OUT_construct(void)
 }
 
 
+void SW_OUT_deconstruct(void)
+{
+	OutKey k;
+	IntU i;
+
+	ForEachOutKey(k)
+	{
+		for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++)
+		{
+			if (!isnull(colnames_OUT[k][i]))
+			{
+				Mem_Free(colnames_OUT[k][i]);
+				colnames_OUT[k][i] = NULL;
+			}
+		}
+	}
+
+	#ifdef SW_OUTARRAY
+	SW_OUT_deconstruct_outarray();
+	#endif
+}
+
+
 
 void SW_OUT_set_ncol(void) {
 	int tLayers = SW_Site.n_layers;

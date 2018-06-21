@@ -636,8 +636,10 @@ void SW_VPD_construct(void) {
 	{
 		SW_VegProd.p_accu[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
 			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()");
-		SW_VegProd.p_oagg[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()");
+		if (pd > eSW_Day) {
+			SW_VegProd.p_oagg[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
+				sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()");
+		}
 	}
 
 	/* initialize the co2-multipliers */
@@ -651,6 +653,24 @@ void SW_VPD_construct(void) {
   }
 }
 
+void SW_VPD_deconstruct(void)
+{
+	OutPeriod pd;
+
+	// De-allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		if (pd > eSW_Day && !isnull(SW_VegProd.p_oagg[pd])) {
+			Mem_Free(SW_VegProd.p_oagg[pd]);
+			SW_VegProd.p_oagg[pd] = NULL;
+		}
+
+		if (!isnull(SW_VegProd.p_accu[pd])) {
+			Mem_Free(SW_VegProd.p_accu[pd]);
+			SW_VegProd.p_accu[pd] = NULL;
+		}
+	}
+}
 
 /**
  * @brief Applies CO2 effects to supplied biomass data.

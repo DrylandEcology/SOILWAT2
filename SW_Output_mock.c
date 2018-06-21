@@ -45,6 +45,9 @@ SW_OUTPUT SW_Output[SW_OUTNKEYS]; /* declared here, externed elsewhere */
 void SW_OUT_construct(void)
 {}
 
+void SW_OUT_deconstruct(void)
+{}
+
 void SW_OUT_new_year(void)
 {}
 

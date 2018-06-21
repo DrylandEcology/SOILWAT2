@@ -34,6 +34,7 @@ typedef enum {
 void SW_F_read(const char *s);
 char *SW_F_name(SW_FileIndex i);
 void SW_F_construct(const char *firstfile);
+void SW_F_deconstruct(void);
 void SW_WeatherPrefix(char prefix[]);
 void SW_OutputPrefix(char prefix[]);
 void SW_CSV_F_INIT(const char *s);

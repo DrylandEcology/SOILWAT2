@@ -33,6 +33,7 @@
 #include "SW_Model.h"
 #include "SW_Output.h"
 #include "SW_Site.h"
+#include "SW_Flow.h"
 #include "SW_SoilWater.h"
 #include "SW_VegEstab.h"
 #include "SW_VegProd.h"
@@ -54,8 +55,6 @@ static void _begin_year(void);
 static void _begin_day(void);
 static void _end_day(void);
 
-/* Dummy declaration for Flow constructor defined in SW_Flow.c */
-void SW_FLW_construct(void);
 
 /*******************************************************/
 /***************** Begin Main Code *********************/
@@ -92,6 +91,24 @@ void SW_CTL_init_model(const char *firstfile) {
 	SW_FLW_construct();
 	SW_CBN_construct();
 }
+
+
+/** @brief Free all allocated memory
+*/
+void SW_CTL_clear_model(void) {
+	SW_F_deconstruct();
+	SW_MDL_deconstruct();
+	SW_WTH_deconstruct();
+	SW_SIT_deconstruct();
+	SW_VES_deconstruct();
+	SW_VPD_deconstruct();
+	SW_OUT_deconstruct();
+	SW_SWC_deconstruct();
+	SW_FLW_deconstruct();
+	SW_CBN_deconstruct();
+}
+
+
 
 void SW_CTL_run_current_year(void) {
   /*=======================================================*/

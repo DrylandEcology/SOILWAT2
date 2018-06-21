@@ -33,7 +33,7 @@
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-char *MyFileName;
+static char *MyFileName;
 char *InFiles[SW_NFILES];
 char _ProjDir[FILENAME_MAX];
 char weather_prefix[FILENAME_MAX];
@@ -242,6 +242,17 @@ void SW_F_construct(const char *firstfile) {
 	} else
 		_ProjDir[0] = '\0';
 
+}
+
+void SW_F_deconstruct(void) {
+	IntUS i;
+
+	for (i = 0; i < SW_NFILES; i++)
+	{
+		if (!isnull(InFiles[i])) {
+			Mem_Free(InFiles[i]);
+		}
+	}
 }
 
 

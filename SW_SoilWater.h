@@ -128,6 +128,7 @@ typedef struct {
 } SW_SOILWAT;
 
 void SW_SWC_construct(void);
+void SW_SWC_deconstruct(void);
 void SW_SWC_new_year(void);
 void SW_SWC_read(void);
 void _read_swc_hist(TimeInt year);

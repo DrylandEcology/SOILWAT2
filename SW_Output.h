@@ -184,6 +184,7 @@ typedef struct {
 
 // Function declarations
 void SW_OUT_construct(void);
+void SW_OUT_deconstruct(void);
 void SW_OUT_set_ncol(void);
 void SW_OUT_set_colnames(void);
 void SW_OUT_new_year(void);

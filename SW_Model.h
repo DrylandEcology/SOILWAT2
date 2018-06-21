@@ -50,6 +50,7 @@ typedef struct {
 
 void SW_MDL_read(void);
 void SW_MDL_construct(void);
+void SW_MDL_deconstruct(void);
 void SW_MDL_new_year(void);
 void SW_MDL_new_day(void);
 

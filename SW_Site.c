@@ -209,7 +209,11 @@ void SW_SIT_construct(void) {
 	 * before clearing structure.
 	 */
 	memset(&SW_Site, 0, sizeof(SW_Site));
+}
 
+void SW_SIT_deconstruct(void)
+{
+	SW_SIT_clear_layers();
 }
 
 void SW_SIT_read(void) {

@@ -138,6 +138,7 @@ void calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel, LyrInd
 void init_site_info(void);
 void SW_SIT_read(void);
 void SW_SIT_construct(void);
+void SW_SIT_deconstruct(void);
 void _echo_inputs(void);
 
 /* these used to be in Layers */

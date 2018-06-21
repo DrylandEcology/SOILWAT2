@@ -72,9 +72,8 @@ int main(int argc, char **argv) {
 
 	SW_CTL_main();
 
-	SW_SIT_clear_layers();
-	SW_WTH_clear_runavg_list();
 	SW_OUT_close_files(); // not used with rSOILWAT2
+	SW_CTL_clear_model(); // de-allocate all memory
 
 	return 0;
 }

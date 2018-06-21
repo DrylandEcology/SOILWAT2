@@ -137,6 +137,29 @@ void SW_OUT_set_nrow(void)
 	#endif
 }
 
+void SW_OUT_deconstruct_outarray(void)
+{
+	IntUS i;
+	OutKey k;
+
+	ForEachOutKey(k) {
+		for (i = 0; i < SW_OUTNPERIODS; i++) {
+			if (!isnull(p_OUT[k][timeSteps[k][i]])) {
+				Mem_Free(p_OUT[k][timeSteps[k][i]]);
+				p_OUT[k][timeSteps[k][i]] = NULL;
+			}
+
+			#ifdef STEPWAT
+			if (!isnull(p_OUTsd[k][timeSteps[k][i]])) {
+				Mem_Free(p_OUTsd[k][timeSteps[k][i]]);
+				p_OUTsd[k][timeSteps[k][i]] = NULL;
+			}
+			#endif
+		}
+	}
+
+}
+
 
 #ifdef RSOILWAT
 /** @brief Corresponds to function `get_outstrleader` of `SOILWAT2-standalone`

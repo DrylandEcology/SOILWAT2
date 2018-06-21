@@ -155,9 +155,36 @@ void SW_WTH_construct(void) {
 	{
 		SW_Weather.p_accu[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
 			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()");
-		SW_Weather.p_oagg[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()");
+		if (pd > eSW_Day) {
+			SW_Weather.p_oagg[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
+				sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()");
+		}
 	}
+}
+
+void SW_WTH_deconstruct(void)
+{
+	OutPeriod pd;
+
+	// De-allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		if (pd > eSW_Day && !isnull(SW_Weather.p_oagg[pd])) {
+			Mem_Free(SW_Weather.p_oagg[pd]);
+			SW_Weather.p_oagg[pd] = NULL;
+		}
+
+		if (!isnull(SW_Weather.p_accu[pd])) {
+			Mem_Free(SW_Weather.p_accu[pd]);
+			SW_Weather.p_accu[pd] = NULL;
+		}
+	}
+
+	if (SW_Weather.use_markov) {
+		SW_MKV_deconstruct();
+	}
+
+	SW_WTH_clear_runavg_list();
 }
 
 void SW_WTH_init(void) {

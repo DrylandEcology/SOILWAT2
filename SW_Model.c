@@ -39,6 +39,7 @@
 #include "filefuncs.h"
 #include "rands.h"
 #include "Times.h"
+#include "myMemory.h"
 
 #include "SW_Defines.h"
 #include "SW_Files.h"
@@ -92,6 +93,9 @@ void SW_MDL_construct(void) {
 	RandSeed(0);
 #endif
 }
+
+void SW_MDL_deconstruct(void)
+{}
 
 void SW_MDL_read(void) {
 	/* =================================================== */

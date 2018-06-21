@@ -17,6 +17,7 @@
 #include <string.h>
 #include "generic.h"
 #include "filefuncs.h"
+#include "myMemory.h"
 #include "SW_Defines.h"
 #include "SW_Times.h"
 #include "SW_Files.h"
@@ -58,6 +59,10 @@ extern SW_MODEL SW_Model;
 void SW_CBN_construct(void)
 {
   memset(&SW_Carbon, 0, sizeof(SW_Carbon));
+}
+
+void SW_CBN_deconstruct(void)
+{
 }
 
 

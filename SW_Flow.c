@@ -193,8 +193,6 @@ static void arrays2records(void);
  * not always occur.
  */
 
-void SW_FLW_construct(void);
-void SW_Water_Flow(void);
 
 void SW_FLW_construct(void) {
 	/* 06/26/2013	(rjm) added function SW_FLW_construct() to init global variables between consecutive calls to SoilWat as dynamic library */
@@ -237,6 +235,9 @@ void SW_FLW_construct(void) {
 		veg_h2o_qum[k][0] = veg_h2o_qum[k][1] = 0.;
 	}
 }
+
+void SW_FLW_deconstruct(void)
+{}
 
 /* *************************************************** */
 /* *************************************************** */

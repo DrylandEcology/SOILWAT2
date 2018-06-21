@@ -155,6 +155,50 @@ void SW_MKV_construct(void) {
 	m->cfnd = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 }
 
+void SW_MKV_deconstruct(void)
+{
+	if (!isnull(SW_Markov.wetprob)) {
+		Mem_Free(SW_Markov.wetprob);
+		SW_Markov.wetprob = NULL;
+	}
+
+	if (!isnull(SW_Markov.dryprob)) {
+		Mem_Free(SW_Markov.dryprob);
+		SW_Markov.dryprob = NULL;
+	}
+
+	if (!isnull(SW_Markov.avg_ppt)) {
+		Mem_Free(SW_Markov.avg_ppt);
+		SW_Markov.avg_ppt = NULL;
+	}
+
+	if (!isnull(SW_Markov.std_ppt)) {
+		Mem_Free(SW_Markov.std_ppt);
+		SW_Markov.std_ppt = NULL;
+	}
+
+	if (!isnull(SW_Markov.cfxw)) {
+		Mem_Free(SW_Markov.cfxw);
+		SW_Markov.cfxw = NULL;
+	}
+
+	if (!isnull(SW_Markov.cfxd)) {
+		Mem_Free(SW_Markov.cfxd);
+		SW_Markov.cfxd = NULL;
+	}
+
+	if (!isnull(SW_Markov.cfnw)) {
+		Mem_Free(SW_Markov.cfnw);
+		SW_Markov.cfnw = NULL;
+	}
+
+	if (!isnull(SW_Markov.cfnd)) {
+		Mem_Free(SW_Markov.cfnd);
+		SW_Markov.cfnd = NULL;
+	}
+}
+
+
 void SW_MKV_today(TimeInt doy, RealD *tmax, RealD *tmin, RealD *rain) {
 	/* =================================================== */
 	/* enter with rain == yesterday's ppt, doy as array index
