@@ -229,7 +229,6 @@ void _create_filename_ST(char *str, char *flag, int iteration, char *filename) {
 	strcpy(fileDup, str); // copy file name to new variable
 	basename = strtok(fileDup, ".");
 	ext = strtok(NULL, ".");
-	free(fileDup);
 
 	// Put new file together
 	if (iteration > 0) {
@@ -237,6 +236,8 @@ void _create_filename_ST(char *str, char *flag, int iteration, char *filename) {
 	} else {
 		sprintf(filename, "%s_%s.%s", basename, flag, ext);
 	}
+
+	free(fileDup);
 }
 
 
