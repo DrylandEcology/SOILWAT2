@@ -631,12 +631,6 @@ void SW_VPD_construct(void) {
 	// Clear the module structure:
 	memset(&SW_VegProd, 0, sizeof(SW_VegProd));
 
-	// Allocate output pointers: `array` of size SW_OUTNPERIODS
-	SW_VegProd.p_accu = (SW_VEGPROD_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
-		sizeof(SW_VEGPROD_OUTPUTS *), "SW_VPD_construct()");
-	SW_VegProd.p_oagg = (SW_VEGPROD_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
-		sizeof(SW_VEGPROD_OUTPUTS *), "SW_VPD_construct()");
-
 	// Allocate output structures:
 	ForEachOutPeriod(pd)
 	{

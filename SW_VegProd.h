@@ -115,8 +115,8 @@ typedef struct {
 	int rank_SWPcrits[NVEGTYPES]; // array to store the SWP crits in order of lest negative to most negative (used in STEPWAT2/sxw_resource)
 
 	SW_VEGPROD_OUTPUTS
-		**p_accu, // output accumulator: summed values for each time period
-		**p_oagg; // output aggregator: mean or sum for each time periods
+		*p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time period
+		*p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
 
 	Bool use_SWA;
 } SW_VEGPROD;

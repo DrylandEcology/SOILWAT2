@@ -120,8 +120,8 @@ typedef struct {
   #endif
 
 	SW_SOILWAT_OUTPUTS
-		**p_accu, // output accumulator: summed values for each time period
-		**p_oagg; // output aggregator: mean or sum for each time periods
+		*p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time period
+		*p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
 	Bool hist_use;
 	SW_SOILWAT_HIST hist;
 

@@ -89,12 +89,6 @@ void SW_VES_construct(void) {
 	// Clear the module structure:
 	memset(&SW_VegEstab, 0, sizeof(SW_VegEstab));
 
-	// Allocate output pointers: `array` of size SW_OUTNPERIODS
-	SW_VegEstab.p_accu = (SW_VEGESTAB_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
-		sizeof(SW_VEGESTAB_OUTPUTS *), "SW_VES_construct()");
-	SW_VegEstab.p_oagg = (SW_VEGESTAB_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
-		sizeof(SW_VEGESTAB_OUTPUTS *), "SW_VES_construct()");
-
 	// Allocate output structures:
 	ForEachOutPeriod(pd)
 	{

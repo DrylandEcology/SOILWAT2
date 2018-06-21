@@ -150,12 +150,6 @@ void SW_WTH_construct(void) {
 	// Clear the module structure:
 	memset(&SW_Weather, 0, sizeof(SW_Weather));
 
-	// Allocate output pointers: `array` of size SW_OUTNPERIODS
-	SW_Weather.p_accu = (SW_WEATHER_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
-		sizeof(SW_WEATHER_OUTPUTS *), "SW_WTH_construct()");
-	SW_Weather.p_oagg = (SW_WEATHER_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
-		sizeof(SW_WEATHER_OUTPUTS *), "SW_WTH_construct()");
-
 	// Allocate output structures:
 	ForEachOutPeriod(pd)
 	{

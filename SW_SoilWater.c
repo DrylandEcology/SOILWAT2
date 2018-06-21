@@ -309,12 +309,6 @@ void SW_SWC_construct(void) {
 	// Clear the module structure:
 	memset(&SW_Soilwat, 0, sizeof(SW_SOILWAT));
 
-	// Allocate output pointers: `array` of size SW_OUTNPERIODS
-	SW_Soilwat.p_accu = (SW_SOILWAT_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
-		sizeof(SW_SOILWAT_OUTPUTS *), "SW_SWC_construct()");
-	SW_Soilwat.p_oagg = (SW_SOILWAT_OUTPUTS **) Mem_Calloc(SW_OUTNPERIODS,
-		sizeof(SW_SOILWAT_OUTPUTS *), "SW_SWC_construct()");
-
 	// Allocate output structures:
 	ForEachOutPeriod(pd)
 	{
