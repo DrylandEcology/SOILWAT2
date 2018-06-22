@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
 	SW_CTL_main();
 
 	SW_OUT_close_files(); // not used with rSOILWAT2
-	SW_CTL_clear_model(); // de-allocate all memory
+	SW_CTL_clear_model(swTRUE); // de-allocate all memory
 
 	return 0;
 }

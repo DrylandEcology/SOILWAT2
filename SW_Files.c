@@ -251,6 +251,7 @@ void SW_F_deconstruct(void) {
 	{
 		if (!isnull(InFiles[i])) {
 			Mem_Free(InFiles[i]);
+			InFiles[i] = NULL;
 		}
 	}
 }

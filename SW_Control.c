@@ -93,16 +93,21 @@ void SW_CTL_init_model(const char *firstfile) {
 }
 
 
-/** @brief Free all allocated memory
+/** @brief Free allocated memory
+		@param full_reset.
+			* If `FALSE`, de-allocate memory for `SOILWAT2` variables, but do not
+				reset output arrays `p_OUT` and `p_OUTsd` which are used under
+				`SW_OUTARRAY` to pass output in-memory to `rSOILWAT2` and to `STEPWAT2`.
+			* if `TRUE`, de-allocate all memory including output arrays.
 */
-void SW_CTL_clear_model(void) {
+void SW_CTL_clear_model(Bool full_reset) {
 	SW_F_deconstruct();
 	SW_MDL_deconstruct();
 	SW_WTH_deconstruct();
 	SW_SIT_deconstruct();
 	SW_VES_deconstruct();
 	SW_VPD_deconstruct();
-	SW_OUT_deconstruct();
+	SW_OUT_deconstruct(full_reset);
 	SW_SWC_deconstruct();
 	SW_FLW_deconstruct();
 	SW_CBN_deconstruct();

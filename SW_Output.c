@@ -1520,7 +1520,7 @@ void SW_OUT_construct(void)
 }
 
 
-void SW_OUT_deconstruct(void)
+void SW_OUT_deconstruct(Bool full_reset)
 {
 	OutKey k;
 	IntU i;
@@ -1538,7 +1538,11 @@ void SW_OUT_deconstruct(void)
 	}
 
 	#ifdef SW_OUTARRAY
-	SW_OUT_deconstruct_outarray();
+	if (full_reset) {
+		SW_OUT_deconstruct_outarray();
+	}
+	#else
+	if (full_reset) {} // avoid ``-Wunused-parameter` warning
 	#endif
 }
 
