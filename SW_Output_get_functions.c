@@ -100,8 +100,8 @@ extern char sw_outstr_agg[];
 #ifdef SW_OUTARRAY
 extern RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 extern IntUS ncol_TimeOUT[];
-extern IntU nrow_OUT[];
-extern IntU irow_OUT[];
+extern size_t nrow_OUT[];
+extern size_t irow_OUT[];
 #endif
 #ifdef STEPWAT
 extern RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
@@ -129,7 +129,7 @@ static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
 static void format_IterationSummary(RealD *p, RealD *psd, OutPeriod pd, IntUS N)
 {
 	IntUS i;
-	IntU n;
+	size_t n;
 	RealD sd;
 	char str[OUTSTRLEN];
 
@@ -148,7 +148,7 @@ static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
 	IntUS N1, IntUS N2, IntUS offset)
 {
 	IntUS k, i;
-	IntU n;
+	size_t n;
 	RealD sd;
 	char str[OUTSTRLEN];
 

@@ -68,8 +68,8 @@ RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
 Bool prepare_IterationSummary;
 #endif
 
-IntU nrow_OUT[SW_OUTNPERIODS]; // number of years/months/weeks/days
-IntU irow_OUT[SW_OUTNPERIODS]; // row index of current year/month/week/day output; incremented at end of each day
+size_t nrow_OUT[SW_OUTNPERIODS]; // number of years/months/weeks/days
+size_t irow_OUT[SW_OUTNPERIODS]; // row index of current year/month/week/day output; incremented at end of each day
 const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time header columns for each output period
 
 
@@ -102,7 +102,8 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time hea
 void SW_OUT_set_nrow(void)
 {
 	TimeInt i;
-	IntU n_yrs, startyear, endyear;
+	size_t n_yrs;
+	IntU startyear, endyear;
 	#ifdef SWDEBUG
 	int debug = 0;
 	#endif
@@ -212,7 +213,7 @@ void get_outvalleader(RealD *p, OutPeriod pd) {
 		@param n. The current iteration/repetition number (base1).
 		@param x. The new value.
 */
-void do_running_agg(RealD *p, RealD *psd, IntU k, IntU n, RealD x)
+void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
 {
 	RealD prev_val = p[k];
 
@@ -231,7 +232,7 @@ void do_running_agg(RealD *p, RealD *psd, IntU k, IntU n, RealD x)
 void setGlobalSTEPWAT2_OutputVariables(void)
 {
 	IntUS i;
-	IntU size;
+	size_t size;
 	OutKey k;
 
 	ForEachOutKey(k) {
