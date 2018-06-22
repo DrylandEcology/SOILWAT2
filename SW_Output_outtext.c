@@ -252,8 +252,8 @@ void _create_filename_ST(char *str, char *flag, int iteration, char *filename) {
 
   If `-o` flag is used, then this function creates only one set of output files.
 
-  \param iteration. Current iteration value that is used for the file name
-    if -i flag used in STEPWAT2. Set to a negative value otherwise.
+  \param iteration. Current iteration value (base1) that is used for the file
+    name if -i flag used in STEPWAT2. Set to a negative value otherwise.
   \param pd. The output time step.
 */
 /***********************************************************/
@@ -279,7 +279,7 @@ void _create_csv_file_ST(int iteration, OutPeriod pd)
 
 	} else
 	{ // STEPWAT2: storing values for every iteration
-		if (iteration > 0) {
+		if (iteration > 1) {
 			// close files from previous iteration
 			if (SW_OutFiles.make_regular) {
 				CloseFile(&SW_OutFiles.fp_reg[pd]);
