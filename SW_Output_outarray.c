@@ -53,7 +53,8 @@ extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
 
 // defined here:
 
-// 2-dim array of pointers to 2-dim output arrays
+// 2-dim array of pointers to output arrays; initialized to NULL because they
+// are defined globally and thus have `static storage duration`
 // `p_OUT` used by rSOILWAT2 for output and by STEPWAT2 for mean aggregation
 RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
@@ -163,16 +164,12 @@ void SW_OUT_deconstruct_outarray(void)
 
 	ForEachOutKey(k) {
 		for (i = 0; i < SW_OUTNPERIODS; i++) {
-			if (!isnull(p_OUT[k][timeSteps[k][i]])) {
-				Mem_Free(p_OUT[k][timeSteps[k][i]]);
-				p_OUT[k][timeSteps[k][i]] = NULL;
-			}
+			Mem_Free(p_OUT[k][i]);
+			p_OUT[k][i] = NULL;
 
 			#ifdef STEPWAT
-			if (!isnull(p_OUTsd[k][timeSteps[k][i]])) {
-				Mem_Free(p_OUTsd[k][timeSteps[k][i]]);
-				p_OUTsd[k][timeSteps[k][i]] = NULL;
-			}
+			Mem_Free(p_OUTsd[k][i]);
+			p_OUTsd[k][i] = NULL;
 			#endif
 		}
 	}
@@ -232,7 +229,9 @@ void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
 void setGlobalSTEPWAT2_OutputVariables(void)
 {
 	IntUS i;
-	size_t size;
+	size_t
+		size,
+		s = sizeof(RealD);
 	OutKey k;
 
 	ForEachOutKey(k) {
@@ -240,10 +239,10 @@ void setGlobalSTEPWAT2_OutputVariables(void)
 			size = nrow_OUT[timeSteps[k][i]] *
 				(ncol_OUT[k] + ncol_TimeOUT[timeSteps[k][i]]);
 
-			p_OUT[k][timeSteps[k][i]] = (RealD *) Mem_Calloc(size, sizeof(RealD *),
+			p_OUT[k][timeSteps[k][i]] = (RealD *) Mem_Calloc(size, s,
 				"setGlobalSTEPWAT2_OutputVariables()");
 
-			p_OUTsd[k][timeSteps[k][i]] = (RealD *) Mem_Calloc(size, sizeof(RealD *),
+			p_OUTsd[k][timeSteps[k][i]] = (RealD *) Mem_Calloc(size, s,
 				"setGlobalSTEPWAT2_OutputVariables()");
 		}
 	}
