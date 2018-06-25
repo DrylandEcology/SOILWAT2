@@ -1110,7 +1110,9 @@ void find_OutPeriods_inUse(void)
 
 	ForEachOutKey(k) {
 		for (i = 0; i < used_OUTNPERIODS; i++) {
-			use_OutPeriod[timeSteps[k][i]] = swTRUE;
+			if (SW_Output[k].use) {
+				use_OutPeriod[timeSteps[k][i]] = swTRUE;
+			}
 		}
 	}
 }
