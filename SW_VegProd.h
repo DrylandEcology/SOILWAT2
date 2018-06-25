@@ -112,7 +112,9 @@ typedef struct {
 
 	RealD critSoilWater[NVEGTYPES]; // storing values in same order as defined in STEPWAT2/rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
 
-	int rank_SWPcrits[NVEGTYPES]; // array to store the SWP crits in order of lest negative to most negative (used in STEPWAT2/sxw_resource)
+	// `rank_SWPcrits[k]` hold the vegetation type at rank `k` of decreasingly
+	// sorted critical SWP values
+	int rank_SWPcrits[NVEGTYPES];
 
 	SW_VEGPROD_OUTPUTS
 		*p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time period
