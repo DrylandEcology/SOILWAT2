@@ -1529,12 +1529,18 @@ void SW_OUT_deconstruct(Bool full_reset)
 	{
 		for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++)
 		{
-			if (!isnull(colnames_OUT[k][i]))
-			{
+			if (!isnull(colnames_OUT[k][i])) {
 				Mem_Free(colnames_OUT[k][i]);
 				colnames_OUT[k][i] = NULL;
 			}
 		}
+
+		#ifdef RSOILWAT
+		if (!isnull(SW_Output[k].outfile)) {
+			Mem_Free(SW_Output[k].outfile);
+			SW_Output[k].outfile = NULL;
+		}
+		#endif
 	}
 
 	#ifdef SW_OUTARRAY
@@ -2052,6 +2058,14 @@ void SW_OUT_read(void)
 
 		// Convert strings to index numbers
 		k = str2key(Str_ToUpper(keyname, upkey));
+
+		// For now: rSOILWAT2's function `onGet_SW_OUT` requires that
+		// `SW_Output[k].outfile` is allocated here
+		#if defined(RSOILWAT)
+		SW_Output[k].outfile = (char *) Str_Dup(outfile);
+		#else
+		outfile[0] = '\0';
+		#endif
 
 		// Fill information into `SW_Output[k]`
 		msg_type = SW_OUT_read_onekey(k,
