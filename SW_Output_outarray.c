@@ -236,14 +236,17 @@ void setGlobalSTEPWAT2_OutputVariables(void)
 
 	ForEachOutKey(k) {
 		for (i = 0; i < used_OUTNPERIODS; i++) {
-			size = nrow_OUT[timeSteps[k][i]] *
-				(ncol_OUT[k] + ncol_TimeOUT[timeSteps[k][i]]);
+			if (SW_Output[k].use && timeSteps[k][i] != SW_MISSING)
+			{
+				size = nrow_OUT[timeSteps[k][i]] *
+					(ncol_OUT[k] + ncol_TimeOUT[timeSteps[k][i]]);
 
-			p_OUT[k][timeSteps[k][i]] = (RealD *) Mem_Calloc(size, s,
-				"setGlobalSTEPWAT2_OutputVariables()");
+				p_OUT[k][timeSteps[k][i]] = (RealD *) Mem_Calloc(size, s,
+					"setGlobalSTEPWAT2_OutputVariables()");
 
-			p_OUTsd[k][timeSteps[k][i]] = (RealD *) Mem_Calloc(size, s,
-				"setGlobalSTEPWAT2_OutputVariables()");
+				p_OUTsd[k][timeSteps[k][i]] = (RealD *) Mem_Calloc(size, s,
+					"setGlobalSTEPWAT2_OutputVariables()");
+			}
 		}
 	}
 }
