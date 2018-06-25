@@ -479,7 +479,6 @@ void SW_VPD_read(void) {
 					SW_VegProd.critSoilWater[k] = help_veg[k]; // for use with get_swa for properly partitioning available soilwater
 				}
 				get_critical_rank();
-
 				break;
 
 			/* CO2 Biomass Power Equation */
@@ -786,12 +785,6 @@ void SW_VPD_init(void) {
 				v->veg[k].total_agb_daily[doy] = 0.;
 			}
 		}
-		// function called here for rSOILWAT since the SW_VPD_read() function not called when rSOILWAT2 run
-		#ifdef RSOILWAT
-			// Only want to call function once, only checking that 2 are 0 because before function is run all == 0 but after run only 1 value will be 0.
-			if(SW_VegProd.rank_SWPcrits[0] == 0 && SW_VegProd.rank_SWPcrits[1] == 0)
-				get_critical_rank();
-		#endif
 }
 
 void _echo_VegProd(void) {
