@@ -167,32 +167,27 @@ void SW_CTL_run_current_year(void) {
   #endif
 }
 
+/** @brief Initiate/update variables for a new simulation year.
+    @description In addition to the timekeeper (Model), usually only modules
+      that read input yearly or produce output need to have this call.
+*/
 static void _begin_year(void) {
-	/*=======================================================*/
-	/* in addition to the timekeeper (Model), usually only
-	 * modules that read input yearly or produce output need
-	 * to have this call */
-	 SW_MDL_new_year();
-	 SW_WTH_new_year();
-	 SW_SWC_new_year();
-	 SW_VES_new_year();
-	 SW_OUT_new_year();
+	SW_MDL_new_year();
+	SW_WTH_new_year();
+	SW_SWC_new_year();
+	SW_VES_new_year();
+	SW_OUT_new_year();
 
-	 // Dynamic CO2 effects
-	 SW_VPD_init();
-
+	// Dynamic CO2 effects
+	SW_VPD_init();
 }
 
 static void _begin_day(void) {
-	/*=======================================================*/
-
 	SW_MDL_new_day();
 	SW_WTH_new_day();
 }
 
 static void _end_day(void) {
-	/*=======================================================*/
-
 	_collect_values();
 	SW_WTH_end_day();
 	SW_SWC_end_day();
