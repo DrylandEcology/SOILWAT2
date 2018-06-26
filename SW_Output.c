@@ -1025,15 +1025,21 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
 	const char *str)
 {
+	Bool warn = SW_Output[k].use;
+
 	timeSteps_SXW[k][0] = pd;
 	SW_Output[k].use = swTRUE;
 	SW_Output[k].first_orig = 1;
 	SW_Output[k].last_orig = 366;
 
 	if (SW_Output[k].sumtype != aggfun) {
-		LogError(logfp, LOGWARN, "STEPWAT2 requires %s of %s, " \
-			"but this is currently set to '%s': changed to '%s'.",
-			styp2str[aggfun], str, styp2str[SW_Output[k].sumtype], styp2str[aggfun]);
+		if (warn && SW_Output[k].sumtype != eSW_Off)
+		{
+			LogError(logfp, LOGWARN, "STEPWAT2 requires %s of %s, " \
+				"but this is currently set to '%s': changed to '%s'.",
+				styp2str[aggfun], str, styp2str[SW_Output[k].sumtype], styp2str[aggfun]);
+		}
+
 		SW_Output[k].sumtype = aggfun;
 	}
 }
