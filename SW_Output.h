@@ -203,6 +203,12 @@ Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k);
 Bool has_keyname_soillayers(const char *var);
 Bool has_key_soillayers(OutKey k);
 
+#ifdef STEPWAT
+void find_OutPeriods_inUse2(void);
+Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k);
+void SW_OUT_set_SXWrequests(void);
+#endif
+
 
 // Functions that format the output in `sw_outstr` for printing
 /* --------------------------------------------------- */

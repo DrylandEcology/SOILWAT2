@@ -236,7 +236,7 @@ void setGlobalSTEPWAT2_OutputVariables(void)
 
 	ForEachOutKey(k) {
 		for (i = 0; i < used_OUTNPERIODS; i++) {
-			if (SW_Output[k].use && timeSteps[k][i] != SW_MISSING)
+			if (SW_Output[k].use && timeSteps[k][i] != eSW_NoTime)
 			{
 				size = nrow_OUT[timeSteps[k][i]] *
 					(ncol_OUT[k] + ncol_TimeOUT[timeSteps[k][i]]);

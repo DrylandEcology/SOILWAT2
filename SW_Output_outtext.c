@@ -47,8 +47,6 @@ extern SW_OUTPUT SW_Output[];
 extern char _Sep;
 extern TimeInt tOffset;
 
-extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
-extern IntUS used_OUTNPERIODS;
 extern Bool use_OutPeriod[];
 
 extern char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];

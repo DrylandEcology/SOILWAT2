@@ -82,13 +82,16 @@
 #define SW_MONTH_LONG "Month"
 #define SW_YEAR_LONG  "Year"
 
-#define SW_OUTNPERIODS 4  /* must match with enum */
+#define SW_OUTNPERIODS 4  // must match with defines below except `eSW_NoTime`
 #define eSW_Day 0
 #define eSW_Week 1
 #define eSW_Month 2
 #define eSW_Year 3
-// c++ doesn't support (pd)++ for pd as a typedef enum OutPeriod in macro `ForEachOutPeriod`
+#define eSW_NoTime 999 // no time period
+// c++ doesn't support (pd)++ for pd as a typedef enum OutPeriod in
+// macro `ForEachOutPeriod` --> instead, define as type `IntUS`
 typedef IntUS OutPeriod;
+
 
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */

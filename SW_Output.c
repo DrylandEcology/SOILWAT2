@@ -215,14 +215,22 @@ TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
 
 
 // Global variables describing output periods:
-OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];// array to keep track of the periods that will be used for each output
-IntUS used_OUTNPERIODS; // number of different time steps/periods that are used/requested
-Bool use_OutPeriod[SW_OUTNPERIODS]; // TRUE if time step/period is active for any output key
+/** `timeSteps` is the array that keeps track of the output time periods that
+    are required for `text` and/or `array`-based output for each output key. */
+OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
+/** The number of different time steps/periods that are used/requested
+		Note: Under STEPWAT2, this may be larger than the sum of `use_OutPeriod`
+			because it also incorporates information from `timeSteps_SXW`. */
+IntUS used_OUTNPERIODS;
+/** TRUE if time step/period is active for any output key. */
+Bool use_OutPeriod[SW_OUTNPERIODS];
 
 
 // Global variables describing size and names of output
-char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS]; // names of output columns for each output key; number is an expensive guess
-IntUS ncol_OUT[SW_OUTNKEYS]; // number of output columns for each output key
+/** names of output columns for each output key; number is an expensive guess */
+char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
+/** number of output columns for each output key */
+IntUS ncol_OUT[SW_OUTNKEYS];
 
 
 // Text-based output: defined in `SW_Output_outtext.c`:
@@ -243,6 +251,10 @@ extern size_t irow_OUT[];
 
 
 #ifdef STEPWAT
+/** `timeSteps_SXW` is the array that keeps track of the output time periods
+    that are required for `SXW` in-memory output for each output key.
+    Compare with `timeSteps` */
+OutPeriod timeSteps_SXW[SW_OUTNKEYS][SW_OUTNPERIODS];
 extern char sw_outstr_agg[];
 
 /** `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
@@ -325,8 +337,10 @@ static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k);
 static void average_for(ObjType otyp, OutPeriod pd);
 
 #ifdef STEPWAT
-static int check_STEPWAT2_output_requirements(char msg[]);
+static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
+	const char *str);
 #endif
+
 
 /* =================================================== */
 /* =================================================== */
@@ -930,7 +944,7 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 	TimeInt pd = 0;
 	OutKey k;
 	IntUS i;
-	Bool use_KeyPeriodCombo;
+	Bool use_help, use_KeyPeriodCombo;
 
 	switch (op)
 	{
@@ -962,7 +976,13 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 		use_KeyPeriodCombo = swFALSE;
 		for (i = 0; i < used_OUTNPERIODS; i++)
 		{
-			if (op == timeSteps[k][i])
+			use_help = (Bool) op == timeSteps[k][i];
+
+			#ifdef STEPWAT
+			use_help = (Bool) (use_help || op == timeSteps_SXW[k][i]);
+			#endif
+
+			if (use_help)
 			{
 				use_KeyPeriodCombo = swTRUE;
 				break;
@@ -1002,91 +1022,22 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 
 
 #ifdef STEPWAT
-/** @brief Check that STEPWAT2 will receive correct values in `SXW`
-		@description These tests must match with STEPWAT2's `struct stepwat_st`.
-			Currently implemented checks:
-			* monthly summed transpiration
-			* annual mean air temperature
-			* annual and monthly precipitation sum
-			* annual sum of AET
-*/
-static int check_STEPWAT2_output_requirements(char msg[])
+static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
+	const char *str)
 {
-	int i,
-			res = 0; // return value indicating type of message if any
+	timeSteps_SXW[k][0] = pd;
+	SW_Output[k].use = swTRUE;
+	SW_Output[k].first_orig = 1;
+	SW_Output[k].last_orig = 366;
 
-	msg[0] = '\0';
-
-	// Check that STEPWAT2 receives monthly summed transpiration
-	Bool has_monT = swFALSE;
-
-	for (i = 0; i < used_OUTNPERIODS; i++) {
-		if (timeSteps[eSW_Transp][i] == eSW_Month) {
-			has_monT = swTRUE;
-			break;
-		}
+	if (SW_Output[k].sumtype != aggfun) {
+		LogError(logfp, LOGWARN, "STEPWAT2 requires %s of %s, " \
+			"but this is currently set to '%s': changed to '%s'.",
+			styp2str[aggfun], str, styp2str[SW_Output[k].sumtype], styp2str[aggfun]);
+		SW_Output[k].sumtype = aggfun;
 	}
-
-	if (!(has_monT && SW_Output[eSW_Transp].sumtype == eSW_Sum)) {
-		sprintf(msg, "STEPWAT2 requires monthly transpiration sum, " \
-			"but this is currently turned off and/or not the sum.");
-		return(LOGFATAL);
-	}
-
-	// Check that STEPWAT2 receives annual mean air temperature
-	Bool has_annualTemp = swFALSE;
-
-	for (i = 0; i < used_OUTNPERIODS; i++) {
-		if (timeSteps[eSW_Temp][i] == eSW_Year) {
-			has_annualTemp = swTRUE;
-			break;
-		}
-	}
-
-	if (!(has_annualTemp && SW_Output[eSW_Temp].sumtype == eSW_Avg)) {
-		sprintf(msg, "STEPWAT2 requires annual mean air temperature, " \
-			"but this is currently turned off and/or not the mean.");
-		return(LOGFATAL);
-	}
-
-	// Check that STEPWAT2 receives annual and monthly precipitation sum
-	Bool has_annualPPT = swFALSE, has_monthlyPPT = swFALSE;
-
-	for (i = 0; i < used_OUTNPERIODS; i++) {
-		if (timeSteps[eSW_Precip][i] == eSW_Month) {
-			has_monthlyPPT = swTRUE;
-		}
-		if (timeSteps[eSW_Precip][i] == eSW_Year) {
-			has_annualPPT = swTRUE;
-		}
-	}
-
-	if (!(has_monthlyPPT && has_annualPPT && SW_Output[eSW_Precip].sumtype == eSW_Sum)) {
-		sprintf(msg, "STEPWAT2 requires monthly and annual " \
-			"precipitation sum, but these are currently turned off and/or not the sum.");
-		return(LOGFATAL);
-	}
-
-	// Check that STEPWAT2 receives annual sum of AET
-	Bool has_annualAET = swFALSE;
-
-	for (i = 0; i < used_OUTNPERIODS; i++) {
-		if (timeSteps[eSW_AET][i] == eSW_Year) {
-			has_annualAET = swTRUE;
-			break;
-		}
-	}
-
-	if (!(has_annualAET && SW_Output[eSW_AET].sumtype == eSW_Sum)) {
-		sprintf(msg, "STEPWAT2 requires annual AET sum, " \
-			"but this is currently turned off and/or not the sum.");
-		return(LOGFATAL);
-	}
-
-	return(res);
 }
 #endif
-
 
 
 /* =================================================== */
@@ -1096,7 +1047,9 @@ static int check_STEPWAT2_output_requirements(char msg[])
 
 
 
-/** Tally for which output time periods at least one output key/type is active
+/** @brief Tally for which output time periods at least one output key/type is active
+		@inputs `SW_Output[k].use` and `timeSteps`
+		@sideeffects Set elements of `use_OutPeriod[]`
 */
 void find_OutPeriods_inUse(void)
 {
@@ -1110,8 +1063,12 @@ void find_OutPeriods_inUse(void)
 
 	ForEachOutKey(k) {
 		for (i = 0; i < used_OUTNPERIODS; i++) {
-			if (SW_Output[k].use) {
-				use_OutPeriod[timeSteps[k][i]] = swTRUE;
+			if (SW_Output[k].use)
+			{
+				if (timeSteps[k][i] != eSW_NoTime)
+				{
+					use_OutPeriod[timeSteps[k][i]] = swTRUE;
+				}
 			}
 		}
 	}
@@ -1132,15 +1089,82 @@ Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k)
 	return has_timeStep;
 }
 
+#ifdef STEPWAT
+/** Tally for which output time periods at least one output key/type is active
+		while accounting for output needs of `SXW`
+		@inputs: `SW_Output[k].use` and `timeSteps_SXW`
+		@sideeffects
+*/
+void find_OutPeriods_inUse2(void)
+{}
+
+/** Determine whether output period `pd` is active for output key `k` while
+		accounting for output needs of `SXW`
+*/
+Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k)
+{
+	int i;
+	Bool has_timeStep2 = has_OutPeriod_inUse(pd, k);
+
+	if (!has_timeStep2)
+	{
+		for (i = 0; i < used_OUTNPERIODS; i++)
+		{
+			has_timeStep2 = (Bool) has_timeStep2 || timeSteps_SXW[k][i] == pd;
+		}
+	}
+
+	return has_timeStep2;
+}
+
+/** @brief Specify the output requirements so that the correct values are
+		passed in-memory via `SXW` to STEPWAT2
+		@description These must match with STEPWAT2's `struct stepwat_st`.
+			Currently implemented:
+			* monthly summed transpiration
+			* monthly mean bulk soil water content
+			* annual mean air temperature
+			* annual and monthly precipitation sum
+			* annual sum of AET
+		@sideeffects Sets elements of `timeSteps_SXW`, updates `used_OUTNPERIODS`,
+			and adjusts variables `use`, `sumtype` (with a warning), `first_orig`,
+			and `last_orig` of `SW_Output`.
+*/
+void SW_OUT_set_SXWrequests(void)
+{
+	// Update `used_OUTNPERIODS`:
+	// SXW uses up to 2 time periods for the same output key: monthly and yearly
+	used_OUTNPERIODS = max(2, used_OUTNPERIODS);
+
+	// STEPWAT2 requires monthly summed transpiration
+	_set_SXWrequests_helper(eSW_Transp, eSW_Month, eSW_Sum,
+		"monthly transpiration");
+
+	// STEPWAT2 requires monthly mean bulk soil water content
+	_set_SXWrequests_helper(eSW_SWCBulk, eSW_Month, eSW_Avg,
+		"monthly bulk soil water content");
+
+	// STEPWAT2 requires annual mean air temperature
+	_set_SXWrequests_helper(eSW_Temp, eSW_Year, eSW_Avg,
+		"annual air temperature");
+
+	// STEPWAT2 requires annual and monthly precipitation sum
+	_set_SXWrequests_helper(eSW_Transp, eSW_Month, eSW_Sum,
+		"annual and monthly precipitation");
+	timeSteps_SXW[eSW_Precip][1] = eSW_Year;
+
+	// STEPWAT2 requires annual sum of AET
+	_set_SXWrequests_helper(eSW_AET, eSW_Year, eSW_Sum,
+		"annual AET");
+}
+#endif
 
 
 void SW_OUT_construct(void)
 {
 	/* =================================================== */
 	OutKey k;
-	#ifdef SW_OUTARRAY
 	OutPeriod p;
-	#endif
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *s = NULL;
 	int j;
@@ -1191,6 +1215,14 @@ void SW_OUT_construct(void)
 	 */
 	ForEachOutKey(k)
 	{
+		ForEachOutPeriod(p)
+		{
+			timeSteps[k][p] = eSW_NoTime;
+			#ifdef STEPWAT
+			timeSteps_SXW[k][p] = eSW_NoTime;
+			#endif
+		}
+
 		switch (k)
 		{
 		case eSW_Temp:
@@ -1870,10 +1902,12 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
 	SW_Output[k].use = (Bool) (sumtype != eSW_Off);
 
 	// Proceed to next line if output key/type is turned off
+	#ifdef STEPWAT
 	if (!SW_Output[k].use)
 	{
 		return(-1); // return and read next line of `outsetup.in`
 	}
+	#endif
 
 	// Check whether output key/type generates output for each soil layers or not
 	SW_Output[k].has_sl = has_key_soillayers(k);
@@ -2087,14 +2121,17 @@ void SW_OUT_read(void)
 		}
 
 		// Specify which output time periods are requested for this output key/type
-		if (useTimeStep) {
-			// `timeStep` was read in earlier on the `TIMESTEP` line; ignore `period`
-			for (i = 0; i < used_OUTNPERIODS; i++) {
-				timeSteps[k][i] = str2period(Str_ToUpper(timeStep[i], ext));
-			}
+		if (SW_Output[k].use)
+		{
+			if (useTimeStep) {
+				// `timeStep` was read in earlier on the `TIMESTEP` line; ignore `period`
+				for (i = 0; i < used_OUTNPERIODS; i++) {
+					timeSteps[k][i] = str2period(Str_ToUpper(timeStep[i], ext));
+				}
 
-		} else {
-			timeSteps[k][0] = str2period(Str_ToUpper(period, ext));
+			} else {
+				timeSteps[k][0] = str2period(Str_ToUpper(period, ext));
+			}
 		}
 	} //end of while-loop
 
@@ -2105,17 +2142,6 @@ void SW_OUT_read(void)
 	#ifdef STEPWAT
 	// Determine number of used years/months/weeks/days in simulation period
 	SW_OUT_set_nrow();
-
-	// Check that STEPWAT2 will receive correct values in `SXW`
-	msg_type = check_STEPWAT2_output_requirements(msg);
-
-	if (msg_type != 0) {
-		if (msg_type == LOGFATAL) {
-			CloseFile(&f);
-		}
-
-		LogError(logfp, msg_type, "%s", msg);
-	}
 	#endif
 
 	CloseFile(&f);
@@ -2236,7 +2262,10 @@ void SW_OUT_write_today(void)
 	TimeInt t = 0xffff;
 	OutKey k;
 	OutPeriod p;
-	Bool writeit[SW_OUTNPERIODS];
+	Bool writeit[SW_OUTNPERIODS], use_help;
+	#ifdef STEPWAT
+	Bool use_help_txt, use_help_SXW;
+	#endif
 	IntUS i;
 
 	#ifdef SWDEBUG
@@ -2290,45 +2319,64 @@ void SW_OUT_write_today(void)
 
 		for (i = 0; i < used_OUTNPERIODS; i++)
 		{
-			#ifdef SWDEBUG
-			if (debug) swprintf("/%d=%s", timeSteps[k][i], pd2str[timeSteps[k][i]]);
+			use_help = (Bool) (timeSteps[k][i] == eSW_NoTime || !writeit[timeSteps[k][i]]);
+
+			#ifdef STEPWAT
+			use_help_txt = use_help;
+			use_help_SXW = timeSteps_SXW[k][i] == eSW_NoTime || !writeit[timeSteps_SXW[k][i]];
+			use_help = (Bool) use_help_txt && use_help_SXW;
 			#endif
 
-			#ifdef SW_OUTTEXT
-			if (timeSteps[k][i] < eSW_Day || timeSteps[k][i] > eSW_Year) {
-				// RSOILWAT sets off variables to SW_missing so this is not invalid for rSOILWAT2
-				LogError(logfp, LOGWARN,
-					"'SW_OUT_write_today': Invalid period = %d for key = %s",
-					timeSteps[k][i], key2str[k]);
-				continue;
+			if (use_help) {
+				continue; // don't call any `get_XXX` function
 			}
-			#endif
-
-			if (!writeit[timeSteps[k][i]]) {
-				continue;
-			}
-
-			#ifdef SWDEBUG
-			if (debug) swprintf(" call pfunc(s)");
-			#endif
 
 			#ifdef SOILWAT
+			#ifdef SWDEBUG
+			if (debug) swprintf(" call pfunc_text(%d=%s))",
+				timeSteps[k][i], pd2str[timeSteps[k][i]]);
+			#endif
 			((void (*)(OutPeriod)) SW_Output[k].pfunc_text)(timeSteps[k][i]);
 
 			#elif RSOILWAT
+			#ifdef SWDEBUG
+			if (debug) swprintf(" call pfunc_mem(%d=%s))",
+				timeSteps[k][i], pd2str[timeSteps[k][i]]);
+			#endif
 			((void (*)(OutPeriod)) SW_Output[k].pfunc_mem)(timeSteps[k][i]);
 
 			#elif defined(STEPWAT)
-			((void (*)(OutPeriod)) SW_Output[k].pfunc_SXW)(timeSteps[k][i]);
-
-			if (prepare_IterationSummary)
+			if (!use_help_SXW)
 			{
-				((void (*)(OutPeriod)) SW_Output[k].pfunc_agg)(timeSteps[k][i]);
+				#ifdef SWDEBUG
+				if (debug) swprintf(" call pfunc_SXW(%d=%s))",
+					timeSteps_SXW[k][i], pd2str[timeSteps_SXW[k][i]]);
+				#endif
+				((void (*)(OutPeriod)) SW_Output[k].pfunc_SXW)(timeSteps_SXW[k][i]);
 			}
 
-			if (print_SW_Output)
+			if (use_help_txt)
 			{
-				((void (*)(OutPeriod)) SW_Output[k].pfunc_text)(timeSteps[k][i]);
+				continue;  // SXW output complete; skip to next output key
+			}
+			else {
+				if (prepare_IterationSummary)
+				{
+					#ifdef SWDEBUG
+					if (debug) swprintf(" call pfunc_agg(%d=%s))",
+						timeSteps[k][i], pd2str[timeSteps[k][i]]);
+					#endif
+					((void (*)(OutPeriod)) SW_Output[k].pfunc_agg)(timeSteps[k][i]);
+				}
+
+				if (print_SW_Output)
+				{
+					#ifdef SWDEBUG
+					if (debug) swprintf(" call pfunc_text(%d=%s))",
+						timeSteps[k][i], pd2str[timeSteps[k][i]]);
+					#endif
+					((void (*)(OutPeriod)) SW_Output[k].pfunc_text)(timeSteps[k][i]);
+				}
 			}
 			#endif
 
