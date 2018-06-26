@@ -48,6 +48,8 @@ extern char _Sep;
 extern TimeInt tOffset;
 
 extern Bool use_OutPeriod[];
+extern IntUS used_OUTNPERIODS;
+extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
 
 extern char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
 extern IntUS ncol_OUT[];
@@ -184,11 +186,11 @@ void _create_csv_files(OutPeriod pd)
 	// allows subsetting such as `eOutputFile[pd]` or append time period to
 	// a basename, etc.
 
-	if (SW_OutFiles.make_regular) {
+	if (SW_OutFiles.make_regular[pd]) {
 		SW_OutFiles.fp_reg[pd] = OpenFile(SW_F_name(eOutputDaily + pd), "w");
 	}
 
-	if (SW_OutFiles.make_soil) {
+	if (SW_OutFiles.make_soil[pd]) {
 		SW_OutFiles.fp_soil[pd] = OpenFile(SW_F_name(eOutputDaily_soil + pd), "w");
 	}
 }
@@ -261,7 +263,7 @@ void _create_csv_file_ST(int iteration, OutPeriod pd)
 
 	if (iteration <= 0)
 	{ // STEPWAT2: aggregated values over all iterations
-		if (SW_OutFiles.make_regular) {
+		if (SW_OutFiles.make_regular[pd]) {
 			// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
 			// a specific order of `SW_FileIndex` --> fix and create something that
 			// allows subsetting such as `eOutputFile[pd]` or append time period to
@@ -270,7 +272,7 @@ void _create_csv_file_ST(int iteration, OutPeriod pd)
 			SW_OutFiles.fp_reg_agg[pd] = OpenFile(filename, "w");
 		}
 
-		if (SW_OutFiles.make_soil) {
+		if (SW_OutFiles.make_soil[pd]) {
 			_create_filename_ST(SW_F_name(eOutputDaily_soil + pd), "agg", 0, filename);
 			SW_OutFiles.fp_soil_agg[pd] = OpenFile(filename, "w");
 		}
@@ -279,20 +281,20 @@ void _create_csv_file_ST(int iteration, OutPeriod pd)
 	{ // STEPWAT2: storing values for every iteration
 		if (iteration > 1) {
 			// close files from previous iteration
-			if (SW_OutFiles.make_regular) {
+			if (SW_OutFiles.make_regular[pd]) {
 				CloseFile(&SW_OutFiles.fp_reg[pd]);
 			}
-			if (SW_OutFiles.make_soil) {
+			if (SW_OutFiles.make_soil[pd]) {
 				CloseFile(&SW_OutFiles.fp_soil[pd]);
 			}
 		}
 
-		if (SW_OutFiles.make_regular) {
+		if (SW_OutFiles.make_regular[pd]) {
 			_create_filename_ST(SW_F_name(eOutputDaily + pd), "rep", iteration, filename);
 			SW_OutFiles.fp_reg[pd] = OpenFile(filename, "w");
 		}
 
-		if (SW_OutFiles.make_soil) {
+		if (SW_OutFiles.make_soil[pd]) {
 			_create_filename_ST(SW_F_name(eOutputDaily_soil + pd), "rep", iteration, filename);
 			SW_OutFiles.fp_soil[pd] = OpenFile(filename, "w");
 		}
@@ -387,14 +389,45 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_a
 	_create_csv_headers(pd, header_reg, header_soil, does_agg);
 
 	// Write headers to files
-	if (SW_OutFiles.make_regular) {
+	if (SW_OutFiles.make_regular[pd]) {
 		fprintf(fp_reg, "%s%s\n", str_time, header_reg);
 		fflush(fp_reg);
 	}
 
-	if (SW_OutFiles.make_soil) {
+	if (SW_OutFiles.make_soil[pd]) {
 		fprintf(fp_soil, "%s%s\n", str_time, header_soil);
 		fflush(fp_soil);
+	}
+}
+
+
+
+void find_TXToutputSoilReg_inUse(void)
+{
+	IntUS i;
+	OutKey k;
+
+	ForEachOutPeriod(i)
+	{
+		SW_OutFiles.make_soil[i] = swFALSE;
+		SW_OutFiles.make_regular[i] = swFALSE;
+	}
+
+	ForEachOutKey(k)
+	{
+		for (i = 0; i < used_OUTNPERIODS; i++)
+		{
+			if (timeSteps[k][i] != eSW_NoTime)
+			{
+				if (SW_Output[k].has_sl)
+				{
+					SW_OutFiles.make_soil[timeSteps[k][i]] = swTRUE;
+				} else
+				{
+					SW_OutFiles.make_regular[timeSteps[k][i]] = swTRUE;
+				}
+			}
+		}
 	}
 }
 
@@ -403,40 +436,41 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_a
     call this routine at the end of the program run.
 */
 void SW_OUT_close_files(void) {
-  Bool close_regular, close_layers, close_aggs;
-  OutPeriod p;
+	Bool close_regular, close_layers, close_aggs;
+	OutPeriod p;
 
-	#if defined(SOILWAT)
-  close_regular = SW_OutFiles.make_regular;
-  close_layers = SW_OutFiles.make_soil;
-  close_aggs = swFALSE;
 
-	#elif defined(STEPWAT)
-  close_regular = (Bool) (SW_OutFiles.make_regular && storeAllIterations);
-  close_layers = (Bool) (SW_OutFiles.make_soil && storeAllIterations);
-  close_aggs = (Bool) ((SW_OutFiles.make_regular || SW_OutFiles.make_soil)
-    && prepare_IterationSummary);
-	#endif
+	ForEachOutPeriod(p) {
+		#if defined(SOILWAT)
+		close_regular = SW_OutFiles.make_regular[p];
+		close_layers = SW_OutFiles.make_soil[p];
+		close_aggs = swFALSE;
 
-  ForEachOutPeriod(p) {
-    if (use_OutPeriod[p]) {
-      if (close_regular) {
-        CloseFile(&SW_OutFiles.fp_reg[p]);
-      }
+		#elif defined(STEPWAT)
+		close_regular = (Bool) (SW_OutFiles.make_regular[p] && storeAllIterations);
+		close_layers = (Bool) (SW_OutFiles.make_soil[p] && storeAllIterations);
+		close_aggs = (Bool) ((SW_OutFiles.make_regular[p] || SW_OutFiles.make_soil[p])
+			&& prepare_IterationSummary);
+		#endif
 
-      if (close_layers) {
-        CloseFile(&SW_OutFiles.fp_soil[p]);
-      }
+		if (use_OutPeriod[p]) {
+			if (close_regular) {
+				CloseFile(&SW_OutFiles.fp_reg[p]);
+			}
 
-      if (close_aggs) {
-        #ifdef STEPWAT
-        CloseFile(&SW_OutFiles.fp_reg_agg[p]);
+			if (close_layers) {
+				CloseFile(&SW_OutFiles.fp_soil[p]);
+			}
 
-        if (close_layers) {
-          CloseFile(&SW_OutFiles.fp_soil_agg[p]);
-        }
-        #endif
-      }
-    }
-  }
+			if (close_aggs) {
+				#ifdef STEPWAT
+				CloseFile(&SW_OutFiles.fp_reg_agg[p]);
+
+				if (close_layers) {
+					CloseFile(&SW_OutFiles.fp_soil_agg[p]);
+				}
+				#endif
+			}
+		}
+	}
 }

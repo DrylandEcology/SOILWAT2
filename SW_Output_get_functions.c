@@ -74,7 +74,6 @@ extern SW_VEGPROD SW_VegProd;
 extern SW_VEGESTAB SW_VegEstab;
 extern SW_CARBON SW_Carbon;
 
-extern SW_OUTPUT SW_Output[];
 extern IntUS ncol_OUT[];
 
 #ifdef STEPWAT

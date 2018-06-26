@@ -18,7 +18,7 @@
 
 
 typedef struct {
-	Bool make_soil, make_regular;
+	Bool make_soil[SW_OUTNPERIODS], make_regular[SW_OUTNPERIODS];
 
 	#ifdef STEPWAT
 	// average/sd across iteration/repetitions
@@ -56,6 +56,7 @@ void SW_OUT_create_iteration_files(int iteration);
 
 void get_outstrleader(OutPeriod pd, char *str);
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_agg);
+void find_TXToutputSoilReg_inUse(void);
 void SW_OUT_close_files(void);
 
 #endif

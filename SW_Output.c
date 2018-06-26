@@ -1149,7 +1149,7 @@ void SW_OUT_set_SXWrequests(void)
 		"annual air temperature");
 
 	// STEPWAT2 requires annual and monthly precipitation sum
-	_set_SXWrequests_helper(eSW_Transp, eSW_Month, eSW_Sum,
+	_set_SXWrequests_helper(eSW_Precip, eSW_Month, eSW_Sum,
 		"annual and monthly precipitation");
 	timeSteps_SXW[eSW_Precip][1] = eSW_Year;
 
@@ -1178,8 +1178,11 @@ void SW_OUT_construct(void)
 	#endif
 
 	#ifdef SW_OUTTEXT
-	SW_OutFiles.make_soil = swFALSE;
-	SW_OutFiles.make_regular = swFALSE;
+	ForEachOutPeriod(p)
+	{
+		SW_OutFiles.make_soil[p] = swFALSE;
+		SW_OutFiles.make_regular[p] = swFALSE;
+	}
 	#endif
 
 	bFlush_output = swFALSE;
@@ -1223,6 +1226,16 @@ void SW_OUT_construct(void)
 			#endif
 		}
 
+		// default values for `SW_Output`:
+		SW_Output[k].use = swFALSE;
+		SW_Output[k].mykey = k;
+		SW_Output[k].myobj = key2obj[k];
+		SW_Output[k].sumtype = eSW_Off;
+		SW_Output[k].has_sl = has_key_soillayers(k);
+		SW_Output[k].first_orig = 1;
+		SW_Output[k].last_orig = 366;
+
+		// assign `get_XXX` functions
 		switch (k)
 		{
 		case eSW_Temp:
@@ -1902,15 +1915,10 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
 	SW_Output[k].use = (Bool) (sumtype != eSW_Off);
 
 	// Proceed to next line if output key/type is turned off
-	#ifdef STEPWAT
 	if (!SW_Output[k].use)
 	{
 		return(-1); // return and read next line of `outsetup.in`
 	}
-	#endif
-
-	// Check whether output key/type generates output for each soil layers or not
-	SW_Output[k].has_sl = has_key_soillayers(k);
 
 	/* check validity of summary type */
 	if (SW_Output[k].sumtype == eSW_Fnl && !SW_Output[k].has_sl)
@@ -1921,17 +1929,6 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
 			"  Using type AVG instead.", MyFileName, key2str[k]);
 		res = LOGWARN;
 	}
-
-	// Check whether output per soil layer or 'regular' is requested
-	#ifdef SW_OUTTEXT
-	if (SW_Output[k].has_sl)
-	{
-		SW_OutFiles.make_soil = swTRUE;
-	} else
-	{
-		SW_OutFiles.make_regular = swTRUE;
-	}
-	#endif
 
 	// set use_SWA to TRUE if defined.
 	// Used in SW_Control to run the functions to get the recalculated values only if SWA is used
@@ -1970,8 +1967,6 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
 	}
 
 	// Set remaining values of `SW_Output[k]`
-	SW_Output[k].mykey = k;
-	SW_Output[k].myobj = key2obj[k];
 	SW_Output[k].first_orig = first;
 	SW_Output[k].last_orig = last;
 
@@ -2056,7 +2051,20 @@ void SW_OUT_read(void)
 					timeStep[1], timeStep[2], timeStep[3]);	// maximum number of possible timeStep is SW_OUTNPERIODS
 			used_OUTNPERIODS--; // decrement the count to make sure to not count keyname in the number of periods
 
-			useTimeStep = 1;
+			if (used_OUTNPERIODS > 0)
+			{ // make sure that `TIMESTEP` line did contain time periods;
+				// otherwise, use values from the `period` column
+				useTimeStep = 1;
+
+				if (used_OUTNPERIODS > SW_OUTNPERIODS)
+				{
+					CloseFile(&f);
+					LogError(logfp, LOGFATAL, "SW_OUT_read: used_OUTNPERIODS = %d > " \
+						"SW_OUTNPERIODS = %d which is illegal.\n",
+						used_OUTNPERIODS, SW_OUTNPERIODS);
+				}
+			}
+
 			continue; // read next line of `outsetup.in`
 		}
 
@@ -2138,6 +2146,12 @@ void SW_OUT_read(void)
 
 	// Determine which output periods are turned on for at least one output key
 	find_OutPeriods_inUse();
+
+	#ifdef SW_OUTTEXT
+	// Determine for which output periods text output per soil layer or 'regular'
+	// is requested:
+	find_TXToutputSoilReg_inUse();
+	#endif
 
 	#ifdef STEPWAT
 	// Determine number of used years/months/weeks/days in simulation period
@@ -2319,15 +2333,15 @@ void SW_OUT_write_today(void)
 
 		for (i = 0; i < used_OUTNPERIODS; i++)
 		{
-			use_help = (Bool) (timeSteps[k][i] == eSW_NoTime || !writeit[timeSteps[k][i]]);
+			use_help = (Bool) (timeSteps[k][i] != eSW_NoTime && writeit[timeSteps[k][i]]);
 
 			#ifdef STEPWAT
 			use_help_txt = use_help;
-			use_help_SXW = timeSteps_SXW[k][i] == eSW_NoTime || !writeit[timeSteps_SXW[k][i]];
-			use_help = (Bool) use_help_txt && use_help_SXW;
+			use_help_SXW = (Bool) (timeSteps_SXW[k][i] != eSW_NoTime && writeit[timeSteps_SXW[k][i]]);
+			use_help = (Bool) use_help_txt || use_help_SXW;
 			#endif
 
-			if (use_help) {
+			if (!use_help) {
 				continue; // don't call any `get_XXX` function
 			}
 
@@ -2346,7 +2360,7 @@ void SW_OUT_write_today(void)
 			((void (*)(OutPeriod)) SW_Output[k].pfunc_mem)(timeSteps[k][i]);
 
 			#elif defined(STEPWAT)
-			if (!use_help_SXW)
+			if (use_help_SXW)
 			{
 				#ifdef SWDEBUG
 				if (debug) swprintf(" call pfunc_SXW(%d=%s))",
@@ -2355,9 +2369,9 @@ void SW_OUT_write_today(void)
 				((void (*)(OutPeriod)) SW_Output[k].pfunc_SXW)(timeSteps_SXW[k][i]);
 			}
 
-			if (use_help_txt)
+			if (!use_help_txt)
 			{
-				continue;  // SXW output complete; skip to next output key
+				continue;  // SXW output complete; skip to next output period
 			}
 			else {
 				if (prepare_IterationSummary)
@@ -2418,7 +2432,7 @@ void SW_OUT_write_today(void)
 		{
 			get_outstrleader(p, str_time);
 
-			if (SW_OutFiles.make_regular)
+			if (SW_OutFiles.make_regular[p])
 			{
 				if (print_SW_Output) {
 					fprintf(SW_OutFiles.fp_reg[p], "%s%s\n",
@@ -2436,7 +2450,7 @@ void SW_OUT_write_today(void)
 				#endif
 			}
 
-			if (SW_OutFiles.make_soil)
+			if (SW_OutFiles.make_soil[p])
 			{
 				if (print_SW_Output) {
 					fprintf(SW_OutFiles.fp_soil[p], "%s%s\n",
