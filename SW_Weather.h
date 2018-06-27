@@ -39,7 +39,6 @@
 typedef struct {
 	/* comes from markov weather day-to-day */
 	RealD temp_avg[TWO_DAYS], temp_max[TWO_DAYS], temp_min[TWO_DAYS],
-	// currently commented out: temp_run_avg[TWO_DAYS], temp_yr_avg, gsppt, /* year's avg and growing season ppt for STEPPE */
 	ppt[TWO_DAYS], rain[TWO_DAYS];
 } SW_WEATHER_2DAYS;
 

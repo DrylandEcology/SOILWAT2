@@ -227,8 +227,6 @@ void SW_WTH_new_year(void) {
 	if (!weth_found && firsttime) {
 		wn->temp_max[Today] = wn->temp_min[Today] = wn->ppt[Today] = wn->rain[Today] = 0.;
 		w->snow = w->snowmelt = w->snowloss = 0.;
-		// wn->gsppt = 0.;
-
 		w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
 	}
 
@@ -276,7 +274,6 @@ void SW_WTH_new_day(void) {
 	wn->temp_min[Today] = tmpmin + w->scale_temp_min[month];
 
 	wn->temp_avg[Today] = (wn->temp_max[Today] + wn->temp_min[Today]) / 2.;
-	// wn->temp_run_avg[Today] = _runavg_temp(wn->temp_avg[Today]);
 
 	ppt *= w->scale_precip[month];
 
@@ -289,23 +286,6 @@ void SW_WTH_new_day(void) {
 		SW_SWC_adjust_snow(wn->temp_min[Today], wn->temp_max[Today], wn->ppt[Today],
 		  &wn->rain[Today], &w->snow, &w->snowmelt);
   }
-
-#ifdef STEPWAT
-	/* This is a nice idea but doesn't work as I'd like, so
-	 * I'll go back to letting STEPPE handle it for now.
-
-	 is_warm = (wn->temp_run_avg[Today] > 1.0);
-
-	 is_growingseason = (doy >= m->startstart && doy <= m->daymid)
-	 ? is_warm
-	 : (is_growingseason && is_warm);
-	 if (doy >= m->startstart && doy <= m->daymid && is_growingseason)
-	 wn->gsppt = wn->gsppt + wn->ppt[Today];
-	 else if (is_growingseason)
-	 wn->gsppt += wn->ppt[Today];
-	 */
-#endif
-
 }
 
 void SW_WTH_read(void) {
@@ -505,7 +485,6 @@ static void _update_yesterday(void) {
 	wn->temp_max[Yesterday] = wn->temp_max[Today];
 	wn->temp_min[Yesterday] = wn->temp_min[Today];
 	wn->temp_avg[Yesterday] = wn->temp_avg[Today];
-	// wn->temp_run_avg[Yesterday] = wn->temp_run_avg[Today];
 
 	wn->ppt[Yesterday] = wn->ppt[Today];
 	wn->rain[Yesterday] = wn->rain[Today];

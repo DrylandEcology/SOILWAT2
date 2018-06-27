@@ -1129,7 +1129,7 @@ Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k)
 			Currently implemented:
 			* monthly summed transpiration
 			* monthly mean bulk soil water content
-			* annual mean air temperature
+			* annual and monthly mean air temperature
 			* annual and monthly precipitation sum
 			* annual sum of AET
 		@sideeffects Sets elements of `timeSteps_SXW`, updates `used_OUTNPERIODS`,
@@ -1150,9 +1150,10 @@ void SW_OUT_set_SXWrequests(void)
 	_set_SXWrequests_helper(eSW_SWCBulk, eSW_Month, eSW_Avg,
 		"monthly bulk soil water content");
 
-	// STEPWAT2 requires annual mean air temperature
-	_set_SXWrequests_helper(eSW_Temp, eSW_Year, eSW_Avg,
-		"annual air temperature");
+	// STEPWAT2 requires annual and monthly mean air temperature
+	_set_SXWrequests_helper(eSW_Temp, eSW_Month, eSW_Avg,
+		"annual and monthly air temperature");
+	timeSteps_SXW[eSW_Temp][1] = eSW_Year;
 
 	// STEPWAT2 requires annual and monthly precipitation sum
 	_set_SXWrequests_helper(eSW_Precip, eSW_Month, eSW_Sum,

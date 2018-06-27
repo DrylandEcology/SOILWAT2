@@ -436,10 +436,15 @@ void get_temp_agg(OutPeriod pd)
 // STEPWAT2 expects annual mean air temperature
 void get_temp_SXW(OutPeriod pd)
 {
-	if (pd == eSW_Year) {
+	if (pd == eSW_Month || pd == eSW_Year) {
 		SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
 
-		SXW.temp = vo->temp_avg;
+		if (pd == eSW_Month) {
+			SXW.temp_monthly[SW_Model.month - tOffset] = vo->temp_avg;
+		}
+		else if (pd == eSW_Year) {
+			SXW.temp = vo->temp_avg;
+		}
 	}
 }
 #endif
