@@ -1579,13 +1579,17 @@ void SW_OUT_deconstruct(Bool full_reset)
 	OutKey k;
 	IntU i;
 
+	#if defined(SW_OUTARRAY) || defined(RSOILWAT)
 	ForEachOutKey(k)
 	{
-		for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++)
+		if (full_reset)
 		{
-			if (!isnull(colnames_OUT[k][i])) {
-				Mem_Free(colnames_OUT[k][i]);
-				colnames_OUT[k][i] = NULL;
+			for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++)
+			{
+				if (!isnull(colnames_OUT[k][i])) {
+					Mem_Free(colnames_OUT[k][i]);
+					colnames_OUT[k][i] = NULL;
+				}
 			}
 		}
 
@@ -1597,10 +1601,10 @@ void SW_OUT_deconstruct(Bool full_reset)
 		#endif
 	}
 
-	#ifdef SW_OUTARRAY
 	if (full_reset) {
 		SW_OUT_deconstruct_outarray();
 	}
+
 	#else
 	if (full_reset) {} // avoid ``-Wunused-parameter` warning
 	#endif
