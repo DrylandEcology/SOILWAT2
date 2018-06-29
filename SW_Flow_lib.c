@@ -1850,7 +1850,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 	unsigned int i, sFadjusted_sTemp;
   #ifdef SWDEBUG
-  int debug = 1;
+  int debug = 0;
   #endif
 	double T1, vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], sTempR[MAX_ST_RGR];
 	static Bool do_once_at_soiltempError = swTRUE;
@@ -2039,7 +2039,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 	#ifdef SWDEBUG
 	if (debug) {
-		//sw_error(0, "Stop at end of soil temperature calculations");
+		sw_error(0, "Stop at end of soil temperature calculations");
 	}
 	#endif
 }

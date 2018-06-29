@@ -128,8 +128,8 @@ namespace {
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
     nlyrs = MAX_LAYERS;
-    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double width2[nlyrs] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp2[nlyrs] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
@@ -142,7 +142,8 @@ namespace {
       fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError);
 
     //Structure Tests
-    EXPECT_EQ(sizeof(stValues.tlyrs_by_slyrs), 21008.);//Is the structure the expected size? - This value is static.
+    EXPECT_EQ(sizeof(stValues.tlyrs_by_slyrs),
+      sizeof(double) * MAX_ST_RGR * (MAX_LAYERS + 1));
 
     for(unsigned int i = ceil(stValues.depths[nlyrs - 1]/deltaX); i < nRgr + 1; i++){
         EXPECT_EQ(stValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
@@ -159,15 +160,15 @@ namespace {
   }
 
 // Death tests for soil_temperature_init function
-  TEST(SWFlowTempTest, SoilTemperatureInitDeathTest) {
+  TEST(SWFlowTempDeathTest, SoilTemperatureInitDeathTest) {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     double deltaX = 15.0, sTconst = 4.15;
     unsigned int nlyrs, nRgr = 65, i =0.;
     Bool ptr_stError = swFALSE;
     nlyrs = MAX_LAYERS;
-    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double width2[nlyrs] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp2[nlyrs] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
@@ -199,9 +200,11 @@ namespace {
     // *****  Test when nlyrs = 1  ***** //
     unsigned int i = 0.;
     nlyrs = 1;
-    double width[] = {20}, oldsTemp[] = {1};
-    double bDensity[] = {fmaxf(RandNorm(1.5,0.5), 0.1)}, fc[] = {fmaxf(RandNorm(1.5, 0.5), 0.1)};
+    double width[nlyrs] = {20}, oldsTemp[] = {1};
+    double bDensity[nlyrs] = {fmaxf(RandNorm(1.5,0.5), 0.1)},
+      fc[nlyrs] = {fmaxf(RandNorm(1.5, 0.5), 0.1)};
     double wp[1];
+
     wp[0]= fmax(fc[0] - 0.6, .1); // wp will always be less than fc
 
     soil_temperature_init(bDensity, width, oldsTemp, sTconst, nlyrs,
@@ -238,8 +241,8 @@ namespace {
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
     nlyrs = MAX_LAYERS;
-    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double width2[nlyrs] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp2[nlyrs] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
@@ -270,7 +273,7 @@ namespace {
 
     // lyrSoil_to_lyrTemp_temperature tests
     maxvalR = 0.;
-    for (i = 0; i < nRgr + 1; i++) {
+    for (i = 0; i <= nRgr + 1; i++) {
       EXPECT_GT(stValues.oldsTempR[i], -200); //Values interpolated into oldsTempR should be realistic
       EXPECT_LT(stValues.oldsTempR[i], 200); //Values interpolated into oldsTempR should be realistic
       if(GT(stValues.oldsTempR[i], maxvalR)) {
@@ -310,7 +313,7 @@ namespace {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     nlyrs = MAX_LAYERS;
-    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double width2[nlyrs] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double sTemp3[nlyrs], sTemp4[nlyrs],swc2[nlyrs], swc_sat2[nlyrs];
 
     unsigned int i = 0.;
@@ -346,10 +349,10 @@ namespace {
     /// don't use RandNorm for fcR, wpR, vwcR, and bDensityR because will trigger
     /// error causing condtions
 
-    double sTempR[nRgr + 1], oldsTempR[nRgr + 1], wpR[nRgr + 1], fcR[nRgr + 1],
-    vwcR[nRgr + 1], bDensityR[nRgr + 1];
+    double sTempR[nRgr + 2], oldsTempR[nRgr + 2], wpR[nRgr + 2], fcR[nRgr + 2],
+    vwcR[nRgr + 2], bDensityR[nRgr + 2];
     int i = 0.;
-    for (i = 0; i < nRgr + 1; i++) {
+    for (i = 0; i <= nRgr + 1; i++) {
       sTempR[i] = RandNorm(1.5, 1);
       oldsTempR[i] = RandNorm(1.5, 1);
       fcR[i] = 2.1;
@@ -366,20 +369,20 @@ namespace {
     EXPECT_EQ(sTempR[nRgr + 1], sTconst);
 
     //Check that ptr_stError is FALSE
-    // EXPECT_EQ(ptr_stError, 0); hashed out as when soil temp fails, and sTempR values are irregular, this turns to one.
+    EXPECT_EQ(ptr_stError, 0);
 
     //Check that when  ptr_stError is FALSE, sTempR values are realisitic and pass check in code (between -100 and 100)
-    if(ptr_stError == 0){
-      for (i = 0; i < nRgr + 1; i++) {
-        EXPECT_LT(sTempR[i], 100);
-        EXPECT_GT(sTempR[i], -100);
+    for (i = 0; i <= nRgr + 1; i++)
+    {
+      EXPECT_LT(sTempR[i], 100);
+      EXPECT_GT(sTempR[i], -100);
     }
-  }
 
     // test that the ptr_stError is FALSE when it is supposed to
-    double sTempR2[nRgr + 1], oldsTempR3[nRgr + 1];
+    double sTempR2[nRgr + 2], oldsTempR3[nRgr + 2];
 
-    for (i = 0; i < nRgr + 1; i++) {
+    for (i = 0; i <= nRgr + 1; i++)
+    {
       sTempR2[i] = RandNorm(150, 1);
       oldsTempR3[i] = RandNorm(150, 1);
     }
@@ -412,21 +415,19 @@ namespace {
     double swc[] = {1.0}, swc_sat[] = {1.5}, bDensity[] = {1.8}, width[] = {20},
     oldsTemp[] = {5.0}, sTemp[] = {4.0}, fc[] = {2.6}, wp[] = {1.0};
 
-    // copy initital oldsTempR values so we can check they have been updated
-    double OLDTEMPS[nRgr + 1];
-    memcpy(OLDTEMPS, stValues.oldsTempR, sizeof(OLDTEMPS));
 
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
-    // Test surface temp equals surface_temperature_under_snow() because snow > 0
+
+    // Expect that surface temp equals surface_temperature_under_snow() because snow > 0
     EXPECT_EQ(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
 
-    //Test surface temp equals equatin when biomass < blimititer & snow = 0
+    // Test surface temp equals equation when biomass < blimititer & snow = 0
     snowdepth = 0;
 
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
@@ -438,7 +439,7 @@ namespace {
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
 
-    //Test surface temp equals equation when biomass < blimititer & snow = 0
+    //Test surface temp equals equation when biomass > blimititer & snow = 0
     biomass = 305;
 
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
@@ -452,15 +453,16 @@ namespace {
 
     // checks for  lyrTemp_to_lyrSoil_temperature
     int resultValue = sizeof(sTemp) / sizeof(sTemp[0]);
-    EXPECT_EQ(1, resultValue); // when the number of soil layers is 1, sTemp should be 1
+    EXPECT_EQ(1, resultValue); // when the number of soil layers is 1, sTemp should have length 1
     EXPECT_GT(sTemp[0], -100); // Sense check
     EXPECT_LT(sTemp[0], 100); // Sense check
-    EXPECT_EQ(0, ptr_stError); // ptr_stError should be 1
+    EXPECT_EQ(0, ptr_stError); // ptr_stError should be FALSE
 
-    // Test that oldsTempR is updated to sTempR for the next day
-    for(k = 0; k < nRgr +1; k++) {
-      //  printf("\n k %u sTemp %f , newoldtemp %f,OLDSTEMPS %f", k, sTemp[k], stValues.oldsTempR[k],OLDTEMPS[k] );
-      EXPECT_NE(stValues.oldsTempR[k], OLDTEMPS[k]);
+    // Expect that oldsTempR is updated to sTempR for the next day
+    for (k = 0; k <= nRgr + 1; k++)
+    {
+      //swprintf("\n k %u, newoldtempR %f", k, stValues.oldsTempR[k]);
+      EXPECT_NE(stValues.oldsTempR[k], SW_MISSING);
     }
 
     //Reset to global state
@@ -469,7 +471,8 @@ namespace {
 
     // ptr_stError should be set to TRUE if soil_temperature_today fails (i.e. unrealistic temp values)
     double sTemp2[nlyrs], oldsTemp2[nlyrs];
-    for (i = 0; i < nlyrs; i++) {
+    for (i = 0; i < nlyrs; i++)
+    {
       sTemp2[i] = RandNorm(150, 1);
       oldsTemp2[i] = RandNorm(150, 1);
     }
@@ -503,9 +506,9 @@ namespace {
     Bool ptr_stError = swFALSE;
 
     unsigned int nlyrs2 = MAX_LAYERS;
-    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double oldsTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    double sTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double width2[nlyrs2] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp3[nlyrs2] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double sTemp3[nlyrs2] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     ptr_stError = swFALSE;
     double swc2[nlyrs2], swc_sat2[nlyrs2], bDensity2[nlyrs2], fc2[nlyrs2], wp2[nlyrs2];
 
@@ -515,13 +518,9 @@ namespace {
       swc_sat2[i] = fc2[i] + 0.2; //swc_sat > fc2
       swc2[i] =  swc_sat2[i] - 0.3; // swc_sat > swc
       wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp < fc
-    //  swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
-    //   i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
+      //swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
+      //  i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
     }
-
-    // copy initital oldsTempR values so we can check they have been updated
-    double OLDTEMPS2[nRgr + 1];
-    memcpy(OLDTEMPS2, stValues.oldsTempR, sizeof(OLDTEMPS2));
 
     // Test surface temp equals surface_temperature_under_snow() because snow > 0
     snowdepth = 5;
@@ -562,24 +561,28 @@ namespace {
 
     // checks for  lyrTemp_to_lyrSoil_temperature
     int resultValue2 = sizeof(sTemp3) / sizeof(sTemp3[0]);
-    EXPECT_EQ(MAX_LAYERS, resultValue2); // when the number of soil layers is MAX_LAYERS, sTemp should be MAX_LAYERS
+    EXPECT_EQ(MAX_LAYERS, resultValue2); // when the number of soil layers is MAX_LAYERS, length of sTemp3 should be MAX_LAYERS
 
-    for(k = 1; k < nRgr +1; k++) {
-      if (ptr_stError == swFALSE) {
-        //swprintf("\n k %u, sTemp3 %f, newoldtemp %f ,OLDSTEMPS2 %f", k, sTemp3[k], stValues.oldsTempR[k], OLDTEMPS2[k] );
-        EXPECT_GT(sTemp3[k], -100); // Sense check
-        EXPECT_LT(sTemp3[k], 100); // Sense check
-        // Test that oldsTempR is updated to sTempR for the next day
-        EXPECT_NE(stValues.oldsTempR[k], OLDTEMPS2[k]);
-      }
+    for (k = 0; k < nlyrs2; k++)
+    {
+      //swprintf("\n k %u, sTemp3 %f", k, sTemp3[k]);
+      EXPECT_GT(sTemp3[k], -100); // Sense check
+      EXPECT_LT(sTemp3[k], 100); // Sense check
+    }
+
+    // Expect that oldsTempR is updated to sTempR for the next day
+    for (k = 0; k <= nRgr + 1; k++)
+    {
+      //swprintf("\n k %u, newoldtempR %f", k, stValues.oldsTempR[k]);
+      EXPECT_NE(stValues.oldsTempR[k], SW_MISSING);
     }
 
     // Reset to global state
     Reset_SOILWAT2_after_UnitTest();
-   }
+  }
 
   // Test that main soil temperature functions fails when it is supposed to
-  TEST(SWFlowTempTest, MainSoilTemperatureFunctionDeathTest) {
+  TEST(SWFlowTempDeathTest, MainSoilTemperatureFunctionDeathTest) {
 
     // *****  Test when nlyrs = MAX_LAYERS  ***** //
 
@@ -592,9 +595,9 @@ namespace {
     Bool ptr_stError = swFALSE;
 
     unsigned int nlyrs = MAX_LAYERS;
-    double width[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double oldsTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    double sTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double width[nlyrs] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp[nlyrs] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double sTemp[nlyrs] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double swc[nlyrs], swc_sat[nlyrs], bDensity[nlyrs], fc[nlyrs], wp[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
