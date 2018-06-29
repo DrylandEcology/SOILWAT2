@@ -29,7 +29,7 @@ use_c11 = -std=c11
 use_gnu11 = -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
 
 CFLAGS = -O2 -Wall -Wextra -pedantic
-debug_flags = -g -O0 -DSWDEBUG -fstack-protector-strong
+debug_flags = -g -O0 -DSWDEBUG -fstack-protector # -fstack-protector-strong is only available with gcc v4.9
 CXXFLAGS = -Wall -Wextra
 cov_flags = -coverage
 gtest_flags = $(CXXFLAGS) $(CPPFLAGS) $(debug_flags) $(use_gnu11)
