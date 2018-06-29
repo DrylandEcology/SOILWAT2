@@ -25,10 +25,15 @@ uname_m = $(shell uname -m)
 # CC = gcc
 # CXX = g++
 # AR = ar
-CFLAGS = -O3 -Wall -Wextra -pedantic -std=c11
-CXXFLAGS = -Wall -Wextra -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
-CovFlags = -coverage -g -O0
-DebugFlags = -g -O0 -std=c11 -DSWDEBUG
+use_c11 = -std=c11
+use_gnu11 = -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
+
+CFLAGS = -O2 -Wall -Wextra -pedantic
+debug_flags = -g -O0 -DSWDEBUG -fstack-protector-strong
+CXXFLAGS = -Wall -Wextra
+cov_flags = -coverage
+gtest_flags = $(CXXFLAGS) $(CPPFLAGS) $(debug_flags) $(use_gnu11)
+
 LDFLAGS = -L.
 LDLIBS = -l$(target) -lm						# order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 
@@ -67,39 +72,38 @@ GTEST_DIR = googletest/googletest
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
-gtest_CPPFLAGS = $(CPPFLAGS) -DSWDEBUG
 gtest_LDLIBS = -l$(gtest) -l$(target)++ -lm
 cov_LDLIBS = -l$(gtest) -lcov$(target)++ -lm
 
 lib : $(lib_target)
 
 $(lib_target) :
-		$(CC) $(CPPFLAGS) $(CFLAGS) -c $(sources)
+		$(CC) $(CPPFLAGS) $(CFLAGS) $(use_c11) -c $(sources)
 		@rm -f $(lib_target)
 		$(AR) -rcs $(lib_target) $(objects)
 		@rm -f $(objects)
 
 $(lib_target++) :
-		$(CXX) $(gtest_CPPFLAGS) $(CXXFLAGS) -c $(sources_tests)
+		$(CXX) $(gtest_flags) -c $(sources_tests)
 		$(AR) -rcsu $(lib_target++) $(objects_tests)
 		@rm -f $(objects_tests)
 
 $(lib_covtarget++) :
-		$(CXX) $(gtest_CPPFLAGS) $(CXXFLAGS) $(CovFlags) -c $(sources_tests)
+		$(CXX) $(gtest_flags) $(cov_flags) -c $(sources_tests)
 		$(AR) -rcsu $(lib_covtarget++) $(objects_tests)
 		@rm -f $(objects_tests)
 
 bin : $(target)
 
 $(target) : $(lib_target)
-		$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $(target) $(bin_sources) $(LDLIBS)
+		$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(use_c11) -o $(target) $(bin_sources) $(LDLIBS)
 
 bin_debug :
-		$(CC) $(CPPFLAGS) $(DebugFlags) -c $(sources)
+		$(CC) $(CPPFLAGS) $(debug_flags) $(use_c11) -c $(sources)
 		@rm -f $(lib_target)
 		$(AR) -rcs $(lib_target) $(objects)
 		@rm -f $(objects)
-		$(CC) $(CPPFLAGS) $(DebugFlags) $(LDFLAGS) -o $(target) $(bin_sources) $(LDLIBS)
+		$(CC) $(CPPFLAGS) $(debug_flags) $(LDFLAGS) $(use_c11) -o $(target) $(bin_sources) $(LDLIBS)
 
 .PHONY : bint
 bint : bin
@@ -125,12 +129,12 @@ bind_valgrind : bind
 lib_test : $(lib_gtest)
 
 $(lib_gtest) :
-		$(CXX) $(CPPFLAGS) $(CXXFLAGS) -isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
+		$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(use_gnu11) -isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
 			-pthread -c ${GTEST_DIR}/src/gtest-all.cc
 		$(AR) -r $(lib_gtest) gtest-all.o
 
 test : $(lib_gtest) $(lib_target++)
-		$(CXX) $(gtest_CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
+		$(CXX) $(gtest_flags) $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
 				test/*.cc -o $(bin_test) $(gtest_LDLIBS)
 
 .PHONY : test_run
@@ -138,7 +142,7 @@ test_run :
 		./$(bin_test)
 
 cov : cov_clean $(lib_gtest) $(lib_covtarget++)
-		$(CXX) $(gtest_CPPFLAGS) $(CXXFLAGS) $(CovFlags) $(LDFLAGS) -isystem ${GTEST_DIR}/include \
+		$(CXX) $(gtest_flags) $(cov_flags) $(LDFLAGS) -isystem ${GTEST_DIR}/include \
 			-pthread test/*.cc -o $(bin_test) $(cov_LDLIBS)
 
 .PHONY : cov_run
