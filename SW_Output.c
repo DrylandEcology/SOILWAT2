@@ -1447,10 +1447,10 @@ void SW_OUT_construct(void)
 
 void SW_OUT_deconstruct(Bool full_reset)
 {
+	#if defined(SW_OUTARRAY) || defined(RSOILWAT)
 	OutKey k;
 	IntU i;
 
-	#if defined(SW_OUTARRAY) || defined(RSOILWAT)
 	ForEachOutKey(k)
 	{
 		if (full_reset)
