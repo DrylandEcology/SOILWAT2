@@ -8,6 +8,10 @@
 # make lib         create SOILWAT2 library
 # make test        compile unit tests in 'test/ folder with googletest
 # make test_run    run unit tests (in a previous step compiled with 'make test')
+# make bin_debug   compile the binary executable in debug mode
+# make bind        same as 'make bin_debug' plus moves a copy of the binary to the
+#                  'testing/' folder
+# make bind_valgrind	same as 'make bind' plus runs valgrind on the debug binary in the testing/ folder
 # make cov         same as 'make test' but with code coverage support
 # make cov_run     run unit tests and gcov on each source file (in a previous step
 #                  compiled with 'make cov')
@@ -24,6 +28,7 @@ uname_m = $(shell uname -m)
 CFLAGS = -O3 -Wall -Wextra -pedantic -std=c11
 CXXFLAGS = -Wall -Wextra -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
 CovFlags = -coverage -g -O0
+DebugFlags = -g -O0 -std=c11 -DSWDEBUG
 LDFLAGS = -L.
 LDLIBS = -l$(target) -lm						# order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 
@@ -89,6 +94,13 @@ bin : $(target)
 $(target) : $(lib_target)
 		$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $(target) $(bin_sources) $(LDLIBS)
 
+bin_debug :
+		$(CC) $(CPPFLAGS) $(DebugFlags) -c $(sources)
+		@rm -f $(lib_target)
+		$(AR) -rcs $(lib_target) $(objects)
+		@rm -f $(objects)
+		$(CC) $(CPPFLAGS) $(DebugFlags) $(LDFLAGS) -o $(target) $(bin_sources) $(LDLIBS)
+
 .PHONY : bint
 bint : bin
 		cp $(target) testing/$(target)
@@ -96,6 +108,14 @@ bint : bin
 .PHONY : bint_run
 bint_run : bint
 		./testing/$(target) -d ./testing -f files.in
+
+.PHONY : bind
+bind : bin_debug
+		cp $(target) testing/$(target)
+
+.PHONY : bind_valgrind
+bind_valgrind : bind
+		valgrind -v --track-origins=yes --leak-check=full ./testing/SOILWAT2 -d ./testing -f files.in
 
 
 # GoogleTest:

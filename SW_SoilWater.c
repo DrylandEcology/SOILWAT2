@@ -1,4 +1,4 @@
-/********************************************************/
+  /********************************************************/
 /********************************************************/
 /*	Source file: SoilWater.c
  Type: module
@@ -102,8 +102,6 @@ static void _clear_hist(void) {
 }
 
 #ifdef SWDEBUG
-#define EQ_w_tol(x, y) (fabs((x) - (y)) <= 1e-9)
-
 void SW_WaterBalance_Checks(void)
 {
   SW_SOILWAT *sw = &SW_Soilwat;
@@ -121,7 +119,7 @@ void SW_WaterBalance_Checks(void)
     intercepted, int_veg_total = 0.,
     delta_surfaceWater,
     delta_swc_total = 0., delta_swcj[MAX_LAYERS];
-  RealD lhs, rhs;
+  RealD lhs, rhs, wbtol = 1e-9;
 
   static RealD surfaceWater_yesterday = 0.;
   static Bool do_once = swTRUE;
@@ -210,7 +208,7 @@ void SW_WaterBalance_Checks(void)
   // AET == E(total) + T(total)
   if (do_once) sw->wbErrorNames[1] = Str_Dup("AET == Etotal + Ttotal");
   rhs = Etotal + Ttotal;
-  if (!EQ_w_tol(sw->aet, rhs))
+  if (!EQ_w_tol(sw->aet, rhs, wbtol))
   {
     sw->wbError[1]++;
     if (debugi[1]) swprintf("%s: AET(%f) == %f == Etotal(%f) + Ttotal(%f)\n",
@@ -226,7 +224,7 @@ void SW_WaterBalance_Checks(void)
   //            + E(total veg-intercepted) + E(snow sublimation)
   if (do_once) sw->wbErrorNames[3] = Str_Dup("Etotal == Esoil + Eponded + Eveg + Elitter + Esnow");
   rhs = Esoil + Eponded + Eveg + Elitter + Esnow;
-  if (!EQ_w_tol(Etotal, rhs))
+  if (!EQ_w_tol(Etotal, rhs, wbtol))
   {
     sw->wbError[3]++;
     if (debugi[3]) swprintf("%s: Etotal(%f) == %f == Esoil(%f) + Eponded(%f) + Eveg(%f) + Elitter(%f) + Esnow(%f)\n",
@@ -237,7 +235,7 @@ void SW_WaterBalance_Checks(void)
   //                    + E(total veg-intercepted)
   if (do_once) sw->wbErrorNames[4] = Str_Dup("Esurf == Eponded + Eveg + Elitter");
   rhs = Eponded + Eveg + Elitter;
-  if (!EQ_w_tol(Etotalsurf, rhs))
+  if (!EQ_w_tol(Etotalsurf, rhs, wbtol))
   {
     sw->wbError[4]++;
     if (debugi[4]) swprintf("%s: Esurf(%f) == %f == Eponded(%f) + Eveg(%f) + Elitter(%f)\n",
@@ -249,7 +247,7 @@ void SW_WaterBalance_Checks(void)
   // infiltration = [rain + snowmelt + runon] - (runoff + intercepted + delta_surfaceWater + Eponded)
   if (do_once) sw->wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + intercepted + delta_surfaceWater + Eponded)");
   rhs = arriving_water - (runoff + intercepted + delta_surfaceWater + Eponded);
-  if (!EQ_w_tol(infiltration, rhs))
+  if (!EQ_w_tol(infiltration, rhs, wbtol))
   {
     sw->wbError[5]++;
     if (debugi[5]) swprintf("%s: inf(%f) == %f == rain(%f) + snowmelt(%f) + runon(%f) - (runoff(%f) + intercepted(%f) + delta_surfaceWater(%f) + Eponded(%f))\n",
@@ -260,7 +258,7 @@ void SW_WaterBalance_Checks(void)
   if (do_once) sw->wbErrorNames[6] = Str_Dup("Ttotal + Esoil = inf - (deepDrainage + delta_swc)");
   lhs = Ttotal + Esoil;
   rhs = infiltration - (deepDrainage + delta_swc_total);
-  if (!EQ_w_tol(lhs, rhs))
+  if (!EQ_w_tol(lhs, rhs, wbtol))
   {
     sw->wbError[6]++;
     if (debugi[6]) swprintf("%s: Ttotal(%f) + Esoil(%f) == %f == %f == inf(%f) - (deepDrainage(%f) + delta_swc(%f))\n",
@@ -275,7 +273,7 @@ void SW_WaterBalance_Checks(void)
   {
     rhs = percolationIn[i] + hydraulicRedistribution[i] -
       (percolationOut[i] + Ttotalj[i] + sw->evaporation[i]);
-    if (!EQ_w_tol(delta_swcj[i], rhs))
+    if (!EQ_w_tol(delta_swcj[i], rhs, wbtol))
     {
       sw->wbError[7]++;
       if (debugi[7]) swprintf("%s sl=%d: delta_swc(%f) == %f == perc_in(%f) + hydred(%f) - (perc_out(%f) + Ttot(%f) + Esoil(%f))\n",
@@ -775,19 +773,34 @@ void SW_SWC_adjust_swc(TimeInt doy) {
 
 }
 
+/**
+  @brief Calculates todays snowpack, partitioning of ppt into rain and snow, snowmelt and snowloss.
+
+  SWAT2K routines from Neitsch S, Arnold J, Kiniry J, Williams J. 2005. Soil and water assessment tool (SWAT) theoretical documentation. version 2005.
+  Blackland Research Center, Texas Agricultural Experiment Station: Temple, TX.
+
+  @param temp_min Daily minimum temperature (C)
+  @param temp_max Daily maximum temperature (C)
+  @param ppt Daily precipitation (cm)
+  @param *rain Daily rainfall (cm)
+  @param *snow Daily rainfall (cm)
+  @param *snowmelt  Daily snowmelt (cm)
+
+  @returns void
+ **/
+
+
+ /*************************************************************************************************
+ History:
+
+   10/04/2010	(drs) added snowMAUS snow accumulation, sublimation and melt algorithm: Trnka, M., Kocmánková, E., Balek, J., Eitzinger, J., Ruget, F., Formayer, H., Hlavinka, P., Schaumberger, A., Horáková, V., Mozny, M. & Zalud, Z. (2010) Simple snow cover model for agrometeorological applications. Agricultural and Forest Meteorology, 150, 1115-1127.
+   replaced SW_SWC_snow_accumulation, SW_SWC_snow_sublimation, and SW_SWC_snow_melt with SW_SWC_adjust_snow
+   10/19/2010	(drs) replaced snowMAUS simulation with SWAT2K routines.
+
+ **************************************************************************************************/
+
 void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
 	RealD *snow, RealD *snowmelt) {
-
-	/*---------------------
-	 10/04/2010	(drs) added snowMAUS snow accumulation, sublimation and melt algorithm: Trnka, M., Kocmánková, E., Balek, J., Eitzinger, J., Ruget, F., Formayer, H., Hlavinka, P., Schaumberger, A., Horáková, V., Mozny, M. & Zalud, Z. (2010) Simple snow cover model for agrometeorological applications. Agricultural and Forest Meteorology, 150, 1115-1127.
-	 replaced SW_SWC_snow_accumulation, SW_SWC_snow_sublimation, and SW_SWC_snow_melt with SW_SWC_adjust_snow
-	 10/19/2010	(drs) replaced snowMAUS simulation with SWAT2K routines: Neitsch S, Arnold J, Kiniry J, Williams J. 2005. Soil and water assessment tool (SWAT) theoretical documentation. version 2005. Blackland Research Center, Texas Agricultural Experiment Station: Temple, TX.
-	 Inputs:	temp_min: daily minimum temperature (C)
-	 temp_max: daily maximum temperature (C)
-	 ppt: daily precipitation (cm)
-	 snowpack[Yesterday]: yesterday's snowpack (water-equivalent cm)
-	 Outputs:	snowpack[Today], partitioning of ppt into rain and snow, snowmelt and snowloss
-	 ---------------------*/
 
 	RealD *snowpack = &SW_Soilwat.snowpack[Today],
 		doy = SW_Model.doy,
@@ -857,28 +870,36 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
 	}
 }
 
+/**
+  @brief Calculates the soil water potential or the soil water content of the current layer as a functions
+         of soil texture at the layer.
+
+  The equation and its coefficients are based on a
+  paper by Cosby,Hornberger,Clapp,Ginn,  in WATER RESOURCES RESEARCH
+  June 1984.  Moisture retention data was fit to the power function.
+
+  @param fractionGravel Fraction of soil containing gravel.
+  @param swcBulk Soilwater content of the current layer (cm/layer)
+  @param n Layer number to index the **lyr pointer
+
+  @return swb Soilwater potential of the current layer or soilwater content (if swflag=swFALSE)
+**/
+
+/**
+  HISTORY:
+    DATE:  April 2, 1992
+    9/1/92  (SLC) if swc comes in as zero, set swpotentl to
+    upperbnd.  (Previously, we flagged this
+    as an error, and set swpotentl to zero).
+
+    27-Aug-03 (cwb) removed the upperbnd business. Except for
+    missing values, swc < 0 is impossible, so it's an error,
+    and the previous limit of swp to 80 seems unreasonable.
+    return 0.0 if input value is MISSING
+**/
+
 RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n) {
 	/**********************************************************************
-	 PURPOSE: Calculate the soil water potential or the soilwater
-	 content of the current layer,
-	 as a function of soil texture at the layer.
-
-	 DATE:  April 2, 1992
-
-	 HISTORY:
-	 9/1/92  (SLC) if swc comes in as zero, set swpotentl to
-	 upperbnd.  (Previously, we flagged this
-	 as an error, and set swpotentl to zero).
-
-	 27-Aug-03 (cwb) removed the upperbnd business. Except for
-	 missing values, swc < 0 is impossible, so it's an error,
-	 and the previous limit of swp to 80 seems unreasonable.
-	 return 0.0 if input value is MISSING
-
-	 INPUTS:
-	 swcBulk - soilwater content of the current layer (cm/layer)
-	 n   - layer number to index the **lyr pointer.
-
 	 These are the values for each layer obtained via lyr[n]:
 	 width  - width of current soil layer
 	 psisMatric   - "saturation" matric potential
@@ -895,18 +916,7 @@ RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n) {
 
 	 COMMENT:
 	 See the routine "watreqn" for a description of how the variables
-	 psisMatric, bMatric, binverseMatric, thetasMatric are initialized.
-
-	 OUTPUTS:
-	 swpotentl - soilwater potential of the current layer
-	 (if swflag=swTRUE)
-	 or
-	 soilwater content (if swflag=swFALSE)
-
-	 DESCRIPTION: The equation and its coefficients are based on a
-	 paper by Cosby,Hornberger,Clapp,Ginn,  in WATER RESOURCES RESEARCH
-	 June 1984.  Moisture retention data was fit to the power function
-
+	 psisMatric, bMatric, binverseMatric, thetasMatric are initialized
 	 **********************************************************************/
 
 	SW_LAYER_INFO *lyr = SW_Site.lyr[n];
@@ -929,42 +939,63 @@ RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n) {
 	return swp;
 }
 
-RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n) {
-	/* =================================================== */
-	/* used to be swfunc in the fortran version */
-	/* 27-Aug-03 (cwb) moved from the Site module. */
-	/* return the volume as cmH2O/cmSOIL */
+/**
+  @brief Used to be swfunc in the fortran version
 
-	//printf("fractionGravel, swpMatric, n: %f, %f, %d\n", fractionGravel, swpMatric, n);
+  @param fractionGravel Fraction of soil that contains gravel
+  @param SWSWPmatric
+  @param n
+
+  @return t as the volume (cmH2O/cmSOIL)
+
+**/
+
+/**
+  History:
+    27-Aug-03 (cwb) moved from the Site module.
+**/
+
+RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n) {
 	SW_LAYER_INFO *lyr = SW_Site.lyr[n];
 	RealD t, p;
-
 	swpMatric *= BARCONV;
 	p = powe(lyr->psisMatric / swpMatric, lyr->binverseMatric); // lyr->psisMatric calculated in water equation function | todo: check to make sure these are calculated before
-	t = lyr->thetasMatric * p * 0.01 * (1 - fractionGravel);
+  t = lyr->thetasMatric * p * 0.01 * (1 - fractionGravel);
 	return (t);
-
 }
 
+/**
+  @brief Calculates 'Brooks-Corey' residual volumetric soil water based on Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties for hydrological modeling..
+  Based on "In Watershed management in the Eighties" (eds Jones EB, Ward TJ), pp. 293-299. American Society of Civil Engineers, New York.
+
+  @params fractionGravel Fraction of soil consisting of gravel.
+  @params sand Fraction of soil consisting of sand.
+  @params clay Fraction of soil consisting of clay.
+  @params porosity Fraction of Soil porosity as the saturated VWC
+
+  @returns Resudual volumetric soil water (cm/cm)
+**/
+
+/*---------------------
+  History:
+  02/03/2012	(drs)	calculates 'Brooks-Corey' residual volumetric soil water based on Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties for hydrological modeling. In Watershed management in the Eighties (eds Jones EB, Ward TJ), pp. 293-299. American Society of Civil Engineers, New York.
+  however, equation is only valid if (0.05 < clay < 0.6) & (0.05 < sand < 0.7)
+
+ ---------------------*/
+
 RealD SW_VWCBulkRes(RealD fractionGravel, RealD sand, RealD clay, RealD porosity) {
-	/*---------------------
-	 02/03/2012	(drs)	calculates 'Brooks-Corey' residual volumetric soil water based on Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties for hydrological modeling. In Watershed management in the Eighties (eds Jones EB, Ward TJ), pp. 293-299. American Society of Civil Engineers, New York.
-	 however, equation is only valid if (0.05 < clay < 0.6) & (0.05 < sand < 0.7)
-
-	 Input:	sand: soil texture sand content (fraction)
-	 clay: soil texture clay content (fraction)
-	 porosity: soil porosity = saturated VWC (fraction)
-	 Output: residual volumetric soil water (cm/cm)
-	 ---------------------*/
-	RealD res;
-
-	sand *= 100.;
-	clay *= 100.;
-
-	res = (-0.0182482 + 0.00087269 * sand + 0.00513488 * clay + 0.02939286 * porosity - 0.00015395 * squared(clay) - 0.0010827 * sand * porosity
-			- 0.00018233 * squared(clay) * squared(porosity) + 0.00030703 * squared(clay) * porosity - 0.0023584 * squared(porosity) * clay) * (1 - fractionGravel);
-
-	return (fmax(res, 0.));
+  if (clay < .05 || clay > .6 || sand < .05 || sand > .7){
+    LogError(logfp, LOGWARN, "Sand and/or clay values out of valid range, simulation outputs may differ.");
+    return SW_MISSING;
+  }
+  else{
+    RealD res;
+  	sand *= 100.;
+  	clay *= 100.;
+  	res = (-0.0182482 + 0.00087269 * sand + 0.00513488 * clay + 0.02939286 * porosity - 0.00015395 * squared(clay) - 0.0010827 * sand * porosity
+  			- 0.00018233 * squared(clay) * squared(porosity) + 0.00030703 * squared(clay) * porosity - 0.0023584 * squared(porosity) * clay) * (1 - fractionGravel);
+    return (fmax(res, 0.));
+  }
 }
 
 #ifdef DEBUG_MEM
