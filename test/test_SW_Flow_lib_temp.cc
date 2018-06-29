@@ -202,7 +202,7 @@ namespace {
     nlyrs = 1;
     double width[] = {20}, oldsTemp[] = {1};
     double bDensity[] = {fmaxf(RandNorm(1.5,0.5), 0.1)},
-      fc[nlyrs] = {fmaxf(RandNorm(1.5, 0.5), 0.1)};
+      fc[] = {fmaxf(RandNorm(1.5, 0.5), 0.1)};
     double wp[1];
 
     wp[0]= fmax(fc[0] - 0.6, .1); // wp will always be less than fc
