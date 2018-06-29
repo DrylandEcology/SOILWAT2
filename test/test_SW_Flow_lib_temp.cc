@@ -109,7 +109,8 @@ namespace {
       fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError);
 
     //Structure Tests
-    EXPECT_EQ(sizeof(stValues.tlyrs_by_slyrs), 21008.);//Is the structure the expected size? - This value is static.
+    EXPECT_EQ(sizeof(stValues.tlyrs_by_slyrs),
+      sizeof(double) * MAX_ST_RGR * (MAX_LAYERS + 1));
 
     for(unsigned int i = ceil(stValues.depths[nlyrs - 1]/deltaX); i < nRgr + 1; i++){
         EXPECT_EQ(stValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
