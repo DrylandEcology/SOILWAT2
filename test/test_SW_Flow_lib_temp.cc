@@ -128,8 +128,8 @@ namespace {
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
     nlyrs = MAX_LAYERS;
-    double width2[nlyrs] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double oldsTemp2[nlyrs] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
@@ -167,8 +167,8 @@ namespace {
     unsigned int nlyrs, nRgr = 65, i =0.;
     Bool ptr_stError = swFALSE;
     nlyrs = MAX_LAYERS;
-    double width2[nlyrs] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double oldsTemp2[nlyrs] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
@@ -200,8 +200,8 @@ namespace {
     // *****  Test when nlyrs = 1  ***** //
     unsigned int i = 0.;
     nlyrs = 1;
-    double width[nlyrs] = {20}, oldsTemp[] = {1};
-    double bDensity[nlyrs] = {fmaxf(RandNorm(1.5,0.5), 0.1)},
+    double width[] = {20}, oldsTemp[] = {1};
+    double bDensity[] = {fmaxf(RandNorm(1.5,0.5), 0.1)},
       fc[nlyrs] = {fmaxf(RandNorm(1.5, 0.5), 0.1)};
     double wp[1];
 
@@ -241,8 +241,8 @@ namespace {
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
     nlyrs = MAX_LAYERS;
-    double width2[nlyrs] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double oldsTemp2[nlyrs] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
@@ -313,7 +313,7 @@ namespace {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     nlyrs = MAX_LAYERS;
-    double width2[nlyrs] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double sTemp3[nlyrs], sTemp4[nlyrs],swc2[nlyrs], swc_sat2[nlyrs];
 
     unsigned int i = 0.;
@@ -506,9 +506,9 @@ namespace {
     Bool ptr_stError = swFALSE;
 
     unsigned int nlyrs2 = MAX_LAYERS;
-    double width2[nlyrs2] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double oldsTemp3[nlyrs2] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    double sTemp3[nlyrs2] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double sTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     ptr_stError = swFALSE;
     double swc2[nlyrs2], swc_sat2[nlyrs2], bDensity2[nlyrs2], fc2[nlyrs2], wp2[nlyrs2];
 
@@ -595,9 +595,9 @@ namespace {
     Bool ptr_stError = swFALSE;
 
     unsigned int nlyrs = MAX_LAYERS;
-    double width[nlyrs] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double oldsTemp[nlyrs] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    double sTemp[nlyrs] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double width[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    double oldsTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double sTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double swc[nlyrs], swc_sat[nlyrs], bDensity[nlyrs], fc[nlyrs], wp[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
