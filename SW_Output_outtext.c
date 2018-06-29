@@ -1,14 +1,15 @@
 /********************************************************/
 /********************************************************/
-/*  Source file: SW_Output_outtext.c
-  Type: module
-  Application: SOILWAT - soilwater dynamics simulator
-  Purpose: define functions to deal with text outputs; currently, used
-    by SOILWAT2-standalone and STEPWAT2
+/**
+  @file
+  @brief Output functionality for processing of text outputs that are written
+  to disk files
+
+  See the \ref out_algo "output algorithm documentation" for details.
 
   History:
   2018 June 15 (drs) moved functions from `SW_Output.c`
- */
+*/
 /********************************************************/
 /********************************************************/
 
@@ -61,11 +62,13 @@ extern char const *pd2longstr[];
 // defined here:
 SW_FILE_STATUS SW_OutFiles;
 
-/** `print_IterationSummary is TRUE if STEPWAT2 is called with `-o` flag
-      and if STEPWAT2 is currently in its last iteration/repetition
-   `print_SW_Output is TRUE for SOILWAT2 and
-      if STEPWAT2 is called with `-i` flag`*/
-Bool print_IterationSummary, print_SW_Output;
+Bool
+  /** `print_IterationSummary` is TRUE if STEPWAT2 is called with `-o` flag
+      and if STEPWAT2 is currently in its last iteration/repetition */
+  print_IterationSummary,
+  /** `print_SW_Output` is TRUE for SOILWAT2 and
+      if STEPWAT2 is called with `-i` flag */
+  print_SW_Output;
 
 /** `sw_outstr` holds the formatted output as returned from `get_XXX` for
       SOILWAT2-standalone and for a single iteration/repeat for STEPWAT2 */

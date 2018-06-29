@@ -1,16 +1,18 @@
 /********************************************************/
 /********************************************************/
-/*  Source file: SW_Output_SOILWAT2.c
-  Type: module
-  Application: SOILWAT - soilwater dynamics simulator
-  Purpose: define `get_XXX` functions
+/**
+  @file
+  @brief Format user-specified output for text and/or in-memory processing
+
+  See the \ref out_algo "output algorithm documentation" for details.
 
   History:
   2018 June 04 (drs) moved output formatter `get_XXX` functions from
      `SW_Output.c` to dedicated `SW_Output_get_functions.c`
- */
+*/
 /********************************************************/
 /********************************************************/
+
 
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */

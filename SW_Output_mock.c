@@ -1,5 +1,16 @@
-// Source file: mock of Output.c
-// NOTE: all function content is for mock purposes only and to reduce compile warnings
+/********************************************************/
+/********************************************************/
+/**
+  @file
+  @brief All content is for mock purposes only and to reduce compile warnings
+
+  Our unit testing framework `googletest` is c++ which doesn't like some of
+  the constructs we use in the output code. Thus, we currently cannot test
+  any output code and use these mock functions instead as placeholders.
+*/
+/********************************************************/
+/********************************************************/
+
 
 #include <math.h>
 #include <stdio.h>

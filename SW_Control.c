@@ -168,7 +168,8 @@ void SW_CTL_run_current_year(void) {
 }
 
 /** @brief Initiate/update variables for a new simulation year.
-    @description In addition to the timekeeper (Model), usually only modules
+
+    In addition to the timekeeper (Model), usually only modules
       that read input yearly or produce output need to have this call.
 */
 static void _begin_year(void) {

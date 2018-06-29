@@ -329,7 +329,8 @@ char * sw_strdup(const char * s)
 
 
 /** @brief Calculate running average online (in one pass)
-		@description Calculate average m across values x[k] with k = {0, ..., n}
+
+		Calculate average m across values x[k] with k = {0, ..., n}
 			using
 				m[n] = m[n - 1] + (x[n] - m[n - 1]) / n
 			based on Welford's algorithm
@@ -344,7 +345,8 @@ double get_running_mean(unsigned int n, double mean_prev, double val_to_add)
 }
 
 /** @brief Calculate running standard deviation online (in one pass)
-		@description Calculate standard deviation S across values x[k] with
+
+		Calculate standard deviation S across values x[k] with
 			k = {0, ..., n} using
 				S[n] = S[n - 1] + ss[n]
 			where

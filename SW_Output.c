@@ -1,156 +1,26 @@
 /********************************************************/
 /********************************************************/
-/*	Source file: Output.c
- Type: module
- Application: SOILWAT - soilwater dynamics simulator
- Purpose: Read / write and otherwise manage the
- user-specified output flags.
+/**
+  @file
+  @brief Read / write and otherwise manage the user-specified output
 
- COMMENTS: The algorithm for the summary bookkeeping
- is much more complicated than I'd like, but I don't
- see a cleaner way to address the need to keep
- running tabs without storing daily arrays for each
- output variable.  That might make somewhat
- simpler code, and perhaps slightly more efficient,
- but at a high cost of memory, and the original goal
- was to make this object oriented, so memory should
- be used sparingly.  Plus, much of the code is quite
- general, and the main loops are very simple indeed.
+  See the \ref out_algo "output algorithm documentation" for details.
 
- Generally, adding a new output key is fairly simple,
- and much of the code need not be considered.
- Refer to the comment block at the very end of this
- file for details.
-
- Comment (06/23/2015, drs): In summary, the output of SOILWAT works as follows
- SW_OUT_flush() calls at end of year and SW_Control.c/_collect_values() calls daily
- 1) SW_OUT_sum_today() that
- 1.1) if end of an output period, call average_for(): converts the (previously summed values (by sumof_wth) of) SW_WEATHER_OUTPUTS portion of SW_Weather from the ‘Xsum' to the ‘Xavg'
- 1.2) on each day calls collect_sums() that calls sumof_wth(): SW_Weather (simulation slot ’now') values are summed up during each output period and stored in the SW_WEATHER_OUTPUTS (output) slots 'Xsum' of SW_Weather
-
- 2) SW_OUT_write_today() that
- 2.1) calls the get_temp() etc functions via SW_Output.pfunc: the values stored in ‘Xavg’ by average_for are converted to text string 'sw_outstr’
- 2.2) outputs the text string 'sw_outstr’ with the fresh values to a text file via SW_Output.fp_X
-
-
-
- History:
- 9/11/01 cwb -- INITIAL CODING
- 10-May-02 cwb -- Added conditionals for interfacing
- with STEPPE.  See SW_OUT_read(), SW_OUT_close_files(),
- SW_OUT_write_today(), get_temp() and get_transp().
- The changes prevent the model from opening, closing,
- and writing to files because SXW only requires periodic
- (eg, weekly) transpiration and yearly temperature
- from get_transp() and get_temp(), resp.
- --The output config file must be prepared by the SXW
- interface code such that only yearly temp and daily,
- weekly, or monthly transpiration are requested for
- periods (1,end).
-
- 12/02 - IMPORTANT CHANGE - cwb
- refer to comments in Times.h regarding base0
-
- 27-Aug-03 (cwb) Just a comment that this code doesn't
- handle missing values in the summaries, especially
- the averages.  This really needs to be addressed
- sometime, but for now it's the user's responsibility
- to make sure there are no missing values.  The
- model doesn't generate any on its own, but it
- still needs to be fixed, although that will take
- a bit of work to keep track of the number of
- missing days, etc.
- 20090826 (drs) stricmp -> strcmp -> Str_CompareI; in SW_OUT_sum_today () added break; after default:
- 20090827 (drs) changed output-strings str[12] to #define OUTSTRLEN 18; str[OUTSTRLEN]; because of sprintf(str, ...) overflow and memory corruption into for-index i
- 20090909 (drs) strcmp -> Str_CompareI (not case-sensitive)
- 20090915 (drs) wetdays output was not working: changed in get_wetdays() the output from sprintf(fmt, "%c%%3.0f", _Sep); to sprintf(str, "%c%i", _Sep, val);
- 20091013 (drs) output period of static void get_swcBulk(void) was erroneously set to eSW_SWP instead of eSW_SWCBulk
- 20091015 (drs) ppt is divided into rain and snow and all three values plust snowmelt are output into precip
- 20100202 (drs) changed SW_CANOPY to SW_CANOPYEV and SW_LITTER to SW_LITTEREV;
- and eSW_Canopy to eSW_CanopyEv and eSW_Litter to eSW_LitterEv;
- added SWC_CANOPYINT, SW_LITTERINT, SW_SOILINF, SW_LYRDRAIN;
- added eSW_CanopyInt, eSW_LitterInt, eSW_SoilInf, eSW_LyrDrain;
- updated key2str, key2obj;
- added private functions get_canint(), get_litint(), get_soilinf(), get_lyrdrain();
- updated SW_OUT_construct(), sumof_swc() and average_for() with new functions and keys
- for layer drain use only for(i=0; i < SW_Site.n_layers-1; i++)
- 04/16/2010 (drs) added SWC_SWA, eSW_SWABulk; updated key2str, key2obj; added private functions get_swaBulk();
- updated SW_OUT_construct(), sumof_swc()[->make calculation here] and average_for() with new functions and keys
- 10/20/2010 (drs) added SW_HYDRED, eSW_HydRed; updated key2str, key2obj; added private functions get_hydred();
- updated SW_OUT_construct(), sumof_swc()[->make calculation here] and average_for() with new functions and keys
- 11/16/2010 (drs) added forest intercepted water to canopy interception
- updated get_canint(), SW_OUT_construct(), sumof_swc()[->make calculation here] and average_for()
- 01/03/2011	(drs) changed parameter type of str2period(), str2key(), and str2type() from 'const char *' to 'char *' to avoid 'discard qualifiers from pointer target type' in Str_ComparI()
- 01/05/2011	(drs) made typecast explicit: changed in SW_OUT_write_today(): SW_Output[k].pfunc() to ((void (*)(OutPeriod))SW_Output[k].pfunc)(); -> doesn't solve problem under darwin10
- -> 'abort trap' was due to str[OUTSTRLEN] being too short (OUTSTRLEN 18), changed to OUTSTRLEN 100
- 01/06/2011	(drs) changed all floating-point output from %7.4f to %7.6f to avoid rounding errors in post-run output calculations
- 03/06/2011	(drs) in average_for() changed loop to average hydred from "for(i=0; i < SW_Site.n_layers-1; i++)" to "ForEachSoilLayer(i)" because deepest layer was not averaged
- 07/22/2011 (drs) added SW_SURFACEW and SW_EVAPSURFACE, eSW_SurfaceWater and eSW_EvapSurface; updated key2str, key2obj; added private functions get_surfaceWater() and get_evapSurface();
- updated SW_OUT_construct(), sumof_swc()[->make calculation here] and average_for() with new functions and keys
- 09/12/2011	(drs)	renamed SW_EVAP to SW_EVAPSOIL, and eSW_Evap to eSW_EvapSoil;
- deleted SW_CANOPYEV, eSW_CanopyEv, SW_LITTEREV, eSW_LitterEv, SW_CANOPYINT, eSW_CanopyInt, SW_LITTERINT, and eSW_LitterInt;
- added SW_INTERCEPTION and eSW_Interception
- 09/12/2011	(drs)	renamed get_evap() to get_evapSoil(); renamed get_EvapsurfaceWater() to get_evapSurface()
- deleted get_canevap(), get_litevap(), get_canint(), and get_litint()
- added get_interception()
- 09/12/2011	(drs)	increased #define OUTSTRLEN from 100 to 400 (since transpiration and hydraulic redistribution will be 4x as long)
- increased static char sw_outstr[0xff] from 0xff=255 to OUTSTRLEN
- 09/12/2011	(drs)	updated SW_OUT_construct(), sumof_swc()[->make calculation here] and average_for() with new functions and keys
- 09/12/2011	(drs)	added snowdepth as output to snowpack, i.e., updated updated get_snowpack(), sumof_swc()[->make calculation here] and average_for()
- 09/30/2011	(drs)	in SW_OUT_read(): opening of output files: SW_Output[k].outfile is extended by SW_Files.in:SW_OutputPrefix()
- 01/09/2012	(drs)	'abort trap' in get_transp due to sw_outstr[OUTSTRLEN] being too short (OUTSTRLEN 400), changed to OUTSTRLEN 1000
- 05/25/2012  (DLM) added SW_SOILTEMP to keytostr, updated keytoobj;  wrote get_soiltemp(void) function, added code in the _construct() function to link to get_soiltemp() correctly;  added code to sumof and average_for() to handle the new key
- 05/25/2012  (DLM) added a few lines of nonsense to sumof_ves() function in order to get rid of the annoying compiler warnings
- 06/12/2012  (DLM) changed OUTSTRLEN from 1000 to 2000
- 07/02/2012  (DLM) updated # of chars in keyname & upkey arrays in SW_OUT_READ() function to account for longer keynames... for some reason it would still read them in correctly on OS X without an error, but wouldn't on JANUS.
- 11/30/2012	(clk)	changed get_surfaceWater() to ouput amound of surface water, surface runoff, and snowmelt runoff, respectively.
- 12/13/2012	(clk, drs)	changed get_surfaceWater() to output amount of surface water
- added get_runoffrunon() to output surface runoff, and snowmelt runoff, respectively, in a separate file -> new version of outsetupin;
- updated key2str and OutKey
- 12/14/2012 (drs)	changed OUTSTRLEN from 2000 to 3000 to prevent 'Abort trap: 6' at runtime
- 01/10/2013	(clk)	in function SW_OUT_read, when creating the output files, needed to loop through this four times
- for each OutKey, giving us the output files for day, week, month, and year. Also, added
- a switch statement to acqurie the dy, wk, mo, or yr suffix based on the iteration of the for loop.
- When reading in lines from outsetup, removed PERIOD from the read in because it is unneeded in since
- we are doing all time steps.
- Removed the line SW_Output[k].period = str2period(Str_ToUpper(period, ext)), since we are no longer
- reading in a period.
- in function SW_OUT_close_files need to loop through and close all four time step files for each
- OutKey, determined which file to close based on the iteration of the for loop.
- in function SW_OUT_write_today needed to loop through the code four times for each OutKey, changing
- the period of the output for each iteration. With the for loop, I am also able to pick the
- proper FILE pointer to choose when outputting the data.
- in function average_for needed to loop through the code four times for each OutKey, changing
- the period of the output for each iteration.
- the function str2period is no longer used in the code, but will leave it in the code for now.
- 01/17/2013	(clk)	in function SW_OUT_read, created an additional condition that if the keyname was TIMESTEP,
- the code would rescan the line looking for up to 5 strings. The first one would be saved
- back into keyname, while the other four would be stored in a matrix. These values would be
- the desired timesteps to output. Then you would convert these strings to periods, and store
- them in an array of integers and keep track of how many timesteps were actually read in.
- The other changes are modifications of the changes made on 01/10/2013. For all the for loops, instead of
- looping through 4 times, we now loop through for as many times as periods that we read in from the
- TIMESTEP line. Also, in all the switch cases where we increased that value which changed the period
- to the next period, we now use the array of integers that stored the period and move through that with
- each iteration.
- 02/05/2013	(clk) in the function get_soiltemp(), when determing the period, the code was using SW_Output[eSW_SWCBulk].period,
- which needed to be SW_Output[eSW_SoilTemp].period, since we are looking at soil temp, not SWCM.
- 04/16/2013	(clk)	Added two new ouputs: vwcMatric and swaMatric.
- in the get functions, the calculation is
- (the matric value) = (the bulk value)/(1-fractionVolBulk_gravel)
- Also changed the names of swp -> swpMatric, swc -> swcBulk, swcm -> vwcBulk, and swa -> swaBulk
- 06/27/2013	(drs)	closed open files if LogError() with LOGFATAL is called in SW_OUT_read()
-
- 07/01/2013	(clk)	Changed the outsetup file so that the TIMESTEP line could be used or not used, depending on the need
- If the TIMESTEP line is not used, need to have an additional column for the period again
- Within the code, changed the timesteps array to be two dimensional, and keep track of the periods to be used
- for each of the outputs. Then, at every for loop that was implemented for the TIMESTEP code, put in
- place a conditional that will determine which of the four possible periods are to be used for each output.
- 07/09/2013	(clk)	Added forb to the outputs: transpiration, surface evaporation, interception, and hydraulic redistribution
- 08/21/2013	(clk)	Modified the establisment output to actually output for each species and not just the last one in the group.
- 06/23/2015 (akt)	Added output for surface temperature to get_temp()
- 06/15/2017 Modified PPT values so daily, weekly, monthly, and yearly are run for both RSOILWAT and STEPWAT
- */
+  History:
+    - 9/11/01 cwb -- INITIAL CODING
+    - 10-May-02 cwb -- Added conditionals for interfacing
+      with STEPPE
+    - 27-Aug-03 (cwb) Just a comment that this code doesn't
+      handle missing values in the summaries, especially
+      the averages.  This really needs to be addressed
+      sometime, but for now it's the user's responsibility
+      to make sure there are no missing values.  The
+      model doesn't generate any on its own, but it
+      still needs to be fixed, although that will take
+      a bit of work to keep track of the number of
+      missing days, etc.
+    - 2018 June 04 (drs) -- complete overhaul of output code
+*/
 /********************************************************/
 /********************************************************/
 
@@ -389,7 +259,7 @@ static OutSum str2stype(char *s)
 /** Checks whether a output variable (key) comes with soil layer or not.
 		See also function `has_keyname_soillayers`.
 
-    \param k. The key of output variable (key), i.e., one of `OutKey`.
+    \param k The key of output variable (key), i.e., one of `OutKey`.
     \return `TRUE` if `var` comes with soil layers; `FALSE` otherwise.
 */
 Bool has_key_soillayers(OutKey k) {
@@ -418,7 +288,7 @@ Bool has_key_soillayers(OutKey k) {
 /** Checks whether a output variable (key) comes with soil layer or not
 		See also function `has_key_soillayers`.
 
-    \param var. The name of an output variable (key), i.e., one of `key2str`.
+    \param var The name of an output variable (key), i.e., one of `key2str`.
     \return `TRUE` if `var` comes with soil layers; `FALSE` otherwise.
 */
 Bool has_keyname_soillayers(const char *var) {
@@ -1125,7 +995,8 @@ Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k)
 
 /** @brief Specify the output requirements so that the correct values are
 		passed in-memory via `SXW` to STEPWAT2
-		@description These must match with STEPWAT2's `struct stepwat_st`.
+
+		These must match with STEPWAT2's `struct stepwat_st`.
 			Currently implemented:
 			* monthly summed transpiration
 			* monthly mean bulk soil water content
@@ -1649,7 +1520,7 @@ void SW_OUT_set_ncol(void) {
 }
 
 /** @brief Set column/variable names in global array `colnames_OUT`
-		@description
+
 		Order of outputs must match up with all `get_XXX` functions and with
 		indexing macros `iOUT` and `iOUT2`; particularly, output variables with
 		values for each of `N` soil layers for `k` different (e.g., vegetation)
@@ -2448,7 +2319,7 @@ void SW_OUT_write_today(void)
 				if (print_SW_Output) {
 					fprintf(SW_OutFiles.fp_reg[p], "%s%s\n",
 						str_time, SW_OutFiles.buf_reg[p]);
-					// TODO: STEPWAT2 needs a fflush for yearly output;
+					// STEPWAT2 needs a fflush for yearly output;
 					// other time steps, the soil-layer files, and SOILWAT2 work fine without it...
 					fflush(SW_OutFiles.fp_reg[p]);
 				}
@@ -2527,18 +2398,17 @@ void _echo_outputs(void)
 
 #ifdef DEBUG_MEM
 #include "myMemory.h"
-/*======================================================*/
+/** when debugging memory problems, use the bookkeeping
+  code in myMemory.c
+  This routine sets the known memory refs in this module
+  so they can be  checked for leaks, etc.  Includes
+  malloc-ed memory in SOILWAT.  All refs will have been
+  cleared by a call to ClearMemoryRefs() before this, and
+  will be checked via CheckMemoryRefs() after this, most
+  likely in the main() function.
+*/
 void SW_OUT_SetMemoryRefs( void)
 {
-	/* when debugging memory problems, use the bookkeeping
-	 code in myMemory.c
-	 This routine sets the known memory refs in this module
-	 so they can be  checked for leaks, etc.  Includes
-	 malloc-ed memory in SOILWAT.  All refs will have been
-	 cleared by a call to ClearMemoryRefs() before this, and
-	 will be checked via CheckMemoryRefs() after this, most
-	 likely in the main() function.
-	 */
 	OutKey k;
 
 	ForEachOutKey(k)
@@ -2551,151 +2421,224 @@ void SW_OUT_SetMemoryRefs( void)
 
 #endif
 
-/*==================================================================
 
- Description of the algorithm.
-
- There is a structure array (SW_OUTPUT) that contains the
- information from the outsetup.in file. This structure is filled in
- the initialization process by matching defined macros of valid keys
- with enumeration variables used as indices into the structure
- array.  A similar combination of text macros and enumeration
- constants handles the TIMEPERIOD conversion from text to numeric
- index.
-
- Each structure element of the array contains the output period
- code, start and end values, output file name, opened file pointer
- for output, on/off status, and a pointer to the function that
- prepares a complete line of formatted output per output period.
-
- A _construct() function clears the entire structure array to set
- values and flags to zero. Those output objects that are
- turned off are ignored.
- Thus, to add a new output variable, a new get_function must be added to
- in addition to adding the new macro and enumeration keys
- for it.  Oh, and a line or two of summarizing code.
-
- After initialization, each valid output key has an element in the
- structure array that "knows" its parameters and whether it is on or
- off.  There is still space allocated for the "off" keys but they
- are ignored by the use flag.
-
- During the daily execution loop of the model, values for each of
- the output objects are accumulated via a call to
- SW_OUT_sum_today(x) function with x being a special enumeration
- code that defines the actual module object to be summed (see
- SW_Output.h).  This enumeration code breaks up the many output
- variables into a few simple types so that adding a new output
- variable is simplified by putting it into its proper category.
-
- When the _sum_today() function is called, it calls the averaging
- function which puts the sum, average, etc into the output
- accumulators--(dy|wk|mo|yr)avg--then conditionally clears the
- summary accumulators--(dy|wk|mo|yr)sum--if a new period has
- occurred (in preparation for the new period), then calls the
- function to handle collecting the summaries called collect_sums().
-
- The collect_sums() function needs the object type (eg, eSWC, eWTH)
- and the output period (eg, dy, wk, etc) and then, for each valid
- output key, it assigns a pointer to the appropriate object's
- summary sub-structure.  (This is where the complexity of this
- approach starts to become a bit clumsy, but it nonetheless tends to
- keep the overall code size down.) After assigning the pointer to
- the summary structure, the pointers are passed to a routine to
- actually do the accumulation for the various output objects
- (currently SWC and WTH).  No other arithmetic is performed here.
- This routine is only called, however, if the current day or period
- falls within the range specified by the user.  Otherwise, the
- accumulators will remain zero.  Also, the period check is used in
- other places to determine whether to bother with averaging and
- printing.
-
- Once a period other than daily has passed, the accumulated values
- are averaged or summed as appropriate within the average_for()
- subroutine as mentioned above.
-
- After the averaging function, the values are ready to format for
- output.  The SW_OUT_write_today() routine is called from the
- end_day() function in main(). Throughout the run for each period
- all used values are appended to a string and at the end of the period
- the string is written to the proper output file. The SW_OUT_write_today()
- function goes through each key and if in use, it calls populate_output_values()
- function to parse the output string and format it properly. After the string
- is formatted it is added to an output string which is written to the output File
- at the end of the period.
-
- So to summarize, adding another output quantity requires several steps.
- - Add an appropriate element to the SW_*_OUTPUTS substructure of the
- main object (eg SW_Soilwat) to hold the output value.
- - Define a new key string and add a macro definition and enumeration
- to the appropriate list in Output.h.  Be sure the new key's position
- in the list doesn't interfere with the ForEach*() loops.
- - Increase the value of SW_OUTNKEYS macro in Output.h.
- - Add the macro and enum keys to the key2str and key2obj lists in
- SW_Output.c as appropriate, IN THE SAME LIST POSITION.
- - Create and declare a get_*() function that returns the correctly
- formatted string for output.
- - Add a line to link the get_ function to the appropriate element in
- the SW_OUTPUT array in _construct().
- - Add new code to the switch statement in sumof_*() to handle the new
- key.
- - Add new code to the switch statement in average_for() to do the
- summarizing.
- - Add new code to create_col_headers to make proper columns for new value
- - if variable is a soil variable (has layers) add name to SW_OUT_read, create_col_headers
- 		and populate_output_values in the if block checking for SOIL variables
-		looks like below code `if (has_key_soillayers(key)) {`
-	----------------------------
-	To make new values work with STEPWAT do the following
-	- add average storage variable to sxw.h in the soilwat_average structure
-	- add memory allocation to _make_soil_arrays function in sxw.c
-	- add call to mem_Free for variable in free_all_sxw_memory in sxw.c
-	- add #ifdef STEPWAT code to the get_* function that calculates the average over iterations
+/*==================================================================*/
+/**
+  @defgroup out_algo Description of the output algorithm
 
 
+  __In summary:__
 
- That should do it.  However, new code is about to be added to Output.c
- and outsetup.in that will allow quantities to be summarized by summing
- or averaging.  Possibly in the future, more types of options will be
- added (eg, geometric average, stddev, who knows).  Thus, new keys will
- be needed to handle those operations within the average_for()
- function, but the rest of the code will be the same.
+  The function SW_CTL_run_current_year() in file SW_Control.c calls:
+    - the function _end_day() in file SW_Control.c, for each day, which in turn
+      calls _collect_values() with (global) arguments `bFlush_output` = `FALSE`
+      and `tOffset` = 1
+    - the function SW_OUT_flush(), after the last day of each year, which in
+      turn calls _collect_values() with (global) arguments
+      `bFlush_output` = TRUE and `tOffset` = 0
+
+  The function _collect_values()
+    -# calls SW_OUT_sum_today() for each of the \ref ObjType `otype`
+      that produce output, i.e., `eSWC`, `eWTH`, `eVES`, and `eVPD`.
+      SW_OUT_sum_today() loops over each \ref OutPeriod `pd`
+      - if today is the start of a new day/week/month/year period or if
+        `bFlush_output`, then it
+        -# calls average_for() with arguments `otype` and `pd` which
+          -# loops over all output keys `k`
+          -# divides the summed values by the duration of the specific output
+             period
+          -# fills the output aggregator `p_oagg[pd]` variables
+        -# resets the memory of the output accumulator `p_accu[d]` variables
+      - and, unless `bFlush_output` is `FALSE`, in a second loop over each
+        \ref OutPeriod `pd` calls collect_sums() with arguments `otype` and `pd`
+        which calls the output summing function corresponding to its
+        \ref ObjType argument `otype`, i.e., one of the functions sumof_swc(),
+        sumof_wth(), sumof_ves(), or sumof_vpd, in order to sum up the daily
+        values in the corresponding output accumulator `p_accu[pd]` variables.
+
+    -# calls SW_OUT_write_today() which loops over each \OutKey `k` and
+      loops over each \ref OutPeriod `pd` and, depending on application (see
+      details below):
+      - calls the appropriate output formatter function `get_XXX` via its
+        pointer stored in `SW_Output[k].pfunc_XXX`
+      - writes output to file(s) and/or passes output in-memory
+
+  There are four types of outputs and thus four types of output formatter
+  functions `get_XXX` in file \ref SW_Output_get_functions.c
+    - output to text files of current simulation:
+      - output formatter function such as `get_XXX_text` which prepare a
+        formatted text string in the global variable \ref sw_outstr which is
+        concatenated and written to the text files by SW_OUT_write_today()
+      - these output formatter functions are assigned to pointers
+        `SW_Output[k].pfunc_text` and called by SW_OUT_write_today()
+      - currently used by `SOILWAT2-standalone` and by `STEPWAT2` if executed
+        with its `-i flag`
+
+    - output to text files of values that are aggregated across several
+      simulations (mean and SD of values)
+      - output formatter function such as `get_XXX_agg` which
+        - calculate a cumulative running mean and SD for the output values in
+          the pointer array variables \ref p_OUT and \ref p_OUTsd
+        - if `print_IterationSummary` is `TRUE` (i.e., for the last simulation
+          run = last iteration in `STEPWAT2` terminology),
+          prepare a formatted text string in the global variable
+          \ref sw_outstr_agg which is concatenated and written to the text
+          files by SW_OUT_write_today()
+      - these output formatter functions are assigned to pointers
+        `SW_Output[k].pfunc_agg` and called by SW_OUT_write_today()
+      - currently used by `STEPWAT2` if executed with its `-o flag`
+
+    - in-memory output via `STEPWAT2` variable `SXW`
+      - the variable `SXW` is defined by `STEPWAT2` in its struct `stepwat_st`
+      - the function SW_OUT_set_SXWrequests() instructs the output code to
+        pass these outputs independently of any text output requested by an user
+      - output formatter function such as `get_XXX_SWX` which pass the correct
+        values directly in the appropriate slots of `SXW` for the correct time
+        step
+      - these output formatter functions are assigned to pointers
+        `SW_Output[k].pfunc_SXW` and called by SW_OUT_write_today()
+      - currently used by `STEPWAT2` if executed with its `-s flag`, i.e.,
+        whenever `STEPWAT2` is run with `SOILWAT2`
+
+    - in-memory output via pointer array variable \ref p_OUT
+      - output formatter function such as `get_XXX_mem` which store the correct
+        values directly in the appropriate elements of \ref p_OUT
+      - these output formatter functions are assigned to pointers
+        `SW_Output[k].pfunc_mem` and called by SW_OUT_write_today()
+      - currently used by `rSOILWAT2`
 
 
- Comment (06/23/2015, akt): Adding Output at SOILWAT for further using at RSOILWAT and STEP as well
+  __Below text is outdated as of June 2018 (retained until updated):__
 
- Above details is good enough for knowing how to add a new output at soilwat.
- However here we are adding some more details about how we can add this output for further using that to RSOILWAT and STEP side as well.
+  In detail:
 
- At the top with Comment (06/23/2015, drs): details about how output of SOILWAT works.
+  There is a structure array (SW_OUTPUT) that contains the
+  information from the outsetup.in file. This structure is filled in
+  the initialization process by matching defined macros of valid keys
+  with enumeration variables used as indices into the structure
+  array.  A similar combination of text macros and enumeration
+  constants handles the TIMEPERIOD conversion from text to numeric
+  index.
 
- Example : Adding extra place holder at existing output of SOILWAT for both STEP and RSOILWAT:
- - Adding extra place holder for existing output for both STEP and RSOILWAT: example adding extra output surfaceTemp at SW_WEATHER.
- We need to modified SW_Weather.h with adding a placeholder at SW_WEATHER and at inner structure SW_WEATHER_OUTPUTS.
- - Then somewhere this surfaceTemp value need to set at SW_WEATHER placeholder, here we add this atSW_Flow.c
- - Further modify file SW_Output.c ; add sum of surfaceTemp at function sumof_wth(). Then use this
- sum value to calculate average of surfaceTemp at function average_for().
- - Then go to function get_temp(), add extra placeholder like surfaceTempVal that will store this average surfaceTemp value.
- Add this value to both STEP and RSOILWAT side code of this function for all the periods like weekly, monthly and yearly (for
- daily set day sum value of surfaceTemp not avg), add this surfaceTempVal at end of this get_Temp() function for finally
- printing in output file.
- - Pass this surfaceTempVal to sxw.h file from STEP, by adding extra placeholder at sxw.h so that STEP model can use this value there.
- - For using this surfaceTemp value in RSOILWAT side of function get_Temp(), increment index of p_Rtemp output array
- by one and add this sum value  for daily and avg value for other periods at last index.
- - Further need to modify SW_R_lib.c, for newOutput we need to add new pointers;
- functions start() and onGetOutput() will need to be modified. For this example adding extra placeholder at existing TEMP output so
- only function onGetOutput() need to be modified; add placeholder name for surfaceTemp at array Ctemp_names[] and then 	increment
- number of columns for Rtemp outputs (Rtemp_columns) by one.
- - At RSOILWAT further we will need to modify L_swOutput.R and G_swOut.R. At L_swOutput.R increment number of columns for swOutput_TEMP.
+  Each structure element of the array contains the output period
+  code, start and end values, output file name, opened file pointer
+  for output, on/off status, and a pointer to the function that
+  prepares a complete line of formatted output per output period.
 
- So to summarize, adding extra place holder at existing output of SOILWAT for both STEP and RSOILWAT side code above steps are useful.
+  A _construct() function clears the entire structure array to set
+  values and flags to zero. Those output objects that are
+  turned off are ignored.
+  Thus, to add a new output variable, a new get_function must be added to
+  in addition to adding the new macro and enumeration keys
+  for it.  Oh, and a line or two of summarizing code.
 
- However, adding another new output quantity requires several steps for SOILWAT and both STEP and RSOILWAT side code as well.
- So adding more information to above details (for adding  another new output quantity that can further use in both STEP and RSOILWAT) :
- - We need to modify SW_R_lib.c of SOILWAT; add new pointers; functions start()  and onGetOutput() will need to be modified.
- - The sw_output.c of SOILWAT will need to be modified for new output quantity; add new pointers here too for RSOILWAT.
- - We will need to also read in the new config params from outputsetup_v30.in ; then we  will need to accumulate the new values ;
- write them out to file and assign the values to the RSOILWAT pointers.
- - At RSOILWAT we will need to modify L_swOutput.R and G_swOut.R
+  After initialization, each valid output key has an element in the
+  structure array that "knows" its parameters and whether it is on or
+  off.  There is still space allocated for the "off" keys but they
+  are ignored by the use flag.
 
- */
+  During the daily execution loop of the model, values for each of
+  the output objects are accumulated via a call to
+  SW_OUT_sum_today(x) function with x being a special enumeration
+  code that defines the actual module object to be summed (see
+  SW_Output.h).  This enumeration code breaks up the many output
+  variables into a few simple types so that adding a new output
+  variable is simplified by putting it into its proper category.
+
+  When the _sum_today() function is called, it calls the averaging
+  function which puts the sum, average, etc into the output
+  accumulators--(dy|wk|mo|yr)avg--then conditionally clears the
+  summary accumulators--(dy|wk|mo|yr)sum--if a new period has
+  occurred (in preparation for the new period), then calls the
+  function to handle collecting the summaries called collect_sums().
+
+  The collect_sums() function needs the object type (eg, eSWC, eWTH)
+  and the output period (eg, dy, wk, etc) and then, for each valid
+  output key, it assigns a pointer to the appropriate object's
+  summary sub-structure.  (This is where the complexity of this
+  approach starts to become a bit clumsy, but it nonetheless tends to
+  keep the overall code size down.) After assigning the pointer to
+  the summary structure, the pointers are passed to a routine to
+  actually do the accumulation for the various output objects
+  (currently SWC and WTH).  No other arithmetic is performed here.
+  This routine is only called, however, if the current day or period
+  falls within the range specified by the user.  Otherwise, the
+  accumulators will remain zero.  Also, the period check is used in
+  other places to determine whether to bother with averaging and
+  printing.
+
+  Once a period other than daily has passed, the accumulated values
+  are averaged or summed as appropriate within the average_for()
+  subroutine as mentioned above.
+
+  After the averaging function, the values are ready to format for
+  output.  The SW_OUT_write_today() routine is called from the
+  end_day() function in main(). Throughout the run for each period
+  all used values are appended to a string and at the end of the period
+  the string is written to the proper output file. The SW_OUT_write_today()
+  function goes through each key and if in use, it calls populate_output_values()
+  function to parse the output string and format it properly. After the string
+  is formatted it is added to an output string which is written to the output File
+  at the end of the period.
+
+  So to summarize, adding another output quantity requires several steps.
+  - Add an appropriate element to the SW_*_OUTPUTS substructure of the
+  main object (eg SW_Soilwat) to hold the output value.
+  - Define a new key string and add a macro definition and enumeration
+  to the appropriate list in Output.h.  Be sure the new key's position
+  in the list doesn't interfere with the ForEach*() loops.
+  - Increase the value of SW_OUTNKEYS macro in Output.h.
+  - Add the macro and enum keys to the key2str and key2obj lists in
+  SW_Output.c as appropriate, IN THE SAME LIST POSITION.
+  - Create and declare a get_*() function that returns the correctly
+  formatted string for output.
+  - Add a line to link the get_ function to the appropriate element in
+  the SW_OUTPUT array in _construct().
+  - Add new code to the switch statement in sumof_*() to handle the new
+  key.
+  - Add new code to the switch statement in average_for() to do the
+  summarizing.
+  - Add new code to create_col_headers to make proper columns for new value
+  - if variable is a soil variable (has layers) add name to SW_OUT_read, create_col_headers
+    and populate_output_values in the if block checking for SOIL variables
+    looks like below code `if (has_key_soillayers(key)) {`
+
+
+
+  Comment (06/23/2015, akt): Adding Output at SOILWAT for further using at RSOILWAT and STEP as well
+
+  Above details is good enough for knowing how to add a new output at soilwat.
+  However here we are adding some more details about how we can add this output for further using that to RSOILWAT and STEP side as well.
+
+  At the top with Comment (06/23/2015, drs): details about how output of SOILWAT works.
+
+  Example : Adding extra place holder at existing output of SOILWAT for both STEP and RSOILWAT:
+  - Adding extra place holder for existing output for both STEP and RSOILWAT: example adding extra output surfaceTemp at SW_WEATHER.
+  We need to modified SW_Weather.h with adding a placeholder at SW_WEATHER and at inner structure SW_WEATHER_OUTPUTS.
+  - Then somewhere this surfaceTemp value need to set at SW_WEATHER placeholder, here we add this atSW_Flow.c
+  - Further modify file SW_Output.c ; add sum of surfaceTemp at function sumof_wth(). Then use this
+  sum value to calculate average of surfaceTemp at function average_for().
+  - Then go to function get_temp(), add extra placeholder like surfaceTempVal that will store this average surfaceTemp value.
+  Add this value to both STEP and RSOILWAT side code of this function for all the periods like weekly, monthly and yearly (for
+  daily set day sum value of surfaceTemp not avg), add this surfaceTempVal at end of this get_Temp() function for finally
+  printing in output file.
+  - Pass this surfaceTempVal to sxw.h file from STEP, by adding extra placeholder at sxw.h so that STEP model can use this value there.
+  - For using this surfaceTemp value in RSOILWAT side of function get_Temp(), increment index of p_Rtemp output array
+  by one and add this sum value  for daily and avg value for other periods at last index.
+  - Further need to modify SW_R_lib.c, for newOutput we need to add new pointers;
+  functions start() and onGetOutput() will need to be modified. For this example adding extra placeholder at existing TEMP output so
+  only function onGetOutput() need to be modified; add placeholder name for surfaceTemp at array Ctemp_names[] and then 	increment
+  number of columns for Rtemp outputs (Rtemp_columns) by one.
+  - At RSOILWAT further we will need to modify L_swOutput.R and G_swOut.R. At L_swOutput.R increment number of columns for swOutput_TEMP.
+
+  So to summarize, adding extra place holder at existing output of SOILWAT for both STEP and RSOILWAT side code above steps are useful.
+
+  However, adding another new output quantity requires several steps for SOILWAT and both STEP and RSOILWAT side code as well.
+  So adding more information to above details (for adding  another new output quantity that can further use in both STEP and RSOILWAT) :
+  - We need to modify SW_R_lib.c of SOILWAT; add new pointers; functions start()  and onGetOutput() will need to be modified.
+  - The sw_output.c of SOILWAT will need to be modified for new output quantity; add new pointers here too for RSOILWAT.
+  - We will need to also read in the new config params from outputsetup_v30.in ; then we  will need to accumulate the new values ;
+  write them out to file and assign the values to the RSOILWAT pointers.
+  - At RSOILWAT we will need to modify L_swOutput.R and G_swOut.R
+
+*/

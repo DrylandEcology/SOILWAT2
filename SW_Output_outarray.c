@@ -1,14 +1,14 @@
 /********************************************************/
 /********************************************************/
-/*  Source file: SW_Output_outarray.c
-  Type: module
-  Application: SOILWAT - soilwater dynamics simulator
-  Purpose: define functions to deal with array outputs; currently, used
-    by rSOILWAT2 and STEPWAT2
+/**
+  @file
+  @brief Output functionality for in-memory processing of outputs
+
+  See the \ref out_algo "output algorithm documentation" for details.
 
   History:
   2018 June 15 (drs) moved functions from `SW_Output.c` and `rSW_Output.c`
- */
+*/
 /********************************************************/
 /********************************************************/
 
