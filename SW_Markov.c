@@ -227,7 +227,7 @@ void SW_MKV_today(TimeInt doy, RealD *tmax, RealD *tmin, RealD *rain) {
 	_ucov[0] = SW_Markov.u_cov[week][0];
 	_ucov[1] = SW_Markov.u_cov[week][1];
 	mvnorm(tmax, tmin);
-    temp_correct(doy,tmax,tmin,rain);
+	temp_correct(doy,tmax,tmin,rain);
 }
 
 Bool SW_MKV_read_prob(void) {
@@ -235,7 +235,8 @@ Bool SW_MKV_read_prob(void) {
 	SW_MARKOV *v = &SW_Markov;
 	const int nitems = 5;
 	FILE *f;
-	int lineno = 0, day, x;
+	int lineno = 0, day, x, msg_type = 0;
+	char msg[200]; // error message
 	RealF wet, dry, avg, std, cfxw, cfxd, cfnw, cfnd;
 
 	/* note that Files.read() must be called prior to this. */
@@ -248,22 +249,75 @@ Bool SW_MKV_read_prob(void) {
 		if (++lineno == MAX_DAYS)
 			break; /* skip extra lines */
 
-		x = sscanf(inbuf, "%d %f %f %f %f %f %f %f %f", &day, &wet, &dry, &avg, &std, &cfxw, &cfxd, &cfnw, &cfnd);
+		x = sscanf(inbuf, "%d %f %f %f %f %f %f %f %f",
+			&day, &wet, &dry, &avg, &std, &cfxw, &cfxd, &cfnw, &cfnd);
+
+		// Check that text file is ok:
 		if (x < nitems) {
-			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "\nToo few values in line %d file %s\n", lineno, MyFileName);
+			msg_type = LOGFATAL;
+			sprintf(msg, "Too few values in line %d of file %s\n",
+				lineno, MyFileName);
 		}
-		day--;
+
+		// Check that input values meet requirements:
+
+		// day is a real calendar day
+		if (!isfinite(day) || day < 1 || day > MAX_DAYS)
+		{
+			msg_type = LOGFATAL;
+			sprintf(msg, "'day' = %d is out of range in line %d of file %s\n",
+				day, lineno, MyFileName);
+		}
+
+		// Probabilities are in [0, 1]
+		if (!isfinite(wet) || LT(wet, 0.) || GT(wet, 1.) ||
+				!isfinite(dry) || LT(dry, 0.) || GT(dry, 1.))
+		{
+			msg_type = LOGFATAL;
+			sprintf(msg, "Probabilities of being wet = %f and/or of being dry = %f "\
+				"are out of range in line %d of file %s\n",
+				wet, dry, lineno, MyFileName);
+		}
+
+		// Mean and SD of daily precipitation are >= 0
+		if (!isfinite(avg) || LT(avg, 0.) || !isfinite(std) || LT(std, 0.))
+		{
+			msg_type = LOGFATAL;
+			sprintf(msg, "Mean daily precipitation = %f and/or SD = %f "\
+				"are out of range in line %d of file %s\n",
+				avg, std, lineno, MyFileName);
+		}
+
+		// Correction factors are real numbers
+		if (!isfinite(cfxw) || !isfinite(cfxd) ||
+				!isfinite(cfnw) || !isfinite(cfnd))
+		{
+			msg_type = LOGFATAL;
+			sprintf(msg, "One of the correction factor is not a real number "\
+				"(cfxw = %f; cfxd = %f; cfnw = %f; cfnd = %f) in line %d of file %s\n",
+				cfxw, cfxd, cfnw, cfnd, lineno, MyFileName);
+		}
+
+		// If any input is bad, then close file and fail with message:
+		if (msg_type != 0)
+		{
+			CloseFile(&f);
+			LogError(logfp, LOGFATAL, "%s", msg);
+		}
+
+		// Store values in `SW_Markov`
+		day--; // base1 -> base0
+
 		v->wetprob[day] = wet;
 		v->dryprob[day] = dry;
 		v->avg_ppt[day] = avg;
 		v->std_ppt[day] = std;
-        v->cfxw[day] = cfxw;
+		v->cfxw[day] = cfxw;
 		v->cfxd[day] = cfxd;
 		v->cfnw[day] = cfnw;
 		v->cfnd[day] = cfnd;
-
 	}
+
 	CloseFile(&f);
 
 	return swTRUE;
@@ -275,7 +329,8 @@ Bool SW_MKV_read_cov(void) {
 	SW_MARKOV *v = &SW_Markov;
 	const int nitems = 7;
 	FILE *f;
-	int lineno = 0, week, x;
+	int lineno = 0, week, x, msg_type = 0;
+	char msg[200]; // error message
 	RealF t1, t2, t3, t4, t5, t6;
 
 	MyFileName = SW_F_name(eMarkovCov);
@@ -287,12 +342,53 @@ Bool SW_MKV_read_cov(void) {
 		if (++lineno == MAX_WEEKS)
 			break; /* skip extra lines */
 
-		x = sscanf(inbuf, "%d %f %f %f %f %f %f", &week, &t1, &t2, &t3, &t4, &t5, &t6);
+		x = sscanf(inbuf, "%d %f %f %f %f %f %f",
+			&week, &t1, &t2, &t3, &t4, &t5, &t6);
+
+		// Check that text file is ok:
 		if (x < nitems) {
-			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "\nToo few values in line %d file %s\n", lineno, MyFileName);
+			msg_type = LOGFATAL;
+			sprintf(msg, "Too few values in line %d of file %s\n",
+				lineno, MyFileName);
 		}
-		week--;
+
+		// week is a real calendar week
+		if (!isfinite(week) || week < 1 || week > MAX_WEEKS)
+		{
+			msg_type = LOGFATAL;
+			sprintf(msg, "'week' = %d is out of range in line %d of file %s\n",
+				week, lineno, MyFileName);
+		}
+
+		// Mean weekly temperature values are real numbers
+		if (!isfinite(t1) || !isfinite(t2))
+		{
+			msg_type = LOGFATAL;
+			sprintf(msg, "Mean weekly temperature (max = %f and/or min = %f) "\
+				"are not real numbers in line %d of file %s\n",
+				t1, t2, lineno, MyFileName);
+		}
+
+		// Covariance values >= 0
+		if (!isfinite(t3) || !isfinite(t4) || !isfinite(t5) || !isfinite(t6) ||
+				LT(t3, 0.) || LT(t4, 0.) || LT(t5, 0.) || LT(t6, 0.))
+		{
+			msg_type = LOGFATAL;
+			sprintf(msg, "One of the covariance values is out of range "\
+				"(t3 = %f; t4 = %f; t5 = %f; t6 = %f) in line %d of file %s\n",
+				t3, t4, t5, t6, lineno, MyFileName);
+		}
+
+		// If any input is bad, then close file and fail with message:
+		if (msg_type != 0)
+		{
+			CloseFile(&f);
+			LogError(logfp, LOGFATAL, "%s", msg);
+		}
+
+		// Store values in `SW_Markov`
+		week--; // base1 -> base0
+
 		v->u_cov[week][0] = t1;
 		v->u_cov[week][1] = t2;
 		v->v_cov[week][0][0] = t3;
@@ -300,6 +396,7 @@ Bool SW_MKV_read_cov(void) {
 		v->v_cov[week][1][0] = t5;
 		v->v_cov[week][1][1] = t6;
 	}
+
 	CloseFile(&f);
 
 	return swTRUE;
