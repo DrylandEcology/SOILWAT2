@@ -262,7 +262,7 @@ Bool SW_MKV_read_prob(void) {
 		// Check that input values meet requirements:
 
 		// day is a real calendar day
-		if (!isfinite(day) || day < 1 || day > MAX_DAYS)
+		if (!isfinite((float) day) || day < 1 || day > MAX_DAYS)
 		{
 			msg_type = LOGFATAL;
 			sprintf(msg, "'day' = %d is out of range in line %d of file %s\n",
@@ -353,7 +353,7 @@ Bool SW_MKV_read_cov(void) {
 		}
 
 		// week is a real calendar week
-		if (!isfinite(week) || week < 1 || week > MAX_WEEKS)
+		if (!isfinite((float) week) || week < 1 || week > MAX_WEEKS)
 		{
 			msg_type = LOGFATAL;
 			sprintf(msg, "'week' = %d is out of range in line %d of file %s\n",
