@@ -1151,26 +1151,36 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
 	double acc;
 
 	// interpolate soil temperature values for depth of soil profile layers
-	for (j = 0; j < nlyrSoil + 1; j++) {
+	for (j = 0; j < nlyrSoil; j++) {
 		sTemp[j] = 0.0;
 		acc = 0.0;
 		n = 0;
 		while (LT(acc, width_Soil[j]) && i <= nlyrTemp + 1) {
-			if (EQ(cor[i][j], 0.0)) {// zero cor values indicate next soil temperature layer
-				i++;}
-			if (GT(cor[i][j], 0.0)) { // there are soil layers to add; index i = 0 is soil surface temperature
-				if (!(i == 0 && LT(acc + cor[i][j], width_Soil[j]))) {//don't use soil surface temperature if there is other sufficient soil temperature to interpolate
-					sTemp[j] += interpolation(((i > 0) ? depth_Temp[i - 1] : 0.0), depth_Temp[i], sTempR[i], sTempR[i + 1], depth_Soil[j]);
+			if (EQ(cor[i][j], 0.0))
+			{ // zero cor values indicate next soil temperature layer
+				i++;
+			}
+			if (GT(cor[i][j], 0.0))
+			{ // there are soil layers to add; index i = 0 is soil surface temperature
+				if (!(i == 0 && LT(acc + cor[i][j], width_Soil[j])))
+				{ //don't use soil surface temperature if there is other sufficient soil temperature to interpolate
+					sTemp[j] += interpolation(((i > 0) ? depth_Temp[i - 1] : 0.0),
+						depth_Temp[i], sTempR[i], sTempR[i + 1], depth_Soil[j]);
 					n++; // add weighting by layer width
 				}
+
 				acc += cor[i][j];
 				if (LT(acc, width_Soil[j])) i++;
-			} else if (LT(cor[i][j], 0.0)) { // negative cor values indicate copying values from deepest soil layer
+
+			} else if (LT(cor[i][j], 0.0))
+			{ // negative cor values indicate copying values from deepest soil layer
 				break;
 			}
 		}
-		if(n > 0)
+
+		if(n > 0) {
 			sTemp[j] = sTemp[j] / n;
+		}
 
     #ifdef SWDEBUG
     if (debug)

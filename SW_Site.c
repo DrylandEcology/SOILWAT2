@@ -531,7 +531,7 @@ static void _read_layers(void) {
 		v->lyr[lyrno]->swcBulk_wiltpt = SW_SWPmatric2VWCBulk(f_gravel, 15, lyrno) * v->lyr[lyrno]->width;
 		calculate_soilBulkDensity(matricd, f_gravel, lyrno);
 
-		if (lyrno == MAX_LAYERS) {
+		if (lyrno >= MAX_LAYERS) {
 			CloseFile(&f);
 			LogError(logfp, LOGFATAL, "%s : Too many layers specified (%d).\n"
 					"Maximum number of layers is %d\n", MyFileName, lyrno + 1, MAX_LAYERS);

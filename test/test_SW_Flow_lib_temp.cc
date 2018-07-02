@@ -509,14 +509,13 @@ namespace {
     double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double oldsTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double sTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    ptr_stError = swFALSE;
     double swc2[nlyrs2], swc_sat2[nlyrs2], bDensity2[nlyrs2], fc2[nlyrs2], wp2[nlyrs2];
 
     for (i = 0; i < nlyrs2; i++) {
       bDensity2[i] = fmaxf(RandNorm(1.,0.5), 0.1); // greater than 0.1
       fc2[i] = fmaxf(RandNorm(1.5, 0.5), 0.1); // greater than 0.1
       swc_sat2[i] = fc2[i] + 0.2; //swc_sat > fc2
-      swc2[i] =  swc_sat2[i] - 0.3; // swc_sat > swc
+      swc2[i] =  fmax(swc_sat2[i] - 0.3, 0.01); // swc_sat > swc > 0
       wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp < fc
       //swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
       //  i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
