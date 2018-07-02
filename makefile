@@ -36,8 +36,8 @@ warning_flags = -Wall -Wextra -Werror
 warning_flags_bin = $(warning_flags) -Wpedantic
 
 # Instrumentation options
-instr_flags = -fstack-protector-all -D_FORTIFY_SOURCE=2 -fsanitize=undefined
-	#-fsanitize=address
+instr_flags = -fstack-protector-all
+instr_flags_local = $(instr_flags) -D_FORTIFY_SOURCE=2 -fsanitize=undefined -fsanitize=address
 	# -fstack-protector-strong (gcc >= v4.9)
 	# (gcc >= 4.0) -D_FORTIFY_SOURCE: lightweight buffer overflow protection to some memory and string functions
 	# (gcc >= 4.8; llvm >= 3.1) -fsanitize=address: replaces `mudflap` run time checker; https://github.com/google/sanitizers/wiki/AddressSanitizer
