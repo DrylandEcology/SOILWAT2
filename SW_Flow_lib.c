@@ -1216,11 +1216,11 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
 
 	//interpolate soil temperature at soil temperature profile depths
 	for (i = 0; i < nlyrTemp; i++) {
-		while (LT(depth_Soil2[j1 + 1], depth_Temp[i]) && (j1 + 1) < nlyrSoil) {
+		while ((j1 + 1) < nlyrSoil && LT(depth_Soil2[j1 + 1], depth_Temp[i])) {
 			j1++;
 		}
 		j2 = j1 + 1;
-		while (LE(depth_Soil2[j2 + 1], depth_Temp[i]) && (j2 + 1) < nlyrSoil + 1) {
+		while ((j2 + 1) < nlyrSoil + 1 && LE(depth_Soil2[j2 + 1], depth_Temp[i])) {
 			j2++;
 		}
 
