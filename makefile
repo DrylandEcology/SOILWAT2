@@ -22,21 +22,39 @@
 
 uname_m = $(shell uname -m)
 
+#------ COMMANDS AND STANDARDS
 # CC = gcc
 # CXX = g++
 # AR = ar
 use_c11 = -std=c11
 use_gnu11 = -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
 
-CFLAGS = -O2 -Wall -Wextra -pedantic
-debug_flags = -g -O0 -DSWDEBUG -fstack-protector # -fstack-protector-strong is only available with gcc v4.9
-CXXFLAGS = -Wall -Wextra
+
+#------ FLAGS
+# Diagnostic warning/error messages
+warning_flags = -Wall -Wextra -Werror
+warning_flags_bin = $(warning_flags) -Wpedantic
+
+# Instrumentation options
+instr_flags = -fstack-protector-all -D_FORTIFY_SOURCE=2 -fsanitize=undefined
+	#-fsanitize=address
+	# -fstack-protector-strong (gcc >= v4.9)
+	# (gcc >= 4.0) -D_FORTIFY_SOURCE: lightweight buffer overflow protection to some memory and string functions
+	# (gcc >= 4.8; llvm >= 3.1) -fsanitize=address: replaces `mudflap` run time checker; https://github.com/google/sanitizers/wiki/AddressSanitizer
+
+# Precompiler, compiler, and linker flags
+CFLAGS = -O2 $(warning_flags_bin)
+debug_flags = -g -O0 -DSWDEBUG $(instr_flags)
+
+CXXFLAGS = $(warning_flags)
 cov_flags = -coverage
 gtest_flags = $(CXXFLAGS) $(CPPFLAGS) $(debug_flags) $(use_gnu11)
 
 LDFLAGS = -L.
 LDLIBS = -l$(target) -lm						# order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 
+
+#------ CODE FILES
 sources = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 					rands.c Times.c mymemory.c filefuncs.c \
 					SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c \
@@ -56,6 +74,7 @@ sources_tests = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 objects_tests = $(sources_tests:.c=.o)
 
 
+#------ OUTPUT NAMES
 bin_sources = SW_Main.c
 bin_objects = $(bin_sources:.c=.o)
 
@@ -75,6 +94,8 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
 gtest_LDLIBS = -l$(gtest) -l$(target)++ -lm
 cov_LDLIBS = -l$(gtest) -lcov$(target)++ -lm
 
+
+#------ TARGETS
 lib : $(lib_target)
 
 $(lib_target) :
