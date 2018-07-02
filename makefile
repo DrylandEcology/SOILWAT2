@@ -143,6 +143,13 @@ bin_debug :
 		@rm -f $(objects)
 		$(CC) $(CPPFLAGS) $(debug_flags) $(instr_flags_severe) $(LDFLAGS) $(use_c11) -o $(target) $(bin_sources) $(LDLIBS)
 
+bin_debug_ci :
+		$(CC) $(CPPFLAGS) $(debug_flags) $(use_c11) -c $(sources)
+		@rm -f $(lib_target)
+		$(AR) -rcs $(lib_target) $(objects)
+		@rm -f $(objects)
+		$(CC) $(CPPFLAGS) $(debug_flags) $(LDFLAGS) $(use_c11) -o $(target) $(bin_sources) $(LDLIBS)
+
 .PHONY : bint
 bint : bin
 		cp $(target) testing/$(target)
@@ -156,8 +163,9 @@ bind : bin_debug
 		cp $(target) testing/$(target)
 
 .PHONY : bind_valgrind
-bind_valgrind : bind
-		valgrind -v --track-origins=yes --leak-check=full ./testing/SOILWAT2 -d ./testing -f files.in
+bind_valgrind : bin_debug_ci
+		cp $(target) testing/$(target)
+		valgrind -v --track-origins=yes --leak-check=full ./testing/$(target) -d ./testing -f files.in
 
 
 # GoogleTest:
