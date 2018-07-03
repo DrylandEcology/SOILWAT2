@@ -210,7 +210,7 @@ clean1 :
 
 .PHONY : clean2
 clean2 :
-		@rm -f $(target) $(lib_target) $(lib_target++)
+		@rm -f $(target) $(lib_target) $(lib_target++) $(lib_target_ci++)
 		@rm -f testing/$(target)
 
 .PHONY : bint_clean
@@ -223,7 +223,7 @@ test_clean :
 
 .PHONY : cov_clean
 cov_clean :
-		@rm -f $(lib_covtarget++) *.gcda *.gcno *.gcov
+		@rm -f $(lib_covtarget++) $(lib_covtarget_ci++) *.gcda *.gcno *.gcov
 		@rm -fr *.dSYM
 
 .PHONY : cleaner
