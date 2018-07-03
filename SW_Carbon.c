@@ -17,6 +17,7 @@
 #include <string.h>
 #include "generic.h"
 #include "filefuncs.h"
+#include "myMemory.h"
 #include "SW_Defines.h"
 #include "SW_Times.h"
 #include "SW_Files.h"
@@ -58,6 +59,10 @@ extern SW_MODEL SW_Model;
 void SW_CBN_construct(void)
 {
   memset(&SW_Carbon, 0, sizeof(SW_Carbon));
+}
+
+void SW_CBN_deconstruct(void)
+{
 }
 
 
@@ -200,7 +205,6 @@ void SW_CBN_read(void)
 /**
  * @brief Calculates the multipliers of the CO2-effect for biomass and water-use efficiency.
  *
- * @description
  * Multipliers are calculated per year with the equation: Coeff1 * ppm^Coeff2
  * Where Coeff1 and Coeff2 are provided by the VegProd input. Coefficients assume that
  * monthly biomass reflect values for atmospheric conditions at 360 ppm CO2. Each PFT has

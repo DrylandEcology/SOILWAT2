@@ -21,6 +21,7 @@
 #define SW_MODEL_H
 
 #include "Times.h"
+#include "SW_Defines.h"
 
 typedef struct {
 	TimeInt /* controlling dates for model run */
@@ -42,13 +43,14 @@ typedef struct {
 
 	/* first day of new week/month is checked for
 	 * printing and summing weekly/monthly values */
-	Bool newweek, newmonth, newyear;
+	Bool newperiod[SW_OUTNPERIODS];
 	Bool isnorth;
 
 } SW_MODEL;
 
 void SW_MDL_read(void);
 void SW_MDL_construct(void);
+void SW_MDL_deconstruct(void);
 void SW_MDL_new_year(void);
 void SW_MDL_new_day(void);
 

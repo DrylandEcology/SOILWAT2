@@ -181,13 +181,11 @@ LyrIndex _newlayer(void) {
 	v->n_layers++;
 
 	v->lyr = (!v->lyr) /* if not yet defined */
-	? (SW_LAYER_INFO **) /* malloc() it  */
-	Mem_Calloc(v->n_layers, sizeof(SW_LAYER_INFO *), "_newlayer()")
+		? (SW_LAYER_INFO **) Mem_Calloc(v->n_layers, sizeof(SW_LAYER_INFO *), "_newlayer()") /* malloc() it  */
+		: (SW_LAYER_INFO **) Mem_ReAlloc(v->lyr, sizeof(SW_LAYER_INFO *) * (v->n_layers)); /* else realloc() */
 
-	:
-		(SW_LAYER_INFO **) /* else realloc() */
-		Mem_ReAlloc(v->lyr, sizeof(SW_LAYER_INFO *) * (v->n_layers));
 	v->lyr[v->n_layers - 1] = (SW_LAYER_INFO *) Mem_Calloc(1, sizeof(SW_LAYER_INFO), "_newlayer()");
+
 	return v->n_layers - 1;
 }
 
@@ -211,7 +209,11 @@ void SW_SIT_construct(void) {
 	 * before clearing structure.
 	 */
 	memset(&SW_Site, 0, sizeof(SW_Site));
+}
 
+void SW_SIT_deconstruct(void)
+{
+	SW_SIT_clear_layers();
 }
 
 void SW_SIT_read(void) {
@@ -697,7 +699,7 @@ void init_site_info(void) {
 				s + 1, SW_Site.lyr[s]->evap_coeff);
 		}
 
-		swfprintf(logfp, "\n");
+		fprintf(logfp, "\n");
 	}
 
 	ForEachVegType(k)
@@ -718,7 +720,7 @@ void init_site_info(void) {
 				}
 			}
 
-			swfprintf(logfp, "\n");
+			fprintf(logfp, "\n");
 		}
 	}
 

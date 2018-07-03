@@ -77,6 +77,21 @@ __Tests, documentation, and code__ form a trinity
     ```
   * Development/feature branches can only be merged into master if they pass
     all checks
+  * Informal and local integration tests example:
+    1. Before coding, run `testing/` and produce reference output
+        ```
+        git checkout master
+        make cleaner bint_run
+        cp -r testing/Output testing/Output_ref
+        ```
+    2. Develop your code and keep "testing/Output_ref" locally, i.e., don't
+    include "testing/Output_ref" in commits
+    3. Regularly, e.g., before finalizing a commit, check that new code produces
+    identical output (that is unless you work on output...)
+        ```
+        make cleaner bint_run
+        diff testing/Output/ testing/Output_ref/ -qs
+        ```
 
 - Debugging is controlled at two levels:
   * at the preprocessor (pass `-DSWDEBUG`):

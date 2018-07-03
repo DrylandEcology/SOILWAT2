@@ -56,27 +56,28 @@ LDLIBS = -l$(target) -lm						# order of libraries is important for GNU gcc (lib
 
 
 #------ CODE FILES
-sources = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
-					rands.c Times.c mymemory.c filefuncs.c \
-					SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c \
-					SW_Markov.c SW_Weather.c SW_Sky.c SW_Output.c \
+sources = $(sw_sources) SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
+					rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c \
+					SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c \
+					SW_Output.c SW_Output_get_functions.c\
 					SW_VegProd.c SW_Flow_lib.c SW_Flow.c SW_Carbon.c
 objects = $(sources:.c=.o)
 
-# Unfortunately, we cannot include 'SW_Output.c' currently because
+# Unfortunately, we currently cannot include 'SW_Output.c' because
 #  - cannot increment expression of enum type (e.g., OutKey, OutPeriod)
 #  - assigning to 'OutKey' from incompatible type 'int'
-# ==> instead, we use 'SW_Output_mock.c' which provides mock versions of the public functions (but will result in some compiler warnings)
+# ==> instead, we use 'SW_Output_mock.c' which provides mock versions of the
+# public functions (but will result in some compiler warnings)
 sources_tests = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
-					rands.c Times.c mymemory.c filefuncs.c \
-					SW_Files.c SW_Model.c SW_Site.c SW_SoilWater.c \
-					SW_Markov.c SW_Weather.c SW_Sky.c SW_Output_mock.c\
+					rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c \
+					SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c \
+					SW_Output_mock.c \
 					SW_VegProd.c SW_Flow_lib.c SW_Flow.c SW_Carbon.c
 objects_tests = $(sources_tests:.c=.o)
 
 
 #------ OUTPUT NAMES
-bin_sources = SW_Main.c
+bin_sources = SW_Main.c SW_Output_outtext.c # SOILWAT2-standalone
 bin_objects = $(bin_sources:.c=.o)
 
 
@@ -209,7 +210,7 @@ clean1 :
 
 .PHONY : clean2
 clean2 :
-		@rm -f $(target) $(lib_target) $(lib_target++)
+		@rm -f $(target) $(lib_target) $(lib_target++) $(lib_target_ci++)
 		@rm -f testing/$(target)
 
 .PHONY : bint_clean
@@ -222,7 +223,7 @@ test_clean :
 
 .PHONY : cov_clean
 cov_clean :
-		@rm -f $(lib_covtarget++) *.gcda *.gcno *.gcov
+		@rm -f $(lib_covtarget++) $(lib_covtarget_ci++) *.gcda *.gcno *.gcov
 		@rm -fr *.dSYM
 
 .PHONY : cleaner

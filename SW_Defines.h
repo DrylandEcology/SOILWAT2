@@ -71,6 +71,27 @@
 #define SW_GRASS 3
 
 
+/* output period specifiers */
+#define SW_DAY   "DY"
+#define SW_WEEK  "WK"
+#define SW_MONTH "MO"
+#define SW_YEAR  "YR"
+
+#define SW_DAY_LONG   "Day"
+#define SW_WEEK_LONG  "Week"
+#define SW_MONTH_LONG "Month"
+#define SW_YEAR_LONG  "Year"
+
+#define SW_OUTNPERIODS 4  // must match with defines below except `eSW_NoTime`
+#define eSW_Day 0
+#define eSW_Week 1
+#define eSW_Month 2
+#define eSW_Year 3
+#define eSW_NoTime 999 // no time period
+// c++ doesn't support (pd)++ for pd as a typedef enum OutPeriod in
+// macro `ForEachOutPeriod` --> instead, define as type `IntUS`
+typedef IntUS OutPeriod;
+
 
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */
@@ -86,6 +107,8 @@
 #define ForEachVegTypeBottomUp(k)  for ((k) = NVEGTYPES - 1; (k) >= 0; (k)--)
 /* define m as Months */
 #define ForEachMonth(m)         for((m)=Jan; (m) <= Dec;  (m)++)
+#define ForEachOutPeriod(k)  for((k)=eSW_Day;     (k)<=eSW_Year;     (k)++)
+
 
 /* The ARCTANGENT function req'd by the original fortran produces
  * a highly configurable logistic curve. It was unfortunately

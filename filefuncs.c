@@ -300,6 +300,7 @@ Bool MkDir(const char *dname) {
 		strcat(errstr, "/");
 	}
 
+	free(c);
 	return result;
 }
 
