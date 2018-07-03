@@ -60,15 +60,15 @@
 typedef struct {
 
 	double depths[MAX_LAYERS],  //soil layer depths of SoilWat soil
-	       depthsR[MAX_ST_RGR + 1],//evenly spaced soil layer depths for soil temperature calculations
+	       depthsR[MAX_ST_RGR],//evenly spaced soil layer depths for soil temperature calculations
 		   	 fcR[MAX_ST_RGR],//field capacity of soil layers for soil temperature calculations
 		   	 wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
 		   	 bDensityR[MAX_ST_RGR],//bulk density of soil layers for soil temperature calculations
 		   	 oldsFusionPool_actual[MAX_LAYERS],
-		   	 oldsTempR[MAX_ST_RGR + 1];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
+		   	 oldsTempR[MAX_ST_RGR];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
 
 	Bool lyrFrozen[MAX_LAYERS];
-	double tlyrs_by_slyrs[MAX_ST_RGR + 1][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers
+	double tlyrs_by_slyrs[MAX_ST_RGR][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers
 
 	/*unsigned int x1BoundsR[MAX_ST_RGR],
 	             x2BoundsR[MAX_ST_RGR],
@@ -150,7 +150,7 @@ void soil_temperature(double airTemp,
 						double snow,
 						Bool *ptr_stError);
 
-void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1],
+void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
 	 unsigned int nlyrTemp, double depth_Temp[],
 	 double sTempR[], unsigned int nlyrSoil, double depth_Soil[],
 	 double width_Soil[], double sTemp[]);
@@ -159,7 +159,7 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
 	double sTemp[], double endTemp, unsigned int nlyrTemp,
 	double depth_Temp[], double maxTempDepth, double sTempR[]);
 
-void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrSoil,
+void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR][MAX_LAYERS + 1], unsigned int nlyrSoil,
 		double width_Soil[], double var[], unsigned int nlyrTemp, double width_Temp,
 		double res[]);
 
