@@ -533,7 +533,7 @@ static void _read_layers(void) {
 		v->lyr[lyrno]->swcBulk_wiltpt = SW_SWPmatric2VWCBulk(f_gravel, 15, lyrno) * v->lyr[lyrno]->width;
 		calculate_soilBulkDensity(matricd, f_gravel, lyrno);
 
-		if (lyrno == MAX_LAYERS) {
+		if (lyrno >= MAX_LAYERS) {
 			CloseFile(&f);
 			LogError(logfp, LOGFATAL, "%s : Too many layers specified (%d).\n"
 					"Maximum number of layers is %d\n", MyFileName, lyrno + 1, MAX_LAYERS);
@@ -724,17 +724,28 @@ void init_site_info(void) {
 		}
 	}
 
-	sp->stNRGR = (sp->stMaxDepth / sp->stDeltaX) - 1; // getting the number of regressions, for use in the soil_temperature function
-	if (!EQ(fmod(sp->stMaxDepth, sp->stDeltaX), 0.0) || (sp->stNRGR > MAX_ST_RGR)) {
-		// resets it to the default values if the remainder of the division != 0.  fmod is like the % symbol except it works with double values
-		// without this reset, then there wouldn't be a whole number of regressions in the soil_temperature function (ie there is a remainder from the division), so this way I don't even have to deal with that possibility
-		if (sp->stNRGR > MAX_ST_RGR)
-			LogError(logfp, LOGWARN,
-					"\nSOIL_TEMP FUNCTION ERROR: the number of regressions is > the maximum number of regressions.  resetting max depth, deltaX, nRgr values to 180, 15, & 11 respectively\n");
-		else
-			LogError(logfp, LOGWARN,
-					"\nSOIL_TEMP FUNCTION ERROR: max depth is not evenly divisible by deltaX (ie the remainder != 0).  resetting max depth, deltaX, nRgr values to 180, 15, & 11 respectively\n");
+	// getting the number of regressions, for use in the soil_temperature function
+	sp->stNRGR = (sp->stMaxDepth / sp->stDeltaX) - 1;
+	Bool too_many_RGR = (Bool) (sp->stNRGR + 1 >= MAX_ST_RGR);
 
+	if (!EQ(fmod(sp->stMaxDepth, sp->stDeltaX), 0.0) || too_many_RGR) {
+
+		if (too_many_RGR)
+		{ // because we will use loops such `for (i = 0; i <= nRgr + 1; i++)`
+			LogError(logfp, LOGWARN,
+				"\nSOIL_TEMP FUNCTION ERROR: the number of regressions is > the "\
+				"maximum number of regressions.  resetting max depth, deltaX, nRgr "\
+				"values to 180, 15, & 11 respectively\n");
+		}
+		else
+		{ // because we don't deal with partial layers
+			LogError(logfp, LOGWARN,
+				"\nSOIL_TEMP FUNCTION ERROR: max depth is not evenly divisible by "\
+				"deltaX (ie the remainder != 0).  resetting max depth, deltaX, nRgr "\
+				"values to 180, 15, & 11 respectively\n");
+		}
+
+		// resets it to the default values
 		sp->stMaxDepth = 180.0;
 		sp->stNRGR = 11;
 		sp->stDeltaX = 15.0;
