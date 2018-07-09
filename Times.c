@@ -351,9 +351,9 @@ void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
 	unsigned int doy, mday, month, month2 = NoMonth;
 	double sign = 1.;
 
-	for (doy = 1; doy <= MAX_DAYS; doy++) {
-		mday = doy2mday(doy);
-		month = doy2month(doy);
+	for (doy = 0; doy < MAX_DAYS; doy++) {
+		mday = doy2mday(doy + 1);
+		month = doy2month(doy + 1);
 
 		if (mday == 15) {
 			dailyValues[doy] = monthlyValues[month];
