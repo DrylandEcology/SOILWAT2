@@ -41,6 +41,8 @@ extern char _firstfile[];
 /** Initialize SOILWAT2 variables and read values from example input file
  */
 void Reset_SOILWAT2_after_UnitTest(void) {
+  SW_CTL_clear_model(swFALSE);
+
   SW_CTL_init_model(_firstfile);
   SW_CTL_obtain_inputs();
 
