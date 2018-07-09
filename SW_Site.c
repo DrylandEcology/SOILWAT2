@@ -630,7 +630,13 @@ void init_site_info(void) {
 			swcmin_help1 = SW_VWCBulkRes(lyr->fractionVolBulk_gravel, lyr->fractionWeightMatric_sand, lyr->fractionWeightMatric_clay, lyr->swcBulk_saturated / lyr->width)
 					* lyr->width;
 			swcmin_help2 = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, 30., s) * lyr->width;
-			lyr->swcBulk_min = fmax(0., fmin(swcmin_help1, swcmin_help2));
+			// when SW_VWCBulkRes returns the macro SW_MISSING always use swcmin_help2
+			if(missing(swcmin_help1)){
+				lyr -> swcBulk_min = swcmin_help2;
+			}
+			else{
+				lyr->swcBulk_min = fmax(0., fmin(swcmin_help1, swcmin_help2));
+			}
 		} else if (GE(_SWCMinVal, 1.0)) { /* assume that unit(_SWCMinVal) == -bar */
 			lyr->swcBulk_min = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCMinVal, s) * lyr->width;
 		} else { /* assume that unit(_SWCMinVal) == cm/cm */
@@ -676,31 +682,41 @@ void init_site_info(void) {
 
 	/* normalize the evap and transp coefficients separately
 	 * to avoid obfuscation in the above loop */
-	if (!EQ(evsum, 1.0)) {
-		LogError(logfp, LOGWARN, "%s : Evap coefficients were normalized, "
-				"ev_co sum (%5.4f) != 1.0.\nNew coefficients are:", MyFileName, evsum);
+	if (!EQ_w_tol(evsum, 1.0, 1e-4)) { // inputs are not more precise than at most 3-4 digits
+		LogError(logfp, LOGWARN,
+			"%s : Evaporation coefficients were normalized:\n" \
+			"\tSum of coefficients was %.4f, but must be 1.0. " \
+			"New coefficients are:", MyFileName, evsum);
+
 		ForEachEvapLayer(s)
 		{
 			SW_Site.lyr[s]->evap_coeff /= evsum;
-			LogError(logfp, LOGNOTE, "  Layer %d : %5.4f", s + 1, SW_Site.lyr[s]->evap_coeff);
+			LogError(logfp, LOGNOTE, "  Layer %2d : %.4f",
+				s + 1, SW_Site.lyr[s]->evap_coeff);
 		}
+
+		swfprintf(logfp, "\n");
 	}
 
 	ForEachVegType(k)
 	{
-		if (!EQ(trsum_veg[k], 1.0)) {
-			LogError(logfp, LOGWARN, "%s : Transp coefficients for %s were normalized, "
-				"tr_co_forb sum (%5.4f) != 1.0.\nNew Coefficients are:",
-				MyFileName, key2veg[k], trsum_veg[k]);
+		if (!EQ_w_tol(trsum_veg[k], 1.0, 1e-4)) { // inputs are not more precise than at most 3-4 digits
+			LogError(logfp, LOGWARN,
+				"%s : Transpiration coefficients were normalized for %s:\n" \
+				"\tSum of coefficients was %.4f, but must be 1.0. " \
+				"New coefficients are:", MyFileName, key2veg[k], trsum_veg[k]);
 
 			ForEachSoilLayer(s)
 			{
 				if (GT(SW_Site.lyr[s]->transp_coeff[k], 0.))
 				{
 					SW_Site.lyr[s]->transp_coeff[k] /= trsum_veg[k];
-					LogError(logfp, LOGNOTE, "  Layer %d : %5.4f", s + 1, SW_Site.lyr[s]->transp_coeff[k]);
+					LogError(logfp, LOGNOTE, "  Layer %2d : %.4f",
+						s + 1, SW_Site.lyr[s]->transp_coeff[k]);
 				}
 			}
+
+			swfprintf(logfp, "\n");
 		}
 	}
 

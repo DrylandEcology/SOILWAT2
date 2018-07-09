@@ -102,8 +102,6 @@ static void _clear_hist(void) {
 }
 
 #ifdef SWDEBUG
-#define EQ_w_tol(x, y) (fabs((x) - (y)) <= 1e-9)
-
 void SW_WaterBalance_Checks(void)
 {
   SW_SOILWAT *sw = &SW_Soilwat;
@@ -121,7 +119,7 @@ void SW_WaterBalance_Checks(void)
     intercepted, int_veg_total = 0.,
     delta_surfaceWater,
     delta_swc_total = 0., delta_swcj[MAX_LAYERS];
-  RealD lhs, rhs;
+  RealD lhs, rhs, wbtol = 1e-9;
 
   static RealD surfaceWater_yesterday = 0.;
   static Bool do_once = swTRUE;
@@ -210,7 +208,7 @@ void SW_WaterBalance_Checks(void)
   // AET == E(total) + T(total)
   if (do_once) sw->wbErrorNames[1] = Str_Dup("AET == Etotal + Ttotal");
   rhs = Etotal + Ttotal;
-  if (!EQ_w_tol(sw->aet, rhs))
+  if (!EQ_w_tol(sw->aet, rhs, wbtol))
   {
     sw->wbError[1]++;
     if (debugi[1]) swprintf("%s: AET(%f) == %f == Etotal(%f) + Ttotal(%f)\n",
@@ -226,7 +224,7 @@ void SW_WaterBalance_Checks(void)
   //            + E(total veg-intercepted) + E(snow sublimation)
   if (do_once) sw->wbErrorNames[3] = Str_Dup("Etotal == Esoil + Eponded + Eveg + Elitter + Esnow");
   rhs = Esoil + Eponded + Eveg + Elitter + Esnow;
-  if (!EQ_w_tol(Etotal, rhs))
+  if (!EQ_w_tol(Etotal, rhs, wbtol))
   {
     sw->wbError[3]++;
     if (debugi[3]) swprintf("%s: Etotal(%f) == %f == Esoil(%f) + Eponded(%f) + Eveg(%f) + Elitter(%f) + Esnow(%f)\n",
@@ -237,7 +235,7 @@ void SW_WaterBalance_Checks(void)
   //                    + E(total veg-intercepted)
   if (do_once) sw->wbErrorNames[4] = Str_Dup("Esurf == Eponded + Eveg + Elitter");
   rhs = Eponded + Eveg + Elitter;
-  if (!EQ_w_tol(Etotalsurf, rhs))
+  if (!EQ_w_tol(Etotalsurf, rhs, wbtol))
   {
     sw->wbError[4]++;
     if (debugi[4]) swprintf("%s: Esurf(%f) == %f == Eponded(%f) + Eveg(%f) + Elitter(%f)\n",
@@ -249,7 +247,7 @@ void SW_WaterBalance_Checks(void)
   // infiltration = [rain + snowmelt + runon] - (runoff + intercepted + delta_surfaceWater + Eponded)
   if (do_once) sw->wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + intercepted + delta_surfaceWater + Eponded)");
   rhs = arriving_water - (runoff + intercepted + delta_surfaceWater + Eponded);
-  if (!EQ_w_tol(infiltration, rhs))
+  if (!EQ_w_tol(infiltration, rhs, wbtol))
   {
     sw->wbError[5]++;
     if (debugi[5]) swprintf("%s: inf(%f) == %f == rain(%f) + snowmelt(%f) + runon(%f) - (runoff(%f) + intercepted(%f) + delta_surfaceWater(%f) + Eponded(%f))\n",
@@ -260,7 +258,7 @@ void SW_WaterBalance_Checks(void)
   if (do_once) sw->wbErrorNames[6] = Str_Dup("Ttotal + Esoil = inf - (deepDrainage + delta_swc)");
   lhs = Ttotal + Esoil;
   rhs = infiltration - (deepDrainage + delta_swc_total);
-  if (!EQ_w_tol(lhs, rhs))
+  if (!EQ_w_tol(lhs, rhs, wbtol))
   {
     sw->wbError[6]++;
     if (debugi[6]) swprintf("%s: Ttotal(%f) + Esoil(%f) == %f == %f == inf(%f) - (deepDrainage(%f) + delta_swc(%f))\n",
@@ -275,7 +273,7 @@ void SW_WaterBalance_Checks(void)
   {
     rhs = percolationIn[i] + hydraulicRedistribution[i] -
       (percolationOut[i] + Ttotalj[i] + sw->evaporation[i]);
-    if (!EQ_w_tol(delta_swcj[i], rhs))
+    if (!EQ_w_tol(delta_swcj[i], rhs, wbtol))
     {
       sw->wbError[7]++;
       if (debugi[7]) swprintf("%s sl=%d: delta_swc(%f) == %f == perc_in(%f) + hydred(%f) - (perc_out(%f) + Ttot(%f) + Esoil(%f))\n",
@@ -986,7 +984,6 @@ RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n) {
  ---------------------*/
 
 RealD SW_VWCBulkRes(RealD fractionGravel, RealD sand, RealD clay, RealD porosity) {
-
   if (clay < .05 || clay > .6 || sand < .05 || sand > .7){
     LogError(logfp, LOGWARN, "Sand and/or clay values out of valid range, simulation outputs may differ.");
     return SW_MISSING;

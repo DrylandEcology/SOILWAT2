@@ -591,17 +591,23 @@ void SW_VPD_read(void) {
 		fraction_sum += v->veg[k].cov.fCover;
 	}
 
-	if (!EQ(fraction_sum, 1.0)) {
-		LogError(logfp, LOGWARN, "%s : Fractions of vegetation components were normalized, "
-			"sum of fractions (%5.4f) != 1.0.\nNew coefficients are:", MyFileName, fraction_sum);
+
+	if (!EQ_w_tol(fraction_sum, 1.0, 1e-4)) { // inputs are not more precise than at most 3-4 digits
+		LogError(logfp, LOGWARN,
+			"%s : Fractions of vegetation components were normalized:\n" \
+			"\tSum of fractions was %.4f, but must be 1.0. " \
+			"New coefficients are:", MyFileName, fraction_sum);
 
 		v->bare_cov.fCover /= fraction_sum;
-		LogError(logfp, LOGWARN, "  Bare Ground fraction : %5.4f", v->bare_cov.fCover);
+		LogError(logfp, LOGNOTE, "Bare ground fraction = %.4f", v->bare_cov.fCover);
 
 		ForEachVegType(k) {
 			v->veg[k].cov.fCover /= fraction_sum;
-			LogError(logfp, LOGWARN, " %d fraction : %5.4f", key2veg[k], v->veg[k].cov.fCover);
+			LogError(logfp, LOGNOTE, "%s fraction = %.4f",
+				key2veg[k], v->veg[k].cov.fCover);
 		}
+
+		swfprintf(logfp, "\n");
 	}
 
 	CloseFile(&f);
