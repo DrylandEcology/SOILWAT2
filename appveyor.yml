@@ -12,5 +12,5 @@ install:
 build_script:
   - set PATH=%PATH%;c:\cygwin\bin
   - set CPPFLAGS=-DSWDEBUG && make cleaner bint_run
-  - make cleaner test test_run
+  - make cleaner testci test_run
   - make cleaner

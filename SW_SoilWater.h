@@ -119,15 +119,16 @@ typedef struct {
   char *wbErrorNames[N_WBCHECKS];
   #endif
 
-	SW_SOILWAT_OUTPUTS dysum, /* helpful placeholder */
-	wksum, mosum, yrsum, /* accumulators for *avg */
-	wkavg, moavg, yravg; /* averages or sums as appropriate */
+	SW_SOILWAT_OUTPUTS
+		*p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time period
+		*p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
 	Bool hist_use;
 	SW_SOILWAT_HIST hist;
 
 } SW_SOILWAT;
 
 void SW_SWC_construct(void);
+void SW_SWC_deconstruct(void);
 void SW_SWC_new_year(void);
 void SW_SWC_read(void);
 void _read_swc_hist(TimeInt year);
@@ -143,6 +144,10 @@ RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n);
 RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n);
 RealD SW_VWCBulkRes(RealD fractionGravel, RealD sand, RealD clay, RealD porosity);
 void get_dSWAbulk(int i);
+
+#ifdef SWDEBUG
+void SW_WaterBalance_Checks(void);
+#endif
 
 #ifdef DEBUG_MEM
 void SW_SWC_SetMemoryRefs(void);

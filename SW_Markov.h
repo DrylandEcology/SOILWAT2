@@ -33,6 +33,7 @@ typedef struct {
 } SW_MARKOV;
 
 void SW_MKV_construct(void);
+void SW_MKV_deconstruct(void);
 Bool SW_MKV_read_prob(void);
 Bool SW_MKV_read_cov(void);
 void SW_MKV_today(TimeInt doy, RealD *tmax, RealD *tmin, RealD *rain);

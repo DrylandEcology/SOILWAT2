@@ -19,6 +19,7 @@
 #define SW_CONTROL_H
 
 void SW_CTL_init_model(const char *firstfile);
+void SW_CTL_clear_model(Bool full_reset);
 void SW_CTL_obtain_inputs(void);
 void SW_CTL_read_inputs_from_disk(void);
 void SW_CTL_main(void); /* main controlling loop for SOILWAT  */

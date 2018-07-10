@@ -84,26 +84,69 @@ void SW_VES_construct(void) {
 	 * will need to free all allocated memory first
 	 * before clearing structure.
 	 */
+	OutPeriod pd;
 
+	// Clear the module structure:
 	memset(&SW_VegEstab, 0, sizeof(SW_VegEstab));
 
-}
-
-void SW_VES_clear(void) {
-	unsigned int i;
-	if (SW_VegEstab.count > 0) {
-		free(SW_VegEstab.yrsum.days);
-		//free(SW_VegEstab.yravg.days);
-
-		for(i=0; i<SW_VegEstab.count; i++)
-		{
-			free(SW_VegEstab.parms[i]);
-			SW_VegEstab.parms[i]=NULL;
+	// Allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_VegEstab.p_accu[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(1,
+			sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_construct()");
+		if (pd > eSW_Day) {
+			SW_VegEstab.p_oagg[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(1,
+				sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_construct()");
 		}
-		free(SW_VegEstab.parms);
-		SW_VegEstab.parms = NULL;
 	}
 }
+
+void SW_VES_deconstruct(void)
+{
+	OutPeriod pd;
+	IntU i;
+
+	// De-allocate parameters
+	if (SW_VegEstab.count > 0)
+	{
+		for (i = 0; i < SW_VegEstab.count; i++)
+		{
+			Mem_Free(SW_VegEstab.parms[i]);
+			SW_VegEstab.parms[i] = NULL;
+		}
+
+		Mem_Free(SW_VegEstab.parms);
+		SW_VegEstab.parms = NULL;
+	}
+
+
+	ForEachOutPeriod(pd)
+	{
+		// De-allocate days and parameters
+		if (SW_VegEstab.count > 0)
+		{
+			if (!isnull(SW_VegEstab.p_oagg[pd]->days)) {
+				Mem_Free(SW_VegEstab.p_oagg[eSW_Year]->days);
+			}
+
+			if (!isnull(SW_VegEstab.p_accu[pd]->days)) {
+				Mem_Free(SW_VegEstab.p_accu[eSW_Year]->days);
+			}
+		}
+
+		// De-allocate output structures
+		if (pd > eSW_Day && !isnull(SW_VegEstab.p_oagg[pd])) {
+			Mem_Free(SW_VegEstab.p_oagg[pd]);
+			SW_VegEstab.p_oagg[pd] = NULL;
+		}
+
+		if (!isnull(SW_VegEstab.p_accu[pd])) {
+			Mem_Free(SW_VegEstab.p_accu[pd]);
+			SW_VegEstab.p_accu[pd] = NULL;
+		}
+	}
+}
+
 
 void SW_VES_new_year(void) {
 	/* =================================================== */
@@ -112,14 +155,11 @@ void SW_VES_new_year(void) {
 
 	if (0 == SW_VegEstab.count)
 		return;
-	Mem_Set(SW_VegEstab.yrsum.days, 0, SW_VegEstab.count);
-
 }
 
 void SW_VES_read(void) {
 	/* =================================================== */
 	FILE *f;
-	IntU i;
 
 	MyFileName = SW_F_name(eVegEstab);
 	f = OpenFile(MyFileName, "r");
@@ -134,17 +174,31 @@ void SW_VES_read(void) {
 		CloseFile(&f);
 		return;
 	}
+
 	while (GetALine(f, inbuf)) {
 		_read_spp(inbuf);
 	}
+
 	CloseFile(&f);
+
+	Init_SW_VegEstab();
+
+	if (EchoInits)
+		_echo_VegEstab();
+}
+
+
+void Init_SW_VegEstab(void)
+{
+	IntU i;
+
 	for (i = 0; i < SW_VegEstab.count; i++)
 		_spp_init(i);
 
-	if (SW_VegEstab.count > 0)
-		SW_VegEstab.yrsum.days = (TimeInt *) Mem_Calloc(SW_VegEstab.count, sizeof(TimeInt), "SW_VES_read()");
-	if (EchoInits)
-		_echo_VegEstab();
+	if (SW_VegEstab.count > 0) {
+		SW_VegEstab.p_accu[eSW_Year]->days = (TimeInt *) Mem_Calloc(
+			SW_VegEstab.count, sizeof(TimeInt), "Init_SW_VegEstab()");
+	}
 }
 
 

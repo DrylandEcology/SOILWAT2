@@ -1,5 +1,16 @@
-// Source file: mock of Output.c
-// NOTE: all function content is for mock purposes only and to reduce compile warnings
+/********************************************************/
+/********************************************************/
+/**
+  @file
+  @brief All content is for mock purposes only and to reduce compile warnings
+
+  Our unit testing framework `googletest` is c++ which doesn't like some of
+  the constructs we use in the output code. Thus, we currently cannot test
+  any output code and use these mock functions instead as placeholders.
+*/
+/********************************************************/
+/********************************************************/
+
 
 #include <math.h>
 #include <stdio.h>
@@ -45,14 +56,21 @@ SW_OUTPUT SW_Output[SW_OUTNKEYS]; /* declared here, externed elsewhere */
 void SW_OUT_construct(void)
 {}
 
+void SW_OUT_deconstruct(Bool full_reset)
+{
+	if (full_reset) {}
+}
+
 void SW_OUT_new_year(void)
 {}
 
 void SW_OUT_read(void)
 {}
 
+#ifndef RSOILWAT
 void SW_OUT_close_files(void)
 {}
+#endif
 
 void _collect_values(void)
 {}
@@ -71,88 +89,82 @@ void SW_OUT_sum_today(ObjType otyp)
 void SW_OUT_write_today(void)
 {}
 
-static void get_none(void)
+void get_none(void)
 {}
 
-static void get_outstrleader(TimeInt pd)
-{
-  TimeInt x = pd;
-  if (x == 1) {}
-}
-
-static void get_co2effects(void)
+void get_co2effects(void)
 {}
 
-static void get_estab(void)
+void get_estab(void)
 {}
 
-static void get_temp(void)
+void get_temp(void)
 {}
 
-static void get_precip(void)
+void get_precip(void)
 {}
 
-static void get_vwcBulk(void)
+void get_vwcBulk(void)
 {}
 
-static void get_vwcMatric(void)
+void get_vwcMatric(void)
 {}
 
-static void get_swcBulk(void)
+void get_swcBulk(void)
 {}
 
-static void get_swpMatric(void)
+void get_swpMatric(void)
 {}
 
-static void get_swaBulk(void)
+void get_swaBulk(void)
 {}
 
-static void get_swaMatric(void)
+void get_swaMatric(void)
 {}
 
-static void get_surfaceWater(void)
+void get_surfaceWater(void)
 {}
 
-static void get_runoff(void)
+void get_runoff(void)
 {}
 
-static void get_transp(void)
+void get_transp(void)
 {}
 
-static void get_evapSoil(void)
+void get_evapSoil(void)
 {}
 
-static void get_evapSurface(void)
+void get_evapSurface(void)
 {}
 
-static void get_interception(void)
+void get_interception(void)
 {}
 
-static void get_soilinf(void)
+void get_soilinf(void)
 {}
 
-static void get_lyrdrain(void)
+void get_lyrdrain(void)
 {}
 
-static void get_hydred(void)
+void get_hydred(void)
 {}
 
-static void get_aet(void)
+void get_aet(void)
 {}
 
-static void get_pet(void)
+void get_pet(void)
 {}
 
-static void get_wetdays(void)
+void get_wetdays(void)
 {}
 
-static void get_snowpack(void)
+void get_snowpack(void)
 {}
 
-static void get_deepswc(void)
+void get_deepswc(void)
 {}
 
-static void get_soiltemp(void)
+void get_soiltemp(void)
 {}
 
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
@@ -194,14 +206,14 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 
 static void average_for(ObjType otyp, OutPeriod pd)
 {
+  if (pd == eSW_Day) {}
   SW_OUT_sum_today(otyp);
-  get_outstrleader(pd);
 }
 
 static void collect_sums(ObjType otyp, OutPeriod op)
 {
+  if (op == eSW_Day) {}
   SW_OUT_sum_today(otyp);
-  get_outstrleader(op);
 }
 
 void _echo_outputs(void)
