@@ -38,6 +38,7 @@ namespace{
     // inperpolate_monthlyValues should not change index 0 because we used
     // base1 indices
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[0], 0);
+    EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[1], 10.0);
     // test top conditional
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[14], 10.0);
     // test middle conditional
@@ -57,11 +58,14 @@ namespace{
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[13], 19.354838709677419);
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[31], 14.838709677419356);
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[365], 15.161290322580644);
+    // test last day on leap year
+    EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[MAX_DAYS], 15.161290322580644)
     // change december monthly value to ensure meaningful final interpolation
     interpolate -> cloudcov[11] = 12;
     interpolate_monthlyValues(interpolate -> cloudcov, interpolate -> cloudcov_daily);
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[365], 16.129032258064516);
-
+    // test last day on leap year
+    EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[MAX_DAYS], 16.129032258064516);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
   }
