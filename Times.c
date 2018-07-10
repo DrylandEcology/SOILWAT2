@@ -365,7 +365,7 @@ void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
 				month2 = (month == Jan) ? Dec : month - 1;
 				sign = -1;
 			}
-
+			
 			dailyValues[doy] = monthlyValues[month] + sign * (monthlyValues[month2] - monthlyValues[month]) / (monthdays[month]) * (mday - 15.);
 		}
 	}

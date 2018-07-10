@@ -32,16 +32,16 @@ namespace{
     for (i = 0; i < length(interpolate -> cloudcov); i++){
       interpolate -> cloudcov[i] = 10;
     }
+    interpolate -> cloudcov_daily[0] = 0;
     interpolate_monthlyValues(interpolate -> cloudcov, interpolate -> cloudcov_daily);
 
-    // test final conditional
+    // inperpolate_monthlyValues should not change index 0
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[0], 0);
     // test top conditional
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[14], 10.0);
     // test middle conditional
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[15], 10.0);
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[365], 10.0);
-
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
