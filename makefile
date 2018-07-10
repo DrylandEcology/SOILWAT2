@@ -23,36 +23,63 @@
 
 uname_m = $(shell uname -m)
 
+
+#------ OUTPUT NAMES
+target = SOILWAT2
+bin_test = sw_test
+target_test = $(target)_test
+target_severe = $(target)_severe
+target_cov = $(target)_cov
+
+lib_target = lib$(target).a
+lib_target_test = lib$(target_test).a
+lib_target_severe = lib$(target_severe).a
+lib_target_cov = lib$(target_cov).a
+
+
 #------ COMMANDS AND STANDARDS
 # CC = gcc
 # CXX = g++
 # AR = ar
+# RM = rm
+
 use_c11 = -std=c11
-use_gnu11 = -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
+use_gnu++11 = -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
 
 
 #------ FLAGS
 # Diagnostic warning/error messages
-warning_flags = -Wall -Wextra -Werror
-warning_flags_bin = $(warning_flags) -Wpedantic
+warning_flags = -Wall -Wextra
+warning_flags_bin = $(warning_flags) -Wpedantic -Werror
 
-# Instrumentation options
+# Instrumentation options for debugging and testing
 instr_flags = -fstack-protector-all
-instr_flags_severe = -D_FORTIFY_SOURCE=2 -fsanitize=undefined -fsanitize=address
+instr_flags_severe = -D_FORTIFY_SOURCE=2 -Wno-macro-redefined \
+	-fsanitize=undefined -fsanitize=address
 	# -fstack-protector-strong (gcc >= v4.9)
 	# (gcc >= 4.0) -D_FORTIFY_SOURCE: lightweight buffer overflow protection to some memory and string functions
 	# (gcc >= 4.8; llvm >= 3.1) -fsanitize=address: replaces `mudflap` run time checker; https://github.com/google/sanitizers/wiki/AddressSanitizer
 
-# Precompiler, compiler, and linker flags
-CFLAGS = -O2 $(warning_flags_bin)
-debug_flags = -g -O0 -DSWDEBUG $(instr_flags)
+# Precompiler and compiler flags and options
+sw_CPPFLAGS = $(CPPFLAGS)
+sw_CFLAGS = $(CFLAGS)
+sw_CXXFLAGS = $(CXXFLAGS) -Wno-error=deprecated		# TODO: clang++: "treating 'c' input as 'c++' when in C++ mode"
 
-CXXFLAGS = $(warning_flags)
+bin_flags = -O2
+debug_flags = -g -O0 -DSWDEBUG
 cov_flags = -coverage
-gtest_flags = $(CXXFLAGS) $(CPPFLAGS) $(debug_flags) $(use_gnu11)
 
-LDFLAGS = -L.
-LDLIBS = -l$(target) -lm						# order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
+# Linker flags and libraries
+# order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
+sw_LDFLAGS = $(LDFLAGS) -L.
+sw_LDLIBS = $(LDLIBS) -lm
+
+target_LDLIBS = -l$(target) $(sw_LDLIBS)
+test_LDLIBS = -l$(target_test) $(sw_LDLIBS)
+severe_LDLIBS = -l$(target_severe) $(sw_LDLIBS)
+cov_LDLIBS = -l$(target_cov) $(sw_LDLIBS)
+
+gtest_LDLIBS = -l$(gtest)
 
 
 #------ CODE FILES
@@ -76,80 +103,86 @@ sources_tests = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 objects_tests = $(sources_tests:.c=.o)
 
 
-#------ OUTPUT NAMES
 bin_sources = SW_Main.c SW_Output_outtext.c # SOILWAT2-standalone
 bin_objects = $(bin_sources:.c=.o)
-
-
-target = SOILWAT2
-bin_test = sw_test
-lib_target = lib$(target).a
-lib_target++ = lib$(target)++.a
-lib_covtarget++ = libcov$(target)++.a
-lib_target_ci++ = lib$(target)_ci++.a
-lib_covtarget_ci++ = libcov$(target)_ci++.a
 
 
 gtest = gtest
 lib_gtest = lib$(gtest).a
 GTEST_DIR = googletest/googletest
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
-GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
-                $(GTEST_DIR)/include/gtest/internal/*.h
-gtest_LDLIBS = -l$(gtest) -l$(target)++ -lm
-cov_LDLIBS = -l$(gtest) -lcov$(target)++ -lm
-gtest_LDLIBS_ci = -l$(gtest) -l$(target)_ci++ -lm
-cov_LDLIBS_ci = -l$(gtest) -lcov$(target)_ci++ -lm
+GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h $(GTEST_DIR)/include/gtest/internal/*.h
+
 
 
 #------ TARGETS
+bin : $(target)
+
 lib : $(lib_target)
 
 $(lib_target) :
-		$(CC) $(CPPFLAGS) $(CFLAGS) $(use_c11) -c $(sources)
-		@rm -f $(lib_target)
+		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(bin_flags) $(warning_flags_bin) \
+		$(use_c11) -c $(sources)
+
+		-@$(RM) -f $(lib_target)
 		$(AR) -rcs $(lib_target) $(objects)
-		@rm -f $(objects)
-
-$(lib_target++) :
-		$(CXX) $(gtest_flags) $(instr_flags_severe) -c $(sources_tests)
-		$(AR) -rcsu $(lib_target++) $(objects_tests)
-		@rm -f $(objects_tests)
-
-$(lib_covtarget++) :
-		$(CXX) $(gtest_flags) $(instr_flags_severe) $(cov_flags) -c $(sources_tests)
-		$(AR) -rcsu $(lib_covtarget++) $(objects_tests)
-		@rm -f $(objects_tests)
-
-$(lib_target_ci++) :
-		$(CXX) $(gtest_flags) -c $(sources_tests)
-		$(AR) -rcsu $(lib_target_ci++) $(objects_tests)
-		@rm -f $(objects_tests)
-
-$(lib_covtarget_ci++) :
-		$(CXX) $(gtest_flags) $(cov_flags) -c $(sources_tests)
-		$(AR) -rcsu $(lib_covtarget_ci++) $(objects_tests)
-		@rm -f $(objects_tests)
+		-@$(RM) -f $(objects)
 
 
-bin : $(target)
+$(lib_target_test) :
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
+		$(instr_flags) $(use_gnu++11) -c $(sources_tests)
+
+		-@$(RM) -f $(lib_target_test)
+		$(AR) -rcs $(lib_target_test) $(objects_tests)
+		-@$(RM) -f $(objects)
+
+$(lib_target_severe) :
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
+		$(instr_flags_severe) $(use_gnu++11) -c $(sources_tests)
+
+		-@$(RM) -f $(lib_target_severe)
+		$(AR) -rcs $(lib_target_severe) $(objects_tests)
+		-@$(RM) -f $(objects)
+
+$(lib_target_cov) :
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
+		$(instr_flags) $(cov_flags) $(use_gnu++11) -c $(sources_tests)
+
+		-@$(RM) -f $(lib_target_cov)
+		$(AR) -rcs $(lib_target_cov) $(objects_tests)
+		-@$(RM) -f $(objects)
+
 
 $(target) : $(lib_target)
-		$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(use_c11) -o $(target) $(bin_sources) $(LDLIBS)
+		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(bin_flags) $(warning_flags_bin) \
+		$(use_c11) \
+		-o $(target) $(bin_sources) $(target_LDLIBS) $(sw_LDFLAGS)
 
 bin_debug :
-		$(CC) $(CPPFLAGS) $(debug_flags) $(instr_flags_severe) $(use_c11) -c $(sources)
-		@rm -f $(lib_target)
-		$(AR) -rcs $(lib_target) $(objects)
-		@rm -f $(objects)
-		$(CC) $(CPPFLAGS) $(debug_flags) $(instr_flags_severe) $(LDFLAGS) $(use_c11) -o $(target) $(bin_sources) $(LDLIBS)
+		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
+		$(instr_flags_severe) $(use_c11) -c $(sources_tests)
+
+		-@$(RM) -f $(lib_target_severe)
+		$(AR) -rcs $(lib_target_severe) $(objects_tests)
+		-@$(RM) -f $(objects)
+
+		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
+		$(instr_flags_severe) $(use_c11) \
+		-o $(target) $(bin_sources) $(severe_LDLIBS) $(sw_LDFLAGS)
 
 bin_debug_ci :
-		$(CC) $(CPPFLAGS) $(debug_flags) $(use_c11) -c $(sources)
-		@rm -f $(lib_target)
-		$(AR) -rcs $(lib_target) $(objects)
-		@rm -f $(objects)
-		$(CC) $(CPPFLAGS) $(debug_flags) $(LDFLAGS) $(use_c11) -o $(target) $(bin_sources) $(LDLIBS)
+		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
+		$(instr_flags) $(use_c11) -c $(sources_tests)
+
+		-@$(RM) -f $(lib_target_test)
+		$(AR) -rcs $(lib_target_test) $(objects_tests)
+		-@$(RM) -f $(objects)
+
+		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
+		$(instr_flags) $(use_c11) \
+		-o $(target) $(bin_sources) $(test_LDLIBS) $(sw_LDFLAGS)
+
 
 .PHONY : bint
 bint : bin
@@ -170,31 +203,40 @@ bind_valgrind : bin_debug_ci
 
 
 # GoogleTest:
-# based on section 'Generic Build Instructions' in https://github.com/google/googletest/tree/master/googletest)
+# based on section 'Generic Build Instructions' at
+# https://github.com/google/googletest/tree/master/googletest)
 #   1) build googletest library
 #   2) compile SOILWAT2 test source file
 lib_test : $(lib_gtest)
 
 $(lib_gtest) :
-		$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(use_gnu11) -isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
-			-pthread -c ${GTEST_DIR}/src/gtest-all.cc
-		$(AR) -r $(lib_gtest) gtest-all.o
+		@$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(use_gnu++11) \
+		-isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
+		-pthread -c ${GTEST_DIR}/src/gtest-all.cc
 
-test : $(lib_gtest) $(lib_target++)
-		$(CXX) $(gtest_flags)  $(instr_flags_severe) $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
-				test/*.cc -o $(bin_test) $(gtest_LDLIBS)
+		@$(AR) -r $(lib_gtest) gtest-all.o
 
-testci : $(lib_gtest) $(lib_target_ci++)
-		$(CXX) $(gtest_flags) $(LDFLAGS) -isystem ${GTEST_DIR}/include -pthread \
-				test/*.cc -o $(bin_test) $(gtest_LDLIBS_ci)
+test : $(lib_gtest) $(lib_target_severe)
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
+		$(instr_flags_severe) $(use_gnu++11) \
+		-isystem ${GTEST_DIR}/include -pthread \
+		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(severe_LDLIBS) $(sw_LDFLAGS)
+
+testci : $(lib_gtest) $(lib_target_test)
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
+		$(instr_flags) $(use_gnu++11) \
+		-isystem ${GTEST_DIR}/include -pthread \
+		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(test_LDLIBS) $(sw_LDFLAGS)
 
 .PHONY : test_run
 test_run :
 		./$(bin_test)
 
-cov : cov_clean $(lib_gtest) $(lib_covtarget_ci++)
-		$(CXX) $(gtest_flags) $(cov_flags) $(LDFLAGS) -isystem ${GTEST_DIR}/include \
-			-pthread test/*.cc -o $(bin_test) $(cov_LDLIBS_ci)
+cov : cov_clean $(lib_gtest) $(lib_target_cov)
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
+		$(instr_flags) $(cov_flags) $(use_gnu++11) \
+		-isystem ${GTEST_DIR}/include -pthread \
+		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(cov_LDLIBS) $(sw_LDFLAGS)
 
 .PHONY : cov_run
 cov_run : cov
@@ -206,25 +248,31 @@ cov_run : cov
 
 .PHONY : clean1
 clean1 :
-		@rm -f $(objects) $(bin_objects)
+		-@$(RM) -f $(objects) $(bin_objects)
 
 .PHONY : clean2
 clean2 :
-		@rm -f $(target) $(lib_target) $(lib_target++) $(lib_target_ci++)
-		@rm -f testing/$(target)
+		-@$(RM) -f $(target) $(lib_target)
+		-@$(RM) -f testing/$(target)
 
 .PHONY : bint_clean
 bint_clean :
-		@rm -f testing/Output/*
+		-@$(RM) -f testing/Output/*
 
 .PHONY : test_clean
 test_clean :
-		@rm -f gtest-all.o $(lib_gtest) $(bin_test)
+		-@$(RM) -f gtest-all.o $(lib_gtest) $(bin_test)
+		-@$(RM) -f $(lib_target_test) $(lib_target_severe) $(lib_target_cov)
+		-@$(RM) -fr *.dSYM
+		-@$(RM) -f $(objects_tests)
 
 .PHONY : cov_clean
 cov_clean :
-		@rm -f $(lib_covtarget++) $(lib_covtarget_ci++) *.gcda *.gcno *.gcov
-		@rm -fr *.dSYM
+		-@$(RM) -f $(lib_target_cov) *.gcda *.gcno *.gcov
+		-@$(RM) -fr *.dSYM
 
 .PHONY : cleaner
 cleaner : clean1 clean2 bint_clean test_clean cov_clean
+
+.PHONY : clean
+clean : cleaner
