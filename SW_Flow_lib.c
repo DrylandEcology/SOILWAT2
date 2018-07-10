@@ -1238,7 +1238,9 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
 
 		#ifdef SWDEBUG
 		if (debug)
+
 			swprintf("\nConf T: i=%i, j1=%i, j2=%i, sTempR[%i]=%2.2f, sTemp2[%i]=%2.2f, sTemp2[%i]=%2.2f, depthT[%i]=%2.2f, depthS2[%i]=%2.2f, depthS2[%i]=%2.2f", i, j1, j2, i, sTempR[i], j1, sTemp2[j1], j2, sTemp2[j2], i, depth_Temp[i], j1, depth_Soil2[j1], j2, depth_Soil2[j2]);
+
 		#endif
 	}
 	sTempR[nlyrTemp + 1] = endTemp;
