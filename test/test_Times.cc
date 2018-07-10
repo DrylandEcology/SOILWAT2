@@ -35,7 +35,8 @@ namespace{
     interpolate -> cloudcov_daily[0] = 0;
     interpolate_monthlyValues(interpolate -> cloudcov, interpolate -> cloudcov_daily);
 
-    // inperpolate_monthlyValues should not change index 0
+    // inperpolate_monthlyValues should not change index 0 because we used
+    // base1 indices
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[0], 0);
     // test top conditional
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[14], 10.0);
@@ -50,6 +51,8 @@ namespace{
     interpolate -> cloudcov[0] = 20;
     interpolate_monthlyValues(interpolate -> cloudcov, interpolate -> cloudcov_daily);
     // calculated by hand
+    EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[0], 0);
+    EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[1], 15.483870967741936);
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[14], 19.6774193548387);
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[13], 19.354838709677419);
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[31], 14.838709677419356);
