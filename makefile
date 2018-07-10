@@ -135,7 +135,7 @@ $(lib_target_test) :
 
 		-@$(RM) -f $(lib_target_test)
 		$(AR) -rcs $(lib_target_test) $(objects_tests)
-		-@$(RM) -f $(objects)
+		-@$(RM) -f $(objects_tests)
 
 $(lib_target_severe) :
 		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
@@ -143,7 +143,7 @@ $(lib_target_severe) :
 
 		-@$(RM) -f $(lib_target_severe)
 		$(AR) -rcs $(lib_target_severe) $(objects_tests)
-		-@$(RM) -f $(objects)
+		-@$(RM) -f $(objects_tests)
 
 $(lib_target_cov) :
 		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
@@ -151,7 +151,7 @@ $(lib_target_cov) :
 
 		-@$(RM) -f $(lib_target_cov)
 		$(AR) -rcs $(lib_target_cov) $(objects_tests)
-		-@$(RM) -f $(objects)
+		-@$(RM) -f $(objects_tests)
 
 
 $(target) : $(lib_target)
@@ -165,7 +165,7 @@ bin_debug :
 
 		-@$(RM) -f $(lib_target_severe)
 		$(AR) -rcs $(lib_target_severe) $(objects_tests)
-		-@$(RM) -f $(objects)
+		-@$(RM) -f $(objects_tests)
 
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
 		$(instr_flags_severe) $(use_c11) \
@@ -177,7 +177,7 @@ bin_debug_ci :
 
 		-@$(RM) -f $(lib_target_test)
 		$(AR) -rcs $(lib_target_test) $(objects_tests)
-		-@$(RM) -f $(objects)
+		-@$(RM) -f $(objects_tests)
 
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
 		$(instr_flags) $(use_c11) \
