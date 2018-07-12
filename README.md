@@ -49,6 +49,15 @@ You can help us in different ways:
    [pull request](https://github.com/DrylandEcology/SOILWAT2/pulls)
 
 
+__Compilation__:
+  * Requirements:
+    - a recent version of the `gcc` or `clang/llvm` toolchains
+    - POSIX- or GNU-compliant `make`
+    - On Windows OS: an installation of `cygwin`
+  * Build with `make` (see `make help` to print information about all
+    available targets)
+
+
 __SOILWAT2 code is used as part of three applications__:
   * stand-alone (code flag `SOILWAT` is defined if neither `STEPWAT` nor
     `RSOILWAT` exist),
@@ -75,9 +84,9 @@ __Tests, documentation, and code__ form a trinity
   * Note: `SOILWAT2` is written in C whereas `GoogleTest` is a C++ framework.
   * Run unit tests locally on the command-line with
     ```
-    make test     # compiles the unit-test binary/executable (with `-DSWDEBUG`)
-    make test_run # executes the unit-test binary
-    make cleaner
+    make test test_run         # compiles and executes the unit-tests
+    make test_severe test_run  # compiles/executes with strict/severe flags
+    make clean                 # cleans build artifacts
     ```
   * Development/feature branches can only be merged into master if they pass
     all checks
@@ -85,7 +94,7 @@ __Tests, documentation, and code__ form a trinity
     1. Before coding, run `testing/` and produce reference output
         ```
         git checkout master
-        make cleaner bint_run
+        make bin bint_run
         cp -r testing/Output testing/Output_ref
         ```
     2. Develop your code and keep "testing/Output_ref" locally, i.e., don't
@@ -93,7 +102,7 @@ __Tests, documentation, and code__ form a trinity
     3. Regularly, e.g., before finalizing a commit, check that new code produces
     identical output (that is unless you work on output...)
         ```
-        make cleaner bint_run
+        make bin bint_run
         diff testing/Output/ testing/Output_ref/ -qs
         ```
 
@@ -116,19 +125,21 @@ __Tests, documentation, and code__ form a trinity
       ...
     }
     ```
-  * Clean, compile and run SOILWAT2-standalone in debugging mode with, e.g.,
+  * Clean, compile and run optimized SOILWAT2-standalone in debugging mode
+    with, e.g.,
     ```
-    make cleaner bint_run CPPFLAGS=-DSWDEBUG
+    make bin bint_run CPPFLAGS=-DSWDEBUG
     ```
-  * Alternatively, you can use the pre-configured debugging targets
-    `bin_debug` and `bind`, for instance, with
+  * Alternatively and potentially preferably, you can use the pre-configured
+    debugging targets
+    `bin_debug` and `bin_debug_severe`, for instance, with
     ```
-    make cleaner bind bint_run
+    make bin_debug_severe bint_run
     ```
   * If **valgrind** is installed, then you can call the target `bind_valgrind`
     (see description in `makefile`) with
     ```
-    make cleaner bind_valgrind
+    make bind_valgrind
     ```
 
 <br>

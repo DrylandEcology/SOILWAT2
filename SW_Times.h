@@ -33,6 +33,11 @@
 
 #include "Times.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /*---------------------------------------------------------------*/
 typedef enum {
 	Yesterday, Today
@@ -54,5 +59,10 @@ typedef struct {
  * The user need only supply a 0/1 flag in the file
  * containing the start/end years.
  */
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

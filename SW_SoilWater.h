@@ -41,6 +41,10 @@
 #ifndef SW_SOILWATER_H
 #define SW_SOILWATER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "generic.h"
 #include "SW_Defines.h"
 #include "SW_Times.h"
@@ -151,6 +155,11 @@ void SW_WaterBalance_Checks(void);
 
 #ifdef DEBUG_MEM
 void SW_SWC_SetMemoryRefs(void);
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

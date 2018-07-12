@@ -37,6 +37,11 @@
 #include "SW_Defines.h"    /* for tanfunc_t*/
 #include "Times.h" 				// for MAX_MONTHS
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #define BIO_INDEX 0        /**< An integer representing the index of the biomass multipliers in the VegType#co2_multipliers 2D array. */
 #define WUE_INDEX 1        /**< An integer representing the index of the WUE multipliers in the VegType#co2_multipliers 2D array. */
 
@@ -130,5 +135,10 @@ void SW_VPD_deconstruct(void);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
 void _echo_VegProd(void);
 void get_critical_rank(void);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

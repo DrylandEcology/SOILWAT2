@@ -49,6 +49,10 @@
 
 #include "SW_Defines.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 typedef unsigned int LyrIndex;
 
@@ -147,6 +151,11 @@ LyrIndex _newlayer(void);
 
 #ifdef DEBUG_MEM
 	void SW_SIT_SetMemoryRefs(void);
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

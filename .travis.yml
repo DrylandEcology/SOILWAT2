@@ -5,9 +5,16 @@ compiler:
   - gcc
 
 script:
-  - export CPPFLAGS=-DSWDEBUG && make cleaner bint_run
-  - make cleaner cov test_run
+  # compile and run optimized binary
+  - make clean bin bint_run
+  # compile and run debug binary
+  - make clean bin_debug_severe bint_run
+  # compile and run (severe) unit tests
+  - make clean test_severe test_run
+  # determine code coverage of unit tests
+  - make clean cov test_run
 
 after_success:
   - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
-  - make cleaner
+  # clean up
+  - make clean

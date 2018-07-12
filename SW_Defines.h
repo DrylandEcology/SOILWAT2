@@ -17,10 +17,14 @@
 /********************************************************/
 
 #ifndef SOILW_DEF_H
-	#define SOILW_DEF_H
+#define SOILW_DEF_H
 
 #include <math.h>  /* for atan() in tanfunc() below */
 #include "generic.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Not sure if this parameter is variable or a consequence of algebra,
  * but it's different in the FORTRAN version than in the ELM doc.
@@ -149,5 +153,10 @@ typedef enum { eF,   /* file management */
                eVPD, /* vegetation production */
                eOUT  /* output */
 } ObjType;
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

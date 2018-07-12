@@ -36,7 +36,7 @@
 /* --------------------------------------------------- */
 
 /* see generic.h and filefuncs.h for more info on these vars */
-char inbuf[1024]; /* buffer used by input statements */
+char inbuf[MAX_FILENAMESIZE]; /* buffer used by input statements */
 char errstr[MAX_ERROR]; /* used to compose an error msg    */
 FILE *logfp; /* file handle for logging messages */
 int logged; /* boolean: true = we logged a msg */
@@ -62,7 +62,7 @@ void usage(void) {
   sw_error(0, "%s", s1);
 }
 
-char _firstfile[1024];
+char _firstfile[MAX_FILENAMESIZE];
 
 void init_args(int argc, char **argv) {
 	/* =================================================== */

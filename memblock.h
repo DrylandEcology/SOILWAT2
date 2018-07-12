@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define bGarbage 0xCC
 /*typedef unsigned char byte*/
 typedef signed char flag;
@@ -51,5 +55,10 @@ flag fValidPointer(void *pv, size_t size);
 #define fPtrEqual(pLeft, pRight)   ((pLeft) == (pRight))
 #define fPtrLessEq(pLeft, pRight)  ((pLeft) <= (pRight))
 #define fPtrGrtrEq(pLeft, pRight)  ((pLeft) >= (pRight))
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

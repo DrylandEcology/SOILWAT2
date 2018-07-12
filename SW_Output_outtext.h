@@ -16,6 +16,10 @@
 #ifndef SW_OUTPUT_TXT_H
 #define SW_OUTPUT_TXT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 typedef struct {
 	Bool make_soil[SW_OUTNPERIODS], make_regular[SW_OUTNPERIODS];
@@ -58,5 +62,10 @@ void get_outstrleader(OutPeriod pd, char *str);
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_agg);
 void find_TXToutputSoilReg_inUse(void);
 void SW_OUT_close_files(void);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

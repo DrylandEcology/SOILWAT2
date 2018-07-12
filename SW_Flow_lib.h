@@ -37,6 +37,10 @@
 #ifndef SW_WATERSUBS_H
 #define SW_WATERSUBS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Standing crop can only intercept so much precip
  * This is the limiter used inside stdcrop_intercepted()
  */
@@ -178,5 +182,10 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTem
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
 	int nRgr, double sTempR[], double oldsTempR[], double vwcR[], double wpR[], double fcR[],
 	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

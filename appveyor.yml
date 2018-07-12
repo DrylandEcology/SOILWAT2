@@ -11,6 +11,12 @@ install:
 # to run your custom scripts instead of automatic MSBuild
 build_script:
   - set PATH=%PATH%;c:\cygwin\bin
-  - set CPPFLAGS=-DSWDEBUG && make cleaner bint_run
-  - make cleaner testci test_run
-  - make cleaner
+  # compile and run optimized binary
+  - make clean bin bint_run
+  # compile and run debug binary
+  - make clean bin_debug_severe bint_run
+  # compile and run (severe) unit tests
+  - make clean test test_run
+  - make clean test_severe test_run
+  # clean up
+  - make clean
