@@ -9,14 +9,14 @@ install:
   - git submodule update --init --recursive
 
 # to run your custom scripts instead of automatic MSBuild
+# Note: appveyor doesn't have sanitizers -> cannot run *_severe test targets
 build_script:
   - set PATH=%PATH%;c:\cygwin\bin
   # compile and run optimized binary
   - make clean bin bint_run
   # compile and run debug binary
-  - make clean bin_debug_severe bint_run
-  # compile and run (severe) unit tests
+   - make clean bin_debug bint_run
+  # compile and run unit tests
   - make clean test test_run
-  - make clean test_severe test_run
   # clean up
   - make clean
