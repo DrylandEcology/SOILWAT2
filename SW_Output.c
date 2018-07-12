@@ -1826,6 +1826,8 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
 		last = 366;
 		#ifndef RSOILWAT
 		strcpy(period, "YR");
+		#else
+		if (period) {} // avoid `-Wunused-parameter`
 		#endif
 
 	} else if ((k == eSW_AllVeg || k == eSW_ET || k == eSW_AllWthr || k == eSW_AllH2O))
