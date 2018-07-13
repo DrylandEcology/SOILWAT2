@@ -64,10 +64,9 @@ warning_flags = -Wall -Wextra
 # Don't use 'warning_flags_severe*' for production builds and rSOILWAT2
 warning_flags_severe = $(warning_flags) -Wpedantic -Werror
 warnings_flags_severe_cxx = $(warning_flags_severe) -Wno-error
-	# TODO: address underlying problems so that we can eventually add -Werror:
-	#  - clang++: "treating 'c' input as 'c++' when in C++ mode"
-	#  - ISO C++ forbids variable length array: (clang++ uses -Wvla-extension
-	#    whereas g++ uses -Wvla) --> cannot compile c++ unit tests with -Werror
+	# TODO: address underlying problems so that we can eliminate `-Wno-error`:
+	#  - compiler warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated (https://github.com/DrylandEcology/SOILWAT2/issues/208)
+	#  - compiler warning: variable length arrays (https://github.com/DrylandEcology/SOILWAT2/issues/214)
 
 # Instrumentation options for debugging and testing
 instr_flags = -fstack-protector-all
