@@ -1,0 +1,7 @@
+# Suppression of memory leaks
+# https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer#suppressions
+
+# These are known leaks that await fixing
+
+# https://github.com/DrylandEcology/SOILWAT2/issues/205
+leak:SW_VPD_construct
