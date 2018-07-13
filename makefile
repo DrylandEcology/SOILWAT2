@@ -199,7 +199,7 @@ bint_run : bint
 		./testing/$(target) -d ./testing -f files.in
 
 .PHONY : bind_valgrind
-bind_valgrind : bin_debug bind
+bind_valgrind : bin_debug bint
 		valgrind -v --track-origins=yes --leak-check=full ./testing/$(target) -d ./testing -f files.in
 
 
