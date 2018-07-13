@@ -51,7 +51,8 @@ You can help us in different ways:
 
 __Compilation__:
   * Requirements:
-    - a recent version of the `gcc` or `clang/llvm` toolchains
+    - the `gcc` or `clang/llvm` toolchains
+      - `gcc >= v4.9` and `clang >= v3.3` for the `*_severe` test/debug targets
     - POSIX- or GNU-compliant `make`
     - On Windows OS: an installation of `cygwin`
   * Build with `make` (see `make help` to print information about all
@@ -89,7 +90,12 @@ __Tests, documentation, and code__ form a trinity
     make clean                 # cleans build artifacts
     ```
   * Development/feature branches can only be merged into master if they pass
-    all checks
+    all checks on `appveyor` and `travis` continuous integration servers, i.e.,
+    run the following locally to prepare a pull-request or commit to be reviewed
+    ```
+    make clean bin_debug_severe bint_run
+    make clean test_severe test_run
+    ```
   * Informal and local integration tests example:
     1. Before coding, run `testing/` and produce reference output
         ```

@@ -75,6 +75,7 @@ instr_flags_severe = $(instr_flags) -fsanitize=undefined -fsanitize=address
 	# -fstack-protector-strong (gcc >= v4.9)
 	# (gcc >= 4.0) -D_FORTIFY_SOURCE: lightweight buffer overflow protection to some memory and string functions
 	# (gcc >= 4.8; llvm >= 3.1) -fsanitize=address: replaces `mudflap` run time checker; https://github.com/google/sanitizers/wiki/AddressSanitizer
+	# (gcc >= 4.9; llvm >= 3.3) -fsanitize=undefined
 
 # Precompiler and compiler flags and options
 sw_CPPFLAGS = $(CPPFLAGS)

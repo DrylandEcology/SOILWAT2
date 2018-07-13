@@ -1,8 +1,21 @@
 language: cpp
 
+# We want to run the `*_severe` debug and test targets; thus, we need
+# g++ >= 4.9 and clang++ >= 3.5
 compiler:
   - clang
   - gcc
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-4.9
+      - g++-4.9
+
+before_install:
+  - if [[ $CXX = g++ ]]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
 
 script:
   # compile and run optimized binary
