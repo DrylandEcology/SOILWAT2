@@ -96,6 +96,11 @@ __Tests, documentation, and code__ form a trinity
     make clean bin_debug_severe bint_run
     make clean test_severe test_run
     ```
+  * Note that you may want/need to exclude known memory leaks from severe
+    testing (see https://github.com/DrylandEcology/SOILWAT2/issues/205):
+    ```
+    ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+    ```
   * Informal and local integration tests example:
     1. Before coding, run `testing/` and produce reference output
         ```
