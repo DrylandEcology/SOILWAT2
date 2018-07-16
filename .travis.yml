@@ -1,4 +1,5 @@
-language: c
+language: cpp
+
 compiler:
   - clang
   - gcc
@@ -6,7 +7,7 @@ compiler:
 script:
   - export CPPFLAGS=-DSWDEBUG && make cleaner bint_run
   - make cleaner cov test_run
-  - make cleaner
 
 after_success:
   - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+  - make cleaner

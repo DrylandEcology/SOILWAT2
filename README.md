@@ -15,6 +15,7 @@
 [11]: https://img.shields.io/github/downloads/DrylandEcology/SOILWAT2/total.svg
 [12]: https://github.com/DrylandEcology/SOILWAT2
 
+<br>
 
 # SOILWAT2
 
@@ -38,6 +39,7 @@ Some recent references
 * Schlaepfer, D. R., W. K. Lauenroth, and J. B. Bradford. 2012. Ecohydrological
   niche of sagebrush ecosystems. Ecohydrology 5:453-466.
 
+<br>
 
 ## How to contribute
 You can help us in different ways:
@@ -68,7 +70,9 @@ __Tests, documentation, and code__ form a trinity
     but don't push them to the repository
 - Code tests
   * Use [GoogleTest](https://github.com/google/googletest/blob/master/googletest/docs/Documentation.md)
-    to add unit tests to the existing framework
+    to add unit tests to the existing framework in the folder `test/` where
+    each unit test file uses the naming scheme `test/test_*.cc`.
+  * Note: `SOILWAT2` is written in C whereas `GoogleTest` is a C++ framework.
   * Run unit tests locally on the command-line with
     ```
     make test     # compiles the unit-test binary/executable (with `-DSWDEBUG`)
@@ -116,12 +120,18 @@ __Tests, documentation, and code__ form a trinity
     ```
     make cleaner bint_run CPPFLAGS=-DSWDEBUG
     ```
-  * The "makefile" also contains pre-configured debugging targets including
-    `bin_debug`, `bind`, and `bind_valgrind` (see description in `makefile`).
-    If **valgrind** is installed, then for example
+  * Alternatively, you can use the pre-configured debugging targets
+    `bin_debug` and `bind`, for instance, with
+    ```
+    make cleaner bind bint_run
+    ```
+  * If **valgrind** is installed, then you can call the target `bind_valgrind`
+    (see description in `makefile`) with
     ```
     make cleaner bind_valgrind
     ```
+
+<br>
 
 ## Notes
 
