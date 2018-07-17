@@ -14,7 +14,11 @@
 /********************************************************/
 /********************************************************/
 #ifndef SW_FILES_H
-	#define SW_FILES_H
+#define SW_FILES_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define SW_NFILES 23
 
@@ -41,6 +45,11 @@ void SW_CSV_F_INIT(const char *s);
 
 #ifdef DEBUG_MEM
 void SW_F_SetMemoryRefs(void);
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

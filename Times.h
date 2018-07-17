@@ -43,6 +43,11 @@
 #include <time.h>
 #include "generic.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /*---------------------------------------------------------------*/
 #define MAX_MONTHS 12
 #define MAX_WEEKS 53
@@ -117,5 +122,10 @@ Bool isleapyear_now(void);
 Bool isleapyear(const TimeInt year);
 
 void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

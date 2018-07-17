@@ -5,30 +5,40 @@
  * @date   23 January 2017
  */
 #ifndef CARBON
-  #define CARBON             /**< A macro that only lets the variables in @f SW_Carbon.h be defined once. */
+#define CARBON             /**< A macro that only lets the variables in @f SW_Carbon.h be defined once. */
 
-  #include "SW_Defines.h"
+#include "SW_Defines.h"
 
 
-  /**
-   * @brief The main structure holding all CO2-related data.
-   */
-  typedef struct {
-    int
-      use_wue_mult,                      /**< A boolean integer indicating if WUE multipliers should be calculated. */
-      use_bio_mult;                      /**< A boolean integer indicating if biomass multipliers should be calculated. */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    char
-      scenario[64];                      /**< A 64-char array holding the scenario name for which we are extracting CO2 data from the carbon.in file. */
+/**
+ * @brief The main structure holding all CO2-related data.
+ */
+typedef struct {
+  int
+    use_wue_mult,                      /**< A boolean integer indicating if WUE multipliers should be calculated. */
+    use_bio_mult;                      /**< A boolean integer indicating if biomass multipliers should be calculated. */
 
-    double
-      ppm[MAX_NYEAR];                 /**< A 1D array holding atmospheric CO2 concentration values (units ppm) that are indexed by calendar year. Is typically only populated for the years that are being simulated. `ppm[index]` is the CO2 value for the calendar year `index + 1` */
+  char
+    scenario[64];                      /**< A 64-char array holding the scenario name for which we are extracting CO2 data from the carbon.in file. */
 
-  } SW_CARBON;
+  double
+    ppm[MAX_NYEAR];                 /**< A 1D array holding atmospheric CO2 concentration values (units ppm) that are indexed by calendar year. Is typically only populated for the years that are being simulated. `ppm[index]` is the CO2 value for the calendar year `index + 1` */
 
-  /* Function Declarations */
-  void SW_CBN_construct(void);
-  void SW_CBN_deconstruct(void);
-  void SW_CBN_read(void);
-  void calculate_CO2_multipliers(void);
+} SW_CARBON;
+
+/* Function Declarations */
+void SW_CBN_construct(void);
+void SW_CBN_deconstruct(void);
+void SW_CBN_read(void);
+void calculate_CO2_multipliers(void);
+
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

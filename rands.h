@@ -13,6 +13,10 @@
 #include <stdio.h>
 #include <float.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************
  * Basic definitions
  ***************************************************/
@@ -50,6 +54,11 @@ float RandBeta(float aa, float bb);
 #define RandUni RandUni_fast
 #else
 #define RandUni RandUni_good
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #define RANDS_H

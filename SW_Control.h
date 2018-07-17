@@ -18,6 +18,10 @@
 #ifndef SW_CONTROL_H
 #define SW_CONTROL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void SW_CTL_init_model(const char *firstfile);
 void SW_CTL_clear_model(Bool full_reset);
 void SW_CTL_obtain_inputs(void);
@@ -27,6 +31,11 @@ void SW_CTL_run_current_year(void);
 
 #ifdef DEBUG_MEM
 void SW_CTL_SetMemoryRefs(void);
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

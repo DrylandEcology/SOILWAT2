@@ -72,8 +72,8 @@ IntUS ncol_OUT[SW_OUTNKEYS];
 
 
 // Mock definitions
-char const *key2str[] = {};
-char const *pd2longstr[] = {};
+char const *key2str[] = {"SW_MISSING"};
+char const *pd2longstr[] = {"SW_MISSING"};
 
 
 
