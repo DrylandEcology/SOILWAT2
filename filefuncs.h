@@ -11,6 +11,9 @@
 
 #include "generic.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /***************************************************
  * Function definitions
@@ -29,5 +32,10 @@ void sw_error(int errorcode, const char *format, ...);
 void LogError(FILE *fp, const int mode, const char *fmt, ...);
 
 extern char inbuf[]; /* declare in main, use anywhere */
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

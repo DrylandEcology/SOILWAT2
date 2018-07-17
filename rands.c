@@ -13,6 +13,7 @@ long _randseed = 0L;
 
 #ifdef RSOILWAT
   #include <R_ext/Random.h> // for the random number generators
+  #include <Rmath.h> // for rnorm()
 #endif
 
 
@@ -328,7 +329,7 @@ double RandNorm(double mean, double stddev) {
 
 	#ifdef RSOILWAT
 		GetRNGstate();
-		y = norm_rand();
+		y = rnorm(mean, stddev);
 		PutRNGstate();
 
 	#else

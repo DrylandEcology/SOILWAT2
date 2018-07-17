@@ -27,6 +27,11 @@
 #include "SW_Times.h"
 #include "SW_Defines.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /* missing values may be different than with other things */
 #define WTH_MISSING   999.
 
@@ -94,6 +99,11 @@ void SW_WTH_clear_runavg_list(void);
 
 #ifdef DEBUG_MEM
 void SW_WTH_SetMemoryRefs(void);
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
