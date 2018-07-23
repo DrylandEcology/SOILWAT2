@@ -512,28 +512,30 @@ namespace {
     unsigned int tr_regions[1] = {1}; // 1-4
     double tr_coeff[1] = {0.0496}; //trco_grass
     double swc[1] = {12};
-    double check1 = 2.328876e-05, check2 = 1.926636e-06, test = 0;
+
+    //INPUTS for expected outputs
+    double swp_avgExpected1 = 1.100536e-06, swp_avgExpected8 = 0.0003875786;
 
     //Begin TEST when n_layers is one
     transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions, tr_coeff, swc);
 
-    test = round(check1); //Rounding is required for unit test.
-    swp_avg = round(swp_avg); //Rounding is required for unit test.
+    double test = round(swp_avgExpected1 * 1000000) / 1000000; //Rounding is required for unit test.
+    double check = round(swp_avg * 1000000) / 1000000; //Rounding is required for unit test.
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
-    EXPECT_DOUBLE_EQ(swp_avg, test); //Test results always very close to zero, regardless of inputs.
+    EXPECT_DOUBLE_EQ(test, check); //swp_avg is expected to be 1.100536e-06
 
     //Begin TEST when n_layers is at "max"
     //INPUTS
-    n_tr_rgns = 4, n_layers = 8; //Only 8 inputs in soils.in file.  Same output for 8-25 layers.
-    unsigned int tr_regions2[8] = {1,1,2,2,3,3,4,4};
+    n_tr_rgns = 2, n_layers = 8; //Only 8 inputs in soils.in file.  Same output for 8-25 layers.
+    unsigned int tr_regions2[8] = {1,1,1,1,2,2,2,2};
     double tr_coeff2[8] = {0.033, 0.033, 0.067, 0.067, 0.067, 0.133, 0.133, 0.133};
     double swc2[8] = {0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31};
 
     transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions2, tr_coeff2, swc2);
-    test = round(check2); //Rounding is required for unit test.
-    swp_avg = round(swp_avg); //Rounding is required for unit test.
+    test = round(swp_avgExpected8 * 1000000000) / 1000000000; //Rounding is required for unit test.
+    check = round(swp_avg * 1000000000) / 1000000000; //Rounding is required for unit test.
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
-    EXPECT_DOUBLE_EQ(swp_avg, test); //Test results always very close to zero, regardless of inputs.
+    EXPECT_DOUBLE_EQ(test, check); //swp_avg is expected to be 0.0003875786
 
 
     //Reset to previous global states.
@@ -549,80 +551,88 @@ namespace {
     EsT_partitioning(&fbse, &fbst, blivelai, lai_param);
 
     double test = round(fbse * 1000) / 1000; //Rounding is required for unit test.
-    EXPECT_DOUBLE_EQ(test, 0.995);
+    EXPECT_DOUBLE_EQ(test, 0.995); //fbse is expected to be 0.995
 
     test = round(fbst * 1000) / 1000; //Rounding is required for unit test.
     EXPECT_DOUBLE_EQ(test, 0.005); //fbst = 1 - fbse; fbse = bsemax
-    EXPECT_GE(fbse, 0);
-    EXPECT_GE(fbst, 0);
-    EXPECT_LT(fbse, 1);
-    EXPECT_LT(fbst, 1);
+    EXPECT_GE(fbse, 0); //fbse and fbst must be between zero and one
+    EXPECT_GE(fbst, 0); //fbse and fbst must be between zero and one
+    EXPECT_LT(fbse, 1); //fbse and fbst must be between zero and one
+    EXPECT_LT(fbst, 1); //fbse and fbst must be between zero and one
     EXPECT_DOUBLE_EQ(fbst + fbse, 1); //Must add up to one.
 
     //TEST when fbse < bsemax
     blivelai = 0.0012, lai_param = 5;
     EsT_partitioning(&fbse, &fbst, blivelai, lai_param);
     test = round(fbse * 1000000) / 1000000; //Rounding is required for unit test.
-    double check = round(0.994018 * 1000000) / 1000000;
-    EXPECT_DOUBLE_EQ(test, check);
+    double check = round(0.994018 * 1000000) / 1000000; //Rounding is required for unit test.
+    EXPECT_DOUBLE_EQ(test, check); //fbse is expected to be 0.994018
 
     test = round(fbst * 1000) / 1000; //Rounding is required for unit test.
-    check = round(0.005982036 * 1000) / 1000;
+    check = round(0.005982036 * 1000) / 1000; //Rounding is required for unit test.
     EXPECT_DOUBLE_EQ(test, check);
-    EXPECT_GE(fbse, 0);
-    EXPECT_GE(fbst, 0);
-    EXPECT_LT(fbse, 1);
-    EXPECT_LT(fbst, 1);
-    EXPECT_DOUBLE_EQ(fbst + fbse, 1);
+    EXPECT_GE(fbse, 0); //fbse and fbst must be between zero and one
+    EXPECT_GE(fbst, 0); //fbse and fbst must be between zero and one
+    EXPECT_LT(fbse, 1); //fbse and fbst must be between zero and one
+    EXPECT_LT(fbst, 1); //fbse and fbst must be between zero and one
+    EXPECT_DOUBLE_EQ(fbst + fbse, 1);  //Must add up to one.
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
 
   //TEST pot_soil_evap for when nelyrs = 1 and nelyrs = MAX
+  //Begin TEST with nelrs = 1
   TEST(SWFlowTest, pot_soil_evap){
     //INPUTS
     unsigned int nelyrs = 1;
-    double ecoeff[8] = {45, 0.1, 0.25, 0.5, 45, 0.1, 0.25, 0.5};
+    double ecoeff[1] = {0.01};
     double bserate = 0, totagb, fbse = 0.813, petday = 0.1, shift = 45, shape = 0.1,
-      inflec = 0.25, range = 0.5, Es_param_limit = 1;
-    double width[8] = {5,5,5,5,10,10,10,10};
-    double swc[8] = {1,2,3,4,5,6,7,8};
+      inflec = 0.25, range = 0.8, Es_param_limit = 1;
+    double width[1] = {5};
+    double swc[8] = {1};
+
+    //INPUTS for expected outputs
+    double bserateExpected = 0;
 
     //Begin TEST for if(totagb >= Es_param_limit)
     totagb = 17000;
     pot_soil_evap(&bserate, nelyrs, ecoeff, totagb, fbse, petday, shift, shape, inflec, range,
       width, swc, Es_param_limit);
 
-    EXPECT_DOUBLE_EQ(bserate, 0); //Expected return of zero when totagb >= Es_param_limit
+    EXPECT_DOUBLE_EQ(bserate, bserateExpected); //Expected return of zero when totagb >= Es_param_limit
 
     //Begin TEST for if(totagb < Es_param_limit)
     totagb = 0.5;
+    bserateExpected = 0.02561575;
+
     pot_soil_evap(&bserate, nelyrs, ecoeff, totagb, fbse, petday, shift, shape, inflec, range,
       width, swc, Es_param_limit);
-    double test = 0.02563894;
-    test = round(test); //Rounding is required for unit test.
-    double check = round(bserate);
-    EXPECT_DOUBLE_EQ(check, test);
+    double test = round(bserateExpected * 10000) / 10000; //Rounding is required for unit test.
+    double check = round(bserate * 10000) / 10000; //Rounding is required for unit test.
+    EXPECT_DOUBLE_EQ(test, check); //bserate is expected to be 0.02561575
 
-    //TEST for when nelyrs = MAX_LAYERS
+    //Begin TEST for when nelyrs = 8
     nelyrs = 8; //Only 8 inputs available for SW_SWCbulk2SWPmatric function of SW_SoilWater.c
+    double ecoeff8[8] = {0.01, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5};
+    double width8[8] = {5,5,10,10,10,20,20,20};
+    double swc8[8] = {1,2,3,4,5,6,7,8};
 
     //Begin TEST for if(totagb >= Es_param_limit)
     totagb = 17000;
-    pot_soil_evap(&bserate, nelyrs, ecoeff, totagb, fbse, petday, shift, shape, inflec, range,
-      width, swc, Es_param_limit);
+    pot_soil_evap(&bserate, nelyrs, ecoeff8, totagb, fbse, petday, shift, shape, inflec, range,
+      width8, swc8, Es_param_limit);
 
     EXPECT_DOUBLE_EQ(bserate, 0); //Expected return of zero when totagb >= Es_param_limit
 
     //Begin TEST for if(totagb < Es_param_limit)
     totagb = 0.5;
-    pot_soil_evap(&bserate, nelyrs, ecoeff, totagb, fbse, petday, shift, shape, inflec, range,
-      width, swc, Es_param_limit);
-    double test2 = 0.02563877;
-    test2 = round(test2); //Rounding is required for unit test.
-    check = round(bserate);
-    EXPECT_DOUBLE_EQ(check, test2);
+
+    pot_soil_evap(&bserate, nelyrs, ecoeff8, totagb, fbse, petday, shift, shape, inflec, range,
+      width8, swc8, Es_param_limit);
+    test = round(bserateExpected * 10000) / 10000; //Rounding is required for unit test.
+    check = round(bserate * 10000) / 10000; //Rounding is required for unit test.
+    EXPECT_DOUBLE_EQ(test, check);  //bserate is expected to be 0.02561575
 
 
     //Reset to previous global states.
@@ -638,26 +648,32 @@ namespace {
     double width[1] = {5};
     double swc[1] = {1};
 
-    //Begin TEST for bserate
+    //INPUTS for expected outputs
+    double bserateExpected = 0.06306041;
+
+    //Begin TEST for bserate when nelyrs = 1
     pot_soil_evap_bs(&bserate, nelyrs, ecoeff, petday, shift, shape, inflec, range, width, swc);
 
-    double test = 0.06305998;
-    test = round(test); //Rounding is required for unit test.
-    double check = round(bserate);
-    EXPECT_DOUBLE_EQ(check, test);
+    double test = round(bserateExpected * 1000) / 1000; //Rounding is required for unit test.
+    double check = round(bserate * 1000) / 1000; //Rounding is required for unit test.
+    EXPECT_DOUBLE_EQ(test, check);  //bserate is expected to be 0.06306041
 
     //Testing when nelyrs = MAX_LAYERS
+    //INPUTS
     nelyrs = 8; //Only 8 inputs available for SW_SWCbulk2SWPmatric function of SW_SoilWater.c
     double ecoeff8[8] = {0.1, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5};
     double width8[8] = {5,5,5,5,10,10,10,10};
     double swc8[8] = {1,2,3,4,5,6,7,8};
 
+    //INPUTS for expected outputs
+    bserateExpected = 0.06306041;
+
     pot_soil_evap_bs(&bserate, nelyrs, ecoeff8, petday, shift, shape, inflec, range, width8, swc8);
 
-    double test2 = 0.06306041;
-    test2 = round(test); //Rounding is required for unit test.
-    check = round(bserate);
-    EXPECT_DOUBLE_EQ(check, test2);
+
+    test = round(bserateExpected * 10000) / 10000; //Rounding is required for unit test.
+    check = round(bserate * 10000) / 10000; //Rounding is required for unit test.
+    EXPECT_DOUBLE_EQ(test, check); //bserate is expected to be 0.06306041
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
@@ -678,7 +694,7 @@ namespace {
         shade_yinflex, shade_range, co2_wue_multiplier);
 
     double test = 0;
-    double check = round(bstrate);
+    double check = bstrate;
     EXPECT_DOUBLE_EQ(check, test); //bstrate = 0 if biolove < 0
 
     //Begin TEST for if biolive > 0
@@ -689,8 +705,9 @@ namespace {
 
     test = 0.06596299;
     test = round(test * 1000) / 1000; //Rounding is required for unit test.
-    check = round(bstrate * 1000) / 1000;
+    check = round(bstrate * 1000) / 1000;  //Rounding is required for unit test.
     EXPECT_DOUBLE_EQ(check, test); //For this test local variable shadeaf = 1, affecting bstrate
+                                   //bstrate is expected to be 0.06596299
 
     //Begin TEST for if biodead > shade_deadmax
     biodead = 0.95;
@@ -700,8 +717,8 @@ namespace {
 
     test = 0.06564905;
     test = round(test * 1000) / 1000; //Rounding is required for unit test.
-    check = round(bstrate * 1000) / 1000;
-    EXPECT_DOUBLE_EQ(check, test);
+    check = round(bstrate * 1000) / 1000;  //Rounding is required for unit test.
+    EXPECT_DOUBLE_EQ(check, test); //bstrate is expected to be 0.06564905
 
     //Begin TEST for if biodead < shade_deadmax
     biodead = 0.2;
@@ -713,6 +730,7 @@ namespace {
     test = round(test * 1000) / 1000; //Rounding is required for unit test.
     check = round(bstrate * 1000) / 1000;
     EXPECT_DOUBLE_EQ(check, test); //For this test local variable shadeaf = 1, affecting bstrate
+                                   //bstrate is expected to be 0.06596299
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
@@ -739,7 +757,7 @@ namespace {
 
     test = 0.6298786;
     test = round(test * 1000) / 1000; //Rounding is required for unit test.
-    check = round(wat * 1000) / 1000;
+    check = round(wat * 1000) / 1000; //Rounding is required for unit test.
     EXPECT_DOUBLE_EQ(check, test); //When petday = 0.3, watrate = 0.6298786
     EXPECT_LE(check, 1); //watrate must be between 0 & 1
     EXPECT_GE(check, 0); //watrate must be between 0 & 1
@@ -832,7 +850,7 @@ namespace {
     //INPUTS
     double swc[8] =  {0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31};
     double qty[8] = {0.05, 1.51, 3.51, 5.51, 7.51, 9.51, 11.51, 13.51};
-    double aet = 0.33, rate = 0.62, aetExpected = 0.33;
+    double aet = 0.33, rate = 0.62;
     unsigned int nlyrs = 8;
     double coeff[8] = {0.033, 0.033, 0.067, 0.067, 0.067, 0.133, 0.133, 0.133};
     double swcmin[8] = {0.01, 1.01, 3.01, 5.01, 7.01, 9.01, 11.01, 13.01};
@@ -843,17 +861,18 @@ namespace {
     //Begin TEST when nlyrs = 8, only 8 inputs in soils.in file.
     //TEST for if local variable sumswp = 0 (coeff[i] = 0)
 
-    //INPUTS
+    //INPUTS for expected outputs
     double swcExpected[8] =  {0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31};
     double qtyExpected[8] = {0.05, 1.51, 3.51, 5.51, 7.51, 9.51, 11.51, 13.51};
+    double aetExpected = 0.33;
 
-    for(unsigned int i = 0; i < 8; i++){ //set coeff[] to all zeros
+    for(unsigned int i = 0; i < nlyrs; i++){ //set coeff[] to all zeros
       coeff[i] = 0;
     }
 
     remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin);
 
-    for(unsigned int i = 0; i < 8; i++){
+    for(unsigned int i = 0; i < nlyrs; i++){
       EXPECT_DOUBLE_EQ(qty[i], qtyExpected[i]); //no change expected from original values
       EXPECT_DOUBLE_EQ(swc[i], swcExpected[i]); //no change expected from original values
       EXPECT_DOUBLE_EQ(aet, aetExpected); //no change expected from original values
@@ -862,7 +881,7 @@ namespace {
     //Begin TEST for if st->lyrFrozen[i]
     double array[8] = {0.033, 0.033, 0.067, 0.067, 0.067, 0.133, 0.133, 0.133}; //coeff[]
 
-    for(unsigned int i = 0; i < 8; i++){
+    for(unsigned int i = 0; i < 8; i++){ //coeff[i] != 0
       coeff[i] = array[i];
     }
     remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin);
@@ -877,27 +896,24 @@ namespace {
     }
 
     //Begin TEST for if st->lyrFrozen[i] = false.
-    double array1[8] = {0, 3.029771e-06, 3.031059e-03, 2.410392e-01, 1.649234e-02, 3.542865e-01, 2.006341e-01, 3.000000e-01}; //qtyExpected
-    double array2[8] = {0.010000, 1.909997, 3.806969, 5.468961, 7.593508, 9.155714, 11.209366, 13.010000}; //swcExpected
-    aetExpected = 1.445486;
+    double array1[8] = {0, 0.0000849692, 0.0001230640, 0.0062931543, 0.4625235750, 0.0074406658, 0.0350922916, 0.1084422801}; //qtyExpected
+    double array2[8] = {0.010000, 1.909915, 3.809877, 5.703707, 7.147476, 9.502559, 11.374908, 13.201558}; //swcExpected
+    aetExpected = 0.95;
 
     for(unsigned int i = 0; i < 8; i++){
 
-      double test = array1[i];
-      test = round(test); //Rounding is required for unit test.
-      double check = round(qty[i]);
-      EXPECT_DOUBLE_EQ(check, test); //Values for qty[] are tested against array of expected Values
+      double test = round(array1[i] * 10000) / 10000; //Rounding is required for unit test.
+      double check = round(qty[i] * 10000) / 10000; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //Values for qty[] are tested against array of expected Values
 
-      test = array2[i];
-      test = round(test / 1000) * 1000; //Rounding is required for unit test.
-      check = round(swc[i] / 1000) * 1000;
-      EXPECT_DOUBLE_EQ(check, test); //Values for swc[] are tested against array of expected values
+      test = round(array2[i] * 1000000) / 1000000; //Rounding is required for unit test.
+      check = round(swc[i] * 1000000) / 1000000; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //Values for swc[] are tested against array of expected values
 
     }
     double test = aetExpected;
-    test = round(test / 1000) * 1000; //Rounding is required for unit test.
-    double check = round(aet / 1000) * 1000;
-    EXPECT_DOUBLE_EQ(check, test); //aet is expected to be 0.33
+    double check = aet;
+    EXPECT_DOUBLE_EQ(check, test); //aet is expected to be 0.95
 
     //Test when nlyrs = 1
     nlyrs = 1;
@@ -906,16 +922,18 @@ namespace {
     double coeff1[1] = {0.033};
     double swcmin1[1] = {0.01};
     //Begin TEST for if local variable sumswp = 0 (coeff[i] = 0)
+    double qtyExpected1[1] = {0};
+
     for(unsigned int i = 0; i < nlyrs; i++){ //set coeff[] to all zeros
       coeff[i] = 0;
     }
 
     remove_from_soil(swc1, qty1, &aet, nlyrs, coeff1, rate, swcmin1);
-
     for(unsigned int i = 0; i < nlyrs; i++){ //no change expected from original preset values
-      EXPECT_DOUBLE_EQ(round(qty[i]), round(qtyExpected[i])); //no change expected from original preset values
-      EXPECT_DOUBLE_EQ(swc[i], swcExpected[i]); //no change expected from original preset values
-      EXPECT_DOUBLE_EQ(round(aet), round(aetExpected)); //no change expected from original preset values
+
+      EXPECT_DOUBLE_EQ(qty1[i], qtyExpected1[i]); //no change expected from original preset values
+      EXPECT_DOUBLE_EQ(swc1[i], swcExpected[i]); //no change expected from original preset values
+      EXPECT_DOUBLE_EQ(aet, aetExpected); //no change expected from original preset values
     }
 
     //Begin TEST for if st->lyrFrozen[i]
@@ -931,29 +949,15 @@ namespace {
         EXPECT_DOUBLE_EQ(qty[i], 0); //should be zero
         EXPECT_DOUBLE_EQ(swc[i], swcExpected[i]); //no change expected from original values
         EXPECT_DOUBLE_EQ(aet, aetExpected); //no change expected from original values
+      }else{
+        //Begin TEST for if st->lyrFrozen[i] = false.
+        aetExpected = 0.95;
+        remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin);
+
+        EXPECT_DOUBLE_EQ(qty[i], qtyExpected1[i]); //should be 0
+        EXPECT_DOUBLE_EQ(swc[i], swcExpected[i]); //no change expected from original values
+        EXPECT_DOUBLE_EQ(aet, aetExpected); //aet is expected to be 0.95
       }
-    }
-
-    //Begin TEST for if st->lyrFrozen[i] = false.
-    double array3[8] = {0, 1.889579e-08, 1.890382e-05, 1.503291e-03, 1.376369e-01, 5.000000e-01, 2.006341e-01, 3.000000e-01}; //qtyExpected
-    aetExpected = 1.469793;
-
-    for(unsigned int i = 0; i < nlyrs; i++){
-
-      double test = array3[i];
-      test = round(test / 1000) * 1000; //Rounding is required for unit test.
-      double check = round(qty[i] / 1000) * 1000;
-      EXPECT_DOUBLE_EQ(check, test);//Values for qty[] are tested against array of expected Values
-
-      test = array2[i];
-      test = round(test / 1000) * 1000; //Rounding is required for unit test.
-      check = round(swc[i] / 1000) * 1000;
-      EXPECT_DOUBLE_EQ(check, test);//Values for swc[] are tested against array of expected values
-
-      test = aetExpected;
-      test = round(test / 1000) * 1000; //Rounding is required for unit test.
-      check = round(aet / 1000) * 1000;
-      EXPECT_DOUBLE_EQ(check, test); //aet is expected to be 1.469793.
     }
 
     //Reset to previous global states.
@@ -977,52 +981,48 @@ namespace {
     ST_RGR_VALUES stValues;
 	  ST_RGR_VALUES *st = &stValues;
 
+    //INPUTS for expected outputs
     double swcExpected[8] = {0, 1.01, 4.01, 5.01, 6.01, 9.01, 11.01, 13.01};
     double drainExpected[8] = {1, 1, 0, 0, 1, 1, 1, 1};
     double drainoutExpected = 0.1;
     double standingWaterExpected = 0.01;
 
     //Begin TEST for if swc[i] <= swcmin[i]
-
     infiltrate_water_low(swc, drain, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc, width, swcmin,
       swcsat, impermeability, &standingWater);
 
-
-    EXPECT_DOUBLE_EQ(drainoutExpected, drainout);
-    EXPECT_DOUBLE_EQ(standingWaterExpected, standingWater);
+    EXPECT_DOUBLE_EQ(drainoutExpected, drainout); //drainout expected to be 0.1
+    EXPECT_DOUBLE_EQ(standingWaterExpected, standingWater); //standingWater expected to be 0.01
 
     for(unsigned int i = 0; i < nlyrs; i++){
-
-      EXPECT_DOUBLE_EQ(swcExpected[i], swc[i]);
-      EXPECT_DOUBLE_EQ(drainExpected[i], drain[i]);
-
+      EXPECT_DOUBLE_EQ(swcExpected[i], swc[i]); //swc is expected to match swcExpected
+      EXPECT_DOUBLE_EQ(drainExpected[i], drain[i]); //drain is expected to match drainExpected
     }
 
     //Begin TEST for if swc[i] > swcmin[i]
     double swcExpected2[8] = {0, 1.6495, 4.3800, 5.0100, 6.0100, 9.5100, 11.6100, 13.1100};
     double drainExpected2[8] = {1.0095, 1.2700, -1.3000, -0.6000, 1.0000, 1.0000, 0.8000, 0.9000};
+    standingWaterExpected = 0.0105;
 
     infiltrate_water_low(swcmin, drain, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc, width, swc,
       swcsat, impermeability, &standingWater); //switch swc and swcmin arrays
 
-    standingWaterExpected = 0.0105;
-
-    EXPECT_DOUBLE_EQ(drainoutExpected, drainout);
+    EXPECT_DOUBLE_EQ(drainoutExpected, drainout); //drainout is expected to be 0.1
 
     double test = standingWaterExpected;
     test = round(test * 10) / 10; //Rounding is required for unit test.
     double check = round(standingWater * 10) / 10;
-    EXPECT_DOUBLE_EQ(test, check);
+    EXPECT_DOUBLE_EQ(test, check); //standingWater is expected to be 0.0105
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      test = round(swcExpected2[i] / 10) * 10;
-      check = round(swc[i] / 10) * 10;
-      EXPECT_DOUBLE_EQ(test, check);
+      test = round(swcExpected2[i] / 10) * 10; //Rounding is required for unit test.
+      check = round(swc[i] / 10) * 10; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
 
       test = round(drainExpected2[i] / 100) * 100; //Rounding is required for unit test.
-      check = round(drain[i] / 100) * 100;
-      EXPECT_DOUBLE_EQ(test, check);
+      check = round(drain[i] / 100) * 100; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //drain is expected to match drainExpected
 
     }
 
@@ -1037,35 +1037,35 @@ namespace {
       if (st->lyrFrozen[i]){
 
         standingWaterExpected = 0.019905;
-        test = round(standingWaterExpected / 10) * 10;
-        check = round(standingWater / 10) * 10;
-        EXPECT_DOUBLE_EQ(test, check);
-        EXPECT_DOUBLE_EQ(drainoutExpected, drainout);
+        test = round(standingWaterExpected / 10) * 10; //Rounding is required for unit test.
+        check = round(standingWater / 10) * 10; //Rounding is required for unit test.
+        EXPECT_DOUBLE_EQ(test, check); //standingWater is expected to be 0.0105
+        EXPECT_DOUBLE_EQ(drainoutExpected, drainout); //drainout is expected to be 0.1
 
-        test = round(swcExpected3[i] / 10) * 10;
-        check = round(swc[i] / 10) * 10;
-        EXPECT_DOUBLE_EQ(test, check);
+        test = round(swcExpected3[i] / 10) * 10; //Rounding is required for unit test.
+        check = round(swc[i] / 10) * 10; //Rounding is required for unit test.
+        EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
 
         test = round(drainExpected3[i] / 100) * 100; //Rounding is required for unit test.
-        check = round(drain[i] / 100) * 100;
-        EXPECT_DOUBLE_EQ(test, check);
+        check = round(drain[i] / 100) * 100; //Rounding is required for unit test.
+        EXPECT_DOUBLE_EQ(test, check); //drain is expected to match drainExpected
       }
     //Begin TEST for if lyrFrozen == false
       else{
 
         standingWaterExpected = 0.019905;
         test = round(standingWaterExpected / 10) * 10; //Rounding is required for unit test.
-        check = round(standingWater / 10) * 10;
-        EXPECT_DOUBLE_EQ(test, check);
-        EXPECT_DOUBLE_EQ(drainoutExpected, drainout);
+        check = round(standingWater / 10) * 10; //Rounding is required for unit test.
+        EXPECT_DOUBLE_EQ(test, check); //standingWater is expected to be 0.019905
+        EXPECT_DOUBLE_EQ(drainoutExpected, drainout); //drainout is expected to be 0.1
 
         test = round(swcExpected2[i] / 10) * 10; //Rounding is required for unit test.
-        check = round(swc[i] / 10) * 10;
-        EXPECT_DOUBLE_EQ(test, check);
+        check = round(swc[i] / 10) * 10; //Rounding is required for unit test.
+        EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
 
         test = round(drainExpected2[i] / 100) * 100; //Rounding is required for unit test.
-        check = round(drain[i] / 100) * 100;
-        EXPECT_DOUBLE_EQ(test, check);
+        check = round(drain[i] / 100) * 100; //Rounding is required for unit test.
+        EXPECT_DOUBLE_EQ(test, check); //drain is expected to match drainExpected
       }
     }
 
@@ -1074,6 +1074,7 @@ namespace {
     double swc2[8] = {1.02, 2.02, 3.02, 4.02, 5.02, 6.02, 7.02, 8.02};
     double swcsat2[8] = {1.01, 2.01, 3.01, 4.01, 5.01, 6.01, 7.01, 8.01};
 
+    //INPUTS for expected outputs
     double swcExpected4[8] = {0, 2.01, 3.01, 6.01, 5.01, 6.01, 7.01, 8.01};
     double drainExpected4[8] = {0.93, 1.45, -2.35, -1.6, 0.97, 0.98, 0.49, 0.90};
     standingWaterExpected = 0.08;
@@ -1081,21 +1082,21 @@ namespace {
     infiltrate_water_low(swc2, drain, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc, width, swcmin,
       swcsat2, impermeability, &standingWater);
 
-    EXPECT_DOUBLE_EQ(drainoutExpected, drainout);
+    EXPECT_DOUBLE_EQ(drainoutExpected, drainout); //drainout is expected to be 0.1
 
     test = round(standingWaterExpected * 10) / 10; //Rounding is required for unit test.
-    check = round(standingWater * 10) / 10;
-    EXPECT_DOUBLE_EQ(test, check);
+    check = round(standingWater * 10) / 10; //Rounding is required for unit test.
+    EXPECT_DOUBLE_EQ(test, check); //standingWater is expected to be 0.08
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      test = round(swcExpected4[i] / 10) * 10;
-      check = round(swc[i] / 10) * 10;
-      EXPECT_DOUBLE_EQ(test, check);
+      test = round(swcExpected4[i] / 10) * 10; //Rounding is required for unit test.
+      check = round(swc[i] / 10) * 10; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
 
       test = round(drainExpected4[i] * 10) / 10; //Rounding is required for unit test.
-      check = round(drain[i] * 10) / 10;
-      EXPECT_DOUBLE_EQ(test, check);
+      check = round(drain[i] * 10) / 10; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //drain is expected to match drainExpected
 
     }
 
@@ -1103,6 +1104,7 @@ namespace {
     //INPUTS
     double swcsat3[8] = {5.0, 10.77, 13.61, 7.01, 8.01, 12.01, 13.01, 15};
 
+    //INPUTS for expected outputs
     double swcExpected5[8] = {0.01, 1.01, 3.01, 5.01, 7.01, 9.01, 11.01, 13.01};
     double drainExpected5[8] = {1, 1, 1, 1, 1, 1, 1, 1};
     standingWaterExpected = 0;
@@ -1111,26 +1113,26 @@ namespace {
       swcsat3, impermeability, &standingWater);
 
     EXPECT_DOUBLE_EQ(drainoutExpected, drainout);
-    test = round(standingWaterExpected); //Rounding is required for unit test.
-    check = round(standingWater);
-    EXPECT_DOUBLE_EQ(test, check);
+    test = standingWaterExpected;
+    check = round(standingWater); //Rounding is required for unit test.
+    EXPECT_DOUBLE_EQ(test, check); //no standingWater expected
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      test = round(swcExpected5[i] / 10) * 10;
-      check = round(swc[i] / 10) * 10;
-      EXPECT_DOUBLE_EQ(test, check);
+      test = round(swcExpected5[i] / 10) * 10; //Rounding is required for unit test.
+      check = round(swc[i] / 10) * 10; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
 
       test = round(drainExpected5[i] / 100) * 100; //Rounding is required for unit test.
-      check = round(drain[i] / 100) * 100;
-      EXPECT_DOUBLE_EQ(test, check);
+      check = round(drain[i] / 100) * 100; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //drain is expected to match drainExpected
 
     }
 
     //Begin testing when nlyrs = 1
     nlyrs = 1;
 
-    //INPUTS
+    //INPUTS for one layer
     double swc_1[1] = {0.01};
     double drain_1[1] = {1};
     drainout = 0.1, sdrainpar = 0.6, sdraindpth = 6, standingWater = 0;
@@ -1140,24 +1142,23 @@ namespace {
     double swcsat_1[1] = {0};
     double impermeability_1[1] = {0.05};
 
+    //INPUTS for expected outputs
     double swcExpected_1[1] = {0};
     double drainExpected_1[8] = {1};
     drainoutExpected = 0.1;
     standingWaterExpected = 0.01;
 
     //Begin TEST for if swc[i] <= swcmin[i]
-
     infiltrate_water_low(swc_1, drain_1, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc_1, width_1, swcmin_1,
       swcsat_1, impermeability_1, &standingWater);
 
-
-    EXPECT_DOUBLE_EQ(drainoutExpected, drainout);
-    EXPECT_DOUBLE_EQ(standingWaterExpected, standingWater);
+    EXPECT_DOUBLE_EQ(drainoutExpected, drainout); //drainout is expected to be 0.1
+    EXPECT_DOUBLE_EQ(standingWaterExpected, standingWater); //standingWater is expected to be 0.01
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      EXPECT_DOUBLE_EQ(swcExpected_1[i], swc_1[i]);
-      EXPECT_DOUBLE_EQ(drainExpected_1[i], drain_1[i]);
+      EXPECT_DOUBLE_EQ(swcExpected_1[i], swc_1[i]); //swc is expected to match swcExpected
+      EXPECT_DOUBLE_EQ(drainExpected_1[i], drain_1[i]); //drain is expected to match drainExpected
 
     }
 
@@ -1170,26 +1171,27 @@ namespace {
 
     standingWaterExpected = 0.0105;
 
-    EXPECT_DOUBLE_EQ(round(drainoutExpected * 10) / 10, round(drainout * 10) / 10);
+    EXPECT_DOUBLE_EQ(round(drainoutExpected * 10) / 10, round(drainout * 10) / 10); //Rounding is required for unit test.
 
     test = standingWaterExpected;
     test = round(test * 10) / 10; //Rounding is required for unit test.
-    check = round(standingWater * 10) / 10;
-    EXPECT_DOUBLE_EQ(test, check);
+    check = round(standingWater * 10) / 10; //Rounding is required for unit test.
+    EXPECT_DOUBLE_EQ(test, check); //standingWater is expected to be 0.0105
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      test = round(swcExpected2_1[i] / 10) * 10;
-      check = round(swc_1[i] / 10) * 10;
-      EXPECT_DOUBLE_EQ(test, check);
+      test = round(swcExpected2_1[i] / 10) * 10; //Rounding is required for unit test.
+      check = round(swc_1[i] / 10) * 10; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
 
       test = round(drainExpected2_1[i] / 100) * 100; //Rounding is required for unit test.
-      check = round(drain_1[i] / 100) * 100;
-      EXPECT_DOUBLE_EQ(test, check);
+      check = round(drain_1[i] / 100) * 100; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //drain is expected to match drainExpected
 
     }
 
     //Begin TEST for if lyrFrozen == true
+    //INPUTS for expected outputs
     double swcExpected3_1[1] = {0};
     double drainExpected3_1[1] = {1.000095};
 
@@ -1198,37 +1200,40 @@ namespace {
 
     for(unsigned int i = 0; i < nlyrs; i++){
       if (st->lyrFrozen[i]){
-
+        //INPUTS for expected outputs
         standingWaterExpected = 0.019905;
-        test = round(standingWaterExpected / 10) * 10;
-        check = round(standingWater / 10) * 10;
-        EXPECT_DOUBLE_EQ(test, check);
-        EXPECT_DOUBLE_EQ(drainoutExpected, drainout);
 
-        test = round(swcExpected3_1[i] / 10) * 10;
-        check = round(swc_1[i] / 10) * 10;
-        EXPECT_DOUBLE_EQ(test, check);
+        test = round(standingWaterExpected / 10) * 10; //Rounding is required for unit test.
+        check = round(standingWater / 10) * 10; //Rounding is required for unit test.
+        EXPECT_DOUBLE_EQ(test, check); //standingWater is expected to be 0.0105
+        EXPECT_DOUBLE_EQ(drainoutExpected, drainout); //drainout is expected to be 0.1
+
+        test = round(swcExpected3_1[i] / 10) * 10; //Rounding is required for unit test.
+        check = round(swc_1[i] / 10) * 10; //Rounding is required for unit test.
+        EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
 
         test = round(drainExpected3_1[i] / 100) * 100; //Rounding is required for unit test.
-        check = round(drain_1[i] / 100) * 100;
-        EXPECT_DOUBLE_EQ(test, check);
+        check = round(drain_1[i] / 100) * 100; //Rounding is required for unit test.
+        EXPECT_DOUBLE_EQ(test, check); //drain is expected to match drainExpected
       }
     //Begin TEST for if lyrFrozen == false
       else{
-
+        //INPUTS for expected outputs
         standingWaterExpected = 0.019905;
+
         test = round(standingWaterExpected / 10) * 10; //Rounding is required for unit test.
-        check = round(standingWater / 10) * 10;
-        EXPECT_DOUBLE_EQ(test, check);
-        EXPECT_DOUBLE_EQ(round(drainoutExpected * 10) / 10, round(drainout * 10) / 10);
+        check = round(standingWater / 10) * 10; //Rounding is required for unit test.
+        EXPECT_DOUBLE_EQ(test, check); //standingWater is expected to be 0.019905
+        EXPECT_DOUBLE_EQ(round(drainoutExpected * 10) / 10, round(drainout * 10) / 10); //Rounding is required for unit test.
+          //drainout is expected to be 0.1
 
         test = round(swcExpected2_1[i] / 10) * 10; //Rounding is required for unit test.
-        check = round(swc_1[i] / 10) * 10;
-        EXPECT_DOUBLE_EQ(test, check);
+        check = round(swc_1[i] / 10) * 10; //Rounding is required for unit test.
+        EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
 
         test = round(drainExpected2_1[i] / 100) * 100; //Rounding is required for unit test.
-        check = round(drain_1[i] / 100) * 100;
-        EXPECT_DOUBLE_EQ(test, check);
+        check = round(drain_1[i] / 100) * 100; //Rounding is required for unit test.
+        EXPECT_DOUBLE_EQ(test, check); //drain is expected to match drainExpected
       }
     }
 
@@ -1237,6 +1242,7 @@ namespace {
     double swc2_1[1] = {1.02};
     double swcsat2_1[1] = {1.01};
 
+    //INPUTS for expected outputs
     double swcExpected4_1[1] = {0};
     double drainExpected4_1[1] = {1.57};
     standingWaterExpected = 0;
@@ -1245,21 +1251,22 @@ namespace {
     infiltrate_water_low(swc2_1, drain_1, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc_1, width_1, swcmin_1,
       swcsat2_1, impermeability_1, &standingWater);
 
-    EXPECT_DOUBLE_EQ(round(drainoutExpected * 10) / 10, round(drainout * 10) / 10);
+    EXPECT_DOUBLE_EQ(round(drainoutExpected * 10) / 10, round(drainout * 10) / 10); //Rounding is required for unit test.
+      //drainout is expected to be 0.67
 
     test = round(standingWaterExpected * 10) / 10; //Rounding is required for unit test.
-    check = round(standingWater * 10) / 10;
-    EXPECT_DOUBLE_EQ(test, check);
+    check = round(standingWater * 10) / 10; //Rounding is required for unit test.
+    EXPECT_DOUBLE_EQ(test, check); //No standingWater expected
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      test = round(swcExpected4_1[i] / 10) * 10;
-      check = round(swc_1[i] / 10) * 10;
-      EXPECT_DOUBLE_EQ(test, check);
+      test = round(swcExpected4_1[i] / 10) * 10; //Rounding is required for unit test.
+      check = round(swc_1[i] / 10) * 10; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
 
       test = round(drainExpected4_1[i] * 10) / 10; //Rounding is required for unit test.
-      check = round(drain_1[i] * 10) / 10;
-      EXPECT_DOUBLE_EQ(test, check);
+      check = round(drain_1[i] * 10) / 10; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //drain is expected to match drainExpected
 
     }
 
@@ -1267,6 +1274,7 @@ namespace {
     //INPUTS
     double swcsat3_1[1] = {5.0};
 
+    //INPUTS for expected outputs
     double swcExpected5_1[1] = {0.01};
     double drainExpected5_1[1] = {1};
     standingWaterExpected = 0;
@@ -1274,59 +1282,131 @@ namespace {
     infiltrate_water_low(swc_1, drain_1, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc_1, width_1, swcmin_1,
       swcsat3_1, impermeability_1, &standingWater);
 
-    EXPECT_DOUBLE_EQ(round(drainoutExpected * 10) / 10, round(drainout * 10) / 10);
+    EXPECT_DOUBLE_EQ(round(drainoutExpected * 10) / 10, round(drainout * 10) / 10); //Rounding is required for unit test.
+      //drainout is expected to be 0.67
     test = round(standingWaterExpected); //Rounding is required for unit test.
-    check = round(standingWater);
-    EXPECT_DOUBLE_EQ(test, check);
+    check = round(standingWater); //Rounding is required for unit test.
+    EXPECT_DOUBLE_EQ(test, check); //No standingWater expected
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      test = round(swcExpected5_1[i] / 10) * 10;
-      check = round(swc_1[i] / 10) * 10;
-      EXPECT_DOUBLE_EQ(test, check);
+      test = round(swcExpected5_1[i] / 10) * 10; //Rounding is required for unit test.
+      check = round(swc_1[i] / 10) * 10; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
 
       test = round(drainExpected5_1[i] / 100) * 100; //Rounding is required for unit test.
-      check = round(drain_1[i] / 100) * 100;
-      EXPECT_DOUBLE_EQ(test, check);
-
+      check = round(drain_1[i] / 100) * 100; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //drain is expected to match drainExpected
     }
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
-/**
+
+  //TEST for hydraulic_redistribution when nlyrs = 8 and nlyrs = 1
   TEST(SWFlowTest, hydraulic_redistribution){
 
     //INPUTS
-    double swc[]
-    double swcwp[]
-    double lyrRootCo[]
-    double hydred[]
-    unsigned int nlyrs
-    double maxCondroot
-    double swp50
-    double shapeCond
-    double scale
+    double swc[8] = {0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12};
+    double swcwp[8] = {0.01, 0.11, 0.21, 0.51, 0.71, 0.91, 1.01, 1.11};
+    double lyrRootCo[8] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
+    double hydred[8] = {1,2,3,4,5,6,7,8}; //hydred[0] != 0 for test
+    unsigned int nlyrs = 8;
+    double maxCondroot = -0.2328;
+    double swp50 = 10;
+    double shapeCond = 1;
+    double scale = 0.3;
 
-    //Begin TEST for if swp[i] < swpwp[i] OR swp[j] < swpwp[j] AND lyrFrozen == false
+    //INPUTS for expected outputs
+    double swcExpected[8] = {0.01, 0.11, 0.21, 0.51, 0.71, 0.91, 1.01, 1.11};
+    double hydredExpected[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+    //Begin TESTing when nlyrs = 8
+    //Begin TEST for if swp[i] < swpwp[i] OR swp[j] < swpwp[j] AND lyrFrozen == false; j = i + 1
+    hydraulic_redistribution(swcwp, swc, lyrRootCo, hydred, nlyrs, maxCondroot, swp50, shapeCond, scale);
+      //inputs for swc and swcwp have been switched
+
+    EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
+    for(unsigned int i = 0; i < nlyrs; i++){
+      double test = round(swc[i] * 10) / 10; //Rounding is required for unit test.
+      double check = round(swcExpected[i] * 10) / 10; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
+
+      test = hydred[i]; //Rounding is required for unit test.
+      check = hydredExpected[i];
+      EXPECT_DOUBLE_EQ(test, check); //hydred is expected to match hydredExpected
+    }
 
     //Begin TEST for if else ^^
+    //INPUTS for expected outputs.
+    double swcExpected2[8] = {0.0200000, -49.5435878, 153.2318989, -47.0177693, 0.7169582, -54.8815000, 1.0170000, 1.1170000};
+    double hydredExpected2[8] = {0.000000000, -49.663587804, 153.011898909, -47.537769291, -0.003041772, -55.801500035, -0.003000008, -0.003000000};
 
-    //Begin TEST for if swp[i] > swp[i+1]; j = i+1
+    hydraulic_redistribution(swc, swcwp, lyrRootCo, hydred, nlyrs, maxCondroot, swp50, shapeCond, scale);
 
-    //Begin TEST for relCondroot[i] > (relCondroot[i+1] * (lyrRootCo[i] * lyrRootCo[j] / (1. - Rx))
+    EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
+    for(unsigned int i = 0; i < nlyrs; i++){
+      double test = round(swc[i] * 1000) / 1000; //Rounding is required for unit test.
+      double check = round(swcExpected2[i] * 1000) / 1000; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
 
-    //Begin TEST for relCondroot[i] <= (relCondroot[i+1] * (lyrRootCo[i] * lyrRootCo[j] / (1. - Rx))
+      test = round(hydred[i] * 1000) / 1000; //Rounding is required for unit test.
+      check = round(hydredExpected2[i] * 1000) / 1000; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //hydred is expected to match hydredExpected
+    }
 
-    //Begin TEST for swa
+    //Begin TESTing when nlyrs = 1
+    //INPUTS
+    double swc1[1] = {0.02};
+    double swcwp1[1] = {0.01};
+    double lyrRootCo1[1] = {0.1};
+    double hydred1[1] = {1}; //hydred[0] != 0 for test
+    nlyrs = 1;
+    maxCondroot = -0.2328;
+    swp50 = 10;
+    shapeCond = 1;
+    scale = 0.3;
 
-    //Begin TEST for if (-hydredsum) > swa
+    //INPUTS for expected outputs
+    double swcExpected11[1] = {0.02};
+    double hydredExpected11[1] = {0};
 
+    //Begin TESTing when nlyrs = 1
+    //Begin TEST for if swp[i] < swpwp[i] OR swp[j] < swpwp[j] AND lyrFrozen == false; j = i + 1
+    hydraulic_redistribution(swcwp1, swc1, lyrRootCo1, hydred1, nlyrs, maxCondroot, swp50, shapeCond, scale);
+      //inputs for swc and swcwp have been switched
 
+    EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
+    for(unsigned int i = 0; i < nlyrs; i++){
+      double test = swc1[i]; //Rounding is required for unit test.
+      double check = swcExpected11[i]; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
 
+      test = hydred1[i]; //Rounding is required for unit test.
+      check = hydredExpected11[i];
+      EXPECT_DOUBLE_EQ(test, check); //hydred is expected to match hydredExpected
+    }
+
+    //Begin TEST for if else ^^
+    //INPUTS for expected outputs.
+    double swcExpected21[1] = {0.02};
+    double hydredExpected21[1] = {0};
+
+    hydraulic_redistribution(swc1, swcwp1, lyrRootCo1, hydred1, nlyrs, maxCondroot, swp50, shapeCond, scale);
+
+    EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
+    for(unsigned int i = 0; i < nlyrs; i++){
+      double test = swc1[i]; //Rounding is required for unit test.
+      double check = swcExpected21[i]; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //swc is expected to match swcExpected
+
+      test = hydred1[i]; //Rounding is required for unit test.
+      check = hydredExpected21[i]; //Rounding is required for unit test.
+      EXPECT_DOUBLE_EQ(test, check); //hydred is expected to match hydredExpected
+    }
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
-  }*/
+  }
 
 }
