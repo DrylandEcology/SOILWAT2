@@ -1889,7 +1889,7 @@ Equations based on Parton 1978. @cite Parton1978
 Equations based on Parton 1984. @cite Parton1984
 
 @param airTemp Average daily air temperature in Celcius
-@param pet Potential evapotranspiration
+@param pet Potential evapotranspiration rate, measured in cm per day.
 @param *aet Actual evapotranspiration, measured in centimeters per day.
 @param biomass Standing-crop biomass, measured in grams per square meter.
 @param swc Displays soilwater content in each layer before drainage, measured
