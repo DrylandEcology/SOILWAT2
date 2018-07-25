@@ -3,7 +3,7 @@
 /*  Source file: SW_Output.h
 	Type: header
 	Application: SOILWAT - soilwater dynamics simulator
-	Purpose: Support for Output.c
+	Purpose: Support for SW_Output.c and SW_Output_get_functions.c
 	History:
 	(9/11/01) -- INITIAL CODING - cwb
 	2010/02/02	(drs) changed SW_CANOPY to SW_CANOPYEV and SW_LITTER to SW_LITTEREV
@@ -22,7 +22,7 @@
 	12/13/2012	(clk) added SW_RUNOFF, updated SW_OUTNKEYs to 29, added eSW_Runoff to enum
 	12/14/2012	(drs) updated SW_OUTNKEYs from 29 to 26 [incorrect number probably introduced 09/12/2011]
 	01/10/2013	(clk)	instead of using one FILE pointer named fp, created four new
-			FILE pointers; fp_dy, fp_wk, fp_mo, and fp_yr. This allows us to keep track
+			FILE pointers; fp_reg_agg[eSW_Day], fp_reg_agg[eSW_Week], fp_reg_agg[eSW_Month], and fp_reg_agg[eSW_Year]. This allows us to keep track
 			of all time steps for each OutKey.
 */
 /********************************************************/
@@ -32,7 +32,30 @@
 #define SW_OUTPUT_H
 
 #include "Times.h"
+#include "SW_Defines.h"
+#include "SW_SoilWater.h"
+#include "SW_Weather.h"
+#include "SW_VegProd.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+// Array-based output:
+#if defined(RSOILWAT) || defined(STEPWAT)
+#define SW_OUTARRAY
+#endif
+
+// Text-based output:
+#if defined(SOILWAT) || defined(STEPWAT)
+#define SW_OUTTEXT
+#endif
+
+
+
+#define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
+#define OUT_DIGITS 6 // number of floating point decimal digits written to output files
 
 /* These are the keywords to be found in the output setup file */
 /* some of them are from the old fortran model and are no longer */
@@ -109,20 +132,11 @@ typedef enum {
 	/* vegetation quantities */
 	eSW_AllVeg,
 	eSW_Estab,
+	// vegetation other */
 	eSW_CO2Effects,
 	eSW_LastKey /* make sure this is the last one */
 } OutKey;
 
-/* output period specifiers found in input file */
-#define SW_DAY   "DY"
-#define SW_WEEK  "WK"
-#define SW_MONTH "MO"
-#define SW_YEAR  "YR"
-#define SW_OUTNPERIODS 4  /* must match with enum */
-
-typedef enum {
-	eSW_Day, eSW_Week, eSW_Month, eSW_Year
-} OutPeriod;
 
 /* summary methods */
 #define SW_SUM_OFF "OFF"  /* don't output */
@@ -139,56 +153,27 @@ typedef struct {
 	OutKey mykey;
 	ObjType myobj;
 	OutSum sumtype;
-	Bool use;
-	TimeInt first, last, 			/* updated for each year */
-			first_orig, last_orig;
-	int yr_row, mo_row, wk_row, dy_row;
-	char *outfile; /* point to name of output file */
-	void (*pfunc)(OutPeriod); /* pointer to output routine */
+	Bool
+		use,		// TRUE if output is requested
+		has_sl;	// TRUE if output key/type produces output for each soil layer
+	TimeInt
+		first, last, 			/* first/last doy of current year, i.e., updated for each year */
+		first_orig, last_orig; /* first/last doy that were originally requested */
+
+	#ifdef SW_OUTTEXT
+	void (*pfunc_text)(OutPeriod); /* pointer to output routine for text output */
+	#endif
+
+	#if defined(RSOILWAT)
+	void (*pfunc_mem)(OutPeriod); /* pointer to output routine for array output */
+	char *outfile; /* name of output */ //could probably be removed
+
+	#elif defined(STEPWAT)
+	void (*pfunc_agg)(OutPeriod); /* pointer to output routine for aggregated output across STEPWAT iterations */
+	void (*pfunc_SXW)(OutPeriod); /* pointer to output routine for STEPWAT in-memory output */
+	#endif
 } SW_OUTPUT;
 
-typedef struct {
-	// used in SW_Output.c for creating column headers
-	int col_status_dy,
-			col_status_wk,
-			col_status_mo,
-			col_status_yr;
-
-	int lastMonth,
-			lastWeek;
-
-	int finalValue_dy,
-			finalValue_wk,
-			finalValue_mo,
-			finalValue_yr;
-
-	int make_soil,
-			make_regular;
-
-	Bool use_Day,
-			 use_Week,
-			 use_Month,
-			 use_Year;
-
-	FILE *fp_dy; /* opened output file pointer for day*/
-	FILE *fp_wk; /* opened output file pointer for week*/
-	FILE *fp_mo; /* opened output file pointer for month*/
-	FILE *fp_yr; /* opened output file pointer for year*/
-	FILE *fp_dy_soil; /* opened output file pointer for day*/
-	FILE *fp_wk_soil; /* opened output file pointer for week*/
-	FILE *fp_mo_soil; /* opened output file pointer for month*/
-	FILE *fp_yr_soil; /* opened output file pointer for year*/
-
-	FILE *fp_dy_avg; /* opened output file pointer for day*/
-	FILE *fp_wk_avg; /* opened output file pointer for week*/
-	FILE *fp_mo_avg; /* opened output file pointer for month*/
-	FILE *fp_yr_avg; /* opened output file pointer for year*/
-	FILE *fp_dy_soil_avg; /* opened output file pointer for day*/
-	FILE *fp_wk_soil_avg; /* opened output file pointer for week*/
-	FILE *fp_mo_soil_avg; /* opened output file pointer for month*/
-	FILE *fp_yr_soil_avg; /* opened output file pointer for year*/
-
-} SW_FILE_STATUS;
 
 /* convenience loops for consistency.
  * k must be a defined variable, either of OutKey type
@@ -198,31 +183,173 @@ typedef struct {
 #define ForEachSWC_OutKey(k) for((k)=eSW_AllH2O;  (k)<=eSW_SnowPack; (k)++)
 #define ForEachWTH_OutKey(k) for((k)=eSW_AllWthr; (k)<=eSW_Precip;   (k)++)
 #define ForEachVES_OutKey(k) for((k)=eSW_AllVeg;  (k)<=eSW_Estab;    (k)++)
-#define ForEachOutPeriod(k)  for((k)=eSW_Day;     (k)<=eSW_Year;     (k)++)
 
+
+
+// Function declarations
 void SW_OUT_construct(void);
+void SW_OUT_deconstruct(Bool full_reset);
 void SW_OUT_set_ncol(void);
-#ifdef RSOILWAT
 void SW_OUT_set_colnames(void);
-#endif
 void SW_OUT_new_year(void);
+int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
+	int last, char msg[]);
 void SW_OUT_read(void);
 void SW_OUT_sum_today(ObjType otyp);
 void SW_OUT_write_today(void);
 void SW_OUT_write_year(void);
-void SW_OUT_close_files(void);
 void SW_OUT_flush(void);
 void _collect_values(void);
 void _echo_outputs(void);
 
-// file creation functions
-void stat_Output_Daily_CSV_Summary(int iteration);
-void stat_Output_Weekly_CSV_Summary(int iteration);
-void stat_Output_Monthly_CSV_Summary(int iteration);
-void stat_Output_Yearly_CSV_Summary(int iteration);
+void find_OutPeriods_inUse(void);
+Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k);
+Bool has_keyname_soillayers(const char *var);
+Bool has_key_soillayers(OutKey k);
+
+#ifdef STEPWAT
+void find_OutPeriods_inUse2(void);
+Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k);
+void SW_OUT_set_SXWrequests(void);
+#endif
+
+
+// Functions that format the output in `sw_outstr` for printing
+/* --------------------------------------------------- */
+/* each of these get_<envparm> -type funcs return a
+ * formatted string of the appropriate type and are
+ * pointed to by SW_Output[k].pfunc so they can be called
+ * anonymously by looping over the Output[k] list
+ * (see _output_today() for usage.)
+ * they all use the global-level string sw_outstr[].
+ */
+/* 10-May-02 (cwb) Added conditionals for interfacing with STEPPE
+ * 05-Mar-03 (cwb) Added code for max,min,avg. Previously, only avg was output.
+ * 22 June-15 (akt)  Added code for adding surfaceTemp at output
+ */
+void get_none(OutPeriod pd); /* default until defined */
+
+#ifdef SW_OUTTEXT
+void get_temp_text(OutPeriod pd);
+void get_precip_text(OutPeriod pd);
+void get_vwcBulk_text(OutPeriod pd);
+void get_vwcMatric_text(OutPeriod pd);
+void get_swcBulk_text(OutPeriod pd);
+void get_swpMatric_text(OutPeriod pd);
+void get_swaBulk_text(OutPeriod pd);
+void get_swaMatric_text(OutPeriod pd);
+void get_swa_text(OutPeriod pd);
+void get_surfaceWater_text(OutPeriod pd);
+void get_runoffrunon_text(OutPeriod pd);
+void get_transp_text(OutPeriod pd);
+void get_evapSoil_text(OutPeriod pd);
+void get_evapSurface_text(OutPeriod pd);
+void get_interception_text(OutPeriod pd);
+void get_soilinf_text(OutPeriod pd);
+void get_lyrdrain_text(OutPeriod pd);
+void get_hydred_text(OutPeriod pd);
+void get_aet_text(OutPeriod pd);
+void get_pet_text(OutPeriod pd);
+void get_wetdays_text(OutPeriod pd);
+void get_snowpack_text(OutPeriod pd);
+void get_deepswc_text(OutPeriod pd);
+void get_estab_text(OutPeriod pd);
+void get_soiltemp_text(OutPeriod pd);
+void get_co2effects_text(OutPeriod pd);
+#endif
+
+#if defined(RSOILWAT)
+void get_temp_mem(OutPeriod pd);
+void get_precip_mem(OutPeriod pd);
+void get_vwcBulk_mem(OutPeriod pd);
+void get_vwcMatric_mem(OutPeriod pd);
+void get_swcBulk_mem(OutPeriod pd);
+void get_swpMatric_mem(OutPeriod pd);
+void get_swaBulk_mem(OutPeriod pd);
+void get_swaMatric_mem(OutPeriod pd);
+void get_swa_mem(OutPeriod pd);
+void get_surfaceWater_mem(OutPeriod pd);
+void get_runoffrunon_mem(OutPeriod pd);
+void get_transp_mem(OutPeriod pd);
+void get_evapSoil_mem(OutPeriod pd);
+void get_evapSurface_mem(OutPeriod pd);
+void get_interception_mem(OutPeriod pd);
+void get_soilinf_mem(OutPeriod pd);
+void get_lyrdrain_mem(OutPeriod pd);
+void get_hydred_mem(OutPeriod pd);
+void get_aet_mem(OutPeriod pd);
+void get_pet_mem(OutPeriod pd);
+void get_wetdays_mem(OutPeriod pd);
+void get_snowpack_mem(OutPeriod pd);
+void get_deepswc_mem(OutPeriod pd);
+void get_estab_mem(OutPeriod pd);
+void get_soiltemp_mem(OutPeriod pd);
+void get_co2effects_mem(OutPeriod pd);
+
+#elif defined(STEPWAT)
+void get_temp_agg(OutPeriod pd);
+void get_precip_agg(OutPeriod pd);
+void get_vwcBulk_agg(OutPeriod pd);
+void get_vwcMatric_agg(OutPeriod pd);
+void get_swcBulk_agg(OutPeriod pd);
+void get_swpMatric_agg(OutPeriod pd);
+void get_swaBulk_agg(OutPeriod pd);
+void get_swaMatric_agg(OutPeriod pd);
+void get_swa_agg(OutPeriod pd);
+void get_surfaceWater_agg(OutPeriod pd);
+void get_runoffrunon_agg(OutPeriod pd);
+void get_transp_agg(OutPeriod pd);
+void get_evapSoil_agg(OutPeriod pd);
+void get_evapSurface_agg(OutPeriod pd);
+void get_interception_agg(OutPeriod pd);
+void get_soilinf_agg(OutPeriod pd);
+void get_lyrdrain_agg(OutPeriod pd);
+void get_hydred_agg(OutPeriod pd);
+void get_aet_agg(OutPeriod pd);
+void get_pet_agg(OutPeriod pd);
+void get_wetdays_agg(OutPeriod pd);
+void get_snowpack_agg(OutPeriod pd);
+void get_deepswc_agg(OutPeriod pd);
+void get_estab_agg(OutPeriod pd);
+void get_soiltemp_agg(OutPeriod pd);
+void get_co2effects_agg(OutPeriod pd);
+
+void get_temp_SXW(OutPeriod pd);
+void get_precip_SXW(OutPeriod pd);
+void get_vwcBulk_SXW(OutPeriod pd);
+void get_vwcMatric_SXW(OutPeriod pd);
+void get_swcBulk_SXW(OutPeriod pd);
+void get_swpMatric_SXW(OutPeriod pd);
+void get_swaBulk_SXW(OutPeriod pd);
+void get_swaMatric_SXW(OutPeriod pd);
+void get_swa_SXW(OutPeriod pd);
+void get_surfaceWater_SXW(OutPeriod pd);
+void get_runoffrunon_SXW(OutPeriod pd);
+void get_transp_SXW(OutPeriod pd);
+void get_evapSoil_SXW(OutPeriod pd);
+void get_evapSurface_SXW(OutPeriod pd);
+void get_interception_SXW(OutPeriod pd);
+void get_soilinf_SXW(OutPeriod pd);
+void get_lyrdrain_SXW(OutPeriod pd);
+void get_hydred_SXW(OutPeriod pd);
+void get_aet_SXW(OutPeriod pd);
+void get_pet_SXW(OutPeriod pd);
+void get_wetdays_SXW(OutPeriod pd);
+void get_snowpack_SXW(OutPeriod pd);
+void get_deepswc_SXW(OutPeriod pd);
+void get_estab_SXW(OutPeriod pd);
+void get_soiltemp_SXW(OutPeriod pd);
+void get_co2effects_SXW(OutPeriod pd);
+#endif
+
 
 #ifdef DEBUG_MEM
 	void SW_OUT_SetMemoryRefs(void);
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

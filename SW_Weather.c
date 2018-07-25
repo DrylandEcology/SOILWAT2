@@ -91,14 +91,9 @@ void _clear_hist_weather(void) {
 	/* --------------------------------------------------- */
 	SW_WEATHER_HIST *wh = &SW_Weather.hist;
 	TimeInt d;
-	int i;
-	SW_WEATHER_OUTPUTS *wo[7] = { &SW_Weather.dysum, &SW_Weather.wksum, &SW_Weather.mosum, &SW_Weather.yrsum, &SW_Weather.wkavg, &SW_Weather.moavg, &SW_Weather.yravg };
 
 	for (d = 0; d < MAX_DAYS; d++)
 		wh->ppt[d] = wh->temp_max[d] = wh->temp_min[d] = WTH_MISSING;
-
-	for (i = 0; i < 7; i++)
-		memset(wo[i], 0, sizeof(SW_WEATHER_OUTPUTS));
 }
 
 static void _clear_runavg(void) {
@@ -148,10 +143,48 @@ void SW_WTH_construct(void) {
 	/* =================================================== */
 	tail = 0;
 	firsttime = swTRUE;
-	/* clear the module structure */
-	memset(&SW_Weather, 0, sizeof(SW_WEATHER));
 	SW_Markov.ppt_events = 0;
 	wthdataIndex = 0;
+	OutPeriod pd;
+
+	// Clear the module structure:
+	memset(&SW_Weather, 0, sizeof(SW_Weather));
+
+	// Allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_Weather.p_accu[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
+			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()");
+		if (pd > eSW_Day) {
+			SW_Weather.p_oagg[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
+				sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()");
+		}
+	}
+}
+
+void SW_WTH_deconstruct(void)
+{
+	OutPeriod pd;
+
+	// De-allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		if (pd > eSW_Day && !isnull(SW_Weather.p_oagg[pd])) {
+			Mem_Free(SW_Weather.p_oagg[pd]);
+			SW_Weather.p_oagg[pd] = NULL;
+		}
+
+		if (!isnull(SW_Weather.p_accu[pd])) {
+			Mem_Free(SW_Weather.p_accu[pd]);
+			SW_Weather.p_accu[pd] = NULL;
+		}
+	}
+
+	if (SW_Weather.use_markov) {
+		SW_MKV_deconstruct();
+	}
+
+	SW_WTH_clear_runavg_list();
 }
 
 void SW_WTH_init(void) {
@@ -168,18 +201,17 @@ void SW_WTH_new_year(void) {
 	TimeInt year = SW_Model.year;
 
 	_clear_runavg();
-	memset(&SW_Weather.yrsum, 0, sizeof(SW_WEATHER_OUTPUTS));
 
 	if (year < SW_Weather.yr.first) {
 		weth_found = swFALSE;
 	} else {
-#ifdef RSOILWAT
+		#ifdef RSOILWAT
 		weth_found = swFALSE;
 		rSW_WTH_new_year2(year);
 		wthdataIndex++;
-#else
+		#else
 		weth_found = _read_weather_hist(year);
-#endif
+		#endif
 	}
 
 	if (!weth_found && !SW_Weather.use_markov) {
@@ -195,8 +227,6 @@ void SW_WTH_new_year(void) {
 	if (!weth_found && firsttime) {
 		wn->temp_max[Today] = wn->temp_min[Today] = wn->ppt[Today] = wn->rain[Today] = 0.;
 		w->snow = w->snowmelt = w->snowloss = 0.;
-		// wn->gsppt = 0.;
-
 		w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
 	}
 
@@ -244,7 +274,6 @@ void SW_WTH_new_day(void) {
 	wn->temp_min[Today] = tmpmin + w->scale_temp_min[month];
 
 	wn->temp_avg[Today] = (wn->temp_max[Today] + wn->temp_min[Today]) / 2.;
-	// wn->temp_run_avg[Today] = _runavg_temp(wn->temp_avg[Today]);
 
 	ppt *= w->scale_precip[month];
 
@@ -257,23 +286,6 @@ void SW_WTH_new_day(void) {
 		SW_SWC_adjust_snow(wn->temp_min[Today], wn->temp_max[Today], wn->ppt[Today],
 		  &wn->rain[Today], &w->snow, &w->snowmelt);
   }
-
-#ifdef STEPWAT
-	/* This is a nice idea but doesn't work as I'd like, so
-	 * I'll go back to letting STEPPE handle it for now.
-
-	 is_warm = (wn->temp_run_avg[Today] > 1.0);
-
-	 is_growingseason = (doy >= m->startstart && doy <= m->daymid)
-	 ? is_warm
-	 : (is_growingseason && is_warm);
-	 if (doy >= m->startstart && doy <= m->daymid && is_growingseason)
-	 wn->gsppt = wn->gsppt + wn->ppt[Today];
-	 else if (is_growingseason)
-	 wn->gsppt += wn->ppt[Today];
-	 */
-#endif
-
 }
 
 void SW_WTH_read(void) {
@@ -473,7 +485,6 @@ static void _update_yesterday(void) {
 	wn->temp_max[Yesterday] = wn->temp_max[Today];
 	wn->temp_min[Yesterday] = wn->temp_min[Today];
 	wn->temp_avg[Yesterday] = wn->temp_avg[Today];
-	// wn->temp_run_avg[Yesterday] = wn->temp_run_avg[Today];
 
 	wn->ppt[Yesterday] = wn->ppt[Today];
 	wn->rain[Yesterday] = wn->rain[Today];

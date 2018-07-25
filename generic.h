@@ -24,9 +24,17 @@
 #endif
 
 #ifdef DEBUG
-  #def SWDEBUG
+  #define SWDEBUG
 #endif
 
+#ifdef RSWDEBUG
+  #define SWDEBUG
+#endif
+
+
+#if !defined(STEPWAT) && !defined(RSOILWAT)
+  #define SOILWAT // SOILWAT2-standalone
+#endif
 
 
 #ifndef GENERIC_H
@@ -39,6 +47,11 @@
 
 #ifdef RSOILWAT
   #include <R_ext/Print.h>
+#endif
+
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 /***************************************************
@@ -123,13 +136,6 @@ typedef unsigned char byte;
   #define swprintf Rprintf
 #else
   #define swprintf printf
-#endif
-
-/**< Print file macro that can be used both for rSOILWAT2 and for SOILWAT2-standalone. Use instead of (R)fprintf */
-#ifdef RSOILWAT
-  #define swfprintf Rfprintf
-#else
-  #define swfprintf fprintf
 #endif
 
 
@@ -231,6 +237,11 @@ double lobfM(double xs[], double ys[], unsigned int n);
 double lobfB(double xs[], double ys[], unsigned int n);
 void lobf(double *m, double* b, double xs[], double ys[], unsigned int size);
 
+double get_running_mean(unsigned int n, double mean_prev, double val_to_add);
+double get_running_sqr(double mean_prev, double mean_current, double val_to_add);
+double final_running_sd(unsigned int n, double ssqr);
+
+
 #ifdef DEBUG
 extern errstr[];
 #define LogError(fp, m, fmt, p1, p2, p3, p4, p5, p6, p7, p8, p9) \
@@ -241,6 +252,11 @@ extern errstr[];
 #ifndef strdup
   char * sw_strdup(const char * s);
   #define strdup(x) sw_strdup(x)
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #define GENERIC_H

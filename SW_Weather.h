@@ -25,6 +25,12 @@
 #define SW_WEATHER_H
 
 #include "SW_Times.h"
+#include "SW_Defines.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* missing values may be different than with other things */
 #define WTH_MISSING   999.
@@ -38,7 +44,6 @@
 typedef struct {
 	/* comes from markov weather day-to-day */
 	RealD temp_avg[TWO_DAYS], temp_max[TWO_DAYS], temp_min[TWO_DAYS],
-	// currently commented out: temp_run_avg[TWO_DAYS], temp_yr_avg, gsppt, /* year's avg and growing season ppt for STEPPE */
 	ppt[TWO_DAYS], rain[TWO_DAYS];
 } SW_WEATHER_2DAYS;
 
@@ -71,9 +76,9 @@ typedef struct {
 	RealD snow, snowmelt, snowloss;
 
 	/* This section is required for computing the output quantities.  */
-	SW_WEATHER_OUTPUTS dysum, /* helpful placeholder */
-	wksum, mosum, yrsum, /* accumulators for *avg */
-	wkavg, moavg, yravg; /* averages or sums as appropriate*/
+	SW_WEATHER_OUTPUTS
+		*p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time period
+		*p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
 	SW_WEATHER_HIST hist;
 	SW_WEATHER_2DAYS now;
 
@@ -84,6 +89,7 @@ Bool _read_weather_hist(TimeInt year);
 void _clear_hist_weather(void);
 void SW_WTH_init(void);
 void SW_WTH_construct(void);
+void SW_WTH_deconstruct(void);
 void SW_WTH_new_day(void);
 void SW_WTH_new_year(void);
 void SW_WTH_sum_today(void);
@@ -93,6 +99,11 @@ void SW_WTH_clear_runavg_list(void);
 
 #ifdef DEBUG_MEM
 void SW_WTH_SetMemoryRefs(void);
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

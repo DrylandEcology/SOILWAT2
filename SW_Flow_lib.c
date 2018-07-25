@@ -1128,7 +1128,7 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[],
      @brief Interpolate soil temperature layer temperature values to
      input soil profile depths/layers.
 
-     @param cor[MAX_ST_RGR + 1][MAX_LAYERS + 1]
+     @param cor[MAX_ST_RGR][MAX_LAYERS + 1]
      @param nlyrTemp The number of soil temperature layers.
      @param depth_Temp Depths of soil temperature layers (cm).
      @param sTempR Temperature values of soil temperature layers (C).
@@ -1141,7 +1141,7 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[],
      * sTemp Updated temperatature values soil layers (C)
  */
 
-void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1],
+void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
   unsigned int nlyrTemp, double depth_Temp[], double sTempR[], unsigned int nlyrSoil,
   double depth_Soil[], double width_Soil[], double sTemp[]){
 	unsigned int i = 0, j, n;
@@ -1151,26 +1151,36 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1],
 	double acc;
 
 	// interpolate soil temperature values for depth of soil profile layers
-	for (j = 0; j < nlyrSoil + 1; j++) {
+	for (j = 0; j < nlyrSoil; j++) {
 		sTemp[j] = 0.0;
 		acc = 0.0;
 		n = 0;
 		while (LT(acc, width_Soil[j]) && i <= nlyrTemp + 1) {
-			if (EQ(cor[i][j], 0.0)) {// zero cor values indicate next soil temperature layer
-				i++;}
-			if (GT(cor[i][j], 0.0)) { // there are soil layers to add; index i = 0 is soil surface temperature
-				if (!(i == 0 && LT(acc + cor[i][j], width_Soil[j]))) {//don't use soil surface temperature if there is other sufficient soil temperature to interpolate
-					sTemp[j] += interpolation(((i > 0) ? depth_Temp[i - 1] : 0.0), depth_Temp[i], sTempR[i], sTempR[i + 1], depth_Soil[j]);
+			if (EQ(cor[i][j], 0.0))
+			{ // zero cor values indicate next soil temperature layer
+				i++;
+			}
+			if (GT(cor[i][j], 0.0))
+			{ // there are soil layers to add; index i = 0 is soil surface temperature
+				if (!(i == 0 && LT(acc + cor[i][j], width_Soil[j])))
+				{ //don't use soil surface temperature if there is other sufficient soil temperature to interpolate
+					sTemp[j] += interpolation(((i > 0) ? depth_Temp[i - 1] : 0.0),
+						depth_Temp[i], sTempR[i], sTempR[i + 1], depth_Soil[j]);
 					n++; // add weighting by layer width
 				}
+
 				acc += cor[i][j];
 				if (LT(acc, width_Soil[j])) i++;
-			} else if (LT(cor[i][j], 0.0)) { // negative cor values indicate copying values from deepest soil layer
+
+			} else if (LT(cor[i][j], 0.0))
+			{ // negative cor values indicate copying values from deepest soil layer
 				break;
 			}
 		}
-		if(n > 0)
+
+		if(n > 0) {
 			sTemp[j] = sTemp[j] / n;
+		}
 
     #ifdef SWDEBUG
     if (debug)
@@ -1216,11 +1226,11 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
 
 	//interpolate soil temperature at soil temperature profile depths
 	for (i = 0; i < nlyrTemp; i++) {
-		while (LT(depth_Soil2[j1 + 1], depth_Temp[i]) && (j1 + 1) < nlyrSoil) {
+		while ((j1 + 1) < nlyrSoil && LT(depth_Soil2[j1 + 1], depth_Temp[i])) {
 			j1++;
 		}
 		j2 = j1 + 1;
-		while (LE(depth_Soil2[j2 + 1], depth_Temp[i]) && (j2 + 1) < nlyrSoil + 1) {
+		while ((j2 + 1) < nlyrSoil + 1 && LE(depth_Soil2[j2 + 1], depth_Temp[i])) {
 			j2++;
 		}
 
@@ -1243,7 +1253,7 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
     @brief Initialize soil temperature layer values by transfering soil layer values
     to soil temperature layer values.
 
-    @param cor[MAX_ST_RGR + 1][MAX_LAYERS + 1]
+    @param cor[MAX_ST_RGR][MAX_LAYERS + 1]
     @param nlyrSoil The number of soil layers.
     @param width_Soil The width of the soil layers.
     @param var The soil layer values to be interpolated.
@@ -1254,7 +1264,7 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
     @return res os updated and reflects new values.
 */
 
-void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR + 1][MAX_LAYERS + 1], unsigned int nlyrSoil,
+void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR][MAX_LAYERS + 1], unsigned int nlyrSoil,
 	double width_Soil[], double var[], unsigned int nlyrTemp, double width_Temp,
 	double res[]) {
 
@@ -1364,6 +1374,19 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 			"\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n",
 			nlyrs, sTconst, deltaX, theMaxDepth, nRgr);
 	#endif
+
+	// if we have too many regression layers then quit
+  if (nRgr + 1 >= MAX_ST_RGR) {
+		if (!(*ptr_stError)) {
+			(*ptr_stError) = swTRUE;
+
+			// if the error hasn't been reported yet... print an error to the logfile
+			LogError(logfp, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: "\
+				"too many (n = %d) regression layers requested... "\
+				"soil temperature will NOT be calculated\n", nRgr);
+		}
+		return; // exits the function
+	}
 
 
 	// init st
@@ -1647,7 +1670,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 
 	int i, k, m, Nsteps_per_day = 1;
 	double pe, cs, sh, part1, parts, part2;
-	double oldsTempR2[MAX_ST_RGR + 1];
+	double oldsTempR2[MAX_ST_RGR];
 	Bool Tsoil_not_exploded = swTRUE;
   #ifdef SWDEBUG
   int debug = 0;
@@ -1839,7 +1862,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
   #ifdef SWDEBUG
   int debug = 0;
   #endif
-	double T1, vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], sTempR[MAX_ST_RGR + 1];
+	double T1, vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], sTempR[MAX_ST_RGR];
 	static Bool do_once_at_soiltempError = swTRUE;
 	static double delta_time = SEC_PER_DAY; // last successful time step in seconds; start out with 1 day
 
@@ -1899,7 +1922,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 		} else {
 			T1 = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
 			#ifdef SWDEBUG
-			if (debug){
+			if (debug) {
 				swprintf("\nT1 = %f = %f + ((%f * (%f - %f)) / %f)",
 					airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
 			}
@@ -1923,6 +1946,12 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 			do_once_at_soiltempError = swFALSE;
 		}
+
+		#ifdef SWDEBUG
+		if (debug) {
+			swprintf("\n");
+		}
+		#endif
 
 		return;
 	}
@@ -1971,6 +2000,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 			swprintf("\nk %d oldsTempR %f sTempR %f depth %f",
 				i, st->oldsTempR[i], sTempR[i], (i * deltaX)); // *(oldsTempR + i) is equivalent to writing oldsTempR[i]
 		}
+		swprintf("\n");
 	}
 	#endif
 
@@ -2007,6 +2037,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 			swprintf("\ni %d oldTemp %f sTemp %f swc %f, swc_sat %f depth %f frozen %d",
 				i, oldsTemp[i], sTemp[i], swc[i], swc_sat[i], st->depths[i], st->lyrFrozen[i]);
 		}
+
+		swprintf("\n");
 	}
 	#endif
 
@@ -2017,7 +2049,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 	#ifdef SWDEBUG
 	if (debug) {
-		sw_error(-1, "Stop at end of soil temperature calculations");
+		sw_error(0, "Stop at end of soil temperature calculations");
 	}
 	#endif
 }

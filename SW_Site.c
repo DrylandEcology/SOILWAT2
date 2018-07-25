@@ -181,13 +181,11 @@ LyrIndex _newlayer(void) {
 	v->n_layers++;
 
 	v->lyr = (!v->lyr) /* if not yet defined */
-	? (SW_LAYER_INFO **) /* malloc() it  */
-	Mem_Calloc(v->n_layers, sizeof(SW_LAYER_INFO *), "_newlayer()")
+		? (SW_LAYER_INFO **) Mem_Calloc(v->n_layers, sizeof(SW_LAYER_INFO *), "_newlayer()") /* malloc() it  */
+		: (SW_LAYER_INFO **) Mem_ReAlloc(v->lyr, sizeof(SW_LAYER_INFO *) * (v->n_layers)); /* else realloc() */
 
-	:
-		(SW_LAYER_INFO **) /* else realloc() */
-		Mem_ReAlloc(v->lyr, sizeof(SW_LAYER_INFO *) * (v->n_layers));
 	v->lyr[v->n_layers - 1] = (SW_LAYER_INFO *) Mem_Calloc(1, sizeof(SW_LAYER_INFO), "_newlayer()");
+
 	return v->n_layers - 1;
 }
 
@@ -211,7 +209,11 @@ void SW_SIT_construct(void) {
 	 * before clearing structure.
 	 */
 	memset(&SW_Site, 0, sizeof(SW_Site));
+}
 
+void SW_SIT_deconstruct(void)
+{
+	SW_SIT_clear_layers();
 }
 
 void SW_SIT_read(void) {
@@ -531,7 +533,7 @@ static void _read_layers(void) {
 		v->lyr[lyrno]->swcBulk_wiltpt = SW_SWPmatric2VWCBulk(f_gravel, 15, lyrno) * v->lyr[lyrno]->width;
 		calculate_soilBulkDensity(matricd, f_gravel, lyrno);
 
-		if (lyrno == MAX_LAYERS) {
+		if (lyrno >= MAX_LAYERS) {
 			CloseFile(&f);
 			LogError(logfp, LOGFATAL, "%s : Too many layers specified (%d).\n"
 					"Maximum number of layers is %d\n", MyFileName, lyrno + 1, MAX_LAYERS);
@@ -624,14 +626,16 @@ void init_site_info(void) {
 			}
 		}
 
+
 		/* Compute swc wet and dry limits and init value */
 		if (LT(_SWCMinVal, 0.0)) { /* estimate swcBulk_min for each layer based on residual SWC from an equation in Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties for hydrological modeling. In Watershed management in the Eighties (eds Jones EB, Ward TJ), pp. 293-299. American Society of Civil Engineers, New York.
 		 or based on SWC at -3 MPa if smaller (= suction at residual SWC from Fredlund DG, Xing AQ (1994) EQUATIONS FOR THE SOIL-WATER CHARACTERISTIC CURVE. Canadian Geotechnical Journal, 31, 521-532.) */
 			swcmin_help1 = SW_VWCBulkRes(lyr->fractionVolBulk_gravel, lyr->fractionWeightMatric_sand, lyr->fractionWeightMatric_clay, lyr->swcBulk_saturated / lyr->width)
 					* lyr->width;
 			swcmin_help2 = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, 30., s) * lyr->width;
+
 			// when SW_VWCBulkRes returns the macro SW_MISSING always use swcmin_help2
-			if(missing(swcmin_help1)){
+			if(missing(swcmin_help1 / lyr -> width)){
 				lyr -> swcBulk_min = swcmin_help2;
 			}
 			else{
@@ -695,7 +699,7 @@ void init_site_info(void) {
 				s + 1, SW_Site.lyr[s]->evap_coeff);
 		}
 
-		swfprintf(logfp, "\n");
+		fprintf(logfp, "\n");
 	}
 
 	ForEachVegType(k)
@@ -716,21 +720,32 @@ void init_site_info(void) {
 				}
 			}
 
-			swfprintf(logfp, "\n");
+			fprintf(logfp, "\n");
 		}
 	}
 
-	sp->stNRGR = (sp->stMaxDepth / sp->stDeltaX) - 1; // getting the number of regressions, for use in the soil_temperature function
-	if (!EQ(fmod(sp->stMaxDepth, sp->stDeltaX), 0.0) || (sp->stNRGR > MAX_ST_RGR)) {
-		// resets it to the default values if the remainder of the division != 0.  fmod is like the % symbol except it works with double values
-		// without this reset, then there wouldn't be a whole number of regressions in the soil_temperature function (ie there is a remainder from the division), so this way I don't even have to deal with that possibility
-		if (sp->stNRGR > MAX_ST_RGR)
-			LogError(logfp, LOGWARN,
-					"\nSOIL_TEMP FUNCTION ERROR: the number of regressions is > the maximum number of regressions.  resetting max depth, deltaX, nRgr values to 180, 15, & 11 respectively\n");
-		else
-			LogError(logfp, LOGWARN,
-					"\nSOIL_TEMP FUNCTION ERROR: max depth is not evenly divisible by deltaX (ie the remainder != 0).  resetting max depth, deltaX, nRgr values to 180, 15, & 11 respectively\n");
+	// getting the number of regressions, for use in the soil_temperature function
+	sp->stNRGR = (sp->stMaxDepth / sp->stDeltaX) - 1;
+	Bool too_many_RGR = (Bool) (sp->stNRGR + 1 >= MAX_ST_RGR);
 
+	if (!EQ(fmod(sp->stMaxDepth, sp->stDeltaX), 0.0) || too_many_RGR) {
+
+		if (too_many_RGR)
+		{ // because we will use loops such `for (i = 0; i <= nRgr + 1; i++)`
+			LogError(logfp, LOGWARN,
+				"\nSOIL_TEMP FUNCTION ERROR: the number of regressions is > the "\
+				"maximum number of regressions.  resetting max depth, deltaX, nRgr "\
+				"values to 180, 15, & 11 respectively\n");
+		}
+		else
+		{ // because we don't deal with partial layers
+			LogError(logfp, LOGWARN,
+				"\nSOIL_TEMP FUNCTION ERROR: max depth is not evenly divisible by "\
+				"deltaX (ie the remainder != 0).  resetting max depth, deltaX, nRgr "\
+				"values to 180, 15, & 11 respectively\n");
+		}
+
+		// resets it to the default values
 		sp->stMaxDepth = 180.0;
 		sp->stNRGR = 11;
 		sp->stDeltaX = 15.0;

@@ -49,6 +49,10 @@
 
 #include "SW_Defines.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 typedef unsigned int LyrIndex;
 
@@ -138,6 +142,7 @@ void calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel, LyrInd
 void init_site_info(void);
 void SW_SIT_read(void);
 void SW_SIT_construct(void);
+void SW_SIT_deconstruct(void);
 void _echo_inputs(void);
 
 /* these used to be in Layers */
@@ -146,6 +151,11 @@ LyrIndex _newlayer(void);
 
 #ifdef DEBUG_MEM
 	void SW_SIT_SetMemoryRefs(void);
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

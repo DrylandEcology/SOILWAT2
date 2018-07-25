@@ -15,82 +15,162 @@
 [11]: https://img.shields.io/github/downloads/DrylandEcology/SOILWAT2/total.svg
 [12]: https://github.com/DrylandEcology/SOILWAT2
 
+<br>
 
 # SOILWAT2
 
 This version of SoilWat brings new features. This is the same
-code that is used by [rSOILWAT2](https://github.com/DrylandEcology/rSOILWAT2) and
-[STEPWAT2](https://github.com/DrylandEcology/STEPWAT2).
+code that is used by [rSOILWAT2](https://github.com/DrylandEcology/rSOILWAT2)
+and [STEPWAT2](https://github.com/DrylandEcology/STEPWAT2).
 
-If you make use of this model, please cite appropriate references, and we would like to
-hear about your particular study (especially a copy of any published paper).
+If you make use of this model, please cite appropriate references, and we would
+like to hear about your particular study (especially a copy of any published
+paper).
 
 
 Some recent references
 
-* Bradford, J. B., D. R. Schlaepfer, and W. K. Lauenroth. 2014. Ecohydrology of adjacent
-  sagebrush and lodgepole pine ecosystems: The consequences of climate change and
-  disturbance. Ecosystems 17:590-605.
+* Bradford, J. B., D. R. Schlaepfer, and W. K. Lauenroth. 2014. Ecohydrology of
+  adjacent sagebrush and lodgepole pine ecosystems: The consequences of climate
+  change and disturbance. Ecosystems 17:590-605.
 * Palmquist, K.A., Schlaepfer, D.R., Bradford, J.B., and Lauenroth, W.K. 2016.
-  Mid-latitude shrub steppe plant communities: climate change consequences for soil water
-  resources. Ecology 97:2342–2354.
-* Schlaepfer, D. R., W. K. Lauenroth, and J. B. Bradford. 2012. Ecohydrological niche of
-  sagebrush ecosystems. Ecohydrology 5:453-466.
+  Mid-latitude shrub steppe plant communities: climate change consequences for
+  soil water resources. Ecology 97:2342–2354.
+* Schlaepfer, D. R., W. K. Lauenroth, and J. B. Bradford. 2012. Ecohydrological
+  niche of sagebrush ecosystems. Ecohydrology 5:453-466.
 
+<br>
 
 ## How to contribute
 You can help us in different ways:
 
 1. Reporting [issues](https://github.com/DrylandEcology/SOILWAT2/issues)
-2. Contributing code and sending a [pull request](https://github.com/DrylandEcology/SOILWAT2/pulls)
+2. Contributing code and sending a
+   [pull request](https://github.com/DrylandEcology/SOILWAT2/pulls)
 
-__SOILWAT2 code is used as part of three applications__: stand-alone, as part of [STEPWAT2](https://github.com/DrylandEcology/STEPWAT2),
-and as part of the R package [rSOILWAT2](https://github.com/DrylandEcology/rSOILWAT2)
-* The files 'Makevars', 'SW_R_lib.c' and 'SW_R_lib.h' are used when compiling for
-  [rSOILWAT2](https://github.com/DrylandEcology/rSOILWAT2) and ignored otherwise.
-* The file 'SW_Main_Function.c' is used when compiling with
-  [STEPWAT2](https://github.com/DrylandEcology/STEPWAT2) and ignored otherwise.
 
-__Follow our guidelines__ as detailed [here](https://github.com/DrylandEcology/workflow_guidelines)
+__Compilation__:
+  * Requirements:
+    - the `gcc` or `clang/llvm` toolchains
+      - `gcc >= v4.9` and `clang >= v3.3` for the `*_severe` test/debug targets
+    - POSIX- or GNU-compliant `make`
+    - On Windows OS: an installation of `cygwin`
+  * Build with `make` (see `make help` to print information about all
+    available targets)
+
+
+__SOILWAT2 code is used as part of three applications__:
+  * stand-alone (code flag `SOILWAT` is defined if neither `STEPWAT` nor
+    `RSOILWAT` exist),
+  * as part of [STEPWAT2](https://github.com/DrylandEcology/STEPWAT2)
+    (code flag `STEPWAT`), and
+  * as part of the R package
+    [rSOILWAT2](https://github.com/DrylandEcology/rSOILWAT2)
+    (code flag `RSOILWAT`)
+
+
+__Follow our guidelines__ as detailed
+[here](https://github.com/DrylandEcology/workflow_guidelines)
 
 __Tests, documentation, and code__ form a trinity
 - Code documentation
-  * Use [doxygen](http://www.stack.nl/~dimitri/doxygen/) to write inline code documentation
-  * Update help pages on the command-line with `doxygen Doxyfile`
+  * Use [doxygen](http://www.stack.nl/~dimitri/doxygen/) to write inline code
+    documentation
+  * Update help pages (locally) on the command-line with `doxygen Doxyfile`,
+    but don't push them to the repository
 - Code tests
   * Use [GoogleTest](https://github.com/google/googletest/blob/master/googletest/docs/Documentation.md)
-  to add unit tests to the existing framework
+    to add unit tests to the existing framework in the folder `test/` where
+    each unit test file uses the naming scheme `test/test_*.cc`.
+  * Note: `SOILWAT2` is written in C whereas `GoogleTest` is a C++ framework.
   * Run unit tests locally on the command-line with
     ```
-    make test     # compiles the unit-test binary/executable
-    make test_run # executes the unit-test binary
-    make cleaner
+    make test test_run         # compiles and executes the unit-tests
+    make test_severe test_run  # compiles/executes with strict/severe flags
+    make clean                 # cleans build artifacts
     ```
-  * Development/feature branches can only be merged into master if they pass all checks
+  * Development/feature branches can only be merged into master if they pass
+    all checks on `appveyor` and `travis` continuous integration servers, i.e.,
+    run the following locally to prepare a pull-request or commit to be reviewed
+    ```
+    make clean bin_debug_severe bint_run
+    make clean test_severe test_run
+    ```
+  * Note that you may want/need to exclude known memory leaks from severe
+    testing (see https://github.com/DrylandEcology/SOILWAT2/issues/205):
+    ```
+    ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+    ```
+  * Informal and local integration tests example:
+    1. Before coding, run `testing/` and produce reference output
+        ```
+        git checkout master
+        make bin bint_run
+        cp -r testing/Output testing/Output_ref
+        ```
+    2. Develop your code and keep "testing/Output_ref" locally, i.e., don't
+    include "testing/Output_ref" in commits
+    3. Regularly, e.g., before finalizing a commit, check that new code produces
+    identical output (that is unless you work on output...)
+        ```
+        make bin bint_run
+        diff testing/Output/ testing/Output_ref/ -qs
+        ```
 
 - Debugging is controlled at two levels:
-  * at the preprocessor (pass -DSWDEBUG): all debug code is wrapped by this flag
-  * in functions with local variables (int debug = 1;): debug code can be conditional on
-    such a variable, e.g.,
+  * at the preprocessor (pass `-DSWDEBUG`):
+    all debug code is wrapped by this flag so that it does not end up in
+    production code; unit testing is compiled in debugging mode.
+  * in functions with local debug variable flags (int debug = 1;):
+    debug code can be conditional on such a variable, e.g.,
     ```
-    #ifdef SWDEBUG
-    if (debug) swprintf("hello, this is debugging code\n");
-    ...
-    #endif
+    void foo() {
+      #ifdef SWDEBUG
+      int debug = 1;
+      #endif
+      ...
+      #ifdef SWDEBUG
+      if (debug) swprintf("hello, this is debugging code\n");
+      ...
+      #endif
+      ...
+    }
+    ```
+  * Clean, compile and run optimized SOILWAT2-standalone in debugging mode
+    with, e.g.,
+    ```
+    make bin bint_run CPPFLAGS=-DSWDEBUG
+    ```
+  * Alternatively and potentially preferably, you can use the pre-configured
+    debugging targets
+    `bin_debug` and `bin_debug_severe`, for instance, with
+    ```
+    make bin_debug_severe bint_run
+    ```
+  * If **valgrind** is installed, then you can call the target `bind_valgrind`
+    (see description in `makefile`) with
+    ```
+    make bind_valgrind
     ```
 
-## Note
+<br>
+
+## Notes
 
 __Version numbers__
 
-We attempt to follow guidelines of [semantic versioning](http://semver.org/) with version
-numbers of MAJOR.MINOR.PATCH.
+We attempt to follow guidelines of [semantic versioning](http://semver.org/)
+with version numbers of `MAJOR.MINOR.PATCH`.
 
 
 __Organization renamed from Burke-Lauenroth-Lab to DrylandEcology on Dec 22, 2017__
 
-All existing information should [automatically be redirected](https://help.github.com/articles/renaming-a-repository/) to the new name.
-Contributors are encouraged, however, to update local clones to [point to the new URL](https://help.github.com/articles/changing-a-remote-s-url/), i.e.,
+All existing information should
+[automatically be redirected](https://help.github.com/articles/renaming-a-repository/)
+to the new name.
+Contributors are encouraged, however, to update local clones to
+[point to the new URL](https://help.github.com/articles/changing-a-remote-s-url/),
+i.e.,
 ```
 git remote set-url origin https://github.com/DrylandEcology/SOILWAT2.git
 ```
@@ -98,9 +178,12 @@ git remote set-url origin https://github.com/DrylandEcology/SOILWAT2.git
 
 __Repository renamed from SOILWAT to SOILWAT2 on Feb 23, 2017__
 
-All existing information should [automatically be redirected](https://help.github.com/articles/renaming-a-repository/) to the new name.
-
-Contributors are encouraged, however, to update local clones to [point to the new URL](https://help.github.com/articles/changing-a-remote-s-url/), i.e.,
+All existing information should
+[automatically be redirected](https://help.github.com/articles/renaming-a-repository/)
+to the new name.
+Contributors are encouraged, however, to update local clones to
+[point to the new URL](https://help.github.com/articles/changing-a-remote-s-url/),
+i.e.,
 ```
 git remote set-url origin https://github.com/DrylandEcology/SOILWAT2.git
 ```

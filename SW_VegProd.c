@@ -47,6 +47,7 @@ changed _echo_inits() to now display the bare ground components in logfile.log
 #include <string.h>
 #include "generic.h"
 #include "filefuncs.h"
+#include "myMemory.h"
 #include "SW_Defines.h"
 #include "SW_Files.h"
 #include "SW_Times.h"
@@ -478,7 +479,6 @@ void SW_VPD_read(void) {
 					SW_VegProd.critSoilWater[k] = help_veg[k]; // for use with get_swa for properly partitioning available soilwater
 				}
 				get_critical_rank();
-
 				break;
 
 			/* CO2 Biomass Power Equation */
@@ -607,7 +607,7 @@ void SW_VPD_read(void) {
 				key2veg[k], v->veg[k].cov.fCover);
 		}
 
-		swfprintf(logfp, "\n");
+		fprintf(logfp, "\n");
 	}
 
 	CloseFile(&f);
@@ -624,23 +624,52 @@ void SW_VPD_read(void) {
 
 void SW_VPD_construct(void) {
 	/* =================================================== */
+	int year, k;
+	OutPeriod pd;
 
+	// Clear the module structure:
 	memset(&SW_VegProd, 0, sizeof(SW_VegProd));
 
+	// Allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_VegProd.p_accu[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
+			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()");
+		if (pd > eSW_Day) {
+			SW_VegProd.p_oagg[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
+				sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()");
+		}
+	}
 
-  SW_VEGPROD *v = &SW_VegProd;
-  int year, k;
-
+	/* initialize the co2-multipliers */
   for (year = 0; year < MAX_NYEAR; year++)
   {
     ForEachVegType(k)
     {
-      v->veg[k].co2_multipliers[BIO_INDEX][year] = 1.;
-      v->veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
+      SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][year] = 1.;
+      SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
     }
   }
 }
 
+void SW_VPD_deconstruct(void)
+{
+	OutPeriod pd;
+
+	// De-allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		if (pd > eSW_Day && !isnull(SW_VegProd.p_oagg[pd])) {
+			Mem_Free(SW_VegProd.p_oagg[pd]);
+			SW_VegProd.p_oagg[pd] = NULL;
+		}
+
+		if (!isnull(SW_VegProd.p_accu[pd])) {
+			Mem_Free(SW_VegProd.p_accu[pd]);
+			SW_VegProd.p_accu[pd] = NULL;
+		}
+	}
+}
 
 /**
  * @brief Applies CO2 effects to supplied biomass data.
@@ -756,12 +785,6 @@ void SW_VPD_init(void) {
 				v->veg[k].total_agb_daily[doy] = 0.;
 			}
 		}
-		// function called here for rSOILWAT since the SW_VPD_read() function not called when rSOILWAT2 run
-		#ifdef RSOILWAT
-			// Only want to call function once, only checking that 2 are 0 because before function is run all == 0 but after run only 1 value will be 0.
-			if(SW_VegProd.rank_SWPcrits[0] == 0 && SW_VegProd.rank_SWPcrits[1] == 0)
-				get_critical_rank();
-		#endif
 }
 
 void _echo_VegProd(void) {
@@ -795,7 +818,10 @@ void _echo_VegProd(void) {
 }
 
 
-// get the rank of the critical values for use with soilwater calculations
+/** @brief Determine vegetation type of decreasingly ranked the critical SWP
+		@inputs SW_VegProd.critSoilWater[]
+		@sideeffects Sets `SW_VegProd.rank_SWPcrits[]`
+*/
 void get_critical_rank(void){
 	/*----------------------------------------------------------
 		Get proper order for rank_SWPcrits
