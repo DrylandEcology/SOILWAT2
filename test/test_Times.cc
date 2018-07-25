@@ -25,31 +25,30 @@ namespace{
     // point to the structure that contains cloud coverage monthly values
     SW_SKY SW_Sky;
     SW_SKY *interpolate = &SW_Sky;
-
     unsigned int i;
-
     // set all monthlyValues all 10
     for (i = 0; i < length(interpolate -> cloudcov); i++){
       interpolate -> cloudcov[i] = 10;
     }
     interpolate -> cloudcov_daily[0] = 0;
-    interpolate_monthlyValues(interpolate -> cloudcov, interpolate -> cloudcov_daily);
 
+    // test various obtained values
+    interpolate_monthlyValues(interpolate -> cloudcov, interpolate -> cloudcov_daily);
     // inperpolate_monthlyValues should not change index 0 because we used
     // base1 indices
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[0], 0);
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[1], 10.0);
-    // test top conditional
+    // test top conditional, day < 15
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[14], 10.0);
-    // test middle conditional
+    // test middle conditional, day >= 15
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[15], 10.0);
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[365], 10.0);
-
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
     // change first value to 20 and test the changes
     interpolate -> cloudcov[0] = 20;
+
     interpolate_monthlyValues(interpolate -> cloudcov, interpolate -> cloudcov_daily);
     // calculated by hand
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[0], 0);
