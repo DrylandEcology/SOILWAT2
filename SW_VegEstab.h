@@ -21,6 +21,11 @@
 	#include "../ST_defines.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /* indices to bars[] */
 #define SW_GERM_BARS 0
 #define SW_ESTAB_BARS 1
@@ -121,5 +126,10 @@ void _echo_VegEstab(void);
  roots_wet                     ------  rootswet
 
  */
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -48,11 +48,13 @@ const char * masterfile_test = "files.in"; // relative to 'dir_test'
 
 
 // Global variables which are defined in SW_Main_lib.c:
-extern char errstr[];
-extern FILE *logfp;
-extern int logged;
-extern Bool QuietMode, EchoInits;
-extern char _firstfile[];
+// We need to redefine them here because they are not included in the library
+char inbuf[MAX_FILENAMESIZE];
+char errstr[MAX_ERROR];
+FILE *logfp;
+int logged;
+Bool QuietMode, EchoInits;
+char _firstfile[MAX_FILENAMESIZE];
 
 
 
@@ -81,9 +83,9 @@ int main(int argc, char **argv) {
   res = RUN_ALL_TESTS();
 
   //--- Take down SOILWAT2 variables
-  SW_SIT_clear_layers();
-  SW_WTH_clear_runavg_list();
+  SW_CTL_clear_model(swTRUE); // de-allocate all memory
 
   //--- Return output of 'RUN_ALL_TESTS()', see https://github.com/google/googletest/blob/master/googletest/docs/FAQ.md#my-compiler-complains-about-ignoring-return-value-when-i-call-run_all_tests-why
   return res;
 }
+

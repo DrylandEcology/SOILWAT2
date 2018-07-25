@@ -18,8 +18,12 @@
 #ifndef SW_SKY_H
 #define SW_SKY_H
 
-
 #include "SW_Times.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 typedef struct {
     RealD cloudcov     [MAX_MONTHS], /* monthly cloud cover (frac) */
@@ -39,5 +43,10 @@ typedef struct {
 void SW_SKY_read(void);
 void SW_SKY_init(double scale_sky[], double scale_wind[], double scale_rH[], double scale_transmissivity[]);
 void SW_SKY_construct(void);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

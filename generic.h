@@ -49,6 +49,11 @@
   #include <R_ext/Print.h>
 #endif
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***************************************************
  * Basic definitions
  ***************************************************/
@@ -247,6 +252,11 @@ extern errstr[];
 #ifndef strdup
   char * sw_strdup(const char * s);
   #define strdup(x) sw_strdup(x)
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #define GENERIC_H

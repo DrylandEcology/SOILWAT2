@@ -23,6 +23,10 @@
 #include "Times.h"
 #include "SW_Defines.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
 	TimeInt /* controlling dates for model run */
 	startyr, /* beginning year for model run */
@@ -53,5 +57,10 @@ void SW_MDL_construct(void);
 void SW_MDL_deconstruct(void);
 void SW_MDL_new_year(void);
 void SW_MDL_new_day(void);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

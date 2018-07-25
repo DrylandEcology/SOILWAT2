@@ -16,6 +16,11 @@
 #ifndef SW_OUTPUT_ARRAY_H
 #define SW_OUTPUT_ARRAY_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /** iOUT returns the index to the `i`-th column for time period `pd` in an
   output array that is organized by columns where `i` is base0 and
   `pd` is `OutPeriod`. The index order has to match up with column names as
@@ -45,6 +50,11 @@ void get_outvalleader(RealD *p, OutPeriod pd);
 #ifdef STEPWAT
 void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x);
 void setGlobalSTEPWAT2_OutputVariables(void);
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 

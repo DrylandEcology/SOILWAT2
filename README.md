@@ -15,6 +15,7 @@
 [11]: https://img.shields.io/github/downloads/DrylandEcology/SOILWAT2/total.svg
 [12]: https://github.com/DrylandEcology/SOILWAT2
 
+<br>
 
 # SOILWAT2
 
@@ -38,6 +39,7 @@ Some recent references
 * Schlaepfer, D. R., W. K. Lauenroth, and J. B. Bradford. 2012. Ecohydrological
   niche of sagebrush ecosystems. Ecohydrology 5:453-466.
 
+<br>
 
 ## How to contribute
 You can help us in different ways:
@@ -45,6 +47,16 @@ You can help us in different ways:
 1. Reporting [issues](https://github.com/DrylandEcology/SOILWAT2/issues)
 2. Contributing code and sending a
    [pull request](https://github.com/DrylandEcology/SOILWAT2/pulls)
+
+
+__Compilation__:
+  * Requirements:
+    - the `gcc` or `clang/llvm` toolchains
+      - `gcc >= v4.9` and `clang >= v3.3` for the `*_severe` test/debug targets
+    - POSIX- or GNU-compliant `make`
+    - On Windows OS: an installation of `cygwin`
+  * Build with `make` (see `make help` to print information about all
+    available targets)
 
 
 __SOILWAT2 code is used as part of three applications__:
@@ -68,20 +80,32 @@ __Tests, documentation, and code__ form a trinity
     but don't push them to the repository
 - Code tests
   * Use [GoogleTest](https://github.com/google/googletest/blob/master/googletest/docs/Documentation.md)
-    to add unit tests to the existing framework
+    to add unit tests to the existing framework in the folder `test/` where
+    each unit test file uses the naming scheme `test/test_*.cc`.
+  * Note: `SOILWAT2` is written in C whereas `GoogleTest` is a C++ framework.
   * Run unit tests locally on the command-line with
     ```
-    make test     # compiles the unit-test binary/executable (with `-DSWDEBUG`)
-    make test_run # executes the unit-test binary
-    make cleaner
+    make test test_run         # compiles and executes the unit-tests
+    make test_severe test_run  # compiles/executes with strict/severe flags
+    make clean                 # cleans build artifacts
     ```
   * Development/feature branches can only be merged into master if they pass
-    all checks
+    all checks on `appveyor` and `travis` continuous integration servers, i.e.,
+    run the following locally to prepare a pull-request or commit to be reviewed
+    ```
+    make clean bin_debug_severe bint_run
+    make clean test_severe test_run
+    ```
+  * Note that you may want/need to exclude known memory leaks from severe
+    testing (see https://github.com/DrylandEcology/SOILWAT2/issues/205):
+    ```
+    ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+    ```
   * Informal and local integration tests example:
     1. Before coding, run `testing/` and produce reference output
         ```
         git checkout master
-        make cleaner bint_run
+        make bin bint_run
         cp -r testing/Output testing/Output_ref
         ```
     2. Develop your code and keep "testing/Output_ref" locally, i.e., don't
@@ -89,7 +113,7 @@ __Tests, documentation, and code__ form a trinity
     3. Regularly, e.g., before finalizing a commit, check that new code produces
     identical output (that is unless you work on output...)
         ```
-        make cleaner bint_run
+        make bin bint_run
         diff testing/Output/ testing/Output_ref/ -qs
         ```
 
@@ -112,16 +136,24 @@ __Tests, documentation, and code__ form a trinity
       ...
     }
     ```
-  * Clean, compile and run SOILWAT2-standalone in debugging mode with, e.g.,
+  * Clean, compile and run optimized SOILWAT2-standalone in debugging mode
+    with, e.g.,
     ```
-    make cleaner bint_run CPPFLAGS=-DSWDEBUG
+    make bin bint_run CPPFLAGS=-DSWDEBUG
     ```
-  * The "makefile" also contains pre-configured debugging targets including
-    `bin_debug`, `bind`, and `bind_valgrind` (see description in `makefile`).
-    If **valgrind** is installed, then for example
+  * Alternatively and potentially preferably, you can use the pre-configured
+    debugging targets
+    `bin_debug` and `bin_debug_severe`, for instance, with
     ```
-    make cleaner bind_valgrind
+    make bin_debug_severe bint_run
     ```
+  * If **valgrind** is installed, then you can call the target `bind_valgrind`
+    (see description in `makefile`) with
+    ```
+    make bind_valgrind
+    ```
+
+<br>
 
 ## Notes
 

@@ -37,6 +37,10 @@
 #include "SW_Weather.h"
 #include "SW_VegProd.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 // Array-based output:
 #if defined(RSOILWAT) || defined(STEPWAT)
@@ -341,6 +345,11 @@ void get_co2effects_SXW(OutPeriod pd);
 
 #ifdef DEBUG_MEM
 	void SW_OUT_SetMemoryRefs(void);
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
