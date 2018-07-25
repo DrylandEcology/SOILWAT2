@@ -24,14 +24,17 @@
  * input from files.in.
  */
 typedef enum {
-	eNoFile = -1, eFirst = 0, eModel, eLog, eSite, eLayers, eWeather, eMarkovProb, eMarkovCov, eSky,
-	 				eVegProd, eVegEstab, eCarbon, eSoilwat, eOutput, eOutputDaily,eOutputWeekly,eOutputMonthly,eOutputYearly,
-					eOutputDaily_soil,eOutputWeekly_soil,eOutputMonthly_soil,eOutputYearly_soil, eEndFile
+	eNoFile = -1, eFirst = 0, eModel, eLog, eSite, eLayers, eWeather,
+	eMarkovProb, eMarkovCov, eSky, eVegProd, eVegEstab, eCarbon, eSoilwat,
+	eOutput, eOutputDaily, eOutputWeekly, eOutputMonthly, eOutputYearly,
+	eOutputDaily_soil, eOutputWeekly_soil, eOutputMonthly_soil, eOutputYearly_soil,
+	eEndFile
 } SW_FileIndex;
 
 void SW_F_read(const char *s);
 char *SW_F_name(SW_FileIndex i);
 void SW_F_construct(const char *firstfile);
+void SW_F_deconstruct(void);
 void SW_WeatherPrefix(char prefix[]);
 void SW_OutputPrefix(char prefix[]);
 void SW_CSV_F_INIT(const char *s);

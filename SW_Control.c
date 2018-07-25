@@ -33,6 +33,7 @@
 #include "SW_Model.h"
 #include "SW_Output.h"
 #include "SW_Site.h"
+#include "SW_Flow.h"
 #include "SW_SoilWater.h"
 #include "SW_VegEstab.h"
 #include "SW_VegProd.h"
@@ -54,8 +55,6 @@ static void _begin_year(void);
 static void _begin_day(void);
 static void _end_day(void);
 
-/* Dummy declaration for Flow constructor defined in SW_Flow.c */
-void SW_FLW_construct(void);
 
 /*******************************************************/
 /***************** Begin Main Code *********************/
@@ -93,9 +92,32 @@ void SW_CTL_init_model(const char *firstfile) {
 	SW_CBN_construct();
 }
 
+
+/** @brief Free allocated memory
+		@param full_reset.
+			* If `FALSE`, de-allocate memory for `SOILWAT2` variables, but do not
+				reset output arrays `p_OUT` and `p_OUTsd` which are used under
+				`SW_OUTARRAY` to pass output in-memory to `rSOILWAT2` and to `STEPWAT2`.
+			* if `TRUE`, de-allocate all memory including output arrays.
+*/
+void SW_CTL_clear_model(Bool full_reset) {
+	SW_F_deconstruct();
+	SW_MDL_deconstruct();
+	SW_WTH_deconstruct();
+	SW_SIT_deconstruct();
+	SW_VES_deconstruct();
+	SW_VPD_deconstruct();
+	SW_OUT_deconstruct(full_reset);
+	SW_SWC_deconstruct();
+	SW_FLW_deconstruct();
+	SW_CBN_deconstruct();
+}
+
+
+
 void SW_CTL_run_current_year(void) {
   /*=======================================================*/
-  TimeInt *doy = &SW_Model.doy;
+  TimeInt *doy = &SW_Model.doy; // base1
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -116,16 +138,14 @@ void SW_CTL_run_current_year(void) {
     #endif
     SW_SWC_water_flow();
 
-    #ifdef RSOILWAT
+    // Only run this function if SWA output is asked for
+    if (SW_VegProd.use_SWA) {
       calculate_repartitioned_soilwater();
-    #else
-    // Only run this function id SWA is asked for
-    if(SW_VegProd.use_SWA)
-      calculate_repartitioned_soilwater(); // new function to calculate the repartioned soilwater values (SWA). Needs to be called after SW_SWC_water_flow so other values are calculated
-    #endif
+    }
 
-    if (SW_VegEstab.use)
+    if (SW_VegEstab.use) {
       SW_VES_checkestab();
+    }
 
     #ifdef SWDEBUG
     if (debug) swprintf("ending day ... ");
@@ -147,32 +167,28 @@ void SW_CTL_run_current_year(void) {
   #endif
 }
 
+/** @brief Initiate/update variables for a new simulation year.
+
+    In addition to the timekeeper (Model), usually only modules
+      that read input yearly or produce output need to have this call.
+*/
 static void _begin_year(void) {
-	/*=======================================================*/
-	/* in addition to the timekeeper (Model), usually only
-	 * modules that read input yearly or produce output need
-	 * to have this call */
-	 SW_MDL_new_year();
-	 SW_WTH_new_year();
-	 SW_SWC_new_year();
-	 SW_VES_new_year();
-	 SW_OUT_new_year();
+	SW_MDL_new_year();
+	SW_WTH_new_year();
+	SW_SWC_new_year();
+	SW_VES_new_year();
+	SW_OUT_new_year();
 
-	 // Dynamic CO2 effects
-	 SW_VPD_init();
-
+	// Dynamic CO2 effects
+	SW_VPD_init();
 }
 
 static void _begin_day(void) {
-	/*=======================================================*/
-
 	SW_MDL_new_day();
 	SW_WTH_new_day();
 }
 
 static void _end_day(void) {
-	/*=======================================================*/
-
 	_collect_values();
 	SW_WTH_end_day();
 	SW_SWC_end_day();

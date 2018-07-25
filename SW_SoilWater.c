@@ -1,4 +1,4 @@
-/********************************************************/
+  /********************************************************/
 /********************************************************/
 /*	Source file: SoilWater.c
  Type: module
@@ -48,6 +48,7 @@
 #include "SW_Files.h"
 #include "SW_Model.h"
 #include "SW_Site.h"
+#include "SW_Flow.h"
 #include "SW_SoilWater.h"
 #include "SW_VegProd.h"
 #ifdef SWDEBUG
@@ -57,7 +58,6 @@
   #include "../rSW_SoilWater.h" // for onSet_SW_SWC_hist()
 #endif
 
-void SW_Water_Flow(void); /* see Water_Flow.c */
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -295,17 +295,71 @@ void SW_WaterBalance_Checks(void)
 
 void SW_SWC_construct(void) {
 	/* =================================================== */
+	OutPeriod pd;
 
 	SW_Soilwat.soiltempError = swFALSE;
-
 	temp_snow = 0.;
 
-	//Clear memory before setting it
+	// Clear memory before setting it
 	if (!isnull(SW_Soilwat.hist.file_prefix)) {
 		Mem_Free(SW_Soilwat.hist.file_prefix);
 		SW_Soilwat.hist.file_prefix = NULL;
 	}
+
+	// Clear the module structure:
 	memset(&SW_Soilwat, 0, sizeof(SW_SOILWAT));
+
+	// Allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_Soilwat.p_accu[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
+			sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_construct()");
+		if (pd > eSW_Day) {
+			SW_Soilwat.p_oagg[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
+				sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_construct()");
+		}
+	}
+}
+
+void SW_SWC_deconstruct(void)
+{
+	OutPeriod pd;
+
+	// De-allocate output structures:
+	ForEachOutPeriod(pd)
+	{
+		if (pd > eSW_Day && !isnull(SW_Soilwat.p_oagg[pd])) {
+			Mem_Free(SW_Soilwat.p_oagg[pd]);
+			SW_Soilwat.p_oagg[pd] = NULL;
+		}
+
+		if (!isnull(SW_Soilwat.p_accu[pd])) {
+			Mem_Free(SW_Soilwat.p_accu[pd]);
+			SW_Soilwat.p_accu[pd] = NULL;
+		}
+	}
+
+	if (!isnull(SW_Soilwat.hist.file_prefix)) {
+		Mem_Free(SW_Soilwat.hist.file_prefix);
+		SW_Soilwat.hist.file_prefix = NULL;
+	}
+
+	if (!isnull(SW_Soilwat.hist.file_prefix)) {
+		Mem_Free(SW_Soilwat.hist.file_prefix);
+		SW_Soilwat.hist.file_prefix = NULL;
+	}
+
+	#ifdef SWDEBUG
+	IntU i;
+
+	for (i = 0; i < N_WBCHECKS; i++)
+	{
+		if (!isnull(SW_Soilwat.wbErrorNames[i])) {
+			Mem_Free(SW_Soilwat.wbErrorNames[i]);
+			SW_Soilwat.wbErrorNames[i] = NULL;
+		}
+	}
+	#endif
 }
 
 void SW_SWC_water_flow(void) {
@@ -361,7 +415,10 @@ void SW_SWC_water_flow(void) {
 
 /**
   \fn void calculate_repartitioned_soilwater(void)
-  Sets up the structures that will hold the repartitioned soilwater and propagate the swa_master structure for use in get_dSWAbulk().
+  Sets up the structures that will hold the available soil water partitioned
+  among vegetation types and propagate the swa_master structure for
+  use in get_dSWAbulk().
+  Must be call after `SW_SWC_water_flow()` is executed.
 */
 /***********************************************************/
 void calculate_repartitioned_soilwater(void){
@@ -558,8 +615,6 @@ void SW_SWC_new_year(void) {
 	LyrIndex lyr;
 	TimeInt year = SW_Model.year;
 	Bool reset = (Bool) (SW_Site.reset_yr || SW_Model.year == SW_Model.startyr);
-
-	memset(&SW_Soilwat.yrsum, 0, sizeof(SW_SOILWAT_OUTPUTS));
 
 	/* reset the swc */
 	ForEachSoilLayer(lyr)

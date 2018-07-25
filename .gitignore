@@ -33,6 +33,6 @@ doc/html/*
 # Binary files
 SOILWAT2
 testing/SOILWAT2
-libSOILWAT2.a
-libSOILWAT2++.a
-libcovSOILWAT2++.a
+libSOILWAT2*
+libcovSOILWAT2*
+

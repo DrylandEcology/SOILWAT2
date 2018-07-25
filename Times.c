@@ -271,8 +271,6 @@ TimeInt Time_get_lastdoy_y(TimeInt year) {
  * pretty independent of the current time, so I'm
  * removing the preceeding Time_ to shorten the calls in
  * the code
- *
- * @returns the month the given day falls under
  */
 TimeInt doy2month(const TimeInt doy) {
 	/* =================================================== */
@@ -335,21 +333,19 @@ Bool isleapyear(const TimeInt year) {
 	return (Bool) (((yr % 4) == 0) && (((t) != yr) || ((yr % 400) == 0)));
 
 }
+/**
+ @brief Linear interpolation of monthly value; monthly values are assumed to representative for the 15th of a month
 
+ @author drs
+ @date 09/22/2011
+
+ @param monthlyValues. Input, record with values for each month
+ @param dailyValues. Output, linear interpolation for each day
+
+ @note dailyValues[0] will always be 0 as the function does not modify it since there is no day 0, furthermore dailyValues is
+ 			 only sub-setted by base1 objects in the model.
+ **/
 void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
-	/**********************************************************************
-	 PURPOSE: linear interpolation of monthly value; monthly values are assumed to representative for the 15th of a month
-
-	 HISTORY:
-	 09/22/2011 (drs)
-
-	 INPUTS:
-	 monthlyValues - record with values for each month
-
-	 OUTPUTS:
-	 dailyValues - linear interpolation for each day
-	 **********************************************************************/
-
 	unsigned int doy, mday, month, month2 = NoMonth;
 	double sign = 1.;
 
@@ -359,16 +355,15 @@ void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
 
 		if (mday == 15) {
 			dailyValues[doy] = monthlyValues[month];
-		}
-		else {
+		} else {
 			if (mday >= 15) {
 				month2 = (month == Dec) ? Jan : month + 1;
 				sign = 1;
-			}
-			else {
+			} else {
 				month2 = (month == Jan) ? Dec : month - 1;
 				sign = -1;
 			}
+
 			dailyValues[doy] = monthlyValues[month] + sign * (monthlyValues[month2] - monthlyValues[month]) / (monthdays[month]) * (mday - 15.);
 		}
 	}

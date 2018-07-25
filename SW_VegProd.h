@@ -112,11 +112,13 @@ typedef struct {
 
 	RealD critSoilWater[NVEGTYPES]; // storing values in same order as defined in STEPWAT2/rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
 
-	int rank_SWPcrits[NVEGTYPES]; // array to store the SWP crits in order of lest negative to most negative (used in STEPWAT2/sxw_resource)
+	// `rank_SWPcrits[k]` hold the vegetation type at rank `k` of decreasingly
+	// sorted critical SWP values
+	int rank_SWPcrits[NVEGTYPES];
 
-	SW_VEGPROD_OUTPUTS dysum, /* helpful placeholder */
-		wksum, mosum, yrsum, /* accumulators for *avg */
-		wkavg, moavg, yravg; /* averages or sums as appropriate */
+	SW_VEGPROD_OUTPUTS
+		*p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time period
+		*p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
 
 	Bool use_SWA;
 } SW_VEGPROD;
@@ -124,6 +126,7 @@ typedef struct {
 void SW_VPD_read(void);
 void SW_VPD_init(void);
 void SW_VPD_construct(void);
+void SW_VPD_deconstruct(void);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
 void _echo_VegProd(void);
 void get_critical_rank(void);

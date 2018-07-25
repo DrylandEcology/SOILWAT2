@@ -30,6 +30,7 @@
 #include "SW_Site.h"
 #include "SW_Weather.h"
 #include "SW_Output.h"
+#include "SW_Output_outtext.h"
 #include "SW_Main_lib.c"
 
 
@@ -66,13 +67,13 @@ int main(int argc, char **argv) {
 	SW_CTL_obtain_inputs();
 
 	SW_OUT_set_ncol();
-	//SW_OUT_set_colnames(); // only using with rSOILWAT2
+	SW_OUT_set_colnames();
+	SW_OUT_create_files(); // only used with SOILWAT2
 
 	SW_CTL_main();
 
-	SW_SIT_clear_layers();
-	SW_WTH_clear_runavg_list();
-	SW_OUT_close_files();
+	SW_OUT_close_files(); // not used with rSOILWAT2
+	SW_CTL_clear_model(swTRUE); // de-allocate all memory
 
 	return 0;
 }
