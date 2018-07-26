@@ -26,7 +26,8 @@ namespace{
     SW_SKY SW_Sky;
     SW_SKY *interpolate = &SW_Sky;
     unsigned int i;
-    // set all monthlyValues all 10
+    // set all monthlyValues all 10 to ensure we know what monthlyValues
+    // are being used to interpolate dailyValues
     for (i = 0; i < length(interpolate -> cloudcov); i++){
       interpolate -> cloudcov[i] = 10;
     }
@@ -46,7 +47,7 @@ namespace{
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
-    // change first value to 20 and test the changes
+    // change first value to 20 and test the changes to the interpolated daily values
     interpolate -> cloudcov[0] = 20;
 
     interpolate_monthlyValues(interpolate -> cloudcov, interpolate -> cloudcov_daily);
@@ -59,8 +60,10 @@ namespace{
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[365], 15.161290322580644);
     // test last day on leap year
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[MAX_DAYS], 15.483870967741936);
+
     // change december monthly value to ensure meaningful final interpolation
     interpolate -> cloudcov[11] = 12;
+
     interpolate_monthlyValues(interpolate -> cloudcov, interpolate -> cloudcov_daily);
     EXPECT_DOUBLE_EQ(interpolate -> cloudcov_daily[365], 16.129032258064516);
     // test last day on leap year
