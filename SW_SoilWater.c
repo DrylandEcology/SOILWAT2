@@ -858,8 +858,8 @@ void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
 	RealD *snow, RealD *snowmelt) {
 
 	RealD *snowpack = &SW_Soilwat.snowpack[Today],
-		doy = SW_Model.doy,
-		temp_ave, Rmelt, SnowAccu = 0., SnowMelt = 0.;
+		doy = SW_Model.doy, temp_ave,
+		Rmelt, SnowAccu = 0., SnowMelt = 0.;
 
 	static RealD snow_cov = 1.;
 
