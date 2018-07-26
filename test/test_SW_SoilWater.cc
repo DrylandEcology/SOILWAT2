@@ -29,7 +29,8 @@ namespace{
     //declare mock INPUTS
     RealD fractionGravel = .1, clay = .7, sand = .2, porosity = 1;
 
-    // test clay > .6
+    // test clay > .6, this is not within accepted values so it should return
+    // SW_MISSING
     RealD res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
     EXPECT_DOUBLE_EQ(res, SW_MISSING);
     // Reset to previous global states
@@ -38,10 +39,10 @@ namespace{
     clay = .5;
     sand = .04;
 
-    // test sand < .05
+    // test sand < .05, this is not within accepted values so it should return
+    // SW_MISSING
     res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
     EXPECT_DOUBLE_EQ(res, SW_MISSING);
-
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -109,8 +110,8 @@ namespace{
     // run tests for gravel fractions on the interval [.0, .8], step .05
     for (i = 0; i <= 16; i++){
       fractionGravel = i / 20.;
-
       tExpect = p * (1 - fractionGravel);
+
       t = SW_SWPmatric2VWCBulk(fractionGravel, swpMatric, n);
       // Tolerance for error since division with RealD introcuces some error
       EXPECT_NEAR(t, tExpect, tol);
