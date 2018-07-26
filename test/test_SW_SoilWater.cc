@@ -51,16 +51,30 @@ namespace{
   TEST(SWSoilWaterTest, SWSWCSdjustSnow){
     // setup mock variables
     SW_Site.TminAccu2 = 0;
+    SW_Model.doy = 1;
+    SW_Site.RmeltMax = 1;
+    SW_Site.RmeltMin = 0;
+    SW_Site.lambdasnow = .1;
+    SW_Site.TmaxCrit = 1;
+
     RealD temp_min = 0, temp_max = 10, ppt = 1, rain = 1.5, snow = 1.5,
     snowmelt = 1.2;
 
-    // test 1, since TminAccu2 is < temp_ave, we expect SnowAccu to be 0 and thus
+    // Since TminAccu2 < temp_ave, we expect SnowAccu to be 0 and thus
     // rain is ppt - SnowAccu
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
     EXPECT_EQ(rain, 1);
     EXPECT_EQ(snow, 0);
+    EXPECT_EQ(snowmelt, 0);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
+
+    // test TminAccu2 > temp_ave
+    SW_Site.TminAccu2 = 6;
+
+    SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
+    EXPECT_EQ(rain, 0);
+    EXPECT_EQ(snow, 1);
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWCbulk2SWPmatric'
