@@ -76,6 +76,16 @@ namespace{
     EXPECT_EQ(rain, 0);
     EXPECT_EQ(snow, 1);
     EXPECT_EQ(snowmelt, 0);
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
+
+    // test temp_snow > TmaxCrit
+    temp_max = 22;
+
+    SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
+    EXPECT_EQ(rain, 1);
+    EXPECT_EQ(snow, 0);
+    EXPECT_EQ(snowmelt, 0);
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWCbulk2SWPmatric'
@@ -129,6 +139,8 @@ namespace{
     // test swcBulk < 0, should cause the program to fail and write to log
     EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n),
     "@ generic.c LogError");
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWPmatric2VWCBulk'
