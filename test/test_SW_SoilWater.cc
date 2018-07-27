@@ -69,12 +69,13 @@ namespace{
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
-    // test TminAccu2 > temp_ave
+    // test TminAccu2 >= temp_ave
     SW_Site.TminAccu2 = 6;
 
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
     EXPECT_EQ(rain, 0);
     EXPECT_EQ(snow, 1);
+    EXPECT_EQ(snowmelt, 0);
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWCbulk2SWPmatric'
@@ -130,6 +131,13 @@ namespace{
       // Tolerance for error since division with RealD introcuces some error
       EXPECT_NEAR(t, tExpect, tol);
     }
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
+
+    // test for when fractionGravel is 1, should return 0
+    fractionGravel = 1;
+    t = SW_SWPmatric2VWCBulk(fractionGravel, swpMatric, n);
+    EXPECT_EQ(t, 0);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
   }
