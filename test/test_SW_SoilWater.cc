@@ -107,6 +107,28 @@ namespace{
     EXPECT_LT(actualExpectDiff, .0002);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
+
+    // test fractionGravel == 1, this should cause the main equation in the function
+    // to not work
+    fractionGravel = 1;
+
+    res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
+    EXPECT_DOUBLE_EQ(res, INFINITY);
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+  TEST(SWSoilWaterDeathTest, SWSWCbulk2SWPmatricDeathTest) {
+    RealD fractionGravel = 0.2, swcBulk = -1;
+    LyrIndex n = 1;
+    SW_Site.lyr[n] -> width = 1;
+    SW_Site.lyr[n] -> psisMatric = 1;
+    SW_Site.lyr[n] -> thetasMatric = 1;
+    SW_Site.lyr[n] -> bMatric = 1;
+
+    // test swcBulk < 0, should cause the program to fail and write to log
+    EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n),
+    "@ generic.c LogError");
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWPmatric2VWCBulk'
