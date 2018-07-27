@@ -22,17 +22,19 @@ extern SW_SITE SW_Site;
 extern SW_VEGPROD SW_VegProd;
 
 namespace{
-  float tol = 1e-6;
-
   // Test the 'SW_SoilWater' function 'SW_VWCBulkRes'
   TEST(SWSoilWaterTest, SWVWCBulkRes){
     //declare mock INPUTS
-    RealD fractionGravel = .1, clay = .7, sand = .2, porosity = 1;
+    RealD fractionGravel = .1;
+    RealD clay = .7;
+    RealD sand = .2;
+    RealD porosity = 1;
 
     // test clay > .6, this is not within accepted values so it should return
     // SW_MISSING
     RealD res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
     EXPECT_DOUBLE_EQ(res, SW_MISSING);
+
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
@@ -90,21 +92,22 @@ namespace{
 
   // Test the 'SW_SoilWater' function 'SW_SWCbulk2SWPmatric'
   TEST(SWSoilWaterTest, SWSWCbulk2SWPmatric){
-    RealD fractionGravel = 0.2, swcBulk = 0;
+    RealD fractionGravel = 0.2;
+    RealD swcBulk = 0;
     LyrIndex n = 1;
 
-    // test 0 for swc
+    // test missing and 0 for swc
     RealD res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
 
-    // test missing for swc
     swcBulk = 999;
 
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     EXPECT_EQ(res, 0.0);
+    Reset_SOILWAT2_after_UnitTest();
 
-    // test swp val math
+    // test swp val
     swcBulk = 4;
     SW_Site.lyr[n] -> width = 1;
     SW_Site.lyr[n] -> psisMatric = 1;
@@ -112,8 +115,7 @@ namespace{
     SW_Site.lyr[n] -> bMatric = 1;
 
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
-    RealD resExpect = .00013310902; // did math by hand to get this value
-    RealD actualExpectDiff = fabs(res - resExpect);
+    RealD actualExpectDiff = fabs(res - .00013310902);
     EXPECT_LT(actualExpectDiff, .0002);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -146,15 +148,14 @@ namespace{
   // Test the 'SW_SoilWater' function 'SW_SWPmatric2VWCBulk'
   TEST(SWSoilWaterTest, SWSWPmatric2VWCBulk){
     // set up mock variables
-    RealD p, tExpect, t, fractionGravel;
-    RealD swpMatric = 15.0, psisMatric = 18.608013, binverseMatric = 0.188608,
-    thetaMatric = 41.37;
+    RealD fractionGravel = .1, swpMatric = 15.0, p = 0.11656662532982573,
+    psisMatric = 18.608013, binverseMatric = 0.188608, thetaMatric = 41.37;
+    RealD tExpect, t, actualExpectDiff;
     int i;
     LyrIndex n = 0;
     SW_Site.lyr[n]->thetasMatric = thetaMatric;
     SW_Site.lyr[n]->psisMatric = psisMatric;
     SW_Site.lyr[n]->bMatric = binverseMatric;
-    p = 0.11656662532982573; // done by hand
 
     // run tests for gravel fractions on the interval [.0, .8], step .05
     for (i = 0; i <= 16; i++){
@@ -162,14 +163,17 @@ namespace{
       tExpect = p * (1 - fractionGravel);
 
       t = SW_SWPmatric2VWCBulk(fractionGravel, swpMatric, n);
+      actualExpectDiff = fabs(t - tExpect);
+
       // Tolerance for error since division with RealD introcuces some error
-      EXPECT_NEAR(t, tExpect, tol);
+      EXPECT_LT(actualExpectDiff, 0.0000001);
+
     }
-    // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
     // test for when fractionGravel is 1, should return 0
     fractionGravel = 1;
+
     t = SW_SWPmatric2VWCBulk(fractionGravel, swpMatric, n);
     EXPECT_EQ(t, 0);
     // Reset to previous global states
