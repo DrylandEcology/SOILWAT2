@@ -970,7 +970,7 @@ Equations are based on a paper by Cosby,Hornberger,Clapp,Ginn. @cite Cosby1984
 
 RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n) {
 /**********************************************************************
-/**
+
 HISTORY:
     DATE:  April 2, 1992
     9/1/92  (SLC) if swc comes in as zero, set swpotentl to
@@ -981,7 +981,7 @@ HISTORY:
     missing values, swc < 0 is impossible, so it's an error,
     and the previous limit of swp to 80 seems unreasonable.
     return 0.0 if input value is MISSING
-**/
+
    These are the values for each layer obtained via lyr[n]:
 	 width  - width of current soil layer
 	 psisMatric   - "saturation" matric potential
