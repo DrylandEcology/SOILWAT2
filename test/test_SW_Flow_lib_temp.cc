@@ -519,9 +519,9 @@ namespace {
       fc2[i] = fmaxf(RandNorm(1.5, 0.5), 0.1); // greater than 0.1
       swc_sat2[i] = fc2[i] + 0.2; //swc_sat > fc2
       swc2[i] =  fmax(swc_sat2[i] - 0.3, 0.01); // swc_sat > swc > 0
-      wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp < fc
-      //swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
-      //  i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
+      wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // 0 < wp < fc
+      swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
+        i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
     }
 
     // Test surface temp equals surface_temperature_under_snow() because snow > 0
@@ -614,6 +614,10 @@ namespace {
       swc_sat[i] = fc[i] + 0.2; //swc_sat > fc2
       swc[i] =  swc_sat[i] - 0.3; // swc_sat > swc
       wp[i] = fmaxf(fc[i] - 0.6, 0.1); // wp < fc
+
+      swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
+        i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
+
     }
 
     // Should fail when soil_temperature_init fails - i.e. when theMaxDepth < depth of nlyrs
