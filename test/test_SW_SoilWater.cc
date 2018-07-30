@@ -71,7 +71,8 @@ namespace{
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
-    // test TminAccu2 >= temp_ave
+    // test TminAccu2 >= temp_ave causing snow accumulation to become == to the
+    // amount of ppt
     SW_Site.TminAccu2 = 6;
 
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
@@ -81,7 +82,7 @@ namespace{
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
-    // test temp_snow > TmaxCrit
+    // test temp_snow > TmaxCrit, therefore we expect no snowmelt
     temp_max = 22;
 
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
@@ -96,18 +97,19 @@ namespace{
     RealD swcBulk = 0;
     LyrIndex n = 1;
 
-    // test missing and 0 for swc
+    // test 0 for swc
     RealD res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
 
+    // test SW_MISSING (999) for swc
     swcBulk = 999;
 
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
 
-    // test swp val
+    // test main function calculations, swp
     swcBulk = 4;
     SW_Site.lyr[n] -> width = 1;
     SW_Site.lyr[n] -> psisMatric = 1;
@@ -120,8 +122,8 @@ namespace{
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
-    // test fractionGravel == 1, this should cause the main equation in the function
-    // to not work
+    // test fractionGravel == 1, this should cause the main equation in the
+    // function to not work and thus return INFINITY
     fractionGravel = 1;
 
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
