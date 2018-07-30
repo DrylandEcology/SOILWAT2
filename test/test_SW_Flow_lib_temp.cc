@@ -60,7 +60,7 @@ namespace {
 
     tSoilAvg = surface_temperature_under_snow(airTempAvg, snow);
 
-    EXPECT_EQ(0, tSoilAvg); // When there is snow, the return is 0
+    EXPECT_EQ(0, tSoilAvg); // When there is snow, the return of tSoilAvg is 0
 
 
     // test when snow is > 0 and airTempAvg is >= 0
@@ -68,14 +68,14 @@ namespace {
 
     tSoilAvg = surface_temperature_under_snow(airTempAvg, snow);
 
-    EXPECT_EQ(-2.0, tSoilAvg); // When there is snow and airTemp >= 0, the return is -2.0
+    EXPECT_EQ(-2.0, tSoilAvg); // When there is snow and airTemp >= 0, the return of tSoilAvg is -2.0
 
     // test when snow > 0 and airTempAvg < 0
     snow = 1, airTempAvg = -10;
 
     tSoilAvg = surface_temperature_under_snow(airTempAvg, snow);
 
-    EXPECT_EQ(-4.55, tSoilAvg); // When there snow == 1 airTempAvg = -10
+    EXPECT_EQ(-4.55, tSoilAvg); // When snow == 1 and airTempAvg = -10, tSoilAvg = -4.55
 
     //
     snow = 6.7, airTempAvg = 0;
@@ -118,8 +118,8 @@ namespace {
     }
 
     // Other init test
-    EXPECT_EQ(stValues.depths[nlyrs - 1], 20); // sum of inputs width = maximum depth; in my example 20
-    EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
+    EXPECT_EQ(stValues.depths[nlyrs - 1], 20); // sum of input width should = maximum depth; in my example 20
+    EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // The nRgr should = (MaxDepth/deltaX) - 1
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
@@ -151,7 +151,7 @@ namespace {
     }
 
     // Other init test
-    EXPECT_EQ(stValues.depths[nlyrs - 1], 295); // sum of inputs width = maximum depth; in my example 295
+    EXPECT_EQ(stValues.depths[nlyrs - 1], 295); // sum of input width should = maximum depth; in my example 295
     EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
 
     // Reset to previous global state
@@ -220,7 +220,7 @@ namespace {
     }
 
     for (i = ceil(stValues.depths[nlyrs - 1]/deltaX) + 1; i < nRgr + 1; i++) {
-      //The TempLayer values that are at depths greater than the max SoilLayer depth should be uniform
+      //The TempLayeR values that are at depths greater than the max SoilLayer depth should be uniform
       EXPECT_EQ(stValues.bDensityR[i], stValues.bDensityR[i - 1]);
       EXPECT_EQ(stValues.fcR[i], stValues.fcR[i - 1]);
       EXPECT_EQ(stValues.wpR[i], stValues.wpR[i - 1]);
@@ -265,7 +265,7 @@ namespace {
     }
 
     for (i = ceil(stValues.depths[nlyrs - 1]/deltaX) + 1; i < nRgr + 1; i++) {
-      //The TempLayer values that are at depths greater than the max SoilLayer depth should be uniform
+      //The TempLayeR values that are at depths greater than the max SoilLayer depth should be uniform
       EXPECT_EQ(stValues.bDensityR[i], stValues.bDensityR[i - 1]);
       EXPECT_EQ(stValues.fcR[i], stValues.fcR[i - 1]);
       EXPECT_EQ(stValues.wpR[i], stValues.wpR[i - 1]);
@@ -298,7 +298,7 @@ namespace {
 
     set_frozen_unfrozen(nlyrs, sTemp, swc, swc_sat, width);
 
-    EXPECT_EQ(1,stValues.lyrFrozen[0]); // Soil should freeze when sTemp is <= -1
+    EXPECT_EQ(1,stValues.lyrFrozen[0]); // Soil should freeze (= 1) when sTemp is <= -1
     // AND swc is > swc_sat - width * .13
 
     /// ***** Test that soil does not freeze ***** ///
@@ -306,7 +306,7 @@ namespace {
 
     set_frozen_unfrozen(nlyrs, sTemp2, swc, swc_sat, width);
 
-    EXPECT_EQ(0,stValues.lyrFrozen[0]); // Soil should NOT freeze when sTemp is > -1
+    EXPECT_EQ(0,stValues.lyrFrozen[0]); // Soil should NOT freeze ( = 0) when sTemp is > -1
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
@@ -322,14 +322,14 @@ namespace {
       sTemp4[i] = 0;
       swc2[i] = 5; // set swc to a high value so will be > swc_sat - width * .13
       swc_sat2[i] = 1;
-      // run
+      // Run
       set_frozen_unfrozen(nlyrs, sTemp3, swc2, swc_sat2, width2);
       // Test
-      EXPECT_EQ(1,stValues.lyrFrozen[i]);
+      EXPECT_EQ(1,stValues.lyrFrozen[i]); // when sTemp3 < 0 , we expect the layers to be frozen (1)
       // run
       set_frozen_unfrozen(nlyrs, sTemp4, swc2, swc_sat2, width2);
       // Test
-      EXPECT_EQ(0,stValues.lyrFrozen[i]);
+      EXPECT_EQ(0,stValues.lyrFrozen[i]); // when sTemp4 > 0, we expect the layers NOT to be fronze (0)
     }
 
     // Reset to previous global state
@@ -365,17 +365,17 @@ namespace {
       vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError);
 
     // Check that values that are set, are set right.
-    EXPECT_EQ(sTempR[0], T1);
-    EXPECT_EQ(sTempR[nRgr + 1], sTconst);
+    EXPECT_EQ(sTempR[0], T1); // The first layer of sTempR should be equal to T1
+    EXPECT_EQ(sTempR[nRgr + 1], sTconst); // The last layer of sTempR should be equal to sTconst
 
     //Check that ptr_stError is FALSE
-    EXPECT_EQ(ptr_stError, 0);
+    EXPECT_EQ(ptr_stError, 0); // There should be no errors.
 
     //Check that when  ptr_stError is FALSE, sTempR values are realisitic and pass check in code (between -100 and 100)
     for (i = 0; i <= nRgr + 1; i++)
     {
-      EXPECT_LT(sTempR[i], 100);
-      EXPECT_GT(sTempR[i], -100);
+      EXPECT_LT(sTempR[i], 100); // Temp values in any layer should always be < 100
+      EXPECT_GT(sTempR[i], -100); // Temp values in any layer should always be > -100
     }
 
     // test that the ptr_stError is FALSE when it is supposed to
@@ -391,7 +391,7 @@ namespace {
       vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError);
 
     //Check that ptr_stError is TRUE
-    EXPECT_EQ(ptr_stError, 1);
+    EXPECT_EQ(ptr_stError, 1); // An error (ptr_stError  = 1) should be documented when soil temperature values are incredibly high
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
@@ -423,6 +423,7 @@ namespace {
 
 
     // Expect that surface temp equals surface_temperature_under_snow() because snow > 0
+    // Should not equal other two formula options
     EXPECT_EQ(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
@@ -435,6 +436,8 @@ namespace {
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
+    // Expect that surface temp equals Form 1 because snow = 0 & biomass < blimiter
+    // Should not equal other two  options
     EXPECT_EQ(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
@@ -447,6 +450,8 @@ namespace {
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
+    // Expect that surface temp equals Form 2 because snow = 0 & biomass > blimiter
+    // Should not equal other two  options
     EXPECT_EQ(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
@@ -458,16 +463,14 @@ namespace {
     EXPECT_LT(sTemp[0], 100); // Sense check
     EXPECT_EQ(0, ptr_stError); // ptr_stError should be FALSE
 
-    // Expect that oldsTempR is updated to sTempR for the next day
     for (k = 0; k <= nRgr + 1; k++)
     {
-      //swprintf("\n k %u, newoldtempR %f", k, stValues.oldsTempR[k]);
+      // Expect that oldsTempR is updated to sTempR for the next day (should not be missing)
       EXPECT_NE(stValues.oldsTempR[k], SW_MISSING);
     }
 
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
-
 
     // ptr_stError should be set to TRUE if soil_temperature_today fails (i.e. unrealistic temp values)
     double sTemp2[nlyrs], oldsTemp2[nlyrs];
@@ -529,6 +532,8 @@ namespace {
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
+    // Expect that surface temp equals surface_temperature_under_snow() because snow > 0
+    // Should not equal other two formula options
     EXPECT_EQ(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
@@ -542,6 +547,8 @@ namespace {
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
+    // Expect that surface temp equals Form 1 because snow = 0 & biomass < blimiter
+    // Should not equal other two  options
     EXPECT_EQ(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
@@ -554,6 +561,8 @@ namespace {
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
+    // Expect that surface temp equals Form 2 because snow = 0 & biomass > blimiter
+    // Should not equal other two  options
     EXPECT_EQ(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
@@ -569,7 +578,7 @@ namespace {
       EXPECT_LT(sTemp3[k], 100); // Sense check
     }
 
-    // Expect that oldsTempR is updated to sTempR for the next day
+    // Expect that oldsTempR is updated to sTempR for the next day (should not be missing)
     for (k = 0; k <= nRgr + 1; k++)
     {
       //swprintf("\n k %u, newoldtempR %f", k, stValues.oldsTempR[k]);
