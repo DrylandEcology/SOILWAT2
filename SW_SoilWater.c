@@ -862,7 +862,6 @@ void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
 		Rmelt, SnowAccu = 0., SnowMelt = 0.;
 
 	static RealD snow_cov = 1.;
-
 	temp_ave = (temp_min + temp_max) / 2.;
 
 	/* snow accumulation */
@@ -877,7 +876,7 @@ void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
 
 	/* snow melt */
 	Rmelt = (SW_Site.RmeltMax + SW_Site.RmeltMin) / 2. + sin((doy - 81.) / 58.09) * (SW_Site.RmeltMax - SW_Site.RmeltMin) / 2.;
-	temp_snow = temp_snow * (1 - SW_Site.lambdasnow) + temp_ave * SW_Site.lambdasnow;
+  temp_snow = temp_snow * (1 - SW_Site.lambdasnow) + temp_ave * SW_Site.lambdasnow;
 	if (GT(temp_snow, SW_Site.TmaxCrit)) {
 		SnowMelt = fmin( *snowpack, Rmelt * snow_cov * ((temp_snow + temp_max)/2. - SW_Site.TmaxCrit) );
 	} else {
