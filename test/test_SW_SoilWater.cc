@@ -30,9 +30,9 @@ namespace{
     RealD sand = .2;
     RealD porosity = 1;
 
+    RealD res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
     // test clay > .6, this is not within accepted values so it should return
     // SW_MISSING
-    RealD res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
     EXPECT_DOUBLE_EQ(res, SW_MISSING);
 
     // Reset to previous global states
@@ -41,9 +41,9 @@ namespace{
     clay = .5;
     sand = .04;
 
+    res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
     // test sand < .05, this is not within accepted values so it should return
     // SW_MISSING
-    res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
     EXPECT_DOUBLE_EQ(res, SW_MISSING);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -65,8 +65,11 @@ namespace{
     // Since TminAccu2 < temp_ave, we expect SnowAccu to be 0 and thus
     // rain is ppt - SnowAccu
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
+    // test modified rain parameter
     EXPECT_EQ(rain, 1);
+    // test modified snow parameter
     EXPECT_EQ(snow, 0);
+    // test modified snowmelt parameter
     EXPECT_EQ(snowmelt, 0);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -76,8 +79,11 @@ namespace{
     SW_Site.TminAccu2 = 6;
 
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
+    // test modified rain parameter
     EXPECT_EQ(rain, 0);
+    // test modified snow parameter
     EXPECT_EQ(snow, 1);
+    // test modified snowmelt parameter
     EXPECT_EQ(snowmelt, 0);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -86,8 +92,11 @@ namespace{
     temp_max = 22;
 
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
+    // test modified rain parameter, ppt - SnowAccu
     EXPECT_EQ(rain, 1);
+    // test modified snow parameter
     EXPECT_EQ(snow, 0);
+    // test modified snowmelt parameter
     EXPECT_EQ(snowmelt, 0);
   }
 
@@ -97,19 +106,20 @@ namespace{
     RealD swcBulk = 0;
     LyrIndex n = 1;
 
-    // test 0 for swc
     RealD res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
+    // test 0 for swc
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
 
-    // test SW_MISSING (999) for swc
+    // set swcBulk to SW_MISSING
     swcBulk = 999;
 
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
+    // test SW_MISSING for swc
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
 
-    // test main function calculations, swp
+    // set variables for clean test
     swcBulk = 4;
     SW_Site.lyr[n] -> width = 1;
     SW_Site.lyr[n] -> psisMatric = 1;
@@ -118,15 +128,17 @@ namespace{
 
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     RealD actualExpectDiff = fabs(res - .00013310902);
+    // test main function calculations of swp
     EXPECT_LT(actualExpectDiff, .0002);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
-    // test fractionGravel == 1, this should cause the main equation in the
-    // function to not work and thus return INFINITY
+    // set fractionGravel to 1 for test
     fractionGravel = 1;
 
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
+    // test fractionGravel == 1, this should cause the main equation in
+    // the function to not work and thus return INFINITY
     EXPECT_DOUBLE_EQ(res, INFINITY);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -159,7 +171,7 @@ namespace{
     SW_Site.lyr[n]->psisMatric = psisMatric;
     SW_Site.lyr[n]->bMatric = binverseMatric;
 
-    // run tests for gravel fractions on the interval [.0, .8], step .05
+    // set gravel fractions on the interval [.0, .8], step .05
     for (i = 0; i <= 16; i++){
       fractionGravel = i / 20.;
       tExpect = p * (1 - fractionGravel);
@@ -168,15 +180,17 @@ namespace{
       actualExpectDiff = fabs(t - tExpect);
 
       // Tolerance for error since division with RealD introcuces some error
+      // test the different gravel fractions
       EXPECT_LT(actualExpectDiff, 0.0000001);
 
     }
     Reset_SOILWAT2_after_UnitTest();
 
-    // test for when fractionGravel is 1, should return 0
+    // set fractionGravel to 1 for test
     fractionGravel = 1;
 
     t = SW_SWPmatric2VWCBulk(fractionGravel, swpMatric, n);
+    // test for when fractionGravel is 1, should return 0
     EXPECT_EQ(t, 0);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
