@@ -616,7 +616,7 @@ namespace {
       wp[i] = fmaxf(fc[i] - 0.6, 0.1); // wp < fc
 
       swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
-        i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
+        i, bDensity[i],  swc_sat[i], fc[i], swc[i], wp[i] );
 
     }
 
