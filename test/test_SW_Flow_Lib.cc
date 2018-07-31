@@ -270,9 +270,7 @@ namespace {
       impermeability5, &standingWater);
 
     for (i = 0; i < MAX_LAYERS; i++) {
-      swc5[i] = (int)(swc5[i] * 10000000 + 0.5)/ 10000000; // need to round for unit test, despite using EXPECT_DOUBLE_EQ
-      swcsat5[i] = (int)(swcsat5[i] * 10000000 + 0.5)/ 10000000; // need to round for unit test, despite using EXPECT_DOUBLE_EQ
-      EXPECT_DOUBLE_EQ(swc5[i], swcsat5[i]); // test that swc is now equal to or below swcsat in all layers but the top
+      EXPECT_NEAR(swc5[i], swcsat5[i], 0.0000001); // test that swc is now equal to or below swcsat in all layers but the top
     }
 
     EXPECT_GT(standingWater, 0); // standingWater should be above 0
@@ -317,8 +315,6 @@ namespace {
     //Declare INPUTS for expected returns
     double expReturnTemp[] = {0.201, 0.245, 0.299, 0.364, 0.443, 0.539, 0.653, 0.788,
       0.948, 1.137, 0.136, 0.01, 0.032, 0.057, 0.060}; // These are the expected outcomes for the variable arads.
-
-
 
     for (int i = 0; i <15; i++){
 
@@ -1395,6 +1391,7 @@ namespace {
     hydraulic_redistribution(swc1, swcwp1, lyrRootCo1, hydred1, nlyrs, maxCondroot, swp50, shapeCond, scale);
 
     EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
+
     for(unsigned int i = 0; i < nlyrs; i++){
       double test = swc1[i]; //Rounding is required for unit test.
       double check = swcExpected21[i]; //Rounding is required for unit test.

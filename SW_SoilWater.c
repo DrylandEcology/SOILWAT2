@@ -959,7 +959,7 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
 @brief Calculates the soil water potential or the soil water content of the current layer as a functions
          of soil texture at the layer.
 
-Equations are based on a paper by Cosby,Hornberger,Clapp,Ginn. @cite Cosby1984
+Equations are based on a paper by Cosby, Hornberger, Clapp, Ginn. @cite Cosby1984 <BR>Moisture retention data was fit to the power function.
 
 @param fractionGravel Fraction of soil containing gravel, percentage.
 @param swcBulk Soilwater content of the current layer, (cm/layer).
