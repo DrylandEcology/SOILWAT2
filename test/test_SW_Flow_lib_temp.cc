@@ -553,6 +553,12 @@ namespace {
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
 
+        for (k = 0; k < nlyrs2; k++)
+        {
+          swprintf("\n k %u, sTemp3 %f", k, sTemp3[k]);
+          EXPECT_GT(sTemp3[k], -100); // Sense check
+          EXPECT_LT(sTemp3[k], 100); // Sense check
+        }
     //Test surface temp equals equation when biomass < blimititer & snow = 0
     biomass = 305;
 
@@ -570,12 +576,7 @@ namespace {
     // checks for  lyrTemp_to_lyrSoil_temperature
     int resultValue2 = sizeof(sTemp3) / sizeof(sTemp3[0]);
     EXPECT_EQ(MAX_LAYERS, resultValue2); // when the number of soil layers is MAX_LAYERS, length of sTemp3 should be MAX_LAYERS
-    for (k = 0; k < nlyrs2; k++)
-    {
-      swprintf("\n k %u, sTemp2 %f", k, sTemp2[k]);
-      EXPECT_GT(sTemp2[k], -100); // Sense check
-      EXPECT_LT(sTemp2[k], 100); // Sense check
-    }
+
     for (k = 0; k < nlyrs2; k++)
     {
       swprintf("\n k %u, sTemp3 %f", k, sTemp3[k]);
