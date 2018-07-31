@@ -882,15 +882,6 @@ namespace {
     }
     remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin);
 
-    for(unsigned int i = 0; i < 8; i++){
-      if (st->lyrFrozen[i]){ //If layer is frozen
-
-        EXPECT_DOUBLE_EQ(qty[i], 0); //should be zero
-        EXPECT_DOUBLE_EQ(swc[i], swcExpected[i]); //no change expected from original values
-        EXPECT_DOUBLE_EQ(aet, aetExpected); //no change expected from original values
-      }
-    }
-
     //Begin TEST for if st->lyrFrozen[i] = false.
     double array1[8] = {0, 0.0000849692, 0.0001230640, 0.0062931543, 0.4625235750, 0.0074406658, 0.0350922916, 0.1084422801}; //qtyExpected
     double array2[8] = {0.010000, 1.909915, 3.809877, 5.703707, 7.147476, 9.502559, 11.374908, 13.201558}; //swcExpected
@@ -944,7 +935,6 @@ namespace {
 
         EXPECT_DOUBLE_EQ(qty[i], 0); //should be zero
         EXPECT_DOUBLE_EQ(swc[i], swcExpected[i]); //no change expected from original values
-        EXPECT_DOUBLE_EQ(aet, aetExpected); //no change expected from original values
       }else{
         //Begin TEST for if st->lyrFrozen[i] = false.
         aetExpected = 0.95;
@@ -1190,6 +1180,8 @@ namespace {
     //INPUTS for expected outputs
     double swcExpected3_1[1] = {0};
     double drainExpected3_1[1] = {1.000095};
+    double drainoutExpectedf = 0.119;
+    standingWaterExpected = 0.019905;
 
     infiltrate_water_low(swcmin_1, drain_1, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc_1, width_1, swc_1,
       swcsat_1, impermeability_1, &standingWater);
@@ -1197,12 +1189,12 @@ namespace {
     for(unsigned int i = 0; i < nlyrs; i++){
       if (st->lyrFrozen[i]){
         //INPUTS for expected outputs
-        standingWaterExpected = 0.019905;
+
 
         test = round(standingWaterExpected / 10) * 10; //Rounding is required for unit test.
         check = round(standingWater / 10) * 10; //Rounding is required for unit test.
         EXPECT_DOUBLE_EQ(test, check); //standingWater is expected to be 0.0105
-        EXPECT_DOUBLE_EQ(drainoutExpected, drainout); //drainout is expected to be 0.1
+        EXPECT_DOUBLE_EQ(drainoutExpectedf, drainout); //drainout is expected to be 0.1
 
         test = round(swcExpected3_1[i] / 10) * 10; //Rounding is required for unit test.
         check = round(swc_1[i] / 10) * 10; //Rounding is required for unit test.
