@@ -22,8 +22,6 @@ extern SW_SITE SW_Site;
 extern SW_VEGPROD SW_VegProd;
 
 namespace{
-  float tol = 1e-6;
-
   // Test the 'SW_SoilWater' function 'SW_VWCBulkRes'
   TEST(SWSoilWaterTest, SWVWCBulkRes){
     //declare mock INPUTS
@@ -63,9 +61,8 @@ namespace{
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
     EXPECT_EQ(rain, 1);
     EXPECT_EQ(snow, 0);
-
-    // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
+
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWCbulk2SWPmatric'
@@ -80,6 +77,7 @@ namespace{
     swcBulk = 999;
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     EXPECT_EQ(res, 0.0);
+    Reset_SOILWAT2_after_UnitTest();
 
     // test swp val
     swcBulk = 4;
@@ -91,45 +89,38 @@ namespace{
     RealD resExpect = .00013310902; // did math by hand to get this value
     RealD actualExpectDiff = fabs(res - resExpect);
     EXPECT_LT(actualExpectDiff, .0002);
-
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWPmatric2VWCBulk'
   TEST(SWSoilWaterTest, SWSWPmatric2VWCBulk){
     // set up mock variables
-    RealD fractionGravel;
+    RealD fractionGravel = .1;
     RealD swpMatric = 15.0;
     RealD p;
     RealD tExpect;
     RealD t;
+    RealD actualExpectDiff;
     RealD psisMatric = 18.608013;
     RealD binverseMatric = 0.188608;
     RealD thetaMatric = 41.37;
-
-    int i;
+    RealD testNumber;
     LyrIndex n = 0;
-
     SW_Site.lyr[n]->thetasMatric = thetaMatric;
-    SW_Site.lyr[n]->psisMatric = psisMatric;
-    SW_Site.lyr[n]->bMatric = binverseMatric;
+  	SW_Site.lyr[n]->psisMatric = psisMatric;
+  	SW_Site.lyr[n]->bMatric = binverseMatric;
 
-    p = thetaMatric * 0.01 * \
-      powe(psisMatric / (swpMatric * BARCONV), binverseMatric);
-
-    // run tests for gravel fractions on the interval [.0, .8], step .05
-    for (i = 0; i <= 16; i++)
-    {
-      fractionGravel = i / 20.;
-      tExpect = p * (1 - fractionGravel);
+    // run tests for gravel fractions on the interval [.05, .8], step .05
+    for(testNumber = 1; testNumber <= 16; testNumber++){
+      fractionGravel = (testNumber / 20);
+      p = powe(psisMatric / (swpMatric * BARCONV), binverseMatric);
+      tExpect = thetaMatric * p * 0.01 * (1 - fractionGravel);
       t = SW_SWPmatric2VWCBulk(fractionGravel, swpMatric, n);
+      actualExpectDiff = fabs(t - tExpect);
 
       // Tolerance for error since division with RealD introcuces some error
-      EXPECT_NEAR(t, tExpect, tol);
-    }
+      EXPECT_LT(actualExpectDiff, 0.0000001);
 
-    // Reset to previous global states
+    }
     Reset_SOILWAT2_after_UnitTest();
   }
 }

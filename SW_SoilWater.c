@@ -872,8 +872,8 @@ replaced SW_SWC_snow_accumulation, SW_SWC_snow_sublimation, and SW_SWC_snow_melt
     **************************************************************************************************/
 
 	RealD *snowpack = &SW_Soilwat.snowpack[Today],
-		doy = SW_Model.doy,
-		temp_ave, Rmelt, SnowAccu = 0., SnowMelt = 0.;
+		doy = SW_Model.doy, temp_ave,
+		Rmelt, SnowAccu = 0., SnowMelt = 0.;
 
 	static RealD snow_cov = 1.;
 
