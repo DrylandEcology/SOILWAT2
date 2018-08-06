@@ -31,8 +31,8 @@ namespace{
     RealD porosity = 1;
 
     RealD res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    // test clay > .6, this is not within accepted values so it should return
-    // SW_MISSING
+    // when clay > .6, we expect res == SW_MISSING since this isn't within reasonable
+    // range
     EXPECT_DOUBLE_EQ(res, SW_MISSING);
 
     // Reset to previous global states
@@ -42,9 +42,28 @@ namespace{
     sand = .04;
 
     res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    // test sand < .05, this is not within accepted values so it should return
-    // SW_MISSING
+    // when sand < .05, we expect res == SW_MISSING since this isn't within reasonable
+    // range
     EXPECT_DOUBLE_EQ(res, SW_MISSING);
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
+
+    sand = .4;
+    porosity = .4;
+
+    res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
+    // when sand == .4, clay == .5, porosity == .4 and fractionGravel ==.1,
+    // we expect res == .088373829599999967
+    EXPECT_DOUBLE_EQ(res, .088373829599999967);
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
+
+    porosity = .1;
+
+    res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
+    // when sand == .4, clay == .5, porosity == .1 and fractionGravel ==.1,
+    // we expect res == 0
+    EXPECT_DOUBLE_EQ(res, 0);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -62,41 +81,36 @@ namespace{
     RealD temp_min = 0, temp_max = 10, ppt = 1, rain = 1.5, snow = 1.5,
     snowmelt = 1.2;
 
-    // Since TminAccu2 < temp_ave, we expect SnowAccu to be 0 and thus
-    // rain is ppt - SnowAccu
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
-    // test modified rain parameter
+    // when average temperature >= SW_Site.TminAccu2, we expect rain == ppt
     EXPECT_EQ(rain, 1);
-    // test modified snow parameter
+    // when average temperature >= SW_Site.TminAccu2, we expect snow == 0
     EXPECT_EQ(snow, 0);
-    // test modified snowmelt parameter
+    // when temp_snow <= SW_Site.TmaxCrit, we expect snowmelt == 0
     EXPECT_EQ(snowmelt, 0);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
-    // test TminAccu2 >= temp_ave causing snow accumulation to become == to the
-    // amount of ppt
     SW_Site.TminAccu2 = 6;
 
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
-    // test modified rain parameter
+    // when average temperature < SW_Site.TminAccu2, we expect rain == 0
     EXPECT_EQ(rain, 0);
-    // test modified snow parameter
+    // when average temperature < SW_Site.TminAccu2, we expect snow == ppt
     EXPECT_EQ(snow, 1);
-    // test modified snowmelt parameter
+    // when temp_snow > SW_Site.TmaxCrit, we expect snowmelt == fmax(0, *snowpack - *snowmelt )
     EXPECT_EQ(snowmelt, 0);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
-    // test temp_snow > TmaxCrit, therefore we expect no snowmelt
     temp_max = 22;
 
     SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow, &snowmelt);
-    // test modified rain parameter, ppt - SnowAccu
+    // when average temperature >= SW_Site.TminAccu2, we expect rain == ppt
     EXPECT_EQ(rain, 1);
-    // test modified snow parameter
+    // when average temperature >= SW_Site.TminAccu2, we expect snow == 0
     EXPECT_EQ(snow, 0);
-    // test modified snowmelt parameter
+    // when temp_snow > SW_Site.TmaxCrit, we expect snowmelt == 0
     EXPECT_EQ(snowmelt, 0);
   }
 
@@ -107,15 +121,14 @@ namespace{
     LyrIndex n = 1;
 
     RealD res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
-    // test 0 for swc
+    // when swc is 0, we expect res == 0
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
 
-    // set swcBulk to SW_MISSING
-    swcBulk = 999;
+    swcBulk = SW_MISSING;
 
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
-    // test SW_MISSING for swc
+    // when swc is SW_MISSING, we expect res == 0
     EXPECT_EQ(res, 0.0);
     Reset_SOILWAT2_after_UnitTest();
 
@@ -133,12 +146,11 @@ namespace{
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
-    // set fractionGravel to 1 for test
     fractionGravel = 1;
 
     res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
-    // test fractionGravel == 1, this should cause the main equation in
-    // the function to not work and thus return INFINITY
+    // when fractionGravel == 1, we expect the main equation in
+    // the function to not work correctly and thus return INFINITY
     EXPECT_DOUBLE_EQ(res, INFINITY);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -152,7 +164,7 @@ namespace{
     SW_Site.lyr[n] -> thetasMatric = 1;
     SW_Site.lyr[n] -> bMatric = 1;
 
-    // test swcBulk < 0, should cause the program to fail and write to log
+    // when swcBulk < 0, we expect the program to fail and write to log
     EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n),
     "@ generic.c LogError");
     // Reset to previous global states
@@ -179,18 +191,16 @@ namespace{
       t = SW_SWPmatric2VWCBulk(fractionGravel, swpMatric, n);
       actualExpectDiff = fabs(t - tExpect);
 
-      // Tolerance for error since division with RealD introcuces some error
-      // test the different gravel fractions
+      // when fractionGravel is between [.0, .8], we expect t = p * (1 - fractionGravel)
       EXPECT_LT(actualExpectDiff, 0.0000001);
 
     }
     Reset_SOILWAT2_after_UnitTest();
 
-    // set fractionGravel to 1 for test
     fractionGravel = 1;
 
     t = SW_SWPmatric2VWCBulk(fractionGravel, swpMatric, n);
-    // test for when fractionGravel is 1, should return 0
+    // when fractionGravel is 1, we expect t == 0
     EXPECT_EQ(t, 0);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
