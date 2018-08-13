@@ -546,7 +546,6 @@ namespace {
     EXPECT_LT(fbse, 1); //fbse and fbst must be between zero and one
     EXPECT_LT(fbst, 1); //fbse and fbst must be between zero and one
     EXPECT_DOUBLE_EQ(fbst + fbse, 1);  //Must add up to one.
-
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -937,7 +936,7 @@ namespace {
         EXPECT_NEAR(standingWater, standingWaterExpected, 0.0000001); //standingWater is expected to be 0 if lyrFrozen == TRUE
         EXPECT_NEAR(drainoutExpected, drainout, 0.0000001); //drainout is expected to be 0.1
         EXPECT_NEAR(swcmin[i], swcExpected3[i], 0.0001); //swc is expected to match swcExpected, swcmin switched with swc
-        EXPECT_NEAR(drain[i], drainExpected3[i], 0.001); //drain is expected to match drainExpected
+        EXPECT_NEAR(drain[i], drainExpected3[i], 0.01); //drain is expected to match drainExpected
       }
     }
 
