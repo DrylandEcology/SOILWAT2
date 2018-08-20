@@ -369,12 +369,11 @@ Bool SW_MKV_read_cov(void) {
 				t1, t2, lineno, MyFileName);
 		}
 
-		// Covariance values >= 0
-		if (!isfinite(t3) || !isfinite(t4) || !isfinite(t5) || !isfinite(t6) ||
-				LT(t3, 0.) || LT(t4, 0.) || LT(t5, 0.) || LT(t6, 0.))
+		// Covariance values are finite
+		if (!isfinite(t3) || !isfinite(t4) || !isfinite(t5) || !isfinite(t6))
 		{
 			msg_type = LOGFATAL;
-			sprintf(msg, "One of the covariance values is out of range "\
+			sprintf(msg, "One of the covariance values is not a real number "\
 				"(t3 = %f; t4 = %f; t5 = %f; t6 = %f) in line %d of file %s\n",
 				t3, t4, t5, t6, lineno, MyFileName);
 		}
