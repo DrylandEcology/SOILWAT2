@@ -839,7 +839,7 @@ namespace {
     aetExpected = 0.33;
 
     for(unsigned int i = 0; i < nlyrs; i++){
-      if (st->lyrFrozen[i]){ //If layer is frozen
+      if (st->lyrFrozen[i] == swTRUE){ //If layer is frozen
         remove_from_soil(swc, qty, &aet, nlyrs, coeffZ, rate, swcmin);
 
         EXPECT_DOUBLE_EQ(qty[i], 0); //should be zero
@@ -930,12 +930,12 @@ namespace {
       swcsat, impermeability, &standingWater);
 
     for(unsigned int i = 0; i < nlyrs; i++){
-      if (st->lyrFrozen[i]){
+      if (st->lyrFrozen[i] == swTRUE){
         standingWaterExpected = 0; //Only IF lyr is Frozen
 
         EXPECT_NEAR(standingWater, standingWaterExpected, 0.0000001); //standingWater is expected to be 0 if lyrFrozen == TRUE
         EXPECT_NEAR(drainoutExpected, drainout, 0.0000001); //drainout is expected to be 0.1
-        EXPECT_NEAR(swcmin[i], swcExpected3[i], 0.0001); //swc is expected to match swcExpected, swcmin switched with swc
+        EXPECT_NEAR(swcmin[i], swcExpected3[i], 0.01); //swc is expected to match swcExpected, swcmin switched with swc
         EXPECT_NEAR(drain[i], drainExpected3[i], 0.01); //drain is expected to match drainExpected
       }
     }
@@ -1048,7 +1048,7 @@ namespace {
       swcsat_1, impermeability_1, &standingWater);
 
     for(unsigned int i = 0; i < nlyrs; i++){
-      if (st->lyrFrozen[i]){
+      if (st->lyrFrozen[i] == swTRUE){
 
         EXPECT_NEAR(standingWater, standingWaterExpected, 0.0001); //standingWater is expected to be 0.011
         EXPECT_NEAR(drainoutExpectedf, drainout, 0.0001); //drainout is expected to be 0.1
