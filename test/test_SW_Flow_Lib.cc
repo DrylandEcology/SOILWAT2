@@ -782,9 +782,6 @@ namespace {
     double coeffZero[8] = {0,0,0,0,0,0,0,0};
     double swcmin[8] = {0.01, 1.01, 3.01, 5.01, 7.01, 9.01, 11.01, 13.01};
 
-    ST_RGR_VALUES stValues; //Required for st->lyrFrozen[i]
-    ST_RGR_VALUES *st = &stValues;
-
     //Begin TEST when nlyrs = 8, only 8 inputs in soils.in file.
     //TEST for if local variable sumswp = 0 (coeff[i] = 0)
 
@@ -822,7 +819,6 @@ namespace {
     double swc1[1] =  {0.01};
     double qty1[1] = {0.05};
     double coeff1[1] = {0.033};
-    double coeffZ[1] = {0};
     double swcmin1[1] = {0.01};
     //Begin TEST for if local variable sumswp = 0 (coeff[i] = 0)
     double qtyExpected1[1] = {0};
@@ -839,20 +835,15 @@ namespace {
     aetExpected = 0.33;
 
     for(unsigned int i = 0; i < nlyrs; i++){
-      if (st->lyrFrozen[i] == swTRUE){ //If layer is frozen
-        remove_from_soil(swc, qty, &aet, nlyrs, coeffZ, rate, swcmin);
 
-        EXPECT_DOUBLE_EQ(qty[i], 0); //should be zero
-        EXPECT_DOUBLE_EQ(swc[i], swcExpected[i]); //no change expected from original values
-      }else{
-        //Begin TEST for if st->lyrFrozen[i] = false.
-        aetExpected = 0.95;
-        remove_from_soil(swc, qty, &aet, nlyrs, coeff1, rate, swcmin);
+      //Begin TEST for if st->lyrFrozen[i] = false.
+      aetExpected = 0.95;
+      remove_from_soil(swc, qty, &aet, nlyrs, coeff1, rate, swcmin);
 
-        EXPECT_DOUBLE_EQ(qty[i], qtyExpected1[i]); //should be 0
-        EXPECT_DOUBLE_EQ(swc[i], swcExpected[i]); //no change expected from original values
-        EXPECT_DOUBLE_EQ(aet, aetExpected); //aet is expected to be 0.95
-      }
+      EXPECT_DOUBLE_EQ(qty[i], qtyExpected1[i]); //should be 0
+      EXPECT_DOUBLE_EQ(swc[i], swcExpected[i]); //no change expected from original values
+      EXPECT_DOUBLE_EQ(aet, aetExpected); //aet is expected to be 0.95
+
     }
 
     //Reset to previous global states.
