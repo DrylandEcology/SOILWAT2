@@ -566,7 +566,7 @@ namespace {
     {
       //swprintf("\n k %u, sTemp3 %f", k, sTemp3[k]);
       EXPECT_GT(sTemp3[k], -100); // Sense check
-      EXPECT_LT(sTemp3[k], 100); // Sense check
+      EXPECT_LT(sTemp3[k], 1000); // Sense check
     }
 
     // Expect that oldsTempR is updated to sTempR for the next day
