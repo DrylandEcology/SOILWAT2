@@ -500,6 +500,9 @@ namespace {
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
     EXPECT_NEAR(swp_avgExpected1, swp_avg, 0.000001); //swp_avg is expected to be 1.100536e-06
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST when n_layers is at "max"
     //INPUTS
     n_tr_rgns = 2, n_layers = 8; //Only 8 inputs in soils.in file.  Same output for 8-25 layers.
@@ -533,6 +536,9 @@ namespace {
     EXPECT_LT(fbse, 1); //fbse and fbst must be between zero and one
     EXPECT_LT(fbst, 1); //fbse and fbst must be between zero and one
     EXPECT_DOUBLE_EQ(fbst + fbse, 1); //Must add up to one.
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //TEST when fbse < bsemax
     blivelai = 0.0012, lai_param = 5, fbseExpected = 0.994018, fbstExpected = 0.005982036;
@@ -571,6 +577,9 @@ namespace {
 
     EXPECT_DOUBLE_EQ(bserate, bserateExpected); //Expected return of zero when totagb >= Es_param_limit
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST for if(totagb < Es_param_limit)
     totagb = 0.5;
     bserateExpected = 0.02561575;
@@ -579,6 +588,9 @@ namespace {
       width, swc, Es_param_limit);
 
     EXPECT_NEAR(bserate, bserateExpected, 0.0001); //bserate is expected to be 0.02561575
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for when nelyrs = 8
     nelyrs = 8; //Only 8 inputs available for SW_SWCbulk2SWPmatric function of SW_SoilWater.c
@@ -592,6 +604,9 @@ namespace {
       width8, swc8, Es_param_limit);
 
     EXPECT_DOUBLE_EQ(bserate, 0); //Expected return of zero when totagb >= Es_param_limit
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for if(totagb < Es_param_limit)
     totagb = 0.5;
@@ -621,6 +636,9 @@ namespace {
     pot_soil_evap_bs(&bserate, nelyrs, ecoeff, petday, shift, shape, inflec, range, width, swc);
 
     EXPECT_NEAR(bserate, bserateExpected, 0.0001);  //bserate is expected to be 0.06306041
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Testing when nelyrs = MAX_LAYERS
     //INPUTS
@@ -659,6 +677,9 @@ namespace {
 
     EXPECT_DOUBLE_EQ(bstrate, 0); //bstrate = 0 if biolove < 0
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST for if biolive > 0
     biolive = 0.8;
     pot_transp(&bstrate, swpavg, biolive, biodead, fbst, petday, swp_shift, swp_shape,
@@ -668,16 +689,20 @@ namespace {
     EXPECT_NEAR(bstrate, bstrateExpected, 0.0000001); //For this test local variable shadeaf = 1, affecting bstrate
                                    //bstrate is expected to be 0.06596299
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST for if biodead > shade_deadmax
     biodead = 0.95, bstrateExpected = 0.06564905;
     pot_transp(&bstrate, swpavg, biolive, biodead, fbst, petday, swp_shift, swp_shape,
       swp_inflec, swp_range, shade_scale, shade_deadmax, shade_xinflex, shade_slope,
         shade_yinflex, shade_range, co2_wue_multiplier);
 
-    //test = 0.06564905;
-    //test = round(test * 1000) / 1000; //Rounding is required for unit test.
     //check = round(bstrate * 1000) / 1000;  //Rounding is required for unit test.
     EXPECT_NEAR(bstrate, bstrateExpected, 0.001); //bstrate is expected to be 0.06564905
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for if biodead < shade_deadmax
     biodead = 0.2, bstrateExpected = 0.06596299;
@@ -706,6 +731,9 @@ namespace {
     EXPECT_LE(wat, 1); //watrate must be between 0 & 1
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST for if 0.2 < petday < .4
     petday = 0.3, watExpected = 0.6298786;
     wat = watrate(swp, petday, shift, shape, inflec, range);
@@ -714,6 +742,9 @@ namespace {
     EXPECT_LE(wat, 1); //watrate must be between 0 & 1
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST for if 0.4 < petday < .6
     petday = 0.5, watExpected = 0.6285504;
     wat = watrate(swp, petday, shift, shape, inflec, range);
@@ -721,6 +752,9 @@ namespace {
     EXPECT_NEAR(wat, watExpected, 0.0000001); //When petrate = 0.5, watrate = 0.6285504
     EXPECT_LE(wat, 1); //watrate must be between 0 & 1
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for if 0.6 < petday < 1
     petday = 0.8, watExpected = 0.627666;
@@ -752,6 +786,9 @@ namespace {
 
       EXPECT_NEAR(water_pool, waterExpected, 0.0000001); //Variable water_pool is expected to be 0.67 with current inputs
     EXPECT_GE(water_pool, 0); //water_pool is never negative
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for when water_pool < evap_rate
     water_pool = 0.1, evap_rate = 0.67, aet = 0.78, aetExpected = 0.88, evapExpected = 0.1;
@@ -798,6 +835,9 @@ namespace {
       EXPECT_DOUBLE_EQ(aet, aetExpected); //no change expected from original values
     }
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST for if st->lyrFrozen[i]
     remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin);
 
@@ -813,6 +853,9 @@ namespace {
 
     }
     EXPECT_DOUBLE_EQ(aet, aetExpected); //aet is expected to be 0.95
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Test when nlyrs = 1
     nlyrs = 1;
@@ -831,10 +874,16 @@ namespace {
       EXPECT_DOUBLE_EQ(aet, aetExpected); //no change expected from original preset values
     }
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST for if st->lyrFrozen[i]
     aetExpected = 0.33;
 
     for(unsigned int i = 0; i < nlyrs; i++){
+
+      //Reset to previous global states.
+      Reset_SOILWAT2_after_UnitTest();
 
       //Begin TEST for if st->lyrFrozen[i] = false.
       aetExpected = 0.95;
@@ -885,6 +934,9 @@ namespace {
       EXPECT_DOUBLE_EQ(drainExpected[i], drain[i]); //drain is expected to match drainExpected
     }
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST for if swc[i] > swcmin[i]
     double swcExpected2[8] = {0, 1.6495, 6.3800, 5.0100, 6.0100, 9.5100, 11.6100, 13.1100};
     double drainExpected2[8] = {1.0095, 1.2700, -1.3000, -0.6000, 1.0000, 1.0000, 0.8000, 0.9000};
@@ -907,6 +959,9 @@ namespace {
       EXPECT_NEAR(swcmin[i], swcExpected2[i], 0.0000001); //swc is expected to match swcExpected, swcmin has replaced swc
       EXPECT_NEAR(drain1[i], drainExpected2[i], 0.0000001); //drain is expected to match drainExpected
     }
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for if lyrFrozen == true
     double swcExpected3[8] = {0, 1.3795, 6.112700, 5.010000, 6.010000, 9.510000, 11.910000, 12.810000};
@@ -931,6 +986,9 @@ namespace {
       }
     }
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST for if swc[j] > swcsat[j]
     //INPUTS
     double swc2[8] = {1.02, 2.02, 3.02, 4.02, 5.02, 6.02, 7.02, 8.02};
@@ -952,11 +1010,12 @@ namespace {
 
       EXPECT_NEAR(swc2[i], swcExpected4[i], 0.0000001); //swc is expected to match swcExpected
 
-    //  test = round(drainExpected4[i] * 10) / 10; //Rounding is required for unit test.
-    //  check = round(drain[i] * 10) / 10; //Rounding is required for unit test.
       EXPECT_NEAR(drain3[i], drainExpected4[i], 0.0000001); //drain is expected to match drainExpected
 
     }
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for if swc[j] <= swcsat[j]
     //INPUTS
@@ -979,6 +1038,9 @@ namespace {
       EXPECT_NEAR(swc[i], swcExpected5[i], 0.0000001); //swc is expected to match swcExpected
       EXPECT_NEAR(drain[i], drainExpected5[i], 0.0000001); //drain is expected to match drainExpected
     }
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Begin testing when nlyrs = 1
     nlyrs = 1;
@@ -1013,6 +1075,9 @@ namespace {
 
     }
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST for if swc[i] > swcmin[i]
     double swcExpected2_1[1] = {0};
     double drainExpected2_1[1] = {1.019};
@@ -1030,6 +1095,9 @@ namespace {
       EXPECT_NEAR(drain_1[i], drainExpected2_1[i], 0.0000001); //drain is expected to match drainExpected
     }
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST for if lyrFrozen == true
     //INPUTS for expected outputs
     double swcExpected3_1[1] = {0};
@@ -1046,7 +1114,6 @@ namespace {
         EXPECT_NEAR(swc_1[i], swcExpected3_1[i], 0.0001); //swc is expected to match swcExpected
         EXPECT_NEAR(drain_1[i], drainExpected2_1[i], 0.0001); //drain is expected to match drainExpected
       }
-
     //Begin TEST for if lyrFrozen == false
       else{
         //INPUTS for expected outputs
@@ -1058,6 +1125,9 @@ namespace {
         EXPECT_NEAR(drain_1[i], drainExpected2_1[i], 0.0000001); //drain is expected to match drainExpected
       }
     }
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for if swc[j] > swcsat[j]
     //INPUTS
@@ -1081,6 +1151,9 @@ namespace {
       EXPECT_NEAR(swc_1[i], swcExpected4_1[i], 0.0000001); //swc is expected to match swcExpected
       EXPECT_NEAR(drain_1[i], drainExpected4_1[i], 0.0000001); //drain is expected to match drainExpected
     }
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for if swc[j] <= swcsat[j]
     //INPUTS
@@ -1137,6 +1210,9 @@ namespace {
       EXPECT_NEAR(hydred[i], hydredExpected[i], 0.0000001); //hydred is expected to match hydredExpected
     }
 
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
+
     //Begin TEST for if else ^^
     //INPUTS for expected outputs.
     double swcExpected2[8] = {0.0200000, -49.5435878, 153.2318989, -47.0177693, 0.7169582, -54.8815000, 1.0170000, 1.1170000};
@@ -1150,6 +1226,9 @@ namespace {
       EXPECT_NEAR(swc[i], swcExpected2[i], 0.0001); //swc is expected to match swcExpected
       EXPECT_NEAR(hydred[i], hydredExpected2[i], 0.0001); //hydred is expected to match hydredExpected
     }
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Begin TESTing when nlyrs = 1
     //INPUTS
@@ -1178,6 +1257,9 @@ namespace {
       EXPECT_NEAR(swc1[i], swcExpected11[i], 0.0000001); //swc is expected to match swcExpected
       EXPECT_NEAR(hydred1[i], hydredExpected11[i], 0.0000001); //hydred is expected to match hydredExpected
     }
+
+    //Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for if else ^^
     //INPUTS for expected outputs.
