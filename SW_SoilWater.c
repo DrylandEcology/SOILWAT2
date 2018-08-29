@@ -590,7 +590,7 @@ void get_dSWAbulk(int i){
 		printf("---------------------\n\n");*/
 }
 /**
-@brief Converts swcBulk and snowpack from today to yesterday
+@brief Copies today's values so that the values for swcBulk and snowpack become yesterday's values.
 */
 void SW_SWC_end_day(void) {
 	/* =================================================== */
@@ -604,15 +604,10 @@ void SW_SWC_end_day(void) {
 
 }
 /**
-@brief init first doy swc, either by the computer init value or by the last day of last
-    year, which is also, coincidentally, Yesterday
+@brief init first doy swc, either by the computed init value or by the last day of last
+      year, which is also, coincidentally, Yesterday
 */
 void SW_SWC_new_year(void) {
-	/* =================================================== */
-	/* init first doy swc, either by the computed init value
-	 * or by the last day of last year, which is also,
-	 * coincidentally, Yesterday.
-	 */
 
 	LyrIndex lyr;
 	TimeInt year = SW_Model.year;
@@ -654,7 +649,7 @@ void SW_SWC_new_year(void) {
   }
 }
 /**
-@brief Like all of the other "objects", read() reads in the setup parameters. See
+@brief Like all of the other functions, read() reads in the setup parameters. See
       _read_swc_hist() for reading historical files.
 */
 void SW_SWC_read(void) {
@@ -1021,13 +1016,13 @@ HISTORY:
 }
 
 /**
-@brief Used to be swfunc in the fortran version
+@brief Convert soil water potential to bulk volumetric water content.
 
 @param fractionGravel Fraction of soil containing gravel, percentage.
 @param swpMatric lyr->psisMatric calculated in water equation function
 @param n Layer of soil.
 
-@return t as the volume (cmH2O/cmSOIL)
+@return Volumentric water content (cm H<SUB>2</SUB>O/cm SOIL).
 **/
 
 
@@ -1048,8 +1043,10 @@ RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n) {
 }
 
 /**
-@brief Calculates 'Brooks-Corey' residual volumetric soil water based on Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties for hydrological modeling..
-Based on "In Watershed management in the Eighties" (eds Jones EB, Ward TJ), pp. 293-299. American Society of Civil Engineers, New York.
+@brief Calculates 'Brooks-Corey' residual volumetric soil water.
+
+Equations based on: Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties
+      for hydrological modeling, based on @cite ASCE1985
 
 @params fractionGravel Fraction of soil consisting of gravel, percentage.
 @params sand Fraction of soil consisting of sand, percentage.

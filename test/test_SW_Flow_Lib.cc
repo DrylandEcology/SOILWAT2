@@ -302,9 +302,9 @@ namespace {
   TEST(SWFlowTest, petfunc){
     //Begin TEST for avgtemp input variable
     //Declare INPUTS
-    unsigned int doy = 2;
+    unsigned int doy = 2; //For the second day in the month of January
     double rlat = 0.681, elev = 1000, slope = 0, aspect = -1, reflec = 0.15, humid = 61,
-      windsp = 1.3, cloudcov = 71, transcoeff = 1;//For the first day in the month of January
+      windsp = 1.3, cloudcov = 71, transcoeff = 1;
     double temp, check;
     double avgtemps[] = {30,35,40,45,50,55,60,65,70,75,20,-35,-12.667,-1,0}; // These are test temperatures, in degrees Celcius.
 
@@ -323,16 +323,12 @@ namespace {
     //Begin TEST for rlat input variable.  Inputs outside the range of [-1.169,1.169] produce the same output, 0.042.  Rlat values outside this range represent values near the poles.
     //INPUTS
     temp = 25, cloudcov = 71, humid = 61, windsp = 1.3;
-    double rlats[] = {-1.5708, -1.3, -1.169, -1.069, -0.969, -0.869, -0.769, -0.669, -0.569, -0.469, -0.369, -0.269, -0.169,
-      -0.069, 0.031, 0.131, 0.231, 0.331, 0.431, 0.531, 0.631, 0.731, 0.831, 0.931,
-        1.031, 1.5708}; //Initialize array of potential latitudes, in radians, for the site.
+    double rlats[] = {-1.570796, -0.7853982, 0, 0.7853982, 1.570796}; //Initialize array of potential latitudes, in radians, for the site.
 
    //Declare INPUTS for expected returns
-    double expReturnLats[] = {0.042, 0.042, 0.414, 0.412, 0.415, 0.418, 0.420, 0.419, 0.416, 0.411, 0.402,
-      0.391, 0.376, 0.359, 0.339, 0.317, 0.293, 0.267, 0.239, 0.210, 0.180, 0.150, 0.120,
-        0.092, 0.066, 0.042}; //These are the expected returns for petfunc while manipulating the rlats input variable.
+    double expReturnLats[] = {0.042, 0.420, 0.346, 0.134, 0.042}; //These are the expected returns for petfunc while manipulating the rlats input variable.
 
-    for (int i = 0; i < 26; i++){
+    for (int i = 0; i < 5; i++){
 
       rlat = rlats[i]; //Uses array of latitudes initialized above.
       check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
@@ -342,88 +338,82 @@ namespace {
     //Begin TEST for elev input variable, testing from -413 meters (Death Valley) to 8727 meters (~Everest).
     //INPUTS
     rlat = 0.681;
-    elev = -413;
+    double elevT[] = {-413,0,1000,4418,8727};
 
     //Declare INPUTS for expected returns
-    double expReturnElev[] = {0.181, 0.176, 0.171, 0.165, 0.160, 0.156, 0.151, 0.146, 0.142, 0.137, 0.133, 0.128, 0.124,
-      0.120, 0.116, 0.113, 0.109, 0.106, 0.102, 0.099, 0.096};
+    double expReturnElev[] = {0.181,0.176,0.165,0.130,0.096};
 
-    for(int i = 0; i < 21; i++){
+    for(int i = 0; i < 5; i++){
 
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
+      check = petfunc(doy, temp, rlat, elevT[i], slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
       //test = round(check* 1000 + 0.00001) / 1000; //Rounding is required for unit test.
 
       EXPECT_NEAR(check, expReturnElev[i], 0.001); //Tests the return of the petfunc against the expected return for the petfunc.
 
-      elev += 457;  //Incrments elevation input variable.
     }
     //Begin TEST for slope input variable
     //INPUTS
-    elev = 1000, slope = 0;
+    elev = 1000;
+    double slopeT[] = {0,15,34,57,90};
 
     //Declare INPUTS for expected returns
-    double expReturnSlope[] = {0.165, 0.142, 0.118, 0.094, 0.069, 0.044, 0.020, 0.01, 0.01, 0.01,
-      0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, };
+    double expReturnSlope[] = {0.165, 0.082, 0.01, 0.01, 0.01};
       //Expected returns of 0.01 occur when the petfunc returns a negative number.
 
-    for (int i = 0; i < 21; i++){
+    for (int i = 0; i < 5; i++){
 
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
+      check = petfunc(doy, temp, rlat, elev, slopeT[i], aspect, reflec, humid, windsp, cloudcov, transcoeff);
 
       EXPECT_NEAR(check, expReturnSlope[i], 0.001); //Tests the return of the petfunc against the expected return for the petfunc.
 
-      slope += 4.3; //Incrments slope input variable.
     }
 
     //Begin TEST for aspect input variable
     //INPUTS
-    slope = 5, aspect = 0;
+    slope = 5;
+    double aspectT[] = {0, 46, 112, 253, 358};
 
     //Declare INPUTS for expected returns
-    double expReturnAspect[] = {0.138, 0.139, 0.141, 0.145, 0.151, 0.157, 0.164, 0.170, 0.177, 0.182, 0.187, 0.190,
-      0.191, 0.191, 0.189, 0.185, 0.180, 0.174, 0.167, 0.160, 0.154, 0.148, 0.143, 0.140, 0.138};
+    double expReturnAspect[] = {0.138, 0.146, 0.175, 0.172, 0.138};
 
-    for(int i = 0; i < 25; i++){
+    for(int i = 0; i < 5; i++){
 
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
+      check = petfunc(doy, temp, rlat, elev, slope, aspectT[i], reflec, humid, windsp, cloudcov, transcoeff);
 
       EXPECT_NEAR(check, expReturnAspect[i], 0.001);
 
-      aspect += 14.67; //Incrments aspect input variable.
     }
 
     //Begin TEST for reflec input variable
     //INPUTS
-    aspect = -1, slope = 0, reflec = 0;
+    aspect = -1, slope = 0;
+    double reflecT[] = {0.1, 0.22, 0.46, 0.55, 0.98};
 
     //Declare INPUTS for expected returnsdouble expReturnSwpAvg = 0.00000148917;
-    double expReturnReflec[] = {0.187, 0.180, 0.174, 0.167, 0.161, 0.154, 0.148, 0.141, 0.135, 0.128, 0.122, 0.115,
-      0.109, 0.102, 0.096, 0.089, 0.083, 0.076, 0.070, 0.063, 0.057, 0.050, 0.044};
+    double expReturnReflec[] = {0.172, 0.155, 0.120, 0.107, 0.045};
 
-    for(int i = 0; i < 23; i++){
+    for(int i = 0; i < 5; i++){
 
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
+      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflecT[i], humid, windsp, cloudcov, transcoeff);
 
       EXPECT_NEAR(check, expReturnReflec[i], 0.001);
 
-      reflec += 0.045; //Increments reflec input variable.
     }
 
     //Begin TEST for humidity input varibable.
     //INPUTS
-    reflec = 0.15, humid = 0;
+    reflec = 0.15;
+    double humidT[] = {2, 34, 56, 79, 89};
 
     //Declare INPUTS for expected returns.
-    double expReturnHumid[] = {0.221, 0.247, 0.248, 0.246, 0.241, 0.236, 0.229, 0.221, 0.213, 0.205, 0.196,
-      0.187, 0.177, 0.168, 0.158, 0.148, 0.137, 0.127, 0.116, 0.105, 0.094, 0.083};
+    double expReturnHumid[] = {0.242, 0.218, 0.176, 0.125, 0.102};
 
-    for(int i = 0; i < 22; i++){
+    for(int i = 0; i < 5; i++){
 
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
+      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humidT[i], windsp, cloudcov, transcoeff);
 
       EXPECT_NEAR(check, expReturnHumid[i], 0.001);
 
-      humid += 4.6; //Increments humid input variable.
     }
 
     //Begin TEST for windsp input variable.
@@ -445,15 +435,15 @@ namespace {
 
     //Begin TEST for cloudcov input variable.
     //INPUTS
-    windsp = 1.3, cloudcov = 0;
+    windsp = 1.3;
+    double cloudcovT[] = {1, 12, 36, 76, 99};
 
     //Declare INPUTS for expected returns.
-    double expReturnCloudcov[] = {0.148, 0.149, 0.150, 0.151, 0.152, 0.153, 0.154, 0.155, 0.156, 0.157,
-      0.158, 0.159, 0.160, 0.161, 0.162, 0.163, 0.164, 0.165, 0.166, 0.167, 0.168, 0.169, 0.170, 0.171};
+    double expReturnCloudcov[] = {0.148, 0.151, 0.157, 0.166, 0.172};
 
-    for(int i = 0; i < 24; i++){
+    for(int i = 0; i < 5; i++){
 
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
+      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcovT[i], transcoeff);
 
       EXPECT_NEAR(check, expReturnCloudcov[i], 0.001);
 
@@ -462,19 +452,19 @@ namespace {
 
     //Begin TEST for cloudcov input variable.
     //INPUTS
-    cloudcov = 71, transcoeff = 0.01;
+    cloudcov = 71;
+    double transcoeffT[] = {0.01, 0.11, 0.53, 0.67, 0.89};
 
     //Declare INPUTS for expected returns.
-    double expReturnTranscoeff = 0.165;
+    double expReturnTranscoeff = 0.1650042;
     //The same value is returned for every tested transcoeff input.
 
-    for(int i = 0; i < 20; i++){
+    for(int i = 0; i < 5; i++){
 
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
+      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeffT[i]);
 
       EXPECT_NEAR(check, expReturnTranscoeff, 0.001);
 
-      transcoeff += 52.57; //Incrments transcoeff input variable.
     }
 
     //Reset to previous global states.
@@ -523,14 +513,14 @@ namespace {
   TEST(SWFlowTest, EsT_partitioning){
 
     //INPUTS
-    double fbse = 0, fbst = 0, blivelai = 0.002, lai_param = 2;
+    double fbse = 0, fbst = 0, blivelai = 0.002, lai_param = 2, tol6 = 0.0000001;
 
     //TEST when fbse > bsemax
     double fbseExpected = 0.995, fbstExpected = 0.005;
     EsT_partitioning(&fbse, &fbst, blivelai, lai_param);
 
-    EXPECT_NEAR(fbse, fbseExpected, 0.0000001); //fbse is expected to be 0.995
-    EXPECT_NEAR(fbst, fbstExpected, 0.0000001); //fbst = 1 - fbse; fbse = bsemax
+    EXPECT_NEAR(fbse, fbseExpected, tol6); //fbse is expected to be 0.995
+    EXPECT_NEAR(fbst, fbstExpected, tol6); //fbst = 1 - fbse; fbse = bsemax
     EXPECT_GE(fbse, 0); //fbse and fbst must be between zero and one
     EXPECT_GE(fbst, 0); //fbse and fbst must be between zero and one
     EXPECT_LT(fbse, 1); //fbse and fbst must be between zero and one
@@ -544,9 +534,9 @@ namespace {
     blivelai = 0.0012, lai_param = 5, fbseExpected = 0.994018, fbstExpected = 0.005982036;
     EsT_partitioning(&fbse, &fbst, blivelai, lai_param);
 
-    EXPECT_NEAR(fbse, fbseExpected, 0.0000001); //fbse is expected to be 0.994018
+    EXPECT_NEAR(fbse, fbseExpected, tol6); //fbse is expected to be 0.994018
 
-    EXPECT_NEAR(fbst, fbstExpected, 0.0000001); //fbst is expected to be 0.005982036
+    EXPECT_NEAR(fbst, fbstExpected, tol6); //fbst is expected to be 0.005982036
     EXPECT_GE(fbse, 0); //fbse and fbst must be between zero and one
     EXPECT_GE(fbst, 0); //fbse and fbst must be between zero and one
     EXPECT_LT(fbse, 1); //fbse and fbst must be between zero and one
@@ -731,9 +721,6 @@ namespace {
     EXPECT_LE(wat, 1); //watrate must be between 0 & 1
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
-
     //Begin TEST for if 0.2 < petday < .4
     petday = 0.3, watExpected = 0.6298786;
     wat = watrate(swp, petday, shift, shape, inflec, range);
@@ -784,11 +771,8 @@ namespace {
     EXPECT_NEAR(evap_rate, evapExpected, 0.0000001); //Variable evap_rate is expected to be 0.33 with current inputs
     EXPECT_GE(evap_rate, 0); //evap_rate is never negative
 
-      EXPECT_NEAR(water_pool, waterExpected, 0.0000001); //Variable water_pool is expected to be 0.67 with current inputs
+    EXPECT_NEAR(water_pool, waterExpected, 0.0000001); //Variable water_pool is expected to be 0.67 with current inputs
     EXPECT_GE(water_pool, 0); //water_pool is never negative
-
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for when water_pool < evap_rate
     water_pool = 0.1, evap_rate = 0.67, aet = 0.78, aetExpected = 0.88, evapExpected = 0.1;
@@ -974,17 +958,6 @@ namespace {
 
     infiltrate_water_low(swcmin, drain2, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc, width, swc02,
       swcsat, impermeability, &standingWater);
-
-    for(unsigned int i = 0; i < nlyrs; i++){
-      if (st->lyrFrozen[i] == swTRUE){
-        standingWaterExpected = 0; //Only IF lyr is Frozen
-
-        EXPECT_NEAR(standingWater, standingWaterExpected, 0.0000001); //standingWater is expected to be 0 if lyrFrozen == TRUE
-        EXPECT_NEAR(drainoutExpected, drainout, 0.0000001); //drainout is expected to be 0.1
-        EXPECT_NEAR(swcmin[i], swcExpected3[i], 0.01); //swc is expected to match swcExpected, swcmin switched with swc
-        EXPECT_NEAR(drain[i], drainExpected3[i], 0.01); //drain is expected to match drainExpected
-      }
-    }
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();

@@ -133,7 +133,7 @@ Equations based on Corbett and Crouse 1968. @cite Corbett1968
 @param ppt Daily precipitation (cm/day).
 @param x Vegetation cover or LAI for the day, based on monthly biomass
        values, see the routine "initprod" (m).
-@param scale Represents scale of snow depth (cm/day).
+@param scale Proportion of vegetation height above snowpack multiplied by its cover value.
 @param a A parameter for intercept of grass interception equation.
 @param b B parameter for intercept of grass interception equation.
 @param c C parameter for slope of grass interception equation.
@@ -141,7 +141,7 @@ Equations based on Corbett and Crouse 1968. @cite Corbett1968
 
 @sideeffect
   - *pptleft  Updated amount of precipitation left after interception (cm/day).
-  - *wintveg  Updated amount of precipitation interception by grass (cm/day).
+  - *wintveg  Updated amount of precipitation interception by vegetation (cm/day).
 */
 
 
@@ -191,8 +191,8 @@ Equations developed by John Bradford, based on equations by Corbett and Crouse 1
 
 @param *pptleft Remaining precipitation (cm/day).
 @param *wintlit Amount of precipitation intercepted by litter (cm).
-@param blitter Litter biomass, required for wintlit.
-@param scale Used to represent snow depth (cm/day).
+@param blitter Litter biomass, required for wintlit (g/m<SUP>2</SUP>).
+@param scale Proportion of vegetation height above snowpack multiplied by its cover value.
 @param a A parameter for intercept of grass interception equation.
 @param b B parameter for intercept of grass interception equation.
 @param c C parameter for slope of grass interception equation.
@@ -200,7 +200,7 @@ Equations developed by John Bradford, based on equations by Corbett and Crouse 1
 
 @sideeffect
   - *pptleft  Updated amount of precipitation left after interception (cm/day).
-  - *wintgrass  Updated amount of precipitation interception by grass (cm/day).
+  - *wintgrass  Updated amount of precipitation interception by vegetation (cm/day).
 */
 
 /**********************************************************************
@@ -244,21 +244,21 @@ void litter_intercepted_water(double *pptleft, double *wintlit, double blitter,
 @brief Infiltrate water into soil layers under high water conditions, otherwise
       known as saturated percolation.
 
-@param swc  Displays soilwater content in each layer before drainage (cm<SUP>3</SUP> H<SUB>2</SUB>O).
+@param swc Soilwater content in each layer before drainage (cm H<SUB>2</SUB>O).
 @param drain Drainage amount in each layer (cm/day).
-@param *drainout Drainage from the previous layer (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param *drainout Drainage from the previous layer (cm H<SUB>2</SUB>O).
 @param pptleft Daily precipitation available to the soil (cm/day).
 @param nlyrs Number of layers available to drain from.
-@param swcfc Displays soilwater content in each layer at field capacity (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param swcsat Displays soilwater content in each layer at saturation (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param impermeability Displays impermeability measures for each layer.
+@param swcfc Soilwater content in each layer at field capacity (cm H<SUB>2</SUB>O).
+@param swcsat Soilwater content in each layer at saturation (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param impermeability Impermeability measures for each layer.
 @param *standingWater Remaining water on the surface (m<SUP>3</SUP> H<SUB>2</SUB>O).
 
 @sideeffect
   - drain Updated drainage amount in each layer (cm/day).
-  - swc Updated soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+  - swc Updated soilwater content in each layer after drainage (cm H<SUB>2</SUB>O).
   - *standingWater Updated remaining water on the surface (m<SUP>3</SUP> H<SUB>2</SUB>O).
-  - *drainout Updated drainage from the previous layer (m<SUP>3</SUP> H<SUB>2</SUB>O).
+  - *drainout Updated drainage from the previous layer (cm H<SUB>2</SUB>O).
 
 */
 /**********************************************************************
@@ -337,7 +337,7 @@ Equations based on Penman 1948. @cite Penman1948, ASCE 2000. @cite ASCE2000, Bow
 @param cloudcov Average cloud cover for the month (%).
 @param transcoeff Transmission coefficient for the month. note: not used in result (%).
 
-@return fmax Potential evapotranspiration rate (mm/day).
+@return fmax Potential evapotranspiration rate (cm/day).
 
 */
 
@@ -493,15 +493,15 @@ double svapor(double temp) {
 @brief Compute weighted average of soilwater potential to be
     used for transpiration calculations.
 
-@param *swp_avg Weighted average of soilwater potential and transpiration coefficients (MPa).
-@param n_tr_rgns List of n_lyrs elements of transpiration regions that each soil layer belongs to.
+@param *swp_avg Weighted average of soilwater potential and transpiration coefficients (-bar).
+@param n_tr_rgns Array of n_lyrs elements of transpiration regions that each soil layer belongs to.
 @param n_layers Number of soil layers.
 @param tr_regions Number of layer regions used in weighted average, typically 3;<BR>
         to represent shallow, mid, & deep depths to compute transpiration rate.
 @param tr_coeff  Transpiration coefficient for each layer.
-@param swc Displays soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 
-@sideeffect *swp_avg Weighted average of soilwater potential and transpiration coefficients (MPa).
+@sideeffect *swp_avg Weighted average of soilwater potential and transpiration coefficients (-bar).
 
 */
 
@@ -589,17 +589,17 @@ void EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_pa
 }
 /**
 
-@brief Calculates potential bare soil evaporation rate, see 2.11 in ELM doc.
+@brief Calculates potential bare soil evaporation rate.
 
 Based on equations from Parton 1978. @cite Parton1978
 
 @param *bserate Bare soil evaporation loss rate (cm/day).
 @param nelyrs Number of layers to consider in evaporation.
 @param ecoeff Evaporation coefficients.
-@param totagb Sum of abovegraound biomass and litter.
+@param totagb Sum of above ground biomass and litter.
 @param fbse Fraction of water loss from bare soil evaporation.
 @param petday Potential evapotranspiration rate (cm/day).
-@param shift Displacement of the inflection point in order to shift the function up, down, left, or right.
+@param shift Displacement of the inflection point in order to shift the function up, down, left, or right; in relation to the macro tanfunc.
 @param shape Slope of the line at the inflection point.
 @param inflec Y-value of the inflection point.
 @param range Max y-value - min y-value at the limits.
@@ -666,7 +666,7 @@ void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double
 
 /**
 
-@brief Calculate the potential bare soil evaporation rate of bare ground, see 2.11 in ELM doc.
+@brief Calculate the potential bare soil evaporation rate of bare ground.
 
 Based on equations from Parton 1978. @cite Parton1978
 
@@ -721,7 +721,7 @@ void pot_soil_evap_bs(double *bserate, unsigned int nelyrs, double ecoeff[], dou
 Based on equations from Parton 1978. @cite Parton1978
 
 @param *bstrate This is the bare soil evaporation loss rate (cm/day).
-@param swpavg Weighted average of soil water potential (MPa).
+@param swpavg Weighted average of soil water potential (-bar).
 @param biolive Living biomass (%).
 @param biodead Dead biomass (%).
 @param fbst Fraction of water loss from transpiration.
@@ -747,8 +747,6 @@ void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, 
   double shade_scale, double shade_deadmax, double shade_xinflex, double shade_slope,
   double shade_yinflex, double shade_range, double co2_wue_multiplier) {
 	/**********************************************************************
-	 PURPOSE: Calculate potential transpiration rate.
-	 See 2.11 in ELM doc.
 
 	 HISTORY:
 	 4/30/92  (SLC)
@@ -800,7 +798,7 @@ void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, 
 
 Based on equations from Parton 1978. @cite Parton1978
 
-@param swp Soil water potential (MPa).
+@param swp Soil water potential (-bar).
 @param petday Potential evapotranspiration rate (cm/day).
 @param shift Displacement of the inflection point in order to shift the function up, down, left, or right.
 @param shape Slope of the line at the inflection point.
@@ -846,7 +844,8 @@ double watrate(double swp, double petday, double shift, double shape, double inf
 }
 
 /**
-@brief Evaporates water from surface the water pool, call sperately for each pool.
+@brief Evaporates water from the surface water pool, i.e., intercepted water
+      (tree, shrub, grass, litter) or standingWater. <BR>Note: call sperately for each pool.
 
 @param *water_pool Pool of surface water minus evaporated water (cm/day).
 @param *evap_rate Actual evaporation from this pool (cm/day).
@@ -878,7 +877,7 @@ void evap_fromSurface(double *water_pool, double *evap_rate, double *aet) {
 
 Based on equations from Parton 1978. @cite Parton1978
 
-@param swc Displays soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param qty Removal quanity from each layer, evaporation or transpiration (mm/day).
 @param *aet Actual evapotranspiration (cm/day).
 @param nlyrs Number of layers considered in water removal.
@@ -945,11 +944,11 @@ Based on equations from Parton 1978. @cite Parton1978
 @param nlyrs Number of layers in the soil profile.
 @param sdrainpar Slow drainage parameter.
 @param sdraindpth Slow drainage depth (cm).
-@param swcfc Soilwater content at field capacity (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param width The width of them soil layers (cm).
+@param swcfc Soilwater content at field capacity (cm H<SUB>2</SUB>O).
+@param width The width of the soil layers (cm).
 @param swcmin Lower limit on soilwater content per layer.
-@param swcsat Displays soilwater content in each layer at saturation (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param impermeability Displays impermeability measures for each layer.
+@param swcsat Soilwater content in each layer at saturation (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param impermeability Impermeability measures for each layer.
 @param *standingWater Remaining water on the surface (m<SUP>3</SUP> H<SUB>2</SUB>O).
 
 @sideeffect
@@ -1037,7 +1036,7 @@ Based on equations from Ryel 2002. @cite Ryel2002
 
 @param swc Soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param swcwp Soil water content water potential (-bar).
-@param lyrRootCo Fraction of active roots in layer i.
+@param lyrRootCo Fraction of active roots per layer.
 @param hydred Hydraulic redistribtion for each soil water layer (cm/day/layer).
 @param nlyrs Number of soil layers.
 @param maxCondroot Maximum radial soil-root conductance of the entire active root system for water (cm/-bar/day).
@@ -1141,7 +1140,7 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 @param nlyrSoil Number of soil layer.
 @param depth_Soil Depths of soil layers (cm).
 @param width_Soil Witdths of soil layers (cm).
-@param sTemp Temperatature values of soil layers (&deg;C).
+@param sTemp Temperature values of soil layers (&deg;C).
 
 @sideeffect sTemp Updated temperatature values soil layers (&deg;C).
 */
@@ -1203,7 +1202,7 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
 @param endTemp Final input for sTemp variables
 @param nlyrTemp Number of soil temperature layers.
 @param depth_Temp Depths of soil temperature layers (cm).
-@param maxTempDepth Meximum depth temperature (&deg;C).
+@param maxTempDepth Maximum depth temperature (&deg;C).
 @param sTempR Array of today's (regression)-layer soil temperature values.
 
 @sideeffect sTempR Updated array of today's (regression)-layer soil temperature values.
@@ -1267,7 +1266,7 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
 @param width_Temp Width of the soil temperature layers.
 @param res Values interpolated to soil temperature depths.
 
-@return res OS updated and reflects new values.
+@return res is updated and reflects new values.
 */
 
 void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR][MAX_LAYERS + 1], unsigned int nlyrSoil,
@@ -1524,7 +1523,8 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 }
 
 /**
-@brief Function to determine if a soil layer is frozen or not.
+@brief Function to determine if a soil layer is frozen/unfrozen, as well as change
+      the frozen/unfrozen status of the layer.
 
 Equations based on Parton 1998. @cite Parton1998
 
@@ -1558,6 +1558,8 @@ void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[],
 
 /**
 @brief Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature.
+
+@note: THIS FUNCTION IS CURRENTLY NOT OPERATIONAL
 
 Based on equations from Eitzinger 2000. @cite Eitzinger2000
 
@@ -1883,7 +1885,7 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param pet Potential evapotranspiration rate (cm/day).
 @param *aet Actual evapotranspiration (cm/day).
 @param biomass Standing-crop biomass (g/m<SUP>2</SUP>).
-@param swc Displays soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param swc_sat The satured soil water content of the soil layers (cm/cm).
 @param bDensity An array of the bulk density of the soil layers (g/cm<SUP>3</SUP>).
 @param width The width of the layers (cm).
@@ -1893,17 +1895,17 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param nlyrs Number of layers in the soil profile.
 @param fc An array of the field capacity of the soil layers (cm/layer).
 @param wp An array of the wilting point of the soil layers (cm/layer).
-@param bmLimiter Biomass limiter constant (300 g/m<SUP>2</SUP>)
-@param t1Param1 Constant for the avg temp at the top of soil equation (15)
-@param t1Param2 Constant for the avg temp at the top of soil equation (-4)
-@param t1Param3 Constant for the avg temp at the top of soil equation (600)
-@param csParam1 Constant for the soil thermal conductivity equation (0.00070)
-@param csParam2 Constant for the soil thermal conductivity equation (0.00030)
-@param shParam Constant for the specific heat capacity equation (0.18)
+@param bmLimiter Biomass limiter constant (300 g/m<SUP>2</SUP>).
+@param t1Param1 Constant for the avg temp at the top of soil equation (15).
+@param t1Param2 Constant for the avg temp at the top of soil equation (-4).
+@param t1Param3 Constant for the avg temp at the top of soil equation (600).
+@param csParam1 Constant for the soil thermal conductivity equation (0.00070).
+@param csParam2 Constant for the soil thermal conductivity equation (0.00030).
+@param shParam Constant for the specific heat capacity equation (0.18).
 @param snowdepth Depth of snow cover (cm)
 @param sTconst Constant soil temperature (&deg;C).
-@param deltaX Distance between profile points (default is 15 from Parton's equation, wouldn't recommend changing the value from that).
-@param theMaxDepth Lower bound of the equation (default is 180 from Parton's equation, wouldn't recommend changing the value from that).
+@param deltaX Distance between profile points (default is 15 cm from Parton's equation @cite Parton1984).
+@param theMaxDepth Lower bound of the equation (default is 180 cm from Parton's equation @cite Parton1984).
 @param nRgr Number of regressions (1 extra value is needed for the sTempR and oldsTempR for the last layer.
 @param snow Snow-water-equivalent of the area (cm).
 @param *ptr_stError Boolean indicating whether there was an error.
