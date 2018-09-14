@@ -10,6 +10,7 @@
 #include "filefuncs.h"
 
 long _randseed = 0L;
+uint64_t stream = 1u;
 
 #ifdef RSOILWAT
   #include <R_ext/Random.h> // for the random number generators
@@ -19,38 +20,30 @@ long _randseed = 0L;
 
 /*****************************************************/
 /**
-  \fn void RandSeed(signed long seed)
-  \brief Resets the random number seed.
+  \brief Sets the random number seed. This should only be done ONCE per iteration.
 
- The seed is set to negative when this routine
- is called, so the generator routines
- ( eg, RandUni()) can tell that it has
- changed.  If called with seed==0,
- _randseed is reset from process time.
- '% 0xffff' is due to a bug in RandUni()
- that conks if seed is too large; should
- be removed in the near future.
+  \param Seed is the initial state of the system. 0 indicates a random seed.
+  \param pcg_rng is the random number generator to set.
 
- \param seed The seed.
-
- cwb - 6/27/00
 */
-void RandSeed(signed long seed) {
+void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
 
-	if (seed == 0L) {
-		_randseed = ((long) time(NULL ));
-		if (_randseed == -1) {
-      sw_error(-1, "ERROR: RandSeed(0) called, but time() not available\n");
-		}
-		/*    _randseed %= 0xffff; */
-		_randseed *= -1;
-	} else {
-		_randseed = labs(seed) * -1;
-	}
+  if(seed == 0){
+    //seed with a random value. Uses the system time to generate
+    //a pseudo-random seed.
+    pcg32_srandom_r(pcg_rng, time(NULL), stream);
+  }
+  else {
+    //Seed with a specific value.
+    pcg32_srandom_r(pcg_rng, (int) seed, stream);
+  }
+
+  //Increment the stream so no two generators have the same sequence.
+  stream++;
 
 #ifndef RSOILWAT
 #if RAND_FAST
-	srand(labs(_randseed));
+  srand(labs(_randseed));
 #endif
 #endif
 
@@ -60,137 +53,17 @@ void RandSeed(signed long seed) {
 
 /*****************************************************/
 /**
-  \fn double RandUni_fast(void)
-  \brief Generate a uniform random variate.
+  Random number generator using the specified rng.
 
-  "Fast" because it
-  utilizes the system rand() but shuffles the results
-  to make a less correlated sequence.  This code is
-  based on FUNCTION RAN0 in Press, et al., 1986,
-  Numerical Recipes, p196, Press Syndicate, NY.
-
-  Of course, just how fast is "fast" depends on the
-  implementation of the compiler.  Some older generators
-  may be quite simple, and so would be faster than
-  a more complicated algorithm.  Newer rand()'s
-  are often fast and good.
-
-  cwb 18-Dec-02
-
-	\return double. A value between 0 and 1.
+  \parameters: pcg32_random_t* that specifies which stream to use.
+ 
+  \returns: a double between 0 and 1.
 */
-double RandUni_fast(void) {
-	static double y;
+double RandUni(pcg32_random_t* pcg_rng) {
 
-	#ifdef RSOILWAT
-		GetRNGstate();
-		y = unif_rand();
-		PutRNGstate();
-
-	#else
-		static short first_time = 1;
-		static int bucket[BUCKETSIZE];
-		static double rmax = RAND_MAX;
-		int i, j;
-
-
-		if (first_time) {
-			first_time = 0;
-			for (j = 0; j < BUCKETSIZE; j++) {
-				rand();
-			}
-			for (j = 0; j < BUCKETSIZE; j++) {
-				bucket[j] = rand();
-			}
-			y = rand() / rmax;
-		}
-		i = 1 + (int) ((double) BUCKETSIZE * y);
-		i = max(BUCKETSIZE -1, min(i,0));
-		y = bucket[i] / rmax;
-		bucket[i] = rand();
-	#endif
-
-	return y;
-}
-
-/*****************************************************/
-/**
-	\fn double RandUni_good(void)
-	\brief Generate a uniform random variate.
-
-	Return a random number from
-	uniform distribution.
-	Result is between 0 and 1. This routine
-	is adapted from FUNCTION RAN1 in
-	Press, et al., 1986, Numerical Recipes,
-	p196, Press Syndicate, NY.
-	To reset the random number sequence,
-	set _randseed to any negative number
-	prior to calling this function, or one
-	that depends on it (eg, RandNorm()).
-
-	This code is preferable in terms of portability
-	as well as consistency across compilers.
-
-	cwb - 6/20/00
-
- 	\return double. A value between 0 and 1.
-
-*/
-double RandUni_good(void) {
-	static double y;
-
-	#ifdef RSOILWAT
-		GetRNGstate();
-		y = unif_rand();
-		PutRNGstate();
-
-	#else
-		long i;
-		static short first_time = 1;
-		static double bucket[BUCKETSIZE];
-		static const long im1 = 259200, ia1 = 7141, ic1 = 54773, im2 = 134456,
-			ia2 = 8121, ic2 = 28411, im3 = 243000, ia3 = 4561, ic3 = 51349;
-		static const double rm1 = 3.8580247e-6, /* 1/im1 */
-			rm2 = 7.4373773e-6; /* 1/im2 */
-
-		static long ix1, ix2, ix3;
-
-		if (_randseed == 0L) {
-			sw_error(-1, "RandUni() error: seed not set\n");
-		}
-		if (first_time || _randseed < 0) {
-			first_time = 0;
-			ix1 = abs(ic1 - abs(_randseed)) % im1;
-			ix1 = (ia1 * ix1 + ic1) % im1;
-			ix2 = ix1 % im2;
-			ix2 = (ia2 * ix2 + ic2) % im2; /* looks like a typo in the book */
-			ix3 = ix1 % im3;
-			for (i = 0; i < BUCKETSIZE; i++) {
-				ix1 = (ia1 * ix1 + ic1) % im1;
-				ix2 = (ia2 * ix2 + ic2) % im2;
-				bucket[i] = ((double) ix1 + (double) ix2 * rm2) * rm1;
-			}
-			_randseed = 1;
-		}
-
-		/* start here if not initializing, */
-		/* and make the numbers happen     */
-		ix1 = (ia1 * ix1 + ic1) % im1;
-		ix2 = (ia2 * ix2 + ic2) % im2;
-		ix3 = (ia3 * ix3 + ic3) % im3;
-
-		/* get a random index into the bucket */
-		i = 1 + (ix3 * BUCKETSIZE) / im3;
-		i = max(BUCKETSIZE -1, min( i,0));
-		/*  i = (i > BUCKETSIZE -1 ) ? BUCKETSIZE -1 : i; */
-
-		/* snatch a random number and replace it */
-		y = bucket[i];
-		bucket[i] = ((double) ix1 + (double) ix2 * rm2) * rm1;
-	#endif
-
-	return y;
+  uint32_t number = pcg32_random_r(pcg_rng);
+printf("RandIni() returned %f", number / RAND_MAX); //for testing purposes
+  return (double) number / RAND_MAX;
 }
 
 /*****************************************************/
@@ -215,11 +88,11 @@ double RandUni_good(void) {
 
 	\param first. One bound of the range between two numbers. A const long argument.
 	\param last. One bound of the range between two numbers. A const long argument.
+	\param pcg_rng. random number generator to use.
 
 	\return integer. Random number between the two bounds defined.
-
 */
-int RandUniRange(const long first, const long last) {
+int RandUniRange(const long first, const long last, pcg32_random_t* pcg_rng) {
 	long f, l, r;
 
 	if (first == last)
@@ -234,12 +107,11 @@ int RandUniRange(const long first, const long last) {
 	}
 
 	r = l - f + 1;
-	return (long) (RandUni() * r) + f;
+	return (long) (RandUni(pcg_rng) * r) + f;
 }
 
 /*****************************************************/
-void RandUniList(long count, long first, long last, RandListType list[]) {
-	/*-------------------------------------------
+/**
 	 create a list of random integers from
 	 uniform distribution.  There are count
 	 numbers put into the list array, and
@@ -250,7 +122,15 @@ void RandUniList(long count, long first, long last, RandListType list[]) {
 	 it should be fast for any number of count items.
 
 	 cwb - 6/27/00
-	 -------------------------------------------*/
+
+	\param count. number of values to generate.
+	\param first. lower bound of the values.
+	\param last. upper bound of the values.
+	\param list. Upon return this array will be filled with random values.
+	\param pcg_rng. random number generator to pull values from.
+*/
+void RandUniList(long count, long first, long last, RandListType list[], pcg32_random_t* pcg_rng) {
+
 	long i, j, c, range, *klist;
 
 	range = last - first + 1;
@@ -270,9 +150,9 @@ void RandUniList(long count, long first, long last, RandListType list[]) {
 	/* if count <= 2, handle things directly */
 	/* for less complexity and more speed    */
 	if (count <= 2) {
-		list[0] = (long) RandUniRange(first, last);
+		list[0] = (long) RandUniRange(first, last, pcg_rng);
 		if (count == 2)
-			while ((list[1] = RandUniRange(first, last)) == list[0])
+			while ((list[1] = RandUniRange(first, last, pcg_rng)) == list[0])
 				;
 		return;
 	}
@@ -288,7 +168,7 @@ void RandUniList(long count, long first, long last, RandListType list[]) {
 
 	/* now randomize the list */
 	for (i = 0; i < range; i++) {
-		while ((j = RandUniRange(0, range - 1)) == i)
+		while ((j = RandUniRange(0, range - 1, pcg_rng)) == i)
 			;
 		c = klist[i];
 		klist[i] = klist[j];
@@ -306,8 +186,7 @@ void RandUniList(long count, long first, long last, RandListType list[]) {
 }
 
 /*****************************************************/
-double RandNorm(double mean, double stddev) {
-	/*-------------------------------------------
+/**
 	 return a random number from
 	 normal distribution with mean and stddev
 	 characteristics supplied by the user.
@@ -324,7 +203,13 @@ double RandNorm(double mean, double stddev) {
 	 cwb - 09-Dec-2002 -- FINALLY noticed that
 	 gasdev and gset have to be static!
 	 might as well set the others.
-	 -------------------------------------------*/
+
+	\param mean. the mean of the distribution
+	\param stddev. standard deviation of the distribution
+	\param pcg_rng. the random number generator to pull values from
+*/
+double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
+
 	double y;
 
 	#ifdef RSOILWAT
@@ -339,8 +224,8 @@ double RandNorm(double mean, double stddev) {
 
 		if (!set) {
 			do {
-				v1 = 2.0 * RandUni() - 1.0;
-				v2 = 2.0 * RandUni() - 1.0;
+				v1 = 2.0 * RandUni(pcg_rng) - 1.0;
+				v2 = 2.0 * RandUni(pcg_rng) - 1.0;
 				r = v1 * v1 + v2 * v2;
 			} while (r >= 1.0);
 			fac = sqrt(-2.0 *log(r)/r);
@@ -374,13 +259,12 @@ double RandNorm(double mean, double stddev) {
 
   [More info can be found here](http://people.sc.fsu.edu/~jburkardt/f77_src/ranlib/ranlib.html)
 
-
-
   \param aa. The first shape parameter of the beta distribution with 0.0 < aa.
   \param bb. The second shape parameter of the beta distribution with 0.0 < bb.
+  \param pcg_rng. the random number generator to pull values from.
   \return A random variate of a beta distribution.
 */
-float RandBeta ( float aa, float bb )
+float RandBeta ( float aa, float bb, pcg32_random_t* pcg_rng)
 {
   float a;
   float alpha;
@@ -425,8 +309,8 @@ float RandBeta ( float aa, float bb )
 
     for ( ; ; )
     {
-      u1 = RandUni ( );
-      u2 = RandUni ( );
+      u1 = RandUni (pcg_rng);
+      u2 = RandUni (pcg_rng);
       v = beta * log ( u1 / ( 1.0 - u1 ) );
 /*
   exp ( v ) replaced by r4_exp ( v )
@@ -470,8 +354,8 @@ float RandBeta ( float aa, float bb )
 
     for ( ; ; )
     {
-      u1 = RandUni ( );
-      u2 = RandUni ( );
+      u1 = RandUni (pcg_rng);
+      u2 = RandUni (pcg_rng);
 
       if ( u1 < 0.5 )
       {

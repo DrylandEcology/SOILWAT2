@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <float.h>
+#include "pcg/pcg_basic.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,8 +35,6 @@ extern "C" {
  of the two functions again if you use a different
  compiler.
  */
-#define RAND_FAST 1
-/* #define RAND_FAST 0 */
 
 typedef long RandListType;
 
@@ -43,18 +42,12 @@ typedef long RandListType;
  * Function definitions
  ***************************************************/
 
-void RandSeed(signed long seed);
-double RandUni_good(void);
-double RandUni_fast(void);
-int RandUniRange(const long first, const long last);
-double RandNorm(double mean, double stddev);
-void RandUniList(long, long, long, RandListType[]);
-float RandBeta(float aa, float bb);
-#if RAND_FAST
-#define RandUni RandUni_fast
-#else
-#define RandUni RandUni_good
-#endif
+void RandSeed(signed long seed, pcg32_random_t* pcg_rng);
+double RandUni(pcg32_random_t* pcg_rng);
+int RandUniRange(const long first, const long last, pcg32_random_t* pcg_rng);
+double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng);
+void RandUniList(long, long, long, RandListType[], pcg32_random_t* pcg_rng);
+float RandBeta(float aa, float bb, pcg32_random_t* pcg_rng);
 
 
 #ifdef __cplusplus
