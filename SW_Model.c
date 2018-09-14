@@ -48,12 +48,15 @@
 #include "SW_SoilWater.h"  /* for setup_new_year() */
 #include "SW_Times.h"
 #include "SW_Model.h"
+#include "pcg/pcg_basic.h"
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 extern SW_SITE SW_Site; /* for reset attribute */
 SW_MODEL SW_Model; /* declared here, externed elsewhere */
+
+pcg32_random_t markov_rng;
 
 /* =================================================== */
 /*                Module-Level Variables               */
@@ -90,7 +93,7 @@ void SW_MDL_construct(void) {
 
 #ifndef STEPWAT
 	/* already set by user-provided seed in steppe */
-	RandSeed(0);
+	RandSeed(0,&markov_rng);
 #endif
 }
 
