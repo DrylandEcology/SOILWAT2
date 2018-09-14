@@ -99,6 +99,7 @@ gtest_LDLIBS = -l$(gtest)
 
 
 #------ CODE FILES
+# SOILWAT2 files
 sources_core = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 					rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c \
 					SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c \
@@ -106,6 +107,7 @@ sources_core = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 
 sources_lib = $(sw_sources) $(sources_core) SW_Output.c SW_Output_get_functions.c
 objects_lib = $(sources_lib:.c=.o)
+
 
 # Unfortunately, we currently cannot include 'SW_Output.c' because
 #  - cannot increment expression of enum type (e.g., OutKey, OutPeriod)
@@ -120,12 +122,18 @@ sources_bin = SW_Main.c SW_Output_outtext.c # SOILWAT2-standalone
 objects_bin = $(sources_bin:.c=.o)
 
 
+# PCG random generator files
+PCG_DIR = pcg
+sources_pcg = $(PCG_DIR)/pcg_basic.c
+objects_pcg = pcg_basic.o
+
+
+# Google unit test files
 gtest = gtest
 lib_gtest = lib$(gtest).a
 GTEST_DIR = googletest/googletest
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h $(GTEST_DIR)/include/gtest/internal/*.h
-
 
 
 #------ TARGETS
@@ -135,36 +143,36 @@ lib : $(lib_target)
 
 $(lib_target) :
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(bin_flags) $(warning_flags) \
-		$(use_c11) -c $(sources_lib)
+		$(use_c11) -c $(sources_lib) $(sources_pcg)
 
 		-@$(RM) -f $(lib_target)
-		$(AR) -rcs $(lib_target) $(objects_lib)
-		-@$(RM) -f $(objects_lib)
+		$(AR) -rcs $(lib_target) $(objects_lib) $(objects_pcg)
+		-@$(RM) -f $(objects_lib) $(objects_pcg)
 
 
 $(lib_target_test) :
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(use_gnu11) -c $(sources_lib_test)
+		$(instr_flags) $(use_gnu11) -c $(sources_lib_test) $(sources_pcg)
 
 		-@$(RM) -f $(lib_target_test)
-		$(AR) -rcs $(lib_target_test) $(objects_lib_test)
-		-@$(RM) -f $(objects_lib_test)
+		$(AR) -rcs $(lib_target_test) $(objects_lib_test) $(objects_pcg)
+		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
 
 $(lib_target_severe) :	# needs CXX because of '*_severe' flags which must match test binary build
 		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warnings_flags_severe_cxx) \
-		$(instr_flags_severe) $(use_gnu++11) -c $(sources_lib_test)
+		$(instr_flags_severe) $(use_gnu++11) -c $(sources_lib_test) $(sources_pcg)
 
 		-@$(RM) -f $(lib_target_severe)
-		$(AR) -rcs $(lib_target_severe) $(objects_lib_test)
-		-@$(RM) -f $(objects_lib_test)
+		$(AR) -rcs $(lib_target_severe) $(objects_lib_test) $(objects_pcg)
+		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
 
 $(lib_target_cov) :	# needs CXX because of 'coverage' flags which must match test binary build
 		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(cov_flags) $(use_gnu++11) -c $(sources_lib_test)
+		$(instr_flags) $(cov_flags) $(use_gnu++11) -c $(sources_lib_test) $(sources_pcg)
 
 		-@$(RM) -f $(lib_target_cov)
-		$(AR) -rcs $(lib_target_cov) $(objects_lib_test)
-		-@$(RM) -f $(objects_lib_test)
+		$(AR) -rcs $(lib_target_cov) $(objects_lib_test) $(objects_pcg)
+		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
 
 
 $(target) : $(lib_target)
@@ -174,11 +182,11 @@ $(target) : $(lib_target)
 
 bin_debug_severe :
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe) \
-		$(instr_flags_severe) $(use_c11) -c $(sources_lib_test)
+		$(instr_flags_severe) $(use_c11) -c $(sources_lib_test) $(sources_pcg)
 
 		-@$(RM) -f $(lib_target_severe)
-		$(AR) -rcs $(lib_target_severe) $(objects_lib_test)
-		-@$(RM) -f $(objects_lib_test)
+		$(AR) -rcs $(lib_target_severe) $(objects_lib_test) $(objects_pcg)
+		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
 
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe) \
 		$(instr_flags_severe) $(use_c11) \
@@ -249,7 +257,7 @@ cov_run : cov
 
 .PHONY : clean1
 clean1 :
-		-@$(RM) -f $(objects_lib) $(objects_bin)
+		-@$(RM) -f $(objects_lib) $(objects_bin) $(objects_pcg)
 
 .PHONY : clean2
 clean2 :
