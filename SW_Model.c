@@ -95,7 +95,7 @@ void SW_MDL_construct(void) {
 
 #ifndef STEPWAT
 	/* already set by user-provided seed in steppe */
-	RandSeed(Globals.randseed,&markov_rng);
+	RandSeed(0,&markov_rng);
 #endif
 }
 
