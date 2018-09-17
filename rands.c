@@ -10,7 +10,7 @@
 #include "filefuncs.h"
 
 long _randseed = 0L;
-uint64_t stream = 1u;
+uint64_t stream = 1u;//stream id. this is given out to a pcg_rng then incremented.
 
 #ifdef RSOILWAT
   #include <R_ext/Random.h> // for the random number generators
@@ -60,9 +60,12 @@ void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
   \returns: a double between 0 and 1.
 */
 double RandUni(pcg32_random_t* pcg_rng) {
-
-  uint32_t number = pcg32_random_r(pcg_rng);
-printf("RandIni() returned %f", number / RAND_MAX); //for testing purposes
+  // get a random unsigned int and cast it to a signed int.
+  int number = (int) pcg32_random_r(pcg_rng);
+  // negative values are possible. This takes the absolute value.
+  number = labs(number); 
+//printf("%f\n", number/(double)RAND_MAX);
+  // divide by RAND_MAX to get a value between 0 and 1.
   return (double) number / RAND_MAX;
 }
 

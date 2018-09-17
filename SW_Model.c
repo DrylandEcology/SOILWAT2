@@ -56,7 +56,9 @@
 extern SW_SITE SW_Site; /* for reset attribute */
 SW_MODEL SW_Model; /* declared here, externed elsewhere */
 
-pcg32_random_t markov_rng;
+#ifndef STEPWAT
+  pcg32_random_t markov_rng;
+#endif
 
 /* =================================================== */
 /*                Module-Level Variables               */
@@ -93,7 +95,7 @@ void SW_MDL_construct(void) {
 
 #ifndef STEPWAT
 	/* already set by user-provided seed in steppe */
-	RandSeed(0,&markov_rng);
+	RandSeed(Globals.randseed,&markov_rng);
 #endif
 }
 
