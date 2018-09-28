@@ -71,7 +71,7 @@ double RandUni(pcg32_random_t* pcg_rng) {
 
 /*****************************************************/
 /**
-	\fn int RandUniRange(const long first, const long last)
+	\fn int RandUniIntRange(const long first, const long last)
 	\brief Generate a random integer between two numbers.
 
 	Return a randomly selected integer between
@@ -95,7 +95,7 @@ double RandUni(pcg32_random_t* pcg_rng) {
 
 	\return integer. Random number between the two bounds defined.
 */
-int RandUniRange(const long first, const long last, pcg32_random_t* pcg_rng) {
+int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) {
 	long f, l, r;
 
 	if (first == last)
@@ -109,8 +109,53 @@ int RandUniRange(const long first, const long last, pcg32_random_t* pcg_rng) {
 		l = last;
 	}
 
-	r = l - f + 1;
-	return (long) (RandUni(pcg_rng) * r) + f;
+  r = l - f + 1;
+  //pcg32_boundedrand_r returns a random number between 0 and r.
+	return (long) pcg32_boundedrand_r(pcg_rng, r) + f;
+}
+
+/*****************************************************/
+/**
+	\fn int RandUniIntRange(const long first, const long last)
+	\brief Generate a random integer between two numbers.
+
+	Return a randomly selected integer between
+	first and last, inclusive.
+
+	cwb - 12/5/00
+
+	cwb - 12/8/03 - just noticed that the previous
+	version only worked with positive numbers
+	and when first < last.  Now it works with
+	negative numbers as well as reversed order.
+
+	Examples:
+	- first = 1, last = 10, result = 6
+	- first = 5, last = -1, result = 2
+	- first = -5, last = 5, result = 0
+
+	\param first. One bound of the range between two numbers. A const long argument.
+	\param last. One bound of the range between two numbers. A const long argument.
+	\param pcg_rng. random number generator to use.
+
+	\return integer. Random number between the two bounds defined.
+*/
+float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rng) {
+	float f, l, r;
+
+	if (max == min)
+		return min;
+
+	if (min > max) {
+		l = min;
+		f = max;
+	} else {
+		f = min;
+		l = max;
+	}
+
+	r = l - f;
+	return (float) (RandUni(pcg_rng) * r) + f;
 }
 
 /*****************************************************/
@@ -153,10 +198,9 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 	/* if count <= 2, handle things directly */
 	/* for less complexity and more speed    */
 	if (count <= 2) {
-		list[0] = (long) RandUniRange(first, last, pcg_rng);
+		list[0] = (long) RandUniIntRange(first, last, pcg_rng);
 		if (count == 2)
-			while ((list[1] = RandUniRange(first, last, pcg_rng)) == list[0])
-				;
+			while ((list[1] = RandUniIntRange(first, last, pcg_rng)) == list[0]);
 		return;
 	}
 
@@ -171,7 +215,7 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 
 	/* now randomize the list */
 	for (i = 0; i < range; i++) {
-		while ((j = RandUniRange(0, range - 1, pcg_rng)) == i)
+		while ((j = RandUniIntRange(0, range - 1, pcg_rng)) == i)
 			;
 		c = klist[i];
 		klist[i] = klist[j];
