@@ -10,7 +10,7 @@
 #include "filefuncs.h"
 
 long _randseed = 0L;
-uint64_t stream = 1u;//stream id. this is given out to a pcg_rng then incremented.
+uint64_t stream = 1u; //stream id. this is given out to a pcg_rng then incremented.
 
 #ifdef RSOILWAT
   #include <R_ext/Random.h> // for the random number generators
@@ -20,7 +20,8 @@ uint64_t stream = 1u;//stream id. this is given out to a pcg_rng then incremente
 
 /*****************************************************/
 /**
-  \brief Sets the random number seed. This should only be done ONCE per iteration.
+  \brief Sets the random number seed. If using this function with STEPWAT2
+         only call RandSeed once per iteration.
 
   \param Seed is the initial state of the system. 0 indicates a random seed.
   \param pcg_rng is the random number generator to set.
@@ -40,13 +41,6 @@ void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
 
   //Increment the stream so no two generators have the same sequence.
   stream++;
-
-#ifndef RSOILWAT
-#if RAND_FAST
-  srand(labs(_randseed));
-#endif
-#endif
-
 }
 
 #define BUCKETSIZE 97
@@ -60,13 +54,26 @@ void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
   \returns: a double between 0 and 1.
 */
 double RandUni(pcg32_random_t* pcg_rng) {
+
+  int number;
+
+#ifdef RSOILWAT
+
+  GetRNGstate(); 
+	number = unif_rand();
+	PutRNGstate();
+
+#else
   // get a random unsigned int and cast it to a signed int.
-  int number = (int) pcg32_random_r(pcg_rng);
+  number = (int) pcg32_random_r(pcg_rng);
   // negative values are possible. This takes the absolute value.
   number = labs(number); 
-//printf("%f\n", number/(double)RAND_MAX);
+  //printf("%f\n", number/(double)RAND_MAX);
   // divide by RAND_MAX to get a value between 0 and 1.
-  return (double) number / RAND_MAX;
+  number = number / (double)RAND_MAX;
+#endif
+
+  return number;
 }
 
 /*****************************************************/

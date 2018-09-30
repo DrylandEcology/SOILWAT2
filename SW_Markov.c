@@ -38,7 +38,7 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 extern SW_MODEL SW_Model;
-extern pcg32_random_t markov_rng;
+pcg32_random_t markov_rng;
 SW_MARKOV SW_Markov; /* declared here, externed elsewhere */
 
 /* =================================================== */
@@ -146,6 +146,8 @@ void SW_MKV_construct(void) {
 	/* =================================================== */
 	SW_MARKOV *m = &SW_Markov;
 	size_t s = sizeof(RealD);
+	
+	RandSeed(0,&markov_rng);
 
 	m->wetprob = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->dryprob = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
