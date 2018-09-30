@@ -44,7 +44,8 @@ typedef long RandListType;
 
 void RandSeed(signed long seed, pcg32_random_t* pcg_rng);
 double RandUni(pcg32_random_t* pcg_rng);
-int RandUniRange(const long first, const long last, pcg32_random_t* pcg_rng);
+int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng);
+float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rng);
 double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng);
 void RandUniList(long, long, long, RandListType[], pcg32_random_t* pcg_rng);
 float RandBeta(float aa, float bb, pcg32_random_t* pcg_rng);
