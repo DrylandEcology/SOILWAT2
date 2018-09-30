@@ -56,10 +56,6 @@
 extern SW_SITE SW_Site; /* for reset attribute */
 SW_MODEL SW_Model; /* declared here, externed elsewhere */
 
-#ifndef STEPWAT
-  pcg32_random_t markov_rng;
-#endif
-
 /* =================================================== */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
@@ -92,11 +88,6 @@ void SW_MDL_construct(void) {
 		SW_Model.newperiod[pd] = swFALSE;
 	}
 	SW_Model.newperiod[eSW_Day] = swTRUE; // every day is a new day
-
-#ifndef STEPWAT
-	/* already set by user-provided seed in steppe */
-	RandSeed(0,&markov_rng);
-#endif
 }
 
 void SW_MDL_deconstruct(void)
