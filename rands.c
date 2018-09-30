@@ -130,15 +130,15 @@ int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) 
 	negative numbers as well as reversed order.
 
 	Examples:
-	- first = 1, last = 10, result = 6
-	- first = 5, last = -1, result = 2
+	- first = .2, last = .7, result = .434
+	- first = 4.5, last = -1.1, result = -.32
 	- first = -5, last = 5, result = 0
 
-	\param first. One bound of the range between two numbers. A const long argument.
-	\param last. One bound of the range between two numbers. A const long argument.
+	\param min. One bound of the range between two numbers. A const float argument.
+	\param max. One bound of the range between two numbers. A const float argument.
 	\param pcg_rng. random number generator to use.
 
-	\return integer. Random number between the two bounds defined.
+	\return float. Random number between the two bounds defined.
 */
 float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rng) {
 	float f, l, r;
