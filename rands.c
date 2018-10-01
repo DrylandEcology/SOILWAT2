@@ -55,7 +55,7 @@ void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
 */
 double RandUni(pcg32_random_t* pcg_rng) {
 
-  int number;
+  double number;
 
 #ifdef RSOILWAT
 
