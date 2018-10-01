@@ -60,8 +60,8 @@ double RandUni(pcg32_random_t* pcg_rng) {
 #ifdef RSOILWAT
 
   GetRNGstate(); 
-	number = unif_rand();
-	PutRNGstate();
+  number = unif_rand();
+  PutRNGstate();
 
 #else
   // get a random unsigned int and cast it to a signed int.
@@ -103,22 +103,33 @@ double RandUni(pcg32_random_t* pcg_rng) {
 	\return integer. Random number between the two bounds defined.
 */
 int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) {
-	long f, l, r;
+  long f, l, r, rtn;
 
-	if (first == last)
-		return first;
+  if (first == last)
+    return first;
 
-	if (first > last) {
-		l = first;
-		f = last;
-	} else {
-		f = first;
-		l = last;
-	}
+  if (first > last) {
+    l = first;
+    f = last;
+  } else {
+    f = first;
+    l = last;
+  }
+
+#ifdef RSOILWAT
+
+  GetRNGstate(); 
+  rtn = (long) runif(f,l+1); //l+1 because we will be casting to a long.
+  PutRNGstate();
+
+#else
 
   r = l - f + 1;
   //pcg32_boundedrand_r returns a random number between 0 and r.
-	return (long) pcg32_boundedrand_r(pcg_rng, r) + f;
+  rtn = pcg32_boundedrand_r(pcg_rng, r) + f;
+
+#endif
+return rtn;
 }
 
 /*****************************************************/
