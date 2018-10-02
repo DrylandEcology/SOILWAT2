@@ -71,7 +71,7 @@ double RandUni(pcg32_random_t* pcg_rng) {
   // get a random unsigned int and cast it to a signed int.
   number = (int) pcg32_random_r(pcg_rng);
   // negative values are possible. This takes the absolute value.
-  number = labs(number); 
+  number = fabs(number); 
   //printf("%f\n", number/(double)RAND_MAX);
   // divide by RAND_MAX to get a value between 0 and 1.
   number = number / (double)RAND_MAX;
