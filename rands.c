@@ -28,6 +28,8 @@ uint64_t stream = 1u; //stream id. this is given out to a pcg_rng then increment
 
 */
 void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
+//we don't need to set a random seed if RSOILWAT is used
+#ifndef RSOILWAT
 
   if(seed == 0){
     //seed with a random value. Uses the system time to generate
@@ -41,6 +43,8 @@ void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
 
   //Increment the stream so no two generators have the same sequence.
   stream++;
+
+#endif
 }
 
 #define BUCKETSIZE 97
@@ -72,7 +76,6 @@ double RandUni(pcg32_random_t* pcg_rng) {
   // divide by RAND_MAX to get a value between 0 and 1.
   number = number / (double)RAND_MAX;
 #endif
-
   return number;
 }
 
