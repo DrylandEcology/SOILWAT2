@@ -23,16 +23,20 @@
 namespace {
   // This tests the beta random number generator
   TEST(BetaGeneratorTest, ZeroToOneOutput) {
-    EXPECT_LT(RandBeta(0.5, 2), 1);
-    EXPECT_LT(RandBeta(1, 3), 1);
-    EXPECT_GT(RandBeta(1, 4), 0);
-    EXPECT_GT(RandBeta(0.25, 1), 0);
+    pcg32_random_t ZeroToOne_rng;
+    RandSeed(0,&ZeroToOne_rng);
+    EXPECT_LT(RandBeta(0.5, 2,&ZeroToOne_rng), 1);
+    EXPECT_LT(RandBeta(1, 3,&ZeroToOne_rng), 1);
+    EXPECT_GT(RandBeta(1, 4,&ZeroToOne_rng), 0);
+    EXPECT_GT(RandBeta(0.25, 1,&ZeroToOne_rng), 0);
   }
 
   TEST(BetaGeneratorDeathTest, Errors) {
-    EXPECT_DEATH(RandBeta(-0.5, 2), "AA <= 0.0");
-    EXPECT_DEATH(RandBeta(1, -3), "BB <= 0.0");
-    EXPECT_DEATH(RandBeta(-1, -3), "AA <= 0.0");
+    pcg32_random_t error_rng;
+    RandSeed(0,&error_rng);
+    EXPECT_DEATH(RandBeta(-0.5, 2,&error_rng), "AA <= 0.0");
+    EXPECT_DEATH(RandBeta(1, -3,&error_rng), "BB <= 0.0");
+    EXPECT_DEATH(RandBeta(-1, -3,&error_rng), "AA <= 0.0");
   }
 
 } // namespace
