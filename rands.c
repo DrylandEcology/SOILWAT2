@@ -54,7 +54,7 @@ void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
   Random number generator using the specified rng.
 
   \parameters: pcg32_random_t* that specifies which stream to use.
- 
+
   \returns: a double between 0 and 1.
 */
 double RandUni(pcg32_random_t* pcg_rng) {
@@ -63,18 +63,13 @@ double RandUni(pcg32_random_t* pcg_rng) {
 
 #ifdef RSOILWAT
 
-  GetRNGstate(); 
+  GetRNGstate();
   number = unif_rand();
   PutRNGstate();
 
 #else
-  // get a random unsigned int and cast it to a signed int.
-  number = (int) pcg32_random_r(pcg_rng);
-  // negative values are possible. This takes the absolute value.
-  number = fabs(number); 
-  //printf("%f\n", number/(double)RAND_MAX);
-  // divide by RAND_MAX to get a value between 0 and 1.
-  number = number / (double)RAND_MAX;
+  // get a random double and bit shift is 32 bits (less that 1)
+  number = ldexp(pcg32_random_r(pcg_rng), -32);
 #endif
   return number;
 }
@@ -121,7 +116,7 @@ int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) 
 
 #ifdef RSOILWAT
 
-  GetRNGstate(); 
+  GetRNGstate();
   rtn = (long) runif(f,l+1); //l+1 because we will be casting to a long.
   PutRNGstate();
 
