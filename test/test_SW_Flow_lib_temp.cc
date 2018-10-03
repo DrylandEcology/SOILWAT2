@@ -34,6 +34,7 @@
 #include "../SW_Weather.h"
 #include "../SW_Markov.h"
 #include "../SW_Sky.h"
+#include "../pcg/pcg_basic.h"
 
 #include "../SW_Flow_lib.h"
 #include "../SW_Flow_lib.c"
@@ -43,8 +44,8 @@
 
 extern SW_MODEL SW_Model;
 extern SW_VEGPROD SW_VegProd;
-
 extern ST_RGR_VALUES stValues;
+pcg32_random_t flowTemp_rng;
 
 namespace {
 
@@ -95,12 +96,14 @@ namespace {
     double deltaX = 15.0, theMaxDepth = 990.0, sTconst = 4.15;
     unsigned int nlyrs, nRgr = 65;
     Bool ptr_stError = swFALSE;
+    pcg32_random_t STInit_rng;
+    RandSeed(0,&STInit_rng);
 
     // *****  Test when nlyrs = 1  ***** //
     unsigned int i =0.;
     nlyrs = 1;
     double width[] = {20}, oldsTemp[] = {1};
-    double bDensity[] = {RandNorm(1.,0.5)}, fc[] = {RandNorm(1.5, 0.5)};
+    double bDensity[] = {RandNorm(1.,0.5,&STInit_rng)}, fc[] = {RandNorm(1.5, 0.5,&STInit_rng)};
     double wp[1];
     wp[0]= fc[0] - 0.6; // wp will always be less than fc
 
@@ -133,8 +136,8 @@ namespace {
     double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
-      bDensity2[i] = RandNorm(1.,0.5);
-      fc2[i] = RandNorm(1.5, 0.5);
+      bDensity2[i] = RandNorm(1.,0.5,&STInit_rng);
+      fc2[i] = RandNorm(1.5, 0.5,&STInit_rng);
       wp2[i] = fc2[i] - 0.6; // wp will always be less than fc
     }
 
@@ -170,10 +173,12 @@ namespace {
     double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
+    pcg32_random_t STInitDeath_rng;
+    RandSeed(0,&STInitDeath_rng);
 
     for (i = 0; i < nlyrs; i++) {
-      bDensity2[i] = RandNorm(1.,0.5);
-      fc2[i] = RandNorm(1.5, 0.5);
+      bDensity2[i] = RandNorm(1.,0.5,&STInitDeath_rng);
+      fc2[i] = RandNorm(1.5, 0.5,&STInitDeath_rng);
       wp2[i] = fc2[i] - 0.6; // wp will always be less than fc
     }
 
@@ -197,12 +202,15 @@ namespace {
     unsigned int nlyrs, nRgr = 65;
     Bool ptr_stError = swFALSE;
 
+    pcg32_random_t SLIF_rng;
+    RandSeed(0,&SLIF_rng);
+
     // *****  Test when nlyrs = 1  ***** //
     unsigned int i = 0.;
     nlyrs = 1;
     double width[] = {20}, oldsTemp[] = {1};
-    double bDensity[] = {fmaxf(RandNorm(1.5,0.5), 0.1)},
-      fc[] = {fmaxf(RandNorm(1.5, 0.5), 0.1)};
+    double bDensity[] = {fmaxf(RandNorm(1.5,0.5,&SLIF_rng), 0.1)},
+      fc[] = {fmaxf(RandNorm(1.5, 0.5,&SLIF_rng), 0.1)};
     double wp[1];
 
     wp[0]= fmax(fc[0] - 0.6, .1); // wp will always be less than fc
@@ -246,8 +254,8 @@ namespace {
     double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
-      bDensity2[i] = fmaxf(RandNorm(1.,0.5), 0.1);
-      fc2[i] = fmaxf(RandNorm(1.5, 0.5), 0.1);
+      bDensity2[i] = fmaxf(RandNorm(1.,0.5,&SLIF_rng), 0.1);
+      fc2[i] = fmaxf(RandNorm(1.5, 0.5,&SLIF_rng), 0.1);
       wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp will always be less than fc
       EXPECT_GT(bDensity2[i], 0);
       EXPECT_GT(fc2[i], 0);
@@ -345,6 +353,9 @@ namespace {
     int nRgr =65;
     Bool ptr_stError = swFALSE;
 
+    pcg32_random_t STTF_rng;
+    RandSeed(0,&STTF_rng);
+
     // declare input in for loop for non-error causing conditions;
     /// don't use RandNorm for fcR, wpR, vwcR, and bDensityR because will trigger
     /// error causing condtions
@@ -353,8 +364,8 @@ namespace {
     vwcR[nRgr + 2], bDensityR[nRgr + 2];
     int i = 0.;
     for (i = 0; i <= nRgr + 1; i++) {
-      sTempR[i] = RandNorm(1.5, 1);
-      oldsTempR[i] = RandNorm(1.5, 1);
+      sTempR[i] = RandNorm(1.5, 1,&STTF_rng);
+      oldsTempR[i] = RandNorm(1.5, 1,&STTF_rng);
       fcR[i] = 2.1;
       wpR[i] = 1.5; // wp will always be less than fc
       vwcR[i] = 1.6;
@@ -383,8 +394,8 @@ namespace {
 
     for (i = 0; i <= nRgr + 1; i++)
     {
-      sTempR2[i] = RandNorm(150, 1);
-      oldsTempR3[i] = RandNorm(150, 1);
+      sTempR2[i] = RandNorm(150, 1,&STTF_rng);
+      oldsTempR3[i] = RandNorm(150, 1,&STTF_rng);
     }
 
     soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR2, oldsTempR3,
@@ -403,6 +414,9 @@ namespace {
   TEST(SWFlowTempTest, MainSoilTemperatureFunction_Lyr01) {
 
     unsigned int k, i;
+
+    pcg32_random_t MSTF_Lyer1_rng;
+    RandSeed(0,&MSTF_Lyer1_rng);
 
     // *****  Test when nlyrs = 1  ***** //
     unsigned int nlyrs = 1, nRgr = 65;
@@ -473,8 +487,8 @@ namespace {
     double sTemp2[nlyrs], oldsTemp2[nlyrs];
     for (i = 0; i < nlyrs; i++)
     {
-      sTemp2[i] = RandNorm(150, 1);
-      oldsTemp2[i] = RandNorm(150, 1);
+      sTemp2[i] = RandNorm(150, 1,&MSTF_Lyer1_rng);
+      oldsTemp2[i] = RandNorm(150, 1,&MSTF_Lyer1_rng);
     }
 
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
@@ -495,6 +509,9 @@ namespace {
   TEST(SWFlowTempTest, MainSoilTemperatureFunction_LyrMAX) {
     // *****  Test when nlyrs = MAX_LAYERS  ***** //
 
+    pcg32_random_t soilTemp_rng;
+    RandSeed(0,&soilTemp_rng);
+
     unsigned int i, k;
 
     // intialize values
@@ -512,8 +529,8 @@ namespace {
     double swc2[nlyrs2], swc_sat2[nlyrs2], bDensity2[nlyrs2], fc2[nlyrs2], wp2[nlyrs2];
 
     for (i = 0; i < nlyrs2; i++) {
-      bDensity2[i] = fmaxf(RandNorm(1.,0.5), 0.1); // greater than 0.1
-      fc2[i] = fmaxf(RandNorm(1.5, 0.5), 0.1); // greater than 0.1
+      bDensity2[i] = fmaxf(RandNorm(1.,0.5,&soilTemp_rng), 0.1); // greater than 0.1
+      fc2[i] = fmaxf(RandNorm(1.5, 0.5,&soilTemp_rng), 0.1); // greater than 0.1
       swc_sat2[i] = fc2[i] + 0.2; //swc_sat > fc2
       swc2[i] =  fmax(swc_sat2[i] - 0.3, 0.01); // swc_sat > swc > 0
       wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp < fc
@@ -593,6 +610,9 @@ namespace {
     snow = 1;
     Bool ptr_stError = swFALSE;
 
+    pcg32_random_t MSTFDT_rng;
+    RandSeed(0, &MSTFDT_rng);
+
     unsigned int nlyrs = MAX_LAYERS;
     double width[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double oldsTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
@@ -600,8 +620,8 @@ namespace {
     double swc[nlyrs], swc_sat[nlyrs], bDensity[nlyrs], fc[nlyrs], wp[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
-      bDensity[i] = fmaxf(RandNorm(1.,0.5), 0.1); // greater than 0.1
-      fc[i] = fmaxf(RandNorm(1.5, 0.5), 0.1); // greater than 0.1
+      bDensity[i] = fmaxf(RandNorm(1.,0.5, &MSTFDT_rng), 0.1); // greater than 0.1
+      fc[i] = fmaxf(RandNorm(1.5, 0.5, &MSTFDT_rng), 0.1); // greater than 0.1
       swc_sat[i] = fc[i] + 0.2; //swc_sat > fc2
       swc[i] =  swc_sat[i] - 0.3; // swc_sat > swc
       wp[i] = fmaxf(fc[i] - 0.6, 0.1); // wp < fc
