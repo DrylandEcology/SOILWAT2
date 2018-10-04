@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 #include <float.h>
-#include "pcg/pcg_basic.h"
+#include "pcg/pcg_basic.h" // see https://github.com/imneme/pcg-c-basic
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,20 +21,6 @@ extern "C" {
 /***************************************************
  * Basic definitions
  ***************************************************/
-
-/* You can choose to use a shuffled random set
- based on the compiler's rand() (RAND_FAST=1)
- or a compiler-independent version (RAND_FAST=0)
- but the speed of the "fast" version depends
- of course on the compiler.
-
- Some tests I ran with the GNU compiler from
- Cygwin (for Wintel) showed the FAST version to be
- better distributed, although the time was very
- nearly the same.  I'd suggest comparing the results
- of the two functions again if you use a different
- compiler.
- */
 
 typedef long RandListType;
 

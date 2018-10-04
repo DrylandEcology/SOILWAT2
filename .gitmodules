@@ -5,3 +5,4 @@
 [submodule "pcg"]
 	path = pcg
 	url = https://github.com/imneme/pcg-c-basic
+        branch = master

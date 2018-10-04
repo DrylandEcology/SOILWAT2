@@ -9,6 +9,8 @@
 #include "myMemory.h"
 #include "filefuncs.h"
 
+#include "pcg/pcg_basic.h"
+
 long _randseed = 0L;
 uint64_t stream = 1u; //stream id. this is given out to a pcg_rng then incremented.
 
@@ -47,7 +49,7 @@ void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
 #endif
 }
 
-#define BUCKETSIZE 97
+
 
 /*****************************************************/
 /**
@@ -71,6 +73,7 @@ double RandUni(pcg32_random_t* pcg_rng) {
   // get a random double and bit shift is 32 bits (less that 1)
   number = ldexp(pcg32_random_r(pcg_rng), -32);
 #endif
+
   return number;
 }
 
@@ -107,36 +110,35 @@ int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) 
     return first;
 
   if (first > last) {
-    l = first;
+    l = first + 1;
     f = last;
   } else {
     f = first;
-    l = last;
+    l = last + 1;
   }
 
 #ifdef RSOILWAT
 
   GetRNGstate();
-  rtn = (long) runif(f,l+1); //l+1 because we will be casting to a long.
+  rtn = (long) runif(f, l);
   PutRNGstate();
 
 #else
 
-  r = l - f + 1;
+  r = l - f;
   //pcg32_boundedrand_r returns a random number between 0 and r.
   rtn = pcg32_boundedrand_r(pcg_rng, r) + f;
 
 #endif
-return rtn;
+
+  return rtn;
 }
 
 /*****************************************************/
 /**
-	\fn int RandUniIntRange(const long first, const long last)
-	\brief Generate a random integer between two numbers.
+	\brief Generate a random float between two numbers.
 
-	Return a randomly selected integer between
-	first and last, inclusive.
+	Return a randomly selected float between first and last, inclusive.
 
 	cwb - 12/5/00
 

@@ -146,14 +146,16 @@ void SW_MKV_construct(void) {
 	/* =================================================== */
 	SW_MARKOV *m = &SW_Markov;
 	size_t s = sizeof(RealD);
-	
-	RandSeed(0,&markov_rng);
+
+	/* STEPWAT2: The markov_rng seed will be reset with `Globals.randseed` by
+		 its `main` at the beginning of each iteration */
+	RandSeed(0, &markov_rng);
 
 	m->wetprob = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->dryprob = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->avg_ppt = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->std_ppt = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
-    m->cfxw = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
+	m->cfxw = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->cfxd = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->cfnw = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->cfnd = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
