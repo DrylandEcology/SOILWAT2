@@ -2,3 +2,7 @@
 	path = googletest
 	url = https://github.com/google/googletest
 	branch = master
+[submodule "pcg"]
+	path = pcg
+	url = https://github.com/imneme/pcg-c-basic
+        branch = master

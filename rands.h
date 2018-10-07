@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <float.h>
+#include "pcg/pcg_basic.h" // see https://github.com/imneme/pcg-c-basic
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,40 +22,19 @@ extern "C" {
  * Basic definitions
  ***************************************************/
 
-/* You can choose to use a shuffled random set
- based on the compiler's rand() (RAND_FAST=1)
- or a compiler-independent version (RAND_FAST=0)
- but the speed of the "fast" version depends
- of course on the compiler.
-
- Some tests I ran with the GNU compiler from
- Cygwin (for Wintel) showed the FAST version to be
- better distributed, although the time was very
- nearly the same.  I'd suggest comparing the results
- of the two functions again if you use a different
- compiler.
- */
-#define RAND_FAST 1
-/* #define RAND_FAST 0 */
-
 typedef long RandListType;
 
 /***************************************************
  * Function definitions
  ***************************************************/
 
-void RandSeed(signed long seed);
-double RandUni_good(void);
-double RandUni_fast(void);
-int RandUniRange(const long first, const long last);
-double RandNorm(double mean, double stddev);
-void RandUniList(long, long, long, RandListType[]);
-float RandBeta(float aa, float bb);
-#if RAND_FAST
-#define RandUni RandUni_fast
-#else
-#define RandUni RandUni_good
-#endif
+void RandSeed(signed long seed, pcg32_random_t* pcg_rng);
+double RandUni(pcg32_random_t* pcg_rng);
+int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng);
+float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rng);
+double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng);
+void RandUniList(long, long, long, RandListType[], pcg32_random_t* pcg_rng);
+float RandBeta(float aa, float bb, pcg32_random_t* pcg_rng);
 
 
 #ifdef __cplusplus

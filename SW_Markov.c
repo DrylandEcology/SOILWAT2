@@ -32,11 +32,13 @@
 #include "SW_Weather.h"
 #include "SW_Model.h"
 #include "SW_Markov.h"
+#include "pcg/pcg_basic.h"
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 extern SW_MODEL SW_Model;
+pcg32_random_t markov_rng;
 SW_MARKOV SW_Markov; /* declared here, externed elsewhere */
 
 /* =================================================== */
@@ -128,8 +130,8 @@ static void mvnorm(RealD *tmax, RealD *tmin) {
 		LogError(logfp, LOGFATAL, "\nBad covariance matrix in mvnorm()");
 	vc11 = (EQ(vc11, s)) ? 0. : sqrt(vc11 -s);
 
-	z1 = RandNorm(0., 3.5);
-	z2 = RandNorm(0., 3.5);
+	z1 = RandNorm(0., 3.5, &markov_rng);
+	z2 = RandNorm(0., 3.5, &markov_rng);
 	*tmin = (vc10 * z1) + (vc11 * z2) + _ucov[1];
 	*tmax = vc00 * z1 + _ucov[0];
 
@@ -145,11 +147,15 @@ void SW_MKV_construct(void) {
 	SW_MARKOV *m = &SW_Markov;
 	size_t s = sizeof(RealD);
 
+	/* STEPWAT2: The markov_rng seed will be reset with `Globals.randseed` by
+		 its `main` at the beginning of each iteration */
+	RandSeed(0, &markov_rng);
+
 	m->wetprob = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->dryprob = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->avg_ppt = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->std_ppt = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
-    m->cfxw = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
+	m->cfxw = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->cfxd = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->cfnw = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->cfnd = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
@@ -210,9 +216,9 @@ void SW_MKV_today(TimeInt doy, RealD *tmax, RealD *tmin, RealD *rain) {
 	/* Calculate Precip */
 	prob = (GT(*rain, 0.0)) ? SW_Markov.wetprob[doy] : SW_Markov.dryprob[doy];
 
-	p = RandUni();
+	p = RandUni(&markov_rng);
 	if (LE(p,prob)) {
-		x = RandNorm(SW_Markov.avg_ppt[doy], SW_Markov.std_ppt[doy]);
+		x = RandNorm(SW_Markov.avg_ppt[doy], SW_Markov.std_ppt[doy], &markov_rng);
 		*rain = max(0., x);
 	} else {
 		*rain = 0.;

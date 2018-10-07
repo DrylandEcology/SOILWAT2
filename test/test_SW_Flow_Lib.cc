@@ -34,6 +34,7 @@
 #include "../SW_Weather.h"
 #include "../SW_Markov.h"
 #include "../SW_Sky.h"
+#include "../pcg/pcg_basic.h"
 
 #include "../SW_Flow_lib.h"
 
@@ -41,6 +42,7 @@
 
 extern SW_MODEL SW_Model;
 extern SW_VEGPROD SW_VegProd;
+pcg32_random_t flow_rng;
 SW_VEGPROD *v = &SW_VegProd;
 int k;
 
@@ -197,9 +199,12 @@ TEST(SWFlowTest, LitterInterceptedWater) {
     nlyrs = MAX_LAYERS, pptleft = 5.0;
     double swc2[nlyrs], swcfc2[nlyrs], swcsat2[nlyrs], impermeability2[nlyrs], drain2[nlyrs];
 
+    pcg32_random_t infiltrate_rng;
+    RandSeed(0,&infiltrate_rng);
+
     for (i = 0; i < MAX_LAYERS; i++) {
-      swc2[i] = RandNorm(1.,0.5);
-      swcfc2[i] = RandNorm(1,.5);
+      swc2[i] = RandNorm(1.,0.5,&infiltrate_rng);
+      swcfc2[i] = RandNorm(1,.5,&infiltrate_rng);
       swcsat2[i] = swcfc2[i] + .1; // swcsat will always be greater than swcfc in each layer
       impermeability2[i] = 0.0;
     }
@@ -223,7 +228,7 @@ TEST(SWFlowTest, LitterInterceptedWater) {
     double swc3[nlyrs], swcfc3[nlyrs], swcsat3[nlyrs], drain3[nlyrs];
 
     for (i = 0; i < MAX_LAYERS; i++) {
-      swc3[i] = RandNorm(1.,0.5);
+      swc3[i] = RandNorm(1.,0.5,&infiltrate_rng);
       swcfc3[i] = swc3[i] + .2;
       swcsat3[i] = swcfc3[i] + .5;
       drain3[i] = 0.;// swcsat will always be greater than swcfc in each layer
@@ -242,7 +247,7 @@ TEST(SWFlowTest, LitterInterceptedWater) {
     pptleft = 20.0;
 
     for (i = 0; i < MAX_LAYERS; i++) {
-      swc4[i] = RandNorm(1.,0.5);
+      swc4[i] = RandNorm(1.,0.5,&infiltrate_rng);
       swcfc4[i] = swc4[i] + .2;
       swcsat4[i] = swcfc4[i] + .3; // swcsat will always be greater than swcfc in each layer
       impermeability4[i] = 1.0;
@@ -265,7 +270,7 @@ TEST(SWFlowTest, LitterInterceptedWater) {
     pptleft = 5.0;
 
     for (i = 0; i < MAX_LAYERS; i++) {
-      swc5[i] = RandNorm(1.2,0.5);
+      swc5[i] = RandNorm(1.2,0.5,&infiltrate_rng);
       swcfc5[i] = swc5[i] - .4; // set up conditions for excess SWC
       swcsat5[i] = swcfc5[i] + .1; // swcsat will always be greater than swcfc in each layer
       impermeability5[i] = 1.0;

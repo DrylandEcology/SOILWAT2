@@ -49,6 +49,7 @@
 #include "SW_Times.h"
 #include "SW_Model.h"
 
+
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
@@ -87,11 +88,6 @@ void SW_MDL_construct(void) {
 		SW_Model.newperiod[pd] = swFALSE;
 	}
 	SW_Model.newperiod[eSW_Day] = swTRUE; // every day is a new day
-
-#ifndef STEPWAT
-	/* already set by user-provided seed in steppe */
-	RandSeed(0);
-#endif
 }
 
 void SW_MDL_deconstruct(void)
