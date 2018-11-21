@@ -30,7 +30,8 @@ typedef struct {
           windspeed    [MAX_MONTHS], /* windspeed (m/s) */
           r_humidity   [MAX_MONTHS], /* relative humidity (%) */
           transmission [MAX_MONTHS], /* frac light transmitted by atmos. */ /* used as input for petfunc, but algorithm cancels it out */
-          snow_density	[MAX_MONTHS];	/* snow density (kg/m3) */
+          snow_density [MAX_MONTHS], /* snow density (kg/m3) */
+          n_rain_per_day[MAX_MONTHS]; /* number of precipitation events per month (currently used in interception functions) */
 
     RealD cloudcov_daily     [MAX_DAYS+1], /* interpolated daily cloud cover (frac) */
           windspeed_daily    [MAX_DAYS+1], /* interpolated daily windspeed (m/s) */
