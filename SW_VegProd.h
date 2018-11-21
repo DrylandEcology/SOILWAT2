@@ -55,7 +55,6 @@ typedef struct {
 typedef struct {
   CoverType cov;
 
-	RealD conv_stcr; /* divisor for lai_standing gives pct_cover */
 	tanfunc_t cnpy, /* canopy height based on biomass */
 	tr_shade_effects; /* shading effect on transpiration based on live and dead biomass */
 	RealD canopy_height_constant; /* if > 0 then constant canopy height (cm) and overriding cnpy-tangens=f(biomass) */
@@ -70,16 +69,17 @@ typedef struct {
 	CO2_pct_live[MAX_MONTHS], /* monthly live biomass in percent after CO2 effects */
 	lai_conv[MAX_MONTHS]; /* monthly amount of biomass   needed to produce lai=1 (g/m**2)      */
 
-	RealD litter_daily[MAX_DAYS + 1], /* daily interpolation of monthly litter values (g/m**2)    */
-	biomass_daily[MAX_DAYS + 1], /* daily interpolation of monthly aboveground biomass (g/m**2) */
-	pct_live_daily[MAX_DAYS + 1], /* daily interpolation of monthly live biomass in percent   */
-	veg_height_daily[MAX_DAYS + 1], /* daily interpolation of monthly height of vegetation (cm)   */
-	lai_conv_daily[MAX_DAYS + 1], /* daily interpolation of monthly amount of biomass needed to produce lai=1 (g/m**2)        */
-	lai_live_daily[MAX_DAYS + 1], /* daily interpolation of lai of live biomass               */
-	pct_cover_daily[MAX_DAYS + 1], vegcov_daily[MAX_DAYS + 1], /* daily interpolation of veg cover for today; function of monthly biomass */
-	biolive_daily[MAX_DAYS + 1], /* daily interpolation of biomass * pct_live               */
-	biodead_daily[MAX_DAYS + 1], /* daily interpolation of biomass - biolive                */
-	total_agb_daily[MAX_DAYS + 1]; /* daily interpolation of sum of aboveground biomass & litter */
+  RealD
+    litter_daily[MAX_DAYS + 1], /* daily interpolation of monthly litter values (g/m**2)    */
+    biomass_daily[MAX_DAYS + 1], /* daily interpolation of monthly aboveground biomass (g/m**2) */
+    pct_live_daily[MAX_DAYS + 1], /* daily interpolation of monthly live biomass in percent   */
+    veg_height_daily[MAX_DAYS + 1], /* daily interpolation of monthly height of vegetation (cm)   */
+    lai_conv_daily[MAX_DAYS + 1], /* daily interpolation of monthly amount of biomass needed to produce lai=1 (g/m**2)        */
+    lai_live_daily[MAX_DAYS + 1], /* daily interpolation of lai of live biomass               */
+    bLAI_total_daily[MAX_DAYS + 1], /* daily total "compound" leaf area index */
+    biolive_daily[MAX_DAYS + 1], /* daily interpolation of biomass * pct_live               */
+    biodead_daily[MAX_DAYS + 1], /* daily interpolation of biomass - biolive                */
+    total_agb_daily[MAX_DAYS + 1]; /* daily interpolation of sum of aboveground biomass & litter */
 
 	Bool flagHydraulicRedistribution; /*1: allow hydraulic redistribution/lift to occur; 0: turned off */
 	RealD maxCondroot, /* hydraulic redistribution: maximum radial soil-root conductance of the entire active root system for water (cm/-bar/day) */
@@ -88,8 +88,8 @@ typedef struct {
 
 	RealD SWPcrit; /* critical soil water potential below which vegetation cannot sustain transpiration (-bar) */
 
-	RealD veg_intPPT_a, veg_intPPT_b, veg_intPPT_c, veg_intPPT_d; /* vegetation intercepted rain = (a + b*veg) + (c+d*veg) * ppt; Grasses+Shrubs: veg=vegcov, Trees: veg=LAI */
-	RealD litt_intPPT_a, litt_intPPT_b, litt_intPPT_c, litt_intPPT_d; /* litter intercepted rain = (a + b*litter) + (c+d*litter) * ppt */
+	RealD veg_kSmax, veg_kdead; /* vegetation interception parameters */
+	RealD lit_kSmax; /* litter interception parameters */
 
 	RealD EsTpartitioning_param; /* Parameter for partitioning of bare-soil evaporation and transpiration as in Es = exp(-param*LAI) */
 
