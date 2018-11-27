@@ -97,7 +97,6 @@ void SW_VPD_read(void) {
 	int x, k, lineno = 0;
 	const int line_help = 27; // last case line number before monthly biomass densities
 	RealF help_veg[NVEGTYPES], help_bareGround, litt, biom, pctl, laic;
-	RealD fraction_sum = 0.;
 
 	MyFileName = SW_F_name(eVegProd);
 	f = OpenFile(MyFileName, "r");
@@ -510,29 +509,7 @@ void SW_VPD_read(void) {
 		LogError(logfp, LOGWARN, errstr);
 	}
 
-	fraction_sum = v->bare_cov.fCover;
-	ForEachVegType(k) {
-		fraction_sum += v->veg[k].cov.fCover;
-	}
-
-
-	if (!EQ_w_tol(fraction_sum, 1.0, 1e-4)) { // inputs are not more precise than at most 3-4 digits
-		LogError(logfp, LOGWARN,
-			"%s : Fractions of vegetation components were normalized:\n" \
-			"\tSum of fractions was %.4f, but must be 1.0. " \
-			"New coefficients are:", MyFileName, fraction_sum);
-
-		v->bare_cov.fCover /= fraction_sum;
-		LogError(logfp, LOGNOTE, "Bare ground fraction = %.4f", v->bare_cov.fCover);
-
-		ForEachVegType(k) {
-			v->veg[k].cov.fCover /= fraction_sum;
-			LogError(logfp, LOGNOTE, "%s fraction = %.4f",
-				key2veg[k], v->veg[k].cov.fCover);
-		}
-
-		fprintf(logfp, "\n");
-	}
+  SW_VPD_fix_cover();
 
 	CloseFile(&f);
 #ifdef RSOILWAT
@@ -543,6 +520,46 @@ void SW_VPD_read(void) {
 
 	if (EchoInits)
 		_echo_VegProd();
+}
+
+/**
+  \brief Check that sum of land cover is 1; adjust if not.
+
+  \sideeffect
+    - Adjusts `SW_VegProd->bare_cov.fCover` and `SW_VegProd->veg[k].cov.fCover`
+      to sum to 1.
+    - Print a warning that values are adjusted and notes with the new values.
+*/
+void SW_VPD_fix_cover(void)
+{
+  SW_VEGPROD *v = &SW_VegProd;
+  int k;
+  RealD fraction_sum = 0.;
+
+  fraction_sum = v->bare_cov.fCover;
+  ForEachVegType(k) {
+    fraction_sum += v->veg[k].cov.fCover;
+  }
+
+  if (!EQ_w_tol(fraction_sum, 1.0, 1e-4)) {
+    // inputs are never more precise than at most 3-4 digits
+
+    LogError(logfp, LOGWARN,
+      "Fractions of land cover components were normalized:\n" \
+      "\tSum of fractions was %.4f instead of 1.0. " \
+      "New coefficients are:", fraction_sum);
+
+    v->bare_cov.fCover /= fraction_sum;
+    LogError(logfp, LOGNOTE, "Bare ground fraction = %.4f", v->bare_cov.fCover);
+
+    ForEachVegType(k) {
+      v->veg[k].cov.fCover /= fraction_sum;
+      LogError(logfp, LOGNOTE, "%s fraction = %.4f",
+        key2veg[k], v->veg[k].cov.fCover);
+    }
+
+    fprintf(logfp, "\n");
+  }
 }
 
 
