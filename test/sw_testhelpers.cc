@@ -37,6 +37,12 @@
 #include "sw_testhelpers.h"
 
 extern char _firstfile[];
+extern SW_SITE SW_Site;
+
+extern SW_MODEL SW_Model;
+//extern SW_VEGPROD SW_VegProd;
+//SW_VEGPROD *v = &SW_VegProd;
+//int k;
 
 /** Initialize SOILWAT2 variables and read values from example input file
  */
@@ -49,4 +55,91 @@ void Reset_SOILWAT2_after_UnitTest(void) {
   // Next two function calls will require SW_Output.c (see issue #85 'Make SW_Output.c comptabile with c++ to include in unit testing code')
   // SW_OUT_set_ncol();
   // SW_OUT_set_colnames();
+}
+
+
+
+	// This function is a modified version of the function _read_layers in SW_Site.c.
+void _set_layers(RealF *dmax, RealF *matricd, RealF *f_gravel,
+  RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
+  RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp) {
+
+  RealF dmin = 0.0, trco_veg[NVEGTYPES];
+	SW_SITE *v = &SW_Site;
+
+	Bool evap_ok = swTRUE, /* mitigate gaps in layers' evap coeffs */
+		transp_ok_veg[NVEGTYPES]; /* same for transpiration coefficients */
+
+		LyrIndex lyrno, k;
+
+	for (unsigned int i = 0; i < MAX_LAYERS; i++) {
+		lyrno = _newlayer();
+
+		v->lyr[lyrno]->width = dmax[i] - dmin;
+		dmin = dmax[i];
+		v->lyr[lyrno]->soilMatric_density = matricd[i];
+		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel[i];
+		v->lyr[lyrno]->evap_coeff = evco[i];
+
+    ForEachVegType(k)
+		{
+      if(k == SW_TREES){
+        trco_veg[k] = trco_tree[i];
+      }
+      if(k == SW_SHRUB){
+        trco_veg[k] = trco_shrub[i];
+      }
+      if(k == SW_FORBS){
+        trco_veg[k] = trco_forb[i];
+      }
+      if(k == SW_GRASS){
+        trco_veg[k] = trco_grass[i];
+      }
+    }
+    ForEachVegType(k)
+    {
+			v->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
+			v->lyr[lyrno]->my_transp_rgn[k] = 0;
+		}
+		v->lyr[lyrno]->fractionWeightMatric_sand = psand[i];
+		v->lyr[lyrno]->fractionWeightMatric_clay = pclay[i];
+		v->lyr[lyrno]->impermeability = imperm[i];
+		v->lyr[lyrno]->sTemp = soiltemp[i];
+
+		if (evap_ok) {
+			if (GT(v->lyr[lyrno]->evap_coeff, 0.0)) {
+				v->n_evap_lyrs++;
+			} else
+				evap_ok = swFALSE;
+		}
+
+		ForEachVegType(k)
+		{
+			if (transp_ok_veg[k]) {
+				if (GT(v->lyr[lyrno]->transp_coeff[k], 0.0)) {
+					v->n_transp_lyrs[k]++;
+				} else
+					transp_ok_veg[k] = swFALSE;
+			}
+		}
+
+		water_eqn(f_gravel[i], psand[i], pclay[i], lyrno);
+
+		v->lyr[lyrno]->swcBulk_fieldcap = SW_SWPmatric2VWCBulk(f_gravel[i], 0.333, lyrno) * v->lyr[lyrno]->width;
+		v->lyr[lyrno]->swcBulk_wiltpt = SW_SWPmatric2VWCBulk(f_gravel[i], 15, lyrno) * v->lyr[lyrno]->width;
+		calculate_soilBulkDensity(matricd[i], f_gravel[i], lyrno);
+
+	/* n_layers set in _newlayer() */
+	#ifdef RSOILWAT
+		if (v->deepdrain && !collectInData) {
+			lyrno = _newlayer();
+			v->lyr[lyrno]->width = 1.0;
+		}
+	#else
+		if (v->deepdrain) {
+			lyrno = _newlayer();
+			v->lyr[lyrno]->width = 1.0;
+		}
+	#endif
+  }
 }
