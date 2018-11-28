@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-#define SW_NFILES 23
+#define SW_NFILES 22
 
 /* The number of enum elements between eNoFile and
  * eEndFile (not inclusive) must match SW_NFILES.
