@@ -56,77 +56,110 @@ void Reset_SOILWAT2_after_UnitTest(void) {
 
 
 
-	// This function is a modified version of the function _read_layers in SW_Site.c.
-void _set_layers(RealF *dmax, RealF *matricd, RealF *f_gravel,
+/**
+  @brief Creates soil layers based on function arguments (instead of reading
+    them from an input file as `_read_layers` does)
+
+  @param nlyrs The number of soil layers to create.
+  @sideeffect After deleting any previous data in the soil layer array
+    `SW_Site.lyr`, it creates new soil layers based on the argument inputs.
+
+  @note
+    - This function is a modified version of the function `_read_layers` in
+      `SW_Site.c`.
+    - This function does not re-calculate `n_transp_rgn` and
+      `_TranspRgnBounds`, i.e., the values from the previous and new soil layers
+      must match (see function `SW_SIT_read`).
+*/
+void _set_layers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel,
   RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
-  RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp) {
+  RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp)
+{
 
-  RealF dmin = 0.0, trco_veg[NVEGTYPES];
-	SW_SITE *v = &SW_Site;
+  RealF dmin = 0.0;
+  SW_SITE *v = &SW_Site;
 
-		LyrIndex lyrno, k;
+  LyrIndex lyrno;
+  unsigned int i, k;
 
-	for (int i = 0; i < MAX_LAYERS; i++) {
-    //printf("i: %x\nmatricd1: %f\n", i, matricd[i]);
-    printf("I: %d\ndmax1: %f\n",i, dmax[i]);
+  // De-allocate and delete previous soil layers
+  SW_SIT_clear_layers();
+  v->n_layers = 0;
+  v->n_evap_lyrs = 0;
 
-    lyrno = _newlayer();
-
-		v->lyr[lyrno]->width = dmax[i] - dmin;
-		dmin = dmax[i];
-		v->lyr[lyrno]->soilMatric_density = matricd[i];
-		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel[i];
-		v->lyr[lyrno]->evap_coeff = evco[i];
-
-    //printf("matricd2: %f\n", SW_Site.lyr[lyrno]->soilMatric_density);
-    printf("dmax2(width): %f\n", SW_Site.lyr[lyrno]->width);
-    ForEachVegType(k)
-		{
-      if(k == SW_TREES){
-        trco_veg[k] = trco_tree[i];
-      }
-      if(k == SW_SHRUB){
-        trco_veg[k] = trco_shrub[i];
-      }
-      if(k == SW_FORBS){
-        trco_veg[k] = trco_forb[i];
-      }
-      if(k == SW_GRASS){
-        trco_veg[k] = trco_grass[i];
-      }
-    }
-    ForEachVegType(k)
-    {
-			v->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
-			v->lyr[lyrno]->my_transp_rgn[k] = 0;
-		}
-		v->lyr[lyrno]->fractionWeightMatric_sand = psand[i];
-		v->lyr[lyrno]->fractionWeightMatric_clay = pclay[i];
-		v->lyr[lyrno]->impermeability = imperm[i];
-		v->lyr[lyrno]->sTemp = soiltemp[i];
-
-		water_eqn(f_gravel[i], psand[i], pclay[i], lyrno);
-
-		v->lyr[lyrno]->swcBulk_fieldcap = SW_SWPmatric2VWCBulk(f_gravel[i], 0.333, lyrno) * v->lyr[lyrno]->width;
-
-
-  	v->lyr[lyrno]->swcBulk_wiltpt = SW_SWPmatric2VWCBulk(f_gravel[i], 15, lyrno) * v->lyr[lyrno]->width;
-
-  	calculate_soilBulkDensity(matricd[i], f_gravel[i], lyrno);
-    //printf("matricd4: %f\n", SW_Site.lyr[lyrno]->soilMatric_density);
-    printf("dmax4(width): %f\n", SW_Site.lyr[lyrno]->width);
-	   /* n_layers set in _newlayer() */
-
-     //printf("matricd3: %f\n", matricd[i]);
-     printf("dmax3: %f\n", dmax[i]);
-     //printf("matricd5: %f\n", SW_Site.lyr[lyrno]->soilMatric_density);
-
+  ForEachVegType(k)
+  {
+    v->n_transp_lyrs[k] = 0;
   }
 
-  if (v->deepdrain) {
+
+  // Create new soil
+  for (i = 0; i < nlyrs; i++)
+  {
+    // Create the next soil layer
+    lyrno = _newlayer();
+
+    v->lyr[lyrno]->width = dmax[i] - dmin;
+    dmin = dmax[i];
+    v->lyr[lyrno]->soilMatric_density = matricd[i];
+    v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel[i];
+    v->lyr[lyrno]->evap_coeff = evco[i];
+
+    ForEachVegType(k)
+    {
+      switch (k)
+      {
+        case SW_TREES:
+          v->lyr[lyrno]->transp_coeff[k] = trco_tree[i];
+          break;
+        case SW_SHRUB:
+          v->lyr[lyrno]->transp_coeff[k] = trco_shrub[i];
+          break;
+        case SW_FORBS:
+          v->lyr[lyrno]->transp_coeff[k] = trco_forb[i];
+          break;
+        case SW_GRASS:
+          v->lyr[lyrno]->transp_coeff[k] = trco_grass[i];
+          break;
+      }
+
+      v->lyr[lyrno]->my_transp_rgn[k] = 0;
+
+      if (GT(v->lyr[lyrno]->transp_coeff[k], 0.0))
+      {
+        v->n_transp_lyrs[k]++;
+      }
+    }
+
+    v->lyr[lyrno]->fractionWeightMatric_sand = psand[i];
+    v->lyr[lyrno]->fractionWeightMatric_clay = pclay[i];
+    v->lyr[lyrno]->impermeability = imperm[i];
+    v->lyr[lyrno]->sTemp = soiltemp[i];
+
+    if (GT(v->lyr[lyrno]->evap_coeff, 0.0))
+    {
+      v->n_evap_lyrs++;
+    }
+
+    water_eqn(f_gravel[i], psand[i], pclay[i], lyrno);
+
+    v->lyr[lyrno]->swcBulk_fieldcap = SW_SWPmatric2VWCBulk(f_gravel[i], 0.333,
+      lyrno) * v->lyr[lyrno]->width;
+    v->lyr[lyrno]->swcBulk_wiltpt = SW_SWPmatric2VWCBulk(f_gravel[i], 15,
+      lyrno) * v->lyr[lyrno]->width;
+    calculate_soilBulkDensity(matricd[i], f_gravel[i], lyrno);
+
+    swprintf("L: %d/%d depth=%3.1f, width=%3.1f\n", i, lyrno, dmax[i],
+      v->lyr[lyrno]->width);
+  }
+
+  if (v->deepdrain)
+  {
     lyrno = _newlayer();
     v->lyr[lyrno]->width = 1.0;
   }
-  printf("dmax5(width): %f\n", SW_Site.lyr[lyrno]->width);
+  swprintf("Last: %d/%d width=%3.1f\n", i, lyrno, v->lyr[lyrno]->width);
 
+  // Re-initialize site parameters based on new soil layers
+  init_site_info();
 }
