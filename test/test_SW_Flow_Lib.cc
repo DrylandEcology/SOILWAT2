@@ -474,7 +474,7 @@ namespace {
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
     }
-/**
+
   //Test transp_weighted_avg function.
   TEST(SWFlowTest, transp_weighted_avg){
 
@@ -504,9 +504,10 @@ namespace {
     double swc2[25] = {0.01, 0.02, 0.03, 0.04, 1.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61, 7.62, 7.63, 9.51, 9.52, 9.53, 11.41, 11.42, 11.43, 13.31, 13.32, 13.33};
 
     //INPUTS for expected OUTPUTS
-    double swp_avgExpectedM = 0.13;
+    double swp_avgExpectedM = 0.0009799683;
 
-			RealF dmax[25] = {5, 10, 10, 10, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20};
+      //Pointer inputs for _set_layers.
+			RealF dmax[25] = {5, 6, 10, 11, 12, 20, 21, 22, 25, 30, 40, 41, 42, 50, 51, 52, 53, 54, 55, 60, 70, 80, 90, 110, 150}; //Can't have multiple layers with same max depth.
 			RealF matricd[25] = {1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130, 1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130,1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130, 1.4};
 			RealF f_gravel[25] = {0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2};
       RealF evco[25] = {0.813, 0.153, 0.034, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -527,12 +528,14 @@ namespace {
 
 		EXPECT_GE(swp_avg, 0); //Must always be non negative.
 
-		EXPECT_NEAR(swp_avgExpectedM, swp_avg, 0.001);
+
+		EXPECT_NEAR(swp_avgExpectedM, swp_avg, 0.000001);
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
 */
+
   //Test EsT_partitioning by manipulating fbse and fbst variables.
   TEST(SWFlowTest, EsT_partitioning){
 
