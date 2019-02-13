@@ -195,7 +195,7 @@ TEST(SWFlowTest, LitterInterceptedWater) {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
-    int i;
+    unsigned int i;
     nlyrs = MAX_LAYERS, pptleft = 5.0;
     double *swc2 = new double[nlyrs];
     double *swcfc2 = new double[nlyrs];
@@ -302,29 +302,15 @@ TEST(SWFlowTest, LitterInterceptedWater) {
     }
 
     EXPECT_GT(standingWater, 0); // standingWater should be above 0
-
-    delete[] impermeability2;
-    delete[] drain2;
-    delete[] swc2;
-    delete[] swcfc2;
-    delete[] swcsat2;
-    delete[] drain3;
-    delete[] swc3;
-    delete[] swcfc3;
-    delete[] swcsat3;
-    delete[] impermeability4;
-    delete[] drain4;
-    delete[] swc4;
-    delete[] swcfc4;
-    delete[] swcsat4;
-    delete[] impermeability5;
-    delete[] drain5;
-    delete[] swc5;
-    delete[] swcfc5;
-    delete[] swcsat5;
+    // deallocate pointers
+    double *array_list[] = { impermeability2, drain2, swc2, swcfc2, swcsat2,
+                           drain3, swc3, swcfc3, swcsat3,
+                           impermeability4, drain4, swc4, swcfc4, swcsat4,
+                           impermeability5, drain5, swc5, swcfc5, swcsat5 };
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
+    Deallocate_pointers(array_list);
   }
 
 }

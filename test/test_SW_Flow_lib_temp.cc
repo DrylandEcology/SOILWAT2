@@ -158,12 +158,11 @@ namespace {
     // Other init test
     EXPECT_EQ(stValues.depths[nlyrs - 1], 295); // sum of inputs width = maximum depth; in my example 295
     EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
-    delete[] bDensity2;
-    delete[] fc2;
-    delete[] wp2;
+    double *array_list[] = { bDensity2, fc2, wp2};
+
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
-
+    Deallocate_pointers(array_list);
   }
 
 // Death tests for soil_temperature_init function
@@ -193,11 +192,11 @@ namespace {
 
     EXPECT_DEATH_IF_SUPPORTED(soil_temperature_init(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
         fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError),"@ generic.c LogError"); // We expect death when max depth < last layer
-    delete[] bDensity2;
-    delete[] fc2;
-    delete[] wp2;
+    double *array_list[] = { bDensity2, fc2, wp2};
+
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
+    Deallocate_pointers(array_list);
   }
 
 
@@ -300,12 +299,11 @@ namespace {
     }
     EXPECT_LE(maxvalR, sTconst);//Maximum interpolated oldsTempR value should be less than or equal to maximum in oldsTemp2 (sTconst = last layer)
     EXPECT_EQ(stValues.oldsTempR[nRgr + 1], sTconst); //Temperature in last interpolated layer should equal sTconst
+    double *array_list[] = { bDensity2, fc2, wp2};
 
-    delete[] bDensity2;
-    delete[] fc2;
-    delete[] wp2;
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
+    Deallocate_pointers(array_list);
   }
 
   // Test set layer to frozen or unfrozen 'set_frozen_unfrozen'
@@ -355,12 +353,10 @@ namespace {
       // Test
       EXPECT_EQ(0,stValues.lyrFrozen[i]);
     }
-    delete[] sTemp3;
-    delete[] sTemp4;
-    delete[] swc2;
-    delete[] swc_sat2;
+    double *array_list[] = {sTemp3, sTemp4, swc2, swc_sat2};
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
+    Deallocate_pointers(array_list);
   }
 
   // Test soil temperature today function 'soil_temperature_today'
@@ -427,16 +423,10 @@ namespace {
 
     //Check that ptr_stError is TRUE
     EXPECT_EQ(ptr_stError, 1);
-    delete[] sTempR2;
-    delete[] oldsTempR3;
-    delete[] sTempR;
-    delete[] oldsTempR;
-    delete[] wpR;
-    delete[] fcR;
-    delete[] vwcR;
-    delete[] bDensityR;
+    double *array_list[] = {sTempR2, oldsTempR3, sTempR, oldsTempR, wpR, fcR, vwcR, bDensityR};
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
+    Deallocate_pointers(array_list);
   }
 
   // Test main soil temperature function 'soil_temperature'
@@ -530,10 +520,11 @@ namespace {
 
     // Check that ptr_stError is TRUE
     EXPECT_EQ(ptr_stError, 1);
-    delete[] sTemp2;
-    delete[] oldsTemp2;
+    double *array_list[] = {sTemp2, oldsTemp2};
+
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
+    Deallocate_pointers(array_list);
   }
 
   // Test main soil temperature function 'soil_temperature'
@@ -630,13 +621,11 @@ namespace {
       //swprintf("\n k %u, newoldtempR %f", k, stValues.oldsTempR[k]);
       EXPECT_NE(stValues.oldsTempR[k], SW_MISSING);
     }
-    delete[] swc2;
-    delete[] swc_sat2;
-    delete[] bDensity2;
-    delete[] fc2;
-    delete[] wp2;
+    double *array_list[] = { swc2, swc_sat2, bDensity2, fc2, wp2};
+
     // Reset to global state
     Reset_SOILWAT2_after_UnitTest();
+    Deallocate_pointers(array_list);
   }
 
   // Test that main soil temperature functions fails when it is supposed to
@@ -681,12 +670,10 @@ namespace {
       oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError), "@ generic.c LogError");
-    delete[] swc;
-    delete[] swc_sat;
-    delete[] bDensity;
-    delete[] fc;
-    delete[] wp;
+    double *array_list[] = {swc, swc_sat, bDensity, fc, wp};
+
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
+    Deallocate_pointers(array_list);
   }
 }
