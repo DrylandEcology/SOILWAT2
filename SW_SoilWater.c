@@ -984,12 +984,13 @@ RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n) {
 			theta1 = 0.0;
 		else
 			theta1 = (swcBulk / lyr->width) * 100. / (1. - fractionGravel);
-		swp = lyr->psisMatric / powe(theta1/lyr->thetasMatric, lyr->bMatric) / BARCONV;
-	} else {
+    if (GT(BARCONV, 0.0))
+      swp = lyr->psisMatric / powe(theta1/lyr->thetasMatric, lyr->bMatric) / BARCONV;
+    else
+      LogError(logfp, LOGFATAL, "Attempt to divide by 0, SWP value may not be accurate.");
+	} else
 		LogError(logfp, LOGFATAL, "Invalid SWC value (%.4f) in SW_SWC_swc2potential.\n"
 				"    Year = %d, DOY=%d, Layer = %d\n", swcBulk, SW_Model.year, SW_Model.doy, n);
-	}
-
 	return swp;
 }
 
