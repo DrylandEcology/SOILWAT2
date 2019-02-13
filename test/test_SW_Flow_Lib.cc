@@ -197,7 +197,11 @@ TEST(SWFlowTest, LitterInterceptedWater) {
     /// generate inputs using a for loop
     int i;
     nlyrs = MAX_LAYERS, pptleft = 5.0;
-    double swc2[nlyrs], swcfc2[nlyrs], swcsat2[nlyrs], impermeability2[nlyrs], drain2[nlyrs];
+    double *swc2 = new double[nlyrs];
+    double *swcfc2 = new double[nlyrs];
+    double *swcsat2 = new double[nlyrs];
+    double *impermeability2 = new double[nlyrs];
+    double *drain2 = new double[nlyrs];
 
     pcg32_random_t infiltrate_rng;
     RandSeed(0,&infiltrate_rng);
@@ -225,7 +229,10 @@ TEST(SWFlowTest, LitterInterceptedWater) {
 
     /* Test when pptleft and standingWater are 0 (No drainage); swc < swcfc3  < swcsat */
     pptleft = 0.0, standingWater = 0.0;
-    double swc3[nlyrs], swcfc3[nlyrs], swcsat3[nlyrs], drain3[nlyrs];
+    double *swc3 = new double[nlyrs];
+    double *swcfc3 = new double[nlyrs];
+    double *swcsat3 = new double[nlyrs];
+    double *drain3 = new double[nlyrs];
 
     for (i = 0; i < MAX_LAYERS; i++) {
       swc3[i] = RandNorm(1.,0.5,&infiltrate_rng);
@@ -243,7 +250,11 @@ TEST(SWFlowTest, LitterInterceptedWater) {
 
 
     /* Test when impermeability is greater than 0 and large precipitation */
-    double impermeability4[nlyrs], drain4[nlyrs], swc4[nlyrs], swcfc4[nlyrs], swcsat4[nlyrs];
+    double *impermeability4 = new double[nlyrs];
+    double *drain4 = new double[nlyrs];
+    double *swc4 = new double[nlyrs];
+    double *swcfc4 = new double[nlyrs];
+    double *swcsat4 = new double[nlyrs];
     pptleft = 20.0;
 
     for (i = 0; i < MAX_LAYERS; i++) {
@@ -266,7 +277,11 @@ TEST(SWFlowTest, LitterInterceptedWater) {
     }
 
     /* Test "push", when swcsat > swc */
-    double impermeability5[nlyrs], drain5[nlyrs], swc5[nlyrs], swcfc5[nlyrs], swcsat5[nlyrs];
+    double *impermeability5 = new double[nlyrs];
+    double *drain5 = new double[nlyrs];
+    double *swc5 = new double[nlyrs];
+    double *swcfc5 = new double[nlyrs];
+    double *swcsat5 = new double[nlyrs];
     pptleft = 5.0;
 
     for (i = 0; i < MAX_LAYERS; i++) {
@@ -288,7 +303,25 @@ TEST(SWFlowTest, LitterInterceptedWater) {
 
     EXPECT_GT(standingWater, 0); // standingWater should be above 0
 
-
+    delete[] impermeability2;
+    delete[] drain2;
+    delete[] swc2;
+    delete[] swcfc2;
+    delete[] swcsat2;
+    delete[] drain3;
+    delete[] swc3;
+    delete[] swcfc3;
+    delete[] swcsat3;
+    delete[] impermeability4;
+    delete[] drain4;
+    delete[] swc4;
+    delete[] swcfc4;
+    delete[] swcsat4;
+    delete[] impermeability5;
+    delete[] drain5;
+    delete[] swc5;
+    delete[] swcfc5;
+    delete[] swcsat5;
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();

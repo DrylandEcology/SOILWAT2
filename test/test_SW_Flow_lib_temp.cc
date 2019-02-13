@@ -133,7 +133,9 @@ namespace {
     nlyrs = MAX_LAYERS;
     double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
+    double *bDensity2 = new double[nlyrs];
+    double *fc2 = new double[nlyrs];
+    double *wp2 = new double[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
       bDensity2[i] = RandNorm(1.,0.5,&STInit_rng);
@@ -156,7 +158,9 @@ namespace {
     // Other init test
     EXPECT_EQ(stValues.depths[nlyrs - 1], 295); // sum of inputs width = maximum depth; in my example 295
     EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
-
+    delete[] bDensity2;
+    delete[] fc2;
+    delete[] wp2;
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
 
@@ -172,7 +176,9 @@ namespace {
     nlyrs = MAX_LAYERS;
     double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
+    double *bDensity2 = new double[nlyrs];
+    double *fc2 = new double[nlyrs];
+    double *wp2 = new double[nlyrs];
     pcg32_random_t STInitDeath_rng;
     RandSeed(0,&STInitDeath_rng);
 
@@ -187,7 +193,9 @@ namespace {
 
     EXPECT_DEATH_IF_SUPPORTED(soil_temperature_init(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
         fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError),"@ generic.c LogError"); // We expect death when max depth < last layer
-
+    delete[] bDensity2;
+    delete[] fc2;
+    delete[] wp2;
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -251,7 +259,9 @@ namespace {
     nlyrs = MAX_LAYERS;
     double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double oldsTemp2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    double bDensity2[nlyrs], fc2[nlyrs], wp2[nlyrs];
+    double *bDensity2 = new double[nlyrs];
+    double *fc2 = new double[nlyrs];
+    double *wp2 = new double[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
       bDensity2[i] = fmaxf(RandNorm(1.,0.5,&SLIF_rng), 0.1);
@@ -291,6 +301,9 @@ namespace {
     EXPECT_LE(maxvalR, sTconst);//Maximum interpolated oldsTempR value should be less than or equal to maximum in oldsTemp2 (sTconst = last layer)
     EXPECT_EQ(stValues.oldsTempR[nRgr + 1], sTconst); //Temperature in last interpolated layer should equal sTconst
 
+    delete[] bDensity2;
+    delete[] fc2;
+    delete[] wp2;
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -322,7 +335,10 @@ namespace {
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     nlyrs = MAX_LAYERS;
     double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double sTemp3[nlyrs], sTemp4[nlyrs],swc2[nlyrs], swc_sat2[nlyrs];
+    double *sTemp3 = new double[nlyrs];
+    double *sTemp4 = new double[nlyrs];
+    double *swc2 = new double[nlyrs];
+    double *swc_sat2 = new double[nlyrs];
 
     unsigned int i = 0.;
     for (i = 0; i < nlyrs; i++) {
@@ -339,7 +355,10 @@ namespace {
       // Test
       EXPECT_EQ(0,stValues.lyrFrozen[i]);
     }
-
+    delete[] sTemp3;
+    delete[] sTemp4;
+    delete[] swc2;
+    delete[] swc_sat2;
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -360,8 +379,12 @@ namespace {
     /// don't use RandNorm for fcR, wpR, vwcR, and bDensityR because will trigger
     /// error causing condtions
 
-    double sTempR[nRgr + 2], oldsTempR[nRgr + 2], wpR[nRgr + 2], fcR[nRgr + 2],
-    vwcR[nRgr + 2], bDensityR[nRgr + 2];
+    double *sTempR = new double[nRgr + 2];
+    double *oldsTempR = new double[nRgr + 2];
+    double *wpR = new double[nRgr + 2];
+    double *fcR = new double[nRgr + 2];
+    double *vwcR = new double[nRgr + 2];
+    double *bDensityR = new double[nRgr + 2];
     int i = 0.;
     for (i = 0; i <= nRgr + 1; i++) {
       sTempR[i] = RandNorm(1.5, 1,&STTF_rng);
@@ -390,7 +413,8 @@ namespace {
     }
 
     // test that the ptr_stError is FALSE when it is supposed to
-    double sTempR2[nRgr + 2], oldsTempR3[nRgr + 2];
+    double *sTempR2 = new double[nRgr + 2];
+    double *oldsTempR3 = new double[nRgr + 2];
 
     for (i = 0; i <= nRgr + 1; i++)
     {
@@ -403,7 +427,14 @@ namespace {
 
     //Check that ptr_stError is TRUE
     EXPECT_EQ(ptr_stError, 1);
-
+    delete[] sTempR2;
+    delete[] oldsTempR3;
+    delete[] sTempR;
+    delete[] oldsTempR;
+    delete[] wpR;
+    delete[] fcR;
+    delete[] vwcR;
+    delete[] bDensityR;
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -484,7 +515,8 @@ namespace {
 
 
     // ptr_stError should be set to TRUE if soil_temperature_today fails (i.e. unrealistic temp values)
-    double sTemp2[nlyrs], oldsTemp2[nlyrs];
+    double *sTemp2 = new double[nlyrs];
+    double *oldsTemp2 = new double[nlyrs];
     for (i = 0; i < nlyrs; i++)
     {
       sTemp2[i] = RandNorm(150, 1,&MSTF_Lyer1_rng);
@@ -498,7 +530,8 @@ namespace {
 
     // Check that ptr_stError is TRUE
     EXPECT_EQ(ptr_stError, 1);
-
+    delete[] sTemp2;
+    delete[] oldsTemp2;
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -526,7 +559,12 @@ namespace {
     double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double oldsTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double sTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    double swc2[nlyrs2], swc_sat2[nlyrs2], bDensity2[nlyrs2], fc2[nlyrs2], wp2[nlyrs2];
+
+    double *swc2 = new double[nlyrs2];
+    double *swc_sat2 = new double[nlyrs2];
+    double *bDensity2 = new double[nlyrs2];
+    double *fc2 = new double[nlyrs2];
+    double *wp2 = new double[nlyrs2];
 
     for (i = 0; i < nlyrs2; i++) {
       bDensity2[i] = fmaxf(RandNorm(1.,0.5,&soilTemp_rng), 0.1); // greater than 0.1
@@ -592,7 +630,11 @@ namespace {
       //swprintf("\n k %u, newoldtempR %f", k, stValues.oldsTempR[k]);
       EXPECT_NE(stValues.oldsTempR[k], SW_MISSING);
     }
-
+    delete[] swc2;
+    delete[] swc_sat2;
+    delete[] bDensity2;
+    delete[] fc2;
+    delete[] wp2;
     // Reset to global state
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -617,7 +659,11 @@ namespace {
     double width[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double oldsTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double sTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    double swc[nlyrs], swc_sat[nlyrs], bDensity[nlyrs], fc[nlyrs], wp[nlyrs];
+    double *swc = new double[nlyrs];
+    double *swc_sat = new double[nlyrs];
+    double *bDensity = new double[nlyrs];
+    double *fc = new double[nlyrs];
+    double *wp = new double[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
       bDensity[i] = fmaxf(RandNorm(1.,0.5, &MSTFDT_rng), 0.1); // greater than 0.1
@@ -635,7 +681,11 @@ namespace {
       oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError), "@ generic.c LogError");
-
+    delete[] swc;
+    delete[] swc_sat;
+    delete[] bDensity;
+    delete[] fc;
+    delete[] wp;
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
   }
