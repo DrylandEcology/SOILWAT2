@@ -307,10 +307,10 @@ TEST(SWFlowTest, LitterInterceptedWater) {
                            drain3, swc3, swcfc3, swcsat3,
                            impermeability4, drain4, swc4, swcfc4, swcsat4,
                            impermeability5, drain5, swc5, swcfc5, swcsat5 };
-
+    for (i = 0; i < length(array_list); i++){
+      delete[] array_list[i];
+    }
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
-    Deallocate_pointers(array_list);
   }
-
 }

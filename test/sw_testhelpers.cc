@@ -50,12 +50,3 @@ void Reset_SOILWAT2_after_UnitTest(void) {
   // SW_OUT_set_ncol();
   // SW_OUT_set_colnames();
 }
-/*
-  Deallocate all pointers in a list.
-*/
-void Deallocate_pointers(double **ptr_list){
-  unsigned int i;
-  for (i = 0; i < length(ptr_list); i++){
-    delete[] ptr_list[i];
-  }
-}

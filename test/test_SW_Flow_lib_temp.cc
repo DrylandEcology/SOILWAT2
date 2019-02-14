@@ -158,11 +158,10 @@ namespace {
     // Other init test
     EXPECT_EQ(stValues.depths[nlyrs - 1], 295); // sum of inputs width = maximum depth; in my example 295
     EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
-    double *array_list[] = { bDensity2, fc2, wp2};
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
-    Deallocate_pointers(array_list);
+    delete[] bDensity2; delete[] fc2; delete[] wp2;
   }
 
 // Death tests for soil_temperature_init function
@@ -192,11 +191,10 @@ namespace {
 
     EXPECT_DEATH_IF_SUPPORTED(soil_temperature_init(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
         fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError),"@ generic.c LogError"); // We expect death when max depth < last layer
-    double *array_list[] = { bDensity2, fc2, wp2};
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
-    Deallocate_pointers(array_list);
+    delete[] wp2; delete[] fc2; delete[] bDensity2;
   }
 
 
@@ -299,11 +297,10 @@ namespace {
     }
     EXPECT_LE(maxvalR, sTconst);//Maximum interpolated oldsTempR value should be less than or equal to maximum in oldsTemp2 (sTconst = last layer)
     EXPECT_EQ(stValues.oldsTempR[nRgr + 1], sTconst); //Temperature in last interpolated layer should equal sTconst
-    double *array_list[] = { bDensity2, fc2, wp2};
 
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
-    Deallocate_pointers(array_list);
+    delete[] bDensity2; delete[] fc2; delete[] wp2;
   }
 
   // Test set layer to frozen or unfrozen 'set_frozen_unfrozen'
@@ -353,10 +350,9 @@ namespace {
       // Test
       EXPECT_EQ(0,stValues.lyrFrozen[i]);
     }
-    double *array_list[] = {sTemp3, sTemp4, swc2, swc_sat2};
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
-    Deallocate_pointers(array_list);
+    delete[] sTemp3; delete[] sTemp4; delete[] swc2; delete[] swc_sat2;
   }
 
   // Test soil temperature today function 'soil_temperature_today'
@@ -365,7 +361,7 @@ namespace {
     // declare inputs and output
     double delta_time = 86400., deltaX = 15.0, T1 = 20.0, sTconst = 4.16, csParam1 = 0.00070,
     csParam2 = 0.000030, shParam = 0.18;
-    int nRgr =65;
+    unsigned int nRgr =65;
     Bool ptr_stError = swFALSE;
 
     pcg32_random_t STTF_rng;
@@ -381,7 +377,7 @@ namespace {
     double *fcR = new double[nRgr + 2];
     double *vwcR = new double[nRgr + 2];
     double *bDensityR = new double[nRgr + 2];
-    int i = 0.;
+    unsigned int i = 0.;
     for (i = 0; i <= nRgr + 1; i++) {
       sTempR[i] = RandNorm(1.5, 1,&STTF_rng);
       oldsTempR[i] = RandNorm(1.5, 1,&STTF_rng);
@@ -424,9 +420,11 @@ namespace {
     //Check that ptr_stError is TRUE
     EXPECT_EQ(ptr_stError, 1);
     double *array_list[] = {sTempR2, oldsTempR3, sTempR, oldsTempR, wpR, fcR, vwcR, bDensityR};
+    for (i = 0; i < length(array_list); i++){
+      delete[] array_list[i];
+    }
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
-    Deallocate_pointers(array_list);
   }
 
   // Test main soil temperature function 'soil_temperature'
@@ -520,11 +518,10 @@ namespace {
 
     // Check that ptr_stError is TRUE
     EXPECT_EQ(ptr_stError, 1);
-    double *array_list[] = {sTemp2, oldsTemp2};
 
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
-    Deallocate_pointers(array_list);
+    delete[] oldsTemp2; delete[] sTemp2;
   }
 
   // Test main soil temperature function 'soil_temperature'
@@ -622,10 +619,11 @@ namespace {
       EXPECT_NE(stValues.oldsTempR[k], SW_MISSING);
     }
     double *array_list[] = { swc2, swc_sat2, bDensity2, fc2, wp2};
-
+    for (i = 0; i < length(array_list); i++){
+      delete[] array_list[i];
+    }
     // Reset to global state
     Reset_SOILWAT2_after_UnitTest();
-    Deallocate_pointers(array_list);
   }
 
   // Test that main soil temperature functions fails when it is supposed to
@@ -670,10 +668,9 @@ namespace {
       oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError), "@ generic.c LogError");
-    double *array_list[] = {swc, swc_sat, bDensity, fc, wp};
 
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
-    Deallocate_pointers(array_list);
+    delete[] swc; delete[] swc_sat; delete[] bDensity; delete[] fc; delete[] wp;
   }
 }
