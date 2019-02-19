@@ -1056,7 +1056,7 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[],
 	 **********************************************************************/
 
 	unsigned int i, j;
-	double swp[OVER_SIZE] = {0}, swpwp[OVER_SIZE] = {0}, relCondroot[OVER_SIZE] = {0}, hydredmat[OVER_SIZE][OVER_SIZE] = {0};
+	double swp[OVER_SIZE] = {0}, swpwp[OVER_SIZE] = {0}, relCondroot[OVER_SIZE] = {0}, hydredmat[OVER_SIZE][OVER_SIZE] = {{0}};
   double Rx, swa, hydred_sum, x;
 
 
