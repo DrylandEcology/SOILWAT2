@@ -282,7 +282,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 
 	int i;
 	int j;
-	double d[OVER_SIZE];
+	double d[OVER_SIZE] = {0};
 	double push, ksat_rel;
 
 	ST_RGR_VALUES *st = &stValues;
@@ -982,7 +982,7 @@ void infiltrate_water_low(double swc[], double drain[], double *drainout, unsign
 
 	unsigned int i;
 	int j;
-	double drainlw = 0.0, swc_avail, drainpot, d[OVER_SIZE], push, kunsat_rel	;
+	double drainlw = 0.0, swc_avail, drainpot, d[OVER_SIZE] = {0}, push, kunsat_rel	;
 
 	ST_RGR_VALUES *st = &stValues;
 
@@ -1056,7 +1056,7 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[],
 	 **********************************************************************/
 
 	unsigned int i, j;
-	double swp[OVER_SIZE], swpwp[OVER_SIZE], relCondroot[OVER_SIZE], hydredmat[OVER_SIZE][OVER_SIZE];
+	double swp[OVER_SIZE] = {0}, swpwp[OVER_SIZE] = {0}, relCondroot[OVER_SIZE] = {0}, hydredmat[OVER_SIZE][OVER_SIZE] = {0};
   double Rx, swa, hydred_sum, x;
 
 
