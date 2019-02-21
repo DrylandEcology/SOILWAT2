@@ -581,13 +581,6 @@ namespace {
     for (k = 0; k < nlyrs2; k++)
     {
       //swprintf("\n k %u, sTemp3 %f", k, sTemp3[k]);
-      if (sTemp3[k] == 999){
-        //isPassing = false;
-        for(i = 0; i < length(bDensity2); i++){
-          printf("bDensity2: %f\n",bDensity2[i]);
-          printf("fc2: %f\n", fc2[i]);
-        }
-      }
       EXPECT_GT(sTemp3[k], -100); // Sense check
       EXPECT_LT(sTemp3[k], 100); // Sense check
     }
