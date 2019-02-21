@@ -46,6 +46,7 @@ extern "C" {
 #define BARCONV     1024.
 #define SEC_PER_DAY	86400. // the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400 seconds)
 #define OVER_SIZE     99 // initialize (double) arrays to a size bigger than possible access
+#define STR_OVER_SIZE 999
 
 //was 256 & 1024...
 #define MAX_FILENAMESIZE 512

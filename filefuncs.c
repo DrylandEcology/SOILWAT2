@@ -16,7 +16,7 @@
 #include "filefuncs.h"
 #include "generic.h"
 #include "myMemory.h"
-
+#include "SW_Defines.h"
 #ifdef RSOILWAT
   #include <R.h>    // for REvprintf(), error(), and warning()
 #endif
@@ -75,7 +75,7 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 	 *           to be called each time replacement args occur.
 	 */
 
-	char outfmt[50 + strlen(fmt)]; /* to prepend err type str */
+	char outfmt[STR_OVER_SIZE] = {0}; /* to prepend err type str */
 	va_list args;
 
 	va_start(args, fmt);
