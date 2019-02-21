@@ -1059,7 +1059,6 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[],
 	double swp[OVER_SIZE] = {0}, swpwp[OVER_SIZE] = {0}, relCondroot[OVER_SIZE] = {0}, hydredmat[OVER_SIZE][OVER_SIZE] = {{0}};
   double Rx, swa, hydred_sum, x;
 
-
 	ST_RGR_VALUES *st = &stValues;
 
 	for (i = 0; i < nlyrs; i++) {
@@ -1214,8 +1213,7 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
   #ifdef SWDEBUG
   int debug = 0;
   #endif
-	double depth_Soil2[OVER_SIZE] = {0};
-  double sTemp2[OVER_SIZE] = {0};
+	double depth_Soil2[OVER_SIZE] = {0}, sTemp2[OVER_SIZE] = {0};
 
 	//transfer data to include bottom conditions; do not include surface temperature in interpolations
 	for (i = 0; i < nlyrSoil; i++) {
@@ -1363,8 +1361,7 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
   #endif
 	double d1 = 0.0, d2 = 0.0, acc = 0.0;
 	// double fc_vwc[nlyrs], wp_vwc[nlyrs];
-  double fc_vwc[OVER_SIZE] = {0};
-  double wp_vwc[OVER_SIZE] = {0};
+  double fc_vwc[OVER_SIZE] = {0}, wp_vwc[OVER_SIZE] = {0};
 
 	// pointers
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
