@@ -508,7 +508,6 @@ namespace {
   // is only called in the soil_temperature function
   TEST(SWFlowTempTest, MainSoilTemperatureFunction_LyrMAX) {
     // *****  Test when nlyrs = MAX_LAYERS  ***** //
-
     pcg32_random_t soilTemp_rng;
     RandSeed(0,&soilTemp_rng);
 
@@ -529,8 +528,8 @@ namespace {
     double swc2[nlyrs2], swc_sat2[nlyrs2], bDensity2[nlyrs2], fc2[nlyrs2], wp2[nlyrs2];
 
     for (i = 0; i < nlyrs2; i++) {
-      bDensity2[i] = fmaxf(RandNorm(1.,0.5,&soilTemp_rng), 0.1); // greater than 0.1
-      fc2[i] = fmaxf(RandNorm(1.5, 0.5,&soilTemp_rng), 0.1); // greater than 0.1
+      bDensity2[i] = fmaxf(RandNorm(1.,0.5,&soilTemp_rng), 0.129); // greater than 0.129
+      fc2[i] = fmaxf(RandNorm(1.5, 0.5,&soilTemp_rng), 0.129); // greater than 0.129
       swc_sat2[i] = fc2[i] + 0.2; //swc_sat > fc2
       swc2[i] =  fmax(swc_sat2[i] - 0.3, 0.01); // swc_sat > swc > 0
       wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp < fc
@@ -582,6 +581,13 @@ namespace {
     for (k = 0; k < nlyrs2; k++)
     {
       //swprintf("\n k %u, sTemp3 %f", k, sTemp3[k]);
+      if (sTemp3[k] == 999){
+        //isPassing = false;
+        for(i = 0; i < length(bDensity2); i++){
+          printf("bDensity2: %f\n",bDensity2[i]);
+          printf("fc2: %f\n", fc2[i]);
+        }
+      }
       EXPECT_GT(sTemp3[k], -100); // Sense check
       EXPECT_LT(sTemp3[k], 100); // Sense check
     }
