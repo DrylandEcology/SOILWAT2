@@ -149,8 +149,8 @@ void _set_layers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel,
       lyrno) * v->lyr[lyrno]->width;
     calculate_soilBulkDensity(matricd[i], f_gravel[i], lyrno);
 
-    swprintf("L: %d/%d depth=%3.1f, width=%3.1f\n", i, lyrno, dmax[i],
-      v->lyr[lyrno]->width);
+//    swprintf("L: %d/%d depth=%3.1f, width=%3.1f\n", i, lyrno, dmax[i],
+//      v->lyr[lyrno]->width);
   }
 
   if (v->deepdrain)
@@ -158,7 +158,7 @@ void _set_layers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel,
     lyrno = _newlayer();
     v->lyr[lyrno]->width = 1.0;
   }
-  swprintf("Last: %d/%d width=%3.1f\n", i, lyrno, v->lyr[lyrno]->width);
+//  swprintf("Last: %d/%d width=%3.1f\n", i, lyrno, v->lyr[lyrno]->width);
 
   // Re-initialize site parameters based on new soil layers
   init_site_info();

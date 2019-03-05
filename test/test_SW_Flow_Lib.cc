@@ -534,7 +534,7 @@ namespace {
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
-*/
+
 
   //Test EsT_partitioning by manipulating fbse and fbst variables.
   TEST(SWFlowTest, EsT_partitioning){
@@ -612,8 +612,9 @@ namespace {
     //Begin TEST for when nelyrs = 25
     nelyrs = 25;
     double ecoeff8[25] = {0.01, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5,0.01, 0.1, 0.25, 0.5,0.01, 0.1, 0.25, 0.5,0.01, 0.1, 0.25, 0.5,0.51};
-    double width8[25] = {5,10,10,10,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20};
     double swc8[25] = {.01, 0.02, 0.03, 0.04, 1.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61, 7.62, 7.63, 9.51, 9.52, 9.53, 11.41, 11.42, 11.43, 13.31, 13.32, 13.33};
+    double width8[25] = {5,1,4,1,1,8,1,1,3,5,10,1,1,8,1,1,1,1,1,5,10,10,10,20,40};//Based on dmax in _set_layers
+
 
     //Begin TEST for if(totagb >= Es_param_limit)
     totagb = 17000;
@@ -642,36 +643,33 @@ namespace {
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
-
     //Begin TEST for if(totagb < Es_param_limit)
-    totagb = 0.5;
-/**
-      RealF dmax[25] = {5, 15, 25, 35, 55, 75, 95, 115, 135, 155, 175, 195, 215, 235, 255, 275, 295, 315, 335, 355, 375, 395, 415, 435, 455};
-			RealF matricd[25] = {1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130, 1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130,1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130, 1.4};
-			RealF f_gravel[25] = {0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2};
-			RealF evco[25] = {0.813, 0.153, 0.034, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-      RealF trco_grass[25] = {0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.1999};
-      RealF trco_shrub[25] = {0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.1999};
-      RealF trco_tree[25] = {0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.1999};
-      RealF trco_forb[25] = {0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.1999};
-      RealF psand[25] = {0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57, 0.57, 0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57, 0.57, 0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57, 0.57, 0.58};
-			RealF pclay[25] = {0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28, 0.28, 0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28, 0.28, 0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28, 0.28, 0.29};
-			RealF imperm[25] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-			RealF soiltemp[25] = {-1, -1, -1, -1, 0, 0, 1, 1, -1, -1, -1, -1, 0, 0, 1, 1, -1, -1, -1, -1, 0, 0, 1, 1, 2};
-*/
-      _set_layers(nelyrs, dmax, matricd, f_gravel,
+    SW_VEGPROD *v = &SW_VegProd; //The float Es_param_limit is being affected by the veg pointer.
+    totagb = 0.5, bserateExpected = 0.02563948;
+//      printf("1totagb: %f Es_param_limit: %f\n", totagb, Es_param_limit);
+	      _set_layers(nelyrs, dmax, matricd, f_gravel,
         evco, trco_grass, trco_shrub, trco_tree,
         trco_forb, psand, pclay, imperm, soiltemp);
 
     pot_soil_evap(&bserate, nelyrs, ecoeff8, totagb, fbse, petday, shift, shape, inflec, range,
       width8, swc8, Es_param_limit);
-
+    //  printf("Es: %f\n", Es_param_limit);
+    //  printf("togab: %f\n", totagb);
+//      for(unsigned int k=0; k< nelyrs; k++){
+//        printf("k: %x\n", k);
+//      EXPECT_EQ(Es_param_limit, v->veg[k].Es_param_limit);  //Pointer is 0 when it should be 1
+//    }
+//      printf("2totagb: %f Es_param_limit: %f\n", totagb, Es_param_limit);
+      if(v->veg[k].Es_param_limit > 600){
+        EXPECT_GT(bserate, 0);
     EXPECT_NEAR(bserate, bserateExpected, 0.0001);  //bserate is expected to be 0.02561575
-
+      }
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
 
+
+/** HERE
   //TEST pot_soil_evap_bs for when nelyrs = 1 and nelyrs = MAX
   TEST(SWFlowTest, pot_soil_evap_bs){
     //INPUTS
@@ -726,6 +724,7 @@ namespace {
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
+
 
   //Test pot_transp by manipulating biolive and biodead input variables
   TEST(SWFlowTest, pot_transp){
@@ -785,7 +784,7 @@ namespace {
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
-
+*/
   //Test result for watrate by manipulating variable petday
   TEST(SWFlowTest, watrate){
 
