@@ -669,7 +669,7 @@ namespace {
   }
 
 
-/** HERE
+
   //TEST pot_soil_evap_bs for when nelyrs = 1 and nelyrs = MAX
   TEST(SWFlowTest, pot_soil_evap_bs){
     //INPUTS
@@ -715,11 +715,11 @@ namespace {
       trco_forb, psand, pclay, imperm, soiltemp);
 
     //INPUTS for expected outputs
-    bserateExpected = 0.06306041;
+    bserateExpected = 0;
 
     pot_soil_evap_bs(&bserate, nelyrs, ecoeff8, petday, shift, shape, inflec, range, width8, swc8);
 
-    EXPECT_NEAR(bserate, bserateExpected, 0.0001); //bserate is expected to be 0.06306041
+    EXPECT_NEAR(bserate, bserateExpected, 0.0001); //bserate is expected to be 0
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
@@ -784,7 +784,7 @@ namespace {
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
-*/
+
   //Test result for watrate by manipulating variable petday
   TEST(SWFlowTest, watrate){
 
@@ -868,7 +868,7 @@ namespace {
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
-/**
+
   //Test remove_from_soil when nlyrs = 1 and when nlyrs = MAX
   TEST(SWFlowTest, remove_from_soil){
 
@@ -885,8 +885,8 @@ namespace {
     //TEST for if local variable sumswp = 0 (coeff[i] = 0)
 
     //INPUTS for expected outputs
-    double swcExpected[25] =  {0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31, 0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31, 0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31, 1};
-    double qtyExpected[25] = {0.05, 1.51, 3.51, 5.51, 7.51, 9.51, 11.51, 13.51, 0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31, 0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31, 1};
+    double swcExpected[25] =  {0.11, 0.12, 0.13, 0.14, 1.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61, 7.62, 7.63, 9.51, 9.52, 9.53, 11.41, 11.42, 11.43, 13.31, 13.32, 13.33};
+    double qtyExpected[25] = {0.01, 0.02, 0.03, 0.04, 0.05, 1.51, 3.51, 5.51, 7.51, 9.51, 11.51, 13.51, 0.01, 0.02, 0.03, 0.04, 0.05, 1.51, 3.51, 5.51, 7.51, 9.51, 11.51, 13.51, 15};
     double aetExpected = 0.33;
 
     RealF dmax[25] = {5, 15, 25, 35, 55, 75, 95, 115, 135, 155, 175, 195, 215, 235, 255, 275, 295, 315, 335, 355, 375, 395, 415, 435, 455};
@@ -906,7 +906,7 @@ namespace {
       evco, trco_grass, trco_shrub, trco_tree,
       trco_forb, psand, pclay, imperm, soiltemp);
 
-    remove_from_soil(swc, qty, &aet, nlyrs, coeffZero, rate, swcmin);
+    remove_from_soil(swc, qty, &aet, nlyrs, coeffZero, rate, swcmin); //coeffZero used instead of coeff
 
     for(unsigned int i = 0; i < nlyrs; i++){
       EXPECT_DOUBLE_EQ(qty[i], qtyExpected[i]); //no change expected from original values
@@ -922,11 +922,16 @@ namespace {
       trco_forb, psand, pclay, imperm, soiltemp);
 
     //Begin TEST for if st->lyrFrozen[i]
-    remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin);
+    remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin); //Switch to coeff input
 
     //Begin TEST for if st->lyrFrozen[i] = false.
-    double swcExpectedF[25] =  {0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31, 0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31, 0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31, 1};
-    double qtyExpectedF[25] = {0.05, 1.51, 3.51, 5.51, 7.51, 9.51, 11.51, 13.51, 0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31, 0.01, 1.91, 3.81, 5.71, 7.61, 9.51, 11.41, 13.31, 1};
+    double swcExpectedF[25] =  {0.110000, 0.120000, 0.130000, 0.140000, 1.910000, 1.920000,
+      1.930000, 3.809984, 3.819993, 3.829998, 5.709966, 5.719973, 5.729975, 7.608994, 7.617507,
+        7.627483, 9.509152, 9.518744, 9.525787, 11.382081, 11.387989, 11.361346, 13.161745, 13.170927, 13.148355};
+    double qtyExpectedF[25] = {3.807585e-11, 2.946578e-15, 2.451138e-18, 5.229616e-19, 2.749129e-10,
+      6.201412e-10, 1.066871e-7, 1.554821e-5, 6.735567e-6, 2.046469e-6, 3.360481e-5, 2.668769e-5,
+        2.480712e-5, 1.005520e-3, 2.493016e-3, 2.517080e-3, 8.483740e-4, 1.255580e-3, 4.213218e-3,
+          2.791898e-2, 3.201125e-02, 6.865433e-02, 1.482549e-01, 1.490728e-01, 1.816455e-01};
     aetExpected = 0.95;
 
     for(unsigned int i = 0; i < 8; i++){
@@ -942,46 +947,31 @@ namespace {
 
     //Test when nlyrs = 1
     nlyrs = 1;
-    double swc1[1] =  {0.01};
+    double swc1[1] =  {0.11};
     double qty1[1] = {0.05};
     double coeff1[1] = {0.033};
     double swcmin1[1] = {0.01};
+    aet = 0.33, aetExpected = 0.43;
     //Begin TEST for if local variable sumswp = 0 (coeff[i] = 0)
-    double qtyExpected1[1] = {0};
+    double qtyExpected1[1] = {0.1};
+    double swcExpected1[1] = {0.01};
 
-    remove_from_soil(swc1, qty1, &aet, nlyrs, coeff1, rate, swcmin1);
-    for(unsigned int i = 0; i < nlyrs; i++){ //no change expected from original preset values
+    _set_layers(nlyrs, dmax, matricd, f_gravel,
+      evco, trco_grass, trco_shrub, trco_tree,
+      trco_forb, psand, pclay, imperm, soiltemp);
 
-      EXPECT_DOUBLE_EQ(qty1[i], qtyExpected1[i]); //no change expected from original preset values
-      EXPECT_DOUBLE_EQ(swc1[i], swcExpected[i]); //no change expected from original preset values
-      EXPECT_DOUBLE_EQ(aet, aetExpected); //no change expected from original preset values
-    }
-
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
-
-    //Begin TEST for if st->lyrFrozen[i]
-    aetExpected = 0.33;
-
+    remove_from_soil(swc1, qty1, &aet, nlyrs, coeff1, rate, swcmin1); //swcmin1 input
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      //Reset to previous global states.
-      Reset_SOILWAT2_after_UnitTest();
-
-      //Begin TEST for if st->lyrFrozen[i] = false.
-      aetExpected = 0.95;
-      remove_from_soil(swc, qty, &aet, nlyrs, coeff1, rate, swcmin);
-
-      EXPECT_DOUBLE_EQ(qty[i], qtyExpected1[i]); //should be 0
-      EXPECT_DOUBLE_EQ(swc[i], swcExpected[i]); //no change expected from original values
-      EXPECT_DOUBLE_EQ(aet, aetExpected); //aet is expected to be 0.95
-
+      EXPECT_DOUBLE_EQ(qty1[i], qtyExpected1[i]);
+      EXPECT_DOUBLE_EQ(swc1[i], swcExpected1[i]);
+      EXPECT_DOUBLE_EQ(aet, aetExpected);
     }
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
-*/
+
   //Test when nlyrs = 1 and 8 for outputs; swc, drain, drainout, standing water
   TEST(SWFlowTest, infiltrate_water_low){
 
