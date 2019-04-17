@@ -59,7 +59,7 @@ extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
 RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
 #ifdef STEPWAT
-extern ModelType Globals; // defined in `ST_Main.c`
+extern ModelType *Globals; // defined in `ST_Main.c`
 // `p_OUTsd` used by STEPWAT2 for standard-deviation of mean aggregation
 RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
 /** `prepare_IterationSummary` is TRUE if STEPWAT2 is called with `-o` flag
@@ -112,7 +112,7 @@ void SW_OUT_set_nrow(void)
 	startyear = SW_Model.startyr;
 
 	#ifdef STEPWAT
-	n_yrs = Globals.runModelYears;
+	n_yrs = Globals->runModelYears;
 	endyear = startyear + n_yrs + 1;
 
 	#else
