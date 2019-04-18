@@ -881,7 +881,7 @@ namespace {
     double coeffZero[25] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     double swcmin[25] = {0.01, 0.02, 0.03, 0.04, 1.71, 1.72, 1.73, 3.61, 3.62, 3.63, 5.51, 5.52, 5.53, 7.41, 7.42, 7.43, 9.31, 9.32, 9.33, 11.11, 11.12, 11.13, 13.01, 13.02, 13.03};
 
-    //Begin TEST when nlyrs = 8, only 8 inputs in soils.in file.
+    //Begin TEST when nlyrs = MAX LAYERS
     //TEST for if local variable sumswp = 0 (coeff[i] = 0)
 
     //INPUTS for expected outputs
@@ -1241,18 +1241,18 @@ namespace {
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
-/**
-  //TEST for hydraulic_redistribution when nlyrs = 8 and nlyrs = 1
+
+  //TEST for hydraulic_redistribution when nlyrs = MAX_LAYERS and nlyrs = 1
   TEST(SWFlowTest, hydraulic_redistribution){
 
     //INPUTS
-    double swc[25] = {0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 2};
-    double swcwp[25] = {0.01, 0.11, 0.21, 0.51, 0.71, 0.91, 1.01, 1.11, 0.01, 0.11, 0.21, 0.51, 0.71, 0.91, 1.01, 1.11, 0.01, 0.11, 0.21, 0.51, 0.71, 0.91, 1.01, 1.11, 3};
-    double lyrRootCo[25] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1};
-    double hydred[25] = {1,2,3,4,5,6,7,8, 1,2,3,4,5,6,7,8, 1,2,3,4,5,6,7,8, 9}; //hydred[0] != 0 for test
-    unsigned int nlyrs = 25;
+    double swc[25] = {5.01,10.005,10.02,10.03,20.01, 20.02, 20.03, 20.04, 20.01, 20.05, 20.06, 20.07, 20.08, 20.09, 20.10, 20.11, 20.12, 20.13, 20.14, 20.15, 20.16, 20.17, 20.18, 20.19, 20.2};
+    double swcwp[25] = {5,10,10,10,20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20};
+    double lyrRootCo[25] = {.10,.11,.12,.13,.14,.15,.16,.17, .18,.19,.20,.21,.22,.23,.24,.25, .26,.27,.28,.29,.30,.31,.32,.33, .34};
+    double hydred[25] = {1,2,3,4,5,6,7,8, 1,2,3,4,5,6,7,8, 1,2,3,4,5,6,7,8, 9}; //hydred[0] != 0 for test, otherwise these don't matter as they are reset to zero in function
+    unsigned int nlyrs = MAX_LAYERS;
     double maxCondroot = -0.2328;
-    double swp50 = 10;
+    double swp50 = 1.2e12;
     double shapeCond = 1;
     double scale = 0.3;
 
@@ -1274,10 +1274,13 @@ namespace {
       trco_forb, psand, pclay, imperm, soiltemp);
 
     //INPUTS for expected outputs
-    double swcExpected[25] = {0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 2};
+//    double swcExpected[25] = {0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 2};
+    double swcExpected[25] = {5.010, 10.005, 10.020, 10.030, 20.010, 20.020, 20.030, 20.040,
+        20.010, 20.050, 20.060, 20.070, 20.080, 20.090, 20.100, 20.110, 20.120, 20.130, 20.140,
+          20.150, 20.160, 20.170, 20.180, 20.190, 20.200};
     double hydredExpected[25] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    //Begin TESTing when nlyrs = 8
+    //Begin TESTing when nlyrs = MAX
     //Begin TEST for if swp[i] < swpwp[i] OR swp[j] < swpwp[j] AND lyrFrozen == false; j = i + 1
     hydraulic_redistribution(swcwp, swc, lyrRootCo, hydred, nlyrs, maxCondroot, swp50, shapeCond, scale);
       //inputs for swc and swcwp have been switched
@@ -1294,8 +1297,14 @@ namespace {
 
     //Begin TEST for if else ^^
     //INPUTS for expected outputs.
-    double swcExpected2[25] = {0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 2};
-    double hydredExpected2[25] = {0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 0.02, 0.12, 0.22, 0.52, 0.72, 0.92, 1.02, 1.12, 2};
+    double swcExpected2[25] = {5.010, 10.005, 10.020, 10.030, 20.010, 20.020, 20.030, 20.040,
+        20.010, 20.050, 20.060, 20.070, 20.080, 20.090, 20.100, 20.110, 20.120, 20.130, 20.140,
+          20.150, 20.160, 20.170, 20.180, 20.190, 20.200};
+    double hydredExpected2[25] = {0, 4.298116e-07, -8.801668e-08, -1.314532e-07,
+        -1.885189e-07, -2.053540e-07, -1.214441e-07, -1.316728e-07, 2.016268e-06, 1.453133e-07,
+          -2.634546e-07, -3.011598e-07, -3.274744e-07, -3.483882e-07, -2.135987e-07, -2.271032e-07,
+            2.816679e-06, 1.642664e-07, -4.138196e-07, -4.647347e-07, -4.989383e-07, -5.252975e-07,
+              -3.362445e-07, -3.541813e-07, -4.314838e-07};
 
     _set_layers(nlyrs, dmax, matricd, f_gravel,
       evco, trco_grass, trco_shrub, trco_tree,
@@ -1362,5 +1371,4 @@ namespace {
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
-*/
 }
