@@ -81,7 +81,7 @@ extern IntUS ncol_OUT[];
 #ifdef STEPWAT
 extern Bool prepare_IterationSummary;
 extern ModelType Globals; // defined in `ST_Main.c`
-extern SXW_t SXW; // structure to store values in and pass back to STEPPE
+extern SXW_t* SXW; // structure to store values in and pass back to STEPPE
 extern TimeInt tOffset; // defined in `SW_Output.c`
 #endif
 
@@ -442,10 +442,10 @@ void get_temp_SXW(OutPeriod pd)
 		SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
 
 		if (pd == eSW_Month) {
-			SXW.temp_monthly[SW_Model.month - tOffset] = vo->temp_avg;
+			SXW->temp_monthly[SW_Model.month - tOffset] = vo->temp_avg;
 		}
 		else if (pd == eSW_Year) {
-			SXW.temp = vo->temp_avg;
+			SXW->temp = vo->temp_avg;
 		}
 	}
 }
@@ -511,10 +511,10 @@ void get_precip_SXW(OutPeriod pd)
 		SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
 
 		if (pd == eSW_Month) {
-			SXW.ppt_monthly[SW_Model.month - tOffset] = vo->ppt;
+			SXW->ppt_monthly[SW_Model.month - tOffset] = vo->ppt;
 		}
 		else if (pd == eSW_Year) {
-			SXW.ppt = vo->ppt;
+			SXW->ppt = vo->ppt;
 		}
 	}
 }
@@ -779,7 +779,7 @@ void get_swcBulk_SXW(OutPeriod pd)
 
 		ForEachSoilLayer(i)
 		{
-			SXW.swc[Ilp(i, SW_Model.month - tOffset)] = vo->swcBulk[i];
+			SXW->swc[Ilp(i, SW_Model.month - tOffset)] = vo->swcBulk[i];
 		}
 	}
 }
@@ -1192,7 +1192,7 @@ void get_transp_SXW(OutPeriod pd)
 		/* total transpiration */
 		ForEachSoilLayer(i)
 		{
-			SXW.transpTotal[Ilp(i, SW_Model.month - tOffset)] = vo->transp_total[i];
+			SXW->transpTotal[Ilp(i, SW_Model.month - tOffset)] = vo->transp_total[i];
 		}
 
 		/* transpiration for each vegetation type */
@@ -1200,7 +1200,7 @@ void get_transp_SXW(OutPeriod pd)
 		{
 			ForEachSoilLayer(i)
 			{
-				SXW.transpVeg[k][Ilp(i, SW_Model.month - tOffset)] = vo->transp[k][i];
+				SXW->transpVeg[k][Ilp(i, SW_Model.month - tOffset)] = vo->transp[k][i];
 			}
 		}
 	}
@@ -1647,7 +1647,7 @@ void get_aet_SXW(OutPeriod pd)
 	if (pd == eSW_Year) {
 		SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
 
-		SXW.aet = vo->aet;
+		SXW->aet = vo->aet;
 	}
 }
 #endif
