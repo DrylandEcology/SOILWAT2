@@ -89,6 +89,13 @@ __Tests, documentation, and code__ form a trinity
     make test_severe test_run  # compiles/executes with strict/severe flags
     make clean                 # cleans build artifacts
     ```
+  * If you want to run unit tests repeatedly (e.g., to sample a range of
+    random numbers), then you may use the bash-script `many_test_runs.sh` which
+    runs `N` number of times and reports only unit test failures, e.g.,
+    ```
+    ./many_test_runs.sh # will run a default (currently, 10) number of times
+    N=3 ./many_test_runs.sh # will run 3 replicates
+    ```
   * Development/feature branches can only be merged into master if they pass
     all checks on `appveyor` and `travis` continuous integration servers, i.e.,
     run the following locally to prepare a pull-request or commit to be reviewed
