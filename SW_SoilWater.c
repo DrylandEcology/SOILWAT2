@@ -925,12 +925,18 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
 }
 
 /**
-  @brief Calculates the soil water potential or the soil water content of the current layer as a functions
-         of soil texture at the layer.
+  @brief Calculates the soil water potential from soil water content of the
+         n-th soil layer.
 
   The equation and its coefficients are based on a
   paper by Cosby,Hornberger,Clapp,Ginn,  in WATER RESOURCES RESEARCH
   June 1984.  Moisture retention data was fit to the power function.
+
+  The code assumes the following conditions (which are checked during data input):
+      * width > 0 which is checked by function `_read_layers`
+      * fractionGravel in [0, 1] which is checked by function `_read_layers`
+      * thetasMatric > 0 which is checked by function `water_eqn`
+      * bMatric != 0 which is checked by function `water_eqn`
 
   @param fractionGravel Fraction of soil containing gravel.
   @param swcBulk Soilwater content of the current layer (cm/layer)
@@ -974,17 +980,28 @@ RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n) {
 	 **********************************************************************/
 
 	SW_LAYER_INFO *lyr = SW_Site.lyr[n];
-	float theta1, swp = 0.;
+	RealD theta1, theta2, swp = .0;
 
 	if (missing(swcBulk) || ZRO(swcBulk))
 		return 0.0;
 
 	if (GT(swcBulk, 0.0)) {
-		if (EQ(fractionGravel,1.0))
-			theta1 = 0.0;
-		else
-			theta1 = (swcBulk / lyr->width) * 100. / (1. - fractionGravel);
-		swp = lyr->psisMatric / powe(theta1/lyr->thetasMatric, lyr->bMatric) / BARCONV;
+		// we have soil moisture
+
+		// calculate matric VWC from bulk VWC
+		theta1 = (swcBulk / lyr->width) * 100. / (1. - fractionGravel);
+
+		// calculate (VWC / VWC(saturated)) ^ b
+		theta2 = powe(theta1 / lyr->thetasMatric, lyr->bMatric);
+
+		if (isnan(theta2) || ZRO(theta2)) {
+			LogError(logfp, LOGFATAL, "SW_SWCbulk2SWPmatric(): Year = %d, DOY=%d, Layer = %d:\n"
+					"\tinvalid value of (theta / theta(saturated)) ^ b = %f (must be != 0)\n",
+					SW_Model.year, SW_Model.doy, n, theta2);
+		} else {
+			swp = lyr->psisMatric / theta2 / BARCONV;
+		}
+
 	} else {
 		LogError(logfp, LOGFATAL, "Invalid SWC value (%.4f) in SW_SWC_swc2potential.\n"
 				"    Year = %d, DOY=%d, Layer = %d\n", swcBulk, SW_Model.year, SW_Model.doy, n);

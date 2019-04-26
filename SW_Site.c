@@ -143,12 +143,20 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 	RealD theta33, theta33t, OM = 0., thetasMatric33, thetasMatric33t; /* Saxton et al. auxiliary variables */
 
 	SW_Site.lyr[n]->thetasMatric = -14.2 * sand - 3.7 * clay + 50.5;
+
+	if (LE(SW_Site.lyr[n]->thetasMatric, 0.0)) {
+		LogError(logfp, LOGFATAL, "water_eqn(): invalid value of "
+				"theta(saturated, matric; Cosby et al. 1984) = %f (must be > 0)\n",
+				SW_Site.lyr[n]->thetasMatric);
+	}
+
 	SW_Site.lyr[n]->psisMatric = powe(10.0, (-1.58* sand - 0.63*clay + 2.17));
 	SW_Site.lyr[n]->bMatric = -0.3 * sand + 15.7 * clay + 3.10;
 
 	if (ZRO(SW_Site.lyr[n]->bMatric)) {
-		LogError(logfp, LOGFATAL, "Value of beta in SW_SIT_read() = %f\n"
-				"Possible division by zero.  Exiting", SW_Site.lyr[n]->bMatric);
+		LogError(logfp, LOGFATAL, "water_eqn(): invalid value of "
+				"beta = %f (must be != 0)\n",
+				SW_Site.lyr[n]->bMatric);
 	}
 
 	SW_Site.lyr[n]->binverseMatric = 1.0 / SW_Site.lyr[n]->bMatric;
@@ -161,6 +169,12 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 	thetasMatric33 = thetasMatric33t + (0.636 * thetasMatric33t - 0.107);
 
 	SW_Site.lyr[n]->swcBulk_saturated = SW_Site.lyr[n]->width * (theta33 + thetasMatric33 - 0.097 * sand + 0.043) * (1 - fractionGravel);
+
+	if (LE(SW_Site.lyr[n]->swcBulk_saturated, 0.0)) {
+		LogError(logfp, LOGFATAL, "water_eqn(): invalid value of "
+				"theta(saturated, bulk; Saxton et al. 2006) = %f (must be > 0)\n",
+				SW_Site.lyr[n]->swcBulk_saturated);
+	}
 
 }
 
@@ -459,52 +473,69 @@ static void _read_layers(void) {
 		x = sscanf(inbuf, "%f %f %f %f %f %f %f %f %f %f %f %f", &dmax, &matricd, &f_gravel,
 			&evco, &trco_veg[SW_GRASS], &trco_veg[SW_SHRUB], &trco_veg[SW_TREES],
 			&trco_veg[SW_FORBS], &psand, &pclay, &imperm, &soiltemp);
+
 		if (x < 10) {
 			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "%s : Incomplete record %d.\n", MyFileName, lyrno + 1);
+			LogError(logfp, LOGFATAL, "%s : Incomplete record %d.\n",
+				MyFileName, lyrno + 1);
 		}
-		if (LT(matricd,0.)) {
+
+		v->lyr[lyrno]->width = dmax - dmin;
+
+		if (LE(v->lyr[lyrno]->width, 0.)) {
+			fail = swTRUE;
+			fval = v->lyr[lyrno]->width;
+			errtype = Str_Dup("layer width");
+
+		} else if (LT(matricd, 0.)) {
 			fail = swTRUE;
 			fval = matricd;
 			errtype = Str_Dup("bulk density");
-		} else if (LT(f_gravel,0.) || GT(f_gravel,0.5)) {
+
+		} else if (LT(f_gravel, 0.) || GT(f_gravel, 0.5)) { // 0 <= gravel < 1
 			fail = swTRUE;
 			fval = f_gravel;
 			errtype = Str_Dup("gravel content");
 
-			swprintf("\nGravel content is either too HIGH (> 0.5), or too LOW (<0.0): %0.3f", f_gravel);
+			swprintf("\nGravel content is either too HIGH (1 > 0.5 >), or too LOW (<0.0): %0.3f", f_gravel);
 			swprintf("\nParameterization for Brooks-Corey equation may fall outside of valid range.");
 			swprintf("\nThis can cause implausible SWP values.");
 			swprintf("\nConsider setting SWC minimum in siteparam.in file.");
 
-		} else if (LE(psand,0.)) {
+		} else if (LE(psand, 0.)) {
 			fail = swTRUE;
 			fval = psand;
 			errtype = Str_Dup("sand proportion");
-		} else if (LE(pclay,0.)) {
+
+		} else if (LE(pclay, 0.)) {
 			fail = swTRUE;
 			fval = pclay;
 			errtype = Str_Dup("clay proportion");
-		} else if (LT(imperm,0.)) {
+
+		} else if (LT(imperm, 0.)) {
 			fail = swTRUE;
 			fval = imperm;
 			errtype = Str_Dup("impermeability");
 		}
+
 		if (fail) {
 			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "%s : Invalid %s (%5.4f) in layer %d.\n", MyFileName, errtype, fval, lyrno + 1);
+			LogError(logfp, LOGFATAL, "%s : Invalid %s (%5.4f) in layer %d.\n",
+					MyFileName, errtype, fval, lyrno + 1);
 		}
 
-		v->lyr[lyrno]->width = dmax - dmin;
 		dmin = dmax;
-		v->lyr[lyrno]->soilMatric_density = matricd;
 		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel;
+		v->lyr[lyrno]->soilMatric_density = matricd;
+		calculate_soilBulkDensity(matricd, f_gravel, lyrno);
 		v->lyr[lyrno]->evap_coeff = evco;
+
 		ForEachVegType(k)
 		{
 			v->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
 			v->lyr[lyrno]->my_transp_rgn[k] = 0;
 		}
+
 		v->lyr[lyrno]->fractionWeightMatric_sand = psand;
 		v->lyr[lyrno]->fractionWeightMatric_clay = pclay;
 		v->lyr[lyrno]->impermeability = imperm;
@@ -528,10 +559,8 @@ static void _read_layers(void) {
 		}
 
 		water_eqn(f_gravel, psand, pclay, lyrno);
-
 		v->lyr[lyrno]->swcBulk_fieldcap = SW_SWPmatric2VWCBulk(f_gravel, 0.333, lyrno) * v->lyr[lyrno]->width;
 		v->lyr[lyrno]->swcBulk_wiltpt = SW_SWPmatric2VWCBulk(f_gravel, 15, lyrno) * v->lyr[lyrno]->width;
-		calculate_soilBulkDensity(matricd, f_gravel, lyrno);
 
 		if (lyrno >= MAX_LAYERS) {
 			CloseFile(&f);
@@ -540,6 +569,7 @@ static void _read_layers(void) {
 		}
 
 	}
+
 	CloseFile(&f);
 
 	/* n_layers set in _newlayer() */

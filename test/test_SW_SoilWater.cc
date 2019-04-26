@@ -116,57 +116,108 @@ namespace{
 
   // Test the 'SW_SoilWater' function 'SW_SWCbulk2SWPmatric'
   TEST(SWSoilWaterTest, SWSWCbulk2SWPmatric){
+    // Note: function `SW_SWCbulk2SWPmatric` accesses `SW_Site.lyr[n]`
+
+    RealD tol = 1e-2; // pedotransfer functions are not very exact
     RealD fractionGravel = 0.2;
-    RealD swcBulk = 0;
+    RealD swcBulk;
+    RealD res;
+    RealD help;
     LyrIndex n = 1;
 
-    RealD res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     // when swc is 0, we expect res == 0
+    res = SW_SWCbulk2SWPmatric(fractionGravel, 0., n);
     EXPECT_EQ(res, 0.0);
-    Reset_SOILWAT2_after_UnitTest();
 
-    swcBulk = SW_MISSING;
-
-    res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
     // when swc is SW_MISSING, we expect res == 0
+    res = SW_SWCbulk2SWPmatric(fractionGravel, SW_MISSING, n);
     EXPECT_EQ(res, 0.0);
-    Reset_SOILWAT2_after_UnitTest();
 
-    // set variables for clean test
-    swcBulk = 4;
-    SW_Site.lyr[n] -> width = 1;
-    SW_Site.lyr[n] -> psisMatric = 1;
-    SW_Site.lyr[n] -> thetasMatric = 1;
-    SW_Site.lyr[n] -> bMatric = 1;
+    // if swc > field capacity, then we expect res < 0.33 bar
+    res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel,
+      SW_Site.lyr[n]->swcBulk_fieldcap + 0.1, n);
+    EXPECT_LT(res, 0.33 + tol);
 
-    res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
-    RealD actualExpectDiff = fabs(res - .00013310902);
-    // test main function calculations of swp
-    EXPECT_LT(actualExpectDiff, .0002);
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
+    // if swc = field capacity, then we expect res == 0.33 bar
+    res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel,
+      SW_Site.lyr[n]->swcBulk_fieldcap, n);
+    EXPECT_NEAR(res, 0.33, tol);
 
-    fractionGravel = 1;
+    // if field capacity > swc > wilting point, then
+    // we expect 15 bar > res > 0.33 bar
+    swcBulk = (SW_Site.lyr[n]->swcBulk_fieldcap +
+      SW_Site.lyr[n]->swcBulk_wiltpt) / 2;
+    res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel,
+      swcBulk, n);
+    EXPECT_GT(res, 0.33 - tol);
+    EXPECT_LT(res, 15 + tol);
 
-    res = SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n);
-    // when fractionGravel == 1, we expect the main equation in
-    // the function to not work correctly and thus return INFINITY
-    EXPECT_DOUBLE_EQ(res, INFINITY);
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
+    // if swc = wilting point, then we expect res == 15 bar
+    res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel,
+      SW_Site.lyr[n]->swcBulk_wiltpt, n);
+    EXPECT_NEAR(res, 15., tol);
+
+    // if swc < wilting point, then we expect res > 15 bar
+    swcBulk = (SW_Site.lyr[n]->swcBulk_wiltpt) / 2;
+    res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel,
+      swcBulk, n);
+    EXPECT_GT(res, 15. - tol);
+
+
+    // ------ meddling with internal value
+    // if fractionGravel == 1: no soil volume available to hold any soil water
+    // this would also lead to theta1 == 0 and division by zero
+    // this situation does normally not occur because it is
+    // checked during input by function `_read_layers`
+    res = SW_SWCbulk2SWPmatric(1., SW_Site.lyr[n]->swcBulk_fieldcap, n);
+    EXPECT_DOUBLE_EQ(res, 0.); // SWP "ought to be" infinity [bar]
+
+    // if theta(sat, matric; Cosby et al. 1984) == 0: would be division by zero
+    // this situation does normally not occur because it is
+    // checked during input by function `water_eqn`
+    help = SW_Site.lyr[n]->thetasMatric;
+    SW_Site.lyr[n]->thetasMatric = 0.;
+    res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel, 0., n);
+    EXPECT_DOUBLE_EQ(res, 0.); // SWP "ought to be" infinity [bar]
+    SW_Site.lyr[n]->thetasMatric = help;
+
+
+    // if lyr->width == 0: would be division by zero
+    // this situation does normally not occur because it is
+    // checked during input by function `_read_layers`
+    help = SW_Site.lyr[n]->bMatric;
+    SW_Site.lyr[n]->width = 0.;
+     res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel, 0., n);
+    EXPECT_DOUBLE_EQ(res, 0.); // swc < width
+    SW_Site.lyr[n]->width = help;
+
+
+    // No need to reset to previous global states because we didn't change any
+    // global states
+    // Reset_SOILWAT2_after_UnitTest();
   }
 
   TEST(SWSoilWaterDeathTest, SWSWCbulk2SWPmatricDeathTest) {
-    RealD fractionGravel = 0.2, swcBulk = -1;
     LyrIndex n = 1;
-    SW_Site.lyr[n] -> width = 1;
-    SW_Site.lyr[n] -> psisMatric = 1;
-    SW_Site.lyr[n] -> thetasMatric = 1;
-    SW_Site.lyr[n] -> bMatric = 1;
+    RealD help;
 
-    // when swcBulk < 0, we expect the program to fail and write to log
-    EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(fractionGravel, swcBulk, n),
-    "@ generic.c LogError");
+    // we expect fatal errors and write to log under two situations:
+
+    // if swc < 0: water content can physically not be negative
+    EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(
+      SW_Site.lyr[n]->fractionVolBulk_gravel, -1., n),
+      "@ generic.c LogError");
+
+    // if theta1 == 0 (i.e., gravel == 1) && lyr->bMatric == 0:
+    // would be division by NaN
+    // this is in normally checked during input by function `water_eqn`
+    help = SW_Site.lyr[n]->bMatric;
+    SW_Site.lyr[n]->bMatric = 0.;
+    EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(
+      1., SW_Site.lyr[n]->swcBulk_fieldcap, n),
+      "@ generic.c LogError");
+    SW_Site.lyr[n]->bMatric = help;
+
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
   }
