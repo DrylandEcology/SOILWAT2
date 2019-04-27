@@ -169,8 +169,12 @@ namespace{
     // this would also lead to theta1 == 0 and division by zero
     // this situation does normally not occur because it is
     // checked during input by function `_read_layers`
-    res = SW_SWCbulk2SWPmatric(1., SW_Site.lyr[n]->swcBulk_fieldcap, n);
-    EXPECT_DOUBLE_EQ(res, 0.); // SWP "ought to be" infinity [bar]
+    // Note: this situation is tested by the death test
+    // `SWSWCbulk2SWPmatricDeathTest`: we cannot test it here because the
+    // Address Sanitizer would complain with `UndefinedBehaviorSanitizer`
+    // see [issue #231](https://github.com/DrylandEcology/SOILWAT2/issues/231)
+    // res = SW_SWCbulk2SWPmatric(1., SW_Site.lyr[n]->swcBulk_fieldcap, n);
+    // EXPECT_DOUBLE_EQ(res, 0.); // SWP "ought to be" infinity [bar]
 
     // if theta(sat, matric; Cosby et al. 1984) == 0: would be division by zero
     // this situation does normally not occur because it is
@@ -180,7 +184,6 @@ namespace{
     res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel, 0., n);
     EXPECT_DOUBLE_EQ(res, 0.); // SWP "ought to be" infinity [bar]
     SW_Site.lyr[n]->thetasMatric = help;
-
 
     // if lyr->width == 0: would be division by zero
     // this situation does normally not occur because it is
@@ -210,7 +213,9 @@ namespace{
 
     // if theta1 == 0 (i.e., gravel == 1) && lyr->bMatric == 0:
     // would be division by NaN
-    // this is in normally checked during input by function `water_eqn`
+    // note: this case is in normally prevented due to checks of inputs by
+    // function `water_eqn` for `bMatric` and function `_read_layers` for
+    // `gravelFraction`
     help = SW_Site.lyr[n]->bMatric;
     SW_Site.lyr[n]->bMatric = 0.;
     EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(
