@@ -529,9 +529,9 @@ namespace {
   // is only called in the soil_temperature function
   TEST(SWFlowTempTest, MainSoilTemperatureFunction_LyrMAX) {
     // *****  Test when nlyrs = MAX_LAYERS  ***** //
-
     pcg32_random_t soilTemp_rng;
-    RandSeed(0,&soilTemp_rng);
+    RandSeed(0, &soilTemp_rng);
+
 
     unsigned int i, k;
 
@@ -547,19 +547,25 @@ namespace {
     double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double oldsTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double sTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double bDensity2[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
+        // we don't need soil texture, but we need SWC(sat), SWC(field capacity),
+    // and SWC(wilting point)
     double *swc2 = new double[nlyrs2];
     double *swc_sat2 = new double[nlyrs2];
-    double *bDensity2 = new double[nlyrs2];
     double *fc2 = new double[nlyrs2];
     double *wp2 = new double[nlyrs2];
 
     for (i = 0; i < nlyrs2; i++) {
-      bDensity2[i] = fmaxf(RandNorm(1.,0.5,&soilTemp_rng), 0.1); // greater than 0.1
-      fc2[i] = fmaxf(RandNorm(1.5, 0.5,&soilTemp_rng), 0.1); // greater than 0.1
-      swc_sat2[i] = fc2[i] + 0.2; //swc_sat > fc2
-      swc2[i] =  fmax(swc_sat2[i] - 0.3, 0.01); // swc_sat > swc > 0
-      wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp < fc
+      // SWC(wilting point): width > swc_wp > 0
+      wp2[i] = 0.1 * width2[i];
+      // SWC(field capacity): width > swc_fc > swc_wp
+      fc2[i] = fminf(width2[i], wp2[i] + 0.15 * width2[i]);
+      // SWC(saturation): width > swc_sat > swc_fc
+      swc_sat2[i] = fminf(width2[i], fc2[i] + 0.2 * width2[i]);
+      // SWC: swc_sat >= SWC > 0; here, swc_fc >= SWC >= swc_wp
+      swc2[i] = RandUniFloatRange(wp2[i], fc2[i], &soilTemp_rng);
+
       //swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
       //  i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
     }
@@ -618,10 +624,12 @@ namespace {
       //swprintf("\n k %u, newoldtempR %f", k, stValues.oldsTempR[k]);
       EXPECT_NE(stValues.oldsTempR[k], SW_MISSING);
     }
-    double *array_list[] = { swc2, swc_sat2, bDensity2, fc2, wp2};
+    
+    double *array_list[] = { swc2, swc_sat2, fc2, wp2};
     for (i = 0; i < length(array_list); i++){
       delete[] array_list[i];
     }
+    
     // Reset to global state
     Reset_SOILWAT2_after_UnitTest();
   }
