@@ -42,8 +42,9 @@ char **getfiles(const char *fspec, int *nfound);
  */
 void sw_error(int code, const char *format, ...)
 {
-  va_list(ap);
+  va_list ap;
   va_start(ap, format);
+
 #ifdef RSOILWAT
   REvprintf(format, ap);
 #else
