@@ -483,10 +483,9 @@ void get_dSWAbulk(int i){
 	float crit_val, prev_crit_val, smallestCritVal, vegFractionSum, newFraction;
 	float veg_type_in_use; // set to current veg type fraction value to avoid multiple if loops. should just need 1 instead of 3 now.
 	float inner_loop_veg_type; // set to inner loop veg type
-	int array_size = NVEGTYPES * NVEGTYPES;
 	smallestCritVal = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[0]];
-	RealF dSWA_bulk[array_size][array_size][MAX_LAYERS];
-	RealF dSWA_bulk_repartioned[array_size][array_size][MAX_LAYERS];
+	RealF dSWA_bulk[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES][MAX_LAYERS];
+	RealF dSWA_bulk_repartioned[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES][MAX_LAYERS];
 
   // need to initialize to 0
   for(curr_vegType = 0; curr_vegType < NVEGTYPES; curr_vegType++){
