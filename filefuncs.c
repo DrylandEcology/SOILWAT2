@@ -16,7 +16,7 @@
 #include "filefuncs.h"
 #include "generic.h"
 #include "myMemory.h"
-
+#include "SW_Defines.h"
 #ifdef RSOILWAT
   #include <R.h>    // for REvprintf(), error(), and warning()
 #endif
@@ -42,8 +42,9 @@ char **getfiles(const char *fspec, int *nfound);
  */
 void sw_error(int code, const char *format, ...)
 {
-  va_list(ap);
+  va_list ap;
   va_start(ap, format);
+
 #ifdef RSOILWAT
   REvprintf(format, ap);
 #else
@@ -75,7 +76,7 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 	 *           to be called each time replacement args occur.
 	 */
 
-	char outfmt[50 + strlen(fmt)]; /* to prepend err type str */
+	char outfmt[ERRSTRLEN] = {0}; /* to prepend err type str */
 	va_list args;
 
 	va_start(args, fmt);

@@ -187,9 +187,13 @@ namespace {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
-    int i;
+    unsigned int i;
     nlyrs = MAX_LAYERS, pptleft = 5.0;
-    double swc2[nlyrs], swcfc2[nlyrs], swcsat2[nlyrs], impermeability2[nlyrs], drain2[nlyrs];
+    double *swc2 = new double[nlyrs];
+    double *swcfc2 = new double[nlyrs];
+    double *swcsat2 = new double[nlyrs];
+    double *impermeability2 = new double[nlyrs];
+    double *drain2 = new double[nlyrs];
 
     pcg32_random_t infiltrate_rng;
     RandSeed(0,&infiltrate_rng);
@@ -216,7 +220,10 @@ namespace {
 
     /* Test when pptleft and standingWater are 0 (No drainage); swc < swcfc3  < swcsat */
     pptleft = 0.0, standingWater = 0.0;
-    double swc3[nlyrs], swcfc3[nlyrs], swcsat3[nlyrs], drain3[nlyrs];
+    double *swc3 = new double[nlyrs];
+    double *swcfc3 = new double[nlyrs];
+    double *swcsat3 = new double[nlyrs];
+    double *drain3 = new double[nlyrs];
 
     for (i = 0; i < MAX_LAYERS; i++) {
       swc3[i] = RandNorm(1.,0.5,&infiltrate_rng);
@@ -233,7 +240,11 @@ namespace {
     }
 
     /* Test when impermeability is greater than 0 and large precipitation */
-    double impermeability4[nlyrs], drain4[nlyrs], swc4[nlyrs], swcfc4[nlyrs], swcsat4[nlyrs];
+    double *impermeability4 = new double[nlyrs];
+    double *drain4 = new double[nlyrs];
+    double *swc4 = new double[nlyrs];
+    double *swcfc4 = new double[nlyrs];
+    double *swcsat4 = new double[nlyrs];
     pptleft = 20.0;
 
     for (i = 0; i < MAX_LAYERS; i++) {
@@ -257,7 +268,11 @@ namespace {
     }
 
     /* Test "push", when swcsat > swc */
-    double impermeability5[nlyrs], drain5[nlyrs], swc5[nlyrs], swcfc5[nlyrs], swcsat5[nlyrs];
+    double *impermeability5 = new double[nlyrs];
+    double *drain5 = new double[nlyrs];
+    double *swc5 = new double[nlyrs];
+    double *swcfc5 = new double[nlyrs];
+    double *swcsat5 = new double[nlyrs];
     pptleft = 5.0;
 
     for (i = 0; i < MAX_LAYERS; i++) {
@@ -277,13 +292,23 @@ namespace {
 
     EXPECT_GT(standingWater, 0); // standingWater should be above 0
 
+
+    // deallocate pointers
+    double *array_list[] = { impermeability2, drain2, swc2, swcfc2, swcsat2,
+                           drain3, swc3, swcfc3, swcsat3,
+                           impermeability4, drain4, swc4, swcfc4, swcsat4,
+                           impermeability5, drain5, swc5, swcfc5, swcsat5 };
+    for (i = 0; i < length(array_list); i++){
+      delete[] array_list[i];
+    }
+
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
   }
 
+
   //Test svapor function by manipulating variable temp.
   TEST(SWFlowTest, svapor){
-
     //Declare INPUTS
     double temp[] = {30,35,40,45,50,55,60,65,70,75,20,-35,-12.667,-1,0}; // These are test temperatures, in degrees Celcius.
     double expOut[] = {32.171, 43.007, 56.963, 74.783, 97.353, 125.721, 161.113,

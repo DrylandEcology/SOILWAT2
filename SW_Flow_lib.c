@@ -90,7 +90,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 #include "generic.h"
 #include "filefuncs.h"
 #include "SW_Defines.h"
@@ -275,7 +275,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 
 	int i;
 	int j;
-	double d[nlyrs];
+	double d[MAX_LAYERS] = {0};
 	double push, ksat_rel;
 
 	ST_RGR_VALUES *st = &stValues;
@@ -981,7 +981,7 @@ void infiltrate_water_low(double swc[], double drain[], double *drainout, unsign
 
 	unsigned int i;
 	int j;
-	double drainlw = 0.0, swc_avail, drainpot, d[nlyrs], push, kunsat_rel	;
+	double drainlw = 0.0, swc_avail, drainpot, d[MAX_LAYERS] = {0}, push, kunsat_rel	;
 
 	ST_RGR_VALUES *st = &stValues;
 
@@ -1061,9 +1061,8 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 	 **********************************************************************/
 
 	unsigned int i, j;
-	double swp[nlyrs], swpwp[nlyrs], relCondroot[nlyrs], hydredmat[nlyrs][nlyrs], Rx, swa,
-		hydred_sum, x;
-
+	double swp[MAX_LAYERS] = {0}, swpwp[MAX_LAYERS] = {0}, relCondroot[MAX_LAYERS] = {0}, hydredmat[MAX_LAYERS][MAX_LAYERS] = {{0}};
+  double Rx, swa, hydred_sum, x;
 
 	ST_RGR_VALUES *st = &stValues;
 
@@ -1217,7 +1216,7 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
   #ifdef SWDEBUG
   int debug = 0;
   #endif
-	double depth_Soil2[nlyrSoil + 1], sTemp2[nlyrSoil + 1];
+	double depth_Soil2[MAX_LAYERS + 1] = {0}, sTemp2[MAX_LAYERS + 1] = {0};
 
 	//transfer data to include bottom conditions; do not include surface temperature in interpolations
 	for (i = 0; i < nlyrSoil; i++) {
@@ -1369,7 +1368,8 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
   int debug = 0;
   #endif
 	double d1 = 0.0, d2 = 0.0, acc = 0.0;
-	double fc_vwc[nlyrs], wp_vwc[nlyrs];
+	// double fc_vwc[nlyrs], wp_vwc[nlyrs];
+  double fc_vwc[MAX_LAYERS] = {0}, wp_vwc[MAX_LAYERS] = {0};
 
 	// pointers
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
