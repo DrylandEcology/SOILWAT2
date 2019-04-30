@@ -11,13 +11,20 @@
 
 #include "pcg/pcg_basic.h"
 
-long _randseed = 0L;
-uint64_t stream = 1u; //stream id. this is given out to a pcg_rng then incremented.
 
-#ifdef RSOILWAT
+#ifndef RSOILWAT
+  uint64_t stream = 1u; //stream id. this is given out to a pcg_rng then incremented.
+
+#else
+  // R-API requires that we use it's own random number implementation
+  // see https://cran.r-project.org/doc/manuals/R-exts.html#Writing-portable-packages
+  // and https://cran.r-project.org/doc/manuals/R-exts.html#Random-numbers
   #include <R_ext/Random.h> // for the random number generators
   #include <Rmath.h> // for rnorm()
 #endif
+
+
+
 
 
 /*****************************************************/
@@ -33,7 +40,7 @@ void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
 //we don't need to set a random seed if RSOILWAT is used
 #ifndef RSOILWAT
 
-  if(seed == 0){
+  if (seed == 0) {
     //seed with a random value. Uses the system time to generate
     //a pseudo-random seed.
     pcg32_srandom_r(pcg_rng, time(NULL), stream);
@@ -45,6 +52,10 @@ void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
 
   //Increment the stream so no two generators have the same sequence.
   stream++;
+
+#else
+  // silence compile warnings [-Wunused-parameter]
+  if (pcg_rng == NULL && seed > 0) {}
 
 #endif
 }
@@ -61,21 +72,24 @@ void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
 */
 double RandUni(pcg32_random_t* pcg_rng) {
 
-  double number;
+  double res;
 
-#ifdef RSOILWAT
+  #ifndef RSOILWAT
+    // get a random double and bit shift is 32 bits (less that 1)
+    res = ldexp(pcg32_random_r(pcg_rng), -32);
 
-  GetRNGstate();
-  number = unif_rand();
-  PutRNGstate();
+  #else
+    if (pcg_rng == NULL) {} // silence compile warnings [-Wunused-parameter]
 
-#else
-  // get a random double and bit shift is 32 bits (less that 1)
-  number = ldexp(pcg32_random_r(pcg_rng), -32);
-#endif
+    GetRNGstate();
+    res = unif_rand();
+    PutRNGstate();
+  #endif
 
-  return number;
+  return res;
 }
+
+
 
 /*****************************************************/
 /**
@@ -104,7 +118,8 @@ double RandUni(pcg32_random_t* pcg_rng) {
 	\return integer. Random number between the two bounds defined.
 */
 int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) {
-  long f, l, r, rtn;
+
+  long f, l, res;
 
   if (first == last)
     return first;
@@ -117,22 +132,23 @@ int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) 
     l = last + 1;
   }
 
-#ifdef RSOILWAT
+  #ifndef RSOILWAT
+    long r = l - f;
+    //pcg32_boundedrand_r returns a random number between 0 and r.
+    res = pcg32_boundedrand_r(pcg_rng, r) + f;
 
-  GetRNGstate();
-  rtn = (long) runif(f, l);
-  PutRNGstate();
+  #else
+    if (pcg_rng == NULL) {} // silence compile warnings [-Wunused-parameter]
 
-#else
+    GetRNGstate();
+    res = (long) runif(f, l);
+    PutRNGstate();
+  #endif
 
-  r = l - f;
-  //pcg32_boundedrand_r returns a random number between 0 and r.
-  rtn = pcg32_boundedrand_r(pcg_rng, r) + f;
-
-#endif
-
-  return rtn;
+  return res;
 }
+
+
 
 /*****************************************************/
 /**
@@ -159,6 +175,7 @@ int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) 
 	\return float. Random number between the two bounds defined.
 */
 float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rng) {
+
 	float f, l, r;
 
 	if (max == min)
@@ -173,6 +190,7 @@ float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rn
 	}
 
 	r = l - f;
+
 	return (float) (RandUni(pcg_rng) * r) + f;
 }
 
@@ -202,7 +220,7 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 	range = last - first + 1;
 
 	if (count > range || range <= 0) {
-    sw_error(-1, "Programmer error in RandUniList: count > range || range <= 0\n");
+    sw_error(-1, "Error in RandUniList: count > range || range <= 0\n");
 	}
 
 	/* if count == range for some weird reason, just
@@ -217,8 +235,10 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 	/* for less complexity and more speed    */
 	if (count <= 2) {
 		list[0] = (long) RandUniIntRange(first, last, pcg_rng);
-		if (count == 2)
+
+		if (count == 2) {
 			while ((list[1] = RandUniIntRange(first, last, pcg_rng)) == list[0]);
+		}
 		return;
 	}
 
@@ -247,7 +267,6 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 	}
 
 	Mem_Free(klist);
-
 }
 
 /*****************************************************/
@@ -275,14 +294,9 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 */
 double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 
-	double y;
+	double res;
 
-	#ifdef RSOILWAT
-		GetRNGstate();
-		y = rnorm(mean, stddev);
-		PutRNGstate();
-
-	#else
+	#ifndef RSOILWAT
 		static short set = 0;
 
 		static double v1, v2, r, fac, gset, gasdev;
@@ -302,10 +316,18 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 			set = 0;
 		}
 
-		y = mean + gasdev * stddev;
+		res = mean + gasdev * stddev;
+
+	#else
+		if (pcg_rng == NULL) {} // silence compile warnings [-Wunused-parameter]
+
+		GetRNGstate();
+		res = rnorm(mean, stddev);
+		PutRNGstate();
+
 	#endif
 
-	return y;
+	return res;
 }
 
 /**
@@ -329,8 +351,7 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
   \param pcg_rng. the random number generator to pull values from.
   \return A random variate of a beta distribution.
 */
-float RandBeta ( float aa, float bb, pcg32_random_t* pcg_rng)
-{
+float RandBeta ( float aa, float bb, pcg32_random_t* pcg_rng) {
   float a;
   float alpha;
   float b;
@@ -352,129 +373,110 @@ float RandBeta ( float aa, float bb, pcg32_random_t* pcg_rng)
   float y;
   float z;
 
-  if ( aa <= 0.0 )
-  {
-    sw_error(1, "GENBET - Fatal error: AA <= 0.0\n");
+  if ( aa <= 0.0 ) {
+    sw_error(1, "RandBeta - Fatal error: AA <= 0.0\n");
   }
 
-  if ( bb <= 0.0 )
-  {
-    sw_error(1, "GENBET - Fatal error: BB <= 0.0\n");
+  if ( bb <= 0.0 ) {
+    sw_error(1, "RandBeta - Fatal error: BB <= 0.0\n");
   }
-/*
-  Algorithm BB
-*/
-  if ( 1.0 < aa && 1.0 < bb )
-  {
-    a = min ( aa, bb );
-    b = max ( aa, bb );
+
+  //------  Algorithm BB
+  if ( 1.0 < aa && 1.0 < bb ) {
+    a = min( aa, bb );
+    b = max( aa, bb );
     alpha = a + b;
-    beta = sqrt ( ( alpha - 2.0 ) / ( 2.0 * a * b - alpha ) );
+    beta = sqrt( ( alpha - 2.0 ) / ( 2.0 * a * b - alpha ) );
     gamma = a + 1.0 / beta;
 
-    for ( ; ; )
-    {
-      u1 = RandUni (pcg_rng);
-      u2 = RandUni (pcg_rng);
+    for ( ; ; ) {
+      u1 = RandUni(pcg_rng);
+      u2 = RandUni(pcg_rng);
+
       v = beta * log ( u1 / ( 1.0 - u1 ) );
-/*
-  exp ( v ) replaced by r4_exp ( v )
-*/
+      // exp ( v ) replaced by r4_exp ( v )
       w = a * exp ( v );
 
       z = u1 * u1 * u2;
       r = gamma * v - log4;
       s = a + r - w;
 
-      if ( 5.0 * z <= s + 1.0 + log5 )
-      {
+      if ( 5.0 * z <= s + 1.0 + log5 ) {
         break;
       }
 
       t = log ( z );
-      if ( t <= s )
-      {
+      if ( t <= s ) {
         break;
       }
 
-      if ( t <= ( r + alpha * log ( alpha / ( b + w ) ) ) )
-      {
+      if ( t <= ( r + alpha * log ( alpha / ( b + w ) ) ) ) {
         break;
       }
     }
   }
-/*
-  Algorithm BC
-*/
-  else
-  {
-    a = max ( aa, bb );
-    b = min ( aa, bb );
+
+
+  //------  Algorithm BC
+  else {
+    a = max( aa, bb );
+    b = min( aa, bb );
     alpha = a + b;
     beta = 1.0 / b;
     delta = 1.0 + a - b;
-    k1 = delta * ( 1.0 / 72.0 + b / 24.0 )
-      / ( a / b - 7.0 / 9.0 );
+    k1 = delta * ( 1.0 / 72.0 + b / 24.0 ) / ( a / b - 7.0 / 9.0 );
     k2 = 0.25 + ( 0.5 + 0.25 / delta ) * b;
 
-    for ( ; ; )
-    {
-      u1 = RandUni (pcg_rng);
-      u2 = RandUni (pcg_rng);
+    for ( ; ; ) {
+      u1 = RandUni(pcg_rng);
+      u2 = RandUni(pcg_rng);
 
-      if ( u1 < 0.5 )
-      {
+      if ( u1 < 0.5 ) {
         y = u1 * u2;
         z = u1 * y;
 
-        if ( k1 <= 0.25 * u2 + z - y )
-        {
+        if ( k1 <= 0.25 * u2 + z - y ) {
           continue;
         }
       }
-      else
-      {
+
+      else {
         z = u1 * u1 * u2;
 
-        if ( z <= 0.25 )
-        {
+        if ( z <= 0.25 ) {
           v = beta * log ( u1 / ( 1.0 - u1 ) );
           w = a * exp ( v );
 
-          if ( aa == a )
-          {
+          if ( aa == a ) {
             value = w / ( b + w );
           }
-          else
-          {
+          else {
             value = b / ( b + w );
           }
+
           return value;
         }
 
-        if ( k2 < z )
-        {
+        if ( k2 < z ) {
           continue;
         }
       }
 
-      v = beta * log ( u1 / ( 1.0 - u1 ) );
-      w = a * exp ( v );
+      v = beta * log( u1 / ( 1.0 - u1 ) );
+      w = a * exp( v );
 
-      if ( log ( z ) <= alpha * ( log ( alpha / ( b + w ) ) + v ) - log4 )
-      {
+      if ( log( z ) <= alpha * ( log( alpha / ( b + w ) ) + v ) - log4 ) {
         break;
       }
     }
   }
 
-  if ( aa == a )
-  {
+  if ( aa == a ) {
     value = w / ( b + w );
   }
-  else
-  {
+  else {
     value = b / ( b + w );
   }
+
   return value;
 }
