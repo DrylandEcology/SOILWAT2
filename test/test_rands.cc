@@ -104,13 +104,14 @@ namespace {
     int i, n = 10;
     int min = 7, max = 123;
     int x0, x1, x2;
+    int ne01 = 0, ne02 = 0, ne12 = 0; // counter of differences among streams
 
     RandSeed(7, &rng0);
     RandSeed(1, &rng1); // different seed & different stream than rng0
     RandSeed(1, &rng2); // same seed, but different stream than rng1
 
     for (i = 0; i < n; i++) {
-      // Produce random numbers and check that within bounds of [min, max)
+      // Produce random numbers and check that within bounds of [min, max]
       x0 = RandUniIntRange(min, max, &rng0);
       EXPECT_GE(x0, min);
       EXPECT_LE(x0, max);
@@ -123,12 +124,18 @@ namespace {
       EXPECT_GE(x2, min);
       EXPECT_LE(x2, max);
 
-      // Check that random number sequences are different among streams,
-      // even if they were initiated with the same seed
-      EXPECT_NE(x0, x1);
-      EXPECT_NE(x0, x2);
-      EXPECT_NE(x1, x2);
+      // Count differences among streams
+      ne01 += EQ(x0, x1) ? 0 : 1;
+      ne02 += EQ(x0, x2) ? 0 : 1;
+      ne12 += EQ(x1, x2) ? 0 : 1;
     }
+
+    // Check that random number sequences are different among streams,
+    // at least some of the time, even if they were initiated with the same seed
+    EXPECT_GT(ne01, 0);
+    EXPECT_GT(ne02, 0);
+    EXPECT_GT(ne12, 0);
+
 
     RandSeed(0, &rng0);
 
