@@ -177,8 +177,16 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 
 	// mvnorm = mean + A * z
 	*tmax = wTmax_sd * z1 + wTmax;
-	*tmin = (vc10 * z1) + (vc11 * z2) + wTmin;
+	*tmin = fmin(*tmax, (vc10 * z1) + (vc11 * z2) + wTmin);
 }
+
+#ifdef SWDEBUG
+  // since `mvnorm` is static we cannot do unit tests unless we set it up
+  // as an externed function pointer
+  void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD) = &mvnorm;
+#endif
+
+
 
 /* =================================================== */
 /* =================================================== */
