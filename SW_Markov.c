@@ -256,31 +256,36 @@ void SW_MKV_deconstruct(void)
 }
 
 
-void SW_MKV_today(TimeInt doy, RealD *tmax, RealD *tmin, RealD *rain) {
+void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 	/* =================================================== */
-	/* enter with rain == yesterday's ppt, doy as array index
+	/* enter with rain == yesterday's ppt, doy0 as array index: [0, 365] = doy - 1
 	 * leave with rain == today's ppt
 	 */
 	TimeInt week;
 	RealF prob, p, x;
 
-	/* Calculate Precip */
-	prob = (GT(*rain, 0.0)) ? SW_Markov.wetprob[doy] : SW_Markov.dryprob[doy];
+	/* Calculate Precipitation:
+		prop = probability that it precipitates today depending on whether it
+			was wet (precipitated) yesterday `wetprob` or
+			whether it was dry yesterday `dryprob` */
+	prob = (GT(*rain, 0.0)) ? SW_Markov.wetprob[doy0] : SW_Markov.dryprob[doy0];
 
 	p = RandUni(&markov_rng);
-	if (LE(p,prob)) {
-		x = RandNorm(SW_Markov.avg_ppt[doy], SW_Markov.std_ppt[doy], &markov_rng);
-		*rain = max(0., x);
+	if (LE(p, prob)) {
+		x = RandNorm(SW_Markov.avg_ppt[doy0], SW_Markov.std_ppt[doy0], &markov_rng);
+		*rain = fmax(0., x);
 	} else {
 		*rain = 0.;
 	}
 
-	if (!ZRO(*rain))
+	if (GT(*rain, 0.)) {
 		SW_Markov.ppt_events++;
+	}
 
 	/* Calculate temperature */
-	week = Doy2Week(doy+1);
 	temp_correct(doy,tmax,tmin,rain);
+	week = Doy2Week(doy0 + 1);
+
 	mvnorm(tmax, tmin,
 		SW_Markov.u_cov[week][0],    // mean weekly maximum daily temp
 		SW_Markov.u_cov[week][1],    // mean weekly minimum daily temp
@@ -369,14 +374,14 @@ Bool SW_MKV_read_prob(void) {
 		// Store values in `SW_Markov`
 		day--; // base1 -> base0
 
-		v->wetprob[day] = wet;
-		v->dryprob[day] = dry;
-		v->avg_ppt[day] = avg;
-		v->std_ppt[day] = std;
-		v->cfxw[day] = cfxw;
-		v->cfxd[day] = cfxd;
-		v->cfnw[day] = cfnw;
-		v->cfnd[day] = cfnd;
+		v->wetprob[day] = wet; // probability of being wet today given a wet yesterday
+		v->dryprob[day] = dry; // probability of being wet today given a dry yesterday
+		v->avg_ppt[day] = avg; // mean precip (cm) of wet days
+		v->std_ppt[day] = std; // std dev. for precip of wet days
+		v->cfxw[day] = cfxw;   // correction factor for tmax for wet days
+		v->cfxd[day] = cfxd;   // correction factor for tmax for dry days
+		v->cfnw[day] = cfnw;   // correction factor for tmin for wet days
+		v->cfnd[day] = cfnd;   // correction factor for tmin for dry days
 	}
 
 	CloseFile(&f);
@@ -449,12 +454,12 @@ Bool SW_MKV_read_cov(void) {
 		// Store values in `SW_Markov`
 		week--; // base1 -> base0
 
-		v->u_cov[week][0] = t1;
-		v->u_cov[week][1] = t2;
-		v->v_cov[week][0][0] = t3;
-		v->v_cov[week][0][1] = t4;
-		v->v_cov[week][1][0] = t5;
-		v->v_cov[week][1][1] = t6;
+		v->u_cov[week][0] = t1;    // mean weekly maximum daily temp
+		v->u_cov[week][1] = t2;    // mean weekly minimum daily temp
+		v->v_cov[week][0][0] = t3; // mean weekly variance of maximum daily temp
+		v->v_cov[week][0][1] = t4; // mean weekly covariance of min/max daily temp
+		v->v_cov[week][1][0] = t5; // mean weekly covariance of min/max daily temp
+		v->v_cov[week][1][1] = t6; // mean weekly variance of minimum daily temp
 	}
 
 	CloseFile(&f);
