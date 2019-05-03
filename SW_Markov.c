@@ -46,7 +46,6 @@ SW_MARKOV SW_Markov; /* declared here, externed elsewhere */
 /* --------------------------------------------------- */
 
 static char *MyFileName;
-static RealD _vcov[2][2], _ucov[2];
 
 /* =================================================== */
 /* =================================================== */
@@ -104,7 +103,26 @@ static void temp_correct(TimeInt doy,RealD *tmax, RealD *tmin, RealD *rain) {
 
 }
 
-static void mvnorm(RealD *tmax, RealD *tmin) {
+/** Calculate multivariate normal variates for a set of
+    minimum and maximum temperature means, variances, and their covariance
+    for a specific day
+
+    @param wTmax Mean weekly maximum daily temperature (degree Celsius);
+           previously `_ucov[0]`
+    @param wTmin Mean weekly minimum daily temperature (degree Celsius);
+           previously `_ucov[1]`
+    @param wTmax_var Mean weekly variance of maximum daily temperature;
+           previously `vc00 = _vcov[0][0]`
+    @param wTmin_var Mean weekly variance of minimum daily temperature;
+           previously `vc11 = _vcov[1][1]`
+    @param wT_covar Mean weekly covariance between maximum and minimum
+           daily temperature; previously `vc10 = _vcov[1][0]`
+
+    @return Daily minimum (*tmin) and maximum (*tmax) temperature.
+*/
+
+static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
+	RealD wTmax_var, RealD wTmin_var, RealD wT_covar) {
 	/* --------------------------------------------------- */
 	/* This proc is distilled from a much more general function
 	 * in the original fortran version which was prepared to
@@ -121,20 +139,45 @@ static void mvnorm(RealD *tmax, RealD *tmin) {
 	 * cwb - 24-Oct-03 -- Note the switch to double (RealD).
 	 *       C converts the floats transparently.
 	 */
-	RealD s, z1, z2, vc00 = _vcov[0][0], vc10 = _vcov[1][0], vc11 = _vcov[1][1];
+	RealD s, z1, z2, wTmax_sd, vc10, vc11;
 
-	vc00 = sqrt(vc00);
-	vc10 = (GT(vc00, 0.)) ? vc10 / vc00 : 0;
+	// Gentle, J. E. 2009. Computational statistics. Springer, Dordrecht; New York.
+	// ==> mvnorm = mean + A * z
+	// where
+	//   z = vector of standard normal variates
+	//   A = Cholesky factor or the square root of the variance-covariance matrix
+
+	// 2-dimensional case:
+	//   mvnorm1 = mean1 + sd1 * z1
+	//   mvnorm2 = mean2 + sd2 * (rho * z1 + sqrt(1 - rho^2) * z2)
+	//      where rho(Pearson) = covariance / (sd1 * sd2)
+
+	// mvnorm2 = sd2 * rho * z1 + sd2 * sqrt(1 - rho^2) * z2
+	// mvnorm2 = covar / sd1 * z1 + sd2 * sqrt(1 - covar ^ 2 / (var1 * var2)) * z2
+	// mvnorm2 = covar / sd1 * z1 + sqrt(var2 - covar ^ 2 / var1) * z2
+	// mvnorm2 = vc10 * z1 + vc11 * z2
+	// with
+	//   vc10 = covar / sd1
+	//   s = covar ^ 2 / var1
+	//   vc11 = sqrt(var2 - covar ^ 2 / var1)
+
+	// Generate two independent standard normal random numbers
+	z1 = RandNorm(0., 1., &markov_rng);
+	z2 = RandNorm(0., 1., &markov_rng);
+
+	wTmax_sd = sqrt(wTmax_var);
+	vc10 = (GT(wTmax_sd, 0.)) ? wT_covar / wTmax_sd : 0;
 	s = vc10 * vc10;
-	if (GT(s,vc11))
+
+	if (GT(s, wTmin_var)) {
 		LogError(logfp, LOGFATAL, "\nBad covariance matrix in mvnorm()");
-	vc11 = (EQ(vc11, s)) ? 0. : sqrt(vc11 -s);
+	}
 
-	z1 = RandNorm(0., 3.5, &markov_rng);
-	z2 = RandNorm(0., 3.5, &markov_rng);
-	*tmin = (vc10 * z1) + (vc11 * z2) + _ucov[1];
-	*tmax = vc00 * z1 + _ucov[0];
+	vc11 = (EQ(wTmin_var, s)) ? 0. : sqrt(wTmin_var - s);
 
+	// mvnorm = mean + A * z
+	*tmax = wTmax_sd * z1 + wTmax;
+	*tmin = (vc10 * z1) + (vc11 * z2) + wTmin;
 }
 
 /* =================================================== */
@@ -229,11 +272,15 @@ void SW_MKV_today(TimeInt doy, RealD *tmax, RealD *tmin, RealD *rain) {
 
 	/* Calculate temperature */
 	week = Doy2Week(doy+1);
-	memcpy(_vcov, &SW_Markov.v_cov[week], 4 * sizeof(RealD));
-	_ucov[0] = SW_Markov.u_cov[week][0];
-	_ucov[1] = SW_Markov.u_cov[week][1];
-	mvnorm(tmax, tmin);
 	temp_correct(doy,tmax,tmin,rain);
+	mvnorm(tmax, tmin,
+		SW_Markov.u_cov[week][0],    // mean weekly maximum daily temp
+		SW_Markov.u_cov[week][1],    // mean weekly minimum daily temp
+		SW_Markov.v_cov[week][0][0], // mean weekly variance of maximum daily temp
+		SW_Markov.v_cov[week][1][1], // mean weekly variance of minimum daily temp
+		SW_Markov.v_cov[week][1][0]  // mean weekly covariance of min/max daily temp
+	);
+
 }
 
 Bool SW_MKV_read_prob(void) {
