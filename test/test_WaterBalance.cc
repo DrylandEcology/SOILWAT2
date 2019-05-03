@@ -37,9 +37,10 @@
 #include "sw_testhelpers.h"
 
 
+extern SW_MODEL SW_Model;
 extern SW_SOILWAT SW_Soilwat;
 extern SW_SITE SW_Site;
-
+extern SW_WEATHER SW_Weather;
 
 
 namespace {
@@ -91,6 +92,31 @@ namespace {
     SW_Site.lyr[0]->impermeability = 0.95;
     SW_Site.percentRunoff = 0.5;
     SW_Site.percentRunon = 1.25;
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error: " << SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
+
+  TEST(WaterBalance, WithWeatherGeneratorOnly) {
+    int i;
+
+    // Turn on Markov weather generator (and turn off use of historical weather)
+    SW_Soilwat.hist_use = swFALSE;
+    SW_Weather.yr.first = SW_Model.endyr + 1;
+    SW_Weather.use_markov = swTRUE;
+
+    // Read Markov weather generator input files (they are not normally read)
+    SW_MKV_setup();
 
     // Run the simulation
     SW_CTL_main();

@@ -347,13 +347,8 @@ void SW_WTH_read(void) {
 	w->yr.last = SW_Model.endyr;
 	w->yr.total = w->yr.last - w->yr.first + 1;
 	if (w->use_markov) {
-		SW_MKV_construct();
-		if (!SW_MKV_read_prob()) {
-			LogError(logfp, LOGFATAL, "%s: Markov weather requested but could not open %s", MyFileName, SW_F_name(eMarkovProb));
-		}
-		if (!SW_MKV_read_cov()) {
-			LogError(logfp, LOGFATAL, "%s: Markov weather requested but could not open %s", MyFileName, SW_F_name(eMarkovCov));
-		}
+		SW_MKV_setup();
+
 	} else if (SW_Model.startyr < w->yr.first) {
 		LogError(logfp, LOGFATAL, "%s : Model year (%d) starts before weather files (%d)"
 				" and use_Markov=swFALSE.\nPlease synchronize the years"

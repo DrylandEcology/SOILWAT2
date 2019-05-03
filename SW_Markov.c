@@ -265,6 +265,10 @@ void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 	TimeInt week;
 	RealF prob, p, x;
 
+	#ifdef SWDEBUG
+	short debug = 0;
+	#endif
+
 	/* Calculate Precipitation:
 		prop = probability that it precipitates today depending on whether it
 			was wet (precipitated) yesterday `wetprob` or
@@ -300,6 +304,13 @@ void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 		SW_Markov.cfnw[week],  // correction factor for tmin for wet days
 		SW_Markov.cfnd[week]   // correction factor for tmin for dry days
 	);
+
+	#ifdef SWDEBUG
+	if (debug) {
+		swprintf("mkv: yr=%d/doy0=%d/week=%d: ppt=%.3f, tmax=%.3f, tmin=%.3f\n",
+			SW_Model.year, doy0, week, *rain, *tmax, *tmin);
+	}
+	#endif
 }
 
 Bool SW_MKV_read_prob(void) {
@@ -471,6 +482,21 @@ Bool SW_MKV_read_cov(void) {
 	CloseFile(&f);
 
 	return swTRUE;
+}
+
+
+void SW_MKV_setup(void) {
+  SW_MKV_construct();
+
+  if (!SW_MKV_read_prob()) {
+    LogError(logfp, LOGFATAL, "Markov weather requested but could not open %s",
+      SW_F_name(eMarkovProb));
+  }
+
+  if (!SW_MKV_read_cov()) {
+    LogError(logfp, LOGFATAL, "Markov weather requested but could not open %s",
+      SW_F_name(eMarkovCov));
+  }
 }
 
 

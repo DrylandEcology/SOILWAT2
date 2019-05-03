@@ -41,6 +41,7 @@ void SW_MKV_construct(void);
 void SW_MKV_deconstruct(void);
 Bool SW_MKV_read_prob(void);
 Bool SW_MKV_read_cov(void);
+void SW_MKV_setup(void);
 void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain);
 
 #ifdef DEBUG_MEM
