@@ -311,6 +311,7 @@ void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 			SW_Model.year, doy0, week, *rain, *tmax, *tmin);
 	}
 	#endif
+
 }
 
 Bool SW_MKV_read_prob(void) {
@@ -329,7 +330,7 @@ Bool SW_MKV_read_prob(void) {
 		return swFALSE;
 
 	while (GetALine(f, inbuf)) {
-		if (++lineno == MAX_DAYS)
+		if (lineno++ == MAX_DAYS)
 			break; /* skip extra lines */
 
 		x = sscanf(inbuf, "%d %f %f %f %f",
@@ -408,7 +409,7 @@ Bool SW_MKV_read_cov(void) {
 		return swFALSE;
 
 	while (GetALine(f, inbuf)) {
-		if (++lineno == MAX_WEEKS)
+		if (lineno++ == MAX_WEEKS)
 			break; /* skip extra lines */
 
 		x = sscanf(inbuf, "%d %f %f %f %f %f %f %f %f %f %f",
