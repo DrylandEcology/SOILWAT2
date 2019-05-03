@@ -40,6 +40,7 @@ extern SW_MODEL SW_Model;
 extern SW_MARKOV SW_Markov;
 
 extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD);
+extern void (*test_temp_correct_wetdry)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD);
 
 
 namespace {
@@ -104,6 +105,45 @@ namespace {
     EXPECT_DEATH_IF_SUPPORTED(
       (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.),
       "@ generic.c LogError");
+  }
+
+
+  // Test correcting daily temperatures for wet/dry days
+  TEST(WGTest, temp_correct_wetdry) {
+    RealD
+      tmax = 0., tmin = 0., t0 = 0., t10 = 10.,
+      wet = 1., dry = 0.,
+      cf0 = 0., cf_pos = 5., cf_neg = -5.;
+
+    // Case: tmax = tmin; wet; cf_*_wet = 0 ==> input = output
+    tmax = t0;
+    tmin = t0;
+    (test_temp_correct_wetdry)(&tmax, &tmin, wet, cf0, cf_pos, cf0, cf_pos);
+    EXPECT_DOUBLE_EQ(tmin, tmax);
+
+    // Case: tmax > tmin; wet; cf_*_wet != 0 ==> input + cf_*_wet = output
+    tmax = t10;
+    tmin = t0;
+    (test_temp_correct_wetdry)(&tmax, &tmin, wet, cf_neg, cf_pos, cf_neg, cf_pos);
+    EXPECT_DOUBLE_EQ(tmax, t10 + cf_neg);
+    EXPECT_DOUBLE_EQ(tmin, t0 + cf_neg);
+    EXPECT_LE(tmin, tmax);
+
+    // Case: tmax > tmin; dry; cf_*_dry != 0 ==> input + cf_*_dry = output
+    tmax = t10;
+    tmin = t0;
+    (test_temp_correct_wetdry)(&tmax, &tmin, dry, cf_neg, cf_pos, cf_neg, cf_pos);
+    EXPECT_DOUBLE_EQ(tmax, t10 + cf_pos);
+    EXPECT_DOUBLE_EQ(tmin, t0 + cf_pos);
+    EXPECT_LE(tmin, tmax);
+
+    // Case: tmax < tmin; wet; cf_*_wet > 0 ==> tmin <= tmax
+    tmax = t0;
+    tmin = t10;
+    (test_temp_correct_wetdry)(&tmax, &tmin, wet, cf_pos, cf_pos, cf_pos, cf_pos);
+    EXPECT_DOUBLE_EQ(tmax, t0 + cf_pos);
+    EXPECT_DOUBLE_EQ(tmin, fmin(tmax, t10 + cf_pos));
+    EXPECT_LE(tmin, tmax);
   }
 
 } // namespace
