@@ -122,15 +122,42 @@ static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
 	 */
 	SW_WEATHER *w = &SW_Weather;
 	TimeInt doy = SW_Model.doy - 1;
+	Bool no_missing = swTRUE;
 
 	if (!weth_found) {
+		// no weather input file for current year ==> use weather generator
 		*ppt = w->now.ppt[Yesterday]; /* reqd for markov */
 		SW_MKV_today(doy, tmax, tmin, ppt);
 
 	} else {
-		*tmax = (!missing(w->hist.temp_max[doy])) ? w->hist.temp_max[doy] : w->now.temp_max[Yesterday];
-		*tmin = (!missing(w->hist.temp_min[doy])) ? w->hist.temp_min[doy] : w->now.temp_min[Yesterday];
-		*ppt = (!missing(w->hist.ppt[doy])) ? w->hist.ppt[doy] : 0.;
+		// weather input file for current year available
+
+		no_missing = (Bool) (!missing(w->hist.temp_max[doy]) &&
+									!missing(w->hist.temp_min[doy]) &&
+									!missing(w->hist.ppt[doy]));
+
+		if (no_missing) {
+			// all values available
+			*tmax = w->hist.temp_max[doy];
+			*tmin = w->hist.temp_min[doy];
+			*ppt = w->hist.ppt[doy];
+
+		} else {
+			// some of today's values are missing
+
+			if (SW_Weather.use_markov) {
+				// if weather generator is turned on then use it for all values
+				*ppt = w->now.ppt[Yesterday]; /* reqd for markov */
+				SW_MKV_today(doy, tmax, tmin, ppt);
+
+			} else {
+				// impute missing values with 0 for precipitation and
+				// with LOCF for temperature (i.e., last-observation-carried-forward)
+				*tmax = (!missing(w->hist.temp_max[doy])) ? w->hist.temp_max[doy] : w->now.temp_max[Yesterday];
+				*tmin = (!missing(w->hist.temp_min[doy])) ? w->hist.temp_min[doy] : w->now.temp_min[Yesterday];
+				*ppt = (!missing(w->hist.ppt[doy])) ? w->hist.ppt[doy] : 0.;
+			}
+		}
 	}
 
 }
