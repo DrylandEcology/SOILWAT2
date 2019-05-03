@@ -93,7 +93,7 @@ void _clear_hist_weather(void) {
 	TimeInt d;
 
 	for (d = 0; d < MAX_DAYS; d++)
-		wh->ppt[d] = wh->temp_max[d] = wh->temp_min[d] = WTH_MISSING;
+		wh->ppt[d] = wh->temp_max[d] = wh->temp_min[d] = SW_MISSING;
 }
 
 static void _clear_runavg(void) {
@@ -101,7 +101,7 @@ static void _clear_runavg(void) {
 	TimeInt i;
 
 	for (i = 0; i < SW_Weather.days_in_runavg; i++)
-		runavg_list[i] = WTH_MISSING;
+		runavg_list[i] = SW_MISSING;
 }
 
 void SW_WTH_clear_runavg_list(void) {
@@ -447,16 +447,16 @@ Bool _read_weather_hist(TimeInt year) {
 		wh->ppt[doy] = ppt;
 
 		/* Reassign if invalid values are found.  The values are
-		 * either valid or WTH_MISSING.  If they were not
+		 * either valid or SW_MISSING.  If they were not
 		 * present in the file, we wouldn't get this far because
 		 * sscanf() would return too few items.
 		 */
 		if (missing(tmpmax)) {
-			wh->temp_max[doy] = WTH_MISSING;
+			wh->temp_max[doy] = SW_MISSING;
 			LogError(logfp, LOGWARN, "%s : Missing max temp on doy=%d.", fname, doy + 1);
 		}
 		if (missing(tmpmin)) {
-			wh->temp_min[doy] = WTH_MISSING;
+			wh->temp_min[doy] = SW_MISSING;
 			LogError(logfp, LOGWARN, "%s : Missing min temp on doy=%d.", fname, doy + 1);
 		}
 		if (missing(ppt)) {
