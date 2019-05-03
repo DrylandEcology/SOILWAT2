@@ -62,6 +62,7 @@ namespace {
 
     // Reset to previous global state
     // Reset_SOILWAT2_after_UnitTest();
+    SW_MKV_deconstruct();
   }
 
 
