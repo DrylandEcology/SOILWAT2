@@ -68,11 +68,11 @@ namespace {
   TEST(WaterBalance, WithSoilTemperature) {
     int i;
 
-    // Run the simulation
-    SW_CTL_main();
-
     // Turn on soil temperature simulations
     SW_Site.use_soil_temp = swTRUE;
+
+    // Run the simulation
+    SW_CTL_main();
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
