@@ -87,7 +87,15 @@ void SW_SKY_read(void) {
 					&v->snow_density[4], &v->snow_density[5], &v->snow_density[6], &v->snow_density[7], &v->snow_density[8], &v->snow_density[9], &v->snow_density[10],
 					&v->snow_density[11]);
 			break;
+		case 5:
+      x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+          &v->n_rain_per_day[0], &v->n_rain_per_day[1], &v->n_rain_per_day[2],
+          &v->n_rain_per_day[3], &v->n_rain_per_day[4], &v->n_rain_per_day[5],
+          &v->n_rain_per_day[6], &v->n_rain_per_day[7], &v->n_rain_per_day[8],
+          &v->n_rain_per_day[9], &v->n_rain_per_day[10], &v->n_rain_per_day[11]);
+			break;
 		}
+
 		if (x < 12) {
 			CloseFile(&f);
 			sprintf(errstr, "%s : invalid record %d.\n", MyFileName, lineno);
@@ -106,12 +114,16 @@ void SW_SKY_read(void) {
 void SW_SKY_init(double scale_sky[], double scale_wind[], double scale_rH[], double scale_transmissivity[]) {
 	int i;
 	SW_SKY *v = &SW_Sky;
-	for(i=0; i<MAX_MONTHS; i++) {
-		v->cloudcov[i] = min(100., max(0.0,scale_sky[i]+v->cloudcov[i]));
-		v->windspeed[i] = max(0.0, scale_wind[i] * v->windspeed[i]);
-		v->r_humidity[i] = min(100., max(0.0, scale_rH[i] + v->r_humidity[i]));
-		v->transmission[i] = min(1.0, max(0.0, scale_transmissivity[i]*v->transmission[i]));
+
+  /* scale mean monthly climate values */
+	for (i = 0; i < MAX_MONTHS; i++)
+	{
+		v->cloudcov[i] = fmin(100., fmax(0.0, scale_sky[i] + v->cloudcov[i]));
+		v->windspeed[i] = fmax(0.0, scale_wind[i] * v->windspeed[i]);
+		v->r_humidity[i] = fmin(100., fmax(0.0, scale_rH[i] + v->r_humidity[i]));
+		v->transmission[i] = fmin(1.0, fmax(0.0, scale_transmissivity[i] * v->transmission[i]));
 	}
+
 	/* interpolate monthly input values to daily records */
 	interpolate_monthlyValues(v->cloudcov, v->cloudcov_daily);
 	interpolate_monthlyValues(v->windspeed, v->windspeed_daily);
