@@ -125,9 +125,9 @@ namespace {
       EXPECT_LE(x2, max);
 
       // Count differences among streams
-      ne01 += EQ(x0, x1) ? 0 : 1;
-      ne02 += EQ(x0, x2) ? 0 : 1;
-      ne12 += EQ(x1, x2) ? 0 : 1;
+      ne01 += (x0 == x1) ? 0 : 1;
+      ne02 += (x0 == x2) ? 0 : 1;
+      ne12 += (x1 == x2) ? 0 : 1;
     }
 
     // Check that random number sequences are different among streams,
