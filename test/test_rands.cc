@@ -113,15 +113,15 @@ namespace {
       // Produce random numbers and check that within bounds of [min, max)
       x0 = RandUniIntRange(min, max, &rng0);
       EXPECT_GE(x0, min);
-      EXPECT_LT(x0, max);
+      EXPECT_LE(x0, max);
 
       x1 = RandUniIntRange(min, max, &rng1);
       EXPECT_GE(x1, min);
-      EXPECT_LT(x1, max);
+      EXPECT_LE(x1, max);
 
       x2 = RandUniIntRange(min, max, &rng2);
       EXPECT_GE(x2, min);
-      EXPECT_LT(x2, max);
+      EXPECT_LE(x2, max);
 
       // Check that random number sequences are different among streams,
       // even if they were initiated with the same seed
