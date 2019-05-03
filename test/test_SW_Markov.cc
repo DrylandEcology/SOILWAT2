@@ -68,29 +68,31 @@ namespace {
   // Test drawing multivariate normal variates for daily maximum/minimum temp
   TEST(WGTest, mvnorm) {
     short k, n = 3;
-    RealD tmax = 0., tmin = 0.,
-      val[n] = {-10., 0., 10.};
+    RealD tmax = 0., tmin = 0., tval;
 
 
     for (k = 0; k < n; k++) {
+      // Create temperature values: here with n = 3: -10, 0, +10
+      tval = -10. + 10. * k;
+
       // Case: wtmax = wtmin, variance = 0, covar = 0 ==> input = output
-      (test_mvnorm)(&tmax, &tmin, val[k], val[k], 0., 0., 0.);
-      EXPECT_DOUBLE_EQ(tmax, val[k]);
-      EXPECT_DOUBLE_EQ(tmin, val[k]);
+      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 0.);
+      EXPECT_DOUBLE_EQ(tmax, tval);
+      EXPECT_DOUBLE_EQ(tmin, tval);
       EXPECT_DOUBLE_EQ(tmin, tmax);
 
       // Case: wtmax = wtmin, variance = 0, covar > 0 ==> input = output
-      (test_mvnorm)(&tmax, &tmin, val[k], val[k], 0., 0., 1.);
-      EXPECT_DOUBLE_EQ(tmax, val[k]);
-      EXPECT_DOUBLE_EQ(tmin, val[k]);
+      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 1.);
+      EXPECT_DOUBLE_EQ(tmax, tval);
+      EXPECT_DOUBLE_EQ(tmin, tval);
       EXPECT_DOUBLE_EQ(tmin, tmax);
 
       // Case: wtmax > wtmin, variance > 0, covar > 0 ==> tmin <= tmax
-      (test_mvnorm)(&tmax, &tmin, val[k] + 1., val[k], 1., 1., 1.);
+      (test_mvnorm)(&tmax, &tmin, tval + 1., tval, 1., 1., 1.);
       EXPECT_LE(tmin, tmax);
 
       // Case: wtmax < wtmin, variance > 0, covar > 0 ==> tmin == tmax
-      (test_mvnorm)(&tmax, &tmin, val[k] - 1., val[k], 1., 1., 1.);
+      (test_mvnorm)(&tmax, &tmin, tval - 1., tval, 1., 1., 1.);
       EXPECT_DOUBLE_EQ(tmin, tmax);
     }
 
