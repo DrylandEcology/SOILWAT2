@@ -418,10 +418,10 @@ Bool _read_weather_hist(TimeInt year) {
 
 	sprintf(fname, "%s.%4d", SW_Weather.name_prefix, year);
 
+	_clear_hist_weather(); // clear values before returning
+
 	if (NULL == (f = fopen(fname, "r")))
 		return swFALSE;
-
-	_clear_hist_weather();
 
 	while (GetALine(f, inbuf)) {
 		lineno++;
