@@ -78,7 +78,7 @@ RealD *runavg_list; /* used in run_tmp_avg() */
 static char *MyFileName;
 static TimeInt tail;
 static Bool firsttime;
-static int wthdataIndex;
+
 
 /* =================================================== */
 /* =================================================== */
@@ -171,7 +171,6 @@ void SW_WTH_construct(void) {
 	tail = 0;
 	firsttime = swTRUE;
 	SW_Markov.ppt_events = 0;
-	wthdataIndex = 0;
 	OutPeriod pd;
 
 	// Clear the module structure:
@@ -233,9 +232,7 @@ void SW_WTH_new_year(void) {
 		weth_found = swFALSE;
 	} else {
 		#ifdef RSOILWAT
-		weth_found = swFALSE;
-		rSW_WTH_new_year2(year);
-		wthdataIndex++;
+		weth_found = onSet_WTH_DATA_YEAR(year);
 		#else
 		weth_found = _read_weather_hist(year);
 		#endif
@@ -445,24 +442,6 @@ Bool _read_weather_hist(TimeInt year) {
 		wh->temp_min[doy] = tmpmin;
 		wh->temp_avg[doy] = (tmpmax + tmpmin) / 2.0;
 		wh->ppt[doy] = ppt;
-
-		/* Reassign if invalid values are found.  The values are
-		 * either valid or SW_MISSING.  If they were not
-		 * present in the file, we wouldn't get this far because
-		 * sscanf() would return too few items.
-		 */
-		if (missing(tmpmax)) {
-			wh->temp_max[doy] = SW_MISSING;
-			LogError(logfp, LOGWARN, "%s : Missing max temp on doy=%d.", fname, doy + 1);
-		}
-		if (missing(tmpmin)) {
-			wh->temp_min[doy] = SW_MISSING;
-			LogError(logfp, LOGWARN, "%s : Missing min temp on doy=%d.", fname, doy + 1);
-		}
-		if (missing(ppt)) {
-			wh->ppt[doy] = 0.;
-			LogError(logfp, LOGWARN, "%s : Missing PPT on doy=%d.", fname, doy + 1);
-		}
 
 		if (!missing(tmpmax) && !missing(tmpmin)) {
 			k++;
