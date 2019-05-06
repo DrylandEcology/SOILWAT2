@@ -248,7 +248,7 @@ void SW_WTH_new_year(void) {
 	 * (doy=1) and are below the critical temps for freezing
 	 * and with ppt=0 there's nothing to freeze.
 	 */
-	if (!weth_found && firsttime) {
+	if (firsttime) {
 		wn->temp_max[Today] = wn->temp_min[Today] = wn->ppt[Today] = wn->rain[Today] = 0.;
 		w->snow = w->snowmelt = w->snowloss = 0.;
 		w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
