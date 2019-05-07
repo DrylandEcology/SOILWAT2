@@ -109,7 +109,7 @@ typedef struct {
 		surfaceWater, surfaceWater_evap,
 		pet, aet,
 		litter_evap, evap_veg[NVEGTYPES],
-		litter_int, int_veg[NVEGTYPES],
+		litter_int, int_veg[NVEGTYPES], // todays intercepted rain by litter and by vegetation
 		sTemp[MAX_LAYERS],
 		surfaceTemp; // soil surface temperature
 

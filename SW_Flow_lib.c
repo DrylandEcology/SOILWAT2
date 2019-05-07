@@ -123,6 +123,7 @@ static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 /*              Local Function Definitions             */
 /* --------------------------------------------------- */
 
+
 /**
 @brief Calculate the water intercepted by vegetation.
 
@@ -171,74 +172,105 @@ void veg_intercepted_water(double *pptleft, double *wintveg, double ppt, double 
 		intcpt = b * x + a;
 		slope = d * x + c;
 
-		*wintveg = (intcpt + slope * ppt) * scale;
 
-		*wintveg = fmin(*wintveg, ppt);
-		*wintveg = fmin(*wintveg, MAX_WINTSTCR(x));
-		*pptleft = fmax(ppt - *wintveg, 0.0);
 
-	} else {
-	  /*  no precip. or no biomass, so obviously nothing is intercepted by standing crop. */
-		*pptleft = ppt;
-		*wintveg = 0.0;
-	}
-}
 
 /**
-@brief Calculate the water intercepted by litter.
 
-Equations developed by John Bradford, based on equations by Corbett and Crouse 1968. @cite Corbett1968
+  \brief Calculate rain interception by vegetation canopies.
 
-@param *pptleft Remaining precipitation (cm/day).
-@param *wintlit Amount of precipitation intercepted by litter (cm).
-@param blitter Litter biomass, required for wintlit (g/m<SUP>2</SUP>).
-@param scale Proportion of vegetation height above snowpack multiplied by its cover value.
-@param a A parameter for intercept of grass interception equation.
-@param b B parameter for intercept of grass interception equation.
-@param c C parameter for slope of grass interception equation.
-@param d D parameter for slope of grass interception equation.
+  Interception equations as of v4.3.0 (21 Nov 2018) are based on results by
+  Vegas Galdos et al. 2012 \cite VegasGaldos2012 and
+  Gerrits 2010 \cite Gerrits2010.
 
-@sideeffect
-  - *pptleft  Updated amount of precipitation left after interception (cm/day).
-  - *wintgrass  Updated amount of precipitation interception by vegetation (cm/day).
+  Previously, equations were derived from Bradford 2004 \cite Bradford2004
+  based on data from Corbet and Crouse (1968) \cite Corbett1968; these were
+  implemented on 15 Oct 2003. The original formulation by
+  Parton 1978 \cite Parton1978 was also based on
+  Corbet and Crouse (1968) \cite Corbett1968.
+
+  \param ppt_incident Amount of rain (cm) arriving at canopy.
+  \param int_veg See side effects.
+  \param s_veg Current canopy storage of intercepted water (cm).
+  \param m Number of rain events per day.
+  \param kSmax Parameter (mm) to determine storage capacity based on LAI.
+  \param LAI Leaf-area index (m2 / m2).
+  \param scale The compound fraction of vegetation type coverage and canopy
+    extent above snow pack.
+
+  \sideeffect
+    - ppt_incident Amount of rain not intercepted, i.e., throughfall (cm).
+    - int_veg Amount of rain interception by vegetation canopy (cm).
+    - s_veg Updated canopy storage (cm).
 */
 
-/**********************************************************************
- HISTORY:
- 4/30/92  (SLC)
- 7/1/92   (SLC) Reset pptleft to 0 if less than 0 (due to round off)
- 6-Oct-03 (cwb) wintlit = 0 if no litter.
- 15-Oct-03 (cwb) replaced Parton's original equations with new ones
- developed by John Bradford based on Corbet and Crouse, 1968.
- Replaced the following code:
- par1 = exp((-1. + .45 * log10(blitter+1.)) * log(10.));
- *wintlit = (.015 * (*pptleft) + .0635) * exp(par1);
+void veg_intercepted_water(double *ppt_incident, double *int_veg,
+  double *s_veg, double m, double kSmax, double LAI, double scale)
+{
+  if (GT(LAI, 0.) && GT(*ppt_incident, 0.))
+  {
+    double Dthreshold_cm = m * kSmax * log10(1 + LAI) / 10.;
 
- 21-Oct-03 (cwb) added MAX_WINTLIT line
- **********************************************************************/
+    *int_veg = scale * fmin(*ppt_incident,
+      fmax(0., Dthreshold_cm - *s_veg / scale));
+    *s_veg += *int_veg;
+    *ppt_incident -= *int_veg;
 
-void litter_intercepted_water(double *pptleft, double *wintlit, double blitter,
-  double scale, double a, double b, double c, double d) {
-	double intcpt, slope;
-
-	if (ZRO(blitter)) {
-		*wintlit = 0.0;
-	} else if (GT(*pptleft, 0.0)) {
-		intcpt = b * blitter + a;
-		slope = d * blitter + c;
-
-		*wintlit = (intcpt + slope * (*pptleft)) * scale;
-
-		*wintlit = fmin(*pptleft,*wintlit);
-		*wintlit = fmin(*wintlit, MAX_WINTLIT);
-		*pptleft -= *wintlit;
-		*pptleft = fmax(*pptleft, 0.0);
-
-	} else {
-		*pptleft = 0.0;
-		*wintlit = 0.0;
-	}
+  } else {
+    *int_veg = 0.;
+  }
 }
+
+
+/**
+  \brief Calculate rain interception by litter layer.
+
+  Interception equations as of v4.3.0 (21 Nov 2018) are based on results by
+  Vegas Galdos et al. 2012 \cite VegasGaldos2012 and
+  Gerrits 2010 \cite Gerrits2010.
+
+  Previously, equations were derived from Bradford 2004 \cite Bradford2004
+  based on data from Corbet and Crouse (1968) \cite Corbett1968; these were
+  implemented on 15 Oct 2003. The original formulation by
+  Parton 1978 \cite Parton1978 was also based on
+  Corbet and Crouse (1968) \cite Corbett1968.
+
+  \param ppt_through Amount of rain (cm) arriving at litter layer.
+  \param int_lit See side effects.
+  \param s_lit Current litter storage of intercepted water (cm).
+  \param m Number of rain events per day.
+  \param kSmax Parameter (mm) to determine storage capacity based on litter
+    biomass.
+  \param blitter Litter biomass density (g / m2).
+  \param scale The compound fraction of vegetation type coverage and litter
+    above snow pack.
+
+  \sideeffect
+    - ppt_incident Amount of rain not intercepted, i.e., throughfall (cm).
+    - int_lit Amount of rain interception by litter;
+      added to previous value (cm).
+    - s_lit Updated litter storage (cm).
+*/
+
+void litter_intercepted_water(double *ppt_through, double *int_lit,
+  double *s_lit, double m, double kSmax, double blitter, double scale)
+{
+  if (GT(blitter, 0.) && GT(*ppt_through, 0.))
+  {
+    double
+      intercepted = 0.0,
+      Dthreshold_cm = m * kSmax * log10(1 + blitter) / 10.;
+
+    intercepted = scale * fmin(*ppt_through,
+      fmax(0., Dthreshold_cm - *s_lit / scale));
+
+    *int_lit += intercepted;
+    *s_lit += intercepted;
+    *ppt_through -= intercepted;
+  }
+
+}
+
 
 /**
 @brief Infiltrate water into soil layers under high water conditions, otherwise
@@ -1664,8 +1696,9 @@ temp += temp;
 /**
 @brief Calculate today's soil temperature for each layer.
 
-The algorithm selects a shorter time step if required for a stable solution
-    		(@cite Parton1978,@cite Parton1984).
+
+		The algorithm selects a shorter time step if required for a stable solution
+    		(@cite Parton1978, @cite Parton1984).
 
 @param ptr_dTime Yesterday's successful time step in seconds.
 @param deltaX The depth increment for the soil temperature (regression) calculations (cm).

@@ -41,16 +41,6 @@
 extern "C" {
 #endif
 
-/* Standing crop can only intercept so much precip
- * This is the limiter used inside stdcrop_intercepted()
- */
-#define MAX_WINTSTCR(x) ((x) * .1)
-#define MAX_WINTFOR (ppt)
-
-/* Litter can only intercept so much precip.
- * This is the limiter used inside litter_intercepted()
- */
-#define MAX_WINTLIT (blitter * .2)
 
 // based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 #define TCORRECTION			0.02 	// correction factor for eq. 3 [unitless]; estimate based on data from CPER/SGS LTER
@@ -85,10 +75,11 @@ typedef struct {
 /*                Function Definitions                 */
 /* --------------------------------------------------- */
 
-void veg_intercepted_water(double *pptleft, double *wintveg, double ppt, double x,
-  double scale, double a, double b, double c, double d);
+void veg_intercepted_water(double *ppt_incident, double *int_veg, double *s_veg,
+  double m, double kSmax, double LAI, double scale);
 
-void litter_intercepted_water(double *pptleft, double *wintlit, double blitter, double scale, double a, double b, double c, double d);
+void litter_intercepted_water(double *ppt_through, double *int_lit, double *s_lit,
+  double m, double kSmax, double blitter, double scale);
 
 void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft, int nlyrs, double swcfc[], double swcsat[], double impermeability[],
 		double *standingWater);
