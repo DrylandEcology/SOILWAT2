@@ -952,7 +952,9 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
   @brief Calculates the soil water potential from soil water content of the
          n-th soil layer.
 
-Equations are based on a paper by Cosby, Hornberger, Clapp, Ginn. @cite Cosby1984 <BR>Moisture retention data was fit to the power function.
+  The equation and its coefficients are based on a
+  paper by Cosby,Hornberger,Clapp,Ginn,  in WATER RESOURCES RESEARCH
+  June 1984.  Moisture retention data was fit to the power function.
 
   The code assumes the following conditions (which are checked during data input):
       * width > 0 which is checked by function `_read_layers`
@@ -964,7 +966,7 @@ Equations are based on a paper by Cosby, Hornberger, Clapp, Ginn. @cite Cosby198
   @param swcBulk Soilwater content of the current layer (cm/layer)
   @param n Layer number to index the **lyr pointer
 
-@return swb Soilwater potential of the current layer or soilwater content (if swflag=swFALSE).
+  @return swb Soilwater potential of the current layer or soilwater content (if swflag=swFALSE)
 **/
 
 RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n) {

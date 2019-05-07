@@ -291,6 +291,8 @@ namespace {
     }
 
     EXPECT_GT(standingWater, 0); // standingWater should be above 0
+
+
     // deallocate pointers
     double *array_list[] = { impermeability2, drain2, swc2, swcfc2, swcsat2,
                            drain3, swc3, swcfc3, swcsat3,
@@ -299,7 +301,29 @@ namespace {
     for (i = 0; i < length(array_list); i++){
       delete[] array_list[i];
     }
+
     // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
+  //Test svapor function by manipulating variable temp.
+  TEST(SWFlowTest, svapor){
+    //Declare INPUTS
+    double temp[] = {30,35,40,45,50,55,60,65,70,75,20,-35,-12.667,-1,0}; // These are test temperatures, in degrees Celcius.
+    double expOut[] = {32.171, 43.007, 56.963, 74.783, 97.353, 125.721, 161.113,
+      204.958, 258.912, 324.881, 17.475, 0.243, 1.716, 4.191, 4.509}; // These are the expected outputs for the svapor function.
+
+    //Declare OUTPUTS
+    double vapor;
+
+    //Begin TEST
+    for (int i = 0; i <15; i++){
+      vapor = svapor(temp[i]);
+
+      EXPECT_NEAR(expOut[i], vapor, 0.001); // Testing input array temp[], expected output is expOut[].
+    }
+    //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
 
