@@ -163,18 +163,6 @@ par2 = LE(vegcov, 3.0) ? vegcov * .33333333
 
 21-Oct-03 (cwb) added MAX_WINTLIT line
 **********************************************************************/
-void veg_intercepted_water(double *pptleft, double *wintveg, double ppt, double x,
-  double scale, double a, double b, double c, double d)
-{
-	double intcpt, slope;
-
-	if (GT(x, 0.) && GT(ppt, 0.)) {
-		intcpt = b * x + a;
-		slope = d * x + c;
-
-
-
-
 /**
 
   \brief Calculate rain interception by vegetation canopies.
