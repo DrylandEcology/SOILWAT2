@@ -121,10 +121,16 @@ void SW_WaterBalance_Checks(void)
     delta_swc_total = 0., delta_swcj[MAX_LAYERS];
   RealD lhs, rhs, wbtol = 1e-9;
 
-  static RealD surfaceWater_yesterday = 0.;
+  static RealD surfaceWater_yesterday;
   static Bool do_once = swTRUE;
   static Bool debug = swFALSE;
 
+
+  // re-init static variables on first day of each simulation
+  // to prevent carry-over
+  if (SW_Model.year == SW_Model.startyr && SW_Model.doy == SW_Model.firstdoy) {
+    surfaceWater_yesterday = 0.;
+  }
 
   // Sum up variables
   ForEachSoilLayer(i)
