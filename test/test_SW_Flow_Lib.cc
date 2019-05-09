@@ -532,11 +532,11 @@ namespace {
     unsigned int tr_regions2[25] = {1,1,1,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
     double tr_coeff2[25] = {0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495,
         0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.1999}; //trco_tree
-    double swc2[25] = {0.01, 0.02, 0.03, 0.04, 1.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61,
-        7.62, 7.63, 9.51, 9.52, 9.53, 11.41, 11.42, 11.43, 13.31, 13.32, 13.33};
+    double swc2[25] = {.41, .42, .45, .46, 0.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61,
+        7.62, 7.63, 9.51, 9.52, 9.53, 10.41, 10.42, 11.43, 12.01, 12.12, 13.33};
 
     //INPUTS for expected OUTPUTS
-    double swp_avgExpectedM = 0.0009799683;
+    double swp_avgExpectedM = 0.0009865503;
 
       //Pointer inputs for _set_layers.
 			RealF dmax[25] = {5, 6, 10, 11, 12, 20, 21, 22, 25, 30, 40, 41, 42, 50, 51, 52, 53, 54, 55, 60, 70, 80, 90, 110, 150}; //Can't have multiple layers with same max depth.
@@ -611,7 +611,7 @@ namespace {
   }
 
   //TEST pot_soil_evap for when nelyrs = 1 and nelyrs = MAX
-  //Begin TEST with nelrs = 1
+  //Begin TEST with nelyrs = 1
   TEST(SWFlowTest, pot_soil_evap){
     //INPUTS
     unsigned int nelyrs = 1;
@@ -650,8 +650,8 @@ namespace {
     nelyrs = 25;
     double ecoeff8[25] = {0.01, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5,0.01, 0.1, 0.25, 0.5,
         0.01, 0.1, 0.25, 0.5,0.01, 0.1, 0.25, 0.5,0.51};
-    double swc8[25] = {.01, 0.02, 0.03, 0.04, 1.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61, 7.62,
-        7.63, 9.51, 9.52, 9.53, 11.41, 11.42, 11.43, 13.31, 13.32, 13.33};
+    double swc8[25] = {.41, .42, .45, .46, 0.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61,
+        7.62, 7.63, 9.51, 9.52, 9.53, 10.41, 10.42, 11.43, 12.01, 12.12, 13.33};
     double width8[25] = {5,1,4,1,1,8,1,1,3,5,10,1,1,8,1,1,1,1,1,5,10,10,10,20,40};//Based on dmax in _set_layers
 
 
@@ -697,22 +697,14 @@ namespace {
 
     pot_soil_evap(&bserate, nelyrs, ecoeff8, totagb, fbse, petday, shift, shape, inflec, range,
       width8, swc8, Es_param_limit);
-    //  printf("Es: %f\n", Es_param_limit);
-    //  printf("togab: %f\n", totagb);
-//      for(unsigned int k=0; k< nelyrs; k++){
-//        printf("k: %x\n", k);
-//      EXPECT_EQ(Es_param_limit, v->veg[k].Es_param_limit);  //Pointer is 0 when it should be 1
-//    }
-//      printf("2totagb: %f Es_param_limit: %f\n", totagb, Es_param_limit);
+
       if(v->veg[k].Es_param_limit > 600){
         EXPECT_GT(bserate, 0);
-    EXPECT_NEAR(bserate, bserateExpected, 0.0001);  //bserate is expected to be 0.02561575
+        EXPECT_NEAR(bserate, bserateExpected, 0.0000001);  //bserate is expected to be 0.02563948
       }
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
   }
-
-
 
   //TEST pot_soil_evap_bs for when nelyrs = 1 and nelyrs = MAX
   TEST(SWFlowTest, pot_soil_evap_bs){
@@ -738,8 +730,9 @@ namespace {
     //INPUTS
     nelyrs = 25; //Only 8 inputs available for SW_SWCbulk2SWPmatric function of SW_SoilWater.c
     double ecoeff8[25] = {0.1, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5, 0.1, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5, 0.1, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5, 0.4};
-    double width8[25] = {5,10,10,10,20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20};
-    double swc8[25] = {0.01, 0.02, 0.03, 0.04, 1.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61, 7.62, 7.63, 9.51, 9.52, 9.53, 11.41, 11.42, 11.43, 13.31, 13.32, 13.33};
+    double width8[25] = {5,1,4,1,1,8,1,1,3,5,10,1,1,8,1,1,1,1,1,5,10,10,10,20,40};//Based on dmax in _set_layers
+    double swc8[25] = {.41, .42, .45, .46, 0.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61,
+        7.62, 7.63, 9.51, 9.52, 9.53, 10.41, 10.42, 11.43, 12.01, 12.12, 13.33};
 
     RealF dmax[25] = {5, 15, 25, 35, 55, 75, 95, 115, 135, 155, 175, 195, 215, 235, 255, 275, 295, 315, 335, 355, 375, 395, 415, 435, 455};
     RealF matricd[25] = {1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130, 1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130,1.430, 1.410, 1.390,
@@ -768,7 +761,7 @@ namespace {
 
     pot_soil_evap_bs(&bserate, nelyrs, ecoeff8, petday, shift, shape, inflec, range, width8, swc8);
 
-    EXPECT_NEAR(bserate, bserateExpected, 0.0001); //bserate is expected to be 0
+    EXPECT_NEAR(bserate, bserateExpected, 0.000001); //bserate is expected to be 0
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
