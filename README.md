@@ -89,6 +89,13 @@ __Tests, documentation, and code__ form a trinity
     make test_severe test_run  # compiles/executes with strict/severe flags
     make clean                 # cleans build artifacts
     ```
+  * If you want to run unit tests repeatedly (e.g., to sample a range of
+    random numbers), then you may use the bash-script `many_test_runs.sh` which
+    runs `N` number of times and reports only unit test failures, e.g.,
+    ```
+    ./many_test_runs.sh # will run a default (currently, 10) number of times
+    N=3 ./many_test_runs.sh # will run 3 replicates
+    ```
   * Development/feature branches can only be merged into master if they pass
     all checks on `appveyor` and `travis` continuous integration servers, i.e.,
     run the following locally to prepare a pull-request or commit to be reviewed
@@ -101,6 +108,33 @@ __Tests, documentation, and code__ form a trinity
     ```
     ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
     ```
+
+    The address sanitizer may not work correctly and/or fail, if you use the
+    `Apple-clang` version shipped with macOS X. You may need to build `clang`
+    yourself
+    (see [Sanitizer issue #1026](https://github.com/google/sanitizers/issues/1026)):
+    e.g.,
+    ```
+    sudo port install clang-8.0 clang-select
+    sudo port select --set clang mp-clang-8.0
+    ```
+    and to revert to the default version
+    ```
+    sudo port select --set clang none
+    ```
+    If you installed `clang` in a non-default location, then you
+    may need to also fix names of shared dynamic libraries in the test
+    executable if you get the error `... dyld: Library not loaded ...`, e.g.,
+    ```
+    # build test executable with clang and leak detection
+    CC=clang CXX=clang++ ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe
+    otool -L sw_test # check faulty library path
+    # figure out correct library path and insert with:
+    install_name_tool -change /opt/local/libexec/llvm-8.0/lib/libclang_rt.asan_osx_dynamic.dylib /opt/local/libexec/llvm-8.0/lib/clang/8.0.0/lib/darwin/libclang_rt.asan_osx_dynamic.dylib sw_test
+    # run tests
+    make test_run
+    ```
+
   * Informal and local integration tests example:
     1. Before coding, run `testing/` and produce reference output
         ```

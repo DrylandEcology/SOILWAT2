@@ -15,6 +15,9 @@
 extern "C" {
 #endif
 
+#define ERRSTRLEN 3000 /* LogError: max output string length */
+
+
 /***************************************************
  * Function definitions
  ***************************************************/

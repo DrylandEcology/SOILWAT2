@@ -63,10 +63,9 @@ use_gnu++11 = -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
 warning_flags = -Wall -Wextra
 # Don't use 'warning_flags_severe*' for production builds and rSOILWAT2
 warning_flags_severe = $(warning_flags) -Wpedantic -Werror
-warnings_flags_severe_cxx = $(warning_flags_severe) -Wno-error
+warnings_flags_severe_cxx = $(warning_flags_severe) -Wno-error=deprecated
 	# TODO: address underlying problems so that we can eliminate `-Wno-error`:
-	#  - compiler warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated (https://github.com/DrylandEcology/SOILWAT2/issues/208)
-	#  - compiler warning: variable length arrays (https://github.com/DrylandEcology/SOILWAT2/issues/214)
+	#  - compiler warning 'deprecated': treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated (https://github.com/DrylandEcology/SOILWAT2/issues/208)
 
 # Instrumentation options for debugging and testing
 instr_flags = -fstack-protector-all

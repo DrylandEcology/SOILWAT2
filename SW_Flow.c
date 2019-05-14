@@ -46,7 +46,7 @@
  10/19/2010	(drs) added call to hydraulic_redistribution() in SW_Water_Flow() after all the evap/transp/infiltration is computed
  added temporary array lyrHydRed to arrays2records() and records2arrays()
  11/16/2010	(drs) added call to forest_intercepted_water() depending on SW_VegProd.Type..., added forest_h2o to trace forest intercepted water
- renamed standcrop_h2o_qum -> veg_h2o_qum
+ renamed standcrop_h2o_qum -> veg_int_storage
  renamed totstcr_h2o -> totveg_h2o
  01/03/2011	(drs) changed type of lyrTrRegions[MAX_LAYERS] from int to IntU to avoid warning message that ' pointer targets differ in signedness' in function transp_weighted_avg()
  01/04/2011	(drs) added snowmelt to h2o_for_soil after interception, otherwise last day of snowmelt (when snowpack is gone) wasn't made available and aet became too small
@@ -172,7 +172,8 @@ RealD UpNeigh_lyrSWCBulk[MAX_LAYERS], UpNeigh_lyrDrain[MAX_LAYERS], UpNeigh_drai
 
 
 static RealD surfaceTemp[TWO_DAYS],
-	veg_h2o_qum[NVEGTYPES][TWO_DAYS], litter_h2o_qum[TWO_DAYS],
+	veg_int_storage[NVEGTYPES], // storage of intercepted rain by the vegetation
+	litter_int_storage, // storage of intercepted rain by the litter layer
 	standingWater[TWO_DAYS]; /* water on soil surface if layer below is saturated */
 
 
@@ -232,10 +233,10 @@ void SW_FLW_construct(void) {
 	drainout = 0;
 	surfaceTemp[0] = surfaceTemp[1] = 0.;
 	standingWater[0] = standingWater[1] = 0.;
-	litter_h2o_qum[0] = litter_h2o_qum[1] = 0.;
+	litter_int_storage = 0.;
 
 	ForEachVegType(k) {
-		veg_h2o_qum[k][0] = veg_h2o_qum[k][1] = 0.;
+		veg_int_storage[k] = 0.;
 	}
 }
 
@@ -261,16 +262,15 @@ void SW_Water_Flow(void) {
 		soil_evap[NVEGTYPES], soil_evap_rate[NVEGTYPES], soil_evap_rate_bs = 1.,
 		surface_evap_veg_rate[NVEGTYPES],
 		surface_evap_litter_rate = 1., surface_evap_standingWater_rate = 1.,
-		veg_h2o[NVEGTYPES], litter_h2o,
-		litter_h2o_help, h2o_for_soil = 0., ppt_toUse, snowmelt,
-		snowdepth_scale_veg[NVEGTYPES],
-		pet2, rate_help, x;
+		h2o_for_soil = 0., snowmelt,
+		scale_veg[NVEGTYPES],
+		pet2, peti, rate_help, x;
 
-	int doy, k;
+	int doy, month, k;
 	LyrIndex i;
 
 	doy = SW_Model.doy; /* base1 */
-	/*	month = SW_Model.month;*//* base0 */
+	month = SW_Model.month; /* base0 */
 
 	records2arrays();
 
@@ -284,6 +284,20 @@ void SW_Water_Flow(void) {
 	}
 	#endif
 
+	/* PET */
+	x = v->bare_cov.albedo * v->bare_cov.fCover;
+	ForEachVegType(k)
+	{
+		x += v->veg[k].cov.albedo * v->veg[k].cov.fCover;
+	}
+
+  sw->pet = SW_Site.pet_scale * petfunc(doy, w->now.temp_avg[Today],
+    SW_Site.latitude, SW_Site.altitude,
+    SW_Site.slope, SW_Site.aspect, x,
+    SW_Sky.r_humidity_daily[doy], SW_Sky.windspeed_daily[doy],
+    SW_Sky.cloudcov_daily[doy], SW_Sky.transmission_daily[doy]);
+
+
 	/* snowdepth scaling */
 	sw->snowdepth = SW_SnowDepth(sw->snowpack[Today], SW_Sky.snow_density_daily[doy]);
 	/* if snow depth is deeper than vegetation height then
@@ -295,70 +309,47 @@ void SW_Water_Flow(void) {
 
 	ForEachVegType(k)
 	{
+		scale_veg[k] = v->veg[k].cov.fCover;
+
 		if (GT(v->veg[k].veg_height_daily[doy], 0.)) {
-			snowdepth_scale_veg[k] = 1. - sw->snowdepth / v->veg[k].veg_height_daily[doy];
-		} else {
-			snowdepth_scale_veg[k] = 1.;
+			scale_veg[k] *= 1. - sw->snowdepth / v->veg[k].veg_height_daily[doy];
 		}
 	}
 
-	/* Interception */
-	ppt_toUse = w->now.rain[Today]; /* ppt is partioned into ppt = snow + rain */
+	/* Rainfall interception */
+	h2o_for_soil = w->now.rain[Today]; /* ppt is partioned into ppt = snow + rain */
 
-	ForEachVegType(k)
-	{
-		if (GT(v->veg[k].cov.fCover, 0.) && GT(snowdepth_scale_veg[k], 0.))
-		{
-			/* veg type k present AND veg not fully covered in snow */
-			if (k == SW_TREES) {
-				x = v->veg[k].lai_live_daily[doy];
-			} else {
-				x = v->veg[k].vegcov_daily[doy];
-			}
+  ForEachVegType(k)
+  {
+    if (GT(h2o_for_soil, 0.) && GT(scale_veg[k], 0.))
+    {
+      /* canopy interception only if rainfall, if vegetation cover > 0, and if
+          plants are taller than snowpack depth */
+      veg_intercepted_water(&h2o_for_soil,
+        &sw->int_veg[k], &veg_int_storage[k],
+        SW_Sky.n_rain_per_day[month], v->veg[k].veg_kSmax,
+        v->veg[k].bLAI_total_daily[doy], scale_veg[k]);
 
-			veg_intercepted_water(&h2o_for_soil, &veg_h2o[k], ppt_toUse, x,
-				snowdepth_scale_veg[k] * v->veg[k].cov.fCover,
-				v->veg[k].veg_intPPT_a, v->veg[k].veg_intPPT_b,
-				v->veg[k].veg_intPPT_c, v->veg[k].veg_intPPT_d);
+    } else {
+      sw->int_veg[k] = 0.;
+    }
+  }
 
-			/* amount of rain that is not intercepted by the canopy */
-			ppt_toUse = h2o_for_soil;
+  sw->litter_int = 0.;
 
-		} else {
-			/* snow depth is more than vegetation height  */
-			h2o_for_soil = ppt_toUse;
-			veg_h2o[k] = 0.;
-		} /* end interception */
-	}
+  if (GT(h2o_for_soil, 0.) && EQ(sw->snowpack[Today], 0.)) {
+    /* litter interception only when no snow and if rainfall reaches litter */
+    ForEachVegType(k)
+    {
+      if (GT(v->veg[k].cov.fCover, 0.)) {
+        litter_intercepted_water(&h2o_for_soil,
+          &sw->litter_int, &litter_int_storage,
+          SW_Sky.n_rain_per_day[month], v->veg[k].lit_kSmax,
+          v->veg[k].litter_daily[doy], v->veg[k].cov.fCover);
+      }
+    }
+  }
 
-	if (EQ(sw->snowpack[Today], 0.)) { /* litter interception only when no snow */
-		litter_h2o_help = 0.;
-
-		ForEachVegType(k)
-		{
-			if (GT(v->veg[k].cov.fCover, 0.)) {
-				litter_intercepted_water(&h2o_for_soil, &litter_h2o, v->veg[k].litter_daily[doy],
-					v->veg[k].cov.fCover, v->veg[k].litt_intPPT_a, v->veg[k].litt_intPPT_b,
-					v->veg[k].litt_intPPT_c, v->veg[k].litt_intPPT_d);
-
-				litter_h2o_help += litter_h2o;
-			}
-		}
-
-		litter_h2o = litter_h2o_help;
-	} else {
-		litter_h2o = 0.;
-	}
-
-	/* Sum cumulative intercepted components */
-	ForEachVegType(k)
-	{
-		sw->int_veg[k] = veg_h2o[k];
-		veg_h2o_qum[k][Today] = veg_h2o_qum[k][Yesterday] + veg_h2o[k];
-	}
-
-	sw->litter_int = litter_h2o;
-	litter_h2o_qum[Today] = litter_h2o_qum[Yesterday] + litter_h2o;
 	/* End Interception */
 
 
@@ -438,19 +429,6 @@ void SW_Water_Flow(void) {
 	// end surface water and infiltration
 
 
-	/* PET */
-	x = v->bare_cov.albedo * v->bare_cov.fCover;
-	ForEachVegType(k)
-	{
-		x += v->veg[k].cov.albedo * v->veg[k].cov.fCover;
-	}
-
-	sw->pet = SW_Site.pet_scale;
-	sw->pet *= petfunc(doy, w->now.temp_avg[Today], SW_Site.latitude,
-		SW_Site.altitude, SW_Site.slope, SW_Site.aspect, x, SW_Sky.r_humidity_daily[doy],
-		SW_Sky.windspeed_daily[doy], SW_Sky.cloudcov_daily[doy], SW_Sky.transmission_daily[doy]);
-
-
 	/* Potential bare-soil evaporation rates */
 	if (GT(v->bare_cov.fCover, 0.) && EQ(sw->snowpack[Today], 0.)) /* bare ground present AND no snow on ground */
 	{
@@ -467,7 +445,7 @@ void SW_Water_Flow(void) {
 	/* Potential transpiration & bare-soil evaporation rates */
 	ForEachVegType(k)
 	{
-		if (GT(v->veg[k].cov.fCover, 0.) && GT(snowdepth_scale_veg[k], 0.)) {
+		if (GT(scale_veg[k], 0.)) {
 			/* vegetation type k present AND not fully covered in snow */
 			EsT_partitioning(&soil_evap[k], &transp_veg[k], v->veg[k].lai_live_daily[doy],
 				v->veg[k].EsTpartitioning_param);
@@ -496,7 +474,7 @@ void SW_Water_Flow(void) {
 				v->veg[k].tr_shade_effects.yinflec, v->veg[k].tr_shade_effects.range,
 				v->veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
 
-			transp_rate[k] *= snowdepth_scale_veg[k] * v->veg[k].cov.fCover;
+			transp_rate[k] *= scale_veg[k];
 
 		} else {
 			soil_evap_rate[k] = 0.;
@@ -505,18 +483,23 @@ void SW_Water_Flow(void) {
 	}
 
 
-	/* Potential evaporation rates of intercepted and surface water */
-	ForEachVegType(k) {
-		surface_evap_veg_rate[k] = veg_h2o_qum[k][Today];
-	}
-
-	surface_evap_litter_rate = litter_h2o_qum[Today];
-	surface_evap_standingWater_rate = standingWater[Today];
-
 	/* Snow sublimation takes precedence over other ET fluxes:
 		see functions `SW_SWC_adjust_snow` and `SW_SWC_snowloss`*/
 	w->snowloss = SW_SWC_snowloss(sw->pet, &sw->snowpack[Today]);
 	pet2 = fmax(0., sw->pet - w->snowloss);
+
+	/* Potential evaporation rates of intercepted and surface water */
+	peti = pet2;
+	ForEachVegType(k) {
+		surface_evap_veg_rate[k] = fmax(0.,
+		  fmin(peti * scale_veg[k], veg_int_storage[k]));
+		peti -= surface_evap_veg_rate[k] / scale_veg[k];
+	}
+
+	surface_evap_litter_rate = fmax(0., fmin(peti, litter_int_storage));
+	peti -= surface_evap_litter_rate;
+	surface_evap_standingWater_rate = fmax(0., fmin(peti, standingWater[Today]));
+	peti -= surface_evap_standingWater_rate;
 
 	/* Scale all (potential) evaporation and transpiration flux rates to (PET - Esnow) */
 	rate_help = surface_evap_litter_rate + surface_evap_standingWater_rate +
@@ -546,11 +529,11 @@ void SW_Water_Flow(void) {
 	/* Evaporation of intercepted and surface water */
 	ForEachVegType(k)
 	{
-		evap_fromSurface(&veg_h2o_qum[k][Today], &surface_evap_veg_rate[k], &sw->aet);
+		evap_fromSurface(&veg_int_storage[k], &surface_evap_veg_rate[k], &sw->aet);
 		sw->evap_veg[k] = surface_evap_veg_rate[k];
 	}
 
-	evap_fromSurface(&litter_h2o_qum[Today], &surface_evap_litter_rate, &sw->aet);
+	evap_fromSurface(&litter_int_storage, &surface_evap_litter_rate, &sw->aet);
 	evap_fromSurface(&standingWater[Today], &surface_evap_standingWater_rate, &sw->aet);
 
 	sw->litter_evap = surface_evap_litter_rate;
@@ -586,7 +569,7 @@ void SW_Water_Flow(void) {
 	/* Vegetation transpiration and bare-soil evaporation */
 	ForEachVegType(k)
 	{
-		if (GT(v->veg[k].cov.fCover, 0.) && GT(snowdepth_scale_veg[k], 0.)) {
+		if (GT(scale_veg[k], 0.)) {
 			/* remove bare-soil evap from swc */
 			remove_from_soil(lyrSWCBulk, lyrEvap[k], &sw->aet, SW_Site.n_evap_lyrs,
 				lyrEvapCo, soil_evap_rate[k], lyrSWCBulk_HalfWiltpts);
@@ -717,10 +700,6 @@ void SW_Water_Flow(void) {
 	arrays2records();
 
 	standingWater[Yesterday] = standingWater[Today];
-	litter_h2o_qum[Yesterday] = litter_h2o_qum[Today];
-	ForEachVegType(k) {
-		veg_h2o_qum[k][Yesterday] = veg_h2o_qum[k][Today];
-	}
 
 } /* END OF WATERFLOW */
 
