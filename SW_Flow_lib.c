@@ -664,19 +664,23 @@ void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double
 
 	/* get the weighted average of swp in the evap layers */
 	for (i = 0; i < nelyrs; i++) {
+	  if (ZRO(ecoeff[i])) {
+	    break;
+	  }
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
 		avswp += x * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
 	}
 
-	avswp /= sumwidth;
+  // Note: avswp = 0 if swc = 0 because that is the return value of SW_SWCbulk2SWPmatric
+	avswp /= (ZRO(sumwidth)) ? 1 : sumwidth;
 
 	/*  8/27/92 (SLC) if totagb > Es_param_limit, assume soil surface is
 	 * completely covered with litter and that bare soil
 	 * evaporation is inhibited.
 	 */
 
-	if (GE(totagb, Es_param_limit)) {
+	if (GE(totagb, Es_param_limit) || ZRO(avswp)) {
 		*bserate = 0.;
 	} else {
 		*bserate = petday * watrate(avswp, petday, shift, shape, inflec, range) * (1. - (totagb / Es_param_limit)) * fbse;

@@ -45,6 +45,8 @@ extern SW_MODEL SW_Model;
 extern SW_VEGPROD SW_VegProd;
 pcg32_random_t flow_rng;
 SW_VEGPROD *v = &SW_VegProd;
+SW_SITE *s = &SW_Site;
+
 int k;
 
 namespace {
@@ -529,37 +531,25 @@ namespace {
     //Begin TEST when n_layers is at "max"
     //INPUTS
     swp_avg = 10, n_tr_rgns = 4, n_layers = 25;
-    unsigned int tr_regions2[25] = {1,1,1,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
-    double tr_coeff2[25] = {0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495,
-        0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.1999}; //trco_tree
-    double swc2[25] = {.41, .42, .45, .46, 0.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61,
-        7.62, 7.63, 9.51, 9.52, 9.53, 10.41, 10.42, 11.43, 12.01, 12.12, 13.33};
+    unsigned int i, tr_regions2[25] = {1,1,1,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
+    double tr_coeff2[25];
+    double swc2[25];
 
     //INPUTS for expected OUTPUTS
-    double swp_avgExpectedM = 0.0009865503;
+    double swp_avgExpectedM = 1.7389131503001496;
 
-      //Pointer inputs for _set_layers.
-			RealF dmax[25] = {5, 6, 10, 11, 12, 20, 21, 22, 25, 30, 40, 41, 42, 50, 51, 52, 53, 54, 55, 60, 70, 80, 90, 110, 150}; //Can't have multiple layers with same max depth.
-			RealF matricd[25] = {1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130, 1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130,1.430, 1.410,
-          1.390, 1.390, 1.380, 1.150, 1.130, 1.130, 1.4};
-			RealF f_gravel[25] = {0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2};
-      RealF evco[25] = {0.813, 0.153, 0.034, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-      RealF trco_grass[25] = {0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997,
-          0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.1999};
-      RealF trco_shrub[25] = {0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.134,
-          0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.1999};
-      RealF trco_tree[25] = {0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997,
-          0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.1999};
-      RealF trco_forb[25] = {0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.134,
-          0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.1999};
-      RealF psand[25] = {0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57, 0.57, 0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57, 0.57, 0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57, 0.57, 0.58};
-			RealF pclay[25] = {0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28, 0.28, 0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28, 0.28, 0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28, 0.28, 0.29};
-			RealF imperm[25] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-			RealF soiltemp[25] = {-1, -1, -1, -1, 0, 0, 1, 1, -1, -1, -1, -1, 0, 0, 1, 1, -1, -1, -1, -1, 0, 0, 1, 1, 2};
+    // Setup soil layers
+    create_test_soillayers(n_layers);
 
-      _set_layers(n_layers, dmax, matricd, f_gravel,
-        evco, trco_grass, trco_shrub, trco_tree,
-        trco_forb, psand, pclay, imperm, soiltemp);
+    ForEachSoilLayer(i) {
+      // copy soil layer values into arrays so that they can be passed as
+      // arguments to `transp_weighted_avg`
+      tr_coeff2[i] = s->lyr[i]->transp_coeff[SW_SHRUB];
+
+      // example: swc as mean of wilting point and field capacity
+      swc2[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt) / 2.;
+    }
+
 
 		transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions2, tr_coeff2, swc2);
 
@@ -610,109 +600,105 @@ namespace {
     Reset_SOILWAT2_after_UnitTest();
   }
 
-  //TEST pot_soil_evap for when nelyrs = 1 and nelyrs = MAX
-  //Begin TEST with nelyrs = 1
-  TEST(SWFlowTest, pot_soil_evap){
-    //INPUTS
-    unsigned int nelyrs = 1;
-    double ecoeff[1] = {0.01};
-    double bserate = 0, totagb, fbse = 0.813, petday = 0.1, shift = 45, shape = 0.1,
-      inflec = 0.25, range = 0.8, Es_param_limit = 1;
-    double width[1] = {5};
-    double swc[1] = {1};
+  // TEST pot_soil_evap
+  TEST(SWFlowTest, pot_soil_evap) {
+    unsigned int i, k, nelyrs;
+    double bserate = 0, totagb, Es_param_limit = 999.,
+      fbse = 0.813, fbse0 = 0., petday = 0.1, petday0 = 0.,
+      shift = 45, shape = 0.1, inflec = 0.25, range = 0.5;
 
-    //INPUTS for expected outputs
-    double bserateExpected = 0;
-
-    //Begin TEST for if(totagb >= Es_param_limit)
-    totagb = 17000;
-    pot_soil_evap(&bserate, nelyrs, ecoeff, totagb, fbse, petday, shift, shape, inflec, range,
-      width, swc, Es_param_limit);
-
-    EXPECT_DOUBLE_EQ(bserate, bserateExpected); //Expected return of zero when totagb >= Es_param_limit
-
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
-
-    //Begin TEST for if(totagb < Es_param_limit)
-    totagb = 0.5, bserateExpected = 0;
-    bserateExpected = 0.02563937;
-
-    pot_soil_evap(&bserate, nelyrs, ecoeff, totagb, fbse, petday, shift, shape, inflec, range,
-      width, swc, Es_param_limit);
-
-    EXPECT_NEAR(bserate, bserateExpected, 0.0001); //bserate is expected to be 0.02561575
-
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
-
-    //Begin TEST for when nelyrs = 25
-    nelyrs = 25;
-    double ecoeff8[25] = {0.01, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5,0.01, 0.1, 0.25, 0.5,
-        0.01, 0.1, 0.25, 0.5,0.01, 0.1, 0.25, 0.5,0.51};
-    double swc8[25] = {.41, .42, .45, .46, 0.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61,
-        7.62, 7.63, 9.51, 9.52, 9.53, 10.41, 10.42, 11.43, 12.01, 12.12, 13.33};
-    double width8[25] = {5,1,4,1,1,8,1,1,3,5,10,1,1,8,1,1,1,1,1,5,10,10,10,20,40};//Based on dmax in _set_layers
+    double swc[25], width[25], lyrEvapCo[25];
+    double swc0[25] = { 0. }; // for test if swc = 0
 
 
-    //Begin TEST for if(totagb >= Es_param_limit)
-    totagb = 17000;
+    // Loop over tests with varying number of soil layers
+    for (k = 0; k < 2; k++) {
 
-    RealF dmax[25] = {5, 6, 10, 11, 12, 20, 21, 22, 25, 30, 40, 41, 42, 50, 51, 52, 53, 54, 55, 60, 70, 80, 90, 110, 150};
-    RealF matricd[25] = {1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130, 1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130,1.430,
-        1.410, 1.390, 1.390, 1.380, 1.150, 1.130, 1.130, 1.4};
-    RealF f_gravel[25] = {0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2};
-    RealF evco[25] = {0.813, 0.153, 0.034, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    RealF trco_grass[25] = {0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997,
-        0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.1999};
-    RealF trco_shrub[25] = {0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.134,
-        0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.1999};
-    RealF trco_tree[25] = {0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997,
-        0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.1999};
-    RealF trco_forb[25] = {0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.134, 0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.134,
-        0.094, 0.176, 0.175, 0.110, 0.109, 0.101, 0.101, 0.1999};
-    RealF psand[25] = {0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57, 0.57, 0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57, 0.57, 0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57, 0.57, 0.58};
-    RealF pclay[25] = {0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28, 0.28, 0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28, 0.28, 0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28, 0.28, 0.29};
-    RealF imperm[25] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    RealF soiltemp[25] = {-1, -1, -1, -1, 0, 0, 1, 1, -1, -1, -1, -1, 0, 0, 1, 1, -1, -1, -1, -1, 0, 0, 1, 1, 2};
+      // Select number of soil layers used in test
+      if (k == 0) {
+        nelyrs = 1; // test 1: 1 soil layer
 
-    _set_layers(nelyrs, dmax, matricd, f_gravel,
-      evco, trco_grass, trco_shrub, trco_tree,
-      trco_forb, psand, pclay, imperm, soiltemp);
-
-    pot_soil_evap(&bserate, nelyrs, ecoeff8, totagb, fbse, petday, shift, shape, inflec, range,
-      width8, swc8, Es_param_limit);
-
-    EXPECT_DOUBLE_EQ(bserate, 0); //Expected return of zero when totagb >= Es_param_limit
-
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
-/**
-    //Begin TEST for if(totagb < Es_param_limit)
-    SW_VEGPROD *v = &SW_VegProd; //The float Es_param_limit is being affected by the veg pointer.
-    totagb = 0.5, bserateExpected = 0.02563948;
-
-	      _set_layers(nelyrs, dmax, matricd, f_gravel,
-        evco, trco_grass, trco_shrub, trco_tree,
-        trco_forb, psand, pclay, imperm, soiltemp);
-
-    pot_soil_evap(&bserate, nelyrs, ecoeff8, totagb, fbse, petday, shift, shape, inflec, range,
-      width8, swc8, Es_param_limit);
-TimeInt doy = 1;
-ForEachVegType(k){
-  for (doy = 1; doy <= MAX_DAYS; doy++){
-  v->veg[k].total_agb_daily[doy] = totagb; //These pointers weren't cooperating,
-  v->veg[k].Es_param_limit = Es_param_limit; //this is an attempt at fixing this problem.
-  }
-}
-      if(totagb < Es_param_limit){
-        EXPECT_GT(bserate, 0);
-        EXPECT_NEAR(bserate, bserateExpected, 0.0000001);  //bserate is expected to be 0.02563948
+      } else if (k == 1) {
+        nelyrs = 25; // test 2: 25 soil layers
       }
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
-*/
+
+      // Setup soil layers
+      create_test_soillayers(nelyrs);
+
+      ForEachSoilLayer(i) {
+        // copy soil layer values into arrays so that they can be passed as
+        // arguments to `pot_soil_evap`
+        width[i] = s->lyr[i]->width;
+        lyrEvapCo[i] = s->lyr[i]->evap_coeff;
+
+        // example: swc as mean of wilting point and field capacity
+        swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt) / 2.;
+      }
+
+      // Begin TEST if (totagb >= Es_param_limit)
+      totagb = Es_param_limit + 1.;
+      pot_soil_evap(&bserate, nelyrs, lyrEvapCo, totagb, fbse, petday, shift,
+        shape, inflec, range, width, swc, Es_param_limit);
+
+      // expect baresoil evaporation rate = 0 if totagb >= Es_param_limit
+      EXPECT_DOUBLE_EQ(bserate, 0.) <<
+        "pot_soil_evap != 0 if biom >= limit for " << nelyrs << " soil layers";
+
+
+      // Begin TESTs if (totagb < Es_param_limit)
+      totagb = Es_param_limit / 2;
+
+      // Begin TEST if (PET = 0)
+      pot_soil_evap(&bserate, nelyrs, lyrEvapCo, totagb, fbse, petday0, shift,
+        shape, inflec, range, width, swc, Es_param_limit);
+
+      // expect baresoil evaporation rate = 0 if PET = 0
+      EXPECT_DOUBLE_EQ(bserate, 0.) <<
+        "pot_soil_evap != 0 if PET = 0 for " << nelyrs << " soil layers";
+
+
+      // Begin TEST if (potential baresoil rate = 0)
+      pot_soil_evap(&bserate, nelyrs, lyrEvapCo, totagb, fbse0, petday, shift,
+        shape, inflec, range, width, swc, Es_param_limit);
+
+      // expect baresoil evaporation rate = 0 if fbse = 0
+      EXPECT_DOUBLE_EQ(bserate, 0.) <<
+        "pot_soil_evap != 0 if fbse = 0 for " << nelyrs << " soil layers";
+
+
+      // Begin TEST if (swc = 0)
+      pot_soil_evap(&bserate, nelyrs, lyrEvapCo, totagb, fbse, petday, shift,
+        shape, inflec, range, width, swc0, Es_param_limit);
+
+      // expect baresoil evaporation rate = 0 if swc = 0
+      EXPECT_DOUBLE_EQ(bserate, 0.) <<
+        "pot_soil_evap != 0 if swc = 0 for " << nelyrs << " soil layers";
+
+
+      // Begin TEST if (totagb < Es_param_limit)
+      pot_soil_evap(&bserate, nelyrs, lyrEvapCo, totagb, fbse, petday, shift,
+        shape, inflec, range, width, swc, Es_param_limit);
+
+      // expect baresoil evaporation rate > 0
+      // if totagb >= Es_param_limit & swc > 0
+      EXPECT_GT(bserate, 0.) <<
+        "pot_soil_evap !> 0 for " << nelyrs << " soil layers";
+
+      // expect baresoil evaporation rate <= PET
+      EXPECT_LE(bserate, petday) <<
+        "pot_soil_evap !<= PET for " << nelyrs << " soil layers";
+
+      // expect baresoil evaporation rate <= potential water loss fraction
+      EXPECT_LE(bserate, fbse) <<
+        "pot_soil_evap !<= fbse for " << nelyrs << " soil layers";
+
+
+      //Reset to previous global states.
+      Reset_SOILWAT2_after_UnitTest();
+    }
+
   }
+
 
   //TEST pot_soil_evap_bs for when nelyrs = 1 and nelyrs = MAX
   TEST(SWFlowTest, pot_soil_evap_bs){
