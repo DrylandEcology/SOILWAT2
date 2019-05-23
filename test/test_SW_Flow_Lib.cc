@@ -49,10 +49,12 @@ SW_SITE *s = &SW_Site;
 
 int k;
 
-namespace {
+namespace
+{
 
   // Test the veg interception function 'veg_intercepted_water'
-  TEST(SWFlowTest, VegInterceptedWater) {
+  TEST(SWFlowTest, VegInterceptedWater)
+  {
 
     ForEachVegType(k)
     {
@@ -69,7 +71,7 @@ namespace {
       EXPECT_EQ(0, wintveg); // When there is no veg, interception should be 0
       EXPECT_EQ(0, store); // When there is no veg, stored interception should be 0
       EXPECT_EQ(pptleft, ppt); /* When there is no interception, ppt before interception
-      should equal ppt left after interception */
+        should equal ppt left after interception */
 
       // Test expectations when there is no rain, but there is leaf-area
       bLAI = 1.5, ppt = 0.0, pptleft = ppt, store = 0.0;
@@ -80,7 +82,7 @@ namespace {
       EXPECT_EQ(0, wintveg);  // When there is no ppt, interception should be 0
       EXPECT_EQ(0, store);  // When there is no ppt, stored interception should be 0
       EXPECT_EQ(pptleft, ppt); /* When there is no interception, ppt before interception
-      should equal ppt left after interception */
+        should equal ppt left after interception */
 
       // Test expectations when there is both veg cover and precipitation
       bLAI = 1.5, ppt = 5.0, pptleft = ppt, store = 0.0;
@@ -99,7 +101,8 @@ namespace {
   }
 
   // Test the litter interception function 'litter_intercepted_water'
-  TEST(SWFlowTest, LitterInterceptedWater) {
+  TEST(SWFlowTest, LitterInterceptedWater)
+  {
 
     ForEachVegType(k)
     {
@@ -116,42 +119,43 @@ namespace {
       EXPECT_EQ(0, wintlit); // When litter is 0, interception should be 0
       EXPECT_EQ(0, store); // When litter is 0, stored interception should be 0
       EXPECT_EQ(pptleft, ppt); /* When litter is 0, ppt before interception
-      should equal ppt left after interception */
+        should equal ppt left after interception */
 
       // Test expectations when pptleft is 0
       pptleft = 0.0, scale = 0.5, blitter = 5.0;
 
 
-    // Test expectations when there is no throughfall
-    blitter = 200.0, ppt = 0.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
+      // Test expectations when there is no throughfall
+      blitter = 200.0, ppt = 0.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
 
-    litter_intercepted_water(&pptleft, &wintlit, &store,
-      m, v->veg[k].lit_kSmax, blitter, scale);
+      litter_intercepted_water(&pptleft, &wintlit, &store,
+        m, v->veg[k].lit_kSmax, blitter, scale);
 
-    EXPECT_EQ(0, pptleft); // When there is no ppt, pptleft should be 0
-    EXPECT_EQ(0, wintlit); // When there is no ppt, interception should be 0
-    EXPECT_EQ(0, store); // When there is no ppt, stored interception should be 0
+      EXPECT_EQ(0, pptleft); // When there is no ppt, pptleft should be 0
+      EXPECT_EQ(0, wintlit); // When there is no ppt, interception should be 0
+      EXPECT_EQ(0, store); // When there is no ppt, stored interception should be 0
 
-    //litter_intercepted_water(&pptleft, &wintlit, blitter, scale, a, b, c, d);
+      //litter_intercepted_water(&pptleft, &wintlit, blitter, scale, a, b, c, d);
 
-    // Test expectations when pptleft, scale, and blitter are greater than 0
-    blitter = 200.0, ppt = 5.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
+      // Test expectations when pptleft, scale, and blitter are greater than 0
+      blitter = 200.0, ppt = 5.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
 
-    litter_intercepted_water(&pptleft, &wintlit, &store,
-      m, v->veg[k].lit_kSmax, blitter, scale);
+      litter_intercepted_water(&pptleft, &wintlit, &store,
+        m, v->veg[k].lit_kSmax, blitter, scale);
 
-    EXPECT_GT(wintlit, 0); // interception by litter should be greater than 0
-    EXPECT_LE(wintlit, pptleft); // interception by lit should be less than or equal to ppt
-    EXPECT_GT(store, 0); // stored interception by litter should be greater than 0
-    EXPECT_GE(pptleft, 0); // The pptleft (for soil) should be greater than or equal to 0
+      EXPECT_GT(wintlit, 0); // interception by litter should be greater than 0
+      EXPECT_LE(wintlit, pptleft); // interception by lit should be less than or equal to ppt
+      EXPECT_GT(store, 0); // stored interception by litter should be greater than 0
+      EXPECT_GE(pptleft, 0); // The pptleft (for soil) should be greater than or equal to 0
 
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
+      // Reset to previous global state
+      Reset_SOILWAT2_after_UnitTest();
     }
   }
 
   // Test infiltration under high water function, 'infiltrate_water_high'
-  TEST(SWFlowTest, infiltrate_water_high){
+  TEST(SWFlowTest, infiltrate_water_high)
+  {
 
     // declare inputs
     double pptleft = 5.0, standingWater, drainout;
@@ -159,7 +163,8 @@ namespace {
     // ***** Tests when nlyrs = 1 ***** //
     ///  provide inputs
     int nlyrs = 1;
-    double swc[1] = {0.8}, swcfc[1] = {1.1}, swcsat[1] = {1.6}, impermeability[1] = {0.}, drain[1] = {0.};
+    double swc[1] = {0.8}, swcfc[1] = {1.1}, swcsat[1] = {1.6},
+      impermeability[1] = {0.}, drain[1] = {0.};
 
     infiltrate_water_high(swc, drain, &drainout, pptleft, nlyrs, swcfc, swcsat,
       impermeability, &standingWater);
@@ -169,7 +174,8 @@ namespace {
     EXPECT_DOUBLE_EQ(drainout, drain[0]); // drainout and drain should be equal when we have one layer
 
     /* Test when pptleft and standingWater are 0 (No drainage) */
-    pptleft = 0.0, standingWater = 0.0, drain[0] = 0., swc[0] = 0.8, swcfc[0] = 1.1, swcsat[0] = 1.6;
+    pptleft = 0.0, standingWater = 0.0, drain[0] = 0., swc[0] = 0.8,
+    swcfc[0] = 1.1, swcsat[0] = 1.6;
 
     infiltrate_water_high(swc, drain, &drainout, pptleft, nlyrs, swcfc, swcsat,
       impermeability, &standingWater);
@@ -205,20 +211,22 @@ namespace {
     pcg32_random_t infiltrate_rng;
     RandSeed(0,&infiltrate_rng);
 
-    for (i = 0; i < MAX_LAYERS; i++) {
+    for (i = 0; i < MAX_LAYERS; i++)
+    {
       swc2[i] = RandNorm(1.,0.5,&infiltrate_rng);
       swcfc2[i] = RandNorm(1,.5,&infiltrate_rng);
       swcsat2[i] = swcfc2[i] + .1; // swcsat will always be greater than swcfc in each layer
       impermeability2[i] = 0.0;
     }
 
-    infiltrate_water_high(swc2, drain2, &drainout, pptleft, nlyrs, swcfc2, swcsat2,
-      impermeability2, &standingWater);
+    infiltrate_water_high(swc2, drain2, &drainout, pptleft, nlyrs, swcfc2,
+      swcsat2, impermeability2, &standingWater);
 
     EXPECT_EQ(drainout, drain2[MAX_LAYERS - 1]); /* drainout and drain should be
       equal in the last layer */
 
-    for (i = 0; i < MAX_LAYERS; i++) {
+    for (i = 0; i < MAX_LAYERS; i++)
+    {
       swc2[i] = swc2[i] - 1/10000.; // test below is failing because of small numerical differences.
       EXPECT_LE(swc2[i], swcsat2[i]); // swc should be less than or equal to swcsat
       EXPECT_GE(drain2[i], -1./100000000.); /*  drainage should be greater than or
@@ -232,17 +240,19 @@ namespace {
     double *swcsat3 = new double[nlyrs];
     double *drain3 = new double[nlyrs];
 
-    for (i = 0; i < MAX_LAYERS; i++) {
+    for (i = 0; i < MAX_LAYERS; i++)
+    {
       swc3[i] = RandNorm(1.,0.5,&infiltrate_rng);
       swcfc3[i] = swc3[i] + .2;
       swcsat3[i] = swcfc3[i] + .5;
       drain3[i] = 0.;// swcsat will always be greater than swcfc in each layer
     }
 
-    infiltrate_water_high(swc3, drain3, &drainout, pptleft, nlyrs, swcfc3, swcsat3,
-      impermeability2, &standingWater);
+    infiltrate_water_high(swc3, drain3, &drainout, pptleft, nlyrs, swcfc3,
+      swcsat3, impermeability2, &standingWater);
 
-    for (i = 0; i < MAX_LAYERS; i++) {
+    for (i = 0; i < MAX_LAYERS; i++)
+    {
       EXPECT_DOUBLE_EQ(0, drain3[i]); // drainage should be 0
     }
 
@@ -254,7 +264,8 @@ namespace {
     double *swcsat4 = new double[nlyrs];
     pptleft = 20.0;
 
-    for (i = 0; i < MAX_LAYERS; i++) {
+    for (i = 0; i < MAX_LAYERS; i++)
+    {
       swc4[i] = RandNorm(1.,0.5,&infiltrate_rng);
       swcfc4[i] = swc4[i] + .2;
       swcsat4[i] = swcfc4[i] + .3; // swcsat will always be greater than swcfc in each layer
@@ -264,13 +275,14 @@ namespace {
 
     swc4[0] = 0.8; // Need to hard code this value because swc4 is altered by function
 
-    infiltrate_water_high(swc4, drain4, &drainout, pptleft, nlyrs, swcfc4, swcsat4,
-      impermeability4, &standingWater);
+    infiltrate_water_high(swc4, drain4, &drainout, pptleft, nlyrs, swcfc4,
+      swcsat4, impermeability4, &standingWater);
 
     EXPECT_DOUBLE_EQ(standingWater, (pptleft + 0.8) - swcsat4[0]); /* When impermeability is 1,
       standingWater should be equivalent to  pptLeft + swc[0] - swcsat[0]) */
 
-    for (i = 0; i < MAX_LAYERS; i++) {
+    for (i = 0; i < MAX_LAYERS; i++)
+    {
       EXPECT_DOUBLE_EQ(0, drain4[i]); //When impermeability is 1, drainage should be 0
     }
 
@@ -282,7 +294,8 @@ namespace {
     double *swcsat5 = new double[nlyrs];
     pptleft = 5.0;
 
-    for (i = 0; i < MAX_LAYERS; i++) {
+    for (i = 0; i < MAX_LAYERS; i++)
+    {
       swc5[i] = RandNorm(1.2,0.5,&infiltrate_rng);
       swcfc5[i] = swc5[i] - .4; // set up conditions for excess SWC
       swcsat5[i] = swcfc5[i] + .1; // swcsat will always be greater than swcfc in each layer
@@ -290,10 +303,11 @@ namespace {
       drain5[i] = 0.0;
     }
 
-    infiltrate_water_high(swc5, drain5, &drainout, pptleft, nlyrs, swcfc5, swcsat5,
-      impermeability5, &standingWater);
+    infiltrate_water_high(swc5, drain5, &drainout, pptleft, nlyrs, swcfc5,
+      swcsat5, impermeability5, &standingWater);
 
-    for (i = 0; i < MAX_LAYERS; i++) {
+    for (i = 0; i < MAX_LAYERS; i++)
+    {
       EXPECT_NEAR(swc5[i], swcsat5[i], 0.0000001); // test that swc is now equal to or below swcsat in all layers but the top
     }
 
@@ -305,7 +319,8 @@ namespace {
                            drain3, swc3, swcfc3, swcsat3,
                            impermeability4, drain4, swc4, swcfc4, swcsat4,
                            impermeability5, drain5, swc5, swcfc5, swcsat5 };
-    for (i = 0; i < length(array_list); i++){
+    for (i = 0; i < length(array_list); i++)
+    {
       delete[] array_list[i];
     }
 
@@ -315,11 +330,13 @@ namespace {
 
 
   //Test svapor function by manipulating variable temp.
-  TEST(SWFlowTest, svapor){
+  TEST(SWFlowTest, svapor)
+  {
     //Declare INPUTS
     double temp[] = {30,35,40,45,50,55,60,65,70,75,20,-35,-12.667,-1,0}; // These are test temperatures, in degrees Celcius.
     double expOut[] = {32.171, 43.007, 56.963, 74.783, 97.353, 125.721, 161.113,
-      204.958, 258.912, 324.881, 17.475, 0.243, 1.716, 4.191, 4.509}; // These are the expected outputs for the svapor function.
+                       204.958, 258.912, 324.881, 17.475, 0.243, 1.716, 4.191,
+                       4.509}; // These are the expected outputs for the svapor function.
 
     //Declare OUTPUTS
     double vapor;
@@ -335,23 +352,26 @@ namespace {
   }
 
   //Test petfunc by manipulating each input individually.
-  TEST(SWFlowTest, petfunc){
+  TEST(SWFlowTest, petfunc)
+  {
     //Begin TEST for avgtemp input variable
     //Declare INPUTS
     unsigned int doy = 2; //For the second day in the month of January
-    double rlat = 0.681, elev = 1000, slope = 0, aspect = -1, reflec = 0.15, humid = 61,
-      windsp = 1.3, cloudcov = 71, transcoeff = 1;
+    double rlat = 0.681, elev = 1000, slope = 0, aspect = -1, reflec = 0.15,
+      humid = 61,windsp = 1.3, cloudcov = 71, transcoeff = 1;
     double temp, check;
     double avgtemps[] = {30,35,40,45,50,55,60,65,70,75,20,-35,-12.667,-1,0}; // These are test temperatures, in degrees Celcius.
 
     //Declare INPUTS for expected returns
-    double expReturnTemp[] = {0.201, 0.245, 0.299, 0.364, 0.443, 0.539, 0.653, 0.788,
-      0.948, 1.137, 0.136, 0.01, 0.032, 0.057, 0.060}; // These are the expected outcomes for the variable arads.
+    double expReturnTemp[] = {0.201, 0.245, 0.299, 0.364, 0.443, 0.539, 0.653,
+                              0.788, 0.948, 1.137, 0.136, 0.01, 0.032, 0.057,
+                              0.060}; // These are the expected outcomes for the variable arads.
 
-    for (int i = 0; i <15; i++){
-
+    for (int i = 0; i <15; i++)
+    {
       temp = avgtemps[i]; //Uses array of temperatures for testing for input into temp variable.
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
+      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
+                      windsp, cloudcov, transcoeff);
 
       EXPECT_NEAR(check, expReturnTemp[i], 0.001); //Tests the return of the petfunc against the expected return for the petfunc.
     }
@@ -364,10 +384,11 @@ namespace {
    //Declare INPUTS for expected returns
     double expReturnLats[] = {0.042, 0.420, 0.346, 0.134, 0.042}; //These are the expected returns for petfunc while manipulating the rlats input variable.
 
-    for (int i = 0; i < 5; i++){
-
+    for (int i = 0; i < 5; i++)
+    {
       rlat = rlats[i]; //Uses array of latitudes initialized above.
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
+      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
+                      windsp, cloudcov, transcoeff);
 
       EXPECT_NEAR(check, expReturnLats[i], 0.001); //Tests the return of the petfunc against the expected return for the petfunc.
     }
@@ -379,13 +400,13 @@ namespace {
     //Declare INPUTS for expected returns
     double expReturnElev[] = {0.181,0.176,0.165,0.130,0.096};
 
-    for(int i = 0; i < 5; i++){
-
-      check = petfunc(doy, temp, rlat, elevT[i], slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
+    for(int i = 0; i < 5; i++)
+    {
+      check = petfunc(doy, temp, rlat, elevT[i], slope, aspect, reflec, humid,
+                      windsp, cloudcov, transcoeff);
       //test = round(check* 1000 + 0.00001) / 1000; //Rounding is required for unit test.
 
       EXPECT_NEAR(check, expReturnElev[i], 0.001); //Tests the return of the petfunc against the expected return for the petfunc.
-
     }
     //Begin TEST for slope input variable
     //INPUTS
@@ -396,12 +417,12 @@ namespace {
     double expReturnSlope[] = {0.165, 0.082, 0.01, 0.01, 0.01};
       //Expected returns of 0.01 occur when the petfunc returns a negative number.
 
-    for (int i = 0; i < 5; i++){
-
-      check = petfunc(doy, temp, rlat, elev, slopeT[i], aspect, reflec, humid, windsp, cloudcov, transcoeff);
+    for (int i = 0; i < 5; i++)
+    {
+      check = petfunc(doy, temp, rlat, elev, slopeT[i], aspect, reflec, humid,
+                      windsp, cloudcov, transcoeff);
 
       EXPECT_NEAR(check, expReturnSlope[i], 0.001); //Tests the return of the petfunc against the expected return for the petfunc.
-
     }
 
     //Begin TEST for aspect input variable
@@ -413,11 +434,10 @@ namespace {
     double expReturnAspect[] = {0.138, 0.146, 0.175, 0.172, 0.138};
 
     for(int i = 0; i < 5; i++){
-
-      check = petfunc(doy, temp, rlat, elev, slope, aspectT[i], reflec, humid, windsp, cloudcov, transcoeff);
+      check = petfunc(doy, temp, rlat, elev, slope, aspectT[i], reflec, humid,
+                      windsp, cloudcov, transcoeff);
 
       EXPECT_NEAR(check, expReturnAspect[i], 0.001);
-
     }
 
     //Begin TEST for reflec input variable
@@ -428,12 +448,12 @@ namespace {
     //Declare INPUTS for expected returnsdouble expReturnSwpAvg = 0.00000148917;
     double expReturnReflec[] = {0.172, 0.155, 0.120, 0.107, 0.045};
 
-    for(int i = 0; i < 5; i++){
-
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflecT[i], humid, windsp, cloudcov, transcoeff);
+    for(int i = 0; i < 5; i++)
+    {
+      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflecT[i], humid,
+                      windsp, cloudcov, transcoeff);
 
       EXPECT_NEAR(check, expReturnReflec[i], 0.001);
-
     }
 
     //Begin TEST for humidity input varibable.
@@ -444,12 +464,12 @@ namespace {
     //Declare INPUTS for expected returns.
     double expReturnHumid[] = {0.242, 0.218, 0.176, 0.125, 0.102};
 
-    for(int i = 0; i < 5; i++){
-
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humidT[i], windsp, cloudcov, transcoeff);
+    for(int i = 0; i < 5; i++)
+    {
+      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humidT[i],
+                      windsp, cloudcov, transcoeff);
 
       EXPECT_NEAR(check, expReturnHumid[i], 0.001);
-
     }
 
     //Begin TEST for windsp input variable.
@@ -457,12 +477,15 @@ namespace {
     humid = 61, windsp = 0;
 
     //Declare INPUTS for expected returns.
-    double expReturnWindsp[] = {0.112, 0.204, 0.297, 0.390, 0.483, 0.576, 0.669, 0.762, 0.855, 0.948,
-      1.041, 1.134, 1.227, 1.320, 1.413, 1.506, 1.599, 1.692, 1.785, 1.878, 1.971, 2.064, 2.157};
+    double expReturnWindsp[] = {0.112, 0.204, 0.297, 0.390, 0.483, 0.576, 0.669,
+                                0.762, 0.855, 0.948, 1.041, 1.134, 1.227, 1.320,
+                                1.413, 1.506, 1.599, 1.692, 1.785, 1.878, 1.971,
+                                2.064, 2.157};
 
-    for(int i = 0; i < 23; i++){
-
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeff);
+    for(int i = 0; i < 23; i++)
+    {
+      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
+                      windsp, cloudcov, transcoeff);
 
       EXPECT_NEAR(check, expReturnWindsp[i], 0.001);
 
@@ -477,9 +500,10 @@ namespace {
     //Declare INPUTS for expected returns.
     double expReturnCloudcov[] = {0.148, 0.151, 0.157, 0.166, 0.172};
 
-    for(int i = 0; i < 5; i++){
-
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcovT[i], transcoeff);
+    for(int i = 0; i < 5; i++)
+    {
+      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
+                      windsp, cloudcovT[i], transcoeff);
 
       EXPECT_NEAR(check, expReturnCloudcov[i], 0.001);
 
@@ -495,12 +519,12 @@ namespace {
     double expReturnTranscoeff = 0.1650042;
     //The same value is returned for every tested transcoeff input.
 
-    for(int i = 0; i < 5; i++){
-
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid, windsp, cloudcov, transcoeffT[i]);
+    for(int i = 0; i < 5; i++)
+    {
+      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
+                      windsp, cloudcov, transcoeffT[i]);
 
       EXPECT_NEAR(check, expReturnTranscoeff, 0.001);
-
     }
 
     //Reset to previous global states.
@@ -508,8 +532,8 @@ namespace {
     }
 
   //Test transp_weighted_avg function.
-  TEST(SWFlowTest, transp_weighted_avg){
-
+  TEST(SWFlowTest, transp_weighted_avg)
+  {
     //INPUTS
     double swp_avg = 10;
     unsigned int n_tr_rgns = 1, n_layers = 1;
@@ -520,7 +544,8 @@ namespace {
     //INPUTS for expected outputs
     double swp_avgExpected1 = 1.100536e-06;
     //Begin TEST when n_layers is one
-    transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions, tr_coeff, swc);
+    transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions, tr_coeff,
+                        swc);
 
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
     EXPECT_NEAR(swp_avgExpected1, swp_avg, 0.000001); //swp_avg is expected to be 1.100536e-06
@@ -531,9 +556,9 @@ namespace {
     //Begin TEST when n_layers is at "max"
     //INPUTS
     swp_avg = 10, n_tr_rgns = 4, n_layers = 25;
-    unsigned int i, tr_regions2[25] = {1,1,1,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
-    double tr_coeff2[25];
-    double swc2[25];
+    unsigned int i, tr_regions2[25] = {1,1,1,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,
+                                       4,4,4,4,4};
+    double tr_coeff2[25],swc2[25];
 
     //INPUTS for expected OUTPUTS
     double swp_avgExpectedM = 1.7389131503001496;
@@ -541,7 +566,8 @@ namespace {
     // Setup soil layers
     create_test_soillayers(n_layers);
 
-    ForEachSoilLayer(i) {
+    ForEachSoilLayer(i)
+    {
       // copy soil layer values into arrays so that they can be passed as
       // arguments to `transp_weighted_avg`
       tr_coeff2[i] = s->lyr[i]->transp_coeff[SW_SHRUB];
@@ -551,7 +577,8 @@ namespace {
     }
 
 
-		transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions2, tr_coeff2, swc2);
+		transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions2, tr_coeff2,
+                        swc2);
 
 		EXPECT_GE(swp_avg, 0); //Must always be non negative.
 
@@ -564,10 +591,11 @@ namespace {
 
 
   //Test EsT_partitioning by manipulating fbse and fbst variables.
-  TEST(SWFlowTest, EsT_partitioning){
-
+  TEST(SWFlowTest, EsT_partitioning)
+  {
     //INPUTS
-    double fbse = 0, fbst = 0, blivelai = 0.002, lai_param = 2, tol6 = 0.0000001;
+    double fbse = 0, fbst = 0, blivelai = 0.002, lai_param = 2,
+      tol6 = 0.0000001;
 
     //TEST when fbse > bsemax
     double fbseExpected = 0.995, fbstExpected = 0.005;
@@ -585,7 +613,8 @@ namespace {
     Reset_SOILWAT2_after_UnitTest();
 
     //TEST when fbse < bsemax
-    blivelai = 0.0012, lai_param = 5, fbseExpected = 0.994018, fbstExpected = 0.005982036;
+    blivelai = 0.0012, lai_param = 5, fbseExpected = 0.994018,
+      fbstExpected = 0.005982036;
     EsT_partitioning(&fbse, &fbst, blivelai, lai_param);
 
     EXPECT_NEAR(fbse, fbseExpected, tol6); //fbse is expected to be 0.994018
@@ -601,7 +630,8 @@ namespace {
   }
 
   // TEST pot_soil_evap
-  TEST(SWFlowTest, pot_soil_evap) {
+  TEST(SWFlowTest, pot_soil_evap)
+  {
     unsigned int i, k, nelyrs;
     double bserate = 0, totagb, Es_param_limit = 999.,
       fbse = 0.813, fbse0 = 0., petday = 0.1, petday0 = 0.,
@@ -610,22 +640,23 @@ namespace {
     double swc[25], width[25], lyrEvapCo[25];
     double swc0[25] = { 0. }; // for test if swc = 0
 
-
     // Loop over tests with varying number of soil layers
-    for (k = 0; k < 2; k++) {
-
+    for (k = 0; k < 2; k++)
+    {
       // Select number of soil layers used in test
-      if (k == 0) {
+      if (k == 0)
+      {
         nelyrs = 1; // test 1: 1 soil layer
-
-      } else if (k == 1) {
+      } else if (k == 1)
+      {
         nelyrs = 25; // test 2: 25 soil layers
       }
 
       // Setup soil layers
       create_test_soillayers(nelyrs);
 
-      ForEachSoilLayer(i) {
+      ForEachSoilLayer(i)
+      {
         // copy soil layer values into arrays so that they can be passed as
         // arguments to `pot_soil_evap`
         width[i] = s->lyr[i]->width;
@@ -696,47 +727,63 @@ namespace {
       //Reset to previous global states.
       Reset_SOILWAT2_after_UnitTest();
     }
-
   }
 
 
   //TEST pot_soil_evap_bs for when nelyrs = 1 and nelyrs = MAX
-  TEST(SWFlowTest, pot_soil_evap_bs){
+  TEST(SWFlowTest, pot_soil_evap_bs)
+  {
     //INPUTS
-    unsigned int nelyrs = 1;
-    double ecoeff[1] = {0.1};
-    double bserate = 0, petday = 0.1, shift = 45, shape = 0.1, inflec = 0.25, range = 0.8;
-    double width[1] = {5};
-    double swc[1] = {1};
+    unsigned int nelyrs,i;
+    double bserate = 0, petday = 0.1, shift = 45, shape = 0.1, inflec = 0.25,
+      range = 0.8;
+    double ecoeff[25], width[25], swc[25];
 
-    //INPUTS for expected outputs
-    double bserateExpected = 0.06306041;
+    // Loop over tests with varying number of soil layers
+    for (k = 0; k < 2; k++)
+    {
+      // Select number of soil layers used in test
+      if (k == 0)
+      {
+        nelyrs = 1; // test 1: 1 soil layer
+      } else if (k == 1)
+      {
+        nelyrs = 25; // test 2: 25 soil layers
+      }
 
-    //Begin TEST for bserate when nelyrs = 1
-    pot_soil_evap_bs(&bserate, nelyrs, ecoeff, petday, shift, shape, inflec, range, width, swc);
+      // Setup soil layers
+      create_test_soillayers(nelyrs);
 
-    EXPECT_NEAR(bserate, bserateExpected, 0.0001);  //bserate is expected to be 0.06306041
+      ForEachSoilLayer(i)
+      {
+        // copy soil layer values into arrays so that they can be passed as
+        // arguments to `pot_soil_evap`
+        width[i] = s->lyr[i]->width;
+        ecoeff[i] = s->lyr[i]->evap_coeff;
 
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
+        // example: swc as mean of wilting point and field capacity
+        swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt) / 2.;
+      }
 
-    //Testing when nelyrs = MAX_LAYERS
-    //INPUTS
-    nelyrs = 25;
-    double ecoeff8[25] = {0.1, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5, 0.1, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5, 0.1, 0.1, 0.25, 0.5, 0.01, 0.1, 0.25, 0.5, 0.4};
-    double width8[25] = {5,1,4,1,1,8,1,1,3,5,10,1,1,8,1,1,1,1,1,5,10,10,10,20,40};//Based on dmax in _set_layers
-    double swc8[25] = {.41, .42, .45, .46, 0.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61,
-        7.62, 7.63, 9.51, 9.52, 9.53, 10.41, 10.42, 11.43, 12.01, 12.12, 13.33};
-
-    // Setup soil layers
-    create_test_soillayers(nelyrs);
-
-    //INPUTS for expected outputs
-    bserateExpected = 0;
-
-    pot_soil_evap_bs(&bserate, nelyrs, ecoeff8, petday, shift, shape, inflec, range, width8, swc8);
-
-    EXPECT_NEAR(bserate, bserateExpected, 0.000001); //bserate is expected to be 0
+      //Begin TEST for bserate when nelyrs = 1
+      pot_soil_evap_bs(&bserate, nelyrs, ecoeff, petday, shift, shape, inflec,
+                       range, width, swc);
+      if(nelyrs == 1)
+      {
+        //bserate is expected to be 0.06306041
+        EXPECT_NEAR(bserate, 0.06307376, 0.0001) <<
+          "pot_soil_evap_bs != 0.06306041 if nelyr = 1 for " << nelyrs << " soil layesrs";
+        //Reset to previous global states.
+        Reset_SOILWAT2_after_UnitTest();
+        // Setup soil layers for next test
+      }
+      if(nelyrs == 25)
+      {
+        //bserate is expected to be 0.06307376
+        EXPECT_NEAR(bserate, 0.06307376, 0.0001) <<
+          "pot_soil_evap_bs != 0.06306041 if nelyr = 25 for " << nelyrs << " soil layesrs";
+      }
+    }
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
