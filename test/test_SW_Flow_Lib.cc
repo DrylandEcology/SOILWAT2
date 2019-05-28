@@ -760,7 +760,6 @@ namespace
         // arguments to `pot_soil_evap`
         width[i] = s->lyr[i]->width;
         ecoeff[i] = s->lyr[i]->evap_coeff;
-
         // example: swc as mean of wilting point and field capacity
         swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt) / 2.;
       }
@@ -934,29 +933,46 @@ namespace
   }
 
   //Test remove_from_soil when nlyrs = 1 and when nlyrs = MAX
-  TEST(SWFlowTest, remove_from_soil){
-
+  TEST(SWFlowTest, remove_from_soil)
+  {
     //INPUTS
-    double swc[25] =  {0.11, 0.12, 0.13, 0.14, 1.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73, 7.61, 7.62,
-        7.63, 9.51, 9.52, 9.53, 11.41, 11.42, 11.43, 13.31, 13.32, 13.33};
+    unsigned int nlyrs,i;
+    double aet = 0.33, rate = 0.62;
+    double swc[25], swcmin[25];
+    double coeffZero[25] = {0.};
     double qty[25] = {0.01, 0.02, 0.03, 0.04, 0.05, 1.51, 3.51, 5.51, 7.51, 9.51, 11.51, 13.51, 0.01, 0.02, 0.03,
         0.04, 0.05, 1.51, 3.51, 5.51, 7.51, 9.51, 11.51, 13.51, 15};
-    double aet = 0.33, rate = 0.62;
-    unsigned int nlyrs = 25;
     double coeff[25] = {0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495, 0.1006,
         0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.0496, 0.0495, 0.1006, 0.1006, 0.1006, 0.1997, 0.1997, 0.1997, 0.1999};
-    double coeffZero[25] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    double swcmin[25] = {0.01, 0.02, 0.03, 0.04, 1.71, 1.72, 1.73, 3.61, 3.62, 3.63, 5.51, 5.52, 5.53, 7.41, 7.42,
-        7.43, 9.31, 9.32, 9.33, 11.11, 11.12, 11.13, 13.01, 13.02, 13.03};
 
-    //Begin TEST when nlyrs = MAX LAYERS
+    //Begin TEST 1: nlyrs = MAX LAYERS
+    nlyrs = MAX_LAYERS;
+    // Setup soil layers
+    create_test_soillayers(nlyrs);
+
+    ForEachSoilLayer(i)
+    {
+      // copy soil layer values into arrays so that they can be passed as
+      // arguments to `pot_soil_evap`
+      // example: swc as mean of wilting point and field capacity
+      swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt) / 2.;
+      swcmin[i] = s->lyr[i]->swcBulk_min;
+    }
+
     //TEST for if local variable sumswp = 0 (coeff[i] = 0)
 
     //INPUTS for expected outputs
-    double swcExpected[25] =  {0.11, 0.12, 0.13, 0.14, 1.91, 1.92, 1.93, 3.81, 3.82, 3.83, 5.71, 5.72, 5.73,
-        7.61, 7.62, 7.63, 9.51, 9.52, 9.53, 11.41, 11.42, 11.43, 13.31, 13.32, 13.33};
-    double qtyExpected[25] = {0.01, 0.02, 0.03, 0.04, 0.05, 1.51, 3.51, 5.51, 7.51, 9.51, 11.51, 13.51, 0.01,
-        0.02, 0.03, 0.04, 0.05, 1.51, 3.51, 5.51, 7.51, 9.51, 11.51, 13.51, 15};
+    double swcExpected[25] =  {0.825889, 0.206871, 0.992054, 0.258086,
+                               0.232875, 1.850324, 0.167824, 0.167824,
+                               0.440474, 0.919427, 2.204563, 0.229410,
+                               0.232875, 1.850324, 0.167824, 0.167824,
+                               0.146825, 0.183885, 0.220456, 1.147049,
+                               2.328750 ,2.312906, 1.678236, 3.356472,
+                               6.727619};
+    double qtyExpected[25] = {0.01, 0.02, 0.03, 0.04, 0.05, 1.51, 3.51,
+                              5.51, 7.51, 9.51, 11.51, 13.51, 0.01, 0.02,
+                              0.03, 0.04, 0.05, 1.51, 3.51, 5.51, 7.51, 9.51,
+                              11.51, 13.51, 15};
     double aetExpected = 0.33;
 
     // Setup soil layers
@@ -964,11 +980,12 @@ namespace
 
     remove_from_soil(swc, qty, &aet, nlyrs, coeffZero, rate, swcmin); //coeffZero used instead of coeff
 
-    for(unsigned int i = 0; i < nlyrs; i++){
-      EXPECT_DOUBLE_EQ(qty[i], qtyExpected[i]); //no change expected from original values
-      EXPECT_DOUBLE_EQ(swc[i], swcExpected[i]); //no change expected from original values
-      EXPECT_DOUBLE_EQ(aet, aetExpected); //no change expected from original values
+    for(unsigned int i = 0; i < nlyrs; i++)
+    {
+      EXPECT_NEAR(qty[i], qtyExpected[i], 0.000001); //no change expected from original values
+      EXPECT_NEAR(swc[i], swcExpected[i], 0.000001); //no change expected from original values
     }
+    EXPECT_DOUBLE_EQ(aet, aetExpected); //no change expected from original values
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
@@ -976,52 +993,51 @@ namespace
     // Setup soil layers, again
     create_test_soillayers(nlyrs);
 
-    //Begin TEST for if st->lyrFrozen[i]
     remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin); //Switch to coeff input
 
     //Begin TEST for if st->lyrFrozen[i] = false.
-    double swcExpectedF[25] =  {0.110000, 0.120000, 0.130000, 0.140000, 1.910000, 1.920000,
-      1.930000, 3.809984, 3.820000, 3.830000, 5.710000, 5.696932, 5.674575, 7.610000, 7.619420,
-        7.629414, 9.510000, 9.519872, 9.330000, 11.409998, 11.420000, 11.430000, 13.310000,
-          13.320000, 13.330000};
-    double qtyExpectedF[25] = {3.807585e-11, 2.946578e-15, 2.451138e-18, 5.229616e-19, 2.749129e-10,
-      6.201412e-10, 1.066871e-7, 3.617061e-06, 1.079864e-11, 2.466943e-12, 1.593482e-12,
-        2.306815e-02, 5.542488e-02, 9.350456e-10, 5.799634e-04, 5.855617e-04, 4.605526e-07,
-        1.281553e-04, 2.000000e-01, 2.211426e-06, 2.940567e-09, 6.293515e-09, 1.631867e-09, 1.023362e-11, 6.989596e-14};
-    aetExpected = 0.6097937;
+    double swcExpectedF[25] =  {0.8150952, 0.1969343, 0.9730951, 0.2393520,
+                                0.2142418, 1.8133338, 0.1281072, 0.1281072,
+                                0.4296803, 0.9094903, 2.1856042, 0.2106758,
+                                0.2142418, 1.8133338, 0.1281072, 0.1281072,
+                                0.1360311, 0.1739485, 0.2014974, 1.1283149,
+                                2.3101168, 2.2759156, 1.6385199, 3.3167559,
+                                6.6880586};
+    double qtyExpectedF[25] = {0.010793763, 0.009936670, 0.018958925,
+                               0.018734034, 0.018633165, 0.036990249,
+                               0.039716785, 0.039716785, 0.010793746,
+                               0.009936696, 0.018958808, 0.018734217,
+                               0.018633165, 0.036990249, 0.039716785,
+                               0.039716785, 0.010793876, 0.009936543,
+                               0.018958564, 0.018734053, 0.018633165,
+                               0.036990416, 0.039716092, 0.039716092,
+                               0.039560369};
+    aetExpected = 0.95;
 
-    for(unsigned int i = 0; i < nlyrs; i++){
-
+    for(unsigned int i = 0; i < nlyrs; i++)
+    {
       EXPECT_NEAR(qty[i], qtyExpectedF[i], 0.0001); //Values for qty[] are tested against array of expected Values
       EXPECT_NEAR(swc[i], swcExpectedF[i], 0.0001); //Values for swc[] are tested against array of expected values
-
     }
     EXPECT_NEAR(aet, aetExpected, 0.0000001); //aet is expected to be 0.6097937
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
 
-    //Test when nlyrs = 1
+    //Begin TEST 2: nlyrs = 1
     nlyrs = 1;
-    double swc1[1] =  {0.11};
-    double qty1[1] = {0.05};
-    double coeff1[1] = {0.033};
-    double swcmin1[1] = {0.01};
-    aet = 0.33, aetExpected = 0.43;
+
     //Begin TEST for if local variable sumswp = 0 (coeff[i] = 0)
-    double qtyExpected1[1] = {0.1};
-    double swcExpected1[1] = {0.01};
+    aet = 0.33, aetExpected = 0.820787;
+    double qtyExpected1 = 0.490787, swcExpected1 = 0.335102;
 
     // Setup soil layers
     create_test_soillayers(nlyrs);
 
-    remove_from_soil(swc1, qty1, &aet, nlyrs, coeff1, rate, swcmin1); //swcmin1 input
-    for(unsigned int i = 0; i < nlyrs; i++){
-
-      EXPECT_DOUBLE_EQ(qty1[i], qtyExpected1[i]);
-      EXPECT_DOUBLE_EQ(swc1[i], swcExpected1[i]);
-      EXPECT_DOUBLE_EQ(aet, aetExpected);
-    }
+    remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin);
+    EXPECT_NEAR(qty[0], qtyExpected1, 0.1);
+    EXPECT_NEAR(swc[0], swcExpected1, 0.000001);
+    EXPECT_NEAR(aet, aetExpected, 0.1);
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
