@@ -43,9 +43,12 @@
 extern SW_SITE SW_Site;
 extern SW_MODEL SW_Model;
 extern SW_VEGPROD SW_VegProd;
+extern ST_RGR_VALUES stValues;
+
 pcg32_random_t flow_rng;
 SW_VEGPROD *v = &SW_VegProd;
 SW_SITE *s = &SW_Site;
+ST_RGR_VALUES *st = &stValues;
 
 int k;
 
@@ -934,7 +937,7 @@ namespace
     unsigned int nlyrs, i;
     double aet_init = 0.33, aet, rate = 0.62;
     double swc_init[MAX_LAYERS], swc[MAX_LAYERS], swcmin[MAX_LAYERS];
-    double qty_init[MAX_LAYERS], qty[MAX_LAYERS];
+    double qty[MAX_LAYERS], qty_sum;
     double coeff[MAX_LAYERS], coeffZero[MAX_LAYERS] = {0.};
 
     // Expected outcomes
@@ -975,21 +978,18 @@ namespace
         // copy soil layer values into arrays so that they can be passed as
         // arguments to `pot_soil_evap`
         swcmin[i] = s->lyr[i]->swcBulk_min;
-
         // example: swc as mean of wilting point and field capacity
         swc_init[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt) / 2.;
-        // example: qty to remove as 50% of "available" swc
-        qty_init[i] = 0.5 * (swc[i] - swcmin[i]);
         // example: coeff as shrub trco
         coeff[i] = s->lyr[i]->transp_coeff[SW_SHRUB];
       }
 
-      // Begin TEST: coeff[i] == 0
+      // Begin TEST: coeff[i] == 0 --> no water to extract
       // Re-set inputs
       aet = aet_init;
       ForEachSoilLayer(i)
       {
-        qty[i] = qty_init[i];
+        qty[i] = 0.;
         swc[i] = swc_init[i];
       }
 
@@ -998,24 +998,61 @@ namespace
       ForEachSoilLayer(i)
       {
         swcExpected[i] = swc[i];
-        qtyExpected[i] = qty[i];
+        qtyExpected[i] = 0.;
       }
 
       // Call function: coeffZero used instead of coeff
       remove_from_soil(swc, qty, &aet, nlyrs, coeffZero, rate, swcmin);
 
       // Check expectation of no change from original values
+      qty_sum = 0.;
       for (i = 0; i < nlyrs; i++)
       {
         EXPECT_NEAR(qty[i], qtyExpected[i], tol6) <<
-          "remove_from_soil: qty != qty for layer " << 1 + i << " out of "
-          << nlyrs << " soil layers";
+          "remove_from_soil(no coeff): qty != qty for layer " << 1 + i <<
+          " out of " << nlyrs << " soil layers";
         EXPECT_NEAR(swc[i], swcExpected[i], tol6) <<
-          "remove_from_soil: swc != swc for layer " << 1 + i << " out of "
-          << nlyrs << " soil layers";
+          "remove_from_soil(no coeff): swc != swc for layer " << 1 + i <<
+          " out of " << nlyrs << " soil layers";
+        qty_sum += qty[i];
       }
       EXPECT_DOUBLE_EQ(aet, aetExpected) <<
-          "remove_from_soil: aet != aet for " << nlyrs << " soil layers";
+          "remove_from_soil(no coeff): aet != aet for " << nlyrs <<
+          " soil layers";
+      EXPECT_DOUBLE_EQ(qty_sum, 0.) <<
+          "remove_from_soil: sum(qty) != 0 for " << nlyrs << " soil layers";
+
+
+      // Begin TEST: frozen[i] --> no water to extract
+      // Re-set inputs and set soil layers as frozen
+      aet = aet_init;
+      ForEachSoilLayer(i)
+      {
+        st->lyrFrozen[i] = swTRUE;
+        qty[i] = 0.;
+        swc[i] = swc_init[i];
+      }
+
+      // Call function: switch to coeff input
+      remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin);
+
+      // Check expectation of no change from original values
+      qty_sum = 0.;
+      for (i = 0; i < nlyrs; i++)
+      {
+        EXPECT_NEAR(qty[i], qtyExpected[i], tol6) <<
+          "remove_from_soil(frozen): qty != qty for layer " << 1 + i <<
+          " out of " << nlyrs << " soil layers";
+        EXPECT_NEAR(swc[i], swcExpected[i], tol6) <<
+          "remove_from_soil(frozen): swc != swc for layer " << 1 + i <<
+          " out of " << nlyrs << " soil layers";
+        qty_sum += qty[i];
+      }
+      EXPECT_DOUBLE_EQ(aet, aetExpected) <<
+          "remove_from_soil(frozen): aet != aet for " << nlyrs <<
+          " soil layers";
+      EXPECT_DOUBLE_EQ(qty_sum, 0.) <<
+          "remove_from_soil: sum(qty) != 0 for " << nlyrs << " soil layers";
 
 
       // TEST if some coeff[i] > 0
@@ -1023,7 +1060,8 @@ namespace
       aet = aet_init;
       ForEachSoilLayer(i)
       {
-        qty[i] = qty_init[i];
+        st->lyrFrozen[i] = swFALSE;
+        qty[i] = 0.;
         swc[i] = swc_init[i];
       }
 
@@ -1049,6 +1087,7 @@ namespace
       remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin);
 
       // Check values of qty[] and swc[] against array of expected values
+      qty_sum = 0.;
       for (i = 0; i < nlyrs; i++)
       {
         EXPECT_NEAR(qty[i], qtyExpected[i], tol6) <<
@@ -1057,10 +1096,14 @@ namespace
         EXPECT_NEAR(swc[i], swcExpected[i], tol6) <<
           "remove_from_soil: swc != expected for layer " << 1 + i << " out of "
           << nlyrs << " soil layers";
+        qty_sum += qty[i];
       }
       EXPECT_NEAR(aet, aetExpected, tol6) <<
           "remove_from_soil: aet != expected for " << nlyrs << " soil layers";
-
+      EXPECT_GT(qty_sum, 0.) <<
+          "remove_from_soil: sum(qty) !> 0 for " << nlyrs << " soil layers";
+      EXPECT_LE(qty_sum, rate) <<
+          "remove_from_soil: sum(qty) !<= rate for " << nlyrs << " soil layers";
     }
 
     // Reset to previous global states.
@@ -1088,8 +1131,6 @@ namespace
     double impermeability[25] = {0.025, 0.030, 0.035, 0.040, 0.060, 0.075, 0.080, 0.115, 0.125,
         0.145, 0.150, 0.155, 0.180, 0.190, 0.210, 0.215, 0.250, 0.255, 0.275, 0.375, 0.495, 0.500, 0.500, 0.750, 1.000};
 
-    ST_RGR_VALUES stValues;
-	  ST_RGR_VALUES *st = &stValues;
 
     //INPUTS for expected outputs
     double swcExpected[25] = {0, 0.02, 0.03, 0.04, 1.91, 1.92, 1.93, 3.81, 3.82, 3.83, 8.11,
