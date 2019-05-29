@@ -227,9 +227,8 @@ namespace
 
     for (i = 0; i < MAX_LAYERS; i++)
     {
-      swc2[i] = swc2[i] - 1/10000.; // test below is failing because of small numerical differences.
       EXPECT_LE(swc2[i], swcsat2[i]); // swc should be less than or equal to swcsat
-      EXPECT_GE(drain2[i], -1./100000000.); /*  drainage should be greater than or
+      EXPECT_GE(drain2[i], 0.); /*  drainage should be greater than or
       equal to 0 or a very small value like 0 */
     }
 
@@ -308,7 +307,7 @@ namespace
 
     for (i = 0; i < MAX_LAYERS; i++)
     {
-      EXPECT_NEAR(swc5[i], swcsat5[i], 0.0000001); // test that swc is now equal to or below swcsat in all layers but the top
+      EXPECT_NEAR(swc5[i], swcsat5[i], tol6); // test that swc is now equal to or below swcsat in all layers but the top
     }
 
     EXPECT_GT(standingWater, 0); // standingWater should be above 0
@@ -345,7 +344,7 @@ namespace
     for (int i = 0; i <15; i++){
       vapor = svapor(temp[i]);
 
-      EXPECT_NEAR(expOut[i], vapor, 0.001); // Testing input array temp[], expected output is expOut[].
+      EXPECT_NEAR(expOut[i], vapor, tol3); // Testing input array temp[], expected output is expOut[].
     }
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
@@ -373,7 +372,7 @@ namespace
       check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
                       windsp, cloudcov, transcoeff);
 
-      EXPECT_NEAR(check, expReturnTemp[i], 0.001); //Tests the return of the petfunc against the expected return for the petfunc.
+      EXPECT_NEAR(check, expReturnTemp[i], tol3); //Tests the return of the petfunc against the expected return for the petfunc.
     }
 
     //Begin TEST for rlat input variable.  Inputs outside the range of [-1.169,1.169] produce the same output, 0.042.  Rlat values outside this range represent values near the poles.
@@ -390,7 +389,7 @@ namespace
       check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
                       windsp, cloudcov, transcoeff);
 
-      EXPECT_NEAR(check, expReturnLats[i], 0.001); //Tests the return of the petfunc against the expected return for the petfunc.
+      EXPECT_NEAR(check, expReturnLats[i], tol3); //Tests the return of the petfunc against the expected return for the petfunc.
     }
     //Begin TEST for elev input variable, testing from -413 meters (Death Valley) to 8727 meters (~Everest).
     //INPUTS
@@ -404,9 +403,8 @@ namespace
     {
       check = petfunc(doy, temp, rlat, elevT[i], slope, aspect, reflec, humid,
                       windsp, cloudcov, transcoeff);
-      //test = round(check* 1000 + 0.00001) / 1000; //Rounding is required for unit test.
 
-      EXPECT_NEAR(check, expReturnElev[i], 0.001); //Tests the return of the petfunc against the expected return for the petfunc.
+      EXPECT_NEAR(check, expReturnElev[i], tol3); //Tests the return of the petfunc against the expected return for the petfunc.
     }
     //Begin TEST for slope input variable
     //INPUTS
@@ -422,7 +420,7 @@ namespace
       check = petfunc(doy, temp, rlat, elev, slopeT[i], aspect, reflec, humid,
                       windsp, cloudcov, transcoeff);
 
-      EXPECT_NEAR(check, expReturnSlope[i], 0.001); //Tests the return of the petfunc against the expected return for the petfunc.
+      EXPECT_NEAR(check, expReturnSlope[i], tol3); //Tests the return of the petfunc against the expected return for the petfunc.
     }
 
     //Begin TEST for aspect input variable
@@ -437,7 +435,7 @@ namespace
       check = petfunc(doy, temp, rlat, elev, slope, aspectT[i], reflec, humid,
                       windsp, cloudcov, transcoeff);
 
-      EXPECT_NEAR(check, expReturnAspect[i], 0.001);
+      EXPECT_NEAR(check, expReturnAspect[i], tol3);
     }
 
     //Begin TEST for reflec input variable
@@ -453,7 +451,7 @@ namespace
       check = petfunc(doy, temp, rlat, elev, slope, aspect, reflecT[i], humid,
                       windsp, cloudcov, transcoeff);
 
-      EXPECT_NEAR(check, expReturnReflec[i], 0.001);
+      EXPECT_NEAR(check, expReturnReflec[i], tol3);
     }
 
     //Begin TEST for humidity input varibable.
@@ -469,7 +467,7 @@ namespace
       check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humidT[i],
                       windsp, cloudcov, transcoeff);
 
-      EXPECT_NEAR(check, expReturnHumid[i], 0.001);
+      EXPECT_NEAR(check, expReturnHumid[i], tol3);
     }
 
     //Begin TEST for windsp input variable.
@@ -487,7 +485,7 @@ namespace
       check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
                       windsp, cloudcov, transcoeff);
 
-      EXPECT_NEAR(check, expReturnWindsp[i], 0.001);
+      EXPECT_NEAR(check, expReturnWindsp[i], tol3);
 
       windsp += 2.26; //Increments windsp input variable.
     }
@@ -505,7 +503,7 @@ namespace
       check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
                       windsp, cloudcovT[i], transcoeff);
 
-      EXPECT_NEAR(check, expReturnCloudcov[i], 0.001);
+      EXPECT_NEAR(check, expReturnCloudcov[i], tol3);
 
       cloudcov += 4.27; //Incrments cloudcov input variable.
     }
@@ -524,7 +522,7 @@ namespace
       check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
                       windsp, cloudcov, transcoeffT[i]);
 
-      EXPECT_NEAR(check, expReturnTranscoeff, 0.001);
+      EXPECT_NEAR(check, expReturnTranscoeff, tol3);
     }
 
     //Reset to previous global states.
@@ -548,7 +546,7 @@ namespace
                         swc);
 
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
-    EXPECT_NEAR(swp_avgExpected1, swp_avg, 0.000001); //swp_avg is expected to be 1.100536e-06
+    EXPECT_NEAR(swp_avgExpected1, swp_avg, tol6); //swp_avg is expected to be 1.100536e-06
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
@@ -583,7 +581,7 @@ namespace
 		EXPECT_GE(swp_avg, 0); //Must always be non negative.
 
 
-		EXPECT_NEAR(swp_avgExpectedM, swp_avg, 0.000001);
+		EXPECT_NEAR(swp_avgExpectedM, swp_avg, tol6);
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
@@ -594,8 +592,7 @@ namespace
   TEST(SWFlowTest, EsT_partitioning)
   {
     //INPUTS
-    double fbse = 0, fbst = 0, blivelai = 0.002, lai_param = 2,
-      tol6 = 0.0000001;
+    double fbse = 0, fbst = 0, blivelai = 0.002, lai_param = 2;
 
     //TEST when fbse > bsemax
     double fbseExpected = 0.995, fbstExpected = 0.005;
@@ -767,19 +764,17 @@ namespace
       //Begin TEST for bserate when nelyrs = 1
       pot_soil_evap_bs(&bserate, nelyrs, ecoeff, petday, shift, shape, inflec,
                        range, width, swc);
-      if(nelyrs == 1)
+      if (nelyrs == 1)
       {
-        //bserate is expected to be 0.06306041
-        EXPECT_NEAR(bserate, 0.06307376, 0.0001) <<
+        EXPECT_NEAR(bserate, 0.062997815, tol6) <<
           "pot_soil_evap_bs != 0.06306041 if nelyr = 1 for " << nelyrs << " soil layesrs";
         //Reset to previous global states.
         Reset_SOILWAT2_after_UnitTest();
         // Setup soil layers for next test
       }
-      if(nelyrs == 25)
+      if (nelyrs == 25)
       {
-        //bserate is expected to be 0.06307376
-        EXPECT_NEAR(bserate, 0.06307376, 0.0001) <<
+        EXPECT_NEAR(bserate, 0.062997200, tol6) <<
           "pot_soil_evap_bs != 0.06306041 if nelyr = 25 for " << nelyrs << " soil layesrs";
       }
     }
@@ -817,31 +812,30 @@ namespace
       swp_inflec, swp_range, shade_scale, shade_deadmax, shade_xinflex, shade_slope,
         shade_yinflex, shade_range, co2_wue_multiplier);
 
-    EXPECT_NEAR(bstrate, bstrateExpected, 0.0000001); //For this test local variable shadeaf = 1, affecting bstrate
+    EXPECT_NEAR(bstrate, bstrateExpected, tol6); //For this test local variable shadeaf = 1, affecting bstrate
                                    //bstrate is expected to be 0.06596299
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for if biodead > shade_deadmax
-    biodead = 0.95, bstrateExpected = 0.06564905;
+    biodead = 0.95, bstrateExpected = 0.0659629;
     pot_transp(&bstrate, swpavg, biolive, biodead, fbst, petday, swp_shift, swp_shape,
       swp_inflec, swp_range, shade_scale, shade_deadmax, shade_xinflex, shade_slope,
         shade_yinflex, shade_range, co2_wue_multiplier);
 
-    //check = round(bstrate * 1000) / 1000;  //Rounding is required for unit test.
-    EXPECT_NEAR(bstrate, bstrateExpected, 0.001); //bstrate is expected to be 0.06564905
+    EXPECT_NEAR(bstrate, bstrateExpected, tol6); //bstrate is expected to be 0.06564905
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for if biodead < shade_deadmax
-    biodead = 0.2, bstrateExpected = 0.06596299;
+    biodead = 0.2, bstrateExpected = 0.0659629;
     pot_transp(&bstrate, swpavg, biolive, biodead, fbst, petday, swp_shift, swp_shape,
       swp_inflec, swp_range, shade_scale, shade_deadmax, shade_xinflex, shade_slope,
         shade_yinflex, shade_range, co2_wue_multiplier);
 
-    EXPECT_NEAR(bstrate, bstrateExpected, 0.0000001); //For this test local variable shadeaf = 1, affecting bstrate
+    EXPECT_NEAR(bstrate, bstrateExpected, tol6); //For this test local variable shadeaf = 1, affecting bstrate
                                    //bstrate is expected to be 0.06596299
 
     //Reset to previous global states.
@@ -858,7 +852,7 @@ namespace
     double watExpected = 0.630365;
     double wat = watrate(swp, petday, shift, shape, inflec, range);
 
-    EXPECT_NEAR(wat, watExpected, 0.0000001); //When petday = 0.1, watrate = 0.630365
+    EXPECT_NEAR(wat, watExpected, tol6); //When petday = 0.1, watrate = 0.630365
     EXPECT_LE(wat, 1); //watrate must be between 0 & 1
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
@@ -866,7 +860,7 @@ namespace
     petday = 0.3, watExpected = 0.6298786;
     wat = watrate(swp, petday, shift, shape, inflec, range);
 
-    EXPECT_NEAR(wat, watExpected, 0.0000001); //When petday = 0.3, watrate = 0.6298786
+    EXPECT_NEAR(wat, watExpected, tol6); //When petday = 0.3, watrate = 0.6298786
     EXPECT_LE(wat, 1); //watrate must be between 0 & 1
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
@@ -877,7 +871,7 @@ namespace
     petday = 0.5, watExpected = 0.6285504;
     wat = watrate(swp, petday, shift, shape, inflec, range);
 
-    EXPECT_NEAR(wat, watExpected, 0.0000001); //When petrate = 0.5, watrate = 0.6285504
+    EXPECT_NEAR(wat, watExpected, tol6); //When petrate = 0.5, watrate = 0.6285504
     EXPECT_LE(wat, 1); //watrate must be between 0 & 1
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
@@ -888,7 +882,7 @@ namespace
     petday = 0.8, watExpected = 0.627666;
     wat = watrate(swp, petday, shift, shape, inflec, range);
 
-    EXPECT_NEAR(wat, watExpected, 0.0000001); //When petday = 0.8, watrate = 0.627666
+    EXPECT_NEAR(wat, watExpected, tol6); //When petday = 0.8, watrate = 0.627666
     EXPECT_LE(wat, 1); //watrate must be between 0 & 1
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
@@ -906,23 +900,23 @@ namespace
     double aetExpected = 0.86, evapExpected = 0.33, waterExpected = 0.67;
     evap_fromSurface(&water_pool, &evap_rate, &aet);
 
-    EXPECT_NEAR(aet, aetExpected, 0.0000001); //Variable aet is expected to be 0.86 with current inputs
+    EXPECT_NEAR(aet, aetExpected, tol6); //Variable aet is expected to be 0.86 with current inputs
     EXPECT_GE(aet, 0); //aet is never negative
 
-    EXPECT_NEAR(evap_rate, evapExpected, 0.0000001); //Variable evap_rate is expected to be 0.33 with current inputs
+    EXPECT_NEAR(evap_rate, evapExpected, tol6); //Variable evap_rate is expected to be 0.33 with current inputs
     EXPECT_GE(evap_rate, 0); //evap_rate is never negative
 
-    EXPECT_NEAR(water_pool, waterExpected, 0.0000001); //Variable water_pool is expected to be 0.67 with current inputs
+    EXPECT_NEAR(water_pool, waterExpected, tol6); //Variable water_pool is expected to be 0.67 with current inputs
     EXPECT_GE(water_pool, 0); //water_pool is never negative
 
     //Begin TEST for when water_pool < evap_rate
     water_pool = 0.1, evap_rate = 0.67, aet = 0.78, aetExpected = 0.88, evapExpected = 0.1;
     evap_fromSurface(&water_pool, &evap_rate, &aet);
 
-    EXPECT_NEAR(aet, aetExpected, 0.0000001); //Variable aet is expected to be 0.88 with current inputs
+    EXPECT_NEAR(aet, aetExpected, tol6); //Variable aet is expected to be 0.88 with current inputs
     EXPECT_GE(aet, 0); //aet is never negative
 
-    EXPECT_NEAR(evap_rate, evapExpected, 0.0000001); //Variable evap_rate is expected to be 0.1 with current inputs
+    EXPECT_NEAR(evap_rate, evapExpected, tol6); //Variable evap_rate is expected to be 0.1 with current inputs
     EXPECT_GE(evap_rate, 0); //evap_rate is never negative
 
     EXPECT_DOUBLE_EQ(water_pool, 0); //Variable water_pool is expected to be 0 when water_pool < evap_rate
@@ -1012,10 +1006,10 @@ namespace
       // Check expectation of no change from original values
       for (i = 0; i < nlyrs; i++)
       {
-        EXPECT_NEAR(qty[i], qtyExpected[i], 0.000001) <<
+        EXPECT_NEAR(qty[i], qtyExpected[i], tol6) <<
           "remove_from_soil: qty != qty for layer " << 1 + i << " out of "
           << nlyrs << " soil layers";
-        EXPECT_NEAR(swc[i], swcExpected[i], 0.000001) <<
+        EXPECT_NEAR(swc[i], swcExpected[i], tol6) <<
           "remove_from_soil: swc != swc for layer " << 1 + i << " out of "
           << nlyrs << " soil layers";
       }
@@ -1056,14 +1050,14 @@ namespace
       // Check values of qty[] and swc[] against array of expected values
       for (i = 0; i < nlyrs; i++)
       {
-        EXPECT_NEAR(qty[i], qtyExpected[i], 0.0001) <<
+        EXPECT_NEAR(qty[i], qtyExpected[i], tol6) <<
           "remove_from_soil: qty != expected for layer " << 1 + i << " out of "
           << nlyrs << " soil layers";
-        EXPECT_NEAR(swc[i], swcExpected[i], 0.0001) <<
+        EXPECT_NEAR(swc[i], swcExpected[i], tol6) <<
           "remove_from_soil: swc != expected for layer " << 1 + i << " out of "
           << nlyrs << " soil layers";
       }
-      EXPECT_NEAR(aet, aetExpected, 0.0000001) <<
+      EXPECT_NEAR(aet, aetExpected, tol6) <<
           "remove_from_soil: aet != expected for " << nlyrs << " soil layers";
 
     }
@@ -1107,28 +1101,32 @@ namespace
     infiltrate_water_low(swc, drain, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc, width, swcmin,
       swcsat, impermeability, &standingWater);
 
-    EXPECT_NEAR(drainoutExpected, drainout, 0.0000001); //drainout expected to be 0.1
-    EXPECT_NEAR(standingWaterExpected, standingWater, 0.0000001); //standingWater expected to be 0.01
+    EXPECT_NEAR(drainoutExpected, drainout, tol6); //drainout expected to be 0.1
+    EXPECT_NEAR(standingWaterExpected, standingWater, tol6); //standingWater expected to be 0.01
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      EXPECT_NEAR(swcExpected[i], swc[i], 0.0000001); //swc is expected to match swcExpected
-      EXPECT_NEAR(drainExpected[i], drain[i], 0.0000001); //drain is expected to match drainExpected
+      EXPECT_NEAR(swcExpected[i], swc[i], tol6); //swc is expected to match swcExpected
+      EXPECT_NEAR(drainExpected[i], drain[i], tol6); //drain is expected to match drainExpected
     }
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
 
     //Begin TEST for if swc[i] > swcmin[i]
-    double swcExpected2[25] = {0, 0.03000011, 0.04000101, 0.05000102, 1.92000405, 1.93000306, 1.94000103,
-        3.82000707, 3.83000207, 3.84000405, 8.21004642, 13.61000000, 5.01000000, 6.01000000, 6.20000000,
-          6.40000000, 7.03000000, 8.21000000, 9.31000000, 10.10000000, 11.43002411, 11.44000100,
-            13.32000000, 13.33000000, 13.34000000};
-    double drainExpected2[25] = {1.0000950, 1.0000949, 1.0000939, 1.0000929, 1.0000888, 1.0000858,
-        1.0000847, 1.0000777, 1.0000756, 1.0000715, -1.4899749, -9.3699749, -8.6399749, -7.0299749,
-          -5.5999749, -4.3599749, -1.8699749, -0.5499749, -0.3199749, 1.0000251, 1.0000010, 1.0000000,
-            1.0000000, 0.9999500, 0.9999000};
-    standingWaterExpected = 0.019905;
+    double swcExpected2[25] = {
+       0.00,  0.03,  0.04,  0.05,  1.92,
+       1.93,  1.94,  3.82,  3.83,  3.84,
+       8.21, 13.61,  5.01,  6.01,  6.20,
+       6.40,  7.03,  8.21,  9.31, 10.10,
+      11.43, 11.44, 13.32, 13.33, 13.34};
+    double drainExpected2[25] = {
+       1.00,  1.00,  1.00,  1.00,  1.00,
+       1.00,  1.00,  1.00,  1.00,  1.00,
+      -1.40, -9.29, -8.57, -6.97, -5.55,
+      -4.32, -1.84, -0.53, -0.31,  1.00,
+       1.00,  1.00,  1.00,  1.00,  1.00};
+    standingWaterExpected = 0.02;
 
     //Reset altered INPUTS
     double swc1[25] = {0.02, 0.03, 0.04, 0.05, 1.92, 1.93, 1.94, 3.82, 3.83, 3.84, 5.72, 5.73, 5.74,
@@ -1141,12 +1139,13 @@ namespace
 
     EXPECT_DOUBLE_EQ(drainoutExpected, drainout); //drainout is expected to be 0.1
 
-    EXPECT_NEAR(standingWater, standingWaterExpected, 0.01); //standingWater is expected to be 0.02;  small precision is needed
+    EXPECT_NEAR(standingWater, standingWaterExpected, tol6); //standingWater is expected to be 0.02;  small precision is needed
 
-    for(unsigned int i = 0; i < nlyrs; i++){
-
-      EXPECT_NEAR(swcmin[i], swcExpected2[i], 0.001); //swc is expected to match swcExpected, swcmin has replaced swc
-      EXPECT_NEAR(drain[i], drainExpected2[i], 0.1); //drain is expected to match drainExpected. ASK about negative values
+    for (unsigned int i = 0; i < nlyrs; i++){
+      EXPECT_NEAR(swcmin[i], swcExpected2[i], tol6) <<
+        "infiltrate_water_low: swc != expected for layer " << 1 + i; //swc is expected to match swcExpected, swcmin has replaced swc
+      EXPECT_NEAR(drain[i], drainExpected2[i], tol6) <<
+        "infiltrate_water_low: drain != expected for layer " << 1 + i; //drain is expected to match drainExpected. ASK about negative values
     }
 
     //Reset to previous global states.
@@ -1177,7 +1176,7 @@ namespace
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      EXPECT_NEAR(swc3[i], swcExpected4[i], 0.0000001); //swc is expected to match swcExpected
+      EXPECT_NEAR(swc3[i], swcExpected4[i], tol6); //swc is expected to match swcExpected
       EXPECT_NEAR(drain3[i], drainExpected4[i], 0.01); //drain is expected to match drainExpected
     }
 
@@ -1208,7 +1207,7 @@ namespace
       swcsat3, impermeability, &standingWater);
 
     EXPECT_DOUBLE_EQ(drainoutExpected, drainout);
-    EXPECT_NEAR(standingWater, standingWaterExpected, 0.0000001); //standingWater is expected to be 0
+    EXPECT_NEAR(standingWater, standingWaterExpected, tol6); //standingWater is expected to be 0
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
@@ -1263,13 +1262,13 @@ namespace
     infiltrate_water_low(swcmin_1, drain_1, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc_1, width_1, swc_1,
       swcsat_1, impermeability_1, &standingWater); //switch swc and swcmin arrays
 
-    EXPECT_NEAR(drainout, drainoutExpected, 0.0000001);
-    EXPECT_NEAR(standingWater, standingWaterExpected, 0.0000001); //standingWater is expected to be 0.0105
+    EXPECT_NEAR(drainout, drainoutExpected, tol6);
+    EXPECT_NEAR(standingWater, standingWaterExpected, tol6); //standingWater is expected to be 0.0105
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      EXPECT_NEAR(swc_1[i], swcExpected2_1[i], 0.0000001); //swc is expected to match swcExpected
-      EXPECT_NEAR(drain_1[i], drainExpected2_1[i], 0.0000001); //drain is expected to match drainExpected
+      EXPECT_NEAR(swc_1[i], swcExpected2_1[i], tol6); //swc is expected to match swcExpected
+      EXPECT_NEAR(drain_1[i], drainExpected2_1[i], tol6); //drain is expected to match drainExpected
     }
 
     //Reset to previous global states.
@@ -1286,20 +1285,20 @@ namespace
     for(unsigned int i = 0; i < nlyrs; i++){
       if (st->lyrFrozen[i] == swTRUE){
 
-        EXPECT_NEAR(standingWater, standingWaterExpected, 0.0001); //standingWater is expected to be 0.011
-        EXPECT_NEAR(drainoutExpectedf, drainout, 0.0001); //drainout is expected to be 0.1
-        EXPECT_NEAR(swc_1[i], swcExpected3_1[i], 0.0001); //swc is expected to match swcExpected
-        EXPECT_NEAR(drain_1[i], drainExpected2_1[i], 0.0001); //drain is expected to match drainExpected
+        EXPECT_NEAR(standingWater, standingWaterExpected, tol6); //standingWater is expected to be 0.011
+        EXPECT_NEAR(drainoutExpectedf, drainout, tol6); //drainout is expected to be 0.1
+        EXPECT_NEAR(swc_1[i], swcExpected3_1[i], tol6); //swc is expected to match swcExpected
+        EXPECT_NEAR(drain_1[i], drainExpected2_1[i], tol6); //drain is expected to match drainExpected
       }
     //Begin TEST for if lyrFrozen == false
       else{
         //INPUTS for expected outputs
         standingWaterExpected = 0.011;
 
-        EXPECT_NEAR(standingWater, standingWaterExpected, 0.0000001); //standingWater is expected to be 0.011
-        EXPECT_NEAR(drainout, drainoutExpected, 0.0000001);//drainout is expected to be 0.1
-        EXPECT_NEAR(swc_1[i], swcExpected2_1[i], 0.0000001); //swc is expected to match swcExpected
-        EXPECT_NEAR(drain_1[i], drainExpected2_1[i], 0.0000001); //drain is expected to match drainExpected
+        EXPECT_NEAR(standingWater, standingWaterExpected, tol6); //standingWater is expected to be 0.011
+        EXPECT_NEAR(drainout, drainoutExpected, tol6);//drainout is expected to be 0.1
+        EXPECT_NEAR(swc_1[i], swcExpected2_1[i], tol6); //swc is expected to match swcExpected
+        EXPECT_NEAR(drain_1[i], drainExpected2_1[i], tol6); //drain is expected to match drainExpected
       }
     }
 
@@ -1320,13 +1319,13 @@ namespace
     infiltrate_water_low(swc2_1, drain_1, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc_1, width_1, swcmin_1,
       swcsat2_1, impermeability_1, &standingWater);
 
-    EXPECT_NEAR(drainout, drainoutExpected, 0.0000001); //drainout is expected to be 0.67
-    EXPECT_NEAR(standingWater, standingWaterExpected, 0.0000001); //No standingWater expected
+    EXPECT_NEAR(drainout, drainoutExpected, tol6); //drainout is expected to be 0.67
+    EXPECT_NEAR(standingWater, standingWaterExpected, tol6); //No standingWater expected
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      EXPECT_NEAR(swc_1[i], swcExpected4_1[i], 0.0000001); //swc is expected to match swcExpected
-      EXPECT_NEAR(drain_1[i], drainExpected4_1[i], 0.0000001); //drain is expected to match drainExpected
+      EXPECT_NEAR(swc_1[i], swcExpected4_1[i], tol6); //swc is expected to match swcExpected
+      EXPECT_NEAR(drain_1[i], drainExpected4_1[i], tol6); //drain is expected to match drainExpected
     }
 
     //Reset to previous global states.
@@ -1344,13 +1343,13 @@ namespace
     infiltrate_water_low(swc_1, drain_1, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc_1, width_1, swcmin_1,
       swcsat3_1, impermeability_1, &standingWater);
 
-    EXPECT_NEAR(drainout, drainoutExpected, 0.0000001); //drainout is expected to be 0.67
-    EXPECT_NEAR(standingWater, standingWaterExpected, 0.0000001); //No standingWater expected
+    EXPECT_NEAR(drainout, drainoutExpected, tol6); //drainout is expected to be 0.67
+    EXPECT_NEAR(standingWater, standingWaterExpected, tol6); //No standingWater expected
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      EXPECT_NEAR(swc_1[i], swcExpected5_1[i], 0.0000001); //swc is expected to match swcExpected
-      EXPECT_NEAR(drain_1[i], drainExpected5_1[i], 0.0000001); //drain is expected to match drainExpected
+      EXPECT_NEAR(swc_1[i], swcExpected5_1[i], tol6); //swc is expected to match swcExpected
+      EXPECT_NEAR(drain_1[i], drainExpected5_1[i], tol6); //drain is expected to match drainExpected
     }
 
     //Reset to previous global states.
@@ -1389,8 +1388,8 @@ namespace
     EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      EXPECT_NEAR(swc[i], swcExpected[i], 0.0000001); //swc is expected to match swcExpected
-      EXPECT_NEAR(hydred[i], hydredExpected[i], 0.0000001); //hydred is expected to match hydredExpected
+      EXPECT_NEAR(swc[i], swcExpected[i], tol6); //swc is expected to match swcExpected
+      EXPECT_NEAR(hydred[i], hydredExpected[i], tol6); //hydred is expected to match hydredExpected
     }
 
     //Reset to previous global states.
@@ -1415,8 +1414,8 @@ namespace
     EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      EXPECT_NEAR(swc[i], swcExpected2[i], 0.0001); //swc is expected to match swcExpected
-      EXPECT_NEAR(hydred[i], hydredExpected2[i], 0.0001); //hydred is expected to match hydredExpected
+      EXPECT_NEAR(swc[i], swcExpected2[i], tol3); //swc is expected to match swcExpected
+      EXPECT_NEAR(hydred[i], hydredExpected2[i], tol3); //hydred is expected to match hydredExpected
     }
 
     //Reset to previous global states.
@@ -1446,8 +1445,8 @@ namespace
     EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      EXPECT_NEAR(swc1[i], swcExpected11[i], 0.0000001); //swc is expected to match swcExpected
-      EXPECT_NEAR(hydred1[i], hydredExpected11[i], 0.0000001); //hydred is expected to match hydredExpected
+      EXPECT_NEAR(swc1[i], swcExpected11[i], tol6); //swc is expected to match swcExpected
+      EXPECT_NEAR(hydred1[i], hydredExpected11[i], tol6); //hydred is expected to match hydredExpected
     }
 
     //Reset to previous global states.
@@ -1464,8 +1463,8 @@ namespace
 
     for(unsigned int i = 0; i < nlyrs; i++){
 
-      EXPECT_NEAR(swc1[i], swcExpected21[i], 0.0000001); //swc is expected to match swcExpected
-      EXPECT_NEAR(hydred1[i], hydredExpected21[i], 0.0000001); //hydred is expected to match hydredExpected
+      EXPECT_NEAR(swc1[i], swcExpected21[i], tol6); //swc is expected to match swcExpected
+      EXPECT_NEAR(hydred1[i], hydredExpected21[i], tol6); //hydred is expected to match hydredExpected
     }
 
     //Reset to previous global states.
