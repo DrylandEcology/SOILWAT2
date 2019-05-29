@@ -106,9 +106,6 @@ extern SW_MODEL SW_Model;
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-
-ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
-
 extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
 extern SW_CARBON SW_Carbon;
@@ -118,6 +115,8 @@ unsigned int fusion_pool_init;   // simply keeps track of whether or not the val
 /* *************************************************** */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
+
+static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 
 /* *************************************************** */
 /* *************************************************** */
@@ -895,33 +894,27 @@ void evap_fromSurface(double *water_pool, double *evap_rate, double *aet) {
 }
 
 /**
-  @brief Extracts a certain total amount of water from across soil layers by
-    transpiration or evaporation.
 
-    Removes water from the soil and replaces earlier versions' call to separate
-    functions for evaporations and transpiration and instead combines them into
-    one function, see Eqns. 2.12 - 2.18 in "Abiotic Section of ELM".
+@brief Removes water from the soil and replaces earlier versions' call to separate functions
+      for evaporations and transpiration and instead combines them into one function,
+      see Eqns. 2.12 - 2.18 in "Abiotic Section of ELM".
 
-  Based on equations from Parton 1978. @cite Parton1978
+Based on equations from Parton 1978. @cite Parton1978
 
-  @param swc Soil water content in each layer before extraction
-         (cm<SUP>3</SUP> H<SUB>2</SUB>O).
-  @param qty Placeholder used to return the output, i.e., the amount of
-         extracted water (see below).
-  @param *aet Actual evapotranspiration before removal (cm/day).
-  @param nlyrs Number of soil layers potentially affected by water extraction.
-  @param coeff Coefficients (0-1; sum = 1) that describe how `rate` is
-         potentially distributed across soil layers.
-  @param rate Total amount of soil water (cm) to be extracted from the soil
-         profile by evaporation or transpiration.
-  @param swcmin Lower limit of soil water content per layer (cm).
+@param swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param qty Removal quanity from each layer, evaporation or transpiration (mm/day).
+@param *aet Actual evapotranspiration (cm/day).
+@param nlyrs Number of layers considered in water removal.
+@param coeff Coefficients of removal for removal layers.
+@param rate Removal rate, either soil_evap_rate or soil_transp_rate.
+@param swcmin Lower limit on soilwater content per layer.
 
-  @sideeffect
-    - swc Updated soil water content (cm) after evaporation or transpiration.
-    - qty Amount of water (cm) that was extracted from each soil layer
-      as evaporation or transpiration (previous content is discarded).
-    - *aet Updated evapotranspiration (cm/day).
+@sideeffect
+  - swc Updated soil water content adjusted after evaporation.
+  - qty Updated removal quantity from each layer, evap or transp.
+  - *aet Updated evapotranspiration (cm/day).
 */
+
 void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyrs,
     double coeff[], double rate, double swcmin[]) {
 	/**********************************************************************
@@ -937,7 +930,6 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 
 	unsigned int i;
 	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q;
-	Bool has_water;
 
 	ST_RGR_VALUES *st = &stValues;
 
@@ -946,20 +938,20 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 		sumswp += swpfrac[i];
 	}
 
-	has_water = (Bool) !ZRO(sumswp);
+	if (ZRO(sumswp))
+		return;
 
 	for (i = 0; i < nlyrs; i++) {
-		if (has_water && !st->lyrFrozen[i]) {
-			// water extraction, i.e., evaporation and transpiration
+		if (st->lyrFrozen[i]) {
+			// no water extraction, i.e., evaporation and transpiration, from a frozen soil layer
+			qty[i] = 0.;
+
+		} else {
 			q = (swpfrac[i] / sumswp) * rate;
 			swc_avail = fmax(0., swc[i] - swcmin[i]);
 			qty[i] = fmin( q, swc_avail);
 			swc[i] -= qty[i];
 			*aet += qty[i];
-
-		} else {
-			// no water extracted if frozen or no water
-			qty[i] = 0.;
 		}
 	}
 }
