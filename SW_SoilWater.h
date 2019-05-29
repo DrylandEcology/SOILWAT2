@@ -121,6 +121,7 @@ typedef struct {
 	int wbError[N_WBCHECKS]; /* water balance and water cycling error indicators (currently 8)
 	    0, no error detected; > 0, number of errors detected */
   char *wbErrorNames[N_WBCHECKS];
+  Bool is_wbError_init;
   #endif
 
 	SW_SOILWAT_OUTPUTS

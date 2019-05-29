@@ -57,7 +57,8 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error: " << SW_Soilwat.wbErrorNames[i];
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -76,7 +77,8 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error: " << SW_Soilwat.wbErrorNames[i];
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -97,7 +99,8 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error: " << SW_Soilwat.wbErrorNames[i];
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
     }
 
     // Reset to previous global state

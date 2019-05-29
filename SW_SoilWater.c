@@ -122,7 +122,6 @@ void SW_WaterBalance_Checks(void)
   RealD lhs, rhs, wbtol = 1e-9;
 
   static RealD surfaceWater_yesterday = 0.;
-  static Bool do_once = swTRUE;
   static Bool debug = swFALSE;
 
 
@@ -185,7 +184,7 @@ void SW_WaterBalance_Checks(void)
 
 
   //--- Water balance checks (there are # checks n = N_WBCHECKS)
-  if (do_once) {
+  if (!sw->is_wbError_init) {
     for (i = 0; i < N_WBCHECKS; i++) {
       debug = (debug || debugi[i])? swTRUE: swFALSE;
     }
@@ -197,7 +196,9 @@ void SW_WaterBalance_Checks(void)
 
 
   // AET <= PET
-  if (do_once) sw->wbErrorNames[0] = Str_Dup("AET <= PET");
+  if (!sw->is_wbError_init) {
+    sw->wbErrorNames[0] = Str_Dup("AET <= PET");
+  }
   if (!LE(sw->aet, sw->pet))
   {
     sw->wbError[0]++;
@@ -206,7 +207,9 @@ void SW_WaterBalance_Checks(void)
   }
 
   // AET == E(total) + T(total)
-  if (do_once) sw->wbErrorNames[1] = Str_Dup("AET == Etotal + Ttotal");
+  if (!sw->is_wbError_init) {
+    sw->wbErrorNames[1] = Str_Dup("AET == Etotal + Ttotal");
+  }
   rhs = Etotal + Ttotal;
   if (!EQ_w_tol(sw->aet, rhs, wbtol))
   {
@@ -217,12 +220,16 @@ void SW_WaterBalance_Checks(void)
 
   // T(total) = sum of T(veg-type i from soil layer j)
   // doesn't make sense here because Ttotal is the sum of Tvegij
-  if (do_once) sw->wbErrorNames[2] = Str_Dup("T(total) = sum of T(veg-type i from soil layer j)");
+  if (!sw->is_wbError_init) {
+    sw->wbErrorNames[2] = Str_Dup("T(total) = sum of T(veg-type i from soil layer j)");
+  }
   sw->wbError[2] += 0;
 
   // E(total) = E(total bare-soil) + E(ponded water) + E(total litter-intercepted) +
   //            + E(total veg-intercepted) + E(snow sublimation)
-  if (do_once) sw->wbErrorNames[3] = Str_Dup("Etotal == Esoil + Eponded + Eveg + Elitter + Esnow");
+  if (!sw->is_wbError_init) {
+    sw->wbErrorNames[3] = Str_Dup("Etotal == Esoil + Eponded + Eveg + Elitter + Esnow");
+  }
   rhs = Esoil + Eponded + Eveg + Elitter + Esnow;
   if (!EQ_w_tol(Etotal, rhs, wbtol))
   {
@@ -233,7 +240,9 @@ void SW_WaterBalance_Checks(void)
 
   // E(total surface) = E(ponded water) + E(total litter-intercepted) +
   //                    + E(total veg-intercepted)
-  if (do_once) sw->wbErrorNames[4] = Str_Dup("Esurf == Eponded + Eveg + Elitter");
+  if (!sw->is_wbError_init) {
+    sw->wbErrorNames[4] = Str_Dup("Esurf == Eponded + Eveg + Elitter");
+  }
   rhs = Eponded + Eveg + Elitter;
   if (!EQ_w_tol(Etotalsurf, rhs, wbtol))
   {
@@ -245,7 +254,9 @@ void SW_WaterBalance_Checks(void)
 
   //--- Water cycling checks
   // infiltration = [rain + snowmelt + runon] - (runoff + intercepted + delta_surfaceWater + Eponded)
-  if (do_once) sw->wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + intercepted + delta_surfaceWater + Eponded)");
+  if (!sw->is_wbError_init) {
+    sw->wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + intercepted + delta_surfaceWater + Eponded)");
+  }
   rhs = arriving_water - (runoff + intercepted + delta_surfaceWater + Eponded);
   if (!EQ_w_tol(infiltration, rhs, wbtol))
   {
@@ -255,7 +266,9 @@ void SW_WaterBalance_Checks(void)
   }
 
   // E(soil) + Ttotal = infiltration - (deepDrainage + delta(swc))
-  if (do_once) sw->wbErrorNames[6] = Str_Dup("Ttotal + Esoil = inf - (deepDrainage + delta_swc)");
+  if (!sw->is_wbError_init) {
+    sw->wbErrorNames[6] = Str_Dup("Ttotal + Esoil = inf - (deepDrainage + delta_swc)");
+  }
   lhs = Ttotal + Esoil;
   rhs = infiltration - (deepDrainage + delta_swc_total);
   if (!EQ_w_tol(lhs, rhs, wbtol))
@@ -268,7 +281,9 @@ void SW_WaterBalance_Checks(void)
   // for every soil layer j: delta(swc) =
   //   = infiltration/percolationIn + hydraulicRedistribution -
   //     (percolationOut/deepDrainage + transpiration + evaporation)
-  if (do_once) sw->wbErrorNames[7] = Str_Dup("delta_swc[i] == perc_in[i] + hydred[i] - (perc_out[i] + Ttot[i] + Esoil[i]))");
+  if (!sw->is_wbError_init) {
+    sw->wbErrorNames[7] = Str_Dup("delta_swc[i] == perc_in[i] + hydred[i] - (perc_out[i] + Ttot[i] + Esoil[i]))");
+  }
   ForEachSoilLayer(i)
   {
     rhs = percolationIn[i] + hydraulicRedistribution[i] -
@@ -282,8 +297,10 @@ void SW_WaterBalance_Checks(void)
     }
   }
 
-  // Add names only once
-  if (do_once) do_once = swFALSE;
+  // Setup only once
+  if (!sw->is_wbError_init) {
+    sw->is_wbError_init = swTRUE;
+  }
 }
 #endif
 
@@ -299,6 +316,9 @@ void SW_SWC_construct(void) {
 
 	SW_Soilwat.soiltempError = swFALSE;
 	temp_snow = 0.;
+	#ifdef SWDEBUG
+		SW_Soilwat.is_wbError_init = swFALSE;
+	#endif
 
 	// Clear memory before setting it
 	if (!isnull(SW_Soilwat.hist.file_prefix)) {
