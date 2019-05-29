@@ -1163,20 +1163,25 @@ namespace
     //INPUTS for expected outputs
     double swcExpected4[25] = {0.01, 0.03, 0.04, 0.05, 1.92, 1.93, 1.94, 3.82, 3.83, 3.84, 5.72, 5.73, 5.74, 7.62,
         7.63, 7.64, 9.52, 9.53, 9.54, 11.42, 11.43, 11.44, 13.32, 13.33, 13.34};
-    double drainExpected4[25] = {-61.1385, -58.6685, -55.1085, -50.3585, -46.9785, -42.7085, -36.7485, -32.3685,
-        -27.8985, -21.7485, -16.6985, -8.8185, -8.5485, -8.1585, -7.5885, -6.8285, -6.3185, -5.6385, -4.8685,
-          -4.1885, -3.6085, -2.0385, -1.3485, -0.6585, 1};
-    standingWaterExpected = 62.2185;
+    double drainExpected4[25] = {
+      -61.14, -58.67, -55.11, -50.36, -46.98,
+      -42.71, -36.75, -32.37, -27.90, -21.75,
+      -16.70,  -8.82,  -8.55,  -8.16,  -7.59,
+       -6.83,  -6.32,  -5.64,  -4.87,  -4.19,
+       -3.61,  -2.04,  -1.35,  -0.66,   1.00};
+    standingWaterExpected = 62.23;
 
     infiltrate_water_low(swc3, drain3, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc, width, swc1,
       swcsat2, impermeability, &standingWater); //swc1 array used instead of swcmin
 
-    EXPECT_DOUBLE_EQ(drainoutExpected, drainout); //drainout is expected to be 0.1
-    EXPECT_NEAR(standingWater, standingWaterExpected, 0.1); //standingWater is expected to be 62.2185
+    EXPECT_DOUBLE_EQ(drainoutExpected, drainout);
+    EXPECT_NEAR(standingWater, standingWaterExpected, tol6);
 
     for (unsigned int i = 0; i < nlyrs; i++) {
-      EXPECT_NEAR(swc3[i], swcExpected4[i], tol6); //swc is expected to match swcExpected
-      EXPECT_NEAR(drain3[i], drainExpected4[i], 0.01); //drain is expected to match drainExpected
+      EXPECT_NEAR(swc3[i], swcExpected4[i], tol6) <<
+        "infiltrate_water_low: swc3 != expected for layer " << 1 + i;
+      EXPECT_NEAR(drain3[i], drainExpected4[i], tol6) <<
+        "infiltrate_water_low: drain3 != expected for layer " << 1 + i;
     }
 
     //Reset to previous global states.
@@ -1194,12 +1199,18 @@ namespace
     standingWater = 0;
 
     //INPUTS for expected outputs
-    double swcExpected5[25] = {0.01000000, 0.02990300, 0.03999956, 0.05000050, 1.92000202, 1.93000153,
-        1.94000052, 3.82000354, 3.83000104, 3.84000203, 5.72000052, 5.73000051, 5.74000253, 7.62000103,
-          7.63000202, 7.64000052, 9.52000353, 9.53000053, 9.54000202, 11.42001009, 11.43001214, 11.44000056, 13.32000000, 13.33002513, 13.34000000};
-    double drainExpected5[25] = {1.000000, 1.000097, 1.000097, 1.000097, 1.000095, 1.000093, 1.000093,
-        1.000089, 1.000088, 1.000086, 1.000086, 1.000085, 1.000083, 1.000082, 1.000080, 1.000079, 1.000076,
-          1.000075, 1.000073, 1.000063, 1.000051, 1.000050, 1.000050, 1.000025, 1.000000};
+    double swcExpected5[25] = {
+       0.0100000,  0.0203000,  0.0306895,  0.0411604,  1.9122710,
+       1.9234184,  1.9341728,  3.8166685,  3.8276648,  3.8392298,
+       5.7196636,  5.7300379,  5.7416501,  7.6219838,  7.6328286,
+       7.6425259,  9.5239335,  9.5332091,  9.5433626, 11.4269608,
+      11.4389426, 11.4446626, 13.3223313, 13.3367485, 13.3455828};
+    double drainExpected5[25] = {
+      1.0000000, 1.0097000, 1.0190105, 1.0278500, 1.0355790,
+      1.0421606, 1.0479877, 1.0513191, 1.0536542, 1.0544244,
+      1.0547607, 1.0547228, 1.0530727, 1.0510889, 1.0482602,
+      1.0457342, 1.0418007, 1.0385915, 1.0352288, 1.0282680,
+      1.0193253, 1.0146626, 1.0123313, 1.0055828, 1.0000000};
     standingWaterExpected = 0;
 
     infiltrate_water_low(swc4, drain4, &drainout, nlyrs, sdrainpar, sdraindpth, swcfc, width, swcmin2,
@@ -1209,8 +1220,10 @@ namespace
     EXPECT_NEAR(standingWater, standingWaterExpected, tol6); //standingWater is expected to be 0
 
     for (unsigned int i = 0; i < nlyrs; i++) {
-      EXPECT_NEAR(swc4[i], swcExpected5[i], 0.01); //swc is expected to match swcExpected
-      EXPECT_NEAR(drain4[i], drainExpected5[i], 0.1); //drain is expected to match drainExpected(near 1)
+      EXPECT_NEAR(swc4[i], swcExpected5[i], tol6) <<
+        "infiltrate_water_low: swc4 != expected for layer " << 1 + i;
+      EXPECT_NEAR(drain4[i], drainExpected5[i], tol6) <<
+        "infiltrate_water_low: drain4 != expected for layer " << 1 + i;
     }
 
     //Reset to previous global states.
