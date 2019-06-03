@@ -78,7 +78,7 @@ RealD *runavg_list; /* used in run_tmp_avg() */
 static char *MyFileName;
 static TimeInt tail;
 static Bool firsttime;
-static int wthdataIndex;
+
 
 /* =================================================== */
 /* =================================================== */
@@ -93,7 +93,7 @@ void _clear_hist_weather(void) {
 	TimeInt d;
 
 	for (d = 0; d < MAX_DAYS; d++)
-		wh->ppt[d] = wh->temp_max[d] = wh->temp_min[d] = WTH_MISSING;
+		wh->ppt[d] = wh->temp_max[d] = wh->temp_min[d] = SW_MISSING;
 }
 
 static void _clear_runavg(void) {
@@ -101,7 +101,7 @@ static void _clear_runavg(void) {
 	TimeInt i;
 
 	for (i = 0; i < SW_Weather.days_in_runavg; i++)
-		runavg_list[i] = WTH_MISSING;
+		runavg_list[i] = SW_MISSING;
 }
 
 void SW_WTH_clear_runavg_list(void) {
@@ -122,15 +122,42 @@ static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
 	 */
 	SW_WEATHER *w = &SW_Weather;
 	TimeInt doy = SW_Model.doy - 1;
+	Bool no_missing = swTRUE;
 
 	if (!weth_found) {
+		// no weather input file for current year ==> use weather generator
 		*ppt = w->now.ppt[Yesterday]; /* reqd for markov */
 		SW_MKV_today(doy, tmax, tmin, ppt);
 
 	} else {
-		*tmax = (!missing(w->hist.temp_max[doy])) ? w->hist.temp_max[doy] : w->now.temp_max[Yesterday];
-		*tmin = (!missing(w->hist.temp_min[doy])) ? w->hist.temp_min[doy] : w->now.temp_min[Yesterday];
-		*ppt = (!missing(w->hist.ppt[doy])) ? w->hist.ppt[doy] : 0.;
+		// weather input file for current year available
+
+		no_missing = (Bool) (!missing(w->hist.temp_max[doy]) &&
+									!missing(w->hist.temp_min[doy]) &&
+									!missing(w->hist.ppt[doy]));
+
+		if (no_missing) {
+			// all values available
+			*tmax = w->hist.temp_max[doy];
+			*tmin = w->hist.temp_min[doy];
+			*ppt = w->hist.ppt[doy];
+
+		} else {
+			// some of today's values are missing
+
+			if (SW_Weather.use_markov) {
+				// if weather generator is turned on then use it for all values
+				*ppt = w->now.ppt[Yesterday]; /* reqd for markov */
+				SW_MKV_today(doy, tmax, tmin, ppt);
+
+			} else {
+				// impute missing values with 0 for precipitation and
+				// with LOCF for temperature (i.e., last-observation-carried-forward)
+				*tmax = (!missing(w->hist.temp_max[doy])) ? w->hist.temp_max[doy] : w->now.temp_max[Yesterday];
+				*tmin = (!missing(w->hist.temp_min[doy])) ? w->hist.temp_min[doy] : w->now.temp_min[Yesterday];
+				*ppt = (!missing(w->hist.ppt[doy])) ? w->hist.ppt[doy] : 0.;
+			}
+		}
 	}
 
 }
@@ -144,7 +171,6 @@ void SW_WTH_construct(void) {
 	tail = 0;
 	firsttime = swTRUE;
 	SW_Markov.ppt_events = 0;
-	wthdataIndex = 0;
 	OutPeriod pd;
 
 	// Clear the module structure:
@@ -206,9 +232,7 @@ void SW_WTH_new_year(void) {
 		weth_found = swFALSE;
 	} else {
 		#ifdef RSOILWAT
-		weth_found = swFALSE;
-		rSW_WTH_new_year2(year);
-		wthdataIndex++;
+		weth_found = onSet_WTH_DATA_YEAR(year);
 		#else
 		weth_found = _read_weather_hist(year);
 		#endif
@@ -224,7 +248,7 @@ void SW_WTH_new_year(void) {
 	 * (doy=1) and are below the critical temps for freezing
 	 * and with ppt=0 there's nothing to freeze.
 	 */
-	if (!weth_found && firsttime) {
+	if (firsttime) {
 		wn->temp_max[Today] = wn->temp_min[Today] = wn->ppt[Today] = wn->rain[Today] = 0.;
 		w->snow = w->snowmelt = w->snowloss = 0.;
 		w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
@@ -347,13 +371,8 @@ void SW_WTH_read(void) {
 	w->yr.last = SW_Model.endyr;
 	w->yr.total = w->yr.last - w->yr.first + 1;
 	if (w->use_markov) {
-		SW_MKV_construct();
-		if (!SW_MKV_read_prob()) {
-			LogError(logfp, LOGFATAL, "%s: Markov weather requested but could not open %s", MyFileName, SW_F_name(eMarkovProb));
-		}
-		if (!SW_MKV_read_cov()) {
-			LogError(logfp, LOGFATAL, "%s: Markov weather requested but could not open %s", MyFileName, SW_F_name(eMarkovCov));
-		}
+		SW_MKV_setup();
+
 	} else if (SW_Model.startyr < w->yr.first) {
 		LogError(logfp, LOGFATAL, "%s : Model year (%d) starts before weather files (%d)"
 				" and use_Markov=swFALSE.\nPlease synchronize the years"
@@ -396,10 +415,10 @@ Bool _read_weather_hist(TimeInt year) {
 
 	sprintf(fname, "%s.%4d", SW_Weather.name_prefix, year);
 
+	_clear_hist_weather(); // clear values before returning
+
 	if (NULL == (f = fopen(fname, "r")))
 		return swFALSE;
-
-	_clear_hist_weather();
 
 	while (GetALine(f, inbuf)) {
 		lineno++;
@@ -423,24 +442,6 @@ Bool _read_weather_hist(TimeInt year) {
 		wh->temp_min[doy] = tmpmin;
 		wh->temp_avg[doy] = (tmpmax + tmpmin) / 2.0;
 		wh->ppt[doy] = ppt;
-
-		/* Reassign if invalid values are found.  The values are
-		 * either valid or WTH_MISSING.  If they were not
-		 * present in the file, we wouldn't get this far because
-		 * sscanf() would return too few items.
-		 */
-		if (missing(tmpmax)) {
-			wh->temp_max[doy] = WTH_MISSING;
-			LogError(logfp, LOGWARN, "%s : Missing max temp on doy=%d.", fname, doy + 1);
-		}
-		if (missing(tmpmin)) {
-			wh->temp_min[doy] = WTH_MISSING;
-			LogError(logfp, LOGWARN, "%s : Missing min temp on doy=%d.", fname, doy + 1);
-		}
-		if (missing(ppt)) {
-			wh->ppt[doy] = 0.;
-			LogError(logfp, LOGWARN, "%s : Missing PPT on doy=%d.", fname, doy + 1);
-		}
 
 		if (!missing(tmpmax) && !missing(tmpmin)) {
 			k++;
