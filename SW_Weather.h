@@ -32,8 +32,6 @@ extern "C" {
 #endif
 
 
-/* missing values may be different than with other things */
-#define WTH_MISSING   999.
 
 /*  all temps are in degrees C, all precip is in cm */
 /*  in fact, all water variables are in cm throughout

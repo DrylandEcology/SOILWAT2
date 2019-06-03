@@ -46,65 +46,84 @@ SW_MARKOV SW_Markov; /* declared here, externed elsewhere */
 /* --------------------------------------------------- */
 
 static char *MyFileName;
-static RealD _vcov[2][2], _ucov[2];
 
 /* =================================================== */
 /* =================================================== */
 /*             Private Function Definitions            */
 /* --------------------------------------------------- */
 
-static void temp_correct(TimeInt doy,RealD *tmax, RealD *tmin, RealD *rain) {
+/**
+  @brief Adjust average maximum/minimum daily temperature for whether day is
+         wet or dry
 
-    RealD tx, tn,cfxw,cfxd,cfnw,cfnd,rn;
+  This function accounts for the situation such as daily maximum temperature
+  being reduced on wet days compared to average (e.g., clouds prevent warming
+  during daylight hours) and such as daily minimum temperature being increased
+  on wet days compared to average (e.g., clouds prevent radiative losses
+  during the night).
 
-    rn = *rain;
-    cfxw = SW_Markov.cfxw[doy];
-    cfnw = SW_Markov.cfnw[doy];
-    cfxd = SW_Markov.cfxd[doy];
-    cfnd = SW_Markov.cfnd[doy];
-    tx = *tmax;
-    tn = *tmin;
+  All temperature values are in units of degree Celsius.
 
-    if (rn > 0.) {
-            if (tx < 0. ) { //if temp is less than 0 special case
-                tx = tx*((1.0 - cfxw)+1.0);
-            }
-            else { tx = tx*cfxw;
-            }
+  @param tmax The average daily maximum temperature to be corrected
+    (as produced by `mvnorm`).
+  @param tmin The average daily minimum temperature to be corrected
+    (as produced by `mvnorm`).
+  @param rain Today's rain amount.
+  @param cfmax_wet The additive correction factor for maximum temperature on a
+    wet day.
+  @param cfmax_dry The additive correction factor for maximum temperature on a
+    dry day.
+  @param cfmin_wet The additive correction factor for minimum temperature on a
+    wet day.
+  @param cfmin_dry The additive correction factor for minimum temperature on a
+    dry day.
 
+  @return tmax The corrected maximum temperature, i.e., tmax + cfmax.
+  @return tmin The corrected minimum temperature, i.e., tmin + cfmin.
+*/
+static void temp_correct_wetdry(RealD *tmax, RealD *tmin, RealD rain,
+  RealD cfmax_wet, RealD cfmax_dry, RealD cfmin_wet, RealD cfmin_dry) {
 
-            if (tn < 0) {//if temp is less than 0 special case
-                tn = tn*((1.0 - cfnw)+1.0);
-            }
-            else {
-            tn = tn*cfnw;
-            }
-    }
+  if (GT(rain, 0.)) {
+    // today is wet: use wet-day correction factors
+    *tmax = *tmax + cfmax_wet;
+    *tmin = fmin(*tmax, *tmin + cfmin_wet);
 
- //apply correction factor to temperature
-        if (rn <= 0.) {
-            if (tx < 0. ) {//if temp is less than 0 special case
-                tx = tx*((1.0 - cfxd)+1.0);
-            }
-            else {
-                tx = tx*cfxd;
-            }
-
-            if (tn < 0.) { //if temp is less than 0 special case
-                tn = tn*((1.0 - cfnd)+1.0);
-            }
-           else {
-            tn = tn*cfnd;
-           }
-        }
-
-
-        *tmin = tn;
-        *tmax = tx;
-
+  } else {
+    // today is dry: use dry-day correction factors
+    *tmax = *tmax + cfmax_dry;
+    *tmin = fmin(*tmax, *tmin + cfmin_dry);
+  }
 }
 
-static void mvnorm(RealD *tmax, RealD *tmin) {
+
+#ifdef SWDEBUG
+  // since `temp_correct_wetdry` is static we cannot do unit tests unless we set it up
+  // as an externed function pointer
+  void (*test_temp_correct_wetdry)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD) = &temp_correct_wetdry;
+#endif
+
+
+
+/** Calculate multivariate normal variates for a set of
+    minimum and maximum temperature means, variances, and their covariance
+    for a specific day
+
+    @param wTmax Mean weekly maximum daily temperature (degree Celsius);
+           previously `_ucov[0]`
+    @param wTmin Mean weekly minimum daily temperature (degree Celsius);
+           previously `_ucov[1]`
+    @param wTmax_var Mean weekly variance of maximum daily temperature;
+           previously `vc00 = _vcov[0][0]`
+    @param wTmin_var Mean weekly variance of minimum daily temperature;
+           previously `vc11 = _vcov[1][1]`
+    @param wT_covar Mean weekly covariance between maximum and minimum
+           daily temperature; previously `vc10 = _vcov[1][0]`
+
+    @return Daily minimum (*tmin) and maximum (*tmax) temperature.
+*/
+static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
+	RealD wTmax_var, RealD wTmin_var, RealD wT_covar) {
 	/* --------------------------------------------------- */
 	/* This proc is distilled from a much more general function
 	 * in the original fortran version which was prepared to
@@ -121,21 +140,54 @@ static void mvnorm(RealD *tmax, RealD *tmin) {
 	 * cwb - 24-Oct-03 -- Note the switch to double (RealD).
 	 *       C converts the floats transparently.
 	 */
-	RealD s, z1, z2, vc00 = _vcov[0][0], vc10 = _vcov[1][0], vc11 = _vcov[1][1];
+	RealD s, z1, z2, wTmax_sd, vc10, vc11;
 
-	vc00 = sqrt(vc00);
-	vc10 = (GT(vc00, 0.)) ? vc10 / vc00 : 0;
+	// Gentle, J. E. 2009. Computational statistics. Springer, Dordrecht; New York.
+	// ==> mvnorm = mean + A * z
+	// where
+	//   z = vector of standard normal variates
+	//   A = Cholesky factor or the square root of the variance-covariance matrix
+
+	// 2-dimensional case:
+	//   mvnorm1 = mean1 + sd1 * z1
+	//   mvnorm2 = mean2 + sd2 * (rho * z1 + sqrt(1 - rho^2) * z2)
+	//      where rho(Pearson) = covariance / (sd1 * sd2)
+
+	// mvnorm2 = sd2 * rho * z1 + sd2 * sqrt(1 - rho^2) * z2
+	// mvnorm2 = covar / sd1 * z1 + sd2 * sqrt(1 - covar ^ 2 / (var1 * var2)) * z2
+	// mvnorm2 = covar / sd1 * z1 + sqrt(var2 - covar ^ 2 / var1) * z2
+	// mvnorm2 = vc10 * z1 + vc11 * z2
+	// with
+	//   vc10 = covar / sd1
+	//   s = covar ^ 2 / var1
+	//   vc11 = sqrt(var2 - covar ^ 2 / var1)
+
+	// Generate two independent standard normal random numbers
+	z1 = RandNorm(0., 1., &markov_rng);
+	z2 = RandNorm(0., 1., &markov_rng);
+
+	wTmax_sd = sqrt(wTmax_var);
+	vc10 = (GT(wTmax_sd, 0.)) ? wT_covar / wTmax_sd : 0;
 	s = vc10 * vc10;
-	if (GT(s,vc11))
+
+	if (GT(s, wTmin_var)) {
 		LogError(logfp, LOGFATAL, "\nBad covariance matrix in mvnorm()");
-	vc11 = (EQ(vc11, s)) ? 0. : sqrt(vc11 -s);
+	}
 
-	z1 = RandNorm(0., 3.5, &markov_rng);
-	z2 = RandNorm(0., 3.5, &markov_rng);
-	*tmin = (vc10 * z1) + (vc11 * z2) + _ucov[1];
-	*tmax = vc00 * z1 + _ucov[0];
+	vc11 = (EQ(wTmin_var, s)) ? 0. : sqrt(wTmin_var - s);
 
+	// mvnorm = mean + A * z
+	*tmax = wTmax_sd * z1 + wTmax;
+	*tmin = fmin(*tmax, (vc10 * z1) + (vc11 * z2) + wTmin);
 }
+
+#ifdef SWDEBUG
+  // since `mvnorm` is static we cannot do unit tests unless we set it up
+  // as an externed function pointer
+  void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD) = &mvnorm;
+#endif
+
+
 
 /* =================================================== */
 /* =================================================== */
@@ -205,35 +257,61 @@ void SW_MKV_deconstruct(void)
 }
 
 
-void SW_MKV_today(TimeInt doy, RealD *tmax, RealD *tmin, RealD *rain) {
+void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 	/* =================================================== */
-	/* enter with rain == yesterday's ppt, doy as array index
+	/* enter with rain == yesterday's ppt, doy0 as array index: [0, 365] = doy - 1
 	 * leave with rain == today's ppt
 	 */
 	TimeInt week;
 	RealF prob, p, x;
 
-	/* Calculate Precip */
-	prob = (GT(*rain, 0.0)) ? SW_Markov.wetprob[doy] : SW_Markov.dryprob[doy];
+	#ifdef SWDEBUG
+	short debug = 0;
+	#endif
+
+	/* Calculate Precipitation:
+		prop = probability that it precipitates today depending on whether it
+			was wet (precipitated) yesterday `wetprob` or
+			whether it was dry yesterday `dryprob` */
+	prob = (GT(*rain, 0.0)) ? SW_Markov.wetprob[doy0] : SW_Markov.dryprob[doy0];
 
 	p = RandUni(&markov_rng);
-	if (LE(p,prob)) {
-		x = RandNorm(SW_Markov.avg_ppt[doy], SW_Markov.std_ppt[doy], &markov_rng);
-		*rain = max(0., x);
+	if (LE(p, prob)) {
+		x = RandNorm(SW_Markov.avg_ppt[doy0], SW_Markov.std_ppt[doy0], &markov_rng);
+		*rain = fmax(0., x);
 	} else {
 		*rain = 0.;
 	}
 
-	if (!ZRO(*rain))
+	if (GT(*rain, 0.)) {
 		SW_Markov.ppt_events++;
+	}
 
 	/* Calculate temperature */
-	week = Doy2Week(doy+1);
-	memcpy(_vcov, &SW_Markov.v_cov[week], 4 * sizeof(RealD));
-	_ucov[0] = SW_Markov.u_cov[week][0];
-	_ucov[1] = SW_Markov.u_cov[week][1];
-	mvnorm(tmax, tmin);
-	temp_correct(doy,tmax,tmin,rain);
+	week = Doy2Week(doy0 + 1);
+
+	mvnorm(tmax, tmin,
+		SW_Markov.u_cov[week][0],    // mean weekly maximum daily temp
+		SW_Markov.u_cov[week][1],    // mean weekly minimum daily temp
+		SW_Markov.v_cov[week][0][0], // mean weekly variance of maximum daily temp
+		SW_Markov.v_cov[week][1][1], // mean weekly variance of minimum daily temp
+		SW_Markov.v_cov[week][1][0]  // mean weekly covariance of min/max daily temp
+	);
+
+	temp_correct_wetdry(tmax, tmin, *rain,
+		SW_Markov.cfxw[week],  // correction factor for tmax for wet days
+		SW_Markov.cfxd[week],  // correction factor for tmax for dry days
+		SW_Markov.cfnw[week],  // correction factor for tmin for wet days
+		SW_Markov.cfnd[week]   // correction factor for tmin for dry days
+	);
+
+	#ifdef SWDEBUG
+	if (debug) {
+		swprintf("mkv: yr=%d/doy0=%d/week=%d: ppt=%.3f, tmax=%.3f, tmin=%.3f\n",
+			SW_Model.year, doy0, week, *rain, *tmax, *tmin);
+	}
+	#endif
+
 }
 
 Bool SW_MKV_read_prob(void) {
@@ -243,7 +321,7 @@ Bool SW_MKV_read_prob(void) {
 	FILE *f;
 	int lineno = 0, day, x, msg_type = 0;
 	char msg[200]; // error message
-	RealF wet, dry, avg, std, cfxw, cfxd, cfnw, cfnd;
+	RealF wet, dry, avg, std;
 
 	/* note that Files.read() must be called prior to this. */
 	MyFileName = SW_F_name(eMarkovProb);
@@ -252,11 +330,11 @@ Bool SW_MKV_read_prob(void) {
 		return swFALSE;
 
 	while (GetALine(f, inbuf)) {
-		if (++lineno == MAX_DAYS)
+		if (lineno++ == MAX_DAYS)
 			break; /* skip extra lines */
 
-		x = sscanf(inbuf, "%d %f %f %f %f %f %f %f %f",
-			&day, &wet, &dry, &avg, &std, &cfxw, &cfxd, &cfnw, &cfnd);
+		x = sscanf(inbuf, "%d %f %f %f %f",
+			&day, &wet, &dry, &avg, &std);
 
 		// Check that text file is ok:
 		if (x < nitems) {
@@ -294,16 +372,6 @@ Bool SW_MKV_read_prob(void) {
 				avg, std, lineno, MyFileName);
 		}
 
-		// Correction factors are real numbers
-		if (!isfinite(cfxw) || !isfinite(cfxd) ||
-				!isfinite(cfnw) || !isfinite(cfnd))
-		{
-			msg_type = LOGFATAL;
-			sprintf(msg, "One of the correction factor is not a real number "\
-				"(cfxw = %f; cfxd = %f; cfnw = %f; cfnd = %f) in line %d of file %s\n",
-				cfxw, cfxd, cfnw, cfnd, lineno, MyFileName);
-		}
-
 		// If any input is bad, then close file and fail with message:
 		if (msg_type != 0)
 		{
@@ -314,14 +382,10 @@ Bool SW_MKV_read_prob(void) {
 		// Store values in `SW_Markov`
 		day--; // base1 -> base0
 
-		v->wetprob[day] = wet;
-		v->dryprob[day] = dry;
-		v->avg_ppt[day] = avg;
-		v->std_ppt[day] = std;
-		v->cfxw[day] = cfxw;
-		v->cfxd[day] = cfxd;
-		v->cfnw[day] = cfnw;
-		v->cfnd[day] = cfnd;
+		v->wetprob[day] = wet; // probability of being wet today given a wet yesterday
+		v->dryprob[day] = dry; // probability of being wet today given a dry yesterday
+		v->avg_ppt[day] = avg; // mean precip (cm) of wet days
+		v->std_ppt[day] = std; // std dev. for precip of wet days
 	}
 
 	CloseFile(&f);
@@ -333,11 +397,11 @@ Bool SW_MKV_read_prob(void) {
 Bool SW_MKV_read_cov(void) {
 	/* =================================================== */
 	SW_MARKOV *v = &SW_Markov;
-	const int nitems = 7;
+	const int nitems = 11;
 	FILE *f;
 	int lineno = 0, week, x, msg_type = 0;
 	char msg[200]; // error message
-	RealF t1, t2, t3, t4, t5, t6;
+	RealF t1, t2, t3, t4, t5, t6, cfxw, cfxd, cfnw, cfnd;
 
 	MyFileName = SW_F_name(eMarkovCov);
 
@@ -345,11 +409,11 @@ Bool SW_MKV_read_cov(void) {
 		return swFALSE;
 
 	while (GetALine(f, inbuf)) {
-		if (++lineno == MAX_WEEKS)
+		if (lineno++ == MAX_WEEKS)
 			break; /* skip extra lines */
 
-		x = sscanf(inbuf, "%d %f %f %f %f %f %f",
-			&week, &t1, &t2, &t3, &t4, &t5, &t6);
+		x = sscanf(inbuf, "%d %f %f %f %f %f %f %f %f %f %f",
+			&week, &t1, &t2, &t3, &t4, &t5, &t6, &cfxw, &cfxd, &cfnw, &cfnd);
 
 		// Check that text file is ok:
 		if (x < nitems) {
@@ -384,6 +448,16 @@ Bool SW_MKV_read_cov(void) {
 				t3, t4, t5, t6, lineno, MyFileName);
 		}
 
+		// Correction factors are real numbers
+		if (!isfinite(cfxw) || !isfinite(cfxd) ||
+				!isfinite(cfnw) || !isfinite(cfnd))
+		{
+			msg_type = LOGFATAL;
+			sprintf(msg, "One of the correction factor is not a real number "\
+				"(cfxw = %f; cfxd = %f; cfnw = %f; cfnd = %f) in line %d of file %s\n",
+				cfxw, cfxd, cfnw, cfnd, lineno, MyFileName);
+		}
+
 		// If any input is bad, then close file and fail with message:
 		if (msg_type != 0)
 		{
@@ -394,17 +468,36 @@ Bool SW_MKV_read_cov(void) {
 		// Store values in `SW_Markov`
 		week--; // base1 -> base0
 
-		v->u_cov[week][0] = t1;
-		v->u_cov[week][1] = t2;
-		v->v_cov[week][0][0] = t3;
-		v->v_cov[week][0][1] = t4;
-		v->v_cov[week][1][0] = t5;
-		v->v_cov[week][1][1] = t6;
+		v->u_cov[week][0] = t1;    // mean weekly maximum daily temp
+		v->u_cov[week][1] = t2;    // mean weekly minimum daily temp
+		v->v_cov[week][0][0] = t3; // mean weekly variance of maximum daily temp
+		v->v_cov[week][0][1] = t4; // mean weekly covariance of min/max daily temp
+		v->v_cov[week][1][0] = t5; // mean weekly covariance of min/max daily temp
+		v->v_cov[week][1][1] = t6; // mean weekly variance of minimum daily temp
+		v->cfxw[week] = cfxw;      // correction factor for tmax for wet days
+		v->cfxd[week] = cfxd;      // correction factor for tmax for dry days
+		v->cfnw[week] = cfnw;      // correction factor for tmin for wet days
+		v->cfnd[week] = cfnd;      // correction factor for tmin for dry days
 	}
 
 	CloseFile(&f);
 
 	return swTRUE;
+}
+
+
+void SW_MKV_setup(void) {
+  SW_MKV_construct();
+
+  if (!SW_MKV_read_prob()) {
+    LogError(logfp, LOGFATAL, "Markov weather requested but could not open %s",
+      SW_F_name(eMarkovProb));
+  }
+
+  if (!SW_MKV_read_cov()) {
+    LogError(logfp, LOGFATAL, "Markov weather requested but could not open %s",
+      SW_F_name(eMarkovCov));
+  }
 }
 
 
