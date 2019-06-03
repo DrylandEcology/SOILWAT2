@@ -1102,9 +1102,12 @@ namespace
           "remove_from_soil: aet != expected for " << nlyrs << " soil layers";
       EXPECT_GT(qty_sum, 0.) <<
           "remove_from_soil: sum(qty) !> 0 for " << nlyrs << " soil layers";
-      // detailed message to document why appveyor-ci (but not travis-ci)
+      // detailed message due to failure on appveyor-ci (but not travis-ci):
       // fails with "Expected: (qty_sum) <= (rate), actual: 0.62 vs 0.62"
-      EXPECT_LE(qty_sum, rate) << std::setprecision(12) << std::fixed <<
+      // --> it almost appears as if `EXPECT_LE` is behaving as if `EXPECT_LT`
+      // on appveyor-ci
+      // --> hack for this case on appveyor-ci: add `tol9` to `rate`
+      EXPECT_LE(qty_sum, rate + tol9) << std::setprecision(12) << std::fixed <<
           "remove_from_soil: sum(qty)=" << qty_sum <<
           " !<= rate=" << rate <<
           " for " << nlyrs << " soil layers";
