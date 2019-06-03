@@ -214,9 +214,9 @@ void SW_CTL_read_inputs_from_disk(void) {
   if (debug) swprintf(" > 'model'");
   #endif
 
-  SW_WTH_read();
+  SW_WTH_read(); // inputs also `climate/cloud/sky` and `SW_MKV_setup` if turned on
   #ifdef SWDEBUG
-  if (debug) swprintf(" > 'weather'");
+  if (debug) swprintf(" > 'weather' + 'climate'");
   #endif
 
   SW_VPD_read();
@@ -224,9 +224,9 @@ void SW_CTL_read_inputs_from_disk(void) {
   if (debug) swprintf(" > 'veg'");
   #endif
 
-  SW_SIT_read();
+  SW_SIT_read(); // inputs also soil layer data
   #ifdef SWDEBUG
-  if (debug) swprintf(" > 'site'");
+  if (debug) swprintf(" > 'site' + 'soils'");
   #endif
 
   SW_VES_read();
