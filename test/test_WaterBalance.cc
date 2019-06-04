@@ -37,9 +37,10 @@
 #include "sw_testhelpers.h"
 
 
+extern SW_MODEL SW_Model;
 extern SW_SOILWAT SW_Soilwat;
 extern SW_SITE SW_Site;
-
+extern SW_WEATHER SW_Weather;
 
 
 namespace {
@@ -69,11 +70,11 @@ namespace {
   TEST(WaterBalance, WithSoilTemperature) {
     int i;
 
-    // Run the simulation
-    SW_CTL_main();
-
     // Turn on soil temperature simulations
     SW_Site.use_soil_temp = swTRUE;
+
+    // Run the simulation
+    SW_CTL_main();
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -101,6 +102,56 @@ namespace {
     for (i = 0; i < N_WBCHECKS; i++) {
       EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error in test " <<
         i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
+
+  TEST(WaterBalance, WithWeatherGeneratorOnly) {
+    int i;
+
+    // Turn on Markov weather generator (and turn off use of historical weather)
+    SW_Soilwat.hist_use = swFALSE;
+    SW_Weather.yr.first = SW_Model.endyr + 1;
+    SW_Weather.use_markov = swTRUE;
+
+    // Read Markov weather generator input files (they are not normally read)
+    SW_MKV_setup();
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error: " << SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
+  TEST(WaterBalance, WithWeatherGeneratorForSomeMissingValues) {
+    int i;
+
+    // Turn on Markov weather generator
+    SW_Weather.use_markov = swTRUE;
+
+    // Read Markov weather generator input files (they are not normally read)
+    SW_MKV_setup();
+
+    // Point to partial weather data
+    strcpy(SW_Weather.name_prefix, "Input/data_weather_missing/weath");
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error: " << SW_Soilwat.wbErrorNames[i];
     }
 
     // Reset to previous global state
