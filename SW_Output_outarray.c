@@ -59,7 +59,7 @@ extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
 RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
 #ifdef STEPWAT
-extern ModelType *Globals; // defined in `ST_Main.c`
+extern GlobalType SuperGlobals;
 // `p_OUTsd` used by STEPWAT2 for standard-deviation of mean aggregation
 RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
 /** `prepare_IterationSummary` is TRUE if STEPWAT2 is called with `-o` flag
@@ -96,7 +96,7 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time hea
 /** @brief Determine number of used years/months/weeks/days in simulation period
 
 		@param SW_Model
-		@param Globals if compiled for STEPWAT2
+		@param SuperGlobals if compiled for STEPWAT2
 		@param use_OutPeriod
 		@sideeffects Set `nrow_OUT`
 */
@@ -112,7 +112,7 @@ void SW_OUT_set_nrow(void)
 	startyear = SW_Model.startyr;
 
 	#ifdef STEPWAT
-	n_yrs = Globals->runModelYears;
+	n_yrs = SuperGlobals.runModelYears;
 	endyear = startyear + n_yrs + 1;
 
 	#else
