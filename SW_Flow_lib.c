@@ -106,6 +106,9 @@ extern SW_MODEL SW_Model;
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
+
+ST_RGR_VALUES stValues; //keeps track of soil_temperature values
+
 extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
 extern SW_CARBON SW_Carbon;
@@ -115,8 +118,6 @@ unsigned int fusion_pool_init;   // simply keeps track of whether or not the val
 /* *************************************************** */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
-
-static ST_RGR_VALUES stValues; // keeps track of the soil_temperature values
 
 /* *************************************************** */
 /* *************************************************** */
@@ -1023,7 +1024,7 @@ void infiltrate_water_low(double swc[], double drain[], double *drainout, unsign
 			swc_avail = fmax(0., swc[i] - swcmin[i]);
 			drainpot = GT(swc[i], swcfc[i]) ? sdrainpar : sdrainpar * exp((swc[i] - swcfc[i]) * sdraindpth / width[i]);
 			d[i] = kunsat_rel * (1. - impermeability[i]) * fmin(swc_avail, drainpot);
-		}
+    }
 		drain[i] += d[i];
 
 		if (i < nlyrs - 1) { /* percolate up to next-to-last layer */
@@ -1160,7 +1161,7 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 @param nlyrTemp The number of soil temperature layers.
 @param depth_Temp Depths of soil temperature layers (cm).
 @param sTempR Temperature values of soil temperature layers (&deg;C).
-@param nlyrSoil Number of soil layer.
+@param nlyrSoil Number of soil layers.
 @param depth_Soil Depths of soil layers (cm).
 @param width_Soil Witdths of soil layers (cm).
 @param sTemp Temperature values of soil layers (&deg;C).
@@ -1219,7 +1220,7 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
 @brief Interpolate soil layer temperature values to soil temperature profile
    depths/layers.
 
-@param nlyrSoil Number of soil layer.
+@param nlyrSoil Number of soil layers.
 @param depth_Soil Depths of soil layers (cm).
 @param sTemp Temperatature values of soil layers (&deg;C).
 @param endTemp Final input for sTemp variables
@@ -1281,7 +1282,7 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
 @brief Initialize soil temperature layer values by transfering soil layer values
     to soil temperature layer values.
 
-@param cor[MAX_ST_RGR][MAX_LAYERS + 1] Two dimensional array containing soiltemperature data.
+@param cor[MAX_ST_RGR][MAX_LAYERS + 1] Two dimensional array containing soil temperature data.
 @param nlyrSoil Number of soil layers.
 @param width_Soil Width of the soil layers.
 @param var Soil layer values to be interpolated.
