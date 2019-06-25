@@ -44,11 +44,13 @@ extern SW_SITE SW_Site;
 extern SW_MODEL SW_Model;
 extern SW_VEGPROD SW_VegProd;
 extern ST_RGR_VALUES stValues;
+//extern SW_SOILWAT_OUTPUTS SW_Soilwat_outputs;
 
 pcg32_random_t flow_rng;
 SW_VEGPROD *v = &SW_VegProd;
 SW_SITE *s = &SW_Site;
 ST_RGR_VALUES *st = &stValues;
+//SW_SOILWAT_OUTPUTS *swo = NULL;
 
 int k;
 
@@ -1481,22 +1483,6 @@ namespace
           swcmin[i] = s->lyr[i]->swcBulk_min;
           swcsat[i] = s->lyr[i]->swcBulk_saturated;
         }
-        standingWaterExpected = 0.;
-
-        if (st->lyrFrozen[i] == swFALSE)
-        {
-          //INPUTS for expected outputs
-          standingWaterExpected = 0., drainoutExpected = 0.5271396;
-
-          //standingWater is expected to be 0.
-          EXPECT_NEAR(standingWater, standingWaterExpected, tol6);
-          //drainout is expected to be 0.5271396
-          EXPECT_NEAR(drainout, drainoutExpected, tol6);
-          //swc is expected to match 0.3993920
-          EXPECT_NEAR(swc[i], swcExpected2_1[i], tol6);
-          //drain is expected to match 1.426497
-          EXPECT_NEAR(drain[i], drainExpected2_1[i], tol6);
-        }
 
         //Reset to previous global states.
         Reset_SOILWAT2_after_UnitTest();
@@ -1587,110 +1573,164 @@ namespace
   TEST(SWFlowTest, hydraulic_redistribution)
   {
     //INPUTS
-    double swc[25] = {5.01,10.005,10.02,10.03,20.01, 20.02, 20.03, 20.04, 20.01, 20.05, 20.06, 20.07,
-        20.08, 20.09, 20.10, 20.11, 20.12, 20.13, 20.14, 20.15, 20.16, 20.17, 20.18, 20.19, 20.2};
-    double swcwp[25] = {5,10,10,10,20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20};
-    double lyrRootCo[25] = {.10,.11,.12,.13,.14,.15,.16,.17, .18,.19,.20,.21,.22,.23,.24,.25, .26,.27,.28,.29,.30,.31,.32,.33, .34};
-    double hydred[25] = {1,2,3,4,5,6,7,8, 1,2,3,4,5,6,7,8, 1,2,3,4,5,6,7,8, 9}; //hydred[0] != 0 for test, otherwise these don't matter as they are reset to zero in function
-    unsigned int nlyrs = MAX_LAYERS;
-    double maxCondroot = -0.2328;
-    double swp50 = 1.2e12;
-    double shapeCond = 1;
-    double scale = 0.3;
+    unsigned int nlyrs, i, k;
+    double maxCondroot = -0.2328, swp50 = 1.2e12, shapeCond = 1, scale = 0.3;
+    double swc[MAX_LAYERS], swcwp[MAX_LAYERS], lyrRootCo[MAX_LAYERS],
+      hydred[MAX_LAYERS] = {0.};
 
-    // Setup soil layers
-    create_test_soillayers(nlyrs);
+    // Loop over tests with varying number of soil layers
+    for (k = 0; k < 2; k++)
+    {
+      // Select number of soil layers used in test
+      if (k == 0)
+      {
+        nlyrs = 1; // test 1: 1 soil layer
+      } else if (k == 1)
+      {
+        nlyrs = MAX_LAYERS; // test 2: MAX_LAYERS soil layers
+      }
 
-    //INPUTS for expected outputs
-    double swcExpected[25] = {5.010, 10.005, 10.020, 10.030, 20.010, 20.020, 20.030, 20.040,
-        20.010, 20.050, 20.060, 20.070, 20.080, 20.090, 20.100, 20.110, 20.120, 20.130, 20.140,
-          20.150, 20.160, 20.170, 20.180, 20.190, 20.200};
-    double hydredExpected[25] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+      if(k == 1) //nlyrs = MAX_LAYERS
+      {
+        // Setup soil layers
+        create_test_soillayers(nlyrs);
+        ForEachSoilLayer(i)
+        {
+          swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
+            / 2.;
+          swcwp[i] = s->lyr[i]->swcBulk_wiltpt;
+          lyrRootCo[i] =  s->lyr[i]->transp_coeff[SW_SHRUB];
+          st->lyrFrozen[i] = swFALSE;
+        }
 
-    //Begin TESTing when nlyrs = MAX
-    //Begin TEST for if swp[i] < swpwp[i] OR swp[j] < swpwp[j] AND lyrFrozen == false; j = i + 1
-    hydraulic_redistribution(swcwp, swc, lyrRootCo, hydred, nlyrs, maxCondroot, swp50, shapeCond, scale);
-      //inputs for swc and swcwp have been switched
+        //Begin TEST for if swp[i] < swpwp[i] OR swp[j] < swpwp[j] AND lyrFrozen == false;
+        //j = i + 1
+        //INPUTS for expected outcomes
+        double swcExpected0[25] = {
+          0.8258890, 0.2068147, 0.9921274, 0.2581945, 0.2329534,
+          1.8504017, 0.1677781, 0.1677781, 0.4402285, 0.9193707,
+          2.2046364, 0.2295185, 0.2329534, 1.8504017, 0.1677781,
+          0.1677781, 0.1465795, 0.1838287, 0.2205295, 1.1471575,
+          2.3288284, 2.3129837, 1.6781901, 3.3564261, 6.7275403};
+        double hydredExpected0[25] = {
+          0.000000e+00, -5.630918e-05, 7.341111e-05, 1.085271e-04, 7.844259e-05,
+          7.767014e-05, -4.592553e-05, -4.592553e-05, -2.455028e-04, -5.631293e-05,
+          7.342950e-05, 1.084979e-04, 7.844259e-05, 7.767014e-05, -4.592553e-05,
+          -4.592553e-05, -2.455263e-04, -5.629044e-05, 7.346768e-05, 1.085242e-04,
+          7.844259e-05, 7.766175e-05, -4.589769e-05, -4.589769e-05, -7.874827e-05};
 
-    EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
-    for (unsigned int i = 0; i < nlyrs; i++) {
-      EXPECT_NEAR(swc[i], swcExpected[i], tol6); //swc is expected to match swcExpected
-      EXPECT_NEAR(hydred[i], hydredExpected[i], tol6); //hydred is expected to match hydredExpected
+        hydraulic_redistribution(swc, swcwp, lyrRootCo, hydred, nlyrs,
+          maxCondroot, swp50, shapeCond, scale);
+
+        EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
+        ForEachSoilLayer(i)
+        {
+          EXPECT_NEAR(swc[i], swcExpected0[i], tol3) <<
+            "hydraulic_redistribution: swc != swcExpected0 for layer " << 1 + i << " out of "
+            << nlyrs << " soil layers";
+          EXPECT_NEAR(hydred[i], hydredExpected0[i], tol3) <<
+            "hydraulic_redistribution: hydred != hydredExpected0 for layer "
+            << 1 + i << " out of "<< nlyrs << " soil layers";
+        }
+
+        //Reset to previous global states.
+        Reset_SOILWAT2_after_UnitTest();
+        // Setup soil layers
+        create_test_soillayers(nlyrs);
+        //Reset inputs, swcwp has been altered
+        ForEachSoilLayer(i)
+        {
+          swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
+            / 2.;
+          swcwp[i] = (s->lyr[i]->swcBulk_wiltpt) / 4;
+          lyrRootCo[i] =  s->lyr[i]->transp_coeff[SW_SHRUB];
+          st->lyrFrozen[i] = swFALSE;
+          hydred[i] = 0.;
+        }
+        //Begin TEST for if else ^^
+        //INPUTS for expected outputs.
+        double swcExpected1[25] = {
+          0.8258890, 0.2068147, 0.9921274, 0.2581945, 0.2329534,
+          1.8504017, 0.1677781, 0.1677781, 0.4402285, 0.9193707,
+          2.2046364, 0.2295185, 0.2329534, 1.8504017, 0.1677781,
+          0.1677781, 0.1465795, 0.1838287, 0.2205295, 1.1471575,
+          2.3288284, 2.3129837, 1.6781901, 3.3564261, 6.7275403};
+        double hydredExpected1[25] = {
+          0.000000e+00, -5.630918e-05, 7.341111e-05, 1.085271e-04, 7.844259e-05,
+          7.767014e-05, -4.592553e-05, -4.592553e-05, -2.455028e-04, -5.631293e-05,
+          7.342950e-05, 1.084979e-04, 7.844259e-05, 7.767014e-05, -4.592553e-05,
+          -4.592553e-05, -2.455263e-04, -5.629044e-05, 7.346768e-05, 1.085242e-04,
+          7.844259e-05, 7.766175e-05, -4.589769e-05, -4.589769e-05, -7.874827e-05};
+
+        hydraulic_redistribution(swc, swcwp, lyrRootCo, hydred, nlyrs,
+          maxCondroot, swp50, shapeCond, scale);
+
+        EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
+        ForEachSoilLayer(i)
+        {
+          EXPECT_NEAR(swc[i], swcExpected1[i], tol3) <<
+            "hydraulic_redistribution: swc != swcExpected1 for layer " << 1 + i <<
+            " out of "<< nlyrs << " soil layers";
+          EXPECT_NEAR(hydred[i], hydredExpected1[i], tol3) <<
+            "hydraulic_redistribution: hydred != hydredExpected1 for layer "
+            << 1 + i << " out of "<< nlyrs << " soil layers";
+        }
+      }
+      //Reset to previous global states.
+      Reset_SOILWAT2_after_UnitTest();
+      // Setup soil layers
+      create_test_soillayers(nlyrs);
+      if(k == 0) //nlyrs = 1
+      {
+        swc[0] = (s->lyr[0]->swcBulk_fieldcap + s->lyr[0]->swcBulk_wiltpt)
+          / 2.;
+        swcwp[0] = (s->lyr[0]->swcBulk_wiltpt);
+        lyrRootCo[0] =  s->lyr[0]->transp_coeff[SW_SHRUB];
+        st->lyrFrozen[0] = swFALSE;
+        hydred[0] = 0.;
+
+        //INPUTS for expected outputs
+        double swcExpected2[1] = {0.8259472};
+        double hydredExpected2[1] = {5.821762e-05};
+
+        //Begin TESTing when nlyrs = 1
+        //Begin TEST for if swp[i] < swpwp[i] OR swp[j] < swpwp[j] AND lyrFrozen == false; j = i + 1
+        hydraulic_redistribution(swc, swcwp, lyrRootCo, hydred, nlyrs,
+          maxCondroot, swp50, shapeCond, scale);
+
+        EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
+
+        EXPECT_NEAR(swc[0], swcExpected2[0], tol3); //swc is expected to match swcExpected
+        EXPECT_NEAR(hydred[0], hydredExpected2[0], tol3); //hydred is expected to match hydredExpected
+
+        //Reset to previous global states.
+        Reset_SOILWAT2_after_UnitTest();
+        // Setup soil layers
+        create_test_soillayers(nlyrs);
+
+        swc[0] = (s->lyr[0]->swcBulk_fieldcap + s->lyr[0]->swcBulk_wiltpt)
+          / 2.;
+        swcwp[0] = (s->lyr[0]->swcBulk_wiltpt) / 4;
+        lyrRootCo[0] =  s->lyr[0]->transp_coeff[SW_SHRUB];
+        st->lyrFrozen[0] = swFALSE;
+        hydred[0] = 0.;
+
+        //Begin TEST for if else ^^
+        //INPUTS for expected outputs.
+        double swcExpected3[1] = {0.8259472};
+        double hydredExpected3[1] = {5.821762e-05};
+
+        hydraulic_redistribution(swc, swcwp, lyrRootCo, hydred, nlyrs,
+          maxCondroot, swp50, shapeCond, scale);
+
+        EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
+
+        EXPECT_NEAR(swc[0], swcExpected3[0], tol3); //swc is expected to match swcExpected
+        EXPECT_NEAR(hydred[0], hydredExpected3[0], tol3); //hydred is expected to match hydredExpected
+
+      }
+      //Reset to previous global states.
+      Reset_SOILWAT2_after_UnitTest();
     }
-
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
-
-    //Begin TEST for if else ^^
-    //INPUTS for expected outputs.
-    double swcExpected2[25] = {5.010, 10.005, 10.020, 10.030, 20.010, 20.020, 20.030, 20.040,
-        20.010, 20.050, 20.060, 20.070, 20.080, 20.090, 20.100, 20.110, 20.120, 20.130, 20.140,
-          20.150, 20.160, 20.170, 20.180, 20.190, 20.200};
-    double hydredExpected2[25] = {0, 4.298116e-07, -8.801668e-08, -1.314532e-07,
-        -1.885189e-07, -2.053540e-07, -1.214441e-07, -1.316728e-07, 2.016268e-06, 1.453133e-07,
-          -2.634546e-07, -3.011598e-07, -3.274744e-07, -3.483882e-07, -2.135987e-07, -2.271032e-07,
-            2.816679e-06, 1.642664e-07, -4.138196e-07, -4.647347e-07, -4.989383e-07, -5.252975e-07,
-              -3.362445e-07, -3.541813e-07, -4.314838e-07};
-
-    // Setup soil layers, again
-    create_test_soillayers(nlyrs);
-
-    hydraulic_redistribution(swc, swcwp, lyrRootCo, hydred, nlyrs, maxCondroot, swp50, shapeCond, scale);
-
-    EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
-    for (unsigned int i = 0; i < nlyrs; i++) {
-      EXPECT_NEAR(swc[i], swcExpected2[i], tol3); //swc is expected to match swcExpected
-      EXPECT_NEAR(hydred[i], hydredExpected2[i], tol3); //hydred is expected to match hydredExpected
-    }
-
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
-
-    //Begin TESTing when nlyrs = 1
-    //INPUTS
-    double swc1[1] = {0.02};
-    double swcwp1[1] = {0.01};
-    double lyrRootCo1[1] = {0.1};
-    double hydred1[1] = {1}; //hydred[0] != 0 for test
-    nlyrs = 1;
-    maxCondroot = -0.2328;
-    swp50 = 10;
-    shapeCond = 1;
-    scale = 0.3;
-
-    //INPUTS for expected outputs
-    double swcExpected11[1] = {0.02};
-    double hydredExpected11[1] = {0};
-
-    //Begin TESTing when nlyrs = 1
-    //Begin TEST for if swp[i] < swpwp[i] OR swp[j] < swpwp[j] AND lyrFrozen == false; j = i + 1
-    hydraulic_redistribution(swcwp1, swc1, lyrRootCo1, hydred1, nlyrs, maxCondroot, swp50, shapeCond, scale);
-      //inputs for swc and swcwp have been switched
-
-    EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
-    for (unsigned int i = 0; i < nlyrs; i++) {
-      EXPECT_NEAR(swc1[i], swcExpected11[i], tol6); //swc is expected to match swcExpected
-      EXPECT_NEAR(hydred1[i], hydredExpected11[i], tol6); //hydred is expected to match hydredExpected
-    }
-
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
-
-    //Begin TEST for if else ^^
-    //INPUTS for expected outputs.
-    double swcExpected21[1] = {0.02};
-    double hydredExpected21[1] = {0};
-
-    hydraulic_redistribution(swc1, swcwp1, lyrRootCo1, hydred1, nlyrs, maxCondroot, swp50, shapeCond, scale);
-
-    EXPECT_DOUBLE_EQ(hydred[0], 0); //no hydred in top layer
-
-    for (unsigned int i = 0; i < nlyrs; i++) {
-      EXPECT_NEAR(swc1[i], swcExpected21[i], tol6); //swc is expected to match swcExpected
-      EXPECT_NEAR(hydred1[i], hydredExpected21[i], tol6); //hydred is expected to match hydredExpected
-    }
-
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
   }
 }
