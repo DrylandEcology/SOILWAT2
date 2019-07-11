@@ -246,7 +246,7 @@ void get_co2effects_agg(OutPeriod pd) {
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 2 * NVEGTYPES);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_CO2Effects]);
 	}
 }
 #endif
@@ -395,7 +395,7 @@ void get_biomass_agg(OutPeriod pd) {
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 16);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Biomass]);
 	}
 }
 #endif
@@ -465,7 +465,7 @@ void get_estab_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, v->count);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Estab]);
 	}
 }
 #endif
@@ -516,7 +516,7 @@ void get_temp_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 4);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Temp]);
 	}
 }
 
@@ -585,7 +585,7 @@ void get_precip_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 5);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Precip]);
 	}
 }
 
@@ -658,7 +658,7 @@ void get_vwcBulk_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_VWCBulk]);
 	}
 }
 #endif
@@ -724,7 +724,7 @@ void get_vwcMatric_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_VWCMatric]);
 	}
 }
 #endif
@@ -851,7 +851,7 @@ void get_swcBulk_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SWCBulk]);
 	}
 }
 
@@ -941,7 +941,7 @@ void get_swpMatric_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SWPMatric]);
 	}
 }
 #endif
@@ -997,7 +997,7 @@ void get_swaBulk_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SWABulk]);
 	}
 }
 #endif
@@ -1064,7 +1064,7 @@ void get_swaMatric_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SWAMatric]);
 	}
 }
 #endif
@@ -1105,7 +1105,7 @@ void get_surfaceWater_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 1);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SurfaceWater]);
 	}
 }
 #endif
@@ -1165,7 +1165,7 @@ void get_runoffrunon_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 4);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Runoff]);
 	}
 }
 #endif
@@ -1343,7 +1343,7 @@ void get_evapSoil_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_evap_lyrs);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_EvapSoil]);
 	}
 }
 #endif
@@ -1416,7 +1416,7 @@ void get_evapSurface_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, NVEGTYPES + 3);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_EvapSurface]);
 	}
 }
 #endif
@@ -1483,7 +1483,7 @@ void get_interception_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, NVEGTYPES + 2);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Interception]);
 	}
 }
 #endif
@@ -1527,7 +1527,7 @@ void get_soilinf_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 1);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SoilInf]);
 	}
 }
 #endif
@@ -1584,7 +1584,7 @@ void get_lyrdrain_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers - 1);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_LyrDrain]);
 	}
 }
 #endif
@@ -1722,7 +1722,7 @@ void get_aet_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 1);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_AET]);
 	}
 }
 
@@ -1773,7 +1773,7 @@ void get_pet_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 1);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_PET]);
 	}
 }
 #endif
@@ -1858,7 +1858,7 @@ void get_wetdays_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_WetDays]);
 	}
 }
 #endif
@@ -1903,7 +1903,7 @@ void get_snowpack_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 2);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SnowPack]);
 	}
 }
 #endif
@@ -1944,7 +1944,7 @@ void get_deepswc_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 1);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_DeepSWC]);
 	}
 }
 #endif
@@ -2000,7 +2000,7 @@ void get_soiltemp_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SoilTemp]);
 	}
 }
 #endif
