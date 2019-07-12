@@ -78,6 +78,7 @@ extern SW_VEGESTAB SW_VegEstab;
 extern Bool EchoInits;
 extern SW_CARBON SW_Carbon;
 
+
 SW_OUTPUT SW_Output[SW_OUTNKEYS];
 
 char _Sep; /* output delimiter */
@@ -153,7 +154,7 @@ char const *key2str[] =
 	// vegetation quantities:
 	SW_ALLVEG, SW_ESTAB,
 	// vegetation other:
-	SW_CO2EFFECTS
+	SW_CO2EFFECTS, SW_BIOMASS
 };
 
 /* converts an enum output key (OutKey type) to a module  */
@@ -168,7 +169,7 @@ ObjType key2obj[] =
 	// vegetation quantities:
 	eVES, eVES,
 	// vegetation other:
-	eVPD
+	eVPD, eVPD
 };
 
 char const *pd2str[] =
@@ -322,8 +323,12 @@ static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 	switch (k)
 	{
 		case eSW_CO2Effects:
+			break;
+
+		case eSW_Biomass:
 			ForEachVegType(ik) {
 				s->veg[ik].biomass += v->veg[ik].biomass_daily[SW_Model.doy];
+				s->veg[ik].litter += v->veg[ik].litter_daily[SW_Model.doy];
 				s->veg[ik].biolive += v->veg[ik].biolive_daily[SW_Model.doy];
 			}
 			break;
@@ -789,8 +794,12 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 				break;
 
 			case eSW_CO2Effects:
+				break;
+
+			case eSW_Biomass:
 				ForEachVegType(i) {
 					vp->p_oagg[pd]->veg[i].biomass = vp->p_accu[pd]->veg[i].biomass / div;
+					vp->p_oagg[pd]->veg[i].litter = vp->p_accu[pd]->veg[i].litter / div;
 					vp->p_oagg[pd]->veg[i].biolive = vp->p_accu[pd]->veg[i].biolive / div;
 				}
 				break;
@@ -1428,6 +1437,18 @@ void SW_OUT_construct(void)
 			#endif
 			break;
 
+		case eSW_Biomass:
+			#ifdef SW_OUTTEXT
+			SW_Output[k].pfunc_text = (void (*)(OutPeriod)) get_biomass_text;
+			#endif
+			#if defined(RSOILWAT)
+			SW_Output[k].pfunc_mem = (void (*)(OutPeriod)) get_biomass_mem;
+			#elif defined(STEPWAT)
+			SW_Output[k].pfunc_agg = (void (*)(OutPeriod)) get_biomass_agg;
+			SW_Output[k].pfunc_SXW = (void (*)(OutPeriod)) get_none;
+			#endif
+			break;
+
 		default:
 			#ifdef SW_OUTTEXT
 			SW_Output[k].pfunc_text = (void (*)(OutPeriod)) get_none;
@@ -1515,7 +1536,10 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_SoilTemp] = tLayers;
 	ncol_OUT[eSW_AllVeg] = 0;
 	ncol_OUT[eSW_Estab] = SW_VegEstab.count;
-	ncol_OUT[eSW_CO2Effects] = 2 * (NVEGTYPES + 1) + 2 * NVEGTYPES;
+	ncol_OUT[eSW_CO2Effects] = 2 * NVEGTYPES;
+	ncol_OUT[eSW_Biomass] = NVEGTYPES + 1 +  // fCover for NVEGTYPES plus bare-ground
+		NVEGTYPES + 2 +  // biomass for NVEGTYPES plus totals and litter
+		NVEGTYPES + 1; // biolive for NVEGTYPES plus totals
 
 }
 
@@ -1559,11 +1583,8 @@ void SW_OUT_set_colnames(void) {
 	const char *cnames_eSW_SnowPack[] = { "snowpackWaterEquivalent_cm",
 		"snowdepth_cm" };
 	const char *cnames_eSW_DeepSWC[] = { "lowLayerDrain_cm" };
-	const char *cnames_eSW_CO2Effects[] = { // uses different order of vegtypes than others ...
-		"GrassBiomass", "ShrubBiomass", "TreeBiomass", "ForbBiomass", "TotalBiomass",
-		"GrassBiolive", "ShrubBiolive", "TreeBiolive", "ForbBiolive", "TotalBiolive",
-		"GrassBioMult", "ShrubBioMult", "TreeBioMult", "ForbBioMult",
-		"GrassWUEMult", "ShrubWUEMult", "TreeWUEMult", "ForbWUEMult" };
+	const char *cnames_eSW_CO2Effects[] = { "BioMult", "WUEMult" };
+
 
 	#ifdef SWDEBUG
 	if (debug) swprintf("SW_OUT_set_colnames: set columns for 'eSW_Temp' ...");
@@ -1744,8 +1765,37 @@ void SW_OUT_set_colnames(void) {
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_CO2Effects' ...");
 	#endif
-	for (i = 0; i < ncol_OUT[eSW_CO2Effects]; i++) {
-		colnames_OUT[eSW_CO2Effects][i] = Str_Dup(cnames_eSW_CO2Effects[i]);
+	for (i = 0; i < 2; i++) {
+		for (j = 0; j < NVEGTYPES; j++) {
+			strcpy(ctemp, cnames_eSW_CO2Effects[i]);
+			strcat(ctemp, "_");
+			strcat(ctemp, cnames_VegTypes[j + 1]); // j+1 since no total column
+			colnames_OUT[eSW_CO2Effects][j + i * NVEGTYPES] = Str_Dup(ctemp);
+		}
+	}
+	#ifdef SWDEBUG
+	if (debug) swprintf(" 'eSW_Biomass' ...");
+	#endif
+	i = 0;
+	strcpy(ctemp, "fCover_BareGround");
+	colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp);
+	i = 1;
+	for (j = 0; j < NVEGTYPES; j++) {
+		strcpy(ctemp, "fCover_");
+		strcat(ctemp, cnames_VegTypes[j + 1]); // j+1 since no total column
+		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp);
+	}
+	i += j;
+	for (j = 0; j < NVEGTYPES + 2; j++) {
+		strcpy(ctemp, "Biomass_");
+		strcat(ctemp, cnames_VegTypes[j]);
+		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp);
+	}
+	i += j;
+	for (j = 0; j < NVEGTYPES + 1; j++) {
+		strcpy(ctemp, "Biolive_");
+		strcat(ctemp, cnames_VegTypes[j]);
+		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" completed.\n");
