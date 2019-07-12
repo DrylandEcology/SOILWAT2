@@ -252,8 +252,6 @@ void get_co2effects_agg(OutPeriod pd) {
 #endif
 
 
-
-
 //------ eSW_Biomass
 #ifdef SW_OUTTEXT
 void get_biomass_text(OutPeriod pd) {
