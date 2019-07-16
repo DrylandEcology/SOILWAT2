@@ -87,7 +87,7 @@ char sw_outstr[MAX_LAYERS * OUTSTRLEN];
   Active if \ref print_IterationSummary is TRUE
 */
 #define sw_outstr_agg
-#undefine sw_outstr_agg
+#undef sw_outstr_agg
 
 #ifdef STEPWAT
 char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];

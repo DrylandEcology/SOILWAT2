@@ -72,14 +72,14 @@ RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
   aggregation. See also \ref p_OUT
 */
 #define p_OUTsd
-#undefine p_OUTsd
+#undef p_OUTsd
 
 /** `prepare_IterationSummary` is TRUE if STEPWAT2 is called with `-o` flag
       and if STEPWAT2 is currently not in its last iteration/repetition.
       Compare with \ref print_IterationSummary`
 */
 #define prepare_IterationSummary
-#undefine prepare_IterationSummary
+#undef prepare_IterationSummary
 
 #ifdef STEPWAT
 extern ModelType Globals; // defined in `ST_Main.c`
