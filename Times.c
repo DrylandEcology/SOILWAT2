@@ -339,11 +339,12 @@ Bool isleapyear(const TimeInt year) {
  @author drs
  @date 09/22/2011
 
- @param monthlyValues. Input, record with values for each month
- @param dailyValues. Output, linear interpolation for each day
+ @param[in] monthlyValues Array with values for each month
+ @param[out] dailyValues Array with linearly interpolated values for each day
 
- @note dailyValues[0] will always be 0 as the function does not modify it since there is no day 0, furthermore dailyValues is
- 			 only sub-setted by base1 objects in the model.
+ @note dailyValues[0] will always be 0 as the function does not modify it
+   since there is no day 0 (doy is base1), furthermore dailyValues is
+   only sub-setted by base1 objects in the model.
  **/
 void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
 	unsigned int doy, mday, month, month2 = NoMonth;

@@ -109,7 +109,6 @@ static void _read_layers(void);
 
 
 /**
-	\fn void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n)
 	\brief Calculate soil moisture characteristics for each layer.
 
   Saturated moisture content for matric density (thetasMatric), saturation matric
@@ -125,15 +124,16 @@ static void _read_layers(void);
 
 	sand + clay + silt must equal one. Fraction silt is calculated: 1 - (sand + clay).
 
-	\param fractionGravel. The fraction of gravel in a layer by volume.
-	\param sand. The fraction of sand in a layer by weight.
-	\param clay. The fraction of clay in a layer by weight.
-	\param n. Soil layer index.
+	\param fractionGravel The fraction of gravel in a layer by volume.
+	\param sand The fraction of sand in a layer by weight.
+	\param clay The fraction of clay in a layer by weight.
+	\param n Soil layer index.
 
-	\return thetasMatric. Saturated water content for soil matrix volume (m^3/m^3).
-	\return psisMatric. Saturation matric potential (MPa).
-	\return bMatric. Slope of the linear log-log retention curve (unitless).
-	\return swcBulk_saturated. The saturated water content for given bulk density (cm/layer).
+	\sideeffect
+		- thetasMatric Saturated water content for soil matrix volume (m^3/m^3).
+		- psisMatric Saturation matric potential (MPa).
+		- bMatric Slope of the linear log-log retention curve (unitless).
+		- swcBulk_saturated The saturated water content for given bulk density (cm/layer).
 
 */
 

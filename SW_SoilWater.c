@@ -1092,10 +1092,10 @@ RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n) {
 Equations based on: Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties
       for hydrological modeling, based on @cite ASCE1985
 
-@params fractionGravel Fraction of soil consisting of gravel, percentage.
-@params sand Fraction of soil consisting of sand, percentage.
-@params clay Fraction of soil consisting of clay, percentage.
-@params porosity Fraction of Soil porosity as the saturated VWC, percentage.
+@param fractionGravel Fraction of soil consisting of gravel, percentage.
+@param sand Fraction of soil consisting of sand, percentage.
+@param clay Fraction of soil consisting of clay, percentage.
+@param porosity Fraction of Soil porosity as the saturated VWC, percentage.
 
 @returns Residual volumetric soil water (cm/cm)
 **/

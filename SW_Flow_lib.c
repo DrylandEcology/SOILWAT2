@@ -125,27 +125,6 @@ unsigned int fusion_pool_init;   // simply keeps track of whether or not the val
 /* --------------------------------------------------- */
 
 
-/**
-@brief Calculate the water intercepted by vegetation.
-
-Equations based on Corbett and Crouse 1968. @cite Corbett1968
-
-@param *pptleft Remaining precipitation (cm/day).
-@param *wintveg Amount of precipitation intercepted by vegetation (cm).
-@param ppt Daily precipitation (cm/day).
-@param x Vegetation cover or LAI for the day, based on monthly biomass
-       values, see the routine "initprod" (m).
-@param scale Proportion of vegetation height above snowpack multiplied by its cover value.
-@param a A parameter for intercept of grass interception equation.
-@param b B parameter for intercept of grass interception equation.
-@param c C parameter for slope of grass interception equation.
-@param d D parameter for slope of grass interception equation.
-
-@sideeffect
-  - *pptleft  Updated amount of precipitation left after interception (cm/day).
-  - *wintveg  Updated amount of precipitation interception by vegetation (cm/day).
-*/
-
 
 /**********************************************************************
 HISTORY:
@@ -178,9 +157,9 @@ par2 = LE(vegcov, 3.0) ? vegcov * .33333333
   Parton 1978 \cite Parton1978 was also based on
   Corbet and Crouse (1968) \cite Corbett1968.
 
-  \param ppt_incident Amount of rain (cm) arriving at canopy.
-  \param int_veg See side effects.
-  \param s_veg Current canopy storage of intercepted water (cm).
+  \param[in,out] *ppt_incident Amount of rain (cm) arriving at canopy.
+  \param[out] *int_veg Amount of rain intercepted by vegetation canopy (cm).
+  \param[in,out] *s_veg Current canopy storage of intercepted water (cm).
   \param m Number of rain events per day.
   \param kSmax Parameter (mm) to determine storage capacity based on LAI.
   \param LAI Leaf-area index (m2 / m2).
@@ -189,7 +168,6 @@ par2 = LE(vegcov, 3.0) ? vegcov * .33333333
 
   \sideeffect
     - ppt_incident Amount of rain not intercepted, i.e., throughfall (cm).
-    - int_veg Amount of rain interception by vegetation canopy (cm).
     - s_veg Updated canopy storage (cm).
 */
 
@@ -224,9 +202,10 @@ void veg_intercepted_water(double *ppt_incident, double *int_veg,
   Parton 1978 \cite Parton1978 was also based on
   Corbet and Crouse (1968) \cite Corbett1968.
 
-  \param ppt_through Amount of rain (cm) arriving at litter layer.
-  \param int_lit See side effects.
-  \param s_lit Current litter storage of intercepted water (cm).
+  \param[in,out] *ppt_through Amount of rain (cm) arriving at litter layer.
+  \param[out] *int_lit Amount of rain intercepted by litter;
+      added to previous value (cm).
+  \param[in,out] *s_lit Current litter storage of intercepted water (cm).
   \param m Number of rain events per day.
   \param kSmax Parameter (mm) to determine storage capacity based on litter
     biomass.
@@ -235,9 +214,7 @@ void veg_intercepted_water(double *ppt_incident, double *int_veg,
     above snow pack.
 
   \sideeffect
-    - ppt_incident Amount of rain not intercepted, i.e., throughfall (cm).
-    - int_lit Amount of rain interception by litter;
-      added to previous value (cm).
+    - ppt_through Amount of rain not intercepted, i.e., throughfall (cm).
     - s_lit Updated litter storage (cm).
 */
 
@@ -1157,7 +1134,7 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 @brief Interpolate soil temperature layer temperature values to
      input soil profile depths/layers.
 
-@param cor[MAX_ST_RGR][MAX_LAYERS + 1] Two dimensional array containing soil temperature data.
+@param cor Two dimensional array containing soil temperature data.
 @param nlyrTemp The number of soil temperature layers.
 @param depth_Temp Depths of soil temperature layers (cm).
 @param sTempR Temperature values of soil temperature layers (&deg;C).
@@ -1282,7 +1259,7 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
 @brief Initialize soil temperature layer values by transfering soil layer values
     to soil temperature layer values.
 
-@param cor[MAX_ST_RGR][MAX_LAYERS + 1] Two dimensional array containing soil temperature data.
+@param cor Two dimensional array containing soil temperature data.
 @param nlyrSoil Number of soil layers.
 @param width_Soil Width of the soil layers.
 @param var Soil layer values to be interpolated.
@@ -1363,7 +1340,7 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 /**
 @brief Initialize soil structure and properties for soil temperature simulation.
 
-@param bDensity An array of the bulk density of the soil layers (g/cm<SUP>3</SUB>).
+@param bDensity An array of the bulk density of the soil layers (g/cm3).
 @param width The width of the layers (cm).
 @param oldsTemp An array of yesterday's temperature values (&deg;C).
 @param sTconst The soil temperature at a soil depth where it stays constant as

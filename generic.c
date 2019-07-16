@@ -312,12 +312,14 @@ void lobf(double *m, double *b, double xs[], double ys[], unsigned int n) {
 	*b = lobfB(xs, ys, n); // b = y-intercept
 }
 
-/** @brief Duplicate strings. Used if `strdup` is not available.
+/** @brief Duplicate strings.
 
-    `strdup` is not a ISO C standard, but included in the POSIX standard. That means that
-    it is not available on some compilers, e.g., travis-ci with -std=c11 flag set.
+  Used if strdup() is not available. strdup() is not a ISO C standard,
+  but included in the POSIX standard. That means that it is not available on
+  some compilers, e.g., travis-ci with -std=c11 flag set.
 
-    Code from https://stackoverflow.com/questions/482375/strdup-function
+  @see
+    Code from <https://stackoverflow.com/questions/482375/strdup-function>
 */
 char * sw_strdup(const char * s)
 {
@@ -330,14 +332,20 @@ char * sw_strdup(const char * s)
 
 /** @brief Calculate running average online (in one pass)
 
-		Calculate average m across values x[k] with k = {0, ..., n}
-			using
-				m[n] = m[n - 1] + (x[n] - m[n - 1]) / n
-			based on Welford's algorithm
-		@return The running average at sequence position n, i.e., m[n]
+		Calculate average \f$m\f$ across values \f$x[k]\f$ with
+		\f$k = {0, ..., n}\f$ using
+				\f$m[n] = m[n - 1] + (x[n] - m[n - 1]) / n\f$
 
-		@references https://www.johndcook.com/blog/standard_deviation/
-		@references https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online
+		@param n Sequence position
+		@param mean_prev Previous average value, i.e., \f$m[n - 1]\f$
+		@param val_to_add New value that is added to the updated average,
+					 i.e., \f$x[n]\f$
+
+		@return The running average at sequence position \f$n\f$, i.e., \f$m[n]\f$
+
+		@see Welford's algorithm based on
+			<https://www.johndcook.com/blog/standard_deviation/> and
+			<https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online>
 */
 double get_running_mean(unsigned int n, double mean_prev, double val_to_add)
 {
@@ -346,18 +354,24 @@ double get_running_mean(unsigned int n, double mean_prev, double val_to_add)
 
 /** @brief Calculate running standard deviation online (in one pass)
 
-		Calculate standard deviation S across values x[k] with
-			k = {0, ..., n} using
-				S[n] = S[n - 1] + ss[n]
-			where
-				ss[n] = (x[n] - m[n - 1]) * (x[n] - m[n])
-			and where m[n] is the running average from function `get_running_mean`.
-			based on Welford's algorithm
-		@return The summand ss[n]. This can be used as input to function
-			`final_running_sd`.
+		Part of calculating standard deviation across values \f$x[k]\f$ with
+			\f$k = {0, ..., n}\f$ using \f$S[n] = S[n - 1] + ss[n]\f$
+		where
+			\f$ss[n] = (x[n] - m[n - 1]) * (x[n] - m[n])\f$
+		and where \f$m[n]\f$ is the running average from function
+		get_running_mean().
 
-		@references https://www.johndcook.com/blog/standard_deviation/
-		@references https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online
+		@param mean_prev Previous average value, i.e., \f$m[n - 1]\f$
+		@param mean_current Current average value, i.e., \f$m[n]\f$
+		@param val_to_add New value that was added to the updated average,
+					 i.e., \f$x[n]\f$
+
+		@return The summand \f$ss[n]\f$. The sum of these values can be used as
+		input to function final_running_sd().
+
+		@see Welford's algorithm based on
+			<https://www.johndcook.com/blog/standard_deviation/> and
+			<https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online>
 */
 double get_running_sqr(double mean_prev, double mean_current, double val_to_add)
 {
@@ -365,12 +379,17 @@ double get_running_sqr(double mean_prev, double mean_current, double val_to_add)
 }
 
 /** @brief Finalize the running standard deviation calculation (in one pass)
-		@return The running standard deviation at sequence position n, i.e.,
-			sqrt(S[n] / (n - 1))
-		where S[n] has been calculated using function `get_running_sqr`.
 
-		@references https://www.johndcook.com/blog/standard_deviation/
-		@references https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online
+		@param n Sequence position
+		@param ssqr The value \f$S[n]\f$ which has been calculated as the
+			sum of the return values of calls to the function get_running_sqr().
+
+		@return The running standard deviation at sequence position \f$n\f$,
+			i.e., \f$\sqrt{\frac{S[n]}{n - 1}}\f$
+
+		@see Welford's algorithm based on
+			<https://www.johndcook.com/blog/standard_deviation/> and
+			<https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online>
 */
 double final_running_sd(unsigned int n, double ssqr)
 {

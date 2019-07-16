@@ -5,7 +5,7 @@
  * @date   23 January 2017
  */
 #ifndef CARBON
-#define CARBON             /**< A macro that only lets the variables in @f SW_Carbon.h be defined once. */
+#define CARBON
 
 #include "SW_Defines.h"
 

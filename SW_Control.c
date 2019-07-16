@@ -94,7 +94,7 @@ void SW_CTL_init_model(const char *firstfile) {
 
 
 /** @brief Free allocated memory
-		@param full_reset.
+		@param full_reset
 			* If `FALSE`, de-allocate memory for `SOILWAT2` variables, but
 					* do not reset output arrays `p_OUT` and `p_OUTsd` which are used under
 						`SW_OUTARRAY` to pass output in-memory to `rSOILWAT2` and to

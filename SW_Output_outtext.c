@@ -70,17 +70,29 @@ Bool
       if STEPWAT2 is called with `-i` flag */
   print_SW_Output;
 
-/** `sw_outstr` holds the formatted output as returned from `get_XXX` for
-      SOILWAT2-standalone and for a single iteration/repeat for STEPWAT2 */
+/** \brief Formatted output string for single run output
+
+  Used for output as returned from any function `get_XXX_text` which are used
+  for SOILWAT2-standalone and for a single iteration/repeat for STEPWAT2
+*/
 char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 
+/** \brief Formatted output string for aggregated output
+
+  Defined as char `sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];`
+
+  Used for output as returned from any function `get_XXX_agg` which
+  aggregates output across iterations/repeats for STEPWAT2
+
+  Active if \ref print_IterationSummary is TRUE
+*/
+#define sw_outstr_agg
+#undefine sw_outstr_agg
+
 #ifdef STEPWAT
+char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
 extern Bool prepare_IterationSummary; // defined in `SW_Output.c`
 extern Bool storeAllIterations; // defined in `SW_Output.c`
-/** `sw_outstr_agg` holds the formatted output as returned from `get_XXX` for
-     aggregated output across iterations/repeats;
-     active if `print_IterationSummary` is TRUE */
-char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
 #endif
 
 
@@ -175,11 +187,9 @@ static void get_outstrheader(OutPeriod pd, char *str) {
 
 #if defined(SOILWAT)
 /**
-  \fn static void _create_csv_files(OutPeriod pd)
+  \brief Create `csv` output files for specified time step
 
-  Creates `csv` output files for specified time step
-
-  \param pd. The output time step.
+  \param pd The output time step.
 */
 /***********************************************************/
 void _create_csv_files(OutPeriod pd)
@@ -199,8 +209,8 @@ void _create_csv_files(OutPeriod pd)
 }
 
 /** @brief create all of the user-specified output files.
-    call this routine at the beginning of the main program run, but
-    after `SW_OUT_read` which sets the global variable `use_OutPeriod`.
+    @note Call this routine at the beginning of the main program run, but
+    after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
 void SW_OUT_create_files(void) {
 	OutPeriod pd;
@@ -245,19 +255,17 @@ void _create_filename_ST(char *str, char *flag, int iteration, char *filename) {
 
 
 /**
-  \fn void _create_csv_file_ST(int iteration, OutPeriod pd)
-
-  Creates `csv` output files for specified time step depending on
-  `-o` and `-i` flags, for `STEPWAT2`.
+  \brief Creates `csv` output files for specified time step depending on
+    `-o` and `-i` flags, for `STEPWAT2`.
 
   If `-i` flag is used, then this function creates a file for each `iteration`
   with the file name containing the value of `iteration`.
 
   If `-o` flag is used, then this function creates only one set of output files.
 
-  \param iteration. Current iteration value (base1) that is used for the file
+  \param iteration Current iteration value (base1) that is used for the file
     name if -i flag used in STEPWAT2. Set to a negative value otherwise.
-  \param pd. The output time step.
+  \param pd The output time step.
 */
 /***********************************************************/
 void _create_csv_file_ST(int iteration, OutPeriod pd)
@@ -364,18 +372,20 @@ void get_outstrleader(OutPeriod pd, char *str) {
 
 
 /**
-  \fn void write_headers_to_csv(int outFileTimestep, FILE *regular_file, FILE *soil_file)
   \brief Creates column headers for output files
 
-  write_headers_to_csv is called only once for each set of output files and it goes through
+  write_headers_to_csv() is called only once for each set of output files and it goes through
 	all values and if the value is defined to be used it creates the header in the output file.
 
-	Note: `SW_OUT_set_ncol` and `SW_OUT_set_colnames` must be called before
-		`_create_csv_headers`; otherwise, `ncol_OUT` and `colnames_OUT` are not set.
+	\note The functions SW_OUT_set_ncol() and SW_OUT_set_colnames() must
+	  be called before _create_csv_headers(); otherwise, `ncol_OUT` and
+	  `colnames_OUT` are not set.
 
-  \param pd. timeperiod so it can write headers to correct output file.
-  \param regular_file. name of file.
-	\param soil_file. name of file.
+  \param pd timeperiod so it can write headers to correct output file.
+  \param fp_reg name of file.
+  \param fp_soil name of file.
+  \param does_agg Indicate whether output is aggregated (`-o` option) or
+    for each SOILWAT2 run (`-i` option)
 
   \return void.
 */

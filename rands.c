@@ -29,12 +29,16 @@
 
 /*****************************************************/
 /**
-  \brief Sets the random number seed. If using this function with STEPWAT2
-         only call RandSeed once per iteration.
+  \brief Sets the random number seed.
 
-  \param Seed is the initial state of the system. 0 indicates a random seed.
-  \param pcg_rng is the random number generator to set.
+  \param seed The initial state of the system; if 0 then use system time.
+  \param[in,out] pcg_rng The random number generator to set.
 
+  \note If using this function with STEPWAT2, then call RandSeed() only once
+    per iteration.
+
+  \sideeffect Increment the stream so that no two generators have the same
+    sequence.
 */
 void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
 //we don't need to set a random seed if RSOILWAT is used
@@ -64,11 +68,11 @@ void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
 
 /*****************************************************/
 /**
-  Random number generator using the specified rng.
+  \brief A pseudo-random number from the uniform distribution.
 
-  \parameters: pcg32_random_t* that specifies which stream to use.
+  \param[in,out] *pcg_rng The random number generator to use.
 
-  \returns: a double between 0 and 1.
+  @return A pseudo-random number between 0 and 1.
 */
 double RandUni(pcg32_random_t* pcg_rng) {
 
@@ -93,9 +97,16 @@ double RandUni(pcg32_random_t* pcg_rng) {
 
 /*****************************************************/
 /**
-	\fn int RandUniIntRange(const long first, const long last)
-	\brief Generate a random integer between two numbers.
+	\brief A pseudo-random number from a bounded uniform distribution.
 
+	\param first One bound of the range between two numbers.
+	\param last One bound of the range between two numbers.
+  \param[in,out] *pcg_rng The random number generator to use.
+
+	\return Random number between the two bounds defined.
+*/
+int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) {
+/* History:
 	Return a randomly selected integer between
 	first and last, inclusive.
 
@@ -110,14 +121,7 @@ double RandUni(pcg32_random_t* pcg_rng) {
 	- first = 1, last = 10, result = 6
 	- first = 5, last = -1, result = 2
 	- first = -5, last = 5, result = 0
-
-	\param first. One bound of the range between two numbers. A const long argument.
-	\param last. One bound of the range between two numbers. A const long argument.
-	\param pcg_rng. random number generator to use.
-
-	\return integer. Random number between the two bounds defined.
 */
-int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) {
 
   long f, l, res;
 
@@ -154,7 +158,14 @@ int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) 
 /**
 	\brief Generate a random float between two numbers.
 
-	Return a randomly selected float between first and last, inclusive.
+	\param min One bound of the range between two numbers.
+	\param max One bound of the range between two numbers.
+  \param[in,out] *pcg_rng The random number generator to use.
+
+	\return Random number between first and last, inclusive.
+*/
+float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rng) {
+/* History:
 
 	cwb - 12/5/00
 
@@ -167,15 +178,7 @@ int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) 
 	- first = .2, last = .7, result = .434
 	- first = 4.5, last = -1.1, result = -.32
 	- first = -5, last = 5, result = 0
-
-	\param min. One bound of the range between two numbers. A const float argument.
-	\param max. One bound of the range between two numbers. A const float argument.
-	\param pcg_rng. random number generator to use.
-
-	\return float. Random number between the two bounds defined.
 */
-float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rng) {
-
 	float f, l, r;
 
 	if (max == min)
@@ -196,8 +199,9 @@ float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rn
 
 /*****************************************************/
 /**
-	 create a list of random integers from
-	 uniform distribution.  There are count
+	 \brief Create a list of random integers from a uniform distribution.
+
+	 There are count
 	 numbers put into the list array, and
 	 the numbers fall between first and last,
 	 inclusive.  The numbers are non-repeating,
@@ -207,11 +211,11 @@ float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rn
 
 	 cwb - 6/27/00
 
-	\param count. number of values to generate.
-	\param first. lower bound of the values.
-	\param last. upper bound of the values.
-	\param list. Upon return this array will be filled with random values.
-	\param pcg_rng. random number generator to pull values from.
+	\param count Number of values to generate.
+	\param first Lower bound of the values.
+	\param last Upper bound of the values.
+	\param[out] list Upon return this array will be filled with random values.
+  \param[in,out] *pcg_rng The random number generator to use.
 */
 void RandUniList(long count, long first, long last, RandListType list[], pcg32_random_t* pcg_rng) {
 
@@ -271,9 +275,8 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 
 /*****************************************************/
 /**
-	 return a random number from
-	 normal distribution with mean and stddev
-	 characteristics supplied by the user.
+	 \brief A pseudo-random number from a normal distribution.
+
 	 This routine is
 	 adapted from FUNCTION GASDEV in
 	 Press, et al., 1986, Numerical Recipes,
@@ -283,17 +286,17 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 	 prior to calling any function, that
 	 depends on RandUni().
 
+	\param mean The mean of the distribution
+	\param stddev Standard deviation of the distribution
+  \param[in,out] *pcg_rng The random number generator to use.
+*/
+double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
+/* History:
 	 cwb - 6/20/00
 	 cwb - 09-Dec-2002 -- FINALLY noticed that
 	 gasdev and gset have to be static!
 	 might as well set the others.
-
-	\param mean. the mean of the distribution
-	\param stddev. standard deviation of the distribution
-	\param pcg_rng. the random number generator to pull values from
 */
-double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
-
 	double res;
 
 	#ifndef RSOILWAT
@@ -331,12 +334,12 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 }
 
 /**
-  \fn float RandBeta ( float aa, float bb )
-  \brief Generates a beta random variate.
+  \brief Generate a beta random variate.
 
-  RandBeta returns a single random variate from the beta distribution
-  with shape parameters a and b. The density is
-      x^(a-1) * (1-x)^(b-1) / Beta(a,b) for 0 < x < 1
+  The beta distribution has two shape parameters \f$a\f$ and \f$b\f$.
+  The density is
+      \f[\frac{x ^ (a - 1) * (1 - x) ^ (b - 1)}{Beta(a, b)}\f]
+  for \f$0 < x < 1\f$
 
 	The code for RandBeta was taken from ranlib, a FORTRAN77 library. Original
 	FORTRAN77 version by Barry Brown, James Lovato. C version by John Burkardt.
@@ -346,9 +349,11 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 
   [More info can be found here](http://people.sc.fsu.edu/~jburkardt/f77_src/ranlib/ranlib.html)
 
-  \param aa. The first shape parameter of the beta distribution with 0.0 < aa.
-  \param bb. The second shape parameter of the beta distribution with 0.0 < bb.
-  \param pcg_rng. the random number generator to pull values from.
+  \param aa The first shape parameter of the beta distribution with
+         \f$0.0 < aa\f$.
+  \param bb The second shape parameter of the beta distribution with
+         \f$0.0 < bb\f$.
+  \param[in,out] *pcg_rng The random number generator to use.
   \return A random variate of a beta distribution.
 */
 float RandBeta ( float aa, float bb, pcg32_random_t* pcg_rng) {

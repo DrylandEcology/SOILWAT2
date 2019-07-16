@@ -361,7 +361,7 @@ void SW_Water_Flow(void) {
 	w->snowRunoff = w->snowmelt - snowmelt;
 	h2o_for_soil += snowmelt;
 
-	/** @brief Surface water runon:
+	/* @brief Surface water runon:
 			Proportion of water that arrives at surface added as daily runon from a hypothetical
 				identical neighboring upslope site.
 			@param percentRunon Value ranges between 0 and +inf; 0 = no runon,
@@ -413,7 +413,7 @@ void SW_Water_Flow(void) {
 	}
 	#endif
 
-	/** @brief Surface water runoff:
+	/* @brief Surface water runoff:
 			Proportion of ponded surface water removed as daily runoff.
 			@param percentRunoff Value ranges between 0 and 1; 0 = no loss of surface water,
 			1 = all ponded water lost via runoff.

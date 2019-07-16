@@ -933,8 +933,9 @@ static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
 
 
 /** @brief Tally for which output time periods at least one output key/type is active
-		@inputs `SW_Output[k].use` and `timeSteps`
-		@sideeffects Set elements of `use_OutPeriod[]`
+
+		@sideeffect Uses SW_Output[k].use and timeSteps to set elements of
+			use_OutPeriod[]
 */
 void find_OutPeriods_inUse(void)
 {
@@ -977,8 +978,7 @@ Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k)
 #ifdef STEPWAT
 /** Tally for which output time periods at least one output key/type is active
 		while accounting for output needs of `SXW`
-		@inputs: `SW_Output[k].use` and `timeSteps_SXW`
-		@sideeffects
+		@param `SW_Output[k].use` and `timeSteps_SXW`
 */
 void find_OutPeriods_inUse2(void)
 {}
@@ -1012,7 +1012,7 @@ Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k)
 			* annual and monthly mean air temperature
 			* annual and monthly precipitation sum
 			* annual sum of AET
-		@sideeffects Sets elements of `timeSteps_SXW`, updates `used_OUTNPERIODS`,
+		@sideeffect Sets elements of `timeSteps_SXW`, updates `used_OUTNPERIODS`,
 			and adjusts variables `use`, `sumtype` (with a warning), `first_orig`,
 			and `last_orig` of `SW_Output`.
 */
@@ -2508,7 +2508,7 @@ void SW_OUT_SetMemoryRefs( void)
         sumof_wth(), sumof_ves(), or sumof_vpd, in order to sum up the daily
         values in the corresponding output accumulator `p_accu[pd]` variables.
 
-    -# calls SW_OUT_write_today() which loops over each \OutKey `k` and
+    -# calls SW_OUT_write_today() which loops over each \ref OutKey `k` and
       loops over each \ref OutPeriod `pd` and, depending on application (see
       details below):
       - calls the appropriate output formatter function `get_XXX` via its
