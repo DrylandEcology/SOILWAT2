@@ -188,88 +188,49 @@ void get_none(OutPeriod pd)
 
 
 //------ eSW_CO2Effects
-// NOTE: `get_co2effects` uses a different order of vegetation types than the rest of SoilWat!!!
 #ifdef SW_OUTTEXT
 void get_co2effects_text(OutPeriod pd) {
 	int k;
-	RealD biomass_total = 0., biolive_total = 0.;
 	SW_VEGPROD *v = &SW_VegProd;
-	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
 
-	ForEachVegType(k)
-	{
-		biomass_total += vo->veg[k].biomass;
-		biolive_total += vo->veg[k].biolive;
-	}
-
+	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
-	sprintf(sw_outstr,
-		"%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
-		_Sep, OUT_DIGITS, vo->veg[SW_GRASS].biomass,
-		_Sep, OUT_DIGITS, vo->veg[SW_SHRUB].biomass,
-		_Sep, OUT_DIGITS, vo->veg[SW_TREES].biomass,
-		_Sep, OUT_DIGITS, vo->veg[SW_FORBS].biomass,
-		_Sep, OUT_DIGITS, biomass_total,
-		_Sep, OUT_DIGITS, vo->veg[SW_GRASS].biolive,
-		_Sep, OUT_DIGITS, vo->veg[SW_SHRUB].biolive,
-		_Sep, OUT_DIGITS, vo->veg[SW_TREES].biolive,
-		_Sep, OUT_DIGITS, vo->veg[SW_FORBS].biolive,
-		_Sep, OUT_DIGITS, biolive_total,
-		_Sep, OUT_DIGITS, v->veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_Model.simyear],
-		_Sep, OUT_DIGITS, v->veg[SW_SHRUB].co2_multipliers[BIO_INDEX][SW_Model.simyear],
-		_Sep, OUT_DIGITS, v->veg[SW_TREES].co2_multipliers[BIO_INDEX][SW_Model.simyear],
-		_Sep, OUT_DIGITS, v->veg[SW_FORBS].co2_multipliers[BIO_INDEX][SW_Model.simyear],
-		_Sep, OUT_DIGITS, v->veg[SW_GRASS].co2_multipliers[WUE_INDEX][SW_Model.simyear],
-		_Sep, OUT_DIGITS, v->veg[SW_SHRUB].co2_multipliers[WUE_INDEX][SW_Model.simyear],
-		_Sep, OUT_DIGITS, v->veg[SW_TREES].co2_multipliers[WUE_INDEX][SW_Model.simyear],
-		_Sep, OUT_DIGITS, v->veg[SW_FORBS].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
+
+	if (pd) {} // hack to silence "-Wunused-parameter"
+
+	ForEachVegType(k) {
+		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS,
+			v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
+		strcat(sw_outstr, str);
+	}
+	ForEachVegType(k) {
+		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS,
+			v->veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
+		strcat(sw_outstr, str);
+	}
 }
 #endif
 
 #if defined(RSOILWAT)
 void get_co2effects_mem(OutPeriod pd) {
 	int k;
-	RealD biomass_total = 0., biolive_total = 0.;
 	SW_VEGPROD *v = &SW_VegProd;
-	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_CO2Effects][pd];
 	get_outvalleader(p, pd);
 
+	// No averaging or summing required:
 	ForEachVegType(k)
 	{
-		biomass_total += vo->veg[k].biomass;
-		biolive_total += vo->veg[k].biolive;
+		p[iOUT(k, pd)] = v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear];
+		p[iOUT(k + NVEGTYPES, pd)] = v->veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear];
 	}
-
-	p[iOUT(0, pd)] = vo->veg[SW_GRASS].biomass;
-	p[iOUT(1, pd)] = vo->veg[SW_SHRUB].biomass;
-	p[iOUT(2, pd)] = vo->veg[SW_TREES].biomass;
-	p[iOUT(3, pd)] = vo->veg[SW_FORBS].biomass;
-	p[iOUT(4, pd)] = biomass_total;
-	p[iOUT(5, pd)] = vo->veg[SW_GRASS].biolive;
-	p[iOUT(6, pd)] = vo->veg[SW_SHRUB].biolive;
-	p[iOUT(7, pd)] = vo->veg[SW_TREES].biolive;
-	p[iOUT(8, pd)] = vo->veg[SW_FORBS].biolive;
-	p[iOUT(9, pd)] = biolive_total;
-
-	// No averaging or summing required:
-	p[iOUT(10, pd)] = v->veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_Model.simyear];
-	p[iOUT(11, pd)] = v->veg[SW_SHRUB].co2_multipliers[BIO_INDEX][SW_Model.simyear];
-	p[iOUT(12, pd)] = v->veg[SW_TREES].co2_multipliers[BIO_INDEX][SW_Model.simyear];
-	p[iOUT(13, pd)] = v->veg[SW_FORBS].co2_multipliers[BIO_INDEX][SW_Model.simyear];
-	p[iOUT(14, pd)] = v->veg[SW_GRASS].co2_multipliers[WUE_INDEX][SW_Model.simyear];
-	p[iOUT(15, pd)] = v->veg[SW_SHRUB].co2_multipliers[WUE_INDEX][SW_Model.simyear];
-	p[iOUT(16, pd)] = v->veg[SW_TREES].co2_multipliers[WUE_INDEX][SW_Model.simyear];
-	p[iOUT(17, pd)] = v->veg[SW_FORBS].co2_multipliers[WUE_INDEX][SW_Model.simyear];
 }
 
 #elif defined(STEPWAT)
 void get_co2effects_agg(OutPeriod pd) {
 	int k;
-	RealD biomass_total = 0., biolive_total = 0.;
 	SW_VEGPROD *v = &SW_VegProd;
-	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_CO2Effects][pd],
@@ -277,44 +238,166 @@ void get_co2effects_agg(OutPeriod pd) {
 
 	ForEachVegType(k)
 	{
-		biomass_total += vo->veg[k].biomass;
-		biolive_total += vo->veg[k].biolive;
+		do_running_agg(p, psd, iOUT(k, pd), Globals.currIter,
+			v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
+		do_running_agg(p, psd, iOUT(k + NVEGTYPES, pd), Globals.currIter,
+			v->veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
 	}
-
-	do_running_agg(p, psd, iOUT(0, pd), Globals.currIter, vo->veg[SW_GRASS].biomass);
-	do_running_agg(p, psd, iOUT(1, pd), Globals.currIter, vo->veg[SW_SHRUB].biomass);
-	do_running_agg(p, psd, iOUT(2, pd), Globals.currIter, vo->veg[SW_TREES].biomass);
-	do_running_agg(p, psd, iOUT(3, pd), Globals.currIter, vo->veg[SW_FORBS].biomass);
-	do_running_agg(p, psd, iOUT(4, pd), Globals.currIter, biomass_total);
-	do_running_agg(p, psd, iOUT(5, pd), Globals.currIter, vo->veg[SW_GRASS].biolive);
-	do_running_agg(p, psd, iOUT(6, pd), Globals.currIter, vo->veg[SW_SHRUB].biolive);
-	do_running_agg(p, psd, iOUT(7, pd), Globals.currIter, vo->veg[SW_TREES].biolive);
-	do_running_agg(p, psd, iOUT(8, pd), Globals.currIter, vo->veg[SW_FORBS].biolive);
-	do_running_agg(p, psd, iOUT(9, pd), Globals.currIter, biolive_total);
-
-	do_running_agg(p, psd, iOUT(10, pd), Globals.currIter,
-		v->veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
-	do_running_agg(p, psd, iOUT(11, pd), Globals.currIter,
-		v->veg[SW_SHRUB].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
-	do_running_agg(p, psd, iOUT(12, pd), Globals.currIter,
-		v->veg[SW_TREES].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
-	do_running_agg(p, psd, iOUT(13, pd), Globals.currIter,
-		v->veg[SW_FORBS].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
-	do_running_agg(p, psd, iOUT(14, pd), Globals.currIter,
-		v->veg[SW_GRASS].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
-	do_running_agg(p, psd, iOUT(15, pd), Globals.currIter,
-		v->veg[SW_SHRUB].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
-	do_running_agg(p, psd, iOUT(16, pd), Globals.currIter,
-		v->veg[SW_TREES].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
-	do_running_agg(p, psd, iOUT(17, pd), Globals.currIter,
-		v->veg[SW_FORBS].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 17);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_CO2Effects]);
 	}
 }
 #endif
+
+
+//------ eSW_Biomass
+#ifdef SW_OUTTEXT
+void get_biomass_text(OutPeriod pd) {
+	int k;
+	RealD biomass_total = 0., litter_total = 0., biolive_total = 0.;
+	SW_VEGPROD *v = &SW_VegProd;
+	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
+
+	// scale total biomass by fCover to obtain 100% total cover biomass
+	ForEachVegType(k)
+	{
+		biomass_total += vo->veg[k].biomass * v->veg[k].cov.fCover;
+		litter_total += vo->veg[k].litter * v->veg[k].cov.fCover;
+		biolive_total += vo->veg[k].biolive * v->veg[k].cov.fCover;
+	}
+
+	char str[OUTSTRLEN];
+	sw_outstr[0] = '\0';
+
+	// fCover for NVEGTYPES plus bare-ground
+	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, v->bare_cov.fCover);
+	strcat(sw_outstr, str);
+	ForEachVegType(k) {
+		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, v->veg[k].cov.fCover);
+		strcat(sw_outstr, str);
+	}
+
+	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
+	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, biomass_total);
+	strcat(sw_outstr, str);
+	ForEachVegType(k) {
+		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS,
+			vo->veg[k].biomass * v->veg[k].cov.fCover);
+		strcat(sw_outstr, str);
+	}
+	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, litter_total);
+	strcat(sw_outstr, str);
+
+	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
+	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, biolive_total);
+	strcat(sw_outstr, str);
+	ForEachVegType(k) {
+		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS,
+			vo->veg[k].biolive * v->veg[k].cov.fCover);
+		strcat(sw_outstr, str);
+	}
+}
+#endif
+
+#if defined(RSOILWAT)
+void get_biomass_mem(OutPeriod pd) {
+	int k, i;
+	RealD biomass_total = 0., litter_total = 0., biolive_total = 0.;
+	SW_VEGPROD *v = &SW_VegProd;
+	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
+
+	RealD *p = p_OUT[eSW_Biomass][pd];
+	get_outvalleader(p, pd);
+
+	// scale total biomass by fCover to obtain 100% total cover biomass
+	ForEachVegType(k)
+	{
+		biomass_total += vo->veg[k].biomass * v->veg[k].cov.fCover;
+		litter_total += vo->veg[k].litter * v->veg[k].cov.fCover;
+		biolive_total += vo->veg[k].biolive * v->veg[k].cov.fCover;
+	}
+
+	// fCover for NVEGTYPES plus bare-ground
+	p[iOUT(0, pd)] = v->bare_cov.fCover;
+	i = 1;
+	ForEachVegType(k)
+	{
+		p[iOUT(i + k, pd)] = v->veg[k].cov.fCover;
+	}
+
+	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
+	p[iOUT(i + NVEGTYPES, pd)] = biomass_total;
+	i += NVEGTYPES + 1;
+	ForEachVegType(k) {
+		p[iOUT(i + k, pd)] = vo->veg[k].biomass * v->veg[k].cov.fCover;
+	}
+	p[iOUT(i + NVEGTYPES, pd)] = litter_total;
+
+	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
+	p[iOUT(i + NVEGTYPES + 1, pd)] = biolive_total;
+	i += NVEGTYPES + 2;
+	ForEachVegType(k) {
+		p[iOUT(i + k, pd)] = vo->veg[k].biolive * v->veg[k].cov.fCover;
+	}
+}
+
+#elif defined(STEPWAT)
+void get_biomass_agg(OutPeriod pd) {
+	int k, i;
+	RealD biomass_total = 0., litter_total = 0., biolive_total = 0.;
+	SW_VEGPROD *v = &SW_VegProd;
+	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
+
+	RealD
+		*p = p_OUT[eSW_Biomass][pd],
+		*psd = p_OUTsd[eSW_Biomass][pd];
+
+	// scale total biomass by fCover to obtain 100% total cover biomass
+	ForEachVegType(k)
+	{
+		biomass_total += vo->veg[k].biomass * v->veg[k].cov.fCover;
+		litter_total += vo->veg[k].litter * v->veg[k].cov.fCover;
+		biolive_total += vo->veg[k].biolive * v->veg[k].cov.fCover;
+	}
+
+	// fCover for NVEGTYPES plus bare-ground
+	do_running_agg(p, psd, iOUT(0, pd), Globals.currIter, v->bare_cov.fCover);
+	i = 1;
+	ForEachVegType(k)
+	{
+		do_running_agg(p, psd, iOUT(i + k, pd), Globals.currIter,
+			v->veg[k].cov.fCover);
+	}
+
+	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
+	do_running_agg(p, psd, iOUT(i + NVEGTYPES, pd), Globals.currIter,
+		biomass_total);
+	i += NVEGTYPES + 1;
+	ForEachVegType(k) {
+		do_running_agg(p, psd, iOUT(i + k, pd), Globals.currIter,
+			vo->veg[k].biomass * v->veg[k].cov.fCover);
+	}
+	do_running_agg(p, psd, iOUT(i + NVEGTYPES, pd), Globals.currIter,
+		litter_total);
+
+	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
+	do_running_agg(p, psd, iOUT(i + NVEGTYPES + 1, pd), Globals.currIter,
+		biolive_total);
+	i += NVEGTYPES + 2;
+	ForEachVegType(k) {
+		do_running_agg(p, psd, iOUT(i + k, pd), Globals.currIter,
+			vo->veg[k].biolive * v->veg[k].cov.fCover);
+	}
+
+	if (print_IterationSummary) {
+		sw_outstr_agg[0] = '\0';
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Biomass]);
+	}
+}
+#endif
+
 
 
 //------ eSW_Estab
@@ -380,7 +463,7 @@ void get_estab_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, v->count);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Estab]);
 	}
 }
 #endif
@@ -431,7 +514,7 @@ void get_temp_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 4);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Temp]);
 	}
 }
 
@@ -500,7 +583,7 @@ void get_precip_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 5);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Precip]);
 	}
 }
 
@@ -573,7 +656,7 @@ void get_vwcBulk_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_VWCBulk]);
 	}
 }
 #endif
@@ -639,7 +722,7 @@ void get_vwcMatric_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_VWCMatric]);
 	}
 }
 #endif
@@ -766,7 +849,7 @@ void get_swcBulk_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SWCBulk]);
 	}
 }
 
@@ -856,7 +939,7 @@ void get_swpMatric_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SWPMatric]);
 	}
 }
 #endif
@@ -912,7 +995,7 @@ void get_swaBulk_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SWABulk]);
 	}
 }
 #endif
@@ -979,7 +1062,7 @@ void get_swaMatric_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SWAMatric]);
 	}
 }
 #endif
@@ -1020,7 +1103,7 @@ void get_surfaceWater_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 1);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SurfaceWater]);
 	}
 }
 #endif
@@ -1080,7 +1163,7 @@ void get_runoffrunon_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 4);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Runoff]);
 	}
 }
 #endif
@@ -1258,7 +1341,7 @@ void get_evapSoil_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_evap_lyrs);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_EvapSoil]);
 	}
 }
 #endif
@@ -1331,7 +1414,7 @@ void get_evapSurface_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, NVEGTYPES + 3);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_EvapSurface]);
 	}
 }
 #endif
@@ -1398,7 +1481,7 @@ void get_interception_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, NVEGTYPES + 2);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Interception]);
 	}
 }
 #endif
@@ -1442,7 +1525,7 @@ void get_soilinf_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 1);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SoilInf]);
 	}
 }
 #endif
@@ -1499,7 +1582,7 @@ void get_lyrdrain_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers - 1);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_LyrDrain]);
 	}
 }
 #endif
@@ -1637,7 +1720,7 @@ void get_aet_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 1);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_AET]);
 	}
 }
 
@@ -1688,7 +1771,7 @@ void get_pet_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 1);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_PET]);
 	}
 }
 #endif
@@ -1773,7 +1856,7 @@ void get_wetdays_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_WetDays]);
 	}
 }
 #endif
@@ -1818,7 +1901,7 @@ void get_snowpack_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 2);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SnowPack]);
 	}
 }
 #endif
@@ -1859,7 +1942,7 @@ void get_deepswc_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, 1);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_DeepSWC]);
 	}
 }
 #endif
@@ -1915,7 +1998,7 @@ void get_soiltemp_agg(OutPeriod pd)
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, SW_Site.n_layers);
+		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SoilTemp]);
 	}
 }
 #endif

@@ -92,8 +92,9 @@ extern "C" {
 #define SW_ALLVEG		"ALLVEG"		//27	5		0/* position and variable marker, not an output key */
 #define SW_ESTAB		"ESTABL"		//28	5		0
 #define SW_CO2EFFECTS		"CO2EFFECTS"		//29	?		?
+#define SW_BIOMASS		"BIOMASS"		//30	?		?
 
-#define SW_OUTNKEYS 30 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
+#define SW_OUTNKEYS 31 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
 
 /* these are the code analog of the above */
 /* see also key2str[] in Output.c */
@@ -134,6 +135,7 @@ typedef enum {
 	eSW_Estab,
 	// vegetation other */
 	eSW_CO2Effects,
+	eSW_Biomass,
 	eSW_LastKey /* make sure this is the last one */
 } OutKey;
 
@@ -256,6 +258,7 @@ void get_deepswc_text(OutPeriod pd);
 void get_estab_text(OutPeriod pd);
 void get_soiltemp_text(OutPeriod pd);
 void get_co2effects_text(OutPeriod pd);
+void get_biomass_text(OutPeriod pd);
 #endif
 
 #if defined(RSOILWAT)
@@ -285,6 +288,7 @@ void get_deepswc_mem(OutPeriod pd);
 void get_estab_mem(OutPeriod pd);
 void get_soiltemp_mem(OutPeriod pd);
 void get_co2effects_mem(OutPeriod pd);
+void get_biomass_mem(OutPeriod pd);
 
 #elif defined(STEPWAT)
 void get_temp_agg(OutPeriod pd);
@@ -313,6 +317,7 @@ void get_deepswc_agg(OutPeriod pd);
 void get_estab_agg(OutPeriod pd);
 void get_soiltemp_agg(OutPeriod pd);
 void get_co2effects_agg(OutPeriod pd);
+void get_biomass_agg(OutPeriod pd);
 
 void get_temp_SXW(OutPeriod pd);
 void get_precip_SXW(OutPeriod pd);
@@ -340,6 +345,7 @@ void get_deepswc_SXW(OutPeriod pd);
 void get_estab_SXW(OutPeriod pd);
 void get_soiltemp_SXW(OutPeriod pd);
 void get_co2effects_SXW(OutPeriod pd);
+void get_biomass_SXW(OutPeriod pd);
 #endif
 
 

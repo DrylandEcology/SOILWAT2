@@ -102,7 +102,7 @@ typedef struct {
 
 
 typedef struct {
-  RealD biomass, biolive;
+  RealD biomass, biolive, litter;
 } VegTypeOut;
 
 

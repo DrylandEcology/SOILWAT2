@@ -127,6 +127,11 @@ void get_co2effects(OutPeriod pd)
 	if (pd) {}
 }
 
+void get_biomass(OutPeriod pd)
+{
+	if (pd) {}
+}
+
 void get_estab(OutPeriod pd)
 {
 	if (pd) {}
@@ -326,6 +331,7 @@ void _echo_outputs(void)
 	get_deepswc(pd);
 	get_soiltemp(pd);
 	get_co2effects(pd);
+	get_biomass(pd);
 
 	OutKey k = eSW_NoKey;
 	SW_VEGPROD *vveg = NULL;
