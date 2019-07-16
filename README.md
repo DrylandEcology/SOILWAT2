@@ -78,6 +78,8 @@ __Tests, documentation, and code__ form a trinity
     documentation
   * Update help pages (locally) on the command-line with `doxygen Doxyfile`,
     but don't push them to the repository
+  * View documentation in your browser by opening `doc/html/index.html`
+
 - Code tests
   * Use [GoogleTest](https://github.com/google/googletest/blob/master/googletest/docs/Documentation.md)
     to add unit tests to the existing framework in the folder `test/` where
