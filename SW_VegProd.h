@@ -65,19 +65,21 @@ typedef struct {
   /** Surface cover attributes of the vegetation type */
   CoverType cov;
 
-  /** Parameters to calculate canopy height based on biomass;
-    user input from file `Input/veg.in` */
-  tanfunc_t cnpy;
+  tanfunc_t
+    /** Parameters to calculate canopy height based on biomass;
+      user input from file `Input/veg.in` */
+    cnpy;
   /** Constant canopy height: if > 0 then constant canopy height [cm] and
     overriding cnpy-tangens = f(biomass);
     user input from file `Input/veg.in` */
   RealD canopy_height_constant;
 
-
-  RealD
+  tanfunc_t
     /** Shading effect on transpiration based on live and dead biomass;
       user input from file `Input/veg.in` */
-    tr_shade_effects,
+    tr_shade_effects;
+
+  RealD
     /** Parameter of live and dead biomass shading effects;
       user input from file `Input/veg.in` */
     shade_scale,
