@@ -88,10 +88,12 @@ typedef struct {
     shade_deadmax;
 
   RealD
-    /** Monthly litter amount [g / m2];
+    /** Monthly litter amount [g / m2] as if this vegetation type covers 100%
+      of the simulated surface;
       user input from file `Input/veg.in` */
     litter[MAX_MONTHS],
-    /** Monthly aboveground biomass [g / m2];
+    /** Monthly aboveground biomass [g / m2] as if this vegetation type
+      covers 100% of the simulated surface;
       user input from file `Input/veg.in` */
     biomass[MAX_MONTHS],
     /** Monthly aboveground biomass after CO2 effects */
