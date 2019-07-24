@@ -11,12 +11,16 @@ sudo: required
 matrix:
   fast_finish: true
 
-# We want to run the `*_severe` debug and test targets; thus, we need
-# g++ >= 4.9 and clang++ >= 3.5
+# Run tests with both clang and gcc compilers
 compiler:
   - clang
   - gcc
 
+
+# Install addons:
+# - upgrade to minimum gcc version: our `*_severe` debug and test targets require
+#   g++ >= 4.9 and clang++ >= 3.5
+# - creating doxygen documentations requires the packages: doxygen ... graphviz
 addons:
   apt:
     sources:
@@ -25,6 +29,10 @@ addons:
       - gcc-4.9
       - g++-4.9
       - doxygen
+      - doxygen-latex
+      - doxygen-doc
+      - doxygen-gui
+      - graphviz
 
 before_install:
   - if [[ $CXX = g++ ]]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
@@ -41,7 +49,7 @@ script:
   # check that doxygen generates documentation without warnings
   # note: doxygen version on travis-ci is currently 1.8.6 (instead of 1.8.15),
   # thus, warnings about unsupported tags are ok, but we first need to downgrade the Doxyfile
-  - if [[ $(doxygen --version) != 1.8.15 ]]; then doxygen -u Doxyfile &>/dev/null; fi
+  - if [[ $(doxygen --version) != "1.8.15" ]]; then doxygen -u Doxyfile &>/dev/null; fi
   - doxygen Doxyfile | grep -wF "warning"
 
 before_cache:
