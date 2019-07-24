@@ -6,9 +6,9 @@
 [2]: https://travis-ci.org/DrylandEcology/SOILWAT2
 [3]: https://ci.appveyor.com/api/projects/status/noes9lralyjhen3t/branch/master?svg=true
 [4]: https://ci.appveyor.com/project/DrylandEcologyGit/soilwat2/branch/master
-[5]: https://img.shields.io/github/release/DrylandEcology/SOILWAT2.svg?label=current+release
+[5]: https://img.shields.io/github/release/DrylandEcology/SOILWAT2.svg
 [6]: https://github.com/DrylandEcology/SOILWAT2/releases
-[7]: https://img.shields.io/github/license/DrylandEcology/SOILWAT2.svg?label=current+release
+[7]: https://img.shields.io/github/license/DrylandEcology/SOILWAT2.svg
 [8]: https://www.gnu.org/licenses/gpl.html
 [9]: https://codecov.io/gh/DrylandEcology/SOILWAT2/branch/master/graph/badge.svg
 [10]: https://codecov.io/gh/DrylandEcology/SOILWAT2
@@ -19,7 +19,7 @@
 [issues]: https://github.com/DrylandEcology/SOILWAT2/issues
 [pull request]: https://github.com/DrylandEcology/SOILWAT2/pulls
 [guidelines]: https://github.com/DrylandEcology/workflow_guidelines
-[doxygen]: http://www.stack.nl/~dimitri/doxygen/
+[doxygen]: https://github.com/doxygen/doxygen
 [GoogleTest]: https://github.com/google/googletest
 [semantic versioning]: https://semver.org/
 

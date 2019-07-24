@@ -111,12 +111,10 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time hea
 /*             (declared in SW_Output_outarray.h)      */
 /* --------------------------------------------------- */
 
-/** @brief Determine number of used years/months/weeks/days in simulation period
+/** @brief Determine number of years/months/weeks/days used in simulation period
 
-		@param SW_Model
-		@param Globals if compiled for STEPWAT2
-		@param use_OutPeriod
-		@sideeffect Set `nrow_OUT`
+  @sideeffect Set nrow_OUT using global variables SW_Model,
+    Globals if compiled for STEPWAT2, and use_OutPeriod
 */
 void SW_OUT_set_nrow(void)
 {

@@ -932,10 +932,11 @@ static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
 
 
 
-/** @brief Tally for which output time periods at least one output key/type is active
+/** @brief Tally for which output time periods at least one output key/type is
+		active
 
-		@sideeffect Uses SW_Output[k].use and timeSteps to set elements of
-			use_OutPeriod[]
+		@sideeffect Uses global variables SW_Output.use and timeSteps to set
+			elements of use_OutPeriod
 */
 void find_OutPeriods_inUse(void)
 {
@@ -1543,16 +1544,18 @@ void SW_OUT_set_ncol(void) {
 
 }
 
-/** @brief Set column/variable names in global array `colnames_OUT`
+/** @brief Set column/variable names
 
-		Order of outputs must match up with all `get_XXX` functions and with
-		indexing macros `iOUT` and `iOUT2`; particularly, output variables with
-		values for each of `N` soil layers for `k` different (e.g., vegetation)
-		components (e.g., transpiration, SWA, and hydraulic redistribution) report
-		based on a loop over components within
-		which a loop over soil layers is nested, e.g.,
-		`C1_Lyr1, C1_Lyr2, ..., C1_LyrN, C2_Lyr1, ..., C2_LyrN, ...,
-		Ck_Lyr1, ..., Ck_LyrN`
+  Order of outputs must match up with all `get_XXX` functions and with
+  indexing macros iOUT and iOUT2; particularly, output variables with
+  values for each of `N` soil layers for `k` different (e.g., vegetation)
+  components (e.g., transpiration, SWA, and hydraulic redistribution) report
+  based on a loop over components within
+  which a loop over soil layers is nested, e.g.,
+  `C1_Lyr1, C1_Lyr2, ..., C1_LyrN, C2_Lyr1, ..., C2_LyrN, ...,
+  Ck_Lyr1, ..., Ck_LyrN`
+
+  @sideeffect Set values of colnames_OUT
 */
 void SW_OUT_set_colnames(void) {
 	IntUS i, j;

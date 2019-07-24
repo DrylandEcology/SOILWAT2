@@ -1354,7 +1354,7 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 @param ptr_stError Booleans status of soil temperature error in *ptr_stError.
 
 @sideeffect
-  - ptr_stError Updated booleans status of soil temperature error in *ptr_stError.
+  - *ptr_stError Updated booleans status of soil temperature error in *ptr_stError.
   - ST_RGR_VALUES.depths Depths of soil layer profile (cm).
   - ST_RGR_VALUES.depthsR Evenly spaced depths of soil temperature profile (cm).
   - ST_RGR_VALUES.tlyrs_by_slyrs Values of correspondance between soil profile layers and soil temperature layers.
@@ -1666,9 +1666,8 @@ temp += temp;
 /**
 @brief Calculate today's soil temperature for each layer.
 
-
-		The algorithm selects a shorter time step if required for a stable solution
-    		(@cite Parton1978, @cite Parton1984).
+The algorithm selects a shorter time step if required for a stable solution
+(@cite Parton1978, @cite Parton1984).
 
 @param ptr_dTime Yesterday's successful time step in seconds.
 @param deltaX The depth increment for the soil temperature (regression) calculations (cm).
@@ -1685,12 +1684,12 @@ temp += temp;
 @param csParam1 A constant for the soil thermal conductivity equation.
 @param csParam2 A constant for the soil thermal conductivity equation.
 @param shParam A constant for specific heat capacity equation.
-@param *ptr_stError - A boolean indicating whether there was an error.
+@param *ptr_stError A boolean indicating whether there was an error.
 
 @sideeffect
-  -Updated soil temperature values in array of sTempR.
-  -Realized time step for today in updated value of ptr_dTime.
-  -Updated status of soil temperature error in *ptr_stError.
+  - Updated soil temperature values in array of sTempR.
+  - Realized time step for today in updated value of ptr_dTime.
+  - Updated status of soil temperature error in *ptr_stError.
 */
 
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,

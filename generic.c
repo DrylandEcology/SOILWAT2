@@ -354,12 +354,20 @@ double get_running_mean(unsigned int n, double mean_prev, double val_to_add)
 
 /** @brief Calculate running standard deviation online (in one pass)
 
-		Part of calculating standard deviation across values \f$x[k]\f$ with
-			\f$k = {0, ..., n}\f$ using \f$S[n] = S[n - 1] + ss[n]\f$
+		There are two parts when calculating the standard deviation \f$sd\f$
+		across values \f$x[k]\f$ for \f$k = {0, ..., n}\f$.
+
+		1) The first part is to calculate the running sum of squares \f$S[n]\f$, i.e.,
+			\f$S[n] = S[n - 1] + ss[n]\f$
 		where
 			\f$ss[n] = (x[n] - m[n - 1]) * (x[n] - m[n])\f$
 		and where \f$m[n]\f$ is the running average from function
 		get_running_mean().
+		The function get_running_sqr() calculates \f$ss[n]\f$ which needs to be
+		added up.
+
+		2) The second part is to calculate \f$sd = \sqrt{\frac{S[n]}{n - 1}}\f$
+		which is accomplished by function final_running_sd().
 
 		@param mean_prev Previous average value, i.e., \f$m[n - 1]\f$
 		@param mean_current Current average value, i.e., \f$m[n]\f$
@@ -367,7 +375,7 @@ double get_running_mean(unsigned int n, double mean_prev, double val_to_add)
 					 i.e., \f$x[n]\f$
 
 		@return The summand \f$ss[n]\f$. The sum of these values can be used as
-		input to function final_running_sd().
+						input to function final_running_sd().
 
 		@see Welford's algorithm based on
 			<https://www.johndcook.com/blog/standard_deviation/> and
@@ -378,14 +386,29 @@ double get_running_sqr(double mean_prev, double mean_current, double val_to_add)
 	return (val_to_add - mean_prev) * (val_to_add - mean_current);
 }
 
-/** @brief Finalize the running standard deviation calculation (in one pass)
+/** @brief Calculate running average online (in one pass)
+
+		There are two parts when calculating the standard deviation \f$sd\f$
+		across values \f$x[k]\f$ for \f$k = {0, ..., n}\f$.
+
+		(1) The first part is to calculate the running sum of squares \f$S[n]\f$, i.e.,
+			\f$S[n] = S[n - 1] + ss[n]\f$
+		where
+			\f$ss[n] = (x[n] - m[n - 1]) * (x[n] - m[n])\f$
+		and where \f$m[n]\f$ is the running average from function
+		get_running_mean().
+		The function get_running_sqr() calculates \f$ss[n]\f$ which needs to be
+		added up.
+
+		(2) The second part is to calculate \f$sd = \sqrt{\frac{S[n]}{n - 1}}\f$
+		which is accomplished by function final_running_sd().
 
 		@param n Sequence position
 		@param ssqr The value \f$S[n]\f$ which has been calculated as the
-			sum of the return values of calls to the function get_running_sqr().
+			sum of the return values of calls to the function get_running_sqr()
 
 		@return The running standard deviation at sequence position \f$n\f$,
-			i.e., \f$\sqrt{\frac{S[n]}{n - 1}}\f$
+			i.e., \f$\sqrt{\frac{S[n]}{n - 1}}\f$.
 
 		@see Welford's algorithm based on
 			<https://www.johndcook.com/blog/standard_deviation/> and

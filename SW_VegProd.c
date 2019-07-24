@@ -769,8 +769,8 @@ void _echo_VegProd(void) {
 
 /** @brief Determine vegetation type of decreasingly ranked the critical SWP
 
-		@sideeffect Sets `SW_VegProd.rank_SWPcrits[]` based on
-		  `SW_VegProd.critSoilWater[]`
+  @sideeffect Sets `SW_VegProd.rank_SWPcrits[]` based on
+    `SW_VegProd.critSoilWater[]`
 */
 void get_critical_rank(void){
 	/*----------------------------------------------------------
