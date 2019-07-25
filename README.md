@@ -88,7 +88,7 @@ Some recent references
 <a name="get_documentation"></a>
 ### Documentation
   * Use [doxygen][] to generate help pages (locally) on the command-line with
-    `doxygen Doxyfile`, but don't push them to the repository
+    `make doc` (which basically runs `doxygen doc/Doxyfile`)
 
   * View documentation in your browser by opening `doc/html/index.html`
 
@@ -129,12 +129,17 @@ You can help us in different ways:
 <a name="code_documentation"></a>
 #### Code documentation
   * Use [doxygen][] to write inline documentation
-  * Make sure that new documentation creates `doxygen` documentation without
-    warnings, i.e., `doxygen Doxyfile | grep warning` should be empty, and
-    that newly created and amended documentation displays as intended by
-    opening `doc/html/index.html` and navigating to the item in question
 
-  * Use regular c-style comments to document to code
+  * Make sure that new documentation results in `doxygen` documentation without
+    warnings, i.e., `make doc` is successful
+    (it basically checks that `doxygen doc/Doxyfile | grep warning` is empty).
+    Make also sure that newly created and amended documentation displays
+    as intended by opening `doc/html/index.html` and navigating to the item
+    in question
+
+  * Keep `doc/html/` local, i.e., don't push to the repository
+
+  * Use regular c-style comments to additionally document code
 
 <br>
 

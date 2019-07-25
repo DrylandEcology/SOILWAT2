@@ -47,10 +47,7 @@ script:
   # determine code coverage of unit tests
   - make clean cov test_run
   # check that doxygen generates documentation without warnings
-  # note: doxygen version on travis-ci is currently 1.8.6 (instead of 1.8.15),
-  # thus, warnings about unsupported tags are ok, but we first need to downgrade the Doxyfile
-  - if [[ $(doxygen --version) != "1.8.15" ]]; then doxygen -u Doxyfile &>/dev/null; fi
-  - doxygen Doxyfile | grep -wF "warning"
+  - make doc
 
 before_cache:
   # don't cache generated documentation files
