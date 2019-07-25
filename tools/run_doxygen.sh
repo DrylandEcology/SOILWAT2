@@ -16,7 +16,7 @@ doc_path="doc"                            # path to documentation
 doxy=${doc_path}"/Doxyfile"               # Doxyfile
 log=${doc_path}"/log_doxygen.log"         # logfile for doxygen output
 log_tmp=${doc_path}"/log_doxygen_tmp.log"
-doxexcept=${doc_path}"/doxygen_exceptions.txt" # filename that lists exceptions (one per line)
+doxexcept=${doc_path}"/doxygen_exceptions_wrong.txt" # filename that lists exceptions (one per line)
 
 # Downgrade Doxyfile in case this runs an old doxygen version, e.g.,
 # travis-ci is currently on 1.8.6 (instead of 1.8.15)
