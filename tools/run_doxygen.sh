@@ -41,7 +41,7 @@ fi
 
 
 # Examine log file for remaining warnings/errors
-warnings=$(grep "warning\|error" ${log} 2>&1)
+warnings=$(grep -iE "warning|error" ${log} 2>&1)
 
 if [ -n "${warnings}" ]; then
   echo ${warnings}
