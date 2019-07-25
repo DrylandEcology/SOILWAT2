@@ -45,4 +45,5 @@ warnings="$(grep -iE "warning|error" ${log} 2>&1 || echo "")"
 
 if [ -n "${warnings}" ]; then
   echo "${warnings}"
+  exit 1
 fi
