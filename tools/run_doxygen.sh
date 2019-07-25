@@ -3,12 +3,6 @@
 # Create documentation using doxygen and report any errors/warnings except
 # those warnings/errors listed as exceptions (doc/doxygen_exceptions.txt)
 
-doc_path="doc"                            # path to documentation
-doxy=${doc_path}"/Doxyfile"               # Doxyfile
-log=${doc_path}"/log_doxygen.log"         # logfile for doxygen output
-log_tmp=${doc_path}"/log_doxygen_tmp.log"
-doxexcept=${doc_path}"/doxygen_exceptions.txt" # filename that lists exceptions (one per line)
-
 
 # Don't use set if run locally, e.g., with `make doc`
 if [ ${CI} ]; then
@@ -17,10 +11,16 @@ if [ ${CI} ]; then
   # The -v flag makes the shell print all lines in the script before executing them
 fi
 
+
+doc_path="doc"                            # path to documentation
+doxy=${doc_path}"/Doxyfile"               # Doxyfile
+log=${doc_path}"/log_doxygen.log"         # logfile for doxygen output
+log_tmp=${doc_path}"/log_doxygen_tmp.log"
+doxexcept=${doc_path}"/doxygen_exceptions.txt" # filename that lists exceptions (one per line)
+
 # Downgrade Doxyfile in case this runs an old doxygen version, e.g.,
 # travis-ci is currently on 1.8.6 (instead of 1.8.15)
-if [[ $(doxygen --version) != "1.8.15" ]]
-then
+if [[ $(doxygen --version) != "1.8.15" ]]; then
   doxygen -u ${doxy} &>/dev/null
 fi
 
@@ -41,8 +41,9 @@ fi
 
 
 # Examine log file for remaining warnings/errors
-warnings=$(grep "warning\|error" ${log})
+warnings=$(grep "warning\|error" ${log} 2>&1)
 
 if [ -n "${warnings}" ]; then
   echo ${warnings}
+  exit 1
 fi
