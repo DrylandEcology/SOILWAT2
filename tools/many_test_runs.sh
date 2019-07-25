@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# N=3 ./many_test_runs.sh: run unit tests repeatedly and report failures only
+# N=3 ./tools/many_test_runs.sh: run unit tests repeatedly and report failures
 # $N number of test runs; default 10 if empty or unset
 
 iters=${N:-10}
@@ -22,4 +22,3 @@ for i in $(seq 1 $iters); do
 done
 
 echo $(date): Completed ${iters} test replicates.
-

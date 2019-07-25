@@ -249,7 +249,7 @@ cov : cov_clean $(lib_gtest) $(lib_target_cov)
 .PHONY : cov_run
 cov_run : cov
 		./$(bin_test)
-		./run_gcov.sh
+		./tools/run_gcov.sh
 
 
 

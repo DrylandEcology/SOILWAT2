@@ -162,11 +162,11 @@ Run unit tests locally on the command-line with
 ```
 
 If you want to run unit tests repeatedly (e.g., to sample a range of
-random numbers), then you may use the bash-script `many_test_runs.sh` which
-runs `N` number of times and reports only unit test failures, e.g.,
+random numbers), then you may use the bash-script `tools/many_test_runs.sh`
+which runs `N` number of times and reports only unit test failures, e.g.,
 ```{.sh}
-      ./many_test_runs.sh        # will run a default (currently, 10) number of times
-      N=3 ./many_test_runs.sh    # will run 3 replicates
+      ./tools/many_test_runs.sh        # will run a default (currently, 10) number of times
+      N=3 ./tool/many_test_runs.sh     # will run 3 replicates
 ```
 
 <br>
