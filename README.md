@@ -1,6 +1,7 @@
-| Unix | Windows | Release | License | Coverage | Downloads |
+| *nix | Windows | Release | DOI | License | Coverage |
 | :---- | :---- | :---- | :---- | :---- | :---- |
-[ ![Travis build status][1]][2] | [![Appveyor build status][3]][4] | [ ![github release][5]][6] | [![license][7]][8] | [![codecov status][9]][10] | [![github downloads][11]][SOILWAT2] |
+[ ![Travis build status][1]][2] | [![Appveyor build status][3]][4] | [ ![github release][5]][6] | [ ![DOI][7]][8] | [![license][9]][10] | [![codecov status][11]][12] |
+
 
 [1]: https://travis-ci.org/DrylandEcology/SOILWAT2.svg?branch=master
 [2]: https://travis-ci.org/DrylandEcology/SOILWAT2
@@ -8,11 +9,12 @@
 [4]: https://ci.appveyor.com/project/DrylandEcologyGit/soilwat2/branch/master
 [5]: https://img.shields.io/github/release/DrylandEcology/SOILWAT2.svg
 [6]: https://github.com/DrylandEcology/SOILWAT2/releases
-[7]: https://img.shields.io/github/license/DrylandEcology/SOILWAT2.svg
-[8]: https://www.gnu.org/licenses/gpl.html
-[9]: https://codecov.io/gh/DrylandEcology/SOILWAT2/branch/master/graph/badge.svg
-[10]: https://codecov.io/gh/DrylandEcology/SOILWAT2
-[11]: https://img.shields.io/github/downloads/DrylandEcology/SOILWAT2/total.svg
+[7]: https://zenodo.org/badge/9551524.svg
+[8]: https://zenodo.org/badge/latestdoi/9551524
+[9]: https://img.shields.io/github/license/DrylandEcology/SOILWAT2.svg
+[10]: https://www.gnu.org/licenses/gpl.html
+[11]: https://codecov.io/gh/DrylandEcology/SOILWAT2/branch/master/graph/badge.svg
+[12]: https://codecov.io/gh/DrylandEcology/SOILWAT2
 [SOILWAT2]: https://github.com/DrylandEcology/SOILWAT2
 [rSOILWAT2]: https://github.com/DrylandEcology/rSOILWAT2
 [STEPWAT2]: https://github.com/DrylandEcology/STEPWAT2
@@ -27,6 +29,8 @@
 
 
 # SOILWAT2
+
+SOILWAT2 is an ecosystem water balance simulation model.
 
 This version of SoilWat brings new features. This is the same code that is
 used by [rSOILWAT2][] and [STEPWAT2][].
