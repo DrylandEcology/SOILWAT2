@@ -75,6 +75,8 @@ Some recent references
 <a name="get_started"></a>
 ## How to get started
 
+A detailed manual can be found in the documentation \ref page_manual.
+
 <a name="compile"></a>
 ### Compilation
   * Requirements:
