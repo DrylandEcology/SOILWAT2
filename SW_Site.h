@@ -148,6 +148,11 @@ void _echo_inputs(void);
 /* these used to be in Layers */
 void SW_SIT_clear_layers(void);
 LyrIndex _newlayer(void);
+void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel,
+  RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
+  RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp,
+  int nRegions, RealD *regionLowerBounds);
+void derive_soilRegions(int nRegions, RealD *regionLowerBounds);
 
 #ifdef DEBUG_MEM
 	void SW_SIT_SetMemoryRefs(void);
