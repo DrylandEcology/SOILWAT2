@@ -705,18 +705,21 @@ void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel
   @brief Resets soil regions based on input parameters.
 
   @param nRegions The number of regions to create. Must be between
-    1 and MAX_TRANSP_REGIONS.
-  @param lowerBounds Array of size nRegions containing the lower bound of
-    each region in ascending (in value) order. If you think about this from the
-	perspective of soil, it would mean the shallowest bound is at lowerBounds[0].
-  @sideeffect _TranspRgnBounds and n_transp_rgn will be derived from the input and
-    from the soil information.
+    1 and \ref MAX_TRANSP_REGIONS.
+  @param regionLowerBounds Array of size \ref nRegions containing the lower
+    bound of each region in ascending (in value) order. If you think about this
+    from the perspective of soil, it would mean the shallowest bound is at
+    lowerBounds[0].
+
+  @sideeffect
+    \ref _TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
+    derived from the input and from the soil information.
 
   @note
-	- nRegions does NOT determine how many regions will be derived. It only
-	  defines the size of the regionLowerBounds array. For example, if your input
-	  parameters are (4, { 10, 20, 40 }), but there is a soil layer from
-	  41 to 60 cm, it will be placed in _TranspRgnBounds[4].
+  - \ref nRegions does NOT determine how many regions will be derived. It only
+    defines the size of the \ref regionLowerBounds array. For example, if your
+    input parameters are (4, { 10, 20, 40 }), but there is a soil layer from
+    41 to 60 cm, it will be placed in _TranspRgnBounds[4].
 */
 void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 	int i, j;
