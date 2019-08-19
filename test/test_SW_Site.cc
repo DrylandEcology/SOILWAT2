@@ -131,6 +131,9 @@ namespace {
         "for transpiration region = " << i <<
         " at a soil depth of " << soildepth << " cm";
     }
+
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
   }
 
 } // namespace
