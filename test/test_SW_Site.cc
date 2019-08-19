@@ -42,6 +42,7 @@ extern SW_CARBON SW_Carbon;
 extern SW_MODEL SW_Model;
 extern SW_VEGPROD SW_VegProd;
 extern SW_SITE SW_Site;
+extern LyrIndex _TranspRgnBounds[];
 
 
 namespace {
@@ -99,6 +100,37 @@ namespace {
 
     EXPECT_DEATH_IF_SUPPORTED(water_eqn(fractionGravel, sand, clay, n), "@ generic.c LogError");
 
+  }
+
+
+  // Test that soil transpiration regions are derived well
+  TEST(SWSiteTest, SoilTranspirationRegions) {
+    LyrIndex
+      i, id,
+      nRegions = 3,
+      prev_TranspRgnBounds[MAX_TRANSP_REGIONS] = {0};
+    RealD
+      soildepth;
+
+    for (i = 0; i < MAX_TRANSP_REGIONS; ++i) {
+      prev_TranspRgnBounds[i] = _TranspRgnBounds[i];
+    }
+
+    // Check that "default" values do not change region bounds
+    RealD regionLowerBounds[nRegions] = {20., 40., 100.};
+    derive_soilRegions(nRegions, regionLowerBounds);
+
+    for (i = 0; i < nRegions; ++i) {
+      // Quickly calculate soil depth for current region as output information
+      soildepth = 0.;
+      for (id = 0; id <= _TranspRgnBounds[i]; ++id) {
+        soildepth += SW_Site.lyr[id]->width;
+      }
+
+      EXPECT_EQ(prev_TranspRgnBounds[i], _TranspRgnBounds[i]) <<
+        "for transpiration region = " << i <<
+        " at a soil depth of " << soildepth << " cm";
+    }
   }
 
 } // namespace
