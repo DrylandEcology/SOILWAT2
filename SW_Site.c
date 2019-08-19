@@ -108,6 +108,7 @@ static char *MyFileName;
 static void _read_layers(void);
 
 
+
 /**
 	\fn void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n)
 	\brief Calculate soil moisture characteristics for each layer.
@@ -591,7 +592,7 @@ static void _read_layers(void) {
     them from an input file as `_read_layers` does)
 
   @param nlyrs The number of soil layers to create.
-  @param nRegions The number of regions to create. Must be between 
+  @param nRegions The number of regions to create. Must be between
     1 and MAX_TRANSP_REGIONS.
   @param lowerBounds Array of size nRegions containing the lower bound of
     each region in ascending (in value) order. If you think about this from the
@@ -698,21 +699,23 @@ void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel
   init_site_info();
 }
 
+
+
 /**
   @brief Resets soil regions based on input parameters.
 
-  @param nRegions The number of regions to create. Must be between 
+  @param nRegions The number of regions to create. Must be between
     1 and MAX_TRANSP_REGIONS.
   @param lowerBounds Array of size nRegions containing the lower bound of
     each region in ascending (in value) order. If you think about this from the
 	perspective of soil, it would mean the shallowest bound is at lowerBounds[0].
-  @sideeffect _TranspRgnBounds and n_transp_rgn will be derived from the input and 
+  @sideeffect _TranspRgnBounds and n_transp_rgn will be derived from the input and
     from the soil information.
 
   @note
 	- nRegions does NOT determine how many regions will be derived. It only
 	  defines the size of the regionLowerBounds array. For example, if your input
-	  parameters are (4, { 10, 20, 40 }), but there is a soil layer from 
+	  parameters are (4, { 10, 20, 40 }), but there is a soil layer from
 	  41 to 60 cm, it will be placed in _TranspRgnBounds[4].
 */
 void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
@@ -743,8 +746,7 @@ void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 		// Find the layer that pushes us out of the region.
 		// It becomes the bound.
 		while(totalDepth < regionLowerBounds[i] && layer <= v->n_layers &&
-		      v->lyr[layer]->transp_coeff[0] > 0 && v->lyr[layer]->transp_coeff[1] > 0 &&
-			  v->lyr[layer]->transp_coeff[2] > 0 && v->lyr[layer]->transp_coeff[3] > 0){
+		      sum_across_vegtypes(v->lyr[layer]->transp_coeff)) {
 			totalDepth += v->lyr[layer]->width;
 			_TranspRgnBounds[i] = layer;
 			layer++;
@@ -753,7 +755,7 @@ void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 
 	/* -------------- Check for duplicates -------------- */
 	for(i = 0; i < nRegions - 1; ++i){
-		// If there is a duplicate bound we will remove it by left shifting the 
+		// If there is a duplicate bound we will remove it by left shifting the
 		// array, overwriting the duplicate.
 		if(_TranspRgnBounds[i] == _TranspRgnBounds[i + 1]){
 			for(j = i + 1; j < nRegions - 1; ++j){
