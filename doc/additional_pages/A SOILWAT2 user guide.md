@@ -23,23 +23,28 @@ badges are green. Thus, if installation
 doesn't work for you and our checks are passing, then it is likely a problem
 on your side.
   * If you believe that you have found a bug in our code, then please report
-    it with a minimal reproducible example as an [issues][].
+    it with a minimal reproducible example as an [issue][].
   * However, we do not have the resources to offer support.
 
 <br>
 
 ### Minimal requirements
-  - on Windows OS, a `*nix` emulator, e.g., an
-    installation of [cygwin][] or [docker][]
-  - on Mac OSX, [xcode][], xcode command line tools `xcode-select --install`,
-    and having agreed to the xcode license `xcodebuild -license`
-  - additionally,
+  - on Windows OS:
+    - a `*nix` emulator, e.g., an installation of [cygwin][] or [docker][]
+  - on Mac OSX:
+    - [xcode][]
+    - xcode command line tools that you can install with:
+      `xcode-select --install`
+    - having agreed to the xcode license that you can do with:
+      `xcodebuild -license`
+  - additionally:
     - the `gcc` or `clang/llvm` toolchains;
       ideally, `gcc >= v4.9` or `clang >= v3.3`
     - POSIX- or GNU-compliant `make`
     - `git` to download the code
-  - optional: `doxgyen` (ideally `>= v1.8.15`) to generate a local copy of the
-    documentation
+  - optional:
+    - `doxgyen` (ideally `>= v1.8.15`) to generate a local copy of the
+      documentation
 
 <br>
 
@@ -47,7 +52,7 @@ on your side.
 
 
 ### Download
-  * Downloading the `SOILWAT2` code as `zip` file (via green button
+  * Note: Downloading the `SOILWAT2` code as `zip` file (via green button
     on website) or directly from
     [here](https://github.com/DrylandEcology/SOILWAT2/archive/master.zip)
     doesn't work out of the box because this wouldn't include code for the
