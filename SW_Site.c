@@ -771,7 +771,8 @@ void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 
 	/* -------------- Derive n_transp_rgn --------------- */
 	v->n_transp_rgn = 0;
-	while(_TranspRgnBounds[v->n_transp_rgn] != UNDEFINED_LAYER && v->n_transp_rgn < MAX_TRANSP_REGIONS){
+	while(v->n_transp_rgn < MAX_TRANSP_REGIONS &&
+	      _TranspRgnBounds[v->n_transp_rgn] != UNDEFINED_LAYER) {
 		v->n_transp_rgn++;
 	}
 }
