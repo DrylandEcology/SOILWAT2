@@ -178,7 +178,7 @@ namespace {
         "for transpiration region for the " << i + 1 << "-th soil layer";
     }
 
-    delete regionLowerBounds4;
+    delete[] regionLowerBounds4;
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
