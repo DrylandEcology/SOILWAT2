@@ -742,13 +742,14 @@ void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 
 	/* ----------------- Derive Regions ------------------- */
 	// Loop through the regions the user wants to derive
+	layer = 0; // SW_Site.lyr is base0-indexed
+	totalDepth = 0;
 	for(i = 0; i < nRegions; ++i){
-		layer = 1;
-		totalDepth = 0;
 		_TranspRgnBounds[i] = layer;
 		// Find the layer that pushes us out of the region.
 		// It becomes the bound.
-		while(totalDepth < regionLowerBounds[i] && layer <= v->n_layers &&
+		while(totalDepth < regionLowerBounds[i] &&
+		      layer < v->n_layers &&
 		      sum_across_vegtypes(v->lyr[layer]->transp_coeff)) {
 			totalDepth += v->lyr[layer]->width;
 			_TranspRgnBounds[i] = layer;
