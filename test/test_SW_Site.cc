@@ -105,9 +105,14 @@ namespace {
 
   // Test that soil transpiration regions are derived well
   TEST(SWSiteTest, SoilTranspirationRegions) {
+    /* Notes:
+        - SW_Site.n_layers is base1
+        - soil layer information in _TranspRgnBounds is base0
+    */
+
     LyrIndex
       i, id,
-      nRegions = 3,
+      nRegions,
       prev_TranspRgnBounds[MAX_TRANSP_REGIONS] = {0};
     RealD
       soildepth;
@@ -116,9 +121,11 @@ namespace {
       prev_TranspRgnBounds[i] = _TranspRgnBounds[i];
     }
 
+
     // Check that "default" values do not change region bounds
-    RealD regionLowerBounds[nRegions] = {20., 40., 100.};
-    derive_soilRegions(nRegions, regionLowerBounds);
+    nRegions = 3;
+    RealD regionLowerBounds1[nRegions] = {20., 40., 100.};
+    derive_soilRegions(nRegions, regionLowerBounds1);
 
     for (i = 0; i < nRegions; ++i) {
       // Quickly calculate soil depth for current region as output information
@@ -128,9 +135,49 @@ namespace {
       }
 
       EXPECT_EQ(prev_TranspRgnBounds[i], _TranspRgnBounds[i]) <<
-        "for transpiration region = " << i <<
+        "for transpiration region = " << i + 1 <<
         " at a soil depth of " << soildepth << " cm";
     }
+
+
+    // Check that setting one region for all soil layers works
+    nRegions = 1;
+    RealD regionLowerBounds2[nRegions] = {100.};
+    derive_soilRegions(nRegions, regionLowerBounds2);
+
+    for (i = 0; i < nRegions; ++i) {
+      EXPECT_EQ(SW_Site.n_layers - 1, _TranspRgnBounds[i]) <<
+        "for a single transpiration region across all soil layers";
+    }
+
+
+    // Check that setting one region for one soil layer works
+    nRegions = 1;
+    RealD regionLowerBounds3[nRegions] = {SW_Site.lyr[0]->width};
+    derive_soilRegions(nRegions, regionLowerBounds3);
+
+    for (i = 0; i < nRegions; ++i) {
+      EXPECT_EQ(0, _TranspRgnBounds[i]) <<
+        "for a single transpiration region for the shallowest soil layer";
+    }
+
+
+    // Check that setting the maximal number of regions works
+    nRegions = MAX_TRANSP_REGIONS;
+    RealD regionLowerBounds4[nRegions];
+    // Example: one region each for the topmost soil layers
+    soildepth = 0.;
+    for (i = 0; i < nRegions; ++i) {
+      soildepth += SW_Site.lyr[i]->width;
+      regionLowerBounds4[i] = soildepth;
+    }
+    derive_soilRegions(nRegions, regionLowerBounds4);
+
+    for (i = 0; i < nRegions; ++i) {
+      EXPECT_EQ(i, _TranspRgnBounds[i]) <<
+        "for transpiration region for the " << i + 1 << "-th soil layer";
+    }
+
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
