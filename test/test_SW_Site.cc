@@ -124,7 +124,7 @@ namespace {
 
     // Check that "default" values do not change region bounds
     nRegions = 3;
-    RealD regionLowerBounds1[nRegions] = {20., 40., 100.};
+    RealD regionLowerBounds1[] = {20., 40., 100.};
     derive_soilRegions(nRegions, regionLowerBounds1);
 
     for (i = 0; i < nRegions; ++i) {
@@ -142,7 +142,7 @@ namespace {
 
     // Check that setting one region for all soil layers works
     nRegions = 1;
-    RealD regionLowerBounds2[nRegions] = {100.};
+    RealD regionLowerBounds2[] = {100.};
     derive_soilRegions(nRegions, regionLowerBounds2);
 
     for (i = 0; i < nRegions; ++i) {
@@ -153,7 +153,7 @@ namespace {
 
     // Check that setting one region for one soil layer works
     nRegions = 1;
-    RealD regionLowerBounds3[nRegions] = {SW_Site.lyr[0]->width};
+    RealD regionLowerBounds3[] = {SW_Site.lyr[0]->width};
     derive_soilRegions(nRegions, regionLowerBounds3);
 
     for (i = 0; i < nRegions; ++i) {
@@ -164,7 +164,7 @@ namespace {
 
     // Check that setting the maximal number of regions works
     nRegions = MAX_TRANSP_REGIONS;
-    RealD regionLowerBounds4[nRegions];
+    RealD *regionLowerBounds4 = new RealD[nRegions];
     // Example: one region each for the topmost soil layers
     soildepth = 0.;
     for (i = 0; i < nRegions; ++i) {
@@ -178,6 +178,7 @@ namespace {
         "for transpiration region for the " << i + 1 << "-th soil layer";
     }
 
+    delete regionLowerBounds4;
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
