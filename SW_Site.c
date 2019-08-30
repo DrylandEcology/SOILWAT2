@@ -589,20 +589,43 @@ static void _read_layers(void) {
 
 /**
   @brief Creates soil layers based on function arguments (instead of reading
-    them from an input file as `_read_layers` does)
+    them from an input file as _read_layers() does)
 
   @param nlyrs The number of soil layers to create.
-  @param nRegions The number of regions to create. Must be between
-    1 and MAX_TRANSP_REGIONS.
-  @param lowerBounds Array of size nRegions containing the lower bound of
-    each region in ascending (in value) order. If you think about this from the
-	perspective of soil, it would mean the shallowest bound is at lowerBounds[0].
+  @param[in] dmax Array of size \p nlyrs for depths [cm] of each soil layer
+    measured from the surface
+  @param[in] matricd Array of size \p nlyrs for soil matric density [g/cm3]
+  @param[in] f_gravel Array of size \p nlyrs for volumetric gravel content [v/v]
+  @param[in] evco Array of size \p nlyrs with bare-soil evaporation coefficients
+    [0, 1] that sum up to 1.
+  @param[in] trco_grass Array of size \p nlyrs with transpiration coefficients
+    for grasses [0, 1] that sum up to 1.
+  @param[in] trco_shrub Array of size \p nlyrs with transpiration coefficients
+    for shrubs [0, 1] that sum up to 1.
+  @param[in] trco_tree Array of size \p nlyrs with transpiration coefficients
+    for trees [0, 1] that sum up to 1.
+  @param[in] trco_forb Array of size \p nlyrs with transpiration coefficients
+    for forbs [0, 1] that sum up to 1.
+  @param[in] psand Array of size \p nlyrs for sand content of the
+    soil matrix [g3 / g3]
+  @param[in] pclay Array of size \p nlyrs for clay content of the
+    soil matrix [g3 / g3]
+  @param[in] imperm Array of size \p nlyrs with impermeability coefficients
+    [0, 1]
+  @param[in] soiltemp Array of size \p nlyrs with initial soil temperature [C]
+  @param nRegions The number of transpiration regions to create. Must be between
+    1 and \ref MAX_TRANSP_REGIONS.
+  @param[in] regionLowerBounds Array of size \p nRegions containing the lower
+    depth [cm] of each region in ascending (in value) order. If you think about
+    this from the perspective of soil, it would mean the shallowest bound is at
+    `lowerBounds[0]`.
+
   @sideeffect After deleting any previous data in the soil layer array
-    `SW_Site.lyr`, it creates new soil layers based on the argument inputs.
+    SW_Site.lyr, it creates new soil layers based on the argument inputs.
 
   @note
-    - This function is a modified version of the function `_read_layers` in
-      `SW_Site.c`.
+    - This function is a modified version of the function _read_layers() in
+      SW_Site.c.
 */
 void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel,
   RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
@@ -704,22 +727,22 @@ void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel
 /**
   @brief Resets soil regions based on input parameters.
 
-  @param nRegions The number of regions to create. Must be between
+  @param nRegions The number of transpiration regions to create. Must be between
     1 and \ref MAX_TRANSP_REGIONS.
-  @param regionLowerBounds Array of size \ref nRegions containing the lower
-    bound of each region in ascending (in value) order. If you think about this
-    from the perspective of soil, it would mean the shallowest bound is at
-    lowerBounds[0].
+  @param[in] regionLowerBounds Array of size \p nRegions containing the lower
+    depth [cm] of each region in ascending (in value) order. If you think about
+    this from the perspective of soil, it would mean the shallowest bound is at
+    `lowerBounds[0]`.
 
   @sideeffect
     \ref _TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
     derived from the input and from the soil information.
 
   @note
-  - \ref nRegions does NOT determine how many regions will be derived. It only
-    defines the size of the \ref regionLowerBounds array. For example, if your
-    input parameters are (4, { 10, 20, 40 }), but there is a soil layer from
-    41 to 60 cm, it will be placed in _TranspRgnBounds[4].
+  - \p nRegions does NOT determine how many regions will be derived. It only
+    defines the size of the \p regionLowerBounds array. For example, if your
+    input parameters are `(4, { 10, 20, 40 })`, but there is a soil layer from
+    41 to 60 cm, it will be placed in `_TranspRgnBounds[4]`.
 */
 void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 	int i, j;
