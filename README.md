@@ -234,7 +234,7 @@ yourself
 e.g.,
 
 ```{.sh}
-      sudo port install clang-8.0 clang-select
+      sudo port install clang-8.0
       sudo port select --set clang mp-clang-8.0
 ```
 
