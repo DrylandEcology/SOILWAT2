@@ -736,6 +736,27 @@ void SW_VPD_init(void) {
 	}
 }
 
+
+/**
+  @brief Sum up values across vegetation types
+
+  @param[in] *x Array of size \ref NVEGTYPES
+  @return Sum across `*x`
+*/
+RealD sum_across_vegtypes(RealD *x)
+{
+  unsigned int k;
+  RealD sum = 0.;
+
+  ForEachVegType(k)
+  {
+    sum += x[k];
+  }
+
+  return sum;
+}
+
+
 void _echo_VegProd(void) {
 	/* ================================================== */
 

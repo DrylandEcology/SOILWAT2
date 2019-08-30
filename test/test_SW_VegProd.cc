@@ -108,6 +108,16 @@ namespace {
   }
 
 
+  // Test summing values across vegetation types
+  TEST(VegTest, Summing) {
+    double x0[NVEGTYPES] = {0.};
+    double x1[NVEGTYPES] = {0.25, 0.25, 0.25, 0.25};
+
+    EXPECT_DOUBLE_EQ(sum_across_vegtypes(x0), 0.);
+    EXPECT_DOUBLE_EQ(sum_across_vegtypes(x1), 1.);
+  }
+
+
 	// Check `get_critical_rank`
 	TEST(VegTest, rank) {
 		int k;

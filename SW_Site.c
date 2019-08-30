@@ -108,6 +108,7 @@ static char *MyFileName;
 static void _read_layers(void);
 
 
+
 /**
 	\brief Calculate soil moisture characteristics for each layer.
 
@@ -586,6 +587,195 @@ static void _read_layers(void) {
 	#endif
 }
 
+/**
+  @brief Creates soil layers based on function arguments (instead of reading
+    them from an input file as `_read_layers` does)
+
+  @param nlyrs The number of soil layers to create.
+  @param nRegions The number of regions to create. Must be between
+    1 and MAX_TRANSP_REGIONS.
+  @param lowerBounds Array of size nRegions containing the lower bound of
+    each region in ascending (in value) order. If you think about this from the
+	perspective of soil, it would mean the shallowest bound is at lowerBounds[0].
+  @sideeffect After deleting any previous data in the soil layer array
+    `SW_Site.lyr`, it creates new soil layers based on the argument inputs.
+
+  @note
+    - This function is a modified version of the function `_read_layers` in
+      `SW_Site.c`.
+*/
+void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel,
+  RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
+  RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp,
+  int nRegions, RealD *regionLowerBounds)
+{
+
+  RealF dmin = 0.0;
+  SW_SITE *v = &SW_Site;
+
+  LyrIndex lyrno;
+  unsigned int i, k;
+
+  // De-allocate and delete previous soil layers
+  SW_SIT_clear_layers();
+  v->n_layers = 0;
+  v->n_evap_lyrs = 0;
+
+  ForEachVegType(k)
+  {
+    v->n_transp_lyrs[k] = 0;
+  }
+
+  // Create new soil
+  for (i = 0; i < nlyrs; i++)
+  {
+    // Create the next soil layer
+    lyrno = _newlayer();
+
+    v->lyr[lyrno]->width = dmax[i] - dmin;
+    dmin = dmax[i];
+    v->lyr[lyrno]->soilMatric_density = matricd[i];
+    v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel[i];
+    v->lyr[lyrno]->evap_coeff = evco[i];
+
+    ForEachVegType(k)
+    {
+      switch (k)
+      {
+        case SW_TREES:
+          v->lyr[lyrno]->transp_coeff[k] = trco_tree[i];
+          break;
+        case SW_SHRUB:
+          v->lyr[lyrno]->transp_coeff[k] = trco_shrub[i];
+          break;
+        case SW_FORBS:
+          v->lyr[lyrno]->transp_coeff[k] = trco_forb[i];
+          break;
+        case SW_GRASS:
+          v->lyr[lyrno]->transp_coeff[k] = trco_grass[i];
+          break;
+      }
+
+      v->lyr[lyrno]->my_transp_rgn[k] = 0;
+
+      if (GT(v->lyr[lyrno]->transp_coeff[k], 0.0))
+      {
+        v->n_transp_lyrs[k]++;
+      }
+    }
+
+    v->lyr[lyrno]->fractionWeightMatric_sand = psand[i];
+    v->lyr[lyrno]->fractionWeightMatric_clay = pclay[i];
+    v->lyr[lyrno]->impermeability = imperm[i];
+    v->lyr[lyrno]->sTemp = soiltemp[i];
+
+    if (GT(v->lyr[lyrno]->evap_coeff, 0.0))
+    {
+      v->n_evap_lyrs++;
+    }
+
+    water_eqn(f_gravel[i], psand[i], pclay[i], lyrno);
+
+    v->lyr[lyrno]->swcBulk_fieldcap = SW_SWPmatric2VWCBulk(f_gravel[i], 0.333,
+      lyrno) * v->lyr[lyrno]->width;
+    v->lyr[lyrno]->swcBulk_wiltpt = SW_SWPmatric2VWCBulk(f_gravel[i], 15,
+      lyrno) * v->lyr[lyrno]->width;
+    calculate_soilBulkDensity(matricd[i], f_gravel[i], lyrno);
+
+//    swprintf("L: %d/%d depth=%3.1f, width=%3.1f\n", i, lyrno, dmax[i],
+//      v->lyr[lyrno]->width);
+  }
+
+  if (v->deepdrain)
+  {
+    lyrno = _newlayer();
+    v->lyr[lyrno]->width = 1.0;
+  }
+  //  swprintf("Last: %d/%d width=%3.1f\n", i, lyrno, v->lyr[lyrno]->width);
+
+  derive_soilRegions(nRegions, regionLowerBounds);
+
+  // Re-initialize site parameters based on new soil layers
+  init_site_info();
+}
+
+
+
+/**
+  @brief Resets soil regions based on input parameters.
+
+  @param nRegions The number of regions to create. Must be between
+    1 and \ref MAX_TRANSP_REGIONS.
+  @param regionLowerBounds Array of size \ref nRegions containing the lower
+    bound of each region in ascending (in value) order. If you think about this
+    from the perspective of soil, it would mean the shallowest bound is at
+    lowerBounds[0].
+
+  @sideeffect
+    \ref _TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
+    derived from the input and from the soil information.
+
+  @note
+  - \ref nRegions does NOT determine how many regions will be derived. It only
+    defines the size of the \ref regionLowerBounds array. For example, if your
+    input parameters are (4, { 10, 20, 40 }), but there is a soil layer from
+    41 to 60 cm, it will be placed in _TranspRgnBounds[4].
+*/
+void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
+	int i, j;
+	SW_SITE *v = &SW_Site;
+	RealD totalDepth = 0;
+	LyrIndex layer, UNDEFINED_LAYER = 999;
+
+	/* ------------- Error checking --------------- */
+	if(nRegions < 1 || nRegions > MAX_TRANSP_REGIONS){
+		LogError(logfp, LOGFATAL, "derive_soilRegions: invalid number of regions (%d)\n", nRegions);
+		return;
+	}
+
+	/* --------------- Clear out the array ------------------ */
+	for(i = 0; i < MAX_TRANSP_REGIONS; ++i){
+		// Setting bounds to a ridiculous number so we
+		// know how many get set.
+		_TranspRgnBounds[i] = UNDEFINED_LAYER;
+	}
+
+	/* ----------------- Derive Regions ------------------- */
+	// Loop through the regions the user wants to derive
+	layer = 0; // SW_Site.lyr is base0-indexed
+	totalDepth = 0;
+	for(i = 0; i < nRegions; ++i){
+		_TranspRgnBounds[i] = layer;
+		// Find the layer that pushes us out of the region.
+		// It becomes the bound.
+		while(totalDepth < regionLowerBounds[i] &&
+		      layer < v->n_layers &&
+		      sum_across_vegtypes(v->lyr[layer]->transp_coeff)) {
+			totalDepth += v->lyr[layer]->width;
+			_TranspRgnBounds[i] = layer;
+			layer++;
+		}
+	}
+
+	/* -------------- Check for duplicates -------------- */
+	for(i = 0; i < nRegions - 1; ++i){
+		// If there is a duplicate bound we will remove it by left shifting the
+		// array, overwriting the duplicate.
+		if(_TranspRgnBounds[i] == _TranspRgnBounds[i + 1]){
+			for(j = i + 1; j < nRegions - 1; ++j){
+				_TranspRgnBounds[j] = _TranspRgnBounds[j + 1];
+			}
+			_TranspRgnBounds[MAX_TRANSP_REGIONS - 1] = UNDEFINED_LAYER;
+		}
+	}
+
+	/* -------------- Derive n_transp_rgn --------------- */
+	v->n_transp_rgn = 0;
+	while(v->n_transp_rgn < MAX_TRANSP_REGIONS &&
+	      _TranspRgnBounds[v->n_transp_rgn] != UNDEFINED_LAYER) {
+		v->n_transp_rgn++;
+	}
+}
 
 void init_site_info(void) {
 	/* =================================================== */
