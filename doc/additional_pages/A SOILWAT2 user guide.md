@@ -93,7 +93,8 @@ on your side.
 
 ### Example
   * The source code contains a complete example simulation project in `testing/`
-  * Copy the executable to the testing path and run the simulation, e.g.,
+  * Copy the executable to the testing path, modify inputs as desired,
+    and run a simulation, e.g.,
 ```{.sh}
     make bint bint_run
 ```
