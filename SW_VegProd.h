@@ -134,6 +134,7 @@ void SW_VPD_fix_cover(void);
 void SW_VPD_construct(void);
 void SW_VPD_deconstruct(void);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
+RealD sum_across_vegtypes(RealD *x);
 void _echo_VegProd(void);
 void get_critical_rank(void);
 
