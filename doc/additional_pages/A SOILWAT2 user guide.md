@@ -2,7 +2,7 @@
 
 
 [SOILWAT2]: https://github.com/DrylandEcology/SOILWAT2
-[issues]: https://github.com/DrylandEcology/SOILWAT2/issues
+[issue]: https://github.com/DrylandEcology/SOILWAT2/issues
 [rSOILWAT2]: https://github.com/DrylandEcology/rSOILWAT2
 [cygwin]: https://www.cygwin.com
 [docker]: https://www.docker.com
@@ -29,19 +29,18 @@ on your side.
 <br>
 
 ### Minimal requirements
-  - on Windows OS:
-    - a `*nix` emulator, e.g., an installation of [cygwin][] or [docker][]
-  - on Mac OSX:
-    - [xcode][]
-    - xcode command line tools that you can install with:
-      `xcode-select --install`
-    - having agreed to the xcode license that you can do with:
-      `xcodebuild -license`
-  - additionally:
+  - on any platform:
     - the `gcc` or `clang/llvm` toolchains;
       ideally, `gcc >= v4.9` or `clang >= v3.3`
     - POSIX- or GNU-compliant `make`
     - `git` to download the code
+  - additionally, on Windows OS:
+    - a `*nix` emulator, e.g., an installation of [cygwin][] or [docker][]
+  - additionally, on Mac OSX:
+    - [xcode][] or at least:
+      - xcode command line tools (run `xcode-select --install`
+        in the terminal/on the command line)
+      - having agreed to the xcode license (run `xcodebuild -license`)
   - optional:
     - `doxgyen` (ideally `>= v1.8.15`) to generate a local copy of the
       documentation
