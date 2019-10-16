@@ -11,6 +11,8 @@
 #
 # make doc         create html documentation for SOILWAT2 using doxygen
 #
+# make doc_open    open documentation
+#
 # make lib         create SOILWAT2 library
 #
 # make test        compile unit tests in 'test/ folder (with googletest)
@@ -258,6 +260,11 @@ cov_run : cov
 .PHONY : doc
 doc :
 		./tools/run_doxygen.sh
+
+
+.PHONY : doc_open
+doc_open :
+		./tools/doc_open.sh
 
 
 .PHONY : clean1
