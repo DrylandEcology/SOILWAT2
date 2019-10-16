@@ -20,7 +20,7 @@ doxexcept=${doc_path}"/doxygen_exceptions.txt" # filename that lists exceptions 
 
 # Downgrade Doxyfile in case this runs an old doxygen version, e.g.,
 # travis-ci is currently on 1.8.6 (instead of 1.8.15)
-if [[ $(doxygen --version) != "1.8.15" ]]; then
+if [[ $(doxygen --version) != "1.8.16" ]]; then
   doxygen -u ${doxy} &>/dev/null
 fi
 
