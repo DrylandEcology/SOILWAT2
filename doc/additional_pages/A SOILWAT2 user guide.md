@@ -1,13 +1,17 @@
 \page page_manual A SOILWAT2 user guide
 
 
-[SOILWAT2]: https://github.com/DrylandEcology/SOILWAT2
-[issue]: https://github.com/DrylandEcology/SOILWAT2/issues
-[rSOILWAT2]: https://github.com/DrylandEcology/rSOILWAT2
+[clang/llvm]: https://clang.llvm.org
 [cygwin]: https://www.cygwin.com
 [docker]: https://www.docker.com
-[xcode]: https://developer.apple.com/xcode
 [doxygen]: https://github.com/doxygen/doxygen
+[gcc]: https://gcc.gnu.org
+[git]: https://git-scm.com
+[issue]: https://github.com/DrylandEcology/SOILWAT2/issues
+[rSOILWAT2]: https://github.com/DrylandEcology/rSOILWAT2
+[SOILWAT2]: https://github.com/DrylandEcology/SOILWAT2
+[tinytex]: https://yihui.name/tinytex/
+[xcode]: https://developer.apple.com/xcode
 
 
 The `SOILWAT2` program must be downloaded as source code and compiled from the
@@ -30,20 +34,37 @@ on your side.
 
 ### Minimal requirements
   - on any platform:
-    - the `gcc` or `clang/llvm` toolchains;
+    - the [gcc][] or [clang/llvm][] toolchains;
       ideally, `gcc >= v4.9` or `clang >= v3.3`
-    - POSIX- or GNU-compliant `make`
-    - `git` to download the code
+    - POSIX- [make](https://pubs.opengroup.org/onlinepubs/9699919799/) or
+      GNU-compliant [make](https://www.gnu.org/software/make/)
+    - [git][] to download the code
   - additionally, on Windows OS:
     - a `*nix` emulator, e.g., an installation of [cygwin][] or [docker][]
-  - additionally, on Mac OSX:
-    - [xcode][] or at least:
-      - xcode command line tools (run `xcode-select --install`
-        in the terminal/on the command line)
-      - having agreed to the xcode license (run `xcodebuild -license`)
+  - on Mac OSX:
+    - xcode command line tools (run `xcode-select --install` on the command line)
+    - having agreed to the xcode license (run `xcodebuild -license`)
+    - or, alternatively, the full [xcode][] installation
   - optional:
-    - `doxgyen` (ideally `>= v1.8.15`) to generate a local copy of the
-      documentation
+    - [doxygen][] (ideally `>= v1.8.16`) and a minimal `latex` installation (see below)
+      to generate a local copy of the documentation
+
+
+
+#### Example instructions for a minimal `latex` installation
+  * details on [tinytex][]
+  * install the R package `tinytex`
+```{.r}
+    install.packages("tinytex")
+    tinytex::install_tinytex()
+```
+  * if you don't have write permission to `/usr/local/bin`, then appropriate symlinks
+    are not generated; thus, locate the path to `tlmgr`,
+    e.g., with help of `tinytex::tinytex_root()`, and fix symlinks with
+    escalated privileges
+```{.sh}
+    sudo [path/to/]tlmgr path add
+```
 
 <br>
 
@@ -54,37 +75,44 @@ on your side.
   * Note: Downloading the `SOILWAT2` code as `zip` file (via green button
     on website) or directly from
     [here](https://github.com/DrylandEcology/SOILWAT2/archive/master.zip)
-    doesn't work out of the box because this wouldn't include code for the
+    doesn't work out of the box because this will not download required code for the
     "submodules".
 
-  * Use `git` to download/clone the [SOILWAT2][] from `github`, e.g.,
+  * Use `git` to download the latest version of [SOILWAT2][] from our repository on
+    [github](https://github.com), e.g.,
 ```{.sh}
     git clone -b master --single-branch --recursive https://github.com/DrylandEcology/SOILWAT2.git SOILWAT2
 ```
 
+  * Download a specific version of [SOILWAT2][], e.g., version 5.0.0,
+```{.sh}
+    git clone -b v5.0.0 --single-branch --recursive https://github.com/DrylandEcology/SOILWAT2.git SOILWAT2
+```
+
+  * If you are a developer, then clone the repository (instead of a single branch), e.g.,
+  ```{.sh}
+    git clone --recursive https://github.com/DrylandEcology/SOILWAT2.git SOILWAT2
+```
 <br>
 
 
 ### Compilation
   * Compile an executable binary, e.g.,
 ```{.sh}
-      cd SOILWAT2/
-      make bin
+    cd SOILWAT2/
+    make bin
 ```
 
 <br>
 
 
 ### Documentation
-  * Generate help pages (locally)
+  * Generate help pages (locally) and open them in your browser
 ```{.sh}
-      cd SOILWAT2/
-      make doc
+    cd SOILWAT2/
+    make doc
+    make doc_open
 ```
-
-  * View documentation in your browser by opening `doc/html/index.html`
-    - on Mac OSX, e.g., `open doc/html/index.html`
-    - on a Linux-style platform, e.g., `xdg-open doc/html/index.html`
 
 <br>
 

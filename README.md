@@ -75,7 +75,8 @@ Some recent references
 <a name="get_started"></a>
 ## How to get started
 
-A detailed manual can be found in the documentation \ref page_manual.
+A detailed manual can be found
+[here](`doc/additional_pages/A SOILWAT2 user guide.md`) or here \ref page_manual.
 
 <a name="compile"></a>
 ### Compilation
@@ -96,7 +97,7 @@ A detailed manual can be found in the documentation \ref page_manual.
   * Use [doxygen][] to generate help pages (locally) on the command-line with
     `make doc` (which basically runs `doxygen doc/Doxyfile`)
 
-  * View documentation in your browser by opening `doc/html/index.html`
+  * View documentation in your browser with `make doc_open`
 
 <br>
 
