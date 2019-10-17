@@ -77,6 +77,9 @@ static void _zero_state(unsigned int sppnum);
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
 
+/**
+@brief Constructor for SW_VegEstab.
+*/
 void SW_VES_construct(void) {
 	/* =================================================== */
 	/* note that an initializer that is called during
@@ -101,6 +104,9 @@ void SW_VES_construct(void) {
 	}
 }
 
+/**
+@brief Deconstructor for SW_VegEstab for each period, pd.
+*/
 void SW_VES_deconstruct(void)
 {
 	OutPeriod pd;
@@ -147,16 +153,19 @@ void SW_VES_deconstruct(void)
 	}
 }
 
-
+/**
+@brief We can use the debug memset because we allocated days, that is, it
+			wasn't allocated by the compiler.
+*/
 void SW_VES_new_year(void) {
-	/* =================================================== */
-	/* we can use the debug memset because we allocated days,
-	 * that is, it wasn't allocated by the compiler. */
 
 	if (0 == SW_VegEstab.count)
 		return;
 }
 
+/**
+@brief Reads in file for SW_VegEstab
+*/
 void SW_VES_read(void) {
 	/* =================================================== */
 	FILE *f;
@@ -187,7 +196,9 @@ void SW_VES_read(void) {
 		_echo_VegEstab();
 }
 
-
+/**
+@brief Initializer for SW_VegEstab.
+*/
 void Init_SW_VegEstab(void)
 {
 	IntU i;
@@ -201,14 +212,15 @@ void Init_SW_VegEstab(void)
 	}
 }
 
-
+/**
+@brief Check that each count coincides with a day of the year.
+*/
 void SW_VES_checkestab(void) {
 	/* =================================================== */
 	IntUS i;
 
 	for (i = 0; i < SW_VegEstab.count; i++)
 		_checkit(SW_Model.doy, i);
-
 }
 
 /* =================================================== */
@@ -398,12 +410,14 @@ static void _read_spp(const char *infile) {
 	CloseFile(&f);
 }
 
+/**
+@brief Initializations performed after acquiring parameters after read() or some
+			other function call.
 
+@param sppnum Index for which paramater is beign initialized.
+*/
 void _spp_init(unsigned int sppnum) {
-	/* =================================================== */
-	/* initializations performed after acquiring parameters
-	 * after read() or some other function call.
-	 */
+
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
 	SW_LAYER_INFO **lyr = SW_Site.lyr;
 	IntU i;
@@ -460,13 +474,15 @@ static void _sanity_check(unsigned int sppnum) {
 
 }
 
+/**
+@brief First time called with no species defined so SW_VegEstab.count == 0 and
+			SW_VegEstab.parms is not initialized yet, malloc() required.  For each
+			species thereafter realloc() is called.
+
+@return (++v->count) - 1
+*/
 unsigned int _new_species(void) {
-	/* --------------------------------------------------- */
-	/* first time called with no species defined so
-	 SW_VegEstab.count==0 and SW_VegEstab.parms is
-	 not initialized yet, malloc() required.  For each
-	 species thereafter realloc() is called.
-	 */
+
 	const char *me = "SW_VegEstab_newspecies()";
 	SW_VEGESTAB *v = &SW_VegEstab;
 
@@ -479,6 +495,9 @@ unsigned int _new_species(void) {
 	return (++v->count) - 1;
 }
 
+/**
+@brief Text output for VegEstab.
+*/
 void _echo_VegEstab(void) {
 	/* --------------------------------------------------- */
 	SW_VEGESTAB_INFO **v = SW_VegEstab.parms;

@@ -197,7 +197,9 @@ static void arrays2records(void);
  * not always occur.
  */
 
-
+/**
+@brief Initialize global variables between consecutive calls to SOILWAT.
+*/
 void SW_FLW_construct(void) {
 	/* 06/26/2013	(rjm) added function SW_FLW_construct() to init global variables between consecutive calls to SoilWat as dynamic library */
 	int i, k;
@@ -239,7 +241,9 @@ void SW_FLW_construct(void) {
 		veg_int_storage[k] = 0.;
 	}
 }
-
+/**
+@brief This function is blank.
+*/
 void SW_FLW_deconstruct(void)
 {}
 

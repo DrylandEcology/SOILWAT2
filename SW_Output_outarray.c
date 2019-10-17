@@ -173,6 +173,9 @@ void SW_OUT_set_nrow(void)
 	#endif
 }
 
+/**
+@brief For each out key, the p_OUT array is set to NULL.
+*/
 void SW_OUT_deconstruct_outarray(void)
 {
 	IntUS i;

@@ -58,6 +58,10 @@ static void _end_day(void);
 
 /*******************************************************/
 /***************** Begin Main Code *********************/
+/**
+@brief Calls 'SW_CTL_run_current_year' for each year
+          which calls 'SW_SWC_water_flow' for each day.
+*/
 
 void SW_CTL_main(void) {
   #ifdef SWDEBUG
@@ -74,12 +78,12 @@ void SW_CTL_main(void) {
     SW_CTL_run_current_year();
   }
 } /******* End Main Loop *********/
-/*******************************************************/
 
+/**
+@brief Initialize all structures, simulating a constructor call.
+ */
 void SW_CTL_init_model(const char *firstfile) {
-	/*=======================================================*/
-	/* initialize all structures, simulating
-	 * a constructor call */
+
 	SW_F_construct(firstfile);
 	SW_MDL_construct();
 	SW_WTH_construct();
@@ -114,8 +118,9 @@ void SW_CTL_clear_model(Bool full_reset) {
 	SW_CBN_deconstruct();
 }
 
-
-
+/**
+@brief Calls 'SW_SWC_water_flow' for each day.
+*/
 void SW_CTL_run_current_year(void) {
   /*=======================================================*/
   TimeInt *doy = &SW_Model.doy; // base1
@@ -168,9 +173,9 @@ void SW_CTL_run_current_year(void) {
   #endif
 }
 
-/** @brief Initiate/update variables for a new simulation year.
-
-    In addition to the timekeeper (Model), usually only modules
+/**
+@brief Initiate/update variables for a new simulation year.
+      In addition to the timekeeper (Model), usually only modules
       that read input yearly or produce output need to have this call.
 */
 static void _begin_year(void) {
@@ -194,7 +199,10 @@ static void _end_day(void) {
 	SW_WTH_end_day();
 	SW_SWC_end_day();
 }
-
+/**
+@brief Reads inputs from disk and makes a print statement if there is an error
+        in doing so.
+*/
 void SW_CTL_read_inputs_from_disk(void) {
   #ifdef SWDEBUG
   int debug = 0;
@@ -251,7 +259,9 @@ void SW_CTL_read_inputs_from_disk(void) {
   #endif
 }
 
-
+/**
+@brief Calls SW_CTL_read_inputs_from_disk and calculate_CO2_multipliers.
+*/
 void SW_CTL_obtain_inputs(void) {
   SW_CTL_read_inputs_from_disk();
   calculate_CO2_multipliers();
@@ -260,16 +270,19 @@ void SW_CTL_obtain_inputs(void) {
 
 #ifdef DEBUG_MEM
 #include "SW_Markov.h"  /* for setmemrefs function */
-/*======================================================*/
+
+/**
+@brief This routine sets the known memory refs so they can be
+      checked for leaks, etc.  Includes malloc-ed memory in
+      SOILWAT.  All refs will have been cleared
+      by a call to ClearMemoryRefs() before this, and will be
+      checked via CheckMemoryRefs() after this, most likely in
+      the main() function.
+*/
 void SW_CTL_SetMemoryRefs( void) {
 	/* when debugging memory problems, use the bookkeeping
 	 code in myMemory.c
-	 This routine sets the known memory refs so they can be
-	 checked for leaks, etc.  Includes malloc-ed memory in
-	 SOILWAT.  All refs will have been cleared
-	 by a call to ClearMemoryRefs() before this, and will be
-	 checked via CheckMemoryRefs() after this, most likely in
-	 the main() function.
+
 	 */
 
 	SW_F_SetMemoryRefs();

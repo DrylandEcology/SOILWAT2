@@ -316,6 +316,9 @@ void SW_WaterBalance_Checks(void)
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
 
+/**
+@brief Constructor for soilWater Content.
+*/
 void SW_SWC_construct(void) {
 	/* =================================================== */
 	OutPeriod pd;

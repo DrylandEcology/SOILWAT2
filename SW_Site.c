@@ -179,6 +179,11 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 
 }
 
+/**
+@brief Used to calculate the bulk density of the soil from the inputed matric density.
+
+Based on equation 20 from Saxton. @cite Saxton2006
+*/
 void calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel, LyrIndex n) {
 	/* ---------------------------------------------------------------- */
 	/* used to calculate the bulk density from the given matric density */
@@ -186,12 +191,14 @@ void calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel, LyrInd
 	SW_Site.lyr[n]->soilBulk_density = matricDensity * (1 - fractionGravel) + (fractionGravel * 2.65); /*eqn. 20 from Saxton et al. 2006  to calculate the bulk density of soil */
 }
 
+
+/**
+@brief First time called with no layers so SW_Site.lyr
+ not initialized yet, malloc() required.  For each
+ layer thereafter realloc() is called.
+*/
 LyrIndex _newlayer(void) {
-	/* --------------------------------------------------- */
-	/* first time called with no layers so SW_Site.lyr
-	 not initialized yet, malloc() required.  For each
-	 layer thereafter realloc() is called.
-	 */
+
 	SW_SITE *v = &SW_Site;
 	v->n_layers++;
 
@@ -216,21 +223,29 @@ LyrIndex _newlayer(void) {
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
 
+/**
+	@brief Initialized memory for SW_Site
+	/note that an initializer that is called during execution
+			(better called clean() or something) will need to free all allocated
+			memory first before clearing structure.
+*/
 void SW_SIT_construct(void) {
 	/* =================================================== */
-	/* note that an initializer that is called during
-	 * execution (better called clean() or something)
-	 * will need to free all allocated memory first
-	 * before clearing structure.
-	 */
+
 	memset(&SW_Site, 0, sizeof(SW_Site));
 }
 
+/**
+@brief Runs SW_SIT_clear_layers.
+*/
 void SW_SIT_deconstruct(void)
 {
 	SW_SIT_clear_layers();
 }
 
+/**
+@brief Reads in file for input values.
+*/
 void SW_SIT_read(void) {
 	/* =================================================== */
 	/* 5-Feb-2002 (cwb) Removed rgntop requirement in
@@ -996,12 +1011,12 @@ void init_site_info(void) {
 
 }
 
+/**
+@brief For multiple runs with the shared library, the need to remove the allocated
+			soil layers arises to avoid leaks. (rjm 2013)
+*/
 void SW_SIT_clear_layers(void) {
-	/* =================================================== */
-	/*
-	 * For multiple runs with the shared library, the need to
-	 * remove the allocated soil layer arises to avoid leaks.(rjm 2013)
-	 */
+
 	LyrIndex i, j;
 	SW_SITE *s = &SW_Site;
 
@@ -1025,6 +1040,9 @@ void SW_SIT_clear_layers(void) {
 	s->lyr = NULL;
 }
 
+/**
+@brief Print site-parameters and soil characteristics.
+*/
 void _echo_inputs(void) {
 	/* =================================================== */
 	SW_SITE *s = &SW_Site;

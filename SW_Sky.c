@@ -50,6 +50,9 @@ static char *MyFileName;
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
 
+/**
+@brief Reads in file for sky.
+*/
 void SW_SKY_read(void) {
 	/* =================================================== */
 	/* 6-Oct-03 (cwb) - all this time I had lines 1 & 3
@@ -110,7 +113,9 @@ void SW_SKY_read(void) {
 
 }
 
-
+/**
+@brief Initializes cloudcov, windspeed, r_humidity, transmission, as well as daily values.
+*/
 void SW_SKY_init(double scale_sky[], double scale_wind[], double scale_rH[], double scale_transmissivity[]) {
 	int i;
 	SW_SKY *v = &SW_Sky;

@@ -100,6 +100,9 @@ void SW_OUT_new_year(void)
 void SW_OUT_read(void)
 {}
 
+/**
+@brief This is a blank function.
+*/
 void _collect_values(void)
 {}
 
@@ -301,6 +304,9 @@ static void collect_sums(ObjType otyp, OutPeriod op)
 	SW_OUT_sum_today(otyp);
 }
 
+/**
+@brief Runs get commands for each eSW_Year.
+*/
 void _echo_outputs(void)
 {
 	OutPeriod pd = eSW_Year;

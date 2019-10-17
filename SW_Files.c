@@ -69,6 +69,16 @@ static void init(const char *s) {
 /* =================================================== */
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
+
+/**
+@brief Removes old output and/or create the output directories if needed.
+
+@param *s Name of the first file to read for filenames, or NULL. If NULL, then read
+	from DFLT_FIRSTFILE or whichever filename was set previously.
+
+@sideeffect *s Updated name of the first file to read for filenames, or NULL. If NULL, then read
+	from DFLT_FIRSTFILE or whichever filename was set previously.
+*/
 void SW_CSV_F_INIT(const char *s)
 {
 	/* AKT 08/28/2016
@@ -215,12 +225,28 @@ void SW_F_read(const char *s) {
 
 }
 
+/**
+@brief Adds FileIndex parameter i to array InFiles
+
+@param i Index parameter.
+
+@return InFiles Array of index parameters.
+*/
 char *SW_F_name(SW_FileIndex i) {
 	/* =================================================== */
 	return InFiles[i];
 
 }
+/**
+@brief Determines string length of file being read in combined with _ProjDir.
 
+@param *firstfile File to be read in.
+
+@sideeffect
+	- *firstfile File to be read in.
+	- *c Counter parameter for the firstfile.
+	- *p Parameter for length of project directory plus *c
+*/
 void SW_F_construct(const char *firstfile) {
 	/* =================================================== */
 	/* 10-May-02 (cwb) enhancement allows model to be run
@@ -244,6 +270,9 @@ void SW_F_construct(const char *firstfile) {
 
 }
 
+/**
+@brief Deconstructor for each of the SW_NFILES.
+*/
 void SW_F_deconstruct(void) {
 	IntUS i;
 
@@ -256,11 +285,20 @@ void SW_F_deconstruct(void) {
 	}
 }
 
+/**
+@brief Copies the prefix string to the weather_prefix.
 
+@param prefix Array of chars.
+*/
 void SW_WeatherPrefix(char prefix[]) {
 	strcpy(prefix, weather_prefix);
 }
 
+/**
+@brief Creates a string for output of OutputPrefix
+
+@param prefix Array of chars.
+*/
 void SW_OutputPrefix(char prefix[]) {
 
 	if (strcmp(output_prefix, "/") == 0)

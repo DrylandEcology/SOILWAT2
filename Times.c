@@ -55,6 +55,9 @@ static void _remaketime(void);
 /*            "Public" Function Definitions            */
 /* --------------------------------------------------- */
 
+/**
+@brief Initializes the time.
+*/
 void Time_init(void) {
 	/* =================================================== */
 
@@ -62,9 +65,12 @@ void Time_init(void) {
 	memset(cum_monthdays, 0, sizeof(TimeInt) * MAX_MONTHS);
 	cum_monthdays[NoMonth] = 1000;
 
-	Time_now(); /* set structure's time to current */
+	Time_now();
 }
 
+/**
+@brief Sets current structure to present time.
+*/
 void Time_now(void) {
 	/* =================================================== */
 	time_t x = time(NULL );
@@ -74,8 +80,10 @@ void Time_now(void) {
 	_reinit();
 }
 
+/**
+@brief Makes a new year.
+*/
 void Time_new_year(TimeInt year) {
-	/* =================================================== */
 
 	year = yearto4digit(year);
 	_tym.tm_year = (int) year - 1900;
@@ -84,9 +92,10 @@ void Time_new_year(TimeInt year) {
 
 }
 
+/**
+@brief Sets current day to tomorrow and changes the year if needed.
+*/
 void Time_next_day(void) {
-	/* =================================================== */
-	/* set current day to tomorrow, change year if needed */
 
 	if ((TimeInt) _tym.tm_yday == last_doy) {
 		_tym.tm_year++;
@@ -97,13 +106,13 @@ void Time_next_day(void) {
 
 }
 
+/**
+@brief Sets the internal yearday and year to match year. Makes sure the month
+			and month-day are correct for yearday. <br>
+			Does not change current doy, to do this use new_year()
+@param year
+*/
 void Time_set_year(TimeInt year) {
-	/* =================================================== */
-	/* sets the internal yearday and year to match year */
-	/* makes sure the month and month-day are correct for */
-	/* yearday.
-	 * DOES NOT change current doy.  Use new_year() for that.
-	 */
 
 	year = yearto4digit(year);
 
@@ -118,6 +127,11 @@ void Time_set_year(TimeInt year) {
 
 }
 
+/**
+@brief Sets the day of the year.
+
+@param doy Day of the year.
+*/
 void Time_set_doy(const TimeInt doy) {
 	/* =================================================== */
 
@@ -127,24 +141,36 @@ void Time_set_doy(const TimeInt doy) {
 	_remaketime();
 }
 
+/**
+@brief Sets the mday.
+
+@param day
+*/
 void Time_set_mday(const TimeInt day) {
-	/* =================================================== */
 
 	_tym.tm_mday = (int) day;
 	_remaketime();
 
 }
 
+/**
+@brief Sets the month.
+
+@param mon Month.
+*/
 void Time_set_month(const TimeInt mon) {
-	/* =================================================== */
 
 	_tym.tm_mon = (int) mon;
 	_remaketime();
 
 }
 
+/**
+@brief Returns the timestamp of the 'model' time. To get actual timestamp,
+			call Time_timestamp_now().
+@return _timestamp
+*/
 time_t Time_timestamp(void) {
-	/* =================================================== */
 	/* returns the timestamp of the "model" time.  to get
 	 * actual timestamp, call Time_timestamp_now()
 	 */
@@ -152,6 +178,11 @@ time_t Time_timestamp(void) {
 
 }
 
+/**
+@brief Returns the timestamp of the current real time.
+
+@return time
+*/
 time_t Time_timestamp_now(void) {
 	/* =================================================== */
 	/* returns the timestamp of the current real time.
@@ -160,23 +191,43 @@ time_t Time_timestamp_now(void) {
 
 }
 
+/**
+@brief Returns the last day of the year.
+
+@return cum_monthdays[Dec]
+*/
 TimeInt Time_lastDOY(void) {
-	/* =================================================== */
 
 	return cum_monthdays[Dec];
 }
 
+/**
+@brief Returns days in a given month.
+
+@param month
+
+@return days_in_month
+*/
 TimeInt Time_days_in_month(TimeInt month) {
-	/* =================================================== */
 
 	return days_in_month[month];
 }
 
+/**
+@brief Returns a time value.
+
+@return (asctime(&_tym))
+*/
 char *Time_printtime(void) {
-	/* =================================================== */
+
 	return (asctime(&_tym));
 }
 
+/**
+@brief Time formatted to daynmshort.
+
+@return _outs
+*/
 char *Time_daynmshort(void) {
 	/* =================================================== */
 
@@ -184,6 +235,11 @@ char *Time_daynmshort(void) {
 	return _outs;
 }
 
+/**
+@brief doy2mday and doy2month formatted to daynmshort_d.
+
+@return _outs
+*/
 char *Time_daynmshort_d(const TimeInt doy) {
 	/* =================================================== */
 	struct tm tmp = _tym;
@@ -194,6 +250,11 @@ char *Time_daynmshort_d(const TimeInt doy) {
 	return _outs;
 }
 
+/**
+@brief mday and mon formatted to daynmshort_d.
+
+@return _outs
+*/
 char *Time_daynmshort_dm(const TimeInt mday, const TimeInt mon) {
 	/* =================================================== */
 	struct tm tmp = _tym;
@@ -204,6 +265,11 @@ char *Time_daynmshort_dm(const TimeInt mday, const TimeInt mon) {
 	return _outs;
 }
 
+/**
+@brief Time formatting.
+
+@return _outs
+*/
 char *Time_daynmlong(void) {
 	/* =================================================== */
 
@@ -211,6 +277,13 @@ char *Time_daynmlong(void) {
 	return _outs;
 }
 
+/**
+@brief Time formatting.
+
+@param doy Day of the year.
+
+@return _outs
+*/
 char *Time_daynmlong_d(const TimeInt doy) {
 	/* =================================================== */
 	struct tm tmp = _tym;
@@ -221,6 +294,14 @@ char *Time_daynmlong_d(const TimeInt doy) {
 	return _outs;
 }
 
+/**
+@brief Time formatting.
+
+@param mday day in Month, day format.
+@param mon Month.
+
+@return _outs
+*/
 char *Time_daynmlong_dm(const TimeInt mday, const TimeInt mon) {
 	/* =================================================== */
 	struct tm tmp = _tym;
@@ -234,33 +315,91 @@ char *Time_daynmlong_dm(const TimeInt mday, const TimeInt mon) {
 /* =================================================== */
 /* simple methods to return state values */
 
+/**
+@brief Gets the year.
+
+@return _yearto4digit_t()
+*/
 TimeInt Time_get_year(void) {
 	return _yearto4digit_t();
 }
+
+/**
+@brief Gets day of the year.
+
+@return (TimeInt) _tym.tm_yday
+*/
 TimeInt Time_get_doy(void) {
 	return (TimeInt) _tym.tm_yday;
 }
+
+/**
+@brief Gets the month.
+
+@return (TimeInt) _tym.tm_mon
+*/
 TimeInt Time_get_month(void) {
 	return (TimeInt) _tym.tm_mon;
 }
+
+/**
+@brief Gets the week.
+
+@return doy2week(_tym.tm_yday)
+*/
 TimeInt Time_get_week(void) {
 	return doy2week(_tym.tm_yday);
 }
+/**
+@brief Gets mday.
+
+@return (TimeInt) _tym.tm_mday
+*/
 TimeInt Time_get_mday(void) {
 	return (TimeInt) _tym.tm_mday;
 }
+
+/**
+@brief Gets the hour.
+
+@return (TimeInt) _tym.tm_hour
+*/
 TimeInt Time_get_hour(void) {
 	return (TimeInt) _tym.tm_hour;
 }
+
+/**
+@brief Gets current minutes.
+
+@return (TimeInt) _tym.tm_min
+*/
 TimeInt Time_get_mins(void) {
 	return (TimeInt) _tym.tm_min;
 }
+
+/**
+@brief Gets current seconds.
+
+@return (TimeInt) _tym.tm_sec
+*/
 TimeInt Time_get_secs(void) {
 	return (TimeInt) _tym.tm_sec;
 }
+
+/**
+@brief Gets the last day of the year.
+
+@return last_doy
+*/
 TimeInt Time_get_lastdoy(void) {
 	return last_doy;
 }
+
+/**
+@brief Gets last day of the year, checks for leapyear.
+
+@return 366 or 365
+*/
 TimeInt Time_get_lastdoy_y(TimeInt year) {
 	return isleapyear(year) ? 366 : 365;
 }
@@ -272,6 +411,14 @@ TimeInt Time_get_lastdoy_y(TimeInt year) {
  * removing the preceeding Time_ to shorten the calls in
  * the code
  */
+
+/**
+@brief Doy is base1, mon becomes base0 month containing doy.
+  	note mon can't become 13, so any day after Nov 30
+  	returns Dec.
+@param doy Day of the year.
+@return mon for the month.
+*/
 TimeInt doy2month(const TimeInt doy) {
 	/* =================================================== */
 	/* doy is base1, mon becomes base0 month containing doy.
@@ -286,44 +433,62 @@ TimeInt doy2month(const TimeInt doy) {
 
 }
 
+/**
+@brief Doy is base1, mon becomes base0 month containing doy.
+  	note mon can't become 13, so any day after Nov 30
+  	returns Dec.
+@param doy Day of the year.
+@return doy in mday format.
+*/
 TimeInt doy2mday(const TimeInt doy) {
-	/* =================================================== */
-	/* doy is base1, mon becomes base0 month containing doy.
-	 * note mon can't become 13, so any day after Nov 30
-	 * returns Dec.
-	 */
 
 	TimeInt mon = doy2month(doy);
 	return (mon == Jan) ? doy : doy - cum_monthdays[mon - 1];
 
 }
 
+/**
+@brief Enter with doy base1 and return base0 number of 7 day
+  	periods (weeks) since beginning of year. Note that week
+  	number doesn't necessarily correspond to the calendar week.
+  	Jan 1 starts on different days depending on the year.  In
+  	2000 it started on Sun: each year later it starts 1 day
+  	later, each year earlier it started one day earlier.
+@param doy Day of the year.
+@return (TimeInt) ((yr > 100) ? yr : (yr < 50) ? 2000 + yr : 1900 + yr)
+*/
 TimeInt doy2week(TimeInt doy) {
-	/* =================================================== */
-	/* Enter with doy base1 and return base0 number of 7 day
-	 * periods (weeks) since beginning of year. Note that week
-	 * number doesn't necessarily correspond to the calendar week.
-	 * Jan 1 starts on different days depending on the year.  In
-	 * 2000 it started on Sun: each year later it starts 1 day
-	 * later, each year earlier it started one day earlier.
-	 */
+
 	return ((TimeInt) (((doy) - 1) / WKDAYS));
 }
 
+/**
+@brief Returns the year, but with the capability to handle Y2K problems.
+
+@return TimeInt
+*/
 TimeInt yearto4digit(TimeInt yr) {
-	/* =================================================== */
-	/* handle the Y2K problems */
 
 	return (TimeInt) ((yr > 100) ? yr : (yr < 50) ? 2000 + yr : 1900 + yr);
 
 }
 
+/**
+@brief Is it a leap year? Checks current year.
+
+@return Yes or no.
+*/
 Bool isleapyear_now(void) {
 	/* =================================================== */
 	/* check current year from struct tm */
 	return isleapyear(_yearto4digit_t());
 }
 
+/**
+@brief Is it a leap year?
+
+@return Yes or no.
+*/
 Bool isleapyear(const TimeInt year) {
 	/* =================================================== */
 
