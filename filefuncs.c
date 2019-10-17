@@ -81,7 +81,9 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 
 	va_start(args, fmt);
 
-	if (LOGNOTE & mode)
+	if (LOGQUIET & mode)
+		strcpy(outfmt, "");
+	else if (LOGNOTE & mode)
 		strcpy(outfmt, "NOTE: ");
 	else if (LOGWARN & mode)
 		strcpy(outfmt, "WARNING: ");
@@ -192,7 +194,8 @@ void CloseFile(FILE **f) {
 	 used as a check for whether the file is opened or not.
 	 */
 	if (*f == NULL ) {
-		fprintf(logfp, "WARNING: Tried to close file that exist/isn't open!!!\n");
+		LogError(logfp, LOGWARN,
+			"Tried to close file that doesn't exist or isn't open!");
 		return;
 	}
 	fclose(*f);

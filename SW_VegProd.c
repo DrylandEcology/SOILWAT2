@@ -558,7 +558,7 @@ void SW_VPD_fix_cover(void)
         key2veg[k], v->veg[k].cov.fCover);
     }
 
-    fprintf(logfp, "\n");
+    LogError(logfp, LOGQUIET, "");
   }
 }
 
