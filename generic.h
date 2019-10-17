@@ -140,6 +140,7 @@ typedef unsigned char byte;
 
 
 /* constants for LogError() mode */
+#define LOGQUIET  0x00
 #define LOGNOTE  0x01
 #define LOGWARN  0x02
 #define LOGERROR 0x04

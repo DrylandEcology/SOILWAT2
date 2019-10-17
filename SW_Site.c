@@ -942,7 +942,7 @@ void init_site_info(void) {
 				s + 1, SW_Site.lyr[s]->evap_coeff);
 		}
 
-		fprintf(logfp, "\n");
+		LogError(logfp, LOGQUIET, "");
 	}
 
 	ForEachVegType(k)
@@ -963,7 +963,7 @@ void init_site_info(void) {
 				}
 			}
 
-			fprintf(logfp, "\n");
+			LogError(logfp, LOGQUIET, "");
 		}
 	}
 
