@@ -72,6 +72,9 @@ _notime = 0xffff; /* init value for _prev* */
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
 
+/**
+@brief MDL constructor for global variables.
+*/
 void SW_MDL_construct(void) {
 	/* =================================================== */
 	/* note that an initializer that is called during
@@ -90,9 +93,15 @@ void SW_MDL_construct(void) {
 	SW_Model.newperiod[eSW_Day] = swTRUE; // every day is a new day
 }
 
+/**
+@brief This is a blank function.
+*/
 void SW_MDL_deconstruct(void)
 {}
 
+/**
+@brief Reads in MDL file and displays error message if file is incorrect.
+*/
 void SW_MDL_read(void) {
 	/* =================================================== */
 	/*
@@ -214,13 +223,12 @@ void SW_MDL_read(void) {
 
 }
 
-
+/**
+@brief Sets up time structures and calls modules that have yearly init routines.
+*/
 void SW_MDL_new_year() {
 	/* =================================================== */
-	/* sets up time structures and calls modules that have
-	 * yearly init routines
-	 *
-	 * 1/24/02 - added code for partial start and end years
+	/* 1/24/02 - added code for partial start and end years
 	 */
 
 	SW_MODEL *m = &SW_Model;
@@ -235,11 +243,11 @@ void SW_MDL_new_year() {
 	m->lastdoy = (year == m->endyr) ? m->endend : Time_lastDOY();
 }
 
+/**
+@brief Sets the output period elements of SW_Model based on current day.
+*/
 void SW_MDL_new_day(void) {
-	/* =================================================== */
-	/* sets the output period elements of SW_Model
-	 * based on the current day.
-	 */
+
 	OutPeriod pd;
 
 	SW_Model.month = doy2month(SW_Model.doy);

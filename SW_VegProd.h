@@ -18,7 +18,7 @@
  09/09/2011	(drs) added variable RealD EsTpartitioning_param to struct VegType as parameter for partitioning of bare-soil evaporation and transpiration as in Es = exp(-param*LAI)
  09/09/2011	(drs) added variable RealD Es_param_limit to struct VegType as parameter for for scaling and limiting bare soil evaporation rate: if totagb > Es_param_limit then no bare-soil evaporation
  09/13/2011	(drs) added variables RealD litt_intPPT_a, litt_intPPT_b, litt_intPPT_c, litt_intPPT_d to struct VegType for parameters in litter intercepted rain = (a + b*litter) + (c+d*litter) * ppt, which were previously hidden in code in SW_Flow_lib.c
- 09/13/2011	(drs)	added variable RealD canopy_height_constant to struct VegType; if > 0 then constant canopy height (cm) and overriding cnpy-tangens=f(biomass)
+ 09/13/2011	(drs)	added variable RealD canopy_height_constant to struct VegType; if > 0 then constant canopy height [cm] and overriding cnpy-tangens=f(biomass)
  09/15/2011	(drs)	added variable RealD albedo to struct VegType (previously in SW_Site.h struct SW_SITE)
  09/26/2011	(drs)	added a daily variable for each monthly input in struct VegType: RealD litter_daily, biomass_daily, pct_live_daily, veg_height_daily, lai_conv_daily, lai_conv_daily, lai_live_daily, pct_cover_daily, vegcov_daily, biolive_daily, biodead_daily, total_agb_daily each of [MAX_DAYS]
  09/26/2011	(dsr)	removed monthly variables RealD veg_height, lai_live, pct_cover, vegcov, biolive, biodead, total_agb each [MAX_MONTHS] from struct VegType because replaced with daily records
@@ -46,57 +46,158 @@ extern "C" {
 #define WUE_INDEX 1        /**< An integer representing the index of the WUE multipliers in the VegType#co2_multipliers 2D array. */
 
 
+/** Data type that describes cover attributes of a surface type */
 typedef struct {
-	RealD fCover,         /* cover component (fraction) of total plot */
-	  albedo;             /* surface albedo */
+  RealD
+    /** The cover contribution to the total plot [0-1];
+      user input from file `Input/veg.in` */
+    fCover,
+    /** The surface albedo [0-1];
+      user input from file `Input/veg.in` */
+    albedo;
 } CoverType;
 
 
+/** Data type that describes a vegetation type: currently, one of
+  \ref NVEGTYPES available types:
+  \ref SW_TREES, \ref SW_SHRUB, \ref SW_FORBS, and \ref SW_GRASS */
 typedef struct {
+  /** Surface cover attributes of the vegetation type */
   CoverType cov;
 
-	tanfunc_t cnpy, /* canopy height based on biomass */
-	tr_shade_effects; /* shading effect on transpiration based on live and dead biomass */
-	RealD canopy_height_constant; /* if > 0 then constant canopy height (cm) and overriding cnpy-tangens=f(biomass) */
+  tanfunc_t
+    /** Parameters to calculate canopy height based on biomass;
+      user input from file `Input/veg.in` */
+    cnpy;
+  /** Constant canopy height: if > 0 then constant canopy height [cm] and
+    overriding cnpy-tangens = f(biomass);
+    user input from file `Input/veg.in` */
+  RealD canopy_height_constant;
 
-	RealD shade_scale, /* scaling of live and dead biomass shading effects */
-	shade_deadmax; /* maximal dead biomass for shading effects */
-
-	RealD litter[MAX_MONTHS], /* monthly litter values (g/m**2)    */
-	biomass[MAX_MONTHS], /* monthly aboveground biomass (g/m**2) */
-	CO2_biomass[MAX_MONTHS], /* monthly aboveground biomass after CO2 effects */
-	pct_live[MAX_MONTHS], /* monthly live biomass in percent   */
-	CO2_pct_live[MAX_MONTHS], /* monthly live biomass in percent after CO2 effects */
-	lai_conv[MAX_MONTHS]; /* monthly amount of biomass   needed to produce lai=1 (g/m**2)      */
+  tanfunc_t
+    /** Shading effect on transpiration based on live and dead biomass;
+      user input from file `Input/veg.in` */
+    tr_shade_effects;
 
   RealD
-    litter_daily[MAX_DAYS + 1], /* daily interpolation of monthly litter values (g/m**2)    */
-    biomass_daily[MAX_DAYS + 1], /* daily interpolation of monthly aboveground biomass (g/m**2) */
-    pct_live_daily[MAX_DAYS + 1], /* daily interpolation of monthly live biomass in percent   */
-    veg_height_daily[MAX_DAYS + 1], /* daily interpolation of monthly height of vegetation (cm)   */
-    lai_conv_daily[MAX_DAYS + 1], /* daily interpolation of monthly amount of biomass needed to produce lai=1 (g/m**2)        */
-    lai_live_daily[MAX_DAYS + 1], /* daily interpolation of lai of live biomass               */
-    bLAI_total_daily[MAX_DAYS + 1], /* daily total "compound" leaf area index */
-    biolive_daily[MAX_DAYS + 1], /* daily interpolation of biomass * pct_live               */
-    biodead_daily[MAX_DAYS + 1], /* daily interpolation of biomass - biolive                */
-    total_agb_daily[MAX_DAYS + 1]; /* daily interpolation of sum of aboveground biomass & litter */
+    /** Parameter of live and dead biomass shading effects;
+      user input from file `Input/veg.in` */
+    shade_scale,
+    /** Maximal dead biomass for shading effects;
+      user input from file `Input/veg.in` */
+    shade_deadmax;
 
-	Bool flagHydraulicRedistribution; /*1: allow hydraulic redistribution/lift to occur; 0: turned off */
-	RealD maxCondroot, /* hydraulic redistribution: maximum radial soil-root conductance of the entire active root system for water (cm/-bar/day) */
-	swpMatric50, /* hydraulic redistribution: soil water potential (-bar) where conductance is reduced by 50% */
-	shapeCond; /* hydraulic redistribution: shaping parameter for the empirical relationship from van Genuchten to model relative soil-root conductance for water */
+  RealD
+    /** Monthly litter amount [g / m2] as if this vegetation type covers 100%
+      of the simulated surface;
+      user input from file `Input/veg.in` */
+    litter[MAX_MONTHS],
+    /** Monthly aboveground biomass [g / m2] as if this vegetation type
+      covers 100% of the simulated surface;
+      user input from file `Input/veg.in` */
+    biomass[MAX_MONTHS],
+    /** Monthly aboveground biomass after CO2 effects */
+    CO2_biomass[MAX_MONTHS],
+    /** Monthly live biomass in percent of aboveground biomass;
+      user input from file `Input/veg.in` */
+    pct_live[MAX_MONTHS],
+    /** Monthly live biomass in percent of aboveground biomass after
+      CO2 effects */
+    CO2_pct_live[MAX_MONTHS],
+    /** Parameter to translate biomass to LAI = 1 [g / m2];
+      user input from file `Input/veg.in` */
+    lai_conv[MAX_MONTHS];
 
-	RealD SWPcrit; /* critical soil water potential below which vegetation cannot sustain transpiration (-bar) */
+  RealD
+    /** Daily litter amount [g / m2] */
+    litter_daily[MAX_DAYS + 1],
+    /** Daily aboveground biomass [g / m2] */
+    biomass_daily[MAX_DAYS + 1],
+    /** Daily live biomass in percent of aboveground biomass */
+    pct_live_daily[MAX_DAYS + 1],
+    /** Daily height of vegetation canopy [cm] */
+    veg_height_daily[MAX_DAYS + 1],
+    /** Daily parameter value to translate biomass to LAI = 1 [g / m2] */
+    lai_conv_daily[MAX_DAYS + 1],
+    /** Daily LAI of live biomass [m2 / m2]*/
+    lai_live_daily[MAX_DAYS + 1],
+    /** Daily total "compound" leaf area index [m2 / m2]*/
+    bLAI_total_daily[MAX_DAYS + 1],
+    /** Daily live biomass [g / m2] */
+    biolive_daily[MAX_DAYS + 1],
+    /** Daily dead standing biomass [g / m2] */
+    biodead_daily[MAX_DAYS + 1],
+    /** Daily sum of aboveground biomass & litter [g / m2] */
+    total_agb_daily[MAX_DAYS + 1];
 
-	RealD veg_kSmax, veg_kdead; /* vegetation interception parameters */
-	RealD lit_kSmax; /* litter interception parameters */
+  Bool
+    /** Flag for hydraulic redistribution/lift:
+      1, simulate; 0, don't simulate;
+      user input from file `Input/veg.in` */
+    flagHydraulicRedistribution;
 
-	RealD EsTpartitioning_param; /* Parameter for partitioning of bare-soil evaporation and transpiration as in Es = exp(-param*LAI) */
+  RealD
+    /** Parameter for hydraulic redistribution: maximum radial soil-root
+      conductance of the entire active root system for water
+      [cm / (-bar * day)];
+      user input from file `Input/veg.in` */
+    maxCondroot,
+    /** Parameter for hydraulic redistribution: soil water potential [-bar]
+      where conductance is reduced by 50%;
+      user input from file `Input/veg.in` */
+    swpMatric50,
+    /** Parameter for hydraulic redistribution: shape parameter for the
+      empirical relationship from van Genuchten to model relative soil-root
+      conductance for water;
+      user input from file `Input/veg.in` */
+    shapeCond;
 
-	RealD Es_param_limit; /* parameter for scaling and limiting bare soil evaporation rate */
+  RealD
+    /** Critical soil water potential below which vegetation cannot sustain
+      transpiration [-bar];
+      user input from file `Input/veg.in` */
+    SWPcrit;
 
-	RealD co2_bio_coeff1, co2_bio_coeff2, co2_wue_coeff1, co2_wue_coeff2; /* Coefficients for CO2-effects; used by 'calculate_CO2_multipliers()' for biomass and WUE effects */
-  RealD co2_multipliers[2][MAX_NYEAR];  /**< A 2D array of PFT structures. Column BIO_INDEX holds biomass multipliers. Column WUE_INDEX holds WUE multipliers. Rows represent years. */
+  RealD
+    /** Parameter for vegetation interception;
+      user input from file `Input/veg.in` */
+    veg_kSmax,
+    /** Parameter for vegetation interception parameter;
+      user input from file `Input/veg.in` */
+    veg_kdead,
+    /** Parameter for litter interception;
+      user input from file `Input/veg.in` */
+    lit_kSmax;
+
+  RealD
+    /** Parameter for partitioning potential rates of bare-soil evaporation
+      and transpiration;
+      user input from file `Input/veg.in` */
+    EsTpartitioning_param,
+    /** Parameter for scaling and limiting bare soil evaporation rate;
+      user input from file `Input/veg.in` */
+    Es_param_limit;
+
+  RealD
+    /** Parameter for CO2-effects on biomass;
+      user input from file `Input/veg.in` */
+    co2_bio_coeff1,
+    /** Parameter for CO2-effects on biomass;
+      user input from file `Input/veg.in` */
+    co2_bio_coeff2,
+    /** Parameter for CO2-effects on water-use-efficiency;
+      user input from file `Input/veg.in` */
+    co2_wue_coeff1,
+    /** Parameter for CO2-effects on water-use-efficiency;
+      user input from file `Input/veg.in` */
+    co2_wue_coeff2;
+
+  RealD
+    /** Calculated multipliers for CO2-effects:
+      - column \ref BIO_INDEX holds biomass multipliers
+      - column \ref WUE_INDEX holds water-use-efficiency multipliers
+      - rows represent years */
+    co2_multipliers[2][MAX_NYEAR];
 
 } VegType;
 
@@ -107,26 +208,41 @@ typedef struct {
 
 
 typedef struct {
-	VegTypeOut veg[NVEGTYPES]; // used to be: grass, shrub, tree, forb;
+  VegTypeOut veg[NVEGTYPES];
 } SW_VEGPROD_OUTPUTS;
 
 
+/** Data type to describe the surface cover of a SOILWAT2 simulation run */
 typedef struct {
-	VegType veg[NVEGTYPES]; // used to be: grass, shrub, tree, forb;
-	CoverType bare_cov;   /* bare ground cover of plot */
+  /** Data for each vegetation type */
+  VegType veg[NVEGTYPES];
+  /** Bare-ground cover of plot that is not occupied by vegetation;
+      user input from file `Input/veg.in` */
+  CoverType bare_cov;
 
-	RealD critSoilWater[NVEGTYPES]; // storing values in same order as defined in STEPWAT2/rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
+  Bool
+    /** Flag that determines whether vegetation-type specific soil water
+      availability should be calculated;
+      user input from file `Input/outsetup.in` */
+    use_SWA;
 
-	// `rank_SWPcrits[k]` hold the vegetation type at rank `k` of decreasingly
-	// sorted critical SWP values
-	int rank_SWPcrits[NVEGTYPES];
+  RealD
+    // storing values in same order as defined in STEPWAT2/rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
+    critSoilWater[NVEGTYPES];
 
-	SW_VEGPROD_OUTPUTS
-		*p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time period
-		*p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
+  int
+    // `rank_SWPcrits[k]` hold the vegetation type at rank `k` of decreasingly
+    // sorted critical SWP values
+    rank_SWPcrits[NVEGTYPES];
 
-	Bool use_SWA;
+  SW_VEGPROD_OUTPUTS
+    /** output accumulator: summed values for each output time period */
+    *p_accu[SW_OUTNPERIODS],
+    /** output aggregator: mean or sum for each output time periods */
+    *p_oagg[SW_OUTNPERIODS];
 } SW_VEGPROD;
+
+
 
 void SW_VPD_read(void);
 void SW_VPD_init(void);

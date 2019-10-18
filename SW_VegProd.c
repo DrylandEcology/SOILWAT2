@@ -89,6 +89,9 @@ char const *key2veg[] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
 
+/**
+@brief Reads file for SW_VegProd.
+*/
 void SW_VPD_read(void) {
 	/* =================================================== */
 	SW_VEGPROD *v = &SW_VegProd;
@@ -558,11 +561,13 @@ void SW_VPD_fix_cover(void)
         key2veg[k], v->veg[k].cov.fCover);
     }
 
-    fprintf(logfp, "\n");
+    LogError(logfp, LOGQUIET, "");
   }
 }
 
-
+/**
+@brief Constructor for SW_VegProd.
+*/
 void SW_VPD_construct(void) {
 	/* =================================================== */
 	int year, k;
@@ -593,6 +598,9 @@ void SW_VPD_construct(void) {
   }
 }
 
+/**
+@brief Deconstructor for SW_VegProd.
+*/
 void SW_VPD_deconstruct(void)
 {
 	OutPeriod pd;
@@ -620,21 +628,22 @@ void SW_VPD_deconstruct(void)
  *
  * @param new_biomass  The resulting biomass after applying the multiplier.
  * @param biomass      The biomass to be modified (representing the value under reference
- *                     conditions (i.e., 360 ppm CO2, currently).
+ *                     conditions (i.e., 360 ppm CO<SUB>2</SUB>, currently).
  * @param multiplier   The biomass multiplier for this PFT.
- * @note Does not return a value, @p new_biomass is directly modified.
+ *
+ * @sideeffect new_biomass Updated biomass.
  */
 void apply_biomassCO2effect(double new_biomass[], double biomass[], double multiplier) {
   int i;
   for (i = 0; i < 12; i++) new_biomass[i] = (biomass[i] * multiplier);
 }
 
-
+/**
+@brief Set up vegetation parameters to be used in the 'watrflow' subroutine.
+*/
 void SW_VPD_init(void) {
 	/* ================================================== */
-	/* set up vegetation parameters to be used in
-	* the "watrflow" subroutine.
-	*
+	/*
 	* History:
 	*     Originally included in the FORTRAN model.
 	*
@@ -648,7 +657,6 @@ void SW_VPD_init(void) {
 	where pstem = 0.3,
 	aconst = 464.0,
 	conv_stcr = 3.0;
-	*
 	*
 	*/
 
@@ -757,6 +765,9 @@ RealD sum_across_vegtypes(RealD *x)
 }
 
 
+/**
+@brief Text output for VegProd.
+*/
 void _echo_VegProd(void) {
 	/* ================================================== */
 
@@ -789,8 +800,9 @@ void _echo_VegProd(void) {
 
 
 /** @brief Determine vegetation type of decreasingly ranked the critical SWP
-		@inputs SW_VegProd.critSoilWater[]
-		@sideeffects Sets `SW_VegProd.rank_SWPcrits[]`
+
+  @sideeffect Sets `SW_VegProd.rank_SWPcrits[]` based on
+    `SW_VegProd.critSoilWater[]`
 */
 void get_critical_rank(void){
 	/*----------------------------------------------------------

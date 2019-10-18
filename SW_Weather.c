@@ -87,6 +87,9 @@ static Bool firsttime;
 
 static void _update_yesterday(void);
 
+/**
+@brief Clears weather history.
+*/
 void _clear_hist_weather(void) {
 	/* --------------------------------------------------- */
 	SW_WEATHER_HIST *wh = &SW_Weather.hist;
@@ -104,6 +107,9 @@ static void _clear_runavg(void) {
 		runavg_list[i] = SW_MISSING;
 }
 
+/**
+@brief Clears memory for runavg_list.
+*/
 void SW_WTH_clear_runavg_list(void) {
 	free(runavg_list);
 	runavg_list = NULL;
@@ -166,6 +172,10 @@ static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
 /* =================================================== */
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
+
+/**
+@brief Constructor for SW_Weather.
+*/
 void SW_WTH_construct(void) {
 	/* =================================================== */
 	tail = 0;
@@ -188,6 +198,9 @@ void SW_WTH_construct(void) {
 	}
 }
 
+/**
+@brief Deconstructor for SW_Weather.
+*/
 void SW_WTH_deconstruct(void)
 {
 	OutPeriod pd;
@@ -213,6 +226,9 @@ void SW_WTH_deconstruct(void)
 	SW_WTH_clear_runavg_list();
 }
 
+/**
+@brief This is a blank function.
+*/
 void SW_WTH_init(void) {
 	/* =================================================== */
 	/* nothing to initialize */
@@ -220,6 +236,9 @@ void SW_WTH_init(void) {
 
 }
 
+/**
+@brief Sets new year for SW_Weather.
+*/
 void SW_WTH_new_year(void) {
 	/* =================================================== */
 	SW_WEATHER *w = &SW_Weather;
@@ -257,15 +276,20 @@ void SW_WTH_new_year(void) {
 	firsttime = swFALSE;
 }
 
+/**
+@brief Updates 'yesterday'.
+*/
 void SW_WTH_end_day(void) {
 	/* =================================================== */
 	_update_yesterday();
 }
 
+/**
+@brief Guarantees that today's weather will not be invalid via -_todays_weth().
+*/
 void SW_WTH_new_day(void) {
 	/* =================================================== */
-	/* guarantees that today's weather will not be invalid
-	 * via _todays_weth()
+	/*  History
 	 *
 	 *  20-Jul-2002 -- added growing season computation to
 	 *                 facilitate the steppe/soilwat interface.
@@ -312,6 +336,9 @@ void SW_WTH_new_day(void) {
   }
 }
 
+/**
+@brief Reads in file for SW_Weather.
+*/
 void SW_WTH_read(void) {
 	/* =================================================== */
 	SW_WEATHER *w = &SW_Weather;
@@ -389,7 +416,12 @@ void SW_WTH_read(void) {
 		SW_SKY_init(w->scale_skyCover, w->scale_wind, w->scale_rH, w->scale_transmissivity);
 }
 
+/**
+@brief Read the historical (measured) weather files.  Format is day-of-month,
+      month number, year, doy, mintemp, maxtemp (ppt). Temperatures in (&deg;C).
 
+@param year
+*/
 Bool _read_weather_hist(TimeInt year) {
 	/* =================================================== */
 	/* Read the historical (measured) weather files.

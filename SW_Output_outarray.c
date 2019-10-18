@@ -53,19 +53,37 @@ extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
 
 // defined here:
 
-// 2-dim array of pointers to output arrays; initialized to NULL because they
-// are defined globally and thus have `static storage duration`
-// `p_OUT` used by rSOILWAT2 for output and by STEPWAT2 for mean aggregation
+/** \brief A 2-dim array of pointers to output arrays.
+
+  \note This should be initialized to NULL because they are defined globally
+    and thus have `static storage duration`.
+
+  The variable p_OUT used by rSOILWAT2 for output and by STEPWAT2 for
+  mean aggregation.
+*/
 RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
+
+/** \brief A 2-dim array of pointers to output arrays of standard deviations.
+
+  \note This should be initialized to NULL because they are defined globally
+    and thus have `static storage duration`.
+
+  The variable p_OUTsd is used by STEPWAT2 for standard-deviation during
+  aggregation. See also \ref p_OUT
+*/
+#define p_OUTsd
+#undef p_OUTsd
+
+/** `prepare_IterationSummary` is TRUE if STEPWAT2 is called with `-o` flag
+      and if STEPWAT2 is currently not in its last iteration/repetition.
+      Compare with \ref print_IterationSummary`
+*/
+#define prepare_IterationSummary
+#undef prepare_IterationSummary
 
 #ifdef STEPWAT
 extern GlobalType SuperGlobals;
-// `p_OUTsd` used by STEPWAT2 for standard-deviation of mean aggregation
 RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
-/** `prepare_IterationSummary` is TRUE if STEPWAT2 is called with `-o` flag
-      and if STEPWAT2 is currently not in its last iteration/repetition.
-      Compare with `print_IterationSummary` defined in `SW_Output_outtext.c`
-*/
 Bool prepare_IterationSummary;
 #endif
 
@@ -93,12 +111,10 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time hea
 /*             (declared in SW_Output_outarray.h)      */
 /* --------------------------------------------------- */
 
-/** @brief Determine number of used years/months/weeks/days in simulation period
+/** @brief Determine number of years/months/weeks/days used in simulation period
 
-		@param SW_Model
-		@param SuperGlobals if compiled for STEPWAT2
-		@param use_OutPeriod
-		@sideeffects Set `nrow_OUT`
+  @sideeffect Set nrow_OUT using global variables SW_Model,
+    SuperGlobals if compiled for STEPWAT2, and use_OutPeriod
 */
 void SW_OUT_set_nrow(void)
 {
@@ -157,6 +173,9 @@ void SW_OUT_set_nrow(void)
 	#endif
 }
 
+/**
+@brief For each out key, the p_OUT array is set to NULL.
+*/
 void SW_OUT_deconstruct_outarray(void)
 {
 	IntUS i;
@@ -223,7 +242,7 @@ void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
 
 		Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in `rSW_Output.c`
 
-		@sideeffects: `*p_OUT` and `*p_OUTsd` pointing to allocated arrays for
+		@sideeffect: `*p_OUT` and `*p_OUTsd` pointing to allocated arrays for
 			each output period and output key.
 	*/
 void setGlobalSTEPWAT2_OutputVariables(void)

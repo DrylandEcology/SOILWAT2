@@ -193,7 +193,9 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 /* =================================================== */
 /*             Public Function Definitions             */
 /* --------------------------------------------------- */
-
+/**
+@brief Markov constructor for global variables.
+*/
 void SW_MKV_construct(void) {
 	/* =================================================== */
 	SW_MARKOV *m = &SW_Markov;
@@ -212,7 +214,9 @@ void SW_MKV_construct(void) {
 	m->cfnw = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->cfnd = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 }
-
+/**
+@brief Markov deconstructor; frees up memory space.
+*/
 void SW_MKV_deconstruct(void)
 {
 	if (!isnull(SW_Markov.wetprob)) {
@@ -256,7 +260,18 @@ void SW_MKV_deconstruct(void)
 	}
 }
 
+/**
+@brief Calculates precipitation and temperature.
 
+@param doy0 Day of the year.
+@param *tmax Maximum temperature (&deg;C).
+@param *tmin Mininum temperature (&deg;C).
+@param *rain Rainfall (cm).
+
+@sideeffect *tmax Updated maximum temperature (&deg;C).
+@sideeffect *tmin Updated minimum temperature (&deg;C).
+@sideeffect *rain Updated rainfall (cm).
+*/
 void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 	/* =================================================== */
 	/* enter with rain == yesterday's ppt, doy0 as array index: [0, 365] = doy - 1
@@ -313,7 +328,11 @@ void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 	#endif
 
 }
+/**
+@brief Reads prob file in and checks input variables for errors, then stores files in SW_Markov.
 
+@return swTRUE Returns true if prob file is correctly opened and closed.
+*/
 Bool SW_MKV_read_prob(void) {
 	/* =================================================== */
 	SW_MARKOV *v = &SW_Markov;
@@ -393,7 +412,11 @@ Bool SW_MKV_read_prob(void) {
 	return swTRUE;
 }
 
+/**
+@brief Reads cov file in and checks input variables for errors, then stores files in SW_Markov.
 
+@return Returns true if cov file is correctly opened and closed.
+*/
 Bool SW_MKV_read_cov(void) {
 	/* =================================================== */
 	SW_MARKOV *v = &SW_Markov;

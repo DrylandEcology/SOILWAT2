@@ -29,6 +29,7 @@ sw_test
 
 # Doxygen documentation files: they should be produced locally
 doc/html/*
+doc/log_doxygen.log
 
 # Binary files
 SOILWAT2
