@@ -15,7 +15,8 @@
 extern "C" {
 #endif
 
-#define ERRSTRLEN 3000 /* LogError: max output string length */
+/** Constant to define the maximal length of error messages */
+#define ERRSTRLEN 3000
 
 
 /***************************************************

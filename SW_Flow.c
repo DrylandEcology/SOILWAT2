@@ -197,7 +197,9 @@ static void arrays2records(void);
  * not always occur.
  */
 
-
+/**
+@brief Initialize global variables between consecutive calls to SOILWAT.
+*/
 void SW_FLW_construct(void) {
 	/* 06/26/2013	(rjm) added function SW_FLW_construct() to init global variables between consecutive calls to SoilWat as dynamic library */
 	int i, k;
@@ -239,7 +241,9 @@ void SW_FLW_construct(void) {
 		veg_int_storage[k] = 0.;
 	}
 }
-
+/**
+@brief This function is blank.
+*/
 void SW_FLW_deconstruct(void)
 {}
 
@@ -361,7 +365,7 @@ void SW_Water_Flow(void) {
 	w->snowRunoff = w->snowmelt - snowmelt;
 	h2o_for_soil += snowmelt;
 
-	/** @brief Surface water runon:
+	/* @brief Surface water runon:
 			Proportion of water that arrives at surface added as daily runon from a hypothetical
 				identical neighboring upslope site.
 			@param percentRunon Value ranges between 0 and +inf; 0 = no runon,
@@ -413,7 +417,7 @@ void SW_Water_Flow(void) {
 	}
 	#endif
 
-	/** @brief Surface water runoff:
+	/* @brief Surface water runoff:
 			Proportion of ponded surface water removed as daily runoff.
 			@param percentRunoff Value ranges between 0 and 1; 0 = no loss of surface water,
 			1 = all ponded water lost via runoff.

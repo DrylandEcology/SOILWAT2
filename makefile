@@ -9,6 +9,10 @@
 #                  'testing/' folder
 # make bint_run    same as 'make bint' plus execute the binary in testing/
 #
+# make doc         create html documentation for SOILWAT2 using doxygen
+#
+# make doc_open    open documentation
+#
 # make lib         create SOILWAT2 library
 #
 # make test        compile unit tests in 'test/ folder (with googletest)
@@ -29,6 +33,7 @@
 #                  files, libraries, and the binary exe(s)
 # make test_clean  delete test files and libraries
 # make cov_clean   delete files associated with code coverage
+# make doc_clean   delete documentation
 #-------------------------------------------------------------------------------
 
 uname_m = $(shell uname -m)
@@ -249,9 +254,17 @@ cov : cov_clean $(lib_gtest) $(lib_target_cov)
 .PHONY : cov_run
 cov_run : cov
 		./$(bin_test)
-		./run_gcov.sh
+		./tools/run_gcov.sh
 
 
+.PHONY : doc
+doc :
+		./tools/run_doxygen.sh
+
+
+.PHONY : doc_open
+doc_open :
+		./tools/doc_open.sh
 
 
 .PHONY : clean1
@@ -285,6 +298,10 @@ cleaner : clean1 clean2 bint_clean test_clean cov_clean
 .PHONY : clean
 clean : cleaner
 
+.PHONY : doc_clean
+doc_clean :
+		-@$(RM) -fr doc/html/
+		-@$(RM) -f doc/log_doxygen.log
 
 
 .PHONY : help

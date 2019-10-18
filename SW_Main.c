@@ -52,14 +52,17 @@ static void check_log(void) {
 }
 
 /************  Main() ************************/
+
+/**
+@brief Provides a way to inform the user that something was logged, can be changed by code
+ 			(eg. init file) but must be set before init_args().  See generic.h
+*/
 int main(int argc, char **argv) {
 	/* =================================================== */
 
 	logged = swFALSE;
 	atexit(check_log);
-	logfp = stdout; /* provides a way to inform user that something */
-	/* was logged.  can be changed by code (eg init file */
-	/* but must be set before init_args().  see generic.h */
+	logfp = stdout;
 
 	init_args(argc, argv);
 

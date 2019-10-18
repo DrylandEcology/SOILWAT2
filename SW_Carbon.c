@@ -6,7 +6,7 @@
  * Atmospheric carbon dioxide has been observed to affect water-use efficiency
  * and biomass, which is what this code attempts to simulate. The effects can
  * be varied by plant functional type. Most usages of the functions here are
- * in @f SW_VegProd.c and @f SW_Flow_lib.c.
+ * in SW_VegProd.c and SW_Flow_lib.c.
  *
  * @date   7 February 2017
  */

@@ -176,19 +176,27 @@ static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
 /*             (declared in SW_Output.h)               */
 /* --------------------------------------------------- */
 
+/**
+@brief Output routine for quantities that aren't yet implemented.
+			This just gives the main output loop something to call, rather than an
+			empty pointer.
+@param pd Period.
+*/
 void get_none(OutPeriod pd)
 {
-	/* --------------------------------------------------- */
-	/* output routine for quantities that aren't yet implemented
-	 * this just gives the main output loop something to call,
-	 * rather than an empty pointer.
-	 */
+
 	if (pd) {}
 }
 
 
 //------ eSW_CO2Effects
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets CO<SUB>2</SUB> effects by running through each vegetation type if dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_co2effects_text(OutPeriod pd) {
 	int k;
 	SW_VEGPROD *v = &SW_VegProd;
@@ -402,16 +410,19 @@ void get_biomass_agg(OutPeriod pd) {
 
 //------ eSW_Estab
 /* --------------------------------------------------- */
-/* the establishment check produces, for each species in
- * the given set, a day of year >=0 that the species
- * established itself in the current year.  The output
- * will be a single row of numbers for each year.  Each
- * column represents a species in the order it was entered
- * in the estabs.in file.  The value will be the day that
- * the species established, or 0 if it didn't establish
- * this year.
- */
+
 #ifdef SW_OUTTEXT
+
+/**
+@brief The establishment check produces, for each species in the given set,
+			a day of year >= 0 that the species established itself in the current year.
+			The output will be a single row of numbers for each year. Each column
+			represents a species in order it was entered in the stabs.in file. The
+			value will be the day that the species established, or - if it didn't
+			establish this year.  This check is for OUTTEXT.
+
+@param pd Period.
+*/
 void get_estab_text(OutPeriod pd)
 {
 	SW_VEGESTAB *v = &SW_VegEstab;
@@ -431,6 +442,16 @@ void get_estab_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+/**
+@brief The establishment check produces, for each species in the given set,
+			a day of year >= 0 that the species established itself in the current year.
+			The output will be a single row of numbers for each year. Each column
+			represents a species in order it was entered in the stabs.in file. The
+			value will be the day that the species established, or - if it didn't
+			establish this year.  This check is for RSOILWAT.
+
+@param pd Period.
+*/
 void get_estab_mem(OutPeriod pd)
 {
 	SW_VEGESTAB *v = &SW_VegEstab;
@@ -446,6 +467,16 @@ void get_estab_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+/**
+@brief The establishment check produces, for each species in the given set,
+			a day of year >= 0 that the species established itself in the current year.
+			The output will be a single row of numbers for each year. Each column
+			represents a species in order it was entered in the stabs.in file. The
+			value will be the day that the species established, or - if it didn't
+			establish this year.  This check is for STEPWAT.
+
+@param pd Period.
+*/
 void get_estab_agg(OutPeriod pd)
 {
 	SW_VEGESTAB *v = &SW_VegEstab;
@@ -471,6 +502,12 @@ void get_estab_agg(OutPeriod pd)
 
 //------ eSW_Temp
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets temp text from SW_WEATHER_OUTPUTS when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_temp_text(OutPeriod pd)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -485,6 +522,12 @@ void get_temp_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets temp text from SW_WEATHER_OUTPUTS when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_temp_mem(OutPeriod pd)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -499,6 +542,12 @@ void get_temp_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets temp text from SW_WEATHER_OUTPUTS when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_temp_agg(OutPeriod pd)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -518,7 +567,11 @@ void get_temp_agg(OutPeriod pd)
 	}
 }
 
-// STEPWAT2 expects annual mean air temperature
+/**
+@brief STEPWAT2 expects annual mean air temperature
+
+@param pd Period.
+*/
 void get_temp_SXW(OutPeriod pd)
 {
 	if (pd == eSW_Month || pd == eSW_Year) {
@@ -537,6 +590,12 @@ void get_temp_SXW(OutPeriod pd)
 
 //------ eSW_Precip
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets precipitation text from SW_WEATHER_OUTPUTS when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_precip_text(OutPeriod pd)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -552,6 +611,12 @@ void get_precip_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets precipitation text from SW_WEATHER_OUTPUTS when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_precip_mem(OutPeriod pd)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -567,6 +632,12 @@ void get_precip_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets precipitation text from SW_WEATHER_OUTPUTS when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_precip_agg(OutPeriod pd)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -587,7 +658,11 @@ void get_precip_agg(OutPeriod pd)
 	}
 }
 
-// STEPWAT2 expects monthly and annual sum of precipitation
+/**
+@brief STEPWAT2 expects monthly and annual sum of precipitation
+
+@param pd Period.
+*/
 void get_precip_SXW(OutPeriod pd)
 {
 	if (pd == eSW_Month || pd == eSW_Year) {
@@ -603,9 +678,14 @@ void get_precip_SXW(OutPeriod pd)
 }
 #endif
 
-
 //------ eSW_VWCBulk
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets vwcBulk text from SW_SOILWAT_OUTPUTS when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_vwcBulk_text(OutPeriod pd)
 {
 	LyrIndex i;
@@ -624,6 +704,12 @@ void get_vwcBulk_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets vwcBulk text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_vwcBulk_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -639,6 +725,12 @@ void get_vwcBulk_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets vwcBulk text from SW_SOILWAT_OUTPUTS when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_vwcBulk_agg(OutPeriod pd)
 {
 	LyrIndex i;
@@ -664,6 +756,12 @@ void get_vwcBulk_agg(OutPeriod pd)
 
 //------ eSW_VWCMatric
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets vwcMatric text from SW_SOILWAT_OUTPUTS when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_vwcMatric_text(OutPeriod pd)
 {
 	LyrIndex i;
@@ -685,6 +783,12 @@ void get_vwcMatric_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets vwcMatric text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_vwcMatric_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -702,6 +806,12 @@ void get_vwcMatric_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets vwcMatric text from SW_SOILWAT_OUTPUTS when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_vwcMatric_agg(OutPeriod pd)
 {
 	LyrIndex i;
@@ -730,6 +840,12 @@ void get_vwcMatric_agg(OutPeriod pd)
 
 //------ eSW_SWA
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets SWA text from SW_SOILWAT_OUTPUTS when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_swa_text(OutPeriod pd)
 {
 	/* added 21-Oct-03, cwb */
@@ -752,6 +868,12 @@ void get_swa_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets SWA text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_swa_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -771,6 +893,12 @@ void get_swa_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets SWA text from SW_SOILWAT_OUTPUTS when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_swa_agg(OutPeriod pd)
 {
 	LyrIndex i;
@@ -797,9 +925,14 @@ void get_swa_agg(OutPeriod pd)
 }
 #endif
 
-
 //------ eSW_SWCBulk
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets swcBulk text from SW_SOILWAT_OUTPUTS when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_swcBulk_text(OutPeriod pd)
 {
 	/* added 21-Oct-03, cwb */
@@ -818,6 +951,12 @@ void get_swcBulk_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets swcBulk text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_swcBulk_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -833,6 +972,12 @@ void get_swcBulk_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets swcBulk text from SW_SOILWAT_OUTPUTS when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_swcBulk_agg(OutPeriod pd)
 {
 	LyrIndex i;
@@ -853,7 +998,11 @@ void get_swcBulk_agg(OutPeriod pd)
 	}
 }
 
-// STEPWAT2 expects monthly mean SWCbulk by soil layer
+/**
+@brief STEPWAT2 expects monthly mean SWCbulk by soil layer.
+
+@param pd Period.
+*/
 void get_swcBulk_SXW(OutPeriod pd)
 {
 	if (pd == eSW_Month) {
@@ -870,16 +1019,16 @@ void get_swcBulk_SXW(OutPeriod pd)
 
 
 //------ eSW_SWPMatric
-/* can't take arithmetic average of swp because it's
- * exponential.  At this time (until I remember to look
- * up whether harmonic or some other average is better
- * and fix this) we're not averaging swp but converting
- * the averaged swc.  This also avoids converting for
- * each day.
- *
- * added 12-Oct-03, cwb */
-
 #ifdef SW_OUTTEXT
+
+/**
+@brief eSW_SWPMatric Can't take arithmetic average of swp vecause its exponentail.
+			At this time (until I rewmember to look up whether harmonic or some other
+			average is better and fix this) we're not averaging swp but converting
+			the averged swc.  This also avoids converting for each day. added 12-Oct-03, cwb
+
+@param pd Period.
+*/
 void get_swpMatric_text(OutPeriod pd)
 {
 	RealD val;
@@ -902,6 +1051,12 @@ void get_swpMatric_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets swpMatric when dealing with RSOILWAT
+
+@param pd Period.
+*/
 void get_swpMatric_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -919,6 +1074,12 @@ void get_swpMatric_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets swpMatric when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_swpMatric_agg(OutPeriod pd)
 {
 	RealD val;
@@ -947,6 +1108,12 @@ void get_swpMatric_agg(OutPeriod pd)
 
 //------ eSW_SWABulk
 #ifdef SW_OUTTEXT
+
+/**
+@brief gets swaBulk when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_swaBulk_text(OutPeriod pd)
 {
 	LyrIndex i;
@@ -964,6 +1131,12 @@ void get_swaBulk_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets swaBulk when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_swaBulk_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -979,6 +1152,12 @@ void get_swaBulk_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets swaBulk when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_swaBulk_agg(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1000,9 +1179,14 @@ void get_swaBulk_agg(OutPeriod pd)
 }
 #endif
 
-
 //------ eSW_SWAMatric
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets swaMatric when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_swaMatric_text(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1024,6 +1208,12 @@ void get_swaMatric_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets swaMatric when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_swaMatric_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1042,6 +1232,12 @@ void get_swaMatric_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets swaMatric when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_swaMatric_agg(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1070,6 +1266,12 @@ void get_swaMatric_agg(OutPeriod pd)
 
 //------ eSW_SurfaceWater
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets surfaceWater when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_surfaceWater_text(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1080,6 +1282,12 @@ void get_surfaceWater_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets surfaceWater when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_surfaceWater_mem(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1091,6 +1299,12 @@ void get_surfaceWater_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets surfaceWater when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_surfaceWater_agg(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1111,6 +1325,12 @@ void get_surfaceWater_agg(OutPeriod pd)
 
 //------ eSW_Runoff
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets surfaceRunon, surfaceRunoff, and snowRunoff when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_runoffrunon_text(OutPeriod pd)
 {
 	RealD net;
@@ -1128,6 +1348,12 @@ void get_runoffrunon_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets surfaceRunon, surfaceRunoff, and snowRunoff when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_runoffrunon_mem(OutPeriod pd)
 {
 	RealD net;
@@ -1145,6 +1371,12 @@ void get_runoffrunon_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets surfaceRunon, surfaceRunoff, and snowRunoff when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_runoffrunon_agg(OutPeriod pd)
 {
 	RealD net;
@@ -1168,9 +1400,14 @@ void get_runoffrunon_agg(OutPeriod pd)
 }
 #endif
 
-
 //------ eSW_Transp
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets transp_total when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_transp_text(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1200,6 +1437,12 @@ void get_transp_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets transp_total when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_transp_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1226,6 +1469,12 @@ void get_transp_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets transp_total when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_transp_agg(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1263,8 +1512,12 @@ void get_transp_agg(OutPeriod pd)
 	}
 }
 
-// STEPWAT2 expects monthly sum of transpiration by soil layer
-// see function `_transp_contribution_by_group`
+/**
+@brief STEPWAT2 expects monthly sum of transpiration by soil layer. <BR>
+				see function '_transp_contribution_by_group'
+
+@param pd Period.
+*/
 void get_transp_SXW(OutPeriod pd)
 {
 	if (pd == eSW_Month) {
@@ -1293,6 +1546,12 @@ void get_transp_SXW(OutPeriod pd)
 
 //------ eSW_EvapSoil
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets evap when dealing with OUTTEXT.
+
+@brief pd Period.
+*/
 void get_evapSoil_text(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1310,6 +1569,12 @@ void get_evapSoil_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets evap when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_evapSoil_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1325,6 +1590,12 @@ void get_evapSoil_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets evap when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_evapSoil_agg(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1349,6 +1620,12 @@ void get_evapSoil_agg(OutPeriod pd)
 
 //------ eSW_EvapSurface
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets evapSurface when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_evapSurface_text(OutPeriod pd)
 {
 	int k;
@@ -1372,6 +1649,12 @@ void get_evapSurface_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets evapSurface when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_evapSurface_mem(OutPeriod pd)
 {
 	int k;
@@ -1391,6 +1674,12 @@ void get_evapSurface_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets evapSurface when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_evapSurface_agg(OutPeriod pd)
 {
 	int k;
@@ -1419,9 +1708,14 @@ void get_evapSurface_agg(OutPeriod pd)
 }
 #endif
 
-
 //------ eSW_Interception
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets total_int, int_veg, and litter_int when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_interception_text(OutPeriod pd)
 {
 	int k;
@@ -1443,6 +1737,12 @@ void get_interception_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets total_int, int_veg, and litter_int when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_interception_mem(OutPeriod pd)
 {
 	int k;
@@ -1461,6 +1761,12 @@ void get_interception_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets total_int, int_veg, and litter_int when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_interception_agg(OutPeriod pd)
 {
 	int k;
@@ -1486,9 +1792,14 @@ void get_interception_agg(OutPeriod pd)
 }
 #endif
 
-
 //------ eSW_SoilInf
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets soil_inf when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_soilinf_text(OutPeriod pd)
 {
 	/* 20100202 (drs) added */
@@ -1502,6 +1813,12 @@ void get_soilinf_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets soil_inf when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_soilinf_mem(OutPeriod pd)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -1513,6 +1830,12 @@ void get_soilinf_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets soil_inf when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_soilinf_agg(OutPeriod pd)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -1533,6 +1856,12 @@ void get_soilinf_agg(OutPeriod pd)
 
 //------ eSW_LyrDrain
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets lyrdrain when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_lyrdrain_text(OutPeriod pd)
 {
 	/* 20100202 (drs) added */
@@ -1551,6 +1880,12 @@ void get_lyrdrain_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets lyrdrain when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_lyrdrain_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1566,6 +1901,12 @@ void get_lyrdrain_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets lyrdrain when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_lyrdrain_agg(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1590,6 +1931,12 @@ void get_lyrdrain_agg(OutPeriod pd)
 
 //------ eSW_HydRed
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets hydred and hydred_total when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_hydred_text(OutPeriod pd)
 {
 	/* 20101020 (drs) added */
@@ -1620,6 +1967,12 @@ void get_hydred_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets hydred and hydred_total when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_hydred_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1646,6 +1999,12 @@ void get_hydred_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets hydred and hydred_total when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_hydred_agg(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1687,6 +2046,12 @@ void get_hydred_agg(OutPeriod pd)
 
 //------ eSW_AET
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets actual evapotranspiration when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_aet_text(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1697,6 +2062,12 @@ void get_aet_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets actual evapotranspiration when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_aet_mem(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1708,6 +2079,12 @@ void get_aet_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets actual evapotranspiration when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_aet_agg(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1724,7 +2101,11 @@ void get_aet_agg(OutPeriod pd)
 	}
 }
 
-// STEPWAT2 expects annual sum of actual evapotranspiration
+/**
+@brief STEPWAT2 expects annual sum of actual evapotranspiration
+
+@param pd Period.
+*/
 void get_aet_SXW(OutPeriod pd)
 {
 	if (pd == eSW_Year) {
@@ -1738,6 +2119,12 @@ void get_aet_SXW(OutPeriod pd)
 
 //------ eSW_PET
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets potential evapotranspiration when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_pet_text(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1748,6 +2135,12 @@ void get_pet_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets potential evapotranspiration when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_pet_mem(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1759,6 +2152,10 @@ void get_pet_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets potential evapotranspiration when dealing with OUTTEXT.
+*/
 void get_pet_agg(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1779,6 +2176,12 @@ void get_pet_agg(OutPeriod pd)
 
 //------ eSW_WetDays
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets is_wet and wetdays when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_wetdays_text(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1806,6 +2209,12 @@ void get_wetdays_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets is_wet and wetdays when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_wetdays_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1830,6 +2239,12 @@ void get_wetdays_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets is_wet and wetdays when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_wetdays_agg(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1864,6 +2279,12 @@ void get_wetdays_agg(OutPeriod pd)
 
 //------ eSW_SnowPack
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets snowpack and snowdepth when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_snowpack_text(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1876,6 +2297,12 @@ void get_snowpack_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets snowpack and snowdepth when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_snowpack_mem(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1888,6 +2315,12 @@ void get_snowpack_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets snowpack and snowdepth when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_snowpack_agg(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1909,6 +2342,12 @@ void get_snowpack_agg(OutPeriod pd)
 
 //------ eSW_DeepSWC
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets deep for when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_deepswc_text(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1919,6 +2358,12 @@ void get_deepswc_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets deep for when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_deepswc_mem(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1930,6 +2375,12 @@ void get_deepswc_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets deep for when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_deepswc_agg(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
@@ -1950,6 +2401,12 @@ void get_deepswc_agg(OutPeriod pd)
 
 //------ eSW_SoilTemp
 #ifdef SW_OUTTEXT
+
+/**
+@brief Gets soil temperature for when dealing with OUTTEXT.
+
+@param pd Period.
+*/
 void get_soiltemp_text(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1967,6 +2424,12 @@ void get_soiltemp_text(OutPeriod pd)
 #endif
 
 #if defined(RSOILWAT)
+
+/**
+@brief Gets soil temperature for when dealing with RSOILWAT.
+
+@param pd Period.
+*/
 void get_soiltemp_mem(OutPeriod pd)
 {
 	LyrIndex i;
@@ -1982,6 +2445,12 @@ void get_soiltemp_mem(OutPeriod pd)
 }
 
 #elif defined(STEPWAT)
+
+/**
+@brief Gets soil temperature for when dealing with STEPWAT.
+
+@param pd Period.
+*/
 void get_soiltemp_agg(OutPeriod pd)
 {
 	LyrIndex i;

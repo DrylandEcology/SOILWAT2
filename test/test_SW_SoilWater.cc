@@ -248,7 +248,7 @@ namespace{
       actualExpectDiff = fabs(t - tExpect);
 
       // when fractionGravel is between [.0, .8], we expect t = p * (1 - fractionGravel)
-      EXPECT_LT(actualExpectDiff, 0.0000001);
+      EXPECT_LT(actualExpectDiff, tol6);
 
     }
     Reset_SOILWAT2_after_UnitTest();

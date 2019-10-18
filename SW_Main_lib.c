@@ -50,6 +50,9 @@ void init_args(int argc, char **argv);
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
 
+/**
+@brief In the case of an error, *s1 is displayed.
+*/
 void usage(void) {
 	const char *s1 = "Ecosystem water simulation model SOILWAT2\n"
 			"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
@@ -64,6 +67,14 @@ void usage(void) {
 
 char _firstfile[MAX_FILENAMESIZE];
 
+/**
+@brief Initializes arguments and sets indicators/variables based on results.
+
+@param argc Argument C.
+@param argv Argument V.
+
+@sideeffect argv Updated argument V.
+*/
 void init_args(int argc, char **argv) {
 	/* =================================================== */
 	/* to add an option:
@@ -147,4 +158,3 @@ void init_args(int argc, char **argv) {
 	} /* end for(i) */
 
 }
-

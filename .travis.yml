@@ -11,12 +11,16 @@ sudo: required
 matrix:
   fast_finish: true
 
-# We want to run the `*_severe` debug and test targets; thus, we need
-# g++ >= 4.9 and clang++ >= 3.5
+# Run tests with both clang and gcc compilers
 compiler:
   - clang
   - gcc
 
+
+# Install addons:
+# - upgrade to minimum gcc version: our `*_severe` debug and test targets require
+#   g++ >= 4.9 and clang++ >= 3.5
+# - creating doxygen documentations requires the packages: doxygen ... graphviz
 addons:
   apt:
     sources:
@@ -24,6 +28,11 @@ addons:
     packages:
       - gcc-4.9
       - g++-4.9
+      - doxygen
+      - doxygen-latex
+      - doxygen-doc
+      - doxygen-gui
+      - graphviz
 
 before_install:
   - if [[ $CXX = g++ ]]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
@@ -37,8 +46,15 @@ script:
   - ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
   # determine code coverage of unit tests
   - make clean cov test_run
+  # check that doxygen generates documentation without warnings
+  - make doc
+
+before_cache:
+  # don't cache generated documentation files
+  - rm -rf doc/html
 
 after_success:
+  # have `codecov` collect code coverage results
   - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
   # clean up
   - make clean
