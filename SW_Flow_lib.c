@@ -339,8 +339,10 @@ Equations based on Penman 1948. @cite Penman1948, ASCE 2000. @cite ASCE2000, Bow
 
 */
 
-double petfunc(unsigned int doy, double avgtemp, double rlat, double elev, double slope,
-  double aspect, double reflec, double humid, double windsp, double cloudcov, double transcoeff) {
+double petfunc(unsigned int doy, double avgtemp, double rlat, double elev,
+  double slope, double aspect, double reflec, double humid, double windsp,
+  double cloudcov, double transcoeff)
+{
 /***********************************************************************
 HISTORY:
 4/30/92  (SLC)
@@ -390,72 +392,207 @@ stepSize - the step size to use in integration
 
 ***********************************************************************/
 
-  double declin, par1, par2, ahou, hou, azmth, solrad, shwave, kelvin, arads, clrsky, ftemp, vapor, result, dayAngle, P, gamma, cosZ, sinZ, cosA, sinA, stepSize, azmthSlope,
-			rslope;
+  double declin, par1, par2, ahou, hou, azmth, solrad, shwave, kelvin, arads,
+    clrsky, ftemp, vapor, result, dayAngle, P, gamma, cosZ, sinZ, cosA, sinA,
+    stepSize, azmthSlope, rslope;
 
-	/* Unit conversion factors:
-	 1 langley = 1 ly = 41840 J/m2 = 0.0168 evaporative-mm (1 [ly] / 2490 [kJ/kg heat of vaporization at about T = 10-15 C], see also Allen et al. (1998, ch. 1))
-	 1 mmHg = 101.325/760 kPa = 0.1333 kPa
-	 1 mile = 1609.344 m
-	 0 C = 273.15 K */
+  /* Unit conversion factors:
+   1 langley = 1 ly = 41840 J/m2 = 0.0168 evaporative-mm
+    (1 [ly] / 2490 [kJ/kg heat of vaporization at about T = 10-15 C],
+    see also Allen et al. (1998, ch. 1))
+   1 mmHg = 101.325/760 kPa = 0.1333 kPa
+   1 mile = 1609.344 m
+   0 C = 273.15 K
+  */
 
-	/* calculate solar declination */
-	/* pre-Oct/11/2012 equation (unknown source): declin = .401426 *sin(6.283185 *(doy -77.) /365.); */
-	dayAngle = 6.283185 * (doy - 1.) / 365.; /* Spencer (1971): dayAngle = day angle [radians] */
-	declin = 0.006918 - 0.399912 * cos(dayAngle) + 0.070257 * sin(dayAngle) - 0.006758 * cos(2. * dayAngle) + 0.000907 * sin(2. * dayAngle) - 0.002697 * cos(3. * dayAngle)
-			+ 0.00148 * sin(3. * dayAngle); /* Spencer (1971): declin = solar declination [radians] */
+  // Calculate solar declination:
+  /* equation used previous to Oct/11/2012 (from unknown source):
+      declin = .401426 *sin(6.283185 *(doy -77.) /365.);
+  */
 
-	/* calculate the short wave solar radiation on a clear day using an equation presented by Sellers (1965)*/
-	par2 = -tan(rlat) * tan(declin); /* Sellers (1965), page 15, eqn. 3.3: par2 = cos(H) with H = half-day length = ahou = sunset hour angle */
-	par1 = sqrt(1. - (par2*par2)); /* trigonometric identities: par1 = sin(H) */
-	ahou = fmax(atan2(par1,par2), 0.0); /* calculate ahou = H from trigonometric function: tan(H) = sin(H)/cos(H) */
+  // Spencer (1971): dayAngle = day angle [radians]
+  dayAngle = swPI * (doy - 1.) / 365.;
 
-	if (slope != 0) {
-		stepSize = (ahou / 24); /* step size is calculated by the the difference in our limits of integrations, for hou, using 0 to ahou, divided by some resolution. The best resolution size seems to be around 24*/
-		azmthSlope = 6.283185 * (aspect - 180) / 360; /* convert the aspect of the slope from degrees into radians */
-		rslope = 6.283185 * slope / 360; /* convert the slope from degrees into radians */
-		solrad = 0; /* start with an initial solrad of zero, then begin the summation */
-		for (hou = -ahou; hou <= ahou; hou += stepSize) /* sum Sellers (1965), page 35, eqn. 3.15 over the period of sunrise to sunset, h=-ahou to h=ahou */
-		{
-			cosZ = sin(rlat) * sin(declin) + cos(rlat) * cos(declin) * cos(hou); /* calculate the current value for cos(Z), Z = zenith angle of the sun, for current hour angle */
-			sinZ = sqrt(1. - (cosZ*cosZ)); /* calculate the current value for sin(Z), Z = zenith angle of the sun, for current hour angle */
-			cosA = (sin(rlat) * cosZ - sin(declin)) / (cos(rlat) * sinZ); /* cos(A) = cosine of the azimuth angle of the sun */
-			sinA = (cos(declin) * sin(hou)) / sinZ; /* sin(A) = sine of the azimuth angle of the sun */
-			azmth = atan2(sinA, cosA); /* determines the current azimuth angle of the sun based on the current hour angle */
-			solrad += stepSize * (cosZ * cos(rslope) + sinZ * sin(rslope) * cos(azmth - azmthSlope)); /* Sellers (1965), page 35, eqn. 3.15: Qs [langlay] = solrad = instantaneous solar radiation on a sloped surface. */
-		}
-	} else /* if no slope, use old equation that doesn't account for slope to save some time */
-	{
-		solrad = ahou * sin(rlat) * sin(declin) + cos(rlat) * cos(declin) * sin(ahou); /* Sellers (1965), page 16, eqn. 3.7: Qs [langlay/day] = solrad = daily total solar radiation incident on a horizontal surface at the top of the atmosphere; factor '(mean(d)/d)^2' with (mean(d) = mean distance and d = instantaneous distance of the earth from the sun) of Seller's equation is missing here */
-		solrad = solrad * 2; /* multiply solrad by two to account for both halves of the day, as eqn. 3.7 only integrates half a day */
-	}
-	solrad = (1440 / 6.283185) * 1.952 * solrad * transcoeff; /* 917. = S * 1440/pi with S = solar constant = 2.0 [langlay/min] (Sellers (1965), page 11) and with 1440 = min/day; however, solar constant S (Kopp et al. 2011) = 1.952 [langley/min] = 1361 [W/m2] <> Seller's value of S = 2.0 [langlay/min] = 1440 [W/m2] => instead of factor 917 (pre-Oct 11, 2012), it should be 895;factor 'transcoeff' is not in Seller's equation and drops out of the result with next line of code; */
+  // Spencer (1971): declin = solar declination [radians]
+  declin = 0.006918 \
+    - 0.399912 * cos(dayAngle) \
+    + 0.070257 * sin(dayAngle) \
+    - 0.006758 * cos(2. * dayAngle) \
+    + 0.000907 * sin(2. * dayAngle) \
+    - 0.002697 * cos(3. * dayAngle) \
+    + 0.001480 * sin(3. * dayAngle);
 
-	shwave = solrad * .0168 / transcoeff; /* shwave used in Penman (1948), eqn. 13: shwave [evaporation equivalent-mm/day] = RA = total radiation if the atmosphere were perfectly clear; Rc = Short-wave radiation from sun and sky [usually in evaporation equivalent of mm/day] ? [radiation/cm2/day,] = RA*(0.18+0.55n/N) is approximation for Rothamsted based on monthly values over the period 1931-40; with x = 0.0168 = conversion factor from [ly] to [mm] */
+  // Calculate short wave solar radiation on a clear day:
+  //   Sellers (1965), page 15, eqn. 3.3:
+  //   with H = half-day length = ahou = sunset hour angle
 
-	/* calculate long wave radiation */
-	kelvin = avgtemp + 273.15; /* kelvin = Ta = average air temperature of today [C] converted to [K] */
-	ftemp = kelvin * .01;
-	ftemp = ftemp * ftemp * ftemp * ftemp * 11.71 * 0.0168; /* Sellers (1965), eqn. 3.8: ftemp [mm/day] = theoretical black-body radiation at Ta [K] = Stefan-Boltzmann law = sigma*Ta^4 [W/m2] with sigma = 5.670373*1e-8 [W/m2/K4] = 11.71*1e-8 [ly/day/K4] (http://physics.nist.gov/cgi-bin/cuu/Value?sigma);
-	 ftemp is used in Penman (1948), eqn. 13 with units = [evaporation equivalent-mm/day];
-	 with unknown x = 0.201*1e-8 (value pre-Oct 11, 2012), though assuming x = sigma * conversion factor([ly] to [mm]) = 11.71*10\88-8 [ly/day/K4] * 0.0168 [mm/ly] = 0.196728 [mm/day/K4] ca.= 0.201 ? */
+  // calculate par2 = cos(H)
+  par2 = -tan(rlat) * tan(declin);
+  // calculate par1 = sin(H) from trigonometric identities
+  par1 = sqrt(1. - (par2 * par2));
+  // calculate ahou = H from trigonometric function: tan(H) = sin(H)/cos(H)
+  ahou = fmax(atan2(par1, par2), 0.0);
 
-	/* calculate the PET using Penman (1948) */
-	vapor = svapor(avgtemp); /* Penman (1948), ea = vapor = saturation vapor pressure at air-Tave [mmHg] */
-	/* pre-Oct/11/2012 equation (unknown source): arads = vapor *3010.21 / (kelvin*kelvin); with unknown: x = 3010.12 =? 5336 [mmHg*K] (Merva (1975)) * 9/5 [F/K] = 2964 [mmHg*F]; however, result virtually identical with FAO and ASCE formulations (Allen et al. 1998, 2005) --> replaced  */
-	arads = 4098. * vapor / ((avgtemp + 237.3) * (avgtemp + 237.3)) * 5. / 9.; /* Allen et al. (1998, ch.3 eqn. 13) and (2005, eqn. 5): arads used in Penman (1948), eqn. 16: arads [mmHg/F] = Delta [mmHg/C] * [C/F] = slope of e:T at T=Ta = 'Slope of the Saturation Vapor Pressure-Temperature Curve' */
-	clrsky = 1. - cloudcov / 100.; /* Penman (1948): n/N = clrsky = Ratio of actual/possible hours of sunshine = 1 - m/10 = 1 - fraction of sky covered by cloud */
-	humid *= vapor / 100.; /* Penman (1948): ed = humid = saturation vapor pressure at dewpoint [mmHg] = relative humidity * ea */
-	windsp *= 53.70; /* u2 [miles/day at 2-m above ground] = windsp [miles/h at 2-m above ground] * 24 [h/day] = windsp [m/s at 2-m above ground] * 86400 [s/day] * 1/1609.344 [miles/m] with 86400/1609 = 53.70 */
-	par1 = .35 * (vapor - humid) * (1. + .0098 * windsp); /* Penman (1948), eqn. 19: par1 = Ea [mm/day] = evaporation rate from open water with ea instead of es as required in eqn. 16 */
-	par2 = (1. - reflec) * shwave * (.18 + .55 * clrsky) /* Penman (1948), eqn. 13 [mm/day]: par2 = H = net radiant energy available at surface [mm/day] */
-	- ftemp * (.56 - .092 * sqrt(humid)) * (.10 + .90 * clrsky);
-	P = 101.3 * powe((293. - 0.0065 * elev) / 293., 5.26); /* Allen et al. (1998, ch.3 eqn. 7) and (2005, eqn. 3): P [kPa] = atmospheric pressure with elev [m] */
-	gamma = 0.000665 * P * 760. / 101.325 * 5. / 9.; /* Allen et al. (1998, ch.3 eqn. 8) and (2005, eqn. 4): gamma [mmHg/F] = psychrometric constant [kPa/C] * [mmHG/kPa] * [C/F] */
-	result = ((arads * par2 + gamma * par1) / (arads + gamma)) / 10.;/* Penman (1948), eqn. 16: result*10 = E [mm/day] = evaporation from open water */
-	/* originally and pre-Oct/11/2012, Penman (1948) gamma [mmHg/F] == 0.27*/
+  if (slope != 0) {
+    // account for slope effects on solar radiation
+    /* step size is calculated by the difference in our limits of integrations,
+       for hou, using 0 to ahou, divided by some resolution.
+       The best resolution size seems to be around 24
+    */
+    stepSize = (ahou / 24);
+    // convert aspect and slope from degrees to radians:
+    azmthSlope = swPI * (aspect - 180) / 360;
+    rslope = swPI * slope / 360;
 
-	return fmax(result, 0.01);
+    // initialize solrad
+    solrad = 0;
+
+    // Sellers (1965), page 35, eqn. 3.15: Qs [langlay] = solrad
+    //   sum instantaneous solar radiation on a sloped surface over the
+    //   period of sunrise to sunset, h=-ahou to h=ahou
+    for (hou = -ahou; hou <= ahou; hou += stepSize)
+    {
+      // Z = zenith angle of the sun, for current hour angle
+      cosZ = sin(rlat) * sin(declin) + cos(rlat) * cos(declin) * cos(hou);
+      sinZ = sqrt(1. - (cosZ*cosZ));
+
+      // determine A = azimuth angle of the sun, for current hour angle
+      cosA = (sin(rlat) * cosZ - sin(declin)) / (cos(rlat) * sinZ);
+      sinA = (cos(declin) * sin(hou)) / sinZ;
+      azmth = atan2(sinA, cosA);
+
+      // Sum instantaneous solar radiation on a sloped surface:
+      solrad += stepSize * (cosZ * cos(rslope) + sinZ * sin(rslope) * cos(azmth - azmthSlope));
+    }
+
+  } else
+  {
+    // no slope
+
+    // Sellers (1965), page 16, eqn. 3.7: Qs [langlay/day] = solrad =
+    //   daily total solar radiation incident on a horizontal surface at the
+    //   top of the atmosphere
+    /* Note: factor '(mean(d)/d)^2' of Seller's equation is missing here
+             with mean(d) = mean distance and
+             d = instantaneous distance of the earth from the sun)
+    */
+    solrad = ahou * sin(rlat) * sin(declin) + cos(rlat) * cos(declin) * sin(ahou);
+
+    // multiply solrad by two to account for both halves of the day,
+    // as eqn. 3.7 only integrates half a day
+    solrad = solrad * 2;
+  }
+
+  /* Notes:
+    917. = S * 1440/pi
+      with S = solar constant = 2.0 [langlay/min] (Sellers (1965), page 11)
+      and with 1440 = min/day;
+    however, solar constant S (Kopp et al. 2011) = 1.952 [langley/min] =
+    = 1361 [W/m2] <> Seller's value of S = 2.0 [langlay/min] = 1440 [W/m2]
+    => instead of factor 917 (pre-Oct 11, 2012), it should be 895
+  */
+  /* Notes: factor 'transcoeff' is not in Seller's equation and
+    drops out of the result with next line of code;
+  */
+  solrad = (1440 / swPI) * 1.952 * solrad * transcoeff;
+
+  /* Notes:
+    shwave used in Penman (1948),
+    eqn. 13: shwave [evaporation equivalent-mm/day] = RA =
+      = total radiation if the atmosphere were perfectly clear;
+    Rc = Short-wave radiation from sun and sky
+    [usually in evaporation equivalent of mm/day] ? [radiation/cm2/day,] =
+      = RA*(0.18+0.55n/N) is approximation for Rothamsted based on
+    monthly values over the period 1931-40;
+    with x = 0.0168 = conversion factor from [ly] to [mm]
+  */
+  shwave = solrad * .0168 / transcoeff;
+
+  // Calculate long wave radiation:
+  /* Notes:
+    Sellers (1965), eqn. 3.8:
+    ftemp [mm/day] = theoretical black-body radiation at
+    Ta [K] = Stefan-Boltzmann law = sigma*Ta^4 [W/m2]
+    with sigma = 5.670373*1e-8 [W/m2/K4] = 11.71*1e-8 [ly/day/K4]
+    (http://physics.nist.gov/cgi-bin/cuu/Value?sigma);
+  */
+
+  kelvin = avgtemp + 273.15; // convert [C] to [Kelvin]
+  ftemp = kelvin * .01;
+  ftemp = ftemp * ftemp * ftemp * ftemp * 11.71 * 0.0168;
+  /* Notes:
+   ftemp is used in Penman (1948), eqn. 13 with
+   units = [evaporation equivalent-mm/day];
+   with unknown x = 0.201*1e-8 (value pre-Oct 11, 2012),
+   though assuming x = sigma * conversion factor([ly] to [mm]) =
+   = 11.71*10\88-8 [ly/day/K4] * 0.0168 [mm/ly] = 0.196728 [mm/day/K4]
+   ca.= 0.201 ?
+  */
+
+  // Calculate PET using Penman (1948):
+
+  // Saturation vapor pressure at air-Tave [mmHg] ea = vapor
+  vapor = svapor(avgtemp);
+
+  // Slope of the Saturation Vapor Pressure-Temperature Curve:
+  // arads [mmHg/F] = Delta [mmHg/C] * [C/F] = slope of e:T at T=Ta =
+  // 'Slope of the Saturation Vapor Pressure-Temperature Curve'
+  /* Notes:
+    pre-Oct/11/2012 equation (unknown source):
+      arads = vapor *3010.21 / (kelvin*kelvin);
+    with unknown: x = 3010.12 =?
+      5336 [mmHg*K] (Merva (1975)) * 9/5 [F/K] = 2964 [mmHg*F];
+    however, result virtually identical with FAO and ASCE formulations
+    (Allen et al. 1998, 2005) --> replaced
+  */
+  // Allen et al. (1998, ch.3 eqn. 13) and (2005, eqn. 5):
+  // arads used in Penman (1948), eqn. 16:
+  arads = 4098. * vapor / ((avgtemp + 237.3) * (avgtemp + 237.3)) * 5. / 9.;
+
+  // Clear sky:
+  // Penman (1948): n/N = clrsky =
+  //  = Ratio of actual/possible hours of sunshine = 1 - m/10 =
+  //  = 1 - fraction of sky covered by cloud
+  clrsky = 1. - cloudcov / 100.;
+
+  // Saturation vapor pressure at dewpoint [mmHg] = ed = relative humidity * ea
+  humid *= vapor / 100.;
+
+  // Wind speed
+  //   u2 [miles/day at 2-m above ground] =
+  //   = windsp [miles/h at 2-m above ground] * 24 [h/day] =
+  //   = windsp [m/s at 2-m above ground] * 86400 [s/day] * 1/1609.344 [miles/m]
+  //   with 86400/1609 = 53.70
+  windsp *= 53.70;
+
+  // Evaporation rate from open water:
+  // Penman (1948), eqn. 19: par1 = Ea [mm/day] = evaporation rate from
+  //  open water with ea instead of es as required in eqn. 16
+  par1 = .35 * (vapor - humid) * (1. + .0098 * windsp);
+
+  // Net radiant energy available at surface:
+  // Penman (1948), eqn. 13 [mm/day]: par2 = H [mm/day]
+  par2 = (1. - reflec) * shwave * (.18 + .55 * clrsky)
+    - ftemp * (.56 - .092 * sqrt(humid)) * (.10 + .90 * clrsky);
+
+  // Atmospheric pressure:
+  // Allen et al. (1998, ch.3 eqn. 7) and (2005, eqn. 3):
+  //  P [kPa] = atmospheric pressure with elev [m]
+  P = 101.3 * powe((293. - 0.0065 * elev) / 293., 5.26);
+
+  // Psychrometric constant:
+  // Allen et al. (1998, ch.3 eqn. 8) and (2005, eqn. 4):
+  // gamma [mmHg/F] = psychrometric constant [kPa/C] * [mmHG/kPa] * [C/F]
+  /* Notes:
+      originally and pre-Oct/11/2012, Penman (1948) gamma [mmHg/F] == 0.27
+  */
+  gamma = 0.000665 * P * 760. / 101.325 * 5. / 9.;
+
+  // Evaporation from open water:
+  // Penman (1948), eqn. 16: result*10 = E [mm/day]
+  result = ((arads * par2 + gamma * par1) / (arads + gamma)) / 10.;
+
+  return fmax(result, 0.01);
 }
 
 /**
