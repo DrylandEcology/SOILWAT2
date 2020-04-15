@@ -411,15 +411,15 @@ stepSize - the step size to use in integration
   */
 
   // Spencer (1971): dayAngle = day angle [radians]
-  dayAngle = swPI * (doy - 1.) / 365.;
+  dayAngle = swPI2 * (doy - 1.) / 365.;
 
   // Spencer (1971): declin = solar declination [radians]
-  declin = 0.006918 \
-    - 0.399912 * cos(dayAngle) \
-    + 0.070257 * sin(dayAngle) \
-    - 0.006758 * cos(2. * dayAngle) \
-    + 0.000907 * sin(2. * dayAngle) \
-    - 0.002697 * cos(3. * dayAngle) \
+  declin = 0.006918
+    - 0.399912 * cos(dayAngle)
+    + 0.070257 * sin(dayAngle)
+    - 0.006758 * cos(2. * dayAngle)
+    + 0.000907 * sin(2. * dayAngle)
+    - 0.002697 * cos(3. * dayAngle)
     + 0.001480 * sin(3. * dayAngle);
 
   // Calculate short wave solar radiation on a clear day:
@@ -441,8 +441,8 @@ stepSize - the step size to use in integration
     */
     stepSize = (ahou / 24);
     // convert aspect and slope from degrees to radians:
-    azmthSlope = swPI * (aspect - 180) / 360;
-    rslope = swPI * slope / 360;
+    azmthSlope = swPI2 * (aspect - 180) / 360;
+    rslope = swPI2 * slope / 360;
 
     // initialize solrad
     solrad = 0;
@@ -454,7 +454,7 @@ stepSize - the step size to use in integration
     {
       // Z = zenith angle of the sun, for current hour angle
       cosZ = sin(rlat) * sin(declin) + cos(rlat) * cos(declin) * cos(hou);
-      sinZ = sqrt(1. - (cosZ*cosZ));
+      sinZ = sqrt(1. - (cosZ * cosZ));
 
       // determine A = azimuth angle of the sun, for current hour angle
       cosA = (sin(rlat) * cosZ - sin(declin)) / (cos(rlat) * sinZ);
@@ -494,7 +494,7 @@ stepSize - the step size to use in integration
   /* Notes: factor 'transcoeff' is not in Seller's equation and
     drops out of the result with next line of code;
   */
-  solrad = (1440 / swPI) * 1.952 * solrad * transcoeff;
+  solrad = (1440 / swPI2) * 1.952 * solrad * transcoeff;
 
   /* Notes:
     shwave used in Penman (1948),
