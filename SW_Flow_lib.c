@@ -471,6 +471,20 @@ stepSize - the step size to use in integration
     azmthSlope = swPI2 * (aspect - 180) / 360;
     rslope = swPI2 * slope / 360;
 
+
+    // pre-calculate values used in for-loop that are independent of `hou`
+    const double
+      sin_lat = sin(rlat),
+      cos_lat = cos(rlat),
+      sin_declin = sin(declin),
+      cos_declin = cos(declin),
+      sin_slope = sin(rslope),
+      cos_slope = cos(rslope);
+    const double
+      sins_lat_declin = sin_lat * sin_declin,
+      coss_lat_declin = cos_lat * cos_declin;
+
+
     // initialize solrad
     solrad = 0;
 
@@ -480,16 +494,17 @@ stepSize - the step size to use in integration
     for (hou = -ahou; hou <= ahou; hou += stepSize)
     {
       // Z = zenith angle of the sun, for current hour angle
-      cosZ = sin(rlat) * sin(declin) + cos(rlat) * cos(declin) * cos(hou);
+      cosZ = sins_lat_declin + coss_lat_declin * cos(hou);
       sinZ = sqrt(1. - (cosZ * cosZ));
 
       // determine A = azimuth angle of the sun, for current hour angle
-      cosA = (sin(rlat) * cosZ - sin(declin)) / (cos(rlat) * sinZ);
-      sinA = (cos(declin) * sin(hou)) / sinZ;
+      cosA = (sin_lat * cosZ - sin_declin) / (cos_lat * sinZ);
+      sinA = (cos_declin * sin(hou)) / sinZ;
       azmth = atan2(sinA, cosA);
 
       // Sum instantaneous solar radiation on a sloped surface:
-      solrad += stepSize * (cosZ * cos(rslope) + sinZ * sin(rslope) * cos(azmth - azmthSlope));
+      solrad += stepSize *
+        (cosZ * cos_slope + sinZ * sin_slope * cos(azmth - azmthSlope));
     }
 
   } else
