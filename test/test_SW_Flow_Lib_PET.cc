@@ -68,8 +68,8 @@ namespace
   }
 
 
-  // Test solar declination
-  TEST(SWFlowTestPET, solar_declination)
+  // Test solar declination and sunset hour angle
+  TEST(SWFlowTestPET, solar_metrics)
   {
     double declin,
       declin_max = 0.4094, // should rather be 0.409 = (23+26/60)*pi/180
@@ -79,9 +79,15 @@ namespace
       doy_Sep_equinox = 266,
       doy_Jun_solstice = 173,
       doy_Dec_solstice = 355;
+    double ahou,
+      rlat_equator = 0.,
+      rlat,
+      six_hours = 6 * swPI / 12;
+
 
     // Loop through each day of year
     for (i = 1; i <= 365; i++) {
+      // Solar declination
       declin = solar_declination(i);
 
       // Equinox: sign changes
@@ -102,8 +108,22 @@ namespace
 
       EXPECT_LE(declin, declin_max) << "doy = " << i;
       EXPECT_GE(declin, declin_min) << "doy = " << i;
+
+
+      // Sunset hour angle: every day has six hours on equator
+      ahou = sunset_hourangle(rlat_equator, declin);
+      EXPECT_NEAR(ahou, six_hours, tol6) << "doy = " << i;
     }
 
+
+    // Loop through latitudes
+    for (i = 0; i <= 10; i++) {
+      // Sunset hour angle: every location has six hours on
+      // equinoxes (when declin = 0)
+      rlat = (-90 + 180 * (i - 0) / 10) * swPI / 180;
+      ahou = sunset_hourangle(rlat, 0.);
+      EXPECT_NEAR(ahou, six_hours, tol3) << "lat = " << rlat;
+    }
   }
 
 

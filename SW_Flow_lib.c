@@ -354,6 +354,33 @@ double solar_declination(unsigned int doy)
 }
 
 
+/** Calculate sunset/sunrise hour angle
+
+    Equations based on Sellers 1965 @cite Sellers1965.
+
+    @param rlat	Latitude of the site [radians].
+    @param declin	Solar declination [radians].
+
+    @return Sunset (or sunrise) hour angle [radians];
+      this is equal to half-day length.
+*/
+double sunset_hourangle(double rlat, double declin)
+{
+  double par1, par2;
+
+  // Sellers (1965), page 15, eqn. 3.3:
+
+  // calculate par2 = cos(H)
+  par2 = -tan(rlat) * tan(declin);
+
+  // calculate par1 = sin(H) from trigonometric identities
+  par1 = sqrt(1. - (par2 * par2));
+
+  // calculate ahou = H from trigonometric function: tan(H) = sin(H)/cos(H)
+  return fmax(atan2(par1, par2), 0.0);
+}
+
+
 
 /**
 @brief Calculate the potential evapotranspiration rate.
@@ -446,19 +473,12 @@ stepSize - the step size to use in integration
   // Calculate solar declination
   declin = solar_declination(doy);
 
+
+  // Calculate H = half-day length = ahou = sunset hour angle
+  ahou = sunset_hourangle(rlat, declin);
+
+
   // Calculate short wave solar radiation on a clear day:
-  //   Sellers (1965), page 15, eqn. 3.3:
-  //   with H = half-day length = ahou = sunset hour angle
-
-  // calculate par2 = cos(H)
-  par2 = -tan(rlat) * tan(declin);
-  // calculate par1 = sin(H) from trigonometric identities
-  par1 = sqrt(1. - (par2 * par2));
-  // calculate ahou = H from trigonometric function: tan(H) = sin(H)/cos(H)
-  ahou = fmax(atan2(par1, par2), 0.0);
-
-
-
   if (!ZRO(slope) && !EQ(aspect, -1)) {
     // account for slope-aspect effects on solar radiation
 
