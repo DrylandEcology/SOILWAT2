@@ -366,13 +366,14 @@ Equations based on Penman 1948. @cite Penman1948, ASCE 2000. @cite ASCE2000, Bow
 @param elev	Elevation of site (m).
 @param slope	Slope of the site (degrees).
 @param aspect	Aspect of the site (degrees).
+  A value of -1 indicates no data, ie., treat it as if slope = 0
 @param reflec  Unitless measurement of albedo.
 @param humid Average relative humidity for the month (%).
 @param windsp Average wind speed for the month at 2-m above ground (m/s).
 @param cloudcov Average cloud cover for the month (%).
 @param transcoeff Transmission coefficient for the month. note: not used in result (%).
 
-@return fmax Potential evapotranspiration rate (cm/day).
+@return Potential evapotranspiration rate (cm/day).
 
 */
 
@@ -456,8 +457,11 @@ stepSize - the step size to use in integration
   // calculate ahou = H from trigonometric function: tan(H) = sin(H)/cos(H)
   ahou = fmax(atan2(par1, par2), 0.0);
 
-  if (slope != 0) {
-    // account for slope effects on solar radiation
+
+
+  if (!ZRO(slope) && !EQ(aspect, -1)) {
+    // account for slope-aspect effects on solar radiation
+
     /* step size is calculated by the difference in our limits of integrations,
        for hou, using 0 to ahou, divided by some resolution.
        The best resolution size seems to be around 24

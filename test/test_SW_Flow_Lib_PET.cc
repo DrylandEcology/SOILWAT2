@@ -166,11 +166,11 @@ namespace
     //Begin TEST for slope input variable
     //INPUTS
     elev = 1000;
+    aspect = 180; // south-facing slope
     double slopeT[] = {0,15,34,57,90};
 
     //Declare INPUTS for expected returns
-    double expReturnSlope[] = {0.165, 0.082, 0.01, 0.01, 0.01};
-      //Expected returns of 0.01 occur when the petfunc returns a negative number.
+    double expReturnSlope[] = {0.1650, 0.2398, 0.3148, 0.3653, 0.3479};
 
     for (int i = 0; i < 5; i++)
     {
