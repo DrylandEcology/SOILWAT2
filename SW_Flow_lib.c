@@ -318,6 +318,43 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 	}
 }
 
+
+
+/** Calculate solar declination
+
+    Formula is from on Spencer 1971 @cite Spencer1971.
+    Errors are reported to be ±0.0007 radians (0.04 degrees);
+    except near equinoxes in leap years when errors can be twice as large.
+
+    @param doy Represents the day of the year 1-365.
+
+    @return Solar declination in [radians].
+*/
+double solar_declination(unsigned int doy)
+{
+  /* Notes: equation used previous to Oct/11/2012 (from unknown source):
+      declin = .401426 *sin(6.283185 *(doy -77.) /365.);
+  */
+
+  double dayAngle, declin;
+
+  // Spencer (1971): dayAngle = day angle [radians]
+  dayAngle = swPI2 * (doy - 1.) / 365.;
+
+  // Spencer (1971): declin = solar declination [radians]
+  declin = 0.006918 \
+    - 0.399912 * cos(dayAngle) \
+    + 0.070257 * sin(dayAngle) \
+    - 0.006758 * cos(2. * dayAngle) \
+    + 0.000907 * sin(2. * dayAngle) \
+    - 0.002697 * cos(3. * dayAngle) \
+    + 0.001480 * sin(3. * dayAngle);
+
+  return declin;
+}
+
+
+
 /**
 @brief Calculate the potential evapotranspiration rate.
 
@@ -369,7 +406,6 @@ Kopp G, Lean JL (2011) A new, lower value of total solar irradiance: Evidence an
 Merva GE (1975) Physioengineering principles. Avi Pub. Co., Westport, Conn., ix, 353 p. pp.
 Penman HL (1948) Natural evaporation form open water, bare soil and grass. Proceedings of the Royal Society of London. Series A, Mathematical and Physical Sciences, 193, 120-145.
 Sellers WD (1965) Physical climatology. University of Chicago Press, Chicago, USA.
-Spencer JW (1971) Fourier Series Representation of the Position of the Sun. Search, 2, 172-172.
 
 LOCAL VARIABLES:
 solrad - solar radiation (ly/day)
@@ -393,7 +429,7 @@ stepSize - the step size to use in integration
 ***********************************************************************/
 
   double declin, par1, par2, ahou, hou, azmth, solrad, shwave, kelvin, arads,
-    clrsky, ftemp, vapor, result, dayAngle, P, gamma, cosZ, sinZ, cosA, sinA,
+    clrsky, ftemp, vapor, result, P, gamma, cosZ, sinZ, cosA, sinA,
     stepSize, azmthSlope, rslope;
 
   /* Unit conversion factors:
@@ -405,22 +441,9 @@ stepSize - the step size to use in integration
    0 C = 273.15 K
   */
 
-  // Calculate solar declination:
-  /* equation used previous to Oct/11/2012 (from unknown source):
-      declin = .401426 *sin(6.283185 *(doy -77.) /365.);
-  */
 
-  // Spencer (1971): dayAngle = day angle [radians]
-  dayAngle = swPI2 * (doy - 1.) / 365.;
-
-  // Spencer (1971): declin = solar declination [radians]
-  declin = 0.006918
-    - 0.399912 * cos(dayAngle)
-    + 0.070257 * sin(dayAngle)
-    - 0.006758 * cos(2. * dayAngle)
-    + 0.000907 * sin(2. * dayAngle)
-    - 0.002697 * cos(3. * dayAngle)
-    + 0.001480 * sin(3. * dayAngle);
+  // Calculate solar declination
+  declin = solar_declination(doy);
 
   // Calculate short wave solar radiation on a clear day:
   //   Sellers (1965), page 15, eqn. 3.3:

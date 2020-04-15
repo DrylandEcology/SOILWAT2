@@ -88,6 +88,8 @@ double petfunc(unsigned int doy, double avgtemp, double rlat, double elev, doubl
 		double transcoeff);
 
 double svapor(double temp);
+double solar_declination(unsigned int doy);
+
 
 void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n_layers, unsigned int tr_regions[], double tr_coeff[], double swc[]);
 

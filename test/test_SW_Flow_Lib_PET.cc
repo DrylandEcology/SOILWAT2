@@ -68,6 +68,45 @@ namespace
   }
 
 
+  // Test solar declination
+  TEST(SWFlowTestPET, solar_declination)
+  {
+    double declin,
+      declin_max = 0.4094, // should rather be 0.409 = (23+26/60)*pi/180
+      declin_min = -declin_max;
+    int i,
+      doy_Mar_equinox = 80,
+      doy_Sep_equinox = 266,
+      doy_Jun_solstice = 173,
+      doy_Dec_solstice = 355;
+
+    // Loop through each day of year
+    for (i = 1; i <= 365; i++) {
+      declin = solar_declination(i);
+
+      // Equinox: sign changes
+      if (i <= doy_Mar_equinox || i > doy_Sep_equinox) {
+        EXPECT_LT(declin, 0) << "doy = " << i;
+
+      } else if (i > doy_Mar_equinox && i <= doy_Sep_equinox) {
+        EXPECT_GT(declin, 0) << "doy = " << i;
+      }
+
+      // Solstice: max/min
+      if (i == doy_Jun_solstice) {
+        EXPECT_NEAR(declin, declin_max, tol3) << "doy = " << i;
+      }
+      if (i == doy_Dec_solstice) {
+        EXPECT_NEAR(declin, declin_min, tol3) << "doy = " << i;
+      }
+
+      EXPECT_LE(declin, declin_max) << "doy = " << i;
+      EXPECT_GE(declin, declin_min) << "doy = " << i;
+    }
+
+  }
+
+
   //Test petfunc by manipulating each input individually.
   TEST(SWFlowTestPET, petfunc)
   {
