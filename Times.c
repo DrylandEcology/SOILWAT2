@@ -73,10 +73,23 @@ void Time_init(void) {
 */
 void Time_now(void) {
 	/* =================================================== */
+
 	time_t x = time(NULL );
 
 	memcpy(&_tym, (struct tm *) localtime(&x), sizeof(struct tm));
 
+  /*
+  // Initialize to Jan 1, 1970
+  _tym.tm_year = 70;
+  _tym.tm_mon = 0;
+  _tym.tm_mday = 1;
+  _tym.tm_hour = 0;
+  _tym.tm_min = 0;
+  _tym.tm_sec = 0;
+  mktime(&_tym);
+
+  //printf("%s\n", asctime(&_tym));
+  */
 	_reinit();
 }
 
