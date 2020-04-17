@@ -479,7 +479,7 @@ stepSize - the step size to use in integration
 
 
   // Calculate short wave solar radiation on a clear day:
-  if (!ZRO(slope) && !EQ(aspect, -1)) {
+  if (!ZRO(slope) && !EQ(aspect, -1.)) {
     // account for slope-aspect effects on solar radiation
 
     /* step size is calculated by the difference in our limits of integrations,
