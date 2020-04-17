@@ -442,9 +442,7 @@ TimeInt doy2month(const TimeInt doy) {
 */
 TimeInt doy2mday(const TimeInt doy) {
 
-	TimeInt mon = doy2month(doy);
-	return (mon == Jan) ? doy : doy - cum_monthdays[mon - 1];
-
+  return (doy <= days_in_month[Jan]) ? doy : doy - cum_monthdays[doy2month(doy) - 1];
 }
 
 /**
