@@ -512,7 +512,7 @@ Bool isleapyear(const TimeInt year) {
    only sub-setted by base1 objects in the model.
  **/
 void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
-	unsigned int doy, mday, month, month2 = NoMonth;
+	unsigned int doy, mday, month, month2 = NoMonth, nmdays;
 	double sign = 1.;
 
 	for (doy = 1; doy <= MAX_DAYS; doy++) {
@@ -521,16 +521,22 @@ void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
 
 		if (mday == 15) {
 			dailyValues[doy] = monthlyValues[month];
+
 		} else {
 			if (mday >= 15) {
 				month2 = (month == Dec) ? Jan : month + 1;
 				sign = 1;
+				nmdays = days_in_month[month];
+
 			} else {
 				month2 = (month == Jan) ? Dec : month - 1;
 				sign = -1;
+				nmdays = days_in_month[month2];
 			}
 
-			dailyValues[doy] = monthlyValues[month] + sign * (monthlyValues[month2] - monthlyValues[month]) / (monthdays[month]) * (mday - 15.);
+			dailyValues[doy] = monthlyValues[month]
+			  + sign * (monthlyValues[month2] - monthlyValues[month])
+			  * (mday - 15.) / nmdays;
 		}
 	}
 }
