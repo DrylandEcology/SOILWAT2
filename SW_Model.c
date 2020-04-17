@@ -240,7 +240,7 @@ void SW_MDL_new_year() {
 	SW_Model.simyear = SW_Model.year + SW_Model.addtl_yr;
 
 	m->firstdoy = (year == m->startyr) ? m->startstart : 1;
-	m->lastdoy = (year == m->endyr) ? m->endend : Time_lastDOY();
+	m->lastdoy = (year == m->endyr) ? m->endend : Time_get_lastdoy_y(year);
 }
 
 /**

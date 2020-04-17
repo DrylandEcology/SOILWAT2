@@ -93,7 +93,6 @@ void Time_set_month(const TimeInt mon);
 time_t Time_timestamp(void);
 time_t Time_timestamp_now(void);
 TimeInt Time_days_in_month(TimeInt month);
-TimeInt Time_lastDOY(void);
 
 char *Time_printtime(void);
 char *Time_daynmshort(void);
@@ -111,7 +110,6 @@ TimeInt Time_get_mday(void);
 TimeInt Time_get_hour(void);
 TimeInt Time_get_mins(void);
 TimeInt Time_get_secs(void);
-TimeInt Time_get_lastdoy(void);
 TimeInt Time_get_lastdoy_y(TimeInt year);
 
 TimeInt doy2month(const TimeInt doy);

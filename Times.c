@@ -37,7 +37,6 @@
 
 /* cum_monthdays has one extra for the Doy2Month macro
  * to be able to determine the 12th month.  */
-static TimeInt last_doy;
 static TimeInt monthdays[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 static TimeInt days_in_month[MAX_MONTHS], cum_monthdays[MAX_MONTHS + 1];
 
@@ -110,7 +109,7 @@ void Time_new_year(TimeInt year) {
 */
 void Time_next_day(void) {
 
-	if ((TimeInt) _tym.tm_yday == last_doy) {
+	if ((TimeInt) _tym.tm_yday == cum_monthdays[Dec]) {
 		_tym.tm_year++;
 		_reinit();
 	} else {
@@ -204,15 +203,6 @@ time_t Time_timestamp_now(void) {
 
 }
 
-/**
-@brief Returns the last day of the year.
-
-@return cum_monthdays[Dec]
-*/
-TimeInt Time_lastDOY(void) {
-
-	return cum_monthdays[Dec];
-}
 
 /**
 @brief Returns days in a given month.
@@ -399,14 +389,6 @@ TimeInt Time_get_secs(void) {
 	return (TimeInt) _tym.tm_sec;
 }
 
-/**
-@brief Gets the last day of the year.
-
-@return last_doy
-*/
-TimeInt Time_get_lastdoy(void) {
-	return last_doy;
-}
 
 /**
 @brief Gets last day of the year, checks for leapyear.
@@ -566,8 +548,6 @@ static void _reinit(void) {
 	cum_monthdays[Jan] = days_in_month[Jan];
 	for (m = Feb; m < NoMonth; m++)
 		cum_monthdays[m] = days_in_month[m] + cum_monthdays[m - 1];
-
-	last_doy = cum_monthdays[Dec];
 }
 
 static TimeInt _yearto4digit_t(void) {
