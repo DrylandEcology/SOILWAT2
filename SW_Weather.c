@@ -366,7 +366,7 @@ void SW_WTH_read(void) {
 			w->use_markov = itob(atoi(inbuf));
 			break;
 		case 4:
-			w->yr.first = YearTo4Digit(atoi(inbuf));
+			w->yr.first = yearto4digit(atoi(inbuf));
 			break;
 		case 5:
 			w->days_in_runavg = atoi(inbuf);

@@ -179,14 +179,6 @@ void UnComment(char *s) {
 }
 
 
-/**************************************************************/
-Bool Is_LeapYear(int yr) {
-	/* yr must be a 4 digit year number */
-
-	int t = (yr / 100) * 100;
-
-	return (Bool) (((yr % 4) == 0) && (((t) != yr) || ((yr % 400) == 0)));
-}
 
 /**************************************************************************************************************************************
  PURPOSE: Calculate a linear interpolation between two points, for use in soil_temperature function

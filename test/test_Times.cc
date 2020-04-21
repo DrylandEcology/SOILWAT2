@@ -20,6 +20,42 @@
 #include "sw_testhelpers.h"
 
 namespace{
+  TEST(TimesTest, leap_year_consequences) {
+    unsigned int k, lpadd,
+      years[] = {1900, 1980, 1981, 2000}; // noleap, leap, noleap, leap years
+
+    Bool kleap,
+      isleap[] = {swFALSE, swTRUE, swFALSE, swTRUE};
+
+    // Loop through years and tests
+    for (k = 0; k < length(years); k++) {
+      Time_new_year(years[k]);
+      kleap = isleapyear(years[k]);
+
+      lpadd = kleap ? 1 : 0;
+
+      EXPECT_EQ(kleap, isleap[k]);
+      EXPECT_EQ(Time_days_in_month(Feb), 28 + lpadd);
+      EXPECT_EQ(Time_get_lastdoy_y(years[k]), 365 + lpadd);
+
+      EXPECT_EQ(doy2month(1), Jan); // first day of January
+      EXPECT_EQ(doy2month(59 + lpadd), Feb); // last day of February
+      EXPECT_EQ(doy2month(60 + lpadd), Mar); // first day of March
+      EXPECT_EQ(doy2month(365 + lpadd), Dec); // last day of December
+
+      EXPECT_EQ(doy2mday(1), 1); // first day of January
+      EXPECT_EQ(doy2mday(59 + lpadd), 28 + lpadd); // last day of February
+      EXPECT_EQ(doy2mday(60 + lpadd), 1); // first day of March
+      EXPECT_EQ(doy2mday(365 + lpadd), 31); // last day of December
+
+      EXPECT_EQ(doy2week(1), 0); // first day of first (base0) 7-day period
+      EXPECT_EQ(doy2week(7), 0); // last day of first 7-day period
+      EXPECT_EQ(doy2week(8), 1); // first day of second 7-day period
+      EXPECT_EQ(doy2week(365 + lpadd), 52);
+    }
+  }
+
+
   // Test the 'Times.c' function 'xintpl_monthlyValues'
   double valXd(double v1, double v2, int sign, int mday, int delta_days) {
     return v1 + (v2 - v1) * sign * (mday - 15.) / delta_days;

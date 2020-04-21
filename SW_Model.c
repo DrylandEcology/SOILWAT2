@@ -81,11 +81,11 @@ void SW_MDL_construct(void) {
 	 * execution (better called clean() or something)
 	 * will need to free all allocated memory first
 	 * before clearing structure.
-	 *
 	 */
 	OutPeriod pd;
 
-	Time_init();
+	Time_init_model(); // values of time are correct only after Time_new_year()
+
 	ForEachOutPeriod(pd)
 	{
 		SW_Model.newperiod[pd] = swFALSE;
@@ -226,7 +226,7 @@ void SW_MDL_read(void) {
 /**
 @brief Sets up time structures and calls modules that have yearly init routines.
 */
-void SW_MDL_new_year() {
+void SW_MDL_new_year(void) {
 	/* =================================================== */
 	/* 1/24/02 - added code for partial start and end years
 	 */
@@ -250,8 +250,8 @@ void SW_MDL_new_day(void) {
 
 	OutPeriod pd;
 
-	SW_Model.month = doy2month(SW_Model.doy);
-	SW_Model.week = doy2week(SW_Model.doy); /* more often an index */
+	SW_Model.month = doy2month(SW_Model.doy); /* base0 */
+	SW_Model.week = doy2week(SW_Model.doy); /* base0; more often an index */
 
 	/* in this case, we've finished the daily loop and are about
 	 * to flush the output */
