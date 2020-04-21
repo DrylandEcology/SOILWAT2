@@ -71,6 +71,7 @@ namespace {
   // Test the SW_VEGPROD constructor 'SW_VPD_construct'
   TEST(VegTest, Constructor) {
     SW_VPD_construct();
+    SW_VPD_init_run();
 
     ForEachVegType(k) {
       EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[BIO_INDEX][0]);

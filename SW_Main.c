@@ -66,17 +66,28 @@ int main(int argc, char **argv) {
 
 	init_args(argc, argv);
 
-	SW_CTL_init_model(_firstfile);
-	SW_CTL_obtain_inputs();
+  // setup and construct model (independent of inputs)
+	SW_CTL_setup_model(_firstfile);
 
+	// read user inputs
+	SW_CTL_read_inputs_from_disk();
+
+	// initialize simulation run (based on user inputs)
+	SW_CTL_init_run();
+
+  // initialize output
 	SW_OUT_set_ncol();
 	SW_OUT_set_colnames();
 	SW_OUT_create_files(); // only used with SOILWAT2
 
+  // run simulation: loop through each year
 	SW_CTL_main();
 
+  // finish-up output
 	SW_OUT_close_files(); // not used with rSOILWAT2
-	SW_CTL_clear_model(swTRUE); // de-allocate all memory
+
+	// de-allocate all memory
+	SW_CTL_clear_model(swTRUE);
 
 	return 0;
 }

@@ -46,21 +46,15 @@ extern SW_MODEL SW_Model;
 void Reset_SOILWAT2_after_UnitTest(void) {
   SW_CTL_clear_model(swFALSE);
 
-  SW_CTL_init_model(_firstfile);
-  SW_CTL_obtain_inputs();
+  SW_CTL_setup_model(_firstfile);
+  SW_CTL_read_inputs_from_disk();
+  SW_CTL_init_run();
 
 
   // Next two function calls will require SW_Output.c
   //   (see issue #85 'Make SW_Output.c comptabile with c++ to include in unit testing code')
   // SW_OUT_set_ncol();
   // SW_OUT_set_colnames();
-
-
-  // Set year to first (Gregorian) calendar year of testing simulation:
-  // In a regular SOILWAT2 run, this is set via:
-  //   SW_CTL_main > SW_CTL_run_current_year >
-  //     _begin_year > SW_MDL_new_year > Time_new_year
-  Time_new_year(SW_Model.startyr);
 }
 
 

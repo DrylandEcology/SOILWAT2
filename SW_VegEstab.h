@@ -94,7 +94,7 @@ void SW_VES_read(void);
 void SW_VES_construct(void);
 void SW_VES_deconstruct(void);
 void SW_VES_init(void);
-void Init_SW_VegEstab(void);
+void SW_VegEstab_construct(void);
 void SW_VES_checkestab(void);
 void SW_VES_new_year(void);
 void _spp_init(unsigned int sppnum);

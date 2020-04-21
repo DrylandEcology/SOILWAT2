@@ -50,7 +50,6 @@
 #include "SW_Model.h"
 #include "SW_SoilWater.h"
 #include "SW_Markov.h"
-#include "SW_Sky.h"
 
 #include "SW_Weather.h"
 #ifdef RSOILWAT
@@ -63,10 +62,6 @@
 extern SW_MODEL SW_Model;
 extern SW_MARKOV SW_Markov;
 
-#ifdef RSOILWAT
-extern Bool collectInData;
-#endif
-
 SW_WEATHER SW_Weather; /* declared here, externed elsewhere */
 
 Bool weth_found; /* swTRUE=success reading this years weather file */
@@ -76,8 +71,6 @@ RealD *runavg_list; /* used in run_tmp_avg() */
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
 static char *MyFileName;
-static TimeInt tail;
-static Bool firsttime;
 
 
 /* =================================================== */
@@ -178,9 +171,6 @@ static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
 */
 void SW_WTH_construct(void) {
 	/* =================================================== */
-	tail = 0;
-	firsttime = swTRUE;
-	SW_Markov.ppt_events = 0;
 	OutPeriod pd;
 
 	// Clear the module structure:
@@ -199,7 +189,7 @@ void SW_WTH_construct(void) {
 }
 
 /**
-@brief Deconstructor for SW_Weather.
+@brief Deconstructor for SW_Weather and SW_Markov (if used)
 */
 void SW_WTH_deconstruct(void)
 {
@@ -227,53 +217,52 @@ void SW_WTH_deconstruct(void)
 }
 
 /**
-@brief This is a blank function.
+@brief Initialize weather variables for a simulation run
+
+  They are used as default if weather for the first day is missing
 */
-void SW_WTH_init(void) {
-	/* =================================================== */
-	/* nothing to initialize */
-	/* this is a stub to make all objects more consistent */
-
-}
-
-/**
-@brief Sets new year for SW_Weather.
-*/
-void SW_WTH_new_year(void) {
-	/* =================================================== */
-	SW_WEATHER *w = &SW_Weather;
-	SW_WEATHER_2DAYS *wn = &SW_Weather.now;
-	TimeInt year = SW_Model.year;
-
-	_clear_runavg();
-
-	if (year < SW_Weather.yr.first) {
-		weth_found = swFALSE;
-	} else {
-		#ifdef RSOILWAT
-		weth_found = onSet_WTH_DATA_YEAR(year);
-		#else
-		weth_found = _read_weather_hist(year);
-		#endif
-	}
-
-	if (!weth_found && !SW_Weather.use_markov) {
-		LogError(logfp, LOGFATAL, "Markov Simulator turned off and weather file found not for year %d", year);
-	}
-
+void SW_WTH_init_run(void) {
 	/* setup today's weather because it's used as a default
 	 * value when weather for the first day is missing.
 	 * Notice that temps of 0. are reasonable for January
 	 * (doy=1) and are below the critical temps for freezing
 	 * and with ppt=0 there's nothing to freeze.
 	 */
-	if (firsttime) {
-		wn->temp_max[Today] = wn->temp_min[Today] = wn->ppt[Today] = wn->rain[Today] = 0.;
-		w->snow = w->snowmelt = w->snowloss = 0.;
-		w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
+	SW_Markov.ppt_events = 0;
+
+	SW_Weather.now.temp_max[Today] = SW_Weather.now.temp_min[Today] = 0.;
+	SW_Weather.now.ppt[Today] = SW_Weather.now.rain[Today] = 0.;
+	SW_Weather.snow = SW_Weather.snowmelt = SW_Weather.snowloss = 0.;
+	SW_Weather.snowRunoff = 0.;
+	SW_Weather.surfaceRunoff = SW_Weather.surfaceRunon = 0.;
+	SW_Weather.soil_inf = 0.;
+}
+
+/**
+@brief Sets new year for SW_Weather.
+*/
+void SW_WTH_new_year(void) {
+
+	_clear_runavg();
+
+	if (SW_Model.year < SW_Weather.yr.first) {
+		weth_found = swFALSE;
+	} else {
+		#ifdef RSOILWAT
+		weth_found = onSet_WTH_DATA_YEAR(SW_Model.year);
+		#else
+		weth_found = _read_weather_hist(SW_Model.year);
+		#endif
 	}
 
-	firsttime = swFALSE;
+	if (!weth_found && !SW_Weather.use_markov) {
+		LogError(
+		  logfp,
+		  LOGFATAL,
+		  "Markov Simulator turned off and weather file found not for year %d",
+		  SW_Model.year
+		);
+	}
 }
 
 /**
@@ -397,23 +386,18 @@ void SW_WTH_read(void) {
 	}
 	w->yr.last = SW_Model.endyr;
 	w->yr.total = w->yr.last - w->yr.first + 1;
-	if (w->use_markov) {
-		SW_MKV_setup();
 
-	} else if (SW_Model.startyr < w->yr.first) {
-		LogError(logfp, LOGFATAL, "%s : Model year (%d) starts before weather files (%d)"
-				" and use_Markov=swFALSE.\nPlease synchronize the years"
-				" or set up the Markov weather files", MyFileName, SW_Model.startyr, w->yr.first);
+	if (!w->use_markov && SW_Model.startyr < w->yr.first) {
+    LogError(
+      logfp,
+      LOGFATAL,
+      "%s : Model year (%d) starts before weather files (%d)"
+        " and use_Markov=swFALSE.\nPlease synchronize the years"
+        " or set up the Markov weather files",
+      MyFileName, SW_Model.startyr, w->yr.first
+    );
 	}
 	/* else we assume weather files match model run years */
-
-	/* required for PET */
-	SW_SKY_read();
-
-	#ifdef RSOILWAT
-	if(!collectInData)
-	#endif
-		SW_SKY_init(w->scale_skyCover, w->scale_wind, w->scale_rH, w->scale_transmissivity);
 }
 
 /**
@@ -440,7 +424,8 @@ Bool _read_weather_hist(TimeInt year) {
 
 	SW_WEATHER_HIST *wh = &SW_Weather.hist;
 	FILE *f;
-	int x, lineno = 0, k = 0, i, j, doy;
+	int x, lineno = 0, doy, k = 0;
+	// TimeInt mon, j;
 	RealF tmpmax, tmpmin, ppt, acc = 0.0;
 
 	char fname[MAX_FILENAMESIZE];
@@ -481,25 +466,24 @@ Bool _read_weather_hist(TimeInt year) {
 		}
 	} /* end of input lines */
 
+  // Calculate annual average temperature
+  // TODO: current code does not use `temp_year_avg` value -> remove?
 	wh->temp_year_avg = acc / (k + 0.0);
 
-	x = 0;
-	for (i = 0; i < MAX_MONTHS; i++) {
-		k = 31;
-		if (i == 8 || i == 3 || i == 5 || i == 10)
-			k = 30; // september, april, june, & november all have 30 days...
-		else if (i == 1) {
-			k = 28; // february has 28 days, except if it's a leap year, in which case it has 29 days...
-			if (isleapyear(year))
-				k = 29;
-		}
+  // Calculate monthly average temperature
+  // TODO: current code does not use `temp_month_avg` value -> remove?
+  /*
+	for (mon = Jan; mon <= Dec; i++) {
+	  k = Time_days_in_month(mon);
 
 		acc = 0.0;
 		for (j = 0; j < k; j++)
+		{
 			acc += wh->temp_avg[j + x];
+		}
 		wh->temp_month_avg[i] = acc / (k + 0.0);
-		x += k;
 	}
+  */
 
 	fclose(f);
 	return swTRUE;

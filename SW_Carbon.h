@@ -34,7 +34,7 @@ typedef struct {
 void SW_CBN_construct(void);
 void SW_CBN_deconstruct(void);
 void SW_CBN_read(void);
-void calculate_CO2_multipliers(void);
+void SW_CBN_init_run(void);
 
 
 #ifdef __cplusplus

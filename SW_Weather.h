@@ -91,7 +91,7 @@ typedef struct {
 void SW_WTH_read(void);
 Bool _read_weather_hist(TimeInt year);
 void _clear_hist_weather(void);
-void SW_WTH_init(void);
+void SW_WTH_init_run(void);
 void SW_WTH_construct(void);
 void SW_WTH_deconstruct(void);
 void SW_WTH_new_day(void);

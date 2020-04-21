@@ -101,6 +101,27 @@ static void _clear_hist(void) {
 	}
 }
 
+static void _reset_swc(void) {
+	LyrIndex lyr;
+
+	/* reset swc */
+	ForEachSoilLayer(lyr)
+	{
+		SW_Soilwat.swcBulk[Today][lyr] = SW_Soilwat.swcBulk[Yesterday][lyr] = SW_Site.lyr[lyr]->swcBulk_init;
+		SW_Soilwat.drain[lyr] = 0.;
+	}
+
+	/* reset the snowpack */
+	SW_Soilwat.snowpack[Today] = SW_Soilwat.snowpack[Yesterday] = 0.;
+
+	/* reset deep drainage */
+	if (SW_Site.deepdrain) {
+		SW_Soilwat.swcBulk[Today][SW_Site.deep_lyr] = 0.;
+  }
+}
+
+
+
 #ifdef SWDEBUG
 void SW_WaterBalance_Checks(void)
 {
@@ -322,12 +343,6 @@ void SW_WaterBalance_Checks(void)
 void SW_SWC_construct(void) {
 	/* =================================================== */
 	OutPeriod pd;
-
-	SW_Soilwat.soiltempError = swFALSE;
-	temp_snow = 0.;
-	#ifdef SWDEBUG
-		SW_Soilwat.is_wbError_init = swFALSE;
-	#endif
 
 	// Clear memory before setting it
 	if (!isnull(SW_Soilwat.hist.file_prefix)) {
@@ -631,6 +646,20 @@ void SW_SWC_end_day(void) {
 	v->snowpack[Yesterday] = v->snowpack[Today];
 
 }
+
+void SW_SWC_init_run(void) {
+
+	SW_Soilwat.soiltempError = swFALSE;
+
+	#ifdef SWDEBUG
+		SW_Soilwat.is_wbError_init = swFALSE;
+	#endif
+
+	temp_snow = 0.; // module-level snow temperature
+
+  _reset_swc();
+}
+
 /**
 @brief init first doy swc, either by the computed init value or by the last day of last
       year, which is also, coincidentally, Yesterday
@@ -639,43 +668,35 @@ void SW_SWC_new_year(void) {
 
 	LyrIndex lyr;
 	TimeInt year = SW_Model.year;
-	Bool reset = (Bool) (SW_Site.reset_yr || SW_Model.year == SW_Model.startyr);
 
-	/* reset the swc */
-	ForEachSoilLayer(lyr)
-	{
-		if (reset) {
-			SW_Soilwat.swcBulk[Today][lyr] = SW_Soilwat.swcBulk[Yesterday][lyr] = SW_Site.lyr[lyr]->swcBulk_init;
-			SW_Soilwat.drain[lyr] = 0.;
-		} else {
-			SW_Soilwat.swcBulk[Today][lyr] = SW_Soilwat.swcBulk[Yesterday][lyr];
-		}
-	}
+  if (SW_Site.reset_yr) {
+    _reset_swc();
 
-	/* reset the snowpack */
-	if (reset) {
-		SW_Soilwat.snowpack[Today] = SW_Soilwat.snowpack[Yesterday] = 0.;
-	} else {
-		SW_Soilwat.snowpack[Today] = SW_Soilwat.snowpack[Yesterday];
-	}
+  } else {
+    /* update swc */
+    ForEachSoilLayer(lyr)
+    {
+      SW_Soilwat.swcBulk[Today][lyr] = SW_Soilwat.swcBulk[Yesterday][lyr];
+    }
 
-	/* reset the historical (measured) values, if needed */
+    /* update snowpack */
+    SW_Soilwat.snowpack[Today] = SW_Soilwat.snowpack[Yesterday];
+  }
+
+	/* update historical (measured) values, if needed */
 	if (SW_Soilwat.hist_use && year >= SW_Soilwat.hist.yr.first) {
 		#ifndef RSOILWAT
 			_read_swc_hist(year);
 		#else
-			if(useFiles) {
+			if (useFiles) {
 				_read_swc_hist(year);
 			} else {
 				onSet_SW_SWC_hist();
 			}
 		#endif
 	}
-	/* always reset deep drainage */
-	if (SW_Site.deepdrain){
-		SW_Soilwat.swcBulk[Today][SW_Site.deep_lyr] = 0.;
-  }
 }
+
 /**
 @brief Like all of the other functions, read() reads in the setup parameters. See
       _read_swc_hist() for reading historical files.

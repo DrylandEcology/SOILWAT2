@@ -190,16 +190,16 @@ void SW_VES_read(void) {
 
 	CloseFile(&f);
 
-	Init_SW_VegEstab();
+	SW_VegEstab_construct();
 
 	if (EchoInits)
 		_echo_VegEstab();
 }
 
 /**
-@brief Initializer for SW_VegEstab.
+@brief Construct SW_VegEstab variable
 */
-void Init_SW_VegEstab(void)
+void SW_VegEstab_construct(void)
 {
 	IntU i;
 
@@ -208,7 +208,7 @@ void Init_SW_VegEstab(void)
 
 	if (SW_VegEstab.count > 0) {
 		SW_VegEstab.p_accu[eSW_Year]->days = (TimeInt *) Mem_Calloc(
-			SW_VegEstab.count, sizeof(TimeInt), "Init_SW_VegEstab()");
+			SW_VegEstab.count, sizeof(TimeInt), "SW_VegEstab_construct()");
 	}
 }
 

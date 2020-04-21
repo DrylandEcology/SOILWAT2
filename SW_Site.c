@@ -82,9 +82,6 @@ SW_SITE SW_Site; /* declared here, externed elsewhere */
 extern Bool EchoInits;
 extern char const *key2veg[];
 
-#ifdef RSOILWAT
-extern Bool collectInData;
-#endif
 
 /* transpiration regions  shallow, moderately shallow,  */
 /* deep and very deep. units are in layer numbers. */
@@ -448,12 +445,7 @@ void SW_SIT_read(void) {
 	}
 
 	_read_layers();
-	#ifndef RSOILWAT
-		init_site_info();
-	#else
-		if(!collectInData)
-			init_site_info();
-	#endif
+
 	if (EchoInits)
 		_echo_inputs();
 }
@@ -589,17 +581,10 @@ static void _read_layers(void) {
 	CloseFile(&f);
 
 	/* n_layers set in _newlayer() */
-	#ifdef RSOILWAT
-		if (v->deepdrain && !collectInData) {
-			lyrno = _newlayer();
-			v->lyr[lyrno]->width = 1.0;
-		}
-	#else
-		if (v->deepdrain) {
-			lyrno = _newlayer();
-			v->lyr[lyrno]->width = 1.0;
-		}
-	#endif
+  if (v->deepdrain) {
+    lyrno = _newlayer();
+    v->lyr[lyrno]->width = 1.0;
+  }
 }
 
 /**
@@ -734,7 +719,7 @@ void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel
   derive_soilRegions(nRegions, regionLowerBounds);
 
   // Re-initialize site parameters based on new soil layers
-  init_site_info();
+  SW_SIT_init_run();
 }
 
 
@@ -815,7 +800,7 @@ void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 	}
 }
 
-void init_site_info(void) {
+void SW_SIT_init_run(void) {
 	/* =================================================== */
 	/* potentially this routine can be called whether the
 	 * layer data came from a file or a function call which
@@ -1022,15 +1007,9 @@ void SW_SIT_clear_layers(void) {
 
 	j = SW_Site.n_layers;
 
-	#ifdef RSOILWAT
-		if (s->deepdrain && !collectInData) {
-			j++;
-		}
-	#else
-		if (s->deepdrain) {
-				j++;
-		}
-	#endif
+  if (s->deepdrain) {
+      j++;
+  }
 
 	for (i = 0; i < j; i++) {
 		free(s->lyr[i]);
