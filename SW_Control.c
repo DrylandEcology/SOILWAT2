@@ -90,11 +90,12 @@ void SW_CTL_setup_model(const char *firstfile) {
 	SW_F_construct(firstfile);
 	SW_MDL_construct();
 	SW_WTH_construct();
-	// SW_SKY_construct() not need
 	// delay SW_MKV_construct() until we know from inputs whether we need it
+	// SW_SKY_construct() not need
 	SW_SIT_construct();
 	SW_VES_construct();
 	SW_VPD_construct();
+	// SW_FLW_construct() not needed
 	SW_OUT_construct();
 	SW_SWC_construct();
 	SW_CBN_construct();
@@ -112,11 +113,12 @@ void SW_CTL_setup_model(const char *firstfile) {
 void SW_CTL_clear_model(Bool full_reset) {
 	SW_F_deconstruct();
 	SW_MDL_deconstruct();
-	SW_WTH_deconstruct(); // also calls SW_MKV_deconstruct() if needed
-	// SW_SKY_deconstruct() not need
+	SW_WTH_deconstruct(); // calls SW_MKV_deconstruct() if needed
+	// SW_SKY_deconstruct() not needed
 	SW_SIT_deconstruct();
 	SW_VES_deconstruct();
 	SW_VPD_deconstruct();
+	// SW_FLW_deconstruct() not needed
 	SW_OUT_deconstruct(full_reset);
 	SW_SWC_deconstruct();
 	SW_CBN_deconstruct();
@@ -131,13 +133,14 @@ void SW_CTL_init_run(void) {
 	// SW_F_init_run() not needed
 	// SW_MDL_init_run() not needed
 	SW_WTH_init_run();
+	// SW_MKV_init_run() not needed
 	SW_SKY_init_run();
 	SW_SIT_init_run();
 	// SW_VES_init_run() not needed
 	SW_VPD_init_run();
 	SW_FLW_init_run();
-	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() may be
-	//   useful for rSOILWAT2 and STEPWAT2 applications
+	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
+	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
 	SW_SWC_init_run();
 	SW_CBN_init_run();
 }
@@ -205,14 +208,17 @@ void SW_CTL_run_current_year(void) {
 */
 static void _begin_year(void) {
 
+	// SW_F_new_year() not needed
 	SW_MDL_new_year(); // call first to set up time-related arrays for this year
 	SW_WTH_new_year();
-	//SW_SIT_new_year() not needed
+	// SW_MKV_new_year() not needed
 	SW_SKY_new_year(); // Update daily climate variables from monthly values
+	//SW_SIT_new_year() not needed
 	SW_VES_new_year();
 	SW_VPD_new_year(); // Dynamic CO2 effects on vegetation
 	// SW_FLW_new_year() not needed
 	SW_SWC_new_year();
+	// SW_CBN_new_year() not needed
 	SW_OUT_new_year();
 }
 

@@ -60,7 +60,6 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 extern SW_MODEL SW_Model;
-extern SW_MARKOV SW_Markov;
 
 SW_WEATHER SW_Weather; /* declared here, externed elsewhere */
 
@@ -228,8 +227,6 @@ void SW_WTH_init_run(void) {
 	 * (doy=1) and are below the critical temps for freezing
 	 * and with ppt=0 there's nothing to freeze.
 	 */
-	SW_Markov.ppt_events = 0;
-
 	SW_Weather.now.temp_max[Today] = SW_Weather.now.temp_min[Today] = 0.;
 	SW_Weather.now.ppt[Today] = SW_Weather.now.rain[Today] = 0.;
 	SW_Weather.snow = SW_Weather.snowmelt = SW_Weather.snowloss = 0.;

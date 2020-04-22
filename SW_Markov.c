@@ -206,6 +206,8 @@ void SW_MKV_construct(void) {
 		 its `main` at the beginning of each iteration */
 	RandSeed(0, &markov_rng);
 
+	m->ppt_events = 0;
+
 	m->wetprob = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->dryprob = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->avg_ppt = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
@@ -215,6 +217,7 @@ void SW_MKV_construct(void) {
 	m->cfnw = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->cfnd = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 }
+
 /**
 @brief Markov deconstructor; frees up memory space.
 */
