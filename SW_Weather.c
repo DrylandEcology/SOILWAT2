@@ -63,7 +63,11 @@ extern SW_MODEL SW_Model;
 
 SW_WEATHER SW_Weather; /* declared here, externed elsewhere */
 
-Bool weth_found; /* swTRUE=success reading this years weather file */
+/** `swTRUE`/`swFALSE` if historical daily meteorological inputs
+    are available/not available for the current simulation year
+*/
+Bool weth_found;
+
 RealD *runavg_list; /* used in run_tmp_avg() */
 
 /* =================================================== */
@@ -235,8 +239,13 @@ void SW_WTH_init_run(void) {
 	SW_Weather.soil_inf = 0.;
 }
 
-/**
-@brief Sets new year for SW_Weather.
+/** @brief Sets up daily meteorological inputs for current simulation year
+
+    @sideeffect
+      \ref weth_found is set to `swTRUE` if historical daily meteorological inputs
+      are successfully located;
+      otherwise, \ref weth_found is `swFALSE` and the weather generator
+      is required to produce daily meteorological inputs.
 */
 void SW_WTH_new_year(void) {
 
@@ -244,6 +253,7 @@ void SW_WTH_new_year(void) {
 
 	if (SW_Model.year < SW_Weather.yr.first) {
 		weth_found = swFALSE;
+
 	} else {
 		#ifdef RSOILWAT
 		weth_found = onSet_WTH_DATA_YEAR(SW_Model.year);
@@ -256,7 +266,7 @@ void SW_WTH_new_year(void) {
 		LogError(
 		  logfp,
 		  LOGFATAL,
-		  "Markov Simulator turned off and weather file found not for year %d",
+		  "Markov Simulator turned off and weather file not found for year %d",
 		  SW_Model.year
 		);
 	}
@@ -397,11 +407,19 @@ void SW_WTH_read(void) {
 	/* else we assume weather files match model run years */
 }
 
-/**
-@brief Read the historical (measured) weather files.  Format is day-of-month,
-      month number, year, doy, mintemp, maxtemp (ppt). Temperatures in (&deg;C).
 
-@param year
+/** @brief Read the historical (observed) weather file for a simulation year.
+
+    The naming convection of the weather input files:
+      `[weather-data path/][weather-file prefix].[year]`
+
+    Format of a input file (white-space separated values):
+      `doy maxtemp(&deg;C) mintemp (&deg;C) precipitation (cm)`
+
+    @param year
+
+    @return `swTRUE`/`swFALSE` if historical daily meteorological inputs are
+      successfully/unsuccessfully read in.
 */
 Bool _read_weather_hist(TimeInt year) {
 	/* =================================================== */
