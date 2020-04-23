@@ -421,9 +421,10 @@ Bool _read_weather_hist(TimeInt year) {
 
 	SW_WEATHER_HIST *wh = &SW_Weather.hist;
 	FILE *f;
-	int x, lineno = 0, doy, k = 0;
-	// TimeInt mon, j;
-	RealF tmpmax, tmpmin, ppt, acc = 0.0;
+	int x, lineno = 0, doy;
+	// TimeInt mon, j, k = 0;
+	RealF tmpmax, tmpmin, ppt;
+	// RealF acc = 0.0;
 
 	char fname[MAX_FILENAMESIZE];
 
@@ -451,24 +452,31 @@ Bool _read_weather_hist(TimeInt year) {
 		}
 
 		/* --- Make the assignments ---- */
-		doy--;
+		doy--; // base1 -> base0
 		wh->temp_max[doy] = tmpmax;
 		wh->temp_min[doy] = tmpmin;
 		wh->temp_avg[doy] = (tmpmax + tmpmin) / 2.0;
 		wh->ppt[doy] = ppt;
 
+    // Calculate annual average temperature based on historical input, i.e.,
+    // the `temp_year_avg` calculated here is prospective and unsuitable when
+    // the weather generator is used to generate values for the
+    // current simulation year, e.g., STEPWAT2
+		/*
 		if (!missing(tmpmax) && !missing(tmpmin)) {
 			k++;
 			acc += wh->temp_avg[doy];
 		}
+		*/
 	} /* end of input lines */
 
-  // Calculate annual average temperature
-  // TODO: current code does not use `temp_year_avg` value -> remove?
-	wh->temp_year_avg = acc / (k + 0.0);
+  // Calculate annual average temperature based on historical input
+	// wh->temp_year_avg = acc / (k + 0.0);
 
-  // Calculate monthly average temperature
-  // TODO: current code does not use `temp_month_avg` value -> remove?
+  // Calculate monthly average temperature based on historical input
+  // the `temp_month_avg` calculated here is prospective and unsuitable when
+  // the weather generator is used to generate values for the
+  // current simulation year, e.g., STEPWAT2
   /*
 	for (mon = Jan; mon <= Dec; i++) {
 	  k = Time_days_in_month(mon);
