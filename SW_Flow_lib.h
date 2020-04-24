@@ -90,6 +90,7 @@ double petfunc(unsigned int doy, double avgtemp, double rlat, double elev, doubl
 double svapor(double temp);
 double solar_declination(unsigned int doy);
 double sunset_hourangle(double rlat, double declin);
+double slope_svp_to_t(double es_at_tmean, double tmean);
 double atmospheric_pressure(double elev);
 double psychrometric_constant(double pressure);
 

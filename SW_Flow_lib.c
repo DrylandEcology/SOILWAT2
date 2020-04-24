@@ -382,6 +382,24 @@ double sunset_hourangle(double rlat, double declin)
 
 
 
+/** @brief Slope of the Saturation Vapor Pressure-Temperature Curve
+
+    Based on equation 13 (chapter 3) of Allen et al. (1998) @cite allen1998 and
+    equation 5 of Allen et al. (2005) @cite ASCE2005.
+
+    Prior to 2012-Oct-11, equation `vapor * 3010.21 / (kelvin * kelvin)`
+    was of unknown origin.
+    However, results are very similar to the current implementation.
+
+    @param es_at_tmean Saturation vapor pressure at average temperature [kPa]
+    @param tmean Average temperature for the day [&deg;C]
+
+    @return slope of es:T at T=Ta [kPa / K]
+*/
+double slope_svp_to_t(double es_at_tmean, double tmean) {
+  return 4098. * es_at_tmean / squared(tmean + 237.3);
+}
+
 /** @brief Atmospheric pressure based on elevation
 
     Based on equation 7 (chapter 3) of Allen et al. (1998) @cite allen1998 and
@@ -475,7 +493,7 @@ rslope - slope of the site (radians)
 hou    - hour angle
 shwave - short wave solar radiation (mm/day)
 kelvin - average air temperature [K]
-arads  - 'Slope of the Saturation Vapor Pressure-Temperature Curve' [mmHg/F]
+Delta  - 'Slope of the Saturation Vapor Pressure-Temperature Curve' [mmHg/F]
 clrsky - relative amount of clear sky
 fhumid - saturation vapor pressure at dewpoint [mmHg]
 ftemp  - theoretical black-body radiation [mm/day]
