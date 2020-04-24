@@ -468,7 +468,23 @@ stepSize - the step size to use in integration
    1 mile = 1609.344 m
    0 C = 273.15 K
   */
+  static const double
+    // [mmHg / F] = [kPa / K] * [mmHg / kPa] * [K / F] =
+    //            = [kPa / K] * (760. / 101.325) * (5. / 9.)
+    convert_kPa_per_K__to__mmHg_per_F = 4.1670093484,
 
+    // [miles / day] = [m / s] * [miles / m] * [s / day] =
+    //               = [m / s] * (1 / 1609.344) * 86400
+    convert_m_per_s__to__miles_per_day = 53.686471,
+
+    // [langley] = [evaporative mm] * [kJ / m2] / [heat of vaporization] =
+    //           = [evaporative mm] * (41.840) / 2490
+    // 2490 [kJ/kg heat of vaporization at about T = 10-15 C], see also Allen et al. (1998, ch. 1)
+    convert_ly__to__mm = 0.0168,
+
+    // [W / m2] = [evaporative mm / day] * [kJ / s / m2] * [s / day] / [heat of vaporization] =
+    //            [evaporative mm / day] * 1e-3 * 86400 / 2490
+    convert_W_per_m2__to__mm_per_day = 0.0346988;
 
   // Calculate solar declination
   declin = solar_declination(doy);
