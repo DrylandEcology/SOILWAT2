@@ -212,7 +212,7 @@ void SW_CBN_read(void)
  * default value of 1.0. Multipliers are only calculated for the years that will
  * be simulated.
  */
-void calculate_CO2_multipliers(void) {
+void SW_CBN_init_run(void) {
   int k;
   TimeInt year,
     simendyr = SW_Model.endyr + SW_Model.addtl_yr;

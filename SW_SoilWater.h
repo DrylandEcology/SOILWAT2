@@ -136,6 +136,7 @@ void SW_SWC_construct(void);
 void SW_SWC_deconstruct(void);
 void SW_SWC_new_year(void);
 void SW_SWC_read(void);
+void SW_SWC_init_run(void);
 void _read_swc_hist(TimeInt year);
 void SW_SWC_water_flow(void);
 void calculate_repartitioned_soilwater(void);

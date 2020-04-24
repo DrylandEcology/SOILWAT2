@@ -24,16 +24,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "generic.h"
+#include "Times.h"
 #include "filefuncs.h"
 #include "SW_Defines.h"
 #include "SW_Files.h"
+#include "SW_Model.h"
 #include "SW_Sky.h"
+#include "SW_Weather.h"
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
 SW_SKY SW_Sky; /* declared here, externed elsewhere */
+extern SW_WEATHER SW_Weather;
+extern SW_MODEL SW_Model;
 
 /* =================================================== */
 /*                Module-Level Variables               */
@@ -110,38 +115,60 @@ void SW_SKY_read(void) {
 	}
 
 	CloseFile(&f);
-
 }
+
+/** @brief Scale mean monthly climate values
+*/
+void SW_SKY_init_run(void) {
+	TimeInt mon;
+	SW_SKY *v = &SW_Sky;
+	SW_WEATHER *w = &SW_Weather;
+
+	for (mon = Jan; mon <= Dec; mon++)
+	{
+		v->cloudcov[mon] = fmin(
+		  100.,
+		  fmax(0.0, w->scale_skyCover[mon] + v->cloudcov[mon])
+		);
+
+		v->windspeed[mon] = fmax(
+		  0.0,
+		  w->scale_wind[mon] * v->windspeed[mon]
+		);
+
+		v->r_humidity[mon] = fmin(
+		  100.,
+		  fmax(0.0, w->scale_rH[mon] + v->r_humidity[mon])
+		);
+
+		v->transmission[mon] = fmin(
+		  1.0,
+		  fmax(0.0, w->scale_transmissivity[mon] * v->transmission[mon])
+		);
+	}
+}
+
 
 /**
-@brief Initializes cloudcov, windspeed, r_humidity, transmission, as well as daily values.
+  @brief Interpolate monthly input values to daily records
+  (depends on "current" year)
+
+  Note: time must be set with SW_MDL_new_year() or Time_new_year()
+  prior to this function.
 */
-void SW_SKY_init(double scale_sky[], double scale_wind[], double scale_rH[], double scale_transmissivity[]) {
-	int i;
+void SW_SKY_new_year(void) {
+	TimeInt year = SW_Model.year;
 	SW_SKY *v = &SW_Sky;
 
-  /* scale mean monthly climate values */
-	for (i = 0; i < MAX_MONTHS; i++)
-	{
-		v->cloudcov[i] = fmin(100., fmax(0.0, scale_sky[i] + v->cloudcov[i]));
-		v->windspeed[i] = fmax(0.0, scale_wind[i] * v->windspeed[i]);
-		v->r_humidity[i] = fmin(100., fmax(0.0, scale_rH[i] + v->r_humidity[i]));
-		v->transmission[i] = fmin(1.0, fmax(0.0, scale_transmissivity[i] * v->transmission[i]));
-	}
+  /* We only need to re-calculate values if this is first year or
+     if previous year was different from current year in leap/noleap status
+  */
 
-	/* interpolate monthly input values to daily records */
-	interpolate_monthlyValues(v->cloudcov, v->cloudcov_daily);
-	interpolate_monthlyValues(v->windspeed, v->windspeed_daily);
-	interpolate_monthlyValues(v->r_humidity, v->r_humidity_daily);
-	interpolate_monthlyValues(v->transmission, v->transmission_daily);
-	interpolate_monthlyValues(v->snow_density, v->snow_density_daily);
-}
-
-void SW_SKY_construct(void) {
-	/* note that an initializer that is called during
-	 * execution (better called clean() or something)
-	 * will need to free all allocated memory first
-	 * before clearing structure.
-	 */
-
+  if (year == SW_Model.startyr || isleapyear(year) != isleapyear(year - 1)) {
+    interpolate_monthlyValues(v->cloudcov, v->cloudcov_daily);
+    interpolate_monthlyValues(v->windspeed, v->windspeed_daily);
+    interpolate_monthlyValues(v->r_humidity, v->r_humidity_daily);
+    interpolate_monthlyValues(v->transmission, v->transmission_daily);
+    interpolate_monthlyValues(v->snow_density, v->snow_density_daily);
+  }
 }

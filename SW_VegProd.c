@@ -59,9 +59,6 @@ changed _echo_inits() to now display the bare ground components in logfile.log
 /* --------------------------------------------------- */
 extern Bool EchoInits;
 extern SW_MODEL SW_Model;
-#ifdef RSOILWAT
-extern Bool collectInData;
-#endif
 
 #ifdef STEPWAT
 	#include "../sxw.h"
@@ -515,11 +512,6 @@ void SW_VPD_read(void) {
   SW_VPD_fix_cover();
 
 	CloseFile(&f);
-#ifdef RSOILWAT
-	if (!collectInData)
-#endif
-
-	SW_VPD_init();
 
 	if (EchoInits)
 		_echo_VegProd();
@@ -570,7 +562,6 @@ void SW_VPD_fix_cover(void)
 */
 void SW_VPD_construct(void) {
 	/* =================================================== */
-	int year, k;
 	OutPeriod pd;
 
 	// Clear the module structure:
@@ -586,8 +577,15 @@ void SW_VPD_construct(void) {
 				sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()");
 		}
 	}
+}
 
-	/* initialize the co2-multipliers */
+
+
+void SW_VPD_init_run(void) {
+  TimeInt year;
+  int k;
+
+  /* Set co2-multipliers to default */
   for (year = 0; year < MAX_NYEAR; year++)
   {
     ForEachVegType(k)
@@ -597,6 +595,7 @@ void SW_VPD_construct(void) {
     }
   }
 }
+
 
 /**
 @brief Deconstructor for SW_VegProd.
@@ -638,10 +637,12 @@ void apply_biomassCO2effect(double new_biomass[], double biomass[], double multi
   for (i = 0; i < 12; i++) new_biomass[i] = (biomass[i] * multiplier);
 }
 
+
+
 /**
-@brief Set up vegetation parameters to be used in the 'watrflow' subroutine.
+@brief Update vegetation parameters for new year
 */
-void SW_VPD_init(void) {
+void SW_VPD_new_year(void) {
 	/* ================================================== */
 	/*
 	* History:
