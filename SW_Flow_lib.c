@@ -119,6 +119,7 @@ unsigned int fusion_pool_init;   // simply keeps track of whether or not the val
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
 
+
 /* *************************************************** */
 /* *************************************************** */
 /*              Local Function Definitions             */
@@ -320,7 +321,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 
 
 
-/** Calculate solar declination
+/** @brief Calculate solar declination
 
     Formula is from on Spencer 1971 @cite Spencer1971.
     Errors are reported to be ±0.0007 radians (0.04 degrees);
@@ -354,7 +355,8 @@ double solar_declination(unsigned int doy)
 }
 
 
-/** Calculate sunset/sunrise hour angle
+
+/** @brief Calculate sunset/sunrise hour angle
 
     Equations based on Sellers 1965 @cite Sellers1965.
 
@@ -576,13 +578,20 @@ double psychrometric_constant(double pressure) {
 }
 
 
+
 /**
 @brief Calculate the potential evapotranspiration rate.
 
-Equations based on Penman 1948. @cite Penman1948, ASCE 2000. @cite ASCE2000, Bowen 1926. @cite Bowen1926, @cite Brunt1939, Kopp G. and Lean J.L. @cite Kopp2011, Sellers 1965. @cite Sellers1965
+  Equations based on Penman 1948 @cite Penman1948, ASCE 2000 @cite ASCE2000,
+  Bowen 1926 @cite Bowen1926, Brunt 1939 @cite Brunt1939,
+  Kopp et al. 2011 @cite Kopp2011, and Sellers 1965 @cite Sellers1965 .
+
+  Note: Penman 1948 @cite Penman1948 assumes that net heat and vapor exchange
+  with ground and surrounding areas is negligible over time step.
+
 
 @param doy Represents the day of the year 1-365.
-@param avgtemp Average temperature for the day (&deg;C).
+@param avgtemp Average air temperature for the day (&deg;C).
 @param rlat	Latitude of the site (Radians).
 @param elev	Elevation of site (m).
 @param slope	Slope of the site (degrees).
@@ -592,9 +601,9 @@ Equations based on Penman 1948. @cite Penman1948, ASCE 2000. @cite ASCE2000, Bow
 @param humid Average relative humidity for the month (%).
 @param windsp Average wind speed for the month at 2-m above ground (m/s).
 @param cloudcov Average cloud cover for the month (%).
-@param transcoeff Transmission coefficient for the month. note: not used in result (%).
+@param transcoeff Transmission coefficient for the month [0-1].
 
-@return Potential evapotranspiration rate (cm/day).
+@return Potential evapotranspiration [cm / day].
 
 */
 

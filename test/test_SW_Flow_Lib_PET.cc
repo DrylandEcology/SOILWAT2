@@ -284,26 +284,8 @@ namespace
 
       cloudcov += 4.27; //Incrments cloudcov input variable.
     }
-
-    //Begin TEST for cloudcov input variable.
-    //INPUTS
-    cloudcov = 71;
-    double transcoeffT[] = {0.01, 0.11, 0.53, 0.67, 0.89};
-
-    //Declare INPUTS for expected returns.
-    double expReturnTranscoeff = 0.1650042;
-    //The same value is returned for every tested transcoeff input.
-
-    for (int i = 0; i < 5; i++)
-    {
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
-                      windsp, cloudcov, transcoeffT[i]);
-
-      EXPECT_NEAR(check, expReturnTranscoeff, tol3);
-    }
-
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
-    }
+  }
 
 }
