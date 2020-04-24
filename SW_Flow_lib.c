@@ -381,6 +381,152 @@ double sunset_hourangle(double rlat, double declin)
 }
 
 
+static double _solar_radiation_sloped(
+  double rlat, double slope, double aspect,
+  double ahou, double declin
+) {
+  double
+    hou, azmth, solrad, stepSize, azmthSlope, rslope,
+    cosZ, sinZ, cosA, sinA;
+
+  /* step size is calculated by the difference in our limits of integrations,
+     for hou, using 0 to ahou, divided by some resolution.
+     The best resolution size seems to be around 24
+  */
+  stepSize = (ahou / 24.);
+  // convert aspect and slope from degrees to radians:
+  azmthSlope = swPI2 * (aspect - 180.) / 360.;
+  rslope = swPI2 * slope / 360.;
+
+
+  // pre-calculate values used in for-loop that are independent of `hou`
+  const double
+    sin_lat = sin(rlat),
+    cos_lat = cos(rlat),
+    sin_declin = sin(declin),
+    cos_declin = cos(declin),
+    sin_slope = sin(rslope),
+    cos_slope = cos(rslope);
+  const double
+    sins_lat_declin = sin_lat * sin_declin,
+    coss_lat_declin = cos_lat * cos_declin;
+
+
+  // initialize solrad
+  solrad = 0.;
+
+  // Sellers (1965), page 35, eqn. 3.15: Qs [langlay] = solrad
+  //   sum instantaneous solar radiation on a sloped surface over the
+  //   period of sunrise to sunset, h=-ahou to h=ahou
+  for (hou = -ahou; hou <= ahou; hou += stepSize)
+  {
+    // Z = zenith angle of the sun, for current hour angle
+    cosZ = sins_lat_declin + coss_lat_declin * cos(hou);
+    sinZ = sqrt(1. - (cosZ * cosZ));
+
+    // determine A = azimuth angle of the sun, for current hour angle
+    cosA = (sin_lat * cosZ - sin_declin) / (cos_lat * sinZ);
+    sinA = (cos_declin * sin(hou)) / sinZ;
+    azmth = atan2(sinA, cosA);
+
+    // Sum instantaneous solar radiation on a sloped surface:
+    solrad += stepSize *
+      (cosZ * cos_slope + sinZ * sin_slope * cos(azmth - azmthSlope));
+  }
+
+  // TODO: I believe division by 2 is incorrect; it was mistakenly introduced
+  // because `solar_radiation_TOA` was dividing by `2 * pi` instead of `pi`
+  return solrad / 2.;
+}
+
+
+/** @brief Daily total solar radiation on top of the atmosphere
+    (extraterrestrial)
+
+    Equations based on Sellers 1965 @cite Sellers1965.
+
+    @param ahou Sunset hour angle [hour].
+    @param declin Solar declination [radians].
+    @param rlat Latitude of the site [radians].
+    @param slope Slope of the site [degrees].
+    @param aspect Aspect of the site [degrees].
+      A value of -1 indicates no data, ie., treat it as if slope = 0
+
+    @return Solar radiation Qs [langlay / day]
+*/
+double solar_radiation_TOA(
+  double rlat, double slope, double aspect,
+  double ahou, double declin
+) {
+
+  double solrad;
+
+  if (!ZRO(slope) && !EQ(aspect, -1.)) {
+    // account for slope-aspect effects on solar radiation
+    // TODO: this should be calculated on Earth's surface not on top of atmosphere
+    solrad = _solar_radiation_sloped(rlat, slope, aspect, ahou, declin);
+
+  } else
+  {
+    // no slope
+    // Sellers (1965), page 16, eqn. 3.7: Qs [langlay/day] = solrad =
+    //   daily total solar radiation incident on a horizontal surface at the
+    //   top of the atmosphere
+    /* Note: factor '(mean(d)/d)^2' of Seller's equation is missing here
+             with mean(d) = mean distance and
+             d = instantaneous distance of the earth from the sun)
+    */
+    solrad = ahou * sin(rlat) * sin(declin) + cos(rlat) * cos(declin) * sin(ahou);
+  }
+
+  /* Notes:
+    917. = S * 1440/pi
+      with S = solar constant = 2.0 [langlay/min] (Sellers (1965), page 11)
+      and with 1440 = min/day;
+    however, solar constant S (Kopp et al. 2011) = 1.952 [langley/min] =
+    = 1361 [W/m2] <> Seller's value of S = 2.0 [langlay/min] = 1440 [W/m2]
+    => instead of factor 917 (pre-Oct 11, 2012), it should be 895
+  */
+  return 1440. / swPI * 1.952 * solrad;
+}
+
+
+/** Calculate incoming solar (short wave) radiation available at Earth's surface
+
+  Based on equation 12 from Penman (1948) @cite Penman1948 that estimates
+  atmospheric transmittance,
+  i.e., atmospheric attenuation by absorption and scattering,
+  from an empirical relationship with relative sunshine hours `a + b * n/N`
+  where `a` can be interpreted as minimum atmospheric transmittance and
+  `a + b` as its maximum.
+  Coefficients were estimated from monthly values over the period 1931-1940
+  for Rothamsted, UK.
+
+  @param Rs Incoming solar (short wave) radiation on top of atmosphere
+  @param sunshine_fraction Ratio of actual to possible hours of sunshine [0-1]
+  @return Rc [same units as Rs].
+*/
+double solar_radiation_surface(double Rs, double sunshine_fraction) {
+  return Rs * (.18 + .55 * sunshine_fraction);
+}
+
+/** Theoretical black-body radiation based on Stefan-Boltzmann's law
+
+  Stefan-Boltzmann law = `sigma * Ta^4 [W / m2]`
+  with Stefan-Boltzmann constant = sigma = 5.670374 * 1e-8 [W / m2 / K4]
+  (http://physics.nist.gov/cgi-bin/cuu/Value?sigma).
+
+  @param T Temperature [C]
+  @return Radiation [W / m2]
+*/
+double blackbody_radiation(double T) {
+  double tmp_K;
+
+  tmp_K = 0.01 * (T + 273.15); // convert [C] to [Kelvin]
+  return 5.670374 * squared(squared(tmp_K));
+}
+
+
 
 /** @brief Slope of the Saturation Vapor Pressure-Temperature Curve
 
@@ -498,15 +644,10 @@ clrsky - relative amount of clear sky
 fhumid - saturation vapor pressure at dewpoint [mmHg]
 ftemp  - theoretical black-body radiation [mm/day]
 par1,par2 - parameters in computation of pet.
-cosZ,sinZ - parameters in computation of pet.
-cosA,sinA - parameters in computation of pet.
-stepSize - the step size to use in integration
 
 ***********************************************************************/
 
-  double declin, par1, par2, ahou, hou, azmth, solrad, shwave, kelvin, arads,
-    clrsky, ftemp, vapor, result, P, gamma, cosZ, sinZ, cosA, sinA,
-    stepSize, azmthSlope, rslope;
+  double declin, ahou, Ea, Rn, Rs, Rc, Rbb, Delta, clrsky, vapor, P, gamma, pet;
 
   /* Unit conversion factors:
    1 langley = 1 ly = 41840 J/m2 = 0.0168 evaporative-mm
@@ -534,6 +675,20 @@ stepSize - the step size to use in integration
     //            [evaporative mm / day] * 1e-3 * 86400 / 2490
     convert_W_per_m2__to__mm_per_day = 0.0346988;
 
+
+  //------ Convert input variables
+  // Clear sky
+  // Penman (1948): n/N = clrsky =
+  //  = Ratio of actual/possible hours of sunshine =
+  //  approximate with 1 - m/10 = 1 - fraction of sky covered by cloud
+  clrsky = 1. - cloudcov / 100.;
+
+  // Wind speed (2 meters above ground)
+  windsp *= convert_m_per_s__to__miles_per_day;
+
+
+
+  //------ Calculate radiation terms
   // Calculate solar declination
   declin = solar_declination(doy);
 
@@ -542,118 +697,24 @@ stepSize - the step size to use in integration
   ahou = sunset_hourangle(rlat, declin);
 
 
-  // Calculate short wave solar radiation on a clear day:
-  if (!ZRO(slope) && !EQ(aspect, -1.)) {
-    // account for slope-aspect effects on solar radiation
-
-    /* step size is calculated by the difference in our limits of integrations,
-       for hou, using 0 to ahou, divided by some resolution.
-       The best resolution size seems to be around 24
-    */
-    stepSize = (ahou / 24);
-    // convert aspect and slope from degrees to radians:
-    azmthSlope = swPI2 * (aspect - 180) / 360;
-    rslope = swPI2 * slope / 360;
+  // Calculate incoming solar (short wave) radiation on top of atmosphere
+  Rs = solar_radiation_TOA(rlat, slope, aspect, ahou, declin);
+  Rs *= convert_ly__to__mm;
 
 
-    // pre-calculate values used in for-loop that are independent of `hou`
-    const double
-      sin_lat = sin(rlat),
-      cos_lat = cos(rlat),
-      sin_declin = sin(declin),
-      cos_declin = cos(declin),
-      sin_slope = sin(rslope),
-      cos_slope = cos(rslope);
-    const double
-      sins_lat_declin = sin_lat * sin_declin,
-      coss_lat_declin = cos_lat * cos_declin;
+  // Calculate incoming solar (short wave) radiation available at Earth's surface
+  Rc = solar_radiation_surface(Rs, clrsky);
+  Rc *= transcoeff; // TODO: this is probably superfluous because `solar_radiation_surface` already accounts for transmissivity
 
-
-    // initialize solrad
-    solrad = 0;
-
-    // Sellers (1965), page 35, eqn. 3.15: Qs [langlay] = solrad
-    //   sum instantaneous solar radiation on a sloped surface over the
-    //   period of sunrise to sunset, h=-ahou to h=ahou
-    for (hou = -ahou; hou <= ahou; hou += stepSize)
-    {
-      // Z = zenith angle of the sun, for current hour angle
-      cosZ = sins_lat_declin + coss_lat_declin * cos(hou);
-      sinZ = sqrt(1. - (cosZ * cosZ));
-
-      // determine A = azimuth angle of the sun, for current hour angle
-      cosA = (sin_lat * cosZ - sin_declin) / (cos_lat * sinZ);
-      sinA = (cos_declin * sin(hou)) / sinZ;
-      azmth = atan2(sinA, cosA);
-
-      // Sum instantaneous solar radiation on a sloped surface:
-      solrad += stepSize *
-        (cosZ * cos_slope + sinZ * sin_slope * cos(azmth - azmthSlope));
-    }
-
-  } else
-  {
-    // no slope
-
-    // Sellers (1965), page 16, eqn. 3.7: Qs [langlay/day] = solrad =
-    //   daily total solar radiation incident on a horizontal surface at the
-    //   top of the atmosphere
-    /* Note: factor '(mean(d)/d)^2' of Seller's equation is missing here
-             with mean(d) = mean distance and
-             d = instantaneous distance of the earth from the sun)
-    */
-    solrad = ahou * sin(rlat) * sin(declin) + cos(rlat) * cos(declin) * sin(ahou);
-
-    // multiply solrad by two to account for both halves of the day,
-    // as eqn. 3.7 only integrates half a day
-    solrad = solrad * 2;
-  }
-
-  /* Notes:
-    917. = S * 1440/pi
-      with S = solar constant = 2.0 [langlay/min] (Sellers (1965), page 11)
-      and with 1440 = min/day;
-    however, solar constant S (Kopp et al. 2011) = 1.952 [langley/min] =
-    = 1361 [W/m2] <> Seller's value of S = 2.0 [langlay/min] = 1440 [W/m2]
-    => instead of factor 917 (pre-Oct 11, 2012), it should be 895
-  */
-  /* Notes: factor 'transcoeff' is not in Seller's equation and
-    drops out of the result with next line of code;
-  */
-  solrad = (1440 / swPI2) * 1.952 * solrad * transcoeff;
-
-  /* Notes:
-    shwave used in Penman (1948),
-    eqn. 13: shwave [evaporation equivalent-mm/day] = RA =
-      = total radiation if the atmosphere were perfectly clear;
-    Rc = Short-wave radiation from sun and sky
-    [usually in evaporation equivalent of mm/day] ? [radiation/cm2/day,] =
-      = RA*(0.18+0.55n/N) is approximation for Rothamsted based on
-    monthly values over the period 1931-40;
-    with x = 0.0168 = conversion factor from [ly] to [mm]
-  */
-  shwave = solrad * .0168 / transcoeff;
 
   // Calculate long wave radiation:
-  /* Notes:
-    Sellers (1965), eqn. 3.8:
-    ftemp [mm/day] = theoretical black-body radiation at
-    Ta [K] = Stefan-Boltzmann law = sigma*Ta^4 [W/m2]
-    with sigma = 5.670373*1e-8 [W/m2/K4] = 11.71*1e-8 [ly/day/K4]
-    (http://physics.nist.gov/cgi-bin/cuu/Value?sigma);
-  */
+  Rbb = blackbody_radiation(avgtemp);
+  Rbb *= convert_W_per_m2__to__mm_per_day;
 
-  kelvin = avgtemp + 273.15; // convert [C] to [Kelvin]
-  ftemp = kelvin * .01;
-  ftemp = ftemp * ftemp * ftemp * ftemp * 11.71 * 0.0168;
-  /* Notes:
-   ftemp is used in Penman (1948), eqn. 13 with
-   units = [evaporation equivalent-mm/day];
-   with unknown x = 0.201*1e-8 (value pre-Oct 11, 2012),
-   though assuming x = sigma * conversion factor([ly] to [mm]) =
-   = 11.71*10\88-8 [ly/day/K4] * 0.0168 [mm/ly] = 0.196728 [mm/day/K4]
-   ca.= 0.201 ?
-  */
+
+
+  //------ Calculate inputs to Penman's equation
+
   // Calculate atmospheric pressure
   P = atmospheric_pressure(elev);
 
@@ -672,30 +733,26 @@ stepSize - the step size to use in integration
   // Saturation vapor pressure at dewpoint [mmHg] = ed = relative humidity * ea
   humid *= vapor / 100.;
 
-  // Wind speed
-  //   u2 [miles/day at 2-m above ground] =
-  //   = windsp [miles/h at 2-m above ground] * 24 [h/day] =
-  //   = windsp [m/s at 2-m above ground] * 86400 [s/day] * 1/1609.344 [miles/m]
-  //   with 86400/1609 = 53.70
-  windsp *= 53.70;
+
+
+  //------ Calculate PET using Penman (1948):
 
   // Evaporation rate from open water:
-  // Penman (1948), eqn. 19: par1 = Ea [mm/day] = evaporation rate from
+  // Penman (1948), eqn. 19: par1 = Ea [mm / day] = evaporation rate from
   //  open water with ea instead of es as required in eqn. 16
-  par1 = .35 * (vapor - humid) * (1. + .0098 * windsp);
+  Ea = .35 * (vapor - humid) * (1. + .0098 * windsp);
 
-  // Net radiant energy available at surface:
-  // Penman (1948), eqn. 13 [mm/day]: par2 = H [mm/day]
-  par2 = (1. - reflec) * shwave * (.18 + .55 * clrsky)
-    - ftemp * (.56 - .092 * sqrt(humid)) * (.10 + .90 * clrsky);
+  // Net radiant energy available at surface = net irradiance:
+  // Penman (1948), eqn. 13 [mm / day]: Rn = H [mm / day]
+  // This assumes that net heat and vapor exchange with ground and surrounding
+  // areas is negligible over time step (Penman 1948 eqn. 9)
+  Rn = (1. - reflec) * Rc - Rbb * (.56 - .092 * sqrt(humid)) * (.10 + .90 * clrsky);
 
+  // Penman's evaporation from open water = potential evapotranspiration
+  // Penman (1948), eqn. 16: E [mm / day]
+  pet = (Delta * Rn + gamma * Ea) / (Delta + gamma);
 
-
-  // Evaporation from open water:
-  // Penman (1948), eqn. 16: result*10 = E [mm/day]
-  result = ((arads * par2 + gamma * par1) / (arads + gamma)) / 10.;
-
-  return fmax(result, 0.01);
+  return fmax(0.1 * pet, 0.01); // PET [cm / day]
 }
 
 /**
