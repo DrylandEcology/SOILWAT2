@@ -26,6 +26,7 @@
 #include "generic.h"
 #include "filefuncs.h"
 #include "rands.h"
+#include "Times.h"
 #include "myMemory.h"
 #include "SW_Defines.h"
 #include "SW_Files.h"
@@ -205,6 +206,8 @@ void SW_MKV_construct(void) {
 		 its `main` at the beginning of each iteration */
 	RandSeed(0, &markov_rng);
 
+	m->ppt_events = 0;
+
 	m->wetprob = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->dryprob = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->avg_ppt = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
@@ -214,6 +217,7 @@ void SW_MKV_construct(void) {
 	m->cfnw = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 	m->cfnd = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
 }
+
 /**
 @brief Markov deconstructor; frees up memory space.
 */
@@ -263,7 +267,7 @@ void SW_MKV_deconstruct(void)
 /**
 @brief Calculates precipitation and temperature.
 
-@param doy0 Day of the year.
+@param doy0 Day of the year (base0).
 @param *tmax Maximum temperature (&deg;C).
 @param *tmin Mininum temperature (&deg;C).
 @param *rain Rainfall (cm).
@@ -303,7 +307,7 @@ void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 	}
 
 	/* Calculate temperature */
-	week = Doy2Week(doy0 + 1);
+	week = doy2week(doy0 + 1);
 
 	mvnorm(tmax, tmin,
 		SW_Markov.u_cov[week][0],    // mean weekly maximum daily temp

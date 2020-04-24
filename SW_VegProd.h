@@ -245,9 +245,10 @@ typedef struct {
 
 
 void SW_VPD_read(void);
-void SW_VPD_init(void);
+void SW_VPD_new_year(void);
 void SW_VPD_fix_cover(void);
 void SW_VPD_construct(void);
+void SW_VPD_init_run(void);
 void SW_VPD_deconstruct(void);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
 RealD sum_across_vegtypes(RealD *x);

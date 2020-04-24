@@ -94,14 +94,6 @@ extern "C" {
 
 #define isnull(a) (NULL == (a))
 
-/* -------  Some Time macros that should be always on ------ */
-#define YearTo4Digit(y) ((TimeInt)(( (y) > 100)  \
-                      ? (y)                      \
-                      : ((y)<50) ? 2000+(y)      \
-                                    : 1900+(y) ) )
-#define WEEKDAYS 7
-#define Doy2Week(d) ((TimeInt)(((d)-1) /WEEKDAYS))
-
 /* ---------   Redefine basic types to be more malleable ---- */
 typedef float RealF;
 typedef double RealD;
@@ -231,7 +223,6 @@ char *Str_ToUpper(char *s, char *r);
 char *Str_ToLower(char *s, char *r);
 int Str_CompareI(char *t, char *s);
 void UnComment(char *s);
-Bool Is_LeapYear(int yr);
 double interpolation(double x1, double x2, double y1, double y2, double deltaX);
 void st_getBounds(unsigned int *x1, unsigned int *x2, unsigned int *equal, unsigned int size, double depth, double bounds[]);
 double lobfM(double xs[], double ys[], unsigned int n);

@@ -25,6 +25,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "generic.h"
+#include "Times.h"
 #include "filefuncs.h"
 #include "rands.h"
 #include "SW_Defines.h"
@@ -38,6 +39,8 @@
 #include "SW_VegEstab.h"
 #include "SW_VegProd.h"
 #include "SW_Weather.h"
+#include "SW_Markov.h"
+#include "SW_Sky.h"
 #include "SW_Carbon.h"
 
 /* =================================================== */
@@ -47,6 +50,7 @@ extern SW_MODEL SW_Model;
 extern SW_VEGESTAB SW_VegEstab;
 extern SW_SITE SW_Site;
 extern SW_VEGPROD SW_VegProd;
+extern SW_WEATHER SW_Weather;
 
 /* =================================================== */
 /*                Module-Level Declarations            */
@@ -79,20 +83,21 @@ void SW_CTL_main(void) {
   }
 } /******* End Main Loop *********/
 
-/**
-@brief Initialize all structures, simulating a constructor call.
+/** @brief Setup and construct model (independent of inputs)
  */
-void SW_CTL_init_model(const char *firstfile) {
+void SW_CTL_setup_model(const char *firstfile) {
 
 	SW_F_construct(firstfile);
 	SW_MDL_construct();
 	SW_WTH_construct();
+	// delay SW_MKV_construct() until we know from inputs whether we need it
+	// SW_SKY_construct() not need
 	SW_SIT_construct();
 	SW_VES_construct();
 	SW_VPD_construct();
+	// SW_FLW_construct() not needed
 	SW_OUT_construct();
 	SW_SWC_construct();
-	SW_FLW_construct();
 	SW_CBN_construct();
 }
 
@@ -108,15 +113,38 @@ void SW_CTL_init_model(const char *firstfile) {
 void SW_CTL_clear_model(Bool full_reset) {
 	SW_F_deconstruct();
 	SW_MDL_deconstruct();
-	SW_WTH_deconstruct();
+	SW_WTH_deconstruct(); // calls SW_MKV_deconstruct() if needed
+	// SW_SKY_deconstruct() not needed
 	SW_SIT_deconstruct();
 	SW_VES_deconstruct();
 	SW_VPD_deconstruct();
+	// SW_FLW_deconstruct() not needed
 	SW_OUT_deconstruct(full_reset);
 	SW_SWC_deconstruct();
-	SW_FLW_deconstruct();
 	SW_CBN_deconstruct();
 }
+
+/** @brief Initialize simulation run (based on user inputs)
+  Note: Time will only be set up correctly while carrying out a
+  simulation year, i.e., after calling _begin_year()
+*/
+void SW_CTL_init_run(void) {
+
+	// SW_F_init_run() not needed
+	// SW_MDL_init_run() not needed
+	SW_WTH_init_run();
+	// SW_MKV_init_run() not needed
+	SW_SKY_init_run();
+	SW_SIT_init_run();
+	// SW_VES_init_run() not needed
+	SW_VPD_init_run();
+	SW_FLW_init_run();
+	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
+	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
+	SW_SWC_init_run();
+	SW_CBN_init_run();
+}
+
 
 /**
 @brief Calls 'SW_SWC_water_flow' for each day.
@@ -179,14 +207,19 @@ void SW_CTL_run_current_year(void) {
       that read input yearly or produce output need to have this call.
 */
 static void _begin_year(void) {
-	SW_MDL_new_year();
-	SW_WTH_new_year();
-	SW_SWC_new_year();
-	SW_VES_new_year();
-	SW_OUT_new_year();
 
-	// Dynamic CO2 effects
-	SW_VPD_init();
+	// SW_F_new_year() not needed
+	SW_MDL_new_year(); // call first to set up time-related arrays for this year
+	SW_WTH_new_year();
+	// SW_MKV_new_year() not needed
+	SW_SKY_new_year(); // Update daily climate variables from monthly values
+	//SW_SIT_new_year() not needed
+	SW_VES_new_year();
+	SW_VPD_new_year(); // Dynamic CO2 effects on vegetation
+	// SW_FLW_new_year() not needed
+	SW_SWC_new_year();
+	// SW_CBN_new_year() not needed
+	SW_OUT_new_year();
 }
 
 static void _begin_day(void) {
@@ -199,6 +232,7 @@ static void _end_day(void) {
 	SW_WTH_end_day();
 	SW_SWC_end_day();
 }
+
 /**
 @brief Reads inputs from disk and makes a print statement if there is an error
         in doing so.
@@ -222,10 +256,22 @@ void SW_CTL_read_inputs_from_disk(void) {
   if (debug) swprintf(" > 'model'");
   #endif
 
-  SW_WTH_read(); // inputs also `climate/cloud/sky` and `SW_MKV_setup` if turned on
+  SW_WTH_read();
   #ifdef SWDEBUG
-  if (debug) swprintf(" > 'weather' + 'climate'");
+  if (debug) swprintf(" > 'weather'");
   #endif
+
+  SW_SKY_read();
+  #ifdef SWDEBUG
+  if (debug) swprintf(" > 'climate'");
+  #endif
+
+  if (SW_Weather.use_markov) {
+    SW_MKV_setup();
+    #ifdef SWDEBUG
+    if (debug) swprintf(" > 'weather generator'");
+    #endif
+  }
 
   SW_VPD_read();
   #ifdef SWDEBUG
@@ -259,13 +305,6 @@ void SW_CTL_read_inputs_from_disk(void) {
   #endif
 }
 
-/**
-@brief Calls SW_CTL_read_inputs_from_disk and calculate_CO2_multipliers.
-*/
-void SW_CTL_obtain_inputs(void) {
-  SW_CTL_read_inputs_from_disk();
-  calculate_CO2_multipliers();
-}
 
 
 #ifdef DEBUG_MEM

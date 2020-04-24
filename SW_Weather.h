@@ -47,8 +47,8 @@ typedef struct {
 
 typedef struct {
 	/* comes from historical weather files */
-	RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS], ppt[MAX_DAYS],
-	temp_month_avg[MAX_MONTHS], temp_year_avg;
+	RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS], ppt[MAX_DAYS];
+	// RealD temp_month_avg[MAX_MONTHS], temp_year_avg; // currently not used
 } SW_WEATHER_HIST;
 
 /* accumulators for output values hold only the */
@@ -91,7 +91,7 @@ typedef struct {
 void SW_WTH_read(void);
 Bool _read_weather_hist(TimeInt year);
 void _clear_hist_weather(void);
-void SW_WTH_init(void);
+void SW_WTH_init_run(void);
 void SW_WTH_construct(void);
 void SW_WTH_deconstruct(void);
 void SW_WTH_new_day(void);
