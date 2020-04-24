@@ -382,6 +382,36 @@ double sunset_hourangle(double rlat, double declin)
 
 
 
+/** @brief Atmospheric pressure based on elevation
+
+    Based on equation 7 (chapter 3) of Allen et al. (1998) @cite allen1998 and
+    equation 3 of Allen et al. (2005) @cite ASCE2005.
+
+    @param elev Site elevation [m above mean sea level].
+    @return atmospheric pressure [kPa]
+*/
+double atmospheric_pressure(double elev) {
+  return 101.3 * powe((293. - 0.0065 * elev) / 293., 5.26);
+}
+
+
+/** @brief Psychrometric constant `gamma`
+
+    Based on equation 8 (chapter 3) of Allen et al. (1998) @cite allen1998 and
+    equation 4 of Allen et al. (2005) @cite ASCE2005.
+
+    Prior to 2012-Oct-11, equation was based on
+    Penman (1948) @cite Penman1948 : `gamma [mmHg / F] = 0.27`
+
+    @param pressure Atmospheric pressure [kPa]
+
+    @return Psychrometric constant [kPa / K]
+*/
+double psychrometric_constant(double pressure) {
+  return 0.000665 * pressure;
+}
+
+
 /**
 @brief Calculate the potential evapotranspiration rate.
 
@@ -606,32 +636,20 @@ stepSize - the step size to use in integration
    = 11.71*10\88-8 [ly/day/K4] * 0.0168 [mm/ly] = 0.196728 [mm/day/K4]
    ca.= 0.201 ?
   */
+  // Calculate atmospheric pressure
+  P = atmospheric_pressure(elev);
 
-  // Calculate PET using Penman (1948):
+  // Calculate psychrometric constant
+  gamma = psychrometric_constant(P);
+  gamma *= convert_kPa_per_K__to__mmHg_per_F;
 
   // Saturation vapor pressure at air-Tave [mmHg] ea = vapor
   vapor = svapor(avgtemp);
 
   // Slope of the Saturation Vapor Pressure-Temperature Curve:
-  // arads [mmHg/F] = Delta [mmHg/C] * [C/F] = slope of e:T at T=Ta =
-  // 'Slope of the Saturation Vapor Pressure-Temperature Curve'
-  /* Notes:
-    pre-Oct/11/2012 equation (unknown source):
-      arads = vapor *3010.21 / (kelvin*kelvin);
-    with unknown: x = 3010.12 =?
-      5336 [mmHg*K] (Merva (1975)) * 9/5 [F/K] = 2964 [mmHg*F];
-    however, result virtually identical with FAO and ASCE formulations
-    (Allen et al. 1998, 2005) --> replaced
-  */
-  // Allen et al. (1998, ch.3 eqn. 13) and (2005, eqn. 5):
-  // arads used in Penman (1948), eqn. 16:
-  arads = 4098. * vapor / ((avgtemp + 237.3) * (avgtemp + 237.3)) * 5. / 9.;
-
-  // Clear sky:
-  // Penman (1948): n/N = clrsky =
-  //  = Ratio of actual/possible hours of sunshine = 1 - m/10 =
-  //  = 1 - fraction of sky covered by cloud
-  clrsky = 1. - cloudcov / 100.;
+  Delta = slope_svp_to_t(vapor, avgtemp);
+  Delta *= 5. / 9.;
+  // TODO: why not: Delta *= convert_kPa_per_K__to__mmHg_per_F;
 
   // Saturation vapor pressure at dewpoint [mmHg] = ed = relative humidity * ea
   humid *= vapor / 100.;
@@ -653,18 +671,7 @@ stepSize - the step size to use in integration
   par2 = (1. - reflec) * shwave * (.18 + .55 * clrsky)
     - ftemp * (.56 - .092 * sqrt(humid)) * (.10 + .90 * clrsky);
 
-  // Atmospheric pressure:
-  // Allen et al. (1998, ch.3 eqn. 7) and (2005, eqn. 3):
-  //  P [kPa] = atmospheric pressure with elev [m]
-  P = 101.3 * powe((293. - 0.0065 * elev) / 293., 5.26);
 
-  // Psychrometric constant:
-  // Allen et al. (1998, ch.3 eqn. 8) and (2005, eqn. 4):
-  // gamma [mmHg/F] = psychrometric constant [kPa/C] * [mmHG/kPa] * [C/F]
-  /* Notes:
-      originally and pre-Oct/11/2012, Penman (1948) gamma [mmHg/F] == 0.27
-  */
-  gamma = 0.000665 * P * 760. / 101.325 * 5. / 9.;
 
   // Evaporation from open water:
   // Penman (1948), eqn. 16: result*10 = E [mm/day]
