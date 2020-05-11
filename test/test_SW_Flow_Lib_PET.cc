@@ -36,7 +36,7 @@
 #include "../SW_Sky.h"
 #include "../pcg/pcg_basic.h"
 
-#include "../SW_Flow_lib.h"
+#include "../SW_Flow_lib_PET.h"
 
 #include "sw_testhelpers.h"
 
@@ -49,7 +49,7 @@ namespace
 {
 
   //Test svapor function by manipulating variable temp.
-  TEST(SWFlowTestPET, svapor)
+  TEST(SW2_PET_Test, svapor)
   {
     //Declare INPUTS
     double temp[] = {30,35,40,45,50,55,60,65,70,75,20,-35,-12.667,-1,0}; // These are test temperatures, in degrees Celcius.
@@ -73,7 +73,7 @@ namespace
 
 
   // Test solar declination and sunset hour angle
-  TEST(SWFlowTestPET, solar_metrics)
+  TEST(SW2_PET_Test, solar_metrics)
   {
     double declin,
       declin_max = 0.4094, // should rather be 0.409 = (23+26/60)*pi/180
@@ -130,7 +130,7 @@ namespace
     }
   }
 
-  TEST(SWFlowTestPET, SRS)
+  TEST(SW2_PET_Test, SRS)
   {
     unsigned int doy;
     double
@@ -225,7 +225,7 @@ namespace
 
 
   //Test petfunc by manipulating each input individually.
-  TEST(SWFlowTestPET, petfunc)
+  TEST(SW2_PET_Test, petfunc)
   {
     //Begin TEST for avgtemp input variable
     //Declare INPUTS
