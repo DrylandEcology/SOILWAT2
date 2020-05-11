@@ -40,6 +40,10 @@
 
 #include "sw_testhelpers.h"
 
+extern char output_prefix[FILENAME_MAX];
+
+extern double (*test_solar_radiation_sloped)(RealD, RealD, RealD, RealD, RealD);
+
 
 namespace
 {
@@ -124,6 +128,99 @@ namespace
       ahou = sunset_hourangle(rlat, 0.);
       EXPECT_NEAR(ahou, six_hours, tol3) << "lat = " << rlat;
     }
+  }
+
+  TEST(SWFlowTestPET, SRS)
+  {
+    unsigned int doy;
+    double
+      rlat1 = 45 * swPI / 180.,
+      rlat2 = 39.74 * swPI / 180., // Boulder, CO
+      sdec, ahou1, ahou2,
+      c = 1440. / swPI * 1.952;
+
+    FILE *fp1, *fp2;
+    char fname_srs1[FILENAME_MAX], fname_srs2[FILENAME_MAX];
+
+    strcpy(fname_srs1, output_prefix);
+    strcat(fname_srs1, "SWFlowTestPET_SRS1.csv");
+    fp1 = OpenFile(fname_srs1, "w");
+
+    strcpy(fname_srs2, output_prefix);
+    strcat(fname_srs2, "SWFlowTestPET_SRS2.csv");
+    fp2 = OpenFile(fname_srs2, "w");
+
+    fprintf(
+      fp1,
+      "doy, rlat, c, Sr[0], "
+      "Srs[slp=0;asp=N], Srs[slp=1;asp=N], Srs[slp=10;asp=N], Srs[slp=45;asp=N], "
+      "Srs[slp=0;asp=E], Srs[slp=1;asp=E], Srs[slp=10;asp=E], Srs[slp=45;asp=E], "
+      "Srs[slp=0;asp=S], Srs[slp=1;asp=S], Srs[slp=10;asp=S], Srs[slp=45;asp=S], "
+      "Srs[slp=0;asp=W], Srs[slp=1;asp=W], Srs[slp=10;asp=W], Srs[slp=45;asp=W] "
+      "\n"
+    );
+
+    fprintf(
+      fp2,
+      "doy, rlat, c, Sr[0], "
+      "Srs[slp=40;asp=S], Srs[slp=90;asp=N], Srs[slp=90;asp=E], Srs[slp=90;asp=S], Srs[slp=90;asp=W] "
+      "\n"
+    );
+
+    for (doy = 1; doy <= 366; doy++) {
+      sdec = solar_declination(doy);
+      ahou1 = sunset_hourangle(rlat1, sdec);
+      ahou2 = sunset_hourangle(rlat2, sdec);
+
+      fprintf(
+        fp1,
+        "%d, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n",
+        doy,
+        rlat1, c,
+        solar_radiation_TOA(rlat1, 0., -1., ahou1, sdec),
+
+        test_solar_radiation_sloped(rlat1, 0., 0., ahou1, sdec),
+        test_solar_radiation_sloped(rlat1, 1., 0., ahou1, sdec),
+        test_solar_radiation_sloped(rlat1, 10., 0., ahou1, sdec),
+        test_solar_radiation_sloped(rlat1, 45., 0., ahou1, sdec),
+
+        test_solar_radiation_sloped(rlat1, 0., 90., ahou1, sdec),
+        test_solar_radiation_sloped(rlat1, 1., 90., ahou1, sdec),
+        test_solar_radiation_sloped(rlat1, 10., 90., ahou1, sdec),
+        test_solar_radiation_sloped(rlat1, 45., 90., ahou1, sdec),
+
+        test_solar_radiation_sloped(rlat1, 0., 180., ahou1, sdec),
+        test_solar_radiation_sloped(rlat1, 1., 180., ahou1, sdec),
+        test_solar_radiation_sloped(rlat1, 10., 180., ahou1, sdec),
+        test_solar_radiation_sloped(rlat1, 45., 180., ahou1, sdec),
+
+        test_solar_radiation_sloped(rlat1, 0., 270., ahou1, sdec),
+        test_solar_radiation_sloped(rlat1, 1., 270., ahou1, sdec),
+        test_solar_radiation_sloped(rlat1, 10., 270., ahou1, sdec),
+        test_solar_radiation_sloped(rlat1, 45., 270., ahou1, sdec)
+      );
+
+      fflush(fp1);
+
+      fprintf(
+        fp2,
+        "%d, %f, %f, %f, %f, %f, %f, %f, %f\n",
+        doy,
+        rlat2, c,
+        solar_radiation_TOA(rlat2, 0., -1., ahou2, sdec),
+
+        test_solar_radiation_sloped(rlat2, 40., 180., ahou2, sdec),
+        test_solar_radiation_sloped(rlat2, 90., 0., ahou2, sdec),
+        test_solar_radiation_sloped(rlat2, 90., 90., ahou2, sdec),
+        test_solar_radiation_sloped(rlat2, 90., 180., ahou2, sdec),
+        test_solar_radiation_sloped(rlat2, 90., 270., ahou2, sdec)
+      );
+
+      fflush(fp2);
+    }
+
+    CloseFile(&fp1);
+    CloseFile(&fp2);
   }
 
 

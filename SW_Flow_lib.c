@@ -441,6 +441,12 @@ static double _solar_radiation_sloped(
   return solrad / 2.;
 }
 
+#ifdef SWDEBUG
+  // since `_solar_radiation_sloped` is static we cannot do unit tests unless we set it up
+  // as an externed function pointer
+  double (*test_solar_radiation_sloped)(RealD, RealD, RealD, RealD, RealD) = &_solar_radiation_sloped;
+#endif
+
 
 /** @brief Daily total solar radiation on top of the atmosphere
     (extraterrestrial)
@@ -452,7 +458,8 @@ static double _solar_radiation_sloped(
     @param rlat Latitude of the site [radians].
     @param slope Slope of the site [degrees].
     @param aspect Aspect of the site [degrees].
-      A value of -1 indicates no data, ie., treat it as if slope = 0
+      A value of -1 indicates no data, ie., treat it as if slope = 0;
+      North = 0 deg, East = 90 deg, South = 180 deg, W = 270.
 
     @return Solar radiation Qs [langlay / day]
 */
@@ -495,8 +502,8 @@ double solar_radiation_TOA(
 
 /** Calculate incoming solar (short wave) radiation available at Earth's surface
 
-  Based on equation 12 from Penman (1948) @cite Penman1948 that estimates
-  atmospheric transmittance,
+  Penman (1948) @cite Penman1948 implements the Angstrom-Prescott relationship
+  in equation 12 that estimates atmospheric transmittance,
   i.e., atmospheric attenuation by absorption and scattering,
   from an empirical relationship with relative sunshine hours `a + b * n/N`
   where `a` can be interpreted as minimum atmospheric transmittance and
@@ -504,7 +511,8 @@ double solar_radiation_TOA(
   Coefficients were estimated from monthly values over the period 1931-1940
   for Rothamsted, UK.
 
-  @param Rs Incoming solar (short wave) radiation on top of atmosphere
+  @param Rs Extraterrestrial (incoming) solar (short wave) radiation
+    on top of atmosphere. Also called Angot radiation.
   @param sunshine_fraction Ratio of actual to possible hours of sunshine [0-1]
   @return Rc [same units as Rs].
 */
