@@ -1,4 +1,6 @@
+os: linux
 language: cpp
+dist: xenial
 
 # We want to run the `*_severe` debug and test targets; thus, we need
 # to enable ptrace capability for (L/A)SAN which is currently not possible
@@ -8,34 +10,48 @@ language: cpp
 # - https://github.com/travis-ci/travis-ci/issues/9033
 sudo: required
 
-matrix:
-  fast_finish: true
 
-# Run tests with both clang and gcc compilers
-compiler:
-  - clang
-  - gcc
+# List required addons:
 
+# - Test with clang and gcc compilers with minimum and default versions:
+#   Our `*_severe` debug and test targets require g++ >= 4.9 and clang++ >= 3.5
 
-# Install addons:
-# - upgrade to minimum gcc version: our `*_severe` debug and test targets require
-#   g++ >= 4.9 and clang++ >= 3.5
 # - creating doxygen documentations requires the packages: doxygen ... graphviz
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
+      - llvm-toolchain-xenial-3.5
     packages:
-      - gcc-4.9
       - g++-4.9
+      - clang-3.5
       - doxygen
       - doxygen-latex
       - doxygen-doc
       - doxygen-gui
       - graphviz
 
+
+jobs:
+  fast_finish: true
+  include:
+    - compiler: gcc
+      env: MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
+
+    - compiler: gcc
+      env: MATRIX_EVAL="echo Default gcc version"
+
+    - compiler: clang
+      env: MATRIX_EVAL="CC=clang-3.5 && CXX=clang++-3.5"
+
+    - compiler: clang
+      env: MATRIX_EVAL="echo Default clang version"
+
+
+
 before_install:
-  - if [[ $CXX = g++ ]]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+  - eval "${MATRIX_EVAL}"
+
 
 script:
   # compile and run optimized binary
