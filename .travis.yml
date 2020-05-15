@@ -53,7 +53,7 @@ jobs:
 
 
 before_install:
-  - if [ "$UPDATE_BINUTILS" -eq "true" ] ; then source ./tools/travis_update_binutils.sh ; fi
+  - if [ "$UPDATE_BINUTILS" = "true" ] ; then source ./tools/travis_update_binutils.sh ; fi
   - eval "${MATRIX_EVAL}"
 
 
