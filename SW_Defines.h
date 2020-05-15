@@ -19,7 +19,7 @@
 #ifndef SOILW_DEF_H
 #define SOILW_DEF_H
 
-#include <math.h>  /* for atan() in tanfunc() below */
+#include <math.h>  /* >= C99; for: atan(), isfinite() */
 #include "generic.h"
 
 #ifdef __cplusplus
@@ -141,6 +141,7 @@ typedef struct { RealF xinflec, yinflec, range, slope; } tanfunc_t;
 
 
 /* standardize the test for missing */
+/* isfinite is C99 and std::isfinite is C++11 */
 #define missing(x)  ( EQ( fabs( (x) ), SW_MISSING ) || !isfinite( (x) ) )
 
 /* types to identify the various modules/objects */
