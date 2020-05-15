@@ -1,6 +1,5 @@
 os: linux
 language: cpp
-dist: xenial
 
 # We want to run the `*_severe` debug and test targets; thus, we need
 # to enable ptrace capability for (L/A)SAN which is currently not possible
@@ -17,39 +16,39 @@ sudo: required
 #   Our `*_severe` debug and test targets require g++ >= 4.9 and clang++ >= 3.5
 
 # - creating doxygen documentations requires the packages: doxygen ... graphviz
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - llvm-toolchain-xenial-3.5
-    packages:
-      - g++-4.9
-      - clang-3.5
-      - doxygen
-      - doxygen-latex
-      - doxygen-doc
-      - doxygen-gui
-      - graphviz
 
 
 jobs:
   fast_finish: true
   include:
     - compiler: gcc
-      env: MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
+      apt:
+        sources: ['ubuntu-toolchain-r-test']
+        packages: ['g++-4.9', 'doxygen', 'doxygen-latex', 'doxygen-doc', 'doxygen-gui', 'graphviz']
+      env: MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9" UPDATE_BINUTILS="false"
 
     - compiler: gcc
-      env: MATRIX_EVAL="echo Default gcc version"
+      apt:
+        sources: ['ubuntu-toolchain-r-test']
+        packages: ['doxygen', 'doxygen-latex', 'doxygen-doc', 'doxygen-gui', 'graphviz']
+      env: MATRIX_EVAL="echo Default gcc version" UPDATE_BINUTILS="true"
 
     - compiler: clang
-      env: MATRIX_EVAL="CC=clang-3.5 && CXX=clang++-3.5"
+      apt:
+        sources: ['ubuntu-toolchain-r-test']
+        packages: ['clang-3.5', 'doxygen-latex', 'doxygen-doc', 'doxygen-gui', 'graphviz']
+       env: MATRIX_EVAL="CC=clang-3.5 && CXX=clang++-3.5" UPDATE_BINUTILS="false"
 
     - compiler: clang
-      env: MATRIX_EVAL="echo Default clang version"
+      apt:
+        sources: ['ubuntu-toolchain-r-test']
+        packages: ['doxygen', 'doxygen-latex', 'doxygen-doc', 'doxygen-gui', 'graphviz']
+      env: MATRIX_EVAL="echo Default clang version" UPDATE_BINUTILS="false"
 
 
 
 before_install:
+  - if [ "$UPDATE_BINUTILS" -eq "true" ] ; then source ./tools/travis_update_binutils.sh ; fi
   - eval "${MATRIX_EVAL}"
 
 
