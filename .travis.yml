@@ -20,29 +20,34 @@ sudo: required
 
 jobs:
   fast_finish: true
+
   include:
     - compiler: gcc
-      apt:
-        sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-4.9', 'doxygen', 'doxygen-latex', 'doxygen-doc', 'doxygen-gui', 'graphviz']
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['g++-4.9', 'doxygen', 'doxygen-latex', 'doxygen-doc', 'doxygen-gui', 'graphviz']
       env: MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9" UPDATE_BINUTILS="false"
 
     - compiler: gcc
-      apt:
-        sources: ['ubuntu-toolchain-r-test']
-        packages: ['doxygen', 'doxygen-latex', 'doxygen-doc', 'doxygen-gui', 'graphviz']
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['doxygen', 'doxygen-latex', 'doxygen-doc', 'doxygen-gui', 'graphviz']
       env: MATRIX_EVAL="echo Default gcc version" UPDATE_BINUTILS="true"
 
     - compiler: clang
-      apt:
-        sources: ['ubuntu-toolchain-r-test']
-        packages: ['clang-3.5', 'doxygen-latex', 'doxygen-doc', 'doxygen-gui', 'graphviz']
-       env: MATRIX_EVAL="CC=clang-3.5 && CXX=clang++-3.5" UPDATE_BINUTILS="false"
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['clang-3.5', 'doxygen-latex', 'doxygen-doc', 'doxygen-gui', 'graphviz']
+      env: MATRIX_EVAL="CC=clang-3.5 && CXX=clang++-3.5" UPDATE_BINUTILS="false"
 
     - compiler: clang
-      apt:
-        sources: ['ubuntu-toolchain-r-test']
-        packages: ['doxygen', 'doxygen-latex', 'doxygen-doc', 'doxygen-gui', 'graphviz']
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['doxygen', 'doxygen-latex', 'doxygen-doc', 'doxygen-gui', 'graphviz']
       env: MATRIX_EVAL="echo Default clang version" UPDATE_BINUTILS="false"
 
 
