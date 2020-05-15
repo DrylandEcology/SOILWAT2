@@ -18,6 +18,8 @@
 #include "../generic.h"
 #include "../SW_Defines.h"
 
+#include "sw_testhelpers.h" // get the re-defined `missing`
+
 
 namespace {
 
@@ -25,7 +27,7 @@ namespace {
     // SOILWAT2 missing value
     EXPECT_TRUE(missing(SW_MISSING));
 
-    // C isfinite()
+    // isfinite()
     EXPECT_TRUE(missing(NAN));
     EXPECT_TRUE(missing(INFINITY));
     EXPECT_TRUE(missing(exp(800)));
