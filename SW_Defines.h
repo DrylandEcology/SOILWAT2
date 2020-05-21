@@ -43,6 +43,10 @@ extern "C" {
 #define SW_MISSING     999.     /* value to use as MISSING */
 #define swPI          3.141592653589793238462643383279502884197169399375
 #define swPI2         6.28318530717958
+#define swPI_half     1.57079632679490
+#define deg_to_rad    0.0174532925199433 /**< Convert arc-degrees to radians, i.e., x * deg_to_rad with deg_to_rad = pi / 180 */
+#define rad_to_deg    57.29577951308232 /**< Convert radians to arc-degrees, i.e., x * rad_to_deg with rad_to_deg = 180 / pi */
+
 #define BARCONV     1024.
 #define SEC_PER_DAY	86400. // the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400 seconds)
 

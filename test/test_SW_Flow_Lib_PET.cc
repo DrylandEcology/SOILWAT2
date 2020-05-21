@@ -124,7 +124,7 @@ namespace
     for (i = 0; i <= 10; i++) {
       // Sunset hour angle: every location has six hours on
       // equinoxes (when declin = 0)
-      rlat = (-90 + 180 * (i - 0) / 10) * swPI / 180;
+      rlat = (-90. + 180. * (i - 0.) / 10.) * deg_to_rad;
       ahou = sunset_hourangle(rlat, 0.);
       EXPECT_NEAR(ahou, six_hours, tol3) << "lat = " << rlat;
     }
@@ -134,8 +134,8 @@ namespace
   {
     unsigned int doy;
     double
-      rlat1 = 45 * swPI / 180.,
-      rlat2 = 39.74 * swPI / 180., // Boulder, CO
+      rlat1 = 45 * deg_to_rad,
+      rlat2 = 39.74 * deg_to_rad, // Boulder, CO
       sdec, ahou1, ahou2,
       c = 1440. / swPI * 1.952;
 

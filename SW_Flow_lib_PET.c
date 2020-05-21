@@ -108,8 +108,8 @@ static double _solar_radiation_sloped(
   */
   stepSize = (ahou / 24.);
   // convert aspect and slope from degrees to radians:
-  azmthSlope = swPI2 * (aspect - 180.) / 360.;
-  rslope = swPI2 * slope / 360.;
+  azmthSlope = (aspect - 180.) * deg_to_rad;
+  rslope = slope * deg_to_rad;
 
 
   // pre-calculate values used in for-loop that are independent of `hou`
@@ -510,4 +510,3 @@ double svapor(double temp) {
 
 	return (exp(par2) * .75);
 }
-
