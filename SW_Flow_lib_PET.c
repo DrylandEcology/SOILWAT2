@@ -4,7 +4,7 @@
   Source file: SW_Flow_lib_PET.c
   Type: module
   Application: SOILWAT2 - soilwater dynamics simulator
-  Purpose: Evaporative demand
+  Purpose: Radiation and evaporative demand
 */
 /********************************************************/
 /********************************************************/
@@ -67,30 +67,29 @@ double solar_declination(unsigned int doy)
 
 
 
-/** @brief Calculate sunset/sunrise hour angle
+/** @brief Calculate sunset/sunrise hour angle on a horizontal surface
 
-    Equations based on Sellers 1965 @cite Sellers1965.
+    Hour angle values range from negative at sunrise \f$omega = -omega_s\f$,
+    via \f$omega = 0\f$ at solar noon to positive at sunset
+    \f$omega = -omega_s\f$.
 
-    @param rlat	Latitude of the site [radians].
-    @param declin	Solar declination [radians].
+    Equation based on Duffie & Beckman 2013 @cite duffie2013.
 
-    @return Sunset (or sunrise) hour angle [radians];
-      this is equal to half-day length.
+    @param rlat Latitude of the site [radians].
+    @param declin Solar declination [radians].
+
+    @return Sunset (or -sunrise) hour angle \f$omega_s\f$ [radians] on a
+      horizontal surface.
 */
 double sunset_hourangle(double rlat, double declin)
 {
-  double par1, par2;
+  // based on Duffie & Beckman 2013: eq. 1.6.10
+  return acos(fmax(-1.0, fmin(1.0, -tan(rlat) * tan(declin))));
+}
 
-  // Sellers (1965), page 15, eqn. 3.3:
 
-  // calculate par2 = cos(H)
-  par2 = -tan(rlat) * tan(declin);
 
-  // calculate par1 = sin(H) from trigonometric identities
-  par1 = sqrt(1. - (par2 * par2));
 
-  // calculate ahou = H from trigonometric function: tan(H) = sin(H)/cos(H)
-  return fmax(atan2(par1, par2), 0.0);
 }
 
 
