@@ -102,8 +102,8 @@ typedef struct {
 		pet_scale,	/* changes relative effect of PET calculation */
 		latitude,	/* latitude of the site (radians)        */
 		altitude,	/* altitude a.s.l (m) of the site */
-		slope,		/* slope of the site (in degrees) */
-		aspect,		/* aspect of the site (in degrees) */
+		slope,		/* slope of the site (radians): between 0 (horizontal) and pi / 2 (vertical) */
+		aspect,		/* aspect of the site (radians): A value of \ref SW_MISSING indicates no data, ie., treat it as if slope = 0; South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi */
 					/* SWAT2K model parameters : Neitsch S, Arnold J, Kiniry J, Williams J. 2005. Soil and water assessment tool (SWAT) theoretical documentation. version 2005. Blackland Research Center, Texas Agricultural Experiment Station: Temple, TX. */
 		TminAccu2,	/* Avg. air temp below which ppt is snow ( C) */
 		TmaxCrit,	/* Snow temperature at which snow melt starts ( C) */

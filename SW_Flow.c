@@ -286,18 +286,36 @@ void SW_Water_Flow(void) {
 	}
 	#endif
 
-	/* PET */
+	/* Solar radiation and PET */
 	x = v->bare_cov.albedo * v->bare_cov.fCover;
 	ForEachVegType(k)
 	{
 		x += v->veg[k].cov.albedo * v->veg[k].cov.fCover;
 	}
 
-  sw->pet = SW_Site.pet_scale * petfunc(doy, w->now.temp_avg[Today],
-    SW_Site.latitude, SW_Site.altitude,
-    SW_Site.slope, SW_Site.aspect, x,
-    SW_Sky.r_humidity_daily[doy], SW_Sky.windspeed_daily[doy],
-    SW_Sky.cloudcov_daily[doy], SW_Sky.transmission_daily[doy]);
+	sw->H_gt = solar_radiation(
+		doy,
+		SW_Site.latitude,
+		SW_Site.altitude,
+		SW_Site.slope,
+		SW_Site.aspect,
+		x,
+		SW_Sky.cloudcov_daily[doy],
+		SW_Sky.r_humidity_daily[doy],
+		w->now.temp_avg[Today],
+		&sw->H_oh,
+		&sw->H_gh
+	);
+
+	sw->pet = SW_Site.pet_scale * petfunc(
+		sw->H_gt,
+		w->now.temp_avg[Today],
+		SW_Site.altitude,
+		x,
+		SW_Sky.r_humidity_daily[doy],
+		SW_Sky.windspeed_daily[doy],
+		SW_Sky.cloudcov_daily[doy]
+	);
 
 
 	/* snowdepth scaling */

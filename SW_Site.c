@@ -335,16 +335,16 @@ void SW_SIT_read(void) {
 			v->transp.range = atof(inbuf);
 			break;
 		case 22:
-			v->latitude = atof(inbuf);
+			v->latitude = atof(inbuf) * deg_to_rad;
 			break;
 		case 23:
 			v->altitude = atof(inbuf);
 			break;
 		case 24:
-			v->slope = atof(inbuf);
+			v->slope = atof(inbuf) * deg_to_rad;
 			break;
 		case 25:
-			v->aspect = atof(inbuf);
+			v->aspect = atof(inbuf) * deg_to_rad;
 			break;
 		case 26:
 			v->bmLimiter = atof(inbuf);
@@ -1037,10 +1037,10 @@ void _echo_inputs(void) {
 	LogError(logfp, LOGNOTE, "  PET Scale: %5.4f\n", s->pet_scale);
 	LogError(logfp, LOGNOTE, "  Runoff: proportion of surface water lost: %5.4f\n", s->percentRunoff);
 	LogError(logfp, LOGNOTE, "  Runon: proportion of new surface water gained: %5.4f\n", s->percentRunon);
-	LogError(logfp, LOGNOTE, "  Latitude (radians): %4.2f\n", s->latitude);
+	LogError(logfp, LOGNOTE, "  Latitude (degree): %4.2f\n", s->latitude * rad_to_deg);
 	LogError(logfp, LOGNOTE, "  Altitude (m a.s.l.): %4.2f \n", s->altitude);
-	LogError(logfp, LOGNOTE, "  Slope (degrees): %4.2f\n", s->slope);
-	LogError(logfp, LOGNOTE, "  Aspect (degrees): %4.2f\n", s->aspect);
+	LogError(logfp, LOGNOTE, "  Slope (degree): %4.2f\n", s->slope * rad_to_deg);
+	LogError(logfp, LOGNOTE, "  Aspect (degree): %4.2f\n", s->aspect * rad_to_deg);
 
 	LogError(logfp, LOGNOTE, "\nSnow simulation parameters (SWAT2K model):\n----------------------\n");
 	LogError(logfp, LOGNOTE, "  Avg. air temp below which ppt is snow ( C): %5.4f\n", s->TminAccu2);

@@ -147,6 +147,7 @@ typedef struct { RealF xinflec, yinflec, range, slope; } tanfunc_t;
 /* standardize the test for missing */
 #define missing(x)  ( EQ(fabs( (x) ), SW_MISSING) )
 
+
 /* types to identify the various modules/objects */
 typedef enum { eF,   /* file management */
                eMDL, /* model */
