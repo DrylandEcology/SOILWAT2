@@ -84,7 +84,7 @@ typedef struct {
 			snowdepth,
 			et,
 			aet,
-			pet,
+			pet, H_oh, H_gh, H_gt,
 			deep,
 			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
 			surfaceTemp; // soil surface temperature
@@ -107,7 +107,8 @@ typedef struct {
 		drain[MAX_LAYERS], /* amt of swc able to drain from curr layer to next */
 		hydred[NVEGTYPES][MAX_LAYERS], /* hydraulic redistribution cm/layer */
 		surfaceWater, surfaceWater_evap,
-		pet, aet,
+		pet, H_oh, H_gh, H_gt,
+		aet,
 		litter_evap, evap_veg[NVEGTYPES],
 		litter_int, int_veg[NVEGTYPES], // todays intercepted rain by litter and by vegetation
 		sTemp[MAX_LAYERS],

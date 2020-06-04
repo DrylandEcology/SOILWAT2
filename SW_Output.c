@@ -493,6 +493,9 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 
 	case eSW_PET:
 		s->pet += v->pet;
+		s->H_oh += v->H_oh;
+		s->H_gh += v->H_gh;
+		s->H_gt += v->H_gt;
 		break;
 
 	case eSW_WetDays:
@@ -778,6 +781,9 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 
 			case eSW_PET:
 				s->p_oagg[pd]->pet = s->p_accu[pd]->pet / div;
+				s->p_oagg[pd]->H_oh = s->p_accu[pd]->H_oh / div;
+				s->p_oagg[pd]->H_gh = s->p_accu[pd]->H_gh / div;
+				s->p_oagg[pd]->H_gt = s->p_accu[pd]->H_gt / div;
 				break;
 
 			case eSW_WetDays:
@@ -1530,7 +1536,7 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_HydRed] = tLayers * (NVEGTYPES + 1); // NVEGTYPES plus totals
 	ncol_OUT[eSW_ET] = 0;
 	ncol_OUT[eSW_AET] = 1;
-	ncol_OUT[eSW_PET] = 1;
+	ncol_OUT[eSW_PET] = 4;
 	ncol_OUT[eSW_WetDays] = tLayers;
 	ncol_OUT[eSW_SnowPack] = 2;
 	ncol_OUT[eSW_DeepSWC] = 1;
@@ -1582,7 +1588,9 @@ void SW_OUT_set_colnames(void) {
 	const char *cnames_eSW_SurfaceWater[] = { "surfaceWater_cm" };
 	const char *cnames_add_eSW_EvapSurface[] = { "evap_surfaceWater" };
 	const char *cnames_eSW_AET[] = { "evapotr_cm" };
-	const char *cnames_eSW_PET[] = { "pet_cm" };
+	const char *cnames_eSW_PET[] = { "pet_cm",
+		"H_oh_MJm-2", "H_gh_MJm-2", "H_gt_MJm-2"
+	};
 	const char *cnames_eSW_SnowPack[] = { "snowpackWaterEquivalent_cm",
 		"snowdepth_cm" };
 	const char *cnames_eSW_DeepSWC[] = { "lowLayerDrain_cm" };

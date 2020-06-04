@@ -19,7 +19,10 @@
 
 #include "SW_Flow_lib_PET.h"
 
+// for output of radiation terms
+#include "SW_SoilWater.h"
 
+extern SW_SOILWAT SW_Soilwat;
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -372,6 +375,9 @@ par1,par2 - parameters in computation of pet.
 
   double declin, ahou, Ea, Rn, Rs, Rc, Rbb, Delta, clrsky, vapor, P, gamma, pet;
 
+  // for output of radiation terms
+  SW_SOILWAT *sw = &SW_Soilwat;
+
   /* Unit conversion factors:
    1 langley = 1 ly = 41840 J/m2 = 0.0168 evaporative-mm
     (1 [ly] / 2490 [kJ/kg heat of vaporization at about T = 10-15 C],
@@ -396,7 +402,11 @@ par1,par2 - parameters in computation of pet.
 
     // [W / m2] = [evaporative mm / day] * [kJ / s / m2] * [s / day] / [heat of vaporization] =
     //            [evaporative mm / day] * 1e-3 * 86400 / 2490
-    convert_W_per_m2__to__mm_per_day = 0.0346988;
+    convert_W_per_m2__to__mm_per_day = 0.0346988,
+
+    // [MJ / m2] = [evaporative mm / day] * [1e3 kJ / m2] / [heat of vaporization] =
+    //             [evaporative mm / day] * 1e3 / 2490
+    convert_MJ_per_m2__to__mm_per_day = 0.4016063;
 
 
   //------ Convert input variables
@@ -419,6 +429,10 @@ par1,par2 - parameters in computation of pet.
   // Calculate H = half-day length = ahou = sunset hour angle
   ahou = sunset_hourangle(rlat, declin);
 
+// horizontal radiation
+sw->H_oh = solar_radiation_TOA(rlat, 0., 0., ahou, declin) * convert_ly__to__mm / convert_MJ_per_m2__to__mm_per_day;
+sw->H_gh = solar_radiation_surface(sw->H_oh, clrsky) * transcoeff;
+
 
   // Calculate incoming solar (short wave) radiation on top of atmosphere
   Rs = solar_radiation_TOA(rlat, slope, aspect, ahou, declin);
@@ -429,6 +443,7 @@ par1,par2 - parameters in computation of pet.
   Rc = solar_radiation_surface(Rs, clrsky);
   Rc *= transcoeff; // TODO: this is probably superfluous because `solar_radiation_surface` already accounts for transmissivity
 
+sw->H_gt = Rc / convert_MJ_per_m2__to__mm_per_day;
 
   // Calculate long wave radiation:
   Rbb = blackbody_radiation(avgtemp);
