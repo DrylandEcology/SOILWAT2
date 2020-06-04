@@ -89,10 +89,6 @@ double sunset_hourangle(double rlat, double declin)
 
 
 
-
-}
-
-
 static double _solar_radiation_sloped(
   double rlat, double slope, double aspect,
   double ahou, double declin
