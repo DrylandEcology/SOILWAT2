@@ -244,14 +244,16 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
 
   // Integrate the sine of the sun angle (= solar altitude angle)
   // above a horizontal surface from sunrise to sunset
-  tmp1 = 2. * squared(g) * sun_angles[6] + 2. * g * h * sin(sun_angles[6])
-        + squared(h) * (sun_angles[6] + 0.5 * sin(2. * sun_angles[6]));
+  tmp1 = 2. * squared(g) * sun_angles[6] \
+       + 4. * g * h * sin(sun_angles[6]) \
+       + squared(h) * (sun_angles[6] + 0.5 * sin(2. * sun_angles[6]));
   tmp2 = g * sun_angles[6] + h * sin(sun_angles[6]);
   int_sin_beta[0] = fmax(0., tmp1 / (2. * tmp2)); // Allen et al. 2006: eq. 26
 
 
   // Integrate the cosine of the solar incidence angle on a horizontal surface
   // from sunrise to sunset: Allen et al. 2006: eq. 35
+  // standardize by pi because integral is across half day (0 to sunset)
   int_cos_theta[0] = tmp2 / swPI;
 
 
@@ -455,7 +457,8 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
     // Integrate the cosine of the solar incidence angle on tilted surface
     // from (first) sunrise to (last) sunset
     // Allen et al. 2006: eqs 5 (one sunshine period) and 51 (two periods)
-    int_cos_theta[1] = tmp2 / swPI;
+    // standardize by 2 * pi because integral is across full day
+    int_cos_theta[1] = tmp2 / swPI2;
   }
 
 }
