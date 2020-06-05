@@ -621,13 +621,14 @@ double clearnessindex_diffuse(double K_b)
   @param[in] air_temp_mean Daily mean air temperature [C]
 
   @param[out] H_oh Daily extraterrestrial horizontal irradiation [MJ / m2]
+  @param[out] H_ot Daily extraterrestrial tilted irradiation [MJ / m2]
   @param[out] H_gh Daily global horizontal irradiation [MJ / m2]
   @return H_gt Daily global (tilted) irradiation [MJ / m2]
 */
 double solar_radiation(unsigned int doy,
   double lat, double elev, double slope, double aspect,
   double albedo, double cloud_cover, double rel_humidity, double air_temp_mean,
-  double *H_oh, double *H_gh)
+  double *H_oh, double *H_ot, double *H_gh)
 {
   double
     P, e_a,
@@ -656,6 +657,7 @@ double solar_radiation(unsigned int doy,
   //--- Daily extraterrestrial irradiation H_o [H_oh, H_ot]
   solar_radiation_extraterrestrial(doy, int_cos_theta, H_o);
   *H_oh = H_o[0];
+  *H_ot = H_o[1];
 
   //--- Separation/decomposition: separate global horizontal irradiation H_gh
   // into direct and diffuse radiation components
@@ -680,7 +682,7 @@ double solar_radiation(unsigned int doy,
 
     // Direct beam irradiation
     K_bt = k_c * clearsky_directbeam(P, e_a, int_sin_beta[1]);
-    H_bt = K_bt * H_o[1]; // Allen et al. 2006: eq. 30
+    H_bt = K_bt * (*H_ot); // Allen et al. 2006: eq. 30
 
 
     // Diffuse irradiation (isotropic)
@@ -688,7 +690,7 @@ double solar_radiation(unsigned int doy,
 
 
     // Diffuse irradiation (anisotropic): HDKR model (Reindl et al. 1990)
-    f_B = K_bt / K_bh * H_o[1] / (*H_oh); // Allen et al. 2006: eq. 34
+    f_B = K_bt / K_bh * (*H_ot) / (*H_oh); // Allen et al. 2006: eq. 34
 
     f_ia = f_i * (1. - K_bh) \
       * (1 + sqrt(K_bh / (K_bh + K_dh)) * pow(sin(slope / 2.), 3.)) \

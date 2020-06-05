@@ -304,6 +304,7 @@ void SW_Water_Flow(void) {
 		SW_Sky.r_humidity_daily[doy],
 		w->now.temp_avg[Today],
 		&sw->H_oh,
+		&sw->H_ot,
 		&sw->H_gh
 	);
 

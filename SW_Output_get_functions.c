@@ -2134,9 +2134,10 @@ void get_pet_text(OutPeriod pd)
 	sw_outstr[0] = '\0';
 	sprintf(
 		sw_outstr,
-		"%c%.*f%c%.*f%c%.*f%c%.*f",
+		"%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
 		_Sep, OUT_DIGITS, vo->pet,
 		_Sep, OUT_DIGITS, vo->H_oh,
+		_Sep, OUT_DIGITS, vo->H_ot,
 		_Sep, OUT_DIGITS, vo->H_gh,
 		_Sep, OUT_DIGITS, vo->H_gt
 	);
@@ -2160,8 +2161,9 @@ void get_pet_mem(OutPeriod pd)
 
 	p[iOUT(0, pd)] = vo->pet;
 	p[iOUT(1, pd)] = vo->H_oh;
-	p[iOUT(2, pd)] = vo->H_gh;
-	p[iOUT(3, pd)] = vo->H_gt;
+	p[iOUT(2, pd)] = vo->H_ot;
+	p[iOUT(3, pd)] = vo->H_gh;
+	p[iOUT(4, pd)] = vo->H_gt;
 }
 
 #elif defined(STEPWAT)
@@ -2180,8 +2182,9 @@ void get_pet_agg(OutPeriod pd)
 
 	do_running_agg(p, psd, iOUT(0, pd), Globals->currIter, vo->pet);
 	do_running_agg(p, psd, iOUT(1, pd), Globals->currIter, vo->H_oh);
-	do_running_agg(p, psd, iOUT(2, pd), Globals->currIter, vo->H_gh);
-	do_running_agg(p, psd, iOUT(3, pd), Globals->currIter, vo->H_gt);
+	do_running_agg(p, psd, iOUT(2, pd), Globals->currIter, vo->H_ot);
+	do_running_agg(p, psd, iOUT(3, pd), Globals->currIter, vo->H_gh);
+	do_running_agg(p, psd, iOUT(4, pd), Globals->currIter, vo->H_gt);
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
