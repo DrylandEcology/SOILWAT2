@@ -239,13 +239,27 @@ void SW_WTH_init_run(void) {
 	SW_Weather.soil_inf = 0.;
 }
 
+
 /** @brief Sets up daily meteorological inputs for current simulation year
 
-    @sideeffect
-      \ref weth_found is set to `swTRUE` if historical daily meteorological inputs
-      are successfully located;
-      otherwise, \ref weth_found is `swFALSE` and the weather generator
-      is required to produce daily meteorological inputs.
+  Meteorological inputs are required for each day; they can either be
+  observed and provided via weather input files or they can be generated
+  by a weather generator (which has separate input requirements).
+
+  SOILWAT2 handles three scenarios of missing data:
+    1. Some individual days are missing (set to the missing value)
+    2. An entire year is missing (file `weath.xxxx` for year `xxxx` is absent)
+    3. No daily weather input files are available
+
+  SOILWAT2 may be set up such that only the weather generator is used:
+    1. Turn on the weather generator
+    2. Set the "first year to begin historical weather" to a year after
+       the last simulated year
+
+  @sideeffect
+    - if historical daily meteorological inputs are successfully located,
+      then \ref weth_found is set to `swTRUE`
+    - otherwise, \ref weth_found is `swFALSE`
 */
 void SW_WTH_new_year(void) {
 
