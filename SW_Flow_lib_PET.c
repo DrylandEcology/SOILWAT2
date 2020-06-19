@@ -279,11 +279,12 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
     // on tilted surface (Eq. 11-13)
     tmp3 = squared(b) + squared(c);
     tmp = tmp3 - squared(a);
-    tmp = sqrt(GT(tmp, 0.) ? tmp : 0.0001);
-    tmp2 = b * tmp; // see Step Di (Appendix A)
+    tmp = sqrt(GT(tmp, 0.) ? tmp : 0.0001); // see Step Di (Appendix A)
 
-/* Calculation of omega via asin(sin(omega)) as per Eq. 12-13
+/* Calculation of omega via asin(sin(omega)) as per Eq. 12-13 */
     tmp1 = a * c;
+    tmp2 = b * tmp;
+
     trig_omega1 = (tmp1 - tmp2) / tmp3;
     trig_omega1 = fmax(-1., fmin(1., trig_omega1)); // see Step Diii (Appendix A)
     omega1 = asin(trig_omega1);
@@ -291,7 +292,7 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
     trig_omega2 = (tmp1 + tmp2) / tmp3;
     trig_omega2 = fmax(-1., fmin(1., trig_omega2)); // see Step Diii (Appendix A)
     omega2 = asin(trig_omega2);
-*/
+
 
 /* Calculation of omega via acos(cos(omega))
    Problem: omega can take values in [-pi, +pi]; however,
@@ -305,14 +306,57 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
       sin(omega) = a / c - b / c * cos(omega)
       cos(omega) = (a * b - c * sqrt(b^2 + c^2 - a^2)) / (b^2 + c^2)
 */
+/*
     tmp1 = a * b;
-    trig_omega1 = (tmp1 + c * tmp) / tmp3;
-    trig_omega1 = fmax(-1., fmin(1., trig_omega1));
-    trig_omega2 = (tmp1 - c * tmp) / tmp3;
-    trig_omega2 = fmax(-1., fmin(1., trig_omega2));
-    omega1 = -acos(trig_omega1);
-    omega2 = acos(trig_omega2);
+    tmp2 = c * tmp;
 
+    trig_omega1 = (tmp1 + tmp2) / tmp3;
+    trig_omega1 = fmax(-1., fmin(1., trig_omega1));
+    omega1 = -acos(trig_omega1);
+
+    trig_omega2 = (tmp1 - tmp2) / tmp3;
+    trig_omega2 = fmax(-1., fmin(1., trig_omega2));
+    omega2 = acos(trig_omega2);
+*/
+/*
+double sin_omega1, sin_omega2, cos_omega1, cos_omega2, somega1, somega2, comega1, comega2;
+tmp1 = a * c;
+tmp2 = b * tmp;
+
+sin_omega1 = (tmp1 - tmp2) / tmp3;
+sin_omega1 = fmax(-1., fmin(1., sin_omega1)); // see Step Diii (Appendix A)
+somega1 = asin(sin_omega1);
+
+sin_omega2 = (tmp1 + tmp2) / tmp3;
+sin_omega2 = fmax(-1., fmin(1., sin_omega2)); // see Step Diii (Appendix A)
+somega2 = asin(sin_omega2);
+
+tmp1 = a * b;
+tmp2 = c * tmp;
+
+cos_omega1 = (tmp1 + tmp2) / tmp3;
+cos_omega1 = fmax(-1., fmin(1., cos_omega1));
+comega1 = -acos(cos_omega1);
+
+cos_omega2 = (tmp1 - tmp2) / tmp3;
+cos_omega2 = fmax(-1., fmin(1., cos_omega2));
+comega2 = acos(cos_omega2);
+
+
+printf(
+  "\n\tsin:-=sin(o1)=%f, +=sin(o2)=%f"
+  "\n\tasin:-=o1=%f, +=o2=%f, -pi-o1=%f, pi-o2=%f"
+
+  "\n\tcos:+=cos(o1)=%f, -=cos(o2)=%f"
+  "\n\tacos:-+=o1=%f, +-=o2=%f, -pi-o1=%f, pi-o2=%f\n\n",
+
+  sin_omega1, sin_omega2,
+  somega1, somega2, -swPI - somega1, swPI - somega2,
+
+  cos_omega1, cos_omega2,
+  comega1, comega2, -swPI - comega1, swPI - comega2
+);
+*/
 
     // Candidate sunrise and sunset hour angles on tilted surface
     cos_theta1 = -a + b * cos(omega1) + c * sin(omega1);
