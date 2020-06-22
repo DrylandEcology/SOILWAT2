@@ -76,8 +76,7 @@ typedef struct {
     scale_temp_min[MAX_MONTHS],
     scale_skyCover[MAX_MONTHS],
     scale_wind[MAX_MONTHS],
-    scale_rH[MAX_MONTHS],
-    scale_transmissivity[MAX_MONTHS];
+    scale_rH[MAX_MONTHS];
 	char name_prefix[MAX_FILENAMESIZE - 5]; // subtract 4-digit 'year' file type extension
 	RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceTemp;
 	RealD snow, snowmelt, snowloss;

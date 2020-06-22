@@ -361,7 +361,7 @@ void SW_WTH_read(void) {
 	FILE *f;
 	int lineno = 0, month, x;
 	RealF sppt, stmax, stmin;
-	RealF sky,wind,rH,transmissivity;
+	RealF sky, wind, rH;
 
 	MyFileName = SW_F_name(eWeather);
 	f = OpenFile(MyFileName, "r");
@@ -399,21 +399,30 @@ void SW_WTH_read(void) {
 		default:
 			if (lineno == 6 + MAX_MONTHS)
 				break;
-			x = sscanf(inbuf, "%d %f %f %f %f %f %f %f", &month, &sppt, &stmax, &stmin,&sky,&wind,&rH,&transmissivity);
-			if (x < 4) {
+
+			x = sscanf(
+				inbuf,
+				"%d %f %f %f %f %f %f",
+				&month, &sppt, &stmax, &stmin, &sky, &wind, &rH
+			);
+
+			if (x != 7) {
 				CloseFile(&f);
 				LogError(logfp, LOGFATAL, "%s : Bad record %d.", MyFileName, lineno);
 			}
-			w->scale_precip[month - 1] = sppt;
-			w->scale_temp_max[month - 1] = stmax;
-			w->scale_temp_min[month - 1] = stmin;
-			w->scale_skyCover[month - 1] = sky;
-			w->scale_wind[month - 1] = wind;
-			w->scale_rH[month - 1] = rH;
-			w->scale_transmissivity[month - 1] = transmissivity;
+
+			month--; // convert to base0
+			w->scale_precip[month] = sppt;
+			w->scale_temp_max[month] = stmax;
+			w->scale_temp_min[month] = stmin;
+			w->scale_skyCover[month] = sky;
+			w->scale_wind[month] = wind;
+			w->scale_rH[month] = rH;
 		}
+
 		lineno++;
 	}
+
 	SW_WeatherPrefix(w->name_prefix);
 	CloseFile(&f);
 	if (lineno < nitems - 1) {

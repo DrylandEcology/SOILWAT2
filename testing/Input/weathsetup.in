@@ -24,17 +24,16 @@
 # SkyCover = additive for mean monthly sky cover [%]; min(100, max(0, scale + sky cover))
 # Wind = multiplicative for mean monthly wind speed; max(0, scale * wind speed)
 # rH = additive for mean monthly relative humidity [%]; min(100, max(0, scale + rel. Humidity))
-# Transmissivity = multiplicative for mean monthly relative transmissivity; min(1, max(0, scale * transmissivity))
-#Mon   PPT    MaxT    MinT  SkyCover   Wind    rH    Transmissivity
-1    1.000    0.00    0.00       0.0    1.0   0.0               1.0
-2    1.000    0.00    0.00       0.0    1.0   0.0               1.0
-3    1.000    0.00    0.00       0.0    1.0   0.0               1.0
-4    1.000    0.00    0.00       0.0    1.0   0.0               1.0
-5    1.000    0.00    0.00       0.0    1.0   0.0               1.0
-6    1.000    0.00    0.00       0.0    1.0   0.0               1.0
-7    1.000    0.00    0.00       0.0    1.0   0.0               1.0
-8    1.000    0.00    0.00       0.0    1.0   0.0               1.0
-9    1.000    0.00    0.00       0.0    1.0   0.0               1.0
-10   1.000    0.00    0.00       0.0    1.0   0.0               1.0
-11   1.000    0.00    0.00       0.0    1.0   0.0               1.0
-12   1.000    0.00    0.00       0.0    1.0   0.0               1.0
+#Mon   PPT    MaxT    MinT  SkyCover   Wind    rH
+1    1.000    0.00    0.00       0.0    1.0   0.0
+2    1.000    0.00    0.00       0.0    1.0   0.0
+3    1.000    0.00    0.00       0.0    1.0   0.0
+4    1.000    0.00    0.00       0.0    1.0   0.0
+5    1.000    0.00    0.00       0.0    1.0   0.0
+6    1.000    0.00    0.00       0.0    1.0   0.0
+7    1.000    0.00    0.00       0.0    1.0   0.0
+8    1.000    0.00    0.00       0.0    1.0   0.0
+9    1.000    0.00    0.00       0.0    1.0   0.0
+10   1.000    0.00    0.00       0.0    1.0   0.0
+11   1.000    0.00    0.00       0.0    1.0   0.0
+12   1.000    0.00    0.00       0.0    1.0   0.0
