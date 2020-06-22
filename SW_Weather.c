@@ -369,7 +369,8 @@ void SW_WTH_read(void) {
 			break;
 
 		case 4:
-			w->yr.first = yearto4digit(atoi(inbuf));
+			x = atoi(inbuf);
+			w->yr.first = (x < 0) ? SW_Model.startyr : yearto4digit(x);
 			break;
 
 		default:
