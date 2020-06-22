@@ -35,7 +35,6 @@ typedef struct {
     RealD cloudcov_daily     [MAX_DAYS+1], /* interpolated daily cloud cover (frac) */
           windspeed_daily    [MAX_DAYS+1], /* interpolated daily windspeed (m/s) */
           r_humidity_daily   [MAX_DAYS+1], /* interpolated daily relative humidity (%) */
-          transmission_daily [MAX_DAYS+1], /* interpolated daily frac light transmitted by atmos. */ /* used as input for petfunc, but algorithm cancels it out */
           snow_density_daily	[MAX_DAYS+1];	/* interpolated daily snow density (kg/m3) */
 
 } SW_SKY;
