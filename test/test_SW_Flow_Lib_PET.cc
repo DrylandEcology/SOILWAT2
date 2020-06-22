@@ -42,33 +42,100 @@
 
 extern char output_prefix[FILENAME_MAX];
 
-extern double (*test_solar_radiation_sloped)(RealD, RealD, RealD, RealD, RealD);
-
 
 namespace
 {
-
-  //Test svapor function by manipulating variable temp.
-  TEST(SW2_PET_Test, svapor)
+  // Test solar position
+  TEST(SW2_SolarPosition_Test, solar_position)
   {
-    //Declare INPUTS
-    double temp[] = {30,35,40,45,50,55,60,65,70,75,20,-35,-12.667,-1,0}; // These are test temperatures, in degrees Celcius.
-    double expOut[] = {32.171, 43.007, 56.963, 74.783, 97.353, 125.721, 161.113,
-                       204.958, 258.912, 324.881, 17.475, 0.243, 1.716, 4.191,
-                       4.509}; // These are the expected outputs for the svapor function.
+    double declin, reldist, lat,
+      six_hours = 6. * swPI / 12.,
+      // Min/max solar declination = angle of Earth's axial tilt/obliquity
+      //   value for 2020 based on Astronomical Almanac 2010
+      declin_max = 23.43668 * deg_to_rad,
+      declin_min = -declin_max,
+      // Min/max relative sun-earth distance
+      //   values based on Astronomical Almanac 2010
+      reldist_max = 1.01671,
+      reldist_min = 0.98329;
 
-    //Declare OUTPUTS
-    double vapor;
+    int i,
+      // Dates of equinoxes and solstices (day of nonleap year):
+      //   - March equinox (March 19-21)
+      //   - June solstice (Jun 20-22)
+      //   - September equinox (Sep 21-24)
+      //   - December solistice (Dec 20-23)
+      doy_Mar_equinox[2] = {79, 81},
+      doy_Sep_equinox[2] = {264, 266},
+      doy_Jun_solstice[2] = {171, 173},
+      doy_Dec_solstice[2] = {354, 357},
+      // Dates of perihelion and aphelion
+      doy_perihelion[2] = {2, 5},
+      doy_aphelion[2] = {184, 187};
 
-    //Begin TEST
-    for (int i = 0; i <15; i++) {
-      vapor = svapor(temp[i]);
 
-      EXPECT_NEAR(expOut[i], vapor, tol3); // Testing input array temp[], expected output is expOut[].
+    for (i = 1; i <= 366; i++) {
+      //------ Relative sun-earth distance
+      reldist = sqrt(1. / sun_earth_distance_squaredinverse(i));
+
+      if (i >= doy_perihelion[0] && i <= doy_perihelion[1]) {
+        // Test: sun-earth distance reaches min c. 14 days after Dec solstice
+        EXPECT_NEAR(reldist, reldist_min, tol3) << "doy = " << i;
+
+      } else if (i >= doy_aphelion[0] && i <= doy_aphelion[1]) {
+        // Test: sun-earth distance reaches max c. 14 days after Jun solstice
+        EXPECT_NEAR(reldist, reldist_max, tol3) << "doy = " << i;
+
+      } else {
+        EXPECT_LE(reldist, reldist_max + tol3) << "doy = " << i;
+        EXPECT_GE(reldist, reldist_min - tol3) << "doy = " << i;
+      }
+
+
+      //------ Solar declination
+      declin = solar_declination(i);
+
+      // Test: solar declination changes sign on equinox
+      if (i <= doy_Mar_equinox[0] || i > doy_Sep_equinox[1]) {
+        EXPECT_LT(declin, 0.) << "doy = " << i;
+
+      } else if (i > doy_Mar_equinox[1] && i <= doy_Sep_equinox[0]) {
+        EXPECT_GT(declin, 0.) << "doy = " << i;
+      }
+
+      // Test: solar declination reaches max/min value on solstice
+      if (i >= doy_Jun_solstice[0] && i <= doy_Jun_solstice[1]) {
+        EXPECT_NEAR(declin, declin_max, tol3) << "doy = " << i;
+
+      } else if (i >= doy_Dec_solstice[0] && i <= doy_Dec_solstice[1]) {
+        EXPECT_NEAR(declin, declin_min, tol3) << "doy = " << i;
+
+      } else {
+        EXPECT_LE(declin, declin_max + tol3) << "doy = " << i;
+        EXPECT_GE(declin, declin_min - tol3) << "doy = " << i;
+      }
+
+
+      //------ Sunset hour angle on horizontal surface
+      // Test: every day has six hour of possible sunshine on equator
+      EXPECT_NEAR(
+        sunset_hourangle(0., declin),
+        six_hours,
+        tol6
+      ) << "doy = " << i;
     }
 
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
+
+    // Sunset hour angle on horizontal surface
+    // Test: every location has six hours of possible sunshine on equinoxes
+    for (i = 0; i <= 10; i++) {
+      lat = (-90. + 180. * (i - 0.) / 10.) * deg_to_rad;
+      EXPECT_NEAR(
+        sunset_hourangle(lat, 0.),
+        six_hours,
+        tol3
+      ) << "lat = " << lat;
+    }
   }
 
 
@@ -130,97 +197,27 @@ namespace
     }
   }
 
-  TEST(SW2_PET_Test, SRS)
+
+
+
+  // Test saturated vapor pressure function
+  TEST(SW2_PET_Test, svapor)
   {
-    unsigned int doy;
-    double
-      rlat1 = 45 * deg_to_rad,
-      rlat2 = 39.74 * deg_to_rad, // Boulder, CO
-      sdec, ahou1, ahou2,
-      c = 1440. / swPI * 1.952;
+    //Declare INPUTS
+    double temp[] = {30,35,40,45,50,55,60,65,70,75,20,-35,-12.667,-1,0}; // These are test temperatures, in degrees Celcius.
+    double expOut[] = {32.171, 43.007, 56.963, 74.783, 97.353, 125.721, 161.113,
+                       204.958, 258.912, 324.881, 17.475, 0.243, 1.716, 4.191,
+                       4.509}; // These are the expected outputs for the svapor function.
 
-    FILE *fp1, *fp2;
-    char fname_srs1[FILENAME_MAX], fname_srs2[FILENAME_MAX];
+    //Declare OUTPUTS
+    double vapor;
 
-    strcpy(fname_srs1, output_prefix);
-    strcat(fname_srs1, "SWFlowTestPET_SRS1.csv");
-    fp1 = OpenFile(fname_srs1, "w");
+    //Begin TEST
+    for (int i = 0; i <15; i++) {
+      vapor = svapor(temp[i]);
 
-    strcpy(fname_srs2, output_prefix);
-    strcat(fname_srs2, "SWFlowTestPET_SRS2.csv");
-    fp2 = OpenFile(fname_srs2, "w");
-
-    fprintf(
-      fp1,
-      "doy, rlat, c, Sr[0], "
-      "Srs[slp=0;asp=N], Srs[slp=1;asp=N], Srs[slp=10;asp=N], Srs[slp=45;asp=N], "
-      "Srs[slp=0;asp=E], Srs[slp=1;asp=E], Srs[slp=10;asp=E], Srs[slp=45;asp=E], "
-      "Srs[slp=0;asp=S], Srs[slp=1;asp=S], Srs[slp=10;asp=S], Srs[slp=45;asp=S], "
-      "Srs[slp=0;asp=W], Srs[slp=1;asp=W], Srs[slp=10;asp=W], Srs[slp=45;asp=W] "
-      "\n"
-    );
-
-    fprintf(
-      fp2,
-      "doy, rlat, c, Sr[0], "
-      "Srs[slp=40;asp=S], Srs[slp=90;asp=N], Srs[slp=90;asp=E], Srs[slp=90;asp=S], Srs[slp=90;asp=W] "
-      "\n"
-    );
-
-    for (doy = 1; doy <= 366; doy++) {
-      sdec = solar_declination(doy);
-      ahou1 = sunset_hourangle(rlat1, sdec);
-      ahou2 = sunset_hourangle(rlat2, sdec);
-
-      fprintf(
-        fp1,
-        "%d, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n",
-        doy,
-        rlat1, c,
-        solar_radiation_TOA(rlat1, 0., -1., ahou1, sdec),
-
-        test_solar_radiation_sloped(rlat1, 0., 0., ahou1, sdec),
-        test_solar_radiation_sloped(rlat1, 1., 0., ahou1, sdec),
-        test_solar_radiation_sloped(rlat1, 10., 0., ahou1, sdec),
-        test_solar_radiation_sloped(rlat1, 45., 0., ahou1, sdec),
-
-        test_solar_radiation_sloped(rlat1, 0., 90., ahou1, sdec),
-        test_solar_radiation_sloped(rlat1, 1., 90., ahou1, sdec),
-        test_solar_radiation_sloped(rlat1, 10., 90., ahou1, sdec),
-        test_solar_radiation_sloped(rlat1, 45., 90., ahou1, sdec),
-
-        test_solar_radiation_sloped(rlat1, 0., 180., ahou1, sdec),
-        test_solar_radiation_sloped(rlat1, 1., 180., ahou1, sdec),
-        test_solar_radiation_sloped(rlat1, 10., 180., ahou1, sdec),
-        test_solar_radiation_sloped(rlat1, 45., 180., ahou1, sdec),
-
-        test_solar_radiation_sloped(rlat1, 0., 270., ahou1, sdec),
-        test_solar_radiation_sloped(rlat1, 1., 270., ahou1, sdec),
-        test_solar_radiation_sloped(rlat1, 10., 270., ahou1, sdec),
-        test_solar_radiation_sloped(rlat1, 45., 270., ahou1, sdec)
-      );
-
-      fflush(fp1);
-
-      fprintf(
-        fp2,
-        "%d, %f, %f, %f, %f, %f, %f, %f, %f\n",
-        doy,
-        rlat2, c,
-        solar_radiation_TOA(rlat2, 0., -1., ahou2, sdec),
-
-        test_solar_radiation_sloped(rlat2, 40., 180., ahou2, sdec),
-        test_solar_radiation_sloped(rlat2, 90., 0., ahou2, sdec),
-        test_solar_radiation_sloped(rlat2, 90., 90., ahou2, sdec),
-        test_solar_radiation_sloped(rlat2, 90., 180., ahou2, sdec),
-        test_solar_radiation_sloped(rlat2, 90., 270., ahou2, sdec)
-      );
-
-      fflush(fp2);
+      EXPECT_NEAR(expOut[i], vapor, tol3);
     }
-
-    CloseFile(&fp1);
-    CloseFile(&fp2);
   }
 
 

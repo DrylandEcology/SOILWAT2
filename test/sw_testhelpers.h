@@ -3,7 +3,8 @@
 
 #define length(array) (sizeof(array) / sizeof(*(array))) //get length of an array
 
-const double tol3 = 1e-3, tol6 = 1e-6, tol9 = 1e-9;
+static const double
+  tol0 = 1e-0, tol1 = 1e-1, tol2 = 1e-2, tol3 = 1e-3, tol6 = 1e-6, tol9 = 1e-9;
 
 
 void Reset_SOILWAT2_after_UnitTest(void);
