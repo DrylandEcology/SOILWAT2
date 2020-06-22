@@ -60,10 +60,13 @@ typedef struct {
 
 typedef struct {
 
-	Bool use_markov, /* swTRUE=use markov for any year missing a weather */
-	/*      file, which means markov must be initialized */
-	/* swFALSE = fail if any weather file is missing.  */
-	use_snow;
+	Bool
+		use_weathergenerator_only,
+			// swTRUE: set use_weathergenerator = swTRUE and ignore weather inputs
+		use_weathergenerator,
+			// swTRUE: use weather generator for missing weather input (values/files)
+			// swFALSE: fail if any weather input is missing (values/files)
+		use_snow;
 	RealD pct_snowdrift, pct_snowRunoff;
 	TimeInt days_in_runavg;
 	SW_TIMES yr;

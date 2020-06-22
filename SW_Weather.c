@@ -113,9 +113,9 @@ void SW_WTH_clear_runavg_list(void) {
 
 static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
 	/* --------------------------------------------------- */
-	/* If use_markov=swFALSE and no weather file found, we won't
+	/* If use_weathergenerator = swFALSE and no weather file found, we won't
 	 * get this far because the new_year() will fail, so if
-	 * no weather file found and we make it here, use_markov=swTRUE
+	 * no weather file found and we make it here, use_weathergenerator = swTRUE
 	 * and we call mkv_today().  Otherwise, we're using this
 	 * year's weather file and this logic sets today's value
 	 * to yesterday's if today's is missing.  This may not
@@ -147,7 +147,7 @@ static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
 		} else {
 			// some of today's values are missing
 
-			if (SW_Weather.use_markov) {
+			if (SW_Weather.use_weathergenerator) {
 				// if weather generator is turned on then use it for all values
 				*ppt = w->now.ppt[Yesterday]; /* reqd for markov */
 				SW_MKV_today(doy, tmax, tmin, ppt);
@@ -212,7 +212,7 @@ void SW_WTH_deconstruct(void)
 		}
 	}
 
-	if (SW_Weather.use_markov) {
+	if (SW_Weather.use_weathergenerator) {
 		SW_MKV_deconstruct();
 	}
 
@@ -251,7 +251,9 @@ void SW_WTH_init_run(void) {
     2. An entire year is missing (file `weath.xxxx` for year `xxxx` is absent)
     3. No daily weather input files are available
 
-  SOILWAT2 may be set up such that only the weather generator is used:
+  SOILWAT2 may be set up such that the weather generator is exclusively:
+    - Set the weather generator to exclusive use
+  or
     1. Turn on the weather generator
     2. Set the "first year to begin historical weather" to a year after
        the last simulated year
@@ -265,7 +267,10 @@ void SW_WTH_new_year(void) {
 
 	_clear_runavg();
 
-	if (SW_Model.year < SW_Weather.yr.first) {
+	if (
+		SW_Weather.use_weathergenerator_only ||
+		SW_Model.year < SW_Weather.yr.first
+	) {
 		weth_found = swFALSE;
 
 	} else {
@@ -276,7 +281,7 @@ void SW_WTH_new_year(void) {
 		#endif
 	}
 
-	if (!weth_found && !SW_Weather.use_markov) {
+	if (!weth_found && !SW_Weather.use_weathergenerator) {
 		LogError(
 		  logfp,
 		  LOGFATAL,
@@ -372,9 +377,17 @@ void SW_WTH_read(void) {
 		case 2:
 			w->pct_snowRunoff = atoi(inbuf);
 			break;
+
 		case 3:
-			w->use_markov = itob(atoi(inbuf));
+			x = atoi(inbuf);
+			if (x > 1) {
+				w->use_weathergenerator_only = w->use_weathergenerator = swTRUE;
+			} else {
+				w->use_weathergenerator_only = swFALSE;
+				w->use_weathergenerator = itob(x);
+			}
 			break;
+
 		case 4:
 			w->yr.first = yearto4digit(atoi(inbuf));
 			break;
@@ -382,6 +395,7 @@ void SW_WTH_read(void) {
 			w->days_in_runavg = atoi(inbuf);
 			runavg_list = (RealD *) Mem_Calloc(w->days_in_runavg, sizeof(RealD), "SW_WTH_read()");
 			break;
+
 		default:
 			if (lineno == 6 + MAX_MONTHS)
 				break;
@@ -408,7 +422,7 @@ void SW_WTH_read(void) {
 	w->yr.last = SW_Model.endyr;
 	w->yr.total = w->yr.last - w->yr.first + 1;
 
-	if (!w->use_markov && SW_Model.startyr < w->yr.first) {
+	if (!w->use_weathergenerator && SW_Model.startyr < w->yr.first) {
     LogError(
       logfp,
       LOGFATAL,

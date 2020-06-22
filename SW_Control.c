@@ -266,7 +266,7 @@ void SW_CTL_read_inputs_from_disk(void) {
   if (debug) swprintf(" > 'climate'");
   #endif
 
-  if (SW_Weather.use_markov) {
+  if (SW_Weather.use_weathergenerator) {
     SW_MKV_setup();
     #ifdef SWDEBUG
     if (debug) swprintf(" > 'weather generator'");
