@@ -161,8 +161,6 @@ RealD lyrSWCBulk[MAX_LAYERS], lyrDrain[MAX_LAYERS],
 	lyrSWCBulk_FieldCaps[MAX_LAYERS], lyrSWCBulk_Saturated[MAX_LAYERS],
 	lyrSWCBulk_Wiltpts[MAX_LAYERS], lyrSWCBulk_HalfWiltpts[MAX_LAYERS],
 	lyrSWCBulk_Mins[MAX_LAYERS],
-	lyrpsisMatric[MAX_LAYERS], lyrthetasMatric[MAX_LAYERS],
-	lyrBetasMatric[MAX_LAYERS], lyrBetaInvMatric[MAX_LAYERS],
 
 	lyroldsTemp[MAX_LAYERS], lyrsTemp[MAX_LAYERS];
 
@@ -224,8 +222,7 @@ void SW_FLW_init_run(void) {
 		lyrEvap_BareGround[i] = 0;
 		lyrEvapCo[i] = lyrSWCBulk_FieldCaps[i] = 0;
 		lyrWidths[i] = lyrSWCBulk_Wiltpts[i] = lyrSWCBulk_HalfWiltpts[i] = 0;
-		lyrSWCBulk_Mins[i] = lyrpsisMatric[i] = 0;
-		lyrthetasMatric[i] = lyrBetasMatric[i] = lyrBetaInvMatric[i] = 0;
+		lyrSWCBulk_Mins[i] = 0;
 		lyrImpermeability[i] = lyrSWCBulk_Saturated[i] = 0;
 		lyroldsTemp[i] = lyrsTemp[i] = lyrbDensity[i] = 0;
 	}
@@ -756,10 +753,6 @@ static void records2arrays(void) {
 			lyrSWCBulk_Wiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt;
 			lyrSWCBulk_HalfWiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt / 2.;
 			lyrSWCBulk_Mins[i] = SW_Site.lyr[i]->swcBulk_min;
-			lyrpsisMatric[i] = SW_Site.lyr[i]->psisMatric;
-			lyrthetasMatric[i] = SW_Site.lyr[i]->thetasMatric;
-			lyrBetasMatric[i] = SW_Site.lyr[i]->bMatric;
-			lyrBetaInvMatric[i] = SW_Site.lyr[i]->binverseMatric;
 			lyrImpermeability[i] = SW_Site.lyr[i]->impermeability;
 			lyrSWCBulk_Saturated[i] = SW_Site.lyr[i]->swcBulk_saturated;
 			lyrbDensity[i] = SW_Site.lyr[i]->soilBulk_density;
