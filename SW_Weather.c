@@ -68,7 +68,6 @@ SW_WEATHER SW_Weather; /* declared here, externed elsewhere */
 */
 Bool weth_found;
 
-RealD *runavg_list; /* used in run_tmp_avg() */
 
 /* =================================================== */
 /*                Module-Level Variables               */
@@ -95,21 +94,6 @@ void _clear_hist_weather(void) {
 		wh->ppt[d] = wh->temp_max[d] = wh->temp_min[d] = SW_MISSING;
 }
 
-static void _clear_runavg(void) {
-	/* --------------------------------------------------- */
-	TimeInt i;
-
-	for (i = 0; i < SW_Weather.days_in_runavg; i++)
-		runavg_list[i] = SW_MISSING;
-}
-
-/**
-@brief Clears memory for runavg_list.
-*/
-void SW_WTH_clear_runavg_list(void) {
-	free(runavg_list);
-	runavg_list = NULL;
-}
 
 static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
 	/* --------------------------------------------------- */
@@ -215,8 +199,6 @@ void SW_WTH_deconstruct(void)
 	if (SW_Weather.use_weathergenerator) {
 		SW_MKV_deconstruct();
 	}
-
-	SW_WTH_clear_runavg_list();
 }
 
 /**
@@ -264,8 +246,6 @@ void SW_WTH_init_run(void) {
     - otherwise, \ref weth_found is `swFALSE`
 */
 void SW_WTH_new_year(void) {
-
-	_clear_runavg();
 
 	if (
 		SW_Weather.use_weathergenerator_only ||
@@ -357,7 +337,7 @@ void SW_WTH_new_day(void) {
 void SW_WTH_read(void) {
 	/* =================================================== */
 	SW_WEATHER *w = &SW_Weather;
-	const int nitems = 18;
+	const int nitems = 17;
 	FILE *f;
 	int lineno = 0, month, x;
 	RealF sppt, stmax, stmin;
@@ -391,13 +371,9 @@ void SW_WTH_read(void) {
 		case 4:
 			w->yr.first = yearto4digit(atoi(inbuf));
 			break;
-		case 5:
-			w->days_in_runavg = atoi(inbuf);
-			runavg_list = (RealD *) Mem_Calloc(w->days_in_runavg, sizeof(RealD), "SW_WTH_read()");
-			break;
 
 		default:
-			if (lineno == 6 + MAX_MONTHS)
+			if (lineno == 5 + MAX_MONTHS)
 				break;
 
 			x = sscanf(
@@ -425,9 +401,11 @@ void SW_WTH_read(void) {
 
 	SW_WeatherPrefix(w->name_prefix);
 	CloseFile(&f);
-	if (lineno < nitems - 1) {
+
+	if (lineno < nitems) {
 		LogError(logfp, LOGFATAL, "%s : Too few input lines.", MyFileName);
 	}
+
 	w->yr.last = SW_Model.endyr;
 	w->yr.total = w->yr.last - w->yr.first + 1;
 
@@ -579,9 +557,6 @@ void SW_WTH_SetMemoryRefs( void) {
 	 this, and will be checked via CheckMemoryRefs() after
 	 this, most likely in the main() function.
 	 */
-
-	NoteMemoryRef(runavg_list);
-
 }
 
 #endif

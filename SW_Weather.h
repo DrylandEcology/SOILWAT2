@@ -68,7 +68,6 @@ typedef struct {
 			// swFALSE: fail if any weather input is missing (values/files)
 		use_snow;
 	RealD pct_snowdrift, pct_snowRunoff;
-	TimeInt days_in_runavg;
 	SW_TIMES yr;
   RealD
     scale_precip[MAX_MONTHS],
@@ -100,7 +99,6 @@ void SW_WTH_new_day(void);
 void SW_WTH_new_year(void);
 void SW_WTH_sum_today(void);
 void SW_WTH_end_day(void);
-void SW_WTH_clear_runavg_list(void);
 
 
 #ifdef DEBUG_MEM
