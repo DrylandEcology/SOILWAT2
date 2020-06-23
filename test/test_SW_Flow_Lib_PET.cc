@@ -179,12 +179,101 @@ namespace
 
       EXPECT_LE(declin, declin_max) << "doy = " << i;
       EXPECT_GE(declin, declin_min) << "doy = " << i;
+  // Test extraterrestrial solar radiation
+  //   Comparison against examples by Duffie & Beckman 2013 are expected to
+  //   deviate in value, but show similar patterns, because equations for
+  //   (i) sun-earth distance equation and (ii) solar declination differ
+  TEST(SW2_SolarRadiation_Test, extraterrestrial)
+  {
+    unsigned int k1, k2, doy;
+    double
+      lat,
+      lat_Madison_WI = 43. * deg_to_rad, // Duffie & Beckman 2013: Ex 1.6.1
+      lat_StLouis_MO = 38.6 * deg_to_rad, // Duffie & Beckman 2013: Ex 2.11.1
+      int_cos_theta[2], int_sin_beta[2],
+      H_o[2],
+      res_ratio;
+
+    // Duffie & Beckman 2013: Table 1.10.1
+    unsigned int doys_Table1_6_1[12] = {
+      17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344
+    };
+    double
+      lats_Table1_10_1[9] = {85., 45., 30., 15., 0., -10., -45., -60., -90.},
+      // values off at high polar latitudes
+      // during shifts between permanent sun and night
+      //   * lat = +85: Mar = 2.2, Sep = 6.4
+      //   * lat = -90: Mar = 6.2, Sep = 1.4, Oct = 20.4
+      H_oh_Table1_10_1[9][12] = {
+        {0.0, 0.0, NAN, 19.2, 37.0, 44.7, 41.0, 26.4, NAN, 0.0, 0.0, 0.0},
+        {12.2, 17.4, 25.1, 33.2, 39.2, 41.7, 40.4, 35.3, 27.8, 19.6, 13.3, 10.7},
+        {21.3, 25.7, 31.5, 36.8, 40.0, 41.1, 40.4, 37.8, 33.2, 27.4, 22.2, 19.9},
+        {29.6, 32.6, 35.9, 38.0, 38.5, 38.4, 38.3, 38.0, 36.4, 33.4, 30.1, 28.5},
+        {36.2, 37.4, 37.8, 36.7, 34.8, 33.5, 34.0, 35.7, 37.2, 37.3, 36.3, 35.7},
+        {39.5, 39.3, 37.7, 34.5, 31.1, 29.2, 29.9, 32.9, 36.3, 38.5, 39.3, 39.4},
+        {42.8, 37.1, 28.6, 19.6, 12.9, 10.0, 11.3, 16.6, 24.9, 34.0, 41.2, 44.5},
+        {41.0, 32.4, 21.2, 10.9, 4.5, 2.2, 3.1, 8.0, 17.0, 28.4, 38.7, 43.7},
+        {43.3, 27.8, NAN, 0.0, 0.0, 0.0, 0.0, 0.0, NAN, NAN, 39.4, 47.8}
+      };
+
+    for (k1 = 0; k1 < 9; k1++) {
+      lat = lats_Table1_10_1[k1] * deg_to_rad;
+
+      for (k2 = 0; k2 < 12; k2++) {
+        if (std::isfinite(H_oh_Table1_10_1[k1][k2])) {
+          doy = doys_Table1_6_1[k2];
+
+          sun_hourangles(doy, lat, 0., 0., int_cos_theta, int_sin_beta);
+          solar_radiation_extraterrestrial(doy, int_cos_theta, H_o);
+
+          if (ZRO(H_oh_Table1_10_1[k1][k2])) {
+            // Check for small absolute difference
+            EXPECT_NEAR(H_o[0], H_oh_Table1_10_1[k1][k2], tol6)
+              << "Duffie & Beckman 2013: Table 1.10.1:"
+              << " latitude = " << lats_Table1_10_1[k1]
+              << ", month = " << k2 + 1
+              << " int(cos(theta)) = " << int_cos_theta[0] << "\n";
+
+          } else {
+            // Check for small relative difference (< 10%)
+            res_ratio = H_o[0] / H_oh_Table1_10_1[k1][k2];
+
+            EXPECT_NEAR(res_ratio, 1., tol1)
+              << "Duffie & Beckman 2013: Table 1.10.1:"
+              << " latitude = " << lats_Table1_10_1[k1]
+              << ", month = " << k2 + 1
+              << " int(cos(theta)) = " << int_cos_theta[0] << "\n";
+          }
+        }
+      }
+    }
 
 
       // Sunset hour angle: every day has six hours on equator
       ahou = sunset_hourangle(rlat_equator, declin);
       EXPECT_NEAR(ahou, six_hours, tol6) << "doy = " << i;
     }
+    // Duffie & Beckman 2013: Example 1.10.1
+    doy = 105;
+    sun_hourangles(doy, lat_Madison_WI, 0., 0., int_cos_theta, int_sin_beta);
+    solar_radiation_extraterrestrial(doy, int_cos_theta, H_o);
+    EXPECT_NEAR(H_o[0], 33.8, 2. * tol1)
+      << "Duffie & Beckman 2013: Example 1.10.1\n";
+
+    // Duffie & Beckman 2013: Example 2.11.1
+    doy = 246;
+    sun_hourangles(doy, lat_StLouis_MO, 0., 0., int_cos_theta, int_sin_beta);
+    solar_radiation_extraterrestrial(doy, int_cos_theta, H_o);
+    EXPECT_NEAR(H_o[0], 33.0, 7. * tol1)
+      << "Duffie & Beckman 2013: Example 2.11.1\n";
+
+    // Duffie & Beckman 2013: Example 2.12.1
+    doy = 162;
+    sun_hourangles(doy, lat_Madison_WI, 0., 0., int_cos_theta, int_sin_beta);
+    solar_radiation_extraterrestrial(doy, int_cos_theta, H_o);
+    EXPECT_NEAR(H_o[0], 41.8, tol1)
+      << "Duffie & Beckman 2013: Example 2.12.1\n";
+  }
 
 
     // Loop through latitudes
