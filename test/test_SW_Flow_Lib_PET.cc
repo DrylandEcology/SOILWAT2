@@ -190,7 +190,7 @@ namespace
       lat,
       lat_Madison_WI = 43. * deg_to_rad, // Duffie & Beckman 2013: Ex 1.6.1
       lat_StLouis_MO = 38.6 * deg_to_rad, // Duffie & Beckman 2013: Ex 2.11.1
-      int_cos_theta[2], int_sin_beta[2],
+      sun_angles[7], int_cos_theta[2], int_sin_beta[2],
       H_o[2],
       res_ratio;
 
@@ -223,7 +223,10 @@ namespace
         if (std::isfinite(H_oh_Table1_10_1[k1][k2])) {
           doy = doys_Table1_6_1[k2];
 
-          sun_hourangles(doy, lat, 0., 0., int_cos_theta, int_sin_beta);
+          sun_hourangles(
+            doy, lat, 0., 0.,
+            sun_angles, int_cos_theta, int_sin_beta
+          );
           solar_radiation_extraterrestrial(doy, int_cos_theta, H_o);
 
           if (ZRO(H_oh_Table1_10_1[k1][k2])) {
@@ -232,7 +235,7 @@ namespace
               << "Duffie & Beckman 2013: Table 1.10.1:"
               << " latitude = " << lats_Table1_10_1[k1]
               << ", month = " << k2 + 1
-              << " int(cos(theta)) = " << int_cos_theta[0] << "\n";
+              << ", int(cos(theta)) = " << int_cos_theta[0] << "\n";
 
           } else {
             // Check for small relative difference (< 10%)
@@ -242,37 +245,47 @@ namespace
               << "Duffie & Beckman 2013: Table 1.10.1:"
               << " latitude = " << lats_Table1_10_1[k1]
               << ", month = " << k2 + 1
-              << " int(cos(theta)) = " << int_cos_theta[0] << "\n";
+              << ", int(cos(theta)) = " << int_cos_theta[0] << "\n";
           }
         }
       }
+
+      SW_PET_init_run(); // Re-init radiation memoization (for next location)
     }
 
 
-      // Sunset hour angle: every day has six hours on equator
-      ahou = sunset_hourangle(rlat_equator, declin);
-      EXPECT_NEAR(ahou, six_hours, tol6) << "doy = " << i;
-    }
     // Duffie & Beckman 2013: Example 1.10.1
     doy = 105;
-    sun_hourangles(doy, lat_Madison_WI, 0., 0., int_cos_theta, int_sin_beta);
+    sun_hourangles(
+      doy, lat_Madison_WI, 0., 0.,
+      sun_angles, int_cos_theta, int_sin_beta
+    );
     solar_radiation_extraterrestrial(doy, int_cos_theta, H_o);
     EXPECT_NEAR(H_o[0], 33.8, 2. * tol1)
       << "Duffie & Beckman 2013: Example 1.10.1\n";
+    SW_PET_init_run(); // Re-init radiation memoization
 
     // Duffie & Beckman 2013: Example 2.11.1
     doy = 246;
-    sun_hourangles(doy, lat_StLouis_MO, 0., 0., int_cos_theta, int_sin_beta);
+    sun_hourangles(
+      doy, lat_StLouis_MO, 0., 0.,
+      sun_angles, int_cos_theta, int_sin_beta
+    );
     solar_radiation_extraterrestrial(doy, int_cos_theta, H_o);
     EXPECT_NEAR(H_o[0], 33.0, 7. * tol1)
       << "Duffie & Beckman 2013: Example 2.11.1\n";
+    SW_PET_init_run(); // Re-init radiation memoization
 
     // Duffie & Beckman 2013: Example 2.12.1
     doy = 162;
-    sun_hourangles(doy, lat_Madison_WI, 0., 0., int_cos_theta, int_sin_beta);
+    sun_hourangles(
+      doy, lat_Madison_WI, 0., 0.,
+      sun_angles, int_cos_theta, int_sin_beta
+    );
     solar_radiation_extraterrestrial(doy, int_cos_theta, H_o);
     EXPECT_NEAR(H_o[0], 41.8, tol1)
       << "Duffie & Beckman 2013: Example 2.12.1\n";
+    SW_PET_init_run(); // Re-init radiation memoization
   }
 
 

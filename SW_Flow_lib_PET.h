@@ -21,12 +21,14 @@ extern "C" {
 /*                Function Definitions                 */
 /* --------------------------------------------------- */
 
+void SW_PET_init_run(void);
+
 double sun_earth_distance_squaredinverse(unsigned int doy);
 double solar_declination(unsigned int doy);
 double sunset_hourangle(double lat, double declin);
 
 void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
-  double int_cos_theta[], double int_sin_beta[]);
+  double sun_angles[], double int_cos_theta[], double int_sin_beta[]);
 
 void solar_radiation_extraterrestrial(unsigned int doy, double int_cos_theta[],
   double G_o[]);

@@ -34,6 +34,7 @@
 #include "SW_Model.h"
 #include "SW_Output.h"
 #include "SW_Site.h"
+#include "SW_Flow_lib_PET.h"
 #include "SW_Flow.h"
 #include "SW_SoilWater.h"
 #include "SW_VegEstab.h"
@@ -134,6 +135,7 @@ void SW_CTL_init_run(void) {
 	// SW_MDL_init_run() not needed
 	SW_WTH_init_run();
 	// SW_MKV_init_run() not needed
+	SW_PET_init_run();
 	SW_SKY_init_run();
 	SW_SIT_init_run();
 	// SW_VES_init_run() not needed
