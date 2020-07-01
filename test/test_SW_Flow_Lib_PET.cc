@@ -677,20 +677,21 @@ namespace
   // Test saturated vapor pressure function
   TEST(SW2_PET_Test, svapor)
   {
-    //Declare INPUTS
-    double temp[] = {30,35,40,45,50,55,60,65,70,75,20,-35,-12.667,-1,0}; // These are test temperatures, in degrees Celcius.
-    double expOut[] = {32.171, 43.007, 56.963, 74.783, 97.353, 125.721, 161.113,
-                       204.958, 258.912, 324.881, 17.475, 0.243, 1.716, 4.191,
-                       4.509}; // These are the expected outputs for the svapor function.
+    int i;
+    double
+      // Temperature [C]
+      temp_C[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60},
 
-    //Declare OUTPUTS
-    double vapor;
+      // Expected saturated vapor pressure
+      expected_svp[] = {
+        0.3889344, 0.9389376, 2.1197755,
+        4.5085235,
+        9.0911046, 17.4746454, 32.1712519, 56.9627354, 97.3531630, 161.1126950
+      };
 
-    //Begin TEST
-    for (int i = 0; i <15; i++) {
-      vapor = svapor(temp[i]);
-
-      EXPECT_NEAR(expOut[i], vapor, tol3);
+    for (i = 0; i < 10; i++)
+    {
+      EXPECT_NEAR(svapor(temp_C[i]), expected_svp[i], tol6);
     }
   }
 
