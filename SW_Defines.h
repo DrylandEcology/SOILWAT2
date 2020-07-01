@@ -41,9 +41,25 @@ extern "C" {
 #define MAX_NYEAR 2500  /**< An integer representing the max calendar year that is supported. The number just needs to be reasonable, it is an artifical limit. */
 
 #define SW_MISSING     999.     /* value to use as MISSING */
-#define swPI          3.141592653589793238462643383279502884197169399375
-#define swPI2         6.28318530717958
-#define swPI_half     1.57079632679490
+
+
+/* M_PI and M_PI_2 from <math.h> if implementation conforms to POSIX extension
+   but may not be defined for any implementation that conforms to the C standard
+*/
+#ifdef M_PI
+  #define swPI M_PI
+#else
+  #define swPI        3.141592653589793238462643383279502884197169399375
+#endif
+
+#define swPI2         6.28318530717958647692528676655900577
+
+#ifdef M_PI_2
+  #define swPI_half M_PI_2
+#else
+  #define swPI_half   1.57079632679489661923132169163975144
+#endif
+
 #define deg_to_rad    0.0174532925199433 /**< Convert arc-degrees to radians, i.e., x * deg_to_rad with deg_to_rad = pi / 180 */
 #define rad_to_deg    57.29577951308232 /**< Convert radians to arc-degrees, i.e., x * rad_to_deg with rad_to_deg = 180 / pi */
 
