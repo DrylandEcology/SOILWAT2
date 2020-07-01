@@ -160,8 +160,16 @@ double sunset_hourangle(double lat, double declin)
 /** @brief Integrals of solar incidence angle and solar altitude angle
 
   This function calculates all possible sunrise and sunset hour angles
-  for a horizontal and a tilted surface based on equations developed
-  by Allen et al. 2006 @cite allen2006AaFM.
+  for a horizontal and a tilted surface for all latitudes, slopes, and aspects
+  based on equations developed by Allen et al. 2006 @cite allen2006AaFM.
+
+  Note that Duffie & Beckman 2013 @cite duffie2013 present an alternative
+  set of equations to calculate sunrise and sunset hour angles. While these
+  provide comparable outcomes to the Allen et al. equations
+  for sun-facing conditions, they produce, as implemented here, much more
+  self-shading and no two-period daylight outcomes. They are activated
+  if `sun_hourangles_Duffie2013_2205` is defined, e.g.,
+  `CPPFLAGS=-Dsun_hourangles_Duffie2013_2205 make bin`
 
   @note The function is memoized on `doy`.
     The other arguments latitude, slope, and aspect are fixed
@@ -176,20 +184,21 @@ double sunset_hourangle(double lat, double declin)
     A value of \ref SW_MISSING indicates no data, i.e., treat it as if slope = 0;
     South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi.
 
-  @param[out] sun_angles Array of size 7 returning with
-    0. indicator:
-       - sun never rises above horizontal surface = -2
-       - sun never rises above tilted surface = -1
-       - sun never sets = 0
-       - sun rises and sets once for tilted surface = 1
-       - sun rises and sets twice for tilted surface = 2
-    1. sunrise hour angle on horizontal surface -omega_s
-       (equal to the negative of the sunset hour angle on horizontal surface)
-    2. first sunrise hour angle on tilted surface
-    3. first sunset hour angle on tilted surface (if two periods of sunshine)
-    4. second sunrise hour angle on tilted surface (if two periods of sunshine)
-    5. final sunset hour angle on tilted surface
-    6. sunset hour angle on horizontal surface omega_s
+  @param[out] sun_angles Array of size 7 where the elements are as follows:
+
+      1. indicator:
+         - sun never rises above horizontal surface = -2
+         - sun never rises above tilted surface = -1
+         - sun never sets = 0
+         - sun rises and sets once for tilted surface = 1
+         - sun rises and sets twice for tilted surface = 2
+      2. sunrise hour angle on horizontal surface -omega_s
+         (equal to the negative of the sunset hour angle on horizontal surface)
+      3. first sunrise hour angle on tilted surface
+      4. first sunset hour angle on tilted surface (if two periods of sunshine)
+      5. second sunrise hour angle on tilted surface (if two periods of sunshine)
+      6. final sunset hour angle on tilted surface
+      7. sunset hour angle on horizontal surface omega_s
 
   @param[out] int_cos_theta Array of length 2 with
     daily integral during sunshine (one or two periods)
@@ -204,21 +213,24 @@ double sunset_hourangle(double lat, double declin)
 void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
  double sun_angles[], double int_cos_theta[], double int_sin_beta[])
 {
-  unsigned int i;
+  unsigned int
+    i,
+    doy0 = doy - 1; // doy is base1
 
-  if (missing(msun_angles[doy][0])) {
 
-    static const double tol3 = 0.001;
+  if (missing(msun_angles[doy0][0])) {
+
+    // (drs) set tolerance to 1e-9 instead of 1e-3 to minimize "edge" effects
+    static const double tol = 1e-9;
+
     double
       declin,
       a, b, c, g, h,
       f1, f2, f3, f4, f5,
       tmp, tmp1, tmp2, tmp3, X,
-      omega1, omega1x, trig_omega1, omega1b,
-      omega2, omega2x, trig_omega2, omega2b,
-      cos_theta_sunrise, cos_theta_sunset,
-      cos_theta1, cos_theta1x, cos_theta1b,
-      cos_theta2, cos_theta2x, cos_theta2b;
+      omega1, trig_omega1, omega1b, cos_theta1b,
+      omega2, trig_omega2, omega2b, cos_theta2b,
+      cos_theta_sunrise, cos_theta_sunset;
 
 
     // Calculate solar declination
@@ -228,27 +240,28 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
     //------ Horizontal surfaces: sunset and sunrise angles
     if ((declin + lat > swPI_half) || (declin + lat < -swPI_half)) {
       // sun never sets
-      msun_angles[doy][0] = 0;
-      msun_angles[doy][6] = swPI;
+      msun_angles[doy0][0] = 0;
+      msun_angles[doy0][6] = msun_angles[doy0][5] = swPI;
 
     } else if ((declin - lat > swPI_half) || (declin - lat < -swPI_half)) {
       // sun never rises
-      msun_angles[doy][0] = -2;
-      msun_angles[doy][6] = 0.;
+      msun_angles[doy0][0] = -2;
+      msun_angles[doy0][6] = msun_angles[doy0][5] = 0.;
 
     } else {
-      msun_angles[doy][0] = 1;
-      msun_angles[doy][6] = sunset_hourangle(lat, declin);
+      msun_angles[doy0][0] = 1;
+      msun_angles[doy0][6] = msun_angles[doy0][5] = sunset_hourangle(lat, declin);
     }
 
 
     // Sunrise hour angle on horizontal surface is
     // equal to the negative of the sunset hour angle
-    msun_angles[doy][1] = -msun_angles[doy][6];
+    msun_angles[doy0][1] = -msun_angles[doy0][6];
+    msun_angles[doy0][2] = -msun_angles[doy0][5];
 
 
     // Check that we have daylight
-    if (GE(msun_angles[doy][0], 0.)) {
+    if (GE(msun_angles[doy0][0], 0.)) {
 
       //------ Integrate on a horizontal surface from sunrise to sunset
       g = sin(declin) * sin(lat);
@@ -257,25 +270,28 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
 
       // Integrate the sine of the sun angle (= solar altitude angle)
       // above a horizontal surface from sunrise to sunset
-      tmp1 = 2. * squared(g) * msun_angles[doy][6] \
-           + 4. * g * h * sin(msun_angles[doy][6]) \
+      tmp1 = 2. * squared(g) * msun_angles[doy0][6] \
+           + 4. * g * h * sin(msun_angles[doy0][6]) \
            + squared(h) *
-           (msun_angles[doy][6] + 0.5 * sin(2. * msun_angles[doy][6]));
-      tmp2 = g * msun_angles[doy][6] + h * sin(msun_angles[doy][6]);
+             (msun_angles[doy0][6] + 0.5 * sin(2. * msun_angles[doy0][6]));
+      tmp2 = g * msun_angles[doy0][6] + h * sin(msun_angles[doy0][6]);
 
       // Allen et al. 2006: eq. 26
-      memoized_int_sin_beta[doy][0] = fmax(0., tmp1 / (2. * tmp2));
+      memoized_int_sin_beta[doy0][0] = fmax(0., tmp1 / (2. * tmp2));
 
 
       // Integrate the cosine of the solar incidence angle on a
       // horizontal surface from sunrise to sunset: Allen et al. 2006: eq. 35
-      // standardize by pi because integral is across half day (0 to sunset)
-      memoized_int_cos_theta[doy][0] = tmp2 / swPI;
+      // (drs): re-expressed eq. 35 with `g` and `h` via eq. 26
+      // (drs): standardize by pi because integral is for half day (0 to sunset)
+      memoized_int_cos_theta[doy0][0] = tmp2 / swPI;
 
 
 
       //------ Tilted surfaces: sunset and sunrise angles
       if (has_tilted_surface(slope, aspect)) {
+
+        // Calculate auxiliary variables
         a = sin(declin) * (
               cos(lat) * sin(slope) * cos(aspect) -
               sin(lat) * cos(slope)
@@ -286,103 +302,43 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
             );
         c = cos(declin) * sin(slope) * sin(aspect);
 
+
         // Calculate angle of indicence on tilted surface at
         // horizontal sunrise and sunrise hour angles
         cos_theta_sunrise =
-          -a + b * cos(msun_angles[doy][1]) + c * sin(msun_angles[doy][1]);
+          -a + b * cos(msun_angles[doy0][1]) + c * sin(msun_angles[doy0][1]);
         cos_theta_sunset =
-          -a + b * cos(msun_angles[doy][6]) + c * sin(msun_angles[doy][6]);
+          -a + b * cos(msun_angles[doy0][6]) + c * sin(msun_angles[doy0][6]);
+
 
         // Calculate candidate sunrise and sunset hour angles
         // on tilted surface (Eq. 11-13)
         tmp3 = squared(b) + squared(c);
         tmp = tmp3 - squared(a);
-        tmp = sqrt(GT(tmp, 0.) ? tmp : 0.0001); // see Step Di (Appendix A)
+        tmp = (tmp > 0.) ? sqrt(tmp) : tol;
 
-    ///*
         // Calculation of omega via asin(sin(omega)) as per Eq. 12-13
         tmp1 = a * c;
         tmp2 = b * tmp;
 
         trig_omega1 = (tmp1 - tmp2) / tmp3;
         // see Step Diii (Appendix A)
-        trig_omega1 = fmax(-1., fmin(1., trig_omega1));
+        trig_omega1 = fmax(-1. + tol, fmin(1. - tol, trig_omega1));
         omega1 = asin(trig_omega1);
 
         trig_omega2 = (tmp1 + tmp2) / tmp3;
         // see Step Diii (Appendix A)
-        trig_omega2 = fmax(-1., fmin(1., trig_omega2));
+        trig_omega2 = fmax(-1. + tol, fmin(1. - tol, trig_omega2));
         omega2 = asin(trig_omega2);
-    //*/
-
-        /*
-        Calculation of omega via acos(cos(omega))
-        Problem: omega can take values in [-pi, +pi]; however,
-                C99 asin() returns values in [-pi/2, +pi/2] --> we double pack
-        Solution: C99 acos() returns values in [0, pi] & account for sign
-
-        Derivation:
-          Start with Eq. 10: cos(omega) = a / b - c / b * sin(omega)
-          Solve for cos(omega) instead of sin(omega) as done in Eqs 11-13:
-            c / b * sin(omega) = a / b - cos(omega)
-            sin(omega) = a / c - b / c * cos(omega)
-            cos(omega) = (a * b - c * sqrt(b^2 + c^2 - a^2)) / (b^2 + c^2)
-        */
-    /*
-        tmp1 = a * b;
-        tmp2 = c * tmp;
-
-        trig_omega1 = (tmp1 + tmp2) / tmp3;
-        trig_omega1 = fmax(-1., fmin(1., trig_omega1));
-        omega1 = -acos(trig_omega1);
-
-        trig_omega2 = (tmp1 - tmp2) / tmp3;
-        trig_omega2 = fmax(-1., fmin(1., trig_omega2));
-        omega2 = acos(trig_omega2);
-    */
-    /*
-    double
-      sin_omega1, sin_omega2, somega1, somega2,
-      cos_omega1, cos_omega2, comega1, comega2;
-
-    tmp1 = a * c;
-    tmp2 = b * tmp;
-
-    sin_omega1 = (tmp1 - tmp2) / tmp3;
-    sin_omega1 = fmax(-1., fmin(1., sin_omega1)); // see Step Diii (Appendix A)
-    somega1 = asin(sin_omega1);
-
-    sin_omega2 = (tmp1 + tmp2) / tmp3;
-    sin_omega2 = fmax(-1., fmin(1., sin_omega2)); // see Step Diii (Appendix A)
-    somega2 = asin(sin_omega2);
-
-    tmp1 = a * b;
-    tmp2 = c * tmp;
-
-    cos_omega1 = (tmp1 + tmp2) / tmp3;
-    cos_omega1 = fmax(-1., fmin(1., cos_omega1));
-    comega1 = -acos(cos_omega1);
-
-    cos_omega2 = (tmp1 - tmp2) / tmp3;
-    cos_omega2 = fmax(-1., fmin(1., cos_omega2));
-    comega2 = acos(cos_omega2);
 
 
-    printf(
-      ", %f, %f"
-      ", %f, %f, %f, %f"
 
-      ", %f, %f"
-      ", %f, %f, %f, %f",
+      #ifndef sun_hourangles_Duffie2013_2205
+        // Use Allen et al. 2006 to calculate tilted sunrise/sunset
 
-      sin_omega1, sin_omega2,
-      somega1, somega2, -swPI - somega1, swPI - somega2,
-
-      cos_omega1, cos_omega2,
-      comega1, comega2, -swPI - comega1, swPI - comega2
-    );
-
-    */
+        double
+          omega1x, cos_theta1, cos_theta1x,
+          omega2x, cos_theta2, cos_theta2x;
 
         // Candidate sunrise and sunset hour angles on tilted surface
         cos_theta1 = -a + b * cos(omega1) + c * sin(omega1);
@@ -391,82 +347,137 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
 
         // Step B. Determine the beginning integration limit representing
         // the initial incidence of the center of the solar beam on the slope
-        if (LE(cos_theta_sunrise, cos_theta1) && LT(cos_theta1, tol3)) {
+        if (
+          ((cos_theta_sunrise < cos_theta1) ||
+          EQ_w_tol(cos_theta_sunrise, cos_theta1, tol)) &&
+          (cos_theta1 < tol)
+        ) {
+
           // Sunrise on tilted surface is after sunrise on horizontal surface
-          msun_angles[doy][2] = omega1;
+          msun_angles[doy0][2] = omega1;
 
         } else {
           // Sunsrise occurs with the sun above the tilted surface
           omega1x = -swPI - omega1;
           cos_theta1x = -a + b * cos(omega1x) + c * sin(omega1x);
 
-          if (GT(cos_theta1x, tol3)) {
-            msun_angles[doy][2] = msun_angles[doy][1];
-
-          } else if (
-            LE(cos_theta1x, tol3) &&
-            LE(omega1x, msun_angles[doy][1])
+          if (
+            (cos_theta1x > tol) ||
+            ((cos_theta1x <= tol) &&
+            ((omega1x < msun_angles[doy0][1]) ||
+            EQ_w_tol(omega1x, msun_angles[doy0][1], tol)))
           ) {
-            msun_angles[doy][2] = msun_angles[doy][1];
+            msun_angles[doy0][2] = msun_angles[doy0][1];
 
           } else {
-            msun_angles[doy][2] = omega1x;
+            msun_angles[doy0][2] = omega1x;
           }
         }
 
-        if (LT(msun_angles[doy][2], msun_angles[doy][1])) {
+        if (msun_angles[doy0][2] < msun_angles[doy0][1]) {
           // prevent "transparent" earth
-          msun_angles[doy][2] = msun_angles[doy][1];
+          msun_angles[doy0][2] = msun_angles[doy0][1];
         }
 
 
         // Step C. Determine the ending integration limit representing
         // the final incidence of the center of the solar beam on the slope
-        if (LE(cos_theta_sunset, cos_theta2) && LT(cos_theta2, tol3)) {
+        if (
+          ((cos_theta_sunset < cos_theta2) ||
+          EQ_w_tol(cos_theta_sunset, cos_theta2, tol)) &&
+          (cos_theta2 < tol)
+        ) {
+
           // Sunrise on tilted surface is before sunset on horizontal surface
-          msun_angles[doy][5] = omega2;
+          msun_angles[doy0][5] = omega2;
 
         } else {
           // Sunset occurs with the sun above the tilted surface
           omega2x = swPI - omega2;
           cos_theta2x = -a + b * cos(omega2x) + c * sin(omega2x);
 
-          if (GT(cos_theta2x, tol3)) {
-            msun_angles[doy][5] = msun_angles[doy][6];
-
-          } else if (
-            LE(cos_theta2x, tol3) &&
-            GE(omega2x, msun_angles[doy][6])
+          if (
+            (cos_theta2x > tol) ||
+            ((cos_theta2x <= tol) &&
+            ((omega2x > msun_angles[doy0][6]) ||
+            EQ_w_tol(omega2x, msun_angles[doy0][6], tol)))
           ) {
-            msun_angles[doy][5] = msun_angles[doy][6];
+            msun_angles[doy0][5] = msun_angles[doy0][6];
 
           } else {
-            msun_angles[doy][5] = omega2x;
+            msun_angles[doy0][5] = omega2x;
           }
         }
 
-        if (GT(msun_angles[doy][5], msun_angles[doy][6])) {
+        if (msun_angles[doy0][5] > msun_angles[doy0][6]) {
           // prevent "transparent" earth
-          msun_angles[doy][5] = msun_angles[doy][6];
+          msun_angles[doy0][5] = msun_angles[doy0][6];
         }
+
+
+      #else
+        // instead of Allen et al. 2006 use
+        // Duffie et al. 2013: eq. 2.20.5e-2.20.5i
+
+        double A, B, C, abs_omega_sr, abs_omega_ss;
+
+        A = cos(slope) + tan(lat) * cos(aspect) * sin(slope);
+        B = cos(msun_angles[doy0][6]) * cos(slope) + \
+          tan(declin) * sin(slope) * cos(aspect);
+
+        if (ZRO(cos(lat))) {
+          C = sin(slope) * sin(aspect) / tol;
+        } else {
+          C = sin(slope) * sin(aspect) / cos(lat);
+        }
+
+        tmp3 = squared(A) + squared(C);
+        tmp = tmp3 - squared(B);
+        tmp = (tmp > 0.) ? sqrt(tmp) : tol;
+
+        tmp1 = A * B;
+        tmp2 = C * tmp;
+
+        trig_omega1 = (tmp1 + tmp2) / tmp3;
+        trig_omega1 = fmax(-1. + tol, fmin(1. - tol, trig_omega1));
+        abs_omega_sr = fmin(msun_angles[doy0][6], acos(trig_omega1));
+
+        trig_omega2 = (tmp1 - tmp2) / tmp3;
+        trig_omega2 = fmax(-1. + tol, fmin(1. - tol, trig_omega2));
+        abs_omega_ss = fmin(msun_angles[doy0][6], acos(trig_omega2));
+
+        if ((A > 0. && B > 0.) || (A > B) || EQ_w_tol(A, B, tol)) {
+          msun_angles[doy0][2] = -abs_omega_sr;
+          msun_angles[doy0][5] = abs_omega_ss;
+
+        } else {
+          msun_angles[doy0][2] = abs_omega_sr;
+          msun_angles[doy0][5] = -abs_omega_ss;
+        }
+
+      #endif
 
 
         // Step D. Additional limits for numerical stability and
         // twice per day periods of sun
 
-        if (GE(msun_angles[doy][2], msun_angles[doy][5])) {
+        if (msun_angles[doy0][2] >= msun_angles[doy0][5]) {
           // slope is always shaded
-          msun_angles[doy][0] = -1;
-          msun_angles[doy][2] = 0.;
-          msun_angles[doy][5] = 0.;
+          msun_angles[doy0][0] = -1;
+          msun_angles[doy0][2] = 0.;
+          msun_angles[doy0][5] = 0.;
         }
 
 
         // Check that we have daylight
-        if (GE(msun_angles[doy][0], 0.)) {
+        if (GE(msun_angles[doy0][0], 0.)) {
 
+          // Allen et al. 2006: eq. 7
+          // (drs): take absolute of rhs so that this checks correctly not
+          // only for Northern but also Southern latitudes
           tmp = sin(lat) * cos(declin) + cos(lat) * sin(declin);
-          if (GT(sin(slope), tmp)) {
+          if (sin(slope) > fabs(tmp)) {
+
             // possibility for two periods of sunshine
             omega2b = fmin(omega1, omega2);
             omega1b = fmax(omega1, omega2);
@@ -474,59 +485,64 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
             cos_theta1b = -a + b * cos(omega1b) + c * sin(omega1b);
             cos_theta2b = -a + b * cos(omega2b) + c * sin(omega2b);
 
-            if (GT(fabs(cos_theta1b), tol3)) {
+            if (fabs(cos_theta1b) > tol) {
               omega1b = swPI - omega1b;
             }
 
-            if (GT(fabs(cos_theta2b), tol3)) {
+            if (fabs(cos_theta2b) > tol) {
               omega2b = -swPI - omega2b;
             }
 
             if (
-              GE(omega2b, msun_angles[doy][2]) &&
-              LE(omega1b, msun_angles[doy][5])
+              ((omega2b > msun_angles[doy0][2]) ||
+              EQ_w_tol(omega2b, msun_angles[doy0][2], tol)) &&
+              ((omega1b < msun_angles[doy0][5]) ||
+              EQ_w_tol(omega1b, msun_angles[doy0][5], tol))
             ) {
               // two periods of sunshine are still possible
+              // Allen et al. 2006: eq. 50
+              // (drs) re-expressed eq. 50 with `a`, `b`, and `c`
               X = - a * (omega1b - omega2b)
                   + b * (sin(omega1b) - sin(omega2b))
                   - c * (cos(omega1b) - cos(omega2b));
 
-              if (LT(X, 0.)) {
+              if (X < 0.) {
                 // indeed two periods of sunshine
-                msun_angles[doy][0] = 2;
-                msun_angles[doy][3] = omega2b;
-                msun_angles[doy][4] = omega1b;
+                msun_angles[doy0][0] = 2;
+                msun_angles[doy0][3] = omega2b;
+                msun_angles[doy0][4] = omega1b;
               }
             }
           }
 
 
           // Integrate from (first) sunrise to (last) sunset
-          if (EQ(msun_angles[doy][0], 2.)) {
+          if (EQ(msun_angles[doy0][0], 2.)) {
             // Two periods of sunshine
-            f1 = sin(msun_angles[doy][3]) - sin(msun_angles[doy][2]) \
-               + sin(msun_angles[doy][5]) - sin(msun_angles[doy][4]);
-            f2 = cos(msun_angles[doy][3]) - cos(msun_angles[doy][2]) \
-               + cos(msun_angles[doy][5]) - cos(msun_angles[doy][4]);
-            f3 = msun_angles[doy][3] - msun_angles[doy][2] + \
-                 msun_angles[doy][5] - msun_angles[doy][4];
-            f4 = sin(2. * msun_angles[doy][3]) \
-               - sin(2. * msun_angles[doy][2]) \
-               + sin(2. * msun_angles[doy][5]) \
-               - sin(2. * msun_angles[doy][4]);
-            f5 = squared(sin(msun_angles[doy][3])) \
-               - squared(sin(msun_angles[doy][2])) \
-               + squared(sin(msun_angles[doy][5])) \
-               - squared(sin(msun_angles[doy][4]));
+            f1 = sin(msun_angles[doy0][3]) - sin(msun_angles[doy0][2]) \
+               + sin(msun_angles[doy0][5]) - sin(msun_angles[doy0][4]);
+            f2 = cos(msun_angles[doy0][3]) - cos(msun_angles[doy0][2]) \
+               + cos(msun_angles[doy0][5]) - cos(msun_angles[doy0][4]);
+            f3 = msun_angles[doy0][3] - msun_angles[doy0][2] + \
+                 msun_angles[doy0][5] - msun_angles[doy0][4];
+            f4 = sin(2. * msun_angles[doy0][3]) \
+               - sin(2. * msun_angles[doy0][2]) \
+               + sin(2. * msun_angles[doy0][5]) \
+               - sin(2. * msun_angles[doy0][4]);
+            f5 = squared(sin(msun_angles[doy0][3])) \
+               - squared(sin(msun_angles[doy0][2])) \
+               + squared(sin(msun_angles[doy0][5])) \
+               - squared(sin(msun_angles[doy0][4]));
 
           } else {
             // One period of sunshine
-            f1 = sin(msun_angles[doy][5]) - sin(msun_angles[doy][2]);
-            f2 = cos(msun_angles[doy][5]) - cos(msun_angles[doy][2]);
-            f3 = msun_angles[doy][5] - msun_angles[doy][2];
-            f4 = sin(2. * msun_angles[doy][5]) - sin(2. * msun_angles[doy][2]);
-            f5 = squared(sin(msun_angles[doy][5])) \
-               - squared(sin(msun_angles[doy][2]));
+            f1 = sin(msun_angles[doy0][5]) - sin(msun_angles[doy0][2]);
+            f2 = cos(msun_angles[doy0][5]) - cos(msun_angles[doy0][2]);
+            f3 = msun_angles[doy0][5] - msun_angles[doy0][2];
+            f4 = sin(2. * msun_angles[doy0][5]) \
+               - sin(2. * msun_angles[doy0][2]);
+            f5 = squared(sin(msun_angles[doy0][5])) \
+               - squared(sin(msun_angles[doy0][2]));
           }
 
 
@@ -539,29 +555,27 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
                + f5 * 0.5 * c * h;
           tmp2 = b * f1 - c * f2 - a * f3;
           //  Allen et al. 2006: eq. 22
-          memoized_int_sin_beta[doy][1] = fmax(0., tmp1 / tmp2);
+          memoized_int_sin_beta[doy0][1] = fmax(0., tmp1 / tmp2);
 
           // Integrate the cosine of the solar incidence angle on tilted surface
           // from (first) sunrise to (last) sunset
           // Allen et al. 2006: eqs 5 (one sunshine period) and 51 (two periods)
-          // standardize by 2 * pi because integral is across full day
-          memoized_int_cos_theta[doy][1] = tmp2 / swPI2;
+          // (drs): re-expressed eq. 5 with `abc` and `f1-3` via eq. 22
+          // (drs): standardize by 2 * pi because integral is across full day
+          memoized_int_cos_theta[doy0][1] = tmp2 / swPI2;
         }
-
-      } else {
-        //printf(", , , , , , , , , , , , ");
       }
     }
   }
 
   // Grab memoized values
-  int_cos_theta[0] = memoized_int_cos_theta[doy][0];
-  int_cos_theta[1] = memoized_int_cos_theta[doy][1];
-  int_sin_beta[0] = memoized_int_sin_beta[doy][0];
-  int_sin_beta[1] = memoized_int_sin_beta[doy][1];
+  int_cos_theta[0] = memoized_int_cos_theta[doy0][0];
+  int_cos_theta[1] = memoized_int_cos_theta[doy0][1];
+  int_sin_beta[0] = memoized_int_sin_beta[doy0][0];
+  int_sin_beta[1] = memoized_int_sin_beta[doy0][1];
 
   for (i = 0; i < 7; i++) {
-    sun_angles[i] = msun_angles[doy][i];
+    sun_angles[i] = msun_angles[doy0][i];
   }
 }
 
@@ -596,7 +610,9 @@ void solar_radiation_extraterrestrial(unsigned int doy, double int_cos_theta[],
   double G_o[])
 {
 
-  if (missing(memoized_G_o[doy][0]))
+  unsigned int doy0 = doy - 1; // doy is base1
+
+  if (missing(memoized_G_o[doy0][0]))
   {
     int k;
     double di2 = 1.;
@@ -614,18 +630,18 @@ void solar_radiation_extraterrestrial(unsigned int doy, double int_cos_theta[],
       if (GT(int_cos_theta[k], 0.)) {
         // Allen et al. 2006: eq. 35 (horizontal surface) and
         // eqs 6 and 51 (tilted surface)
-        memoized_G_o[doy][k] = G_sc * di2 * int_cos_theta[k];
+        memoized_G_o[doy0][k] = G_sc * di2 * int_cos_theta[k];
 
       } else {
         // no radiation
-        memoized_G_o[doy][k] = 0.;
+        memoized_G_o[doy0][k] = 0.;
       }
     }
   }
 
   // Grab memoized values
-  G_o[0] = memoized_G_o[doy][0];
-  G_o[1] = memoized_G_o[doy][1];
+  G_o[0] = memoized_G_o[doy0][0];
+  G_o[1] = memoized_G_o[doy0][1];
 }
 
 
@@ -802,7 +818,6 @@ double solar_radiation(unsigned int doy,
     // Direct beam irradiation
     K_bt = k_c * clearsky_directbeam(P, e_a, int_sin_beta[1]);
     H_bt = K_bt * (*H_ot); // Allen et al. 2006: eq. 30
-
 
     // Diffuse irradiation (isotropic)
     f_i = 0.75 + 0.25 * cos(slope) - slope / swPI2; // Allen et al. 2006: eq. 32
