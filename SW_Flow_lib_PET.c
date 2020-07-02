@@ -645,7 +645,7 @@ void solar_radiation_extraterrestrial(unsigned int doy, double int_cos_theta[],
 }
 
 
-/** @brief Cloud effects on incoming solar radiation
+/** @brief Cloud effects on incoming solar radiation by Kasten and Czeplak 1980
 
   Estimate global horizontal irradiation H_gh from
   clear-sky horizontal radiation H_{clearsky,h} as
@@ -657,9 +657,33 @@ void solar_radiation_extraterrestrial(unsigned int doy, double int_cos_theta[],
 
   @return k_c [0-1]
 */
-double atmospheric_attenuation_cloudfactor(double cloud_cover) {
+double overcast_attenuation_KastenCzeplak1980(double cloud_cover)
+{
   return 1. - 0.75 * pow(cloud_cover, 3.4);
 }
+
+/** @brief Cloud effects on incoming solar radiation by Angstrom 1924
+
+  Estimate global horizontal irradiation H_gh from
+  clear-sky horizontal radiation H_{clearsky,h} as
+    `H_gh = k_c * H_{clearsky}`
+  where k_c represents the effects of relative sunshine,
+  e.g., limited due to cloud cover,
+  based on a relationship developed by Angstrom 1924 @cite angstrom1924QJRMS.
+
+  Note: This is not equivalent to the more widely used Angstrom-Prescott type
+  models that estimate H_gh from extraterrestrial radiation H_oh.
+
+  @param sunshine_fraction Ratio of actual to possible hours of sunshine [0-1]
+
+  @return k_c [0-1]
+*/
+double overcast_attenuation_Angstrom1924(double sunshine_fraction)
+{
+  return 0.25 + 0.75 * sunshine_fraction;
+}
+
+
 
 
 /** @brief Atmospheric attenuation by clear-sky model of direct beam radiation
@@ -798,7 +822,13 @@ double solar_radiation(unsigned int doy,
   // into direct and diffuse radiation components
 
   // Atmospheric attenuation: additional cloud effects
-  k_c = atmospheric_attenuation_cloudfactor(cloud_cover / 100.);
+//  k_c = overcast_attenuation_KastenCzeplak1980(cloud_cover / 100.);
+
+  // TODO: improve estimation of sunshine_fraction n/N
+  // e.g., Essa and Etman 2004 (Meteorol Atmos Physics) and
+  // Matuszko 2012 (Int J Climatol) suggest that n/N != 1 - C
+  k_c = overcast_attenuation_Angstrom1924(1. - cloud_cover / 100.);
+
 
   // Atmospheric attenuation: clear-sky model for direct beam irradiation
   K_bh = k_c * clearsky_directbeam(P, e_a, int_sin_beta[0]);

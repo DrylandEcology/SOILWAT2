@@ -33,7 +33,8 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
 void solar_radiation_extraterrestrial(unsigned int doy, double int_cos_theta[],
   double G_o[]);
 
-double atmospheric_attenuation_cloudfactor(double cloud_cover);
+double overcast_attenuation_KastenCzeplak1980(double cloud_cover);
+double overcast_attenuation_Angstrom1924(double sunshine_fraction);
 double clearsky_directbeam(double P, double e_a, double int_sin_beta);
 double clearnessindex_diffuse(double K_b);
 
