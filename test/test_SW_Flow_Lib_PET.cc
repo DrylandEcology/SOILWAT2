@@ -697,7 +697,7 @@ namespace
         {0.7, 0.7, 0.4, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.4},
       // Climate normals for Madison, WI
       // "WMO Climate Normals for MADISON/DANE CO REGIONAL ARPT, WI 1961–1990".
-      // National Oceanic and Atmospheric Administration. Retrieved March 10, 2014.
+      // National Oceanic and Atmospheric Administration. Retrieved Jul 3, 2020.
       // ftp://ftp.atdd.noaa.gov/pub/GCOS/WMO-Normals/TABLES/REG_IV/US/GROUP4/72641.TXT
       cloud_cover[12] =
         // Element 20:  Sky Cover (Cloud Cover)
@@ -745,24 +745,34 @@ namespace
 
 
 
-  // Test saturated vapor pressure function
-  TEST(SW2_PET_Test, svapor)
+  // Test saturation vapor pressure functions
+  TEST(SW2_PET_Test, svp)
   {
     int i;
     double
       // Temperature [C]
       temp_C[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60},
 
-      // Expected saturated vapor pressure
+      // Expected saturation vapor pressure [kPa]
+      check_svp,
       expected_svp[] = {
-        0.3889344, 0.9389376, 2.1197755,
-        4.5085235,
-        9.0911046, 17.4746454, 32.1712519, 56.9627354, 97.3531630, 161.1126950
+        0.0380009, 0.103226, 0.2598657, 0.6112912,
+        1.2281879, 2.3393207, 4.247004, 7.3849328, 12.3517837, 19.9461044
+      },
+
+      // Expected slope of svp - temperature curve [kPa / K]
+      check_svp_to_t,
+      expected_svp_to_T[] = {
+        0.0039537, 0.0099076, 0.0230775, 0.0503666,
+        0.0822986, 0.1449156, 0.2437929, 0.3937122, 0.6129093, 0.9231149
       };
 
     for (i = 0; i < 10; i++)
     {
-      EXPECT_NEAR(svapor(temp_C[i]), expected_svp[i], tol6);
+      check_svp = svp(temp_C[i], &check_svp_to_t);
+
+      EXPECT_NEAR(check_svp, expected_svp[i], tol6);
+      EXPECT_NEAR(check_svp_to_t, expected_svp_to_T[i], tol6);
     }
   }
 

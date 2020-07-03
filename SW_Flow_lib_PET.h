@@ -50,8 +50,7 @@ double blackbody_radiation(double T);
 double petfunc(double H_g, double avgtemp, double elev,
   double reflec, double humid, double windsp, double cloudcov);
 
-double svapor(double temp);
-double slope_svp_to_t(double es_at_tmean, double tmean);
+double svp(double T, double *slope_svp_to_t);
 double atmospheric_pressure(double elev);
 double psychrometric_constant(double pressure);
 

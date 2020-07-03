@@ -899,24 +899,6 @@ double blackbody_radiation(double T) {
 
 
 
-/** @brief Slope of the saturation vapor pressure-temperature curve
-
-  Based on equation 13 (chapter 3) of Allen et al. (1998) @cite allen1998 and
-  equation 5 of Allen et al. (2005) @cite ASCE2005.
-
-  Prior to 2012-Oct-11, equation `vapor * 3010.21 / (kelvin * kelvin)`
-  was of unknown origin.
-  However, results are very similar to the current implementation.
-
-  @param es_at_tmean Saturation vapor pressure at average temperature [kPa]
-  @param tmean Average temperature for the day [&deg;C]
-
-  @return slope of es:T at T=Ta [kPa / K]
-*/
-double slope_svp_to_t(double es_at_tmean, double tmean) {
-  return 4098. * es_at_tmean / squared(tmean + 237.3);
-}
-
 /** @brief Atmospheric pressure based on elevation
 
   Based on equation 7 (chapter 3) of Allen et al. (1998) @cite allen1998 and
@@ -947,24 +929,49 @@ double psychrometric_constant(double pressure) {
 }
 
 
-/** @brief Saturation vapor pressure of water.
 
-  Equations based on Hess 1959. @cite Hess1961
+/** @brief Saturation vapor pressure of water and ice and the
+           slope of the saturation vapor pressure-temperature curve
 
-  @author SLC
+  Empirical equation derived from integrating the Clausius–Clapeyron equation
+  by Huang 2018 @cite huang2018JAMC.
 
-  @param  temp Average temperature for the day (&deg;C).
+  The slope of the svp-T curve is obtained by derivation for temperature.
 
-  @return svapor Saturation vapor pressure (mm of Hg/&deg;F).
+  @param[in] T Temperature [C]
+  @param[out] Slope of es:T [kPa / K]
+
+  @return Saturation vapor pressure [kPa]
 */
-double svapor(double temp) {
-	double par1, par2;
+double svp(double T, double *slope_svp_to_t) {
+  double tmp, tmp0, tmp1, tmp2, tmp3, dp, svp;
 
-	par1 = 1. / (temp + 273.);
-	par2 = log(6.11) + 5418.38 * (.00366 - par1); /*drs: par2 = ln(es [mbar]) = ln(es(at T = 273.15K) = 6.11 [mbar]) + (mean molecular mass of water vapor) * (latent heat of vaporization) / (specific gas constant) * (1/(273.15 [K]) - 1/(air temperature [K])) */
+  if (T > 0) {
+    // Derivation for Huang 2018: eq. 17
+    tmp0 = T + 105.;
+    tmp1 = pow(tmp0, 1.57);
+    tmp = T + 237.1;
+    tmp2 = 4924.99 / squared(tmp);
+    tmp3 = exp(34.494 - 4924.99 / tmp);
+    dp = 1.57 * pow(tmp0, 0.57);
 
-	return (exp(par2) * .75);
+  } else {
+    // Derivation for Huang 2018: eq. 18
+    tmp0 = T + 868.;
+    tmp1 = squared(tmp0);
+    tmp = T + 278.;
+    tmp2 = 6545.8 / squared(tmp);
+    tmp3 = exp(43.494 - 6545.8 / tmp);
+    dp = 2. * tmp0;
+  }
+
+  svp = tmp3 / tmp1;
+  *slope_svp_to_t = svp * tmp2 - tmp3 / squared(tmp1) * dp;
+  (*slope_svp_to_t) *= 1e-3;
+
+  return 1e-3 * svp;
 }
+
 
 
 /**
