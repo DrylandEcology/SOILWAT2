@@ -777,165 +777,240 @@ namespace
   }
 
 
-  //Test petfunc by manipulating each input individually.
+
+
+  // Test `petfunc()`
   TEST(SW2_PET_Test, petfunc)
   {
-    //Begin TEST for avgtemp input variable
-    //Declare INPUTS
-    unsigned int doy = 2; //For the second day in the month of January
-    double rlat = 0.681, elev = 1000, slope = 0, aspect = -1, reflec = 0.15,
-      humid = 61,windsp = 1.3, cloudcov = 71, transcoeff = 1;
-    double temp, check;
-    double avgtemps[] = {30,35,40,45,50,55,60,65,70,75,20,-35,-12.667,-1,0}; // These are test temperatures, in degrees Celcius.
+    int i;
+    unsigned int doy = 2;
+    double
+      check_pet,
+      H_gt, H_oh, H_ot, H_gh,
+      lat = 39. * deg_to_rad,
+      elev = 1000.,
+      slope0 = 0.,
+      sloped = 5. * deg_to_rad,
+      aspect = -90. * deg_to_rad, // East-facing slope
+      reflec = 0.15,
+      temp = 25.,
+      RH = 61.,
+      windsp = 1.3,
+      cloudcov = 71.;
 
-    //Declare INPUTS for expected returns
-    double expReturnTemp[] = {0.201, 0.245, 0.299, 0.364, 0.443, 0.539, 0.653,
-                              0.788, 0.948, 1.137, 0.136, 0.01, 0.032, 0.057,
-                              0.060}; // These are the expected outcomes for the variable arads.
 
-    for (int i = 0; i <15; i++)
+    // TEST `petfunc()` for varying average daily air temperature `avgtemp` [C]
+    double
+      // Inputs
+      avgtemps[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60},
+      // Expected PET
+      expected_pet_avgtemps[] = {
+        0.0133, 0.0296, 0.0571, 0.0961,
+        0.1410, 0.1956, 0.2673, 0.3665, 0.5063, 0.7024
+      };
+
+    for (i = 0; i < 10; i++)
     {
-      temp = avgtemps[i]; //Uses array of temperatures for testing for input into temp variable.
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
-                      windsp, cloudcov, transcoeff);
+      H_gt = solar_radiation(
+        doy,
+        lat, elev, slope0, aspect, reflec,
+        cloudcov, RH, avgtemps[i],
+        &H_oh, &H_ot, &H_gh
+      );
 
-      EXPECT_NEAR(check, expReturnTemp[i], tol3); //Tests the return of the petfunc against the expected return for the petfunc.
+      check_pet = petfunc(H_gt, avgtemps[i], elev, reflec, RH, windsp, cloudcov);
+
+      EXPECT_NEAR(check_pet, expected_pet_avgtemps[i], tol3);
     }
 
-    //Begin TEST for rlat input variable.  Inputs outside the range of [-1.169,1.169] produce the same output, 0.042.  Rlat values outside this range represent values near the poles.
-    //INPUTS
-    temp = 25, cloudcov = 71, humid = 61, windsp = 1.3;
-    double rlats[] = {-1.570796, -0.7853982, 0, 0.7853982, 1.570796}; //Initialize array of potential latitudes, in radians, for the site.
 
-   //Declare INPUTS for expected returns
-    double expReturnLats[] = {0.042, 0.420, 0.346, 0.134, 0.042}; //These are the expected returns for petfunc while manipulating the rlats input variable.
+    // TEST `petfunc()` for varying latitude `lat` [± pi / 2]
+    double
+      // Inputs
+      lats[] = {-90., -45., 0., 45., 90.},
+      // Expected PET
+      expected_pet_lats[] = {0.2287, 0.6621, 0.5418, 0.1764, 0.0421};
 
-    for (int i = 0; i < 5; i++)
+    for (i = 0; i < 5; i++)
     {
-      rlat = rlats[i]; //Uses array of latitudes initialized above.
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
-                      windsp, cloudcov, transcoeff);
+      H_gt = solar_radiation(
+        doy,
+        lats[i] * deg_to_rad, elev, slope0, aspect, reflec,
+        cloudcov, RH, temp,
+        &H_oh, &H_ot, &H_gh
+      );
 
-      EXPECT_NEAR(check, expReturnLats[i], tol3); //Tests the return of the petfunc against the expected return for the petfunc.
-    }
-    //Begin TEST for elev input variable, testing from -413 meters (Death Valley) to 8727 meters (~Everest).
-    //INPUTS
-    rlat = 0.681;
-    double elevT[] = {-413,0,1000,4418,8727};
+      check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcov);
 
-    //Declare INPUTS for expected returns
-    double expReturnElev[] = {0.181,0.176,0.165,0.130,0.096};
+      EXPECT_NEAR(check_pet, expected_pet_lats[i], tol3);
 
-    for (int i = 0; i < 5; i++)
+      SW_PET_init_run(); // Re-init radiation memoization
+   }
+
+
+    // TEST `petfunc()` for varying elevation [m a.s.l.]
+    // Testing from -413 meters (Death Valley) to 8727 meters (~Everest).
+    double
+      // Inputs
+      elevs[] = {-413, 0, 1000, 4418, 8727},
+      // Expected PET
+      expected_pet_elevs[] = {0.2377, 0.2350, 0.2287, 0.2109, 0.1957};
+
+    for (i = 0; i < 5; i++)
     {
-      check = petfunc(doy, temp, rlat, elevT[i], slope, aspect, reflec, humid,
-                      windsp, cloudcov, transcoeff);
+      H_gt = solar_radiation(
+        doy,
+        lat, elevs[i], slope0, aspect, reflec,
+        cloudcov, RH, temp,
+        &H_oh, &H_ot, &H_gh
+      );
 
-      EXPECT_NEAR(check, expReturnElev[i], tol3); //Tests the return of the petfunc against the expected return for the petfunc.
+      check_pet = petfunc(H_gt, temp, elevs[i], reflec, RH, windsp, cloudcov);
+
+      EXPECT_NEAR(check_pet, expected_pet_elevs[i], tol3);
     }
-    //Begin TEST for slope input variable
-    //INPUTS
-    elev = 1000;
-    aspect = 180; // south-facing slope
-    double slopeT[] = {0,15,34,57,90};
 
-    //Declare INPUTS for expected returns
-    double expReturnSlope[] = {0.1650, 0.2398, 0.3148, 0.3653, 0.3479};
 
-    for (int i = 0; i < 5; i++)
+    // TEST `petfunc()` for varying slope [0 - pi / 2; radians]
+    double
+      // Inputs
+      slopes[] = {0., 15., 34., 57., 90.},
+      // Expected PET
+      expected_pet_slopes[] = {0.2287, 0.2256, 0.2189, 0.2051, 0.1714};
+
+    for (i = 0; i < 5; i++)
     {
-      check = petfunc(doy, temp, rlat, elev, slopeT[i], aspect, reflec, humid,
-                      windsp, cloudcov, transcoeff);
+      H_gt = solar_radiation(
+        doy,
+        lat, elev, slopes[i] * deg_to_rad, aspect, reflec,
+        cloudcov, RH, temp,
+        &H_oh, &H_ot, &H_gh
+      );
 
-      EXPECT_NEAR(check, expReturnSlope[i], tol3); //Tests the return of the petfunc against the expected return for the petfunc.
+      check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcov);
+
+      EXPECT_NEAR(check_pet, expected_pet_slopes[i], tol3);
+
+      SW_PET_init_run(); // Re-init radiation memoization
     }
 
-    //Begin TEST for aspect input variable
-    //INPUTS
-    slope = 5;
-    double aspectT[] = {0, 46, 112, 253, 358};
 
-    //Declare INPUTS for expected returns
-    double expReturnAspect[] = {0.138, 0.146, 0.175, 0.172, 0.138};
+    // TEST `petfunc()` for varying aspect
+    //   [South facing slope = 0, East = -pi / 2, West = pi / 2, North = ±pi]
+    double
+      // Inputs
+      aspects[] = {-180, -90, -45, 0, 45, 90, 180},
+      // Expected PET
+      expected_pet_aspects[] = {
+        0.2059, 0.2279, 0.2431, 0.2494, 0.2431, 0.2279, 0.2059
+      };
 
-    for (int i = 0; i < 5; i++) {
-      check = petfunc(doy, temp, rlat, elev, slope, aspectT[i], reflec, humid,
-                      windsp, cloudcov, transcoeff);
-
-      EXPECT_NEAR(check, expReturnAspect[i], tol3);
-    }
-
-    //Begin TEST for reflec input variable
-    //INPUTS
-    aspect = -1, slope = 0;
-    double reflecT[] = {0.1, 0.22, 0.46, 0.55, 0.98};
-
-    //Declare INPUTS for expected returnsdouble expReturnSwpAvg = 0.00000148917;
-    double expReturnReflec[] = {0.172, 0.155, 0.120, 0.107, 0.045};
-
-    for (int i = 0; i < 5; i++)
+    for (i = 0; i < 7; i++)
     {
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflecT[i], humid,
-                      windsp, cloudcov, transcoeff);
+      H_gt = solar_radiation(
+        doy,
+        lat, elev, sloped, aspects[i] * deg_to_rad, reflec,
+        cloudcov, RH, temp,
+        &H_oh, &H_ot, &H_gh
+      );
 
-      EXPECT_NEAR(check, expReturnReflec[i], tol3);
+      check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcov);
+
+      EXPECT_NEAR(check_pet, expected_pet_aspects[i], tol3);
+
+      SW_PET_init_run(); // Re-init radiation memoization
     }
 
-    //Begin TEST for humidity input varibable.
-    //INPUTS
-    reflec = 0.15;
-    double humidT[] = {2, 34, 56, 79, 89};
 
-    //Declare INPUTS for expected returns.
-    double expReturnHumid[] = {0.242, 0.218, 0.176, 0.125, 0.102};
+    // TEST `petfunc()` for varying albedo [0-1]
+    double
+      // Inputs
+      reflecs[] = {0., 0.22, 0.46, 0.55, 1.},
+      // Expected PET
+      expected_pet_reflecs[] = {0.2602, 0.2128, 0.1607, 0.1411, 0.0421};
 
-    for (int i = 0; i < 5; i++)
+    for (i = 0; i < 5; i++)
     {
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humidT[i],
-                      windsp, cloudcov, transcoeff);
+      H_gt = solar_radiation(
+        doy,
+        lat, elev, sloped, aspect, reflecs[i],
+        cloudcov, RH, temp,
+        &H_oh, &H_ot, &H_gh
+      );
 
-      EXPECT_NEAR(check, expReturnHumid[i], tol3);
+      check_pet = petfunc(H_gt, temp, elev, reflecs[i], RH, windsp, cloudcov);
+
+      EXPECT_NEAR(check_pet, expected_pet_reflecs[i], tol3);
     }
 
-    //Begin TEST for windsp input variable.
-    //INPUTS
-    humid = 61, windsp = 0;
 
-    //Declare INPUTS for expected returns.
-    double expReturnWindsp[] = {0.112, 0.204, 0.297, 0.390, 0.483, 0.576, 0.669,
-                                0.762, 0.855, 0.948, 1.041, 1.134, 1.227, 1.320,
-                                1.413, 1.506, 1.599, 1.692, 1.785, 1.878, 1.971,
-                                2.064, 2.157};
+    // TEST `petfunc()` for varying relative humidity [0-100; %]
+    double
+      // Inputs
+      RHs[] = {0, 34, 56, 79, 100},
+      // Expected PET
+      expected_pet_RHs[] = {0.2968, 0.2854, 0.2399, 0.1869, 0.1356};
 
-    for (int i = 0; i < 23; i++)
+    for (i = 0; i < 5; i++)
     {
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
-                      windsp, cloudcov, transcoeff);
+      H_gt = solar_radiation(
+        doy,
+        lat, elev, slope0, aspect, reflec,
+        cloudcov, RHs[i], temp,
+        &H_oh, &H_ot, &H_gh
+      );
 
-      EXPECT_NEAR(check, expReturnWindsp[i], tol3);
+      check_pet = petfunc(H_gt, temp, elev, reflec, RHs[i], windsp, cloudcov);
 
-      windsp += 2.26; //Increments windsp input variable.
+      EXPECT_NEAR(check_pet, expected_pet_RHs[i], tol3);
     }
 
-    //Begin TEST for cloudcov input variable.
-    //INPUTS
-    windsp = 1.3;
-    double cloudcovT[] = {1, 12, 36, 76, 99};
 
-    //Declare INPUTS for expected returns.
-    double expReturnCloudcov[] = {0.148, 0.151, 0.157, 0.166, 0.172};
+    // TEST `petfunc()` for varying wind speed [m / s]
+    double
+      // Inputs
+      windsps[] = {0., 1., 5., 10., 20.},
+      // Expected PET
+      expected_pet_windsps[] = {0.1753, 0.2164, 0.3807, 0.5861, 0.9969};
 
-    for (int i = 0; i < 5; i++)
+    H_gt = solar_radiation(
+      doy,
+      lat, elev, slope0, aspect, reflec,
+      cloudcov, RH, temp,
+      &H_oh, &H_ot, &H_gh
+    );
+
+    for (i = 0; i < 5; i++)
     {
-      check = petfunc(doy, temp, rlat, elev, slope, aspect, reflec, humid,
-                      windsp, cloudcovT[i], transcoeff);
+      check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsps[i], cloudcov);
 
-      EXPECT_NEAR(check, expReturnCloudcov[i], tol3);
-
-      cloudcov += 4.27; //Incrments cloudcov input variable.
+      EXPECT_NEAR(check_pet, expected_pet_windsps[i], tol3);
     }
-    //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
+
+
+    // TEST `petfunc()` for varying cloud cover [0-100; %]
+    double
+      // Inputs
+      cloudcovs[] = {0, 12, 36, 76, 100},
+      // Expected PET
+      expected_pet_cloudcovs[] = {0.1332, 0.1493, 0.1816, 0.2355, 0.2580};
+      // Note: increasing cloud cover decreases H_gt and increases PET
+
+    for (i = 0; i < 5; i++)
+    {
+      H_gt = solar_radiation(
+        doy,
+        lat, elev, slope0, aspect, reflec,
+        cloudcovs[i], RH, temp,
+        &H_oh, &H_ot, &H_gh
+      );
+
+      check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcovs[i]);
+
+      EXPECT_NEAR(check_pet, expected_pet_cloudcovs[i], tol3);
+    }
+
+    SW_PET_init_run(); // Re-init radiation memoization
   }
 
 }
