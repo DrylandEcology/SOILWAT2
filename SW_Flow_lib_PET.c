@@ -1043,7 +1043,7 @@ par1,par2 - parameters in computation of pet.
 
 ***********************************************************************/
 
-  double Ea, Rn, Rc, Rbb, Delta, clrsky, vapor, P, gamma, pet;
+  double Ea, Rn, Rc, Rbb, delta, clrsky, ea, P_kPa, gamma, pet;
 
   /* Unit conversion factors:
    1 langley = 1 ly = 41840 J/m2 = 0.0168 evaporative-mm
@@ -1054,9 +1054,9 @@ par1,par2 - parameters in computation of pet.
    0 C = 273.15 K
   */
   static const double
-    // [mmHg / F] = [kPa / K] * [mmHg / kPa] * [K / F] =
-    //            = [kPa / K] * (760. / 101.325) * (5. / 9.)
-    convert_kPa_per_K__to__mmHg_per_F = 4.1670093484,
+    // [mmHg / F] = [kPa / K] * [mmHg / kPa] =
+    //            = [kPa / K] * (760. / 101.325)
+    convert_kPa__to__mmHg = 7.5006168,
 
     // [miles / day] = [m / s] * [miles / m] * [s / day] =
     //               = [m / s] * (1 / 1609.344) * 86400
@@ -1088,34 +1088,30 @@ par1,par2 - parameters in computation of pet.
 
 
 
-  //------ Calculate radiation
+  //------ Calculate incoming short wave radiation [mm / day]
   Rc = H_g * convert_MJ_per_m2__to__mm_per_day;
 
 
-  // Calculate long wave radiation:
+  // Calculate outgoing long wave radiation [mm / day]
   Rbb = blackbody_radiation(avgtemp);
   Rbb *= convert_W_per_m2__to__mm_per_day;
 
 
   //------ Calculate inputs to Penman's equation
 
-  // Calculate atmospheric pressure
-  P = atmospheric_pressure(elev);
+  // Calculate atmospheric pressure [kPa]
+  P_kPa = atmospheric_pressure(elev);
 
-  // Calculate psychrometric constant
-  gamma = psychrometric_constant(P);
-  gamma *= convert_kPa_per_K__to__mmHg_per_F;
+  // Calculate psychrometric constant [kPa / K]
+  gamma = psychrometric_constant(P_kPa);
 
-  // Saturation vapor pressure at air-Tave [mmHg] ea = vapor
-  vapor = svapor(avgtemp);
 
-  // Slope of the Saturation Vapor Pressure-Temperature Curve:
-  Delta = slope_svp_to_t(vapor, avgtemp);
-  Delta *= 5. / 9.;
-  // TODO: why not: Delta *= convert_kPa_per_K__to__mmHg_per_F;
+  // Saturation vapor pressure [mmHg]
+  // and delta = slope of the svp-temperature curve [kPa / K]
+  ea = svp(avgtemp, &delta); //   at air-Tave = ea
+  ea *= convert_kPa__to__mmHg;
 
-  // Saturation vapor pressure at dewpoint [mmHg] = ed = relative humidity * ea
-  humid *= vapor / 100.;
+  humid *= ea / 100.; //   at dewpoint = ed = relative humidity * ea
 
 
 
@@ -1124,7 +1120,7 @@ par1,par2 - parameters in computation of pet.
   // Evaporation rate from open water:
   // Penman (1948), eqn. 19: par1 = Ea [mm / day] = evaporation rate from
   //  open water with ea instead of es as required in eqn. 16
-  Ea = .35 * (vapor - humid) * (1. + .0098 * windsp);
+  Ea = .35 * (ea - humid) * (1. + .0098 * windsp);
 
   // Net radiant energy available at surface = net irradiance:
   // Penman (1948), eqn. 13 [mm / day]: Rn = H [mm / day]
@@ -1134,7 +1130,9 @@ par1,par2 - parameters in computation of pet.
 
   // Penman's evaporation from open water = potential evapotranspiration
   // Penman (1948), eqn. 16: E [mm / day]
-  pet = (Delta * Rn + gamma * Ea) / (Delta + gamma);
+  // note: eqn. 16 expects units of delta and gamma to be [mmHg / F]; however,
+  //       these units cancel each other out. Thus, we use here [kPa / K]
+  pet = (delta * Rn + gamma * Ea) / (delta + gamma);
 
   return fmax(0.1 * pet, 0.01); // PET [cm / day]
 }
