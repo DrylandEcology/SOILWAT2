@@ -939,7 +939,7 @@ double psychrometric_constant(double pressure) {
   The slope of the svp-T curve is obtained by derivation for temperature.
 
   @param[in] T Temperature [C]
-  @param[out] Slope of es:T [kPa / K]
+  @param[out] slope_svp_to_t Slope of es:T [kPa / K]
 
   @return Saturation vapor pressure [kPa]
 */
@@ -977,71 +977,25 @@ double svp(double T, double *slope_svp_to_t) {
 /**
 @brief Daily potential evapotranspiration
 
-  Equations based on Penman 1948 @cite Penman1948, ASCE 2000 @cite ASCE2000,
-  Bowen 1926 @cite Bowen1926, Brunt 1939 @cite Brunt1939,
-  Kopp et al. 2011 @cite Kopp2011, and Sellers 1965 @cite Sellers1965 .
+  Equations based on Penman 1948 @cite Penman1948.
 
   Note: Penman 1948 @cite Penman1948 assumes that net heat and vapor exchange
-  with ground and surrounding areas is negligible over time step.
+  with ground and surrounding areas is negligible over a daily time step.
 
 
-  @param H_g Daily global horizontal/tilted irradiation [MJ / m2]
-  @param avgtemp Average air temperature for the day (&deg;C).
-  @param elev	Elevation of site (m).
-  @param reflec  Unitless measurement of albedo.
-  @param humid Average relative humidity for the month (%).
-  @param windsp Average wind speed for the month at 2-m above ground (m/s).
-  @param cloudcov Average cloud cover for the month (%).
+  @param H_g Global horizontal/tilted irradiation [MJ / m2]
+  @param avgtemp Average air temperature [C]
+  @param elev Elevation of site [m asl]
+  @param reflec  Albedo [-]
+  @param humid Average relative humidity [%]
+  @param windsp Average wind speed at 2-m above ground [m / s]
+  @param cloudcov Average cloud cover [%]
 
-  @return Potential evapotranspiration [cm / day].
+  @return Potential evapotranspiration [cm / day]
 */
 double petfunc(double H_g, double avgtemp, double elev,
   double reflec, double humid, double windsp, double cloudcov)
 {
-/***********************************************************************
-HISTORY:
-4/30/92  (SLC)
-10/11/2012	(drs)	annotated all equations;
-replaced unknown equation for solar declination with one by Spencer (1971);
-replaced unknown equation for 'Slope of the Saturation Vapor Pressure-Temperature Curve' = arads with one provided by Allen et al. (1998) and (2005);
-replaced constant psychrometric constant (0.27 [mmHg/F]) as function of pressure, and pressure as function of elevation of site (Allen et al. (1998) and (2005));
-windspeed data is in [m/s] and not in code-required [miles/h] -> fixed conversation factor so that code now requires [m/s];
-replaced conversion addend from C to K (previously, 273) with 273.15;
-updated solar constant from S = 2.0 [ly/min] to S = 1.952 [ly/min] (Kopp et al. 2011) in the equation to calculate solrad;
-replaced unknown numerical factor of 0.201 in black-body long wave radiation to sigma x conversion-factor = 0.196728 [mm/day/K4];
---> further update suggestions:
-- add Seller's factor '(mean(d)/d)^2' with (mean(d) = mean distance and d = instantaneous distance of the earth from the sun) to shortwave calculations
-11/06/2012	(clk)	allowed slope and aspect to be used in the calculation for solar radiation;
-if slope is 0, will still use old equation,
-else will sum up Seller (1965), page 35, eqn. 3.15 from sunrise to sunset.
-
-SOURCES:
-Allen RG, Pereira LS, Raes D, Smith M (1998) In Crop evapotranspiration - Guidelines for computing crop water requirements. FAO - Food and Agriculture Organizations of the United Nations, Rome.
-Allen RG, Walter IA, Elliott R, Howell T, Itenfisu D, Jensen M (2005) In The ASCE standardized reference evapotranspiration equation, pp. 59. ASCE-EWRI Task Committee Report.
-Bowen IS (1926) The Ratio of Heat Losses by Conduction and by Evaporation from any Water Surface. Physical Review, 27, 779.
-Brunt D (1939) Physical and dynamical meteorology. Cambridge University Press.
-Kopp G, Lean JL (2011) A new, lower value of total solar irradiance: Evidence and climate significance. Geophysical Research Letters, 38, L01706.
-Merva GE (1975) Physioengineering principles. Avi Pub. Co., Westport, Conn., ix, 353 p. pp.
-Penman HL (1948) Natural evaporation form open water, bare soil and grass. Proceedings of the Royal Society of London. Series A, Mathematical and Physical Sciences, 193, 120-145.
-Sellers WD (1965) Physical climatology. University of Chicago Press, Chicago, USA.
-
-LOCAL VARIABLES:
-solrad - solar radiation (ly/day)
-declin - solar declination (radians)
-ahou   - sunset hour angle
-azmth  - azimuth angle of the sun
-azmthSlope - azimuth angle of the slope
-rslope - slope of the site (radians)
-hou    - hour angle
-shwave - short wave solar radiation (mm/day)
-kelvin - average air temperature [K]
-Delta  - 'Slope of the Saturation Vapor Pressure-Temperature Curve' [mmHg/F]
-clrsky - relative amount of clear sky
-fhumid - saturation vapor pressure at dewpoint [mmHg]
-ftemp  - theoretical black-body radiation [mm/day]
-par1,par2 - parameters in computation of pet.
-
-***********************************************************************/
 
   double Ea, Rn, Rc, Rbb, delta, clrsky, ea, P_kPa, gamma, pet;
 
