@@ -100,6 +100,7 @@ typedef struct {
 
 	RealD slow_drain_coeff, /* low soil water drainage coefficient   */
 		pet_scale,	/* changes relative effect of PET calculation */
+		longitude,	/* longitude of the site (radians)        */
 		latitude,	/* latitude of the site (radians)        */
 		altitude,	/* altitude a.s.l (m) of the site */
 		slope,		/* slope of the site (radians): between 0 (horizontal) and pi / 2 (vertical) */
