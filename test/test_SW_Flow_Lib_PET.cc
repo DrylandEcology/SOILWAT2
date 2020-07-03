@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <float.h>
+#include <cmath>
 #include <math.h>
 #include <memory.h>
 #include <stdarg.h>
