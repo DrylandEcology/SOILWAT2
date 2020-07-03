@@ -738,6 +738,8 @@ namespace
         << "Duffie & Beckman 2013: Example 2.19.1, H_gt: "
         << "month = " << k + 1 << "\n";
     }
+
+    SW_PET_init_run(); // Re-init radiation memoization
   }
 
 
