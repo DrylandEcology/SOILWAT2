@@ -668,6 +668,75 @@ namespace
   }
 
 
+  // Test solar radiation: global horizontal and tilted
+  //   Comparison against examples by Duffie & Beckman 2013 are expected to
+  //   deviate in value, but show similar patterns, because (i) calculations for
+  //   H_oh differ (see `SW2_SolarRadiation_Test.extraterrestrial`), (ii)
+  //   we calculate H_gh while they use measured H_gh values, and (iii)
+  //   separation models differ, etc.
+  TEST(SW2_SolarRadiation_Test, global)
+  {
+    unsigned int k;
+
+    // Duffie & Beckman 2013: Table 1.6.1
+    unsigned int doys_Table1_6_1[12] = {
+      17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344
+    };
+    double
+      H_gt, H_ot, H_oh, H_gh,
+      // Duffie & Beckman 2013: Example 2.19.1
+      H_Ex2_19_1[3][12] = {
+        // H_oh
+        {13.37, 18.81, 26.03, 33.78, 39.42, 41.78, 40.56, 35.92, 28.80, 20.90, 14.62, 11.91},
+        // H_gh
+        {6.44, 9.89, 12.86, 16.05, 21.36, 23.04, 22.58, 20.33, 14.59, 10.48, 6.37, 5.74},
+        // H_gt
+        {13.7, 17.2, 15.8, 14.7, 16.6, 16.5, 16.8, 17.5, 15.6, 15.2, 11.4, 12.7}
+      },
+      albedo[12] =
+        {0.7, 0.7, 0.4, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.4},
+      // Climate normals for Madison, WI
+      // "WMO Climate Normals for MADISON/DANE CO REGIONAL ARPT, WI 1961–1990".
+      // National Oceanic and Atmospheric Administration. Retrieved March 10, 2014.
+      // ftp://ftp.atdd.noaa.gov/pub/GCOS/WMO-Normals/TABLES/REG_IV/US/GROUP4/72641.TXT
+      cloud_cover[12] =
+        // Element 20:  Sky Cover (Cloud Cover)
+        // {66.25, 66.25, 70, 67.5, 65, 60, 57.5, 57.5, 60, 63.75, 72.5, 71.25},
+        // Mar, Apr, Sep, Oct, Nov, Dec: replaced observed with estimated values to match `H_Ex2_19_1`
+        {66.25, 66.25, 80., 90., 65.0, 60.0, 57.5, 57.5, 80., 75., 85., 60.},
+      // Element 11:  Relative Humidity (%), MN3HRLY (Statistic 94):  Mean of 3-Hourly Observations
+      rel_humidity[12] =
+        {74.5, 73.1, 71.4, 66.3, 65.8, 68.3, 71.0, 74.4, 76.8, 73.2, 76.9, 78.5},
+      // Element 01:  Dry Bulb Temperature (deg C)
+      air_temp_mean[12] =
+        {-8.9, -6.3, 0.2, 7.4, 13.6, 19, 21.7, 20.2, 15.4, 9.4, 1.9, -5.7};
+
+    // Duffie & Beckman 2013: Example 2.19.1
+    for (k = 0; k < 12; k++) {
+      H_gt = solar_radiation(
+        doys_Table1_6_1[k],
+        43. * deg_to_rad, // latitude
+        226., // elevation
+        60 * deg_to_rad, // slope
+        0., // aspect
+        albedo[k],
+        cloud_cover[k],
+        rel_humidity[k],
+        air_temp_mean[k],
+        &H_oh,
+        &H_ot,
+        &H_gh
+      );
+
+      EXPECT_NEAR(H_oh, H_Ex2_19_1[0][k], tol0)
+        << "Duffie & Beckman 2013: Example 2.19.1, H_oh: "
+        << "month = " << k + 1 << "\n";
+      EXPECT_NEAR(H_gh, H_Ex2_19_1[1][k], tol0)
+        << "Duffie & Beckman 2013: Example 2.19.1, H_gh: "
+        << "month = " << k + 1 << "\n";
+      EXPECT_NEAR(H_gt, H_Ex2_19_1[2][k], tol0)
+        << "Duffie & Beckman 2013: Example 2.19.1, H_gt: "
+        << "month = " << k + 1 << "\n";
     }
   }
 
