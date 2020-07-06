@@ -414,9 +414,11 @@ void SW_WTH_read(void) {
     LogError(
       logfp,
       LOGFATAL,
-      "%s : Model year (%d) starts before weather files (%d)"
-        " and use_Markov=swFALSE.\nPlease synchronize the years"
-        " or set up the Markov weather files",
+      "%s : Model year (%d) starts before weather files (%d) "
+        "and the Markov weather generator is turned off. \n"
+        "Please synchronize the years or "
+        "activate the weather generator "
+        "(and set up input files `mkv_prob.in` and `mkv_covar.in`).",
       MyFileName, SW_Model.startyr, w->yr.first
     );
 	}
