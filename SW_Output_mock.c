@@ -79,6 +79,7 @@ char const *pd2longstr[] = {"SW_MISSING"};
 
 /* =================================================== */
 /*             Public Function Definitions             */
+/*             (declared in SW_Output.h)               */
 /* --------------------------------------------------- */
 void SW_OUT_set_colnames(void)
 {}
@@ -125,132 +126,132 @@ void get_none(OutPeriod pd)
 	if (pd) {}
 }
 
-void get_co2effects(OutPeriod pd)
+void get_co2effects_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_biomass(OutPeriod pd)
+void get_biomass_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_estab(OutPeriod pd)
+void get_estab_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_temp(OutPeriod pd)
+void get_temp_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_precip(OutPeriod pd)
+void get_precip_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_vwcBulk(OutPeriod pd)
+void get_vwcBulk_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_vwcMatric(OutPeriod pd)
+void get_vwcMatric_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_swcBulk(OutPeriod pd)
+void get_swcBulk_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_swpMatric(OutPeriod pd)
+void get_swpMatric_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_swaBulk(OutPeriod pd)
+void get_swaBulk_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_swaMatric(OutPeriod pd)
+void get_swaMatric_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_surfaceWater(OutPeriod pd)
+void get_surfaceWater_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_runoff(OutPeriod pd)
+void get_runoffrunon_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_transp(OutPeriod pd)
+void get_transp_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_evapSoil(OutPeriod pd)
+void get_evapSoil_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_evapSurface(OutPeriod pd)
+void get_evapSurface_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_interception(OutPeriod pd)
+void get_interception_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_soilinf(OutPeriod pd)
+void get_soilinf_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_lyrdrain(OutPeriod pd)
+void get_lyrdrain_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_hydred(OutPeriod pd)
+void get_hydred_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_aet(OutPeriod pd)
+void get_aet_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_pet(OutPeriod pd)
+void get_pet_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_wetdays(OutPeriod pd)
+void get_wetdays_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_snowpack(OutPeriod pd)
+void get_snowpack_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_deepswc(OutPeriod pd)
+void get_deepswc_text(OutPeriod pd)
 {
 	if (pd) {}
 }
 
-void get_soiltemp(OutPeriod pd)
+void get_soiltemp_text(OutPeriod pd)
 {
 	if (pd) {}
 }
@@ -312,32 +313,32 @@ void _echo_outputs(void)
 	OutPeriod pd = eSW_Year;
 
 	get_none(pd);
-	get_estab(pd);
-	get_temp(pd);
-	get_precip(pd);
-	get_vwcBulk(pd);
-	get_vwcMatric(pd);
-	get_swcBulk(pd);
-	get_swpMatric(pd);
-	get_swaBulk(pd);
-	get_swaMatric(pd);
-	get_surfaceWater(pd);
-	get_runoff(pd);
-	get_transp(pd);
-	get_evapSoil(pd);
-	get_evapSurface(pd);
-	get_interception(pd);
-	get_soilinf(pd);
-	get_lyrdrain(pd);
-	get_hydred(pd);
-	get_aet(pd);
-	get_pet(pd);
-	get_wetdays(pd);
-	get_snowpack(pd);
-	get_deepswc(pd);
-	get_soiltemp(pd);
-	get_co2effects(pd);
-	get_biomass(pd);
+	get_estab_text(pd);
+	get_temp_text(pd);
+	get_precip_text(pd);
+	get_vwcBulk_text(pd);
+	get_vwcMatric_text(pd);
+	get_swcBulk_text(pd);
+	get_swpMatric_text(pd);
+	get_swaBulk_text(pd);
+	get_swaMatric_text(pd);
+	get_surfaceWater_text(pd);
+	get_runoffrunon_text(pd);
+	get_transp_text(pd);
+	get_evapSoil_text(pd);
+	get_evapSurface_text(pd);
+	get_interception_text(pd);
+	get_soilinf_text(pd);
+	get_lyrdrain_text(pd);
+	get_hydred_text(pd);
+	get_aet_text(pd);
+	get_pet_text(pd);
+	get_wetdays_text(pd);
+	get_snowpack_text(pd);
+	get_deepswc_text(pd);
+	get_soiltemp_text(pd);
+	get_co2effects_text(pd);
+	get_biomass_text(pd);
 
 	OutKey k = eSW_NoKey;
 	SW_VEGPROD *vveg = NULL;
