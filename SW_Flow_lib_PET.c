@@ -704,7 +704,8 @@ double overcast_attenuation_Angstrom1924(double sunshine_fraction)
 */
 double clearsky_directbeam(double P, double e_a, double int_sin_beta)
 {
-  double W, Kt = 1.;
+  double W, Kt = 1., K_b;
+
   /* Allen et al. 2006: "Kt is an empirical turbidity coefficient,
      0 < Kt <= 1.0 where Kt = 1.0 for clean air (typical of regions of
      agricultural and natural vegetation) and Kt = 0.5 for extremely turbid,
@@ -715,8 +716,15 @@ double clearsky_directbeam(double P, double e_a, double int_sin_beta)
   W = 2.1 + 0.14 * e_a * P; // Allen et al. 2006: eq. 18
 
   // Allen et al. 2006: eq. 17
-  return 0.98 * exp(-0.00146 * P / (Kt * int_sin_beta) \
-         - 0.075 * pow(W / int_sin_beta, 0.4));
+  if (GT(int_sin_beta, 0.)) {
+    K_b = 0.98 * exp(-0.00146 * P / (Kt * int_sin_beta) \
+           - 0.075 * pow(W / int_sin_beta, 0.4));
+
+  } else {
+    K_b = 0.;
+  }
+
+  return fmax(0., fmin(1., K_b));
 }
 
 /** @brief Clearness index of diffuse radiation
@@ -744,7 +752,7 @@ double clearnessindex_diffuse(double K_b)
     K_d = 0.10 + 2.08 * K_b;
   }
 
-  return K_d;
+  return fmax(0., fmin(1., K_d));
 }
 
 
@@ -857,7 +865,7 @@ double solar_radiation(unsigned int doy,
     f_B = K_bt / K_bh * (*H_ot) / (*H_oh); // Allen et al. 2006: eq. 34
 
     f_ia = f_i * (1. - K_bh) \
-      * (1 + sqrt(K_bh / (K_bh + K_dh)) * pow(sin(slope / 2.), 3.)) \
+      * (1. + sqrt(K_bh / (K_bh + K_dh)) * pow(sin(slope / 2.), 3.)) \
       + f_B * K_bh; // Allen et al. 2006: eq. 33
 
     H_dt = f_ia * H_dh; // Allen et al. 2006: eq. 31
