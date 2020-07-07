@@ -259,6 +259,7 @@ void SW_SIT_read(void) {
 	#endif
 	LyrIndex r;
 	Bool too_many_regions = swFALSE;
+	RealD tmp;
 
 	/* note that Files.read() must be called prior to this. */
 	MyFileName = SW_F_name(eSite);
@@ -350,7 +351,8 @@ void SW_SIT_read(void) {
 			v->slope = atof(inbuf) * deg_to_rad;
 			break;
 		case 26:
-			v->aspect = atof(inbuf) * deg_to_rad;
+			tmp = atof(inbuf);
+			v->aspect = missing(tmp) ? tmp : tmp * deg_to_rad;
 			break;
 		case 27:
 			v->bmLimiter = atof(inbuf);
