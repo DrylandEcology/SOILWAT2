@@ -659,7 +659,7 @@ void solar_radiation_extraterrestrial(unsigned int doy, double int_cos_theta[],
 */
 double overcast_attenuation_KastenCzeplak1980(double cloud_cover)
 {
-  return 1. - 0.75 * pow(cloud_cover, 3.4);
+  return fmax(0., fmin(1., 1. - 0.75 * pow(cloud_cover, 3.4)));
 }
 
 /** @brief Cloud effects on incoming solar radiation by Angstrom 1924
@@ -680,7 +680,7 @@ double overcast_attenuation_KastenCzeplak1980(double cloud_cover)
 */
 double overcast_attenuation_Angstrom1924(double sunshine_fraction)
 {
-  return 0.25 + 0.75 * sunshine_fraction;
+  return fmax(0., fmin(1., 0.25 + 0.75 * sunshine_fraction));
 }
 
 
