@@ -801,15 +801,6 @@ double solar_radiation(unsigned int doy,
     H_bt, H_dt, H_rt, K_bt, f_ia, f_i, f_B,
     H_g;
 
-  // Calculate atmospheric pressure
-  P = atmospheric_pressure(elev);
-
-  // Actual vapor pressure [kPa] estimated from daily mean air temperature and
-  // mean monthly relative humidity at air-Tave
-  // Allen et al. 2005: eqs 7 and 14
-  e_a = rel_humidity / 100. *
-    0.6108 * exp((273.15 + air_temp_mean) / (air_temp_mean + 237.3));
-
 
   //--- Calculate daily integration of cos(theta) and sin(beta)
   //    for horizontal and tilted surfaces
@@ -826,11 +817,20 @@ double solar_radiation(unsigned int doy,
   *H_oh = H_o[0];
   *H_ot = H_o[1];
 
-  //--- Separation/decomposition: separate global horizontal irradiation H_gh
-  // into direct and diffuse radiation components
+
+  //--- Atmospheric attenuation
+  // Calculate atmospheric pressure
+  P = atmospheric_pressure(elev);
+
+  // Actual vapor pressure [kPa] estimated from daily mean air temperature and
+  // mean monthly relative humidity
+  // Allen et al. 2005: eqs 7 and 14
+  e_a = rel_humidity / 100. *
+    0.6108 * exp((17.27 * air_temp_mean) / (air_temp_mean + 237.3));
+
 
   // Atmospheric attenuation: additional cloud effects
-//  k_c = overcast_attenuation_KastenCzeplak1980(cloud_cover / 100.);
+  //k_c = overcast_attenuation_KastenCzeplak1980(cloud_cover / 100.);
 
   // TODO: improve estimation of sunshine_fraction n/N
   // e.g., Essa and Etman 2004 (Meteorol Atmos Physics) and
@@ -838,13 +838,16 @@ double solar_radiation(unsigned int doy,
   k_c = overcast_attenuation_Angstrom1924(1. - cloud_cover / 100.);
 
 
+  //--- Separation/decomposition: separate global horizontal irradiation H_gh
+  // into direct and diffuse radiation components
+
   // Atmospheric attenuation: clear-sky model for direct beam irradiation
-  K_bh = k_c * clearsky_directbeam(P, e_a, int_sin_beta[0]);
-  H_bh = K_bh * (*H_oh); // Allen et al. 2006: eq. 24
+  K_bh = clearsky_directbeam(P, e_a, int_sin_beta[0]);
+  H_bh = K_bh * k_c * (*H_oh); // Allen et al. 2006: eq. 24 + k_c
 
   // Diffuse irradiation
   K_dh = clearnessindex_diffuse(K_bh);
-  H_dh = K_dh * (*H_oh); // Allen et al. 2006: eq. 25
+  H_dh = K_dh * k_c * (*H_oh); // Allen et al. 2006: eq. 25 + k_c
 
   // Global horizontal irradiation: Allen et al. 2006: eq. 23
   *H_gh = H_bh + H_dh;
@@ -854,8 +857,8 @@ double solar_radiation(unsigned int doy,
   if (has_tilted_surface(slope, aspect)) {
 
     // Direct beam irradiation
-    K_bt = k_c * clearsky_directbeam(P, e_a, int_sin_beta[1]);
-    H_bt = K_bt * (*H_ot); // Allen et al. 2006: eq. 30
+    K_bt = clearsky_directbeam(P, e_a, int_sin_beta[1]);
+    H_bt = K_bt * k_c * (*H_ot); // Allen et al. 2006: eq. 30 + k_c
 
     // Diffuse irradiation (isotropic)
     f_i = 0.75 + 0.25 * cos(slope) - slope / swPI2; // Allen et al. 2006: eq. 32
