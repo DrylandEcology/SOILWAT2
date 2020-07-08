@@ -176,6 +176,11 @@ double sunset_hourangle(double lat, double declin)
     for any given SOILWAT2.
     Call \ref SW_PET_init_run to initialize the memoization.
 
+  @note The 2nd elements of the return arrays
+    `int_cos_theta` and `int_sin_beta` provide horizontal values
+    if the input surface, defined by `slope` and `aspect`, is horizontal.
+
+
   @param[in] doy Day of year [1-365].
   @param[in] lat Latitude of the site [radians].
   @param[in] slope Slope of the site
@@ -203,7 +208,7 @@ double sunset_hourangle(double lat, double declin)
   @param[out] int_cos_theta Array of length 2 with
     daily integral during sunshine (one or two periods)
     of the cosine of the solar incidence angle
-    on a horizontal (1st element) and tilted (2nd element) surface [-]
+    on a horizontal (1st element) and tilted (2nd element) surface [-].
 
   @param[out] int_sin_beta Array of length 2 with
     daily integral during sunshine (one or two periods)
@@ -564,6 +569,11 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
           // (drs): standardize by 2 * pi because integral is across full day
           memoized_int_cos_theta[doy0][1] = tmp2 / swPI2;
         }
+
+      } else {
+        // Horizontal surface: grab horizontal values
+        memoized_int_sin_beta[doy0][1] = memoized_int_sin_beta[doy0][0];
+        memoized_int_cos_theta[doy0][1] = memoized_int_cos_theta[doy0][0];
       }
     }
   }
