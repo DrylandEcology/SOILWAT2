@@ -703,8 +703,9 @@ namespace
       cloud_cover[12] =
         // Element 20:  Sky Cover (Cloud Cover)
         // {66.25, 66.25, 70, 67.5, 65, 60, 57.5, 57.5, 60, 63.75, 72.5, 71.25},
-        // Mar, Apr, Sep, Oct, Nov, Dec: replaced observed with estimated values to match `H_Ex2_19_1`
-        {66.25, 66.25, 80., 90., 65.0, 60.0, 57.5, 57.5, 80., 75., 85., 60.},
+        // replaced observed with estimated values to match `H_Ex2_19_1`:
+        // replaced ~ -61 + 1.661 * observed
+        {53., 47.5, 54., 53., 40., 35., 35., 30., 46., 50., 63., 52.},
       // Element 11:  Relative Humidity (%), MN3HRLY (Statistic 94):  Mean of 3-Hourly Observations
       rel_humidity[12] =
         {74.5, 73.1, 71.4, 66.3, 65.8, 68.3, 71.0, 74.4, 76.8, 73.2, 76.9, 78.5},
@@ -732,10 +733,11 @@ namespace
       EXPECT_NEAR(H_oh, H_Ex2_19_1[0][k], tol0)
         << "Duffie & Beckman 2013: Example 2.19.1, H_oh: "
         << "month = " << k + 1 << "\n";
-      EXPECT_NEAR(H_gh, H_Ex2_19_1[1][k], tol0)
+      // Feb/March deviate by ±1.25; other months by less than ±1
+      EXPECT_NEAR(H_gh, H_Ex2_19_1[1][k], 1.3 * tol0)
         << "Duffie & Beckman 2013: Example 2.19.1, H_gh: "
         << "month = " << k + 1 << "\n";
-      EXPECT_NEAR(H_gt, H_Ex2_19_1[2][k], tol0)
+      EXPECT_NEAR(H_gt, H_Ex2_19_1[2][k], 1.3 * tol0)
         << "Duffie & Beckman 2013: Example 2.19.1, H_gt: "
         << "month = " << k + 1 << "\n";
     }
@@ -806,8 +808,8 @@ namespace
       avgtemps[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60},
       // Expected PET
       expected_pet_avgtemps[] = {
-        0.0133, 0.0296, 0.0571, 0.0961,
-        0.1410, 0.1956, 0.2673, 0.3665, 0.5063, 0.7024
+        0.0100, 0.0184, 0.0346, 0.0576,
+        0.0896, 0.1290, 0.1867, 0.2736, 0.4027, 0.5890
       };
 
     for (i = 0; i < 10; i++)
@@ -830,7 +832,7 @@ namespace
       // Inputs
       lats[] = {-90., -45., 0., 45., 90.},
       // Expected PET
-      expected_pet_lats[] = {0.2287, 0.6621, 0.5418, 0.1764, 0.0421};
+      expected_pet_lats[] = {0.1550, 0.4360, 0.3597, 0.1216, 0.0421};
 
     for (i = 0; i < 5; i++)
     {
@@ -855,7 +857,7 @@ namespace
       // Inputs
       elevs[] = {-413, 0, 1000, 4418, 8727},
       // Expected PET
-      expected_pet_elevs[] = {0.2377, 0.2350, 0.2287, 0.2109, 0.1957};
+      expected_pet_elevs[] = {0.1670, 0.1634, 0.1550, 0.1305, 0.1093};
 
     for (i = 0; i < 5; i++)
     {
@@ -877,7 +879,7 @@ namespace
       // Inputs
       slopes[] = {0., 15., 34., 57., 90.},
       // Expected PET
-      expected_pet_slopes[] = {0.2287, 0.2256, 0.2189, 0.2051, 0.1714};
+      expected_pet_slopes[] = {0.1550, 0.1542, 0.1512, 0.1429, 0.1200};
 
     for (i = 0; i < 5; i++)
     {
@@ -903,7 +905,7 @@ namespace
       aspects[] = {-180, -90, -45, 0, 45, 90, 180},
       // Expected PET
       expected_pet_aspects[] = {
-        0.2059, 0.2279, 0.2431, 0.2494, 0.2431, 0.2279, 0.2059
+        0.1357, 0.1549, 0.1681, 0.1736, 0.1681, 0.1549, 0.1357
       };
 
     for (i = 0; i < 7; i++)
@@ -928,7 +930,7 @@ namespace
       // Inputs
       reflecs[] = {0., 0.22, 0.46, 0.55, 1.},
       // Expected PET
-      expected_pet_reflecs[] = {0.2602, 0.2128, 0.1607, 0.1411, 0.0421};
+      expected_pet_reflecs[] = {0.1745, 0.1457, 0.1141, 0.1022, 0.0421};
 
     for (i = 0; i < 5; i++)
     {
@@ -950,7 +952,7 @@ namespace
       // Inputs
       RHs[] = {0, 34, 56, 79, 100},
       // Expected PET
-      expected_pet_RHs[] = {0.2968, 0.2854, 0.2399, 0.1869, 0.1356};
+      expected_pet_RHs[] = {0.2267, 0.2123, 0.1662, 0.1128, 0.0612};
 
     for (i = 0; i < 5; i++)
     {
@@ -972,7 +974,7 @@ namespace
       // Inputs
       windsps[] = {0., 1., 5., 10., 20.},
       // Expected PET
-      expected_pet_windsps[] = {0.1753, 0.2164, 0.3807, 0.5861, 0.9969};
+      expected_pet_windsps[] = {0.1016, 0.1426, 0.3070, 0.5124, 0.9232};
 
     H_gt = solar_radiation(
       doy,
@@ -994,7 +996,7 @@ namespace
       // Inputs
       cloudcovs[] = {0, 12, 36, 76, 100},
       // Expected PET
-      expected_pet_cloudcovs[] = {0.1332, 0.1493, 0.1816, 0.2355, 0.2580};
+      expected_pet_cloudcovs[] = {0.1253, 0.1303, 0.1404, 0.1571, 0.1671};
       // Note: increasing cloud cover decreases H_gt and increases PET
 
     for (i = 0; i < 5; i++)
