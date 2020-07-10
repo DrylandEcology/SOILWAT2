@@ -772,7 +772,8 @@ double clearnessindex_diffuse(double K_b)
   by Allen et al. 2006 @cite allen2006AaFM which is
   based on Majumdar et al. 1972 and updated by ASCE-EWRI 2005;
   additionally, we incorporate effects of cloud cover based
-  on a relationship developed by Kasten and Czeplak 1980 @cite kasten1980SE.
+  on a relationship developed by Angstrom 1924 @cite angstrom1924QJRMS to
+  represent all-sky conditions.
 
   We use the anisotropic HDKR transposition model
   (Reindl et al. 1990 @cite reindl1990SE) to
