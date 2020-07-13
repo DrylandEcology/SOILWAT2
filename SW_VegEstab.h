@@ -17,9 +17,7 @@
 
 #include "SW_Defines.h"
 #include "SW_Times.h"
-#ifdef STEPWAT
-	#include "../ST_defines.h"
-#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +27,7 @@ extern "C" {
 /* indices to bars[] */
 #define SW_GERM_BARS 0
 #define SW_ESTAB_BARS 1
+
 
 typedef struct {
 

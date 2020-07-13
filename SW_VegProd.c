@@ -60,10 +60,7 @@ changed _echo_inits() to now display the bare ground components in logfile.log
 extern Bool EchoInits;
 extern SW_MODEL SW_Model;
 
-#ifdef STEPWAT
-	#include "../sxw.h"
-	extern SXW_t SXW; // structure to store values in and pass back to STEPPE
-#endif
+
 
 SW_VEGPROD SW_VegProd; /* declared here, externed elsewhere */
 
