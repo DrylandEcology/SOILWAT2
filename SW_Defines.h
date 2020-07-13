@@ -76,9 +76,8 @@ extern "C" {
   #define DFLT_FIRSTFILE "files.in"
 #endif
 
-#ifndef STEPWAT
-  #define MAX_SPECIESNAMELEN   4  /* for vegestab out of steppe-model context */
-#endif
+#define MAX_SPECIESNAMELEN   4  /* for vegestab */
+
 
 /* convenience indices to arrays in the model */
 #define TWO_DAYS   2
