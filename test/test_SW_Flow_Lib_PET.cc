@@ -291,17 +291,31 @@ namespace
             //------ Expectation 3: Tilted sunrise/sunset:
             // negatively symmetric in aspect reflected around South aspect
             for (k2 = 0; k2 < 4; k2++) {
+              // k2 = 0: `o[.][2]` (first sunrise) vs `o[.][5]` (final sunset)
+              // k2 = 1: `o[.][3]` (first sunset) vs `o[.][4]` (second sunrise)
+
               if (
-                !missing(o[0][itime][2 + k2]) ||
-                !missing(o[1][itime][5 - k2])
+                missing(o[0][itime][2 + k2]) || missing(o[1][itime][5 - k2])
               ) {
+                // if one of (first sunset, second sunrise) is missing,
+                // then both should be missing
+                EXPECT_TRUE(
+                  missing(o[0][itime][2 + k2]) && missing(o[1][itime][5 - k2])
+                ) <<
+                  "symmetry (reflected aspect) of tilted sunrise/sunset for" <<
+                  msg.str() <<
+                  " k2 = " << k2 << " (missing values)";
+
+              } else {
+                // no values missing
                 EXPECT_NEAR(
                   o[0][itime][2 + k2],
                   -o[1][itime][5 - k2],
                   tol9
                 ) <<
                   "symmetry (reflected aspect) of tilted sunrise/sunset for" <<
-                  msg.str();
+                  msg.str() <<
+                  " k2 = " << k2;
               }
             }
           }
