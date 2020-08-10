@@ -12,6 +12,8 @@ install:
 # Note: appveyor doesn't have sanitizers -> cannot run *_severe test targets
 build_script:
   - set PATH=%PATH%;c:\cygwin\bin
+  # print compiler versions as seen by make
+  - make compiler_version
   # compile and run optimized binary
   - make clean bin bint_run
   # compile and run debug binary

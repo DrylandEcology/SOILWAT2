@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # commands         explanations
 #-------------------------------------------------------------------------------
-# help             display the top of this file, i.e., print explanations
+# make help        display the top of this file, i.e., print explanations
 #
 # make all         (synonym to 'bin'): compile the binary executable using
 #                  optimizations
@@ -34,6 +34,8 @@
 # make test_clean  delete test files and libraries
 # make cov_clean   delete files associated with code coverage
 # make doc_clean   delete documentation
+#
+# make compiler_version print version information of CC and CXX compilers
 #-------------------------------------------------------------------------------
 
 uname_m = $(shell uname -m)
@@ -326,3 +328,11 @@ doc_clean :
 .PHONY : help
 help :
 		less makefile
+
+
+.PHONY : compiler_version
+compiler_version :
+		@(echo CC version:)
+		@(echo `"$(CC)" --version`)
+		@(echo CXX version:)
+		@(echo `"$(CXX)" --version`)
