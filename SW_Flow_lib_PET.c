@@ -511,7 +511,7 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
                   + b * (sin(omega1b) - sin(omega2b))
                   - c * (cos(omega1b) - cos(omega2b));
 
-              if (X < 0.) {
+              if (LT(X, 0.)) {
                 // indeed two periods of sunshine
                 msun_angles[doy0][0] = 2;
                 msun_angles[doy0][3] = omega2b;
