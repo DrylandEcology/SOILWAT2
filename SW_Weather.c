@@ -68,7 +68,6 @@ SW_WEATHER SW_Weather; /* declared here, externed elsewhere */
 */
 Bool weth_found;
 
-RealD *runavg_list; /* used in run_tmp_avg() */
 
 /* =================================================== */
 /*                Module-Level Variables               */
@@ -95,27 +94,12 @@ void _clear_hist_weather(void) {
 		wh->ppt[d] = wh->temp_max[d] = wh->temp_min[d] = SW_MISSING;
 }
 
-static void _clear_runavg(void) {
-	/* --------------------------------------------------- */
-	TimeInt i;
-
-	for (i = 0; i < SW_Weather.days_in_runavg; i++)
-		runavg_list[i] = SW_MISSING;
-}
-
-/**
-@brief Clears memory for runavg_list.
-*/
-void SW_WTH_clear_runavg_list(void) {
-	free(runavg_list);
-	runavg_list = NULL;
-}
 
 static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
 	/* --------------------------------------------------- */
-	/* If use_markov=swFALSE and no weather file found, we won't
+	/* If use_weathergenerator = swFALSE and no weather file found, we won't
 	 * get this far because the new_year() will fail, so if
-	 * no weather file found and we make it here, use_markov=swTRUE
+	 * no weather file found and we make it here, use_weathergenerator = swTRUE
 	 * and we call mkv_today().  Otherwise, we're using this
 	 * year's weather file and this logic sets today's value
 	 * to yesterday's if today's is missing.  This may not
@@ -147,7 +131,7 @@ static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
 		} else {
 			// some of today's values are missing
 
-			if (SW_Weather.use_markov) {
+			if (SW_Weather.use_weathergenerator) {
 				// if weather generator is turned on then use it for all values
 				*ppt = w->now.ppt[Yesterday]; /* reqd for markov */
 				SW_MKV_today(doy, tmax, tmin, ppt);
@@ -212,11 +196,9 @@ void SW_WTH_deconstruct(void)
 		}
 	}
 
-	if (SW_Weather.use_markov) {
+	if (SW_Weather.use_weathergenerator) {
 		SW_MKV_deconstruct();
 	}
-
-	SW_WTH_clear_runavg_list();
 }
 
 /**
@@ -239,19 +221,36 @@ void SW_WTH_init_run(void) {
 	SW_Weather.soil_inf = 0.;
 }
 
+
 /** @brief Sets up daily meteorological inputs for current simulation year
 
-    @sideeffect
-      \ref weth_found is set to `swTRUE` if historical daily meteorological inputs
-      are successfully located;
-      otherwise, \ref weth_found is `swFALSE` and the weather generator
-      is required to produce daily meteorological inputs.
+  Meteorological inputs are required for each day; they can either be
+  observed and provided via weather input files or they can be generated
+  by a weather generator (which has separate input requirements).
+
+  SOILWAT2 handles three scenarios of missing data:
+    1. Some individual days are missing (set to the missing value)
+    2. An entire year is missing (file `weath.xxxx` for year `xxxx` is absent)
+    3. No daily weather input files are available
+
+  SOILWAT2 may be set up such that the weather generator is exclusively:
+    - Set the weather generator to exclusive use
+  or
+    1. Turn on the weather generator
+    2. Set the "first year to begin historical weather" to a year after
+       the last simulated year
+
+  @sideeffect
+    - if historical daily meteorological inputs are successfully located,
+      then \ref weth_found is set to `swTRUE`
+    - otherwise, \ref weth_found is `swFALSE`
 */
 void SW_WTH_new_year(void) {
 
-	_clear_runavg();
-
-	if (SW_Model.year < SW_Weather.yr.first) {
+	if (
+		SW_Weather.use_weathergenerator_only ||
+		SW_Model.year < SW_Weather.yr.first
+	) {
 		weth_found = swFALSE;
 
 	} else {
@@ -262,7 +261,7 @@ void SW_WTH_new_year(void) {
 		#endif
 	}
 
-	if (!weth_found && !SW_Weather.use_markov) {
+	if (!weth_found && !SW_Weather.use_weathergenerator) {
 		LogError(
 		  logfp,
 		  LOGFATAL,
@@ -338,11 +337,11 @@ void SW_WTH_new_day(void) {
 void SW_WTH_read(void) {
 	/* =================================================== */
 	SW_WEATHER *w = &SW_Weather;
-	const int nitems = 18;
+	const int nitems = 17;
 	FILE *f;
 	int lineno = 0, month, x;
 	RealF sppt, stmax, stmin;
-	RealF sky,wind,rH,transmissivity;
+	RealF sky, wind, rH;
 
 	MyFileName = SW_F_name(eWeather);
 	f = OpenFile(MyFileName, "r");
@@ -358,49 +357,68 @@ void SW_WTH_read(void) {
 		case 2:
 			w->pct_snowRunoff = atoi(inbuf);
 			break;
+
 		case 3:
-			w->use_markov = itob(atoi(inbuf));
+			x = atoi(inbuf);
+			if (x > 1) {
+				w->use_weathergenerator_only = w->use_weathergenerator = swTRUE;
+			} else {
+				w->use_weathergenerator_only = swFALSE;
+				w->use_weathergenerator = itob(x);
+			}
 			break;
+
 		case 4:
-			w->yr.first = yearto4digit(atoi(inbuf));
+			x = atoi(inbuf);
+			w->yr.first = (x < 0) ? SW_Model.startyr : yearto4digit(x);
 			break;
-		case 5:
-			w->days_in_runavg = atoi(inbuf);
-			runavg_list = (RealD *) Mem_Calloc(w->days_in_runavg, sizeof(RealD), "SW_WTH_read()");
-			break;
+
 		default:
-			if (lineno == 6 + MAX_MONTHS)
+			if (lineno == 5 + MAX_MONTHS)
 				break;
-			x = sscanf(inbuf, "%d %f %f %f %f %f %f %f", &month, &sppt, &stmax, &stmin,&sky,&wind,&rH,&transmissivity);
-			if (x < 4) {
+
+			x = sscanf(
+				inbuf,
+				"%d %f %f %f %f %f %f",
+				&month, &sppt, &stmax, &stmin, &sky, &wind, &rH
+			);
+
+			if (x != 7) {
 				CloseFile(&f);
 				LogError(logfp, LOGFATAL, "%s : Bad record %d.", MyFileName, lineno);
 			}
-			w->scale_precip[month - 1] = sppt;
-			w->scale_temp_max[month - 1] = stmax;
-			w->scale_temp_min[month - 1] = stmin;
-			w->scale_skyCover[month - 1] = sky;
-			w->scale_wind[month - 1] = wind;
-			w->scale_rH[month - 1] = rH;
-			w->scale_transmissivity[month - 1] = transmissivity;
+
+			month--; // convert to base0
+			w->scale_precip[month] = sppt;
+			w->scale_temp_max[month] = stmax;
+			w->scale_temp_min[month] = stmin;
+			w->scale_skyCover[month] = sky;
+			w->scale_wind[month] = wind;
+			w->scale_rH[month] = rH;
 		}
+
 		lineno++;
 	}
+
 	SW_WeatherPrefix(w->name_prefix);
 	CloseFile(&f);
-	if (lineno < nitems - 1) {
+
+	if (lineno < nitems) {
 		LogError(logfp, LOGFATAL, "%s : Too few input lines.", MyFileName);
 	}
+
 	w->yr.last = SW_Model.endyr;
 	w->yr.total = w->yr.last - w->yr.first + 1;
 
-	if (!w->use_markov && SW_Model.startyr < w->yr.first) {
+	if (!w->use_weathergenerator && SW_Model.startyr < w->yr.first) {
     LogError(
       logfp,
       LOGFATAL,
-      "%s : Model year (%d) starts before weather files (%d)"
-        " and use_Markov=swFALSE.\nPlease synchronize the years"
-        " or set up the Markov weather files",
+      "%s : Model year (%d) starts before weather files (%d) "
+        "and the Markov weather generator is turned off. \n"
+        "Please synchronize the years or "
+        "activate the weather generator "
+        "(and set up input files `mkv_prob.in` and `mkv_covar.in`).",
       MyFileName, SW_Model.startyr, w->yr.first
     );
 	}
@@ -542,9 +560,6 @@ void SW_WTH_SetMemoryRefs( void) {
 	 this, and will be checked via CheckMemoryRefs() after
 	 this, most likely in the main() function.
 	 */
-
-	NoteMemoryRef(runavg_list);
-
 }
 
 #endif

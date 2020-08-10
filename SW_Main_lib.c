@@ -46,14 +46,18 @@ Bool QuietMode, EchoInits; /* if true, echo inits to logfile */
 //function
 void init_args(int argc, char **argv);
 
+
 /* =================================================== */
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
 
+static void usage(void);
+
+
 /**
 @brief In the case of an error, *s1 is displayed.
 */
-void usage(void) {
+static void usage(void) {
 	const char *s1 = "Ecosystem water simulation model SOILWAT2\n"
 			"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
 			"Usage: soilwat [-d startdir] [-f files.in] [-e] [-q]\n"

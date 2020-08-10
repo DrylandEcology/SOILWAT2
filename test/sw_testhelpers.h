@@ -1,15 +1,25 @@
+#include <cmath>
 #include "gtest/gtest.h"
 
 
 #define length(array) (sizeof(array) / sizeof(*(array))) //get length of an array
 
-const double tol3 = 1e-3, tol6 = 1e-6, tol9 = 1e-9;
+static const double
+  tol0 = 1e-0, tol1 = 1e-1, tol2 = 1e-2, tol3 = 1e-3, tol6 = 1e-6, tol9 = 1e-9;
 
+
+/* SOILWAT2's macro `missing` uses `isfinite` which is C99; however,
+   unit tests are compiled with C++ and the corresponding
+   `std::isfinite` is C++11
+   -> avoiding "error: use of undeclared identifier 'isfinite';
+      did you mean 'std::isfinite'?"
+*/
+#undef missing
+#define missing(x)  ( EQ( fabs( (x) ), SW_MISSING ) || !std::isfinite( (x) ) )
+
+
+/* Functions for unit tests */
 
 void Reset_SOILWAT2_after_UnitTest(void);
-
-void _set_layers(LyrIndex nlyrs, RealF dmax[], RealF matricd[], RealF f_gravel[],
-  RealF evco[], RealF trco_grass[], RealF trco_shrub[], RealF trco_tree[],
-  RealF trco_forb[], RealF psand[], RealF pclay[], RealF imperm[], RealF soiltemp[]);
 
 void create_test_soillayers(unsigned int nlayers);

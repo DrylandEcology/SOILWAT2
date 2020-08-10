@@ -1,17 +1,24 @@
+# Build matrix
 platform:
   - x86
-  - Any CPU
+  - x64
 
+# Allow to fail on first error in matrix
+# true = allow to fail on first error in matrix
 matrix:
   fast_finish: true
 
 install:
   - git submodule update --init --recursive
 
-# to run your custom scripts instead of automatic MSBuild
+# custom build scripts (instead of automatic MSBuild)
 # Note: appveyor doesn't have sanitizers -> cannot run *_severe test targets
 build_script:
   - set PATH=%PATH%;c:\cygwin\bin
+  #- if "%PLATFORM%"=="x86" set PATH=%PATH%;c:\cygwin\bin
+  #- if "%PLATFORM%"=="x64" set PATH=%PATH%;c:\cygwin64\bin
+  # print compiler versions as seen by make
+  - make compiler_version
   # compile and run optimized binary
   - make clean bin bint_run
   # compile and run debug binary

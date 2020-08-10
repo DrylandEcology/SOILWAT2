@@ -116,7 +116,7 @@ namespace {
     // Turn on Markov weather generator (and turn off use of historical weather)
     SW_Soilwat.hist_use = swFALSE;
     SW_Weather.yr.first = SW_Model.endyr + 1;
-    SW_Weather.use_markov = swTRUE;
+    SW_Weather.use_weathergenerator = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup();
@@ -138,7 +138,7 @@ namespace {
     int i;
 
     // Turn on Markov weather generator
-    SW_Weather.use_markov = swTRUE;
+    SW_Weather.use_weathergenerator = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup();

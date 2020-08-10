@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # commands         explanations
 #-------------------------------------------------------------------------------
-# help             display the top of this file, i.e., print explanations
+# make help        display the top of this file, i.e., print explanations
 #
 # make all         (synonym to 'bin'): compile the binary executable using
 #                  optimizations
@@ -34,6 +34,8 @@
 # make test_clean  delete test files and libraries
 # make cov_clean   delete files associated with code coverage
 # make doc_clean   delete documentation
+#
+# make compiler_version print version information of CC and CXX compilers
 #-------------------------------------------------------------------------------
 
 uname_m = $(shell uname -m)
@@ -66,19 +68,37 @@ use_gnu++11 = -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
 #------ FLAGS
 # Diagnostic warning/error messages
 warning_flags = -Wall -Wextra
+
 # Don't use 'warning_flags_severe*' for production builds and rSOILWAT2
-warning_flags_severe = $(warning_flags) -Wpedantic -Werror
-warnings_flags_severe_cxx = $(warning_flags_severe) -Wno-error=deprecated
-	# TODO: address underlying problems so that we can eliminate `-Wno-error`:
-	#  - compiler warning 'deprecated': treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated (https://github.com/DrylandEcology/SOILWAT2/issues/208)
+warning_flags_severe = \
+	$(warning_flags) \
+	-Wpedantic \
+	-Werror \
+	-Wcast-align \
+	-Wmissing-declarations \
+	-Wredundant-decls
+
+warnings_flags_severe_cxx = \
+	$(warning_flags_severe) \
+	-Wno-error=deprecated
+	# TODO: address underlying problems so that we can eliminate
+	# `-Wno-error=deprecated`
+	# (https://github.com/DrylandEcology/SOILWAT2/issues/208):
+	# "treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated"
+
 
 # Instrumentation options for debugging and testing
 instr_flags = -fstack-protector-all
-instr_flags_severe = $(instr_flags) -fsanitize=undefined -fsanitize=address
+
+instr_flags_severe = \
+	$(instr_flags) \
+	-fsanitize=undefined \
+	-fsanitize=address
 	# -fstack-protector-strong (gcc >= v4.9)
 	# (gcc >= 4.0) -D_FORTIFY_SOURCE: lightweight buffer overflow protection to some memory and string functions
 	# (gcc >= 4.8; llvm >= 3.1) -fsanitize=address: replaces `mudflap` run time checker; https://github.com/google/sanitizers/wiki/AddressSanitizer
 	# (gcc >= 4.9; llvm >= 3.3) -fsanitize=undefined
+
 
 # Precompiler and compiler flags and options
 sw_CPPFLAGS = $(CPPFLAGS)
@@ -88,6 +108,7 @@ sw_CXXFLAGS = $(CXXFLAGS)
 bin_flags = -O2 -fno-stack-protector
 debug_flags = -g -O0 -DSWDEBUG
 cov_flags = -O0 -coverage
+
 
 # Linker flags and libraries
 # order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
@@ -107,7 +128,7 @@ gtest_LDLIBS = -l$(gtest)
 sources_core = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
 					rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c \
 					SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c \
-					SW_VegProd.c SW_Flow_lib.c SW_Flow.c SW_Carbon.c
+					SW_VegProd.c SW_Flow_lib_PET.c SW_Flow_lib.c SW_Flow.c SW_Carbon.c
 
 sources_lib = $(sw_sources) $(sources_core) SW_Output.c SW_Output_get_functions.c
 objects_lib = $(sources_lib:.c=.o)
@@ -307,3 +328,11 @@ doc_clean :
 .PHONY : help
 help :
 		less makefile
+
+
+.PHONY : compiler_version
+compiler_version :
+		@(echo CC version:)
+		@(echo `"$(CC)" --version`)
+		@(echo CXX version:)
+		@(echo `"$(CXX)" --version`)

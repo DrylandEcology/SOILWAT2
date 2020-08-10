@@ -259,6 +259,7 @@ void SW_SIT_read(void) {
 	#endif
 	LyrIndex r;
 	Bool too_many_regions = swFALSE;
+	RealD tmp;
 
 	/* note that Files.read() must be called prior to this. */
 	MyFileName = SW_F_name(eSite);
@@ -335,70 +336,77 @@ void SW_SIT_read(void) {
 			v->transp.range = atof(inbuf);
 			break;
 		case 22:
-			v->latitude = atof(inbuf);
+			// longitude is currently not used by the code, but may be used in the future
+			// it is present in the `siteparam.in` input file to completely document
+			// site location
+			v->longitude = atof(inbuf) * deg_to_rad;
 			break;
 		case 23:
-			v->altitude = atof(inbuf);
+			v->latitude = atof(inbuf) * deg_to_rad;
 			break;
 		case 24:
-			v->slope = atof(inbuf);
+			v->altitude = atof(inbuf);
 			break;
 		case 25:
-			v->aspect = atof(inbuf);
+			v->slope = atof(inbuf) * deg_to_rad;
 			break;
 		case 26:
-			v->bmLimiter = atof(inbuf);
+			tmp = atof(inbuf);
+			v->aspect = missing(tmp) ? tmp : tmp * deg_to_rad;
 			break;
 		case 27:
-			v->t1Param1 = atof(inbuf);
+			v->bmLimiter = atof(inbuf);
 			break;
 		case 28:
-			v->t1Param2 = atof(inbuf);
+			v->t1Param1 = atof(inbuf);
 			break;
 		case 29:
-			v->t1Param3 = atof(inbuf);
+			v->t1Param2 = atof(inbuf);
 			break;
 		case 30:
-			v->csParam1 = atof(inbuf);
+			v->t1Param3 = atof(inbuf);
 			break;
 		case 31:
-			v->csParam2 = atof(inbuf);
+			v->csParam1 = atof(inbuf);
 			break;
 		case 32:
-			v->shParam = atof(inbuf);
+			v->csParam2 = atof(inbuf);
 			break;
 		case 33:
-			v->Tsoil_constant = atof(inbuf);
+			v->shParam = atof(inbuf);
 			break;
 		case 34:
-			v->stDeltaX = atof(inbuf);
+			v->Tsoil_constant = atof(inbuf);
 			break;
 		case 35:
-			v->stMaxDepth = atof(inbuf);
+			v->stDeltaX = atof(inbuf);
 			break;
 		case 36:
-			v->use_soil_temp = itob(atoi(inbuf));
+			v->stMaxDepth = atof(inbuf);
 			break;
 		case 37:
+			v->use_soil_temp = itob(atoi(inbuf));
+			break;
+		case 38:
 			c->use_bio_mult = itob(atoi(inbuf));
 			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': use_bio_mult = %d\n", c->use_bio_mult);
 			#endif
 			break;
-		case 38:
+		case 39:
 			c->use_wue_mult = itob(atoi(inbuf));
 			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': use_wue_mult = %d\n", c->use_wue_mult);
 			#endif
 			break;
-		case 39:
+		case 40:
 			strcpy(c->scenario, inbuf);
 			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", c->scenario);
 			#endif
 			break;
 		default:
-			if (lineno > 39 + MAX_TRANSP_REGIONS)
+			if (lineno > 40 + MAX_TRANSP_REGIONS)
 				break; /* skip extra lines */
 
 			if (MAX_TRANSP_REGIONS < v->n_transp_rgn) {
@@ -1037,10 +1045,11 @@ void _echo_inputs(void) {
 	LogError(logfp, LOGNOTE, "  PET Scale: %5.4f\n", s->pet_scale);
 	LogError(logfp, LOGNOTE, "  Runoff: proportion of surface water lost: %5.4f\n", s->percentRunoff);
 	LogError(logfp, LOGNOTE, "  Runon: proportion of new surface water gained: %5.4f\n", s->percentRunon);
-	LogError(logfp, LOGNOTE, "  Latitude (radians): %4.2f\n", s->latitude);
+	LogError(logfp, LOGNOTE, "  Longitude (degree): %4.2f\n", s->longitude * rad_to_deg);
+	LogError(logfp, LOGNOTE, "  Latitude (degree): %4.2f\n", s->latitude * rad_to_deg);
 	LogError(logfp, LOGNOTE, "  Altitude (m a.s.l.): %4.2f \n", s->altitude);
-	LogError(logfp, LOGNOTE, "  Slope (degrees): %4.2f\n", s->slope);
-	LogError(logfp, LOGNOTE, "  Aspect (degrees): %4.2f\n", s->aspect);
+	LogError(logfp, LOGNOTE, "  Slope (degree): %4.2f\n", s->slope * rad_to_deg);
+	LogError(logfp, LOGNOTE, "  Aspect (degree): %4.2f\n", s->aspect * rad_to_deg);
 
 	LogError(logfp, LOGNOTE, "\nSnow simulation parameters (SWAT2K model):\n----------------------\n");
 	LogError(logfp, LOGNOTE, "  Avg. air temp below which ppt is snow ( C): %5.4f\n", s->TminAccu2);

@@ -86,16 +86,11 @@ void SW_SKY_read(void) {
 					&v->r_humidity[5], &v->r_humidity[6], &v->r_humidity[7], &v->r_humidity[8], &v->r_humidity[9], &v->r_humidity[10], &v->r_humidity[11]);
 			break;
 		case 3:
-			x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", &v->transmission[0], &v->transmission[1], &v->transmission[2], &v->transmission[3],
-					&v->transmission[4], &v->transmission[5], &v->transmission[6], &v->transmission[7], &v->transmission[8], &v->transmission[9], &v->transmission[10],
-					&v->transmission[11]);
-			break;
-		case 4:
 			x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", &v->snow_density[0], &v->snow_density[1], &v->snow_density[2], &v->snow_density[3],
 					&v->snow_density[4], &v->snow_density[5], &v->snow_density[6], &v->snow_density[7], &v->snow_density[8], &v->snow_density[9], &v->snow_density[10],
 					&v->snow_density[11]);
 			break;
-		case 5:
+		case 4:
       x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
           &v->n_rain_per_day[0], &v->n_rain_per_day[1], &v->n_rain_per_day[2],
           &v->n_rain_per_day[3], &v->n_rain_per_day[4], &v->n_rain_per_day[5],
@@ -140,11 +135,6 @@ void SW_SKY_init_run(void) {
 		  100.,
 		  fmax(0.0, w->scale_rH[mon] + v->r_humidity[mon])
 		);
-
-		v->transmission[mon] = fmin(
-		  1.0,
-		  fmax(0.0, w->scale_transmissivity[mon] * v->transmission[mon])
-		);
 	}
 }
 
@@ -168,7 +158,6 @@ void SW_SKY_new_year(void) {
     interpolate_monthlyValues(v->cloudcov, v->cloudcov_daily);
     interpolate_monthlyValues(v->windspeed, v->windspeed_daily);
     interpolate_monthlyValues(v->r_humidity, v->r_humidity_daily);
-    interpolate_monthlyValues(v->transmission, v->transmission_daily);
     interpolate_monthlyValues(v->snow_density, v->snow_density_daily);
   }
 }

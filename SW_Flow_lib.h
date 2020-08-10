@@ -84,11 +84,6 @@ void litter_intercepted_water(double *ppt_through, double *int_lit, double *s_li
 void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft, int nlyrs, double swcfc[], double swcsat[], double impermeability[],
 		double *standingWater);
 
-double petfunc(unsigned int doy, double avgtemp, double rlat, double elev, double slope, double aspect, double reflec, double humid, double windsp, double cloudcov,
-		double transcoeff);
-
-double svapor(double temp);
-
 void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n_layers, unsigned int tr_regions[], double tr_coeff[], double swc[]);
 
 void EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param);

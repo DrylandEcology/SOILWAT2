@@ -18,11 +18,12 @@ log=${doc_path}"/log_doxygen.log"         # logfile for doxygen output
 log_tmp=${doc_path}"/log_doxygen_tmp.log"
 doxexcept=${doc_path}"/doxygen_exceptions.txt" # filename that lists exceptions (one per line)
 
-# Downgrade Doxyfile in case this runs an old doxygen version, e.g.,
-# travis-ci is currently on 1.8.6 (instead of 1.8.15)
-if [[ $(doxygen --version) != "1.8.16" ]]; then
+# Downgrade/upgrade Doxyfile in case this runs an different doxygen version, e.g.,
+# travis-ci is currently on 1.8.11
+#if [[ $(doxygen --version) != "1.8.17" ]]; then
+#  echo "Upgrade Doxyfile to doxygen v"`doxygen --version`
   doxygen -u ${doxy} &>/dev/null
-fi
+#fi
 
 # Run doxygen and pipe all output to a log file
 doxygen ${doxy} > ${log} 2>&1

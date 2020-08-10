@@ -2122,7 +2122,8 @@ void get_aet_SXW(OutPeriod pd)
 #ifdef SW_OUTTEXT
 
 /**
-@brief Gets potential evapotranspiration when dealing with OUTTEXT.
+@brief Gets potential evapotranspiration and radiation
+				when dealing with OUTTEXT.
 
 @param pd Period.
 */
@@ -2131,14 +2132,23 @@ void get_pet_text(OutPeriod pd)
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
 
 	sw_outstr[0] = '\0';
-	sprintf(sw_outstr, "%c%.*f", _Sep, OUT_DIGITS, vo->pet);
+	sprintf(
+		sw_outstr,
+		"%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
+		_Sep, OUT_DIGITS, vo->pet,
+		_Sep, OUT_DIGITS, vo->H_oh,
+		_Sep, OUT_DIGITS, vo->H_ot,
+		_Sep, OUT_DIGITS, vo->H_gh,
+		_Sep, OUT_DIGITS, vo->H_gt
+	);
 }
 #endif
 
 #if defined(RSOILWAT)
 
 /**
-@brief Gets potential evapotranspiration when dealing with OUTTEXT.
+@brief Gets potential evapotranspiration and radiation
+			when dealing with OUTTEXT.
 
 @param pd Period.
 */
@@ -2150,12 +2160,17 @@ void get_pet_mem(OutPeriod pd)
 	get_outvalleader(p, pd);
 
 	p[iOUT(0, pd)] = vo->pet;
+	p[iOUT(1, pd)] = vo->H_oh;
+	p[iOUT(2, pd)] = vo->H_ot;
+	p[iOUT(3, pd)] = vo->H_gh;
+	p[iOUT(4, pd)] = vo->H_gt;
 }
 
 #elif defined(STEPWAT)
 
 /**
-@brief Gets potential evapotranspiration when dealing with OUTTEXT.
+@brief Gets potential evapotranspiration and radiation
+			when dealing with OUTTEXT.
 */
 void get_pet_agg(OutPeriod pd)
 {
@@ -2166,6 +2181,10 @@ void get_pet_agg(OutPeriod pd)
 		*psd = p_OUTsd[eSW_PET][pd];
 
 	do_running_agg(p, psd, iOUT(0, pd), Globals->currIter, vo->pet);
+	do_running_agg(p, psd, iOUT(1, pd), Globals->currIter, vo->H_oh);
+	do_running_agg(p, psd, iOUT(2, pd), Globals->currIter, vo->H_ot);
+	do_running_agg(p, psd, iOUT(3, pd), Globals->currIter, vo->H_gh);
+	do_running_agg(p, psd, iOUT(4, pd), Globals->currIter, vo->H_gt);
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';

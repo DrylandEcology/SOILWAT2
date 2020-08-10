@@ -24,7 +24,9 @@ for ((k = 0; k < ncomp; k++)); do
 
   echo $'\n'`"${ccs[k]}" --version`
   echo $'\n'`"${cxxs[k]}" --version`
+  echo $'\n'
 
+  CC=${ccs[k]} CXX=${cxxs[k]} make compiler_version
 
   echo $'\n'$'\n'Run binary with ${port_compilers[k]} ...
   CC=${ccs[k]} CXX=${cxxs[k]} make clean bin bint_run

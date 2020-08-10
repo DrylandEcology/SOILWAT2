@@ -392,8 +392,8 @@ void get_outstrleader(OutPeriod pd, char *str) {
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_agg) {
 	char str_time[20];
 	char
-		// 2500 characters required for does_agg = TRUE
-		header_reg[OUTSTRLEN],
+		// 3500 characters required for does_agg = TRUE
+		header_reg[2 * OUTSTRLEN],
 		// 26500 characters required for 25 soil layers and does_agg = TRUE
 		header_soil[SW_Site.n_layers * OUTSTRLEN];
 

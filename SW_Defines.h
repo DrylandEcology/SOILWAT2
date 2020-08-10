@@ -19,7 +19,7 @@
 #ifndef SOILW_DEF_H
 #define SOILW_DEF_H
 
-#include <math.h>  /* for atan() in tanfunc() below */
+#include <math.h>  /* >= C99; for: atan(), isfinite() */
 #include "generic.h"
 
 #ifdef __cplusplus
@@ -41,8 +41,28 @@ extern "C" {
 #define MAX_NYEAR 2500  /**< An integer representing the max calendar year that is supported. The number just needs to be reasonable, it is an artifical limit. */
 
 #define SW_MISSING     999.     /* value to use as MISSING */
-#define swPI          3.141592653589793238462643383279502884197169399375
-#define swPI2         6.28318530717958
+
+
+/* M_PI and M_PI_2 from <math.h> if implementation conforms to POSIX extension
+   but may not be defined for any implementation that conforms to the C standard
+*/
+#ifdef M_PI
+  #define swPI M_PI
+#else
+  #define swPI        3.141592653589793238462643383279502884197169399375
+#endif
+
+#define swPI2         6.28318530717958647692528676655900577
+
+#ifdef M_PI_2
+  #define swPI_half M_PI_2
+#else
+  #define swPI_half   1.57079632679489661923132169163975144
+#endif
+
+#define deg_to_rad    0.0174532925199433 /**< Convert arc-degrees to radians, i.e., x * deg_to_rad with deg_to_rad = pi / 180 */
+#define rad_to_deg    57.29577951308232 /**< Convert radians to arc-degrees, i.e., x * rad_to_deg with rad_to_deg = 180 / pi */
+
 #define BARCONV     1024.
 #define SEC_PER_DAY	86400. // the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400 seconds)
 
@@ -56,9 +76,8 @@ extern "C" {
   #define DFLT_FIRSTFILE "files.in"
 #endif
 
-#ifndef STEPWAT
-  #define MAX_SPECIESNAMELEN   4  /* for vegestab out of steppe-model context */
-#endif
+#define MAX_SPECIESNAMELEN   4  /* for vegestab */
+
 
 /* convenience indices to arrays in the model */
 #define TWO_DAYS   2
@@ -141,7 +160,9 @@ typedef struct { RealF xinflec, yinflec, range, slope; } tanfunc_t;
 
 
 /* standardize the test for missing */
-#define missing(x)  ( EQ(fabs( (x) ), SW_MISSING) )
+/* isfinite is C99 and std::isfinite is C++11 */
+#define missing(x)  ( EQ( fabs( (x) ), SW_MISSING ) || !isfinite( (x) ) )
+
 
 /* types to identify the various modules/objects */
 typedef enum { eF,   /* file management */
