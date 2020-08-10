@@ -183,7 +183,7 @@ namespace
       int_cos_theta[2],
       int_sin_beta[2],
       daylength[4][14];
-    std::ostringstream msg;
+    std::ostringstream msg, msg2;
 
 
     for (isl = 0; isl <= 8; isl++) {
@@ -272,7 +272,7 @@ namespace
           for (itime = 0; itime < 14; itime++) {
             msg.str("");
             msg <<
-              " doy = " << doy_used[1][itime] <<
+              "doy = " << doy_used[1][itime] <<
               ", lat = " <<
                 round(latitude_used[1][itime] * rad_to_deg * 100.) / 100. <<
               ", slope = " <<
@@ -282,10 +282,20 @@ namespace
               "|" <<
                 round(aspect_used[1][itime] * rad_to_deg * 100.) / 100.;
 
+            msg2.str("");
+            for (k2 = 0; k2 < 7; k2++) {
+              msg2 <<
+                "o[0|1][" << k2 << "] = " <<
+                o[0][itime][k2] << "|" << o[1][itime][k2];
+
+              if (k2 < 6) msg2 << ", ";
+            }
+
+
             //------ Expectation 2: Daylength:
             // symmetric in aspect reflected around South aspect: 0±abs(asp)
             EXPECT_NEAR(daylength[0][itime], daylength[1][itime], tol9) <<
-              "symmetry (reflected aspect) of daylength for" <<
+              "symmetry (reflected aspect) of daylength for " <<
               msg.str();
 
             //------ Expectation 3: Tilted sunrise/sunset:
@@ -302,9 +312,10 @@ namespace
                 EXPECT_TRUE(
                   missing(o[0][itime][2 + k2]) && missing(o[1][itime][5 - k2])
                 ) <<
-                  "symmetry (reflected aspect) of tilted sunrise/sunset for" <<
+                  "symmetry (reflected aspect) of tilted sunrise/sunset for " <<
                   msg.str() <<
-                  " k2 = " << k2 << " (missing values)";
+                  " k2 = " << k2 << " (missing values);" <<
+                  " hour angles: " << msg2.str();
 
               } else {
                 // no values missing
@@ -313,9 +324,10 @@ namespace
                   -o[1][itime][5 - k2],
                   tol9
                 ) <<
-                  "symmetry (reflected aspect) of tilted sunrise/sunset for" <<
+                  "symmetry (reflected aspect) of tilted sunrise/sunset for " <<
                   msg.str() <<
-                  " k2 = " << k2;
+                  " k2 = " << k2 <<
+                  "; hour angles: " << msg2.str();
               }
             }
           }
