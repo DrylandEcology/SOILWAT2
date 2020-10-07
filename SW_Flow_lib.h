@@ -57,7 +57,7 @@ typedef struct {
 	       depthsR[MAX_ST_RGR],//evenly spaced soil layer depths for soil temperature calculations
 		   	 fcR[MAX_ST_RGR],//field capacity of soil layers for soil temperature calculations
 		   	 wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
-		   	 bDensityR[MAX_ST_RGR],//bulk density of soil layers for soil temperature calculations
+		   	 bDensityR[MAX_ST_RGR],//bulk density of the whole soil per soil layer for soil temperature calculations
 		   	 oldsFusionPool_actual[MAX_LAYERS],
 		   	 oldsTempR[MAX_ST_RGR];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
 
