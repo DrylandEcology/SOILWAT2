@@ -1175,7 +1175,8 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 /**
 @brief Initialize soil structure and properties for soil temperature simulation.
 
-@param bDensity An array of the bulk density of the soil layers (g/cm3).
+@param bDensity An array of the bulk density of the whole soil per soil layer,
+  (g/cm3).
 @param width The width of the layers (cm).
 @param oldsTemp An array of yesterday's temperature values (&deg;C).
 @param sTconst The soil temperature at a soil depth where it stays constant as
@@ -1325,7 +1326,8 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 	}
 	#endif
 
-	// calculate volumetric field capacity, volumetric wilting point, bulk density, and
+	// calculate volumetric field capacity, volumetric wilting point,
+	// bulk density of the whole soil, and
 	// initial soil temperature for layers of the soil temperature profile
 	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, bDensity, nRgr, deltaX,
 		st->bDensityR);
@@ -1405,7 +1407,8 @@ Based on equations from Eitzinger 2000. @cite Eitzinger2000
 @param shParam A constant for specific heat capacity equation.
 @param nlyrs Number of layers available.
 @param vwc An array of temperature-layer VWC values (cm/layer).
-@param bDensity An array of the bulk density of the soil layers (g/cm<SUP>3</SUP>).
+@param bDensity An array of the bulk density of the whole soil per soil layer
+  (g/cm<SUP>3</SUP>).
 
 @return sFadjusted_sTemp Adjusted soil layer temperature due to freezing/thawing
 
@@ -1515,7 +1518,8 @@ The algorithm selects a shorter time step if required for a stable solution
 @param vwcR An array of temperature-layer VWC values (cm/layer).
 @param wpR An array of temperature-layer wilting point values (cm/layer).
 @param fcR An array of temperature-layer field capacity values (cm/layer).
-@param bDensityR temperature-layer bulk density values (g/cm<SUP>3</SUP>).
+@param bDensityR temperature-layer bulk density of the whole soil
+  (g/cm<SUP>3</SUP>).
 @param csParam1 A constant for the soil thermal conductivity equation.
 @param csParam2 A constant for the soil thermal conductivity equation.
 @param shParam A constant for specific heat capacity equation.
@@ -1692,7 +1696,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
  aet - the actual evapotranspiration rate
  biomass - the standing-crop biomass
  swc - soil water content
- bDensity - bulk density of the soil layers
+ bDensity - bulk density of the whole soil per soil layer
  width - width of layers
  oldsTemp - soil layer temperatures from the previous day in celsius
  nlyrs - number of soil layers, must be greater than 1 or the function won't work right
@@ -1724,7 +1728,8 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param biomass Standing-crop biomass (g/m<SUP>2</SUP>).
 @param swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param swc_sat The satured soil water content of the soil layers (cm/cm).
-@param bDensity An array of the bulk density of the soil layers (g/cm<SUP>3</SUP>).
+@param bDensity An array of the bulk density of the whole soil per soil layer
+  (g/cm<SUP>3</SUP>).
 @param width The width of the layers (cm).
 @param oldsTemp An array of yesterday's temperature values (&deg;C).
 @param sTemp Temperatature values of soil layers (&deg;C).

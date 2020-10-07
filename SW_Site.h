@@ -59,10 +59,10 @@ typedef unsigned int LyrIndex;
 typedef struct {
 
 	RealD width, /* width of the soil layer (cm) */
-		soilBulk_density, /* bulk soil density, i.e., including gravel component, (g/cm3) */
+		soilBulk_density, /* bulk soil density of the whole soil, i.e., including rock/gravel component, (g/cm3) */
 		evap_coeff, /* prop. of total soil evap from this layer */
 		transp_coeff[NVEGTYPES], /* prop. of total transp from this layer    */
-		soilMatric_density, /* matric soil density, i.e., gravel component excluded, (g/cm3) */
+		soilMatric_density, /* matric soil density of the < 2 mm fraction, i.e., gravel component excluded, (g/cm3) */
 		fractionVolBulk_gravel, /* gravel content (> 2 mm) as volume-fraction of bulk soil (g/cm3) */
 		fractionWeightMatric_sand, /* sand content (< 2 mm & > . mm) as weight-fraction of matric soil (g/g) */
 		fractionWeightMatric_clay, /* clay content (< . mm & > . mm) as weight-fraction of matric soil (g/g) */

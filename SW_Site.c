@@ -109,16 +109,21 @@ static void _read_layers(void);
 /**
 	\brief Calculate soil moisture characteristics for each layer.
 
-  Saturated moisture content for matric density (thetasMatric), saturation matric
+  Bulk refers to the whole soil, i.e., including the rock/gravel component,
+  whereas matric refers to the < 2 mm fraction.
+
+  Saturated moisture content of the matric component (thetasMatric), saturation matric
 	potential (psisMatric), and the slope of the retention curve (bMatric) for each
 	layer are calculated using equations found in Cosby et al. (1984). \cite Cosby1984
-	The saturated moisture content in the bulk density for each layer (swcBulk_saturated)
+	The saturated moisture content of the whole soil (bulk) for each layer (swcBulk_saturated)
 	is calculated using equations found in Saxton and Rawls (2006; Equations 2, 3 & 5).
 	\cite Saxton2006
 
 	Return from the function is void. Calculated values stored in SW_Site object.
 
-	Bulk density is matric density plus gravel.
+	SOILWAT2 calculates internally based on soil bulk density of the whole soil,
+	i.e., including rock/gravel component. However, inputs are expected to
+	represent soil (matric) density of the < 2 mm fraction.
 
 	sand + clay + silt must equal one. Fraction silt is calculated: 1 - (sand + clay).
 
@@ -128,10 +133,10 @@ static void _read_layers(void);
 	\param n Soil layer index.
 
 	\sideeffect
-		- thetasMatric Saturated water content for soil matrix volume (m^3/m^3).
+		- thetasMatric Saturated water content for the matric component (m^3/m^3).
 		- psisMatric Saturation matric potential (MPa).
 		- bMatric Slope of the linear log-log retention curve (unitless).
-		- swcBulk_saturated The saturated water content for given bulk density (cm/layer).
+		- swcBulk_saturated The saturated water content for the whole soil (bulk) (cm/layer).
 
 */
 
@@ -177,14 +182,15 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 }
 
 /**
-@brief Used to calculate the bulk density of the soil from the inputed matric density.
+  @brief Estimate soil density of the whole soil (bulk).
 
-Based on equation 20 from Saxton. @cite Saxton2006
+  SOILWAT2 calculates internally based on soil bulk density of the whole soil,
+  i.e., including rock/gravel component. However, SOILWAT2 inputs are expected
+  to represent soil (matric) density of the < 2 mm fraction.
+
+  Based on equation 20 from Saxton. @cite Saxton2006
 */
 void calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel, LyrIndex n) {
-	/* ---------------------------------------------------------------- */
-	/* used to calculate the bulk density from the given matric density */
-	/* ---------------------------------------------------------------- */
 	SW_Site.lyr[n]->soilBulk_density = matricDensity * (1 - fractionGravel) + (fractionGravel * 2.65); /*eqn. 20 from Saxton et al. 2006  to calculate the bulk density of soil */
 }
 
@@ -506,7 +512,7 @@ static void _read_layers(void) {
 		} else if (LT(matricd, 0.)) {
 			fail = swTRUE;
 			fval = matricd;
-			errtype = Str_Dup("bulk density");
+			errtype = Str_Dup("soil density");
 
 		} else if (LT(f_gravel, 0.) || GT(f_gravel, 0.5)) { // 0 <= gravel < 1
 			fail = swTRUE;
@@ -602,7 +608,8 @@ static void _read_layers(void) {
   @param nlyrs The number of soil layers to create.
   @param[in] dmax Array of size \p nlyrs for depths [cm] of each soil layer
     measured from the surface
-  @param[in] matricd Array of size \p nlyrs for soil matric density [g/cm3]
+  @param[in] matricd Array of size \p nlyrs for soil density of the matric
+    component, i.e., the < 2 mm fraction [g/cm3]
   @param[in] f_gravel Array of size \p nlyrs for volumetric gravel content [v/v]
   @param[in] evco Array of size \p nlyrs with bare-soil evaporation coefficients
     [0, 1] that sum up to 1.
