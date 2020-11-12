@@ -1,0 +1,24 @@
+﻿Variable Group,By soil layer,Description
+temp_air,,"max., min, average air temperature (C; input)"
+precip,,"total precipitation (cm; input), rain, snow-fall, snowmelt, and snowloss (cm)"
+infiltration,,"infiltration (cm), runoff (cm)"
+vwc_bulk,x,bulk volumetric soilwater (cm / cm)
+vwc_matric,x,matric volumetric soilwater (cm / cm)
+swc_bulk,x,bulk soil water content (cm)
+swa,x,"plant available soil water (cm): trees, shrubs, forbs, grasses"
+swp_matric,x,matric soil water potential (-bars)
+surface_water,,surface water (cm)
+transp,x,"water extracted for transpiration (cm): total, trees, shrubs, forbs, grasses"
+evap_soil,x,bare-soil evaporation (cm)
+evap_surface,,"evaporation of intercepted rain (cm): total, trees, shrubs, forbs, grasses, litter, surface water"
+interception,,"intercepted rain (cm): total, trees, shrubs, forbs, grasses, and litter (cm)"
+percolation,x,water percolated among layers (cm)
+hydred,x,"hydraulic redistribution from each layer (cm): total, trees, shrubs, forbs, grasses"
+aet,,actual evapotranspiration (cm)
+pet,,"potential evapotranspiration (cm), extraterrestrial horizontal solar irradiation [MJ/m2], extraterrestrial tilted solar irradiation [MJ/m2], global horizontal irradiation [MJ/m2], global tilted irradiation [MJ/m2]"
+wetdays,x,days above -1.5 MPa
+snowpack,,"snowpack water equivalent (cm), snowdepth (cm)"
+deep_drain,,deep drainage = diffuse recharge (cm)
+temp_soil,x,soil temperature (C)
+co2effects,,"vegetation CO2-effect (multiplier) for trees, shrubs, forbs, grasses; WUE CO2-effect (multiplier) for trees, shrubs, forbs, grasses"
+vegetation,,"vegetation: cover (%) for trees, shrubs, forbs, grasses; biomass (g/m2 as component of total) for total, trees, shrubs, forbs, grasses, and litter; live biomass (g/m2 as component of total) total, trees, shrubs, forbs, grasses"
