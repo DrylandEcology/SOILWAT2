@@ -171,7 +171,9 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 	thetasMatric33t = 0.278 * sand + 0.034 * clay + 0.022 * OM - 0.018 * sand * OM - 0.027 * clay * OM - 0.584 * sand * clay + 0.078;
 	thetasMatric33 = thetasMatric33t + (0.636 * thetasMatric33t - 0.107);
 
-	SW_Site.lyr[n]->swcBulk_saturated = SW_Site.lyr[n]->width * (theta33 + thetasMatric33 - 0.097 * sand + 0.043) * (1 - fractionGravel);
+	SW_Site.lyr[n]->swcBulk_saturated = SW_Site.lyr[n]->width * \
+		(theta33 + thetasMatric33 - 0.097 * sand + 0.043) * \
+		(1 - fractionGravel);
 
 	if (LE(SW_Site.lyr[n]->swcBulk_saturated, 0.0)) {
 		LogError(logfp, LOGFATAL, "water_eqn(): invalid value of "
@@ -886,31 +888,66 @@ void SW_SIT_init_run(void) {
 
 
 		/* Compute swc wet and dry limits and init value */
-		if (LT(_SWCMinVal, 0.0)) { /* estimate swcBulk_min for each layer based on residual SWC from an equation in Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties for hydrological modeling. In Watershed management in the Eighties (eds Jones EB, Ward TJ), pp. 293-299. American Society of Civil Engineers, New York.
-		 or based on SWC at -3 MPa if smaller (= suction at residual SWC from Fredlund DG, Xing AQ (1994) EQUATIONS FOR THE SOIL-WATER CHARACTERISTIC CURVE. Canadian Geotechnical Journal, 31, 521-532.) */
-			swcmin_help1 = SW_VWCBulkRes(lyr->fractionVolBulk_gravel, lyr->fractionWeightMatric_sand, lyr->fractionWeightMatric_clay, lyr->swcBulk_saturated / lyr->width)
-					* lyr->width;
-			swcmin_help2 = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, 30., s) * lyr->width;
+		if (LT(_SWCMinVal, 0.0)) {
+			/* input: estimate mininum SWC */
 
-			// when SW_VWCBulkRes returns the macro SW_MISSING always use swcmin_help2
-			if(missing(swcmin_help1 / lyr -> width)){
-				lyr -> swcBulk_min = swcmin_help2;
-			}
-			else{
+			/* residual SWC of Rawls & Brakensiek (1985) */
+			swcmin_help1 = SW_VWCBulkRes(
+				lyr->fractionVolBulk_gravel,
+				lyr->fractionWeightMatric_sand,
+				lyr->fractionWeightMatric_clay,
+				lyr->swcBulk_saturated / lyr->width
+			);
+
+			/* residual SWC at -3 MPa (Fredlund DG, Xing AQ (1994)
+				EQUATIONS FOR THE SOIL-WATER CHARACTERISTIC CURVE.
+				Canadian Geotechnical Journal, 31, 521-532.)
+			*/
+			swcmin_help2 = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, 30., s);
+
+			// if `SW_VWCBulkRes()` returns SW_MISSING then use `swcmin_help2`
+			if (missing(swcmin_help1)){
+				lyr->swcBulk_min = swcmin_help2;
+
+			} else{
 				lyr->swcBulk_min = fmax(0., fmin(swcmin_help1, swcmin_help2));
 			}
-		} else if (GE(_SWCMinVal, 1.0)) { /* assume that unit(_SWCMinVal) == -bar */
-			lyr->swcBulk_min = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCMinVal, s) * lyr->width;
-		} else { /* assume that unit(_SWCMinVal) == cm/cm */
-			lyr->swcBulk_min = _SWCMinVal * lyr->width;
+
+		} else if (GE(_SWCMinVal, 1.0)) {
+			/* input: fixed SWP value as minimum SWC; unit(_SWCMinVal) == -bar */
+			lyr->swcBulk_min = SW_SWPmatric2VWCBulk(
+				lyr->fractionVolBulk_gravel,
+				_SWCMinVal,
+				s
+			);
+
+		} else {
+			/* input: fixed VWC value as minimum SWC; unit(_SWCMinVal) == cm/cm */
+			lyr->swcBulk_min = _SWCMinVal;
 		}
+
+		/* Convert VWC to SWC */
+		lyr->swcBulk_min *= lyr->width;
 
 		#ifdef SWDEBUG
 		if (debug) {
-			swprintf("swcmin[%d]=%f = swpmin=%f\n", s, lyr->swcBulk_min,
-				SW_SWCbulk2SWPmatric(lyr->fractionVolBulk_gravel, lyr->swcBulk_min, s));
-			swprintf("SWC(HalfWiltpt)[%d]=%f = swp(hw)=%f\n", s, lyr->swcBulk_wiltpt / 2,
-				SW_SWCbulk2SWPmatric(lyr->fractionVolBulk_gravel, lyr->swcBulk_wiltpt / 2, s));
+			swprintf(
+				"L[%d] swcmin=%f = swpmin=%f\n",
+				s,
+				lyr->swcBulk_min,
+				SW_SWCbulk2SWPmatric(lyr->fractionVolBulk_gravel, lyr->swcBulk_min, s)
+			);
+
+			swprintf(
+				"L[%d] SWC(HalfWiltpt)=%f = swp(hw)=%f\n",
+				s,
+				lyr->swcBulk_wiltpt / 2,
+				SW_SWCbulk2SWPmatric(
+					lyr->fractionVolBulk_gravel,
+					lyr->swcBulk_wiltpt / 2,
+					s
+				)
+			);
 		}
 		#endif
 
