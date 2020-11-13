@@ -140,26 +140,38 @@ static void _read_layers(void);
 
 */
 
-//STEPWAT calls this function so no longer private
 void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 	/* --------------------------------------------------- */
-	RealD theta33, theta33t, OM = 0., thetasMatric33, thetasMatric33t; /* Saxton et al. auxiliary variables */
+	/* Saxton et al. auxiliary variables */
+	RealD theta33, theta33t, OM = 0., thetasMatric33, thetasMatric33t;
 
 	SW_Site.lyr[n]->thetasMatric = -14.2 * sand - 3.7 * clay + 50.5;
 
-	if (LE(SW_Site.lyr[n]->thetasMatric, 0.0)) {
-		LogError(logfp, LOGFATAL, "water_eqn(): invalid value of "
-				"theta(saturated, matric; Cosby et al. 1984) = %f (must be > 0)\n",
-				SW_Site.lyr[n]->thetasMatric);
+	if (
+		LE(SW_Site.lyr[n]->thetasMatric, 0.0) ||
+		GT(SW_Site.lyr[n]->thetasMatric, 100.0)
+	) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"water_eqn(): invalid value of "
+			"theta(saturated, matric, [%]; Cosby et al. 1984) = %f "
+			"(must within 0-100%)\n",
+			SW_Site.lyr[n]->thetasMatric
+		);
 	}
+
 
 	SW_Site.lyr[n]->psisMatric = powe(10.0, (-1.58* sand - 0.63*clay + 2.17));
 	SW_Site.lyr[n]->bMatric = -0.3 * sand + 15.7 * clay + 3.10;
 
 	if (ZRO(SW_Site.lyr[n]->bMatric)) {
-		LogError(logfp, LOGFATAL, "water_eqn(): invalid value of "
-				"beta = %f (must be != 0)\n",
-				SW_Site.lyr[n]->bMatric);
+		LogError(
+			logfp,
+			LOGFATAL,
+			"water_eqn(): invalid value of beta = %f (must be != 0)\n",
+			SW_Site.lyr[n]->bMatric
+		);
 	}
 
 	SW_Site.lyr[n]->binverseMatric = 1.0 / SW_Site.lyr[n]->bMatric;
@@ -171,15 +183,27 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 	thetasMatric33t = 0.278 * sand + 0.034 * clay + 0.022 * OM - 0.018 * sand * OM - 0.027 * clay * OM - 0.584 * sand * clay + 0.078;
 	thetasMatric33 = thetasMatric33t + (0.636 * thetasMatric33t - 0.107);
 
-	SW_Site.lyr[n]->swcBulk_saturated = SW_Site.lyr[n]->width * \
-		(theta33 + thetasMatric33 - 0.097 * sand + 0.043) * \
-		(1 - fractionGravel);
+	SW_Site.lyr[n]->swcBulk_saturated = (1. - fractionGravel) * \
+		(theta33 + thetasMatric33 - 0.097 * sand + 0.043);
 
-	if (LE(SW_Site.lyr[n]->swcBulk_saturated, 0.0)) {
-		LogError(logfp, LOGFATAL, "water_eqn(): invalid value of "
-				"theta(saturated, bulk; Saxton et al. 2006) = %f (must be > 0)\n",
-				SW_Site.lyr[n]->swcBulk_saturated);
+	if (
+		LE(SW_Site.lyr[n]->swcBulk_saturated, 0.) ||
+		GT(SW_Site.lyr[n]->swcBulk_saturated, 1.)
+	) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"water_eqn(): invalid value of "
+			"theta(saturated, bulk, [cm / cm]; Saxton et al. 2006) = %f "
+			"(must be within 0-1)\n",
+			SW_Site.lyr[n]->swcBulk_saturated
+		);
 	}
+
+
+
+	/* Convert VWC to SWC */
+	SW_Site.lyr[n]->swcBulk_saturated *= SW_Site.lyr[n]->width;
 
 }
 
