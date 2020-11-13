@@ -1006,17 +1006,19 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
   paper by Cosby,Hornberger,Clapp,Ginn,  in WATER RESOURCES RESEARCH
   June 1984.  Moisture retention data was fit to the power function.
 
-  The code assumes the following conditions (which are checked during data input):
-      * width > 0 which is checked by function `_read_layers`
-      * fractionGravel in [0, 1] which is checked by function `_read_layers`
-      * thetasMatric > 0 which is checked by function `water_eqn`
-      * bMatric != 0 which is checked by function `water_eqn`
+  The code assumes the following conditions:
+      * checked by `SW_SIT_init_run()`
+          * width > 0
+          * fractionGravel, sand, clay, and sand + clay in [0, 1]
+      * checked by function `water_eqn()`
+          * thetasMatric > 0
+          * bMatric != 0
 
   @param fractionGravel Fraction of soil containing gravel.
   @param swcBulk Soilwater content of the current layer (cm/layer)
   @param n Layer number to index the **lyr pointer
 
-  @return swb Soilwater potential of the current layer or soilwater content (if swflag=swFALSE)
+  @return soil water potential
 **/
 
 RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n) {
@@ -1061,7 +1063,7 @@ HISTORY:
 	if (GT(swcBulk, 0.0)) {
 		// we have soil moisture
 
-		// calculate matric VWC from bulk VWC
+		// calculate matric VWC [cm / cm %] from bulk VWC
 		theta1 = (swcBulk / lyr->width) * 100. / (1. - fractionGravel);
 
 		// calculate (VWC / VWC(saturated)) ^ b

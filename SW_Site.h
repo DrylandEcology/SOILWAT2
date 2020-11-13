@@ -138,10 +138,13 @@ typedef struct {
 
 
 void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n);
-void calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel, LyrIndex n);
+RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
+LyrIndex nlayers_bsevap();
+void nlayers_vegroots(LyrIndex n_transp_lyrs[]);
 
 void SW_SIT_construct(void);
 void SW_SIT_deconstruct(void);
+void SW_SIT_init_counts(void);
 void SW_SIT_read(void);
 void SW_SIT_init_run(void);
 void _echo_inputs(void);
@@ -149,6 +152,8 @@ void _echo_inputs(void);
 /* these used to be in Layers */
 void SW_SIT_clear_layers(void);
 LyrIndex _newlayer(void);
+void add_deepdrain_layer(void);
+
 void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel,
   RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
   RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp,

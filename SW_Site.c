@@ -216,8 +216,86 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 
   Based on equation 20 from Saxton. @cite Saxton2006
 */
-void calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel, LyrIndex n) {
-	SW_Site.lyr[n]->soilBulk_density = matricDensity * (1 - fractionGravel) + (fractionGravel * 2.65); /*eqn. 20 from Saxton et al. 2006  to calculate the bulk density of soil */
+RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel) {
+	/*eqn. 20 from Saxton et al. 2006  to calculate the bulk density of soil */
+	return matricDensity * (1 - fractionGravel) + (fractionGravel * 2.65);
+}
+
+
+/**
+  @brief Count soil layers with bare-soil evaporation potential
+
+  The count stops at first layer with 0.
+*/
+LyrIndex nlayers_bsevap() {
+	SW_SITE *v = &SW_Site;
+	LyrIndex s, n = 0;
+
+	ForEachSoilLayer(s)
+	{
+		if (GT(v->lyr[s]->evap_coeff, 0.0))
+		{
+			n++;
+		} else{
+			break;
+		}
+	}
+
+	return n;
+}
+
+/**
+  @brief Count soil layers with roots potentially extracting water for
+         transpiration
+
+  The count stops at first layer with 0 per vegetation type.
+*/
+void nlayers_vegroots(LyrIndex n_transp_lyrs[]) {
+	SW_SITE *v = &SW_Site;
+	LyrIndex s;
+	int k;
+
+	ForEachVegType(k)
+	{
+		n_transp_lyrs[k] = 0;
+
+		ForEachSoilLayer(s)
+		{
+			if (GT(v->lyr[s]->transp_coeff[k], 0.0)) {
+				n_transp_lyrs[k]++;
+			} else {
+				break;
+			}
+		}
+	}
+}
+
+
+/**
+  @brief Adds a dummy soil layer to handle deep drainage
+*/
+void add_deepdrain_layer(void) {
+
+	if (SW_Site.deepdrain) {
+
+		/* check if deep drain dummy layer was already added */
+		if (SW_Site.deep_lyr == 0) {
+			/* `_newlayer()` sets n_layers */
+			LyrIndex s = _newlayer();
+			SW_Site.lyr[s]->width = 1.0;
+
+			/* sp->deepdrain indicates an extra (dummy) layer for deep drainage
+			* has been added, so n_layers really should be n_layers -1
+			* NOTE: deep_lyr is base0, n_layers is BASE1
+			*/
+			SW_Site.deep_lyr = --SW_Site.n_layers;
+		}
+
+	} else {
+
+		/* no deep drainage */
+		SW_Site.deep_lyr = 0;
+	}
 }
 
 
@@ -262,6 +340,7 @@ void SW_SIT_construct(void) {
 	/* =================================================== */
 
 	memset(&SW_Site, 0, sizeof(SW_Site));
+	SW_SIT_init_counts();
 }
 
 /**
@@ -298,7 +377,6 @@ void SW_SIT_read(void) {
 
 	f = OpenFile(MyFileName, "r");
 
-	v->n_transp_rgn = 0;
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
 		case 0:
@@ -485,9 +563,6 @@ void SW_SIT_read(void) {
 	}
 
 	_read_layers();
-
-	if (EchoInits)
-		_echo_inputs();
 }
 
 static void _read_layers(void) {
@@ -496,19 +571,10 @@ static void _read_layers(void) {
 
 	SW_SITE *v = &SW_Site;
 	FILE *f;
-	Bool evap_ok = swTRUE, /* mitigate gaps in layers' evap coeffs */
-		transp_ok_veg[NVEGTYPES], /* same for transpiration coefficients */
-		fail = swFALSE;
-		LyrIndex lyrno;
+	LyrIndex lyrno;
 	int x, k;
-	const char *errtype = "\0";
 	RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay, matricd, imperm,
-		soiltemp, fval = 0, f_gravel;
-
-	// Initialize
-	ForEachVegType(k) {
-		transp_ok_veg[k] = swTRUE;
-	}
+		soiltemp, f_gravel;
 
 	/* note that Files.read() must be called prior to this. */
 	MyFileName = SW_F_name(eLayers);
@@ -518,65 +584,42 @@ static void _read_layers(void) {
 	while (GetALine(f, inbuf)) {
 		lyrno = _newlayer();
 
-		x = sscanf(inbuf, "%f %f %f %f %f %f %f %f %f %f %f %f", &dmax, &matricd, &f_gravel,
-			&evco, &trco_veg[SW_GRASS], &trco_veg[SW_SHRUB], &trco_veg[SW_TREES],
-			&trco_veg[SW_FORBS], &psand, &pclay, &imperm, &soiltemp);
+		x = sscanf(
+			inbuf,
+			"%f %f %f %f %f %f %f %f %f %f %f %f",
+			&dmax,
+			&matricd,
+			&f_gravel,
+			&evco,
+			&trco_veg[SW_GRASS], &trco_veg[SW_SHRUB], &trco_veg[SW_TREES], &trco_veg[SW_FORBS],
+			&psand,
+			&pclay,
+			&imperm,
+			&soiltemp
+		);
 
 		if (x < 10) {
 			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "%s : Incomplete record %d.\n",
-				MyFileName, lyrno + 1);
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Incomplete record %d.\n",
+				MyFileName, lyrno + 1
+			);
 		}
 
 		v->lyr[lyrno]->width = dmax - dmin;
 
-		if (LE(v->lyr[lyrno]->width, 0.)) {
-			fail = swTRUE;
-			fval = v->lyr[lyrno]->width;
-			errtype = Str_Dup("layer width");
-
-		} else if (LT(matricd, 0.)) {
-			fail = swTRUE;
-			fval = matricd;
-			errtype = Str_Dup("soil density");
-
-		} else if (LT(f_gravel, 0.) || GE(f_gravel, 1.)) {
-			fail = swTRUE;
-			fval = f_gravel;
-			errtype = Str_Dup("gravel content");
-
-		} else if (LE(psand, 0.)) {
-			fail = swTRUE;
-			fval = psand;
-			errtype = Str_Dup("sand proportion");
-
-		} else if (LE(pclay, 0.)) {
-			fail = swTRUE;
-			fval = pclay;
-			errtype = Str_Dup("clay proportion");
-
-		} else if (LT(imperm, 0.)) {
-			fail = swTRUE;
-			fval = imperm;
-			errtype = Str_Dup("impermeability");
-		}
-
-		if (fail) {
-			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "%s : Invalid %s (%5.4f) in layer %d.\n",
-					MyFileName, errtype, fval, lyrno + 1);
-		}
+		/* checks for valid values now carried out by `SW_SIT_init_run()` */
 
 		dmin = dmax;
 		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel;
 		v->lyr[lyrno]->soilMatric_density = matricd;
-		calculate_soilBulkDensity(matricd, f_gravel, lyrno);
 		v->lyr[lyrno]->evap_coeff = evco;
 
 		ForEachVegType(k)
 		{
 			v->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
-			v->lyr[lyrno]->my_transp_rgn[k] = 0;
 		}
 
 		v->lyr[lyrno]->fractionWeightMatric_sand = psand;
@@ -584,42 +627,19 @@ static void _read_layers(void) {
 		v->lyr[lyrno]->impermeability = imperm;
 		v->lyr[lyrno]->sTemp = soiltemp;
 
-		if (evap_ok) {
-			if (GT(v->lyr[lyrno]->evap_coeff, 0.0)) {
-				v->n_evap_lyrs++;
-			} else
-				evap_ok = swFALSE;
-		}
-
-		ForEachVegType(k)
-		{
-			if (transp_ok_veg[k]) {
-				if (GT(v->lyr[lyrno]->transp_coeff[k], 0.0)) {
-					v->n_transp_lyrs[k]++;
-				} else
-					transp_ok_veg[k] = swFALSE;
-			}
-		}
-
-		water_eqn(f_gravel, psand, pclay, lyrno);
-		v->lyr[lyrno]->swcBulk_fieldcap = SW_SWPmatric2VWCBulk(f_gravel, 0.333, lyrno) * v->lyr[lyrno]->width;
-		v->lyr[lyrno]->swcBulk_wiltpt = SW_SWPmatric2VWCBulk(f_gravel, 15, lyrno) * v->lyr[lyrno]->width;
-
 		if (lyrno >= MAX_LAYERS) {
 			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "%s : Too many layers specified (%d).\n"
-					"Maximum number of layers is %d\n", MyFileName, lyrno + 1, MAX_LAYERS);
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Too many layers specified (%d).\n"
+				"Maximum number of layers is %d\n",
+				MyFileName, lyrno + 1, MAX_LAYERS
+			);
 		}
-
 	}
 
 	CloseFile(&f);
-
-	/* n_layers set in _newlayer() */
-  if (v->deepdrain) {
-    lyrno = _newlayer();
-    v->lyr[lyrno]->width = 1.0;
-  }
 }
 
 /**
@@ -675,15 +695,9 @@ void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel
   LyrIndex lyrno;
   unsigned int i, k;
 
-  // De-allocate and delete previous soil layers
+  // De-allocate and delete previous soil layers and reset counters
   SW_SIT_clear_layers();
-  v->n_layers = 0;
-  v->n_evap_lyrs = 0;
-
-  ForEachVegType(k)
-  {
-    v->n_transp_lyrs[k] = 0;
-  }
+  SW_SIT_init_counts();
 
   // Create new soil
   for (i = 0; i < nlyrs; i++)
@@ -714,44 +728,16 @@ void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel
           v->lyr[lyrno]->transp_coeff[k] = trco_grass[i];
           break;
       }
-
-      v->lyr[lyrno]->my_transp_rgn[k] = 0;
-
-      if (GT(v->lyr[lyrno]->transp_coeff[k], 0.0))
-      {
-        v->n_transp_lyrs[k]++;
-      }
     }
 
     v->lyr[lyrno]->fractionWeightMatric_sand = psand[i];
     v->lyr[lyrno]->fractionWeightMatric_clay = pclay[i];
     v->lyr[lyrno]->impermeability = imperm[i];
     v->lyr[lyrno]->sTemp = soiltemp[i];
-
-    if (GT(v->lyr[lyrno]->evap_coeff, 0.0))
-    {
-      v->n_evap_lyrs++;
-    }
-
-    water_eqn(f_gravel[i], psand[i], pclay[i], lyrno);
-
-    v->lyr[lyrno]->swcBulk_fieldcap = SW_SWPmatric2VWCBulk(f_gravel[i], 0.333,
-      lyrno) * v->lyr[lyrno]->width;
-    v->lyr[lyrno]->swcBulk_wiltpt = SW_SWPmatric2VWCBulk(f_gravel[i], 15,
-      lyrno) * v->lyr[lyrno]->width;
-    calculate_soilBulkDensity(matricd[i], f_gravel[i], lyrno);
-
-//    swprintf("L: %d/%d depth=%3.1f, width=%3.1f\n", i, lyrno, dmax[i],
-//      v->lyr[lyrno]->width);
   }
 
-  if (v->deepdrain)
-  {
-    lyrno = _newlayer();
-    v->lyr[lyrno]->width = 1.0;
-  }
-  //  swprintf("Last: %d/%d width=%3.1f\n", i, lyrno, v->lyr[lyrno]->width);
 
+  // Guess soil transpiration regions
   derive_soilRegions(nRegions, regionLowerBounds);
 
   // Re-initialize site parameters based on new soil layers
@@ -849,22 +835,125 @@ void SW_SIT_init_run(void) {
 	SW_LAYER_INFO *lyr;
 	LyrIndex s, r, curregion;
 	int k, wiltminflag = 0, initminflag = 0;
-	RealD evsum = 0., trsum_veg[NVEGTYPES] = {0.}, swcmin_help1, swcmin_help2;
+	Bool fail = swFALSE;
+	RealD
+		fval = 0,
+		evsum = 0., trsum_veg[NVEGTYPES] = {0.},
+		swcmin_help1, swcmin_help2;
+	const char *errtype = "\0";
+
 	#ifdef SWDEBUG
 	int debug = 0;
 	#endif
 
-	/* sp->deepdrain indicates an extra (dummy) layer for deep drainage
-	 * has been added, so n_layers really should be n_layers -1
-	 * otherwise, the bottom layer is functional, so don't decrement n_layers
-	 * and set deep_layer to zero as a flag.
-	 * NOTE: deep_lyr is base0, n_layers is BASE1
-	 */
-	sp->deep_lyr = (sp->deepdrain) ? --sp->n_layers : 0;
 
+	/* Determine number of layers with potential for
+		 bare-soil evaporation and transpiration */
+	sp->n_evap_lyrs = nlayers_bsevap();
+	nlayers_vegroots(sp->n_transp_lyrs);
+
+
+	/* Manage deep drainage */
+	add_deepdrain_layer();
+
+
+	/* Loop over soil layers check variables and calculate parameters */
 	ForEachSoilLayer(s)
 	{
 		lyr = sp->lyr[s];
+
+		/* Check validity of soil variables:
+			previously, checked by code in `_read_layers()`,
+			erroneously skipped by `set_soillayers()`,
+			and checked by code in rSOILWAT2's `onSet_SW_LYR()`
+		*/
+		if (LE(lyr->width, 0.)) {
+			fail = swTRUE;
+			fval = lyr->width;
+			errtype = Str_Dup("layer width");
+
+		} else if (LT(lyr->soilMatric_density, 0.)) {
+			fail = swTRUE;
+			fval = lyr->soilMatric_density;
+			errtype = Str_Dup("soil density");
+
+		} else if (
+			LT(lyr->fractionVolBulk_gravel, 0.) ||
+			GE(lyr->fractionVolBulk_gravel, 1.)
+		) {
+			fail = swTRUE;
+			fval = lyr->fractionVolBulk_gravel;
+			errtype = Str_Dup("gravel content");
+
+		} else if (
+			LE(lyr->fractionWeightMatric_sand, 0.) ||
+			GE(lyr->fractionWeightMatric_sand, 1.)
+		) {
+			fail = swTRUE;
+			fval = lyr->fractionWeightMatric_sand;
+			errtype = Str_Dup("sand proportion");
+
+		} else if (
+			LE(lyr->fractionWeightMatric_clay, 0.) ||
+			GE(lyr->fractionWeightMatric_clay, 1.)
+		) {
+			fail = swTRUE;
+			fval = lyr->fractionWeightMatric_clay;
+			errtype = Str_Dup("clay proportion");
+
+		} else if (
+			GE(lyr->fractionWeightMatric_sand + lyr->fractionWeightMatric_clay, 1.)
+		) {
+			fail = swTRUE;
+			fval = lyr->fractionWeightMatric_sand + lyr->fractionWeightMatric_clay;
+			errtype = Str_Dup("sand+clay proportion");
+
+		} else if (
+			LT(lyr->impermeability, 0.) ||
+			GT(lyr->impermeability, 1.)
+		) {
+			fail = swTRUE;
+			fval = lyr->impermeability;
+			errtype = Str_Dup("impermeability");
+		}
+
+		if (fail) {
+			LogError(
+				logfp,
+				LOGFATAL,
+				"Invalid %s (%5.4f) in layer %d.\n",
+				errtype, fval, s + 1
+			);
+		}
+
+		/* Update soil density for gravel */
+		lyr->soilBulk_density = calculate_soilBulkDensity(
+			lyr->soilMatric_density,
+			lyr->fractionVolBulk_gravel
+		);
+
+		/* Calculate pedotransfer function paramaters */
+		water_eqn(
+			lyr->fractionVolBulk_gravel,
+			lyr->fractionWeightMatric_sand,
+			lyr->fractionWeightMatric_clay,
+			s
+		);
+
+		/* Calculate SWC at field capacity and at wilting point */
+		lyr->swcBulk_fieldcap = lyr->width * SW_SWPmatric2VWCBulk(
+			lyr->fractionVolBulk_gravel,
+			0.333,
+			s
+		);
+
+		lyr->swcBulk_wiltpt = lyr->width * SW_SWPmatric2VWCBulk(
+			lyr->fractionVolBulk_gravel,
+			15,
+			s
+		);
+
+
 		/* sum ev and tr coefficients for later */
 		evsum += lyr->evap_coeff;
 		ForEachVegType(k)
@@ -970,7 +1059,10 @@ void SW_SIT_init_run(void) {
 		}
 		#endif
 
+
+		/* Calculate wet limit of SWC for what inputs defined as wet */
 		lyr->swcBulk_wet = GE(_SWCWetVal, 1.0) ? SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCWetVal, s) * lyr->width : _SWCWetVal * lyr->width;
+		/* Calculate initial SWC based on inputs */
 		lyr->swcBulk_init = GE(_SWCInitVal, 1.0) ? SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCInitVal, s) * lyr->width : _SWCInitVal * lyr->width;
 
 		/* test validity of values */
@@ -1065,6 +1157,11 @@ void SW_SIT_init_run(void) {
 		sp->stDeltaX = 15.0;
 	}
 
+
+	if (EchoInits)
+	{
+		_echo_inputs();
+	}
 }
 
 /**
@@ -1072,15 +1169,14 @@ void SW_SIT_init_run(void) {
 			soil layers arises to avoid leaks. (rjm 2013)
 */
 void SW_SIT_clear_layers(void) {
-
-	LyrIndex i, j;
 	SW_SITE *s = &SW_Site;
+	LyrIndex i, j;
 
 	j = SW_Site.n_layers;
 
-  if (s->deepdrain) {
-      j++;
-  }
+	if (s->deepdrain && s->deep_lyr > 0) {
+		j++;
+	}
 
 	for (i = 0; i < j; i++) {
 		free(s->lyr[i]);
@@ -1088,6 +1184,32 @@ void SW_SIT_clear_layers(void) {
 	}
 	free(s->lyr);
 	s->lyr = NULL;
+}
+
+
+/**
+	@brief Reset counts of `SW_Site` to zero
+*/
+void SW_SIT_init_counts(void) {
+	int k;
+	LyrIndex i;
+	SW_SITE *s = &SW_Site;
+
+	// Reset counts
+	s->n_layers = 0;
+	s->n_evap_lyrs = 0;
+	s->deep_lyr = 0;
+	s->n_transp_rgn = 0;
+
+	ForEachVegType(k)
+	{
+		s->n_transp_lyrs[k] = 0;
+
+		ForEachSoilLayer(i)
+		{
+			s->lyr[i]->my_transp_rgn[k] = 0;
+		}
+	}
 }
 
 /**
