@@ -540,15 +540,10 @@ static void _read_layers(void) {
 			fval = matricd;
 			errtype = Str_Dup("soil density");
 
-		} else if (LT(f_gravel, 0.) || GT(f_gravel, 0.5)) { // 0 <= gravel < 1
+		} else if (LT(f_gravel, 0.) || GE(f_gravel, 1.)) {
 			fail = swTRUE;
 			fval = f_gravel;
 			errtype = Str_Dup("gravel content");
-
-			swprintf("\nGravel content is either too HIGH (1 > 0.5 >), or too LOW (<0.0): %0.3f", f_gravel);
-			swprintf("\nParameterization for Brooks-Corey equation may fall outside of valid range.");
-			swprintf("\nThis can cause implausible SWP values.");
-			swprintf("\nConsider setting SWC minimum in siteparam.in file.");
 
 		} else if (LE(psand, 0.)) {
 			fail = swTRUE;
