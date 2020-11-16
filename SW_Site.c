@@ -1004,7 +1004,7 @@ void SW_SIT_init_run(void) {
 				lyr->fractionVolBulk_gravel,
 				lyr->fractionWeightMatric_sand,
 				lyr->fractionWeightMatric_clay,
-				lyr->swcBulk_saturated / lyr->width
+				lyr->swcBulk_saturated / ((1. - lyr->fractionVolBulk_gravel) * lyr->width)
 			);
 
 			/* residual SWC at -3 MPa (Fredlund DG, Xing AQ (1994)
