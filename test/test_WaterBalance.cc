@@ -159,4 +159,32 @@ namespace {
   }
 
 
+  TEST(WaterBalance, WithHighGravelVolume) {
+    int i;
+    LyrIndex s;
+
+    // Set high gravel volume in all soil layers
+    ForEachSoilLayer(s)
+    {
+      SW_Site.lyr[s]->fractionVolBulk_gravel = 0.99;
+    }
+
+    // Re-calculate soils
+    SW_SIT_init_run();
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error: " <<
+        SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
 } // namespace
