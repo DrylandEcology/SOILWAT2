@@ -598,7 +598,9 @@ static void _read_layers(void) {
 			&soiltemp
 		);
 
-		if (x < 10) {
+		/* Check that we have 12 values per layer */
+		/* Adjust number if new variables are added */
+		if (x != 12) {
 			CloseFile(&f);
 			LogError(
 				logfp,
