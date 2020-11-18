@@ -57,30 +57,38 @@ extern "C" {
 typedef unsigned int LyrIndex;
 
 typedef struct {
+	/* bulk = relating to the whole soil, i.e., matric + rock/gravel/coarse fragments */
+	/* matric = relating to the < 2 mm fraction of the soil, i.e., sand, clay, and silt */
 
-	RealD width, /* width of the soil layer (cm) */
-		soilBulk_density, /* bulk soil density of the whole soil, i.e., including rock/gravel component, (g/cm3) */
+	RealD
+		/* Inputs */
+		width, /* width of the soil layer (cm) */
+		soilMatric_density, /* matric soil density of the < 2 mm fraction, i.e., gravel component excluded, (g/cm3) */
 		evap_coeff, /* prop. of total soil evap from this layer */
 		transp_coeff[NVEGTYPES], /* prop. of total transp from this layer    */
-		soilMatric_density, /* matric soil density of the < 2 mm fraction, i.e., gravel component excluded, (g/cm3) */
 		fractionVolBulk_gravel, /* gravel content (> 2 mm) as volume-fraction of bulk soil (g/cm3) */
 		fractionWeightMatric_sand, /* sand content (< 2 mm & > . mm) as weight-fraction of matric soil (g/g) */
 		fractionWeightMatric_clay, /* clay content (< . mm & > . mm) as weight-fraction of matric soil (g/g) */
-		swcBulk_fieldcap, /* field_cap * width                        */
-		swcBulk_wiltpt, /* wilting_pt * width                       */
-		swcBulk_wet, /* swc considered "wet" (cm) *width         */
-		swcBulk_init, /* start the model at this swc (cm) *width  */
-		swcBulk_min, /* swc cannot go below this (cm) *width     */
-		swcBulk_saturated, /* saturated soil water content (cm) * width */
 		impermeability, /* fraction of how impermeable a layer is (0=permeable, 1=impermeable)    */
-		swcBulk_atSWPcrit[NVEGTYPES], /* swc at the critical soil water potential */
+		sTemp, /* initial soil temperature for each soil layer */
 
-		thetasMatric, /* This group is parameters for */
-		psisMatric, /* Cosby et al. (1982) SWC <-> SWP */
-		bMatric, /* conversion functions. */
-		binverseMatric,
+		/* Derived soil characteristics */
+		soilBulk_density, /* bulk soil density of the whole soil, i.e., including rock/gravel component, (g/cm3) */
+		swcBulk_fieldcap, /* Soil water content (SWC) corresponding to field capacity (SWP = -0.033 MPa) [cm] */
+		swcBulk_wiltpt, /* SWC corresponding to wilting point (SWP = -1.5 MPa) [cm] */
+		swcBulk_min, /* Minimal SWC [cm] */
+		swcBulk_wet, /* SWC considered "wet" [cm] */
+		swcBulk_init, /* Initial SWC for first day of simulation [cm] */
+		swcBulk_atSWPcrit[NVEGTYPES], /* SWC corresponding to critical SWP for transpiration */
 
-		sTemp; /* initial soil temperature for each soil layer */
+		/* Saxton et al. 2006 */
+		swcBulk_saturated, /* saturated bulk SWC [cm] */
+
+		/* Cosby et al. (1984): SOILWAT2's soil water retention curve */
+		thetasMatric, /* saturated matric SWC [cm] */
+		psisMatric, /* saturated matric SWP [cm] */
+		bMatric, /* slope of the logarithmic retention curve */
+		binverseMatric; /* inverse of bMatric */
 
 	LyrIndex my_transp_rgn[NVEGTYPES]; /* which transp zones from Site am I in? */
 } SW_LAYER_INFO;

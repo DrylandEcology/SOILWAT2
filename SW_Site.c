@@ -141,11 +141,18 @@ static void _read_layers(void);
 */
 
 void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
-	/* --------------------------------------------------- */
-	/* Saxton et al. auxiliary variables */
-	RealD theta33, theta33t, OM = 0., thetasMatric33, thetasMatric33t;
 
+	/* Cosby, B. J., G. M. Hornberger, R. B. Clapp, and T. R. Ginn. 1984.
+		 A statistical exploration of the relationships of soil moisture
+		 characteristics to the physical properties of soils.
+		 Water Resources Research 20:682–690.
+		 https://doi.org/10.1029/WR020i006p00682. */
+
+	/* Table 4 */
 	SW_Site.lyr[n]->thetasMatric = -14.2 * sand - 3.7 * clay + 50.5;
+	SW_Site.lyr[n]->psisMatric = powe(10.0, -1.58 * sand - 0.63 * clay + 2.17);
+	SW_Site.lyr[n]->bMatric = -0.3 * sand + 15.7 * clay + 3.10;
+
 
 	if (
 		LE(SW_Site.lyr[n]->thetasMatric, 0.0) ||
@@ -161,10 +168,6 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 		);
 	}
 
-
-	SW_Site.lyr[n]->psisMatric = powe(10.0, (-1.58* sand - 0.63*clay + 2.17));
-	SW_Site.lyr[n]->bMatric = -0.3 * sand + 15.7 * clay + 3.10;
-
 	if (ZRO(SW_Site.lyr[n]->bMatric)) {
 		LogError(
 			logfp,
@@ -176,36 +179,63 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 
 	SW_Site.lyr[n]->binverseMatric = 1.0 / SW_Site.lyr[n]->bMatric;
 
-	/* saturated soil water content: Saxton, K. E. and W. J. Rawls. 2006. Soil water characteristic estimates by texture and organic matter for hydrologic solutions. Soil Science Society of America Journal 70:1569-1578. */
-	theta33t = -0.251 * sand + 0.195 * clay + 0.011 * OM + 0.006 * (sand * OM) - 0.027 * (clay * OM) + 0.452 * (sand * clay) + 0.299;
-	theta33 = theta33t + (1.283 * powe(theta33t, 2) - 0.374 * theta33t - 0.015);
 
-	thetasMatric33t = 0.278 * sand + 0.034 * clay + 0.022 * OM - 0.018 * sand * OM - 0.027 * clay * OM - 0.584 * sand * clay + 0.078;
-	thetasMatric33 = thetasMatric33t + (0.636 * thetasMatric33t - 0.107);
+	/* Saxton, K. E. and W. J. Rawls. 2006. Soil water characteristic estimates
+		 by texture and organic matter for hydrologic solutions.
+		 Soil Science Society of America Journal 70:1569-1578.
+	*/
 
-	SW_Site.lyr[n]->swcBulk_saturated = (1. - fractionGravel) * \
-		(theta33 + thetasMatric33 - 0.097 * sand + 0.043);
+	RealD
+		OM = 0.,
+		theta_S, theta_33, theta_33t, theta_S33, theta_S33t;
+
+	/* Eq. 2: 33 kPa moisture */
+	theta_33t =
+		+ 0.299 \
+		- 0.251 * sand \
+		+ 0.195 * clay \
+		+ 0.011 * OM \
+		+ 0.006 * sand * OM \
+		- 0.027 * clay * OM \
+		+ 0.452 * sand * clay;
+
+	theta_33 = theta_33t + (1.283 * squared(theta_33t) - 0.374 * theta_33t - 0.015);
+
+	/* Eq. 3: SAT-33 kPa moisture */
+	theta_S33t =
+		+ 0.078 \
+		+ 0.278 * sand \
+		+ 0.034 * clay \
+		+ 0.022 * OM \
+		- 0.018 * sand * OM \
+		- 0.027 * clay * OM \
+		- 0.584 * sand * clay;
+
+	theta_S33 = theta_S33t + (0.636 * theta_S33t - 0.107);
+
+
+	/* Eq. 5: saturated moisture */
+	theta_S = theta_33 + theta_S33 - 0.097 * sand + 0.043;
 
 	if (
-		LE(SW_Site.lyr[n]->swcBulk_saturated, 0.) ||
-		GT(SW_Site.lyr[n]->swcBulk_saturated, 1.)
+		LE(theta_S, 0.) ||
+		GT(theta_S, 1.)
 	) {
 		LogError(
 			logfp,
 			LOGFATAL,
 			"water_eqn(): invalid value of "
-			"theta(saturated, bulk, [cm / cm]; Saxton et al. 2006) = %f "
+			"theta(saturated, [cm / cm]; Saxton et al. 2006) = %f "
 			"(must be within 0-1)\n",
-			SW_Site.lyr[n]->swcBulk_saturated
+			theta_S
 		);
 	}
 
-
-
-	/* Convert VWC to SWC */
-	SW_Site.lyr[n]->swcBulk_saturated *= SW_Site.lyr[n]->width;
-
+	SW_Site.lyr[n]->swcBulk_saturated =
+		SW_Site.lyr[n]->width * (1. - fractionGravel) * theta_S;
 }
+
+
 
 /**
   @brief Estimate soil density of the whole soil (bulk).

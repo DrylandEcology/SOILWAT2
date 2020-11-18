@@ -661,13 +661,19 @@ void SW_Water_Flow(void) {
 
 
 	/* Calculate percolation for unsaturated soil water conditions. */
-	/* 01/06/2011	(drs) call to infiltrate_water_low() has to be the last swc affecting calculation */
+	/* 01/06/2011	(drs) call to infiltrate_water_low() has to be the last swc
+		 affecting calculation */
 
 	w->soil_inf += standingWater[Today];
-	infiltrate_water_low(lyrSWCBulk, lyrDrain, &drainout, SW_Site.n_layers,
+
+	infiltrate_water_low(
+		lyrSWCBulk, lyrDrain, &drainout, SW_Site.n_layers,
 		SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH, lyrSWCBulk_FieldCaps, lyrWidths,
-		lyrSWCBulk_Mins, lyrSWCBulk_Saturated, lyrImpermeability, &standingWater[Today]);
-	w->soil_inf -= standingWater[Today]; // adjust soil_infiltration for water pushed back to surface
+		lyrSWCBulk_Mins, lyrSWCBulk_Saturated, lyrImpermeability, &standingWater[Today]
+	);
+
+	// adjust soil_infiltration for water pushed back to surface
+	w->soil_inf -= standingWater[Today];
 
 	sw->surfaceWater = standingWater[Today];
 
