@@ -37,6 +37,8 @@
 #ifndef SW_WATERSUBS_H
 #define SW_WATERSUBS_H
 
+#include "SW_Site.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -107,6 +109,12 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 
 void infiltrate_water_low(double swc[], double drain[], double *drainout, unsigned int nlyrs, double sdrainpar, double sdraindpth, double swcfc[], double width[],
 		double swcmin[], double swcsat[], double impermeability[], double *standingWater);
+
+void percolate_unsaturated(
+	double swc[], double percolate[], double *drainout, double *standingWater,
+	unsigned int nlyrs, SW_LAYER_INFO *lyr[], Bool lyrFrozen[],
+	double slow_drain_coeff, double slow_drain_depth
+);
 
 void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], double hydred[], unsigned int nlyrs, double maxCondroot, double swp50, double shapeCond,
 		double scale);

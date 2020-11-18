@@ -106,7 +106,8 @@ typedef struct {
 		n_transp_lyrs[NVEGTYPES], /* layer index of deepest transp. region       */
 		deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
 
-	RealD slow_drain_coeff, /* low soil water drainage coefficient   */
+	RealD
+		slow_drain_coeff, /* low soil water drainage coefficient   */
 		pet_scale,	/* changes relative effect of PET calculation */
 		longitude,	/* longitude of the site (radians)        */
 		latitude,	/* latitude of the site (radians)        */

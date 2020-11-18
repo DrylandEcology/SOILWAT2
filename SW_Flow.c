@@ -131,6 +131,7 @@
 extern SW_MODEL SW_Model;
 extern SW_SITE SW_Site;
 extern SW_SOILWAT SW_Soilwat;
+extern ST_RGR_VALUES stValues;
 extern SW_WEATHER SW_Weather;
 extern SW_VEGPROD SW_VegProd;
 extern SW_SKY SW_Sky;
@@ -666,16 +667,17 @@ void SW_Water_Flow(void) {
 
 	w->soil_inf += standingWater[Today];
 
-	infiltrate_water_low(
-		lyrSWCBulk, lyrDrain, &drainout, SW_Site.n_layers,
-		SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH, lyrSWCBulk_FieldCaps, lyrWidths,
-		lyrSWCBulk_Mins, lyrSWCBulk_Saturated, lyrImpermeability, &standingWater[Today]
+	/* Unsaturated percolation based on Parton 1978, Black et al. 1969 */
+	percolate_unsaturated(
+		lyrSWCBulk, lyrDrain, &drainout, &standingWater[Today],
+		SW_Site.n_layers, SW_Site.lyr, stValues.lyrFrozen,
+		SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
 	);
 
 	// adjust soil_infiltration for water pushed back to surface
 	w->soil_inf -= standingWater[Today];
-
 	sw->surfaceWater = standingWater[Today];
+
 
 	#ifdef SWDEBUG
 	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {

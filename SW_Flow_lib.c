@@ -96,6 +96,7 @@
 #include "SW_Defines.h"
 #include "SW_Flow_lib.h"
 #include "SW_SoilWater.h"
+#include "SW_Site.h"
 #include "SW_Carbon.h"
 #include "Times.h"
 
@@ -770,100 +771,93 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 }
 
 /**
+	@brief Calculate soil water drainage for low soil water conditions
 
-@brief Calculate soilwater drainage for low soil water conditions, see Equation 2.9 in ELM doc.
+	Based on equation 2.9 by Parton 1978. @cite Parton1978
 
-Based on equations from Parton 1978. @cite Parton1978
-
-@param swc Soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param drain This is the drainage from each layer (cm/day).
-@param *drainout Drainage from the previous layer (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param nlyrs Number of layers in the soil profile.
-@param sdrainpar Slow drainage parameter.
-@param sdraindpth Slow drainage depth (cm).
-@param swcfc Soilwater content at field capacity (cm H<SUB>2</SUB>O).
-@param width The width of the soil layers (cm).
-@param swcmin Lower limit on soilwater content per layer.
-@param swcsat Soilwater content in each layer at saturation (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param impermeability Impermeability measures for each layer.
-@param *standingWater Remaining water on the surface (m<SUP>3</SUP> H<SUB>2</SUB>O).
-
-@sideeffect
-  - swc Updated soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-  - drain Updated drainage from each layer (cm/day).
-  - *drainout Drainage from the previous layer (m<SUP>3</SUP> H<SUB>2</SUB>O).
-  - *standingWater Remaining water on the surface (m<SUP>3</SUP> H<SUB>2</SUB>O).
+	@param[in,out] swc Soil water content in each layer [cm].
+	@param[in,out] percolate Drainage from each layer [cm / day].
+	@param[in,out] *drainout Drainage from the last layer [cm / day].
+	@param[in,out] *standingWater Remaining water on the surface [cm].
+	@param nlyrs Number of layers in the soil profile [1].
+	@param[in] *lyr Soil characteristics for each soil layer.
+	@param[in] *lyrFrozen Frozen/unfrozen status for each soil layer.
+	@param slow_drain_coeff Slow drainage parameter [cm / day].
+	@param slow_drain_depth Slow drainage depth [cm].
 */
 
-void infiltrate_water_low(double swc[], double drain[], double *drainout, unsigned int nlyrs,
-    double sdrainpar, double sdraindpth, double swcfc[], double width[], double swcmin[],
-    double swcsat[], double impermeability[], double *standingWater) {
-	/**********************************************************************
-	 HISTORY:
-	 4/30/92  (SLC)
-	 7/2/92   (fixed bug.  equation for drainlw needed fixing)
-	 8/13/92 (SLC) Changed call to function which checks lower bound
-	 on soilwater content.  REplaced call to "chkzero" with
-	 the function "getdiff".
-	 - lower bound is used in place of zero as lower bound
-	 here.  Old code used 0.cm water as a lower bound in
-	 low water drainage.
-	 9/22/01 - (cwb) replaced tr_reg_max[] with transp_rgn[]
-	 see INPUTS
-	 1/14/02 - (cwb) fixed off by one error in loop.
-	 6-Oct-03  (cwb) removed condition disallowing gravitational
-	 drainage from transpiration region 1.
-
-	 **********************************************************************/
+void percolate_unsaturated(
+	double swc[], double percolate[], double *drainout, double *standingWater,
+	unsigned int nlyrs, SW_LAYER_INFO *lyr[], Bool lyrFrozen[],
+	double slow_drain_coeff, double slow_drain_depth
+) {
 
 	unsigned int i;
 	int j;
-	double drainlw = 0.0, swc_avail, drainpot, d[MAX_LAYERS] = {0}, push, kunsat_rel	;
-
-	ST_RGR_VALUES *st = &stValues;
+	double
+		drainlw = 0.0, swc_avail, drainpot, d[MAX_LAYERS] = {0}, push, kunsat_rel,
+		K_unsat;
 
 	// Unsaturated percolation
 	for (i = 0; i < nlyrs; i++) {
-		/* calculate potential unsaturated percolation */
-		if (LE(swc[i], swcmin[i])) { /* in original code was !GT(swc[i], swcwp[i]) equivalent to LE(swc[i], swcwp[i]), but then water is drained to swcmin nevertheless - maybe should be LE(swc[i], swcmin[i]) */
+		if (LE(swc[i], lyr[i]->swcBulk_min)) {
 			d[i] = 0.;
+
 		} else {
-			if (st->lyrFrozen[i]) {
-				kunsat_rel = 0.01; // roughly estimated from Parton et al. 1998 GCB
+			if (lyrFrozen[i]) {
+				// roughly estimated from Parton et al. 1998 GCB
+				kunsat_rel = 0.01;
 			} else {
 				kunsat_rel = 1.;
 			}
-			swc_avail = fmax(0., swc[i] - swcmin[i]);
-			drainpot = GT(swc[i], swcfc[i]) ? sdrainpar : sdrainpar * exp((swc[i] - swcfc[i]) * sdraindpth / width[i]);
-			d[i] = kunsat_rel * (1. - impermeability[i]) * fmin(swc_avail, drainpot);
-    }
-		drain[i] += d[i];
 
-		if (i < nlyrs - 1) { /* percolate up to next-to-last layer */
+			swc_avail = fmax(0., swc[i] - lyr[i]->swcBulk_min);
+
+			/* Unsaturated percolation following Parton 1978, Eq. 2.9 */
+			/* Eq. 2.9 is claimed to be based on Black et al. 1969, eq. 17 */
+			K_unsat = slow_drain_coeff;
+
+			drainpot = GT(swc[i], lyr[i]->swcBulk_fieldcap) ?
+				K_unsat :
+				K_unsat * exp(
+					(swc[i] - lyr[i]->swcBulk_fieldcap) / lyr[i]->width * slow_drain_depth
+				);
+
+			d[i] = kunsat_rel * (1. - lyr[i]->impermeability) *
+				fmin(swc_avail, drainpot);
+		}
+
+		percolate[i] += d[i];
+
+		if (i < nlyrs - 1) {
+			/* percolate up to next-to-last layer */
 			swc[i + 1] += d[i];
 			swc[i] -= d[i];
-		} else { /* percolate last layer */
-			drainlw = fmax( d[i], 0.0);
+		} else {
+			/* percolate last layer */
+			drainlw = fmax(d[i], 0.0);
 			(*drainout) += drainlw;
 			swc[i] -= drainlw;
 		}
 	}
 
-	/* adjust (i.e., push water upwards) if water content of a layer is now above saturated water content */
+	/* adjust (i.e., push water upwards) if water content of a layer is
+		 now above saturated water content */
 	for (j = nlyrs - 1; j >= 0; j--) {
-		if (GT(swc[j], swcsat[j])) {
-			push = swc[j] - swcsat[j];
+		if (GT(swc[j], lyr[j]->swcBulk_saturated)) {
+			push = swc[j] - lyr[j]->swcBulk_saturated;
 			swc[j] -= push;
 			if (j > 0) {
-				drain[j - 1] -= push;
+				percolate[j - 1] -= push;
 				swc[j - 1] += push;
 			} else {
 				(*standingWater) += push;
 			}
 		}
 	}
-
 }
+
+
 
 /**
 
