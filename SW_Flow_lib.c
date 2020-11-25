@@ -813,18 +813,105 @@ void percolate_unsaturated(
 
 			swc_avail = fmax(0., swc[i] - lyr[i]->swcBulk_min);
 
+if (swTRUE) {
 			/* Unsaturated percolation following Parton 1978, Eq. 2.9 */
 			/* Eq. 2.9 is claimed to be based on Black et al. 1969, eq. 17 */
+			/* p_unsat1[i] = 0.02 * exp(-15 * (vwc_fc[i] - vwc[i])) */
 			K_unsat = slow_drain_coeff;
-
 			drainpot = GT(swc[i], lyr[i]->swcBulk_fieldcap) ?
 				K_unsat :
 				K_unsat * exp(
-					(swc[i] - lyr[i]->swcBulk_fieldcap) / lyr[i]->width * slow_drain_depth
+					- slow_drain_depth * (lyr[i]->swcBulk_fieldcap - swc[i]) / lyr[i]->width
 				);
+}
+
+
+if (swFALSE) {
+			/* Black et al. 1969, eq. 17: with assumption that 15 cm = field capacity */
+			K_unsat = 0.35;
+			slow_drain_depth = 0.7;
+			drainpot = GT(swc[i], lyr[i]->swcBulk_fieldcap) ?
+				K_unsat :
+				K_unsat * exp(
+					- slow_drain_depth * (lyr[i]->swcBulk_fieldcap - swc[i])
+				);
+}
+
+
+if (swFALSE) {
+			/* Modified eq. 2.9 */
+			/* p_unsat2[i] = p_unsat1 * (vwc[i] - vwc_min[i]) / (vwc_sat[i] - vwc_min[i]) */
+			K_unsat = slow_drain_coeff;
+			drainpot = GT(swc[i], lyr[i]->swcBulk_fieldcap) ?
+				K_unsat :
+				K_unsat *
+				(swc[i] - lyr[i]->swcBulk_min) / (lyr[i]->swcBulk_saturated - lyr[i]->swcBulk_min) *
+				exp(
+					- slow_drain_depth * (lyr[i]->swcBulk_fieldcap - swc[i]) / lyr[i]->width
+				);
+}
+
+if (swFALSE) {
+			/* Modified eq. 2.9 */
+			/* p_unsat3[i] = 0.02 * exp(-15 * (vwc_fc[i] - vwc[i]) / (1 - gravel[i])) */
+			K_unsat = slow_drain_coeff;
+			drainpot = GT(swc[i], lyr[i]->swcBulk_fieldcap) ?
+				K_unsat :
+				K_unsat *
+				exp(
+					- slow_drain_depth * (lyr[i]->swcBulk_fieldcap - swc[i]) /
+					(lyr[i]->width * (1. - SW_Site.lyr[i]->fractionVolBulk_gravel))
+				);
+}
+
+if (swFALSE) {
+			/* Hydraulic conductivity based on
+				 Saxton et al. 2006: eq. 17 [cm / day]
+			*/
+			K_unsat = lyr[i]->Saxton2006_K_sat_bulk * pow(
+				swc[i] / lyr[i]->swcBulk_saturated,
+				3. + 2. / lyr[i]->Saxton2006_lambda
+			);
+
+			/* Modified Darcy's Law simplified from
+				 Parton et al. 1998 eq. 1, doi: 10.1016/S0921-8181(98)00040-X
+			*/
+			/* Convert [-bar] to [cm of head]: 1020.408 [(cm of head) / bar]
+					h_p =  pressure head [meter of head]
+					psi_p = pressure potential [Pa = N/m2]
+					-> psi_p = rho_water * g * h_p =
+									 = 1000 [kg/m3] * 9.8 [m/s2] * 1 [m of head] =
+									 = 9800 [N/m2] = 9.8 [kPa] = 0.0098 [MPa]
+					-> h_p = psi_p / (rho_water * g) =
+									 = 1 [MPa] / (1000 [kg/m3] * 9.8 [m/s2]) =
+									 = 1e6 [kg/m/s2] / 9800 [kg/m2/s2] =
+									 = 102.0408 [m]
+			*/
+			if (i < nlyrs - 1) {
+				drainpot = fmax(
+					0.,
+					K_unsat * 1020.408 * (
+						+ SW_SWCbulk2SWPmatric(lyr[i + 1]->fractionVolBulk_gravel, swc[i + 1], i + 1)
+						- SW_SWCbulk2SWPmatric(lyr[i]->fractionVolBulk_gravel, swc[i], i)
+					) /
+					(0.5 * (lyr[i + 1]->width + lyr[i]->width))
+				);
+			} else {
+				drainpot = K_unsat;
+			}
+}
+
 
 			d[i] = kunsat_rel * (1. - lyr[i]->impermeability) *
 				fmin(swc_avail, drainpot);
+
+if (swFALSE) {
+if (i < nlyrs - 1) {
+swprintf("L%d: swc=%f/swp=%f, drainpot=%f, swc=%f/swp=%f\n", i, swc[i]/lyr[i]->width, SW_SWCbulk2SWPmatric(lyr[i]->fractionVolBulk_gravel, swc[i], i), drainpot, swc[i+1]/lyr[i+1]->width, SW_SWCbulk2SWPmatric(lyr[i + 1]->fractionVolBulk_gravel, swc[i + 1], i + 1));
+} else {
+swprintf("L%d: swc=%f/swp=%f, drainpot=%f\n", i, swc[i]/lyr[i]->width, SW_SWCbulk2SWPmatric(lyr[i]->fractionVolBulk_gravel, swc[i], i), drainpot);
+}
+}
 		}
 
 		percolate[i] += d[i];

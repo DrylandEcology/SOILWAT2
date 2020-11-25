@@ -83,6 +83,10 @@ typedef struct {
 
 		/* Saxton et al. 2006 */
 		swcBulk_saturated, /* saturated bulk SWC [cm] */
+		Saxton2006_K_sat_matric, /* saturated matric conductivity [cm / day] */
+		Saxton2006_K_sat_bulk, /* saturated bulk conductivity [cm / day] */
+		Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
+		Saxton2006_lambda, /* Slope of logarithmic tension-moisture curve */
 
 		/* Cosby et al. (1984): SOILWAT2's soil water retention curve */
 		thetasMatric, /* saturated matric SWC [cm] */

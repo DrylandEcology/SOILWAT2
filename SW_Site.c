@@ -187,7 +187,20 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 
 	RealD
 		OM = 0.,
-		theta_S, theta_33, theta_33t, theta_S33, theta_S33t;
+		theta_S, theta_33, theta_33t, theta_S33, theta_S33t, theta_1500, theta_1500t,
+		R_w, alpha;
+
+	/* Eq. 1: 1500 kPa moisture */
+	theta_1500t =
+		+ 0.031 \
+		- 0.024 * sand \
+		+ 0.487 * clay \
+		+ 0.006 * OM \
+		+ 0.005 * sand * OM \
+		- 0.013 * clay * OM \
+		+ 0.068 * sand * clay;
+
+	theta_1500 = theta_1500t + (0.14 * theta_1500t - 0.02);
 
 	/* Eq. 2: 33 kPa moisture */
 	theta_33t =
@@ -233,9 +246,45 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 
 	SW_Site.lyr[n]->swcBulk_saturated =
 		SW_Site.lyr[n]->width * (1. - fractionGravel) * theta_S;
+
+
+	/* Eq. 18: slope of logarithmic tension-moisture curve */
+	SW_Site.lyr[n]->Saxton2006_lambda =
+		(log(theta_33) - log(theta_1500)) / (log(1500.) - log(33.));
+
+
+	/* Eq. 19: Gravel volume <-> weight fraction */
+	alpha = SW_Site.lyr[n]->soilMatric_density / 2.65;
+
+	if (GT(fractionGravel, 0.)) {
+		R_w = fractionGravel / (alpha + fractionGravel * (1. - alpha));
+	} else {
+		R_w = 0.;
+	}
+
+
+	/* Eq. 16: saturated conductivity [cm / day] */
+	SW_Site.lyr[n]->Saxton2006_K_sat_matric =
+		24. / 10. * 1930. \
+		* pow(theta_S - theta_33, 3. - SW_Site.lyr[n]->Saxton2006_lambda);
+
+
+	/* Eq. 22: saturated conductivity in bulk soils */
+	SW_Site.lyr[n]->Saxton2006_K_sat_bulk =
+		SW_Site.lyr[n]->Saxton2006_K_sat_matric;
+
+	if (GT(fractionGravel, 0.)) {
+		SW_Site.lyr[n]->Saxton2006_fK_gravel =
+			(1. - R_w) / (1. - R_w * (1. - 1.5 * alpha));
+
+		SW_Site.lyr[n]->Saxton2006_K_sat_bulk *=
+			SW_Site.lyr[n]->Saxton2006_fK_gravel;
+
+	} else {
+		SW_Site.lyr[n]->Saxton2006_fK_gravel = 1.;
+	}
+
 }
-
-
 
 /**
   @brief Estimate soil density of the whole soil (bulk).
