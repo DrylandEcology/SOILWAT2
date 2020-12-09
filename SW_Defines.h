@@ -26,6 +26,23 @@
 extern "C" {
 #endif
 
+/* SOILWAT2 version and compile time metadata */
+#ifndef SW2_VERSION
+  #define SW2_VERSION "unset"
+#endif
+
+#ifndef USERNAME
+  #define USERNAME "unset"
+#endif
+
+#ifndef HOSTNAME
+  #define HOSTNAME "unset"
+#endif
+
+#define BUILD_DATE __DATE__
+#define BUILD_TIME __TIME__
+
+
 /* Not sure if this parameter is variable or a consequence of algebra,
  * but it's different in the FORTRAN version than in the ELM doc.
  * If deemed to need changing, might as well recompile rather than

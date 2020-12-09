@@ -45,29 +45,47 @@ int logged; /* boolean: true = we logged a msg */
 Bool QuietMode, EchoInits; /* if true, echo inits to logfile */
 //function
 void init_args(int argc, char **argv);
+void print_version(void);
 
 
 /* =================================================== */
 /*                Module-Level Declarations            */
 /* --------------------------------------------------- */
 
-static void usage(void);
+static void print_usage(void);
 
 
-/**
-@brief In the case of an error, *s1 is displayed.
+/** @brief Print usage and command line options
 */
-static void usage(void) {
-	const char *s1 = "Ecosystem water simulation model SOILWAT2\n"
-			"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
-			"Usage: soilwat [-d startdir] [-f files.in] [-e] [-q]\n"
-			"  -d : operate (chdir) in startdir (default=.)\n"
-			"  -f : supply list of input files (default=files.in)\n"
-			"       a preceeding path applies to all input files\n"
-			"  -e : echo initial values from site and estab to logfile\n"
-			"  -q : quiet mode, don't print message to check logfile.\n";
-  sw_error(0, "%s", s1);
+static void print_usage(void) {
+	swprintf(
+		"Ecosystem water simulation model SOILWAT2\n"
+		"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
+		"Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h]\n"
+		"  -d : operate (chdir) in startdir (default=.)\n"
+		"  -f : name of main input file (default=files.in)\n"
+		"       a preceeding path applies to all input files\n"
+		"  -e : echo initial values from site and estab to logfile\n"
+		"  -q : quiet mode, don't print message to check logfile\n"
+		"  -v : print version information\n"
+		"  -h : print this help information\n"
+	);
 }
+
+
+/** @brief Print version information
+*/
+void print_version(void) {
+	swprintf(
+		"SOILWAT2 version: %s\n",
+		SW2_VERSION
+	);
+	swprintf(
+		"Compiled        : by %s, on %s, on %s %s\n",
+		USERNAME, HOSTNAME, BUILD_DATE, BUILD_TIME
+	);
+}
+
 
 char _firstfile[MAX_FILENAMESIZE];
 
@@ -94,8 +112,8 @@ void init_args(int argc, char **argv) {
 	 *                   at end of program.
 	 */
 	char str[1024];
-	char const *opts[] = { "-d", "-f", "-e", "-q" }; /* valid options */
-	int valopts[] = { 1, 1, 0, 0 }; /* indicates options with values */
+	char const *opts[] = { "-d", "-f", "-e", "-q", "-v", "-h" }; /* valid options */
+	int valopts[] = { 1, 1, 0, 0, 0, 0 }; /* indicates options with values */
 	/* 0=none, 1=required, -1=optional */
 	int i, /* looper through all cmdline arguments */
 	a, /* current valid argument-value position */
@@ -117,8 +135,8 @@ void init_args(int argc, char **argv) {
 				break; /* found it, move on */
 		}
 		if (op == nopts) {
-      usage();
-      sw_error(-1, "Invalid option %s\n", argv[a]);
+      print_usage();
+      sw_error(-1, "\nInvalid option %s\n", argv[a]);
 		}
 
 		*str = '\0';
@@ -131,30 +149,48 @@ void init_args(int argc, char **argv) {
 				strcpy(str, argv[++a]);
 
 			} else if (0 < valopts[op]) { /* required opt-val not found */
-        usage();
-        sw_error(-1, "Incomplete option %s\n", opts[op]);
+        print_usage();
+        sw_error(-1, "\nIncomplete option %s\n", opts[op]);
 			} /* opt-val not required */
 		}
 
 		/* tell us what to do here                   */
 		/* set indicators/variables based on results */
 		switch (op) {
-		case 0: /* -d */
-			if (!ChDir(str)) {
-				LogError(logfp, LOGFATAL, "Invalid project directory (%s)", str);
-			}
-			break;
-		case 1:
-			strcpy(_firstfile, str);
-			break; /* -f */
-		case 2:
-			EchoInits = swTRUE;
-			break; /* -e */
-		case 3:
-			QuietMode = swTRUE;
-			break; /* -q */
-		default:
-			LogError(logfp, LOGFATAL, "Programmer: bad option in main:init_args:switch");
+			case 0: /* -d */
+				if (!ChDir(str)) {
+					LogError(logfp, LOGFATAL, "Invalid project directory (%s)", str);
+				}
+				break;
+
+			case 1: /* -f */
+				strcpy(_firstfile, str);
+				break;
+
+			case 2: /* -e */
+				EchoInits = swTRUE;
+				break;
+
+			case 3: /* -q */
+				QuietMode = swTRUE;
+				break;
+
+			case 4: /* -v */
+				print_version();
+				sw_error(-1, "");
+				break;
+
+			case 5: /* -h */
+				print_usage();
+				sw_error(-1, "");
+				break;
+
+			default:
+				LogError(
+					logfp,
+					LOGFATAL,
+					"Programmer: bad option in main:init_args:switch"
+				);
 		}
 
 		a++; /* move to next valid arg-value position */

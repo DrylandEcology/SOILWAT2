@@ -66,6 +66,11 @@ int main(int argc, char **argv) {
 
 	init_args(argc, argv);
 
+	// Print version if not in quiet mode
+	if (!QuietMode) {
+		print_version();
+	}
+
   // setup and construct model (independent of inputs)
 	SW_CTL_setup_model(_firstfile);
 
