@@ -448,9 +448,18 @@ namespace {
     double swc[] = {1.0}, swc_sat[] = {1.5}, bDensity[] = {1.8}, width[] = {20},
     oldsTemp[] = {5.0}, sTemp[] = {4.0}, fc[] = {2.6}, wp[] = {1.0};
 
+    SW_ST_init_run(
+      airTemp,
+      swc, swc_sat,
+      bDensity, width,
+      oldsTemp, surfaceTemp,
+      nlyrs, fc, wp,
+      sTconst, deltaX, theMaxDepth,
+      nRgr, &ptr_stError
+    );
 
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-      oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+      oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
@@ -464,7 +473,7 @@ namespace {
     snowdepth = 0;
 
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-      oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+      oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
@@ -476,7 +485,7 @@ namespace {
     biomass = 305;
 
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-      oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+      oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
@@ -505,19 +514,34 @@ namespace {
     // ptr_stError should be set to TRUE if soil_temperature_today fails (i.e. unrealistic temp values)
     double *sTemp2 = new double[nlyrs];
     double *oldsTemp2 = new double[nlyrs];
+
+    surfaceTemp[Today] = airTemp = 1500.;
+
     for (i = 0; i < nlyrs; i++)
     {
-      sTemp2[i] = RandNorm(150, 1,&MSTF_Lyer1_rng);
-      oldsTemp2[i] = RandNorm(150, 1,&MSTF_Lyer1_rng);
+      sTemp2[i] = RandNorm(surfaceTemp[Today], 1, &MSTF_Lyer1_rng);
+      oldsTemp2[i] = RandNorm(surfaceTemp[Today], 1, &MSTF_Lyer1_rng);
     }
 
+    SW_ST_init_run(
+      airTemp,
+      swc, swc_sat,
+      bDensity, width,
+      oldsTemp, surfaceTemp,
+      nlyrs, fc, wp,
+      sTconst, deltaX, theMaxDepth,
+      nRgr, &ptr_stError
+    );
+
+    EXPECT_EQ(ptr_stError, swFALSE);
+
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-      oldsTemp2, sTemp2, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+      oldsTemp2, sTemp2, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
-    // Check that ptr_stError is TRUE
-    EXPECT_EQ(ptr_stError, 1);
+    // Check that error has occurred as indicated by ptr_stError
+    EXPECT_EQ(ptr_stError, swTRUE);
 
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
@@ -549,7 +573,7 @@ namespace {
     double sTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double bDensity2[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
-        // we don't need soil texture, but we need SWC(sat), SWC(field capacity),
+    // we don't need soil texture, but we need SWC(sat), SWC(field capacity),
     // and SWC(wilting point)
     double *swc2 = new double[nlyrs2];
     double *swc_sat2 = new double[nlyrs2];
@@ -570,11 +594,21 @@ namespace {
       //  i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
     }
 
+    SW_ST_init_run(
+      airTemp,
+      swc2, swc_sat2,
+      bDensity2, width2,
+      oldsTemp3, surfaceTemp,
+      nlyrs2, fc2, wp2,
+      sTconst, deltaX, theMaxDepth,
+      nRgr, &ptr_stError
+    );
+
     // Test surface temp equals surface_temperature_under_snow() because snow > 0
     snowdepth = 5;
 
     soil_temperature(airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
-      oldsTemp3, sTemp3, surfaceTemp, nlyrs2, fc2, wp2, bmLimiter, t1Param1, t1Param2,
+      oldsTemp3, sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
@@ -587,7 +621,7 @@ namespace {
     biomass = 100;
 
     soil_temperature(airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
-      oldsTemp3, sTemp3, surfaceTemp, nlyrs2, fc2, wp2, bmLimiter, t1Param1, t1Param2,
+      oldsTemp3, sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
@@ -599,7 +633,7 @@ namespace {
     biomass = 305;
 
     soil_temperature(airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
-      oldsTemp3, sTemp3, surfaceTemp, nlyrs2, fc2, wp2, bmLimiter, t1Param1, t1Param2,
+      oldsTemp3, sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError);
 
@@ -624,12 +658,12 @@ namespace {
       //swprintf("\n k %u, newoldtempR %f", k, stValues.oldsTempR[k]);
       EXPECT_NE(stValues.oldsTempR[k], SW_MISSING);
     }
-    
+
     double *array_list[] = { swc2, swc_sat2, fc2, wp2};
     for (i = 0; i < length(array_list); i++){
       delete[] array_list[i];
     }
-    
+
     // Reset to global state
     Reset_SOILWAT2_after_UnitTest();
   }
@@ -637,48 +671,23 @@ namespace {
   // Test that main soil temperature functions fails when it is supposed to
   TEST(SWFlowTempDeathTest, MainSoilTemperatureFunctionDeathTest) {
 
-    // *****  Test when nlyrs = MAX_LAYERS  ***** //
-
-    // intialize values
-    unsigned int nRgr = 65, i = 0.;
+    unsigned int nlyrs = 1, nRgr = 65;
     double airTemp = 25.0, pet = 5.0, aet = 4.0, biomass = 100., surfaceTemp[] = {20.0, 15. ,14.},
     bmLimiter = 300., t1Param1 = 15., t1Param2 = -4., t1Param3 = 600., csParam1 =0.00070,
     csParam2 = 0.00030, shParam = 0.18, snowdepth = 5, sTconst = 4.15, deltaX = 15,
-    snow = 1;
+    theMaxDepth = 990., snow = 1;
     Bool ptr_stError = swFALSE;
 
-    pcg32_random_t MSTFDT_rng;
-    RandSeed(0, &MSTFDT_rng);
+    double swc[] = {1.0}, swc_sat[] = {1.5}, bDensity[] = {1.8}, width[] = {20},
+    oldsTemp[] = {5.0}, sTemp[] = {4.0};
 
-    unsigned int nlyrs = MAX_LAYERS;
-    double width[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double oldsTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    double sTemp[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    double *swc = new double[nlyrs];
-    double *swc_sat = new double[nlyrs];
-    double *bDensity = new double[nlyrs];
-    double *fc = new double[nlyrs];
-    double *wp = new double[nlyrs];
-
-    for (i = 0; i < nlyrs; i++) {
-      bDensity[i] = fmaxf(RandNorm(1.,0.5, &MSTFDT_rng), 0.1); // greater than 0.1
-      fc[i] = fmaxf(RandNorm(1.5, 0.5, &MSTFDT_rng), 0.1); // greater than 0.1
-      swc_sat[i] = fc[i] + 0.2; //swc_sat > fc2
-      swc[i] =  swc_sat[i] - 0.3; // swc_sat > swc
-      wp[i] = fmaxf(fc[i] - 0.6, 0.1); // wp < fc
-    }
-
-    // Should fail when soil_temperature_init fails - i.e. when theMaxDepth < depth of nlyrs
-
-    double theMaxDepth = 70;
-
+    // Should fail when soil_temperature was not initialized
     EXPECT_DEATH_IF_SUPPORTED(soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-      oldsTemp, sTemp, surfaceTemp, nlyrs, fc, wp, bmLimiter, t1Param1, t1Param2,
+      oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError), "@ generic.c LogError");
 
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
-    delete[] swc; delete[] swc_sat; delete[] bDensity; delete[] fc; delete[] wp;
   }
 }

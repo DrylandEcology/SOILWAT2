@@ -283,6 +283,32 @@ void SW_Water_Flow(void) {
 	}
 	#endif
 
+
+	if (SW_Site.use_soil_temp && !soil_temp_init) {
+		/* We initialize soil temperature (and un/frozen state of soil layers)
+			 before water flow of first day because we use un/frozen states), but
+			 calculate soil temperature at end of each day
+		*/
+		SW_ST_init_run(
+			w->now.temp_avg[Today],
+			lyrSWCBulk,
+			lyrSWCBulk_Saturated,
+			lyrbDensity,
+			lyrWidths,
+			lyroldsTemp,
+			surfaceTemp,
+			SW_Site.n_layers,
+			lyrSWCBulk_FieldCaps,
+			lyrSWCBulk_Wiltpts,
+			SW_Site.Tsoil_constant,
+			SW_Site.stDeltaX,
+			SW_Site.stMaxDepth,
+			SW_Site.stNRGR,
+			&SW_Soilwat.soiltempError
+		);
+	}
+
+
 	/* Solar radiation and PET */
 	x = v->bare_cov.albedo * v->bare_cov.fCover;
 	ForEachVegType(k)
@@ -711,7 +737,7 @@ void SW_Water_Flow(void) {
 	if (SW_Site.use_soil_temp) {
 		soil_temperature(w->now.temp_avg[Today], sw->pet, sw->aet, x, lyrSWCBulk,
 			lyrSWCBulk_Saturated, lyrbDensity, lyrWidths, lyroldsTemp, lyrsTemp, surfaceTemp,
-			SW_Site.n_layers, lyrSWCBulk_FieldCaps, lyrSWCBulk_Wiltpts, SW_Site.bmLimiter,
+			SW_Site.n_layers, SW_Site.bmLimiter,
 			SW_Site.t1Param1, SW_Site.t1Param2, SW_Site.t1Param3, SW_Site.csParam1,
 			SW_Site.csParam2, SW_Site.shParam, sw->snowdepth, SW_Site.Tsoil_constant,
 			SW_Site.stDeltaX, SW_Site.stMaxDepth, SW_Site.stNRGR, sw->snowpack[Today],
@@ -771,8 +797,9 @@ static void records2arrays(void) {
 			}
 		}
 
-		ForEachEvapLayer(i)
+		ForEachEvapLayer(i) {
 			lyrEvapCo[i] = SW_Site.lyr[i]->evap_coeff;
+		}
 
 	} /* end firsttime stuff */
 
