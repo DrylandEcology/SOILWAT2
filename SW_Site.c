@@ -1023,6 +1023,8 @@ void SW_SIT_init_run(void) {
 						"  %s transpiration coefficient > 0 (%d) in '%s'.\n"
 						"  Please fix the discrepancy and try again.\n",
 						SW_F_name(eSite), r + 1, key2veg[k], s, SW_F_name(eLayers));
+			} else {
+				lyr->my_transp_rgn[k] = 0;
 			}
 		}
 
@@ -1224,7 +1226,6 @@ void SW_SIT_clear_layers(void) {
 */
 void SW_SIT_init_counts(void) {
 	int k;
-	LyrIndex i;
 	SW_SITE *s = &SW_Site;
 
 	// Reset counts
@@ -1236,11 +1237,6 @@ void SW_SIT_init_counts(void) {
 	ForEachVegType(k)
 	{
 		s->n_transp_lyrs[k] = 0;
-
-		ForEachSoilLayer(i)
-		{
-			s->lyr[i]->my_transp_rgn[k] = 0;
-		}
 	}
 }
 
