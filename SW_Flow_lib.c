@@ -119,6 +119,10 @@ unsigned int fusion_pool_init;   // simply keeps track of whether or not the val
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
 
+Bool do_once_at_soiltempError;
+// last successful time step in seconds; start out with 1 day
+double delta_time;
+
 
 /* *************************************************** */
 /* *************************************************** */
@@ -1173,6 +1177,12 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 }
 
 
+void SW_ST_init_run(void) {
+	soil_temp_init = 0;
+	fusion_pool_init = 0;
+	do_once_at_soiltempError = swTRUE;
+	delta_time = SEC_PER_DAY;
+}
 
 
 /**
@@ -1201,7 +1211,7 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 
 	@sideeffect *ptr_stError Updated boolean indicating if there was an error.
 */
-void SW_ST_init_run(
+void SW_ST_setup_run(
 	double airTemp,
 	double swc[],
 	double swc_sat[],
@@ -1226,12 +1236,12 @@ void SW_ST_init_run(
 	if (!soil_temp_init) {
 		#ifdef SWDEBUG
 		if (debug) {
-			swprintf("\nCalling soil_temperature_init\n");
+			swprintf("\nCalling soil_temperature_setup\n");
 		}
 		#endif
 
 		surfaceTemp[Today] = airTemp;
-		soil_temperature_init(
+		soil_temperature_setup(
 			bDensity, width,
 			oldsTemp, sTconst,
 			nlyrs, fc, wp,
@@ -1266,7 +1276,7 @@ void SW_ST_init_run(
   - ST_RGR_VALUES.tlyrs_by_slyrs Values of correspondance between soil profile layers and soil temperature layers.
 */
 
-void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
+void soil_temperature_setup(double bDensity[], double width[], double oldsTemp[],
 	double sTconst, unsigned int nlyrs, double fc[], double wp[], double deltaX,
 	double theMaxDepth, unsigned int nRgr, Bool *ptr_stError) {
 
@@ -1282,7 +1292,10 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 	// pointers
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
-	soil_temp_init = 1; // make this value 1 to make sure that this function isn't called more than once... (b/c it doesn't need to be)
+	// set `soil_temp_init` to 1 to indicate that this function was already called
+	// and shouldn't be called again
+	soil_temp_init = 1;
+
 
 	#ifdef SWDEBUG
 	if (debug)
@@ -1838,8 +1851,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
   int debug = 0;
   #endif
 	double T1, vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], sTempR[MAX_ST_RGR];
-	static Bool do_once_at_soiltempError = swTRUE;
-	static double delta_time = SEC_PER_DAY; // last successful time step in seconds; start out with 1 day
 
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much

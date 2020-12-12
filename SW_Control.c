@@ -34,6 +34,7 @@
 #include "SW_Model.h"
 #include "SW_Output.h"
 #include "SW_Site.h"
+#include "SW_Flow_lib.h"
 #include "SW_Flow_lib_PET.h"
 #include "SW_Flow.h"
 #include "SW_SoilWater.h"
@@ -141,6 +142,7 @@ void SW_CTL_init_run(void) {
 	// SW_VES_init_run() not needed
 	SW_VPD_init_run();
 	SW_FLW_init_run();
+	SW_ST_init_run();
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
 	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
 	SW_SWC_init_run();

@@ -135,8 +135,7 @@ extern SW_WEATHER SW_Weather;
 extern SW_VEGPROD SW_VegProd;
 extern SW_SKY SW_Sky;
 
-extern unsigned int soil_temp_init; // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
-extern unsigned int fusion_pool_init;
+extern unsigned int soil_temp_init;
 extern char const *key2veg[];
 
 /* *************************************************** */
@@ -204,8 +203,6 @@ void SW_FLW_init_run(void) {
 	/* 06/26/2013	(rjm) added function SW_FLW_init_run() to init global variables between consecutive calls to SoilWat as dynamic library */
 	int i, k;
 
-	soil_temp_init = 0;
-	fusion_pool_init = 0;
 
 	//These only have to be cleared if a loop is wrong in the code.
 	for (i = 0; i < MAX_LAYERS; i++) {
@@ -289,7 +286,7 @@ void SW_Water_Flow(void) {
 			 before water flow of first day because we use un/frozen states), but
 			 calculate soil temperature at end of each day
 		*/
-		SW_ST_init_run(
+		SW_ST_setup_run(
 			w->now.temp_avg[Today],
 			lyrSWCBulk,
 			lyrSWCBulk_Saturated,

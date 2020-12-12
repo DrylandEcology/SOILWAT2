@@ -153,7 +153,9 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR][MAX_LAYERS + 1], unsigned int nly
 
 double surface_temperature_under_snow(double airTempAvg, double snow);
 
-void SW_ST_init_run(
+void SW_ST_init_run(void);
+
+void SW_ST_setup_run(
 	double airTemp,
 	double swc[],
 	double swc_sat[],
@@ -171,7 +173,7 @@ void SW_ST_init_run(
 	Bool *ptr_stError
 );
 
-void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
+void soil_temperature_setup(double bDensity[], double width[], double oldsTemp[],
 	double sTconst, unsigned int nlyrs, double fc[], double wp[], double deltaX,
 	double theMaxDepth, unsigned int nRgr, Bool *ptr_stError);
 

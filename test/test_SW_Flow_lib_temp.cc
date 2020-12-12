@@ -89,7 +89,7 @@ namespace {
     Reset_SOILWAT2_after_UnitTest();
   }
 
-  // Test the soil temperature initialization function 'soil_temperature_init'
+  // Test the soil temperature initialization function 'soil_temperature_setup'
   TEST(SWFlowTempTest, SoilTemperatureInit) {
 
     // declare inputs and output
@@ -108,7 +108,7 @@ namespace {
     wp[0]= fc[0] - 0.6; // wp will always be less than fc
 
     /// test standard conditions
-    soil_temperature_init(bDensity, width, oldsTemp, sTconst, nlyrs,
+    soil_temperature_setup(bDensity, width, oldsTemp, sTconst, nlyrs,
       fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError);
 
     //Structure Tests
@@ -143,7 +143,7 @@ namespace {
       wp2[i] = fc2[i] - 0.6; // wp will always be less than fc
     }
 
-    soil_temperature_init(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
+    soil_temperature_setup(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
       fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError);
 
     //Structure Tests
@@ -164,7 +164,7 @@ namespace {
     delete[] bDensity2; delete[] fc2; delete[] wp2;
   }
 
-// Death tests for soil_temperature_init function
+// Death tests for soil_temperature_setup function
   TEST(SWFlowTempDeathTest, SoilTemperatureInitDeathTest) {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
@@ -189,7 +189,7 @@ namespace {
     /// test when theMaxDepth is less than soil layer depth - function should fail
     double theMaxDepth2 = 70.0;
 
-    EXPECT_DEATH_IF_SUPPORTED(soil_temperature_init(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
+    EXPECT_DEATH_IF_SUPPORTED(soil_temperature_setup(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
         fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError),"@ generic.c LogError"); // We expect death when max depth < last layer
 
     // Reset to previous global state
@@ -199,7 +199,7 @@ namespace {
 
 
   // Test lyrSoil_to_lyrTemp, lyrSoil_to_lyrTemp_temperature via
-  // soil_temperature_init function
+  // soil_temperature_setup function
   TEST(SWFlowTempTest, SoilLayerInterpolationFunctions) {
 
     // declare inputs and output
@@ -220,10 +220,10 @@ namespace {
 
     wp[0]= fmax(fc[0] - 0.6, .1); // wp will always be less than fc
 
-    soil_temperature_init(bDensity, width, oldsTemp, sTconst, nlyrs,
+    soil_temperature_setup(bDensity, width, oldsTemp, sTconst, nlyrs,
       fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError);
 
-    // lyrSoil_to_lyrTemp tests: This function is used in soil_temperature_init
+    // lyrSoil_to_lyrTemp tests: This function is used in soil_temperature_setup
     // to transfer the soil layer values of bdensity, fc, and wp, to the "temperature layer"
     // which are contained in bdensityR, fcR, and wpR. Thus we check these values.
     for (i = 0; i < nRgr + 1; i++) {  // all Values should be greater than 0
@@ -269,7 +269,7 @@ namespace {
       EXPECT_GT(wp2[i], 0);
     }
 
-    soil_temperature_init(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
+    soil_temperature_setup(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
       fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError);
 
     // lyrSoil_to_lyrTemp tests
@@ -448,7 +448,7 @@ namespace {
     double swc[] = {1.0}, swc_sat[] = {1.5}, bDensity[] = {1.8}, width[] = {20},
     oldsTemp[] = {5.0}, sTemp[] = {4.0}, fc[] = {2.6}, wp[] = {1.0};
 
-    SW_ST_init_run(
+    SW_ST_setup_run(
       airTemp,
       swc, swc_sat,
       bDensity, width,
@@ -523,7 +523,7 @@ namespace {
       oldsTemp2[i] = RandNorm(surfaceTemp[Today], 1, &MSTF_Lyer1_rng);
     }
 
-    SW_ST_init_run(
+    SW_ST_setup_run(
       airTemp,
       swc, swc_sat,
       bDensity, width,
@@ -594,7 +594,7 @@ namespace {
       //  i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
     }
 
-    SW_ST_init_run(
+    SW_ST_setup_run(
       airTemp,
       swc2, swc_sat2,
       bDensity2, width2,
