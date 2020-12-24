@@ -1006,17 +1006,19 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
   paper by Cosby,Hornberger,Clapp,Ginn,  in WATER RESOURCES RESEARCH
   June 1984.  Moisture retention data was fit to the power function.
 
-  The code assumes the following conditions (which are checked during data input):
-      * width > 0 which is checked by function `_read_layers`
-      * fractionGravel in [0, 1] which is checked by function `_read_layers`
-      * thetasMatric > 0 which is checked by function `water_eqn`
-      * bMatric != 0 which is checked by function `water_eqn`
+  The code assumes the following conditions:
+      * checked by `SW_SIT_init_run()`
+          * width > 0
+          * fractionGravel, sand, clay, and sand + clay in [0, 1]
+      * checked by function `water_eqn()`
+          * thetasMatric > 0
+          * bMatric != 0
 
   @param fractionGravel Fraction of soil containing gravel.
   @param swcBulk Soilwater content of the current layer (cm/layer)
   @param n Layer number to index the **lyr pointer
 
-  @return swb Soilwater potential of the current layer or soilwater content (if swflag=swFALSE)
+  @return soil water potential
 **/
 
 RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n) {
@@ -1061,7 +1063,7 @@ HISTORY:
 	if (GT(swcBulk, 0.0)) {
 		// we have soil moisture
 
-		// calculate matric VWC from bulk VWC
+		// calculate matric VWC [cm / cm %] from bulk VWC
 		theta1 = (swcBulk / lyr->width) * 100. / (1. - fractionGravel);
 
 		// calculate (VWC / VWC(saturated)) ^ b
@@ -1132,16 +1134,31 @@ History:
 
 ---------------------*/
 
-  if (clay < .05 || clay > .6 || sand < .05 || sand > .7){
-    LogError(logfp, LOGWARN, "Sand and/or clay values out of valid range, simulation outputs may differ.");
+  if (clay < .05 || clay > .6 || sand < .05 || sand > .7) {
+    LogError(
+      logfp,
+      LOGWARN,
+      "Sand and/or clay values out of valid range, simulation outputs may differ."
+    );
     return SW_MISSING;
-  }
-  else{
+
+  } else {
     RealD res;
-  	sand *= 100.;
-  	clay *= 100.;
-  	res = (-0.0182482 + 0.00087269 * sand + 0.00513488 * clay + 0.02939286 * porosity - 0.00015395 * squared(clay) - 0.0010827 * sand * porosity
-  			- 0.00018233 * squared(clay) * squared(porosity) + 0.00030703 * squared(clay) * porosity - 0.0023584 * squared(porosity) * clay) * (1 - fractionGravel);
+    sand *= 100.;
+    clay *= 100.;
+
+    res = (1. - fractionGravel) * (
+      - 0.0182482 \
+      + 0.00087269 * sand \
+      + 0.00513488 * clay \
+      + 0.02939286 * porosity \
+      - 0.00015395 * squared(clay) \
+      - 0.0010827 * sand * porosity \
+      - 0.00018233 * squared(clay) * squared(porosity) \
+      + 0.00030703 * squared(clay) * porosity \
+      - 0.0023584 * squared(porosity) * clay
+    );
+
     return (fmax(res, 0.));
   }
 }

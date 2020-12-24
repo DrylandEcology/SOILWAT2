@@ -38,7 +38,13 @@
 # make compiler_version print version information of CC and CXX compilers
 #-------------------------------------------------------------------------------
 
-uname_m = $(shell uname -m)
+#------ Identification
+SW2_VERSION := "$(shell git describe --abbrev=7 --dirty --always --tags)"
+HOSTNAME := "$(shell uname -sn)"
+
+sw_info = -DSW2_VERSION=\"$(SW2_VERSION)\" \
+					-DUSERNAME=\"$(USER)\" \
+					-DHOSTNAME=\"$(HOSTNAME)\"
 
 
 #------ OUTPUT NAMES
@@ -101,7 +107,7 @@ instr_flags_severe = \
 
 
 # Precompiler and compiler flags and options
-sw_CPPFLAGS = $(CPPFLAGS)
+sw_CPPFLAGS = $(CPPFLAGS) $(sw_info)
 sw_CFLAGS = $(CFLAGS)
 sw_CXXFLAGS = $(CXXFLAGS)
 

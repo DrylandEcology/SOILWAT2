@@ -119,6 +119,10 @@ unsigned int fusion_pool_init;   // simply keeps track of whether or not the val
 /*                Module-Level Variables               */
 /* --------------------------------------------------- */
 
+Bool do_once_at_soiltempError;
+// last successful time step in seconds; start out with 1 day
+double delta_time;
+
 
 /* *************************************************** */
 /* *************************************************** */
@@ -1172,6 +1176,82 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 	return tSoilAvg;
 }
 
+
+void SW_ST_init_run(void) {
+	soil_temp_init = 0;
+	fusion_pool_init = 0;
+	do_once_at_soiltempError = swTRUE;
+	delta_time = SEC_PER_DAY;
+}
+
+
+/**
+	@brief Initialize soil temperature for a simulation run.
+
+	@param airTemp Average daily air temperature (&deg;C).
+	@param swc Soilwater content in each layer before drainage
+		(m<SUP>3</SUP> H<SUB>2</SUB>O).
+	@param swc_sat The satured soil water content of the soil layers (cm/cm).
+	@param bDensity An array of the bulk density of the whole soil per soil layer
+		(g/cm<SUP>3</SUP>).
+	@param width The width of the layers (cm).
+	@param oldsTemp An array of yesterday's temperature values (&deg;C).
+	@param surfaceTemp Current surface air temperatature (&deg;C).
+	@param nlyrs Number of layers in the soil profile.
+	@param fc An array of the field capacity of the soil layers (cm/layer).
+	@param wp An array of the wilting point of the soil layers (cm/layer).
+	@param sTconst Constant soil temperature (&deg;C).
+	@param deltaX Distance between profile points
+		(default is 15 cm from Parton's equation @cite Parton1984).
+	@param theMaxDepth Lower bound of the equation
+		(default is 180 cm from Parton's equation @cite Parton1984).
+	@param nRgr Number of regressions
+		(1 extra is needed for the sTempR and oldsTempR for the last layer.
+	@param *ptr_stError Boolean indicating whether there was an error.
+
+	@sideeffect *ptr_stError Updated boolean indicating if there was an error.
+*/
+void SW_ST_setup_run(
+	double airTemp,
+	double swc[],
+	double swc_sat[],
+	double bDensity[],
+	double width[],
+	double oldsTemp[],
+	double surfaceTemp[2],
+	unsigned int nlyrs,
+	double fc[],
+	double wp[],
+	double sTconst,
+	double deltaX,
+	double theMaxDepth,
+	unsigned int nRgr,
+	Bool *ptr_stError
+) {
+
+	#ifdef SWDEBUG
+	int debug = 0;
+	#endif
+
+	if (!soil_temp_init) {
+		#ifdef SWDEBUG
+		if (debug) {
+			swprintf("\nCalling soil_temperature_setup\n");
+		}
+		#endif
+
+		surfaceTemp[Today] = airTemp;
+		soil_temperature_setup(
+			bDensity, width,
+			oldsTemp, sTconst,
+			nlyrs, fc, wp,
+			deltaX, theMaxDepth, nRgr,
+			ptr_stError
+		);
+		set_frozen_unfrozen(nlyrs, oldsTemp, swc, swc_sat, width);
+	}
+}
+
 /**
 @brief Initialize soil structure and properties for soil temperature simulation.
 
@@ -1196,7 +1276,7 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
   - ST_RGR_VALUES.tlyrs_by_slyrs Values of correspondance between soil profile layers and soil temperature layers.
 */
 
-void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
+void soil_temperature_setup(double bDensity[], double width[], double oldsTemp[],
 	double sTconst, unsigned int nlyrs, double fc[], double wp[], double deltaX,
 	double theMaxDepth, unsigned int nRgr, Bool *ptr_stError) {
 
@@ -1212,7 +1292,10 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 	// pointers
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
 
-	soil_temp_init = 1; // make this value 1 to make sure that this function isn't called more than once... (b/c it doesn't need to be)
+	// set `soil_temp_init` to 1 to indicate that this function was already called
+	// and shouldn't be called again
+	soil_temp_init = 1;
+
 
 	#ifdef SWDEBUG
 	if (debug)
@@ -1360,6 +1443,7 @@ void soil_temperature_init(double bDensity[], double width[], double oldsTemp[],
 	}
   #endif
 }
+
 
 /**
 @brief Function to determine if a soil layer is frozen/unfrozen, as well as change
@@ -1735,8 +1819,6 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param sTemp Temperatature values of soil layers (&deg;C).
 @param surfaceTemp Current surface air temperatature (&deg;C).
 @param nlyrs Number of layers in the soil profile.
-@param fc An array of the field capacity of the soil layers (cm/layer).
-@param wp An array of the wilting point of the soil layers (cm/layer).
 @param bmLimiter Biomass limiter constant (300 g/m<SUP>2</SUP>).
 @param t1Param1 Constant for the avg temp at the top of soil equation (15).
 @param t1Param2 Constant for the avg temp at the top of soil equation (-4).
@@ -1759,7 +1841,7 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 
 void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	double swc[], double swc_sat[], double bDensity[], double width[], double oldsTemp[],
-	double sTemp[], double surfaceTemp[2], unsigned int nlyrs, double fc[], double wp[],
+	double sTemp[], double surfaceTemp[2], unsigned int nlyrs,
 	double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1,
 	double csParam2, double shParam, double snowdepth, double sTconst, double deltaX,
 	double theMaxDepth, unsigned int nRgr, double snow, Bool *ptr_stError) {
@@ -1769,8 +1851,6 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
   int debug = 0;
   #endif
 	double T1, vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], sTempR[MAX_ST_RGR];
-	static Bool do_once_at_soiltempError = swTRUE;
-	static double delta_time = SEC_PER_DAY; // last successful time step in seconds; start out with 1 day
 
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
@@ -1795,18 +1875,14 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	#endif
 
 	if (!soil_temp_init) {
-		#ifdef SWDEBUG
-		if (debug) {
-			swprintf("\nCalling soil_temperature_init\n");
-		}
-		#endif
+		*ptr_stError = swTRUE;
 
-		surfaceTemp[Today] = airTemp;
-		set_frozen_unfrozen(nlyrs, oldsTemp, swc, swc_sat, width);
-		soil_temperature_init(bDensity, width, oldsTemp, sTconst, nlyrs, fc, wp, deltaX,
-			theMaxDepth, nRgr, ptr_stError);
+		LogError(
+			logfp,
+			LOGFATAL,
+			"SOILWAT2 ERROR soil temperature module was not initialized.\n"
+		);
 	}
-
 
 	// calculating T1, the average daily soil surface temperature
 	if (GT(snowdepth, 0.0)) {
@@ -1880,8 +1956,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 		swprintf("\nlayer values:");
 		for (i = 0; i < nlyrs; i++) {
-			swprintf("\ni %2d width %f depth %f vwc %f fc %f wp %f oldsTemp %f bDensity %f",
-			i, width[i], st->depths[i], vwc[i], fc[i], wp[i], oldsTemp[i], bDensity[i]);
+			swprintf("\ni %2d width %f depth %f vwc %f bDensity %f",
+			i, width[i], st->depths[i], vwc[i], bDensity[i]);
 		}
 		swprintf("\n");
 	}
