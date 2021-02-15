@@ -147,7 +147,7 @@ typedef struct {
 
 void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n);
 RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
-LyrIndex nlayers_bsevap();
+LyrIndex nlayers_bsevap(void);
 void nlayers_vegroots(LyrIndex n_transp_lyrs[]);
 
 void SW_SIT_construct(void);
