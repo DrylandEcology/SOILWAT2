@@ -2056,27 +2056,44 @@ void get_hydred_agg(OutPeriod pd)
 void get_aet_text(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_WEATHER_OUTPUTS *vo2 = SW_Weather.p_oagg[pd];
 
 	sw_outstr[0] = '\0';
-	sprintf(sw_outstr, "%c%.*f", _Sep, OUT_DIGITS, vo->aet);
+	sprintf(
+		sw_outstr,
+		"%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
+		_Sep, OUT_DIGITS, vo->aet,
+		_Sep, OUT_DIGITS, vo->tran,
+		_Sep, OUT_DIGITS, vo->esoil,
+		_Sep, OUT_DIGITS, vo->ecnw,
+		_Sep, OUT_DIGITS, vo->esurf,
+		_Sep, OUT_DIGITS, vo2->snowloss // should be `vo->esnow`
+	);
+
 }
 #endif
 
 #if defined(RSOILWAT)
 
 /**
-@brief Gets actual evapotranspiration when dealing with OUTTEXT.
+@brief Gets actual evapotranspiration when dealing with RSOILWAT.
 
 @param pd Period.
 */
 void get_aet_mem(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_WEATHER_OUTPUTS *vo2 = SW_Weather.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_AET][pd];
 	get_outvalleader(p, pd);
 
 	p[iOUT(0, pd)] = vo->aet;
+	p[iOUT(1, pd)] = vo->tran;
+	p[iOUT(2, pd)] = vo->esoil;
+	p[iOUT(3, pd)] = vo->ecnw;
+	p[iOUT(4, pd)] = vo->esurf;
+	p[iOUT(5, pd)] = vo2->snowloss; // should be `vo->esnow`
 }
 
 #elif defined(STEPWAT)
@@ -2089,12 +2106,19 @@ void get_aet_mem(OutPeriod pd)
 void get_aet_agg(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_WEATHER_OUTPUTS *vo2 = SW_Weather.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_AET][pd],
 		*psd = p_OUTsd[eSW_AET][pd];
 
 	do_running_agg(p, psd, iOUT(0, pd), Globals->currIter, vo->aet);
+	do_running_agg(p, psd, iOUT(1, pd), Globals->currIter, vo->tran);
+	do_running_agg(p, psd, iOUT(2, pd), Globals->currIter, vo->esoil);
+	do_running_agg(p, psd, iOUT(3, pd), Globals->currIter, vo->ecnw);
+	do_running_agg(p, psd, iOUT(4, pd), Globals->currIter, vo->esurf);
+	// should be `vo->esnow`
+	do_running_agg(p, psd, iOUT(5, pd), Globals->currIter, vo2->snowloss);
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';

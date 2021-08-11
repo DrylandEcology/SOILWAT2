@@ -489,6 +489,20 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 
 	case eSW_AET:
 		s->aet += v->aet;
+		ForEachSoilLayer(i) {
+			ForEachVegType(j) {
+				s->tran += v->transpiration[j][i];
+			}
+		}
+		ForEachEvapLayer(i) {
+			s->esoil += v->evaporation[i];
+		}
+		ForEachVegType(j) {
+			s->ecnw += v->evap_veg[j];
+		}
+		s->esurf += v->litter_evap + v->surfaceWater_evap;
+		// esnow: evaporation from snow (sublimation) should be handled here,
+		// but values are stored in SW_WEATHER instead
 		break;
 
 	case eSW_PET:
@@ -763,6 +777,11 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 
 			case eSW_AET:
 				s->p_oagg[pd]->aet = s->p_accu[pd]->aet / div;
+				s->p_oagg[pd]->tran = s->p_accu[pd]->tran / div;
+				s->p_oagg[pd]->esoil = s->p_accu[pd]->esoil / div;
+				s->p_oagg[pd]->ecnw = s->p_accu[pd]->ecnw / div;
+				s->p_oagg[pd]->esurf = s->p_accu[pd]->esurf / div;
+				// s->p_oagg[pd]->esnow = s->p_accu[pd]->esnow / div;
 				break;
 
 			case eSW_LyrDrain:
@@ -1537,7 +1556,7 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_LyrDrain] = tLayers - 1;
 	ncol_OUT[eSW_HydRed] = tLayers * (NVEGTYPES + 1); // NVEGTYPES plus totals
 	ncol_OUT[eSW_ET] = 0;
-	ncol_OUT[eSW_AET] = 1;
+	ncol_OUT[eSW_AET] = 6;
 	ncol_OUT[eSW_PET] = 5;
 	ncol_OUT[eSW_WetDays] = tLayers;
 	ncol_OUT[eSW_SnowPack] = 2;
@@ -1589,7 +1608,9 @@ void SW_OUT_set_colnames(void) {
 		"ponded_runon" };
 	const char *cnames_eSW_SurfaceWater[] = { "surfaceWater_cm" };
 	const char *cnames_add_eSW_EvapSurface[] = { "evap_surfaceWater" };
-	const char *cnames_eSW_AET[] = { "evapotr_cm" };
+	const char *cnames_eSW_AET[] = {
+		"evapotr_cm", "tran_cm", "esoil_cm", "ecnw_cm", "esurf_cm", "esnow_cm"
+	};
 	const char *cnames_eSW_PET[] = { "pet_cm",
 		"H_oh_MJm-2", "H_ot_MJm-2", "H_gh_MJm-2", "H_gt_MJm-2"
 	};

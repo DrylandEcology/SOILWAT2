@@ -83,7 +83,7 @@ typedef struct {
 			snowpack,
 			snowdepth,
 			et,
-			aet,
+			aet, tran, esoil, ecnw, esurf, esnow,
 			pet, H_oh, H_ot, H_gh, H_gt,
 			deep,
 			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
