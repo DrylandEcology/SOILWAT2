@@ -319,17 +319,30 @@ Bool has_keyname_soillayers(const char *var) {
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 {
 	int ik;
+	RealD tmp;
 
 	switch (k)
 	{
 		case eSW_CO2Effects:
 			break;
 
+		// scale biomass by fCover to obtain biomass as observed in total vegetation
 		case eSW_Biomass:
 			ForEachVegType(ik) {
-				s->veg[ik].biomass += v->veg[ik].biomass_daily[SW_Model.doy];
-				s->veg[ik].litter += v->veg[ik].litter_daily[SW_Model.doy];
-				s->veg[ik].biolive += v->veg[ik].biolive_daily[SW_Model.doy];
+				tmp = v->veg[ik].biomass_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+				s->veg[ik].biomass_inveg += tmp;
+				s->biomass_total += tmp;
+
+				tmp = v->veg[ik].litter_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+				s->veg[ik].litter_inveg += tmp;
+				s->litter_total += tmp;
+
+				tmp = v->veg[ik].biolive_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+				s->veg[ik].biolive_inveg += tmp;
+				s->biolive_total += tmp;
+
+				s->LAI +=
+					v->veg[ik].lai_live_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
 			}
 			break;
 
@@ -825,10 +838,20 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 
 			case eSW_Biomass:
 				ForEachVegType(i) {
-					vp->p_oagg[pd]->veg[i].biomass = vp->p_accu[pd]->veg[i].biomass / div;
-					vp->p_oagg[pd]->veg[i].litter = vp->p_accu[pd]->veg[i].litter / div;
-					vp->p_oagg[pd]->veg[i].biolive = vp->p_accu[pd]->veg[i].biolive / div;
+					vp->p_oagg[pd]->veg[i].biomass_inveg =
+						vp->p_accu[pd]->veg[i].biomass_inveg / div;
+
+					vp->p_oagg[pd]->veg[i].litter_inveg =
+						vp->p_accu[pd]->veg[i].litter_inveg / div;
+
+					vp->p_oagg[pd]->veg[i].biolive_inveg =
+						vp->p_accu[pd]->veg[i].biolive_inveg / div;
 				}
+
+				vp->p_oagg[pd]->biomass_total = vp->p_accu[pd]->biomass_total / div;
+				vp->p_oagg[pd]->litter_total = vp->p_accu[pd]->litter_total / div;
+				vp->p_oagg[pd]->biolive_total = vp->p_accu[pd]->biolive_total / div;
+				vp->p_oagg[pd]->LAI = vp->p_accu[pd]->LAI / div;
 				break;
 
 			default:
@@ -1567,7 +1590,8 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_CO2Effects] = 2 * NVEGTYPES;
 	ncol_OUT[eSW_Biomass] = NVEGTYPES + 1 +  // fCover for NVEGTYPES plus bare-ground
 		NVEGTYPES + 2 +  // biomass for NVEGTYPES plus totals and litter
-		NVEGTYPES + 1; // biolive for NVEGTYPES plus totals
+		NVEGTYPES + 1 +  // biolive for NVEGTYPES plus totals
+		1; // LAI
 
 }
 
@@ -1831,6 +1855,10 @@ void SW_OUT_set_colnames(void) {
 		strcat(ctemp, cnames_VegTypes[j]);
 		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp);
 	}
+	i += j;
+	strcpy(ctemp, "LAI_total");
+	colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp);
+
 	#ifdef SWDEBUG
 	if (debug) swprintf(" completed.\n");
 	#endif

@@ -265,17 +265,8 @@ void get_co2effects_agg(OutPeriod pd) {
 #ifdef SW_OUTTEXT
 void get_biomass_text(OutPeriod pd) {
 	int k;
-	RealD biomass_total = 0., litter_total = 0., biolive_total = 0.;
 	SW_VEGPROD *v = &SW_VegProd;
 	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
-
-	// scale total biomass by fCover to obtain 100% total cover biomass
-	ForEachVegType(k)
-	{
-		biomass_total += vo->veg[k].biomass * v->veg[k].cov.fCover;
-		litter_total += vo->veg[k].litter * v->veg[k].cov.fCover;
-		biolive_total += vo->veg[k].biolive * v->veg[k].cov.fCover;
-	}
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -289,44 +280,37 @@ void get_biomass_text(OutPeriod pd) {
 	}
 
 	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
-	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, biomass_total);
+	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->biomass_total);
 	strcat(sw_outstr, str);
 	ForEachVegType(k) {
-		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS,
-			vo->veg[k].biomass * v->veg[k].cov.fCover);
+		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->veg[k].biomass_inveg);
 		strcat(sw_outstr, str);
 	}
-	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, litter_total);
+	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->litter_total);
 	strcat(sw_outstr, str);
 
 	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
-	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, biolive_total);
+	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->biolive_total);
 	strcat(sw_outstr, str);
 	ForEachVegType(k) {
-		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS,
-			vo->veg[k].biolive * v->veg[k].cov.fCover);
+		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->veg[k].biolive_inveg);
 		strcat(sw_outstr, str);
 	}
+
+	// leaf area index [m2/m2]
+	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->LAI);
+	strcat(sw_outstr, str);
 }
 #endif
 
 #if defined(RSOILWAT)
 void get_biomass_mem(OutPeriod pd) {
 	int k, i;
-	RealD biomass_total = 0., litter_total = 0., biolive_total = 0.;
 	SW_VEGPROD *v = &SW_VegProd;
 	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_Biomass][pd];
 	get_outvalleader(p, pd);
-
-	// scale total biomass by fCover to obtain 100% total cover biomass
-	ForEachVegType(k)
-	{
-		biomass_total += vo->veg[k].biomass * v->veg[k].cov.fCover;
-		litter_total += vo->veg[k].litter * v->veg[k].cov.fCover;
-		biolive_total += vo->veg[k].biolive * v->veg[k].cov.fCover;
-	}
 
 	// fCover for NVEGTYPES plus bare-ground
 	p[iOUT(0, pd)] = v->bare_cov.fCover;
@@ -337,39 +321,33 @@ void get_biomass_mem(OutPeriod pd) {
 	}
 
 	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
-	p[iOUT(i + NVEGTYPES, pd)] = biomass_total;
+	p[iOUT(i + NVEGTYPES, pd)] = vo->biomass_total;
 	i += NVEGTYPES + 1;
 	ForEachVegType(k) {
-		p[iOUT(i + k, pd)] = vo->veg[k].biomass * v->veg[k].cov.fCover;
+		p[iOUT(i + k, pd)] = vo->veg[k].biomass_inveg;
 	}
-	p[iOUT(i + NVEGTYPES, pd)] = litter_total;
+	p[iOUT(i + NVEGTYPES, pd)] = vo->litter_total;
 
 	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
-	p[iOUT(i + NVEGTYPES + 1, pd)] = biolive_total;
+	p[iOUT(i + NVEGTYPES + 1, pd)] = vo->biolive_total;
 	i += NVEGTYPES + 2;
 	ForEachVegType(k) {
-		p[iOUT(i + k, pd)] = vo->veg[k].biolive * v->veg[k].cov.fCover;
+		p[iOUT(i + k, pd)] = vo->veg[k].biolive_inveg;
 	}
+
+	// leaf area index [m2/m2]
+	p[iOUT(i + NVEGTYPES, pd)] = vo->LAI;
 }
 
 #elif defined(STEPWAT)
 void get_biomass_agg(OutPeriod pd) {
 	int k, i;
-	RealD biomass_total = 0., litter_total = 0., biolive_total = 0.;
 	SW_VEGPROD *v = &SW_VegProd;
 	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_Biomass][pd],
 		*psd = p_OUTsd[eSW_Biomass][pd];
-
-	// scale total biomass by fCover to obtain 100% total cover biomass
-	ForEachVegType(k)
-	{
-		biomass_total += vo->veg[k].biomass * v->veg[k].cov.fCover;
-		litter_total += vo->veg[k].litter * v->veg[k].cov.fCover;
-		biolive_total += vo->veg[k].biolive * v->veg[k].cov.fCover;
-	}
 
 	// fCover for NVEGTYPES plus bare-ground
 	do_running_agg(p, psd, iOUT(0, pd), Globals->currIter, v->bare_cov.fCover);
@@ -382,23 +360,27 @@ void get_biomass_agg(OutPeriod pd) {
 
 	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
 	do_running_agg(p, psd, iOUT(i + NVEGTYPES, pd), Globals->currIter,
-		biomass_total);
+		vo->biomass_total);
 	i += NVEGTYPES + 1;
 	ForEachVegType(k) {
 		do_running_agg(p, psd, iOUT(i + k, pd), Globals->currIter,
-			vo->veg[k].biomass * v->veg[k].cov.fCover);
+			vo->veg[k].biomass_inveg);
 	}
 	do_running_agg(p, psd, iOUT(i + NVEGTYPES, pd), Globals->currIter,
-		litter_total);
+		vo->litter_total);
 
 	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
 	do_running_agg(p, psd, iOUT(i + NVEGTYPES + 1, pd), Globals->currIter,
-		biolive_total);
+		vo->biolive_total);
 	i += NVEGTYPES + 2;
 	ForEachVegType(k) {
 		do_running_agg(p, psd, iOUT(i + k, pd), Globals->currIter,
-			vo->veg[k].biolive * v->veg[k].cov.fCover);
+			vo->veg[k].biolive_inveg);
 	}
+
+	// leaf area index [m2/m2]
+	do_running_agg(p, psd, iOUT(i + NVEGTYPES, pd), Globals->currIter,
+		vo->LAI);
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
