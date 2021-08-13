@@ -6,9 +6,21 @@
 
 
 #--- List of (builtin and macport) compilers
-declare -a port_compilers=("none" "mp-gcc7" "mp-gcc9" "mp-gcc10" "mp-clang-5.0" "mp-clang-9.0" "mp-clang-10")
-declare -a ccs=("clang" "gcc" "gcc" "gcc" "clang" "clang" "clang")
-declare -a cxxs=("clang++" "g++" "g++" "g++" "clang++" "clang++" "clang++")
+declare -a port_compilers=(
+  "none"
+  "mp-gcc7" "mp-gcc9" "mp-gcc10" "mp-gcc11"
+  "mp-clang-5.0" "mp-clang-9.0" "mp-clang-10" "mp-clang-11" "mp-clang-12"
+)
+declare -a ccs=(
+  "clang"
+  "gcc" "gcc" "gcc" "gcc"
+  "clang" "clang" "clang" "clang" "clang"
+)
+declare -a cxxs=(
+  "clang++"
+  "g++" "g++" "g++" "g++"
+  "clang++" "clang++" "clang++" "clang++" "clang++"
+)
 
 ncomp=${#ccs[@]}
 

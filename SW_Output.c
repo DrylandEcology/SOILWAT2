@@ -319,17 +319,30 @@ Bool has_keyname_soillayers(const char *var) {
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 {
 	int ik;
+	RealD tmp;
 
 	switch (k)
 	{
 		case eSW_CO2Effects:
 			break;
 
+		// scale biomass by fCover to obtain biomass as observed in total vegetation
 		case eSW_Biomass:
 			ForEachVegType(ik) {
-				s->veg[ik].biomass += v->veg[ik].biomass_daily[SW_Model.doy];
-				s->veg[ik].litter += v->veg[ik].litter_daily[SW_Model.doy];
-				s->veg[ik].biolive += v->veg[ik].biolive_daily[SW_Model.doy];
+				tmp = v->veg[ik].biomass_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+				s->veg[ik].biomass_inveg += tmp;
+				s->biomass_total += tmp;
+
+				tmp = v->veg[ik].litter_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+				s->veg[ik].litter_inveg += tmp;
+				s->litter_total += tmp;
+
+				tmp = v->veg[ik].biolive_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+				s->veg[ik].biolive_inveg += tmp;
+				s->biolive_total += tmp;
+
+				s->LAI +=
+					v->veg[ik].lai_live_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
 			}
 			break;
 
@@ -489,6 +502,20 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 
 	case eSW_AET:
 		s->aet += v->aet;
+		ForEachSoilLayer(i) {
+			ForEachVegType(j) {
+				s->tran += v->transpiration[j][i];
+			}
+		}
+		ForEachEvapLayer(i) {
+			s->esoil += v->evaporation[i];
+		}
+		ForEachVegType(j) {
+			s->ecnw += v->evap_veg[j];
+		}
+		s->esurf += v->litter_evap + v->surfaceWater_evap;
+		// esnow: evaporation from snow (sublimation) should be handled here,
+		// but values are stored in SW_WEATHER instead
 		break;
 
 	case eSW_PET:
@@ -763,6 +790,11 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 
 			case eSW_AET:
 				s->p_oagg[pd]->aet = s->p_accu[pd]->aet / div;
+				s->p_oagg[pd]->tran = s->p_accu[pd]->tran / div;
+				s->p_oagg[pd]->esoil = s->p_accu[pd]->esoil / div;
+				s->p_oagg[pd]->ecnw = s->p_accu[pd]->ecnw / div;
+				s->p_oagg[pd]->esurf = s->p_accu[pd]->esurf / div;
+				// s->p_oagg[pd]->esnow = s->p_accu[pd]->esnow / div;
 				break;
 
 			case eSW_LyrDrain:
@@ -806,10 +838,20 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 
 			case eSW_Biomass:
 				ForEachVegType(i) {
-					vp->p_oagg[pd]->veg[i].biomass = vp->p_accu[pd]->veg[i].biomass / div;
-					vp->p_oagg[pd]->veg[i].litter = vp->p_accu[pd]->veg[i].litter / div;
-					vp->p_oagg[pd]->veg[i].biolive = vp->p_accu[pd]->veg[i].biolive / div;
+					vp->p_oagg[pd]->veg[i].biomass_inveg =
+						vp->p_accu[pd]->veg[i].biomass_inveg / div;
+
+					vp->p_oagg[pd]->veg[i].litter_inveg =
+						vp->p_accu[pd]->veg[i].litter_inveg / div;
+
+					vp->p_oagg[pd]->veg[i].biolive_inveg =
+						vp->p_accu[pd]->veg[i].biolive_inveg / div;
 				}
+
+				vp->p_oagg[pd]->biomass_total = vp->p_accu[pd]->biomass_total / div;
+				vp->p_oagg[pd]->litter_total = vp->p_accu[pd]->litter_total / div;
+				vp->p_oagg[pd]->biolive_total = vp->p_accu[pd]->biolive_total / div;
+				vp->p_oagg[pd]->LAI = vp->p_accu[pd]->LAI / div;
 				break;
 
 			default:
@@ -1537,7 +1579,7 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_LyrDrain] = tLayers - 1;
 	ncol_OUT[eSW_HydRed] = tLayers * (NVEGTYPES + 1); // NVEGTYPES plus totals
 	ncol_OUT[eSW_ET] = 0;
-	ncol_OUT[eSW_AET] = 1;
+	ncol_OUT[eSW_AET] = 6;
 	ncol_OUT[eSW_PET] = 5;
 	ncol_OUT[eSW_WetDays] = tLayers;
 	ncol_OUT[eSW_SnowPack] = 2;
@@ -1548,7 +1590,8 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_CO2Effects] = 2 * NVEGTYPES;
 	ncol_OUT[eSW_Biomass] = NVEGTYPES + 1 +  // fCover for NVEGTYPES plus bare-ground
 		NVEGTYPES + 2 +  // biomass for NVEGTYPES plus totals and litter
-		NVEGTYPES + 1; // biolive for NVEGTYPES plus totals
+		NVEGTYPES + 1 +  // biolive for NVEGTYPES plus totals
+		1; // LAI
 
 }
 
@@ -1589,7 +1632,9 @@ void SW_OUT_set_colnames(void) {
 		"ponded_runon" };
 	const char *cnames_eSW_SurfaceWater[] = { "surfaceWater_cm" };
 	const char *cnames_add_eSW_EvapSurface[] = { "evap_surfaceWater" };
-	const char *cnames_eSW_AET[] = { "evapotr_cm" };
+	const char *cnames_eSW_AET[] = {
+		"evapotr_cm", "tran_cm", "esoil_cm", "ecnw_cm", "esurf_cm", "esnow_cm"
+	};
 	const char *cnames_eSW_PET[] = { "pet_cm",
 		"H_oh_MJm-2", "H_ot_MJm-2", "H_gh_MJm-2", "H_gt_MJm-2"
 	};
@@ -1810,6 +1855,10 @@ void SW_OUT_set_colnames(void) {
 		strcat(ctemp, cnames_VegTypes[j]);
 		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp);
 	}
+	i += j;
+	strcpy(ctemp, "LAI_total");
+	colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp);
+
 	#ifdef SWDEBUG
 	if (debug) swprintf(" completed.\n");
 	#endif

@@ -182,9 +182,6 @@ typedef struct {
  * or int (IntU is better).
  */
 #define ForEachOutKey(k)     for((k)=eSW_NoKey+1; (k)<eSW_LastKey;   (k)++)
-#define ForEachSWC_OutKey(k) for((k)=eSW_AllH2O;  (k)<=eSW_SnowPack; (k)++)
-#define ForEachWTH_OutKey(k) for((k)=eSW_AllWthr; (k)<=eSW_Precip;   (k)++)
-#define ForEachVES_OutKey(k) for((k)=eSW_AllVeg;  (k)<=eSW_Estab;    (k)++)
 
 
 
