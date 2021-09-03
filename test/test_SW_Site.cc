@@ -103,6 +103,26 @@ namespace {
   }
 
 
+  // Test that `SW_SIT_init_run` fails on bad soil inputs
+  TEST(SWSiteTest, SoilParametersDeathTest) {
+    LyrIndex n1 = 0, n2 = 1, k = 2;
+    RealD help;
+
+    // Check error for bad bare-soil evaporation coefficient (should be [0-1])
+    help = SW_Site.lyr[n1]->evap_coeff;
+    SW_Site.lyr[n1]->evap_coeff = -0.5;
+    EXPECT_DEATH_IF_SUPPORTED(SW_SIT_init_run(), "@ generic.c LogError");
+    SW_Site.lyr[n1]->evap_coeff = help;
+
+    // Check error for bad transpiration coefficient (should be [0-1])
+    SW_Site.lyr[n2]->transp_coeff[k] = 1.5;
+    EXPECT_DEATH_IF_SUPPORTED(SW_SIT_init_run(), "@ generic.c LogError");
+
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
   // Test that soil transpiration regions are derived well
   TEST(SWSiteTest, SoilTranspirationRegions) {
     /* Notes:

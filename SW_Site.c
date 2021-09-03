@@ -947,6 +947,24 @@ void SW_SIT_init_run(void) {
 			fail = swTRUE;
 			fval = lyr->impermeability;
 			errtype = Str_Dup("impermeability");
+
+		} else if (
+			LT(lyr->evap_coeff, 0.) ||
+			GT(lyr->evap_coeff, 1.)
+		) {
+			fail = swTRUE;
+			fval = lyr->evap_coeff;
+			errtype = Str_Dup("bare-soil evaporation coefficient");
+
+		} else {
+			ForEachVegType(k) {
+				if (LT(lyr->transp_coeff[k], 0.) || GT(lyr->transp_coeff[k], 1.)) {
+					fail = swTRUE;
+					fval = lyr->transp_coeff[k];
+					errtype = Str_Dup("transpiration coefficient");
+					break;
+				}
+			}
 		}
 
 		if (fail) {
@@ -958,13 +976,14 @@ void SW_SIT_init_run(void) {
 			);
 		}
 
+
 		/* Update soil density for gravel */
 		lyr->soilBulk_density = calculate_soilBulkDensity(
 			lyr->soilMatric_density,
 			lyr->fractionVolBulk_gravel
 		);
 
-		/* Calculate pedotransfer function paramaters */
+		/* Calculate pedotransfer function parameters */
 		water_eqn(
 			lyr->fractionVolBulk_gravel,
 			lyr->fractionWeightMatric_sand,
@@ -988,6 +1007,7 @@ void SW_SIT_init_run(void) {
 
 		/* sum ev and tr coefficients for later */
 		evsum += lyr->evap_coeff;
+
 		ForEachVegType(k)
 		{
 			trsum_veg[k] += lyr->transp_coeff[k];
