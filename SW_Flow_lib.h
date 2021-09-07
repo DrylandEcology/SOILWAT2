@@ -162,7 +162,7 @@ void SW_ST_setup_run(
 	double bDensity[],
 	double width[],
 	double oldsTemp[],
-	double surfaceTemp[],
+	double surfaceTemp[2],
 	unsigned int nlyrs,
 	double fc[],
 	double wp[],
