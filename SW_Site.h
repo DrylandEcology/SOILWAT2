@@ -53,12 +53,15 @@
 extern "C" {
 #endif
 
+#define SWRC_PARAM_NMAX 6 /**< Maximal number of SWRC parameters implemented */
 
 typedef unsigned int LyrIndex;
 
 typedef struct {
 	/* bulk = relating to the whole soil, i.e., matric + rock/gravel/coarse fragments */
 	/* matric = relating to the < 2 mm fraction of the soil, i.e., sand, clay, and silt */
+
+	LyrIndex id; /**< Number of soil layer: 1 = most shallow, 2 = second shallowest, etc. up to ::MAX_LAYERS */
 
 	RealD
 		/* Inputs */
@@ -82,13 +85,15 @@ typedef struct {
 		swcBulk_atSWPcrit[NVEGTYPES], /* SWC corresponding to critical SWP for transpiration */
 
 		/* Saxton et al. 2006 */
-		swcBulk_saturated, /* saturated bulk SWC [cm] */
+		swcBulk_saturated; /* saturated bulk SWC [cm] */
 
-		/* Cosby et al. (1984): SOILWAT2's soil water retention curve */
-		thetasMatric, /* saturated matric SWC [cm] */
-		psisMatric, /* saturated matric SWP [cm] */
-		bMatric, /* slope of the logarithmic retention curve */
-		binverseMatric; /* inverse of bMatric */
+
+	/* Soil water retention curve (SWRC) */
+	unsigned int
+		swrc_type, /**< Type of SWRC: 1 = Campbell 1974 */
+		pdf_type; /**< Type of PDF: 1 = Cosby et al. 1984 for Campbell 1974 */
+	Bool swrcp_from_pdf; /**< Estimate SWRC parameters with a PDF from soils if TRUE; if FALSE, use values provided as inputs */
+	RealD swrcp[SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation specific to selected SWRC */
 
 	LyrIndex my_transp_rgn[NVEGTYPES]; /* which transp zones from Site am I in? */
 } SW_LAYER_INFO;
@@ -145,7 +150,24 @@ typedef struct {
 } SW_SITE;
 
 
-void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n);
+void SWRC_PDF_estimate_parameters(
+	unsigned int swrc_type, unsigned int pdf_type,
+	double *swrcp,
+	double sand, double clay, double gravel
+);
+void SWRC_PDF_Cosby1984_for_Campbell1974(
+	double *swrcp,
+	double sand, double clay
+);
+
+Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp);
+Bool SWRC_check_parameters_for_Campbell1974(double *swrcp);
+
+void PDF_Saxton2006(
+	double *swc_sat,
+	double sand, double clay, double gravel, double width
+);
+
 RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
 LyrIndex nlayers_bsevap(void);
 void nlayers_vegroots(LyrIndex n_transp_lyrs[]);

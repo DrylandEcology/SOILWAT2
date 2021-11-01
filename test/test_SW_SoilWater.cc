@@ -68,6 +68,7 @@ namespace{
     Reset_SOILWAT2_after_UnitTest();
   }
 
+
   // Test the 'SW_SoilWater' function 'SW_SWC_adjust_snow'
   TEST(SWSoilWaterTest, SWSWCSdjustSnow){
     // setup mock variables
@@ -114,151 +115,212 @@ namespace{
     EXPECT_EQ(snowmelt, 0);
   }
 
-  // Test the 'SW_SoilWater' function 'SW_SWCbulk2SWPmatric'
-  TEST(SWSoilWaterTest, SWSWCbulk2SWPmatric){
-    // Note: function `SW_SWCbulk2SWPmatric` accesses `SW_Site.lyr[n]`
 
-    RealD tol = 1e-2; // pedotransfer functions are not very exact
-    RealD fractionGravel = 0.2;
-    RealD swcBulk;
-    RealD res;
-    RealD help;
-    LyrIndex n = 1;
+  // Test the 'SW_SoilWater' function 'SWRC_SWCtoSWP'
+  TEST(SWSoilWaterTest, SWRC_SWCtoSWP) {
+    // set up mock variables
+    RealD
+      res,
+      swcBulk, swp, swc_fc, swc_wp,
+      swrcp[SWRC_PARAM_NMAX],
+      sand = 0.33,
+      clay = 0.33,
+      gravel = 0.2,
+      width = 10.;
+
+    //--- Cosby et al. 1984 PDF for Campbell's 1974 SWRC
+    unsigned int swrc_type = 1, pdf_type = 1;
+
+    SWRC_PDF_estimate_parameters(
+      swrc_type,
+      pdf_type,
+      swrcp,
+      sand,
+      clay,
+      gravel
+    );
 
     // when swc is 0, we expect res == 0
-    res = SW_SWCbulk2SWPmatric(fractionGravel, 0., n);
+    res = SWRC_SWCtoSWP(0., swrc_type, swrcp, gravel, width);
     EXPECT_EQ(res, 0.0);
 
     // when swc is SW_MISSING, we expect res == 0
-    res = SW_SWCbulk2SWPmatric(fractionGravel, SW_MISSING, n);
+    res = SWRC_SWCtoSWP(SW_MISSING, swrc_type, swrcp, gravel, width);
     EXPECT_EQ(res, 0.0);
 
     // if swc > field capacity, then we expect res < 0.33 bar
-    res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel,
-      SW_Site.lyr[n]->swcBulk_fieldcap + 0.1, n);
-    EXPECT_LT(res, 0.33 + tol);
+    swp = 1. / 3.;
+    swc_fc = SWRC_SWPtoSWC(swp, swrc_type, swrcp, gravel, width);
+    res = SWRC_SWCtoSWP(swc_fc + 0.1, swrc_type, swrcp, gravel, width);
+    EXPECT_LT(res, swp);
 
     // if swc = field capacity, then we expect res == 0.33 bar
-    res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel,
-      SW_Site.lyr[n]->swcBulk_fieldcap, n);
-    EXPECT_NEAR(res, 0.33, tol);
+    res = SWRC_SWCtoSWP(swc_fc, swrc_type, swrcp, gravel, width);
+    EXPECT_NEAR(res, 1. / 3., tol9);
 
     // if field capacity > swc > wilting point, then
     // we expect 15 bar > res > 0.33 bar
-    swcBulk = (SW_Site.lyr[n]->swcBulk_fieldcap +
-      SW_Site.lyr[n]->swcBulk_wiltpt) / 2;
-    res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel,
-      swcBulk, n);
-    EXPECT_GT(res, 0.33 - tol);
-    EXPECT_LT(res, 15 + tol);
+    swc_wp = SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width);
+    swcBulk = (swc_wp + swc_fc) / 2.;
+    res = SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width);
+    EXPECT_GT(res, 1. / 3.);
+    EXPECT_LT(res, 15.);
 
     // if swc = wilting point, then we expect res == 15 bar
-    res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel,
-      SW_Site.lyr[n]->swcBulk_wiltpt, n);
-    EXPECT_NEAR(res, 15., tol);
+    res = SWRC_SWCtoSWP(swc_wp, swrc_type, swrcp, gravel, width);
+    EXPECT_NEAR(res, 15., tol9);
 
     // if swc < wilting point, then we expect res > 15 bar
-    swcBulk = (SW_Site.lyr[n]->swcBulk_wiltpt) / 2;
-    res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel,
-      swcBulk, n);
-    EXPECT_GT(res, 15. - tol);
+    res = SWRC_SWCtoSWP(swc_wp / 2., swrc_type, swrcp, gravel, width);
+    EXPECT_GT(res, 15.);
 
-
-    // ------ meddling with internal value
-    // if fractionGravel == 1: no soil volume available to hold any soil water
-    // this would also lead to theta1 == 0 and division by zero
-    // this situation does normally not occur because it is
-    // checked during input by function `_read_layers`
-    // Note: this situation is tested by the death test
-    // `SWSWCbulk2SWPmatricDeathTest`: we cannot test it here because the
-    // Address Sanitizer would complain with `UndefinedBehaviorSanitizer`
-    // see [issue #231](https://github.com/DrylandEcology/SOILWAT2/issues/231)
-    // res = SW_SWCbulk2SWPmatric(1., SW_Site.lyr[n]->swcBulk_fieldcap, n);
-    // EXPECT_DOUBLE_EQ(res, 0.); // SWP "ought to be" infinity [bar]
-
-    // if theta(sat, matric; Cosby et al. 1984) == 0: would be division by zero
-    // this situation does normally not occur because it is
-    // checked during input by function `water_eqn`
-    help = SW_Site.lyr[n]->thetasMatric;
-    SW_Site.lyr[n]->thetasMatric = 0.;
-    res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel, 0., n);
-    EXPECT_DOUBLE_EQ(res, 0.); // SWP "ought to be" infinity [bar]
-    SW_Site.lyr[n]->thetasMatric = help;
-
-    // if lyr->width == 0: would be division by zero
-    // this situation does normally not occur because it is
-    // checked during input by function `_read_layers`
-    help = SW_Site.lyr[n]->bMatric;
-    SW_Site.lyr[n]->width = 0.;
-     res = SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel, 0., n);
-    EXPECT_DOUBLE_EQ(res, 0.); // swc < width
-    SW_Site.lyr[n]->width = help;
-
-
-    // No need to reset to previous global states because we didn't change any
-    // global states
-    // Reset_SOILWAT2_after_UnitTest();
+    // --- 3a) if theta1 == 0 (e.g., gravel == 1)
+    res = SWRC_SWCtoSWP(swc_wp, swrc_type, swrcp, 1., width);
+    EXPECT_DOUBLE_EQ(res, 0.);
   }
 
-  TEST(SWSoilWaterDeathTest, SWSWCbulk2SWPmatricDeathTest) {
-    LyrIndex n = 1;
-    RealD help;
 
-    // we expect fatal errors and write to log under two situations:
-
-    // if swc < 0: water content can physically not be negative
-    EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(
-      SW_Site.lyr[n]->fractionVolBulk_gravel, -1., n),
-      "@ generic.c LogError");
-
-    // if theta1 == 0 (i.e., gravel == 1) && lyr->bMatric == 0:
-    // would be division by NaN
-    // note: this case is in normally prevented due to checks of inputs by
-    // function `water_eqn` for `bMatric` and function `_read_layers` for
-    // `gravelFraction`
-    help = SW_Site.lyr[n]->bMatric;
-    SW_Site.lyr[n]->bMatric = 0.;
-    EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(
-      1., SW_Site.lyr[n]->swcBulk_fieldcap, n),
-      "@ generic.c LogError");
-    SW_Site.lyr[n]->bMatric = help;
-
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
-  }
-
-  // Test the 'SW_SoilWater' function 'SW_SWPmatric2VWCBulk'
-  TEST(SWSoilWaterTest, SWSWPmatric2VWCBulk){
+  TEST(SWSoilWaterDeathTest, SWRC_SWCtoSWPDeathTest) {
     // set up mock variables
-    RealD fractionGravel = .1, swpMatric = 15.0, p = 0.11656662532982573,
-    psisMatric = 18.608013, binverseMatric = 0.188608, thetaMatric = 41.37;
-    RealD tExpect, t, actualExpectDiff;
-    int i;
-    LyrIndex n = 0;
-    SW_Site.lyr[n]->thetasMatric = thetaMatric;
-    SW_Site.lyr[n]->psisMatric = psisMatric;
-    SW_Site.lyr[n]->bMatric = binverseMatric;
+    RealD
+      swrcp[SWRC_PARAM_NMAX],
+      sand = 0.33,
+      clay = 0.33,
+      gravel = 0.1,
+      width = 10.;
 
-    // set gravel fractions on the interval [.0, .8], step .05
-    for (i = 0; i <= 16; i++){
-      fractionGravel = i / 20.;
-      tExpect = p * (1 - fractionGravel);
+    unsigned int swrc_type;
 
-      t = SW_SWPmatric2VWCBulk(fractionGravel, swpMatric, n);
-      actualExpectDiff = fabs(t - tExpect);
 
-      // when fractionGravel is between [.0, .8], we expect t = p * (1 - fractionGravel)
-      EXPECT_LT(actualExpectDiff, tol6);
+    //--- we expect fatal errors in three situations
 
+    //--- 1) Unimplemented SWRC
+    swrc_type = 255;
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_SWCtoSWP(0., swrc_type, swrcp, gravel, width),
+      "@ generic.c LogError"
+    );
+
+
+    //--- Cosby et al. 1984 PDF for Campbell's 1974 SWRC
+    swrc_type = 1;
+
+    SWRC_PDF_estimate_parameters(
+      swrc_type,
+      1,
+      swrcp,
+      sand,
+      clay,
+      gravel
+    );
+
+    // --- 2) swc < 0: water content cannot be negative
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width),
+      "@ generic.c LogError"
+    );
+
+
+    // --- 3) if theta_sat == 0
+    // note: this case is normally prevented due to checks of inputs by
+    // function `SWRC_check_parameters_for_Campbell1974` and
+    // function `_read_layers`
+    swrcp[0] = 0.;
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_SWCtoSWP(5., swrc_type, swrcp, gravel, width),
+      "@ generic.c LogError"
+    );
+  }
+
+
+  // Test the 'SW_SoilWater' function 'SWRC_SWPtoSWC'
+  TEST(SWSoilWaterTest, SWRC_SWPtoSWC) {
+    // set up mock variables
+    RealD
+      res,
+      swpMatric = 15.0,
+      swrcp[SWRC_PARAM_NMAX],
+      sand = 0.33,
+      clay = 0.33,
+      gravel,
+      width = 10.;
+    short i;
+
+    //--- Campbell's 1974 SWRC (using Cosby et al. 1984 PDF)
+    unsigned int swrc_type = 1, pdf_type = 1;
+
+    // set gravel fractions on the interval [.0, 1], step .1
+    for (i = 0; i <= 10; i++) {
+      gravel = i / 10.;
+
+      SWRC_PDF_estimate_parameters(
+        swrc_type,
+        pdf_type,
+        swrcp,
+        sand,
+        clay,
+        gravel
+      );
+
+      res = SWRC_SWPtoSWC(swpMatric, swrc_type, swrcp, gravel, width);
+
+      EXPECT_GE(res, 0.);
+      EXPECT_LE(res, width * (1. - gravel));
     }
-    Reset_SOILWAT2_after_UnitTest();
 
-    fractionGravel = 1;
 
-    t = SW_SWPmatric2VWCBulk(fractionGravel, swpMatric, n);
     // when fractionGravel is 1, we expect t == 0
-    EXPECT_EQ(t, 0);
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
+    EXPECT_EQ(
+      SWRC_SWPtoSWC(swpMatric, swrc_type, swrcp, 1., width),
+      0.
+    );
+
+    // when width is 0, we expect t == 0
+    EXPECT_EQ(
+      SWRC_SWPtoSWC(swpMatric, swrc_type, swrcp, 0., 0.),
+      0.
+    );
+  }
+
+
+  TEST(SWSoilWaterDeathTest, SWRC_SWPtoSWCDeathTest) {
+    // set up mock variables
+    RealD
+      swrcp[SWRC_PARAM_NMAX],
+      sand = 0.33,
+      clay = 0.33,
+      gravel = 0.1,
+      width = 10.;
+
+    unsigned int swrc_type;
+
+
+    //--- we expect fatal errors in two situations
+
+    //--- 1) Unimplemented SWRC
+    swrc_type = 255;
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width),
+      "@ generic.c LogError"
+    );
+
+
+    //--- Cosby et al. 1984 PDF for Campbell's 1974 SWRC
+    swrc_type = 1;
+
+    SWRC_PDF_estimate_parameters(
+      swrc_type,
+      1,
+      swrcp,
+      sand,
+      clay,
+      gravel
+    );
+
+    // --- 2) swp <= 0: water content cannot be negative
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width),
+      "@ generic.c LogError"
+    );
   }
 }

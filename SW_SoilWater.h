@@ -147,10 +147,38 @@ void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
 RealD SW_SWC_snowloss(RealD pet, RealD *snowpack);
 RealD SW_SnowDepth(RealD SWE, RealD snowdensity);
 void SW_SWC_end_day(void);
-RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n);
-RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n);
 RealD SW_VWCBulkRes(RealD fractionGravel, RealD sand, RealD clay, RealD porosity);
 void get_dSWAbulk(int i);
+
+double SW_SWRC_SWCtoSWP(double swcBulk, SW_LAYER_INFO *lyr);
+double SWRC_SWCtoSWP(
+	double swcBulk,
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width
+);
+double SWRC_SWCtoSWP_Campbell1974(
+	double swcBulk,
+	double *swrcp,
+	double gravel,
+	double width
+);
+
+RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr);
+double SWRC_SWPtoSWC(
+	double swpMatric,
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width
+);
+double SWRC_SWPtoSWC_Campbell1974(
+	double swpMatric,
+	double *swrcp,
+	double gravel,
+	double width
+);
 
 #ifdef SWDEBUG
 void SW_WaterBalance_Checks(void);

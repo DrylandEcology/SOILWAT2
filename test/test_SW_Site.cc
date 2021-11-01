@@ -46,60 +46,102 @@ extern LyrIndex _TranspRgnBounds[];
 
 
 namespace {
-  // Test the water equation function 'water_eqn'
-  TEST(SWSiteTest, WaterEquation) {
+  // Test pedotransfer functions
+  TEST(SWSiteTest, PDFs) {
+    // inputs
+    RealD
+      swrcp[SWRC_PARAM_NMAX],
+      swc_sat,
+      sand = 0.33,
+      clay = 0.33,
+      gravel = 0.1,
+      width = 10.;
+    unsigned int swrc_type, pdf_type;
 
-    //declare inputs
-    RealD fractionGravel = 0.1, sand = .33, clay =.33;
-    LyrIndex n = 1;
 
-    water_eqn(fractionGravel, sand, clay, n);
+    //--- Test Cosby et al. 1984 PDF for Campbell's 1974 SWRC
+    swrc_type = 1;
+    pdf_type = 1;
 
-    // Test swcBulk_saturated
-    EXPECT_GT(SW_Site.lyr[n]->swcBulk_saturated, 0.); // The swcBulk_saturated should be greater than 0
-    EXPECT_LT(SW_Site.lyr[n]->swcBulk_saturated, SW_Site.lyr[n]->width); // The swcBulk_saturated can't be greater than the width of the layer
+    SWRC_PDF_estimate_parameters(
+      swrc_type, pdf_type,
+      swrcp,
+      sand, clay, gravel
+    );
+
+    EXPECT_EQ(
+      SWRC_check_parameters(swrc_type, swrcp),
+      swTRUE
+    );
 
     // Test thetasMatric
-    EXPECT_GT(SW_Site.lyr[n]->thetasMatric, 36.3); /* Value should always be greater
+    EXPECT_GT(swrcp[0], 36.3); /* Value should always be greater
     than 36.3 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_LT(SW_Site.lyr[n]->thetasMatric, 46.8); /* Value should always be less
+    EXPECT_LT(swrcp[0], 46.8); /* Value should always be less
     than 46.8 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_DOUBLE_EQ(SW_Site.lyr[n]->thetasMatric,  44.593); /* If sand is .33 and
+    EXPECT_DOUBLE_EQ(swrcp[0],  44.593); /* If sand is .33 and
     clay is .33, thetasMatric should be 44.593 */
 
     // Test psisMatric
-    EXPECT_GT(SW_Site.lyr[n]->psisMatric, 3.890451); /* Value should always be greater
+    EXPECT_GT(swrcp[1], 3.890451); /* Value should always be greater
     than 3.890451 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_LT(SW_Site.lyr[n]->psisMatric,  34.67369); /* Value should always be less
+    EXPECT_LT(swrcp[1],  34.67369); /* Value should always be less
     than 34.67369 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_DOUBLE_EQ(SW_Site.lyr[n]->psisMatric, 27.586715750763947); /* If sand is
+    EXPECT_DOUBLE_EQ(swrcp[1], 27.586715750763947); /* If sand is
     .33 and clay is .33, psisMatric should be 27.5867 */
 
     // Test bMatric
-    EXPECT_GT(SW_Site.lyr[n]->bMatric, 2.8); /* Value should always be greater than
+    EXPECT_GT(swrcp[2], 2.8); /* Value should always be greater than
     2.8 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_LT(SW_Site.lyr[n]->bMatric, 18.8); /* Value should always be less
+    EXPECT_LT(swrcp[2], 18.8); /* Value should always be less
     than 18.8 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_DOUBLE_EQ(SW_Site.lyr[n]->bMatric, 8.182); /* If sand is .33 and clay is .33,
+    EXPECT_DOUBLE_EQ(swrcp[2], 8.182); /* If sand is .33 and clay is .33,
     thetasMatric should be 8.182 */
 
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
+
+    //--- Test `swcBulk_saturated`
+    PDF_Saxton2006(&swc_sat, sand, clay, gravel, width);
+
+    // The swcBulk_saturated should be greater than 0
+    EXPECT_GT(swc_sat, 0.);
+    // The swcBulk_saturated can't be greater than the width of the layer
+    EXPECT_LT(swc_sat, width);
+
+
+
+    //--- Test bad parameters: Cosby et al. 1984 PDF for Campbell's 1974 SWRC
+    swrc_type = 1;
+    pdf_type = 1;
+
+    sand = 10. + 1./3.; // unrealistic but forces `bmatric` to become 0
+
+    SWRC_PDF_estimate_parameters(
+      swrc_type, pdf_type,
+      swrcp,
+      sand, clay, gravel
+    );
+
+    EXPECT_EQ(
+      SWRC_check_parameters(swrc_type, swrcp),
+      swFALSE
+    );
   }
 
-  // Test that water equation function 'water_eqn' fails
-  TEST(SWSiteTest, WaterEquationDeathTest) {
 
-    //declare inputs
-    RealD fractionGravel = 0.1;
-    LyrIndex n = 1;
+  // Test fatal failures of SWRC parameter checks
+  TEST(SWSiteTest, PDFsDeathTest) {
 
-    // Test that error will be logged when b_matric is 0
-    RealD sand = 10. + 1./3.; // So that bmatric will equal 0, even though this is a very irrealistic value
-    RealD clay = 0;
+    // inputs
+    unsigned int swrc_type;
+    RealD swrcp[SWRC_PARAM_NMAX];
 
-    EXPECT_DEATH_IF_SUPPORTED(water_eqn(fractionGravel, sand, clay, n), "@ generic.c LogError");
+    //--- Test unimplemented SWRC
+    swrc_type = 255;
 
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_check_parameters(swrc_type, swrcp),
+      "@ generic.c LogError"
+    );
   }
 
 

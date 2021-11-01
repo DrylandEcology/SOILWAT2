@@ -374,7 +374,7 @@ void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n
 
 		for (i = 0; i < n_layers; i++) {
 			if (tr_regions[i] == r) {
-				swp += tr_coeff[i] * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+				swp += tr_coeff[i] * SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
 				sumco += tr_coeff[i];
 			}
 		}
@@ -486,10 +486,10 @@ void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double
 	  }
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
-		avswp += x * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
 	}
 
-  // Note: avswp = 0 if swc = 0 because that is the return value of SW_SWCbulk2SWPmatric
+  // Note: avswp = 0 if swc = 0 because that is the return value of SW_SWRC_SWCtoSWP
 	avswp /= (ZRO(sumwidth)) ? 1 : sumwidth;
 
 	/*  8/27/92 (SLC) if totagb > Es_param_limit, assume soil surface is
@@ -546,7 +546,7 @@ void pot_soil_evap_bs(double *bserate, unsigned int nelyrs, double ecoeff[], dou
 	for (i = 0; i < nelyrs; i++) {
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
-		avswp += x * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
 	}
 
 	avswp /= sumwidth;
@@ -751,7 +751,7 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	ST_RGR_VALUES *st = &stValues;
 
 	for (i = 0; i < nlyrs; i++) {
-		swpfrac[i] = coeff[i] / SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		swpfrac[i] = coeff[i] / SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
 		sumswp += swpfrac[i];
 	}
 
@@ -908,9 +908,9 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 	ST_RGR_VALUES *st = &stValues;
 
 	for (i = 0; i < nlyrs; i++) {
-		swp[i] = SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		swp[i] = SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
 		relCondroot[i] = fmin( 1., fmax(0., 1./(1. + powe(swp[i]/swp50, shapeCond) ) ) );
-		swpwp[i] = SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swcwp[i], i);
+		swpwp[i] = SW_SWRC_SWCtoSWP(swcwp[i], SW_Site.lyr[i]);
 
 		hydredmat[0][i] = hydredmat[i][0] = 0.; /* no hydred in top layer */
 	}
