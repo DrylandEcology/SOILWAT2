@@ -78,13 +78,11 @@ RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
       and if STEPWAT2 is currently not in its last iteration/repetition.
       Compare with \ref print_IterationSummary`
 */
-#define prepare_IterationSummary
-#undef prepare_IterationSummary
 
 #ifdef STEPWAT
 extern GlobalType SuperGlobals;
 RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
-Bool prepare_IterationSummary;
+extern Bool prepare_IterationSummary; // defined in `SW_Output.c`
 #endif
 
 size_t nrow_OUT[SW_OUTNPERIODS]; // number of years/months/weeks/days
