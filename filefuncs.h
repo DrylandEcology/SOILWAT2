@@ -16,8 +16,6 @@
 extern "C" {
 #endif
 
-/** Constant to define the maximal length of error messages */
-#define ERRSTRLEN 3000
 
 
 /* =================================================== */

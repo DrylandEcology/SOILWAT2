@@ -148,7 +148,7 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 	 *           to be called each time replacement args occur.
 	 */
 
-	char outfmt[ERRSTRLEN] = {0}; /* to prepend err type str */
+	char outfmt[MAX_ERROR] = {0}; /* to prepend err type str */
 	va_list args;
 
 	va_start(args, fmt);
