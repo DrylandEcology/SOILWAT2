@@ -12,10 +12,7 @@
 #include "pcg/pcg_basic.h"
 
 
-#ifndef RSOILWAT
-  uint64_t stream = 1u; //stream id. this is given out to a pcg_rng then incremented.
-
-#else
+#ifdef RSOILWAT
   // R-API requires that we use it's own random number implementation
   // see https://cran.r-project.org/doc/manuals/R-exts.html#Writing-portable-packages
   // and https://cran.r-project.org/doc/manuals/R-exts.html#Random-numbers
@@ -24,8 +21,18 @@
 #endif
 
 
+/* =================================================== */
+/*                  Local Variables                    */
+/* --------------------------------------------------- */
+
+#ifndef RSOILWAT
+  static uint64_t stream = 1u; //stream id. this is given out to a pcg_rng then incremented.
+#endif
 
 
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
 
 /*****************************************************/
 /**

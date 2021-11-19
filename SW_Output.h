@@ -28,6 +28,31 @@
 /********************************************************/
 /********************************************************/
 
+
+
+/* Inclusion of output-related files
+
+   - SOILWAT2 binary (SW_OUTTEXT)
+      - SW_Output.c
+      - SW_Output_get_functions.c
+      - SW_Output_outtext.c
+
+   - SOILWAT2 test (SW_OUTTEXT)
+      - SW_Output_mock.c + SW_Output.h
+
+   - rSOILWAT2 package (SW_OUTARRAY)
+      - SW_Output.c
+      - SW_Output_get_functions.c
+      - SW_Output_outarray.c
+
+   - STEPWAT2 (SW_OUTTEXT, SW_OUTARRAY)
+      - SW_Output.c
+      - SW_Output_get_functions.c
+      - SW_Output_outtext.c
+      - SW_Output_outarray.c
+*/
+
+
 #ifndef SW_OUTPUT_H
 #define SW_OUTPUT_H
 
@@ -185,7 +210,36 @@ typedef struct {
 
 
 
-// Function declarations
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+
+extern SW_OUTPUT SW_Output[SW_OUTNKEYS];
+
+extern char _Sep;
+extern TimeInt tOffset;
+
+extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
+extern IntUS used_OUTNPERIODS;
+extern Bool use_OutPeriod[SW_OUTNPERIODS];
+
+extern char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
+extern IntUS ncol_OUT[SW_OUTNKEYS];
+
+#ifdef STEPWAT
+  extern Bool prepare_IterationSummary;
+  extern Bool storeAllIterations;
+#endif
+
+extern char const *key2str[];
+extern char const *pd2longstr[];
+
+
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_OUT_construct(void);
 void SW_OUT_deconstruct(Bool full_reset);
 void SW_OUT_set_ncol(void);

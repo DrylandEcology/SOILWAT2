@@ -17,9 +17,7 @@
 #include "../SW_Flow_lib.h"
 #include "sw_testhelpers.h"
 
-extern SW_MODEL SW_Model;
-extern SW_SITE SW_Site;
-extern SW_VEGPROD SW_VegProd;
+
 
 namespace{
   // Test the 'SW_SoilWater' function 'SW_VWCBulkRes'

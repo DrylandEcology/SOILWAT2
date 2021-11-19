@@ -38,8 +38,26 @@ extern "C" {
 	(ncol_TimeOUT[(pd)] + (i) + SW_Site.n_layers * (k)))
 
 
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
 
-// Function declarations
+extern RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
+
+#ifdef STEPWAT
+  extern RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
+#endif
+
+
+extern size_t nrow_OUT[SW_OUTNPERIODS];
+extern size_t irow_OUT[SW_OUTNPERIODS];
+extern const IntUS ncol_TimeOUT[SW_OUTNPERIODS];
+
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_OUT_set_nrow(void);
 void SW_OUT_deconstruct_outarray(void);
 

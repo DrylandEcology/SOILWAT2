@@ -10,6 +10,7 @@
 #define FILEFUNCS_H
 
 #include "generic.h"
+#include "SW_Defines.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,9 +20,16 @@ extern "C" {
 #define ERRSTRLEN 3000
 
 
-/***************************************************
- * Function definitions
- ***************************************************/
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern char inbuf[MAX_FILENAMESIZE]; /* defined in SW_Main_lib.c */
+extern char _firstfile[MAX_FILENAMESIZE]; /* defined in SW_Main_lib.c */
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 FILE * OpenFile(const char *, const char *);
 void CloseFile(FILE **);
 Bool GetALine(FILE *f, char buf[]);
@@ -34,8 +42,6 @@ Bool MkDir(const char *d);
 Bool RemoveFiles(const char *fspec);
 void sw_error(int errorcode, const char *format, ...);
 void LogError(FILE *fp, const int mode, const char *fmt, ...);
-
-extern char inbuf[]; /* declare in main, use anywhere */
 
 
 #ifdef __cplusplus

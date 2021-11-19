@@ -24,10 +24,10 @@ extern "C" {
 
 typedef long RandListType;
 
-/***************************************************
- * Function definitions
- ***************************************************/
 
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void RandSeed(signed long seed, pcg32_random_t* pcg_rng);
 double RandUni(pcg32_random_t* pcg_rng);
 int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng);

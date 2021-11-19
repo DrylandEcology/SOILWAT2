@@ -112,82 +112,169 @@
 #include "generic.h"
 #include "filefuncs.h"
 #include "SW_Defines.h"
-#include "SW_Model.h"
-#include "SW_Site.h"
-#include "SW_SoilWater.h"
-#include "SW_Flow_lib.h"
+#include "SW_Model.h" // externs SW_Model
+#include "SW_Site.h" // externs SW_Site
+#include "SW_SoilWater.h" // externs SW_Soilwat
+#include "SW_Flow_lib.h" // externs stValues, soil_temp_init
 /*#include "SW_VegEstab.h" */
-#include "SW_VegProd.h"
-#include "SW_Weather.h"
-#include "SW_Sky.h"
+#include "SW_VegProd.h" // externs SW_VegProd, key2veg
+#include "SW_Weather.h"  // externs SW_Weather
+#include "SW_Sky.h" // externs SW_Sky
 
 #include "SW_Flow_lib_PET.h"
 #include "SW_Flow.h"
 
 
 /* =================================================== */
-/*                  Global Variables                   */
-/* --------------------------------------------------- */
-extern SW_MODEL SW_Model;
-extern SW_SITE SW_Site;
-extern SW_SOILWAT SW_Soilwat;
-extern SW_WEATHER SW_Weather;
-extern SW_VEGPROD SW_VegProd;
-extern SW_SKY SW_Sky;
-
-extern unsigned int soil_temp_init;
-extern char const *key2veg[];
-
-/* *************************************************** */
-/*                Module-Level Variables               */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 
 /* temporary arrays for SoWat_flow_subs.c subroutines.
  * array indexing in those routines will be from
  * zero rather than 1.  see records2arrays().
  */
-IntU lyrTrRegions[NVEGTYPES][MAX_LAYERS];
+static IntU lyrTrRegions[NVEGTYPES][MAX_LAYERS];
 
-RealD lyrSWCBulk[MAX_LAYERS], lyrDrain[MAX_LAYERS],
+static RealD
+	lyrSWCBulk[MAX_LAYERS],
+	lyrDrain[MAX_LAYERS],
 
-	lyrTransp[NVEGTYPES][MAX_LAYERS], lyrTranspCo[NVEGTYPES][MAX_LAYERS],
-	lyrEvap[NVEGTYPES][MAX_LAYERS], lyrEvap_BareGround[MAX_LAYERS],
-	lyrSWCBulk_atSWPcrit[NVEGTYPES][MAX_LAYERS], lyrHydRed[NVEGTYPES][MAX_LAYERS],
+	lyrTransp[NVEGTYPES][MAX_LAYERS],
+	lyrTranspCo[NVEGTYPES][MAX_LAYERS],
+	lyrEvap[NVEGTYPES][MAX_LAYERS],
+	lyrEvap_BareGround[MAX_LAYERS],
+	lyrSWCBulk_atSWPcrit[NVEGTYPES][MAX_LAYERS],
+	lyrHydRed[NVEGTYPES][MAX_LAYERS],
 
-	lyrbDensity[MAX_LAYERS], lyrWidths[MAX_LAYERS],
-	lyrEvapCo[MAX_LAYERS], lyrSumTrCo[MAX_TRANSP_REGIONS + 1],
+	lyrbDensity[MAX_LAYERS],
+	lyrWidths[MAX_LAYERS],
+	lyrEvapCo[MAX_LAYERS],
+	lyrSumTrCo[MAX_TRANSP_REGIONS + 1],
 	lyrImpermeability[MAX_LAYERS],
-	lyrSWCBulk_FieldCaps[MAX_LAYERS], lyrSWCBulk_Saturated[MAX_LAYERS],
-	lyrSWCBulk_Wiltpts[MAX_LAYERS], lyrSWCBulk_HalfWiltpts[MAX_LAYERS],
+	lyrSWCBulk_FieldCaps[MAX_LAYERS],
+	lyrSWCBulk_Saturated[MAX_LAYERS],
+	lyrSWCBulk_Wiltpts[MAX_LAYERS],
+	lyrSWCBulk_HalfWiltpts[MAX_LAYERS],
 	lyrSWCBulk_Mins[MAX_LAYERS],
 
-	lyroldsTemp[MAX_LAYERS], lyrsTemp[MAX_LAYERS];
+	lyroldsTemp[MAX_LAYERS],
+	lyrsTemp[MAX_LAYERS];
 
-RealD drainout; /* h2o drained out of deepest layer */
+
+static RealD drainout; /* h2o drained out of deepest layer */
 
 // variables to help calculate runon from a (hypothetical) upslope neighboring (UpNeigh) site
-RealD UpNeigh_lyrSWCBulk[MAX_LAYERS], UpNeigh_lyrDrain[MAX_LAYERS], UpNeigh_drainout,
+static RealD
+	UpNeigh_lyrSWCBulk[MAX_LAYERS],
+	UpNeigh_lyrDrain[MAX_LAYERS],
+	UpNeigh_drainout,
 	UpNeigh_standingWater;
 
 
-static RealD surfaceTemp[TWO_DAYS],
+static RealD
+	surfaceTemp[TWO_DAYS],
 	veg_int_storage[NVEGTYPES], // storage of intercepted rain by the vegetation
 	litter_int_storage, // storage of intercepted rain by the litter layer
 	standingWater[TWO_DAYS]; /* water on soil surface if layer below is saturated */
 
 
-/* *************************************************** */
-/* *************************************************** */
-/*            Private functions                        */
+
+/* =================================================== */
+/*             Local Function Definitions              */
 /* --------------------------------------------------- */
-static void records2arrays(void);
-static void arrays2records(void);
+
+static void records2arrays(void) {
+	/* some values are unchanged by the water subs but
+	 * are still required in an array format.
+	 * Also, some arrays start out empty and are
+	 * filled during the water flow.
+	 * See arrays2records() for the modified arrays.
+	 *
+	 * 3/24/2003 - cwb - when running with steppe, the
+	 *       static variable firsttime would only be set once
+	 *       so the firsttime tasks were done only the first
+	 *       year, but what we really want with stepwat is
+	 *       to firsttime tasks on the first day of each year.
+	 * 1-Oct-03 (cwb) - Removed references to sum_transp_coeff.
+	 *       see also Site.c.
+	 */
+	LyrIndex i;
+	int k;
+
+	ForEachSoilLayer(i)
+	{
+		lyrSWCBulk[i] = SW_Soilwat.swcBulk[Today][i];
+		lyroldsTemp[i] = SW_Soilwat.sTemp[i];
+	}
+
+	if (SW_Model.doy == SW_Model.firstdoy) {
+		ForEachSoilLayer(i)
+		{
+			lyrSWCBulk_FieldCaps[i] = SW_Site.lyr[i]->swcBulk_fieldcap;
+			lyrWidths[i] = SW_Site.lyr[i]->width;
+			lyrSWCBulk_Wiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt;
+			lyrSWCBulk_HalfWiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt / 2.;
+			lyrSWCBulk_Mins[i] = SW_Site.lyr[i]->swcBulk_min;
+			lyrImpermeability[i] = SW_Site.lyr[i]->impermeability;
+			lyrSWCBulk_Saturated[i] = SW_Site.lyr[i]->swcBulk_saturated;
+			lyrbDensity[i] = SW_Site.lyr[i]->soilBulk_density;
+
+			ForEachVegType(k)
+			{
+				lyrTrRegions[k][i] = SW_Site.lyr[i]->my_transp_rgn[k];
+				lyrSWCBulk_atSWPcrit[k][i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[k];
+				lyrTranspCo[k][i] = SW_Site.lyr[i]->transp_coeff[k];
+			}
+		}
+
+		ForEachEvapLayer(i) {
+			lyrEvapCo[i] = SW_Site.lyr[i]->evap_coeff;
+		}
+
+	} /* end firsttime stuff */
+
+}
+
+static void arrays2records(void) {
+	/* move output quantities from arrays to
+	 * the appropriate records.
+	 */
+	LyrIndex i;
+	int k;
+
+	ForEachSoilLayer(i)
+	{
+		SW_Soilwat.swcBulk[Today][i] = lyrSWCBulk[i];
+		SW_Soilwat.drain[i] = lyrDrain[i];
+		SW_Soilwat.sTemp[i] = lyrsTemp[i];
+		ForEachVegType(k)
+		{
+			SW_Soilwat.hydred[k][i] = lyrHydRed[k][i];
+			SW_Soilwat.transpiration[k][i] = lyrTransp[k][i];
+		}
+	}
+	SW_Soilwat.surfaceTemp = surfaceTemp[Today];
+	SW_Weather.surfaceTemp = surfaceTemp[Today];
+
+	if (SW_Site.deepdrain)
+		SW_Soilwat.swcBulk[Today][SW_Site.deep_lyr] = drainout;
+
+
+	ForEachEvapLayer(i)
+	{
+		SW_Soilwat.evaporation[i] = lyrEvap_BareGround[i];
+		ForEachVegType(k)
+		{
+			SW_Soilwat.evaporation[i] += lyrEvap[k][i];
+		}
+	}
+
+}
 
 
 
-/* *************************************************** */
-/* *************************************************** */
-/*             Public functions                        */
+/* =================================================== */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 /* There is only one external function here and it is
  * only called from SW_Soilwat, so it is declared there.
@@ -750,90 +837,3 @@ void SW_Water_Flow(void) {
 
 } /* END OF WATERFLOW */
 
-static void records2arrays(void) {
-	/* some values are unchanged by the water subs but
-	 * are still required in an array format.
-	 * Also, some arrays start out empty and are
-	 * filled during the water flow.
-	 * See arrays2records() for the modified arrays.
-	 *
-	 * 3/24/2003 - cwb - when running with steppe, the
-	 *       static variable firsttime would only be set once
-	 *       so the firsttime tasks were done only the first
-	 *       year, but what we really want with stepwat is
-	 *       to firsttime tasks on the first day of each year.
-	 * 1-Oct-03 (cwb) - Removed references to sum_transp_coeff.
-	 *       see also Site.c.
-	 */
-	LyrIndex i;
-	int k;
-
-	ForEachSoilLayer(i)
-	{
-		lyrSWCBulk[i] = SW_Soilwat.swcBulk[Today][i];
-		lyroldsTemp[i] = SW_Soilwat.sTemp[i];
-	}
-
-	if (SW_Model.doy == SW_Model.firstdoy) {
-		ForEachSoilLayer(i)
-		{
-			lyrSWCBulk_FieldCaps[i] = SW_Site.lyr[i]->swcBulk_fieldcap;
-			lyrWidths[i] = SW_Site.lyr[i]->width;
-			lyrSWCBulk_Wiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt;
-			lyrSWCBulk_HalfWiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt / 2.;
-			lyrSWCBulk_Mins[i] = SW_Site.lyr[i]->swcBulk_min;
-			lyrImpermeability[i] = SW_Site.lyr[i]->impermeability;
-			lyrSWCBulk_Saturated[i] = SW_Site.lyr[i]->swcBulk_saturated;
-			lyrbDensity[i] = SW_Site.lyr[i]->soilBulk_density;
-
-			ForEachVegType(k)
-			{
-				lyrTrRegions[k][i] = SW_Site.lyr[i]->my_transp_rgn[k];
-				lyrSWCBulk_atSWPcrit[k][i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[k];
-				lyrTranspCo[k][i] = SW_Site.lyr[i]->transp_coeff[k];
-			}
-		}
-
-		ForEachEvapLayer(i) {
-			lyrEvapCo[i] = SW_Site.lyr[i]->evap_coeff;
-		}
-
-	} /* end firsttime stuff */
-
-}
-
-static void arrays2records(void) {
-	/* move output quantities from arrays to
-	 * the appropriate records.
-	 */
-	LyrIndex i;
-	int k;
-
-	ForEachSoilLayer(i)
-	{
-		SW_Soilwat.swcBulk[Today][i] = lyrSWCBulk[i];
-		SW_Soilwat.drain[i] = lyrDrain[i];
-		SW_Soilwat.sTemp[i] = lyrsTemp[i];
-		ForEachVegType(k)
-		{
-			SW_Soilwat.hydred[k][i] = lyrHydRed[k][i];
-			SW_Soilwat.transpiration[k][i] = lyrTransp[k][i];
-		}
-	}
-	SW_Soilwat.surfaceTemp = surfaceTemp[Today];
-	SW_Weather.surfaceTemp = surfaceTemp[Today];
-
-	if (SW_Site.deepdrain)
-		SW_Soilwat.swcBulk[Today][SW_Site.deep_lyr] = drainout;
-
-
-	ForEachEvapLayer(i)
-	{
-		SW_Soilwat.evaporation[i] = lyrEvap_BareGround[i];
-		ForEachVegType(k)
-		{
-			SW_Soilwat.evaporation[i] += lyrEvap[k][i];
-		}
-	}
-
-}

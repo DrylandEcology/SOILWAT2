@@ -27,8 +27,10 @@
 #include "Times.h"
 
 #include "SW_Defines.h"
-#include "SW_Model.h"
+#include "SW_Model.h" // externs SW_Model
 
+// externs `SW_Output`, `tOffset` `use_OutPeriod`, `used_OUTNPERIODS`,
+//         `timeSteps`, `ncol_OUT`
 #include "SW_Output.h"
 #include "SW_Output_outarray.h"
 
@@ -40,18 +42,6 @@
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-extern SW_MODEL SW_Model;
-
-// defined in `SW_Output.c`:
-extern SW_OUTPUT SW_Output[];
-extern TimeInt tOffset;
-extern Bool use_OutPeriod[];
-extern IntUS used_OUTNPERIODS;
-extern IntUS ncol_OUT[];
-extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
-
-
-// defined here:
 
 /** \brief A 2-dim array of pointers to output arrays.
 
@@ -74,15 +64,10 @@ RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 #define p_OUTsd
 #undef p_OUTsd
 
-/** `prepare_IterationSummary` is TRUE if STEPWAT2 is called with `-o` flag
-      and if STEPWAT2 is currently not in its last iteration/repetition.
-      Compare with \ref print_IterationSummary`
-*/
 
 #ifdef STEPWAT
 extern GlobalType SuperGlobals;
 RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
-extern Bool prepare_IterationSummary; // defined in `SW_Output.c`
 #endif
 
 size_t nrow_OUT[SW_OUTNPERIODS]; // number of years/months/weeks/days
@@ -92,21 +77,7 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time hea
 
 
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Declarations            */
-/* --------------------------------------------------- */
-
-
-/* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
-/* --------------------------------------------------- */
-
-
-/* =================================================== */
-/* =================================================== */
-/*             Function Definitions                    */
-/*             (declared in SW_Output_outarray.h)      */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /** @brief Determine number of years/months/weeks/days used in simulation period

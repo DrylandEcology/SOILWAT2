@@ -31,26 +31,30 @@
 #include "SW_Defines.h"
 #include "SW_Files.h"
 #include "SW_Weather.h"
-#include "SW_Model.h"
+#include "SW_Model.h" // externs SW_Model
 #include "SW_Markov.h"
 #include "pcg/pcg_basic.h"
+
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-extern SW_MODEL SW_Model;
-pcg32_random_t markov_rng;
-SW_MARKOV SW_Markov; /* declared here, externed elsewhere */
+
+pcg32_random_t markov_rng; // used by STEPWAT2
+SW_MARKOV SW_Markov;
+
+
 
 /* =================================================== */
-/*                Module-Level Variables               */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 
 static char *MyFileName;
 
+
+
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
+/*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
 /**
@@ -191,9 +195,9 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 
 
 /* =================================================== */
-/* =================================================== */
-/*             Public Function Definitions             */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
+
 /**
 @brief Markov constructor for global variables.
 */

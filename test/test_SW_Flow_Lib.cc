@@ -40,11 +40,7 @@
 
 #include "sw_testhelpers.h"
 
-extern SW_SITE SW_Site;
-extern SW_MODEL SW_Model;
-extern SW_VEGPROD SW_VegProd;
-extern ST_RGR_VALUES stValues;
-//extern SW_SOILWAT_OUTPUTS SW_Soilwat_outputs;
+
 
 pcg32_random_t flow_rng;
 SW_VEGPROD *v = &SW_VegProd;

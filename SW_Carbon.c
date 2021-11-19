@@ -21,34 +21,29 @@
 #include "SW_Defines.h"
 #include "SW_Times.h"
 #include "SW_Files.h"
-#include "SW_Carbon.h"
+#include "SW_Carbon.h" // externs SW_Carbon
 #include "SW_Site.h"
-#include "SW_VegProd.h"
-#include "SW_Model.h"
+#include "SW_VegProd.h" // externs SW_VegProd
+#include "SW_Model.h" // externs SW_Model
+
+
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
+SW_CARBON SW_Carbon;
+
 
 /* =================================================== */
-/*                Module-Level Variables               */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 
 static char *MyFileName;
-SW_CARBON SW_Carbon;    // Declared here, externed elsewhere
-extern SW_VEGPROD SW_VegProd;
-extern SW_MODEL SW_Model;
 
 
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
-/* --------------------------------------------------- */
-
-/* =================================================== */
-/* =================================================== */
-/*             Public Function Definitions             */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /**

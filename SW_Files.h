@@ -35,6 +35,19 @@ typedef enum {
 	eEndFile
 } SW_FileIndex;
 
+
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern char *InFiles[SW_NFILES];
+extern char _ProjDir[FILENAME_MAX];
+extern char weather_prefix[FILENAME_MAX];
+extern char output_prefix[FILENAME_MAX];
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_F_read(const char *s);
 char *SW_F_name(SW_FileIndex i);
 void SW_F_construct(const char *firstfile);

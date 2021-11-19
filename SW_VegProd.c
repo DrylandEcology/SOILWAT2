@@ -45,42 +45,35 @@ changed _echo_inits() to now display the bare ground components in logfile.log
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "generic.h"
-#include "filefuncs.h"
+#include "generic.h" // externs `QuietMode`, `EchoInits`
+#include "filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "myMemory.h"
 #include "SW_Defines.h"
 #include "SW_Files.h"
 #include "SW_Times.h"
 #include "SW_VegProd.h"
-#include "SW_Model.h"
+#include "SW_Model.h" // externs SW_Model
+
+
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-extern Bool EchoInits;
-extern SW_MODEL SW_Model;
+SW_VEGPROD SW_VegProd;
+
+// key2veg must be in the same order as the indices to vegetation types defined in SW_Defines.h
+char const *key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 
 
-
-SW_VEGPROD SW_VegProd; /* declared here, externed elsewhere */
 
 /* =================================================== */
-/*                Module-Level Variables               */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 static char *MyFileName;
 
-// key2veg must be in the same order as the indices to vegetation types defined in SW_Defines.h
-char const *key2veg[] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
-/* --------------------------------------------------- */
-
-
-/* =================================================== */
-/* =================================================== */
-/*             Public Function Definitions             */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /**

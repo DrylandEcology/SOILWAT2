@@ -31,39 +31,60 @@
 #include "SW_Defines.h"
 #include "SW_Files.h"
 #include "SW_Control.h"
-#include "SW_Model.h"
+#include "SW_Model.h" // externs SW_Model
 #include "SW_Output.h"
-#include "SW_Site.h"
+#include "SW_Site.h" // externs SW_Site
 #include "SW_Flow_lib.h"
 #include "SW_Flow_lib_PET.h"
 #include "SW_Flow.h"
 #include "SW_SoilWater.h"
-#include "SW_VegEstab.h"
-#include "SW_VegProd.h"
-#include "SW_Weather.h"
+#include "SW_VegEstab.h" // externs SW_VegEstab
+#include "SW_VegProd.h" // externs SW_VegProd
+#include "SW_Weather.h"  // externs SW_Weather
 #include "SW_Markov.h"
 #include "SW_Sky.h"
 #include "SW_Carbon.h"
 
-/* =================================================== */
-/*                  Global Declarations                */
-/* --------------------------------------------------- */
-extern SW_MODEL SW_Model;
-extern SW_VEGESTAB SW_VegEstab;
-extern SW_SITE SW_Site;
-extern SW_VEGPROD SW_VegProd;
-extern SW_WEATHER SW_Weather;
+
 
 /* =================================================== */
-/*                Module-Level Declarations            */
+/*             Local Function Definitions              */
 /* --------------------------------------------------- */
-static void _begin_year(void);
-static void _begin_day(void);
-static void _end_day(void);
+/**
+@brief Initiate/update variables for a new simulation year.
+      In addition to the timekeeper (Model), usually only modules
+      that read input yearly or produce output need to have this call.
+*/
+static void _begin_year(void) {
+	// SW_F_new_year() not needed
+	SW_MDL_new_year(); // call first to set up time-related arrays for this year
+	SW_WTH_new_year();
+	// SW_MKV_new_year() not needed
+	SW_SKY_new_year(); // Update daily climate variables from monthly values
+	//SW_SIT_new_year() not needed
+	SW_VES_new_year();
+	SW_VPD_new_year(); // Dynamic CO2 effects on vegetation
+	// SW_FLW_new_year() not needed
+	SW_SWC_new_year();
+	// SW_CBN_new_year() not needed
+	SW_OUT_new_year();
+}
+
+static void _begin_day(void) {
+	SW_MDL_new_day();
+	SW_WTH_new_day();
+}
+
+static void _end_day(void) {
+	_collect_values();
+	SW_WTH_end_day();
+	SW_SWC_end_day();
+}
 
 
-/*******************************************************/
-/***************** Begin Main Code *********************/
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
 /**
 @brief Calls 'SW_CTL_run_current_year' for each year
           which calls 'SW_SWC_water_flow' for each day.
@@ -205,37 +226,6 @@ void SW_CTL_run_current_year(void) {
   #endif
 }
 
-/**
-@brief Initiate/update variables for a new simulation year.
-      In addition to the timekeeper (Model), usually only modules
-      that read input yearly or produce output need to have this call.
-*/
-static void _begin_year(void) {
-
-	// SW_F_new_year() not needed
-	SW_MDL_new_year(); // call first to set up time-related arrays for this year
-	SW_WTH_new_year();
-	// SW_MKV_new_year() not needed
-	SW_SKY_new_year(); // Update daily climate variables from monthly values
-	//SW_SIT_new_year() not needed
-	SW_VES_new_year();
-	SW_VPD_new_year(); // Dynamic CO2 effects on vegetation
-	// SW_FLW_new_year() not needed
-	SW_SWC_new_year();
-	// SW_CBN_new_year() not needed
-	SW_OUT_new_year();
-}
-
-static void _begin_day(void) {
-	SW_MDL_new_day();
-	SW_WTH_new_day();
-}
-
-static void _end_day(void) {
-	_collect_values();
-	SW_WTH_end_day();
-	SW_SWC_end_day();
-}
 
 /**
 @brief Reads inputs from disk and makes a print statement if there is an error

@@ -133,6 +133,16 @@ typedef struct {
 
 } SW_SOILWAT;
 
+
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern SW_SOILWAT SW_Soilwat;
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_SWC_construct(void);
 void SW_SWC_deconstruct(void);
 void SW_SWC_new_year(void);

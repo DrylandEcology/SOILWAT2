@@ -82,7 +82,11 @@ typedef unsigned int TimeInt;
  * not here.
  */
 
-/*=======  SUBROUTINES ========*/
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void Time_init_model(void);
 void Time_new_year(TimeInt year);
 

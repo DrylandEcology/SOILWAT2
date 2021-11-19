@@ -30,19 +30,28 @@
 #include "SW_Defines.h"
 #include "SW_Files.h"
 
+
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-static char *MyFileName;
+
 char *InFiles[SW_NFILES];
 char _ProjDir[FILENAME_MAX];
 char weather_prefix[FILENAME_MAX];
 char output_prefix[FILENAME_MAX];
 
+
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
+
+static char *MyFileName;
+
+
+/* =================================================== */
+/*             Local Function Definitions              */
+/* --------------------------------------------------- */
+
 static void init(const char *s) {
 	/* --------------------------------------------------- */
 	/* sets the name of the first input file. If called
@@ -65,9 +74,9 @@ static void init(const char *s) {
 
 }
 
+
 /* =================================================== */
-/* =================================================== */
-/*             Public Function Definitions             */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /**

@@ -26,7 +26,7 @@
 #include "../SW_Times.h"
 #include "../SW_Files.h"
 #include "../SW_Carbon.h"
-#include "../SW_Site.h"
+#include "../SW_Site.h" // externs `_TranspRgnBounds`
 #include "../SW_VegProd.h"
 #include "../SW_VegEstab.h"
 #include "../SW_Model.h"
@@ -37,12 +37,6 @@
 
 #include "sw_testhelpers.h"
 
-
-extern SW_CARBON SW_Carbon;
-extern SW_MODEL SW_Model;
-extern SW_VEGPROD SW_VegProd;
-extern SW_SITE SW_Site;
-extern LyrIndex _TranspRgnBounds[];
 
 
 namespace {
