@@ -142,7 +142,13 @@ void SW_CBN_read(void)
     if (year < 0)
     {
       CloseFile(&f);
-      sprintf(errstr, "(SW_Carbon) Year %d in scenario '%s' is negative; only positive values are allowed.\n", year, c->scenario);
+      sprintf(
+        errstr,
+        "(SW_Carbon) Year %d in scenario '%.64s' is negative; "
+        "only positive values are allowed.\n",
+        year,
+        c->scenario
+      );
       LogError(logfp, LOGFATAL, errstr);
     }
 
@@ -160,7 +166,13 @@ void SW_CBN_read(void)
     if (existing_years[year] != 0)
     {
       CloseFile(&f);
-      sprintf(errstr, "(SW_Carbon) Year %d in scenario '%s' is entered more than once; only one entry is allowed.\n", year, c->scenario);
+      sprintf(
+        errstr,
+        "(SW_Carbon) Year %d in scenario '%.64s' is entered more than once; "
+        "only one entry is allowed.\n",
+        year,
+        c->scenario
+      );
       LogError(logfp, LOGFATAL, errstr);
     }
     existing_years[year] = 1;
@@ -175,13 +187,22 @@ void SW_CBN_read(void)
   // otherwise the empty file will be masked as not being able to find the scenario
   if (fileWasEmpty == 1)
   {
-    sprintf(errstr, "(SW_Carbon) carbon.in was empty; for debugging purposes, SOILWAT2 read in file '%s'\n", MyFileName);
+    sprintf(
+      errstr,
+      "(SW_Carbon) carbon.in was empty; "
+      "for debugging purposes, SOILWAT2 read in file '%s'\n",
+      MyFileName
+    );
     LogError(logfp, LOGFATAL, errstr);
   }
 
   if (EQ(ppm, -1.))  // A scenario must be found in order for ppm to have a positive value
   {
-    sprintf(errstr, "(SW_Carbon) The scenario '%s' was not found in carbon.in\n", c->scenario);
+    sprintf(
+      errstr,
+      "(SW_Carbon) The scenario '%.64s' was not found in carbon.in\n",
+      c->scenario
+    );
     LogError(logfp, LOGFATAL, errstr);
   }
 
@@ -190,7 +211,13 @@ void SW_CBN_read(void)
   {
     if (existing_years[year] == 0)
     {
-      sprintf(errstr, "(SW_Carbon) missing CO2 data for year %d; ensure that ppm values for this year exist in scenario '%s'\n", year, c->scenario);
+      sprintf(
+        errstr,
+        "(SW_Carbon) missing CO2 data for year %d; "
+        "ensure that ppm values for this year exist in scenario '%.64s'\n",
+        year,
+        c->scenario
+      );
       LogError(logfp, LOGFATAL, errstr);
     }
   }
@@ -230,7 +257,11 @@ void SW_CBN_init_run(void) {
 
     if (LT(ppm, 0.))  // CO2 concentration must not be negative values
     {
-      sprintf(errstr, "(SW_Carbon) No CO2 ppm data was provided for year %d\n", year);
+      sprintf(
+        errstr,
+        "(SW_Carbon) No CO2 ppm data was provided for year %d\n",
+        year
+      );
       LogError(logfp, LOGFATAL, errstr);
     }
 
