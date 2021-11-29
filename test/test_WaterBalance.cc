@@ -37,11 +37,6 @@
 #include "sw_testhelpers.h"
 
 
-extern SW_MODEL SW_Model;
-extern SW_SOILWAT SW_Soilwat;
-extern SW_SITE SW_Site;
-extern SW_WEATHER SW_Weather;
-
 
 namespace {
   /* Test daily water balance and water cycling:

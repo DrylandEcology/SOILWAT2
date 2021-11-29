@@ -70,11 +70,17 @@ typedef struct {
 				 x2Bounds[MAX_LAYERS];*/
 } ST_RGR_VALUES;
 
-/* =================================================== */
-/* =================================================== */
-/*                Function Definitions                 */
-/* --------------------------------------------------- */
 
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern ST_RGR_VALUES stValues;
+extern unsigned int soil_temp_init;
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void veg_intercepted_water(double *ppt_incident, double *int_veg, double *s_veg,
   double m, double kSmax, double LAI, double scale);
 

@@ -58,53 +58,134 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "generic.h"
-#include "filefuncs.h"
+#include "generic.h" // externs `QuietMode`, `EchoInits`
+#include "filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "myMemory.h"
 #include "SW_Defines.h"
 
-#include "SW_Carbon.h"
+#include "SW_Carbon.h" // externs SW_Carbon
 #include "SW_Files.h"
-#include "SW_Site.h"
+#include "SW_Site.h" // externs SW_Site
 #include "SW_SoilWater.h"
 
-#include "SW_VegProd.h"
+#include "SW_VegProd.h" // externs SW_VegProd, key2veg
+
+
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-extern SW_VEGPROD SW_VegProd;
-extern SW_CARBON SW_Carbon;
-
-SW_SITE SW_Site; /* declared here, externed elsewhere */
-
-extern Bool EchoInits;
-extern char const *key2veg[];
+SW_SITE SW_Site;
 
 
 /* transpiration regions  shallow, moderately shallow,  */
 /* deep and very deep. units are in layer numbers. */
 LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
 
+
 /* for these three, units are cm/cm if < 1, -bars if >= 1 */
-RealD _SWCInitVal, /* initialization value for swc */
-_SWCWetVal, /* value for a "wet" day,       */
-_SWCMinVal; /* lower bound on swc.          */
+RealD
+  _SWCInitVal, /* initialization value for swc */
+  _SWCWetVal, /* value for a "wet" day,       */
+  _SWCMinVal; /* lower bound on swc.          */
+
+
 
 /* =================================================== */
-/*                Module-Level Variables               */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 static char *MyFileName;
 
+
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
+/*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void _read_layers(void);
+static void _read_layers(void) {
+	/* =================================================== */
+	/* 5-Feb-2002 (cwb) removed dmin requirement in input file */
+
+	SW_SITE *v = &SW_Site;
+	FILE *f;
+	LyrIndex lyrno;
+	int x, k;
+	RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay, matricd, imperm,
+		soiltemp, f_gravel;
+
+	/* note that Files.read() must be called prior to this. */
+	MyFileName = SW_F_name(eLayers);
+
+	f = OpenFile(MyFileName, "r");
+
+	while (GetALine(f, inbuf)) {
+		lyrno = _newlayer();
+
+		x = sscanf(
+			inbuf,
+			"%f %f %f %f %f %f %f %f %f %f %f %f",
+			&dmax,
+			&matricd,
+			&f_gravel,
+			&evco,
+			&trco_veg[SW_GRASS], &trco_veg[SW_SHRUB], &trco_veg[SW_TREES], &trco_veg[SW_FORBS],
+			&psand,
+			&pclay,
+			&imperm,
+			&soiltemp
+		);
+
+		/* Check that we have 12 values per layer */
+		/* Adjust number if new variables are added */
+		if (x != 12) {
+			CloseFile(&f);
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Incomplete record %d.\n",
+				MyFileName, lyrno + 1
+			);
+		}
+
+		v->lyr[lyrno]->width = dmax - dmin;
+
+		/* checks for valid values now carried out by `SW_SIT_init_run()` */
+
+		dmin = dmax;
+		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel;
+		v->lyr[lyrno]->soilMatric_density = matricd;
+		v->lyr[lyrno]->evap_coeff = evco;
+
+		ForEachVegType(k)
+		{
+			v->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
+		}
+
+		v->lyr[lyrno]->fractionWeightMatric_sand = psand;
+		v->lyr[lyrno]->fractionWeightMatric_clay = pclay;
+		v->lyr[lyrno]->impermeability = imperm;
+		v->lyr[lyrno]->sTemp = soiltemp;
+
+		if (lyrno >= MAX_LAYERS) {
+			CloseFile(&f);
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Too many layers specified (%d).\n"
+				"Maximum number of layers is %d\n",
+				MyFileName, lyrno + 1, MAX_LAYERS
+			);
+		}
+	}
+
+	CloseFile(&f);
+}
 
 
+
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
 
 /**
 	\brief Calculate soil moisture characteristics for each layer.
@@ -357,7 +438,7 @@ LyrIndex _newlayer(void) {
 
 /* =================================================== */
 /* =================================================== */
-/*             Public Function Definitions             */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /**
@@ -593,85 +674,6 @@ void SW_SIT_read(void) {
 	}
 
 	_read_layers();
-}
-
-static void _read_layers(void) {
-	/* =================================================== */
-	/* 5-Feb-2002 (cwb) removed dmin requirement in input file */
-
-	SW_SITE *v = &SW_Site;
-	FILE *f;
-	LyrIndex lyrno;
-	int x, k;
-	RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay, matricd, imperm,
-		soiltemp, f_gravel;
-
-	/* note that Files.read() must be called prior to this. */
-	MyFileName = SW_F_name(eLayers);
-
-	f = OpenFile(MyFileName, "r");
-
-	while (GetALine(f, inbuf)) {
-		lyrno = _newlayer();
-
-		x = sscanf(
-			inbuf,
-			"%f %f %f %f %f %f %f %f %f %f %f %f",
-			&dmax,
-			&matricd,
-			&f_gravel,
-			&evco,
-			&trco_veg[SW_GRASS], &trco_veg[SW_SHRUB], &trco_veg[SW_TREES], &trco_veg[SW_FORBS],
-			&psand,
-			&pclay,
-			&imperm,
-			&soiltemp
-		);
-
-		/* Check that we have 12 values per layer */
-		/* Adjust number if new variables are added */
-		if (x != 12) {
-			CloseFile(&f);
-			LogError(
-				logfp,
-				LOGFATAL,
-				"%s : Incomplete record %d.\n",
-				MyFileName, lyrno + 1
-			);
-		}
-
-		v->lyr[lyrno]->width = dmax - dmin;
-
-		/* checks for valid values now carried out by `SW_SIT_init_run()` */
-
-		dmin = dmax;
-		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel;
-		v->lyr[lyrno]->soilMatric_density = matricd;
-		v->lyr[lyrno]->evap_coeff = evco;
-
-		ForEachVegType(k)
-		{
-			v->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
-		}
-
-		v->lyr[lyrno]->fractionWeightMatric_sand = psand;
-		v->lyr[lyrno]->fractionWeightMatric_clay = pclay;
-		v->lyr[lyrno]->impermeability = imperm;
-		v->lyr[lyrno]->sTemp = soiltemp;
-
-		if (lyrno >= MAX_LAYERS) {
-			CloseFile(&f);
-			LogError(
-				logfp,
-				LOGFATAL,
-				"%s : Too many layers specified (%d).\n"
-				"Maximum number of layers is %d\n",
-				MyFileName, lyrno + 1, MAX_LAYERS
-			);
-		}
-	}
-
-	CloseFile(&f);
 }
 
 /**

@@ -8,7 +8,7 @@
 /* int logged is to be declared in the main module of your program. */
 /* global variable indicates logfile used: externed via generic.h */
 /* so we can't make it Bool.  But we don't have to explicitly */
-/* extern it in each module, just include generic.h. */
+/* externed it in each module, just include generic.h. */
 /* Just be sure to set logged = FALSE as the first step in main(). */
 
 /*
@@ -22,6 +22,11 @@
 #include "generic.h"
 #include "filefuncs.h"
 
+
+
+/* =================================================== */
+/*             Local Function Definitions              */
+/* --------------------------------------------------- */
 
 static void uncomment_cstyle(char *p) {
 	/*-------------------------------------------
@@ -43,6 +48,12 @@ static void uncomment_cstyle(char *p) {
 	*p = '\0';
 
 }
+
+
+
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
 
 /*****************************************************/
 char *Str_TrimLeft(char *s) {

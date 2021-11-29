@@ -18,6 +18,9 @@ extern "C" {
 #endif
 
 
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 char *Str_Dup(const char *s); /* return pointer to malloc'ed dup of s */
 void *Mem_Malloc(size_t size, const char *funcname);
 void *Mem_Calloc(size_t nobjs, size_t size, const char *funcname);

@@ -36,8 +36,6 @@
 #include "sw_testhelpers.h"
 
 
-extern SW_MODEL SW_Model;
-extern SW_VEGPROD SW_VegProd;
 
 
 static void assert_decreasing_SWPcrit(void);

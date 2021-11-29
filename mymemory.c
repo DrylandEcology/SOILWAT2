@@ -46,7 +46,10 @@ void mem_DelNode( void *handle);
 
 #endif
 
-/* Note that errstr[] is externed via generic.h */
+
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
 
 /*****************************************************/
 char *Str_Dup(const char *s) {

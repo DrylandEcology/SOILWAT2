@@ -28,31 +28,28 @@
 #include "filefuncs.h"
 #include "SW_Defines.h"
 #include "SW_Files.h"
-#include "SW_Model.h"
+#include "SW_Model.h" // externs SW_Model
 #include "SW_Sky.h"
-#include "SW_Weather.h"
+#include "SW_Weather.h"  // externs SW_Weather
+
+
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-SW_SKY SW_Sky; /* declared here, externed elsewhere */
-extern SW_WEATHER SW_Weather;
-extern SW_MODEL SW_Model;
+SW_SKY SW_Sky;
+
 
 /* =================================================== */
-/*                Module-Level Variables               */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 static char *MyFileName;
 
-/* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
-/* --------------------------------------------------- */
+
 
 /* =================================================== */
-/* =================================================== */
-/*             Public Function Definitions             */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /**

@@ -145,6 +145,19 @@ typedef struct {
 } SW_SITE;
 
 
+
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern SW_SITE SW_Site;
+extern LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
+extern RealD _SWCInitVal, _SWCWetVal, _SWCMinVal;
+
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n);
 RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
 LyrIndex nlayers_bsevap(void);

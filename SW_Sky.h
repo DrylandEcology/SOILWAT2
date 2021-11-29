@@ -39,6 +39,17 @@ typedef struct {
 
 } SW_SKY;
 
+
+
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern SW_SKY SW_Sky;
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_SKY_read(void);
 void SW_SKY_init_run(void);
 void SW_SKY_new_year(void);

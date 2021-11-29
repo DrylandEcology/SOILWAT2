@@ -52,6 +52,16 @@ typedef struct {
 
 } SW_MODEL;
 
+
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern SW_MODEL SW_Model;
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_MDL_read(void);
 void SW_MDL_construct(void);
 void SW_MDL_deconstruct(void);

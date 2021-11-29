@@ -29,18 +29,18 @@
 #include "myMemory.h"
 #include "Times.h"
 
-#include "SW_Carbon.h"
+#include "SW_Carbon.h" // externs SW_Carbon
 #include "SW_Defines.h"
 #include "SW_Files.h"
-#include "SW_Model.h"
-#include "SW_Site.h"
-#include "SW_SoilWater.h"
+#include "SW_Model.h" // externs SW_Model
+#include "SW_Site.h" // externs SW_Site
+#include "SW_SoilWater.h" // externs SW_Soilwat
 #include "SW_Times.h"
-#include "SW_Weather.h"
-#include "SW_VegEstab.h"
-#include "SW_VegProd.h"
+#include "SW_Weather.h"  // externs SW_Weather
+#include "SW_VegEstab.h" // externs SW_VegEstab
+#include "SW_VegProd.h" // externs SW_VegProd
 
-#include "SW_Output.h"
+#include "SW_Output.h" // externs `_Sep`, `tOffset`, `ncol_OUT`
 
 #ifdef RSOILWAT
 #include <R.h>
@@ -50,81 +50,26 @@
 
 #ifdef STEPWAT
 #include <math.h>
-#include "../sxw.h"
-#include "../ST_defines.h"
+#include "../sxw.h" // externs `*SXW`
+#include "../ST_globals.h" // externs `*Globals`, `SuperGlobals`
 #endif
 
 // Array-based output declarations:
 #ifdef SW_OUTARRAY
+// externs `ncol_TimeOUT`, `nrow_OUT`, `irow_OUT`, `*p_OUT`, `*p_OUTsd`
 #include "SW_Output_outarray.h"
 #endif
 
 // Text-based output declarations:
 #ifdef SW_OUTTEXT
+// externs `print_IterationSummary`, `sw_outstr`, `sw_outstr_agg`
 #include "SW_Output_outtext.h"
 #endif
 
 
-/* =================================================== */
-/*                  Global Variables                   */
-/* --------------------------------------------------- */
-extern SW_SITE SW_Site;
-extern SW_SOILWAT SW_Soilwat;
-extern SW_MODEL SW_Model;
-extern SW_WEATHER SW_Weather;
-extern SW_VEGPROD SW_VegProd;
-extern SW_VEGESTAB SW_VegEstab;
-extern SW_CARBON SW_Carbon;
-
-extern IntUS ncol_OUT[];
-
-#ifdef STEPWAT
-extern Bool prepare_IterationSummary;
-extern ModelType *Globals; // defined in `ST_Main.c`
-extern GlobalType SuperGlobals;
-extern SXW_t* SXW; // structure to store values in and pass back to STEPPE
-extern TimeInt tOffset; // defined in `SW_Output.c`
-#endif
-
-// Text-based output: defined in `SW_Output_outtext.c`:
-#ifdef SW_OUTTEXT
-extern SW_FILE_STATUS SW_OutFiles;
-extern char _Sep;
-extern char sw_outstr[];
-extern Bool print_IterationSummary;
-#endif
-#ifdef STEPWAT
-extern char sw_outstr_agg[];
-#endif
-
-
-// Array-based output: defined in `SW_Output_outarray.c`
-#ifdef SW_OUTARRAY
-extern RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
-extern IntUS ncol_TimeOUT[];
-extern size_t nrow_OUT[];
-extern size_t irow_OUT[];
-#endif
-#ifdef STEPWAT
-extern RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
-#endif
-
 
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Declarations           */
-/* --------------------------------------------------- */
-
-#ifdef STEPWAT
-static void format_IterationSummary(RealD *p, RealD *psd, OutPeriod pd,
-	IntUS N);
-static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
-	IntUS N1, IntUS N2, IntUS offset);
-#endif
-
-/* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
+/*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
 #ifdef STEPWAT
@@ -171,9 +116,9 @@ static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
 #endif
 
 
+
 /* =================================================== */
-/* =================================================== */
-/*             Function Definitions                    */
+/*             Global Function Definitions             */
 /*             (declared in SW_Output.h)               */
 /* --------------------------------------------------- */
 
