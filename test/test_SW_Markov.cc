@@ -36,8 +36,6 @@
 #include "sw_testhelpers.h"
 
 
-extern SW_MODEL SW_Model;
-extern SW_MARKOV SW_Markov;
 
 extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD);
 extern void (*test_temp_correct_wetdry)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD);

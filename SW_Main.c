@@ -23,19 +23,21 @@
 #else
 #include <unistd.h>
 #endif
-#include "generic.h"
-#include "filefuncs.h"
+#include "generic.h" // externs `QuietMode`, `EchoInits`
+#include "filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "SW_Defines.h"
 #include "SW_Control.h"
 #include "SW_Site.h"
 #include "SW_Weather.h"
 #include "SW_Output.h"
 #include "SW_Output_outtext.h"
-#include "SW_Main_lib.c"
+#include "SW_Main_lib.h"
 
 
-static void check_log(void);
 
+/* =================================================== */
+/*             Local Function Definitions              */
+/* --------------------------------------------------- */
 
 static void check_log(void) {
 	/* =================================================== */
@@ -51,11 +53,15 @@ static void check_log(void) {
 
 }
 
-/************  Main() ************************/
 
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
+
+/************  Main() ************************/
 /**
 @brief Provides a way to inform the user that something was logged, can be changed by code
- 			(eg. init file) but must be set before init_args().  See generic.h
+ 			(eg. init file) but must be set before sw_init_args().  See generic.h
 */
 int main(int argc, char **argv) {
 	/* =================================================== */
@@ -64,11 +70,11 @@ int main(int argc, char **argv) {
 	atexit(check_log);
 	logfp = stdout;
 
-	init_args(argc, argv);
+	sw_init_args(argc, argv);
 
 	// Print version if not in quiet mode
 	if (!QuietMode) {
-		print_version();
+		sw_print_version();
 	}
 
   // setup and construct model (independent of inputs)

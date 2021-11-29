@@ -33,31 +33,33 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "generic.h"
-#include "filefuncs.h"
+#include "generic.h" // externs `QuietMode`, `EchoInits`
+#include "filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "myMemory.h"
 #include "Times.h"
 
-#include "SW_Carbon.h"
+#include "SW_Carbon.h" // externs SW_Carbon
 #include "SW_Defines.h"
 #include "SW_Files.h"
-#include "SW_Model.h"
-#include "SW_Site.h"
-#include "SW_SoilWater.h"
+#include "SW_Model.h" // externs SW_Model
+#include "SW_Site.h" // externs SW_Site
+#include "SW_SoilWater.h" // externs SW_Soilwat
 #include "SW_Times.h"
-#include "SW_Weather.h"
-#include "SW_VegEstab.h"
-#include "SW_VegProd.h"
+#include "SW_Weather.h"  // externs SW_Weather
+#include "SW_VegEstab.h" // externs SW_VegEstab
+#include "SW_VegProd.h" // externs SW_VegProd
 
 #include "SW_Output.h"
 
 // Array-based output declarations:
 #ifdef SW_OUTARRAY
-#include "SW_Output_outarray.h"
+  #include "SW_Output_outarray.h"
 #endif
 
 // Text-based output declarations:
 #ifdef SW_OUTTEXT
+// externs `SW_OutFiles`, `print_IterationSummary`, `print_SW_Output`,
+//         `sw_outstr`, `sw_outstr_agg`
 #include "SW_Output_outtext.h"
 #endif
 
@@ -69,15 +71,6 @@
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-extern SW_SITE SW_Site;
-extern SW_SOILWAT SW_Soilwat;
-extern SW_MODEL SW_Model;
-extern SW_WEATHER SW_Weather;
-extern SW_VEGPROD SW_VegProd;
-extern SW_VEGESTAB SW_VegEstab;
-extern Bool EchoInits;
-extern SW_CARBON SW_Carbon;
-
 
 SW_OUTPUT SW_Output[SW_OUTNKEYS];
 
@@ -89,10 +82,12 @@ TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
 /** `timeSteps` is the array that keeps track of the output time periods that
     are required for `text` and/or `array`-based output for each output key. */
 OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
+
 /** The number of different time steps/periods that are used/requested
 		Note: Under STEPWAT2, this may be larger than the sum of `use_OutPeriod`
 			because it also incorporates information from `timeSteps_SXW`. */
 IntUS used_OUTNPERIODS;
+
 /** TRUE if time step/period is active for any output key. */
 Bool use_OutPeriod[SW_OUTNPERIODS];
 
@@ -100,25 +95,10 @@ Bool use_OutPeriod[SW_OUTNPERIODS];
 // Global variables describing size and names of output
 /** names of output columns for each output key; number is an expensive guess */
 char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
+
 /** number of output columns for each output key */
 IntUS ncol_OUT[SW_OUTNKEYS];
 
-
-// Text-based output: defined in `SW_Output_outtext.c`:
-#ifdef SW_OUTTEXT
-extern SW_FILE_STATUS SW_OutFiles;
-extern char sw_outstr[];
-extern Bool print_IterationSummary;
-extern Bool print_SW_Output;
-#endif
-
-
-// Array-based output: defined in `SW_Output_outarray.c`
-#ifdef SW_OUTARRAY
-extern IntUS ncol_TimeOUT[];
-extern size_t nrow_OUT[];
-extern size_t irow_OUT[];
-#endif
 
 
 #ifdef STEPWAT
@@ -126,7 +106,6 @@ extern size_t irow_OUT[];
     that are required for `SXW` in-memory output for each output key.
     Compare with `timeSteps` */
 OutPeriod timeSteps_SXW[SW_OUTNKEYS][SW_OUTNPERIODS];
-extern char sw_outstr_agg[];
 
 /** `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
      if TRUE, then write to disk the SOILWAT2 output
@@ -183,7 +162,7 @@ char const *styp2str[] =
 
 
 /* =================================================== */
-/*                Module-Level Variables               */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 static char *MyFileName;
 
@@ -191,7 +170,6 @@ static int useTimeStep; /* flag to determine whether or not the line TIMESTEP ex
 static Bool bFlush_output; /* process partial period ? */
 
 
-/* =================================================== */
 /* =================================================== */
 /*             Private Function Declarations            */
 /* --------------------------------------------------- */
@@ -214,8 +192,7 @@ static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
 
 
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
+/*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
 /** Convert string representation of time period to `OutPeriod` value.
@@ -975,11 +952,11 @@ static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
 #endif
 
 
-/* =================================================== */
-/* =================================================== */
-/*             Public Function Definitions             */
-/* --------------------------------------------------- */
 
+
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
 
 
 /** @brief Tally for which output time periods at least one output key/type is

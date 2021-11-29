@@ -23,41 +23,42 @@
 #else
 #include <unistd.h>
 #endif
-#include "generic.h"
-#include "filefuncs.h"
+#include "generic.h" // externs `QuietMode`, `EchoInits`
+#include "filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "SW_Defines.h"
 #include "SW_Control.h"
 #include "SW_Site.h"
 #include "SW_Weather.h"
+#include "SW_Main_lib.h"
+
 
 /* =================================================== */
-/*                  Global Declarations                */
-/* externed by other routines elsewhere in the program */
+/*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-/* see generic.h and filefuncs.h for more info on these vars */
-char inbuf[MAX_FILENAMESIZE]; /* buffer used by input statements */
+// externed by "SW_Main_lib.h"
+char _firstfile[MAX_FILENAMESIZE];
+Bool QuietMode = swTRUE;
+Bool EchoInits = swFALSE; /* if true, echo inits to logfile */
+
+
+// externed by "generic.h"
 char errstr[MAX_ERROR]; /* used to compose an error msg    */
 FILE *logfp; /* file handle for logging messages */
-int logged; /* boolean: true = we logged a msg */
-/* if true, write indicator to stderr */
+int logged = 0; /* boolean: true = we logged a msg; if true, write indicator to stderr */
 
-Bool QuietMode, EchoInits; /* if true, echo inits to logfile */
-//function
-void init_args(int argc, char **argv);
-void print_version(void);
+// externed by "filefuncs.h"
+char inbuf[MAX_FILENAMESIZE]; /* buffer used by input statements */
+
 
 
 /* =================================================== */
-/*                Module-Level Declarations            */
+/*             Local Function Definitions              */
 /* --------------------------------------------------- */
-
-static void print_usage(void);
-
 
 /** @brief Print usage and command line options
 */
-static void print_usage(void) {
+static void sw_print_usage(void) {
 	swprintf(
 		"Ecosystem water simulation model SOILWAT2\n"
 		"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
@@ -73,9 +74,14 @@ static void print_usage(void) {
 }
 
 
+
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
+
 /** @brief Print version information
 */
-void print_version(void) {
+void sw_print_version(void) {
 	swprintf(
 		"SOILWAT2 version: %s\n",
 		SW2_VERSION
@@ -87,7 +93,6 @@ void print_version(void) {
 }
 
 
-char _firstfile[MAX_FILENAMESIZE];
 
 /**
 @brief Initializes arguments and sets indicators/variables based on results.
@@ -97,7 +102,7 @@ char _firstfile[MAX_FILENAMESIZE];
 
 @sideeffect argv Updated argument V.
 */
-void init_args(int argc, char **argv) {
+void sw_init_args(int argc, char **argv) {
 	/* =================================================== */
 	/* to add an option:
 	 *  - include it in opts[]
@@ -135,7 +140,7 @@ void init_args(int argc, char **argv) {
 				break; /* found it, move on */
 		}
 		if (op == nopts) {
-      print_usage();
+      sw_print_usage();
       sw_error(-1, "\nInvalid option %s\n", argv[a]);
 		}
 
@@ -149,7 +154,7 @@ void init_args(int argc, char **argv) {
 				strcpy(str, argv[++a]);
 
 			} else if (0 < valopts[op]) { /* required opt-val not found */
-        print_usage();
+        sw_print_usage();
         sw_error(-1, "\nIncomplete option %s\n", opts[op]);
 			} /* opt-val not required */
 		}
@@ -176,12 +181,12 @@ void init_args(int argc, char **argv) {
 				break;
 
 			case 4: /* -v */
-				print_version();
+				sw_print_version();
 				sw_error(-1, "");
 				break;
 
 			case 5: /* -h */
-				print_usage();
+				sw_print_usage();
 				sw_error(-1, "");
 				break;
 
@@ -189,7 +194,7 @@ void init_args(int argc, char **argv) {
 				LogError(
 					logfp,
 					LOGFATAL,
-					"Programmer: bad option in main:init_args:switch"
+					"Programmer: bad option in main:sw_init_args:switch"
 				);
 		}
 

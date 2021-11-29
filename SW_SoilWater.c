@@ -46,50 +46,42 @@
 #include "myMemory.h"
 #include "SW_Defines.h"
 #include "SW_Files.h"
-#include "SW_Model.h"
-#include "SW_Site.h"
+#include "SW_Model.h" // externs SW_Model
+#include "SW_Site.h" // externs SW_Site
 #include "SW_Flow.h"
 #include "SW_SoilWater.h"
-#include "SW_VegProd.h"
+#include "SW_VegProd.h" // externs SW_VegProd
 #ifdef SWDEBUG
-  #include "SW_Weather.h"
+  #include "SW_Weather.h"   // externs SW_Weather
 #endif
 #ifdef RSOILWAT
   #include "../rSW_SoilWater.h" // for onSet_SW_SWC_hist()
+  #include "../SW_R_lib.h" // externs `useFiles`
 #endif
+
 
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-extern SW_MODEL SW_Model;
-extern SW_SITE SW_Site;
-extern SW_VEGPROD SW_VegProd;
-#ifdef RSOILWAT
-	extern Bool useFiles;
-#endif
+SW_SOILWAT SW_Soilwat;
 
-SW_SOILWAT SW_Soilwat; /* declared here, externed elsewhere */
-#ifdef SWDEBUG
-  extern SW_WEATHER SW_Weather;
-#endif
 
 
 /* =================================================== */
-/*                Module-Level Variables               */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 static char *MyFileName;
 static RealD temp_snow;
 
 
+
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
+/*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
 static void _clear_hist(void) {
-	/* --------------------------------------------------- */
 	TimeInt d;
 	LyrIndex z;
 	for (d = 0; d < MAX_DAYS; d++) {
@@ -121,6 +113,9 @@ static void _reset_swc(void) {
 }
 
 
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
 
 #ifdef SWDEBUG
 void SW_WaterBalance_Checks(void)
@@ -331,11 +326,6 @@ void SW_WaterBalance_Checks(void)
 }
 #endif
 
-
-/* =================================================== */
-/* =================================================== */
-/*             Public Function Definitions             */
-/* --------------------------------------------------- */
 
 /**
 @brief Constructor for soilWater Content.

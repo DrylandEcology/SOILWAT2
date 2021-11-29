@@ -44,32 +44,34 @@
 #include "SW_Defines.h"
 #include "SW_Files.h"
 #include "SW_Weather.h"
-#include "SW_Site.h"
+#include "SW_Site.h" // externs SW_Site
 #include "SW_SoilWater.h"  /* for setup_new_year() */
 #include "SW_Times.h"
-#include "SW_Model.h"
+#include "SW_Model.h" // externs SW_Model
 
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-extern SW_SITE SW_Site; /* for reset attribute */
-SW_MODEL SW_Model; /* declared here, externed elsewhere */
+SW_MODEL SW_Model;
+
 
 /* =================================================== */
-/*                Module-Level Variables               */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 static char *MyFileName;
 
 /* these are set in _new_day() */
-static TimeInt _prevweek, /* check for new week */
-_prevmonth, /* check for new month */
-_prevyear, /* check for new year */
-_notime = 0xffff; /* init value for _prev* */
+static TimeInt
+  _prevweek, /* check for new week */
+  _prevmonth, /* check for new month */
+  _prevyear, /* check for new year */
+  _notime = 0xffff; /* init value for _prev* */
+
+
 
 /* =================================================== */
-/* =================================================== */
-/*             Public Function Definitions             */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /**

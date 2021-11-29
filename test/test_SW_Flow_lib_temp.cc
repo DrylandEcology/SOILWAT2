@@ -42,9 +42,7 @@
 
 #include "sw_testhelpers.h"
 
-extern SW_MODEL SW_Model;
-extern SW_VEGPROD SW_VegProd;
-extern ST_RGR_VALUES stValues;
+
 pcg32_random_t flowTemp_rng;
 
 namespace {

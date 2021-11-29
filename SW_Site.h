@@ -150,6 +150,19 @@ typedef struct {
 } SW_SITE;
 
 
+
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern SW_SITE SW_Site;
+extern LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
+extern RealD _SWCInitVal, _SWCWetVal, _SWCMinVal;
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
+
 void SWRC_PDF_estimate_parameters(
 	unsigned int swrc_type, unsigned int pdf_type,
 	double *swrcp,
@@ -159,6 +172,7 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 	double *swrcp,
 	double sand, double clay
 );
+
 
 Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp);
 Bool SWRC_check_parameters_for_Campbell1974(double *swrcp);

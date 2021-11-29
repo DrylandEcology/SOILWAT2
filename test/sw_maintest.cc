@@ -15,9 +15,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../generic.h"
 #include "../myMemory.h"
-#include "../filefuncs.h"
+// externs `*logfp`, `errstr`, `logged`, `QuietMode`, `EchoInits`
+#include "../generic.h"
+#include "../filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "../rands.h"
 #include "../Times.h"
 #include "../SW_Defines.h"
@@ -47,15 +48,6 @@ const char * dir_test = "./testing";
 const char * masterfile_test = "files.in"; // relative to 'dir_test'
 
 
-// Global variables which are defined in SW_Main_lib.c:
-// We need to redefine them here because they are not included in the library
-char inbuf[MAX_FILENAMESIZE];
-char errstr[MAX_ERROR];
-FILE *logfp;
-int logged;
-Bool QuietMode, EchoInits;
-char _firstfile[MAX_FILENAMESIZE];
-
 
 
 int main(int argc, char **argv) {
@@ -67,7 +59,7 @@ int main(int argc, char **argv) {
   logged = swFALSE;
   logfp = stdout;
 
-  // Emulate 'init_args()'
+  // Emulate 'sw_init_args()'
   if (!ChDir(dir_test)) {
     swprintf("Invalid project directory (%s)", dir_test);
   }

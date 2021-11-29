@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_CTL_setup_model(const char *firstfile);
 void SW_CTL_clear_model(Bool full_reset);
 void SW_CTL_init_run(void);

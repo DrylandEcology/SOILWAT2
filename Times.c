@@ -32,7 +32,7 @@
 
 
 /* =================================================== */
-/*                Module-Level Variables               */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 
 
@@ -46,9 +46,10 @@ static TimeInt
   cum_monthdays[MAX_MONTHS]; /* monthly cumulative number of days for "current" year */
 
 
+
+
 /* =================================================== */
-/* =================================================== */
-/*            "Public" Function Definitions            */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /**

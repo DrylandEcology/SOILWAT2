@@ -26,7 +26,7 @@
 #include "../Times.h"
 #include "../SW_Defines.h"
 #include "../SW_Times.h"
-#include "../SW_Files.h"
+#include "../SW_Files.h" // externs `output_prefix`
 #include "../SW_Carbon.h"
 #include "../SW_Site.h"
 #include "../SW_VegProd.h"
@@ -42,7 +42,6 @@
 
 #include "sw_testhelpers.h"
 
-extern char output_prefix[FILENAME_MAX];
 
 
 namespace

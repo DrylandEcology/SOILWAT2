@@ -15,9 +15,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../generic.h"
 #include "../myMemory.h"
-#include "../filefuncs.h"
+// externs `*logfp`, `errstr`, `logged`, `QuietMode`, `EchoInits`
+#include "../generic.h"
+#include "../filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "../rands.h"
 #include "../Times.h"
 #include "../SW_Defines.h"
@@ -36,10 +37,7 @@
 
 #include "sw_testhelpers.h"
 
-extern char _firstfile[];
-extern SW_SITE SW_Site;
 
-extern SW_MODEL SW_Model;
 
 /** Initialize SOILWAT2 variables and read values from example input file
  */

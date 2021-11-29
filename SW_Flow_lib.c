@@ -94,14 +94,15 @@
 #include "generic.h"
 #include "filefuncs.h"
 #include "SW_Defines.h"
+#include "SW_Site.h" // externs SW_Site
 #include "SW_Flow_lib.h"
-#include "SW_SoilWater.h"
-#include "SW_Carbon.h"
+#include "SW_SoilWater.h" // externs SW_Soilwat
+#include "SW_Carbon.h" // externs SW_Carbon
 #include "Times.h"
 
+#include "SW_Model.h" // externs SW_Model
 
-#include "SW_Model.h"
-extern SW_MODEL SW_Model;
+
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -109,27 +110,24 @@ extern SW_MODEL SW_Model;
 
 ST_RGR_VALUES stValues; //keeps track of soil_temperature values
 
-extern SW_SITE SW_Site;
-extern SW_SOILWAT SW_Soilwat;
-extern SW_CARBON SW_Carbon;
 unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
-unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
 
-/* *************************************************** */
-/*                Module-Level Variables               */
+
+
+/* =================================================== */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
+static unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
 
-Bool do_once_at_soiltempError;
+static Bool do_once_at_soiltempError;
 // last successful time step in seconds; start out with 1 day
-double delta_time;
+static double delta_time;
 
 
-/* *************************************************** */
-/* *************************************************** */
-/*              Local Function Definitions             */
+
+/* =================================================== */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
-
-
 
 /**********************************************************************
 HISTORY:

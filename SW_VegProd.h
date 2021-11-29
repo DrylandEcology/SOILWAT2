@@ -249,6 +249,16 @@ typedef struct {
 
 
 
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern SW_VEGPROD SW_VegProd;
+extern char const *key2veg[NVEGTYPES];
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_VPD_read(void);
 void SW_VPD_new_year(void);
 void SW_VPD_fix_cover(void);

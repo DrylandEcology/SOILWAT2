@@ -30,7 +30,16 @@ typedef struct {
 
 } SW_CARBON;
 
-/* Function Declarations */
+
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern SW_CARBON SW_Carbon;
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_CBN_construct(void);
 void SW_CBN_deconstruct(void);
 void SW_CBN_read(void);

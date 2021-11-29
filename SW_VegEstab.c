@@ -35,35 +35,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "generic.h"
-#include "filefuncs.h"
+#include "generic.h" // externs `QuietMode`, `EchoInits`
+#include "filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "myMemory.h"
 #include "SW_Defines.h"
 #include "SW_Files.h"
-#include "SW_Site.h"
+#include "SW_Site.h" // externs SW_Site
 #include "SW_Times.h"
-#include "SW_Model.h"
-#include "SW_SoilWater.h"
-#include "SW_Weather.h"
+#include "SW_Model.h" // externs SW_Model
+#include "SW_SoilWater.h" // externs SW_Soilwat
+#include "SW_Weather.h"  // externs SW_Weather
 #include "SW_VegEstab.h"
+
+
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-extern SW_MODEL SW_Model;
-extern SW_SITE SW_Site;
-extern SW_WEATHER SW_Weather;
-extern SW_SOILWAT SW_Soilwat;
-extern Bool EchoInits;
+SW_VEGESTAB SW_VegEstab;
 
-SW_VEGESTAB SW_VegEstab; /* declared here, externed elsewhere */
 
 /* =================================================== */
-/*                Module-Level Variables               */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 static char *MyFileName;
 
-/* =================================================== */
+
+
 /* =================================================== */
 /*             Private Function Declarations           */
 /* --------------------------------------------------- */
@@ -72,9 +70,10 @@ static void _read_spp(const char *infile);
 static void _checkit(TimeInt doy, unsigned int sppnum);
 static void _zero_state(unsigned int sppnum);
 
+
+
 /* =================================================== */
-/* =================================================== */
-/*             Public Function Definitions             */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /**
@@ -223,9 +222,10 @@ void SW_VES_checkestab(void) {
 		_checkit(SW_Model.doy, i);
 }
 
+
+
 /* =================================================== */
-/* =================================================== */
-/*            Private Function Definitions             */
+/*            Local Function Definitions               */
 /* --------------------------------------------------- */
 
 static void _checkit(TimeInt doy, unsigned int sppnum) {

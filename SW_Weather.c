@@ -47,7 +47,7 @@
 #include "Times.h"
 #include "SW_Defines.h"
 #include "SW_Files.h"
-#include "SW_Model.h"
+#include "SW_Model.h" // externs SW_Model
 #include "SW_SoilWater.h"
 #include "SW_Markov.h"
 
@@ -56,42 +56,51 @@
   #include "../rSW_Weather.h"
 #endif
 
+
+
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-extern SW_MODEL SW_Model;
 
-SW_WEATHER SW_Weather; /* declared here, externed elsewhere */
+SW_WEATHER SW_Weather;
+
+
+
+/* =================================================== */
+/*                  Local Variables                    */
+/* --------------------------------------------------- */
+
+static char *MyFileName;
 
 /** `swTRUE`/`swFALSE` if historical daily meteorological inputs
     are available/not available for the current simulation year
 */
-Bool weth_found;
+#define weth_found
+#undef weth_found
+
+static Bool weth_found;
 
 
 /* =================================================== */
-/*                Module-Level Variables               */
-/* --------------------------------------------------- */
-static char *MyFileName;
-
-
-/* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
+/*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void _update_yesterday(void);
-
-/**
-@brief Clears weather history.
-*/
-void _clear_hist_weather(void) {
+static void _update_yesterday(void) {
 	/* --------------------------------------------------- */
-	SW_WEATHER_HIST *wh = &SW_Weather.hist;
-	TimeInt d;
+	/* save today's temp values as yesterday */
+	/* this must be done after all calculations are
+	 * finished for the day and before today's weather
+	 * is read from the file.  Assumes Today's weather
+	 * is always validated (non-missing).
+	 */
+	SW_WEATHER_2DAYS *wn = &SW_Weather.now;
 
-	for (d = 0; d < MAX_DAYS; d++)
-		wh->ppt[d] = wh->temp_max[d] = wh->temp_min[d] = SW_MISSING;
+	wn->temp_max[Yesterday] = wn->temp_max[Today];
+	wn->temp_min[Yesterday] = wn->temp_min[Today];
+	wn->temp_avg[Yesterday] = wn->temp_avg[Today];
+
+	wn->ppt[Yesterday] = wn->ppt[Today];
+	wn->rain[Yesterday] = wn->rain[Today];
 }
 
 
@@ -148,9 +157,29 @@ static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
 
 }
 
+
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
+
+
+/**
+@brief Clears weather history.
+@note Used by rSOILWAT2
+*/
+void _clear_hist_weather(void) {
+	/* --------------------------------------------------- */
+	SW_WEATHER_HIST *wh = &SW_Weather.hist;
+	TimeInt d;
+
+	for (d = 0; d < MAX_DAYS; d++)
+		wh->ppt[d] = wh->temp_max[d] = wh->temp_min[d] = SW_MISSING;
+}
+
+
 /* =================================================== */
 /* =================================================== */
-/*             Public Function Definitions             */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /**
@@ -434,6 +463,8 @@ void SW_WTH_read(void) {
     Format of a input file (white-space separated values):
       `doy maxtemp(&deg;C) mintemp (&deg;C) precipitation (cm)`
 
+    @note Used by rSOILWAT2
+
     @param year
 
     @return `swTRUE`/`swFALSE` if historical daily meteorological inputs are
@@ -528,24 +559,6 @@ Bool _read_weather_hist(TimeInt year) {
 
 	fclose(f);
 	return swTRUE;
-}
-
-static void _update_yesterday(void) {
-	/* --------------------------------------------------- */
-	/* save today's temp values as yesterday */
-	/* this must be done after all calculations are
-	 * finished for the day and before today's weather
-	 * is read from the file.  Assumes Today's weather
-	 * is always validated (non-missing).
-	 */
-	SW_WEATHER_2DAYS *wn = &SW_Weather.now;
-
-	wn->temp_max[Yesterday] = wn->temp_max[Today];
-	wn->temp_min[Yesterday] = wn->temp_min[Today];
-	wn->temp_avg[Yesterday] = wn->temp_avg[Today];
-
-	wn->ppt[Yesterday] = wn->ppt[Today];
-	wn->rain[Yesterday] = wn->rain[Today];
 }
 
 #ifdef DEBUG_MEM
