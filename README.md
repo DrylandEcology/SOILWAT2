@@ -81,8 +81,8 @@ A detailed manual can be found
 <a name="compile"></a>
 ### Compilation
   * Requirements:
-    - the `gcc` or `clang/llvm` toolchains
-      - `gcc >= v4.9` and `clang >= v3.3` for the `*_severe` test/debug targets
+    - the `gcc` or `clang/llvm` toolchains compliant with `C11`
+      - for unit tests: `gcc >= v5.0` or `clang >= v5.0` compliant with `C++11`
     - POSIX- or GNU-compliant `make`
     - On Windows OS: an installation of `cygwin`
 

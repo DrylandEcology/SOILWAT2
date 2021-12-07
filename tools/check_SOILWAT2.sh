@@ -8,6 +8,10 @@
 # - gcc10 and gcc11 are getting stuck at
 #   `SWFlowTempDeathTest.SoilTemperatureInitDeathTest` when running with
 #   sanitizer "ASAN_OPTIONS=detect_leaks=1"
+# Note:
+# - googletests (Dec 2021) expects C++11 compliant compilers and
+#   gcc >= 5.0 or clang >= 5.0
+
 
 
 #--- List of (builtin and macport) compilers
