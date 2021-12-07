@@ -103,11 +103,15 @@ instr_flags = -fstack-protector-all
 instr_flags_severe = \
 	$(instr_flags) \
 	-fsanitize=undefined \
-	-fsanitize=address
+	-fsanitize=address \
+	-fno-omit-frame-pointer \
+	-fno-common
 	# -fstack-protector-strong (gcc >= v4.9)
 	# (gcc >= 4.0) -D_FORTIFY_SOURCE: lightweight buffer overflow protection to some memory and string functions
-	# (gcc >= 4.8; llvm >= 3.1) -fsanitize=address: replaces `mudflap` run time checker; https://github.com/google/sanitizers/wiki/AddressSanitizer
-	# (gcc >= 4.9; llvm >= 3.3) -fsanitize=undefined
+	# (gcc >= 4.8; llvm >= 3.1) -fsanitize=address: AdressSanitizer: replaces `mudflap` run time checker; https://github.com/google/sanitizers/wiki/AddressSanitizer
+	#   -fno-omit-frame-pointer: allows fast unwinder to work properly for ASan
+	#   -fno-common: allows ASan to instrument global variables
+	# (gcc >= 4.9; llvm >= 3.3) -fsanitize=undefined: UndefinedBehaviorSanitizer
 
 
 # Precompiler and compiler flags and options
