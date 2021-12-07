@@ -47,7 +47,7 @@
 namespace
 {
   // Test solar position
-  TEST(SW2_SolarPosition_Test, solar_position)
+  TEST(SW2SolarPositionTest, SolarPosition)
   {
     double declin, reldist, lat,
       six_hours = 6. * swPI / 12.,
@@ -141,7 +141,7 @@ namespace
 
 
   // Test sun hour angles for horizontal and tilted surfaces
-  TEST(SW2_SolarPosition_Test, hourangles_symmetries)
+  TEST(SW2SolarPositionTest, HourAnglesSymmetries)
   {
     //------ Check expectations on some symmetries
     //  - Expectation 1: Horizontal sunset/sunrise:
@@ -350,7 +350,7 @@ namespace
   // ```
   //   Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lat_and_doy.R
   // ```
-  TEST(SW2_SolarPosition_Test, hourangles_by_lat_and_doy)
+  TEST(SW2SolarPositionTest, HourAnglesByLatAndDoy)
   {
     int k, ilat, idoy, isl, iasp, length_strnum;
     double
@@ -497,7 +497,7 @@ namespace
   // ```
   //   Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lats.R
   // ```
-  TEST(SW2_SolarPosition_Test, hourangles_by_lats)
+  TEST(SW2SolarPositionTest, HourAnglesByLats)
   {
     int k, ilat, idoy, isl, iasp, iasp2,
       // day of nonleap year Mar 18 (one day before equinox), Jun 21 (solstice),
@@ -588,7 +588,7 @@ namespace
   //   Comparison against examples by Duffie & Beckman 2013 are expected to
   //   deviate in value, but show similar patterns, because equations for
   //   (i) sun-earth distance equation and (ii) solar declination differ
-  TEST(SW2_SolarRadiation_Test, extraterrestrial)
+  TEST(SW2SolarRadiationTest, extraterrestrial)
   {
     unsigned int k1, k2, doy;
     double
@@ -700,7 +700,7 @@ namespace
   //   H_oh differ (see `SW2_SolarRadiation_Test.extraterrestrial`), (ii)
   //   we calculate H_gh while they use measured H_gh values, and (iii)
   //   separation models differ, etc.
-  TEST(SW2_SolarRadiation_Test, global)
+  TEST(SW2SolarRadiationTest, global)
   {
     unsigned int k;
 
@@ -774,7 +774,7 @@ namespace
 
 
   // Test saturation vapor pressure functions
-  TEST(SW2_PET_Test, svp)
+  TEST(SW2PETTest, svp)
   {
     int i;
     double
@@ -808,7 +808,7 @@ namespace
 
 
   // Test `petfunc()`
-  TEST(SW2_PET_Test, petfunc)
+  TEST(SW2PETTest, petfunc)
   {
     int i;
     unsigned int doy = 2;
@@ -1053,7 +1053,7 @@ namespace
   // ```
   //   Rscript tools/plot__SW2_PET_Test__petfunc_by_temps.R
   // ```
-  TEST(SW2_PET_Test, petfunc_by_temps)
+  TEST(SW2PETTest, PetfuncByTemps)
   {
     int doy, k1, k2, k3, k4, k5;
 

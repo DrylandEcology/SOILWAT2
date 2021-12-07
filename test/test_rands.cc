@@ -23,7 +23,7 @@
 
 namespace {
   // This tests the uniform random number generator
-  TEST(RNG_unif, ZeroToOneOutput) {
+  TEST(RNGUnifTest, ZeroToOneOutput) {
     pcg32_random_t rng0, rng1, rng2;
     int i, n = 10;
     double min = 0., max = 1.;
@@ -55,7 +55,7 @@ namespace {
     }
   }
 
-  TEST(RNG_unif, FloatRangeOutput) {
+  TEST(RNGUnifTest, FloatRangeOutput) {
     pcg32_random_t rng0, rng1, rng2;
     int i, n = 10;
     float min = 7.5, max = 77.7;
@@ -99,7 +99,7 @@ namespace {
   }
 
 
-  TEST(RNG_unif, IntRangeOutput) {
+  TEST(RNGUnifTest, IntRangeOutput) {
     pcg32_random_t rng0, rng1, rng2;
     int i, n = 10;
     int min = 7, max = 123;
@@ -152,7 +152,7 @@ namespace {
 
 
   // This tests the normal random number generator
-  TEST(RNG_norm, MeanSD) {
+  TEST(RNGNormTest, MeanSD) {
     pcg32_random_t rng0, rng1, rng2;
     int i, n = 10, f = 9999;
     double mean = 0., sd = 1.,
@@ -202,7 +202,7 @@ namespace {
 
 
   // This tests the beta random number generator
-  TEST(RNG_beta, ZeroToOneOutput) {
+  TEST(RNGBetaTest, ZeroToOneOutput) {
     pcg32_random_t ZeroToOne_rng;
     RandSeed(0, &ZeroToOne_rng);
     EXPECT_LT(RandBeta(0.5, 2, &ZeroToOne_rng), 1);
@@ -211,12 +211,12 @@ namespace {
     EXPECT_GT(RandBeta(0.25, 1, &ZeroToOne_rng), 0);
   }
 
-  TEST(RNG_beta_death, Errors) {
+  TEST(RNGBetaDeathTest, Errors) {
     pcg32_random_t error_rng;
     RandSeed(0, &error_rng);
-    EXPECT_DEATH(RandBeta(-0.5, 2, &error_rng), "AA <= 0.0");
-    EXPECT_DEATH(RandBeta(1, -3, &error_rng), "BB <= 0.0");
-    EXPECT_DEATH(RandBeta(-1, -3, &error_rng), "AA <= 0.0");
+    EXPECT_DEATH_IF_SUPPORTED(RandBeta(-0.5, 2, &error_rng), "AA <= 0.0");
+    EXPECT_DEATH_IF_SUPPORTED(RandBeta(1, -3, &error_rng), "BB <= 0.0");
+    EXPECT_DEATH_IF_SUPPORTED(RandBeta(-1, -3, &error_rng), "AA <= 0.0");
   }
 
 } // namespace

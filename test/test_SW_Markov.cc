@@ -99,18 +99,19 @@ namespace {
     Reset_SOILWAT2_after_UnitTest();
   }
 
-  TEST(WGTest, mvnormDeathTest) {
+  TEST(WGDeathTest, mvnorm) {
     RealD tmax = 0., tmin = 0.;
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL
     EXPECT_DEATH_IF_SUPPORTED(
       (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.),
-      "@ generic.c LogError");
+      "@ generic.c LogError"
+    );
   }
 
 
   // Test correcting daily temperatures for wet/dry days
-  TEST(WGTest, temp_correct_wetdry) {
+  TEST(WGTest, WetDryTemperatureCorrection) {
     RealD
       tmax = 0., tmin = 0., t0 = 0., t10 = 10.,
       wet = 1., dry = 0.,

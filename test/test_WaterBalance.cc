@@ -45,7 +45,7 @@ namespace {
       ii) Summarize checks added to debugging code of 'SW_SWC_water_flow' (which is
           compiled if flag 'SWDEBUG' is defined)
   */
-  TEST(WaterBalance, Example1) { // default run == 'testing' example1
+  TEST(WaterBalanceTest, Example1) { // default run == 'testing' example1
     int i;
 
     // Run the simulation
@@ -62,7 +62,7 @@ namespace {
   }
 
 
-  TEST(WaterBalance, WithSoilTemperature) {
+  TEST(WaterBalanceTest, WithSoilTemperature) {
     int i;
 
     // Turn on soil temperature simulations
@@ -82,7 +82,7 @@ namespace {
   }
 
 
-  TEST(WaterBalance, WithPondedWaterRunonRunoff) {
+  TEST(WaterBalanceTest, WithPondedWaterRunonRunoff) {
     int i;
 
     // Turn on impermeability of first soil layer, runon, and runoff
@@ -105,7 +105,7 @@ namespace {
 
 
 
-  TEST(WaterBalance, WithWeatherGeneratorOnly) {
+  TEST(WaterBalanceTest, WithWeatherGeneratorOnly) {
     int i;
 
     // Turn on Markov weather generator (and turn off use of historical weather)
@@ -129,7 +129,7 @@ namespace {
   }
 
 
-  TEST(WaterBalance, WithWeatherGeneratorForSomeMissingValues) {
+  TEST(WaterBalanceTest, WithWeatherGeneratorForSomeMissingValues) {
     int i;
 
     // Turn on Markov weather generator
@@ -154,7 +154,7 @@ namespace {
   }
 
 
-  TEST(WaterBalance, WithHighGravelVolume) {
+  TEST(WaterBalanceTest, WithHighGravelVolume) {
     int i;
     LyrIndex s;
 

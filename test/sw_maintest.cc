@@ -48,13 +48,23 @@ const char * dir_test = "./testing";
 const char * masterfile_test = "files.in"; // relative to 'dir_test'
 
 
+/* Naming scheme for unit tests
+   https://google.github.io/googletest/faq.html
+   https://google.github.io/googletest/advanced.html
+
+    - no underscore "_" in names of test suites or tests
+    - non-death tests are identified by a test suit name that ends with "*Test"
+    - death tests are identified by a test suit name that ends with "*DeathTest"
+*/
+
 
 
 int main(int argc, char **argv) {
   int res;
-  /*--- Imitate 'SW_Main.c/main()': we need to initialize and take down SOILWAT2 variables
-    because SOILWAT2 uses (global) states. This is otherwise not comptable with the c++
-    approach used by googletest.
+  /*--- Imitate 'SW_Main.c/main()':
+    we need to initialize and take down SOILWAT2 variables
+    because SOILWAT2 uses (global) states.
+    This is otherwise not comptable with the c++ approach used by googletest.
   */
   logged = swFALSE;
   logfp = stdout;

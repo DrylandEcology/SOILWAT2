@@ -155,7 +155,7 @@ namespace
   }
 
   // Test infiltration under high water function, 'infiltrate_water_high'
-  TEST(SWFlowTest, infiltrate_water_high)
+  TEST(SWFlowTest, SaturatedPercolation)
   {
 
     // declare inputs
@@ -330,7 +330,7 @@ namespace
 
 
   //Test transp_weighted_avg function.
-  TEST(SWFlowTest, transp_weighted_avg)
+  TEST(SWFlowTest, TranspWeightedAvg)
   {
     //INPUTS
     double swp_avg = 10;
@@ -389,7 +389,7 @@ namespace
 
 
   //Test EsT_partitioning by manipulating fbse and fbst variables.
-  TEST(SWFlowTest, EsT_partitioning)
+  TEST(SWFlowTest, EsTPartitioning)
   {
     //INPUTS
     double fbse = 0, fbst = 0, blivelai = 0.002, lai_param = 2;
@@ -427,7 +427,7 @@ namespace
   }
 
   // TEST pot_soil_evap
-  TEST(SWFlowTest, pot_soil_evap)
+  TEST(SWFlowTest, PotentialSoilEvaporation)
   {
     unsigned int i, k, nelyrs;
     double bserate = 0, totagb, Es_param_limit = 999.,
@@ -528,7 +528,7 @@ namespace
 
 
   //TEST pot_soil_evap_bs for when nelyrs = 1 and nelyrs = MAX
-  TEST(SWFlowTest, pot_soil_evap_bs)
+  TEST(SWFlowTest, PotentialSoilEvaporation2)
   {
     //INPUTS
     unsigned int nelyrs,i;
@@ -585,7 +585,7 @@ namespace
 
 
   //Test pot_transp by manipulating biolive and biodead input variables
-  TEST(SWFlowTest, pot_transp)
+  TEST(SWFlowTest, PotentialTranspiration)
   {
     //INPUTS
     double bstrate = 0, swpavg = 0.8, biolive = -0.8, biodead = 0.2, fbst = 0.8, petday = 0.1,
@@ -691,7 +691,7 @@ namespace
   }
 
   //Test evap_fromSurface by manipulating water_pool and evap_rate variables
-  TEST(SWFlowTest, evap_fromSurface)
+  TEST(SWFlowTest, SurfaceEvaporation)
   {
     //INPUTS
     double water_pool = 1, evap_rate = 0.33, aet = 0.53;
@@ -727,7 +727,7 @@ namespace
   }
 
   //Test remove_from_soil when nlyrs = 1 and when nlyrs = MAX
-  TEST(SWFlowTest, remove_from_soil)
+  TEST(SWFlowTest, RemoveFromSoil)
   {
     // INPUTS
     unsigned int nlyrs, i;
@@ -890,7 +890,7 @@ namespace
 
 
   //Test when nlyrs = 1 and 25 for outputs; swc, drain, drainout, standing water
-  TEST(SWFlowTest, infiltrate_water_low)
+  TEST(SWFlowTest, UnsaturatedPercolation)
   {
     //INPUTS
     unsigned int nlyrs, i, k;
@@ -1106,7 +1106,7 @@ namespace
 
 
   //TEST for hydraulic_redistribution when nlyrs = MAX_LAYERS and nlyrs = 1
-  TEST(SWFlowTest, hydraulic_redistribution)
+  TEST(SWFlowTest, HydraulicRedistribution)
   {
     // INPUTS
     unsigned int nlyrs, i, k;
