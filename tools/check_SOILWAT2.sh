@@ -5,10 +5,12 @@
 # - expects clang as default compiler
 
 # Problems:
-# - gcc10 and gcc11 are getting stuck at
-#   `SWFlowTempDeathTest.SoilTemperatureInitDeathTest` when running with
-#   sanitizer "ASAN_OPTIONS=detect_leaks=1"
-# Note:
+# - unit test compiled with gcc are getting stuck or throw a "stack-overflow"
+#   when running with sanitizer "ASAN_OPTIONS=detect_leaks=1",
+#   but binaries work correctly
+
+
+# Notes:
 # - googletests (Dec 2021) expects C++11 compliant compilers and
 #   gcc >= 5.0 or clang >= 5.0
 
@@ -18,18 +20,18 @@
 
 declare -a port_compilers=(
   "none"
-  "mp-gcc7" "mp-gcc9" "mp-gcc10" "mp-gcc11"
-  "mp-clang-5.0" "mp-clang-9.0" "mp-clang-10" "mp-clang-11" "mp-clang-12"
+  "mp-gcc49" "mp-gcc5" "mp-gcc7" "mp-gcc9" "mp-gcc10" "mp-gcc11"
+  "mp-clang-3.3" "mp-clang-5.0" "mp-clang-9.0" "mp-clang-10" "mp-clang-11" "mp-clang-12" "mp-clang-13"
 )
 declare -a ccs=(
   "clang"
-  "gcc" "gcc" "gcc" "gcc"
-  "clang" "clang" "clang" "clang" "clang"
+  "gcc" "gcc" "gcc" "gcc" "gcc" "gcc"
+  "clang" "clang" "clang" "clang" "clang" "clang" "clang"
 )
 declare -a cxxs=(
   "clang++"
-  "g++" "g++" "g++" "g++"
-  "clang++" "clang++" "clang++" "clang++" "clang++"
+  "g++" "g++" "g++" "g++" "g++" "g++"
+  "clang++" "clang++" "clang++" "clang++" "clang++" "clang++" "clang"
 )
 
 
@@ -45,7 +47,11 @@ for ((k = 0; k < ncomp; k++)); do
 
   echo $'\n'Set compiler ...
   if [ "${port_compilers[k]}" != "none" ]; then
-    sudo port select --set ${ccs[k]} ${port_compilers[k]}
+    res=$(sudo port select --set ${ccs[k]} ${port_compilers[k]})
+
+    if ( echo ${res} | grep "failed" ); then
+      continue
+    fi
   fi
 
   echo $'\n'`"${ccs[k]}" --version`
@@ -79,8 +85,9 @@ for ((k = 0; k < ncomp; k++)); do
        --------------------------------------------------$'\n'\
        Run sanitizer on tests with ${port_compilers[k]}: exclude known leaks ...$'\n'\
        --------------------------------------------------
-  CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
-
+  # CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+  # https://github.com/google/sanitizers/wiki/AddressSanitizer
+  CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
