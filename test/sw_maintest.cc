@@ -70,9 +70,16 @@ int main(int argc, char **argv) {
   // Initialize SOILWAT2 variables and read values from example input file
   Reset_SOILWAT2_after_UnitTest();
 
-  //--- Setup and call unit tests
+
+  //--- Setup unit tests
   ::testing::InitGoogleTest(&argc, argv);
+
+  // set death tests to be "threadsafe" instead of "fast"
+  GTEST_FLAG_SET(death_test_style, "threadsafe");
+
+  // Run unit tests
   res = RUN_ALL_TESTS();
+
 
   //--- Take down SOILWAT2 variables
   SW_CTL_clear_model(swTRUE); // de-allocate all memory
