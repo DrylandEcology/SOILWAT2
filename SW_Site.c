@@ -236,7 +236,7 @@ void SWRC_PDF_estimate_parameters(
 
 /**
 	@brief Estimate Campbell's 1974 SWRC parameters \cite Campbell1974
-		using Cosby et al. 1984 PDF \cite Cosby1984
+		using Cosby et al. 1984 multivariate PDF \cite Cosby1984
 
 	Estimation of three (+1) SWRC parameter values `swrcp`
 	based on sand, clay, and (silt):
@@ -246,6 +246,10 @@ void SWRC_PDF_estimate_parameters(
 		- `swrcp[2]` (`bMatric`): slope of the linear log-log retention curve [-]
 		- `swrcp[3]` (`binverseMatric`): the inverse of `swrcp[2]`
 			(not a parameter per se but pre-calculated for convenience)
+
+	Multivariate PDFs are from Cosby et al. 1984 Table 4;
+	Cosby et al. 1984 provided also univariate PDFs in Table 5
+	but they are not used here.
 
 	See `SWRC_SWCtoSWP_Campbell1974()` and `SWRC_SWPtoSWC_Campbell1974()`
 	for implementation of Campbell's 1974 SWRC.
@@ -260,6 +264,8 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 ) {
 	/* Table 4 */
 	swrcp[0] = -14.2 * sand - 3.7 * clay + 50.5;
+	/* swrcp[1] = psisMatric: originally formulated as function of silt */
+	/* here re-formulated as function of clay */
 	swrcp[1] = powe(10.0, -1.58 * sand - 0.63 * clay + 2.17);
 	swrcp[2] = -0.3 * sand + 15.7 * clay + 3.10;
 
