@@ -66,9 +66,10 @@ lib_target_cov = lib$(target_cov).a
 # AR = ar
 # RM = rm
 
-use_c11 = -std=c11
-use_gnu11 = -std=gnu11		# gnu11 required for googletest on Windows/cygwin
-use_gnu++11 = -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
+set_std = -std=c11
+# gnu11/gnu++11 used to be required for googletest on Windows/cygwin
+set_std_tests = -std=c11
+set_std++_tests = -std=c++11
 
 
 #------ FLAGS
@@ -182,7 +183,7 @@ lib : $(lib_target)
 
 $(lib_target) :
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(bin_flags) $(warning_flags) \
-		$(use_c11) -c $(sources_lib) $(sources_pcg)
+		$(set_std) -c $(sources_lib) $(sources_pcg)
 
 		-@$(RM) -f $(lib_target)
 		$(AR) -rcs $(lib_target) $(objects_lib) $(objects_pcg)
@@ -191,7 +192,7 @@ $(lib_target) :
 
 $(lib_target_test) :
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(use_gnu11) -c $(sources_lib_test) $(sources_pcg)
+		$(instr_flags) $(set_std_tests) -c $(sources_lib_test) $(sources_pcg)
 
 		-@$(RM) -f $(lib_target_test)
 		$(AR) -rcs $(lib_target_test) $(objects_lib_test) $(objects_pcg)
@@ -199,7 +200,7 @@ $(lib_target_test) :
 
 $(lib_target_severe) :	# needs CXX because of '*_severe' flags which must match test binary build
 		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags_severe_cxx) \
-		$(instr_flags_severe) $(use_gnu++11) -c $(sources_lib_test) $(sources_pcg)
+		$(instr_flags_severe) $(set_std++_tests) -c $(sources_lib_test) $(sources_pcg)
 
 		-@$(RM) -f $(lib_target_severe)
 		$(AR) -rcs $(lib_target_severe) $(objects_lib_test) $(objects_pcg)
@@ -207,7 +208,7 @@ $(lib_target_severe) :	# needs CXX because of '*_severe' flags which must match 
 
 $(lib_target_cov) :	# needs CXX because of 'coverage' flags which must match test binary build
 		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(cov_flags) $(use_gnu++11) -c $(sources_lib_test) $(sources_pcg)
+		$(instr_flags) $(cov_flags) $(set_std++_tests) -c $(sources_lib_test) $(sources_pcg)
 
 		-@$(RM) -f $(lib_target_cov)
 		$(AR) -rcs $(lib_target_cov) $(objects_lib_test) $(objects_pcg)
@@ -216,24 +217,24 @@ $(lib_target_cov) :	# needs CXX because of 'coverage' flags which must match tes
 
 $(target) : $(lib_target)
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(bin_flags) $(warning_flags) \
-		$(use_c11) \
+		$(set_std) \
 		-o $(target) $(sources_bin) $(target_LDLIBS) $(sw_LDFLAGS)
 
 bin_debug_severe :
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe_cc) \
-		$(instr_flags_severe) $(use_c11) -c $(sources_lib_test) $(sources_pcg)
+		$(instr_flags_severe) $(set_std) -c $(sources_lib_test) $(sources_pcg)
 
 		-@$(RM) -f $(lib_target_severe)
 		$(AR) -rcs $(lib_target_severe) $(objects_lib_test) $(objects_pcg)
 		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
 
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe_cc) \
-		$(instr_flags_severe) $(use_c11) \
+		$(instr_flags_severe) $(set_std) \
 		-o $(target) $(sources_bin) $(severe_LDLIBS) $(sw_LDFLAGS)
 
 bin_debug : $(lib_target_test)
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(use_c11) \
+		$(instr_flags) $(set_std) \
 		-o $(target) $(sources_bin) $(test_LDLIBS) $(sw_LDFLAGS)
 
 
@@ -258,7 +259,7 @@ bind_valgrind : bin_debug bint
 lib_test : $(lib_gtest)
 
 $(lib_gtest) :
-		@$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(use_gnu++11) \
+		@$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(set_std++_tests) \
 		-isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
 		-pthread -c ${GTEST_DIR}/src/gtest-all.cc
 
@@ -266,13 +267,13 @@ $(lib_gtest) :
 
 test_severe : $(lib_gtest) $(lib_target_severe)
 		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags_severe_cxx) \
-		$(instr_flags_severe) $(use_gnu++11) \
+		$(instr_flags_severe) $(set_std++_tests) \
 		-isystem ${GTEST_DIR}/include -pthread \
 		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(severe_LDLIBS) $(sw_LDFLAGS)
 
 test : $(lib_gtest) $(lib_target_test)
 		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(use_gnu++11) \
+		$(instr_flags) $(set_std++_tests) \
 		-isystem ${GTEST_DIR}/include -pthread \
 		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(test_LDLIBS) $(sw_LDFLAGS)
 
@@ -282,7 +283,7 @@ test_run :
 
 cov : cov_clean $(lib_gtest) $(lib_target_cov)
 		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(cov_flags) $(use_gnu++11) \
+		$(instr_flags) $(cov_flags) $(set_std++_tests) \
 		-isystem ${GTEST_DIR}/include -pthread \
 		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(cov_LDLIBS) $(sw_LDFLAGS)
 
