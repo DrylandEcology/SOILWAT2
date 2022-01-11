@@ -226,6 +226,14 @@ following output is implemented:
       CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lats make test test_run
       Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lats.R
 ```
+
+  - PET plots as function of radiation, relative humidity, wind speed, and cover
+
+```{.sh}
+      CPPFLAGS=-DSW2_PET_Test__petfunc_by_temps make test test_run
+      Rscript tools/plot__SW2_PET_Test__petfunc_by_temps.R
+```
+
 <br>
 
 

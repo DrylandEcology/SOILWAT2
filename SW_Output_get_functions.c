@@ -29,18 +29,18 @@
 #include "myMemory.h"
 #include "Times.h"
 
-#include "SW_Carbon.h"
+#include "SW_Carbon.h" // externs SW_Carbon
 #include "SW_Defines.h"
 #include "SW_Files.h"
-#include "SW_Model.h"
-#include "SW_Site.h"
-#include "SW_SoilWater.h"
+#include "SW_Model.h" // externs SW_Model
+#include "SW_Site.h" // externs SW_Site
+#include "SW_SoilWater.h" // externs SW_Soilwat
 #include "SW_Times.h"
-#include "SW_Weather.h"
-#include "SW_VegEstab.h"
-#include "SW_VegProd.h"
+#include "SW_Weather.h"  // externs SW_Weather
+#include "SW_VegEstab.h" // externs SW_VegEstab
+#include "SW_VegProd.h" // externs SW_VegProd
 
-#include "SW_Output.h"
+#include "SW_Output.h" // externs `_Sep`, `tOffset`, `ncol_OUT`
 
 #ifdef RSOILWAT
 #include <R.h>
@@ -50,81 +50,26 @@
 
 #ifdef STEPWAT
 #include <math.h>
-#include "../sxw.h"
-#include "../ST_defines.h"
+#include "../sxw.h" // externs `*SXW`
+#include "../ST_globals.h" // externs `*Globals`, `SuperGlobals`
 #endif
 
 // Array-based output declarations:
 #ifdef SW_OUTARRAY
+// externs `ncol_TimeOUT`, `nrow_OUT`, `irow_OUT`, `*p_OUT`, `*p_OUTsd`
 #include "SW_Output_outarray.h"
 #endif
 
 // Text-based output declarations:
 #ifdef SW_OUTTEXT
+// externs `print_IterationSummary`, `sw_outstr`, `sw_outstr_agg`
 #include "SW_Output_outtext.h"
 #endif
 
 
-/* =================================================== */
-/*                  Global Variables                   */
-/* --------------------------------------------------- */
-extern SW_SITE SW_Site;
-extern SW_SOILWAT SW_Soilwat;
-extern SW_MODEL SW_Model;
-extern SW_WEATHER SW_Weather;
-extern SW_VEGPROD SW_VegProd;
-extern SW_VEGESTAB SW_VegEstab;
-extern SW_CARBON SW_Carbon;
-
-extern IntUS ncol_OUT[];
-
-#ifdef STEPWAT
-extern Bool prepare_IterationSummary;
-extern ModelType *Globals; // defined in `ST_Main.c`
-extern GlobalType SuperGlobals;
-extern SXW_t* SXW; // structure to store values in and pass back to STEPPE
-extern TimeInt tOffset; // defined in `SW_Output.c`
-#endif
-
-// Text-based output: defined in `SW_Output_outtext.c`:
-#ifdef SW_OUTTEXT
-extern SW_FILE_STATUS SW_OutFiles;
-extern char _Sep;
-extern char sw_outstr[];
-extern Bool print_IterationSummary;
-#endif
-#ifdef STEPWAT
-extern char sw_outstr_agg[];
-#endif
-
-
-// Array-based output: defined in `SW_Output_outarray.c`
-#ifdef SW_OUTARRAY
-extern RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
-extern IntUS ncol_TimeOUT[];
-extern size_t nrow_OUT[];
-extern size_t irow_OUT[];
-#endif
-#ifdef STEPWAT
-extern RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
-#endif
-
 
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Declarations           */
-/* --------------------------------------------------- */
-
-#ifdef STEPWAT
-static void format_IterationSummary(RealD *p, RealD *psd, OutPeriod pd,
-	IntUS N);
-static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
-	IntUS N1, IntUS N2, IntUS offset);
-#endif
-
-/* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
+/*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
 #ifdef STEPWAT
@@ -171,9 +116,9 @@ static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
 #endif
 
 
+
 /* =================================================== */
-/* =================================================== */
-/*             Function Definitions                    */
+/*             Global Function Definitions             */
 /*             (declared in SW_Output.h)               */
 /* --------------------------------------------------- */
 
@@ -265,17 +210,8 @@ void get_co2effects_agg(OutPeriod pd) {
 #ifdef SW_OUTTEXT
 void get_biomass_text(OutPeriod pd) {
 	int k;
-	RealD biomass_total = 0., litter_total = 0., biolive_total = 0.;
 	SW_VEGPROD *v = &SW_VegProd;
 	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
-
-	// scale total biomass by fCover to obtain 100% total cover biomass
-	ForEachVegType(k)
-	{
-		biomass_total += vo->veg[k].biomass * v->veg[k].cov.fCover;
-		litter_total += vo->veg[k].litter * v->veg[k].cov.fCover;
-		biolive_total += vo->veg[k].biolive * v->veg[k].cov.fCover;
-	}
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -289,44 +225,37 @@ void get_biomass_text(OutPeriod pd) {
 	}
 
 	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
-	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, biomass_total);
+	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->biomass_total);
 	strcat(sw_outstr, str);
 	ForEachVegType(k) {
-		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS,
-			vo->veg[k].biomass * v->veg[k].cov.fCover);
+		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->veg[k].biomass_inveg);
 		strcat(sw_outstr, str);
 	}
-	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, litter_total);
+	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->litter_total);
 	strcat(sw_outstr, str);
 
 	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
-	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, biolive_total);
+	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->biolive_total);
 	strcat(sw_outstr, str);
 	ForEachVegType(k) {
-		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS,
-			vo->veg[k].biolive * v->veg[k].cov.fCover);
+		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->veg[k].biolive_inveg);
 		strcat(sw_outstr, str);
 	}
+
+	// leaf area index [m2/m2]
+	sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->LAI);
+	strcat(sw_outstr, str);
 }
 #endif
 
 #if defined(RSOILWAT)
 void get_biomass_mem(OutPeriod pd) {
 	int k, i;
-	RealD biomass_total = 0., litter_total = 0., biolive_total = 0.;
 	SW_VEGPROD *v = &SW_VegProd;
 	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_Biomass][pd];
 	get_outvalleader(p, pd);
-
-	// scale total biomass by fCover to obtain 100% total cover biomass
-	ForEachVegType(k)
-	{
-		biomass_total += vo->veg[k].biomass * v->veg[k].cov.fCover;
-		litter_total += vo->veg[k].litter * v->veg[k].cov.fCover;
-		biolive_total += vo->veg[k].biolive * v->veg[k].cov.fCover;
-	}
 
 	// fCover for NVEGTYPES plus bare-ground
 	p[iOUT(0, pd)] = v->bare_cov.fCover;
@@ -337,39 +266,33 @@ void get_biomass_mem(OutPeriod pd) {
 	}
 
 	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
-	p[iOUT(i + NVEGTYPES, pd)] = biomass_total;
+	p[iOUT(i + NVEGTYPES, pd)] = vo->biomass_total;
 	i += NVEGTYPES + 1;
 	ForEachVegType(k) {
-		p[iOUT(i + k, pd)] = vo->veg[k].biomass * v->veg[k].cov.fCover;
+		p[iOUT(i + k, pd)] = vo->veg[k].biomass_inveg;
 	}
-	p[iOUT(i + NVEGTYPES, pd)] = litter_total;
+	p[iOUT(i + NVEGTYPES, pd)] = vo->litter_total;
 
 	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
-	p[iOUT(i + NVEGTYPES + 1, pd)] = biolive_total;
+	p[iOUT(i + NVEGTYPES + 1, pd)] = vo->biolive_total;
 	i += NVEGTYPES + 2;
 	ForEachVegType(k) {
-		p[iOUT(i + k, pd)] = vo->veg[k].biolive * v->veg[k].cov.fCover;
+		p[iOUT(i + k, pd)] = vo->veg[k].biolive_inveg;
 	}
+
+	// leaf area index [m2/m2]
+	p[iOUT(i + NVEGTYPES, pd)] = vo->LAI;
 }
 
 #elif defined(STEPWAT)
 void get_biomass_agg(OutPeriod pd) {
 	int k, i;
-	RealD biomass_total = 0., litter_total = 0., biolive_total = 0.;
 	SW_VEGPROD *v = &SW_VegProd;
 	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_Biomass][pd],
 		*psd = p_OUTsd[eSW_Biomass][pd];
-
-	// scale total biomass by fCover to obtain 100% total cover biomass
-	ForEachVegType(k)
-	{
-		biomass_total += vo->veg[k].biomass * v->veg[k].cov.fCover;
-		litter_total += vo->veg[k].litter * v->veg[k].cov.fCover;
-		biolive_total += vo->veg[k].biolive * v->veg[k].cov.fCover;
-	}
 
 	// fCover for NVEGTYPES plus bare-ground
 	do_running_agg(p, psd, iOUT(0, pd), Globals->currIter, v->bare_cov.fCover);
@@ -382,23 +305,27 @@ void get_biomass_agg(OutPeriod pd) {
 
 	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
 	do_running_agg(p, psd, iOUT(i + NVEGTYPES, pd), Globals->currIter,
-		biomass_total);
+		vo->biomass_total);
 	i += NVEGTYPES + 1;
 	ForEachVegType(k) {
 		do_running_agg(p, psd, iOUT(i + k, pd), Globals->currIter,
-			vo->veg[k].biomass * v->veg[k].cov.fCover);
+			vo->veg[k].biomass_inveg);
 	}
 	do_running_agg(p, psd, iOUT(i + NVEGTYPES, pd), Globals->currIter,
-		litter_total);
+		vo->litter_total);
 
 	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
 	do_running_agg(p, psd, iOUT(i + NVEGTYPES + 1, pd), Globals->currIter,
-		biolive_total);
+		vo->biolive_total);
 	i += NVEGTYPES + 2;
 	ForEachVegType(k) {
 		do_running_agg(p, psd, iOUT(i + k, pd), Globals->currIter,
-			vo->veg[k].biolive * v->veg[k].cov.fCover);
+			vo->veg[k].biolive_inveg);
 	}
+
+	// leaf area index [m2/m2]
+	do_running_agg(p, psd, iOUT(i + NVEGTYPES, pd), Globals->currIter,
+		vo->LAI);
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
@@ -2056,27 +1983,44 @@ void get_hydred_agg(OutPeriod pd)
 void get_aet_text(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_WEATHER_OUTPUTS *vo2 = SW_Weather.p_oagg[pd];
 
 	sw_outstr[0] = '\0';
-	sprintf(sw_outstr, "%c%.*f", _Sep, OUT_DIGITS, vo->aet);
+	sprintf(
+		sw_outstr,
+		"%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
+		_Sep, OUT_DIGITS, vo->aet,
+		_Sep, OUT_DIGITS, vo->tran,
+		_Sep, OUT_DIGITS, vo->esoil,
+		_Sep, OUT_DIGITS, vo->ecnw,
+		_Sep, OUT_DIGITS, vo->esurf,
+		_Sep, OUT_DIGITS, vo2->snowloss // should be `vo->esnow`
+	);
+
 }
 #endif
 
 #if defined(RSOILWAT)
 
 /**
-@brief Gets actual evapotranspiration when dealing with OUTTEXT.
+@brief Gets actual evapotranspiration when dealing with RSOILWAT.
 
 @param pd Period.
 */
 void get_aet_mem(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_WEATHER_OUTPUTS *vo2 = SW_Weather.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_AET][pd];
 	get_outvalleader(p, pd);
 
 	p[iOUT(0, pd)] = vo->aet;
+	p[iOUT(1, pd)] = vo->tran;
+	p[iOUT(2, pd)] = vo->esoil;
+	p[iOUT(3, pd)] = vo->ecnw;
+	p[iOUT(4, pd)] = vo->esurf;
+	p[iOUT(5, pd)] = vo2->snowloss; // should be `vo->esnow`
 }
 
 #elif defined(STEPWAT)
@@ -2089,12 +2033,19 @@ void get_aet_mem(OutPeriod pd)
 void get_aet_agg(OutPeriod pd)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_WEATHER_OUTPUTS *vo2 = SW_Weather.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_AET][pd],
 		*psd = p_OUTsd[eSW_AET][pd];
 
 	do_running_agg(p, psd, iOUT(0, pd), Globals->currIter, vo->aet);
+	do_running_agg(p, psd, iOUT(1, pd), Globals->currIter, vo->tran);
+	do_running_agg(p, psd, iOUT(2, pd), Globals->currIter, vo->esoil);
+	do_running_agg(p, psd, iOUT(3, pd), Globals->currIter, vo->ecnw);
+	do_running_agg(p, psd, iOUT(4, pd), Globals->currIter, vo->esurf);
+	// should be `vo->esnow`
+	do_running_agg(p, psd, iOUT(5, pd), Globals->currIter, vo2->snowloss);
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';

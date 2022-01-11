@@ -83,7 +83,7 @@ typedef struct {
 			snowpack,
 			snowdepth,
 			et,
-			aet,
+			aet, tran, esoil, ecnw, esurf, esnow,
 			pet, H_oh, H_ot, H_gh, H_gt,
 			deep,
 			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
@@ -133,6 +133,16 @@ typedef struct {
 
 } SW_SOILWAT;
 
+
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern SW_SOILWAT SW_Soilwat;
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_SWC_construct(void);
 void SW_SWC_deconstruct(void);
 void SW_SWC_new_year(void);

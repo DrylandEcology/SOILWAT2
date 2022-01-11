@@ -26,7 +26,7 @@
 #include "../SW_Times.h"
 #include "../SW_Files.h"
 #include "../SW_Carbon.h"
-#include "../SW_Site.h"
+#include "../SW_Site.h" // externs `_TranspRgnBounds`
 #include "../SW_VegProd.h"
 #include "../SW_VegEstab.h"
 #include "../SW_Model.h"
@@ -37,12 +37,6 @@
 
 #include "sw_testhelpers.h"
 
-
-extern SW_CARBON SW_Carbon;
-extern SW_MODEL SW_Model;
-extern SW_VEGPROD SW_VegProd;
-extern SW_SITE SW_Site;
-extern LyrIndex _TranspRgnBounds[];
 
 
 namespace {
@@ -100,6 +94,26 @@ namespace {
 
     EXPECT_DEATH_IF_SUPPORTED(water_eqn(fractionGravel, sand, clay, n), "@ generic.c LogError");
 
+  }
+
+
+  // Test that `SW_SIT_init_run` fails on bad soil inputs
+  TEST(SWSiteTest, SoilParametersDeathTest) {
+    LyrIndex n1 = 0, n2 = 1, k = 2;
+    RealD help;
+
+    // Check error for bad bare-soil evaporation coefficient (should be [0-1])
+    help = SW_Site.lyr[n1]->evap_coeff;
+    SW_Site.lyr[n1]->evap_coeff = -0.5;
+    EXPECT_DEATH_IF_SUPPORTED(SW_SIT_init_run(), "@ generic.c LogError");
+    SW_Site.lyr[n1]->evap_coeff = help;
+
+    // Check error for bad transpiration coefficient (should be [0-1])
+    SW_Site.lyr[n2]->transp_coeff[k] = 1.5;
+    EXPECT_DEATH_IF_SUPPORTED(SW_SIT_init_run(), "@ generic.c LogError");
+
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
   }
 
 

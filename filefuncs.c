@@ -14,7 +14,7 @@
 #endif
 
 #include "filefuncs.h"
-#include "generic.h"
+#include "generic.h" // externs errstr
 #include "myMemory.h"
 #include "SW_Defines.h"
 #ifdef RSOILWAT
@@ -22,13 +22,85 @@
 #endif
 
 
-/* Note that errstr[] is externed in generic.h via filefuncs.h */
 /* 01/05/2011	(drs) removed unused variable *p from MkDir()
  06/21/2013	(DLM)	memory leak in function getfiles(): variables dname and fname need to be free'd
  */
 
-char **getfiles(const char *fspec, int *nfound);
 
+
+/* =================================================== */
+/*             Local Function Definitions              */
+/* --------------------------------------------------- */
+
+static char **getfiles(const char *fspec, int *nfound) {
+	/* return a list of files described by fspec
+	 * fspec is as described in RemoveFiles(),
+	 * **flist is a dynamic char array containing pointers to the
+	 *   file names found that match fspec
+	 * nfound is the number of files found, also, num elements in flist
+	 */
+
+	char **flist = NULL, *dname, *fname, *fn1, *fn2, *p2;
+
+	int len1, len2;
+	Bool match, alloc = swFALSE;
+
+	DIR *dir;
+	struct dirent *ent;
+
+	assert(fspec != NULL);
+
+	dname = Str_Dup(DirName(fspec));
+	fname = Str_Dup(BaseName(fspec));
+
+	if (strchr(fname, '*')) {
+		fn1 = strtok(fname, "*");
+		fn2 = strtok(NULL, "*");
+	} else {
+		fn1 = fname;
+		fn2 = NULL;
+	}
+	len1 = (fn1) ? strlen(fn1) : 0;
+	len2 = (fn2) ? strlen(fn2) : 0;
+
+	(*nfound) = 0;
+
+	if ((dir = opendir(dname)) == NULL )
+		return NULL ;
+
+	while ((ent = readdir(dir)) != NULL ) {
+		match = swTRUE;
+		if (fn1)
+			match = (0 == strncmp(ent->d_name, fn1, len1)) ? swTRUE : swFALSE;
+		if (match && fn2) {
+			p2 = ent->d_name + (strlen(ent->d_name) - len2);
+			match = (0 == strcmp(fn2, p2)) ? swTRUE : swFALSE;
+		}
+
+		if (match) {
+			(*nfound)++;
+			if (alloc) {
+				flist = (char **) Mem_ReAlloc(flist, sizeof(char *) * (*nfound));
+			} else {
+				flist = (char **) Mem_Malloc(sizeof(char *) * (*nfound), "getfiles");
+				alloc = swTRUE;
+			}
+			flist[(*nfound) - 1] = Str_Dup(ent->d_name);
+		}
+	}
+
+	closedir(dir);
+	free(dname);
+	free(fname);
+
+	return flist;
+}
+
+
+
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
 
 /**
  * @brief Prints an error message and throws an error or warning. Works both for rSOILWAT2
@@ -76,7 +148,7 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
 	 *           to be called each time replacement args occur.
 	 */
 
-	char outfmt[ERRSTRLEN] = {0}; /* to prepend err type str */
+	char outfmt[MAX_ERROR] = {0}; /* to prepend err type str */
 	va_list args;
 
 	va_start(args, fmt);
@@ -349,67 +421,3 @@ Bool RemoveFiles(const char *fspec) {
 	return (Bool) result;
 }
 
-/**************************************************************/
-char **getfiles(const char *fspec, int *nfound) {
-	/* return a list of files described by fspec
-	 * fspec is as described in RemoveFiles(),
-	 * **flist is a dynamic char array containing pointers to the
-	 *   file names found that match fspec
-	 * nfound is the number of files found, also, num elements in flist
-	 */
-
-	char **flist = NULL, *dname, *fname, *fn1, *fn2, *p2;
-
-	int len1, len2;
-	Bool match, alloc = swFALSE;
-
-	DIR *dir;
-	struct dirent *ent;
-
-	assert(fspec != NULL);
-
-	dname = Str_Dup(DirName(fspec));
-	fname = Str_Dup(BaseName(fspec));
-
-	if (strchr(fname, '*')) {
-		fn1 = strtok(fname, "*");
-		fn2 = strtok(NULL, "*");
-	} else {
-		fn1 = fname;
-		fn2 = NULL;
-	}
-	len1 = (fn1) ? strlen(fn1) : 0;
-	len2 = (fn2) ? strlen(fn2) : 0;
-
-	(*nfound) = 0;
-
-	if ((dir = opendir(dname)) == NULL )
-		return NULL ;
-
-	while ((ent = readdir(dir)) != NULL ) {
-		match = swTRUE;
-		if (fn1)
-			match = (0 == strncmp(ent->d_name, fn1, len1)) ? swTRUE : swFALSE;
-		if (match && fn2) {
-			p2 = ent->d_name + (strlen(ent->d_name) - len2);
-			match = (0 == strcmp(fn2, p2)) ? swTRUE : swFALSE;
-		}
-
-		if (match) {
-			(*nfound)++;
-			if (alloc) {
-				flist = (char **) Mem_ReAlloc(flist, sizeof(char *) * (*nfound));
-			} else {
-				flist = (char **) Mem_Malloc(sizeof(char *) * (*nfound), "getfiles");
-				alloc = swTRUE;
-			}
-			flist[(*nfound) - 1] = Str_Dup(ent->d_name);
-		}
-	}
-
-	closedir(dir);
-	free(dname);
-	free(fname);
-
-	return flist;
-}

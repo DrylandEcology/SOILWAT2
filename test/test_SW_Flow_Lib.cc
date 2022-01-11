@@ -40,11 +40,7 @@
 
 #include "sw_testhelpers.h"
 
-extern SW_SITE SW_Site;
-extern SW_MODEL SW_Model;
-extern SW_VEGPROD SW_VegProd;
-extern ST_RGR_VALUES stValues;
-//extern SW_SOILWAT_OUTPUTS SW_Soilwat_outputs;
+
 
 pcg32_random_t flow_rng;
 SW_VEGPROD *v = &SW_VegProd;
@@ -736,26 +732,10 @@ namespace
     // INPUTS
     unsigned int nlyrs, i;
     double aet_init = 0.33, aet, rate = 0.62;
-    double swc_init[MAX_LAYERS], swc[MAX_LAYERS], swcmin[MAX_LAYERS];
-    double qty[MAX_LAYERS], qty_sum;
+    double swc_init[MAX_LAYERS], swc[MAX_LAYERS];
+    double swcmin[MAX_LAYERS] = {0.};
+    double qty[MAX_LAYERS] = {0.}, qty_sum = 0.;
     double coeff[MAX_LAYERS], coeffZero[MAX_LAYERS] = {0.};
-
-    // Expected outcomes
-    double swcExpected[MAX_LAYERS], qtyExpected[MAX_LAYERS], aetExpected;
-    double swcExpected_1L[1] = {0.335102002};
-    double qtyExpected_1L[1] = {0.490786736};
-    double swcExpected_MAXL[MAX_LAYERS] = {
-      0.797272468, 0.188079794, 0.959050850, 0.225652538, 0.212587913,
-      1.830213267, 0.147813558, 0.147813558, 0.411441988, 0.900635851,
-      2.171560691, 0.196976313, 0.212587913, 1.830213267, 0.147813558,
-      0.147813558, 0.117792659, 0.165094114, 0.187453675, 1.114615515,
-      2.308462927, 2.292794374, 1.658226136, 3.336462333, 6.688236569};
-    double qtyExpected_MAXL[MAX_LAYERS] = {
-      0.028616270, 0.018791319, 0.033002659, 0.032433487, 0.020287088,
-      0.020111162, 0.020010061, 0.020010061, 0.029032004, 0.018791319,
-      0.033002659, 0.032433487, 0.020287088, 0.020111162, 0.020010061,
-      0.020010061, 0.029032004, 0.018791319, 0.033002659, 0.032433487,
-      0.020287088, 0.020111162, 0.020010061, 0.020010061, 0.039382201};
 
 
     // Loop over tests with varying number of soil layers
@@ -770,21 +750,18 @@ namespace
         nlyrs = MAX_LAYERS; // test 2: MAX_LAYERS soil layers
       }
 
-      // Setup soil layers
+      // Setup: soil layers
       create_test_soillayers(nlyrs);
 
       ForEachSoilLayer(i)
       {
-        // copy soil layer values into arrays so that they can be passed as
-        // arguments to `pot_soil_evap`
-        swcmin[i] = s->lyr[i]->swcBulk_min;
-        // example: swc as mean of wilting point and field capacity
-        swc_init[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt) / 2.;
-        // example: coeff as shrub trco
-        coeff[i] = s->lyr[i]->transp_coeff[SW_SHRUB];
+        // Setup: initial swc to some example value, here SWC at 20% VWC
+        swc_init[i] = 0.2 * s->lyr[i]->width;
+        // Setup: water extraction coefficient, some example value, here 0.5
+        coeff[i] = 0.5;
       }
 
-      // Begin TEST: coeff[i] == 0 --> no water to extract
+      //------ 1) TEST: if coeff[i] == 0, then expectation: no water extracted
       // Re-set inputs
       aet = aet_init;
       ForEachSoilLayer(i)
@@ -793,37 +770,30 @@ namespace
         swc[i] = swc_init[i];
       }
 
-      // Expected output: identical to inputs
-      aetExpected = aet_init;
-      ForEachSoilLayer(i)
-      {
-        swcExpected[i] = swc[i];
-        qtyExpected[i] = 0.;
-      }
-
-      // Call function: coeffZero used instead of coeff
+      // Call function to test: use coeffZero instead of coeff
       remove_from_soil(swc, qty, &aet, nlyrs, coeffZero, rate, swcmin);
 
       // Check expectation of no change from original values
       qty_sum = 0.;
       for (i = 0; i < nlyrs; i++)
       {
-        EXPECT_NEAR(qty[i], qtyExpected[i], tol6) <<
+        EXPECT_NEAR(qty[i], 0., tol6) <<
           "remove_from_soil: qty != qty for layer " << 1 + i << " out of "
           << nlyrs << " soil layers";
-        EXPECT_NEAR(swc[i], swcExpected[i], tol6) <<
+        EXPECT_NEAR(swc[i], swc_init[i], tol6) <<
           "remove_from_soil: swc != swc for layer " << 1 + i << " out of "
           << nlyrs << " soil layers";
-          qty_sum += qty[i];
+        qty_sum += qty[i];
       }
-      EXPECT_DOUBLE_EQ(aet, aetExpected) <<
+      EXPECT_DOUBLE_EQ(aet, aet_init) <<
           "remove_from_soil(no coeff): aet != aet for " << nlyrs <<
           " soil layers";
       EXPECT_DOUBLE_EQ(qty_sum, 0.) <<
           "remove_from_soil: sum(qty) != 0 for " << nlyrs << " soil layers";
 
-      //Begin TEST: frozen[i] --> no water to extract
-      //Re-set inputs and set soil layers as frozen
+
+      //------ 2) TEST: if frozen[i], then expectation: no water extracted
+      // Re-set inputs and set soil layers as frozen
       aet = aet_init;
       ForEachSoilLayer(i)
       {
@@ -832,29 +802,29 @@ namespace
         swc[i] = swc_init[i];
       }
 
-      // Call function: switch to coeff input
+      // Call function to test
       remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin);
 
       // Check expectation of no change from original values
       qty_sum = 0.;
       for (i = 0; i < nlyrs; i++)
       {
-        EXPECT_NEAR(qty[i], qtyExpected[i], tol6) <<
+        EXPECT_NEAR(qty[i], 0., tol6) <<
           "remove_from_soil(frozen): qty != qty for layer " << 1 + i <<
           " out of " << nlyrs << " soil layers";
-        EXPECT_NEAR(swc[i], swcExpected[i], tol6) <<
+        EXPECT_NEAR(swc[i], swc_init[i], tol6) <<
           "remove_from_soil(frozen): swc != swc for layer " << 1 + i <<
           " out of " << nlyrs << " soil layers";
         qty_sum += qty[i];
       }
-      EXPECT_DOUBLE_EQ(aet, aetExpected) <<
+      EXPECT_DOUBLE_EQ(aet, aet_init) <<
           "remove_from_soil(frozen): aet != aet for " << nlyrs <<
           " soil layers";
       EXPECT_DOUBLE_EQ(qty_sum, 0.) <<
           "remove_from_soil: sum(qty) != 0 for " << nlyrs << " soil layers";
 
 
-      // TEST if some coeff[i] > 0
+      //------ 3) TEST: if coeff[i] > 0 && !frozen[i], then water is extracted
       // Re-set inputs
       aet = aet_init;
       ForEachSoilLayer(i)
@@ -864,41 +834,43 @@ namespace
         swc[i] = swc_init[i];
       }
 
-      // Expected output
-      aetExpected = aet_init;
-      ForEachSoilLayer(i)
-      {
-        if (k == 0)
-        {
-          swcExpected[i] = swcExpected_1L[i];
-          qtyExpected[i] = qtyExpected_1L[i];
-
-        } else if (k == 1)
-        {
-          swcExpected[i] = swcExpected_MAXL[i];
-          qtyExpected[i] = qtyExpected_MAXL[i];
-        }
-
-        aetExpected += qtyExpected[i];
-      }
-
-      // Call function: switch to coeff input
+      // Call function to test
       remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate, swcmin);
 
-      // Check values of qty[] and swc[] against array of expected values
+      // Check values of qty[] and swc[]
       qty_sum = 0.;
       for (i = 0; i < nlyrs; i++)
       {
-        EXPECT_NEAR(qty[i], qtyExpected[i], tol6) <<
-          "remove_from_soil: qty != expected for layer " << 1 + i << " out of "
-          << nlyrs << " soil layers";
-        EXPECT_NEAR(swc[i], swcExpected[i], tol6) <<
-          "remove_from_soil: swc != expected for layer " << 1 + i << " out of "
-          << nlyrs << " soil layers";
+        // Check that swc_init > qty (removed amount of water) > 0
+        EXPECT_GT(qty[i], 0.) <<
+          "remove_from_soil: qty !> 0 in layer "
+          << 1 + i << " out of " << nlyrs << " soil layers";
+        EXPECT_LT(qty[i], swc_init[i]) <<
+          "remove_from_soil: qty !< swc_init in layer "
+          << 1 + i << " out of " << nlyrs << " soil layers";
+
+        // Check that swc_init > swc > swc_min
+        EXPECT_GT(swc[i], swcmin[i]) <<
+          "remove_from_soil: qty !> swc_min in layer "
+          << 1 + i << " out of " << nlyrs << " soil layers";
+        EXPECT_LT(swc[i], swc_init[i]) <<
+          "remove_from_soil: qty !< swc_init in layer "
+          << 1 + i << " out of " << nlyrs << " soil layers";
+
+        // Check that swc_init = swc + qty
+        EXPECT_NEAR(swc[i] + qty[i], swc_init[i], tol6) <<
+          "remove_from_soil: swc + qty != swc_init in layer "
+          << 1 + i << " out of " << nlyrs << " soil layers";
+
         qty_sum += qty[i];
       }
-      EXPECT_NEAR(aet, aetExpected, tol6) <<
-          "remove_from_soil: aet != expected for " << nlyrs << " soil layers";
+
+      // Check that aet - aet_init = sum(qty)
+      EXPECT_NEAR(aet, aet_init + qty_sum, tol6) <<
+          "remove_from_soil: delta(aet) != sum(qty) for "
+          << nlyrs << " soil layers";
+
+      // Check that rate >= sum(qty) > 0
       EXPECT_GT(qty_sum, 0.) <<
           "remove_from_soil: sum(qty) !> 0 for " << nlyrs << " soil layers";
       // detailed message due to failure on appveyor-ci (but not travis-ci):
@@ -922,8 +894,12 @@ namespace
   {
     //INPUTS
     unsigned int nlyrs, i, k;
-    double drainout = 0.1, sdrainpar = 0.6, sdraindpth = 6, standingWater = 0.;
-    double swc[MAX_LAYERS], drain[MAX_LAYERS], swcfc[MAX_LAYERS];
+    double
+      sum_delta_swc, small, drainout, standingWater,
+      sdrainpar = 0.02, // SW_Site.slow_drain_coeff
+      sdraindpth = SLOW_DRAIN_DEPTH;
+    double swc_init[MAX_LAYERS], swc[MAX_LAYERS];
+    double drain[MAX_LAYERS], swcfc[MAX_LAYERS];
     double width[MAX_LAYERS], swcmin[MAX_LAYERS], swcsat[MAX_LAYERS];
     double impermeability[MAX_LAYERS] = {0.};
 
@@ -939,433 +915,195 @@ namespace
         nlyrs = MAX_LAYERS; // test 2: MAX_LAYERS soil layers
       }
 
-      if(k == 1) //nlyrs = MAX_LAYERS
-      {
-
-        //Setup soil layers
-        create_test_soillayers(nlyrs);
-        drainout = 0.1, standingWater = 0;
-        ForEachSoilLayer(i)
-        {
-          // copy soil layer values into arrays so that they can be passed as
-          // example: swc as mean of wilting point and field capacity
-          swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
-            / 2.;
-          drain[i] = 1.;
-          swcfc[i] = s->lyr[i]->swcBulk_fieldcap;
-          width[i] = s->lyr[i]->width;
-          swcmin[i] = s->lyr[i]->swcBulk_min;
-          swcsat[i] = s->lyr[i]->swcBulk_saturated;
-        }
-
-        //INPUTS for expected outputs
-        double swcExpected0[MAX_LAYERS] = {
-          0.335102, 0.084524, 0.369557, 0.092513, 0.072265,
-          0.578848, 0.079652, 0.079652, 0.179332, 0.365506,
-          0.749107, 0.073229, 0.072265, 0.578848, 0.079652,
-          0.079652, 0.059777, 0.073101, 0.074911, 0.366146,
-          0.722649, 0.723560, 0.796521, 1.593042, 3.223746};
-        double drainExpected0[MAX_LAYERS];
-        double drainoutExpected = 0.1, standingWaterExpected = 0.;
-        ForEachSoilLayer(i)
-        {
-          drainExpected0[i] = 1.;
-        }
-        //Begin TEST for if swc[i] <= swcmin[i]
-        //Inputs for swc and swcmin have been swapped
-        ForEachSoilLayer(i)
-        {
-          swc[i] = s->lyr[i]->swcBulk_min;
-          swcmin[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
-            / 2.;
-          drain[i] = 1.;
-        }
-
-        infiltrate_water_low(swc, drain, &drainout, nlyrs, sdrainpar,
-          sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-          &standingWater);
-        //drainout expected to be 0.1
-        EXPECT_NEAR(drainoutExpected, drainout, tol6);
-        //standingWater expected to be 0.
-        EXPECT_NEAR(standingWaterExpected, standingWater, tol6);
-
-        ForEachSoilLayer(i)
-        {
-          EXPECT_NEAR(swc[i], swcExpected0[i], tol6) <<
-            "infiltrate_water_low: swc != expected for layer " << 1 + i;
-          EXPECT_NEAR(drain[i], drainExpected0[i], tol6) <<
-            "infiltrate_water_low: drain != expected for layer " << 1 + i;
-        }
-
-        //Reset to previous global states.
-        Reset_SOILWAT2_after_UnitTest();
-
-        //Begin TEST for if swc[i] > swcmin[i]
-        //Setup soil layers
-        create_test_soillayers(nlyrs);
-        //Reset INPUTS; swc[i] > swcmin[i]
-        ForEachSoilLayer(i)
-        {
-          swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
-            / 2.;
-          drain[i] = 1.;
-          swcfc[i] = s->lyr[i]->swcBulk_fieldcap;
-          width[i] = s->lyr[i]->width;
-          swcmin[i] = s->lyr[i]->swcBulk_min;
-          swcsat[i] = s->lyr[i]->swcBulk_saturated;
-        }
-        drainout = 0.1, standingWater = 0;
-
-        //Reset expected outcomes
-        double swcExpected1[MAX_LAYERS] = {
-          0.399392, 0.084524, 0.940897, 0.258086, 0.232875,
-          1.850324, 0.167824, 0.167824, 0.440474, 0.919427,
-          2.204563, 0.229410, 0.232875, 1.850324, 0.167824,
-          0.167824, 0.146825, 0.183885, 0.220456, 1.147049,
-          2.328750, 2.312906, 1.678236, 3.400368, 6.776540};
-        double drainExpected1[MAX_LAYERS] = {
-          1.426497, 1.548844, 1.600000, 1.600000, 1.600000,
-          1.600000, 1.600000, 1.600000, 1.600000, 1.600000,
-          1.600000, 1.600000, 1.600000, 1.600000, 1.600000,
-          1.600000, 1.600000, 1.600000, 1.600000, 1.600000,
-          1.600000, 1.600000, 1.600000, 1.556104, 1.507181};
-        standingWaterExpected = 0, drainoutExpected = 0.607181;
-
-        infiltrate_water_low(swc, drain, &drainout, nlyrs, sdrainpar,
-          sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-          &standingWater);
-
-        //drainout is expected to be 0.1
-        EXPECT_NEAR(drainoutExpected, drainout, tol6);
-        //standingWater is expected to be 0.
-        EXPECT_NEAR(standingWater, standingWaterExpected, tol6);
-
-        ForEachSoilLayer(i)
-        {
-          EXPECT_NEAR(swc[i], swcExpected1[i], tol6) <<
-            "infiltrate_water_low: swc != expected for layer " << 1 + i;
-          EXPECT_NEAR(drain[i], drainExpected1[i], tol6) <<
-            "infiltrate_water_low: drain != expected for layer " << 1 + i;
-        }
-
-        //Reset to previous global states.
-        Reset_SOILWAT2_after_UnitTest();
-
-        //Setup soil layers
-        create_test_soillayers(nlyrs);
-
-        //Begin TEST for if swc[j] > swcsat[j]
-        //Reset INPUTS; swc[j] > swcsat[j]
-        //swc and swcsat have been swapped
-        ForEachSoilLayer(i)
-        {
-          swcsat[i] = ((s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
-            / 2.);
-          swc[i] = s->lyr[i]->swcBulk_saturated;
-          drain[i] = 1;
-        }
-        standingWater = 0, drainout = 0.1;
-
-        //INPUTS for expected outputs
-        double swcExpected2[MAX_LAYERS] = {
-          0.825889, 0.206871, 0.992054, 0.258086, 0.232875,
-          1.850324, 0.167824, 0.167824, 0.440474, 0.919427,
-          2.204563, 0.229410, 0.232875, 1.850324, 0.167824,
-          0.167824, 0.146825, 0.183885, 0.220456, 1.147049,
-          2.328750, 2.312906, 1.678236, 3.356472, 6.727619};
-        double drainExpected2[MAX_LAYERS] = {
-          -19.455442, -19.300536, -18.690795, -18.534689, -18.393543,
-          -17.261477, -17.113211, -16.964945, -16.483618, -15.795148,
-          -14.440166, -14.301405, -14.160259, -13.028194, -12.879927,
-          -12.731661, -12.571219, -12.433525, -12.298027, -11.604222,
-          -10.192758, -8.777677, -7.295012, -4.329682, 1.6};
-        standingWaterExpected = 21.35793, drainoutExpected = 0.7;
-
-        infiltrate_water_low(swc, drain, &drainout, nlyrs, sdrainpar,
-          sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-          &standingWater);
-
-        //drainout is expected to be 0.1
-        EXPECT_NEAR(drainoutExpected, drainout, tol6);
-        //standingWater is expected to be 0.
-        EXPECT_NEAR(standingWater, standingWaterExpected, tol6);
-
-        ForEachSoilLayer(i)
-        {
-        EXPECT_NEAR(swc[i], swcExpected2[i], tol6) <<
-          "infiltrate_water_low: swc != expected for layer " << 1 + i;
-        EXPECT_NEAR(drain[i], drainExpected2[i], tol6) <<
-          "infiltrate_water_low: drain != expected for layer " << 1 + i;
-        }
-
-        //Reset to previous global states.
-        Reset_SOILWAT2_after_UnitTest();
-
-        //Setup soil layers
-        create_test_soillayers(nlyrs);
-
-        //Begin TEST for if swc[j] <= swcsat[j]
-        //INPUTS
-        //Reset INPUTS; swc[j] <= swcsat[j]
-        //swc and swcsat have been reset
-        ForEachSoilLayer(i)
-        {
-          swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
-            / 2.;
-          drain[i] = 1.;
-          swcfc[i] = s->lyr[i]->swcBulk_fieldcap;
-          width[i] = s->lyr[i]->width;
-          swcmin[i] = s->lyr[i]->swcBulk_min;
-          swcsat[i] = s->lyr[i]->swcBulk_saturated;
-        }
-        standingWater = 0, drainout = 0.1;
-
-        //INPUTS for expected outputs
-        double swcExpected3[MAX_LAYERS] = {
-          0.399392, 0.084524, 0.940896, 0.258086, 0.232875,
-          1.850324, 0.167824, 0.167824, 0.440474, 0.919427,
-          2.204563, 0.229410, 0.232875, 1.850324, 0.167824,
-          0.167824, 0.146825, 0.183885, 0.220456, 1.147049,
-          2.328750, 2.312906, 1.678236, 3.400368, 6.776541};
-        double drainExpected3[MAX_LAYERS] = {
-          1.426497, 1.548844, 1.600000, 1.600000, 1.600000,
-          1.600000, 1.600000, 1.600000, 1.600000, 1.600000,
-          1.600000, 1.600000, 1.600000, 1.600000, 1.600000,
-          1.600000, 1.600000, 1.600000, 1.600000, 1.600000,
-          1.600000, 1.600000, 1.600000, 1.556104, 1.507182};
-        standingWaterExpected = 0, drainoutExpected = 0.607181;
-
-        infiltrate_water_low(swc, drain, &drainout, nlyrs, sdrainpar,
-          sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-          &standingWater);
-
-        //drainout is expected to be 0.607181
-        EXPECT_NEAR(drainoutExpected, drainout, tol6);
-        //standingWater is expected to be 0.
-        EXPECT_NEAR(standingWater, standingWaterExpected, tol6);
-
-        ForEachSoilLayer(i)
-        {
-          EXPECT_NEAR(swc[i], swcExpected3[i], tol6) <<
-            "infiltrate_water_low: swc != expected for layer " << 1 + i;
-          EXPECT_NEAR(drain[i], drainExpected3[i], tol6) <<
-            "infiltrate_water_low: drain != expected for layer " << 1 + i;
-        }
-
-      }
-      //Reset to previous global states.
-      Reset_SOILWAT2_after_UnitTest();
-
-      //Setup soil layers
+      // Setup soil layers
       create_test_soillayers(nlyrs);
-      if(k == 0) //nlyrs = 1
+
+      // Initialize soil arrays to be independent of soil texture...
+      ForEachSoilLayer(i)
       {
-        //INPUTS for one layer
-        ForEachSoilLayer(i)
-        {
-          // copy soil layer values into arrays so that they can be passed as
-          // example: swc as mean of wilting point and field capacity
-          swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
-            / 2.;
-          drain[i] = 1.;
-          swcfc[i] = s->lyr[i]->swcBulk_fieldcap;
-          width[i] = s->lyr[i]->width;
-          swcmin[i] = s->lyr[i]->swcBulk_min;
-          swcsat[i] = s->lyr[i]->swcBulk_saturated;
-        }
-        //INPUTS for expected outputs
-        double swcExpected_1[1] = {0.335102};
-        double drainExpected_1[1] = {1.};
-        double drainoutExpected = 0.1, standingWaterExpected = 0;
-
-        //Begin TEST for if swc[i] <= swcmin[i]
-        //Inputs for swc and swcmin have been swapped
-        ForEachSoilLayer(i)
-        {
-          swc[i] = s->lyr[i]->swcBulk_min;
-          swcmin[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
-            / 2.;
-        }
-        infiltrate_water_low(swc, drain, &drainout, nlyrs, sdrainpar,
-          sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-          &standingWater);
-
-        //drainout is expected to be 0.1
-        EXPECT_NEAR(drainoutExpected, drainout, tol6);
-        //standingWater is expected to be 0.
-        EXPECT_NEAR(standingWater, standingWaterExpected, tol6);
-
-        //swc is expected to match 0.335102
-        EXPECT_NEAR(swc[0], swcExpected_1[0], tol6);
-        //drain is expected to match 1.
-        EXPECT_DOUBLE_EQ(drain[0], drainExpected_1[0]);
-
-        //Reset to previous global states.
-        Reset_SOILWAT2_after_UnitTest();
-
-        //Setup soil layers
-        create_test_soillayers(nlyrs);
-
-        //Begin TEST for if swc[i] > swcmin[i]
-        standingWater = 0, drainout = 0.1;
-        ForEachSoilLayer(i)
-        {
-          swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
-            / 2.;
-          swcmin[i] = s->lyr[i]->swcBulk_min;
-          drain[i] = 1.;
-        }
-        double swcExpected2_1[1] = {0.399392};
-        double drainExpected2_1[1] = {1.426497};
-        standingWaterExpected = 0., drainoutExpected = 0.526497;
-
-        infiltrate_water_low(swc, drain, &drainout, nlyrs, sdrainpar,
-          sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-          &standingWater);
-
-        //drainout is expected to be 0.526497
-        EXPECT_NEAR(drainoutExpected, drainout, tol6);
-        //standingWater is expected to be 0.
-        EXPECT_NEAR(standingWater, standingWaterExpected, tol6);
-
-        //swc is expected to match 0.399392
-        EXPECT_NEAR(swc[0], swcExpected2_1[0], tol6);
-        //drain is expected to match 1.426497
-        EXPECT_NEAR(drain[0], drainExpected2_1[0], tol6);
-
-        //Reset to previous global states.
-        Reset_SOILWAT2_after_UnitTest();
-
-        //Setup soil layers
-        create_test_soillayers(nlyrs);
-
-        //Begin TEST for if lyrFrozen == true
-        //INPUTS for expected outputs
-        double swcExpected3_1[1] = {0.821624};
-        double drainoutExpectedf = 0.104265;
-        //Set lyrFrozen
-        ForEachSoilLayer(i)
-        {
-          st->lyrFrozen[i] = swTRUE;
-        }
-
-        infiltrate_water_low(swc, drain, &drainout, nlyrs, sdrainpar,
-          sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-          &standingWater);
-
-        if (st->lyrFrozen[i] == swTRUE)
-        {
-          //standingWater is expected to be 0.
-          EXPECT_NEAR(standingWater, standingWaterExpected, tol6);
-          //drainout is expected to be 0.104265
-          EXPECT_NEAR(drainoutExpectedf, drainout, tol6);
-          //swc is expected to match 0.821624
-          EXPECT_NEAR(swc[0], swcExpected3_1[0], tol6);
-          //drain is expected to match 1.426497
-          EXPECT_NEAR(drain[0], drainExpected2_1[0], tol6);
-        }
-        //Reset to previous global states.
-        Reset_SOILWAT2_after_UnitTest();
-        //Setup soil layers
-        create_test_soillayers(nlyrs);
-
-        //Begin TEST for if lyrFrozen == false
-        ForEachSoilLayer(i)
-        {
-          st->lyrFrozen[i] = swFALSE;
-          swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
-            / 2.;
-          drain[i] = 1.;
-          swcfc[i] = s->lyr[i]->swcBulk_fieldcap;
-          width[i] = s->lyr[i]->width;
-          swcmin[i] = s->lyr[i]->swcBulk_min;
-          swcsat[i] = s->lyr[i]->swcBulk_saturated;
-        }
-
-        //Reset to previous global states.
-        Reset_SOILWAT2_after_UnitTest();
-
-        //Setup soil layers
-        create_test_soillayers(nlyrs);
-
-        //Begin TEST for if swc[j] > swcsat[j]
-
-        //INPUTS
-        //swc and swcsat have been swapped
-        standingWater = 0, drainout = 0.1;
-        ForEachSoilLayer(i)
-        {
-          swcsat[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
-            / 2.;
-          drain[i] = 1.;
-          swcfc[i] = s->lyr[i]->swcBulk_fieldcap;
-          width[i] = s->lyr[i]->width;
-          swcmin[i] = s->lyr[i]->swcBulk_min;
-          swc[i] = s->lyr[i]->swcBulk_saturated;
-        }
-
-        //INPUTS for expected outputs
-        double swcExpected4_1[1] = {0.825889};
-        double drainExpected4_1[1] = {1.6};
-        standingWaterExpected = 0.302488, drainoutExpected = 0.7;
-
-        infiltrate_water_low(swc, drain, &drainout, nlyrs, sdrainpar,
-          sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-          &standingWater);
-
-        //drainout is expected to be 0.7
-        EXPECT_NEAR(drainout, drainoutExpected, tol6);
-        //standingWater expected to be 0.302488
-        EXPECT_NEAR(standingWater, standingWaterExpected, tol6);
-        //swc is expected to match 0.825889
-        EXPECT_NEAR(swc[0], swcExpected4_1[0], tol6);
-        //drain is expected to match 1.6
-        EXPECT_NEAR(drain[0], drainExpected4_1[0], tol6);
-
-        //Reset to previous global states.
-        Reset_SOILWAT2_after_UnitTest();
-
-        //Setup soil layers
-        create_test_soillayers(nlyrs);
-
-        //Begin TEST for if swc[j] <= swcsat[j]
-        //Reset INPUTS; swc[j] <= swcsat[j]
-        //swc and swcsat have been reset
-        standingWater = 0, drainout = 0.1;
-        ForEachSoilLayer(i)
-        {
-          swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt)
-            / 2.;
-          drain[i] = 1.;
-          swcfc[i] = s->lyr[i]->swcBulk_fieldcap;
-          width[i] = s->lyr[i]->width;
-          swcmin[i] = s->lyr[i]->swcBulk_min;
-          swcsat[i] = s->lyr[i]->swcBulk_saturated;
-        }
-
-        //INPUTS for expected outputs
-        double swcExpected5_1[1] = {0.399392};
-        double drainExpected5_1[1] = {1.426497};
-        standingWaterExpected = 0., drainoutExpected = 0.526497;
-
-        infiltrate_water_low(swc, drain, &drainout, nlyrs, sdrainpar,
-          sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-          &standingWater);
-
-        //drainout is expected to be 0.526497
-        EXPECT_NEAR(drainout, drainoutExpected, tol6);
-        //standingWater expected to be 0.
-        EXPECT_NEAR(standingWater, standingWaterExpected, tol6);
-        //swc is expected to be 0.399392
-        EXPECT_NEAR(swc[0], swcExpected5_1[0], tol6);
-        //drain is expected to be 1.426497
-        EXPECT_NEAR(drain[0], drainExpected5_1[0], tol6);
-
+        width[i] = s->lyr[i]->width;
+        swcfc[i] = 0.25 * width[i];
+        swcmin[i] = 0.05 * width[i];
+        swcsat[i] = 0.35 * width[i];
       }
-      //Reset to previous global states.
-      Reset_SOILWAT2_after_UnitTest();
+
+
+      //--- (1) TEST:
+      //        if swc[i] <= swcmin[i],
+      //        then expect drain = 0
+
+      // Set initial values
+      drainout = 0.;
+      standingWater = 0;
+
+      ForEachSoilLayer(i)
+      {
+        swc_init[i] = 0.5 * swcmin[i];
+        swc[i] = swc_init[i];
+        drain[i] = 0.;
+      }
+
+      // Call function to test
+      infiltrate_water_low(
+        swc, drain, &drainout, nlyrs, sdrainpar,
+        sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
+        &standingWater
+      );
+
+      // Expectation: drainout = 0
+      EXPECT_NEAR(drainout, 0., tol6);
+
+      // Expectation: standingWater = 0
+      EXPECT_NEAR(standingWater, 0., tol6);
+
+      // Expectations: (i) drain[i] = 0; (ii) delta(swc[i]) = 0
+      ForEachSoilLayer(i)
+      {
+        EXPECT_NEAR(drain[i], 0., tol6) <<
+          "infiltrate_water_low: drain != 0 for layer " << 1 + i;
+        EXPECT_NEAR(swc[i], swc_init[i], tol6) <<
+          "infiltrate_water_low: swc != swc_init for layer " << 1 + i;
+      }
+
+
+      //--- (2) TEST:
+      //        if swc_fc > swc[i] > swcmin[i],
+      //        then expect drain > 0
+
+      // Set initial values
+      drainout = 0.;
+      standingWater = 0;
+
+      ForEachSoilLayer(i)
+      {
+        swc_init[i] = 0.9 * swcfc[i];
+        swc[i] = swc_init[i];
+        drain[i] = 0.;
+      }
+
+      // Call function to test
+      infiltrate_water_low(
+        swc, drain, &drainout, nlyrs, sdrainpar,
+        sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
+        &standingWater
+      );
+
+      // Expectation: drainout > 0
+      EXPECT_GT(drainout, 0.);
+
+      // Expectation: standingWater = 0
+      EXPECT_NEAR(standingWater, 0., tol6);
+
+      // Expectations: (i) drain[i] > 0; (ii) sum(delta(swc[i])) < 0
+      sum_delta_swc = 0.;
+      ForEachSoilLayer(i)
+      {
+        EXPECT_GT(drain[i], 0.) <<
+          "infiltrate_water_low: drain !> 0 for layer " << 1 + i;
+        sum_delta_swc += swc[i] - swc_init[i];
+      }
+      EXPECT_LT(sum_delta_swc, 0.) <<
+        "infiltrate_water_low: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
+
+
+      //--- (3) TEST:
+      //        if swc_sat ~ swc[i] > swc_fc[i],
+      //        then expect drain < 0 && ponded > 0
+
+      // Set initial values
+      drainout = 0.;
+      standingWater = 0;
+
+      ForEachSoilLayer(i)
+      {
+        swc_init[i] = 1.1 * swcsat[i];
+        swc[i] = swc_init[i];
+        drain[i] = 0.;
+      }
+
+      // Call function to test
+      infiltrate_water_low(
+        swc, drain, &drainout, nlyrs, sdrainpar,
+        sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
+        &standingWater
+      );
+
+      // Expectation: drainout > 0
+      EXPECT_GT(drainout, 0.);
+
+      // Expectation: standingWater > 0
+      EXPECT_GT(standingWater, 0.);
+
+      // Expectations: (i) drain[i] < 0; (ii) sum(delta(swc[i])) < 0
+      sum_delta_swc = 0.;
+      ForEachSoilLayer(i)
+      {
+        if (i + 1 < nlyrs) {
+          EXPECT_LT(drain[i], 0.) <<
+            "infiltrate_water_low: drain !< 0 for layer " << 1 + i;
+        } else {
+          EXPECT_NEAR(drain[i], sdrainpar, tol6) <<
+            "infiltrate_water_low: drain != sdrainpar for last layer " << 1 + i;
+        }
+        sum_delta_swc += swc[i] - swc_init[i];
+      }
+      EXPECT_LT(sum_delta_swc, 0.) <<
+        "infiltrate_water_low: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
+
+
+      //--- (4) TEST:
+      //        if lyrFrozen[i],
+      //        then expect drain[i] to be small
+      small = tol3;
+
+      // Set initial values
+      drainout = 0.;
+      standingWater = 0;
+
+      ForEachSoilLayer(i)
+      {
+        swc_init[i] = 0.9 * swcfc[i];
+        swc[i] = swc_init[i];
+        drain[i] = 0.;
+        st->lyrFrozen[i] = swTRUE;
+      }
+
+      // Call function to test
+      infiltrate_water_low(
+        swc, drain, &drainout, nlyrs, sdrainpar,
+        sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
+        &standingWater
+      );
+
+      // Expectation: small > drainout > 0
+      EXPECT_GT(drainout, 0.);
+      EXPECT_LT(drainout, small);
+
+      // Expectation: standingWater = 0
+      EXPECT_NEAR(standingWater, 0., tol6);
+
+      // Expectations: (i) small > drain[i] > 0; (ii) delta(swc[i]) ~ 0
+      ForEachSoilLayer(i)
+      {
+        EXPECT_GT(drain[i], 0.) <<
+          "infiltrate_water_low: drain !> 0 for layer " << 1 + i;
+        EXPECT_LT(drain[i], small) <<
+          "infiltrate_water_low: small !> drain for layer " << 1 + i;
+        EXPECT_NEAR(swc[i], swc_init[i], small) <<
+          "infiltrate_water_low: swc !~ swc_init for layer " << 1 + i;
+      }
+
+      // Reset frozen status
+      ForEachSoilLayer(i)
+      {
+        st->lyrFrozen[i] = swFALSE;
+      }
     }
+
+    // Reset to previous global states.
+    Reset_SOILWAT2_after_UnitTest();
   }
+
 
   //TEST for hydraulic_redistribution when nlyrs = MAX_LAYERS and nlyrs = 1
   TEST(SWFlowTest, hydraulic_redistribution)

@@ -38,7 +38,13 @@
 # make compiler_version print version information of CC and CXX compilers
 #-------------------------------------------------------------------------------
 
-uname_m = $(shell uname -m)
+#------ Identification
+SW2_VERSION := "$(shell git describe --abbrev=7 --dirty --always --tags)"
+HOSTNAME := "$(shell uname -sn)"
+
+sw_info = -DSW2_VERSION=\"$(SW2_VERSION)\" \
+					-DUSERNAME=\"$(USER)\" \
+					-DHOSTNAME=\"$(HOSTNAME)\"
 
 
 #------ OUTPUT NAMES
@@ -78,7 +84,11 @@ warning_flags_severe = \
 	-Wmissing-declarations \
 	-Wredundant-decls
 
-warnings_flags_severe_cxx = \
+warning_flags_severe_cc = \
+	$(warning_flags_severe) \
+	-Wstrict-prototypes # '-Wstrict-prototypes' is valid for C/ObjC but not for C++
+
+warning_flags_severe_cxx = \
 	$(warning_flags_severe) \
 	-Wno-error=deprecated
 	# TODO: address underlying problems so that we can eliminate
@@ -101,7 +111,7 @@ instr_flags_severe = \
 
 
 # Precompiler and compiler flags and options
-sw_CPPFLAGS = $(CPPFLAGS)
+sw_CPPFLAGS = $(CPPFLAGS) $(sw_info)
 sw_CFLAGS = $(CFLAGS)
 sw_CXXFLAGS = $(CXXFLAGS)
 
@@ -184,7 +194,7 @@ $(lib_target_test) :
 		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
 
 $(lib_target_severe) :	# needs CXX because of '*_severe' flags which must match test binary build
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warnings_flags_severe_cxx) \
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags_severe_cxx) \
 		$(instr_flags_severe) $(use_gnu++11) -c $(sources_lib_test) $(sources_pcg)
 
 		-@$(RM) -f $(lib_target_severe)
@@ -206,14 +216,14 @@ $(target) : $(lib_target)
 		-o $(target) $(sources_bin) $(target_LDLIBS) $(sw_LDFLAGS)
 
 bin_debug_severe :
-		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe) \
+		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe_cc) \
 		$(instr_flags_severe) $(use_c11) -c $(sources_lib_test) $(sources_pcg)
 
 		-@$(RM) -f $(lib_target_severe)
 		$(AR) -rcs $(lib_target_severe) $(objects_lib_test) $(objects_pcg)
 		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
 
-		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe) \
+		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe_cc) \
 		$(instr_flags_severe) $(use_c11) \
 		-o $(target) $(sources_bin) $(severe_LDLIBS) $(sw_LDFLAGS)
 
@@ -251,7 +261,7 @@ $(lib_gtest) :
 		@$(AR) -r $(lib_gtest) gtest-all.o
 
 test_severe : $(lib_gtest) $(lib_target_severe)
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warnings_flags_severe_cxx) \
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags_severe_cxx) \
 		$(instr_flags_severe) $(use_gnu++11) \
 		-isystem ${GTEST_DIR}/include -pthread \
 		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(severe_LDLIBS) $(sw_LDFLAGS)

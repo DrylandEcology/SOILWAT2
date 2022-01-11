@@ -46,14 +46,26 @@ typedef struct {
 
 
 
-// Function declarations
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern SW_FILE_STATUS SW_OutFiles;
+extern Bool print_IterationSummary;
+extern Bool print_SW_Output;
+extern char sw_outstr[MAX_LAYERS * OUTSTRLEN];
+
+#ifdef STEPWAT
+  extern char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
+#endif
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 #if defined(SOILWAT)
-void _create_csv_files(OutPeriod pd);
 void SW_OUT_create_files(void);
 
 #elif defined(STEPWAT)
-void _create_filename_ST(char *str, char *flag, int iteration, char *filename);
-void _create_csv_file_ST(int iteration, OutPeriod pd);
 void SW_OUT_create_summary_files(void);
 void SW_OUT_create_iteration_files(int iteration);
 #endif

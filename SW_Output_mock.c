@@ -17,58 +17,41 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "generic.h"
-#include "filefuncs.h"
+#include "generic.h" // externs `QuietMode`, `EchoInits`
+#include "filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "myMemory.h"
 #include "Times.h"
 
-#include "SW_Carbon.h"
+#include "SW_Carbon.h" // externs SW_Carbon
 #include "SW_Defines.h"
 #include "SW_Files.h"
-#include "SW_Model.h"
-#include "SW_Site.h"
-#include "SW_SoilWater.h"
+#include "SW_Model.h" // externs SW_Model
+#include "SW_Site.h" // externs SW_Site
+#include "SW_SoilWater.h" // externs SW_Soilwat
 #include "SW_Times.h"
 #include "SW_Output.h"
-#include "SW_Weather.h"
-#include "SW_VegEstab.h"
-#include "SW_VegProd.h"
+#include "SW_Weather.h"  // externs SW_Weather
+#include "SW_VegEstab.h" // externs SW_VegEstab
+#include "SW_VegProd.h" // externs SW_VegProd
 
-// Global Variables
-extern SW_SITE SW_Site;
-extern SW_SOILWAT SW_Soilwat;
-extern SW_MODEL SW_Model;
-extern SW_WEATHER SW_Weather;
-extern SW_VEGPROD SW_VegProd;
-extern SW_VEGESTAB SW_VegEstab;
-extern Bool EchoInits;
-extern SW_CARBON SW_Carbon;
 
-// Copy-paste from SW_Output.c (lines 81-103)
+
+/* =================================================== */
+/*                  Global Variables                   */
+/* --------------------------------------------------- */
+
+// Copy-paste definitions from SW_Output.c (lines 81-103)
 SW_OUTPUT SW_Output[SW_OUTNKEYS];
 
-char _Sep; /* output delimiter */
-TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
+char _Sep;
+TimeInt tOffset;
 
-
-// Global variables describing output periods:
-/** `timeSteps` is the array that keeps track of the output time periods that
-    are required for `text` and/or `array`-based output for each output key. */
 OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
-/** The number of different time steps/periods that are used/requested
-		Note: Under STEPWAT2, this may be larger than the sum of `use_OutPeriod`
-			because it also incorporates information from `timeSteps_SXW`. */
 IntUS used_OUTNPERIODS;
-/** TRUE if time step/period is active for any output key. */
 Bool use_OutPeriod[SW_OUTNPERIODS];
 
-
-// Global variables describing size and names of output
-/** names of output columns for each output key; number is an expensive guess */
 char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
-/** number of output columns for each output key */
 IntUS ncol_OUT[SW_OUTNKEYS];
-
 
 
 // Mock definitions
@@ -78,7 +61,7 @@ char const *pd2longstr[] = {"SW_MISSING"};
 
 
 /* =================================================== */
-/*             Public Function Definitions             */
+/*             Global Function Definitions             */
 /*             (declared in SW_Output.h)               */
 /* --------------------------------------------------- */
 void SW_OUT_set_colnames(void)
@@ -262,7 +245,7 @@ static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 	if ((int)x == 1) {}
 
 	if (EQ(0., v->bare_cov.fCover)) {}
-	if (EQ(0., s->veg[SW_GRASS].biomass)) {}
+	if (EQ(0., s->veg[SW_GRASS].biomass_inveg)) {}
 }
 
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)

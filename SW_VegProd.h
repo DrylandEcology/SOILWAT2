@@ -203,12 +203,17 @@ typedef struct {
 
 
 typedef struct {
-  RealD biomass, biolive, litter;
+  // biomass [g/m2] per vegetation type as observed in total vegetation
+  // (reduced from 100% cover per vegtype (inputs) to actual cover (simulated))
+  RealD biomass_inveg, biolive_inveg, litter_inveg;
 } VegTypeOut;
 
 
 typedef struct {
+  // biomass [g/m2] per vegetation type as observed in total vegetation
   VegTypeOut veg[NVEGTYPES];
+  // biomass [g/m2] of total vegetation
+  RealD biomass_total, biolive_total, litter_total, LAI;
 } SW_VEGPROD_OUTPUTS;
 
 
@@ -244,6 +249,16 @@ typedef struct {
 
 
 
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern SW_VEGPROD SW_VegProd;
+extern char const *key2veg[NVEGTYPES];
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_VPD_read(void);
 void SW_VPD_new_year(void);
 void SW_VPD_fix_cover(void);

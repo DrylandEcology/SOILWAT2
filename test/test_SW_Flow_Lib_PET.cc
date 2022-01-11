@@ -26,7 +26,7 @@
 #include "../Times.h"
 #include "../SW_Defines.h"
 #include "../SW_Times.h"
-#include "../SW_Files.h"
+#include "../SW_Files.h" // externs `output_prefix`
 #include "../SW_Carbon.h"
 #include "../SW_Site.h"
 #include "../SW_VegProd.h"
@@ -42,7 +42,6 @@
 
 #include "sw_testhelpers.h"
 
-extern char output_prefix[FILENAME_MAX];
 
 
 namespace
@@ -1041,5 +1040,109 @@ namespace
 
     SW_PET_init_run(); // Re-init radiation memoization
   }
+
+
+
+  #ifdef SW2_PET_Test__petfunc_by_temps
+  // Run SOILWAT2 unit tests with flag
+  // ```
+  //   CPPFLAGS=-DSW2_PET_Test__petfunc_by_temps make test test_run
+  // ```
+  //
+  // Produce plots based on output generated above
+  // ```
+  //   Rscript tools/plot__SW2_PET_Test__petfunc_by_temps.R
+  // ```
+  TEST(SW2_PET_Test, petfunc_by_temps)
+  {
+    int doy, k1, k2, k3, k4, k5;
+
+    double
+      pet,
+      temp, RH, windspeed, cloudcover, fH_gt,
+      H_gt, H_oh, H_ot, H_gh,
+      elev = 0.,
+      lat = 40.,
+      slope = 0.,
+      aspect = SW_MISSING,
+      reflec = 0.15;
+
+    FILE *fp;
+    char fname[FILENAME_MAX];
+
+    strcpy(fname, output_prefix);
+    strcat(fname, "Table__SW2_PET_Test__petfunc_by_temps.csv");
+    fp = OpenFile(fname, "w");
+
+    // Column names
+    fprintf(
+      fp,
+      "Temperature_C, RH_pct, windspeed_m_per_s, cloudcover_pct, fH_gt, PET_mm"
+      "\n"
+    );
+
+    // Loop over treatment factors
+    for (k1 = -40; k1 < 60; k1++)
+    {
+      temp = k1;
+
+      for (k2 = 0; k2 <= 10; k2++)
+      {
+        RH = 10. * k2;
+
+        for (k3 = 0; k3 <= 3; k3++)
+        {
+          windspeed = squared(k3);
+
+          for (k4 = 0; k4 <= 3; k4++)
+          {
+            cloudcover = 33.3 * k4;
+
+            for (k5 = -1; k5 <= 1; k5++)
+            {
+              fH_gt = 1 + k5 * 0.2;
+              pet = 0.;
+
+              for (doy = 1; doy <= 365; doy++)
+              {
+
+                H_gt = fH_gt * solar_radiation(
+                  doy,
+                  lat, elev, slope, aspect, reflec,
+                  cloudcover, RH, temp,
+                  &H_oh, &H_ot, &H_gh
+                );
+
+                pet += petfunc(
+                  H_gt,
+                  temp,
+                  elev, reflec,
+                  RH, windspeed, cloudcover
+                );
+              }
+
+              fprintf(
+                fp,
+                "%f, %f, %f, %f, %f, %f\n",
+                temp,
+                RH,
+                windspeed,
+                cloudcover,
+                fH_gt,
+                pet
+              );
+
+              fflush(fp);
+            }
+          }
+        }
+      }
+    }
+
+    // Clean up
+    CloseFile(&fp);
+  }
+  #endif // end of SW2_PET_Test__petfunc_by_temps
+
 
 }

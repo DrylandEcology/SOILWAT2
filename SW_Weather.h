@@ -89,6 +89,17 @@ typedef struct {
 
 } SW_WEATHER;
 
+
+
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern SW_WEATHER SW_Weather;
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_WTH_read(void);
 Bool _read_weather_hist(TimeInt year);
 void _clear_hist_weather(void);

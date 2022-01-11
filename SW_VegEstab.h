@@ -89,6 +89,16 @@ typedef struct {
 
 } SW_VEGESTAB;
 
+
+/* =================================================== */
+/*            Externed Global Variables                */
+/* --------------------------------------------------- */
+extern SW_VEGESTAB SW_VegEstab;
+
+
+/* =================================================== */
+/*             Global Function Declarations            */
+/* --------------------------------------------------- */
 void SW_VES_read(void);
 void SW_VES_construct(void);
 void SW_VES_deconstruct(void);

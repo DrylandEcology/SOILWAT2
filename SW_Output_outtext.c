@@ -29,9 +29,12 @@
 
 #include "SW_Defines.h"
 #include "SW_Files.h"
-#include "SW_Model.h"
-#include "SW_Site.h"
+#include "SW_Model.h" // externs SW_Model
+#include "SW_Site.h" // externs SW_Site
 
+// externs `SW_Output`, `_Sep`, `tOffset`, `use_OutPeriod`, `used_OUTNPERIODS`,
+//         `timeSteps`, `colnames_OUT`, `ncol_OUT`, `key2str`, `pd2longstr`,
+//         `prepare_IterationSummary`, `storeAllIterations`
 #include "SW_Output.h"
 #include "SW_Output_outtext.h"
 
@@ -40,27 +43,8 @@
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-extern SW_MODEL SW_Model;
-extern SW_SITE SW_Site;
-
-// defined in `SW_Output.c`
-extern SW_OUTPUT SW_Output[];
-extern char _Sep;
-extern TimeInt tOffset;
-
-extern Bool use_OutPeriod[];
-extern IntUS used_OUTNPERIODS;
-extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
-
-extern char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
-extern IntUS ncol_OUT[];
-
-extern char const *key2str[];
-extern char const *pd2longstr[];
-
-
-// defined here:
 SW_FILE_STATUS SW_OutFiles;
+
 
 Bool
   /** `print_IterationSummary` is TRUE if STEPWAT2 is called with `-o` flag
@@ -70,12 +54,14 @@ Bool
       if STEPWAT2 is called with `-i` flag */
   print_SW_Output;
 
+
 /** \brief Formatted output string for single run output
 
   Used for output as returned from any function `get_XXX_text` which are used
   for SOILWAT2-standalone and for a single iteration/repeat for STEPWAT2
 */
 char sw_outstr[MAX_LAYERS * OUTSTRLEN];
+
 
 /** \brief Formatted output string for aggregated output
 
@@ -91,23 +77,18 @@ char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 
 #ifdef STEPWAT
 char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
-extern Bool prepare_IterationSummary; // defined in `SW_Output.c`
-extern Bool storeAllIterations; // defined in `SW_Output.c`
 #endif
 
 
+
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Declarations            */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 
-static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil, Bool does_agg);
-static void get_outstrheader(OutPeriod pd, char *str);
 
 
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
+/*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
 static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil, Bool does_agg) {
@@ -156,6 +137,31 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil, Boo
 }
 
 
+#if defined(SOILWAT)
+/**
+  \brief Create `csv` output files for specified time step
+
+  \param pd The output time step.
+*/
+/***********************************************************/
+static void _create_csv_files(OutPeriod pd)
+{
+	// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
+	// a specific order of `SW_FileIndex` --> fix and create something that
+	// allows subsetting such as `eOutputFile[pd]` or append time period to
+	// a basename, etc.
+
+	if (SW_OutFiles.make_regular[pd]) {
+		SW_OutFiles.fp_reg[pd] = OpenFile(SW_F_name(eOutputDaily + pd), "w");
+	}
+
+	if (SW_OutFiles.make_soil[pd]) {
+		SW_OutFiles.fp_soil[pd] = OpenFile(SW_F_name(eOutputDaily_soil + pd), "w");
+	}
+}
+#endif
+
+
 static void get_outstrheader(OutPeriod pd, char *str) {
 	switch (pd) {
 		case eSW_Day:
@@ -177,63 +183,14 @@ static void get_outstrheader(OutPeriod pd, char *str) {
 }
 
 
-
-/* =================================================== */
-/* =================================================== */
-/*             Function Definitions                    */
-/*             (declared in SW_Output_outtext.h)       */
-/* --------------------------------------------------- */
-
-
-#if defined(SOILWAT)
-/**
-  \brief Create `csv` output files for specified time step
-
-  \param pd The output time step.
-*/
-/***********************************************************/
-void _create_csv_files(OutPeriod pd)
-{
-	// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
-	// a specific order of `SW_FileIndex` --> fix and create something that
-	// allows subsetting such as `eOutputFile[pd]` or append time period to
-	// a basename, etc.
-
-	if (SW_OutFiles.make_regular[pd]) {
-		SW_OutFiles.fp_reg[pd] = OpenFile(SW_F_name(eOutputDaily + pd), "w");
-	}
-
-	if (SW_OutFiles.make_soil[pd]) {
-		SW_OutFiles.fp_soil[pd] = OpenFile(SW_F_name(eOutputDaily_soil + pd), "w");
-	}
-}
-
-/** @brief create all of the user-specified output files.
-    @note Call this routine at the beginning of the main program run, but
-    after SW_OUT_read() which sets the global variable use_OutPeriod.
-*/
-void SW_OUT_create_files(void) {
-	OutPeriod pd;
-
-	ForEachOutPeriod(pd) {
-		if (use_OutPeriod[pd]) {
-			_create_csv_files(pd);
-
-			write_headers_to_csv(pd, SW_OutFiles.fp_reg[pd], SW_OutFiles.fp_soil[pd],
-				swFALSE);
-		}
-	}
-}
-
-
-#elif defined(STEPWAT)
+#if defined(STEPWAT)
 /** Splits a filename such as `name.ext` into its two parts `name` and `ext`;
 		appends `flag` and, if positive, `iteration` to `name` with `_` as
 		separator; and returns the full name concatenated
 
 		\return `name_flagiteration.ext`
 */
-void _create_filename_ST(char *str, char *flag, int iteration, char *filename) {
+static void _create_filename_ST(char *str, char *flag, int iteration, char *filename) {
 	char *basename;
 	char *ext;
 	char *fileDup = (char *)malloc(strlen(str) + 1);
@@ -268,7 +225,7 @@ void _create_filename_ST(char *str, char *flag, int iteration, char *filename) {
   \param pd The output time step.
 */
 /***********************************************************/
-void _create_csv_file_ST(int iteration, OutPeriod pd)
+static void _create_csv_file_ST(int iteration, OutPeriod pd)
 {
 	char filename[FILENAME_MAX];
 
@@ -311,6 +268,38 @@ void _create_csv_file_ST(int iteration, OutPeriod pd)
 		}
 	}
 }
+#endif
+
+
+
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
+
+
+
+
+#if defined(SOILWAT)
+
+/** @brief create all of the user-specified output files.
+    @note Call this routine at the beginning of the main program run, but
+    after SW_OUT_read() which sets the global variable use_OutPeriod.
+*/
+void SW_OUT_create_files(void) {
+	OutPeriod pd;
+
+	ForEachOutPeriod(pd) {
+		if (use_OutPeriod[pd]) {
+			_create_csv_files(pd);
+
+			write_headers_to_csv(pd, SW_OutFiles.fp_reg[pd], SW_OutFiles.fp_soil[pd],
+				swFALSE);
+		}
+	}
+}
+
+
+#elif defined(STEPWAT)
 
 void SW_OUT_create_summary_files(void) {
 	OutPeriod p;

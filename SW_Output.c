@@ -33,31 +33,33 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "generic.h"
-#include "filefuncs.h"
+#include "generic.h" // externs `QuietMode`, `EchoInits`
+#include "filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "myMemory.h"
 #include "Times.h"
 
-#include "SW_Carbon.h"
+#include "SW_Carbon.h" // externs SW_Carbon
 #include "SW_Defines.h"
 #include "SW_Files.h"
-#include "SW_Model.h"
-#include "SW_Site.h"
-#include "SW_SoilWater.h"
+#include "SW_Model.h" // externs SW_Model
+#include "SW_Site.h" // externs SW_Site
+#include "SW_SoilWater.h" // externs SW_Soilwat
 #include "SW_Times.h"
-#include "SW_Weather.h"
-#include "SW_VegEstab.h"
-#include "SW_VegProd.h"
+#include "SW_Weather.h"  // externs SW_Weather
+#include "SW_VegEstab.h" // externs SW_VegEstab
+#include "SW_VegProd.h" // externs SW_VegProd
 
 #include "SW_Output.h"
 
 // Array-based output declarations:
 #ifdef SW_OUTARRAY
-#include "SW_Output_outarray.h"
+  #include "SW_Output_outarray.h"
 #endif
 
 // Text-based output declarations:
 #ifdef SW_OUTTEXT
+// externs `SW_OutFiles`, `print_IterationSummary`, `print_SW_Output`,
+//         `sw_outstr`, `sw_outstr_agg`
 #include "SW_Output_outtext.h"
 #endif
 
@@ -69,15 +71,6 @@
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-extern SW_SITE SW_Site;
-extern SW_SOILWAT SW_Soilwat;
-extern SW_MODEL SW_Model;
-extern SW_WEATHER SW_Weather;
-extern SW_VEGPROD SW_VegProd;
-extern SW_VEGESTAB SW_VegEstab;
-extern Bool EchoInits;
-extern SW_CARBON SW_Carbon;
-
 
 SW_OUTPUT SW_Output[SW_OUTNKEYS];
 
@@ -89,10 +82,12 @@ TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
 /** `timeSteps` is the array that keeps track of the output time periods that
     are required for `text` and/or `array`-based output for each output key. */
 OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
+
 /** The number of different time steps/periods that are used/requested
 		Note: Under STEPWAT2, this may be larger than the sum of `use_OutPeriod`
 			because it also incorporates information from `timeSteps_SXW`. */
 IntUS used_OUTNPERIODS;
+
 /** TRUE if time step/period is active for any output key. */
 Bool use_OutPeriod[SW_OUTNPERIODS];
 
@@ -100,25 +95,10 @@ Bool use_OutPeriod[SW_OUTNPERIODS];
 // Global variables describing size and names of output
 /** names of output columns for each output key; number is an expensive guess */
 char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
+
 /** number of output columns for each output key */
 IntUS ncol_OUT[SW_OUTNKEYS];
 
-
-// Text-based output: defined in `SW_Output_outtext.c`:
-#ifdef SW_OUTTEXT
-extern SW_FILE_STATUS SW_OutFiles;
-extern char sw_outstr[];
-extern Bool print_IterationSummary;
-extern Bool print_SW_Output;
-#endif
-
-
-// Array-based output: defined in `SW_Output_outarray.c`
-#ifdef SW_OUTARRAY
-extern IntUS ncol_TimeOUT[];
-extern size_t nrow_OUT[];
-extern size_t irow_OUT[];
-#endif
 
 
 #ifdef STEPWAT
@@ -126,7 +106,6 @@ extern size_t irow_OUT[];
     that are required for `SXW` in-memory output for each output key.
     Compare with `timeSteps` */
 OutPeriod timeSteps_SXW[SW_OUTNKEYS][SW_OUTNPERIODS];
-extern char sw_outstr_agg[];
 
 /** `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
      if TRUE, then write to disk the SOILWAT2 output
@@ -183,7 +162,7 @@ char const *styp2str[] =
 
 
 /* =================================================== */
-/*                Module-Level Variables               */
+/*                  Local Variables                    */
 /* --------------------------------------------------- */
 static char *MyFileName;
 
@@ -191,7 +170,6 @@ static int useTimeStep; /* flag to determine whether or not the line TIMESTEP ex
 static Bool bFlush_output; /* process partial period ? */
 
 
-/* =================================================== */
 /* =================================================== */
 /*             Private Function Declarations            */
 /* --------------------------------------------------- */
@@ -214,8 +192,7 @@ static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
 
 
 /* =================================================== */
-/* =================================================== */
-/*             Private Function Definitions            */
+/*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
 /** Convert string representation of time period to `OutPeriod` value.
@@ -319,17 +296,30 @@ Bool has_keyname_soillayers(const char *var) {
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 {
 	int ik;
+	RealD tmp;
 
 	switch (k)
 	{
 		case eSW_CO2Effects:
 			break;
 
+		// scale biomass by fCover to obtain biomass as observed in total vegetation
 		case eSW_Biomass:
 			ForEachVegType(ik) {
-				s->veg[ik].biomass += v->veg[ik].biomass_daily[SW_Model.doy];
-				s->veg[ik].litter += v->veg[ik].litter_daily[SW_Model.doy];
-				s->veg[ik].biolive += v->veg[ik].biolive_daily[SW_Model.doy];
+				tmp = v->veg[ik].biomass_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+				s->veg[ik].biomass_inveg += tmp;
+				s->biomass_total += tmp;
+
+				tmp = v->veg[ik].litter_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+				s->veg[ik].litter_inveg += tmp;
+				s->litter_total += tmp;
+
+				tmp = v->veg[ik].biolive_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+				s->veg[ik].biolive_inveg += tmp;
+				s->biolive_total += tmp;
+
+				s->LAI +=
+					v->veg[ik].lai_live_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
 			}
 			break;
 
@@ -489,6 +479,20 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 
 	case eSW_AET:
 		s->aet += v->aet;
+		ForEachSoilLayer(i) {
+			ForEachVegType(j) {
+				s->tran += v->transpiration[j][i];
+			}
+		}
+		ForEachEvapLayer(i) {
+			s->esoil += v->evaporation[i];
+		}
+		ForEachVegType(j) {
+			s->ecnw += v->evap_veg[j];
+		}
+		s->esurf += v->litter_evap + v->surfaceWater_evap;
+		// esnow: evaporation from snow (sublimation) should be handled here,
+		// but values are stored in SW_WEATHER instead
 		break;
 
 	case eSW_PET:
@@ -763,6 +767,11 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 
 			case eSW_AET:
 				s->p_oagg[pd]->aet = s->p_accu[pd]->aet / div;
+				s->p_oagg[pd]->tran = s->p_accu[pd]->tran / div;
+				s->p_oagg[pd]->esoil = s->p_accu[pd]->esoil / div;
+				s->p_oagg[pd]->ecnw = s->p_accu[pd]->ecnw / div;
+				s->p_oagg[pd]->esurf = s->p_accu[pd]->esurf / div;
+				// s->p_oagg[pd]->esnow = s->p_accu[pd]->esnow / div;
 				break;
 
 			case eSW_LyrDrain:
@@ -806,10 +815,20 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 
 			case eSW_Biomass:
 				ForEachVegType(i) {
-					vp->p_oagg[pd]->veg[i].biomass = vp->p_accu[pd]->veg[i].biomass / div;
-					vp->p_oagg[pd]->veg[i].litter = vp->p_accu[pd]->veg[i].litter / div;
-					vp->p_oagg[pd]->veg[i].biolive = vp->p_accu[pd]->veg[i].biolive / div;
+					vp->p_oagg[pd]->veg[i].biomass_inveg =
+						vp->p_accu[pd]->veg[i].biomass_inveg / div;
+
+					vp->p_oagg[pd]->veg[i].litter_inveg =
+						vp->p_accu[pd]->veg[i].litter_inveg / div;
+
+					vp->p_oagg[pd]->veg[i].biolive_inveg =
+						vp->p_accu[pd]->veg[i].biolive_inveg / div;
 				}
+
+				vp->p_oagg[pd]->biomass_total = vp->p_accu[pd]->biomass_total / div;
+				vp->p_oagg[pd]->litter_total = vp->p_accu[pd]->litter_total / div;
+				vp->p_oagg[pd]->biolive_total = vp->p_accu[pd]->biolive_total / div;
+				vp->p_oagg[pd]->LAI = vp->p_accu[pd]->LAI / div;
 				break;
 
 			default:
@@ -933,11 +952,11 @@ static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
 #endif
 
 
-/* =================================================== */
-/* =================================================== */
-/*             Public Function Definitions             */
-/* --------------------------------------------------- */
 
+
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
 
 
 /** @brief Tally for which output time periods at least one output key/type is
@@ -1537,7 +1556,7 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_LyrDrain] = tLayers - 1;
 	ncol_OUT[eSW_HydRed] = tLayers * (NVEGTYPES + 1); // NVEGTYPES plus totals
 	ncol_OUT[eSW_ET] = 0;
-	ncol_OUT[eSW_AET] = 1;
+	ncol_OUT[eSW_AET] = 6;
 	ncol_OUT[eSW_PET] = 5;
 	ncol_OUT[eSW_WetDays] = tLayers;
 	ncol_OUT[eSW_SnowPack] = 2;
@@ -1548,7 +1567,8 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_CO2Effects] = 2 * NVEGTYPES;
 	ncol_OUT[eSW_Biomass] = NVEGTYPES + 1 +  // fCover for NVEGTYPES plus bare-ground
 		NVEGTYPES + 2 +  // biomass for NVEGTYPES plus totals and litter
-		NVEGTYPES + 1; // biolive for NVEGTYPES plus totals
+		NVEGTYPES + 1 +  // biolive for NVEGTYPES plus totals
+		1; // LAI
 
 }
 
@@ -1589,7 +1609,9 @@ void SW_OUT_set_colnames(void) {
 		"ponded_runon" };
 	const char *cnames_eSW_SurfaceWater[] = { "surfaceWater_cm" };
 	const char *cnames_add_eSW_EvapSurface[] = { "evap_surfaceWater" };
-	const char *cnames_eSW_AET[] = { "evapotr_cm" };
+	const char *cnames_eSW_AET[] = {
+		"evapotr_cm", "tran_cm", "esoil_cm", "ecnw_cm", "esurf_cm", "esnow_cm"
+	};
 	const char *cnames_eSW_PET[] = { "pet_cm",
 		"H_oh_MJm-2", "H_ot_MJm-2", "H_gh_MJm-2", "H_gt_MJm-2"
 	};
@@ -1810,6 +1832,10 @@ void SW_OUT_set_colnames(void) {
 		strcat(ctemp, cnames_VegTypes[j]);
 		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp);
 	}
+	i += j;
+	strcpy(ctemp, "LAI_total");
+	colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp);
+
 	#ifdef SWDEBUG
 	if (debug) swprintf(" completed.\n");
 	#endif

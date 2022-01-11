@@ -38,11 +38,6 @@
 #include "sw_testhelpers.h"
 
 
-extern SW_CARBON SW_Carbon;
-extern SW_MODEL SW_Model;
-extern SW_VEGPROD SW_VegProd;
-
-
 
 namespace {
   SW_CARBON *c = &SW_Carbon;

@@ -17,10 +17,8 @@ extern "C" {
 
 
 /* =================================================== */
-/* =================================================== */
-/*                Function Definitions                 */
+/*             Global Function Declarations            */
 /* --------------------------------------------------- */
-
 void SW_PET_init_run(void);
 
 double sun_earth_distance_squaredinverse(unsigned int doy);
