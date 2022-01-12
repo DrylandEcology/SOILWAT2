@@ -771,16 +771,22 @@ void SW_Water_Flow(void) {
 
 
 	/* Calculate percolation for unsaturated soil water conditions. */
-	/* 01/06/2011	(drs) call to infiltrate_water_low() has to be the last swc
+	/* 01/06/2011	(drs) call to percolate_unsaturated() has to be the last swc
 		 affecting calculation */
 
 	w->soil_inf += standingWater[Today];
 
 	/* Unsaturated percolation based on Parton 1978, Black et al. 1969 */
 	percolate_unsaturated(
-		lyrSWCBulk, lyrDrain, &drainout, &standingWater[Today],
-		SW_Site.n_layers, SW_Site.lyr, stValues.lyrFrozen,
-		SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
+		lyrSWCBulk,
+		lyrDrain,
+		&drainout,
+		&standingWater[Today],
+		SW_Site.n_layers,
+		SW_Site.lyr,
+		stValues.lyrFrozen,
+		SW_Site.slow_drain_coeff,
+		SLOW_DRAIN_DEPTH
 	);
 
 	// adjust soil_infiltration for water pushed back to surface

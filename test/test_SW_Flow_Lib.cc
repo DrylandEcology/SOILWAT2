@@ -890,18 +890,15 @@ namespace
 
 
   //Test when nlyrs = 1 and 25 for outputs; swc, drain, drainout, standing water
-  TEST(SWFlowTest, infiltrate_water_low)
+  TEST(SWFlowTest, PercolateUnsaturated)
   {
     //INPUTS
     unsigned int nlyrs, i, k;
     double
-      sum_delta_swc, small, drainout, standingWater,
-      sdrainpar = 0.02, // SW_Site.slow_drain_coeff
-      sdraindpth = SLOW_DRAIN_DEPTH;
-    double swc_init[MAX_LAYERS], swc[MAX_LAYERS];
-    double drain[MAX_LAYERS], swcfc[MAX_LAYERS];
-    double width[MAX_LAYERS], swcmin[MAX_LAYERS], swcsat[MAX_LAYERS];
-    double impermeability[MAX_LAYERS] = {0.};
+      sum_delta_swc, small, drainout, standingWater;
+    double swc[MAX_LAYERS];
+    double drain[MAX_LAYERS];
+
 
     // Loop over tests with varying number of soil layers
     for (k = 0; k < 2; k++)
@@ -921,10 +918,9 @@ namespace
       // Initialize soil arrays to be independent of soil texture...
       ForEachSoilLayer(i)
       {
-        width[i] = s->lyr[i]->width;
-        swcfc[i] = 0.25 * width[i];
-        swcmin[i] = 0.05 * width[i];
-        swcsat[i] = 0.35 * width[i];
+        SW_Site.lyr[i]->swcBulk_fieldcap = 0.25 * SW_Site.lyr[i]->width;
+        SW_Site.lyr[i]->swcBulk_min = 0.05 * SW_Site.lyr[i]->width;
+        SW_Site.lyr[i]->swcBulk_saturated = 0.35 * SW_Site.lyr[i]->width;
       }
 
 
@@ -938,16 +934,16 @@ namespace
 
       ForEachSoilLayer(i)
       {
-        swc_init[i] = 0.5 * swcmin[i];
-        swc[i] = swc_init[i];
+        SW_Site.lyr[i]->swcBulk_init = 0.5 * SW_Site.lyr[i]->swcBulk_min;
+        swc[i] = SW_Site.lyr[i]->swcBulk_init;
         drain[i] = 0.;
       }
 
       // Call function to test
-      infiltrate_water_low(
-        swc, drain, &drainout, nlyrs, sdrainpar,
-        sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-        &standingWater
+      percolate_unsaturated(
+        swc, drain, &drainout, &standingWater,
+        nlyrs, SW_Site.lyr, stValues.lyrFrozen,
+        SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
       // Expectation: drainout = 0
@@ -960,9 +956,9 @@ namespace
       ForEachSoilLayer(i)
       {
         EXPECT_NEAR(drain[i], 0., tol6) <<
-          "infiltrate_water_low: drain != 0 for layer " << 1 + i;
-        EXPECT_NEAR(swc[i], swc_init[i], tol6) <<
-          "infiltrate_water_low: swc != swc_init for layer " << 1 + i;
+          "percolate_unsaturated: drain != 0 for layer " << 1 + i;
+        EXPECT_NEAR(swc[i], SW_Site.lyr[i]->swcBulk_init, tol6) <<
+          "percolate_unsaturated: swc != swc_init for layer " << 1 + i;
       }
 
 
@@ -976,16 +972,16 @@ namespace
 
       ForEachSoilLayer(i)
       {
-        swc_init[i] = 0.9 * swcfc[i];
-        swc[i] = swc_init[i];
+        SW_Site.lyr[i]->swcBulk_init = 0.9 * SW_Site.lyr[i]->swcBulk_fieldcap;
+        swc[i] = SW_Site.lyr[i]->swcBulk_init;
         drain[i] = 0.;
       }
 
       // Call function to test
-      infiltrate_water_low(
-        swc, drain, &drainout, nlyrs, sdrainpar,
-        sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-        &standingWater
+      percolate_unsaturated(
+        swc, drain, &drainout, &standingWater,
+        nlyrs, SW_Site.lyr, stValues.lyrFrozen,
+        SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
       // Expectation: drainout > 0
@@ -999,11 +995,11 @@ namespace
       ForEachSoilLayer(i)
       {
         EXPECT_GT(drain[i], 0.) <<
-          "infiltrate_water_low: drain !> 0 for layer " << 1 + i;
-        sum_delta_swc += swc[i] - swc_init[i];
+          "percolate_unsaturated: drain !> 0 for layer " << 1 + i;
+        sum_delta_swc += swc[i] - SW_Site.lyr[i]->swcBulk_init;
       }
       EXPECT_LT(sum_delta_swc, 0.) <<
-        "infiltrate_water_low: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
+        "percolate_unsaturated: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
 
 
       //--- (3) TEST:
@@ -1016,16 +1012,16 @@ namespace
 
       ForEachSoilLayer(i)
       {
-        swc_init[i] = 1.1 * swcsat[i];
-        swc[i] = swc_init[i];
+        SW_Site.lyr[i]->swcBulk_init = 1.1 * SW_Site.lyr[i]->swcBulk_saturated;
+        swc[i] = SW_Site.lyr[i]->swcBulk_init;
         drain[i] = 0.;
       }
 
       // Call function to test
-      infiltrate_water_low(
-        swc, drain, &drainout, nlyrs, sdrainpar,
-        sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-        &standingWater
+      percolate_unsaturated(
+        swc, drain, &drainout, &standingWater,
+        nlyrs, SW_Site.lyr, stValues.lyrFrozen,
+        SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
       // Expectation: drainout > 0
@@ -1040,15 +1036,15 @@ namespace
       {
         if (i + 1 < nlyrs) {
           EXPECT_LT(drain[i], 0.) <<
-            "infiltrate_water_low: drain !< 0 for layer " << 1 + i;
+            "percolate_unsaturated: drain !< 0 for layer " << 1 + i;
         } else {
-          EXPECT_NEAR(drain[i], sdrainpar, tol6) <<
-            "infiltrate_water_low: drain != sdrainpar for last layer " << 1 + i;
+          EXPECT_NEAR(drain[i], SW_Site.slow_drain_coeff, tol6) <<
+            "percolate_unsaturated: drain != sdrainpar in last layer " << 1 + i;
         }
-        sum_delta_swc += swc[i] - swc_init[i];
+        sum_delta_swc += swc[i] - SW_Site.lyr[i]->swcBulk_init;
       }
       EXPECT_LT(sum_delta_swc, 0.) <<
-        "infiltrate_water_low: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
+        "percolate_unsaturated: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
 
 
       //--- (4) TEST:
@@ -1062,18 +1058,19 @@ namespace
 
       ForEachSoilLayer(i)
       {
-        swc_init[i] = 0.9 * swcfc[i];
-        swc[i] = swc_init[i];
+        SW_Site.lyr[i]->swcBulk_init = 0.9 * SW_Site.lyr[i]->swcBulk_fieldcap;
+        swc[i] = SW_Site.lyr[i]->swcBulk_init;
         drain[i] = 0.;
-        st->lyrFrozen[i] = swTRUE;
+        stValues.lyrFrozen[i] = swTRUE;
       }
 
       // Call function to test
-      infiltrate_water_low(
-        swc, drain, &drainout, nlyrs, sdrainpar,
-        sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-        &standingWater
+      percolate_unsaturated(
+        swc, drain, &drainout, &standingWater,
+        nlyrs, SW_Site.lyr, stValues.lyrFrozen,
+        SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
+
 
       // Expectation: small > drainout > 0
       EXPECT_GT(drainout, 0.);
@@ -1086,17 +1083,17 @@ namespace
       ForEachSoilLayer(i)
       {
         EXPECT_GT(drain[i], 0.) <<
-          "infiltrate_water_low: drain !> 0 for layer " << 1 + i;
+          "percolate_unsaturated: drain !> 0 for layer " << 1 + i;
         EXPECT_LT(drain[i], small) <<
-          "infiltrate_water_low: small !> drain for layer " << 1 + i;
-        EXPECT_NEAR(swc[i], swc_init[i], small) <<
-          "infiltrate_water_low: swc !~ swc_init for layer " << 1 + i;
+          "percolate_unsaturated: small !> drain for layer " << 1 + i;
+        EXPECT_NEAR(swc[i], SW_Site.lyr[i]->swcBulk_init, small) <<
+          "percolate_unsaturated: swc !~ swc_init for layer " << 1 + i;
       }
 
       // Reset frozen status
       ForEachSoilLayer(i)
       {
-        st->lyrFrozen[i] = swFALSE;
+        stValues.lyrFrozen[i] = swFALSE;
       }
     }
 
