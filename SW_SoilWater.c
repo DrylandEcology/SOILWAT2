@@ -124,7 +124,7 @@ void SW_WaterBalance_Checks(void)
 	SW_WEATHER *w = &SW_Weather;
 
   IntUS i, k;
-  int debugi[N_WBCHECKS] = {1, 1, 1, 1, 1, 1, 1, 1}; // print output for each check yes/no
+  int debugi[N_WBCHECKS] = {1, 1, 1, 1, 1, 1, 1, 1, 1}; // print output for each check yes/no
   char flag[15];
   RealD
     Etotal, Etotalsurf, Etotalint, Eponded, Elitter, Esnow, Esoil = 0., Eveg = 0.,
@@ -318,6 +318,30 @@ void SW_WaterBalance_Checks(void)
         percolationOut[i], Ttotalj[i], sw->evaporation[i]);
     }
   }
+
+  // for every soil layer j: swc_min <= swc <= swc_sat
+  if (!sw->is_wbError_init) {
+    sw->wbErrorNames[8] = Str_Dup("swc[i] => swc_min[i] && swc[i] <= swc_sat[i]");
+  }
+  ForEachSoilLayer(i)
+  {
+    if (
+      LT(sw->swcBulk[Today][i], SW_Site.lyr[i]->swcBulk_min) ||
+      GT(sw->swcBulk[Today][i], SW_Site.lyr[i]->swcBulk_saturated)
+    ) {
+      sw->wbError[8]++;
+      if (debugi[8]) {
+        swprintf(
+          "%s sl=%d: swc_min(%f) <= swc(%f) <= swc_sat(%f)\n",
+          flag, i,
+          SW_Site.lyr[i]->swcBulk_min,
+          sw->swcBulk[Today][i],
+          SW_Site.lyr[i]->swcBulk_saturated
+        );
+      }
+    }
+  }
+
 
   // Setup only once
   if (!sw->is_wbError_init) {
