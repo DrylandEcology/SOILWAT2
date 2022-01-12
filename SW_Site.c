@@ -917,7 +917,7 @@ void SW_SIT_init_run(void) {
 	SW_SITE *sp = &SW_Site;
 	SW_LAYER_INFO *lyr;
 	LyrIndex s, r, curregion;
-	int k;
+	int k, flagswpcrit = 0;
 	Bool fail = swFALSE;
 	RealD
 		fval = 0,
@@ -1058,49 +1058,6 @@ void SW_SIT_init_run(void) {
 		lyr->swcBulk_halfwiltpt = 0.5 * lyr->swcBulk_wiltpt;
 
 
-		/* sum ev and tr coefficients for later */
-		evsum += lyr->evap_coeff;
-
-		ForEachVegType(k)
-		{
-			trsum_veg[k] += lyr->transp_coeff[k];
-
-			/* calculate soil water content at SWPcrit for each vegetation type */
-			lyr->swcBulk_atSWPcrit[k] = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel,
-				SW_VegProd.veg[k].SWPcrit, s) * lyr->width;
-
-			/* Find which transpiration region the current soil layer
-			 * is in and check validity of result. Region bounds are
-			 * base1 but s is base0.*/
-			curregion = 0;
-			ForEachTranspRegion(r)
-			{
-				if (s < _TranspRgnBounds[r]) {
-					if (ZRO(lyr->transp_coeff[k]))
-						break; /* end of transpiring layers */
-					curregion = r + 1;
-					break;
-				}
-			}
-
-			if (curregion || _TranspRgnBounds[curregion] == 0) {
-				lyr->my_transp_rgn[k] = curregion;
-				sp->n_transp_lyrs[k] = max(sp->n_transp_lyrs[k], s);
-
-			} else if (s == 0) {
-				LogError(logfp, LOGFATAL, "%s : Top soil layer must be included\n"
-						"  in %s tranpiration regions.\n", SW_F_name(eSite), key2veg[k]);
-			} else if (r < sp->n_transp_rgn) {
-				LogError(logfp, LOGFATAL, "%s : Transpiration region %d \n"
-						"  is deeper than the deepest layer with a\n"
-						"  %s transpiration coefficient > 0 (%d) in '%s'.\n"
-						"  Please fix the discrepancy and try again.\n",
-						SW_F_name(eSite), r + 1, key2veg[k], s, SW_F_name(eLayers));
-			} else {
-				lyr->my_transp_rgn[k] = 0;
-			}
-		}
-
 
 		/* Compute swc wet and dry limits and init value */
 		if (LT(_SWCMinVal, 0.0)) {
@@ -1226,9 +1183,109 @@ void SW_SIT_init_run(void) {
 		}
 		#endif
 
+
+		/* sum ev and tr coefficients for later */
+		evsum += lyr->evap_coeff;
+
+		ForEachVegType(k)
+		{
+			trsum_veg[k] += lyr->transp_coeff[k];
+			/* calculate soil water content at SWPcrit for each vegetation type */
+			lyr->swcBulk_atSWPcrit[k] = lyr->width * SW_SWPmatric2VWCBulk(
+				lyr->fractionVolBulk_gravel,
+				SW_VegProd.veg[k].SWPcrit,
+				s
+			);
+
+			if (LT(lyr->swcBulk_atSWPcrit[k], lyr->swcBulk_min)) {
+				flagswpcrit++;
+
+				// lower SWcrit [-bar] to SWP-equivalent of swBulk_min
+				SW_VegProd.veg[k].SWPcrit = fmin(
+					SW_VegProd.veg[k].SWPcrit,
+					SW_SWCbulk2SWPmatric(
+						lyr->fractionVolBulk_gravel,
+						lyr->swcBulk_min,
+						s
+					)
+				);
+
+				LogError(
+					logfp, LOGWARN,
+					"%s : Layer %d - vegtype %d\n"
+					"  calculated swcBulk_atSWPcrit (%7.4f) <= swcBulk_min (%7.4f).\n"
+					"  SWcrit adjusted to %7.4 "
+					"(and all swcBulk_atSWPcrit will be re-calculated).",
+					MyFileName, s + 1, k + 1,
+					lyr->swcBulk_atSWPcrit[k], lyr->swcBulk_min,
+					SW_VegProd.veg[k].SWPcrit
+				);
+			}
+
+			/* Find which transpiration region the current soil layer
+			 * is in and check validity of result. Region bounds are
+			 * base1 but s is base0.*/
+			curregion = 0;
+			ForEachTranspRegion(r)
+			{
+				if (s < _TranspRgnBounds[r]) {
+					if (ZRO(lyr->transp_coeff[k]))
+						break; /* end of transpiring layers */
+					curregion = r + 1;
+					break;
+				}
+			}
+
+			if (curregion || _TranspRgnBounds[curregion] == 0) {
+				lyr->my_transp_rgn[k] = curregion;
+				sp->n_transp_lyrs[k] = max(sp->n_transp_lyrs[k], s);
+
+			} else if (s == 0) {
+				LogError(logfp, LOGFATAL, "%s : Top soil layer must be included\n"
+						"  in %s tranpiration regions.\n", SW_F_name(eSite), key2veg[k]);
+			} else if (r < sp->n_transp_rgn) {
+				LogError(logfp, LOGFATAL, "%s : Transpiration region %d \n"
+						"  is deeper than the deepest layer with a\n"
+						"  %s transpiration coefficient > 0 (%d) in '%s'.\n"
+						"  Please fix the discrepancy and try again.\n",
+						SW_F_name(eSite), r + 1, key2veg[k], s, SW_F_name(eLayers));
+			} else {
+				lyr->my_transp_rgn[k] = 0;
+			}
+		}
 	} /*end ForEachSoilLayer */
 
 
+	/* Re-calculate `swcBulk_atSWPcrit`
+			if it was below `swcBulk_min` for any vegetation x soil layer combination
+			using adjusted `SWPcrit`
+	*/
+	if (flagswpcrit) {
+		ForEachSoilLayer(s)
+		{
+			ForEachVegType(k)
+			{
+				/* calculate soil water content at adjusted SWPcrit */
+				lyr->swcBulk_atSWPcrit[k] = lyr->width * SW_SWPmatric2VWCBulk(
+					lyr->fractionVolBulk_gravel,
+					SW_VegProd.veg[k].SWPcrit,
+					s
+				);
+
+				if (LT(lyr->swcBulk_atSWPcrit[k], lyr->swcBulk_min)) {
+					LogError(
+						logfp, LOGFATAL,
+						"%s : Layer %d - vegtype %d\n"
+						"  calculated swcBulk_atSWPcrit (%7.4f) <= swcBulk_min (%7.4f) "
+						"even with adjusted SWcrit (%7.4f).\n",
+						MyFileName, s + 1, k + 1,
+						lyr->swcBulk_atSWPcrit[k], lyr->swcBulk_min,
+						SW_VegProd.veg[k].SWPcrit
+					);
+				}
+			}
+		}
+	}
 
 	/* normalize the evap and transp coefficients separately
 	 * to avoid obfuscation in the above loop */
