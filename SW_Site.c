@@ -917,12 +917,12 @@ void SW_SIT_init_run(void) {
 	SW_SITE *sp = &SW_Site;
 	SW_LAYER_INFO *lyr;
 	LyrIndex s, r, curregion;
-	int k, wiltminflag = 0, initminflag = 0;
+	int k;
 	Bool fail = swFALSE;
 	RealD
 		fval = 0,
 		evsum = 0., trsum_veg[NVEGTYPES] = {0.},
-		swcmin_help1, swcmin_help2;
+		swcmin_help1, swcmin_help2, tmp;
 	const char *errtype = "\0";
 
 	#ifdef SWDEBUG
@@ -1055,6 +1055,8 @@ void SW_SIT_init_run(void) {
 			s
 		);
 
+		lyr->swcBulk_halfwiltpt = 0.5 * lyr->swcBulk_wiltpt;
+
 
 		/* sum ev and tr coefficients for later */
 		evsum += lyr->evap_coeff;
@@ -1142,6 +1144,66 @@ void SW_SIT_init_run(void) {
 		/* Convert VWC to SWC */
 		lyr->swcBulk_min *= lyr->width;
 
+
+		/* Calculate wet limit of SWC for what inputs defined as wet */
+		lyr->swcBulk_wet = lyr->width * (GE(_SWCWetVal, 1.0) ?
+			SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCWetVal, s) :
+			_SWCWetVal
+		);
+
+		/* Calculate initial SWC based on inputs */
+		lyr->swcBulk_init = lyr->width * (GE(_SWCInitVal, 1.0) ?
+			SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCInitVal, s) :
+			_SWCInitVal
+		);
+
+
+		/* test validity of values */
+		if (LT(lyr->swcBulk_init, lyr->swcBulk_min)) {
+			LogError(
+				logfp, LOGFATAL,
+				"%s : Layer %d\n"
+				"  calculated swcBulk_init (%7.4f) <= swcBulk_min (%7.4f).\n"
+				"  Recheck parameters and try again.",
+				MyFileName, s + 1, lyr->swcBulk_init, lyr->swcBulk_min
+			);
+		}
+
+		if (LT(lyr->swcBulk_wiltpt, lyr->swcBulk_min)) {
+			LogError(
+				logfp, LOGFATAL,
+				"%s : Layer %d\n"
+				"  calculated swcBulk_wiltpt (%7.4f) <= swcBulk_min (%7.4f).\n"
+				"  Recheck parameters and try again.",
+				MyFileName, s + 1, lyr->swcBulk_wiltpt, lyr->swcBulk_min
+			);
+		}
+
+		if (LT(lyr->swcBulk_halfwiltpt, lyr->swcBulk_min)) {
+			tmp = 0.5 * (lyr->swcBulk_min + lyr->swcBulk_wiltpt);
+
+			LogError(
+				logfp, LOGNOTE,
+				"%s : Layer %d\n"
+				"  calculated swcBulk_halfwiltpt (%7.4f) <= swcBulk_min (%7.4f).\n"
+				"  swcBulk_halfwiltpt was adjusted to (%7.4f).",
+				MyFileName, s + 1, lyr->swcBulk_halfwiltpt, lyr->swcBulk_min, tmp
+			);
+
+			lyr->swcBulk_halfwiltpt = tmp;
+		}
+
+		if (LE(lyr->swcBulk_wet, lyr->swcBulk_min)) {
+			LogError(
+				logfp, LOGFATAL,
+				"%s : Layer %d\n"
+				"  calculated swcBulk_wet (%7.4f) <= swcBulk_min (%7.4f).\n"
+				"  Recheck parameters and try again.",
+				MyFileName, s + 1, lyr->swcBulk_wet, lyr->swcBulk_min
+			);
+		}
+
+
 		#ifdef SWDEBUG
 		if (debug) {
 			swprintf(
@@ -1154,46 +1216,19 @@ void SW_SIT_init_run(void) {
 			swprintf(
 				"L[%d] SWC(HalfWiltpt)=%f = swp(hw)=%f\n",
 				s,
-				lyr->swcBulk_wiltpt / 2,
+				lyr->swcBulk_halfwiltpt,
 				SW_SWCbulk2SWPmatric(
 					lyr->fractionVolBulk_gravel,
-					lyr->swcBulk_wiltpt / 2,
+					lyr->swcBulk_halfwiltpt,
 					s
 				)
 			);
 		}
 		#endif
 
-
-		/* Calculate wet limit of SWC for what inputs defined as wet */
-		lyr->swcBulk_wet = GE(_SWCWetVal, 1.0) ? SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCWetVal, s) * lyr->width : _SWCWetVal * lyr->width;
-		/* Calculate initial SWC based on inputs */
-		lyr->swcBulk_init = GE(_SWCInitVal, 1.0) ? SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCInitVal, s) * lyr->width : _SWCInitVal * lyr->width;
-
-		/* test validity of values */
-		if (LT(lyr->swcBulk_init, lyr->swcBulk_min))
-			initminflag++;
-		if (LT(lyr->swcBulk_wiltpt, lyr->swcBulk_min))
-			wiltminflag++;
-		if (LE(lyr->swcBulk_wet, lyr->swcBulk_min)) {
-			LogError(logfp, LOGFATAL, "%s : Layer %d\n"
-					"  calculated swcBulk_wet (%7.4f) <= swcBulk_min (%7.4f).\n"
-					"  Recheck parameters and try again.", MyFileName, s + 1, lyr->swcBulk_wet, lyr->swcBulk_min);
-		}
-
 	} /*end ForEachSoilLayer */
 
-	if (wiltminflag) {
-		LogError(logfp, LOGWARN, "%s : %d layers were found in which wiltpoint < swcBulk_min.\n"
-				"  You should reconsider wiltpoint or swcBulk_min.\n"
-				"  See site parameter file for swcBulk_min and site.log for swc details.", MyFileName, wiltminflag);
-	}
 
-	if (initminflag) {
-		LogError(logfp, LOGWARN, "%s : %d layers were found in which swcBulk_init < swcBulk_min.\n"
-				"  You should reconsider swcBulk_init or swcBulk_min.\n"
-				"  See site parameter file for swcBulk_init and site.log for swc details.", MyFileName, initminflag);
-	}
 
 	/* normalize the evap and transp coefficients separately
 	 * to avoid obfuscation in the above loop */

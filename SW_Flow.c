@@ -213,7 +213,7 @@ static void records2arrays(void) {
 			lyrSWCBulk_FieldCaps[i] = SW_Site.lyr[i]->swcBulk_fieldcap;
 			lyrWidths[i] = SW_Site.lyr[i]->width;
 			lyrSWCBulk_Wiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt;
-			lyrSWCBulk_HalfWiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt / 2.;
+			lyrSWCBulk_HalfWiltpts[i] = SW_Site.lyr[i]->swcBulk_halfwiltpt;
 			lyrSWCBulk_Mins[i] = SW_Site.lyr[i]->swcBulk_min;
 			lyrImpermeability[i] = SW_Site.lyr[i]->impermeability;
 			lyrSWCBulk_Saturated[i] = SW_Site.lyr[i]->swcBulk_saturated;
