@@ -1108,7 +1108,8 @@ namespace
     // INPUTS
     unsigned int nlyrs, i, k;
     double maxCondroot = -0.2328, swp50 = 1.2e12, shapeCond = 1, scale = 0.3;
-    double swc[MAX_LAYERS], swcwp[MAX_LAYERS], lyrRootCo[MAX_LAYERS],
+    double
+      swc[MAX_LAYERS],
       hydred[MAX_LAYERS] = {0.};
     double swcExpected = 0., hydredExpected = 0.;
 
@@ -1147,14 +1148,19 @@ namespace
       {
         // example data based on soil:
         swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt) / 2.;
-        swcwp[i] = s->lyr[i]->swcBulk_wiltpt;
-        lyrRootCo[i] =  s->lyr[i]->transp_coeff[SW_SHRUB]; // shrubs as example
-        st->lyrFrozen[i] = swFALSE;
+        stValues.lyrFrozen[i] = swFALSE;
       }
 
       // Call function to be tested
-      hydraulic_redistribution(swc, swcwp, lyrRootCo, hydred, nlyrs,
-        maxCondroot, swp50, shapeCond, scale);
+      hydraulic_redistribution(
+        swc,
+        hydred,
+        SW_SHRUB,
+        nlyrs,
+        SW_Site.lyr,
+        stValues.lyrFrozen,
+        maxCondroot, swp50, shapeCond, scale
+      );
 
       // Expection: no hydred in top layer
       EXPECT_DOUBLE_EQ(hydred[0], 0.);

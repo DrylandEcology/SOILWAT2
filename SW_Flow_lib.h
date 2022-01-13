@@ -123,8 +123,18 @@ void percolate_unsaturated(
 	double slow_drain_depth
 );
 
-void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], double hydred[], unsigned int nlyrs, double maxCondroot, double swp50, double shapeCond,
-		double scale);
+void hydraulic_redistribution(
+	double swc[],
+	double hydred[],
+	unsigned int vegk,
+	unsigned int nlyrs,
+	SW_LAYER_INFO *lyr[],
+	Bool lyrFrozen[],
+	double maxCondroot,
+	double swp50,
+	double shapeCond,
+	double scale
+);
 
 void soil_temperature(double airTemp,
 		              double pet,

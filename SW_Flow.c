@@ -736,13 +736,23 @@ void SW_Water_Flow(void) {
 
 	/* Hydraulic redistribution */
 	ForEachVegTypeBottomUp(k) {
-		if (v->veg[k].flagHydraulicRedistribution && GT(v->veg[k].cov.fCover, 0.) &&
-			GT(v->veg[k].biolive_daily[doy], 0.)) {
-
-			hydraulic_redistribution(lyrSWCBulk, lyrSWCBulk_Wiltpts, lyrTranspCo[k],
-				lyrHydRed[k], SW_Site.n_layers, v->veg[k].maxCondroot, v->veg[k].swpMatric50,
-				v->veg[k].shapeCond, v->veg[k].cov.fCover);
-
+		if (
+			v->veg[k].flagHydraulicRedistribution &&
+			GT(v->veg[k].cov.fCover, 0.) &&
+			GT(v->veg[k].biolive_daily[doy], 0.)
+		) {
+			hydraulic_redistribution(
+				lyrSWCBulk,
+				lyrHydRed[k],
+				k,
+				SW_Site.n_layers,
+				SW_Site.lyr,
+				stValues.lyrFrozen,
+				v->veg[k].maxCondroot,
+				v->veg[k].swpMatric50,
+				v->veg[k].shapeCond,
+				v->veg[k].cov.fCover
+			);
 		} else {
 			/* Set daily array to zero */
 			ForEachSoilLayer(i) {

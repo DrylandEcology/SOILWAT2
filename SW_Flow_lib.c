@@ -900,30 +900,39 @@ void percolate_unsaturated(
 
 
 /**
+	@brief Calculate hydraulic redistribution.
 
-@brief Calculate hydraulic redistribution.
+	Based on equations from Ryel 2002. @cite Ryel2002
 
-Based on equations from Ryel 2002. @cite Ryel2002
+	@param[in,out] swc Soil water content in each layer (m<SUP>3</SUP> H<SUB>2</SUB>O).
+	@param[out] hydred Hydraulic redistribtion for each soil layer (cm/day/layer).
+	@param vegk Index to vegetation type (used to access rooting profile) [1].
+	@param nlyrs Number of layers in the soil profile [1].
+	@param[in] *lyr Soil characteristics for each soil layer.
+	@param[in] *lyrFrozen Frozen/unfrozen status for each soil layer.
+	@param maxCondroot Maximum radial soil-root conductance of the entire active root system for water (cm/-bar/day).
+	@param swp50 Soil water potential (-bar) where conductance is reduced by 50%.
+	@param shapeCond Shaping parameter for the empirical relationship from van Genuchten to
+				model relative soil-root conductance for water.
+	@param scale Fraction of vegetation type to scale hydred.
 
-@param swc Soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param swcwp Soil water content water potential (-bar).
-@param lyrRootCo Fraction of active roots per layer.
-@param hydred Hydraulic redistribtion for each soil water layer (cm/day/layer).
-@param nlyrs Number of soil layers.
-@param maxCondroot Maximum radial soil-root conductance of the entire active root system for water (cm/-bar/day).
-@param swp50 Soil water potential (-bar) where conductance is reduced by 50%.
-@param shapeCond Shaping parameter for the empirical relationship from van Genuchten to
-      model relative soil-root conductance for water.
-@param scale Fraction of vegetation type to scale hydred.
-
-@sideeffect
-  - swc Updated soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-  - hydred Hydraulic redistribtion for each soil water layer (cm/day/layer).
+	@sideeffect
+		- swc Updated soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+		- hydred Hydraulic redistribtion for each soil water layer (cm/day/layer).
 
 */
-
-void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], double hydred[],
-    unsigned int nlyrs, double maxCondroot, double swp50, double shapeCond, double scale) {
+void hydraulic_redistribution(
+	double swc[],
+	double hydred[],
+	unsigned int vegk,
+	unsigned int nlyrs,
+	SW_LAYER_INFO *lyr[],
+	Bool lyrFrozen[],
+	double maxCondroot,
+	double swp50,
+	double shapeCond,
+	double scale
+) {
 	/**********************************************************************
 	 HISTORY:
 	 10/19/2010 (drs)
@@ -932,53 +941,72 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 	 **********************************************************************/
 
 	unsigned int i, j;
-	double swp[MAX_LAYERS] = {0}, swpwp[MAX_LAYERS] = {0}, relCondroot[MAX_LAYERS] = {0}, hydredmat[MAX_LAYERS][MAX_LAYERS] = {{0}};
-  double Rx, swa, hydred_sum, x;
+	double
+		swp[MAX_LAYERS] = {0},
+		relCondroot[MAX_LAYERS] = {0},
+		hydredmat[MAX_LAYERS][MAX_LAYERS] = {{0}};
+	double swa, hdnet, x, tmp, mlyrRootCo_i, mlyrRootCo_j;
 
-	ST_RGR_VALUES *st = &stValues;
 
 	for (i = 0; i < nlyrs; i++) {
-		swp[i] = SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		swp[i] = SW_SWCbulk2SWPmatric(lyr[i]->fractionVolBulk_gravel, swc[i], i);
 		relCondroot[i] = fmin( 1., fmax(0., 1./(1. + powe(swp[i]/swp50, shapeCond) ) ) );
-		swpwp[i] = SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swcwp[i], i);
-
 		hydredmat[0][i] = hydredmat[i][0] = 0.; /* no hydred in top layer */
+		hydredmat[i][i] = 0.; /* no hydred within same layer */
 	}
 
+		/*
+			layer i receives moisture moved from layer j: `hydredmat[i][j] > 0`
+			layer i loses moisture to layer j: `hydredmat[i][j] < 0`
+			net moisture change in layer i: `sum across j of hydredmat[i][j]`
+				which equals `sum across j of -hydredmat[j][i]`
+		*/
+
 	for (i = 1; i < nlyrs; i++) {
-		hydredmat[i][i] = 0.; /* init */
 
 		for (j = i + 1; j < nlyrs; j++) {
 
-			if ((LT(swp[i], swpwp[i]) || LT(swp[j], swpwp[j])) &&
-				(st->lyrFrozen[i] == swFALSE) && (st->lyrFrozen[j] == swFALSE)) {
-				/* hydred occurs only if at least one soil layer's swp is above wilting point
-				and both soil layers are not frozen */
+			if (
+				(
+					GT(swc[i], lyr[i]->swcBulk_wiltpt) ||
+					GT(swc[j], lyr[j]->swcBulk_wiltpt)
+				) &&
+				(lyrFrozen[i] == swFALSE) && (lyrFrozen[j] == swFALSE)
+			) {
+				/* hydred only occurs if at least one soil layer is wet
+					(more moisture than at wilting point)
+					and both soil layers are not frozen
+				*/
 
-				if (GT(swp[i], swp[j])) {
-					Rx = lyrRootCo[j]; // layer j has more water than i
-				} else {
-					Rx = lyrRootCo[i];
-				}
+				mlyrRootCo_i = lyr[i]->transp_coeff[vegk];
+				mlyrRootCo_j = lyr[j]->transp_coeff[vegk];
 
-				hydredmat[i][j] = maxCondroot * 10. / 24. * (swp[j] - swp[i]) *
-					fmax(relCondroot[i], relCondroot[j]) * (lyrRootCo[i] * lyrRootCo[j] / (1. - Rx)); /* assuming a 10-hour night */
-				hydredmat[j][i] = -hydredmat[i][j];
+				/* Ryel et al. 2002: eq. 6; assuming a 10-hour night */
+				tmp =
+					maxCondroot * 10. / 24. * (swp[j] - swp[i]) *
+					fmax(relCondroot[i], relCondroot[j]) *
+					mlyrRootCo_i * mlyrRootCo_j /
+					(1. - (GT(swp[i], swp[j]) ? mlyrRootCo_j : mlyrRootCo_i));
+
+				hydredmat[i][j] = tmp;
+				hydredmat[j][i] = -tmp;
+
 			} else {
 				hydredmat[i][j] = hydredmat[j][i] = 0.;
 			}
 		}
 	}
 
-	for (i = 0; i < nlyrs; i++) { /* total hydred from layer i cannot extract more than its swa */
-		hydred_sum = 0.;
+	/* net hydred from layer i cannot extract moisture below swc_min */
+	for (i = 0; i < nlyrs; i++) {
+		hdnet = 0.;
 		for (j = 0; j < nlyrs; j++) {
-			hydred_sum += hydredmat[i][j];
+			hdnet += hydredmat[i][j];
 		}
 
-		swa = fmax( 0., swc[i] - swcwp[i] );
-		if (LT(hydred_sum, 0.) && GT( -hydred_sum, swa)) {
-			x = swa / -hydred_sum;
+		swa = fmax( 0., swc[i] - lyr[i]->swcBulk_wiltpt );
+		if (LT(hdnet, 0.) && GT( -hdnet, swa)) {
+			x = swa / -hdnet;
 			for (j = 0; j < nlyrs; j++) {
 				hydredmat[i][j] *= x;
 				hydredmat[j][i] *= x;
