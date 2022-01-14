@@ -741,6 +741,7 @@ void SW_Water_Flow(void) {
 			GT(v->veg[k].cov.fCover, 0.) &&
 			GT(v->veg[k].biolive_daily[doy], 0.)
 		) {
+
 			hydraulic_redistribution(
 				lyrSWCBulk,
 				lyrHydRed[k],
@@ -753,6 +754,7 @@ void SW_Water_Flow(void) {
 				v->veg[k].shapeCond,
 				v->veg[k].cov.fCover
 			);
+
 		} else {
 			/* Set daily array to zero */
 			ForEachSoilLayer(i) {

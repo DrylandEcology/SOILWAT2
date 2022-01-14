@@ -940,32 +940,64 @@ void hydraulic_redistribution(
 	 03/23/2012 (drs) excluded hydraulic redistribution from top soil layer (assuming that this layer is <= 5 cm deep)
 	 **********************************************************************/
 
-	unsigned int i, j;
+	unsigned int i, j, idso, idre, nit;
+	Bool is_hd_adj;
 	double
+		swa[MAX_LAYERS] = {0},
 		swp[MAX_LAYERS] = {0},
 		relCondroot[MAX_LAYERS] = {0},
+		mlyrRootCo[2] = {0.},
 		hydredmat[MAX_LAYERS][MAX_LAYERS] = {{0}};
-	double swa, hdnet, x, tmp, mlyrRootCo_i, mlyrRootCo_j;
+	double hdnet, hdin, hdout, tmp;
 
+	#ifdef SWDEBUG
+	short debug = 0;
+	double hdnet2;
+	#endif
 
+	#ifdef SWDEBUG
+	if (debug) {
+		swprintf("hydred[%d-%d/veg(%d)]: \n", SW_Model.year, SW_Model.doy, vegk);
+	}
+	#endif
+
+	/* Pre-calculate variables */
 	for (i = 0; i < nlyrs; i++) {
+		/* Set water extraction limit to moisture above SWPcrit by vegetation
+			(unless wilting point is lower)
+		*/
+		swa[i] = fmax(
+			0.,
+			swc[i] - fmin(lyr[i]->swcBulk_wiltpt, lyr[i]->swcBulk_atSWPcrit[vegk])
+		);
+
 		swp[i] = SW_SWCbulk2SWPmatric(lyr[i]->fractionVolBulk_gravel, swc[i], i);
-		relCondroot[i] = fmin( 1., fmax(0., 1./(1. + powe(swp[i]/swp50, shapeCond) ) ) );
+
+		/* Ryel et al. 2002: eq. 7 relative soil-root conductance */
+		relCondroot[i] = fmin(
+			1.,
+			fmax(0., 1./(1. + powe(swp[i]/swp50, shapeCond)))
+		);
+
 		hydredmat[0][i] = hydredmat[i][0] = 0.; /* no hydred in top layer */
 		hydredmat[i][i] = 0.; /* no hydred within same layer */
 	}
 
-		/*
-			layer i receives moisture moved from layer j: `hydredmat[i][j] > 0`
-			layer i loses moisture to layer j: `hydredmat[i][j] < 0`
-			net moisture change in layer i: `sum across j of hydredmat[i][j]`
-				which equals `sum across j of -hydredmat[j][i]`
-		*/
+	/* Calculate hydraulic redistribution according to Ryel et al. 2002:
+		layer i receives moisture moved from layer j: `hydredmat[i][j] > 0`
+		layer i loses moisture to layer j: `hydredmat[i][j] < 0`
+		net moisture change in layer i: `sum across j of hydredmat[i][j]`
+			which equals `sum across j of -hydredmat[j][i]`
+	*/
 
 	for (i = 1; i < nlyrs; i++) {
 
 		for (j = i + 1; j < nlyrs; j++) {
 
+			/* hydred only occurs if at least one soil layer is wet
+				(more moisture than at wilting point)
+				and both soil layers are not frozen
+			*/
 			if (
 				(
 					GT(swc[i], lyr[i]->swcBulk_wiltpt) ||
@@ -973,20 +1005,54 @@ void hydraulic_redistribution(
 				) &&
 				(lyrFrozen[i] == swFALSE) && (lyrFrozen[j] == swFALSE)
 			) {
-				/* hydred only occurs if at least one soil layer is wet
-					(more moisture than at wilting point)
-					and both soil layers are not frozen
+
+				/* Identify source layer: from which water is removed */
+				idso = LT(swp[i], swp[j]) ? i : j;
+				/* Identify recipient layer: to which water is moved */
+				idre = (idso == i) ? j : i;
+
+
+				/* Correct rooting contributions for different layer widths
+					-> truncate to source layer width
+					(original equation assumed identical layer widths)
 				*/
+				mlyrRootCo[0] = lyr[idso]->transp_coeff[vegk];
+				mlyrRootCo[1] = lyr[idre]->transp_coeff[vegk];
 
-				mlyrRootCo_i = lyr[i]->transp_coeff[vegk];
-				mlyrRootCo_j = lyr[j]->transp_coeff[vegk];
+				if (LT(lyr[idso]->width, lyr[idre]->width)) {
+					mlyrRootCo[1] *= lyr[idso]->width / lyr[idre]->width;
+				}
 
-				/* Ryel et al. 2002: eq. 6; assuming a 10-hour night */
+
+				/* Ryel et al. 2002: eq. 6 */
+				/* Convert hourly to daily: assume a fixed day with a 10-hour night */
 				tmp =
-					maxCondroot * 10. / 24. * (swp[j] - swp[i]) *
+					10. / 24. * maxCondroot * (swp[j] - swp[i]) *
 					fmax(relCondroot[i], relCondroot[j]) *
-					mlyrRootCo_i * mlyrRootCo_j /
-					(1. - (GT(swp[i], swp[j]) ? mlyrRootCo_j : mlyrRootCo_i));
+					mlyrRootCo[0] * mlyrRootCo[1] / (1. - mlyrRootCo[0]);
+
+				/* limit hydred to moisture above swc_min */
+				tmp = copysign(fmin(fabs(tmp), swa[idso]), tmp);
+
+				#ifdef SWDEBUG
+				if (debug) {
+					swprintf(
+						"hd[sl=%d,%d|so=%d,re=%d]=%+.6f cm: "
+						"so|re: w=%4.1f|%4.1f cm, "
+						"swc=%.4f|%.4f cm, "
+						"swp=%7.3f|%7.3f MPa, "
+						"c=%.4f|%.4f, "
+						"R=%.4f|%.4f"
+						"\n",
+						i, j, idso, idre, tmp,
+						lyr[idso]->width, lyr[idre]->width,
+						swc[idso], swc[idre],
+						-0.1 * swp[idso], -0.1 * swp[idre],
+						relCondroot[idso], relCondroot[idre],
+						mlyrRootCo[0], mlyrRootCo[1]
+					);
+				}
+				#endif
 
 				hydredmat[i][j] = tmp;
 				hydredmat[j][i] = -tmp;
@@ -997,35 +1063,92 @@ void hydraulic_redistribution(
 		}
 	}
 
-	/* net hydred from layer i cannot extract moisture below swc_min */
-	for (i = 0; i < nlyrs; i++) {
-		hdnet = 0.;
-		for (j = 0; j < nlyrs; j++) {
-			hdnet += hydredmat[i][j];
-		}
 
-		swa = fmax( 0., swc[i] - lyr[i]->swcBulk_wiltpt );
-		if (LT(hdnet, 0.) && GT( -hdnet, swa)) {
-			x = swa / -hdnet;
-			for (j = 0; j < nlyrs; j++) {
-				hydredmat[i][j] *= x;
-				hydredmat[j][i] *= x;
+
+	/* Restrict net hydred so that it does not remove moisture below swc_min */
+	nit = 0;
+	is_hd_adj = swTRUE;
+
+	while (nit < nlyrs && is_hd_adj) {
+		/* Iterate because the restriction of outgoing hydred in one layer affects
+				incoming hydred in other layers which, in turn, may affect their
+				ability for outgoing hydred
+		*/
+		nit++;
+		is_hd_adj = swFALSE; /* init for current iteration */
+
+		for (i = 0; i < nlyrs; i++) {
+
+			if (GT(swa[i], 0.)) {
+				/* Calculate net hydred for layer i */
+				hdin = hdout = 0.;
+				for (j = 0; j < nlyrs; j++) {
+					if (GT(hydredmat[i][j], 0.)) {
+						hdin += hydredmat[i][j];
+					} else {
+						hdout += hydredmat[i][j];
+					}
+				}
+				hdnet = hdin + hdout;
+
+				if (LT(hdnet, 0.) && GT( -hdnet, swa[i])) {
+					/* net hydred would extract more moisture than available above swc_min
+						-> reduce moisture extractions so that -hdnet <= swa
+					*/
+					tmp = - (swa[i] + hdin) / hdout;
+					is_hd_adj = swTRUE;
+
+					for (j = 0; j < nlyrs; j++) {
+						if (LT(hydredmat[i][j], 0.)) {
+							hydredmat[i][j] *= tmp;
+							hydredmat[j][i] *= tmp;
+						}
+					}
+				}
+
+				#ifdef SWDEBUG
+				if (debug) {
+					hdnet2 = 0.;
+					for (j = 0; j < nlyrs; j++) hdnet2 += hydredmat[i][j];
+					if (!EQ(hdnet, hdnet2)) {
+						swprintf(
+							"hd[sl=%d|it=%d]: pre=%+.6f (hdin=%.6f, hdout=%.6f), "
+							"post=%+.6f, swa=%.6f, swc=%.4f\n",
+							i, nit, hdnet, hdin, hdout, hdnet2, swa[i], swc[i]
+						);
+					}
+				}
+				#endif
+
 			}
 		}
 	}
 
+	if (is_hd_adj) {
+		LogError(
+			logfp, LOGFATAL,
+			"[%d-%d/veg(%d)]: "
+			"hydraulic redistribution failed to constrain to swc_min.",
+			SW_Model.year, SW_Model.doy, vegk
+		);
+	}
+
+
+	/* Determine finalized hydraulic redistribution */
+
 	hydred[0] = 0.; /* no hydred in top layer */
 
 	for (i = 1; i < nlyrs; i++) {
-		hydred[i] = 0.; //init
+		hydred[i] = 0.;
 		for (j = 1; j < nlyrs; j++) {
 			hydred[i] += hydredmat[i][j];
 		}
 
-		hydred[i] *= scale;
+		hydred[i] *= scale; /* scale by fractional vegetation contribution */
 		swc[i] += hydred[i];
 	}
 }
+
 
 /**
 @brief Interpolate soil temperature layer temperature values to
