@@ -332,29 +332,45 @@ namespace
   //Test transp_weighted_avg function.
   TEST(SWFlowTest, transp_weighted_avg)
   {
+    //--- TEST when n_layers is 1 ------
     //INPUTS
     double swp_avg = 10;
+    unsigned int i;
     unsigned int n_tr_rgns = 1, n_layers = 1;
     unsigned int tr_regions[1] = {1}; // 1-4
     double tr_coeff[1] = {0.0496}; //trco_grass
     double swc[1] = {12};
 
     //INPUTS for expected outputs
-    double swp_avgExpected1 = 1.100536e-06;
+    double swp_avgExpected1 = 1.5992088;
+
+    // Setup soil layers
+    create_test_soillayers(n_layers);
+
+    ForEachSoilLayer(i)
+    {
+      // copy soil layer values into arrays so that they can be passed as
+      // arguments to `transp_weighted_avg`
+      tr_coeff[i] = s->lyr[i]->transp_coeff[SW_SHRUB];
+
+      // example: swc as mean of wilting point and field capacity
+      swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt) / 2.;
+    }
+
     //Begin TEST when n_layers is one
     transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions, tr_coeff,
                         swc);
 
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
-    EXPECT_NEAR(swp_avgExpected1, swp_avg, tol6); //swp_avg is expected to be 1.100536e-06
+    EXPECT_NEAR(swp_avg, swp_avgExpected1, tol6);
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
 
-    //Begin TEST when n_layers is at "max"
+    //--- TEST when n_layers is at "max" ------
     //INPUTS
     swp_avg = 10, n_tr_rgns = 4, n_layers = 25;
-    unsigned int i, tr_regions2[25] = {1,1,1,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,
+    unsigned int tr_regions2[25] = {1,1,1,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,
                                        4,4,4,4,4};
     double tr_coeff2[25],swc2[25];
 
@@ -375,13 +391,13 @@ namespace
     }
 
 
-		transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions2, tr_coeff2,
+    transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions2, tr_coeff2,
                         swc2);
 
-		EXPECT_GE(swp_avg, 0); //Must always be non negative.
+    EXPECT_GE(swp_avg, 0); //Must always be non negative.
 
 
-		EXPECT_NEAR(swp_avgExpectedM, swp_avg, tol6);
+    EXPECT_NEAR(swp_avg, swp_avgExpectedM, tol6);
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
