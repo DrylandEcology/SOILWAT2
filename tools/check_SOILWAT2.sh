@@ -38,6 +38,16 @@ declare -a cxxs=(
 ncomp=${#ccs[@]}
 
 
+#--- Function to check testing output
+check_testing_output () {
+  if diff  -q -x "\.DS_Store" -x "\.gitignore" testing/Output/ testing/Output_ref/ >/dev/null 2>&1; then
+    echo $'\n'"Error: Example output is not reproduced by binary!"$'\n'$'\n'
+  else
+    echo $'\n'"Example output is reproduced by binary!"$'\n'$'\n'
+  fi
+}
+
+
 #--- Loop through tests and compilers
 for ((k = 0; k < ncomp; k++)); do
   echo $'\n'$'\n'$'\n'\
@@ -66,8 +76,18 @@ for ((k = 0; k < ncomp; k++)); do
        --------------------------------------------------$'\n'\
        Run binary with ${port_compilers[k]} ...$'\n'\
        --------------------------------------------------
+
   CC=${ccs[k]} CXX=${cxxs[k]} make clean bin bint_run
+
+  if [ ${k} -eq 0 ]; then
+    # Save default testing output as reference for future comparisons
+    cp -r testing/Output testing/Output_ref
+  fi
+  check_testing_output
+
   CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_debug_severe bint_run
+  check_testing_output
+
   if command -v valgrind >/dev/null 2>&1; then
     CC=${ccs[k]} CXX=${cxxs[k]} make bind_valgrind bint_run
   fi
@@ -77,6 +97,7 @@ for ((k = 0; k < ncomp; k++)); do
        --------------------------------------------------$'\n'\
        Run tests with ${port_compilers[k]} ...$'\n'\
        --------------------------------------------------
+
   CC=${ccs[k]} CXX=${cxxs[k]} make clean test test_run
   CC=${ccs[k]} CXX=${cxxs[k]} make clean test_severe test_run
 
@@ -85,6 +106,7 @@ for ((k = 0; k < ncomp; k++)); do
        --------------------------------------------------$'\n'\
        Run sanitizer on tests with ${port_compilers[k]}: exclude known leaks ...$'\n'\
        --------------------------------------------------
+
   # CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
   # https://github.com/google/sanitizers/wiki/AddressSanitizer
   CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
@@ -93,9 +115,11 @@ for ((k = 0; k < ncomp; k++)); do
        --------------------------------------------------$'\n'\
        Unset compiler ...$'\n'\
        --------------------------------------------------
+
   if [ "${port_compilers[k]}" != "none" ]; then
     sudo port select --set ${ccs[k]} none
   fi
+
 done
 
 echo $'\n'$'\n'\
