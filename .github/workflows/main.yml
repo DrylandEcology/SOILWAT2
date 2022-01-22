@@ -63,9 +63,8 @@ jobs:
     
     runs-on: windows-latest
     env:
-      CYGWIN_NOWINPATH: 1 # Removes non-Cygwin dirs from PATH.
-      CHERE_INVOKING: '' # Makes Cygwin's `bash.exe --login` not cd.
-    defaults:
+      CYGWIN_NOWINPATH: 1 # only have cygwin's executables on PATH
+      CHERE_INVOKING: 1 # prevent profile script to change directory
       run:
         shell: C:\cygwin\bin\bash.exe --login -eo pipefail -o igncr {0}
 
