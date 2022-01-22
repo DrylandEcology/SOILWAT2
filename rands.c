@@ -312,6 +312,8 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 		static double v1, v2, r, fac, gset, gasdev;
 
 		if (!set) {
+			/* `RandUni(pcg_rng)` returns 0 if `pcg_rng` is not initialized
+				 causing an infinite while-loop */
 			do {
 				v1 = 2.0 * RandUni(pcg_rng) - 1.0;
 				v2 = 2.0 * RandUni(pcg_rng) - 1.0;

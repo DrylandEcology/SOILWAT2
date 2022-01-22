@@ -69,6 +69,7 @@ namespace {
     short k, n = 3;
     RealD tmax = 0., tmin = 0., tval;
 
+    SW_MKV_construct(); // initialize markov_rng
 
     for (k = 0; k < n; k++) {
       // Create temperature values: here with n = 3: -10, 0, +10
@@ -96,20 +97,24 @@ namespace {
     }
 
     // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
+    // Reset_SOILWAT2_after_UnitTest();
+    SW_MKV_deconstruct();
   }
 
   TEST(WGDeathTest, mvnorm) {
-    // TODO: figure out why this death test hangs and remove skip
-    GTEST_SKIP();
-
     RealD tmax = 0., tmin = 0.;
+
+    SW_MKV_construct(); // initialize markov_rng
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL
     EXPECT_DEATH_IF_SUPPORTED(
       (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.),
       "@ generic.c LogError"
     );
+
+    // Reset to previous global state
+    // Reset_SOILWAT2_after_UnitTest();
+    SW_MKV_deconstruct();
   }
 
 
@@ -119,6 +124,8 @@ namespace {
       tmax = 0., tmin = 0., t0 = 0., t10 = 10.,
       wet = 1., dry = 0.,
       cf0 = 0., cf_pos = 5., cf_neg = -5.;
+
+    SW_MKV_construct(); // initialize markov_rng
 
     // Case: tmax = tmin; wet; cf_*_wet = 0 ==> input = output
     tmax = t0;
@@ -149,6 +156,10 @@ namespace {
     EXPECT_DOUBLE_EQ(tmax, t0 + cf_pos);
     EXPECT_DOUBLE_EQ(tmin, fmin(tmax, t10 + cf_pos));
     EXPECT_LE(tmin, tmax);
+
+    // Reset to previous global state
+    // Reset_SOILWAT2_after_UnitTest();
+    SW_MKV_deconstruct();
   }
 
 } // namespace
