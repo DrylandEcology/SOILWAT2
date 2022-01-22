@@ -35,11 +35,15 @@ jobs:
         make clean bin_debug_severe bint_run
 
     - name: Unit tests
-      run: |
-        make clean test test_run
-        make clean test_severe test_run
-
-    - name: Unit tests with sanitizers
+      run: make clean test test_run
+        
+    - name: Severe unit tests (without sanitizers)
+      if: ${{ runner.os == 'macOS' }}
+      run: make clean test_severe test_run
+      
+    - name: Severe unit tests (with sanitizers)
+      # Apple clang does not support "AddressSanitizer: detect_leaks" (at least as of clang-1200.0.32.29)
+      if: ${{ runner.os != 'macOS' }}
       run: ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
       
     - name: Generate coverage report (ubuntu)
