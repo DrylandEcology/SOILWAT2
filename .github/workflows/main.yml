@@ -48,7 +48,7 @@ jobs:
       
     - name: Generate coverage report (ubuntu)
       if: ${{ runner.os == 'Linux' && success() }}
-      run: make clean cov test_run
+      run: make clean cov cov_run
 
     - name: Upload coverage to Codecov (ubuntu)
       if: ${{ runner.os == 'Linux' && success() }}
