@@ -1,0 +1,52 @@
+name: SOILWAT2 C/C++ CI
+
+#TODO: add gcc and clang versions
+#TODO: add doxygen documentation check
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+      
+    - name: Print compiler versions as seen by make
+      run: make compiler_version
+    
+    - name: Run binary
+      run: |
+        make clean bin bint_run
+        make clean bin_debug_severe bint_run
+
+    - name: Unit tests
+      run: |
+        make clean test test_run
+        make clean test_severe test_run
+
+    - name: Unit tests with sanitizers
+      run: ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+      
+    - name: Generate coverage report (ubuntu)
+      if: ${{ runner.os == 'ubuntu' && success() }}
+      run: make clean cov test_run
+
+    - name: Upload coverage to Codecov (ubuntu)
+      if: ${{ runner.os == 'ubuntu' && success() }}
+      uses: codecov/codecov-action@v2
+      with:
+        fail_ci_if_error: false # just report, don't fail checks
