@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - master
+      - feature_ghactions_v2
 
 jobs:
   build:
@@ -81,7 +82,7 @@ jobs:
     - name: Install cygwin (windows)
       uses: cygwin/cygwin-install-action@v1
       with:
-        packages: gcc-core make
+        packages: gcc-core gcc-g++ make
       
     - name: Print compiler versions as seen by make
       run: make compiler_version
