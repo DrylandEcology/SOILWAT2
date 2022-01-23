@@ -65,6 +65,7 @@ jobs:
     env:
       CYGWIN_NOWINPATH: 1 # only have cygwin's executables on PATH
       CHERE_INVOKING: 1 # prevent profile script to change directory
+    defaults:
       run:
         shell: C:\cygwin\bin\bash.exe --login -eo pipefail -o igncr {0}
 
