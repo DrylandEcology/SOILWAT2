@@ -166,7 +166,7 @@ void SW_MDL_read(void) {
 	cnt = 0;
 	while (GetALine(f, inbuf)) {
 		cnt++;
-		if (isalpha(*inbuf) && strcmp(inbuf, "end")) { /* get hemisphere */
+		if (isalpha((int) *inbuf) && strcmp(inbuf, "end")) { /* get hemisphere */
 			m->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
 			fhemi = swTRUE;
 			break;
