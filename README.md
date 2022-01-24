@@ -1,6 +1,12 @@
-| *nix | Windows | Release | DOI | License | Coverage | Documentation |
-| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
-[ ![gh nix build status][1]][2] | [![gh win build status][3]][2] | [ ![github release][5]][6] | [ ![DOI][7]][8] | [![license][9]][10] | [![codecov status][11]][12] | [![doc status][4]][2] |
+<!-- badges: start -->
+[![gh nix build status][1]][2]
+[![gh win build status][3]][2]
+[![github release][5]][6]
+[![DOI][7]][8]
+[![license][9]][10]
+[![codecov status][11]][12]
+[![doc status][4]][2]
+<!-- badges: end -->
 
 
 [1]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/main_nix.yml/badge.svg?branch=master
