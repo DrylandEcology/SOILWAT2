@@ -16,6 +16,7 @@
 Note: this document is best viewed as part of the doxygen-built documentation
 (there may be text artifacts if viewed as standalone-markdown).
 
+<br>
 
 The `SOILWAT2` program must be downloaded as source code and compiled from the
 command line. The program is written in `C` and has no graphical user interface.
@@ -24,7 +25,8 @@ If you are more familiar with `R`, then you may prefer to use our R package
 
 We are continuously checking the successful installation, compilation,
 and passing of logical tests of `SOILWAT2` both on a `*nix` as well as on a
-Windows OS platform. You can confirm yourself that these checks are passing
+Windows OS platform (using `cygwin`).
+You can confirm yourself that these checks are passing
 by visiting the online `README` page of [SOILWAT2][] and double check that the
 badges are green. Thus, if installation
 doesn't work for you and our checks are passing, then it is likely a problem
@@ -37,11 +39,16 @@ on your side.
 
 ### Minimal requirements
   - on any platform:
-    - the [gcc][] or [clang/llvm][] toolchains;
-      ideally, `gcc >= v4.9` or `clang >= v3.3` (at least `v5.0` for testing)
+    - to compile the `SOILWAT2` executable
+      - `C11` compliant [gcc][] or [clang/llvm][] toolchains;
+        ideally, `gcc >= v4.9` or `clang >= v3.3`
+    - to compile the `SOILWAT2` unit tests (using `googletest`)
+      - `C++11` compliant [gcc][] or [clang/llvm][] toolchains;
+        where `gcc >= v5.0` or `clang >= v5.0`
+      - `POSIX API` (needs to be activated on `cygwin`, see `makefile`)
     - POSIX- [make](https://pubs.opengroup.org/onlinepubs/9699919799/) or
       GNU-compliant [make](https://www.gnu.org/software/make/)
-    - [git][] to download the code
+    - [git][] to download the code from the `github` repository
   - additionally, on Windows OS:
     - a `*nix` emulator, e.g., an installation of [cygwin][] or [docker][]
   - on Mac OSX:
@@ -49,7 +56,8 @@ on your side.
     - having agreed to the xcode license (run `xcodebuild -license`)
     - or, alternatively, the full [xcode][] installation
   - optional:
-    - [doxygen][] (ideally `>= v1.8.16`) and a minimal `latex` installation (see below)
+    - [doxygen][] (ideally `>= v1.8.17`) and
+      a minimal `latex` installation (see below)
       to generate a local copy of the documentation
 
 

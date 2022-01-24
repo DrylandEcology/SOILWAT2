@@ -60,14 +60,22 @@ lib_target_severe = lib$(target_severe).a
 lib_target_cov = lib$(target_cov).a
 
 
-#------ COMMANDS AND STANDARDS
+#------ COMMANDS
 # CC = gcc
 # CXX = g++
 # AR = ar
 # RM = rm
 
+
+#------ STANDARDS
+# googletest requires c++11 and POSIX API
+# cygwin does not enable POSIX API by default (e.g., `strdup()` is missing)
+# --> enable by defining `_POSIX_C_SOURCE=200809L`
+#     (or `-std=gnu++11` or `_GNU_SOURCE`)
+# see https://github.com/google/googletest/issues/813 and
+# see https://github.com/google/googletest/pull/2839#issue-613300962
+
 set_std = -std=c11
-# gnu11/gnu++11 used to be required for googletest on Windows/cygwin
 set_std_tests = -std=c11
 set_std++_tests = -std=c++11
 
@@ -123,6 +131,7 @@ sw_CXXFLAGS = $(CXXFLAGS)
 bin_flags = -O2 -fno-stack-protector
 debug_flags = -g -O0 -DSWDEBUG
 cov_flags = -O0 -coverage
+gtest_flags = -D_POSIX_C_SOURCE=200809L # googletest requires POSIX API
 
 
 # Linker flags and libraries
@@ -259,11 +268,11 @@ bind_valgrind : bin_debug bint
 lib_test : $(lib_gtest)
 
 $(lib_gtest) :
-		@$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(set_std++_tests) \
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(gtest_flags) $(set_std++_tests) \
 		-isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
 		-pthread -c ${GTEST_DIR}/src/gtest-all.cc
 
-		@$(AR) -r $(lib_gtest) gtest-all.o
+		$(AR) -r $(lib_gtest) gtest-all.o
 
 test_severe : $(lib_gtest) $(lib_target_severe)
 		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags_severe_cxx) \

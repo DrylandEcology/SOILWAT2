@@ -11,8 +11,10 @@
 
 
 # Notes:
-# - googletests (Dec 2021) expects C++11 compliant compilers and
-#   gcc >= 5.0 or clang >= 5.0
+# - googletests (Jan 2022) requires a C++11 compliant compilers,
+#   gcc >= 5.0 or clang >= 5.0,
+#   and POSIX API (e.g., `_POSIX_C_SOURCE=200809L`)
+#   which is not enabled by default on all systems
 
 
 
