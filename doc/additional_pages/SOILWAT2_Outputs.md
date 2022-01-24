@@ -1,6 +1,10 @@
-\page page_outputs SOILWAT2 Outputs
+# SOILWAT2 Outputs
 
 [SOILWAT2]: https://github.com/DrylandEcology/SOILWAT2
+
+Note: this document is best viewed as part of the doxygen-built documentation
+(there may be text artifacts if viewed as standalone-markdown).
+
 
 ### Example
   * The source code contains a complete example simulation project in `testing/`
@@ -18,8 +22,8 @@
 ```
 
   * The inputs comprise the master file `files.in` and the content of the
-    `Input/` folder. They are explained in detail on the page
-    \ref page_inputs.
+    `Input/` folder. They are explained in detail
+    [here](doc/additional_pages/SOILWAT2_Inputs.md).
   * The user can turn on/off different types of outputs via the
     input file \ref outsetupin.
   * The outputs are written to the folder `Output/` including a
@@ -56,4 +60,5 @@ The names of the output files are user inputs in the file \ref filesin.
 
 
 <hr>
-Go back to the \ref index "main page" or the \ref page_manual "user guide".
+Go back to the [main page](README.md) or
+[user guide](doc/additional_pages/A_SOILWAT2_user_guide.md).

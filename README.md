@@ -83,8 +83,13 @@ Some recent references
 <a name="get_started"></a>
 ## How to get started
 
-A detailed manual can be found
-[here](`doc/additional_pages/A SOILWAT2 user guide.md`) or here \ref page_manual.
+SOILWAT2 comes with a
+[detailed manual](doc/additional_pages/A_SOILWAT2_user_guide.md)
+and short overviews of
+[inputs](doc/additional_pages/SOILWAT2_Inputs.md)
+and [outputs](doc/additional_pages/SOILWAT2_Outputs.md).
+A full code documentation may be built, see [here](#get_documentation).
+
 
 <a name="compile"></a>
 ### Compilation

@@ -1,5 +1,4 @@
-\page page_manual A SOILWAT2 user guide
-
+# A SOILWAT2 user guide
 
 [clang/llvm]: https://clang.llvm.org
 [cygwin]: https://www.cygwin.com
@@ -12,6 +11,10 @@
 [SOILWAT2]: https://github.com/DrylandEcology/SOILWAT2
 [tinytex]: https://yihui.name/tinytex/
 [xcode]: https://developer.apple.com/xcode
+
+
+Note: this document is best viewed as part of the doxygen-built documentation
+(there may be text artifacts if viewed as standalone-markdown).
 
 
 The `SOILWAT2` program must be downloaded as source code and compiled from the
@@ -35,7 +38,7 @@ on your side.
 ### Minimal requirements
   - on any platform:
     - the [gcc][] or [clang/llvm][] toolchains;
-      ideally, `gcc >= v4.9` or `clang >= v3.3`
+      ideally, `gcc >= v4.9` or `clang >= v3.3` (at least `v5.0` for testing)
     - POSIX- [make](https://pubs.opengroup.org/onlinepubs/9699919799/) or
       GNU-compliant [make](https://www.gnu.org/software/make/)
     - [git][] to download the code
@@ -107,13 +110,16 @@ on your side.
 
 
 ### Documentation
-  * Generate help pages (locally) and open them in your browser
+  * Code documentation
 ```{.sh}
     cd SOILWAT2/
     make doc
     make doc_open
 ```
 
+  * Documentation of user inputs and outputs
+    * \subpage doc/additional_pages/SOILWAT2_Inputs.md "SOILWAT2 Inputs"
+    * \subpage doc/additional_pages/SOILWAT2_Outputs.md "SOILWAT2 Outputs"
 <br>
 
 
@@ -134,16 +140,18 @@ on your side.
 ```
 
   * The inputs comprise the master file `files.in` and the content of the
-    `Input/` folder. They are explained in detail \subpage page_inputs "here".
+    `Input/` folder. They are explained in detail
+    [here](doc/additional_pages/SOILWAT2_Inputs.md).
   * The outputs are written to `Output/` including a logfile that contains
     warnings and errors. The output files are in `.csv` format and can be
     opened by a spreadsheet program (e.g., `LibreOffice` or `Excel`) or
     imported into `R`
     (e.g., `data <- read.csv("testing/Output/sw2_yearly.csv")`).
-    Outputs are explained in detail \subpage page_outputs "here".
+    Outputs are explained in detail
+    [here](doc/additional_pages/SOILWAT2_Inputs.md).
 
 <br>
 
 <hr>
-Go back to the \ref index "main page".
+Go back to the [main page](README.md).
 
