@@ -1,4 +1,4 @@
-name: SOILWAT2 doc CI
+name: docs
 
 on:
   push:
