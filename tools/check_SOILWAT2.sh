@@ -43,9 +43,11 @@ ncomp=${#ccs[@]}
 #--- Function to check testing output
 check_testing_output () {
   if diff  -q -x "\.DS_Store" -x "\.gitignore" testing/Output/ testing/Output_ref/ >/dev/null 2>&1; then
-    echo $'\n'"Error: Example output is not reproduced by binary!"$'\n'$'\n'
-  else
     echo $'\n'"Example output is reproduced by binary!"$'\n'$'\n'
+  else
+    echo $'\n'"Error: Example output is not reproduced by binary!"
+    diff  -qs -x "\.DS_Store" -x "\.gitignore" testing/Output/ testing/Output_ref/
+    echo $'\n'$'\n'
   fi
 }
 
