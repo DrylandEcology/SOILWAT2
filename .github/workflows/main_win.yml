@@ -1,4 +1,4 @@
-name: SOILWAT2 cygwin CI
+name: win-tests
 
 #TODO: run unit tests with different compiler versions of both gcc and clang
 
