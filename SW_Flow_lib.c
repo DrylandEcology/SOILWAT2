@@ -509,18 +509,16 @@ void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double
 
 Based on equations from Parton 1978. @cite Parton1978
 
-@param *bserate Bare soil evaporation loss rate (cm/day).
-@param nelyrs Number of layers to consider in evaporation.
-@param ecoeff Array of evaporation coefficients.
-@param petday Potential evapotranspiration rate (cm/day).
-@param shift Displacement of the inflection point in order to shift the function up, down, left, or right.
-@param shape Slope of the line at the inflection point.
-@param inflec Y-value of the inflection point.
-@param range Max y-value - min y-value at the limits.
-@param width Width of each layer (cm).
-@param swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-
-@return *bserate Updated bare soil evaporation loss rate (cm/day).
+@param[in,out] *bserate Bare soil evaporation loss rate (cm/day).
+@param[in] nelyrs Number of layers to consider in evaporation.
+@param[in] ecoeff Array of evaporation coefficients.
+@param[in] petday Potential evapotranspiration rate (cm/day).
+@param[in] shift Displacement of the inflection point in order to shift the function up, down, left, or right.
+@param[in] shape Slope of the line at the inflection point.
+@param[in] inflec Y-value of the inflection point.
+@param[in] range Max y-value - min y-value at the limits.
+@param[in] width Width of each layer (cm).
+@param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 
 */
 
@@ -1096,15 +1094,14 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
 @brief Initialize soil temperature layer values by transfering soil layer values
     to soil temperature layer values.
 
-@param cor Two dimensional array containing soil temperature data.
-@param nlyrSoil Number of soil layers.
-@param width_Soil Width of the soil layers.
-@param var Soil layer values to be interpolated.
-@param nlyrTemp Number of soil temperature layers.
-@param width_Temp Width of the soil temperature layers.
-@param res Values interpolated to soil temperature depths.
+@param[in] cor Two dimensional array containing soil temperature data.
+@param[in] nlyrSoil Number of soil layers.
+@param[in] width_Soil Width of the soil layers.
+@param[in] var Soil layer values to be interpolated.
+@param[in] nlyrTemp Number of soil temperature layers.
+@param[in] width_Temp Width of the soil temperature layers.
+@param[in,out] res Values interpolated to soil temperature depths.
 
-@return res is updated and reflects new values.
 */
 
 void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR][MAX_LAYERS + 1], unsigned int nlyrSoil,
