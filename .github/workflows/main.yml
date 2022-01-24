@@ -10,7 +10,6 @@ on:
   pull_request:
     branches:
       - master
-      - feature_ghactions_v2
 
 jobs:
   build:
