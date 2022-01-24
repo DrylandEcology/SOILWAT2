@@ -275,13 +275,13 @@ $(lib_gtest) :
 		$(AR) -r $(lib_gtest) gtest-all.o
 
 test_severe : $(lib_gtest) $(lib_target_severe)
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags_severe_cxx) \
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags_severe_cxx) \
 		$(instr_flags_severe) $(set_std++_tests) \
 		-isystem ${GTEST_DIR}/include -pthread \
 		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(severe_LDLIBS) $(sw_LDFLAGS)
 
 test : $(lib_gtest) $(lib_target_test)
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) \
 		$(instr_flags) $(set_std++_tests) \
 		-isystem ${GTEST_DIR}/include -pthread \
 		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(test_LDLIBS) $(sw_LDFLAGS)
@@ -291,7 +291,7 @@ test_run :
 		./$(bin_test)
 
 cov : cov_clean $(lib_gtest) $(lib_target_cov)
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) \
 		$(instr_flags) $(cov_flags) $(set_std++_tests) \
 		-isystem ${GTEST_DIR}/include -pthread \
 		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(cov_LDLIBS) $(sw_LDFLAGS)
