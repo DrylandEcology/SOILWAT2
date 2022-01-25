@@ -1,12 +1,19 @@
-| *nix | Windows | Release | DOI | License | Coverage |
-| :---- | :---- | :---- | :---- | :---- | :---- |
-[ ![Travis build status][1]][2] | [![Appveyor build status][3]][4] | [ ![github release][5]][6] | [ ![DOI][7]][8] | [![license][9]][10] | [![codecov status][11]][12] |
+<!-- badges: start -->
+[![gh nix build status][1]][2]
+[![gh win build status][3]][2]
+[![github release][5]][6]
+[![DOI][7]][8]
+[![license][9]][10]
+[![codecov status][11]][12]
+[![doc status][4]][2]
+<!-- badges: end -->
 
 
-[1]: https://travis-ci.org/DrylandEcology/SOILWAT2.svg?branch=master
-[2]: https://travis-ci.org/DrylandEcology/SOILWAT2
-[3]: https://ci.appveyor.com/api/projects/status/noes9lralyjhen3t/branch/master?svg=true
-[4]: https://ci.appveyor.com/project/DrylandEcologyGit/soilwat2/branch/master
+[1]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/main_nix.yml/badge.svg?branch=master
+[2]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows
+[3]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/main_win.yml/badge.svg?branch=master
+[4]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/check_doc.yml/badge.svg?branch=master
+
 [5]: https://img.shields.io/github/release/DrylandEcology/SOILWAT2.svg
 [6]: https://github.com/DrylandEcology/SOILWAT2/releases
 [7]: https://zenodo.org/badge/9551524.svg
@@ -15,6 +22,7 @@
 [10]: https://www.gnu.org/licenses/gpl.html
 [11]: https://codecov.io/gh/DrylandEcology/SOILWAT2/branch/master/graph/badge.svg
 [12]: https://codecov.io/gh/DrylandEcology/SOILWAT2
+
 [SOILWAT2]: https://github.com/DrylandEcology/SOILWAT2
 [rSOILWAT2]: https://github.com/DrylandEcology/rSOILWAT2
 [STEPWAT2]: https://github.com/DrylandEcology/STEPWAT2
@@ -75,14 +83,21 @@ Some recent references
 <a name="get_started"></a>
 ## How to get started
 
-A detailed manual can be found
-[here](`doc/additional_pages/A SOILWAT2 user guide.md`) or here \ref page_manual.
+SOILWAT2 comes with a
+[detailed manual](doc/additional_pages/A_SOILWAT2_user_guide.md)
+and short overviews of
+[inputs](doc/additional_pages/SOILWAT2_Inputs.md)
+and [outputs](doc/additional_pages/SOILWAT2_Outputs.md).
+A full code documentation may be built, see [here](#get_documentation).
+
 
 <a name="compile"></a>
 ### Compilation
   * Requirements:
-    - the `gcc` or `clang/llvm` toolchains
-      - `gcc >= v4.9` and `clang >= v3.3` for the `*_severe` test/debug targets
+    - the `gcc` or `clang/llvm` toolchains compliant with `C11`
+      - for unit tests (using `googletest`), additionally,
+        - `g++ >= v5.0` or `clang++ >= v5.0` compliant with `C++11`
+        - `POSIX API`
     - POSIX- or GNU-compliant `make`
     - On Windows OS: an installation of `cygwin`
 
@@ -240,7 +255,7 @@ following output is implemented:
 __Continous integration checks__
 
 Development/feature branches can only be merged into master if they pass
-all checks on `appveyor` and `travis` continuous integration servers, i.e.,
+all checks on the continuous integration servers, i.e.,
 run the following locally to prepare a pull-request or commit to be reviewed
 ```{.sh}
       make clean bin_debug_severe bint_run

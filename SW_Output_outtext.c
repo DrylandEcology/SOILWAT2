@@ -376,7 +376,6 @@ void get_outstrleader(OutPeriod pd, char *str) {
   \param does_agg Indicate whether output is aggregated (`-o` option) or
     for each SOILWAT2 run (`-i` option)
 
-  \return void.
 */
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_agg) {
 	char str_time[20];

@@ -22,8 +22,8 @@
 #
 # make bin_debug   compile the binary executable in debug mode
 # make bin_debug_severe   same as 'make bin_debug' but with severe flags
-# make bind_valgrind      same as 'make bind' plus run valgrind on the debug
-#                  binary in the testing/ folder
+# make bind_valgrind      same as 'make bin_debug' plus run valgrind
+#                  on the debug binary in the testing/ folder
 #
 # make cov         same as 'make test' but with code coverage support
 # make cov_run     run unit tests and gcov on each source file (in a previous
@@ -50,25 +50,38 @@ sw_info = -DSW2_VERSION=\"$(SW2_VERSION)\" \
 #------ OUTPUT NAMES
 target = SOILWAT2
 bin_test = sw_test
+target_debug = $(target)_debug
+target_debugsevere = $(target)_debugsevere
 target_test = $(target)_test
-target_severe = $(target)_severe
+target_testsevere = $(target)_testsevere
 target_cov = $(target)_cov
 
-lib_target = lib$(target).a
-lib_target_test = lib$(target_test).a
-lib_target_severe = lib$(target_severe).a
-lib_target_cov = lib$(target_cov).a
+lib_target_CC = lib$(target).a	# used by `make all` (= `make bin`)
+lib_target_CC_debug = lib$(target_debug).a	# used by `make bin_debug` and `make bind_valgrind`
+lib_target_CC_debugsevere = lib$(target_debugsevere).a	# used by `make bin_debug_severe`
+lib_target_CC_test = lib$(target_test).a	# used by `make test`
+lib_target_CXX_testsevere = lib$(target_testsevere).a	# used by `make test_severe`
+lib_target_CXX_cov = lib$(target_cov).a	# used by `make cov`
 
 
-#------ COMMANDS AND STANDARDS
+#------ COMMANDS
 # CC = gcc
 # CXX = g++
 # AR = ar
 # RM = rm
 
-use_c11 = -std=c11
-use_gnu11 = -std=gnu11		# gnu11 required for googletest on Windows/cygwin
-use_gnu++11 = -std=gnu++11		# gnu++11 required for googletest on Windows/cygwin
+
+#------ STANDARDS
+# googletest requires c++11 and POSIX API
+# cygwin does not enable POSIX API by default (e.g., `strdup()` is missing)
+# --> enable by defining `_POSIX_C_SOURCE=200809L`
+#     (or `-std=gnu++11` or `_GNU_SOURCE`)
+# see https://github.com/google/googletest/issues/813 and
+# see https://github.com/google/googletest/pull/2839#issue-613300962
+
+set_std = -std=c11
+set_std_tests = -std=c11
+set_std++_tests = -std=c++11
 
 
 #------ FLAGS
@@ -103,11 +116,15 @@ instr_flags = -fstack-protector-all
 instr_flags_severe = \
 	$(instr_flags) \
 	-fsanitize=undefined \
-	-fsanitize=address
+	-fsanitize=address \
+	-fno-omit-frame-pointer \
+	-fno-common
 	# -fstack-protector-strong (gcc >= v4.9)
 	# (gcc >= 4.0) -D_FORTIFY_SOURCE: lightweight buffer overflow protection to some memory and string functions
-	# (gcc >= 4.8; llvm >= 3.1) -fsanitize=address: replaces `mudflap` run time checker; https://github.com/google/sanitizers/wiki/AddressSanitizer
-	# (gcc >= 4.9; llvm >= 3.3) -fsanitize=undefined
+	# (gcc >= 4.8; llvm >= 3.1) -fsanitize=address: AdressSanitizer: replaces `mudflap` run time checker; https://github.com/google/sanitizers/wiki/AddressSanitizer
+	#   -fno-omit-frame-pointer: allows fast unwinder to work properly for ASan
+	#   -fno-common: allows ASan to instrument global variables
+	# (gcc >= 4.9; llvm >= 3.3) -fsanitize=undefined: UndefinedBehaviorSanitizer
 
 
 # Precompiler and compiler flags and options
@@ -118,6 +135,7 @@ sw_CXXFLAGS = $(CXXFLAGS)
 bin_flags = -O2 -fno-stack-protector
 debug_flags = -g -O0 -DSWDEBUG
 cov_flags = -O0 -coverage
+gtest_flags = -D_POSIX_C_SOURCE=200809L # googletest requires POSIX API
 
 
 # Linker flags and libraries
@@ -126,8 +144,10 @@ sw_LDFLAGS = $(LDFLAGS) -L.
 sw_LDLIBS = $(LDLIBS) -lm
 
 target_LDLIBS = -l$(target) $(sw_LDLIBS)
+debug_LDLIBS = -l$(target_debug) $(sw_LDLIBS)
+debugsevere_LDLIBS = -l$(target_debugsevere) $(sw_LDLIBS)
 test_LDLIBS = -l$(target_test) $(sw_LDLIBS)
-severe_LDLIBS = -l$(target_severe) $(sw_LDLIBS)
+testsevere_LDLIBS = -l$(target_testsevere) $(sw_LDLIBS)
 cov_LDLIBS = -l$(target_cov) $(sw_LDLIBS)
 
 gtest_LDLIBS = -l$(gtest)
@@ -172,65 +192,76 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h $(GTEST_DIR)/include/gtest/intern
 
 
 #------ TARGETS
+all : $(target)
 bin : $(target)
 
-lib : $(lib_target)
+#--- Targets for SOILWAT2 library
+lib : $(lib_target_CC)
 
-$(lib_target) :
+$(lib_target_CC) :
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(bin_flags) $(warning_flags) \
-		$(use_c11) -c $(sources_lib) $(sources_pcg)
+		$(set_std) -c $(sources_lib) $(sources_pcg)
 
-		-@$(RM) -f $(lib_target)
-		$(AR) -rcs $(lib_target) $(objects_lib) $(objects_pcg)
+		-@$(RM) -f $(lib_target_CC)
+		$(AR) -rcs $(lib_target_CC) $(objects_lib) $(objects_pcg)
 		-@$(RM) -f $(objects_lib) $(objects_pcg)
 
-
-$(lib_target_test) :
+$(lib_target_CC_debug) :
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(use_gnu11) -c $(sources_lib_test) $(sources_pcg)
+		$(instr_flags) $(set_std) -c $(sources_lib) $(sources_pcg)
 
-		-@$(RM) -f $(lib_target_test)
-		$(AR) -rcs $(lib_target_test) $(objects_lib_test) $(objects_pcg)
+		-@$(RM) -f $(lib_target_CC_debug)
+		$(AR) -rcs $(lib_target_CC_debug) $(objects_lib) $(objects_pcg)
+		-@$(RM) -f $(objects_lib) $(objects_pcg)
+
+$(lib_target_CC_debugsevere) :
+		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe_cc) \
+		$(instr_flags_severe) $(set_std) -c $(sources_lib) $(sources_pcg)
+
+		-@$(RM) -f $(lib_target_CC_debugsevere)
+		$(AR) -rcs $(lib_target_CC_debugsevere) $(objects_lib) $(objects_pcg)
+		-@$(RM) -f $(objects_lib) $(objects_pcg)
+
+$(lib_target_CC_test) :
+		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
+		$(instr_flags) $(set_std_tests) -c $(sources_lib_test) $(sources_pcg)
+
+		-@$(RM) -f $(lib_target_CC_test)
+		$(AR) -rcs $(lib_target_CC_test) $(objects_lib_test) $(objects_pcg)
 		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
 
-$(lib_target_severe) :	# needs CXX because of '*_severe' flags which must match test binary build
+$(lib_target_CXX_testsevere) :	# needs CXX because of '*_severe' flags which must match test executable
 		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags_severe_cxx) \
-		$(instr_flags_severe) $(use_gnu++11) -c $(sources_lib_test) $(sources_pcg)
+		$(instr_flags_severe) $(set_std++_tests) -c $(sources_lib_test) $(sources_pcg)
 
-		-@$(RM) -f $(lib_target_severe)
-		$(AR) -rcs $(lib_target_severe) $(objects_lib_test) $(objects_pcg)
+		-@$(RM) -f $(lib_target_CXX_testsevere)
+		$(AR) -rcs $(lib_target_CXX_testsevere) $(objects_lib_test) $(objects_pcg)
 		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
 
-$(lib_target_cov) :	# needs CXX because of 'coverage' flags which must match test binary build
+$(lib_target_CXX_cov) :	# needs CXX because of 'coverage' flags which must match test executable
 		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(cov_flags) $(use_gnu++11) -c $(sources_lib_test) $(sources_pcg)
+		$(instr_flags) $(cov_flags) $(set_std++_tests) -c $(sources_lib_test) $(sources_pcg)
 
-		-@$(RM) -f $(lib_target_cov)
-		$(AR) -rcs $(lib_target_cov) $(objects_lib_test) $(objects_pcg)
+		-@$(RM) -f $(lib_target_CXX_cov)
+		$(AR) -rcs $(lib_target_CXX_cov) $(objects_lib_test) $(objects_pcg)
 		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
 
 
-$(target) : $(lib_target)
+#--- Targets for SOILWAT2 executable
+$(target) : $(lib_target_CC)
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(bin_flags) $(warning_flags) \
-		$(use_c11) \
+		$(set_std) \
 		-o $(target) $(sources_bin) $(target_LDLIBS) $(sw_LDFLAGS)
 
-bin_debug_severe :
-		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe_cc) \
-		$(instr_flags_severe) $(use_c11) -c $(sources_lib_test) $(sources_pcg)
-
-		-@$(RM) -f $(lib_target_severe)
-		$(AR) -rcs $(lib_target_severe) $(objects_lib_test) $(objects_pcg)
-		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
-
-		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe_cc) \
-		$(instr_flags_severe) $(use_c11) \
-		-o $(target) $(sources_bin) $(severe_LDLIBS) $(sw_LDFLAGS)
-
-bin_debug : $(lib_target_test)
+bin_debug : $(lib_target_CC_debug)
 		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(use_c11) \
-		-o $(target) $(sources_bin) $(test_LDLIBS) $(sw_LDFLAGS)
+		$(instr_flags) $(set_std) \
+		-o $(target) $(sources_bin) $(debug_LDLIBS) $(sw_LDFLAGS)
+
+bin_debug_severe : $(lib_target_CC_debugsevere)
+		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe_cc) \
+		$(instr_flags_severe) $(set_std) \
+		-o $(target) $(sources_bin) $(debugsevere_LDLIBS) $(sw_LDFLAGS)
 
 
 .PHONY : bint
@@ -246,7 +277,7 @@ bind_valgrind : bin_debug bint
 		valgrind -v --track-origins=yes --leak-check=full ./testing/$(target) -d ./testing -f files.in
 
 
-# GoogleTest:
+#--- Target for GoogleTest library
 # based on section 'Generic Build Instructions' at
 # https://github.com/google/googletest/tree/master/googletest)
 #   1) build googletest library
@@ -254,31 +285,36 @@ bind_valgrind : bin_debug bint
 lib_test : $(lib_gtest)
 
 $(lib_gtest) :
-		@$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(use_gnu++11) \
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(gtest_flags) $(set_std++_tests) \
 		-isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
 		-pthread -c ${GTEST_DIR}/src/gtest-all.cc
 
-		@$(AR) -r $(lib_gtest) gtest-all.o
+		$(AR) -r $(lib_gtest) gtest-all.o
 
-test_severe : $(lib_gtest) $(lib_target_severe)
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags_severe_cxx) \
-		$(instr_flags_severe) $(use_gnu++11) \
-		-isystem ${GTEST_DIR}/include -pthread \
-		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(severe_LDLIBS) $(sw_LDFLAGS)
 
-test : $(lib_gtest) $(lib_target_test)
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(use_gnu++11) \
+#--- Targets for SOILWAT2 test executable
+test : $(lib_gtest) $(lib_target_CC_test)
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) \
+		$(instr_flags) $(set_std++_tests) \
 		-isystem ${GTEST_DIR}/include -pthread \
 		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(test_LDLIBS) $(sw_LDFLAGS)
+
+test_severe : $(lib_gtest) $(lib_target_CXX_testsevere)
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags_severe_cxx) \
+		$(instr_flags_severe) $(set_std++_tests) \
+		-isystem ${GTEST_DIR}/include -pthread \
+		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(testsevere_LDLIBS) $(sw_LDFLAGS)
+
 
 .PHONY : test_run
 test_run :
 		./$(bin_test)
 
-cov : cov_clean $(lib_gtest) $(lib_target_cov)
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(cov_flags) $(use_gnu++11) \
+
+#--- Targets for SOILWAT2 code coverage test executable
+cov : cov_clean $(lib_gtest) $(lib_target_CXX_cov)
+		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) \
+		$(instr_flags) $(cov_flags) $(set_std++_tests) \
 		-isystem ${GTEST_DIR}/include -pthread \
 		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(cov_LDLIBS) $(sw_LDFLAGS)
 
@@ -288,6 +324,7 @@ cov_run : cov
 		./tools/run_gcov.sh
 
 
+#--- Targets for documentation
 .PHONY : doc
 doc :
 		./tools/run_doxygen.sh
@@ -298,13 +335,14 @@ doc_open :
 		./tools/doc_open.sh
 
 
+#--- Targets to clean artifacts
 .PHONY : clean1
 clean1 :
 		-@$(RM) -f $(objects_lib) $(objects_bin) $(objects_pcg)
 
 .PHONY : clean2
 clean2 :
-		-@$(RM) -f $(target) $(lib_target)
+		-@$(RM) -f $(target) $(lib_target_CC) $(lib_target_CC_debug) $(lib_target_CC_debugsevere)
 		-@$(RM) -f testing/$(target)
 
 .PHONY : bint_clean
@@ -314,13 +352,13 @@ bint_clean :
 .PHONY : test_clean
 test_clean :
 		-@$(RM) -f gtest-all.o $(lib_gtest) $(bin_test)
-		-@$(RM) -f $(lib_target_test) $(lib_target_severe) $(lib_target_cov)
+		-@$(RM) -f $(lib_target_CC_test) $(lib_target_CXX_testsevere) $(lib_target_CXX_cov)
 		-@$(RM) -fr *.dSYM
 		-@$(RM) -f $(objects_lib_test)
 
 .PHONY : cov_clean
 cov_clean :
-		-@$(RM) -f $(lib_target_cov) *.gcda *.gcno *.gcov
+		-@$(RM) -f $(lib_target_CXX_cov) *.gcda *.gcno *.gcov
 		-@$(RM) -fr *.dSYM
 
 .PHONY : cleaner
@@ -335,11 +373,12 @@ doc_clean :
 		-@$(RM) -f doc/log_doxygen.log
 
 
+#--- Target for makefile help
 .PHONY : help
 help :
 		less makefile
 
-
+#--- Target to print compiler information
 .PHONY : compiler_version
 compiler_version :
 		@(echo CC version:)

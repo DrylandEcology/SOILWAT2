@@ -1,0 +1,48 @@
+name: win-tests
+
+#TODO: run unit tests with different compiler versions of both gcc and clang
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build_Windows_Cygwin:
+    # see https://github.com/cygwin/cygwin-install-action
+    # based on https://github.com/resurrecting-open-source-projects/scrot
+
+    runs-on: windows-latest
+    env:
+      CYGWIN_NOWINPATH: 1 # only have cygwin's executables on PATH
+      CHERE_INVOKING: 1 # prevent profile script to change directory
+    defaults:
+      run:
+        shell: C:\cygwin\bin\bash.exe --login -eo pipefail -o igncr {0}
+
+    steps:
+    - run: git config --global core.autocrlf input
+      shell: bash
+
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Install cygwin (windows)
+      uses: cygwin/cygwin-install-action@v1
+      with:
+        packages: gcc-core gcc-g++ make
+
+    - name: Print compiler versions as seen by make
+      run: make compiler_version
+
+    # AddressSanitizer and LeakSanitizer not available on cygwin
+    - name: Run binary
+      run: make clean bin bint_run
+
+    - name: Unit tests
+      run: make clean test test_run

@@ -46,10 +46,19 @@ if (do_plot) {
   rh <- unique(data_pet[, "RH_pct"])
 
   all_labeller <- ggplot2::labeller(
-    windspeed_m_per_s = setNames(paste0("Wind speed: ", ws, " m/s"), nm = ws),
-    cloudcover_pct = setNames(paste0("Cloud cover: ", round(cc), "%"), nm = cc),
-    RH_pct = setNames(paste0("Rel. humidity: ", round(rh), "%"), nm = rh),
-    fH_gt = setNames(paste0("RSDS scaler: ", fH * 100, "%"), nm = fH)
+    windspeed_m_per_s = stats::setNames(
+      paste0("Wind speed: ", ws, " m/s"),
+      nm = ws
+    ),
+    cloudcover_pct = stats::setNames(
+      paste0("Cloud cover: ", round(cc), "%"),
+      nm = cc
+    ),
+    RH_pct = stats::setNames(
+      paste0("Rel. humidity: ", round(rh), "%"),
+      nm = rh
+    ),
+    fH_gt = stats::setNames(paste0("RSDS scaler: ", fH * 100, "%"), nm = fH)
   )
 
 

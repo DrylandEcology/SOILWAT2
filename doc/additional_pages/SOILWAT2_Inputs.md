@@ -1,6 +1,11 @@
-\page page_inputs SOILWAT2 Inputs
+# SOILWAT2 Inputs
 
 [SOILWAT2]: https://github.com/DrylandEcology/SOILWAT2
+
+Note: this document is best viewed as part of the doxygen-built documentation
+(there may be text artifacts if viewed as standalone-markdown).
+
+<br>
 
 ### Example
   * The source code contains a complete example simulation project in `testing/`
@@ -22,7 +27,7 @@
     \ref explain_inputs "below".
   * The outputs are written to `Output/` including a logfile that contains
     warnings and errors. Outputs are explained in detail
-    \ref page_outputs "here".
+    [here](doc/additional_pages/SOILWAT2_Outputs.md).
 
 <br>
 
@@ -131,4 +136,5 @@ Go back to the \ref explain_inputs "list of input files"
 
 
 <hr>
-Go back to the \ref index "main page" or the \ref page_manual "user guide".
+Go back to the [main page](README.md) or
+[user guide](doc/additional_pages/A_SOILWAT2_user_guide.md).

@@ -82,7 +82,7 @@ namespace {
   }
 
   // Test that water equation function 'water_eqn' fails
-  TEST(SWSiteTest, WaterEquationDeathTest) {
+  TEST(SWSiteDeathTest, WaterEquation) {
 
     //declare inputs
     RealD fractionGravel = 0.1;
@@ -92,13 +92,15 @@ namespace {
     RealD sand = 10. + 1./3.; // So that bmatric will equal 0, even though this is a very irrealistic value
     RealD clay = 0;
 
-    EXPECT_DEATH_IF_SUPPORTED(water_eqn(fractionGravel, sand, clay, n), "@ generic.c LogError");
-
+    EXPECT_DEATH_IF_SUPPORTED(
+      water_eqn(fractionGravel, sand, clay, n),
+      "@ generic.c LogError"
+    );
   }
 
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST(SWSiteTest, SoilParametersDeathTest) {
+  TEST(SWSiteDeathTest, SoilParameters) {
     LyrIndex n1 = 0, n2 = 1, k = 2;
     RealD help;
 
