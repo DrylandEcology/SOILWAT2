@@ -5,9 +5,21 @@
 # - expects clang as default compiler
 
 # Problems:
-# - unit test compiled with gcc are getting stuck or throw a "stack-overflow"
-#   when running with sanitizer "ASAN_OPTIONS=detect_leaks=1",
-#   but binaries work correctly
+# - (Jan 2022): running unit tests crashes with
+#   "AddressSanitizer: stack-overflow" for test_severe and sanitizer tests
+#   but no error with regular unit test:
+#   affected compilers:
+#   - all available gccs: i.e., gcc9, gcc10, gcc11
+#   - no problem with any clang
+
+# - (Jan 2022): compiling any unit test fails with
+#   ```
+#   Undefined symbols for architecture x86_64:
+#     "std::runtime_error::what() const", referenced from:
+#         vtable for testing::internal::GoogleTestFailureException in libgtest.a(gtest-all.o)
+#     ...
+#   ```
+#   affected compilers: clang-13
 
 
 # Notes:
@@ -56,7 +68,7 @@ check_testing_output () {
 for ((k = 0; k < ncomp; k++)); do
   echo $'\n'$'\n'$'\n'\
        ==================================================$'\n'\
-       Test SOILWAT2 with compiler \'${port_compilers[k]}\'$'\n'\
+       ${k} Test SOILWAT2 with compiler \'${port_compilers[k]}\'$'\n'\
        ==================================================
 
   echo $'\n'Set compiler ...
@@ -114,6 +126,7 @@ for ((k = 0; k < ncomp; k++)); do
   # CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
   # https://github.com/google/sanitizers/wiki/AddressSanitizer
   CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
