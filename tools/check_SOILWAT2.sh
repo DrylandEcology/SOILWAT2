@@ -93,7 +93,7 @@ for ((k = 0; k < ncomp; k++)); do
   check_testing_output
 
   if command -v valgrind >/dev/null 2>&1; then
-    CC=${ccs[k]} CXX=${cxxs[k]} make bind_valgrind bint_run
+    CC=${ccs[k]} CXX=${cxxs[k]} make clean bind_valgrind
   fi
 
 
