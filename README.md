@@ -94,8 +94,10 @@ A full code documentation may be built, see [here](#get_documentation).
 <a name="compile"></a>
 ### Compilation
   * Requirements:
-    - the `gcc` or `clang/llvm` toolchains
-      - `gcc >= v5` and `clang >= v5` for the `*_severe` test/debug targets
+    - the `gcc` or `clang/llvm` toolchains compliant with `C11`
+      - for unit tests (using `googletest`), additionally,
+        - `g++ >= v5.0` or `clang++ >= v5.0` compliant with `C++11`
+        - `POSIX API`
     - POSIX- or GNU-compliant `make`
     - On Windows OS: an installation of `cygwin`
 

@@ -5,6 +5,7 @@
 Note: this document is best viewed as part of the doxygen-built documentation
 (there may be text artifacts if viewed as standalone-markdown).
 
+<br>
 
 ### Example
   * The source code contains a complete example simulation project in `testing/`

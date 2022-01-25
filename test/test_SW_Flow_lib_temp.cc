@@ -162,8 +162,8 @@ namespace {
     delete[] bDensity2; delete[] fc2; delete[] wp2;
   }
 
-// Death tests for soil_temperature_setup function
-  TEST(SWFlowTempDeathTest, SoilTemperatureInitDeathTest) {
+  // Death tests for soil_temperature_setup function
+  TEST(SWFlowTempDeathTest, SoilTemperatureInit) {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     double deltaX = 15.0, sTconst = 4.15;
@@ -187,8 +187,15 @@ namespace {
     /// test when theMaxDepth is less than soil layer depth - function should fail
     double theMaxDepth2 = 70.0;
 
-    EXPECT_DEATH_IF_SUPPORTED(soil_temperature_setup(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
-        fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError),"@ generic.c LogError"); // We expect death when max depth < last layer
+    // We expect death when max depth < last layer
+    EXPECT_DEATH_IF_SUPPORTED(
+      soil_temperature_setup(
+        bDensity2, width2, oldsTemp2, sTconst, nlyrs,
+        fc2, wp2, deltaX, theMaxDepth2, nRgr,
+        &ptr_stError
+      ),
+      "@ generic.c LogError"
+    );
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
@@ -667,7 +674,7 @@ namespace {
   }
 
   // Test that main soil temperature functions fails when it is supposed to
-  TEST(SWFlowTempDeathTest, MainSoilTemperatureFunctionDeathTest) {
+  TEST(SWFlowTempDeathTest, MainSoilTemperatureFunction) {
 
     unsigned int nlyrs = 1, nRgr = 65;
     double airTemp = 25.0, pet = 5.0, aet = 4.0, biomass = 100., surfaceTemp[] = {20.0, 15. ,14.},
@@ -680,10 +687,16 @@ namespace {
     oldsTemp[] = {5.0}, sTemp[] = {4.0};
 
     // Should fail when soil_temperature was not initialized
-    EXPECT_DEATH_IF_SUPPORTED(soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-      oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
-      t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-      nRgr, snow, &ptr_stError), "@ generic.c LogError");
+    EXPECT_DEATH_IF_SUPPORTED(
+      soil_temperature(
+        airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
+        oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
+        t1Param3, csParam1, csParam2, shParam, snowdepth,
+        sTconst, deltaX, theMaxDepth, nRgr, snow,
+        &ptr_stError
+      ),
+      "@ generic.c LogError"
+    );
 
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();

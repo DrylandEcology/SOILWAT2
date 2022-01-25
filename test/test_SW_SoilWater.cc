@@ -21,7 +21,7 @@
 
 namespace{
   // Test the 'SW_SoilWater' function 'SW_VWCBulkRes'
-  TEST(SWSoilWaterTest, SWVWCBulkRes){
+  TEST(SWSoilWaterTest, VWCBulkRes){
     //declare mock INPUTS
     RealD fractionGravel = .1;
     RealD clay = .7;
@@ -67,7 +67,7 @@ namespace{
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWC_adjust_snow'
-  TEST(SWSoilWaterTest, SWSWCSdjustSnow){
+  TEST(SWSoilWaterTest, SWCdjustSnow){
     // setup mock variables
     SW_Site.TminAccu2 = 0;
     SW_Model.doy = 1;
@@ -113,7 +113,7 @@ namespace{
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWCbulk2SWPmatric'
-  TEST(SWSoilWaterTest, SWSWCbulk2SWPmatric){
+  TEST(SWSoilWaterTest, SWCbulk2SWPmatric){
     // Note: function `SW_SWCbulk2SWPmatric` accesses `SW_Site.lyr[n]`
 
     RealD tol = 1e-2; // pedotransfer functions are not very exact
@@ -198,16 +198,17 @@ namespace{
     // Reset_SOILWAT2_after_UnitTest();
   }
 
-  TEST(SWSoilWaterDeathTest, SWSWCbulk2SWPmatricDeathTest) {
+  TEST(SWSoilWaterDeathTest, SWCbulk2SWPmatricDeathTest) {
     LyrIndex n = 1;
     RealD help;
 
     // we expect fatal errors and write to log under two situations:
 
     // if swc < 0: water content can physically not be negative
-    EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(
-      SW_Site.lyr[n]->fractionVolBulk_gravel, -1., n),
-      "@ generic.c LogError");
+    EXPECT_DEATH_IF_SUPPORTED(
+      SW_SWCbulk2SWPmatric(SW_Site.lyr[n]->fractionVolBulk_gravel, -1., n),
+      "@ generic.c LogError"
+    );
 
     // if theta1 == 0 (i.e., gravel == 1) && lyr->bMatric == 0:
     // would be division by NaN
@@ -216,9 +217,10 @@ namespace{
     // `gravelFraction`
     help = SW_Site.lyr[n]->bMatric;
     SW_Site.lyr[n]->bMatric = 0.;
-    EXPECT_DEATH_IF_SUPPORTED(SW_SWCbulk2SWPmatric(
-      1., SW_Site.lyr[n]->swcBulk_fieldcap, n),
-      "@ generic.c LogError");
+    EXPECT_DEATH_IF_SUPPORTED(
+      SW_SWCbulk2SWPmatric(1., SW_Site.lyr[n]->swcBulk_fieldcap, n),
+      "@ generic.c LogError"
+    );
     SW_Site.lyr[n]->bMatric = help;
 
     // Reset to previous global states
@@ -226,7 +228,7 @@ namespace{
   }
 
   // Test the 'SW_SoilWater' function 'SW_SWPmatric2VWCBulk'
-  TEST(SWSoilWaterTest, SWSWPmatric2VWCBulk){
+  TEST(SWSoilWaterTest, SWPmatric2VWCBulk){
     // set up mock variables
     RealD fractionGravel = .1, swpMatric = 15.0, p = 0.11656662532982573,
     psisMatric = 18.608013, binverseMatric = 0.188608, thetaMatric = 41.37;
