@@ -1081,18 +1081,23 @@ void SW_SIT_init_run(void) {
 				lyr->swcBulk_saturated / ((1. - lyr->fractionVolBulk_gravel) * lyr->width)
 			);
 
-			/* residual SWC at -3 MPa (Fredlund DG, Xing AQ (1994)
-				EQUATIONS FOR THE SOIL-WATER CHARACTERISTIC CURVE.
-				Canadian Geotechnical Journal, 31, 521-532.)
+			/* Lower limit for swc_min
+				Notes:
+				- used in case the equation for residual SWC doesn't work or
+					produces unrealistic small values
+				- currently, -30 MPa
+					(based on limited test runs across western US including hot deserts)
+					lower than "air-dry" = hygroscopic point (-10. MPa; Porporato et al. 2001)
+					not as extreme as "oven-dry" (-1000. MPa; Fredlund et al. 1994)
 			*/
-			swcmin_help2 = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, 30., s);
+			swcmin_help2 = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, 300., s);
 
 			// if `SW_VWCBulkRes()` returns SW_MISSING then use `swcmin_help2`
-			if (missing(swcmin_help1)){
+			if (missing(swcmin_help1)) {
 				lyr->swcBulk_min = swcmin_help2;
 
-			} else{
-				lyr->swcBulk_min = fmax(0., fmin(swcmin_help1, swcmin_help2));
+			} else {
+				lyr->swcBulk_min = fmax(swcmin_help1, swcmin_help2);
 			}
 
 		} else if (GE(_SWCMinVal, 1.0)) {
