@@ -1263,6 +1263,8 @@ void SW_SIT_init_run(void) {
 	if (flagswpcrit) {
 		ForEachSoilLayer(s)
 		{
+			lyr = sp->lyr[s];
+
 			ForEachVegType(k)
 			{
 				/* calculate soil water content at adjusted SWPcrit */
@@ -1285,6 +1287,13 @@ void SW_SIT_init_run(void) {
 				}
 			}
 		}
+
+		/* Update values for `get_swa()` */
+		ForEachVegType(k)
+		{
+			SW_VegProd.critSoilWater[k] = -0.1 * SW_VegProd.veg[k].SWPcrit;
+		}
+		get_critical_rank();
 	}
 
 	/* normalize the evap and transp coefficients separately
