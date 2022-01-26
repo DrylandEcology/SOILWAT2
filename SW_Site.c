@@ -922,7 +922,7 @@ void SW_SIT_init_run(void) {
 	RealD
 		fval = 0,
 		evsum = 0., trsum_veg[NVEGTYPES] = {0.},
-		swcmin_help1, swcmin_help2;
+		swcmin_help1, swcmin_help2, tmp;
 	const char *errtype = "\0";
 
 	#ifdef SWDEBUG
@@ -1135,8 +1135,8 @@ void SW_SIT_init_run(void) {
 			LogError(
 				logfp, LOGFATAL,
 				"%s : Layer %d\n"
-				"  calculated swcBulk_init (%7.4f) <= swcBulk_min (%7.4f).\n"
-				"  Recheck parameters and try again.",
+				"  calculated `swcBulk_init` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
+				"  Recheck parameters and try again.\n",
 				MyFileName, s + 1, lyr->swcBulk_init, lyr->swcBulk_min
 			);
 		}
@@ -1145,19 +1145,24 @@ void SW_SIT_init_run(void) {
 			LogError(
 				logfp, LOGFATAL,
 				"%s : Layer %d\n"
-				"  calculated swcBulk_wiltpt (%7.4f) <= swcBulk_min (%7.4f).\n"
-				"  Recheck parameters and try again.",
+				"  calculated `swcBulk_wiltpt` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
+				"  Recheck parameters and try again.\n",
 				MyFileName, s + 1, lyr->swcBulk_wiltpt, lyr->swcBulk_min
 			);
 		}
 
 		if (LT(lyr->swcBulk_halfwiltpt, lyr->swcBulk_min)) {
 			LogError(
-				logfp, LOGNOTE,
+				logfp, LOGWARN,
 				"%s : Layer %d\n"
-				"  calculated swcBulk_halfwiltpt (%7.4f) <= swcBulk_min (%7.4f).\n"
-				"  swcBulk_halfwiltpt was set to swcBulk_min.",
-				MyFileName, s + 1, lyr->swcBulk_halfwiltpt, lyr->swcBulk_min
+				"  calculated `swcBulk_halfwiltpt` (%.4f cm / %.2f MPa)\n"
+				"          <= `swcBulk_min` (%.4f cm / %.2f MPa).\n"
+				"  `swcBulk_halfwiltpt` was set to `swcBulk_min`.\n",
+				MyFileName, s + 1,
+				lyr->swcBulk_halfwiltpt,
+				-0.1 * SW_SWCbulk2SWPmatric(lyr->fractionVolBulk_gravel, lyr->swcBulk_halfwiltpt, s),
+				lyr->swcBulk_min,
+				-0.1 * SW_SWCbulk2SWPmatric(lyr->fractionVolBulk_gravel, lyr->swcBulk_min, s)
 			);
 
 			lyr->swcBulk_halfwiltpt = lyr->swcBulk_min;
@@ -1167,8 +1172,8 @@ void SW_SIT_init_run(void) {
 			LogError(
 				logfp, LOGFATAL,
 				"%s : Layer %d\n"
-				"  calculated swcBulk_wet (%7.4f) <= swcBulk_min (%7.4f).\n"
-				"  Recheck parameters and try again.",
+				"  calculated `swcBulk_wet` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
+				"  Recheck parameters and try again.\n",
 				MyFileName, s + 1, lyr->swcBulk_wet, lyr->swcBulk_min
 			);
 		}
@@ -1214,7 +1219,7 @@ void SW_SIT_init_run(void) {
 				flagswpcrit++;
 
 				// lower SWcrit [-bar] to SWP-equivalent of swBulk_min
-				SW_VegProd.veg[k].SWPcrit = fmin(
+				tmp = fmin(
 					SW_VegProd.veg[k].SWPcrit,
 					SW_SWCbulk2SWPmatric(
 						lyr->fractionVolBulk_gravel,
@@ -1226,13 +1231,19 @@ void SW_SIT_init_run(void) {
 				LogError(
 					logfp, LOGWARN,
 					"%s : Layer %d - vegtype %d\n"
-					"  calculated swcBulk_atSWPcrit (%7.4f) <= swcBulk_min (%7.4f).\n"
-					"  SWcrit adjusted to %7.4 "
-					"(and all swcBulk_atSWPcrit will be re-calculated).",
+					"  calculated `swcBulk_atSWPcrit` (%.4f cm / %.4f MPa)\n"
+					"          <= `swcBulk_min` (%.4f cm / %.4f MPa).\n"
+					"  `SWcrit` adjusted to %.4f MPa "
+					"(and swcBulk_atSWPcrit in every layer will be re-calculated).\n",
 					MyFileName, s + 1, k + 1,
-					lyr->swcBulk_atSWPcrit[k], lyr->swcBulk_min,
-					SW_VegProd.veg[k].SWPcrit
+					lyr->swcBulk_atSWPcrit[k],
+					-0.1 * SW_VegProd.veg[k].SWPcrit,
+					lyr->swcBulk_min,
+					-0.1 * SW_SWCbulk2SWPmatric(lyr->fractionVolBulk_gravel, lyr->swcBulk_min, s),
+					-0.1 * tmp
 				);
+
+				SW_VegProd.veg[k].SWPcrit = tmp;
 			}
 
 			/* Find which transpiration region the current soil layer
@@ -1291,11 +1302,13 @@ void SW_SIT_init_run(void) {
 					LogError(
 						logfp, LOGFATAL,
 						"%s : Layer %d - vegtype %d\n"
-						"  calculated swcBulk_atSWPcrit (%7.4f) <= swcBulk_min (%7.4f) "
-						"even with adjusted SWcrit (%7.4f).\n",
+						"  calculated `swcBulk_atSWPcrit` (%.4f cm)\n"
+						"          <= `swcBulk_min` (%.4f cm).\n"
+						"  even with adjusted `SWcrit` (%.4f MPa).\n",
 						MyFileName, s + 1, k + 1,
-						lyr->swcBulk_atSWPcrit[k], lyr->swcBulk_min,
-						SW_VegProd.veg[k].SWPcrit
+						lyr->swcBulk_atSWPcrit[k],
+						lyr->swcBulk_min,
+						-0.1 * SW_VegProd.veg[k].SWPcrit
 					);
 				}
 			}
