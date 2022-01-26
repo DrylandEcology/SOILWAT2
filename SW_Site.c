@@ -922,7 +922,7 @@ void SW_SIT_init_run(void) {
 	RealD
 		fval = 0,
 		evsum = 0., trsum_veg[NVEGTYPES] = {0.},
-		swcmin_help1, swcmin_help2, tmp;
+		swcmin_help1, swcmin_help2;
 	const char *errtype = "\0";
 
 	#ifdef SWDEBUG
@@ -1055,8 +1055,18 @@ void SW_SIT_init_run(void) {
 			s
 		);
 
-		lyr->swcBulk_halfwiltpt = 0.5 * lyr->swcBulk_wiltpt;
-
+		/* Calculate SWC limit of bare-soil evaporation
+			as `max(0.5 * wiltpt, SWC@hygroscopic)`
+			Notes:
+				- `0.5 * wiltpt` is the E_soil limit from FAO-56 (Allen et al. 1998)
+				- `SWC at hygroscopic point` (-10 MPa; e.g., Porporato et al. 2001)
+					describes "air-dry" soil
+				- This will also be check to be >= swc_min, see below
+		*/
+		lyr->swcBulk_halfwiltpt = fmax(
+			0.5 * lyr->swcBulk_wiltpt,
+			lyr->width * SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, 100., s)
+		);
 
 
 		/* Compute swc wet and dry limits and init value */
@@ -1137,17 +1147,15 @@ void SW_SIT_init_run(void) {
 		}
 
 		if (LT(lyr->swcBulk_halfwiltpt, lyr->swcBulk_min)) {
-			tmp = 0.5 * (lyr->swcBulk_min + lyr->swcBulk_wiltpt);
-
 			LogError(
 				logfp, LOGNOTE,
 				"%s : Layer %d\n"
 				"  calculated swcBulk_halfwiltpt (%7.4f) <= swcBulk_min (%7.4f).\n"
-				"  swcBulk_halfwiltpt was adjusted to (%7.4f).",
-				MyFileName, s + 1, lyr->swcBulk_halfwiltpt, lyr->swcBulk_min, tmp
+				"  swcBulk_halfwiltpt was set to swcBulk_min.",
+				MyFileName, s + 1, lyr->swcBulk_halfwiltpt, lyr->swcBulk_min
 			);
 
-			lyr->swcBulk_halfwiltpt = tmp;
+			lyr->swcBulk_halfwiltpt = lyr->swcBulk_min;
 		}
 
 		if (LE(lyr->swcBulk_wet, lyr->swcBulk_min)) {
