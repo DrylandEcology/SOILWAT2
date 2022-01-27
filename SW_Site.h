@@ -76,7 +76,7 @@ typedef struct {
 		soilBulk_density, /* bulk soil density of the whole soil, i.e., including rock/gravel component, (g/cm3) */
 		swcBulk_fieldcap, /* Soil water content (SWC) corresponding to field capacity (SWP = -0.033 MPa) [cm] */
 		swcBulk_wiltpt, /* SWC corresponding to wilting point (SWP = -1.5 MPa) [cm] */
-		swcBulk_halfwiltpt, /* SWC = 0.5 * swcBulk_wiltpt or, if that is < swcBulk_min, mean(swcBulk_wiltpt, swcBulk_min) */
+		swcBulk_halfwiltpt, /* Adjusted half-wilting point used as SWC limit for bare-soil evaporation */
 		swcBulk_min, /* Minimal SWC [cm] */
 		swcBulk_wet, /* SWC considered "wet" [cm] */
 		swcBulk_init, /* Initial SWC for first day of simulation [cm] */

@@ -1055,13 +1055,14 @@ void SW_SIT_init_run(void) {
 			s
 		);
 
-		/* Calculate SWC limit of bare-soil evaporation
+		/* Calculate lower SWC limit of bare-soil evaporation
 			as `max(0.5 * wiltpt, SWC@hygroscopic)`
 			Notes:
 				- `0.5 * wiltpt` is the E_soil limit from FAO-56 (Allen et al. 1998)
+					which may correspond to unrealistically extreme SWP
 				- `SWC at hygroscopic point` (-10 MPa; e.g., Porporato et al. 2001)
 					describes "air-dry" soil
-				- This will also be check to be >= swc_min, see below
+				- Also make sure that `>= swc_min`, see below
 		*/
 		lyr->swcBulk_halfwiltpt = fmax(
 			0.5 * lyr->swcBulk_wiltpt,
