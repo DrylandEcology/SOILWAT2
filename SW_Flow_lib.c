@@ -770,126 +770,167 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 }
 
 /**
+	@brief Calculate unsaturated percolation
 
-@brief Calculate soilwater drainage for low soil water conditions, see Equation 2.9 in ELM doc.
+	Based on equation 2.9 by Parton 1978. @cite Parton1978
 
-Based on equations from Parton 1978. @cite Parton1978
+	Here, we modified eq. 2.9:
+		(i) use scaled `swc`, i.e., vary from 0 (at `swc_min`) to `swc_fc`
+				(instead from `swc_min` to `swc_fc`)
+		(ii) modify `exp(.)` to vary from 0 (at `swc_min`) to 1 (at `swc_fc`)
+				(instead from `exp(-15 * fc / width)` to 1)
 
-@param swc Soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param drain This is the drainage from each layer (cm/day).
-@param *drainout Drainage from the previous layer (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param nlyrs Number of layers in the soil profile.
-@param sdrainpar Slow drainage parameter.
-@param sdraindpth Slow drainage depth (cm).
-@param swcfc Soilwater content at field capacity (cm H<SUB>2</SUB>O).
-@param width The width of the soil layers (cm).
-@param swcmin Lower limit on soilwater content per layer.
-@param swcsat Soilwater content in each layer at saturation (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param impermeability Impermeability measures for each layer.
-@param *standingWater Remaining water on the surface (m<SUP>3</SUP> H<SUB>2</SUB>O).
+	This function was previously named `infiltrate_water_low()`.
 
-@sideeffect
-  - swc Updated soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-  - drain Updated drainage from each layer (cm/day).
-  - *drainout Drainage from the previous layer (m<SUP>3</SUP> H<SUB>2</SUB>O).
-  - *standingWater Remaining water on the surface (m<SUP>3</SUP> H<SUB>2</SUB>O).
+	@param[in,out] swc Soil water content in each layer [cm].
+	@param[in,out] percolate Drainage from each layer [cm / day].
+	@param[in,out] *drainout Drainage from the last layer [cm / day].
+	@param[in,out] *standingWater Remaining water on the surface [cm].
+	@param nlyrs Number of layers in the soil profile [1].
+	@param[in] *lyr Soil characteristics for each soil layer.
+	@param[in] *lyrFrozen Frozen/unfrozen status for each soil layer.
+	@param slow_drain_coeff Slow drainage parameter [cm / day].
+	@param slow_drain_depth Slow drainage depth [cm].
 */
 
-void infiltrate_water_low(double swc[], double drain[], double *drainout, unsigned int nlyrs,
-    double sdrainpar, double sdraindpth, double swcfc[], double width[], double swcmin[],
-    double swcsat[], double impermeability[], double *standingWater) {
-	/**********************************************************************
-	 HISTORY:
-	 4/30/92  (SLC)
-	 7/2/92   (fixed bug.  equation for drainlw needed fixing)
-	 8/13/92 (SLC) Changed call to function which checks lower bound
-	 on soilwater content.  REplaced call to "chkzero" with
-	 the function "getdiff".
-	 - lower bound is used in place of zero as lower bound
-	 here.  Old code used 0.cm water as a lower bound in
-	 low water drainage.
-	 9/22/01 - (cwb) replaced tr_reg_max[] with transp_rgn[]
-	 see INPUTS
-	 1/14/02 - (cwb) fixed off by one error in loop.
-	 6-Oct-03  (cwb) removed condition disallowing gravitational
-	 drainage from transpiration region 1.
-
-	 **********************************************************************/
+void percolate_unsaturated(
+	double swc[], double percolate[], double *drainout, double *standingWater,
+	unsigned int nlyrs, SW_LAYER_INFO *lyr[], Bool lyrFrozen[],
+	double slow_drain_coeff, double slow_drain_depth
+) {
 
 	unsigned int i;
 	int j;
-	double drainlw = 0.0, swc_avail, drainpot, d[MAX_LAYERS] = {0}, push, kunsat_rel	;
+	double
+		drainlw = 0.0, swc_avail, drainpot,
+		d[MAX_LAYERS] = {0},
+		push, kunsat_rel, swcrel, tmp1, tmp2;
 
-	ST_RGR_VALUES *st = &stValues;
 
-	// Unsaturated percolation
+	/* Note that this function calculates percolation as if no gravel
+			(other than reduction of soil moisture via factor `1 - Rv`)
+			--> TODO: consider adjusting percolation for gravel effects
+	*/
 	for (i = 0; i < nlyrs; i++) {
 		/* calculate potential unsaturated percolation */
-		if (LE(swc[i], swcmin[i])) { /* in original code was !GT(swc[i], swcwp[i]) equivalent to LE(swc[i], swcwp[i]), but then water is drained to swcmin nevertheless - maybe should be LE(swc[i], swcmin[i]) */
-			d[i] = 0.;
-		} else {
-			if (st->lyrFrozen[i]) {
-				kunsat_rel = 0.01; // roughly estimated from Parton et al. 1998 GCB
-			} else {
-				kunsat_rel = 1.;
-			}
-			swc_avail = fmax(0., swc[i] - swcmin[i]);
-			drainpot = GT(swc[i], swcfc[i]) ? sdrainpar : sdrainpar * exp((swc[i] - swcfc[i]) * sdraindpth / width[i]);
-			d[i] = kunsat_rel * (1. - impermeability[i]) * fmin(swc_avail, drainpot);
-    }
-		drain[i] += d[i];
+		swc_avail = fmax(0., swc[i] - lyr[i]->swcBulk_min);
 
-		if (i < nlyrs - 1) { /* percolate up to next-to-last layer */
+		if (LE(swc_avail, 0.)) {
+			d[i] = 0.;
+
+		} else {
+
+			drainpot = slow_drain_coeff; // potential unsaturated percolation rate
+
+			/* Scale pot. unsat. percolation rate by frozen soil
+				roughly estimated from Parton et al. 1998 GCB
+			*/
+			kunsat_rel = lyrFrozen[i] ? 0.01 : 1.;
+
+			/* Scale pot. unsat. percolation rate by soil moisture
+					Using Parton 1978, eq. 2.9:
+						`slow drainage = 0.02 * exp(15. * (SWC - FieldCapacity) / width)`
+
+					which is reportedly based on Black et al. 1969, eq. 14/17:
+						`drainage rate = 0.35 * exp(0.7 * (storage - 15.))`
+			*/
+
+			if (LT(swc[i], lyr[i]->swcBulk_fieldcap)) {
+				/* Here, we modified eq. 2.9:
+						(i) use scaled swc, i.e., vary from 0 (at swc_min) to swc_fc
+						(ii) modify `exp(.)` to vary from 0 (at swc_min) to 1 (at swc_fc)
+								(instead from `exp(-15*fc/width)` to 1)
+				*/
+				swcrel = fmax(
+					0.,
+					fmin(
+						1.,
+						swc_avail / (lyr[i]->swcBulk_fieldcap - lyr[i]->swcBulk_min)
+					)
+				);
+
+				tmp1 = slow_drain_depth * lyr[i]->swcBulk_fieldcap / lyr[i]->width;
+				tmp2 = exp(-tmp1);
+
+				if (LT(tmp2, 1.)) {
+					drainpot *= (exp(tmp1 * (swcrel - 1.)) - tmp2) / (1. - tmp2);
+				} else {
+					drainpot = 0.;
+				}
+			}
+
+			d[i] =
+				kunsat_rel * (1. - lyr[i]->impermeability) *
+				fmin(swc_avail, fmax(0., drainpot));
+		}
+
+		percolate[i] += d[i];
+
+		if (i < nlyrs - 1) {
+			/* percolate up to next-to-last layer */
 			swc[i + 1] += d[i];
 			swc[i] -= d[i];
-		} else { /* percolate last layer */
-			drainlw = fmax( d[i], 0.0);
+		} else {
+			/* percolate last layer */
+			drainlw = fmax(d[i], 0.0);
 			(*drainout) += drainlw;
 			swc[i] -= drainlw;
 		}
 	}
 
-	/* adjust (i.e., push water upwards) if water content of a layer is now above saturated water content */
+
+	/* adjust (i.e., push water upwards) if water content of a layer is
+		 now above saturated water content */
 	for (j = nlyrs - 1; j >= 0; j--) {
-		if (GT(swc[j], swcsat[j])) {
-			push = swc[j] - swcsat[j];
+		if (GT(swc[j], lyr[j]->swcBulk_saturated)) {
+			push = swc[j] - lyr[j]->swcBulk_saturated;
 			swc[j] -= push;
 			if (j > 0) {
-				drain[j - 1] -= push;
+				percolate[j - 1] -= push;
 				swc[j - 1] += push;
 			} else {
 				(*standingWater) += push;
 			}
 		}
 	}
-
 }
 
+
+
 /**
+	@brief Calculate hydraulic redistribution.
 
-@brief Calculate hydraulic redistribution.
+	Based on equations from Ryel 2002. @cite Ryel2002
 
-Based on equations from Ryel 2002. @cite Ryel2002
+	@param[in,out] swc Soil water content in each layer (m<SUP>3</SUP> H<SUB>2</SUB>O).
+	@param[out] hydred Hydraulic redistribtion for each soil layer (cm/day/layer).
+	@param vegk Index to vegetation type (used to access rooting profile) [1].
+	@param nlyrs Number of layers in the soil profile [1].
+	@param[in] *lyr Soil characteristics for each soil layer.
+	@param[in] *lyrFrozen Frozen/unfrozen status for each soil layer.
+	@param maxCondroot Maximum radial soil-root conductance of the entire active root system for water (cm/-bar/day).
+	@param swp50 Soil water potential (-bar) where conductance is reduced by 50%.
+	@param shapeCond Shaping parameter for the empirical relationship from van Genuchten to
+				model relative soil-root conductance for water.
+	@param scale Fraction of vegetation type to scale hydred.
 
-@param swc Soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param swcwp Soil water content water potential (-bar).
-@param lyrRootCo Fraction of active roots per layer.
-@param hydred Hydraulic redistribtion for each soil water layer (cm/day/layer).
-@param nlyrs Number of soil layers.
-@param maxCondroot Maximum radial soil-root conductance of the entire active root system for water (cm/-bar/day).
-@param swp50 Soil water potential (-bar) where conductance is reduced by 50%.
-@param shapeCond Shaping parameter for the empirical relationship from van Genuchten to
-      model relative soil-root conductance for water.
-@param scale Fraction of vegetation type to scale hydred.
-
-@sideeffect
-  - swc Updated soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-  - hydred Hydraulic redistribtion for each soil water layer (cm/day/layer).
+	@sideeffect
+		- swc Updated soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+		- hydred Hydraulic redistribtion for each soil water layer (cm/day/layer).
 
 */
-
-void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], double hydred[],
-    unsigned int nlyrs, double maxCondroot, double swp50, double shapeCond, double scale) {
+void hydraulic_redistribution(
+	double swc[],
+	double hydred[],
+	unsigned int vegk,
+	unsigned int nlyrs,
+	SW_LAYER_INFO *lyr[],
+	Bool lyrFrozen[],
+	double maxCondroot,
+	double swp50,
+	double shapeCond,
+	double scale
+) {
 	/**********************************************************************
 	 HISTORY:
 	 10/19/2010 (drs)
@@ -897,73 +938,215 @@ void hydraulic_redistribution(double swc[], double swcwp[], double lyrRootCo[], 
 	 03/23/2012 (drs) excluded hydraulic redistribution from top soil layer (assuming that this layer is <= 5 cm deep)
 	 **********************************************************************/
 
-	unsigned int i, j;
-	double swp[MAX_LAYERS] = {0}, swpwp[MAX_LAYERS] = {0}, relCondroot[MAX_LAYERS] = {0}, hydredmat[MAX_LAYERS][MAX_LAYERS] = {{0}};
-  double Rx, swa, hydred_sum, x;
+	unsigned int i, j, idso, idre, nit;
+	Bool is_hd_adj;
+	double
+		swa[MAX_LAYERS] = {0},
+		swp[MAX_LAYERS] = {0},
+		relCondroot[MAX_LAYERS] = {0},
+		mlyrRootCo[2] = {0.},
+		hydredmat[MAX_LAYERS][MAX_LAYERS] = {{0}};
+	double hdnet, hdin, hdout, tmp;
 
-	ST_RGR_VALUES *st = &stValues;
+	#ifdef SWDEBUG
+	short debug = 0;
+	double hdnet2;
+	#endif
 
+	#ifdef SWDEBUG
+	if (debug) {
+		swprintf("hydred[%d-%d/veg(%d)]: \n", SW_Model.year, SW_Model.doy, vegk);
+	}
+	#endif
+
+	/* Pre-calculate variables */
 	for (i = 0; i < nlyrs; i++) {
-		swp[i] = SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
-		relCondroot[i] = fmin( 1., fmax(0., 1./(1. + powe(swp[i]/swp50, shapeCond) ) ) );
-		swpwp[i] = SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swcwp[i], i);
+		/* Set water extraction limit to moisture above SWPcrit by vegetation
+			(unless wilting point is lower)
+		*/
+		swa[i] = fmax(
+			0.,
+			swc[i] - fmin(lyr[i]->swcBulk_wiltpt, lyr[i]->swcBulk_atSWPcrit[vegk])
+		);
+
+		swp[i] = SW_SWCbulk2SWPmatric(lyr[i]->fractionVolBulk_gravel, swc[i], i);
+
+		/* Ryel et al. 2002: eq. 7 relative soil-root conductance */
+		relCondroot[i] = fmin(
+			1.,
+			fmax(0., 1./(1. + powe(swp[i]/swp50, shapeCond)))
+		);
 
 		hydredmat[0][i] = hydredmat[i][0] = 0.; /* no hydred in top layer */
+		hydredmat[i][i] = 0.; /* no hydred within same layer */
 	}
 
+	/* Calculate hydraulic redistribution according to Ryel et al. 2002:
+		layer i receives moisture moved from layer j: `hydredmat[i][j] > 0`
+		layer i loses moisture to layer j: `hydredmat[i][j] < 0`
+		net moisture change in layer i: `sum across j of hydredmat[i][j]`
+			which equals `sum across j of -hydredmat[j][i]`
+	*/
+
 	for (i = 1; i < nlyrs; i++) {
-		hydredmat[i][i] = 0.; /* init */
 
 		for (j = i + 1; j < nlyrs; j++) {
 
-			if ((LT(swp[i], swpwp[i]) || LT(swp[j], swpwp[j])) &&
-				(st->lyrFrozen[i] == swFALSE) && (st->lyrFrozen[j] == swFALSE)) {
-				/* hydred occurs only if at least one soil layer's swp is above wilting point
-				and both soil layers are not frozen */
+			/* hydred only occurs if at least one soil layer is wet
+				(more moisture than at wilting point)
+				and both soil layers are not frozen
+			*/
+			if (
+				(
+					GT(swc[i], lyr[i]->swcBulk_wiltpt) ||
+					GT(swc[j], lyr[j]->swcBulk_wiltpt)
+				) &&
+				(lyrFrozen[i] == swFALSE) && (lyrFrozen[j] == swFALSE)
+			) {
 
-				if (GT(swp[i], swp[j])) {
-					Rx = lyrRootCo[j]; // layer j has more water than i
-				} else {
-					Rx = lyrRootCo[i];
+				/* Identify source layer: from which water is removed */
+				idso = LT(swp[i], swp[j]) ? i : j;
+				/* Identify recipient layer: to which water is moved */
+				idre = (idso == i) ? j : i;
+
+
+				/* Correct rooting contributions for different layer widths
+					-> truncate to source layer width
+					(original equation assumed identical layer widths)
+				*/
+				mlyrRootCo[0] = lyr[idso]->transp_coeff[vegk];
+				mlyrRootCo[1] = lyr[idre]->transp_coeff[vegk];
+
+				if (LT(lyr[idso]->width, lyr[idre]->width)) {
+					mlyrRootCo[1] *= lyr[idso]->width / lyr[idre]->width;
 				}
 
-				hydredmat[i][j] = maxCondroot * 10. / 24. * (swp[j] - swp[i]) *
-					fmax(relCondroot[i], relCondroot[j]) * (lyrRootCo[i] * lyrRootCo[j] / (1. - Rx)); /* assuming a 10-hour night */
-				hydredmat[j][i] = -hydredmat[i][j];
+
+				/* Ryel et al. 2002: eq. 6 */
+				/* Convert hourly to daily: assume a fixed day with a 10-hour night */
+				tmp =
+					10. / 24. * maxCondroot * (swp[j] - swp[i]) *
+					fmax(relCondroot[i], relCondroot[j]) *
+					mlyrRootCo[0] * mlyrRootCo[1] / (1. - mlyrRootCo[0]);
+
+				/* limit hydred to moisture above swc_min */
+				tmp = copysign(fmin(fabs(tmp), swa[idso]), tmp);
+
+				#ifdef SWDEBUG
+				if (debug) {
+					swprintf(
+						"hd[sl=%d,%d|so=%d,re=%d]=%+.6f cm: "
+						"so|re: w=%4.1f|%4.1f cm, "
+						"swc=%.4f|%.4f cm, "
+						"swp=%7.3f|%7.3f MPa, "
+						"c=%.4f|%.4f, "
+						"R=%.4f|%.4f"
+						"\n",
+						i, j, idso, idre, tmp,
+						lyr[idso]->width, lyr[idre]->width,
+						swc[idso], swc[idre],
+						-0.1 * swp[idso], -0.1 * swp[idre],
+						relCondroot[idso], relCondroot[idre],
+						mlyrRootCo[0], mlyrRootCo[1]
+					);
+				}
+				#endif
+
+				hydredmat[i][j] = tmp;
+				hydredmat[j][i] = -tmp;
+
 			} else {
 				hydredmat[i][j] = hydredmat[j][i] = 0.;
 			}
 		}
 	}
 
-	for (i = 0; i < nlyrs; i++) { /* total hydred from layer i cannot extract more than its swa */
-		hydred_sum = 0.;
-		for (j = 0; j < nlyrs; j++) {
-			hydred_sum += hydredmat[i][j];
-		}
 
-		swa = fmax( 0., swc[i] - swcwp[i] );
-		if (LT(hydred_sum, 0.) && GT( -hydred_sum, swa)) {
-			x = swa / -hydred_sum;
-			for (j = 0; j < nlyrs; j++) {
-				hydredmat[i][j] *= x;
-				hydredmat[j][i] *= x;
+
+	/* Restrict net hydred so that it does not remove moisture below swc_min */
+	nit = 0;
+	is_hd_adj = swTRUE;
+
+	while (nit < nlyrs && is_hd_adj) {
+		/* Iterate because the restriction of outgoing hydred in one layer affects
+				incoming hydred in other layers which, in turn, may affect their
+				ability for outgoing hydred
+		*/
+		nit++;
+		is_hd_adj = swFALSE; /* init for current iteration */
+
+		for (i = 0; i < nlyrs; i++) {
+
+			if (GT(swa[i], 0.)) {
+				/* Calculate net hydred for layer i */
+				hdin = hdout = 0.;
+				for (j = 0; j < nlyrs; j++) {
+					if (GT(hydredmat[i][j], 0.)) {
+						hdin += hydredmat[i][j];
+					} else {
+						hdout += hydredmat[i][j];
+					}
+				}
+				hdnet = hdin + hdout;
+
+				if (LT(hdnet, 0.) && GT( -hdnet, swa[i])) {
+					/* net hydred would extract more moisture than available above swc_min
+						-> reduce moisture extractions so that -hdnet <= swa
+					*/
+					tmp = - (swa[i] + hdin) / hdout;
+					is_hd_adj = swTRUE;
+
+					for (j = 0; j < nlyrs; j++) {
+						if (LT(hydredmat[i][j], 0.)) {
+							hydredmat[i][j] *= tmp;
+							hydredmat[j][i] *= tmp;
+						}
+					}
+				}
+
+				#ifdef SWDEBUG
+				if (debug) {
+					hdnet2 = 0.;
+					for (j = 0; j < nlyrs; j++) hdnet2 += hydredmat[i][j];
+					if (!EQ(hdnet, hdnet2)) {
+						swprintf(
+							"hd[sl=%d|it=%d]: pre=%+.6f (hdin=%.6f, hdout=%.6f), "
+							"post=%+.6f, swa=%.6f, swc=%.4f\n",
+							i, nit, hdnet, hdin, hdout, hdnet2, swa[i], swc[i]
+						);
+					}
+				}
+				#endif
+
 			}
 		}
 	}
 
+	if (is_hd_adj) {
+		LogError(
+			logfp, LOGFATAL,
+			"[%d-%d/veg(%d)]: "
+			"hydraulic redistribution failed to constrain to swc_min.",
+			SW_Model.year, SW_Model.doy, vegk
+		);
+	}
+
+
+	/* Determine finalized hydraulic redistribution */
+
 	hydred[0] = 0.; /* no hydred in top layer */
 
 	for (i = 1; i < nlyrs; i++) {
-		hydred[i] = 0.; //init
+		hydred[i] = 0.;
 		for (j = 1; j < nlyrs; j++) {
 			hydred[i] += hydredmat[i][j];
 		}
 
-		hydred[i] *= scale;
+		hydred[i] *= scale; /* scale by fractional vegetation contribution */
 		swc[i] += hydred[i];
 	}
 }
+
 
 /**
 @brief Interpolate soil temperature layer temperature values to

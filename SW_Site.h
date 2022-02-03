@@ -76,6 +76,7 @@ typedef struct {
 		soilBulk_density, /* bulk soil density of the whole soil, i.e., including rock/gravel component, (g/cm3) */
 		swcBulk_fieldcap, /* Soil water content (SWC) corresponding to field capacity (SWP = -0.033 MPa) [cm] */
 		swcBulk_wiltpt, /* SWC corresponding to wilting point (SWP = -1.5 MPa) [cm] */
+		swcBulk_halfwiltpt, /* Adjusted half-wilting point used as SWC limit for bare-soil evaporation */
 		swcBulk_min, /* Minimal SWC [cm] */
 		swcBulk_wet, /* SWC considered "wet" [cm] */
 		swcBulk_init, /* Initial SWC for first day of simulation [cm] */
@@ -83,6 +84,10 @@ typedef struct {
 
 		/* Saxton et al. 2006 */
 		swcBulk_saturated, /* saturated bulk SWC [cm] */
+		Saxton2006_K_sat_matric, /* saturated matric conductivity [cm / day] */
+		Saxton2006_K_sat_bulk, /* saturated bulk conductivity [cm / day] */
+		Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
+		Saxton2006_lambda, /* Slope of logarithmic tension-moisture curve */
 
 		/* Cosby et al. (1984): SOILWAT2's soil water retention curve */
 		thetasMatric, /* saturated matric SWC [cm] */
@@ -106,7 +111,8 @@ typedef struct {
 		n_transp_lyrs[NVEGTYPES], /* layer index of deepest transp. region       */
 		deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
 
-	RealD slow_drain_coeff, /* low soil water drainage coefficient   */
+	RealD
+		slow_drain_coeff, /* low soil water drainage coefficient   */
 		pet_scale,	/* changes relative effect of PET calculation */
 		longitude,	/* longitude of the site (radians)        */
 		latitude,	/* latitude of the site (radians)        */

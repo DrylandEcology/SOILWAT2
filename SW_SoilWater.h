@@ -92,7 +92,7 @@ typedef struct {
 
 
 #ifdef SWDEBUG
-  #define N_WBCHECKS 8 // number of water balance checks
+  #define N_WBCHECKS 9 // number of water balance checks
 #endif
 
 typedef struct {

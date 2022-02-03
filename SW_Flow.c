@@ -213,7 +213,7 @@ static void records2arrays(void) {
 			lyrSWCBulk_FieldCaps[i] = SW_Site.lyr[i]->swcBulk_fieldcap;
 			lyrWidths[i] = SW_Site.lyr[i]->width;
 			lyrSWCBulk_Wiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt;
-			lyrSWCBulk_HalfWiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt / 2.;
+			lyrSWCBulk_HalfWiltpts[i] = SW_Site.lyr[i]->swcBulk_halfwiltpt;
 			lyrSWCBulk_Mins[i] = SW_Site.lyr[i]->swcBulk_min;
 			lyrImpermeability[i] = SW_Site.lyr[i]->impermeability;
 			lyrSWCBulk_Saturated[i] = SW_Site.lyr[i]->swcBulk_saturated;
@@ -736,12 +736,24 @@ void SW_Water_Flow(void) {
 
 	/* Hydraulic redistribution */
 	ForEachVegTypeBottomUp(k) {
-		if (v->veg[k].flagHydraulicRedistribution && GT(v->veg[k].cov.fCover, 0.) &&
-			GT(v->veg[k].biolive_daily[doy], 0.)) {
+		if (
+			v->veg[k].flagHydraulicRedistribution &&
+			GT(v->veg[k].cov.fCover, 0.) &&
+			GT(v->veg[k].biolive_daily[doy], 0.)
+		) {
 
-			hydraulic_redistribution(lyrSWCBulk, lyrSWCBulk_Wiltpts, lyrTranspCo[k],
-				lyrHydRed[k], SW_Site.n_layers, v->veg[k].maxCondroot, v->veg[k].swpMatric50,
-				v->veg[k].shapeCond, v->veg[k].cov.fCover);
+			hydraulic_redistribution(
+				lyrSWCBulk,
+				lyrHydRed[k],
+				k,
+				SW_Site.n_layers,
+				SW_Site.lyr,
+				stValues.lyrFrozen,
+				v->veg[k].maxCondroot,
+				v->veg[k].swpMatric50,
+				v->veg[k].shapeCond,
+				v->veg[k].cov.fCover
+			);
 
 		} else {
 			/* Set daily array to zero */
@@ -771,15 +783,22 @@ void SW_Water_Flow(void) {
 
 
 	/* Calculate percolation for unsaturated soil water conditions. */
-	/* 01/06/2011	(drs) call to infiltrate_water_low() has to be the last swc
+	/* 01/06/2011	(drs) call to percolate_unsaturated() has to be the last swc
 		 affecting calculation */
 
 	w->soil_inf += standingWater[Today];
 
-	infiltrate_water_low(
-		lyrSWCBulk, lyrDrain, &drainout, SW_Site.n_layers,
-		SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH, lyrSWCBulk_FieldCaps, lyrWidths,
-		lyrSWCBulk_Mins, lyrSWCBulk_Saturated, lyrImpermeability, &standingWater[Today]
+	/* Unsaturated percolation based on Parton 1978, Black et al. 1969 */
+	percolate_unsaturated(
+		lyrSWCBulk,
+		lyrDrain,
+		&drainout,
+		&standingWater[Today],
+		SW_Site.n_layers,
+		SW_Site.lyr,
+		stValues.lyrFrozen,
+		SW_Site.slow_drain_coeff,
+		SLOW_DRAIN_DEPTH
 	);
 
 	// adjust soil_infiltration for water pushed back to surface

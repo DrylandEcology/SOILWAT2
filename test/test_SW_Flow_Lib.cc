@@ -332,29 +332,45 @@ namespace
   //Test transp_weighted_avg function.
   TEST(SWFlowTest, TranspWeightedAvg)
   {
+    //--- TEST when n_layers is 1 ------
     //INPUTS
     double swp_avg = 10;
+    unsigned int i;
     unsigned int n_tr_rgns = 1, n_layers = 1;
     unsigned int tr_regions[1] = {1}; // 1-4
     double tr_coeff[1] = {0.0496}; //trco_grass
     double swc[1] = {12};
 
     //INPUTS for expected outputs
-    double swp_avgExpected1 = 1.100536e-06;
+    double swp_avgExpected1 = 1.5992088;
+
+    // Setup soil layers
+    create_test_soillayers(n_layers);
+
+    ForEachSoilLayer(i)
+    {
+      // copy soil layer values into arrays so that they can be passed as
+      // arguments to `transp_weighted_avg`
+      tr_coeff[i] = s->lyr[i]->transp_coeff[SW_SHRUB];
+
+      // example: swc as mean of wilting point and field capacity
+      swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt) / 2.;
+    }
+
     //Begin TEST when n_layers is one
     transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions, tr_coeff,
                         swc);
 
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
-    EXPECT_NEAR(swp_avgExpected1, swp_avg, tol6); //swp_avg is expected to be 1.100536e-06
+    EXPECT_NEAR(swp_avg, swp_avgExpected1, tol6);
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
 
-    //Begin TEST when n_layers is at "max"
+    //--- TEST when n_layers is at "max" ------
     //INPUTS
     swp_avg = 10, n_tr_rgns = 4, n_layers = 25;
-    unsigned int i, tr_regions2[25] = {1,1,1,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,
+    unsigned int tr_regions2[25] = {1,1,1,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,
                                        4,4,4,4,4};
     double tr_coeff2[25],swc2[25];
 
@@ -375,13 +391,13 @@ namespace
     }
 
 
-		transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions2, tr_coeff2,
+    transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions2, tr_coeff2,
                         swc2);
 
-		EXPECT_GE(swp_avg, 0); //Must always be non negative.
+    EXPECT_GE(swp_avg, 0); //Must always be non negative.
 
 
-		EXPECT_NEAR(swp_avgExpectedM, swp_avg, tol6);
+    EXPECT_NEAR(swp_avg, swp_avgExpectedM, tol6);
 
     //Reset to previous global states.
     Reset_SOILWAT2_after_UnitTest();
@@ -890,18 +906,15 @@ namespace
 
 
   //Test when nlyrs = 1 and 25 for outputs; swc, drain, drainout, standing water
-  TEST(SWFlowTest, UnsaturatedPercolation)
+  TEST(SWFlowTest, PercolateUnsaturated)
   {
     //INPUTS
     unsigned int nlyrs, i, k;
     double
-      sum_delta_swc, small, drainout, standingWater,
-      sdrainpar = 0.02, // SW_Site.slow_drain_coeff
-      sdraindpth = SLOW_DRAIN_DEPTH;
-    double swc_init[MAX_LAYERS], swc[MAX_LAYERS];
-    double drain[MAX_LAYERS], swcfc[MAX_LAYERS];
-    double width[MAX_LAYERS], swcmin[MAX_LAYERS], swcsat[MAX_LAYERS];
-    double impermeability[MAX_LAYERS] = {0.};
+      sum_delta_swc, small, drainout, standingWater;
+    double swc[MAX_LAYERS];
+    double drain[MAX_LAYERS];
+
 
     // Loop over tests with varying number of soil layers
     for (k = 0; k < 2; k++)
@@ -921,10 +934,9 @@ namespace
       // Initialize soil arrays to be independent of soil texture...
       ForEachSoilLayer(i)
       {
-        width[i] = s->lyr[i]->width;
-        swcfc[i] = 0.25 * width[i];
-        swcmin[i] = 0.05 * width[i];
-        swcsat[i] = 0.35 * width[i];
+        SW_Site.lyr[i]->swcBulk_fieldcap = 0.25 * SW_Site.lyr[i]->width;
+        SW_Site.lyr[i]->swcBulk_min = 0.05 * SW_Site.lyr[i]->width;
+        SW_Site.lyr[i]->swcBulk_saturated = 0.35 * SW_Site.lyr[i]->width;
       }
 
 
@@ -938,16 +950,16 @@ namespace
 
       ForEachSoilLayer(i)
       {
-        swc_init[i] = 0.5 * swcmin[i];
-        swc[i] = swc_init[i];
+        SW_Site.lyr[i]->swcBulk_init = 0.5 * SW_Site.lyr[i]->swcBulk_min;
+        swc[i] = SW_Site.lyr[i]->swcBulk_init;
         drain[i] = 0.;
       }
 
       // Call function to test
-      infiltrate_water_low(
-        swc, drain, &drainout, nlyrs, sdrainpar,
-        sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-        &standingWater
+      percolate_unsaturated(
+        swc, drain, &drainout, &standingWater,
+        nlyrs, SW_Site.lyr, stValues.lyrFrozen,
+        SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
       // Expectation: drainout = 0
@@ -960,9 +972,9 @@ namespace
       ForEachSoilLayer(i)
       {
         EXPECT_NEAR(drain[i], 0., tol6) <<
-          "infiltrate_water_low: drain != 0 for layer " << 1 + i;
-        EXPECT_NEAR(swc[i], swc_init[i], tol6) <<
-          "infiltrate_water_low: swc != swc_init for layer " << 1 + i;
+          "percolate_unsaturated: drain != 0 for layer " << 1 + i;
+        EXPECT_NEAR(swc[i], SW_Site.lyr[i]->swcBulk_init, tol6) <<
+          "percolate_unsaturated: swc != swc_init for layer " << 1 + i;
       }
 
 
@@ -976,16 +988,16 @@ namespace
 
       ForEachSoilLayer(i)
       {
-        swc_init[i] = 0.9 * swcfc[i];
-        swc[i] = swc_init[i];
+        SW_Site.lyr[i]->swcBulk_init = 0.9 * SW_Site.lyr[i]->swcBulk_fieldcap;
+        swc[i] = SW_Site.lyr[i]->swcBulk_init;
         drain[i] = 0.;
       }
 
       // Call function to test
-      infiltrate_water_low(
-        swc, drain, &drainout, nlyrs, sdrainpar,
-        sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-        &standingWater
+      percolate_unsaturated(
+        swc, drain, &drainout, &standingWater,
+        nlyrs, SW_Site.lyr, stValues.lyrFrozen,
+        SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
       // Expectation: drainout > 0
@@ -999,11 +1011,11 @@ namespace
       ForEachSoilLayer(i)
       {
         EXPECT_GT(drain[i], 0.) <<
-          "infiltrate_water_low: drain !> 0 for layer " << 1 + i;
-        sum_delta_swc += swc[i] - swc_init[i];
+          "percolate_unsaturated: drain !> 0 for layer " << 1 + i;
+        sum_delta_swc += swc[i] - SW_Site.lyr[i]->swcBulk_init;
       }
       EXPECT_LT(sum_delta_swc, 0.) <<
-        "infiltrate_water_low: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
+        "percolate_unsaturated: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
 
 
       //--- (3) TEST:
@@ -1016,16 +1028,16 @@ namespace
 
       ForEachSoilLayer(i)
       {
-        swc_init[i] = 1.1 * swcsat[i];
-        swc[i] = swc_init[i];
+        SW_Site.lyr[i]->swcBulk_init = 1.1 * SW_Site.lyr[i]->swcBulk_saturated;
+        swc[i] = SW_Site.lyr[i]->swcBulk_init;
         drain[i] = 0.;
       }
 
       // Call function to test
-      infiltrate_water_low(
-        swc, drain, &drainout, nlyrs, sdrainpar,
-        sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-        &standingWater
+      percolate_unsaturated(
+        swc, drain, &drainout, &standingWater,
+        nlyrs, SW_Site.lyr, stValues.lyrFrozen,
+        SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
       // Expectation: drainout > 0
@@ -1040,15 +1052,15 @@ namespace
       {
         if (i + 1 < nlyrs) {
           EXPECT_LT(drain[i], 0.) <<
-            "infiltrate_water_low: drain !< 0 for layer " << 1 + i;
+            "percolate_unsaturated: drain !< 0 for layer " << 1 + i;
         } else {
-          EXPECT_NEAR(drain[i], sdrainpar, tol6) <<
-            "infiltrate_water_low: drain != sdrainpar for last layer " << 1 + i;
+          EXPECT_NEAR(drain[i], SW_Site.slow_drain_coeff, tol6) <<
+            "percolate_unsaturated: drain != sdrainpar in last layer " << 1 + i;
         }
-        sum_delta_swc += swc[i] - swc_init[i];
+        sum_delta_swc += swc[i] - SW_Site.lyr[i]->swcBulk_init;
       }
       EXPECT_LT(sum_delta_swc, 0.) <<
-        "infiltrate_water_low: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
+        "percolate_unsaturated: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
 
 
       //--- (4) TEST:
@@ -1062,18 +1074,19 @@ namespace
 
       ForEachSoilLayer(i)
       {
-        swc_init[i] = 0.9 * swcfc[i];
-        swc[i] = swc_init[i];
+        SW_Site.lyr[i]->swcBulk_init = 0.9 * SW_Site.lyr[i]->swcBulk_fieldcap;
+        swc[i] = SW_Site.lyr[i]->swcBulk_init;
         drain[i] = 0.;
-        st->lyrFrozen[i] = swTRUE;
+        stValues.lyrFrozen[i] = swTRUE;
       }
 
       // Call function to test
-      infiltrate_water_low(
-        swc, drain, &drainout, nlyrs, sdrainpar,
-        sdraindpth, swcfc, width, swcmin, swcsat, impermeability,
-        &standingWater
+      percolate_unsaturated(
+        swc, drain, &drainout, &standingWater,
+        nlyrs, SW_Site.lyr, stValues.lyrFrozen,
+        SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
+
 
       // Expectation: small > drainout > 0
       EXPECT_GT(drainout, 0.);
@@ -1086,17 +1099,17 @@ namespace
       ForEachSoilLayer(i)
       {
         EXPECT_GT(drain[i], 0.) <<
-          "infiltrate_water_low: drain !> 0 for layer " << 1 + i;
+          "percolate_unsaturated: drain !> 0 for layer " << 1 + i;
         EXPECT_LT(drain[i], small) <<
-          "infiltrate_water_low: small !> drain for layer " << 1 + i;
-        EXPECT_NEAR(swc[i], swc_init[i], small) <<
-          "infiltrate_water_low: swc !~ swc_init for layer " << 1 + i;
+          "percolate_unsaturated: small !> drain for layer " << 1 + i;
+        EXPECT_NEAR(swc[i], SW_Site.lyr[i]->swcBulk_init, small) <<
+          "percolate_unsaturated: swc !~ swc_init for layer " << 1 + i;
       }
 
       // Reset frozen status
       ForEachSoilLayer(i)
       {
-        st->lyrFrozen[i] = swFALSE;
+        stValues.lyrFrozen[i] = swFALSE;
       }
     }
 
@@ -1111,7 +1124,8 @@ namespace
     // INPUTS
     unsigned int nlyrs, i, k;
     double maxCondroot = -0.2328, swp50 = 1.2e12, shapeCond = 1, scale = 0.3;
-    double swc[MAX_LAYERS], swcwp[MAX_LAYERS], lyrRootCo[MAX_LAYERS],
+    double
+      swc[MAX_LAYERS],
       hydred[MAX_LAYERS] = {0.};
     double swcExpected = 0., hydredExpected = 0.;
 
@@ -1120,17 +1134,17 @@ namespace
     double hydredExpected_1L[1] = {0.};
 
     double swcExpected_MAXL[MAX_LAYERS] = {
-      0.8258890, 0.2068147, 0.9921274, 0.2581945, 0.2329534,
-      1.8504017, 0.1677781, 0.1677781, 0.4402285, 0.9193707,
-      2.2046364, 0.2295185, 0.2329534, 1.8504017, 0.1677781,
-      0.1677781, 0.1465795, 0.1838287, 0.2205295, 1.1471575,
-      2.3288284, 2.3129837, 1.6781901, 3.3564261, 6.7275403};
+      0.8258890, 0.2068467, 0.9920907, 0.2581966, 0.2329534,
+      1.8503562, 0.1678064, 0.1678063, 0.4403078, 0.9193770,
+      2.2045783, 0.2295204, 0.2329534, 1.8503562, 0.1678063,
+      0.1678063, 0.1466935, 0.1838611, 0.2205380, 1.1471038,
+      2.3287794, 2.3129346, 1.6781799, 3.3564146, 6.7275094};
     double hydredExpected_MAXL[MAX_LAYERS] = {
-      0.000000e+00, -5.630918e-05, 7.341111e-05, 1.085271e-04, 7.844259e-05,
-      7.767014e-05, -4.592553e-05, -4.592553e-05, -2.455028e-04, -5.631293e-05,
-      7.342950e-05, 1.084979e-04, 7.844259e-05, 7.767014e-05, -4.592553e-05,
-      -4.592553e-05, -2.455263e-04, -5.629044e-05, 7.346768e-05, 1.085242e-04,
-      7.844259e-05, 7.766175e-05, -4.589769e-05, -4.589769e-05, -7.874827e-05};
+      0.000000e+00, -2.436254e-05, 3.723615e-05, 1.105724e-04, 7.844259e-05,
+      3.179664e-05, -1.7262914e-05, -1.726291e-05, -1.6618943e-04, -5.0191450e-05,
+      1.491759e-05, 1.105724e-04, 7.844259e-05, 3.1796639e-05, -1.72629141e-05,
+      -1.726291e-05, -1.311540e-04, -2.436254e-05, 8.168036e-05, 5.476663e-05,
+      2.937160e-05, 2.906830e-05, -5.625116e-05, -5.774957e-05, -1.093454e-04};
 
     // Loop over tests with varying number of soil layers
     for (k = 0; k < 2; k++)
@@ -1150,14 +1164,19 @@ namespace
       {
         // example data based on soil:
         swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt) / 2.;
-        swcwp[i] = s->lyr[i]->swcBulk_wiltpt;
-        lyrRootCo[i] =  s->lyr[i]->transp_coeff[SW_SHRUB]; // shrubs as example
-        st->lyrFrozen[i] = swFALSE;
+        stValues.lyrFrozen[i] = swFALSE;
       }
 
       // Call function to be tested
-      hydraulic_redistribution(swc, swcwp, lyrRootCo, hydred, nlyrs,
-        maxCondroot, swp50, shapeCond, scale);
+      hydraulic_redistribution(
+        swc,
+        hydred,
+        SW_SHRUB,
+        nlyrs,
+        SW_Site.lyr,
+        stValues.lyrFrozen,
+        maxCondroot, swp50, shapeCond, scale
+      );
 
       // Expection: no hydred in top layer
       EXPECT_DOUBLE_EQ(hydred[0], 0.);
