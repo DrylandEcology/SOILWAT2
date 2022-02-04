@@ -390,19 +390,7 @@ void PDF_Saxton2006(
 
 	double
 		OM = 0.,
-		theta_S, theta_33, theta_33t, theta_S33, theta_S33t, theta_1500, theta_1500t;
-
-	/* Eq. 1: 1500 kPa moisture */
-	theta_1500t =
-		+ 0.031 \
-		- 0.024 * sand \
-		+ 0.487 * clay \
-		+ 0.006 * OM \
-		+ 0.005 * sand * OM \
-		- 0.013 * clay * OM \
-		+ 0.068 * sand * clay;
-
-	theta_1500 = theta_1500t + (0.14 * theta_1500t - 0.02);
+		theta_S, theta_33, theta_33t, theta_S33, theta_S33t;
 
 	/* Eq. 2: 33 kPa moisture */
 	theta_33t =
@@ -449,19 +437,30 @@ void PDF_Saxton2006(
 	*swc_sat = width * (1. - gravel) * theta_S;
 
 
-// currently, not used:
-/*
-	double R_w, alpha;
-*/
+// currently, unused and defunct code:
+// (e.g., SW_Site.lyr[n] assignments don't work here anymore!):
+#ifdef UNUSED_SAXTON2006
+	double R_w, alpha, theta_1500, theta_1500t;
+
+	/* Eq. 1: 1500 kPa moisture */
+	theta_1500t =
+		+ 0.031 \
+		- 0.024 * sand \
+		+ 0.487 * clay \
+		+ 0.006 * OM \
+		+ 0.005 * sand * OM \
+		- 0.013 * clay * OM \
+		+ 0.068 * sand * clay;
+
+	theta_1500 = theta_1500t + (0.14 * theta_1500t - 0.02);
+
 
 	/* Eq. 18: slope of logarithmic tension-moisture curve */
-/*
 	SW_Site.lyr[n]->Saxton2006_lambda =
 		(log(theta_33) - log(theta_1500)) / (log(1500.) - log(33.));
-*/
+
 
 	/* Eq. 19: Gravel volume <-> weight fraction */
-/*
 	alpha = SW_Site.lyr[n]->soilMatric_density / 2.65;
 
 	if (GT(fractionGravel, 0.)) {
@@ -469,17 +468,15 @@ void PDF_Saxton2006(
 	} else {
 		R_w = 0.;
 	}
-*/
+
 
 	/* Eq. 16: saturated conductivity [cm / day] */
-/*
 	SW_Site.lyr[n]->Saxton2006_K_sat_matric =
 		24. / 10. * 1930. \
 		* pow(theta_S - theta_33, 3. - SW_Site.lyr[n]->Saxton2006_lambda);
-*/
+
 
 	/* Eq. 22: saturated conductivity in bulk soils */
-/*
 	SW_Site.lyr[n]->Saxton2006_K_sat_bulk =
 		SW_Site.lyr[n]->Saxton2006_K_sat_matric;
 
@@ -493,7 +490,7 @@ void PDF_Saxton2006(
 	} else {
 		SW_Site.lyr[n]->Saxton2006_fK_gravel = 1.;
 	}
-*/
+#endif
 }
 
 
