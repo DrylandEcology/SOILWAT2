@@ -21,7 +21,7 @@
 
 namespace{
   // Test the 'SW_SoilWater' function 'SW_VWCBulkRes'
-  TEST(SWSoilWaterTest, SWVWCBulkRes){
+  TEST(SWSoilWaterTest, VWCBulkRes){
     //declare mock INPUTS
     RealD fractionGravel = .1;
     RealD clay = .7;
@@ -68,7 +68,7 @@ namespace{
 
 
   // Test the 'SW_SoilWater' function 'SW_SWC_adjust_snow'
-  TEST(SWSoilWaterTest, SWSWCSdjustSnow){
+  TEST(SWSoilWaterTest, SWCadjustSnow){
     // setup mock variables
     SW_Site.TminAccu2 = 0;
     SW_Model.doy = 1;
@@ -115,7 +115,7 @@ namespace{
 
 
   // Test the 'SW_SoilWater' function 'SWRC_SWCtoSWP'
-  TEST(SWSoilWaterTest, SWRC_SWCtoSWP) {
+  TEST(SWSoilWaterTest, SWCtoSWP) {
     // set up mock variables
     RealD
       res,
@@ -178,7 +178,7 @@ namespace{
   }
 
 
-  TEST(SWSoilWaterDeathTest, SWRC_SWCtoSWPDeathTest) {
+  TEST(SoilWaterDeathTest, SWCtoSWP) {
     // set up mock variables
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -232,7 +232,7 @@ namespace{
 
 
   // Test the 'SW_SoilWater' function 'SWRC_SWPtoSWC'
-  TEST(SWSoilWaterTest, SWRC_SWPtoSWC) {
+  TEST(SWSoilWaterTest, SWPtoSWC) {
     // set up mock variables
     RealD
       res,
@@ -281,7 +281,7 @@ namespace{
   }
 
 
-  TEST(SWSoilWaterDeathTest, SWRC_SWPtoSWCDeathTest) {
+  TEST(SoilWaterDeathTest, SWPtoSWC) {
     // set up mock variables
     RealD
       swrcp[SWRC_PARAM_NMAX],

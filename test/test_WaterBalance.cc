@@ -45,7 +45,7 @@ namespace {
       ii) Summarize checks added to debugging code of 'SW_SWC_water_flow' (which is
           compiled if flag 'SWDEBUG' is defined)
   */
-  TEST(WaterBalance, Example1) { // default run == 'testing' example1
+  TEST(WaterBalanceTest, Example1) { // default run == 'testing' example1
     int i;
 
     // Run the simulation
@@ -53,7 +53,8 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error in test " <<
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
         i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
     }
 
@@ -62,7 +63,7 @@ namespace {
   }
 
 
-  TEST(WaterBalance, WithSoilTemperature) {
+  TEST(WaterBalanceTest, WithSoilTemperature) {
     int i;
 
     // Turn on soil temperature simulations
@@ -73,7 +74,8 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error in test " <<
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
         i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
     }
 
@@ -82,7 +84,7 @@ namespace {
   }
 
 
-  TEST(WaterBalance, WithPondedWaterRunonRunoff) {
+  TEST(WaterBalanceTest, WithPondedWaterRunonRunoff) {
     int i;
 
     // Turn on impermeability of first soil layer, runon, and runoff
@@ -95,7 +97,8 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error in test " <<
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
         i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
     }
 
@@ -105,7 +108,7 @@ namespace {
 
 
 
-  TEST(WaterBalance, WithWeatherGeneratorOnly) {
+  TEST(WaterBalanceTest, WithWeatherGeneratorOnly) {
     int i;
 
     // Turn on Markov weather generator (and turn off use of historical weather)
@@ -121,7 +124,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error: " << SW_Soilwat.wbErrorNames[i];
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -129,7 +134,7 @@ namespace {
   }
 
 
-  TEST(WaterBalance, WithWeatherGeneratorForSomeMissingValues) {
+  TEST(WaterBalanceTest, WithWeatherGeneratorForSomeMissingValues) {
     int i;
 
     // Turn on Markov weather generator
@@ -146,7 +151,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) << "Water balance error: " << SW_Soilwat.wbErrorNames[i];
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -154,7 +161,7 @@ namespace {
   }
 
 
-  TEST(WaterBalance, WithHighGravelVolume) {
+  TEST(WaterBalanceTest, WithHighGravelVolume) {
     int i;
     LyrIndex s;
 
@@ -173,8 +180,8 @@ namespace {
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
       EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
-        "Water balance error: " <<
-        SW_Soilwat.wbErrorNames[i];
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
     }
 
     // Reset to previous global state

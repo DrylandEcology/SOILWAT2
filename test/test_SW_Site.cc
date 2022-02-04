@@ -123,7 +123,7 @@ namespace {
 
 
   // Test fatal failures of SWRC parameter checks
-  TEST(SWSiteTest, PDFsDeathTest) {
+  TEST(SiteDeathTest, PDFs) {
 
     // inputs
     unsigned int swrc_type;
@@ -140,7 +140,7 @@ namespace {
 
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST(SWSiteTest, SoilParametersDeathTest) {
+  TEST(SiteDeathTest, SoilParameters) {
     LyrIndex n1 = 0, n2 = 1, k = 2;
     RealD help;
 

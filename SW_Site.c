@@ -390,7 +390,19 @@ void PDF_Saxton2006(
 
 	double
 		OM = 0.,
-		theta_S, theta_33, theta_33t, theta_S33, theta_S33t;
+		theta_S, theta_33, theta_33t, theta_S33, theta_S33t, theta_1500, theta_1500t;
+
+	/* Eq. 1: 1500 kPa moisture */
+	theta_1500t =
+		+ 0.031 \
+		- 0.024 * sand \
+		+ 0.487 * clay \
+		+ 0.006 * OM \
+		+ 0.005 * sand * OM \
+		- 0.013 * clay * OM \
+		+ 0.068 * sand * clay;
+
+	theta_1500 = theta_1500t + (0.14 * theta_1500t - 0.02);
 
 	/* Eq. 2: 33 kPa moisture */
 	theta_33t =
@@ -435,9 +447,54 @@ void PDF_Saxton2006(
 	}
 
 	*swc_sat = width * (1. - gravel) * theta_S;
+
+
+// currently, not used:
+/*
+	double R_w, alpha;
+*/
+
+	/* Eq. 18: slope of logarithmic tension-moisture curve */
+/*
+	SW_Site.lyr[n]->Saxton2006_lambda =
+		(log(theta_33) - log(theta_1500)) / (log(1500.) - log(33.));
+*/
+
+	/* Eq. 19: Gravel volume <-> weight fraction */
+/*
+	alpha = SW_Site.lyr[n]->soilMatric_density / 2.65;
+
+	if (GT(fractionGravel, 0.)) {
+		R_w = fractionGravel / (alpha + fractionGravel * (1. - alpha));
+	} else {
+		R_w = 0.;
+	}
+*/
+
+	/* Eq. 16: saturated conductivity [cm / day] */
+/*
+	SW_Site.lyr[n]->Saxton2006_K_sat_matric =
+		24. / 10. * 1930. \
+		* pow(theta_S - theta_33, 3. - SW_Site.lyr[n]->Saxton2006_lambda);
+*/
+
+	/* Eq. 22: saturated conductivity in bulk soils */
+/*
+	SW_Site.lyr[n]->Saxton2006_K_sat_bulk =
+		SW_Site.lyr[n]->Saxton2006_K_sat_matric;
+
+	if (GT(fractionGravel, 0.)) {
+		SW_Site.lyr[n]->Saxton2006_fK_gravel =
+			(1. - R_w) / (1. - R_w * (1. - 1.5 * alpha));
+
+		SW_Site.lyr[n]->Saxton2006_K_sat_bulk *=
+			SW_Site.lyr[n]->Saxton2006_fK_gravel;
+
+	} else {
+		SW_Site.lyr[n]->Saxton2006_fK_gravel = 1.;
+	}
+*/
 }
-
-
 
 
 /**
@@ -1008,12 +1065,12 @@ void SW_SIT_init_run(void) {
 	SW_SITE *sp = &SW_Site;
 	SW_LAYER_INFO *lyr;
 	LyrIndex s, r, curregion;
-	int k, wiltminflag = 0, initminflag = 0;
+	int k, flagswpcrit = 0;
 	Bool fail = swFALSE;
 	RealD
 		fval = 0,
 		evsum = 0., trsum_veg[NVEGTYPES] = {0.},
-		swcmin_help1, swcmin_help2;
+		swcmin_help1, swcmin_help2, tmp;
 	const char *errtype = "\0";
 
 	#ifdef SWDEBUG
@@ -1160,6 +1217,19 @@ lyr->swrcp_from_pdf = swTRUE;
 		lyr->swcBulk_fieldcap = SW_SWRC_SWPtoSWC(0.333, lyr);
 		lyr->swcBulk_wiltpt = SW_SWRC_SWPtoSWC(15., lyr);
 
+		/* Calculate lower SWC limit of bare-soil evaporation
+			as `max(0.5 * wiltpt, SWC@hygroscopic)`
+			Notes:
+				- `0.5 * wiltpt` is the E_soil limit from FAO-56 (Allen et al. 1998)
+					which may correspond to unrealistically extreme SWP
+				- `SWC at hygroscopic point` (-10 MPa; e.g., Porporato et al. 2001)
+					describes "air-dry" soil
+				- Also make sure that `>= swc_min`, see below
+		*/
+		lyr->swcBulk_halfwiltpt = fmax(
+			0.5 * lyr->swcBulk_wiltpt,
+			SW_SWRC_SWPtoSWC(100., lyr)
+		);
 
 		/* Estimate additional properties */
 		PDF_Saxton2006(
@@ -1170,18 +1240,171 @@ lyr->swrcp_from_pdf = swTRUE;
 			lyr->width
 		);
 
+
+
+
+
+		/* Compute swc wet and dry limits and init value */
+		if (LT(_SWCMinVal, 0.0)) {
+			/* input: estimate mininum SWC */
+
+			/* residual SWC of Rawls & Brakensiek (1985) */
+			swcmin_help1 = SW_VWCBulkRes(
+				lyr->fractionVolBulk_gravel,
+				lyr->fractionWeightMatric_sand,
+				lyr->fractionWeightMatric_clay,
+				lyr->swcBulk_saturated / ((1. - lyr->fractionVolBulk_gravel) * lyr->width)
+			);
+
+			/* Lower limit for swc_min
+				Notes:
+				- used in case the equation for residual SWC doesn't work or
+					produces unrealistic small values
+				- currently, -30 MPa
+					(based on limited test runs across western US including hot deserts)
+					lower than "air-dry" = hygroscopic point (-10. MPa; Porporato et al. 2001)
+					not as extreme as "oven-dry" (-1000. MPa; Fredlund et al. 1994)
+			*/
+			swcmin_help2 = SW_SWRC_SWPtoSWC(300., lyr) / lyr->width;
+
+			// if `SW_VWCBulkRes()` returns SW_MISSING then use `swcmin_help2`
+			if (missing(swcmin_help1)) {
+				lyr->swcBulk_min = swcmin_help2;
+
+			} else {
+				lyr->swcBulk_min = fmax(swcmin_help1, swcmin_help2);
+			}
+
+		} else if (GE(_SWCMinVal, 1.0)) {
+			/* input: fixed SWP value as minimum SWC; unit(_SWCMinVal) == -bar */
+			lyr->swcBulk_min = SW_SWRC_SWPtoSWC(_SWCMinVal, lyr) / lyr->width;
+
+		} else {
+			/* input: fixed VWC value as minimum SWC; unit(_SWCMinVal) == cm/cm */
+			lyr->swcBulk_min = _SWCMinVal;
+		}
+
+		/* Convert VWC to SWC */
+		lyr->swcBulk_min *= lyr->width;
+
+
+		/* Calculate wet limit of SWC for what inputs defined as wet */
+		lyr->swcBulk_wet = GE(_SWCWetVal, 1.0) ?
+			SW_SWRC_SWPtoSWC(_SWCWetVal, lyr) :
+			_SWCWetVal * lyr->width;
+
+		/* Calculate initial SWC based on inputs */
+		lyr->swcBulk_init = GE(_SWCInitVal, 1.0) ?
+			SW_SWRC_SWPtoSWC(_SWCInitVal, lyr) :
+			_SWCInitVal * lyr->width;
+
+
+		/* test validity of values */
+		if (LT(lyr->swcBulk_init, lyr->swcBulk_min)) {
+			LogError(
+				logfp, LOGFATAL,
+				"%s : Layer %d\n"
+				"  calculated `swcBulk_init` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
+				"  Recheck parameters and try again.\n",
+				MyFileName, s + 1, lyr->swcBulk_init, lyr->swcBulk_min
+			);
+		}
+
+		if (LT(lyr->swcBulk_wiltpt, lyr->swcBulk_min)) {
+			LogError(
+				logfp, LOGFATAL,
+				"%s : Layer %d\n"
+				"  calculated `swcBulk_wiltpt` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
+				"  Recheck parameters and try again.\n",
+				MyFileName, s + 1, lyr->swcBulk_wiltpt, lyr->swcBulk_min
+			);
+		}
+
+		if (LT(lyr->swcBulk_halfwiltpt, lyr->swcBulk_min)) {
+			LogError(
+				logfp, LOGWARN,
+				"%s : Layer %d\n"
+				"  calculated `swcBulk_halfwiltpt` (%.4f cm / %.2f MPa)\n"
+				"          <= `swcBulk_min` (%.4f cm / %.2f MPa).\n"
+				"  `swcBulk_halfwiltpt` was set to `swcBulk_min`.\n",
+				MyFileName, s + 1,
+				lyr->swcBulk_halfwiltpt,
+				-0.1 * SW_SWRC_SWCtoSWP(lyr->swcBulk_halfwiltpt, lyr),
+				lyr->swcBulk_min,
+				-0.1 * SW_SWRC_SWCtoSWP(lyr->swcBulk_min, lyr)
+			);
+
+			lyr->swcBulk_halfwiltpt = lyr->swcBulk_min;
+		}
+
+		if (LE(lyr->swcBulk_wet, lyr->swcBulk_min)) {
+			LogError(
+				logfp, LOGFATAL,
+				"%s : Layer %d\n"
+				"  calculated `swcBulk_wet` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
+				"  Recheck parameters and try again.\n",
+				MyFileName, s + 1, lyr->swcBulk_wet, lyr->swcBulk_min
+			);
+		}
+
+
+		#ifdef SWDEBUG
+		if (debug) {
+			swprintf(
+				"L[%d] swcmin=%f = swpmin=%f\n",
+				s,
+				lyr->swcBulk_min,
+				SW_SWRC_SWCtoSWP(lyr->swcBulk_min, lyr)
+			);
+
+			swprintf(
+				"L[%d] SWC(HalfWiltpt)=%f = swp(hw)=%f\n",
+				s,
+				lyr->swcBulk_halfwiltpt,
+				SW_SWRC_SWCtoSWP(lyr->swcBulk_halfwiltpt, lyr)
+			);
+		}
+		#endif
+
+
 		/* sum ev and tr coefficients for later */
 		evsum += lyr->evap_coeff;
 
 		ForEachVegType(k)
 		{
 			trsum_veg[k] += lyr->transp_coeff[k];
-
 			/* calculate soil water content at SWPcrit for each vegetation type */
 			lyr->swcBulk_atSWPcrit[k] = SW_SWRC_SWPtoSWC(
 				SW_VegProd.veg[k].SWPcrit,
 				lyr
 			);
+
+			if (LT(lyr->swcBulk_atSWPcrit[k], lyr->swcBulk_min)) {
+				flagswpcrit++;
+
+				// lower SWcrit [-bar] to SWP-equivalent of swBulk_min
+				tmp = fmin(
+					SW_VegProd.veg[k].SWPcrit,
+					SW_SWRC_SWCtoSWP(lyr->swcBulk_min, lyr)
+				);
+
+				LogError(
+					logfp, LOGWARN,
+					"%s : Layer %d - vegtype %d\n"
+					"  calculated `swcBulk_atSWPcrit` (%.4f cm / %.4f MPa)\n"
+					"          <= `swcBulk_min` (%.4f cm / %.4f MPa).\n"
+					"  `SWcrit` adjusted to %.4f MPa "
+					"(and swcBulk_atSWPcrit in every layer will be re-calculated).\n",
+					MyFileName, s + 1, k + 1,
+					lyr->swcBulk_atSWPcrit[k],
+					-0.1 * SW_VegProd.veg[k].SWPcrit,
+					lyr->swcBulk_min,
+					-0.1 * SW_SWRC_SWCtoSWP(lyr->swcBulk_min, lyr),
+					-0.1 * tmp
+				);
+
+				SW_VegProd.veg[k].SWPcrit = tmp;
+			}
 
 			/* Find which transpiration region the current soil layer
 			 * is in and check validity of result. Region bounds are
@@ -1214,97 +1437,48 @@ lyr->swrcp_from_pdf = swTRUE;
 				lyr->my_transp_rgn[k] = 0;
 			}
 		}
-
-
-		/* Compute swc wet and dry limits and init value */
-		if (LT(_SWCMinVal, 0.0)) {
-			/* input: estimate mininum SWC */
-
-			/* residual SWC of Rawls & Brakensiek (1985) */
-			swcmin_help1 = SW_VWCBulkRes(
-				lyr->fractionVolBulk_gravel,
-				lyr->fractionWeightMatric_sand,
-				lyr->fractionWeightMatric_clay,
-				lyr->swcBulk_saturated / ((1. - lyr->fractionVolBulk_gravel) * lyr->width)
-			);
-
-			/* residual SWC at -3 MPa (Fredlund DG, Xing AQ (1994)
-				EQUATIONS FOR THE SOIL-WATER CHARACTERISTIC CURVE.
-				Canadian Geotechnical Journal, 31, 521-532.)
-			*/
-			swcmin_help2 = SW_SWRC_SWPtoSWC(30., lyr) / lyr->width;
-
-			// if `SW_VWCBulkRes()` returns SW_MISSING then use `swcmin_help2`
-			if (missing(swcmin_help1)){
-				lyr->swcBulk_min = swcmin_help2;
-
-			} else{
-				lyr->swcBulk_min = fmax(0., fmin(swcmin_help1, swcmin_help2));
-			}
-
-		} else if (GE(_SWCMinVal, 1.0)) {
-			/* input: fixed SWP value as minimum SWC; unit(_SWCMinVal) == -bar */
-			lyr->swcBulk_min = SW_SWRC_SWPtoSWC(_SWCMinVal, lyr) / lyr->width;
-
-		} else {
-			/* input: fixed VWC value as minimum SWC; unit(_SWCMinVal) == cm/cm */
-			lyr->swcBulk_min = _SWCMinVal;
-		}
-
-		/* Convert VWC to SWC */
-		lyr->swcBulk_min *= lyr->width;
-
-		#ifdef SWDEBUG
-		if (debug) {
-			swprintf(
-				"L[%d] swcmin=%f = swpmin=%f\n",
-				s,
-				lyr->swcBulk_min,
-				SW_SWRC_SWCtoSWP(lyr->swcBulk_min, lyr)
-			);
-
-			swprintf(
-				"L[%d] SWC(HalfWiltpt)=%f = swp(hw)=%f\n",
-				s,
-				lyr->swcBulk_wiltpt / 2.,
-				SW_SWRC_SWCtoSWP(lyr->swcBulk_wiltpt / 2., lyr)
-			);
-		}
-		#endif
-
-
-		/* Calculate wet limit of SWC for what inputs defined as wet */
-		lyr->swcBulk_wet = GE(_SWCWetVal, 1.0) ?
-			SW_SWRC_SWPtoSWC(_SWCWetVal, lyr) :
-			_SWCWetVal * lyr->width;
-		/* Calculate initial SWC based on inputs */
-		lyr->swcBulk_init = GE(_SWCInitVal, 1.0) ?
-			SW_SWRC_SWPtoSWC(_SWCInitVal, lyr) :
-			_SWCInitVal * lyr->width;
-
-		/* test validity of values */
-		if (LT(lyr->swcBulk_init, lyr->swcBulk_min))
-			initminflag++;
-		if (LT(lyr->swcBulk_wiltpt, lyr->swcBulk_min))
-			wiltminflag++;
-		if (LE(lyr->swcBulk_wet, lyr->swcBulk_min)) {
-			LogError(logfp, LOGFATAL, "%s : Layer %d\n"
-					"  calculated swcBulk_wet (%7.4f) <= swcBulk_min (%7.4f).\n"
-					"  Recheck parameters and try again.", MyFileName, s + 1, lyr->swcBulk_wet, lyr->swcBulk_min);
-		}
-
 	} /*end ForEachSoilLayer */
 
-	if (wiltminflag) {
-		LogError(logfp, LOGWARN, "%s : %d layers were found in which wiltpoint < swcBulk_min.\n"
-				"  You should reconsider wiltpoint or swcBulk_min.\n"
-				"  See site parameter file for swcBulk_min and site.log for swc details.", MyFileName, wiltminflag);
-	}
 
-	if (initminflag) {
-		LogError(logfp, LOGWARN, "%s : %d layers were found in which swcBulk_init < swcBulk_min.\n"
-				"  You should reconsider swcBulk_init or swcBulk_min.\n"
-				"  See site parameter file for swcBulk_init and site.log for swc details.", MyFileName, initminflag);
+	/* Re-calculate `swcBulk_atSWPcrit`
+			if it was below `swcBulk_min` for any vegetation x soil layer combination
+			using adjusted `SWPcrit`
+	*/
+	if (flagswpcrit) {
+		ForEachSoilLayer(s)
+		{
+			lyr = sp->lyr[s];
+
+			ForEachVegType(k)
+			{
+				/* calculate soil water content at adjusted SWPcrit */
+				lyr->swcBulk_atSWPcrit[k] = SW_SWRC_SWPtoSWC(
+					SW_VegProd.veg[k].SWPcrit,
+					lyr
+				);
+
+				if (LT(lyr->swcBulk_atSWPcrit[k], lyr->swcBulk_min)) {
+					LogError(
+						logfp, LOGFATAL,
+						"%s : Layer %d - vegtype %d\n"
+						"  calculated `swcBulk_atSWPcrit` (%.4f cm)\n"
+						"          <= `swcBulk_min` (%.4f cm).\n"
+						"  even with adjusted `SWcrit` (%.4f MPa).\n",
+						MyFileName, s + 1, k + 1,
+						lyr->swcBulk_atSWPcrit[k],
+						lyr->swcBulk_min,
+						-0.1 * SW_VegProd.veg[k].SWPcrit
+					);
+				}
+			}
+		}
+
+		/* Update values for `get_swa()` */
+		ForEachVegType(k)
+		{
+			SW_VegProd.critSoilWater[k] = -0.1 * SW_VegProd.veg[k].SWPcrit;
+		}
+		get_critical_rank();
 	}
 
 	/* normalize the evap and transp coefficients separately

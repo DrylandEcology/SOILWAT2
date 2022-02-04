@@ -1,0 +1,64 @@
+name: tests
+
+#TODO: run unit tests with different compiler versions of both gcc and clang
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build_nix:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Print compiler versions as seen by make
+      run: make compiler_version
+
+    - name: Run binary
+      run: |
+        make clean bin bint_run
+        make clean bin_debug_severe bint_run
+
+    - name: Unit tests
+      run: make clean test test_run
+
+    - name: Severe unit tests (without sanitizers)
+      if: ${{ runner.os == 'macOS' }}
+      run: make clean test_severe test_run
+
+    - name: Severe unit tests (with sanitizers)
+      # Apple clang does not support "AddressSanitizer: detect_leaks" (at least as of clang-1200.0.32.29)
+      if: ${{ runner.os != 'macOS' }}
+      run: ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+
+
+  check_code_coverage:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Generate coverage report
+      run: make clean cov cov_run
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        fail_ci_if_error: false # just report, don't fail checks

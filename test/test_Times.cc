@@ -20,7 +20,7 @@
 #include "sw_testhelpers.h"
 
 namespace{
-  TEST(TimesTest, leap_year_consequences) {
+  TEST(TimesTest, LeapYear) {
     unsigned int k, lpadd,
       years[] = {1900, 1980, 1981, 2000}; // noleap, leap, noleap, leap years
 
@@ -61,7 +61,7 @@ namespace{
     return v1 + (v2 - v1) * sign * (mday - 15.) / delta_days;
   }
 
-  TEST(TimesTest, interpolate_monthlyValues) {
+  TEST(TimesTest, InterpolateMonthlyValues) {
     // point to the structure that contains cloud coverage monthly values
     SW_SKY SW_Sky;
     SW_SKY *xintpl = &SW_Sky;
