@@ -102,85 +102,6 @@ static char *MyFileName;
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void _read_layers(void) {
-	/* =================================================== */
-	/* 5-Feb-2002 (cwb) removed dmin requirement in input file */
-
-	SW_SITE *v = &SW_Site;
-	FILE *f;
-	LyrIndex lyrno;
-	int x, k;
-	RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay, matricd, imperm,
-		soiltemp, f_gravel;
-
-	/* note that Files.read() must be called prior to this. */
-	MyFileName = SW_F_name(eLayers);
-
-	f = OpenFile(MyFileName, "r");
-
-	while (GetALine(f, inbuf)) {
-		lyrno = _newlayer();
-
-		x = sscanf(
-			inbuf,
-			"%f %f %f %f %f %f %f %f %f %f %f %f",
-			&dmax,
-			&matricd,
-			&f_gravel,
-			&evco,
-			&trco_veg[SW_GRASS], &trco_veg[SW_SHRUB], &trco_veg[SW_TREES], &trco_veg[SW_FORBS],
-			&psand,
-			&pclay,
-			&imperm,
-			&soiltemp
-		);
-
-		/* Check that we have 12 values per layer */
-		/* Adjust number if new variables are added */
-		if (x != 12) {
-			CloseFile(&f);
-			LogError(
-				logfp,
-				LOGFATAL,
-				"%s : Incomplete record %d.\n",
-				MyFileName, lyrno + 1
-			);
-		}
-
-		v->lyr[lyrno]->width = dmax - dmin;
-
-		/* checks for valid values now carried out by `SW_SIT_init_run()` */
-
-		dmin = dmax;
-		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel;
-		v->lyr[lyrno]->soilMatric_density = matricd;
-		v->lyr[lyrno]->evap_coeff = evco;
-
-		ForEachVegType(k)
-		{
-			v->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
-		}
-
-		v->lyr[lyrno]->fractionWeightMatric_sand = psand;
-		v->lyr[lyrno]->fractionWeightMatric_clay = pclay;
-		v->lyr[lyrno]->impermeability = imperm;
-		v->lyr[lyrno]->sTemp = soiltemp;
-
-		if (lyrno >= MAX_LAYERS) {
-			CloseFile(&f);
-			LogError(
-				logfp,
-				LOGFATAL,
-				"%s : Too many layers specified (%d).\n"
-				"Maximum number of layers is %d\n",
-				MyFileName, lyrno + 1, MAX_LAYERS
-			);
-		}
-	}
-
-	CloseFile(&f);
-}
-
 
 
 /* =================================================== */
@@ -849,9 +770,95 @@ void SW_SIT_read(void) {
 
 		}
 	}
-
-	_read_layers();
 }
+
+
+
+/** Reads soil layers and soil properties from input file
+
+		@note Previously, the function was static and named `_read_layers()`.
+*/
+void SW_LYR_read(void) {
+	/* =================================================== */
+	/* 5-Feb-2002 (cwb) removed dmin requirement in input file */
+
+	SW_SITE *v = &SW_Site;
+	FILE *f;
+	LyrIndex lyrno;
+	int x, k;
+	RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay, matricd, imperm,
+		soiltemp, f_gravel;
+
+	/* note that Files.read() must be called prior to this. */
+	MyFileName = SW_F_name(eLayers);
+
+	f = OpenFile(MyFileName, "r");
+
+	while (GetALine(f, inbuf)) {
+		lyrno = _newlayer();
+
+		x = sscanf(
+			inbuf,
+			"%f %f %f %f %f %f %f %f %f %f %f %f",
+			&dmax,
+			&matricd,
+			&f_gravel,
+			&evco,
+			&trco_veg[SW_GRASS], &trco_veg[SW_SHRUB], &trco_veg[SW_TREES], &trco_veg[SW_FORBS],
+			&psand,
+			&pclay,
+			&imperm,
+			&soiltemp
+		);
+
+		/* Check that we have 12 values per layer */
+		/* Adjust number if new variables are added */
+		if (x != 12) {
+			CloseFile(&f);
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Incomplete record %d.\n",
+				MyFileName, lyrno + 1
+			);
+		}
+
+		v->lyr[lyrno]->width = dmax - dmin;
+
+		/* checks for valid values now carried out by `SW_SIT_init_run()` */
+
+		dmin = dmax;
+		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel;
+		v->lyr[lyrno]->soilMatric_density = matricd;
+		v->lyr[lyrno]->evap_coeff = evco;
+
+		ForEachVegType(k)
+		{
+			v->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
+		}
+
+		v->lyr[lyrno]->fractionWeightMatric_sand = psand;
+		v->lyr[lyrno]->fractionWeightMatric_clay = pclay;
+		v->lyr[lyrno]->impermeability = imperm;
+		v->lyr[lyrno]->sTemp = soiltemp;
+
+		if (lyrno >= MAX_LAYERS) {
+			CloseFile(&f);
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Too many layers specified (%d).\n"
+				"Maximum number of layers is %d\n",
+				MyFileName, lyrno + 1, MAX_LAYERS
+			);
+		}
+	}
+
+	CloseFile(&f);
+}
+
+
+
 
 /**
   @brief Creates soil layers based on function arguments (instead of reading
