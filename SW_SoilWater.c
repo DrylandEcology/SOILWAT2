@@ -1062,6 +1062,19 @@ double SWRC_SWCtoSWP(
 	double gravel,
 	double width
 ) {
+	if (missing(swcBulk) || ZRO(swcBulk) || EQ(gravel, 1.)) {
+		return 0.0;
+	}
+
+	if (LE(swcBulk, 0.0)) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"SWRC_SWCtoSWP(): invalid SWC = %.4f (must be >= 0)\n",
+			swcBulk
+		);
+	}
+
 	double res = SW_MISSING;
 
 	switch (swrc_type) {
@@ -1121,22 +1134,7 @@ double SWRC_SWCtoSWP_Campbell1974(
 	double gravel,
 	double width
 ) {
-
-	if (missing(swcBulk) || ZRO(swcBulk) || EQ(gravel, 1.)) {
-		return 0.0;
-	}
-
-	if (LE(swcBulk, 0.0)) {
-		LogError(
-			logfp,
-			LOGFATAL,
-			"SWRC_SWCtoSWP_Campbell1974(): "
-			"invalid value of SWC = %.4f (must be >= 0)\n",
-			swcBulk
-		);
-	}
-
-	// we have soil moisture
+	// assume that we have soil moisture
 	double theta1, theta2;
 
 	// calculate matric VWC [cm / cm %] from SWC
@@ -1210,6 +1208,15 @@ double SWRC_SWPtoSWC(
 	double gravel,
 	double width
 ) {
+	if (LE(swpMatric, 0.)) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"SWRC_SWPtoSWC(): invalid SWP = %.4f (must be > 0)\n",
+			swpMatric
+		);
+	}
+
 	double res = SW_MISSING;
 
 	switch (swrc_type) {
@@ -1269,25 +1276,14 @@ double SWRC_SWPtoSWC_Campbell1974(
 	double gravel,
 	double width
 ) {
-	double res = SW_MISSING;
-
-	if (GT(swpMatric, 0.)) {
-		res =
-			0.01 * swrcp[0] * powe(swrcp[1] / (swpMatric * BARCONV), swrcp[3]) *
-			(1. - gravel) * width;
-
-	} else {
-		LogError(
-			logfp,
-			LOGFATAL,
-			"SWRC_SWPtoSWC_Campbell1974(): "
-			"invalid value of SWP = %.4f (must be > 0)\n",
-			swpMatric
-		);
-	}
-
-	return res;
+	// assume that `swpMatric` > 0
+	return
+		0.01 * swrcp[0] * powe(swrcp[1] / (swpMatric * BARCONV), swrcp[3]) *
+		(1. - gravel) * width;
 }
+
+
+
 
 
 
