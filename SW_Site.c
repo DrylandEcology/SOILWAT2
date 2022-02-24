@@ -102,6 +102,100 @@ static char *MyFileName;
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
+/** Check validity of soil properties
+
+	@param[in] *lyr Soil information.
+
+	@return A logical value indicating if soil properties passed the checks.
+*/
+static Bool SW_check_soil_properties(SW_LAYER_INFO *lyr) {
+	int k;
+	RealD fval = 0;
+	const char *errtype = "\0";
+	Bool res = swTRUE;
+
+
+	if (LE(lyr->width, 0.)) {
+		res = swFALSE;
+		fval = lyr->width;
+		errtype = Str_Dup("layer width");
+
+	} else if (LT(lyr->soilMatric_density, 0.)) {
+		res = swFALSE;
+		fval = lyr->soilMatric_density;
+		errtype = Str_Dup("soil density");
+
+	} else if (
+		LT(lyr->fractionVolBulk_gravel, 0.) ||
+		GE(lyr->fractionVolBulk_gravel, 1.)
+	) {
+		res = swFALSE;
+		fval = lyr->fractionVolBulk_gravel;
+		errtype = Str_Dup("gravel content");
+
+	} else if (
+		LE(lyr->fractionWeightMatric_sand, 0.) ||
+		GE(lyr->fractionWeightMatric_sand, 1.)
+	) {
+		res = swFALSE;
+		fval = lyr->fractionWeightMatric_sand;
+		errtype = Str_Dup("sand proportion");
+
+	} else if (
+		LE(lyr->fractionWeightMatric_clay, 0.) ||
+		GE(lyr->fractionWeightMatric_clay, 1.)
+	) {
+		res = swFALSE;
+		fval = lyr->fractionWeightMatric_clay;
+		errtype = Str_Dup("clay proportion");
+
+	} else if (
+		GE(lyr->fractionWeightMatric_sand + lyr->fractionWeightMatric_clay, 1.)
+	) {
+		res = swFALSE;
+		fval = lyr->fractionWeightMatric_sand + lyr->fractionWeightMatric_clay;
+		errtype = Str_Dup("sand+clay proportion");
+
+	} else if (
+		LT(lyr->impermeability, 0.) ||
+		GT(lyr->impermeability, 1.)
+	) {
+		res = swFALSE;
+		fval = lyr->impermeability;
+		errtype = Str_Dup("impermeability");
+
+	} else if (
+		LT(lyr->evap_coeff, 0.) ||
+		GT(lyr->evap_coeff, 1.)
+	) {
+		res = swFALSE;
+		fval = lyr->evap_coeff;
+		errtype = Str_Dup("bare-soil evaporation coefficient");
+
+	} else {
+		ForEachVegType(k) {
+			if (LT(lyr->transp_coeff[k], 0.) || GT(lyr->transp_coeff[k], 1.)) {
+				res = swFALSE;
+				fval = lyr->transp_coeff[k];
+				errtype = Str_Dup("transpiration coefficient");
+				break;
+			}
+		}
+	}
+
+	if (!res) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"'%s' has an invalid value (%5.4f) in layer %d.\n",
+			errtype, fval, lyr->id + 1
+		);
+	}
+
+	return res;
+}
+
+
 
 
 /* =================================================== */
@@ -1070,12 +1164,9 @@ void SW_SIT_init_run(void) {
 	SW_LAYER_INFO *lyr;
 	LyrIndex s, r, curregion;
 	int k, flagswpcrit = 0;
-	Bool fail = swFALSE;
 	RealD
-		fval = 0,
 		evsum = 0., trsum_veg[NVEGTYPES] = {0.},
 		swcmin_help1, swcmin_help2, tmp;
-	const char *errtype = "\0";
 
 	#ifdef SWDEBUG
 	int debug = 0;
@@ -1098,84 +1189,16 @@ void SW_SIT_init_run(void) {
 		lyr = sp->lyr[s];
 
 		/* Check validity of soil variables:
-			previously, checked by code in `_read_layers()`,
-			erroneously skipped by `set_soillayers()`,
-			and checked by code in rSOILWAT2's `onSet_SW_LYR()`
 		*/
-		if (LE(lyr->width, 0.)) {
-			fail = swTRUE;
-			fval = lyr->width;
-			errtype = Str_Dup("layer width");
 
-		} else if (LT(lyr->soilMatric_density, 0.)) {
-			fail = swTRUE;
-			fval = lyr->soilMatric_density;
-			errtype = Str_Dup("soil density");
 
-		} else if (
-			LT(lyr->fractionVolBulk_gravel, 0.) ||
-			GE(lyr->fractionVolBulk_gravel, 1.)
-		) {
-			fail = swTRUE;
-			fval = lyr->fractionVolBulk_gravel;
-			errtype = Str_Dup("gravel content");
-
-		} else if (
-			LE(lyr->fractionWeightMatric_sand, 0.) ||
-			GE(lyr->fractionWeightMatric_sand, 1.)
-		) {
-			fail = swTRUE;
-			fval = lyr->fractionWeightMatric_sand;
-			errtype = Str_Dup("sand proportion");
-
-		} else if (
-			LE(lyr->fractionWeightMatric_clay, 0.) ||
-			GE(lyr->fractionWeightMatric_clay, 1.)
-		) {
-			fail = swTRUE;
-			fval = lyr->fractionWeightMatric_clay;
-			errtype = Str_Dup("clay proportion");
-
-		} else if (
-			GE(lyr->fractionWeightMatric_sand + lyr->fractionWeightMatric_clay, 1.)
-		) {
-			fail = swTRUE;
-			fval = lyr->fractionWeightMatric_sand + lyr->fractionWeightMatric_clay;
-			errtype = Str_Dup("sand+clay proportion");
-
-		} else if (
-			LT(lyr->impermeability, 0.) ||
-			GT(lyr->impermeability, 1.)
-		) {
-			fail = swTRUE;
-			fval = lyr->impermeability;
-			errtype = Str_Dup("impermeability");
-
-		} else if (
-			LT(lyr->evap_coeff, 0.) ||
-			GT(lyr->evap_coeff, 1.)
-		) {
-			fail = swTRUE;
-			fval = lyr->evap_coeff;
-			errtype = Str_Dup("bare-soil evaporation coefficient");
-
-		} else {
-			ForEachVegType(k) {
-				if (LT(lyr->transp_coeff[k], 0.) || GT(lyr->transp_coeff[k], 1.)) {
-					fail = swTRUE;
-					fval = lyr->transp_coeff[k];
-					errtype = Str_Dup("transpiration coefficient");
-					break;
-				}
-			}
-		}
-
-		if (fail) {
+		/* Check soil properties for valid values */
+		if (!SW_check_soil_properties(lyr)) {
 			LogError(
 				logfp,
 				LOGFATAL,
-				"Invalid %s (%5.4f) in layer %d.\n",
-				errtype, fval, s + 1
+				"Invalid soil properties in layer %d.\n",
+				lyr->id + 1
 			);
 		}
 
@@ -1310,7 +1333,7 @@ lyr->swrcp_from_pdf = swTRUE;
 				"%s : Layer %d\n"
 				"  calculated `swcBulk_init` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
 				"  Recheck parameters and try again.\n",
-				MyFileName, s + 1, lyr->swcBulk_init, lyr->swcBulk_min
+				MyFileName, lyr->id + 1, lyr->swcBulk_init, lyr->swcBulk_min
 			);
 		}
 
@@ -1320,7 +1343,7 @@ lyr->swrcp_from_pdf = swTRUE;
 				"%s : Layer %d\n"
 				"  calculated `swcBulk_wiltpt` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
 				"  Recheck parameters and try again.\n",
-				MyFileName, s + 1, lyr->swcBulk_wiltpt, lyr->swcBulk_min
+				MyFileName, lyr->id + 1, lyr->swcBulk_wiltpt, lyr->swcBulk_min
 			);
 		}
 
@@ -1331,7 +1354,7 @@ lyr->swrcp_from_pdf = swTRUE;
 				"  calculated `swcBulk_halfwiltpt` (%.4f cm / %.2f MPa)\n"
 				"          <= `swcBulk_min` (%.4f cm / %.2f MPa).\n"
 				"  `swcBulk_halfwiltpt` was set to `swcBulk_min`.\n",
-				MyFileName, s + 1,
+				MyFileName, lyr->id + 1,
 				lyr->swcBulk_halfwiltpt,
 				-0.1 * SW_SWRC_SWCtoSWP(lyr->swcBulk_halfwiltpt, lyr),
 				lyr->swcBulk_min,
@@ -1347,7 +1370,7 @@ lyr->swrcp_from_pdf = swTRUE;
 				"%s : Layer %d\n"
 				"  calculated `swcBulk_wet` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
 				"  Recheck parameters and try again.\n",
-				MyFileName, s + 1, lyr->swcBulk_wet, lyr->swcBulk_min
+				MyFileName, lyr->id + 1, lyr->swcBulk_wet, lyr->swcBulk_min
 			);
 		}
 
@@ -1399,7 +1422,7 @@ lyr->swrcp_from_pdf = swTRUE;
 					"          <= `swcBulk_min` (%.4f cm / %.4f MPa).\n"
 					"  `SWcrit` adjusted to %.4f MPa "
 					"(and swcBulk_atSWPcrit in every layer will be re-calculated).\n",
-					MyFileName, s + 1, k + 1,
+					MyFileName, lyr->id + 1, k + 1,
 					lyr->swcBulk_atSWPcrit[k],
 					-0.1 * SW_VegProd.veg[k].SWPcrit,
 					lyr->swcBulk_min,
@@ -1468,7 +1491,7 @@ lyr->swrcp_from_pdf = swTRUE;
 						"  calculated `swcBulk_atSWPcrit` (%.4f cm)\n"
 						"          <= `swcBulk_min` (%.4f cm).\n"
 						"  even with adjusted `SWcrit` (%.4f MPa).\n",
-						MyFileName, s + 1, k + 1,
+						MyFileName, lyr->id + 1, k + 1,
 						lyr->swcBulk_atSWPcrit[k],
 						lyr->swcBulk_min,
 						-0.1 * SW_VegProd.veg[k].SWPcrit
@@ -1497,7 +1520,7 @@ lyr->swrcp_from_pdf = swTRUE;
 		{
 			SW_Site.lyr[s]->evap_coeff /= evsum;
 			LogError(logfp, LOGNOTE, "  Layer %2d : %.4f",
-				s + 1, SW_Site.lyr[s]->evap_coeff);
+				lyr->id + 1, SW_Site.lyr[s]->evap_coeff);
 		}
 
 		LogError(logfp, LOGQUIET, "");
@@ -1517,7 +1540,7 @@ lyr->swrcp_from_pdf = swTRUE;
 				{
 					SW_Site.lyr[s]->transp_coeff[k] /= trsum_veg[k];
 					LogError(logfp, LOGNOTE, "  Layer %2d : %.4f",
-						s + 1, SW_Site.lyr[s]->transp_coeff[k]);
+						lyr->id + 1, SW_Site.lyr[s]->transp_coeff[k]);
 				}
 			}
 
