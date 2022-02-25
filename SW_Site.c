@@ -91,6 +91,31 @@ RealD
   _SWCMinVal; /* lower bound on swc.          */
 
 
+/** Character representation of implemented Soil Water Retention Curves (SWRC)
+*/
+/* MAINTENANCE:
+	- Values must exactly match those provided in `siteparam.in`.
+	- If entries are added/removed/change, then update `check_SWRC_vs_PDF()`,
+	  `SWRC_check_parameters()`, `SWRC_SWCtoSWP()`, and `SWRC_SWPtoSWC()`.
+*/
+char const *swrc2str[N_SWRCs] = {
+	"Campbell1974"
+};
+
+/** Character representation of implemented Pedotransfer Functions (PDF)
+*/
+/* MAINTENANCE:
+	- Values must exactly match those provided in `siteparam.in`.
+	- The first value must be "NoPDF".
+	- If entries are added/removed/change, then update `check_SWRC_vs_PDF()` and
+	  `SWRC_PDF_estimate_parameters()`.
+*/
+char const *pdf2str[N_PDFs] = {
+	"NoPDF",
+	"Cosby1984AndOthers",
+	"Cosby1984"
+};
+
 
 /* =================================================== */
 /*                  Local Variables                    */
@@ -202,19 +227,71 @@ static Bool SW_check_soil_properties(SW_LAYER_INFO *lyr) {
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
+
+/**
+	@brief Translate a SWRC name into a SWRC type number
+
+	@param[in] *swrc_name Name selected SWRC
+
+	@return Internal identification number of selected SWRC
+*/
+unsigned int encode_str2swrc(char *swrc_name) {
+	unsigned int k;
+
+	for (
+		k = 0;
+		k < N_SWRCs && Str_CompareI(swrc_name, (char *)swrc2str[k]);
+		k++
+	);
+
+	if (k == N_SWRCs) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"SWRC '%s' is not implemented.",
+			swrc_name
+		);
+	}
+
+	return k;
+}
+
+/**
+	@brief Translate a PDF name into a PDF type number
+
+	@param[in] *pdf_name Name selected PDF
+
+	@return Internal identification number of selected PDF
+*/
+unsigned int encode_str2pdf(char *pdf_name) {
+	unsigned int k;
+
+	for (
+		k = 0;
+		k < N_PDFs && Str_CompareI(pdf_name, (char *)pdf2str[k]);
+		k++
+	);
+
+	if (k == N_PDFs) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"PDF '%s' is not implemented.",
+			pdf_name
+		);
+	}
+
+	return k;
+}
+
+
+
 /**
 	@brief Estimate parameters of selected soil water retention curve (SWRC)
 		using selected pedotransfer function (PDF)
 
-	Implemented SWRCs (`swrc_type`):
-		1. Campbell 1974 \cite Campbell1974
+	See `pdf2str` for implemented PDFs.
 
-	Implemented PDFs (`pdf_type`):
-		1. Cosby et al. 1984 \cite Cosby1984 PDF estimates parameters of
-			 Campbell 1974 \cite Campbell1974 SWRC
-			 see `SWRC_PDF_Cosby1984_for_Campbell1974()`
-
-	@param[in] swrc_type Identification number of selected SWRC
 	@param[in] pdf_type Identification number of selected PDF
 	@param[out] *swrcp Vector of SWRC parameters to be estimated
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
@@ -223,29 +300,47 @@ static Bool SW_check_soil_properties(SW_LAYER_INFO *lyr) {
 		of the whole soil [m3/m3]
 */
 void SWRC_PDF_estimate_parameters(
-	unsigned int swrc_type, unsigned int pdf_type,
+	unsigned int pdf_type,
 	double *swrcp,
 	double sand, double clay, double gravel
 ) {
 
-	if (swrc_type == 1 && pdf_type == 1) {
-		SWRC_PDF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
-
-	} else {
+	if (pdf_type == 0) {
 		LogError(
 			logfp,
-			LOGFATAL,
-			"PDF type %d for SWRC type %d is not implemented.",
-			pdf_type, swrc_type
+			LOGNOTE,
+			"`SWRC_PDF_estimate_parameters()` was called even though "
+			"`pdf_type` %d was requested "
+			"(which uses values from 'swrc_params.in' instead of estimation).",
+			pdf_type
 		);
 
+	} else {
 
-		/**********************************/
-		/* TODO: remove once other PDFs are implemented that utilize gravel */
-		/* avoiding `error: unused parameter 'gravel' [-Werror=unused-parameter]` */
-		if (gravel < 0.) {};
-		/**********************************/
+		/* Initialize swrcp[] to 0 */
+		memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+
+		if (pdf_type == 1) {
+			SWRC_PDF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
+
+		} else if (pdf_type == 2) {
+			SWRC_PDF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
+
+		} else {
+			LogError(
+				logfp,
+				LOGFATAL,
+				"PDF (type %d) is not implemented in SOILWAT2.",
+				pdf_type
+			);
+		}
 	}
+
+	/**********************************/
+	/* TODO: remove once other PDFs are implemented that utilize gravel */
+	/* avoiding `error: unused parameter 'gravel' [-Werror=unused-parameter]` */
+	if (gravel < 0.) {};
+	/**********************************/
 }
 
 
@@ -301,7 +396,7 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp) {
 	Bool res = swFALSE;
 
 	switch (swrc_type) {
-		case 1:
+		case 0:
 			res = SWRC_check_parameters_for_Campbell1974(swrcp);
 			break;
 
@@ -309,7 +404,7 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp) {
 			LogError(
 				logfp,
 				LOGFATAL,
-				"Parameter check for SWRC type %d is not implemented.",
+				"Selected SWRC (type %d) is not implemented.",
 				swrc_type
 			);
 			break;
@@ -1229,14 +1324,12 @@ void SW_SIT_init_run(void) {
 /* TODO: remove once new inputs are implemented */
 lyr->swrc_type = 1;
 lyr->pdf_type = 1;
-lyr->swrcp_from_pdf = swTRUE;
 /**********************************/
 
 		if (lyr->swrcp_from_pdf) {
 			/* Use pedotransfer function PDF */
 			/* estimate parameters of soil water retention curve (SWRC) for layer */
 			SWRC_PDF_estimate_parameters(
-				lyr->swrc_type,
 				lyr->pdf_type,
 				lyr->swrcp,
 				lyr->fractionWeightMatric_sand,
@@ -1250,8 +1343,9 @@ lyr->swrcp_from_pdf = swTRUE;
 			LogError(
 				logfp,
 				LOGFATAL,
-				"Parameter checks for layer %d (SWRC type %d) failed.",
-				lyr->id, lyr->swrc_type
+				"Checks of parameters for SWRC '%s' in layer %d failed.",
+				swrc2str[lyr->swrc_type],
+				lyr->id + 1
 			);
 		}
 

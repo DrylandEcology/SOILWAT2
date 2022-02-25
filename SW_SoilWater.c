@@ -1040,6 +1040,7 @@ RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_LAYER_INFO *lyr) {
   @brief Convert soil water content to soil water potential using
       specified soil water retention curve (SWRC)
 
+  See `swrc2str()` for implemented SWRCs.
 
   The code assumes the following conditions:
       - checked by `SW_SIT_init_run()`
@@ -1079,7 +1080,7 @@ double SWRC_SWCtoSWP(
 	double res = SW_MISSING;
 
 	switch (swrc_type) {
-		case 1:
+		case 0:
 			res = SWRC_SWCtoSWP_Campbell1974(swcBulk, swrcp, gravel, width);
 			break;
 
@@ -1087,7 +1088,7 @@ double SWRC_SWCtoSWP(
 			LogError(
 				logfp,
 				LOGFATAL,
-				"SWRC type %d is not implemented.",
+				"SWRC (type %d) is not implemented.",
 				swrc_type
 			);
 			break;
@@ -1153,6 +1154,7 @@ double SWRC_SWCtoSWP_Campbell1974(
 
   SOILWAT2 convenience wrapper for `SWRC_SWPtoSWC()`.
 
+  See `swrc2str()` for implemented SWRCs.
 
   @param[in] swpMatric Soil water potential [-bar]
   @param[in] *lyr Soil information including
@@ -1176,6 +1178,7 @@ RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr) {
   @brief Convert soil water potential to soil water content using
          specified soil water retention curve (SWRC)
 
+  See `swrc2str()` for implemented SWRCs.
 
   The code assumes the following conditions:
       - checked by `SW_SIT_init_run()`
@@ -1211,7 +1214,7 @@ double SWRC_SWPtoSWC(
 	double res = SW_MISSING;
 
 	switch (swrc_type) {
-		case 1:
+		case 0:
 			res = SWRC_SWPtoSWC_Campbell1974(swpMatric, swrcp, gravel, width);
 			break;
 
@@ -1219,7 +1222,7 @@ double SWRC_SWPtoSWC(
 			LogError(
 				logfp,
 				LOGFATAL,
-				"SWRC type %d is not implemented.",
+				"SWRC (type %d) is not implemented.",
 				swrc_type
 			);
 			break;

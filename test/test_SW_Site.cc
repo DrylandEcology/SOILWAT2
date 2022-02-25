@@ -54,11 +54,11 @@ namespace {
 
 
     //--- Test Cosby et al. 1984 PDF for Campbell's 1974 SWRC
-    swrc_type = 1;
-    pdf_type = 1;
+    swrc_type = encode_str2swrc(Str_Dup("Campbell1974"));
+    pdf_type = encode_str2pdf(Str_Dup("Cosby1984AndOthers"));
 
     SWRC_PDF_estimate_parameters(
-      swrc_type, pdf_type,
+      pdf_type,
       swrcp,
       sand, clay, gravel
     );
@@ -104,13 +104,13 @@ namespace {
 
 
     //--- Test bad parameters: Cosby et al. 1984 PDF for Campbell's 1974 SWRC
-    swrc_type = 1;
-    pdf_type = 1;
+    swrc_type = encode_str2swrc(Str_Dup("Campbell1974"));
+    pdf_type = encode_str2pdf(Str_Dup("Cosby1984AndOthers"));
 
     sand = 10. + 1./3.; // unrealistic but forces `bmatric` to become 0
 
     SWRC_PDF_estimate_parameters(
-      swrc_type, pdf_type,
+      pdf_type,
       swrcp,
       sand, clay, gravel
     );

@@ -54,6 +54,9 @@ extern "C" {
 #endif
 
 #define SWRC_PARAM_NMAX 6 /**< Maximal number of SWRC parameters implemented */
+#define N_SWRCs 1 /**< Number of implemented SWRCs */
+#define N_PDFs 3 /**< Number of implemented PDFs */
+
 
 typedef unsigned int LyrIndex;
 
@@ -96,9 +99,8 @@ typedef struct {
 
 	/* Soil water retention curve (SWRC) */
 	unsigned int
-		swrc_type, /**< Type of SWRC: 1 = Campbell 1974 */
-		pdf_type; /**< Type of PDF: 1 = Cosby et al. 1984 for Campbell 1974 */
-	Bool swrcp_from_pdf; /**< Estimate SWRC parameters with a PDF from soils if TRUE; if FALSE, use values provided as inputs */
+		swrc_type, /**< Type of SWRC (see `swrc2str[]`) */
+		pdf_type; /**< Type of PDF (see `pdf2str[]`) */
 	RealD swrcp[SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation specific to selected SWRC */
 
 	LyrIndex my_transp_rgn[NVEGTYPES]; /* which transp zones from Site am I in? */
@@ -154,6 +156,15 @@ typedef struct {
 	SW_LAYER_INFO **lyr; 	/* one struct per soil layer pointed to by   */
 							/* a dynamically allocated block of pointers */
 
+	/* Soil water retention curve (SWRC), see `SW_LAYER_INFO` */
+	unsigned int
+		site_swrc_type,
+		site_pdf_type;
+
+	char
+		site_swrc_name[64],
+		site_pdf_name[64];
+
 } SW_SITE;
 
 
@@ -165,13 +176,19 @@ extern SW_SITE SW_Site;
 extern LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
 extern RealD _SWCInitVal, _SWCWetVal, _SWCMinVal;
 
+extern char const *swrc2str[];
+extern char const *pdf2str[];
+
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
+unsigned int encode_str2swrc(char *swrc_name);
+unsigned int encode_str2pdf(char *pdf_name);
+
 void SWRC_PDF_estimate_parameters(
-	unsigned int swrc_type, unsigned int pdf_type,
+	unsigned int pdf_type,
 	double *swrcp,
 	double sand, double clay, double gravel
 );

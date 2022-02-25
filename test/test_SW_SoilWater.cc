@@ -127,10 +127,11 @@ namespace{
       width = 10.;
 
     //--- Cosby et al. 1984 PDF for Campbell's 1974 SWRC
-    unsigned int swrc_type = 1, pdf_type = 1;
+    unsigned int
+      swrc_type = encode_str2swrc(Str_Dup("Campbell1974")),
+      pdf_type = encode_str2pdf(Str_Dup("Cosby1984AndOthers"));
 
     SWRC_PDF_estimate_parameters(
-      swrc_type,
       pdf_type,
       swrcp,
       sand,
@@ -187,7 +188,7 @@ namespace{
       gravel = 0.1,
       width = 10.;
 
-    unsigned int swrc_type;
+    unsigned int swrc_type, pdf_type;
 
 
     //--- we expect fatal errors in three situations
@@ -201,11 +202,11 @@ namespace{
 
 
     //--- Cosby et al. 1984 PDF for Campbell's 1974 SWRC
-    swrc_type = 1;
+    swrc_type = encode_str2swrc(Str_Dup("Campbell1974"));
+    pdf_type = encode_str2pdf(Str_Dup("Cosby1984AndOthers"));
 
     SWRC_PDF_estimate_parameters(
-      swrc_type,
-      1,
+      pdf_type,
       swrcp,
       sand,
       clay,
@@ -245,14 +246,15 @@ namespace{
     short i;
 
     //--- Campbell's 1974 SWRC (using Cosby et al. 1984 PDF)
-    unsigned int swrc_type = 1, pdf_type = 1;
+    unsigned int
+      swrc_type = encode_str2swrc(Str_Dup("Campbell1974")),
+      pdf_type = encode_str2pdf(Str_Dup("Cosby1984AndOthers"));
 
     // set gravel fractions on the interval [.0, 1], step .1
     for (i = 0; i <= 10; i++) {
       gravel = i / 10.;
 
       SWRC_PDF_estimate_parameters(
-        swrc_type,
         pdf_type,
         swrcp,
         sand,
@@ -290,7 +292,7 @@ namespace{
       gravel = 0.1,
       width = 10.;
 
-    unsigned int swrc_type;
+    unsigned int swrc_type, pdf_type;
 
 
     //--- we expect fatal errors in two situations
@@ -304,11 +306,11 @@ namespace{
 
 
     //--- Cosby et al. 1984 PDF for Campbell's 1974 SWRC
-    swrc_type = 1;
+    swrc_type = encode_str2swrc(Str_Dup("Campbell1974"));
+    pdf_type = encode_str2pdf(Str_Dup("Cosby1984AndOthers"));
 
     SWRC_PDF_estimate_parameters(
-      swrc_type,
-      1,
+      pdf_type,
       swrcp,
       sand,
       clay,
