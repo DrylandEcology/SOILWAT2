@@ -1895,11 +1895,55 @@ void _echo_inputs(void) {
 			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_init, s->lyr[i])
 		);
 
+	LogError(
+		logfp,
+		LOGNOTE,
+		"\nSoil Water Retention Curve:\n---------------------------\n"
+	);
+	LogError(
+		logfp,
+		LOGNOTE,
+		"  SWRC type: %d (%s)\n",
+		s->site_swrc_type,
+		s->site_swrc_name
+	);
+	LogError(
+		logfp,
+		LOGNOTE,
+		"  PDF type: %d (%s)\n",
+		s->site_pdf_type,
+		s->site_pdf_name
+	);
+
+	LogError(
+		logfp,
+		LOGNOTE,
+		"  Lyr     Param1     Param2     Param3     Param4     Param5     Param6\n"
+	);
+	ForEachSoilLayer(i)
+	{
+		LogError(
+			logfp,
+			LOGNOTE,
+			"  %3d%11.4f%11.4f%11.4f%11.4f%11.4f%11.4f\n",
+			i + 1,
+			s->lyr[i]->swrcp[0],
+			s->lyr[i]->swrcp[1],
+			s->lyr[i]->swrcp[2],
+			s->lyr[i]->swrcp[3],
+			s->lyr[i]->swrcp[4],
+			s->lyr[i]->swrcp[5]
+		);
 	}
 
-	LogError(logfp, LOGNOTE, "\n------------ End of Site Parameters ------------------\n");
-	//fflush(logfp);
 
+
+	LogError(
+		logfp,
+		LOGNOTE,
+		"\n------------ End of Site Parameters ------------------\n"
+	);
+	//fflush(logfp);
 }
 
 #ifdef DEBUG_MEM
