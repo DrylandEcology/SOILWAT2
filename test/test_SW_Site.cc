@@ -68,21 +68,21 @@ namespace {
       swTRUE
     );
 
-    // Test thetasMatric
-    EXPECT_GT(swrcp[0], 36.3); /* Value should always be greater
-    than 36.3 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_LT(swrcp[0], 46.8); /* Value should always be less
-    than 46.8 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_DOUBLE_EQ(swrcp[0],  44.593); /* If sand is .33 and
-    clay is .33, thetasMatric should be 44.593 */
-
     // Test psisMatric
-    EXPECT_GT(swrcp[1], 3.890451); /* Value should always be greater
+    EXPECT_GT(swrcp[0], 3.890451); /* Value should always be greater
     than 3.890451 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_LT(swrcp[1],  34.67369); /* Value should always be less
+    EXPECT_LT(swrcp[0],  34.67369); /* Value should always be less
     than 34.67369 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_DOUBLE_EQ(swrcp[1], 27.586715750763947); /* If sand is
+    EXPECT_DOUBLE_EQ(swrcp[0], 27.586715750763947); /* If sand is
     .33 and clay is .33, psisMatric should be 27.5867 */
+
+    // Test thetasMatric
+    EXPECT_GT(swrcp[1], 0.363); /* Value should always be greater
+    than 36.3 based upon complete consideration of potential range of sand and clay values */
+    EXPECT_LT(swrcp[1], 0.468); /* Value should always be less
+    than 46.8 based upon complete consideration of potential range of sand and clay values */
+    EXPECT_DOUBLE_EQ(swrcp[1], 0.44593); /* If sand is .33 and
+    clay is .33, thetasMatric should be 44.593 */
 
     // Test bMatric
     EXPECT_GT(swrcp[2], 2.8); /* Value should always be greater than

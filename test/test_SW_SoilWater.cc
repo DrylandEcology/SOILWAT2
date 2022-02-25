@@ -195,7 +195,7 @@ namespace{
     //--- 1) Unimplemented SWRC
     swrc_type = 255;
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(0., swrc_type, swrcp, gravel, width),
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width),
       "@ generic.c LogError"
     );
 
@@ -223,7 +223,7 @@ namespace{
     // note: this case is normally prevented due to checks of inputs by
     // function `SWRC_check_parameters_for_Campbell1974` and
     // function `_read_layers`
-    swrcp[0] = 0.;
+    swrcp[1] = 0.;
     EXPECT_DEATH_IF_SUPPORTED(
       SWRC_SWCtoSWP(5., swrc_type, swrcp, gravel, width),
       "@ generic.c LogError"

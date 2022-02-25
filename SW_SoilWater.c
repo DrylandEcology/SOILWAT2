@@ -1019,9 +1019,6 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
 
   SOILWAT2 convenience wrapper for `SWRC_SWCtoSWP()`.
 
-  Implemented SWRCs (`swrc_type`):
-      1. Campbell 1974 \cite Campbell1974, see `SWRC_SWCtoSWP_Campbell1974()`
-
   @param[in] swcBulk Soil water content in the layer [cm]
   @param[in] *lyr Soil information including
     SWRC type, SWRC parameters,
@@ -1043,8 +1040,12 @@ RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_LAYER_INFO *lyr) {
   @brief Convert soil water content to soil water potential using
       specified soil water retention curve (SWRC)
 
-  Implemented SWRCs (`swrc_type`):
-      1. Campbell 1974 \cite Campbell1974, see `SWRC_SWCtoSWP_Campbell1974()`
+
+  The code assumes the following conditions:
+      - checked by `SW_SIT_init_run()`
+          - width > 0
+          - fractionGravel, sand, clay, and sand + clay in [0, 1]
+      - SWRC parameters checked by `SWRC_check_parameters()`.
 
   @param[in] swcBulk Soil water content in the layer [cm]
   @param[in] swrc_type Identification number of selected SWRC
@@ -1100,22 +1101,7 @@ double SWRC_SWCtoSWP(
   @brief Convert soil water content to soil water potential using
   Campbell's 1974 \cite Campbell1974 Soil Water Retention Curve
 
-  The code assumes the following conditions:
-      - checked by `SW_SIT_init_run()`
-          - width > 0
-          - fractionGravel, sand, clay, and sand + clay in [0, 1]
-      - SWRC parameters checked by `SWRC_check_parameters_for_Campbell1974()`
-        and, if necessary, estimated by `SWRC_PDF_Cosby1984_for_Campbell1974()`
-        from soil texture:
-          - `swrcp[0]` (previously named `thetasMatric`):
-            saturated volumetric water content
-            of the matric component [100 * cm/cm]; must be within 0-100
-          - `swrcp[1]` (`psisMatric`):
-            saturated soil water matric potential [-bar]; must be > 0
-          - `swrcp[2]` (`bMatric`):
-            slope of the linear log-log retention curve [-]; must be != 0
-          - `swrcp[3]` (`binverseMatric`): the inverse of `swrcp[2]`
-            (not a parameter per se but pre-calculated for convenience)
+  Parameters are explained in `SWRC_check_parameters_for_Campbell1974()`.
 
   @note
     This function was previously named `SW_SWCbulk2SWPmatric()`.
@@ -1135,25 +1121,28 @@ double SWRC_SWCtoSWP_Campbell1974(
 	double width
 ) {
 	// assume that we have soil moisture
-	double theta1, theta2;
+	double theta, tmp, res;
 
-	// calculate matric VWC [cm / cm %] from SWC
-	theta1 = (swcBulk / width) * 100. / (1. - gravel);
+	// convert bulk SWC [cm] to theta = matric VWC [cm / cm]
+	theta = swcBulk / (width * (1. - gravel));
 
-	// calculate (VWC / VWC(saturated)) ^ b
-	theta2 = powe(theta1 / swrcp[0], swrcp[2]);
+	// calculate (theta / theta_s) ^ b
+	tmp = powe(theta / swrcp[1], swrcp[2]);
 
-	if (!isfinite(theta2) || ZRO(theta2)) {
+	if (!isfinite(tmp) || ZRO(tmp)) {
 		LogError(
 			logfp,
 			LOGFATAL,
 			"SWRC_SWCtoSWP_Campbell1974(): "
 			"invalid value of (theta / theta(saturated)) ^ b = %f (must be != 0)\n",
-			theta2
+			tmp
 		);
 	}
 
-	return swrcp[1] / theta2 / BARCONV;
+	res = swrcp[0] / tmp;
+
+	// convert [cm of H20; SOILWAT2 legacy value] to [bar]
+	return res / 1024.;
 }
 
 
@@ -1164,8 +1153,6 @@ double SWRC_SWCtoSWP_Campbell1974(
 
   SOILWAT2 convenience wrapper for `SWRC_SWPtoSWC()`.
 
-  Implemented SWRCs (`swrc_type`):
-      1. Campbell 1974 \cite Campbell1974, see `SWRC_SWPtoSWC_Campbell1974()`
 
   @param[in] swpMatric Soil water potential [-bar]
   @param[in] *lyr Soil information including
@@ -1189,8 +1176,12 @@ RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr) {
   @brief Convert soil water potential to soil water content using
          specified soil water retention curve (SWRC)
 
-  Implemented SWRCs (`swrc_type`):
-      1. Campbell 1974 \cite Campbell1974, see `SWRC_SWPtoSWC_Campbell1974()`
+
+  The code assumes the following conditions:
+      - checked by `SW_SIT_init_run()`
+          - width > 0
+          - fractionGravel, sand, clay, and sand + clay in [0, 1]
+      - SWRC parameters checked by `SWRC_check_parameters()`.
 
   @param[in] swpMatric Soil water potential [-bar]
   @param[in] swrc_type Identification number of selected SWRC
@@ -1242,22 +1233,7 @@ double SWRC_SWPtoSWC(
   @brief Convert soil water potential to soil water content using
     Campbell's 1974 \cite Campbell1974 Soil Water Retention Curve
 
-  The code assumes the following conditions:
-      - checked by `SW_SIT_init_run()`
-          - width > 0
-          - fractionGravel, sand, clay, and sand + clay in [0, 1]
-      - SWRC parameters checked by `SWRC_check_parameters_for_Campbell1974()`
-        and, if necessary, estimated by `SWRC_PDF_Cosby1984_for_Campbell1974()`
-        from soil texture:
-          - `swrcp[0]` (previously named `thetasMatric`):
-            saturated volumetric water content
-            of the matric component [100 * cm/cm]; must be within 0-100
-          - `swrcp[1]` (`psisMatric`):
-            saturated soil water matric potential [-bar]; must be > 0
-          - `swrcp[2]` (`bMatric`):
-            slope of the linear log-log retention curve [-]; must be != 0
-          - `swrcp[3]` (`binverseMatric`): the inverse of `swrcp[2]`
-            (not a parameter per se but pre-calculated for convenience)
+  Parameters are explained in `SWRC_check_parameters_for_Campbell1974()`.
 
   @note
     This function was previously named `SW_SWPmatric2VWCBulk()`.
@@ -1276,10 +1252,16 @@ double SWRC_SWPtoSWC_Campbell1974(
 	double gravel,
 	double width
 ) {
-	// assume that `swpMatric` > 0
-	return
-		0.01 * swrcp[0] * powe(swrcp[1] / (swpMatric * BARCONV), swrcp[3]) *
-		(1. - gravel) * width;
+	double phi, res;
+
+	// convert SWP [-bar] to phi [cm of H20; SOILWAT2 legacy value]
+	phi = swpMatric * 1024.;
+
+	// calculate matric theta [cm / cm]; assuming `swpMatric` > 0
+	res = swrcp[1] * powe(swrcp[0] / phi, 1. / swrcp[2]);
+
+	// convert matric theta [cm / cm] to bulk SWC [cm]
+	return (1. - gravel) * width * res;
 }
 
 

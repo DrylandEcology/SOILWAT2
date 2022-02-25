@@ -253,14 +253,10 @@ void SWRC_PDF_estimate_parameters(
 	@brief Estimate Campbell's 1974 SWRC parameters \cite Campbell1974
 		using Cosby et al. 1984 multivariate PDF \cite Cosby1984
 
-	Estimation of three (+1) SWRC parameter values `swrcp`
-	based on sand, clay, and (silt):
-		- `swrcp[0]` (previously named `thetasMatric`):
-			saturated volumetric water content for the matric component [cm/cm]
-		- `swrcp[1]` (`psisMatric`): saturated soil water matric potential [-bar]
-		- `swrcp[2]` (`bMatric`): slope of the linear log-log retention curve [-]
-		- `swrcp[3]` (`binverseMatric`): the inverse of `swrcp[2]`
-			(not a parameter per se but pre-calculated for convenience)
+	Estimation of three SWRC parameter values `swrcp`
+	based on sand, clay, and (silt).
+
+	Parameters are explained in `SWRC_check_parameters_for_Campbell1974()`.
 
 	Multivariate PDFs are from Cosby et al. 1984 Table 4;
 	Cosby et al. 1984 provided also univariate PDFs in Table 5
@@ -278,13 +274,14 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 	double sand, double clay
 ) {
 	/* Table 4 */
-	swrcp[0] = -14.2 * sand - 3.7 * clay + 50.5;
-	/* swrcp[1] = psisMatric: originally formulated as function of silt */
-	/* here re-formulated as function of clay */
-	swrcp[1] = powe(10.0, -1.58 * sand - 0.63 * clay + 2.17);
-	swrcp[2] = -0.3 * sand + 15.7 * clay + 3.10;
 
-	swrcp[3] = ZRO(swrcp[2]) ? SW_MISSING : 1.0 / swrcp[2];
+	/* swrcp[0] = psi_saturated: originally formulated as function of silt
+	   here re-formulated as function of clay */
+	swrcp[0] = powe(10.0, -1.58 * sand - 0.63 * clay + 2.17);
+	/* swrcp[1] = theta_saturated: originally with units [100 * cm / cm]
+	   here re-formulated with units [cm / cm] */
+	swrcp[1] = -0.142 * sand - 0.037 * clay + 0.505;
+	swrcp[2] = -0.3 * sand + 15.7 * clay + 3.10;
 }
 
 
@@ -293,8 +290,7 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 /**
 	@brief Check Soil Water Retention Curve (SWRC) parameters
 
-	Implemented SWRCs:
-		1. Campbell 1974 \cite Campbell1974
+	See `swrc2str` for implemented SWRCs.
 
 	@param[in] swrc_type Identification number of selected SWRC
 	@param[in] *swrcp Vector of SWRC parameters
@@ -334,9 +330,9 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp) {
 	using Cosby et al. 1984 pedotransfer functions.
 
 	Campbell's 1974 SWRC uses three parameters:
-		- `swrcp[0]` (previously named `thetasMatric`):
+		- `swrcp[0]` (`psisMatric`): saturated soil water matric potential [-bar]
+		- `swrcp[1]` (previously named `thetasMatric`):
 			saturated volumetric water content for the matric component [cm/cm]
-		- `swrcp[1]` (`psisMatric`): saturated soil water matric potential [-bar]
 		- `swrcp[2]` (`bMatric`): slope of the linear log-log retention curve [-]
 
 	@param[in] *swrcp Vector of SWRC parameters
@@ -346,24 +342,24 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp) {
 Bool SWRC_check_parameters_for_Campbell1974(double *swrcp) {
 	Bool res = swTRUE;
 
-	if (LE(swrcp[0], 0.0) || GT(swrcp[0], 100.0)) {
-		res = swFALSE;
-		LogError(
-			logfp,
-			LOGWARN,
-			"SWRC_check_parameters_for_Campbell1974(): invalid value of "
-			"theta(saturated, matric, [100 * cm/cm]) = %f (must within 0-100)\n",
-			swrcp[0]
-		);
-	}
-
-	if (LE(swrcp[1], 0.0)) {
+	if (LE(swrcp[0], 0.0)) {
 		res = swFALSE;
 		LogError(
 			logfp,
 			LOGWARN,
 			"SWRC_check_parameters_for_Campbell1974(): invalid value of "
 			"psi(saturated, matric, [-bar]) = %f (must > 0)\n",
+			swrcp[1]
+		);
+	}
+
+	if (LE(swrcp[1], 0.0) || GT(swrcp[1], 1.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_Campbell1974(): invalid value of "
+			"theta(saturated, matric, [cm/cm]) = %f (must within 0-1)\n",
 			swrcp[1]
 		);
 	}
@@ -843,25 +839,44 @@ void SW_SIT_read(void) {
 	CloseFile(&f);
 
 	if (LT(v->percentRunoff, 0.) || GT(v->percentRunoff, 1.)) {
-		LogError(logfp, LOGFATAL, "%s : proportion of ponded surface water removed as daily"
-		  "runoff = %f (value ranges between 0 and 1)\n", MyFileName, v->percentRunoff);
+		LogError(
+			logfp,
+			LOGFATAL,
+			"%s : proportion of ponded surface water removed as daily"
+			"runoff = %f (value ranges between 0 and 1)\n",
+			MyFileName, v->percentRunoff
+		);
 	}
 
 	if (LT(v->percentRunon, 0.)) {
-		LogError(logfp, LOGFATAL, "%s : proportion of water that arrives at surface added "
-		  "as daily runon = %f (value ranges between 0 and +inf)\n", MyFileName, v->percentRunon);
+		LogError(
+			logfp,
+			LOGFATAL,
+			"%s : proportion of water that arrives at surface added "
+			"as daily runon = %f (value ranges between 0 and +inf)\n",
+			MyFileName, v->percentRunon
+		);
 	}
 
 	if (too_many_regions) {
-		LogError(logfp, LOGFATAL, "%s : Number of transpiration regions"
-				" exceeds maximum allowed (%d > %d)\n", MyFileName, v->n_transp_rgn, MAX_TRANSP_REGIONS);
+		LogError(
+			logfp,
+			LOGFATAL,
+			"%s : Number of transpiration regions"
+			" exceeds maximum allowed (%d > %d)\n",
+			MyFileName, v->n_transp_rgn, MAX_TRANSP_REGIONS
+		);
 	}
 
 	/* check for any discontinuities (reversals) in the transpiration regions */
 	for (r = 1; r < v->n_transp_rgn; r++) {
 		if (_TranspRgnBounds[r - 1] >= _TranspRgnBounds[r]) {
-			LogError(logfp, LOGFATAL, "%s : Discontinuity/reversal in transpiration regions.\n", SW_F_name(eSite));
-
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Discontinuity/reversal in transpiration regions.\n",
+				SW_F_name(eSite)
+			);
 		}
 	}
 }
