@@ -937,8 +937,17 @@ void SW_SIT_read(void) {
 			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", c->scenario);
 			#endif
 			break;
+		case 41:
+			strcpy(v->site_swrc_name, inbuf);
+			v->site_swrc_type = encode_str2swrc(v->site_swrc_name);
+			break;
+		case 42:
+			strcpy(v->site_pdf_name, inbuf);
+			v->site_pdf_type = encode_str2pdf(v->site_pdf_name);
+			break;
+
 		default:
-			if (lineno > 40 + MAX_TRANSP_REGIONS)
+			if (lineno > 42 + MAX_TRANSP_REGIONS)
 				break; /* skip extra lines */
 
 			if (MAX_TRANSP_REGIONS < v->n_transp_rgn) {
@@ -1273,6 +1282,73 @@ void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 }
 
 
+
+/** Obtain soil water retention curve parameters from disk
+*/
+void SW_SWRC_read(void) {
+
+	/* Don't read values from disk if they will be estimated via a PDF */
+	if (SW_Site.site_pdf_type != 0) return;
+
+	FILE *f;
+	LyrIndex lyrno = 0, k;
+	int x;
+	RealF tmp_swrcp[SWRC_PARAM_NMAX];
+
+	/* note that Files.read() must be called prior to this. */
+	MyFileName = SW_F_name(eSWRCp);
+
+	f = OpenFile(MyFileName, "r");
+
+	while (GetALine(f, inbuf)) {
+		x = sscanf(
+			inbuf,
+			"%f %f %f %f %f %f",
+			&tmp_swrcp[0],
+			&tmp_swrcp[1],
+			&tmp_swrcp[2],
+			&tmp_swrcp[3],
+			&tmp_swrcp[4],
+			&tmp_swrcp[5]
+		);
+
+		/* Note: `SW_SIT_init_run()` will call function to check for valid values */
+
+		/* Check that we have n = `SWRC_PARAM_NMAX` values per layer */
+		if (x != SWRC_PARAM_NMAX) {
+			CloseFile(&f);
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Bad number of SWRC parameters %d -- must be %d.\n",
+				MyFileName, x, SWRC_PARAM_NMAX
+			);
+		}
+
+		/* Check that we are within `SW_Site.n_layers` */
+		if (lyrno >= SW_Site.n_layers) {
+			CloseFile(&f);
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Number of layers with SWRC parameters (%d) "
+				"must match number of soil layers (%d)\n",
+				MyFileName, lyrno + 1, SW_Site.n_layers
+			);
+		}
+
+		/* Copy values into structure */
+		for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+			SW_Site.lyr[lyrno]->swrcp[k] = tmp_swrcp[k];
+		}
+
+		lyrno++;
+	}
+
+	CloseFile(&f);
+}
+
+
 /**
 	@brief Derive and check soil properties from inputs
 
@@ -1364,15 +1440,12 @@ void SW_SIT_init_run(void) {
 		);
 
 
-/**********************************/
-/* TODO: remove once new inputs are implemented */
-lyr->swrc_type = 1;
-lyr->pdf_type = 1;
-/**********************************/
-
-		if (lyr->swrcp_from_pdf) {
-			/* Use pedotransfer function PDF */
-			/* estimate parameters of soil water retention curve (SWRC) for layer */
+		if (lyr->pdf_type > 0) {
+			/* Use pedotransfer function PDF
+			   estimate parameters of soil water retention curve (SWRC) for layer.
+			   If pdf_type == 0, then the parameters were already obtained from disk
+			   by `SW_SWRC_read()`
+			*/
 			SWRC_PDF_estimate_parameters(
 				lyr->pdf_type,
 				lyr->swrcp,
@@ -1894,6 +1967,7 @@ void _echo_inputs(void) {
 			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_min, s->lyr[i]),
 			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_init, s->lyr[i])
 		);
+	}
 
 	LogError(
 		logfp,

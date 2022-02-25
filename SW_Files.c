@@ -148,53 +148,53 @@ void SW_F_read(const char *s) {
     #endif
 
 		switch (lineno) {
-		case 5:
+		case 6:
 			strcpy(weather_prefix, inbuf);
 			break;
-		case 13:
+		case 14:
 			strcpy(output_prefix, inbuf);
 			break;
-		case 15:
+		case 16:
 			InFiles[eOutputDaily] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputDaily]);
 			break;
-		case 16:
+		case 17:
 			InFiles[eOutputWeekly] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputWeekly]);
 			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
-		case 17:
+		case 18:
 			InFiles[eOutputMonthly] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputMonthly]);
 			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
-		case 18:
+		case 19:
 			InFiles[eOutputYearly] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputYearly]);
 			break;
-		case 19:
+		case 20:
 			InFiles[eOutputDaily_soil] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputDaily_soil]);
 			//printf("filename: %s \n",InFiles[eOutputDaily]);
 			break;
-		case 20:
+		case 21:
 			InFiles[eOutputWeekly_soil] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputWeekly_soil]);
 			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
-		case 21:
+		case 22:
 			InFiles[eOutputMonthly_soil] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputMonthly_soil]);
 			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
-		case 22:
+		case 23:
 			InFiles[eOutputYearly_soil] = Str_Dup(inbuf);
 			++fileno;
 			SW_CSV_F_INIT(InFiles[eOutputYearly_soil]);

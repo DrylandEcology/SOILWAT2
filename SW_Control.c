@@ -282,6 +282,11 @@ void SW_CTL_read_inputs_from_disk(void) {
   if (debug) swprintf(" > 'soils'");
   #endif
 
+  SW_SWRC_read();
+  #ifdef SWDEBUG
+  if (debug) swprintf(" > 'swrc parameters'");
+  #endif
+
   SW_VES_read();
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'establishment'");

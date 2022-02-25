@@ -220,6 +220,7 @@ void _echo_inputs(void);
 
 /* these used to be in Layers */
 void SW_LYR_read(void);
+void SW_SWRC_read(void);
 void SW_SIT_clear_layers(void);
 LyrIndex _newlayer(void);
 void add_deepdrain_layer(void);
