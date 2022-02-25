@@ -380,6 +380,34 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 }
 
 
+/**
+	@brief Check whether selected PDF and SWRC are compatible
+
+	@param[in] *swrc_name Name selected SWRC
+	@param[in] *pdf_name Name selected PDF
+
+	@return A logical value indicating if SWRC and PDF are compatible.
+*/
+Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name) {
+	Bool res = swFALSE;
+
+	if (Str_CompareI(pdf_name, Str_Dup("NoPDF")) == 0) {
+		res = swTRUE;
+	} else {
+
+		if (
+			Str_CompareI(swrc_name, Str_Dup("Campbell1974")) == 0 &&
+			(
+				Str_CompareI(pdf_name, Str_Dup("Cosby1984AndOthers")) == 0 ||
+				Str_CompareI(pdf_name, Str_Dup("Cosby1984")) == 0
+			)
+		) {
+			res = swTRUE;
+		}
+	}
+
+	return res;
+}
 
 
 /**
@@ -1293,13 +1321,29 @@ void SW_SIT_init_run(void) {
 	add_deepdrain_layer();
 
 
+	/* Check compatibility between selected SWRC and PDF */
+	if (!check_SWRC_vs_PDF(sp->site_swrc_name, sp->site_pdf_name)) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"Selected PDF '%s' is incompatible with selected SWRC '%s'\n",
+			sp->site_pdf_name,
+			sp->site_swrc_name
+		);
+	}
+
+
 	/* Loop over soil layers check variables and calculate parameters */
 	ForEachSoilLayer(s)
 	{
 		lyr = sp->lyr[s];
 
-		/* Check validity of soil variables:
+		/* Copy site-level SWRC/PDF information to each layer:
+		   We currently allow specifying one SWRC/PDF for a site for all layers;
+		   remove in the future if we allow SWRC/PDF to vary by soil layer
 		*/
+		lyr->swrc_type = sp->site_swrc_type;
+		lyr->pdf_type = sp->site_pdf_type;
 
 
 		/* Check soil properties for valid values */

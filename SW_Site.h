@@ -198,6 +198,7 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 );
 
 
+Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name);
 Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp);
 Bool SWRC_check_parameters_for_Campbell1974(double *swrcp);
 
