@@ -391,15 +391,15 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name) {
 	Bool res = swFALSE;
 
-	if (Str_CompareI(pdf_name, Str_Dup("NoPDF")) == 0) {
+	if (Str_CompareI(pdf_name, (char *) "NoPDF") == 0) {
 		res = swTRUE;
 	} else {
 
 		if (
-			Str_CompareI(swrc_name, Str_Dup("Campbell1974")) == 0 &&
+			Str_CompareI(swrc_name, (char *) "Campbell1974") == 0 &&
 			(
-				Str_CompareI(pdf_name, Str_Dup("Cosby1984AndOthers")) == 0 ||
-				Str_CompareI(pdf_name, Str_Dup("Cosby1984")) == 0
+				Str_CompareI(pdf_name, (char *) "Cosby1984AndOthers") == 0 ||
+				Str_CompareI(pdf_name, (char *) "Cosby1984") == 0
 			)
 		) {
 			res = swTRUE;

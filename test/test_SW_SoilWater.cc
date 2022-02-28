@@ -128,8 +128,8 @@ namespace{
 
     //--- Cosby et al. 1984 PDF for Campbell's 1974 SWRC
     unsigned int
-      swrc_type = encode_str2swrc(Str_Dup("Campbell1974")),
-      pdf_type = encode_str2pdf(Str_Dup("Cosby1984AndOthers"));
+      swrc_type = encode_str2swrc((char *) "Campbell1974"),
+      pdf_type = encode_str2pdf((char *) "Cosby1984AndOthers");
 
     SWRC_PDF_estimate_parameters(
       pdf_type,
@@ -202,8 +202,8 @@ namespace{
 
 
     //--- Cosby et al. 1984 PDF for Campbell's 1974 SWRC
-    swrc_type = encode_str2swrc(Str_Dup("Campbell1974"));
-    pdf_type = encode_str2pdf(Str_Dup("Cosby1984AndOthers"));
+    swrc_type = encode_str2swrc((char *) "Campbell1974");
+    pdf_type = encode_str2pdf((char *) "Cosby1984AndOthers");
 
     SWRC_PDF_estimate_parameters(
       pdf_type,
@@ -247,8 +247,8 @@ namespace{
 
     //--- Campbell's 1974 SWRC (using Cosby et al. 1984 PDF)
     unsigned int
-      swrc_type = encode_str2swrc(Str_Dup("Campbell1974")),
-      pdf_type = encode_str2pdf(Str_Dup("Cosby1984AndOthers"));
+      swrc_type = encode_str2swrc((char *) "Campbell1974"),
+      pdf_type = encode_str2pdf((char *) "Cosby1984AndOthers");
 
     // set gravel fractions on the interval [.0, 1], step .1
     for (i = 0; i <= 10; i++) {
@@ -306,8 +306,8 @@ namespace{
 
 
     //--- Cosby et al. 1984 PDF for Campbell's 1974 SWRC
-    swrc_type = encode_str2swrc(Str_Dup("Campbell1974"));
-    pdf_type = encode_str2pdf(Str_Dup("Cosby1984AndOthers"));
+    swrc_type = encode_str2swrc((char *) "Campbell1974");
+    pdf_type = encode_str2pdf((char *) "Cosby1984AndOthers");
 
     SWRC_PDF_estimate_parameters(
       pdf_type,
