@@ -1737,16 +1737,26 @@ void SW_SIT_init_run(void) {
 	/* normalize the evap and transp coefficients separately
 	 * to avoid obfuscation in the above loop */
 	if (!EQ_w_tol(evsum, 1.0, 1e-4)) { // inputs are not more precise than at most 3-4 digits
-		LogError(logfp, LOGWARN,
-			"%s : Evaporation coefficients were normalized:\n" \
-			"\tSum of coefficients was %.4f, but must be 1.0. " \
-			"New coefficients are:", MyFileName, evsum);
+		LogError(
+			logfp,
+			LOGWARN,
+			"%s : Evaporation coefficients were normalized:\n"
+			"\tSum of coefficients was %.4f, but must be 1.0. "
+			"New coefficients are:",
+			MyFileName,
+			evsum
+		);
 
 		ForEachEvapLayer(s)
 		{
 			SW_Site.lyr[s]->evap_coeff /= evsum;
-			LogError(logfp, LOGNOTE, "  Layer %2d : %.4f",
-				lyr->id + 1, SW_Site.lyr[s]->evap_coeff);
+			LogError(
+				logfp,
+				LOGNOTE,
+				"  Layer %2d : %.4f",
+				SW_Site.lyr[s]->id + 1,
+				SW_Site.lyr[s]->evap_coeff
+			);
 		}
 
 		LogError(logfp, LOGQUIET, "");
@@ -1754,19 +1764,29 @@ void SW_SIT_init_run(void) {
 
 	ForEachVegType(k)
 	{
-		if (!EQ_w_tol(trsum_veg[k], 1.0, 1e-4)) { // inputs are not more precise than at most 3-4 digits
-			LogError(logfp, LOGWARN,
-				"%s : Transpiration coefficients were normalized for %s:\n" \
-				"\tSum of coefficients was %.4f, but must be 1.0. " \
-				"New coefficients are:", MyFileName, key2veg[k], trsum_veg[k]);
+		// inputs are not more precise than at most 3-4 digits
+		if (!EQ_w_tol(trsum_veg[k], 1.0, 1e-4)) {
+			LogError(
+				logfp,
+				LOGWARN,
+				"%s : Transpiration coefficients were normalized for %s:\n"
+				"\tSum of coefficients was %.4f, but must be 1.0. "
+				"New coefficients are:",
+				MyFileName, key2veg[k], trsum_veg[k]
+			);
 
 			ForEachSoilLayer(s)
 			{
 				if (GT(SW_Site.lyr[s]->transp_coeff[k], 0.))
 				{
 					SW_Site.lyr[s]->transp_coeff[k] /= trsum_veg[k];
-					LogError(logfp, LOGNOTE, "  Layer %2d : %.4f",
-						lyr->id + 1, SW_Site.lyr[s]->transp_coeff[k]);
+					LogError(
+						logfp,
+						LOGNOTE,
+						"  Layer %2d : %.4f",
+						SW_Site.lyr[s]->id + 1,
+						SW_Site.lyr[s]->transp_coeff[k]
+					);
 				}
 			}
 
@@ -1782,17 +1802,23 @@ void SW_SIT_init_run(void) {
 
 		if (too_many_RGR)
 		{ // because we will use loops such `for (i = 0; i <= nRgr + 1; i++)`
-			LogError(logfp, LOGWARN,
-				"\nSOIL_TEMP FUNCTION ERROR: the number of regressions is > the "\
-				"maximum number of regressions.  resetting max depth, deltaX, nRgr "\
-				"values to 180, 15, & 11 respectively\n");
+			LogError(
+				logfp,
+				LOGWARN,
+				"\nSOIL_TEMP FUNCTION ERROR: the number of regressions is > the "
+				"maximum number of regressions.  resetting max depth, deltaX, nRgr "
+				"values to 180, 15, & 11 respectively\n"
+			);
 		}
 		else
 		{ // because we don't deal with partial layers
-			LogError(logfp, LOGWARN,
-				"\nSOIL_TEMP FUNCTION ERROR: max depth is not evenly divisible by "\
-				"deltaX (ie the remainder != 0).  resetting max depth, deltaX, nRgr "\
-				"values to 180, 15, & 11 respectively\n");
+			LogError(
+				logfp,
+				LOGWARN,
+				"\nSOIL_TEMP FUNCTION ERROR: max depth is not evenly divisible by "
+				"deltaX (ie the remainder != 0).  resetting max depth, deltaX, nRgr "
+				"values to 180, 15, & 11 respectively\n"
+			);
 		}
 
 		// resets it to the default values
