@@ -174,6 +174,12 @@ double SWRC_SWCtoSWP_Campbell1974(
 	double gravel,
 	double width
 );
+double SWRC_SWCtoSWP_vanGenuchten1980(
+	double swcBulk,
+	double *swrcp,
+	double gravel,
+	double width
+);
 
 RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr);
 double SWRC_SWPtoSWC(
@@ -184,6 +190,12 @@ double SWRC_SWPtoSWC(
 	double width
 );
 double SWRC_SWPtoSWC_Campbell1974(
+	double swpMatric,
+	double *swrcp,
+	double gravel,
+	double width
+);
+double SWRC_SWPtoSWC_vanGenuchten1980(
 	double swpMatric,
 	double *swrcp,
 	double gravel,

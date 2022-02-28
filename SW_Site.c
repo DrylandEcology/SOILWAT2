@@ -99,7 +99,8 @@ RealD
 	  `SWRC_check_parameters()`, `SWRC_SWCtoSWP()`, and `SWRC_SWPtoSWC()`.
 */
 char const *swrc2str[N_SWRCs] = {
-	"Campbell1974"
+	"Campbell1974",
+	"vanGenuchten1980"
 };
 
 /** Character representation of implemented Pedotransfer Functions (PDF)
@@ -113,7 +114,8 @@ char const *swrc2str[N_SWRCs] = {
 char const *pdf2str[N_PDFs] = {
 	"NoPDF",
 	"Cosby1984AndOthers",
-	"Cosby1984"
+	"Cosby1984",
+	"Rosetta3"
 };
 
 
@@ -404,6 +406,12 @@ Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name) {
 		) {
 			res = swTRUE;
 		}
+		else if (
+			Str_CompareI(swrc_name, (char *) "vanGenuchten1980") == 0 &&
+			Str_CompareI(pdf_name, (char *) "Rosetta3") == 0
+		) {
+			res = swTRUE;
+		}
 	}
 
 	return res;
@@ -426,6 +434,10 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp) {
 	switch (swrc_type) {
 		case 0:
 			res = SWRC_check_parameters_for_Campbell1974(swrcp);
+			break;
+
+		case 1:
+			res = SWRC_check_parameters_for_vanGenuchten1980(swrcp);
 			break;
 
 		default:
@@ -495,6 +507,87 @@ Bool SWRC_check_parameters_for_Campbell1974(double *swrcp) {
 			"SWRC_check_parameters_for_Campbell1974(): invalid value of "
 			"beta = %f (must be != 0)\n",
 			swrcp[2]
+		);
+	}
+
+	return res;
+}
+
+/**
+	@brief Check van Genuchten 1980 SWRC parameters \cite vanGenuchten1980
+
+	See `SWRC_SWCtoSWP_vanGenuchten1980()` and `SWRC_SWPtoSWC_vanGenuchten1980()`
+	for implementation of van Genuchten's 1980 SWRC.
+
+	van Genuchten's 1980 SWRC uses four parameters:
+		- `swrcp[0]` (`theta_r`): residual volumetric water content
+			of the matric component [cm/cm]
+		- `swrcp[1]` (`theta_s`): saturated volumetric water content
+			of the matric component [cm/cm]
+		- `swrcp[2]` (`alpha`): related to the inverse of air entry suction [cm-1]
+		- `swrcp[3]` (`n`): measure of the pore-size distribution [-]
+
+	@param[in] *swrcp Vector of SWRC parameters
+
+	@return A logical value indicating if parameters passed the checks.
+*/
+Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp) {
+	Bool res = swTRUE;
+
+	if (LE(swrcp[0], 0.0) || GT(swrcp[0], 1.)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"theta(residual, matric, [cm/cm]) = %f (must within 0-1)\n",
+			swrcp[0]
+		);
+	}
+
+	if (LE(swrcp[1], 0.0) || GT(swrcp[1], 1.)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"theta(saturated, matric, [cm/cm]) = %f (must within 0-1)\n",
+			swrcp[1]
+		);
+	}
+
+	if (LE(swrcp[1], swrcp[0])) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid values for "
+			"theta(residual, matric, [cm/cm]) = %f and "
+			"theta(saturated, matric, [cm/cm]) = %f "
+			"(must be theta_r < theta_s)\n",
+			swrcp[0], swrcp[1]
+		);
+	}
+
+	if (LE(swrcp[2], 0.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"alpha([1 / cm]) = %f (must > 0)\n",
+			swrcp[2]
+		);
+	}
+
+	if (LE(swrcp[3], 1.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"n = %f (must be > 1)\n",
+			swrcp[3]
 		);
 	}
 

@@ -54,8 +54,8 @@ extern "C" {
 #endif
 
 #define SWRC_PARAM_NMAX 6 /**< Maximal number of SWRC parameters implemented */
-#define N_SWRCs 1 /**< Number of implemented SWRCs */
-#define N_PDFs 3 /**< Number of implemented PDFs */
+#define N_SWRCs 2 /**< Number of implemented SWRCs */
+#define N_PDFs 4 /**< Number of implemented PDFs */
 
 
 typedef unsigned int LyrIndex;
@@ -201,6 +201,7 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name);
 Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp);
 Bool SWRC_check_parameters_for_Campbell1974(double *swrcp);
+Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp);
 
 void PDF_Saxton2006(
 	double *swc_sat,

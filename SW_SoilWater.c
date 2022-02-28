@@ -1084,6 +1084,10 @@ double SWRC_SWCtoSWP(
 			res = SWRC_SWCtoSWP_Campbell1974(swcBulk, swrcp, gravel, width);
 			break;
 
+		case 1:
+			res = SWRC_SWCtoSWP_vanGenuchten1980(swcBulk, swrcp, gravel, width);
+			break;
+
 		default:
 			LogError(
 				logfp,
@@ -1146,6 +1150,55 @@ double SWRC_SWCtoSWP_Campbell1974(
 	return res / 1024.;
 }
 
+
+/**
+  @brief Convert soil water content to soil water potential using
+  van Genuchten 1980 \cite vanGenuchten1980 Soil Water Retention Curve
+
+  Parameters are explained in `SWRC_check_parameters_for_vanGenuchten1980()`.
+
+  @param[in] swcBulk Soil water content in the layer [cm]
+  @param[in] *swrcp Vector of SWRC parameters
+  @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+    of the whole soil [m3/m3]
+  @param[in] width Soil layer width [cm]
+
+  @return Soil water potential [-bar]
+**/
+double SWRC_SWCtoSWP_vanGenuchten1980(
+	double swcBulk,
+	double *swrcp,
+	double gravel,
+	double width
+) {
+	double res, tmp, theta;
+
+	// convert bulk SWC [cm] to theta = matric VWC [cm / cm]
+	theta = swcBulk / (width * (1. - gravel));
+
+	// calculate inverse of normalized theta
+	tmp = theta - swrcp[0];
+
+	if (!isfinite(tmp) || LE(tmp, 0.)) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"SWRC_SWCtoSWP_vanGenuchten1980(): "
+			"invalid value of (theta - theta(residual)) = %f (must be > 0)\n",
+			tmp
+		);
+	}
+
+	tmp = (swrcp[1] - swrcp[0]) / tmp;
+
+
+	// calculate tension [cm of H20]
+	tmp = powe(tmp, 1. / (1. - 1. / swrcp[3])); // tmp values are in 0-1
+	res = pow(-1. + tmp, 1. / swrcp[3]) / swrcp[2]; // use `pow()` because x < 0
+
+	// convert [cm of H20 at 4 C; value from `soilDB::KSSL_VG_model()`] to [bar]
+	return res / 1019.716;
+}
 
 
 /**
@@ -1218,6 +1271,10 @@ double SWRC_SWPtoSWC(
 			res = SWRC_SWPtoSWC_Campbell1974(swpMatric, swrcp, gravel, width);
 			break;
 
+		case 1:
+			res = SWRC_SWPtoSWC_vanGenuchten1980(swpMatric, swrcp, gravel, width);
+			break;
+
 		default:
 			LogError(
 				logfp,
@@ -1268,8 +1325,42 @@ double SWRC_SWPtoSWC_Campbell1974(
 }
 
 
+/**
+  @brief Convert soil water potential to soil water content using
+    van Genuchten 1980 \cite vanGenuchten1980 Soil Water Retention Curve
 
+  Parameters are explained in `SWRC_check_parameters_for_vanGenuchten1980()`.
 
+  @param[in] swpMatric Soil water potential [-bar]
+  @param[in] *swrcp Vector of SWRC parameters
+  @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+    of the whole soil [m3/m3]
+  @param[in] width Soil layer width [cm]
+
+  @return Soil water content in the layer [cm]
+**/
+double SWRC_SWPtoSWC_vanGenuchten1980(
+	double swpMatric,
+	double *swrcp,
+	double gravel,
+	double width
+) {
+	double phi, tmp, res;
+
+	// convert SWP [-bar] to phi [cm of H20 at 4 C;
+	// value from `soilDB::KSSL_VG_model()`]
+	phi = swpMatric * 1019.716;
+
+	// assume that `swpMatric` > 0
+	tmp = powe(swrcp[2] * phi, swrcp[3]);
+	tmp = powe(1. + tmp, 1. - 1. / swrcp[3]);
+
+	// calculate matric theta [cm / cm]
+	res = swrcp[0] + (swrcp[1] - swrcp[0]) / tmp;
+
+	// convert matric theta [cm / cm] to bulk SWC [cm]
+	return (1. - gravel) * width * res;
+}
 
 
 /**
