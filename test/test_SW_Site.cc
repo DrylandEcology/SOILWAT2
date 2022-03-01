@@ -40,102 +40,226 @@
 
 
 namespace {
+  // List SWRC: PDFs
+  const char *ns_pdfca2C1974[] = {
+    "Campbell1974",
+    "Cosby1984AndOthers", "Cosby1984"
+  };
+  const char *ns_pdfa2vG1980[] = {
+    "vanGenuchten1980",
+    // all PDFs
+    "Rosetta3"
+  };
+  const char *ns_pdfc2vG1980[] = {
+    "vanGenuchten1980"
+    // PDFs implemented in C
+  };
+
+
   // Test pedotransfer functions
-  TEST(SWSiteTest, PDFs) {
+  TEST(SiteTest, PDFs) {
     // inputs
     RealD
       swrcp[SWRC_PARAM_NMAX],
-      swc_sat,
       sand = 0.33,
       clay = 0.33,
-      gravel = 0.1,
-      width = 10.;
-    unsigned int swrc_type, pdf_type;
+      gravel = 0.1;
+    unsigned int swrc_type, k;
 
 
-    //--- Test Cosby et al. 1984 PDF for Campbell's 1974 SWRC
-    swrc_type = encode_str2swrc((char *) "Campbell1974");
-    pdf_type = encode_str2pdf((char *) "Cosby1984AndOthers");
+    //--- Matching PDF-SWRC pairs
+    // (k starts at 1 because 0 holds the SWRC)
 
-    SWRC_PDF_estimate_parameters(
-      pdf_type,
-      swrcp,
-      sand, clay, gravel
-    );
+    swrc_type = encode_str2swrc((char *) ns_pdfca2C1974[0]);
+    for (k = 1; k < length(ns_pdfca2C1974); k++) {
+      SWRC_PDF_estimate_parameters(
+        encode_str2pdf((char *) ns_pdfca2C1974[k]),
+        swrcp,
+        sand, clay, gravel
+      );
+      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    }
 
-    EXPECT_EQ(
-      SWRC_check_parameters(swrc_type, swrcp),
-      swTRUE
-    );
-
-    // Test psisMatric
-    EXPECT_GT(swrcp[0], 3.890451); /* Value should always be greater
-    than 3.890451 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_LT(swrcp[0],  34.67369); /* Value should always be less
-    than 34.67369 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_DOUBLE_EQ(swrcp[0], 27.586715750763947); /* If sand is
-    .33 and clay is .33, psisMatric should be 27.5867 */
-
-    // Test thetasMatric
-    EXPECT_GT(swrcp[1], 0.363); /* Value should always be greater
-    than 36.3 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_LT(swrcp[1], 0.468); /* Value should always be less
-    than 46.8 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_DOUBLE_EQ(swrcp[1], 0.44593); /* If sand is .33 and
-    clay is .33, thetasMatric should be 44.593 */
-
-    // Test bMatric
-    EXPECT_GT(swrcp[2], 2.8); /* Value should always be greater than
-    2.8 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_LT(swrcp[2], 18.8); /* Value should always be less
-    than 18.8 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_DOUBLE_EQ(swrcp[2], 8.182); /* If sand is .33 and clay is .33,
-    thetasMatric should be 8.182 */
+    swrc_type = encode_str2swrc((char *) ns_pdfc2vG1980[0]);
+    for (k = 1; k < length(ns_pdfc2vG1980); k++) {
+      SWRC_PDF_estimate_parameters(
+        encode_str2pdf((char *) ns_pdfc2vG1980[k]),
+        swrcp,
+        sand, clay, gravel
+      );
+      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    }
+  }
 
 
-    //--- Test `swcBulk_saturated`
-    PDF_Saxton2006(&swc_sat, sand, clay, gravel, width);
+  // Test fatal failures of PDF estimation
+  TEST(SiteDeathTest, PDFs) {
 
-    // The swcBulk_saturated should be greater than 0
-    EXPECT_GT(swc_sat, 0.);
-    // The swcBulk_saturated can't be greater than the width of the layer
-    EXPECT_LT(swc_sat, width);
+    RealD
+      swrcp[SWRC_PARAM_NMAX],
+      sand = 0.33,
+      clay = 0.33,
+      gravel = 0.1;
+    unsigned int pdf_type;
 
 
+    //--- Test unimplemented PDF
+    pdf_type = N_PDFs + 1;
 
-    //--- Test bad parameters: Cosby et al. 1984 PDF for Campbell's 1974 SWRC
-    swrc_type = encode_str2swrc((char *) "Campbell1974");
-    pdf_type = encode_str2pdf((char *) "Cosby1984AndOthers");
-
-    sand = 10. + 1./3.; // unrealistic but forces `bmatric` to become 0
-
-    SWRC_PDF_estimate_parameters(
-      pdf_type,
-      swrcp,
-      sand, clay, gravel
-    );
-
-    EXPECT_EQ(
-      SWRC_check_parameters(swrc_type, swrcp),
-      swFALSE
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_PDF_estimate_parameters(pdf_type, swrcp, sand, clay, gravel),
+      "@ generic.c LogError"
     );
   }
 
 
+  // Test PDF-SWRC pairings
+  TEST(SiteTest, PDF2SWRC) {
+    unsigned int k; // `length()` returns "unsigned long"
+
+    // Matching/incorrect PDF-SWRC pairs
+    // (k starts at 1 because 0 holds the SWRC)
+    for (k = 0; k < N_SWRCs; k++) {
+      EXPECT_TRUE(
+        (bool) check_SWRC_vs_PDF((char *) swrc2str[k], (char *) "NoPDF", swTRUE)
+      );
+    }
+
+    for (k = 1; k < length(ns_pdfca2C1974); k++) {
+      EXPECT_TRUE(
+        (bool) check_SWRC_vs_PDF(
+          (char *) ns_pdfca2C1974[0],
+          (char *) ns_pdfca2C1974[k],
+          swTRUE
+        )
+      );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PDF(
+          (char *) ns_pdfa2vG1980[0],
+          (char *) ns_pdfca2C1974[k],
+          swTRUE
+        )
+      );
+    }
+
+    for (k = 1; k < length(ns_pdfa2vG1980); k++) {
+      EXPECT_TRUE(
+        (bool) check_SWRC_vs_PDF(
+          (char *) ns_pdfa2vG1980[0],
+          (char *) ns_pdfa2vG1980[k],
+          swFALSE
+        )
+      );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PDF(
+          (char *) ns_pdfca2C1974[0],
+          (char *) ns_pdfa2vG1980[k],
+          swFALSE
+        )
+      );
+    }
+  }
+
+
   // Test fatal failures of SWRC parameter checks
-  TEST(SiteDeathTest, PDFs) {
+  TEST(SiteDeathTest, SWRCpChecks) {
 
     // inputs
-    unsigned int swrc_type;
     RealD swrcp[SWRC_PARAM_NMAX];
+    unsigned int swrc_type;
+
 
     //--- Test unimplemented SWRC
-    swrc_type = 255;
+    swrc_type = N_SWRCs + 1;
 
     EXPECT_DEATH_IF_SUPPORTED(
       SWRC_check_parameters(swrc_type, swrcp),
       "@ generic.c LogError"
     );
+  }
+
+
+  // Test nonfatal failures of SWRC parameter checks
+  TEST(SiteTest, SWRCpChecks) {
+
+    // inputs
+    RealD
+      swrcp[SWRC_PARAM_NMAX],
+      tmp;
+    unsigned int swrc_type;
+
+
+    //--- SWRC: Campbell1974
+    swrc_type = encode_str2swrc((char *) "Campbell1974");
+    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    swrcp[0] = 24.2159;
+    swrcp[1] = 0.4436;
+    swrcp[2] = 10.3860;
+    EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+
+    // Param1 = psi_sat (> 0)
+    tmp = swrcp[0];
+    swrcp[0] = -1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[0] = tmp;
+
+    // Param2 = theta_sat (0-1)
+    tmp = swrcp[1];
+    swrcp[1] = -1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[1] = 1.5;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[1] = tmp;
+
+    // Param3 = beta (!= 0)
+    tmp = swrcp[2];
+    swrcp[2] = 0.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[2] = tmp;
+
+
+
+    //--- Fail SWRC: vanGenuchten1980
+    swrc_type = encode_str2swrc((char *) "vanGenuchten1980");
+    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    swrcp[0] = 0.1246;
+    swrcp[1] = 0.4445;
+    swrcp[2] = 0.0112;
+    swrcp[3] = 1.2673;
+    EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+
+
+    // Param1 = theta_res (0-1)
+    tmp = swrcp[0];
+    swrcp[0] = -1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[0] = 1.5;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[0] = tmp;
+
+    // Param2 = theta_sat (0-1 & > theta_res)
+    tmp = swrcp[1];
+    swrcp[1] = -1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[1] = 1.5;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[1] = 0.5 * swrcp[0];
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[1] = tmp;
+
+    // Param3 = alpha (> 0)
+    tmp = swrcp[2];
+    swrcp[2] = 0.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[2] = tmp;
+
+    // Param4 = n (> 1)
+    tmp = swrcp[3];
+    swrcp[3] = 1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[3] = tmp;
   }
 
 

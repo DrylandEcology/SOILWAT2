@@ -114,212 +114,220 @@ namespace{
   }
 
 
-  // Test the 'SW_SoilWater' function 'SWRC_SWCtoSWP'
-  TEST(SWSoilWaterTest, SWCtoSWP) {
+  // Test the 'SW_SoilWater' functions 'SWRC_SWCtoSWP' and `SWRC_SWPtoSWC`
+  TEST(SWSoilWaterTest, TranslateBetweenSWCandSWP) {
     // set up mock variables
     RealD
-      res,
+      phi,
       swcBulk, swp, swc_fc, swc_wp,
       swrcp[SWRC_PARAM_NMAX],
       sand = 0.33,
       clay = 0.33,
       gravel = 0.2,
       width = 10.;
+    unsigned int swrc_type, pdf_type;
 
-    //--- Cosby et al. 1984 PDF for Campbell's 1974 SWRC
-    unsigned int
-      swrc_type = encode_str2swrc((char *) "Campbell1974"),
-      pdf_type = encode_str2pdf((char *) "Cosby1984AndOthers");
 
-    SWRC_PDF_estimate_parameters(
-      pdf_type,
-      swrcp,
-      sand,
-      clay,
-      gravel
-    );
+    // Loop over SWRCs
+    for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
+      memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
 
-    // when swc is 0, we expect res == 0
-    res = SWRC_SWCtoSWP(0., swrc_type, swrcp, gravel, width);
-    EXPECT_EQ(res, 0.0);
+      // Find a suitable PDF to generate `SWRCp`
+      // (start `k2` at 1 because 0 codes to "NoPDF")
+      for (
+        pdf_type = 1;
+        pdf_type < N_PDFs && !check_SWRC_vs_PDF(
+          (char *) swrc2str[swrc_type],
+          (char *) pdf2str[pdf_type],
+          swTRUE
+        );
+        pdf_type++
+      ) {}
 
-    // when swc is SW_MISSING, we expect res == 0
-    res = SWRC_SWCtoSWP(SW_MISSING, swrc_type, swrcp, gravel, width);
-    EXPECT_EQ(res, 0.0);
+      // Obtain SWRCp
+      if (pdf_type < N_PDFs) {
+        // PDF implemented in C: estimate parameters
+        SWRC_PDF_estimate_parameters(
+          pdf_type,
+          swrcp,
+          sand,
+          clay,
+          gravel
+        );
 
-    // if swc > field capacity, then we expect res < 0.33 bar
-    swp = 1. / 3.;
-    swc_fc = SWRC_SWPtoSWC(swp, swrc_type, swrcp, gravel, width);
-    res = SWRC_SWCtoSWP(swc_fc + 0.1, swrc_type, swrcp, gravel, width);
-    EXPECT_LT(res, swp);
+      } else {
+        // PDF not implemented in C: provide hard coded values
+        if (
+          Str_CompareI(
+            (char *) swrc2str[swrc_type],
+            (char *) "vanGenuchten1980"
+          ) == 0
+        ) {
+          swrcp[0] = 0.11214750;
+          swrcp[1] = 0.4213539;
+          swrcp[2] = 0.007735474;
+          swrcp[3] = 1.344678;
 
-    // if swc = field capacity, then we expect res == 0.33 bar
-    res = SWRC_SWCtoSWP(swc_fc, swrc_type, swrcp, gravel, width);
-    EXPECT_NEAR(res, 1. / 3., tol9);
+        } else {
+          FAIL() << "No SWRC parameters available for " << swrc2str[swrc_type];
+        }
+      }
 
-    // if field capacity > swc > wilting point, then
-    // we expect 15 bar > res > 0.33 bar
-    swc_wp = SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width);
-    swcBulk = (swc_wp + swc_fc) / 2.;
-    res = SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width);
-    EXPECT_GT(res, 1. / 3.);
-    EXPECT_LT(res, 15.);
 
-    // if swc = wilting point, then we expect res == 15 bar
-    res = SWRC_SWCtoSWP(swc_wp, swrc_type, swrcp, gravel, width);
-    EXPECT_NEAR(res, 15., tol9);
+      //------ Tests SWC -> SWP
 
-    // if swc < wilting point, then we expect res > 15 bar
-    res = SWRC_SWCtoSWP(swc_wp / 2., swrc_type, swrcp, gravel, width);
-    EXPECT_GT(res, 15.);
+      // if swc > field capacity, then we expect phi < 0.33 bar
+      swp = 1. / 3.;
+      swc_fc = SWRC_SWPtoSWC(swp, swrc_type, swrcp, gravel, width);
+      phi = SWRC_SWCtoSWP(swc_fc + 0.1, swrc_type, swrcp, gravel, width);
+      EXPECT_LT(phi, swp);
 
-    // --- 3a) if theta1 == 0 (e.g., gravel == 1)
-    res = SWRC_SWCtoSWP(swc_wp, swrc_type, swrcp, 1., width);
-    EXPECT_DOUBLE_EQ(res, 0.);
+      // if swc = field capacity, then we expect phi == 0.33 bar
+      phi = SWRC_SWCtoSWP(swc_fc, swrc_type, swrcp, gravel, width);
+      EXPECT_NEAR(phi, 1. / 3., tol9);
+
+      // if field capacity > swc > wilting point, then
+      // we expect 15 bar > phi > 0.33 bar
+      swc_wp = SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width);
+      swcBulk = (swc_wp + swc_fc) / 2.;
+      phi = SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width);
+      EXPECT_GT(phi, 1. / 3.);
+      EXPECT_LT(phi, 15.);
+
+      // if swc = wilting point, then we expect phi == 15 bar
+      phi = SWRC_SWCtoSWP(swc_wp, swrc_type, swrcp, gravel, width);
+      EXPECT_NEAR(phi, 15., tol9);
+
+      // if swc < wilting point, then we expect phi > 15 bar
+      swcBulk = SWRC_SWPtoSWC(2. * 15., swrc_type, swrcp, gravel, width);
+      phi = SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width);
+      EXPECT_GT(phi, 15.);
+
+
+      //------ Tests SWP -> SWC
+      // when fractionGravel is 1, we expect theta == 0
+      EXPECT_EQ(
+        SWRC_SWPtoSWC(15., swrc_type, swrcp, 1., width),
+        0.
+      );
+
+      // when width is 0, we expect theta == 0
+      EXPECT_EQ(
+        SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, 0.),
+        0.
+      );
+
+      // check bounds of swc
+      swcBulk = SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width);
+      EXPECT_GE(swcBulk, 0.);
+      EXPECT_LE(swcBulk, width * (1. - gravel));
+    }
   }
 
 
+  // Death Tests of 'SW_SoilWater' function 'SWRC_SWCtoSWP'
   TEST(SoilWaterDeathTest, SWCtoSWP) {
     // set up mock variables
     RealD
       swrcp[SWRC_PARAM_NMAX],
-      sand = 0.33,
-      clay = 0.33,
       gravel = 0.1,
       width = 10.;
 
-    unsigned int swrc_type, pdf_type;
+    unsigned int swrc_type;
 
 
-    //--- we expect fatal errors in three situations
+    //--- we expect fatal errors in a few situations
 
     //--- 1) Unimplemented SWRC
-    swrc_type = 255;
+    swrc_type = N_SWRCs + 1;
     EXPECT_DEATH_IF_SUPPORTED(
       SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width),
       "@ generic.c LogError"
     );
 
 
-    //--- Cosby et al. 1984 PDF for Campbell's 1974 SWRC
-    swrc_type = encode_str2swrc((char *) "Campbell1974");
-    pdf_type = encode_str2pdf((char *) "Cosby1984AndOthers");
-
-    SWRC_PDF_estimate_parameters(
-      pdf_type,
-      swrcp,
-      sand,
-      clay,
-      gravel
+    // --- 2) swc < 0: water content cannot be missing, zero or negative
+    swrc_type = 0; // any SWRC
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_SWCtoSWP(SW_MISSING, swrc_type, swrcp, gravel, width),
+      "@ generic.c LogError"
     );
-
-    // --- 2) swc < 0: water content cannot be negative
     EXPECT_DEATH_IF_SUPPORTED(
       SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width),
       "@ generic.c LogError"
     );
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_SWCtoSWP(0., swrc_type, swrcp, gravel, width),
+      "@ generic.c LogError"
+    );
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width),
+      "@ generic.c LogError"
+    );
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0.),
+      "@ generic.c LogError"
+    );
 
 
-    // --- 3) if theta_sat == 0
-    // note: this case is normally prevented due to checks of inputs by
-    // function `SWRC_check_parameters_for_Campbell1974` and
-    // function `_read_layers`
-    swrcp[1] = 0.;
+    // --- 3) if theta_sat == 0 (specific to Campbell1974)
+    // note: this case is normally prevented due to checks of inputs
+    swrc_type = encode_str2swrc((char *) "Campbell1974");
+    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    swrcp[0] = 24.2159;
+    swrcp[2] = 10.3860;
+
+    swrcp[1] = 0.; // instead of 0.4436
     EXPECT_DEATH_IF_SUPPORTED(
       SWRC_SWCtoSWP(5., swrc_type, swrcp, gravel, width),
+      "@ generic.c LogError"
+    );
+
+
+    // --- 4) if (theta - theta_res) <= 0 (specific to vanGenuchten1980)
+    // note: this case is normally prevented due to SWC checks
+    swrc_type = encode_str2swrc((char *) "vanGenuchten1980");
+    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    swrcp[0] = 0.1246;
+    swrcp[1] = 0.4445;
+    swrcp[2] = 0.0112;
+    swrcp[3] = 1.2673;
+
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width),
       "@ generic.c LogError"
     );
   }
 
 
-  // Test the 'SW_SoilWater' function 'SWRC_SWPtoSWC'
-  TEST(SWSoilWaterTest, SWPtoSWC) {
-    // set up mock variables
-    RealD
-      res,
-      swpMatric = 15.0,
-      swrcp[SWRC_PARAM_NMAX],
-      sand = 0.33,
-      clay = 0.33,
-      gravel,
-      width = 10.;
-    short i;
-
-    //--- Campbell's 1974 SWRC (using Cosby et al. 1984 PDF)
-    unsigned int
-      swrc_type = encode_str2swrc((char *) "Campbell1974"),
-      pdf_type = encode_str2pdf((char *) "Cosby1984AndOthers");
-
-    // set gravel fractions on the interval [.0, 1], step .1
-    for (i = 0; i <= 10; i++) {
-      gravel = i / 10.;
-
-      SWRC_PDF_estimate_parameters(
-        pdf_type,
-        swrcp,
-        sand,
-        clay,
-        gravel
-      );
-
-      res = SWRC_SWPtoSWC(swpMatric, swrc_type, swrcp, gravel, width);
-
-      EXPECT_GE(res, 0.);
-      EXPECT_LE(res, width * (1. - gravel));
-    }
-
-
-    // when fractionGravel is 1, we expect t == 0
-    EXPECT_EQ(
-      SWRC_SWPtoSWC(swpMatric, swrc_type, swrcp, 1., width),
-      0.
-    );
-
-    // when width is 0, we expect t == 0
-    EXPECT_EQ(
-      SWRC_SWPtoSWC(swpMatric, swrc_type, swrcp, 0., 0.),
-      0.
-    );
-  }
-
-
+  // Death Tests of 'SW_SoilWater' function 'SWRC_SWPtoSWC'
   TEST(SoilWaterDeathTest, SWPtoSWC) {
     // set up mock variables
     RealD
       swrcp[SWRC_PARAM_NMAX],
-      sand = 0.33,
-      clay = 0.33,
       gravel = 0.1,
       width = 10.;
 
-    unsigned int swrc_type, pdf_type;
+    unsigned int swrc_type;
 
 
     //--- we expect fatal errors in two situations
 
     //--- 1) Unimplemented SWRC
-    swrc_type = 255;
+    swrc_type = N_SWRCs + 1;
     EXPECT_DEATH_IF_SUPPORTED(
       SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width),
       "@ generic.c LogError"
     );
 
-
-    //--- Cosby et al. 1984 PDF for Campbell's 1974 SWRC
-    swrc_type = encode_str2swrc((char *) "Campbell1974");
-    pdf_type = encode_str2pdf((char *) "Cosby1984AndOthers");
-
-    SWRC_PDF_estimate_parameters(
-      pdf_type,
-      swrcp,
-      sand,
-      clay,
-      gravel
-    );
-
-    // --- 2) swp <= 0: water content cannot be negative
+    // --- 2) swp <= 0: water content cannot be zero or negative (any SWRC)
+    swrc_type = 0;
     EXPECT_DEATH_IF_SUPPORTED(
       SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width),
+      "@ generic.c LogError"
+    );
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width),
       "@ generic.c LogError"
     );
   }
