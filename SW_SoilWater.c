@@ -1064,15 +1064,11 @@ double SWRC_SWCtoSWP(
 	double gravel,
 	double width
 ) {
-	if (missing(swcBulk) || ZRO(swcBulk) || EQ(gravel, 1.)) {
-		return 0.0;
-	}
-
-	if (LE(swcBulk, 0.0)) {
+	if (missing(swcBulk) || LE(swcBulk, 0.) || EQ(gravel, 1.) || LE(width, 0.)) {
 		LogError(
 			logfp,
 			LOGFATAL,
-			"SWRC_SWCtoSWP(): invalid SWC = %.4f (must be >= 0)\n",
+			"SWRC_SWCtoSWP(): invalid SWC = %.4f (must be > 0)\n",
 			swcBulk
 		);
 	}
