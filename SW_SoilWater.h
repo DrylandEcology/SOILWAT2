@@ -166,19 +166,22 @@ double SWRC_SWCtoSWP(
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,
-	double width
+	double width,
+	const int errmode
 );
 double SWRC_SWCtoSWP_Campbell1974(
 	double swcBulk,
 	double *swrcp,
 	double gravel,
-	double width
+	double width,
+	const int errmode
 );
 double SWRC_SWCtoSWP_vanGenuchten1980(
 	double swcBulk,
 	double *swrcp,
 	double gravel,
-	double width
+	double width,
+	const int errmode
 );
 
 RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr);
@@ -187,7 +190,8 @@ double SWRC_SWPtoSWC(
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,
-	double width
+	double width,
+	const int errmode
 );
 double SWRC_SWPtoSWC_Campbell1974(
 	double swpMatric,

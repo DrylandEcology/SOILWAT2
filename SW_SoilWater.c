@@ -1034,7 +1034,8 @@ RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_LAYER_INFO *lyr) {
     lyr->swrc_type,
     lyr->swrcp,
     lyr->fractionVolBulk_gravel,
-    lyr->width
+    lyr->width,
+    LOGFATAL
   );
 }
 
@@ -1056,6 +1057,9 @@ RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_LAYER_INFO *lyr) {
   @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
+  @param[in] errmode An error code passed to `LogError()`.
+    SOILWAT2 uses `LOGFATAL` and fails but
+    other applications may want to warn only (`LOGWARN`) and return.
 
   @return Soil water potential [-bar]
 **/
@@ -1064,32 +1068,41 @@ double SWRC_SWCtoSWP(
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,
-	double width
+	double width,
+	const int errmode
 ) {
+	double res = SW_MISSING;
+
 	if (missing(swcBulk) || LE(swcBulk, 0.) || EQ(gravel, 1.) || LE(width, 0.)) {
 		LogError(
 			logfp,
-			LOGFATAL,
+			errmode,
 			"SWRC_SWCtoSWP(): invalid SWC = %.4f (must be > 0)\n",
 			swcBulk
 		);
-	}
 
-	double res = SW_MISSING;
+		return res;
+	}
 
 	switch (swrc_type) {
 		case 0:
-			res = SWRC_SWCtoSWP_Campbell1974(swcBulk, swrcp, gravel, width);
+			res = SWRC_SWCtoSWP_Campbell1974(
+				swcBulk, swrcp, gravel, width,
+				errmode
+			);
 			break;
 
 		case 1:
-			res = SWRC_SWCtoSWP_vanGenuchten1980(swcBulk, swrcp, gravel, width);
+			res = SWRC_SWCtoSWP_vanGenuchten1980(
+				swcBulk, swrcp, gravel, width,
+				errmode
+			);
 			break;
 
 		default:
 			LogError(
 				logfp,
-				LOGFATAL,
+				errmode,
 				"SWRC (type %d) is not implemented.",
 				swrc_type
 			);
@@ -1114,6 +1127,9 @@ double SWRC_SWCtoSWP(
   @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
+  @param[in] errmode An error code passed to `LogError()`.
+    SOILWAT2 uses `LOGFATAL` and fails but
+    other applications may want to warn only (`LOGWARN`) and return.
 
   @return Soil water potential [-bar]
 **/
@@ -1121,7 +1137,8 @@ double SWRC_SWCtoSWP_Campbell1974(
 	double swcBulk,
 	double *swrcp,
 	double gravel,
-	double width
+	double width,
+	const int errmode
 ) {
 	// assume that we have soil moisture
 	double theta, tmp, res;
@@ -1135,11 +1152,13 @@ double SWRC_SWCtoSWP_Campbell1974(
 	if (!isfinite(tmp) || ZRO(tmp)) {
 		LogError(
 			logfp,
-			LOGFATAL,
+			errmode,
 			"SWRC_SWCtoSWP_Campbell1974(): "
 			"invalid value of (theta / theta(saturated)) ^ b = %f (must be != 0)\n",
 			tmp
 		);
+
+		return SW_MISSING;
 	}
 
 	res = swrcp[0] / tmp;
@@ -1160,6 +1179,9 @@ double SWRC_SWCtoSWP_Campbell1974(
   @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
+  @param[in] errmode An error code passed to `LogError()`.
+    SOILWAT2 uses `LOGFATAL` and fails but
+    other applications may want to warn only (`LOGWARN`) and return.
 
   @return Soil water potential [-bar]
 **/
@@ -1167,7 +1189,8 @@ double SWRC_SWCtoSWP_vanGenuchten1980(
 	double swcBulk,
 	double *swrcp,
 	double gravel,
-	double width
+	double width,
+	const int errmode
 ) {
 	double res, tmp, theta;
 
@@ -1180,11 +1203,13 @@ double SWRC_SWCtoSWP_vanGenuchten1980(
 	if (!isfinite(tmp) || LE(tmp, 0.)) {
 		LogError(
 			logfp,
-			LOGFATAL,
+			errmode,
 			"SWRC_SWCtoSWP_vanGenuchten1980(): "
 			"invalid value of (theta - theta(residual)) = %f (must be > 0)\n",
 			tmp
 		);
+
+		return SW_MISSING;
 	}
 
 	tmp = (swrcp[1] - swrcp[0]) / tmp;
@@ -1220,7 +1245,8 @@ RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr) {
     lyr->swrc_type,
     lyr->swrcp,
     lyr->fractionVolBulk_gravel,
-    lyr->width
+    lyr->width,
+    LOGFATAL
   );
 }
 
@@ -1243,6 +1269,9 @@ RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr) {
   @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
+  @param[in] errmode An error code passed to `LogError()`.
+    SOILWAT2 uses `LOGFATAL` and fails but
+    other applications may want to warn only (`LOGWARN`) and return.
 
   @return Soil water content in the layer [cm]
 **/
@@ -1251,18 +1280,21 @@ double SWRC_SWPtoSWC(
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,
-	double width
+	double width,
+	const int errmode
 ) {
+	double res = SW_MISSING;
+
 	if (LE(swpMatric, 0.)) {
 		LogError(
 			logfp,
-			LOGFATAL,
+			errmode,
 			"SWRC_SWPtoSWC(): invalid SWP = %.4f (must be > 0)\n",
 			swpMatric
 		);
-	}
 
-	double res = SW_MISSING;
+		return res;
+	}
 
 	switch (swrc_type) {
 		case 0:
@@ -1276,7 +1308,7 @@ double SWRC_SWPtoSWC(
 		default:
 			LogError(
 				logfp,
-				LOGFATAL,
+				errmode,
 				"SWRC (type %d) is not implemented.",
 				swrc_type
 			);

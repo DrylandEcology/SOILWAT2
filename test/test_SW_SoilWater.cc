@@ -126,7 +126,7 @@ namespace{
       gravel = 0.2,
       width = 10.;
     unsigned int swrc_type, pdf_type;
-
+    const int em = LOGFATAL;
 
     // Loop over SWRCs
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
@@ -178,47 +178,47 @@ namespace{
 
       // if swc > field capacity, then we expect phi < 0.33 bar
       swp = 1. / 3.;
-      swc_fc = SWRC_SWPtoSWC(swp, swrc_type, swrcp, gravel, width);
-      phi = SWRC_SWCtoSWP(swc_fc + 0.1, swrc_type, swrcp, gravel, width);
+      swc_fc = SWRC_SWPtoSWC(swp, swrc_type, swrcp, gravel, width, em);
+      phi = SWRC_SWCtoSWP(swc_fc + 0.1, swrc_type, swrcp, gravel, width, em);
       EXPECT_LT(phi, swp);
 
       // if swc = field capacity, then we expect phi == 0.33 bar
-      phi = SWRC_SWCtoSWP(swc_fc, swrc_type, swrcp, gravel, width);
+      phi = SWRC_SWCtoSWP(swc_fc, swrc_type, swrcp, gravel, width, em);
       EXPECT_NEAR(phi, 1. / 3., tol9);
 
       // if field capacity > swc > wilting point, then
       // we expect 15 bar > phi > 0.33 bar
-      swc_wp = SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width);
+      swc_wp = SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, em);
       swcBulk = (swc_wp + swc_fc) / 2.;
-      phi = SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width);
+      phi = SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width, em);
       EXPECT_GT(phi, 1. / 3.);
       EXPECT_LT(phi, 15.);
 
       // if swc = wilting point, then we expect phi == 15 bar
-      phi = SWRC_SWCtoSWP(swc_wp, swrc_type, swrcp, gravel, width);
+      phi = SWRC_SWCtoSWP(swc_wp, swrc_type, swrcp, gravel, width, em);
       EXPECT_NEAR(phi, 15., tol9);
 
       // if swc < wilting point, then we expect phi > 15 bar
-      swcBulk = SWRC_SWPtoSWC(2. * 15., swrc_type, swrcp, gravel, width);
-      phi = SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width);
+      swcBulk = SWRC_SWPtoSWC(2. * 15., swrc_type, swrcp, gravel, width, em);
+      phi = SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width, em);
       EXPECT_GT(phi, 15.);
 
 
       //------ Tests SWP -> SWC
       // when fractionGravel is 1, we expect theta == 0
       EXPECT_EQ(
-        SWRC_SWPtoSWC(15., swrc_type, swrcp, 1., width),
+        SWRC_SWPtoSWC(15., swrc_type, swrcp, 1., width, em),
         0.
       );
 
       // when width is 0, we expect theta == 0
       EXPECT_EQ(
-        SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, 0.),
+        SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, 0., em),
         0.
       );
 
       // check bounds of swc
-      swcBulk = SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width);
+      swcBulk = SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, em);
       EXPECT_GE(swcBulk, 0.);
       EXPECT_LE(swcBulk, width * (1. - gravel));
     }
@@ -236,37 +236,66 @@ namespace{
     unsigned int swrc_type;
 
 
-    //--- we expect fatal errors in a few situations
+    //--- we expect (non-)fatal errors in a few situations
+    // (fatality depends on the error mode)
 
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width),
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
+    );
+    EXPECT_EQ(
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGWARN),
+      SW_MISSING
     );
 
 
     // --- 2) swc < 0: water content cannot be missing, zero or negative
     swrc_type = 0; // any SWRC
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(SW_MISSING, swrc_type, swrcp, gravel, width),
+      SWRC_SWCtoSWP(SW_MISSING, swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
+    EXPECT_EQ(
+      SWRC_SWCtoSWP(SW_MISSING, swrc_type, swrcp, gravel, width, LOGWARN),
+      SW_MISSING
+    );
+
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width),
+      SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
+    EXPECT_EQ(
+      SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGWARN),
+      SW_MISSING
+    );
+
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(0., swrc_type, swrcp, gravel, width),
+      SWRC_SWCtoSWP(0., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
+    EXPECT_EQ(
+      SWRC_SWCtoSWP(0., swrc_type, swrcp, gravel, width, LOGWARN),
+      SW_MISSING
+    );
+
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width),
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGFATAL),
       "@ generic.c LogError"
     );
+    EXPECT_EQ(
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGWARN),
+      SW_MISSING
+    );
+
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0.),
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGFATAL),
       "@ generic.c LogError"
+    );
+    EXPECT_EQ(
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGWARN),
+      SW_MISSING
     );
 
 
@@ -279,8 +308,12 @@ namespace{
 
     swrcp[1] = 0.; // instead of 0.4436
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(5., swrc_type, swrcp, gravel, width),
+      SWRC_SWCtoSWP(5., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
+    );
+    EXPECT_EQ(
+      SWRC_SWCtoSWP(5., swrc_type, swrcp, gravel, width, LOGWARN),
+      SW_MISSING
     );
 
 
@@ -294,8 +327,12 @@ namespace{
     swrcp[3] = 1.2673;
 
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width),
+      SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
+    );
+    EXPECT_EQ(
+      SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGWARN),
+      SW_MISSING
     );
   }
 
@@ -311,24 +348,38 @@ namespace{
     unsigned int swrc_type;
 
 
-    //--- we expect fatal errors in two situations
+    //--- we expect (non-)fatal errors in two situations
+    // (fatality depends on the error mode)
 
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width),
+      SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
+    );
+    EXPECT_EQ(
+      SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width, LOGWARN),
+      SW_MISSING
     );
 
     // --- 2) swp <= 0: water content cannot be zero or negative (any SWRC)
     swrc_type = 0;
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width),
+      SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
+    EXPECT_EQ(
+      SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGWARN),
+      SW_MISSING
+    );
+
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width),
+      SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
+    );
+    EXPECT_EQ(
+      SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width, LOGWARN),
+      SW_MISSING
     );
   }
 }
