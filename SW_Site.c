@@ -233,7 +233,7 @@ static Bool SW_check_soil_properties(SW_LAYER_INFO *lyr) {
 /**
 	@brief Translate a SWRC name into a SWRC type number
 
-	@param[in] *swrc_name Name selected SWRC
+	@param[in] *swrc_name Name of a SWRC
 
 	@return Internal identification number of selected SWRC
 */
@@ -261,7 +261,7 @@ unsigned int encode_str2swrc(char *swrc_name) {
 /**
 	@brief Translate a PDF name into a PDF type number
 
-	@param[in] *pdf_name Name selected PDF
+	@param[in] *pdf_name Name of a PDF
 
 	@return Internal identification number of selected PDF
 */
@@ -347,20 +347,20 @@ void SWRC_PDF_estimate_parameters(
 
 
 /**
-	@brief Estimate Campbell's 1974 SWRC parameters \cite Campbell1974
-		using Cosby et al. 1984 multivariate PDF \cite Cosby1984
+	@brief Estimate Campbell's 1974 SWRC parameters
+		using Cosby et al. 1984 multivariate PDF
 
 	Estimation of three SWRC parameter values `swrcp`
 	based on sand, clay, and (silt).
 
 	Parameters are explained in `SWRC_check_parameters_for_Campbell1974()`.
 
-	Multivariate PDFs are from Cosby et al. 1984 Table 4;
+	Multivariate PDFs are from Cosby et al. 1984 (\cite Cosby1984) Table 4;
 	Cosby et al. 1984 provided also univariate PDFs in Table 5
 	but they are not used here.
 
 	See `SWRC_SWCtoSWP_Campbell1974()` and `SWRC_SWPtoSWC_Campbell1974()`
-	for implementation of Campbell's 1974 SWRC.
+	for implementation of Campbell's 1974 SWRC (\cite Campbell1974).
 
 	@param[out] *swrcp Vector of SWRC parameters to be estimated
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
@@ -385,9 +385,9 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 /**
 	@brief Check whether selected PDF and SWRC are compatible
 
-	@param[in] *swrc_name Name selected SWRC
-	@param[in] *pdf_name Name selected PDF
-	@param[in] isSW2 Logical if scope of PDF implementation is "SOILWAT2".
+	@param[in] *swrc_name Name of selected SWRC
+	@param[in] *pdf_name Name of selected PDF
+	@param[in] isSW2 Logical; TRUE if scope of PDF implementation is "SOILWAT2".
 
 	@return A logical value indicating if SWRC and PDF are compatible.
 */
@@ -424,7 +424,7 @@ Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name, Bool isSW2) {
 /**
 	@brief Check Soil Water Retention Curve (SWRC) parameters
 
-	See `swrc2str` for implemented SWRCs.
+	See #swrc2str for implemented SWRCs.
 
 	@param[in] swrc_type Identification number of selected SWRC
 	@param[in] *swrcp Vector of SWRC parameters
@@ -459,13 +459,10 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp) {
 
 
 /**
-	@brief Check Campbell's 1974 SWRC parameters \cite Campbell1974
+	@brief Check Campbell's 1974 SWRC parameters
 
 	See `SWRC_SWCtoSWP_Campbell1974()` and `SWRC_SWPtoSWC_Campbell1974()`
-	for implementation of Campbell's 1974 SWRC.
-
-	See `SWRC_PDF_Cosby1984_for_Campbell1974()` to estimate parameters
-	using Cosby et al. 1984 pedotransfer functions.
+	for implementation of Campbell's 1974 SWRC (\cite Campbell1974).
 
 	Campbell's 1974 SWRC uses three parameters:
 		- `swrcp[0]` (`psisMatric`): saturated soil water matric potential [-bar]
@@ -517,10 +514,10 @@ Bool SWRC_check_parameters_for_Campbell1974(double *swrcp) {
 }
 
 /**
-	@brief Check van Genuchten 1980 SWRC parameters \cite vanGenuchten1980
+	@brief Check van Genuchten 1980 SWRC parameters
 
 	See `SWRC_SWCtoSWP_vanGenuchten1980()` and `SWRC_SWPtoSWC_vanGenuchten1980()`
-	for implementation of van Genuchten's 1980 SWRC.
+	for implementation of van Genuchten's 1980 SWRC (\cite vanGenuchten1980).
 
 	van Genuchten's 1980 SWRC uses four parameters:
 		- `swrcp[0]` (`theta_r`): residual volumetric water content

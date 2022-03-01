@@ -1019,6 +1019,8 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
 
   SOILWAT2 convenience wrapper for `SWRC_SWCtoSWP()`.
 
+  See #swrc2str() for implemented SWRCs.
+
   @param[in] swcBulk Soil water content in the layer [cm]
   @param[in] *lyr Soil information including
     SWRC type, SWRC parameters,
@@ -1040,7 +1042,7 @@ RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_LAYER_INFO *lyr) {
   @brief Convert soil water content to soil water potential using
       specified soil water retention curve (SWRC)
 
-  See `swrc2str()` for implemented SWRCs.
+  See #swrc2str() for implemented SWRCs.
 
   The code assumes the following conditions:
       - checked by `SW_SIT_init_run()`
@@ -1203,7 +1205,7 @@ double SWRC_SWCtoSWP_vanGenuchten1980(
 
   SOILWAT2 convenience wrapper for `SWRC_SWPtoSWC()`.
 
-  See `swrc2str()` for implemented SWRCs.
+  See #swrc2str() for implemented SWRCs.
 
   @param[in] swpMatric Soil water potential [-bar]
   @param[in] *lyr Soil information including
@@ -1227,7 +1229,7 @@ RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr) {
   @brief Convert soil water potential to soil water content using
          specified soil water retention curve (SWRC)
 
-  See `swrc2str()` for implemented SWRCs.
+  See #swrc2str() for implemented SWRCs.
 
   The code assumes the following conditions:
       - checked by `SW_SIT_init_run()`

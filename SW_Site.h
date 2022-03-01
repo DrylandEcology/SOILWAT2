@@ -53,23 +53,28 @@
 extern "C" {
 #endif
 
-/* Soil Water Retention Curves (SWRC) -- Pedotransfer functions (PDFs) */
-/* MAINTENANCE: Implement a new SWRC "XXX" and corresponding PDF "YYY"
-			* update number of `N_SWRCs` and `N_PDFs`
-			* add new names to `swrc2str[]` and `pdf2str[]`
-			* implement new functions
-				* `SWRC_check_parameters_for_XXX()` to validate parameter values
-				* `SWRC_PDF_YYY_for_XXX()` to estimate parameter values (if implemented)
-				* `SWRC_SWCtoSWP_XXX()` to translate moisture content to potential
-				* `SWRC_SWPtoSWC_XXX()` to translate water potential to content
-			* update "wrapper" functions to call new XXX/YYY-specific functions
-				* `check_SWRC_vs_PDF()`
-				* `SWRC_PDF_estimate_parameters()` (if PDF is implemented)
-				* `SWRC_check_parameters()`
-				* `SWRC_SWCtoSWP()`
-				* `SWRC_SWPtoSWC()`
-			* update `siteparam.in` and `swrc_param.in`
-			* update and add new unit tests that utilize new XXX/YYY functions
+
+
+/**
+	@defgroup swrc_pdf Overview over Soil Water Retention Curves (SWRCs) -- Pedotransfer functions (PDFs)
+
+	__Implement a new SWRC "XXX" and corresponding PDF "YYY"__
+
+		- update number of `N_SWRCs` and `N_PDFs`
+		- add new names to `swrc2str[]` and `pdf2str[]`
+		- implement new functions
+			- `SWRC_check_parameters_for_XXX()` to validate parameter values
+			- `SWRC_PDF_YYY_for_XXX()` to estimate parameter values (if implemented)
+			- `SWRC_SWCtoSWP_XXX()` to translate moisture content to potential
+			- `SWRC_SWPtoSWC_XXX()` to translate water potential to content
+		- update "wrapper" functions to call new XXX/YYY-specific functions
+			- `check_SWRC_vs_PDF()`
+			- `SWRC_PDF_estimate_parameters()` (if PDF is implemented)
+			- `SWRC_check_parameters()`
+			- `SWRC_SWCtoSWP()`
+			- `SWRC_SWPtoSWC()`
+		- update `siteparam.in` and `swrc_param.in`
+		- update and add new unit tests that utilize new XXX/YYY functions
 */
 #define SWRC_PARAM_NMAX 6 /**< Maximal number of SWRC parameters implemented */
 #define N_SWRCs 2 /**< Number of implemented SWRCs */
@@ -117,9 +122,9 @@ typedef struct {
 
 	/* Soil water retention curve (SWRC) */
 	unsigned int
-		swrc_type, /**< Type of SWRC (see `swrc2str[]`) */
-		pdf_type; /**< Type of PDF (see `pdf2str[]`) */
-	RealD swrcp[SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation specific to selected SWRC */
+		swrc_type, /**< Type of SWRC (see #swrc2str) */
+		pdf_type; /**< Type of PDF (see #pdf2str) */
+	RealD swrcp[SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation varies with selected SWRC, see `SWRC_check_parameters()` */
 
 	LyrIndex my_transp_rgn[NVEGTYPES]; /* which transp zones from Site am I in? */
 } SW_LAYER_INFO;

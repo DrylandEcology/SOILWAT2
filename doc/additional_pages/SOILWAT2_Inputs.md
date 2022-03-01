@@ -41,6 +41,7 @@ SOILWAT2 needs the following input files for a simulation run:
 \refitem yearsin years.in
 \refitem siteparamin siteparam.in
 \refitem soilsin soils.in
+\refitem swrcpin swrc_params.in
 \refitem weathsetupin weathsetup.in
 \refitem mkvprobin mkv_prob.in
 \refitem mkvcovarin mkv_covar.in
@@ -76,6 +77,12 @@ Go back to the \ref explain_inputs "list of input files"
 
 \section soilsin soils.in
 \verbinclude testing/Input/soils.in
+
+Go back to the \ref explain_inputs "list of input files"
+<hr>
+
+\section swrcpin swrc_params.in
+\verbinclude testing/Input/swrc_params.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>
