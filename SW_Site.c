@@ -387,10 +387,11 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 
 	@param[in] *swrc_name Name selected SWRC
 	@param[in] *pdf_name Name selected PDF
+	@param[in] isSW2 Logical if scope of PDF implementation is "SOILWAT2".
 
 	@return A logical value indicating if SWRC and PDF are compatible.
 */
-Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name) {
+Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name, Bool isSW2) {
 	Bool res = swFALSE;
 
 	if (Str_CompareI(pdf_name, (char *) "NoPDF") == 0) {
@@ -407,7 +408,9 @@ Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name) {
 			res = swTRUE;
 		}
 		else if (
+			!isSW2 &&
 			Str_CompareI(swrc_name, (char *) "vanGenuchten1980") == 0 &&
+			// "Rosetta3" PDF is not implemented in SOILWAT2 (but in rSOILWAT2)
 			Str_CompareI(pdf_name, (char *) "Rosetta3") == 0
 		) {
 			res = swTRUE;
@@ -1491,7 +1494,7 @@ void SW_SIT_init_run(void) {
 
 
 	/* Check compatibility between selected SWRC and PDF */
-	if (!check_SWRC_vs_PDF(sp->site_swrc_name, sp->site_pdf_name)) {
+	if (!check_SWRC_vs_PDF(sp->site_swrc_name, sp->site_pdf_name, swTRUE)) {
 		LogError(
 			logfp,
 			LOGFATAL,
