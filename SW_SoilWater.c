@@ -1149,13 +1149,14 @@ double SWRC_SWCtoSWP_Campbell1974(
 	// calculate (theta / theta_s) ^ b
 	tmp = powe(theta / swrcp[1], swrcp[2]);
 
-	if (!isfinite(tmp) || ZRO(tmp)) {
+	if (!isfinite(tmp) || LE(tmp, 0.)) {
 		LogError(
 			logfp,
 			errmode,
-			"SWRC_SWCtoSWP_Campbell1974(): "
-			"invalid value of (theta / theta(saturated)) ^ b = %f (must be != 0)\n",
-			tmp
+			"SWRC_SWCtoSWP_Campbell1974(): invalid value of\n"
+			"\t(theta / theta(saturated)) ^ b = (%f / %f) ^ %f =\n"
+			"\t= %f (must be > 0)\n",
+			theta, swrcp[1], swrcp[2], tmp
 		);
 
 		return SW_MISSING;
@@ -1204,9 +1205,10 @@ double SWRC_SWCtoSWP_vanGenuchten1980(
 		LogError(
 			logfp,
 			errmode,
-			"SWRC_SWCtoSWP_vanGenuchten1980(): "
-			"invalid value of (theta - theta(residual)) = %f (must be > 0)\n",
-			tmp
+			"SWRC_SWCtoSWP_vanGenuchten1980(): invalid value of\n"
+			"\t(theta - theta(residual)) = %f - %f =\n"
+			"\t= %f (must be > 0)\n",
+			theta, swrcp[0], tmp
 		);
 
 		return SW_MISSING;
