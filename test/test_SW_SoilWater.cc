@@ -245,7 +245,7 @@ namespace{
       SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
-    EXPECT_EQ(
+    EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGWARN),
       SW_MISSING
     );
@@ -257,7 +257,7 @@ namespace{
       SWRC_SWCtoSWP(SW_MISSING, swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
-    EXPECT_EQ(
+    EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(SW_MISSING, swrc_type, swrcp, gravel, width, LOGWARN),
       SW_MISSING
     );
@@ -266,7 +266,7 @@ namespace{
       SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
-    EXPECT_EQ(
+    EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGWARN),
       SW_MISSING
     );
@@ -275,7 +275,7 @@ namespace{
       SWRC_SWCtoSWP(0., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
-    EXPECT_EQ(
+    EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(0., swrc_type, swrcp, gravel, width, LOGWARN),
       SW_MISSING
     );
@@ -284,7 +284,7 @@ namespace{
       SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGFATAL),
       "@ generic.c LogError"
     );
-    EXPECT_EQ(
+    EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGWARN),
       SW_MISSING
     );
@@ -293,7 +293,7 @@ namespace{
       SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGFATAL),
       "@ generic.c LogError"
     );
-    EXPECT_EQ(
+    EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGWARN),
       SW_MISSING
     );
@@ -311,7 +311,7 @@ namespace{
       SWRC_SWCtoSWP(5., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
-    EXPECT_EQ(
+    EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(5., swrc_type, swrcp, gravel, width, LOGWARN),
       SW_MISSING
     );
@@ -330,7 +330,7 @@ namespace{
       SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
-    EXPECT_EQ(
+    EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGWARN),
       SW_MISSING
     );
@@ -357,7 +357,7 @@ namespace{
       SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
-    EXPECT_EQ(
+    EXPECT_DOUBLE_EQ(
       SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width, LOGWARN),
       SW_MISSING
     );
@@ -368,7 +368,7 @@ namespace{
       SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
-    EXPECT_EQ(
+    EXPECT_DOUBLE_EQ(
       SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGWARN),
       SW_MISSING
     );
@@ -377,7 +377,7 @@ namespace{
       SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width, LOGFATAL),
       "@ generic.c LogError"
     );
-    EXPECT_EQ(
+    EXPECT_DOUBLE_EQ(
       SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width, LOGWARN),
       SW_MISSING
     );
