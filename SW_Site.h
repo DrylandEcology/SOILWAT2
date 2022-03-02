@@ -235,6 +235,17 @@ double SWRC_PDF_swcBulk_saturated(
 	double sand,
 	double clay
 );
+double SWRC_PDF_swcBulk_minimum(
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width,
+	unsigned int pdf_type,
+	double ui_sm_min,
+	double sand,
+	double clay,
+	double swcBulk_sat
+);
 void PDF_Saxton2006(
 	double *theta_sat,
 	double sand,

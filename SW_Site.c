@@ -225,6 +225,107 @@ static Bool SW_check_soil_properties(SW_LAYER_INFO *lyr) {
 
 
 
+/** Lower realistic limit for minimum `theta`
+	Notes:
+	- currently, -30 MPa
+		(based on limited test runs across western US including hot deserts)
+		lower than "air-dry" = hygroscopic point (-10. MPa; Porporato et al. 2001)
+		not as extreme as "oven-dry" (-1000. MPa; Fredlund et al. 1994)
+*/
+static double lower_limit_of_theta_min(
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width
+) {
+	double res = SWRC_SWPtoSWC(300., swrc_type, swrcp, gravel, width, LOGFATAL);
+
+	// convert bulk [cm] to matric [cm / cm]
+	return res / ((1. - gravel) * width);
+}
+
+/**
+	@brief Legacy minimum/residual volumetric water content
+
+	This function returns minimum soil water content determined
+	by user input via #_SWCMinVal and/or
+	by the pedotransfer function of Rawls & Brakensiek 1985 \cite rawls1985WmitE
+	(independent of the selected SWRC), and/or
+	by an estimate of a realistic lower limit.
+
+	This reproduces legacy behavior of SOILWAT2 prior to v7.0.0.
+
+	@param[in] ui_sm_min User input of requested minimum soil moisture,
+		see #_SWCMinVal
+	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+		of the whole soil [m3/m3]
+	@param[in] width Soil layer width [cm]
+	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] swcBulk_sat Saturated water content of the bulk soil [cm]
+	@param[in] swrc_type Identification number of selected SWRC
+	@param[in] *swrcp Vector of SWRC parameters
+
+	@return Estimated minimum volumetric water content of the matric soil [cm / cm]
+*/
+static double legacy_theta_min(
+	double ui_sm_min,
+	double gravel,
+	double width,
+	double sand,
+	double clay,
+	double swcBulk_sat,
+	unsigned int swrc_type,
+	double *swrcp
+) {
+	double vwc_min = SW_MISSING, vwcmin1, vwcmin2;
+
+	if (LT(ui_sm_min, 0.0)) {
+		/* input: do estimate minimum theta */
+
+		/* residual theta estimated with Rawls & Brakensiek (1985) PDF*/
+		PDF_RawlsBrakensiek1985(
+			&vwcmin1,
+			sand,
+			clay,
+			swcBulk_sat / ((1. - gravel) * width)
+		);
+
+		/* Lower realistic limit for theta_min
+			- used in case `PDF_RawlsBrakensiek1985` doesn't work or
+				produces unrealistic small values
+		*/
+		vwcmin2 = lower_limit_of_theta_min(swrc_type, swrcp, gravel, width);
+
+		// if `PDF_RawlsBrakensiek1985()` returns SW_MISSING then use `swcmin_help2`
+		if (missing(vwcmin1)) {
+			vwc_min = vwcmin2;
+
+		} else {
+			vwc_min = fmax(vwcmin1, vwcmin2);
+		}
+
+	} else if (GE(_SWCMinVal, 1.0)) {
+		/* input: fixed (matric) SWP value; unit(_SWCMinVal) == -bar */
+		vwc_min = SWRC_SWPtoSWC(
+			_SWCMinVal,
+			swrc_type,
+			swrcp,
+			gravel,
+			width,
+			LOGFATAL
+		) / ((1. - gravel) * width);
+
+	} else {
+		/* input: fixed matric VWC; unit(_SWCMinVal) == cm/cm */
+		vwc_min = _SWCMinVal / width;
+	}
+
+	return vwc_min;
+}
+
+
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -402,7 +503,7 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 	`pdf_name` is "Cosby1984AndOthers" (see #pdf2str).
 
 	@param[in] swrc_type Identification number of selected SWRC
-	@param[out] *swrcp Vector of SWRC parameters to be estimated
+	@param[in] *swrcp Vector of SWRC parameters
 	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
 		of the whole soil [m3/m3]
 	@param[in] width Soil layer width [cm]
@@ -410,7 +511,7 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 
-	@return Estimated saturated water content [cm]
+	@return Estimated saturated water content of the bulk soil [cm]
 */
 double SWRC_PDF_swcBulk_saturated(
 	unsigned int swrc_type,
@@ -448,9 +549,105 @@ double SWRC_PDF_swcBulk_saturated(
 			break;
 	}
 
-	// Convert from [cm/cm] to [cm]
+	// Convert from matric [cm/cm] to bulk [cm]
 	return theta_sat * width * (1. - gravel);
 }
+
+
+/**
+	@brief Minimum/residual soil water content
+
+	See #pdf2str for implemented PDFs.
+	See #swrc2str for implemented SWRCs.
+
+	Minimum/residual volumetric water content is usually estimated as one of the
+	SWRC parameters; this is what this function returns.
+
+	For historical reasons, if `swrc_name` is "Campbell1974", then a
+	`pdf_name` of "Cosby1984AndOthers" will reproduce `SOILWAT2` legacy mode
+	(`SOILWAT2` prior to v7.0.0) and return minimum soil water content determined
+	by the user #_SWCMinVal and/or by Rawls & Brakensiek 1985 PDF,
+	see `legacy_theta_min()`;
+	`pdf_name` of "Cosby1984" will return zero as minimum soil water content.
+
+	The arguments `_SWCMinVal`, `sand`, `clay`, and `swcBulk_sat`
+	are utilized only if `pdf_name` is "Cosby1984AndOthers".
+
+	@param[in] swrc_type Identification number of selected SWRC
+	@param[in] *swrcp Vector of SWRC parameters
+	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+		of the whole soil [m3/m3]
+	@param[in] width Soil layer width [cm]
+	@param[in] pdf_type Identification number of selected PDF
+	@param[in] ui_sm_min User input of requested minimum soil moisture,
+		see #_SWCMinVal
+	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] swcBulk_sat Saturated water content of the bulk soil [cm]
+
+	@return Estimated minimum water content of the bulk soil [cm]
+*/
+double SWRC_PDF_swcBulk_minimum(
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width,
+	unsigned int pdf_type,
+	double ui_sm_min,
+	double sand,
+	double clay,
+	double swcBulk_sat
+) {
+	double theta_min = SW_MISSING;
+
+	switch (swrc_type) {
+		case 0: // Campbell1974
+			if (pdf_type == 1) {
+				// Cosby1984AndOthers
+				theta_min = legacy_theta_min(
+					ui_sm_min,
+					gravel,
+					width,
+					sand,
+					clay,
+					swcBulk_sat,
+					swrc_type,
+					swrcp
+				);
+
+			} else if (pdf_type == 2) {
+				// Cosby1984
+				theta_min = 0.; // TODO: should this be slightly larger than 0? e.g., -30 MPa?
+
+			} else {
+				LogError(
+					logfp,
+					LOGFATAL,
+					"`SWRC_PDF_swcBulk_minimum()`: SWRC (type %d) is not implemented.",
+					swrc_type
+				);
+			}
+			break;
+
+		case 1: // vanGenuchten1980
+			theta_min = swrcp[0];
+			break;
+
+		default:
+			LogError(
+				logfp,
+				LOGFATAL,
+				"`SWRC_PDF_swcBulk_minimum()`: SWRC (type %d) is not implemented.",
+				swrc_type
+			);
+			break;
+	}
+
+	// Convert from matric [cm/cm] to bulk [cm]
+	return theta_min * width * (1. - gravel);
+}
+
+
 
 /**
 	@brief Check whether selected PDF and SWRC are compatible
@@ -671,7 +868,8 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp) {
 
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
-	@param[out] *theta_sat Estimated saturated volumetric water content [cm/cm]
+	@param[out] *theta_sat Estimated saturated volumetric water content
+		of the matric soil [cm/cm]
 */
 void PDF_Saxton2006(
 	double *theta_sat,
@@ -784,7 +982,6 @@ void PDF_Saxton2006(
 
 
 
-
 /**
 	@brief Rawls and Brakensiek 1985 PDFs \cite rawls1985WmitE
 		to estimate residual soil water content for the Brooks-Corey SWRC
@@ -797,7 +994,8 @@ void PDF_Saxton2006(
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] porosity Pore space of the matric soil (< 2 mm fraction) [cm3/cm3]
-	@param[out] *theta_min Estimated residual volumetric water content [cm/cm]
+	@param[out] *theta_min Estimated residual volumetric water content
+		of the matric soil [cm/cm]
 */
 void PDF_RawlsBrakensiek1985(
 	double *theta_min,
@@ -1592,8 +1790,7 @@ void SW_SIT_init_run(void) {
 	LyrIndex s, r, curregion;
 	int k, flagswpcrit = 0;
 	RealD
-		evsum = 0., trsum_veg[NVEGTYPES] = {0.},
-		swcmin_help1, swcmin_help2, tmp;
+		evsum = 0., trsum_veg[NVEGTYPES] = {0.}, tmp;
 
 	#ifdef SWDEBUG
 	int debug = 0;
@@ -1709,55 +1906,17 @@ void SW_SIT_init_run(void) {
 			lyr->fractionWeightMatric_clay
 		);
 
-
-
-
-
-		/* Compute swc wet and dry limits and init value */
-		if (LT(_SWCMinVal, 0.0)) {
-			/* input: estimate mininum SWC */
-
-			/* residual VWC of Rawls & Brakensiek (1985) */
-			PDF_RawlsBrakensiek1985(
-				&swcmin_help1,
-				lyr->fractionWeightMatric_sand,
-				lyr->fractionWeightMatric_clay,
-				lyr->swcBulk_saturated / ((1. - lyr->fractionVolBulk_gravel) * lyr->width)
-			);
-
-			/* Lower limit for swc_min
-				Notes:
-				- used in case the equation for residual SWC doesn't work or
-					produces unrealistic small values
-				- currently, -30 MPa
-					(based on limited test runs across western US including hot deserts)
-					lower than "air-dry" = hygroscopic point (-10. MPa; Porporato et al. 2001)
-					not as extreme as "oven-dry" (-1000. MPa; Fredlund et al. 1994)
-			*/
-			swcmin_help2 = SW_SWRC_SWPtoSWC(300., lyr) / lyr->width;
-
-			// if `SW_VWCBulkRes()` returns SW_MISSING then use `swcmin_help2`
-			if (missing(swcmin_help1)) {
-				lyr->swcBulk_min = swcmin_help2;
-
-			} else {
-				lyr->swcBulk_min = fmax(
-					swcmin_help1 * (1. - lyr->fractionVolBulk_gravel),
-					swcmin_help2
-				);
-			}
-
-		} else if (GE(_SWCMinVal, 1.0)) {
-			/* input: fixed SWP value as minimum SWC; unit(_SWCMinVal) == -bar */
-			lyr->swcBulk_min = SW_SWRC_SWPtoSWC(_SWCMinVal, lyr) / lyr->width;
-
-		} else {
-			/* input: fixed VWC value as minimum SWC; unit(_SWCMinVal) == cm/cm */
-			lyr->swcBulk_min = _SWCMinVal;
-		}
-
-		/* Convert VWC to SWC */
-		lyr->swcBulk_min *= lyr->width;
+		lyr->swcBulk_min = SWRC_PDF_swcBulk_minimum(
+			lyr->swrc_type,
+			lyr->swrcp,
+			lyr->fractionVolBulk_gravel,
+			lyr->width,
+			lyr->pdf_type,
+			_SWCMinVal,
+			lyr->fractionWeightMatric_sand,
+			lyr->fractionWeightMatric_clay,
+			lyr->swcBulk_saturated
+		);
 
 
 		/* Calculate wet limit of SWC for what inputs defined as wet */
