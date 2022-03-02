@@ -251,7 +251,7 @@ static double lower_limit_of_theta_min(
 	by user input via #_SWCMinVal and/or
 	by the pedotransfer function of Rawls & Brakensiek 1985 \cite rawls1985WmitE
 	(independent of the selected SWRC), and/or
-	by an estimate of a realistic lower limit.
+	by an estimate of a realistic lower limit (see `lower_limit_of_theta_min()`).
 
 	This reproduces legacy behavior of SOILWAT2 prior to v7.0.0.
 
@@ -297,7 +297,7 @@ static double legacy_theta_min(
 		*/
 		vwcmin2 = lower_limit_of_theta_min(swrc_type, swrcp, gravel, width);
 
-		// if `PDF_RawlsBrakensiek1985()` returns SW_MISSING then use `swcmin_help2`
+		// if `PDF_RawlsBrakensiek1985()` returns SW_MISSING then use `vwcmin2`
 		if (missing(vwcmin1)) {
 			vwc_min = vwcmin2;
 
@@ -563,15 +563,15 @@ double SWRC_PDF_swcBulk_saturated(
 	Minimum/residual volumetric water content is usually estimated as one of the
 	SWRC parameters; this is what this function returns.
 
-	For historical reasons, if `swrc_name` is "Campbell1974", then a
-	`pdf_name` of "Cosby1984AndOthers" will reproduce `SOILWAT2` legacy mode
-	(`SOILWAT2` prior to v7.0.0) and return minimum soil water content determined
-	by the user #_SWCMinVal and/or by Rawls & Brakensiek 1985 PDF,
-	see `legacy_theta_min()`;
-	`pdf_name` of "Cosby1984" will return zero as minimum soil water content.
+	If `swrc_name` is "Campbell1974", then
+	`theta_min` should be zero which would, however, lead to infinite
+	soil water potentials. Instead, `theta_min` is determined
+		- by user input via #_SWCMinVal and
+		- by the pedotransfer function of Rawls & Brakensiek 1985 \cite rawls1985WmitE
+		- by an estimate of a realistic lower limit
 
-	The arguments `_SWCMinVal`, `sand`, `clay`, and `swcBulk_sat`
-	are utilized only if `pdf_name` is "Cosby1984AndOthers".
+	Thus, the arguments `_SWCMinVal`, `sand`, `clay`, and `swcBulk_sat`
+	are utilized only if `swrc_name` is "Campbell1974".
 
 	@param[in] swrc_type Identification number of selected SWRC
 	@param[in] *swrcp Vector of SWRC parameters
@@ -601,9 +601,10 @@ double SWRC_PDF_swcBulk_minimum(
 	double theta_min = SW_MISSING;
 
 	switch (swrc_type) {
-		case 0: // Campbell1974
-			if (pdf_type == 1) {
-				// Cosby1984AndOthers
+		case 0: // Campbell1974: does not define a `theta_min`
+			if (pdf_type == 1 || pdf_type == 2) {
+				// Cosby1984AndOthers/Cosby1984: we cannot set theta_min = 0 because phi -> infinity
+				// -> `legacy_theta_min()`
 				theta_min = legacy_theta_min(
 					ui_sm_min,
 					gravel,
@@ -615,16 +616,21 @@ double SWRC_PDF_swcBulk_minimum(
 					swrcp
 				);
 
-			} else if (pdf_type == 2) {
-				// Cosby1984
-				theta_min = 0.; // TODO: should this be slightly larger than 0? e.g., -30 MPa?
+				// Possible alternatives to `legacy_theta_min()`
+				/* theta_min defined via realistic phi_min */
+				// theta_min = lower_limit_of_theta_min(swrc_type, swrcp, gravel, width);
+
+				/* theta_min so that `SWRC_SWCtoSWP_Campbell1974()` does just not explode but SWP > 1e13 bar */
+				// theta_min = powe(D_DELTA, 1. / swrcp[2]) * swrcp[1];
+
 
 			} else {
 				LogError(
 					logfp,
 					LOGFATAL,
-					"`SWRC_PDF_swcBulk_minimum()`: SWRC (type %d) is not implemented.",
-					swrc_type
+					"`SWRC_PDF_swcBulk_minimum()`: "
+					"PDF (type %d) is not implemented for SWRC (type %d).",
+					pdf_type, swrc_type
 				);
 			}
 			break;
