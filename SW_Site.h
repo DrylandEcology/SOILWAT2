@@ -226,9 +226,19 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp);
 Bool SWRC_check_parameters_for_Campbell1974(double *swrcp);
 Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp);
 
+double SWRC_PDF_swcBulk_saturated(
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width,
+	unsigned int pdf_type,
+	double sand,
+	double clay
+);
 void PDF_Saxton2006(
-	double *swc_sat,
-	double sand, double clay, double gravel, double width
+	double *theta_sat,
+	double sand,
+	double clay
 );
 
 RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);

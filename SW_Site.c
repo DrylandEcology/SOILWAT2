@@ -292,7 +292,7 @@ unsigned int encode_str2pdf(char *pdf_name) {
 	@brief Estimate parameters of selected soil water retention curve (SWRC)
 		using selected pedotransfer function (PDF)
 
-	See `pdf2str` for implemented PDFs.
+	See #pdf2str for implemented PDFs.
 
 	@param[in] pdf_type Identification number of selected PDF
 	@param[out] *swrcp Vector of SWRC parameters to be estimated
@@ -381,6 +381,76 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 	swrcp[2] = -0.3 * sand + 15.7 * clay + 3.10;
 }
 
+
+/**
+	@brief Saturated soil water content
+
+	See #pdf2str for implemented PDFs.
+	See #swrc2str for implemented SWRCs.
+
+	Saturated volumetric water content is usually estimated as one of the
+	SWRC parameters; this is what this function returns.
+
+	For historical reasons, if `swrc_name` is "Campbell1974", then a
+	`pdf_name` of "Cosby1984AndOthers" will reproduce `SOILWAT2` legacy mode
+	(`SOILWAT2` prior to v7.0.0) and return saturated soil water content estimated
+	by Saxton et al. 2006 (\cite Saxton2006) PDF instead;
+	`pdf_name` of "Cosby1984" will return saturated soil water content estimated
+	by Cosby et al. 1984 (\cite Cosby1984) PDF.
+
+	The arguments `pdf_type`, `sand`, and `clay` are utilized only if
+	`pdf_name` is "Cosby1984AndOthers" (see #pdf2str).
+
+	@param[in] swrc_type Identification number of selected SWRC
+	@param[out] *swrcp Vector of SWRC parameters to be estimated
+	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+		of the whole soil [m3/m3]
+	@param[in] width Soil layer width [cm]
+	@param[in] pdf_type Identification number of selected PDF
+	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+
+	@return Estimated saturated water content [cm]
+*/
+double SWRC_PDF_swcBulk_saturated(
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width,
+	unsigned int pdf_type,
+	double sand,
+	double clay
+) {
+	double theta_sat = SW_MISSING;
+
+	switch (swrc_type) {
+		case 0: // Campbell1974
+			if (pdf_type == 1) {
+				// Cosby1984AndOthers
+				PDF_Saxton2006(&theta_sat, sand, clay);
+			} else {
+				// Cosby1984
+				theta_sat = swrcp[1];
+			}
+			break;
+
+		case 1: // vanGenuchten1980
+			theta_sat = swrcp[1];
+			break;
+
+		default:
+			LogError(
+				logfp,
+				LOGFATAL,
+				"`SWRC_PDF_swcBulk_saturated()`: SWRC (type %d) is not implemented.",
+				swrc_type
+			);
+			break;
+	}
+
+	// Convert from [cm/cm] to [cm]
+	return theta_sat * width * (1. - gravel);
+}
 
 /**
 	@brief Check whether selected PDF and SWRC are compatible
@@ -601,23 +671,16 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp) {
 
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
-	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
-		of the whole soil [m3/m3]
-	@param[in] width Soil layer width [cm]
-	@param[out] *swc_sat Saturated water content [cm] to be estimated
+	@param[out] *theta_sat Estimated saturated volumetric water content [cm/cm]
 */
 void PDF_Saxton2006(
-	double *swc_sat,
-	double sand, double clay, double gravel, double width
+	double *theta_sat,
+	double sand,
+	double clay
 ) {
-	/* Saxton, K. E. and W. J. Rawls. 2006. Soil water characteristic estimates
-		 by texture and organic matter for hydrologic solutions.
-		 Soil Science Society of America Journal 70:1569-1578.
-	*/
-
 	double
 		OM = 0.,
-		theta_S, theta_33, theta_33t, theta_S33, theta_S33t;
+		theta_33, theta_33t, theta_S33, theta_S33t;
 
 	/* Eq. 2: 33 kPa moisture */
 	theta_33t =
@@ -646,22 +709,21 @@ void PDF_Saxton2006(
 
 
 	/* Eq. 5: saturated moisture */
-	theta_S = theta_33 + theta_S33 - 0.097 * sand + 0.043;
+	*theta_sat = theta_33 + theta_S33 - 0.097 * sand + 0.043;
 
 	if (
-		LE(theta_S, 0.) ||
-		GT(theta_S, 1.)
+		LE(*theta_sat, 0.) ||
+		GT(*theta_sat, 1.)
 	) {
 		LogError(
 			logfp,
 			LOGFATAL,
 			"PDF_Saxton2006(): invalid value of "
 			"theta(saturated, [cm / cm]) = %f (must be within 0-1)\n",
-			theta_S
+			*theta_sat
 		);
 	}
 
-	*swc_sat = width * (1. - gravel) * theta_S;
 
 
 // currently, unused and defunct code:
@@ -1577,13 +1639,16 @@ void SW_SIT_init_run(void) {
 			SW_SWRC_SWPtoSWC(100., lyr)
 		);
 
-		/* Estimate additional properties */
-		PDF_Saxton2006(
-			&(lyr->swcBulk_saturated),
-			lyr->fractionWeightMatric_sand,
-			lyr->fractionWeightMatric_clay,
+
+		/* Extract or estimate additional properties */
+		lyr->swcBulk_saturated = SWRC_PDF_swcBulk_saturated(
+			lyr->swrc_type,
+			lyr->swrcp,
 			lyr->fractionVolBulk_gravel,
-			lyr->width
+			lyr->width,
+			lyr->pdf_type,
+			lyr->fractionWeightMatric_sand,
+			lyr->fractionWeightMatric_clay
 		);
 
 
