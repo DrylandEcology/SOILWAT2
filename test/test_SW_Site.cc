@@ -263,6 +263,60 @@ namespace {
   }
 
 
+  // Test 'PDF_RawlsBrakensiek1985'
+  TEST(SiteTest, PDFRawlsBrakensiek1985) {
+    //declare mock INPUTS
+    double
+      theta_min,
+      clay = 0.1,
+      sand = 0.6,
+      porosity = 0.4;
+    int k1, k2, k3;
+
+    //--- EXPECT SW_MISSING if soil texture is out of range
+    // within range: sand [0.05, 0.7], clay [0.05, 0.6], porosity [0.1, 1[
+    PDF_RawlsBrakensiek1985(&theta_min, 0., clay, porosity);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+
+    PDF_RawlsBrakensiek1985(&theta_min, 0.75, clay, porosity);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+
+    PDF_RawlsBrakensiek1985(&theta_min, sand, 0., porosity);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+
+    PDF_RawlsBrakensiek1985(&theta_min, sand, 0.65, porosity);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+
+    PDF_RawlsBrakensiek1985(&theta_min, sand, clay, 0.);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+
+    PDF_RawlsBrakensiek1985(&theta_min, sand, clay, 1.);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+
+
+    // Check that `theta_min` is reasonable over ranges of soil properties
+    for (k1 = 0; k1 <= 5; k1++) {
+      sand = 0.05 + (double) k1 / 5. * (0.7 - 0.05);
+
+      for (k2 = 0; k2 <= 5; k2++) {
+        clay = 0.05 + (double) k2 / 5. * (0.6 - 0.05);
+
+        for (k3 = 0; k3 <= 5; k3++) {
+          porosity = 0.1 + (double) k3 / 5. * (0.99 - 0.1);
+
+          PDF_RawlsBrakensiek1985(&theta_min, sand, clay, porosity);
+          EXPECT_GE(theta_min, 0.);
+          EXPECT_LT(theta_min, porosity);
+        }
+      }
+    }
+
+    // Expect theta_min = 0 if sand = 0.4, clay = 0.5, and porosity = 0.1
+    PDF_RawlsBrakensiek1985(&theta_min, 0.4, 0.5, 0.1);
+    EXPECT_DOUBLE_EQ(theta_min, 0);
+  }
+
+
   // Test that `SW_SIT_init_run` fails on bad soil inputs
   TEST(SiteDeathTest, SoilParameters) {
     LyrIndex n1 = 0, n2 = 1, k = 2;

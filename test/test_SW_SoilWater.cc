@@ -20,53 +20,6 @@
 
 
 namespace{
-  // Test the 'SW_SoilWater' function 'SW_VWCBulkRes'
-  TEST(SWSoilWaterTest, VWCBulkRes){
-    //declare mock INPUTS
-    RealD fractionGravel = .1;
-    RealD clay = .7;
-    RealD sand = .2;
-    RealD porosity = 1;
-
-    RealD res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    // when clay > .6, we expect res == SW_MISSING since this isn't within reasonable
-    // range
-    EXPECT_DOUBLE_EQ(res, SW_MISSING);
-
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
-
-    clay = .5;
-    sand = .04;
-
-    res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    // when sand < .05, we expect res == SW_MISSING since this isn't within reasonable
-    // range
-    EXPECT_DOUBLE_EQ(res, SW_MISSING);
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
-
-    sand = .4;
-    porosity = .4;
-
-    res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    // when sand == .4, clay == .5, porosity == .4 and fractionGravel ==.1,
-    // we expect res == .088373829599999967
-    EXPECT_DOUBLE_EQ(res, .088373829599999967);
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
-
-    porosity = .1;
-
-    res = SW_VWCBulkRes(fractionGravel, sand, clay, porosity);
-    // when sand == .4, clay == .5, porosity == .1 and fractionGravel ==.1,
-    // we expect res == 0
-    EXPECT_DOUBLE_EQ(res, 0);
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
-  }
-
-
   // Test the 'SW_SoilWater' function 'SW_SWC_adjust_snow'
   TEST(SWSoilWaterTest, SWCadjustSnow){
     // setup mock variables

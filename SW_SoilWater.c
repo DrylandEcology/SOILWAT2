@@ -1394,57 +1394,6 @@ double SWRC_SWPtoSWC_vanGenuchten1980(
 
 
 /**
-@brief Calculates 'Brooks-Corey' residual volumetric soil water.
-
-Equations based on: Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties
-      for hydrological modeling, based on @cite ASCE1985
-
-@param fractionGravel Fraction of soil consisting of gravel, percentage.
-@param sand Fraction of soil consisting of sand, percentage.
-@param clay Fraction of soil consisting of clay, percentage.
-@param porosity Fraction of Soil porosity as the saturated VWC, percentage.
-
-@returns Residual volumetric soil water (cm/cm)
-**/
-
-RealD SW_VWCBulkRes(RealD fractionGravel, RealD sand, RealD clay, RealD porosity) {
-/*---------------------
-History:
-  02/03/2012	(drs)	calculates 'Brooks-Corey' residual volumetric soil water based on Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties for hydrological modeling. In Watershed management in the Eighties (eds Jones EB, Ward TJ), pp. 293-299. American Society of Civil Engineers, New York.
-  however, equation is only valid if (0.05 < clay < 0.6) & (0.05 < sand < 0.7)
-
----------------------*/
-
-  if (clay < .05 || clay > .6 || sand < .05 || sand > .7) {
-    LogError(
-      logfp,
-      LOGWARN,
-      "Sand and/or clay values out of valid range, simulation outputs may differ."
-    );
-    return SW_MISSING;
-
-  } else {
-    RealD res;
-    sand *= 100.;
-    clay *= 100.;
-
-    res = (1. - fractionGravel) * (
-      - 0.0182482 \
-      + 0.00087269 * sand \
-      + 0.00513488 * clay \
-      + 0.02939286 * porosity \
-      - 0.00015395 * squared(clay) \
-      - 0.0010827 * sand * porosity \
-      - 0.00018233 * squared(clay) * squared(porosity) \
-      + 0.00030703 * squared(clay) * porosity \
-      - 0.0023584 * squared(porosity) * clay
-    );
-
-    return (fmax(res, 0.));
-  }
-}
-
-/**
 @brief This routine sets the known memory refs in this module
      so they can be  checked for leaks, etc.
 */

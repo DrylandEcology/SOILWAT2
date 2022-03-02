@@ -240,6 +240,13 @@ void PDF_Saxton2006(
 	double sand,
 	double clay
 );
+void PDF_RawlsBrakensiek1985(
+	double *theta_min,
+	double sand,
+	double clay,
+	double porosity
+);
+
 
 RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
 LyrIndex nlayers_bsevap(void);

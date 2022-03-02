@@ -783,6 +783,64 @@ void PDF_Saxton2006(
 }
 
 
+
+
+/**
+	@brief Rawls and Brakensiek 1985 PDFs \cite rawls1985WmitE
+		to estimate residual soil water content for the Brooks-Corey SWRC
+		\cite brooks1964a
+
+	@note This function was previously named "SW_VWCBulkRes".
+	@note This function is only well-defined for `clay` values in 5-60%,
+		`sand` values in 5-70%, and `porosity` must in 10-<100%.
+
+	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] porosity Pore space of the matric soil (< 2 mm fraction) [cm3/cm3]
+	@param[out] *theta_min Estimated residual volumetric water content [cm/cm]
+*/
+void PDF_RawlsBrakensiek1985(
+	double *theta_min,
+	double sand,
+	double clay,
+	double porosity
+) {
+	if (
+		GE(clay, 0.05) && LE(clay, 0.6) &&
+		GE(sand, 0.05) && LE(sand, 0.7) &&
+		GE(porosity, 0.1) && LT(porosity, 1.)
+	) {
+		sand *= 100.;
+		clay *= 100.;
+		/* Note: the equation requires sand and clay in units of [100 * g / g];
+			porosity, however, must be in units of [cm3 / cm3]
+		*/
+		*theta_min = fmax(
+			0.,
+			- 0.0182482 \
+			+ 0.00087269 * sand \
+			+ 0.00513488 * clay \
+			+ 0.02939286 * porosity \
+			- 0.00015395 * squared(clay) \
+			- 0.0010827 * sand * porosity \
+			- 0.00018233 * squared(clay) * squared(porosity) \
+			+ 0.00030703 * squared(clay) * porosity \
+			- 0.0023584 * squared(porosity) * clay
+		);
+
+	} else {
+			LogError(
+			logfp,
+			LOGWARN,
+			"`PDF_RawlsBrakensiek1985()`: sand, clay, or porosity out of valid range."
+		);
+
+		*theta_min = SW_MISSING;
+	}
+}
+
+
+
 /**
   @brief Estimate soil density of the whole soil (bulk).
 
@@ -1659,9 +1717,9 @@ void SW_SIT_init_run(void) {
 		if (LT(_SWCMinVal, 0.0)) {
 			/* input: estimate mininum SWC */
 
-			/* residual SWC of Rawls & Brakensiek (1985) */
-			swcmin_help1 = SW_VWCBulkRes(
-				lyr->fractionVolBulk_gravel,
+			/* residual VWC of Rawls & Brakensiek (1985) */
+			PDF_RawlsBrakensiek1985(
+				&swcmin_help1,
 				lyr->fractionWeightMatric_sand,
 				lyr->fractionWeightMatric_clay,
 				lyr->swcBulk_saturated / ((1. - lyr->fractionVolBulk_gravel) * lyr->width)
@@ -1683,7 +1741,10 @@ void SW_SIT_init_run(void) {
 				lyr->swcBulk_min = swcmin_help2;
 
 			} else {
-				lyr->swcBulk_min = fmax(swcmin_help1, swcmin_help2);
+				lyr->swcBulk_min = fmax(
+					swcmin_help1 * (1. - lyr->fractionVolBulk_gravel),
+					swcmin_help2
+				);
 			}
 
 		} else if (GE(_SWCMinVal, 1.0)) {

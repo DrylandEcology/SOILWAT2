@@ -157,7 +157,6 @@ void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
 RealD SW_SWC_snowloss(RealD pet, RealD *snowpack);
 RealD SW_SnowDepth(RealD SWE, RealD snowdensity);
 void SW_SWC_end_day(void);
-RealD SW_VWCBulkRes(RealD fractionGravel, RealD sand, RealD clay, RealD porosity);
 void get_dSWAbulk(int i);
 
 double SW_SWRC_SWCtoSWP(double swcBulk, SW_LAYER_INFO *lyr);
