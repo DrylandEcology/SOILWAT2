@@ -738,7 +738,7 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp) {
 	for implementation of Campbell's 1974 SWRC (\cite Campbell1974).
 
 	Campbell's 1974 SWRC uses three parameters:
-		- `swrcp[0]` (`psisMatric`): saturated soil water matric potential [-bar]
+		- `swrcp[0]` (`psisMatric`): air-entry suction [cm]
 		- `swrcp[1]` (previously named `thetasMatric`):
 			saturated volumetric water content for the matric component [cm/cm]
 		- `swrcp[2]` (`bMatric`): slope of the linear log-log retention curve [-]
@@ -756,7 +756,7 @@ Bool SWRC_check_parameters_for_Campbell1974(double *swrcp) {
 			logfp,
 			LOGWARN,
 			"SWRC_check_parameters_for_Campbell1974(): invalid value of "
-			"psi(saturated, matric, [-bar]) = %f (must > 0)\n",
+			"psi(saturated, matric, [cm]) = %f (must > 0)\n",
 			swrcp[1]
 		);
 	}
