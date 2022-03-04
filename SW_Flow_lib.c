@@ -742,12 +742,18 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	 **********************************************************************/
 
 	unsigned int i;
-	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q;
+	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q, tmpswp;
 
 	ST_RGR_VALUES *st = &stValues;
 
 	for (i = 0; i < nlyrs; i++) {
-		swpfrac[i] = coeff[i] / SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
+		tmpswp = SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
+		if (GT(tmpswp, 0.)) {
+			swpfrac[i] = coeff[i] / tmpswp;
+		} else {
+			// saturated conditions -> divide by SWP [-bar] at field capacity
+			swpfrac[i] = coeff[i] / 0.333;
+		}
 		sumswp += swpfrac[i];
 	}
 
