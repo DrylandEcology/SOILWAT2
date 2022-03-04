@@ -1073,7 +1073,7 @@ double SWRC_SWCtoSWP(
 ) {
 	double res = SW_MISSING;
 
-	if (missing(swcBulk) || LE(swcBulk, 0.) || EQ(gravel, 1.) || LE(width, 0.)) {
+	if (LE(swcBulk, 0.) || EQ(gravel, 1.) || LE(width, 0.)) {
 		LogError(
 			logfp,
 			errmode,
@@ -1122,6 +1122,17 @@ double SWRC_SWCtoSWP(
   @note
     This function was previously named `SW_SWCbulk2SWPmatric()`.
 
+  @note
+   `SWRC_SWPtoSWC_Campbell1974()` and `SWRC_SWCtoSWP_Campbell1974()`
+    are the inverse of each other
+    for `(phi, theta)` between `(swrcp[0], `theta` at `swrcp[0]`)`
+    and `(infinity, 0)`.
+
+  @note
+    The function has a discontinuity at saturated water content for which
+    the matric potential at the "air-entry suction" point (see `swrcp[0]`)
+    is returned whereas 0 bar is returned for larger values.
+
   @param[in] swcBulk Soil water content in the layer [cm]
   @param[in] *swrcp Vector of SWRC parameters
   @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
@@ -1146,23 +1157,32 @@ double SWRC_SWCtoSWP_Campbell1974(
 	// convert bulk SWC [cm] to theta = matric VWC [cm / cm]
 	theta = swcBulk / (width * (1. - gravel));
 
-	// calculate (theta / theta_s) ^ b
-	tmp = powe(theta / swrcp[1], swrcp[2]);
+	if (GT(theta, swrcp[1])) {
+		// `theta` should not become larger than `theta_sat`;
+		// however, "Cosby1984AndOthers" does not use `swrcp[1]` for `theta_sat`
+		// which can lead to inconsistencies; thus,
+		// we return with 0 instead of, correctly, with errmode and SW_MISSING
+		res = 0.;
 
-	if (!isfinite(tmp) || LE(tmp, 0.)) {
-		LogError(
-			logfp,
-			errmode,
-			"SWRC_SWCtoSWP_Campbell1974(): invalid value of\n"
-			"\t(theta / theta(saturated)) ^ b = (%f / %f) ^ %f =\n"
-			"\t= %f (must be > 0)\n",
-			theta, swrcp[1], swrcp[2], tmp
-		);
+	} else {
+		// calculate (theta / theta_s) ^ b
+		tmp = powe(theta / swrcp[1], swrcp[2]);
 
-		return SW_MISSING;
+		if (LE(tmp, 0.)) {
+			LogError(
+				logfp,
+				errmode,
+				"SWRC_SWCtoSWP_Campbell1974(): invalid value of\n"
+				"\t(theta / theta(saturated)) ^ b = (%f / %f) ^ %f =\n"
+				"\t= %f (must be > 0)\n",
+				theta, swrcp[1], swrcp[2], tmp
+			);
+
+			return SW_MISSING;
+		}
+
+		res = swrcp[0] / tmp;
 	}
-
-	res = swrcp[0] / tmp;
 
 	// convert [cm of H20; SOILWAT2 legacy value] to [bar]
 	return res / 1024.;
@@ -1174,6 +1194,11 @@ double SWRC_SWCtoSWP_Campbell1974(
   van Genuchten 1980 \cite vanGenuchten1980 Soil Water Retention Curve
 
   Parameters are explained in `SWRC_check_parameters_for_vanGenuchten1980()`.
+
+  @note
+   `SWRC_SWPtoSWC_vanGenuchten1980()` and `SWRC_SWCtoSWP_vanGenuchten1980()`
+    are the inverse of each other
+    for `(phi, theta)` between `(0, theta_sat)` and `(infinity, theta_min)`.
 
   @param[in] swcBulk Soil water content in the layer [cm]
   @param[in] *swrcp Vector of SWRC parameters
@@ -1198,31 +1223,50 @@ double SWRC_SWCtoSWP_vanGenuchten1980(
 	// convert bulk SWC [cm] to theta = matric VWC [cm / cm]
 	theta = swcBulk / (width * (1. - gravel));
 
-	// calculate inverse of normalized theta
-	tmp = theta - swrcp[0];
+	// calculate if theta in ]theta_min, theta_sat]
+	if (GT(theta, swrcp[0])) {
+		if (LT(theta, swrcp[1])) {
+			// calculate inverse of normalized theta
+			tmp = (swrcp[1] - swrcp[0]) / (theta - swrcp[0]);
 
-	if (!isfinite(tmp) || LE(tmp, 0.)) {
+			// calculate tension [cm of H20]
+			tmp = powe(tmp, 1. / (1. - 1. / swrcp[3])); // tmp values are >= 1
+			res = pow(-1. + tmp, 1. / swrcp[3]) / swrcp[2]; // `pow()` because x >= 0
+
+			// convert [cm of H20 at 4 C; value from `soilDB::KSSL_VG_model()`] to [bar]
+			res /= 1019.716;
+
+		} else if (EQ(theta, swrcp[1])) {
+			// theta is theta_sat
+			res = 0;
+
+		} else {
+			// theta is > theta_sat
+			LogError(
+				logfp,
+				errmode,
+				"SWRC_SWCtoSWP_vanGenuchten1980(): invalid value of\n"
+				"\ttheta = %f (must be <= theta_sat = %f)\n",
+				theta, swrcp[1]
+			);
+
+			res = SW_MISSING;
+		}
+
+	} else {
+		// theta is <= theta_min
 		LogError(
 			logfp,
 			errmode,
 			"SWRC_SWCtoSWP_vanGenuchten1980(): invalid value of\n"
-			"\t(theta - theta(residual)) = %f - %f =\n"
-			"\t= %f (must be > 0)\n",
-			theta, swrcp[0], tmp
+			"\ttheta = %f (must be > theta_min = %f)\n",
+			theta, swrcp[0]
 		);
 
-		return SW_MISSING;
+		res = SW_MISSING;
 	}
 
-	tmp = (swrcp[1] - swrcp[0]) / tmp;
-
-
-	// calculate tension [cm of H20]
-	tmp = powe(tmp, 1. / (1. - 1. / swrcp[3])); // tmp values are in 0-1
-	res = pow(-1. + tmp, 1. / swrcp[3]) / swrcp[2]; // use `pow()` because x < 0
-
-	// convert [cm of H20 at 4 C; value from `soilDB::KSSL_VG_model()`] to [bar]
-	return res / 1019.716;
+	return res;
 }
 
 
@@ -1287,11 +1331,11 @@ double SWRC_SWPtoSWC(
 ) {
 	double res = SW_MISSING;
 
-	if (LE(swpMatric, 0.)) {
+	if (LT(swpMatric, 0.)) {
 		LogError(
 			logfp,
 			errmode,
-			"SWRC_SWPtoSWC(): invalid SWP = %.4f (must be > 0)\n",
+			"SWRC_SWPtoSWC(): invalid SWP = %.4f (must be >= 0)\n",
 			swpMatric
 		);
 
@@ -1330,6 +1374,16 @@ double SWRC_SWPtoSWC(
   @note
     This function was previously named `SW_SWPmatric2VWCBulk()`.
 
+  @note
+    The function returns saturated water content if `swpMatric` is at or below
+    the "air-entry suction" point (see `swrcp[0]`).
+
+  @note
+   `SWRC_SWPtoSWC_Campbell1974()` and `SWRC_SWCtoSWP_Campbell1974()`
+    are the inverse of each other
+    for `(phi, theta)` between `(swrcp[0], `theta` at `swrcp[0]`)`
+    and `(infinity, 0)`.
+
   @param[in] swpMatric Soil water potential [-bar]
   @param[in] *swrcp Vector of SWRC parameters
   @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
@@ -1349,8 +1403,14 @@ double SWRC_SWPtoSWC_Campbell1974(
 	// convert SWP [-bar] to phi [cm of H20; SOILWAT2 legacy value]
 	phi = swpMatric * 1024.;
 
-	// calculate matric theta [cm / cm]; assuming `swpMatric` > 0
-	res = swrcp[1] * powe(swrcp[0] / phi, 1. / swrcp[2]);
+	if (LT(phi, swrcp[0])) {
+		res = swrcp[1]; // theta_sat
+
+	} else {
+		// calculate matric theta [cm / cm]
+		// within [0, theta_sat] because `phi` > swrcp[0]
+		res = swrcp[1] * powe(swrcp[0] / phi, 1. / swrcp[2]);
+	}
 
 	// convert matric theta [cm / cm] to bulk SWC [cm]
 	return (1. - gravel) * width * res;
@@ -1362,6 +1422,11 @@ double SWRC_SWPtoSWC_Campbell1974(
     van Genuchten 1980 \cite vanGenuchten1980 Soil Water Retention Curve
 
   Parameters are explained in `SWRC_check_parameters_for_vanGenuchten1980()`.
+
+  @note
+   `SWRC_SWPtoSWC_vanGenuchten1980()` and `SWRC_SWCtoSWP_vanGenuchten1980()`
+    are the inverse of each other
+    for `(phi, theta)` between `(0, theta_sat)` and `(infinity, theta_min)`.
 
   @param[in] swpMatric Soil water potential [-bar]
   @param[in] *swrcp Vector of SWRC parameters
@@ -1383,11 +1448,10 @@ double SWRC_SWPtoSWC_vanGenuchten1980(
 	// value from `soilDB::KSSL_VG_model()`]
 	phi = swpMatric * 1019.716;
 
-	// assume that `swpMatric` > 0
 	tmp = powe(swrcp[2] * phi, swrcp[3]);
 	tmp = powe(1. + tmp, 1. - 1. / swrcp[3]);
 
-	// calculate matric theta [cm / cm]
+	// calculate matric theta [cm / cm] which is within [theta_min, theta_sat]
 	res = swrcp[0] + (swrcp[1] - swrcp[0]) / tmp;
 
 	// convert matric theta [cm / cm] to bulk SWC [cm]
