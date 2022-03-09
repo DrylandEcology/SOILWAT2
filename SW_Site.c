@@ -602,7 +602,7 @@ double SWRC_PDF_swcBulk_minimum(
 
 	switch (swrc_type) {
 		case 0: // Campbell1974: does not define a `theta_min`
-			if (pdf_type == 1 || pdf_type == 2) {
+			if (pdf_type == 0 || pdf_type == 1 || pdf_type == 2) {
 				// Cosby1984AndOthers/Cosby1984: we cannot set theta_min = 0 because phi -> infinity
 				// -> `legacy_theta_min()`
 				theta_min = legacy_theta_min(
