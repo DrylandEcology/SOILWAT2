@@ -114,12 +114,13 @@ extern "C" {
 #define SW_SNOWPACK		"SNOWPACK"		//24	4		2
 #define SW_DEEPSWC		"DEEPSWC"		//25	4		1
 #define SW_SOILTEMP		"SOILTEMP"		//26	4		2
-#define SW_ALLVEG		"ALLVEG"		//27	5		0/* position and variable marker, not an output key */
-#define SW_ESTAB		"ESTABL"		//28	5		0
-#define SW_CO2EFFECTS		"CO2EFFECTS"		//29	?		?
-#define SW_BIOMASS		"BIOMASS"		//30	?		?
+#define SW_FROZEN       "FROZEN"        //27    ?       ?
+#define SW_ALLVEG		"ALLVEG"		//28	5		0/* position and variable marker, not an output key */
+#define SW_ESTAB		"ESTABL"		//29	5		0
+#define SW_CO2EFFECTS	"CO2EFFECTS"	//30	?		?
+#define SW_BIOMASS		"BIOMASS"		//31	?		?
 
-#define SW_OUTNKEYS 31 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
+#define SW_OUTNKEYS 32 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
 
 /* these are the code analog of the above */
 /* see also key2str[] in Output.c */
@@ -155,6 +156,7 @@ typedef enum {
 	eSW_SnowPack,
 	eSW_DeepSWC,
 	eSW_SoilTemp,
+    eSW_Frozen,
 	/* vegetation quantities */
 	eSW_AllVeg,
 	eSW_Estab,
@@ -308,6 +310,7 @@ void get_snowpack_text(OutPeriod pd);
 void get_deepswc_text(OutPeriod pd);
 void get_estab_text(OutPeriod pd);
 void get_soiltemp_text(OutPeriod pd);
+void get_frozen_text(OutPeriod pd);
 void get_co2effects_text(OutPeriod pd);
 void get_biomass_text(OutPeriod pd);
 #endif
@@ -338,6 +341,7 @@ void get_snowpack_mem(OutPeriod pd);
 void get_deepswc_mem(OutPeriod pd);
 void get_estab_mem(OutPeriod pd);
 void get_soiltemp_mem(OutPeriod pd);
+void get_frozen_mem(outPeriod pd);
 void get_co2effects_mem(OutPeriod pd);
 void get_biomass_mem(OutPeriod pd);
 
@@ -367,6 +371,7 @@ void get_snowpack_agg(OutPeriod pd);
 void get_deepswc_agg(OutPeriod pd);
 void get_estab_agg(OutPeriod pd);
 void get_soiltemp_agg(OutPeriod pd);
+void get_frozen_agg(OutPeriod pd);
 void get_co2effects_agg(OutPeriod pd);
 void get_biomass_agg(OutPeriod pd);
 
@@ -395,6 +400,7 @@ void get_snowpack_SXW(OutPeriod pd);
 void get_deepswc_SXW(OutPeriod pd);
 void get_estab_SXW(OutPeriod pd);
 void get_soiltemp_SXW(OutPeriod pd);
+void get_frozen_SXW(OutPeriod pd);
 void get_co2effects_SXW(OutPeriod pd);
 void get_biomass_SXW(OutPeriod pd);
 #endif
