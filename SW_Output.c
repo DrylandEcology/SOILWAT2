@@ -48,6 +48,7 @@
 #include "SW_Weather.h"  // externs SW_Weather
 #include "SW_VegEstab.h" // externs SW_VegEstab
 #include "SW_VegProd.h" // externs SW_VegProd
+#include "SW_Flow_lib.h" // externs stValues
 
 #include "SW_Output.h"
 
@@ -129,7 +130,7 @@ char const *key2str[] =
 	SW_ALLH2O, SW_VWCBULK, SW_VWCMATRIC, SW_SWCBULK, SW_SWABULK, SW_SWAMATRIC,
 		SW_SWA, SW_SWPMATRIC, SW_SURFACEW, SW_TRANSP, SW_EVAPSOIL, SW_EVAPSURFACE,
 		SW_INTERCEPTION, SW_LYRDRAIN, SW_HYDRED, SW_ET, SW_AET, SW_PET, SW_WETDAY,
-		SW_SNOWPACK, SW_DEEPSWC, SW_SOILTEMP,
+		SW_SNOWPACK, SW_DEEPSWC, SW_SOILTEMP, SW_FROZEN,
 	// vegetation quantities:
 	SW_ALLVEG, SW_ESTAB,
 	// vegetation other:
@@ -144,7 +145,7 @@ ObjType key2obj[] =
 	eWTH, eWTH, eWTH, eWTH, eWTH,
 	// soil related water quantities:
 	eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
-		eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
+		eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC, eSWC,
 	// vegetation quantities:
 	eVES, eVES,
 	// vegetation other:
@@ -256,7 +257,8 @@ Bool has_key_soillayers(OutKey k) {
 			k == eSW_LyrDrain ||
 			k == eSW_HydRed ||
 			k == eSW_WetDays ||
-			k == eSW_SoilTemp
+			k == eSW_SoilTemp ||
+            k == eSW_Frozen
 		) ? swTRUE : swFALSE;
 
 	return(has);
@@ -285,7 +287,8 @@ Bool has_keyname_soillayers(const char *var) {
 			strcmp(var, SW_LYRDRAIN) == 0 ||
 			strcmp(var, SW_HYDRED) == 0 ||
 			strcmp(var, SW_WETDAY) == 0 ||
-			strcmp(var, SW_SOILTEMP) == 0
+			strcmp(var, SW_SOILTEMP) == 0 ||
+            strcmp(var, SW_FROZEN) == 0
 		) ? swTRUE : swFALSE;
 
 	return(has);
@@ -522,6 +525,11 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		ForEachSoilLayer(i)
 			s->sTemp[i] += v->sTemp[i];
 		break;
+            
+    case eSW_Frozen:
+        ForEachSoilLayer(i)
+            s->lyrFrozen[i] += stValues.lyrFrozen[i];
+        break;
 
 	default:
 		LogError(logfp, LOGFATAL, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
@@ -647,6 +655,14 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 									s->p_accu[pd]->sTemp[i] / div;
 				}
 				break;
+            
+            case eSW_Frozen:
+                    ForEachSoilLayer(i) {
+                        s->p_oagg[pd]->lyrFrozen[i] = (SW_Output[k].sumtype == eSW_Fnl) ?
+                                            s->lyrFrozen[i] :
+                                            s->p_accu[pd]->lyrFrozen[i] / div;
+                    }
+                    break;
 
 			case eSW_VWCBulk:
 				ForEachSoilLayer(i) {
@@ -1441,6 +1457,18 @@ void SW_OUT_construct(void)
 			#endif
 			break;
 
+        case eSW_Frozen:
+            #ifdef SW_OUTTEXT
+            SW_Output[k].pfunc_text = (void (*)(OutPeriod)) get_frozen_text;
+            #endif
+            #if defined(RSOILWAT)
+            SW_Output[k].pfunc_mem = (void (*)(OutPeriod)) get_frozen_mem;
+            #elif defined(STEPWAT)
+            SW_Output[k].pfunc_agg = (void (*)(OutPeriod)) get_frozen_agg;
+            SW_Output[k].pfunc_SXW = (void (*)(OutPeriod)) get_none;
+            #endif
+            break;
+
 		case eSW_Estab:
 			#ifdef SW_OUTTEXT
 			SW_Output[k].pfunc_text = (void (*)(OutPeriod)) get_estab_text;
@@ -1562,6 +1590,7 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_SnowPack] = 2;
 	ncol_OUT[eSW_DeepSWC] = 1;
 	ncol_OUT[eSW_SoilTemp] = tLayers;
+    ncol_OUT[eSW_Frozen] = tLayers;
 	ncol_OUT[eSW_AllVeg] = 0;
 	ncol_OUT[eSW_Estab] = SW_VegEstab.count;
 	ncol_OUT[eSW_CO2Effects] = 2 * NVEGTYPES;
@@ -1619,7 +1648,6 @@ void SW_OUT_set_colnames(void) {
 		"snowdepth_cm" };
 	const char *cnames_eSW_DeepSWC[] = { "lowLayerDrain_cm" };
 	const char *cnames_eSW_CO2Effects[] = { "BioMult", "WUEMult" };
-
 
 	#ifdef SWDEBUG
 	if (debug) swprintf("SW_OUT_set_colnames: set columns for 'eSW_Temp' ...");
@@ -1790,7 +1818,14 @@ void SW_OUT_set_colnames(void) {
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SoilTemp]; i++) {
 		colnames_OUT[eSW_SoilTemp][i] = Str_Dup(Layers_names[i]);
-	}
+    }
+    
+    #ifdef SWDEBUG
+    if (debug) swprintf(" 'eSW_State' ...");
+    #endif
+        for (i = 0; i < ncol_OUT[eSW_Frozen]; i++) {
+                colnames_OUT[eSW_Frozen][i] = Str_Dup(Layers_names[i]);
+    }
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Estab' ...");
 	#endif
@@ -1808,6 +1843,7 @@ void SW_OUT_set_colnames(void) {
 			colnames_OUT[eSW_CO2Effects][j + i * NVEGTYPES] = Str_Dup(ctemp);
 		}
 	}
+    
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Biomass' ...");
 	#endif
@@ -1834,7 +1870,7 @@ void SW_OUT_set_colnames(void) {
 	}
 	i += j;
 	strcpy(ctemp, "LAI_total");
-	colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp);
+    colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp);
 
 	#ifdef SWDEBUG
 	if (debug) swprintf(" completed.\n");
