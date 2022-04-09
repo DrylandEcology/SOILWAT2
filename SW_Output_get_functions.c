@@ -2484,7 +2484,7 @@ void get_frozen_mem(OutPeriod pd)
 
     ForEachSoilLayer(i)
     {
-        p[iOUT(i, pd)] = stValues.lyrFrozen[i];
+        p[iOUT(i, pd)] = vo->lyrFrozen[i];
     }
 }
 
@@ -2506,7 +2506,7 @@ void get_frozen_agg(OutPeriod pd)
 
     ForEachSoilLayer(i)
     {
-        do_running_agg(p, psd, iOUT(i, pd), Globals->currIter, stValues.lyrFrozen[i]);
+        do_running_agg(p, psd, iOUT(i, pd), Globals->currIter, vo->lyrFrozen[i]);
     }
 
     if (print_IterationSummary) {
