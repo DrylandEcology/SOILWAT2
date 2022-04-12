@@ -341,7 +341,7 @@ void get_snowpack_mem(OutPeriod pd);
 void get_deepswc_mem(OutPeriod pd);
 void get_estab_mem(OutPeriod pd);
 void get_soiltemp_mem(OutPeriod pd);
-void get_frozen_mem(outPeriod pd);
+void get_frozen_mem(OutPeriod pd);
 void get_co2effects_mem(OutPeriod pd);
 void get_biomass_mem(OutPeriod pd);
 
