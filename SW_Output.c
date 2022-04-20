@@ -528,7 +528,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
             
     case eSW_Frozen:
         ForEachSoilLayer(i)
-            s->lyrFrozen[i] += stValues.lyrFrozen[i];
+            s->lyrFrozen[i] += v->lyrFrozen[i];
         break;
 
 	default:
