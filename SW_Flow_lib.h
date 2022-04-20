@@ -41,7 +41,6 @@
 extern "C" {
 #endif
 
-
 // based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 #define TCORRECTION			0.02 	// correction factor for eq. 3 [unitless]; estimate based on data from CPER/SGS LTER
 #define FREEZING_TEMP_C		-1.		// freezing point of water in soil [C]; based on Parton 1984
@@ -60,8 +59,7 @@ typedef struct {
 		   	 bDensityR[MAX_ST_RGR],//bulk density of the whole soil per soil layer for soil temperature calculations
 		   	 oldsFusionPool_actual[MAX_LAYERS],
 		   	 oldsTempR[MAX_ST_RGR];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
-
-	Bool lyrFrozen[MAX_LAYERS];
+    
 	double tlyrs_by_slyrs[MAX_ST_RGR][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers
 
 	/*unsigned int x1BoundsR[MAX_ST_RGR],
@@ -118,7 +116,7 @@ void percolate_unsaturated(
 	double *standingWater,
 	unsigned int nlyrs,
 	SW_LAYER_INFO *lyr[],
-	Bool lyrFrozen[],
+    RealD lyrFrozen[],
 	double slow_drain_coeff,
 	double slow_drain_depth
 );
@@ -129,7 +127,7 @@ void hydraulic_redistribution(
 	unsigned int vegk,
 	unsigned int nlyrs,
 	SW_LAYER_INFO *lyr[],
-	Bool lyrFrozen[],
+	RealD lyrFrozen[],
 	double maxCondroot,
 	double swp50,
 	double shapeCond,
