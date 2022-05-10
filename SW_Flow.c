@@ -748,7 +748,7 @@ void SW_Water_Flow(void) {
 				k,
 				SW_Site.n_layers,
 				SW_Site.lyr,
-				stValues.lyrFrozen,
+				sw->lyrFrozen,
 				v->veg[k].maxCondroot,
 				v->veg[k].swpMatric50,
 				v->veg[k].shapeCond,
@@ -796,7 +796,7 @@ void SW_Water_Flow(void) {
 		&standingWater[Today],
 		SW_Site.n_layers,
 		SW_Site.lyr,
-		stValues.lyrFrozen,
+		sw->lyrFrozen,
 		SW_Site.slow_drain_coeff,
 		SLOW_DRAIN_DEPTH
 	);

@@ -319,7 +319,7 @@ namespace {
 
     set_frozen_unfrozen(nlyrs, sTemp, swc, swc_sat, width);
 
-    EXPECT_EQ(1,stValues.lyrFrozen[0]); // Soil should freeze when sTemp is <= -1
+    EXPECT_EQ(1,SW_Soilwat.lyrFrozen[0]); // Soil should freeze when sTemp is <= -1
     // AND swc is > swc_sat - width * .13
 
     /// ***** Test that soil does not freeze ***** ///
@@ -327,7 +327,7 @@ namespace {
 
     set_frozen_unfrozen(nlyrs, sTemp2, swc, swc_sat, width);
 
-    EXPECT_EQ(0,stValues.lyrFrozen[0]); // Soil should NOT freeze when sTemp is > -1
+    EXPECT_EQ(0,SW_Soilwat.lyrFrozen[0]); // Soil should NOT freeze when sTemp is > -1
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
@@ -349,11 +349,11 @@ namespace {
       // run
       set_frozen_unfrozen(nlyrs, sTemp3, swc2, swc_sat2, width2);
       // Test
-      EXPECT_EQ(1,stValues.lyrFrozen[i]);
+      EXPECT_EQ(1,SW_Soilwat.lyrFrozen[i]);
       // run
       set_frozen_unfrozen(nlyrs, sTemp4, swc2, swc_sat2, width2);
       // Test
-      EXPECT_EQ(0,stValues.lyrFrozen[i]);
+      EXPECT_EQ(0,SW_Soilwat.lyrFrozen[i]);
     }
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
