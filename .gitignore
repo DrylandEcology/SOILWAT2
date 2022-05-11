@@ -15,6 +15,7 @@
 
 # Test project output
 /testing/Output/*
+/testing/Output_*
 
 # Google unit test output
 gtest-*.o

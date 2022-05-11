@@ -40,15 +40,15 @@
 
 SOILWAT2 is an ecosystem water balance simulation model.
 
-This version of SoilWat brings new features. This is the same code that is
+This repository of `SOILWAT2` contains the same code that is
 used by [rSOILWAT2][] and [STEPWAT2][].
 
-If you make use of this model, please cite appropriate references, and we would
+If you utilize this model, please cite appropriate references, and we would
 like to hear about your particular study (especially a copy of any published
 paper).
 
 
-Some recent references
+Some references
 
 * Bradford, J. B., D. R. Schlaepfer, and W. K. Lauenroth. 2014. Ecohydrology of
   adjacent sagebrush and lodgepole pine ecosystems: The consequences of climate
@@ -74,6 +74,7 @@ Some recent references
     4. [Code tests](#code_tests)
     5. [Code debugging](#code_debugging)
     6. [Code versioning](#code_versioning)
+    7. [Reverse dependencies](#revdep)
 3. [Some additional notes](#more_notes)
 
 <br>
@@ -101,9 +102,19 @@ A full code documentation may be built, see [here](#get_documentation).
     - POSIX- or GNU-compliant `make`
     - On Windows OS: an installation of `cygwin`
 
-  * Build with `make` (see `make help` to print information about all
-    available targets)
+  * Clone the repository
+    (details can be found in the
+    [manual](doc/additional_pages/A_SOILWAT2_user_guide.md)), for instance,
+    ```{.sh}
+        git clone --recursive https://github.com/DrylandEcology/SOILWAT2.git SOILWAT2
+    ```
 
+  * Build with `make` (see `make help` to print information about all
+    available targets), for instance,
+    ```{.sh}
+        cd SOILWAT2/
+        make bin
+    ```
 <br>
 
 
@@ -128,14 +139,15 @@ You can help us in different ways:
 
 
 <a name="SOILWAT2_code"></a>
-### SOILWAT2 code is used as part of three applications
-  * Stand-alone
-    (Programmer note: code flag `SOILWAT` is defined if neither `STEPWAT` nor
-    `RSOILWAT` exist),
+### `SOILWAT2` code is used as part of three applications
+  * Stand-alone,
 
   * Part/submodule of [STEPWAT2][] (code flag `STEPWAT`), and
 
   * Part/submodule of the R package [rSOILWAT2][] (code flag `RSOILWAT`)
+
+Changes in `SOILWAT2` must be reflected by updates to `STEPWAT2` or `rSOILWAT2`;
+please see section [reverse dependencies](#revdep).
 
 <br>
 
@@ -146,22 +158,28 @@ You can help us in different ways:
 <br>
 
 
-### Tests, documentation, and code form a trinity
+### Code development, documentation, and tests go together
+
+We develop code on development branches and,
+after they are reviewed and pass our checks,
+merge them into the master branch for release.
+
 
 <a name="code_documentation"></a>
 #### Code documentation
-  * Use [doxygen][] to write inline documentation
+  * Document new code with [doxygen][] inline documentation
 
-  * Make sure that new documentation results in `doxygen` documentation without
-    warnings, i.e., `make doc` is successful
-    (it basically checks that `doxygen doc/Doxyfile | grep warning` is empty).
-    Make also sure that newly created and amended documentation displays
+  * Check that new documentation renders correctly and does not
+    generate `doxygen` warnings, i.e.,
+    run `make doc` and check that it returns successfully
+    (it checks that `doxygen doc/Doxyfile | grep warning` is empty).
+    Also check that new or amended documentation displays
     as intended by opening `doc/html/index.html` and navigating to the item
     in question
 
   * Keep `doc/html/` local, i.e., don't push to the repository
 
-  * Use regular c-style comments to additionally document code
+  * Use regular c-style comments for additional code documentation
 
 <br>
 
@@ -170,16 +188,23 @@ You can help us in different ways:
 #### Code tests
 __Testing framework__
 
-Use [GoogleTest][] to add unit tests to the existing framework in the
-folder `test/` where each unit test file uses the naming scheme
-`test/test_*.cc`.
+The goal is to cover all code development with new or amended tests.
+`SOILWAT2` comes with unit tests and integration tests.
+Additionally, the github repository runs continuous integration checks.
+
+<br>
+
+__Unit tests__
+
+We use [GoogleTest][] for unit tests
+to check that individual units of code, e.g., functions, work as expected.
+
+These tests are organized in the folder `test/`
+in files with the naming scheme `test_*.cc`.
 
 Note: `SOILWAT2` is written in C whereas `GoogleTest` is a C++ framework. This
 causes some complications, see `makefile`.
 
-<br>
-
-__Running unit tests__
 
 Run unit tests locally on the command-line with
 ```{.sh}
@@ -188,9 +213,20 @@ Run unit tests locally on the command-line with
       make clean                 # cleans build artifacts
 ```
 
-If you want to run unit tests repeatedly (e.g., to sample a range of
-random numbers), then you may use the bash-script `tools/many_test_runs.sh`
-which runs `N` number of times and reports only unit test failures, e.g.,
+
+__Miscellaneous scripts for tests__
+
+Users of `SOILWAT2` work with a variety of compilers across different platforms
+and we aim to test that this works across a reasonable selection.
+We can do that manually or use the bash-script `tools/check_SOILWAT2.sh`
+which runs tests with different compiler versions.
+Please note that this script currently works only with `macports`.
+
+
+`SOILWAT2` is a deterministic simulation model; however, running unit tests
+repeatedly may be helpful for debugging in rare situations. For that,
+the bash-script `tools/many_test_runs.sh` will run `N` number of times and
+only reports unit test failures, e.g.,
 ```{.sh}
       ./tools/many_test_runs.sh        # will run a default (currently, 10) number of times
       N=3 ./tool/many_test_runs.sh     # will run 3 replicates
@@ -200,23 +236,41 @@ which runs `N` number of times and reports only unit test failures, e.g.,
 
 __Integration tests__
 
-Informal and local integration tests example:
-  1. Before coding, run the example in `testing/` to produce reference output
+We use integration tests to check that the entire simulation model works
+as expected when used in a real-world application setting.
+
+The folder `testing/` contains all necessary inputs to run `SOILWAT2`
+for one generic location
+(it is a relatively wet and cool site in the sagebrush steppe).
 
 ```{.sh}
+      make bin bint_run
+```
+
+The simulated output is stored at `testing/Output/`.
+
+
+Another use case is to compare output of a new (development) branch to output
+from a previous (reference) release.
+
+Depending on the purpose of the development branch
+the new output should be exactly the same as reference output or
+differ in specific ways in specific variables.
+
+The following steps provide a starting point for such comparisons:
+
+```{.sh}
+      # Simulate on refernce branch and copy output to "Output_ref"
       git checkout master
       make bin bint_run
       cp -r testing/Output testing/Output_ref
-```
 
-  2. Develop your code and keep "testing/Output_ref" locally, i.e., don't
-  include "testing/Output_ref" in commits
-
-  3. Regularly, e.g., before finalizing a commit, check that new code produces
-  identical output (that is unless you work on output...)
-
-```{.sh}
+      # Switch to development branch <branch_xxx> and run the same simulation
+      git checkout <branch_xxx>
       make bin bint_run
+
+      # Compare the two sets of outputs
+      #   * Lists all output files and determine if they are exactly they same
       diff testing/Output/ testing/Output_ref/ -qs
 ```
 
@@ -224,8 +278,8 @@ Informal and local integration tests example:
 __Additional tests__
 
 Additional output can be generated by passing appropriate flags when running
-unit tests. Scripts are available to analyze such output. Currently, the
-following output is implemented:
+unit tests. Scripts are available to analyze such output.
+Currently, the following is implemented:
 
   - Sun hour angles plots for horizontal and tilted surfaces
 
@@ -255,8 +309,9 @@ following output is implemented:
 __Continous integration checks__
 
 Development/feature branches can only be merged into master if they pass
-all checks on the continuous integration servers, i.e.,
-run the following locally to prepare a pull-request or commit to be reviewed
+all checks on the continuous integration servers.
+Running the following tests locally helps to increase chances that
+they will work well on the servers as well:
 ```{.sh}
       make clean bin_debug_severe bint_run
       make clean test_severe test_run
@@ -266,33 +321,25 @@ run the following locally to prepare a pull-request or commit to be reviewed
 
 __Sanitizer__
 
-You may want/need to exclude known memory leaks from severe testing
+Running tests with the `severe` targets may require excluding known memory leaks
 (see [issue #205](https://github.com/DrylandEcology/SOILWAT2/issues/205)):
 
 ```{.sh}
       ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
 ```
 
-The address sanitizer may not work correctly and/or fail, if you use the
-`Apple-clang` version shipped with macOS X. You may need to build `clang`
-yourself
-(see [Sanitizer issue #1026](https://github.com/google/sanitizers/issues/1026)):
-e.g.,
+The address sanitizer may not work correctly and/or fail when used with the
+`Apple-clang` version that is shipped with macOS X
+(see [Sanitizer issue #1026](https://github.com/google/sanitizers/issues/1026)).
+A separate installation of `clang` may be required,
+e.g., via `homebrew` or `macports`.
 
-```{.sh}
-      sudo port install clang-8.0
-      sudo port select --set clang mp-clang-8.0
-```
 
-Revert to the default version
-
-```{.sh}
-      sudo port select --set clang none
-```
-
-If you installed `clang` in a non-default location, then you
-may need to also fix names of shared dynamic libraries in the test
-executable if you get the error `... dyld: Library not loaded ...`, e.g.,
+If `clang` is installed in a non-default location and
+if shared dynamic libraries are not picked up correctly, then
+the test executable may throw an error `... dyld: Library not loaded ...`.
+This can be fixed, for instance, with the following steps
+(details depend on the specific setup, below is for `macports` and `clang-8.0`):
 
 ```{.sh}
       # build test executable with clang and leak detection
@@ -342,14 +389,14 @@ executable if you get the error `... dyld: Library not loaded ...`, e.g.,
     make bin bint_run CPPFLAGS=-DSWDEBUG
 ```
 
-  * Alternatively and potentially preferably, you can use the pre-configured
-    debugging targets `bin_debug` and `bin_debug_severe`, for instance, with
+  * Alternatively, use the pre-configured debugging targets
+    `bin_debug` and `bin_debug_severe`, for instance, with
 
 ```{.sh}
     make bin_debug_severe bint_run
 ```
 
-  * If **valgrind** is installed, then you can call the target `bind_valgrind`
+  * If **valgrind** is installed, then call the target `bind_valgrind`
     (see description in `makefile`) with
 
 ```
@@ -364,7 +411,46 @@ executable if you get the error `... dyld: Library not loaded ...`, e.g.,
 #### Version numbers
 
 We attempt to follow guidelines of [semantic versioning][] with version
-numbers of `MAJOR.MINOR.PATCH`.
+numbers of `MAJOR.MINOR.PATCH`;
+however, our version number updates are focusing
+on simulated output (e.g., identical output -> increase patch number) and
+on dependencies `STEPWAT2` and `rSOILWAT2`
+(e.g., no updates required -> increase patch number).
+
+We create a new release for each update to the master branch.
+The master branch is updated via pull requests from development branches
+after they are reviewed and pass required checks.
+
+
+<br>
+
+
+<a name="revdep"></a>
+## Reverse dependencies
+
+`STEPWAT2` and `rSOILWAT2` depend on `SOILWAT2`;
+they utilize the master branch of `SOILWAT2` as a submodule.
+Thus, changes in `SOILWAT2` need to be propagated to `STEPWAT2` and `rSOILWAT2`.
+
+The following steps can serve as starting point to resolve
+the cross-repository reverse dependencies:
+
+  1. Create development branch `branch_*` in `SOILWAT2`
+  1. Create respective development branches in `STEPWAT2` and `rSOILWAT2`
+  1. Update the `SOILWAT2` submodule of `STEPWAT2` and `rSOILWAT2` as first
+     commit on these new development branches:
+      * Have `.gitmodules` point to the new `SOILWAT2` branch `branch_*`
+      * Update the submodule `git submodule update --remote`
+  1. Develop and test code and follow guidelines of `STEPWAT2` and `rSOILWAT2`
+  1. Create pull requests for each development branch
+  1. Merge pull request `SOILWAT2` once development is finalized, reviewed, and
+     sufficiently tested across all three repositories;
+     create new `SOILWAT2` [release](#code_versioning)
+  1. Finalize development branches in `STEPWAT2` and `rSOILWAT2`
+      * Have `.gitmodules` point to the new `SOILWAT2` release on `master`
+      * Update the submodule `git submodule update --remote`
+  1. Handle pull requests for `STEPWAT2` and `rSOILWAT2` according to
+     their guidelines
 
 <br>
 
