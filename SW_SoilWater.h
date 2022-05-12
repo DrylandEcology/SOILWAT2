@@ -1,4 +1,4 @@
-﻿/********************************************************/
+/********************************************************/
 /********************************************************/
 /*	Source file: SW_SoilWater.h
  Type: header
@@ -87,7 +87,8 @@ typedef struct {
 			pet, H_oh, H_ot, H_gh, H_gt,
 			deep,
 			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
-			surfaceTemp; // soil surface temperature
+            surfaceTemp, // soil surface temperature
+            lyrFrozen[MAX_LAYERS];
 } SW_SOILWAT_OUTPUTS;
 
 
@@ -112,7 +113,8 @@ typedef struct {
 		litter_evap, evap_veg[NVEGTYPES],
 		litter_int, int_veg[NVEGTYPES], // todays intercepted rain by litter and by vegetation
 		sTemp[MAX_LAYERS],
-		surfaceTemp; // soil surface temperature
+        surfaceTemp, // soil surface temperature
+        lyrFrozen[MAX_LAYERS];
 
 	RealF swa_master[NVEGTYPES][NVEGTYPES][MAX_LAYERS]; // veg_type, crit_val, layer
 	RealF dSWA_repartitioned_sum[NVEGTYPES][MAX_LAYERS];

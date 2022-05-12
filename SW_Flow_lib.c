@@ -279,7 +279,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 	double d[MAX_LAYERS] = {0};
 	double push, ksat_rel;
 
-	ST_RGR_VALUES *st = &stValues;
+    SW_SOILWAT *st = &SW_Soilwat;
 
 	// Infiltration
 	swc[0] += pptleft + *standingWater;
@@ -287,7 +287,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 
 	// Saturated percolation
 	for (i = 0; i < nlyrs; i++) {
-		if (st->lyrFrozen[i]) {
+		if (!ZRO(st->lyrFrozen[i])) {
 			ksat_rel = 0.01; // roughly estimated from Parton et al. 1998 GCB
 		} else {
 			ksat_rel = 1.;
@@ -744,7 +744,7 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	unsigned int i;
 	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q, tmpswp;
 
-	ST_RGR_VALUES *st = &stValues;
+    SW_SOILWAT *st = &SW_Soilwat;
 
 	for (i = 0; i < nlyrs; i++) {
 		tmpswp = SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
@@ -761,7 +761,7 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 		return;
 
 	for (i = 0; i < nlyrs; i++) {
-		if (st->lyrFrozen[i]) {
+		if (!ZRO(st->lyrFrozen[i])) {
 			// no water extraction, i.e., evaporation and transpiration, from a frozen soil layer
 			qty[i] = 0.;
 
@@ -801,7 +801,7 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 
 void percolate_unsaturated(
 	double swc[], double percolate[], double *drainout, double *standingWater,
-	unsigned int nlyrs, SW_LAYER_INFO *lyr[], Bool lyrFrozen[],
+	unsigned int nlyrs, SW_LAYER_INFO *lyr[], RealD lyrFrozen[],
 	double slow_drain_coeff, double slow_drain_depth
 ) {
 
@@ -831,7 +831,7 @@ void percolate_unsaturated(
 			/* Scale pot. unsat. percolation rate by frozen soil
 				roughly estimated from Parton et al. 1998 GCB
 			*/
-			kunsat_rel = lyrFrozen[i] ? 0.01 : 1.;
+			kunsat_rel = !ZRO(lyrFrozen[i]) ? 0.01 : 1.;
 
 			/* Scale pot. unsat. percolation rate by soil moisture
 					Using Parton 1978, eq. 2.9:
@@ -931,7 +931,7 @@ void hydraulic_redistribution(
 	unsigned int vegk,
 	unsigned int nlyrs,
 	SW_LAYER_INFO *lyr[],
-	Bool lyrFrozen[],
+    RealD lyrFrozen[],
 	double maxCondroot,
 	double swp50,
 	double shapeCond,
@@ -1651,7 +1651,7 @@ void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[],
 // 	TODO: freeze surfaceWater and restrict infiltration
 
 	unsigned int i;
-	ST_RGR_VALUES *st = &stValues;
+    SW_SOILWAT *st = &SW_Soilwat;
 
 	for (i = 0; i < nlyrs; i++){
 		if (LE(sTemp[i], FREEZING_TEMP_C) && GT(swc[i], swc_sat[i] - width[i] * MIN_VWC_TO_FREEZE) ){
@@ -2038,6 +2038,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
+    SW_SOILWAT *v = &SW_Soilwat;
 
 	/* local variables explained:
 	 debug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
@@ -2107,7 +2108,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 				// reset soil temperature values
 				sTemp[i] = SW_MISSING;
 				// make sure that no soil layer is stuck in frozen status
-				st->lyrFrozen[i] = swFALSE;
+				v->lyrFrozen[i] = swFALSE;
 			}
 
 			do_once_at_soiltempError = swFALSE;
@@ -2200,8 +2201,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 		swprintf("\nSoil profile layer temperatures:");
 		for (i = 0; i < nlyrs; i++) {
-			swprintf("\ni %d oldTemp %f sTemp %f swc %f, swc_sat %f depth %f frozen %d",
-				i, oldsTemp[i], sTemp[i], swc[i], swc_sat[i], st->depths[i], st->lyrFrozen[i]);
+			swprintf("\ni %d oldTemp %f sTemp %f swc %f, swc_sat %f depth %f frozen %f",
+				i, oldsTemp[i], sTemp[i], swc[i], swc_sat[i], st->depths[i], v->lyrFrozen[i]);
 		}
 
 		swprintf("\n");

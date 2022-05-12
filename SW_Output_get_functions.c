@@ -2440,3 +2440,76 @@ void get_soiltemp_agg(OutPeriod pd)
 	}
 }
 #endif
+
+//------ eSW_Frozen
+#ifdef SW_OUTTEXT
+
+/**
+@brief Gets state (frozen/unfrozen) for each layer for when dealing with OUTTEXT.
+
+@param pd Period.
+*/
+void get_frozen_text(OutPeriod pd)
+{
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+
+    char str[OUTSTRLEN];
+    sw_outstr[0] = '\0';
+
+    ForEachSoilLayer(i)
+    {
+        sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->lyrFrozen[i]);
+        strcat(sw_outstr, str);
+    }
+}
+#endif
+
+#if defined(RSOILWAT)
+
+/**
+@brief Gets soil state (frozen/unfrozen) for when dealing with RSOILWAT.
+
+@param pd Period.
+*/
+void get_frozen_mem(OutPeriod pd)
+{
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+
+    RealD *p = p_OUT[eSW_Frozen][pd];
+    get_outvalleader(p, pd);
+
+    ForEachSoilLayer(i)
+    {
+        p[iOUT(i, pd)] = vo->lyrFrozen[i];
+    }
+}
+
+#elif defined(STEPWAT)
+
+/**
+@brief Gets soil temperature for when dealing with STEPWAT.
+
+@param pd Period.
+*/
+void get_frozen_agg(OutPeriod pd)
+{
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+
+    RealD
+        *p = p_OUT[eSW_Frozen][pd],
+        *psd = p_OUTsd[eSW_Frozen][pd];
+
+    ForEachSoilLayer(i)
+    {
+        do_running_agg(p, psd, iOUT(i, pd), Globals->currIter, vo->lyrFrozen[i]);
+    }
+
+    if (print_IterationSummary) {
+        sw_outstr_agg[0] = '\0';
+        format_IterationSummary(p, psd, pd, ncol_OUT[eSW_Frozen]);
+    }
+}
+#endif

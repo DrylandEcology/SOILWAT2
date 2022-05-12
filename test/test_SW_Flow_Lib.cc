@@ -45,7 +45,7 @@
 pcg32_random_t flow_rng;
 SW_VEGPROD *v = &SW_VegProd;
 SW_SITE *s = &SW_Site;
-ST_RGR_VALUES *st = &stValues;
+SW_SOILWAT *sw = &SW_Soilwat;
 //SW_SOILWAT_OUTPUTS *swo = NULL;
 
 int k;
@@ -803,7 +803,7 @@ namespace
       aet = aet_init;
       ForEachSoilLayer(i)
       {
-        st->lyrFrozen[i] = swTRUE;
+        sw->lyrFrozen[i] = swTRUE;
         qty[i] = 0.;
         swc[i] = swc_init[i];
       }
@@ -835,7 +835,7 @@ namespace
       aet = aet_init;
       ForEachSoilLayer(i)
       {
-        st->lyrFrozen[i] = swFALSE;
+        sw->lyrFrozen[i] = swFALSE;
         qty[i] = 0.;
         swc[i] = swc_init[i];
       }
@@ -948,7 +948,7 @@ namespace
       // Call function to test
       percolate_unsaturated(
         swc, drain, &drainout, &standingWater,
-        nlyrs, SW_Site.lyr, stValues.lyrFrozen,
+        nlyrs, SW_Site.lyr, SW_Soilwat.lyrFrozen,
         SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
@@ -986,7 +986,7 @@ namespace
       // Call function to test
       percolate_unsaturated(
         swc, drain, &drainout, &standingWater,
-        nlyrs, SW_Site.lyr, stValues.lyrFrozen,
+        nlyrs, SW_Site.lyr, SW_Soilwat.lyrFrozen,
         SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
@@ -1026,7 +1026,7 @@ namespace
       // Call function to test
       percolate_unsaturated(
         swc, drain, &drainout, &standingWater,
-        nlyrs, SW_Site.lyr, stValues.lyrFrozen,
+        nlyrs, SW_Site.lyr, SW_Soilwat.lyrFrozen,
         SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
@@ -1067,13 +1067,13 @@ namespace
         SW_Site.lyr[i]->swcBulk_init = 0.9 * SW_Site.lyr[i]->swcBulk_fieldcap;
         swc[i] = SW_Site.lyr[i]->swcBulk_init;
         drain[i] = 0.;
-        stValues.lyrFrozen[i] = swTRUE;
+        SW_Soilwat.lyrFrozen[i] = swTRUE;
       }
 
       // Call function to test
       percolate_unsaturated(
         swc, drain, &drainout, &standingWater,
-        nlyrs, SW_Site.lyr, stValues.lyrFrozen,
+        nlyrs, SW_Site.lyr, SW_Soilwat.lyrFrozen,
         SW_Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
@@ -1099,7 +1099,7 @@ namespace
       // Reset frozen status
       ForEachSoilLayer(i)
       {
-        stValues.lyrFrozen[i] = swFALSE;
+        SW_Soilwat.lyrFrozen[i] = swFALSE;
       }
     }
 
@@ -1154,7 +1154,7 @@ namespace
       {
         // example data based on soil:
         swc[i] = (s->lyr[i]->swcBulk_fieldcap + s->lyr[i]->swcBulk_wiltpt) / 2.;
-        stValues.lyrFrozen[i] = swFALSE;
+        SW_Soilwat.lyrFrozen[i] = swFALSE;
       }
 
       // Call function to be tested
@@ -1164,7 +1164,7 @@ namespace
         SW_SHRUB,
         nlyrs,
         SW_Site.lyr,
-        stValues.lyrFrozen,
+        SW_Soilwat.lyrFrozen,
         maxCondroot, swp50, shapeCond, scale
       );
 

@@ -239,6 +239,11 @@ void get_soiltemp_text(OutPeriod pd)
 	if (pd) {}
 }
 
+void get_frozen_text(OutPeriod pd)
+{
+    if (pd) {}
+}
+
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 {
 	OutKey x = k;
@@ -320,6 +325,7 @@ void _echo_outputs(void)
 	get_snowpack_text(pd);
 	get_deepswc_text(pd);
 	get_soiltemp_text(pd);
+    get_frozen_text(pd);
 	get_co2effects_text(pd);
 	get_biomass_text(pd);
 
