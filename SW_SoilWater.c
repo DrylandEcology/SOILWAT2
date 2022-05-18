@@ -731,7 +731,7 @@ void SW_SWC_read(void) {
 	v->surfaceTemp = 0;
 	LyrIndex i;
 	ForEachSoilLayer(i)
-		v->sTemp[i] = SW_Site.lyr[i]->sTemp;
+		v->avgLyrTemp[i] = SW_Site.lyr[i]->avgLyrTemp;
 
 	MyFileName = SW_F_name(eSoilwat);
 	f = OpenFile(MyFileName, "r");
