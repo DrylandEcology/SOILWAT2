@@ -2386,10 +2386,25 @@ void get_soiltemp_text(OutPeriod pd)
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
 
+    sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->surfaceMax);
+    strcpy(sw_outstr, str);
+    
+    sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->surfaceMin);
+    strcat(sw_outstr, str);
+    
+    sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->surfaceTemp);
+    strcat(sw_outstr, str);
+    
 	ForEachSoilLayer(i)
 	{
-		sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->sTemp[i]);
-		strcat(sw_outstr, str);
+        sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->maxLyrTemperature[i]);
+        strcat(sw_outstr, str);
+        
+        sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->minLyrTemperature[i]);
+        strcat(sw_outstr, str);
+        
+        sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->avgLyrTemp[i]);
+        strcat(sw_outstr, str);
 	}
 }
 #endif
@@ -2405,13 +2420,21 @@ void get_soiltemp_mem(OutPeriod pd)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+    int nlyrs = SW_Soilwat.nlyrs, doubleOffset = 2 * nlyrs;
 
 	RealD *p = p_OUT[eSW_SoilTemp][pd];
 	get_outvalleader(p, pd);
 
+    p[iOUT(0, pd)] = vo->surfaceMax;
+    p[iOUT(1, pd)] = vo->surfaceMin;
+    
 	ForEachSoilLayer(i)
 	{
-		p[iOUT(i, pd)] = vo->sTemp[i];
+        i += 2;
+        
+		p[iOUT(i, pd)] = vo->surfaceMax[i - 2];
+        p[iOUT(i + nlyrs, pd)] = vo->surfaceMin[i - 2];
+        p[iOUT(i + doubleOffset, pd)] = vo->avgLyrTemp[i - 2];
 	}
 }
 
@@ -2426,14 +2449,22 @@ void get_soiltemp_agg(OutPeriod pd)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+    int nlyrs = SW_Soilwat.nlyrs, doubleOffset = 2 * nlyrs;
 
 	RealD
 		*p = p_OUT[eSW_SoilTemp][pd],
 		*psd = p_OUTsd[eSW_SoilTemp][pd];
 
+    do_running_agg(p, psd, iOUT(0, pd), Globals->currIter, vo->surfaceMax);
+    do_running_agg(p, psd, iOUT(1, pd), Globals->currIter, vo->surfaceMin);
+    
 	ForEachSoilLayer(i)
 	{
-		do_running_agg(p, psd, iOUT(i, pd), Globals->currIter, vo->sTemp[i]);
+        i += 2;
+        
+        do_running_agg(p, psd, iOUT(i, pd), Globals->currIter, vo->surfaceMax[i]);
+		do_running_agg(p, psd, iOUT(i + nlyrs, pd), Globals->currIter, vo->surfaceMin[i]);
+        do_running_agg(p, psd, iOUT(i + doubleOffset, pd), Globals->currIter, vo->avgLyrTemp[i]);
 	}
 
 	if (print_IterationSummary) {
