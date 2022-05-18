@@ -58,7 +58,8 @@ typedef struct {
 		   	 wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
 		   	 bDensityR[MAX_ST_RGR],//bulk density of the whole soil per soil layer for soil temperature calculations
 		   	 oldsFusionPool_actual[MAX_LAYERS],
-		   	 oldsTempR[MAX_ST_RGR];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
+		   	 oldavgLyrTempR[MAX_ST_RGR],//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
+             temperatureRangeR[MAX_ST_RGR];
     
 	double tlyrs_by_slyrs[MAX_ST_RGR][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers
 
@@ -142,8 +143,8 @@ void soil_temperature(double airTemp,
 					  double swc_sat[],
 					  double bDensity[],
 					  double width[],
-					  double oldsTemp[],
-					  double sTemp[],
+					  double oldavgLyrTemp[],
+					  double avgLyrTemp[],
 					  double surfaceTemp[2],
 					  unsigned int nlyrs,
 					  double bmLimiter,
@@ -184,7 +185,7 @@ void SW_ST_setup_run(
 	double swc_sat[],
 	double bDensity[],
 	double width[],
-	double oldsTemp[],
+	double oldavgLyrTemp[],
 	double surfaceTemp[2],
 	unsigned int nlyrs,
 	double fc[],
