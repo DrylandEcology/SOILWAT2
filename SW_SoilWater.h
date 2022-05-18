@@ -28,7 +28,7 @@
  09/09/2011	(drs) replaced in both struct SW_SOILWAT_OUTPUTS and SW_SOILWAT RealD transpiration and hydred with RealD transpiration_xx, hydred_xx for each vegetation type (tree, shrub, grass)
  09/12/2011	(drs) added RealD snowdepth [TWO_DAYS] to struct SW_SOILWAT_OUTPUTS and SW_SOILWAT
  02/03/2012	(drs)	added function 'RealD SW_SWC_SWCres(RealD sand, RealD clay, RealD porosity)': which calculates 'Brooks-Corey' residual volumetric soil water based on Rawls & Brakensiek (1985)
- 05/25/2012  (DLM) added sTemp[MAX_LAYERS] var to SW_SOILWAT_OUTPUTS struct & SW_SOILWAT struct to keep track of the soil temperatures
+ 05/25/2012  (DLM) added avgLyrTemp[MAX_LAYERS] var to SW_SOILWAT_OUTPUTS struct & SW_SOILWAT struct to keep track of the soil temperatures
  04/16/2013	(clk)	Added the variables vwcMatric, and swaMatric to SW_SOILWAT_OUTPUTS
  Also, renamed a few of the other variables to better reflect MATRIC vs BULK values and SWC vs VWC.
  modified the use of these variables throughout the rest of the code.
@@ -86,9 +86,13 @@ typedef struct {
 			aet, tran, esoil, ecnw, esurf, esnow,
 			pet, H_oh, H_ot, H_gh, H_gt,
 			deep,
-			sTemp[MAX_LAYERS], // soil temperature in celcius for each layer
+			avgLyrTemp[MAX_LAYERS], // average soil temperature in celcius for each layer
             surfaceTemp, // soil surface temperature
-            lyrFrozen[MAX_LAYERS];
+            lyrFrozen[MAX_LAYERS],
+            minLyrTemperature[MAX_LAYERS],
+            maxLyrTemperature[MAX_LAYERS],
+            temperatureRange[MAX_LAYERS],
+            surfaceMax, surfaceMin;
 } SW_SOILWAT_OUTPUTS;
 
 
@@ -112,9 +116,13 @@ typedef struct {
 		aet,
 		litter_evap, evap_veg[NVEGTYPES],
 		litter_int, int_veg[NVEGTYPES], // todays intercepted rain by litter and by vegetation
-		sTemp[MAX_LAYERS],
+		avgLyrTemp[MAX_LAYERS],
         surfaceTemp, // soil surface temperature
-        lyrFrozen[MAX_LAYERS];
+        lyrFrozen[MAX_LAYERS],
+        minLyrTemperature[MAX_LAYERS],
+        maxLyrTemperature[MAX_LAYERS],
+        temperatureRange[MAX_LAYERS],
+        surfaceMax, surfaceMin;
 
 	RealF swa_master[NVEGTYPES][NVEGTYPES][MAX_LAYERS]; // veg_type, crit_val, layer
 	RealF dSWA_repartitioned_sum[NVEGTYPES][MAX_LAYERS];
