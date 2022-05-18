@@ -213,7 +213,7 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
 	int nRgr, double avgLyrTempR[], double oldavgLyrTempR[], double vwcR[], double wpR[], double fcR[],
 	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError, double H_gt,
-    double max_air_temp, double min_air_temp, double avgLyrTemp[], double biomass);
+    double max_air_temp, double min_air_temp, double biomass);
 
 #ifdef __cplusplus
 }
