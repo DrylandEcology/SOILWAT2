@@ -1806,17 +1806,10 @@ The algorithm selects a shorter time step if required for a stable solution
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
 	int nRgr, double avgLyrTempR[], double oldavgLyrTempR[], double vwcR[], double wpR[], double fcR[],
 	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError, double H_gt,
-<<<<<<< HEAD
     double max_air_temp, double min_air_temp, double biomass) {
 
 	int i, k, m, Nsteps_per_day = 1;
 	double pe, cs, sh, part1, parts, part2;
-=======
-    double max_air_temp, double min_air_temp, double biomass) {
-
-	int i, k, m, Nsteps_per_day = 1;
-	double pe, cs, sh, part1, parts, part2;
->>>>>>> master
 	double oldavgLyrTempR2[MAX_ST_RGR];
     
     // Calculate max/min surface temperature based on eqations 4 and 5 from Parton 1984
@@ -2185,12 +2178,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 	// calculate the new soil temperature for each layer
 	soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, avgLyrTempR, st->oldavgLyrTempR,
-		vwcR, st->wpR, st->fcR, st->bDensityR, csParam1, csParam2, shParam, ptr_stError, H_gt,
-<<<<<<< HEAD
-        max_air_temp, min_air_temp, biomass);
-=======
-        max_air_temp, min_air_temp, biomass);
->>>>>>> master
+		vwcR, st->wpR, st->fcR, st->bDensityR, csParam1, csParam2, shParam, ptr_stError,
+        H_gt,max_air_temp, min_air_temp, biomass);
 
 	// question: should we ever reset delta_time to SEC_PER_DAY?
 
