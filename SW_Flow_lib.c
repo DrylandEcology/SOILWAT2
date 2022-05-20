@@ -1796,6 +1796,8 @@ The algorithm selects a shorter time step if required for a stable solution
 @param csParam2 A constant for the soil thermal conductivity equation.
 @param shParam A constant for specific heat capacity equation.
 @param *ptr_stError A boolean indicating whether there was an error.
+@param surface_range Temperature range at the surface
+@param temperatureRangeR An array of temperature ranges at each layer to be interpolated
 
 @sideeffect
   - Updated soil temperature values in array of avgLyrTempR.
@@ -1805,31 +1807,19 @@ The algorithm selects a shorter time step if required for a stable solution
 
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
 	int nRgr, double avgLyrTempR[], double oldavgLyrTempR[], double vwcR[], double wpR[], double fcR[],
-	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError, double H_gt,
-    double max_air_temp, double min_air_temp, double biomass) {
+	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError,
+    double surface_range, double temperatureRangeR[]) {
 
 	int i, k, m, Nsteps_per_day = 1;
-	double pe, cs, sh, part1, parts, part2;
+	double pe, cs, sh, inv_dX2, alpha_dT, part2;
 	double oldavgLyrTempR2[MAX_ST_RGR];
     
-    // Calculate max/min surface temperature based on eqations 4 and 5 from Parton 1984
-    // surface_max uses effect on plant canopy (E_B) which uses the equation in figure 1b
-    double surface_max = max_air_temp + (((H_gt * 10) + (.35 * max_air_temp)) * (exp(-.0048 * biomass) - .13));
-    double surface_min = min_air_temp + (.006 * biomass) - 1.82;
-
-    double surface_range = surface_max - surface_min;
     Bool Tsoil_not_exploded = swTRUE;
-    
-    SW_SOILWAT *sw = &SW_Soilwat;
-    ST_RGR_VALUES *st = &stValues;
-    
-    sw->surfaceMax = surface_max;
-    sw->surfaceMin = surface_min;
 
   #ifdef SWDEBUG
   int debug = 0;
   if (SW_Model.year == 1980 && SW_Model.doy < 10) {
-    debug = 0;
+    debug = 1;
   }
   #endif
 
@@ -1841,7 +1831,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 			shorten time step if calculation is not stable (but break and error out if more
 			than 16 sub-time steps were required or if soil temperature go beyond ± 100 C) */
 
-		part1 = *ptr_dTime / squared(deltaX);
+        inv_dX2 = 1. / squared(deltaX);
 		Nsteps_per_day = SEC_PER_DAY / *ptr_dTime;
 
 		// reset previous soil temperature values to yesterday's
@@ -1871,7 +1861,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 				}
 				#endif
                 
-                parts = part1 * cs / (sh * bDensityR[k]);
+                alpha_dT = (*ptr_dTime) * cs / (sh * bDensityR[k]);
 				/* Check that approximation is stable
 					- Derivation to confirm Parton 1984: alpha * K * deltaT / deltaX ^ 2 <= 0.5
 					- Let f be a continuously differentiable function with attractive fixpoint f(a) = a;
@@ -1893,7 +1883,8 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 					- Thus, iteration is stable if abs(lambda) < 1, here
 							abs(1 - 2 * parts) < 1 ==> abs(parts) < 1/2
 				*/
-				(*ptr_stError) = GE(parts, 0.5)? swTRUE: swFALSE; /* Flag whether an error has occurred */
+                // alpha_dT * inv_dX2 is old "parts"
+				(*ptr_stError) = GE(alpha_dT * inv_dX2, 0.5)? swTRUE: swFALSE; /* Flag whether an error has occurred */
 				if (*ptr_stError) {
 					*ptr_dTime = *ptr_dTime / 2;
 					/* step out of for-loop through regression soil layers and re-start with adjusted dTime */
@@ -1902,20 +1893,18 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 
 				part2 = avgLyrTempR[ i - 1] - 2 * oldavgLyrTempR2[i] + oldavgLyrTempR2[i + 1];
 
-				avgLyrTempR[i] = oldavgLyrTempR2[i] + parts * part2; // Parton (1978) eq. 2.21
-
-                // Alpha for equation 6 from Parton 1984
-                parts = cs / (sh * bDensityR[k]);
+				avgLyrTempR[i] = oldavgLyrTempR2[i] + alpha_dT * inv_dX2 * part2; // Parton (1978) eq. 2.21
 
                 // Calculate the diurnal temperature range at depth for interpolation
-                st->temperatureRangeR[k] = surface_range * exp(-deltaX*sqrt(swPI / (parts * (*ptr_dTime))));
+                // Makes use of equation 6 from Parton 1984
+                temperatureRangeR[k] = surface_range * exp(-deltaX*sqrt(swPI / alpha_dT));
 
 				#ifdef SWDEBUG
 				if (debug) {
 					swprintf("step=%d/%d: d(Tsoil[%d]) = %.2f from p1 = %.1f = dt(%.0f) / dX^2(%.0f) and "
 						"ps = %.2f = p1 * cs(%f) / (sh(%.3f) * rho(%.2f))\n",
-						m, Nsteps_per_day, i, parts * part2, part1, *ptr_dTime, squared(deltaX),
-						parts, cs, sh, bDensityR[k]);
+						m, Nsteps_per_day, i, alpha_dT * inv_dX2 * part2, alpha_dT * inv_dX2, *ptr_dTime,
+                        squared(deltaX), alpha_dT * inv_dX2, cs, sh, bDensityR[k]);
 					swprintf("  Tsoil[%d; now]=%.2f Tsoil[prev]=%.2f Tsoil[yesterday]=%.2f\n",
 						i, avgLyrTempR[i],  oldavgLyrTempR2[i], oldavgLyrTempR[i]);
 				}
@@ -2056,13 +2045,15 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1,
 	double csParam2, double shParam, double snowdepth, double sTconst, double deltaX,
 	double theMaxDepth, unsigned int nRgr, double snow, Bool *ptr_stError,
-    double max_air_temp, double min_air_temp, double H_gt) {
+    double max_air_temp, double min_air_temp, double H_gt, double maxLyrTemperature[],
+    double minLyrTemperature[], double *surface_max, double *surface_min) {
 
 	unsigned int i, sFadjusted_avgLyrTemp;
   #ifdef SWDEBUG
   int debug = 0;
   #endif
-	double T1, vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], avgLyrTempR[MAX_ST_RGR];
+	double T1, vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], avgLyrTempR[MAX_ST_RGR],
+    temperatureRangeR[MAX_ST_RGR], temperatureRange[MAX_LAYERS], surface_range;
 
 
 	ST_RGR_VALUES *st = &stValues; // just for convenience, so I don't have to type as much
@@ -2103,7 +2094,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 		#ifdef SWDEBUG
 		if (debug) swprintf("\nThere is snow on the ground, T1=%f calculated using new equation from Parton 1998\n", T1);
 		#endif
-
+        *surface_min = *surface_max = T1;
 	} else {
 		if (LE(biomass, bmLimiter)) { // bmLimiter = 300
 			T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
@@ -2123,11 +2114,22 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 			}
 			#endif
 		}
+        
+        // Calculate max/min surface temperature based on eqations 4 and 5 from Parton 1984
+        // surface_max uses effect on plant canopy (E_B) which uses the equation in figure 1b
+        // Radiation calculation (second line of calculation) is based off of figure 2 in Parton 1984
+        *surface_max = exp(-.0048 * biomass) - .13;
+        *surface_max *= ((0.35 * max_air_temp) + 24.07 * (1.0 - exp(-.000038 * (H_gt*1000))));
+        *surface_max += max_air_temp;
+        *surface_min = min_air_temp + (.006 * biomass) - 1.82;
+        
 	}
 
 	surfaceTemp[Yesterday] = surfaceTemp[Today];
 	surfaceTemp[Today] = T1;
 
+    surface_range = surface_max - surface_min;
+    
 	if (*ptr_stError) {
 		/* we return early (but after calculating surface temperature) and
 				without attempt to calculate soil temperature again */
@@ -2179,7 +2181,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	// calculate the new soil temperature for each layer
 	soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, avgLyrTempR, st->oldavgLyrTempR,
 		vwcR, st->wpR, st->fcR, st->bDensityR, csParam1, csParam2, shParam, ptr_stError,
-        H_gt,max_air_temp, min_air_temp, biomass);
+        surface_range, temperatureRangeR);
 
 	// question: should we ever reset delta_time to SEC_PER_DAY?
 
@@ -2202,7 +2204,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 	// convert soil temperature of soil temperature profile 'avgLyrTempR' to soil profile layers 'avgLyrTemp'
 	lyrTemp_to_lyrSoil_temperature(st->tlyrs_by_slyrs, nRgr, st->depthsR, avgLyrTempR, nlyrs,
-		st->depths, width, avgLyrTemp, st->temperatureRangeR, v->temperatureRange);
+		st->depths, width, avgLyrTemp, temperatureRangeR, temperatureRange);
 
 	// Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
 	sFadjusted_avgLyrTemp = adjust_Tsoil_by_freezing_and_thawing(oldavgLyrTemp, avgLyrTemp, shParam,
@@ -2219,8 +2221,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
     
     // Add/subtract the interpolated range to/from average layer temperature
     for(i = 0; i < nlyrs; i++) {
-        v->maxLyrTemperature[i] = avgLyrTemp[i] + (v->temperatureRange[i] / 2);
-        v->minLyrTemperature[i] = avgLyrTemp[i] - (v->temperatureRange[i] / 2);
+        maxLyrTemperature[i] = avgLyrTemp[i] + (temperatureRange[i] / 2);
+        minLyrTemperature[i] = avgLyrTemp[i] - (temperatureRange[i] / 2);
     }
 
 	#ifdef SWDEBUG
