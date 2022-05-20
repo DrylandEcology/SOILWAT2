@@ -2035,8 +2035,8 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param H_gt Daily global (tilted) irradiation [MJ / m2]
 @param maxLyrTemperature An array holding all of the layers maximum temperature
 @param minLyrTemperature An array holding all of the layers minimum temperature
-@param surface_max Maxmimum surface temperature
-@param surface_min Minimum surface temperature
+@param *surface_max Maxmimum surface temperature
+@param *surface_min Minimum surface temperature
 
 @sideeffect *ptr_stError Updated boolean indicating whether there was an error.
 
