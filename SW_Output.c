@@ -1647,7 +1647,7 @@ void SW_OUT_set_colnames(void) {
 		"forbs", "grass", "litter" };
 
 	const char *cnames_eSW_Temp[] = { "max_C", "min_C", "avg_C",
-		"surfaceAvg" };
+		"surfaceTemp" };
 	const char *cnames_eSW_Precip[] = { "ppt", "rain", "snow_fall", "snowmelt",
 		"snowloss" };
 	const char *cnames_eSW_SoilInf[] = { "soil_inf" };
