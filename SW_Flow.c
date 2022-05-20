@@ -844,8 +844,8 @@ void SW_Water_Flow(void) {
 			SW_Site.t1Param1, SW_Site.t1Param2, SW_Site.t1Param3, SW_Site.csParam1,
 			SW_Site.csParam2, SW_Site.shParam, sw->snowdepth, SW_Site.Tsoil_constant,
 			SW_Site.stDeltaX, SW_Site.stMaxDepth, SW_Site.stNRGR, sw->snowpack[Today],
-			&SW_Soilwat.soiltempError, w->now.temp_max[Today],
-            w->now.temp_min[Today], sw->H_gt);
+			&SW_Soilwat.soiltempError, w->now.temp_max[Today], w->now.temp_min[Today],
+            sw->H_gt, sw->maxLyrTemperature, sw->minLyrTemperature, &sw->surfaceMax, &sw->surfaceMin);
 	}
 
 	/* Soil Temperature ends here */
