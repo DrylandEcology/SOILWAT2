@@ -445,7 +445,7 @@ void get_temp_text(OutPeriod pd)
 		_Sep, OUT_DIGITS, vo->temp_max,
 		_Sep, OUT_DIGITS, vo->temp_min,
 		_Sep, OUT_DIGITS, vo->temp_avg,
-		_Sep, OUT_DIGITS, vo->surfaceTemp);
+		_Sep, OUT_DIGITS, vo->surfaceAvg);
 }
 #endif
 
@@ -466,7 +466,7 @@ void get_temp_mem(OutPeriod pd)
 	p[iOUT(0, pd)] = vo->temp_max;
 	p[iOUT(1, pd)] = vo->temp_min;
 	p[iOUT(2, pd)] = vo->temp_avg;
-	p[iOUT(3, pd)] = vo->surfaceTemp;
+	p[iOUT(3, pd)] = vo->surfaceAvg;
 }
 
 #elif defined(STEPWAT)
@@ -487,7 +487,7 @@ void get_temp_agg(OutPeriod pd)
 	do_running_agg(p, psd, iOUT(0, pd), Globals->currIter, vo->temp_max);
 	do_running_agg(p, psd, iOUT(1, pd), Globals->currIter, vo->temp_min);
 	do_running_agg(p, psd, iOUT(2, pd), Globals->currIter, vo->temp_avg);
-	do_running_agg(p, psd, iOUT(3, pd), Globals->currIter, vo->surfaceTemp);
+	do_running_agg(p, psd, iOUT(3, pd), Globals->currIter, vo->surfaceAvg);
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
@@ -2392,7 +2392,7 @@ void get_soiltemp_text(OutPeriod pd)
     sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->surfaceMin);
     strcat(sw_outstr, str);
     
-    sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->surfaceTemp);
+    sprintf(str, "%c%.*f", _Sep, OUT_DIGITS, vo->surfaceAvg);
     strcat(sw_outstr, str);
     
 	ForEachSoilLayer(i)
@@ -2427,7 +2427,7 @@ void get_soiltemp_mem(OutPeriod pd)
 
     p[iOUT(0, pd)] = vo->surfaceMax;
     p[iOUT(1, pd)] = vo->surfaceMin;
-    p[iOUT(2, pd)] = vo->surfaceTemp;
+    p[iOUT(2, pd)] = vo->surfaceAvg;
     
 	ForEachSoilLayer(i)
 	{
@@ -2458,7 +2458,7 @@ void get_soiltemp_agg(OutPeriod pd)
 
     do_running_agg(p, psd, iOUT(0, pd), Globals->currIter, vo->surfaceMax);
     do_running_agg(p, psd, iOUT(1, pd), Globals->currIter, vo->surfaceMin);
-    do_running_agg(p, psd, iOUT(2, pd), Globals->currIter, vo->surfaceTemp);
+    do_running_agg(p, psd, iOUT(2, pd), Globals->currIter, vo->surfaceAvg);
     
 	ForEachSoilLayer(i)
 	{

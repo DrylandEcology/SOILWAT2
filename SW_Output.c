@@ -357,8 +357,8 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 		s->temp_max += v->now.temp_max[Today];
 		s->temp_min += v->now.temp_min[Today];
 		s->temp_avg += v->now.temp_avg[Today];
-		//added surfaceTemp for sum
-		s->surfaceTemp += v->surfaceTemp;
+		//added surfaceAvg for sum
+		s->surfaceAvg += v->surfaceAvg;
 		break;
 	case eSW_Precip:
 		s->ppt += v->now.ppt[Today];
@@ -527,7 +527,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
                 s->minLyrTemperature[i] += v->minLyrTemperature[i];
                 s->maxLyrTemperature[i] += v->maxLyrTemperature[i];
             }
-            s->surfaceTemp = v->surfaceTemp;
+            s->surfaceAvg = v->surfaceAvg;
             s->surfaceMax = v->surfaceMax;
             s->surfaceMin = v->surfaceMin;
 		break;
@@ -632,7 +632,7 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 				w->p_oagg[pd]->temp_max = w->p_accu[pd]->temp_max / div;
 				w->p_oagg[pd]->temp_min = w->p_accu[pd]->temp_min / div;
 				w->p_oagg[pd]->temp_avg = w->p_accu[pd]->temp_avg / div;
-				w->p_oagg[pd]->surfaceTemp = w->p_accu[pd]->surfaceTemp / div;
+				w->p_oagg[pd]->surfaceAvg = w->p_accu[pd]->surfaceAvg / div;
 				break;
 
 			case eSW_Precip:
@@ -668,7 +668,7 @@ static void average_for(ObjType otyp, OutPeriod pd) {
                                     s->minLyrTemperature[i] :
                                     s->p_accu[pd]->minLyrTemperature[i] / div;
 				}
-                    s->p_oagg[pd]->surfaceTemp = s->surfaceTemp / div;
+                    s->p_oagg[pd]->surfaceAvg = s->surfaceAvg / div;
                     s->p_oagg[pd]->surfaceMax = s->surfaceMax / div;
                     s->p_oagg[pd]->surfaceMin = s->surfaceMin / div;
 				break;
@@ -1647,7 +1647,7 @@ void SW_OUT_set_colnames(void) {
 		"forbs", "grass", "litter" };
 
 	const char *cnames_eSW_Temp[] = { "max_C", "min_C", "avg_C",
-		"surfaceTemp" };
+		"surfaceAvg" };
 	const char *cnames_eSW_Precip[] = { "ppt", "rain", "snow_fall", "snowmelt",
 		"snowloss" };
 	const char *cnames_eSW_SoilInf[] = { "soil_inf" };
@@ -2773,21 +2773,21 @@ void SW_OUT_SetMemoryRefs( void)
   At the top with Comment (06/23/2015, drs): details about how output of SOILWAT works.
 
   Example : Adding extra place holder at existing output of SOILWAT for both STEP and RSOILWAT:
-  - Adding extra place holder for existing output for both STEP and RSOILWAT: example adding extra output surfaceTemp at SW_WEATHER.
+  - Adding extra place holder for existing output for both STEP and RSOILWAT: example adding extra output surfaceAvg at SW_WEATHER.
   We need to modified SW_Weather.h with adding a placeholder at SW_WEATHER and at inner structure SW_WEATHER_OUTPUTS.
-  - Then somewhere this surfaceTemp value need to set at SW_WEATHER placeholder, here we add this atSW_Flow.c
-  - Further modify file SW_Output.c ; add sum of surfaceTemp at function sumof_wth(). Then use this
-  sum value to calculate average of surfaceTemp at function average_for().
-  - Then go to function get_temp(), add extra placeholder like surfaceTempVal that will store this average surfaceTemp value.
+  - Then somewhere this surfaceAvg value need to set at SW_WEATHER placeholder, here we add this atSW_Flow.c
+  - Further modify file SW_Output.c ; add sum of surfaceAvg at function sumof_wth(). Then use this
+  sum value to calculate average of surfaceAvg at function average_for().
+  - Then go to function get_temp(), add extra placeholder like surfaceAvgVal that will store this average surfaceAvg value.
   Add this value to both STEP and RSOILWAT side code of this function for all the periods like weekly, monthly and yearly (for
-  daily set day sum value of surfaceTemp not avg), add this surfaceTempVal at end of this get_Temp() function for finally
+  daily set day sum value of surfaceAvg not avg), add this surfaceAvgVal at end of this get_Temp() function for finally
   printing in output file.
-  - Pass this surfaceTempVal to sxw.h file from STEP, by adding extra placeholder at sxw.h so that STEP model can use this value there.
-  - For using this surfaceTemp value in RSOILWAT side of function get_Temp(), increment index of p_Rtemp output array
+  - Pass this surfaceAvgVal to sxw.h file from STEP, by adding extra placeholder at sxw.h so that STEP model can use this value there.
+  - For using this surfaceAvg value in RSOILWAT side of function get_Temp(), increment index of p_Rtemp output array
   by one and add this sum value  for daily and avg value for other periods at last index.
   - Further need to modify SW_R_lib.c, for newOutput we need to add new pointers;
   functions start() and onGetOutput() will need to be modified. For this example adding extra placeholder at existing TEMP output so
-  only function onGetOutput() need to be modified; add placeholder name for surfaceTemp at array Ctemp_names[] and then 	increment
+  only function onGetOutput() need to be modified; add placeholder name for surfaceAvg at array Ctemp_names[] and then 	increment
   number of columns for Rtemp outputs (Rtemp_columns) by one.
   - At RSOILWAT further we will need to modify L_swOutput.R and G_swOut.R. At L_swOutput.R increment number of columns for swOutput_TEMP.
 

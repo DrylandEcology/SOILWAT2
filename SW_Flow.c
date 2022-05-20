@@ -94,7 +94,7 @@
  added function SW_FLW_construct() to init global variables between consecutive calls to SoilWat as dynamic library
  07/09/2013	(clk)	with the addition of forbs as a vegtype, needed to add a lot of calls to this code and so basically just copied and pasted the code for the other vegtypes
  09/26/2013 (drs) records2arrays(): Init hydraulic redistribution to zero; if not used and not initialized, then there could be non-zero values resulting
- 06/23/2015 (akt)	Added surfaceTemp[Today] value at structure SW_Weather so that we can add surfaceTemp[Today] in output from Sw_Outout.c get_tmp() function
+ 06/23/2015 (akt)	Added surfaceAvg[Today] value at structure SW_Weather so that we can add surfaceAvg[Today] in output from Sw_Outout.c get_tmp() function
  02/08/2016 (CMA & CTD) Added snowpack as an input argument to function call of soil_temperature()
  02/08/2016 (CMA & CTD) Modified biomass to use the live biomass as opposed to standing crop
  */
@@ -172,7 +172,7 @@ static RealD
 
 
 static RealD
-	surfaceTemp[TWO_DAYS],
+	surfaceAvg[TWO_DAYS],
 	veg_int_storage[NVEGTYPES], // storage of intercepted rain by the vegetation
 	litter_int_storage, // storage of intercepted rain by the litter layer
 	standingWater[TWO_DAYS]; /* water on soil surface if layer below is saturated */
@@ -253,8 +253,8 @@ static void arrays2records(void) {
 			SW_Soilwat.transpiration[k][i] = lyrTransp[k][i];
 		}
 	}
-	SW_Soilwat.surfaceTemp = surfaceTemp[Today];
-	SW_Weather.surfaceTemp = surfaceTemp[Today];
+	SW_Soilwat.surfaceAvg = surfaceAvg[Today];
+	SW_Weather.surfaceAvg = surfaceAvg[Today];
 
 	if (SW_Site.deepdrain)
 		SW_Soilwat.swcBulk[Today][SW_Site.deep_lyr] = drainout;
@@ -316,7 +316,7 @@ void SW_FLW_init_run(void) {
 
 	//When running as a library make sure these are set to zero.
 	drainout = 0;
-	surfaceTemp[0] = surfaceTemp[1] = 0.;
+	surfaceAvg[0] = surfaceAvg[1] = 0.;
 	standingWater[0] = standingWater[1] = 0.;
 	litter_int_storage = 0.;
 
@@ -380,7 +380,7 @@ void SW_Water_Flow(void) {
 			lyrbDensity,
 			lyrWidths,
 			lyroldavgLyrTemp,
-			surfaceTemp,
+			surfaceAvg,
 			SW_Site.n_layers,
 			lyrSWCBulk_FieldCaps,
 			lyrSWCBulk_Wiltpts,
@@ -839,7 +839,7 @@ void SW_Water_Flow(void) {
 	// doesn't affect SWC at all (yet), but needs it for the calculation, so therefore the temperature is the last calculation done
 	if (SW_Site.use_soil_temp) {
 		soil_temperature(w->now.temp_avg[Today], sw->pet, sw->aet, x, lyrSWCBulk,
-			lyrSWCBulk_Saturated, lyrbDensity, lyrWidths, lyroldavgLyrTemp, lyravgLyrTemp, surfaceTemp,
+			lyrSWCBulk_Saturated, lyrbDensity, lyrWidths, lyroldavgLyrTemp, lyravgLyrTemp, surfaceAvg,
 			SW_Site.n_layers, SW_Site.bmLimiter,
 			SW_Site.t1Param1, SW_Site.t1Param2, SW_Site.t1Param3, SW_Site.csParam1,
 			SW_Site.csParam2, SW_Site.shParam, sw->snowdepth, SW_Site.Tsoil_constant,
