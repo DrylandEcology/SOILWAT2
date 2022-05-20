@@ -365,8 +365,7 @@ namespace {
 
     // declare inputs and output
     double delta_time = 86400., deltaX = 15.0, T1 = 20.0, sTconst = 4.16, csParam1 = 0.00070,
-    csParam2 = 0.000030, shParam = 0.18, max_air_temp = 10.1, min_air_temp = -5.0, H_gt = 300.0,
-    biomass = 3.0;
+    csParam2 = 0.000030, shParam = 0.18, surface_range = 1.;
     unsigned int nRgr =65;
     Bool ptr_stError = swFALSE;
 
@@ -383,6 +382,7 @@ namespace {
     double *fcR = new double[nRgr + 2];
     double *vwcR = new double[nRgr + 2];
     double *bDensityR = new double[nRgr + 2];
+    double *temperatureRangeR = new double[nRgr + 2];
     unsigned int i = 0.;
     for (i = 0; i <= nRgr + 1; i++) {
       sTempR[i] = RandNorm(1.5, 1,&STTF_rng);
@@ -394,8 +394,7 @@ namespace {
     }
 
     soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR, oldsTempR,
-      vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError, H_gt,
-      max_air_temp, min_air_temp, biomass);
+      vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError, surface_range, temperatureRangeR);
 
     // Check that values that are set, are set right.
     EXPECT_EQ(sTempR[0], T1);
@@ -421,9 +420,8 @@ namespace {
       oldsTempR3[i] = RandNorm(150, 1,&STTF_rng);
     }
 
-      soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR, oldsTempR,
-        vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError, H_gt,
-        max_air_temp, min_air_temp, biomass);
+    soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR2, oldsTempR3,
+        vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError, surface_range, temperatureRangeR);
 
     //Check that ptr_stError is TRUE
     EXPECT_EQ(ptr_stError, 1);
@@ -450,11 +448,12 @@ namespace {
     double airTemp = 25.0, pet = 5.0, aet = 4.0, biomass = 100., surfaceTemp[] = {20.0, 15. ,14.},
     bmLimiter = 300., t1Param1 = 15., t1Param2 = -4., t1Param3 = 600., csParam1 =0.00070,
     csParam2 = 0.00030, shParam = 0.18, snowdepth = 5, sTconst = 4.15, deltaX = 15,
-    theMaxDepth = 990., snow = 1, max_air_temp = 10.1, min_air_temp = -5.0, H_gt = 300.0;
+    theMaxDepth = 990., snow = 1, max_air_temp = 10.1, min_air_temp = -5.0, H_gt = 300.0,
+    surface_max = 10.6, surface_min = -6.8;
     Bool ptr_stError = swFALSE;
 
     double swc[] = {1.0}, swc_sat[] = {1.5}, bDensity[] = {1.8}, width[] = {20},
-    oldsTemp[] = {5.0}, sTemp[] = {4.0}, fc[] = {2.6}, wp[] = {1.0};
+    oldsTemp[] = {5.0}, sTemp[] = {4.0}, fc[] = {2.6}, wp[] = {1.0}, min_temp[] = {10.0}, max_temp[] = {1.0};
 
     SW_ST_setup_run(
       airTemp,
@@ -469,7 +468,8 @@ namespace {
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt);
+      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
+      &surface_max, &surface_min);
 
 
     // Expect that surface temp equals surface_temperature_under_snow() because snow > 0
@@ -483,7 +483,8 @@ namespace {
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt);
+      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
+      &surface_max, &surface_min);
 
     EXPECT_EQ(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
@@ -495,7 +496,8 @@ namespace {
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt);
+      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
+      &surface_max, &surface_min);
 
     EXPECT_EQ(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
@@ -546,7 +548,8 @@ namespace {
     soil_temperature(airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       oldsTemp2, sTemp2, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt);
+      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
+      &surface_max, &surface_max);
 
     // Check that error has occurred as indicated by ptr_stError
     EXPECT_EQ(ptr_stError, swTRUE);
@@ -572,7 +575,8 @@ namespace {
     double airTemp = 25.0, pet = 5.0, aet = 4.0, biomass = 100., surfaceTemp[] = {20.0, 15. ,14.},
     bmLimiter = 300., t1Param1 = 15., t1Param2 = -4., t1Param3 = 600., csParam1 =0.00070,
     csParam2 = 0.00030, shParam = 0.18, snowdepth = 5, sTconst = 4.15, deltaX = 15,
-    theMaxDepth = 990., snow = 1, max_air_temp = 10.1, min_air_temp = -5.0, H_gt = 300.0;
+    theMaxDepth = 990., snow = 1, max_air_temp = 10.1, min_air_temp = -5.0, H_gt = 300.0,
+    surface_max = 10.6, surface_min = -6.8;
     Bool ptr_stError = swFALSE;
 
     unsigned int nlyrs2 = MAX_LAYERS;
@@ -587,7 +591,8 @@ namespace {
     double *swc_sat2 = new double[nlyrs2];
     double *fc2 = new double[nlyrs2];
     double *wp2 = new double[nlyrs2];
-
+    double *min_temp = new double[nlyrs2];
+    double *max_temp = new double[nlyrs2];
     for (i = 0; i < nlyrs2; i++) {
       // SWC(wilting point): width > swc_wp > 0
       wp2[i] = 0.1 * width2[i];
@@ -618,7 +623,8 @@ namespace {
     soil_temperature(airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
       oldsTemp3, sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt);
+      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
+      &surface_max, &surface_min);
 
     EXPECT_EQ(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
@@ -631,7 +637,8 @@ namespace {
     soil_temperature(airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
       oldsTemp3, sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt);
+      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
+      &surface_max, &surface_min);
 
     EXPECT_EQ(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
@@ -643,7 +650,8 @@ namespace {
     soil_temperature(airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
       oldsTemp3, sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
-      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt);
+      nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
+      &surface_max, &surface_min);
 
     EXPECT_EQ(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
@@ -657,7 +665,7 @@ namespace {
     {
       //swprintf("\n k %u, sTemp3 %f", k, sTemp3[k]);
       EXPECT_GT(sTemp3[k], -100); // Sense check
-      EXPECT_LT(sTemp3[k], 100); // Sense check
+      EXPECT_LT(sTemp3[k], 100); // Sense check&
     }
 
     // Expect that oldsTempR is updated to sTempR for the next day
@@ -683,11 +691,12 @@ namespace {
     double airTemp = 25.0, pet = 5.0, aet = 4.0, biomass = 100., surfaceTemp[] = {20.0, 15. ,14.},
     bmLimiter = 300., t1Param1 = 15., t1Param2 = -4., t1Param3 = 600., csParam1 =0.00070,
     csParam2 = 0.00030, shParam = 0.18, snowdepth = 5, sTconst = 4.15, deltaX = 15,
-    theMaxDepth = 990., snow = 1, max_air_temp = 10.1, min_air_temp = -5.0, H_gt = 300.0;
+    theMaxDepth = 990., snow = 1, max_air_temp = 10.1, min_air_temp = -5.0, H_gt = 300.0,
+    surface_max = 10.6, surface_min = -6.8;
     Bool ptr_stError = swFALSE;
 
     double swc[] = {1.0}, swc_sat[] = {1.5}, bDensity[] = {1.8}, width[] = {20},
-    oldsTemp[] = {5.0}, sTemp[] = {4.0};
+      oldsTemp[] = {5.0}, sTemp[] = {4.0}, min_temp[] = {10.0}, max_temp[] = {1.0};
 
     // Should fail when soil_temperature was not initialized
     EXPECT_DEATH_IF_SUPPORTED(
@@ -696,7 +705,8 @@ namespace {
         oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
         t1Param3, csParam1, csParam2, shParam, snowdepth,
         sTconst, deltaX, theMaxDepth, nRgr, snow,
-        &ptr_stError, max_air_temp, min_air_temp, H_gt
+        &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
+        &surface_max, &surface_min
       ),
       "@ generic.c LogError"
     );
