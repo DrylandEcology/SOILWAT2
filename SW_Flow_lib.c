@@ -1384,7 +1384,7 @@ void SW_ST_init_run(void) {
 		(g/cm<SUP>3</SUP>).
 	@param width The width of the layers (cm).
 	@param oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
-	@param surfaceTemp Current surface air temperatature (&deg;C).
+	@param surfaceAvg Current surface air temperatature (&deg;C).
 	@param nlyrs Number of layers in the soil profile.
 	@param fc An array of the field capacity of the soil layers (cm/layer).
 	@param wp An array of the wilting point of the soil layers (cm/layer).
@@ -1406,7 +1406,7 @@ void SW_ST_setup_run(
 	double bDensity[],
 	double width[],
 	double oldavgLyrTemp[],
-	double surfaceTemp[2],
+	double surfaceAvg[2],
 	unsigned int nlyrs,
 	double fc[],
 	double wp[],
@@ -1428,7 +1428,7 @@ void SW_ST_setup_run(
 		}
 		#endif
 
-		surfaceTemp[Today] = airTemp;
+		surfaceAvg[Today] = airTemp;
 		soil_temperature_setup(
 			bDensity, width,
 			oldavgLyrTemp, sTconst,
@@ -2014,7 +2014,7 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param width The width of the layers (cm).
 @param oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
 @param avgLyrTemp Temperatature values of soil layers (&deg;C).
-@param surfaceTemp Current surface air temperatature (&deg;C).
+@param surfaceAvg Current surface air temperatature (&deg;C).
 @param nlyrs Number of layers in the soil profile.
 @param bmLimiter Biomass limiter constant (300 g/m<SUP>2</SUP>).
 @param t1Param1 Constant for the avg temp at the top of soil equation (15).
@@ -2033,6 +2033,10 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param max_air_temp Maximum air temperature of Today
 @param min_air_temp Minimum air temperature of Today
 @param H_gt Daily global (tilted) irradiation [MJ / m2]
+@param maxLyrTemperature An array holding all of the layers maximum temperature
+@param minLyrTemperature An array holding all of the layers minimum temperature
+@param surface_max Maxmimum surface temperature
+@param surface_min Minimum surface temperature
 
 @sideeffect *ptr_stError Updated boolean indicating whether there was an error.
 
@@ -2041,7 +2045,7 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 
 void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	double swc[], double swc_sat[], double bDensity[], double width[], double oldavgLyrTemp[],
-	double avgLyrTemp[], double surfaceTemp[2], unsigned int nlyrs,
+	double avgLyrTemp[], double surfaceAvg[2], unsigned int nlyrs,
 	double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1,
 	double csParam2, double shParam, double snowdepth, double sTconst, double deltaX,
 	double theMaxDepth, unsigned int nRgr, double snow, Bool *ptr_stError,
@@ -2125,8 +2129,8 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
         
 	}
 
-	surfaceTemp[Yesterday] = surfaceTemp[Today];
-	surfaceTemp[Today] = T1;
+	surfaceAvg[Yesterday] = surfaceAvg[Today];
+	surfaceAvg[Today] = T1;
 
     surface_range = surface_max - surface_min;
     
@@ -2228,7 +2232,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	#ifdef SWDEBUG
 	if (debug) {
 		swprintf("\navgLyrTemp %f surface; soil temperature adjusted by freeze/thaw: %i",
-			surfaceTemp[Today], sFadjusted_avgLyrTemp);
+			surfaceAvg[Today], sFadjusted_avgLyrTemp);
 
 		swprintf("\nSoil temperature profile values:");
 		for (i = 0; i <= nRgr + 1; i++) {
