@@ -1819,7 +1819,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
   #ifdef SWDEBUG
   int debug = 0;
   if (SW_Model.year == 1980 && SW_Model.doy < 10) {
-    debug = 1;
+    debug = 0;
   }
   #endif
 
