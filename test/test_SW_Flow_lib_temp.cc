@@ -425,7 +425,7 @@ namespace {
 
     //Check that ptr_stError is TRUE
     EXPECT_EQ(ptr_stError, 1);
-    double *array_list[] = {sTempR2, oldsTempR3, sTempR, oldsTempR, wpR, fcR, vwcR, bDensityR};
+    double *array_list[] = {sTempR2, oldsTempR3, sTempR, oldsTempR, wpR, fcR, vwcR, bDensityR, temperatureRangeR};
     for (i = 0; i < length(array_list); i++){
       delete[] array_list[i];
     }
@@ -675,7 +675,7 @@ namespace {
       EXPECT_NE(stValues.oldavgLyrTempR[k], SW_MISSING);
     }
 
-    double *array_list[] = { swc2, swc_sat2, fc2, wp2};
+    double *array_list[] = { swc2, swc_sat2, fc2, wp2, min_temp, max_temp};
     for (i = 0; i < length(array_list); i++){
       delete[] array_list[i];
     }
