@@ -383,6 +383,7 @@ namespace {
     double *vwcR = new double[nRgr + 2];
     double *bDensityR = new double[nRgr + 2];
     double *temperatureRangeR = new double[nRgr + 2];
+    double *depthsR = new double[nRgr + 2];
     unsigned int i = 0.;
     for (i = 0; i <= nRgr + 1; i++) {
       sTempR[i] = RandNorm(1.5, 1,&STTF_rng);
@@ -394,7 +395,8 @@ namespace {
     }
 
     soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR, oldsTempR,
-      vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError, surface_range, temperatureRangeR);
+      vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError, surface_range,
+      temperatureRangeR, depthsR);
 
     // Check that values that are set, are set right.
     EXPECT_EQ(sTempR[0], T1);
@@ -421,11 +423,12 @@ namespace {
     }
 
     soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR2, oldsTempR3,
-        vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError, surface_range, temperatureRangeR);
+        vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError, surface_range,
+        temperatureRangeR, depthsR);
 
     //Check that ptr_stError is TRUE
     EXPECT_EQ(ptr_stError, 1);
-    double *array_list[] = {sTempR2, oldsTempR3, sTempR, oldsTempR, wpR, fcR, vwcR, bDensityR, temperatureRangeR};
+    double *array_list[] = {sTempR2, oldsTempR3, sTempR, oldsTempR, wpR, fcR, vwcR, bDensityR, temperatureRangeR, depthsR};
     for (i = 0; i < length(array_list); i++){
       delete[] array_list[i];
     }
