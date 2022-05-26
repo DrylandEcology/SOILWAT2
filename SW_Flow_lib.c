@@ -1808,10 +1808,10 @@ The algorithm selects a shorter time step if required for a stable solution
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
 	int nRgr, double avgLyrTempR[], double oldavgLyrTempR[], double vwcR[], double wpR[], double fcR[],
 	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError,
-    double surface_range, double temperatureRangeR[]) {
+    double surface_range, double temperatureRangeR[], double depthsR[]) {
 
 	int i, k, m, Nsteps_per_day = 1;
-	double pe, cs, sh, inv_dX2, alpha_dT, part2;
+	double pe, cs, sh, inv_dX2, alpha_dT, part2, alpha_avg = 0, alpha_total;
 	double oldavgLyrTempR2[MAX_ST_RGR];
     
     Bool Tsoil_not_exploded = swTRUE;
@@ -1840,6 +1840,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 		}
 
 		for (m = 0; m < Nsteps_per_day; m++) {
+            alpha_total = 0;
 			for (i = 1; i < nRgr + 1; i++) {
 				// goes to nRgr, because the soil temp of the last interpolation layer (nRgr) is the sTconst
 				k = i - 1;
@@ -1892,13 +1893,16 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 				}
 
 				part2 = avgLyrTempR[ i - 1] - 2 * oldavgLyrTempR2[i] + oldavgLyrTempR2[i + 1];
-
+                
+                alpha_total += alpha_dT;
+                alpha_avg = alpha_total / i;
+                
 				avgLyrTempR[i] = oldavgLyrTempR2[i] + alpha_dT * inv_dX2 * part2; // Parton (1978) eq. 2.21
 
                 // Calculate the diurnal temperature range at depth for interpolation
                 // Makes use of equation 6 from Parton 1984
-                temperatureRangeR[k] = surface_range * exp(-deltaX*sqrt(swPI / alpha_dT));
-
+                temperatureRangeR[k] = surface_range * exp(-depthsR[k]*sqrt(swPI / (alpha_avg)));
+                
 				#ifdef SWDEBUG
 				if (debug) {
 					swprintf("step=%d/%d: d(Tsoil[%d]) = %.2f from p1 = %.1f = dt(%.0f) / dX^2(%.0f) and "
@@ -2185,7 +2189,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	// calculate the new soil temperature for each layer
 	soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, avgLyrTempR, st->oldavgLyrTempR,
 		vwcR, st->wpR, st->fcR, st->bDensityR, csParam1, csParam2, shParam, ptr_stError,
-        surface_range, temperatureRangeR);
+        surface_range, temperatureRangeR, st->depthsR);
 
 	// question: should we ever reset delta_time to SEC_PER_DAY?
 
