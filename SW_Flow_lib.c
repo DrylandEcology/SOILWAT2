@@ -2136,8 +2136,9 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	surfaceAvg[Yesterday] = surfaceAvg[Today];
 	surfaceAvg[Today] = T1;
 
-    surface_range = surface_max - surface_min;
-    
+	surface_range = *surface_max - *surface_min;
+
+
 	if (*ptr_stError) {
 		/* we return early (but after calculating surface temperature) and
 				without attempt to calculate soil temperature again */
