@@ -1170,7 +1170,9 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
   unsigned int nlyrTemp, double depth_Temp[], double avgLyrTempR[], unsigned int nlyrSoil,
   double depth_Soil[], double width_Soil[], double avgLyrTemp[], double temperatureRangeR[],
   double temperatureRange[]){
-    
+
+	// i: index to soil temperature layer (i = 0 is surface)
+	// j: index to soil layer (j = 0 is first soil layer)
 	unsigned int i = 0, j, n;
   #ifdef SWDEBUG
   int debug = 0;
@@ -1189,7 +1191,7 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
 				i++;
 			}
 			if (GT(cor[i][j], 0.0))
-			{ // there are soil layers to add; index i = 0 is soil surface temperature
+			{ // there are soil layers to add; index i = 0 is soil surface
 				if (!(i == 0 && LT(acc + cor[i][j], width_Soil[j])))
 				{ //don't use soil surface temperature if there is other sufficient soil temperature to interpolate
 					avgLyrTemp[j] += interpolation(((i > 0) ? depth_Temp[i - 1] : 0.0),
@@ -1797,10 +1799,13 @@ The algorithm selects a shorter time step if required for a stable solution
 @param shParam A constant for specific heat capacity equation.
 @param *ptr_stError A boolean indicating whether there was an error.
 @param surface_range Temperature range at the surface
-@param temperatureRangeR An array of temperature ranges at each layer to be interpolated
+@param temperatureRangeR An array of temperature ranges at each (regression)-layer to be interpolated
+
+@note
+	avgLyrTempR[0] and temperatureRangeR[0] represent soil surface conditions.
 
 @sideeffect
-  - Updated soil temperature values in array of avgLyrTempR.
+  - Updated soil temperature values in arrays avgLyrTempR and temperatureRangeR.
   - Realized time step for today in updated value of ptr_dTime.
   - Updated status of soil temperature error in *ptr_stError.
 */
@@ -1823,8 +1828,13 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
   }
   #endif
 
-	avgLyrTempR[0] = sT1; //upper boundary condition; index 0 indicates surface and not first layer
-	avgLyrTempR[nRgr + 1] = sTconst; // lower boundary condition; assuming that lowest layer is the depth of constant soil temperature
+	// upper boundary condition; index 0 indicates surface and not first layer
+	// --> required for interpolation from soil temperature layers to soil layers
+	avgLyrTempR[0] = sT1;
+	temperatureRangeR[0] = surface_range;
+
+	// lower boundary condition; assuming that lowest layer is the depth of constant soil temperature
+	avgLyrTempR[nRgr + 1] = sTconst;
 
 	do {
 		/* loop through today's timesteps and soil layers to calculate soil temperature;
@@ -1901,8 +1911,7 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 
                 // Calculate the diurnal temperature range at depth for interpolation
                 // Makes use of equation 6 from Parton 1984
-                temperatureRangeR[k] = surface_range * exp(-depthsR[k]*sqrt(swPI / (alpha_avg)));
-                
+                temperatureRangeR[i] = surface_range * exp(-depthsR[k]*sqrt(swPI / (alpha_avg)));
 				#ifdef SWDEBUG
 				if (debug) {
 					swprintf("step=%d/%d: d(Tsoil[%d]) = %.2f from p1 = %.1f = dt(%.0f) / dX^2(%.0f) and "
