@@ -1194,12 +1194,28 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
 			{ // there are soil layers to add; index i = 0 is soil surface
 				if (!(i == 0 && LT(acc + cor[i][j], width_Soil[j])))
 				{ //don't use soil surface temperature if there is other sufficient soil temperature to interpolate
-					avgLyrTemp[j] += interpolation(((i > 0) ? depth_Temp[i - 1] : 0.0),
-						depth_Temp[i], avgLyrTempR[i], avgLyrTempR[i + 1], depth_Soil[j]);
+					avgLyrTemp[j] += interpolation(
+						(i > 0) ? depth_Temp[i - 1] : 0.0, // depth of `avgLyrTempR[i]`
+						depth_Temp[i], // depth of `avgLyrTempR[i + 1]`
+						avgLyrTempR[i],
+						avgLyrTempR[i + 1],
+						depth_Soil[j]
+					);
 
-                    temperatureRange[j] += interpolation(((i > 0) ? depth_Temp[i - 1] : 0.0),
-                        depth_Temp[i], temperatureRangeR[i], temperatureRangeR[i + 1], depth_Soil[j]);
-                    
+					// TODO: linear interpolation is not the most appropriate here
+					// because it leads easily to negative values which are impossible
+					// for a range
+					temperatureRange[j] += fmax(
+						0.,
+						interpolation(
+							(i > 0) ? depth_Temp[i - 1] : 0.0,
+							depth_Temp[i],
+							temperatureRangeR[i],
+							temperatureRangeR[i + 1],
+							depth_Soil[j]
+						)
+					);
+
 					n++; // add weighting by layer width
 				}
 				acc += cor[i][j];
