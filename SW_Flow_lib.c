@@ -1816,14 +1816,14 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
     double surface_range, double temperatureRangeR[], double depthsR[]) {
 
 	int i, k, m, Nsteps_per_day = 1;
-	double pe, cs, sh, inv_dX2, alpha_dT, part2, alpha_avg = 0, alpha_total;
+	double pe, cs, sh, dT_to_dX2, alpha, part2;
 	double oldavgLyrTempR2[MAX_ST_RGR];
-    
+
     Bool Tsoil_not_exploded = swTRUE;
 
   #ifdef SWDEBUG
   int debug = 0;
-  if (SW_Model.year == 1980 && SW_Model.doy < 10) {
+  if (SW_Model.year == 1981 && SW_Model.doy > 180 && SW_Model.doy < 191) {
     debug = 0;
   }
   #endif
@@ -1836,12 +1836,17 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 	// lower boundary condition; assuming that lowest layer is the depth of constant soil temperature
 	avgLyrTempR[nRgr + 1] = sTconst;
 
-	do {
-		/* loop through today's timesteps and soil layers to calculate soil temperature;
-			shorten time step if calculation is not stable (but break and error out if more
-			than 16 sub-time steps were required or if soil temperature go beyond ± 100 C) */
 
-        inv_dX2 = 1. / squared(deltaX);
+	//------ Mean soil temperature
+	do {
+		/* calculate mean soil temperature across layers and sub-daily timesteps;
+			 if unstable (ptr_stError), then reduce timestep and repeat calculation;
+			 however, abandon soil temperature calculation
+			 if more than 16 sub-time steps (90 min) are required or
+			 if soil temperatures go beyond ± 100 C)
+		*/
+
+		dT_to_dX2 = (*ptr_dTime) / squared(deltaX);
 		Nsteps_per_day = SEC_PER_DAY / *ptr_dTime;
 
 		// reset previous soil temperature values to yesterday's
@@ -1849,8 +1854,10 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 			oldavgLyrTempR2[i] = oldavgLyrTempR[i];
 		}
 
+		// Loop over sub-daily timesteps
 		for (m = 0; m < Nsteps_per_day; m++) {
-            alpha_total = 0;
+
+			// Loop over interpolation layers
 			for (i = 1; i < nRgr + 1; i++) {
 				// goes to nRgr, because the soil temp of the last interpolation layer (nRgr) is the sTconst
 				k = i - 1;
@@ -1858,21 +1865,25 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 				cs = csParam1 + (pe * csParam2); // Parton (1978) eq. 2.22: soil thermal conductivity; csParam1 = 0.0007, csParam2 = 0.0003
 				sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
 					// TODO: adjust thermal conductivity and heat capacity if layer is frozen
+				alpha = cs / (sh * bDensityR[k]); // thermal diffusivity
 
 				#ifdef SWDEBUG
 				if (debug) {
-					swprintf("step=%d/%d, sl=%d/%d: \n"
-						"\t* pe(%.3f) = (%.3f) / (%.3f) = (vwcR(%.3f) - wpR(%.3f)) / (fcR(%.3f) - wpR(%.3f));\n"
-						"\t* cs(%.3f) = csParam1(%.3f) + (pe * csParam2(%.5f))(%.3f);\n"
-						"\t* sh(%.3f) = vwcR + shParam(%.3f) * (1. - vwcR)(%.3f);\n",
-						m, Nsteps_per_day, i, k,
+					swprintf(
+						"step=%d/%d (dTime=%.0f), sl=%d/%d: \n"
+						"\t* pe(%.3f) = (%.3f) / (%.3f) = (vwcR(%.3f) - wpR(%.3f)) / (fcR(%.3f) - wpR(%.3f))\n"
+						"\t* cs(%.3f) = csParam1(%.3f) + (pe * csParam2(%.5f))(%.3f)\n"
+						"\t* sh(%.3f) = vwcR + shParam(%.3f) * (1. - vwcR)(%.3f)\n"
+						"\t* alpha(%.4f) = cs / (sh * dens(%.2f))\n",
+						m, Nsteps_per_day, *ptr_dTime, i, k,
 						pe, vwcR[k] - wpR[k], fcR[k] - wpR[k], vwcR[k], wpR[k], fcR[k], wpR[k],
 						cs, csParam1, csParam2, pe * csParam2,
-						sh, shParam, 1. - vwcR[k]);
+						sh, shParam, 1. - vwcR[k],
+						alpha, bDensityR[k]
+					);
 				}
 				#endif
-                
-                alpha_dT = (*ptr_dTime) * cs / (sh * bDensityR[k]);
+
 				/* Check that approximation is stable
 					- Derivation to confirm Parton 1984: alpha * K * deltaT / deltaX ^ 2 <= 0.5
 					- Let f be a continuously differentiable function with attractive fixpoint f(a) = a;
@@ -1894,36 +1905,33 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 					- Thus, iteration is stable if abs(lambda) < 1, here
 							abs(1 - 2 * parts) < 1 ==> abs(parts) < 1/2
 				*/
-                // alpha_dT * inv_dX2 is old "parts"
-				(*ptr_stError) = GE(alpha_dT * inv_dX2, 0.5)? swTRUE: swFALSE; /* Flag whether an error has occurred */
+				(*ptr_stError) = GE(alpha * dT_to_dX2, 0.5)? swTRUE: swFALSE; /* Flag whether an error has occurred */
 				if (*ptr_stError) {
 					*ptr_dTime = *ptr_dTime / 2;
 					/* step out of for-loop through regression soil layers and re-start with adjusted dTime */
 					break;
 				}
 
-				part2 = avgLyrTempR[ i - 1] - 2 * oldavgLyrTempR2[i] + oldavgLyrTempR2[i + 1];
-                
-                alpha_total += alpha_dT;
-                alpha_avg = alpha_total / i;
-                
-				avgLyrTempR[i] = oldavgLyrTempR2[i] + alpha_dT * inv_dX2 * part2; // Parton (1978) eq. 2.21
+				part2 = avgLyrTempR[i - 1] - 2 * oldavgLyrTempR2[i] + oldavgLyrTempR2[i + 1];
 
-                // Calculate the diurnal temperature range at depth for interpolation
-                // Makes use of equation 6 from Parton 1984
-                temperatureRangeR[i] = surface_range * exp(-depthsR[k]*sqrt(swPI / (alpha_avg)));
+				avgLyrTempR[i] = oldavgLyrTempR2[i] + alpha * dT_to_dX2 * part2; // Parton (1978) eq. 2.21
+
 				#ifdef SWDEBUG
 				if (debug) {
-					swprintf("step=%d/%d: d(Tsoil[%d]) = %.2f from p1 = %.1f = dt(%.0f) / dX^2(%.0f) and "
-						"ps = %.2f = p1 * cs(%f) / (sh(%.3f) * rho(%.2f))\n",
-						m, Nsteps_per_day, i, alpha_dT * inv_dX2 * part2, alpha_dT * inv_dX2, *ptr_dTime,
-                        squared(deltaX), alpha_dT * inv_dX2, cs, sh, bDensityR[k]);
-					swprintf("  Tsoil[%d; now]=%.2f Tsoil[prev]=%.2f Tsoil[yesterday]=%.2f\n",
-						i, avgLyrTempR[i],  oldavgLyrTempR2[i], oldavgLyrTempR[i]);
+					swprintf(
+						"\t* d(Tsoil[%d]) = %.2f from\n"
+						"\t\t* dT/dX2 = %.1f = dt(%.0f) / dX^2(%.0f)\n"
+						"\t\t* p2 = %.4f = Ts[i-1, t](%.2f) - 2 * Ts[i, t-1](%.2f) + Ts[i+1, t-1](%.2f)\n"
+						"\t-> Tsoil[now]=%.2f, Tsoil[yesterday]=%.2f\n\n",
+						i, alpha * dT_to_dX2 * part2,
+						dT_to_dX2, *ptr_dTime, squared(deltaX),
+						part2, avgLyrTempR[i - 1], oldavgLyrTempR2[i], oldavgLyrTempR2[i + 1],
+						avgLyrTempR[i], oldavgLyrTempR[i]
+					);
 				}
 				#endif
 
-				// Sensibility check to cut-short exploding soil temperature values
+				// Sensibility check to short-cut exploding soil temperature values
 				if (GT(avgLyrTempR[i], 100.) || LT(avgLyrTempR[i], -100.)) {
 					Tsoil_not_exploded = swFALSE;
 					*ptr_stError = swTRUE;
@@ -1942,8 +1950,52 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 			}
 		}
 
-	} while ((*ptr_stError) && Tsoil_not_exploded && Nsteps_per_day <= 16);
+		/* repeat calculation of mean soil temperature if
+				- unstable (ptr_stError)
+				- not more than 16 sub-time steps (90 min)
+				- soil temperatures within ± 100 C
 
+			otherwise, return with error (and abandon soil temperature)
+		*/
+	} while (*ptr_stError && Tsoil_not_exploded && Nsteps_per_day <= 16);
+
+
+	//------ Range of soil temperature
+	if (!(*ptr_stError)) {
+		alpha = 0;
+
+		for (i = 1; i < nRgr + 1; i++) {
+			k = i - 1;
+			pe = (vwcR[k] - wpR[k]) / (fcR[k] - wpR[k]); // the units are volumetric!
+			cs = csParam1 + (pe * csParam2); // Parton (1978) eq. 2.22: soil thermal conductivity; csParam1 = 0.0007, csParam2 = 0.0003
+			sh = vwcR[k] + shParam * (1. - vwcR[k]); // Parton (1978) eq. 2.22: specific heat capacity; shParam = 0.18
+				// TODO: adjust thermal conductivity and heat capacity if layer is frozen
+
+			// Calculate the diurnal temperature range at depth for interpolation
+			// Makes use of equation 6 from Parton 1984
+
+			alpha += cs / (sh * bDensityR[k]); // sum of alpha across shallower layers
+
+			// eq. 6 assumes that soil surface temperature follows a sine wave with
+			// a daily period, i.e. 86400 seconds
+			temperatureRangeR[i] = surface_range * exp(-depthsR[k] * sqrt(swPI / (86400. * alpha / (k + 1.))));
+
+			#ifdef SWDEBUG
+			if (debug) {
+				swprintf(
+					"layer=%d/depth=%.0f: "
+					"range(Tsoil)=%.2f = range(Tsurface)(%.2f) * damp(%.4f) "
+					"(mean(alpha)=%.4f)\n",
+					k, depthsR[k],
+					temperatureRangeR[i],
+					surface_range,
+					exp(-depthsR[k] * sqrt(swPI / (86400. * alpha / (k + 1.)))),
+					alpha / (k + 1.)
+				);
+			}
+			#endif
+		}
+	}
 }
 
 /**********************************************************************
