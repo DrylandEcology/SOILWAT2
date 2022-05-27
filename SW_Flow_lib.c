@@ -2059,6 +2059,9 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	unsigned int i, sFadjusted_avgLyrTemp;
   #ifdef SWDEBUG
   int debug = 0;
+  if (SW_Model.year == 1980 && SW_Model.doy < 10) {
+    debug = 0;
+  }
   #endif
 	double T1, vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], avgLyrTempR[MAX_ST_RGR],
     temperatureRangeR[MAX_ST_RGR], temperatureRange[MAX_LAYERS], surface_range;
@@ -2096,33 +2099,24 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 		);
 	}
 
-	// calculating T1, the average daily soil surface temperature
+	// calculating min/mean/max surface temperature
 	if (GT(snowdepth, 0.0)) {
+		// underneath snow, based on Parton 1998
 		T1 = surface_temperature_under_snow(airTemp, snow);
-		#ifdef SWDEBUG
-		if (debug) swprintf("\nThere is snow on the ground, T1=%f calculated using new equation from Parton 1998\n", T1);
-		#endif
-        *surface_min = *surface_max = T1;
-	} else {
-		if (LE(biomass, bmLimiter)) { // bmLimiter = 300
-			T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
-			#ifdef SWDEBUG
-			if (debug) {
-				swprintf("\nT1 = %f = %f + (%f * %f * (1 - (%f / %f)) * (1 - (%f / %f)) ) )",
-					airTemp, T1, t1Param1, pet, aet, pet, biomass, bmLimiter);
-			}
-			#endif
+		*surface_min = *surface_max = T1;
 
-		} else {
-			T1 = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
-			#ifdef SWDEBUG
-			if (debug) {
-				swprintf("\nT1 = %f = %f + ((%f * (%f - %f)) / %f)",
-					airTemp, T1, t1Param2, biomass, bmLimiter, t1Param3);
-			}
-			#endif
+		#ifdef SWDEBUG
+		if (debug) {
+			swprintf(
+				"\nTsurface (min/mean/max) = %f/%f/%f (underneath snowpack)\n",
+				*surface_min, T1, *surface_max
+			);
 		}
-        
+		#endif
+
+	} else {
+		// No snow cover
+
         // Calculate max/min surface temperature based on eqations 4 and 5 from Parton 1984
         // surface_max uses effect on plant canopy (E_B) which uses the equation in figure 1b
         // Radiation calculation (second line of calculation) is based off of figure 2 in Parton 1984
@@ -2130,7 +2124,34 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
         *surface_max *= ((0.35 * max_air_temp) + 24.07 * (1.0 - exp(-.000038 * (H_gt*1000))));
         *surface_max += max_air_temp;
         *surface_min = min_air_temp + (.006 * biomass) - 1.82;
-        
+
+		if (LE(biomass, bmLimiter)) { // bmLimiter = 300
+			T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
+
+			#ifdef SWDEBUG
+			if (debug) {
+				swprintf(
+					"\nTsurface (min/mean/max) = %f/%f/%f "
+					"\n  mean = %f + (%f * %f * (1 - (%f / %f)) * (1 - (%f / %f)) ) )\n",
+					*surface_min, T1, *surface_max,
+					airTemp, t1Param1, pet, aet, pet, biomass, bmLimiter
+				);
+			}
+			#endif
+
+		} else {
+			T1 = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
+			#ifdef SWDEBUG
+			if (debug) {
+				swprintf(
+					"\nTsurface (min/mean/max) = %f/%f/%f "
+					"\n  mean= %f + ((%f * (%f - %f)) / %f)\n",
+					*surface_min, T1, *surface_max,
+					airTemp, t1Param2, biomass, bmLimiter, t1Param3
+				);
+			}
+			#endif
+		}
 	}
 
 	surfaceAvg[Yesterday] = surfaceAvg[Today];
@@ -2227,7 +2248,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 	// determine frozen/unfrozen status of soil layers
 	set_frozen_unfrozen(nlyrs, avgLyrTemp, swc, swc_sat, width);
-    
+
     // Add/subtract the interpolated range to/from average layer temperature
     for(i = 0; i < nlyrs; i++) {
         maxLyrTemperature[i] = avgLyrTemp[i] + (temperatureRange[i] / 2);
@@ -2262,7 +2283,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 
 	#ifdef SWDEBUG
 	if (debug) {
-		sw_error(0, "Stop at end of soil temperature calculations");
+		sw_error(0, "Stop at end of soil temperature calculations.\n");
 	}
 	#endif
 }
