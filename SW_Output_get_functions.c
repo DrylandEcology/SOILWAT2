@@ -2417,7 +2417,7 @@ void get_soiltemp_mem(OutPeriod pd)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
-    int nlyrs = SW_Soilwat.nlyrs, doubleOffset = 2 * nlyrs;
+    int nlyrs = SW_Site.n_layers, doubleOffset = 2 * nlyrs;
 
 	RealD *p = p_OUT[eSW_SoilTemp][pd];
 	get_outvalleader(p, pd);
@@ -2441,7 +2441,7 @@ void get_soiltemp_agg(OutPeriod pd)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
-    int nlyrs = SW_Site.n_layrs, doubleOffset = 2 * nlyrs;
+    int nlyrs = SW_Site.n_layers, doubleOffset = 2 * nlyrs;
 
 	RealD
 		*p = p_OUT[eSW_SoilTemp][pd],
