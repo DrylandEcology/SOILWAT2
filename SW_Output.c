@@ -358,7 +358,9 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 		s->temp_min += v->now.temp_min[Today];
 		s->temp_avg += v->now.temp_avg[Today];
 		//added surfaceAvg for sum
-		s->surfaceAvg += v->surfaceAvg;
+        s->surfaceAvg = v->surfaceAvg;
+        s->surfaceMax = v->surfaceMax;
+        s->surfaceMin = v->surfaceMin;
 		break;
 	case eSW_Precip:
 		s->ppt += v->now.ppt[Today];
@@ -527,9 +529,6 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
                 s->minLyrTemperature[i] += v->minLyrTemperature[i];
                 s->maxLyrTemperature[i] += v->maxLyrTemperature[i];
             }
-            s->surfaceAvg = v->surfaceAvg;
-            s->surfaceMax = v->surfaceMax;
-            s->surfaceMin = v->surfaceMin;
 		break;
             
     case eSW_Frozen:
@@ -633,6 +632,8 @@ static void average_for(ObjType otyp, OutPeriod pd) {
 				w->p_oagg[pd]->temp_min = w->p_accu[pd]->temp_min / div;
 				w->p_oagg[pd]->temp_avg = w->p_accu[pd]->temp_avg / div;
 				w->p_oagg[pd]->surfaceAvg = w->p_accu[pd]->surfaceAvg / div;
+                w->p_oagg[pd]->surfaceMax = w->p_accu[pd]->surfaceMax / div;
+                w->p_oagg[pd]->surfaceMin = w->p_accu[pd]->surfaceMin / div;
 				break;
 
 			case eSW_Precip:
@@ -668,9 +669,6 @@ static void average_for(ObjType otyp, OutPeriod pd) {
                                     s->minLyrTemperature[i] :
                                     s->p_accu[pd]->minLyrTemperature[i] / div;
 				}
-                    s->p_oagg[pd]->surfaceAvg = s->surfaceAvg / div;
-                    s->p_oagg[pd]->surfaceMax = s->surfaceMax / div;
-                    s->p_oagg[pd]->surfaceMin = s->surfaceMin / div;
 				break;
             
             case eSW_Frozen:
@@ -1581,7 +1579,7 @@ void SW_OUT_set_ncol(void) {
 	int tLayers = SW_Site.n_layers;
 
 	ncol_OUT[eSW_AllWthr] = 0;
-	ncol_OUT[eSW_Temp] = 4;
+	ncol_OUT[eSW_Temp] = 6;
 	ncol_OUT[eSW_Precip] = 5;
 	ncol_OUT[eSW_SoilInf] = 1;
 	ncol_OUT[eSW_Runoff] = 4;
@@ -1606,7 +1604,7 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_WetDays] = tLayers;
 	ncol_OUT[eSW_SnowPack] = 2;
 	ncol_OUT[eSW_DeepSWC] = 1;
-	ncol_OUT[eSW_SoilTemp] = (tLayers * 3) + 3; // 3 for three new column names and + 1 for general surface temp column
+	ncol_OUT[eSW_SoilTemp] = (tLayers * 3); // 3 for three new column names for each layer
     ncol_OUT[eSW_Frozen] = tLayers;
 	ncol_OUT[eSW_AllVeg] = 0;
 	ncol_OUT[eSW_Estab] = SW_VegEstab.count;
@@ -1647,7 +1645,7 @@ void SW_OUT_set_colnames(void) {
 		"forbs", "grass", "litter" };
 
 	const char *cnames_eSW_Temp[] = { "max_C", "min_C", "avg_C",
-		"surfaceTemp" };
+		"surfaceTemp_C" };
 	const char *cnames_eSW_Precip[] = { "ppt", "rain", "snow_fall", "snowmelt",
 		"snowloss" };
 	const char *cnames_eSW_SoilInf[] = { "soil_inf" };
@@ -1670,7 +1668,14 @@ void SW_OUT_set_colnames(void) {
 	if (debug) swprintf("SW_OUT_set_colnames: set columns for 'eSW_Temp' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_Temp]; i++) {
-		colnames_OUT[eSW_Temp][i] = Str_Dup(cnames_eSW_Temp[i]);
+        if(i <= 3) {
+            colnames_OUT[eSW_Temp][i] = Str_Dup(cnames_eSW_Temp[i]);
+        } else {
+            strcpy(ctemp, cnames_eSW_Temp[3]);
+            strcat(ctemp, "_");
+            strcat(ctemp, cnames_eSW_Temp[i % 4]);
+            colnames_OUT[eSW_Temp][i] = Str_Dup(ctemp);
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Precip' ...");
@@ -1833,18 +1838,14 @@ void SW_OUT_set_colnames(void) {
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SoilTemp' ...");
 	#endif
-    j = 0;
+    j = 0; // Layer variable for the next for-loop, 0 is first layer not surface
     for (i = 0; i < ncol_OUT[eSW_SoilTemp]; i++) {
         
-        if(i % 3 == 0 && i > 3) j++;
+        // Check if ready to go onto next layer (added all min/max/avg headers for layer)
+        if(i % 3 == 0 && i > 1) j++;
         
-        if(i <= 2) {
-            // For surface temperature
-            strcpy(ctemp, cnames_eSW_Temp[3]);
-        } else {
-            // For layers 1 through ncol_OUT[eSW_SoilTemp]
-            strcpy(ctemp, Layers_names[j]);
-        }
+        // For layers 1 through ncol_OUT[eSW_SoilTemp]
+        strcpy(ctemp, Layers_names[j]);
         
         strcat(ctemp, "_");
         strcat(ctemp, cnames_eSW_Temp[i % 3]);
