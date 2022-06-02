@@ -1645,7 +1645,7 @@ void SW_OUT_set_colnames(void) {
 		"forbs", "grass", "litter" };
 
 	const char *cnames_eSW_Temp[] = { "max_C", "min_C", "avg_C",
-		"surfaceTemp_C" };
+		"surfaceTemp" };
 	const char *cnames_eSW_Precip[] = { "ppt", "rain", "snow_fall", "snowmelt",
 		"snowloss" };
 	const char *cnames_eSW_SoilInf[] = { "soil_inf" };
@@ -1668,14 +1668,20 @@ void SW_OUT_set_colnames(void) {
 	if (debug) swprintf("SW_OUT_set_colnames: set columns for 'eSW_Temp' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_Temp]; i++) {
-        if(i <= 3) {
-            colnames_OUT[eSW_Temp][i] = Str_Dup(cnames_eSW_Temp[i]);
+        if(i < 3) {
+            strcpy(ctemp, cnames_eSW_Temp[i]);
         } else {
             strcpy(ctemp, cnames_eSW_Temp[3]);
             strcat(ctemp, "_");
-            strcat(ctemp, cnames_eSW_Temp[i % 4]);
-            colnames_OUT[eSW_Temp][i] = Str_Dup(ctemp);
+            if(i == 3) {
+                strcat(ctemp, cnames_eSW_Temp[2]);
+            } else {
+                strcat(ctemp, cnames_eSW_Temp[i % 2]);
+            }
         }
+        
+        colnames_OUT[eSW_Temp][i] = Str_Dup(ctemp);
+        
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Precip' ...");
