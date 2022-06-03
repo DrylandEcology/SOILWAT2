@@ -87,7 +87,6 @@ typedef struct {
 			pet, H_oh, H_ot, H_gh, H_gt,
 			deep,
 			avgLyrTemp[MAX_LAYERS], // average soil temperature in celcius for each layer
-            surfaceAvg, // soil surface average
             lyrFrozen[MAX_LAYERS],
             minLyrTemperature[MAX_LAYERS], // Holds the minimum temperature estimation of each layer
             maxLyrTemperature[MAX_LAYERS]; // Holds the maximum temperature estimation of each layer
@@ -115,7 +114,6 @@ typedef struct {
 		litter_evap, evap_veg[NVEGTYPES],
 		litter_int, int_veg[NVEGTYPES], // todays intercepted rain by litter and by vegetation
 		avgLyrTemp[MAX_LAYERS],
-        surfaceAvg, // soil surface average
         lyrFrozen[MAX_LAYERS],
         minLyrTemperature[MAX_LAYERS], // Holds the minimum temperature estimation of each layer
         maxLyrTemperature[MAX_LAYERS]; // Holds the maximum temperature estimation of each layer

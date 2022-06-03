@@ -253,7 +253,6 @@ static void arrays2records(void) {
 			SW_Soilwat.transpiration[k][i] = lyrTransp[k][i];
 		}
 	}
-	SW_Soilwat.surfaceAvg = surfaceAvg[Today];
 	SW_Weather.surfaceAvg = surfaceAvg[Today];
 
 	if (SW_Site.deepdrain)
