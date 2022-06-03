@@ -445,9 +445,9 @@ void get_temp_text(OutPeriod pd)
 		_Sep, OUT_DIGITS, vo->temp_max,
 		_Sep, OUT_DIGITS, vo->temp_min,
 		_Sep, OUT_DIGITS, vo->temp_avg,
-        _Sep, OUT_DIGITS, vo->surfaceAvg,
-		_Sep, OUT_DIGITS, vo->surfaceMax,
-        _Sep, OUT_DIGITS, vo->surfaceMin);
+        _Sep, OUT_DIGITS, vo->surfaceMax,
+		_Sep, OUT_DIGITS, vo->surfaceMin,
+        _Sep, OUT_DIGITS, vo->surfaceAvg);
 }
 #endif
 
@@ -468,9 +468,9 @@ void get_temp_mem(OutPeriod pd)
 	p[iOUT(0, pd)] = vo->temp_max;
 	p[iOUT(1, pd)] = vo->temp_min;
 	p[iOUT(2, pd)] = vo->temp_avg;
-    p[iOUT(3, pd)] = vo->surfaceAvg;
-	p[iOUT(4, pd)] = vo->surfaceMax;
-    p[iOUT(5, pd)] = vo->surfaceMin;
+    p[iOUT(3, pd)] = vo->surfaceMax;
+	p[iOUT(4, pd)] = vo->surfaceMin;
+    p[iOUT(5, pd)] = vo->surfaceAvg;
 }
 
 #elif defined(STEPWAT)

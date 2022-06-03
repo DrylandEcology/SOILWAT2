@@ -358,9 +358,9 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 		s->temp_min += v->now.temp_min[Today];
 		s->temp_avg += v->now.temp_avg[Today];
 		//added surfaceAvg for sum
-        s->surfaceAvg = v->surfaceAvg;
-        s->surfaceMax = v->surfaceMax;
-        s->surfaceMin = v->surfaceMin;
+        s->surfaceAvg += v->surfaceAvg;
+        s->surfaceMax += v->surfaceMax;
+        s->surfaceMin += v->surfaceMin;
 		break;
 	case eSW_Precip:
 		s->ppt += v->now.ppt[Today];
@@ -1669,15 +1669,13 @@ void SW_OUT_set_colnames(void) {
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_Temp]; i++) {
         if(i < 3) {
+            // Normal air temperature columns
             strcpy(ctemp, cnames_eSW_Temp[i]);
         } else {
+            // Surface temperature columns
             strcpy(ctemp, cnames_eSW_Temp[3]);
             strcat(ctemp, "_");
-            if(i == 3) {
-                strcat(ctemp, cnames_eSW_Temp[2]);
-            } else {
-                strcat(ctemp, cnames_eSW_Temp[i % 2]);
-            }
+            strcat(ctemp, cnames_eSW_Temp[i % 3]);
         }
         
         colnames_OUT[eSW_Temp][i] = Str_Dup(ctemp);
