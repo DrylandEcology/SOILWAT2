@@ -1814,8 +1814,8 @@ The algorithm selects a shorter time step if required for a stable solution
 @param csParam2 A constant for the soil thermal conductivity equation.
 @param shParam A constant for specific heat capacity equation.
 @param *ptr_stError A boolean indicating whether there was an error.
-@param surface_range Temperature range at the surface
-@param temperatureRangeR An array of temperature ranges at each (regression)-layer to be interpolated
+@param surface_range Temperature range at the surface (&deg;C)
+@param temperatureRangeR An array of temperature ranges at each (regression)-layer to be interpolated (&deg;C)
 
 @note
 	avgLyrTempR[0] and temperatureRangeR[0] represent soil surface conditions.
@@ -2111,13 +2111,13 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param nRgr Number of regressions (1 extra value is needed for the avgLyrTempR and oldavgLyrTempR for the last layer.
 @param snow Snow-water-equivalent of the area (cm).
 @param *ptr_stError Boolean indicating whether there was an error.
-@param max_air_temp Maximum air temperature of Today
-@param min_air_temp Minimum air temperature of Today
+@param max_air_temp Maximum air temperature of Today (&deg;C)
+@param min_air_temp Minimum air temperature of Today (&deg;C)
 @param H_gt Daily global (tilted) irradiation [MJ / m2]
-@param maxLyrTemperature An array holding all of the layers maximum temperature
-@param minLyrTemperature An array holding all of the layers minimum temperature
-@param *surface_max Maxmimum surface temperature
-@param *surface_min Minimum surface temperature
+@param maxLyrTemperature An array holding all of the layers maximum temperature (&deg;C)
+@param minLyrTemperature An array holding all of the layers minimum temperature (&deg;C)
+@param *surface_max Maxmimum surface temperature (&deg;C)
+@param *surface_min Minimum surface temperature (&deg;C)
 
 @sideeffect *ptr_stError Updated boolean indicating whether there was an error.
 
