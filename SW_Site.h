@@ -235,7 +235,7 @@ double SWRC_PDF_swcBulk_saturated(
 	double sand,
 	double clay
 );
-double SWRC_PDF_swcBulk_minimum(
+double SW_swcBulk_minimum(
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,

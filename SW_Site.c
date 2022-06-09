@@ -225,7 +225,7 @@ static Bool SW_check_soil_properties(SW_LAYER_INFO *lyr) {
 
 
 
-/** Lower realistic limit for minimum `theta`
+/** A realistic lower limit for minimum `theta`
 	Notes:
 	- currently, -30 MPa
 		(based on limited test runs across western US including hot deserts)
@@ -245,15 +245,18 @@ static double lower_limit_of_theta_min(
 }
 
 /**
-	@brief Legacy minimum/residual volumetric water content
+	@brief User-input based minimum volumetric water content
 
-	This function returns minimum soil water content determined
-	by user input via #_SWCMinVal and/or
-	by the pedotransfer function of Rawls & Brakensiek 1985 \cite rawls1985WmitE
-	(independent of the selected SWRC), and/or
-	by an estimate of a realistic lower limit (see `lower_limit_of_theta_min()`).
-
-	This reproduces legacy behavior of SOILWAT2 prior to v7.0.0.
+	This function returns minimum soil water content `theta_min` determined
+	by user input via #_SWCMinVal as
+		* a fixed VWC value,
+		* a fixed SWP value, or
+		* a realistic lower limit from `lower_limit_of_theta_min()`,
+			unless legacy mode (`pdf` equal to "Cosby1984AndOthers") is used
+			(reproducing behavior prior to v7.0.0), then calculated as
+			maximum of `lower_limit_of_theta_min()` and `PDF_RawlsBrakensiek1985()`
+			with pedotransfer function by Rawls & Brakensiek 1985 \cite rawls1985WmitE
+			(independently of the selected SWRC).
 
 	@param[in] ui_sm_min User input of requested minimum soil moisture,
 		see #_SWCMinVal
@@ -265,10 +268,11 @@ static double lower_limit_of_theta_min(
 	@param[in] swcBulk_sat Saturated water content of the bulk soil [cm]
 	@param[in] swrc_type Identification number of selected SWRC
 	@param[in] *swrcp Vector of SWRC parameters
+	@param[in] legacy_mode If true then legacy behavior (see details)
 
-	@return Estimated minimum volumetric water content of the matric soil [cm / cm]
+	@return Minimum volumetric water content of the matric soil [cm / cm]
 */
-static double legacy_theta_min(
+static double ui_theta_min(
 	double ui_sm_min,
 	double gravel,
 	double width,
@@ -276,37 +280,34 @@ static double legacy_theta_min(
 	double clay,
 	double swcBulk_sat,
 	unsigned int swrc_type,
-	double *swrcp
+	double *swrcp,
+	Bool legacy_mode
 ) {
-	double vwc_min = SW_MISSING, vwcmin1, vwcmin2;
+	double vwc_min = SW_MISSING, tmp_vwcmin;
 
 	if (LT(ui_sm_min, 0.0)) {
-		/* input: do estimate minimum theta */
+		/* user input: request to estimate minimum theta */
 
-		/* residual theta estimated with Rawls & Brakensiek (1985) PDF*/
-		PDF_RawlsBrakensiek1985(
-			&vwcmin1,
-			sand,
-			clay,
-			swcBulk_sat / ((1. - gravel) * width)
-		);
+		/* realistic lower limit for theta_min */
+		vwc_min = lower_limit_of_theta_min(swrc_type, swrcp, gravel, width);
 
-		/* Lower realistic limit for theta_min
-			- used in case `PDF_RawlsBrakensiek1985` doesn't work or
-				produces unrealistic small values
-		*/
-		vwcmin2 = lower_limit_of_theta_min(swrc_type, swrcp, gravel, width);
+		if (legacy_mode) {
+			/* residual theta estimated with Rawls & Brakensiek (1985) PDF */
+			PDF_RawlsBrakensiek1985(
+				&tmp_vwcmin,
+				sand,
+				clay,
+				swcBulk_sat / ((1. - gravel) * width)
+			);
 
-		// if `PDF_RawlsBrakensiek1985()` returns SW_MISSING then use `vwcmin2`
-		if (missing(vwcmin1)) {
-			vwc_min = vwcmin2;
-
-		} else {
-			vwc_min = fmax(vwcmin1, vwcmin2);
+			/* if `PDF_RawlsBrakensiek1985()` was successful, then take max */
+			if (!missing(tmp_vwcmin)) {
+				vwc_min = fmax(vwc_min, tmp_vwcmin);
+			}
 		}
 
 	} else if (GE(_SWCMinVal, 1.0)) {
-		/* input: fixed (matric) SWP value; unit(_SWCMinVal) == -bar */
+		/* user input: fixed (matric) SWP value; unit(_SWCMinVal) == -bar */
 		vwc_min = SWRC_SWPtoSWC(
 			_SWCMinVal,
 			swrc_type,
@@ -317,7 +318,7 @@ static double legacy_theta_min(
 		) / ((1. - gravel) * width);
 
 	} else {
-		/* input: fixed matric VWC; unit(_SWCMinVal) == cm/cm */
+		/* user input: fixed matric VWC; unit(_SWCMinVal) == cm/cm */
 		vwc_min = _SWCMinVal / width;
 	}
 
@@ -555,23 +556,20 @@ double SWRC_PDF_swcBulk_saturated(
 
 
 /**
-	@brief Minimum/residual soil water content
+	@brief Lower limit of simulated soil water content
 
 	See #pdf2str for implemented PDFs.
 	See #swrc2str for implemented SWRCs.
 
-	Minimum/residual volumetric water content is usually estimated as one of the
-	SWRC parameters; this is what this function returns.
+	SWRCs provide a theoretical minimum/residual volumetric water content;
+	however, water potential at that minimum value is infinite. Instead, we
+	use a realistic lower limit that does not crash the simulation.
 
-	If `swrc_name` is "Campbell1974", then
-	`theta_min` should be zero which would, however, lead to infinite
-	soil water potentials. Instead, `theta_min` is determined
-		- by user input via #_SWCMinVal and
-		- by the pedotransfer function of Rawls & Brakensiek 1985 \cite rawls1985WmitE
-		- by an estimate of a realistic lower limit
+	The lower limit is determined via `ui_theta_min()` using user input
+	and is strictly larger than the theoretical SWRC value.
 
-	Thus, the arguments `_SWCMinVal`, `sand`, `clay`, and `swcBulk_sat`
-	are utilized only if `swrc_name` is "Campbell1974".
+	The arguments `sand`, `clay`, and `swcBulk_sat`
+	are utilized only in legacy mode, i.e., `pdf` equal to "Cosby1984AndOthers".
 
 	@param[in] swrc_type Identification number of selected SWRC
 	@param[in] *swrcp Vector of SWRC parameters
@@ -585,9 +583,9 @@ double SWRC_PDF_swcBulk_saturated(
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] swcBulk_sat Saturated water content of the bulk soil [cm]
 
-	@return Estimated minimum water content of the bulk soil [cm]
+	@return Minimum water content of the bulk soil [cm]
 */
-double SWRC_PDF_swcBulk_minimum(
+double SW_swcBulk_minimum(
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,
@@ -598,59 +596,48 @@ double SWRC_PDF_swcBulk_minimum(
 	double clay,
 	double swcBulk_sat
 ) {
-	double theta_min = SW_MISSING;
+	double theta_min_sim, theta_min_theoretical = SW_MISSING;
 
+	/* `theta_min` based on theoretical SWRC (but phi -> infinity) */
 	switch (swrc_type) {
-		case 0: // Campbell1974: does not define a `theta_min`
-			if (pdf_type == 0 || pdf_type == 1 || pdf_type == 2) {
-				// Cosby1984AndOthers/Cosby1984: we cannot set theta_min = 0 because phi -> infinity
-				// -> `legacy_theta_min()`
-				theta_min = legacy_theta_min(
-					ui_sm_min,
-					gravel,
-					width,
-					sand,
-					clay,
-					swcBulk_sat,
-					swrc_type,
-					swrcp
-				);
-
-				// Possible alternatives to `legacy_theta_min()`
-				/* theta_min defined via realistic phi_min */
-				// theta_min = lower_limit_of_theta_min(swrc_type, swrcp, gravel, width);
-
-				/* theta_min so that `SWRC_SWCtoSWP_Campbell1974()` does just not explode but SWP > 1e13 bar */
-				// theta_min = powe(D_DELTA, 1. / swrcp[2]) * swrcp[1];
-
-
-			} else {
-				LogError(
-					logfp,
-					LOGFATAL,
-					"`SWRC_PDF_swcBulk_minimum()`: "
-					"PDF (type %d) is not implemented for SWRC (type %d).",
-					pdf_type, swrc_type
-				);
-			}
+		case 0: // Campbell1974
+			theta_min_theoretical = 0.;
 			break;
 
 		case 1: // vanGenuchten1980
-			theta_min = swrcp[0];
+			theta_min_theoretical = swrcp[0];
 			break;
 
 		default:
 			LogError(
 				logfp,
 				LOGFATAL,
-				"`SWRC_PDF_swcBulk_minimum()`: SWRC (type %d) is not implemented.",
+				"`SW_swcBulk_minimum()`: SWRC (type %d) is not implemented.",
 				swrc_type
 			);
 			break;
 	}
 
-	// Convert from matric [cm/cm] to bulk [cm]
-	return theta_min * width * (1. - gravel);
+	/* `theta_min` based on user input `ui_sm_min` */
+	theta_min_sim = ui_theta_min(
+		ui_sm_min,
+		gravel,
+		width,
+		sand,
+		clay,
+		swcBulk_sat,
+		swrc_type,
+		swrcp,
+		// `pdf_type == 1` (Cosby1984AndOthers) doesn't work for unit test:
+		//   error: "no known conversion from 'bool' to 'Bool'"
+		pdf_type == 1 ? swTRUE : swFALSE
+	);
+
+	/* `theta_min_sim` must be strictly larger than `theta_min_theoretical` */
+	theta_min_sim = fmax(theta_min_sim, theta_min_theoretical + D_DELTA);
+
+	/* Convert from matric [cm/cm] to bulk [cm] */
+	return theta_min_sim * width * (1. - gravel);
 }
 
 
@@ -1912,7 +1899,7 @@ void SW_SIT_init_run(void) {
 			lyr->fractionWeightMatric_clay
 		);
 
-		lyr->swcBulk_min = SWRC_PDF_swcBulk_minimum(
+		lyr->swcBulk_min = SW_swcBulk_minimum(
 			lyr->swrc_type,
 			lyr->swrcp,
 			lyr->fractionVolBulk_gravel,
