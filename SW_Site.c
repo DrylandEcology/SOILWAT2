@@ -514,7 +514,7 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 
 	@return Estimated saturated water content of the bulk soil [cm]
 */
-double SWRC_PDF_swcBulk_saturated(
+double SW_swcBulk_saturated(
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,
@@ -544,7 +544,7 @@ double SWRC_PDF_swcBulk_saturated(
 			LogError(
 				logfp,
 				LOGFATAL,
-				"`SWRC_PDF_swcBulk_saturated()`: SWRC (type %d) is not implemented.",
+				"`SW_swcBulk_saturated()`: SWRC (type %d) is not implemented.",
 				swrc_type
 			);
 			break;
@@ -1889,7 +1889,7 @@ void SW_SIT_init_run(void) {
 
 
 		/* Extract or estimate additional properties */
-		lyr->swcBulk_saturated = SWRC_PDF_swcBulk_saturated(
+		lyr->swcBulk_saturated = SW_swcBulk_saturated(
 			lyr->swrc_type,
 			lyr->swrcp,
 			lyr->fractionVolBulk_gravel,
