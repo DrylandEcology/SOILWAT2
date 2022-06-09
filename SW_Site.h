@@ -56,26 +56,84 @@ extern "C" {
 
 
 /**
-	@defgroup swrc_pdf Overview over Soil Water Retention Curves (SWRCs) -- Pedotransfer functions (PDFs)
+  @defgroup swrc_pdf Soil Water Retention Curves
 
-	__Implement a new SWRC "XXX" and corresponding PDF "YYY"__
+  __Soil Water Retention Curves (SWRCs) -- Pedotransfer functions (PDFs)__
 
-		- update number of `N_SWRCs` and `N_PDFs`
-		- add new names to `swrc2str[]` and `pdf2str[]`
-		- implement new functions
-			- `SWRC_check_parameters_for_XXX()` to validate parameter values
-			- `SWRC_PDF_YYY_for_XXX()` to estimate parameter values (if implemented)
-			- `SWRC_SWCtoSWP_XXX()` to translate moisture content to potential
-			- `SWRC_SWPtoSWC_XXX()` to translate water potential to content
-		- update "wrapper" functions to call new XXX/YYY-specific functions
-			- `check_SWRC_vs_PDF()`
-			- `SWRC_PDF_estimate_parameters()` (if PDF is implemented)
-			- `SWRC_check_parameters()`
-			- `SWRC_SWCtoSWP()`
-			- `SWRC_SWPtoSWC()`
-		- update `siteparam.in` and `swrc_param.in`
-		- update and add new unit tests that utilize new XXX/YYY functions
+  __Overview__
+
+  Historically (before v7.0.0), `SOILWAT2` utilized a hard-coded SWRC
+  by Campbell 1974 (\cite Campbell1974) and estimated SWRC parameters at
+  run-time from soil texture using PDFs by Cosby et al. 1984 (\cite Cosby1984).
+  This behavior can be reproduced with "Campbell1974" and "Cosby1984AndOthers"
+  (see input file `siteparam.in`).
+
+  Now, users of `SOILWAT2` can choose from a range of implemented SWRCs
+  (see input file `siteparam.in`);
+  SWRC parameters can be estimated at run-time from soil properties by
+  selecting a matching PDF (see input file `siteparam.in`) or,
+  alternatively ("NoPDF"), provide adequate SWRC parameter values
+  (see input file `swrc_params.in`).
+  Please note that `rSOILWAT2` may provide additional PDF functionality.
+
+
+  __Approach__
+
+  -# User selections of SWRC and PDF are read in from input file `siteparam.in`
+    by `SW_SIT_read()` and, if "NoPDF", SWRC parameters are read from
+    input file `swrc_params.in` by `SW_SWRC_read()`.
+
+  -# `SW_SIT_init_run()`
+    - calls `check_SWRC_vs_PDF()` to check that selected SWRC and PDF are
+      compatible
+    - calls `SWRC_PDF_estimate_parameters()` to estimate SWRC parameter values
+      from soil properties based on selected PDF (unless "NoPDF")
+    - calls `SWRC_check_parameters()` to check that SWRC parameter values
+      are resonable for the selected SWRC
+
+  -# `SW_SWRC_SWCtoSWP()` and `SW_SWRC_SWPtoSWC()` are used during simulation
+    runs to convert between soil water content and soil water potential.
+
+  -# These high-level "wrapper" functions hide details of any specific SWRC/PDF
+    implementations and are used by SOILWAT2 simulation code.
+    Thus, most of SOILWAT2 is "unaware" about the selected SWRC/PDF
+    and how to interpret SWRC parameters. Instead, these "wrapper" functions
+    know how to call the appropriate SWRC and/or PDF specific functions
+    which implement SWRC and/or PDF specific details.
+
+
+  __Steps to implement a new SWRC "XXX" and corresponding PDF "YYY"__
+
+  -# Update #N_SWRCs and #N_PDFs
+
+  -# Add new names to #swrc2str and #pdf2str
+
+  -# Update input files `siteparam.in` and `swrc_params.in`
+
+  -# Implement new XXX/YYY-specific functions
+    - `SWRC_check_parameters_for_XXX()` to validate parameter values,
+      e.g., `SWRC_check_parameters_for_Campbell1974()`
+    - `SWRC_PDF_YYY_for_XXX()` to estimate parameter values (if implemented),
+      e.g., `SWRC_PDF_Cosby1984_for_Campbell1974()`
+    - `SWRC_SWCtoSWP_XXX()` to translate moisture content to water potential,
+      e.g., `SWRC_SWCtoSWP_Campbell1974()`
+    - `SWRC_SWPtoSWC_XXX()` to translate water potential to moisture content,
+      e.g., `SWRC_SWPtoSWC_Campbell1974()`
+
+  -# Update "wrapper" functions that select and call XXX/YYY-specific functions
+    and/or parameters
+    - `check_SWRC_vs_PDF()`
+    - `SWRC_PDF_estimate_parameters()` (if PDF is implemented)
+    - `SWRC_check_parameters()`
+    - `SWRC_SWCtoSWP()`
+    - `SWRC_SWPtoSWC()`
+    - `SW_swcBulk_minimum()`
+    - `SW_swcBulk_saturated()`
+
+  -# Expand existing unit tests and add new unit tests
+    to utilize new XXX/YYY functions
 */
+
 #define SWRC_PARAM_NMAX 6 /**< Maximal number of SWRC parameters implemented */
 #define N_SWRCs 2 /**< Number of implemented SWRCs */
 #define N_PDFs 4 /**< Number of implemented PDFs */

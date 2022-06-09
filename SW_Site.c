@@ -92,11 +92,10 @@ RealD
 
 
 /** Character representation of implemented Soil Water Retention Curves (SWRC)
-*/
-/* MAINTENANCE:
-	- Values must exactly match those provided in `siteparam.in`.
-	- If entries are added/removed/change, then update `check_SWRC_vs_PDF()`,
-	  `SWRC_check_parameters()`, `SWRC_SWCtoSWP()`, and `SWRC_SWPtoSWC()`.
+
+	@note Code maintenance:
+		- Values must exactly match those provided in `siteparam.in`.
+		- See details in section #swrc_pdf
 */
 char const *swrc2str[N_SWRCs] = {
 	"Campbell1974",
@@ -104,12 +103,11 @@ char const *swrc2str[N_SWRCs] = {
 };
 
 /** Character representation of implemented Pedotransfer Functions (PDF)
-*/
-/* MAINTENANCE:
-	- Values must exactly match those provided in `siteparam.in`.
-	- The first value must be "NoPDF".
-	- If entries are added/removed/change, then update `check_SWRC_vs_PDF()` and
-	  `SWRC_PDF_estimate_parameters()`.
+
+	@note Code maintenance:
+		- Values must exactly match those provided in `siteparam.in`.
+		- The first value must be "NoPDF".
+		- See details in section #swrc_pdf
 */
 char const *pdf2str[N_PDFs] = {
 	"NoPDF",
@@ -335,6 +333,8 @@ static double ui_theta_min(
 /**
 	@brief Translate a SWRC name into a SWRC type number
 
+	See #swrc2str and `siteparam.in`.
+
 	@param[in] *swrc_name Name of a SWRC
 
 	@return Internal identification number of selected SWRC
@@ -362,6 +362,8 @@ unsigned int encode_str2swrc(char *swrc_name) {
 
 /**
 	@brief Translate a PDF name into a PDF type number
+
+	See #pdf2str and `siteparam.in`.
 
 	@param[in] *pdf_name Name of a PDF
 
@@ -644,6 +646,9 @@ double SW_swcBulk_minimum(
 
 /**
 	@brief Check whether selected PDF and SWRC are compatible
+
+	See #pdf2str for implemented PDFs.
+	See #swrc2str for implemented SWRCs.
 
 	@param[in] *swrc_name Name of selected SWRC
 	@param[in] *pdf_name Name of selected PDF
