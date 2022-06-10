@@ -271,11 +271,15 @@ unsigned int encode_str2pdf(char *pdf_name);
 void SWRC_PDF_estimate_parameters(
 	unsigned int pdf_type,
 	double *swrcp,
-	double sand, double clay, double gravel
+	double sand,
+	double clay,
+	double gravel,
+	double bdensity
 );
 void SWRC_PDF_Cosby1984_for_Campbell1974(
 	double *swrcp,
-	double sand, double clay
+	double sand,
+	double clay
 );
 
 

@@ -83,6 +83,7 @@ namespace{
       sand = 0.33,
       clay = 0.33,
       gravel = 0.2,
+      bdensity = 1.4,
       width = 10.,
       // SWP values in [0, Inf[
       swpsb[12] = {
@@ -119,7 +120,8 @@ namespace{
           swrcp,
           sand,
           clay,
-          gravel
+          gravel,
+          bdensity
         );
 
       } else {

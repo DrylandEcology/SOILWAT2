@@ -63,7 +63,8 @@ namespace {
       swrcp[SWRC_PARAM_NMAX],
       sand = 0.33,
       clay = 0.33,
-      gravel = 0.1;
+      gravel = 0.1,
+      bdensity = 1.4;
     unsigned int swrc_type, k;
 
 
@@ -75,7 +76,10 @@ namespace {
       SWRC_PDF_estimate_parameters(
         encode_str2pdf((char *) ns_pdfca2C1974[k]),
         swrcp,
-        sand, clay, gravel
+        sand,
+        clay,
+        gravel,
+        bdensity
       );
       EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
     }
@@ -85,7 +89,10 @@ namespace {
       SWRC_PDF_estimate_parameters(
         encode_str2pdf((char *) ns_pdfc2vG1980[k]),
         swrcp,
-        sand, clay, gravel
+        sand,
+        clay,
+        gravel,
+        bdensity
       );
       EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
     }
@@ -99,7 +106,8 @@ namespace {
       swrcp[SWRC_PARAM_NMAX],
       sand = 0.33,
       clay = 0.33,
-      gravel = 0.1;
+      gravel = 0.1,
+      bdensity = 1.4;
     unsigned int pdf_type;
 
 
@@ -107,7 +115,14 @@ namespace {
     pdf_type = N_PDFs + 1;
 
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_PDF_estimate_parameters(pdf_type, swrcp, sand, clay, gravel),
+      SWRC_PDF_estimate_parameters(
+        pdf_type,
+        swrcp,
+        sand,
+        clay,
+        gravel,
+        bdensity
+      ),
       "@ generic.c LogError"
     );
   }

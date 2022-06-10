@@ -404,11 +404,18 @@ unsigned int encode_str2pdf(char *pdf_name) {
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
 		of the whole soil [m3/m3]
+	@param[in] bdensity Density of the whole soil
+		(matric soil plus coarse fragments) [g/cm3];
+		accepts #SW_MISSING if not used by selected PDF
+
 */
 void SWRC_PDF_estimate_parameters(
 	unsigned int pdf_type,
 	double *swrcp,
-	double sand, double clay, double gravel
+	double sand,
+	double clay,
+	double gravel,
+	double bdensity
 ) {
 
 	if (pdf_type == 0) {
@@ -443,9 +450,13 @@ void SWRC_PDF_estimate_parameters(
 	}
 
 	/**********************************/
-	/* TODO: remove once other PDFs are implemented that utilize gravel */
+	/* TODO: remove once PDFs are implemented that utilize gravel */
 	/* avoiding `error: unused parameter 'gravel' [-Werror=unused-parameter]` */
 	if (gravel < 0.) {};
+
+	/* TODO: remove once PDFs are implemented that utilize bdensity */
+	/* avoiding `error: unused parameter 'gravel' [-Werror=unused-parameter]` */
+	if (bdensity < 0.) {};
 	/**********************************/
 }
 
@@ -1859,7 +1870,8 @@ void SW_SIT_init_run(void) {
 				lyr->swrcp,
 				lyr->fractionWeightMatric_sand,
 				lyr->fractionWeightMatric_clay,
-				lyr->fractionVolBulk_gravel
+				lyr->fractionVolBulk_gravel,
+				lyr->soilBulk_density
 			);
 		}
 
