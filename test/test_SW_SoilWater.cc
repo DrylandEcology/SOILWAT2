@@ -136,6 +136,7 @@ namespace{
           swrcp[1] = 0.4213539;
           swrcp[2] = 0.007735474;
           swrcp[3] = 1.344678;
+          swrcp[4] = 7.78506;
 
         } else {
           FAIL() << "No SWRC parameters available for " << swrc2str[swrc_type];
@@ -308,6 +309,7 @@ namespace{
     swrcp[1] = 0.4445;
     swrcp[2] = 0.0112;
     swrcp[3] = 1.2673;
+    swrcp[4] = 7.78506;
 
     EXPECT_DEATH_IF_SUPPORTED(
       SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGFATAL),

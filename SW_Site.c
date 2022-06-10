@@ -465,7 +465,7 @@ void SWRC_PDF_estimate_parameters(
 	@brief Estimate Campbell's 1974 SWRC parameters
 		using Cosby et al. 1984 multivariate PDF
 
-	Estimation of three SWRC parameter values `swrcp`
+	Estimation of four SWRC parameter values `swrcp`
 	based on sand, clay, and (silt).
 
 	Parameters are explained in `SWRC_check_parameters_for_Campbell1974()`.
@@ -486,6 +486,8 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 	double sand, double clay
 ) {
 	/* Table 4 */
+	/* Original equations formulated with percent sand (%) and clay (%),
+	  here re-formulated for fraction of sand and clay */
 
 	/* swrcp[0] = psi_saturated: originally formulated as function of silt
 	   here re-formulated as function of clay */
@@ -493,7 +495,11 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 	/* swrcp[1] = theta_saturated: originally with units [100 * cm / cm]
 	   here re-formulated with units [cm / cm] */
 	swrcp[1] = -0.142 * sand - 0.037 * clay + 0.505;
+	/* swrcp[2] = b */
 	swrcp[2] = -0.3 * sand + 15.7 * clay + 3.10;
+	/* swrcp[3] = K_saturated: originally with units [inches / day]
+	   here re-formulated with units [cm / day] */
+	swrcp[3] = 2.54 * 24. * powe(10.0, 1.26 * sand - 6.4 * clay - 0.60);
 }
 
 
@@ -740,11 +746,12 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp) {
 	See `SWRC_SWCtoSWP_Campbell1974()` and `SWRC_SWPtoSWC_Campbell1974()`
 	for implementation of Campbell's 1974 SWRC (\cite Campbell1974).
 
-	Campbell's 1974 SWRC uses three parameters:
+	Campbell's 1974 SWRC uses four parameters:
 		- `swrcp[0]` (`psisMatric`): air-entry suction [cm]
 		- `swrcp[1]` (previously named `thetasMatric`):
 			saturated volumetric water content for the matric component [cm/cm]
 		- `swrcp[2]` (`bMatric`): slope of the linear log-log retention curve [-]
+		- `swrcp[3]` (`K_sat`): saturated hydraulic conductivity `[cm / day]`
 
 	@param[in] *swrcp Vector of SWRC parameters
 
@@ -786,6 +793,17 @@ Bool SWRC_check_parameters_for_Campbell1974(double *swrcp) {
 		);
 	}
 
+	if (LE(swrcp[3], 0.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_Campbell1974(): invalid value of "
+			"K_sat = %f (must be > 0)\n",
+			swrcp[3]
+		);
+	}
+
 	return res;
 }
 
@@ -795,13 +813,14 @@ Bool SWRC_check_parameters_for_Campbell1974(double *swrcp) {
 	See `SWRC_SWCtoSWP_vanGenuchten1980()` and `SWRC_SWPtoSWC_vanGenuchten1980()`
 	for implementation of van Genuchten's 1980 SWRC (\cite vanGenuchten1980).
 
-	van Genuchten's 1980 SWRC uses four parameters:
+	van Genuchten's 1980 SWRC uses five parameters:
 		- `swrcp[0]` (`theta_r`): residual volumetric water content
 			of the matric component [cm/cm]
 		- `swrcp[1]` (`theta_s`): saturated volumetric water content
 			of the matric component [cm/cm]
 		- `swrcp[2]` (`alpha`): related to the inverse of air entry suction [cm-1]
 		- `swrcp[3]` (`n`): measure of the pore-size distribution [-]
+		- `swrcp[4]` (`K_sat`): saturated hydraulic conductivity `[cm / day]`
 
 	@param[in] *swrcp Vector of SWRC parameters
 
@@ -864,6 +883,111 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp) {
 			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
 			"n = %f (must be > 1)\n",
 			swrcp[3]
+		);
+	}
+
+	if (LE(swrcp[4], 0.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"K_sat = %f (must be > 0)\n",
+			swrcp[4]
+		);
+	}
+
+	return res;
+}
+
+
+/**
+	@brief Check FXW SWRC parameters
+
+	See `SWRC_SWCtoSWP_FXW()` and `SWRC_SWPtoSWC_FXW()`
+	for implementation of FXW's SWRC
+	(\cite fredlund1994CGJa, \cite wang2018wrr, \rudiyanto2020JoH).
+
+	FXW SWRC uses four parameters:
+		- `swrcp[0]` (`theta_r`): residual volumetric water content
+			of the matric component [cm/cm]
+		- `swrcp[1]` (`theta_s`): saturated volumetric water content
+			of the matric component [cm/cm]
+		- `swrcp[2]` (`alpha`): related to the inverse of air entry suction [cm-1]
+		- `swrcp[3]` (`n`): measure of the pore-size distribution [-]
+
+	@param[in] *swrcp Vector of SWRC parameters
+
+	@return A logical value indicating if parameters passed the checks.
+*/
+Bool SWRC_check_parameters_for_FXW(double *swrcp) {
+	Bool res = swTRUE;
+
+	if (LE(swrcp[0], 0.0) || GT(swrcp[0], 1.)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"theta(residual, matric, [cm/cm]) = %f (must within 0-1)\n",
+			swrcp[0]
+		);
+	}
+
+	if (LE(swrcp[1], 0.0) || GT(swrcp[1], 1.)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"theta(saturated, matric, [cm/cm]) = %f (must within 0-1)\n",
+			swrcp[1]
+		);
+	}
+
+	if (LE(swrcp[1], swrcp[0])) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid values for "
+			"theta(residual, matric, [cm/cm]) = %f and "
+			"theta(saturated, matric, [cm/cm]) = %f "
+			"(must be theta_r < theta_s)\n",
+			swrcp[0], swrcp[1]
+		);
+	}
+
+	if (LE(swrcp[2], 0.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"alpha([1 / cm]) = %f (must > 0)\n",
+			swrcp[2]
+		);
+	}
+
+	if (LE(swrcp[3], 1.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"n = %f (must be > 1)\n",
+			swrcp[3]
+		);
+	}
+
+	if (LE(swrcp[4], 0.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"K_sat = %f (must be > 0)\n",
+			swrcp[4]
 		);
 	}
 

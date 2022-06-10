@@ -212,6 +212,7 @@ namespace {
     swrcp[0] = 24.2159;
     swrcp[1] = 0.4436;
     swrcp[2] = 10.3860;
+    swrcp[3] = 14.14351;
     EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
 
     // Param1 = psi_sat (> 0)
@@ -243,6 +244,7 @@ namespace {
     swrcp[1] = 0.4445;
     swrcp[2] = 0.0112;
     swrcp[3] = 1.2673;
+    swrcp[4] = 7.7851;
     EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
 
 
