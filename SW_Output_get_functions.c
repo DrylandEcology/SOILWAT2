@@ -491,9 +491,9 @@ void get_temp_agg(OutPeriod pd)
 	do_running_agg(p, psd, iOUT(0, pd), Globals->currIter, vo->temp_max);
 	do_running_agg(p, psd, iOUT(1, pd), Globals->currIter, vo->temp_min);
 	do_running_agg(p, psd, iOUT(2, pd), Globals->currIter, vo->temp_avg);
-    do_running_agg(p, psd, iOUT(3, pd), Globals->currIter, vo->surfaceAvg);
-	do_running_agg(p, psd, iOUT(4, pd), Globals->currIter, vo->surfaceMax);
-    do_running_agg(p, psd, iOUT(5, pd), Globals->currIter, vo->surfaceMin);
+    do_running_agg(p, psd, iOUT(3, pd), Globals->currIter, vo->surfaceMax);
+	do_running_agg(p, psd, iOUT(4, pd), Globals->currIter, vo->surfaceMin);
+    do_running_agg(p, psd, iOUT(5, pd), Globals->currIter, vo->surfaceAvg);
 
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
@@ -2441,19 +2441,18 @@ void get_soiltemp_agg(OutPeriod pd)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
-    int nlyrs = SW_Site.n_layers, doubleOffset = 2 * nlyrs;
 
 	RealD
 		*p = p_OUT[eSW_SoilTemp][pd],
 		*psd = p_OUTsd[eSW_SoilTemp][pd];
     
-	ForEachSoilLayer(i)
-	{
-        do_running_agg(p, psd, iOUT(i, pd), Globals->currIter, vo->maxLyrTemperature[i]);
-		do_running_agg(p, psd, iOUT(i + nlyrs, pd), Globals->currIter, vo->minLyrTemperature[i]);
-        do_running_agg(p, psd, iOUT(i + doubleOffset, pd), Globals->currIter, vo->avgLyrTemp[i]);
-	}
-
+    ForEachSoilLayer(i)
+    {
+        do_running_agg(p, psd, iOUT((i * 3), pd), Globals->currIter, vo->maxLyrTemperature[i]);
+        do_running_agg(p, psd, iOUT((i * 3) + 1, pd), Globals->currIter, vo->minLyrTemperature[i]);
+        do_running_agg(p, psd, iOUT((i * 3) + 2, pd), Globals->currIter, vo->avgLyrTemp[i]);
+    }
+    
 	if (print_IterationSummary) {
 		sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd, ncol_OUT[eSW_SoilTemp]);
