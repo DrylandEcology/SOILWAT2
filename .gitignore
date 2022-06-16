@@ -17,6 +17,10 @@
 /testing/Output/*
 /testing/Output_*
 
+# Figures created by scripts in tools/
+/tools/Fig*
+/tools/*.pdf
+
 # Google unit test output
 gtest-*.o
 libgtest.a
