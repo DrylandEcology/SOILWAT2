@@ -29,7 +29,7 @@
 	09/15/2011	(drs)	deleted RealD albedo in struct SW_SITE and moved it to SW_VegProd.h to make input vegetation type dependent
 	02/04/2012	(drs)	added Reald swc_atSWPcrit_xx for each vegetation type (tree, shrub, grass) to struct SW_LAYER_INFO: swc at the critical soil water potential
 	05/24/2012  (DLM) added variables for Soil Temperature constants to SW_SITE struct
-	05/25/2012  (DLM) added variable sTemp to SW_LAYER_INFO struct to keep track of the soil temperature for each soil layer
+	05/25/2012  (DLM) added variable avgLyrTemp to SW_LAYER_INFO struct to keep track of the soil temperature for each soil layer
 	05/30/2012  (DLM) added stDeltaX variable for soil_temperature function to SW_SITE struct
 	05/31/2012  (DLM) added use_soil_temp, stMaxDepth, stNRGR variables to SW_SITE struct
 	11/06/2012	(clk)	added slope and aspect to SW_SITE struct
@@ -157,7 +157,7 @@ typedef struct {
 		fractionWeightMatric_sand, /* sand content (< 2 mm & > . mm) as weight-fraction of matric soil (g/g) */
 		fractionWeightMatric_clay, /* clay content (< . mm & > . mm) as weight-fraction of matric soil (g/g) */
 		impermeability, /* fraction of how impermeable a layer is (0=permeable, 1=impermeable)    */
-		sTemp, /* initial soil temperature for each soil layer */
+		avgLyrTemp, /* initial soil temperature for each soil layer */
 
 		/* Derived soil characteristics */
 		soilBulk_density, /* bulk soil density of the whole soil, i.e., including rock/gravel component, (g/cm3) */

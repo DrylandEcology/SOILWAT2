@@ -58,7 +58,7 @@ typedef struct {
 		   	 wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
 		   	 bDensityR[MAX_ST_RGR],//bulk density of the whole soil per soil layer for soil temperature calculations
 		   	 oldsFusionPool_actual[MAX_LAYERS],
-		   	 oldsTempR[MAX_ST_RGR];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
+             oldavgLyrTempR[MAX_ST_RGR];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
     
 	double tlyrs_by_slyrs[MAX_ST_RGR][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers
 
@@ -142,9 +142,9 @@ void soil_temperature(double airTemp,
 					  double swc_sat[],
 					  double bDensity[],
 					  double width[],
-					  double oldsTemp[],
-					  double sTemp[],
-					  double surfaceTemp[2],
+					  double oldavgLyrTemp[],
+					  double avgLyrTemp[],
+					  double surfaceAvg[2],
 					  unsigned int nlyrs,
 					  double bmLimiter,
 					  double t1Param1,
@@ -159,16 +159,23 @@ void soil_temperature(double airTemp,
 					  double theMaxDepth,
 					  unsigned int nRgr,
 						double snow,
-						Bool *ptr_stError);
+						Bool *ptr_stError,
+                      double maxAirTemp,
+                      double minAirTemp,
+                      double H_gt,
+                      double minLyrTemperature[],
+                      double maxLyrTemperature[],
+                      double *surface_max,
+                      double *surface_min);
 
 void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
-	 unsigned int nlyrTemp, double depth_Temp[],
-	 double sTempR[], unsigned int nlyrSoil, double depth_Soil[],
-	 double width_Soil[], double sTemp[]);
+  unsigned int nlyrTemp, double depth_Temp[], double avgLyrTempR[], unsigned int nlyrSoil,
+  double depth_Soil[], double width_Soil[], double avgLyrTemp[], double temperatureRangeR[],
+  double temperatureRange[]);
 
 void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
-	double sTemp[], double endTemp, unsigned int nlyrTemp,
-	double depth_Temp[], double maxTempDepth, double sTempR[]);
+	double avgLyrTemp[], double endTemp, unsigned int nlyrTemp,
+	double depth_Temp[], double maxTempDepth, double avgLyrTempR[]);
 
 void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR][MAX_LAYERS + 1], unsigned int nlyrSoil,
 		double width_Soil[], double var[], unsigned int nlyrTemp, double width_Temp,
@@ -184,8 +191,8 @@ void SW_ST_setup_run(
 	double swc_sat[],
 	double bDensity[],
 	double width[],
-	double oldsTemp[],
-	double surfaceTemp[2],
+	double oldavgLyrTemp[],
+	double surfaceAvg[2],
 	unsigned int nlyrs,
 	double fc[],
 	double wp[],
@@ -196,20 +203,20 @@ void SW_ST_setup_run(
 	Bool *ptr_stError
 );
 
-void soil_temperature_setup(double bDensity[], double width[], double oldsTemp[],
+void soil_temperature_setup(double bDensity[], double width[], double oldavgLyrTemp[],
 	double sTconst, unsigned int nlyrs, double fc[], double wp[], double deltaX,
 	double theMaxDepth, unsigned int nRgr, Bool *ptr_stError);
 
-void set_frozen_unfrozen(unsigned int nlyrs, double sTemp[], double swc[],
+void set_frozen_unfrozen(unsigned int nlyrs, double avgLyrTemp[], double swc[],
 		double swc_sat[], double width[]);
 
-unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldsTemp[], double sTemp[],
+unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double avgLyrTemp[],
 		double shParam, unsigned int nlyrs, double vwc[], double bDensity[]);
 
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
-	int nRgr, double sTempR[], double oldsTempR[], double vwcR[], double wpR[], double fcR[],
-	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError);
-
+    int nRgr, double avgLyrTempR[], double oldavgLyrTempR[], double vwcR[], double wpR[], double fcR[],
+    double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError,
+    double surface_range, double temperatureRangeR[], double depthsR[]);
 
 #ifdef __cplusplus
 }

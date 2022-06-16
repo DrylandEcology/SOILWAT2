@@ -281,7 +281,7 @@ void SW_OUT_set_SXWrequests(void);
  */
 /* 10-May-02 (cwb) Added conditionals for interfacing with STEPPE
  * 05-Mar-03 (cwb) Added code for max,min,avg. Previously, only avg was output.
- * 22 June-15 (akt)  Added code for adding surfaceTemp at output
+ * 22 June-15 (akt)  Added code for adding surfaceAvg at output
  */
 void get_none(OutPeriod pd); /* default until defined */
 
