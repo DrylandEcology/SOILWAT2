@@ -99,7 +99,8 @@ RealD
 */
 char const *swrc2str[N_SWRCs] = {
 	"Campbell1974",
-	"vanGenuchten1980"
+	"vanGenuchten1980",
+	"FXW"
 };
 
 /** Character representation of implemented Pedotransfer Functions (PDF)
@@ -113,7 +114,8 @@ char const *pdf2str[N_PDFs] = {
 	"NoPDF",
 	"Cosby1984AndOthers",
 	"Cosby1984",
-	"Rosetta3"
+	"Rosetta3",
+	"neuroFX2021"
 };
 
 
@@ -547,16 +549,19 @@ double SW_swcBulk_saturated(
 	switch (swrc_type) {
 		case 0: // Campbell1974
 			if (pdf_type == 1) {
-				// Cosby1984AndOthers
+				// Cosby1984AndOthers (backwards compatible)
 				PDF_Saxton2006(&theta_sat, sand, clay);
 			} else {
-				// Cosby1984
 				theta_sat = swrcp[1];
 			}
 			break;
 
 		case 1: // vanGenuchten1980
 			theta_sat = swrcp[1];
+			break;
+
+		case 2: // FXW
+			theta_sat = swrcp[0];
 			break;
 
 		default:
@@ -617,14 +622,18 @@ double SW_swcBulk_minimum(
 ) {
 	double theta_min_sim, theta_min_theoretical = SW_MISSING;
 
-	/* `theta_min` based on theoretical SWRC (but phi -> infinity) */
+	/* `theta_min` based on theoretical SWRC */
 	switch (swrc_type) {
-		case 0: // Campbell1974
+		case 0: // Campbell1974: phi = infinity at theta_min
 			theta_min_theoretical = 0.;
 			break;
 
-		case 1: // vanGenuchten1980
+		case 1: // vanGenuchten1980: phi = infinity at theta_min
 			theta_min_theoretical = swrcp[0];
+			break;
+
+		case 2: // FXW: phi = 6.3 x 10^6 cm at theta_min
+			theta_min_theoretical = 0.;
 			break;
 
 		default:
@@ -697,6 +706,14 @@ Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name, Bool isSW2) {
 		) {
 			res = swTRUE;
 		}
+		else if (
+			!isSW2 &&
+			Str_CompareI(swrc_name, (char *) "FXW") == 0 &&
+			// "neuroFX2021" PDF is not implemented in SOILWAT2 (but in rSOILWAT2)
+			Str_CompareI(pdf_name, (char *) "neuroFX2021") == 0
+		) {
+			res = swTRUE;
+		}
 	}
 
 	return res;
@@ -723,6 +740,10 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp) {
 
 		case 1:
 			res = SWRC_check_parameters_for_vanGenuchten1980(swrcp);
+			break;
+
+		case 2:
+			res = SWRC_check_parameters_for_FXW(swrcp);
 			break;
 
 		default:
@@ -906,15 +927,27 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp) {
 
 	See `SWRC_SWCtoSWP_FXW()` and `SWRC_SWPtoSWC_FXW()`
 	for implementation of FXW's SWRC
-	(\cite fredlund1994CGJa, \cite wang2018wrr, \rudiyanto2020JoH).
+	(\cite fredlund1994CGJa, \cite wang2018wrr).
 
-	FXW SWRC uses four parameters:
-		- `swrcp[0]` (`theta_r`): residual volumetric water content
+	"FXWJD" is a synonym for the FXW SWRC (\cite wang2018wrr).
+
+	FXW has six parameters (four are used for the SWRC):
+		- `swrcp[0]` (`theta_s`): saturated volumetric water content
 			of the matric component [cm/cm]
-		- `swrcp[1]` (`theta_s`): saturated volumetric water content
-			of the matric component [cm/cm]
-		- `swrcp[2]` (`alpha`): related to the inverse of air entry suction [cm-1]
-		- `swrcp[3]` (`n`): measure of the pore-size distribution [-]
+		- `swrcp[1]` (`alpha`): shape parameter [cm-1]
+		- `swrcp[2]` (`n`): shape parameter [-]
+		- `swrcp[3]` (`m`): shape parameter [-]
+		- `swrcp[4]` (`K_sat`): saturated hydraulic conductivity [cm / day]
+		- `swrcp[5]` (`L`): tortuosity/connectivity parameter [-]
+
+	FXW SWRC does not include a non-zero residual water content parameter;
+	instead, it assumes a pressure head #FXW_h0 of 6.3 x 10^6 cm
+	(equivalent to c. -618 MPa) at zero water content
+	and a "residual" pressure head #FXW_hr of 1500 cm
+	(\cite fredlund1994CGJa, \cite wang2018wrr, \cite rudiyanto2021G).
+
+	Acceptable parameter values are partially based on
+	Table 1 in \cite wang2022wrr.
 
 	@param[in] *swrcp Vector of SWRC parameters
 
@@ -928,54 +961,41 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp) {
 		LogError(
 			logfp,
 			LOGWARN,
-			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
-			"theta(residual, matric, [cm/cm]) = %f (must within 0-1)\n",
+			"SWRC_check_parameters_for_FXW(): invalid value of "
+			"theta(saturated, matric, [cm/cm]) = %f (must be within 0-1)\n",
 			swrcp[0]
 		);
 	}
 
-	if (LE(swrcp[1], 0.0) || GT(swrcp[1], 1.)) {
+	if (LE(swrcp[1], 0.0)) {
 		res = swFALSE;
 		LogError(
 			logfp,
 			LOGWARN,
-			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
-			"theta(saturated, matric, [cm/cm]) = %f (must within 0-1)\n",
+			"SWRC_check_parameters_for_FXW(): invalid value of "
+			"alpha([1 / cm]) = %f (must be > 0)\n",
 			swrcp[1]
 		);
 	}
 
-	if (LE(swrcp[1], swrcp[0])) {
+	if (LE(swrcp[2], 1.0) || GT(swrcp[2], 10.)) {
 		res = swFALSE;
 		LogError(
 			logfp,
 			LOGWARN,
-			"SWRC_check_parameters_for_vanGenuchten1980(): invalid values for "
-			"theta(residual, matric, [cm/cm]) = %f and "
-			"theta(saturated, matric, [cm/cm]) = %f "
-			"(must be theta_r < theta_s)\n",
-			swrcp[0], swrcp[1]
-		);
-	}
-
-	if (LE(swrcp[2], 0.0)) {
-		res = swFALSE;
-		LogError(
-			logfp,
-			LOGWARN,
-			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
-			"alpha([1 / cm]) = %f (must > 0)\n",
+			"SWRC_check_parameters_for_FXW(): invalid value of "
+			"n = %f (must be within 1-10)\n",
 			swrcp[2]
 		);
 	}
 
-	if (LE(swrcp[3], 1.0)) {
+	if (LE(swrcp[3], 0.0) || GT(swrcp[3], 1.5)) {
 		res = swFALSE;
 		LogError(
 			logfp,
 			LOGWARN,
-			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
-			"n = %f (must be > 1)\n",
+			"SWRC_check_parameters_for_FXW(): invalid value of "
+			"m = %f (must be within 0-1.5)\n",
 			swrcp[3]
 		);
 	}
@@ -985,9 +1005,20 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp) {
 		LogError(
 			logfp,
 			LOGWARN,
-			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"SWRC_check_parameters_for_FXW(): invalid value of "
 			"K_sat = %f (must be > 0)\n",
 			swrcp[4]
+		);
+	}
+
+	if (LE(swrcp[5], 0.)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_FXW(): invalid value of "
+			"L = %f (must be > 0)\n",
+			swrcp[5]
 		);
 	}
 

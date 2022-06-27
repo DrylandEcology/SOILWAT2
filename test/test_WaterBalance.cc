@@ -222,4 +222,37 @@ namespace {
   }
 
 
+
+  TEST(WaterBalanceTest, WithSWRCFXW) {
+    int i;
+
+    // Set SWRC and PDF (and SWRC parameter input filename)
+    strcpy(SW_Site.site_swrc_name, (char *) "FXW");
+    SW_Site.site_swrc_type = encode_str2swrc(SW_Site.site_swrc_name);
+    strcpy(SW_Site.site_pdf_name, (char *) "NoPDF");
+    SW_Site.site_pdf_type = encode_str2pdf(SW_Site.site_pdf_name);
+
+    Mem_Free(InFiles[eSWRCp]);
+    InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in");
+
+    // Read SWRC parameter input file (which is not read by default)
+    SW_SWRC_read();
+
+    // Update soils
+    SW_SIT_init_run();
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
 } // namespace

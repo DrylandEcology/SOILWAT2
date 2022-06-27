@@ -60,6 +60,14 @@ extern "C" {
 #define SW_MISSING     999.     /**< Value to use as MISSING */
 
 
+// Euler's constant
+#ifdef M_E
+  #define swE M_E
+#else
+  #define swE         2.71828182845904523536028747135266249
+#endif
+
+
 /* M_PI and M_PI_2 from <math.h> if implementation conforms to POSIX extension
    but may not be defined for any implementation that conforms to the C standard
 */

@@ -135,9 +135,17 @@ extern "C" {
 */
 
 #define SWRC_PARAM_NMAX 6 /**< Maximal number of SWRC parameters implemented */
-#define N_SWRCs 2 /**< Number of implemented SWRCs */
-#define N_PDFs 4 /**< Number of implemented PDFs */
+#define N_SWRCs 3 /**< Number of implemented SWRCs */
+#define N_PDFs 5 /**< Number of implemented PDFs */
 
+
+#define FXW_h0 6.3e6 /**< Pressure head at zero water content [cm] of FWX SWRC */
+#define FXW_hr 1500. /**< Pressure head at residual water content [cm] of FXW SWRC */
+
+
+/* =================================================== */
+/*            TYPEDEFS                                 */
+/* --------------------------------------------------- */
 
 typedef unsigned int LyrIndex;
 
@@ -287,6 +295,7 @@ Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name, Bool isSW2);
 Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp);
 Bool SWRC_check_parameters_for_Campbell1974(double *swrcp);
 Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp);
+Bool SWRC_check_parameters_for_FXW(double *swrcp);
 
 double SW_swcBulk_saturated(
 	unsigned int swrc_type,

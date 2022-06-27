@@ -54,7 +54,15 @@ namespace {
     "vanGenuchten1980"
     // PDFs implemented in C
   };
-
+  const char *ns_pdfa2FXW[] = {
+    "FXW"
+    // all PDFs
+    "neuroFX2021"
+  };
+  const char *ns_pdfc2FXW[] = {
+    "FXW"
+    // PDFs implemented in C
+  };
 
   // Test pedotransfer functions
   TEST(SiteTest, PDFs) {
@@ -88,6 +96,19 @@ namespace {
     for (k = 1; k < length(ns_pdfc2vG1980); k++) {
       SWRC_PDF_estimate_parameters(
         encode_str2pdf((char *) ns_pdfc2vG1980[k]),
+        swrcp,
+        sand,
+        clay,
+        gravel,
+        bdensity
+      );
+      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    }
+
+    swrc_type = encode_str2swrc((char *) ns_pdfc2FXW[0]);
+    for (k = 1; k < length(ns_pdfc2FXW); k++) {
+      SWRC_PDF_estimate_parameters(
+        encode_str2pdf((char *) ns_pdfc2FXW[k]),
         swrcp,
         sand,
         clay,
@@ -156,6 +177,14 @@ namespace {
           swTRUE
         )
       );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PDF(
+          (char *) ns_pdfa2FXW[0],
+          (char *) ns_pdfca2C1974[k],
+          swTRUE
+        )
+      );
     }
 
     for (k = 1; k < length(ns_pdfa2vG1980); k++) {
@@ -174,7 +203,43 @@ namespace {
           swFALSE
         )
       );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PDF(
+          (char *) ns_pdfa2FXW[0],
+          (char *) ns_pdfa2vG1980[k],
+          swFALSE
+        )
+      );
     }
+
+
+    for (k = 1; k < length(ns_pdfa2FXW); k++) {
+      EXPECT_TRUE(
+        (bool) check_SWRC_vs_PDF(
+          (char *) ns_pdfa2FXW[0],
+          (char *) ns_pdfa2FXW[k],
+          swFALSE
+        )
+      );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PDF(
+          (char *) ns_pdfca2C1974[0],
+          (char *) ns_pdfa2FXW[k],
+          swFALSE
+        )
+      );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PDF(
+          (char *) ns_pdfa2vG1980[0],
+          (char *) ns_pdfa2FXW[k],
+          swFALSE
+        )
+      );
+    }
+
   }
 
 
@@ -277,6 +342,60 @@ namespace {
     swrcp[3] = 1.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
     swrcp[3] = tmp;
+
+
+
+
+
+    //--- Fail SWRC: FXW
+    swrc_type = encode_str2swrc((char *) "FXW");
+    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    swrcp[0] = 0.437461;
+    swrcp[1] = 0.050757;
+    swrcp[2] = 1.247689;
+    swrcp[3] = 0.308681;
+    swrcp[4] = 22.985379;
+    swrcp[5] = 2.697338;
+    EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+
+
+    // Param1 = theta_sat (0-1)
+    tmp = swrcp[0];
+    swrcp[0] = -1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[0] = 1.5;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[0] = tmp;
+
+    // Param2 = alpha (> 0)
+    tmp = swrcp[1];
+    swrcp[1] = 0.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[1] = tmp;
+
+    // Param3 = n (> 1)
+    tmp = swrcp[2];
+    swrcp[2] = 1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[2] = tmp;
+
+    // Param4 = m (> 0)
+    tmp = swrcp[3];
+    swrcp[3] = 0.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[3] = tmp;
+
+    // Param5 = Ksat (> 0)
+    tmp = swrcp[4];
+    swrcp[4] = 0.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[4] = tmp;
+
+    // Param6 = L (> 0)
+    tmp = swrcp[5];
+    swrcp[5] = 0.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[5] = tmp;
   }
 
 

@@ -85,12 +85,12 @@ namespace{
       gravel = 0.2,
       bdensity = 1.4,
       width = 10.,
-      // SWP values in [0, Inf[
+      // SWP values in [0, Inf[ but FXW maxes out at 6178.19079 bar
       swpsb[12] = {
-        0., 0.001, 0.01, 0.026, 0.027, 0.33, 15., 30., 100., 300., 1000., 10000.
+        0., 0.001, 0.01, 0.026, 0.027, 0.33, 15., 30., 100., 300., 1000., 6178.
       },
-      // SWP values in [fc, Inf[
-      swpsi[7] = {0.33, 15., 30., 100., 300., 1000., 10000.};
+      // SWP values in [fc, Inf[ but FXW maxes out at 6178.19079 bar
+      swpsi[7] = {0.33, 15., 30., 100., 300., 1000., 6178.};
 
     std::ostringstream msg;
 
@@ -101,7 +101,7 @@ namespace{
       memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
 
       // Find a suitable PDF to generate `SWRCp`
-      // (start `k2` at 1 because 0 codes to "NoPDF")
+      // (start `pdf_type` at 1 because 0 codes to "NoPDF")
       for (
         pdf_type = 1;
         pdf_type < N_PDFs && !check_SWRC_vs_PDF(
@@ -111,6 +111,7 @@ namespace{
         );
         pdf_type++
       ) {}
+
 
       // Obtain SWRCp
       if (pdf_type < N_PDFs) {
@@ -137,6 +138,19 @@ namespace{
           swrcp[2] = 0.007735474;
           swrcp[3] = 1.344678;
           swrcp[4] = 7.78506;
+
+        } else if (
+          Str_CompareI(
+            (char *) swrc2str[swrc_type],
+            (char *) "FXW"
+          ) == 0
+        ) {
+          swrcp[0] = 0.437461;
+          swrcp[1] = 0.050757;
+          swrcp[2] = 1.247689;
+          swrcp[3] = 0.308681;
+          swrcp[4] = 22.985379;
+          swrcp[5] = 2.697338;
 
         } else {
           FAIL() << "No SWRC parameters available for " << swrc2str[swrc_type];
