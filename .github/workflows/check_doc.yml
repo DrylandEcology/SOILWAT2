@@ -2,11 +2,10 @@ name: docs
 
 on:
   push:
-    branches:
-      - master
+    branches: [master, main, release/**]
   pull_request:
-    branches:
-      - master
+    branches: [master, main, release/**]
+
 
 jobs:
   check_documentation:
@@ -17,12 +16,12 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: recursive
-        
+
     - name: Install doxygen and dependencies
       # SOILWAT2 documentation uses bibtex to build references
       run: |
         sudo apt-get update
         sudo apt-get install doxygen doxygen-latex graphviz
-        
+
     - name: Build documentation and check for warnings
       run: make clean doc
