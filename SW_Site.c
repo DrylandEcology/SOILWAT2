@@ -226,8 +226,8 @@ static Bool SW_check_soil_properties(SW_LAYER_INFO *lyr) {
 
 
 /** A realistic lower limit for minimum `theta`
-	Notes:
-	- currently, -30 MPa
+
+@note Currently, -30 MPa
 		(based on limited test runs across western US including hot deserts)
 		lower than "air-dry" = hygroscopic point (-10. MPa; Porporato et al. 2001)
 		not as extreme as "oven-dry" (-1000. MPa; Fredlund et al. 1994)
@@ -767,7 +767,7 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp) {
 	See `SWRC_SWCtoSWP_Campbell1974()` and `SWRC_SWPtoSWC_Campbell1974()`
 	for implementation of Campbell's 1974 SWRC (\cite Campbell1974).
 
-	Campbell's 1974 SWRC uses four parameters:
+	Campbell1974 has four parameters (three are used for the SWRC):
 		- `swrcp[0]` (`psisMatric`): air-entry suction [cm]
 		- `swrcp[1]` (previously named `thetasMatric`):
 			saturated volumetric water content for the matric component [cm/cm]
@@ -798,7 +798,7 @@ Bool SWRC_check_parameters_for_Campbell1974(double *swrcp) {
 			logfp,
 			LOGWARN,
 			"SWRC_check_parameters_for_Campbell1974(): invalid value of "
-			"theta(saturated, matric, [cm/cm]) = %f (must within 0-1)\n",
+			"theta(saturated, matric, [cm/cm]) = %f (must be within 0-1)\n",
 			swrcp[1]
 		);
 	}
@@ -834,7 +834,7 @@ Bool SWRC_check_parameters_for_Campbell1974(double *swrcp) {
 	See `SWRC_SWCtoSWP_vanGenuchten1980()` and `SWRC_SWPtoSWC_vanGenuchten1980()`
 	for implementation of van Genuchten's 1980 SWRC (\cite vanGenuchten1980).
 
-	van Genuchten's 1980 SWRC uses five parameters:
+	"vanGenuchten1980" has five parameters (four are used for the SWRC):
 		- `swrcp[0]` (`theta_r`): residual volumetric water content
 			of the matric component [cm/cm]
 		- `swrcp[1]` (`theta_s`): saturated volumetric water content
@@ -856,7 +856,7 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp) {
 			logfp,
 			LOGWARN,
 			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
-			"theta(residual, matric, [cm/cm]) = %f (must within 0-1)\n",
+			"theta(residual, matric, [cm/cm]) = %f (must be within 0-1)\n",
 			swrcp[0]
 		);
 	}
@@ -867,7 +867,7 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp) {
 			logfp,
 			LOGWARN,
 			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
-			"theta(saturated, matric, [cm/cm]) = %f (must within 0-1)\n",
+			"theta(saturated, matric, [cm/cm]) = %f (must be within 0-1)\n",
 			swrcp[1]
 		);
 	}

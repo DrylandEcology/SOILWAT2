@@ -1257,7 +1257,7 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
     coarse fragments (e.g., gravel), and soil layer width.
 
   @return Soil water potential [-bar]
-**/
+*/
 RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_LAYER_INFO *lyr) {
   return SWRC_SWCtoSWP(
     swcBulk,
@@ -1292,7 +1292,7 @@ RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_LAYER_INFO *lyr) {
     other applications may want to warn only (`LOGWARN`) and return.
 
   @return Soil water potential [-bar]
-**/
+*/
 double SWRC_SWCtoSWP(
 	double swcBulk,
 	unsigned int swrc_type,
@@ -1380,7 +1380,7 @@ double SWRC_SWCtoSWP(
     other applications may want to warn only (`LOGWARN`) and return.
 
   @return Soil water potential [-bar]
-**/
+*/
 double SWRC_SWCtoSWP_Campbell1974(
 	double swcBulk,
 	double *swrcp,
@@ -1447,7 +1447,7 @@ double SWRC_SWCtoSWP_Campbell1974(
     other applications may want to warn only (`LOGWARN`) and return.
 
   @return Soil water potential [-bar]
-**/
+*/
 double SWRC_SWCtoSWP_vanGenuchten1980(
 	double swcBulk,
 	double *swrcp,
@@ -1470,7 +1470,7 @@ double SWRC_SWCtoSWP_vanGenuchten1980(
 			tmp = powe(tmp, 1. / (1. - 1. / swrcp[3])); // tmp values are >= 1
 			res = pow(-1. + tmp, 1. / swrcp[3]) / swrcp[2]; // `pow()` because x >= 0
 
-			// convert [cm of H20 at 4 C; value from `soilDB::KSSL_VG_model()`] to [bar]
+			// convert [cm of H2O at 4 C; value from `soilDB::KSSL_VG_model()`] to [bar]
 			res /= 1019.716;
 
 		} else if (EQ(theta, swrcp[1])) {
@@ -1598,7 +1598,7 @@ double SWRC_SWCtoSWP_FXW(
     coarse fragments (e.g., gravel), and soil layer width.
 
   @return Soil water content in the layer [cm]
-**/
+*/
 RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr) {
   return SWRC_SWPtoSWC(
     swpMatric,
@@ -1634,7 +1634,7 @@ RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr) {
     other applications may want to warn only (`LOGWARN`) and return.
 
   @return Soil water content in the layer [cm]
-**/
+*/
 double SWRC_SWPtoSWC(
 	double swpMatric,
 	unsigned int swrc_type,
@@ -1709,7 +1709,7 @@ double SWRC_SWPtoSWC(
   @param[in] width Soil layer width [cm]
 
   @return Soil water content in the layer [cm]
-**/
+*/
 double SWRC_SWPtoSWC_Campbell1974(
 	double swpMatric,
 	double *swrcp,
@@ -1753,7 +1753,7 @@ double SWRC_SWPtoSWC_Campbell1974(
   @param[in] width Soil layer width [cm]
 
   @return Soil water content in the layer [cm]
-**/
+*/
 double SWRC_SWPtoSWC_vanGenuchten1980(
 	double swpMatric,
 	double *swrcp,
@@ -1762,7 +1762,7 @@ double SWRC_SWPtoSWC_vanGenuchten1980(
 ) {
 	double phi, tmp, res;
 
-	// convert SWP [-bar] to phi [cm of H20 at 4 C;
+	// convert SWP [-bar] to phi [cm of H2O at 4 C;
 	// value from `soilDB::KSSL_VG_model()`]
 	phi = swpMatric * 1019.716;
 
