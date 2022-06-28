@@ -4,11 +4,9 @@ name: win-tests
 
 on:
   push:
-    branches:
-      - master
+    branches: [master, main, release/**]
   pull_request:
-    branches:
-      - master
+    branches: [master, main, release/**]
 
 jobs:
   build_Windows_Cygwin:
