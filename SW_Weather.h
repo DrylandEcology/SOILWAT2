@@ -105,6 +105,7 @@ void SW_WTH_setup(void);
 void SW_WTH_read(void);
 Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather);
 void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, int endYear);
+void deallocateAllHistory(int numYears);
 void _clear_hist_weather(void);
 void SW_WTH_init_run(void);
 void SW_WTH_construct(void);

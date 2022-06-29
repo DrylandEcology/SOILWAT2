@@ -261,6 +261,7 @@ void SW_WTH_construct(void) {
 void SW_WTH_deconstruct(void)
 {
 	OutPeriod pd;
+    int numYears = SW_Model.endyr - SW_Model.startyr;
 
 	// De-allocate output structures:
 	ForEachOutPeriod(pd)
@@ -279,6 +280,24 @@ void SW_WTH_deconstruct(void)
 	if (SW_Weather.use_weathergenerator) {
 		SW_MKV_deconstruct();
 	}
+    deallocateAllHistory(numYears);
+}
+
+/**
+ @brief Helper function to SW_WTH_deconstruct to deallocate allHist array.
+ 
+ @param numYears Number of years the simulation spans to deallocate
+ */
+
+void deallocateAllHistory(int numYears) {
+    int year;
+    
+    for(year = 0; year < numYears; year++) {
+        free(SW_Weather.allHist[year]);
+    }
+    
+    free(SW_Weather.allHist);
+    
 }
 
 /**
