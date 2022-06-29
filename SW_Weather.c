@@ -72,14 +72,6 @@ SW_WEATHER SW_Weather;
 
 static char *MyFileName;
 
-/** `swTRUE`/`swFALSE` if historical daily meteorological inputs
-    are available/not available for the current simulation year
-*/
-#define weth_found
-#undef weth_found
-
-static Bool weth_found;
-
 
 /* =================================================== */
 /*             Local Function Definitions              */
