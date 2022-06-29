@@ -470,7 +470,7 @@ void SW_WTH_read(void) {
     @return `swTRUE`/`swFALSE` if historical daily meteorological inputs are
       successfully/unsuccessfully read in.
 */
-Bool _read_weather_hist(TimeInt year) {
+Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather) {
 	/* =================================================== */
 	/* Read the historical (measured) weather files.
 	 * Format is
@@ -486,7 +486,6 @@ Bool _read_weather_hist(TimeInt year) {
 	 *
 	 */
 
-	SW_WEATHER_HIST *wh = &SW_Weather.hist;
 	FILE *f;
 	int x, lineno = 0, doy;
 	// TimeInt mon, j, k = 0;
@@ -520,10 +519,10 @@ Bool _read_weather_hist(TimeInt year) {
 
 		/* --- Make the assignments ---- */
 		doy--; // base1 -> base0
-		wh->temp_max[doy] = tmpmax;
-		wh->temp_min[doy] = tmpmin;
-		wh->temp_avg[doy] = (tmpmax + tmpmin) / 2.0;
-		wh->ppt[doy] = ppt;
+        yearWeather->temp_max[doy] = tmpmax;
+        yearWeather->temp_min[doy] = tmpmin;
+        yearWeather->temp_avg[doy] = (tmpmax + tmpmin) / 2.0;
+        yearWeather->ppt[doy] = ppt;
 
     // Calculate annual average temperature based on historical input, i.e.,
     // the `temp_year_avg` calculated here is prospective and unsuitable when
