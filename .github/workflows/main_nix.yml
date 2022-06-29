@@ -4,11 +4,10 @@ name: tests
 
 on:
   push:
-    branches:
-      - master
+    branches: [master, main, release/**]
   pull_request:
-    branches:
-      - master
+    branches: [master, main, release/**]
+
 
 jobs:
   build_nix:
@@ -48,7 +47,7 @@ jobs:
 
   check_code_coverage:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v2
