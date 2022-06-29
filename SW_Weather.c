@@ -103,58 +103,109 @@ static void _update_yesterday(void) {
 	wn->rain[Yesterday] = wn->rain[Today];
 }
 
+/**
+ @brief Reads in all weather data through all years and stores them in global SW_Weather's `allHist`
+ 
+ @param[out] allHist 2D array holding all weather data gathered
+ @param[in] startYear Start year of the simulation
+ @param[in] endYear End year of the simulation
+ 
+ @note Function requires SW_MKV_today, SW_Weather.scale_temp_max and SW_Weather.scale_temp_min
+ 
+ */
 
-static void _todays_weth(RealD *tmax, RealD *tmin, RealD *ppt) {
-	/* --------------------------------------------------- */
-	/* If use_weathergenerator = swFALSE and no weather file found, we won't
-	 * get this far because the new_year() will fail, so if
-	 * no weather file found and we make it here, use_weathergenerator = swTRUE
-	 * and we call mkv_today().  Otherwise, we're using this
-	 * year's weather file and this logic sets today's value
-	 * to yesterday's if today's is missing.  This may not
-	 * always be most desirable, especially for ppt, so its
-	 * default is 0.
-	 */
-	SW_WEATHER *w = &SW_Weather;
-	TimeInt doy = SW_Model.doy - 1;
-	Bool no_missing = swTRUE;
+void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, int endYear) {
+    
+    int yearIndex, year, day, numYears = endYear - startYear + 1, yearDays, prevYearDays,
+    monthDays, month, currentMonDays;
+    
+    double yesterdayPPT = 0., yesterdayMin = 0., yesterdayMax = 0.;
+    
+    Bool weth_found = swFALSE, no_missing = swTRUE;
+    
+    for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
+        year = yearIndex + startYear;
+        yearDays = isleapyear(year) ? 366 : 365;
+        monthDays = 31;
+        month = 0;
+        currentMonDays = 0;
+        
+        if(!SW_Weather.use_weathergenerator_only) {
+            #ifdef RSOILWAT
+            weth_found = onSet_WTH_DATA_YEAR(year, allHist[yearIndex]);
+            #else
+            weth_found = _read_weather_hist(year, allHist[yearIndex]);
+            #endif
+        }
+        for(day = 0; day < yearDays; day++) {
+            monthDays++;
+            if(currentMonDays == monthDays - 1) {
+                month++;
+                monthDays = (month == Feb) ? (isleapyear(year) ? 29 : 28) : Time_days_in_month(month);
+            }
+            /* --------------------------------------------------- */
+            /* If use_weathergenerator = swFALSE and no weather file found, we won't
+             * get this far because the new_year() will fail, so if
+             * no weather file found and we make it here, use_weathergenerator = swTRUE
+             * and we call mkv_today().  Otherwise, we're using this
+             * year's weather file and this logic sets today's value
+             * to yesterday's if today's is missing.  This may not
+             * always be most desirable, especially for ppt, so its
+             * default is 0.
+             */
+            if (!weth_found) {
+                if(SW_Weather.use_weathergenerator) {
+                    // no weather input file for current year ==> use weather generator
+                allHist[yearIndex]->ppt[day] = yesterdayPPT;
+                SW_MKV_today(day, &allHist[yearIndex]->temp_max[day],
+                             &allHist[yearIndex]->temp_min[day], &allHist[yearIndex]->ppt[day]);
+                } else {
+                    // TODO: Make error message
+                }
 
-	if (!weth_found) {
-		// no weather input file for current year ==> use weather generator
-		*ppt = w->now.ppt[Yesterday]; /* reqd for markov */
-		SW_MKV_today(doy, tmax, tmin, ppt);
+            } else {
+                // weather input file for current year available
 
-	} else {
-		// weather input file for current year available
+                no_missing = (Bool) (!missing(allHist[yearIndex]->temp_max[day]) &&
+                                        !missing(allHist[yearIndex]->temp_min[day]) &&
+                                        !missing(allHist[yearIndex]->ppt[day]));
+                if(!no_missing) {
+                    // some of today's values are missing
 
-		no_missing = (Bool) (!missing(w->hist.temp_max[doy]) &&
-									!missing(w->hist.temp_min[doy]) &&
-									!missing(w->hist.ppt[doy]));
+                    if (SW_Weather.use_weathergenerator) {
+                        // if weather generator is turned on then use it for all values
+                        allHist[yearIndex]->ppt[day] = yesterdayPPT;
+                        SW_MKV_today(day, &allHist[yearIndex]->temp_max[day],
+                                     &allHist[yearIndex]->temp_min[day], &allHist[yearIndex]->ppt[day]);
 
-		if (no_missing) {
-			// all values available
-			*tmax = w->hist.temp_max[doy];
-			*tmin = w->hist.temp_min[doy];
-			*ppt = w->hist.ppt[doy];
-
-		} else {
-			// some of today's values are missing
-
-			if (SW_Weather.use_weathergenerator) {
-				// if weather generator is turned on then use it for all values
-				*ppt = w->now.ppt[Yesterday]; /* reqd for markov */
-				SW_MKV_today(doy, tmax, tmin, ppt);
-
-			} else {
-				// impute missing values with 0 for precipitation and
-				// with LOCF for temperature (i.e., last-observation-carried-forward)
-				*tmax = (!missing(w->hist.temp_max[doy])) ? w->hist.temp_max[doy] : w->now.temp_max[Yesterday];
-				*tmin = (!missing(w->hist.temp_min[doy])) ? w->hist.temp_min[doy] : w->now.temp_min[Yesterday];
-				*ppt = (!missing(w->hist.ppt[doy])) ? w->hist.ppt[doy] : 0.;
-			}
-		}
-	}
-
+                    } else {
+                        // impute missing values with 0 for precipitation and
+                        // with LOCF for temperature (i.e., last-observation-carried-forward)
+                        allHist[yearIndex]->temp_max[day] = (!missing(allHist[yearIndex]->temp_max[day])) ?
+                                allHist[yearIndex]->temp_max[day] : yesterdayMax;
+                        
+                        allHist[yearIndex]->temp_min[day] = (!missing(allHist[yearIndex]->temp_min[day])) ?
+                                allHist[yearIndex]->temp_min[day] : yesterdayMin;
+                        
+                        allHist[yearIndex]->ppt[day] = (!missing(allHist[yearIndex]->ppt[day])) ?
+                                allHist[yearIndex]->ppt[day] : 0.;
+                    }
+                }
+            }
+            /* scale the weather according to monthly factors */
+            allHist[yearIndex]->temp_max[day] += SW_Weather.scale_temp_max[month];
+            allHist[yearIndex]->temp_min[day] += SW_Weather.scale_temp_min[month];
+            
+            allHist[yearIndex]->ppt[day] *= SW_Weather.scale_precip[month];
+            
+            yesterdayPPT = allHist[yearIndex]->ppt[day];;
+            yesterdayMax = allHist[yearIndex]->temp_max[day];
+            yesterdayMin = allHist[yearIndex]->temp_min[day];
+        }
+        
+        prevYearDays = yearDays;
+        
+    }
 }
 
 
@@ -250,56 +301,6 @@ void SW_WTH_init_run(void) {
 	SW_Weather.soil_inf = 0.;
 }
 
-
-/** @brief Sets up daily meteorological inputs for current simulation year
-
-  Meteorological inputs are required for each day; they can either be
-  observed and provided via weather input files or they can be generated
-  by a weather generator (which has separate input requirements).
-
-  SOILWAT2 handles three scenarios of missing data:
-    1. Some individual days are missing (set to the missing value)
-    2. An entire year is missing (file `weath.xxxx` for year `xxxx` is absent)
-    3. No daily weather input files are available
-
-  SOILWAT2 may be set up such that the weather generator is exclusively:
-    - Set the weather generator to exclusive use
-  or
-    1. Turn on the weather generator
-    2. Set the "first year to begin historical weather" to a year after
-       the last simulated year
-
-  @sideeffect
-    - if historical daily meteorological inputs are successfully located,
-      then \ref weth_found is set to `swTRUE`
-    - otherwise, \ref weth_found is `swFALSE`
-*/
-void SW_WTH_new_year(void) {
-
-	if (
-		SW_Weather.use_weathergenerator_only ||
-		SW_Model.year < SW_Weather.yr.first
-	) {
-		weth_found = swFALSE;
-
-	} else {
-		#ifdef RSOILWAT
-		weth_found = onSet_WTH_DATA_YEAR(SW_Model.year);
-		#else
-		weth_found = _read_weather_hist(SW_Model.year);
-		#endif
-	}
-
-	if (!weth_found && !SW_Weather.use_weathergenerator) {
-		LogError(
-		  logfp,
-		  LOGFATAL,
-		  "Markov Simulator turned off and weather file not found for year %d",
-		  SW_Model.year
-		);
-	}
-}
-
 /**
 @brief Updates 'yesterday'.
 */
@@ -325,10 +326,9 @@ void SW_WTH_new_day(void) {
 	 * 	20091015 (drs) ppt is divided into rain and snow
 	 */
 
-	SW_WEATHER *w = &SW_Weather;
-	SW_WEATHER_2DAYS *wn = &SW_Weather.now;
-	RealD tmpmax, tmpmin, ppt;
-	TimeInt month = SW_Model.month;
+    SW_WEATHER *w = &SW_Weather;
+    SW_WEATHER_2DAYS *wn = &SW_Weather.now;
+    TimeInt day = SW_Model.doy - 1, year = SW_Model.year - SW_Model.startyr;
 
 #ifdef STEPWAT
 	/*
@@ -338,32 +338,29 @@ void SW_WTH_new_day(void) {
 	 */
 #endif
 
-	/* get the plain unscaled values */
-	_todays_weth(&tmpmax, &tmpmin, &ppt);
+    /* get the daily weather from allHist */
+    wn->temp_max[Today] = w->allHist[year]->temp_max[day];
+    wn->temp_min[Today] = w->allHist[year]->temp_min[day];
+    wn->ppt[Today] = w->allHist[year]->ppt[day];
 
-	/* scale the weather according to monthly factors */
-	wn->temp_max[Today] = tmpmax + w->scale_temp_max[month];
-	wn->temp_min[Today] = tmpmin + w->scale_temp_min[month];
+    wn->temp_avg[Today] = (SW_Weather.now.temp_max[Today] + SW_Weather.now.temp_min[Today]) / 2.;
 
-	wn->temp_avg[Today] = (wn->temp_max[Today] + wn->temp_min[Today]) / 2.;
+    w->snow = w->snowmelt = w->snowloss = 0.;
+    w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
 
-	ppt *= w->scale_precip[month];
-
-	wn->ppt[Today] = wn->rain[Today] = ppt;
-	w->snow = w->snowmelt = w->snowloss = 0.;
-	w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
-
-	if (w->use_snow)
-	{
-		SW_SWC_adjust_snow(wn->temp_min[Today], wn->temp_max[Today], wn->ppt[Today],
-		  &wn->rain[Today], &w->snow, &w->snowmelt);
-  }
+    if (w->use_snow)
+    {
+        SW_SWC_adjust_snow(wn->temp_min[Today], wn->temp_max[Today], wn->ppt[Today],
+          &wn->rain[Today], &w->snow, &w->snowmelt);
+    } else {
+        wn->rain[Today] = wn->ppt[Today];
+    }
 }
 
 /**
 @brief Reads in file for SW_Weather.
 */
-void SW_WTH_read(void) {
+void SW_WTH_setup(void) {
 	/* =================================================== */
 	SW_WEATHER *w = &SW_Weather;
 	const int nitems = 17;
@@ -452,6 +449,21 @@ void SW_WTH_read(void) {
     );
 	}
 	/* else we assume weather files match model run years */
+}
+
+void SW_WTH_read(void) {
+    
+    int numYears = SW_Model.endyr - SW_Model.startyr + 1, year;
+
+    SW_Weather.allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * numYears);
+    
+    for(year = 0; year < numYears; year++) {
+        
+        SW_Weather.allHist[year] = (SW_WEATHER_HIST *)malloc(sizeof(SW_WEATHER_HIST));
+    }
+
+    readAllWeather(SW_Weather.allHist, SW_Model.startyr, SW_Model.endyr);
+    
 }
 
 
