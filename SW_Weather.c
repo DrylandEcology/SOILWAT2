@@ -201,10 +201,12 @@ void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, int endYear) {
             /* scale the weather according to monthly factors */
             allHist[yearIndex]->temp_max[day] += SW_Weather.scale_temp_max[month];
             allHist[yearIndex]->temp_min[day] += SW_Weather.scale_temp_min[month];
+            allHist[yearIndex]->temp_avg[day] += (SW_Weather.now.temp_max[Today] +
+                                                  SW_Weather.now.temp_min[Today]) / 2.;
             
             allHist[yearIndex]->ppt[day] *= SW_Weather.scale_precip[month];
             
-            yesterdayPPT = allHist[yearIndex]->ppt[day];;
+            yesterdayPPT = allHist[yearIndex]->ppt[day];
             yesterdayMax = allHist[yearIndex]->temp_max[day];
             yesterdayMin = allHist[yearIndex]->temp_min[day];
         }
@@ -368,7 +370,7 @@ void SW_WTH_new_day(void) {
     wn->temp_min[Today] = w->allHist[year]->temp_min[day];
     wn->ppt[Today] = w->allHist[year]->ppt[day];
 
-    wn->temp_avg[Today] = (SW_Weather.now.temp_max[Today] + SW_Weather.now.temp_min[Today]) / 2.;
+    wn->temp_avg[Today] = w->allHist[year]->temp_avg[day];
 
     w->snow = w->snowmelt = w->snowloss = 0.;
     w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
