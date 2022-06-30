@@ -98,6 +98,20 @@ static void _update_yesterday(void) {
 /**
  @brief Reads in all weather data through all years and stores them in global SW_Weather's `allHist`
  
+ Meteorological inputs are required for each day; they can either be
+ observed and provided via weather input files or they can be generated
+ by a weather generator (which has separate input requirements).
+ SOILWAT2 handles three scenarios of missing data:
+   1. Some individual days are missing (set to the missing value)
+   2. An entire year is missing (file `weath.xxxx` for year `xxxx` is absent)
+   3. No daily weather input files are available
+ SOILWAT2 may be set up such that the weather generator is exclusively:
+   - Set the weather generator to exclusive use
+ or
+   1. Turn on the weather generator
+   2. Set the "first year to begin historical weather" to a year after
+      the last simulated year
+ 
  @param[out] allHist 2D array holding all weather data gathered
  @param[in] startYear Start year of the simulation
  @param[in] endYear End year of the simulation
