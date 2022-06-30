@@ -122,7 +122,7 @@ static void _update_yesterday(void) {
 
 void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, int endYear) {
     
-    int yearIndex, year, day, numYears = endYear - startYear + 1, yearDays, prevYearDays,
+    int yearIndex, year, day, numYears = endYear - startYear + 1, yearDays,
     monthDays, month, currentMonDays;
     
     double yesterdayPPT = 0., yesterdayMin = 0., yesterdayMax = 0.;
@@ -210,8 +210,6 @@ void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, int endYear) {
             yesterdayMax = allHist[yearIndex]->temp_max[day];
             yesterdayMin = allHist[yearIndex]->temp_min[day];
         }
-        
-        prevYearDays = yearDays;
         
     }
 }
