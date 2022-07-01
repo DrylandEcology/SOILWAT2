@@ -23,7 +23,7 @@ namespace {
     TEST(ReadAllWeatherTest, DefaultValues) {
         
         // Testing to fill allHist from `SW_Weather`
-        readAllWeather(SW_Weather.allHist, 1980, 2010);
+        readAllWeather(SW_Weather.allHist, 1980);
         
         EXPECT_NEAR(SW_Weather.allHist[0]->temp_max[0], -0.520000, tol6);
         EXPECT_NEAR(SW_Weather.allHist[0]->temp_avg[0], -8.095000, tol6);

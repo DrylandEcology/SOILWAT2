@@ -287,7 +287,7 @@ void SW_WTH_deconstruct(void)
 	if (SW_Weather.use_weathergenerator) {
 		SW_MKV_deconstruct();
 	}
-    deallocateAllHistory(numYears);
+    deallocateAllHistory();
 }
 
 /**
@@ -296,14 +296,17 @@ void SW_WTH_deconstruct(void)
  @param numYears Number of years the simulation spans to deallocate
  */
 
-void deallocateAllHistory(int numYears) {
-    int year;
+void deallocateAllHistory(void) {
+    unsigned int year;
     
-    for(year = 0; year < numYears; year++) {
-        free(SW_Weather.allHist[year]);
+    if(!isnull(SW_Weather.allHist)) {
+        for(year = 0; year < SW_Weather.n_years; year++) {
+            free(SW_Weather.allHist[year]);
+        }
+        
+        free(SW_Weather.allHist);
+        
     }
-    
-    free(SW_Weather.allHist);
     
 }
 
