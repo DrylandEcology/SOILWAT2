@@ -120,16 +120,16 @@ static void _update_yesterday(void) {
  
  */
 
-void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, int endYear) {
+void readAllWeather(SW_WEATHER_HIST **allHist, int startYear) {
     
-    int yearIndex, year, day, numYears = endYear - startYear + 1, yearDays,
-    monthDays, month, currentMonDays;
+    int day, yearDays, monthDays, month, currentMonDays, year;
+    unsigned int yearIndex;
     
     double yesterdayPPT = 0., yesterdayMin = 0., yesterdayMax = 0.;
     
     Bool weth_found = swFALSE, no_missing = swTRUE;
     
-    for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
+    for(yearIndex = 0; yearIndex < SW_Weather.n_years; yearIndex++) {
         year = yearIndex + startYear;
         yearDays = isleapyear(year) ? 366 : 365;
         monthDays = 31;
@@ -259,6 +259,7 @@ void SW_WTH_construct(void) {
 				sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()");
 		}
 	}
+    SW_Weather.n_years = 0;
 }
 
 /**
@@ -267,7 +268,6 @@ void SW_WTH_construct(void) {
 void SW_WTH_deconstruct(void)
 {
 	OutPeriod pd;
-    int numYears = SW_Model.endyr - SW_Model.startyr;
 
 	// De-allocate output structures:
 	ForEachOutPeriod(pd)
@@ -478,16 +478,17 @@ void SW_WTH_setup(void) {
 
 void SW_WTH_read(void) {
     
-    int numYears = SW_Model.endyr - SW_Model.startyr + 1, year;
+    SW_Weather.n_years = SW_Model.endyr - SW_Model.startyr + 1;
+    unsigned int year;
 
-    SW_Weather.allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * numYears);
+    SW_Weather.allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * SW_Weather.n_years);
     
-    for(year = 0; year < numYears; year++) {
+    for(year = 0; year < SW_Weather.n_years; year++) {
         
         SW_Weather.allHist[year] = (SW_WEATHER_HIST *)malloc(sizeof(SW_WEATHER_HIST));
     }
 
-    readAllWeather(SW_Weather.allHist, SW_Model.startyr, SW_Model.endyr);
+    readAllWeather(SW_Weather.allHist, SW_Model.startyr);
     
 }
 

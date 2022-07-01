@@ -68,6 +68,7 @@ typedef struct {
 			// swFALSE: fail if any weather input is missing (values/files)
 		use_snow;
 	RealD pct_snowdrift, pct_snowRunoff;
+    unsigned int n_years;
 	SW_TIMES yr;
   RealD
     scale_precip[MAX_MONTHS],
