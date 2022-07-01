@@ -144,11 +144,12 @@ void readAllWeather(SW_WEATHER_HIST **allHist, int startYear) {
             #endif
         }
         for(day = 0; day < yearDays; day++) {
-            monthDays++;
-            if(currentMonDays == monthDays - 1) {
+            if(currentMonDays == monthDays) {
                 month++;
                 monthDays = (month == Feb) ? (isleapyear(year) ? 29 : 28) : Time_days_in_month(month);
+                currentMonDays = 0;
             }
+            currentMonDays++;
             /* --------------------------------------------------- */
             /* If use_weathergenerator = swFALSE and no weather file found, we won't
              * get this far because the new_year() will fail, so if
@@ -201,8 +202,8 @@ void readAllWeather(SW_WEATHER_HIST **allHist, int startYear) {
             /* scale the weather according to monthly factors */
             allHist[yearIndex]->temp_max[day] += SW_Weather.scale_temp_max[month];
             allHist[yearIndex]->temp_min[day] += SW_Weather.scale_temp_min[month];
-            allHist[yearIndex]->temp_avg[day] += (SW_Weather.now.temp_max[Today] +
-                                                  SW_Weather.now.temp_min[Today]) / 2.;
+            allHist[yearIndex]->temp_avg[day] = (SW_Weather.scale_temp_max[day] +
+                                                  SW_Weather.scale_temp_min[day]) / 2.;
             
             allHist[yearIndex]->ppt[day] *= SW_Weather.scale_precip[month];
             
