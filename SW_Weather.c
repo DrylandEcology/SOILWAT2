@@ -202,8 +202,8 @@ void readAllWeather(SW_WEATHER_HIST **allHist, int startYear) {
             /* scale the weather according to monthly factors */
             allHist[yearIndex]->temp_max[day] += SW_Weather.scale_temp_max[month];
             allHist[yearIndex]->temp_min[day] += SW_Weather.scale_temp_min[month];
-            allHist[yearIndex]->temp_avg[day] = (SW_Weather.scale_temp_max[day] +
-                                                  SW_Weather.scale_temp_min[day]) / 2.;
+            allHist[yearIndex]->temp_avg[day] = (allHist[yearIndex]->temp_max[day] +
+                                                 allHist[yearIndex]->temp_min[day]) / 2.;
             
             allHist[yearIndex]->ppt[day] *= SW_Weather.scale_precip[month];
             
