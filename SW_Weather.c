@@ -56,6 +56,10 @@
   #include "../rSW_Weather.h"
 #endif
 
+#ifdef STEPWAT
+  #include "../ST_defines.h"
+#endif
+
 
 
 /* =================================================== */
@@ -64,7 +68,9 @@
 
 SW_WEATHER SW_Weather;
 
-
+#ifdef STEPWAT
+extern GlobalType SuperGlobals;
+#endif
 
 /* =================================================== */
 /*                  Local Variables                    */
@@ -482,7 +488,11 @@ void SW_WTH_setup(void) {
 
 void SW_WTH_read(void) {
     
+    #ifdef STEPWAT
+    SW_Weather.n_years = SuperGlobals.runModelYears;
+    #else
     SW_Weather.n_years = SW_Model.endyr - SW_Model.startyr + 1;
+    #endif
     unsigned int year;
 
     SW_Weather.allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * SW_Weather.n_years);
