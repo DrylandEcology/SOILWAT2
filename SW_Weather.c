@@ -122,7 +122,7 @@ static void _update_yesterday(void) {
  
  */
 
-void readAllWeather(SW_WEATHER_HIST **allHist, int startYear) {
+void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_years) {
     
     int day, yearDays, monthDays, month, currentMonDays, year;
     unsigned int yearIndex;
@@ -131,7 +131,7 @@ void readAllWeather(SW_WEATHER_HIST **allHist, int startYear) {
     
     Bool weth_found = swFALSE, no_missing = swTRUE;
     
-    for(yearIndex = 0; yearIndex < SW_Weather.n_years; yearIndex++) {
+    for(yearIndex = 0; yearIndex < n_years; yearIndex++) {
         year = yearIndex + startYear;
         yearDays = isleapyear(year) ? 366 : 365;
         monthDays = 31;
@@ -498,7 +498,7 @@ void SW_WTH_read(void) {
         SW_Weather.allHist[year] = (SW_WEATHER_HIST *)malloc(sizeof(SW_WEATHER_HIST));
     }
 
-    readAllWeather(SW_Weather.allHist, SW_Model.startyr);
+    readAllWeather(SW_Weather.allHist, SW_Model.startyr, SW_Weather.n_years);
     
 }
 
