@@ -57,7 +57,7 @@
 #endif
 
 #ifdef STEPWAT
-  #include "../ST_defines.h"
+  #include "../ST_globals.h" // externs `SuperGlobals
 #endif
 
 
@@ -67,10 +67,6 @@
 /* --------------------------------------------------- */
 
 SW_WEATHER SW_Weather;
-
-#ifdef STEPWAT
-extern GlobalType SuperGlobals;
-#endif
 
 /* =================================================== */
 /*                  Local Variables                    */
