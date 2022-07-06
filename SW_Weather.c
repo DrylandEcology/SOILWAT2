@@ -116,7 +116,7 @@ static void _update_yesterday(void) {
  
  @param[out] allHist 2D array holding all weather data gathered
  @param[in] startYear Start year of the simulation
- @param[in] endYear End year of the simulation
+ @param[in] n_years Number of years in simulation
  
  @note Function requires SW_MKV_today, SW_Weather.scale_temp_max and SW_Weather.scale_temp_min
  
@@ -294,8 +294,6 @@ void SW_WTH_deconstruct(void)
 
 /**
  @brief Helper function to SW_WTH_deconstruct to deallocate allHist array.
- 
- @param numYears Number of years the simulation spans to deallocate
  */
 
 void deallocateAllHistory(void) {
@@ -513,7 +511,8 @@ void SW_WTH_read(void) {
 
     @note Used by rSOILWAT2
 
-    @param year
+    @param year Current year within the simulation
+    @param yearWeather Current year's weather array that is to be filled by function
 
     @return `swTRUE`/`swFALSE` if historical daily meteorological inputs are
       successfully/unsuccessfully read in.
