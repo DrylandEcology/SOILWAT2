@@ -112,12 +112,18 @@ namespace {
     int i;
 
     // Turn on Markov weather generator (and turn off use of historical weather)
-    SW_Soilwat.hist_use = swFALSE;
-    SW_Weather.yr.first = SW_Model.endyr + 1;
     SW_Weather.use_weathergenerator = swTRUE;
+    SW_Weather.use_weathergenerator_only = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup();
+
+    // Point to nonexisting weather data
+    strcpy(SW_Weather.name_prefix, "Input/data_weather_nonexisting/weath");
+
+    // Prepare weather data
+    deallocateAllHistory();
+    SW_WTH_read();
 
     // Run the simulation
     SW_CTL_main();
@@ -145,6 +151,10 @@ namespace {
 
     // Point to partial weather data
     strcpy(SW_Weather.name_prefix, "Input/data_weather_missing/weath");
+
+    // Prepare weather data
+    deallocateAllHistory();
+    SW_WTH_read();
 
     // Run the simulation
     SW_CTL_main();
