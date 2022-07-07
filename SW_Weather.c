@@ -169,7 +169,9 @@ void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_yea
                 SW_MKV_today(day, &allHist[yearIndex]->temp_max[day],
                              &allHist[yearIndex]->temp_min[day], &allHist[yearIndex]->ppt[day]);
                 } else {
-                    // TODO: Make error message
+                    LogError(logfp, LOGWARN, "Weather was not found and user specification "
+                             "for using weather generator is off. Cannot generate "
+                             "weather for day %d of year %d\n", day, year);
                 }
 
             } else {
