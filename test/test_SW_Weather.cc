@@ -30,7 +30,6 @@ namespace {
         EXPECT_NEAR(SW_Weather.allHist[0]->temp_min[0], -15.670000, tol6);
         EXPECT_NEAR(SW_Weather.allHist[0]->ppt[0], .220000, tol6);
         
-        deallocateAllHistory();
     }
 
     TEST(WeatherReadTest, Initialization) {

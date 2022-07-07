@@ -122,7 +122,6 @@ namespace {
     strcpy(SW_Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
     // Prepare weather data
-    deallocateAllHistory();
     SW_WTH_read();
 
     // Run the simulation
@@ -153,7 +152,6 @@ namespace {
     strcpy(SW_Weather.name_prefix, "Input/data_weather_missing/weath");
 
     // Prepare weather data
-    deallocateAllHistory();
     SW_WTH_read();
 
     // Run the simulation

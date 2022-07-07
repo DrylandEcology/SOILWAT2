@@ -489,6 +489,8 @@ void SW_WTH_read(void) {
     #endif
     unsigned int year;
 
+    deallocateAllWeather();
+    
     SW_Weather.allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * SW_Weather.n_years);
     
     for(year = 0; year < SW_Weather.n_years; year++) {
