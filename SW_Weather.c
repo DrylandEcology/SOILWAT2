@@ -289,14 +289,14 @@ void SW_WTH_deconstruct(void)
 	if (SW_Weather.use_weathergenerator) {
 		SW_MKV_deconstruct();
 	}
-    deallocateAllHistory();
+    deallocateAllWeather();
 }
 
 /**
  @brief Helper function to SW_WTH_deconstruct to deallocate allHist array.
  */
 
-void deallocateAllHistory(void) {
+void deallocateAllWeather(void) {
     unsigned int year;
     
     if(!isnull(SW_Weather.allHist)) {
