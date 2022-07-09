@@ -79,15 +79,6 @@ static char *MyFileName;
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void _update_yesterday(void) {
-	/* --------------------------------------------------- */
-	/* save today's temp values as yesterday */
-	/* this must be done after all calculations are
-	 * finished for the day and before today's weather
-	 * is read from the file.  Assumes Today's weather
-	 * is always validated (non-missing).
-	 */
-	SW_WEATHER_2DAYS *wn = &SW_Weather.now;
 
 	wn->temp_max[Yesterday] = wn->temp_max[Today];
 	wn->temp_min[Yesterday] = wn->temp_min[Today];
@@ -323,20 +314,12 @@ void SW_WTH_init_run(void) {
 	 * (doy=1) and are below the critical temps for freezing
 	 * and with ppt=0 there's nothing to freeze.
 	 */
-	SW_Weather.now.temp_max[Today] = SW_Weather.now.temp_min[Today] = 0.;
-	SW_Weather.now.ppt[Today] = SW_Weather.now.rain[Today] = 0.;
+	SW_Weather.now.temp_max = SW_Weather.now.temp_min = 0.;
+	SW_Weather.now.ppt = SW_Weather.now.rain = 0.;
 	SW_Weather.snow = SW_Weather.snowmelt = SW_Weather.snowloss = 0.;
 	SW_Weather.snowRunoff = 0.;
 	SW_Weather.surfaceRunoff = SW_Weather.surfaceRunon = 0.;
 	SW_Weather.soil_inf = 0.;
-}
-
-/**
-@brief Updates 'yesterday'.
-*/
-void SW_WTH_end_day(void) {
-	/* =================================================== */
-	_update_yesterday();
 }
 
 /**
@@ -369,21 +352,21 @@ void SW_WTH_new_day(void) {
 #endif
 
     /* get the daily weather from allHist */
-    wn->temp_max[Today] = w->allHist[year]->temp_max[day];
-    wn->temp_min[Today] = w->allHist[year]->temp_min[day];
-    wn->ppt[Today] = w->allHist[year]->ppt[day];
+    wn->temp_max = w->allHist[year]->temp_max[day];
+    wn->temp_min = w->allHist[year]->temp_min[day];
+    wn->ppt = w->allHist[year]->ppt[day];
 
-    wn->temp_avg[Today] = w->allHist[year]->temp_avg[day];
+    wn->temp_avg = w->allHist[year]->temp_avg[day];
 
     w->snow = w->snowmelt = w->snowloss = 0.;
     w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
 
     if (w->use_snow)
     {
-        SW_SWC_adjust_snow(wn->temp_min[Today], wn->temp_max[Today], wn->ppt[Today],
-          &wn->rain[Today], &w->snow, &w->snowmelt);
+        SW_SWC_adjust_snow(wn->temp_min, wn->temp_max, wn->ppt,
+          &wn->rain, &w->snow, &w->snowmelt);
     } else {
-        wn->rain[Today] = wn->ppt[Today];
+        wn->rain = wn->ppt;
     }
 }
 

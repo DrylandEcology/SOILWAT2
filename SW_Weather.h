@@ -41,8 +41,7 @@ extern "C" {
 
 typedef struct {
 	/* comes from markov weather day-to-day */
-	RealD temp_avg[TWO_DAYS], temp_max[TWO_DAYS], temp_min[TWO_DAYS],
-	ppt[TWO_DAYS], rain[TWO_DAYS];
+	RealD temp_avg, temp_max, temp_min, ppt, rain;
 } SW_WEATHER_2DAYS;
 
 typedef struct {
@@ -113,7 +112,6 @@ void SW_WTH_construct(void);
 void SW_WTH_deconstruct(void);
 void SW_WTH_new_day(void);
 void SW_WTH_sum_today(void);
-void SW_WTH_end_day(void);
 
 
 #ifdef DEBUG_MEM

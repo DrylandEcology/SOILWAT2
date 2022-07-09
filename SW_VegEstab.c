@@ -235,7 +235,7 @@ static void _checkit(TimeInt doy, unsigned int sppnum) {
 	SW_SOILWAT *sw = &SW_Soilwat;
 
 	IntU i;
-	RealF avgtemp = wn->temp_avg[Today], /* avg of today's min/max temp */
+	RealF avgtemp = wn->temp_avg, /* avg of today's min/max temp */
 	avgswc; /* avg_swc today */
 
 	if (doy == SW_Model.firstdoy) {
