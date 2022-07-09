@@ -229,13 +229,12 @@ void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_yea
 @brief Clears weather history.
 @note Used by rSOILWAT2
 */
-void _clear_hist_weather(void) {
+void _clear_hist_weather(SW_WEATHER_HIST *yearWeather) {
 	/* --------------------------------------------------- */
-	SW_WEATHER_HIST *wh = &SW_Weather.hist;
 	TimeInt d;
 
 	for (d = 0; d < MAX_DAYS; d++)
-		wh->ppt[d] = wh->temp_max[d] = wh->temp_min[d] = SW_MISSING;
+        yearWeather->ppt[d] = yearWeather->temp_max[d] = yearWeather->temp_min[d] = SW_MISSING;
 }
 
 
@@ -547,7 +546,7 @@ Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather) {
 
 	sprintf(fname, "%s.%4d", SW_Weather.name_prefix, year);
 
-	_clear_hist_weather(); // clear values before returning
+	_clear_hist_weather(yearWeather); // clear values before returning
 
 	if (NULL == (f = fopen(fname, "r")))
 		return swFALSE;
