@@ -79,13 +79,226 @@ static char *MyFileName;
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
+/**
+ @brief Takes averages through the number of years of the calculated values from calc_SiteClimate
+ @param[in] meanMonthlyTemp 2D array containing all mean average monthly air temperature (deg;C) with dimensions
+ of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[in] maxMonthlyTemp 2D array containing all mean max monthly air temperature (deg;C) with dimensions
+ of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[in] minMonthlyTemp 2D array containing all mean min monthly air temperature (deg;C) with dimensions
+ of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[out] meanMonthlyAvg Array containing sum of monthly mean temperatures
+ @param[out] meanMonthlyMax Array containing sum of monthly maximum temperatures
+ @param[out] meanMonthlyMin Array containing sum of monthly minimum temperatures
+ @param[out] meanMonthlyPPT Array containing sum of monthly mean precipitation
+ @param[out] MAT_C Value containing the sum of daily temperatures
+ @param[out] MAP_cm Value containing the sum of daily precipitation
+ @param[out] PPT_cm Array containing annual precipitation amount [cm]
+ @param[out] Temp_C Array containing annual temperatures [C]
+ @param[in] numYears Number of years we want to average across
+ */
 
-	wn->temp_max[Yesterday] = wn->temp_max[Today];
-	wn->temp_min[Yesterday] = wn->temp_min[Today];
-	wn->temp_avg[Yesterday] = wn->temp_avg[Today];
+void averageAcrossYears(double **meanMonthlyTemp, double **maxMonthlyTemp,
+        double **minMonthlyTemp, double **meanMonthlyPPT, double *meanMonthlyTempAnn,
+        double *maxMonthlyTempAnn, double *minMonthlyTempAnn, double *meanMonthlyPPTAnn,
+        double *MAP_cm, double *MAT_C, double MMT_C[], double MMP_cm[], int numYears) {
+    
+    int month;
+    
+    for(month = 0; month < MAX_MONTHS; month++) {
+        meanMonthlyTempAnn[month] = mean(meanMonthlyTemp[month], numYears);
+        maxMonthlyTempAnn[month] = mean(maxMonthlyTemp[month], numYears);
+        minMonthlyTempAnn[month] = mean(minMonthlyTemp[month], numYears);
+        meanMonthlyPPTAnn[month] = mean(meanMonthlyPPT[month], numYears);
+    }
+    
+    *MAP_cm = mean(MMP_cm, numYears);
+    *MAT_C = mean(MMT_C, numYears);
+}
 
-	wn->ppt[Yesterday] = wn->ppt[Today];
-	wn->rain[Yesterday] = wn->rain[Today];
+/**
+ @brief Calculate climate variable from daily weather
+ @param[in] all_hist Array containing all historical data of a site
+ @param[out] meanMonthlyTemp 2D array containing all mean average monthly air temperature (deg;C) with
+ dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[out] maxMonthlyTemp 2D array containing all mean max monthly air temperature (deg;C) with
+ dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[out] minMonthlyTemp 2D array containing all mean min monthly air temperature (deg;C) with
+ dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[out] meanMonthlyPPT 2D array containing all mean average monthly precipitation (cm) with dimensions
+ of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[out] MMP_cm Array containing annual precipitation amount [cm]
+ @param[out] MMT_C Array containing annual temperatures [C]
+ @param[out] JulyMinTemp Array of size numYears holding minimum July temperatures for each year
+ @param[out] frostFreeDays Array of size numYears holding the maximum consecutive days in a year without frost for every year
+ @param[out] degreeAbove65 Array of size numYears holding the number of days in the year that is above 65F for every year
+ @param[out] sdC4 Array of size three holding the standard deviations of minimum July temperature (0), frost free days (1), number of days above 65F (2)
+ @param[out] PPTJuly Array of size numYears holding mean July precipitation (mm) for each year
+ @param[out] meanTempDryQuarter Array of size numYears holding the average temperature of the driest quarter of the year for every year
+ @param[out] minTempFebruary Array of size numYears holding the mean minimum temperature in february for every year
+ @param[out] sdCheatgrass Array of size 3 holding the standard deviations of July precipitation (0), mean
+ temperature of dry quarter (1), mean minimum temperature of February (2)
+ @param numYears[in] Number of years covered in the simulation
+ @param startYear[in] Start year of simulation
+ 
+ */
+
+void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double **maxMonthlyTemp,
+    double **minMonthlyTemp, double **meanMonthlyPPT, double *MMP_cm, double *MMT_C,
+    double *JulyMinTemp, int *frostFreeDays, double *degreeAbove65, double *sdC4,
+    double *PPTJuly, double *meanTempDryQuarter, double *minTempFebruary,
+    double *sdCheatgrass, int numYears, int startYear) {
+    
+    
+    int month, yearIndex, year, day, numDaysYear, numDaysMonth, currMonDay,
+    consecNonFrost, currentNonFrost, febDays, July = 6, February = 1;
+    
+    double currentTempMin, currentTempMean, totalAbove65, currentJulyMin, JulyPPT,
+    prevFrostMean, frostMean = 0, frostSqr = 0;
+    
+    for(month = 0; month < MAX_MONTHS; month++) {
+        memset(meanMonthlyTemp[month], 0., sizeof(double) * numYears);
+        memset(maxMonthlyTemp[month], 0., sizeof(double) * numYears);
+        memset(minMonthlyTemp[month], 0., sizeof(double) * numYears);
+        memset(meanMonthlyPPT[month], 0., sizeof(double) * numYears);
+    }
+    
+    for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
+        year = yearIndex + startYear;
+        numDaysYear = isleapyear(year) ? 366 : 365;
+        febDays = isleapyear(year) ? 29 : 28;
+        month = 0;
+        currMonDay = 0;
+        numDaysMonth = 31;
+        currentJulyMin = 999;
+        totalAbove65 = 0;
+        currentNonFrost = 0;
+        consecNonFrost = 0;
+        JulyPPT = 0;
+        
+        for(day = 0; day < numDaysYear; day++) {
+            currMonDay++;
+            meanMonthlyTemp[month][yearIndex] += allHist[yearIndex]->temp_avg[day];
+            maxMonthlyTemp[month][yearIndex] += allHist[yearIndex]->temp_max[day];
+            minMonthlyTemp[month][yearIndex] += allHist[yearIndex]->temp_min[day];
+            meanMonthlyPPT[month][yearIndex] += allHist[yearIndex]->ppt[day];
+            
+            MMP_cm[yearIndex] += allHist[yearIndex]->ppt[day];
+            MMT_C[yearIndex] += allHist[yearIndex]->temp_avg[day];
+
+            currentTempMin = allHist[yearIndex]->temp_min[day];
+            currentTempMean = allHist[yearIndex]->temp_avg[day];
+            
+            if(month == July){
+                currentJulyMin = (currentTempMin < currentJulyMin) ?
+                                            currentTempMin : currentJulyMin;
+                JulyPPT += allHist[yearIndex]->ppt[day] * 10;
+            }
+
+            if(currentTempMin > 0.0) {
+                currentNonFrost++;
+            } else if(currentNonFrost > consecNonFrost){
+                consecNonFrost = currentNonFrost;
+                currentNonFrost = 0;
+            } else {
+                currentNonFrost = 0;
+            }
+
+            if(month == February) {
+                minTempFebruary[yearIndex] += allHist[yearIndex]->temp_min[day];
+            }
+
+            if(currMonDay == numDaysMonth) {
+                // Take the average of the current months values for current year
+                meanMonthlyTemp[month][yearIndex] /= numDaysMonth;
+                maxMonthlyTemp[month][yearIndex] /= numDaysMonth;
+                minMonthlyTemp[month][yearIndex] /= numDaysMonth;
+                meanMonthlyPPT[month][yearIndex] /= numDaysMonth;
+                
+                month++;
+                currMonDay = 0;
+                
+                if(month == Mar) minTempFebruary[yearIndex] /= febDays;
+                
+                numDaysMonth = (month == February) ? febDays : Time_days_in_month(month);
+                
+            }
+            
+            currentTempMean -= 18.333;
+            totalAbove65 += (currentTempMean > 0.0) ? currentTempMean : 0.;
+            
+        }
+        
+        JulyMinTemp[yearIndex] = currentJulyMin;
+        PPTJuly[yearIndex] = JulyPPT;
+        degreeAbove65[yearIndex] = totalAbove65;
+        frostFreeDays[yearIndex] = consecNonFrost;
+        
+        prevFrostMean = frostMean;
+        
+        // Get the running values needed for running standard deviation for frostFreeDays
+        frostMean = get_running_mean(yearIndex + 1, prevFrostMean, consecNonFrost);
+        frostSqr += get_running_sqr(prevFrostMean, frostMean, consecNonFrost);
+    }
+    
+    findDriestQtr(meanMonthlyTemp, meanMonthlyPPT, meanTempDryQuarter, numYears, startYear);
+    
+    // Calculate and set standard deviation of C4 variables (frostFreeDays is a running sd)
+    sdC4[0] = standardDeviation(JulyMinTemp, numYears);
+    sdC4[1] = final_running_sd(numYears, frostSqr);
+    sdC4[2] = standardDeviation(degreeAbove65, numYears);
+
+    // Calculate and set the standard deviation of cheatgrass variables
+    sdCheatgrass[0] = standardDeviation(PPTJuly, numYears);
+    sdCheatgrass[1] = standardDeviation(meanTempDryQuarter, numYears);
+    sdCheatgrass[2] = standardDeviation(minTempFebruary, numYears);
+}
+
+/**
+ @brief Helper function to calcsiteClimate to find the driest quarter of the year's average temperature
+ 
+ @param[in] meanMonthlyTemp 2D array holding sum of monthly temperature for every month and year
+ @param[in] meanMonthlyPPT 2D array holding sum of monthly precipitation for every month and year
+ @param[out] meanTempDryQuarter 2D array holding sum of monthly temperature for every month and year
+ @param[in] numYears Number of years in the simulation run
+ @param[in] startYear Start year of the simulation
+ */
+void findDriestQtr(double **meanMonthlyTemp, double **meanMonthlyPPT, double *meanTempDryQuarter,
+                   int numYears, int startYear) {
+    
+    int yearIndex, year, month, prevMonth, nextMonth;
+    
+    double defaultVal = 999., driestThreeMonPPT, driestMeanTemp,
+    currentQtrPPT, currentQtrTemp;
+    
+    for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
+        year = yearIndex + startYear;
+        driestThreeMonPPT = defaultVal;
+        driestMeanTemp = defaultVal;
+
+        for(month = 0; month < MAX_MONTHS; month++) {
+
+            prevMonth = (month == 0) ? 11 : month - 1;
+            nextMonth = (month == 11) ? 0 : month + 1;
+            
+            currentQtrPPT = (meanMonthlyPPT[prevMonth % 12][yearIndex]) +
+                            (meanMonthlyPPT[month % 12][yearIndex]) +
+                            (meanMonthlyPPT[nextMonth % 12][yearIndex]);
+            
+            currentQtrTemp = (meanMonthlyTemp[prevMonth % 12][yearIndex]) +
+                             (meanMonthlyTemp[month % 12][yearIndex]) +
+                             (meanMonthlyTemp[nextMonth % 12][yearIndex]);
+            
+            if(currentQtrPPT < driestThreeMonPPT) {
+                driestMeanTemp = currentQtrTemp;
+                driestThreeMonPPT = currentQtrPPT;
+            }
+            
+        }
+        
+        meanTempDryQuarter[yearIndex] = driestMeanTemp / 3;
+        
+    }
 }
 
 /**
