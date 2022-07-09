@@ -63,14 +63,18 @@ namespace {
         
         int year, day;
         
+        deallocateAllWeather();
+        
         SW_Weather.use_weathergenerator = swTRUE;
+        
+        // Change directory to get input files with some missing data
         strcpy(SW_Weather.name_prefix, "Input/data_weather_missing/weath");
         SW_MKV_setup();
         
-        readAllWeather(SW_Weather.allHist, 1981, 2);
-        
         SW_Model.startyr = 1981;
-        SW_Weather.n_years = 2;
+        SW_Model.endyr = 1982;
+        
+        SW_WTH_read();
         
         // Check everyday's value and test if it's `MISSING`
         for(year = 0; year < 2; year++) {
@@ -78,9 +82,6 @@ namespace {
                 EXPECT_TRUE(!missing(SW_Weather.allHist[year]->temp_max[day]));
             }
         }
-        
-        SW_Model.startyr = 1980;
-        SW_Weather.n_years = 31;
         
         Reset_SOILWAT2_after_UnitTest();
         
@@ -109,6 +110,32 @@ namespace {
         
         Reset_SOILWAT2_after_UnitTest();
         
+    }
+
+    TEST(ReadAllWeatherTest, CheckMissingForMissingYear) {
+
+        int day;
+        
+        deallocateAllWeather();
+        
+        // Change directory to get input files with some missing data
+        strcpy(SW_Weather.name_prefix, "Input/data_weather_nonexisting/weath");
+
+        SW_Weather.use_weathergenerator = swFALSE;
+        SW_Weather.use_weathergenerator_only = swFALSE;
+        
+        SW_Model.startyr = 1981;
+        SW_Model.endyr = 1981;
+        
+        SW_WTH_read();
+
+        // Check everyday's value and test if it's `MISSING`
+        for(day = 0; day < 365; day++) {
+            EXPECT_TRUE(missing(SW_Weather.allHist[0]->temp_max[day]));
+        }
+
+        Reset_SOILWAT2_after_UnitTest();
+
     }
 
     TEST(WeatherReadTest, Initialization) {
