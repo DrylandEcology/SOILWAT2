@@ -229,7 +229,8 @@ typedef struct {
     /** Flag that determines whether vegetation-type specific soil water
       availability should be calculated;
       user input from file `Input/outsetup.in` */
-    use_SWA;
+    use_SWA,
+    veg_method;
 
   RealD
     // storing values in same order as defined in STEPWAT2/rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)

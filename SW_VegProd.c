@@ -84,8 +84,8 @@ void SW_VPD_read(void) {
 	SW_VEGPROD *v = &SW_VegProd;
 	FILE *f;
 	TimeInt mon = Jan;
-	int x, k, lineno = 0;
-	const int line_help = 27; // last case line number before monthly biomass densities
+	int x, k, lineno = 0, veg_method;
+	const int line_help = 28; // last case line number before monthly biomass densities
 	RealF help_veg[NVEGTYPES], help_bareGround, litt, biom, pctl, laic;
 
 	MyFileName = SW_F_name(eVegProd);
@@ -94,8 +94,18 @@ void SW_VPD_read(void) {
 	while (GetALine(f, inbuf)) {
 		if (lineno++ < line_help) {
 			switch (lineno) {
+            case 1:
+                x = sscanf(inbuf, "%d", &veg_method);
+                if(x != 1) {
+                    sprintf(errstr, "ERROR: invalid record in vegetation type components in %s\n", MyFileName);
+                    CloseFile(&f);
+                    LogError(logfp, LOGFATAL, errstr);
+                }
+                v->veg_method = veg_method;
+                break;
+                    
 			/* fractions of vegetation types */
-			case 1:
+			case 2:
 				x = sscanf(inbuf, "%f %f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS], &help_bareGround);
 				if (x < NVEGTYPES + 1) {
@@ -110,7 +120,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* albedo */
-			case 2:
+			case 3:
 				x = sscanf(inbuf, "%f %f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS], &help_bareGround);
 				if (x < NVEGTYPES + 1) {
@@ -125,7 +135,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* canopy height */
-			case 3:
+			case 4:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -137,7 +147,7 @@ void SW_VPD_read(void) {
 					v->veg[k].cnpy.xinflec = help_veg[k];
 				}
 				break;
-			case 4:
+			case 5:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -149,7 +159,7 @@ void SW_VPD_read(void) {
 					v->veg[k].cnpy.yinflec = help_veg[k];
 				}
 				break;
-			case 5:
+			case 6:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -161,7 +171,7 @@ void SW_VPD_read(void) {
 					v->veg[k].cnpy.range = help_veg[k];
 				}
 				break;
-			case 6:
+			case 7:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -173,7 +183,7 @@ void SW_VPD_read(void) {
 					v->veg[k].cnpy.slope = help_veg[k];
 				}
 				break;
-			case 7:
+			case 8:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -187,7 +197,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* vegetation interception parameters */
-			case 8:
+			case 9:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -199,7 +209,7 @@ void SW_VPD_read(void) {
 					v->veg[k].veg_kSmax = help_veg[k];
 				}
 				break;
-			case 9:
+			case 10:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -213,7 +223,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* litter interception parameters */
-			case 10:
+			case 11:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -227,7 +237,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* parameter for partitioning of bare-soil evaporation and transpiration */
-			case 11:
+			case 12:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -241,7 +251,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* Parameter for scaling and limiting bare soil evaporation rate */
-			case 12:
+			case 13:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -255,7 +265,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* shade effects */
-			case 13:
+			case 14:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -267,7 +277,7 @@ void SW_VPD_read(void) {
 					v->veg[k].shade_scale = help_veg[k];
 				}
 				break;
-			case 14:
+			case 15:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -279,7 +289,7 @@ void SW_VPD_read(void) {
 					v->veg[k].shade_deadmax = help_veg[k];
 				}
 				break;
-			case 15:
+			case 16:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -291,7 +301,7 @@ void SW_VPD_read(void) {
 					v->veg[k].tr_shade_effects.xinflec = help_veg[k];
 				}
 				break;
-			case 16:
+			case 17:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -303,7 +313,7 @@ void SW_VPD_read(void) {
 					v->veg[k].tr_shade_effects.yinflec = help_veg[k];
 				}
 				break;
-			case 17:
+			case 18:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -315,7 +325,7 @@ void SW_VPD_read(void) {
 					v->veg[k].tr_shade_effects.range = help_veg[k];
 				}
 				break;
-			case 18:
+			case 19:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -329,7 +339,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* Hydraulic redistribution */
-			case 19:
+			case 20:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -341,7 +351,7 @@ void SW_VPD_read(void) {
 					v->veg[k].flagHydraulicRedistribution = (Bool) EQ(help_veg[k], 1.);
 				}
 				break;
-			case 20:
+			case 21:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -353,7 +363,7 @@ void SW_VPD_read(void) {
 					v->veg[k].maxCondroot = help_veg[k];
 				}
 				break;
-			case 21:
+			case 22:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -365,7 +375,7 @@ void SW_VPD_read(void) {
 					v->veg[k].swpMatric50 = help_veg[k];
 				}
 				break;
-			case 22:
+			case 23:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -379,7 +389,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* Critical soil water potential */
-			case 23:
+			case 24:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -396,7 +406,7 @@ void SW_VPD_read(void) {
 
 			/* CO2 Biomass Power Equation */
 			// Coefficient 1
-			case 24:
+			case 25:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -409,7 +419,7 @@ void SW_VPD_read(void) {
 				}
 				break;
 			// Coefficient 2
-			case 25:
+			case 26:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -424,7 +434,7 @@ void SW_VPD_read(void) {
 
 			/* CO2 WUE Power Equation */
 			// Coefficient 1
-			case 26:
+			case 27:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -437,7 +447,7 @@ void SW_VPD_read(void) {
 				}
 				break;
 			// Coefficient 2
-			case 27:
+			case 28:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
