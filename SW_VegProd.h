@@ -264,6 +264,7 @@ void SW_VPD_read(void);
 void SW_VPD_new_year(void);
 void SW_VPD_fix_cover(void);
 void SW_VPD_construct(void);
+void estimateVegetationFromClimate(SW_VEGPROD *veg, int startYear, int endYear);
 void SW_VPD_init_run(void);
 void SW_VPD_deconstruct(void);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);

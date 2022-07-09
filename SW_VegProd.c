@@ -53,6 +53,7 @@ changed _echo_inits() to now display the bare ground components in logfile.log
 #include "SW_Times.h"
 #include "SW_VegProd.h"
 #include "SW_Model.h" // externs SW_Model
+#include "SW_Weather.h"
 
 
 
@@ -582,18 +583,26 @@ void SW_VPD_construct(void) {
 
 
 void SW_VPD_init_run(void) {
-  TimeInt year;
-  int k;
+    TimeInt year;
+    int k;
+    
+    SW_VEGPROD *veg = &SW_VegProd;
+    SW_MODEL *model = &SW_Model;
 
-  /* Set co2-multipliers to default */
-  for (year = 0; year < MAX_NYEAR; year++)
-  {
-    ForEachVegType(k)
+    /* Set co2-multipliers to default */
+    for (year = 0; year < MAX_NYEAR; year++)
     {
-      SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][year] = 1.;
-      SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
+        ForEachVegType(k)
+        {
+            SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][year] = 1.;
+            SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
+        }
     }
-  }
+    
+    if(veg->veg_method) {
+        estimateVegetationFromClimate(veg, model->startyr, model->endyr);
+    }
+    
 }
 
 
@@ -850,4 +859,68 @@ void get_critical_rank(void){
 	 /*----------------------------------------------------------
 		 End of rank_SWPcrits
 	 ----------------------------------------------------------*/
+}
+
+void estimateVegetationFromClimate(SW_VEGPROD *veg, int startYear, int endYear) {
+    
+    int numYears = endYear - startYear + 1, year, month;
+    
+    // Used for calculating climate
+    double **meanMonthlyTemp, **maxMonthlyTemp, **minMonthlyTemp, **meanMonthlyPPT,
+    MMP_cm[numYears], MMT_C[numYears], JulyMinTemp[numYears], degreeAbove65[numYears], sdC4[3],
+    PPTJuly[numYears], meanTempDryQuarter[numYears], minTempFebruary[numYears], sdCheatgrass[3];
+    
+    int frostFreeDays[numYears];
+    
+    // Used for average across years
+    double meanMonthlyTempAnn[MAX_MONTHS], maxMonthlyTempAnn[MAX_MONTHS], minMonthlyTempAnn[MAX_MONTHS],
+    meanMonthlyPPTAnn[MAX_MONTHS], MAP_cm, MAT_C;
+    
+    meanMonthlyTemp = (double **)malloc(sizeof(double *) * MAX_MONTHS);
+    maxMonthlyTemp = (double **)malloc(sizeof(double *) * MAX_MONTHS);
+    minMonthlyTemp = (double **)malloc(sizeof(double *) * MAX_MONTHS);
+    meanMonthlyPPT = (double **)malloc(sizeof(double *) * MAX_MONTHS);
+    
+    for(month = 0; month < MAX_MONTHS; month++) {
+        
+        meanMonthlyTemp[month] = (double *)malloc(sizeof(double) * numYears);
+        maxMonthlyTemp[month] = (double *)malloc(sizeof(double) * numYears);
+        minMonthlyTemp[month] = (double *)malloc(sizeof(double) * numYears);
+        meanMonthlyPPT[month] = (double *)malloc(sizeof(double) * numYears);
+        
+    }
+    
+    for(year = 0; year < numYears; year++) {
+        MMP_cm[year] = 0.;
+        MMT_C[year] = 0.;
+        JulyMinTemp[year] = 0.;
+        degreeAbove65[year] = 0.;
+        PPTJuly[year] = 0.;
+        meanTempDryQuarter[year] = 0.;
+        minTempFebruary[year] = 0.;
+        frostFreeDays[year] = 0.;
+        
+    }
+    
+    calcSiteClimate(SW_Weather.allHist, meanMonthlyTemp, maxMonthlyTemp, minMonthlyTemp,
+                    meanMonthlyPPT, MMP_cm, MMT_C, JulyMinTemp, frostFreeDays, degreeAbove65, sdC4,
+                    PPTJuly, meanTempDryQuarter, minTempFebruary, sdCheatgrass, numYears, startYear);
+
+    averageAcrossYears(meanMonthlyTemp, maxMonthlyTemp, minMonthlyTemp, meanMonthlyPPT, meanMonthlyTempAnn,
+                       maxMonthlyTempAnn, minMonthlyTempAnn, meanMonthlyPPTAnn, &MAP_cm, &MAT_C, MMT_C,
+                       MMP_cm, numYears);
+    
+    // Clean up allocated memory
+    for(month = 0; month < MAX_MONTHS; month++) {
+        free(meanMonthlyTemp[month]);
+        free(maxMonthlyTemp[month]);
+        free(minMonthlyTemp[month]);
+        free(meanMonthlyPPT[month]);
+    }
+    
+    free(meanMonthlyTemp);
+    free(maxMonthlyTemp);
+    free(minMonthlyTemp);
+    free(meanMonthlyPPT);
+    
 }
