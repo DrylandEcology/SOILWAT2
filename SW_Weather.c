@@ -306,7 +306,7 @@ void deallocateAllWeather(void) {
         }
         
         free(SW_Weather.allHist);
-        
+        SW_Weather.allHist = NULL;
     }
     
 }
