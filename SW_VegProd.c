@@ -600,7 +600,7 @@ void SW_VPD_init_run(void) {
     }
     
     if(veg->veg_method) {
-        estimateVegetationFromClimate(veg, model->startyr, model->endyr);
+        estimateVegetationFromClimate(model->startyr, model->endyr);
     }
     
 }
@@ -861,8 +861,8 @@ void get_critical_rank(void){
 	 ----------------------------------------------------------*/
 }
 
-void estimateVegetationFromClimate(SW_VEGPROD *veg, int startYear, int endYear) {
-    
+void estimateVegetationFromClimate(int startYear, int endYear) {
+    //TODO: SW_VEGPROD veg
     int numYears = endYear - startYear + 1, year, month;
     
     // Used for calculating climate
