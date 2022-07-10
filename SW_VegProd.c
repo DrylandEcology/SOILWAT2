@@ -102,7 +102,7 @@ void SW_VPD_read(void) {
                     CloseFile(&f);
                     LogError(logfp, LOGFATAL, errstr);
                 }
-                v->veg_method = veg_method;
+                v->veg_method = (Bool) veg_method;
                 break;
                     
 			/* fractions of vegetation types */

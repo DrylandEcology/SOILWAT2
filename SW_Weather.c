@@ -220,8 +220,8 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
                 
                 if(month == Mar) minTempFebruary[yearIndex] /= febDays;
                 
-                numDaysMonth = (month == February) ? febDays : Time_days_in_month(month);
-                
+                if(month != Dec + 1)
+                    numDaysMonth = (month == February) ? febDays : Time_days_in_month(month);
             }
             
             currentTempMean -= 18.333;
