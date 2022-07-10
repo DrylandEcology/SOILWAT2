@@ -867,10 +867,10 @@ void estimateVegetationFromClimate(SW_VEGPROD *veg, int startYear, int endYear) 
     
     // Used for calculating climate
     double **meanMonthlyTemp, **maxMonthlyTemp, **minMonthlyTemp, **meanMonthlyPPT,
-    MMP_cm[numYears], MMT_C[numYears], JulyMinTemp[numYears], degreeAbove65[numYears], sdC4[3],
-    PPTJuly[numYears], meanTempDryQuarter[numYears], minTempFebruary[numYears], sdCheatgrass[3];
+    *MMP_cm, *MMT_C, *JulyMinTemp, *degreeAbove65, sdC4[3], *PPTJuly, *meanTempDryQuarter,
+    *minTempFebruary, sdCheatgrass[3];
     
-    int frostFreeDays[numYears];
+    int *frostFreeDays;
     
     // Used for average across years
     double meanMonthlyTempAnn[MAX_MONTHS], maxMonthlyTempAnn[MAX_MONTHS], minMonthlyTempAnn[MAX_MONTHS],
@@ -889,6 +889,15 @@ void estimateVegetationFromClimate(SW_VEGPROD *veg, int startYear, int endYear) 
         meanMonthlyPPT[month] = (double *)malloc(sizeof(double) * numYears);
         
     }
+    
+    MMP_cm = (double *)malloc(sizeof(double) * numYears);
+    MMT_C = (double *)malloc(sizeof(double) * numYears);
+    JulyMinTemp = (double *)malloc(sizeof(double) * numYears);
+    degreeAbove65 = (double *)malloc(sizeof(double) * numYears);
+    PPTJuly = (double *)malloc(sizeof(double) * numYears);
+    meanTempDryQuarter = (double *)malloc(sizeof(double) * numYears);
+    minTempFebruary = (double *)malloc(sizeof(double) * numYears);
+    frostFreeDays = (int *)malloc(sizeof(int) * numYears);
     
     for(year = 0; year < numYears; year++) {
         MMP_cm[year] = 0.;
@@ -922,5 +931,13 @@ void estimateVegetationFromClimate(SW_VEGPROD *veg, int startYear, int endYear) 
     free(maxMonthlyTemp);
     free(minMonthlyTemp);
     free(meanMonthlyPPT);
+    free(MMP_cm);
+    free(MMT_C);
+    free(JulyMinTemp);
+    free(degreeAbove65);
+    free(PPTJuly);
+    free(meanTempDryQuarter);
+    free(minTempFebruary);
+    free(frostFreeDays);
     
 }
