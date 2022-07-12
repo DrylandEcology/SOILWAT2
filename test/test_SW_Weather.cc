@@ -245,7 +245,7 @@ namespace {
         
     }
 
-    TEST(calcSiteClimateTest, FileValues) {
+    TEST(CalcSiteClimateTest, FileValues) {
         
         // This test relies on allHist from `SW_WEATHER` being already filled
         
@@ -284,6 +284,9 @@ namespace {
                 arrayTempAvgYear[month][year] = 0.;
                 arrayTempMinYear[month][year] = 0.;
                 arrayTempMaxYear[month][year] = 0.;
+                MMP_cm[year] = 0.;
+                MMT_C[year] = 0.;
+                minTempFebruary[year] = 0.;
             }
         }
         // 1980 is start year of the simulation
