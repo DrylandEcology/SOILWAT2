@@ -159,9 +159,6 @@ namespace {
         double MAP_cm;
         double MAT_C;
         
-        double AnnTemp_C[31];
-        double AnnPPT_cm[31];
-        
         double **arrayPPTYear;
         arrayPPTYear = new double*[MAX_MONTHS];
         
@@ -182,6 +179,8 @@ namespace {
                 arrayTempAvgYear[month][year] = 0.;
                 arrayTempMinYear[month][year] = 0.;
                 arrayTempMaxYear[month][year] = 0.;
+                MMP_cm[year] = 0.;
+                MMT_C[year] = 0.;
             }
         }
         // 1980 is start year of the simulation
