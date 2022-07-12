@@ -85,7 +85,7 @@ void SW_VPD_read(void) {
 	SW_VEGPROD *v = &SW_VegProd;
 	FILE *f;
 	TimeInt mon = Jan;
-	int x, k, lineno = 0, veg_method;
+	int x, k, lineno = 0;
 	const int line_help = 28; // last case line number before monthly biomass densities
 	RealF help_veg[NVEGTYPES], help_bareGround, litt, biom, pctl, laic;
 
@@ -95,18 +95,8 @@ void SW_VPD_read(void) {
 	while (GetALine(f, inbuf)) {
 		if (lineno++ < line_help) {
 			switch (lineno) {
-            case 1:
-                x = sscanf(inbuf, "%d", &veg_method);
-                if(x != 1) {
-                    sprintf(errstr, "ERROR: invalid record in vegetation type components in %s\n", MyFileName);
-                    CloseFile(&f);
-                    LogError(logfp, LOGFATAL, errstr);
-                }
-                v->veg_method = (Bool) veg_method;
-                break;
-                    
 			/* fractions of vegetation types */
-			case 2:
+			case 1:
 				x = sscanf(inbuf, "%f %f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS], &help_bareGround);
 				if (x < NVEGTYPES + 1) {
@@ -121,7 +111,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* albedo */
-			case 3:
+			case 2:
 				x = sscanf(inbuf, "%f %f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS], &help_bareGround);
 				if (x < NVEGTYPES + 1) {
@@ -136,7 +126,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* canopy height */
-			case 4:
+			case 3:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -148,7 +138,7 @@ void SW_VPD_read(void) {
 					v->veg[k].cnpy.xinflec = help_veg[k];
 				}
 				break;
-			case 5:
+			case 4:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -160,7 +150,7 @@ void SW_VPD_read(void) {
 					v->veg[k].cnpy.yinflec = help_veg[k];
 				}
 				break;
-			case 6:
+			case 5:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -172,7 +162,7 @@ void SW_VPD_read(void) {
 					v->veg[k].cnpy.range = help_veg[k];
 				}
 				break;
-			case 7:
+			case 6:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -184,7 +174,7 @@ void SW_VPD_read(void) {
 					v->veg[k].cnpy.slope = help_veg[k];
 				}
 				break;
-			case 8:
+			case 7:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -198,7 +188,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* vegetation interception parameters */
-			case 9:
+			case 8:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -210,7 +200,7 @@ void SW_VPD_read(void) {
 					v->veg[k].veg_kSmax = help_veg[k];
 				}
 				break;
-			case 10:
+			case 9:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -224,7 +214,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* litter interception parameters */
-			case 11:
+			case 10:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -238,7 +228,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* parameter for partitioning of bare-soil evaporation and transpiration */
-			case 12:
+			case 11:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -252,7 +242,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* Parameter for scaling and limiting bare soil evaporation rate */
-			case 13:
+			case 12:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -266,7 +256,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* shade effects */
-			case 14:
+			case 13:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -278,7 +268,7 @@ void SW_VPD_read(void) {
 					v->veg[k].shade_scale = help_veg[k];
 				}
 				break;
-			case 15:
+			case 14:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -290,7 +280,7 @@ void SW_VPD_read(void) {
 					v->veg[k].shade_deadmax = help_veg[k];
 				}
 				break;
-			case 16:
+			case 15:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -302,7 +292,7 @@ void SW_VPD_read(void) {
 					v->veg[k].tr_shade_effects.xinflec = help_veg[k];
 				}
 				break;
-			case 17:
+			case 16:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -314,7 +304,7 @@ void SW_VPD_read(void) {
 					v->veg[k].tr_shade_effects.yinflec = help_veg[k];
 				}
 				break;
-			case 18:
+			case 17:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -326,7 +316,7 @@ void SW_VPD_read(void) {
 					v->veg[k].tr_shade_effects.range = help_veg[k];
 				}
 				break;
-			case 19:
+			case 18:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -340,7 +330,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* Hydraulic redistribution */
-			case 20:
+			case 19:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -352,7 +342,7 @@ void SW_VPD_read(void) {
 					v->veg[k].flagHydraulicRedistribution = (Bool) EQ(help_veg[k], 1.);
 				}
 				break;
-			case 21:
+			case 20:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -364,7 +354,7 @@ void SW_VPD_read(void) {
 					v->veg[k].maxCondroot = help_veg[k];
 				}
 				break;
-			case 22:
+			case 21:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -376,7 +366,7 @@ void SW_VPD_read(void) {
 					v->veg[k].swpMatric50 = help_veg[k];
 				}
 				break;
-			case 23:
+			case 22:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -390,7 +380,7 @@ void SW_VPD_read(void) {
 				break;
 
 			/* Critical soil water potential */
-			case 24:
+			case 23:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -407,7 +397,7 @@ void SW_VPD_read(void) {
 
 			/* CO2 Biomass Power Equation */
 			// Coefficient 1
-			case 25:
+			case 24:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -420,7 +410,7 @@ void SW_VPD_read(void) {
 				}
 				break;
 			// Coefficient 2
-			case 26:
+			case 25:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -435,7 +425,7 @@ void SW_VPD_read(void) {
 
 			/* CO2 WUE Power Equation */
 			// Coefficient 1
-			case 27:
+			case 26:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -448,7 +438,7 @@ void SW_VPD_read(void) {
 				}
 				break;
 			// Coefficient 2
-			case 28:
+			case 27:
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
@@ -585,9 +575,6 @@ void SW_VPD_construct(void) {
 void SW_VPD_init_run(void) {
     TimeInt year;
     int k;
-    
-    SW_VEGPROD *veg = &SW_VegProd;
-    SW_MODEL *model = &SW_Model;
 
     /* Set co2-multipliers to default */
     for (year = 0; year < MAX_NYEAR; year++)
@@ -597,10 +584,6 @@ void SW_VPD_init_run(void) {
             SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][year] = 1.;
             SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
         }
-    }
-    
-    if(veg->veg_method) {
-        estimateVegetationFromClimate(model->startyr, model->endyr);
     }
     
 }
@@ -859,85 +842,4 @@ void get_critical_rank(void){
 	 /*----------------------------------------------------------
 		 End of rank_SWPcrits
 	 ----------------------------------------------------------*/
-}
-
-void estimateVegetationFromClimate(int startYear, int endYear) {
-    //TODO: SW_VEGPROD veg
-    int numYears = endYear - startYear + 1, year, month;
-    
-    // Used for calculating climate
-    double **meanMonthlyTemp, **maxMonthlyTemp, **minMonthlyTemp, **meanMonthlyPPT,
-    *MMP_cm, *MMT_C, *JulyMinTemp, *degreeAbove65, sdC4[3], *PPTJuly, *meanTempDryQuarter,
-    *minTempFebruary, sdCheatgrass[3];
-    
-    int *frostFreeDays;
-    
-    // Used for average across years
-    double meanMonthlyTempAnn[MAX_MONTHS], maxMonthlyTempAnn[MAX_MONTHS], minMonthlyTempAnn[MAX_MONTHS],
-    meanMonthlyPPTAnn[MAX_MONTHS], MAP_cm, MAT_C;
-    
-    meanMonthlyTemp = (double **)malloc(sizeof(double *) * MAX_MONTHS);
-    maxMonthlyTemp = (double **)malloc(sizeof(double *) * MAX_MONTHS);
-    minMonthlyTemp = (double **)malloc(sizeof(double *) * MAX_MONTHS);
-    meanMonthlyPPT = (double **)malloc(sizeof(double *) * MAX_MONTHS);
-    
-    for(month = 0; month < MAX_MONTHS; month++) {
-        
-        meanMonthlyTemp[month] = (double *)malloc(sizeof(double) * numYears);
-        maxMonthlyTemp[month] = (double *)malloc(sizeof(double) * numYears);
-        minMonthlyTemp[month] = (double *)malloc(sizeof(double) * numYears);
-        meanMonthlyPPT[month] = (double *)malloc(sizeof(double) * numYears);
-        
-    }
-    
-    MMP_cm = (double *)malloc(sizeof(double) * numYears);
-    MMT_C = (double *)malloc(sizeof(double) * numYears);
-    JulyMinTemp = (double *)malloc(sizeof(double) * numYears);
-    degreeAbove65 = (double *)malloc(sizeof(double) * numYears);
-    PPTJuly = (double *)malloc(sizeof(double) * numYears);
-    meanTempDryQuarter = (double *)malloc(sizeof(double) * numYears);
-    minTempFebruary = (double *)malloc(sizeof(double) * numYears);
-    frostFreeDays = (int *)malloc(sizeof(int) * numYears);
-    
-    for(year = 0; year < numYears; year++) {
-        MMP_cm[year] = 0.;
-        MMT_C[year] = 0.;
-        JulyMinTemp[year] = 0.;
-        degreeAbove65[year] = 0.;
-        PPTJuly[year] = 0.;
-        meanTempDryQuarter[year] = 0.;
-        minTempFebruary[year] = 0.;
-        frostFreeDays[year] = 0.;
-        
-    }
-    
-    calcSiteClimate(SW_Weather.allHist, meanMonthlyTemp, maxMonthlyTemp, minMonthlyTemp,
-                    meanMonthlyPPT, MMP_cm, MMT_C, JulyMinTemp, frostFreeDays, degreeAbove65, sdC4,
-                    PPTJuly, meanTempDryQuarter, minTempFebruary, sdCheatgrass, numYears, startYear);
-
-    averageAcrossYears(meanMonthlyTemp, maxMonthlyTemp, minMonthlyTemp, meanMonthlyPPT, meanMonthlyTempAnn,
-                       maxMonthlyTempAnn, minMonthlyTempAnn, meanMonthlyPPTAnn, &MAP_cm, &MAT_C, MMT_C,
-                       MMP_cm, numYears);
-    
-    // Clean up allocated memory
-    for(month = 0; month < MAX_MONTHS; month++) {
-        free(meanMonthlyTemp[month]);
-        free(maxMonthlyTemp[month]);
-        free(minMonthlyTemp[month]);
-        free(meanMonthlyPPT[month]);
-    }
-    
-    free(meanMonthlyTemp);
-    free(maxMonthlyTemp);
-    free(minMonthlyTemp);
-    free(meanMonthlyPPT);
-    free(MMP_cm);
-    free(MMT_C);
-    free(JulyMinTemp);
-    free(degreeAbove65);
-    free(PPTJuly);
-    free(meanTempDryQuarter);
-    free(minTempFebruary);
-    free(frostFreeDays);
-    
 }

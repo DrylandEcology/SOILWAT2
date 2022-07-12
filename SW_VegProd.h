@@ -229,8 +229,7 @@ typedef struct {
     /** Flag that determines whether vegetation-type specific soil water
       availability should be calculated;
       user input from file `Input/outsetup.in` */
-    use_SWA,
-    veg_method;
+    use_SWA;
 
   RealD
     // storing values in same order as defined in STEPWAT2/rgroup.in (0=tree, 1=shrub, 2=grass, 3=forb)
@@ -264,7 +263,6 @@ void SW_VPD_read(void);
 void SW_VPD_new_year(void);
 void SW_VPD_fix_cover(void);
 void SW_VPD_construct(void);
-void estimateVegetationFromClimate(int startYear, int endYear);
 void SW_VPD_init_run(void);
 void SW_VPD_deconstruct(void);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
