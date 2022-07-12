@@ -104,7 +104,7 @@ extern SW_WEATHER SW_Weather;
 void SW_WTH_setup(void);
 void SW_WTH_read(void);
 Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather);
-void averageAcrossYears(double **meanMonthlyTemp, double **maxMonthlyTemp,
+void averageClimateAcrossYears(double **meanMonthlyTemp, double **maxMonthlyTemp,
         double **minMonthlyTemp, double **meanMonthlyPPT, double *meanMonthlyTempAnn,
         double *maxMonthlyTempAnn, double *minMonthlyTempAnn, double *meanMonthlyPPTAnn,
         double *MAP_cm, double *MAT_C, double MMT_C[], double MMP_cm[], int numYears);

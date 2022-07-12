@@ -98,12 +98,14 @@ static char *MyFileName;
  @param[in] numYears Number of years we want to average across
  */
 
-void averageAcrossYears(double **meanMonthlyTemp, double **maxMonthlyTemp,
+void averageClimateAcrossYears(double **meanMonthlyTemp, double **maxMonthlyTemp,
         double **minMonthlyTemp, double **meanMonthlyPPT, double *meanMonthlyTempAnn,
         double *maxMonthlyTempAnn, double *minMonthlyTempAnn, double *meanMonthlyPPTAnn,
         double *MAP_cm, double *MAT_C, double MMT_C[], double MMP_cm[], int numYears) {
     
-    int month;
+    int month, numLeapYears = (numYears / 4) + 1;
+    double numDaysInSimulation = (numYears * 365.) + numLeapYears;
+    double avgDaysInSimulation = numDaysInSimulation / numYears;
     
     for(month = 0; month < MAX_MONTHS; month++) {
         meanMonthlyTempAnn[month] = mean(meanMonthlyTemp[month], numYears);
@@ -113,7 +115,7 @@ void averageAcrossYears(double **meanMonthlyTemp, double **maxMonthlyTemp,
     }
     
     *MAP_cm = mean(MMP_cm, numYears);
-    *MAT_C = mean(MMT_C, numYears);
+    *MAT_C = mean(MMT_C, numYears) / avgDaysInSimulation;
 }
 
 /**
