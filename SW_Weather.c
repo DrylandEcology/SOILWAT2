@@ -241,7 +241,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
         frostSqr += get_running_sqr(prevFrostMean, frostMean, consecNonFrost);
     }
     
-    findDriestQtr(meanMonthlyTemp, meanMonthlyPPT, meanTempDryQuarter, numYears, startYear);
+    findDriestQtr(meanMonthlyTemp, meanMonthlyPPT, meanTempDryQuarter, numYears);
     
     // Calculate and set standard deviation of C4 variables (frostFreeDays is a running sd)
     sdC4[0] = standardDeviation(JulyMinTemp, numYears);
@@ -264,15 +264,14 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
  @param[in] startYear Start year of the simulation
  */
 void findDriestQtr(double **meanMonthlyTemp, double **meanMonthlyPPT, double *meanTempDryQuarter,
-                   int numYears, int startYear) {
+                   int numYears) {
     
-    int yearIndex, year, month, prevMonth, nextMonth;
+    int yearIndex, month, prevMonth, nextMonth;
     
     double defaultVal = 999., driestThreeMonPPT, driestMeanTemp,
     currentQtrPPT, currentQtrTemp;
     
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
-        year = yearIndex + startYear;
         driestThreeMonPPT = defaultVal;
         driestMeanTemp = defaultVal;
 

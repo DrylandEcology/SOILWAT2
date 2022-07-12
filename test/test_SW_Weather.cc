@@ -351,11 +351,11 @@ namespace {
         
     }
 
-    TEST(DriestQuarterTest, OneYear) {
+    TEST(AverageTemperatureOfDriestQuarterTest, OneAndTwoYear) {
         
         double monthlyPPT[MAX_MONTHS] = {.5, .5, .1, .4, .9, 1.0, 1.2, 6.5, 7.5, 1.2, 4., .6};
         double monthlyTemp[MAX_MONTHS] = {-3.2, -.4, 1.2, 3.5, 7.5, 4.5, 6.5, 8.2, 2.0, 3., .1, -.3};
-        double result[31]; // 31 = number of years in simulation
+        double result[2]; // 2 = max number of years in test
         
         double **arrayPPTYear;
         arrayPPTYear = new double*[MAX_MONTHS];
@@ -363,16 +363,22 @@ namespace {
         double **arrayTempAvgYear = new double*[MAX_MONTHS];
         
         for(int month = 0; month < MAX_MONTHS; month++) {
-            arrayPPTYear[month] = new double[31];
-            arrayTempAvgYear[month] = new double[31];
-            for(int year = 0; year < 31; year++) {
+            arrayPPTYear[month] = new double[2];
+            arrayTempAvgYear[month] = new double[2];
+            for(int year = 0; year < 2; year++) {
                 
                 arrayPPTYear[month][year] = monthlyPPT[month];
                 arrayTempAvgYear[month][year] = monthlyTemp[month];
             }
         }
         // 1980 is start year of the simulation
-        findDriestQtr(arrayTempAvgYear, arrayPPTYear, result, 31, 1980);
+        findDriestQtr(arrayTempAvgYear, arrayPPTYear, result, 1);
+        
+        // Value 1.433333... is the average temperature of the driest quarter of the year
+        // In this case, the driest quarter is February-April
+        EXPECT_DOUBLE_EQ(result[0], 1.4333333333333333);
+        
+        findDriestQtr(arrayTempAvgYear, arrayPPTYear, result, 2);
         
         EXPECT_DOUBLE_EQ(result[0], 1.4333333333333333);
         

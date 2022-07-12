@@ -114,7 +114,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
     double *PPTJuly, double *meanTempDryQuarter, double *minTempFebruary,
     double *sdCheatgrass, int numYears, int startYear);
 void findDriestQtr(double **meanMonthlyTemp, double **meanMonthlyPPT, double *meanTempDryQuarter,
-                   int numYears, int startYear);
+                   int numYears);
 void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_years);
 void deallocateAllWeather(void);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
