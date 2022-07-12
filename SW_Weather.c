@@ -140,8 +140,8 @@ void averageClimateAcrossYears(double **meanMonthlyTemp, double **maxMonthlyTemp
  @param[out] minTempFebruary Array of size numYears holding the mean minimum temperature in february for every year
  @param[out] sdCheatgrass Array of size 3 holding the standard deviations of July precipitation (0), mean
  temperature of dry quarter (1), mean minimum temperature of February (2)
- @param numYears[in] Number of years covered in the simulation
- @param startYear[in] Start year of simulation
+ @param[in] numYears Number of years covered in the simulation
+ @param[in] startYear Start year of simulation
  
  */
 
@@ -153,7 +153,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
     
     
     int month, yearIndex, year, day, numDaysYear, numDaysMonth, currMonDay,
-    consecNonFrost, currentNonFrost, febDays, July = 6, February = 1;
+    consecNonFrost, currentNonFrost, July = 6, February = 1;
     
     double currentTempMin, currentTempMean, totalAbove65, currentJulyMin, JulyPPT,
     prevFrostMean, frostMean = 0, frostSqr = 0;
@@ -167,8 +167,8 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
     
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
+        Time_new_year(year);
         numDaysYear = isleapyear(year) ? 366 : 365;
-        febDays = isleapyear(year) ? 29 : 28;
         month = 0;
         currMonDay = 0;
         numDaysMonth = 31;
@@ -217,13 +217,11 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
                 minMonthlyTemp[month][yearIndex] /= numDaysMonth;
                 meanMonthlyPPT[month][yearIndex] /= numDaysMonth;
                 
+                if(month == Feb) minTempFebruary[yearIndex] /= numDaysMonth;
+                
                 month++;
+                if(month != Dec + 1) numDaysMonth = Time_days_in_month(month);
                 currMonDay = 0;
-                
-                if(month == Mar) minTempFebruary[yearIndex] /= febDays;
-                
-                if(month != Dec + 1)
-                    numDaysMonth = (month == February) ? febDays : Time_days_in_month(month);
             }
             
             currentTempMean -= 18.333;
