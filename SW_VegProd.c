@@ -86,7 +86,7 @@ void SW_VPD_read(void) {
 	FILE *f;
 	TimeInt mon = Jan;
 	int x, k, lineno = 0;
-	const int line_help = 28; // last case line number before monthly biomass densities
+	const int line_help = 27; // last case line number before monthly biomass densities
 	RealF help_veg[NVEGTYPES], help_bareGround, litt, biom, pctl, laic;
 
 	MyFileName = SW_F_name(eVegProd);
