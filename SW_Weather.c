@@ -106,16 +106,17 @@ void averageClimateAcrossYears(double **meanMonthlyTemp, double **maxMonthlyTemp
     int month, numLeapYears = (numYears / 4) + 1;
     double numDaysInSimulation = (numYears * 365.) + numLeapYears;
     double avgDaysInSimulation = numDaysInSimulation / numYears;
+    int month;
     
     for(month = 0; month < MAX_MONTHS; month++) {
-        meanMonthlyTempAnn[month] = mean(meanMonthlyTemp[month], numYears);
-        maxMonthlyTempAnn[month] = mean(maxMonthlyTemp[month], numYears);
-        minMonthlyTempAnn[month] = mean(minMonthlyTemp[month], numYears);
-        meanMonthlyPPTAnn[month] = mean(meanMonthlyPPT[month], numYears);
+        meanMonthlyTempAnn[month] = mean(meanMonthlyTemp_C[month], numYears);
+        maxMonthlyTempAnn[month] = mean(maxMonthlyTemp_C[month], numYears);
+        minMonthlyTempAnn[month] = mean(minMonthlyTemp_C[month], numYears);
+        meanMonthlyPPTAnn[month] = mean(meanMonthlyPPT_cm[month], numYears);
     }
     
-    *MAP_cm = mean(MMP_cm, numYears);
-    *MAT_C = mean(MMT_C, numYears) / avgDaysInSimulation;
+    *MAP_cm = mean(annualPPT_cm, numYears);
+    *MAT_C = mean(meanAnnualTemp_C, numYears);
 }
 
 /**
@@ -155,14 +156,13 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
     int month, yearIndex, year, day, numDaysYear, numDaysMonth, currMonDay,
     consecNonFrost, currentNonFrost, July = 6, February = 1;
     
-    double currentTempMin, currentTempMean, totalAbove65, currentJulyMin, JulyPPT,
-    prevFrostMean, frostMean = 0, frostSqr = 0;
+    double currentTempMin, currentTempMean, totalAbove65, currentJulyMin, JulyPPT;
     
     for(month = 0; month < MAX_MONTHS; month++) {
-        memset(meanMonthlyTemp[month], 0., sizeof(double) * numYears);
-        memset(maxMonthlyTemp[month], 0., sizeof(double) * numYears);
-        memset(minMonthlyTemp[month], 0., sizeof(double) * numYears);
-        memset(meanMonthlyPPT[month], 0., sizeof(double) * numYears);
+        memset(meanMonthlyTemp_C[month], 0., sizeof(double) * numYears);
+        memset(maxMonthlyTemp_C[month], 0., sizeof(double) * numYears);
+        memset(minMonthlyTemp_C[month], 0., sizeof(double) * numYears);
+        memset(meanMonthlyPPT_cm[month], 0., sizeof(double) * numYears);
     }
     
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
@@ -180,13 +180,13 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
         
         for(day = 0; day < numDaysYear; day++) {
             currMonDay++;
-            meanMonthlyTemp[month][yearIndex] += allHist[yearIndex]->temp_avg[day];
-            maxMonthlyTemp[month][yearIndex] += allHist[yearIndex]->temp_max[day];
-            minMonthlyTemp[month][yearIndex] += allHist[yearIndex]->temp_min[day];
-            meanMonthlyPPT[month][yearIndex] += allHist[yearIndex]->ppt[day];
+            meanMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_avg[day];
+            maxMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_max[day];
+            minMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_min[day];
+            meanMonthlyPPT_cm[month][yearIndex] += allHist[yearIndex]->ppt[day];
             
-            MMP_cm[yearIndex] += allHist[yearIndex]->ppt[day];
-            MMT_C[yearIndex] += allHist[yearIndex]->temp_avg[day];
+            annualPPT_cm[yearIndex] += allHist[yearIndex]->ppt[day];
+            meanAnnualTemp_C[yearIndex] += allHist[yearIndex]->temp_avg[day];
 
             currentTempMin = allHist[yearIndex]->temp_min[day];
             currentTempMean = allHist[yearIndex]->temp_avg[day];
@@ -212,12 +212,12 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
 
             if(currMonDay == numDaysMonth) {
                 // Take the average of the current months values for current year
-                meanMonthlyTemp[month][yearIndex] /= numDaysMonth;
-                maxMonthlyTemp[month][yearIndex] /= numDaysMonth;
-                minMonthlyTemp[month][yearIndex] /= numDaysMonth;
-                meanMonthlyPPT[month][yearIndex] /= numDaysMonth;
+                meanMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
+                maxMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
+                minMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
+                meanMonthlyPPT_cm[month][yearIndex] /= numDaysMonth;
                 
-                if(month == Feb) minTempFebruary[yearIndex] /= numDaysMonth;
+                if(month == Feb) minTempFebruary_C[yearIndex] /= numDaysMonth;
                 
                 month++;
                 if(month != Dec + 1) numDaysMonth = Time_days_in_month(month);
@@ -230,9 +230,9 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
         }
         
         JulyMinTemp[yearIndex] = currentJulyMin;
-        PPTJuly[yearIndex] = JulyPPT;
-        degreeAbove65[yearIndex] = totalAbove65;
-        frostFreeDays[yearIndex] = consecNonFrost;
+        JulyPPT_mm[yearIndex] = JulyPPT;
+        ddAbove65F_degday[yearIndex] = totalAbove65;
+        frostFreeDays_days[yearIndex] = (double)consecNonFrost;
         
         prevFrostMean = frostMean;
         
@@ -280,13 +280,13 @@ void findDriestQtr(double **meanMonthlyTemp, double **meanMonthlyPPT, double *me
             prevMonth = (month == 0) ? 11 : month - 1;
             nextMonth = (month == 11) ? 0 : month + 1;
             
-            currentQtrPPT = (meanMonthlyPPT[prevMonth % 12][yearIndex]) +
-                            (meanMonthlyPPT[month % 12][yearIndex]) +
-                            (meanMonthlyPPT[nextMonth % 12][yearIndex]);
+            currentQtrPPT = (meanMonthlyPPT_cm[prevMonth][yearIndex]) +
+                            (meanMonthlyPPT_cm[month][yearIndex]) +
+                            (meanMonthlyPPT_cm[nextMonth][yearIndex]);
             
-            currentQtrTemp = (meanMonthlyTemp[prevMonth % 12][yearIndex]) +
-                             (meanMonthlyTemp[month % 12][yearIndex]) +
-                             (meanMonthlyTemp[nextMonth % 12][yearIndex]);
+            currentQtrTemp = (meanMonthlyTemp_C[prevMonth][yearIndex]) +
+                             (meanMonthlyTemp_C[month][yearIndex]) +
+                             (meanMonthlyTemp_C[nextMonth][yearIndex]);
             
             if(currentQtrPPT < driestThreeMonPPT) {
                 driestMeanTemp = currentQtrTemp;
@@ -295,7 +295,7 @@ void findDriestQtr(double **meanMonthlyTemp, double **meanMonthlyPPT, double *me
             
         }
         
-        meanTempDryQuarter[yearIndex] = driestMeanTemp / 3;
+        meanTempDriestQuarter_C[yearIndex] = driestMeanTemp / 3;
         
     }
 }
