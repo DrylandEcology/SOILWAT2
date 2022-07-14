@@ -61,7 +61,6 @@ namespace {
 
     TEST(StandardDeviationTest, UnexpectedAndExpectedCases) {
         double value[1] = {5.};
-        double noValue[0] = {};
         double values[5] = {5.4, 3.4, 7.6, 5.6, 1.8};
         
         double standardDev = standardDeviation(value, 1);
@@ -69,7 +68,7 @@ namespace {
         // Testing that one value for a standard deviation is `NAN`
         EXPECT_TRUE(isnan(standardDev));
         
-        standardDev = standardDeviation(noValue, 0);
+        standardDev = standardDeviation(value, 0);
         
         // Testing that no value put into standard deviation is `NAN`
         EXPECT_DOUBLE_EQ(standardDev, 0.);
@@ -82,11 +81,10 @@ namespace {
     
     TEST(MeanTest, UnexpectedAndExpectedCases) {
         
-        double value[0] = {};
         double result;
         double values[5] = {1.8, 2.2, 10., 13.5, 3.2};
         
-        result = mean(value, 0);
+        result = mean(values, 0);
         
         // Testing that a set of size zero returns `NAN` for a mean
         EXPECT_TRUE(isnan(result));
