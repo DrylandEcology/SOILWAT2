@@ -213,6 +213,19 @@ namespace {
         EXPECT_NEAR(sdCheatgrass[0], 21.598367, tol6);
         EXPECT_NEAR(sdCheatgrass[1], 7.171922, tol6);
         EXPECT_NEAR(sdCheatgrass[2], 2.618434, tol6);
+        
+        for(int month = 0; month < MAX_MONTHS; month++) {
+            for(int year = 0; year < 31; year++) {
+                
+                meanMonthlyPPT_cm[month][year] = 1.;
+                meanMonthlyTemp_C[month][year] = 1.;
+                minMonthlyTemp_C[month][year] = 1.;
+                maxMonthlyTemp_C[month][year] = 1.;
+                annualPPT_cm[year] = 1.;
+                meanAnnualTemp_C[year] = 1.;
+            }
+        }
+        
         // Reset values
         for(int year = 0; year < 31; year++) {
             for(int month = 0; month < MAX_MONTHS; month++) {
@@ -242,6 +255,54 @@ namespace {
         EXPECT_NEAR(MAP_cm, 59.27, tol1);
         EXPECT_NEAR(MAT_C, 4.524863, tol1);
         
+        // Standard deviation of C4 variables of one year
+        EXPECT_TRUE(isnan(sdC4[0]));
+        EXPECT_TRUE(isnan(sdC4[1]));
+        EXPECT_TRUE(isnan(sdC4[2]));
+
+        // Standard deviation of cheatgrass variables of one year
+        EXPECT_TRUE(isnan(sdCheatgrass[0]));
+        EXPECT_TRUE(isnan(sdCheatgrass[1]));
+        EXPECT_TRUE(isnan(sdCheatgrass[2]));
+        
+        for(int year = 0; year < 31; year++) {
+            for(int day = 0; day < 366; day++) {
+                SW_Weather.allHist[year]->temp_max[day] = 1.;
+                SW_Weather.allHist[year]->temp_min[day] = 1.;
+                SW_Weather.allHist[year]->temp_avg[day] = 1.;
+                SW_Weather.allHist[year]->ppt[day] = 1.;
+            }
+        }
+
+        // Start of tests with all `allHist` inputs of 1
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
+                        meanMonthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
+                        JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
+        
+        averageClimateAcrossYears(meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
+            meanMonthlyPPT_cm, 31, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
+            JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C, annualPPT_cm,
+            meanAnnualTemp_C, meanMonthlyTempAnn, maxMonthlyTempAnn, minMonthlyTempAnn,
+            meanMonthlyPPTAnn, sdC4, sdCheatgrass, &MAT_C, &MAP_cm);
+        
+        EXPECT_EQ(meanMonthlyTempAnn[0], 1.);
+        EXPECT_EQ(maxMonthlyTempAnn[0], 1.);
+        EXPECT_EQ(minMonthlyTempAnn[0], 1.);
+        EXPECT_EQ(meanMonthlyPPTAnn[0], 1.);
+        // EXPECT_NEAR because of tests inaccuracy with the actual value
+        // Tolerance of 1 because the inaccurate value the test has is closer to 365
+        EXPECT_NEAR(MAP_cm, 366., 1);
+        EXPECT_EQ(MAT_C, 1.);
+        
+        // Standard deviation of C4 variables of one year
+        EXPECT_EQ(sdC4[0], 0.);
+        EXPECT_EQ(sdC4[1], 0.);
+        EXPECT_EQ(sdC4[2], 0.);
+
+        // Standard deviation of cheatgrass variables of one year
+        EXPECT_EQ(sdCheatgrass[0], 0.);
+        EXPECT_EQ(sdCheatgrass[1], 0.);
+        EXPECT_EQ(sdCheatgrass[2], 0.);
         
         for(int month = 0; month < MAX_MONTHS; month++) {
             delete[] meanMonthlyPPT_cm[month];
