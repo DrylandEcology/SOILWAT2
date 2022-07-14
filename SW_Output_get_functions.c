@@ -2417,16 +2417,15 @@ void get_soiltemp_mem(OutPeriod pd)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
-    int nlyrs = SW_Site.n_layers, doubleOffset = 2 * nlyrs;
 
 	RealD *p = p_OUT[eSW_SoilTemp][pd];
 	get_outvalleader(p, pd);
     
 	ForEachSoilLayer(i)
 	{
-        p[iOUT(i, pd)] = vo->maxLyrTemperature[i];
-        p[iOUT(i + nlyrs, pd)] = vo->minLyrTemperature[i];
-        p[iOUT(i + doubleOffset, pd)] = vo->avgLyrTemp[i];
+        p[iOUT((i * 3), pd)] = vo->maxLyrTemperature[i];
+        p[iOUT((i * 3) + 1, pd)] = vo->minLyrTemperature[i];
+        p[iOUT((i * 3) + 2, pd)] = vo->avgLyrTemp[i];
 	}
 }
 
