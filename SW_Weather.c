@@ -257,7 +257,6 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         frostFreeDays_days[yearIndex] = (double)consecNonFrost;
         
         meanAnnualTemp_C[yearIndex] /= numDaysYear;
-        // TODO: Mention in commit: R code incorrectly calculates meanAnnualTemp_C/MAT_C (doesn't account for leap years)
     }
     
     findDriestQtr(meanTempDriestQuarter_C, numYears, meanMonthlyTemp_C, meanMonthlyPPT_cm);
