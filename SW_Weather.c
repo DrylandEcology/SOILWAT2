@@ -118,9 +118,6 @@ void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTe
     double *minMonthlyTempAnn, double *meanMonthlyPPTAnn, double *sdC4, double *sdCheatgrass,
     double *MAT_C, double *MAP_cm) {
     
-    int month, numLeapYears = (numYears / 4) + 1;
-    double numDaysInSimulation = (numYears * 365.) + numLeapYears;
-    double avgDaysInSimulation = numDaysInSimulation / numYears;
     int month;
     
     for(month = 0; month < MAX_MONTHS; month++) {
@@ -132,6 +129,16 @@ void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTe
     
     *MAP_cm = mean(annualPPT_cm, numYears);
     *MAT_C = mean(meanAnnualTemp_C, numYears);
+    
+    // Calculate and set standard deviation of C4 variables (frostFreeDays is a running sd)
+    sdC4[0] = standardDeviation(JulyMinTemp, numYears);
+    sdC4[1] = standardDeviation(frostFreeDays_days, numYears);
+    sdC4[2] = standardDeviation(ddAbove65F_degday, numYears);
+    
+    // Calculate and set the standard deviation of cheatgrass variables
+    sdCheatgrass[0] = standardDeviation(JulyPPT_mm, numYears);
+    sdCheatgrass[1] = standardDeviation(meanTempDriestQuarter_C, numYears);
+    sdCheatgrass[2] = standardDeviation(minTempFebruary_C, numYears);
 }
 
 /**
@@ -246,26 +253,10 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         ddAbove65F_degday[yearIndex] = totalAbove65;
         frostFreeDays_days[yearIndex] = (double)consecNonFrost;
         
-        prevFrostMean = frostMean;
-        
-        // Get the running values needed for running standard deviation for frostFreeDays
-        frostMean = get_running_mean(yearIndex + 1, prevFrostMean, consecNonFrost);
-        frostSqr += get_running_sqr(prevFrostMean, frostMean, consecNonFrost);
         meanAnnualTemp_C[yearIndex] /= numDaysYear;
         // TODO: Mention in commit: R code incorrectly calculates meanAnnualTemp_C/MAT_C (doesn't account for leap years)
     }
     
-    findDriestQtr(meanMonthlyTemp, meanMonthlyPPT, meanTempDryQuarter, numYears);
-    
-    // Calculate and set standard deviation of C4 variables (frostFreeDays is a running sd)
-    sdC4[0] = standardDeviation(JulyMinTemp, numYears);
-    sdC4[1] = final_running_sd(numYears, frostSqr);
-    sdC4[2] = standardDeviation(degreeAbove65, numYears);
-
-    // Calculate and set the standard deviation of cheatgrass variables
-    sdCheatgrass[0] = standardDeviation(PPTJuly, numYears);
-    sdCheatgrass[1] = standardDeviation(meanTempDryQuarter, numYears);
-    sdCheatgrass[2] = standardDeviation(minTempFebruary, numYears);
     findDriestQtr(meanTempDriestQuarter_C, numYears, meanMonthlyTemp_C, meanMonthlyPPT_cm);
 }
 
