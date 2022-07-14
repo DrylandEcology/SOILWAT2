@@ -172,8 +172,8 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     double *meanTempDriestQuarter_C, double *minTempFebruary_C) {
     
     
-    int month, yearIndex, year, day, numDaysYear, numDaysMonth, currMonDay,
-    consecNonFrost, currentNonFrost, July = 6, February = 1;
+    int month, yearIndex, year, day, numDaysYear, numDaysMonth = Time_days_in_month(0),
+    currMonDay, consecNonFrost, currentNonFrost;
     
     double currentTempMin, currentTempMean, totalAbove65, currentJulyMin, JulyPPT;
     
@@ -187,10 +187,9 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
         Time_new_year(year);
-        numDaysYear = isleapyear(year) ? 366 : 365;
+        numDaysYear = Time_get_lastdoy_y(year);
         month = 0;
         currMonDay = 0;
-        numDaysMonth = 31;
         currentJulyMin = 999;
         totalAbove65 = 0;
         currentNonFrost = 0;
@@ -239,7 +238,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                 if(month == Feb) minTempFebruary_C[yearIndex] /= numDaysMonth;
                 
                 month++;
-                if(month != Dec + 1) numDaysMonth = Time_days_in_month(month);
+                numDaysMonth = Time_days_in_month(month % 12);
                 currMonDay = 0;
             }
             
