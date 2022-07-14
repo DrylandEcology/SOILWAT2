@@ -81,27 +81,42 @@ static char *MyFileName;
 
 /**
  @brief Takes averages through the number of years of the calculated values from calc_SiteClimate
- @param[in] meanMonthlyTemp 2D array containing all mean average monthly air temperature (deg;C) with dimensions
+ 
+ @param[in] meanMonthlyTemp_C 2D array containing monthly means of average daily air temperature (deg;C) with dimensions
  of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[in] maxMonthlyTemp 2D array containing all mean max monthly air temperature (deg;C) with dimensions
+ @param[in] maxMonthlyTemp_C 2D array containing monthly means of maximum daily air temperature (deg;C) with dimensions
  of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[in] minMonthlyTemp 2D array containing all mean min monthly air temperature (deg;C) with dimensions
+ @param[in] minMonthlyTemp_C 2D array containing monthly means of minimum daily air temperature (deg;C) with dimensions
  of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] meanMonthlyAvg Array containing sum of monthly mean temperatures
- @param[out] meanMonthlyMax Array containing sum of monthly maximum temperatures
- @param[out] meanMonthlyMin Array containing sum of monthly minimum temperatures
- @param[out] meanMonthlyPPT Array containing sum of monthly mean precipitation
+ @param[in] meanMonthlyPPT_cm 2D array containing monthly precipitation amount (deg;C) with dimensions
+ of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[in] numYears Calendar year corresponding to first year of `allHist`
+ @param[in] JulyMinTemp Array of size numYears holding minimum July temperatures [C] for each year
+ @param[in] frostFreeDays_days Array of size numYears holding the maximum consecutive days in a year without frost for every year
+ @param[in] ddAbove65F_degday Array of size numYears holding the amount of degree days [C x day] above 65 F
+ @param[in] JulyPPT_mm Array of size numYears holding July precipitation amount (mm)
+ @param[in] meanTempDriestQuarter_C Array of size numYears holding the average temperature of the driest quarter of the year for every year
+ @param[in] minTempFebruary_C Array of size numYears holding the mean minimum temperature in february for every year
+ @param[out] annualPPT_cm Array of size `numYears` containing annual precipitation amount [cm]
+ @param[out] meanAnnualTemp_C Array of size `numYears` containing annual mean temperatures [C]
+ @param[out] meanMonthlyTempAnn Array of size `numYears` containing sum of monthly mean temperatures
+ @param[out] maxMonthlyTempAnn Array of size `numYears` containing sum of monthly maximum temperatures
+ @param[out] minMonthlyTempAnn Array of size `numYears` containing sum of monthly minimum temperatures
+ @param[out] meanMonthlyPPTAnn Array of size `numYears` containing sum of monthly mean precipitation
+ @param[out] sdC4 Array of size three holding the standard deviations of minimum July temperature (0), frost free days (1), number of days above 65F (2)
+ @param[out] sdCheatgrass Array of size 3 holding the standard deviations of July precipitation (0), mean
+ temperature of dry quarter (1), mean minimum temperature of February (2)
  @param[out] MAT_C Value containing the sum of daily temperatures
  @param[out] MAP_cm Value containing the sum of daily precipitation
- @param[out] PPT_cm Array containing annual precipitation amount [cm]
- @param[out] Temp_C Array containing annual temperatures [C]
- @param[in] numYears Number of years we want to average across
  */
 
-void averageClimateAcrossYears(double **meanMonthlyTemp, double **maxMonthlyTemp,
-        double **minMonthlyTemp, double **meanMonthlyPPT, double *meanMonthlyTempAnn,
-        double *maxMonthlyTempAnn, double *minMonthlyTempAnn, double *meanMonthlyPPTAnn,
-        double *MAP_cm, double *MAT_C, double MMT_C[], double MMP_cm[], int numYears) {
+void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTemp_C,
+    double **minMonthlyTemp_C, double **meanMonthlyPPT_cm, double numYears, double JulyMinTemp[],
+    double frostFreeDays_days[], double ddAbove65F_degday[], double JulyPPT_mm[],
+    double meanTempDriestQuarter_C[], double minTempFebruary_C[], double annualPPT_cm[],
+    double meanAnnualTemp_C[], double *meanMonthlyTempAnn, double *maxMonthlyTempAnn,
+    double *minMonthlyTempAnn, double *meanMonthlyPPTAnn, double *sdC4, double *sdCheatgrass,
+    double *MAT_C, double *MAP_cm) {
     
     int month, numLeapYears = (numYears / 4) + 1;
     double numDaysInSimulation = (numYears * 365.) + numLeapYears;
@@ -120,37 +135,34 @@ void averageClimateAcrossYears(double **meanMonthlyTemp, double **maxMonthlyTemp
 }
 
 /**
- @brief Calculate climate variable from daily weather
- @param[in] all_hist Array containing all historical data of a site
- @param[out] meanMonthlyTemp 2D array containing all mean average monthly air temperature (deg;C) with
- dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] maxMonthlyTemp 2D array containing all mean max monthly air temperature (deg;C) with
- dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] minMonthlyTemp 2D array containing all mean min monthly air temperature (deg;C) with
- dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] meanMonthlyPPT 2D array containing all mean average monthly precipitation (cm) with dimensions
- of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] MMP_cm Array containing annual precipitation amount [cm]
- @param[out] MMT_C Array containing annual temperatures [C]
- @param[out] JulyMinTemp Array of size numYears holding minimum July temperatures for each year
- @param[out] frostFreeDays Array of size numYears holding the maximum consecutive days in a year without frost for every year
- @param[out] degreeAbove65 Array of size numYears holding the number of days in the year that is above 65F for every year
- @param[out] sdC4 Array of size three holding the standard deviations of minimum July temperature (0), frost free days (1), number of days above 65F (2)
- @param[out] PPTJuly Array of size numYears holding mean July precipitation (mm) for each year
- @param[out] meanTempDryQuarter Array of size numYears holding the average temperature of the driest quarter of the year for every year
- @param[out] minTempFebruary Array of size numYears holding the mean minimum temperature in february for every year
- @param[out] sdCheatgrass Array of size 3 holding the standard deviations of July precipitation (0), mean
- temperature of dry quarter (1), mean minimum temperature of February (2)
- @param[in] numYears Number of years covered in the simulation
- @param[in] startYear Start year of simulation
+ @brief Calculate monthly and annual time series of climate variables from daily weather
  
+ @param[in] allHist Array containing all historical data of a site
+ @param[in] numYears Number of years represented by `allHist`
+ @param[in] startYear Calendar year corresponding to first year of `allHist`
+ @param[out] meanMonthlyTemp_C 2D array containing monthly means average daily air temperature (deg;C) with
+ dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[out] maxMonthlyTemp_C 2D array containing monthly means max daily air temperature (deg;C) with
+ dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[out] minMonthlyTemp_C 2D array containing monthly means min daily air temperature (deg;C) with
+ dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[out] meanMonthlyPPT_cm_cm 2D array containing monthly amount precipitation (cm) with dimensions
+ of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[out] annualPPT_cm Array of size `numYears` containing annual precipitation amount [cm]
+ @param[out] meanAnnualTemp_C Array of size `numYears` containing annual mean temperatures [C]
+ @param[out] JulyMinTemp Array of size numYears holding minimum July temperatures [C] for each year
+ @param[out] frostFreeDays_days Array of size numYears holding the maximum consecutive days in a year without frost for every year
+ @param[out] ddAbove65F_degday Array of size numYears holding the amount of degree days [C x day] above 65 F
+ @param[out] JulyPPT_mm Array of size numYears holding July precipitation amount (mm)
+ @param[out] meanTempDriestQuarter_C Array of size numYears holding the average temperature of the driest quarter of the year for every year
+ @param[out] minTempFebruary_C Array of size numYears holding the mean minimum temperature in february for every year
  */
 
-void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double **maxMonthlyTemp,
-    double **minMonthlyTemp, double **meanMonthlyPPT, double *MMP_cm, double *MMT_C,
-    double *JulyMinTemp, int *frostFreeDays, double *degreeAbove65, double *sdC4,
-    double *PPTJuly, double *meanTempDryQuarter, double *minTempFebruary,
-    double *sdCheatgrass, int numYears, int startYear) {
+void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
+    double **meanMonthlyTemp_C, double **maxMonthlyTemp_C, double **minMonthlyTemp_C,
+    double **meanMonthlyPPT_cm, double *annualPPT_cm, double *meanAnnualTemp_C, double *JulyMinTemp,
+    double *frostFreeDays_days, double *ddAbove65F_degday, double *JulyPPT_mm,
+    double *meanTempDriestQuarter_C, double *minTempFebruary_C) {
     
     
     int month, yearIndex, year, day, numDaysYear, numDaysMonth, currMonDay,
@@ -239,6 +251,8 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
         // Get the running values needed for running standard deviation for frostFreeDays
         frostMean = get_running_mean(yearIndex + 1, prevFrostMean, consecNonFrost);
         frostSqr += get_running_sqr(prevFrostMean, frostMean, consecNonFrost);
+        meanAnnualTemp_C[yearIndex] /= numDaysYear;
+        // TODO: Mention in commit: R code incorrectly calculates meanAnnualTemp_C/MAT_C (doesn't account for leap years)
     }
     
     findDriestQtr(meanMonthlyTemp, meanMonthlyPPT, meanTempDryQuarter, numYears);
@@ -252,19 +266,22 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, double **meanMonthlyTemp, double
     sdCheatgrass[0] = standardDeviation(PPTJuly, numYears);
     sdCheatgrass[1] = standardDeviation(meanTempDryQuarter, numYears);
     sdCheatgrass[2] = standardDeviation(minTempFebruary, numYears);
+    findDriestQtr(meanTempDriestQuarter_C, numYears, meanMonthlyTemp_C, meanMonthlyPPT_cm);
 }
 
 /**
  @brief Helper function to calcsiteClimate to find the driest quarter of the year's average temperature
  
- @param[in] meanMonthlyTemp 2D array holding sum of monthly temperature for every month and year
- @param[in] meanMonthlyPPT 2D array holding sum of monthly precipitation for every month and year
- @param[out] meanTempDryQuarter 2D array holding sum of monthly temperature for every month and year
- @param[in] numYears Number of years in the simulation run
- @param[in] startYear Start year of the simulation
+ @param[in] numYears Number of years represented within simulation
+ @param[in] startYear Calendar year corresponding to first year of simulation
+ @param[out] meanMonthlyTemp_C 2D array containing monthly means average daily air temperature (deg;C) with
+ dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[out] meanMonthlyPPT_cm_cm 2D array containing monthly amount precipitation (cm) with dimensions
+ of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[out] meanTempDriestQuarter_C Array of size numYears holding the average temperature of the driest quarter of the year for every year
  */
-void findDriestQtr(double **meanMonthlyTemp, double **meanMonthlyPPT, double *meanTempDryQuarter,
-                   int numYears) {
+void findDriestQtr(double *meanTempDriestQuarter_C, int numYears, double **meanMonthlyTemp_C,
+                   double **meanMonthlyPPT_cm) {
     
     int yearIndex, month, prevMonth, nextMonth;
     
