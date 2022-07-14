@@ -204,6 +204,15 @@ namespace {
         EXPECT_NEAR(MAP_cm, 62.817419, tol6);
         EXPECT_NEAR(MAT_C, 4.154009, tol6);
         
+        // Standard deviation of C4 variables
+        EXPECT_NEAR(sdC4[0], 1.785535, tol6);
+        EXPECT_NEAR(sdC4[1], 14.091788, tol6);
+        EXPECT_NEAR(sdC4[2], 19.953560, tol6);
+        
+        // Standard deviation of cheatgrass variables
+        EXPECT_NEAR(sdCheatgrass[0], 21.598367, tol6);
+        EXPECT_NEAR(sdCheatgrass[1], 7.171922, tol6);
+        EXPECT_NEAR(sdCheatgrass[2], 2.618434, tol6);
         // Reset values
         for(int year = 0; year < 31; year++) {
             for(int month = 0; month < MAX_MONTHS; month++) {
@@ -325,10 +334,6 @@ namespace {
         // Sum of all temperature above 65F (18.333C) in first year
         EXPECT_NEAR(ddAbove65F_degday[0], 13.546000, tol6);
         
-        // Standard deviation of C4 variables
-        EXPECT_NEAR(sdC4[0], 1.785535, tol6);
-        EXPECT_NEAR(sdC4[1], 14.091788, tol6);
-        EXPECT_NEAR(sdC4[2], 19.953560, tol6);
         
         // Total precipitation in July of first year
         EXPECT_NEAR(PPTJuly[0], 18.300000, tol6);
@@ -336,10 +341,6 @@ namespace {
         // Smallest temperature in all February first year
         EXPECT_NEAR(minTempFebruary[0], -12.822069, tol6);
         
-        // Standard deviation of cheatgrass variables
-        EXPECT_NEAR(sdCheatgrass[0], 21.598367, tol6);
-        EXPECT_NEAR(sdCheatgrass[1], 7.171922, tol6);
-        EXPECT_NEAR(sdCheatgrass[2], 2.618434, tol6);
         
         for(int month = 0; month < MAX_MONTHS; month++) {
             delete[] meanMonthlyPPT_cm[month];
