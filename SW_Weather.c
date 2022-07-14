@@ -183,6 +183,10 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         memset(minMonthlyTemp_C[month], 0., sizeof(double) * numYears);
         memset(meanMonthlyPPT_cm[month], 0., sizeof(double) * numYears);
     }
+    memset(annualPPT_cm, 0., sizeof(double) * numYears);
+    memset(meanAnnualTemp_C, 0., sizeof(double) * numYears);
+    memset(minTempFebruary_C, 0., sizeof(double) * numYears);
+    memset(JulyPPT_mm, 0., sizeof(double) * numYears);
     
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
@@ -209,7 +213,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             currentTempMin = allHist[yearIndex]->temp_min[day];
             currentTempMean = allHist[yearIndex]->temp_avg[day];
             
-            if(month == July){
+            if(month == Jul){
                 currentJulyMin = (currentTempMin < currentJulyMin) ?
                                             currentTempMin : currentJulyMin;
                 JulyPPT += allHist[yearIndex]->ppt[day] * 10;
@@ -224,8 +228,8 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                 currentNonFrost = 0;
             }
 
-            if(month == February) {
-                minTempFebruary[yearIndex] += allHist[yearIndex]->temp_min[day];
+            if(month == Feb) {
+                minTempFebruary_C[yearIndex] += allHist[yearIndex]->temp_min[day];
             }
 
             if(currMonDay == numDaysMonth) {
