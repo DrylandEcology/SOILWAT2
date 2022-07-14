@@ -299,6 +299,9 @@ namespace {
                 minTempFebruary_C[year] = 0.;
             }
         }
+        
+        SW_WTH_read();
+        
         // 1980 is start year of the simulation
         calcSiteClimate(SW_Weather.allHist, 31, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
                         meanMonthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days,
@@ -334,13 +337,104 @@ namespace {
         // Sum of all temperature above 65F (18.333C) in first year
         EXPECT_NEAR(ddAbove65F_degday[0], 13.546000, tol6);
         
-        
         // Total precipitation in July of first year
-        EXPECT_NEAR(PPTJuly[0], 18.300000, tol6);
+        EXPECT_NEAR(JulyPPT_mm[0], 18.300000, tol6);
         
         // Smallest temperature in all February first year
-        EXPECT_NEAR(minTempFebruary[0], -12.822069, tol6);
+        EXPECT_NEAR(minTempFebruary_C[0], -12.822069, tol6);
         
+        for(int year = 0; year < 2; year++) {
+            for(int day = 0; day < 366; day++) {
+                SW_Weather.allHist[year]->temp_max[day] = 1.;
+                SW_Weather.allHist[year]->temp_min[day] = 1.;
+                SW_Weather.allHist[year]->temp_avg[day] = 1.;
+                SW_Weather.allHist[year]->ppt[day] = 1.;
+            }
+        }
+        
+        calcSiteClimate(SW_Weather.allHist, 2, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
+                        meanMonthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
+                        JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
+        
+        // Start of leap year tests (startYear = 1980)
+        
+        // Average of average temperature of January in 1980
+        EXPECT_EQ(meanMonthlyTemp_C[0][0], 1.);
+        
+        // Average of max temperature in Januaray 1980
+        EXPECT_EQ(maxMonthlyTemp_C[0][0], 1.);
+        
+        // Average of min temperature in Januaray 1980
+        EXPECT_EQ(minMonthlyTemp_C[0][0], 1.);
+        
+        // Average January precipitation in 1980
+        EXPECT_EQ(meanMonthlyPPT_cm[0][0], 1.);
+        
+        // Average temperature of three driest month of first year
+        EXPECT_EQ(meanTempDriestQuarter_C[0], 1.);
+        
+        // Average precipiation of first year of simulation
+        EXPECT_EQ(annualPPT_cm[0], 366.);
+        
+        // Average temperature of first year of simulation
+        EXPECT_EQ(meanAnnualTemp_C[0], 1.);
+        
+        // First year's July minimum temperature
+        EXPECT_EQ(JulyMinTemp[0], 1.);
+        
+        // First year's number of most consecutive frost free days
+        EXPECT_EQ(frostFreeDays_days[0], 0);
+        
+        // Sum of all temperature above 65F (18.333C) in first year
+        EXPECT_EQ(ddAbove65F_degday[0], 0);
+        
+        // Total precipitation in July of first year
+        EXPECT_EQ(JulyPPT_mm[0], 310.);
+        
+        // Smallest temperature in all February first year
+        EXPECT_NEAR(minTempFebruary_C[0], 1., tol6);
+        
+        // Start of nonleap year tests (startYear = 1981)
+        
+        calcSiteClimate(SW_Weather.allHist, 2, 1981, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
+                        meanMonthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
+                        JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
+        
+        // Average of average temperature of January in 1981
+        EXPECT_EQ(meanMonthlyTemp_C[0][0], 1.);
+        
+        // Average of max temperature in Januaray 1981
+        EXPECT_EQ(maxMonthlyTemp_C[0][0], 1.);
+        
+        // Average of min temperature in Januaray 1981
+        EXPECT_EQ(minMonthlyTemp_C[0][0], 1.);
+        
+        // Average January precipitation in 1980
+        EXPECT_EQ(meanMonthlyPPT_cm[0][0], 1.);
+        
+        // Average temperature of three driest month of first year
+        EXPECT_EQ(meanTempDriestQuarter_C[0], 1.);
+        
+        // Average precipiation of first year of simulation
+        EXPECT_EQ(annualPPT_cm[0], 365.);
+        
+        // Average temperature of first year of simulation
+        EXPECT_EQ(meanAnnualTemp_C[0], 1.);
+        
+        // First year's July minimum temperature
+        EXPECT_EQ(JulyMinTemp[0], 1.);
+        
+        // First year's number of most consecutive frost free days
+        EXPECT_EQ(frostFreeDays_days[0], 0);
+        
+        // Sum of all temperature above 65F (18.333C) in first year
+        EXPECT_EQ(ddAbove65F_degday[0], 0);
+        
+        // Total precipitation in July of first year
+        EXPECT_EQ(JulyPPT_mm[0], 310.);
+        
+        // Smallest temperature in all February first year
+        EXPECT_NEAR(minTempFebruary_C[0], 1., tol6);
         
         for(int month = 0; month < MAX_MONTHS; month++) {
             delete[] meanMonthlyPPT_cm[month];
