@@ -137,7 +137,7 @@ namespace {
         Reset_SOILWAT2_after_UnitTest();
 
     }
-    TEST(AverageAcrossYearsTest, FileValues) {
+    TEST(AverageClimateAcrossYearsTest, FileAndValuesOfOne) {
         
         // This test relies on allHist from `SW_WEATHER` being already filled
         
@@ -318,7 +318,7 @@ namespace {
         
     }
 
-    TEST(CalcSiteClimateTest, FileValues) {
+    TEST(CalcSiteClimateTest, FileAndValuesOfOne) {
         
         // This test relies on allHist from `SW_WEATHER` being already filled
         
