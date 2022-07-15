@@ -188,9 +188,10 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     
     
     int month, yearIndex, year, day, numDaysYear, numDaysMonth = Time_days_in_month(0),
-    currMonDay, consecNonFrost, currentNonFrost;
+    currMonDay;
     
-    double currentTempMin, currentTempMean, totalAbove65, currentJulyMin, JulyPPT;
+    double currentTempMin, currentTempMean, totalAbove65, currentJulyMin, JulyPPT,
+    consecNonFrost, currentNonFrost;
     
     for(month = 0; month < MAX_MONTHS; month++) {
         memset(meanMonthlyTemp_C[month], 0., sizeof(double) * numYears);
@@ -235,12 +236,12 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             }
 
             if(currentTempMin > 0.0) {
-                currentNonFrost++;
+                currentNonFrost += 1.;
             } else if(currentNonFrost > consecNonFrost){
                 consecNonFrost = currentNonFrost;
-                currentNonFrost = 0;
+                currentNonFrost = 0.;
             } else {
-                currentNonFrost = 0;
+                currentNonFrost = 0.;
             }
 
             if(month == Feb) {
@@ -268,7 +269,10 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         JulyMinTemp[yearIndex] = currentJulyMin;
         JulyPPT_mm[yearIndex] = JulyPPT;
         ddAbove65F_degday[yearIndex] = totalAbove65;
-        frostFreeDays_days[yearIndex] = (double)consecNonFrost;
+        
+        // The reason behind checking if consecNonFrost is greater than zero,
+        // is that there is a chance all days in the year are above 32F
+        frostFreeDays_days[yearIndex] = (consecNonFrost > 0) ? consecNonFrost : currentNonFrost;
         
         meanAnnualTemp_C[yearIndex] /= numDaysYear;
     }
