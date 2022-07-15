@@ -158,9 +158,15 @@ namespace {
         
         double MAP_cm;
         double MAT_C;
+        double JulyPPTAnn_mm;
+        double meanTempDriestQuarterAnn_C;
+        double minTempFebruaryAnn_C;
+        double ddAbove65F_degdayAnn;
+        double frostFreeAnn;
+        double JulyMinTempAnn;
         
-        double **meanMonthlyPPT_cm;
-        meanMonthlyPPT_cm = new double*[MAX_MONTHS];
+        double **monthlyPPT_cm;
+        monthlyPPT_cm = new double*[MAX_MONTHS];
         
         double **meanMonthlyTemp_C = new double*[MAX_MONTHS];
         
@@ -192,17 +198,25 @@ namespace {
             monthlyPPT_cm, 31, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
             JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C, annualPPT_cm,
             meanAnnualTemp_C, meanMonthlyTempAnn, maxMonthlyTempAnn, minMonthlyTempAnn,
-            meanMonthlyPPTAnn, sdC4, sdCheatgrass, &MAT_C, &MAP_cm);
+            meanMonthlyPPTAnn, sdC4, sdCheatgrass, &MAT_C, &MAP_cm, &JulyPPTAnn_mm,
+            &meanTempDriestQuarterAnn_C, &minTempFebruaryAnn_C, &ddAbove65F_degdayAnn,
+            &frostFreeAnn, &JulyMinTempAnn);
         
         EXPECT_NEAR(meanMonthlyTempAnn[0], -9.325551, tol6);
         EXPECT_NEAR(maxMonthlyTempAnn[0], -2.714381, tol6);
         EXPECT_NEAR(minMonthlyTempAnn[0], -15.936722, tol6);
-        EXPECT_NEAR(meanMonthlyPPTAnn[0], 0.221530, tol6);
+        EXPECT_NEAR(meanMonthlyPPTAnn[0], 6.867419, tol6);
         
         EXPECT_NEAR(meanAnnualTemp_C[0], 4.524863, tol6);
         EXPECT_NEAR(annualPPT_cm[0], 59.2700004, tol6);
         EXPECT_NEAR(MAP_cm, 62.817419, tol6);
         EXPECT_NEAR(MAT_C, 4.154009, tol6);
+        EXPECT_NEAR(JulyPPTAnn_mm, 35.729032, tol6);
+        EXPECT_NEAR(meanTempDriestQuarterAnn_C, 11.524859, tol6);
+        EXPECT_NEAR(minTempFebruaryAnn_C, -13.904599, tol6);
+        EXPECT_NEAR(ddAbove65F_degdayAnn, 21.168032, tol6);
+        EXPECT_NEAR(frostFreeAnn, 90.612903, tol6);
+        EXPECT_NEAR(JulyMinTempAnn, 3.078387, tol6);
         
         // Standard deviation of C4 variables
         EXPECT_NEAR(sdC4[0], 1.785535, tol6);
@@ -216,6 +230,7 @@ namespace {
         
         for(int month = 0; month < MAX_MONTHS; month++) {
             for(int year = 0; year < 31; year++) {
+                monthlyPPT_cm[month][year] = 1.;
                 meanMonthlyTemp_C[month][year] = 1.;
                 minMonthlyTemp_C[month][year] = 1.;
                 maxMonthlyTemp_C[month][year] = 1.;
@@ -237,21 +252,29 @@ namespace {
         }
         // Tests for one year of simulation
         calcSiteClimate(SW_Weather.allHist, 1, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-                        meanMonthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
+                        monthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
                         JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
         
         averageClimateAcrossYears(meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-            meanMonthlyPPT_cm, 1, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
+            monthlyPPT_cm, 1, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
             JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C, annualPPT_cm,
             meanAnnualTemp_C, meanMonthlyTempAnn, maxMonthlyTempAnn, minMonthlyTempAnn,
-            meanMonthlyPPTAnn, sdC4, sdCheatgrass, &MAT_C, &MAP_cm);
+            meanMonthlyPPTAnn, sdC4, sdCheatgrass, &MAT_C, &MAP_cm, &JulyPPTAnn_mm,
+            &meanTempDriestQuarterAnn_C, &minTempFebruaryAnn_C, &ddAbove65F_degdayAnn,
+            &frostFreeAnn, &JulyMinTempAnn);
         
         EXPECT_NEAR(meanMonthlyTempAnn[0], -8.432581, tol6);
         EXPECT_NEAR(maxMonthlyTempAnn[0], -2.562581, tol6);
         EXPECT_NEAR(minMonthlyTempAnn[0], -14.302581, tol6);
-        EXPECT_NEAR(meanMonthlyPPTAnn[0], 0.488387, tol6);
+        EXPECT_NEAR(meanMonthlyPPTAnn[0], 15.1400001, tol6);
         EXPECT_NEAR(MAP_cm, 59.27, tol1);
         EXPECT_NEAR(MAT_C, 4.524863, tol1);
+        EXPECT_NEAR(JulyPPTAnn_mm, 18.299999, tol6);
+        EXPECT_NEAR(meanTempDriestQuarterAnn_C, 0.936387, tol6);
+        EXPECT_NEAR(minTempFebruaryAnn_C, -12.822068, tol6);
+        EXPECT_NEAR(ddAbove65F_degdayAnn, 13.546000, tol6);
+        EXPECT_NEAR(frostFreeAnn, 92, tol6);
+        EXPECT_NEAR(JulyMinTempAnn, 2.809999, tol6);
         
         // Standard deviation of C4 variables of one year
         EXPECT_TRUE(isnan(sdC4[0]));
@@ -273,37 +296,45 @@ namespace {
         }
 
         // Start of tests with all `allHist` inputs of 1
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-                        meanMonthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
+        calcSiteClimate(SW_Weather.allHist, 2, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
+                        monthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
                         JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
         
         averageClimateAcrossYears(meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-            meanMonthlyPPT_cm, 31, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
+            monthlyPPT_cm, 2, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
             JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C, annualPPT_cm,
             meanAnnualTemp_C, meanMonthlyTempAnn, maxMonthlyTempAnn, minMonthlyTempAnn,
-            meanMonthlyPPTAnn, sdC4, sdCheatgrass, &MAT_C, &MAP_cm);
+            meanMonthlyPPTAnn, sdC4, sdCheatgrass, &MAT_C, &MAP_cm, &JulyPPTAnn_mm,
+            &meanTempDriestQuarterAnn_C, &minTempFebruaryAnn_C, &ddAbove65F_degdayAnn,
+            &frostFreeAnn, &JulyMinTempAnn);
         
-        EXPECT_EQ(meanMonthlyTempAnn[0], 1.);
-        EXPECT_EQ(maxMonthlyTempAnn[0], 1.);
-        EXPECT_EQ(minMonthlyTempAnn[0], 1.);
-        EXPECT_EQ(meanMonthlyPPTAnn[0], 1.);
-        // EXPECT_NEAR because of tests inaccuracy with the actual value
-        // Tolerance of 1 because the inaccurate value the test has is closer to 365
-        EXPECT_NEAR(MAP_cm, 366., 1);
-        EXPECT_EQ(MAT_C, 1.);
+        EXPECT_DOUBLE_EQ(meanMonthlyTempAnn[0], 1.);
+        EXPECT_DOUBLE_EQ(maxMonthlyTempAnn[0], 1.);
+        EXPECT_DOUBLE_EQ(minMonthlyTempAnn[0], 1.);
+        EXPECT_DOUBLE_EQ(meanMonthlyPPTAnn[0], 31.);
+        EXPECT_DOUBLE_EQ(JulyPPTAnn_mm, 310.);
+        EXPECT_DOUBLE_EQ(meanTempDriestQuarterAnn_C, 1.);
+        EXPECT_DOUBLE_EQ(minTempFebruaryAnn_C, 1.);
+        EXPECT_DOUBLE_EQ(ddAbove65F_degdayAnn, 0.);
+        EXPECT_DOUBLE_EQ(frostFreeAnn, 365.5);
+        EXPECT_DOUBLE_EQ(JulyMinTempAnn, 1.);
+        // MAP_cm is expected to be 365.5 because we are running a leap year
+        // and nonleap year where the number of days average to 365.5
+        EXPECT_DOUBLE_EQ(MAP_cm, 365.5);
+        EXPECT_DOUBLE_EQ(MAT_C, 1.);
         
         // Standard deviation of C4 variables of one year
-        EXPECT_EQ(sdC4[0], 0.);
-        EXPECT_EQ(sdC4[1], 0.);
-        EXPECT_EQ(sdC4[2], 0.);
+        EXPECT_DOUBLE_EQ(sdC4[0], 0.);
+        EXPECT_NEAR(sdC4[1], .7071067, tol6);
+        EXPECT_DOUBLE_EQ(sdC4[2], 0.);
 
         // Standard deviation of cheatgrass variables of one year
-        EXPECT_EQ(sdCheatgrass[0], 0.);
-        EXPECT_EQ(sdCheatgrass[1], 0.);
-        EXPECT_EQ(sdCheatgrass[2], 0.);
+        EXPECT_DOUBLE_EQ(sdCheatgrass[0], 0.);
+        EXPECT_DOUBLE_EQ(sdCheatgrass[1], 0.);
+        EXPECT_DOUBLE_EQ(sdCheatgrass[2], 0.);
         
         for(int month = 0; month < MAX_MONTHS; month++) {
-            delete[] meanMonthlyPPT_cm[month];
+            delete[] monthlyPPT_cm[month];
             delete[] meanMonthlyTemp_C[month];
             delete[] minMonthlyTemp_C[month];
             delete[] maxMonthlyTemp_C[month];
@@ -376,7 +407,7 @@ namespace {
         EXPECT_NEAR(minMonthlyTemp_C[0][0], -14.302581, tol6);
         
         // Average January precipitation in 1980
-        EXPECT_NEAR(meanMonthlyPPT_cm[0][0], 0.488387, tol6);
+        EXPECT_NEAR(monthlyPPT_cm[0][0], 15.14, tol6);
         
         // Average temperature of three driest month of first year
         EXPECT_NEAR(meanTempDriestQuarter_C[0], .936387, tol6);
@@ -418,37 +449,37 @@ namespace {
         // Start of leap year tests (startYear = 1980)
         
         // Average of average temperature of January in 1980
-        EXPECT_EQ(meanMonthlyTemp_C[0][0], 1.);
+        EXPECT_DOUBLE_EQ(meanMonthlyTemp_C[0][0], 1.);
         
         // Average of max temperature in Januaray 1980
-        EXPECT_EQ(maxMonthlyTemp_C[0][0], 1.);
+        EXPECT_DOUBLE_EQ(maxMonthlyTemp_C[0][0], 1.);
         
         // Average of min temperature in Januaray 1980
-        EXPECT_EQ(minMonthlyTemp_C[0][0], 1.);
+        EXPECT_DOUBLE_EQ(minMonthlyTemp_C[0][0], 1.);
         
         // Average January precipitation in 1980
-        EXPECT_EQ(meanMonthlyPPT_cm[0][0], 1.);
+        EXPECT_DOUBLE_EQ(monthlyPPT_cm[0][0], 31.);
         
         // Average temperature of three driest month of first year
-        EXPECT_EQ(meanTempDriestQuarter_C[0], 1.);
+        EXPECT_DOUBLE_EQ(meanTempDriestQuarter_C[0], 1.);
         
         // Average precipiation of first year of simulation
-        EXPECT_EQ(annualPPT_cm[0], 366.);
+        EXPECT_DOUBLE_EQ(annualPPT_cm[0], 366.);
         
         // Average temperature of first year of simulation
-        EXPECT_EQ(meanAnnualTemp_C[0], 1.);
+        EXPECT_DOUBLE_EQ(meanAnnualTemp_C[0], 1.);
         
         // First year's July minimum temperature
-        EXPECT_EQ(JulyMinTemp[0], 1.);
+        EXPECT_DOUBLE_EQ(JulyMinTemp[0], 1.);
         
         // First year's number of most consecutive frost free days
-        EXPECT_EQ(frostFreeDays_days[0], 0);
+        EXPECT_DOUBLE_EQ(frostFreeDays_days[0], 366);
         
         // Sum of all temperature above 65F (18.333C) in first year
-        EXPECT_EQ(ddAbove65F_degday[0], 0);
+        EXPECT_DOUBLE_EQ(ddAbove65F_degday[0], 0);
         
         // Total precipitation in July of first year
-        EXPECT_EQ(JulyPPT_mm[0], 310.);
+        EXPECT_DOUBLE_EQ(JulyPPT_mm[0], 310.);
         
         // Smallest temperature in all February first year
         EXPECT_NEAR(minTempFebruary_C[0], 1., tol6);
@@ -460,37 +491,37 @@ namespace {
                         JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
         
         // Average of average temperature of January in 1981
-        EXPECT_EQ(meanMonthlyTemp_C[0][0], 1.);
+        EXPECT_DOUBLE_EQ(meanMonthlyTemp_C[0][0], 1.);
         
         // Average of max temperature in Januaray 1981
-        EXPECT_EQ(maxMonthlyTemp_C[0][0], 1.);
+        EXPECT_DOUBLE_EQ(maxMonthlyTemp_C[0][0], 1.);
         
         // Average of min temperature in Januaray 1981
-        EXPECT_EQ(minMonthlyTemp_C[0][0], 1.);
+        EXPECT_DOUBLE_EQ(minMonthlyTemp_C[0][0], 1.);
         
         // Average January precipitation in 1980
-        EXPECT_EQ(meanMonthlyPPT_cm[0][0], 1.);
+        EXPECT_DOUBLE_EQ(monthlyPPT_cm[0][0], 31.);
         
         // Average temperature of three driest month of first year
-        EXPECT_EQ(meanTempDriestQuarter_C[0], 1.);
+        EXPECT_DOUBLE_EQ(meanTempDriestQuarter_C[0], 1.);
         
         // Average precipiation of first year of simulation
-        EXPECT_EQ(annualPPT_cm[0], 365.);
+        EXPECT_DOUBLE_EQ(annualPPT_cm[0], 365.);
         
         // Average temperature of first year of simulation
-        EXPECT_EQ(meanAnnualTemp_C[0], 1.);
+        EXPECT_DOUBLE_EQ(meanAnnualTemp_C[0], 1.);
         
         // First year's July minimum temperature
-        EXPECT_EQ(JulyMinTemp[0], 1.);
+        EXPECT_DOUBLE_EQ(JulyMinTemp[0], 1.);
         
         // First year's number of most consecutive frost free days
-        EXPECT_EQ(frostFreeDays_days[0], 0);
+        EXPECT_DOUBLE_EQ(frostFreeDays_days[0], 365);
         
         // Sum of all temperature above 65F (18.333C) in first year
-        EXPECT_EQ(ddAbove65F_degday[0], 0);
+        EXPECT_DOUBLE_EQ(ddAbove65F_degday[0], 0);
         
         // Total precipitation in July of first year
-        EXPECT_EQ(JulyPPT_mm[0], 310.);
+        EXPECT_DOUBLE_EQ(JulyPPT_mm[0], 310.);
         
         // Smallest temperature in all February first year
         EXPECT_NEAR(minTempFebruary_C[0], 1., tol6);
