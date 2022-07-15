@@ -88,7 +88,7 @@ static char *MyFileName;
  of row (months) size MAX_MONTHS and columns (years) of size numYears
  @param[in] minMonthlyTemp_C 2D array containing monthly means of minimum daily air temperature (deg;C) with dimensions
  of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[in] meanMonthlyPPT_cm 2D array containing monthly precipitation amount (deg;C) with dimensions
+ @param[in] monthlyPPT_cm 2D array containing monthly precipitation amount (deg;C) with dimensions
  of row (months) size MAX_MONTHS and columns (years) of size numYears
  @param[in] numYears Calendar year corresponding to first year of `allHist`
  @param[in] JulyMinTemp Array of size numYears holding minimum July temperatures [C] for each year
@@ -111,7 +111,7 @@ static char *MyFileName;
  */
 
 void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTemp_C,
-    double **minMonthlyTemp_C, double **meanMonthlyPPT_cm, double numYears, double JulyMinTemp[],
+    double **minMonthlyTemp_C, double **monthlyPPT_cm, double numYears, double JulyMinTemp[],
     double frostFreeDays_days[], double ddAbove65F_degday[], double JulyPPT_mm[],
     double meanTempDriestQuarter_C[], double minTempFebruary_C[], double annualPPT_cm[],
     double meanAnnualTemp_C[], double *meanMonthlyTempAnn, double *maxMonthlyTempAnn,
@@ -124,7 +124,7 @@ void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTe
         meanMonthlyTempAnn[month] = mean(meanMonthlyTemp_C[month], numYears);
         maxMonthlyTempAnn[month] = mean(maxMonthlyTemp_C[month], numYears);
         minMonthlyTempAnn[month] = mean(minMonthlyTemp_C[month], numYears);
-        meanMonthlyPPTAnn[month] = mean(meanMonthlyPPT_cm[month], numYears);
+        meanMonthlyPPTAnn[month] = mean(monthlyPPT_cm[month], numYears);
     }
     
     *MAP_cm = mean(annualPPT_cm, numYears);
@@ -153,7 +153,7 @@ void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTe
  dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
  @param[out] minMonthlyTemp_C 2D array containing monthly means min daily air temperature (deg;C) with
  dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] meanMonthlyPPT_cm_cm 2D array containing monthly amount precipitation (cm) with dimensions
+ @param[out] monthlyPPT_cm 2D array containing monthly amount precipitation (cm) with dimensions
  of row (months) size MAX_MONTHS and columns (years) of size numYears
  @param[out] annualPPT_cm Array of size `numYears` containing annual precipitation amount [cm]
  @param[out] meanAnnualTemp_C Array of size `numYears` containing annual mean temperatures [C]
@@ -167,7 +167,7 @@ void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTe
 
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     double **meanMonthlyTemp_C, double **maxMonthlyTemp_C, double **minMonthlyTemp_C,
-    double **meanMonthlyPPT_cm, double *annualPPT_cm, double *meanAnnualTemp_C, double *JulyMinTemp,
+    double **monthlyPPT_cm, double *annualPPT_cm, double *meanAnnualTemp_C, double *JulyMinTemp,
     double *frostFreeDays_days, double *ddAbove65F_degday, double *JulyPPT_mm,
     double *meanTempDriestQuarter_C, double *minTempFebruary_C) {
     
@@ -181,7 +181,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         memset(meanMonthlyTemp_C[month], 0., sizeof(double) * numYears);
         memset(maxMonthlyTemp_C[month], 0., sizeof(double) * numYears);
         memset(minMonthlyTemp_C[month], 0., sizeof(double) * numYears);
-        memset(meanMonthlyPPT_cm[month], 0., sizeof(double) * numYears);
+        memset(monthlyPPT_cm[month], 0., sizeof(double) * numYears);
     }
     memset(annualPPT_cm, 0., sizeof(double) * numYears);
     memset(meanAnnualTemp_C, 0., sizeof(double) * numYears);
@@ -205,7 +205,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             meanMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_avg[day];
             maxMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_max[day];
             minMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_min[day];
-            meanMonthlyPPT_cm[month][yearIndex] += allHist[yearIndex]->ppt[day];
+            monthlyPPT_cm[month][yearIndex] += allHist[yearIndex]->ppt[day];
             
             annualPPT_cm[yearIndex] += allHist[yearIndex]->ppt[day];
             meanAnnualTemp_C[yearIndex] += allHist[yearIndex]->temp_avg[day];
@@ -237,7 +237,6 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                 meanMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
                 maxMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
                 minMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
-                meanMonthlyPPT_cm[month][yearIndex] /= numDaysMonth;
                 
                 if(month == Feb) minTempFebruary_C[yearIndex] /= numDaysMonth;
                 
@@ -258,8 +257,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         
         meanAnnualTemp_C[yearIndex] /= numDaysYear;
     }
-    
-    findDriestQtr(meanTempDriestQuarter_C, numYears, meanMonthlyTemp_C, meanMonthlyPPT_cm);
+    findDriestQtr(meanTempDriestQuarter_C, numYears, meanMonthlyTemp_C, monthlyPPT_cm);
 }
 
 /**
@@ -269,12 +267,12 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
  @param[in] startYear Calendar year corresponding to first year of simulation
  @param[out] meanMonthlyTemp_C 2D array containing monthly means average daily air temperature (deg;C) with
  dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] meanMonthlyPPT_cm_cm 2D array containing monthly amount precipitation (cm) with dimensions
+ @param[out] monthlyPPT_cm 2D array containing monthly amount precipitation (cm) with dimensions
  of row (months) size MAX_MONTHS and columns (years) of size numYears
  @param[out] meanTempDriestQuarter_C Array of size numYears holding the average temperature of the driest quarter of the year for every year
  */
 void findDriestQtr(double *meanTempDriestQuarter_C, int numYears, double **meanMonthlyTemp_C,
-                   double **meanMonthlyPPT_cm) {
+                   double **monthlyPPT_cm) {
     
     int yearIndex, month, prevMonth, nextMonth;
     
@@ -290,9 +288,9 @@ void findDriestQtr(double *meanTempDriestQuarter_C, int numYears, double **meanM
             prevMonth = (month == 0) ? 11 : month - 1;
             nextMonth = (month == 11) ? 0 : month + 1;
             
-            currentQtrPPT = (meanMonthlyPPT_cm[prevMonth][yearIndex]) +
-                            (meanMonthlyPPT_cm[month][yearIndex]) +
-                            (meanMonthlyPPT_cm[nextMonth][yearIndex]);
+            currentQtrPPT = (monthlyPPT_cm[prevMonth][yearIndex]) +
+                            (monthlyPPT_cm[month][yearIndex]) +
+                            (monthlyPPT_cm[nextMonth][yearIndex]);
             
             currentQtrTemp = (meanMonthlyTemp_C[prevMonth][yearIndex]) +
                              (meanMonthlyTemp_C[month][yearIndex]) +

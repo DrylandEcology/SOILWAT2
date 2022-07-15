@@ -169,13 +169,13 @@ namespace {
         double **maxMonthlyTemp_C = new double*[MAX_MONTHS];
         
         for(int month = 0; month < MAX_MONTHS; month++) {
-            meanMonthlyPPT_cm[month] = new double[31];
+            monthlyPPT_cm[month] = new double[31];
             meanMonthlyTemp_C[month] = new double[31];
             minMonthlyTemp_C[month] = new double[31];
             maxMonthlyTemp_C[month] = new double[31];
             for(int year = 0; year < 31; year++) {
                 
-                meanMonthlyPPT_cm[month][year] = 0.;
+                monthlyPPT_cm[month][year] = 0.;
                 meanMonthlyTemp_C[month][year] = 0.;
                 minMonthlyTemp_C[month][year] = 0.;
                 maxMonthlyTemp_C[month][year] = 0.;
@@ -185,11 +185,11 @@ namespace {
         }
         // 1980 is start year of the simulation
         calcSiteClimate(SW_Weather.allHist, 31, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-                        meanMonthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
+                        monthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
                         JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
         
         averageClimateAcrossYears(meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-            meanMonthlyPPT_cm, 31, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
+            monthlyPPT_cm, 31, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
             JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C, annualPPT_cm,
             meanAnnualTemp_C, meanMonthlyTempAnn, maxMonthlyTempAnn, minMonthlyTempAnn,
             meanMonthlyPPTAnn, sdC4, sdCheatgrass, &MAT_C, &MAP_cm);
@@ -216,8 +216,6 @@ namespace {
         
         for(int month = 0; month < MAX_MONTHS; month++) {
             for(int year = 0; year < 31; year++) {
-                
-                meanMonthlyPPT_cm[month][year] = 1.;
                 meanMonthlyTemp_C[month][year] = 1.;
                 minMonthlyTemp_C[month][year] = 1.;
                 maxMonthlyTemp_C[month][year] = 1.;
@@ -229,7 +227,7 @@ namespace {
         // Reset values
         for(int year = 0; year < 31; year++) {
             for(int month = 0; month < MAX_MONTHS; month++) {
-                meanMonthlyPPT_cm[month][year] = 0.;
+                monthlyPPT_cm[month][year] = 0.;
                 meanMonthlyTemp_C[month][year] = 0.;
                 minMonthlyTemp_C[month][year] = 0.;
                 maxMonthlyTemp_C[month][year] = 0.;
@@ -311,7 +309,7 @@ namespace {
             delete[] maxMonthlyTemp_C[month];
         }
         
-        delete[] meanMonthlyPPT_cm;
+        delete[] monthlyPPT_cm;
         delete[] meanMonthlyTemp_C;
         delete[] minMonthlyTemp_C;
         delete[] maxMonthlyTemp_C;
@@ -331,8 +329,8 @@ namespace {
         double annualPPT_cm[31];
         double meanAnnualTemp_C[31];
         
-        double **meanMonthlyPPT_cm;
-        meanMonthlyPPT_cm = new double*[MAX_MONTHS];
+        double **monthlyPPT_cm;
+        monthlyPPT_cm = new double*[MAX_MONTHS];
         
         double **meanMonthlyTemp_C;
         meanMonthlyTemp_C = new double*[MAX_MONTHS];
@@ -344,14 +342,14 @@ namespace {
         maxMonthlyTemp_C = new double*[MAX_MONTHS];
         
         for(int month = 0; month < MAX_MONTHS; month++) {
-            meanMonthlyPPT_cm[month] = new double[31];
+            monthlyPPT_cm[month] = new double[31];
             meanMonthlyTemp_C[month] = new double[31];
             minMonthlyTemp_C[month] = new double[31];
             maxMonthlyTemp_C[month] = new double[31];
             
             for(int year = 0; year < 31; year++) {
                 
-                meanMonthlyPPT_cm[month][year] = 0.;
+                monthlyPPT_cm[month][year] = 0.;
                 meanMonthlyTemp_C[month][year] = 0.;
                 minMonthlyTemp_C[month][year] = 0.;
                 maxMonthlyTemp_C[month][year] = 0.;
@@ -365,7 +363,7 @@ namespace {
         
         // 1980 is start year of the simulation
         calcSiteClimate(SW_Weather.allHist, 31, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-                        meanMonthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days,
+                        monthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days,
                         ddAbove65F_degday, JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
         
         // Average of average temperature of January in 1980
@@ -414,7 +412,7 @@ namespace {
         }
         
         calcSiteClimate(SW_Weather.allHist, 2, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-                        meanMonthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
+                        monthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
                         JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
         
         // Start of leap year tests (startYear = 1980)
@@ -458,7 +456,7 @@ namespace {
         // Start of nonleap year tests (startYear = 1981)
         
         calcSiteClimate(SW_Weather.allHist, 2, 1981, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-                        meanMonthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
+                        monthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
                         JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
         
         // Average of average temperature of January in 1981
@@ -498,13 +496,13 @@ namespace {
         EXPECT_NEAR(minTempFebruary_C[0], 1., tol6);
         
         for(int month = 0; month < MAX_MONTHS; month++) {
-            delete[] meanMonthlyPPT_cm[month];
+            delete[] monthlyPPT_cm[month];
             delete[] meanMonthlyTemp_C[month];
             delete[] minMonthlyTemp_C[month];
             delete[] maxMonthlyTemp_C[month];
         }
         
-        delete[] meanMonthlyPPT_cm;
+        delete[] monthlyPPT_cm;
         delete[] meanMonthlyTemp_C;
         delete[] minMonthlyTemp_C;
         delete[] maxMonthlyTemp_C;
@@ -517,37 +515,37 @@ namespace {
         double monthlyTemp[MAX_MONTHS] = {-3.2, -.4, 1.2, 3.5, 7.5, 4.5, 6.5, 8.2, 2.0, 3., .1, -.3};
         double result[2]; // 2 = max number of years in test
         
-        double **meanMonthlyPPT_cm;
-        meanMonthlyPPT_cm = new double*[MAX_MONTHS];
+        double **monthlyPPT_cm;
+        monthlyPPT_cm = new double*[MAX_MONTHS];
         
         double **meanMonthlyTemp_C = new double*[MAX_MONTHS];
         
         for(int month = 0; month < MAX_MONTHS; month++) {
-            meanMonthlyPPT_cm[month] = new double[2];
+            monthlyPPT_cm[month] = new double[2];
             meanMonthlyTemp_C[month] = new double[2];
             for(int year = 0; year < 2; year++) {
                 
-                meanMonthlyPPT_cm[month][year] = monthlyPPT[month];
+                monthlyPPT_cm[month][year] = monthlyPPT[month];
                 meanMonthlyTemp_C[month][year] = monthlyTemp[month];
             }
         }
         // 1980 is start year of the simulation
-        findDriestQtr(result, 1, meanMonthlyTemp_C, meanMonthlyPPT_cm);
+        findDriestQtr(result, 1, meanMonthlyTemp_C, monthlyPPT_cm);
         
         // Value 1.433333... is the average temperature of the driest quarter of the year
         // In this case, the driest quarter is February-April
         EXPECT_DOUBLE_EQ(result[0], 1.4333333333333333);
         
-        findDriestQtr(result, 2, meanMonthlyTemp_C, meanMonthlyPPT_cm);
+        findDriestQtr(result, 2, meanMonthlyTemp_C, monthlyPPT_cm);
         
         EXPECT_DOUBLE_EQ(result[0], 1.4333333333333333);
         
         for(int month = 0; month < MAX_MONTHS; month++) {
-            delete[] meanMonthlyPPT_cm[month];
+            delete[] monthlyPPT_cm[month];
             delete[] meanMonthlyTemp_C[month];
         }
         
-        delete[] meanMonthlyPPT_cm;
+        delete[] monthlyPPT_cm;
         delete[] meanMonthlyTemp_C;
         
     }
