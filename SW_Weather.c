@@ -106,8 +106,15 @@ static char *MyFileName;
  @param[out] sdC4 Array of size three holding the standard deviations of minimum July temperature (0), frost free days (1), number of days above 65F (2)
  @param[out] sdCheatgrass Array of size 3 holding the standard deviations of July precipitation (0), mean
  temperature of dry quarter (1), mean minimum temperature of February (2)
- @param[out] MAT_C Value containing the sum of daily temperatures
- @param[out] MAP_cm Value containing the sum of daily precipitation
+ @param[out] MAT_C Value containing the average of yearly temperatures
+ @param[out] MAP_cm Value containing the average of yearly precipitation
+ @param[out] JulyPPTAnn_mm Value containing average of July precipitation through all simulation years (mm)
+ @param[out] meanTempDriestQuarterAnn_C Value containing average of mean temperatures in the
+ driest quarters of years through all simulation years
+ @param[out] minTempFebruaryAnn_C Value containing average through all simulation years of sum of minimum temperatures in February
+ @param[out] ddAbove65F_degdayAnn Value containing average of total degrees above 65F (18.33C) throughout the year across all simulation years
+ @param[out] frostFreeAnn Value containing average of most consectutive days in a year without frost throughout all simulation years
+ @param[out] JulyMinTempAnn Value containing the average of lowest temperature in July in all years
  */
 
 void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTemp_C,
@@ -116,7 +123,9 @@ void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTe
     double meanTempDriestQuarter_C[], double minTempFebruary_C[], double annualPPT_cm[],
     double meanAnnualTemp_C[], double *meanMonthlyTempAnn, double *maxMonthlyTempAnn,
     double *minMonthlyTempAnn, double *meanMonthlyPPTAnn, double *sdC4, double *sdCheatgrass,
-    double *MAT_C, double *MAP_cm) {
+    double *MAT_C, double *MAP_cm, double *JulyPPTAnn_mm, double *meanTempDriestQuarterAnn_C,
+    double *minTempFebruaryAnn_C, double *ddAbove65F_degdayAnn, double *frostFreeAnn,
+    double *JulyMinTempAnn) {
     
     int month;
     
@@ -129,6 +138,12 @@ void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTe
     
     *MAP_cm = mean(annualPPT_cm, numYears);
     *MAT_C = mean(meanAnnualTemp_C, numYears);
+    *JulyPPTAnn_mm = mean(JulyPPT_mm, numYears);
+    *meanTempDriestQuarterAnn_C = mean(meanTempDriestQuarter_C, numYears);
+    *minTempFebruaryAnn_C = mean(minTempFebruary_C, numYears);
+    *ddAbove65F_degdayAnn = mean(ddAbove65F_degday, numYears);
+    *frostFreeAnn = mean(frostFreeDays_days, numYears);
+    *JulyMinTempAnn = mean(JulyMinTemp, numYears);
     
     // Calculate and set standard deviation of C4 variables (frostFreeDays is a running sd)
     sdC4[0] = standardDeviation(JulyMinTemp, numYears);

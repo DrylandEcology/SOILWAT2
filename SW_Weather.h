@@ -105,12 +105,14 @@ void SW_WTH_setup(void);
 void SW_WTH_read(void);
 Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather);
 void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTemp_C,
-    double **minMonthlyTemp_C, double **meanMonthlyPPT_cm, double numYears, double JulyMinTemp[],
-    double frostFreeDays_days[], double ddAbove65F_degday[], double JulyPPT_mm[],
+    double **minMonthlyTemp_C, double **monthlyPPT_cm, double numYears, double JulyMinTemp[],
+    double frostFreeDays_days[], double ddAbove65FDegday[], double JulyPPT_mm[],
     double meanTempDriestQuarter_C[], double minTempFebruary_C[], double annualPPT_cm[],
     double meanAnnualTemp_C[], double *meanMonthlyTempAnn, double *maxMonthlyTempAnn,
     double *minMonthlyTempAnn, double *meanMonthlyPPTAnn, double *sdC4, double *sdCheatgrass,
-    double *MAT_C, double *MAP_cm);
+    double *MAT_C, double *MAP_cm, double *JulyPPTAnn_mm, double *meanTempDriestQuarterAnn_C,
+    double *minTempFebruaryAnn_C, double *ddAbove65FDegdayAnn, double *frostFreeAnn,
+    double *JulyMinTempAnn);
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     double **meanMonthlyTemp_C, double **maxMonthlyTemp_C, double **minMonthlyTemp_C,
     double **meanMonthlyPPT_cm, double *annualPPT_cm, double *meanAnnualTemp_C, double *JulyMinTemp,
