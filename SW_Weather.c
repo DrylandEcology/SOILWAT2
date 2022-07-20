@@ -124,8 +124,8 @@ static void _update_yesterday(void) {
 
 void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_years) {
     
-    int day, yearDays, monthDays, month, currentMonDays, year;
-    unsigned int yearIndex;
+    int monthDays, month, currentMonDays, year;
+    unsigned int yearIndex, numDaysYear, day;
     
     double yesterdayPPT = 0., yesterdayMin = 0., yesterdayMax = 0.;
     
@@ -133,18 +133,19 @@ void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_yea
     
     for(yearIndex = 0; yearIndex < n_years; yearIndex++) {
         year = yearIndex + startYear;
-        yearDays = isleapyear(year) ? 366 : 365;
-        monthDays = 31;
-        month = 0;
+        Time_new_year(year);
+        numDaysYear = Time_get_lastdoy_y(year);
+        month = Jan;
+        monthDays = Time_days_in_month(month);
         currentMonDays = 0;
         
         if(!SW_Weather.use_weathergenerator_only) {
             weth_found = _read_weather_hist(year, allHist[yearIndex]);
         }
-        for(day = 0; day < yearDays; day++) {
+        for(day = 0; day < numDaysYear; day++) {
             if(currentMonDays == monthDays) {
                 month++;
-                monthDays = (month == Feb) ? (isleapyear(year) ? 29 : 28) : Time_days_in_month(month);
+                monthDays = Time_days_in_month(month % 12);
                 currentMonDays = 0;
             }
             currentMonDays++;
