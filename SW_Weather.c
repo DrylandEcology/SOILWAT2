@@ -139,11 +139,7 @@ void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_yea
         currentMonDays = 0;
         
         if(!SW_Weather.use_weathergenerator_only) {
-            #ifdef RSOILWAT
-            weth_found = onSet_WTH_DATA_YEAR(year, allHist[yearIndex]);
-            #else
             weth_found = _read_weather_hist(year, allHist[yearIndex]);
-            #endif
         }
         for(day = 0; day < yearDays; day++) {
             if(currentMonDays == monthDays) {
