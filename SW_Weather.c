@@ -94,30 +94,30 @@ void averageClimateAcrossYears(SW_CLIMATE_CALC *climateOutput, int numYears,
     int month;
     
     for(month = 0; month < MAX_MONTHS; month++) {
-        climateAverages.meanMonthlyTempAnn[month] = mean(climateOutput.meanMonthlyTemp_C[month], numYears);
-        climateAverages.maxMonthlyTempAnn[month] = mean(climateOutput.maxMonthlyTemp_C[month], numYears);
-        climateAverages.minMonthlyTempAnn[month] = mean(climateOutput.minMonthlyTemp_C[month], numYears);
-        climateAverages.meanMonthlyPPTAnn[month] = mean(climateOutput.monthlyPPT_cm[month], numYears);
+        climateAverages->meanMonthlyTempAnn[month] = mean(climateOutput->meanMonthlyTemp_C[month], numYears);
+        climateAverages->maxMonthlyTempAnn[month] = mean(climateOutput->maxMonthlyTemp_C[month], numYears);
+        climateAverages->minMonthlyTempAnn[month] = mean(climateOutput->minMonthlyTemp_C[month], numYears);
+        climateAverages->meanMonthlyPPTAnn[month] = mean(climateOutput->monthlyPPT_cm[month], numYears);
     }
     
-    *climateAverages.MAP_cm = mean(climateOutput.annualPPT_cm, numYears);
-    *climateAverages.MAT_C = mean(climateOutput.meanAnnualTemp_C, numYears);
-    *climateAverages.JulyPPTAnn_mm = mean(climateOutput.JulyPPT_mm, numYears);
-    *climateAverages.meanTempDriestQuarterAnn_C = mean(climateOutput.meanTempDriestQuarter_C, numYears);
-    *climateAverages.minTempFebruaryAnn_C = mean(climateOutput.minTempFebruary_C, numYears);
-    *climateAverages.ddAbove65F_degdayAnn = mean(climateOutput.ddAbove65F_degday, numYears);
-    *climateAverages.frostFreeAnn = mean(climateOutput.frostFreeDays_days, numYears);
-    *climateAverages.JulyMinTempAnn = mean(climateOutput.JulyMinTemp, numYears);
+    climateAverages->MAP_cm = mean(climateOutput->annualPPT_cm, numYears);
+    climateAverages->MAT_C = mean(climateOutput->meanAnnualTemp_C, numYears);
+    climateAverages->JulyPPTAnn_mm = mean(climateOutput->JulyPPT_mm, numYears);
+    climateAverages->meanTempDriestQuarterAnn_C = mean(climateOutput->meanTempDriestQuarter_C, numYears);
+    climateAverages->minTempFebruaryAnn_C = mean(climateOutput->minTempFebruary_C, numYears);
+    climateAverages->ddAbove65F_degdayAnn = mean(climateOutput->ddAbove65F_degday, numYears);
+    climateAverages->frostFreeAnn = mean(climateOutput->frostFreeDays_days, numYears);
+    climateAverages->JulyMinTempAnn = mean(climateOutput->JulyMinTemp, numYears);
     
-    // Calculate and set standard deviation of C4 variables (frostFreeDays is a running sd)
-    climateAverages.sdC4[0] = standardDeviation(climateOutput.JulyMinTemp, numYears);
-    climateAverages.sdC4[1] = standardDeviation(climateOutput.frostFreeDays_days, numYears);
-    climateAverages.sdC4[2] = standardDeviation(climateOutput.ddAbove65F_degday, numYears);
+    // Calculate and set standard deviation of C4 variables
+    climateAverages->sdC4[0] = standardDeviation(climateOutput->JulyMinTemp, numYears);
+    climateAverages->sdC4[1] = standardDeviation(climateOutput->frostFreeDays_days, numYears);
+    climateAverages->sdC4[2] = standardDeviation(climateOutput->ddAbove65F_degday, numYears);
     
     // Calculate and set the standard deviation of cheatgrass variables
-    climateAverages.sdCheatgrass[0] = standardDeviation(climateOutput.JulyPPT_mm, numYears);
-    climateAverages.sdCheatgrass[1] = standardDeviation(climateOutput.meanTempDriestQuarter_C, numYears);
-    climateAverages.sdCheatgrass[2] = standardDeviation(climateOutput.minTempFebruary_C, numYears);
+    climateAverages->sdCheatgrass[0] = standardDeviation(climateOutput->JulyPPT_mm, numYears);
+    climateAverages->sdCheatgrass[1] = standardDeviation(climateOutput->meanTempDriestQuarter_C, numYears);
+    climateAverages->sdCheatgrass[2] = standardDeviation(climateOutput->minTempFebruary_C, numYears);
 }
 
 /**
@@ -140,16 +140,15 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     consecNonFrost, currentNonFrost;
     
     for(month = 0; month < MAX_MONTHS; month++) {
-        memset(climateOutput.meanMonthlyTemp_C[month], 0., sizeof(double) * numYears);
-        memset(climateOutput.maxMonthlyTemp_C[month], 0., sizeof(double) * numYears);
-        memset(climateOutput.minMonthlyTemp_C[month], 0., sizeof(double) * numYears);
-        memset(climateOutput.monthlyPPT_cm[month], 0., sizeof(double) * numYears);
+        memset(climateOutput->meanMonthlyTemp_C[month], 0., sizeof(double) * numYears);
+        memset(climateOutput->maxMonthlyTemp_C[month], 0., sizeof(double) * numYears);
+        memset(climateOutput->minMonthlyTemp_C[month], 0., sizeof(double) * numYears);
+        memset(climateOutput->monthlyPPT_cm[month], 0., sizeof(double) * numYears);
     }
-    memset(climateOutput.annualPPT_cm, 0., sizeof(double) * numYears);
-    memset(climateOutput.meanAnnualTemp_C, 0., sizeof(double) * numYears);
-    memset(climateOutput.minTempFebruary_C, 0., sizeof(double) * numYears);
-    memset(climateOutput.JulyPPT_mm, 0., sizeof(double) * numYears);
-    
+    memset(climateOutput->annualPPT_cm, 0., sizeof(double) * numYears);
+    memset(climateOutput->meanAnnualTemp_C, 0., sizeof(double) * numYears);
+    memset(climateOutput->minTempFebruary_C, 0., sizeof(double) * numYears);
+    memset(climateOutput->JulyPPT_mm, 0., sizeof(double) * numYears);
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
         Time_new_year(year);
@@ -164,13 +163,13 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         
         for(day = 0; day < numDaysYear; day++) {
             currMonDay++;
-            climateOutput.meanMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_avg[day];
-            climateOutput.maxMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_max[day];
-            climateOutput.minMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_min[day];
-            climateOutput.monthlyPPT_cm[month][yearIndex] += allHist[yearIndex]->ppt[day];
-            
-            climateOutput.annualPPT_cm[yearIndex] += allHist[yearIndex]->ppt[day];
-            climateOutput.meanAnnualTemp_C[yearIndex] += allHist[yearIndex]->temp_avg[day];
+            climateOutput->meanMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_avg[day];
+            climateOutput->maxMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_max[day];
+            climateOutput->minMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_min[day];
+            climateOutput->monthlyPPT_cm[month][yearIndex] += allHist[yearIndex]->ppt[day];
+
+            climateOutput->annualPPT_cm[yearIndex] += allHist[yearIndex]->ppt[day];
+            climateOutput->meanAnnualTemp_C[yearIndex] += allHist[yearIndex]->temp_avg[day];
 
             currentTempMin = allHist[yearIndex]->temp_min[day];
             currentTempMean = allHist[yearIndex]->temp_avg[day];
@@ -191,16 +190,16 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             }
 
             if(month == Feb) {
-                climateOutput.minTempFebruary_C[yearIndex] += allHist[yearIndex]->temp_min[day];
+                climateOutput->minTempFebruary_C[yearIndex] += allHist[yearIndex]->temp_min[day];
             }
 
             if(currMonDay == numDaysMonth) {
                 // Take the average of the current months values for current year
-                climateOutput.meanMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
-                climateOutput.maxMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
-                climateOutput.minMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
+                climateOutput->meanMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
+                climateOutput->maxMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
+                climateOutput->minMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
                 
-                if(month == Feb) climateOutput.minTempFebruary_C[yearIndex] /= numDaysMonth;
+                if(month == Feb) climateOutput->minTempFebruary_C[yearIndex] /= numDaysMonth;
                 
                 month++;
                 numDaysMonth = Time_days_in_month(month % 12);
@@ -211,19 +210,17 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             totalAbove65 += (currentTempMean > 0.0) ? currentTempMean : 0.;
             
         }
-        
-        climateOutput.JulyMinTemp[yearIndex] = currentJulyMin;
-        climateOutput.JulyPPT_mm[yearIndex] = JulyPPT;
-        climateOutput.ddAbove65F_degday[yearIndex] = totalAbove65;
+        climateOutput->JulyMinTemp[yearIndex] = currentJulyMin;
+        climateOutput->JulyPPT_mm[yearIndex] = JulyPPT;
+        climateOutput->ddAbove65F_degday[yearIndex] = totalAbove65;
         
         // The reason behind checking if consecNonFrost is greater than zero,
         // is that there is a chance all days in the year are above 32F
-        climateOutput.frostFreeDays_days[yearIndex] = (consecNonFrost > 0) ? consecNonFrost : currentNonFrost;
-        
-        climateOutput.meanAnnualTemp_C[yearIndex] /= numDaysYear;
+        climateOutput->frostFreeDays_days[yearIndex] = (consecNonFrost > 0) ? consecNonFrost : currentNonFrost;
+        climateOutput->meanAnnualTemp_C[yearIndex] /= numDaysYear;
     }
-    findDriestQtr(climateOutput.meanTempDriestQuarter_C, numYears,
-                  climateOutput.meanMonthlyTemp_C, climateOutput.monthlyPPT_cm);
+    findDriestQtr(climateOutput->meanTempDriestQuarter_C, numYears,
+                  climateOutput->meanMonthlyTemp_C, climateOutput->monthlyPPT_cm);
 }
 
 /**
