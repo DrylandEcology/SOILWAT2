@@ -82,78 +82,42 @@ static char *MyFileName;
 /**
  @brief Takes averages through the number of years of the calculated values from calc_SiteClimate
  
- @param[in] meanMonthlyTemp_C 2D array containing monthly means of average daily air temperature (deg;C) with dimensions
- of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[in] maxMonthlyTemp_C 2D array containing monthly means of maximum daily air temperature (deg;C) with dimensions
- of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[in] minMonthlyTemp_C 2D array containing monthly means of minimum daily air temperature (deg;C) with dimensions
- of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[in] monthlyPPT_cm 2D array containing monthly precipitation amount (deg;C) with dimensions
- of row (months) size MAX_MONTHS and columns (years) of size numYears
+ @param[in] climateOutput Structure of type SW_CLIMATE_OUTPUT that holds all output from `calcSiteClimate()`
  @param[in] numYears Calendar year corresponding to first year of `allHist`
- @param[in] JulyMinTemp Array of size numYears holding minimum July temperatures [C] for each year
- @param[in] frostFreeDays_days Array of size numYears holding the maximum consecutive days in a year without frost for every year
- @param[in] ddAbove65F_degday Array of size numYears holding the amount of degree days [C x day] above 65 F
- @param[in] JulyPPT_mm Array of size numYears holding July precipitation amount (mm)
- @param[in] meanTempDriestQuarter_C Array of size numYears holding the average temperature of the driest quarter of the year for every year
- @param[in] minTempFebruary_C Array of size numYears holding the mean minimum temperature in february for every year
- @param[out] annualPPT_cm Array of size `numYears` containing annual precipitation amount [cm]
- @param[out] meanAnnualTemp_C Array of size `numYears` containing annual mean temperatures [C]
- @param[out] meanMonthlyTempAnn Array of size `numYears` containing sum of monthly mean temperatures
- @param[out] maxMonthlyTempAnn Array of size `numYears` containing sum of monthly maximum temperatures
- @param[out] minMonthlyTempAnn Array of size `numYears` containing sum of monthly minimum temperatures
- @param[out] meanMonthlyPPTAnn Array of size `numYears` containing sum of monthly mean precipitation
- @param[out] sdC4 Array of size three holding the standard deviations of minimum July temperature (0), frost free days (1), number of days above 65F (2)
- @param[out] sdCheatgrass Array of size 3 holding the standard deviations of July precipitation (0), mean
- temperature of dry quarter (1), mean minimum temperature of February (2)
- @param[out] MAT_C Value containing the average of yearly temperatures
- @param[out] MAP_cm Value containing the average of yearly precipitation
- @param[out] JulyPPTAnn_mm Value containing average of July precipitation through all simulation years (mm)
- @param[out] meanTempDriestQuarterAnn_C Value containing average of mean temperatures in the
- driest quarters of years through all simulation years
- @param[out] minTempFebruaryAnn_C Value containing average through all simulation years of sum of minimum temperatures in February
- @param[out] ddAbove65F_degdayAnn Value containing average of total degrees above 65F (18.33C) throughout the year across all simulation years
- @param[out] frostFreeAnn Value containing average of most consectutive days in a year without frost throughout all simulation years
- @param[out] JulyMinTempAnn Value containing the average of lowest temperature in July in all years
+ @param[out] climateAverages Structure of type SW_CLIMATE_AVERAGES that holds averages and
+ standard deviations output by `averageClimateAcrossYears()`
  */
 
-void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTemp_C,
-    double **minMonthlyTemp_C, double **monthlyPPT_cm, double numYears, double JulyMinTemp[],
-    double frostFreeDays_days[], double ddAbove65F_degday[], double JulyPPT_mm[],
-    double meanTempDriestQuarter_C[], double minTempFebruary_C[], double annualPPT_cm[],
-    double meanAnnualTemp_C[], double *meanMonthlyTempAnn, double *maxMonthlyTempAnn,
-    double *minMonthlyTempAnn, double *meanMonthlyPPTAnn, double *sdC4, double *sdCheatgrass,
-    double *MAT_C, double *MAP_cm, double *JulyPPTAnn_mm, double *meanTempDriestQuarterAnn_C,
-    double *minTempFebruaryAnn_C, double *ddAbove65F_degdayAnn, double *frostFreeAnn,
-    double *JulyMinTempAnn) {
+void averageClimateAcrossYears(SW_CLIMATE_OUTPUT climateOutput, int numYears,
+                               SW_CLIMATE_AVERAGES climateAverages) {
     
     int month;
     
     for(month = 0; month < MAX_MONTHS; month++) {
-        meanMonthlyTempAnn[month] = mean(meanMonthlyTemp_C[month], numYears);
-        maxMonthlyTempAnn[month] = mean(maxMonthlyTemp_C[month], numYears);
-        minMonthlyTempAnn[month] = mean(minMonthlyTemp_C[month], numYears);
-        meanMonthlyPPTAnn[month] = mean(monthlyPPT_cm[month], numYears);
+        climateAverages.meanMonthlyTempAnn[month] = mean(climateOutput.meanMonthlyTemp_C[month], numYears);
+        climateAverages.maxMonthlyTempAnn[month] = mean(climateOutput.maxMonthlyTemp_C[month], numYears);
+        climateAverages.minMonthlyTempAnn[month] = mean(climateOutput.minMonthlyTemp_C[month], numYears);
+        climateAverages.meanMonthlyPPTAnn[month] = mean(climateOutput.monthlyPPT_cm[month], numYears);
     }
     
-    *MAP_cm = mean(annualPPT_cm, numYears);
-    *MAT_C = mean(meanAnnualTemp_C, numYears);
-    *JulyPPTAnn_mm = mean(JulyPPT_mm, numYears);
-    *meanTempDriestQuarterAnn_C = mean(meanTempDriestQuarter_C, numYears);
-    *minTempFebruaryAnn_C = mean(minTempFebruary_C, numYears);
-    *ddAbove65F_degdayAnn = mean(ddAbove65F_degday, numYears);
-    *frostFreeAnn = mean(frostFreeDays_days, numYears);
-    *JulyMinTempAnn = mean(JulyMinTemp, numYears);
+    *climateAverages.MAP_cm = mean(climateOutput.annualPPT_cm, numYears);
+    *climateAverages.MAT_C = mean(climateOutput.meanAnnualTemp_C, numYears);
+    *climateAverages.JulyPPTAnn_mm = mean(climateOutput.JulyPPT_mm, numYears);
+    *climateAverages.meanTempDriestQuarterAnn_C = mean(climateOutput.meanTempDriestQuarter_C, numYears);
+    *climateAverages.minTempFebruaryAnn_C = mean(climateOutput.minTempFebruary_C, numYears);
+    *climateAverages.ddAbove65F_degdayAnn = mean(climateOutput.ddAbove65F_degday, numYears);
+    *climateAverages.frostFreeAnn = mean(climateOutput.frostFreeDays_days, numYears);
+    *climateAverages.JulyMinTempAnn = mean(climateOutput.JulyMinTemp, numYears);
     
     // Calculate and set standard deviation of C4 variables (frostFreeDays is a running sd)
-    sdC4[0] = standardDeviation(JulyMinTemp, numYears);
-    sdC4[1] = standardDeviation(frostFreeDays_days, numYears);
-    sdC4[2] = standardDeviation(ddAbove65F_degday, numYears);
+    climateAverages.sdC4[0] = standardDeviation(climateOutput.JulyMinTemp, numYears);
+    climateAverages.sdC4[1] = standardDeviation(climateOutput.frostFreeDays_days, numYears);
+    climateAverages.sdC4[2] = standardDeviation(climateOutput.ddAbove65F_degday, numYears);
     
     // Calculate and set the standard deviation of cheatgrass variables
-    sdCheatgrass[0] = standardDeviation(JulyPPT_mm, numYears);
-    sdCheatgrass[1] = standardDeviation(meanTempDriestQuarter_C, numYears);
-    sdCheatgrass[2] = standardDeviation(minTempFebruary_C, numYears);
+    climateAverages.sdCheatgrass[0] = standardDeviation(climateOutput.JulyPPT_mm, numYears);
+    climateAverages.sdCheatgrass[1] = standardDeviation(climateOutput.meanTempDriestQuarter_C, numYears);
+    climateAverages.sdCheatgrass[2] = standardDeviation(climateOutput.minTempFebruary_C, numYears);
 }
 
 /**
@@ -162,30 +126,12 @@ void averageClimateAcrossYears(double **meanMonthlyTemp_C, double **maxMonthlyTe
  @param[in] allHist Array containing all historical data of a site
  @param[in] numYears Number of years represented by `allHist`
  @param[in] startYear Calendar year corresponding to first year of `allHist`
- @param[out] meanMonthlyTemp_C 2D array containing monthly means average daily air temperature (deg;C) with
- dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] maxMonthlyTemp_C 2D array containing monthly means max daily air temperature (deg;C) with
- dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] minMonthlyTemp_C 2D array containing monthly means min daily air temperature (deg;C) with
- dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] monthlyPPT_cm 2D array containing monthly amount precipitation (cm) with dimensions
- of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] annualPPT_cm Array of size `numYears` containing annual precipitation amount [cm]
- @param[out] meanAnnualTemp_C Array of size `numYears` containing annual mean temperatures [C]
- @param[out] JulyMinTemp Array of size numYears holding minimum July temperatures [C] for each year
- @param[out] frostFreeDays_days Array of size numYears holding the maximum consecutive days in a year without frost for every year
- @param[out] ddAbove65F_degday Array of size numYears holding the amount of degree days [C x day] above 65 F
- @param[out] JulyPPT_mm Array of size numYears holding July precipitation amount (mm)
- @param[out] meanTempDriestQuarter_C Array of size numYears holding the average temperature of the driest quarter of the year for every year
- @param[out] minTempFebruary_C Array of size numYears holding the mean minimum temperature in february for every year
+ @param[out] climateOutput Structure of type SW_CLIMATE_AVERAGES that holds averages and
+ standard deviations output by `averageClimateAcrossYears()`
  */
 
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-    double **meanMonthlyTemp_C, double **maxMonthlyTemp_C, double **minMonthlyTemp_C,
-    double **monthlyPPT_cm, double *annualPPT_cm, double *meanAnnualTemp_C, double *JulyMinTemp,
-    double *frostFreeDays_days, double *ddAbove65F_degday, double *JulyPPT_mm,
-    double *meanTempDriestQuarter_C, double *minTempFebruary_C) {
-    
+    SW_CLIMATE_OUTPUT climateOutput) {
     
     int month, yearIndex, year, day, numDaysYear, numDaysMonth = Time_days_in_month(0),
     currMonDay;
@@ -194,15 +140,15 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     consecNonFrost, currentNonFrost;
     
     for(month = 0; month < MAX_MONTHS; month++) {
-        memset(meanMonthlyTemp_C[month], 0., sizeof(double) * numYears);
-        memset(maxMonthlyTemp_C[month], 0., sizeof(double) * numYears);
-        memset(minMonthlyTemp_C[month], 0., sizeof(double) * numYears);
-        memset(monthlyPPT_cm[month], 0., sizeof(double) * numYears);
+        memset(climateOutput.meanMonthlyTemp_C[month], 0., sizeof(double) * numYears);
+        memset(climateOutput.maxMonthlyTemp_C[month], 0., sizeof(double) * numYears);
+        memset(climateOutput.minMonthlyTemp_C[month], 0., sizeof(double) * numYears);
+        memset(climateOutput.monthlyPPT_cm[month], 0., sizeof(double) * numYears);
     }
-    memset(annualPPT_cm, 0., sizeof(double) * numYears);
-    memset(meanAnnualTemp_C, 0., sizeof(double) * numYears);
-    memset(minTempFebruary_C, 0., sizeof(double) * numYears);
-    memset(JulyPPT_mm, 0., sizeof(double) * numYears);
+    memset(climateOutput.annualPPT_cm, 0., sizeof(double) * numYears);
+    memset(climateOutput.meanAnnualTemp_C, 0., sizeof(double) * numYears);
+    memset(climateOutput.minTempFebruary_C, 0., sizeof(double) * numYears);
+    memset(climateOutput.JulyPPT_mm, 0., sizeof(double) * numYears);
     
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
@@ -210,7 +156,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         numDaysYear = Time_get_lastdoy_y(year);
         month = 0;
         currMonDay = 0;
-        currentJulyMin = 999;
+        currentJulyMin = SW_MISSING;
         totalAbove65 = 0;
         currentNonFrost = 0;
         consecNonFrost = 0;
@@ -218,13 +164,13 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         
         for(day = 0; day < numDaysYear; day++) {
             currMonDay++;
-            meanMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_avg[day];
-            maxMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_max[day];
-            minMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_min[day];
-            monthlyPPT_cm[month][yearIndex] += allHist[yearIndex]->ppt[day];
+            climateOutput.meanMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_avg[day];
+            climateOutput.maxMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_max[day];
+            climateOutput.minMonthlyTemp_C[month][yearIndex] += allHist[yearIndex]->temp_min[day];
+            climateOutput.monthlyPPT_cm[month][yearIndex] += allHist[yearIndex]->ppt[day];
             
-            annualPPT_cm[yearIndex] += allHist[yearIndex]->ppt[day];
-            meanAnnualTemp_C[yearIndex] += allHist[yearIndex]->temp_avg[day];
+            climateOutput.annualPPT_cm[yearIndex] += allHist[yearIndex]->ppt[day];
+            climateOutput.meanAnnualTemp_C[yearIndex] += allHist[yearIndex]->temp_avg[day];
 
             currentTempMin = allHist[yearIndex]->temp_min[day];
             currentTempMean = allHist[yearIndex]->temp_avg[day];
@@ -245,16 +191,16 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             }
 
             if(month == Feb) {
-                minTempFebruary_C[yearIndex] += allHist[yearIndex]->temp_min[day];
+                climateOutput.minTempFebruary_C[yearIndex] += allHist[yearIndex]->temp_min[day];
             }
 
             if(currMonDay == numDaysMonth) {
                 // Take the average of the current months values for current year
-                meanMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
-                maxMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
-                minMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
+                climateOutput.meanMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
+                climateOutput.maxMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
+                climateOutput.minMonthlyTemp_C[month][yearIndex] /= numDaysMonth;
                 
-                if(month == Feb) minTempFebruary_C[yearIndex] /= numDaysMonth;
+                if(month == Feb) climateOutput.minTempFebruary_C[yearIndex] /= numDaysMonth;
                 
                 month++;
                 numDaysMonth = Time_days_in_month(month % 12);
@@ -266,17 +212,18 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             
         }
         
-        JulyMinTemp[yearIndex] = currentJulyMin;
-        JulyPPT_mm[yearIndex] = JulyPPT;
-        ddAbove65F_degday[yearIndex] = totalAbove65;
+        climateOutput.JulyMinTemp[yearIndex] = currentJulyMin;
+        climateOutput.JulyPPT_mm[yearIndex] = JulyPPT;
+        climateOutput.ddAbove65F_degday[yearIndex] = totalAbove65;
         
         // The reason behind checking if consecNonFrost is greater than zero,
         // is that there is a chance all days in the year are above 32F
-        frostFreeDays_days[yearIndex] = (consecNonFrost > 0) ? consecNonFrost : currentNonFrost;
+        climateOutput.frostFreeDays_days[yearIndex] = (consecNonFrost > 0) ? consecNonFrost : currentNonFrost;
         
-        meanAnnualTemp_C[yearIndex] /= numDaysYear;
+        climateOutput.meanAnnualTemp_C[yearIndex] /= numDaysYear;
     }
-    findDriestQtr(meanTempDriestQuarter_C, numYears, meanMonthlyTemp_C, monthlyPPT_cm);
+    findDriestQtr(climateOutput.meanTempDriestQuarter_C, numYears,
+                  climateOutput.meanMonthlyTemp_C, climateOutput.monthlyPPT_cm);
 }
 
 /**
