@@ -61,7 +61,7 @@ typedef struct {
     RealD **meanMonthlyTemp_C, **maxMonthlyTemp_C, **minMonthlyTemp_C, **monthlyPPT_cm,
     *annualPPT_cm, *meanAnnualTemp_C, *JulyMinTemp, *frostFreeDays_days, *ddAbove65F_degday,
     *JulyPPT_mm, *meanTempDriestQuarter_C, *minTempFebruary_C;
-} SW_CLIMATE_OUTPUT;
+} SW_CLIMATE_CALC;
 
 typedef struct {
     RealD *annualPPT_cm, *meanAnnualTemp_C, *meanMonthlyTempAnn, *maxMonthlyTempAnn,
@@ -117,10 +117,10 @@ extern SW_WEATHER SW_Weather;
 void SW_WTH_setup(void);
 void SW_WTH_read(void);
 Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather);
-void averageClimateAcrossYears(SW_CLIMATE_OUTPUT climateOutput, int numYears,
-                               SW_CLIMATE_AVERAGES climateAverages);
+void averageClimateAcrossYears(SW_CLIMATE_CALC *climateOutput, int numYears,
+                               SW_CLIMATE_AVERAGES *climateAverages);
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-    SW_CLIMATE_OUTPUT climateOutput);
+                     SW_CLIMATE_CALC *climateOutput);
 void findDriestQtr(double *meanTempDriestQuarter_C, int numYears, double **meanMonthlyTemp_C,
                    double **meanMonthlyPPT_cm);
 void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_years);

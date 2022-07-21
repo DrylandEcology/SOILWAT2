@@ -88,8 +88,8 @@ static char *MyFileName;
  standard deviations output by `averageClimateAcrossYears()`
  */
 
-void averageClimateAcrossYears(SW_CLIMATE_OUTPUT climateOutput, int numYears,
-                               SW_CLIMATE_AVERAGES climateAverages) {
+void averageClimateAcrossYears(SW_CLIMATE_CALC *climateOutput, int numYears,
+                               SW_CLIMATE_AVERAGES *climateAverages) {
     
     int month;
     
@@ -131,7 +131,7 @@ void averageClimateAcrossYears(SW_CLIMATE_OUTPUT climateOutput, int numYears,
  */
 
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-    SW_CLIMATE_OUTPUT climateOutput) {
+                     SW_CLIMATE_CALC *climateOutput) {
     
     int month, yearIndex, year, day, numDaysYear, numDaysMonth = Time_days_in_month(0),
     currMonDay;
