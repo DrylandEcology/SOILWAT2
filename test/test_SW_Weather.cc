@@ -140,151 +140,124 @@ namespace {
     TEST(AverageClimateAcrossYearsTest, FileAndValuesOfOne) {
         
         // This test relies on allHist from `SW_WEATHER` being already filled
+        SW_CLIMATE_CALC climateOutput;
+        SW_CLIMATE_AVERAGES climateAverage;
         
-        double meanMonthlyTempAnn[MAX_MONTHS];
-        double maxMonthlyTempAnn[MAX_MONTHS];
-        double minMonthlyTempAnn[MAX_MONTHS];
-        double meanMonthlyPPTAnn[MAX_MONTHS];
-        double JulyMinTemp[31];
-        double frostFreeDays_days[31];
-        double ddAbove65F_degday[31];
-        double JulyPPT_mm[31];
-        double meanTempDriestQuarter_C[31];
-        double minTempFebruary_C[31];
-        double sdCheatgrass[3];
-        double sdC4[3];
-        double annualPPT_cm[31];
-        double meanAnnualTemp_C[31];
+        climateOutput.JulyMinTemp = new double[31]; // 31 = Number of years in the simulation
+        climateOutput.annualPPT_cm = new double[31];
+        climateOutput.frostFreeDays_days = new double[31];
+        climateOutput.ddAbove65F_degday = new double[31];
+        climateOutput.JulyPPT_mm = new double[31];
+        climateOutput.meanTempDriestQuarter_C = new double[31];
+        climateOutput.minTempFebruary_C = new double[31];
+        climateOutput.meanAnnualTemp_C = new double[31];
+        climateOutput.monthlyPPT_cm = new double*[MAX_MONTHS];
+        climateOutput.meanMonthlyTemp_C = new double*[MAX_MONTHS];
+        climateOutput.minMonthlyTemp_C = new double*[MAX_MONTHS];
+        climateOutput.maxMonthlyTemp_C = new double*[MAX_MONTHS];
         
-        double MAP_cm;
-        double MAT_C;
-        double JulyPPTAnn_mm;
-        double meanTempDriestQuarterAnn_C;
-        double minTempFebruaryAnn_C;
-        double ddAbove65F_degdayAnn;
-        double frostFreeAnn;
-        double JulyMinTempAnn;
+        climateAverage.meanMonthlyTempAnn = new double[MAX_MONTHS];
+        climateAverage.maxMonthlyTempAnn = new double[MAX_MONTHS];
+        climateAverage.minMonthlyTempAnn = new double[MAX_MONTHS];
+        climateAverage.meanMonthlyPPTAnn = new double[MAX_MONTHS];
+        climateAverage.sdCheatgrass = new double[3];
+        climateAverage.sdC4 = new double[3];
         
-        double **monthlyPPT_cm;
-        monthlyPPT_cm = new double*[MAX_MONTHS];
-        
-        double **meanMonthlyTemp_C = new double*[MAX_MONTHS];
-        
-        double **minMonthlyTemp_C = new double*[MAX_MONTHS];
-        
-        double **maxMonthlyTemp_C = new double*[MAX_MONTHS];
-        
+        double *freeArray[14] = {climateOutput.JulyMinTemp, climateOutput.annualPPT_cm,
+            climateOutput.frostFreeDays_days,  climateOutput.ddAbove65F_degday,  climateOutput.JulyPPT_mm,
+            climateOutput.meanTempDriestQuarter_C,  climateOutput.minTempFebruary_C,  climateOutput.meanAnnualTemp_C,
+            climateAverage.meanMonthlyTempAnn,  climateAverage.maxMonthlyTempAnn,  climateAverage.minMonthlyTempAnn,
+            climateAverage.meanMonthlyPPTAnn,  climateAverage.sdCheatgrass,  climateAverage.sdC4};
+
         for(int month = 0; month < MAX_MONTHS; month++) {
-            monthlyPPT_cm[month] = new double[31];
-            meanMonthlyTemp_C[month] = new double[31];
-            minMonthlyTemp_C[month] = new double[31];
-            maxMonthlyTemp_C[month] = new double[31];
+            climateOutput.monthlyPPT_cm[month] = new double[31];
+            climateOutput.meanMonthlyTemp_C[month] = new double[31];
+            climateOutput.minMonthlyTemp_C[month] = new double[31];
+            climateOutput.maxMonthlyTemp_C[month] = new double[31];
             for(int year = 0; year < 31; year++) {
-                
-                monthlyPPT_cm[month][year] = 0.;
-                meanMonthlyTemp_C[month][year] = 0.;
-                minMonthlyTemp_C[month][year] = 0.;
-                maxMonthlyTemp_C[month][year] = 0.;
-                annualPPT_cm[year] = 0.;
-                meanAnnualTemp_C[year] = 0.;
+                climateOutput.monthlyPPT_cm[month][year] = 0.;
+                climateOutput.meanMonthlyTemp_C[month][year] = 0.;
+                climateOutput.minMonthlyTemp_C[month][year] = 0.;
+                climateOutput.maxMonthlyTemp_C[month][year] = 0.;
             }
         }
         // 1980 is start year of the simulation
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-                        monthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
-                        JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput);
+        averageClimateAcrossYears(&climateOutput, 31, &climateAverage);
         
-        averageClimateAcrossYears(meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-            monthlyPPT_cm, 31, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
-            JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C, annualPPT_cm,
-            meanAnnualTemp_C, meanMonthlyTempAnn, maxMonthlyTempAnn, minMonthlyTempAnn,
-            meanMonthlyPPTAnn, sdC4, sdCheatgrass, &MAT_C, &MAP_cm, &JulyPPTAnn_mm,
-            &meanTempDriestQuarterAnn_C, &minTempFebruaryAnn_C, &ddAbove65F_degdayAnn,
-            &frostFreeAnn, &JulyMinTempAnn);
+        EXPECT_NEAR(climateAverage.meanMonthlyTempAnn[0], -9.325551, tol6);
+        EXPECT_NEAR(climateAverage.maxMonthlyTempAnn[0], -2.714381, tol6);
+        EXPECT_NEAR(climateAverage.minMonthlyTempAnn[0], -15.936722, tol6);
+        EXPECT_NEAR(climateAverage.meanMonthlyPPTAnn[0], 6.867419, tol6);
         
-        EXPECT_NEAR(meanMonthlyTempAnn[0], -9.325551, tol6);
-        EXPECT_NEAR(maxMonthlyTempAnn[0], -2.714381, tol6);
-        EXPECT_NEAR(minMonthlyTempAnn[0], -15.936722, tol6);
-        EXPECT_NEAR(meanMonthlyPPTAnn[0], 6.867419, tol6);
-        
-        EXPECT_NEAR(meanAnnualTemp_C[0], 4.524863, tol6);
-        EXPECT_NEAR(annualPPT_cm[0], 59.2700004, tol6);
-        EXPECT_NEAR(MAP_cm, 62.817419, tol6);
-        EXPECT_NEAR(MAT_C, 4.154009, tol6);
-        EXPECT_NEAR(JulyPPTAnn_mm, 35.729032, tol6);
-        EXPECT_NEAR(meanTempDriestQuarterAnn_C, 11.524859, tol6);
-        EXPECT_NEAR(minTempFebruaryAnn_C, -13.904599, tol6);
-        EXPECT_NEAR(ddAbove65F_degdayAnn, 21.168032, tol6);
-        EXPECT_NEAR(frostFreeAnn, 90.612903, tol6);
-        EXPECT_NEAR(JulyMinTempAnn, 3.078387, tol6);
+        EXPECT_NEAR(climateAverage.MAP_cm, 62.817419, tol6);
+        EXPECT_NEAR(climateAverage.MAT_C, 4.154009, tol6);
+        EXPECT_NEAR(climateAverage.JulyPPTAnn_mm, 35.729032, tol6);
+        EXPECT_NEAR(climateAverage.meanTempDriestQuarterAnn_C, 11.524859, tol6);
+        EXPECT_NEAR(climateAverage.minTempFebruaryAnn_C, -13.904599, tol6);
+        EXPECT_NEAR(climateAverage.ddAbove65F_degdayAnn, 21.168032, tol6);
+        EXPECT_NEAR(climateAverage.frostFreeAnn, 90.612903, tol6);
+        EXPECT_NEAR(climateAverage.JulyMinTempAnn, 3.078387, tol6);
         
         // Standard deviation of C4 variables
-        EXPECT_NEAR(sdC4[0], 1.785535, tol6);
-        EXPECT_NEAR(sdC4[1], 14.091788, tol6);
-        EXPECT_NEAR(sdC4[2], 19.953560, tol6);
+        EXPECT_NEAR(climateAverage.sdC4[0], 1.785535, tol6);
+        EXPECT_NEAR(climateAverage.sdC4[1], 14.091788, tol6);
+        EXPECT_NEAR(climateAverage.sdC4[2], 19.953560, tol6);
         
         // Standard deviation of cheatgrass variables
-        EXPECT_NEAR(sdCheatgrass[0], 21.598367, tol6);
-        EXPECT_NEAR(sdCheatgrass[1], 7.171922, tol6);
-        EXPECT_NEAR(sdCheatgrass[2], 2.618434, tol6);
+        EXPECT_NEAR(climateAverage.sdCheatgrass[0], 21.598367, tol6);
+        EXPECT_NEAR(climateAverage.sdCheatgrass[1], 7.171922, tol6);
+        EXPECT_NEAR(climateAverage.sdCheatgrass[2], 2.618434, tol6);
         
-        for(int month = 0; month < MAX_MONTHS; month++) {
-            for(int year = 0; year < 31; year++) {
-                monthlyPPT_cm[month][year] = 1.;
-                meanMonthlyTemp_C[month][year] = 1.;
-                minMonthlyTemp_C[month][year] = 1.;
-                maxMonthlyTemp_C[month][year] = 1.;
-                annualPPT_cm[year] = 1.;
-                meanAnnualTemp_C[year] = 1.;
+        for(int year = 0; year < 31; year++) {
+            for(int month = 0; month < MAX_MONTHS; month++) {
+                climateOutput.monthlyPPT_cm[month][year] = 1.;
+                climateOutput.meanMonthlyTemp_C[month][year] = 1.;
+                climateOutput.minMonthlyTemp_C[month][year] = 1.;
+                climateOutput.maxMonthlyTemp_C[month][year] = 1.;
             }
+            climateOutput.annualPPT_cm[year] = 1.;
+            climateOutput.meanAnnualTemp_C[year] = 1.;
         }
         
         // Reset values
         for(int year = 0; year < 31; year++) {
             for(int month = 0; month < MAX_MONTHS; month++) {
-                monthlyPPT_cm[month][year] = 0.;
-                meanMonthlyTemp_C[month][year] = 0.;
-                minMonthlyTemp_C[month][year] = 0.;
-                maxMonthlyTemp_C[month][year] = 0.;
+                climateOutput.monthlyPPT_cm[month][year] = 0.;
+                climateOutput.meanMonthlyTemp_C[month][year] = 0.;
+                climateOutput.minMonthlyTemp_C[month][year] = 0.;
+                climateOutput.maxMonthlyTemp_C[month][year] = 0.;
             }
-            annualPPT_cm[year] = 0.;
-            meanAnnualTemp_C[year] = 0.;
+            climateOutput.annualPPT_cm[year] = 0.;
+            climateOutput.meanAnnualTemp_C[year] = 0.;
         }
         // Tests for one year of simulation
-        calcSiteClimate(SW_Weather.allHist, 1, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-                        monthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
-                        JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
+        calcSiteClimate(SW_Weather.allHist, 1, 1980, &climateOutput);
         
-        averageClimateAcrossYears(meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-            monthlyPPT_cm, 1, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
-            JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C, annualPPT_cm,
-            meanAnnualTemp_C, meanMonthlyTempAnn, maxMonthlyTempAnn, minMonthlyTempAnn,
-            meanMonthlyPPTAnn, sdC4, sdCheatgrass, &MAT_C, &MAP_cm, &JulyPPTAnn_mm,
-            &meanTempDriestQuarterAnn_C, &minTempFebruaryAnn_C, &ddAbove65F_degdayAnn,
-            &frostFreeAnn, &JulyMinTempAnn);
+        averageClimateAcrossYears(&climateOutput, 1, &climateAverage);
         
-        EXPECT_NEAR(meanMonthlyTempAnn[0], -8.432581, tol6);
-        EXPECT_NEAR(maxMonthlyTempAnn[0], -2.562581, tol6);
-        EXPECT_NEAR(minMonthlyTempAnn[0], -14.302581, tol6);
-        EXPECT_NEAR(meanMonthlyPPTAnn[0], 15.1400001, tol6);
-        EXPECT_NEAR(MAP_cm, 59.27, tol1);
-        EXPECT_NEAR(MAT_C, 4.524863, tol1);
-        EXPECT_NEAR(JulyPPTAnn_mm, 18.299999, tol6);
-        EXPECT_NEAR(meanTempDriestQuarterAnn_C, 0.936387, tol6);
-        EXPECT_NEAR(minTempFebruaryAnn_C, -12.822068, tol6);
-        EXPECT_NEAR(ddAbove65F_degdayAnn, 13.546000, tol6);
-        EXPECT_NEAR(frostFreeAnn, 92, tol6);
-        EXPECT_NEAR(JulyMinTempAnn, 2.809999, tol6);
+        EXPECT_NEAR(climateAverage.meanMonthlyTempAnn[0], -8.432581, tol6);
+        EXPECT_NEAR(climateAverage.maxMonthlyTempAnn[0], -2.562581, tol6);
+        EXPECT_NEAR(climateAverage.minMonthlyTempAnn[0], -14.302581, tol6);
+        EXPECT_NEAR(climateAverage.meanMonthlyPPTAnn[0], 15.1400001, tol6);
+        EXPECT_NEAR(climateAverage.MAP_cm, 59.27, tol1);
+        EXPECT_NEAR(climateAverage.MAT_C, 4.524863, tol1);
+        EXPECT_NEAR(climateAverage.JulyPPTAnn_mm, 18.299999, tol6);
+        EXPECT_NEAR(climateAverage.meanTempDriestQuarterAnn_C, 0.936387, tol6);
+        EXPECT_NEAR(climateAverage.minTempFebruaryAnn_C, -12.822068, tol6);
+        EXPECT_NEAR(climateAverage.ddAbove65F_degdayAnn, 13.546000, tol6);
+        EXPECT_NEAR(climateAverage.frostFreeAnn, 92, tol6);
+        EXPECT_NEAR(climateAverage.JulyMinTempAnn, 2.809999, tol6);
         
         // Standard deviation of C4 variables of one year
-        EXPECT_TRUE(isnan(sdC4[0]));
-        EXPECT_TRUE(isnan(sdC4[1]));
-        EXPECT_TRUE(isnan(sdC4[2]));
+        EXPECT_TRUE(isnan(climateAverage.sdC4[0]));
+        EXPECT_TRUE(isnan(climateAverage.sdC4[1]));
+        EXPECT_TRUE(isnan(climateAverage.sdC4[2]));
 
         // Standard deviation of cheatgrass variables of one year
-        EXPECT_TRUE(isnan(sdCheatgrass[0]));
-        EXPECT_TRUE(isnan(sdCheatgrass[1]));
-        EXPECT_TRUE(isnan(sdCheatgrass[2]));
+        EXPECT_TRUE(isnan(climateAverage.sdCheatgrass[0]));
+        EXPECT_TRUE(isnan(climateAverage.sdCheatgrass[1]));
+        EXPECT_TRUE(isnan(climateAverage.sdCheatgrass[2]));
         
         for(int year = 0; year < 31; year++) {
             for(int day = 0; day < 366; day++) {
@@ -296,143 +269,131 @@ namespace {
         }
 
         // Start of tests with all `allHist` inputs of 1
-        calcSiteClimate(SW_Weather.allHist, 2, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-                        monthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
-                        JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
+        calcSiteClimate(SW_Weather.allHist, 2, 1980, &climateOutput);
         
-        averageClimateAcrossYears(meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-            monthlyPPT_cm, 2, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
-            JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C, annualPPT_cm,
-            meanAnnualTemp_C, meanMonthlyTempAnn, maxMonthlyTempAnn, minMonthlyTempAnn,
-            meanMonthlyPPTAnn, sdC4, sdCheatgrass, &MAT_C, &MAP_cm, &JulyPPTAnn_mm,
-            &meanTempDriestQuarterAnn_C, &minTempFebruaryAnn_C, &ddAbove65F_degdayAnn,
-            &frostFreeAnn, &JulyMinTempAnn);
+        averageClimateAcrossYears(&climateOutput, 2, &climateAverage);
         
-        EXPECT_DOUBLE_EQ(meanMonthlyTempAnn[0], 1.);
-        EXPECT_DOUBLE_EQ(maxMonthlyTempAnn[0], 1.);
-        EXPECT_DOUBLE_EQ(minMonthlyTempAnn[0], 1.);
-        EXPECT_DOUBLE_EQ(meanMonthlyPPTAnn[0], 31.);
-        EXPECT_DOUBLE_EQ(JulyPPTAnn_mm, 310.);
-        EXPECT_DOUBLE_EQ(meanTempDriestQuarterAnn_C, 1.);
-        EXPECT_DOUBLE_EQ(minTempFebruaryAnn_C, 1.);
-        EXPECT_DOUBLE_EQ(ddAbove65F_degdayAnn, 0.);
-        EXPECT_DOUBLE_EQ(frostFreeAnn, 365.5);
-        EXPECT_DOUBLE_EQ(JulyMinTempAnn, 1.);
+        EXPECT_DOUBLE_EQ(climateAverage.meanMonthlyTempAnn[0], 1.);
+        EXPECT_DOUBLE_EQ(climateAverage.maxMonthlyTempAnn[0], 1.);
+        EXPECT_DOUBLE_EQ(climateAverage.minMonthlyTempAnn[0], 1.);
+        EXPECT_DOUBLE_EQ(climateAverage.meanMonthlyPPTAnn[0], 31.);
+        EXPECT_DOUBLE_EQ(climateAverage.JulyPPTAnn_mm, 310.);
+        EXPECT_DOUBLE_EQ(climateAverage.meanTempDriestQuarterAnn_C, 1.);
+        EXPECT_DOUBLE_EQ(climateAverage.minTempFebruaryAnn_C, 1.);
+        EXPECT_DOUBLE_EQ(climateAverage.ddAbove65F_degdayAnn, 0.);
+        EXPECT_DOUBLE_EQ(climateAverage.frostFreeAnn, 365.5);
+        EXPECT_DOUBLE_EQ(climateAverage.JulyMinTempAnn, 1.);
         // MAP_cm is expected to be 365.5 because we are running a leap year
         // and nonleap year where the number of days average to 365.5
-        EXPECT_DOUBLE_EQ(MAP_cm, 365.5);
-        EXPECT_DOUBLE_EQ(MAT_C, 1.);
+        EXPECT_DOUBLE_EQ(climateAverage.MAP_cm, 365.5);
+        EXPECT_DOUBLE_EQ(climateAverage.MAT_C, 1.);
         
         // Standard deviation of C4 variables of one year
-        EXPECT_DOUBLE_EQ(sdC4[0], 0.);
-        EXPECT_NEAR(sdC4[1], .7071067, tol6);
-        EXPECT_DOUBLE_EQ(sdC4[2], 0.);
+        EXPECT_DOUBLE_EQ(climateAverage.sdC4[0], 0.);
+        EXPECT_NEAR(climateAverage.sdC4[1], .7071067, tol6);
+        EXPECT_DOUBLE_EQ(climateAverage.sdC4[2], 0.);
 
         // Standard deviation of cheatgrass variables of one year
-        EXPECT_DOUBLE_EQ(sdCheatgrass[0], 0.);
-        EXPECT_DOUBLE_EQ(sdCheatgrass[1], 0.);
-        EXPECT_DOUBLE_EQ(sdCheatgrass[2], 0.);
+        EXPECT_DOUBLE_EQ(climateAverage.sdCheatgrass[0], 0.);
+        EXPECT_DOUBLE_EQ(climateAverage.sdCheatgrass[1], 0.);
+        EXPECT_DOUBLE_EQ(climateAverage.sdCheatgrass[2], 0.);
         
         for(int month = 0; month < MAX_MONTHS; month++) {
-            delete[] monthlyPPT_cm[month];
-            delete[] meanMonthlyTemp_C[month];
-            delete[] minMonthlyTemp_C[month];
-            delete[] maxMonthlyTemp_C[month];
+            delete[] climateOutput.monthlyPPT_cm[month];
+            delete[] climateOutput.meanMonthlyTemp_C[month];
+            delete[] climateOutput.minMonthlyTemp_C[month];
+            delete[] climateOutput.maxMonthlyTemp_C[month];
         }
         
-        delete[] monthlyPPT_cm;
-        delete[] meanMonthlyTemp_C;
-        delete[] minMonthlyTemp_C;
-        delete[] maxMonthlyTemp_C;
+        delete[] climateOutput.monthlyPPT_cm;
+        delete[] climateOutput.meanMonthlyTemp_C;
+        delete[] climateOutput.minMonthlyTemp_C;
+        delete[] climateOutput.maxMonthlyTemp_C;
+
+        // Free rest of allocated memory
+        for(int index = 0; index < 14; index++) {
+            free(freeArray[index]);
+        }
         
     }
 
     TEST(CalcSiteClimateTest, FileAndValuesOfOne) {
-        
+
         // This test relies on allHist from `SW_WEATHER` being already filled
+
+        SW_CLIMATE_CALC climateOutput;
         
-        double JulyMinTemp[31]; // 31 = Number of years in the simulation
-        double frostFreeDays_days[31];
-        double ddAbove65F_degday[31];
-        double JulyPPT_mm[31];
-        double meanTempDriestQuarter_C[31];
-        double minTempFebruary_C[31];
-        double annualPPT_cm[31];
-        double meanAnnualTemp_C[31];
+        climateOutput.JulyMinTemp = new double[31]; // 31 = Number of years in the simulation
+        climateOutput.annualPPT_cm = new double[31];
+        climateOutput.frostFreeDays_days = new double[31];
+        climateOutput.ddAbove65F_degday = new double[31];
+        climateOutput.JulyPPT_mm = new double[31];
+        climateOutput.meanTempDriestQuarter_C = new double[31];
+        climateOutput.minTempFebruary_C = new double[31];
+        climateOutput.meanAnnualTemp_C = new double[31];
+        climateOutput.monthlyPPT_cm = new double*[MAX_MONTHS];
+        climateOutput.meanMonthlyTemp_C = new double*[MAX_MONTHS];
+        climateOutput.minMonthlyTemp_C = new double*[MAX_MONTHS];
+        climateOutput.maxMonthlyTemp_C = new double*[MAX_MONTHS];
         
-        double **monthlyPPT_cm;
-        monthlyPPT_cm = new double*[MAX_MONTHS];
-        
-        double **meanMonthlyTemp_C;
-        meanMonthlyTemp_C = new double*[MAX_MONTHS];
-        
-        double **minMonthlyTemp_C;
-        minMonthlyTemp_C = new double*[MAX_MONTHS];
-        
-        double **maxMonthlyTemp_C;
-        maxMonthlyTemp_C = new double*[MAX_MONTHS];
-        
+        double *freeArray[9] = {climateOutput.JulyMinTemp, climateOutput.annualPPT_cm,
+            climateOutput.frostFreeDays_days, climateOutput.ddAbove65F_degday, climateOutput.JulyPPT_mm,
+            climateOutput.meanTempDriestQuarter_C, climateOutput.minTempFebruary_C, climateOutput.meanAnnualTemp_C};
+
         for(int month = 0; month < MAX_MONTHS; month++) {
-            monthlyPPT_cm[month] = new double[31];
-            meanMonthlyTemp_C[month] = new double[31];
-            minMonthlyTemp_C[month] = new double[31];
-            maxMonthlyTemp_C[month] = new double[31];
-            
+            climateOutput.monthlyPPT_cm[month] = new double[31];
+            climateOutput.meanMonthlyTemp_C[month] = new double[31];
+            climateOutput.minMonthlyTemp_C[month] = new double[31];
+            climateOutput.maxMonthlyTemp_C[month] = new double[31];
             for(int year = 0; year < 31; year++) {
-                
-                monthlyPPT_cm[month][year] = 0.;
-                meanMonthlyTemp_C[month][year] = 0.;
-                minMonthlyTemp_C[month][year] = 0.;
-                maxMonthlyTemp_C[month][year] = 0.;
-                annualPPT_cm[year] = 0.;
-                meanAnnualTemp_C[year] = 0.;
-                minTempFebruary_C[year] = 0.;
+                climateOutput.monthlyPPT_cm[month][year] = 0.;
+                climateOutput.meanMonthlyTemp_C[month][year] = 0.;
+                climateOutput.minMonthlyTemp_C[month][year] = 0.;
+                climateOutput.maxMonthlyTemp_C[month][year] = 0.;
             }
         }
-        
+
         SW_WTH_read();
-        
+
         // 1980 is start year of the simulation
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-                        monthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days,
-                        ddAbove65F_degday, JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
-        
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput);
+
         // Average of average temperature of January in 1980
-        EXPECT_NEAR(meanMonthlyTemp_C[0][0], -8.432581, tol6);
-        
+        EXPECT_NEAR(climateOutput.meanMonthlyTemp_C[0][0], -8.432581, tol6);
+
         // Average of max temperature in Januaray 1980
-        EXPECT_NEAR(maxMonthlyTemp_C[0][0], -2.562581, tol6);
-        
+        EXPECT_NEAR(climateOutput.maxMonthlyTemp_C[0][0], -2.562581, tol6);
+
         // Average of min temperature in Januaray 1980
-        EXPECT_NEAR(minMonthlyTemp_C[0][0], -14.302581, tol6);
-        
+        EXPECT_NEAR(climateOutput.minMonthlyTemp_C[0][0], -14.302581, tol6);
+
         // Average January precipitation in 1980
-        EXPECT_NEAR(monthlyPPT_cm[0][0], 15.14, tol6);
-        
+        EXPECT_NEAR(climateOutput.monthlyPPT_cm[0][0], 15.14, tol6);
+
         // Average temperature of three driest month of first year
-        EXPECT_NEAR(meanTempDriestQuarter_C[0], .936387, tol6);
-        
+        EXPECT_NEAR(climateOutput.meanTempDriestQuarter_C[0], .936387, tol6);
+
         // Average precipiation of first year of simulation
-        EXPECT_NEAR(annualPPT_cm[0], 59.27, tol6);
-        
+        EXPECT_NEAR(climateOutput.annualPPT_cm[0], 59.27, tol6);
+
         // Average temperature of first year of simulation
-        EXPECT_NEAR(meanAnnualTemp_C[0], 4.5248633, tol6);
-        
+        EXPECT_NEAR(climateOutput.meanAnnualTemp_C[0], 4.5248633, tol6);
+
         // First year's July minimum temperature
-        EXPECT_NEAR(JulyMinTemp[0], 2.810000, tol6);
-        
+        EXPECT_NEAR(climateOutput.JulyMinTemp[0], 2.810000, tol6);
+
         // First year's number of most consecutive frost free days
-        EXPECT_EQ(frostFreeDays_days[0], 92);
-        
+        EXPECT_EQ(climateOutput.frostFreeDays_days[0], 92);
+
         // Sum of all temperature above 65F (18.333C) in first year
-        EXPECT_NEAR(ddAbove65F_degday[0], 13.546000, tol6);
-        
+        EXPECT_NEAR(climateOutput.ddAbove65F_degday[0], 13.546000, tol6);
+
         // Total precipitation in July of first year
-        EXPECT_NEAR(JulyPPT_mm[0], 18.300000, tol6);
-        
+        EXPECT_NEAR(climateOutput.JulyPPT_mm[0], 18.300000, tol6);
+
         // Smallest temperature in all February first year
-        EXPECT_NEAR(minTempFebruary_C[0], -12.822069, tol6);
-        
+        EXPECT_NEAR(climateOutput.minTempFebruary_C[0], -12.822069, tol6);
+
         for(int year = 0; year < 2; year++) {
             for(int day = 0; day < 366; day++) {
                 SW_Weather.allHist[year]->temp_max[day] = 1.;
@@ -441,152 +402,153 @@ namespace {
                 SW_Weather.allHist[year]->ppt[day] = 1.;
             }
         }
-        
-        calcSiteClimate(SW_Weather.allHist, 2, 1980, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-                        monthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
-                        JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
-        
+
+        calcSiteClimate(SW_Weather.allHist, 2, 1980, &climateOutput);
+
         // Start of leap year tests (startYear = 1980)
-        
+
         // Average of average temperature of January in 1980
-        EXPECT_DOUBLE_EQ(meanMonthlyTemp_C[0][0], 1.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.meanMonthlyTemp_C[0][0], 1.);
+
         // Average of max temperature in Januaray 1980
-        EXPECT_DOUBLE_EQ(maxMonthlyTemp_C[0][0], 1.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.maxMonthlyTemp_C[0][0], 1.);
+
         // Average of min temperature in Januaray 1980
-        EXPECT_DOUBLE_EQ(minMonthlyTemp_C[0][0], 1.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.minMonthlyTemp_C[0][0], 1.);
+
         // Average January precipitation in 1980
-        EXPECT_DOUBLE_EQ(monthlyPPT_cm[0][0], 31.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.monthlyPPT_cm[0][0], 31.);
+
         // Average temperature of three driest month of first year
-        EXPECT_DOUBLE_EQ(meanTempDriestQuarter_C[0], 1.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.meanTempDriestQuarter_C[0], 1.);
+
         // Average precipiation of first year of simulation
-        EXPECT_DOUBLE_EQ(annualPPT_cm[0], 366.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.annualPPT_cm[0], 366.);
+
         // Average temperature of first year of simulation
-        EXPECT_DOUBLE_EQ(meanAnnualTemp_C[0], 1.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.meanAnnualTemp_C[0], 1.);
+
         // First year's July minimum temperature
-        EXPECT_DOUBLE_EQ(JulyMinTemp[0], 1.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.JulyMinTemp[0], 1.);
+
         // First year's number of most consecutive frost free days
-        EXPECT_DOUBLE_EQ(frostFreeDays_days[0], 366);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.frostFreeDays_days[0], 366);
+
         // Sum of all temperature above 65F (18.333C) in first year
-        EXPECT_DOUBLE_EQ(ddAbove65F_degday[0], 0);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.ddAbove65F_degday[0], 0);
+
         // Total precipitation in July of first year
-        EXPECT_DOUBLE_EQ(JulyPPT_mm[0], 310.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.JulyPPT_mm[0], 310.);
+
         // Smallest temperature in all February first year
-        EXPECT_NEAR(minTempFebruary_C[0], 1., tol6);
-        
+        EXPECT_NEAR(climateOutput.minTempFebruary_C[0], 1., tol6);
+
         // Start of nonleap year tests (startYear = 1981)
-        
-        calcSiteClimate(SW_Weather.allHist, 2, 1981, meanMonthlyTemp_C, maxMonthlyTemp_C, minMonthlyTemp_C,
-                        monthlyPPT_cm, annualPPT_cm, meanAnnualTemp_C, JulyMinTemp, frostFreeDays_days, ddAbove65F_degday,
-                        JulyPPT_mm, meanTempDriestQuarter_C, minTempFebruary_C);
-        
+
+        calcSiteClimate(SW_Weather.allHist, 2, 1981, &climateOutput);
+
         // Average of average temperature of January in 1981
-        EXPECT_DOUBLE_EQ(meanMonthlyTemp_C[0][0], 1.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.meanMonthlyTemp_C[0][0], 1.);
+
         // Average of max temperature in Januaray 1981
-        EXPECT_DOUBLE_EQ(maxMonthlyTemp_C[0][0], 1.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.maxMonthlyTemp_C[0][0], 1.);
+
         // Average of min temperature in Januaray 1981
-        EXPECT_DOUBLE_EQ(minMonthlyTemp_C[0][0], 1.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.minMonthlyTemp_C[0][0], 1.);
+
         // Average January precipitation in 1980
-        EXPECT_DOUBLE_EQ(monthlyPPT_cm[0][0], 31.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.monthlyPPT_cm[0][0], 31.);
+
         // Average temperature of three driest month of first year
-        EXPECT_DOUBLE_EQ(meanTempDriestQuarter_C[0], 1.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.meanTempDriestQuarter_C[0], 1.);
+
         // Average precipiation of first year of simulation
-        EXPECT_DOUBLE_EQ(annualPPT_cm[0], 365.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.annualPPT_cm[0], 365.);
+
         // Average temperature of first year of simulation
-        EXPECT_DOUBLE_EQ(meanAnnualTemp_C[0], 1.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.meanAnnualTemp_C[0], 1.);
+
         // First year's July minimum temperature
-        EXPECT_DOUBLE_EQ(JulyMinTemp[0], 1.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.JulyMinTemp[0], 1.);
+
         // First year's number of most consecutive frost free days
-        EXPECT_DOUBLE_EQ(frostFreeDays_days[0], 365);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.frostFreeDays_days[0], 365);
+
         // Sum of all temperature above 65F (18.333C) in first year
-        EXPECT_DOUBLE_EQ(ddAbove65F_degday[0], 0);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.ddAbove65F_degday[0], 0);
+
         // Total precipitation in July of first year
-        EXPECT_DOUBLE_EQ(JulyPPT_mm[0], 310.);
-        
+        EXPECT_DOUBLE_EQ(climateOutput.JulyPPT_mm[0], 310.);
+
         // Smallest temperature in all February first year
-        EXPECT_NEAR(minTempFebruary_C[0], 1., tol6);
-        
+        EXPECT_NEAR(climateOutput.minTempFebruary_C[0], 1., tol6);
+
         for(int month = 0; month < MAX_MONTHS; month++) {
-            delete[] monthlyPPT_cm[month];
-            delete[] meanMonthlyTemp_C[month];
-            delete[] minMonthlyTemp_C[month];
-            delete[] maxMonthlyTemp_C[month];
+            delete[] climateOutput.monthlyPPT_cm[month];
+            delete[] climateOutput.meanMonthlyTemp_C[month];
+            delete[] climateOutput.minMonthlyTemp_C[month];
+            delete[] climateOutput.maxMonthlyTemp_C[month];
         }
+
+        delete[] climateOutput.monthlyPPT_cm;
+        delete[] climateOutput.meanMonthlyTemp_C;
+        delete[] climateOutput.minMonthlyTemp_C;
+        delete[] climateOutput.maxMonthlyTemp_C;
         
-        delete[] monthlyPPT_cm;
-        delete[] meanMonthlyTemp_C;
-        delete[] minMonthlyTemp_C;
-        delete[] maxMonthlyTemp_C;
-        
+        // Free rest of allocated memory
+        for(int index = 0; index < 9; index++) {
+            free(freeArray[index]);
+        }
+
     }
 
     TEST(AverageTemperatureOfDriestQuarterTest, OneAndTwoYear) {
-        
+
         double monthlyPPT[MAX_MONTHS] = {.5, .5, .1, .4, .9, 1.0, 1.2, 6.5, 7.5, 1.2, 4., .6};
         double monthlyTemp[MAX_MONTHS] = {-3.2, -.4, 1.2, 3.5, 7.5, 4.5, 6.5, 8.2, 2.0, 3., .1, -.3};
         double result[2]; // 2 = max number of years in test
-        
+
         double **monthlyPPT_cm;
         monthlyPPT_cm = new double*[MAX_MONTHS];
-        
+
         double **meanMonthlyTemp_C = new double*[MAX_MONTHS];
-        
+
         for(int month = 0; month < MAX_MONTHS; month++) {
             monthlyPPT_cm[month] = new double[2];
             meanMonthlyTemp_C[month] = new double[2];
             for(int year = 0; year < 2; year++) {
-                
+
                 monthlyPPT_cm[month][year] = monthlyPPT[month];
                 meanMonthlyTemp_C[month][year] = monthlyTemp[month];
             }
         }
         // 1980 is start year of the simulation
         findDriestQtr(result, 1, meanMonthlyTemp_C, monthlyPPT_cm);
-        
+
         // Value 1.433333... is the average temperature of the driest quarter of the year
         // In this case, the driest quarter is February-April
         EXPECT_DOUBLE_EQ(result[0], 1.4333333333333333);
-        
+
         findDriestQtr(result, 2, meanMonthlyTemp_C, monthlyPPT_cm);
-        
+
         EXPECT_DOUBLE_EQ(result[0], 1.4333333333333333);
-        
+
         for(int month = 0; month < MAX_MONTHS; month++) {
             delete[] monthlyPPT_cm[month];
             delete[] meanMonthlyTemp_C[month];
         }
-        
+
         delete[] monthlyPPT_cm;
         delete[] meanMonthlyTemp_C;
-        
+
     }
 
     TEST(WeatherReadTest, Initialization) {
-        
+
         SW_WTH_read();
-        
+
         EXPECT_FLOAT_EQ(SW_Weather.allHist[0]->temp_max[0], -.52);
-        
+
     }
 
 
