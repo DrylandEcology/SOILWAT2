@@ -64,10 +64,9 @@ typedef struct {
 } SW_CLIMATE_CALC;
 
 typedef struct {
-    RealD *annualPPT_cm, *meanAnnualTemp_C, *meanMonthlyTempAnn, *maxMonthlyTempAnn,
-    *minMonthlyTempAnn, *meanMonthlyPPTAnn, *sdC4, *sdCheatgrass, *MAT_C, *MAP_cm,
-    *JulyPPTAnn_mm, *meanTempDriestQuarterAnn_C, *minTempFebruaryAnn_C, *ddAbove65F_degdayAnn,
-    *frostFreeAnn, *JulyMinTempAnn;
+    RealD *meanMonthlyTempAnn, *maxMonthlyTempAnn, *minMonthlyTempAnn, *meanMonthlyPPTAnn,
+    *sdC4, *sdCheatgrass, MAT_C, MAP_cm, JulyPPTAnn_mm, meanTempDriestQuarterAnn_C, minTempFebruaryAnn_C,
+    ddAbove65F_degdayAnn, frostFreeAnn, JulyMinTempAnn;
 } SW_CLIMATE_AVERAGES;
 
 typedef struct {
