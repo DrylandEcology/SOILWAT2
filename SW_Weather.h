@@ -58,6 +58,19 @@ typedef struct {
 } SW_WEATHER_OUTPUTS;
 
 typedef struct {
+    RealD **meanMonthlyTemp_C, **maxMonthlyTemp_C, **minMonthlyTemp_C, **monthlyPPT_cm,
+    *annualPPT_cm, *meanAnnualTemp_C, *JulyMinTemp, *frostFreeDays_days, *ddAbove65F_degday,
+    *JulyPPT_mm, *meanTempDriestQuarter_C, *minTempFebruary_C;
+} SW_CLIMATE_OUTPUT;
+
+typedef struct {
+    RealD *annualPPT_cm, *meanAnnualTemp_C, *meanMonthlyTempAnn, *maxMonthlyTempAnn,
+    *minMonthlyTempAnn, *meanMonthlyPPTAnn, *sdC4, *sdCheatgrass, *MAT_C, *MAP_cm,
+    *JulyPPTAnn_mm, *meanTempDriestQuarterAnn_C, *minTempFebruaryAnn_C, *ddAbove65F_degdayAnn,
+    *frostFreeAnn, *JulyMinTempAnn;
+} SW_CLIMATE_AVERAGES;
+
+typedef struct {
 
 	Bool
 		use_weathergenerator_only,
