@@ -479,7 +479,12 @@ void SW_WTH_setup(void) {
 }
 
 void SW_WTH_read(void) {
-    
+
+    // Deallocate (previous, if any) `allHist`
+    // (using value of `SW_Weather.n_years` previously used to allocate)
+    deallocateAllWeather();
+
+    // Determine required (new) size of new `allHist`
     #ifdef STEPWAT
     SW_Weather.n_years = SuperGlobals.runModelYears;
     #else
@@ -487,8 +492,7 @@ void SW_WTH_read(void) {
     #endif
     unsigned int year;
 
-    deallocateAllWeather();
-    
+    // Allocate new `allHist` (based on current `SW_Weather.n_years`)
     SW_Weather.allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * SW_Weather.n_years);
     
     for(year = 0; year < SW_Weather.n_years; year++) {

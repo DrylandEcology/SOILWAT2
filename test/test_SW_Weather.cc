@@ -33,7 +33,25 @@ namespace {
         EXPECT_NEAR(SW_Weather.allHist[0]->temp_avg[0], -8.095000, tol6);
         EXPECT_NEAR(SW_Weather.allHist[0]->temp_min[0], -15.670000, tol6);
         EXPECT_NEAR(SW_Weather.allHist[0]->ppt[0], .220000, tol6);
-        
+
+    }
+
+    TEST(ReadAllWeatherTest, NoMemoryLeakIfDecreasedNumberOfYears) {
+
+        // Default number of years is 31
+        EXPECT_EQ(SW_Weather.n_years, 31);
+
+        // Decrease number of years
+        SW_Model.startyr = 1981;
+        SW_Model.endyr = 1982;
+
+        // Real expectation is that there is no memory leak for `allHist`
+        SW_WTH_read();
+
+        EXPECT_EQ(SW_Weather.n_years, 2);
+
+
+        Reset_SOILWAT2_after_UnitTest();
     }
 
     TEST(ReadAllWeatherTest, SomeMissingValuesDays) {
@@ -62,9 +80,6 @@ namespace {
     TEST(ReadAllWeatherTest, SomeMissingValuesYears) {
         
         int year, day;
-        
-        deallocateAllWeather();
-        
         SW_Weather.use_weathergenerator = swTRUE;
         
         // Change directory to get input files with some missing data
@@ -115,9 +130,6 @@ namespace {
     TEST(ReadAllWeatherTest, CheckMissingForMissingYear) {
 
         int day;
-        
-        deallocateAllWeather();
-        
         // Change directory to get input files with some missing data
         strcpy(SW_Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
