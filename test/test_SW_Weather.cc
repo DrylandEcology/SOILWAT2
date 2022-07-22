@@ -127,24 +127,22 @@ namespace {
         
     }
 
-    TEST(ReadAllWeatherTest, CheckMissingForMissingYear) {
+    TEST(ReadAllWeatherDeathTest, TooManyMissingAndNoWeatherGenerator) {
 
-        int day;
-        // Change directory to get input files with some missing data
+        // Change to directory without input files
         strcpy(SW_Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
         SW_Weather.use_weathergenerator = swFALSE;
         SW_Weather.use_weathergenerator_only = swFALSE;
-        
+
         SW_Model.startyr = 1981;
         SW_Model.endyr = 1981;
-        
-        SW_WTH_read();
 
-        // Check everyday's value and test if it's `MISSING`
-        for(day = 0; day < 365; day++) {
-            EXPECT_TRUE(missing(SW_Weather.allHist[0]->temp_max[day]));
-        }
+        // Error: too many missing values and weather generator turned off
+        EXPECT_DEATH_IF_SUPPORTED(
+          SW_WTH_read(),
+          ""
+        );
 
         Reset_SOILWAT2_after_UnitTest();
 
