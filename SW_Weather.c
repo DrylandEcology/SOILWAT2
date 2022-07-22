@@ -290,6 +290,22 @@ void SW_WTH_deconstruct(void)
     deallocateAllWeather();
 }
 
+
+/**
+  @brief Allocate memory for `allHist` of `SW_Weather` based on `n_years`
+*/
+void allocateAllWeather(void) {
+  unsigned int year;
+
+  SW_Weather.allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * SW_Weather.n_years);
+
+  for (year = 0; year < SW_Weather.n_years; year++) {
+
+      SW_Weather.allHist[year] = (SW_WEATHER_HIST *)malloc(sizeof(SW_WEATHER_HIST));
+  }
+}
+
+
 /**
  @brief Helper function to SW_WTH_deconstruct to deallocate allHist array.
  */
@@ -490,15 +506,9 @@ void SW_WTH_read(void) {
     #else
     SW_Weather.n_years = SW_Model.endyr - SW_Model.startyr + 1;
     #endif
-    unsigned int year;
 
     // Allocate new `allHist` (based on current `SW_Weather.n_years`)
-    SW_Weather.allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * SW_Weather.n_years);
-    
-    for(year = 0; year < SW_Weather.n_years; year++) {
-        
-        SW_Weather.allHist[year] = (SW_WEATHER_HIST *)malloc(sizeof(SW_WEATHER_HIST));
-    }
+    allocateAllWeather();
 
     readAllWeather(SW_Weather.allHist, SW_Model.startyr, SW_Weather.n_years);
     
