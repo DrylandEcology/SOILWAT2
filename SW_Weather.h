@@ -106,6 +106,21 @@ void SW_WTH_setup(void);
 void SW_WTH_read(void);
 Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather);
 void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_years);
+void scaleAllWeather(
+  SW_WEATHER_HIST **allHist,
+  int startYear,
+  unsigned int n_years,
+  double *scale_temp_max,
+  double *scale_temp_min,
+  double *scale_precip
+);
+void imputeMissingWeather(
+  SW_WEATHER_HIST **allHist,
+  int startYear,
+  unsigned int n_years,
+  Bool useWeatherGenerator,
+  unsigned int nMaxLOCF
+);
 void allocateAllWeather(void);
 void deallocateAllWeather(void);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
