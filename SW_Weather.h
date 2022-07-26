@@ -161,6 +161,8 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                      SW_CLIMATE_YEARLY *climateOutput);
 void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempMon_C,
                    double **meanPPTMon_cm);
+void allocDeallocClimateStructs(int action, int numYears, SW_CLIMATE_YEARLY *climateOutput,
+                                SW_CLIMATE_CLIM *climateAverages);
 void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_years);
 void deallocateAllWeather(void);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);

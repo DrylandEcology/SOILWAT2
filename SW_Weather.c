@@ -773,6 +773,70 @@ Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather) {
 	return swTRUE;
 }
 
+void allocDeallocClimateStructs(int action, int numYears, SW_CLIMATE_YEARLY *climateOutput,
+                                SW_CLIMATE_CLIM *climateAverages) {
+    
+    int deallocate = 0, month;
+    
+    if(action == deallocate) {
+        
+        free(climateOutput->PPT_cm);
+        free(climateOutput->PPTJuly_mm);
+        free(climateOutput->meanTemp_C);
+        free(climateOutput->meanTempDriestQtr_C);
+        free(climateOutput->minTempFeb_C);
+        free(climateOutput->minTempJuly_C);
+        free(climateOutput->frostFree_days);
+        free(climateOutput->ddAbove65F_degday);
+        free(climateAverages->meanTempMon_C);
+        free(climateAverages->maxTempMon_C);
+        free(climateAverages->minTempMon_C);
+        free(climateAverages->PPTMon_cm);
+        free(climateAverages->sdC4);
+        free(climateAverages->sdCheatgrass);
+        
+        for(month = 0; month < MAX_MONTHS; month++) {
+            free(climateOutput->PPTMon_cm[month]);
+            free(climateOutput->meanTempMon_C[month]);
+            free(climateOutput->maxTempMon_C[month]);
+            free(climateOutput->minTempMon_C[month]);
+        }
+
+        free(climateOutput->PPTMon_cm);
+        free(climateOutput->meanTempMon_C);
+        free(climateOutput->maxTempMon_C);
+        free(climateOutput->minTempMon_C);
+    } else {
+        climateOutput->PPTMon_cm = (double **)malloc(sizeof(double *) * MAX_MONTHS);
+        climateOutput->meanTempMon_C = (double **)malloc(sizeof(double *) * MAX_MONTHS);
+        climateOutput->maxTempMon_C = (double **)malloc(sizeof(double *) * MAX_MONTHS);
+        climateOutput->minTempMon_C = (double **)malloc(sizeof(double *) * MAX_MONTHS);
+        
+        for(month = 0; month < MAX_MONTHS; month++) {
+            climateOutput->PPTMon_cm[month] = (double *)malloc(sizeof(double) * numYears);
+            climateOutput->meanTempMon_C[month] = (double *)malloc(sizeof(double) * numYears);
+            climateOutput->maxTempMon_C[month] = (double *)malloc(sizeof(double) * numYears);
+            climateOutput->minTempMon_C[month] = (double *)malloc(sizeof(double) * numYears);
+        }
+        
+        climateOutput->PPT_cm = (double *)malloc(sizeof(double) * numYears);
+        climateOutput->PPTJuly_mm = (double *)malloc(sizeof(double) * numYears);
+        climateOutput->meanTemp_C = (double *)malloc(sizeof(double) * numYears);
+        climateOutput->meanTempDriestQtr_C = (double *)malloc(sizeof(double) * numYears);
+        climateOutput->minTempFeb_C = (double *)malloc(sizeof(double) * numYears);
+        climateOutput->minTempJuly_C = (double *)malloc(sizeof(double) * numYears);
+        climateOutput->frostFree_days = (double *)malloc(sizeof(double) * numYears);
+        climateOutput->ddAbove65F_degday = (double *)malloc(sizeof(double) * numYears);
+        climateAverages->meanTempMon_C = (double *)malloc(sizeof(double) * MAX_MONTHS);
+        climateAverages->maxTempMon_C = (double *)malloc(sizeof(double) * MAX_MONTHS);
+        climateAverages->minTempMon_C = (double *)malloc(sizeof(double) * MAX_MONTHS);
+        climateAverages->PPTMon_cm = (double *)malloc(sizeof(double) * MAX_MONTHS);
+        climateAverages->sdC4 = (double *)malloc(sizeof(double) * 3);
+        climateAverages->sdCheatgrass = (double *)malloc(sizeof(double) * 3);
+    }
+    
+}
+
 #ifdef DEBUG_MEM
 #include "myMemory.h"
 /*======================================================*/

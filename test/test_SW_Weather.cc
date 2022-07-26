@@ -236,22 +236,7 @@ namespace {
 
 
         // ------ Reset and deallocate
-        for(int month = 0; month < MAX_MONTHS; month++) {
-            delete[] climateOutput.monthlyPPT_cm[month];
-            delete[] climateOutput.meanMonthlyTemp_C[month];
-            delete[] climateOutput.minMonthlyTemp_C[month];
-            delete[] climateOutput.maxMonthlyTemp_C[month];
-        }
-
-        delete[] climateOutput.monthlyPPT_cm;
-        delete[] climateOutput.meanMonthlyTemp_C;
-        delete[] climateOutput.minMonthlyTemp_C;
-        delete[] climateOutput.maxMonthlyTemp_C;
-
-        // Free rest of allocated memory
-        for(int index = 0; index < 14; index++) {
-            free(freeArray[index]);
-        }
+        allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
     }
 
 
@@ -260,41 +245,14 @@ namespace {
 
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
-        SW_CLIMATE_CLIM climateAverage;
+        SW_CLIMATE_CLIM climateAverages;
+        
+        int deallocate = 0;
+        int allocate = 1;
 
         // Allocate memory
-        climateOutput.JulyMinTemp = new double[1]; // 1 = Number of years in the simulation
-        climateOutput.annualPPT_cm = new double[1];
-        climateOutput.frostFreeDays_days = new double[1];
-        climateOutput.ddAbove65F_degday = new double[1];
-        climateOutput.JulyPPT_mm = new double[1];
-        climateOutput.meanTempDriestQuarter_C = new double[1];
-        climateOutput.minTempFebruary_C = new double[1];
-        climateOutput.meanAnnualTemp_C = new double[1];
-        climateOutput.monthlyPPT_cm = new double*[MAX_MONTHS];
-        climateOutput.meanMonthlyTemp_C = new double*[MAX_MONTHS];
-        climateOutput.minMonthlyTemp_C = new double*[MAX_MONTHS];
-        climateOutput.maxMonthlyTemp_C = new double*[MAX_MONTHS];
-
-        climateAverage.meanMonthlyTempAnn = new double[MAX_MONTHS];
-        climateAverage.maxMonthlyTempAnn = new double[MAX_MONTHS];
-        climateAverage.minMonthlyTempAnn = new double[MAX_MONTHS];
-        climateAverage.meanMonthlyPPTAnn = new double[MAX_MONTHS];
-        climateAverage.sdCheatgrass = new double[3];
-        climateAverage.sdC4 = new double[3];
-
-        double *freeArray[14] = {climateOutput.JulyMinTemp, climateOutput.annualPPT_cm,
-            climateOutput.frostFreeDays_days,  climateOutput.ddAbove65F_degday,  climateOutput.JulyPPT_mm,
-            climateOutput.meanTempDriestQuarter_C,  climateOutput.minTempFebruary_C,  climateOutput.meanAnnualTemp_C,
-            climateAverage.meanMonthlyTempAnn,  climateAverage.maxMonthlyTempAnn,  climateAverage.minMonthlyTempAnn,
-            climateAverage.meanMonthlyPPTAnn,  climateAverage.sdCheatgrass,  climateAverage.sdC4};
-
-        for(int month = 0; month < MAX_MONTHS; month++) {
-            climateOutput.monthlyPPT_cm[month] = new double[1];
-            climateOutput.meanMonthlyTemp_C[month] = new double[1];
-            climateOutput.minMonthlyTemp_C[month] = new double[1];
-            climateOutput.maxMonthlyTemp_C[month] = new double[1];
-        }
+            // 1 = number of years used in test
+        allocDeallocClimateStructs(allocate, 1, &climateOutput, &climateAverages);
 
         // ------ Check climate variables for one year of default weather ------
 
@@ -395,22 +353,7 @@ namespace {
 
 
         // ------ Reset and deallocate
-        for(int month = 0; month < MAX_MONTHS; month++) {
-            delete[] climateOutput.monthlyPPT_cm[month];
-            delete[] climateOutput.meanMonthlyTemp_C[month];
-            delete[] climateOutput.minMonthlyTemp_C[month];
-            delete[] climateOutput.maxMonthlyTemp_C[month];
-        }
-
-        delete[] climateOutput.monthlyPPT_cm;
-        delete[] climateOutput.meanMonthlyTemp_C;
-        delete[] climateOutput.minMonthlyTemp_C;
-        delete[] climateOutput.maxMonthlyTemp_C;
-
-        // Free rest of allocated memory
-        for(int index = 0; index < 14; index++) {
-            free(freeArray[index]);
-        }
+        allocDeallocClimateStructs(deallocate, 1, &climateOutput, &climateAverages);
 
     }
 
@@ -421,39 +364,11 @@ namespace {
         SW_CLIMATE_CLIM climateAverages;
         SW_WEATHER_HIST **allHist;
 
+        int allocate = 1;
+        int deallocate = 0;
+        
         // Allocate memory
-        climateOutput.JulyMinTemp = new double[2];
-        climateOutput.annualPPT_cm = new double[2];
-        climateOutput.frostFreeDays_days = new double[2];
-        climateOutput.ddAbove65F_degday = new double[2];
-        climateOutput.JulyPPT_mm = new double[2];
-        climateOutput.meanTempDriestQuarter_C = new double[2];
-        climateOutput.minTempFebruary_C = new double[2];
-        climateOutput.meanAnnualTemp_C = new double[2];
-        climateOutput.monthlyPPT_cm = new double*[MAX_MONTHS];
-        climateOutput.meanMonthlyTemp_C = new double*[MAX_MONTHS];
-        climateOutput.minMonthlyTemp_C = new double*[MAX_MONTHS];
-        climateOutput.maxMonthlyTemp_C = new double*[MAX_MONTHS];
-
-        climateAverage.meanMonthlyTempAnn = new double[MAX_MONTHS];
-        climateAverage.maxMonthlyTempAnn = new double[MAX_MONTHS];
-        climateAverage.minMonthlyTempAnn = new double[MAX_MONTHS];
-        climateAverage.meanMonthlyPPTAnn = new double[MAX_MONTHS];
-        climateAverage.sdCheatgrass = new double[3];
-        climateAverage.sdC4 = new double[3];
-
-        double *freeArray[14] = {climateOutput.JulyMinTemp, climateOutput.annualPPT_cm,
-            climateOutput.frostFreeDays_days,  climateOutput.ddAbove65F_degday,  climateOutput.JulyPPT_mm,
-            climateOutput.meanTempDriestQuarter_C,  climateOutput.minTempFebruary_C,  climateOutput.meanAnnualTemp_C,
-            climateAverage.meanMonthlyTempAnn,  climateAverage.maxMonthlyTempAnn,  climateAverage.minMonthlyTempAnn,
-            climateAverage.meanMonthlyPPTAnn,  climateAverage.sdCheatgrass,  climateAverage.sdC4};
-
-        for(int month = 0; month < MAX_MONTHS; month++) {
-            climateOutput.monthlyPPT_cm[month] = new double[2];
-            climateOutput.meanMonthlyTemp_C[month] = new double[2];
-            climateOutput.minMonthlyTemp_C[month] = new double[2];
-            climateOutput.maxMonthlyTemp_C[month] = new double[2];
-        }
+        allocDeallocClimateStructs(allocate, 2, &climateOutput, &climateAverages);
 
         allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * 2);
 
@@ -538,22 +453,7 @@ namespace {
 
 
         // ------ Reset and deallocate
-        for(int month = 0; month < MAX_MONTHS; month++) {
-            delete[] climateOutput.monthlyPPT_cm[month];
-            delete[] climateOutput.meanMonthlyTemp_C[month];
-            delete[] climateOutput.minMonthlyTemp_C[month];
-            delete[] climateOutput.maxMonthlyTemp_C[month];
-        }
-
-        delete[] climateOutput.monthlyPPT_cm;
-        delete[] climateOutput.meanMonthlyTemp_C;
-        delete[] climateOutput.minMonthlyTemp_C;
-        delete[] climateOutput.maxMonthlyTemp_C;
-
-        // Free rest of allocated memory
-        for(int index = 0; index < 14; index++) {
-            free(freeArray[index]);
-        }
+        allocDeallocClimateStructs(deallocate, 2, &climateOutput, &climateAverages);
 
         for (int year = 0; year < 2; year++) {
             free(allHist[year]);
