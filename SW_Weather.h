@@ -58,10 +58,12 @@ typedef struct {
 } SW_WEATHER_OUTPUTS;
 
 /**
- A structure holding all variables that are output to the function `calcSiteClimate()` and is input to the function `averageClimateAcrossYears()`
+ @brief Annual time-series of climate variables
  
- @note Arrays are to be of size `numYears` which is variable (31 years when testing)
- @note Arrays hold values for all simulation years
+ Output of the function `calcSiteClimate()`
+ 
+ @note 2D array dimensions represent month (1st D) and year (2nd D); 1D array dimension represents year.
+ @note Number of years is variable and determined at runtime.
  */
 typedef struct {
     RealD **meanMonthlyTemp_C,              /**< 2D array containing monthly mean average daily air temperature (deg;C)*/
@@ -79,10 +81,11 @@ typedef struct {
 } SW_CLIMATE_CALC;
 
 /**
- A structure holding all variables that are output to the function `averageClimateAcrossYears()`
+ @brief A structure holding all variables that are output to the function `averageClimateAcrossYears()` #SW_CLIMATE_YEARLY
  
- @note If a description mentions a size, it is not variable and has to be the specified size
- @note Averages are taken across all simulation years
+ @note Values are across-year averages of #SW_CLIMATE_YEARLY and 1D array dimension represents month.
+ The exceptions are `sdC4` and `sdCheatgrass` which represent across-year standard devations and the 1D array dimension
+ represents different variables, see `averageClimateAcrossYears()`.
  */
 typedef struct {
     RealD *meanMonthlyTempAnn,              /**< Array of size MAX_MONTHS containing sum of monthly mean temperatures*/
@@ -102,6 +105,7 @@ typedef struct {
     frostFreeAnn,                           /**< Value containing average of most consectutive days in a year without frost*/
     JulyMinTempAnn;                         /**< Value containing the average of lowest temperature in July*/
 } SW_CLIMATE_AVERAGES;
+} SW_CLIMATE_CLIM;
 
 typedef struct {
 
@@ -150,12 +154,12 @@ extern SW_WEATHER SW_Weather;
 void SW_WTH_setup(void);
 void SW_WTH_read(void);
 Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather);
-void averageClimateAcrossYears(SW_CLIMATE_CALC *climateOutput, int numYears,
-                               SW_CLIMATE_AVERAGES *climateAverages);
+void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
+                               SW_CLIMATE_CLIM *climateAverages);
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                     SW_CLIMATE_CALC *climateOutput);
-void findDriestQtr(double *meanTempDriestQuarter_C, int numYears, double **meanMonthlyTemp_C,
-                   double **meanMonthlyPPT_cm);
+                     SW_CLIMATE_YEARLY *climateOutput);
+void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempMon_C,
+                   double **meanPPTMon_cm);
 void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_years);
 void deallocateAllWeather(void);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);

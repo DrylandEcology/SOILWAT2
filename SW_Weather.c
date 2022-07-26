@@ -84,12 +84,12 @@ static char *MyFileName;
  
  @param[in] climateOutput Structure of type SW_CLIMATE_OUTPUT that holds all output from `calcSiteClimate()`
  @param[in] numYears Calendar year corresponding to first year of `allHist`
- @param[out] climateAverages Structure of type SW_CLIMATE_AVERAGES that holds averages and
+ @param[out] climateAverages Structure of type SW_CLIMATE_CLIM that holds averages and
  standard deviations output by `averageClimateAcrossYears()`
  */
 
-void averageClimateAcrossYears(SW_CLIMATE_CALC *climateOutput, int numYears,
-                               SW_CLIMATE_AVERAGES *climateAverages) {
+void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
+                               SW_CLIMATE_CLIM *climateAverages) {
     
     int month;
     
@@ -126,12 +126,12 @@ void averageClimateAcrossYears(SW_CLIMATE_CALC *climateOutput, int numYears,
  @param[in] allHist Array containing all historical data of a site
  @param[in] numYears Number of years represented by `allHist`
  @param[in] startYear Calendar year corresponding to first year of `allHist`
- @param[out] climateOutput Structure of type SW_CLIMATE_AVERAGES that holds averages and
+ @param[out] climateOutput Structure of type SW_CLIMATE_CLIM that holds averages and
  standard deviations output by `averageClimateAcrossYears()`
  */
 
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                     SW_CLIMATE_CALC *climateOutput) {
+                     SW_CLIMATE_YEARLY *climateOutput) {
     
     int month, yearIndex, year, day, numDaysYear, numDaysMonth = Time_days_in_month(0),
     currMonDay;

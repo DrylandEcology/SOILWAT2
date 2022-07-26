@@ -141,8 +141,8 @@ namespace {
     TEST(ClimateVariableTest, ClimateFromDefaultWeather) {
 
         // This test relies on allHist from `SW_WEATHER` being already filled
-        SW_CLIMATE_CALC climateOutput;
-        SW_CLIMATE_AVERAGES climateAverage;
+        SW_CLIMATE_YEARLY climateOutput;
+        SW_CLIMATE_CLIM climateAverage;
 
         // Allocate memory
         climateOutput.JulyMinTemp = new double[31]; // 31 = Number of years in the simulation
@@ -286,8 +286,8 @@ namespace {
     TEST(ClimateVariableTest, ClimateFromOneYearWeather) {
 
         // This test relies on allHist from `SW_WEATHER` being already filled
-        SW_CLIMATE_CALC climateOutput;
-        SW_CLIMATE_AVERAGES climateAverage;
+        SW_CLIMATE_YEARLY climateOutput;
+        SW_CLIMATE_CLIM climateAverage;
 
         // Allocate memory
         climateOutput.JulyMinTemp = new double[1]; // 1 = Number of years in the simulation
@@ -444,8 +444,8 @@ namespace {
 
     TEST(ClimateVariableTest, ClimateFromConstantWeather) {
 
-        SW_CLIMATE_CALC climateOutput;
-        SW_CLIMATE_AVERAGES climateAverage;
+        SW_CLIMATE_YEARLY climateOutput;
+        SW_CLIMATE_CLIM climateAverages;
         SW_WEATHER_HIST **allHist;
 
         // Allocate memory
