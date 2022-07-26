@@ -61,12 +61,17 @@ typedef struct {
 typedef struct {
 
 	Bool
-		use_weathergenerator_only,
-			// swTRUE: set use_weathergenerator = swTRUE and ignore weather inputs
-		use_weathergenerator,
-			// swTRUE: use weather generator for missing weather input (values/files)
-			// swFALSE: fail if any weather input is missing (values/files)
-		use_snow;
+		use_snow,
+		use_weathergenerator_only;
+			// swTRUE: use weather generator and ignore weather inputs
+
+	unsigned int
+		generateWeatherMethod;
+			// see `generateMissingWeather()`
+			// 0 : pass through missing values
+			// 1 : LOCF (temp) + 0 (ppt)
+			// 2 : weather generator (previously, `use_weathergenerator`)
+
 	RealD pct_snowdrift, pct_snowRunoff;
     unsigned int n_years;
 	SW_TIMES yr;
@@ -114,12 +119,12 @@ void scaleAllWeather(
   double *scale_temp_min,
   double *scale_precip
 );
-void imputeMissingWeather(
+void generateMissingWeather(
   SW_WEATHER_HIST **allHist,
   int startYear,
   unsigned int n_years,
-  Bool useWeatherGenerator,
-  unsigned int nMaxLOCF
+  unsigned int method,
+  unsigned int optLOCF_nMax
 );
 void allocateAllWeather(void);
 void deallocateAllWeather(void);

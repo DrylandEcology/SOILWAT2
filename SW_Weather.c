@@ -123,7 +123,7 @@ void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_yea
     for(yearIndex = 0; yearIndex < n_years; yearIndex++) {
 
         if(SW_Weather.use_weathergenerator_only) {
-          // Set to missing for call to `imputeMissingWeather()`
+          // Set to missing for call to `generateMissingWeather()`
           _clear_hist_weather(allHist[yearIndex]);
 
         } else {
@@ -169,7 +169,7 @@ void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_yea
   @note Daily average air temperature is re-calculated after scaling
     minimum and maximum air temperature.
 
-  @note `scaleAllWeather()` assumes that `allHist` is free of missing values.
+  @note Missing values in `allHist` remain unchanged.
 */
 void scaleAllWeather(
   SW_WEATHER_HIST **allHist,
@@ -204,14 +204,26 @@ void scaleAllWeather(
       for (day = 0; day < numDaysYear; day++) {
         month = doy2month(day + 1);
 
-        /* scale weather with monthly factors */
-        allHist[yearIndex]->temp_max[day] += scale_temp_max[month];
-        allHist[yearIndex]->temp_min[day] += scale_temp_min[month];
-        allHist[yearIndex]->ppt[day] *= scale_precip[month];
+        if (!missing(allHist[yearIndex]->temp_max[day])) {
+          allHist[yearIndex]->temp_max[day] += scale_temp_max[month];
+        }
+
+        if (!missing(allHist[yearIndex]->temp_min[day])) {
+          allHist[yearIndex]->temp_min[day] += scale_temp_min[month];
+        }
+
+        if (!missing(allHist[yearIndex]->ppt[day])) {
+          allHist[yearIndex]->ppt[day] *= scale_precip[month];
+        }
 
         /* re-calculate average air temperature */
-        allHist[yearIndex]->temp_avg[day] =
-          (allHist[yearIndex]->temp_max[day] + allHist[yearIndex]->temp_min[day]) / 2.;
+        if (
+          !missing(allHist[yearIndex]->temp_max[day]) &&
+          !missing(allHist[yearIndex]->temp_min[day])
+        ) {
+          allHist[yearIndex]->temp_avg[day] =
+            (allHist[yearIndex]->temp_max[day] + allHist[yearIndex]->temp_min[day]) / 2.;
+        }
       }
     }
   }
@@ -219,50 +231,52 @@ void scaleAllWeather(
 
 
 /**
-  @brief Impute missing weather values
+  @brief Generate missing weather
 
   Meteorological inputs are required for each day; they can either be
   observed and provided via weather input files or they can be generated
-  by a weather generator (which has separate input requirements).
+  such as by a weather generator (which has separate input requirements).
 
   SOILWAT2 handles three scenarios of missing data:
-     1. Some individual days are missing (values correspond to missing)
+     1. Some individual days are missing (values correspond to #SW_MISSING)
      2. An entire year is missing (file `weath.xxxx` for year `xxxx` is absent)
      3. No daily weather input files are available
 
-  SOILWAT2 may be set up such that the weather generator is used exclusively:
+  Available methods to generate weather:
+     1. Pass through (`method` = 0)
+     2. Imputation by last-value-carried forward "LOCF" (`method` = 1)
+        - for minimum and maximum temperature
+        - precipitation is set to 0
+        - error if more than `optLOCF_nMax` days per calendar year are missing
+     3. First-order Markov weather generator (`method` = 2)
+
+  SOILWAT2 may be set up such that weather is generated exclusively
+  (i.e., without an attempt to read data from files on disk):
     - Set the weather generator to exclusive use
   or
      1. Turn on the weather generator
      2. Set the "first year to begin historical weather" to a year after
         the last simulated year
 
-  If the weather generator is turned off, then up to five days per calendar
-  year are imputed
-    - precipitation is set to `0`
-    - minimum and maximum temperature are imputed based on `LOCF`
-      (last value carried forward)
 
-  If more than `nMaxLOCF` days per calendar year are missing and the weather
-  generator is turned off, then an error is thrown.
-
-  @note `SW_MKV_today()` is called if `useWeatherGenerator`
-  which requires that appropriate structures are initialized.
+  @note `SW_MKV_today()` is called if `method` = 2
+  (i.e., the weather generator is used);
+  this requires that appropriate structures are initialized.
 
   @param[in,out] allHist 2D array holding all weather data
   @param[in] startYear Start year of the simulation
   @param[in] n_years Number of years in simulation
-  @param[in] useWeatherGenerator Impute by weather generator (if `TRUE`)
-    or by `LOCF` (for temperature) and zeros (for precipitation) (if `FALSE`).
-  @param[in] nMaxLOCF Maximum number of missing days per year (e.g., 5)
+  @param[in] method Number to identify which method to apply to generate
+    missing values (see details).
+  @param[in] optLOCF_nMax Maximum number of missing days per year (e.g., 5)
     before imputation by `LOCF` throws an error.
 */
-void imputeMissingWeather(
+void generateMissingWeather(
   SW_WEATHER_HIST **allHist,
   int startYear,
   unsigned int n_years,
-  Bool useWeatherGenerator,
-  unsigned int nMaxLOCF
+  unsigned int method,
+  unsigned int optLOCF_nMax
 ) {
 
   int year;
@@ -273,6 +287,22 @@ void imputeMissingWeather(
   Bool any_missing, missing_Tmax, missing_Tmin, missing_PPT;
 
 
+  // Pass through method: return early
+  if (method == 0) return;
+
+
+  // Error out if method not implemented
+  if (method > 2) {
+    LogError(
+      logfp,
+      LOGFATAL,
+      "generateMissingWeather(): method = %u is not implemented.\n",
+      method
+    );
+  }
+
+
+  // Loop over years
   for (yearIndex = 0; yearIndex < n_years; yearIndex++) {
     year = yearIndex + startYear;
     Time_new_year(year);
@@ -289,8 +319,8 @@ void imputeMissingWeather(
       if (any_missing) {
         // some of today's values are missing
 
-        if (useWeatherGenerator) {
-          // if weather generator is turned on then use it for all values
+        if (method == 2) {
+          // Weather generator
           allHist[yearIndex]->ppt[day] = yesterdayPPT;
           SW_MKV_today(
             day,
@@ -299,9 +329,8 @@ void imputeMissingWeather(
             &allHist[yearIndex]->ppt[day]
           );
 
-        } else {
-          // impute missing temperature based on
-          //   LOCF (last-observation-carried-forward)
+        } else if (method == 1) {
+          // LOCF (temp) + 0 (PPT)
           allHist[yearIndex]->temp_max[day] = missing_Tmax ?
             yesterdayMax :
             allHist[yearIndex]->temp_max[day];
@@ -310,7 +339,6 @@ void imputeMissingWeather(
             yesterdayMin :
             allHist[yearIndex]->temp_min[day];
 
-          // impute missing precipitation with 0
           allHist[yearIndex]->ppt[day] = missing_PPT ?
             0. :
             allHist[yearIndex]->ppt[day];
@@ -319,13 +347,13 @@ void imputeMissingWeather(
           // Throw an error if too many values per calendar year are missing
           iMissing++;
 
-          if (iMissing > nMaxLOCF) {
+          if (iMissing > optLOCF_nMax) {
             LogError(
               logfp,
               LOGFATAL,
-              "imputeMissingWeather(): more than %d days missing in year %d "
+              "generateMissingWeather(): more than %u days missing in year %u "
               "and weather generator turned off.\n",
-              nMaxLOCF,
+              optLOCF_nMax,
               year
             );
           }
@@ -412,9 +440,10 @@ void SW_WTH_deconstruct(void)
 		}
 	}
 
-	if (SW_Weather.use_weathergenerator) {
+	if (SW_Weather.generateWeatherMethod == 2) {
 		SW_MKV_deconstruct();
 	}
+
     deallocateAllWeather();
 }
 
@@ -510,6 +539,19 @@ void SW_WTH_new_day(void) {
 #endif
 
     /* get the daily weather from allHist */
+    if (
+      missing(w->allHist[year]->temp_avg[day]) ||
+      missing(w->allHist[year]->ppt[day])
+    ) {
+      LogError(
+        logfp,
+        LOGFATAL,
+        "Missing weather data (day %u - %u) during simulation.",
+        SW_Model.year,
+        SW_Model.doy
+      );
+    }
+
     wn->temp_max[Today] = w->allHist[year]->temp_max[day];
     wn->temp_min[Today] = w->allHist[year]->temp_min[day];
     wn->ppt[Today] = w->allHist[year]->ppt[day];
@@ -557,11 +599,39 @@ void SW_WTH_setup(void) {
 
 		case 3:
 			x = atoi(inbuf);
-			if (x > 1) {
-				w->use_weathergenerator_only = w->use_weathergenerator = swTRUE;
-			} else {
-				w->use_weathergenerator_only = swFALSE;
-				w->use_weathergenerator = itob(x);
+			w->use_weathergenerator_only = swFALSE;
+
+			switch (x) {
+				case 0:
+					// As is
+					w->generateWeatherMethod = 0;
+					break;
+
+				case 1:
+					// weather generator
+					w->generateWeatherMethod = 2;
+					break;
+
+				case 2:
+					// weather generatory only
+					w->generateWeatherMethod = 2;
+					w->use_weathergenerator_only = swTRUE;
+					break;
+
+				case 3:
+					// LOCF (temp) + 0 (PPT)
+					w->generateWeatherMethod = 1;
+					break;
+
+				default:
+					CloseFile(&f);
+					LogError(
+						logfp,
+						LOGFATAL,
+						"%s : Bad missing weather method %d.",
+						MyFileName,
+						x
+					);
 			}
 			break;
 
@@ -607,7 +677,7 @@ void SW_WTH_setup(void) {
 	w->yr.last = SW_Model.endyr;
 	w->yr.total = w->yr.last - w->yr.first + 1;
 
-	if (!w->use_weathergenerator && SW_Model.startyr < w->yr.first) {
+	if (SW_Weather.generateWeatherMethod != 2 && SW_Model.startyr < w->yr.first) {
     LogError(
       logfp,
       LOGFATAL,
@@ -644,12 +714,12 @@ void SW_WTH_read(void) {
 
 
     // Impute missing values
-    imputeMissingWeather(
+    generateMissingWeather(
       SW_Weather.allHist,
       SW_Model.startyr,
       SW_Weather.n_years,
-      (Bool) SW_Weather.use_weathergenerator,
-      3 // nMaxLOCF
+      SW_Weather.generateWeatherMethod,
+      3 // optLOCF_nMax (TODO: make this user input)
     );
 
 

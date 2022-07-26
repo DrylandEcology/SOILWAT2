@@ -55,15 +55,16 @@ namespace {
     }
 
     TEST(ReadAllWeatherTest, SomeMissingValuesDays) {
-        
-        SW_Weather.use_weathergenerator = swTRUE;
-        SW_MKV_setup();
-        
+
+        SW_Weather.generateWeatherMethod = 2;
+
         // Change directory to get input files with some missing data
         strcpy(SW_Weather.name_prefix, "Input/data_weather_missing/weath");
-        
+
+        SW_MKV_setup();
+
         SW_WTH_read();
-        
+
         // With the use of 1980's missing values, test a few days of the year
         // to make sure they are filled using the weather generator
         EXPECT_TRUE(!missing(SW_Weather.allHist[0]->temp_max[0]));
@@ -80,10 +81,11 @@ namespace {
     TEST(ReadAllWeatherTest, SomeMissingValuesYears) {
         
         int year, day;
-        SW_Weather.use_weathergenerator = swTRUE;
-        
+        SW_Weather.generateWeatherMethod = 2;
+
         // Change directory to get input files with some missing data
         strcpy(SW_Weather.name_prefix, "Input/data_weather_missing/weath");
+
         SW_MKV_setup();
         
         SW_Model.startyr = 1981;
@@ -105,8 +107,8 @@ namespace {
     TEST(ReadAllWeatherTest, WeatherGeneratorOnly) {
         
         int year, day;
-        
-        SW_Weather.use_weathergenerator = swTRUE;
+
+        SW_Weather.generateWeatherMethod = 2;
         SW_Weather.use_weathergenerator_only = swTRUE;
         
         SW_MKV_setup();
@@ -127,13 +129,13 @@ namespace {
         
     }
 
-    TEST(ReadAllWeatherDeathTest, TooManyMissingAndNoWeatherGenerator) {
+    TEST(ReadAllWeatherDeathTest, TooManyMissingForLOCF) {
 
         // Change to directory without input files
         strcpy(SW_Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
-        SW_Weather.use_weathergenerator = swFALSE;
-        SW_Weather.use_weathergenerator_only = swFALSE;
+        // Set LOCF (temp) + 0 (PPT) method
+        SW_Weather.generateWeatherMethod = 1;
 
         SW_Model.startyr = 1981;
         SW_Model.endyr = 1981;
