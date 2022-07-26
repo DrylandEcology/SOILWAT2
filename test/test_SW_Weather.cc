@@ -142,41 +142,14 @@ namespace {
 
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
-        SW_CLIMATE_CLIM climateAverage;
+        SW_CLIMATE_CLIM climateAverages;
+        
+        int deallocate = 0;
+        int allocate = 1;
 
         // Allocate memory
-        climateOutput.JulyMinTemp = new double[31]; // 31 = Number of years in the simulation
-        climateOutput.annualPPT_cm = new double[31];
-        climateOutput.frostFreeDays_days = new double[31];
-        climateOutput.ddAbove65F_degday = new double[31];
-        climateOutput.JulyPPT_mm = new double[31];
-        climateOutput.meanTempDriestQuarter_C = new double[31];
-        climateOutput.minTempFebruary_C = new double[31];
-        climateOutput.meanAnnualTemp_C = new double[31];
-        climateOutput.monthlyPPT_cm = new double*[MAX_MONTHS];
-        climateOutput.meanMonthlyTemp_C = new double*[MAX_MONTHS];
-        climateOutput.minMonthlyTemp_C = new double*[MAX_MONTHS];
-        climateOutput.maxMonthlyTemp_C = new double*[MAX_MONTHS];
-        
-        climateAverage.meanMonthlyTempAnn = new double[MAX_MONTHS];
-        climateAverage.maxMonthlyTempAnn = new double[MAX_MONTHS];
-        climateAverage.minMonthlyTempAnn = new double[MAX_MONTHS];
-        climateAverage.meanMonthlyPPTAnn = new double[MAX_MONTHS];
-        climateAverage.sdCheatgrass = new double[3];
-        climateAverage.sdC4 = new double[3];
-        
-        double *freeArray[14] = {climateOutput.JulyMinTemp, climateOutput.annualPPT_cm,
-            climateOutput.frostFreeDays_days,  climateOutput.ddAbove65F_degday,  climateOutput.JulyPPT_mm,
-            climateOutput.meanTempDriestQuarter_C,  climateOutput.minTempFebruary_C,  climateOutput.meanAnnualTemp_C,
-            climateAverage.meanMonthlyTempAnn,  climateAverage.maxMonthlyTempAnn,  climateAverage.minMonthlyTempAnn,
-            climateAverage.meanMonthlyPPTAnn,  climateAverage.sdCheatgrass,  climateAverage.sdC4};
-
-        for(int month = 0; month < MAX_MONTHS; month++) {
-            climateOutput.monthlyPPT_cm[month] = new double[31];
-            climateOutput.meanMonthlyTemp_C[month] = new double[31];
-            climateOutput.minMonthlyTemp_C[month] = new double[31];
-            climateOutput.maxMonthlyTemp_C[month] = new double[31];
-        }
+            // 31 = number of years used in test
+        allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
 
 
         // ------ Check climate variables for default weather ------
@@ -198,25 +171,25 @@ namespace {
 
         calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput);
 
-        EXPECT_NEAR(climateOutput.meanMonthlyTemp_C[Jan][0], -8.432581, tol6);
-        EXPECT_NEAR(climateOutput.maxMonthlyTemp_C[Jan][0], -2.562581, tol6);
-        EXPECT_NEAR(climateOutput.minMonthlyTemp_C[Jan][0], -14.302581, tol6);
-        EXPECT_NEAR(climateOutput.monthlyPPT_cm[Jan][0], 15.1400001, tol6);
-        EXPECT_NEAR(climateOutput.annualPPT_cm[0], 59.27, tol1);
-        EXPECT_NEAR(climateOutput.meanAnnualTemp_C[0], 4.524863, tol1);
+        EXPECT_NEAR(climateOutput.meanTempMon_C[Jan][0], -8.432581, tol6);
+        EXPECT_NEAR(climateOutput.maxTempMon_C[Jan][0], -2.562581, tol6);
+        EXPECT_NEAR(climateOutput.minTempMon_C[Jan][0], -14.302581, tol6);
+        EXPECT_NEAR(climateOutput.PPTMon_cm[Jan][0], 15.1400001, tol6);
+        EXPECT_NEAR(climateOutput.PPT_cm[0], 59.27, tol1);
+        EXPECT_NEAR(climateOutput.meanTemp_C[0], 4.524863, tol1);
 
         // Climate variables used for C4 grass cover
         // (stdev of one value is undefined)
-        EXPECT_NEAR(climateOutput.JulyMinTemp[0], 2.809999, tol6);
-        EXPECT_NEAR(climateOutput.frostFreeDays_days[0], 92, tol6);
+        EXPECT_NEAR(climateOutput.minTempJuly_C[0], 2.809999, tol6);
+        EXPECT_NEAR(climateOutput.frostFree_days[0], 92, tol6);
         EXPECT_NEAR(climateOutput.ddAbove65F_degday[0], 13.546000, tol6);
 
 
         // Climate variables used for cheatgrass cover
         // (stdev of one value is undefined)
-        EXPECT_NEAR(climateOutput.JulyPPT_mm[0], 18.299999, tol6);
-        EXPECT_NEAR(climateOutput.meanTempDriestQuarter_C[0], 0.936387, tol6);
-        EXPECT_NEAR(climateOutput.minTempFebruary_C[0], -12.822068, tol6);
+        EXPECT_NEAR(climateOutput.PPTJuly_mm[0], 18.299999, tol6);
+        EXPECT_NEAR(climateOutput.meanTempDriestQtr_C[0], 0.936387, tol6);
+        EXPECT_NEAR(climateOutput.minTempFeb_C[0], -12.822068, tol6);
 
 
         // --- Long-term variables (aggregated across years) ------
@@ -231,35 +204,35 @@ namespace {
         //   )
         // ```
 
-        averageClimateAcrossYears(&climateOutput, 31, &climateAverage);
+        averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
 
-        EXPECT_NEAR(climateAverage.meanMonthlyTempAnn[Jan], -9.325551, tol6);
-        EXPECT_NEAR(climateAverage.maxMonthlyTempAnn[Jan], -2.714381, tol6);
-        EXPECT_NEAR(climateAverage.minMonthlyTempAnn[Jan], -15.936722, tol6);
-        EXPECT_NEAR(climateAverage.meanMonthlyPPTAnn[Jan], 6.867419, tol6);
+        EXPECT_NEAR(climateAverages.meanTempMon_C[Jan], -9.325551, tol6);
+        EXPECT_NEAR(climateAverages.maxTempMon_C[Jan], -2.714381, tol6);
+        EXPECT_NEAR(climateAverages.minTempMon_C[Jan], -15.936722, tol6);
+        EXPECT_NEAR(climateAverages.PPTMon_cm[Jan], 6.867419, tol6);
 
-        EXPECT_NEAR(climateAverage.MAP_cm, 62.817419, tol6);
-        // Note: rSOILWAT2 v5.3.1 returns incorrect MAT_C = 4.153896
+        EXPECT_NEAR(climateAverages.PPT_cm, 62.817419, tol6);
+        // Note: rSOILWAT2 v5.3.1 returns incorrect meanTemp_C = 4.153896
         //   which is long-term daily average (but not long-term annual average)
-        EXPECT_NEAR(climateAverage.MAT_C, 4.154009, tol6);
+        EXPECT_NEAR(climateAverages.meanTemp_C, 4.154009, tol6);
 
         // Climate variables used for C4 grass cover
-        EXPECT_NEAR(climateAverage.JulyMinTempAnn, 3.078387, tol6);
-        EXPECT_NEAR(climateAverage.frostFreeAnn, 90.612903, tol6);
-        EXPECT_NEAR(climateAverage.ddAbove65F_degdayAnn, 21.168032, tol6);
+        EXPECT_NEAR(climateAverages.minTempJuly_C, 3.078387, tol6);
+        EXPECT_NEAR(climateAverages.frostFree_days, 90.612903, tol6);
+        EXPECT_NEAR(climateAverages.ddAbove65F_degday, 21.168032, tol6);
 
-        EXPECT_NEAR(climateAverage.sdC4[0], 1.785535, tol6);
-        EXPECT_NEAR(climateAverage.sdC4[1], 14.091788, tol6);
-        EXPECT_NEAR(climateAverage.sdC4[2], 19.953560, tol6);
+        EXPECT_NEAR(climateAverages.sdC4[0], 1.785535, tol6);
+        EXPECT_NEAR(climateAverages.sdC4[1], 14.091788, tol6);
+        EXPECT_NEAR(climateAverages.sdC4[2], 19.953560, tol6);
 
         // Climate variables used for cheatgrass cover
-        EXPECT_NEAR(climateAverage.JulyPPTAnn_mm, 35.729032, tol6);
-        EXPECT_NEAR(climateAverage.meanTempDriestQuarterAnn_C, 11.524859, tol6);
-        EXPECT_NEAR(climateAverage.minTempFebruaryAnn_C, -13.904599, tol6);
+        EXPECT_NEAR(climateAverages.PPTJuly_mm, 35.729032, tol6);
+        EXPECT_NEAR(climateAverages.meanTempDriestQtr_C, 11.524859, tol6);
+        EXPECT_NEAR(climateAverages.minTempFeb_C, -13.904599, tol6);
 
-        EXPECT_NEAR(climateAverage.sdCheatgrass[0], 21.598367, tol6);
-        EXPECT_NEAR(climateAverage.sdCheatgrass[1], 7.171922, tol6);
-        EXPECT_NEAR(climateAverage.sdCheatgrass[2], 2.618434, tol6);
+        EXPECT_NEAR(climateAverages.sdCheatgrass[0], 21.598367, tol6);
+        EXPECT_NEAR(climateAverages.sdCheatgrass[1], 7.171922, tol6);
+        EXPECT_NEAR(climateAverages.sdCheatgrass[2], 2.618434, tol6);
 
 
         // ------ Reset and deallocate
@@ -337,88 +310,88 @@ namespace {
         // ```
 
         calcSiteClimate(SW_Weather.allHist, 1, 1980, &climateOutput);
-        averageClimateAcrossYears(&climateOutput, 1, &climateAverage);
+        averageClimateAcrossYears(&climateOutput, 1, &climateAverages);
 
         // Expect that aggregated values across one year are identical
         // to values of that one year
         EXPECT_DOUBLE_EQ(
-          climateAverage.meanMonthlyTempAnn[Jan],
-          climateOutput.meanMonthlyTemp_C[Jan][0]
+          climateAverages.meanTempMon_C[Jan],
+          climateOutput.meanTempMon_C[Jan][0]
         );
         EXPECT_DOUBLE_EQ(
-          climateAverage.maxMonthlyTempAnn[Jan],
-          climateOutput.maxMonthlyTemp_C[Jan][0]
+          climateAverages.maxTempMon_C[Jan],
+          climateOutput.maxTempMon_C[Jan][0]
         );
         EXPECT_DOUBLE_EQ(
-          climateAverage.minMonthlyTempAnn[Jan],
-          climateOutput.minMonthlyTemp_C[Jan][0]
+          climateAverages.minTempMon_C[Jan],
+          climateOutput.minTempMon_C[Jan][0]
         );
         EXPECT_DOUBLE_EQ(
-          climateAverage.meanMonthlyPPTAnn[Jan],
-          climateOutput.monthlyPPT_cm[Jan][0]
+          climateAverages.PPTMon_cm[Jan],
+          climateOutput.PPTMon_cm[Jan][0]
         );
         EXPECT_DOUBLE_EQ(
-          climateAverage.MAP_cm,
-          climateOutput.annualPPT_cm[0]
+          climateAverages.PPT_cm,
+          climateOutput.PPT_cm[0]
         );
         EXPECT_DOUBLE_EQ(
-          climateAverage.MAT_C,
-          climateOutput.meanAnnualTemp_C[0]
+          climateAverages.meanTemp_C,
+          climateOutput.meanTemp_C[0]
         );
 
         // Climate variables used for C4 grass cover
         EXPECT_DOUBLE_EQ(
-          climateAverage.JulyMinTempAnn,
-          climateOutput.JulyMinTemp[0]
+          climateAverages.minTempJuly_C,
+          climateOutput.minTempJuly_C[0]
         );
         EXPECT_DOUBLE_EQ(
-          climateAverage.frostFreeAnn,
-          climateOutput.frostFreeDays_days[0]
+          climateAverages.frostFree_days,
+          climateOutput.frostFree_days[0]
         );
         EXPECT_DOUBLE_EQ(
-          climateAverage.ddAbove65F_degdayAnn,
+          climateAverages.ddAbove65F_degday,
           climateOutput.ddAbove65F_degday[0]
         );
 
         // Climate variables used for cheatgrass cover
         EXPECT_DOUBLE_EQ(
-          climateAverage.JulyPPTAnn_mm,
-          climateOutput.JulyPPT_mm[0]
+          climateAverages.PPTJuly_mm,
+          climateOutput.PPTJuly_mm[0]
         );
         EXPECT_DOUBLE_EQ(
-          climateAverage.meanTempDriestQuarterAnn_C,
-          climateOutput.meanTempDriestQuarter_C[0]
+          climateAverages.meanTempDriestQtr_C,
+          climateOutput.meanTempDriestQtr_C[0]
         );
         EXPECT_DOUBLE_EQ(
-          climateAverage.minTempFebruaryAnn_C,
-          climateOutput.minTempFebruary_C[0]
+          climateAverages.minTempFeb_C,
+          climateOutput.minTempFeb_C[0]
         );
 
 
-        EXPECT_NEAR(climateAverage.meanMonthlyTempAnn[Jan], -8.432581, tol6);
-        EXPECT_NEAR(climateAverage.maxMonthlyTempAnn[Jan], -2.562581, tol6);
-        EXPECT_NEAR(climateAverage.minMonthlyTempAnn[Jan], -14.302581, tol6);
-        EXPECT_NEAR(climateAverage.meanMonthlyPPTAnn[Jan], 15.1400001, tol6);
-        EXPECT_NEAR(climateAverage.MAP_cm, 59.27, tol1);
-        EXPECT_NEAR(climateAverage.MAT_C, 4.524863, tol1);
+        EXPECT_NEAR(climateAverages.meanTempMon_C[Jan], -8.432581, tol6);
+        EXPECT_NEAR(climateAverages.maxTempMon_C[Jan], -2.562581, tol6);
+        EXPECT_NEAR(climateAverages.minTempMon_C[Jan], -14.302581, tol6);
+        EXPECT_NEAR(climateAverages.PPTMon_cm[Jan], 15.1400001, tol6);
+        EXPECT_NEAR(climateAverages.PPT_cm, 59.27, tol1);
+        EXPECT_NEAR(climateAverages.meanTemp_C, 4.524863, tol1);
 
         // Climate variables used for C4 grass cover
         // (stdev of one value is undefined)
-        EXPECT_NEAR(climateAverage.JulyMinTempAnn, 2.809999, tol6);
-        EXPECT_NEAR(climateAverage.frostFreeAnn, 92, tol6);
-        EXPECT_NEAR(climateAverage.ddAbove65F_degdayAnn, 13.546000, tol6);
-        EXPECT_TRUE(isnan(climateAverage.sdC4[0]));
-        EXPECT_TRUE(isnan(climateAverage.sdC4[1]));
-        EXPECT_TRUE(isnan(climateAverage.sdC4[2]));
+        EXPECT_NEAR(climateAverages.minTempJuly_C, 2.809999, tol6);
+        EXPECT_NEAR(climateAverages.frostFree_days, 92, tol6);
+        EXPECT_NEAR(climateAverages.ddAbove65F_degday, 13.546000, tol6);
+        EXPECT_TRUE(isnan(climateAverages.sdC4[0]));
+        EXPECT_TRUE(isnan(climateAverages.sdC4[1]));
+        EXPECT_TRUE(isnan(climateAverages.sdC4[2]));
 
         // Climate variables used for cheatgrass cover
         // (stdev of one value is undefined)
-        EXPECT_NEAR(climateAverage.JulyPPTAnn_mm, 18.299999, tol6);
-        EXPECT_NEAR(climateAverage.meanTempDriestQuarterAnn_C, 0.936387, tol6);
-        EXPECT_NEAR(climateAverage.minTempFebruaryAnn_C, -12.822068, tol6);
-        EXPECT_TRUE(isnan(climateAverage.sdCheatgrass[0]));
-        EXPECT_TRUE(isnan(climateAverage.sdCheatgrass[1]));
-        EXPECT_TRUE(isnan(climateAverage.sdCheatgrass[2]));
+        EXPECT_NEAR(climateAverages.PPTJuly_mm, 18.299999, tol6);
+        EXPECT_NEAR(climateAverages.meanTempDriestQtr_C, 0.936387, tol6);
+        EXPECT_NEAR(climateAverages.minTempFeb_C, -12.822068, tol6);
+        EXPECT_TRUE(isnan(climateAverages.sdCheatgrass[0]));
+        EXPECT_TRUE(isnan(climateAverages.sdCheatgrass[1]));
+        EXPECT_TRUE(isnan(climateAverages.sdCheatgrass[2]));
 
 
         // ------ Reset and deallocate
@@ -510,58 +483,58 @@ namespace {
         // --- Annual time-series of climate variables ------
         calcSiteClimate(allHist, 2, 1980, &climateOutput);
 
-        EXPECT_DOUBLE_EQ(climateOutput.meanMonthlyTemp_C[Jan][0], 1.);
-        EXPECT_DOUBLE_EQ(climateOutput.maxMonthlyTemp_C[Jan][0], 1.);
-        EXPECT_DOUBLE_EQ(climateOutput.minMonthlyTemp_C[Jan][0], 1.);
-        EXPECT_DOUBLE_EQ(climateOutput.monthlyPPT_cm[Jan][0], 31.);
-        EXPECT_DOUBLE_EQ(climateOutput.monthlyPPT_cm[Feb][0], 29.);
-        EXPECT_DOUBLE_EQ(climateOutput.monthlyPPT_cm[Feb][1], 28.);
-        EXPECT_DOUBLE_EQ(climateOutput.annualPPT_cm[0], 366.);
-        EXPECT_DOUBLE_EQ(climateOutput.annualPPT_cm[1], 365.);
-        EXPECT_DOUBLE_EQ(climateOutput.meanAnnualTemp_C[0], 1.);
+        EXPECT_DOUBLE_EQ(climateOutput.meanTempMon_C[Jan][0], 1.);
+        EXPECT_DOUBLE_EQ(climateOutput.maxTempMon_C[Jan][0], 1.);
+        EXPECT_DOUBLE_EQ(climateOutput.minTempMon_C[Jan][0], 1.);
+        EXPECT_DOUBLE_EQ(climateOutput.PPTMon_cm[Jan][0], 31.);
+        EXPECT_DOUBLE_EQ(climateOutput.PPTMon_cm[Feb][0], 29.);
+        EXPECT_DOUBLE_EQ(climateOutput.PPTMon_cm[Feb][1], 28.);
+        EXPECT_DOUBLE_EQ(climateOutput.PPT_cm[0], 366.);
+        EXPECT_DOUBLE_EQ(climateOutput.PPT_cm[1], 365.);
+        EXPECT_DOUBLE_EQ(climateOutput.meanTemp_C[0], 1.);
 
         // Climate variables used for C4 grass cover
         // (stdev of one value is undefined)
-        EXPECT_DOUBLE_EQ(climateOutput.JulyMinTemp[0], 1.);
-        EXPECT_DOUBLE_EQ(climateOutput.frostFreeDays_days[0], 366.);
-        EXPECT_DOUBLE_EQ(climateOutput.frostFreeDays_days[1], 365.);
+        EXPECT_DOUBLE_EQ(climateOutput.minTempJuly_C[0], 1.);
+        EXPECT_DOUBLE_EQ(climateOutput.frostFree_days[0], 366.);
+        EXPECT_DOUBLE_EQ(climateOutput.frostFree_days[1], 365.);
         EXPECT_DOUBLE_EQ(climateOutput.ddAbove65F_degday[0], 0.);
 
 
         // Climate variables used for cheatgrass cover
         // (stdev of one value is undefined)
-        EXPECT_DOUBLE_EQ(climateOutput.JulyPPT_mm[0], 310.);
-        EXPECT_DOUBLE_EQ(climateOutput.meanTempDriestQuarter_C[0], 1.);
-        EXPECT_DOUBLE_EQ(climateOutput.minTempFebruary_C[0], 1.);
+        EXPECT_DOUBLE_EQ(climateOutput.PPTJuly_mm[0], 310.);
+        EXPECT_DOUBLE_EQ(climateOutput.meanTempDriestQtr_C[0], 1.);
+        EXPECT_DOUBLE_EQ(climateOutput.minTempFeb_C[0], 1.);
 
 
         // --- Long-term variables (aggregated across years) ------
-        averageClimateAcrossYears(&climateOutput, 2, &climateAverage);
+        averageClimateAcrossYears(&climateOutput, 2, &climateAverages);
 
-        EXPECT_DOUBLE_EQ(climateAverage.meanMonthlyTempAnn[Jan], 1.);
-        EXPECT_DOUBLE_EQ(climateAverage.maxMonthlyTempAnn[Jan], 1.);
-        EXPECT_DOUBLE_EQ(climateAverage.minMonthlyTempAnn[Jan], 1.);
-        EXPECT_DOUBLE_EQ(climateAverage.meanMonthlyPPTAnn[Jan], 31.);
-        EXPECT_DOUBLE_EQ(climateAverage.meanMonthlyPPTAnn[Feb], 28.5);
-        EXPECT_DOUBLE_EQ(climateAverage.meanMonthlyPPTAnn[Dec], 31);
-        EXPECT_DOUBLE_EQ(climateAverage.MAP_cm, 365.5);
-        EXPECT_DOUBLE_EQ(climateAverage.MAT_C, 1.);
+        EXPECT_DOUBLE_EQ(climateAverages.meanTempMon_C[Jan], 1.);
+        EXPECT_DOUBLE_EQ(climateAverages.maxTempMon_C[Jan], 1.);
+        EXPECT_DOUBLE_EQ(climateAverages.minTempMon_C[Jan], 1.);
+        EXPECT_DOUBLE_EQ(climateAverages.PPTMon_cm[Jan], 31.);
+        EXPECT_DOUBLE_EQ(climateAverages.PPTMon_cm[Feb], 28.5);
+        EXPECT_DOUBLE_EQ(climateAverages.PPTMon_cm[Dec], 31);
+        EXPECT_DOUBLE_EQ(climateAverages.PPT_cm, 365.5);
+        EXPECT_DOUBLE_EQ(climateAverages.meanTemp_C, 1.);
 
         // Climate variables used for C4 grass cover
-        EXPECT_DOUBLE_EQ(climateAverage.JulyMinTempAnn, 1.);
-        EXPECT_DOUBLE_EQ(climateAverage.frostFreeAnn, 365.5);
-        EXPECT_DOUBLE_EQ(climateAverage.ddAbove65F_degdayAnn, 0.);
-        EXPECT_DOUBLE_EQ(climateAverage.sdC4[0], 0.);
-        EXPECT_NEAR(climateAverage.sdC4[1], .7071067, tol6); // sd(366, 365)
-        EXPECT_DOUBLE_EQ(climateAverage.sdC4[2], 0.);
+        EXPECT_DOUBLE_EQ(climateAverages.minTempJuly_C, 1.);
+        EXPECT_DOUBLE_EQ(climateAverages.frostFree_days, 365.5);
+        EXPECT_DOUBLE_EQ(climateAverages.ddAbove65F_degday, 0.);
+        EXPECT_DOUBLE_EQ(climateAverages.sdC4[0], 0.);
+        EXPECT_NEAR(climateAverages.sdC4[1], .7071067, tol6); // sd(366, 365)
+        EXPECT_DOUBLE_EQ(climateAverages.sdC4[2], 0.);
 
         // Climate variables used for cheatgrass cover
-        EXPECT_DOUBLE_EQ(climateAverage.JulyPPTAnn_mm, 310.);
-        EXPECT_DOUBLE_EQ(climateAverage.meanTempDriestQuarterAnn_C, 1.);
-        EXPECT_DOUBLE_EQ(climateAverage.minTempFebruaryAnn_C, 1.);
-        EXPECT_DOUBLE_EQ(climateAverage.sdCheatgrass[0], 0.);
-        EXPECT_DOUBLE_EQ(climateAverage.sdCheatgrass[1], 0.);
-        EXPECT_DOUBLE_EQ(climateAverage.sdCheatgrass[2], 0.);
+        EXPECT_DOUBLE_EQ(climateAverages.PPTJuly_mm, 310.);
+        EXPECT_DOUBLE_EQ(climateAverages.meanTempDriestQtr_C, 1.);
+        EXPECT_DOUBLE_EQ(climateAverages.minTempFeb_C, 1.);
+        EXPECT_DOUBLE_EQ(climateAverages.sdCheatgrass[0], 0.);
+        EXPECT_DOUBLE_EQ(climateAverages.sdCheatgrass[1], 0.);
+        EXPECT_DOUBLE_EQ(climateAverages.sdCheatgrass[2], 0.);
 
 
         // ------ Reset and deallocate
@@ -598,24 +571,24 @@ namespace {
 
         int month, year;
 
-        double **monthlyPPT_cm;
-        monthlyPPT_cm = new double*[MAX_MONTHS];
+        double **PPTMon_cm;
+        PPTMon_cm = new double*[MAX_MONTHS];
 
-        double **meanMonthlyTemp_C = new double*[MAX_MONTHS];
+        double **meanTempMon_C = new double*[MAX_MONTHS];
 
         for(month = 0; month < MAX_MONTHS; month++) {
-            monthlyPPT_cm[month] = new double[2];
-            meanMonthlyTemp_C[month] = new double[2];
+            PPTMon_cm[month] = new double[2];
+            meanTempMon_C[month] = new double[2];
             for(year = 0; year < 2; year++) {
 
-                monthlyPPT_cm[month][year] = monthlyPPT[month];
-                meanMonthlyTemp_C[month][year] = monthlyTemp[month];
+                PPTMon_cm[month][year] = monthlyPPT[month];
+                meanTempMon_C[month][year] = monthlyTemp[month];
             }
         }
 
 
         // ------ Test for one year ------
-        findDriestQtr(result, 1, meanMonthlyTemp_C, monthlyPPT_cm);
+        findDriestQtr(result, 1, meanTempMon_C, PPTMon_cm);
 
         // Value 1.433333... is the average temperature of the driest quarter of the year
         // In this case, the driest quarter is February-April
@@ -623,7 +596,7 @@ namespace {
 
 
         // ------ Test for two years ------
-        findDriestQtr(result, 2, meanMonthlyTemp_C, monthlyPPT_cm);
+        findDriestQtr(result, 2, meanTempMon_C, PPTMon_cm);
 
         EXPECT_NEAR(result[0], 1.4333333333333333, tol9);
         EXPECT_NEAR(result[1], 1.4333333333333333, tol9);
@@ -633,11 +606,11 @@ namespace {
         // ------ Test when there are multiple driest quarters ------
         for (month = 0; month < MAX_MONTHS; month++) {
             for(year = 0; year < 2; year++) {
-                monthlyPPT_cm[month][year] = 1.;
+                PPTMon_cm[month][year] = 1.;
             }
         }
 
-        findDriestQtr(result, 1, meanMonthlyTemp_C, monthlyPPT_cm);
+        findDriestQtr(result, 1, meanTempMon_C, PPTMon_cm);
 
         // Expect that the driest quarter that occurs first
         // among all driest quarters is used
@@ -648,12 +621,12 @@ namespace {
 
         // ------ Clean up
         for(int month = 0; month < MAX_MONTHS; month++) {
-            delete[] monthlyPPT_cm[month];
-            delete[] meanMonthlyTemp_C[month];
+            delete[] PPTMon_cm[month];
+            delete[] meanTempMon_C[month];
         }
 
-        delete[] monthlyPPT_cm;
-        delete[] meanMonthlyTemp_C;
+        delete[] PPTMon_cm;
+        delete[] meanTempMon_C;
 
     }
 
