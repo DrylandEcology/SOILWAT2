@@ -112,7 +112,7 @@ namespace {
     int i;
 
     // Turn on Markov weather generator (and turn off use of historical weather)
-    SW_Weather.use_weathergenerator = swTRUE;
+    SW_Weather.generateWeatherMethod = 2;
     SW_Weather.use_weathergenerator_only = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
@@ -143,13 +143,13 @@ namespace {
     int i;
 
     // Turn on Markov weather generator
-    SW_Weather.use_weathergenerator = swTRUE;
-
-    // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup();
+    SW_Weather.generateWeatherMethod = 2;
 
     // Point to partial weather data
     strcpy(SW_Weather.name_prefix, "Input/data_weather_missing/weath");
+
+    // Read Markov weather generator input files (they are not normally read)
+    SW_MKV_setup();
 
     // Prepare weather data
     SW_WTH_read();
