@@ -718,9 +718,9 @@ void SW_WTH_new_day(void) {
       );
     }
 
-    wn->temp_max[Today] = w->allHist[year]->temp_max[day];
-    wn->temp_min[Today] = w->allHist[year]->temp_min[day];
-    wn->ppt[Today] = w->allHist[year]->ppt[day];
+    wn->temp_max = w->allHist[year]->temp_max[day];
+    wn->temp_min = w->allHist[year]->temp_min[day];
+    wn->ppt = w->allHist[year]->ppt[day];
 
     wn->temp_avg = w->allHist[year]->temp_avg[day];
 
