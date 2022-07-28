@@ -576,6 +576,9 @@ void SW_VPD_init_run(void) {
     TimeInt year;
     int k;
 
+    SW_VEGPROD *veg = &SW_VegProd;
+    SW_MODEL *model = &SW_Model;
+
     /* Set co2-multipliers to default */
     for (year = 0; year < MAX_NYEAR; year++)
     {
@@ -585,6 +588,8 @@ void SW_VPD_init_run(void) {
             SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
         }
     }
+
+    estimateVegetationFromClimate(veg, model->startyr, model->endyr);
     
 }
 
