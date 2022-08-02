@@ -110,7 +110,7 @@ static void _read_layers(void) {
 	FILE *f;
 	LyrIndex lyrno;
 	int x, k;
-	RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay, matricd, imperm,
+	RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay, soildensity, imperm,
 		soiltemp, f_gravel;
 
 	/* note that Files.read() must be called prior to this. */
@@ -125,7 +125,7 @@ static void _read_layers(void) {
 			inbuf,
 			"%f %f %f %f %f %f %f %f %f %f %f %f",
 			&dmax,
-			&matricd,
+			&soildensity,
 			&f_gravel,
 			&evco,
 			&trco_veg[SW_GRASS], &trco_veg[SW_SHRUB], &trco_veg[SW_TREES], &trco_veg[SW_FORBS],
@@ -153,7 +153,7 @@ static void _read_layers(void) {
 
 		dmin = dmax;
 		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel;
-		v->lyr[lyrno]->soilMatric_density = matricd;
+		v->lyr[lyrno]->soilDensityInput = soildensity;
 		v->lyr[lyrno]->evap_coeff = evco;
 
 		ForEachVegType(k)
@@ -370,16 +370,47 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 /**
   @brief Estimate soil density of the whole soil (bulk).
 
-  SOILWAT2 calculates internally based on soil bulk density of the whole soil,
-  i.e., including rock/gravel component. However, SOILWAT2 inputs are expected
-  to represent soil (matric) density of the < 2 mm fraction.
+  Based on equation 20 from Saxton. @cite Saxton2006.
+
+  Similarly, estimate soil bulk density from `theta_sat` with
+  `2.65 * (1. - theta_sat * (1. - fractionGravel))`.
+*/
+RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel) {
+	return matricDensity * (1. - fractionGravel) + fractionGravel * 2.65;
+}
+
+
+/**
+  @brief Estimate soil density of the matric soil component.
 
   Based on equation 20 from Saxton. @cite Saxton2006
 */
-RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel) {
-	/*eqn. 20 from Saxton et al. 2006  to calculate the bulk density of soil */
-	return matricDensity * (1 - fractionGravel) + (fractionGravel * 2.65);
+RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel) {
+	double res;
+
+	if (EQ(fractionGravel, 1.)) {
+		res = 0.;
+	} else {
+		res = (bulkDensity - fractionGravel * 2.65) / (1. - fractionGravel);
+
+		if (LT(res, 0.)) {
+			LogError(
+				logfp,
+				LOGFATAL,
+				"bulkDensity (%f) is lower than expected "
+				"(density of coarse fragments = %f [g/cm3] "
+				"based on %f [%%] coarse fragments).\n",
+				bulkDensity,
+				fractionGravel * 2.65,
+				fractionGravel
+			);
+		}
+	}
+
+	return res;
 }
+
+
 
 
 /**
@@ -675,8 +706,12 @@ void SW_SIT_read(void) {
 			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", c->scenario);
 			#endif
 			break;
+		case 41:
+			v->type_soilDensityInput = atoi(inbuf);
+			break;
+
 		default:
-			if (lineno > 40 + MAX_TRANSP_REGIONS)
+			if (lineno > 41 + MAX_TRANSP_REGIONS)
 				break; /* skip extra lines */
 
 			if (MAX_TRANSP_REGIONS < v->n_transp_rgn) {
@@ -732,8 +767,7 @@ void SW_SIT_read(void) {
   @param nlyrs The number of soil layers to create.
   @param[in] dmax Array of size \p nlyrs for depths [cm] of each soil layer
     measured from the surface
-  @param[in] matricd Array of size \p nlyrs for soil density of the matric
-    component, i.e., the < 2 mm fraction [g/cm3]
+  @param[in] bd Array of size \p nlyrs of soil bulk density [g/cm3]
   @param[in] f_gravel Array of size \p nlyrs for volumetric gravel content [v/v]
   @param[in] evco Array of size \p nlyrs with bare-soil evaporation coefficients
     [0, 1] that sum up to 1.
@@ -766,7 +800,7 @@ void SW_SIT_read(void) {
     - This function is a modified version of the function _read_layers() in
       SW_Site.c.
 */
-void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel,
+void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
   RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
   RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp,
   int nRegions, RealD *regionLowerBounds)
@@ -790,7 +824,8 @@ void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel
 
     v->lyr[lyrno]->width = dmax[i] - dmin;
     dmin = dmax[i];
-    v->lyr[lyrno]->soilMatric_density = matricd[i];
+    v->lyr[lyrno]->soilDensityInput = bd[i];
+    v->type_soilDensityInput = SW_BULK;
     v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel[i];
     v->lyr[lyrno]->evap_coeff = evco[i];
 
@@ -955,9 +990,12 @@ void SW_SIT_init_run(void) {
 			fval = lyr->width;
 			errtype = Str_Dup("layer width");
 
-		} else if (LT(lyr->soilMatric_density, 0.)) {
+		} else if (
+			LT(lyr->soilDensityInput, 0.) ||
+			GT(lyr->soilDensityInput, 2.65)
+		) {
 			fail = swTRUE;
-			fval = lyr->soilMatric_density;
+			fval = lyr->soilDensityInput;
 			errtype = Str_Dup("soil density");
 
 		} else if (
@@ -1028,11 +1066,39 @@ void SW_SIT_init_run(void) {
 		}
 
 
-		/* Update soil density for gravel */
-		lyr->soilBulk_density = calculate_soilBulkDensity(
-			lyr->soilMatric_density,
-			lyr->fractionVolBulk_gravel
-		);
+		/* Update soil density depending on inputs */
+		switch (SW_Site.type_soilDensityInput) {
+
+			case SW_BULK:
+				lyr->soilBulk_density = lyr->soilDensityInput;
+
+				lyr->soilMatric_density = calculate_soilMatricDensity(
+					lyr->soilBulk_density,
+					lyr->fractionVolBulk_gravel
+				);
+
+				break;
+
+			case SW_MATRIC:
+				lyr->soilMatric_density = lyr->soilDensityInput;
+
+				lyr->soilBulk_density = calculate_soilBulkDensity(
+					lyr->soilMatric_density,
+					lyr->fractionVolBulk_gravel
+				);
+
+				break;
+
+		default:
+			LogError(
+				logfp,
+				LOGFATAL,
+				"Soil density type not recognized",
+				SW_Site.type_soilDensityInput
+			);
+		}
+
+
 
 		/* Calculate pedotransfer function parameters */
 		water_eqn(
