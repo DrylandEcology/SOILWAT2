@@ -238,7 +238,8 @@ typedef struct {
   int
     // `rank_SWPcrits[k]` hold the vegetation type at rank `k` of decreasingly
     // sorted critical SWP values
-    rank_SWPcrits[NVEGTYPES];
+    rank_SWPcrits[NVEGTYPES],
+    veg_method;
 
   SW_VEGPROD_OUTPUTS
     /** output accumulator: summed values for each output time period */
@@ -263,7 +264,7 @@ void SW_VPD_read(void);
 void SW_VPD_new_year(void);
 void SW_VPD_fix_cover(void);
 void SW_VPD_construct(void);
-void estimateVegetationFromClimate(SW_VEGPROD *veg, int startYear, int endYear);
+void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYear);
 void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTempMon_C[],
     double PPTMon_cm[], double inputValues[], double shrubLimit, double SumGrassesFraction,
     double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorth, Bool warnExtrapolation,
