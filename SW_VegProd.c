@@ -901,6 +901,11 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
                                 fillEmptyWithBareGround, inNorth, warnExtrapolation,
                                 grassOutput, RelAbundanceL0, RelAbundanceL1);
 
+    vegProd->veg[SW_TREES].cov.fCover = RelAbundanceL1[0];
+    vegProd->veg[SW_SHRUB].cov.fCover = RelAbundanceL1[1];
+    vegProd->veg[SW_FORBS].cov.fCover = RelAbundanceL1[2];
+    vegProd->veg[SW_GRASS].cov.fCover = RelAbundanceL1[3];
+
     // Deallocate climate structs' memory
     allocDeallocClimateStructs(deallocate, numYears, &climateOutput, &climateAverages);
 
@@ -935,7 +940,8 @@ void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTe
     double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorth, Bool warnExtrapolation,
     double *grassOutput, double *RelAbundanceL0, double *RelAbundanceL1) {
 
-    int nTypes = 8, winterMonths[3], summerMonths[3];
+    const int nTypes = 8;
+    int winterMonths[3], summerMonths[3];
 
     // Indices both single value and arrays
     int index, succIndex = 0, forbIndex = 1, C3Index = 2, C4Index = 3, grassAnn = 4,
@@ -1212,7 +1218,7 @@ void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTe
         // Remove them from the `estimIndices` array
         for(index = 0; index < estimIndicesSize; index++) {
             do {
-                isGrassIndex = (overallEstim[index] == grassAnn
+                isGrassIndex = (Bool) (overallEstim[index] == grassAnn
                                 || overallEstim[index] == treeIndex
                                 || overallEstim[index] == bareGround);
 
@@ -1306,13 +1312,16 @@ double cutZeroInf(double value) {
 void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTwoSize,
                    int *finalIndexArray, int *finalIndexArraySize) {
 
-    int index, finalArrayIndex = 0,
+    int index, finalArrayIndex = 0, nTypes = 8,
     tempSize = arrayOneSize + arrayTwoSize + finalArrayIndex, tempIndex = 0;
-    int tempArray[tempSize], tempArraySeen[tempSize];
+    int *tempArray, *tempArraySeen;
+
+    tempArray = (int *)malloc(sizeof(int) * tempSize);
+    tempArraySeen = (int *)malloc(sizeof(int) * nTypes);
 
     for(index = 0; index < tempSize; index++) {
         // Initalize the `seen` version of tempArray
-        tempArraySeen[index] = 0;
+        if(index < nTypes) tempArraySeen[index] = 0;
 
         if(index < finalArrayIndex) {
             tempArray[tempIndex] = finalIndexArray[index];
@@ -1338,5 +1347,8 @@ void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTw
     }
 
     *finalIndexArraySize = finalArrayIndex;
+
+    free(tempArray);
+    free(tempArraySeen);
 
 }
