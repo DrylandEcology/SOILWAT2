@@ -159,4 +159,284 @@ namespace {
 		Reset_SOILWAT2_after_UnitTest();
 	}
 
+    TEST(EstimateVegetationTest, NotFullVegetation) {
+
+        SW_CLIMATE_YEARLY climateOutput;
+        SW_CLIMATE_CLIM climateAverages;
+
+        double inputValues[8] = {SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING,
+                                SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING};
+        double shrubLimit = .2;
+
+        // Array holding only grass values
+        double grassOutput[3]; // 3 = Number of grass variables
+
+        // Array holding all values from the estimation
+        double RelAbundanceL0[8]; // 8 = Number of types
+
+        // Array holding all values from estimation minus grasses
+        double RelAbundanceL1[5]; // 5 = Number of types minus grasses
+
+        double SumGrassesFraction = -SW_MISSING;
+        double C4Variables[3];
+        double RelAbundanceL0Expected[8] = {0.0, 0.2608391, 0.4307062,
+                                                0.0, 0.0, 0.3084547, 0.0, 0.0};
+        double RelAbundanceL1Expected[5] = {0.0, 0.3084547, 0.2608391, 0.4307062, 0.0};
+
+        Bool fillEmptyWithBareGround = swTRUE;
+        Bool inNorth = swTRUE;
+        Bool warnExtrapolation = swTRUE;
+
+        int deallocate = 0;
+        int allocate = 1;
+        int index;
+
+        // Reset "SW_Weather.allHist"
+        SW_WTH_read();
+
+        // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
+        allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
+
+        // Calculate climate of the site and add results to "climateOutput"
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput);
+
+        // Average values from "climateOutput" and put them in "climateAverages"
+        averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
+
+        // Set C4 results, standard deviations are not needed for estimating vegetation
+        C4Variables[0] = climateAverages.minTempJuly_C;
+        C4Variables[1] = climateAverages.ddAbove65F_degday;
+        C4Variables[2] = climateAverages.frostFree_days;
+
+        // Estimate vegetation based off calculated variables and "inputValues"
+        esimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+            climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+            grassOutput, RelAbundanceL0, RelAbundanceL1);
+
+        // Loop through RelAbundanceL0 and test results
+        for(index = 0; index < 8; index++) {
+            EXPECT_NEAR(RelAbundanceL0[index], RelAbundanceL0Expected[index], tol6);
+        }
+
+        // Loop through RelAbundanceL1 and test results
+        for(index = 0; index < 5; index++) {
+            EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol6);
+        }
+        
+        EXPECT_DOUBLE_EQ(grassOutput[0], 1.);
+        EXPECT_DOUBLE_EQ(grassOutput[1], 0.);
+        EXPECT_DOUBLE_EQ(grassOutput[2], 0.);
+
+        // Test with half of input values not "SW_MISSING"
+        inputValues[0] = .376;
+        inputValues[1] = SW_MISSING;
+        inputValues[2] = .096;
+        inputValues[3] = SW_MISSING;
+        inputValues[4] = SW_MISSING;
+        inputValues[5] = .1098;
+        inputValues[6] = .0372;
+        inputValues[7] = SW_MISSING;
+
+        RelAbundanceL0Expected[0] = 0.3760;
+        RelAbundanceL0Expected[1] = 0.3810;
+        RelAbundanceL0Expected[2] = 0.0960;
+        RelAbundanceL0Expected[3] = 0.0000;
+        RelAbundanceL0Expected[4] = 0.0000;
+        RelAbundanceL0Expected[5] = 0.1098;
+        RelAbundanceL0Expected[6] = 0.0372;
+        RelAbundanceL0Expected[7] = 0.0000;
+
+        RelAbundanceL1Expected[0] = 0.0372;
+        RelAbundanceL1Expected[1] = 0.1098;
+        RelAbundanceL1Expected[2] = 0.7570;
+        RelAbundanceL1Expected[3] = 0.0960;
+        RelAbundanceL1Expected[4] = 0.0000;
+
+        esimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+            climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+            grassOutput, RelAbundanceL0, RelAbundanceL1);
+        
+        // Loop through RelAbundanceL0 and test results
+        for(index = 0; index < 8; index++) {
+            EXPECT_NEAR(RelAbundanceL0[index], RelAbundanceL0Expected[index], tol6);
+        }
+
+        // Loop through RelAbundanceL1 and test results
+        for(index = 0; index < 5; index++) {
+            EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol6);
+        }
+
+        EXPECT_DOUBLE_EQ(grassOutput[0], 1.);
+        EXPECT_DOUBLE_EQ(grassOutput[1], 0.);
+        EXPECT_DOUBLE_EQ(grassOutput[2], 0.);
+
+        // Test with all input values not "SW_MISSING"
+        inputValues[0] = .1098;
+        inputValues[1] = .1098;
+        inputValues[2] = .1098;
+        inputValues[3] = .1098;
+        inputValues[4] = .1098;
+        inputValues[5] = .1098;
+        inputValues[6] = .1098;
+        inputValues[7] = .1098;
+
+        RelAbundanceL0Expected[0] = 0.1098;
+        RelAbundanceL0Expected[1] = 0.1098;
+        RelAbundanceL0Expected[2] = 0.1098;
+        RelAbundanceL0Expected[3] = 0.1098;
+        RelAbundanceL0Expected[4] = 0.1098;
+        RelAbundanceL0Expected[5] = 0.1098;
+        RelAbundanceL0Expected[6] = 0.1098;
+        RelAbundanceL0Expected[7] = 0.2314;
+
+        RelAbundanceL1Expected[0] = 0.1098;
+        RelAbundanceL1Expected[1] = 0.1098;
+        RelAbundanceL1Expected[2] = 0.2196;
+        RelAbundanceL1Expected[3] = 0.3294;
+        RelAbundanceL1Expected[4] = 0.2314;
+
+        esimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+            climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+            grassOutput, RelAbundanceL0, RelAbundanceL1);
+
+        // Loop through RelAbundanceL0 and test results. Since initial values
+        // do not add to one and we fill empty with bare ground, bare ground should be higher
+        // than the other values (in this case, .2314)
+        for(index = 0; index < 8; index++) {
+            EXPECT_NEAR(RelAbundanceL0[index], RelAbundanceL0Expected[index], tol6);
+        }
+
+        // Loop through RelAbundanceL1 and test results
+        for(index = 0; index < 5; index++) {
+            EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol6);
+        }
+
+        EXPECT_NEAR(grassOutput[0], .333333, tol6);
+        EXPECT_NEAR(grassOutput[1], .333333, tol6);
+        EXPECT_NEAR(grassOutput[2], .333333, tol6);
+
+        // Deallocate structs
+        allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
+    }
+
+    TEST(EstimateVegetationTest, FullVegetation) {
+
+        SW_CLIMATE_YEARLY climateOutput;
+        SW_CLIMATE_CLIM climateAverages;
+
+        double inputValues[8] = {.0567, .2317, .0392, .0981,
+                                .3218, .0827, .1293, .0405};
+        double shrubLimit = .2;
+
+        // Array holding only grass values
+        double grassOutput[3]; // 3 = Number of grass variables
+
+        // Array holding all values from the estimation
+        double RelAbundanceL0[8]; // 8 = Number of types
+
+        // Array holding all values from estimation minus grasses
+        double RelAbundanceL1[5]; // 5 = Number of types minus grasses
+
+        double SumGrassesFraction = -SW_MISSING;
+        double C4Variables[3];
+        double RelAbundanceL0Expected[8] = {0.0567, 0.2317, .0392,
+            .0981, .3218, .0827, .1293, .0405};
+        double RelAbundanceL1Expected[5] = {.1293, .0827, .2884, .4591, .0405};
+
+        Bool fillEmptyWithBareGround = swTRUE;
+        Bool inNorth = swTRUE;
+        Bool warnExtrapolation = swTRUE;
+
+        int deallocate = 0;
+        int allocate = 1;
+        int index;
+
+        // Reset "SW_Weather.allHist"
+        SW_WTH_read();
+
+        // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
+        allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
+
+        // Calculate climate of the site and add results to "climateOutput"
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput);
+
+        // Average values from "climateOutput" and put them in "climateAverages"
+        averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
+
+        // Set C4 results, standard deviations are not needed for estimating vegetation
+        C4Variables[0] = climateAverages.minTempJuly_C;
+        C4Variables[1] = climateAverages.ddAbove65F_degday;
+        C4Variables[2] = climateAverages.frostFree_days;
+
+        // Estimate vegetation based off calculated variables and "inputValues"
+        esimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+            climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+            grassOutput, RelAbundanceL0, RelAbundanceL1);
+
+        // All values in "RelAbundanceL0" should be exactly the same as "inputValues"
+        for(index = 0; index < 8; index++) {
+            EXPECT_NEAR(RelAbundanceL0[index], RelAbundanceL0Expected[index], tol6);
+        }
+
+        // All values in "RelAbundanceL1" should be exactly the same as "inputValues"
+        for(index = 0; index < 5; index++) {
+            EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol6);
+        }
+
+        EXPECT_NEAR(grassOutput[0], 0.08538445, tol6);
+        EXPECT_NEAR(grassOutput[1], 0.21367894, tol6);
+        EXPECT_NEAR(grassOutput[2], 0.70093662, tol6);
+
+        // Test when a couple input values are not "SW_MISSING"
+        inputValues[0] = .5;
+        inputValues[1] = SW_MISSING;
+        inputValues[2] = .5;
+        inputValues[3] = SW_MISSING;
+        inputValues[4] = SW_MISSING;
+        inputValues[5] = SW_MISSING;
+        inputValues[6] = SW_MISSING;
+        inputValues[7] = SW_MISSING;
+
+        RelAbundanceL0Expected[0] = .5;
+        RelAbundanceL0Expected[1] = 0.;
+        RelAbundanceL0Expected[2] = .5;
+        RelAbundanceL0Expected[3] = 0.;
+        RelAbundanceL0Expected[4] = 0.;
+        RelAbundanceL0Expected[5] = 0.;
+        RelAbundanceL0Expected[6] = 0.;
+        RelAbundanceL0Expected[7] = 0.;
+
+        RelAbundanceL1Expected[0] = 0.;
+        RelAbundanceL1Expected[1] = 0.;
+        RelAbundanceL1Expected[2] = .5;
+        RelAbundanceL1Expected[3] = .5;
+        RelAbundanceL1Expected[4] = 0.;
+
+        esimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+            climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+            grassOutput, RelAbundanceL0, RelAbundanceL1);
+
+        // Loop through RelAbundanceL0 and test results
+        for(index = 0; index < 8; index++) {
+            EXPECT_DOUBLE_EQ(RelAbundanceL0[index], RelAbundanceL0Expected[index]);
+        }
+
+        // Loop through RelAbundanceL1 and test results
+        for(index = 0; index < 5; index++) {
+            EXPECT_DOUBLE_EQ(RelAbundanceL1[index], RelAbundanceL1Expected[index]);
+        }
+
+        EXPECT_DOUBLE_EQ(grassOutput[0], 1.);
+        EXPECT_DOUBLE_EQ(grassOutput[1], 0.);
+        EXPECT_DOUBLE_EQ(grassOutput[2], 0.);
+
+        // Deallocate structs
+        allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
+    }
+
 } // namespace
