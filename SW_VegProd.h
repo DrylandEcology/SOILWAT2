@@ -269,8 +269,8 @@ void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTe
     double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorth, Bool warnExtrapolation,
     double *grassOutput, double *RelAbundanceL0, double *RelAbundanceL1);
 double cutZeroInf(double value);
-void uniqueIndices(double inputValues[], int arrayOne[], int arrayTwo[], int arrayOneSize,
-                   int arrayTwoSize, int *finalIndexArray, int *finalIndexArraySize);
+void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTwoSize,
+                   int *finalIndexArray, int *finalIndexArraySize);
 void SW_VPD_init_run(void);
 void SW_VPD_deconstruct(void);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);

@@ -1017,8 +1017,7 @@ void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTe
         }
     }
 
-    uniqueIndices(inputValues, isetIndices, estimIndices, 3, estimIndicesSize, iFixed, &iFixedSize);
-
+    uniqueIndices(isetIndices, iFixed, 3, iFixedSize, iFixed, &iFixedSize);
 
     // Check if number of elements to estimate is less than or equal to 1
     if(overallEstimSize <= 1) {
@@ -1285,7 +1284,6 @@ double cutZeroInf(double value) {
 /**
  @brief Helper function to `esimatePotNatVegComposition()` that gets unique indices from two input arrays
 
- @param[in] inputValues Array of size eight that holds the input to `esimatePotNatVegComposition()`
  @param[in] arrayOne First array to search through to get indices inside of it
  @param[in] arrayTwo Second array to search through to get indices inside of it
  @param[in] arrayOneSize Size of first array
@@ -1294,34 +1292,37 @@ double cutZeroInf(double value) {
  @param[in,out] finalIndexArraySize Value holding the size of finalIndexArray both before and after the function is run
  */
 
-void uniqueIndices(double inputValues[], int arrayOne[], int arrayTwo[], int arrayOneSize,
-                   int arrayTwoSize, int *finalIndexArray, int *finalIndexArraySize) {
+void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTwoSize,
+                   int *finalIndexArray, int *finalIndexArraySize) {
 
-    int indexOne, indexTwo, finalArrayIndex = *finalIndexArraySize;
+    int index, finalArrayIndex = 0,
+    tempSize = arrayOneSize + arrayTwoSize + finalArrayIndex, tempIndex = 0;
+    int tempArray[tempSize], tempArraySeen[tempSize];
 
-    Bool indexFound = swFALSE;
+    for(index = 0; index < tempSize; index++) {
+        // Initalize the `seen` version of tempArray
+        tempArraySeen[index] = 0;
 
-    // Loop through first array and check all of second array to make sure it's not a repeat
-    for(indexOne = 0; indexOne < arrayOneSize; indexOne++) {
-        for(indexTwo = 0; indexTwo < arrayTwoSize; indexTwo++) {
-            if(arrayOne[indexOne] == arrayTwo[indexTwo]) indexFound = swTRUE;
+        if(index < finalArrayIndex) {
+            tempArray[tempIndex] = finalIndexArray[index];
+            tempIndex++;
         }
-        if(!indexFound && inputValues[arrayOne[indexOne]] != SW_MISSING) {
-            finalIndexArray[finalArrayIndex] = arrayOne[indexOne];
-            finalArrayIndex++;
-            indexFound = swFALSE;
+        if(index < arrayOneSize) {
+            tempArray[tempIndex] = arrayOne[index];
+            tempIndex++;
+        }
+        if(index < arrayTwoSize) {
+            tempArray[tempIndex] = arrayTwo[index];
+            tempIndex++;
         }
     }
 
-    // Loop through the second array to make sure to add things that were missed
-    for(indexTwo = 0; indexTwo < arrayTwoSize; indexTwo++) {
-        for(indexOne = 0; indexOne < arrayOneSize; indexOne++) {
-            if(arrayTwo[indexTwo] == arrayOne[indexOne]) indexFound = swTRUE;
-        }
-        if(!indexFound && inputValues[arrayTwo[indexTwo]] != SW_MISSING) {
-            finalIndexArray[finalArrayIndex] = arrayOne[indexOne];
+    for(index = 0; index < tempSize; index++) {
+        // Check if we have found the current index in question
+        if(tempArraySeen[tempArray[index]] == 0) {
+            finalIndexArray[finalArrayIndex] = tempArray[index];
             finalArrayIndex++;
-            indexFound = swFALSE;
+            tempArraySeen[tempArray[index]] = tempArray[index];
         }
     }
 
