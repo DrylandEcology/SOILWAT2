@@ -867,9 +867,9 @@ void estimateVegetationFromClimate(SW_VEGPROD *veg, int startYear, int endYear) 
     // NOTE: 8 = number of types, 5 = (number of types) - grasses
 
     double coverValues[8] = {SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING,
-                                SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING};
+                            SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING}, shrubLimit = .2;
 
-    double SumGrassesFraction = SW_MISSING, C4Variables[3], grassOutput[3],
+    double SumGrassesFraction = -SW_MISSING, C4Variables[3], grassOutput[3],
     RelAbundanceL0[8], RelAbundanceL1[5];
 
     Bool fillEmptyWithBareGround = swTRUE, inNorth = swTRUE, warnExtrapolation = swTRUE;
@@ -886,7 +886,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *veg, int startYear, int endYear) 
     C4Variables[2] = climateAverages.frostFree_days;
 
     esimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm, climateAverages.meanTempMon_C,
-                                climateAverages.PPTMon_cm, coverValues, SumGrassesFraction, C4Variables,
+                                climateAverages.PPTMon_cm, coverValues, shrubLimit, SumGrassesFraction, C4Variables,
                                 fillEmptyWithBareGround, inNorth, warnExtrapolation,
                                 grassOutput, RelAbundanceL0, RelAbundanceL1);
 
@@ -903,6 +903,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *veg, int startYear, int endYear) 
  @param[in] meanTempMon_C Array of size MAX_MONTHS containing sum of monthly mean temperatures [C]
  @param[in] PPTMon_cm Array of size MAX_MONTHS containing sum of monthly mean precipitation [cm]
  @param[in] inputValues Array of size eight that contains starting values for the function to start with
+ @param[in] shrubLimit Value containing max allowed amount of shrubs
  @param[in] SumGrassesFraction Value holding sum of grass if user would like it to be fixed
  @param[in] C4Variables Array of size three holding C4 variables after being averaged by `averageClimateAcrossYears()`.
  The elements are: 0) July precipitation, 1) mean temperature of dry quarter, 2) mean minimum temperature of February
@@ -919,49 +920,67 @@ void estimateVegetationFromClimate(SW_VEGPROD *veg, int startYear, int endYear) 
  */
 
 void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTempMon_C[],
-    double PPTMon_cm[], double inputValues[], double SumGrassesFraction, double C4Variables[],
-    Bool fillEmptyWithBareGround, Bool inNorth, Bool warnExtrapolation, double *grassOutput,
-    double *RelAbundanceL0, double *RelAbundanceL1) {
+    double PPTMon_cm[], double inputValues[], double shrubLimit, double SumGrassesFraction,
+    double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorth, Bool warnExtrapolation,
+    double *grassOutput, double *RelAbundanceL0, double *RelAbundanceL1) {
 
-    int nTypes = 8, idsToEstimateGrass[3], winterMonths[3], summerMonths[3];
+    int nTypes = 8, winterMonths[3], summerMonths[3];
 
     // Indices both single value and arrays
-    int index, succIndex = 0, forbIndex = 1, C3Index = 2, C4Index = 3,
-    grassAnn = 4, shrubIndex = 5, treeIndex = 6, bareGround = 7, grassEstimSize = 0,
-    overallEstimSize = 0, julyMin = 0, frostFreeDays = 1, degreeAbove65 = 2,
-    estimIndices[5] = {succIndex, forbIndex, C3Index, C4Index, shrubIndex},
+    int index, succIndex = 0, forbIndex = 1, C3Index = 2, C4Index = 3, grassAnn = 4,
+    shrubIndex = 5, treeIndex = 6, bareGround = 7, grassEstimSize = 0, overallEstimSize = 0,
+    julyMin = 0, frostFreeDays = 1, degreeAbove65 = 2, estimIndicesSize = 0,
     estimIndicesNotNA = 0, grassesEstim[3], overallEstim[nTypes], iFixed[nTypes],
-    iFixedSize = 0, isetIndices[3] = {grassAnn, treeIndex, bareGround}, estimIndicesSize = 0;
+    iFixedSize = 0, isetIndices[3] = {grassAnn, treeIndex, bareGround};
 
-    double inputSum = 0, totalSumGrasses = 0., inputSumGrasses = 0., tempDiffJanJul,
+    // Totals of different areas of variables
+    double totalSumGrasses = 0., inputSumGrasses = 0., tempDiffJanJul,
     summerMAP = 0., winterMAP = 0., C4Species = 0., C3Grassland, C3Shrubland, estimGrassSum = 0,
-    finalVegSum = 0., estimCoverSum = 0., tempSumGrasses = 0., estimCover[nTypes], iFixSum = 0.;
+    finalVegSum = 0., estimCoverSum = 0., tempSumGrasses = 0., estimCover[nTypes],
+    initialVegSum = 0.;
 
-    Bool fixGrasses, fixBareGround = (Bool) (inputValues[bareGround] != SW_MISSING);
+    Bool fixSumGrasses, fixBareGround = (Bool) (missing(inputValues[bareGround])),
+    fullVeg = swFALSE, isGrassIndex = swFALSE;
+
+    for(index = 0; index < nTypes; index++) {
+        if(!missing(inputValues[index])) {
+            initialVegSum += inputValues[index];
+        } else {
+            initialVegSum += 0.;
+        }
+    }
+
+    if(initialVegSum >= 1.) fullVeg = swTRUE;
 
     // Initialize estimCover and overallEstim
     for(index = 0; index < nTypes; index++) {
-        if(inputValues[index] != SW_MISSING) {
+        if(index == bareGround) {
+            estimCover[bareGround] =
+                (!missing(inputValues[bareGround])) ? inputValues[bareGround] : 0.;
+            iFixed[iFixedSize] = bareGround;
+            iFixedSize++;
+        } else if(!missing(inputValues[index])) {
             iFixed[iFixedSize] = index;
             iFixedSize++;
+            estimCover[index] = inputValues[index];
         } else {
-            estimIndices[estimIndicesSize] = index;
-            estimIndicesSize++;
+            overallEstim[overallEstimSize] = index;
+            overallEstimSize++;
+            estimCover[index] = 0.;
         }
-        estimCover[index] = 0.;
     }
 
-    fixGrasses = (Bool) (inputValues[grassAnn] != SW_MISSING && inputValues[C3Index] != SW_MISSING
-    && inputValues[C3Index] != SW_MISSING);
+    fixSumGrasses = (Bool) (!missing(inputValues[grassAnn]) && !missing(inputValues[C3Index])
+    && !missing(inputValues[C3Index]) && SumGrassesFraction >= 0);
 
     // Check if grasses are fixed
-    if(fixGrasses) {
+    if(fixSumGrasses) {
         // Set SumGrassesFraction
             // If SumGrassesFraction < 0, set to zero, otherwise keep at value
         SumGrassesFraction = (SumGrassesFraction < 0) ? 0 : SumGrassesFraction;
         // Get sum of input grass values and set to inputSumGrasses
         for(index = C3Index; index < grassAnn; index++) {
-            if(inputValues[index] != SW_MISSING) inputSumGrasses += inputValues[index];
+            if(!missing(inputValues[index])) inputSumGrasses += inputValues[index];
         }
 
         // Get totalSumGrasses
@@ -1000,19 +1019,6 @@ void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTe
 
     uniqueIndices(inputValues, isetIndices, estimIndices, 3, estimIndicesSize, iFixed, &iFixedSize);
 
-    // Loop through inputValues
-    for(index = 0; index < nTypes; index++) {
-        // Check if the element isn't missing
-        if(inputValues[index] != SW_MISSING) {
-            // Add value to inputSum
-            inputSum += inputValues[index];
-        } else {
-            // Put index in overallEstim
-            overallEstim[overallEstimSize] = index;
-            // Incrememnt overallEstim index
-            overallEstimSize++;
-        }
-    }
 
     // Check if number of elements to estimate is less than or equal to 1
     if(overallEstimSize <= 1) {
@@ -1021,14 +1027,14 @@ void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTe
             if(fillEmptyWithBareGround) {
                 // Set estimCover at index `bareGround` to 1 - (all values execpt
                 // at index `bareGround`)
-                estimCover[bareGround] = 1 - (inputSum - estimCover[bareGround]);
-            } else if(inputSum < 1) {
+                estimCover[bareGround] = 1 - (initialVegSum - estimCover[bareGround]);
+            } else if(initialVegSum < 1) {
                 LogError(logfp, LOGFATAL, "'estimate_PotNatVeg_composition': "
                          "User defined relative abundance values are all fixed, "
                          "but their sum is smaller than 1 = full land cover.");
             }
         } else if(overallEstimSize == 1) {
-            estimCover[overallEstim[0]] = 1 - inputSum;
+            estimCover[overallEstim[0]] = 1 - initialVegSum;
         }
     } else {
 
@@ -1081,27 +1087,28 @@ void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTe
                          "(117 - 1011 mm): MAP = %3f mm", PPT_cm * 10);
             }
         }
-
         // Paruelo & Lauenroth (1996): shrub climate-relationship:
-        if(PPT_cm * 10 < 1) {
+        if(PPT_cm * 10 < 1 && !fullVeg) {
             estimCover[shrubIndex] = 0.;
         } else {
-            estimCover[shrubIndex] = cutZeroInf(1.7105 - (.2918 * log(PPT_cm * 10))
+            if(missing(inputValues[shrubIndex]) && !fullVeg) {
+                estimCover[shrubIndex] = cutZeroInf(1.7105 - (.2918 * log(PPT_cm * 10))
                                                 + (1.5451 * winterMAP));
+            }
         }
 
         // Paruelo & Lauenroth (1996): C4-grass climate-relationship:
-        if(meanTemp_C <= 0) {
+        if(meanTemp_C <= 0 && !fullVeg) {
             estimCover[C4Index] = 0;
         } else {
-            estimCover[C4Index] = cutZeroInf(-0.9837 + (.000594 * (PPT_cm * 10))
+            if(missing(inputValues[C4Index]) && !fullVeg) {
+                estimCover[C4Index] = cutZeroInf(-0.9837 + (.000594 * (PPT_cm * 10))
                                              + (1.3528 * summerMAP) + (.2710 * log(meanTemp_C)));
+            }
         }
-
         // This equations give percent species/vegetation -> use to limit
         // Paruelo's C4 equation, i.e., where no C4 species => C4 abundance == 0
-        // TODO: Check to see if we can add a check to see if C4Variables is sufficient
-        if(C4Variables != NULL) {
+        if(C4Variables != NULL && !fullVeg) {
             if(C4Variables[frostFreeDays] <= 0) {
                 C4Species = 0;
             } else {
@@ -1124,31 +1131,37 @@ void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTe
             if(C3Shrubland < 0.) C3Shrubland = 0.;
         }
 
-        if(estimCover[shrubIndex] != SW_MISSING) {
-            estimCover[C3Index] = C3Shrubland;
+        if(!missing(estimCover[shrubIndex]) && estimCover[shrubIndex] >= shrubLimit) {
+            if(missing(inputValues[C3Index]) && !fullVeg) {
+                estimCover[C3Index] = C3Shrubland;
+            }
         } else {
-            estimCover[C3Index] = C3Grassland;
+            if(missing(inputValues[C3Index]) && !fullVeg) {
+                estimCover[C3Index] = C3Grassland;
+            }
         }
-
         // Paruelo & Lauenroth (1996): forb climate-relationship:
-        if(PPT_cm * 10 < 1 || meanTemp_C <= 0) {
+        if((PPT_cm * 10 < 1 || meanTemp_C <= 0) && !fullVeg) {
             estimCover[forbIndex] = SW_MISSING;
         } else {
-            estimCover[forbIndex] = cutZeroInf(-.2035 + (.07975 * log(PPT_cm * 10))
+            if(missing(inputValues[forbIndex]) && !fullVeg) {
+                estimCover[forbIndex] = cutZeroInf(-.2035 + (.07975 * log(PPT_cm * 10))
                                                - (.0623 * log(meanTemp_C)));
+            }
         }
-
         // Paruelo & Lauenroth (1996): succulent climate-relationship:
-        if(tempDiffJanJul <= 0 || winterMAP <= 0) {
+        if((tempDiffJanJul <= 0 || winterMAP <= 0)) {
             estimCover[succIndex] = SW_MISSING;
         } else {
-            estimCover[succIndex] = cutZeroInf(-1 + ((1.20246 * pow(tempDiffJanJul, -.0689)) * (pow(winterMAP, -.0322))));
+            if(missing(inputValues[succIndex])) {
+                estimCover[succIndex] =
+                    cutZeroInf(-1 + ((1.20246 * pow(tempDiffJanJul, -.0689)) * (pow(winterMAP, -.0322))));
+            }
         }
     }
-
-    for(index = 0; index < 5; index++) {
-        if(estimCover[estimIndices[index]] == SW_MISSING) {
-            estimCover[estimIndices[index]] = 0.;
+    for(index = 0; index < overallEstimSize; index++) {
+        if(missing(estimCover[overallEstim[index]])) {
+            estimCover[overallEstim[index]] = 0.;
         } else {
             estimIndicesNotNA++;
         }
@@ -1166,9 +1179,9 @@ void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTe
         }
     }
 
-    if(fixGrasses && totalSumGrasses > 0) {
+    if(fixSumGrasses && totalSumGrasses > 0) {
         for(index = 0; index < grassEstimSize; index++) {
-            estimGrassSum += estimCover[idsToEstimateGrass[index]];
+            estimGrassSum += estimCover[grassesEstim[index]];
         }
         for(index = 0; index < grassEstimSize; index++) {
             estimCover[grassesEstim[index]] *= (totalSumGrasses / estimGrassSum);
@@ -1182,32 +1195,45 @@ void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTe
                  "requested cover evenly divided among grass types.");
     }
 
-    // TODO: FIX
-    if(fixGrasses) {
-        //uniqueIndices(iFixed, &iFixedSize, iFixed, grassIndices, iFixedSize, 3);
-        //uniqueIndices(estimIndices, &idsToEstimateGrass)
-    }
+    if(fixSumGrasses) {
+        // Add grasses to `iFixed` array
+        uniqueIndices(iFixed, grassesEstim, iFixedSize, grassEstimSize, iFixed, &iFixedSize);
 
-    for(index = 0; index < nTypes; index++) {
-        finalVegSum += estimCover[index];
-    }
+        // Remove them from the `estimIndices` array
+        for(index = 0; index < estimIndicesSize; index++) {
+            do {
+                isGrassIndex = (overallEstim[index] == grassAnn
+                                || overallEstim[index] == treeIndex
+                                || overallEstim[index] == bareGround);
 
-    if(!EQ(finalVegSum, 1.)) {
-        estimCoverSum = mean(estimCover, nTypes) * nTypes;
-
-        for(index = 0; index < iFixedSize; index++) {
-            iFixSum += estimCover[iFixed[index]];
+                if(isGrassIndex) {
+                    overallEstim[estimIndicesSize - 1] = overallEstim[index];
+                    estimIndicesSize--;
+                }
+            } while(index != estimIndicesSize - 1 && isGrassIndex);
         }
+    }
 
+    for(index = 0; index < iFixedSize; index++) {
+        if(missing(estimCover[index])) {
+            finalVegSum += 0.;
+        } else {
+            finalVegSum += estimCover[iFixed[index]];
+        }
+    }
+    if(!EQ(finalVegSum, 1.)) {
+        for(index = 0; index < overallEstimSize; index++) {
+            estimCoverSum += estimCover[overallEstim[index]];
+        }
         if(estimCoverSum > 0) {
-            for(index = 0; index < estimIndicesSize; index++) {
-                estimCover[estimIndices[index]] *= (1 - iFixSum) / estimCoverSum;
+            for(index = 0; index < overallEstimSize; index++) {
+                estimCover[overallEstim[index]] *= (1 - finalVegSum) / estimCoverSum;
             }
         } else {
             if(fillEmptyWithBareGround && !fixBareGround) {
-                inputValues[index] = 1.;
+                estimCover[index] = 1.;
                 for(index = 0; index < nTypes - 1; index++) {
-                    inputValues[index] -= inputValues[index];
+                    estimCover[index] -= estimCover[index];
                 }
             } else {
                 LogError(logfp, LOGFATAL, "'estimate_PotNatVeg_composition': "
