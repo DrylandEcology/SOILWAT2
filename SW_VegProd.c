@@ -601,7 +601,7 @@ void SW_VPD_init_run(void) {
     if(veg->veg_method) {
         estimateVegetationFromClimate(veg, model->startyr, model->endyr);
     }
-    
+
 }
 
 
@@ -932,7 +932,9 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
  @param[out] RelAbundanceL1 Array of size five holding all estimated values aside from grasses (not including sum of grasses).
  The elements are: 0) trees, 1) shrubs 2) sum of forbs and succulents 3) overall sum of grasses 4) bare ground
 
- @note This function uses a process that is specified in Teeri JA, Stowe LG (1976) and equations from Paruelo & Lauenroth (1996)
+ @note This function uses equations developed by
+ Paruelo & Lauenroth (1996) @cite paruelo1996EA and,
+ for C4 grasses, an equation by Teeri & Stowe (1976) @cite teeri1976O.
  */
 
 void esimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTempMon_C[],
