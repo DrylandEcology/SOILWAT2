@@ -72,7 +72,7 @@ extern "C" {
   (see input file `siteparam.in`);
   SWRC parameters can be estimated at run-time from soil properties by
   selecting a matching PDF (see input file `siteparam.in`) or,
-  alternatively ("NoPDF"), provide adequate SWRC parameter values
+  alternatively (`has_swrcp`), provide adequate SWRC parameter values
   (see input file `swrc_params.in`).
   Please note that `rSOILWAT2` may provide additional PDF functionality.
 
@@ -80,16 +80,17 @@ extern "C" {
   __Approach__
 
   -# User selections of SWRC and PDF are read in from input file `siteparam.in`
-    by `SW_SIT_read()` and, if "NoPDF", SWRC parameters are read from
+    by `SW_SIT_read()` and, if `has_swrcp`, SWRC parameters are read from
     input file `swrc_params.in` by `SW_SWRC_read()`.
 
   -# `SW_SIT_init_run()`
-    - calls `check_SWRC_vs_PDF()` to check that selected SWRC and PDF are
-      compatible
-    - calls `SWRC_PDF_estimate_parameters()` to estimate SWRC parameter values
-      from soil properties based on selected PDF (unless "NoPDF")
+    - if not `has_swrcp`
+      - calls `check_SWRC_vs_PDF()` to check that selected SWRC and PDF are
+        compatible
+      - calls `SWRC_PDF_estimate_parameters()` to estimate
+        SWRC parameter values from soil properties based on selected PDF
     - calls `SWRC_check_parameters()` to check that SWRC parameter values
-      are resonable for the selected SWRC
+      are resonable for the selected SWRC.
 
   -# `SW_SWRC_SWCtoSWP()` and `SW_SWRC_SWPtoSWC()` are used during simulation
     runs to convert between soil water content and soil water potential.
@@ -106,7 +107,8 @@ extern "C" {
 
   -# Update #N_SWRCs and #N_PDFs
 
-  -# Add new names to #swrc2str and #pdf2str
+  -# Add new names to #swrc2str and #pdf2str and
+     add corresponding macros of indices
 
   -# Update input files `siteparam.in` and `swrc_params.in`
 
@@ -135,8 +137,17 @@ extern "C" {
 */
 
 #define SWRC_PARAM_NMAX 6 /**< Maximal number of SWRC parameters implemented */
-#define N_SWRCs 3 /**< Number of implemented SWRCs */
-#define N_PDFs 5 /**< Number of implemented PDFs */
+#define N_SWRCs 3 /**< Number of SWRCs implemented by SOILWAT2 */
+#define N_PDFs 2 /**< Number of PDFs implemented by SOILWAT2 */
+
+// Indices of #swrc2str (for code readability)
+#define sw_Campbell1974 0
+#define sw_vanGenuchten1980 1
+#define sw_FXW 2
+
+// Indices of #swrc2str (for code readability)
+#define sw_Cosby1984AndOthers 0
+#define sw_Cosby1984 1
 
 
 #define FXW_h0 6.3e6 /**< Pressure head at zero water content [cm] of FWX SWRC */
@@ -254,6 +265,8 @@ typedef struct {
 		site_swrc_name[64],
 		site_pdf_name[64];
 
+	Bool site_has_swrcp; /**< Are `swrcp` already (TRUE) or not yet estimated (FALSE)? */
+
 } SW_SITE;
 
 
@@ -291,7 +304,7 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 );
 
 
-Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name, Bool isSW2);
+Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name);
 Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp);
 Bool SWRC_check_parameters_for_Campbell1974(double *swrcp);
 Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp);

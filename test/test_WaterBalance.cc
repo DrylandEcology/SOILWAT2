@@ -195,8 +195,9 @@ namespace {
     // Set SWRC and PDF (and SWRC parameter input filename)
     strcpy(SW_Site.site_swrc_name, (char *) "vanGenuchten1980");
     SW_Site.site_swrc_type = encode_str2swrc(SW_Site.site_swrc_name);
-    strcpy(SW_Site.site_pdf_name, (char *) "NoPDF");
+    strcpy(SW_Site.site_pdf_name, (char *) "Rosetta3");
     SW_Site.site_pdf_type = encode_str2pdf(SW_Site.site_pdf_name);
+    SW_Site.site_has_swrcp = swTRUE;
 
     Mem_Free(InFiles[eSWRCp]);
     InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in");
@@ -229,8 +230,9 @@ namespace {
     // Set SWRC and PDF (and SWRC parameter input filename)
     strcpy(SW_Site.site_swrc_name, (char *) "FXW");
     SW_Site.site_swrc_type = encode_str2swrc(SW_Site.site_swrc_name);
-    strcpy(SW_Site.site_pdf_name, (char *) "NoPDF");
+    strcpy(SW_Site.site_pdf_name, (char *) "neuroFX2021");
     SW_Site.site_pdf_type = encode_str2pdf(SW_Site.site_pdf_name);
+    SW_Site.site_has_swrcp = swTRUE;
 
     Mem_Free(InFiles[eSWRCp]);
     InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in");

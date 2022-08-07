@@ -1315,21 +1315,21 @@ double SWRC_SWCtoSWP(
 	}
 
 	switch (swrc_type) {
-		case 0:
+		case sw_Campbell1974:
 			res = SWRC_SWCtoSWP_Campbell1974(
 				swcBulk, swrcp, gravel, width,
 				errmode
 			);
 			break;
 
-		case 1:
+		case sw_vanGenuchten1980:
 			res = SWRC_SWCtoSWP_vanGenuchten1980(
 				swcBulk, swrcp, gravel, width,
 				errmode
 			);
 			break;
 
-		case 2:
+		case sw_FXW:
 			res = SWRC_SWCtoSWP_FXW(
 				swcBulk, swrcp, gravel, width,
 				errmode
@@ -1657,15 +1657,15 @@ double SWRC_SWPtoSWC(
 	}
 
 	switch (swrc_type) {
-		case 0:
+		case sw_Campbell1974:
 			res = SWRC_SWPtoSWC_Campbell1974(swpMatric, swrcp, gravel, width);
 			break;
 
-		case 1:
+		case sw_vanGenuchten1980:
 			res = SWRC_SWPtoSWC_vanGenuchten1980(swpMatric, swrcp, gravel, width);
 			break;
 
-		case 2:
+		case sw_FXW:
 			res = SWRC_SWPtoSWC_FXW(swpMatric, swrcp, gravel, width);
 			break;
 

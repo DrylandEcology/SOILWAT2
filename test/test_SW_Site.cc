@@ -52,7 +52,7 @@ namespace {
   };
   const char *ns_pdfc2vG1980[] = {
     "vanGenuchten1980"
-    // PDFs implemented in C
+    // PDFs implemented in SOILWAT2
   };
   const char *ns_pdfa2FXW[] = {
     "FXW"
@@ -61,7 +61,7 @@ namespace {
   };
   const char *ns_pdfc2FXW[] = {
     "FXW"
-    // PDFs implemented in C
+    // PDFs implemented in SOILWAT2
   };
 
   // Test pedotransfer functions
@@ -153,89 +153,72 @@ namespace {
   TEST(SiteTest, PDF2SWRC) {
     unsigned int k; // `length()` returns "unsigned long"
 
-    // Matching/incorrect PDF-SWRC pairs
-    // (k starts at 1 because 0 holds the SWRC)
-    for (k = 0; k < N_SWRCs; k++) {
-      EXPECT_TRUE(
-        (bool) check_SWRC_vs_PDF((char *) swrc2str[k], (char *) "NoPDF", swTRUE)
-      );
-    }
-
     for (k = 1; k < length(ns_pdfca2C1974); k++) {
       EXPECT_TRUE(
         (bool) check_SWRC_vs_PDF(
           (char *) ns_pdfca2C1974[0],
-          (char *) ns_pdfca2C1974[k],
-          swTRUE
+          (char *) ns_pdfca2C1974[k]
         )
       );
 
       EXPECT_FALSE(
         (bool) check_SWRC_vs_PDF(
           (char *) ns_pdfa2vG1980[0],
-          (char *) ns_pdfca2C1974[k],
-          swTRUE
+          (char *) ns_pdfca2C1974[k]
         )
       );
 
       EXPECT_FALSE(
         (bool) check_SWRC_vs_PDF(
           (char *) ns_pdfa2FXW[0],
-          (char *) ns_pdfca2C1974[k],
-          swTRUE
+          (char *) ns_pdfca2C1974[k]
         )
       );
     }
 
     for (k = 1; k < length(ns_pdfa2vG1980); k++) {
-      EXPECT_TRUE(
+      EXPECT_FALSE(
         (bool) check_SWRC_vs_PDF(
           (char *) ns_pdfa2vG1980[0],
-          (char *) ns_pdfa2vG1980[k],
-          swFALSE
+          (char *) ns_pdfa2vG1980[k]
         )
       );
 
       EXPECT_FALSE(
         (bool) check_SWRC_vs_PDF(
           (char *) ns_pdfca2C1974[0],
-          (char *) ns_pdfa2vG1980[k],
-          swFALSE
+          (char *) ns_pdfa2vG1980[k]
         )
       );
 
       EXPECT_FALSE(
         (bool) check_SWRC_vs_PDF(
           (char *) ns_pdfa2FXW[0],
-          (char *) ns_pdfa2vG1980[k],
-          swFALSE
+          (char *) ns_pdfa2vG1980[k]
         )
       );
     }
 
 
     for (k = 1; k < length(ns_pdfa2FXW); k++) {
-      EXPECT_TRUE(
+      EXPECT_FALSE(
         (bool) check_SWRC_vs_PDF(
           (char *) ns_pdfa2FXW[0],
-          (char *) ns_pdfa2FXW[k],
-          swFALSE
+          (char *) ns_pdfa2FXW[k]
         )
       );
 
       EXPECT_FALSE(
         (bool) check_SWRC_vs_PDF(
           (char *) ns_pdfca2C1974[0],
-          (char *) ns_pdfa2FXW[k],
-          swFALSE
+          (char *) ns_pdfa2FXW[k]
         )
       );
 
       EXPECT_FALSE(
         (bool) check_SWRC_vs_PDF(
           (char *) ns_pdfa2vG1980[0],
-          (char *) ns_pdfa2FXW[k],
-          swFALSE
+          (char *) ns_pdfa2FXW[k]
         )
       );
     }

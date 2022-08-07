@@ -95,6 +95,7 @@ RealD
 
 	@note Code maintenance:
 		- Values must exactly match those provided in `siteparam.in`.
+		- Order must exactly match "indices of `swrc2str`"
 		- See details in section #swrc_pdf
 */
 char const *swrc2str[N_SWRCs] = {
@@ -107,15 +108,13 @@ char const *swrc2str[N_SWRCs] = {
 
 	@note Code maintenance:
 		- Values must exactly match those provided in `siteparam.in`.
-		- The first value must be "NoPDF".
+		- Order must exactly match "indices of `pdf2str`"
 		- See details in section #swrc_pdf
+		- `rSOILWAT2` may implemented additional PDFs
 */
 char const *pdf2str[N_PDFs] = {
-	"NoPDF",
 	"Cosby1984AndOthers",
-	"Cosby1984",
-	"Rosetta3",
-	"neuroFX2021"
+	"Cosby1984"
 };
 
 
@@ -336,6 +335,7 @@ static double ui_theta_min(
 	@brief Translate a SWRC name into a SWRC type number
 
 	See #swrc2str and `siteparam.in`.
+	Throws an error if `SWRC` is not implemented.
 
 	@param[in] *swrc_name Name of a SWRC
 
@@ -369,7 +369,8 @@ unsigned int encode_str2swrc(char *swrc_name) {
 
 	@param[in] *pdf_name Name of a PDF
 
-	@return Internal identification number of selected PDF
+	@return Internal identification number of selected PDF;
+		#SW_MISSING if not implemented.
 */
 unsigned int encode_str2pdf(char *pdf_name) {
 	unsigned int k;
@@ -381,12 +382,7 @@ unsigned int encode_str2pdf(char *pdf_name) {
 	);
 
 	if (k == N_PDFs) {
-		LogError(
-			logfp,
-			LOGFATAL,
-			"PDF '%s' is not implemented.",
-			pdf_name
-		);
+		k = (unsigned int) SW_MISSING;
 	}
 
 	return k;
@@ -420,35 +416,22 @@ void SWRC_PDF_estimate_parameters(
 	double bdensity
 ) {
 
-	if (pdf_type == 0) {
-		LogError(
-			logfp,
-			LOGNOTE,
-			"`SWRC_PDF_estimate_parameters()` was called even though "
-			"`pdf_type` %d was requested "
-			"(which uses values from 'swrc_params.in' instead of estimation).",
-			pdf_type
-		);
+	/* Initialize swrcp[] to 0 */
+	memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+
+	if (pdf_type == sw_Cosby1984AndOthers) {
+		SWRC_PDF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
+
+	} else if (pdf_type == sw_Cosby1984) {
+		SWRC_PDF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
 
 	} else {
-
-		/* Initialize swrcp[] to 0 */
-		memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
-
-		if (pdf_type == 1) {
-			SWRC_PDF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
-
-		} else if (pdf_type == 2) {
-			SWRC_PDF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
-
-		} else {
-			LogError(
-				logfp,
-				LOGFATAL,
-				"PDF (type %d) is not implemented in SOILWAT2.",
-				pdf_type
-			);
-		}
+		LogError(
+			logfp,
+			LOGFATAL,
+			"PDF is not implemented in SOILWAT2.",
+			pdf_type
+		);
 	}
 
 	/**********************************/
@@ -547,8 +530,8 @@ double SW_swcBulk_saturated(
 	double theta_sat = SW_MISSING;
 
 	switch (swrc_type) {
-		case 0: // Campbell1974
-			if (pdf_type == 1) {
+		case sw_Campbell1974:
+			if (pdf_type == sw_Cosby1984AndOthers) {
 				// Cosby1984AndOthers (backwards compatible)
 				PDF_Saxton2006(&theta_sat, sand, clay);
 			} else {
@@ -556,11 +539,11 @@ double SW_swcBulk_saturated(
 			}
 			break;
 
-		case 1: // vanGenuchten1980
+		case sw_vanGenuchten1980:
 			theta_sat = swrcp[1];
 			break;
 
-		case 2: // FXW
+		case sw_FXW:
 			theta_sat = swrcp[0];
 			break;
 
@@ -624,15 +607,15 @@ double SW_swcBulk_minimum(
 
 	/* `theta_min` based on theoretical SWRC */
 	switch (swrc_type) {
-		case 0: // Campbell1974: phi = infinity at theta_min
+		case sw_Campbell1974: // phi = infinity at theta_min
 			theta_min_theoretical = 0.;
 			break;
 
-		case 1: // vanGenuchten1980: phi = infinity at theta_min
+		case sw_vanGenuchten1980: // phi = infinity at theta_min
 			theta_min_theoretical = swrcp[0];
 			break;
 
-		case 2: // FXW: phi = 6.3 x 10^6 cm at theta_min
+		case sw_FXW: // phi = 6.3 x 10^6 cm at theta_min
 			theta_min_theoretical = 0.;
 			break;
 
@@ -656,9 +639,9 @@ double SW_swcBulk_minimum(
 		swcBulk_sat,
 		swrc_type,
 		swrcp,
-		// `pdf_type == 1` (Cosby1984AndOthers) doesn't work for unit test:
+		// `(Bool) pdf_type == sw_Cosby1984AndOthers` doesn't work for unit test:
 		//   error: "no known conversion from 'bool' to 'Bool'"
-		pdf_type == 1 ? swTRUE : swFALSE
+		pdf_type == sw_Cosby1984AndOthers ? swTRUE : swFALSE
 	);
 
 	/* `theta_min_sim` must be strictly larger than `theta_min_theoretical` */
@@ -678,39 +661,19 @@ double SW_swcBulk_minimum(
 
 	@param[in] *swrc_name Name of selected SWRC
 	@param[in] *pdf_name Name of selected PDF
-	@param[in] isSW2 Logical; TRUE if scope of PDF implementation is "SOILWAT2".
 
 	@return A logical value indicating if SWRC and PDF are compatible.
 */
-Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name, Bool isSW2) {
+Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name) {
 	Bool res = swFALSE;
 
-	if (Str_CompareI(pdf_name, (char *) "NoPDF") == 0) {
-		res = swTRUE;
-	} else {
-
+	if (!missing((double) encode_str2pdf(pdf_name))) {
 		if (
 			Str_CompareI(swrc_name, (char *) "Campbell1974") == 0 &&
 			(
 				Str_CompareI(pdf_name, (char *) "Cosby1984AndOthers") == 0 ||
 				Str_CompareI(pdf_name, (char *) "Cosby1984") == 0
 			)
-		) {
-			res = swTRUE;
-		}
-		else if (
-			!isSW2 &&
-			Str_CompareI(swrc_name, (char *) "vanGenuchten1980") == 0 &&
-			// "Rosetta3" PDF is not implemented in SOILWAT2 (but in rSOILWAT2)
-			Str_CompareI(pdf_name, (char *) "Rosetta3") == 0
-		) {
-			res = swTRUE;
-		}
-		else if (
-			!isSW2 &&
-			Str_CompareI(swrc_name, (char *) "FXW") == 0 &&
-			// "neuroFX2021" PDF is not implemented in SOILWAT2 (but in rSOILWAT2)
-			Str_CompareI(pdf_name, (char *) "neuroFX2021") == 0
 		) {
 			res = swTRUE;
 		}
@@ -734,15 +697,15 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp) {
 	Bool res = swFALSE;
 
 	switch (swrc_type) {
-		case 0:
+		case sw_Campbell1974:
 			res = SWRC_check_parameters_for_Campbell1974(swrcp);
 			break;
 
-		case 1:
+		case sw_vanGenuchten1980:
 			res = SWRC_check_parameters_for_vanGenuchten1980(swrcp);
 			break;
 
-		case 2:
+		case sw_FXW:
 			res = SWRC_check_parameters_for_FXW(swrcp);
 			break;
 
@@ -1520,9 +1483,12 @@ void SW_SIT_read(void) {
 			strcpy(v->site_pdf_name, inbuf);
 			v->site_pdf_type = encode_str2pdf(v->site_pdf_name);
 			break;
+		case 43:
+			v->site_has_swrcp = itob(atoi(inbuf));
+			break;
 
 		default:
-			if (lineno > 42 + MAX_TRANSP_REGIONS)
+			if (lineno > 43 + MAX_TRANSP_REGIONS)
 				break; /* skip extra lines */
 
 			if (MAX_TRANSP_REGIONS < v->n_transp_rgn) {
@@ -1863,7 +1829,7 @@ void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 void SW_SWRC_read(void) {
 
 	/* Don't read values from disk if they will be estimated via a PDF */
-	if (SW_Site.site_pdf_type != 0) return;
+	if (!SW_Site.site_has_swrcp) return;
 
 	FILE *f;
 	LyrIndex lyrno = 0, k;
@@ -1972,14 +1938,16 @@ void SW_SIT_init_run(void) {
 
 
 	/* Check compatibility between selected SWRC and PDF */
-	if (!check_SWRC_vs_PDF(sp->site_swrc_name, sp->site_pdf_name, swTRUE)) {
-		LogError(
-			logfp,
-			LOGFATAL,
-			"Selected PDF '%s' is incompatible with selected SWRC '%s'\n",
-			sp->site_pdf_name,
-			sp->site_swrc_name
-		);
+	if (!sp->site_has_swrcp) {
+		if (!check_SWRC_vs_PDF(sp->site_swrc_name, sp->site_pdf_name)) {
+			LogError(
+				logfp,
+				LOGFATAL,
+				"Selected PDF '%s' is incompatible with selected SWRC '%s'\n",
+				sp->site_pdf_name,
+				sp->site_swrc_name
+			);
+		}
 	}
 
 
@@ -2014,10 +1982,10 @@ void SW_SIT_init_run(void) {
 		);
 
 
-		if (lyr->pdf_type > 0) {
+		if (!sp->site_has_swrcp) {
 			/* Use pedotransfer function PDF
-			   estimate parameters of soil water retention curve (SWRC) for layer.
-			   If pdf_type == 0, then the parameters were already obtained from disk
+			   to estimate parameters of soil water retention curve (SWRC) for layer.
+			   If `has_swrcp`, then parameters already obtained from disk
 			   by `SW_SWRC_read()`
 			*/
 			SWRC_PDF_estimate_parameters(

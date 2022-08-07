@@ -101,13 +101,11 @@ namespace{
       memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
 
       // Find a suitable PDF to generate `SWRCp`
-      // (start `pdf_type` at 1 because 0 codes to "NoPDF")
       for (
-        pdf_type = 1;
+        pdf_type = 0;
         pdf_type < N_PDFs && !check_SWRC_vs_PDF(
           (char *) swrc2str[swrc_type],
-          (char *) pdf2str[pdf_type],
-          swTRUE
+          (char *) pdf2str[pdf_type]
         );
         pdf_type++
       ) {}
