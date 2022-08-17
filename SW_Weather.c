@@ -131,10 +131,13 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
  */
 
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                     SW_CLIMATE_YEARLY *climateOutput) {
-    
-    int month, yearIndex, year, day, numDaysYear, numDaysMonth = Time_days_in_month(0),
-    currMonDay;
+                     SW_CLIMATE_YEARLY *climateOutput, double latitude) {
+
+    Bool isNorth = (latitude >= 0.0 && latitude < 90.0) ? swTRUE : swFALSE;
+
+    int month, yearIndex, year, day, numDaysYear, currMonDay;
+    int numDaysMonth = (isNorth) ? Time_days_in_month(Jan) : Time_days_in_month(Jul);
+    int adjustedDoy, adjustedYear = 0, secondMonth, seventhMonth, adjustedFullYear;
     
     double currentTempMin, currentTempMean, totalAbove65, currentJulyMin, JulyPPT,
     consecNonFrost, currentNonFrost;
@@ -149,35 +152,52 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     memset(climateOutput->meanTemp_C, 0., sizeof(double) * numYears);
     memset(climateOutput->minTempFeb_C, 0., sizeof(double) * numYears);
     memset(climateOutput->minTempJuly_C, 0., sizeof(double) * numYears);
+
+    fillNorthSouthConstants(allHist, numYears, startYear, climateOutput);
+
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
         Time_new_year(year);
         numDaysYear = Time_get_lastdoy_y(year);
-        month = 0;
+        month = (isNorth) ? Jan : Jul;
         currMonDay = 0;
         currentJulyMin = SW_MISSING;
         totalAbove65 = 0;
         currentNonFrost = 0;
         consecNonFrost = 0;
         JulyPPT = 0;
-        
+        if(isNorth) {
+            secondMonth = Feb;
+            seventhMonth = Jul;
+        } else {
+            secondMonth = Aug;
+            seventhMonth = Jan;
+        }
+
         for(day = 0; day < numDaysYear; day++) {
+            if(isNorth) {
+                adjustedDoy = day;
+                adjustedYear = yearIndex;
+            } else {
+                // Check if current year is leap year
+                adjustedDoy = (numDaysYear == 366) ? day + 182 : day + 181;
+                adjustedDoy = adjustedDoy % numDaysYear;
+                adjustedYear = (adjustedDoy == 0) ? yearIndex + 1 : adjustedYear;
+                adjustedFullYear = adjustedYear + startYear;
+                if(adjustedDoy == 0) Time_new_year(adjustedFullYear);
+            }
+
+            if(month == Jul && yearIndex == numYears - 1 && !isNorth) break;
+
             currMonDay++;
-            climateOutput->meanTempMon_C[month][yearIndex] += allHist[yearIndex]->temp_avg[day];
-            climateOutput->maxTempMon_C[month][yearIndex] += allHist[yearIndex]->temp_max[day];
-            climateOutput->minTempMon_C[month][yearIndex] += allHist[yearIndex]->temp_min[day];
-            climateOutput->PPTMon_cm[month][yearIndex] += allHist[yearIndex]->ppt[day];
 
-            climateOutput->PPT_cm[yearIndex] += allHist[yearIndex]->ppt[day];
-            climateOutput->meanTemp_C[yearIndex] += allHist[yearIndex]->temp_avg[day];
-
-            currentTempMin = allHist[yearIndex]->temp_min[day];
-            currentTempMean = allHist[yearIndex]->temp_avg[day];
+            currentTempMin = allHist[adjustedYear]->temp_min[adjustedDoy];
+            currentTempMean = allHist[adjustedYear]->temp_avg[adjustedDoy];
             
-            if(month == Jul){
+            if(month == seventhMonth){
                 currentJulyMin = (currentTempMin < currentJulyMin) ?
                                             currentTempMin : currentJulyMin;
-                JulyPPT += allHist[yearIndex]->ppt[day] * 10;
+                JulyPPT += allHist[adjustedYear]->ppt[adjustedDoy] * 10;
             }
 
             if(currentTempMin > 0.0) {
@@ -189,38 +209,82 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                 currentNonFrost = 0.;
             }
 
-            if(month == Feb) {
-                climateOutput->minTempFeb_C[yearIndex] += allHist[yearIndex]->temp_min[day];
+            if(month == secondMonth) {
+                climateOutput->minTempFeb_C[yearIndex] += allHist[adjustedYear]->temp_min[adjustedDoy];
             }
 
             if(currMonDay == numDaysMonth) {
-                // Take the average of the current months values for current year
-                climateOutput->meanTempMon_C[month][yearIndex] /= numDaysMonth;
-                climateOutput->maxTempMon_C[month][yearIndex] /= numDaysMonth;
-                climateOutput->minTempMon_C[month][yearIndex] /= numDaysMonth;
+                if(month == secondMonth) climateOutput->minTempFeb_C[yearIndex] /= numDaysMonth;
                 
-                if(month == Feb) climateOutput->minTempFeb_C[yearIndex] /= numDaysMonth;
-                
-                month++;
-                numDaysMonth = Time_days_in_month(month % 12);
+                month = (month + 1) % 12;
+                numDaysMonth = Time_days_in_month(month);
                 currMonDay = 0;
             }
-            
+
             currentTempMean -= 18.333;
             totalAbove65 += (currentTempMean > 0.0) ? currentTempMean : 0.;
             
         }
-        climateOutput->minTempJuly_C[yearIndex] = currentJulyMin;
+        climateOutput->minTempJuly_C[yearIndex] = (currentJulyMin == SW_MISSING) ? 0 : currentJulyMin;
         climateOutput->PPTJuly_mm[yearIndex] = JulyPPT;
         climateOutput->ddAbove65F_degday[yearIndex] = totalAbove65;
         
         // The reason behind checking if consecNonFrost is greater than zero,
         // is that there is a chance all days in the year are above 32F
         climateOutput->frostFree_days[yearIndex] = (consecNonFrost > 0) ? consecNonFrost : currentNonFrost;
-        climateOutput->meanTemp_C[yearIndex] /= numDaysYear;
     }
+
+    if(!isNorth) {
+        currentJulyMin = SW_MISSING;
+        for(day = 0; day < 31; day++) {
+            if(allHist[0]->temp_min[day] < currentJulyMin) {
+                currentJulyMin = allHist[0]->temp_min[day];
+            }
+        }
+        climateOutput->minTempJuly_C[numYears - 1] = currentJulyMin;
+
+        for(day = 31; day < 59; day++) {
+            climateOutput->PPTJuly_mm[numYears - 1] += allHist[0]->temp_min[day];
+        }
+    }
+
     findDriestQtr(climateOutput->meanTempDriestQtr_C, numYears,
                   climateOutput->meanTempMon_C, climateOutput->PPTMon_cm);
+}
+
+void fillNorthSouthConstants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
+                         SW_CLIMATE_YEARLY *climateOutput) {
+
+    int month = Jan, monDay, numDaysMonth = Time_days_in_month(month), yearIndex,
+    day, numDaysYear, currMonDay, year;
+
+    for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
+        year = yearIndex + startYear;
+        Time_new_year(year);
+        numDaysYear = Time_get_lastdoy_y(year);
+        currMonDay = 0;
+        for(day = 0; day < numDaysYear; day++) {
+            currMonDay++;
+            climateOutput->meanTempMon_C[month][yearIndex] += allHist[yearIndex]->temp_avg[day];
+            climateOutput->maxTempMon_C[month][yearIndex] += allHist[yearIndex]->temp_max[day];
+            climateOutput->minTempMon_C[month][yearIndex] += allHist[yearIndex]->temp_min[day];
+            climateOutput->PPTMon_cm[month][yearIndex] += allHist[yearIndex]->ppt[day];
+            climateOutput->PPT_cm[yearIndex] += allHist[yearIndex]->ppt[day];
+            climateOutput->meanTemp_C[yearIndex] += allHist[yearIndex]->temp_avg[day];
+
+            if(currMonDay == numDaysMonth) {
+                climateOutput->meanTempMon_C[month][yearIndex] /= numDaysMonth;
+                climateOutput->maxTempMon_C[month][yearIndex] /= numDaysMonth;
+                climateOutput->minTempMon_C[month][yearIndex] /= numDaysMonth;
+
+                month = (month + 1) % 12;
+                numDaysMonth = Time_days_in_month(month);
+                currMonDay = 0;
+            }
+        }
+        climateOutput->meanTemp_C[yearIndex] /= numDaysYear;
+    }
+
 }
 
 /**
