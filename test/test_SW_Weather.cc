@@ -159,6 +159,8 @@ namespace {
         int deallocate = 0;
         int allocate = 1;
 
+        double latitude = 0.0;
+
         // Allocate memory
             // 31 = number of years used in test
         allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
@@ -181,7 +183,7 @@ namespace {
         //   )
         // ```
 
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput);
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, latitude);
 
         EXPECT_NEAR(climateOutput.meanTempMon_C[Jan][0], -8.432581, tol6);
         EXPECT_NEAR(climateOutput.maxTempMon_C[Jan][0], -2.562581, tol6);
@@ -262,6 +264,8 @@ namespace {
         int deallocate = 0;
         int allocate = 1;
 
+        double latitude = 0.0;
+
         // Allocate memory
             // 1 = number of years used in test
         allocDeallocClimateStructs(allocate, 1, &climateOutput, &climateAverages);
@@ -279,7 +283,7 @@ namespace {
         //   )
         // ```
 
-        calcSiteClimate(SW_Weather.allHist, 1, 1980, &climateOutput);
+        calcSiteClimate(SW_Weather.allHist, 1, 1980, &climateOutput, latitude);
         averageClimateAcrossYears(&climateOutput, 1, &climateAverages);
 
         // Expect that aggregated values across one year are identical
@@ -369,6 +373,109 @@ namespace {
 
     }
 
+    TEST(ClimateVariableTest, ClimateFromDefaultWeatherSouth) {
+
+        // This test relies on allHist from `SW_WEATHER` being already filled
+        SW_CLIMATE_YEARLY climateOutput;
+        SW_CLIMATE_CLIM climateAverages;
+
+        int deallocate = 0;
+        int allocate = 1;
+
+        double latitude = -10.0;
+
+        // Allocate memory
+            // 31 = number of years used in test
+        allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
+
+
+        // ------ Check climate variables for default weather ------
+        // 1980 is first year out of 31 years of default weather
+
+        // --- Annual time-series of climate variables ------
+        // Here, check values for 1980
+
+        // Expect identical output to rSOILWAT2 (e.g., v5.3.1)
+        // ```{r}
+        //   rSOILWAT2::calc_SiteClimate(
+        //     weatherList = rSOILWAT2::get_WeatherHistory(
+        //       rSOILWAT2::sw_exampleData
+        //     )[1],
+        //     do_C4vars = TRUE,
+        //     do_Cheatgrass_ClimVars = TRUE
+        //   )
+        // ```
+
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, latitude);
+
+        EXPECT_NEAR(climateOutput.meanTempMon_C[Jan][0], -8.432581, tol6);
+        EXPECT_NEAR(climateOutput.maxTempMon_C[Jan][0], -2.562581, tol6);
+        EXPECT_NEAR(climateOutput.minTempMon_C[Jan][0], -14.302581, tol6);
+        EXPECT_NEAR(climateOutput.PPTMon_cm[Jan][0], 15.1400001, tol6);
+        EXPECT_NEAR(climateOutput.PPT_cm[0], 59.27, tol6);
+        EXPECT_NEAR(climateOutput.meanTemp_C[0], 4.524863, tol6);
+
+        // Climate variables used for C4 grass cover
+        // (stdev of one value is undefined)
+        EXPECT_NEAR(climateOutput.minTempJuly_C[0], -16.98, tol6);
+        EXPECT_NEAR(climateOutput.frostFree_days[0], 78, tol6); // TODO: Look into (78)
+        EXPECT_NEAR(climateOutput.ddAbove65F_degday[0], 16.990001, tol6);
+
+
+        // Climate variables used for cheatgrass cover
+        // (stdev of one value is undefined)
+        EXPECT_NEAR(climateOutput.PPTJuly_mm[0], 22.199999, tol6);
+        EXPECT_NEAR(climateOutput.meanTempDriestQtr_C[0], 0.936387, tol6);
+        EXPECT_NEAR(climateOutput.minTempFeb_C[0], 5.1445161, tol6);
+
+
+        // --- Long-term variables (aggregated across years) ------
+        // Expect identical output to rSOILWAT2 (e.g., v5.3.1)
+        // ```{r}
+        //   rSOILWAT2::calc_SiteClimate(
+        //     weatherList = rSOILWAT2::get_WeatherHistory(
+        //       rSOILWAT2::sw_exampleData
+        //     ),
+        //     do_C4vars = TRUE,
+        //     do_Cheatgrass_ClimVars = TRUE
+        //   )
+        // ```
+
+        averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
+
+        EXPECT_NEAR(climateAverages.meanTempMon_C[Jan], -9.325551, tol6);
+        EXPECT_NEAR(climateAverages.maxTempMon_C[Jan], -2.714381, tol6);
+        EXPECT_NEAR(climateAverages.minTempMon_C[Jan], -15.936722, tol6);
+        EXPECT_NEAR(climateAverages.PPTMon_cm[Jan], 6.867419, tol6);
+
+        EXPECT_NEAR(climateAverages.PPT_cm, 62.817419, tol6);
+        // Note: rSOILWAT2 v5.3.1 returns incorrect meanTemp_C = 4.153896
+        //   which is long-term daily average (but not long-term annual average)
+        EXPECT_NEAR(climateAverages.meanTemp_C, 4.154009, tol6);
+
+        // Climate variables used for C4 grass cover
+        EXPECT_NEAR(climateAverages.minTempJuly_C, -27.243870, tol6);
+        EXPECT_NEAR(climateAverages.frostFree_days, 68.290323, tol6);
+        EXPECT_NEAR(climateAverages.ddAbove65F_degday, 20.684935, tol6);
+
+        EXPECT_NEAR(climateAverages.sdC4[0], 5.241726, tol6);
+        EXPECT_NEAR(climateAverages.sdC4[1], 13.446669, tol6);
+        EXPECT_NEAR(climateAverages.sdC4[2], 19.755513, tol6);
+
+        // Climate variables used for cheatgrass cover
+        EXPECT_NEAR(climateAverages.PPTJuly_mm, 22.199999, tol6);
+        EXPECT_NEAR(climateAverages.meanTempDriestQtr_C, 11.524859, tol6);
+        EXPECT_NEAR(climateAverages.minTempFeb_C, -13.904599, tol6);
+
+        EXPECT_NEAR(climateAverages.sdCheatgrass[0], 21.598367, tol6);
+        EXPECT_NEAR(climateAverages.sdCheatgrass[1], 7.171922, tol6);
+        EXPECT_NEAR(climateAverages.sdCheatgrass[2], 2.618434, tol6);
+
+
+        // ------ Reset and deallocate
+        allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
+    }
+
 
     TEST(ClimateVariableTest, ClimateFromConstantWeather) {
 
@@ -378,6 +485,8 @@ namespace {
 
         int allocate = 1;
         int deallocate = 0;
+
+        double latitude = 0.0;
         
         // Allocate memory
         allocDeallocClimateStructs(allocate, 2, &climateOutput, &climateAverages);
@@ -408,7 +517,7 @@ namespace {
         }
 
         // --- Annual time-series of climate variables ------
-        calcSiteClimate(allHist, 2, 1980, &climateOutput);
+        calcSiteClimate(allHist, 2, 1980, &climateOutput, latitude);
 
         EXPECT_DOUBLE_EQ(climateOutput.meanTempMon_C[Jan][0], 1.);
         EXPECT_DOUBLE_EQ(climateOutput.maxTempMon_C[Jan][0], 1.);
