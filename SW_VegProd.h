@@ -264,7 +264,8 @@ void SW_VPD_read(void);
 void SW_VPD_new_year(void);
 void SW_VPD_fix_cover(void);
 void SW_VPD_construct(void);
-void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYear, int veg_method);
+void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYear,
+                                   int veg_method, double latitude);
 void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTempMon_C[],
     double PPTMon_cm[], double inputValues[], double shrubLimit, double SumGrassesFraction,
     double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorth, Bool warnExtrapolation,

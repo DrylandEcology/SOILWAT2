@@ -590,6 +590,8 @@ void SW_VPD_init_run(void) {
 
     veg_method = veg->veg_method;
 
+    double latitude = 45.0;
+
     /* Set co2-multipliers to default */
     for (year = 0; year < MAX_NYEAR; year++)
     {
@@ -601,7 +603,7 @@ void SW_VPD_init_run(void) {
     }
 
     if(veg_method > 0) {
-        estimateVegetationFromClimate(veg, model->startyr, model->endyr, veg_method);
+        estimateVegetationFromClimate(veg, model->startyr, model->endyr, veg_method, latitude);
     }
 
 }
@@ -872,7 +874,8 @@ void get_critical_rank(void){
  1 - Estimate fixed vegetation composition (fractional cover) from long-term climate conditions
  */
 
-void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYear, int veg_method) {
+void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYear,
+                                   int veg_method, double latitude) {
 
     int numYears = endYear - startYear + 1, deallocate = 0, allocate = 1, k;
 
@@ -887,12 +890,19 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
     double SumGrassesFraction = SW_MISSING, C4Variables[3], grassOutput[3],
     RelAbundanceL0[8], RelAbundanceL1[5];
 
-    Bool fillEmptyWithBareGround = swTRUE, inNorth = swTRUE, warnExtrapolation = swTRUE;
+    Bool fillEmptyWithBareGround = swTRUE, warnExtrapolation = swTRUE;
+    Bool inNorth;
+
+    if(latitude > 0.0 && latitude < 90.0) {
+        inNorth = swTRUE;
+    } else {
+        inNorth = swFALSE;
+    }
 
     // Allocate climate structs' memory
     allocDeallocClimateStructs(allocate, numYears, &climateOutput, &climateAverages);
 
-    calcSiteClimate(SW_Weather.allHist, numYears, startYear, &climateOutput);
+    calcSiteClimate(SW_Weather.allHist, numYears, startYear, &climateOutput, latitude);
 
     averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);
 
