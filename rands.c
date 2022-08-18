@@ -25,10 +25,6 @@
 /*                  Local Variables                    */
 /* --------------------------------------------------- */
 
-#ifndef RSOILWAT
-  static uint64_t stream = 1u; //stream id. this is given out to a pcg_rng then incremented.
-#endif
-
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -36,37 +32,47 @@
 
 /*****************************************************/
 /**
-  \brief Sets the random number seed.
+  \brief Set the seed of a random number generator.
 
-  \param seed The initial state of the system; if 0 then use system time.
+  The sequence produced by a `pcg` random number generator
+  (https://github.com/imneme/pcg-c-basic) is determined by two elements:
+  (i) an initial state and (ii) a sequence selector (or stream identification).
+
+  A sequence is exactly reproduced if `pcg_rng` is initialized with both
+  the same initial state and the same sequence selector.
+  Unique `initseq` values guarantee that different `pcg_rng` produce
+  non-coinciding sequences.
+
+  If `initstate` is `0u`, then the state of a `pcg_rng` is initialized to
+  system time and the sequence selector to `initseq` plus system time.
+  Thus, two calls (with `initstate = 0u`) will produce different
+  random number sequences if `initseq` was different,
+  even if they occurred during the same system time.
+
+  \param initstate The initial state of the system.
+  \param initseq The initial sequence selector.
   \param[in,out] pcg_rng The random number generator to set.
-
-  \note If using this function with STEPWAT2, then call RandSeed() only once
-    per iteration.
-
-  \sideeffect Increment the stream so that no two generators have the same
-    sequence.
 */
-void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
-//we don't need to set a random seed if RSOILWAT is used
+void RandSeed(
+  unsigned long initstate,
+  unsigned long initseq,
+  pcg32_random_t* pcg_rng
+) {
+// R uses its own random number generators
 #ifndef RSOILWAT
 
-  if (seed == 0) {
-    //seed with a random value. Uses the system time to generate
-    //a pseudo-random seed.
-    pcg32_srandom_r(pcg_rng, time(NULL), stream);
-  }
-  else {
-    //Seed with a specific value.
-    pcg32_srandom_r(pcg_rng, (int) seed, stream);
-  }
+  if (initstate == 0u) {
+    // See `pcg32-demo.c`: seed with time
+    pcg32_srandom_r(pcg_rng, time(NULL), initseq + time(NULL));
 
-  //Increment the stream so no two generators have the same sequence.
-  stream++;
+  } else {
+    // Seed with specific values to make rng output sequence reproducible
+    pcg32_srandom_r(pcg_rng, initstate, initseq);
+  }
 
 #else
   // silence compile warnings [-Wunused-parameter]
-  if (pcg_rng == NULL && seed > 0) {}
+  if (pcg_rng == NULL && initstate > 1u && initseq > 1u) {}
 
 #endif
 }

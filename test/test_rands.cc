@@ -24,34 +24,44 @@
 namespace {
   // This tests the uniform random number generator
   TEST(RNGUnifTest, ZeroToOneOutput) {
-    pcg32_random_t rng0, rng1, rng2;
+    pcg32_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     double min = 0., max = 1.;
-    double x0, x1, x2;
+    double x71, x71b, x11, x12;
 
-    RandSeed(7, &rng0);
-    RandSeed(1, &rng1); // different seed & different stream than rng0
-    RandSeed(1, &rng2); // same seed, but different stream than rng1
+    // Seed rngs
+    RandSeed(7u, 1u, &rng71);
+    RandSeed(7u, 1u, &rng71b); // same state & same sequence as rng71
+    RandSeed(1u, 1u, &rng11); // different state but same sequence as rng71
+    RandSeed(1u, 2u, &rng12); // same state but different sequence as rng11
+
 
     for (i = 0; i < n; i++) {
       // Produce random numbers and check that within bounds of [min, max)
-      x0 = RandUni(&rng0);
-      EXPECT_PRED_FORMAT2(::testing::DoubleLE, min, x0);
-      EXPECT_LT(x0, max);
+      x71 = RandUni(&rng71);
+      EXPECT_GE(x71, min);
+      EXPECT_LT(x71, max);
 
-      x1 = RandUni(&rng1);
-      EXPECT_PRED_FORMAT2(::testing::DoubleLE, min, x1);
-      EXPECT_LT(x1, max);
+      x71b = RandUni(&rng71b);
+      EXPECT_GE(x71b, min);
+      EXPECT_LT(x71b, max);
 
-      x2 = RandUni(&rng2);
-      EXPECT_PRED_FORMAT2(::testing::DoubleLE, min, x2);
-      EXPECT_LT(x2, max);
+      x11 = RandUni(&rng11);
+      EXPECT_GE(x11, min);
+      EXPECT_LT(x11, max);
 
-      // Check that random number sequences are different among streams,
-      // even if they were initiated with the same seed
-      EXPECT_GT(fabs(x0 - x1), 0.);
-      EXPECT_GT(fabs(x0 - x2), 0.);
-      EXPECT_GT(fabs(x1 - x2), 0.);
+      x12 = RandUni(&rng12);
+      EXPECT_GE(x12, min);
+      EXPECT_LT(x12, max);
+
+      // Check that rngs with identical state & sequence produce same output
+      EXPECT_EQ(x71, x71b);
+
+      // Check that rngs with different state and/or different sequence produce
+      // different output
+      EXPECT_TRUE(x71 != x11);
+      EXPECT_TRUE(x71 != x12);
+      EXPECT_TRUE(x11 != x12);
     }
   }
 
@@ -61,22 +71,22 @@ namespace {
     float min = 7.5, max = 77.7;
     float x0, x1, x2;
 
-    RandSeed(7, &rng0);
-    RandSeed(1, &rng1); // different seed & different stream than rng0
-    RandSeed(1, &rng2); // same seed, but different stream than rng1
+    RandSeed(7u, 1u, &rng0);
+    RandSeed(1u, 1u, &rng1); // different seed & different stream than rng0
+    RandSeed(1u, 2u, &rng2); // same seed, but different stream than rng1
 
     for (i = 0; i < n; i++) {
       // Produce random numbers and check that within bounds of [min, max)
       x0 = RandUniFloatRange(min, max, &rng0);
-      EXPECT_PRED_FORMAT2(::testing::FloatLE, min, x0);
+      EXPECT_GE(x0, min);
       EXPECT_LT(x0, max);
 
       x1 = RandUniFloatRange(min, max, &rng1);
-      EXPECT_PRED_FORMAT2(::testing::FloatLE, min, x1);
+      EXPECT_GE(x1, min);
       EXPECT_LT(x1, max);
 
       x2 = RandUniFloatRange(min, max, &rng2);
-      EXPECT_PRED_FORMAT2(::testing::FloatLE, min, x2);
+      EXPECT_GE(x2, min);
       EXPECT_LT(x2, max);
 
       // Check that random number sequences are different among streams,
@@ -86,11 +96,9 @@ namespace {
       EXPECT_GT(fabs(x1 - x2), 0.);
     }
 
-    RandSeed(0, &rng0);
-
     // Check that order of min/max doesn't matter
     x0 = RandUniFloatRange(max, min, &rng0);
-    EXPECT_PRED_FORMAT2(::testing::FloatLE, min, x0);
+    EXPECT_GE(x0, min);
     EXPECT_LT(x0, max);
 
     // Check that result is min if min == max
@@ -106,9 +114,9 @@ namespace {
     int x0, x1, x2;
     int ne01 = 0, ne02 = 0, ne12 = 0; // counter of differences among streams
 
-    RandSeed(7, &rng0);
-    RandSeed(1, &rng1); // different seed & different stream than rng0
-    RandSeed(1, &rng2); // same seed, but different stream than rng1
+    RandSeed(7u, 1u, &rng0);
+    RandSeed(1u, 1u, &rng1); // different seed & different stream than rng0
+    RandSeed(1u, 2u, &rng2); // same seed, but different stream than rng1
 
     for (i = 0; i < n; i++) {
       // Produce random numbers and check that within bounds of [min, max]
@@ -137,7 +145,6 @@ namespace {
     EXPECT_GT(ne12, 0);
 
 
-    RandSeed(0, &rng0);
 
     // Check that order of min/max doesn't matter
     x0 = RandUniIntRange(max, min, &rng0);
@@ -162,9 +169,9 @@ namespace {
       x1[2] = {unlikely[0], unlikely[1]},
       x2[2] = {unlikely[0], unlikely[1]};
 
-    RandSeed(7, &rng0);
-    RandSeed(1, &rng1); // different seed & different stream than rng0
-    RandSeed(1, &rng2); // same seed, but different stream than rng1
+    RandSeed(7u, 1u, &rng0);
+    RandSeed(1u, 1u, &rng1); // different seed & different stream than rng0
+    RandSeed(1u, 2u, &rng2); // same seed, but different stream than rng1
 
     for (i = 0; i < n; i++) {
       // Produce random numbers and check that within likely bounds
@@ -204,7 +211,7 @@ namespace {
   // This tests the beta random number generator
   TEST(RNGBetaTest, ZeroToOneOutput) {
     pcg32_random_t ZeroToOne_rng;
-    RandSeed(0, &ZeroToOne_rng);
+    RandSeed(0u, 0u, &ZeroToOne_rng);
     EXPECT_LT(RandBeta(0.5, 2, &ZeroToOne_rng), 1);
     EXPECT_LT(RandBeta(1, 3, &ZeroToOne_rng), 1);
     EXPECT_GT(RandBeta(1, 4, &ZeroToOne_rng), 0);
@@ -213,7 +220,7 @@ namespace {
 
   TEST(RNGBetaDeathTest, Errors) {
     pcg32_random_t error_rng;
-    RandSeed(0, &error_rng);
+    RandSeed(0u, 0u, &error_rng);
     EXPECT_DEATH_IF_SUPPORTED(RandBeta(-0.5, 2, &error_rng), "AA <= 0.0");
     EXPECT_DEATH_IF_SUPPORTED(RandBeta(1, -3, &error_rng), "BB <= 0.0");
     EXPECT_DEATH_IF_SUPPORTED(RandBeta(-1, -3, &error_rng), "AA <= 0.0");

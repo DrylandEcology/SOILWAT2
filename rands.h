@@ -28,7 +28,11 @@ typedef long RandListType;
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void RandSeed(signed long seed, pcg32_random_t* pcg_rng);
+void RandSeed(
+  unsigned long initstate,
+  unsigned long initseq,
+  pcg32_random_t* pcg_rng
+);
 double RandUni(pcg32_random_t* pcg_rng);
 int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng);
 float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rng);

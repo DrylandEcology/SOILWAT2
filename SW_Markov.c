@@ -209,10 +209,10 @@ void SW_MKV_construct(void) {
 	/* Set seed of `markov_rng`
 	  - SOILWAT2: set seed here
 	  - STEPWAT2: `main()` uses `Globals.randseed` to (re-)set for each iteration
-		- rSOILWAT2: R API handles RNGs
+	  - rSOILWAT2: R API handles RNGs
 	*/
 	#if defined(SOILWAT)
-	RandSeed(0, &markov_rng);
+	RandSeed(0u, 0u, &markov_rng);
 	#endif
 
 	m->ppt_events = 0;
