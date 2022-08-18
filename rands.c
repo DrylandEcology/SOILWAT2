@@ -83,6 +83,9 @@ void RandSeed(
 /**
   \brief A pseudo-random number from the uniform distribution.
 
+  If `pcg_rng` was not initialized with `RandSeed()`, then the first call to
+  `RandUni()` returns 0.
+
   \param[in,out] *pcg_rng The random number generator to use.
 
   @return A pseudo-random number between 0 and 1.
@@ -288,8 +291,26 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 
 /*****************************************************/
 /**
-	 \brief A pseudo-random number from a normal distribution.
+	\brief A pseudo-random number from a normal distribution.
 
+	The function implements the Marsaglia polar method
+	(Marsaglia & Bray 1964 \cite marsaglia1964SR).
+
+	\Note: The implementation is not re-entrant
+	because of static `set` and `gset`.
+	Each other call to `RandNorm()` draws two random numbers.
+	One random number is returned immediately; the other is internally stored
+	in `gset` (and marked by `set`).
+	The next call will return the stored value of `gset`
+	(whether or not the call used the same `pcg_rng`) and resets `gset` and `set`.
+
+	\param mean The mean of the distribution
+	\param stddev Standard deviation of the distribution
+	\param[in,out] *pcg_rng The random number generator to use.
+*/
+double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
+/* History:
+	 cwb - 6/20/00
 	 This routine is
 	 adapted from FUNCTION GASDEV in
 	 Press, et al., 1986, Numerical Recipes,
@@ -299,13 +320,6 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 	 prior to calling any function, that
 	 depends on RandUni().
 
-	\param mean The mean of the distribution
-	\param stddev Standard deviation of the distribution
-  \param[in,out] *pcg_rng The random number generator to use.
-*/
-double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
-/* History:
-	 cwb - 6/20/00
 	 cwb - 09-Dec-2002 -- FINALLY noticed that
 	 gasdev and gset have to be static!
 	 might as well set the others.
@@ -318,8 +332,6 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 		static double v1, v2, r, fac, gset, gasdev;
 
 		if (!set) {
-			/* `RandUni(pcg_rng)` returns 0 if `pcg_rng` is not initialized
-				 causing an infinite while-loop */
 			do {
 				v1 = 2.0 * RandUni(pcg_rng) - 1.0;
 				v2 = 2.0 * RandUni(pcg_rng) - 1.0;
