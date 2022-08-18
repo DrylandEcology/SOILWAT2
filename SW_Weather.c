@@ -398,12 +398,16 @@ void SW_WTH_read(void) {
 			break;
 
 		case 4:
+			w->rng_seed = atoi(inbuf);
+			break;
+
+		case 5:
 			x = atoi(inbuf);
 			w->yr.first = (x < 0) ? SW_Model.startyr : yearto4digit(x);
 			break;
 
 		default:
-			if (lineno == 5 + MAX_MONTHS)
+			if (lineno == 6 + MAX_MONTHS)
 				break;
 
 			x = sscanf(

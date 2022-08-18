@@ -212,7 +212,7 @@ void SW_MKV_construct(void) {
 	  - rSOILWAT2: R API handles RNGs
 	*/
 	#if defined(SOILWAT)
-	RandSeed(0u, 0u, &markov_rng);
+	RandSeed(SW_Weather.rng_seed, 1u, &markov_rng);
 	#endif
 
 	m->ppt_events = 0;
