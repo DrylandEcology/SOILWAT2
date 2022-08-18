@@ -151,7 +151,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     memset(climateOutput->minTempFeb_C, 0., sizeof(double) * numYears);
     memset(climateOutput->minTempJuly_C, 0., sizeof(double) * numYears);
 
-    fillNorthSouthConstants(allHist, numYears, startYear, climateOutput);
+    calcSiteClimateLatInvariants(allHist, numYears, startYear, climateOutput);
 
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
@@ -250,7 +250,12 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                   climateOutput->meanTempMon_C, climateOutput->PPTMon_cm);
 }
 
-void fillNorthSouthConstants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
+/**
+ @brief Helper function to `calcSiteClimate()`. Manages all information that is independant of the site
+ being in the northern/southern hemisphere.
+ */
+
+void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                          SW_CLIMATE_YEARLY *climateOutput) {
 
     int month = Jan, monDay, numDaysMonth = Time_days_in_month(month), yearIndex,
