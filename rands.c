@@ -336,7 +336,7 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 				v1 = 2.0 * RandUni(pcg_rng) - 1.0;
 				v2 = 2.0 * RandUni(pcg_rng) - 1.0;
 				r = v1 * v1 + v2 * v2;
-			} while (r >= 1.0);
+			} while (r >= 1.0 || r == 0.);
 			fac = sqrt(-2.0 *log(r)/r);
 			gset = v1 * fac;
 			gasdev = v2 * fac;
