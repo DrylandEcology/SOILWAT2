@@ -131,9 +131,7 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
  */
 
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                     SW_CLIMATE_YEARLY *climateOutput, double latitude) {
-
-    Bool isNorth = (latitude >= 0.0 && latitude < 90.0) ? swTRUE : swFALSE;
+                     SW_CLIMATE_YEARLY *climateOutput, Bool isNorth) {
 
     int month, yearIndex, year, day, numDaysYear, currMonDay;
     int numDaysMonth = (isNorth) ? Time_days_in_month(Jan) : Time_days_in_month(Jul);
@@ -181,7 +179,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             } else {
                 // Check if current year is leap year
                 adjustedDoy = (numDaysYear == 366) ? day + 182 : day + 181;
-                adjustedDoy = adjustedDoy % numDaysYear;
+                adjustedDoy = adjustedDoy % 365;
                 adjustedYear = (adjustedDoy == 0) ? yearIndex + 1 : adjustedYear;
                 adjustedFullYear = adjustedYear + startYear;
                 if(adjustedDoy == 0) Time_new_year(adjustedFullYear);
@@ -225,7 +223,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             totalAbove65 += (currentTempMean > 0.0) ? currentTempMean : 0.;
             
         }
-        climateOutput->minTempJuly_C[yearIndex] = (currentJulyMin == SW_MISSING) ? 0 : currentJulyMin;
+        climateOutput->minTempJuly_C[yearIndex] = (missing(currentJulyMin)) ? 0 : currentJulyMin;
         climateOutput->PPTJuly_mm[yearIndex] = JulyPPT;
         climateOutput->ddAbove65F_degday[yearIndex] = totalAbove65;
         
