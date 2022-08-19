@@ -293,19 +293,27 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 /**
 	\brief A pseudo-random number from a normal distribution.
 
-	The function implements the Marsaglia polar method
+	If compiled with defined `SOILWAT` or `STEPWAT`, then the function
+	implements the Marsaglia polar method
 	(Marsaglia & Bray 1964 \cite marsaglia1964SR).
+	The implementation is re-entrant
+	(but discards one of the two generated random values).
+	The original, more efficient but not re-entrant implementation is used
+	if compiled with defined `RANDNORMSTATIC`.
 
-	\Note: The implementation is not re-entrant
-	because of static `set` and `gset`.
-	Each other call to `RandNorm()` draws two random numbers.
-	One random number is returned immediately; the other is internally stored
-	in `gset` (and marked by `set`).
-	The next call will return the stored value of `gset`
+	The version compiled with `RANDNORMSTATIC` is not re-entrant because
+	of internal static storage.
+	A first call produces two random values one of which is returned immediately;
+	the second value is internally stored in static `gset`
+	and marked by static `set`.
+	The following call will return the stored value of `gset`
 	(whether or not the call used the same `pcg_rng`) and resets `gset` and `set`.
 
-	\param mean The mean of the distribution
-	\param stddev Standard deviation of the distribution
+	If compiled with defined `RSOILWAT`, then `rnorm()` from header <Rmath.h>
+	is called and R handles the random number generator.
+
+	\param mean The mean of the distribution.
+	\param stddev Standard deviation of the distribution.
 	\param[in,out] *pcg_rng The random number generator to use.
 */
 double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
@@ -327,9 +335,12 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 	double res;
 
 	#ifndef RSOILWAT
-		static short set = 0;
+		double v1, v2, r;
 
-		static double v1, v2, r, fac, gset, gasdev;
+		#ifdef RANDNORMSTATIC
+		/* original, non-reentrant code: issue #326 */
+		static short set = 0;
+		static double fac, gset, gasdev;
 
 		if (!set) {
 			do {
@@ -347,6 +358,18 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 		}
 
 		res = mean + gasdev * stddev;
+
+		#else
+		/* reentrant code: discard one of the two generated random variables */
+		do {
+			v1 = 2.0 * RandUni(pcg_rng) - 1.0;
+			v2 = 2.0 * RandUni(pcg_rng) - 1.0;
+			r = v1 * v1 + v2 * v2;
+		} while (r >= 1.0 || r == 0.);
+
+		res = mean + stddev * v2 * sqrt(-2.0 * log(r) / r);
+		#endif
+
 
 	#else
 		if (pcg_rng == NULL) {} // silence compile warnings [-Wunused-parameter]
