@@ -122,6 +122,10 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
 
 /**
  @brief Calculate monthly and annual time series of climate variables from daily weather
+
+ When site is in southern hemisphere, the first and last six months of data are ignored. The beginning of the year
+ starts on the first day of July and ends on June 30th of the next calendar year. Due to this, what is referred to as
+ the "adjusted" calendar year and is shifted six months in comparison to calendar years.
  
  @param[in] allHist Array containing all historical data of a site
  @param[in] numYears Number of years represented by `allHist`
@@ -232,22 +236,8 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         climateOutput->frostFree_days[yearIndex] = (consecNonFrost > 0) ? consecNonFrost : currentNonFrost;
     }
 
-    if(!isNorth) {
-        currentJulyMin = SW_MISSING;
-        for(day = 0; day < 31; day++) {
-            if(allHist[0]->temp_min[day] < currentJulyMin) {
-                currentJulyMin = allHist[0]->temp_min[day];
-            }
-        }
-        climateOutput->minTempJuly_C[numYears - 1] = currentJulyMin;
-
-        for(day = 31; day < 59; day++) {
-            climateOutput->PPTJuly_mm[numYears - 1] += allHist[0]->temp_min[day];
-        }
-    }
-
     findDriestQtr(climateOutput->meanTempDriestQtr_C, numYears,
-                  climateOutput->meanTempMon_C, climateOutput->PPTMon_cm);
+                  climateOutput->meanTempMon_C, climateOutput->PPTMon_cm, isNorth);
 }
 
 /**
@@ -342,6 +332,9 @@ void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempM
         meanTempDriestQtr_C[yearIndex] = driestMeanTemp / 3;
         
     }
+
+    if(!isNorth) meanTempDriestQtr_C[numYears - 1] = SW_MISSING;
+
 }
 
 
