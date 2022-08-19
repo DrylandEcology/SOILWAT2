@@ -597,6 +597,8 @@ namespace {
 
         double **meanTempMon_C = new double*[MAX_MONTHS];
 
+        Bool isNorth = swTRUE;
+
         for(month = 0; month < MAX_MONTHS; month++) {
             PPTMon_cm[month] = new double[2];
             meanTempMon_C[month] = new double[2];
@@ -609,7 +611,7 @@ namespace {
 
 
         // ------ Test for one year ------
-        findDriestQtr(result, 1, meanTempMon_C, PPTMon_cm);
+        findDriestQtr(result, 1, meanTempMon_C, PPTMon_cm, isNorth);
 
         // Value 1.433333... is the average temperature of the driest quarter of the year
         // In this case, the driest quarter is February-April
@@ -617,7 +619,7 @@ namespace {
 
 
         // ------ Test for two years ------
-        findDriestQtr(result, 2, meanTempMon_C, PPTMon_cm);
+        findDriestQtr(result, 2, meanTempMon_C, PPTMon_cm, isNorth);
 
         EXPECT_NEAR(result[0], 1.4333333333333333, tol9);
         EXPECT_NEAR(result[1], 1.4333333333333333, tol9);
@@ -631,7 +633,7 @@ namespace {
             }
         }
 
-        findDriestQtr(result, 1, meanTempMon_C, PPTMon_cm);
+        findDriestQtr(result, 1, meanTempMon_C, PPTMon_cm, isNorth);
 
         // Expect that the driest quarter that occurs first
         // among all driest quarters is used

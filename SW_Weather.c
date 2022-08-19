@@ -302,9 +302,9 @@ void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int s
  @param[out] meanTempDriestQtr_C Array of size numYears holding the average temperature of the driest quarter of the year for every year
  */
 void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempMon_C,
-                   double **PPTMon_cm) {
+                   double **PPTMon_cm, Bool isNorth) {
     
-    int yearIndex, month, prevMonth, nextMonth;
+    int yearIndex, month, prevMonth, nextMonth, adjustedMonth;
     
     double defaultVal = 999., driestThreeMonPPT, driestMeanTemp,
     currentQtrPPT, currentQtrTemp;
@@ -314,16 +314,22 @@ void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempM
         driestMeanTemp = defaultVal;
 
         for(month = 0; month < MAX_MONTHS; month++) {
+            if(isNorth) {
+                adjustedMonth = month;
+            } else {
+                adjustedMonth = month + Jul;
+                adjustedMonth %= MAX_MONTHS;
+            }
 
-            prevMonth = (month == 0) ? 11 : month - 1;
-            nextMonth = (month == 11) ? 0 : month + 1;
+            prevMonth = (adjustedMonth == 0) ? 11 : adjustedMonth - 1;
+            nextMonth = (adjustedMonth == 11) ? 0 : adjustedMonth + 1;
             
             currentQtrPPT = (PPTMon_cm[prevMonth][yearIndex]) +
-                            (PPTMon_cm[month][yearIndex]) +
+                            (PPTMon_cm[adjustedMonth][yearIndex]) +
                             (PPTMon_cm[nextMonth][yearIndex]);
             
             currentQtrTemp = (meanTempMon_C[prevMonth][yearIndex]) +
-                             (meanTempMon_C[month][yearIndex]) +
+                             (meanTempMon_C[adjustedMonth][yearIndex]) +
                              (meanTempMon_C[nextMonth][yearIndex]);
             
             if(currentQtrPPT < driestThreeMonPPT) {
