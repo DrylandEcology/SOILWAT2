@@ -122,6 +122,10 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
 
 /**
  @brief Calculate monthly and annual time series of climate variables from daily weather
+
+ When site is in southern hemisphere, the first and last six months of data are ignored. The beginning of the year
+ starts on the first day of July and ends on June 30th of the next calendar year. Due to this, what is referred to as
+ the "adjusted" calendar year and is shifted six months in comparison to calendar years.
  
  @param[in] allHist Array containing all historical data of a site
  @param[in] numYears Number of years represented by `allHist`
@@ -131,9 +135,7 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
  */
 
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                     SW_CLIMATE_YEARLY *climateOutput, double latitude) {
-
-    Bool isNorth = (latitude >= 0.0 && latitude < 90.0) ? swTRUE : swFALSE;
+                     SW_CLIMATE_YEARLY *climateOutput, Bool isNorth) {
 
     int month, yearIndex, year, day, numDaysYear, currMonDay;
     int numDaysMonth = (isNorth) ? Time_days_in_month(Jan) : Time_days_in_month(Jul);
@@ -153,7 +155,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     memset(climateOutput->minTempFeb_C, 0., sizeof(double) * numYears);
     memset(climateOutput->minTempJuly_C, 0., sizeof(double) * numYears);
 
-    fillNorthSouthConstants(allHist, numYears, startYear, climateOutput);
+    calcSiteClimateLatInvariants(allHist, numYears, startYear, climateOutput);
 
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
@@ -181,7 +183,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             } else {
                 // Check if current year is leap year
                 adjustedDoy = (numDaysYear == 366) ? day + 182 : day + 181;
-                adjustedDoy = adjustedDoy % numDaysYear;
+                adjustedDoy = adjustedDoy % 365;
                 adjustedYear = (adjustedDoy == 0) ? yearIndex + 1 : adjustedYear;
                 adjustedFullYear = adjustedYear + startYear;
                 if(adjustedDoy == 0) Time_new_year(adjustedFullYear);
@@ -225,7 +227,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             totalAbove65 += (currentTempMean > 0.0) ? currentTempMean : 0.;
             
         }
-        climateOutput->minTempJuly_C[yearIndex] = (currentJulyMin == SW_MISSING) ? 0 : currentJulyMin;
+        climateOutput->minTempJuly_C[yearIndex] = (missing(currentJulyMin)) ? 0 : currentJulyMin;
         climateOutput->PPTJuly_mm[yearIndex] = JulyPPT;
         climateOutput->ddAbove65F_degday[yearIndex] = totalAbove65;
         
@@ -234,25 +236,16 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         climateOutput->frostFree_days[yearIndex] = (consecNonFrost > 0) ? consecNonFrost : currentNonFrost;
     }
 
-    if(!isNorth) {
-        currentJulyMin = SW_MISSING;
-        for(day = 0; day < 31; day++) {
-            if(allHist[0]->temp_min[day] < currentJulyMin) {
-                currentJulyMin = allHist[0]->temp_min[day];
-            }
-        }
-        climateOutput->minTempJuly_C[numYears - 1] = currentJulyMin;
-
-        for(day = 31; day < 59; day++) {
-            climateOutput->PPTJuly_mm[numYears - 1] += allHist[0]->temp_min[day];
-        }
-    }
-
     findDriestQtr(climateOutput->meanTempDriestQtr_C, numYears,
-                  climateOutput->meanTempMon_C, climateOutput->PPTMon_cm);
+                  climateOutput->meanTempMon_C, climateOutput->PPTMon_cm, isNorth);
 }
 
-void fillNorthSouthConstants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
+/**
+ @brief Helper function to `calcSiteClimate()`. Manages all information that is independant of the site
+ being in the northern/southern hemisphere.
+ */
+
+void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                          SW_CLIMATE_YEARLY *climateOutput) {
 
     int month = Jan, monDay, numDaysMonth = Time_days_in_month(month), yearIndex,
@@ -299,9 +292,9 @@ void fillNorthSouthConstants(SW_WEATHER_HIST **allHist, int numYears, int startY
  @param[out] meanTempDriestQtr_C Array of size numYears holding the average temperature of the driest quarter of the year for every year
  */
 void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempMon_C,
-                   double **PPTMon_cm) {
+                   double **PPTMon_cm, Bool isNorth) {
     
-    int yearIndex, month, prevMonth, nextMonth;
+    int yearIndex, month, prevMonth, nextMonth, adjustedMonth;
     
     double defaultVal = 999., driestThreeMonPPT, driestMeanTemp,
     currentQtrPPT, currentQtrTemp;
@@ -311,16 +304,22 @@ void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempM
         driestMeanTemp = defaultVal;
 
         for(month = 0; month < MAX_MONTHS; month++) {
+            if(isNorth) {
+                adjustedMonth = month;
+            } else {
+                adjustedMonth = month + Jul;
+                adjustedMonth %= MAX_MONTHS;
+            }
 
-            prevMonth = (month == 0) ? 11 : month - 1;
-            nextMonth = (month == 11) ? 0 : month + 1;
+            prevMonth = (adjustedMonth == 0) ? 11 : adjustedMonth - 1;
+            nextMonth = (adjustedMonth == 11) ? 0 : adjustedMonth + 1;
             
             currentQtrPPT = (PPTMon_cm[prevMonth][yearIndex]) +
-                            (PPTMon_cm[month][yearIndex]) +
+                            (PPTMon_cm[adjustedMonth][yearIndex]) +
                             (PPTMon_cm[nextMonth][yearIndex]);
             
             currentQtrTemp = (meanTempMon_C[prevMonth][yearIndex]) +
-                             (meanTempMon_C[month][yearIndex]) +
+                             (meanTempMon_C[adjustedMonth][yearIndex]) +
                              (meanTempMon_C[nextMonth][yearIndex]);
             
             if(currentQtrPPT < driestThreeMonPPT) {
@@ -333,6 +332,9 @@ void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempM
         meanTempDriestQtr_C[yearIndex] = driestMeanTemp / 3;
         
     }
+
+    if(!isNorth) meanTempDriestQtr_C[numYears - 1] = SW_MISSING;
+
 }
 
 

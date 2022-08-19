@@ -175,11 +175,11 @@ Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather);
 void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
                                SW_CLIMATE_CLIM *climateAverages);
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                     SW_CLIMATE_YEARLY *climateOutput, double latitude);
-void fillNorthSouthConstants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
+                     SW_CLIMATE_YEARLY *climateOutput, Bool isNorth);
+void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                          SW_CLIMATE_YEARLY *climateOutput);
 void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempMon_C,
-                   double **meanPPTMon_cm);
+                   double **meanPPTMon_cm, Bool isNorth);
 void allocDeallocClimateStructs(int action, int numYears, SW_CLIMATE_YEARLY *climateOutput,
                                 SW_CLIMATE_CLIM *climateAverages);
 void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_years);
