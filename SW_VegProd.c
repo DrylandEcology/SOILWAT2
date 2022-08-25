@@ -887,7 +887,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
     // NOTE: 8 = number of types, 5 = (number of types) - grasses
 
     double coverValues[8] = {SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING,
-                            SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING}, shrubLimit = .2;
+                            0.0, SW_MISSING, 0.0, 0.0}, shrubLimit = .2;
 
     double SumGrassesFraction = SW_MISSING, C4Variables[3], grassOutput[3],
     RelAbundanceL0[8], RelAbundanceL1[5];
@@ -1003,8 +1003,6 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
     for(index = 0; index < nTypes; index++) {
         if(!missing(inputValues[index])) {
             initialVegSum += inputValues[index];
-        } else {
-            initialVegSum += 0.;
         }
     }
 
@@ -1012,12 +1010,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
 
     // Initialize estimCover and overallEstim
     for(index = 0; index < nTypes; index++) {
-        if(index == bareGround) {
-            estimCover[bareGround] =
-                (!missing(inputValues[bareGround])) ? inputValues[bareGround] : 0.;
-            iFixed[iFixedSize] = bareGround;
-            iFixedSize++;
-        } else if(!missing(inputValues[index])) {
+        if(!missing(inputValues[index])) {
             iFixed[iFixedSize] = index;
             iFixedSize++;
             estimCover[index] = inputValues[index];
@@ -1165,20 +1158,20 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
                 estimCover[C4Index] = cutZeroInf(-0.9837 + (.000594 * (PPT_cm * 10))
                                              + (1.3528 * summerMAP) + (.2710 * log(meanTemp_C)));
             }
-        }
-        // This equations give percent species/vegetation -> use to limit
-        // Paruelo's C4 equation, i.e., where no C4 species => C4 abundance == 0
-        if(!missing(C4Variables[0]) && !fullVeg) {
-            if(C4Variables[frostFreeDays] <= 0) {
-                C4Species = 0;
-            } else {
-                C4Species = cutZeroInf(((1.6 * (C4Variables[julyMin] * 9 / 5 + 32)) +
-                                   (.0086 * (C4Variables[degreeAbove65] * 9 / 5))
-                                   - (8.98 * log(C4Variables[frostFreeDays])) - 22.44) / 100);
-            }
-        }
 
-        if(EQ(C4Species, 0.)) estimCover[C4Index] = 0;
+            // This equations give percent species/vegetation -> use to limit
+            // Paruelo's C4 equation, i.e., where no C4 species => C4 abundance == 0
+            if(!missing(C4Variables[0]) && !fullVeg) {
+                if(C4Variables[frostFreeDays] <= 0) {
+                    C4Species = 0;
+                } else {
+                    C4Species = cutZeroInf(((1.6 * (C4Variables[julyMin] * 9 / 5 + 32)) +
+                                       (.0086 * (C4Variables[degreeAbove65] * 9 / 5))
+                                       - (8.98 * log(C4Variables[frostFreeDays])) - 22.44) / 100);
+                }
+            }
+            if(EQ(C4Species, 0.)) estimCover[C4Index] = 0;
+        }
 
         // Paruelo & Lauenroth (1996): C3-grass climate-relationship:
         if(winterMAP <= 0) {
@@ -1348,6 +1341,9 @@ void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTw
 
     tempArray = (int *)malloc(sizeof(int) * tempSize);
     tempArraySeen = (int *)malloc(sizeof(int) * nTypes);
+
+    memset(tempArray, 0, sizeof(int) * tempSize);
+    memset(tempArraySeen, 0, sizeof(int) * nTypes);
 
     for(index = 0; index < tempSize; index++) {
         // Initalize the `seen` version of tempArray
