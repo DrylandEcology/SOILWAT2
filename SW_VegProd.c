@@ -54,6 +54,7 @@ changed _echo_inits() to now display the bare ground components in logfile.log
 #include "SW_VegProd.h"
 #include "SW_Model.h" // externs SW_Model
 #include "SW_Weather.h"
+#include "SW_Site.h"
 
 
 
@@ -587,10 +588,11 @@ void SW_VPD_init_run(void) {
 
     SW_VEGPROD *veg = &SW_VegProd;
     SW_MODEL *model = &SW_Model;
+    SW_SITE *site = &SW_Site;
 
     veg_method = veg->veg_method;
 
-    double latitude = 45.0;
+    double latitude = site->latitude;
 
     /* Set co2-multipliers to default */
     for (year = 0; year < MAX_NYEAR; year++)
@@ -893,7 +895,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
     Bool fillEmptyWithBareGround = swTRUE, warnExtrapolation = swTRUE;
     Bool inNorth;
 
-    if(latitude > 0.0 && latitude < 90.0) {
+    if(latitude > 0.0) {
         inNorth = swTRUE;
     } else {
         inNorth = swFALSE;
