@@ -995,10 +995,11 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
     double totalSumGrasses = 0., inputSumGrasses = 0., tempDiffJanJul,
     summerMAP = 0., winterMAP = 0., C4Species = 0., C3Grassland, C3Shrubland, estimGrassSum = 0,
     finalVegSum = 0., estimCoverSum = 0., tempSumGrasses = 0., estimCover[nTypes],
-    initialVegSum = 0.;
+    initialVegSum = 0., tempValue;
 
-    Bool fixSumGrasses, fixBareGround = (Bool) (missing(inputValues[bareGround])),
-    fullVeg = swFALSE, isGrassIndex = swFALSE;
+    Bool fixSumGrasses = (Bool) (!missing(SumGrassesFraction)),
+    fixBareGround = (Bool) (missing(inputValues[bareGround])), fullVeg = swFALSE,
+    isGrassIndex = swFALSE;
 
     for(index = 0; index < nTypes; index++) {
         if(!missing(inputValues[index])) {
@@ -1006,7 +1007,13 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
         }
     }
 
-    if(initialVegSum >= 1.) fullVeg = swTRUE;
+    if(initialVegSum == 1.) {
+        fullVeg = swTRUE;
+    } else if(initialVegSum > 1.) {
+        LogError(logfp, LOGFATAL, "'estimate_PotNatVeg_composition': ",
+                 "User defined relative abundance values sum to more than ",
+                 "1 = full land cover.");
+    }
 
     // Initialize estimCover and overallEstim
     for(index = 0; index < nTypes; index++) {
@@ -1021,17 +1028,15 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
             estimCover[index] = 0.;
         }
     }
-
-    fixSumGrasses = (Bool) (!missing(inputValues[grassAnn]) && !missing(inputValues[C3Index])
-    && !missing(inputValues[C3Index]) && !missing(SumGrassesFraction));
+    fixSumGrasses = (Bool) (!missing(SumGrassesFraction));
 
     // Check if grasses are fixed
     if(fixSumGrasses) {
         // Set SumGrassesFraction
             // If SumGrassesFraction < 0, set to zero, otherwise keep at value
-        SumGrassesFraction = (missing(SumGrassesFraction)) ? 0 : SumGrassesFraction;
+        cutZeroInf(SumGrassesFraction);
         // Get sum of input grass values and set to inputSumGrasses
-        for(index = C3Index; index < grassAnn; index++) {
+        for(index = C3Index; index <= grassAnn; index++) {
             if(!missing(inputValues[index])) inputSumGrasses += inputValues[index];
         }
 
@@ -1226,12 +1231,16 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
         for(index = 0; index < grassEstimSize; index++) {
             estimGrassSum += estimCover[grassesEstim[index]];
         }
+
+        // If estimGrassSum is 0, make it 1. to prevent dividing by zero
+        estimGrassSum = (EQ(estimGrassSum, 0.)) ? 1. : estimGrassSum;
+        
         for(index = 0; index < grassEstimSize; index++) {
             estimCover[grassesEstim[index]] *= (totalSumGrasses / estimGrassSum);
         }
     } else if(grassEstimSize > 0) {
         for(index = 0; index < grassEstimSize; index++) {
-            estimCover[grassesEstim[index]] = (totalSumGrasses / estimGrassSum);
+            estimCover[grassesEstim[index]] = (totalSumGrasses / grassEstimSize);
         }
         LogError(logfp, LOGWARN, "'estimate_PotNatVeg_composition': "
                  "Total grass cover set, but no grass cover estimated; "
@@ -1243,18 +1252,21 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
         uniqueIndices(iFixed, grassesEstim, iFixedSize, grassEstimSize, iFixed, &iFixedSize);
 
         // Remove them from the `estimIndices` array
-        for(index = 0; index < estimIndicesSize; index++) {
+        for(index = 0; index < overallEstimSize; index++) {
             do {
-                isGrassIndex = (Bool) (overallEstim[index] == grassAnn
-                                || overallEstim[index] == treeIndex
-                                || overallEstim[index] == bareGround);
+                isGrassIndex = (Bool) (overallEstim[index] == C3Index
+                                || overallEstim[index] == C4Index
+                                || overallEstim[index] == grassAnn);
 
-                if(isGrassIndex) {
-                    overallEstim[estimIndicesSize - 1] = overallEstim[index];
-                    estimIndicesSize--;
+                if(isGrassIndex && index + 1 != overallEstimSize) {
+                    tempValue = overallEstim[overallEstimSize - 1];
+                    overallEstim[overallEstimSize - 1] = overallEstim[index];
+                    overallEstim[index] = tempValue;
+                    overallEstimSize--;
                 }
-            } while(index != estimIndicesSize - 1 && isGrassIndex);
+            } while(index != overallEstimSize - 1 && isGrassIndex);
         }
+        overallEstimSize--;
     }
 
     for(index = 0; index < iFixedSize; index++) {
