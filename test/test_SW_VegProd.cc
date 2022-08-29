@@ -161,6 +161,12 @@ namespace {
 
     TEST(EstimateVegetationTest, NotFullVegetation) {
 
+        /*  ================================================================
+            This block of tests deals with input values to
+            `estimatePotNatVegComposition()` that do not add up to 1
+            ================================================================  */
+
+
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
 
@@ -177,7 +183,7 @@ namespace {
         // Array holding all values from estimation minus grasses
         double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
-        double SumGrassesFraction = -SW_MISSING;
+        double SumGrassesFraction = SW_MISSING;
         double C4Variables[3];
         double RelAbundanceL0Expected[8] = {0.0, 0.2608391, 0.4307062,
                                                 0.0, 0.0, 0.3084547, 0.0, 0.0};
@@ -186,6 +192,7 @@ namespace {
         Bool fillEmptyWithBareGround = swTRUE;
         Bool inNorth = swTRUE;
         Bool warnExtrapolation = swTRUE;
+        Bool isNorth = swTRUE;
 
         int deallocate = 0;
         int allocate = 1;
@@ -215,7 +222,7 @@ namespace {
         allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
 
         // Calculate climate of the site and add results to "climateOutput"
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput);
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, isNorth);
 
         // Average values from "climateOutput" and put them in "climateAverages"
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
@@ -376,26 +383,76 @@ namespace {
          Test with `inNorth` to be false, same input values as previous test
          except for trees and bare ground which are both .0549
             ==================================  */
-        RelAbundanceL0Expected[succIndex] = 0.1098;
-        RelAbundanceL0Expected[forbIndex] = 0.1098;
-        RelAbundanceL0Expected[C3Index] = 0.1098;
-        RelAbundanceL0Expected[C4Index] = 0.1098;
-        RelAbundanceL0Expected[grassAnn] = 0.1098;
-        RelAbundanceL0Expected[shrubIndex] = 0.1098;
-        RelAbundanceL0Expected[treeIndex] = 0.0549;
-        RelAbundanceL0Expected[bareGround] = 0.2863;
+//        RelAbundanceL0Expected[succIndex] = 0.1098;
+//        RelAbundanceL0Expected[forbIndex] = 0.1098;
+//        RelAbundanceL0Expected[C3Index] = 0.1098;
+//        RelAbundanceL0Expected[C4Index] = 0.1098;
+//        RelAbundanceL0Expected[grassAnn] = 0.1098;
+//        RelAbundanceL0Expected[shrubIndex] = 0.1098;
+//        RelAbundanceL0Expected[treeIndex] = 0.0549;
+//        RelAbundanceL0Expected[bareGround] = 0.2863;
+//
+//        RelAbundanceL1Expected[treeIndexL1] = 0.0549;
+//        RelAbundanceL1Expected[forbIndexL1] = 0.1098;
+//        RelAbundanceL1Expected[shrubIndexL1] = 0.2196;
+//        RelAbundanceL1Expected[grassesIndexL1] = 0.3294;
+//        RelAbundanceL1Expected[bareGroundL1] = 0.2863;
+//
+//        inNorth = swFALSE;
+//        fillEmptyWithBareGround = swTRUE;
+//
+//        inputValues[treeIndex] = .0549;
+//        inputValues[bareGround] = .0549;
+//
+//        estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+//            climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
+//            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+//            grassOutput, RelAbundanceL0, RelAbundanceL1);
+//
+//        // Loop through RelAbundanceL0 and test results.
+//        for(index = 0; index < 8; index++) {
+//            EXPECT_NEAR(RelAbundanceL0[index], RelAbundanceL0Expected[index], tol6);
+//        }
+//
+//        // Loop through RelAbundanceL1 and test results
+//        for(index = 0; index < 5; index++) {
+//            EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol6);
+//        }
+//
+//        EXPECT_NEAR(grassOutput[0], .333333, tol6);
+//        EXPECT_NEAR(grassOutput[1], .333333, tol6);
+//        EXPECT_NEAR(grassOutput[2], .333333, tol6);
 
-        RelAbundanceL1Expected[treeIndexL1] = 0.0549;
-        RelAbundanceL1Expected[forbIndexL1] = 0.1098;
-        RelAbundanceL1Expected[shrubIndexL1] = 0.2196;
-        RelAbundanceL1Expected[grassesIndexL1] = 0.3294;
-        RelAbundanceL1Expected[bareGroundL1] = 0.2863;
-
-        inNorth = swFALSE;
-        fillEmptyWithBareGround = swTRUE;
-
+        /*  ==================================
+         Test with `SumGrassesFraction` being fixed, all input of previous tests
+         are halved to .0549
+            ==================================  */
+        inputValues[succIndex] = .0549;
+        inputValues[forbIndex] = .0549;
+        inputValues[C3Index] = SW_MISSING;
+        inputValues[C4Index] = SW_MISSING;
+        inputValues[grassAnn] = SW_MISSING;
+        inputValues[shrubIndex] = .0549;
         inputValues[treeIndex] = .0549;
         inputValues[bareGround] = .0549;
+
+        RelAbundanceL0Expected[succIndex] = .0549;
+        RelAbundanceL0Expected[forbIndex] = .0549;
+        RelAbundanceL0Expected[C3Index] = 0.7255;
+        RelAbundanceL0Expected[C4Index] = 0.0;
+        RelAbundanceL0Expected[grassAnn] = 0.0;
+        RelAbundanceL0Expected[shrubIndex] = .0549;
+        RelAbundanceL0Expected[treeIndex] = .0549;
+        RelAbundanceL0Expected[bareGround] = 0.0549;
+
+        RelAbundanceL1Expected[treeIndexL1] = .0549;
+        RelAbundanceL1Expected[forbIndexL1] = .0549;
+        RelAbundanceL1Expected[shrubIndexL1] = 0.1098;
+        RelAbundanceL1Expected[grassesIndexL1] = 0.7255;
+        RelAbundanceL1Expected[bareGroundL1] = 0.0549;
+
+        fillEmptyWithBareGround = swTRUE;
+        SumGrassesFraction = .7255;
 
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
@@ -412,15 +469,20 @@ namespace {
             EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol6);
         }
 
-        EXPECT_NEAR(grassOutput[0], .333333, tol6);
-        EXPECT_NEAR(grassOutput[1], .333333, tol6);
-        EXPECT_NEAR(grassOutput[2], .333333, tol6);
+        EXPECT_NEAR(grassOutput[0], 1., tol6);
+        EXPECT_NEAR(grassOutput[1], 0.0, tol6);
+        EXPECT_NEAR(grassOutput[2], 0.0, tol6);
 
         // Deallocate structs
         allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
     }
 
     TEST(EstimateVegetationTest, FullVegetation) {
+
+        /*  ================================================================
+            This block of tests deals with input values to
+            `estimatePotNatVegComposition()` that add up to 1
+            ================================================================  */
 
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
@@ -438,7 +500,7 @@ namespace {
         // Array holding all values from estimation minus grasses
         double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
-        double SumGrassesFraction = -SW_MISSING;
+        double SumGrassesFraction = SW_MISSING;
         double C4Variables[3];
         double RelAbundanceL0Expected[8] = {0.0567, 0.2317, .0392,
             .0981, .3218, .0827, .1293, .0405};
@@ -447,6 +509,7 @@ namespace {
         Bool fillEmptyWithBareGround = swTRUE;
         Bool inNorth = swTRUE;
         Bool warnExtrapolation = swTRUE;
+        Bool isNorth = swTRUE;
 
         int deallocate = 0;
         int allocate = 1;
@@ -476,7 +539,7 @@ namespace {
         allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
 
         // Calculate climate of the site and add results to "climateOutput"
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput);
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, isNorth);
 
         // Average values from "climateOutput" and put them in "climateAverages"
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
