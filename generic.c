@@ -428,12 +428,18 @@ double final_running_sd(unsigned int n, double ssqr)
  @param length Size of input array may be years, months, days, etc.
  */
 double mean(double values[], int length) {
-    int index;
-    double total = 0.0;
+
+    int index, finalLength = 0;
+    double total = 0.0, currentVal;
     for(index = 0; index < length; index++) {
-        total += values[index];
+        currentVal = values[index];
+
+        if(!missing(currentVal)) {
+            total += currentVal;
+            finalLength++;
+        }
     }
-    return total / length;
+    return total / finalLength;
 }
 
 /**
@@ -447,14 +453,18 @@ double mean(double values[], int length) {
  */
 double standardDeviation(double inputArray[], int length) {
  
-    int index;
-    double arrayMean = mean(inputArray, length), total = 0.0;
+    int index, finalLength = 0;
+    double arrayMean = mean(inputArray, length), total = 0.0, currentVal;
     
     for(index = 0; index < length; index++) {
+        currentVal = inputArray[index];
 
-        total += (inputArray[index] - arrayMean) * (inputArray[index] - arrayMean);
+        if(!missing(currentVal)) {
+            total += (currentVal - arrayMean) * (currentVal - arrayMean);
+            finalLength++;
+        }
     }
     
-    return sqrt(total / (length - 1));
+    return sqrt(total / (finalLength - 1));
     
 }
