@@ -956,7 +956,8 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
  @param[in] PPT_cm Value containing the long-term average of yearly precipitation [cm]
  @param[in] meanTempMon_C Array of size MAX_MONTHS containing long-term average monthly mean temperatures [C]
  @param[in] PPTMon_cm Array of size MAX_MONTHS containing sum of monthly mean precipitation [cm]
- @param[in] inputValues Array of size eight that contains starting values for the function to start with
+ @param[in] inputValues Array of size eight that contains starting values for the function to start with.
+ The elements of compositions are: 0) Succulents 1) Forbs 2) C3 3) C4 4) Grass Annuals 5) Shrubs 6) Trees 7) Bare ground
  @param[in] shrubLimit Shrub cover lower than shrubLimit selects the "grassland" equation to determine C3 grass cover;
  shrub cover larger than shrubLimit selects the "shrubland" equation (default value of 0.2; page 1213 of Paruelo & Lauenroth 1996).
  @param[in] SumGrassesFraction Value holding sum of grass if user would like it to be fixed
