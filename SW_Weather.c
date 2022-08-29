@@ -125,7 +125,8 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
 
  When site is in southern hemisphere, the first and last six months of data are ignored. The beginning of the year
  starts on the first day of July and ends on June 30th of the next calendar year. Due to this, what is referred to as
- the "adjusted" calendar year and is shifted six months in comparison to calendar years.
+ the "adjusted" calendar year and is shifted six months in comparison to calendar years. The southern year
+ starts with 1981 instead of 1980 to handle leap years better.
  
  @param[in] allHist Array containing all historical data of a site
  @param[in] numYears Number of years represented by `allHist`
@@ -138,8 +139,8 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                      SW_CLIMATE_YEARLY *climateOutput, Bool isNorth) {
 
     int month, yearIndex, year, day, numDaysYear, currMonDay;
-    int numDaysMonth = (isNorth) ? Time_days_in_month(Jan) : Time_days_in_month(Jul);
-    int adjustedDoy, adjustedYear = 0, secondMonth, seventhMonth, adjustedFullYear;
+    int numDaysMonth, adjustedDoy, adjustedYear = 0, secondMonth, seventhMonth,
+    adjustedStartYear;
     
     double currentTempMin, currentTempMean, totalAbove65, currentJulyMin, JulyPPT,
     consecNonFrost, currentNonFrost;
@@ -157,8 +158,25 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
 
     calcSiteClimateLatInvariants(allHist, numYears, startYear, climateOutput);
 
-    for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
-        year = yearIndex + startYear;
+    // Set everything that is dependent on north/south before main loop is entered
+    if(isNorth) {
+        secondMonth = Feb;
+        seventhMonth = Jul;
+        numDaysMonth = Time_days_in_month(Jan);
+        adjustedStartYear = 0;
+    } else {
+        secondMonth = Aug;
+        seventhMonth = Jan;
+        numDaysMonth = Time_days_in_month(Jul);
+        adjustedStartYear = 1;
+        climateOutput->minTempJuly_C[0] = SW_MISSING;
+        climateOutput->PPTJuly_mm[0] = SW_MISSING;
+        climateOutput->ddAbove65F_degday[0] = SW_MISSING;
+        climateOutput->frostFree_days[0] = SW_MISSING;
+    }
+
+    for(yearIndex = adjustedStartYear; yearIndex < numYears; yearIndex++) {
+        year = (isNorth) ? yearIndex + startYear : yearIndex + startYear + 1;
         Time_new_year(year);
         numDaysYear = Time_get_lastdoy_y(year);
         month = (isNorth) ? Jan : Jul;
@@ -168,31 +186,33 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         currentNonFrost = 0;
         consecNonFrost = 0;
         JulyPPT = 0;
-        if(isNorth) {
-            secondMonth = Feb;
-            seventhMonth = Jul;
-        } else {
-            secondMonth = Aug;
-            seventhMonth = Jan;
-        }
 
         for(day = 0; day < numDaysYear; day++) {
             if(isNorth) {
                 adjustedDoy = day;
                 adjustedYear = yearIndex;
             } else {
-                // Check if current year is leap year
+                // Adjust year and day to meet southern hemisphere requirements
                 adjustedDoy = (numDaysYear == 366) ? day + 182 : day + 181;
                 adjustedDoy = adjustedDoy % 365;
-                adjustedYear = (adjustedDoy == 0) ? yearIndex + 1 : adjustedYear;
-                adjustedFullYear = adjustedYear + startYear;
-                if(adjustedDoy == 0) Time_new_year(adjustedFullYear);
+
+                if(adjustedDoy == 0) {
+                    adjustedYear++;
+                }
             }
 
-            if(month == Jul && yearIndex == numYears - 1 && !isNorth) break;
+            if(month == Jul && adjustedYear >= numYears - 1 && !isNorth) {
+                // Set all current accumulated values to SW_MISSING to prevent
+                // a zero going into the last year of the arrays
+                JulyPPT = SW_MISSING;
+                totalAbove65 = SW_MISSING;
+                currentNonFrost = SW_MISSING;
+                consecNonFrost = SW_MISSING;
+                currMonDay = SW_MISSING;
+                break;
+            }
 
             currMonDay++;
-
             currentTempMin = allHist[adjustedYear]->temp_min[adjustedDoy];
             currentTempMean = allHist[adjustedYear]->temp_avg[adjustedDoy];
             
@@ -227,7 +247,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             totalAbove65 += (currentTempMean > 0.0) ? currentTempMean : 0.;
             
         }
-        climateOutput->minTempJuly_C[yearIndex] = (missing(currentJulyMin)) ? 0 : currentJulyMin;
+        climateOutput->minTempJuly_C[yearIndex] = currentJulyMin;
         climateOutput->PPTJuly_mm[yearIndex] = JulyPPT;
         climateOutput->ddAbove65F_degday[yearIndex] = totalAbove65;
         
