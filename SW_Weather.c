@@ -92,14 +92,18 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
                                SW_CLIMATE_CLIM *climateAverages) {
     
     int month;
-    
+
+    // Take long-term average of monthly mean, maximum and minimum temperature
+    // and precipitation throughout "numYears"
     for(month = 0; month < MAX_MONTHS; month++) {
         climateAverages->meanTempMon_C[month] = mean(climateOutput->meanTempMon_C[month], numYears);
         climateAverages->maxTempMon_C[month] = mean(climateOutput->maxTempMon_C[month], numYears);
         climateAverages->minTempMon_C[month] = mean(climateOutput->minTempMon_C[month], numYears);
         climateAverages->PPTMon_cm[month] = mean(climateOutput->PPTMon_cm[month], numYears);
     }
-    
+
+    // Take the long-term average of yearly precipitation and temperature,
+    // C4 and Cheatgrass variables
     climateAverages->PPT_cm = mean(climateOutput->PPT_cm, numYears);
     climateAverages->meanTemp_C = mean(climateOutput->meanTemp_C, numYears);
     climateAverages->PPTJuly_mm = mean(climateOutput->PPTJuly_mm, numYears);
@@ -144,7 +148,8 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     
     double currentTempMin, currentTempMean, totalAbove65, currentJulyMin, JulyPPT,
     consecNonFrost, currentNonFrost;
-    
+
+    // Initialize accumulated value arrays to all zeros
     for(month = 0; month < MAX_MONTHS; month++) {
         memset(climateOutput->meanTempMon_C[month], 0., sizeof(double) * numYears);
         memset(climateOutput->maxTempMon_C[month], 0., sizeof(double) * numYears);
@@ -158,7 +163,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
 
     calcSiteClimateLatInvariants(allHist, numYears, startYear, climateOutput);
 
-    // Set everything that is dependent on north/south before main loop is entered
+    // Set starting conditions that are dependent on north/south before main loop is entered
     if(isNorth) {
         secondMonth = Feb;
         seventhMonth = Jul;
@@ -175,6 +180,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         climateOutput->frostFree_days[0] = SW_MISSING;
     }
 
+    // Loop through all years of data starting at "adjustedStartYear"
     for(yearIndex = adjustedStartYear; yearIndex < numYears; yearIndex++) {
         year = (isNorth) ? yearIndex + startYear : yearIndex + startYear + 1;
         Time_new_year(year);
@@ -215,13 +221,15 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             currMonDay++;
             currentTempMin = allHist[adjustedYear]->temp_min[adjustedDoy];
             currentTempMean = allHist[adjustedYear]->temp_avg[adjustedDoy];
-            
+
+            // Part of code that deals with gathering seventh month information
             if(month == seventhMonth){
                 currentJulyMin = (currentTempMin < currentJulyMin) ?
                                             currentTempMin : currentJulyMin;
                 JulyPPT += allHist[adjustedYear]->ppt[adjustedDoy] * 10;
             }
 
+            // Part of code dealing with consecutive amount of days without frost
             if(currentTempMin > 0.0) {
                 currentNonFrost += 1.;
             } else if(currentNonFrost > consecNonFrost){
@@ -231,10 +239,13 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                 currentNonFrost = 0.;
             }
 
+            // Gather minimum temperature of second month of year
             if(month == secondMonth) {
                 climateOutput->minTempFeb_C[yearIndex] += allHist[adjustedYear]->temp_min[adjustedDoy];
             }
 
+            // Once we have reached the end of the month days,
+            // handle it by getting information about the next month
             if(currMonDay == numDaysMonth) {
                 if(month == secondMonth) climateOutput->minTempFeb_C[yearIndex] /= numDaysMonth;
                 
@@ -243,10 +254,12 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                 currMonDay = 0;
             }
 
+            // Accumulate information of degrees above 65ºF
             currentTempMean -= 18.333;
             totalAbove65 += (currentTempMean > 0.0) ? currentTempMean : 0.;
             
         }
+        // Set all values
         climateOutput->minTempJuly_C[yearIndex] = currentJulyMin;
         climateOutput->PPTJuly_mm[yearIndex] = JulyPPT;
         climateOutput->ddAbove65F_degday[yearIndex] = totalAbove65;
@@ -268,7 +281,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
 void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                          SW_CLIMATE_YEARLY *climateOutput) {
 
-    int month = Jan, monDay, numDaysMonth = Time_days_in_month(month), yearIndex,
+    int month = Jan, numDaysMonth = Time_days_in_month(month), yearIndex,
     day, numDaysYear, currMonDay, year;
 
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
@@ -290,7 +303,7 @@ void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int s
                 climateOutput->maxTempMon_C[month][yearIndex] /= numDaysMonth;
                 climateOutput->minTempMon_C[month][yearIndex] /= numDaysMonth;
 
-                month = (month + 1) % 12;
+                month = (month + 1) % MAX_MONTHS;
                 numDaysMonth = Time_days_in_month(month);
                 currMonDay = 0;
             }
@@ -314,14 +327,13 @@ void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int s
 void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempMon_C,
                    double **PPTMon_cm, Bool isNorth) {
     
-    int yearIndex, month, prevMonth, nextMonth, adjustedMonth;
+    int yearIndex, month, prevMonth, nextMonth, adjustedMonth, numQuarterMonths = 3;
     
-    double defaultVal = 999., driestThreeMonPPT, driestMeanTemp,
-    currentQtrPPT, currentQtrTemp;
+    double driestThreeMonPPT, driestMeanTemp, currentQtrPPT, currentQtrTemp;
     
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
-        driestThreeMonPPT = defaultVal;
-        driestMeanTemp = defaultVal;
+        driestThreeMonPPT = SW_MISSING;
+        driestMeanTemp = SW_MISSING;
 
         for(month = 0; month < MAX_MONTHS; month++) {
             if(isNorth) {
@@ -331,25 +343,30 @@ void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempM
                 adjustedMonth %= MAX_MONTHS;
             }
 
-            prevMonth = (adjustedMonth == 0) ? 11 : adjustedMonth - 1;
-            nextMonth = (adjustedMonth == 11) ? 0 : adjustedMonth + 1;
-            
+            // Get next and previous months
+            prevMonth = (adjustedMonth == Jan) ? Dec : adjustedMonth - 1;
+            nextMonth = (adjustedMonth == Dec) ? Jan : adjustedMonth + 1;
+
+            // Get precipitation of current quarter
             currentQtrPPT = (PPTMon_cm[prevMonth][yearIndex]) +
                             (PPTMon_cm[adjustedMonth][yearIndex]) +
                             (PPTMon_cm[nextMonth][yearIndex]);
-            
+
+            // Get temperature of current quarter
             currentQtrTemp = (meanTempMon_C[prevMonth][yearIndex]) +
                              (meanTempMon_C[adjustedMonth][yearIndex]) +
                              (meanTempMon_C[nextMonth][yearIndex]);
-            
+
+            // Check if the current quarter precipitation is a new low
             if(currentQtrPPT < driestThreeMonPPT) {
+                // Make current temperature/precipitation the new lowest
                 driestMeanTemp = currentQtrTemp;
                 driestThreeMonPPT = currentQtrPPT;
             }
             
         }
         
-        meanTempDriestQtr_C[yearIndex] = driestMeanTemp / 3;
+        meanTempDriestQtr_C[yearIndex] = driestMeanTemp / numQuarterMonths;
         
     }
 
