@@ -892,7 +892,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
     double SumGrassesFraction = SW_MISSING, C4Variables[3], grassOutput[3],
     RelAbundanceL0[8], RelAbundanceL1[5];
 
-    Bool fillEmptyWithBareGround = swTRUE, warnExtrapolation = swTRUE;
+    Bool fillEmptyWithBareGround = swFALSE, warnExtrapolation = swTRUE;
     Bool inNorth;
 
     if(latitude > 0.0) {
@@ -988,13 +988,13 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
     // Indices both single value and arrays
     int index, succIndex = 0, forbIndex = 1, C3Index = 2, C4Index = 3, grassAnn = 4,
     shrubIndex = 5, treeIndex = 6, bareGround = 7, grassEstimSize = 0, overallEstimSize = 0,
-    julyMin = 0, frostFreeDays = 1, degreeAbove65 = 2, estimIndicesSize = 0,
-    estimIndicesNotNA = 0, grassesEstim[3], overallEstim[nTypes], iFixed[nTypes],
-    iFixedSize = 0, isetIndices[3] = {grassAnn, treeIndex, bareGround};
+    julyMin = 0, frostFreeDays = 1, degreeAbove65 = 2, estimIndicesNotNA = 0, grassesEstim[3],
+    overallEstim[nTypes], iFixed[nTypes], iFixedSize = 0,
+    isetIndices[3] = {grassAnn, treeIndex, bareGround};
 
     // Totals of different areas of variables
     double totalSumGrasses = 0., inputSumGrasses = 0., tempDiffJanJul,
-    summerMAP = 0., winterMAP = 0., C4Species = 0., C3Grassland, C3Shrubland, estimGrassSum = 0,
+    summerMAP = 0., winterMAP = 0., C4Species = SW_MISSING, C3Grassland, C3Shrubland, estimGrassSum = 0,
     finalVegSum = 0., estimCoverSum = 0., tempSumGrasses = 0., estimCover[nTypes],
     initialVegSum = 0., tempValue;
 
@@ -1002,6 +1002,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
     fixBareGround = (Bool) (missing(inputValues[bareGround])), fullVeg = swFALSE,
     isGrassIndex = swFALSE;
 
+    // Loop through inputValues and get the total
     for(index = 0; index < nTypes; index++) {
         if(!missing(inputValues[index])) {
             initialVegSum += inputValues[index];
@@ -1016,7 +1017,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
                  "1 = full land cover.");
     }
 
-    // Initialize estimCover and overallEstim
+    // Initialize overallEstim and add fixed indices to `iFixed`
     for(index = 0; index < nTypes; index++) {
         if(!missing(inputValues[index])) {
             iFixed[iFixedSize] = index;
@@ -1029,7 +1030,6 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
             estimCover[index] = 0.;
         }
     }
-    fixSumGrasses = (Bool) (!missing(SumGrassesFraction));
 
     // Check if grasses are fixed
     if(fixSumGrasses) {
@@ -1104,16 +1104,17 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
             estimCover[bareGround] = 1.;
         } else {
             // Set months of winter and summer (northern/southern hemisphere)
+            // and get their three month values in precipitation and temperature
             if(inNorth) {
                 for(index = 0; index < 3; index++) {
-                    winterMonths[index] = (index + 11) % 12;
+                    winterMonths[index] = (index + 11) % MAX_MONTHS;
                     summerMonths[index] = (index + 5);
                     summerMAP += PPTMon_cm[summerMonths[index]];
                     winterMAP += PPTMon_cm[winterMonths[index]];
                 }
             } else {
                 for(index = 0; index < 3; index++) {
-                    summerMonths[index] = (index + 11) % 12;
+                    summerMonths[index] = (index + 11) % MAX_MONTHS;
                     winterMonths[index] = (index + 5);
                     summerMAP += PPTMon_cm[summerMonths[index]];
                     winterMAP += PPTMon_cm[winterMonths[index]];
@@ -1198,7 +1199,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
         }
         // Paruelo & Lauenroth (1996): forb climate-relationship:
         if((PPT_cm * 10 < 1 || meanTemp_C <= 0) && !fullVeg) {
-            estimCover[forbIndex] = SW_MISSING;
+            estimCover[forbIndex] = 0.;
         } else {
             if(missing(inputValues[forbIndex]) && !fullVeg) {
                 estimCover[forbIndex] = cutZeroInf(-.2035 + (.07975 * log(PPT_cm * 10))
@@ -1206,8 +1207,8 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
             }
         }
         // Paruelo & Lauenroth (1996): succulent climate-relationship:
-        if((tempDiffJanJul <= 0 || winterMAP <= 0)) {
-            estimCover[succIndex] = SW_MISSING;
+        if(tempDiffJanJul <= 0 || winterMAP <= 0) {
+            estimCover[succIndex] = 0.;
         } else {
             if(missing(inputValues[succIndex])) {
                 estimCover[succIndex] =
@@ -1216,6 +1217,8 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
         }
     }
 
+    // Check if fillEmptyWithBareGround is FALSE and there's less than or equal
+    // to one indices to estimate
     if(!fillEmptyWithBareGround && estimIndicesNotNA <= 1) {
         if(PPT_cm * 10 < 600) {
             estimCover[shrubIndex] += 1.;
@@ -1270,9 +1273,12 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
         overallEstimSize--;
     }
 
+    // Get final estimated vegetation sum
     for(index = 0; index < iFixedSize; index++) {
         finalVegSum += estimCover[iFixed[index]];
     }
+
+    // Check if the final estimated vegetation sum is equal to one
     if(!EQ(finalVegSum, 1.)) {
         for(index = 0; index < overallEstimSize; index++) {
             estimCoverSum += estimCover[overallEstim[index]];
@@ -1297,6 +1303,9 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
             }
         }
     }
+
+    // Fill in all output arrays (grassOutput, RelAbundanceL0, RelAbundanceL1)
+    // with values from estimated array
 
     grassOutput[0] = estimCover[C3Index];
     grassOutput[1] = estimCover[C4Index];
@@ -1359,9 +1368,11 @@ void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTw
     memset(tempArraySeen, 0, sizeof(int) * nTypes);
 
     for(index = 0; index < tempSize; index++) {
-        // Initalize the `seen` version of tempArray
+        // Initalize the "seen" version of tempArray
         if(index < nTypes) tempArraySeen[index] = 0;
 
+        // Add all elements of of finalArrayIndex, arrayOne and arrayTWo
+        // into "tempArray"
         if(index < finalArrayIndex) {
             tempArray[tempIndex] = finalIndexArray[index];
             tempIndex++;
@@ -1376,6 +1387,7 @@ void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTw
         }
     }
 
+    // Loop through `tempArray` and search for unique indices
     for(index = 0; index < tempSize; index++) {
         // Check if we have found the current index in question
         if(tempArraySeen[tempArray[index]] == 0) {
