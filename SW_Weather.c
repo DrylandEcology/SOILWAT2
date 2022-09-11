@@ -243,7 +243,9 @@ void SW_WTH_init_run(void) {
 	 * and with ppt=0 there's nothing to freeze.
 	 */
 	SW_Weather.now.temp_max[Today] = SW_Weather.now.temp_min[Today] = 0.;
+	SW_Weather.now.temp_max[Yesterday] = SW_Weather.now.temp_min[Yesterday] = 0.;
 	SW_Weather.now.ppt[Today] = SW_Weather.now.rain[Today] = 0.;
+	SW_Weather.now.ppt[Yesterday] = SW_Weather.now.rain[Yesterday] = 0.;
 	SW_Weather.snow = SW_Weather.snowmelt = SW_Weather.snowloss = 0.;
 	SW_Weather.snowRunoff = 0.;
 	SW_Weather.surfaceRunoff = SW_Weather.surfaceRunon = 0.;
