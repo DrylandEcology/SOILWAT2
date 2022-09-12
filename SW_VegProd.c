@@ -904,13 +904,13 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
     // Allocate climate structs' memory
     allocDeallocClimateStructs(allocate, numYears, &climateOutput, &climateAverages);
 
-    calcSiteClimate(SW_Weather.allHist, numYears, startYear, &climateOutput, latitude);
+    calcSiteClimate(SW_Weather.allHist, numYears, startYear, &climateOutput, inNorth);
 
     averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);
 
     if(veg_method == 1) {
 
-        C4Variables[0] = climateAverages.minTempJuly_C;
+        C4Variables[0] = climateAverages.minTemp7thMon_C;
         C4Variables[1] = climateAverages.ddAbove65F_degday;
         C4Variables[2] = climateAverages.frostFree_days;
 

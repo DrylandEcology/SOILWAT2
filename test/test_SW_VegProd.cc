@@ -228,7 +228,7 @@ namespace {
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
 
         // Set C4 results, standard deviations are not needed for estimating vegetation
-        C4Variables[0] = climateAverages.minTempJuly_C;
+        C4Variables[0] = climateAverages.minTemp7thMon_C;
         C4Variables[1] = climateAverages.ddAbove65F_degday;
         C4Variables[2] = climateAverages.frostFree_days;
 
@@ -545,7 +545,7 @@ namespace {
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
 
         // Set C4 results, standard deviations are not needed for estimating vegetation
-        C4Variables[0] = climateAverages.minTempJuly_C;
+        C4Variables[0] = climateAverages.minTemp7thMon_C;
         C4Variables[1] = climateAverages.ddAbove65F_degday;
         C4Variables[2] = climateAverages.frostFree_days;
 
