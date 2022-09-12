@@ -68,15 +68,15 @@ typedef struct {
 typedef struct {
     RealD **PPTMon_cm,                      /**< 2D array containing monthly amount precipitation (cm)*/
     *PPT_cm,                                /**< Array containing annual precipitation amount [cm]*/
-    *PPTJuly_mm,                            /**< Array containing July precipitation amount (mm) */
+    *PPT7thMon_mm,                            /**< Array containing July precipitation amount (mm) */
 
     **meanTempMon_C,                        /**< 2D array containing monthly mean average daily air temperature (&deg;C)*/
     **maxTempMon_C,                         /**< 2D array containing monthly mean max daily air temperature (&deg;C)*/
     **minTempMon_C,                         /**< 2D array containing monthly mean min daily air temperature (&deg;C)*/
     *meanTemp_C,                            /**< Array containing annual mean temperatures [C]*/
     *meanTempDriestQtr_C,                   /**< Array containing the average temperature [C] of the driest quarter of the year*/
-    *minTempFeb_C,                          /**< Array containing the mean daily minimum temperature in February [C] */
-    *minTempJuly_C,                         /**< Array containing minimum July temperatures [C] */
+    *minTemp2ndMon_C,                       /**< Array containing the mean daily minimum temperature in February [C] */
+    *minTemp7thMon_C,                       /**< Array containing minimum July temperatures [C] */
 
     *frostFree_days,                        /**< Array containing the maximum consecutive days [-] without frost*/
     *ddAbove65F_degday;                     /**< Array containing the amount of degree days [C x day] above 65 F */
@@ -100,12 +100,12 @@ typedef struct {
                                               temperature of dry quarter (1), mean minimum temperature of February (2)*/
     meanTemp_C,                             /**< Value containing the average of yearly temperatures*/
     PPT_cm,                                 /**< Value containing the average of yearly precipitation*/
-    PPTJuly_mm,                             /**< Value containing average of July precipitation (mm)*/
+    PPT7thMon_mm,                            /**< Value containing average of July precipitation (mm)*/
     meanTempDriestQtr_C,                    /**< Value containing average of mean temperatures in the driest quarters of years*/
-    minTempFeb_C,                           /**< Value containing average of minimum temperatures in February*/
+    minTemp2ndMon_C,                        /**< Value containing average of minimum temperatures in February*/
     ddAbove65F_degday,                      /**< Value containing average of total degrees above 65F (18.33C) throughout the year*/
     frostFree_days,                         /**< Value containing average of most consectutive days in a year without frost*/
-    minTempJuly_C;                          /**< Value containing the average of lowest temperature in July*/
+    minTemp7thMon_C;                        /**< Value containing the average of lowest temperature in July*/
 } SW_CLIMATE_CLIM;
 
 typedef struct {
