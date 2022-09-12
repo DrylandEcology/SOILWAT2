@@ -368,7 +368,7 @@ void SW_WTH_new_day(void) {
 void SW_WTH_read(void) {
 	/* =================================================== */
 	SW_WEATHER *w = &SW_Weather;
-	const int nitems = 17;
+	const int nitems = 18;
 	FILE *f;
 	int lineno = 0, month, x;
 	RealF sppt, stmax, stmin;
