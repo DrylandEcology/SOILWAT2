@@ -359,8 +359,14 @@ void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int s
 void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempMon_C,
                    double **PPTMon_cm, Bool isNorth) {
     
-    int yearIndex, month, prevMonth, nextMonth, adjustedMonth, numQuarterMonths = 3,
-    adjustedYear = 0, endNumYears = (isNorth) ? numYears : numYears - 1;
+    int yearIndex, month, prevMonth, nextMonth, adjustedMonth = 0,
+    numQuarterMonths = 3, endNumYears = (isNorth) ? numYears : numYears - 1;
+
+    // NOTE: These variables are the same throughout the program if site is in
+    // northern hempisphere
+    // The main purpose of these are to easily control the correct year when
+    // dealing with adjusted years in the southern hempisphere
+    int adjustedYearZero = 0, adjustedYearOne = 0, adjustedYearTwo = 0;
 
     double driestThreeMonPPT, driestMeanTemp, currentQtrPPT, currentQtrTemp;
     
@@ -368,32 +374,29 @@ void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempM
         driestThreeMonPPT = SW_MISSING;
         driestMeanTemp = SW_MISSING;
 
+        adjustedYearZero = adjustedYearOne = adjustedYearTwo = yearIndex;
+
         for(month = 0; month < MAX_MONTHS; month++) {
+
             if(isNorth) {
                 adjustedMonth = month;
-                adjustedYear = yearIndex;
-            } else {
-                adjustedMonth = month + Jul;
-                adjustedMonth %= MAX_MONTHS;
 
-                if(adjustedMonth == Jan) {
-                    adjustedYear++;
-                }
+                prevMonth = (adjustedMonth == Jan) ? Dec : adjustedMonth - 1;
+                nextMonth = (adjustedMonth == Dec) ? Jan : adjustedMonth + 1;
+            } else {
+                driestQtrSouthAdjMonYears(month, &adjustedYearZero, &adjustedYearOne,
+                                    &adjustedYearTwo, &adjustedMonth, &prevMonth, &nextMonth);
             }
 
-            // Get next and previous months
-            prevMonth = (adjustedMonth == Jan) ? Dec : adjustedMonth - 1;
-            nextMonth = (adjustedMonth == Dec) ? Jan : adjustedMonth + 1;
-
             // Get precipitation of current quarter
-            currentQtrPPT = (PPTMon_cm[prevMonth][adjustedYear]) +
-                            (PPTMon_cm[adjustedMonth][adjustedYear]) +
-                            (PPTMon_cm[nextMonth][adjustedYear]);
+            currentQtrPPT = (PPTMon_cm[prevMonth][adjustedYearZero]) +
+                            (PPTMon_cm[adjustedMonth][adjustedYearOne]) +
+                            (PPTMon_cm[nextMonth][adjustedYearTwo]);
 
             // Get temperature of current quarter
-            currentQtrTemp = (meanTempMon_C[prevMonth][adjustedYear]) +
-                             (meanTempMon_C[adjustedMonth][adjustedYear]) +
-                             (meanTempMon_C[nextMonth][adjustedYear]);
+            currentQtrTemp = (meanTempMon_C[prevMonth][adjustedYearZero]) +
+                             (meanTempMon_C[adjustedMonth][adjustedYearOne]) +
+                             (meanTempMon_C[nextMonth][adjustedYearTwo]);
 
             // Check if the current quarter precipitation is a new low
             if(currentQtrPPT < driestThreeMonPPT) {
@@ -412,6 +415,65 @@ void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempM
 
 }
 
+
+/**
+ @brief Helper function to `findDriestQtr()` to find adjusted months and years when the current site is in
+ the southern hempisphere.
+
+ When site is in the southern hemisphere, the year starts in July and ends in June of the next calendar year, so
+ months and years need to be adjusted to wrap around years to get accurate driest quarters in a year.
+ See `calcSiteClimate()` documentation for more explanation on adjusted months and adjusted/calendar years.
+
+ @param[in] month Current month of the year [January, December]
+ @param[in,out] adjustedYearZero First adjusted year that is paired with previous month of year
+ @param[in,out] adjustedYearOne Second adjusted year that is paired with current month of year
+ @param[in,out] adjustedYearTwo Third adjusted year that is paired with next month of year
+ @param[in,out] adjustedMonth Adjusted month starting at July going to June of next calendar year
+ @param[in,out] prevMonth Month preceding current input month
+ @param[in,out] nextMonth Month following current input month
+ */
+void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYearOne,
+                           int *adjustedYearTwo, int *adjustedMonth, int *prevMonth,
+                           int *nextMonth)
+{
+    *adjustedMonth = month + Jul;
+    *adjustedMonth %= MAX_MONTHS;
+
+    // Adjust prevMonth, nextMonth and adjustedYear(s) with respect to the
+    // respective adjustedMonth
+    switch(*adjustedMonth) {
+        case Jan:
+            adjustedYearOne++;
+            adjustedYearTwo++;
+
+            *prevMonth = Dec;
+            *nextMonth = Feb;
+            break;
+        case Dec:
+            adjustedYearTwo++;
+
+            *prevMonth = Nov;
+            *nextMonth = Jan;
+            break;
+        case Jun:
+            adjustedYearTwo--;
+
+            *prevMonth = May;
+            *nextMonth = Jul;
+            break;
+        case Jul:
+            adjustedYearZero--;
+
+            *prevMonth = Jun;
+            *nextMonth = Aug;
+            break;
+        default:
+            // Do adjusted months normally
+            *prevMonth = *adjustedMonth - 1;
+            *nextMonth = *adjustedMonth + 1;
+            break;
+    }
+}
 
 
 /* =================================================== */

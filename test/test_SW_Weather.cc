@@ -464,11 +464,11 @@ namespace {
 
         // Climate variables used for cheatgrass cover
         EXPECT_NEAR(climateAverages.PPT7thMon_mm, 65.916666, tol6);
-        EXPECT_NEAR(climateAverages.meanTempDriestQtr_C, 11.524859, tol6);
+        EXPECT_NEAR(climateAverages.meanTempDriestQtr_C, 11.401228, tol6);
         EXPECT_NEAR(climateAverages.minTemp2ndMon_C, 6.545577, tol6);
 
         EXPECT_NEAR(climateAverages.sdCheatgrass[0], 35.285408, tol6);
-        EXPECT_NEAR(climateAverages.sdCheatgrass[1], 7.171922, tol6);
+        EXPECT_NEAR(climateAverages.sdCheatgrass[1], 7.260851, tol6);
         EXPECT_NEAR(climateAverages.sdCheatgrass[2], 1.639639, tol6);
 
 
