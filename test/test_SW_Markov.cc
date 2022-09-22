@@ -64,6 +64,79 @@ namespace {
   }
 
 
+  // Check seeding of RNG for weather generator
+  TEST(WGTest, Seeding) {
+    short k, n = 18, seed = 42;
+    RealD
+      tmax, *tmax0 = new double[n],
+      tmin, *tmin0 = new double[n],
+      ppt, *ppt0 = new double[n];
+
+    // Turn on Markov weather generator
+    SW_Weather.generateWeatherMethod = 2;
+
+
+    //--- Generate some weather values with fixed seed ------
+
+    // Initialize weather generator
+    SW_Weather.rng_seed = seed;
+    SW_MKV_setup();
+    ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
+
+    for (k = 0; k < n; k++) {
+      SW_MKV_today(k, &tmax0[k], &tmin0[k], &ppt);
+      ppt0[k] = ppt;
+    }
+
+    // Reset weather generator
+    SW_MKV_deconstruct();
+
+
+    //--- Expect that generated weather is different with time-varying seed ----
+    // Re-initialize weather generator
+    SW_Weather.rng_seed = 0;
+    SW_MKV_setup();
+    ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
+
+    for (k = 0; k < n; k++) {
+      SW_MKV_today(k, &tmax, &tmin, &ppt);
+
+      EXPECT_NE(tmax, tmax0[k]);
+      EXPECT_NE(tmin, tmin0[k]);
+      if (GT(ppt, 0.)) {
+        EXPECT_NE(ppt, ppt0[k]); // ppt is different on wet days
+      }
+    }
+
+    // Reset weather generator
+    SW_MKV_deconstruct();
+
+
+    //--- Expect that generated weather is reproducible with same seed ------
+    // Re-initialize weather generator
+    SW_Weather.rng_seed = seed;
+    SW_MKV_setup();
+    ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
+
+    for (k = 0; k < n; k++) {
+      SW_MKV_today(k, &tmax, &tmin, &ppt);
+
+      EXPECT_DOUBLE_EQ(tmax, tmax0[k]);
+      EXPECT_DOUBLE_EQ(tmin, tmin0[k]);
+      EXPECT_DOUBLE_EQ(ppt, ppt0[k]);
+    }
+
+
+    // Deallocate arrays
+    delete[] tmax0;
+    delete[] tmin0;
+    delete[] ppt0;
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
   // Test drawing multivariate normal variates for daily maximum/minimum temp
   TEST(WGTest, mvnorm) {
     short k, n = 3;

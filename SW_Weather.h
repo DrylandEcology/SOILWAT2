@@ -71,7 +71,9 @@ typedef struct {
 			// 0 : pass through missing values
 			// 1 : LOCF (temp) + 0 (ppt)
 			// 2 : weather generator (previously, `use_weathergenerator`)
-
+	
+	int rng_seed; // initial state for `mark
+	
 	RealD pct_snowdrift, pct_snowRunoff;
     unsigned int n_years;
 	SW_TIMES yr;
