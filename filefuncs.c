@@ -166,10 +166,14 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
     strcat(outfmt, "\n");
 
     #ifdef RSOILWAT
+        char buf[1024];
+
+        vsnprintf(buf, sizeof buf, outfmt, args);
+
         if(LOGEXIT & mode) {
-            error(outfmt, args);
+            error(buf);
         } else if(fp != NULL) {
-            warning(outfmt, args);
+            warning(buf);
         }
 
     #else
