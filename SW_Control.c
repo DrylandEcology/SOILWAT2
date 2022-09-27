@@ -76,7 +76,6 @@ static void _begin_day(void) {
 
 static void _end_day(void) {
 	_collect_values();
-	SW_WTH_end_day();
 	SW_SWC_end_day();
 }
 

@@ -194,7 +194,7 @@ void SW_WaterBalance_Checks(void)
   runoff = w->snowRunoff + w->surfaceRunoff;
   runon = w->surfaceRunon;
   snowmelt = w->snowmelt;
-  rain = w->now.rain[Today];
+  rain = w->now.rain;
 
   arriving_water = rain + snowmelt + runon;
 
