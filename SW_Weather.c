@@ -896,7 +896,7 @@ void SW_WTH_new_day(void) {
 	 */
 
     SW_WEATHER *w = &SW_Weather;
-    SW_WEATHER_2DAYS *wn = &SW_Weather.now;
+    SW_WEATHER_NOW *wn = &SW_Weather.now;
     TimeInt day = SW_Model.doy - 1, year = SW_Model.year - SW_Model.startyr;
 
 #ifdef STEPWAT
@@ -945,7 +945,7 @@ void SW_WTH_new_day(void) {
 void SW_WTH_setup(void) {
 	/* =================================================== */
 	SW_WEATHER *w = &SW_Weather;
-	const int nitems = 17;
+	const int nitems = 18;
 	FILE *f;
 	int lineno = 0, month, x;
 	RealF sppt, stmax, stmin;
@@ -1005,12 +1005,16 @@ void SW_WTH_setup(void) {
 			break;
 
 		case 4:
+			w->rng_seed = atoi(inbuf);
+			break;
+
+		case 5:
 			x = atoi(inbuf);
 			w->yr.first = (x < 0) ? SW_Model.startyr : yearto4digit(x);
 			break;
 
 		default:
-			if (lineno == 5 + MAX_MONTHS)
+			if (lineno == 6 + MAX_MONTHS)
 				break;
 
 			x = sscanf(

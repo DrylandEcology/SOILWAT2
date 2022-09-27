@@ -64,16 +64,16 @@ namespace {
         SW_MKV_setup();
 
         SW_WTH_read();
-
-        // With the use of 1980's missing values, test a few days of the year
-        // to make sure they are filled using the weather generator
-        EXPECT_TRUE(!missing(SW_Weather.allHist[0]->temp_max[0]));
-        EXPECT_TRUE(!missing(SW_Weather.allHist[0]->temp_max[1]));
-        EXPECT_TRUE(!missing(SW_Weather.allHist[0]->temp_max[2]));
-        EXPECT_TRUE(!missing(SW_Weather.allHist[0]->temp_max[3]));
-        EXPECT_TRUE(!missing(SW_Weather.allHist[0]->temp_max[4]));
-        EXPECT_TRUE(!missing(SW_Weather.allHist[0]->temp_max[365]));
         
+
+
+        // Expect that missing input values (from 1980) are filled by the weather generator
+        EXPECT_FALSE(missing(SW_Weather.allHist[0]->temp_max[0]));
+        EXPECT_FALSE(missing(SW_Weather.allHist[0]->temp_max[1]));
+        EXPECT_FALSE(missing(SW_Weather.allHist[0]->temp_min[0]));
+        EXPECT_FALSE(missing(SW_Weather.allHist[0]->temp_min[2]));
+        EXPECT_FALSE(missing(SW_Weather.allHist[0]->ppt[0]));
+        EXPECT_FALSE(missing(SW_Weather.allHist[0]->ppt[3]));
         Reset_SOILWAT2_after_UnitTest();
         
     }

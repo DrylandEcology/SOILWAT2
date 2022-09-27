@@ -9,9 +9,9 @@
  (8/28/01) -- INITIAL CODING - cwb
  20091014 (drs) added pct_snowdrift as input to weathsetup.in
  20091015 (drs) ppt is divided into rain and snow, added snowmelt
- 01/04/2011	(drs) added variable 'snowloss' to SW_WEATHER_2DAYS and to SW_WEATHER_OUTPUTS
+ 01/04/2011	(drs) added variable 'snowloss' to SW_WEATHER_NOW and to SW_WEATHER_OUTPUTS
  02/16/2011	(drs) added variable 'pct_runoff' to SW_WEATHER as input to weathsetup.in
- 02/19/2011	(drs) added variable 'runoff' to SW_WEATHER_2DAYS and to SW_WEATHER_OUTPUTS
+ 02/19/2011	(drs) added variable 'runoff' to SW_WEATHER_NOW and to SW_WEATHER_OUTPUTS
  moved soil_inf from SW_Soilwat to SW_Weather (added to SW_WEATHER and to SW_WEATHER_OUTPUTS)
  06/01/2012  (DLM) added temp_year_avg variable to SW_WEATHER_HIST struct & temp_month_avg[MAX_MONTHS] variable
  11/30/2012	(clk) added variable 'surfaceRunoff' to SW_WEATHER and SW_WEATHER_OUTPUTS
@@ -42,7 +42,7 @@ extern "C" {
 typedef struct {
 	/* comes from markov weather day-to-day */
 	RealD temp_avg, temp_max, temp_min, ppt, rain;
-} SW_WEATHER_2DAYS;
+} SW_WEATHER_NOW;
 
 typedef struct {
 	/* comes from historical weather files */
@@ -121,7 +121,9 @@ typedef struct {
 			// 0 : pass through missing values
 			// 1 : LOCF (temp) + 0 (ppt)
 			// 2 : weather generator (previously, `use_weathergenerator`)
-
+	
+	int rng_seed; // initial state for `mark
+	
 	RealD pct_snowdrift, pct_snowRunoff;
     unsigned int n_years;
 	SW_TIMES yr;
@@ -142,7 +144,7 @@ typedef struct {
 		*p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
 	SW_WEATHER_HIST hist;
     SW_WEATHER_HIST **allHist;
-	SW_WEATHER_2DAYS now;
+    SW_WEATHER_NOW now;
 
 } SW_WEATHER;
 

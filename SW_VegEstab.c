@@ -231,7 +231,7 @@ void SW_VES_checkestab(void) {
 static void _checkit(TimeInt doy, unsigned int sppnum) {
 
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
-	SW_WEATHER_2DAYS *wn = &SW_Weather.now;
+	SW_WEATHER_NOW *wn = &SW_Weather.now;
 	SW_SOILWAT *sw = &SW_Soilwat;
 
 	IntU i;
