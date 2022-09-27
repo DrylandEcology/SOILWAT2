@@ -95,7 +95,7 @@ namespace {
     unsigned int nlyrs, nRgr = 65;
     Bool ptr_stError = swFALSE;
     pcg32_random_t STInit_rng;
-    RandSeed(0,&STInit_rng);
+    RandSeed(0u, 0u, &STInit_rng);
 
     // *****  Test when nlyrs = 1  ***** //
     unsigned int i =0.;
@@ -176,7 +176,7 @@ namespace {
     double *fc2 = new double[nlyrs];
     double *wp2 = new double[nlyrs];
     pcg32_random_t STInitDeath_rng;
-    RandSeed(0,&STInitDeath_rng);
+    RandSeed(0u, 0u, &STInitDeath_rng);
 
     for (i = 0; i < nlyrs; i++) {
       bDensity2[i] = RandNorm(1.,0.5,&STInitDeath_rng);
@@ -213,7 +213,7 @@ namespace {
     Bool ptr_stError = swFALSE;
 
     pcg32_random_t SLIF_rng;
-    RandSeed(0,&SLIF_rng);
+    RandSeed(0u, 0u, &SLIF_rng);
 
     // *****  Test when nlyrs = 1  ***** //
     unsigned int i = 0.;
@@ -370,7 +370,7 @@ namespace {
     Bool ptr_stError = swFALSE;
 
     pcg32_random_t STTF_rng;
-    RandSeed(0,&STTF_rng);
+    RandSeed(0u, 0u, &STTF_rng);
 
     // declare input in for loop for non-error causing conditions;
     /// don't use RandNorm for fcR, wpR, vwcR, and bDensityR because will trigger
@@ -444,7 +444,7 @@ namespace {
     unsigned int k, i;
 
     pcg32_random_t MSTF_Lyer1_rng;
-    RandSeed(0,&MSTF_Lyer1_rng);
+    RandSeed(0u, 0u, &MSTF_Lyer1_rng);
 
     // *****  Test when nlyrs = 1  ***** //
     unsigned int nlyrs = 1, nRgr = 65;
@@ -568,7 +568,7 @@ namespace {
   TEST(SWFlowTempTest, MainSoilTemperatureFunction_LyrMAX) {
     // *****  Test when nlyrs = MAX_LAYERS  ***** //
     pcg32_random_t soilTemp_rng;
-    RandSeed(0, &soilTemp_rng);
+    RandSeed(0u, 0u, &soilTemp_rng);
 
 
     unsigned int i, k;

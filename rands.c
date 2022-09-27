@@ -25,10 +25,6 @@
 /*                  Local Variables                    */
 /* --------------------------------------------------- */
 
-#ifndef RSOILWAT
-  static uint64_t stream = 1u; //stream id. this is given out to a pcg_rng then incremented.
-#endif
-
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -36,37 +32,47 @@
 
 /*****************************************************/
 /**
-  \brief Sets the random number seed.
+  \brief Set the seed of a random number generator.
 
-  \param seed The initial state of the system; if 0 then use system time.
+  The sequence produced by a `pcg` random number generator
+  (https://github.com/imneme/pcg-c-basic) is determined by two elements:
+  (i) an initial state and (ii) a sequence selector (or stream identification).
+
+  A sequence is exactly reproduced if `pcg_rng` is initialized with both
+  the same initial state and the same sequence selector.
+  Unique `initseq` values guarantee that different `pcg_rng` produce
+  non-coinciding sequences.
+
+  If `initstate` is `0u`, then the state of a `pcg_rng` is initialized to
+  system time and the sequence selector to `initseq` plus system time.
+  Thus, two calls (with `initstate = 0u`) will produce different
+  random number sequences if `initseq` was different,
+  even if they occurred during the same system time.
+
+  \param initstate The initial state of the system.
+  \param initseq The initial sequence selector.
   \param[in,out] pcg_rng The random number generator to set.
-
-  \note If using this function with STEPWAT2, then call RandSeed() only once
-    per iteration.
-
-  \sideeffect Increment the stream so that no two generators have the same
-    sequence.
 */
-void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
-//we don't need to set a random seed if RSOILWAT is used
+void RandSeed(
+  unsigned long initstate,
+  unsigned long initseq,
+  pcg32_random_t* pcg_rng
+) {
+// R uses its own random number generators
 #ifndef RSOILWAT
 
-  if (seed == 0) {
-    //seed with a random value. Uses the system time to generate
-    //a pseudo-random seed.
-    pcg32_srandom_r(pcg_rng, time(NULL), stream);
-  }
-  else {
-    //Seed with a specific value.
-    pcg32_srandom_r(pcg_rng, (int) seed, stream);
-  }
+  if (initstate == 0u) {
+    // See `pcg32-demo.c`: seed with time
+    pcg32_srandom_r(pcg_rng, time(NULL), initseq + time(NULL));
 
-  //Increment the stream so no two generators have the same sequence.
-  stream++;
+  } else {
+    // Seed with specific values to make rng output sequence reproducible
+    pcg32_srandom_r(pcg_rng, initstate, initseq);
+  }
 
 #else
   // silence compile warnings [-Wunused-parameter]
-  if (pcg_rng == NULL && seed > 0) {}
+  if (pcg_rng == NULL && initstate > 1u && initseq > 1u) {}
 
 #endif
 }
@@ -76,6 +82,9 @@ void RandSeed(signed long seed, pcg32_random_t* pcg_rng) {
 /*****************************************************/
 /**
   \brief A pseudo-random number from the uniform distribution.
+
+  If `pcg_rng` was not initialized with `RandSeed()`, then the first call to
+  `RandUni()` returns 0.
 
   \param[in,out] *pcg_rng The random number generator to use.
 
@@ -282,8 +291,34 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 
 /*****************************************************/
 /**
-	 \brief A pseudo-random number from a normal distribution.
+	\brief A pseudo-random number from a normal distribution.
 
+	If compiled with defined `SOILWAT` or `STEPWAT`, then the function
+	implements the Marsaglia polar method
+	(Marsaglia & Bray 1964 \cite marsaglia1964SR).
+	The implementation is re-entrant
+	(but discards one of the two generated random values).
+	The original, more efficient but not re-entrant implementation is used
+	if compiled with defined `RANDNORMSTATIC`.
+
+	The version compiled with `RANDNORMSTATIC` is not re-entrant because
+	of internal static storage.
+	A first call produces two random values one of which is returned immediately;
+	the second value is internally stored in static `gset`
+	and marked by static `set`.
+	The following call will return the stored value of `gset`
+	(whether or not the call used the same `pcg_rng`) and resets `gset` and `set`.
+
+	If compiled with defined `RSOILWAT`, then `rnorm()` from header <Rmath.h>
+	is called and R handles the random number generator.
+
+	\param mean The mean of the distribution.
+	\param stddev Standard deviation of the distribution.
+	\param[in,out] *pcg_rng The random number generator to use.
+*/
+double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
+/* History:
+	 cwb - 6/20/00
 	 This routine is
 	 adapted from FUNCTION GASDEV in
 	 Press, et al., 1986, Numerical Recipes,
@@ -293,13 +328,6 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 	 prior to calling any function, that
 	 depends on RandUni().
 
-	\param mean The mean of the distribution
-	\param stddev Standard deviation of the distribution
-  \param[in,out] *pcg_rng The random number generator to use.
-*/
-double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
-/* History:
-	 cwb - 6/20/00
 	 cwb - 09-Dec-2002 -- FINALLY noticed that
 	 gasdev and gset have to be static!
 	 might as well set the others.
@@ -307,18 +335,19 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 	double res;
 
 	#ifndef RSOILWAT
-		static short set = 0;
+		double v1, v2, r;
 
-		static double v1, v2, r, fac, gset, gasdev;
+		#ifdef RANDNORMSTATIC
+		/* original, non-reentrant code: issue #326 */
+		static short set = 0;
+		static double fac, gset, gasdev;
 
 		if (!set) {
-			/* `RandUni(pcg_rng)` returns 0 if `pcg_rng` is not initialized
-				 causing an infinite while-loop */
 			do {
 				v1 = 2.0 * RandUni(pcg_rng) - 1.0;
 				v2 = 2.0 * RandUni(pcg_rng) - 1.0;
 				r = v1 * v1 + v2 * v2;
-			} while (r >= 1.0);
+			} while (r >= 1.0 || r == 0.);
 			fac = sqrt(-2.0 *log(r)/r);
 			gset = v1 * fac;
 			gasdev = v2 * fac;
@@ -329,6 +358,18 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 		}
 
 		res = mean + gasdev * stddev;
+
+		#else
+		/* reentrant code: discard one of the two generated random variables */
+		do {
+			v1 = 2.0 * RandUni(pcg_rng) - 1.0;
+			v2 = 2.0 * RandUni(pcg_rng) - 1.0;
+			r = v1 * v1 + v2 * v2;
+		} while (r >= 1.0 || r == 0.);
+
+		res = mean + stddev * v2 * sqrt(-2.0 * log(r) / r);
+		#endif
+
 
 	#else
 		if (pcg_rng == NULL) {} // silence compile warnings [-Wunused-parameter]
