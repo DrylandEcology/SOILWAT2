@@ -893,18 +893,16 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
     RelAbundanceL0[8], RelAbundanceL1[5];
 
     Bool fillEmptyWithBareGround = swFALSE, warnExtrapolation = swTRUE;
-    Bool inNorth;
+    Bool inNorthHem = swTRUE;
 
-    if(latitude > 0.0) {
-        inNorth = swTRUE;
-    } else {
-        inNorth = swFALSE;
+    if(latitude < 0.0) {
+        inNorthHem = swFALSE;
     }
 
     // Allocate climate structs' memory
     allocDeallocClimateStructs(allocate, numYears, &climateOutput, &climateAverages);
 
-    calcSiteClimate(SW_Weather.allHist, numYears, startYear, &climateOutput, inNorth);
+    calcSiteClimate(SW_Weather.allHist, numYears, startYear, &climateOutput, inNorthHem);
 
     averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);
 
@@ -917,7 +915,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
                         climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, coverValues,
                         shrubLimit, SumGrassesFraction, C4Variables, fillEmptyWithBareGround,
-                        inNorth, warnExtrapolation, grassOutput, RelAbundanceL0, RelAbundanceL1);
+                        inNorthHem, warnExtrapolation, grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         ForEachVegType(k) {
             vegProd->veg[k].cov.fCover = RelAbundanceL1[k];
@@ -964,7 +962,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
  @param[in] C4Variables Array of size three holding C4 variables after being averaged by `averageClimateAcrossYears()`.
  The elements are: 0) July precipitation, 1) mean temperature of dry quarter, 2) mean minimum temperature of February
  @param[in] fillEmptyWithBareGround Bool value specifying whether or not to fill gaps in values with bare ground
- @param[in] inNorth Bool value specifying if the current site is in the northern hemisphere
+ @param[in] inNorthHem Bool value specifying if the current site is in the northern hemisphere
  @param[in] warnExtrapolation Bool value specifying whether or not to warn the user when extrapolation happens
  @param[out] grassOutput Array of size three holding estimated grass values. The elements are: 0) C3, 1) C4, 2) annual grasses
  @param[out] RelAbundanceL0 Array of size eight holding all estimated values. The elements are:
@@ -979,7 +977,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
 
 void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTempMon_C[],
     double PPTMon_cm[], double inputValues[], double shrubLimit, double SumGrassesFraction,
-    double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorth, Bool warnExtrapolation,
+    double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorthHem, Bool warnExtrapolation,
     double *grassOutput, double *RelAbundanceL0, double *RelAbundanceL1) {
 
     const int nTypes = 8;
@@ -1105,7 +1103,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
         } else {
             // Set months of winter and summer (northern/southern hemisphere)
             // and get their three month values in precipitation and temperature
-            if(inNorth) {
+            if(inNorthHem) {
                 for(index = 0; index < 3; index++) {
                     winterMonths[index] = (index + 11) % MAX_MONTHS;
                     summerMonths[index] = (index + 5);
@@ -1126,8 +1124,8 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
         winterMAP /= PPT_cm;
 
         // Get the difference between July and Janurary
-        tempDiffJanJul = meanTempMon_C[summerMonths[1]] -
-                                        meanTempMon_C[winterMonths[1]];
+        tempDiffJanJul = fabs(meanTempMon_C[summerMonths[1]] -
+                                        meanTempMon_C[winterMonths[1]]);
 
         if(warnExtrapolation) {
             if(meanTemp_C < 1) {

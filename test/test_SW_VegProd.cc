@@ -190,9 +190,9 @@ namespace {
         double RelAbundanceL1Expected[5] = {0.0, 0.3084547, 0.2608391, 0.4307062, 0.0};
 
         Bool fillEmptyWithBareGround = swTRUE;
-        Bool inNorth = swTRUE;
+        Bool inNorthHem = swTRUE;
         Bool warnExtrapolation = swTRUE;
-        Bool isNorth = swTRUE;
+        Bool inNorthHem = swTRUE;
 
         int deallocate = 0;
         int allocate = 1;
@@ -222,7 +222,7 @@ namespace {
         allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
 
         // Calculate climate of the site and add results to "climateOutput"
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, isNorth);
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, inNorthHem);
 
         // Average values from "climateOutput" and put them in "climateAverages"
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
@@ -235,7 +235,7 @@ namespace {
         // Estimate vegetation based off calculated variables and "inputValues"
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
-            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         /*  ==================================
@@ -285,7 +285,7 @@ namespace {
 
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
-            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             grassOutput, RelAbundanceL0, RelAbundanceL1);
         
         // Loop through RelAbundanceL0 and test results
@@ -331,7 +331,7 @@ namespace {
 
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
-            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         // Loop through RelAbundanceL0 and test results. Since initial values
@@ -362,7 +362,7 @@ namespace {
 
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
-            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         // Loop through RelAbundanceL0 and test results.
@@ -452,11 +452,12 @@ namespace {
         RelAbundanceL1Expected[bareGroundL1] = 0.0549;
 
         fillEmptyWithBareGround = swTRUE;
+        inNorthHem = swTRUE;
         SumGrassesFraction = .7255;
 
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
-            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         // Loop through RelAbundanceL0 and test results.
@@ -507,9 +508,9 @@ namespace {
         double RelAbundanceL1Expected[5] = {.1293, .0827, .2884, .4591, .0405};
 
         Bool fillEmptyWithBareGround = swTRUE;
-        Bool inNorth = swTRUE;
+        Bool inNorthHem = swTRUE;
         Bool warnExtrapolation = swTRUE;
-        Bool isNorth = swTRUE;
+        Bool inNorthHem = swTRUE;
 
         int deallocate = 0;
         int allocate = 1;
@@ -539,7 +540,7 @@ namespace {
         allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
 
         // Calculate climate of the site and add results to "climateOutput"
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, isNorth);
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, inNorthHem);
 
         // Average values from "climateOutput" and put them in "climateAverages"
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
@@ -552,7 +553,7 @@ namespace {
         // Estimate vegetation based off calculated variables and "inputValues"
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
-            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         // All values in "RelAbundanceL0" should be exactly the same as "inputValues"
@@ -598,7 +599,7 @@ namespace {
 
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
-            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         // Loop through RelAbundanceL0 and test results
