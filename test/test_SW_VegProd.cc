@@ -380,48 +380,48 @@ namespace {
         EXPECT_NEAR(grassOutput[2], .333333, tol6);
 
         /*  ==================================
-         Test with `inNorth` to be false, same input values as previous test
+         Test with `inNorthHem` to be false, same input values as previous test
          except for trees and bare ground which are both .0549
             ==================================  */
-//        RelAbundanceL0Expected[succIndex] = 0.1098;
-//        RelAbundanceL0Expected[forbIndex] = 0.1098;
-//        RelAbundanceL0Expected[C3Index] = 0.1098;
-//        RelAbundanceL0Expected[C4Index] = 0.1098;
-//        RelAbundanceL0Expected[grassAnn] = 0.1098;
-//        RelAbundanceL0Expected[shrubIndex] = 0.1098;
-//        RelAbundanceL0Expected[treeIndex] = 0.0549;
-//        RelAbundanceL0Expected[bareGround] = 0.2863;
-//
-//        RelAbundanceL1Expected[treeIndexL1] = 0.0549;
-//        RelAbundanceL1Expected[forbIndexL1] = 0.1098;
-//        RelAbundanceL1Expected[shrubIndexL1] = 0.2196;
-//        RelAbundanceL1Expected[grassesIndexL1] = 0.3294;
-//        RelAbundanceL1Expected[bareGroundL1] = 0.2863;
-//
-//        inNorth = swFALSE;
-//        fillEmptyWithBareGround = swTRUE;
-//
-//        inputValues[treeIndex] = .0549;
-//        inputValues[bareGround] = .0549;
-//
-//        estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
-//            climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
-//            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorth, warnExtrapolation,
-//            grassOutput, RelAbundanceL0, RelAbundanceL1);
-//
-//        // Loop through RelAbundanceL0 and test results.
-//        for(index = 0; index < 8; index++) {
-//            EXPECT_NEAR(RelAbundanceL0[index], RelAbundanceL0Expected[index], tol6);
-//        }
-//
-//        // Loop through RelAbundanceL1 and test results
-//        for(index = 0; index < 5; index++) {
-//            EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol6);
-//        }
-//
-//        EXPECT_NEAR(grassOutput[0], .333333, tol6);
-//        EXPECT_NEAR(grassOutput[1], .333333, tol6);
-//        EXPECT_NEAR(grassOutput[2], .333333, tol6);
+        RelAbundanceL0Expected[succIndex] = 0.1098;
+        RelAbundanceL0Expected[forbIndex] = 0.1098;
+        RelAbundanceL0Expected[C3Index] = 0.1098;
+        RelAbundanceL0Expected[C4Index] = 0.1098;
+        RelAbundanceL0Expected[grassAnn] = 0.1098;
+        RelAbundanceL0Expected[shrubIndex] = 0.1098;
+        RelAbundanceL0Expected[treeIndex] = 0.0549;
+        RelAbundanceL0Expected[bareGround] = 0.2863;
+
+        RelAbundanceL1Expected[treeIndexL1] = 0.0549;
+        RelAbundanceL1Expected[forbIndexL1] = 0.1098;
+        RelAbundanceL1Expected[shrubIndexL1] = 0.2196;
+        RelAbundanceL1Expected[grassesIndexL1] = 0.3294;
+        RelAbundanceL1Expected[bareGroundL1] = 0.2863;
+
+        inNorthHem = swFALSE;
+        fillEmptyWithBareGround = swTRUE;
+
+        inputValues[treeIndex] = .0549;
+        inputValues[bareGround] = .0549;
+
+        estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+            climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
+            grassOutput, RelAbundanceL0, RelAbundanceL1);
+
+        // Loop through RelAbundanceL0 and test results.
+        for(index = 0; index < 8; index++) {
+            EXPECT_NEAR(RelAbundanceL0[index], RelAbundanceL0Expected[index], tol6);
+        }
+
+        // Loop through RelAbundanceL1 and test results
+        for(index = 0; index < 5; index++) {
+            EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol6);
+        }
+
+        EXPECT_NEAR(grassOutput[0], .333333, tol6);
+        EXPECT_NEAR(grassOutput[1], .333333, tol6);
+        EXPECT_NEAR(grassOutput[2], .333333, tol6);
 
         /*  ==================================
          Test with `SumGrassesFraction` being fixed, all input of previous tests
