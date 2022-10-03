@@ -159,7 +159,7 @@ namespace {
         int deallocate = 0;
         int allocate = 1;
 
-        Bool isNorth = swTRUE;
+        Bool inNorthHem = swTRUE;
 
         // Allocate memory
             // 31 = number of years used in test
@@ -183,7 +183,7 @@ namespace {
         //   )
         // ```
 
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, isNorth);
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, inNorthHem);
 
         EXPECT_NEAR(climateOutput.meanTempMon_C[Jan][0], -8.432581, tol6);
         EXPECT_NEAR(climateOutput.maxTempMon_C[Jan][0], -2.562581, tol6);
@@ -264,7 +264,7 @@ namespace {
         int deallocate = 0;
         int allocate = 1;
 
-        Bool isNorth = swTRUE;
+        Bool inNorthHem = swTRUE;
 
         // Allocate memory
             // 1 = number of years used in test
@@ -283,7 +283,7 @@ namespace {
         //   )
         // ```
 
-        calcSiteClimate(SW_Weather.allHist, 1, 1980, &climateOutput, isNorth);
+        calcSiteClimate(SW_Weather.allHist, 1, 1980, &climateOutput, inNorthHem);
         averageClimateAcrossYears(&climateOutput, 1, &climateAverages);
 
         // Expect that aggregated values across one year are identical
@@ -382,7 +382,7 @@ namespace {
         int deallocate = 0;
         int allocate = 1;
 
-        Bool isNorth = swFALSE;
+        Bool inNorthHem = swFALSE;
 
         // Allocate memory
             // 31 = number of years used in test
@@ -406,7 +406,7 @@ namespace {
         //   )
         // ```
 
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, isNorth);
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, inNorthHem);
 
         EXPECT_NEAR(climateOutput.meanTempMon_C[Jan][0], -8.432581, tol6);
         EXPECT_NEAR(climateOutput.maxTempMon_C[Jan][0], -2.562581, tol6);
@@ -486,7 +486,7 @@ namespace {
         int allocate = 1;
         int deallocate = 0;
 
-        Bool isNorth = swTRUE;
+        Bool inNorthHem = swTRUE;
         
         // Allocate memory
         allocDeallocClimateStructs(allocate, 2, &climateOutput, &climateAverages);
@@ -517,7 +517,7 @@ namespace {
         }
 
         // --- Annual time-series of climate variables ------
-        calcSiteClimate(allHist, 2, 1980, &climateOutput, isNorth);
+        calcSiteClimate(allHist, 2, 1980, &climateOutput, inNorthHem);
 
         EXPECT_DOUBLE_EQ(climateOutput.meanTempMon_C[Jan][0], 1.);
         EXPECT_DOUBLE_EQ(climateOutput.maxTempMon_C[Jan][0], 1.);
@@ -597,7 +597,7 @@ namespace {
 
         double **meanTempMon_C = new double*[MAX_MONTHS];
 
-        Bool isNorth = swTRUE;
+        Bool inNorthHem = swTRUE;
 
         for(month = 0; month < MAX_MONTHS; month++) {
             PPTMon_cm[month] = new double[2];
@@ -611,7 +611,7 @@ namespace {
 
 
         // ------ Test for one year ------
-        findDriestQtr(result, 1, meanTempMon_C, PPTMon_cm, isNorth);
+        findDriestQtr(result, 1, meanTempMon_C, PPTMon_cm, inNorthHem);
 
         // Value 1.433333... is the average temperature of the driest quarter of the year
         // In this case, the driest quarter is February-April
@@ -619,7 +619,7 @@ namespace {
 
 
         // ------ Test for two years ------
-        findDriestQtr(result, 2, meanTempMon_C, PPTMon_cm, isNorth);
+        findDriestQtr(result, 2, meanTempMon_C, PPTMon_cm, inNorthHem);
 
         EXPECT_NEAR(result[0], 1.4333333333333333, tol9);
         EXPECT_NEAR(result[1], 1.4333333333333333, tol9);
@@ -633,7 +633,7 @@ namespace {
             }
         }
 
-        findDriestQtr(result, 1, meanTempMon_C, PPTMon_cm, isNorth);
+        findDriestQtr(result, 1, meanTempMon_C, PPTMon_cm, inNorthHem);
 
         // Expect that the driest quarter that occurs first
         // among all driest quarters is used
