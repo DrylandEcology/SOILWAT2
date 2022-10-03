@@ -1,3 +1,11 @@
+# SOILWAT2 v7.0.0
+* Moved `calc_SiteClimate()` and `estimate_PotNatVeg_composition()` 
+    functionality from rSOILWAT2 to SOILWAT2.
+* Yesterday values for variables in SW_WEATHER_2DAYS struct are no longer used, 
+    which motivated the struct being renamed to SW_WEATHER_NOW.
+* Weather is now read in all at once, instead of reading one year at a time, by the new function
+    `readAllWeather()`.
+* SOILWAT2 gains `veg_method` as new user input (`"veg.in"`).
 
 # SOILWAT2 v6.6.0
 * Random number generators now produce sequences that can be exactly reproduced.
