@@ -190,7 +190,6 @@ namespace {
         double RelAbundanceL1Expected[5] = {0.0, 0.3084547, 0.2608391, 0.4307062, 0.0};
 
         Bool fillEmptyWithBareGround = swTRUE;
-        Bool inNorthHem = swTRUE;
         Bool warnExtrapolation = swTRUE;
         Bool inNorthHem = swTRUE;
 
@@ -510,7 +509,6 @@ namespace {
         Bool fillEmptyWithBareGround = swTRUE;
         Bool inNorthHem = swTRUE;
         Bool warnExtrapolation = swTRUE;
-        Bool inNorthHem = swTRUE;
 
         int deallocate = 0;
         int allocate = 1;
