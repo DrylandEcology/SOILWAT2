@@ -154,7 +154,7 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
  */
 
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                     SW_CLIMATE_YEARLY *climateOutput, Bool isNorth) {
+                     SW_CLIMATE_YEARLY *climateOutput, Bool inNorthHem) {
 
     int month, yearIndex, year, day, numDaysYear, currMonDay;
     int numDaysMonth, adjustedDoy, adjustedYear = 0, secondMonth, seventhMonth,
@@ -178,7 +178,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     calcSiteClimateLatInvariants(allHist, numYears, startYear, climateOutput);
 
     // Set starting conditions that are dependent on north/south before main loop is entered
-    if(isNorth) {
+    if(inNorthHem) {
         secondMonth = Feb;
         seventhMonth = Jul;
         numDaysMonth = Time_days_in_month(Jan);
@@ -199,7 +199,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         year = yearIndex + startYear;
         Time_new_year(year);
         numDaysYear = Time_get_lastdoy_y(year);
-        month = (isNorth) ? Jan : Jul;
+        month = (inNorthHem) ? Jan : Jul;
         currMonDay = 0;
         currentJulyMin = SW_MISSING;
         totalAbove65 = 0;
@@ -207,14 +207,14 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         consecNonFrost = 0;
         JulyPPT = 0;
 
-        if(!isNorth) {
+        if(!inNorthHem) {
             // Get calendar year days only when site is in southern hemisphere
             // To deal with number of days in data
             calendarYearDays = Time_get_lastdoy_y(year - 1);
         }
 
         for(day = 0; day < numDaysYear; day++) {
-            if(isNorth) {
+            if(inNorthHem) {
                 adjustedDoy = day;
                 adjustedYear = yearIndex;
             } else {
@@ -228,7 +228,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                 }
             }
 
-            if(month == Jul && adjustedYear >= numYears - 1 && !isNorth) {
+            if(month == Jul && adjustedYear >= numYears - 1 && !inNorthHem) {
                 // Set all current accumulated values to SW_MISSING to prevent
                 // a zero going into the last year of the respective arrays
                 // Last six months of data is ignored and do not go into
@@ -302,7 +302,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     }
 
     findDriestQtr(climateOutput->meanTempDriestQtr_C, numYears,
-                  climateOutput->meanTempMon_C, climateOutput->PPTMon_cm, isNorth);
+                  climateOutput->meanTempMon_C, climateOutput->PPTMon_cm, inNorthHem);
 }
 
 /**
@@ -357,10 +357,10 @@ void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int s
  @param[out] meanTempDriestQtr_C Array of size numYears holding the average temperature of the driest quarter of the year for every year
  */
 void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempMon_C,
-                   double **PPTMon_cm, Bool isNorth) {
+                   double **PPTMon_cm, Bool inNorthHem) {
     
     int yearIndex, month, prevMonth, nextMonth, adjustedMonth = 0,
-    numQuarterMonths = 3, endNumYears = (isNorth) ? numYears : numYears - 1;
+    numQuarterMonths = 3, endNumYears = (inNorthHem) ? numYears : numYears - 1;
 
     // NOTE: These variables are the same throughout the program if site is in
     // northern hempisphere
@@ -378,7 +378,7 @@ void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempM
 
         for(month = 0; month < MAX_MONTHS; month++) {
 
-            if(isNorth) {
+            if(inNorthHem) {
                 adjustedMonth = month;
 
                 prevMonth = (adjustedMonth == Jan) ? Dec : adjustedMonth - 1;
@@ -411,7 +411,7 @@ void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempM
         
     }
 
-    if(!isNorth) meanTempDriestQtr_C[numYears - 1] = SW_MISSING;
+    if(!inNorthHem) meanTempDriestQtr_C[numYears - 1] = SW_MISSING;
 
 }
 
