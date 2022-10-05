@@ -15,10 +15,6 @@
 7			# Seed random number generator for weather generator (only used if SOILWAT2)
 			# (seed with 0 to use current time)
 
-#--- Historical daily weather inputs
--1		# first year to begin historical weather
-			# if -1, then use first year of simulation (see `years.in`)
-
 
 #--- Monthly scaling parameters:
 # Month 1 = January, Month 2 = February, etc.
