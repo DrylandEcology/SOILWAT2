@@ -43,7 +43,6 @@
 
 #include "SW_Defines.h"
 #include "SW_Files.h"
-#include "SW_Weather.h"
 #include "SW_Site.h" // externs SW_Site
 #include "SW_SoilWater.h"  /* for setup_new_year() */
 #include "SW_Times.h"

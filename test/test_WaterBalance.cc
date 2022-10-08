@@ -123,6 +123,7 @@ namespace {
 
     // Prepare weather data
     SW_WTH_read();
+    SW_WTH_finalize_all_weather();
 
     // Run the simulation
     SW_CTL_main();
@@ -153,6 +154,7 @@ namespace {
 
     // Prepare weather data
     SW_WTH_read();
+    SW_WTH_finalize_all_weather();
 
     // Run the simulation
     SW_CTL_main();
