@@ -424,13 +424,18 @@ double final_running_sd(unsigned int n, double ssqr)
 
 /**
  @brief Takes the average over an array of size length
+
  @param values Array of size length holding the values to be averaged
  @param length Size of input array may be years, months, days, etc.
+
+ @note When a value is SW_MISSING, the function sees it as a value to skip and ignores it to not influence
+ the mean.
  */
 double mean(double values[], int length) {
 
     int index, finalLength = 0;
     double total = 0.0, currentVal;
+
     for(index = 0; index < length; index++) {
         currentVal = values[index];
 
@@ -439,17 +444,21 @@ double mean(double values[], int length) {
             finalLength++;
         }
     }
+    
     return total / finalLength;
 }
 
 /**
  @brief Takes the standard deviation of all values in an array all at once.
- 
+
  @param inputArray Array containing values to find the standard deviation of
  @param length Size of the input array
+
  @note This function is preferred to be used when the set is small. If the standard deviation of a large set is needed,
  attempt a running standard deviation.
- 
+
+ @note When a value is SW_MISSING, the function sees it as a value to skip and ignores it to not influence
+ the standard deviation.
  */
 double standardDeviation(double inputArray[], int length) {
  

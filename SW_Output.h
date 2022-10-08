@@ -59,7 +59,6 @@
 #include "Times.h"
 #include "SW_Defines.h"
 #include "SW_SoilWater.h"
-#include "SW_Weather.h"
 #include "SW_VegProd.h"
 
 #ifdef __cplusplus

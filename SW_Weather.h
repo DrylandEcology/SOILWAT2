@@ -40,12 +40,12 @@ extern "C" {
  */
 
 typedef struct {
-	/* comes from markov weather day-to-day */
+	/* Weather values of the current simulation day */
 	RealD temp_avg, temp_max, temp_min, ppt, rain;
 } SW_WEATHER_NOW;
 
 typedef struct {
-	/* comes from historical weather files */
+	/* Daily weather values for one year */
 	RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS], ppt[MAX_DAYS];
 	// RealD temp_month_avg[MAX_MONTHS], temp_year_avg; // currently not used
 } SW_WEATHER_HIST;
@@ -133,12 +133,10 @@ typedef struct {
 			// 0 : pass through missing values
 			// 1 : LOCF (temp) + 0 (ppt)
 			// 2 : weather generator (previously, `use_weathergenerator`)
-	
+
 	int rng_seed; // initial state for `mark
-	
+
 	RealD pct_snowdrift, pct_snowRunoff;
-    unsigned int n_years;
-	SW_TIMES yr;
   RealD
     scale_precip[MAX_MONTHS],
     scale_temp_max[MAX_MONTHS],
@@ -154,9 +152,14 @@ typedef struct {
 	SW_WEATHER_OUTPUTS
 		*p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time period
 		*p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
-	SW_WEATHER_HIST hist;
-    SW_WEATHER_HIST **allHist;
-    SW_WEATHER_NOW now;
+
+
+  /* Daily weather record */
+  SW_WEATHER_HIST **allHist; /**< Daily weather values; array of length `n_years` of pointers to struct #SW_WEATHER_HIST where the first represents values for calendar year `startYear` */
+  unsigned int n_years; /**< Length of `allHist`, i.e., number of years of daily weather */
+  unsigned int startYear; /**< Calendar year corresponding to first year of `allHist` */
+
+  SW_WEATHER_NOW now; /**< Weather values of the current simulation day */
 
 } SW_WEATHER;
 
@@ -173,21 +176,33 @@ extern SW_WEATHER SW_Weather;
 /* --------------------------------------------------- */
 void SW_WTH_setup(void);
 void SW_WTH_read(void);
-Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather);
 void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
                                SW_CLIMATE_CLIM *climateAverages);
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                     SW_CLIMATE_YEARLY *climateOutput, Bool inNorthHem);
+                     Bool inNorthHem, SW_CLIMATE_YEARLY *climateOutput);
 void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                          SW_CLIMATE_YEARLY *climateOutput);
-void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempMon_C,
-                   double **meanPPTMon_cm, Bool inNorthHem);
+void findDriestQtr(int numYears, Bool inNorthHem, double *meanTempDriestQtr_C,
+                   double **meanTempMon_C, double **PPTMon_cm);
 void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYearOne,
                            int *adjustedYearTwo, int *adjustedMonth, int *prevMonth,
                            int *nextMonth);
 void allocDeallocClimateStructs(int action, int numYears, SW_CLIMATE_YEARLY *climateOutput,
                                 SW_CLIMATE_CLIM *climateAverages);
-void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_years);
+void _read_weather_hist(
+  TimeInt year,
+  SW_WEATHER_HIST *yearWeather,
+  char weather_prefix[]
+);
+void readAllWeather(
+  SW_WEATHER_HIST **allHist,
+  int startYear,
+  unsigned int n_years,
+  Bool use_weathergenerator_only,
+  char weather_prefix[]
+);
+void finalizeAllWeather(SW_WEATHER *w);
+
 void scaleAllWeather(
   SW_WEATHER_HIST **allHist,
   int startYear,
@@ -203,9 +218,10 @@ void generateMissingWeather(
   unsigned int method,
   unsigned int optLOCF_nMax
 );
-void allocateAllWeather(void);
-void deallocateAllWeather(void);
+void allocateAllWeather(SW_WEATHER *w);
+void deallocateAllWeather(SW_WEATHER *w);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
+void SW_WTH_finalize_all_weather(void);
 void SW_WTH_init_run(void);
 void SW_WTH_construct(void);
 void SW_WTH_deconstruct(void);

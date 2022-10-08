@@ -52,13 +52,6 @@
 #include "SW_Markov.h"
 
 #include "SW_Weather.h"
-#ifdef RSOILWAT
-  #include "../rSW_Weather.h"
-#endif
-
-#ifdef STEPWAT
-  #include "../ST_globals.h" // externs `SuperGlobals
-#endif
 
 
 
@@ -82,7 +75,7 @@ static char *MyFileName;
 /**
  @brief Takes averages through the number of years of the calculated values from calc_SiteClimate
  
- @param[in] climateOutput Structure of type SW_CLIMATE_OUTPUT that holds all output from `calcSiteClimate()`
+ @param[in] climateOutput Structure of type SW_CLIMATE_YEARLY that holds all output from `calcSiteClimate()`
  @param[in] numYears Calendar year corresponding to first year of `allHist`
  @param[out] climateAverages Structure of type SW_CLIMATE_CLIM that holds averages and
  standard deviations output by `averageClimateAcrossYears()`
@@ -125,7 +118,8 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
 }
 
 /**
- @brief Calculate monthly and annual time series of climate variables from daily weather
+ @brief Calculate monthly and annual time series of climate variables from daily weather while adjusting as
+ needed depending on if the site in question is in the northern or southern hemisphere.
 
  This function has two different types of years:
 
@@ -149,18 +143,19 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
  @param[in] allHist Array containing all historical data of a site
  @param[in] numYears Number of years represented by `allHist`
  @param[in] startYear Calendar year corresponding to first year of `allHist`
- @param[out] climateOutput Structure of type SW_CLIMATE_CLIM that holds averages and
+ @param[in] inNorthHem Boolean value specifying if site is in northern hemisphere
+ @param[out] climateOutput Structure of type SW_CLIMATE_YEARLY that holds averages and
  standard deviations output by `averageClimateAcrossYears()`
  */
 
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                     SW_CLIMATE_YEARLY *climateOutput, Bool inNorthHem) {
+                     Bool inNorthHem, SW_CLIMATE_YEARLY *climateOutput) {
 
     int month, yearIndex, year, day, numDaysYear, currMonDay;
     int numDaysMonth, adjustedDoy, adjustedYear = 0, secondMonth, seventhMonth,
     adjustedStartYear, calendarYearDays;
     
-    double currentTempMin, currentTempMean, totalAbove65, currentJulyMin, JulyPPT,
+    double currentTempMin, currentTempMean, totalAbove65, current7thMonMin, PPT7thMon,
     consecNonFrost, currentNonFrost;
 
     // Initialize accumulated value arrays to all zeros
@@ -201,11 +196,11 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         numDaysYear = Time_get_lastdoy_y(year);
         month = (inNorthHem) ? Jan : Jul;
         currMonDay = 0;
-        currentJulyMin = SW_MISSING;
+        current7thMonMin = SW_MISSING;
         totalAbove65 = 0;
         currentNonFrost = 0;
         consecNonFrost = 0;
-        JulyPPT = 0;
+        PPT7thMon = 0;
 
         if(!inNorthHem) {
             // Get calendar year days only when site is in southern hemisphere
@@ -233,7 +228,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                 // a zero going into the last year of the respective arrays
                 // Last six months of data is ignored and do not go into
                 // a new year of data for "adjusted years"
-                JulyPPT = SW_MISSING;
+                PPT7thMon = SW_MISSING;
                 totalAbove65 = SW_MISSING;
                 currentNonFrost = SW_MISSING;
                 consecNonFrost = SW_MISSING;
@@ -247,9 +242,9 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
 
             // Part of code that deals with gathering seventh month information
             if(month == seventhMonth){
-                currentJulyMin = (currentTempMin < currentJulyMin) ?
-                                            currentTempMin : currentJulyMin;
-                JulyPPT += allHist[adjustedYear]->ppt[adjustedDoy] * 10;
+                current7thMonMin = (currentTempMin < current7thMonMin) ?
+                                            currentTempMin : current7thMonMin;
+                PPT7thMon += allHist[adjustedYear]->ppt[adjustedDoy] * 10;
             }
 
             // Part of code dealing with consecutive amount of days without frost
@@ -292,8 +287,8 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             
         }
         // Set all values
-        climateOutput->minTemp7thMon_C[yearIndex] = currentJulyMin;
-        climateOutput->PPT7thMon_mm[yearIndex] = JulyPPT;
+        climateOutput->minTemp7thMon_C[yearIndex] = current7thMonMin;
+        climateOutput->PPT7thMon_mm[yearIndex] = PPT7thMon;
         climateOutput->ddAbove65F_degday[yearIndex] = totalAbove65;
         
         // The reason behind checking if consecNonFrost is greater than zero,
@@ -301,13 +296,19 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         climateOutput->frostFree_days[yearIndex] = (consecNonFrost > 0) ? consecNonFrost : currentNonFrost;
     }
 
-    findDriestQtr(climateOutput->meanTempDriestQtr_C, numYears,
-                  climateOutput->meanTempMon_C, climateOutput->PPTMon_cm, inNorthHem);
+    findDriestQtr(numYears, inNorthHem, climateOutput->meanTempDriestQtr_C,
+                  climateOutput->meanTempMon_C, climateOutput->PPTMon_cm);
 }
 
 /**
  @brief Helper function to `calcSiteClimate()`. Manages all information that is independant of the site
  being in the northern/southern hemisphere.
+
+ @param[in] allHist Array containing all historical data of a site
+ @param[in] numYears Number of years simulation covers
+ @param[in] startYear Calendar year corresponding to first year of `allHist`
+ @param[out] climateOutput Structure of type SW_CLIMATE_YEARLY that holds averages and
+ standard deviations output by `averageClimateAcrossYears()`
  */
 
 void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
@@ -346,18 +347,19 @@ void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int s
 }
 
 /**
- @brief Helper function to calcsiteClimate to find the driest quarter of the year's average temperature
+ @brief Helper function to `calcSiteClimate()` to find the average temperature during the driest quarter of the year
  
  @param[in] numYears Number of years represented within simulation
- @param[in] startYear Calendar year corresponding to first year of simulation
+ @param[in] inNorthHem Boolean value specifying if site is in northern hemisphere
+ @param[out] meanTempDriestQtr_C Array of size numYears holding the average temperature of the
+ driest quarter of the year for every year
  @param[out] meanTempMon_C 2D array containing monthly means average daily air temperature (deg;C) with
  dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
  @param[out] PPTMon_cm 2D array containing monthly amount precipitation (cm) with dimensions
  of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] meanTempDriestQtr_C Array of size numYears holding the average temperature of the driest quarter of the year for every year
  */
-void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempMon_C,
-                   double **PPTMon_cm, Bool inNorthHem) {
+void findDriestQtr(int numYears, Bool inNorthHem, double *meanTempDriestQtr_C,
+                   double **meanTempMon_C, double **PPTMon_cm) {
     
     int yearIndex, month, prevMonth, nextMonth, adjustedMonth = 0,
     numQuarterMonths = 3, endNumYears = (inNorthHem) ? numYears : numYears - 1;
@@ -439,8 +441,7 @@ void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYe
     *adjustedMonth = month + Jul;
     *adjustedMonth %= MAX_MONTHS;
 
-    // Adjust prevMonth, nextMonth and adjustedYear(s) with respect to the
-    // respective adjustedMonth
+    // Adjust prevMonth, nextMonth and adjustedYear(s) to the respective adjustedMonth
     switch(*adjustedMonth) {
         case Jan:
             adjustedYearOne++;
@@ -483,50 +484,80 @@ void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYe
 
 
 /**
- @brief Reads in all weather data through all years and stores them in global SW_Weather's `allHist`
+ @brief Reads in all weather data
+
+ Reads in weather data from disk (if available) for all years and
+ stores values in global SW_Weather's `allHist`.
+ If missing, set values to `SW_MISSING`.
 
  @param[out] allHist 2D array holding all weather data gathered
  @param[in] startYear Start year of the simulation
  @param[in] n_years Number of years in simulation
+ @param[in] use_weathergenerator_only A boolean; if `swFALSE`, code attempts to
+   read weather files from disk.
+ @param[in] weather_prefix File name of weather data without extension.
 
 */
-void readAllWeather(SW_WEATHER_HIST **allHist, int startYear, unsigned int n_years) {
-
-    int year;
-    unsigned int yearIndex, numDaysYear, day;
-
-    Bool weth_found = swFALSE;
+void readAllWeather(
+  SW_WEATHER_HIST **allHist,
+  int startYear,
+  unsigned int n_years,
+  Bool use_weathergenerator_only,
+  char weather_prefix[]
+) {
+    unsigned int yearIndex;
 
     for(yearIndex = 0; yearIndex < n_years; yearIndex++) {
 
-        if(SW_Weather.use_weathergenerator_only) {
-          // Set to missing for call to `generateMissingWeather()`
-          _clear_hist_weather(allHist[yearIndex]);
+        // Set all daily weather values to missing
+        _clear_hist_weather(allHist[yearIndex]);
 
-        } else {
-            year = yearIndex + startYear;
+        // Read daily weather values from disk
+        if (!use_weathergenerator_only) {
 
-            weth_found = _read_weather_hist(year, allHist[yearIndex]);
-
-            // Calculate average air temperature
-            if (weth_found) {
-              Time_new_year(year);
-              numDaysYear = Time_get_lastdoy_y(year);
-
-              for (day = 0; day < numDaysYear; day++) {
-                  if (
-                    !missing(allHist[yearIndex]->temp_max[day]) &&
-                    !missing(allHist[yearIndex]->temp_min[day])
-                  ) {
-                      allHist[yearIndex]->temp_avg[day] = (
-                          allHist[yearIndex]->temp_max[day] +
-                          allHist[yearIndex]->temp_min[day]
-                        ) / 2.;
-                  }
-              }
-            }
+            _read_weather_hist(
+              startYear + yearIndex,
+              allHist[yearIndex],
+              weather_prefix
+            );
         }
     }
+}
+
+
+
+/**
+  @brief Impute missing values and scale with monthly parameters
+
+  Finalize weather values after they have been read in via
+  `readAllWeather()` or `SW_WTH_read()`
+  (the latter also handles (re-)allocation).
+*/
+void finalizeAllWeather(SW_WEATHER *w) {
+  // Impute missing values
+  generateMissingWeather(
+    w->allHist,
+    w->startYear,
+    w->n_years,
+    w->generateWeatherMethod,
+    3 // optLOCF_nMax (TODO: make this user input)
+  );
+
+
+  // Scale with monthly additive/multiplicative parameters
+  scaleAllWeather(
+    w->allHist,
+    w->startYear,
+    w->n_years,
+    w->scale_temp_max,
+    w->scale_temp_min,
+    w->scale_precip
+  );
+}
+
+
+void SW_WTH_finalize_all_weather(void) {
+  finalizeAllWeather(&SW_Weather);
 }
 
 
@@ -575,7 +606,7 @@ void scaleAllWeather(
     // Apply scaling parameters to each day of `allHist`
     for (yearIndex = 0; yearIndex < n_years; yearIndex++) {
       year = yearIndex + startYear;
-      Time_new_year(year);
+      Time_new_year(year); // required for `doy2month()`
       numDaysYear = Time_get_lastdoy_y(year);
 
       for (day = 0; day < numDaysYear; day++) {
@@ -682,7 +713,6 @@ void generateMissingWeather(
   // Loop over years
   for (yearIndex = 0; yearIndex < n_years; yearIndex++) {
     year = yearIndex + startYear;
-    Time_new_year(year);
     numDaysYear = Time_get_lastdoy_y(year);
     iMissing = 0;
 
@@ -821,39 +851,39 @@ void SW_WTH_deconstruct(void)
 		SW_MKV_deconstruct();
 	}
 
-    deallocateAllWeather();
+    deallocateAllWeather(&SW_Weather);
 }
 
 
 /**
-  @brief Allocate memory for `allHist` of `SW_Weather` based on `n_years`
+  @brief Allocate memory for `allHist` for `w` based on `n_years`
 */
-void allocateAllWeather(void) {
+void allocateAllWeather(SW_WEATHER *w) {
   unsigned int year;
 
-  SW_Weather.allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * SW_Weather.n_years);
+  w->allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * w->n_years);
 
-  for (year = 0; year < SW_Weather.n_years; year++) {
+  for (year = 0; year < w->n_years; year++) {
 
-      SW_Weather.allHist[year] = (SW_WEATHER_HIST *)malloc(sizeof(SW_WEATHER_HIST));
+      w->allHist[year] = (SW_WEATHER_HIST *)malloc(sizeof(SW_WEATHER_HIST));
   }
 }
 
 
 /**
- @brief Helper function to SW_WTH_deconstruct to deallocate allHist array.
+ @brief Helper function to SW_WTH_deconstruct to deallocate `allHist` of `w`.
  */
 
-void deallocateAllWeather(void) {
+void deallocateAllWeather(SW_WEATHER *w) {
     unsigned int year;
 
-    if(!isnull(SW_Weather.allHist)) {
-        for(year = 0; year < SW_Weather.n_years; year++) {
-            free(SW_Weather.allHist[year]);
+    if(!isnull(w->allHist)) {
+        for(year = 0; year < w->n_years; year++) {
+            free(w->allHist[year]);
         }
 
-        free(SW_Weather.allHist);
-        SW_Weather.allHist = NULL;
+        free(w->allHist);
+        w->allHist = NULL;
     }
 
 }
@@ -897,20 +927,24 @@ void SW_WTH_new_day(void) {
 
     SW_WEATHER *w = &SW_Weather;
     SW_WEATHER_NOW *wn = &SW_Weather.now;
-    TimeInt day = SW_Model.doy - 1, year = SW_Model.year - SW_Model.startyr;
 
+    /* Indices to today's weather record in `allHist` */
+    TimeInt
+      day = SW_Model.doy - 1,
+      yearIndex = SW_Model.year - SW_Weather.startYear;
+
+/*
 #ifdef STEPWAT
-	/*
 	 TimeInt doy = SW_Model.doy;
 	 Bool is_warm;
 	 Bool is_growingseason = swFALSE;
-	 */
 #endif
+*/
 
     /* get the daily weather from allHist */
     if (
-      missing(w->allHist[year]->temp_avg[day]) ||
-      missing(w->allHist[year]->ppt[day])
+      missing(w->allHist[yearIndex]->temp_avg[day]) ||
+      missing(w->allHist[yearIndex]->ppt[day])
     ) {
       LogError(
         logfp,
@@ -921,11 +955,11 @@ void SW_WTH_new_day(void) {
       );
     }
 
-    wn->temp_max = w->allHist[year]->temp_max[day];
-    wn->temp_min = w->allHist[year]->temp_min[day];
-    wn->ppt = w->allHist[year]->ppt[day];
+    wn->temp_max = w->allHist[yearIndex]->temp_max[day];
+    wn->temp_min = w->allHist[yearIndex]->temp_min[day];
+    wn->ppt = w->allHist[yearIndex]->ppt[day];
 
-    wn->temp_avg = w->allHist[year]->temp_avg[day];
+    wn->temp_avg = w->allHist[yearIndex]->temp_avg[day];
 
     w->snow = w->snowmelt = w->snowloss = 0.;
     w->snowRunoff = w->surfaceRunoff = w->surfaceRunon = w->soil_inf = 0.;
@@ -945,7 +979,7 @@ void SW_WTH_new_day(void) {
 void SW_WTH_setup(void) {
 	/* =================================================== */
 	SW_WEATHER *w = &SW_Weather;
-	const int nitems = 18;
+	const int nitems = 17;
 	FILE *f;
 	int lineno = 0, month, x;
 	RealF sppt, stmax, stmin;
@@ -1008,13 +1042,8 @@ void SW_WTH_setup(void) {
 			w->rng_seed = atoi(inbuf);
 			break;
 
-		case 5:
-			x = atoi(inbuf);
-			w->yr.first = (x < 0) ? SW_Model.startyr : yearto4digit(x);
-			break;
-
 		default:
-			if (lineno == 6 + MAX_MONTHS)
+			if (lineno == 5 + MAX_MONTHS)
 				break;
 
 			x = sscanf(
@@ -1046,66 +1075,39 @@ void SW_WTH_setup(void) {
 	if (lineno < nitems) {
 		LogError(logfp, LOGFATAL, "%s : Too few input lines.", MyFileName);
 	}
-
-	w->yr.last = SW_Model.endyr;
-	w->yr.total = w->yr.last - w->yr.first + 1;
-
-	if (SW_Weather.generateWeatherMethod != 2 && SW_Model.startyr < w->yr.first) {
-    LogError(
-      logfp,
-      LOGFATAL,
-      "%s : Model year (%d) starts before weather files (%d) "
-        "and the Markov weather generator is turned off. \n"
-        "Please synchronize the years or "
-        "activate the weather generator "
-        "(and set up input files `mkv_prob.in` and `mkv_covar.in`).",
-      MyFileName, SW_Model.startyr, w->yr.first
-    );
-	}
-	/* else we assume weather files match model run years */
 }
 
+
+/**
+  @brief (Re-)allocate `allHist` and read daily meteorological input from disk
+
+  The weather generator is not run and daily values are not scaled with
+  monthly climate parameters, see `SW_WTH_finalize_all_weather()` instead.
+*/
 void SW_WTH_read(void) {
 
     // Deallocate (previous, if any) `allHist`
     // (using value of `SW_Weather.n_years` previously used to allocate)
-    deallocateAllWeather();
+    // `SW_WTH_construct()` sets `n_years` to zero
+    deallocateAllWeather(&SW_Weather);
 
-    // Determine required (new) size of new `allHist`
-    #ifdef STEPWAT
-    SW_Weather.n_years = SuperGlobals.runModelYears;
-    #else
+    // Update number of years and first calendar year represented
     SW_Weather.n_years = SW_Model.endyr - SW_Model.startyr + 1;
-    #endif
+    SW_Weather.startYear = SW_Model.startyr;
 
     // Allocate new `allHist` (based on current `SW_Weather.n_years`)
-    allocateAllWeather();
+    allocateAllWeather(&SW_Weather);
 
-
-    // Read daily meteorological input from disk
-    readAllWeather(SW_Weather.allHist, SW_Model.startyr, SW_Weather.n_years);
-
-
-    // Impute missing values
-    generateMissingWeather(
+    // Read daily meteorological input from disk (if available)
+    readAllWeather(
       SW_Weather.allHist,
-      SW_Model.startyr,
+      SW_Weather.startYear,
       SW_Weather.n_years,
-      SW_Weather.generateWeatherMethod,
-      3 // optLOCF_nMax (TODO: make this user input)
-    );
-
-
-    // Scale with monthly additive/multiplicative parameters
-    scaleAllWeather(
-      SW_Weather.allHist,
-      SW_Model.startyr,
-      SW_Weather.n_years,
-      SW_Weather.scale_temp_max,
-      SW_Weather.scale_temp_min,
-      SW_Weather.scale_precip
+      SW_Weather.use_weathergenerator_only,
+      SW_Weather.name_prefix
     );
 }
+
 
 
 /** @brief Read the historical (observed) weather file for a simulation year.
@@ -1120,11 +1122,13 @@ void SW_WTH_read(void) {
 
     @param year Current year within the simulation
     @param yearWeather Current year's weather array that is to be filled by function
-
-    @return `swTRUE`/`swFALSE` if historical daily meteorological inputs are
-      successfully/unsuccessfully read in.
+    @param weather_prefix File name of weather data without extension.
 */
-Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather) {
+void _read_weather_hist(
+  TimeInt year,
+  SW_WEATHER_HIST *yearWeather,
+  char weather_prefix[]
+) {
 	/* =================================================== */
 	/* Read the historical (measured) weather files.
 	 * Format is
@@ -1148,12 +1152,11 @@ Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather) {
 
 	char fname[MAX_FILENAMESIZE];
 
-	sprintf(fname, "%s.%4d", SW_Weather.name_prefix, year);
-
-	_clear_hist_weather(yearWeather); // clear values before returning
+  // Create file name: `[weather-file prefix].[year]`
+	sprintf(fname, "%s.%4d", weather_prefix, year);
 
 	if (NULL == (f = fopen(fname, "r")))
-		return swFALSE;
+		return;
 
 	while (GetALine(f, inbuf)) {
 		lineno++;
@@ -1175,8 +1178,13 @@ Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather) {
 		doy--; // base1 -> base0
         yearWeather->temp_max[doy] = tmpmax;
         yearWeather->temp_min[doy] = tmpmin;
-        yearWeather->temp_avg[doy] = (tmpmax + tmpmin) / 2.0;
         yearWeather->ppt[doy] = ppt;
+
+        // Calculate average air temperature if min/max not missing
+        if (!missing(tmpmax) && !missing(tmpmin)) {
+          yearWeather->temp_avg[doy] = (tmpmax + tmpmin) / 2.0;
+        }
+
 
     // Calculate annual average temperature based on historical input, i.e.,
     // the `temp_year_avg` calculated here is prospective and unsuitable when
@@ -1211,7 +1219,6 @@ Bool _read_weather_hist(TimeInt year, SW_WEATHER_HIST *yearWeather) {
   */
 
 	fclose(f);
-	return swTRUE;
 }
 
 void allocDeallocClimateStructs(int action, int numYears, SW_CLIMATE_YEARLY *climateOutput,

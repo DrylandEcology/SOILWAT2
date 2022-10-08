@@ -83,6 +83,9 @@ int main(int argc, char **argv) {
 	// read user inputs
 	SW_CTL_read_inputs_from_disk();
 
+	// finalize daily weather
+	SW_WTH_finalize_all_weather();
+
 	// initialize simulation run (based on user inputs)
 	SW_CTL_init_run();
 
