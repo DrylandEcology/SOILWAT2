@@ -75,7 +75,7 @@ static char *MyFileName;
 /**
  @brief Takes averages through the number of years of the calculated values from calc_SiteClimate
  
- @param[in] climateOutput Structure of type SW_CLIMATE_OUTPUT that holds all output from `calcSiteClimate()`
+ @param[in] climateOutput Structure of type SW_CLIMATE_YEARLY that holds all output from `calcSiteClimate()`
  @param[in] numYears Calendar year corresponding to first year of `allHist`
  @param[out] climateAverages Structure of type SW_CLIMATE_CLIM that holds averages and
  standard deviations output by `averageClimateAcrossYears()`
@@ -118,7 +118,8 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
 }
 
 /**
- @brief Calculate monthly and annual time series of climate variables from daily weather
+ @brief Calculate monthly and annual time series of climate variables from daily weather while adjusting as
+ needed depending on if the site in question is in the northern or southern hemisphere.
 
  This function has two different types of years:
 
@@ -142,18 +143,19 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
  @param[in] allHist Array containing all historical data of a site
  @param[in] numYears Number of years represented by `allHist`
  @param[in] startYear Calendar year corresponding to first year of `allHist`
- @param[out] climateOutput Structure of type SW_CLIMATE_CLIM that holds averages and
+ @param[in] inNorthHem Boolean value specifying if site is in northern hemisphere
+ @param[out] climateOutput Structure of type SW_CLIMATE_YEARLY that holds averages and
  standard deviations output by `averageClimateAcrossYears()`
  */
 
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                     SW_CLIMATE_YEARLY *climateOutput, Bool inNorthHem) {
+                     Bool inNorthHem, SW_CLIMATE_YEARLY *climateOutput) {
 
     int month, yearIndex, year, day, numDaysYear, currMonDay;
     int numDaysMonth, adjustedDoy, adjustedYear = 0, secondMonth, seventhMonth,
     adjustedStartYear, calendarYearDays;
     
-    double currentTempMin, currentTempMean, totalAbove65, currentJulyMin, JulyPPT,
+    double currentTempMin, currentTempMean, totalAbove65, current7thMonMin, PPT7thMon,
     consecNonFrost, currentNonFrost;
 
     // Initialize accumulated value arrays to all zeros
@@ -194,11 +196,11 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         numDaysYear = Time_get_lastdoy_y(year);
         month = (inNorthHem) ? Jan : Jul;
         currMonDay = 0;
-        currentJulyMin = SW_MISSING;
+        current7thMonMin = SW_MISSING;
         totalAbove65 = 0;
         currentNonFrost = 0;
         consecNonFrost = 0;
-        JulyPPT = 0;
+        PPT7thMon = 0;
 
         if(!inNorthHem) {
             // Get calendar year days only when site is in southern hemisphere
@@ -226,7 +228,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                 // a zero going into the last year of the respective arrays
                 // Last six months of data is ignored and do not go into
                 // a new year of data for "adjusted years"
-                JulyPPT = SW_MISSING;
+                PPT7thMon = SW_MISSING;
                 totalAbove65 = SW_MISSING;
                 currentNonFrost = SW_MISSING;
                 consecNonFrost = SW_MISSING;
@@ -240,9 +242,9 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
 
             // Part of code that deals with gathering seventh month information
             if(month == seventhMonth){
-                currentJulyMin = (currentTempMin < currentJulyMin) ?
-                                            currentTempMin : currentJulyMin;
-                JulyPPT += allHist[adjustedYear]->ppt[adjustedDoy] * 10;
+                current7thMonMin = (currentTempMin < current7thMonMin) ?
+                                            currentTempMin : current7thMonMin;
+                PPT7thMon += allHist[adjustedYear]->ppt[adjustedDoy] * 10;
             }
 
             // Part of code dealing with consecutive amount of days without frost
@@ -285,8 +287,8 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
             
         }
         // Set all values
-        climateOutput->minTemp7thMon_C[yearIndex] = currentJulyMin;
-        climateOutput->PPT7thMon_mm[yearIndex] = JulyPPT;
+        climateOutput->minTemp7thMon_C[yearIndex] = current7thMonMin;
+        climateOutput->PPT7thMon_mm[yearIndex] = PPT7thMon;
         climateOutput->ddAbove65F_degday[yearIndex] = totalAbove65;
         
         // The reason behind checking if consecNonFrost is greater than zero,
@@ -294,13 +296,19 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
         climateOutput->frostFree_days[yearIndex] = (consecNonFrost > 0) ? consecNonFrost : currentNonFrost;
     }
 
-    findDriestQtr(climateOutput->meanTempDriestQtr_C, numYears,
-                  climateOutput->meanTempMon_C, climateOutput->PPTMon_cm, inNorthHem);
+    findDriestQtr(numYears, inNorthHem, climateOutput->meanTempDriestQtr_C,
+                  climateOutput->meanTempMon_C, climateOutput->PPTMon_cm);
 }
 
 /**
  @brief Helper function to `calcSiteClimate()`. Manages all information that is independant of the site
  being in the northern/southern hemisphere.
+
+ @param[in] allHist Array containing all historical data of a site
+ @param[in] numYears Number of years simulation covers
+ @param[in] startYear Calendar year corresponding to first year of `allHist`
+ @param[out] climateOutput Structure of type SW_CLIMATE_YEARLY that holds averages and
+ standard deviations output by `averageClimateAcrossYears()`
  */
 
 void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
@@ -339,18 +347,19 @@ void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int s
 }
 
 /**
- @brief Helper function to calcsiteClimate to find the driest quarter of the year's average temperature
+ @brief Helper function to `calcSiteClimate()` to find the average temperature during the driest quarter of the year
  
  @param[in] numYears Number of years represented within simulation
- @param[in] startYear Calendar year corresponding to first year of simulation
+ @param[in] inNorthHem Boolean value specifying if site is in northern hemisphere
+ @param[out] meanTempDriestQtr_C Array of size numYears holding the average temperature of the
+ driest quarter of the year for every year
  @param[out] meanTempMon_C 2D array containing monthly means average daily air temperature (deg;C) with
  dimensions of row (months) size MAX_MONTHS and columns (years) of size numYears
  @param[out] PPTMon_cm 2D array containing monthly amount precipitation (cm) with dimensions
  of row (months) size MAX_MONTHS and columns (years) of size numYears
- @param[out] meanTempDriestQtr_C Array of size numYears holding the average temperature of the driest quarter of the year for every year
  */
-void findDriestQtr(double *meanTempDriestQtr_C, int numYears, double **meanTempMon_C,
-                   double **PPTMon_cm, Bool inNorthHem) {
+void findDriestQtr(int numYears, Bool inNorthHem, double *meanTempDriestQtr_C,
+                   double **meanTempMon_C, double **PPTMon_cm) {
     
     int yearIndex, month, prevMonth, nextMonth, adjustedMonth = 0,
     numQuarterMonths = 3, endNumYears = (inNorthHem) ? numYears : numYears - 1;
@@ -432,8 +441,7 @@ void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYe
     *adjustedMonth = month + Jul;
     *adjustedMonth %= MAX_MONTHS;
 
-    // Adjust prevMonth, nextMonth and adjustedYear(s) with respect to the
-    // respective adjustedMonth
+    // Adjust prevMonth, nextMonth and adjustedYear(s) to the respective adjustedMonth
     switch(*adjustedMonth) {
         case Jan:
             adjustedYearOne++;
