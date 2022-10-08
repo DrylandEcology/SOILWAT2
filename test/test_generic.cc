@@ -62,6 +62,7 @@ namespace {
     TEST(StandardDeviationTest, UnexpectedAndExpectedCases) {
         double value[1] = {5.};
         double values[5] = {5.4, 3.4, 7.6, 5.6, 1.8};
+        double oneValMissing[5] = {5.4, SW_MISSING, 7.6, 5.6, 1.8};
         
         double standardDev = standardDeviation(value, 1);
         
@@ -77,12 +78,19 @@ namespace {
         
         // Testing the standard deviation function on a normal set of data
         EXPECT_NEAR(standardDev, 2.22441, tol);
+
+        standardDev = standardDeviation(oneValMissing, 5);
+
+        // Testing the standard deviation function on a normal set of data with
+        // one value set to SW_MISSING
+        EXPECT_NEAR(standardDev, 2.413848, tol);
     }
     
     TEST(MeanTest, UnexpectedAndExpectedCases) {
         
         double result;
         double values[5] = {1.8, 2.2, 10., 13.5, 3.2};
+        double oneValMissing[5] = {4.3, 2.6, SW_MISSING, 17.1, 32.4};
         
         result = mean(values, 0);
         
@@ -93,6 +101,11 @@ namespace {
         
         // Testing the mean function on a normal set of data
         EXPECT_FLOAT_EQ(result, 6.14);
+
+        result = mean(oneValMissing, 5);
+
+        // Testing the mean function on a normal set of data
+        EXPECT_FLOAT_EQ(result, 14.1);
         
     }
 
