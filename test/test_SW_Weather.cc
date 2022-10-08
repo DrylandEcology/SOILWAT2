@@ -194,7 +194,7 @@ namespace {
         //   )
         // ```
 
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, inNorthHem);
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
 
         EXPECT_NEAR(climateOutput.meanTempMon_C[Jan][0], -8.432581, tol6);
         EXPECT_NEAR(climateOutput.maxTempMon_C[Jan][0], -2.562581, tol6);
@@ -294,7 +294,7 @@ namespace {
         //   )
         // ```
 
-        calcSiteClimate(SW_Weather.allHist, 1, 1980, &climateOutput, inNorthHem);
+        calcSiteClimate(SW_Weather.allHist, 1, 1980, inNorthHem, &climateOutput);
         averageClimateAcrossYears(&climateOutput, 1, &climateAverages);
 
         // Expect that aggregated values across one year are identical
@@ -386,6 +386,19 @@ namespace {
 
     TEST(ClimateVariableTest, ClimateFromDefaultWeatherSouth) {
 
+        /* ==================================================================
+         Values for these SOILWAT2 tests and in rSOILWAT2 v6.0.0 for
+         southern hemisphere are different than versions preceeding v6.0.0.
+
+         rSOILWAT2 previously calculated climate variable values for southern
+         hemisphere differently than SOILWAT2 now does. To briefly explain,
+         rSOILWAT2 would have instances within the north/south adjustment where
+         July 1st - 3rd would be ignored resulting in different values from
+         missing data for a specific year. SOILWAT2 modified the north/south
+         algorithm and the southern year now properly starts on July 1st
+         resulting in different data values for a year.
+           ================================================================= */
+
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
@@ -393,7 +406,8 @@ namespace {
         int deallocate = 0;
         int allocate = 1;
 
-        Bool inNorthHem = swFALSE;
+        // "South" and not "North" to reduce confusion when calling `calcSiteClimate()`
+        Bool inSouthHem = swFALSE;
 
         // Allocate memory
             // 31 = number of years used in test
@@ -406,18 +420,19 @@ namespace {
         // --- Annual time-series of climate variables ------
         // Here, check values for 1980
 
-        // Expect identical output to rSOILWAT2 (e.g., v5.3.1)
+        // Expect similar output to rSOILWAT2 before v6.0.0 (e.g., v5.3.1)
         // ```{r}
         //   rSOILWAT2::calc_SiteClimate(
         //     weatherList = rSOILWAT2::get_WeatherHistory(
         //       rSOILWAT2::sw_exampleData
         //     )[1],
         //     do_C4vars = TRUE,
-        //     do_Cheatgrass_ClimVars = TRUE
+        //     do_Cheatgrass_ClimVars = TRUE,
+        //     latitude = -10
         //   )
         // ```
 
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, &climateOutput, inNorthHem);
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, inSouthHem, &climateOutput);
 
         EXPECT_NEAR(climateOutput.meanTempMon_C[Jan][0], -8.432581, tol6);
         EXPECT_NEAR(climateOutput.maxTempMon_C[Jan][0], -2.562581, tol6);
@@ -429,26 +444,27 @@ namespace {
         // Climate variables used for C4 grass cover
         // (stdev of one value is undefined)
         EXPECT_NEAR(climateOutput.minTemp7thMon_C[1], -16.98, tol6);
-        EXPECT_NEAR(climateOutput.frostFree_days[1], 78, tol6); // 79
-        EXPECT_NEAR(climateOutput.ddAbove65F_degday[1], 16.458001, tol6); // 16.965000
+        EXPECT_NEAR(climateOutput.frostFree_days[1], 78, tol6);
+        EXPECT_NEAR(climateOutput.ddAbove65F_degday[1], 16.458001, tol6);
 
 
         // Climate variables used for cheatgrass cover
         // (stdev of one value is undefined)
-        EXPECT_NEAR(climateOutput.PPT7thMon_mm[1], 22.199999, tol6); // 22.19999
-        EXPECT_NEAR(climateOutput.meanTempDriestQtr_C[0], 0.936387, tol6); // 15.8733906
-        EXPECT_NEAR(climateOutput.minTemp2ndMon_C[1], 5.1445161, tol6); // 5.3467742
+        EXPECT_NEAR(climateOutput.PPT7thMon_mm[1], 22.199999, tol6);
+        EXPECT_NEAR(climateOutput.meanTempDriestQtr_C[0], 0.936387, tol6);
+        EXPECT_NEAR(climateOutput.minTemp2ndMon_C[1], 5.1445161, tol6);
 
 
         // --- Long-term variables (aggregated across years) ------
-        // Expect identical output to rSOILWAT2 (e.g., v5.3.1)
+        // Expect similar output to rSOILWAT2 before v6.0.0 (e.g., v5.3.1), identical otherwise
         // ```{r}
         //   rSOILWAT2::calc_SiteClimate(
         //     weatherList = rSOILWAT2::get_WeatherHistory(
         //       rSOILWAT2::sw_exampleData
         //     ),
         //     do_C4vars = TRUE,
-        //     do_Cheatgrass_ClimVars = TRUE
+        //     do_Cheatgrass_ClimVars = TRUE,
+        //     latitude = -10
         //   )
         // ```
 
@@ -465,13 +481,13 @@ namespace {
         EXPECT_NEAR(climateAverages.meanTemp_C, 4.154009, tol6);
 
         // Climate variables used for C4 grass cover
-        EXPECT_NEAR(climateAverages.minTemp7thMon_C, -27.199333, tol6); // -27.146999
-        EXPECT_NEAR(climateAverages.frostFree_days, 72.599999, tol6); // 72.6333333
-        EXPECT_NEAR(climateAverages.ddAbove65F_degday, 21.357533, tol6); // 21.2880665
+        EXPECT_NEAR(climateAverages.minTemp7thMon_C, -27.199333, tol6);
+        EXPECT_NEAR(climateAverages.frostFree_days, 72.599999, tol6);
+        EXPECT_NEAR(climateAverages.ddAbove65F_degday, 21.357533, tol6);
 
         EXPECT_NEAR(climateAverages.sdC4[0], 5.325365, tol6);
-        EXPECT_NEAR(climateAverages.sdC4[1], 9.586628, tol6); // 9.4229482
-        EXPECT_NEAR(climateAverages.sdC4[2], 19.550419, tol6); // 19.589081
+        EXPECT_NEAR(climateAverages.sdC4[1], 9.586628, tol6);
+        EXPECT_NEAR(climateAverages.sdC4[2], 19.550419, tol6);
 
         // Climate variables used for cheatgrass cover
         EXPECT_NEAR(climateAverages.PPT7thMon_mm, 65.916666, tol6);
@@ -528,7 +544,7 @@ namespace {
         }
 
         // --- Annual time-series of climate variables ------
-        calcSiteClimate(allHist, 2, 1980, &climateOutput, inNorthHem);
+        calcSiteClimate(allHist, 2, 1980, inNorthHem, &climateOutput);
 
         EXPECT_DOUBLE_EQ(climateOutput.meanTempMon_C[Jan][0], 1.);
         EXPECT_DOUBLE_EQ(climateOutput.maxTempMon_C[Jan][0], 1.);
@@ -622,7 +638,7 @@ namespace {
 
 
         // ------ Test for one year ------
-        findDriestQtr(result, 1, meanTempMon_C, PPTMon_cm, inNorthHem);
+        findDriestQtr(1, inNorthHem, result, meanTempMon_C, PPTMon_cm);
 
         // Value 1.433333... is the average temperature of the driest quarter of the year
         // In this case, the driest quarter is February-April
@@ -630,7 +646,7 @@ namespace {
 
 
         // ------ Test for two years ------
-        findDriestQtr(result, 2, meanTempMon_C, PPTMon_cm, inNorthHem);
+        findDriestQtr(2, inNorthHem, result, meanTempMon_C, PPTMon_cm);
 
         EXPECT_NEAR(result[0], 1.4333333333333333, tol9);
         EXPECT_NEAR(result[1], 1.4333333333333333, tol9);
@@ -644,7 +660,7 @@ namespace {
             }
         }
 
-        findDriestQtr(result, 1, meanTempMon_C, PPTMon_cm, inNorthHem);
+        findDriestQtr(1, inNorthHem, result, meanTempMon_C, PPTMon_cm);
 
         // Expect that the driest quarter that occurs first
         // among all driest quarters is used
