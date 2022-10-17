@@ -1000,7 +1000,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
     estimCover[nTypes], initialVegSum = 0., tempSwapValue, fixedValuesSum = 0;
 
     Bool fixSumGrasses = (Bool) (!missing(SumGrassesFraction)),
-    fullVeg = swFALSE, isGrassIndex = swFALSE, tempShrubBool;
+    isGrassIndex = swFALSE, tempShrubBool;
 
     // Loop through inputValues and get the total
     for(index = 0; index < nTypes; index++) {
@@ -1009,9 +1009,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
         }
     }
 
-    if(EQ(initialVegSum, 1.)) {
-        fullVeg = swTRUE;
-    } else if(initialVegSum > 1.) {
+    if(initialVegSum > 1.) {
         LogError(logfp, LOGFATAL, "'estimate_PotNatVeg_composition': "
                  "User defined relative abundance values sum to more than "
                  "1 = full land cover.");
