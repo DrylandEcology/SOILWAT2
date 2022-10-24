@@ -162,8 +162,11 @@ namespace {
     TEST(EstimateVegetationTest, NotFullVegetation) {
 
         /*  ================================================================
-            This block of tests deals with input values to
-            `estimatePotNatVegComposition()` that do not add up to 1
+                    This block of tests deals with input values to
+               `estimatePotNatVegComposition()` that do not add up to 1
+
+         NOTE: Some tests use EXPECT_NEAR to cover for the unnecessary precision
+                                        in results
             ================================================================  */
 
 
@@ -245,7 +248,10 @@ namespace {
         /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
-           rSOILWAT2::estimate_PotNatVeg_composition_old(
+         clim1 <- calc_SiteClimate(weatherList =
+               rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+
+           rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
              mean_monthly_ppt_mm = 10 * clim1[["meanMonthlyPPTcm"]],
              mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]]
@@ -282,7 +288,10 @@ namespace {
         /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
-           rSOILWAT2::estimate_PotNatVeg_composition_old(
+           clim1 <- calc_SiteClimate(weatherList =
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+
+           rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
              mean_monthly_ppt_mm = 10 * clim1[["meanMonthlyPPTcm"]],
              mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]],
@@ -316,12 +325,12 @@ namespace {
         
         // Loop through RelAbundanceL0 and test results
         for(index = 0; index < 8; index++) {
-            EXPECT_NEAR(RelAbundanceL0[index], RelAbundanceL0Expected[index], tol6);
+            EXPECT_DOUBLE_EQ(RelAbundanceL0[index], RelAbundanceL0Expected[index]);
         }
 
         // Loop through RelAbundanceL1 and test results
         for(index = 0; index < 5; index++) {
-            EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol6);
+            EXPECT_DOUBLE_EQ(RelAbundanceL1[index], RelAbundanceL1Expected[index]);
         }
 
         EXPECT_DOUBLE_EQ(grassOutput[0], 1.);
@@ -344,7 +353,10 @@ namespace {
         /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
-           rSOILWAT2::estimate_PotNatVeg_composition_old(
+           clim1 <- calc_SiteClimate(weatherList =
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+
+           rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
              mean_monthly_ppt_mm = 10 * clim1[["meanMonthlyPPTcm"]],
              mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]],
@@ -385,11 +397,12 @@ namespace {
         // than the other values (in this case, .2314)
         for(index = 0; index < 8; index++) {
             EXPECT_NEAR(RelAbundanceL0[index], RelAbundanceL0Expected[index], tol6);
+            EXPECT_DOUBLE_EQ(RelAbundanceL0[index], RelAbundanceL0Expected[index]);
         }
 
         // Loop through RelAbundanceL1 and test results
         for(index = 0; index < 5; index++) {
-            EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol6);
+            EXPECT_DOUBLE_EQ(RelAbundanceL1[index], RelAbundanceL1Expected[index]);
         }
 
         EXPECT_NEAR(grassOutput[0], .333333, tol6);
@@ -397,24 +410,33 @@ namespace {
         EXPECT_NEAR(grassOutput[2], .333333, tol6);
 
         /*  ===============================================================
-         Test with `inNorthHem` to be false, same input values as previous test
-         except for trees and bare ground which are both .0549
+         Test with `inNorthHem` to be false with two tests:
+
+         1) Same input values as previous test except for trees and bare ground which
+         are both .0549
+
+         2) Default input values:
+         [SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING, 0.0, SW_MISSING, 0.0, 0.0]
+         yielding different values in southern hemisphere compared to northern hemisphere
             ===============================================================  */
 
         /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
-           rSOILWAT2::estimate_PotNatVeg_composition_old(
+           clim1 <- calc_SiteClimate(weatherList =
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+
+           rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
              mean_monthly_ppt_mm = 10 * clim1[["meanMonthlyPPTcm"]],
              mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]],
              Succulents_Fraction = .1098, fix_succulents = TRUE,
+             Forbs_Fraction = .1098, fix_forbs = TRUE,
              C3_Fraction = .1098, fix_C3grasses = TRUE,
+             C4_Fraction = .1098, fix_C4grasses = TRUE,
+             Annuals_Fraction = .1098, fix_annuals = TRUE,
              Shrubs_Fraction = .1098, fix_shrubs = TRUE,
              Trees_Fraction = 0.0549, fix_trees = TRUE,
-             Annuals_Fraction = .1098, fix_annuals = TRUE,
-             C4_Fraction = .1098, fix_C4grasses = TRUE,
-             Forbs_Fraction = .1098, fix_forbs = TRUE,
              BareGround_Fraction = .0549, fix_BareGround = TRUE,
              isNorth = FALSE
            )
@@ -449,17 +471,75 @@ namespace {
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < 8; index++) {
-            EXPECT_NEAR(RelAbundanceL0[index], RelAbundanceL0Expected[index], tol6);
+            EXPECT_DOUBLE_EQ(RelAbundanceL0[index], RelAbundanceL0Expected[index]);
         }
 
         // Loop through RelAbundanceL1 and test results
         for(index = 0; index < 5; index++) {
-            EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol6);
+            EXPECT_DOUBLE_EQ(RelAbundanceL1[index], RelAbundanceL1Expected[index]);
         }
 
         EXPECT_NEAR(grassOutput[0], .333333, tol6);
         EXPECT_NEAR(grassOutput[1], .333333, tol6);
         EXPECT_NEAR(grassOutput[2], .333333, tol6);
+
+        /* Expect similar output to rSOILWAT2 (e.g., v5.3.1)
+         * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
+         ```{r}
+           clim1 <- calc_SiteClimate(weatherList =
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+
+           rSOILWAT2:::estimate_PotNatVeg_composition_old(
+             MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
+             mean_monthly_ppt_mm = 10 * clim1[["meanMonthlyPPTcm"]],
+             mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]],
+             isNorth = FALSE
+           )
+         ```
+         */
+
+        inputValues[succIndex] = SW_MISSING;
+        inputValues[forbIndex] = SW_MISSING;
+        inputValues[C3Index] = SW_MISSING;
+        inputValues[C4Index] = SW_MISSING;
+        inputValues[grassAnn] = 0.;
+        inputValues[shrubIndex] = SW_MISSING;
+        inputValues[treeIndex] = 0.;
+        inputValues[bareGround] = 0.;
+
+        estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+            climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
+            SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
+            C4IsList, grassOutput, RelAbundanceL0, RelAbundanceL1);
+
+        RelAbundanceL0Expected[succIndex] = 0.;
+        RelAbundanceL0Expected[forbIndex] = .228048;
+        RelAbundanceL0Expected[C3Index] = .525755;
+        RelAbundanceL0Expected[C4Index] = .157662;
+        RelAbundanceL0Expected[grassAnn] = 0.;
+        RelAbundanceL0Expected[shrubIndex] = .088534;
+        RelAbundanceL0Expected[treeIndex] = 0.;
+        RelAbundanceL0Expected[bareGround] = 0.;
+
+        RelAbundanceL1Expected[treeIndexL1] = 0.;
+        RelAbundanceL1Expected[shrubIndexL1] = .088534;
+        RelAbundanceL1Expected[forbIndexL1] = .228048; // Constains forbs + succulents (L0)
+        RelAbundanceL1Expected[grassesIndexL1] = .683417;
+        RelAbundanceL1Expected[bareGroundL1] = 0.;
+
+        // Loop through RelAbundanceL0 and test results.
+        for(index = 0; index < nTypes; index++) {
+            EXPECT_NEAR(RelAbundanceL0[index], RelAbundanceL0Expected[index], tol3);
+        }
+
+        // Loop through RelAbundanceL1 and test results
+        for(index = 0; index < 5; index++) {
+            EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol3);
+        }
+
+        EXPECT_NEAR(grassOutput[0], .769303, tol3);
+        EXPECT_NEAR(grassOutput[1], .230696, tol3);
+        EXPECT_DOUBLE_EQ(grassOutput[2], 0.);
 
         /*  ===============================================================
          Test with `SumGrassesFraction` being fixed, all input of previous tests
@@ -469,7 +549,10 @@ namespace {
         /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
-           rSOILWAT2::estimate_PotNatVeg_composition_old(
+           clim1 <- calc_SiteClimate(weatherList =
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+
+           rSOILWAT2::estimate_PotNatVeg_composition(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
              mean_monthly_ppt_mm = 10 * clim1[["meanMonthlyPPTcm"]],
              mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]],
@@ -519,11 +602,16 @@ namespace {
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < 8; index++) {
             EXPECT_NEAR(RelAbundanceL0[index], RelAbundanceL0Expected[index], tol6);
+            EXPECT_DOUBLE_EQ(RelAbundanceL0[index], RelAbundanceL0Expected[index]);
         }
 
         // Loop through RelAbundanceL1 and test results
         for(index = 0; index < 5; index++) {
-            EXPECT_NEAR(RelAbundanceL1[index], RelAbundanceL1Expected[index], tol6);
+            if(index != grassesIndexL1) {
+                EXPECT_DOUBLE_EQ(RelAbundanceL1[index], RelAbundanceL1Expected[index]);
+            } else {
+                EXPECT_NEAR(RelAbundanceL1[grassesIndexL1], SumGrassesFraction, tol6);
+            }
         }
 
         EXPECT_NEAR(grassOutput[0], 1., tol6);
@@ -539,6 +627,9 @@ namespace {
         /*  ================================================================
                    This block of tests deals with input values to
                    `estimatePotNatVegComposition()` that add up to 1
+         
+         NOTE: Some tests use EXPECT_NEAR to cover for the unnecessary precision
+                                        in results
             ================================================================  */
 
         SW_CLIMATE_YEARLY climateOutput;
@@ -632,7 +723,10 @@ namespace {
         /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
-           rSOILWAT2::estimate_PotNatVeg_composition_old(
+           clim1 <- calc_SiteClimate(weatherList =
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+
+           rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
              mean_monthly_ppt_mm = 10 * clim1[["meanMonthlyPPTcm"]],
              mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]],
@@ -693,7 +787,10 @@ namespace {
         /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
-           rSOILWAT2::estimate_PotNatVeg_composition_old(
+           clim1 <- calc_SiteClimate(weatherList =
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+
+           rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
              mean_monthly_ppt_mm = 10 * clim1[["meanMonthlyPPTcm"]],
              mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]],
@@ -757,6 +854,85 @@ namespace {
 
         // Deallocate structs
         allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
+
+        /*  ===============================================================
+             Test `estimateVegetationFromClimate()` when "veg_method" is 1
+             using default values of the function:
+             [SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING, 0.0, SW_MISSING, 0.0, 0.0]
+            ===============================================================  */
+
+        /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
+         * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
+         ```{r}
+           clim1 <- calc_SiteClimate(weatherList =
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+
+           rSOILWAT2:::estimate_PotNatVeg_composition_old(
+             MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
+             mean_monthly_ppt_mm = 10 * clim1[["meanMonthlyPPTcm"]],
+             mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]],
+             isNorth = FALSE
+           )
+         ```
+         */
+
+        RelAbundanceL1Expected[treeIndexL1] = 0.;
+        RelAbundanceL1Expected[shrubIndexL1] = .3084547;
+        RelAbundanceL1Expected[forbIndexL1] = .2608391; // Constains forbs + succulents (L0)
+        RelAbundanceL1Expected[grassesIndexL1] = .4307062;
+        RelAbundanceL1Expected[bareGroundL1] = 0.;
+
+        RelAbundanceL0Expected[bareGround] = 0.;
+
+        estimateVegetationFromClimate(&vegProd, startYear, endYear,
+                                      veg_method, latitude);
+
+        // Loop through RelAbundanceL1 and test results
+        for(index = 0; index < 5; index++) {
+            EXPECT_NEAR(vegProd.veg[index].cov.fCover, RelAbundanceL1Expected[index], tol6);
+        }
+
+        EXPECT_NEAR(vegProd.bare_cov.fCover, RelAbundanceL0Expected[bareGround], tol6);
+    }
+
+    TEST(VegEstimationDeathTest, VegInputGreaterThanOne) {
+
+        /*  ================================================================
+                   Tests a death case of `estimatePotNatVegComposition()`
+                        when input vegetation values sum to over 1
+            ================================================================  */
+
+        SW_CLIMATE_CLIM climateAverages;
+
+        double SumGrassesFraction = SW_MISSING;
+        double C4Variables[3];
+
+        Bool fillEmptyWithBareGround = swTRUE;
+        Bool inNorthHem = swTRUE;
+        Bool warnExtrapolation = swTRUE;
+        Bool C4IsList = swFALSE;
+
+        double inputValues[8] = {.0567, .5, .0392, .0981,
+                                .3218, .0827, .1293, .0405};
+        double shrubLimit = .2;
+
+        // Array holding only grass values
+        double grassOutput[3]; // 3 = Number of grass variables
+
+        // Array holding all values from the estimation
+        double RelAbundanceL0[8]; // 8 = Number of types
+
+        // Array holding all values from estimation minus grasses
+        double RelAbundanceL1[5]; // 5 = Number of types minus grasses
+
+        EXPECT_DEATH_IF_SUPPORTED(
+            estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+                    climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
+                    SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
+                    C4IsList, grassOutput, RelAbundanceL0, RelAbundanceL1);,
+          ""
+        );
+
     }
 
 } // namespace
