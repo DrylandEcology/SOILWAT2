@@ -904,7 +904,7 @@ namespace {
                                       veg_method, latitude);
 
         // Loop through RelAbundanceL1 and test results
-        for(index = 0; index < 5; index++) {
+        for(index = 0; index < 4; index++) {
             EXPECT_NEAR(vegProd.veg[index].cov.fCover, RelAbundanceL1Expected[index], tol6);
         }
 
@@ -919,6 +919,7 @@ namespace {
             ================================================================  */
 
         SW_CLIMATE_CLIM climateAverages;
+        SW_CLIMATE_YEARLY climateOutput;
 
         double SumGrassesFraction = SW_MISSING;
         double C4Variables[3];
@@ -927,6 +928,9 @@ namespace {
         Bool inNorthHem = swTRUE;
         Bool warnExtrapolation = swTRUE;
         Bool C4IsList = swFALSE;
+
+        int allocate = 1;
+        int deallocate = 0;
 
         double inputValues[8] = {.0567, .5, .0392, .0981,
                                 .3218, .0827, .1293, .0405};
@@ -941,6 +945,18 @@ namespace {
         // Array holding all values from estimation minus grasses
         double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
+        // Reset "SW_Weather.allHist"
+        SW_WTH_read();
+
+        // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
+        allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
+
+        // Calculate climate of the site and add results to "climateOutput"
+        calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
+
+        // Average values from "climateOutput" and put them in "climateAverages"
+        averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
+
         EXPECT_DEATH_IF_SUPPORTED(
             estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
                     climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
@@ -948,6 +964,7 @@ namespace {
                     C4IsList, grassOutput, RelAbundanceL0, RelAbundanceL1);,
           ""
         );
+        allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
 
     }
 
