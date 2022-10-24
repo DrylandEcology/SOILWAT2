@@ -894,7 +894,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
     RelAbundanceL0[8], RelAbundanceL1[5];
 
     Bool fillEmptyWithBareGround = swTRUE, warnExtrapolation = swTRUE;
-    Bool inNorthHem = swTRUE;
+    Bool inNorthHem = swTRUE, C4IsList = swFALSE;
 
     if(latitude < 0.0) {
         inNorthHem = swFALSE;
@@ -916,7 +916,8 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
                         climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, coverValues,
                         shrubLimit, SumGrassesFraction, C4Variables, fillEmptyWithBareGround,
-                        inNorthHem, warnExtrapolation, grassOutput, RelAbundanceL0, RelAbundanceL1);
+                        inNorthHem, warnExtrapolation, C4IsList, grassOutput, RelAbundanceL0,
+                        RelAbundanceL1);
 
         ForEachVegType(k) {
             vegProd->veg[k].cov.fCover = RelAbundanceL1[k];
@@ -981,7 +982,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
 void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTempMon_C[],
     double PPTMon_cm[], double inputValues[], double shrubLimit, double SumGrassesFraction,
     double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorthHem, Bool warnExtrapolation,
-    double *grassOutput, double *RelAbundanceL0, double *RelAbundanceL1) {
+    Bool C4IsList, double *grassOutput, double *RelAbundanceL0, double *RelAbundanceL1) {
 
     const int nTypes = 8;
     int winterMonths[3], summerMonths[3];
@@ -1009,7 +1010,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
         }
     }
 
-    if(initialVegSum > 1.) {
+    if(GT(initialVegSum, 1.)) {
         LogError(logfp, LOGFATAL, "'estimate_PotNatVeg_composition': "
                  "User defined relative abundance values sum to more than "
                  "1 = full land cover.");
@@ -1124,7 +1125,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
             winterMAP /= PPT_cm;
 
             // Get the difference between July and Janurary
-            tempDiffJanJul = fabs(meanTempMon_C[summerMonths[1]] -
+            tempDiffJanJul = cutZeroInf(meanTempMon_C[summerMonths[1]] -
                                             meanTempMon_C[winterMonths[1]]);
 
             if(warnExtrapolation) {
@@ -1162,14 +1163,16 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
 
                 // This equations give percent species/vegetation -> use to limit
                 // Paruelo's C4 equation, i.e., where no C4 species => C4 abundance == 0
-                if(C4Variables[frostFreeDays] <= 0) {
-                    C4Species = 0;
-                } else {
-                    C4Species = cutZeroInf(((1.6 * (C4Variables[julyMin] * 9 / 5 + 32)) +
+                if(C4IsList) {
+                    if(C4Variables[frostFreeDays] <= 0) {
+                        C4Species = 0;
+                    } else {
+                        C4Species = cutZeroInf(((1.6 * (C4Variables[julyMin] * 9 / 5 + 32)) +
                                 (.0086 * (C4Variables[degreeAbove65] * 9 / 5))
                                 - (8.98 * log(C4Variables[frostFreeDays])) - 22.44) / 100);
+                    }
+                    if(EQ(C4Species, 0.)) estimCover[C4Index] = 0;
                 }
-                if(EQ(C4Species, 0.)) estimCover[C4Index] = 0;
             }
 
             // Paruelo & Lauenroth (1996): C3-grass climate-relationship:
@@ -1274,6 +1277,9 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
                 }
             }
 
+            // Include fixed grass sum if not missing
+            if(!missing(SumGrassesFraction)) fixedValuesSum += SumGrassesFraction;
+
             // Check if the final estimated vegetation sum is equal to one
             if(!EQ(finalVegSum, 1.)) {
                 for(index = 0; index < overallEstimSize; index++) {
@@ -1284,7 +1290,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
                         estimCover[overallEstim[index]] *= (1 - fixedValuesSum) / estimCoverSum;
                     }
                 } else {
-                    if(fillEmptyWithBareGround && EQ(inputValues[bareGround], 0.0)) {
+                    if(fillEmptyWithBareGround && EQ(inputValues[bareGround], 0.)) {
                         estimCover[bareGround] = 1.;
                         for(index = 0; index < nTypes - 1; index++) {
                             estimCover[bareGround] -= estimCover[index];
