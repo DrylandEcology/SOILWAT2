@@ -283,10 +283,10 @@ namespace {
         inputValues[forbIndex] = SW_MISSING;
         inputValues[C3Index] = .096;
         inputValues[C4Index] = SW_MISSING;
-        inputValues[grassAnn] = SW_MISSING;
+        inputValues[grassAnn] = 0.;
         inputValues[shrubIndex] = .1098;
         inputValues[treeIndex] = .0372;
-        inputValues[bareGround] = SW_MISSING;
+        inputValues[bareGround] = 0.;
 
         /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
@@ -575,7 +575,7 @@ namespace {
         inputValues[forbIndex] = .0549;
         inputValues[C3Index] = SW_MISSING;
         inputValues[C4Index] = SW_MISSING;
-        inputValues[grassAnn] = SW_MISSING;
+        inputValues[grassAnn] = 0.;
         inputValues[shrubIndex] = .0549;
         inputValues[treeIndex] = .0549;
         inputValues[bareGround] = .0549;
@@ -760,10 +760,10 @@ namespace {
         inputValues[forbIndex] = SW_MISSING;
         inputValues[C3Index] = .5;
         inputValues[C4Index] = SW_MISSING;
-        inputValues[grassAnn] = SW_MISSING;
+        inputValues[grassAnn] = 0.;
         inputValues[shrubIndex] = SW_MISSING;
-        inputValues[treeIndex] = SW_MISSING;
-        inputValues[bareGround] = SW_MISSING;
+        inputValues[treeIndex] = 0.;
+        inputValues[bareGround] = 0.;
 
         RelAbundanceL0Expected[succIndex] = .5;
         RelAbundanceL0Expected[forbIndex] = 0.;
@@ -904,8 +904,7 @@ namespace {
 
         RelAbundanceL0Expected[bareGround] = 0.;
 
-        estimateVegetationFromClimate(&vegProd, startYear, endYear,
-                                      veg_method, latitude);
+        estimateVegetationFromClimate(&vegProd, startYear, endYear, veg_method, latitude);
 
         // Loop through RelAbundanceL1 and test results
         for(index = 0; index < 4; index++) {
