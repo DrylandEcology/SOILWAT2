@@ -192,7 +192,6 @@ namespace {
         Bool fillEmptyWithBareGround = swTRUE;
         Bool warnExtrapolation = swTRUE;
         Bool inNorthHem = swTRUE;
-        Bool C4IsList = swFALSE;
         Bool fixBareGround = swTRUE;
 
         int nTypes = 8;
@@ -242,7 +241,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            C4IsList, fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         /*  ===============================================================
                      Test when all input values are "SW_MISSING"
@@ -324,7 +323,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            C4IsList, fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         // Loop through RelAbundanceL0 and test results
         for(index = 0; index < 8; index++) {
@@ -396,7 +395,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            C4IsList, fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         // Loop through RelAbundanceL0 and test results. Since initial values
         // do not add to one and we fill empty with bare ground, bare ground should be higher
@@ -472,7 +471,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            C4IsList, fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < 8; index++) {
@@ -515,7 +514,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            C4IsList, fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         RelAbundanceL0Expected[succIndex] = 0.;
         RelAbundanceL0Expected[forbIndex] = .228048;
@@ -670,7 +669,6 @@ namespace {
         Bool fillEmptyWithBareGround = swTRUE;
         Bool inNorthHem = swTRUE;
         Bool warnExtrapolation = swTRUE;
-        Bool C4IsList = swFALSE;
         Bool fixBareGround = swTRUE;
 
         int deallocate = 0;
@@ -720,7 +718,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            C4IsList, fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         // All values in "RelAbundanceL0" should be exactly the same as "inputValues"
         for(index = 0; index < nTypes; index++) {
@@ -783,7 +781,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            C4IsList, fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         // Loop through RelAbundanceL0 and test results
         for(index = 0; index < nTypes; index++) {
@@ -856,7 +854,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            C4IsList, fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < nTypes; index++) {
@@ -930,7 +928,6 @@ namespace {
         Bool fillEmptyWithBareGround = swTRUE;
         Bool inNorthHem = swTRUE;
         Bool warnExtrapolation = swTRUE;
-        Bool C4IsList = swFALSE;
         Bool fixBareGround = swTRUE;
 
         int allocate = 1;
@@ -965,7 +962,7 @@ namespace {
             estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
                     climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
                     SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-                    C4IsList, fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);,
+                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);,
           ""
         );
         allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
