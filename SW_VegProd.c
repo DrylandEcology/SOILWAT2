@@ -1013,26 +1013,6 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
         }
     }
 
-    if(GT(initialVegSum, 1.)) {
-        LogError(logfp, LOGFATAL, "'estimate_PotNatVeg_composition': "
-                 "User defined relative abundance values sum to more than "
-                 "1 = full land cover.");
-    }
-
-    // Initialize overallEstim and add fixed indices to `iFixed`
-    for(index = 0; index < nTypes; index++) {
-        if(!missing(inputValues[index])) {
-            iFixed[iFixedSize] = index;
-            iFixedSize++;
-            estimCover[index] = inputValues[index];
-            estimIndicesNotNA++;
-        } else {
-            overallEstim[overallEstimSize] = index;
-            overallEstimSize++;
-            estimCover[index] = 0.;
-        }
-    }
-
     // Check if grasses are fixed
     if(fixSumGrasses) {
         // Set SumGrassesFraction
@@ -1076,14 +1056,40 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
             // Otherwise, totalSumGrasses is zero or below
             for(index = 0; index < grassEstimSize; index++) {
                 // Set all found ids to estimate to zero
-                estimCover[grassesEstim[index]] = 0.;
+                inputValues[grassesEstim[index]] = 0.;
             }
+        }
+    }
+
+    // Initialize overallEstim and add fixed indices to `iFixed`
+    for(index = 0; index < nTypes; index++) {
+        if(!missing(inputValues[index])) {
+            iFixed[iFixedSize] = index;
+            iFixedSize++;
+            estimCover[index] = inputValues[index];
+            estimIndicesNotNA++;
+        } else {
+            overallEstim[overallEstimSize] = index;
+            overallEstimSize++;
+            estimCover[index] = 0.;
         }
     }
 
     uniqueIndices(isetIndices, iFixed, 3, iFixedSize, iFixed, &iFixedSize);
 
+    // Set boolean value to true if grasses still need to be estimated
+    if(!EQ(totalSumGrasses, 0.)) {
+        initialVegSum += totalSumGrasses;
+    }
+
+    if(GT(initialVegSum, 1.)) {
+        LogError(logfp, LOGFATAL, "'estimate_PotNatVeg_composition': "
+                 "User defined relative abundance values sum to more than "
+                 "1 = full land cover.");
+    }
+
     // Check if number of elements to estimate is less than or equal to 1
+    // Or `initialVegSum` is 1 and we do not have to estimate any grasses
     if(overallEstimSize <= 1) {
         if(overallEstimSize == 0) {
             // Check if we want to fill gaps in data with bare ground
@@ -1289,19 +1295,12 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
                     fixedValuesSum += inputValues[index];
                 }
             }
+            
             // Include fixed grass sum if not missing
             if(fixSumGrasses && grassEstimSize > 0) {
-                fixedValuesSum -= missing(inputValues[C3Index]) ?
-                                    0. : inputValues[C3Index];
-
-                fixedValuesSum -= missing(inputValues[C4Index]) ?
-                                    0. : inputValues[C4Index];
-
-                fixedValuesSum -= missing(inputValues[grassAnn]) ?
-                                    0. : inputValues[grassAnn];
-
-                fixedValuesSum += SumGrassesFraction;
+                fixedValuesSum += totalSumGrasses;
             }
+
             // Check if the final estimated vegetation sum is equal to one
             if(!EQ(finalVegSum, 1.)) {
                 for(index = 0; index < overallEstimSize; index++) {
