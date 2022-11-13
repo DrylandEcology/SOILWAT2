@@ -893,8 +893,8 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
     double SumGrassesFraction = SW_MISSING, C4Variables[3], grassOutput[3],
     RelAbundanceL0[8], RelAbundanceL1[5];
 
-    Bool fillEmptyWithBareGround = swTRUE, warnExtrapolation = swTRUE;
-    Bool inNorthHem = swTRUE, C4IsList = swFALSE;
+    Bool fillEmptyWithBareGround = swFALSE, warnExtrapolation = swTRUE;
+    Bool inNorthHem = swTRUE;
     Bool fixBareGround = swTRUE;
 
     if(latitude < 0.0) {
@@ -917,7 +917,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
                         climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, coverValues,
                         shrubLimit, SumGrassesFraction, C4Variables, fillEmptyWithBareGround,
-                        inNorthHem, warnExtrapolation, C4IsList, fixBareGround, grassOutput,
+                        inNorthHem, warnExtrapolation, fixBareGround, grassOutput,
                         RelAbundanceL0, RelAbundanceL1);
 
         ForEachVegType(k) {
@@ -985,8 +985,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
 void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTempMon_C[],
     double PPTMon_cm[], double inputValues[], double shrubLimit, double SumGrassesFraction,
     double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorthHem, Bool warnExtrapolation,
-    Bool C4IsList, Bool fixBareGround, double *grassOutput, double *RelAbundanceL0,
-    double *RelAbundanceL1) {
+    Bool fixBareGround, double *grassOutput, double *RelAbundanceL0, double *RelAbundanceL1) {
 
     const int nTypes = 8;
     int winterMonths[3], summerMonths[3];
@@ -1168,7 +1167,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
 
                 // This equations give percent species/vegetation -> use to limit
                 // Paruelo's C4 equation, i.e., where no C4 species => C4 abundance == 0
-                if(C4IsList) {
+                if(!missing(C4Variables[julyMin])) {
                     if(C4Variables[frostFreeDays] <= 0) {
                         C4Species = 0;
                     } else {
