@@ -257,12 +257,15 @@ namespace {
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
          clim1 <- calc_SiteClimate(weatherList =
-               rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+               rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData),
+                                                               do_C4vars = TRUE)
 
            rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
              mean_monthly_ppt_mm = 10 * clim1[["meanMonthlyPPTcm"]],
-             mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]]
+             mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]],
+             dailyC4vars = clim1[["dailyC4vars"]],
+             fix_issue218 = TRUE
            )
          ```
          */
@@ -297,7 +300,8 @@ namespace {
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
            clim1 <- calc_SiteClimate(weatherList =
-                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData),
+                                                               do_C4vars = TRUE)
 
            rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
@@ -306,7 +310,9 @@ namespace {
              Succulents_Fraction = .376, fix_succulents = TRUE,
              C3_Fraction = .096, fix_C3grasses = TRUE,
              Shrubs_Fraction = .1098, fix_shrubs = TRUE,
-             Trees_Fraction = .0372, fix_trees = TRUE
+             Trees_Fraction = .0372, fix_trees = TRUE,
+             dailyC4vars = clim1[["dailyC4vars"]],
+             fix_issue218 = TRUE
            )
          ```
          */
@@ -362,7 +368,8 @@ namespace {
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
            clim1 <- calc_SiteClimate(weatherList =
-                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData),
+                                                               do_C4vars = TRUE)
 
            rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
@@ -375,7 +382,9 @@ namespace {
              Annuals_Fraction = .1098, fix_annuals = TRUE,
              C4_Fraction = .1098, fix_C4grasses = TRUE,
              Forbs_Fraction = .1098, fix_forbs = TRUE,
-             BareGround_Fraction = .1098, fix_BareGround = TRUE
+             BareGround_Fraction = .1098, fix_BareGround = TRUE,
+             dailyC4vars = clim1[["dailyC4vars"]],
+             fix_issue218 = TRUE
            )
          ```
          */
@@ -434,7 +443,8 @@ namespace {
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
            clim1 <- calc_SiteClimate(weatherList =
-                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData),
+                                               do_C4vars = TRUE, latitude = -90)
 
            rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
@@ -448,7 +458,8 @@ namespace {
              Shrubs_Fraction = .1098, fix_shrubs = TRUE,
              Trees_Fraction = 0.0549, fix_trees = TRUE,
              BareGround_Fraction = .0549, fix_BareGround = TRUE,
-             isNorth = FALSE
+             isNorth = FALSE, dailyC4vars = clim1[["dailyC4vars"]],
+             fix_issue218 = TRUE
            )
          ```
          */
@@ -506,13 +517,15 @@ namespace {
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
            clim1 <- calc_SiteClimate(weatherList =
-                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData),
+                                                               do_C4vars = TRUE)
 
            rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
              mean_monthly_ppt_mm = 10 * clim1[["meanMonthlyPPTcm"]],
              mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]],
-             isNorth = FALSE
+             dailyC4vars = clim1[["dailyC4vars"]],
+             fix_issue218 = TRUE
            )
          ```
          */
@@ -718,14 +731,17 @@ namespace {
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
            clim1 <- calc_SiteClimate(weatherList =
-                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData),
+                                                               do_C4vars = TRUE)
 
            rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
              mean_monthly_ppt_mm = 10 * clim1[["meanMonthlyPPTcm"]],
              mean_monthly_Temp_C = clim1[["meanMonthlyTempC"]],
              Succulents_Fraction = .5, fix_succulents = TRUE,
-             C3_Fraction = .5, fix_C3grasses = TRUE
+             C3_Fraction = .5, fix_C3grasses = TRUE,
+             dailyC4vars = clim1[["dailyC4vars"]],
+             fix_issue218 = TRUE
            )
          ```
          */
@@ -782,7 +798,8 @@ namespace {
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
          ```{r}
            clim1 <- calc_SiteClimate(weatherList =
-                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData), do_C4vars = TRUE)
+                 rSOILWAT2::get_WeatherHistory(rSOILWAT2::sw_exampleData),
+                                                               do_C4vars = TRUE)
 
            rSOILWAT2:::estimate_PotNatVeg_composition_old(
              MAP_mm =  10 * clim1[["MAP_cm"]], MAT_C = clim1[["MAT_C"]],
@@ -796,7 +813,9 @@ namespace {
              C4_Fraction = .1098, fix_C4grasses = TRUE,
              Forbs_Fraction = .1098, fix_forbs = TRUE,
              BareGround_Fraction = 0.2314, fix_BareGround = TRUE,
-             fill_empty_with_BareGround = TRUE
+             fill_empty_with_BareGround = TRUE,
+             dailyC4vars = clim1[["dailyC4vars"]],
+             fix_issue218 = TRUE
            )
          ```
          */
