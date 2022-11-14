@@ -893,7 +893,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
     double SumGrassesFraction = SW_MISSING, C4Variables[3], grassOutput[3],
     RelAbundanceL0[8], RelAbundanceL1[5];
 
-    Bool fillEmptyWithBareGround = swFALSE, warnExtrapolation = swTRUE;
+    Bool fillEmptyWithBareGround = swTRUE, warnExtrapolation = swTRUE;
     Bool inNorthHem = swTRUE;
     Bool fixBareGround = swTRUE;
 
@@ -993,7 +993,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
     // Indices both single value and arrays
     int index, succIndex = 0, forbIndex = 1, C3Index = 2, C4Index = 3, grassAnn = 4,
     shrubIndex = 5, treeIndex = 6, bareGround = 7, grassEstimSize = 0, overallEstimSize = 0,
-    julyMin = 0, frostFreeDays = 1, degreeAbove65 = 2, estimIndicesNotNA = 0, grassesEstim[3],
+    julyMin = 0, degreeAbove65 = 1, frostFreeDays = 2, estimIndicesNotNA = 0, grassesEstim[3],
     overallEstim[nTypes], iFixed[nTypes], iFixedSize = 0,
     isetIndices[3] = {grassAnn, treeIndex, bareGround};
 
