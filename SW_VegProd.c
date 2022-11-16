@@ -969,7 +969,6 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
  @param[in] fillEmptyWithBareGround Bool value specifying whether or not to fill gaps in values with bare ground
  @param[in] inNorthHem Bool value specifying if the current site is in the northern hemisphere
  @param[in] warnExtrapolation Bool value specifying whether or not to warn the user when extrapolation happens
- @param[in] C4IsList Bool value specifying if C4 is a list (false when not running rSOILWAT2)
  @param[in] fixBareGround Bool value specifying if bare ground input value is fixed
  @param[out] grassOutput Array of size three holding estimated grass values. The elements are: 0) C3, 1) C4, 2) annual grasses
  @param[out] RelAbundanceL0 Array of size eight holding all estimated values. The elements are:
