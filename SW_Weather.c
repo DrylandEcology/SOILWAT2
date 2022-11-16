@@ -658,14 +658,9 @@ void scaleAllWeather(
         - error if more than `optLOCF_nMax` days per calendar year are missing
      3. First-order Markov weather generator (`method` = 2)
 
-  SOILWAT2 may be set up such that weather is generated exclusively
-  (i.e., without an attempt to read data from files on disk):
-    - Set the weather generator to exclusive use
-  or
-     1. Turn on the weather generator
-     2. Set the "first year to begin historical weather" to a year after
-        the last simulated year
-
+  The user can specify that SOILWAT2 generates all weather without reading
+  any historical weather data files from disk
+  (see `weathsetup.in`: use weather generator for all weather).
 
   @note `SW_MKV_today()` is called if `method` = 2
   (i.e., the weather generator is used);
