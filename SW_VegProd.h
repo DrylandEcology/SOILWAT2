@@ -269,8 +269,8 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
 void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTempMon_C[],
     double PPTMon_cm[], double inputValues[], double shrubLimit, double SumGrassesFraction,
     double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorthHem, Bool warnExtrapolation,
-                                  Bool fixBareGround, double *grassOutput, double *RelAbundanceL0, double *RelAbundanceL1);
-double cutZeroInf(double value);
+    Bool fixBareGround, double *grassOutput, double *RelAbundanceL0, double *RelAbundanceL1);
+double cutZeroInf(double testValue);
 void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTwoSize,
                    int *finalIndexArray, int *finalIndexArraySize);
 void SW_VPD_init_run(void);

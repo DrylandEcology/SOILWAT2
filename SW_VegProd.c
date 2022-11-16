@@ -1373,14 +1373,16 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
 /**
  @brief Helper function to `estimatePotNatVegComposition()` that doesn't allow a value to go below zero
 
+ @param testValue A value of type double holding a value that is to be tested to see if it is below zero
+
  @return A value that is either above or equal to zero
  */
 
-double cutZeroInf(double value) {
-    if(value < 0.) {
+double cutZeroInf(double testValue) {
+    if(LT(testValue, 0.)) {
         return 0.;
     } else {
-        return value;
+        return testValue;
     }
 }
 
