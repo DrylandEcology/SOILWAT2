@@ -874,6 +874,7 @@ void get_critical_rank(void){
  @param[in] endYear Ending year of the simulation
  @param[in] veg_method User specified value determining method of vegetation estimation with the current option(s):
  1 - Estimate fixed vegetation composition (fractional cover) from long-term climate conditions
+ @param[in] latitude Value of type double specifying latitude coordinate the current site is located at
  */
 
 void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYear,
