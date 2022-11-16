@@ -76,7 +76,7 @@ static char *MyFileName;
  @brief Takes averages through the number of years of the calculated values from calc_SiteClimate
  
  @param[in] climateOutput Structure of type SW_CLIMATE_YEARLY that holds all output from `calcSiteClimate()`
- @param[in] numYears Calendar year corresponding to first year of `allHist`
+ @param[in] numYears Number of years represented within simulation
  @param[out] climateAverages Structure of type SW_CLIMATE_CLIM that holds averages and
  standard deviations output by `averageClimateAcrossYears()`
  */
@@ -141,7 +141,7 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
  | 2020 | 2020 | 2020 Jan 1 | 2020 Dec 31 | 2020 | 2020 July 1 | 2021 June 30 |
  
  @param[in] allHist Array containing all historical data of a site
- @param[in] numYears Number of years represented by `allHist`
+ @param[in] numYears Number of years represented within simulation
  @param[in] startYear Calendar year corresponding to first year of `allHist`
  @param[in] inNorthHem Boolean value specifying if site is in northern hemisphere
  @param[out] climateOutput Structure of type SW_CLIMATE_YEARLY that holds averages and
@@ -305,7 +305,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
  being in the northern/southern hemisphere.
 
  @param[in] allHist Array containing all historical data of a site
- @param[in] numYears Number of years simulation covers
+ @param[in] numYears Number of years represented within simulation
  @param[in] startYear Calendar year corresponding to first year of `allHist`
  @param[out] climateOutput Structure of type SW_CLIMATE_YEARLY that holds averages and
  standard deviations output by `averageClimateAcrossYears()`
