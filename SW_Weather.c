@@ -76,7 +76,8 @@ static char *MyFileName;
  @brief Takes averages through the number of years of the calculated values from calc_SiteClimate
  
  @param[in] climateOutput Structure of type SW_CLIMATE_YEARLY that holds all output from `calcSiteClimate()`
- @param[in] numYears Calendar year corresponding to first year of `allHist`
+ like monthly/yearly temperature and precipitation values
+ @param[in] numYears Number of years represented within simulation
  @param[out] climateAverages Structure of type SW_CLIMATE_CLIM that holds averages and
  standard deviations output by `averageClimateAcrossYears()`
  */
@@ -141,11 +142,11 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
  | 2020 | 2020 | 2020 Jan 1 | 2020 Dec 31 | 2020 | 2020 July 1 | 2021 June 30 |
  
  @param[in] allHist Array containing all historical data of a site
- @param[in] numYears Number of years represented by `allHist`
+ @param[in] numYears Number of years represented within simulation
  @param[in] startYear Calendar year corresponding to first year of `allHist`
  @param[in] inNorthHem Boolean value specifying if site is in northern hemisphere
- @param[out] climateOutput Structure of type SW_CLIMATE_YEARLY that holds averages and
- standard deviations output by `averageClimateAcrossYears()`
+ @param[out] climateOutput Structure of type SW_CLIMATE_YEARLY that holds all output from `calcSiteClimate()`
+ like monthly/yearly temperature and precipitation values
  */
 
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
@@ -305,14 +306,14 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
  being in the northern/southern hemisphere.
 
  @param[in] allHist Array containing all historical data of a site
- @param[in] numYears Number of years simulation covers
+ @param[in] numYears Number of years represented within simulation
  @param[in] startYear Calendar year corresponding to first year of `allHist`
- @param[out] climateOutput Structure of type SW_CLIMATE_YEARLY that holds averages and
- standard deviations output by `averageClimateAcrossYears()`
+ @param[out] climateOutput Structure of type SW_CLIMATE_YEARLY that holds all output from `calcSiteClimate()`
+ like monthly/yearly temperature and precipitation values
  */
 
 void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                         SW_CLIMATE_YEARLY *climateOutput) {
+                                  SW_CLIMATE_YEARLY *climateOutput) {
 
     int month = Jan, numDaysMonth = Time_days_in_month(month), yearIndex,
     day, numDaysYear, currMonDay, year;
@@ -658,14 +659,9 @@ void scaleAllWeather(
         - error if more than `optLOCF_nMax` days per calendar year are missing
      3. First-order Markov weather generator (`method` = 2)
 
-  SOILWAT2 may be set up such that weather is generated exclusively
-  (i.e., without an attempt to read data from files on disk):
-    - Set the weather generator to exclusive use
-  or
-     1. Turn on the weather generator
-     2. Set the "first year to begin historical weather" to a year after
-        the last simulated year
-
+  The user can specify that SOILWAT2 generates all weather without reading
+  any historical weather data files from disk
+  (see `weathsetup.in`: use weather generator for all weather).
 
   @note `SW_MKV_today()` is called if `method` = 2
   (i.e., the weather generator is used);
