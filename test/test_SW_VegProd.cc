@@ -283,10 +283,10 @@ namespace {
         inputValues[forbIndex] = SW_MISSING;
         inputValues[C3Index] = SW_MISSING;
         inputValues[C4Index] = SW_MISSING;
-        inputValues[grassAnn] = 0.;
+        inputValues[grassAnn] = SW_MISSING;
         inputValues[shrubIndex] = SW_MISSING;
-        inputValues[treeIndex] = 0.;
-        inputValues[bareGround] = 0.;
+        inputValues[treeIndex] = SW_MISSING;
+        inputValues[bareGround] = SW_MISSING;
 
         /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)

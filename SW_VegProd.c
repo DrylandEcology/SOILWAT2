@@ -1000,6 +1000,8 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
     overallEstim[nTypes], iFixed[nTypes], iFixedSize = 0,
     isetIndices[3] = {grassAnn, treeIndex, bareGround};
 
+    const char *txt_isetIndices[] = {"annual grasses", "trees", "bare ground"};
+
     // Totals of different areas of variables
     double totalSumGrasses = 0., inputSumGrasses = 0., tempDiffJanJul,
     summerMAP = 0., winterMAP = 0., C4Species = SW_MISSING, C3Grassland, C3Shrubland,
@@ -1008,6 +1010,23 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
 
     Bool fixSumGrasses = (Bool) (!missing(SumGrassesFraction)),
     isGrassIndex = swFALSE, tempShrubBool;
+
+
+    // Land cover/vegetation types that are not estimated
+    // (trees, annual grasses, and bare-ground):
+    // set to 0 if input is `SW_MISSING`
+    for (index = 0; index < 3; index++) {
+      if (missing(inputValues[isetIndices[index]])) {
+        inputValues[isetIndices[index]] = 0.;
+
+        LogError(
+          logfp,
+          LOGWARN,
+          "No equation for requested cover type '%s': cover set to 0.\n",
+          txt_isetIndices[index]
+        );
+      }
+    }
 
     // Loop through inputValues and get the total
     for(index = 0; index < nTypes; index++) {
@@ -1048,7 +1067,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
 
             // Check if there is only one grass index to be estimated
             if(grassEstimSize == 1) {
-                
+
                 // Set element to SumGrassesFraction - inputSumGrasses
                 inputValues[grassesEstim[0]] = SumGrassesFraction - inputSumGrasses;
 
@@ -1298,7 +1317,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
                     fixedValuesSum += inputValues[index];
                 }
             }
-            
+
             // Include fixed grass sum if not missing
             if(fixSumGrasses && grassEstimSize > 0) {
                 fixedValuesSum += totalSumGrasses;
