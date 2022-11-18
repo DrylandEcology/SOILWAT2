@@ -1191,6 +1191,39 @@ namespace {
         // Average values from "climateOutput" and put them in "climateAverages"
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
 
+        /*  ===============================================================
+         Test for fail when input sum is greater than one with the values:
+         [.0567, .5, .0392, .0981, .3218, .0827, .1293, .0405]
+            ===============================================================  */
+
+        EXPECT_DEATH_IF_SUPPORTED(
+            estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+                    climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
+                    SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
+                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);,
+          ""
+        );
+
+        /*  ===============================================================
+         Test for fail when SumGrassesFraction makes the input sum greater than one
+         [.0567, .25, .SW_MISSING, SW_MISSING, .0912, .0465, .1293, .0405], input sum = .6142
+         SumGrassesFraction = .5, total input sum: 1.023.
+         Total input sum is 1.1211 instead of 1.1142, because annual grass
+         is already defined, so that value is subtracted from SumGrassesFraction and
+         added to the initial input sum
+            ===============================================================  */
+
+        SumGrassesFraction = .5;
+
+        inputValues[succIndex] = .0567;
+        inputValues[forbIndex] = .25;
+        inputValues[C3Index] = SW_MISSING;
+        inputValues[C4Index] = SW_MISSING;
+        inputValues[grassAnn] = .0912;
+        inputValues[shrubIndex] = .0465;
+        inputValues[treeIndex] = .1293;
+        inputValues[bareGround] = .0405;
+
         EXPECT_DEATH_IF_SUPPORTED(
             estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
                     climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
