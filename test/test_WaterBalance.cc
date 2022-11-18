@@ -199,4 +199,27 @@ namespace {
   }
 
 
+  TEST(WaterBalanceTest, WithVegetationFromClimate1) {
+    int i;
+
+    // Select method to estimate vegetation from long-term climate
+    SW_VegProd.veg_method = 1;
+
+    // Re-calculate vegetation
+    SW_VPD_init_run();
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
 } // namespace
