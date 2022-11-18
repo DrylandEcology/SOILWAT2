@@ -283,10 +283,10 @@ namespace {
         inputValues[forbIndex] = SW_MISSING;
         inputValues[C3Index] = SW_MISSING;
         inputValues[C4Index] = SW_MISSING;
-        inputValues[grassAnn] = SW_MISSING;
+        inputValues[grassAnn] = 0.;
         inputValues[shrubIndex] = SW_MISSING;
-        inputValues[treeIndex] = SW_MISSING;
-        inputValues[bareGround] = SW_MISSING;
+        inputValues[treeIndex] = 0.;
+        inputValues[bareGround] = 0.;
 
         /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
          * NOTE: Command uses deprecated estimate_PotNatVeg_composition (rSOILWAT >= v.6.0.0)
@@ -991,7 +991,7 @@ namespace {
 
         /*  ===============================================================
          Test where one input value is fixed at 1 and 5/7 are fixed to 0,
-         with the rest being SW_MISSING (C3 and C4 values), and `SumGrassFraction`
+         with the rest being SW_MISSING (C3 and C4 values), and `SumGrassesFraction`
          is set to 0
             ===============================================================  */
 
@@ -1065,7 +1065,7 @@ namespace {
 
 
         /*  ===============================================================
-         Test when input sum is 1, including `SumGrassFraction`, and
+         Test when input sum is 1, including `SumGrassesFraction`, and
          grass needs to be estimated
             ===============================================================  */
 
@@ -1231,6 +1231,8 @@ namespace {
                     fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);,
           ""
         );
+
+        // Free allocated data
         allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
 
     }
