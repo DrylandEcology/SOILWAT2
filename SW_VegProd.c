@@ -960,11 +960,14 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
  @param[in] PPT_cm Value containing the long-term average of yearly precipitation [cm]
  @param[in] meanTempMon_C Array of size MAX_MONTHS containing long-term average monthly mean temperatures [C]
  @param[in] PPTMon_cm Array of size MAX_MONTHS containing sum of monthly mean precipitation [cm]
- @param[in] inputValues Array of size eight that contains starting values for the function to start with.
- The elements of compositions are: 0) Succulents 1) Forbs 2) C3 3) C4 4) Grass Annuals 5) Shrubs 6) Trees 7) Bare ground
+ @param[in] inputValues Array of size eight that contains values input by user for each component of cover.
+ The elements of compositions are: 0) Succulents 1) Forbs 2) C3 3) C4 4) Grass Annuals 5) Shrubs 6) Trees 7) Bare ground.
+ A value of SW_MISSING indicates the respective component's value will be estimated. If an element is not SW_MISSING,
+ a value from 0-1 indicates the component cover is fixed and will not be estimated.
  @param[in] shrubLimit Shrub cover lower than shrubLimit selects the "grassland" equation to determine C3 grass cover;
  shrub cover larger than shrubLimit selects the "shrubland" equation (default value of 0.2; page 1213 of Paruelo & Lauenroth 1996).
- @param[in] SumGrassesFraction Value holding sum of grass if user would like it to be fixed
+ @param[in] SumGrassesFraction Value holding sum of grasses, if not SW_MISSING, the sum of grasses is fixed and
+ if a grass component is not fixed, it will be estimated relative to this value
  @param[in] C4Variables Array of size three holding C4 variables after being averaged by `averageClimateAcrossYears()`.
  The elements are: 0) July precipitation, 1) mean temperature of dry quarter, 2) mean minimum temperature of February
  @param[in] fillEmptyWithBareGround Bool value specifying whether or not to fill gaps in values with bare ground
