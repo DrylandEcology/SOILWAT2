@@ -166,15 +166,12 @@ namespace {
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
-        
-        int deallocate = 0;
-        int allocate = 1;
 
         Bool inNorthHem = swTRUE;
 
         // Allocate memory
             // 31 = number of years used in test
-        allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages);
 
 
         // ------ Check climate variables for default weather ------
@@ -265,7 +262,7 @@ namespace {
 
 
         // ------ Reset and deallocate
-        allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
+        deallocateClimateStructs(&climateOutput, &climateAverages);
     }
 
 
@@ -275,15 +272,12 @@ namespace {
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
-        
-        int deallocate = 0;
-        int allocate = 1;
 
         Bool inNorthHem = swTRUE;
 
         // Allocate memory
             // 1 = number of years used in test
-        allocDeallocClimateStructs(allocate, 1, &climateOutput, &climateAverages);
+        allocateClimateStructs(1, &climateOutput, &climateAverages);
 
         // ------ Check climate variables for one year of default weather ------
 
@@ -386,7 +380,7 @@ namespace {
 
 
         // ------ Reset and deallocate
-        allocDeallocClimateStructs(deallocate, 1, &climateOutput, &climateAverages);
+        deallocateClimateStructs(&climateOutput, &climateAverages);
 
     }
 
@@ -409,15 +403,12 @@ namespace {
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
 
-        int deallocate = 0;
-        int allocate = 1;
-
         // "South" and not "North" to reduce confusion when calling `calcSiteClimate()`
         Bool inSouthHem = swFALSE;
 
         // Allocate memory
             // 31 = number of years used in test
-        allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages);
 
 
         // ------ Check climate variables for default weather ------
@@ -510,7 +501,7 @@ namespace {
 
 
         // ------ Reset and deallocate
-        allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
+        deallocateClimateStructs(&climateOutput, &climateAverages);
     }
 
 
@@ -519,14 +510,11 @@ namespace {
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
         SW_WEATHER_HIST **allHist;
-
-        int allocate = 1;
-        int deallocate = 0;
-
+        
         Bool inNorthHem = swTRUE;
         
         // Allocate memory
-        allocDeallocClimateStructs(allocate, 2, &climateOutput, &climateAverages);
+        allocateClimateStructs(2, &climateOutput, &climateAverages);
 
         allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * 2);
 
@@ -611,7 +599,7 @@ namespace {
 
 
         // ------ Reset and deallocate
-        allocDeallocClimateStructs(deallocate, 2, &climateOutput, &climateAverages);
+        deallocateClimateStructs(&climateOutput, &climateAverages);
 
         for (int year = 0; year < 2; year++) {
             free(allHist[year]);
