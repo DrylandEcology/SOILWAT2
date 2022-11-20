@@ -880,8 +880,7 @@ void get_critical_rank(void){
 void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYear,
                                    int veg_method, double latitude) {
 
-    int numYears = endYear - startYear + 1, deallocate = 0, allocate = 1, k,
-    bareGroundIndex = 7;
+    int numYears = endYear - startYear + 1, k, bareGroundIndex = 7;
 
     SW_CLIMATE_YEARLY climateOutput;
     SW_CLIMATE_CLIM climateAverages;
@@ -903,7 +902,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
     }
 
     // Allocate climate structs' memory
-    allocDeallocClimateStructs(allocate, numYears, &climateOutput, &climateAverages);
+    allocateClimateStructs(numYears, &climateOutput, &climateAverages);
 
     calcSiteClimate(SW_Weather.allHist, numYears, startYear, inNorthHem, &climateOutput);
 
@@ -929,7 +928,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
     }
 
     // Deallocate climate structs' memory
-    allocDeallocClimateStructs(deallocate, numYears, &climateOutput, &climateAverages);
+    deallocateClimateStructs(&climateOutput, &climateAverages);
 
 }
 

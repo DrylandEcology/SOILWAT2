@@ -248,8 +248,6 @@ namespace {
         Bool fixBareGround = swTRUE;
 
         int nTypes = 8;
-        int deallocate = 0;
-        int allocate = 1;
         int index;
 
 
@@ -262,7 +260,7 @@ namespace {
         SW_WTH_read();
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
-        allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages);
 
         // Calculate climate of the site and add results to "climateOutput"
         calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
@@ -671,7 +669,7 @@ namespace {
 
 
         // Deallocate structs
-        allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
+        deallocateClimateStructs(&climateOutput, &climateAverages);
     }
 
     TEST(EstimateVegetationTest, FullVegetation) {
@@ -712,16 +710,13 @@ namespace {
         Bool inNorthHem = swTRUE;
         Bool warnExtrapolation = swTRUE;
         Bool fixBareGround = swTRUE;
-
-        int deallocate = 0;
-        int allocate = 1;
-
+        
 
         // Reset "SW_Weather.allHist"
         SW_WTH_read();
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
-        allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages);
 
         // Calculate climate of the site and add results to "climateOutput"
         calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
@@ -1141,7 +1136,7 @@ namespace {
 
 
         // Deallocate structs
-        allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
+        deallocateClimateStructs(&climateOutput, &climateAverages);
 
     }
 
@@ -1163,9 +1158,6 @@ namespace {
         Bool warnExtrapolation = swTRUE;
         Bool fixBareGround = swTRUE;
 
-        int allocate = 1;
-        int deallocate = 0;
-
         double inputValues[8] = {.0567, .5, .0392, .0981,
                                 .3218, .0827, .1293, .0405};
         double shrubLimit = .2;
@@ -1183,7 +1175,7 @@ namespace {
         SW_WTH_read();
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
-        allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages);
 
         // Calculate climate of the site and add results to "climateOutput"
         calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
@@ -1233,7 +1225,7 @@ namespace {
         );
 
         // Free allocated data
-        allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
+        deallocateClimateStructs(&climateOutput, &climateAverages);
 
     }
 
