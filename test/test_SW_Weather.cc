@@ -166,15 +166,12 @@ namespace {
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
-        
-        int deallocate = 0;
-        int allocate = 1;
 
         Bool inNorthHem = swTRUE;
 
         // Allocate memory
             // 31 = number of years used in test
-        allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages);
 
 
         // ------ Check climate variables for default weather ------
@@ -183,16 +180,18 @@ namespace {
         // --- Annual time-series of climate variables ------
         // Here, check values for 1980
 
-        // Expect identical output to rSOILWAT2 (e.g., v5.3.1)
-        // ```{r}
-        //   rSOILWAT2::calc_SiteClimate(
-        //     weatherList = rSOILWAT2::get_WeatherHistory(
-        //       rSOILWAT2::sw_exampleData
-        //     )[1],
-        //     do_C4vars = TRUE,
-        //     do_Cheatgrass_ClimVars = TRUE
-        //   )
-        // ```
+        /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
+         * NOTE: Command uses deprecated calc_SiteClimate (rSOILWAT >= v.6.0.0)
+         ```{r}
+           rSOILWAT2:::calc_SiteClimate_old(
+             weatherList = rSOILWAT2::get_WeatherHistory(
+               rSOILWAT2::sw_exampleData
+             )[1],
+             do_C4vars = TRUE,
+             do_Cheatgrass_ClimVars = TRUE
+           )
+         ```
+        */
 
         calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
 
@@ -217,17 +216,19 @@ namespace {
         EXPECT_NEAR(climateOutput.minTemp2ndMon_C[0], -12.822068, tol6);
 
 
-        // --- Long-term variables (aggregated across years) ------
-        // Expect identical output to rSOILWAT2 (e.g., v5.3.1)
-        // ```{r}
-        //   rSOILWAT2::calc_SiteClimate(
-        //     weatherList = rSOILWAT2::get_WeatherHistory(
-        //       rSOILWAT2::sw_exampleData
-        //     ),
-        //     do_C4vars = TRUE,
-        //     do_Cheatgrass_ClimVars = TRUE
-        //   )
-        // ```
+        /* --- Long-term variables (aggregated across years) ------
+         * Expect identical output to rSOILWAT2 (e.g., v5.3.1)
+         * NOTE: Command uses deprecated calc_SiteClimate (rSOILWAT >= v.6.0.0)
+         ```{r}
+           rSOILWAT2:::calc_SiteClimate_old(
+             weatherList = rSOILWAT2::get_WeatherHistory(
+               rSOILWAT2::sw_exampleData
+             ),
+             do_C4vars = TRUE,
+             do_Cheatgrass_ClimVars = TRUE
+           )
+         ```
+        */
 
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
 
@@ -261,7 +262,7 @@ namespace {
 
 
         // ------ Reset and deallocate
-        allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
+        deallocateClimateStructs(&climateOutput, &climateAverages);
     }
 
 
@@ -271,28 +272,27 @@ namespace {
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
-        
-        int deallocate = 0;
-        int allocate = 1;
 
         Bool inNorthHem = swTRUE;
 
         // Allocate memory
             // 1 = number of years used in test
-        allocDeallocClimateStructs(allocate, 1, &climateOutput, &climateAverages);
+        allocateClimateStructs(1, &climateOutput, &climateAverages);
 
         // ------ Check climate variables for one year of default weather ------
 
-        // Expect identical output to rSOILWAT2 (e.g., v5.3.1)
-        // ```{r}
-        //   rSOILWAT2::calc_SiteClimate(
-        //     weatherList = rSOILWAT2::get_WeatherHistory(
-        //       rSOILWAT2::sw_exampleData
-        //     )[1],
-        //     do_C4vars = TRUE,
-        //     do_Cheatgrass_ClimVars = TRUE
-        //   )
-        // ```
+        /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
+         * NOTE: Command uses deprecated calc_SiteClimate (rSOILWAT >= v.6.0.0)
+         ```{r}
+           rSOILWAT2:::calc_SiteClimate_old(
+             weatherList = rSOILWAT2::get_WeatherHistory(
+               rSOILWAT2::sw_exampleData
+             )[1],
+             do_C4vars = TRUE,
+             do_Cheatgrass_ClimVars = TRUE
+           )
+         ```
+        */
 
         calcSiteClimate(SW_Weather.allHist, 1, 1980, inNorthHem, &climateOutput);
         averageClimateAcrossYears(&climateOutput, 1, &climateAverages);
@@ -380,7 +380,7 @@ namespace {
 
 
         // ------ Reset and deallocate
-        allocDeallocClimateStructs(deallocate, 1, &climateOutput, &climateAverages);
+        deallocateClimateStructs(&climateOutput, &climateAverages);
 
     }
 
@@ -403,15 +403,12 @@ namespace {
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
 
-        int deallocate = 0;
-        int allocate = 1;
-
         // "South" and not "North" to reduce confusion when calling `calcSiteClimate()`
         Bool inSouthHem = swFALSE;
 
         // Allocate memory
             // 31 = number of years used in test
-        allocDeallocClimateStructs(allocate, 31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages);
 
 
         // ------ Check climate variables for default weather ------
@@ -420,17 +417,19 @@ namespace {
         // --- Annual time-series of climate variables ------
         // Here, check values for 1980
 
-        // Expect similar output to rSOILWAT2 before v6.0.0 (e.g., v5.3.1)
-        // ```{r}
-        //   rSOILWAT2::calc_SiteClimate(
-        //     weatherList = rSOILWAT2::get_WeatherHistory(
-        //       rSOILWAT2::sw_exampleData
-        //     )[1],
-        //     do_C4vars = TRUE,
-        //     do_Cheatgrass_ClimVars = TRUE,
-        //     latitude = -10
-        //   )
-        // ```
+        /* Expect similar output to rSOILWAT2 before v6.0.0 (e.g., v5.3.1)
+         * NOTE: Command uses deprecated calc_SiteClimate (rSOILWAT >= v.6.0.0)
+         ```{r}
+           rSOILWAT2:::calc_SiteClimate_old(
+             weatherList = rSOILWAT2::get_WeatherHistory(
+               rSOILWAT2::sw_exampleData
+             )[1],
+             do_C4vars = TRUE,
+             do_Cheatgrass_ClimVars = TRUE,
+             latitude = -10
+           )
+        ```
+        */
 
         calcSiteClimate(SW_Weather.allHist, 31, 1980, inSouthHem, &climateOutput);
 
@@ -455,18 +454,20 @@ namespace {
         EXPECT_NEAR(climateOutput.minTemp2ndMon_C[1], 5.1445161, tol6);
 
 
-        // --- Long-term variables (aggregated across years) ------
-        // Expect similar output to rSOILWAT2 before v6.0.0 (e.g., v5.3.1), identical otherwise
-        // ```{r}
-        //   rSOILWAT2::calc_SiteClimate(
-        //     weatherList = rSOILWAT2::get_WeatherHistory(
-        //       rSOILWAT2::sw_exampleData
-        //     ),
-        //     do_C4vars = TRUE,
-        //     do_Cheatgrass_ClimVars = TRUE,
-        //     latitude = -10
-        //   )
-        // ```
+        /* --- Long-term variables (aggregated across years) ------
+         * Expect similar output to rSOILWAT2 before v6.0.0 (e.g., v5.3.1), identical otherwise
+         * NOTE: Command uses deprecated calc_SiteClimate (rSOILWAT >= v.6.0.0)
+         ```{r}
+           rSOILWAT2:::calc_SiteClimate_old(
+             weatherList = rSOILWAT2::get_WeatherHistory(
+               rSOILWAT2::sw_exampleData
+             ),
+             do_C4vars = TRUE,
+             do_Cheatgrass_ClimVars = TRUE,
+             latitude = -10
+           )
+         ```
+        */
 
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
 
@@ -500,7 +501,7 @@ namespace {
 
 
         // ------ Reset and deallocate
-        allocDeallocClimateStructs(deallocate, 31, &climateOutput, &climateAverages);
+        deallocateClimateStructs(&climateOutput, &climateAverages);
     }
 
 
@@ -509,14 +510,11 @@ namespace {
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
         SW_WEATHER_HIST **allHist;
-
-        int allocate = 1;
-        int deallocate = 0;
-
+        
         Bool inNorthHem = swTRUE;
         
         // Allocate memory
-        allocDeallocClimateStructs(allocate, 2, &climateOutput, &climateAverages);
+        allocateClimateStructs(2, &climateOutput, &climateAverages);
 
         allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * 2);
 
@@ -601,7 +599,7 @@ namespace {
 
 
         // ------ Reset and deallocate
-        allocDeallocClimateStructs(deallocate, 2, &climateOutput, &climateAverages);
+        deallocateClimateStructs(&climateOutput, &climateAverages);
 
         for (int year = 0; year < 2; year++) {
             free(allHist[year]);

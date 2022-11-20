@@ -64,21 +64,25 @@ typedef struct {
  
  @note 2D array dimensions represent month (1st D) and year (2nd D); 1D array dimension represents year.
  @note Number of years is variable and determined at runtime.
+ @note Units of data are embedded within the variable name.
  */
 typedef struct {
-    RealD **PPTMon_cm,                      /**< 2D array containing monthly amount precipitation (cm)*/
-    *PPT_cm,                                /**< Array containing annual precipitation amount [cm]*/
-    *PPT7thMon_mm,                            /**< Array containing July precipitation amount (mm) */
+    RealD **PPTMon_cm,                      /**< 2D array containing monthly amount precipitation*/
+    *PPT_cm,                                /**< Array containing annual precipitation amount*/
+    *PPT7thMon_mm,                          /**< Array containing July precipitation amount in July (northern hemisphere)
+                                               or January (southern hemisphere) */
 
-    **meanTempMon_C,                        /**< 2D array containing monthly mean average daily air temperature (&deg;C)*/
-    **maxTempMon_C,                         /**< 2D array containing monthly mean max daily air temperature (&deg;C)*/
-    **minTempMon_C,                         /**< 2D array containing monthly mean min daily air temperature (&deg;C)*/
-    *meanTemp_C,                            /**< Array containing annual mean temperatures [C]*/
-    *meanTempDriestQtr_C,                   /**< Array containing the average temperature [C] of the driest quarter of the year*/
-    *minTemp2ndMon_C,                       /**< Array containing the mean daily minimum temperature in February [C] */
-    *minTemp7thMon_C,                       /**< Array containing minimum July temperatures [C] */
+    **meanTempMon_C,                        /**< 2D array containing monthly mean average daily air temperature*/
+    **maxTempMon_C,                         /**< 2D array containing monthly mean max daily air temperature*/
+    **minTempMon_C,                         /**< 2D array containing monthly mean min daily air temperature*/
+    *meanTemp_C,                            /**< Array containing annual mean temperatures*/
+    *meanTempDriestQtr_C,                   /**< Array containing the average temperatureof the driest quarter of the year*/
+    *minTemp2ndMon_C,                       /**< Array containing the mean daily minimum temperature in August (southern hemisphere)
+                                             or February (northern hemisphere)*/
+    *minTemp7thMon_C,                       /**< Array containing minimum July temperatures in July (northern hisphere)
+                                             or Janurary (southern hemisphere)*/
 
-    *frostFree_days,                        /**< Array containing the maximum consecutive days [-] without frost*/
+    *frostFree_days,                        /**< Array containing the maximum consecutive days without frost*/
     *ddAbove65F_degday;                     /**< Array containing the amount of degree days [C x day] above 65 F */
 } SW_CLIMATE_YEARLY;
 
@@ -88,6 +92,7 @@ typedef struct {
  @note Values are across-year averages of #SW_CLIMATE_YEARLY and 1D array dimension represents month.
  The exceptions are `sdC4` and `sdCheatgrass` which represent across-year standard devations and the 1D array dimension
  represents different variables, see `averageClimateAcrossYears()`.
+ @note Units of data are embedded within the variable name.
  */
 typedef struct {
     RealD *meanTempMon_C,                   /**< Array of size MAX_MONTHS containing sum of monthly mean temperatures*/
@@ -100,12 +105,15 @@ typedef struct {
                                               temperature of dry quarter (1), mean minimum temperature of February (2)*/
     meanTemp_C,                             /**< Value containing the average of yearly temperatures*/
     PPT_cm,                                 /**< Value containing the average of yearly precipitation*/
-    PPT7thMon_mm,                            /**< Value containing average of July precipitation (mm)*/
+    PPT7thMon_mm,                           /**< Value containing average precipitation in July (northern hemisphere)
+                                              or January (southern hemisphere)*/
     meanTempDriestQtr_C,                    /**< Value containing average of mean temperatures in the driest quarters of years*/
-    minTemp2ndMon_C,                        /**< Value containing average of minimum temperatures in February*/
+    minTemp2ndMon_C,                        /**< Value containing average of minimum temperatures in August (southern hemisphere) or
+                                             February (northern hemisphere)*/
     ddAbove65F_degday,                      /**< Value containing average of total degrees above 65F (18.33C) throughout the year*/
     frostFree_days,                         /**< Value containing average of most consectutive days in a year without frost*/
-    minTemp7thMon_C;                        /**< Value containing the average of lowest temperature in July*/
+    minTemp7thMon_C;                        /**< Value containing the average of lowest temperature in July (northern hisphere)
+                                             or Janurary (southern hemisphere)*/
 } SW_CLIMATE_CLIM;
 
 typedef struct {
@@ -187,8 +195,10 @@ void findDriestQtr(int numYears, Bool inNorthHem, double *meanTempDriestQtr_C,
 void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYearOne,
                            int *adjustedYearTwo, int *adjustedMonth, int *prevMonth,
                            int *nextMonth);
-void allocDeallocClimateStructs(int action, int numYears, SW_CLIMATE_YEARLY *climateOutput,
-                                SW_CLIMATE_CLIM *climateAverages);
+void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
+                            SW_CLIMATE_CLIM *climateAverages);
+void deallocateClimateStructs(SW_CLIMATE_YEARLY *climateOutput,
+                              SW_CLIMATE_CLIM *climateAverages);
 void _read_weather_hist(
   TimeInt year,
   SW_WEATHER_HIST *yearWeather,
