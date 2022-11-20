@@ -183,16 +183,18 @@ namespace {
         // --- Annual time-series of climate variables ------
         // Here, check values for 1980
 
-        // Expect identical output to rSOILWAT2 (e.g., v5.3.1)
-        // ```{r}
-        //   rSOILWAT2::calc_SiteClimate(
-        //     weatherList = rSOILWAT2::get_WeatherHistory(
-        //       rSOILWAT2::sw_exampleData
-        //     )[1],
-        //     do_C4vars = TRUE,
-        //     do_Cheatgrass_ClimVars = TRUE
-        //   )
-        // ```
+        /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
+         * NOTE: Command uses deprecated calc_SiteClimate (rSOILWAT >= v.6.0.0)
+         ```{r}
+           rSOILWAT2:::calc_SiteClimate_old(
+             weatherList = rSOILWAT2::get_WeatherHistory(
+               rSOILWAT2::sw_exampleData
+             )[1],
+             do_C4vars = TRUE,
+             do_Cheatgrass_ClimVars = TRUE
+           )
+         ```
+        */
 
         calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
 
@@ -217,17 +219,19 @@ namespace {
         EXPECT_NEAR(climateOutput.minTemp2ndMon_C[0], -12.822068, tol6);
 
 
-        // --- Long-term variables (aggregated across years) ------
-        // Expect identical output to rSOILWAT2 (e.g., v5.3.1)
-        // ```{r}
-        //   rSOILWAT2::calc_SiteClimate(
-        //     weatherList = rSOILWAT2::get_WeatherHistory(
-        //       rSOILWAT2::sw_exampleData
-        //     ),
-        //     do_C4vars = TRUE,
-        //     do_Cheatgrass_ClimVars = TRUE
-        //   )
-        // ```
+        /* --- Long-term variables (aggregated across years) ------
+         * Expect identical output to rSOILWAT2 (e.g., v5.3.1)
+         * NOTE: Command uses deprecated calc_SiteClimate (rSOILWAT >= v.6.0.0)
+         ```{r}
+           rSOILWAT2:::calc_SiteClimate_old(
+             weatherList = rSOILWAT2::get_WeatherHistory(
+               rSOILWAT2::sw_exampleData
+             ),
+             do_C4vars = TRUE,
+             do_Cheatgrass_ClimVars = TRUE
+           )
+         ```
+        */
 
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
 
@@ -283,16 +287,18 @@ namespace {
 
         // ------ Check climate variables for one year of default weather ------
 
-        // Expect identical output to rSOILWAT2 (e.g., v5.3.1)
-        // ```{r}
-        //   rSOILWAT2::calc_SiteClimate(
-        //     weatherList = rSOILWAT2::get_WeatherHistory(
-        //       rSOILWAT2::sw_exampleData
-        //     )[1],
-        //     do_C4vars = TRUE,
-        //     do_Cheatgrass_ClimVars = TRUE
-        //   )
-        // ```
+        /* Expect identical output to rSOILWAT2 (e.g., v5.3.1)
+         * NOTE: Command uses deprecated calc_SiteClimate (rSOILWAT >= v.6.0.0)
+         ```{r}
+           rSOILWAT2:::calc_SiteClimate_old(
+             weatherList = rSOILWAT2::get_WeatherHistory(
+               rSOILWAT2::sw_exampleData
+             )[1],
+             do_C4vars = TRUE,
+             do_Cheatgrass_ClimVars = TRUE
+           )
+         ```
+        */
 
         calcSiteClimate(SW_Weather.allHist, 1, 1980, inNorthHem, &climateOutput);
         averageClimateAcrossYears(&climateOutput, 1, &climateAverages);
@@ -420,17 +426,19 @@ namespace {
         // --- Annual time-series of climate variables ------
         // Here, check values for 1980
 
-        // Expect similar output to rSOILWAT2 before v6.0.0 (e.g., v5.3.1)
-        // ```{r}
-        //   rSOILWAT2::calc_SiteClimate(
-        //     weatherList = rSOILWAT2::get_WeatherHistory(
-        //       rSOILWAT2::sw_exampleData
-        //     )[1],
-        //     do_C4vars = TRUE,
-        //     do_Cheatgrass_ClimVars = TRUE,
-        //     latitude = -10
-        //   )
-        // ```
+        /* Expect similar output to rSOILWAT2 before v6.0.0 (e.g., v5.3.1)
+         * NOTE: Command uses deprecated calc_SiteClimate (rSOILWAT >= v.6.0.0)
+         ```{r}
+           rSOILWAT2:::calc_SiteClimate_old(
+             weatherList = rSOILWAT2::get_WeatherHistory(
+               rSOILWAT2::sw_exampleData
+             )[1],
+             do_C4vars = TRUE,
+             do_Cheatgrass_ClimVars = TRUE,
+             latitude = -10
+           )
+        ```
+        */
 
         calcSiteClimate(SW_Weather.allHist, 31, 1980, inSouthHem, &climateOutput);
 
@@ -455,18 +463,20 @@ namespace {
         EXPECT_NEAR(climateOutput.minTemp2ndMon_C[1], 5.1445161, tol6);
 
 
-        // --- Long-term variables (aggregated across years) ------
-        // Expect similar output to rSOILWAT2 before v6.0.0 (e.g., v5.3.1), identical otherwise
-        // ```{r}
-        //   rSOILWAT2::calc_SiteClimate(
-        //     weatherList = rSOILWAT2::get_WeatherHistory(
-        //       rSOILWAT2::sw_exampleData
-        //     ),
-        //     do_C4vars = TRUE,
-        //     do_Cheatgrass_ClimVars = TRUE,
-        //     latitude = -10
-        //   )
-        // ```
+        /* --- Long-term variables (aggregated across years) ------
+         * Expect similar output to rSOILWAT2 before v6.0.0 (e.g., v5.3.1), identical otherwise
+         * NOTE: Command uses deprecated calc_SiteClimate (rSOILWAT >= v.6.0.0)
+         ```{r}
+           rSOILWAT2:::calc_SiteClimate_old(
+             weatherList = rSOILWAT2::get_WeatherHistory(
+               rSOILWAT2::sw_exampleData
+             ),
+             do_C4vars = TRUE,
+             do_Cheatgrass_ClimVars = TRUE,
+             latitude = -10
+           )
+         ```
+        */
 
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
 
