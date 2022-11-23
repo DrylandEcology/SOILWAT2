@@ -64,26 +64,25 @@ typedef struct {
  
  @note 2D array dimensions represent month (1st D) and year (2nd D); 1D array dimension represents year.
  @note Number of years is variable and determined at runtime.
- @note Units of data are embedded within the variable name.
  */
 typedef struct {
-    RealD **PPTMon_cm,                      /**< 2D array containing monthly amount precipitation*/
-    *PPT_cm,                                /**< Array containing annual precipitation amount*/
+    RealD **PPTMon_cm,                      /**< 2D array containing monthly amount precipitation [cm]*/
+    *PPT_cm,                                /**< Array containing annual precipitation amount [cm]*/
     *PPT7thMon_mm,                          /**< Array containing July precipitation amount in July (northern hemisphere)
-                                               or January (southern hemisphere) */
+                                               or January (southern hemisphere) [mm]*/
 
-    **meanTempMon_C,                        /**< 2D array containing monthly mean average daily air temperature*/
-    **maxTempMon_C,                         /**< 2D array containing monthly mean max daily air temperature*/
-    **minTempMon_C,                         /**< 2D array containing monthly mean min daily air temperature*/
-    *meanTemp_C,                            /**< Array containing annual mean temperatures*/
-    *meanTempDriestQtr_C,                   /**< Array containing the average temperatureof the driest quarter of the year*/
+    **meanTempMon_C,                        /**< 2D array containing monthly mean average daily air temperature [C]*/
+    **maxTempMon_C,                         /**< 2D array containing monthly mean max daily air temperature [C]*/
+    **minTempMon_C,                         /**< 2D array containing monthly mean min daily air temperature [C]*/
+    *meanTemp_C,                            /**< Array containing annual mean temperatures [C]*/
+    *meanTempDriestQtr_C,                   /**< Array containing the average temperatureof the driest quarter of the year [C]*/
     *minTemp2ndMon_C,                       /**< Array containing the mean daily minimum temperature in August (southern hemisphere)
-                                             or February (northern hemisphere)*/
+                                             or February (northern hemisphere) [C]*/
     *minTemp7thMon_C,                       /**< Array containing minimum July temperatures in July (northern hisphere)
-                                             or Janurary (southern hemisphere)*/
+                                             or Janurary (southern hemisphere) [C]*/
 
-    *frostFree_days,                        /**< Array containing the maximum consecutive days without frost*/
-    *ddAbove65F_degday;                     /**< Array containing the amount of degree days [C x day] above 65 F */
+    *frostFree_days,                        /**< Array containing the maximum consecutive days without frost [days]*/
+    *ddAbove65F_degday;                     /**< Array containing the amount of degree days [C x day] above 65 F*/
 } SW_CLIMATE_YEARLY;
 
 /**
@@ -92,28 +91,31 @@ typedef struct {
  @note Values are across-year averages of #SW_CLIMATE_YEARLY and 1D array dimension represents month.
  The exceptions are `sdC4` and `sdCheatgrass` which represent across-year standard devations and the 1D array dimension
  represents different variables, see `averageClimateAcrossYears()`.
- @note Units of data are embedded within the variable name.
  */
 typedef struct {
-    RealD *meanTempMon_C,                   /**< Array of size MAX_MONTHS containing sum of monthly mean temperatures*/
-    *maxTempMon_C,                          /**< Array of size MAX_MONTHS containing sum of monthly maximum temperatures*/
-    *minTempMon_C,                          /**< Array of size MAX_MONTHS containing sum of monthly minimum temperatures*/
-    *PPTMon_cm,                             /**< Array of size MAX_MONTHS containing sum of monthly mean precipitation*/
-    *sdC4,                                  /**< Array of size three holding the standard deviations of minimum July temperature (0),
-                                             frost free days (1), number of days above 65F (2)*/
-    *sdCheatgrass,                          /**< Array of size three holding the standard deviations of July precipitation (0), mean
-                                              temperature of dry quarter (1), mean minimum temperature of February (2)*/
-    meanTemp_C,                             /**< Value containing the average of yearly temperatures*/
-    PPT_cm,                                 /**< Value containing the average of yearly precipitation*/
+    RealD *meanTempMon_C,                   /**< Array of size MAX_MONTHS containing sum of monthly mean temperatures [C]*/
+    *maxTempMon_C,                          /**< Array of size MAX_MONTHS containing sum of monthly maximum temperatures [C]*/
+    *minTempMon_C,                          /**< Array of size MAX_MONTHS containing sum of monthly minimum temperatures [C]*/
+    *PPTMon_cm,                             /**< Array of size MAX_MONTHS containing sum of monthly mean precipitation [cm]*/
+    *sdC4,                                  /**< Array of size three holding the standard deviations of: 0) minimum July (northern hisphere)
+                                             or Janurary (southern hemisphere) temperature [C],
+                                             1) frost free days [days], 2) number of days above 65F [C x day]*/
+
+    *sdCheatgrass,                          /**< Array of size three holding: 0) the standard deviations of July (northern hisphere)
+                                             or Janurary (southern hemisphere) [cm],
+                                             1) mean temperature of dry quarter [C], 2) mean minimum temperature of February
+                                             (northern hemisphere) or August (southern hemisphere) [C]*/
+    meanTemp_C,                             /**< Value containing the average of yearly temperatures [C]*/
+    PPT_cm,                                 /**< Value containing the average of yearly precipitation [cm]*/
     PPT7thMon_mm,                           /**< Value containing average precipitation in July (northern hemisphere)
-                                              or January (southern hemisphere)*/
-    meanTempDriestQtr_C,                    /**< Value containing average of mean temperatures in the driest quarters of years*/
+                                              or January (southern hemisphere) [mm]*/
+    meanTempDriestQtr_C,                    /**< Value containing average of mean temperatures in the driest quarters of years [C]*/
     minTemp2ndMon_C,                        /**< Value containing average of minimum temperatures in August (southern hemisphere) or
-                                             February (northern hemisphere)*/
-    ddAbove65F_degday,                      /**< Value containing average of total degrees above 65F (18.33C) throughout the year*/
-    frostFree_days,                         /**< Value containing average of most consectutive days in a year without frost*/
+                                             February (northern hemisphere) [C]*/
+    ddAbove65F_degday,                      /**< Value containing average of total degrees above 65F (18.33C) throughout the year [C x day]*/
+    frostFree_days,                         /**< Value containing average of most consectutive days in a year without frost [days]*/
     minTemp7thMon_C;                        /**< Value containing the average of lowest temperature in July (northern hisphere)
-                                             or Janurary (southern hemisphere)*/
+                                             or Janurary (southern hemisphere) [C]*/
 } SW_CLIMATE_CLIM;
 
 typedef struct {
