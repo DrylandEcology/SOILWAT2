@@ -67,6 +67,7 @@ typedef struct {
 			// swTRUE: use weather generator for missing weather input (values/files)
 			// swFALSE: fail if any weather input is missing (values/files)
 		use_snow;
+	int rng_seed; // initial state for `markov_rng`
 	RealD pct_snowdrift, pct_snowRunoff;
 	SW_TIMES yr;
   RealD

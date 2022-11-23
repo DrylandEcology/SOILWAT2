@@ -210,7 +210,7 @@ namespace
     double *drain2 = new double[nlyrs];
 
     pcg32_random_t infiltrate_rng;
-    RandSeed(0,&infiltrate_rng);
+    RandSeed(0u, 0u, &infiltrate_rng);
 
     for (i = 0; i < MAX_LAYERS; i++)
     {

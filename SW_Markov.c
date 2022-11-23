@@ -206,9 +206,14 @@ void SW_MKV_construct(void) {
 	SW_MARKOV *m = &SW_Markov;
 	size_t s = sizeof(RealD);
 
-	/* STEPWAT2: The markov_rng seed will be reset with `Globals.randseed` by
-		 its `main` at the beginning of each iteration */
-	RandSeed(0, &markov_rng);
+	/* Set seed of `markov_rng`
+	  - SOILWAT2: set seed here
+	  - STEPWAT2: `main()` uses `Globals.randseed` to (re-)set for each iteration
+	  - rSOILWAT2: R API handles RNGs
+	*/
+	#if defined(SOILWAT)
+	RandSeed(SW_Weather.rng_seed, 1u, &markov_rng);
+	#endif
 
 	m->ppt_events = 0;
 
