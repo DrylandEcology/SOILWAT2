@@ -5,17 +5,62 @@
   (issue #280; @dschlaep).
     * Automatic conversion between matric and bulk density as needed
       using the new input `type_soilDensityInput`.
-* Moved `calc_SiteClimate()` and `estimate_PotNatVeg_composition()`
-    functionality from rSOILWAT2 to SOILWAT2.
-* Yesterday values for variables in SW_WEATHER_2DAYS struct are no longer used,
-    which motivated the struct being renamed to SW_WEATHER_NOW.
-* Weather is now read in all at once, instead of reading one year at a time, by the new function
-    `readAllWeather()`.
+
+* Daily weather inputs that force a simulation are now processed
+  all at once; previously, values were processed for one year at a time during
+  the main simulation loop (issue #311; @dschlaep, @N1ckP3rsl3y).
+    * Daily weather inputs are now obtained by `readAllWeather()`
+      via `SW_WTH_read()` during `SW_CTL_read_inputs_from_disk()`, i.e.,
+      the same time as other inputs are read from files.
+    * Then, weather values are "finalized", i.e., missing values are imputed
+      (e.g., by the weather generator) and scaled with monthly parameters,
+      by `finalizeAllWeather()` via `SW_WTH_finalize_all_weather()`;
+      this must occur before the simulation is "initialized"
+      by `SW_CTL_init_run()`.
+
+* SOILWAT2 gains the ability to calculate long-term climate summaries
+  (issue #317; @N1ckP3rsl3y, @dschlaep).
+    * New `calcSiteClimate()` calculates monthly and annual time
+      series of climate variables from daily weather.
+    * New `averageClimateAcrossYears()` calculates long-term climate summaries.
+    * Both functions are based on `rSOILWAT2::calc_SiteClimate()`
+      which was previously coded in R.
+    * This version fixes issues from the previous R version:
+       * Mean annual temperature is now the mean across years of
+         means across days within year of mean daily temperature.
+       * Years at locations in the southern hemisphere are now adjusted to start
+         on July 1 of the previous calendar year.
+       * Variables `Month7th_PPT_mm` and `MinTemp_of2ndMonth_C` are now adjusted
+         for location by hemisphere.
+
+* SOILWAT2 gains the ability to estimate fractional land cover
+  representing a potential natural vegetation based on climate relationships
+  (using new input `veg_method`) instead of reading land cover values
+  from input files (issue #318; @N1ckP3rsl3y, @dschlaep).
+    * New `estimatePotNatVegComposition()` estimates
+      fractional land cover representing a potential natural vegetation
+      based on climate relationships.
+      This function is based on `rSOILWAT2::estimate_PotNatVeg_composition()`
+      which was previously coded in R.
+    * New `estimateVegetationFromClimate()`
+      (which is called by `SW_VPD_init_run()`) uses `veg_method` to determine
+      at run time if a simulation utilizes `averageClimateAcrossYears()` and
+      `estimatePotNatVegComposition()` to set land cover values
+      instead of using the cover values provided in the input file.
+    * This version fixes issues from the previous R version:
+       * The `C4` grass correction based on Teeri & Stowe 1976 is now applied
+         as documented (`rSOILWAT2` issue #218).
+       * The sum of all grass components, if fixed, is now incorporated into
+         the total sum of all fixed components (`rSOILWAT2` issue #219).
+
 
 ## Changes to inputs
 * SOILWAT2 gains `type_soilDensityInput` as new user input (`siteparam.in`)
-  with default value 0 (matric soil density) that reproduces previous behavior.
-* SOILWAT2 gains `veg_method` as new user input (`"veg.in"`).
+  with default value 0 (i.e., matric soil density)
+  that reproduces previous behavior.
+* SOILWAT2 gains `veg_method` as new user input (`"veg.in"`)
+  with default value 0 (i.e., land cover are obtained from input files)
+  that reproduces previous behavior.
 
 
 # SOILWAT2 v6.6.0
