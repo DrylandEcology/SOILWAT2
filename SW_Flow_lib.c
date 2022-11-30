@@ -1797,25 +1797,26 @@ temp += temp;
 The algorithm selects a shorter time step if required for a stable solution
 (@cite Parton1978, @cite Parton1984).
 
-@param ptr_dTime Yesterday's successful time step in seconds.
-@param deltaX The depth increment for the soil temperature (regression) calculations (cm).
-@param sT1 The soil surface temperature as upper boundary condition (&deg;C).
-@param sTconst The soil temperature at a soil depth where it stays constant as
+@param[in,out] ptr_dTime Yesterday's successful time step in seconds.
+@param[in] deltaX The depth increment for the soil temperature (regression) calculations (cm).
+@param[in] sT1 The soil surface temperature as upper boundary condition (&deg;C).
+@param[in] sTconst The soil temperature at a soil depth where it stays constant as
 		lower boundary condition (&deg;C).
-@param nRgr The number of regressions (1 extra value is needed for the avgLyrTempR and oldavgLyrTempR for the last layer).
-@param avgLyrTempR An array of today's (regression)-layer soil temperature values (&deg;C).
-@param oldavgLyrTempR An array of yesterday's (regression)-layer soil temperature value (&deg;C).
-@param vwcR An array of temperature-layer VWC values (cm/layer).
-@param wpR An array of temperature-layer wilting point values (cm/layer).
-@param fcR An array of temperature-layer field capacity values (cm/layer).
-@param bDensityR temperature-layer bulk density of the whole soil
+@param[in] nRgr The number of regressions (1 extra value is needed for the avgLyrTempR and oldavgLyrTempR for the last layer).
+@param[in,out] avgLyrTempR An array of today's (regression)-layer soil temperature values (&deg;C).
+@param[in] oldavgLyrTempR An array of yesterday's (regression)-layer soil temperature value (&deg;C).
+@param[in] vwcR An array of temperature-layer VWC values (cm/layer).
+@param[in] wpR An array of temperature-layer wilting point values (cm/layer).
+@param[in] fcR An array of temperature-layer field capacity values (cm/layer).
+@param[in] bDensityR temperature-layer bulk density of the whole soil
   (g/cm<SUP>3</SUP>).
-@param csParam1 A constant for the soil thermal conductivity equation.
-@param csParam2 A constant for the soil thermal conductivity equation.
-@param shParam A constant for specific heat capacity equation.
-@param *ptr_stError A boolean indicating whether there was an error.
-@param surface_range Temperature range at the surface (&deg;C)
-@param temperatureRangeR An array of temperature ranges at each (regression)-layer to be interpolated (&deg;C)
+@param[in] csParam1 A constant for the soil thermal conductivity equation.
+@param[in] csParam2 A constant for the soil thermal conductivity equation.
+@param[in] shParam A constant for specific heat capacity equation.
+@param[in,out] *ptr_stError A boolean indicating whether there was an error.
+@param[in] surface_range Temperature range at the surface (&deg;C)
+@param[in,out] temperatureRangeR An array of temperature ranges at each (regression)-layer to be interpolated (&deg;C)
+@param[in] depthsR Evenly spaced depths of the soil temperature profile (cm).
 
 @note
 	avgLyrTempR[0] and temperatureRangeR[0] represent soil surface conditions.
