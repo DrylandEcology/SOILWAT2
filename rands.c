@@ -388,7 +388,7 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 
   The beta distribution has two shape parameters \f$a\f$ and \f$b\f$.
   The density is
-      \f[\frac{x ^ (a - 1) * (1 - x) ^ (b - 1)}{Beta(a, b)}\f]
+      \f[\frac{x ^ {(a - 1)} * (1 - x) ^ {(b - 1)}}{Beta(a, b)}\f]
   for \f$0 < x < 1\f$
 
 	The code for RandBeta was taken from ranlib, a FORTRAN77 library. Original
