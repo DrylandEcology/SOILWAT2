@@ -26,12 +26,12 @@ jobs:
       shell: bash
 
     - name: Checkout repository and submodules
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         submodules: recursive
 
     - name: Install cygwin (windows)
-      uses: cygwin/cygwin-install-action@v1
+      uses: cygwin/cygwin-install-action@v3
       with:
         packages: gcc-core gcc-g++ make
 
