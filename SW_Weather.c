@@ -475,6 +475,11 @@ void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYe
             *nextMonth = *adjustedMonth + 1;
             break;
     }
+
+    /* coerce to void to silence `-Wunused-but-set-parameter` [clang-15] */
+    (void) adjustedYearZero;
+    (void) adjustedYearOne;
+    (void) adjustedYearTwo;
 }
 
 
