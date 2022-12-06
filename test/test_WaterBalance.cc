@@ -112,12 +112,18 @@ namespace {
     int i;
 
     // Turn on Markov weather generator (and turn off use of historical weather)
-    SW_Soilwat.hist_use = swFALSE;
-    SW_Weather.yr.first = SW_Model.endyr + 1;
-    SW_Weather.use_weathergenerator = swTRUE;
+    SW_Weather.generateWeatherMethod = 2;
+    SW_Weather.use_weathergenerator_only = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup();
+
+    // Point to nonexisting weather data
+    strcpy(SW_Weather.name_prefix, "Input/data_weather_nonexisting/weath");
+
+    // Prepare weather data
+    SW_WTH_read();
+    SW_WTH_finalize_all_weather();
 
     // Run the simulation
     SW_CTL_main();
@@ -138,13 +144,17 @@ namespace {
     int i;
 
     // Turn on Markov weather generator
-    SW_Weather.use_weathergenerator = swTRUE;
+    SW_Weather.generateWeatherMethod = 2;
+
+    // Point to partial weather data
+    strcpy(SW_Weather.name_prefix, "Input/data_weather_missing/weath");
 
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup();
 
-    // Point to partial weather data
-    strcpy(SW_Weather.name_prefix, "Input/data_weather_missing/weath");
+    // Prepare weather data
+    SW_WTH_read();
+    SW_WTH_finalize_all_weather();
 
     // Run the simulation
     SW_CTL_main();
@@ -188,5 +198,28 @@ namespace {
     Reset_SOILWAT2_after_UnitTest();
   }
 
+
+  TEST(WaterBalanceTest, WithVegetationFromClimate1) {
+    int i;
+
+    // Select method to estimate vegetation from long-term climate
+    SW_VegProd.veg_method = 1;
+
+    // Re-calculate vegetation
+    SW_VPD_init_run();
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
 
 } // namespace

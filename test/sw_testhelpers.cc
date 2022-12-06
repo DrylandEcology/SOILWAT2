@@ -46,6 +46,7 @@ void Reset_SOILWAT2_after_UnitTest(void) {
 
   SW_CTL_setup_model(_firstfile);
   SW_CTL_read_inputs_from_disk();
+  SW_WTH_finalize_all_weather();
   SW_CTL_init_run();
 
 

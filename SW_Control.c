@@ -58,7 +58,6 @@
 static void _begin_year(void) {
 	// SW_F_new_year() not needed
 	SW_MDL_new_year(); // call first to set up time-related arrays for this year
-	SW_WTH_new_year();
 	// SW_MKV_new_year() not needed
 	SW_SKY_new_year(); // Update daily climate variables from monthly values
 	//SW_SIT_new_year() not needed
@@ -77,7 +76,6 @@ static void _begin_day(void) {
 
 static void _end_day(void) {
 	_collect_values();
-	SW_WTH_end_day();
 	SW_SWC_end_day();
 }
 
@@ -250,9 +248,9 @@ void SW_CTL_read_inputs_from_disk(void) {
   if (debug) swprintf(" > 'model'");
   #endif
 
-  SW_WTH_read();
+  SW_WTH_setup();
   #ifdef SWDEBUG
-  if (debug) swprintf(" > 'weather'");
+  if (debug) swprintf(" > 'weather setup'");
   #endif
 
   SW_SKY_read();
@@ -260,13 +258,18 @@ void SW_CTL_read_inputs_from_disk(void) {
   if (debug) swprintf(" > 'climate'");
   #endif
 
-  if (SW_Weather.use_weathergenerator) {
+  if (SW_Weather.generateWeatherMethod == 2) {
     SW_MKV_setup();
     #ifdef SWDEBUG
     if (debug) swprintf(" > 'weather generator'");
     #endif
   }
 
+  SW_WTH_read();
+  #ifdef SWDEBUG
+  if (debug) swprintf(" > 'weather read'");
+  #endif
+    
   SW_VPD_read();
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'veg'");

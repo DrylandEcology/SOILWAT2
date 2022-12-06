@@ -354,17 +354,17 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 	{
 
 	case eSW_Temp:
-		s->temp_max += v->now.temp_max[Today];
-		s->temp_min += v->now.temp_min[Today];
-		s->temp_avg += v->now.temp_avg[Today];
+		s->temp_max += v->now.temp_max;
+		s->temp_min += v->now.temp_min;
+		s->temp_avg += v->now.temp_avg;
 		//added surfaceAvg for sum
         s->surfaceAvg += v->surfaceAvg;
         s->surfaceMax += v->surfaceMax;
         s->surfaceMin += v->surfaceMin;
 		break;
 	case eSW_Precip:
-		s->ppt += v->now.ppt[Today];
-		s->rain += v->now.rain[Today];
+		s->ppt += v->now.ppt;
+		s->rain += v->now.rain;
 		s->snow += v->snow;
 		s->snowmelt += v->snowmelt;
 		s->snowloss += v->snowloss;
