@@ -53,6 +53,8 @@
 extern "C" {
 #endif
 
+#define SW_MATRIC 0
+#define SW_BULK 1
 
 
 /**
@@ -169,7 +171,7 @@ typedef struct {
 	RealD
 		/* Inputs */
 		width, /* width of the soil layer (cm) */
-		soilMatric_density, /* matric soil density of the < 2 mm fraction, i.e., gravel component excluded, (g/cm3) */
+		soilDensityInput, /* soil density [g / cm3]: either of the matric component or bulk soil */
 		evap_coeff, /* prop. of total soil evap from this layer */
 		transp_coeff[NVEGTYPES], /* prop. of total transp from this layer    */
 		fractionVolBulk_gravel, /* gravel content (> 2 mm) as volume-fraction of bulk soil (g/cm3) */
@@ -179,6 +181,7 @@ typedef struct {
 		avgLyrTemp, /* initial soil temperature for each soil layer */
 
 		/* Derived soil characteristics */
+		soilMatric_density, /* matric soil density of the < 2 mm fraction, i.e., gravel component excluded, (g/cm3) */
 		soilBulk_density, /* bulk soil density of the whole soil, i.e., including rock/gravel component, (g/cm3) */
 		swcBulk_fieldcap, /* Soil water content (SWC) corresponding to field capacity (SWP = -0.033 MPa) [cm] */
 		swcBulk_wiltpt, /* SWC corresponding to wilting point (SWP = -1.5 MPa) [cm] */
@@ -212,6 +215,8 @@ typedef struct {
 	Bool reset_yr, /* 1: reset values at start of each year */
 		deepdrain, /* 1: allow drainage into deepest layer  */
 		use_soil_temp; /* whether or not to do soil_temperature calculations */
+
+	unsigned int type_soilDensityInput; /* Encodes whether `soilDensityInput` represent matric density (type = SW_MATRIC = 0) or bulk density (type = SW_BULK = 1) */
 
 	LyrIndex n_layers, /* total number of soil layers */
 		n_transp_rgn, /* soil layers are grouped into n transp. regions */
@@ -344,6 +349,7 @@ void PDF_RawlsBrakensiek1985(
 
 
 RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
+RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel);
 LyrIndex nlayers_bsevap(void);
 void nlayers_vegroots(LyrIndex n_transp_lyrs[]);
 
@@ -361,7 +367,7 @@ void SW_SIT_clear_layers(void);
 LyrIndex _newlayer(void);
 void add_deepdrain_layer(void);
 
-void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *matricd, RealF *f_gravel,
+void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
   RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
   RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp,
   int nRegions, RealD *regionLowerBounds);

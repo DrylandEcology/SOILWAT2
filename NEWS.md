@@ -1,14 +1,84 @@
+# NEWS
+
+# SOILWAT2 v7.0.0-9000
+* Soil density inputs can now represent either matric or bulk density
+  (issue #280; @dschlaep).
+    * Automatic conversion between matric and bulk density as needed
+      using the new input `type_soilDensityInput`.
+
+* Daily weather inputs that force a simulation are now processed
+  all at once; previously, values were processed for one year at a time during
+  the main simulation loop (issue #311; @dschlaep, @N1ckP3rsl3y).
+    * Daily weather inputs are now obtained by `readAllWeather()`
+      via `SW_WTH_read()` during `SW_CTL_read_inputs_from_disk()`, i.e.,
+      the same time as other inputs are read from files.
+    * Then, weather values are "finalized", i.e., missing values are imputed
+      (e.g., by the weather generator) and scaled with monthly parameters,
+      by `finalizeAllWeather()` via `SW_WTH_finalize_all_weather()`;
+      this must occur before the simulation is "initialized"
+      by `SW_CTL_init_run()`.
+
+* SOILWAT2 gains the ability to calculate long-term climate summaries
+  (issue #317; @N1ckP3rsl3y, @dschlaep).
+    * New `calcSiteClimate()` calculates monthly and annual time
+      series of climate variables from daily weather.
+    * New `averageClimateAcrossYears()` calculates long-term climate summaries.
+    * Both functions are based on `rSOILWAT2::calc_SiteClimate()`
+      which was previously coded in R.
+    * This version fixes issues from the previous R version:
+       * Mean annual temperature is now the mean across years of
+         means across days within year of mean daily temperature.
+       * Years at locations in the southern hemisphere are now adjusted to start
+         on July 1 of the previous calendar year.
+       * The cheatgrass-related variables, i.e., `Month7th_PPT_mm`,
+         `MeanTemp_ofDriestQuarter_C`, and `MinTemp_of2ndMonth_C`,
+         are now adjusted for location by hemisphere.
+
+* SOILWAT2 gains the ability to estimate fractional land cover
+  representing a potential natural vegetation based on climate relationships
+  (using new input `veg_method`) instead of reading land cover values
+  from input files (issue #318; @N1ckP3rsl3y, @dschlaep).
+    * New `estimatePotNatVegComposition()` estimates
+      fractional land cover representing a potential natural vegetation
+      based on climate relationships.
+      This function is based on `rSOILWAT2::estimate_PotNatVeg_composition()`
+      which was previously coded in R.
+    * New `estimateVegetationFromClimate()`
+      (which is called by `SW_VPD_init_run()`) uses `veg_method` to determine
+      at run time if a simulation utilizes `averageClimateAcrossYears()` and
+      `estimatePotNatVegComposition()` to set land cover values
+      instead of using the cover values provided in the input file.
+    * This version fixes issues from the previous R version:
+       * The `C4` grass correction based on Teeri & Stowe 1976 is now applied
+         as documented (`rSOILWAT2` issue #218).
+       * The sum of all grass components, if fixed, is now incorporated into
+         the total sum of all fixed components (`rSOILWAT2` issue #219).
+
+
+## Changes to inputs
+* SOILWAT2 gains `type_soilDensityInput` as new user input (`siteparam.in`)
+  with default value 0 (i.e., matric soil density)
+  that reproduces previous behavior.
+* SOILWAT2 gains `veg_method` as new user input (`"veg.in"`)
+  with default value 0 (i.e., land cover are obtained from input files)
+  that reproduces previous behavior.
+
 
 # SOILWAT2 v6.6.0
-* Random number generators now produce sequences that can be exactly reproduced.
-* `RandSeed()` gains arguments "initstate" and "initseq" (and lost "seed") to
-  fully seed a `pcg32` random number generator.
-* `RandNorm()` is now re-entrant and discards one of the two generated values.
-  Compilation with `"RANDNORMSTATIC"` re-produces the old, not re-entrant
-  implementation.
+* Random number generators now produce sequences that can be exactly reproduced
+  (@dschlaep).
+    * `RandSeed()` gains arguments "initstate" and "initseq" (and lost "seed")
+      to fully seed a `pcg32` random number generator.
+    * `RandNorm()` is now re-entrant and discards one of the two generated
+      values. Compilation with `"RANDNORMSTATIC"` re-produces the old,
+      not re-entrant implementation.
+    * `SW_MKV_construct()` now only seeds `markov_rng` (the random number
+      generator of the weather generator) if run as `SOILWAT2` using the new
+      input `rng_seed`; `SW_MKV_construct()` does not seed `markov_rng`
+      when run as part of `STEPWAT2` or `rSOILWAT2`
+      (both of which use their own `RNG` initialization procedures).
+* `SW_WTH_init_run()` now also initializes yesterday's weather values
+  (@dschlaep).
+
+## Changes to inputs
 * SOILWAT2 gains `rng_seed` as new user input (`"weathsetup.in"`).
-* `SW_MKV_construct()` now only seeds `markov_rng` (the random number generator
-  of the weather generator) if run as `SOILWAT2` using the new input `rng_seed`;
-  `SW_MKV_construct()` does not seed `markov_rng` when run as part of `STEPWAT2`
-  or `rSOILWAT2` (both of which use their own `RNG` initialization procedures).
-* `SW_WTH_init_run()` now also initializes yesterday's weather values.

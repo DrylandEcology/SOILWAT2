@@ -373,7 +373,7 @@ void SW_Water_Flow(void) {
 			 calculate soil temperature at end of each day
 		*/
 		SW_ST_setup_run(
-			w->now.temp_avg[Today],
+			w->now.temp_avg,
 			lyrSWCBulk,
 			lyrSWCBulk_Saturated,
 			lyrbDensity,
@@ -408,7 +408,7 @@ void SW_Water_Flow(void) {
 		x,
 		SW_Sky.cloudcov_daily[doy],
 		SW_Sky.r_humidity_daily[doy],
-		w->now.temp_avg[Today],
+		w->now.temp_avg,
 		&sw->H_oh,
 		&sw->H_ot,
 		&sw->H_gh
@@ -416,7 +416,7 @@ void SW_Water_Flow(void) {
 
 	sw->pet = SW_Site.pet_scale * petfunc(
 		sw->H_gt,
-		w->now.temp_avg[Today],
+		w->now.temp_avg,
 		SW_Site.altitude,
 		x,
 		SW_Sky.r_humidity_daily[doy],
@@ -444,7 +444,7 @@ void SW_Water_Flow(void) {
 	}
 
 	/* Rainfall interception */
-	h2o_for_soil = w->now.rain[Today]; /* ppt is partioned into ppt = snow + rain */
+	h2o_for_soil = w->now.rain; /* ppt is partioned into ppt = snow + rain */
 
   ForEachVegType(k)
   {
@@ -837,13 +837,13 @@ void SW_Water_Flow(void) {
 	// soil_temperature function computes the soil temp for each layer and stores it in lyravgLyrTemp
 	// doesn't affect SWC at all (yet), but needs it for the calculation, so therefore the temperature is the last calculation done
 	if (SW_Site.use_soil_temp) {
-		soil_temperature(w->now.temp_avg[Today], sw->pet, sw->aet, x, lyrSWCBulk,
+		soil_temperature(w->now.temp_avg, sw->pet, sw->aet, x, lyrSWCBulk,
 			lyrSWCBulk_Saturated, lyrbDensity, lyrWidths, lyroldavgLyrTemp, lyravgLyrTemp, surfaceAvg,
 			SW_Site.n_layers, SW_Site.bmLimiter,
 			SW_Site.t1Param1, SW_Site.t1Param2, SW_Site.t1Param3, SW_Site.csParam1,
 			SW_Site.csParam2, SW_Site.shParam, sw->snowdepth, SW_Site.Tsoil_constant,
 			SW_Site.stDeltaX, SW_Site.stMaxDepth, SW_Site.stNRGR, sw->snowpack[Today],
-			&SW_Soilwat.soiltempError, w->now.temp_max[Today], w->now.temp_min[Today],
+			&SW_Soilwat.soiltempError, w->now.temp_max, w->now.temp_min,
             sw->H_gt, sw->maxLyrTemperature, sw->minLyrTemperature, &w->surfaceMax, &w->surfaceMin);
 	}
 

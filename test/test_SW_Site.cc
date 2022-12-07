@@ -537,4 +537,100 @@ namespace {
     Reset_SOILWAT2_after_UnitTest();
   }
 
+
+  // Test bulk and matric soil density functionality
+  TEST(SWSiteTest, SoilDensity) {
+    double
+      soildensity = 1.4,
+      fcoarse = 0.1;
+
+
+    // Check that matric density is zero if coarse fragments is 100%
+    EXPECT_DOUBLE_EQ(
+      calculate_soilMatricDensity(soildensity, 1.),
+      0.
+    );
+
+
+    // Check that bulk and matric soil density are equal if no coarse fragments
+    EXPECT_DOUBLE_EQ(
+      calculate_soilBulkDensity(soildensity, 0.),
+      calculate_soilMatricDensity(soildensity, 0.)
+    );
+
+
+    // Check that bulk and matric density calculations are inverse to each other
+    EXPECT_DOUBLE_EQ(
+      calculate_soilBulkDensity(
+        calculate_soilMatricDensity(soildensity, fcoarse),
+        fcoarse
+      ),
+      soildensity
+    );
+
+    EXPECT_DOUBLE_EQ(
+      calculate_soilMatricDensity(
+        calculate_soilBulkDensity(soildensity, fcoarse),
+        fcoarse
+      ),
+      soildensity
+    );
+
+
+    // Check that bulk density is larger than matric density if coarse fragments
+    EXPECT_GT(
+      calculate_soilBulkDensity(soildensity, fcoarse),
+      soildensity
+    );
+
+
+    // Inputs represent matric density
+    SW_Site.type_soilDensityInput = SW_MATRIC;
+    SW_Site.lyr[0]->fractionVolBulk_gravel = fcoarse;
+    SW_SIT_init_run();
+
+    EXPECT_GT(
+      SW_Site.lyr[0]->soilBulk_density,
+      SW_Site.lyr[0]->soilMatric_density
+    );
+
+
+    // Inputs represent bulk density
+    SW_Site.type_soilDensityInput = SW_BULK;
+    SW_Site.lyr[0]->fractionVolBulk_gravel = fcoarse;
+    SW_SIT_init_run();
+
+    EXPECT_GT(
+      SW_Site.lyr[0]->soilBulk_density,
+      SW_Site.lyr[0]->soilMatric_density
+    );
+
+
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
+  // Test that bulk and matric soil density fail
+  TEST(SWSiteDeathTest, SoilDensity) {
+
+    // Check error if bulk density too low for coarse fragments
+    EXPECT_DEATH_IF_SUPPORTED(
+      calculate_soilMatricDensity(1.65, 0.7),
+      "@ generic.c LogError"
+    );
+
+
+    // Check error if type_soilDensityInput not implemented
+    SW_Site.type_soilDensityInput = SW_MISSING;
+
+    EXPECT_DEATH_IF_SUPPORTED(
+      SW_SIT_init_run(),
+      "@ generic.c LogError"
+    );
+
+
+    // Reset to previous global states
+    Reset_SOILWAT2_after_UnitTest();
+  }
 } // namespace

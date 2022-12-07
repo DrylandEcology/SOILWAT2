@@ -140,52 +140,58 @@ void sw_error(int code, const char *format, ...)
 
 /**************************************************************/
 void LogError(FILE *fp, const int mode, const char *fmt, ...) {
-	/* uses global variable logged to indicate that a log message
-	 * was sent to output, which can be used to inform user, etc.
-	 *
-	 *  9-Dec-03 (cwb) Modified to accept argument list similar
-	 *           to fprintf() so sprintf(errstr...) doesn't need
-	 *           to be called each time replacement args occur.
-	 */
+    /* uses global variable logged to indicate that a log message
+     * was sent to output, which can be used to inform user, etc.
+     *
+     *  9-Dec-03 (cwb) Modified to accept argument list similar
+     *           to fprintf() so sprintf(errstr...) doesn't need
+     *           to be called each time replacement args occur.
+     */
 
-	char outfmt[MAX_ERROR] = {0}; /* to prepend err type str */
-	va_list args;
+    char outfmt[MAX_ERROR] = {0}; /* to prepend err type str */
+    va_list args;
 
-	va_start(args, fmt);
+    va_start(args, fmt);
 
-	if (LOGQUIET & mode)
-		strcpy(outfmt, "");
-	else if (LOGNOTE & mode)
-		strcpy(outfmt, "NOTE: ");
-	else if (LOGWARN & mode)
-		strcpy(outfmt, "WARNING: ");
-	else if (LOGERROR & mode)
-		strcpy(outfmt, "ERROR: ");
+    if (LOGQUIET & mode)
+        strcpy(outfmt, "");
+    else if (LOGNOTE & mode)
+        strcpy(outfmt, "NOTE: ");
+    else if (LOGWARN & mode)
+        strcpy(outfmt, "WARNING: ");
+    else if (LOGERROR & mode)
+        strcpy(outfmt, "ERROR: ");
 
-	strcat(outfmt, fmt);
-	strcat(outfmt, "\n");
+    strcat(outfmt, fmt);
+    strcat(outfmt, "\n");
 
-	#ifdef RSOILWAT
-		if (fp != NULL) {
-			REvprintf(outfmt, args);
-		}
+    #ifdef RSOILWAT
+        char buf[1024];
 
-	#else
-		int check_eof;
-		check_eof = (EOF == vfprintf(fp, outfmt, args));
+        vsnprintf(buf, sizeof buf, outfmt, args);
 
-		if (check_eof)
-			sw_error(0, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
-		fflush(fp);
-	#endif
+        if(LOGEXIT & mode) {
+            error(buf);
+        } else if(fp != NULL) {
+            warning(buf);
+        }
+
+    #else
+        int check_eof;
+        check_eof = (EOF == vfprintf(fp, outfmt, args));
+
+        if (check_eof)
+            sw_error(0, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
+        fflush(fp);
+
+        if (LOGEXIT & mode) {
+            sw_error(-1, "@ generic.c LogError");
+        }
+    #endif
 
 
-	logged = swTRUE;
-	va_end(args);
-
-	if (LOGEXIT & mode) {
-		sw_error(-1, "@ generic.c LogError");
-	}
+    logged = swTRUE;
+    va_end(args);
 }
 
 

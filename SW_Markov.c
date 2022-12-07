@@ -297,6 +297,15 @@ void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 	short debug = 0;
 	#endif
 
+	#ifdef SWDEBUG
+	if (debug) {
+		swprintf(
+			"mkv(before): yr=%u/doy0=%u: ppt=%.3f, tmax=%.3f, tmin=%.3f\n",
+			SW_Model.year, doy0, *rain, *tmax, *tmin
+		);
+	}
+	#endif
+
 	/* Calculate Precipitation:
 		prop = probability that it precipitates today depending on whether it
 			was wet (precipitated) yesterday `wetprob` or
@@ -335,8 +344,10 @@ void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 
 	#ifdef SWDEBUG
 	if (debug) {
-		swprintf("mkv: yr=%d/doy0=%d/week=%d: ppt=%.3f, tmax=%.3f, tmin=%.3f\n",
-			SW_Model.year, doy0, week, *rain, *tmax, *tmin);
+		swprintf(
+			"mkv(after): yr=%u/doy0=%u/week=%u: ppt=%.3f, tmax=%.3f, tmin=%.3f\n",
+			SW_Model.year, doy0, week, *rain, *tmax, *tmin
+		);
 	}
 	#endif
 
@@ -525,14 +536,22 @@ Bool SW_MKV_read_cov(void) {
 void SW_MKV_setup(void) {
   SW_MKV_construct();
 
-  if (!SW_MKV_read_prob()) {
-    LogError(logfp, LOGFATAL, "Markov weather requested but could not open %s",
-      SW_F_name(eMarkovProb));
+  if (!SW_MKV_read_prob() && SW_Weather.generateWeatherMethod == 2) {
+    LogError(
+      logfp,
+      LOGFATAL,
+      "Weather generator requested but could not open %s",
+      SW_F_name(eMarkovProb)
+    );
   }
 
-  if (!SW_MKV_read_cov()) {
-    LogError(logfp, LOGFATAL, "Markov weather requested but could not open %s",
-      SW_F_name(eMarkovCov));
+  if (!SW_MKV_read_cov() && SW_Weather.generateWeatherMethod == 2) {
+    LogError(
+      logfp,
+      LOGFATAL,
+      "Weather generator requested but could not open %s",
+      SW_F_name(eMarkovCov)
+    );
   }
 }
 

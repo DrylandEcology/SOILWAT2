@@ -1620,7 +1620,7 @@ FORMULA_MACROFILE      =
 # The default value is: NO.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-USE_MATHJAX            = NO
+USE_MATHJAX            = YES
 
 # With MATHJAX_VERSION it is possible to specify the MathJax version to be used.
 # Note that the different versions of MathJax have different requirements with
@@ -1666,8 +1666,8 @@ MATHJAX_RELPATH        = http://cdn.mathjax.org/mathjax/latest
 
 # The MATHJAX_EXTENSIONS tag can be used to specify one or more MathJax
 # extension names that should be enabled during MathJax rendering. For example
-# for MathJax version 2 (see https://docs.mathjax.org/en/v2.7-latest/tex.html
-# #tex-and-latex-extensions):
+# for MathJax version 2 (see
+# https://docs.mathjax.org/en/v2.7-latest/tex.html#tex-and-latex-extensions):
 # MATHJAX_EXTENSIONS = TeX/AMSmath TeX/AMSsymbols
 # For example for MathJax version 3 (see
 # http://docs.mathjax.org/en/latest/input/tex/extensions/index.html):

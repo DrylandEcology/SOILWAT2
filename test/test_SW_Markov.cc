@@ -73,7 +73,8 @@ namespace {
       ppt, *ppt0 = new double[n];
 
     // Turn on Markov weather generator
-    SW_Weather.use_weathergenerator = swTRUE;
+    SW_Weather.generateWeatherMethod = 2;
+
 
     //--- Generate some weather values with fixed seed ------
 
