@@ -30,8 +30,9 @@
          means across days within year of mean daily temperature.
        * Years at locations in the southern hemisphere are now adjusted to start
          on July 1 of the previous calendar year.
-       * Variables `Month7th_PPT_mm` and `MinTemp_of2ndMonth_C` are now adjusted
-         for location by hemisphere.
+       * The cheatgrass-related variables, i.e., `Month7th_PPT_mm`,
+         `MeanTemp_ofDriestQuarter_C`, and `MinTemp_of2ndMonth_C`,
+         are now adjusted for location by hemisphere.
 
 * SOILWAT2 gains the ability to estimate fractional land cover
   representing a potential natural vegetation based on climate relationships
