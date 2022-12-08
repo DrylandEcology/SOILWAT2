@@ -96,7 +96,7 @@ RealD
 	@note Code maintenance:
 		- Values must exactly match those provided in `siteparam.in`.
 		- Order must exactly match "indices of `swrc2str`"
-		- See details in section #swrc_pdf
+		- See details in section \ref swrc_pdf
 */
 char const *swrc2str[N_SWRCs] = {
 	"Campbell1974",
@@ -109,7 +109,7 @@ char const *swrc2str[N_SWRCs] = {
 	@note Code maintenance:
 		- Values must exactly match those provided in `siteparam.in`.
 		- Order must exactly match "indices of `pdf2str`"
-		- See details in section #swrc_pdf
+		- See details in section \ref swrc_pdf
 		- `rSOILWAT2` may implemented additional PDFs
 */
 char const *pdf2str[N_PDFs] = {
@@ -913,7 +913,7 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp) {
 	(\cite fredlund1994CGJa, \cite wang2018wrr, \cite rudiyanto2021G).
 
 	Acceptable parameter values are partially based on
-	Table 1 in \cite wang2022wrr.
+	Table 1 in \cite wang2022WRRa.
 
 	@param[in] *swrcp Vector of SWRC parameters
 
