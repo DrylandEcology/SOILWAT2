@@ -96,14 +96,9 @@ typedef struct {
       covers 100% of the simulated surface;
       user input from file `Input/veg.in` */
     biomass[MAX_MONTHS],
-    /** Monthly aboveground biomass after CO2 effects */
-    CO2_biomass[MAX_MONTHS],
     /** Monthly live biomass in percent of aboveground biomass;
       user input from file `Input/veg.in` */
     pct_live[MAX_MONTHS],
-    /** Monthly live biomass in percent of aboveground biomass after
-      CO2 effects */
-    CO2_pct_live[MAX_MONTHS],
     /** Parameter to translate biomass to LAI = 1 [g / m2];
       user input from file `Input/veg.in` */
     lai_conv[MAX_MONTHS];

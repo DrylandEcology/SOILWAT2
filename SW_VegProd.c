@@ -679,6 +679,9 @@ void SW_VPD_new_year(void) {
 	TimeInt doy; /* base1 */
 	int k;
 
+	double
+		biomass_after_CO2[MAX_MONTHS]; /* Monthly biomass after CO2 effects */
+
 
 	// Grab the real year so we can access CO2 data
 	ForEachVegType(k)
@@ -687,19 +690,27 @@ void SW_VPD_new_year(void) {
 		{
 			if (k == SW_TREES)
 			{
-				// CO2 effects on biomass restricted to percent live biomass
-				apply_biomassCO2effect(v->veg[k].CO2_pct_live, v->veg[k].pct_live,
-					v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
+				// CO2 effects on tree biomass restricted to percent live biomass, i.e.,
+				// total tree biomass is constant while live biomass is increasing
+				apply_biomassCO2effect(
+					biomass_after_CO2,
+					v->veg[k].pct_live,
+					v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]
+				);
 
-				interpolate_monthlyValues(v->veg[k].CO2_pct_live, v->veg[k].pct_live_daily);
+				interpolate_monthlyValues(biomass_after_CO2, v->veg[k].pct_live_daily);
 				interpolate_monthlyValues(v->veg[k].biomass, v->veg[k].biomass_daily);
 
 			} else {
-				// CO2 effects on biomass applied to total biomass
-				apply_biomassCO2effect(v->veg[k].CO2_biomass, v->veg[k].biomass,
-					v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
+				// CO2 effects on biomass applied to total biomass, i.e.,
+				// total and live biomass are increasing
+				apply_biomassCO2effect(
+					biomass_after_CO2,
+					v->veg[k].biomass,
+					v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]
+				);
 
-				interpolate_monthlyValues(v->veg[k].CO2_biomass, v->veg[k].biomass_daily);
+				interpolate_monthlyValues(biomass_after_CO2, v->veg[k].biomass_daily);
 				interpolate_monthlyValues(v->veg[k].pct_live, v->veg[k].pct_live_daily);
 			}
 
