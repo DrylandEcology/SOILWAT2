@@ -125,7 +125,7 @@ void SW_WaterBalance_Checks(void)
 
   IntUS i, k;
   int debugi[N_WBCHECKS] = {1, 1, 1, 1, 1, 1, 1, 1, 1}; // print output for each check yes/no
-  char flag[15];
+  char flag[16];
   RealD
     Etotal, Etotalsurf, Etotalint, Eponded, Elitter, Esnow, Esoil = 0., Eveg = 0.,
     Ttotal = 0., Ttotalj[MAX_LAYERS],
@@ -213,7 +213,7 @@ void SW_WaterBalance_Checks(void)
   }
 
   if (debug) {
-    sprintf(flag, "WB (%d-%d)", SW_Model.year, SW_Model.doy);
+    snprintf(flag, sizeof flag, "WB (%d-%d)", SW_Model.year, SW_Model.doy);
   }
 
 
@@ -810,7 +810,7 @@ void _read_swc_hist(TimeInt year) {
 	RealF swc, st_err;
 	char fname[MAX_FILENAMESIZE];
 
-	sprintf(fname, "%s.%4d", v->hist.file_prefix, year);
+	snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", v->hist.file_prefix, year);
 
 	if (!FileExists(fname)) {
 		LogError(logfp, LOGWARN, "Historical SWC file %s not found.", fname);

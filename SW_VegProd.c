@@ -99,7 +99,7 @@ void SW_VPD_read(void) {
             case 1:
                 x = sscanf(inbuf, "%d", &veg_method);
                 if(x != 1) {
-                    sprintf(errstr, "ERROR: invalid record in vegetation type components in %s\n", MyFileName);
+                    snprintf(errstr, MAX_ERROR, "ERROR: invalid record in vegetation type components in %s\n", MyFileName);
                     CloseFile(&f);
                     LogError(logfp, LOGFATAL, errstr);
                 }
@@ -110,7 +110,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS], &help_bareGround);
 				if (x < NVEGTYPES + 1) {
-					sprintf(errstr, "ERROR: invalid record in vegetation type components in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in vegetation type components in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -125,7 +125,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS], &help_bareGround);
 				if (x < NVEGTYPES + 1) {
-					sprintf(errstr, "ERROR: invalid record in albedo values in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in albedo values in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -140,7 +140,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in canopy xinflec in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy xinflec in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -152,7 +152,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in canopy yinflec in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy yinflec in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -164,7 +164,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in canopy range in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy range in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -176,7 +176,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in canopy slope in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy slope in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -188,7 +188,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in canopy height constant option in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy height constant option in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -202,7 +202,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in interception parameter kSmax(veg) in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in interception parameter kSmax(veg) in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -214,7 +214,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in interception parameter kdead(veg) in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in interception parameter kdead(veg) in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -228,7 +228,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in litter interception parameter kSmax(litter) in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in litter interception parameter kSmax(litter) in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -242,7 +242,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in parameter for partitioning of bare-soil evaporation and transpiration in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in parameter for partitioning of bare-soil evaporation and transpiration in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -256,7 +256,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in parameter for Parameter for scaling and limiting bare soil evaporation rate in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in parameter for Parameter for scaling and limiting bare soil evaporation rate in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -270,7 +270,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in shade scale in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade scale in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -282,7 +282,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in shade max dead biomass in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade max dead biomass in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -294,7 +294,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in shade xinflec in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade xinflec in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -306,7 +306,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in shade yinflec in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade yinflec in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -318,7 +318,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in shade range in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade range in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -330,7 +330,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in shade slope in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade slope in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -344,7 +344,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in hydraulic redistribution: flag in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in hydraulic redistribution: flag in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -356,7 +356,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in hydraulic redistribution: maxCondroot in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in hydraulic redistribution: maxCondroot in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -368,7 +368,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in hydraulic redistribution: swpMatric50 in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in hydraulic redistribution: swpMatric50 in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -380,7 +380,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in hydraulic redistribution: shapeCond in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in hydraulic redistribution: shapeCond in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -394,7 +394,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: invalid record in critical soil water potentials: flag in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in critical soil water potentials: flag in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -411,7 +411,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: Not enough arguments for CO2 Biomass Coefficient 1 in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: Not enough arguments for CO2 Biomass Coefficient 1 in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -424,7 +424,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: Not enough arguments for CO2 Biomass Coefficient 2 in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: Not enough arguments for CO2 Biomass Coefficient 2 in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -439,7 +439,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: Not enough arguments for CO2 WUE Coefficient 1 in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: Not enough arguments for CO2 WUE Coefficient 1 in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -452,7 +452,7 @@ void SW_VPD_read(void) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					sprintf(errstr, "ERROR: Not enough arguments for CO2 WUE Coefficient 2 in %s\n", MyFileName);
+					snprintf(errstr, MAX_ERROR, "ERROR: Not enough arguments for CO2 WUE Coefficient 2 in %s\n", MyFileName);
 					CloseFile(&f);
 					LogError(logfp, LOGFATAL, errstr);
 				}
@@ -471,7 +471,7 @@ void SW_VPD_read(void) {
 
 			x = sscanf(inbuf, "%f %f %f %f", &litt, &biom, &pctl, &laic);
 			if (x < NVEGTYPES) {
-				sprintf(errstr, "ERROR: invalid record %d in %s\n", mon + 1, MyFileName);
+				snprintf(errstr, MAX_ERROR, "ERROR: invalid record %d in %s\n", mon + 1, MyFileName);
 				CloseFile(&f);
 				LogError(logfp, LOGFATAL, errstr);
 			}
@@ -506,7 +506,7 @@ void SW_VPD_read(void) {
 	}
 
 	if (mon < Dec) {
-		sprintf(errstr, "No Veg Production values after month %d", mon + 1);
+		snprintf(errstr, MAX_ERROR, "No Veg Production values after month %d", mon + 1);
 		LogError(logfp, LOGWARN, errstr);
 	}
 
@@ -801,25 +801,38 @@ void _echo_VegProd(void) {
 	char outstr[1500];
 	int k;
 
-	sprintf(errstr, "\n==============================================\n"
-		"Vegetation Production Parameters\n\n");
+	snprintf(
+		errstr,
+		MAX_ERROR,
+		"\n==============================================\n"
+		"Vegetation Production Parameters\n\n"
+	);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
 
 	ForEachVegType(k) {
-		sprintf(errstr,
+		snprintf(
+			errstr,
+			MAX_ERROR,
 			"%s component\t= %1.2f\n"
 			"\tAlbedo\t= %1.2f\n"
 			"\tHydraulic redistribution flag\t= %d\n",
 			key2veg[k], v->veg[k].cov.fCover,
 			v->veg[k].cov.albedo,
-			v->veg[k].flagHydraulicRedistribution);
+			v->veg[k].flagHydraulicRedistribution
+		);
 		strcpy(outstr, errstr);
 		LogError(logfp, LOGNOTE, outstr);
 	}
 
-	sprintf(errstr, "Bare Ground component\t= %1.2f\n"
-		"\tAlbedo\t= %1.2f\n", v->bare_cov.fCover, v->bare_cov.albedo);
+	snprintf(
+		errstr,
+		MAX_ERROR,
+		"Bare Ground component\t= %1.2f\n"
+		"\tAlbedo\t= %1.2f\n",
+		v->bare_cov.fCover,
+		v->bare_cov.albedo
+	);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
 }

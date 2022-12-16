@@ -530,7 +530,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
                 s->maxLyrTemperature[i] += v->maxLyrTemperature[i];
             }
 		break;
-            
+
     case eSW_Frozen:
         ForEachSoilLayer(i)
             s->lyrFrozen[i] += v->lyrFrozen[i];
@@ -670,7 +670,7 @@ static void average_for(ObjType otyp, OutPeriod pd) {
                                     s->p_accu[pd]->minLyrTemperature[i] / div;
 				}
 				break;
-            
+
             case eSW_Frozen:
                     ForEachSoilLayer(i) {
                         s->p_oagg[pd]->lyrFrozen[i] = (SW_Output[k].sumtype == eSW_Fnl) ?
@@ -1677,9 +1677,9 @@ void SW_OUT_set_colnames(void) {
             strcat(ctemp, "_");
             strcat(ctemp, cnames_eSW_Temp[i % 3]);
         }
-        
+
         colnames_OUT[eSW_Temp][i] = Str_Dup(ctemp);
-        
+
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Precip' ...");
@@ -1844,20 +1844,20 @@ void SW_OUT_set_colnames(void) {
 	#endif
     j = 0; // Layer variable for the next for-loop, 0 is first layer not surface
     for (i = 0; i < ncol_OUT[eSW_SoilTemp]; i++) {
-        
+
         // Check if ready to go onto next layer (added all min/max/avg headers for layer)
         if(i % 3 == 0 && i > 1) j++;
-        
+
         // For layers 1 through ncol_OUT[eSW_SoilTemp]
         strcpy(ctemp, Layers_names[j]);
-        
+
         strcat(ctemp, "_");
         strcat(ctemp, cnames_eSW_Temp[i % 3]);
-        
+
         colnames_OUT[eSW_SoilTemp][i] = Str_Dup(ctemp);
 
     }
-    
+
     #ifdef SWDEBUG
     if (debug) swprintf(" 'eSW_Frozen' ...");
     #endif
@@ -1881,7 +1881,7 @@ void SW_OUT_set_colnames(void) {
 			colnames_OUT[eSW_CO2Effects][j + i * NVEGTYPES] = Str_Dup(ctemp);
 		}
 	}
-    
+
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Biomass' ...");
 	#endif
@@ -1947,7 +1947,7 @@ void SW_OUT_new_year(void)
 
 
 int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
-	int last, char msg[])
+	int last, char msg[], size_t sizeof_msg)
 {
 	int res = 0; // return value indicating type of message if any
 
@@ -1970,8 +1970,14 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
 	{
 		SW_Output[k].sumtype = eSW_Avg;
 
-		sprintf(msg, "%s : Summary Type FIN with key %s is meaningless.\n" \
-			"  Using type AVG instead.", MyFileName, key2str[k]);
+		snprintf(
+			msg,
+			sizeof_msg,
+			"%s : Summary Type FIN with key %s is meaningless.\n" \
+			"  Using type AVG instead.",
+			MyFileName,
+			key2str[k]
+		);
 		res = LOGWARN;
 	}
 
@@ -1997,8 +2003,13 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
 	{
 		SW_Output[k].use = swFALSE;
 
-		sprintf(msg, "%s : Output key %s is currently unimplemented.",
-			MyFileName, key2str[k]);
+		snprintf(
+			msg,
+			sizeof_msg,
+			"%s : Output key %s is currently unimplemented.",
+			MyFileName,
+			key2str[k]
+		);
 		return(LOGNOTE);
 	}
 
@@ -2007,9 +2018,14 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
 	{
 		SW_Output[k].use = swFALSE;
 
-		sprintf(msg, "%s : DEEPSWC cannot produce output if deep drainage is " \
+		snprintf(
+			msg,
+			sizeof_msg,
+			"%s : DEEPSWC cannot produce output if deep drainage is " \
 			"not simulated (flag not set in %s).",
-			MyFileName, SW_F_name(eSite));
+			MyFileName,
+			SW_F_name(eSite)
+		);
 		return(LOGWARN);
 	}
 
@@ -2019,8 +2035,14 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
 
 	if (SW_Output[k].last_orig == 0)
 	{
-		sprintf(msg, "%s : Invalid ending day (%d), key=%s.",
-			MyFileName, last, key2str[k]);
+		snprintf(
+			msg,
+			sizeof_msg,
+			"%s : Invalid ending day (%d), key=%s.",
+			MyFileName,
+			last,
+			key2str[k]
+		);
 		return(LOGFATAL);
 	}
 
@@ -2159,10 +2181,15 @@ void SW_OUT_read(void)
 		#endif
 
 		// Fill information into `SW_Output[k]`
-		msg_type = SW_OUT_read_onekey(k,
+		msg_type = SW_OUT_read_onekey(
+			k,
 			str2stype(Str_ToUpper(sumtype, upsum)),
-			period, first, !Str_CompareI("END", (char *)last) ? 366 : atoi(last),
-			msg);
+			period,
+			first,
+			!Str_CompareI("END", (char *)last) ? 366 : atoi(last),
+			msg,
+			sizeof msg
+		);
 
 		if (msg_type != 0) {
 			if (msg_type > 0) {
@@ -2477,7 +2504,7 @@ void SW_OUT_write_today(void)
 	{
 		if (use_OutPeriod[p] && writeit[p])
 		{
-			get_outstrleader(p, str_time);
+			get_outstrleader(p, str_time, sizeof str_time);
 
 			if (SW_OutFiles.make_regular[p])
 			{
@@ -2548,9 +2575,9 @@ void _echo_outputs(void)
 		strcat(errstr, key2str[k]);
 		strcat(errstr, "\n\tSummary Type: ");
 		strcat(errstr, styp2str[SW_Output[k].sumtype]);
-		sprintf(str, "\n\tStart period: %d", SW_Output[k].first_orig);
+		snprintf(str, OUTSTRLEN, "\n\tStart period: %d", SW_Output[k].first_orig);
 		strcat(errstr, str);
-		sprintf(str, "\n\tEnd period  : %d", SW_Output[k].last_orig);
+		snprintf(str, OUTSTRLEN, "\n\tEnd period  : %d", SW_Output[k].last_orig);
 		strcat(errstr, str);
 		strcat(errstr, "\n");
 	}

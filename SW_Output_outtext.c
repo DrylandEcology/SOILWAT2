@@ -118,11 +118,15 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil, Boo
 
 			for (i = 0; i < ncol_OUT[k]; i++) {
 				if (does_agg) {
-						sprintf(str_help1, "%c%s_%s_Mean%c%s_%s_SD",
-							_Sep, key, colnames_OUT[k][i], _Sep, key, colnames_OUT[k][i]);
+						snprintf(
+							str_help1,
+							sizeof str_help1,
+							"%c%s_%s_Mean%c%s_%s_SD",
+							_Sep, key, colnames_OUT[k][i], _Sep, key, colnames_OUT[k][i]
+						);
 						strcat(str_help2, str_help1);
 				} else {
-					sprintf(str_help1, "%c%s_%s", _Sep, key, colnames_OUT[k][i]);
+					snprintf(str_help1, sizeof str_help1, "%c%s_%s", _Sep, key, colnames_OUT[k][i]);
 					strcat(str_help2, str_help1);
 				}
 			}
@@ -162,22 +166,22 @@ static void _create_csv_files(OutPeriod pd)
 #endif
 
 
-static void get_outstrheader(OutPeriod pd, char *str) {
+static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
 	switch (pd) {
 		case eSW_Day:
-			sprintf(str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Day]);
+			snprintf(str, sizeof_str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Day]);
 			break;
 
 		case eSW_Week:
-			sprintf(str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Week]);
+			snprintf(str, sizeof_str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Week]);
 			break;
 
 		case eSW_Month:
-			sprintf(str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Month]);
+			snprintf(str, sizeof_str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Month]);
 			break;
 
 		case eSW_Year:
-			sprintf(str, "%s", "Year");
+			snprintf(str, sizeof_str, "%s", "Year");
 			break;
 	}
 }
@@ -190,7 +194,7 @@ static void get_outstrheader(OutPeriod pd, char *str) {
 
 		\return `name_flagiteration.ext`
 */
-static void _create_filename_ST(char *str, char *flag, int iteration, char *filename) {
+static void _create_filename_ST(char *str, char *flag, int iteration, char *filename, size_t sizeof_filename) {
 	char *basename;
 	char *ext;
 	char *fileDup = (char *)malloc(strlen(str) + 1);
@@ -202,9 +206,9 @@ static void _create_filename_ST(char *str, char *flag, int iteration, char *file
 
 	// Put new file together
 	if (iteration > 0) {
-		sprintf(filename, "%s_%s%d.%s", basename, flag, iteration, ext);
+		snprintf(filename, sizeof_filename, "%s_%s%d.%s", basename, flag, iteration, ext);
 	} else {
-		sprintf(filename, "%s_%s.%s", basename, flag, ext);
+		snprintf(filename, sizeof_filename, "%s_%s.%s", basename, flag, ext);
 	}
 
 	free(fileDup);
@@ -236,12 +240,12 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd)
 			// a specific order of `SW_FileIndex` --> fix and create something that
 			// allows subsetting such as `eOutputFile[pd]` or append time period to
 			// a basename, etc.
-			_create_filename_ST(SW_F_name(eOutputDaily + pd), "agg", 0, filename);
+			_create_filename_ST(SW_F_name(eOutputDaily + pd), "agg", 0, filename, FILENAME_MAX);
 			SW_OutFiles.fp_reg_agg[pd] = OpenFile(filename, "w");
 		}
 
 		if (SW_OutFiles.make_soil[pd]) {
-			_create_filename_ST(SW_F_name(eOutputDaily_soil + pd), "agg", 0, filename);
+			_create_filename_ST(SW_F_name(eOutputDaily_soil + pd), "agg", 0, filename, FILENAME_MAX);
 			SW_OutFiles.fp_soil_agg[pd] = OpenFile(filename, "w");
 		}
 
@@ -258,12 +262,12 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd)
 		}
 
 		if (SW_OutFiles.make_regular[pd]) {
-			_create_filename_ST(SW_F_name(eOutputDaily + pd), "rep", iteration, filename);
+			_create_filename_ST(SW_F_name(eOutputDaily + pd), "rep", iteration, filename, FILENAME_MAX);
 			SW_OutFiles.fp_reg[pd] = OpenFile(filename, "w");
 		}
 
 		if (SW_OutFiles.make_soil[pd]) {
-			_create_filename_ST(SW_F_name(eOutputDaily_soil + pd), "rep", iteration, filename);
+			_create_filename_ST(SW_F_name(eOutputDaily_soil + pd), "rep", iteration, filename, FILENAME_MAX);
 			SW_OutFiles.fp_soil[pd] = OpenFile(filename, "w");
 		}
 	}
@@ -336,24 +340,24 @@ void SW_OUT_create_iteration_files(int iteration) {
 		Also, see note on test value in _write_today() for
 		explanation of the +1.
 */
-void get_outstrleader(OutPeriod pd, char *str) {
+void get_outstrleader(OutPeriod pd, char *str, size_t sizeof_str) {
 	switch (pd) {
 		case eSW_Day:
-			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep, SW_Model.doy);
+			snprintf(str, sizeof_str, "%d%c%d", SW_Model.simyear, _Sep, SW_Model.doy);
 			break;
 
 		case eSW_Week:
-			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep,
+			snprintf(str, sizeof_str, "%d%c%d", SW_Model.simyear, _Sep,
 				(SW_Model.week + 1) - tOffset);
 			break;
 
 		case eSW_Month:
-			sprintf(str, "%d%c%d", SW_Model.simyear, _Sep,
+			snprintf(str, sizeof_str, "%d%c%d", SW_Model.simyear, _Sep,
 				(SW_Model.month + 1) - tOffset);
 			break;
 
 		case eSW_Year:
-			sprintf(str, "%d", SW_Model.simyear);
+			snprintf(str, sizeof_str, "%d", SW_Model.simyear);
 			break;
 	}
 }
@@ -386,7 +390,7 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_a
 		header_soil[SW_Site.n_layers * OUTSTRLEN];
 
 	// Acquire headers
-	get_outstrheader(pd, str_time);
+	get_outstrheader(pd, str_time, sizeof str_time);
 	_create_csv_headers(pd, header_reg, header_soil, does_agg);
 
 	// Write headers to files

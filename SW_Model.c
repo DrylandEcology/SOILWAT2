@@ -194,7 +194,7 @@ void SW_MDL_read(void) {
 	}
 
 	if (!(fstartdy && fenddy && fhemi)) {
-		sprintf(errstr, "\nNot found in %s:\n", MyFileName);
+		snprintf(errstr, MAX_ERROR, "\nNot found in %s:\n", MyFileName);
 		if (!fstartdy) {
 			strcat(errstr, "\tStart Day  - using 1\n");
 			m->startstart = 1;

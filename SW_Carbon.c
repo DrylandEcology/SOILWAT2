@@ -142,8 +142,9 @@ void SW_CBN_read(void)
     if (year < 0)
     {
       CloseFile(&f);
-      sprintf(
+      snprintf(
         errstr,
+        MAX_ERROR,
         "(SW_Carbon) Year %d in scenario '%.64s' is negative; "
         "only positive values are allowed.\n",
         year,
@@ -166,8 +167,9 @@ void SW_CBN_read(void)
     if (existing_years[year] != 0)
     {
       CloseFile(&f);
-      sprintf(
+      snprintf(
         errstr,
+        MAX_ERROR,
         "(SW_Carbon) Year %d in scenario '%.64s' is entered more than once; "
         "only one entry is allowed.\n",
         year,
@@ -187,8 +189,9 @@ void SW_CBN_read(void)
   // otherwise the empty file will be masked as not being able to find the scenario
   if (fileWasEmpty == 1)
   {
-    sprintf(
+    snprintf(
       errstr,
+      MAX_ERROR,
       "(SW_Carbon) carbon.in was empty; "
       "for debugging purposes, SOILWAT2 read in file '%s'\n",
       MyFileName
@@ -198,8 +201,9 @@ void SW_CBN_read(void)
 
   if (EQ(ppm, -1.))  // A scenario must be found in order for ppm to have a positive value
   {
-    sprintf(
+    snprintf(
       errstr,
+      MAX_ERROR,
       "(SW_Carbon) The scenario '%.64s' was not found in carbon.in\n",
       c->scenario
     );
@@ -211,8 +215,9 @@ void SW_CBN_read(void)
   {
     if (existing_years[year] == 0)
     {
-      sprintf(
+      snprintf(
         errstr,
+        MAX_ERROR,
         "(SW_Carbon) missing CO2 data for year %d; "
         "ensure that ppm values for this year exist in scenario '%.64s'\n",
         year,
@@ -257,8 +262,9 @@ void SW_CBN_init_run(void) {
 
     if (LT(ppm, 0.))  // CO2 concentration must not be negative values
     {
-      sprintf(
+      snprintf(
         errstr,
+        MAX_ERROR,
         "(SW_Carbon) No CO2 ppm data was provided for year %d\n",
         year
       );

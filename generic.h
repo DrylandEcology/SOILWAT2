@@ -249,7 +249,7 @@ double standardDeviation(double inputArray[], int length);
 #ifdef DEBUG
 extern errstr[];
 #define LogError(fp, m, fmt, p1, p2, p3, p4, p5, p6, p7, p8, p9) \
-          sprintf(errstr, fmt, p1, p2, p3, p4, p5, p6, p7, p8, p9); \
+          snprintf(errstr, MAX_ERROR, fmt, p1, p2, p3, p4, p5, p6, p7, p8, p9); \
           LogError(fp, m, errstr);
 #endif
 
