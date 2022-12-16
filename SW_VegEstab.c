@@ -506,42 +506,55 @@ void _echo_VegEstab(void) {
 	IntU i;
 	char outstr[2048];
 
-	sprintf(errstr, "\n=========================================================\n\n"
-			"Parameters for the SoilWat Vegetation Establishment Check.\n"
-			"----------------------------------------------------------\n"
-			"Number of species to be tested: %d\n", SW_VegEstab.count);
+	snprintf(
+		errstr,
+		MAX_ERROR,
+		"\n=========================================================\n\n"
+		"Parameters for the SoilWat Vegetation Establishment Check.\n"
+		"----------------------------------------------------------\n"
+		"Number of species to be tested: %d\n",
+		SW_VegEstab.count
+	);
 
 	strcpy(outstr, errstr);
 	for (i = 0; i < SW_VegEstab.count; i++) {
-		sprintf(errstr, "Species: %s\n----------------\n"
-				"Germination parameters:\n"
-				"\tMinimum SWP (bars)  : -%.4f\n"
-				"\tMinimum SWC (cm/cm) : %.4f\n"
-				"\tMinimum SWC (cm/lyr): %.4f\n"
-				"\tMinimum temperature : %.1f\n"
-				"\tMaximum temperature : %.1f\n"
-				"\tFirst possible day  : %d\n"
-				"\tLast  possible day  : %d\n"
-				"\tMinimum consecutive wet days (after first possible day): %d\n",
-				v[i]->sppname, v[i]->bars[SW_GERM_BARS], v[i]->min_swc_germ / lyr[0]->width,
-				v[i]->min_swc_germ, v[i]->min_temp_germ, v[i]->max_temp_germ,
-				v[i]->min_pregerm_days, v[i]->max_pregerm_days, v[i]->min_wetdays_for_germ);
+		snprintf(
+			errstr,
+			MAX_ERROR,
+			"Species: %s\n----------------\n"
+			"Germination parameters:\n"
+			"\tMinimum SWP (bars)  : -%.4f\n"
+			"\tMinimum SWC (cm/cm) : %.4f\n"
+			"\tMinimum SWC (cm/lyr): %.4f\n"
+			"\tMinimum temperature : %.1f\n"
+			"\tMaximum temperature : %.1f\n"
+			"\tFirst possible day  : %d\n"
+			"\tLast  possible day  : %d\n"
+			"\tMinimum consecutive wet days (after first possible day): %d\n",
+			v[i]->sppname, v[i]->bars[SW_GERM_BARS], v[i]->min_swc_germ / lyr[0]->width,
+			v[i]->min_swc_germ, v[i]->min_temp_germ, v[i]->max_temp_germ,
+			v[i]->min_pregerm_days, v[i]->max_pregerm_days, v[i]->min_wetdays_for_germ
+		);
 
-		sprintf(errstr, "Establishment parameters:\n"
-				"\tNumber of layers affecting successful establishment: %d\n"
-				"\tMinimum SWP (bars) : -%.4f\n"
-				"\tMinimum SWC (cm/layer) averaged across top %d layers: %.4f\n"
-				"\tMinimum temperature : %.1f\n"
-				"\tMaximum temperature : %.1f\n"
-				"\tMinimum number of days after germination      : %d\n"
-				"\tMaximum number of days after germination      : %d\n"
-				"\tMinimum consecutive wet days after germination: %d\n"
-				"\tMaximum consecutive dry days after germination: %d\n"
-				"---------------------------------------------------------------\n\n",
-				v[i]->estab_lyrs, v[i]->bars[SW_ESTAB_BARS], v[i]->estab_lyrs,
-				v[i]->min_swc_estab, v[i]->min_temp_estab, v[i]->max_temp_estab,
-				v[i]->min_days_germ2estab, v[i]->max_days_germ2estab, v[i]->min_wetdays_for_estab,
-				v[i]->max_drydays_postgerm);
+		snprintf(
+			errstr,
+			MAX_ERROR,
+			"Establishment parameters:\n"
+			"\tNumber of layers affecting successful establishment: %d\n"
+			"\tMinimum SWP (bars) : -%.4f\n"
+			"\tMinimum SWC (cm/layer) averaged across top %d layers: %.4f\n"
+			"\tMinimum temperature : %.1f\n"
+			"\tMaximum temperature : %.1f\n"
+			"\tMinimum number of days after germination      : %d\n"
+			"\tMaximum number of days after germination      : %d\n"
+			"\tMinimum consecutive wet days after germination: %d\n"
+			"\tMaximum consecutive dry days after germination: %d\n"
+			"---------------------------------------------------------------\n\n",
+			v[i]->estab_lyrs, v[i]->bars[SW_ESTAB_BARS], v[i]->estab_lyrs,
+			v[i]->min_swc_estab, v[i]->min_temp_estab, v[i]->max_temp_estab,
+			v[i]->min_days_germ2estab, v[i]->max_days_germ2estab, v[i]->min_wetdays_for_estab,
+			v[i]->max_drydays_postgerm
+		);
 
 		strcat(outstr, errstr);
 	}

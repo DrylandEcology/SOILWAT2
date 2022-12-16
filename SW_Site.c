@@ -1220,7 +1220,7 @@ RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel) {
 
   The count stops at first layer with 0.
 */
-LyrIndex nlayers_bsevap() {
+LyrIndex nlayers_bsevap(void) {
 	SW_SITE *v = &SW_Site;
 	LyrIndex s, n = 0;
 

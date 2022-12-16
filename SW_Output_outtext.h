@@ -70,7 +70,7 @@ void SW_OUT_create_summary_files(void);
 void SW_OUT_create_iteration_files(int iteration);
 #endif
 
-void get_outstrleader(OutPeriod pd, char *str);
+void get_outstrleader(OutPeriod pd, char *str, size_t sizeof_str);
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_agg);
 void find_TXToutputSoilReg_inUse(void);
 void SW_OUT_close_files(void);

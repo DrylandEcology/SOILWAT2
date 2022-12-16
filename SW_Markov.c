@@ -382,8 +382,13 @@ Bool SW_MKV_read_prob(void) {
 		// Check that text file is ok:
 		if (x < nitems) {
 			msg_type = LOGFATAL;
-			sprintf(msg, "Too few values in line %d of file %s\n",
-				lineno, MyFileName);
+			snprintf(
+				msg,
+				sizeof msg,
+				"Too few values in line %d of file %s\n",
+				lineno,
+				MyFileName
+			);
 		}
 
 		// Check that input values meet requirements:
@@ -392,8 +397,14 @@ Bool SW_MKV_read_prob(void) {
 		if (!isfinite((float) day) || day < 1 || day > MAX_DAYS)
 		{
 			msg_type = LOGFATAL;
-			sprintf(msg, "'day' = %d is out of range in line %d of file %s\n",
-				day, lineno, MyFileName);
+			snprintf(
+				msg,
+				sizeof msg,
+				"'day' = %d is out of range in line %d of file %s\n",
+				day,
+				lineno,
+				MyFileName
+			);
 		}
 
 		// Probabilities are in [0, 1]
@@ -401,18 +412,32 @@ Bool SW_MKV_read_prob(void) {
 				!isfinite(dry) || LT(dry, 0.) || GT(dry, 1.))
 		{
 			msg_type = LOGFATAL;
-			sprintf(msg, "Probabilities of being wet = %f and/or of being dry = %f "\
+			snprintf(
+				msg,
+				sizeof msg,
+				"Probabilities of being wet = %f and/or of being dry = %f "\
 				"are out of range in line %d of file %s\n",
-				wet, dry, lineno, MyFileName);
+				wet,
+				dry,
+				lineno,
+				MyFileName
+			);
 		}
 
 		// Mean and SD of daily precipitation are >= 0
 		if (!isfinite(avg) || LT(avg, 0.) || !isfinite(std) || LT(std, 0.))
 		{
 			msg_type = LOGFATAL;
-			sprintf(msg, "Mean daily precipitation = %f and/or SD = %f "\
+			snprintf(
+				msg,
+				sizeof msg,
+				"Mean daily precipitation = %f and/or SD = %f "\
 				"are out of range in line %d of file %s\n",
-				avg, std, lineno, MyFileName);
+				avg,
+				std,
+				lineno,
+				MyFileName
+			);
 		}
 
 		// If any input is bad, then close file and fail with message:
@@ -465,34 +490,61 @@ Bool SW_MKV_read_cov(void) {
 		// Check that text file is ok:
 		if (x < nitems) {
 			msg_type = LOGFATAL;
-			sprintf(msg, "Too few values in line %d of file %s\n",
-				lineno, MyFileName);
+			snprintf(
+				msg,
+				sizeof msg,
+				"Too few values in line %d of file %s\n",
+				lineno,
+				MyFileName
+			);
 		}
 
 		// week is a real calendar week
 		if (!isfinite((float) week) || week < 1 || week > MAX_WEEKS)
 		{
 			msg_type = LOGFATAL;
-			sprintf(msg, "'week' = %d is out of range in line %d of file %s\n",
-				week, lineno, MyFileName);
+			snprintf(
+				msg,
+				sizeof msg,
+				"'week' = %d is out of range in line %d of file %s\n",
+				week,
+				lineno,
+				MyFileName
+			);
 		}
 
 		// Mean weekly temperature values are real numbers
 		if (!isfinite(t1) || !isfinite(t2))
 		{
 			msg_type = LOGFATAL;
-			sprintf(msg, "Mean weekly temperature (max = %f and/or min = %f) "\
+			snprintf(
+				msg,
+				sizeof msg,
+				"Mean weekly temperature (max = %f and/or min = %f) "\
 				"are not real numbers in line %d of file %s\n",
-				t1, t2, lineno, MyFileName);
+				t1,
+				t2,
+				lineno,
+				MyFileName
+			);
 		}
 
 		// Covariance values are finite
 		if (!isfinite(t3) || !isfinite(t4) || !isfinite(t5) || !isfinite(t6))
 		{
 			msg_type = LOGFATAL;
-			sprintf(msg, "One of the covariance values is not a real number "\
+			snprintf(
+				msg,
+				sizeof msg,
+				"One of the covariance values is not a real number "\
 				"(t3 = %f; t4 = %f; t5 = %f; t6 = %f) in line %d of file %s\n",
-				t3, t4, t5, t6, lineno, MyFileName);
+				t3,
+				t4,
+				t5,
+				t6,
+				lineno,
+				MyFileName
+			);
 		}
 
 		// Correction factors are real numbers
@@ -500,9 +552,18 @@ Bool SW_MKV_read_cov(void) {
 				!isfinite(cfnw) || !isfinite(cfnd))
 		{
 			msg_type = LOGFATAL;
-			sprintf(msg, "One of the correction factor is not a real number "\
+			snprintf(
+				msg,
+				sizeof msg,
+				"One of the correction factor is not a real number "\
 				"(cfxw = %f; cfxd = %f; cfnw = %f; cfnd = %f) in line %d of file %s\n",
-				cfxw, cfxd, cfnw, cfnd, lineno, MyFileName);
+				cfxw,
+				cfxd,
+				cfnw,
+				cfnd,
+				lineno,
+				MyFileName
+			);
 		}
 
 		// If any input is bad, then close file and fail with message:

@@ -74,7 +74,7 @@ static char *MyFileName;
 
 /**
  @brief Takes averages through the number of years of the calculated values from calc_SiteClimate
- 
+
  @param[in] climateOutput Structure of type SW_CLIMATE_YEARLY that holds all output from `calcSiteClimate()`
  like monthly/yearly temperature and precipitation values
  @param[in] numYears Number of years represented within simulation
@@ -84,7 +84,7 @@ static char *MyFileName;
 
 void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
                                SW_CLIMATE_CLIM *climateAverages) {
-    
+
     int month;
 
     // Take long-term average of monthly mean, maximum and minimum temperature
@@ -106,12 +106,12 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
     climateAverages->ddAbove65F_degday = mean(climateOutput->ddAbove65F_degday, numYears);
     climateAverages->frostFree_days = mean(climateOutput->frostFree_days, numYears);
     climateAverages->minTemp7thMon_C = mean(climateOutput->minTemp7thMon_C, numYears);
-    
+
     // Calculate and set standard deviation of C4 variables
     climateAverages->sdC4[0] = standardDeviation(climateOutput->minTemp7thMon_C, numYears);
     climateAverages->sdC4[1] = standardDeviation(climateOutput->frostFree_days, numYears);
     climateAverages->sdC4[2] = standardDeviation(climateOutput->ddAbove65F_degday, numYears);
-    
+
     // Calculate and set the standard deviation of cheatgrass variables
     climateAverages->sdCheatgrass[0] = standardDeviation(climateOutput->PPT7thMon_mm, numYears);
     climateAverages->sdCheatgrass[1] = standardDeviation(climateOutput->meanTempDriestQtr_C, numYears);
@@ -140,7 +140,7 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
  | 1982 | 1982 | 1982 Jan 1 | 1982 Dec 31 | 1982 | 1981 July 1 | 1982 June 30 |
  |    ...    |   ...   |        ...         |           ...        |    ...   |       ...           |         ...           |
  | 2020 | 2020 | 2020 Jan 1 | 2020 Dec 31 | 2020 | 2020 July 1 | 2021 June 30 |
- 
+
  @param[in] allHist Array containing all historical data of a site
  @param[in] numYears Number of years represented within simulation
  @param[in] startYear Calendar year corresponding to first year of `allHist`
@@ -155,7 +155,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     int month, yearIndex, year, day, numDaysYear, currMonDay;
     int numDaysMonth, adjustedDoy, adjustedYear = 0, secondMonth, seventhMonth,
     adjustedStartYear, calendarYearDays;
-    
+
     double currentTempMin, currentTempMean, totalAbove65, current7thMonMin, PPT7thMon,
     consecNonFrost, currentNonFrost;
 
@@ -285,13 +285,13 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                 // Add to total above 65ºF if high enough temperature
                 totalAbove65 += (currentTempMean > 0.0) ? currentTempMean : 0.0;
             }
-            
+
         }
         // Set all values
         climateOutput->minTemp7thMon_C[yearIndex] = current7thMonMin;
         climateOutput->PPT7thMon_mm[yearIndex] = PPT7thMon;
         climateOutput->ddAbove65F_degday[yearIndex] = totalAbove65;
-        
+
         // The reason behind checking if consecNonFrost is greater than zero,
         // is that there is a chance all days in the year are above 32F
         climateOutput->frostFree_days[yearIndex] = (consecNonFrost > 0) ? consecNonFrost : currentNonFrost;
@@ -349,7 +349,7 @@ void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int s
 
 /**
  @brief Helper function to `calcSiteClimate()` to find the average temperature during the driest quarter of the year
- 
+
  @param[in] numYears Number of years represented within simulation
  @param[in] inNorthHem Boolean value specifying if site is in northern hemisphere
  @param[out] meanTempDriestQtr_C Array of size numYears holding the average temperature of the
@@ -361,7 +361,7 @@ void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int s
  */
 void findDriestQtr(int numYears, Bool inNorthHem, double *meanTempDriestQtr_C,
                    double **meanTempMon_C, double **PPTMon_cm) {
-    
+
     int yearIndex, month, prevMonth, nextMonth, adjustedMonth = 0,
     numQuarterMonths = 3, endNumYears = (inNorthHem) ? numYears : numYears - 1;
 
@@ -372,7 +372,7 @@ void findDriestQtr(int numYears, Bool inNorthHem, double *meanTempDriestQtr_C,
     int adjustedYearZero = 0, adjustedYearOne = 0, adjustedYearTwo = 0;
 
     double driestThreeMonPPT, driestMeanTemp, currentQtrPPT, currentQtrTemp;
-    
+
     for(yearIndex = 0; yearIndex < endNumYears; yearIndex++) {
         driestThreeMonPPT = SW_MISSING;
         driestMeanTemp = SW_MISSING;
@@ -407,11 +407,11 @@ void findDriestQtr(int numYears, Bool inNorthHem, double *meanTempDriestQtr_C,
                 driestMeanTemp = currentQtrTemp;
                 driestThreeMonPPT = currentQtrPPT;
             }
-            
+
         }
-        
+
         meanTempDriestQtr_C[yearIndex] = driestMeanTemp / numQuarterMonths;
-        
+
     }
 
     if(!inNorthHem) meanTempDriestQtr_C[numYears - 1] = SW_MISSING;
@@ -1154,7 +1154,7 @@ void _read_weather_hist(
 	char fname[MAX_FILENAMESIZE];
 
   // Create file name: `[weather-file prefix].[year]`
-	sprintf(fname, "%s.%4d", weather_prefix, year);
+	snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", weather_prefix, year);
 
 	if (NULL == (f = fopen(fname, "r")))
 		return;
