@@ -1,6 +1,21 @@
 # NEWS
 
 # SOILWAT2 v7.0.0-9000
+* This version produces nearly identical simulation output
+  as the previous release under default values for the new inputs.
+  Small deviations arise due to a fix in the handling of soil moisture values
+  when between field capacity and saturation.
+
+* Multiple soil water release curves (`SWRC`) are now implemented and can be
+  selected with new input `swrc_name`. Implemented `SWRCs` currently include
+  `"Campbell1974"`, `"vanGenuchten1980"`, and `"FXW"`. New input `has_swrcp`
+  determines if parameters for a `SWRC` are estimated at run-time via an
+  implemented pedotransfer function (`PDF`) based on new input `pdf_name` or
+  if they are provided as inputs via new input file `"swrc_params.in"`.
+  `rSOILWAT2` implements additional pedotransfer functions. See documentation
+  entry of `"swrc_pdf"` for additional details and for guidance on how to
+  implement additional `SWRCs` and `PDFs` (issue #315; @dschlaep).
+
 * Soil density inputs can now represent either matric or bulk density
   (issue #280; @dschlaep).
     * Automatic conversion between matric and bulk density as needed
@@ -56,6 +71,15 @@
 
 
 ## Changes to inputs
+* New inputs via `"siteparam.in"` select a soil water release curve `swrc_name`
+  and determine parameter source `has_swrcp`, i.e.,
+  either estimated via selected pedotransfer function `pdf_name` or
+  values obtained from new input file `"swrc_params.in"`.
+  Default values `"Campbell1974"`, `"Cosby1984AndOthers"`, and 0
+  (i.e., use `PDF` to estimate paramaters) reproduce previous behavior.
+* New input file `"swrc_params.in"` to provide parameters of the selected
+  soil water release curve (if not estimated via a pedotransfer function)
+  for each soil layer.
 * SOILWAT2 gains `type_soilDensityInput` as new user input (`siteparam.in`)
   with default value 0 (i.e., matric soil density)
   that reproduces previous behavior.
