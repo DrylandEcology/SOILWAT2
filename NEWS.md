@@ -10,11 +10,11 @@
   selected with new input `swrc_name`. Implemented `SWRCs` currently include
   `"Campbell1974"`, `"vanGenuchten1980"`, and `"FXW"`. New input `has_swrcp`
   determines if parameters for a `SWRC` are estimated at run-time via an
-  implemented pedotransfer function (`PDF`) based on new input `pdf_name` or
+  implemented pedotransfer function (`PTF`) based on new input `ptf_name` or
   if they are provided as inputs via new input file `"swrc_params.in"`.
   `rSOILWAT2` implements additional pedotransfer functions. See documentation
-  entry of `"swrc_pdf"` for additional details and for guidance on how to
-  implement additional `SWRCs` and `PDFs` (issue #315; @dschlaep).
+  entry of `"swrc_ptf"` for additional details and for guidance on how to
+  implement additional `SWRCs` and `PTFs` (issue #315; @dschlaep).
 
 * Soil density inputs can now represent either matric or bulk density
   (issue #280; @dschlaep).
@@ -73,10 +73,10 @@
 ## Changes to inputs
 * New inputs via `"siteparam.in"` select a soil water release curve `swrc_name`
   and determine parameter source `has_swrcp`, i.e.,
-  either estimated via selected pedotransfer function `pdf_name` or
+  either estimated via selected pedotransfer function `ptf_name` or
   values obtained from new input file `"swrc_params.in"`.
   Default values `"Campbell1974"`, `"Cosby1984AndOthers"`, and 0
-  (i.e., use `PDF` to estimate paramaters) reproduce previous behavior.
+  (i.e., use `PTF` to estimate paramaters) reproduce previous behavior.
 * New input file `"swrc_params.in"` to provide parameters of the selected
   soil water release curve (if not estimated via a pedotransfer function)
   for each soil layer.

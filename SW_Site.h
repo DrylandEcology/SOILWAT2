@@ -58,58 +58,58 @@ extern "C" {
 
 
 /**
-  @defgroup swrc_pdf Soil Water Retention Curves
+  @defgroup swrc_ptf Soil Water Retention Curves
 
-  __Soil Water Retention Curves (SWRCs) -- Pedotransfer functions (PDFs)__
+  __Soil Water Retention Curves (SWRCs) -- Pedotransfer functions (PTFs)__
 
   __Overview__
 
   Historically (before v7.0.0), `SOILWAT2` utilized a hard-coded SWRC
   by Campbell 1974 (\cite Campbell1974) and estimated SWRC parameters at
-  run-time from soil texture using PDFs by Cosby et al. 1984 (\cite Cosby1984).
+  run-time from soil texture using PTFs by Cosby et al. 1984 (\cite Cosby1984).
   This behavior can be reproduced with "Campbell1974" and "Cosby1984AndOthers"
   (see input file `siteparam.in`).
 
   Now, users of `SOILWAT2` can choose from a range of implemented SWRCs
   (see input file `siteparam.in`);
   SWRC parameters can be estimated at run-time from soil properties by
-  selecting a matching PDF (see input file `siteparam.in`) or,
+  selecting a matching PTF (see input file `siteparam.in`) or,
   alternatively (`has_swrcp`), provide adequate SWRC parameter values
   (see input file `swrc_params.in`).
-  Please note that `rSOILWAT2` may provide additional PDF functionality.
+  Please note that `rSOILWAT2` may provide additional PTF functionality.
 
 
   __Approach__
 
-  -# User selections of SWRC and PDF are read in from input file `siteparam.in`
+  -# User selections of SWRC and PTF are read in from input file `siteparam.in`
     by `SW_SIT_read()` and, if `has_swrcp`, SWRC parameters are read from
     input file `swrc_params.in` by `SW_SWRC_read()`.
 
   -# `SW_SIT_init_run()`
     - if not `has_swrcp`
-      - calls `check_SWRC_vs_PDF()` to check that selected SWRC and PDF are
+      - calls `check_SWRC_vs_PTF()` to check that selected SWRC and PTF are
         compatible
-      - calls `SWRC_PDF_estimate_parameters()` to estimate
-        SWRC parameter values from soil properties based on selected PDF
+      - calls `SWRC_PTF_estimate_parameters()` to estimate
+        SWRC parameter values from soil properties based on selected PTF
     - calls `SWRC_check_parameters()` to check that SWRC parameter values
       are resonable for the selected SWRC.
 
   -# `SW_SWRC_SWCtoSWP()` and `SW_SWRC_SWPtoSWC()` are used during simulation
     runs to convert between soil water content and soil water potential.
 
-  -# These high-level "wrapper" functions hide details of any specific SWRC/PDF
+  -# These high-level "wrapper" functions hide details of any specific SWRC/PTF
     implementations and are used by SOILWAT2 simulation code.
-    Thus, most of SOILWAT2 is "unaware" about the selected SWRC/PDF
+    Thus, most of SOILWAT2 is "unaware" about the selected SWRC/PTF
     and how to interpret SWRC parameters. Instead, these "wrapper" functions
-    know how to call the appropriate SWRC and/or PDF specific functions
-    which implement SWRC and/or PDF specific details.
+    know how to call the appropriate SWRC and/or PTF specific functions
+    which implement SWRC and/or PTF specific details.
 
 
-  __Steps to implement a new SWRC "XXX" and corresponding PDF "YYY"__
+  __Steps to implement a new SWRC "XXX" and corresponding PTF "YYY"__
 
-  -# Update #N_SWRCs and #N_PDFs
+  -# Update #N_SWRCs and #N_PTFs
 
-  -# Add new names to #swrc2str and #pdf2str and
+  -# Add new names to #swrc2str and #ptf2str and
      add corresponding macros of indices
 
   -# Update input files `siteparam.in` and `swrc_params.in`
@@ -117,8 +117,8 @@ extern "C" {
   -# Implement new XXX/YYY-specific functions
     - `SWRC_check_parameters_for_XXX()` to validate parameter values,
       e.g., `SWRC_check_parameters_for_Campbell1974()`
-    - `SWRC_PDF_YYY_for_XXX()` to estimate parameter values (if implemented),
-      e.g., `SWRC_PDF_Cosby1984_for_Campbell1974()`
+    - `SWRC_PTF_YYY_for_XXX()` to estimate parameter values (if implemented),
+      e.g., `SWRC_PTF_Cosby1984_for_Campbell1974()`
     - `SWRC_SWCtoSWP_XXX()` to translate moisture content to water potential,
       e.g., `SWRC_SWCtoSWP_Campbell1974()`
     - `SWRC_SWPtoSWC_XXX()` to translate water potential to moisture content,
@@ -126,8 +126,8 @@ extern "C" {
 
   -# Update "wrapper" functions that select and call XXX/YYY-specific functions
     and/or parameters
-    - `check_SWRC_vs_PDF()`
-    - `SWRC_PDF_estimate_parameters()` (if PDF is implemented)
+    - `check_SWRC_vs_PTF()`
+    - `SWRC_PTF_estimate_parameters()` (if PTF is implemented)
     - `SWRC_check_parameters()`
     - `SWRC_SWCtoSWP()`
     - `SWRC_SWPtoSWC()`
@@ -140,7 +140,7 @@ extern "C" {
 
 #define SWRC_PARAM_NMAX 6 /**< Maximal number of SWRC parameters implemented */
 #define N_SWRCs 3 /**< Number of SWRCs implemented by SOILWAT2 */
-#define N_PDFs 2 /**< Number of PDFs implemented by SOILWAT2 */
+#define N_PTFs 2 /**< Number of PTFs implemented by SOILWAT2 */
 
 // Indices of #swrc2str (for code readability)
 #define sw_Campbell1974 0
@@ -203,7 +203,7 @@ typedef struct {
 	/* Soil water retention curve (SWRC) */
 	unsigned int
 		swrc_type, /**< Type of SWRC (see #swrc2str) */
-		pdf_type; /**< Type of PDF (see #pdf2str) */
+		ptf_type; /**< Type of PTF (see #ptf2str) */
 	RealD swrcp[SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation varies with selected SWRC, see `SWRC_check_parameters()` */
 
 	LyrIndex my_transp_rgn[NVEGTYPES]; /* which transp zones from Site am I in? */
@@ -264,11 +264,11 @@ typedef struct {
 	/* Soil water retention curve (SWRC), see `SW_LAYER_INFO` */
 	unsigned int
 		site_swrc_type,
-		site_pdf_type;
+		site_ptf_type;
 
 	char
 		site_swrc_name[64],
-		site_pdf_name[64];
+		site_ptf_name[64];
 
 	Bool site_has_swrcp; /**< Are `swrcp` already (TRUE) or not yet estimated (FALSE)? */
 
@@ -284,7 +284,7 @@ extern LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
 extern RealD _SWCInitVal, _SWCWetVal, _SWCMinVal;
 
 extern char const *swrc2str[];
-extern char const *pdf2str[];
+extern char const *ptf2str[];
 
 
 /* =================================================== */
@@ -292,24 +292,24 @@ extern char const *pdf2str[];
 /* --------------------------------------------------- */
 
 unsigned int encode_str2swrc(char *swrc_name);
-unsigned int encode_str2pdf(char *pdf_name);
+unsigned int encode_str2ptf(char *ptf_name);
 
-void SWRC_PDF_estimate_parameters(
-	unsigned int pdf_type,
+void SWRC_PTF_estimate_parameters(
+	unsigned int ptf_type,
 	double *swrcp,
 	double sand,
 	double clay,
 	double gravel,
 	double bdensity
 );
-void SWRC_PDF_Cosby1984_for_Campbell1974(
+void SWRC_PTF_Cosby1984_for_Campbell1974(
 	double *swrcp,
 	double sand,
 	double clay
 );
 
 
-Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name);
+Bool check_SWRC_vs_PTF(char *swrc_name, char *ptf_name);
 Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp);
 Bool SWRC_check_parameters_for_Campbell1974(double *swrcp);
 Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp);
@@ -320,7 +320,7 @@ double SW_swcBulk_saturated(
 	double *swrcp,
 	double gravel,
 	double width,
-	unsigned int pdf_type,
+	unsigned int ptf_type,
 	double sand,
 	double clay
 );
@@ -329,18 +329,18 @@ double SW_swcBulk_minimum(
 	double *swrcp,
 	double gravel,
 	double width,
-	unsigned int pdf_type,
+	unsigned int ptf_type,
 	double ui_sm_min,
 	double sand,
 	double clay,
 	double swcBulk_sat
 );
-void PDF_Saxton2006(
+void PTF_Saxton2006(
 	double *theta_sat,
 	double sand,
 	double clay
 );
-void PDF_RawlsBrakensiek1985(
+void PTF_RawlsBrakensiek1985(
 	double *theta_min,
 	double sand,
 	double clay,

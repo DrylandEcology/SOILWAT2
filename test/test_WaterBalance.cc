@@ -225,11 +225,11 @@ namespace {
   TEST(WaterBalanceTest, WithSWRCvanGenuchten1980) {
     int i;
 
-    // Set SWRC and PDF (and SWRC parameter input filename)
+    // Set SWRC and PTF (and SWRC parameter input filename)
     strcpy(SW_Site.site_swrc_name, (char *) "vanGenuchten1980");
     SW_Site.site_swrc_type = encode_str2swrc(SW_Site.site_swrc_name);
-    strcpy(SW_Site.site_pdf_name, (char *) "Rosetta3");
-    SW_Site.site_pdf_type = encode_str2pdf(SW_Site.site_pdf_name);
+    strcpy(SW_Site.site_ptf_name, (char *) "Rosetta3");
+    SW_Site.site_ptf_type = encode_str2ptf(SW_Site.site_ptf_name);
     SW_Site.site_has_swrcp = swTRUE;
 
     Mem_Free(InFiles[eSWRCp]);
@@ -260,11 +260,11 @@ namespace {
   TEST(WaterBalanceTest, WithSWRCFXW) {
     int i;
 
-    // Set SWRC and PDF (and SWRC parameter input filename)
+    // Set SWRC and PTF (and SWRC parameter input filename)
     strcpy(SW_Site.site_swrc_name, (char *) "FXW");
     SW_Site.site_swrc_type = encode_str2swrc(SW_Site.site_swrc_name);
-    strcpy(SW_Site.site_pdf_name, (char *) "neuroFX2021");
-    SW_Site.site_pdf_type = encode_str2pdf(SW_Site.site_pdf_name);
+    strcpy(SW_Site.site_ptf_name, (char *) "neuroFX2021");
+    SW_Site.site_ptf_type = encode_str2ptf(SW_Site.site_ptf_name);
     SW_Site.site_has_swrcp = swTRUE;
 
     Mem_Free(InFiles[eSWRCp]);

@@ -96,7 +96,7 @@ RealD
 	@note Code maintenance:
 		- Values must exactly match those provided in `siteparam.in`.
 		- Order must exactly match "indices of `swrc2str`"
-		- See details in section \ref swrc_pdf
+		- See details in section \ref swrc_ptf
 */
 char const *swrc2str[N_SWRCs] = {
 	"Campbell1974",
@@ -104,15 +104,15 @@ char const *swrc2str[N_SWRCs] = {
 	"FXW"
 };
 
-/** Character representation of implemented Pedotransfer Functions (PDF)
+/** Character representation of implemented Pedotransfer Functions (PTF)
 
 	@note Code maintenance:
 		- Values must exactly match those provided in `siteparam.in`.
-		- Order must exactly match "indices of `pdf2str`"
-		- See details in section \ref swrc_pdf
-		- `rSOILWAT2` may implemented additional PDFs
+		- Order must exactly match "indices of `ptf2str`"
+		- See details in section \ref swrc_ptf
+		- `rSOILWAT2` may implemented additional PTFs
 */
-char const *pdf2str[N_PDFs] = {
+char const *ptf2str[N_PTFs] = {
 	"Cosby1984AndOthers",
 	"Cosby1984"
 };
@@ -254,9 +254,9 @@ static double lower_limit_of_theta_min(
 		* a fixed VWC value,
 		* a fixed SWP value, or
 		* a realistic lower limit from `lower_limit_of_theta_min()`,
-			unless legacy mode (`pdf` equal to "Cosby1984AndOthers") is used
+			unless legacy mode (`ptf` equal to "Cosby1984AndOthers") is used
 			(reproducing behavior prior to v7.0.0), then calculated as
-			maximum of `lower_limit_of_theta_min()` and `PDF_RawlsBrakensiek1985()`
+			maximum of `lower_limit_of_theta_min()` and `PTF_RawlsBrakensiek1985()`
 			with pedotransfer function by Rawls & Brakensiek 1985 \cite rawls1985WmitE
 			(independently of the selected SWRC).
 
@@ -294,15 +294,15 @@ static double ui_theta_min(
 		vwc_min = lower_limit_of_theta_min(swrc_type, swrcp, gravel, width);
 
 		if (legacy_mode) {
-			/* residual theta estimated with Rawls & Brakensiek (1985) PDF */
-			PDF_RawlsBrakensiek1985(
+			/* residual theta estimated with Rawls & Brakensiek (1985) PTF */
+			PTF_RawlsBrakensiek1985(
 				&tmp_vwcmin,
 				sand,
 				clay,
 				swcBulk_sat / ((1. - gravel) * width)
 			);
 
-			/* if `PDF_RawlsBrakensiek1985()` was successful, then take max */
+			/* if `PTF_RawlsBrakensiek1985()` was successful, then take max */
 			if (!missing(tmp_vwcmin)) {
 				vwc_min = fmax(vwc_min, tmp_vwcmin);
 			}
@@ -366,25 +366,25 @@ unsigned int encode_str2swrc(char *swrc_name) {
 }
 
 /**
-	@brief Translate a PDF name into a PDF type number
+	@brief Translate a PTF name into a PTF type number
 
-	See #pdf2str and `siteparam.in`.
+	See #ptf2str and `siteparam.in`.
 
-	@param[in] *pdf_name Name of a PDF
+	@param[in] *ptf_name Name of a PTF
 
-	@return Internal identification number of selected PDF;
+	@return Internal identification number of selected PTF;
 		#SW_MISSING if not implemented.
 */
-unsigned int encode_str2pdf(char *pdf_name) {
+unsigned int encode_str2ptf(char *ptf_name) {
 	unsigned int k;
 
 	for (
 		k = 0;
-		k < N_PDFs && Str_CompareI(pdf_name, (char *)pdf2str[k]);
+		k < N_PTFs && Str_CompareI(ptf_name, (char *)ptf2str[k]);
 		k++
 	);
 
-	if (k == N_PDFs) {
+	if (k == N_PTFs) {
 		k = (unsigned int) SW_MISSING;
 	}
 
@@ -395,11 +395,11 @@ unsigned int encode_str2pdf(char *pdf_name) {
 
 /**
 	@brief Estimate parameters of selected soil water retention curve (SWRC)
-		using selected pedotransfer function (PDF)
+		using selected pedotransfer function (PTF)
 
-	See #pdf2str for implemented PDFs.
+	See #ptf2str for implemented PTFs.
 
-	@param[in] pdf_type Identification number of selected PDF
+	@param[in] ptf_type Identification number of selected PTF
 	@param[out] *swrcp Vector of SWRC parameters to be estimated
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
@@ -407,11 +407,11 @@ unsigned int encode_str2pdf(char *pdf_name) {
 		of the whole soil [m3/m3]
 	@param[in] bdensity Density of the whole soil
 		(matric soil plus coarse fragments) [g/cm3];
-		accepts #SW_MISSING if not used by selected PDF
+		accepts #SW_MISSING if not used by selected PTF
 
 */
-void SWRC_PDF_estimate_parameters(
-	unsigned int pdf_type,
+void SWRC_PTF_estimate_parameters(
+	unsigned int ptf_type,
 	double *swrcp,
 	double sand,
 	double clay,
@@ -422,27 +422,27 @@ void SWRC_PDF_estimate_parameters(
 	/* Initialize swrcp[] to 0 */
 	memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
 
-	if (pdf_type == sw_Cosby1984AndOthers) {
-		SWRC_PDF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
+	if (ptf_type == sw_Cosby1984AndOthers) {
+		SWRC_PTF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
 
-	} else if (pdf_type == sw_Cosby1984) {
-		SWRC_PDF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
+	} else if (ptf_type == sw_Cosby1984) {
+		SWRC_PTF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
 
 	} else {
 		LogError(
 			logfp,
 			LOGFATAL,
-			"PDF is not implemented in SOILWAT2.",
-			pdf_type
+			"PTF is not implemented in SOILWAT2.",
+			ptf_type
 		);
 	}
 
 	/**********************************/
-	/* TODO: remove once PDFs are implemented that utilize gravel */
+	/* TODO: remove once PTFs are implemented that utilize gravel */
 	/* avoiding `error: unused parameter 'gravel' [-Werror=unused-parameter]` */
 	if (gravel < 0.) {};
 
-	/* TODO: remove once PDFs are implemented that utilize bdensity */
+	/* TODO: remove once PTFs are implemented that utilize bdensity */
 	/* avoiding `error: unused parameter 'gravel' [-Werror=unused-parameter]` */
 	if (bdensity < 0.) {};
 	/**********************************/
@@ -451,15 +451,15 @@ void SWRC_PDF_estimate_parameters(
 
 /**
 	@brief Estimate Campbell's 1974 SWRC parameters
-		using Cosby et al. 1984 multivariate PDF
+		using Cosby et al. 1984 multivariate PTF
 
 	Estimation of four SWRC parameter values `swrcp`
 	based on sand, clay, and (silt).
 
 	Parameters are explained in `SWRC_check_parameters_for_Campbell1974()`.
 
-	Multivariate PDFs are from Cosby et al. 1984 (\cite Cosby1984) Table 4;
-	Cosby et al. 1984 provided also univariate PDFs in Table 5
+	Multivariate PTFs are from Cosby et al. 1984 (\cite Cosby1984) Table 4;
+	Cosby et al. 1984 provided also univariate PTFs in Table 5
 	but they are not used here.
 
 	See `SWRC_SWCtoSWP_Campbell1974()` and `SWRC_SWPtoSWC_Campbell1974()`
@@ -469,7 +469,7 @@ void SWRC_PDF_estimate_parameters(
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 */
-void SWRC_PDF_Cosby1984_for_Campbell1974(
+void SWRC_PTF_Cosby1984_for_Campbell1974(
 	double *swrcp,
 	double sand, double clay
 ) {
@@ -494,28 +494,28 @@ void SWRC_PDF_Cosby1984_for_Campbell1974(
 /**
 	@brief Saturated soil water content
 
-	See #pdf2str for implemented PDFs.
+	See #ptf2str for implemented PTFs.
 	See #swrc2str for implemented SWRCs.
 
 	Saturated volumetric water content is usually estimated as one of the
 	SWRC parameters; this is what this function returns.
 
 	For historical reasons, if `swrc_name` is "Campbell1974", then a
-	`pdf_name` of "Cosby1984AndOthers" will reproduce `SOILWAT2` legacy mode
+	`ptf_name` of "Cosby1984AndOthers" will reproduce `SOILWAT2` legacy mode
 	(`SOILWAT2` prior to v7.0.0) and return saturated soil water content estimated
-	by Saxton et al. 2006 (\cite Saxton2006) PDF instead;
-	`pdf_name` of "Cosby1984" will return saturated soil water content estimated
-	by Cosby et al. 1984 (\cite Cosby1984) PDF.
+	by Saxton et al. 2006 (\cite Saxton2006) PTF instead;
+	`ptf_name` of "Cosby1984" will return saturated soil water content estimated
+	by Cosby et al. 1984 (\cite Cosby1984) PTF.
 
-	The arguments `pdf_type`, `sand`, and `clay` are utilized only if
-	`pdf_name` is "Cosby1984AndOthers" (see #pdf2str).
+	The arguments `ptf_type`, `sand`, and `clay` are utilized only if
+	`ptf_name` is "Cosby1984AndOthers" (see #ptf2str).
 
 	@param[in] swrc_type Identification number of selected SWRC
 	@param[in] *swrcp Vector of SWRC parameters
 	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
 		of the whole soil [m3/m3]
 	@param[in] width Soil layer width [cm]
-	@param[in] pdf_type Identification number of selected PDF
+	@param[in] ptf_type Identification number of selected PTF
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 
@@ -526,7 +526,7 @@ double SW_swcBulk_saturated(
 	double *swrcp,
 	double gravel,
 	double width,
-	unsigned int pdf_type,
+	unsigned int ptf_type,
 	double sand,
 	double clay
 ) {
@@ -534,9 +534,9 @@ double SW_swcBulk_saturated(
 
 	switch (swrc_type) {
 		case sw_Campbell1974:
-			if (pdf_type == sw_Cosby1984AndOthers) {
+			if (ptf_type == sw_Cosby1984AndOthers) {
 				// Cosby1984AndOthers (backwards compatible)
-				PDF_Saxton2006(&theta_sat, sand, clay);
+				PTF_Saxton2006(&theta_sat, sand, clay);
 			} else {
 				theta_sat = swrcp[1];
 			}
@@ -568,7 +568,7 @@ double SW_swcBulk_saturated(
 /**
 	@brief Lower limit of simulated soil water content
 
-	See #pdf2str for implemented PDFs.
+	See #ptf2str for implemented PTFs.
 	See #swrc2str for implemented SWRCs.
 
 	SWRCs provide a theoretical minimum/residual volumetric water content;
@@ -579,14 +579,14 @@ double SW_swcBulk_saturated(
 	and is strictly larger than the theoretical SWRC value.
 
 	The arguments `sand`, `clay`, and `swcBulk_sat`
-	are utilized only in legacy mode, i.e., `pdf` equal to "Cosby1984AndOthers".
+	are utilized only in legacy mode, i.e., `ptf` equal to "Cosby1984AndOthers".
 
 	@param[in] swrc_type Identification number of selected SWRC
 	@param[in] *swrcp Vector of SWRC parameters
 	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
 		of the whole soil [m3/m3]
 	@param[in] width Soil layer width [cm]
-	@param[in] pdf_type Identification number of selected PDF
+	@param[in] ptf_type Identification number of selected PTF
 	@param[in] ui_sm_min User input of requested minimum soil moisture,
 		see #_SWCMinVal
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
@@ -600,7 +600,7 @@ double SW_swcBulk_minimum(
 	double *swrcp,
 	double gravel,
 	double width,
-	unsigned int pdf_type,
+	unsigned int ptf_type,
 	double ui_sm_min,
 	double sand,
 	double clay,
@@ -642,9 +642,9 @@ double SW_swcBulk_minimum(
 		swcBulk_sat,
 		swrc_type,
 		swrcp,
-		// `(Bool) pdf_type == sw_Cosby1984AndOthers` doesn't work for unit test:
+		// `(Bool) ptf_type == sw_Cosby1984AndOthers` doesn't work for unit test:
 		//   error: "no known conversion from 'bool' to 'Bool'"
-		pdf_type == sw_Cosby1984AndOthers ? swTRUE : swFALSE
+		ptf_type == sw_Cosby1984AndOthers ? swTRUE : swFALSE
 	);
 
 	/* `theta_min_sim` must be strictly larger than `theta_min_theoretical` */
@@ -657,25 +657,25 @@ double SW_swcBulk_minimum(
 
 
 /**
-	@brief Check whether selected PDF and SWRC are compatible
+	@brief Check whether selected PTF and SWRC are compatible
 
-	See #pdf2str for implemented PDFs.
+	See #ptf2str for implemented PTFs.
 	See #swrc2str for implemented SWRCs.
 
 	@param[in] *swrc_name Name of selected SWRC
-	@param[in] *pdf_name Name of selected PDF
+	@param[in] *ptf_name Name of selected PTF
 
-	@return A logical value indicating if SWRC and PDF are compatible.
+	@return A logical value indicating if SWRC and PTF are compatible.
 */
-Bool check_SWRC_vs_PDF(char *swrc_name, char *pdf_name) {
+Bool check_SWRC_vs_PTF(char *swrc_name, char *ptf_name) {
 	Bool res = swFALSE;
 
-	if (!missing((double) encode_str2pdf(pdf_name))) {
+	if (!missing((double) encode_str2ptf(ptf_name))) {
 		if (
 			Str_CompareI(swrc_name, (char *) "Campbell1974") == 0 &&
 			(
-				Str_CompareI(pdf_name, (char *) "Cosby1984AndOthers") == 0 ||
-				Str_CompareI(pdf_name, (char *) "Cosby1984") == 0
+				Str_CompareI(ptf_name, (char *) "Cosby1984AndOthers") == 0 ||
+				Str_CompareI(ptf_name, (char *) "Cosby1984") == 0
 			)
 		) {
 			res = swTRUE;
@@ -993,7 +993,7 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp) {
 
 
 /**
-	@brief Saxton et al. 2006 PDFs \cite Saxton2006
+	@brief Saxton et al. 2006 PTFs \cite Saxton2006
 		to estimate saturated soil water content
 
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
@@ -1001,7 +1001,7 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp) {
 	@param[out] *theta_sat Estimated saturated volumetric water content
 		of the matric soil [cm/cm]
 */
-void PDF_Saxton2006(
+void PTF_Saxton2006(
 	double *theta_sat,
 	double sand,
 	double clay
@@ -1046,7 +1046,7 @@ void PDF_Saxton2006(
 		LogError(
 			logfp,
 			LOGFATAL,
-			"PDF_Saxton2006(): invalid value of "
+			"PTF_Saxton2006(): invalid value of "
 			"theta(saturated, [cm / cm]) = %f (must be within 0-1)\n",
 			*theta_sat
 		);
@@ -1113,7 +1113,7 @@ void PDF_Saxton2006(
 
 
 /**
-	@brief Rawls and Brakensiek 1985 PDFs \cite rawls1985WmitE
+	@brief Rawls and Brakensiek 1985 PTFs \cite rawls1985WmitE
 		to estimate residual soil water content for the Brooks-Corey SWRC
 		\cite brooks1964a
 
@@ -1127,7 +1127,7 @@ void PDF_Saxton2006(
 	@param[out] *theta_min Estimated residual volumetric water content
 		of the matric soil [cm/cm]
 */
-void PDF_RawlsBrakensiek1985(
+void PTF_RawlsBrakensiek1985(
 	double *theta_min,
 	double sand,
 	double clay,
@@ -1160,7 +1160,7 @@ void PDF_RawlsBrakensiek1985(
 			LogError(
 			logfp,
 			LOGWARN,
-			"`PDF_RawlsBrakensiek1985()`: sand, clay, or porosity out of valid range."
+			"`PTF_RawlsBrakensiek1985()`: sand, clay, or porosity out of valid range."
 		);
 
 		*theta_min = SW_MISSING;
@@ -1517,8 +1517,8 @@ void SW_SIT_read(void) {
 			v->site_swrc_type = encode_str2swrc(v->site_swrc_name);
 			break;
 		case 43:
-			strcpy(v->site_pdf_name, inbuf);
-			v->site_pdf_type = encode_str2pdf(v->site_pdf_name);
+			strcpy(v->site_ptf_name, inbuf);
+			v->site_ptf_type = encode_str2ptf(v->site_ptf_name);
 			break;
 		case 44:
 			v->site_has_swrcp = itob(atoi(inbuf));
@@ -1865,7 +1865,7 @@ void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 */
 void SW_SWRC_read(void) {
 
-	/* Don't read values from disk if they will be estimated via a PDF */
+	/* Don't read values from disk if they will be estimated via a PTF */
 	if (!SW_Site.site_has_swrcp) return;
 
 	FILE *f;
@@ -1974,14 +1974,14 @@ void SW_SIT_init_run(void) {
 	add_deepdrain_layer();
 
 
-	/* Check compatibility between selected SWRC and PDF */
+	/* Check compatibility between selected SWRC and PTF */
 	if (!sp->site_has_swrcp) {
-		if (!check_SWRC_vs_PDF(sp->site_swrc_name, sp->site_pdf_name)) {
+		if (!check_SWRC_vs_PTF(sp->site_swrc_name, sp->site_ptf_name)) {
 			LogError(
 				logfp,
 				LOGFATAL,
-				"Selected PDF '%s' is incompatible with selected SWRC '%s'\n",
-				sp->site_pdf_name,
+				"Selected PTF '%s' is incompatible with selected SWRC '%s'\n",
+				sp->site_ptf_name,
 				sp->site_swrc_name
 			);
 		}
@@ -1993,12 +1993,12 @@ void SW_SIT_init_run(void) {
 	{
 		lyr = sp->lyr[s];
 
-		/* Copy site-level SWRC/PDF information to each layer:
-		   We currently allow specifying one SWRC/PDF for a site for all layers;
-		   remove in the future if we allow SWRC/PDF to vary by soil layer
+		/* Copy site-level SWRC/PTF information to each layer:
+		   We currently allow specifying one SWRC/PTF for a site for all layers;
+		   remove in the future if we allow SWRC/PTF to vary by soil layer
 		*/
 		lyr->swrc_type = sp->site_swrc_type;
-		lyr->pdf_type = sp->site_pdf_type;
+		lyr->ptf_type = sp->site_ptf_type;
 
 
 		/* Check soil properties for valid values */
@@ -2048,13 +2048,13 @@ void SW_SIT_init_run(void) {
 
 
 		if (!sp->site_has_swrcp) {
-			/* Use pedotransfer function PDF
+			/* Use pedotransfer function PTF
 			   to estimate parameters of soil water retention curve (SWRC) for layer.
 			   If `has_swrcp`, then parameters already obtained from disk
 			   by `SW_SWRC_read()`
 			*/
-			SWRC_PDF_estimate_parameters(
-				lyr->pdf_type,
+			SWRC_PTF_estimate_parameters(
+				lyr->ptf_type,
 				lyr->swrcp,
 				lyr->fractionWeightMatric_sand,
 				lyr->fractionWeightMatric_clay,
@@ -2099,7 +2099,7 @@ void SW_SIT_init_run(void) {
 			lyr->swrcp,
 			lyr->fractionVolBulk_gravel,
 			lyr->width,
-			lyr->pdf_type,
+			lyr->ptf_type,
 			lyr->fractionWeightMatric_sand,
 			lyr->fractionWeightMatric_clay
 		);
@@ -2109,7 +2109,7 @@ void SW_SIT_init_run(void) {
 			lyr->swrcp,
 			lyr->fractionVolBulk_gravel,
 			lyr->width,
-			lyr->pdf_type,
+			lyr->ptf_type,
 			_SWCMinVal,
 			lyr->fractionWeightMatric_sand,
 			lyr->fractionWeightMatric_clay,
@@ -2586,9 +2586,9 @@ void _echo_inputs(void) {
 	LogError(
 		logfp,
 		LOGNOTE,
-		"  PDF type: %d (%s)\n",
-		s->site_pdf_type,
-		s->site_pdf_name
+		"  PTF type: %d (%s)\n",
+		s->site_ptf_type,
+		s->site_ptf_name
 	);
 
 	LogError(

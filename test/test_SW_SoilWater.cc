@@ -73,7 +73,7 @@ namespace{
   // Test the 'SW_SoilWater' functions 'SWRC_SWCtoSWP' and `SWRC_SWPtoSWC`
   TEST(SWSoilWaterTest, TranslateBetweenSWCandSWP) {
     // set up mock variables
-    unsigned int swrc_type, pdf_type, k;
+    unsigned int swrc_type, ptf_type, k;
     const int em = LOGFATAL;
     RealD
       phi,
@@ -100,22 +100,22 @@ namespace{
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
       memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
 
-      // Find a suitable PDF to generate `SWRCp`
+      // Find a suitable PTF to generate `SWRCp`
       for (
-        pdf_type = 0;
-        pdf_type < N_PDFs && !check_SWRC_vs_PDF(
+        ptf_type = 0;
+        ptf_type < N_PTFs && !check_SWRC_vs_PTF(
           (char *) swrc2str[swrc_type],
-          (char *) pdf2str[pdf_type]
+          (char *) ptf2str[ptf_type]
         );
-        pdf_type++
+        ptf_type++
       ) {}
 
 
       // Obtain SWRCp
-      if (pdf_type < N_PDFs) {
-        // PDF implemented in C: estimate parameters
-        SWRC_PDF_estimate_parameters(
-          pdf_type,
+      if (ptf_type < N_PTFs) {
+        // PTF implemented in C: estimate parameters
+        SWRC_PTF_estimate_parameters(
+          ptf_type,
           swrcp,
           sand,
           clay,
@@ -124,7 +124,7 @@ namespace{
         );
 
       } else {
-        // PDF not implemented in C: provide hard coded values
+        // PTF not implemented in C: provide hard coded values
         if (
           Str_CompareI(
             (char *) swrc2str[swrc_type],
@@ -158,12 +158,12 @@ namespace{
 
       //------ Tests SWC -> SWP
       msg.str("");
-      msg << "SWRC/PDF = " << swrc_type << "/" << pdf_type;
+      msg << "SWRC/PTF = " << swrc_type << "/" << ptf_type;
 
       // preferably we would print names instead of type codes, but
       // this leads to "global-buffer-overflow"
-      // 0 bytes to the right of global variable 'pdf2str'
-      //msg << "SWRC/PDF = " << swrc2str[swrc_type] << "/" << pdf2str[pdf_type];
+      // 0 bytes to the right of global variable 'ptf2str'
+      //msg << "SWRC/PTF = " << swrc2str[swrc_type] << "/" << ptf2str[ptf_type];
 
       swc_sat = SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width, em);
       swc_fc = SWRC_SWPtoSWC(1. / 3., swrc_type, swrcp, gravel, width, em);

@@ -40,32 +40,32 @@
 
 
 namespace {
-  // List SWRC: PDFs
-  const char *ns_pdfca2C1974[] = {
+  // List SWRC: PTFs
+  const char *ns_ptfca2C1974[] = {
     "Campbell1974",
     "Cosby1984AndOthers", "Cosby1984"
   };
-  const char *ns_pdfa2vG1980[] = {
+  const char *ns_ptfa2vG1980[] = {
     "vanGenuchten1980",
-    // all PDFs
+    // all PTFs
     "Rosetta3"
   };
-  const char *ns_pdfc2vG1980[] = {
+  const char *ns_ptfc2vG1980[] = {
     "vanGenuchten1980"
-    // PDFs implemented in SOILWAT2
+    // PTFs implemented in SOILWAT2
   };
-  const char *ns_pdfa2FXW[] = {
+  const char *ns_ptfa2FXW[] = {
     "FXW"
-    // all PDFs
+    // all PTFs
     "neuroFX2021"
   };
-  const char *ns_pdfc2FXW[] = {
+  const char *ns_ptfc2FXW[] = {
     "FXW"
-    // PDFs implemented in SOILWAT2
+    // PTFs implemented in SOILWAT2
   };
 
   // Test pedotransfer functions
-  TEST(SiteTest, PDFs) {
+  TEST(SiteTest, PTFs) {
     // inputs
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -76,13 +76,13 @@ namespace {
     unsigned int swrc_type, k;
 
 
-    //--- Matching PDF-SWRC pairs
+    //--- Matching PTF-SWRC pairs
     // (k starts at 1 because 0 holds the SWRC)
 
-    swrc_type = encode_str2swrc((char *) ns_pdfca2C1974[0]);
-    for (k = 1; k < length(ns_pdfca2C1974); k++) {
-      SWRC_PDF_estimate_parameters(
-        encode_str2pdf((char *) ns_pdfca2C1974[k]),
+    swrc_type = encode_str2swrc((char *) ns_ptfca2C1974[0]);
+    for (k = 1; k < length(ns_ptfca2C1974); k++) {
+      SWRC_PTF_estimate_parameters(
+        encode_str2ptf((char *) ns_ptfca2C1974[k]),
         swrcp,
         sand,
         clay,
@@ -92,10 +92,10 @@ namespace {
       EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
     }
 
-    swrc_type = encode_str2swrc((char *) ns_pdfc2vG1980[0]);
-    for (k = 1; k < length(ns_pdfc2vG1980); k++) {
-      SWRC_PDF_estimate_parameters(
-        encode_str2pdf((char *) ns_pdfc2vG1980[k]),
+    swrc_type = encode_str2swrc((char *) ns_ptfc2vG1980[0]);
+    for (k = 1; k < length(ns_ptfc2vG1980); k++) {
+      SWRC_PTF_estimate_parameters(
+        encode_str2ptf((char *) ns_ptfc2vG1980[k]),
         swrcp,
         sand,
         clay,
@@ -105,10 +105,10 @@ namespace {
       EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
     }
 
-    swrc_type = encode_str2swrc((char *) ns_pdfc2FXW[0]);
-    for (k = 1; k < length(ns_pdfc2FXW); k++) {
-      SWRC_PDF_estimate_parameters(
-        encode_str2pdf((char *) ns_pdfc2FXW[k]),
+    swrc_type = encode_str2swrc((char *) ns_ptfc2FXW[0]);
+    for (k = 1; k < length(ns_ptfc2FXW); k++) {
+      SWRC_PTF_estimate_parameters(
+        encode_str2ptf((char *) ns_ptfc2FXW[k]),
         swrcp,
         sand,
         clay,
@@ -120,8 +120,8 @@ namespace {
   }
 
 
-  // Test fatal failures of PDF estimation
-  TEST(SiteDeathTest, PDFs) {
+  // Test fatal failures of PTF estimation
+  TEST(SiteDeathTest, PTFs) {
 
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -129,15 +129,15 @@ namespace {
       clay = 0.33,
       gravel = 0.1,
       bdensity = 1.4;
-    unsigned int pdf_type;
+    unsigned int ptf_type;
 
 
-    //--- Test unimplemented PDF
-    pdf_type = N_PDFs + 1;
+    //--- Test unimplemented PTF
+    ptf_type = N_PTFs + 1;
 
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_PDF_estimate_parameters(
-        pdf_type,
+      SWRC_PTF_estimate_parameters(
+        ptf_type,
         swrcp,
         sand,
         clay,
@@ -149,76 +149,76 @@ namespace {
   }
 
 
-  // Test PDF-SWRC pairings
-  TEST(SiteTest, PDF2SWRC) {
+  // Test PTF-SWRC pairings
+  TEST(SiteTest, PTF2SWRC) {
     unsigned int k; // `length()` returns "unsigned long"
 
-    for (k = 1; k < length(ns_pdfca2C1974); k++) {
+    for (k = 1; k < length(ns_ptfca2C1974); k++) {
       EXPECT_TRUE(
-        (bool) check_SWRC_vs_PDF(
-          (char *) ns_pdfca2C1974[0],
-          (char *) ns_pdfca2C1974[k]
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfca2C1974[0],
+          (char *) ns_ptfca2C1974[k]
         )
       );
 
       EXPECT_FALSE(
-        (bool) check_SWRC_vs_PDF(
-          (char *) ns_pdfa2vG1980[0],
-          (char *) ns_pdfca2C1974[k]
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfa2vG1980[0],
+          (char *) ns_ptfca2C1974[k]
         )
       );
 
       EXPECT_FALSE(
-        (bool) check_SWRC_vs_PDF(
-          (char *) ns_pdfa2FXW[0],
-          (char *) ns_pdfca2C1974[k]
-        )
-      );
-    }
-
-    for (k = 1; k < length(ns_pdfa2vG1980); k++) {
-      EXPECT_FALSE(
-        (bool) check_SWRC_vs_PDF(
-          (char *) ns_pdfa2vG1980[0],
-          (char *) ns_pdfa2vG1980[k]
-        )
-      );
-
-      EXPECT_FALSE(
-        (bool) check_SWRC_vs_PDF(
-          (char *) ns_pdfca2C1974[0],
-          (char *) ns_pdfa2vG1980[k]
-        )
-      );
-
-      EXPECT_FALSE(
-        (bool) check_SWRC_vs_PDF(
-          (char *) ns_pdfa2FXW[0],
-          (char *) ns_pdfa2vG1980[k]
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfa2FXW[0],
+          (char *) ns_ptfca2C1974[k]
         )
       );
     }
 
-
-    for (k = 1; k < length(ns_pdfa2FXW); k++) {
+    for (k = 1; k < length(ns_ptfa2vG1980); k++) {
       EXPECT_FALSE(
-        (bool) check_SWRC_vs_PDF(
-          (char *) ns_pdfa2FXW[0],
-          (char *) ns_pdfa2FXW[k]
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfa2vG1980[0],
+          (char *) ns_ptfa2vG1980[k]
         )
       );
 
       EXPECT_FALSE(
-        (bool) check_SWRC_vs_PDF(
-          (char *) ns_pdfca2C1974[0],
-          (char *) ns_pdfa2FXW[k]
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfca2C1974[0],
+          (char *) ns_ptfa2vG1980[k]
         )
       );
 
       EXPECT_FALSE(
-        (bool) check_SWRC_vs_PDF(
-          (char *) ns_pdfa2vG1980[0],
-          (char *) ns_pdfa2FXW[k]
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfa2FXW[0],
+          (char *) ns_ptfa2vG1980[k]
+        )
+      );
+    }
+
+
+    for (k = 1; k < length(ns_ptfa2FXW); k++) {
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfa2FXW[0],
+          (char *) ns_ptfa2FXW[k]
+        )
+      );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfca2C1974[0],
+          (char *) ns_ptfa2FXW[k]
+        )
+      );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfa2vG1980[0],
+          (char *) ns_ptfa2FXW[k]
         )
       );
     }
@@ -382,8 +382,8 @@ namespace {
   }
 
 
-  // Test 'PDF_RawlsBrakensiek1985'
-  TEST(SiteTest, PDFRawlsBrakensiek1985) {
+  // Test 'PTF_RawlsBrakensiek1985'
+  TEST(SiteTest, PTFRawlsBrakensiek1985) {
     //declare mock INPUTS
     double
       theta_min,
@@ -394,22 +394,22 @@ namespace {
 
     //--- EXPECT SW_MISSING if soil texture is out of range
     // within range: sand [0.05, 0.7], clay [0.05, 0.6], porosity [0.1, 1[
-    PDF_RawlsBrakensiek1985(&theta_min, 0., clay, porosity);
+    PTF_RawlsBrakensiek1985(&theta_min, 0., clay, porosity);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PDF_RawlsBrakensiek1985(&theta_min, 0.75, clay, porosity);
+    PTF_RawlsBrakensiek1985(&theta_min, 0.75, clay, porosity);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PDF_RawlsBrakensiek1985(&theta_min, sand, 0., porosity);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, 0., porosity);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PDF_RawlsBrakensiek1985(&theta_min, sand, 0.65, porosity);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, 0.65, porosity);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PDF_RawlsBrakensiek1985(&theta_min, sand, clay, 0.);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 0.);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PDF_RawlsBrakensiek1985(&theta_min, sand, clay, 1.);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 1.);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
 
@@ -423,7 +423,7 @@ namespace {
         for (k3 = 0; k3 <= 5; k3++) {
           porosity = 0.1 + (double) k3 / 5. * (0.99 - 0.1);
 
-          PDF_RawlsBrakensiek1985(&theta_min, sand, clay, porosity);
+          PTF_RawlsBrakensiek1985(&theta_min, sand, clay, porosity);
           EXPECT_GE(theta_min, 0.);
           EXPECT_LT(theta_min, porosity);
         }
@@ -431,7 +431,7 @@ namespace {
     }
 
     // Expect theta_min = 0 if sand = 0.4, clay = 0.5, and porosity = 0.1
-    PDF_RawlsBrakensiek1985(&theta_min, 0.4, 0.5, 0.1);
+    PTF_RawlsBrakensiek1985(&theta_min, 0.4, 0.5, 0.1);
     EXPECT_DOUBLE_EQ(theta_min, 0);
   }
 
