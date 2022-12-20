@@ -5,3 +5,6 @@
 
 # https://github.com/DrylandEcology/SOILWAT2/issues/205
 leak:SW_VPD_construct
+
+# on Apple arm64: https://github.com/google/sanitizers/issues/1501
+leak:realizeClassWithoutSwift
