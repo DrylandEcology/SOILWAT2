@@ -14,8 +14,9 @@
 /Debug/
 
 # Test project output
-/testing/Output/*
-/testing/Output_*
+/tests/example/Output/*
+/tests/example/Output_*
+
 
 # Figures created by scripts in tools/
 /tools/Fig*
@@ -39,7 +40,7 @@ doc/Doxyfile.bak
 
 # Binary files
 SOILWAT2
-testing/SOILWAT2
+tests/example/SOILWAT2
 libSOILWAT2*
 libcovSOILWAT2*
 
