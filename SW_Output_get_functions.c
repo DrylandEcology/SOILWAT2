@@ -979,8 +979,8 @@ void get_swpMatric_text(OutPeriod pd)
 	ForEachSoilLayer(i)
 	{
 		/* swpMatric at this point is identical to swcBulk */
-		val = SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel,
-			vo->swpMatric[i], i);
+		val = SW_SWRC_SWCtoSWP(vo->swpMatric[i], SW_Site.lyr[i]);
+
 
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, val);
 		strcat(sw_outstr, str);
@@ -1006,8 +1006,7 @@ void get_swpMatric_mem(OutPeriod pd)
 	ForEachSoilLayer(i)
 	{
 		/* swpMatric at this point is identical to swcBulk */
-		p[iOUT(i, pd)] = SW_SWCbulk2SWPmatric(
-			SW_Site.lyr[i]->fractionVolBulk_gravel, vo->swpMatric[i], i);
+		p[iOUT(i, pd)] = SW_SWRC_SWCtoSWP(vo->swpMatric[i], SW_Site.lyr[i]);
 	}
 }
 
@@ -1031,8 +1030,7 @@ void get_swpMatric_agg(OutPeriod pd)
 	ForEachSoilLayer(i)
 	{
 		/* swpMatric at this point is identical to swcBulk */
-		val = SW_SWCbulk2SWPmatric(
-			SW_Site.lyr[i]->fractionVolBulk_gravel, vo->swpMatric[i], i);
+		val = SW_SWRC_SWCtoSWP(vo->swpMatric[i], SW_Site.lyr[i]);
 		do_running_agg(p, psd, iOUT(i, pd), Globals->currIter, val);
 	}
 

@@ -56,11 +56,117 @@ extern "C" {
 #define SW_MATRIC 0
 #define SW_BULK 1
 
+
+/**
+  @defgroup swrc_ptf Soil Water Retention Curves
+
+  __Soil Water Retention Curves (SWRCs) -- Pedotransfer functions (PTFs)__
+
+  __Overview__
+
+  Historically (before v7.0.0), `SOILWAT2` utilized a hard-coded SWRC
+  by Campbell 1974 (\cite Campbell1974) and estimated SWRC parameters at
+  run-time from soil texture using PTFs by Cosby et al. 1984 (\cite Cosby1984).
+  This behavior can be reproduced with "Campbell1974" and "Cosby1984AndOthers"
+  (see input file `siteparam.in`).
+
+  Now, users of `SOILWAT2` can choose from a range of implemented SWRCs
+  (see input file `siteparam.in`);
+  SWRC parameters can be estimated at run-time from soil properties by
+  selecting a matching PTF (see input file `siteparam.in`) or,
+  alternatively (`has_swrcp`), provide adequate SWRC parameter values
+  (see input file `swrc_params.in`).
+  Please note that `rSOILWAT2` may provide additional PTF functionality.
+
+
+  __Approach__
+
+  -# User selections of SWRC and PTF are read in from input file `siteparam.in`
+    by `SW_SIT_read()` and, if `has_swrcp`, SWRC parameters are read from
+    input file `swrc_params.in` by `SW_SWRC_read()`.
+
+  -# `SW_SIT_init_run()`
+    - if not `has_swrcp`
+      - calls `check_SWRC_vs_PTF()` to check that selected SWRC and PTF are
+        compatible
+      - calls `SWRC_PTF_estimate_parameters()` to estimate
+        SWRC parameter values from soil properties based on selected PTF
+    - calls `SWRC_check_parameters()` to check that SWRC parameter values
+      are resonable for the selected SWRC.
+
+  -# `SW_SWRC_SWCtoSWP()` and `SW_SWRC_SWPtoSWC()` are used during simulation
+    runs to convert between soil water content and soil water potential.
+
+  -# These high-level "wrapper" functions hide details of any specific SWRC/PTF
+    implementations and are used by SOILWAT2 simulation code.
+    Thus, most of SOILWAT2 is "unaware" about the selected SWRC/PTF
+    and how to interpret SWRC parameters. Instead, these "wrapper" functions
+    know how to call the appropriate SWRC and/or PTF specific functions
+    which implement SWRC and/or PTF specific details.
+
+
+  __Steps to implement a new SWRC "XXX" and corresponding PTF "YYY"__
+
+  -# Update #N_SWRCs and #N_PTFs
+
+  -# Add new names to #swrc2str and #ptf2str and
+     add corresponding macros of indices
+
+  -# Update input files `siteparam.in` and `swrc_params.in`
+
+  -# Implement new XXX/YYY-specific functions
+    - `SWRC_check_parameters_for_XXX()` to validate parameter values,
+      e.g., `SWRC_check_parameters_for_Campbell1974()`
+    - `SWRC_PTF_YYY_for_XXX()` to estimate parameter values (if implemented),
+      e.g., `SWRC_PTF_Cosby1984_for_Campbell1974()`
+    - `SWRC_SWCtoSWP_XXX()` to translate moisture content to water potential,
+      e.g., `SWRC_SWCtoSWP_Campbell1974()`
+    - `SWRC_SWPtoSWC_XXX()` to translate water potential to moisture content,
+      e.g., `SWRC_SWPtoSWC_Campbell1974()`
+
+  -# Update "wrapper" functions that select and call XXX/YYY-specific functions
+    and/or parameters
+    - `check_SWRC_vs_PTF()`
+    - `SWRC_PTF_estimate_parameters()` (if PTF is implemented)
+    - `SWRC_check_parameters()`
+    - `SWRC_SWCtoSWP()`
+    - `SWRC_SWPtoSWC()`
+    - `SW_swcBulk_minimum()`
+    - `SW_swcBulk_saturated()`
+
+  -# Expand existing unit tests and add new unit tests
+    to utilize new XXX/YYY functions
+*/
+
+#define SWRC_PARAM_NMAX 6 /**< Maximal number of SWRC parameters implemented */
+#define N_SWRCs 3 /**< Number of SWRCs implemented by SOILWAT2 */
+#define N_PTFs 2 /**< Number of PTFs implemented by SOILWAT2 */
+
+// Indices of #swrc2str (for code readability)
+#define sw_Campbell1974 0
+#define sw_vanGenuchten1980 1
+#define sw_FXW 2
+
+// Indices of #swrc2str (for code readability)
+#define sw_Cosby1984AndOthers 0
+#define sw_Cosby1984 1
+
+
+#define FXW_h0 6.3e6 /**< Pressure head at zero water content [cm] of FWX SWRC */
+#define FXW_hr 1500. /**< Pressure head at residual water content [cm] of FXW SWRC */
+
+
+/* =================================================== */
+/*            TYPEDEFS                                 */
+/* --------------------------------------------------- */
+
 typedef unsigned int LyrIndex;
 
 typedef struct {
 	/* bulk = relating to the whole soil, i.e., matric + rock/gravel/coarse fragments */
 	/* matric = relating to the < 2 mm fraction of the soil, i.e., sand, clay, and silt */
+
+	LyrIndex id; /**< Number of soil layer: 1 = most shallow, 2 = second shallowest, etc. up to ::MAX_LAYERS */
 
 	RealD
 		/* Inputs */
@@ -86,17 +192,19 @@ typedef struct {
 		swcBulk_atSWPcrit[NVEGTYPES], /* SWC corresponding to critical SWP for transpiration */
 
 		/* Saxton et al. 2006 */
-		swcBulk_saturated, /* saturated bulk SWC [cm] */
-		Saxton2006_K_sat_matric, /* saturated matric conductivity [cm / day] */
-		Saxton2006_K_sat_bulk, /* saturated bulk conductivity [cm / day] */
-		Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
-		Saxton2006_lambda, /* Slope of logarithmic tension-moisture curve */
+		swcBulk_saturated; /* saturated bulk SWC [cm] */
+		// currently, not used;
+		//Saxton2006_K_sat_matric, /* saturated matric conductivity [cm / day] */
+		//Saxton2006_K_sat_bulk, /* saturated bulk conductivity [cm / day] */
+		//Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
+		//Saxton2006_lambda; /* Slope of logarithmic tension-moisture curve */
 
-		/* Cosby et al. (1984): SOILWAT2's soil water retention curve */
-		thetasMatric, /* saturated matric SWC [cm] */
-		psisMatric, /* saturated matric SWP [cm] */
-		bMatric, /* slope of the logarithmic retention curve */
-		binverseMatric; /* inverse of bMatric */
+
+	/* Soil water retention curve (SWRC) */
+	unsigned int
+		swrc_type, /**< Type of SWRC (see #swrc2str) */
+		ptf_type; /**< Type of PTF (see #ptf2str) */
+	RealD swrcp[SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation varies with selected SWRC, see `SWRC_check_parameters()` */
 
 	LyrIndex my_transp_rgn[NVEGTYPES]; /* which transp zones from Site am I in? */
 } SW_LAYER_INFO;
@@ -153,6 +261,17 @@ typedef struct {
 	SW_LAYER_INFO **lyr; 	/* one struct per soil layer pointed to by   */
 							/* a dynamically allocated block of pointers */
 
+	/* Soil water retention curve (SWRC), see `SW_LAYER_INFO` */
+	unsigned int
+		site_swrc_type,
+		site_ptf_type;
+
+	char
+		site_swrc_name[64],
+		site_ptf_name[64];
+
+	Bool site_has_swrcp; /**< Are `swrcp` already (TRUE) or not yet estimated (FALSE)? */
+
 } SW_SITE;
 
 
@@ -164,12 +283,71 @@ extern SW_SITE SW_Site;
 extern LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
 extern RealD _SWCInitVal, _SWCWetVal, _SWCMinVal;
 
+extern char const *swrc2str[];
+extern char const *ptf2str[];
 
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n);
+
+unsigned int encode_str2swrc(char *swrc_name);
+unsigned int encode_str2ptf(char *ptf_name);
+
+void SWRC_PTF_estimate_parameters(
+	unsigned int ptf_type,
+	double *swrcp,
+	double sand,
+	double clay,
+	double gravel,
+	double bdensity
+);
+void SWRC_PTF_Cosby1984_for_Campbell1974(
+	double *swrcp,
+	double sand,
+	double clay
+);
+
+
+Bool check_SWRC_vs_PTF(char *swrc_name, char *ptf_name);
+Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp);
+Bool SWRC_check_parameters_for_Campbell1974(double *swrcp);
+Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp);
+Bool SWRC_check_parameters_for_FXW(double *swrcp);
+
+double SW_swcBulk_saturated(
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width,
+	unsigned int ptf_type,
+	double sand,
+	double clay
+);
+double SW_swcBulk_minimum(
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width,
+	unsigned int ptf_type,
+	double ui_sm_min,
+	double sand,
+	double clay,
+	double swcBulk_sat
+);
+void PTF_Saxton2006(
+	double *theta_sat,
+	double sand,
+	double clay
+);
+void PTF_RawlsBrakensiek1985(
+	double *theta_min,
+	double sand,
+	double clay,
+	double porosity
+);
+
+
 RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
 RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel);
 LyrIndex nlayers_bsevap(void);
@@ -183,6 +361,8 @@ void SW_SIT_init_run(void);
 void _echo_inputs(void);
 
 /* these used to be in Layers */
+void SW_LYR_read(void);
+void SW_SWRC_read(void);
 void SW_SIT_clear_layers(void);
 LyrIndex _newlayer(void);
 void add_deepdrain_layer(void);

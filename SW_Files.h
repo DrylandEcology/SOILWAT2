@@ -20,16 +20,30 @@
 extern "C" {
 #endif
 
-#define SW_NFILES 22
+#define SW_NFILES 23
 
 /* The number of enum elements between eNoFile and
  * eEndFile (not inclusive) must match SW_NFILES.
  * also, these elements must match the order of
- * input from files.in.
+ * input from `files.in`.
  */
 typedef enum {
-	eNoFile = -1, eFirst = 0, eModel, eLog, eSite, eLayers, eWeather,
-	eMarkovProb, eMarkovCov, eSky, eVegProd, eVegEstab, eCarbon, eSoilwat,
+	eNoFile = -1,
+	/* List of all input files */
+	eFirst = 0,
+	/* Description of a model run */
+	eModel, eLog,
+	/* Description of simulated site */
+	eSite, eLayers, eSWRCp,
+	/* Weather and climate forcing */
+	eWeather, eMarkovProb, eMarkovCov, eSky,
+	/* Description of vegetation */
+	eVegProd, eVegEstab,
+	/* Description of CO2 effects */
+	eCarbon,
+	/* (optional) soil moisture measurements */
+	eSoilwat,
+	/* Simulation outputs */
 	eOutput, eOutputDaily, eOutputWeekly, eOutputMonthly, eOutputYearly,
 	eOutputDaily_soil, eOutputWeekly_soil, eOutputMonthly_soil, eOutputYearly_soil,
 	eEndFile

@@ -51,13 +51,21 @@ extern "C" {
 #define SLOW_DRAIN_DEPTH 15. /* numerator over depth in slow drain equation */
 
 /* some basic constants */
-#define MAX_LAYERS  25
-#define MAX_TRANSP_REGIONS 4
-#define MAX_ST_RGR 100
+#define MAX_LAYERS  25 /**< Maximum number of soil layers */
+#define MAX_TRANSP_REGIONS 4 /**< Maximum number of transpiration regions */
+#define MAX_ST_RGR 100 /**< Maximum number of soil temperature nodes */
 
 #define MAX_NYEAR 2500  /**< An integer representing the max calendar year that is supported. The number just needs to be reasonable, it is an artifical limit. */
 
-#define SW_MISSING     999.     /* value to use as MISSING */
+#define SW_MISSING     999.     /**< Value to use as MISSING */
+
+
+// Euler's constant
+#ifdef M_E
+  #define swE M_E
+#else
+  #define swE         2.71828182845904523536028747135266249
+#endif
 
 
 /* M_PI and M_PI_2 from <math.h> if implementation conforms to POSIX extension
@@ -80,7 +88,6 @@ extern "C" {
 #define deg_to_rad    0.0174532925199433 /**< Convert arc-degrees to radians, i.e., x * deg_to_rad with deg_to_rad = pi / 180 */
 #define rad_to_deg    57.29577951308232 /**< Convert radians to arc-degrees, i.e., x * rad_to_deg with rad_to_deg = 180 / pi */
 
-#define BARCONV     1024.
 #define SEC_PER_DAY	86400. // the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400 seconds)
 
 
@@ -104,7 +111,7 @@ extern "C" {
 #define SW_MAX 1
 
 /* indices to vegetation types */
-#define NVEGTYPES 4
+#define NVEGTYPES 4 /**< Number of vegetation types implemented */
 #define SW_TREES 0
 #define SW_SHRUB 1
 #define SW_FORBS 2

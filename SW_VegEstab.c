@@ -425,14 +425,15 @@ void _spp_init(unsigned int sppnum) {
 	/* The thetas and psis etc should be initialized by now */
 	/* because init_layers() must be called prior to this routine */
 	/* (see watereqn() ) */
-	v->min_swc_germ = SW_SWPmatric2VWCBulk(lyr[0]->fractionVolBulk_gravel, v->bars[SW_GERM_BARS], 0) * lyr[0]->width;
+	v->min_swc_germ = SW_SWRC_SWPtoSWC(v->bars[SW_GERM_BARS], lyr[0]);
 
 	/* due to possible differences in layer textures and widths, we need
 	 * to average the estab swc across the given layers to peoperly
 	 * compare the actual swc average in the checkit() routine */
 	v->min_swc_estab = 0.;
-	for (i = 0; i < v->estab_lyrs; i++)
-		v->min_swc_estab += SW_SWPmatric2VWCBulk(lyr[i]->fractionVolBulk_gravel, v->bars[SW_ESTAB_BARS], i) * lyr[i]->width;
+	for (i = 0; i < v->estab_lyrs; i++) {
+		v->min_swc_estab += SW_SWRC_SWPtoSWC(v->bars[SW_ESTAB_BARS], lyr[i]);
+	}
 	v->min_swc_estab /= v->estab_lyrs;
 
 	_sanity_check(sppnum);

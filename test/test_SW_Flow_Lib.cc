@@ -451,7 +451,6 @@ namespace
       shift = 45, shape = 0.1, inflec = 0.25, range = 0.5;
 
     double swc[25], width[25], lyrEvapCo[25];
-    double swc0[25] = { 0. }; // for test if swc = 0
 
     // Loop over tests with varying number of soil layers
     for (k = 0; k < 2; k++)
@@ -508,15 +507,6 @@ namespace
       // expect baresoil evaporation rate = 0 if fbse = 0
       EXPECT_DOUBLE_EQ(bserate, 0.) <<
         "pot_soil_evap != 0 if fbse = 0 for " << nelyrs << " soil layers";
-
-
-      // Begin TEST if (swc = 0)
-      pot_soil_evap(&bserate, nelyrs, lyrEvapCo, totagb, fbse, petday, shift,
-        shape, inflec, range, width, swc0, Es_param_limit);
-
-      // expect baresoil evaporation rate = 0 if swc = 0
-      EXPECT_DOUBLE_EQ(bserate, 0.) <<
-        "pot_soil_evap != 0 if swc = 0 for " << nelyrs << " soil layers";
 
 
       // Begin TEST if (totagb < Es_param_limit)

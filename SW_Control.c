@@ -275,9 +275,19 @@ void SW_CTL_read_inputs_from_disk(void) {
   if (debug) swprintf(" > 'veg'");
   #endif
 
-  SW_SIT_read(); // inputs also soil layer data
+  SW_SIT_read();
   #ifdef SWDEBUG
-  if (debug) swprintf(" > 'site' + 'soils'");
+  if (debug) swprintf(" > 'site'");
+  #endif
+
+  SW_LYR_read();
+  #ifdef RSWDEBUG
+  if (debug) swprintf(" > 'soils'");
+  #endif
+
+  SW_SWRC_read();
+  #ifdef SWDEBUG
+  if (debug) swprintf(" > 'swrc parameters'");
   #endif
 
   SW_VES_read();

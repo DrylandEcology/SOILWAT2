@@ -222,4 +222,72 @@ namespace {
     Reset_SOILWAT2_after_UnitTest();
   }
 
+  TEST(WaterBalanceTest, WithSWRCvanGenuchten1980) {
+    int i;
+
+    // Set SWRC and PTF (and SWRC parameter input filename)
+    strcpy(SW_Site.site_swrc_name, (char *) "vanGenuchten1980");
+    SW_Site.site_swrc_type = encode_str2swrc(SW_Site.site_swrc_name);
+    strcpy(SW_Site.site_ptf_name, (char *) "Rosetta3");
+    SW_Site.site_ptf_type = encode_str2ptf(SW_Site.site_ptf_name);
+    SW_Site.site_has_swrcp = swTRUE;
+
+    Mem_Free(InFiles[eSWRCp]);
+    InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in");
+
+    // Read SWRC parameter input file (which is not read by default)
+    SW_SWRC_read();
+
+    // Update soils
+    SW_SIT_init_run();
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
+
+  TEST(WaterBalanceTest, WithSWRCFXW) {
+    int i;
+
+    // Set SWRC and PTF (and SWRC parameter input filename)
+    strcpy(SW_Site.site_swrc_name, (char *) "FXW");
+    SW_Site.site_swrc_type = encode_str2swrc(SW_Site.site_swrc_name);
+    strcpy(SW_Site.site_ptf_name, (char *) "neuroFX2021");
+    SW_Site.site_ptf_type = encode_str2ptf(SW_Site.site_ptf_name);
+    SW_Site.site_has_swrcp = swTRUE;
+
+    Mem_Free(InFiles[eSWRCp]);
+    InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in");
+
+    // Read SWRC parameter input file (which is not read by default)
+    SW_SWRC_read();
+
+    // Update soils
+    SW_SIT_init_run();
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
 } // namespace

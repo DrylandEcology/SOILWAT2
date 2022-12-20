@@ -40,67 +40,404 @@
 
 
 namespace {
-  // Test the water equation function 'water_eqn'
-  TEST(SWSiteTest, WaterEquation) {
+  // List SWRC: PTFs
+  const char *ns_ptfca2C1974[] = {
+    "Campbell1974",
+    "Cosby1984AndOthers", "Cosby1984"
+  };
+  const char *ns_ptfa2vG1980[] = {
+    "vanGenuchten1980",
+    // all PTFs
+    "Rosetta3"
+  };
+  const char *ns_ptfc2vG1980[] = {
+    "vanGenuchten1980"
+    // PTFs implemented in SOILWAT2
+  };
+  const char *ns_ptfa2FXW[] = {
+    "FXW"
+    // all PTFs
+    "neuroFX2021"
+  };
+  const char *ns_ptfc2FXW[] = {
+    "FXW"
+    // PTFs implemented in SOILWAT2
+  };
 
-    //declare inputs
-    RealD fractionGravel = 0.1, sand = .33, clay =.33;
-    LyrIndex n = 1;
+  // Test pedotransfer functions
+  TEST(SiteTest, PTFs) {
+    // inputs
+    RealD
+      swrcp[SWRC_PARAM_NMAX],
+      sand = 0.33,
+      clay = 0.33,
+      gravel = 0.1,
+      bdensity = 1.4;
+    unsigned int swrc_type, k;
 
-    water_eqn(fractionGravel, sand, clay, n);
 
-    // Test swcBulk_saturated
-    EXPECT_GT(SW_Site.lyr[n]->swcBulk_saturated, 0.); // The swcBulk_saturated should be greater than 0
-    EXPECT_LT(SW_Site.lyr[n]->swcBulk_saturated, SW_Site.lyr[n]->width); // The swcBulk_saturated can't be greater than the width of the layer
+    //--- Matching PTF-SWRC pairs
+    // (k starts at 1 because 0 holds the SWRC)
 
-    // Test thetasMatric
-    EXPECT_GT(SW_Site.lyr[n]->thetasMatric, 36.3); /* Value should always be greater
-    than 36.3 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_LT(SW_Site.lyr[n]->thetasMatric, 46.8); /* Value should always be less
-    than 46.8 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_DOUBLE_EQ(SW_Site.lyr[n]->thetasMatric,  44.593); /* If sand is .33 and
-    clay is .33, thetasMatric should be 44.593 */
+    swrc_type = encode_str2swrc((char *) ns_ptfca2C1974[0]);
+    for (k = 1; k < length(ns_ptfca2C1974); k++) {
+      SWRC_PTF_estimate_parameters(
+        encode_str2ptf((char *) ns_ptfca2C1974[k]),
+        swrcp,
+        sand,
+        clay,
+        gravel,
+        bdensity
+      );
+      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    }
 
-    // Test psisMatric
-    EXPECT_GT(SW_Site.lyr[n]->psisMatric, 3.890451); /* Value should always be greater
-    than 3.890451 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_LT(SW_Site.lyr[n]->psisMatric,  34.67369); /* Value should always be less
-    than 34.67369 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_DOUBLE_EQ(SW_Site.lyr[n]->psisMatric, 27.586715750763947); /* If sand is
-    .33 and clay is .33, psisMatric should be 27.5867 */
+    swrc_type = encode_str2swrc((char *) ns_ptfc2vG1980[0]);
+    for (k = 1; k < length(ns_ptfc2vG1980); k++) {
+      SWRC_PTF_estimate_parameters(
+        encode_str2ptf((char *) ns_ptfc2vG1980[k]),
+        swrcp,
+        sand,
+        clay,
+        gravel,
+        bdensity
+      );
+      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    }
 
-    // Test bMatric
-    EXPECT_GT(SW_Site.lyr[n]->bMatric, 2.8); /* Value should always be greater than
-    2.8 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_LT(SW_Site.lyr[n]->bMatric, 18.8); /* Value should always be less
-    than 18.8 based upon complete consideration of potential range of sand and clay values */
-    EXPECT_DOUBLE_EQ(SW_Site.lyr[n]->bMatric, 8.182); /* If sand is .33 and clay is .33,
-    thetasMatric should be 8.182 */
-
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
+    swrc_type = encode_str2swrc((char *) ns_ptfc2FXW[0]);
+    for (k = 1; k < length(ns_ptfc2FXW); k++) {
+      SWRC_PTF_estimate_parameters(
+        encode_str2ptf((char *) ns_ptfc2FXW[k]),
+        swrcp,
+        sand,
+        clay,
+        gravel,
+        bdensity
+      );
+      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    }
   }
 
-  // Test that water equation function 'water_eqn' fails
-  TEST(SWSiteDeathTest, WaterEquation) {
 
-    //declare inputs
-    RealD fractionGravel = 0.1;
-    LyrIndex n = 1;
+  // Test fatal failures of PTF estimation
+  TEST(SiteDeathTest, PTFs) {
 
-    // Test that error will be logged when b_matric is 0
-    RealD sand = 10. + 1./3.; // So that bmatric will equal 0, even though this is a very irrealistic value
-    RealD clay = 0;
+    RealD
+      swrcp[SWRC_PARAM_NMAX],
+      sand = 0.33,
+      clay = 0.33,
+      gravel = 0.1,
+      bdensity = 1.4;
+    unsigned int ptf_type;
+
+
+    //--- Test unimplemented PTF
+    ptf_type = N_PTFs + 1;
 
     EXPECT_DEATH_IF_SUPPORTED(
-      water_eqn(fractionGravel, sand, clay, n),
+      SWRC_PTF_estimate_parameters(
+        ptf_type,
+        swrcp,
+        sand,
+        clay,
+        gravel,
+        bdensity
+      ),
       "@ generic.c LogError"
     );
   }
 
 
+  // Test PTF-SWRC pairings
+  TEST(SiteTest, PTF2SWRC) {
+    unsigned int k; // `length()` returns "unsigned long"
+
+    for (k = 1; k < length(ns_ptfca2C1974); k++) {
+      EXPECT_TRUE(
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfca2C1974[0],
+          (char *) ns_ptfca2C1974[k]
+        )
+      );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfa2vG1980[0],
+          (char *) ns_ptfca2C1974[k]
+        )
+      );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfa2FXW[0],
+          (char *) ns_ptfca2C1974[k]
+        )
+      );
+    }
+
+    for (k = 1; k < length(ns_ptfa2vG1980); k++) {
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfa2vG1980[0],
+          (char *) ns_ptfa2vG1980[k]
+        )
+      );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfca2C1974[0],
+          (char *) ns_ptfa2vG1980[k]
+        )
+      );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfa2FXW[0],
+          (char *) ns_ptfa2vG1980[k]
+        )
+      );
+    }
+
+
+    for (k = 1; k < length(ns_ptfa2FXW); k++) {
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfa2FXW[0],
+          (char *) ns_ptfa2FXW[k]
+        )
+      );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfca2C1974[0],
+          (char *) ns_ptfa2FXW[k]
+        )
+      );
+
+      EXPECT_FALSE(
+        (bool) check_SWRC_vs_PTF(
+          (char *) ns_ptfa2vG1980[0],
+          (char *) ns_ptfa2FXW[k]
+        )
+      );
+    }
+
+  }
+
+
+  // Test fatal failures of SWRC parameter checks
+  TEST(SiteDeathTest, SWRCpChecks) {
+
+    // inputs
+    RealD swrcp[SWRC_PARAM_NMAX];
+    unsigned int swrc_type;
+
+
+    //--- Test unimplemented SWRC
+    swrc_type = N_SWRCs + 1;
+
+    EXPECT_DEATH_IF_SUPPORTED(
+      SWRC_check_parameters(swrc_type, swrcp),
+      "@ generic.c LogError"
+    );
+  }
+
+
+  // Test nonfatal failures of SWRC parameter checks
+  TEST(SiteTest, SWRCpChecks) {
+
+    // inputs
+    RealD
+      swrcp[SWRC_PARAM_NMAX],
+      tmp;
+    unsigned int swrc_type;
+
+
+    //--- SWRC: Campbell1974
+    swrc_type = encode_str2swrc((char *) "Campbell1974");
+    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    swrcp[0] = 24.2159;
+    swrcp[1] = 0.4436;
+    swrcp[2] = 10.3860;
+    swrcp[3] = 14.14351;
+    EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+
+    // Param1 = psi_sat (> 0)
+    tmp = swrcp[0];
+    swrcp[0] = -1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[0] = tmp;
+
+    // Param2 = theta_sat (0-1)
+    tmp = swrcp[1];
+    swrcp[1] = -1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[1] = 1.5;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[1] = tmp;
+
+    // Param3 = beta (!= 0)
+    tmp = swrcp[2];
+    swrcp[2] = 0.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[2] = tmp;
+
+
+
+    //--- Fail SWRC: vanGenuchten1980
+    swrc_type = encode_str2swrc((char *) "vanGenuchten1980");
+    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    swrcp[0] = 0.1246;
+    swrcp[1] = 0.4445;
+    swrcp[2] = 0.0112;
+    swrcp[3] = 1.2673;
+    swrcp[4] = 7.7851;
+    EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+
+
+    // Param1 = theta_res (0-1)
+    tmp = swrcp[0];
+    swrcp[0] = -1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[0] = 1.5;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[0] = tmp;
+
+    // Param2 = theta_sat (0-1 & > theta_res)
+    tmp = swrcp[1];
+    swrcp[1] = -1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[1] = 1.5;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[1] = 0.5 * swrcp[0];
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[1] = tmp;
+
+    // Param3 = alpha (> 0)
+    tmp = swrcp[2];
+    swrcp[2] = 0.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[2] = tmp;
+
+    // Param4 = n (> 1)
+    tmp = swrcp[3];
+    swrcp[3] = 1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[3] = tmp;
+
+
+
+
+
+    //--- Fail SWRC: FXW
+    swrc_type = encode_str2swrc((char *) "FXW");
+    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    swrcp[0] = 0.437461;
+    swrcp[1] = 0.050757;
+    swrcp[2] = 1.247689;
+    swrcp[3] = 0.308681;
+    swrcp[4] = 22.985379;
+    swrcp[5] = 2.697338;
+    EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+
+
+    // Param1 = theta_sat (0-1)
+    tmp = swrcp[0];
+    swrcp[0] = -1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[0] = 1.5;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[0] = tmp;
+
+    // Param2 = alpha (> 0)
+    tmp = swrcp[1];
+    swrcp[1] = 0.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[1] = tmp;
+
+    // Param3 = n (> 1)
+    tmp = swrcp[2];
+    swrcp[2] = 1.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[2] = tmp;
+
+    // Param4 = m (> 0)
+    tmp = swrcp[3];
+    swrcp[3] = 0.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[3] = tmp;
+
+    // Param5 = Ksat (> 0)
+    tmp = swrcp[4];
+    swrcp[4] = 0.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[4] = tmp;
+
+    // Param6 = L (> 0)
+    tmp = swrcp[5];
+    swrcp[5] = 0.;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    swrcp[5] = tmp;
+  }
+
+
+  // Test 'PTF_RawlsBrakensiek1985'
+  TEST(SiteTest, PTFRawlsBrakensiek1985) {
+    //declare mock INPUTS
+    double
+      theta_min,
+      clay = 0.1,
+      sand = 0.6,
+      porosity = 0.4;
+    int k1, k2, k3;
+
+    //--- EXPECT SW_MISSING if soil texture is out of range
+    // within range: sand [0.05, 0.7], clay [0.05, 0.6], porosity [0.1, 1[
+    PTF_RawlsBrakensiek1985(&theta_min, 0., clay, porosity);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+
+    PTF_RawlsBrakensiek1985(&theta_min, 0.75, clay, porosity);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+
+    PTF_RawlsBrakensiek1985(&theta_min, sand, 0., porosity);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+
+    PTF_RawlsBrakensiek1985(&theta_min, sand, 0.65, porosity);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+
+    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 0.);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+
+    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 1.);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+
+
+    // Check that `theta_min` is reasonable over ranges of soil properties
+    for (k1 = 0; k1 <= 5; k1++) {
+      sand = 0.05 + (double) k1 / 5. * (0.7 - 0.05);
+
+      for (k2 = 0; k2 <= 5; k2++) {
+        clay = 0.05 + (double) k2 / 5. * (0.6 - 0.05);
+
+        for (k3 = 0; k3 <= 5; k3++) {
+          porosity = 0.1 + (double) k3 / 5. * (0.99 - 0.1);
+
+          PTF_RawlsBrakensiek1985(&theta_min, sand, clay, porosity);
+          EXPECT_GE(theta_min, 0.);
+          EXPECT_LT(theta_min, porosity);
+        }
+      }
+    }
+
+    // Expect theta_min = 0 if sand = 0.4, clay = 0.5, and porosity = 0.1
+    PTF_RawlsBrakensiek1985(&theta_min, 0.4, 0.5, 0.1);
+    EXPECT_DOUBLE_EQ(theta_min, 0);
+  }
+
+
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST(SWSiteDeathTest, SoilParameters) {
+  TEST(SiteDeathTest, SoilParameters) {
     LyrIndex n1 = 0, n2 = 1, k = 2;
     RealD help;
 

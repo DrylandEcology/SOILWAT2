@@ -91,6 +91,32 @@ RealD
   _SWCMinVal; /* lower bound on swc.          */
 
 
+/** Character representation of implemented Soil Water Retention Curves (SWRC)
+
+	@note Code maintenance:
+		- Values must exactly match those provided in `siteparam.in`.
+		- Order must exactly match "indices of `swrc2str`"
+		- See details in section \ref swrc_ptf
+*/
+char const *swrc2str[N_SWRCs] = {
+	"Campbell1974",
+	"vanGenuchten1980",
+	"FXW"
+};
+
+/** Character representation of implemented Pedotransfer Functions (PTF)
+
+	@note Code maintenance:
+		- Values must exactly match those provided in `siteparam.in`.
+		- Order must exactly match "indices of `ptf2str`"
+		- See details in section \ref swrc_ptf
+		- `rSOILWAT2` may implemented additional PTFs
+*/
+char const *ptf2str[N_PTFs] = {
+	"Cosby1984AndOthers",
+	"Cosby1984"
+};
+
 
 /* =================================================== */
 /*                  Local Variables                    */
@@ -102,83 +128,203 @@ static char *MyFileName;
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void _read_layers(void) {
-	/* =================================================== */
-	/* 5-Feb-2002 (cwb) removed dmin requirement in input file */
+/** Check validity of soil properties
 
-	SW_SITE *v = &SW_Site;
-	FILE *f;
-	LyrIndex lyrno;
-	int x, k;
-	RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay, soildensity, imperm,
-		soiltemp, f_gravel;
+	@param[in] *lyr Soil information.
 
-	/* note that Files.read() must be called prior to this. */
-	MyFileName = SW_F_name(eLayers);
+	@return A logical value indicating if soil properties passed the checks.
+*/
+static Bool SW_check_soil_properties(SW_LAYER_INFO *lyr) {
+	int k;
+	RealD fval = 0;
+	const char *errtype = "\0";
+	Bool res = swTRUE;
 
-	f = OpenFile(MyFileName, "r");
 
-	while (GetALine(f, inbuf)) {
-		lyrno = _newlayer();
+	if (LE(lyr->width, 0.)) {
+		res = swFALSE;
+		fval = lyr->width;
+		errtype = Str_Dup("layer width");
 
-		x = sscanf(
-			inbuf,
-			"%f %f %f %f %f %f %f %f %f %f %f %f",
-			&dmax,
-			&soildensity,
-			&f_gravel,
-			&evco,
-			&trco_veg[SW_GRASS], &trco_veg[SW_SHRUB], &trco_veg[SW_TREES], &trco_veg[SW_FORBS],
-			&psand,
-			&pclay,
-			&imperm,
-			&soiltemp
-		);
+	} else if (
+		LT(lyr->soilDensityInput, 0.) ||
+		GT(lyr->soilDensityInput, 2.65)
+	) {
+		res = swFALSE;
+		fval = lyr->soilDensityInput;
+		errtype = Str_Dup("soil density");
 
-		/* Check that we have 12 values per layer */
-		/* Adjust number if new variables are added */
-		if (x != 12) {
-			CloseFile(&f);
-			LogError(
-				logfp,
-				LOGFATAL,
-				"%s : Incomplete record %d.\n",
-				MyFileName, lyrno + 1
-			);
-		}
+	} else if (
+		LT(lyr->fractionVolBulk_gravel, 0.) ||
+		GE(lyr->fractionVolBulk_gravel, 1.)
+	) {
+		res = swFALSE;
+		fval = lyr->fractionVolBulk_gravel;
+		errtype = Str_Dup("gravel content");
 
-		v->lyr[lyrno]->width = dmax - dmin;
+	} else if (
+		LE(lyr->fractionWeightMatric_sand, 0.) ||
+		GE(lyr->fractionWeightMatric_sand, 1.)
+	) {
+		res = swFALSE;
+		fval = lyr->fractionWeightMatric_sand;
+		errtype = Str_Dup("sand proportion");
 
-		/* checks for valid values now carried out by `SW_SIT_init_run()` */
+	} else if (
+		LE(lyr->fractionWeightMatric_clay, 0.) ||
+		GE(lyr->fractionWeightMatric_clay, 1.)
+	) {
+		res = swFALSE;
+		fval = lyr->fractionWeightMatric_clay;
+		errtype = Str_Dup("clay proportion");
 
-		dmin = dmax;
-		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel;
-		v->lyr[lyrno]->soilDensityInput = soildensity;
-		v->lyr[lyrno]->evap_coeff = evco;
+	} else if (
+		GE(lyr->fractionWeightMatric_sand + lyr->fractionWeightMatric_clay, 1.)
+	) {
+		res = swFALSE;
+		fval = lyr->fractionWeightMatric_sand + lyr->fractionWeightMatric_clay;
+		errtype = Str_Dup("sand+clay proportion");
 
-		ForEachVegType(k)
-		{
-			v->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
-		}
+	} else if (
+		LT(lyr->impermeability, 0.) ||
+		GT(lyr->impermeability, 1.)
+	) {
+		res = swFALSE;
+		fval = lyr->impermeability;
+		errtype = Str_Dup("impermeability");
 
-		v->lyr[lyrno]->fractionWeightMatric_sand = psand;
-		v->lyr[lyrno]->fractionWeightMatric_clay = pclay;
-		v->lyr[lyrno]->impermeability = imperm;
-		v->lyr[lyrno]->avgLyrTemp = soiltemp;
+	} else if (
+		LT(lyr->evap_coeff, 0.) ||
+		GT(lyr->evap_coeff, 1.)
+	) {
+		res = swFALSE;
+		fval = lyr->evap_coeff;
+		errtype = Str_Dup("bare-soil evaporation coefficient");
 
-		if (lyrno >= MAX_LAYERS) {
-			CloseFile(&f);
-			LogError(
-				logfp,
-				LOGFATAL,
-				"%s : Too many layers specified (%d).\n"
-				"Maximum number of layers is %d\n",
-				MyFileName, lyrno + 1, MAX_LAYERS
-			);
+	} else {
+		ForEachVegType(k) {
+			if (LT(lyr->transp_coeff[k], 0.) || GT(lyr->transp_coeff[k], 1.)) {
+				res = swFALSE;
+				fval = lyr->transp_coeff[k];
+				errtype = Str_Dup("transpiration coefficient");
+				break;
+			}
 		}
 	}
 
-	CloseFile(&f);
+	if (!res) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"'%s' has an invalid value (%5.4f) in layer %d.\n",
+			errtype, fval, lyr->id + 1
+		);
+	}
+
+	return res;
+}
+
+
+
+
+/** A realistic lower limit for minimum `theta`
+
+@note Currently, -30 MPa
+		(based on limited test runs across western US including hot deserts)
+		lower than "air-dry" = hygroscopic point (-10. MPa; Porporato et al. 2001)
+		not as extreme as "oven-dry" (-1000. MPa; Fredlund et al. 1994)
+*/
+static double lower_limit_of_theta_min(
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width
+) {
+	double res = SWRC_SWPtoSWC(300., swrc_type, swrcp, gravel, width, LOGFATAL);
+
+	// convert bulk [cm] to matric [cm / cm]
+	return res / ((1. - gravel) * width);
+}
+
+/**
+	@brief User-input based minimum volumetric water content
+
+	This function returns minimum soil water content `theta_min` determined
+	by user input via #_SWCMinVal as
+		* a fixed VWC value,
+		* a fixed SWP value, or
+		* a realistic lower limit from `lower_limit_of_theta_min()`,
+			unless legacy mode (`ptf` equal to "Cosby1984AndOthers") is used
+			(reproducing behavior prior to v7.0.0), then calculated as
+			maximum of `lower_limit_of_theta_min()` and `PTF_RawlsBrakensiek1985()`
+			with pedotransfer function by Rawls & Brakensiek 1985 \cite rawls1985WmitE
+			(independently of the selected SWRC).
+
+	@param[in] ui_sm_min User input of requested minimum soil moisture,
+		see #_SWCMinVal
+	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+		of the whole soil [m3/m3]
+	@param[in] width Soil layer width [cm]
+	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] swcBulk_sat Saturated water content of the bulk soil [cm]
+	@param[in] swrc_type Identification number of selected SWRC
+	@param[in] *swrcp Vector of SWRC parameters
+	@param[in] legacy_mode If true then legacy behavior (see details)
+
+	@return Minimum volumetric water content of the matric soil [cm / cm]
+*/
+static double ui_theta_min(
+	double ui_sm_min,
+	double gravel,
+	double width,
+	double sand,
+	double clay,
+	double swcBulk_sat,
+	unsigned int swrc_type,
+	double *swrcp,
+	Bool legacy_mode
+) {
+	double vwc_min = SW_MISSING, tmp_vwcmin;
+
+	if (LT(ui_sm_min, 0.0)) {
+		/* user input: request to estimate minimum theta */
+
+		/* realistic lower limit for theta_min */
+		vwc_min = lower_limit_of_theta_min(swrc_type, swrcp, gravel, width);
+
+		if (legacy_mode) {
+			/* residual theta estimated with Rawls & Brakensiek (1985) PTF */
+			PTF_RawlsBrakensiek1985(
+				&tmp_vwcmin,
+				sand,
+				clay,
+				swcBulk_sat / ((1. - gravel) * width)
+			);
+
+			/* if `PTF_RawlsBrakensiek1985()` was successful, then take max */
+			if (!missing(tmp_vwcmin)) {
+				vwc_min = fmax(vwc_min, tmp_vwcmin);
+			}
+		}
+
+	} else if (GE(_SWCMinVal, 1.0)) {
+		/* user input: fixed (matric) SWP value; unit(_SWCMinVal) == -bar */
+		vwc_min = SWRC_SWPtoSWC(
+			_SWCMinVal,
+			swrc_type,
+			swrcp,
+			gravel,
+			width,
+			LOGFATAL
+		) / ((1. - gravel) * width);
+
+	} else {
+		/* user input: fixed matric VWC; unit(_SWCMinVal) == cm/cm */
+		vwc_min = _SWCMinVal / width;
+	}
+
+	return vwc_min;
 }
 
 
@@ -187,101 +333,682 @@ static void _read_layers(void) {
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
+
 /**
-	\brief Calculate soil moisture characteristics for each layer.
+	@brief Translate a SWRC name into a SWRC type number
 
-  Bulk refers to the whole soil, i.e., including the rock/gravel component,
-  whereas matric refers to the < 2 mm fraction.
+	See #swrc2str and `siteparam.in`.
+	Throws an error if `SWRC` is not implemented.
 
-  Saturated moisture content of the matric component (thetasMatric), saturation matric
-	potential (psisMatric), and the slope of the retention curve (bMatric) for each
-	layer are calculated using equations found in Cosby et al. (1984). \cite Cosby1984
-	The saturated moisture content of the whole soil (bulk) for each layer (swcBulk_saturated)
-	is calculated using equations found in Saxton and Rawls (2006; Equations 2, 3 & 5).
-	\cite Saxton2006
+	@param[in] *swrc_name Name of a SWRC
 
-	Return from the function is void. Calculated values stored in SW_Site object.
+	@return Internal identification number of selected SWRC
+*/
+unsigned int encode_str2swrc(char *swrc_name) {
+	unsigned int k;
 
-	SOILWAT2 calculates internally based on soil bulk density of the whole soil,
-	i.e., including rock/gravel component. However, inputs are expected to
-	represent soil (matric) density of the < 2 mm fraction.
+	for (
+		k = 0;
+		k < N_SWRCs && Str_CompareI(swrc_name, (char *)swrc2str[k]);
+		k++
+	);
 
-	sand + clay + silt must equal one. Fraction silt is calculated: 1 - (sand + clay).
+	if (k == N_SWRCs) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"SWRC '%s' is not implemented.",
+			swrc_name
+		);
+	}
 
-	\param fractionGravel The fraction of gravel in a layer by volume.
-	\param sand The fraction of sand in a layer by weight.
-	\param clay The fraction of clay in a layer by weight.
-	\param n Soil layer index.
+	return k;
+}
 
-	\sideeffect
-		- thetasMatric Saturated water content for the matric component (m^3/m^3).
-		- psisMatric Saturation matric potential (MPa).
-		- bMatric Slope of the linear log-log retention curve (unitless).
-		- swcBulk_saturated The saturated water content for the whole soil (bulk) (cm/layer).
+/**
+	@brief Translate a PTF name into a PTF type number
+
+	See #ptf2str and `siteparam.in`.
+
+	@param[in] *ptf_name Name of a PTF
+
+	@return Internal identification number of selected PTF;
+		#SW_MISSING if not implemented.
+*/
+unsigned int encode_str2ptf(char *ptf_name) {
+	unsigned int k;
+
+	for (
+		k = 0;
+		k < N_PTFs && Str_CompareI(ptf_name, (char *)ptf2str[k]);
+		k++
+	);
+
+	if (k == N_PTFs) {
+		k = (unsigned int) SW_MISSING;
+	}
+
+	return k;
+}
+
+
+
+/**
+	@brief Estimate parameters of selected soil water retention curve (SWRC)
+		using selected pedotransfer function (PTF)
+
+	See #ptf2str for implemented PTFs.
+
+	@param[in] ptf_type Identification number of selected PTF
+	@param[out] *swrcp Vector of SWRC parameters to be estimated
+	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+		of the whole soil [m3/m3]
+	@param[in] bdensity Density of the whole soil
+		(matric soil plus coarse fragments) [g/cm3];
+		accepts #SW_MISSING if not used by selected PTF
 
 */
+void SWRC_PTF_estimate_parameters(
+	unsigned int ptf_type,
+	double *swrcp,
+	double sand,
+	double clay,
+	double gravel,
+	double bdensity
+) {
 
-void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
+	/* Initialize swrcp[] to 0 */
+	memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
 
-	/* Cosby, B. J., G. M. Hornberger, R. B. Clapp, and T. R. Ginn. 1984.
-		 A statistical exploration of the relationships of soil moisture
-		 characteristics to the physical properties of soils.
-		 Water Resources Research 20:682–690.
-		 https://doi.org/10.1029/WR020i006p00682. */
+	if (ptf_type == sw_Cosby1984AndOthers) {
+		SWRC_PTF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
 
+	} else if (ptf_type == sw_Cosby1984) {
+		SWRC_PTF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
+
+	} else {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"PTF is not implemented in SOILWAT2.",
+			ptf_type
+		);
+	}
+
+	/**********************************/
+	/* TODO: remove once PTFs are implemented that utilize gravel */
+	/* avoiding `error: unused parameter 'gravel' [-Werror=unused-parameter]` */
+	if (gravel < 0.) {};
+
+	/* TODO: remove once PTFs are implemented that utilize bdensity */
+	/* avoiding `error: unused parameter 'gravel' [-Werror=unused-parameter]` */
+	if (bdensity < 0.) {};
+	/**********************************/
+}
+
+
+/**
+	@brief Estimate Campbell's 1974 SWRC parameters
+		using Cosby et al. 1984 multivariate PTF
+
+	Estimation of four SWRC parameter values `swrcp`
+	based on sand, clay, and (silt).
+
+	Parameters are explained in `SWRC_check_parameters_for_Campbell1974()`.
+
+	Multivariate PTFs are from Cosby et al. 1984 (\cite Cosby1984) Table 4;
+	Cosby et al. 1984 provided also univariate PTFs in Table 5
+	but they are not used here.
+
+	See `SWRC_SWCtoSWP_Campbell1974()` and `SWRC_SWPtoSWC_Campbell1974()`
+	for implementation of Campbell's 1974 SWRC (\cite Campbell1974).
+
+	@param[out] *swrcp Vector of SWRC parameters to be estimated
+	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+*/
+void SWRC_PTF_Cosby1984_for_Campbell1974(
+	double *swrcp,
+	double sand, double clay
+) {
 	/* Table 4 */
-	SW_Site.lyr[n]->thetasMatric = -14.2 * sand - 3.7 * clay + 50.5;
-	SW_Site.lyr[n]->psisMatric = powe(10.0, -1.58 * sand - 0.63 * clay + 2.17);
-	SW_Site.lyr[n]->bMatric = -0.3 * sand + 15.7 * clay + 3.10;
+	/* Original equations formulated with percent sand (%) and clay (%),
+	  here re-formulated for fraction of sand and clay */
+
+	/* swrcp[0] = psi_saturated: originally formulated as function of silt
+	   here re-formulated as function of clay */
+	swrcp[0] = powe(10.0, -1.58 * sand - 0.63 * clay + 2.17);
+	/* swrcp[1] = theta_saturated: originally with units [100 * cm / cm]
+	   here re-formulated with units [cm / cm] */
+	swrcp[1] = -0.142 * sand - 0.037 * clay + 0.505;
+	/* swrcp[2] = b */
+	swrcp[2] = -0.3 * sand + 15.7 * clay + 3.10;
+	/* swrcp[3] = K_saturated: originally with units [inches / day]
+	   here re-formulated with units [cm / day] */
+	swrcp[3] = 2.54 * 24. * powe(10.0, 1.26 * sand - 6.4 * clay - 0.60);
+}
 
 
-	if (
-		LE(SW_Site.lyr[n]->thetasMatric, 0.0) ||
-		GT(SW_Site.lyr[n]->thetasMatric, 100.0)
-	) {
+/**
+	@brief Saturated soil water content
+
+	See #ptf2str for implemented PTFs.
+	See #swrc2str for implemented SWRCs.
+
+	Saturated volumetric water content is usually estimated as one of the
+	SWRC parameters; this is what this function returns.
+
+	For historical reasons, if `swrc_name` is "Campbell1974", then a
+	`ptf_name` of "Cosby1984AndOthers" will reproduce `SOILWAT2` legacy mode
+	(`SOILWAT2` prior to v7.0.0) and return saturated soil water content estimated
+	by Saxton et al. 2006 (\cite Saxton2006) PTF instead;
+	`ptf_name` of "Cosby1984" will return saturated soil water content estimated
+	by Cosby et al. 1984 (\cite Cosby1984) PTF.
+
+	The arguments `ptf_type`, `sand`, and `clay` are utilized only if
+	`ptf_name` is "Cosby1984AndOthers" (see #ptf2str).
+
+	@param[in] swrc_type Identification number of selected SWRC
+	@param[in] *swrcp Vector of SWRC parameters
+	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+		of the whole soil [m3/m3]
+	@param[in] width Soil layer width [cm]
+	@param[in] ptf_type Identification number of selected PTF
+	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+
+	@return Estimated saturated water content of the bulk soil [cm]
+*/
+double SW_swcBulk_saturated(
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width,
+	unsigned int ptf_type,
+	double sand,
+	double clay
+) {
+	double theta_sat = SW_MISSING;
+
+	switch (swrc_type) {
+		case sw_Campbell1974:
+			if (ptf_type == sw_Cosby1984AndOthers) {
+				// Cosby1984AndOthers (backwards compatible)
+				PTF_Saxton2006(&theta_sat, sand, clay);
+			} else {
+				theta_sat = swrcp[1];
+			}
+			break;
+
+		case sw_vanGenuchten1980:
+			theta_sat = swrcp[1];
+			break;
+
+		case sw_FXW:
+			theta_sat = swrcp[0];
+			break;
+
+		default:
+			LogError(
+				logfp,
+				LOGFATAL,
+				"`SW_swcBulk_saturated()`: SWRC (type %d) is not implemented.",
+				swrc_type
+			);
+			break;
+	}
+
+	// Convert from matric [cm/cm] to bulk [cm]
+	return theta_sat * width * (1. - gravel);
+}
+
+
+/**
+	@brief Lower limit of simulated soil water content
+
+	See #ptf2str for implemented PTFs.
+	See #swrc2str for implemented SWRCs.
+
+	SWRCs provide a theoretical minimum/residual volumetric water content;
+	however, water potential at that minimum value is infinite. Instead, we
+	use a realistic lower limit that does not crash the simulation.
+
+	The lower limit is determined via `ui_theta_min()` using user input
+	and is strictly larger than the theoretical SWRC value.
+
+	The arguments `sand`, `clay`, and `swcBulk_sat`
+	are utilized only in legacy mode, i.e., `ptf` equal to "Cosby1984AndOthers".
+
+	@param[in] swrc_type Identification number of selected SWRC
+	@param[in] *swrcp Vector of SWRC parameters
+	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+		of the whole soil [m3/m3]
+	@param[in] width Soil layer width [cm]
+	@param[in] ptf_type Identification number of selected PTF
+	@param[in] ui_sm_min User input of requested minimum soil moisture,
+		see #_SWCMinVal
+	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] swcBulk_sat Saturated water content of the bulk soil [cm]
+
+	@return Minimum water content of the bulk soil [cm]
+*/
+double SW_swcBulk_minimum(
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width,
+	unsigned int ptf_type,
+	double ui_sm_min,
+	double sand,
+	double clay,
+	double swcBulk_sat
+) {
+	double theta_min_sim, theta_min_theoretical = SW_MISSING;
+
+	/* `theta_min` based on theoretical SWRC */
+	switch (swrc_type) {
+		case sw_Campbell1974: // phi = infinity at theta_min
+			theta_min_theoretical = 0.;
+			break;
+
+		case sw_vanGenuchten1980: // phi = infinity at theta_min
+			theta_min_theoretical = swrcp[0];
+			break;
+
+		case sw_FXW: // phi = 6.3 x 10^6 cm at theta_min
+			theta_min_theoretical = 0.;
+			break;
+
+		default:
+			LogError(
+				logfp,
+				LOGFATAL,
+				"`SW_swcBulk_minimum()`: SWRC (type %d) is not implemented.",
+				swrc_type
+			);
+			break;
+	}
+
+	/* `theta_min` based on user input `ui_sm_min` */
+	theta_min_sim = ui_theta_min(
+		ui_sm_min,
+		gravel,
+		width,
+		sand,
+		clay,
+		swcBulk_sat,
+		swrc_type,
+		swrcp,
+		// `(Bool) ptf_type == sw_Cosby1984AndOthers` doesn't work for unit test:
+		//   error: "no known conversion from 'bool' to 'Bool'"
+		ptf_type == sw_Cosby1984AndOthers ? swTRUE : swFALSE
+	);
+
+	/* `theta_min_sim` must be strictly larger than `theta_min_theoretical` */
+	theta_min_sim = fmax(theta_min_sim, theta_min_theoretical + D_DELTA);
+
+	/* Convert from matric [cm/cm] to bulk [cm] */
+	return theta_min_sim * width * (1. - gravel);
+}
+
+
+
+/**
+	@brief Check whether selected PTF and SWRC are compatible
+
+	See #ptf2str for implemented PTFs.
+	See #swrc2str for implemented SWRCs.
+
+	@param[in] *swrc_name Name of selected SWRC
+	@param[in] *ptf_name Name of selected PTF
+
+	@return A logical value indicating if SWRC and PTF are compatible.
+*/
+Bool check_SWRC_vs_PTF(char *swrc_name, char *ptf_name) {
+	Bool res = swFALSE;
+
+	if (!missing((double) encode_str2ptf(ptf_name))) {
+		if (
+			Str_CompareI(swrc_name, (char *) "Campbell1974") == 0 &&
+			(
+				Str_CompareI(ptf_name, (char *) "Cosby1984AndOthers") == 0 ||
+				Str_CompareI(ptf_name, (char *) "Cosby1984") == 0
+			)
+		) {
+			res = swTRUE;
+		}
+	}
+
+	return res;
+}
+
+
+/**
+	@brief Check Soil Water Retention Curve (SWRC) parameters
+
+	See #swrc2str for implemented SWRCs.
+
+	@param[in] swrc_type Identification number of selected SWRC
+	@param[in] *swrcp Vector of SWRC parameters
+
+	@return A logical value indicating if parameters passed the checks.
+*/
+Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp) {
+	Bool res = swFALSE;
+
+	switch (swrc_type) {
+		case sw_Campbell1974:
+			res = SWRC_check_parameters_for_Campbell1974(swrcp);
+			break;
+
+		case sw_vanGenuchten1980:
+			res = SWRC_check_parameters_for_vanGenuchten1980(swrcp);
+			break;
+
+		case sw_FXW:
+			res = SWRC_check_parameters_for_FXW(swrcp);
+			break;
+
+		default:
+			LogError(
+				logfp,
+				LOGFATAL,
+				"Selected SWRC (type %d) is not implemented.",
+				swrc_type
+			);
+			break;
+	}
+
+	return res;
+}
+
+
+
+/**
+	@brief Check Campbell's 1974 SWRC parameters
+
+	See `SWRC_SWCtoSWP_Campbell1974()` and `SWRC_SWPtoSWC_Campbell1974()`
+	for implementation of Campbell's 1974 SWRC (\cite Campbell1974).
+
+	Campbell1974 has four parameters (three are used for the SWRC):
+		- `swrcp[0]` (`psisMatric`): air-entry suction [cm]
+		- `swrcp[1]` (previously named `thetasMatric`):
+			saturated volumetric water content for the matric component [cm/cm]
+		- `swrcp[2]` (`bMatric`): slope of the linear log-log retention curve [-]
+		- `swrcp[3]` (`K_sat`): saturated hydraulic conductivity `[cm / day]`
+
+	@param[in] *swrcp Vector of SWRC parameters
+
+	@return A logical value indicating if parameters passed the checks.
+*/
+Bool SWRC_check_parameters_for_Campbell1974(double *swrcp) {
+	Bool res = swTRUE;
+
+	if (LE(swrcp[0], 0.0)) {
+		res = swFALSE;
 		LogError(
 			logfp,
-			LOGFATAL,
-			"water_eqn(): invalid value of "
-			"theta(saturated, matric, [%]; Cosby et al. 1984) = %f "
-			"(must within 0-100%)\n",
-			SW_Site.lyr[n]->thetasMatric
+			LOGWARN,
+			"SWRC_check_parameters_for_Campbell1974(): invalid value of "
+			"psi(saturated, matric, [cm]) = %f (must > 0)\n",
+			swrcp[1]
 		);
 	}
 
-	if (ZRO(SW_Site.lyr[n]->bMatric)) {
+	if (LE(swrcp[1], 0.0) || GT(swrcp[1], 1.0)) {
+		res = swFALSE;
 		LogError(
 			logfp,
-			LOGFATAL,
-			"water_eqn(): invalid value of beta = %f (must be != 0)\n",
-			SW_Site.lyr[n]->bMatric
+			LOGWARN,
+			"SWRC_check_parameters_for_Campbell1974(): invalid value of "
+			"theta(saturated, matric, [cm/cm]) = %f (must be within 0-1)\n",
+			swrcp[1]
 		);
 	}
 
-	SW_Site.lyr[n]->binverseMatric = 1.0 / SW_Site.lyr[n]->bMatric;
+	if (ZRO(swrcp[2])) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_Campbell1974(): invalid value of "
+			"beta = %f (must be != 0)\n",
+			swrcp[2]
+		);
+	}
+
+	if (LE(swrcp[3], 0.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_Campbell1974(): invalid value of "
+			"K_sat = %f (must be > 0)\n",
+			swrcp[3]
+		);
+	}
+
+	return res;
+}
+
+/**
+	@brief Check van Genuchten 1980 SWRC parameters
+
+	See `SWRC_SWCtoSWP_vanGenuchten1980()` and `SWRC_SWPtoSWC_vanGenuchten1980()`
+	for implementation of van Genuchten's 1980 SWRC (\cite vanGenuchten1980).
+
+	"vanGenuchten1980" has five parameters (four are used for the SWRC):
+		- `swrcp[0]` (`theta_r`): residual volumetric water content
+			of the matric component [cm/cm]
+		- `swrcp[1]` (`theta_s`): saturated volumetric water content
+			of the matric component [cm/cm]
+		- `swrcp[2]` (`alpha`): related to the inverse of air entry suction [cm-1]
+		- `swrcp[3]` (`n`): measure of the pore-size distribution [-]
+		- `swrcp[4]` (`K_sat`): saturated hydraulic conductivity `[cm / day]`
+
+	@param[in] *swrcp Vector of SWRC parameters
+
+	@return A logical value indicating if parameters passed the checks.
+*/
+Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp) {
+	Bool res = swTRUE;
+
+	if (LE(swrcp[0], 0.0) || GT(swrcp[0], 1.)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"theta(residual, matric, [cm/cm]) = %f (must be within 0-1)\n",
+			swrcp[0]
+		);
+	}
+
+	if (LE(swrcp[1], 0.0) || GT(swrcp[1], 1.)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"theta(saturated, matric, [cm/cm]) = %f (must be within 0-1)\n",
+			swrcp[1]
+		);
+	}
+
+	if (LE(swrcp[1], swrcp[0])) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid values for "
+			"theta(residual, matric, [cm/cm]) = %f and "
+			"theta(saturated, matric, [cm/cm]) = %f "
+			"(must be theta_r < theta_s)\n",
+			swrcp[0], swrcp[1]
+		);
+	}
+
+	if (LE(swrcp[2], 0.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"alpha([1 / cm]) = %f (must > 0)\n",
+			swrcp[2]
+		);
+	}
+
+	if (LE(swrcp[3], 1.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"n = %f (must be > 1)\n",
+			swrcp[3]
+		);
+	}
+
+	if (LE(swrcp[4], 0.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_vanGenuchten1980(): invalid value of "
+			"K_sat = %f (must be > 0)\n",
+			swrcp[4]
+		);
+	}
+
+	return res;
+}
 
 
-	/* Saxton, K. E. and W. J. Rawls. 2006. Soil water characteristic estimates
-		 by texture and organic matter for hydrologic solutions.
-		 Soil Science Society of America Journal 70:1569-1578.
-	*/
+/**
+	@brief Check FXW SWRC parameters
 
-	RealD
+	See `SWRC_SWCtoSWP_FXW()` and `SWRC_SWPtoSWC_FXW()`
+	for implementation of FXW's SWRC
+	(\cite fredlund1994CGJa, \cite wang2018wrr).
+
+	"FXWJD" is a synonym for the FXW SWRC (\cite wang2018wrr).
+
+	FXW has six parameters (four are used for the SWRC):
+		- `swrcp[0]` (`theta_s`): saturated volumetric water content
+			of the matric component [cm/cm]
+		- `swrcp[1]` (`alpha`): shape parameter [cm-1]
+		- `swrcp[2]` (`n`): shape parameter [-]
+		- `swrcp[3]` (`m`): shape parameter [-]
+		- `swrcp[4]` (`K_sat`): saturated hydraulic conductivity [cm / day]
+		- `swrcp[5]` (`L`): tortuosity/connectivity parameter [-]
+
+	FXW SWRC does not include a non-zero residual water content parameter;
+	instead, it assumes a pressure head #FXW_h0 of 6.3 x 10^6 cm
+	(equivalent to c. -618 MPa) at zero water content
+	and a "residual" pressure head #FXW_hr of 1500 cm
+	(\cite fredlund1994CGJa, \cite wang2018wrr, \cite rudiyanto2021G).
+
+	Acceptable parameter values are partially based on
+	Table 1 in \cite wang2022WRRa.
+
+	@param[in] *swrcp Vector of SWRC parameters
+
+	@return A logical value indicating if parameters passed the checks.
+*/
+Bool SWRC_check_parameters_for_FXW(double *swrcp) {
+	Bool res = swTRUE;
+
+	if (LE(swrcp[0], 0.0) || GT(swrcp[0], 1.)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_FXW(): invalid value of "
+			"theta(saturated, matric, [cm/cm]) = %f (must be within 0-1)\n",
+			swrcp[0]
+		);
+	}
+
+	if (LE(swrcp[1], 0.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_FXW(): invalid value of "
+			"alpha([1 / cm]) = %f (must be > 0)\n",
+			swrcp[1]
+		);
+	}
+
+	if (LE(swrcp[2], 1.0) || GT(swrcp[2], 10.)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_FXW(): invalid value of "
+			"n = %f (must be within 1-10)\n",
+			swrcp[2]
+		);
+	}
+
+	if (LE(swrcp[3], 0.0) || GT(swrcp[3], 1.5)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_FXW(): invalid value of "
+			"m = %f (must be within 0-1.5)\n",
+			swrcp[3]
+		);
+	}
+
+	if (LE(swrcp[4], 0.0)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_FXW(): invalid value of "
+			"K_sat = %f (must be > 0)\n",
+			swrcp[4]
+		);
+	}
+
+	if (LE(swrcp[5], 0.)) {
+		res = swFALSE;
+		LogError(
+			logfp,
+			LOGWARN,
+			"SWRC_check_parameters_for_FXW(): invalid value of "
+			"L = %f (must be > 0)\n",
+			swrcp[5]
+		);
+	}
+
+	return res;
+}
+
+
+/**
+	@brief Saxton et al. 2006 PTFs \cite Saxton2006
+		to estimate saturated soil water content
+
+	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+	@param[out] *theta_sat Estimated saturated volumetric water content
+		of the matric soil [cm/cm]
+*/
+void PTF_Saxton2006(
+	double *theta_sat,
+	double sand,
+	double clay
+) {
+	double
 		OM = 0.,
-		theta_S, theta_33, theta_33t, theta_S33, theta_S33t, theta_1500, theta_1500t,
-		R_w, alpha;
-
-	/* Eq. 1: 1500 kPa moisture */
-	theta_1500t =
-		+ 0.031 \
-		- 0.024 * sand \
-		+ 0.487 * clay \
-		+ 0.006 * OM \
-		+ 0.005 * sand * OM \
-		- 0.013 * clay * OM \
-		+ 0.068 * sand * clay;
-
-	theta_1500 = theta_1500t + (0.14 * theta_1500t - 0.02);
+		theta_33, theta_33t, theta_S33, theta_S33t;
 
 	/* Eq. 2: 33 kPa moisture */
 	theta_33t =
@@ -293,7 +1020,8 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 		- 0.027 * clay * OM \
 		+ 0.452 * sand * clay;
 
-	theta_33 = theta_33t + (1.283 * squared(theta_33t) - 0.374 * theta_33t - 0.015);
+	theta_33 =
+		theta_33t + (1.283 * squared(theta_33t) - 0.374 * theta_33t - 0.015);
 
 	/* Eq. 3: SAT-33 kPa moisture */
 	theta_S33t =
@@ -309,24 +1037,39 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 
 
 	/* Eq. 5: saturated moisture */
-	theta_S = theta_33 + theta_S33 - 0.097 * sand + 0.043;
+	*theta_sat = theta_33 + theta_S33 - 0.097 * sand + 0.043;
 
 	if (
-		LE(theta_S, 0.) ||
-		GT(theta_S, 1.)
+		LE(*theta_sat, 0.) ||
+		GT(*theta_sat, 1.)
 	) {
 		LogError(
 			logfp,
 			LOGFATAL,
-			"water_eqn(): invalid value of "
-			"theta(saturated, [cm / cm]; Saxton et al. 2006) = %f "
-			"(must be within 0-1)\n",
-			theta_S
+			"PTF_Saxton2006(): invalid value of "
+			"theta(saturated, [cm / cm]) = %f (must be within 0-1)\n",
+			*theta_sat
 		);
 	}
 
-	SW_Site.lyr[n]->swcBulk_saturated =
-		SW_Site.lyr[n]->width * (1. - fractionGravel) * theta_S;
+
+
+// currently, unused and defunct code:
+// (e.g., SW_Site.lyr[n] assignments don't work here anymore!):
+#ifdef UNUSED_SAXTON2006
+	double R_w, alpha, theta_1500, theta_1500t;
+
+	/* Eq. 1: 1500 kPa moisture */
+	theta_1500t =
+		+ 0.031 \
+		- 0.024 * sand \
+		+ 0.487 * clay \
+		+ 0.006 * OM \
+		+ 0.005 * sand * OM \
+		- 0.013 * clay * OM \
+		+ 0.068 * sand * clay;
+
+	theta_1500 = theta_1500t + (0.14 * theta_1500t - 0.02);
 
 
 	/* Eq. 18: slope of logarithmic tension-moisture curve */
@@ -364,8 +1107,67 @@ void water_eqn(RealD fractionGravel, RealD sand, RealD clay, LyrIndex n) {
 	} else {
 		SW_Site.lyr[n]->Saxton2006_fK_gravel = 1.;
 	}
-
+#endif
 }
+
+
+
+/**
+	@brief Rawls and Brakensiek 1985 PTFs \cite rawls1985WmitE
+		to estimate residual soil water content for the Brooks-Corey SWRC
+		\cite brooks1964a
+
+	@note This function was previously named "SW_VWCBulkRes".
+	@note This function is only well-defined for `clay` values in 5-60%,
+		`sand` values in 5-70%, and `porosity` must in 10-<100%.
+
+	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+	@param[in] porosity Pore space of the matric soil (< 2 mm fraction) [cm3/cm3]
+	@param[out] *theta_min Estimated residual volumetric water content
+		of the matric soil [cm/cm]
+*/
+void PTF_RawlsBrakensiek1985(
+	double *theta_min,
+	double sand,
+	double clay,
+	double porosity
+) {
+	if (
+		GE(clay, 0.05) && LE(clay, 0.6) &&
+		GE(sand, 0.05) && LE(sand, 0.7) &&
+		GE(porosity, 0.1) && LT(porosity, 1.)
+	) {
+		sand *= 100.;
+		clay *= 100.;
+		/* Note: the equation requires sand and clay in units of [100 * g / g];
+			porosity, however, must be in units of [cm3 / cm3]
+		*/
+		*theta_min = fmax(
+			0.,
+			- 0.0182482 \
+			+ 0.00087269 * sand \
+			+ 0.00513488 * clay \
+			+ 0.02939286 * porosity \
+			- 0.00015395 * squared(clay) \
+			- 0.0010827 * sand * porosity \
+			- 0.00018233 * squared(clay) * squared(porosity) \
+			+ 0.00030703 * squared(clay) * porosity \
+			- 0.0023584 * squared(porosity) * clay
+		);
+
+	} else {
+			LogError(
+			logfp,
+			LOGWARN,
+			"`PTF_RawlsBrakensiek1985()`: sand, clay, or porosity out of valid range."
+		);
+
+		*theta_min = SW_MISSING;
+	}
+}
+
+
 
 /**
   @brief Estimate soil density of the whole soil (bulk).
@@ -505,6 +1307,7 @@ LyrIndex _newlayer(void) {
 		: (SW_LAYER_INFO **) Mem_ReAlloc(v->lyr, sizeof(SW_LAYER_INFO *) * (v->n_layers)); /* else realloc() */
 
 	v->lyr[v->n_layers - 1] = (SW_LAYER_INFO *) Mem_Calloc(1, sizeof(SW_LAYER_INFO), "_newlayer()");
+	v->lyr[v->n_layers - 1]->id = v->n_layers - 1;
 
 	return v->n_layers - 1;
 }
@@ -709,9 +1512,20 @@ void SW_SIT_read(void) {
 		case 41:
 			v->type_soilDensityInput = atoi(inbuf);
 			break;
+		case 42:
+			strcpy(v->site_swrc_name, inbuf);
+			v->site_swrc_type = encode_str2swrc(v->site_swrc_name);
+			break;
+		case 43:
+			strcpy(v->site_ptf_name, inbuf);
+			v->site_ptf_type = encode_str2ptf(v->site_ptf_name);
+			break;
+		case 44:
+			v->site_has_swrcp = itob(atoi(inbuf));
+			break;
 
 		default:
-			if (lineno > 41 + MAX_TRANSP_REGIONS)
+			if (lineno > 44 + MAX_TRANSP_REGIONS)
 				break; /* skip extra lines */
 
 			if (MAX_TRANSP_REGIONS < v->n_transp_rgn) {
@@ -735,30 +1549,135 @@ void SW_SIT_read(void) {
 	CloseFile(&f);
 
 	if (LT(v->percentRunoff, 0.) || GT(v->percentRunoff, 1.)) {
-		LogError(logfp, LOGFATAL, "%s : proportion of ponded surface water removed as daily"
-		  "runoff = %f (value ranges between 0 and 1)\n", MyFileName, v->percentRunoff);
+		LogError(
+			logfp,
+			LOGFATAL,
+			"%s : proportion of ponded surface water removed as daily"
+			"runoff = %f (value ranges between 0 and 1)\n",
+			MyFileName, v->percentRunoff
+		);
 	}
 
 	if (LT(v->percentRunon, 0.)) {
-		LogError(logfp, LOGFATAL, "%s : proportion of water that arrives at surface added "
-		  "as daily runon = %f (value ranges between 0 and +inf)\n", MyFileName, v->percentRunon);
+		LogError(
+			logfp,
+			LOGFATAL,
+			"%s : proportion of water that arrives at surface added "
+			"as daily runon = %f (value ranges between 0 and +inf)\n",
+			MyFileName, v->percentRunon
+		);
 	}
 
 	if (too_many_regions) {
-		LogError(logfp, LOGFATAL, "%s : Number of transpiration regions"
-				" exceeds maximum allowed (%d > %d)\n", MyFileName, v->n_transp_rgn, MAX_TRANSP_REGIONS);
+		LogError(
+			logfp,
+			LOGFATAL,
+			"%s : Number of transpiration regions"
+			" exceeds maximum allowed (%d > %d)\n",
+			MyFileName, v->n_transp_rgn, MAX_TRANSP_REGIONS
+		);
 	}
 
 	/* check for any discontinuities (reversals) in the transpiration regions */
 	for (r = 1; r < v->n_transp_rgn; r++) {
 		if (_TranspRgnBounds[r - 1] >= _TranspRgnBounds[r]) {
-			LogError(logfp, LOGFATAL, "%s : Discontinuity/reversal in transpiration regions.\n", SW_F_name(eSite));
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Discontinuity/reversal in transpiration regions.\n",
+				SW_F_name(eSite)
+			);
+		}
+	}
+}
 
+
+
+/** Reads soil layers and soil properties from input file
+
+		@note Previously, the function was static and named `_read_layers()`.
+*/
+void SW_LYR_read(void) {
+	/* =================================================== */
+	/* 5-Feb-2002 (cwb) removed dmin requirement in input file */
+
+	SW_SITE *v = &SW_Site;
+	FILE *f;
+	LyrIndex lyrno;
+	int x, k;
+	RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay, soildensity, imperm,
+		soiltemp, f_gravel;
+
+	/* note that Files.read() must be called prior to this. */
+	MyFileName = SW_F_name(eLayers);
+
+	f = OpenFile(MyFileName, "r");
+
+	while (GetALine(f, inbuf)) {
+		lyrno = _newlayer();
+
+		x = sscanf(
+			inbuf,
+			"%f %f %f %f %f %f %f %f %f %f %f %f",
+			&dmax,
+			&soildensity,
+			&f_gravel,
+			&evco,
+			&trco_veg[SW_GRASS], &trco_veg[SW_SHRUB], &trco_veg[SW_TREES], &trco_veg[SW_FORBS],
+			&psand,
+			&pclay,
+			&imperm,
+			&soiltemp
+		);
+
+		/* Check that we have 12 values per layer */
+		/* Adjust number if new variables are added */
+		if (x != 12) {
+			CloseFile(&f);
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Incomplete record %d.\n",
+				MyFileName, lyrno + 1
+			);
+		}
+
+		v->lyr[lyrno]->width = dmax - dmin;
+
+		/* checks for valid values now carried out by `SW_SIT_init_run()` */
+
+		dmin = dmax;
+		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel;
+		v->lyr[lyrno]->soilDensityInput = soildensity;
+		v->lyr[lyrno]->evap_coeff = evco;
+
+		ForEachVegType(k)
+		{
+			v->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
+		}
+
+		v->lyr[lyrno]->fractionWeightMatric_sand = psand;
+		v->lyr[lyrno]->fractionWeightMatric_clay = pclay;
+		v->lyr[lyrno]->impermeability = imperm;
+		v->lyr[lyrno]->avgLyrTemp = soiltemp;
+
+		if (lyrno >= MAX_LAYERS) {
+			CloseFile(&f);
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Too many layers specified (%d).\n"
+				"Maximum number of layers is %d\n",
+				MyFileName, lyrno + 1, MAX_LAYERS
+			);
 		}
 	}
 
-	_read_layers();
+	CloseFile(&f);
 }
+
+
+
 
 /**
   @brief Creates soil layers based on function arguments (instead of reading
@@ -940,6 +1859,90 @@ void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 	}
 }
 
+
+
+/** Obtain soil water retention curve parameters from disk
+*/
+void SW_SWRC_read(void) {
+
+	/* Don't read values from disk if they will be estimated via a PTF */
+	if (!SW_Site.site_has_swrcp) return;
+
+	FILE *f;
+	LyrIndex lyrno = 0, k;
+	int x;
+	RealF tmp_swrcp[SWRC_PARAM_NMAX];
+
+	/* note that Files.read() must be called prior to this. */
+	MyFileName = SW_F_name(eSWRCp);
+
+	f = OpenFile(MyFileName, "r");
+
+	while (GetALine(f, inbuf)) {
+		x = sscanf(
+			inbuf,
+			"%f %f %f %f %f %f",
+			&tmp_swrcp[0],
+			&tmp_swrcp[1],
+			&tmp_swrcp[2],
+			&tmp_swrcp[3],
+			&tmp_swrcp[4],
+			&tmp_swrcp[5]
+		);
+
+		/* Note: `SW_SIT_init_run()` will call function to check for valid values */
+
+		/* Check that we have n = `SWRC_PARAM_NMAX` values per layer */
+		if (x != SWRC_PARAM_NMAX) {
+			CloseFile(&f);
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Bad number of SWRC parameters %d -- must be %d.\n",
+				MyFileName, x, SWRC_PARAM_NMAX
+			);
+		}
+
+		/* Check that we are within `SW_Site.n_layers` */
+		if (lyrno >= SW_Site.n_layers) {
+			CloseFile(&f);
+			LogError(
+				logfp,
+				LOGFATAL,
+				"%s : Number of layers with SWRC parameters (%d) "
+				"must match number of soil layers (%d)\n",
+				MyFileName, lyrno + 1, SW_Site.n_layers
+			);
+		}
+
+		/* Copy values into structure */
+		for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+			SW_Site.lyr[lyrno]->swrcp[k] = tmp_swrcp[k];
+		}
+
+		lyrno++;
+	}
+
+	CloseFile(&f);
+}
+
+
+/**
+	@brief Derive and check soil properties from inputs
+
+	Bulk refers to the whole soil,
+	i.e., including the rock/gravel component (coarse fragments),
+	whereas matric refers to the < 2 mm fraction.
+
+	Internally, SOILWAT2 calculates based on bulk soil, i.e., the whole soil.
+	However, sand and clay inputs are expected to represent the soil matric,
+	i.e., the < 2 mm fraction.
+
+	sand + clay + silt must equal one.
+	Fraction of silt is calculated: 1 - (sand + clay).
+
+	@sideeffect Values stored in global variable `SW_Site`.
+*/
 void SW_SIT_init_run(void) {
 	/* =================================================== */
 	/* potentially this routine can be called whether the
@@ -953,12 +1956,8 @@ void SW_SIT_init_run(void) {
 	SW_LAYER_INFO *lyr;
 	LyrIndex s, r, curregion;
 	int k, flagswpcrit = 0;
-	Bool fail = swFALSE;
 	RealD
-		fval = 0,
-		evsum = 0., trsum_veg[NVEGTYPES] = {0.},
-		swcmin_help1, swcmin_help2, tmp;
-	const char *errtype = "\0";
+		evsum = 0., trsum_veg[NVEGTYPES] = {0.}, tmp;
 
 	#ifdef SWDEBUG
 	int debug = 0;
@@ -975,93 +1974,40 @@ void SW_SIT_init_run(void) {
 	add_deepdrain_layer();
 
 
+	/* Check compatibility between selected SWRC and PTF */
+	if (!sp->site_has_swrcp) {
+		if (!check_SWRC_vs_PTF(sp->site_swrc_name, sp->site_ptf_name)) {
+			LogError(
+				logfp,
+				LOGFATAL,
+				"Selected PTF '%s' is incompatible with selected SWRC '%s'\n",
+				sp->site_ptf_name,
+				sp->site_swrc_name
+			);
+		}
+	}
+
+
 	/* Loop over soil layers check variables and calculate parameters */
 	ForEachSoilLayer(s)
 	{
 		lyr = sp->lyr[s];
 
-		/* Check validity of soil variables:
-			previously, checked by code in `_read_layers()`,
-			erroneously skipped by `set_soillayers()`,
-			and checked by code in rSOILWAT2's `onSet_SW_LYR()`
+		/* Copy site-level SWRC/PTF information to each layer:
+		   We currently allow specifying one SWRC/PTF for a site for all layers;
+		   remove in the future if we allow SWRC/PTF to vary by soil layer
 		*/
-		if (LE(lyr->width, 0.)) {
-			fail = swTRUE;
-			fval = lyr->width;
-			errtype = Str_Dup("layer width");
+		lyr->swrc_type = sp->site_swrc_type;
+		lyr->ptf_type = sp->site_ptf_type;
 
-		} else if (
-			LT(lyr->soilDensityInput, 0.) ||
-			GT(lyr->soilDensityInput, 2.65)
-		) {
-			fail = swTRUE;
-			fval = lyr->soilDensityInput;
-			errtype = Str_Dup("soil density");
 
-		} else if (
-			LT(lyr->fractionVolBulk_gravel, 0.) ||
-			GE(lyr->fractionVolBulk_gravel, 1.)
-		) {
-			fail = swTRUE;
-			fval = lyr->fractionVolBulk_gravel;
-			errtype = Str_Dup("gravel content");
-
-		} else if (
-			LE(lyr->fractionWeightMatric_sand, 0.) ||
-			GE(lyr->fractionWeightMatric_sand, 1.)
-		) {
-			fail = swTRUE;
-			fval = lyr->fractionWeightMatric_sand;
-			errtype = Str_Dup("sand proportion");
-
-		} else if (
-			LE(lyr->fractionWeightMatric_clay, 0.) ||
-			GE(lyr->fractionWeightMatric_clay, 1.)
-		) {
-			fail = swTRUE;
-			fval = lyr->fractionWeightMatric_clay;
-			errtype = Str_Dup("clay proportion");
-
-		} else if (
-			GE(lyr->fractionWeightMatric_sand + lyr->fractionWeightMatric_clay, 1.)
-		) {
-			fail = swTRUE;
-			fval = lyr->fractionWeightMatric_sand + lyr->fractionWeightMatric_clay;
-			errtype = Str_Dup("sand+clay proportion");
-
-		} else if (
-			LT(lyr->impermeability, 0.) ||
-			GT(lyr->impermeability, 1.)
-		) {
-			fail = swTRUE;
-			fval = lyr->impermeability;
-			errtype = Str_Dup("impermeability");
-
-		} else if (
-			LT(lyr->evap_coeff, 0.) ||
-			GT(lyr->evap_coeff, 1.)
-		) {
-			fail = swTRUE;
-			fval = lyr->evap_coeff;
-			errtype = Str_Dup("bare-soil evaporation coefficient");
-
-		} else {
-			ForEachVegType(k) {
-				if (LT(lyr->transp_coeff[k], 0.) || GT(lyr->transp_coeff[k], 1.)) {
-					fail = swTRUE;
-					fval = lyr->transp_coeff[k];
-					errtype = Str_Dup("transpiration coefficient");
-					break;
-				}
-			}
-		}
-
-		if (fail) {
+		/* Check soil properties for valid values */
+		if (!SW_check_soil_properties(lyr)) {
 			LogError(
 				logfp,
 				LOGFATAL,
-				"Invalid %s (%5.4f) in layer %d.\n",
-				errtype, fval, s + 1
+				"Invalid soil properties in layer %d.\n",
+				lyr->id + 1
 			);
 		}
 
@@ -1100,26 +2046,37 @@ void SW_SIT_init_run(void) {
 
 
 
-		/* Calculate pedotransfer function parameters */
-		water_eqn(
-			lyr->fractionVolBulk_gravel,
-			lyr->fractionWeightMatric_sand,
-			lyr->fractionWeightMatric_clay,
-			s
-		);
+
+		if (!sp->site_has_swrcp) {
+			/* Use pedotransfer function PTF
+			   to estimate parameters of soil water retention curve (SWRC) for layer.
+			   If `has_swrcp`, then parameters already obtained from disk
+			   by `SW_SWRC_read()`
+			*/
+			SWRC_PTF_estimate_parameters(
+				lyr->ptf_type,
+				lyr->swrcp,
+				lyr->fractionWeightMatric_sand,
+				lyr->fractionWeightMatric_clay,
+				lyr->fractionVolBulk_gravel,
+				lyr->soilBulk_density
+			);
+		}
+
+		/* Check parameters of selected SWRC */
+		if (!SWRC_check_parameters(lyr->swrc_type, lyr->swrcp)) {
+			LogError(
+				logfp,
+				LOGFATAL,
+				"Checks of parameters for SWRC '%s' in layer %d failed.",
+				swrc2str[lyr->swrc_type],
+				lyr->id + 1
+			);
+		}
 
 		/* Calculate SWC at field capacity and at wilting point */
-		lyr->swcBulk_fieldcap = lyr->width * SW_SWPmatric2VWCBulk(
-			lyr->fractionVolBulk_gravel,
-			0.333,
-			s
-		);
-
-		lyr->swcBulk_wiltpt = lyr->width * SW_SWPmatric2VWCBulk(
-			lyr->fractionVolBulk_gravel,
-			15,
-			s
-		);
+		lyr->swcBulk_fieldcap = SW_SWRC_SWPtoSWC(0.333, lyr);
+		lyr->swcBulk_wiltpt = SW_SWRC_SWPtoSWC(15., lyr);
 
 		/* Calculate lower SWC limit of bare-soil evaporation
 			as `max(0.5 * wiltpt, SWC@hygroscopic)`
@@ -1132,69 +2089,43 @@ void SW_SIT_init_run(void) {
 		*/
 		lyr->swcBulk_halfwiltpt = fmax(
 			0.5 * lyr->swcBulk_wiltpt,
-			lyr->width * SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, 100., s)
+			SW_SWRC_SWPtoSWC(100., lyr)
 		);
 
 
-		/* Compute swc wet and dry limits and init value */
-		if (LT(_SWCMinVal, 0.0)) {
-			/* input: estimate mininum SWC */
+		/* Extract or estimate additional properties */
+		lyr->swcBulk_saturated = SW_swcBulk_saturated(
+			lyr->swrc_type,
+			lyr->swrcp,
+			lyr->fractionVolBulk_gravel,
+			lyr->width,
+			lyr->ptf_type,
+			lyr->fractionWeightMatric_sand,
+			lyr->fractionWeightMatric_clay
+		);
 
-			/* residual SWC of Rawls & Brakensiek (1985) */
-			swcmin_help1 = SW_VWCBulkRes(
-				lyr->fractionVolBulk_gravel,
-				lyr->fractionWeightMatric_sand,
-				lyr->fractionWeightMatric_clay,
-				lyr->swcBulk_saturated / ((1. - lyr->fractionVolBulk_gravel) * lyr->width)
-			);
-
-			/* Lower limit for swc_min
-				Notes:
-				- used in case the equation for residual SWC doesn't work or
-					produces unrealistic small values
-				- currently, -30 MPa
-					(based on limited test runs across western US including hot deserts)
-					lower than "air-dry" = hygroscopic point (-10. MPa; Porporato et al. 2001)
-					not as extreme as "oven-dry" (-1000. MPa; Fredlund et al. 1994)
-			*/
-			swcmin_help2 = SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, 300., s);
-
-			// if `SW_VWCBulkRes()` returns SW_MISSING then use `swcmin_help2`
-			if (missing(swcmin_help1)) {
-				lyr->swcBulk_min = swcmin_help2;
-
-			} else {
-				lyr->swcBulk_min = fmax(swcmin_help1, swcmin_help2);
-			}
-
-		} else if (GE(_SWCMinVal, 1.0)) {
-			/* input: fixed SWP value as minimum SWC; unit(_SWCMinVal) == -bar */
-			lyr->swcBulk_min = SW_SWPmatric2VWCBulk(
-				lyr->fractionVolBulk_gravel,
-				_SWCMinVal,
-				s
-			);
-
-		} else {
-			/* input: fixed VWC value as minimum SWC; unit(_SWCMinVal) == cm/cm */
-			lyr->swcBulk_min = _SWCMinVal;
-		}
-
-		/* Convert VWC to SWC */
-		lyr->swcBulk_min *= lyr->width;
+		lyr->swcBulk_min = SW_swcBulk_minimum(
+			lyr->swrc_type,
+			lyr->swrcp,
+			lyr->fractionVolBulk_gravel,
+			lyr->width,
+			lyr->ptf_type,
+			_SWCMinVal,
+			lyr->fractionWeightMatric_sand,
+			lyr->fractionWeightMatric_clay,
+			lyr->swcBulk_saturated
+		);
 
 
 		/* Calculate wet limit of SWC for what inputs defined as wet */
-		lyr->swcBulk_wet = lyr->width * (GE(_SWCWetVal, 1.0) ?
-			SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCWetVal, s) :
-			_SWCWetVal
-		);
+		lyr->swcBulk_wet = GE(_SWCWetVal, 1.0) ?
+			SW_SWRC_SWPtoSWC(_SWCWetVal, lyr) :
+			_SWCWetVal * lyr->width;
 
 		/* Calculate initial SWC based on inputs */
-		lyr->swcBulk_init = lyr->width * (GE(_SWCInitVal, 1.0) ?
-			SW_SWPmatric2VWCBulk(lyr->fractionVolBulk_gravel, _SWCInitVal, s) :
-			_SWCInitVal
-		);
+		lyr->swcBulk_init = GE(_SWCInitVal, 1.0) ?
+			SW_SWRC_SWPtoSWC(_SWCInitVal, lyr) :
+			_SWCInitVal * lyr->width;
 
 
 		/* test validity of values */
@@ -1204,7 +2135,7 @@ void SW_SIT_init_run(void) {
 				"%s : Layer %d\n"
 				"  calculated `swcBulk_init` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
 				"  Recheck parameters and try again.\n",
-				MyFileName, s + 1, lyr->swcBulk_init, lyr->swcBulk_min
+				MyFileName, lyr->id + 1, lyr->swcBulk_init, lyr->swcBulk_min
 			);
 		}
 
@@ -1214,7 +2145,7 @@ void SW_SIT_init_run(void) {
 				"%s : Layer %d\n"
 				"  calculated `swcBulk_wiltpt` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
 				"  Recheck parameters and try again.\n",
-				MyFileName, s + 1, lyr->swcBulk_wiltpt, lyr->swcBulk_min
+				MyFileName, lyr->id + 1, lyr->swcBulk_wiltpt, lyr->swcBulk_min
 			);
 		}
 
@@ -1225,11 +2156,11 @@ void SW_SIT_init_run(void) {
 				"  calculated `swcBulk_halfwiltpt` (%.4f cm / %.2f MPa)\n"
 				"          <= `swcBulk_min` (%.4f cm / %.2f MPa).\n"
 				"  `swcBulk_halfwiltpt` was set to `swcBulk_min`.\n",
-				MyFileName, s + 1,
+				MyFileName, lyr->id + 1,
 				lyr->swcBulk_halfwiltpt,
-				-0.1 * SW_SWCbulk2SWPmatric(lyr->fractionVolBulk_gravel, lyr->swcBulk_halfwiltpt, s),
+				-0.1 * SW_SWRC_SWCtoSWP(lyr->swcBulk_halfwiltpt, lyr),
 				lyr->swcBulk_min,
-				-0.1 * SW_SWCbulk2SWPmatric(lyr->fractionVolBulk_gravel, lyr->swcBulk_min, s)
+				-0.1 * SW_SWRC_SWCtoSWP(lyr->swcBulk_min, lyr)
 			);
 
 			lyr->swcBulk_halfwiltpt = lyr->swcBulk_min;
@@ -1241,7 +2172,7 @@ void SW_SIT_init_run(void) {
 				"%s : Layer %d\n"
 				"  calculated `swcBulk_wet` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
 				"  Recheck parameters and try again.\n",
-				MyFileName, s + 1, lyr->swcBulk_wet, lyr->swcBulk_min
+				MyFileName, lyr->id + 1, lyr->swcBulk_wet, lyr->swcBulk_min
 			);
 		}
 
@@ -1252,18 +2183,14 @@ void SW_SIT_init_run(void) {
 				"L[%d] swcmin=%f = swpmin=%f\n",
 				s,
 				lyr->swcBulk_min,
-				SW_SWCbulk2SWPmatric(lyr->fractionVolBulk_gravel, lyr->swcBulk_min, s)
+				SW_SWRC_SWCtoSWP(lyr->swcBulk_min, lyr)
 			);
 
 			swprintf(
 				"L[%d] SWC(HalfWiltpt)=%f = swp(hw)=%f\n",
 				s,
 				lyr->swcBulk_halfwiltpt,
-				SW_SWCbulk2SWPmatric(
-					lyr->fractionVolBulk_gravel,
-					lyr->swcBulk_halfwiltpt,
-					s
-				)
+				SW_SWRC_SWCtoSWP(lyr->swcBulk_halfwiltpt, lyr)
 			);
 		}
 		#endif
@@ -1276,10 +2203,9 @@ void SW_SIT_init_run(void) {
 		{
 			trsum_veg[k] += lyr->transp_coeff[k];
 			/* calculate soil water content at SWPcrit for each vegetation type */
-			lyr->swcBulk_atSWPcrit[k] = lyr->width * SW_SWPmatric2VWCBulk(
-				lyr->fractionVolBulk_gravel,
+			lyr->swcBulk_atSWPcrit[k] = SW_SWRC_SWPtoSWC(
 				SW_VegProd.veg[k].SWPcrit,
-				s
+				lyr
 			);
 
 			if (LT(lyr->swcBulk_atSWPcrit[k], lyr->swcBulk_min)) {
@@ -1288,11 +2214,7 @@ void SW_SIT_init_run(void) {
 				// lower SWcrit [-bar] to SWP-equivalent of swBulk_min
 				tmp = fmin(
 					SW_VegProd.veg[k].SWPcrit,
-					SW_SWCbulk2SWPmatric(
-						lyr->fractionVolBulk_gravel,
-						lyr->swcBulk_min,
-						s
-					)
+					SW_SWRC_SWCtoSWP(lyr->swcBulk_min, lyr)
 				);
 
 				LogError(
@@ -1302,11 +2224,11 @@ void SW_SIT_init_run(void) {
 					"          <= `swcBulk_min` (%.4f cm / %.4f MPa).\n"
 					"  `SWcrit` adjusted to %.4f MPa "
 					"(and swcBulk_atSWPcrit in every layer will be re-calculated).\n",
-					MyFileName, s + 1, k + 1,
+					MyFileName, lyr->id + 1, k + 1,
 					lyr->swcBulk_atSWPcrit[k],
 					-0.1 * SW_VegProd.veg[k].SWPcrit,
 					lyr->swcBulk_min,
-					-0.1 * SW_SWCbulk2SWPmatric(lyr->fractionVolBulk_gravel, lyr->swcBulk_min, s),
+					-0.1 * SW_SWRC_SWCtoSWP(lyr->swcBulk_min, lyr),
 					-0.1 * tmp
 				);
 
@@ -1359,10 +2281,9 @@ void SW_SIT_init_run(void) {
 			ForEachVegType(k)
 			{
 				/* calculate soil water content at adjusted SWPcrit */
-				lyr->swcBulk_atSWPcrit[k] = lyr->width * SW_SWPmatric2VWCBulk(
-					lyr->fractionVolBulk_gravel,
+				lyr->swcBulk_atSWPcrit[k] = SW_SWRC_SWPtoSWC(
 					SW_VegProd.veg[k].SWPcrit,
-					s
+					lyr
 				);
 
 				if (LT(lyr->swcBulk_atSWPcrit[k], lyr->swcBulk_min)) {
@@ -1372,7 +2293,7 @@ void SW_SIT_init_run(void) {
 						"  calculated `swcBulk_atSWPcrit` (%.4f cm)\n"
 						"          <= `swcBulk_min` (%.4f cm).\n"
 						"  even with adjusted `SWcrit` (%.4f MPa).\n",
-						MyFileName, s + 1, k + 1,
+						MyFileName, lyr->id + 1, k + 1,
 						lyr->swcBulk_atSWPcrit[k],
 						lyr->swcBulk_min,
 						-0.1 * SW_VegProd.veg[k].SWPcrit
@@ -1392,16 +2313,26 @@ void SW_SIT_init_run(void) {
 	/* normalize the evap and transp coefficients separately
 	 * to avoid obfuscation in the above loop */
 	if (!EQ_w_tol(evsum, 1.0, 1e-4)) { // inputs are not more precise than at most 3-4 digits
-		LogError(logfp, LOGWARN,
-			"%s : Evaporation coefficients were normalized:\n" \
-			"\tSum of coefficients was %.4f, but must be 1.0. " \
-			"New coefficients are:", MyFileName, evsum);
+		LogError(
+			logfp,
+			LOGWARN,
+			"%s : Evaporation coefficients were normalized:\n"
+			"\tSum of coefficients was %.4f, but must be 1.0. "
+			"New coefficients are:",
+			MyFileName,
+			evsum
+		);
 
 		ForEachEvapLayer(s)
 		{
 			SW_Site.lyr[s]->evap_coeff /= evsum;
-			LogError(logfp, LOGNOTE, "  Layer %2d : %.4f",
-				s + 1, SW_Site.lyr[s]->evap_coeff);
+			LogError(
+				logfp,
+				LOGNOTE,
+				"  Layer %2d : %.4f",
+				SW_Site.lyr[s]->id + 1,
+				SW_Site.lyr[s]->evap_coeff
+			);
 		}
 
 		LogError(logfp, LOGQUIET, "");
@@ -1409,19 +2340,29 @@ void SW_SIT_init_run(void) {
 
 	ForEachVegType(k)
 	{
-		if (!EQ_w_tol(trsum_veg[k], 1.0, 1e-4)) { // inputs are not more precise than at most 3-4 digits
-			LogError(logfp, LOGWARN,
-				"%s : Transpiration coefficients were normalized for %s:\n" \
-				"\tSum of coefficients was %.4f, but must be 1.0. " \
-				"New coefficients are:", MyFileName, key2veg[k], trsum_veg[k]);
+		// inputs are not more precise than at most 3-4 digits
+		if (!EQ_w_tol(trsum_veg[k], 1.0, 1e-4)) {
+			LogError(
+				logfp,
+				LOGWARN,
+				"%s : Transpiration coefficients were normalized for %s:\n"
+				"\tSum of coefficients was %.4f, but must be 1.0. "
+				"New coefficients are:",
+				MyFileName, key2veg[k], trsum_veg[k]
+			);
 
 			ForEachSoilLayer(s)
 			{
 				if (GT(SW_Site.lyr[s]->transp_coeff[k], 0.))
 				{
 					SW_Site.lyr[s]->transp_coeff[k] /= trsum_veg[k];
-					LogError(logfp, LOGNOTE, "  Layer %2d : %.4f",
-						s + 1, SW_Site.lyr[s]->transp_coeff[k]);
+					LogError(
+						logfp,
+						LOGNOTE,
+						"  Layer %2d : %.4f",
+						SW_Site.lyr[s]->id + 1,
+						SW_Site.lyr[s]->transp_coeff[k]
+					);
 				}
 			}
 
@@ -1437,17 +2378,23 @@ void SW_SIT_init_run(void) {
 
 		if (too_many_RGR)
 		{ // because we will use loops such `for (i = 0; i <= nRgr + 1; i++)`
-			LogError(logfp, LOGWARN,
-				"\nSOIL_TEMP FUNCTION ERROR: the number of regressions is > the "\
-				"maximum number of regressions.  resetting max depth, deltaX, nRgr "\
-				"values to 180, 15, & 11 respectively\n");
+			LogError(
+				logfp,
+				LOGWARN,
+				"\nSOIL_TEMP FUNCTION ERROR: the number of regressions is > the "
+				"maximum number of regressions.  resetting max depth, deltaX, nRgr "
+				"values to 180, 15, & 11 respectively\n"
+			);
 		}
 		else
 		{ // because we don't deal with partial layers
-			LogError(logfp, LOGWARN,
-				"\nSOIL_TEMP FUNCTION ERROR: max depth is not evenly divisible by "\
-				"deltaX (ie the remainder != 0).  resetting max depth, deltaX, nRgr "\
-				"values to 180, 15, & 11 respectively\n");
+			LogError(
+				logfp,
+				LOGWARN,
+				"\nSOIL_TEMP FUNCTION ERROR: max depth is not evenly divisible by "
+				"deltaX (ie the remainder != 0).  resetting max depth, deltaX, nRgr "
+				"values to 180, 15, & 11 respectively\n"
+			);
 		}
 
 		// resets it to the default values
@@ -1607,22 +2554,72 @@ void _echo_inputs(void) {
 
 	ForEachSoilLayer(i)
 	{
-		LogError(logfp, LOGNOTE, "  %3d   %15.4f   %15.4f  %15.4f %15.4f  %15.4f  %15.4f  %15.4f   %15.4f   %15.4f\n", i + 1,
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_fieldcap, i),
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_wiltpt, i),
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_atSWPcrit[SW_FORBS], i),
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_atSWPcrit[SW_TREES], i),
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB], i),
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_atSWPcrit[SW_GRASS], i),
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_wet, i),
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_min, i),
-				SW_SWCbulk2SWPmatric(s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_init, i));
-
+		LogError(
+			logfp,
+			LOGNOTE,
+			"  %3d   %15.4f   %15.4f  %15.4f %15.4f  %15.4f  %15.4f  %15.4f   %15.4f   %15.4f\n",
+			i + 1,
+			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_fieldcap, s->lyr[i]),
+			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_wiltpt, s->lyr[i]),
+			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_atSWPcrit[SW_FORBS], s->lyr[i]),
+			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_atSWPcrit[SW_TREES], s->lyr[i]),
+			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB], s->lyr[i]),
+			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB], s->lyr[i]),
+			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_atSWPcrit[SW_GRASS], s->lyr[i]),
+			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_min, s->lyr[i]),
+			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_init, s->lyr[i])
+		);
 	}
 
-	LogError(logfp, LOGNOTE, "\n------------ End of Site Parameters ------------------\n");
-	//fflush(logfp);
+	LogError(
+		logfp,
+		LOGNOTE,
+		"\nSoil Water Retention Curve:\n---------------------------\n"
+	);
+	LogError(
+		logfp,
+		LOGNOTE,
+		"  SWRC type: %d (%s)\n",
+		s->site_swrc_type,
+		s->site_swrc_name
+	);
+	LogError(
+		logfp,
+		LOGNOTE,
+		"  PTF type: %d (%s)\n",
+		s->site_ptf_type,
+		s->site_ptf_name
+	);
 
+	LogError(
+		logfp,
+		LOGNOTE,
+		"  Lyr     Param1     Param2     Param3     Param4     Param5     Param6\n"
+	);
+	ForEachSoilLayer(i)
+	{
+		LogError(
+			logfp,
+			LOGNOTE,
+			"  %3d%11.4f%11.4f%11.4f%11.4f%11.4f%11.4f\n",
+			i + 1,
+			s->lyr[i]->swrcp[0],
+			s->lyr[i]->swrcp[1],
+			s->lyr[i]->swrcp[2],
+			s->lyr[i]->swrcp[3],
+			s->lyr[i]->swrcp[4],
+			s->lyr[i]->swrcp[5]
+		);
+	}
+
+
+
+	LogError(
+		logfp,
+		LOGNOTE,
+		"\n------------ End of Site Parameters ------------------\n"
+	);
+	//fflush(logfp);
 }
 
 #ifdef DEBUG_MEM

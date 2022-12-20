@@ -113,6 +113,237 @@ static void _reset_swc(void) {
 }
 
 
+/**
+  @brief Convert soil water tension to volumetric water content using
+  FXW Soil Water Retention Curve
+  \cite fredlund1994CGJa, \cite wang2018wrr
+
+  @note
+    This is the internal, bare-bones version of FXW,
+    use `SWRC_SWPtoSWC_FXW()` instead.
+
+  @param[in] phi Pressure head (water tension) [cm of H20]
+  @param[in] *swrcp Vector of SWRC parameters
+
+  @return Volumetric soil water content of the matric soil [cm / cm]
+*/
+static double FXW_phi_to_theta(
+	double phi,
+	double *swrcp
+) {
+	double tmp, res, S_e, C_f;
+
+	if (GE(phi, FXW_h0)) {
+		res = 0.;
+
+	} else {
+		// Relative saturation function: Rudiyanto et al. 2021: eq. 3
+		tmp = pow(fabs(swrcp[1] * phi), swrcp[2]); // `pow()` because phi >= 0
+		S_e = powe(log(swE + tmp), -swrcp[3]);
+
+		// Correction factor: Rudiyanto et al. 2021: eq. 4 (with hr = 1500 cm)
+		// log(1. + 6.3e6 / 1500.) = 8.34307787116938;
+		C_f = 1. - log(1. + phi / FXW_hr) / 8.34307787116938;
+
+		// Calculate matric theta [cm / cm] which is within [0, theta_sat]
+		// Rudiyanto et al. 2021: eq. 1
+		res = swrcp[0] * S_e * C_f;
+	}
+
+	// matric theta [cm / cm]
+	return res;
+}
+
+
+/**
+  \brief Interpolate, Truncate, Project (ITP) method (\cite oliveira2021ATMS) to solve FXW at a given water content
+
+  We estimate `phi` by finding a root of
+      `f(phi) = theta - FXW(phi) = 0`
+  with
+      `a < b && f(a) < 0 && f(b) > 0`
+
+  FXW SWRC (\cite fredlund1994CGJa, \cite wang2018wrr) is defined as
+     `theta = theta_sat * S_e(phi) * C_f(phi)`
+
+  where
+    - `phi` is water tension (pressure head) [cm of H20],
+    - `theta` is volumetric water content [cm / cm],
+    - `theta_sat` is saturated water content [cm / cm],
+    - `S_e` is the relative saturation function [-], and
+    - `C_f` is a correction factor [-].
+
+  We choose starting values to solve `f(phi)`
+    - `a = 0` for which `f(a) = theta - theta_sat < 0 (for theta < theta_sat)`
+    - `b = FXW_h0` for which `f(b) = theta - 0 > 0 (for theta > 0)`
+
+  [Additional info on the ITP method can be found here](https://en.wikipedia.org/wiki/ITP_method)
+
+
+  \param[in] theta Volumetric soil water content of the matric soil [cm / cm]
+  \param[in] *swrcp Vector of FXW SWRC parameters
+
+  \return Water tension [bar] corresponding to theta
+*/
+
+static double itp_FXW_for_phi(double theta, double *swrcp) {
+	double
+		tol2 = 2e-9, // tolerance convergence
+		a = 0., // lower bound of bracket: a < b && f(a) < 0
+		b = FXW_h0, // upper bound of bracket: b > a && f(b) > 0
+		diff_ba = FXW_h0, diff_hf,
+		x_f, x_t, x_itp,
+		y_a, y_b, y_itp,
+		k1, k2,
+		x_half,
+		r,
+		delta,
+		sigma,
+		phi;
+	int
+		j = 0, n0, n_max;
+
+	#ifdef SWDEBUG
+	short debug = 0;
+	#endif
+
+
+	// Evaluate at starting bracket (and checks)
+	y_a = theta - FXW_phi_to_theta(a, swrcp);
+	y_b = theta - FXW_phi_to_theta(b, swrcp);
+
+
+	// Set hyper-parameters
+	k1 = 3.174603e-08; // 0 < k1 = 0.2 / (b - a) < inf
+	/*
+		k1 = 2. converges in about 31-33 iterations
+		k1 = 0.2 converges in 28-30 iterations
+		k1 = 2.e-2 converges in 25-27 iterations
+		k1 = 2.e-3 converges in 22-24 iterations
+		k1 = 2.e-4 converges in about 20 iterations but fails for some
+		k1 = 2.e-6 converges in about 14 iterations or near n_max or fails
+		k1 = 0.2 / (b - a) = 3.174603e-08 (suggested value) converges
+				in about 8 iterations (for very dry soils) or near n_max = 53 or fails
+	*/
+	k1 = 2.e-3;
+	k2 = 2.; // 1 <= k2 < (3 + sqrt(5))/2
+	n0 = 1; // 0 < n0 < inf
+
+	// Upper limit of iterations before convergence
+	n_max = (int) ceil(log2(diff_ba / tol2)) + n0;
+
+	#ifdef SWDEBUG
+	if (debug) {
+		swprintf(
+			"\nitp_FXW_for_phi(theta=%f): init: "
+			"f(a)=%f, f(b)=%f, n_max=%d, k1=%f\n",
+			theta, y_a, y_b, n_max, k1
+		);
+	}
+	#endif
+
+
+	// Iteration
+	do {
+		x_half = (a + b) / 2.;
+
+		// Calculate parameters
+		r = (tol2 * exp2(n_max - j) - diff_ba) / 2.;
+		delta = k1 * pow(diff_ba, k2);
+
+		// Interpolation
+		x_f = (y_b * a - y_a * b) / (y_b - y_a);
+
+		// Truncation
+		diff_hf = x_half - x_f;
+		if (ZRO(diff_hf)) {
+			sigma = 0.; // `copysign()` returns -1 or +1 but never 0
+		} else {
+			sigma = copysign(1., diff_hf);
+		}
+
+		x_t = (delta <= fabs(diff_hf)) ? (x_f + sigma * delta) : x_half;
+
+		// Projection
+		x_itp = (fabs(x_t - x_half) <= r) ? x_t : (x_half - sigma * r);
+
+		// Evaluate function
+		y_itp = theta - FXW_phi_to_theta(x_itp, swrcp);
+
+		#ifdef SWDEBUG
+		if (debug) {
+			swprintf(
+				"j=%d:"
+				"\ta=%f, b=%f, y_a=%f, y_b=%f,\n"
+				"\tr=%f, delta=%f, x_half=%f, x_f=%f, x_t=%f (s=%.0f),\n"
+				"\tx_itp=%f, y_itp=%f\n",
+				j,
+				a, b, y_a, y_b,
+				r, delta, x_half, x_f, x_t, sigma,
+				x_itp, y_itp
+			);
+		}
+		#endif
+
+		// Update interval brackets
+		if (GT(y_itp, 0.)) {
+			b = x_itp;
+			y_b = y_itp;
+			diff_ba = b - a;
+		} else if (LT(y_itp, 0.)) {
+			a = x_itp;
+			y_a = y_itp;
+			diff_ba = b - a;
+		} else {
+			a = x_itp;
+			b = x_itp;
+			diff_ba = 0.;
+		}
+
+		j++;
+	} while (diff_ba > tol2 && j <= n_max);
+
+	phi = (a + b) / 2.;
+
+	if (j > n_max + 1 || fabs(diff_ba) > tol2 || LT(phi, 0.) || GT(phi, FXW_h0)) {
+		// Error if not converged or if `phi` physically impossible
+		LogError(
+			logfp,
+			LOGERROR,
+			"itp_FXW_for_phi(theta = %f): convergence failed at phi = %.9f [cm H2O] "
+			"after %d iterations with b - a = %.9f - %.9f = %.9f !<= tol2 = %.9f.",
+			theta, phi, j, b, a, b - a, tol2
+		);
+
+		phi = SW_MISSING;
+
+	} else {
+		// convert [cm of H2O at 4 C] to [bar]
+		phi /= 1019.716;
+	}
+
+
+	#ifdef SWDEBUG
+	if (debug) {
+		if (!missing(phi)) {
+			swprintf(
+				"itp_FXW_for_phi() = phi = %f [bar]: converged in j=%d/%d steps\n",
+				phi, j, n_max
+			);
+		} else {
+			swprintf(
+				"itp_FXW_for_phi(): failed to converged in j=%d/%d steps\n",
+				j, n_max
+			);
+
+		}
+	}
+	#endif
+
+	return phi;
+}
+
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -1011,170 +1242,581 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
 	}
 }
 
-/**
-  @brief Calculates the soil water potential from soil water content of the
-         n-th soil layer.
 
-  The equation and its coefficients are based on a
-  paper by Cosby,Hornberger,Clapp,Ginn,  in WATER RESOURCES RESEARCH
-  June 1984.  Moisture retention data was fit to the power function.
+/**
+  @brief Convert soil water content to soil water potential using
+      specified soil water retention curve (SWRC)
+
+  SOILWAT2 convenience wrapper for `SWRC_SWCtoSWP()`.
+
+  See #swrc2str() for implemented SWRCs.
+
+  @param[in] swcBulk Soil water content in the layer [cm]
+  @param[in] *lyr Soil information including
+    SWRC type, SWRC parameters,
+    coarse fragments (e.g., gravel), and soil layer width.
+
+  @return Soil water potential [-bar]
+*/
+RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_LAYER_INFO *lyr) {
+  return SWRC_SWCtoSWP(
+    swcBulk,
+    lyr->swrc_type,
+    lyr->swrcp,
+    lyr->fractionVolBulk_gravel,
+    lyr->width,
+    LOGFATAL
+  );
+}
+
+/**
+  @brief Convert soil water content to soil water potential using
+      specified soil water retention curve (SWRC)
+
+  See #swrc2str() for implemented SWRCs.
 
   The code assumes the following conditions:
-      * checked by `SW_SIT_init_run()`
-          * width > 0
-          * fractionGravel, sand, clay, and sand + clay in [0, 1]
-      * checked by function `water_eqn()`
-          * thetasMatric > 0
-          * bMatric != 0
+      - checked by `SW_SIT_init_run()`
+          - width > 0
+          - fractionGravel, sand, clay, and sand + clay in [0, 1]
+      - SWRC parameters checked by `SWRC_check_parameters()`.
 
-  @param fractionGravel Fraction of soil containing gravel.
-  @param swcBulk Soilwater content of the current layer (cm/layer)
-  @param n Layer number to index the **lyr pointer
+  @param[in] swcBulk Soil water content in the layer [cm]
+  @param[in] swrc_type Identification number of selected SWRC
+  @param[in] *swrcp Vector of SWRC parameters
+  @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+    of the whole soil [m3/m3]
+  @param[in] width Soil layer width [cm]
+  @param[in] errmode An error code passed to `LogError()`.
+    SOILWAT2 uses `LOGFATAL` and fails but
+    other applications may want to warn only (`LOGWARN`) and return.
 
-  @return soil water potential
-**/
+  @return Soil water potential [-bar]
+*/
+double SWRC_SWCtoSWP(
+	double swcBulk,
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width,
+	const int errmode
+) {
+	double res = SW_MISSING;
 
-RealD SW_SWCbulk2SWPmatric(RealD fractionGravel, RealD swcBulk, LyrIndex n) {
-/**********************************************************************
+	if (LT(swcBulk, 0.) || EQ(gravel, 1.) || LE(width, 0.)) {
+		LogError(
+			logfp,
+			errmode,
+			"SWRC_SWCtoSWP(): invalid SWC = %.4f (must be >= 0)\n",
+			swcBulk
+		);
 
-HISTORY:
-    DATE:  April 2, 1992
-    9/1/92  (SLC) if swc comes in as zero, set swpotentl to
-    upperbnd.  (Previously, we flagged this
-    as an error, and set swpotentl to zero).
+		return res;
+	}
 
-    27-Aug-03 (cwb) removed the upperbnd business. Except for
-    missing values, swc < 0 is impossible, so it's an error,
-    and the previous limit of swp to 80 seems unreasonable.
-    return 0.0 if input value is MISSING
+	switch (swrc_type) {
+		case sw_Campbell1974:
+			res = SWRC_SWCtoSWP_Campbell1974(
+				swcBulk, swrcp, gravel, width,
+				errmode
+			);
+			break;
 
-   These are the values for each layer obtained via lyr[n]:
-	 width  - width of current soil layer
-	 psisMatric   - "saturation" matric potential
-	 thetasMatric - saturated moisture content.
-	 bMatric       - see equation below.
-	 swc_lim - limit for matric potential
+		case sw_vanGenuchten1980:
+			res = SWRC_SWCtoSWP_vanGenuchten1980(
+				swcBulk, swrcp, gravel, width,
+				errmode
+			);
+			break;
 
-	 LOCAL VARIABLES:
-	 theta1 - volumetric soil water content
+		case sw_FXW:
+			res = SWRC_SWCtoSWP_FXW(
+				swcBulk, swrcp, gravel, width,
+				errmode
+			);
+			break;
 
-	 DEFINED CONSTANTS:
-	 barconv - conversion factor from bars to cm water.  (i.e.
-	 1 bar = 1024cm water)
+		default:
+			LogError(
+				logfp,
+				errmode,
+				"SWRC (type %d) is not implemented.",
+				swrc_type
+			);
+			break;
+	}
 
-	 COMMENT:
-	 See the routine "watreqn" for a description of how the variables
-	 psisMatric, bMatric, binverseMatric, thetasMatric are initialized
-	 **********************************************************************/
+	return res;
+}
 
-	SW_LAYER_INFO *lyr = SW_Site.lyr[n];
-	RealD theta1, theta2, swp = .0;
 
-	if (missing(swcBulk) || ZRO(swcBulk))
-		return 0.0;
+/**
+  @brief Convert soil water content to soil water potential using
+  Campbell's 1974 \cite Campbell1974 Soil Water Retention Curve
 
-	if (GT(swcBulk, 0.0)) {
-		// we have soil moisture
+  Parameters are explained in `SWRC_check_parameters_for_Campbell1974()`.
 
-		// calculate matric VWC [cm / cm %] from bulk VWC
-		theta1 = (swcBulk / lyr->width) * 100. / (1. - fractionGravel);
+  @note
+    This function was previously named `SW_SWCbulk2SWPmatric()`.
 
-		// calculate (VWC / VWC(saturated)) ^ b
-		theta2 = powe(theta1 / lyr->thetasMatric, lyr->bMatric);
+  @note
+   `SWRC_SWPtoSWC_Campbell1974()` and `SWRC_SWCtoSWP_Campbell1974()`
+    are the inverse of each other
+    for `(phi, theta)` between `(swrcp[0], `theta` at `swrcp[0]`)`
+    and `(infinity, 0)`.
 
-		if (isnan(theta2) || ZRO(theta2)) {
-			LogError(logfp, LOGFATAL, "SW_SWCbulk2SWPmatric(): Year = %d, DOY=%d, Layer = %d:\n"
-					"\tinvalid value of (theta / theta(saturated)) ^ b = %f (must be != 0)\n",
-					SW_Model.year, SW_Model.doy, n, theta2);
+  @note
+    The function has a discontinuity at saturated water content for which
+    the matric potential at the "air-entry suction" point (see `swrcp[0]`)
+    is returned whereas 0 bar is returned for larger values.
+
+  @param[in] swcBulk Soil water content in the layer [cm]
+  @param[in] *swrcp Vector of SWRC parameters
+  @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+    of the whole soil [m3/m3]
+  @param[in] width Soil layer width [cm]
+  @param[in] errmode An error code passed to `LogError()`.
+    SOILWAT2 uses `LOGFATAL` and fails but
+    other applications may want to warn only (`LOGWARN`) and return.
+
+  @return Soil water potential [-bar]
+*/
+double SWRC_SWCtoSWP_Campbell1974(
+	double swcBulk,
+	double *swrcp,
+	double gravel,
+	double width,
+	const int errmode
+) {
+	// assume that we have soil moisture
+	double theta, tmp, res;
+
+	// convert bulk SWC [cm] to theta = matric VWC [cm / cm]
+	theta = swcBulk / (width * (1. - gravel));
+
+	if (GT(theta, swrcp[1])) {
+		// `theta` should not become larger than `theta_sat`;
+		// however, "Cosby1984AndOthers" does not use `swrcp[1]` for `theta_sat`
+		// which can lead to inconsistencies; thus,
+		// we return with 0 instead of, correctly, with errmode and SW_MISSING
+		res = 0.;
+
+	} else {
+		// calculate (theta / theta_s) ^ b
+		tmp = powe(theta / swrcp[1], swrcp[2]);
+
+		if (LE(tmp, 0.)) {
+			LogError(
+				logfp,
+				errmode,
+				"SWRC_SWCtoSWP_Campbell1974(): invalid value of\n"
+				"\t(theta / theta(saturated)) ^ b = (%f / %f) ^ %f =\n"
+				"\t= %f (must be > 0)\n",
+				theta, swrcp[1], swrcp[2], tmp
+			);
+
+			return SW_MISSING;
+		}
+
+		res = swrcp[0] / tmp;
+	}
+
+	// convert [cm of H20; SOILWAT2 legacy value] to [bar]
+	return res / 1024.;
+}
+
+
+/**
+  @brief Convert soil water content to soil water potential using
+  van Genuchten 1980 \cite vanGenuchten1980 Soil Water Retention Curve
+
+  Parameters are explained in `SWRC_check_parameters_for_vanGenuchten1980()`.
+
+  @note
+   `SWRC_SWPtoSWC_vanGenuchten1980()` and `SWRC_SWCtoSWP_vanGenuchten1980()`
+    are the inverse of each other
+    for `(phi, theta)` between `(0, theta_sat)` and `(infinity, theta_min)`.
+
+  @param[in] swcBulk Soil water content in the layer [cm]
+  @param[in] *swrcp Vector of SWRC parameters
+  @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+    of the whole soil [m3/m3]
+  @param[in] width Soil layer width [cm]
+  @param[in] errmode An error code passed to `LogError()`.
+    SOILWAT2 uses `LOGFATAL` and fails but
+    other applications may want to warn only (`LOGWARN`) and return.
+
+  @return Soil water potential [-bar]
+*/
+double SWRC_SWCtoSWP_vanGenuchten1980(
+	double swcBulk,
+	double *swrcp,
+	double gravel,
+	double width,
+	const int errmode
+) {
+	double res, tmp, theta;
+
+	// convert bulk SWC [cm] to theta = matric VWC [cm / cm]
+	theta = swcBulk / (width * (1. - gravel));
+
+	// calculate if theta in ]theta_min, theta_sat]
+	if (GT(theta, swrcp[0])) {
+		if (LT(theta, swrcp[1])) {
+			// calculate inverse of normalized theta
+			tmp = (swrcp[1] - swrcp[0]) / (theta - swrcp[0]);
+
+			// calculate tension [cm of H20]
+			tmp = powe(tmp, 1. / (1. - 1. / swrcp[3])); // tmp values are >= 1
+			res = pow(-1. + tmp, 1. / swrcp[3]) / swrcp[2]; // `pow()` because x >= 0
+
+			// convert [cm of H2O at 4 C; value from `soilDB::KSSL_VG_model()`] to [bar]
+			res /= 1019.716;
+
+		} else if (EQ(theta, swrcp[1])) {
+			// theta is theta_sat
+			res = 0;
+
 		} else {
-			swp = lyr->psisMatric / theta2 / BARCONV;
+			// theta is > theta_sat
+			LogError(
+				logfp,
+				errmode,
+				"SWRC_SWCtoSWP_vanGenuchten1980(): invalid value of\n"
+				"\ttheta = %f (must be <= theta_sat = %f)\n",
+				theta, swrcp[1]
+			);
+
+			res = SW_MISSING;
 		}
 
 	} else {
-		LogError(logfp, LOGFATAL, "Invalid SWC value (%.4f) in SW_SWC_swc2potential.\n"
-				"    Year = %d, DOY=%d, Layer = %d\n", swcBulk, SW_Model.year, SW_Model.doy, n);
+		// theta is <= theta_min
+		LogError(
+			logfp,
+			errmode,
+			"SWRC_SWCtoSWP_vanGenuchten1980(): invalid value of\n"
+			"\ttheta = %f (must be > theta_min = %f)\n",
+			theta, swrcp[0]
+		);
+
+		res = SW_MISSING;
 	}
 
-	return swp;
+	return res;
 }
 
-/**
-@brief Convert soil water potential to bulk volumetric water content.
 
-@param fractionGravel Fraction of soil containing gravel, percentage.
-@param swpMatric lyr->psisMatric calculated in water equation function
-@param n Layer of soil.
-
-@return Volumentric water content (cm H<SUB>2</SUB>O/cm SOIL).
-**/
-
-
-
-RealD SW_SWPmatric2VWCBulk(RealD fractionGravel, RealD swpMatric, LyrIndex n) {
 
 /**
-  History:
-    27-Aug-03 (cwb) moved from the Site module.
-**/
+  @brief Convert soil water content to soil water potential using
+  FXW Soil Water Retention Curve
+  \cite fredlund1994CGJa, \cite wang2018wrr
 
-	SW_LAYER_INFO *lyr = SW_Site.lyr[n];
-	RealD t, p;
-	swpMatric *= BARCONV;
-	p = powe(lyr->psisMatric / swpMatric, lyr->binverseMatric); // lyr->psisMatric calculated in water equation function | todo: check to make sure these are calculated before
-  t = lyr->thetasMatric * p * 0.01 * (1 - fractionGravel);
-	return (t);
+  Parameters are explained in `SWRC_check_parameters_for_FXW()`.
+
+  @note
+   `SWRC_SWPtoSWC_FXW()` and `SWRC_SWCtoSWP_FXW()`
+    are the inverse of each other
+    for `(phi, theta)` between `(0, theta_sat)` and `(6.3 x 10^6 cm, 0)`.
+
+
+  @param[in] swcBulk Soil water content in the layer [cm]
+  @param[in] *swrcp Vector of SWRC parameters
+  @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+    of the whole soil [m3/m3]
+  @param[in] width Soil layer width [cm]
+  @param[in] errmode An error code passed to `LogError()`.
+    SOILWAT2 uses `LOGFATAL` and fails but
+    other applications may want to warn only (`LOGWARN`) and return.
+
+  @return Soil water potential [-bar]
+*/
+double SWRC_SWCtoSWP_FXW(
+	double swcBulk,
+	double *swrcp,
+	double gravel,
+	double width,
+	const int errmode
+) {
+	double res, theta;
+
+	// convert bulk SWC [cm] to theta = matric VWC [cm / cm]
+	theta = swcBulk / (width * (1. - gravel));
+
+	// calculate if theta in [0, theta_sat]
+	if (GE(theta, 0.)) {
+		if (LT(theta, swrcp[0])) {
+			// calculate tension = phi [bar]
+			res = itp_FXW_for_phi(theta, swrcp);
+
+		} else if (EQ(theta, swrcp[0])) {
+			// theta is theta_sat
+			res = 0.;
+
+		} else {
+			// theta is > theta_sat
+			LogError(
+				logfp,
+				errmode,
+				"SWRC_SWCtoSWP_FXW(): invalid value of\n"
+				"\ttheta = %f (must be <= theta_sat = %f)\n",
+				theta, swrcp[0]
+			);
+
+			res = SW_MISSING;
+		}
+
+	} else {
+		// theta is < 0
+		LogError(
+			logfp,
+			errmode,
+			"SWRC_SWCtoSWP_FXW(): invalid value of\n"
+			"\ttheta = %f (must be >= 0)\n",
+			theta
+		);
+
+		res = SW_MISSING;
+	}
+
+	return res;
 }
 
+
 /**
-@brief Calculates 'Brooks-Corey' residual volumetric soil water.
+  @brief Convert soil water potential to soil water content using
+         specified soil water retention curve (SWRC)
 
-Equations based on: Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties
-      for hydrological modeling, based on @cite ASCE1985
+  SOILWAT2 convenience wrapper for `SWRC_SWPtoSWC()`.
 
-@param fractionGravel Fraction of soil consisting of gravel, percentage.
-@param sand Fraction of soil consisting of sand, percentage.
-@param clay Fraction of soil consisting of clay, percentage.
-@param porosity Fraction of Soil porosity as the saturated VWC, percentage.
+  See #swrc2str() for implemented SWRCs.
 
-@returns Residual volumetric soil water (cm/cm)
-**/
+  @param[in] swpMatric Soil water potential [-bar]
+  @param[in] *lyr Soil information including
+    SWRC type, SWRC parameters,
+    coarse fragments (e.g., gravel), and soil layer width.
 
-RealD SW_VWCBulkRes(RealD fractionGravel, RealD sand, RealD clay, RealD porosity) {
-/*---------------------
-History:
-  02/03/2012	(drs)	calculates 'Brooks-Corey' residual volumetric soil water based on Rawls WJ, Brakensiek DL (1985) Prediction of soil water properties for hydrological modeling. In Watershed management in the Eighties (eds Jones EB, Ward TJ), pp. 293-299. American Society of Civil Engineers, New York.
-  however, equation is only valid if (0.05 < clay < 0.6) & (0.05 < sand < 0.7)
-
----------------------*/
-
-  if (clay < .05 || clay > .6 || sand < .05 || sand > .7) {
-    LogError(
-      logfp,
-      LOGWARN,
-      "Sand and/or clay values out of valid range, simulation outputs may differ."
-    );
-    return SW_MISSING;
-
-  } else {
-    RealD res;
-    sand *= 100.;
-    clay *= 100.;
-
-    res = (1. - fractionGravel) * (
-      - 0.0182482 \
-      + 0.00087269 * sand \
-      + 0.00513488 * clay \
-      + 0.02939286 * porosity \
-      - 0.00015395 * squared(clay) \
-      - 0.0010827 * sand * porosity \
-      - 0.00018233 * squared(clay) * squared(porosity) \
-      + 0.00030703 * squared(clay) * porosity \
-      - 0.0023584 * squared(porosity) * clay
-    );
-
-    return (fmax(res, 0.));
-  }
+  @return Soil water content in the layer [cm]
+*/
+RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr) {
+  return SWRC_SWPtoSWC(
+    swpMatric,
+    lyr->swrc_type,
+    lyr->swrcp,
+    lyr->fractionVolBulk_gravel,
+    lyr->width,
+    LOGFATAL
+  );
 }
+
+
+/**
+  @brief Convert soil water potential to soil water content using
+         specified soil water retention curve (SWRC)
+
+  See #swrc2str() for implemented SWRCs.
+
+  The code assumes the following conditions:
+      - checked by `SW_SIT_init_run()`
+          - width > 0
+          - fractionGravel, sand, clay, and sand + clay in [0, 1]
+      - SWRC parameters checked by `SWRC_check_parameters()`.
+
+  @param[in] swpMatric Soil water potential [-bar]
+  @param[in] swrc_type Identification number of selected SWRC
+  @param[in] *swrcp Vector of SWRC parameters
+  @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+    of the whole soil [m3/m3]
+  @param[in] width Soil layer width [cm]
+  @param[in] errmode An error code passed to `LogError()`.
+    SOILWAT2 uses `LOGFATAL` and fails but
+    other applications may want to warn only (`LOGWARN`) and return.
+
+  @return Soil water content in the layer [cm]
+*/
+double SWRC_SWPtoSWC(
+	double swpMatric,
+	unsigned int swrc_type,
+	double *swrcp,
+	double gravel,
+	double width,
+	const int errmode
+) {
+	double res = SW_MISSING;
+
+	if (LT(swpMatric, 0.)) {
+		LogError(
+			logfp,
+			errmode,
+			"SWRC_SWPtoSWC(): invalid SWP = %.4f (must be >= 0)\n",
+			swpMatric
+		);
+
+		return res;
+	}
+
+	switch (swrc_type) {
+		case sw_Campbell1974:
+			res = SWRC_SWPtoSWC_Campbell1974(swpMatric, swrcp, gravel, width);
+			break;
+
+		case sw_vanGenuchten1980:
+			res = SWRC_SWPtoSWC_vanGenuchten1980(swpMatric, swrcp, gravel, width);
+			break;
+
+		case sw_FXW:
+			res = SWRC_SWPtoSWC_FXW(swpMatric, swrcp, gravel, width);
+			break;
+
+		default:
+			LogError(
+				logfp,
+				errmode,
+				"SWRC (type %d) is not implemented.",
+				swrc_type
+			);
+			break;
+	}
+
+	return res;
+}
+
+
+/**
+  @brief Convert soil water potential to soil water content using
+    Campbell's 1974 \cite Campbell1974 Soil Water Retention Curve
+
+  Parameters are explained in `SWRC_check_parameters_for_Campbell1974()`.
+
+  @note
+    This function was previously named `SW_SWPmatric2VWCBulk()`.
+
+  @note
+    The function returns saturated water content if `swpMatric` is at or below
+    the "air-entry suction" point (see `swrcp[0]`).
+
+  @note
+   `SWRC_SWPtoSWC_Campbell1974()` and `SWRC_SWCtoSWP_Campbell1974()`
+    are the inverse of each other
+    for `(phi, theta)` between `(swrcp[0], `theta` at `swrcp[0]`)`
+    and `(infinity, 0)`.
+
+  @param[in] swpMatric Soil water potential [-bar]
+  @param[in] *swrcp Vector of SWRC parameters
+  @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+    of the whole soil [m3/m3]
+  @param[in] width Soil layer width [cm]
+
+  @return Soil water content in the layer [cm]
+*/
+double SWRC_SWPtoSWC_Campbell1974(
+	double swpMatric,
+	double *swrcp,
+	double gravel,
+	double width
+) {
+	double phi, res;
+
+	// convert SWP [-bar] to phi [cm of H20; SOILWAT2 legacy value]
+	phi = swpMatric * 1024.;
+
+	if (LT(phi, swrcp[0])) {
+		res = swrcp[1]; // theta_sat
+
+	} else {
+		// calculate matric theta [cm / cm]
+		// within [0, theta_sat] because `phi` > swrcp[0]
+		res = swrcp[1] * powe(swrcp[0] / phi, 1. / swrcp[2]);
+	}
+
+	// convert matric theta [cm / cm] to bulk SWC [cm]
+	return (1. - gravel) * width * res;
+}
+
+
+/**
+  @brief Convert soil water potential to soil water content using
+    van Genuchten 1980 \cite vanGenuchten1980 Soil Water Retention Curve
+
+  Parameters are explained in `SWRC_check_parameters_for_vanGenuchten1980()`.
+
+  @note
+   `SWRC_SWPtoSWC_vanGenuchten1980()` and `SWRC_SWCtoSWP_vanGenuchten1980()`
+    are the inverse of each other
+    for `(phi, theta)` between `(0, theta_sat)` and `(infinity, theta_min)`.
+
+  @param[in] swpMatric Soil water potential [-bar]
+  @param[in] *swrcp Vector of SWRC parameters
+  @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+    of the whole soil [m3/m3]
+  @param[in] width Soil layer width [cm]
+
+  @return Soil water content in the layer [cm]
+*/
+double SWRC_SWPtoSWC_vanGenuchten1980(
+	double swpMatric,
+	double *swrcp,
+	double gravel,
+	double width
+) {
+	double phi, tmp, res;
+
+	// convert SWP [-bar] to phi [cm of H2O at 4 C;
+	// value from `soilDB::KSSL_VG_model()`]
+	phi = swpMatric * 1019.716;
+
+	tmp = powe(swrcp[2] * phi, swrcp[3]);
+	tmp = powe(1. + tmp, 1. - 1. / swrcp[3]);
+
+	// calculate matric theta [cm / cm] which is within [theta_min, theta_sat]
+	res = swrcp[0] + (swrcp[1] - swrcp[0]) / tmp;
+
+	// convert matric theta [cm / cm] to bulk SWC [cm]
+	return (1. - gravel) * width * res;
+}
+
+
+/**
+  @brief Convert soil water potential to soil water content using
+  FXW Soil Water Retention Curve
+  \cite fredlund1994CGJa, \cite wang2018wrr
+
+  Parameters are explained in `SWRC_check_parameters_for_FXW()`.
+
+  @note
+   `SWRC_SWPtoSWC_FXW()` and `SWRC_SWCtoSWP_FXW()`
+    are the inverse of each other
+    for `(phi, theta)` between `(0, theta_sat)` and `(6.3 x 10^6 cm, 0)`.
+
+  @param[in] swpMatric Soil water potential [-bar]
+  @param[in] *swrcp Vector of SWRC parameters
+  @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
+    of the whole soil [m3/m3]
+  @param[in] width Soil layer width [cm]
+
+  @return Soil water content in the layer [cm]
+*/
+double SWRC_SWPtoSWC_FXW(
+	double swpMatric,
+	double *swrcp,
+	double gravel,
+	double width
+) {
+	double phi, res;
+
+	// convert SWP [-bar] to phi [cm of H2O at 4 C;
+	// value from `soilDB::KSSL_VG_model()`]
+	phi = swpMatric * 1019.716;
+
+	res = FXW_phi_to_theta(phi, swrcp);
+
+	// convert matric theta [cm / cm] to bulk SWC [cm]
+	return (1. - gravel) * width * res;
+}
+
+
+
 
 /**
 @brief This routine sets the known memory refs in this module

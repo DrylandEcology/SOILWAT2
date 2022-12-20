@@ -372,7 +372,7 @@ void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n
 
 		for (i = 0; i < n_layers; i++) {
 			if (tr_regions[i] == r) {
-				swp += tr_coeff[i] * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+				swp += tr_coeff[i] * SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
 				sumco += tr_coeff[i];
 			}
 		}
@@ -484,10 +484,10 @@ void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double
 	  }
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
-		avswp += x * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
 	}
 
-  // Note: avswp = 0 if swc = 0 because that is the return value of SW_SWCbulk2SWPmatric
+  // Note: avswp = 0 if swc = 0 because that is the return value of SW_SWRC_SWCtoSWP
 	avswp /= (ZRO(sumwidth)) ? 1 : sumwidth;
 
 	/*  8/27/92 (SLC) if totagb > Es_param_limit, assume soil surface is
@@ -542,7 +542,7 @@ void pot_soil_evap_bs(double *bserate, unsigned int nelyrs, double ecoeff[], dou
 	for (i = 0; i < nelyrs; i++) {
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
-		avswp += x * SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
 	}
 
 	avswp /= sumwidth;
@@ -742,12 +742,18 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	 **********************************************************************/
 
 	unsigned int i;
-	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q;
+	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q, tmpswp;
 
     SW_SOILWAT *st = &SW_Soilwat;
 
 	for (i = 0; i < nlyrs; i++) {
-		swpfrac[i] = coeff[i] / SW_SWCbulk2SWPmatric(SW_Site.lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		tmpswp = SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
+		if (GT(tmpswp, 0.)) {
+			swpfrac[i] = coeff[i] / tmpswp;
+		} else {
+			// saturated conditions -> divide by SWP [-bar] at field capacity
+			swpfrac[i] = coeff[i] / 0.333;
+		}
 		sumswp += swpfrac[i];
 	}
 
@@ -969,7 +975,7 @@ void hydraulic_redistribution(
 			swc[i] - fmin(lyr[i]->swcBulk_wiltpt, lyr[i]->swcBulk_atSWPcrit[vegk])
 		);
 
-		swp[i] = SW_SWCbulk2SWPmatric(lyr[i]->fractionVolBulk_gravel, swc[i], i);
+		swp[i] = SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
 
 		/* Ryel et al. 2002: eq. 7 relative soil-root conductance */
 		relCondroot[i] = fmin(
