@@ -17,22 +17,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "generic.h" // externs `QuietMode`, `EchoInits`
-#include "filefuncs.h" // externs `_firstfile`, `inbuf`
-#include "myMemory.h"
-#include "Times.h"
+#include "include/generic.h" // externs `QuietMode`, `EchoInits`
+#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
+#include "include/myMemory.h"
+#include "include/Times.h"
 
-#include "SW_Carbon.h" // externs SW_Carbon
-#include "SW_Defines.h"
-#include "SW_Files.h"
-#include "SW_Model.h" // externs SW_Model
-#include "SW_Site.h" // externs SW_Site
-#include "SW_SoilWater.h" // externs SW_Soilwat
-#include "SW_Times.h"
-#include "SW_Output.h"
-#include "SW_Weather.h"  // externs SW_Weather
-#include "SW_VegEstab.h" // externs SW_VegEstab
-#include "SW_VegProd.h" // externs SW_VegProd
+#include "include/SW_Carbon.h" // externs SW_Carbon
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_SoilWater.h" // externs SW_Soilwat
+#include "include/SW_Times.h"
+#include "include/SW_Output.h"
+#include "include/SW_Weather.h"  // externs SW_Weather
+#include "include/SW_VegEstab.h" // externs SW_VegEstab
+#include "include/SW_VegProd.h" // externs SW_VegProd
 
 
 

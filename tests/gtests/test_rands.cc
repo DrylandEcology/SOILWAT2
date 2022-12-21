@@ -14,11 +14,11 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include "../generic.h"
-#include "../myMemory.h"
-#include "../filefuncs.h"
-#include "../rands.h"
-#include "../pcg/pcg_basic.h"
+#include "include/generic.h"
+#include "include/myMemory.h"
+#include "include/filefuncs.h"
+#include "include/rands.h"
+#include "external/pcg/pcg_basic.h"
 
 
 namespace {

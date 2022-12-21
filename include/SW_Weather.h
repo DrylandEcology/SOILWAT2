@@ -24,8 +24,8 @@
 #ifndef SW_WEATHER_H
 #define SW_WEATHER_H
 
-#include "SW_Times.h"
-#include "SW_Defines.h"
+#include "include/SW_Times.h"
+#include "include/SW_Defines.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,9 +59,9 @@ typedef struct {
 
 /**
  @brief Annual time-series of climate variables
- 
+
  Output of the function `calcSiteClimate()`
- 
+
  @note 2D array dimensions represent month (1st D) and year (2nd D); 1D array dimension represents year.
  @note Number of years is variable and determined at runtime.
  */
@@ -87,7 +87,7 @@ typedef struct {
 
 /**
  @brief A structure holding all variables that are output to the function `averageClimateAcrossYears()` #SW_CLIMATE_YEARLY
- 
+
  @note Values are across-year averages of #SW_CLIMATE_YEARLY and 1D array dimension represents month.
  The exceptions are `sdC4` and `sdCheatgrass` which represent across-year standard devations and the 1D array dimension
  represents different variables, see `averageClimateAcrossYears()`.

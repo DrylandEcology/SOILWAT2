@@ -19,8 +19,8 @@
  05/31/2012  (DLM) added st_getBounds() function for use in the soil_temperature function in SW_Flow_lib.c
  */
 
-#include "generic.h"
-#include "filefuncs.h"
+#include "include/generic.h"
+#include "include/filefuncs.h"
 
 
 
@@ -444,7 +444,7 @@ double mean(double values[], int length) {
             finalLength++;
         }
     }
-    
+
     return total / finalLength;
 }
 
@@ -461,10 +461,10 @@ double mean(double values[], int length) {
  the standard deviation.
  */
 double standardDeviation(double inputArray[], int length) {
- 
+
     int index, finalLength = 0;
     double arrayMean = mean(inputArray, length), total = 0.0, currentVal;
-    
+
     for(index = 0; index < length; index++) {
         currentVal = inputArray[index];
 
@@ -473,7 +473,7 @@ double standardDeviation(double inputArray[], int length) {
             finalLength++;
         }
     }
-    
+
     return sqrt(total / (finalLength - 1));
-    
+
 }

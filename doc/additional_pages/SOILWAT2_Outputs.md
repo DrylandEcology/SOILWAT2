@@ -8,18 +8,16 @@ Note: this document is best viewed as part of the doxygen-built documentation
 <br>
 
 ### Example
-  * The source code contains a complete example simulation project in `testing/`
-  * Copy the executable to the testing path, modify inputs as desired,
-    and run a simulation, e.g.,
+  * The source code contains a complete example simulation project in
+    `tests/example/`
+  * Modify inputs as desired and run a simulation, e.g.,
 ```{.sh}
-    make bint bint_run
+    make bin_run
 ```
     or, equivalently,
 ```{.sh}
     make bin
-    cp SOILWAT2 testing/
-    cd testing/
-    ./SOILWAT2
+    bin/SOILWAT2 -d ./tests/example -f files.in
 ```
 
   * The inputs comprise the master file `files.in` and the content of the

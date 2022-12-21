@@ -47,7 +47,7 @@
 #ifndef SW_SITE_H
 #define SW_SITE_H
 
-#include "SW_Defines.h"
+#include "include/SW_Defines.h"
 
 #ifdef __cplusplus
 extern "C" {

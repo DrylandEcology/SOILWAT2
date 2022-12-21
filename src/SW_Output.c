@@ -33,35 +33,35 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "generic.h" // externs `QuietMode`, `EchoInits`
-#include "filefuncs.h" // externs `_firstfile`, `inbuf`
-#include "myMemory.h"
-#include "Times.h"
+#include "include/generic.h" // externs `QuietMode`, `EchoInits`
+#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
+#include "include/myMemory.h"
+#include "include/Times.h"
 
-#include "SW_Carbon.h" // externs SW_Carbon
-#include "SW_Defines.h"
-#include "SW_Files.h"
-#include "SW_Model.h" // externs SW_Model
-#include "SW_Site.h" // externs SW_Site
-#include "SW_SoilWater.h" // externs SW_Soilwat
-#include "SW_Times.h"
-#include "SW_Weather.h"  // externs SW_Weather
-#include "SW_VegEstab.h" // externs SW_VegEstab
-#include "SW_VegProd.h" // externs SW_VegProd
-#include "SW_Flow_lib.h" // externs stValues
+#include "include/SW_Carbon.h" // externs SW_Carbon
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_SoilWater.h" // externs SW_Soilwat
+#include "include/SW_Times.h"
+#include "include/SW_Weather.h"  // externs SW_Weather
+#include "include/SW_VegEstab.h" // externs SW_VegEstab
+#include "include/SW_VegProd.h" // externs SW_VegProd
+#include "include/SW_Flow_lib.h" // externs stValues
 
-#include "SW_Output.h"
+#include "include/SW_Output.h"
 
 // Array-based output declarations:
 #ifdef SW_OUTARRAY
-  #include "SW_Output_outarray.h"
+  #include "include/SW_Output_outarray.h"
 #endif
 
 // Text-based output declarations:
 #ifdef SW_OUTTEXT
 // externs `SW_OutFiles`, `print_IterationSummary`, `print_SW_Output`,
 //         `sw_outstr`, `sw_outstr_agg`
-#include "SW_Output_outtext.h"
+#include "include/SW_Output_outtext.h"
 #endif
 
 /* Note: `get_XXX` functions are declared in `SW_Output.h`
@@ -2589,7 +2589,7 @@ void _echo_outputs(void)
 
 
 #ifdef DEBUG_MEM
-#include "myMemory.h"
+#include "include/myMemory.h"
 /** when debugging memory problems, use the bookkeeping
   code in myMemory.c
   This routine sets the known memory refs in this module

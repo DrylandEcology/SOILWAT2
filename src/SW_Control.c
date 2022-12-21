@@ -24,26 +24,26 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "generic.h"
-#include "Times.h"
-#include "filefuncs.h"
-#include "rands.h"
-#include "SW_Defines.h"
-#include "SW_Files.h"
-#include "SW_Control.h"
-#include "SW_Model.h" // externs SW_Model
-#include "SW_Output.h"
-#include "SW_Site.h" // externs SW_Site
-#include "SW_Flow_lib.h"
-#include "SW_Flow_lib_PET.h"
-#include "SW_Flow.h"
-#include "SW_SoilWater.h"
-#include "SW_VegEstab.h" // externs SW_VegEstab
-#include "SW_VegProd.h" // externs SW_VegProd
-#include "SW_Weather.h"  // externs SW_Weather
-#include "SW_Markov.h"
-#include "SW_Sky.h"
-#include "SW_Carbon.h"
+#include "include/generic.h"
+#include "include/Times.h"
+#include "include/filefuncs.h"
+#include "include/rands.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/SW_Control.h"
+#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Output.h"
+#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_Flow_lib.h"
+#include "include/SW_Flow_lib_PET.h"
+#include "include/SW_Flow.h"
+#include "include/SW_SoilWater.h"
+#include "include/SW_VegEstab.h" // externs SW_VegEstab
+#include "include/SW_VegProd.h" // externs SW_VegProd
+#include "include/SW_Weather.h"  // externs SW_Weather
+#include "include/SW_Markov.h"
+#include "include/SW_Sky.h"
+#include "include/SW_Carbon.h"
 
 
 
@@ -315,7 +315,7 @@ void SW_CTL_read_inputs_from_disk(void) {
 
 
 #ifdef DEBUG_MEM
-#include "SW_Markov.h"  /* for setmemrefs function */
+#include "include/SW_Markov.h"  /* for setmemrefs function */
 
 /**
 @brief This routine sets the known memory refs so they can be

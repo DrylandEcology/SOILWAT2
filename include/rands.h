@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 #include <float.h>
-#include "pcg/pcg_basic.h" // see https://github.com/imneme/pcg-c-basic
+#include "external/pcg/pcg_basic.h" // see https://github.com/imneme/pcg-c-basic
 
 #ifdef __cplusplus
 extern "C" {

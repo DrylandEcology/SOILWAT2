@@ -41,22 +41,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "generic.h"
-#include "filefuncs.h"
-#include "myMemory.h"
-#include "SW_Defines.h"
-#include "SW_Files.h"
-#include "SW_Model.h" // externs SW_Model
-#include "SW_Site.h" // externs SW_Site
-#include "SW_Flow.h"
-#include "SW_SoilWater.h"
-#include "SW_VegProd.h" // externs SW_VegProd
+#include "include/generic.h"
+#include "include/filefuncs.h"
+#include "include/myMemory.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_Flow.h"
+#include "include/SW_SoilWater.h"
+#include "include/SW_VegProd.h" // externs SW_VegProd
 #ifdef SWDEBUG
-  #include "SW_Weather.h"   // externs SW_Weather
+  #include "include/SW_Weather.h"   // externs SW_Weather
 #endif
 #ifdef RSOILWAT
-  #include "../rSW_SoilWater.h" // for onSet_SW_SWC_hist()
-  #include "../SW_R_lib.h" // externs `useFiles`
+  #include "rSW_SoilWater.h" // for onSet_SW_SWC_hist()
+  #include "SW_R_lib.h" // externs `useFiles`
 #endif
 
 
@@ -1824,7 +1824,7 @@ double SWRC_SWPtoSWC_FXW(
 */
 
 #ifdef DEBUG_MEM
-#include "myMemory.h"
+#include "include/myMemory.h"
 /*======================================================*/
 void SW_SWC_SetMemoryRefs( void) {
 	/* when debugging memory problems, use the bookkeeping

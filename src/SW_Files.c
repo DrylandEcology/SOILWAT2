@@ -24,11 +24,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "generic.h"
-#include "filefuncs.h"
-#include "myMemory.h"
-#include "SW_Defines.h"
-#include "SW_Files.h"
+#include "include/generic.h"
+#include "include/filefuncs.h"
+#include "include/myMemory.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
 
 
 /* =================================================== */
@@ -317,7 +317,7 @@ void SW_OutputPrefix(char prefix[]) {
 }
 
 #ifdef DEBUG_MEM
-#include "myMemory.h"
+#include "include/myMemory.h"
 /*======================================================*/
 void SW_F_SetMemoryRefs( void) {
 	/* when debugging memory problems, use the bookkeeping

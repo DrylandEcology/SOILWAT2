@@ -6,11 +6,11 @@
 #define MYMEMORY_H
 
 #include <memory.h>
-#include "generic.h"
+#include "include/generic.h"
 
 
 #ifdef DEBUG_MEM
-#include "memblock.h"
+#include "include/memblock.h"
 #endif
 
 #ifdef __cplusplus

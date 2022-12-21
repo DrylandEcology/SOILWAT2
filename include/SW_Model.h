@@ -20,8 +20,8 @@
 #ifndef SW_MODEL_H
 #define SW_MODEL_H
 
-#include "Times.h"
-#include "SW_Defines.h"
+#include "include/Times.h"
+#include "include/SW_Defines.h"
 
 #ifdef __cplusplus
 extern "C" {

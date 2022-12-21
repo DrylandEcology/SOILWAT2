@@ -18,7 +18,7 @@
 #ifndef SW_SKY_H
 #define SW_SKY_H
 
-#include "SW_Times.h"
+#include "include/SW_Times.h"
 
 #ifdef __cplusplus
 extern "C" {

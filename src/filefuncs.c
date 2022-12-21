@@ -13,10 +13,10 @@
 #include <unistd.h>
 #endif
 
-#include "filefuncs.h"
-#include "generic.h" // externs errstr
-#include "myMemory.h"
-#include "SW_Defines.h"
+#include "include/filefuncs.h"
+#include "include/generic.h" // externs errstr
+#include "include/myMemory.h"
+#include "include/SW_Defines.h"
 #ifdef RSOILWAT
   #include <R.h>    // for REvprintf(), error(), and warning()
 #endif

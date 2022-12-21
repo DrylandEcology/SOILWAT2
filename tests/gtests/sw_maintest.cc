@@ -15,36 +15,36 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../myMemory.h"
+#include "include/myMemory.h"
 // externs `*logfp`, `errstr`, `logged`, `QuietMode`, `EchoInits`
-#include "../generic.h"
-#include "../filefuncs.h" // externs `_firstfile`, `inbuf`
-#include "../rands.h"
-#include "../Times.h"
-#include "../SW_Defines.h"
-#include "../SW_Times.h"
-#include "../SW_Files.h"
-#include "../SW_Carbon.h"
-#include "../SW_Site.h"
-#include "../SW_VegProd.h"
-#include "../SW_VegEstab.h"
-#include "../SW_Model.h"
-#include "../SW_SoilWater.h"
-#include "../SW_Weather.h"
-#include "../SW_Markov.h"
-#include "../SW_Sky.h"
+#include "include/generic.h"
+#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
+#include "include/rands.h"
+#include "include/Times.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Times.h"
+#include "include/SW_Files.h"
+#include "include/SW_Carbon.h"
+#include "include/SW_Site.h"
+#include "include/SW_VegProd.h"
+#include "include/SW_VegEstab.h"
+#include "include/SW_Model.h"
+#include "include/SW_SoilWater.h"
+#include "include/SW_Weather.h"
+#include "include/SW_Markov.h"
+#include "include/SW_Sky.h"
 
-#include "../SW_Control.h"
+#include "include/SW_Control.h"
 
-#include "sw_testhelpers.h"
+#include "tests/gtests/sw_testhelpers.h"
 
 
-/* The unit test code is using the SOILWAT2-standalone input files from testing/ as
-   example input.
-   The paths are relative to the unit-test executable which is located at the top level
+/* The unit test code is using the SOILWAT2-standalone input files from
+   tests/example/ as example inputs.
+   The paths are relative to the unit-test executable which is located at bin/
    of the SOILWAT2 repository
 */
-const char * dir_test = "./testing";
+const char * dir_test = "./tests/example";
 const char * masterfile_test = "files.in"; // relative to 'dir_test'
 
 

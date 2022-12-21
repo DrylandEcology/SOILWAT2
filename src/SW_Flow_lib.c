@@ -91,16 +91,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "generic.h"
-#include "filefuncs.h"
-#include "SW_Defines.h"
-#include "SW_Site.h" // externs SW_Site
-#include "SW_Flow_lib.h"
-#include "SW_SoilWater.h" // externs SW_Soilwat
-#include "SW_Carbon.h" // externs SW_Carbon
-#include "Times.h"
+#include "include/generic.h"
+#include "include/filefuncs.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_Flow_lib.h"
+#include "include/SW_SoilWater.h" // externs SW_Soilwat
+#include "include/SW_Carbon.h" // externs SW_Carbon
+#include "include/Times.h"
 
-#include "SW_Model.h" // externs SW_Model
+#include "include/SW_Model.h" // externs SW_Model
 
 
 

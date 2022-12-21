@@ -45,10 +45,10 @@
 extern "C" {
 #endif
 
-#include "generic.h"
-#include "SW_Defines.h"
-#include "SW_Times.h"
-#include "SW_Site.h"
+#include "include/generic.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Times.h"
+#include "include/SW_Site.h"
 
 typedef enum {
 	SW_Adjust_Avg = 1, SW_Adjust_StdErr

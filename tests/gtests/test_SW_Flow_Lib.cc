@@ -17,28 +17,28 @@
 
 #include <typeinfo>  // for 'typeid'
 
-#include "../generic.h"
-#include "../myMemory.h"
-#include "../filefuncs.h"
-#include "../rands.h"
-#include "../Times.h"
-#include "../SW_Defines.h"
-#include "../SW_Times.h"
-#include "../SW_Files.h"
-#include "../SW_Carbon.h"
-#include "../SW_Site.h"
-#include "../SW_VegProd.h"
-#include "../SW_VegEstab.h"
-#include "../SW_Model.h"
-#include "../SW_SoilWater.h"
-#include "../SW_Weather.h"
-#include "../SW_Markov.h"
-#include "../SW_Sky.h"
-#include "../pcg/pcg_basic.h"
+#include "include/generic.h"
+#include "include/myMemory.h"
+#include "include/filefuncs.h"
+#include "include/rands.h"
+#include "include/Times.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Times.h"
+#include "include/SW_Files.h"
+#include "include/SW_Carbon.h"
+#include "include/SW_Site.h"
+#include "include/SW_VegProd.h"
+#include "include/SW_VegEstab.h"
+#include "include/SW_Model.h"
+#include "include/SW_SoilWater.h"
+#include "include/SW_Weather.h"
+#include "include/SW_Markov.h"
+#include "include/SW_Sky.h"
+#include "external/pcg/pcg_basic.h"
 
-#include "../SW_Flow_lib.h"
+#include "include/SW_Flow_lib.h"
 
-#include "sw_testhelpers.h"
+#include "tests/gtests/sw_testhelpers.h"
 
 
 

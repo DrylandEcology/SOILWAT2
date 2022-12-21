@@ -41,7 +41,7 @@
 #define TIMES_H
 
 #include <time.h>
-#include "generic.h"
+#include "include/generic.h"
 
 #ifdef __cplusplus
 extern "C" {

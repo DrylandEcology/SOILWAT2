@@ -9,8 +9,8 @@
 #ifndef FILEFUNCS_H
 #define FILEFUNCS_H
 
-#include "generic.h"
-#include "SW_Defines.h"
+#include "include/generic.h"
+#include "include/SW_Defines.h"
 
 #ifdef __cplusplus
 extern "C" {

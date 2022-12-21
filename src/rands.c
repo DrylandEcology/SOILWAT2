@@ -4,12 +4,12 @@
 #include <ctype.h>
 #include <math.h>
 #include <time.h>
-#include "generic.h"
-#include "rands.h"
-#include "myMemory.h"
-#include "filefuncs.h"
+#include "include/generic.h"
+#include "include/rands.h"
+#include "include/myMemory.h"
+#include "include/filefuncs.h"
 
-#include "pcg/pcg_basic.h"
+#include "external/pcg/pcg_basic.h"
 
 
 #ifdef RSOILWAT

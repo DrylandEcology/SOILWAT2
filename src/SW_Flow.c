@@ -109,20 +109,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "generic.h"
-#include "filefuncs.h"
-#include "SW_Defines.h"
-#include "SW_Model.h" // externs SW_Model
-#include "SW_Site.h" // externs SW_Site
-#include "SW_SoilWater.h" // externs SW_Soilwat
-#include "SW_Flow_lib.h" // externs stValues, soil_temp_init
-/*#include "SW_VegEstab.h" */
-#include "SW_VegProd.h" // externs SW_VegProd, key2veg
-#include "SW_Weather.h"  // externs SW_Weather
-#include "SW_Sky.h" // externs SW_Sky
+#include "include/generic.h"
+#include "include/filefuncs.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_SoilWater.h" // externs SW_Soilwat
+#include "include/SW_Flow_lib.h" // externs stValues, soil_temp_init
+/*#include "include/SW_VegEstab.h" */
+#include "include/SW_VegProd.h" // externs SW_VegProd, key2veg
+#include "include/SW_Weather.h"  // externs SW_Weather
+#include "include/SW_Sky.h" // externs SW_Sky
 
-#include "SW_Flow_lib_PET.h"
-#include "SW_Flow.h"
+#include "include/SW_Flow_lib_PET.h"
+#include "include/SW_Flow.h"
 
 
 /* =================================================== */

@@ -22,21 +22,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "generic.h"
-#include "filefuncs.h"
-#include "myMemory.h"
-#include "Times.h"
+#include "include/generic.h"
+#include "include/filefuncs.h"
+#include "include/myMemory.h"
+#include "include/Times.h"
 
-#include "SW_Defines.h"
-#include "SW_Files.h"
-#include "SW_Model.h" // externs SW_Model
-#include "SW_Site.h" // externs SW_Site
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Site.h" // externs SW_Site
 
 // externs `SW_Output`, `_Sep`, `tOffset`, `use_OutPeriod`, `used_OUTNPERIODS`,
 //         `timeSteps`, `colnames_OUT`, `ncol_OUT`, `key2str`, `pd2longstr`,
 //         `prepare_IterationSummary`, `storeAllIterations`
-#include "SW_Output.h"
-#include "SW_Output_outtext.h"
+#include "include/SW_Output.h"
+#include "include/SW_Output_outtext.h"
 
 
 

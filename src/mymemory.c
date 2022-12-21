@@ -28,9 +28,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "filefuncs.h"
-#include "generic.h"
-#include "myMemory.h"
+#include "include/filefuncs.h"
+#include "include/generic.h"
+#include "include/myMemory.h"
 
 /*  not sure how to handle this block migrated from gen_funcs.c */
 #ifdef DEBUG_MEM_X

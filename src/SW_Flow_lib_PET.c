@@ -14,10 +14,10 @@
 /* --------------------------------------------------- */
 
 #include <math.h>
-#include "generic.h"
-#include "SW_Defines.h"
+#include "include/generic.h"
+#include "include/SW_Defines.h"
 
-#include "SW_Flow_lib_PET.h"
+#include "include/SW_Flow_lib_PET.h"
 
 
 

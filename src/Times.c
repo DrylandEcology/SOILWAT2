@@ -27,8 +27,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "generic.h"
-#include "Times.h"
+#include "include/generic.h"
+#include "include/Times.h"
 
 
 /* =================================================== */

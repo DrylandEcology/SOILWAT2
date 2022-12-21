@@ -15,8 +15,8 @@
 #ifndef SW_VEGESTAB_H
 #define SW_VEGESTAB_H
 
-#include "SW_Defines.h"
-#include "SW_Times.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Times.h"
 
 
 #ifdef __cplusplus

@@ -56,10 +56,10 @@
 #ifndef SW_OUTPUT_H
 #define SW_OUTPUT_H
 
-#include "Times.h"
-#include "SW_Defines.h"
-#include "SW_SoilWater.h"
-#include "SW_VegProd.h"
+#include "include/Times.h"
+#include "include/SW_Defines.h"
+#include "include/SW_SoilWater.h"
+#include "include/SW_VegProd.h"
 
 #ifdef __cplusplus
 extern "C" {

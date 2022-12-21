@@ -54,11 +54,11 @@ ncomp=${#ccs[@]}
 
 #--- Function to check testing output
 check_testing_output () {
-  if diff  -q -x "\.DS_Store" -x "\.gitignore" testing/Output/ testing/Output_ref/ >/dev/null 2>&1; then
+  if diff  -q -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ tests/example/Output_ref/ >/dev/null 2>&1; then
     echo $'\n'"Example output is reproduced by binary!"$'\n'$'\n'
   else
     echo $'\n'"Error: Example output is not reproduced by binary!"
-    diff  -qs -x "\.DS_Store" -x "\.gitignore" testing/Output/ testing/Output_ref/
+    diff  -qs -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ tests/example/Output_ref/
     echo $'\n'$'\n'
   fi
 }
@@ -97,7 +97,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   if [ ${k} -eq 0 ]; then
     # Save default testing output as reference for future comparisons
-    cp -r testing/Output testing/Output_ref
+    cp -r tests/example/Output tests/example/Output_ref
   fi
   check_testing_output
 

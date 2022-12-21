@@ -24,23 +24,23 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "generic.h"
-#include "filefuncs.h"
-#include "myMemory.h"
-#include "Times.h"
+#include "include/generic.h"
+#include "include/filefuncs.h"
+#include "include/myMemory.h"
+#include "include/Times.h"
 
-#include "SW_Carbon.h" // externs SW_Carbon
-#include "SW_Defines.h"
-#include "SW_Files.h"
-#include "SW_Model.h" // externs SW_Model
-#include "SW_Site.h" // externs SW_Site
-#include "SW_SoilWater.h" // externs SW_Soilwat
-#include "SW_Times.h"
-#include "SW_Weather.h"  // externs SW_Weather
-#include "SW_VegEstab.h" // externs SW_VegEstab
-#include "SW_VegProd.h" // externs SW_VegProd
+#include "include/SW_Carbon.h" // externs SW_Carbon
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_SoilWater.h" // externs SW_Soilwat
+#include "include/SW_Times.h"
+#include "include/SW_Weather.h"  // externs SW_Weather
+#include "include/SW_VegEstab.h" // externs SW_VegEstab
+#include "include/SW_VegProd.h" // externs SW_VegProd
 
-#include "SW_Output.h" // externs `_Sep`, `tOffset`, `ncol_OUT`
+#include "include/SW_Output.h" // externs `_Sep`, `tOffset`, `ncol_OUT`
 
 #ifdef RSOILWAT
 #include <R.h>
@@ -50,20 +50,20 @@
 
 #ifdef STEPWAT
 #include <math.h>
-#include "../sxw.h" // externs `*SXW`
-#include "../ST_globals.h" // externs `*Globals`, `SuperGlobals`
+#include "sxw.h" // externs `*SXW`
+#include "ST_globals.h" // externs `*Globals`, `SuperGlobals`
 #endif
 
 // Array-based output declarations:
 #ifdef SW_OUTARRAY
 // externs `ncol_TimeOUT`, `nrow_OUT`, `irow_OUT`, `*p_OUT`, `*p_OUTsd`
-#include "SW_Output_outarray.h"
+#include "include/SW_Output_outarray.h"
 #endif
 
 // Text-based output declarations:
 #ifdef SW_OUTTEXT
 // externs `print_IterationSummary`, `sw_outstr`, `sw_outstr_agg`
-#include "SW_Output_outtext.h"
+#include "include/SW_Output_outtext.h"
 #endif
 
 

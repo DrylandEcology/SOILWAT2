@@ -4,20 +4,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "../generic.h"
-#include "../SW_Sky.h"
-#include "../filefuncs.h"
-#include "../myMemory.h"
-#include "../SW_Defines.h"
-#include "../SW_Files.h"
-#include "../SW_Model.h"
-#include "../SW_Site.h"
-#include "../SW_SoilWater.h"
-#include "../SW_VegProd.h"
-#include "../SW_Site.h"
-#include "../SW_Flow_lib.h"
-#include "../Times.h"
-#include "sw_testhelpers.h"
+#include "include/generic.h"
+#include "include/SW_Sky.h"
+#include "include/filefuncs.h"
+#include "include/myMemory.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/SW_Model.h"
+#include "include/SW_Site.h"
+#include "include/SW_SoilWater.h"
+#include "include/SW_VegProd.h"
+#include "include/SW_Site.h"
+#include "include/SW_Flow_lib.h"
+#include "include/Times.h"
+#include "tests/gtests/sw_testhelpers.h"
 
 namespace{
   TEST(TimesTest, LeapYear) {

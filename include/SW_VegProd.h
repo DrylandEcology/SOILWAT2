@@ -34,8 +34,8 @@
 #ifndef SW_VEGPROD_H
 #define SW_VEGPROD_H
 
-#include "SW_Defines.h"    /* for tanfunc_t*/
-#include "Times.h" 				// for MAX_MONTHS
+#include "include/SW_Defines.h"    /* for tanfunc_t*/
+#include "include/Times.h" 				// for MAX_MONTHS
 
 #ifdef __cplusplus
 extern "C" {

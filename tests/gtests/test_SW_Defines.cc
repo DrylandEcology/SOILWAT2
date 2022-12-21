@@ -15,10 +15,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../generic.h"
-#include "../SW_Defines.h"
+#include "include/generic.h"
+#include "include/SW_Defines.h"
 
-#include "sw_testhelpers.h" // get the re-defined `missing`
+#include "tests/gtests/sw_testhelpers.h" // get the re-defined `missing`
 
 
 namespace {

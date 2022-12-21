@@ -13,7 +13,7 @@
 #ifndef SW_MARKOV_H
 #define SW_MARKOV_H
 
-#include "pcg/pcg_basic.h"
+#include "external/pcg/pcg_basic.h"
 
 #ifdef __cplusplus
 extern "C" {

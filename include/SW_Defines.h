@@ -20,7 +20,7 @@
 #define SOILW_DEF_H
 
 #include <math.h>  /* >= C99; for: atan(), isfinite() */
-#include "generic.h"
+#include "include/generic.h"
 
 #ifdef __cplusplus
 extern "C" {

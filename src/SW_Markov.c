@@ -23,17 +23,17 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "generic.h"
-#include "filefuncs.h"
-#include "rands.h"
-#include "Times.h"
-#include "myMemory.h"
-#include "SW_Defines.h"
-#include "SW_Files.h"
-#include "SW_Weather.h"
-#include "SW_Model.h" // externs SW_Model
-#include "SW_Markov.h"
-#include "pcg/pcg_basic.h"
+#include "include/generic.h"
+#include "include/filefuncs.h"
+#include "include/rands.h"
+#include "include/Times.h"
+#include "include/myMemory.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/SW_Weather.h"
+#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Markov.h"
+#include "external/pcg/pcg_basic.h"
 
 
 /* =================================================== */
@@ -618,7 +618,7 @@ void SW_MKV_setup(void) {
 
 
 #ifdef DEBUG_MEM
-#include "myMemory.h"
+#include "include/myMemory.h"
 /*======================================================*/
 void SW_MKV_SetMemoryRefs( void) {
 	/* when debugging memory problems, use the bookkeeping

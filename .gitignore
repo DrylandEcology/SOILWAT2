@@ -38,7 +38,9 @@ doc/html/*
 doc/log_doxygen.log
 doc/Doxyfile.bak
 
-# Binary files
+# Build and binary directories and files
+bin/*
+build/*
 SOILWAT2
 tests/example/SOILWAT2
 libSOILWAT2*

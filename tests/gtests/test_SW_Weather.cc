@@ -15,10 +15,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../SW_Weather.h"
-#include "sw_testhelpers.h"
-#include "../SW_Markov.h"
-#include "../SW_Model.h"
+#include "include/SW_Weather.h"
+#include "tests/gtests/sw_testhelpers.h"
+#include "include/SW_Markov.h"
+#include "include/SW_Model.h"
 
 namespace {
 
@@ -510,9 +510,9 @@ namespace {
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
         SW_WEATHER_HIST **allHist;
-        
+
         Bool inNorthHem = swTRUE;
-        
+
         // Allocate memory
         allocateClimateStructs(2, &climateOutput, &climateAverages);
 

@@ -239,7 +239,7 @@ __Integration tests__
 We use integration tests to check that the entire simulation model works
 as expected when used in a real-world application setting.
 
-The folder `testing/` contains all necessary inputs to run `SOILWAT2`
+The folder `tests/example/` contains all necessary inputs to run `SOILWAT2`
 for one generic location
 (it is a relatively wet and cool site in the sagebrush steppe).
 
@@ -247,7 +247,7 @@ for one generic location
       make bin bint_run
 ```
 
-The simulated output is stored at `testing/Output/`.
+The simulated output is stored at `tests/example/Output/`.
 
 
 Another use case is to compare output of a new (development) branch to output
@@ -263,7 +263,7 @@ The following steps provide a starting point for such comparisons:
       # Simulate on refernce branch and copy output to "Output_ref"
       git checkout master
       make bin bint_run
-      cp -r testing/Output testing/Output_ref
+      cp -r tests/example/Output tests/example/Output_ref
 
       # Switch to development branch <branch_xxx> and run the same simulation
       git checkout <branch_xxx>
@@ -271,7 +271,7 @@ The following steps provide a starting point for such comparisons:
 
       # Compare the two sets of outputs
       #   * Lists all output files and determine if they are exactly they same
-      diff testing/Output/ testing/Output_ref/ -qs
+      diff tests/example/Output/ tests/example/Output_ref/ -qs
 ```
 
 

@@ -35,17 +35,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "generic.h" // externs `QuietMode`, `EchoInits`
-#include "filefuncs.h" // externs `_firstfile`, `inbuf`
-#include "myMemory.h"
-#include "SW_Defines.h"
-#include "SW_Files.h"
-#include "SW_Site.h" // externs SW_Site
-#include "SW_Times.h"
-#include "SW_Model.h" // externs SW_Model
-#include "SW_SoilWater.h" // externs SW_Soilwat
-#include "SW_Weather.h"  // externs SW_Weather
-#include "SW_VegEstab.h"
+#include "include/generic.h" // externs `QuietMode`, `EchoInits`
+#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
+#include "include/myMemory.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_Times.h"
+#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_SoilWater.h" // externs SW_Soilwat
+#include "include/SW_Weather.h"  // externs SW_Weather
+#include "include/SW_VegEstab.h"
 
 
 

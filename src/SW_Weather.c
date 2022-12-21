@@ -41,17 +41,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "generic.h"
-#include "filefuncs.h"
-#include "myMemory.h"
-#include "Times.h"
-#include "SW_Defines.h"
-#include "SW_Files.h"
-#include "SW_Model.h" // externs SW_Model
-#include "SW_SoilWater.h"
-#include "SW_Markov.h"
+#include "include/generic.h"
+#include "include/filefuncs.h"
+#include "include/myMemory.h"
+#include "include/Times.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_SoilWater.h"
+#include "include/SW_Markov.h"
 
-#include "SW_Weather.h"
+#include "include/SW_Weather.h"
 
 
 
@@ -1289,7 +1289,7 @@ void deallocateClimateStructs(SW_CLIMATE_YEARLY *climateOutput,
 }
 
 #ifdef DEBUG_MEM
-#include "myMemory.h"
+#include "include/myMemory.h"
 /*======================================================*/
 void SW_WTH_SetMemoryRefs( void) {
 	/* when debugging memory problems, use the bookkeeping

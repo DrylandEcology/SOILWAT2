@@ -35,18 +35,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "generic.h"
-#include "filefuncs.h"
-#include "rands.h"
-#include "Times.h"
-#include "myMemory.h"
+#include "include/generic.h"
+#include "include/filefuncs.h"
+#include "include/rands.h"
+#include "include/Times.h"
+#include "include/myMemory.h"
 
-#include "SW_Defines.h"
-#include "SW_Files.h"
-#include "SW_Site.h" // externs SW_Site
-#include "SW_SoilWater.h"  /* for setup_new_year() */
-#include "SW_Times.h"
-#include "SW_Model.h" // externs SW_Model
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_SoilWater.h"  /* for setup_new_year() */
+#include "include/SW_Times.h"
+#include "include/SW_Model.h" // externs SW_Model
 
 
 /* =================================================== */
