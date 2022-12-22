@@ -4,7 +4,7 @@
 
 # Run SOILWAT2 unit tests with appropriate flag
 # ```
-#   CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lats make test test_run
+#   CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lats make test_run
 # ```
 #
 # Produce plots based on output generated above
@@ -13,7 +13,7 @@
 # ```
 
 #------
-dir_out <- file.path("testing", "Output")
+dir_out <- file.path("tests", "example", "Output")
 
 tag_filename <- "SW2_SolarPosition_Test__hourangles_by_lats"
 

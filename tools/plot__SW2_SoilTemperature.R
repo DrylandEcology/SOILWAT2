@@ -3,14 +3,14 @@
 # ```
 #    Rscript tools/plot__SW2_SoilTemperature.R
 # ```
-# after running SOILWAT2 on the "testing" exampel, e.g.,
+# after running SOILWAT2 on "tests/example", e.g.,
 # ```
-#    make bin bint_run
+#    make bin_run
 # ```
 
 # Note: do not commit output (figures) from this script
 
-dir_testing <- "testing"
+dir_testing <- file.path("tests", "example")
 dir_sw2_input <- file.path(dir_testing, "Input")
 dir_sw2_output <- file.path(dir_testing, "Output")
 
@@ -27,17 +27,21 @@ x <- read.csv(file.path(dir_sw2_output, "sw2_daily_slyrs.csv"))
 
 tag_soil_temp <- "SOILTEMP_Lyr"
 tag_surface_temp <- "SOILTEMP_surfaceTemp_C"
-if (!any(grepl(tag_surface_temp, colnames(x)))) {
-  tag_surface_temp <- "SOILTEMP_surfaceTemp"
+if (any(grepl(tag_surface_temp, colnames(x)))) {
+  xsurf <- x
+} else {
+  tag_surface_temp <- "TEMP_surfaceTemp"
+  xsurf <- xw
 }
 
 
 #--- Convert to long format
 
 # Surface soil temperature
-tmp_vars1 <- grep(tag_surface_temp, colnames(x), value = TRUE)
+tmp_vars1 <- grep(tag_surface_temp, colnames(xsurf), value = TRUE)
+stopifnot(length(tmp_vars1) > 0)
 tmp1 <- as.data.frame(tidyr::pivot_longer(
-  x[, c("Year", "Day", tmp_vars1)],
+  xsurf[, c("Year", "Day", tmp_vars1)],
   cols = tidyr::all_of(tmp_vars1),
   names_to = "Fun",
   names_pattern = paste0(tag_surface_temp, "_(.*)_C"),
