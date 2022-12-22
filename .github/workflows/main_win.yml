@@ -40,7 +40,7 @@ jobs:
 
     # AddressSanitizer and LeakSanitizer not available on cygwin
     - name: Run binary
-      run: make clean bin bint_run
+      run: make clean bin_run
 
     - name: Unit tests
-      run: make clean test test_run
+      run: make clean test_run

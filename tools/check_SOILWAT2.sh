@@ -34,18 +34,18 @@
 
 declare -a port_compilers=(
   "none"
-  "mp-gcc49" "mp-gcc5" "mp-gcc7" "mp-gcc9" "mp-gcc10" "mp-gcc11"
-  "mp-clang-3.3" "mp-clang-5.0" "mp-clang-9.0" "mp-clang-10" "mp-clang-11" "mp-clang-12" "mp-clang-13"
+  "mp-gcc10" "mp-gcc11" "mp-gcc12"
+  "mp-clang-10" "mp-clang-11" "mp-clang-12" "mp-clang-13" "mp-clang-14" "mp-clang-15"
 )
 declare -a ccs=(
   "clang"
-  "gcc" "gcc" "gcc" "gcc" "gcc" "gcc"
-  "clang" "clang" "clang" "clang" "clang" "clang" "clang"
+  "gcc" "gcc" "gcc"
+  "clang" "clang" "clang" "clang" "clang" "clang"
 )
 declare -a cxxs=(
   "clang++"
-  "g++" "g++" "g++" "g++" "g++" "g++"
-  "clang++" "clang++" "clang++" "clang++" "clang++" "clang++" "clang"
+  "g++" "g++" "g++"
+  "clang++" "clang++" "clang++" "clang++" "clang++" "clang++"
 )
 
 
@@ -93,7 +93,7 @@ for ((k = 0; k < ncomp; k++)); do
        Run binary with ${port_compilers[k]} ...$'\n'\
        --------------------------------------------------
 
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean bin bint_run
+  CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_run
 
   if [ ${k} -eq 0 ]; then
     # Save default testing output as reference for future comparisons
@@ -101,7 +101,7 @@ for ((k = 0; k < ncomp; k++)); do
   fi
   check_testing_output
 
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_debug_severe bint_run
+  CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_debug_severe
   check_testing_output
 
   if command -v valgrind >/dev/null 2>&1; then
@@ -114,8 +114,8 @@ for ((k = 0; k < ncomp; k++)); do
        Run tests with ${port_compilers[k]} ...$'\n'\
        --------------------------------------------------
 
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean test test_run
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean test_severe test_run
+  CC=${ccs[k]} CXX=${cxxs[k]} make clean test_run
+  CC=${ccs[k]} CXX=${cxxs[k]} make clean test_severe
 
 
   echo $'\n'$'\n'\
@@ -125,7 +125,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   # CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
   # https://github.com/google/sanitizers/wiki/AddressSanitizer
-  CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+  CC=${ccs[k]} CXX=${cxxs[k]} make clean test_leaks
 
 
   echo $'\n'$'\n'\

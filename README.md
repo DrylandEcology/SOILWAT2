@@ -99,7 +99,7 @@ A full code documentation may be built, see [here](#get_documentation).
       - for unit tests (using `googletest`), additionally,
         - `g++ >= v5.0` or `clang++ >= v5.0` compliant with `C++11`
         - `POSIX API`
-    - POSIX- or GNU-compliant `make`
+    - GNU-compliant `make`
     - On Windows OS: an installation of `cygwin`
 
   * Clone the repository
@@ -244,7 +244,7 @@ for one generic location
 (it is a relatively wet and cool site in the sagebrush steppe).
 
 ```{.sh}
-      make bin bint_run
+      make bin_run
 ```
 
 The simulated output is stored at `tests/example/Output/`.
@@ -262,12 +262,12 @@ The following steps provide a starting point for such comparisons:
 ```{.sh}
       # Simulate on refernce branch and copy output to "Output_ref"
       git checkout master
-      make bin bint_run
+      make bin_run
       cp -r tests/example/Output tests/example/Output_ref
 
       # Switch to development branch <branch_xxx> and run the same simulation
       git checkout <branch_xxx>
-      make bin bint_run
+      make bin_run
 
       # Compare the two sets of outputs
       #   * Lists all output files and determine if they are exactly they same
@@ -289,17 +289,17 @@ Currently, the following is implemented:
        and some slope/aspect/day of year combinations
 
 ```{.sh}
-      CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lat_and_doy make test test_run
+      CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lat_and_doy make test_run
       Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lat_and_doy.R
 
-      CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lats make test test_run
+      CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lats make test_run
       Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lats.R
 ```
 
   - PET plots as function of radiation, relative humidity, wind speed, and cover
 
 ```{.sh}
-      CPPFLAGS=-DSW2_PET_Test__petfunc_by_temps make test test_run
+      CPPFLAGS=-DSW2_PET_Test__petfunc_by_temps make test_run
       Rscript tools/plot__SW2_PET_Test__petfunc_by_temps.R
 ```
 
