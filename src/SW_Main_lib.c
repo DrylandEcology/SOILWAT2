@@ -139,67 +139,71 @@ void sw_init_args(int argc, char **argv) {
 			if (strncmp(opts[op], argv[a], 2) == 0)
 				break; /* found it, move on */
 		}
-		if (op == nopts) {
+
+		if (op >= nopts) {
       sw_print_usage();
       sw_error(-1, "\nInvalid option %s\n", argv[a]);
+
+		} else {
+			// Use `valopts[op]` in else-branch to avoid
+			// `warning: array subscript 6 is above array bounds of 'int[6]' [-Warray-bounds]`
+
+			*str = '\0';
+			/* extract value part of option-value pair */
+			if (valopts[op]) {
+				if ('\0' != argv[a][2]) { /* no space betw opt-value */
+					strcpy(str, (argv[a] + 2));
+
+				} else if ('-' != *argv[a + 1]) { /* space betw opt-value */
+					strcpy(str, argv[++a]);
+
+				} else if (0 < valopts[op]) { /* required opt-val not found */
+					sw_print_usage();
+					sw_error(-1, "\nIncomplete option %s\n", opts[op]);
+				} /* opt-val not required */
+			}
+
+			/* tell us what to do here                   */
+			/* set indicators/variables based on results */
+			switch (op) {
+				case 0: /* -d */
+					if (!ChDir(str)) {
+						LogError(logfp, LOGFATAL, "Invalid project directory (%s)", str);
+					}
+					break;
+
+				case 1: /* -f */
+					strcpy(_firstfile, str);
+					break;
+
+				case 2: /* -e */
+					EchoInits = swTRUE;
+					break;
+
+				case 3: /* -q */
+					QuietMode = swTRUE;
+					break;
+
+				case 4: /* -v */
+					sw_print_version();
+					sw_error(-1, "");
+					break;
+
+				case 5: /* -h */
+					sw_print_usage();
+					sw_error(-1, "");
+					break;
+
+				default:
+					LogError(
+						logfp,
+						LOGFATAL,
+						"Programmer: bad option in main:sw_init_args:switch"
+					);
+			}
+
+			a++; /* move to next valid arg-value position */
 		}
-
-		*str = '\0';
-		/* extract value part of option-value pair */
-		if (valopts[op]) {
-			if ('\0' != argv[a][2]) { /* no space betw opt-value */
-				strcpy(str, (argv[a] + 2));
-
-			} else if ('-' != *argv[a + 1]) { /* space betw opt-value */
-				strcpy(str, argv[++a]);
-
-			} else if (0 < valopts[op]) { /* required opt-val not found */
-        sw_print_usage();
-        sw_error(-1, "\nIncomplete option %s\n", opts[op]);
-			} /* opt-val not required */
-		}
-
-		/* tell us what to do here                   */
-		/* set indicators/variables based on results */
-		switch (op) {
-			case 0: /* -d */
-				if (!ChDir(str)) {
-					LogError(logfp, LOGFATAL, "Invalid project directory (%s)", str);
-				}
-				break;
-
-			case 1: /* -f */
-				strcpy(_firstfile, str);
-				break;
-
-			case 2: /* -e */
-				EchoInits = swTRUE;
-				break;
-
-			case 3: /* -q */
-				QuietMode = swTRUE;
-				break;
-
-			case 4: /* -v */
-				sw_print_version();
-				sw_error(-1, "");
-				break;
-
-			case 5: /* -h */
-				sw_print_usage();
-				sw_error(-1, "");
-				break;
-
-			default:
-				LogError(
-					logfp,
-					LOGFATAL,
-					"Programmer: bad option in main:sw_init_args:switch"
-				);
-		}
-
-		a++; /* move to next valid arg-value position */
-
 	} /* end for(i) */
 
 }
