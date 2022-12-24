@@ -557,7 +557,10 @@ void finalizeAllWeather(SW_WEATHER *w) {
     w->n_years,
     w->scale_temp_max,
     w->scale_temp_min,
-    w->scale_precip
+    w->scale_precip,
+    w->scale_skyCover,
+    w->scale_wind,
+    w->scale_rH
   );
 }
 
@@ -579,6 +582,9 @@ void SW_WTH_finalize_all_weather(void) {
     modify daily minimum air temperature [C]
   @param[in] scale_precip Array of monthly, multiplicative scaling parameters to
     modify daily precipitation [-]
+ @param[in] scale_skyCover Array of monthly, additive scaling parameters to modify daily sky cover [%]
+ @param[in] scale_wind Array of monthly, multiplicitive scaling parameters to modify daily wind speed [-]
+ @param[in] scale_rH Array of monthly, additive scaling parameters to modify daily relative humidity [%]
 
   @note Daily average air temperature is re-calculated after scaling
     minimum and maximum air temperature.
@@ -591,7 +597,10 @@ void scaleAllWeather(
   unsigned int n_years,
   double *scale_temp_max,
   double *scale_temp_min,
-  double *scale_precip
+  double *scale_precip,
+  double *scale_skyCover,
+  double *scale_wind,
+  double *scale_rH
 ) {
 
   int year, month;

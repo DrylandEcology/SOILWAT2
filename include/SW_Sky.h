@@ -32,10 +32,7 @@ typedef struct {
           snow_density [MAX_MONTHS], /* snow density (kg/m3) */
           n_rain_per_day[MAX_MONTHS]; /* number of precipitation events per month (currently used in interception functions) */
 
-    RealD cloudcov_daily     [MAX_DAYS+1], /* interpolated daily cloud cover (frac) */
-          windspeed_daily    [MAX_DAYS+1], /* interpolated daily windspeed (m/s) */
-          r_humidity_daily   [MAX_DAYS+1], /* interpolated daily relative humidity (%) */
-          snow_density_daily	[MAX_DAYS+1];	/* interpolated daily snow density (kg/m3) */
+    RealD snow_density_daily	[MAX_DAYS+1];	/* interpolated daily snow density (kg/m3) */
 
 } SW_SKY;
 

@@ -41,12 +41,13 @@ extern "C" {
 
 typedef struct {
 	/* Weather values of the current simulation day */
-	RealD temp_avg, temp_max, temp_min, ppt, rain;
+	RealD temp_avg, temp_max, temp_min, ppt, rain, cloudCover, windSpeed, relHumidity;
 } SW_WEATHER_NOW;
 
 typedef struct {
 	/* Daily weather values for one year */
-	RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS], ppt[MAX_DAYS];
+	RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS], ppt[MAX_DAYS],
+    cloudcov_daily[MAX_DAYS+1], windspeed_daily[MAX_DAYS+1], r_humidity_daily[MAX_DAYS+1];
 	// RealD temp_month_avg[MAX_MONTHS], temp_year_avg; // currently not used
 } SW_WEATHER_HIST;
 
@@ -221,7 +222,10 @@ void scaleAllWeather(
   unsigned int n_years,
   double *scale_temp_max,
   double *scale_temp_min,
-  double *scale_precip
+  double *scale_precip,
+  double *scale_skyCover,
+  double *scale_wind,
+  double *scale_rH
 );
 void generateMissingWeather(
   SW_WEATHER_HIST **allHist,
