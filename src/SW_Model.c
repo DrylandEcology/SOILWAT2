@@ -92,6 +92,10 @@ void SW_MDL_construct(void) {
 		SW_Model.newperiod[pd] = swFALSE;
 	}
 	SW_Model.newperiod[eSW_Day] = swTRUE; // every day is a new day
+
+    // First year information needs to be initialized to interpolate
+    // weather data
+    Time_new_year(SW_Model.year);
 }
 
 /**

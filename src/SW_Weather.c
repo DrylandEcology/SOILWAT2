@@ -993,9 +993,9 @@ void SW_WTH_new_day(void) {
     wn->temp_max = w->allHist[yearIndex]->temp_max[day];
     wn->temp_min = w->allHist[yearIndex]->temp_min[day];
     wn->ppt = w->allHist[yearIndex]->ppt[day];
-    wn->cloudCover = w->allHist[yearIndex]->cloudcov_daily[day];
-    wn->windSpeed = w->allHist[yearIndex]->windspeed_daily[day];
-    wn->relHumidity = w->allHist[yearIndex]->r_humidity_daily[day];
+    wn->cloudCover = w->allHist[yearIndex]->cloudcov_daily[day + 1];
+    wn->windSpeed = w->allHist[yearIndex]->windspeed_daily[day + 1];
+    wn->relHumidity = w->allHist[yearIndex]->r_humidity_daily[day + 1];
 
     wn->temp_avg = w->allHist[yearIndex]->temp_avg[day];
 
