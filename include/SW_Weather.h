@@ -26,6 +26,7 @@
 
 #include "include/SW_Times.h"
 #include "include/SW_Defines.h"
+#include "include/SW_Sky.h"
 
 #ifdef __cplusplus
 extern "C" {

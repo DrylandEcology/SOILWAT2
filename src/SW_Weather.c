@@ -571,7 +571,8 @@ void SW_WTH_finalize_all_weather(void) {
 
 
 /**
-  @brief Apply temperature and precipitation scaling to daily weather values
+  @brief Apply temperature, precipitation, cloud cover, relative humidity, and wind speed
+         scaling to daily weather values
 
   @param[in,out] allHist 2D array holding all weather data
   @param[in] startYear Start year of the simulation (and `allHist`)
@@ -637,6 +638,27 @@ void scaleAllWeather(
 
         if (!missing(allHist[yearIndex]->ppt[day])) {
           allHist[yearIndex]->ppt[day] *= scale_precip[month];
+        }
+
+        if(!missing(allHist[yearIndex]->cloudcov_daily[day])) {
+            allHist[yearIndex]->cloudcov_daily[day] = fmin(
+            100.,
+            fmax(0.0, scale_skyCover[month] + allHist[yearIndex]->cloudcov_daily[day])
+            );
+        }
+
+        if(!missing(allHist[yearIndex]->windspeed_daily[day])) {
+            allHist[yearIndex]->windspeed_daily[day] = fmax(
+            0.0,
+            scale_wind[month] * allHist[yearIndex]->windspeed_daily[day]
+            );
+        }
+
+        if(!missing(allHist[yearIndex]->r_humidity_daily[day])) {
+            allHist[yearIndex]->r_humidity_daily[day] = fmin(
+            100.,
+            fmax(0.0, scale_rH[month] + allHist[yearIndex]->r_humidity_daily[day])
+            );
         }
 
         /* re-calculate average air temperature */
@@ -804,6 +826,9 @@ void _clear_hist_weather(SW_WEATHER_HIST *yearWeather) {
       yearWeather->temp_max[d] = SW_MISSING;
       yearWeather->temp_min[d] = SW_MISSING;
       yearWeather->temp_avg[d] = SW_MISSING;
+      yearWeather->cloudcov_daily[d] = SW_MISSING;
+      yearWeather->windspeed_daily[d] = SW_MISSING;
+      yearWeather->r_humidity_daily[d] = SW_MISSING;
   }
 }
 
@@ -968,6 +993,9 @@ void SW_WTH_new_day(void) {
     wn->temp_max = w->allHist[yearIndex]->temp_max[day];
     wn->temp_min = w->allHist[yearIndex]->temp_min[day];
     wn->ppt = w->allHist[yearIndex]->ppt[day];
+    wn->cloudCover = w->allHist[yearIndex]->cloudcov_daily[day];
+    wn->windSpeed = w->allHist[yearIndex]->windspeed_daily[day];
+    wn->relHumidity = w->allHist[yearIndex]->r_humidity_daily[day];
 
     wn->temp_avg = w->allHist[yearIndex]->temp_avg[day];
 
@@ -1159,6 +1187,7 @@ void _read_weather_hist(
 	// TimeInt mon, j, k = 0;
 	RealF tmpmax, tmpmin, ppt;
 	// RealF acc = 0.0;
+    SW_SKY *sky = &SW_Sky;
 
 	char fname[MAX_FILENAMESIZE];
 
@@ -1207,6 +1236,10 @@ void _read_weather_hist(
 		}
 		*/
 	} /* end of input lines */
+
+    interpolate_monthlyValues(sky->cloudcov, yearWeather->cloudcov_daily);
+    interpolate_monthlyValues(sky->windspeed, yearWeather->windspeed_daily);
+    interpolate_monthlyValues(sky->r_humidity, yearWeather->r_humidity_daily);
 
   // Calculate annual average temperature based on historical input
 	// wh->temp_year_avg = acc / (k + 0.0);
