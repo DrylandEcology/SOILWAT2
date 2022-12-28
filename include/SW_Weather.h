@@ -48,7 +48,7 @@ typedef struct {
 typedef struct {
 	/* Daily weather values for one year */
 	RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS], ppt[MAX_DAYS],
-    cloudcov_daily[MAX_DAYS+1], windspeed_daily[MAX_DAYS+1], r_humidity_daily[MAX_DAYS+1];
+    cloudcov_daily[MAX_DAYS], windspeed_daily[MAX_DAYS], r_humidity_daily[MAX_DAYS];
 	// RealD temp_month_avg[MAX_MONTHS], temp_year_avg; // currently not used
 } SW_WEATHER_HIST;
 

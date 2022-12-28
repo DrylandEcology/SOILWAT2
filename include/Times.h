@@ -42,6 +42,7 @@
 
 #include <time.h>
 #include "include/generic.h"
+#include "include/SW_Defines.h"
 
 #ifdef __cplusplus
 extern "C" {
