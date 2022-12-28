@@ -1237,6 +1237,10 @@ void _read_weather_hist(
 		*/
 	} /* end of input lines */
 
+    // Update yearly day/month information needed when interpolating
+    // cloud cover, wind speed, and relative humidity
+    Time_new_year(year);
+
     interpolate_monthlyValues(sky->cloudcov, yearWeather->cloudcov_daily);
     interpolate_monthlyValues(sky->windspeed, yearWeather->windspeed_daily);
     interpolate_monthlyValues(sky->r_humidity, yearWeather->r_humidity_daily);
