@@ -83,15 +83,15 @@ namespace{
       for (i = 0; i < length(xintpl -> cloudcov); i++) {
         xintpl -> cloudcov[i] = 10;
       }
-        xintpl_weather[0] -> cloudcov_daily[0] = 0;
+        xintpl_weather[0] -> cloudcov_daily[0] = SW_MISSING;
 
       interpolate_monthlyValues(xintpl->cloudcov, xintpl_weather[0] -> cloudcov_daily);
 
-      // value for daily index 0 is unchanged because we use here a base1 index
-      EXPECT_NEAR(xintpl_weather[0] -> cloudcov_daily[0], 0, tol9);
+      // value for daily index 0 is 10 to make sure base0 is working correctly
+      EXPECT_NEAR(xintpl_weather[0] -> cloudcov_daily[0], 10.0, tol9);
 
       // Expect all xintpld values to be the same (constant input)
-      for (doy = 1; doy <= Time_get_lastdoy_y(years[k]); doy++) {
+      for (doy = 0; doy < Time_get_lastdoy_y(years[k]); doy++) {
         EXPECT_NEAR(xintpl_weather[0] -> cloudcov_daily[doy], 10.0, tol9);
       }
 
@@ -112,8 +112,8 @@ namespace{
       } */
 
 
-      // value for daily index 0 is unchanged because we use here a base1 index
-      EXPECT_NEAR(xintpl_weather[0] -> cloudcov_daily[0], 0, tol9);
+      // value for daily index 0 is 10 to make sure base0 is working correctly
+      EXPECT_NEAR(xintpl_weather[0] -> cloudcov_daily[0], 10., tol9);
 
       // Expect mid-Nov to mid-Jan and mid-Feb to mid-Apr values to vary,
       // all other are the same
@@ -154,7 +154,7 @@ namespace{
       }
 
       // Expect Dec 1 to Dec 31 to vary
-      for (doy = 335 + lpadd; doy <= 365 + lpadd; doy++) {
+      for (doy = 335 + lpadd; doy < 365 + lpadd; doy++) {
         isMon1 = (Bool)(doy < 349 + lpadd);
         EXPECT_NEAR(
           xintpl_weather[0] -> cloudcov_daily[doy],
