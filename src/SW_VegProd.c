@@ -677,7 +677,10 @@ void SW_VPD_new_year(void) {
 
 	SW_VEGPROD *v = &SW_VegProd; /* convenience */
 	TimeInt doy; /* base1 */
-	int k;
+    int k;
+
+    // Interpolation is to be in base1 in `interpolate_monthlyValues()`
+    Bool interpAsBase1 = swTRUE;
 
 	double
 		biomass_after_CO2[MAX_MONTHS]; /* Monthly biomass after CO2 effects */
@@ -698,8 +701,8 @@ void SW_VPD_new_year(void) {
 					v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]
 				);
 
-				interpolate_monthlyValues(biomass_after_CO2, v->veg[k].pct_live_daily);
-				interpolate_monthlyValues(v->veg[k].biomass, v->veg[k].biomass_daily);
+				interpolate_monthlyValues(biomass_after_CO2, interpAsBase1, v->veg[k].pct_live_daily);
+				interpolate_monthlyValues(v->veg[k].biomass, interpAsBase1, v->veg[k].biomass_daily);
 
 			} else {
 				// CO2 effects on biomass applied to total biomass, i.e.,
@@ -710,13 +713,13 @@ void SW_VPD_new_year(void) {
 					v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]
 				);
 
-				interpolate_monthlyValues(biomass_after_CO2, v->veg[k].biomass_daily);
-				interpolate_monthlyValues(v->veg[k].pct_live, v->veg[k].pct_live_daily);
+				interpolate_monthlyValues(biomass_after_CO2, interpAsBase1, v->veg[k].biomass_daily);
+				interpolate_monthlyValues(v->veg[k].pct_live, interpAsBase1, v->veg[k].pct_live_daily);
 			}
 
 			// Interpolation of remaining variables from monthly to daily values
-			interpolate_monthlyValues(v->veg[k].litter, v->veg[k].litter_daily);
-			interpolate_monthlyValues(v->veg[k].lai_conv, v->veg[k].lai_conv_daily);
+			interpolate_monthlyValues(v->veg[k].litter, interpAsBase1, v->veg[k].litter_daily);
+			interpolate_monthlyValues(v->veg[k].lai_conv, interpAsBase1, v->veg[k].lai_conv_daily);
 		}
 	}
 

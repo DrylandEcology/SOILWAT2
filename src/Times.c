@@ -179,6 +179,7 @@ Bool isleapyear(const TimeInt year) {
  @date 09/22/2011
 
  @param[in] monthlyValues Array with values for each month
+ @param[in] interpAsBase1 Boolean value specifying if "dailyValues" should be base1 or base0
  @param[out] dailyValues Array with linearly interpolated values for each day
 
  @note Aside from cloud cover, relative humidity, and wind speed in `allHist` in SW_WEATHER, dailyValues[0]
@@ -187,17 +188,17 @@ Bool isleapyear(const TimeInt year) {
 
  @note When the function encounters cloud cover, relative humidity, or wind speed in `allHist` in SW_WEATHER,
        `dailyValues` will be defaulted to base0 to be consistent with minimum/maximum temperature and
-       precipitation in `allHist`. The function will know when one of the three cases is met by detecting
-       SW_MISSING in dailyValues[0].
+       precipitation in `allHist`. The function will know when one of the three cases is met by the parameter
+       "interpAsBase1".
  **/
-void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
+void interpolate_monthlyValues(double monthlyValues[], Bool interpAsBase1,
+                               double dailyValues[]) {
 	unsigned int doy, mday, month, month2 = NoMonth, nmdays;
     unsigned int startdoy = 1, endDay = MAX_DAYS, doyOffset = 0;
 	double sign = 1.;
 
-    // Check if `monthlyValues` is for cloud cover, relative humidity, or
-    // wind speed
-    if(missing(dailyValues[0])) {
+    // Check if we are interpolating values as base1
+    if(!interpAsBase1) {
 
         // Make `dailyValues` base0
         startdoy = 0;

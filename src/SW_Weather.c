@@ -1191,6 +1191,9 @@ void _read_weather_hist(
 	// RealF acc = 0.0;
     SW_SKY *sky = &SW_Sky;
 
+    /* Interpolation is to be in base0 in `interpolate_monthlyValues()` */
+    Bool interpAsBase1 = swFALSE;
+
 	char fname[MAX_FILENAMESIZE];
 
   // Create file name: `[weather-file prefix].[year]`
@@ -1243,9 +1246,9 @@ void _read_weather_hist(
     // cloud cover, wind speed, and relative humidity
     Time_new_year(year);
 
-    interpolate_monthlyValues(sky->cloudcov, yearWeather->cloudcov_daily);
-    interpolate_monthlyValues(sky->windspeed, yearWeather->windspeed_daily);
-    interpolate_monthlyValues(sky->r_humidity, yearWeather->r_humidity_daily);
+    interpolate_monthlyValues(sky->cloudcov, interpAsBase1, yearWeather->cloudcov_daily);
+    interpolate_monthlyValues(sky->windspeed, interpAsBase1, yearWeather->windspeed_daily);
+    interpolate_monthlyValues(sky->r_humidity, interpAsBase1, yearWeather->r_humidity_daily);
 
   // Calculate annual average temperature based on historical input
 	// wh->temp_year_avg = acc / (k + 0.0);
