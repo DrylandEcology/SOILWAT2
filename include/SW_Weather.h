@@ -42,13 +42,15 @@ extern "C" {
 
 typedef struct {
 	/* Weather values of the current simulation day */
-	RealD temp_avg, temp_max, temp_min, ppt, rain, cloudCover, windSpeed, relHumidity;
+	RealD temp_avg, temp_max, temp_min, ppt, rain, cloudCover, windSpeed, relHumidity,
+    shortWaveRad, actualVaporPressure;
 } SW_WEATHER_NOW;
 
 typedef struct {
 	/* Daily weather values for one year */
 	RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS], ppt[MAX_DAYS],
-    cloudcov_daily[MAX_DAYS], windspeed_daily[MAX_DAYS], r_humidity_daily[MAX_DAYS];
+    cloudcov_daily[MAX_DAYS], windspeed_daily[MAX_DAYS], r_humidity_daily[MAX_DAYS],
+    shortWaveRad[MAX_DAYS], actualVaporPressure[MAX_DAYS];
 	// RealD temp_month_avg[MAX_MONTHS], temp_year_avg; // currently not used
 } SW_WEATHER_HIST;
 
@@ -159,6 +161,16 @@ typedef struct {
 	char name_prefix[MAX_FILENAMESIZE - 5]; // subtract 4-digit 'year' file type extension
 	RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
 	RealD snow, snowmelt, snowloss, surfaceMax, surfaceMin;
+
+  Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_relHumidityMonthly,
+    has_temp2, has_ppt, has_cloudCover, has_sfcWind, has_windComp, has_hurs,
+    has_hurs2, has_huss, has_tdps, has_vp, has_rsds;
+
+  int tempComp1_index, tempComp2_index, ppt_index, cloudCover_index, sfcWind_index,
+    windComp1_index, windComp2_index, hurs_index, hurs_comp1_index, hurs_comp2_index,
+    huss_index, tdps_index, vp_index, rsds_index;
+
+  Bool n_input_forcings; // Number of input columns found in weath.YYYY
 
 	/* This section is required for computing the output quantities.  */
 	SW_WEATHER_OUTPUTS

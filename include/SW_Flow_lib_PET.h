@@ -38,7 +38,7 @@ double clearnessindex_diffuse(double K_b);
 
 double solar_radiation(unsigned int doy,
   double lat, double elev, double slope, double aspect,
-  double albedo, double cloud_cover, double rel_humidity, double air_temp_mean,
+  double albedo, double cloud_cover, double e_a,
   double *H_oh, double *H_ot, double *H_gh);
 
 

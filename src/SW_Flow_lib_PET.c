@@ -784,8 +784,7 @@ double clearnessindex_diffuse(double K_b)
   @param[in] albedo Average albedo of the surrounding ground surface
     below the inclined surface [0-1].
   @param[in] cloud_cover Fraction of sky covered by clouds [0-1].
-  @param[in] rel_humidity Daily mean relative humidity [%]
-  @param[in] air_temp_mean Daily mean air temperature [C]
+  @param[in] e_a Actual vapor pressure [kPa]
 
   @param[out] H_oh Daily extraterrestrial horizontal irradiation [MJ / m2]
   @param[out] H_ot Daily extraterrestrial tilted irradiation [MJ / m2]
@@ -794,11 +793,11 @@ double clearnessindex_diffuse(double K_b)
 */
 double solar_radiation(unsigned int doy,
   double lat, double elev, double slope, double aspect,
-  double albedo, double cloud_cover, double rel_humidity, double air_temp_mean,
+  double albedo, double cloud_cover, double e_a,
   double *H_oh, double *H_ot, double *H_gh)
 {
   double
-    P, e_a,
+    P,
     sun_angles[7], int_cos_theta[2], int_sin_beta[2],
     H_o[2],
     k_c,
@@ -826,13 +825,6 @@ double solar_radiation(unsigned int doy,
   //--- Atmospheric attenuation
   // Calculate atmospheric pressure
   P = atmospheric_pressure(elev);
-
-  // Actual vapor pressure [kPa] estimated from daily mean air temperature and
-  // mean monthly relative humidity
-  // Allen et al. 2005: eqs 7 and 14
-  e_a = rel_humidity / 100. *
-    0.6108 * exp((17.27 * air_temp_mean) / (air_temp_mean + 237.3));
-
 
   // Atmospheric attenuation: additional cloud effects
   //k_c = overcast_attenuation_KastenCzeplak1980(cloud_cover / 100.);
