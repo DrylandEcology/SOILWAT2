@@ -1273,6 +1273,43 @@ void _read_weather_hist(
 	fclose(f);
 }
 
+/**
+ @brief Calculate actual vapor pressure based on relative humidity and mean temperature
+
+ @param hurs Daily mean relative humidity [%]
+ @param tmean Daily mean air temperature [C]
+
+ @return Calculated actual vapor pressure [kPa]
+ */
+double actualVaporPressure1(double hurs, double tmean) {
+    return 0.0; // Temporary return
+}
+
+/**
+ @brief Calculate actual vapor pressure based on temperature and relative humidity components (min/max)
+
+ @param hursMax Daily maximum relative humidity [%]
+ @param hursMin Daily minimum relative humidity [%]
+ @param maxTemp Daily minimum air temperature [C]
+ @param minTemp Daily maximum air temperature [C]
+
+ @return Calculated actual vapor pressure [kPa]
+ */
+double actualVaporPressure2(double hursMax, double hursMin, double maxTemp, double minTemp) {
+    return 0.0; // Temporary return
+}
+
+/**
+ @brief Calculate actual vapor pressure based on dew point temperature
+
+ @param tdps 2m dew point temperature [C]
+
+ @return Calculated actual vapor pressure [kPa]
+ */
+double actualVaporPressure3(double tdps) {
+    return 0.0; // Temporary return
+}
+
 void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
                             SW_CLIMATE_CLIM *climateAverages) {
 

@@ -247,6 +247,9 @@ void generateMissingWeather(
   unsigned int method,
   unsigned int optLOCF_nMax
 );
+double actualVaporPressure1(double hurs, double tmean);
+double actualVaporPressure2(double hursMax, double hursMin, double maxTemp, double minTemp);
+double actualVaporPressure3(double tdps);
 void allocateAllWeather(SW_WEATHER *w);
 void deallocateAllWeather(SW_WEATHER *w);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
