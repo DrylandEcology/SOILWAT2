@@ -1,8 +1,8 @@
 [submodule "googletest"]
-	path = googletest
+	path = external/googletest
 	url = https://github.com/google/googletest
 	branch = main
 [submodule "pcg"]
-	path = pcg
+	path = external/pcg
 	url = https://github.com/imneme/pcg-c-basic
         branch = master

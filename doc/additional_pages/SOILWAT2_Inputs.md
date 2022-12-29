@@ -8,19 +8,18 @@ Note: this document is best viewed as part of the doxygen-built documentation
 <br>
 
 ### Example
-  * The source code contains a complete example simulation project in `testing/`
-  * Copy the executable to the testing path, modify inputs as desired,
-    and run a simulation, e.g.,
+  * The source code contains a complete example simulation project in
+    `tests/example/`
+  * Modify inputs as desired and run a simulation, e.g.,
 ```{.sh}
-    make bint bint_run
+    make bin_run
 ```
     or, equivalently,
 ```{.sh}
     make bin
-    cp SOILWAT2 testing/
-    cd testing/
-    ./SOILWAT2
+    bin/SOILWAT2 -d ./tests/example -f files.in
 ```
+
 
   * The inputs comprise the master file `files.in` and the content of the
     `Input/` folder. They are explained in detail
@@ -64,78 +63,78 @@ Go back to the \ref explain_inputs "list of input files"
 <hr>
 
 \section yearsin years.in
-\verbinclude testing/Input/years.in
+\verbinclude tests/example/Input/years.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>
 
 \section siteparamin siteparam.in
-\verbinclude testing/Input/siteparam.in
+\verbinclude tests/example/Input/siteparam.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>
 
 \section soilsin soils.in
-\verbinclude testing/Input/soils.in
+\verbinclude tests/example/Input/soils.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>
 
 \section swrcpin swrc_params.in
-\verbinclude testing/Input/swrc_params.in
+\verbinclude tests/example/Input/swrc_params.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>
 
 \section weathsetupin weathsetup.in
-\verbinclude testing/Input/weathsetup.in
+\verbinclude tests/example/Input/weathsetup.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>
 
 \section mkvprobin mkv_prob.in
-\verbinclude testing/Input/mkv_prob.in
+\verbinclude tests/example/Input/mkv_prob.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>
 
 \section mkvcovarin mkv_covar.in
-\verbinclude testing/Input/mkv_covar.in
+\verbinclude tests/example/Input/mkv_covar.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>
 
 \section climatein climate.in
-\verbinclude testing/Input/climate.in
+\verbinclude tests/example/Input/climate.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>
 
 \section vegin veg.in
-\verbinclude testing/Input/veg.in
+\verbinclude tests/example/Input/veg.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>
 
 \section estabin estab.in
-\verbinclude testing/Input/estab.in
+\verbinclude tests/example/Input/estab.in
 <hr>
 Go back to the \ref explain_inputs "list of input files"
 
 \section carbonin carbon.in
-\verbinclude testing/Input/carbon.in
+\verbinclude tests/example/Input/carbon.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>
 
 \section swcsetupin swcsetup.in
-\verbinclude testing/Input/swcsetup.in
+\verbinclude tests/example/Input/swcsetup.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>
 
 \section outsetupin outsetup.in
-\verbinclude testing/Input/outsetup.in
+\verbinclude tests/example/Input/outsetup.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>

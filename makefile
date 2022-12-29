@@ -3,70 +3,111 @@
 #-------------------------------------------------------------------------------
 # make help        display the top of this file, i.e., print explanations
 #
-# make all         (synonym to 'bin'): compile the binary executable using
-#                  optimizations
-# make bint        same as 'make bin' plus move a copy of the binary to the
-#                  'testing/' folder
-# make bint_run    same as 'make bint' plus execute the binary in testing/
+# make compiler_version print version information of CC and CXX compilers
 #
+# --- Binary executable ------
+# make             create the binary executable 'SOILWAT2'
+# make all
+# make bin
+#
+# make bin_run     same as 'make bin' plus execute the binary for tests/example/
+#                  (previously, `make bint_run`; target `bint` is obsolete)
+#
+# --- Documentation ------
 # make doc         create html documentation for SOILWAT2 using doxygen
 #
 # make doc_open    open documentation
 #
+# --- SOILWAT2 library ------
 # make lib         create SOILWAT2 library
 #
-# make test        compile unit tests in 'test/ folder (with googletest)
-# make test_severe compile unit tests with severe flags in 'test/'
-# make test_run    run unit tests (in a previous step compiled with 'make test'
-#                  or 'make test_severe')
+# --- Tests ------
+# make test        create a test binary executable that includes the unit tests
+#                  in 'tests/gtests/' (using googletest)
+# make test_run    execute the test binary
+# make test_severe similar to `make test_run` with stricter flags for warnings
+#                  and instrumentation; consider cleaning previous build
+#                  artifacts beforehand, e.g., `make clean_test`
+# make test_leaks  similar to `make test_severe` with stricter
+#                  sanitizer settings; consider cleaning previous build
+#                  artifacts beforehand, e.g., `make clean_test`
 #
-# make bin_debug   compile the binary executable in debug mode
-# make bin_debug_severe   same as 'make bin_debug' but with severe flags
-# make bind_valgrind      same as 'make bin_debug' plus run valgrind
-#                  on the debug binary in the testing/ folder
+# make bin_debug   similar to `make bin_run` with debug settings;
+#                  consider cleaning previous build artifacts beforehand,
+#                  e.g., `make clean_build`
+# make bin_debug_severe   similar to `make bin_debug` stricter flags for
+#                  warnings and instrumentation; consider cleaning previous
+#                  build artifacts beforehand, e.g., `make clean_build`
 #
-# make cov         same as 'make test' but with code coverage support
-# make cov_run     run unit tests and gcov on each source file (in a previous
-#                  step compiled with 'make cov')
+# --- Code coverage ------
+# make cov         same as 'make test_run' with code coverage support and
+#                  running `gcov` on each source file
+#                  (previously, `make cov cov_run`); consider cleaning
+#                  previous artifacts beforehand, e.g., `make clean_cov`;
+#                  use matching compiler and `gcov` versions, e.g., for gcc
+#                  `CC=gcc CXX=g++ make clean cov` or for clang v14
+#                  `CC=clang CXX=clang++ GCOV="llvm-cov-mp-14 gcov" make clean_cov cov`
 #
-# make clean       (synonym to 'cleaner'): delete all of the o files, test
-#                  files, libraries, and the binary exe(s)
-# make test_clean  delete test files and libraries
-# make cov_clean   delete files associated with code coverage
-# make doc_clean   delete documentation
-#
-# make compiler_version print version information of CC and CXX compilers
+# --- Cleanup ------
+# make clean       same as 'make clean_bin clean_build clean_test';
+#                  does not clean artifacts from code coverage or documentation
+# make clean_bin   delete 'bin/' (binary and test executables and library)
+# make clean_build delete binary executable build artifacts
+# make clean_test  delete test executable build artifacts
+# make clean_cov   delete code coverage artifacts
+# make clean_doc   delete documentation
 #-------------------------------------------------------------------------------
+
+#------ Requirement: GNU make
+SHELL = /bin/sh
+.SUFFIXES:
+.SUFFIXES: .c .cc .o
+
 
 #------ Identification
 SW2_VERSION := "$(shell git describe --abbrev=7 --dirty --always --tags)"
 HOSTNAME := "$(shell uname -sn)"
 
-sw_info = -DSW2_VERSION=\"$(SW2_VERSION)\" \
+sw_info := -DSW2_VERSION=\"$(SW2_VERSION)\" \
 					-DUSERNAME=\"$(USER)\" \
 					-DHOSTNAME=\"$(HOSTNAME)\"
 
 
-#------ OUTPUT NAMES
-target = SOILWAT2
-bin_test = sw_test
-target_debug = $(target)_debug
-target_debugsevere = $(target)_debugsevere
-target_test = $(target)_test
-target_testsevere = $(target)_testsevere
-target_cov = $(target)_cov
+#------ PATHS
+# directory for source code (including headers) of SOILWAT2
+dir_src := src
+# directory for unit test source code
+dir_test := tests/gtests
+# directories that contain submodules
+dir_pcg := external/pcg
+dir_gtest := external/googletest/googletest
 
-lib_target_CC = lib$(target).a	# used by `make all` (= `make bin`)
-lib_target_CC_debug = lib$(target_debug).a	# used by `make bin_debug` and `make bind_valgrind`
-lib_target_CC_debugsevere = lib$(target_debugsevere).a	# used by `make bin_debug_severe`
-lib_target_CC_test = lib$(target_test).a	# used by `make test`
-lib_target_CXX_testsevere = lib$(target_testsevere).a	# used by `make test_severe`
-lib_target_CXX_cov = lib$(target_cov).a	# used by `make cov`
+# output directory for executables, shared objects, libraries
+dir_bin := bin
+# directories for intermediate (ephemeral) compile objects
+dir_build := build
+dir_build_sw2 := $(dir_build)/sw2
+dir_build_test := $(dir_build)/test
+
+
+
+#------ OUTPUT NAMES
+target := SOILWAT2
+lib_sw2 := $(dir_bin)/lib$(target).a
+bin_sw2 := $(dir_bin)/$(target)
+
+target_test = $(target)_test
+lib_test := $(dir_build_test)/lib$(target_test).a
+bin_test := $(dir_bin)/sw_test
+
+gtest := gtest
+lib_gtest := $(dir_build_test)/lib$(gtest).a
+
 
 
 #------ COMMANDS
-# CC = gcc
-# CXX = g++
+# CC = gcc or clang
+# CXX = g++ or clang++
 # AR = ar
 # RM = rm
 
@@ -79,17 +120,16 @@ lib_target_CXX_cov = lib$(target_cov).a	# used by `make cov`
 # see https://github.com/google/googletest/issues/813 and
 # see https://github.com/google/googletest/pull/2839#issue-613300962
 
-set_std = -std=c11
-set_std_tests = -std=c11
-set_std++_tests = -std=c++11
+set_std := -std=c11
+set_std++_tests := -std=c++11
 
 
 #------ FLAGS
 # Diagnostic warning/error messages
-warning_flags = -Wall -Wextra
+warning_flags := -Wall -Wextra
 
 # Don't use 'warning_flags_severe*' for production builds and rSOILWAT2
-warning_flags_severe = \
+warning_flags_severe := \
 	$(warning_flags) \
 	-Wpedantic \
 	-Werror \
@@ -97,11 +137,11 @@ warning_flags_severe = \
 	-Wmissing-declarations \
 	-Wredundant-decls
 
-warning_flags_severe_cc = \
+warning_flags_severe_cc := \
 	$(warning_flags_severe) \
 	-Wstrict-prototypes # '-Wstrict-prototypes' is valid for C/ObjC but not for C++
 
-warning_flags_severe_cxx = \
+warning_flags_severe_cxx := \
 	$(warning_flags_severe) \
 	-Wno-error=deprecated
 	# TODO: address underlying problems so that we can eliminate
@@ -111,9 +151,9 @@ warning_flags_severe_cxx = \
 
 
 # Instrumentation options for debugging and testing
-instr_flags = -fstack-protector-all
+instr_flags := -fstack-protector-all
 
-instr_flags_severe = \
+instr_flags_severe := \
 	$(instr_flags) \
 	-fsanitize=undefined \
 	-fsanitize=address \
@@ -128,40 +168,71 @@ instr_flags_severe = \
 
 
 # Precompiler and compiler flags and options
-sw_CPPFLAGS = $(CPPFLAGS) $(sw_info)
-sw_CFLAGS = $(CFLAGS)
-sw_CXXFLAGS = $(CXXFLAGS)
+sw_CPPFLAGS := $(CPPFLAGS) $(sw_info) -MMD -MP -I.
+sw_CPPFLAGS_bin := $(sw_CPPFLAGS) -I$(dir_build_sw2)
+sw_CPPFLAGS_test := $(sw_CPPFLAGS) -I$(dir_build_test)
+sw_CFLAGS := $(CFLAGS)
+sw_CXXFLAGS := $(CXXFLAGS)
 
-bin_flags = -O2 -fno-stack-protector
-debug_flags = -g -O0 -DSWDEBUG
-cov_flags = -O0 -coverage
-gtest_flags = -D_POSIX_C_SOURCE=200809L # googletest requires POSIX API
+# `SW2_FLAGS` can be used to pass in additional flags
+bin_flags := -O2 -fno-stack-protector $(SW2_FLAGS)
+debug_flags := -g -O0 -DSWDEBUG $(SW2_FLAGS)
+#cov_flags := -O0 -coverage
+gtest_flags := -D_POSIX_C_SOURCE=200809L # googletest requires POSIX API
 
 
 # Linker flags and libraries
 # order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
-sw_LDFLAGS = $(LDFLAGS) -L.
-sw_LDLIBS = $(LDLIBS) -lm
+sw_LDFLAGS_bin := $(LDFLAGS) -L$(dir_bin)
+sw_LDFLAGS_test := $(LDFLAGS) -L$(dir_bin) -L$(dir_build_test)
+sw_LDLIBS := $(LDLIBS) -lm
 
-target_LDLIBS = -l$(target) $(sw_LDLIBS)
-debug_LDLIBS = -l$(target_debug) $(sw_LDLIBS)
-debugsevere_LDLIBS = -l$(target_debugsevere) $(sw_LDLIBS)
-test_LDLIBS = -l$(target_test) $(sw_LDLIBS)
-testsevere_LDLIBS = -l$(target_testsevere) $(sw_LDLIBS)
-cov_LDLIBS = -l$(target_cov) $(sw_LDLIBS)
-
-gtest_LDLIBS = -l$(gtest)
+target_LDLIBS := -l$(target) $(sw_LDLIBS)
+test_LDLIBS := -l$(target_test) $(sw_LDLIBS)
+gtest_LDLIBS := -l$(gtest)
 
 
 #------ CODE FILES
-# SOILWAT2 files
-sources_core = SW_Main_lib.c SW_VegEstab.c SW_Control.c generic.c \
-					rands.c Times.c mymemory.c filefuncs.c SW_Files.c SW_Model.c \
-					SW_Site.c SW_SoilWater.c SW_Markov.c SW_Weather.c SW_Sky.c \
-					SW_VegProd.c SW_Flow_lib_PET.c SW_Flow_lib.c SW_Flow.c SW_Carbon.c
+# sw_sources is used by STEPWAT2 and rSOILWAT2 to pass relevant output code file
+ifneq ($(origin sw_sources), undefined)
+	# Add source path
+	sw_sources := $(sw_sources:%.c=$(dir_src)/%.c)
+endif
 
-sources_lib = $(sw_sources) $(sources_core) SW_Output.c SW_Output_get_functions.c
-objects_lib = $(sources_lib:.c=.o)
+# SOILWAT2 files
+sources_core := \
+	$(dir_src)/SW_Main_lib.c \
+	$(dir_src)/SW_VegEstab.c \
+	$(dir_src)/SW_Control.c \
+	$(dir_src)/generic.c \
+	$(dir_src)/rands.c \
+	$(dir_src)/Times.c \
+	$(dir_src)/mymemory.c \
+	$(dir_src)/filefuncs.c \
+	$(dir_src)/SW_Files.c \
+	$(dir_src)/SW_Model.c \
+	$(dir_src)/SW_Site.c \
+	$(dir_src)/SW_SoilWater.c \
+	$(dir_src)/SW_Markov.c \
+	$(dir_src)/SW_Weather.c \
+	$(dir_src)/SW_Sky.c \
+	$(dir_src)/SW_VegProd.c \
+	$(dir_src)/SW_Flow_lib_PET.c \
+	$(dir_src)/SW_Flow_lib.c \
+	$(dir_src)/SW_Flow.c \
+	$(dir_src)/SW_Carbon.c
+
+sources_lib = \
+	$(sw_sources) \
+	$(sources_core) \
+	$(dir_src)/SW_Output.c \
+	$(dir_src)/SW_Output_get_functions.c
+objects_lib = $(sources_lib:$(dir_src)/%.c=$(dir_build_sw2)/%.o)
+
+
+# SOILWAT2-standalone
+sources_bin := $(dir_src)/SW_Main.c $(dir_src)/SW_Output_outtext.c
+objects_bin := $(sources_bin:$(dir_src)/%.c=$(dir_build_sw2)/%.o)
 
 
 # Unfortunately, we currently cannot include 'SW_Output.c' because
@@ -169,206 +240,168 @@ objects_lib = $(sources_lib:.c=.o)
 #  - assigning to 'OutKey' from incompatible type 'int'
 # ==> instead, we use 'SW_Output_mock.c' which provides mock versions of the
 # public functions (but will result in some compiler warnings)
-sources_lib_test = $(sources_core) SW_Output_mock.c
-objects_lib_test = $(sources_lib_test:.c=.o)
+sources_lib_test := $(sources_core) $(dir_src)/SW_Output_mock.c
+objects_lib_test := $(sources_lib_test:$(dir_src)/%.c=$(dir_build_test)/%.o)
 
 
-sources_bin = SW_Main.c SW_Output_outtext.c # SOILWAT2-standalone
-objects_bin = $(sources_bin:.c=.o)
+# Unit test files
+sources_test := $(wildcard $(dir_test)/*.cc)
+objects_test := $(sources_test:$(dir_test)/%.cc=$(dir_build_test)/%.o)
 
 
 # PCG random generator files
-PCG_DIR = pcg
-sources_pcg = $(PCG_DIR)/pcg_basic.c
-objects_pcg = pcg_basic.o
+sources_pcg := $(dir_pcg)/pcg_basic.c
+objects_lib_pcg := $(sources_pcg:$(dir_pcg)/%.c=$(dir_build_sw2)/%.o)
+objects_test_pcg := $(sources_pcg:$(dir_pcg)/%.c=$(dir_build_test)/%.o)
 
 
-# Google unit test files
-gtest = gtest
-lib_gtest = lib$(gtest).a
-GTEST_DIR = googletest/googletest
-GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
-GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h $(GTEST_DIR)/include/gtest/internal/*.h
+# Google test code
+GTEST_SRCS_ := $(dir_gtest)/src/*.cc $(dir_gtest)/src/*.h $(GTEST_HEADERS)
+GTEST_HEADERS := $(dir_gtest)/include/gtest/*.h $(dir_gtest)/include/gtest/internal/*.h
+
 
 
 #------ TARGETS
-all : $(target)
-bin : $(target)
+all : $(bin_sw2)
 
-#--- Targets for SOILWAT2 library
-lib : $(lib_target_CC)
+lib : $(lib_sw2)
 
-$(lib_target_CC) :
-		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(bin_flags) $(warning_flags) \
-		$(set_std) -c $(sources_lib) $(sources_pcg)
+test : $(bin_test)
 
-		-@$(RM) -f $(lib_target_CC)
-		$(AR) -rcs $(lib_target_CC) $(objects_lib) $(objects_pcg)
-		-@$(RM) -f $(objects_lib) $(objects_pcg)
-
-$(lib_target_CC_debug) :
-		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(set_std) -c $(sources_lib) $(sources_pcg)
-
-		-@$(RM) -f $(lib_target_CC_debug)
-		$(AR) -rcs $(lib_target_CC_debug) $(objects_lib) $(objects_pcg)
-		-@$(RM) -f $(objects_lib) $(objects_pcg)
-
-$(lib_target_CC_debugsevere) :
-		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe_cc) \
-		$(instr_flags_severe) $(set_std) -c $(sources_lib) $(sources_pcg)
-
-		-@$(RM) -f $(lib_target_CC_debugsevere)
-		$(AR) -rcs $(lib_target_CC_debugsevere) $(objects_lib) $(objects_pcg)
-		-@$(RM) -f $(objects_lib) $(objects_pcg)
-
-$(lib_target_CC_test) :
-		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(set_std_tests) -c $(sources_lib_test) $(sources_pcg)
-
-		-@$(RM) -f $(lib_target_CC_test)
-		$(AR) -rcs $(lib_target_CC_test) $(objects_lib_test) $(objects_pcg)
-		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
-
-$(lib_target_CXX_testsevere) :	# needs CXX because of '*_severe' flags which must match test executable
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags_severe_cxx) \
-		$(instr_flags_severe) $(set_std++_tests) -c $(sources_lib_test) $(sources_pcg)
-
-		-@$(RM) -f $(lib_target_CXX_testsevere)
-		$(AR) -rcs $(lib_target_CXX_testsevere) $(objects_lib_test) $(objects_pcg)
-		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
-
-$(lib_target_CXX_cov) :	# needs CXX because of 'coverage' flags which must match test executable
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(cov_flags) $(set_std++_tests) -c $(sources_lib_test) $(sources_pcg)
-
-		-@$(RM) -f $(lib_target_CXX_cov)
-		$(AR) -rcs $(lib_target_CXX_cov) $(objects_lib_test) $(objects_pcg)
-		-@$(RM) -f $(objects_lib_test) $(objects_pcg)
+.PHONY : all lib test
 
 
-#--- Targets for SOILWAT2 executable
-$(target) : $(lib_target_CC)
-		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(bin_flags) $(warning_flags) \
-		$(set_std) \
-		-o $(target) $(sources_bin) $(target_LDLIBS) $(sw_LDFLAGS)
 
-bin_debug : $(lib_target_CC_debug)
-		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(set_std) \
-		-o $(target) $(sources_bin) $(debug_LDLIBS) $(sw_LDFLAGS)
-
-bin_debug_severe : $(lib_target_CC_debugsevere)
-		$(CC) $(sw_CPPFLAGS) $(sw_CFLAGS) $(debug_flags) $(warning_flags_severe_cc) \
-		$(instr_flags_severe) $(set_std) \
-		-o $(target) $(sources_bin) $(debugsevere_LDLIBS) $(sw_LDFLAGS)
+#--- SOILWAT2 library (utilized by SOILWAT2, rSOILWAT2, and STEPWAT2)
+$(lib_sw2) : $(objects_lib) $(objects_lib_pcg) | $(dir_bin)
+		$(AR) -rcs $(lib_sw2) $(objects_lib) $(objects_lib_pcg)
 
 
-.PHONY : bint
-bint :
-		cp $(target) testing/$(target)
-
-.PHONY : bint_run
-bint_run : bint
-		./testing/$(target) -d ./testing -f files.in
-
-.PHONY : bind_valgrind
-bind_valgrind : bin_debug bint
-		valgrind -v --track-origins=yes --leak-check=full ./testing/$(target) -d ./testing -f files.in
+#--- SOILWAT2 stand-alone executable (utilizing SOILWAT2 library)
+$(bin_sw2) : $(lib_sw2) $(objects_bin) | $(dir_bin)
+		$(CC) $(bin_flags) $(warning_flags) $(set_std) $(objects_bin) $(sw_LDFLAGS_bin) $(target_LDLIBS) -o $(bin_sw2)
 
 
-#--- Target for GoogleTest library
+#--- Unit test library and executable
+$(lib_test) : $(objects_lib_test) $(objects_test_pcg) | $(dir_build_test)
+		$(AR) -rcs $(lib_test) $(objects_lib_test) $(objects_test_pcg)
+
+$(bin_test) : $(lib_gtest) $(lib_test) $(objects_test) | $(dir_bin)
+		$(CXX) $(gtest_flags) $(debug_flags) $(warning_flags) \
+		$(instr_flags) $(set_std++_tests) \
+		-isystem ${dir_gtest}/include -pthread \
+		$(objects_test) $(sw_LDFLAGS_test) $(gtest_LDLIBS) $(test_LDLIBS) -o $(bin_test)
+
+# GoogleTest library
 # based on section 'Generic Build Instructions' at
 # https://github.com/google/googletest/tree/master/googletest)
 #   1) build googletest library
 #   2) compile SOILWAT2 test source file
-lib_test : $(lib_gtest)
+$(lib_gtest) : | $(dir_build_test)
+		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(set_std++_tests) \
+		-isystem ${dir_gtest}/include -I${dir_gtest} \
+		-pthread -c ${dir_gtest}/src/gtest-all.cc -o $(dir_build_test)/gtest-all.o
 
-$(lib_gtest) :
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(gtest_flags) $(set_std++_tests) \
-		-isystem ${GTEST_DIR}/include -I${GTEST_DIR} \
-		-pthread -c ${GTEST_DIR}/src/gtest-all.cc
-
-		$(AR) -r $(lib_gtest) gtest-all.o
+		$(AR) -r $(lib_gtest) $(dir_build_test)/gtest-all.o
 
 
-#--- Targets for SOILWAT2 test executable
-test : $(lib_gtest) $(lib_target_CC_test)
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(set_std++_tests) \
-		-isystem ${GTEST_DIR}/include -pthread \
-		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(test_LDLIBS) $(sw_LDFLAGS)
+#--- Compile source files for library and executable
+$(dir_build_sw2)/%.o: $(dir_src)/%.c | $(dir_build_sw2)
+		$(CC) $(sw_CPPFLAGS_bin) $(sw_CFLAGS) $(bin_flags) $(warning_flags) $(set_std) -c $< -o $@
 
-test_severe : $(lib_gtest) $(lib_target_CXX_testsevere)
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags_severe_cxx) \
-		$(instr_flags_severe) $(set_std++_tests) \
-		-isystem ${GTEST_DIR}/include -pthread \
-		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(testsevere_LDLIBS) $(sw_LDFLAGS)
+$(dir_build_sw2)/%.o: $(dir_pcg)/%.c | $(dir_build_sw2)
+		$(CC) $(sw_CPPFLAGS_bin) $(sw_CFLAGS) $(bin_flags) $(warning_flags) $(set_std) -c $< -o $@
 
+
+#--- Compile source files for unit tests
+$(dir_build_test)/%.o: $(dir_src)/%.c | $(dir_build_test)
+		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -c $< -o $@
+
+$(dir_build_test)/%.o: $(dir_pcg)/%.c | $(dir_build_test)
+		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -c $< -o $@
+
+$(dir_build_test)/%.o: $(dir_test)/%.cc | $(dir_build_test)
+		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -isystem ${dir_gtest}/include -pthread -c $< -o $@
+
+
+#--- Create directories
+$(dir_bin) $(dir_build_sw2) $(dir_build_test):
+		-@mkdir -p $@
+
+
+#--- Include "makefiles" created by the CPPFLAG options `-MMD -MP`
+#-include $(objects_bin:.o=.d) $(objects_lib:.o=.d) $(objects_lib_pcg:.o=.d)
+
+
+
+#--- Convenience targets for testing
+.PHONY : bin_run
+bin_run : all
+		$(bin_sw2) -d ./tests/example -f files.in
 
 .PHONY : test_run
-test_run :
-		./$(bin_test)
+test_run : test
+		$(bin_test)
+
+.PHONY : test_severe
+test_severe :
+		./tools/run_test_severe.sh
+
+.PHONY : test_leaks
+test_leaks :
+		./tools/run_test_leaks.sh
+
+.PHONY : bin_debug
+bin_debug :
+		./tools/run_debug.sh
+
+.PHONY : bin_debug_severe
+bin_debug_severe :
+		./tools/run_debug_severe.sh
 
 
-#--- Targets for SOILWAT2 code coverage test executable
-cov : cov_clean $(lib_gtest) $(lib_target_CXX_cov)
-		$(CXX) $(sw_CPPFLAGS) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(cov_flags) $(set_std++_tests) \
-		-isystem ${GTEST_DIR}/include -pthread \
-		test/*.cc -o $(bin_test) $(gtest_LDLIBS) $(cov_LDLIBS) $(sw_LDFLAGS)
-
-.PHONY : cov_run
-cov_run : cov
-		./$(bin_test)
+#--- Convenience targets for code coverage
+.PHONY : cov
+cov :
 		./tools/run_gcov.sh
 
 
-#--- Targets for documentation
+#--- Convenience targets for documentation
 .PHONY : doc
 doc :
 		./tools/run_doxygen.sh
-
 
 .PHONY : doc_open
 doc_open :
 		./tools/doc_open.sh
 
 
-#--- Targets to clean artifacts
-.PHONY : clean1
-clean1 :
-		-@$(RM) -f $(objects_lib) $(objects_bin) $(objects_pcg)
-
-.PHONY : clean2
-clean2 :
-		-@$(RM) -f $(target) $(lib_target_CC) $(lib_target_CC_debug) $(lib_target_CC_debugsevere)
-		-@$(RM) -f testing/$(target)
-
-.PHONY : bint_clean
-bint_clean :
-		-@$(RM) -f testing/Output/*
-
-.PHONY : test_clean
-test_clean :
-		-@$(RM) -f gtest-all.o $(lib_gtest) $(bin_test)
-		-@$(RM) -f $(lib_target_CC_test) $(lib_target_CXX_testsevere) $(lib_target_CXX_cov)
-		-@$(RM) -fr *.dSYM
-		-@$(RM) -f $(objects_lib_test)
-
-.PHONY : cov_clean
-cov_clean :
-		-@$(RM) -f $(lib_target_CXX_cov) *.gcda *.gcno *.gcov
-		-@$(RM) -fr *.dSYM
-
-.PHONY : cleaner
-cleaner : clean1 clean2 bint_clean test_clean cov_clean
-
+#--- Clean up
 .PHONY : clean
-clean : cleaner
+clean: clean_bin clean_build clean_test
+		-@$(RM) -r $(dir_build)
 
-.PHONY : doc_clean
-doc_clean :
+.PHONY : clean_bin
+clean_bin:
+		-@$(RM) -r $(dir_bin)
+
+.PHONY : clean_build
+clean_build:
+		-@$(RM) -r $(dir_build_sw2)
+		-@$(RM) -f $(bin_sw2) $(lib_sw2)
+
+.PHONY : clean_test
+clean_test:
+		-@$(RM) -r $(dir_build_test)
+		-@$(RM) -f $(bin_test)
+
+.PHONY : clean_cov
+clean_cov : clean_test
+		-@$(RM) -f *.gcov
+		-@$(RM) -fr $(dir_bin)/*.dSYM
+
+.PHONY : clean_doc
+clean_doc :
 		-@$(RM) -fr doc/html/
 		-@$(RM) -f doc/log_doxygen.log
 
@@ -378,6 +411,7 @@ doc_clean :
 help :
 		less makefile
 
+
 #--- Target to print compiler information
 .PHONY : compiler_version
 compiler_version :
@@ -385,3 +419,5 @@ compiler_version :
 		@(echo `"$(CC)" --version`)
 		@(echo CXX version:)
 		@(echo `"$(CXX)" --version`)
+		@(echo make version:)
+		@(echo `"$(MAKE)" --version`)

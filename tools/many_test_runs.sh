@@ -4,16 +4,13 @@
 # $N number of test runs; default 10 if empty or unset
 
 iters=${N:-10}
-sw_test=${sw_test:-"sw_test"}
 
 echo $(date): will run ${iters} test replicates.
 
-if [ ! -x sw_test ]; then
-  make test
-fi
+make test
 
 for i in $(seq 1 $iters); do
-  temp=$( ./sw_test | grep -i "Fail" )
+  temp=$( make test_run | grep -i "Fail" )
 
   if [ ! -z "${temp}" ]; then
     echo Replicate $i failed with:

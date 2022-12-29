@@ -24,4 +24,4 @@ jobs:
         sudo apt-get install doxygen doxygen-latex graphviz
 
     - name: Build documentation and check for warnings
-      run: make clean doc
+      run: make clean clean_doc doc
