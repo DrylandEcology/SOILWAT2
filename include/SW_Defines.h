@@ -59,6 +59,8 @@ extern "C" {
 
 #define SW_MISSING     999.     /**< Value to use as MISSING */
 
+#define MAX_INPUT_COLUMNS 14    /**< Maximum number of columns that can be input in a weath.YYYY file*/
+
 
 // Euler's constant
 #ifdef M_E
