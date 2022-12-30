@@ -812,6 +812,57 @@ void generateMissingWeather(
   }
 }
 
+/**
+ @brief Check weather through all years/days within simultation and make sure all input values are reasonable
+ after possible weather generation and scaling. If a value is to be found unreasonable, the function will execute a program crash.
+
+ @param weather Struct of type SW_WEATHER holding all relevant information pretaining to weather input data
+ */
+void checkAllWeather(SW_WEATHER *weather) {
+
+    // Check if minimum or maximum temperature, or precipitation flags are 0
+
+        // Fail
+
+    // Loop through `allHist` years
+
+        // Loop through `allHist` days
+
+            // Check if minimum temp greater than or equal to maximum temp
+
+                // Fail
+
+            // Otherwise, check if maximum or minimum temp, or
+            // dew point temp is not [-100, 100]
+
+                // Fail
+
+            // Otherwise, check if precipitation is less than 0cm
+
+                // Fail
+
+            // Otherwise, check if relative humidity is less than 0% or greater than 100%
+
+                // Fail
+
+            // Otherwise, check if cloud cover was input and
+            // if the value is less than 0% or greater than 100%
+
+                // Fail
+
+            // Otherwise, check if wind speed is less than 0 m/s
+
+                // Fail
+
+            // Otherwise, check if radiation if less than 0 W * m^-2
+
+                // Fail
+
+            // Otherwise, check if actual vapor pressure is less than kPa
+
+                // Fail
+}
+
 
 /**
 @brief Clears weather history.
