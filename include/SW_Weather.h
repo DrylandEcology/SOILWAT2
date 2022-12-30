@@ -172,7 +172,7 @@ typedef struct {
     windComp1_index, windComp2_index, hurs_index, hurs_comp1_index, hurs_comp2_index,
     huss_index, tdps_index, vp_index, rsds_index;
 
-  Bool n_input_forcings; // Number of input columns found in weath.YYYY
+  int n_input_forcings; // Number of input columns found in weath.YYYY
 
 	/* This section is required for computing the output quantities.  */
 	SW_WEATHER_OUTPUTS
