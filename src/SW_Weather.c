@@ -1070,11 +1070,22 @@ void SW_WTH_new_day(void) {
 void SW_WTH_setup(void) {
 	/* =================================================== */
 	SW_WEATHER *w = &SW_Weather;
-	const int nitems = 17;
+	const int nitems = 34;
 	FILE *f;
-	int lineno = 0, month, x;
+	int lineno = 0, month, x, columnNum, varArrIndex = 0;
+    int tempCompIndex = 3, windCompIndex = 7, hursCompIndex = 9;
+    Bool componentFlag;
 	RealF sppt, stmax, stmin;
-	RealF sky, wind, rH;
+	RealF sky, wind, rH, actVP, shortWaveRad;
+
+    Bool *inputFlags[MAX_INPUT_COLUMNS] = {&w->use_cloudCoverMonthly, &w->use_windSpeedMonthly,
+        &w->use_relHumidityMonthly, &w->has_temp2, &w->has_ppt, &w->has_cloudCover, &w->has_sfcWind,
+        &w->has_windComp, &w->has_hurs, &w->has_hurs2, &w->has_huss, &w->has_tdps, &w->has_vp, &w->has_rsds};
+
+    int *variableIndices[MAX_INPUT_COLUMNS] = {&w->tempComp1_index, &w->tempComp2_index,
+        &w->ppt_index, &w->cloudCover_index, &w->sfcWind_index, &w->windComp1_index, &w->windComp2_index,
+        &w->hurs_index, &w->hurs_comp1_index, &w->hurs_comp2_index, &w->huss_index, &w->tdps_index,
+        &w->vp_index, &w->rsds_index};
 
 	MyFileName = SW_F_name(eWeather);
 	f = OpenFile(MyFileName, "r");
@@ -1133,17 +1144,91 @@ void SW_WTH_setup(void) {
 			w->rng_seed = atoi(inbuf);
 			break;
 
+        case 5:
+            w->use_cloudCoverMonthly = atoi(inbuf);
+            break;
+
+        case 6:
+            w->use_windSpeedMonthly = atoi(inbuf);
+            break;
+
+        case 7:
+            w->use_relHumidityMonthly = atoi(inbuf);
+            break;
+
+        case 8:
+            w->has_temp2 = itob(atoi(inbuf));
+            break;
+
+        case 9:
+            if(w->has_temp2) {
+                w->has_temp2 = itob(atoi(inbuf));
+            }
+            break;
+
+        case 10:
+            w->has_ppt = itob(atoi(inbuf));
+            break;
+
+        case 11:
+            w->has_cloudCover = itob(atoi(inbuf));
+            break;
+
+        case 12:
+            w->has_sfcWind = itob(atoi(inbuf));
+            break;
+
+        case 13:
+            w->has_windComp = itob(atoi(inbuf));
+            break;
+
+        case 14:
+            if(w->has_windComp) {
+                w->has_windComp = itob(atoi(inbuf));
+            }
+            break;
+
+        case 15:
+            w->has_hurs = itob(atoi(inbuf));
+            break;
+
+        case 16:
+            w->has_hurs2 = itob(atoi(inbuf));
+            break;
+
+        case 17:
+            if(w->has_hurs2) {
+                w->has_hurs2 = itob(atoi(inbuf));
+            }
+            break;
+
+        case 18:
+            w->has_huss  = itob(atoi(inbuf));
+            break;
+
+        case 19:
+            w->has_tdps  = itob(atoi(inbuf));
+            break;
+
+        case 20:
+            w->has_vp  = itob(atoi(inbuf));
+            break;
+
+        case 21:
+            w->has_rsds  = itob(atoi(inbuf));
+            break;
+
 		default:
 			if (lineno == 5 + MAX_MONTHS)
 				break;
 
 			x = sscanf(
 				inbuf,
-				"%d %f %f %f %f %f %f",
-				&month, &sppt, &stmax, &stmin, &sky, &wind, &rH
+				"%d %f %f %f %f %f %f %f %f",
+				&month, &sppt, &stmax, &stmin, &sky, &wind, &rH, &actVP, &shortWaveRad
 			);
 
-			if (x != 7) {
+			if (x != 9) {
 				CloseFile(&f);
 				LogError(logfp, LOGFATAL, "%s : Bad record %d.", MyFileName, lineno);
 			}
@@ -1155,10 +1240,21 @@ void SW_WTH_setup(void) {
 			w->scale_skyCover[month] = sky;
 			w->scale_wind[month] = wind;
 			w->scale_rH[month] = rH;
+            w->scale_actVapPress[month] = actVP;
+            w->scale_shortWaveRad[month] = shortWaveRad;
 		}
 
 		lineno++;
 	}
+
+    // Check if monthly flags have been chosen to override daily flags
+    w->has_sfcWind = (w->use_windSpeedMonthly) ? swFALSE : w->has_sfcWind;
+    w->has_windComp = (w->use_windSpeedMonthly) ? swFALSE : w->has_windComp;
+
+    w->has_hurs = (w->use_relHumidityMonthly) ? swFALSE : w->has_hurs;
+    w->has_hurs2 = (w->use_relHumidityMonthly) ? swFALSE : w->has_hurs2;
+
+    w->has_cloudCover = (w->use_cloudCoverMonthly) ? swFALSE : w->has_cloudCover;
 
 	SW_WeatherPrefix(w->name_prefix);
 	CloseFile(&f);
@@ -1166,6 +1262,68 @@ void SW_WTH_setup(void) {
 	if (lineno < nitems) {
 		LogError(logfp, LOGFATAL, "%s : Too few input lines.", MyFileName);
 	}
+
+    // Calculate value indices for `allHist`
+
+    // Default n_input_forcings to 0
+    w->n_input_forcings = 0;
+
+        // Loop through MAX_INPUT_COLUMNS
+    for(columnNum = 3; columnNum < MAX_INPUT_COLUMNS; columnNum++)
+    {
+        variableIndices[varArrIndex] = 0;
+
+        // Check if current flag is in relation to component variables
+        if(&inputFlags[columnNum] == &inputFlags[tempCompIndex] ||
+           &inputFlags[columnNum] == &inputFlags[windCompIndex] ||
+           &inputFlags[columnNum] == &inputFlags[hursCompIndex]) {
+
+            // Set component flag
+            componentFlag = swTRUE;
+            variableIndices[varArrIndex + 1] = 0;
+        } else {
+            componentFlag = swFALSE;
+        }
+
+        // Check if current flag is set
+        if(*inputFlags[columnNum]) {
+
+            // Set current index to "n_input_forcings"
+            variableIndices[varArrIndex] = w->n_input_forcings;
+
+            // Check if flag is meant for components variables
+            if(componentFlag) {
+
+                // Set next index to n_input_focings + 1
+                variableIndices[varArrIndex + 1] = w->n_input_forcings + 1;
+
+                // Increment "varArrIndex" by two
+                varArrIndex += 2;
+
+                // Increment "n_input_forcings" by two
+                w->n_input_forcings += 2;
+            } else {
+            // Otherwise, current flag is not meant for components
+
+                // Increment "varArrIndex" by one
+                varArrIndex++;
+
+                // Increment "n_input_forcings" by one
+                w->n_input_forcings++;
+            }
+        } else {
+            // Otherwise, flag was not set, deal with "varArrayIndex"
+
+            // Check if current flag is for component variables
+            if(componentFlag) {
+                // Increment "varArrIndex" by two
+                varArrIndex += 2;
+            } else {
+                // Increment "varArrIndex" by one
+                varArrIndex++;
+            }
+        }
+    }
 }
 
 
