@@ -560,7 +560,9 @@ void finalizeAllWeather(SW_WEATHER *w) {
     w->scale_precip,
     w->scale_skyCover,
     w->scale_wind,
-    w->scale_rH
+    w->scale_rH,
+    w->scale_actVapPress,
+    w->scale_shortWaveRad
   );
 
   // Make sure all input, scaled, generated, and calculated daily weather values
@@ -590,6 +592,8 @@ void SW_WTH_finalize_all_weather(void) {
  @param[in] scale_skyCover Array of monthly, additive scaling parameters to modify daily sky cover [%]
  @param[in] scale_wind Array of monthly, multiplicitive scaling parameters to modify daily wind speed [-]
  @param[in] scale_rH Array of monthly, additive scaling parameters to modify daily relative humidity [%]
+ @param[in] scale_actVapPress Array of monthly, multiplicitive scaling parameters to modify daily actual vapor pressure [-]
+ @param[in] scale_shortWaveRad Array of monthly, multiplicitive scaling parameters to modify daily shortwave radiation [%]
 
   @note Daily average air temperature is re-calculated after scaling
     minimum and maximum air temperature.
@@ -605,7 +609,9 @@ void scaleAllWeather(
   double *scale_precip,
   double *scale_skyCover,
   double *scale_wind,
-  double *scale_rH
+  double *scale_rH,
+  double *scale_actVapPress,
+  double *scale_shortWaveRad
 ) {
 
   int year, month;
@@ -662,6 +668,20 @@ void scaleAllWeather(
             allHist[yearIndex]->r_humidity_daily[day] = fmin(
             100.,
             fmax(0.0, scale_rH[month] + allHist[yearIndex]->r_humidity_daily[day])
+            );
+        }
+
+        if(!missing(allHist[yearIndex]->actualVaporPressure[day])) {
+            allHist[yearIndex]->actualVaporPressure[day] = fmax(
+            0.0,
+            scale_actVapPress[month] * allHist[yearIndex]->actualVaporPressure[day]
+            );
+        }
+
+        if(!missing(allHist[yearIndex]->shortWaveRad[day])) {
+            allHist[yearIndex]->shortWaveRad[day] = fmax(
+            0.0,
+            scale_shortWaveRad[month] * allHist[yearIndex]->shortWaveRad[day]
             );
         }
 
@@ -1524,7 +1544,7 @@ void _read_weather_hist(
             } else if(weath->has_windComp) {
                 yearWeather->windspeed_daily[doy] = sqrt(squared(weathInput[windComp1Index]) +
                                                     squared(weathInput[windComp2Index]));
-                
+
             }
         }
 

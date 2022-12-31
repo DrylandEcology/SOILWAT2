@@ -240,7 +240,9 @@ void scaleAllWeather(
   double *scale_precip,
   double *scale_skyCover,
   double *scale_wind,
-  double *scale_rH
+  double *scale_rH,
+  double *scale_actVapPress,
+  double *scale_shortWaveRad
 );
 void generateMissingWeather(
   SW_WEATHER_HIST **allHist,
