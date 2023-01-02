@@ -1122,8 +1122,8 @@ void SW_WTH_new_day(void) {
     wn->cloudCover = w->allHist[yearIndex]->cloudcov_daily[day];
     wn->windSpeed = w->allHist[yearIndex]->windspeed_daily[day];
     wn->relHumidity = w->allHist[yearIndex]->r_humidity_daily[day];
-
-    //swprintf("%f %d %d\n", wn->cloudCover, day, SW_Model.year);
+    wn->shortWaveRad = w->allHist[yearIndex]->shortWaveRad[day];
+    wn->actualVaporPressure = w->allHist[yearIndex]->actualVaporPressure[day];
 
     wn->temp_avg = w->allHist[yearIndex]->temp_avg[day];
 
@@ -1217,15 +1217,15 @@ void SW_WTH_setup(void) {
 			break;
 
         case 5:
-            w->use_cloudCoverMonthly = atoi(inbuf);
+            w->use_cloudCoverMonthly = itob(atoi(inbuf));
             break;
 
         case 6:
-            w->use_windSpeedMonthly = atoi(inbuf);
+            w->use_windSpeedMonthly = itob(atoi(inbuf));
             break;
 
         case 7:
-            w->use_relHumidityMonthly = atoi(inbuf);
+            w->use_relHumidityMonthly = itob(atoi(inbuf));
             break;
 
         case 8:
