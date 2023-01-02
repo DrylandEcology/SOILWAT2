@@ -406,8 +406,8 @@ void SW_Water_Flow(void) {
 		SW_Site.slope,
 		SW_Site.aspect,
 		x,
+        w->now.cloudCover,
         w->now.actualVaporPressure,
-		w->now.temp_avg,
 		&sw->H_oh,
 		&sw->H_ot,
 		&sw->H_gh
