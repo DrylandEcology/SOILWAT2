@@ -1482,7 +1482,7 @@ void _read_weather_hist(
 	// RealF acc = 0.0;
     RealF weathInput[MAX_INPUT_COLUMNS + 2];
 
-    int minTempIndex = weath->tempComp1_index, maxTempIndex = weath->tempComp2_index,
+    int maxTempIndex = weath->tempComp1_index, minTempIndex = weath->tempComp2_index,
     precipIndex = weath->ppt_index, cloudcovIndex = weath->cloudCover_index,
     windSpeedIndex = weath->sfcWind_index, windComp1Index = weath->windComp1_index,
     windComp2Index = weath->windComp2_index, relHumIndex = weath->huss_index,
@@ -1502,6 +1502,22 @@ void _read_weather_hist(
 
 	if (NULL == (f = fopen(fname, "r")))
 		return;
+
+    // Update yearly day/month information needed when interpolating
+    // cloud cover, wind speed, and relative humidity if necessary
+    Time_new_year(year);
+
+    if(weath->use_cloudCoverMonthly) {
+        interpolate_monthlyValues(sky->cloudcov, interpAsBase1, yearWeather->cloudcov_daily);
+    }
+
+    if(weath->use_windSpeedMonthly) {
+        interpolate_monthlyValues(sky->windspeed, interpAsBase1, yearWeather->windspeed_daily);
+    }
+
+    if(weath->use_relHumidityMonthly) {
+        interpolate_monthlyValues(sky->r_humidity, interpAsBase1, yearWeather->r_humidity_daily);
+    }
 
 	while (GetALine(f, inbuf)) {
 		lineno++;
@@ -1563,7 +1579,7 @@ void _read_weather_hist(
 
             } else if(weath->has_hurs2) {
                 yearWeather->r_humidity_daily[doy] = (weathInput[hursComp1Index] +
-                                              weathInput[hursComp2Index]) / 2;
+                                                      weathInput[hursComp2Index]) / 2;
 
             } else if(weath->has_huss) {
                 es = (6.112 * exp(17.67 * averageTemp)) / (averageTemp + 243.5);
@@ -1596,7 +1612,7 @@ void _read_weather_hist(
 
             } else {
                 yearWeather->actualVaporPressure[doy] =
-                                actualVaporPressure1(weathInput[relHumIndex],
+                                actualVaporPressure1(yearWeather->r_humidity_daily[doy],
                                                      averageTemp);
 
             }
@@ -1616,23 +1632,6 @@ void _read_weather_hist(
 		}
 		*/
 	} /* end of input lines */
-
-    // Update yearly day/month information needed when interpolating
-    // cloud cover, wind speed, and relative humidity
-    Time_new_year(year);
-
-    if(weath->use_cloudCoverMonthly) {
-        interpolate_monthlyValues(sky->cloudcov, interpAsBase1, yearWeather->cloudcov_daily);
-    }
-
-    if(weath->use_windSpeedMonthly) {
-        interpolate_monthlyValues(sky->windspeed, interpAsBase1, yearWeather->windspeed_daily);
-    }
-
-    if(weath->use_relHumidityMonthly) {
-        interpolate_monthlyValues(sky->r_humidity, interpAsBase1, yearWeather->r_humidity_daily);
-    }
-
 
   // Calculate annual average temperature based on historical input
 	// wh->temp_year_avg = acc / (k + 0.0);
