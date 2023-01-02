@@ -1157,10 +1157,7 @@ void SW_WTH_setup(void) {
         &w->use_relHumidityMonthly, &w->has_temp2, &w->has_ppt, &w->has_cloudCover, &w->has_sfcWind,
         &w->has_windComp, &w->has_hurs, &w->has_hurs2, &w->has_huss, &w->has_tdps, &w->has_vp, &w->has_rsds};
 
-    int *variableIndices[MAX_INPUT_COLUMNS] = {&w->tempComp1_index, &w->tempComp2_index,
-        &w->ppt_index, &w->cloudCover_index, &w->sfcWind_index, &w->windComp1_index, &w->windComp2_index,
-        &w->hurs_index, &w->hurs_comp1_index, &w->hurs_comp2_index, &w->huss_index, &w->tdps_index,
-        &w->vp_index, &w->rsds_index};
+    int varIndices[MAX_INPUT_COLUMNS];
 
 	MyFileName = SW_F_name(eWeather);
 	f = OpenFile(MyFileName, "r");
@@ -1346,7 +1343,7 @@ void SW_WTH_setup(void) {
         // Loop through MAX_INPUT_COLUMNS
     for(columnNum = 3; columnNum < MAX_INPUT_COLUMNS; columnNum++)
     {
-        variableIndices[varArrIndex] = 0;
+        varIndices[varArrIndex] = 0;
 
         // Check if current flag is in relation to component variables
         if(&inputFlags[columnNum] == &inputFlags[tempCompIndex] ||
@@ -1355,7 +1352,7 @@ void SW_WTH_setup(void) {
 
             // Set component flag
             componentFlag = swTRUE;
-            variableIndices[varArrIndex + 1] = 0;
+            varIndices[varArrIndex + 1] = 0;
         } else {
             componentFlag = swFALSE;
         }
@@ -1364,13 +1361,13 @@ void SW_WTH_setup(void) {
         if(*inputFlags[columnNum]) {
 
             // Set current index to "n_input_forcings"
-            variableIndices[varArrIndex] = w->n_input_forcings;
+            varIndices[varArrIndex] = w->n_input_forcings;
 
             // Check if flag is meant for components variables
             if(componentFlag) {
 
                 // Set next index to n_input_focings + 1
-                variableIndices[varArrIndex + 1] = w->n_input_forcings + 1;
+                varIndices[varArrIndex + 1] = w->n_input_forcings + 1;
 
                 // Increment "varArrIndex" by two
                 varArrIndex += 2;
@@ -1399,6 +1396,15 @@ void SW_WTH_setup(void) {
             }
         }
     }
+
+    // Set variable indices in SW_WEATHER
+    // Note: SW_WEATHER index being set is guaranteed to have the respective value
+    // at the given index of `varIndices` (e.g., w->windComp1_index will only be at index 5 in `varIndices`)
+    w->tempComp1_index = varIndices[0], w->tempComp2_index = varIndices[1], w->ppt_index = varIndices[2];
+    w->cloudCover_index = varIndices[3], w->sfcWind_index = varIndices[4], w->windComp1_index = varIndices[5];
+    w->windComp2_index = varIndices[6], w->hurs_index = varIndices[7], w->hurs_comp1_index = varIndices[8];
+    w->hurs_comp2_index = varIndices[9], w->huss_index = varIndices[10], w->tdps_index = varIndices[11];
+    w->vp_index = varIndices[12], w->rsds_index = varIndices[13];
 }
 
 
