@@ -50,6 +50,7 @@
 #include "include/SW_Model.h" // externs SW_Model
 #include "include/SW_SoilWater.h"
 #include "include/SW_Markov.h"
+#include "include/SW_Flow_lib_PET.h"
 
 #include "include/SW_Weather.h"
 
@@ -1493,7 +1494,7 @@ void _read_weather_hist(
     hursComp2Index = weath->hurs_comp2_index, hussIndex = weath->huss_index,
     dewPointIndex = weath->tdps_index;
 
-    double es, e, relHum, averageTemp = 0.;
+    double es, e, relHum, averageTemp = 0., tempSlope, svpVal;
 
     /* Interpolation is to be in base0 in `interpolate_monthlyValues()` */
     Bool interpAsBase1 = swFALSE;
@@ -1578,7 +1579,9 @@ void _read_weather_hist(
                 yearWeather->r_humidity_daily[doy] = weathInput[relHumIndex];
 
             } else if(weath->has_vp) {
-                yearWeather->r_humidity_daily[doy] = weathInput[relHumIndex]; // Temporary
+                svpVal = svp(yearWeather->temp_avg[doy], &tempSlope);
+
+                yearWeather->r_humidity_daily[doy] = weathInput[vaporPressIndex] / svpVal; 
 
             } else if(weath->has_hurs2) {
                 yearWeather->r_humidity_daily[doy] = (weathInput[hursComp1Index] +
@@ -1603,9 +1606,14 @@ void _read_weather_hist(
                 yearWeather->actualVaporPressure[doy] =
                                 actualVaporPressure3(weathInput[dewPointIndex]);
 
-            } else if(!weath->use_relHumidityMonthly && !weath->has_hurs) {
+                // If hurs was calculated, replace previous calculation with this one
+                if(!weath->use_relHumidityMonthly && !weath->has_hurs) {
+                    svpVal = svp(yearWeather->temp_avg[doy], &tempSlope);
 
-                yearWeather->actualVaporPressure[doy] = weathInput[dewPointIndex]; // Temporary
+                    yearWeather->r_humidity_daily[doy] =
+                                 yearWeather->actualVaporPressure[doy] / svpVal;
+                }
+
             } else if(weath->has_hurs2 && weath->has_temp2) {
                 yearWeather->actualVaporPressure[doy] =
                                 actualVaporPressure2(weathInput[hursComp2Index],
