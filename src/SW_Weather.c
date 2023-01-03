@@ -979,7 +979,10 @@ void SW_WTH_new_day(void) {
     /* get the daily weather from allHist */
     if (
       missing(w->allHist[yearIndex]->temp_avg[day]) ||
-      missing(w->allHist[yearIndex]->ppt[day])
+      missing(w->allHist[yearIndex]->ppt[day]) ||
+      missing(w->allHist[yearIndex]->cloudcov_daily[day]) ||
+      missing(w->allHist[yearIndex]->windspeed_daily[day]) ||
+      missing(w->allHist[yearIndex]->r_humidity_daily[day])
     ) {
       LogError(
         logfp,
