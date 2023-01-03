@@ -956,6 +956,8 @@ void _clear_hist_weather(SW_WEATHER_HIST *yearWeather) {
       yearWeather->cloudcov_daily[d] = SW_MISSING;
       yearWeather->windspeed_daily[d] = SW_MISSING;
       yearWeather->r_humidity_daily[d] = SW_MISSING;
+      yearWeather->shortWaveRad[d] = SW_MISSING;
+      yearWeather->actualVaporPressure[d] = SW_MISSING;
   }
 }
 
