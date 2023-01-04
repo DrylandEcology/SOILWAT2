@@ -123,7 +123,6 @@ namespace {
 
     // Prepare weather data
     SW_WTH_read();
-    SW_WTH_finalize_all_weather();
 
     // Set daily cloud cover, wind speed, and relative humidity values aside from
     // SW_MISSING so crash does not occur within `SW_WTH_new_day()`
@@ -132,8 +131,12 @@ namespace {
             SW_Weather.allHist[year]->cloudcov_daily[day] = 0.;
             SW_Weather.allHist[year]->windspeed_daily[day] = 0.;
             SW_Weather.allHist[year]->r_humidity_daily[day] = 0.;
+            SW_Weather.allHist[year]->shortWaveRad[day] = 0.;
+            SW_Weather.allHist[year]->actualVaporPressure[day] = 0.;
         }
     }
+
+    SW_WTH_finalize_all_weather();
 
     // Run the simulation
     SW_CTL_main();
@@ -164,7 +167,6 @@ namespace {
 
     // Prepare weather data
     SW_WTH_read();
-    SW_WTH_finalize_all_weather();
 
     // Set daily cloud cover, wind speed, and relative humidity values aside from
     // SW_MISSING so crash does not occur within `SW_WTH_new_day()`
@@ -173,8 +175,12 @@ namespace {
             SW_Weather.allHist[year]->cloudcov_daily[day] = 0.;
             SW_Weather.allHist[year]->windspeed_daily[day] = 0.;
             SW_Weather.allHist[year]->r_humidity_daily[day] = 0.;
+            SW_Weather.allHist[year]->shortWaveRad[day] = 0.;
+            SW_Weather.allHist[year]->actualVaporPressure[day] = 0.;
         }
     }
+
+    SW_WTH_finalize_all_weather();
 
     // Run the simulation
     SW_CTL_main();
