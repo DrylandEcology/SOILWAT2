@@ -859,7 +859,7 @@ void checkAllWeather(SW_WEATHER *weather) {
 
     // Loop through `allHist` years
     for(year = 0; year < weather->n_years; year++) {
-        numDaysInYear = Time_get_lastdoy_y(year);
+        numDaysInYear = Time_get_lastdoy_y(year + weather->startYear);
 
         // Loop through `allHist` days
         for(doy = 0; doy < numDaysInYear; doy++) {
@@ -1111,7 +1111,9 @@ void SW_WTH_new_day(void) {
       missing(w->allHist[yearIndex]->ppt[day]) ||
       missing(w->allHist[yearIndex]->cloudcov_daily[day]) ||
       missing(w->allHist[yearIndex]->windspeed_daily[day]) ||
-      missing(w->allHist[yearIndex]->r_humidity_daily[day])
+      missing(w->allHist[yearIndex]->r_humidity_daily[day]) ||
+      (missing(w->allHist[yearIndex]->shortWaveRad[day]) && w->has_rsds) ||
+      missing(w->allHist[yearIndex]->actualVaporPressure[day])
     ) {
       LogError(
         logfp,
