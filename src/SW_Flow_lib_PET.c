@@ -980,6 +980,20 @@ double svp(double T, double *slope_svp_to_t) {
   return 1e-3 * svp;
 }
 
+/**
+  @brief Saturation vapor pressure for calculation of actual vapor pressure
+
+  Calculation is based on Allen et al. 2006 @cite allen2006AaFM which is
+  based on Majumdar et al. 1972 and updated by ASCE-EWRI 2005.
+
+  @param[in] temp Daily mean, minimum, or maximum temperature or dewpoint temperature [C]
+
+  @return Saturation vapor pressure [kPa]
+*/
+double svp2(double temp) {
+    // Allen et al. 2005 eq 7
+    return .6108 * exp((17.27 * temp) / (temp + 237.3));
+}
 
 
 /**

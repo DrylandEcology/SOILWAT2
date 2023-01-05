@@ -49,6 +49,7 @@ double petfunc(double H_g, double avgtemp, double elev,
   double reflec, double humid, double windsp, double cloudcov);
 
 double svp(double T, double *slope_svp_to_t);
+double svp2(double temp);
 double atmospheric_pressure(double elev);
 double psychrometric_constant(double pressure);
 
