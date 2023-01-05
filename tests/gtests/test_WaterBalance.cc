@@ -109,7 +109,7 @@ namespace {
 
 
   TEST(WaterBalanceTest, WithWeatherGeneratorOnly) {
-    int i, year, day;
+    int i;
 
     // Turn on Markov weather generator (and turn off use of historical weather)
     SW_Weather.generateWeatherMethod = 2;
@@ -123,19 +123,6 @@ namespace {
 
     // Prepare weather data
     SW_WTH_read();
-
-    // Set daily cloud cover, wind speed, and relative humidity values aside from
-    // SW_MISSING so crash does not occur within `SW_WTH_new_day()`
-    for(year = 0; year < 31; year++) {
-        for(day = 0; day < MAX_DAYS; day++) {
-            SW_Weather.allHist[year]->cloudcov_daily[day] = 0.;
-            SW_Weather.allHist[year]->windspeed_daily[day] = 0.;
-            SW_Weather.allHist[year]->r_humidity_daily[day] = 0.;
-            SW_Weather.allHist[year]->shortWaveRad[day] = 0.;
-            SW_Weather.allHist[year]->actualVaporPressure[day] = 0.;
-        }
-    }
-
     SW_WTH_finalize_all_weather();
 
     // Run the simulation
@@ -154,7 +141,7 @@ namespace {
 
 
   TEST(WaterBalanceTest, WithWeatherGeneratorForSomeMissingValues) {
-    int i, year, day;
+    int i;
 
     // Turn on Markov weather generator
     SW_Weather.generateWeatherMethod = 2;
@@ -167,19 +154,6 @@ namespace {
 
     // Prepare weather data
     SW_WTH_read();
-
-    // Set daily cloud cover, wind speed, and relative humidity values aside from
-    // SW_MISSING so crash does not occur within `SW_WTH_new_day()`
-    for(year = 0; year < 31; year++) {
-        for(day = 0; day < MAX_DAYS; day++) {
-            SW_Weather.allHist[year]->cloudcov_daily[day] = 0.;
-            SW_Weather.allHist[year]->windspeed_daily[day] = 0.;
-            SW_Weather.allHist[year]->r_humidity_daily[day] = 0.;
-            SW_Weather.allHist[year]->shortWaveRad[day] = 0.;
-            SW_Weather.allHist[year]->actualVaporPressure[day] = 0.;
-        }
-    }
-
     SW_WTH_finalize_all_weather();
 
     // Run the simulation

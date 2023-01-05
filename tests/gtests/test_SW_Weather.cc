@@ -20,24 +20,6 @@
 #include "include/SW_Markov.h"
 #include "include/SW_Model.h"
 
-static void zero_unncessary_weather(int numYears);
-
-static void zero_unncessary_weather(int numYears) {
-    int year, day;
-
-    // Set daily cloud cover, wind speed, and relative humidity values aside from
-    // SW_MISSING so crash does not occur within `SW_WTH_new_day()`
-    for(year = 0; year < numYears; year++) {
-        for(day = 0; day < MAX_DAYS; day++) {
-            SW_Weather.allHist[year]->cloudcov_daily[day] = 0.;
-            SW_Weather.allHist[year]->windspeed_daily[day] = 0.;
-            SW_Weather.allHist[year]->r_humidity_daily[day] = 0.;
-            SW_Weather.allHist[year]->shortWaveRad[day] = 0.;
-            SW_Weather.allHist[year]->actualVaporPressure[day] = 0.;
-        }
-    }
-}
-
 namespace {
 
     TEST(ReadAllWeatherTest, DefaultValues) {
@@ -88,9 +70,6 @@ namespace {
         SW_MKV_setup();
 
         SW_WTH_read();
-
-        zero_unncessary_weather(31);
-
         SW_WTH_finalize_all_weather();
 
 
@@ -119,9 +98,6 @@ namespace {
         SW_Model.endyr = 1982;
 
         SW_WTH_read();
-
-        zero_unncessary_weather(2);
-
         SW_WTH_finalize_all_weather();
 
 
@@ -149,9 +125,6 @@ namespace {
         strcpy(SW_Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
         SW_WTH_read();
-
-        zero_unncessary_weather(31);
-
         SW_WTH_finalize_all_weather();
 
         // Check everyday's value and test if it's `MISSING`
