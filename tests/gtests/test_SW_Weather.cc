@@ -686,5 +686,100 @@ namespace {
 
     }
 
+    TEST(DailyInsteadOfMonthlyInputTest, InputValueCalculations) {
+        /*
+           This section covers the correct resulting values from different calculations of the
+           same variable.
 
+           Variables that are being tested are:
+              - Relative humidity
+              - Actual vapor pressure
+              - Wind speed
+
+           (*): Most parts of the this test section are dependent on what is put in default
+           SOILWAT2 new daily input files
+         */
+
+        // Initialize any variables
+
+            // `actualVaporPressureX()` input values
+            // `actualVaporPressureX()` resulting value arrays
+            // Expected results from `actualVaporPressureX()`
+            // Expected results from calls to `_read_weather_hist()` for
+            // relative humidity and wind speed
+
+        /* Actual Vapor Pressure only */
+
+            /* Check all `actualVaporPressureX()` */
+
+        // Loop through X amount of daily values and store the values
+        // in respective array
+
+            // Get and store value of call to `actualVaporPressure1()`
+            // Get and store value of call to `actualVaporPressure2()`
+            // Get and store value of call to `actualVaporPressure3()`
+
+            // Test resulting value from last call to `actualVaporPressure1()`
+            // Test resulting value from last call to `actualVaporPressure2()`
+            // Test resulting value from last call to `actualVaporPressure3()`
+
+        /* Relative humidity only based on input values (*) */
+
+        // Set flags accordingly to how we would like to calculate relative humidity and
+        // wind speed
+        // Reset values from `_read_weather_hist()` for current and following test
+
+        // Test the first few days of calculated relative humidity calculated from:
+            // - min/max relative humidity
+            // - actual vapor pressure
+            // - Specific humidity
+
+        /* Wind speed only based on input values (*) */
+
+            // Set flag to expect wind speed component input
+            // Test first X days of values and make sure they are the same as
+            // sqrt(comp1^2 + comp2^2)
+
+        /* Actual vapor pressure/relative humidity based on dewpoint temperature? (*) */
+    }
+
+    TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
+        // Initialize any variables
+
+        /*
+           This section covers number of flags and the testing of reasonable results (`checkAllWeather()`).
+
+           An incorrect number of "n_input_forcings" within SW_WEATHER relative to the number of input columns
+           read in should result in a crash.
+
+           If an input or calculated value is out of range (e.g., range = [-100, 100] C for min/max temperature),
+           `checkAllWeather()` should result in a crash.
+         */
+
+        /* Not the same number of flags as columns */
+
+            // Set SW_WEATHER's n_input_forcings to a number that is
+            // not the columns being read in
+
+            // Run death test
+
+        /* Check for value(s) that are not within reasonable range these
+           tests will make use of `checkAllWeather()` */
+
+        // Edit SW_WEATHER_HIST values from their original value
+
+            // Make temperature unreasonable (not within [-100, 100])
+            // Make precipitation unresonable (< 0)
+            // Make cloud cover unreasonable (probably greater than 100%)
+            // Make relative humidity unreasonable (probably less than 0%)
+            // Make shortwave radiation unreasonable (< 0)
+            // Make actual vapor pressure unreasonable (< 0)
+
+            // Run death test for temperature
+            // Run death test for precipitation
+            // Run death test for cloud cover
+            // Run death test for relative humidity
+            // Run death test for shortwave radiation
+            // Run death test for actual vapor pressure
+    }
 }
