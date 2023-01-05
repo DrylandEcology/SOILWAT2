@@ -995,6 +995,62 @@ double svp2(double temp) {
     return .6108 * exp((17.27 * temp) / (temp + 237.3));
 }
 
+/**
+ @brief Calculate actual vapor pressure based on relative humidity and mean temperature
+
+ Calculation is based on Allen et al. 2006 @cite allen2006AaFM which is
+ based on Majumdar et al. 1972 and updated by ASCE-EWRI 2005.
+
+ @param hurs Daily mean relative humidity [%]
+ @param tmean Daily mean air temperature [C]
+
+ @return Calculated actual vapor pressure [kPa]
+ */
+double actualVaporPressure1(double hurs, double tmean) {
+    // Allen et al. 2005 eqs 7 and 14
+    return (hurs / 100.) * svp2(tmean);
+}
+
+/**
+ @brief Calculate actual vapor pressure based on temperature and relative humidity components (min/max)
+
+ Calculation is based on Allen et al. 2006 @cite allen2006AaFM which is
+ based on Majumdar et al. 1972 and updated by ASCE-EWRI 2005.
+
+ @param hursMax Daily maximum relative humidity [%]
+ @param hursMin Daily minimum relative humidity [%]
+ @param maxTemp Daily minimum air temperature [C]
+ @param minTemp Daily maximum air temperature [C]
+
+ @return Calculated actual vapor pressure [kPa]
+ */
+double actualVaporPressure2(double hursMax, double hursMin, double maxTemp, double minTemp) {
+    // Allen et al. 2005 eqs 7 and 11
+    double satVapPressureMax = svp2(maxTemp);
+    double satVapPressureMin = svp2(minTemp);
+
+    double relHumVapPressMax = satVapPressureMin * (hursMax / 100);
+    double relHumVapPressMin = satVapPressureMax * (hursMin / 100);
+
+    return (relHumVapPressMax + relHumVapPressMin) / 2;
+}
+
+/**
+ @brief Calculate actual vapor pressure based on dew point temperature
+
+ Calculation is based on Allen et al. 2006 @cite allen2006AaFM which is
+ based on Majumdar et al. 1972 and updated by ASCE-EWRI 2005.
+
+ @param tdps 2m dew point temperature [C]
+
+ @return Calculated actual vapor pressure [kPa]
+ */
+double actualVaporPressure3(double tdps) {
+    // Allen et al. 2005 eqs 7 and 8
+    return svp2(tdps);
+}
+
+
 
 /**
 @brief Daily potential evapotranspiration

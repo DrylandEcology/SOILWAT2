@@ -53,6 +53,10 @@ double svp2(double temp);
 double atmospheric_pressure(double elev);
 double psychrometric_constant(double pressure);
 
+double actualVaporPressure1(double hurs, double tmean);
+double actualVaporPressure2(double hursMax, double hursMin, double maxTemp, double minTemp);
+double actualVaporPressure3(double tdps);
+
 #ifdef __cplusplus
 }
 #endif
