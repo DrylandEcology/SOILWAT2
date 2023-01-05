@@ -1623,7 +1623,7 @@ void _read_weather_hist(
                 if(!SW_Weather.use_relHumidityMonthly && !SW_Weather.has_hurs) {
                     svpVal = svp(yearWeather->temp_avg[doy], &tempSlope);
 
-                    yearWeather->r_humidity_daily[doy] =
+                    yearWeather->actualVaporPressure[doy] =
                                         yearWeather->actualVaporPressure[doy] / svpVal;
                 }
 
