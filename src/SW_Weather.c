@@ -512,12 +512,32 @@ void readAllWeather(
   Bool use_weathergenerator_only,
   char weather_prefix[]
 ) {
-    unsigned int yearIndex;
+    unsigned int yearIndex, year, day;
+
+    /* Interpolation is to be in base0 in `interpolate_monthlyValues()` */
+    Bool interpAsBase1 = swFALSE;
 
     for(yearIndex = 0; yearIndex < n_years; yearIndex++) {
+        year = yearIndex + SW_Weather.startYear;
 
         // Set all daily weather values to missing
         _clear_hist_weather(allHist[yearIndex]);
+
+        // Update yearly day/month information needed when interpolating
+        // cloud cover, wind speed, and relative humidity if necessary
+        Time_new_year(year);
+
+        if(SW_Weather.use_cloudCoverMonthly) {
+            interpolate_monthlyValues(SW_Sky.cloudcov, interpAsBase1, allHist[yearIndex]->cloudcov_daily);
+        }
+
+        if(SW_Weather.use_windSpeedMonthly) {
+            interpolate_monthlyValues(SW_Sky.windspeed, interpAsBase1, allHist[yearIndex]->windspeed_daily);
+        }
+
+        if(SW_Weather.use_relHumidityMonthly) {
+            interpolate_monthlyValues(SW_Sky.r_humidity, interpAsBase1, allHist[yearIndex]->r_humidity_daily);
+        }
 
         // Read daily weather values from disk
         if (!use_weathergenerator_only) {
@@ -527,6 +547,16 @@ void readAllWeather(
               allHist[yearIndex],
               weather_prefix
             );
+        }
+
+        // Check to see if actual vapor pressure needs to be calculated
+        if(!SW_Weather.has_vp && SW_Weather.use_relHumidityMonthly) {
+
+            for(day = 0; day < MAX_DAYS; day++) {
+                allHist[yearIndex]->actualVaporPressure[day] =
+                                actualVaporPressure1(allHist[yearIndex]->r_humidity_daily[day],
+                                                     allHist[yearIndex]->temp_avg[day]);
+            }
         }
     }
 }
@@ -1483,7 +1513,6 @@ void _read_weather_hist(
 	 */
 
 	FILE *f;
-    SW_SKY *sky = &SW_Sky;
     SW_WEATHER *weath = &SW_Weather;
 	int x, lineno = 0, doy;
 	// TimeInt mon, j, k = 0;
@@ -1498,10 +1527,7 @@ void _read_weather_hist(
     hursComp2Index = weath->hurs_comp2_index, hussIndex = weath->huss_index,
     dewPointIndex = weath->tdps_index;
 
-    double es, e, relHum, averageTemp = 0., tempSlope, svpVal;
-
-    /* Interpolation is to be in base0 in `interpolate_monthlyValues()` */
-    Bool interpAsBase1 = swFALSE;
+    double es, e, relHum, tempSlope, svpVal;
 
 	char fname[MAX_FILENAMESIZE];
 
@@ -1510,22 +1536,6 @@ void _read_weather_hist(
 
 	if (NULL == (f = fopen(fname, "r")))
 		return;
-
-    // Update yearly day/month information needed when interpolating
-    // cloud cover, wind speed, and relative humidity if necessary
-    Time_new_year(year);
-
-    if(weath->use_cloudCoverMonthly) {
-        interpolate_monthlyValues(sky->cloudcov, interpAsBase1, yearWeather->cloudcov_daily);
-    }
-
-    if(weath->use_windSpeedMonthly) {
-        interpolate_monthlyValues(sky->windspeed, interpAsBase1, yearWeather->windspeed_daily);
-    }
-
-    if(weath->use_relHumidityMonthly) {
-        interpolate_monthlyValues(sky->r_humidity, interpAsBase1, yearWeather->r_humidity_daily);
-    }
 
 	while (GetALine(f, inbuf)) {
 		lineno++;
@@ -1559,8 +1569,6 @@ void _read_weather_hist(
 
           yearWeather->temp_avg[doy] = (weathInput[maxTempIndex] +
                                         weathInput[minTempIndex]) / 2.0;
-
-          averageTemp = yearWeather->temp_avg[doy];
         }
 
         if(!weath->use_cloudCoverMonthly && weath->has_cloudCover) {
@@ -1592,7 +1600,8 @@ void _read_weather_hist(
                                                       weathInput[hursComp2Index]) / 2;
 
             } else if(weath->has_huss) {
-                es = (6.112 * exp(17.67 * averageTemp)) / (averageTemp + 243.5);
+                es = (6.112 * exp(17.67 * yearWeather->temp_avg[doy]));
+                es /= (yearWeather->temp_avg[doy] + 243.5);
 
                 e = (weathInput[hussIndex] * 1013.25) /
                     (.378 * weathInput[hussIndex] + .622);
@@ -1606,33 +1615,25 @@ void _read_weather_hist(
         }
 
         if(!weath->has_vp) {
-            if(weath->has_tdps) {
+            if(SW_Weather.has_tdps) {
                 yearWeather->actualVaporPressure[doy] =
                                 actualVaporPressure3(weathInput[dewPointIndex]);
 
                 // If hurs was calculated, replace previous calculation with this one
-                if(!weath->use_relHumidityMonthly && !weath->has_hurs) {
+                if(!SW_Weather.use_relHumidityMonthly && !SW_Weather.has_hurs) {
                     svpVal = svp(yearWeather->temp_avg[doy], &tempSlope);
 
                     yearWeather->r_humidity_daily[doy] =
-                                 yearWeather->actualVaporPressure[doy] / svpVal;
+                                        yearWeather->actualVaporPressure[doy] / svpVal;
                 }
 
-            } else if(weath->has_hurs2 && weath->has_temp2) {
+            } else if(SW_Weather.has_hurs2 && SW_Weather.has_temp2) {
                 yearWeather->actualVaporPressure[doy] =
                                 actualVaporPressure2(weathInput[hursComp2Index],
                                                      weathInput[hursComp1Index],
                                                      weathInput[maxTempIndex],
                                                      weathInput[minTempIndex]);
-
-            } else {
-                yearWeather->actualVaporPressure[doy] =
-                                actualVaporPressure1(yearWeather->r_humidity_daily[doy],
-                                                     averageTemp);
-
             }
-        } else {
-            yearWeather->actualVaporPressure[doy] = weathInput[vaporPressIndex];
         }
 
 
