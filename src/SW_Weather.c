@@ -1593,15 +1593,16 @@ void _read_weather_hist(
             } else if(weath->has_vp) {
                 svpVal = svp(yearWeather->temp_avg[doy], &tempSlope);
 
-                yearWeather->r_humidity_daily[doy] = weathInput[vaporPressIndex] / svpVal; 
+                yearWeather->r_humidity_daily[doy] = weathInput[vaporPressIndex] / svpVal;
 
             } else if(weath->has_hurs2) {
                 yearWeather->r_humidity_daily[doy] = (weathInput[hursComp1Index] +
                                                       weathInput[hursComp2Index]) / 2;
 
             } else if(weath->has_huss) {
-                es = (6.112 * exp(17.67 * yearWeather->temp_avg[doy]));
-                es /= (yearWeather->temp_avg[doy] + 243.5);
+                // Specific Humidity (Bolton 1980)
+                es = (6.112 * exp(17.67 * yearWeather->temp_avg[doy]) /
+                     (yearWeather->temp_avg[doy] + 243.5));
 
                 e = (weathInput[hussIndex] * 1013.25) /
                     (.378 * weathInput[hussIndex] + .622);
@@ -1609,7 +1610,7 @@ void _read_weather_hist(
                 relHum = e / es;
                 relHum = max(0., relHum);
 
-                yearWeather->r_humidity_daily[doy] = min(1., relHum);
+                yearWeather->r_humidity_daily[doy] = min(100., relHum);
 
             }
         }

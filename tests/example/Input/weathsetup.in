@@ -34,7 +34,7 @@
 0			# Cloud cover [%]
 0			# Wind speed [m/s]
 0			# Wind speed eastward component [m/s]
-0			# Wind speed westward component [m/s]
+0			# Wind speed northward component [m/s]
 0			# Relative humidity [%]
 0			# Maximum relative humidity [%]
 0			# Minimum relative humidity [%]
