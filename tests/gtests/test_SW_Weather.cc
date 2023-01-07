@@ -720,8 +720,6 @@ namespace {
     }
 
     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
-        // Initialize any variables
-
         /*
            This section covers number of flags and the testing of reasonable results (`checkAllWeather()`).
 
@@ -732,30 +730,63 @@ namespace {
            `checkAllWeather()` should result in a crash.
          */
 
+         // Initialize any variables
+         char weathPrefix[] = "weath";
+         TimeInt year = 1980;
+         double originVal;
+
         /* Not the same number of flags as columns */
 
             // Set SW_WEATHER's n_input_forcings to a number that is
             // not the columns being read in
 
+        allocateAllWeather(&SW_Weather);
+        // SW_Weather.n_input_forcings = 7;
+        SW_Weather.n_years = 1;
+
             // Run death test
+        // EXPECT_DEATH_IF_SUPPORTED(
+        //     _read_weather_hist(year, SW_Weather.allHist[0], weathPrefix),
+        //     ""
+        // );
 
         /* Check for value(s) that are not within reasonable range these
            tests will make use of `checkAllWeather()` */
 
         // Edit SW_WEATHER_HIST values from their original value
 
-            // Make temperature unreasonable (not within [-100, 100])
-            // Make precipitation unresonable (< 0)
-            // Make cloud cover unreasonable (probably greater than 100%)
-            // Make relative humidity unreasonable (probably less than 0%)
-            // Make shortwave radiation unreasonable (< 0)
-            // Make actual vapor pressure unreasonable (< 0)
+            // Make temperature unreasonable (not within [-100, 100] or max < min)
+        SW_WTH_read();
 
-            // Run death test for temperature
-            // Run death test for precipitation
-            // Run death test for cloud cover
-            // Run death test for relative humidity
-            // Run death test for shortwave radiation
-            // Run death test for actual vapor pressure
+        originVal = SW_Weather.allHist[0]->temp_max[0];
+
+        SW_Weather.allHist[0]->temp_max[0] = -102.;
+
+        EXPECT_DEATH_IF_SUPPORTED(
+            checkAllWeather(&SW_Weather),
+            ""
+        );
+
+            // Make precipitation unresonable (< 0)
+        SW_Weather.allHist[0]->temp_max[0] = originVal;
+
+        originVal = SW_Weather.allHist[0]->ppt[0];
+
+        SW_Weather.allHist[0]->ppt[0] = -1.;
+
+        EXPECT_DEATH_IF_SUPPORTED(
+            checkAllWeather(&SW_Weather),
+            ""
+        );
+
+            // Make relative humidity unreasonable (< 0%)
+        SW_Weather.allHist[0]->ppt[0] = originVal;
+
+        SW_Weather.allHist[0]->r_humidity_daily[0] = -.1252;
+
+        EXPECT_DEATH_IF_SUPPORTED(
+            checkAllWeather(&SW_Weather),
+            ""
+        );
     }
 }
