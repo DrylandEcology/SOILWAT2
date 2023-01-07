@@ -688,59 +688,35 @@ namespace {
 
     TEST(DailyInsteadOfMonthlyInputTest, InputValueCalculations) {
         /*
-           This section covers the correct resulting values from different calculations of the
-           same variable.
-
-           Variables that are being tested are:
-              - Relative humidity
-              - Actual vapor pressure
-              - Wind speed
-
-           (*): Most parts of the this test section are dependent on what is put in default
-           SOILWAT2 new daily input files
+           This section covers the correct prioritization of input values resulting
+           in the use of the appropriate equation used for calculation
          */
 
+         // NOTE: capture behaviors and don't be comprehensive (more than likely keep one `EXPECT_NEAR()`)
+
         // Initialize any variables
+        int day, year = 1980, yearIndex = 0;
 
-            // `actualVaporPressureX()` input values
-            // `actualVaporPressureX()` resulting value arrays
-            // Expected results from `actualVaporPressureX()`
-            // Expected results from calls to `_read_weather_hist()` for
-            // relative humidity and wind speed
+        /* Test if monthly values are not being used */
 
-        /* Actual Vapor Pressure only */
+          /* Only test if monthly values are being used for January in relative humidity */
 
-            /* Check all `actualVaporPressureX()` */
+        // Read in all weather
 
-        // Loop through X amount of daily values and store the values
-        // in respective array
+        // Test the 15th day of January in year 1980 and see if it's not equal to 61.0
 
-            // Get and store value of call to `actualVaporPressure1()`
-            // Get and store value of call to `actualVaporPressure2()`
-            // Get and store value of call to `actualVaporPressure3()`
+        /* Test correct priority is being given to input values */
 
-            // Test resulting value from last call to `actualVaporPressure1()`
-            // Test resulting value from last call to `actualVaporPressure2()`
-            // Test resulting value from last call to `actualVaporPressure3()`
+            /* Test with lesser priority than the input */
 
-        /* Relative humidity only based on input values (*) */
+                // Switch directory to new inputs folder
 
-        // Set flags accordingly to how we would like to calculate relative humidity and
-        // wind speed
-        // Reset values from `_read_weather_hist()` for current and following test
+                // Using the new inputs folder, read in year = 1980
 
-        // Test the first few days of calculated relative humidity calculated from:
-            // - min/max relative humidity
-            // - actual vapor pressure
-            // - Specific humidity
+                // Focusing on hurs max and min, artificially set "has_huss"
 
-        /* Wind speed only based on input values (*) */
-
-            // Set flag to expect wind speed component input
-            // Test first X days of values and make sure they are the same as
-            // sqrt(comp1^2 + comp2^2)
-
-        /* Actual vapor pressure/relative humidity based on dewpoint temperature? (*) */
+                // Test if the average of relative humidity has been calculated
+                // instead of being based on huss for the first day of 1980
     }
 
     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
