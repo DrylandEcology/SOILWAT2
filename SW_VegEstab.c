@@ -45,6 +45,7 @@
 #include "SW_Model.h" // externs SW_Model
 #include "SW_SoilWater.h" // externs SW_Soilwat
 #include "SW_Weather.h"  // externs SW_Weather
+#include "SW_VegProd.h" // externs `key2veg[]`
 #include "SW_VegEstab.h"
 
 
@@ -130,7 +131,7 @@ void SW_VES_deconstruct(void)
 		// De-allocate days and parameters
 		if (SW_VegEstab.count > 0)
 		{
-			if (!isnull(SW_VegEstab.p_oagg[pd]->days)) {
+			if (pd > eSW_Day && !isnull(SW_VegEstab.p_oagg[pd]->days)) {
 				Mem_Free(SW_VegEstab.p_oagg[eSW_Year]->days);
 			}
 
@@ -190,26 +191,43 @@ void SW_VES_read(void) {
 	CloseFile(&f);
 
 	SW_VegEstab_construct();
-
-	if (EchoInits)
-		_echo_VegEstab();
 }
 
 /**
-@brief Construct SW_VegEstab variable
+@brief Construct SW_VegEstab output variables
 */
 void SW_VegEstab_construct(void)
 {
-	IntU i;
-
-	for (i = 0; i < SW_VegEstab.count; i++)
-		_spp_init(i);
-
 	if (SW_VegEstab.count > 0) {
+		SW_VegEstab.p_oagg[eSW_Year]->days = (TimeInt *) Mem_Calloc(
+			SW_VegEstab.count, sizeof(TimeInt), "SW_VegEstab_construct()");
+
 		SW_VegEstab.p_accu[eSW_Year]->days = (TimeInt *) Mem_Calloc(
 			SW_VegEstab.count, sizeof(TimeInt), "SW_VegEstab_construct()");
 	}
 }
+
+
+/**
+	@brief Initialization and checks of species establishment parameters
+
+	This works correctly only after
+		* species establishment parameters are read from file by `SW_VES_read()`
+		* soil layers are initialized by `SW_SIT_init_run()`
+*/
+void SW_VES_init_run(void) {
+	IntU i;
+
+	for (i = 0; i < SW_VegEstab.count; i++) {
+		_spp_init(i);
+	}
+
+	if (EchoInits) {
+		_echo_VegEstab();
+	}
+}
+
+
 
 /**
 @brief Check that each count coincides with a day of the year.
@@ -327,7 +345,7 @@ static void _zero_state(unsigned int sppnum) {
 static void _read_spp(const char *infile) {
 	/* =================================================== */
 	SW_VEGESTAB_INFO *v;
-	const int nitems = 15;
+	const int nitems = 16;
 	FILE *f;
 	int lineno = 0;
 	char name[80]; /* only allow 4 char sppnames */
@@ -347,45 +365,48 @@ static void _read_spp(const char *infile) {
 			strcpy(name, inbuf);
 			break;
 		case 1:
-			v->estab_lyrs = atoi(inbuf);
+			v->vegType = atoi(inbuf);
 			break;
 		case 2:
-			v->bars[SW_GERM_BARS] = fabs(atof(inbuf));
+			v->estab_lyrs = atoi(inbuf);
 			break;
 		case 3:
-			v->bars[SW_ESTAB_BARS] = fabs(atof(inbuf));
+			v->bars[SW_GERM_BARS] = fabs(atof(inbuf));
 			break;
 		case 4:
-			v->min_pregerm_days = atoi(inbuf);
+			v->bars[SW_ESTAB_BARS] = fabs(atof(inbuf));
 			break;
 		case 5:
-			v->max_pregerm_days = atoi(inbuf);
+			v->min_pregerm_days = atoi(inbuf);
 			break;
 		case 6:
-			v->min_wetdays_for_germ = atoi(inbuf);
+			v->max_pregerm_days = atoi(inbuf);
 			break;
 		case 7:
-			v->max_drydays_postgerm = atoi(inbuf);
+			v->min_wetdays_for_germ = atoi(inbuf);
 			break;
 		case 8:
-			v->min_wetdays_for_estab = atoi(inbuf);
+			v->max_drydays_postgerm = atoi(inbuf);
 			break;
 		case 9:
-			v->min_days_germ2estab = atoi(inbuf);
+			v->min_wetdays_for_estab = atoi(inbuf);
 			break;
 		case 10:
-			v->max_days_germ2estab = atoi(inbuf);
+			v->min_days_germ2estab = atoi(inbuf);
 			break;
 		case 11:
-			v->min_temp_germ = atof(inbuf);
+			v->max_days_germ2estab = atoi(inbuf);
 			break;
 		case 12:
-			v->max_temp_germ = atof(inbuf);
+			v->min_temp_germ = atof(inbuf);
 			break;
 		case 13:
-			v->min_temp_estab = atof(inbuf);
+			v->max_temp_germ = atof(inbuf);
 			break;
 		case 14:
+			v->min_temp_estab = atof(inbuf);
+			break;
+		case 15:
 			v->max_temp_estab = atof(inbuf);
 			break;
 		}
@@ -443,33 +464,78 @@ static void _sanity_check(unsigned int sppnum) {
 	/* =================================================== */
 	SW_LAYER_INFO **lyr = SW_Site.lyr;
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
-	LyrIndex min_transp_lyrs;
-	int k;
 
-	min_transp_lyrs = SW_Site.n_transp_lyrs[SW_TREES];
-	ForEachVegType(k) {
-		min_transp_lyrs = min(min_transp_lyrs, SW_Site.n_transp_lyrs[k]);
+
+	if (v->vegType > NVEGTYPES) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"%s (%s) : Specified vegetation type (%s [%d]) is not implemented.",
+			MyFileName,
+			v->sppname,
+			key2veg[v->vegType],
+			v->vegType
+		);
 	}
 
-	if (v->estab_lyrs > min_transp_lyrs) {
-		LogError(logfp, LOGFATAL, "%s : Layers requested (estab_lyrs) > (# transpiration layers=%d).", MyFileName, min_transp_lyrs);
+	if (v->estab_lyrs > SW_Site.n_transp_lyrs[v->vegType]) {
+		LogError(
+			logfp,
+			LOGFATAL,
+			"%s (%s) : Layers requested (estab_lyrs = %d) > "
+			"(# transpiration layers = %d).",
+			MyFileName,
+			v->sppname,
+			v->estab_lyrs,
+			SW_Site.n_transp_lyrs[v->vegType]
+		);
 	}
 
 	if (v->min_pregerm_days > v->max_pregerm_days) {
-		LogError(logfp, LOGFATAL, "%s : First day of germination > last day of germination.", MyFileName);
+		LogError(
+			logfp,
+			LOGFATAL,
+			"%s (%s) : First day of germination > last day of germination.",
+			MyFileName,
+			v->sppname
+		);
 	}
 
 	if (v->min_wetdays_for_estab > v->max_days_germ2estab) {
-		LogError(logfp, LOGFATAL, "%s : Minimum wetdays after germination (%d) > maximum days allowed for establishment (%d).", MyFileName, v->min_wetdays_for_estab,
-				v->max_days_germ2estab);
+		LogError(
+			logfp,
+			LOGFATAL,
+			"%s (%s) : Minimum wetdays after germination (%d) > "
+			"maximum days allowed for establishment (%d).",
+			MyFileName,
+			v->sppname,
+			v->min_wetdays_for_estab,
+			v->max_days_germ2estab
+		);
 	}
 
 	if (v->min_swc_germ < lyr[0]->swcBulk_wiltpt) {
-		LogError(logfp, LOGFATAL, "%s : Minimum swc for germination (%.4f) < wiltpoint (%.4f)", MyFileName, v->min_swc_germ, lyr[0]->swcBulk_wiltpt);
+		LogError(
+			logfp,
+			LOGFATAL,
+			"%s (%s) : Minimum swc for germination (%.4f) < wiltpoint (%.4f)",
+			MyFileName,
+			v->sppname,
+			v->min_swc_germ,
+			lyr[0]->swcBulk_wiltpt
+		);
 	}
 
 	if (v->min_swc_estab < lyr[0]->swcBulk_wiltpt) {
-		LogError(logfp, LOGFATAL, "%s : Minimum swc for establishment (%.4f) < wiltpoint (%.4f)", MyFileName, v->min_swc_estab, lyr[0]->swcBulk_wiltpt);
+		LogError(
+			logfp,
+			LOGFATAL,
+			"%s (%s) : Minimum swc for establishment (%.4f) < wiltpoint (%.4f)",
+			MyFileName,
+			v->sppname,
+			v->min_swc_estab,
+			lyr[0]->swcBulk_wiltpt
+		);
 	}
 
 }
@@ -512,7 +578,8 @@ void _echo_VegEstab(void) {
 
 	strcpy(outstr, errstr);
 	for (i = 0; i < SW_VegEstab.count; i++) {
-		sprintf(errstr, "Species: %s\n----------------\n"
+		sprintf(
+				errstr, "Species: %s (vegetation type %s [%d])\n----------------\n"
 				"Germination parameters:\n"
 				"\tMinimum SWP (bars)  : -%.4f\n"
 				"\tMinimum SWC (cm/cm) : %.4f\n"
@@ -522,9 +589,18 @@ void _echo_VegEstab(void) {
 				"\tFirst possible day  : %d\n"
 				"\tLast  possible day  : %d\n"
 				"\tMinimum consecutive wet days (after first possible day): %d\n",
-				v[i]->sppname, v[i]->bars[SW_GERM_BARS], v[i]->min_swc_germ / lyr[0]->width,
-				v[i]->min_swc_germ, v[i]->min_temp_germ, v[i]->max_temp_germ,
-				v[i]->min_pregerm_days, v[i]->max_pregerm_days, v[i]->min_wetdays_for_germ);
+				v[i]->sppname,
+				key2veg[v[i]->vegType],
+				v[i]->vegType,
+				v[i]->bars[SW_GERM_BARS],
+				v[i]->min_swc_germ / lyr[0]->width,
+				v[i]->min_swc_germ,
+				v[i]->min_temp_germ,
+				v[i]->max_temp_germ,
+				v[i]->min_pregerm_days,
+				v[i]->max_pregerm_days,
+				v[i]->min_wetdays_for_germ
+			);
 
 		sprintf(errstr, "Establishment parameters:\n"
 				"\tNumber of layers affecting successful establishment: %d\n"
