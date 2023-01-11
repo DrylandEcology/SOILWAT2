@@ -164,34 +164,70 @@ void SW_VES_new_year(void) {
 }
 
 /**
-@brief Reads in file for SW_VegEstab
+@brief Reads in file for SW_VegEstab and species establishment parameters
 */
 void SW_VES_read(void) {
-	/* =================================================== */
-	FILE *f;
-
-	MyFileName = SW_F_name(eVegEstab);
-	f = OpenFile(MyFileName, "r");
-	SW_VegEstab.use = swTRUE;
-
-	/* if data file empty or useflag=0, assume no
-	 * establishment checks and just continue the model run. */
-	if (!GetALine(f, inbuf) || *inbuf == '0') {
-		SW_VegEstab.use = swFALSE;
-		if (EchoInits)
-			LogError(logfp, LOGNOTE, "Establishment not used.\n");
-		CloseFile(&f);
-		return;
-	}
-
-	while (GetALine(f, inbuf)) {
-		_read_spp(inbuf);
-	}
-
-	CloseFile(&f);
-
-	SW_VegEstab_construct();
+	SW_VES_read2(swTRUE, swTRUE);
 }
+
+/**
+@brief Reads in file for SW_VegEstab and species establishment parameters
+
+@param use_VegEstab Overall decision if user inputs for vegetation establishment
+  should be processed.
+@param consider_InputFlag Should the user input flag read from `"estab.in"` be
+  considered for turning on/off calculations of vegetation establishment.
+
+@note
+  - Establishment is calculated under the following conditions
+    - there are input files with species establishment parameters
+    - at least one of those files is correctly listed in `"estab.in"`
+    - `use_VegEstab` is turned on (`swTRUE`) and
+      - `consider_InputFlag` is off
+      - OR `consider_InputFlag` is on and the input flag in `"estab.in"` is on
+  - Establishment results are included in the output files only
+    if `"ESTABL"` is turned on in `"outsetup.in"`
+*/
+void SW_VES_read2(Bool use_VegEstab, Bool consider_InputFlag) {
+
+	SW_VES_deconstruct();
+	SW_VES_construct();
+
+	SW_VegEstab.count = 0;
+	SW_VegEstab.use = use_VegEstab;
+
+	if (SW_VegEstab.use) {
+		FILE *f;
+
+		MyFileName = SW_F_name(eVegEstab);
+		f = OpenFile(MyFileName, "r");
+
+		if (!GetALine(f, inbuf) || (consider_InputFlag && *inbuf == '0')) {
+			/* turn off vegetation establishment if either
+					 * no species listed
+					 * if user input flag is set to 0 and we don't ignore that input,
+						 i.e.,`consider_InputFlag` is set to `swTRUE`
+			*/
+			SW_VegEstab.use = swFALSE;
+			if (EchoInits) {
+				LogError(logfp, LOGNOTE, "Establishment not used.\n");
+			}
+
+		} else {
+			/* read file names with species establishment parameters
+				 and read those files one by one
+			*/
+			while (GetALine(f, inbuf)) {
+				_read_spp(inbuf);
+			}
+
+			SW_VegEstab_construct();
+		}
+
+		CloseFile(&f);
+	}
+}
+
 
 /**
 @brief Construct SW_VegEstab output variables

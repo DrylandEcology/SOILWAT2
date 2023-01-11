@@ -101,6 +101,7 @@ extern SW_VEGESTAB SW_VegEstab;
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_VES_read(void);
+void SW_VES_read2(Bool use_VegEstab, Bool consider_InputFlag);
 void SW_VES_construct(void);
 void SW_VES_deconstruct(void);
 void SW_VES_init_run(void);
