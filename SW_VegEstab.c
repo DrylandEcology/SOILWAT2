@@ -504,6 +504,8 @@ static void _sanity_check(unsigned int sppnum) {
 	SW_LAYER_INFO **lyr = SW_Site.lyr;
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
 
+	double mean_wiltpt;
+	unsigned int i;
 
 	if (v->vegType >= NVEGTYPES) {
 		LogError(
@@ -564,7 +566,13 @@ static void _sanity_check(unsigned int sppnum) {
 		);
 	}
 
-	if (v->min_swc_estab < lyr[0]->swcBulk_wiltpt) {
+	mean_wiltpt = 0.;
+	for (i = 0; i < v->estab_lyrs; i++) {
+		mean_wiltpt += lyr[i]->swcBulk_wiltpt;
+	}
+	mean_wiltpt /= v->estab_lyrs;
+
+	if (LT(v->min_swc_estab, mean_wiltpt)) {
 		LogError(
 			logfp,
 			LOGFATAL,
@@ -572,7 +580,7 @@ static void _sanity_check(unsigned int sppnum) {
 			MyFileName,
 			v->sppname,
 			v->min_swc_estab,
-			lyr[0]->swcBulk_wiltpt
+			mean_wiltpt
 		);
 	}
 
