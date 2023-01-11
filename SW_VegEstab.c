@@ -198,6 +198,7 @@ void SW_VES_read2(Bool use_VegEstab, Bool consider_InputFlag) {
 
 	if (SW_VegEstab.use) {
 		FILE *f;
+		char buf[FILENAME_MAX];
 
 		MyFileName = SW_F_name(eVegEstab);
 		f = OpenFile(MyFileName, "r");
@@ -218,7 +219,9 @@ void SW_VES_read2(Bool use_VegEstab, Bool consider_InputFlag) {
 				 and read those files one by one
 			*/
 			while (GetALine(f, inbuf)) {
-				_read_spp(inbuf);
+				strcpy(buf, _ProjDir); // add `_ProjDir` to path, e.g., for STEPWAT2
+				strcat(buf, inbuf);
+				_read_spp(buf);
 			}
 
 			SW_VegEstab_construct();
