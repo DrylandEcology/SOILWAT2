@@ -502,14 +502,13 @@ static void _sanity_check(unsigned int sppnum) {
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
 
 
-	if (v->vegType > NVEGTYPES) {
+	if (v->vegType >= NVEGTYPES) {
 		LogError(
 			logfp,
 			LOGFATAL,
-			"%s (%s) : Specified vegetation type (%s [%d]) is not implemented.",
+			"%s (%s) : Specified vegetation type (%d) is not implemented.",
 			MyFileName,
 			v->sppname,
-			key2veg[v->vegType],
 			v->vegType
 		);
 	}
