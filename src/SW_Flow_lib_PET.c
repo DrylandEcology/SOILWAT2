@@ -983,8 +983,7 @@ double svp(double T, double *slope_svp_to_t) {
 /**
   @brief Saturation vapor pressure for calculation of actual vapor pressure
 
-  Calculation is based on Allen et al. 2006 @cite allen2006AaFM which is
-  based on Majumdar et al. 1972 and updated by ASCE-EWRI 2005.
+  Implements equation 7 by Allen et al. (2005) @cite ASCE2005
 
   @param[in] temp Daily mean, minimum, or maximum temperature or dewpoint temperature [C]
 
@@ -998,56 +997,48 @@ double svp2(double temp) {
 /**
  @brief Calculate actual vapor pressure based on relative humidity and mean temperature
 
- Calculation is based on Allen et al. 2006 @cite allen2006AaFM which is
- based on Majumdar et al. 1972 and updated by ASCE-EWRI 2005.
+ Implements equation 7 and 14 by Allen et al. (2005) @cite ASCE2005
 
  @param hurs Daily mean relative humidity [%]
- @param tmean Daily mean air temperature [C]
+ @param meanTemp Daily mean air temperature [C]
 
  @return Calculated actual vapor pressure [kPa]
  */
-double actualVaporPressure1(double hurs, double tmean) {
+double actualVaporPressure1(double hurs, double meanTemp) {
     // Allen et al. 2005 eqs 7 and 14
-    return (hurs / 100.) * svp2(tmean);
+    return (hurs / 100.) * svp2(meanTemp);
 }
 
 /**
- @brief Calculate actual vapor pressure based on temperature and relative humidity components (min/max)
+ @brief Calculate actual vapor pressure from daily minimum and maximum of
+ air temperature and relative humidity
 
- Calculation is based on Allen et al. 2006 @cite allen2006AaFM which is
- based on Majumdar et al. 1972 and updated by ASCE-EWRI 2005.
+ Implements equation 7 and 11 by Allen et al. (2005) @cite ASCE2005
 
- @param hursMax Daily maximum relative humidity [%]
- @param hursMin Daily minimum relative humidity [%]
+ @param maxHurs Daily maximum relative humidity [%]
+ @param minHurs Daily minimum relative humidity [%]
  @param maxTemp Daily minimum air temperature [C]
  @param minTemp Daily maximum air temperature [C]
 
  @return Calculated actual vapor pressure [kPa]
  */
-double actualVaporPressure2(double hursMax, double hursMin, double maxTemp, double minTemp) {
+double actualVaporPressure2(double maxHurs, double minHurs, double maxTemp, double minTemp) {
     // Allen et al. 2005 eqs 7 and 11
-    double satVapPressureMax = svp2(maxTemp);
-    double satVapPressureMin = svp2(minTemp);
-
-    double relHumVapPressMax = satVapPressureMin * (hursMax / 100);
-    double relHumVapPressMin = satVapPressureMax * (hursMin / 100);
-
-    return (relHumVapPressMax + relHumVapPressMin) / 2;
+    return (actualVaporPressure1(minHurs, maxTemp) + actualVaporPressure1(maxHurs, minTemp)) / 2;
 }
 
 /**
  @brief Calculate actual vapor pressure based on dew point temperature
 
- Calculation is based on Allen et al. 2006 @cite allen2006AaFM which is
- based on Majumdar et al. 1972 and updated by ASCE-EWRI 2005.
+ Implements equation 7 and 8 by Allen et al. (2005) @cite ASCE2005
 
- @param tdps 2m dew point temperature [C]
+ @param dewpointTemp 2m dew point temperature [C]
 
  @return Calculated actual vapor pressure [kPa]
  */
-double actualVaporPressure3(double tdps) {
+double actualVaporPressure3(double dewpointTemp) {
     // Allen et al. 2005 eqs 7 and 8
-    return svp2(tdps);
+    return svp2(dewpointTemp);
 }
 
 
