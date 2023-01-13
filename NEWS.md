@@ -88,6 +88,23 @@
   that reproduces previous behavior.
 
 
+# SOILWAT2 v6.7.0
+* This version produces exactly the same simulation output
+  as the previous release under default values
+  (i.e., vegetation establishment is turned off).
+
+* Functionality to calculate and output establishment/recruitment of species
+  now works again and is now covered by tests (issue #336, @dschlaep).
+  Note that this functionality assesses yearly the chances of
+  species to recruit/establish based on simulated daily conditions;
+  however, establishment/recruitment outcomes are not utilized to inform the
+  simulation.
+
+## Changes to inputs
+* New input via `"<species>.estab"` sets the vegetation type of
+  a species establishment parameters'.
+
+
 # SOILWAT2 v6.6.0
 * Random number generators now produce sequences that can be exactly reproduced
   (@dschlaep).
