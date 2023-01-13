@@ -693,17 +693,30 @@ namespace {
          */
 
          // NOTE: capture behaviors and don't be comprehensive (more than likely keep one `EXPECT_NEAR()`)
+        SW_SKY *sky = &SW_Sky;
 
         // Initialize any variables
-        int day, year = 1980, yearIndex = 0;
+        //int day, year = 1980
+        int yearIndex = 0, midJanDay = 14;
 
         /* Test if monthly values are not being used */
 
-          /* Only test if monthly values are being used for January in relative humidity */
+        SW_WTH_setup();
+
+        SW_Weather.use_humidityMonthly = swTRUE;
+        SW_Weather.use_windSpeedMonthly = swTRUE;
+        SW_Weather.use_cloudCoverMonthly = swTRUE;
+        SW_Weather.has_hurs = swTRUE;
 
         // Read in all weather
+        SW_WTH_read();
 
-        // Test the 15th day of January in year 1980 and see if it's not equal to 61.0
+          /* Only test if monthly values are being used for January in relative humidity */
+
+        // Test the middle of January in year 1980 and see if it's not equal to SW_Sky.r_humidity[0]
+        // Note: Daily interpolated values in the middle of a month are equal to the
+        // original monthly values from which they were interpolated
+        EXPECT_NEAR(SW_Weather.allHist[yearIndex]->r_humidity_daily[midJanDay], sky->r_humidity[0], tol6);
 
         /* Test correct priority is being given to input values */
 
@@ -731,8 +744,8 @@ namespace {
          */
 
          // Initialize any variables
-         char weathPrefix[] = "weath";
-         TimeInt year = 1980;
+         //char weathPrefix[] = "weath";
+         //TimeInt year = 1980;
          double originVal;
 
         /* Not the same number of flags as columns */
@@ -741,8 +754,8 @@ namespace {
             // not the columns being read in
 
         allocateAllWeather(&SW_Weather);
-        // SW_Weather.n_input_forcings = 7;
-        SW_Weather.n_years = 1;
+        //SW_Weather.n_input_forcings = 0;
+        //SW_Weather.n_years = 1;
 
             // Run death test
         // EXPECT_DEATH_IF_SUPPORTED(
