@@ -781,9 +781,12 @@ void generateMissingWeather(
   int year;
   unsigned int yearIndex, numDaysYear, day, iMissing;
 
-  double yesterdayPPT = 0., yesterdayMin = 0., yesterdayMax = 0.;
+  double yesterdayPPT = 0., yesterdayTempMin = 0., yesterdayTempMax = 0.,
+         yesterdayCloudCov = 0., yesterdayWindSpeed = 0., yesterdayRelHum = 0.,
+         yesterdayShortWR = 0., yesterdayActVP = 0.;
 
-  Bool any_missing, missing_Tmax, missing_Tmin, missing_PPT;
+  Bool any_missing, missing_Tmax, missing_Tmin, missing_PPT, missing_CloudCov,
+       missing_WindSpeed, missing_RelHum, missing_ShortWR, missing_ActVP;
 
 
   // Pass through method: return early
@@ -811,8 +814,15 @@ void generateMissingWeather(
       missing_Tmax = (Bool) missing(allHist[yearIndex]->temp_max[day]);
       missing_Tmin = (Bool) missing(allHist[yearIndex]->temp_min[day]);
       missing_PPT = (Bool) missing(allHist[yearIndex]->ppt[day]);
+      missing_CloudCov = (Bool) missing(allHist[yearIndex]->cloudcov_daily[day]);
+      missing_WindSpeed = (Bool) missing(allHist[yearIndex]->windspeed_daily[day]);
+      missing_RelHum = (Bool) missing(allHist[yearIndex]->r_humidity_daily[day]);
+      missing_ShortWR = (Bool) missing(allHist[yearIndex]->shortWaveRad[day]);
+      missing_ActVP = (Bool) missing(allHist[yearIndex]->actualVaporPressure[day]);
 
-      any_missing = (Bool) (missing_Tmax || missing_Tmin || missing_PPT);
+      any_missing = (Bool) (missing_Tmax || missing_Tmin || missing_PPT ||
+                            missing_CloudCov || missing_WindSpeed || missing_RelHum ||
+                            missing_ShortWR || missing_ActVP);
 
       if (any_missing) {
         // some of today's values are missing
@@ -828,14 +838,35 @@ void generateMissingWeather(
           );
 
         } else if (method == 1) {
-          // LOCF (temp) + 0 (PPT)
+          // LOCF (temp, cloud cover, wind speed, relative humidity,
+          // shortwave radiation, and actual vapor pressure) + 0 (PPT)
           allHist[yearIndex]->temp_max[day] = missing_Tmax ?
-            yesterdayMax :
+            yesterdayTempMax :
             allHist[yearIndex]->temp_max[day];
 
           allHist[yearIndex]->temp_min[day] = missing_Tmin ?
-            yesterdayMin :
+            yesterdayTempMin :
             allHist[yearIndex]->temp_min[day];
+
+          allHist[yearIndex]->cloudcov_daily[day] = missing_CloudCov ?
+            yesterdayCloudCov :
+            allHist[yearIndex]->cloudcov_daily[day];
+
+          allHist[yearIndex]->windspeed_daily[day] = missing_WindSpeed ?
+            yesterdayWindSpeed :
+            allHist[yearIndex]->windspeed_daily[day];
+
+          allHist[yearIndex]->r_humidity_daily[day] = missing_RelHum ?
+            yesterdayRelHum :
+            allHist[yearIndex]->r_humidity_daily[day];
+
+          allHist[yearIndex]->shortWaveRad[day] = missing_ShortWR ?
+            yesterdayShortWR :
+            allHist[yearIndex]->shortWaveRad[day];
+
+          allHist[yearIndex]->actualVaporPressure[day] = missing_ActVP ?
+            yesterdayActVP :
+            allHist[yearIndex]->actualVaporPressure[day];
 
           allHist[yearIndex]->ppt[day] = missing_PPT ?
             0. :
@@ -865,8 +896,13 @@ void generateMissingWeather(
       }
 
       yesterdayPPT = allHist[yearIndex]->ppt[day];
-      yesterdayMax = allHist[yearIndex]->temp_max[day];
-      yesterdayMin = allHist[yearIndex]->temp_min[day];
+      yesterdayTempMax = allHist[yearIndex]->temp_max[day];
+      yesterdayTempMin = allHist[yearIndex]->temp_min[day];
+      yesterdayCloudCov = allHist[yearIndex]->cloudcov_daily[day];
+      yesterdayWindSpeed = allHist[yearIndex]->windspeed_daily[day];
+      yesterdayRelHum = allHist[yearIndex]->r_humidity_daily[day];
+      yesterdayShortWR = allHist[yearIndex]->shortWaveRad[day];
+      yesterdayActVP = allHist[yearIndex]->actualVaporPressure[day];
     }
   }
 }
