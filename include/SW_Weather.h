@@ -164,15 +164,12 @@ typedef struct {
 	RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
 	RealD snow, snowmelt, snowloss, surfaceMax, surfaceMin;
 
-  Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_relHumidityMonthly,
-    has_temp2, has_ppt, has_cloudCover, has_sfcWind, has_windComp, has_hurs,
-    has_hurs2, has_huss, has_tdps, has_vp, has_rsds;
+  Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly,
+       has_temp2, has_ppt, has_cloudCover, has_sfcWind, has_windComp, has_hurs,
+       has_hurs2, has_huss, has_tdps, has_vp, has_rsds;
 
-  int tempComp1_index, tempComp2_index, ppt_index, cloudCover_index, sfcWind_index,
-    windComp1_index, windComp2_index, hurs_index, hurs_comp1_index, hurs_comp2_index,
-    huss_index, tdps_index, vp_index, rsds_index;
-
-  int n_input_forcings; // Number of input columns found in weath.YYYY
+  unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
+ 			   n_input_forcings; // Number of input columns found in weath.YYYY
 
 	/* This section is required for computing the output quantities.  */
 	SW_WEATHER_OUTPUTS

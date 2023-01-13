@@ -535,7 +535,7 @@ void readAllWeather(
             interpolate_monthlyValues(SW_Sky.windspeed, interpAsBase1, allHist[yearIndex]->windspeed_daily);
         }
 
-        if(SW_Weather.use_relHumidityMonthly) {
+        if(SW_Weather.use_humidityMonthly) {
             interpolate_monthlyValues(SW_Sky.r_humidity, interpAsBase1, allHist[yearIndex]->r_humidity_daily);
         }
 
@@ -1185,17 +1185,15 @@ void SW_WTH_setup(void) {
 	SW_WEATHER *w = &SW_Weather;
 	const int nitems = 34;
 	FILE *f;
-	int lineno = 0, month, x, columnNum, varArrIndex = 0;
+	int lineno = 0, month, x, currFlag, varArrIndex = 0;
     int tempCompIndex = 3, windCompIndex = 7, hursCompIndex = 9;
-    Bool componentFlag;
+    Bool currFlagHasMaxMin;
 	RealF sppt, stmax, stmin;
 	RealF sky, wind, rH, actVP, shortWaveRad;
 
     Bool *inputFlags[MAX_INPUT_COLUMNS] = {&w->use_cloudCoverMonthly, &w->use_windSpeedMonthly,
-        &w->use_relHumidityMonthly, &w->has_temp2, &w->has_ppt, &w->has_cloudCover, &w->has_sfcWind,
+        &w->use_humidityMonthly, &w->has_temp2, &w->has_ppt, &w->has_cloudCover, &w->has_sfcWind,
         &w->has_windComp, &w->has_hurs, &w->has_hurs2, &w->has_huss, &w->has_tdps, &w->has_vp, &w->has_rsds};
-
-    int varIndices[MAX_INPUT_COLUMNS];
 
 	MyFileName = SW_F_name(eWeather);
 	f = OpenFile(MyFileName, "r");
@@ -1263,7 +1261,7 @@ void SW_WTH_setup(void) {
             break;
 
         case 7:
-            w->use_relHumidityMonthly = itob(atoi(inbuf));
+            w->use_humidityMonthly = itob(atoi(inbuf));
             break;
 
         case 8:
@@ -1361,8 +1359,12 @@ void SW_WTH_setup(void) {
     w->has_sfcWind = (w->use_windSpeedMonthly) ? swFALSE : w->has_sfcWind;
     w->has_windComp = (w->use_windSpeedMonthly) ? swFALSE : w->has_windComp;
 
-    w->has_hurs = (w->use_relHumidityMonthly) ? swFALSE : w->has_hurs;
-    w->has_hurs2 = (w->use_relHumidityMonthly) ? swFALSE : w->has_hurs2;
+    if(w->use_humidityMonthly) {
+        w->has_hurs = swFALSE;
+        w->has_hurs2 = swFALSE;
+        w->has_huss = swFALSE;
+        w->has_vp = swFALSE;
+    }
 
     w->has_cloudCover = (w->use_cloudCoverMonthly) ? swFALSE : w->has_cloudCover;
 
@@ -1378,34 +1380,36 @@ void SW_WTH_setup(void) {
     // Default n_input_forcings to 0
     w->n_input_forcings = 0;
 
-        // Loop through MAX_INPUT_COLUMNS
-    for(columnNum = 3; columnNum < MAX_INPUT_COLUMNS; columnNum++)
+        // Loop through MAX_INPUT_COLUMNS starting at flag 3
+        // The loop starts at 3 due to "inputFlags[]" containing monthly flags
+        // in the first three slots (indices 0, 1, and 2)
+    for(currFlag = 3; currFlag < MAX_INPUT_COLUMNS; currFlag++)
     {
-        varIndices[varArrIndex] = 0;
+        w->dailyInputIndices[varArrIndex] = 0;
 
-        // Check if current flag is in relation to component variables
-        if(&inputFlags[columnNum] == &inputFlags[tempCompIndex] ||
-           &inputFlags[columnNum] == &inputFlags[windCompIndex] ||
-           &inputFlags[columnNum] == &inputFlags[hursCompIndex]) {
+        // Check if current flag is in relation to max/min variables
+        if(&inputFlags[currFlag] == &inputFlags[tempCompIndex] ||
+           &inputFlags[currFlag] == &inputFlags[windCompIndex] ||
+           &inputFlags[currFlag] == &inputFlags[hursCompIndex]) {
 
-            // Set component flag
-            componentFlag = swTRUE;
-            varIndices[varArrIndex + 1] = 0;
+            // Set max/min flag
+            currFlagHasMaxMin = swTRUE;
+            w->dailyInputIndices[varArrIndex + 1] = 0;
         } else {
-            componentFlag = swFALSE;
+            currFlagHasMaxMin = swFALSE;
         }
 
         // Check if current flag is set
-        if(*inputFlags[columnNum]) {
+        if(*inputFlags[currFlag]) {
 
             // Set current index to "n_input_forcings"
-            varIndices[varArrIndex] = w->n_input_forcings;
+            w->dailyInputIndices[varArrIndex] = w->n_input_forcings;
 
-            // Check if flag is meant for components variables
-            if(componentFlag) {
+            // Check if flag is meant for max/min values
+            if(currFlagHasMaxMin) {
 
                 // Set next index to n_input_focings + 1
-                varIndices[varArrIndex + 1] = w->n_input_forcings + 1;
+                w->dailyInputIndices[varArrIndex + 1] = w->n_input_forcings + 1;
 
                 // Increment "varArrIndex" by two
                 varArrIndex += 2;
@@ -1413,7 +1417,7 @@ void SW_WTH_setup(void) {
                 // Increment "n_input_forcings" by two
                 w->n_input_forcings += 2;
             } else {
-            // Otherwise, current flag is not meant for components
+            // Otherwise, current flag is not meant for max/min values
 
                 // Increment "varArrIndex" by one
                 varArrIndex++;
@@ -1424,8 +1428,8 @@ void SW_WTH_setup(void) {
         } else {
             // Otherwise, flag was not set, deal with "varArrayIndex"
 
-            // Check if current flag is for component variables
-            if(componentFlag) {
+            // Check if current flag is for max/min variables
+            if(currFlagHasMaxMin) {
                 // Increment "varArrIndex" by two
                 varArrIndex += 2;
             } else {
@@ -1434,15 +1438,6 @@ void SW_WTH_setup(void) {
             }
         }
     }
-
-    // Set variable indices in SW_WEATHER
-    // Note: SW_WEATHER index being set is guaranteed to have the respective value
-    // at the given index of `varIndices` (e.g., w->windComp1_index will only be at index 5 in `varIndices`)
-    w->tempComp1_index = varIndices[0], w->tempComp2_index = varIndices[1], w->ppt_index = varIndices[2];
-    w->cloudCover_index = varIndices[3], w->sfcWind_index = varIndices[4], w->windComp1_index = varIndices[5];
-    w->windComp2_index = varIndices[6], w->hurs_index = varIndices[7], w->hurs_comp1_index = varIndices[8];
-    w->hurs_comp2_index = varIndices[9], w->huss_index = varIndices[10], w->tdps_index = varIndices[11];
-    w->vp_index = varIndices[12], w->rsds_index = varIndices[13];
 }
 
 
@@ -1514,18 +1509,19 @@ void _read_weather_hist(
 
 	FILE *f;
     SW_WEATHER *weath = &SW_Weather;
-	int x, lineno = 0, doy;
+    unsigned int *dailyInputIndices = weath->dailyInputIndices;
+	unsigned int x, lineno = 0, doy;
 	// TimeInt mon, j, k = 0;
 	// RealF acc = 0.0;
-    RealF weathInput[MAX_INPUT_COLUMNS + 2];
+    RealF weathInput[MAX_INPUT_COLUMNS];
 
-    int maxTempIndex = weath->tempComp1_index, minTempIndex = weath->tempComp2_index,
-    precipIndex = weath->ppt_index, cloudcovIndex = weath->cloudCover_index,
-    windSpeedIndex = weath->sfcWind_index, windComp1Index = weath->windComp1_index,
-    windComp2Index = weath->windComp2_index, relHumIndex = weath->huss_index,
-    vaporPressIndex = weath->vp_index, hursComp1Index = weath->hurs_comp1_index,
-    hursComp2Index = weath->hurs_comp2_index, hussIndex = weath->huss_index,
-    dewPointIndex = weath->tdps_index;
+    int maxTempIndex = dailyInputIndices[0], minTempIndex = dailyInputIndices[1],
+    precipIndex = dailyInputIndices[2], cloudcovIndex = dailyInputIndices[3],
+    windSpeedIndex = dailyInputIndices[4], windEastIndex = dailyInputIndices[5],
+    windNorthIndex = dailyInputIndices[6], relHumIndex = dailyInputIndices[7],
+    vaporPressIndex = dailyInputIndices[12], hursMaxIndex = dailyInputIndices[8],
+    hursMinIndex = dailyInputIndices[9], hussIndex = dailyInputIndices[10],
+    dewPointIndex = dailyInputIndices[11];
 
     double es, e, relHum, tempSlope, svpVal;
 
