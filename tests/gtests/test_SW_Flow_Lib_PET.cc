@@ -731,13 +731,20 @@ namespace
         // replaced observed with estimated values to match `H_Ex2_19_1`:
         // replaced ~ -61 + 1.661 * observed
         {53., 47.5, 54., 53., 40., 35., 35., 30., 46., 50., 63., 52.},
+        // Element 11:  Relative Humidity (%), MN3HRLY (Statistic 94):  Mean of 3-Hourly Observations
+      rel_humidity[12] =
+        {74.5, 73.1, 71.4, 66.3, 65.8, 68.3, 71.0, 74.4, 76.8, 73.2, 76.9, 78.5},
+        // Element 01:  Dry Bulb Temperature (deg C)
+      air_temp_mean[12] =
+        {-8.9, -6.3, 0.2, 7.4, 13.6, 19, 21.7, 20.2, 15.4, 9.4, 1.9, -5.7},
       // Actual vapor pressure (kPa)
-      actual_vap_pressure[12] =
-      {0.232164, 0.278781, 0.442500, 0.682698, 1.024887, 1.500820, 1.843139, 1.761336,
-       1.343817, 0.863361, 0.538767, 0.313456};
+      actual_vap_pressure;
 
     // Duffie & Beckman 2013: Example 2.19.1
     for (k = 0; k < 12; k++) {
+
+      actual_vap_pressure = actualVaporPressure1(rel_humidity[k], air_temp_mean[k]);
+
       H_gt = solar_radiation(
         doys_Table1_6_1[k],
         43. * deg_to_rad, // latitude
@@ -746,7 +753,7 @@ namespace
         0., // aspect
         albedo[k],
         cloud_cover[k],
-        actual_vap_pressure[k],
+        actual_vap_pressure,
         &H_oh,
         &H_ot,
         &H_gh
@@ -821,7 +828,8 @@ namespace
       temp = 25.,
       RH = 61.,
       windsp = 1.3,
-      cloudcov = 71.;
+      cloudcov = 71.,
+      actual_vap_pressure;
 
 
     // TEST `petfunc()` for varying average daily air temperature `avgtemp` [C]
@@ -832,17 +840,16 @@ namespace
       expected_pet_avgtemps[] = {
         0.0100, 0.0184, 0.0346, 0.0576,
         0.0896, 0.1290, 0.1867, 0.2736, 0.4027, 0.5890
-      },
-      // Actual vapor pressure input
-      e_a_input[] = {0.030606, 0.076018, 0.174284, 0.372588, 0.749057, 1.426352,
-                   2.588270, 4.499124, 7.525423, 12.159202};
+      };
 
     for (i = 0; i < 10; i++)
     {
+      actual_vap_pressure = actualVaporPressure1(RH, avgtemps[i]);
+
       H_gt = solar_radiation(
         doy,
         lat, elev, slope0, aspect, reflec,
-        cloudcov, e_a_input[i],
+        cloudcov, actual_vap_pressure,
         &H_oh, &H_ot, &H_gh
       );
 
@@ -859,7 +866,7 @@ namespace
       // Expected PET
       expected_pet_lats[] = {0.1550, 0.4360, 0.3597, 0.1216, 0.0421};
 
-    double e_a = 1.932344;
+    double e_a = actualVaporPressure1(RH, temp);
 
     for (i = 0; i < 5; i++)
     {
