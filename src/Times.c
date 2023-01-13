@@ -182,14 +182,10 @@ Bool isleapyear(const TimeInt year) {
  @param[in] interpAsBase1 Boolean value specifying if "dailyValues" should be base1 or base0
  @param[out] dailyValues Array with linearly interpolated values for each day
 
- @note Aside from cloud cover, relative humidity, and wind speed in `allHist` in SW_WEATHER, dailyValues[0]
-       will always be 0 as the function does not modify it since there is no day 0 (doy is base1), furthermore
-       dailyValues is only sub-setted by base1 objects in the model.
-
- @note When the function encounters cloud cover, relative humidity, or wind speed in `allHist` in SW_WEATHER,
-       `dailyValues` will be defaulted to base0 to be consistent with minimum/maximum temperature and
-       precipitation in `allHist`. The function will know when one of the three cases is met by the parameter
-       "interpAsBase1".
+ @note If `interpAsBase1` is TRUE, then `dailyValues[0]` is ignored (with a value of 0) because a `base1`
+ index for "day of year" (doy) is used, i.e., the value on the first day of year (`doy = 1`) is located in `dailyValues[1]`.
+ If `interpAsBase1` is FALSE, then `dailyValues[0]` is utilized because a `base0` index for "day of year" (doy) is used,
+ i.e., the value on the first day of year (`doy = 0`) is located in `dailyValues[0]`.
  **/
 void interpolate_monthlyValues(double monthlyValues[], Bool interpAsBase1,
                                double dailyValues[]) {
