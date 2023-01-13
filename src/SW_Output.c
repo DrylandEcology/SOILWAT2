@@ -1946,8 +1946,7 @@ void SW_OUT_new_year(void)
 
 
 
-int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
-	int last, char msg[], size_t sizeof_msg)
+int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last, char msg[], size_t sizeof_msg)
 {
 	int res = 0; // return value indicating type of message if any
 
@@ -1993,11 +1992,6 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
 		SW_Output[k].sumtype = eSW_Sum;
 		first = 1;
 		last = 366;
-		#ifndef RSOILWAT
-		strcpy(period, "YR");
-		#else
-		if (period) {} // avoid `-Wunused-parameter`
-		#endif
 
 	} else if ((k == eSW_AllVeg || k == eSW_ET || k == eSW_AllWthr || k == eSW_AllH2O))
 	{
@@ -2184,7 +2178,6 @@ void SW_OUT_read(void)
 		msg_type = SW_OUT_read_onekey(
 			k,
 			str2stype(Str_ToUpper(sumtype, upsum)),
-			period,
 			first,
 			!Str_CompareI("END", (char *)last) ? 366 : atoi(last),
 			msg,
