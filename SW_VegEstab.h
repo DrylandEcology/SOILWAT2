@@ -45,6 +45,7 @@ typedef struct {
 	/* THESE VARIABLES DO NOT CHANGE DURING THE NORMAL MODEL RUN */
 	char sppFileName[MAX_FILENAMESIZE]; /* Store the file Name and Path, Mostly for Rsoilwat */
 	char sppname[MAX_SPECIESNAMELEN + 1]; /* one set of parms per species */
+	unsigned int vegType; /**< Vegetation type of species (see "Indices to vegetation types") */
 	TimeInt min_pregerm_days, /* first possible day of germination */
 			max_pregerm_days, /* last possible day of germination */
 			min_wetdays_for_germ, 	/* number of consecutive days top layer must be */
@@ -75,7 +76,7 @@ typedef struct {
 
 typedef struct {
 	TimeInt *days;	/* only output the day of estab for each species in the input */
-					/* this array is allocated via SW_VES_Init() */
+					/* this array is allocated via `SW_VegEstab_construct()` */
 					/* each day in the array corresponds to the ordered species list */
 } SW_VEGESTAB_OUTPUTS;
 
@@ -100,9 +101,10 @@ extern SW_VEGESTAB SW_VegEstab;
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_VES_read(void);
+void SW_VES_read2(Bool use_VegEstab, Bool consider_InputFlag);
 void SW_VES_construct(void);
 void SW_VES_deconstruct(void);
-void SW_VES_init(void);
+void SW_VES_init_run(void);
 void SW_VegEstab_construct(void);
 void SW_VES_checkestab(void);
 void SW_VES_new_year(void);

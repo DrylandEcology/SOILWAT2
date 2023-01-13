@@ -247,8 +247,7 @@ void SW_OUT_deconstruct(Bool full_reset);
 void SW_OUT_set_ncol(void);
 void SW_OUT_set_colnames(void);
 void SW_OUT_new_year(void);
-int SW_OUT_read_onekey(OutKey k, OutSum sumtype, char period[], int first,
-	int last, char msg[]);
+int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last, char msg[]);
 void SW_OUT_read(void);
 void SW_OUT_sum_today(ObjType otyp);
 void SW_OUT_write_today(void);
