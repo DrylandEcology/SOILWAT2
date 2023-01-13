@@ -97,6 +97,14 @@ namespace{
         EXPECT_NEAR(xintpl_weather[0] -> cloudcov_daily[doy], 10.0, tol9);
       }
 
+      // Zero the first value in "cloudcov_daily" for testing on base1 interpolation
+      xintpl_weather[0] -> cloudcov_daily[0] = 0.;
+
+      interpolate_monthlyValues(xintpl->cloudcov, swTRUE, xintpl_weather[0] -> cloudcov_daily);
+
+      // Value for daily index 0 is unchanged because we use here a base1 index
+      EXPECT_NEAR(xintpl_weather[0] -> cloudcov_daily[0], 0, tol9);
+      EXPECT_NEAR(xintpl_weather[0] -> cloudcov_daily[1], 10., tol9);
 
       // Test: all monthlyValues equal to 10 except December and March are 20
       //   (affected by leap/nonleap yrs)
