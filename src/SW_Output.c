@@ -1946,7 +1946,7 @@ void SW_OUT_new_year(void)
 
 
 
-int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last, char msg[])
+int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last, char msg[], size_t sizeof_msg)
 {
 	int res = 0; // return value indicating type of message if any
 
