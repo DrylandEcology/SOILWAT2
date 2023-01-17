@@ -986,16 +986,16 @@ namespace
       // Inputs
       RHs[] = {0, 34, 56, 79, 100},
       // Expected PET
-      expected_pet_RHs[] = {0.2267, 0.2123, 0.1662, 0.1128, 0.0612},
-      // Input actual vapor pressure
-      e_a_in[] = {0.0, 1.077044, 1.773956, 2.502544, 3.167778};
+      expected_pet_RHs[] = {0.2267, 0.2123, 0.1662, 0.1128, 0.0612};
 
     for (i = 0; i < 5; i++)
     {
+      actual_vap_pressure = actualVaporPressure1(RHs[i], temp);
+
       H_gt = solar_radiation(
         doy,
         lat, elev, slope0, aspect, reflec,
-        cloudcov, e_a_in[i],
+        cloudcov, actual_vap_pressure,
         &H_oh, &H_ot, &H_gh
       );
 
