@@ -216,14 +216,29 @@ void deallocateClimateStructs(SW_CLIMATE_YEARLY *climateOutput,
 void _read_weather_hist(
   TimeInt year,
   SW_WEATHER_HIST *yearWeather,
-  char weather_prefix[]
+  char weather_prefix[],
+  unsigned int n_input_forcings,
+  unsigned int *dailyInputIndices,
+  Bool *dailyInputFlags,
+  Bool use_cloudCoverMonthly,
+  Bool use_windSpeedMonthly,
+  Bool use_humidityMonthly
 );
 void readAllWeather(
   SW_WEATHER_HIST **allHist,
   int startYear,
   unsigned int n_years,
   Bool use_weathergenerator_only,
-  char weather_prefix[]
+  char weather_prefix[],
+  Bool use_cloudCoverMonthly,
+  Bool use_humidityMonthly,
+  Bool use_windSpeedMonthly,
+  unsigned int n_input_forcings,
+  unsigned int *dailyInputIndices,
+  Bool *dailyInputFlags,
+  RealD *cloudcov,
+  RealD *windspeed,
+  RealD *r_humidity
 );
 void finalizeAllWeather(SW_WEATHER *w);
 

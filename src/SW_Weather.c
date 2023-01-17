@@ -503,6 +503,23 @@ void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYe
  @param[in] use_weathergenerator_only A boolean; if `swFALSE`, code attempts to
    read weather files from disk.
  @param[in] weather_prefix File name of weather data without extension.
+ @param[in] use_cloudCoverMonthly A boolean; if `swTRUE`, function will interpolate
+ monthly values for cloud cover read-in from disk
+ @param[in] use_humidityMonthly A boolean; if `swTRUE`, function will interpolate
+ monthly values for humidity read-in from disk
+ @param[in] use_windSpeedMonthly A boolean; if `swTRUE`, function will interpolate
+ monthly values for wind speed read-in from disk
+ @param[in] n_input_forcings Number of read-in columns from disk
+ @param[in] dailyInputIndices An array of size MAX_INPUT_COLUMNS holding the calculated
+ column number of which a certain variable resides
+ @param[in] dailyInputFlags An array of size MAX_INPUT_COLUMNS holding booleans specifying
+ what variable has daily input on disk
+ @param[in] cloudcov Array of size MAX_MONTHS holding monthly cloud cover values
+ to be interpolated
+ @param[in] windspeed Array of size MAX_MONTHS holding monthly wind speed values
+ to be interpolated
+ @param[in] r_humidity Array of size MAX_MONTHS holding monthly relative humidity values
+ to be interpolated
 
 */
 void readAllWeather(
@@ -510,7 +527,16 @@ void readAllWeather(
   int startYear,
   unsigned int n_years,
   Bool use_weathergenerator_only,
-  char weather_prefix[]
+  char weather_prefix[],
+  Bool use_cloudCoverMonthly,
+  Bool use_humidityMonthly,
+  Bool use_windSpeedMonthly,
+  unsigned int n_input_forcings,
+  unsigned int *dailyInputIndices,
+  Bool *dailyInputFlags,
+  RealD *cloudcov,
+  RealD *windspeed,
+  RealD *r_humidity
 ) {
     unsigned int yearIndex, year;
 
@@ -527,16 +553,16 @@ void readAllWeather(
         // cloud cover, wind speed, and relative humidity if necessary
         Time_new_year(year);
 
-        if(SW_Weather.use_cloudCoverMonthly) {
-            interpolate_monthlyValues(SW_Sky.cloudcov, interpAsBase1, allHist[yearIndex]->cloudcov_daily);
+        if(use_cloudCoverMonthly) {
+            interpolate_monthlyValues(cloudcov, interpAsBase1, allHist[yearIndex]->cloudcov_daily);
         }
 
-        if(SW_Weather.use_windSpeedMonthly) {
-            interpolate_monthlyValues(SW_Sky.windspeed, interpAsBase1, allHist[yearIndex]->windspeed_daily);
+        if(use_humidityMonthly) {
+            interpolate_monthlyValues(r_humidity, interpAsBase1, allHist[yearIndex]->r_humidity_daily);
         }
 
-        if(SW_Weather.use_humidityMonthly) {
-            interpolate_monthlyValues(SW_Sky.r_humidity, interpAsBase1, allHist[yearIndex]->r_humidity_daily);
+        if(use_windSpeedMonthly) {
+            interpolate_monthlyValues(windspeed, interpAsBase1, allHist[yearIndex]->windspeed_daily);
         }
 
         // Read daily weather values from disk
@@ -545,7 +571,13 @@ void readAllWeather(
             _read_weather_hist(
               year,
               allHist[yearIndex],
-              weather_prefix
+              weather_prefix,
+              n_input_forcings,
+              dailyInputIndices,
+              dailyInputFlags,
+              use_cloudCoverMonthly,
+              use_windSpeedMonthly,
+              use_humidityMonthly
             );
         }
     }
@@ -1510,7 +1542,16 @@ void SW_WTH_read(void) {
       SW_Weather.startYear,
       SW_Weather.n_years,
       SW_Weather.use_weathergenerator_only,
-      SW_Weather.name_prefix
+      SW_Weather.name_prefix,
+      SW_Weather.use_cloudCoverMonthly,
+      SW_Weather.use_windSpeedMonthly,
+      SW_Weather.use_humidityMonthly,
+      SW_Weather.n_input_forcings,
+      SW_Weather.dailyInputIndices,
+      SW_Weather.dailyInputFlags,
+      SW_Sky.cloudcov,
+      SW_Sky.windspeed,
+      SW_Sky.r_humidity
     );
 }
 
@@ -1529,11 +1570,28 @@ void SW_WTH_read(void) {
     @param year Current year within the simulation
     @param yearWeather Current year's weather array that is to be filled by function
     @param weather_prefix File name of weather data without extension.
+    @param n_input_forcings Number of read-in columns from disk
+    @param dailyInputIndices An array of size MAX_INPUT_COLUMNS holding the calculated
+    column number of which a certain variable resides
+    @param dailyInputFlags An array of size MAX_INPUT_COLUMNS holding booleans specifying
+    what variable has daily input on disk
+    @param use_cloudCoverMonthly A boolean; specifying whether or not cloud cover monthly values
+    are to be used instead of daily input values
+    @param use_windSpeedMonthly A boolean; specifying whether or not wind speed monthly values
+    are to be used instead of daily input values
+    @param use_humidityMonthly A boolean; specifying whether or not humidity monthly values
+    are to be used instead of daily input values
 */
 void _read_weather_hist(
   TimeInt year,
   SW_WEATHER_HIST *yearWeather,
-  char weather_prefix[]
+  char weather_prefix[],
+  unsigned int n_input_forcings,
+  unsigned int *dailyInputIndices,
+  Bool *dailyInputFlags,
+  Bool use_cloudCoverMonthly,
+  Bool use_windSpeedMonthly,
+  Bool use_humidityMonthly
 ) {
 	/* =================================================== */
 	/* Read the historical (measured) weather files.
