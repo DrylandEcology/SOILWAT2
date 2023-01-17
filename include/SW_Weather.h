@@ -164,9 +164,8 @@ typedef struct {
 	RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
 	RealD snow, snowmelt, snowloss, surfaceMax, surfaceMin;
 
-  Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly,
-       has_temp2, has_ppt, has_cloudCover, has_sfcWind, has_windComp, has_hurs,
-       has_hurs2, has_huss, has_tdps, has_vp, has_rsds;
+  Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly;
+  Bool dailyInputFlags[MAX_INPUT_COLUMNS];
 
   unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
  			   n_input_forcings; // Number of input columns found in weath.YYYY

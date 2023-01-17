@@ -119,6 +119,22 @@ extern "C" {
 #define SW_FORBS 2
 #define SW_GRASS 3
 
+/* Indices to daily input flags/indices (dailyInputFlags & dailyInputIndices in SW_WEATHER)*/
+#define TEMP_MAX      0
+#define TEMP_MIN      1
+#define PPT           2
+#define CLOUD_COV     3
+#define WIND_SPEED    4
+#define WIND_EAST     5
+#define WIND_NORTH    6
+#define REL_HUMID     7
+#define REL_HUMID_MAX 8
+#define REL_HUMID_MIN 9
+#define SPEC_HUMID    10
+#define TEMP_DEWPOINT 11
+#define ACTUAL_VP     12
+#define SHORT_WR      13
+
 
 /* output period specifiers */
 #define SW_DAY   "DY"

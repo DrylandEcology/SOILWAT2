@@ -1176,13 +1176,19 @@ void SW_WTH_new_day(void) {
 */
 
     /* get the daily weather from allHist */
+    /*
+     Note: Shortwave radiation needs to check if it was input, this is due to the
+     fact that shortwave radiation is not necessary for any calculations in `_read_weather_hist()`
+     and does not get calculated within `_read_weather_hist()` and is thus expected to
+     hold "SW_MISSING" values if daily input is not provided.
+    */
     if (
       missing(w->allHist[yearIndex]->temp_avg[day]) ||
       missing(w->allHist[yearIndex]->ppt[day]) ||
       missing(w->allHist[yearIndex]->cloudcov_daily[day]) ||
       missing(w->allHist[yearIndex]->windspeed_daily[day]) ||
       missing(w->allHist[yearIndex]->r_humidity_daily[day]) ||
-      (missing(w->allHist[yearIndex]->shortWaveRad[day]) && w->has_rsds) ||
+      (missing(w->allHist[yearIndex]->shortWaveRad[day]) && w->dailyInputFlags[SHORT_WR]) ||
       missing(w->allHist[yearIndex]->actualVaporPressure[day])
     ) {
       LogError(
@@ -1225,15 +1231,12 @@ void SW_WTH_setup(void) {
 	SW_WEATHER *w = &SW_Weather;
 	const int nitems = 34;
 	FILE *f;
-	int lineno = 0, month, x, currFlag, varArrIndex = 0;
-    int tempCompIndex = 3, windCompIndex = 7, hursCompIndex = 9;
-    Bool currFlagHasMaxMin;
+	int lineno = 0, month, x, currFlag;
+    Bool monthlyFlagPrioritized = swFALSE;
 	RealF sppt, stmax, stmin;
 	RealF sky, wind, rH, actVP, shortWaveRad;
 
-    Bool *inputFlags[MAX_INPUT_COLUMNS] = {&w->use_cloudCoverMonthly, &w->use_windSpeedMonthly,
-        &w->use_humidityMonthly, &w->has_temp2, &w->has_ppt, &w->has_cloudCover, &w->has_sfcWind,
-        &w->has_windComp, &w->has_hurs, &w->has_hurs2, &w->has_huss, &w->has_tdps, &w->has_vp, &w->has_rsds};
+    Bool *dailyInputFlags = w->dailyInputFlags;
 
 	MyFileName = SW_F_name(eWeather);
 	f = OpenFile(MyFileName, "r");
@@ -1305,65 +1308,59 @@ void SW_WTH_setup(void) {
             break;
 
         case 8:
-            w->has_temp2 = itob(atoi(inbuf));
+            w->dailyInputFlags[TEMP_MAX] = itob(atoi(inbuf));
             break;
 
         case 9:
-            if(w->has_temp2) {
-                w->has_temp2 = itob(atoi(inbuf));
-            }
+            w->dailyInputFlags[TEMP_MIN] = itob(atoi(inbuf));
             break;
 
         case 10:
-            w->has_ppt = itob(atoi(inbuf));
+            w->dailyInputFlags[PPT] = itob(atoi(inbuf));
             break;
 
         case 11:
-            w->has_cloudCover = itob(atoi(inbuf));
+            w->dailyInputFlags[CLOUD_COV] = itob(atoi(inbuf));
             break;
 
         case 12:
-            w->has_sfcWind = itob(atoi(inbuf));
+            w->dailyInputFlags[WIND_SPEED] = itob(atoi(inbuf));
             break;
 
         case 13:
-            w->has_windComp = itob(atoi(inbuf));
+            w->dailyInputFlags[WIND_EAST] = itob(atoi(inbuf));
             break;
 
         case 14:
-            if(w->has_windComp) {
-                w->has_windComp = itob(atoi(inbuf));
-            }
+            w->dailyInputFlags[WIND_NORTH] = itob(atoi(inbuf));
             break;
 
         case 15:
-            w->has_hurs = itob(atoi(inbuf));
+            w->dailyInputFlags[REL_HUMID] = itob(atoi(inbuf));
             break;
 
         case 16:
-            w->has_hurs2 = itob(atoi(inbuf));
+            w->dailyInputFlags[REL_HUMID_MAX] = itob(atoi(inbuf));
             break;
 
         case 17:
-            if(w->has_hurs2) {
-                w->has_hurs2 = itob(atoi(inbuf));
-            }
+            w->dailyInputFlags[REL_HUMID_MIN] = itob(atoi(inbuf));
             break;
 
         case 18:
-            w->has_huss  = itob(atoi(inbuf));
+            w->dailyInputFlags[SPEC_HUMID] = itob(atoi(inbuf));
             break;
 
         case 19:
-            w->has_tdps  = itob(atoi(inbuf));
+            w->dailyInputFlags[TEMP_DEWPOINT] = itob(atoi(inbuf));
             break;
 
         case 20:
-            w->has_vp  = itob(atoi(inbuf));
+            w->dailyInputFlags[ACTUAL_VP] = itob(atoi(inbuf));
             break;
 
         case 21:
-            w->has_rsds  = itob(atoi(inbuf));
+            w->dailyInputFlags[SHORT_WR] = itob(atoi(inbuf));
             break;
 
 		default:
@@ -1395,19 +1392,6 @@ void SW_WTH_setup(void) {
 		lineno++;
 	}
 
-    // Check if monthly flags have been chosen to override daily flags
-    w->has_sfcWind = (w->use_windSpeedMonthly) ? swFALSE : w->has_sfcWind;
-    w->has_windComp = (w->use_windSpeedMonthly) ? swFALSE : w->has_windComp;
-
-    if(w->use_humidityMonthly) {
-        w->has_hurs = swFALSE;
-        w->has_hurs2 = swFALSE;
-        w->has_huss = swFALSE;
-        w->has_vp = swFALSE;
-    }
-
-    w->has_cloudCover = (w->use_cloudCoverMonthly) ? swFALSE : w->has_cloudCover;
-
 	SW_WeatherPrefix(w->name_prefix);
 	CloseFile(&f);
 
@@ -1420,63 +1404,69 @@ void SW_WTH_setup(void) {
     // Default n_input_forcings to 0
     w->n_input_forcings = 0;
 
-        // Loop through MAX_INPUT_COLUMNS starting at flag 3
-        // The loop starts at 3 due to "inputFlags[]" containing monthly flags
-        // in the first three slots (indices 0, 1, and 2)
-    for(currFlag = 3; currFlag < MAX_INPUT_COLUMNS; currFlag++)
+        // Loop through MAX_INPUT_COLUMNS (# of input flags)
+    for(currFlag = 0; currFlag < MAX_INPUT_COLUMNS; currFlag++)
     {
-        w->dailyInputIndices[varArrIndex] = 0;
-
-        // Check if current flag is in relation to max/min variables
-        if(&inputFlags[currFlag] == &inputFlags[tempCompIndex] ||
-           &inputFlags[currFlag] == &inputFlags[windCompIndex] ||
-           &inputFlags[currFlag] == &inputFlags[hursCompIndex]) {
-
-            // Set max/min flag
-            currFlagHasMaxMin = swTRUE;
-            w->dailyInputIndices[varArrIndex + 1] = 0;
-        } else {
-            currFlagHasMaxMin = swFALSE;
-        }
+        // Default the current index to zero
+        w->dailyInputIndices[currFlag] = 0;
 
         // Check if current flag is set
-        if(*inputFlags[currFlag]) {
+        if(dailyInputFlags[currFlag]) {
+            // Set current index to current number of "n_input_forcings"
+            // which is the current number of flags found
+            w->dailyInputIndices[currFlag] = w->n_input_forcings;
 
-            // Set current index to "n_input_forcings"
-            w->dailyInputIndices[varArrIndex] = w->n_input_forcings;
-
-            // Check if flag is meant for max/min values
-            if(currFlagHasMaxMin) {
-
-                // Set next index to n_input_focings + 1
-                w->dailyInputIndices[varArrIndex + 1] = w->n_input_forcings + 1;
-
-                // Increment "varArrIndex" by two
-                varArrIndex += 2;
-
-                // Increment "n_input_forcings" by two
-                w->n_input_forcings += 2;
-            } else {
-            // Otherwise, current flag is not meant for max/min values
-
-                // Increment "varArrIndex" by one
-                varArrIndex++;
-
-                // Increment "n_input_forcings" by one
-                w->n_input_forcings++;
-            }
-        } else {
-            // Otherwise, flag was not set, deal with "varArrayIndex"
-
-            // Check if current flag is for max/min variables
-            if(currFlagHasMaxMin) {
-                // Increment "varArrIndex" by two
-                varArrIndex += 2;
-            } else {
-                // Increment "varArrIndex" by one
-                varArrIndex++;
-            }
+            // Increment "n_input_forcings"
+            w->n_input_forcings++;
         }
+    }
+
+    /*
+       Turn off necessary flags. This happens after the calculation of
+       input indices due to the fact that setting before calculating may
+       result in an incorrect `n_input_forcings` in SW_WEATHER, and unexpectedly
+       crash the program in `_read_weather_hist()`.
+    */
+
+        // Check if monthly flags have been chosen to override daily flags
+        // Asude from checking for a monthly flag, we must make sure we have
+        // daily flags to turn off instead of turning off flags that are already off
+    if(w->use_windSpeedMonthly &&
+        (dailyInputFlags[WIND_SPEED] ||
+         dailyInputFlags[WIND_EAST]  ||
+         dailyInputFlags[WIND_NORTH])) {
+
+        dailyInputFlags[WIND_SPEED] = swFALSE;
+        dailyInputFlags[WIND_EAST] = swFALSE;
+        dailyInputFlags[WIND_NORTH] = swFALSE;
+        monthlyFlagPrioritized = swTRUE;
+    }
+
+    if(w->use_humidityMonthly) {
+        if(dailyInputFlags[REL_HUMID] || dailyInputFlags[REL_HUMID_MAX]  ||
+           dailyInputFlags[REL_HUMID_MIN] || dailyInputFlags[SPEC_HUMID] ||
+           dailyInputFlags[ACTUAL_VP]) {
+
+            dailyInputFlags[REL_HUMID] = swFALSE;
+            dailyInputFlags[REL_HUMID_MAX] = swFALSE;
+            dailyInputFlags[REL_HUMID_MIN] = swFALSE;
+            dailyInputFlags[SPEC_HUMID] = swFALSE;
+            dailyInputFlags[ACTUAL_VP] = swFALSE;
+            monthlyFlagPrioritized = swTRUE;
+        }
+    }
+
+    if(w->use_cloudCoverMonthly && dailyInputFlags[CLOUD_COV]) {
+        dailyInputFlags[CLOUD_COV] = swFALSE;
+        monthlyFlagPrioritized = swTRUE;
+    }
+
+    // Check to see if any daily flags were turned off due to a set monthly flag
+    if(monthlyFlagPrioritized) {
+        // Give the user a generalized note
+        LogError(logfp, LOGNOTE, "One or more daily flags have been turned off due to a set monthly "
+                                 "input flag which overrides daily flags. Please see `weathsetup.in` "
+                                 "to change this if it was not the desired action.");
     }
 }
 
