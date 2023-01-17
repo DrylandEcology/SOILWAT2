@@ -1609,20 +1609,14 @@ void _read_weather_hist(
 	 */
 
 	FILE *f;
-    SW_WEATHER *weath = &SW_Weather;
-    unsigned int *dailyInputIndices = weath->dailyInputIndices;
-	unsigned int x, lineno = 0, doy;
+	unsigned int x, lineno = 0;
+    int doy;
 	// TimeInt mon, j, k = 0;
 	// RealF acc = 0.0;
     RealF weathInput[MAX_INPUT_COLUMNS];
 
-    int maxTempIndex = dailyInputIndices[0], minTempIndex = dailyInputIndices[1],
-    precipIndex = dailyInputIndices[2], cloudcovIndex = dailyInputIndices[3],
-    windSpeedIndex = dailyInputIndices[4], windEastIndex = dailyInputIndices[5],
-    windNorthIndex = dailyInputIndices[6], relHumIndex = dailyInputIndices[7],
-    vaporPressIndex = dailyInputIndices[12], hursMaxIndex = dailyInputIndices[8],
-    hursMinIndex = dailyInputIndices[9], hussIndex = dailyInputIndices[10],
-    dewPointIndex = dailyInputIndices[11];
+    Bool hasMaxMinTemp = (Bool) (dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN]);
+    Bool hasMaxMinRelHumid = (Bool) (dailyInputFlags[REL_HUMID_MAX] && dailyInputFlags[REL_HUMID_MIN]);
 
     double es, e, relHum, tempSlope, svpVal;
 
@@ -1642,7 +1636,7 @@ void _read_weather_hist(
                    &weathInput[8], &weathInput[9], &weathInput[10], &weathInput[11],
                    &weathInput[12], &weathInput[13]);
 
-		if (x != weath->n_input_forcings + 1) {
+		if (x != n_input_forcings + 1) {
 			CloseFile(&f);
 			LogError(logfp, LOGFATAL, "%s : Incomplete record %d (doy=%d).", fname, lineno, doy);
 		}
@@ -1657,85 +1651,104 @@ void _read_weather_hist(
 
 		/* --- Make the assignments ---- */
 		doy--; // base1 -> base0
-        yearWeather->temp_max[doy] = weathInput[maxTempIndex];
-        yearWeather->temp_min[doy] = weathInput[minTempIndex];
-        yearWeather->ppt[doy] = weathInput[precipIndex];
+        yearWeather->temp_max[doy] = weathInput[dailyInputIndices[TEMP_MAX]];
+        yearWeather->temp_min[doy] = weathInput[dailyInputIndices[TEMP_MIN]];
+        yearWeather->ppt[doy] = weathInput[dailyInputIndices[PPT]];
 
         // Calculate average air temperature if min/max not missing
-        if (!missing(weathInput[maxTempIndex]) && !missing(weathInput[minTempIndex])) {
+        if (!missing(weathInput[dailyInputIndices[TEMP_MAX]]) &&
+            !missing(weathInput[dailyInputIndices[TEMP_MIN]])) {
 
-          yearWeather->temp_avg[doy] = (weathInput[maxTempIndex] +
-                                        weathInput[minTempIndex]) / 2.0;
+          yearWeather->temp_avg[doy] = (weathInput[dailyInputIndices[TEMP_MAX]] +
+                                        weathInput[dailyInputIndices[TEMP_MIN]]) / 2.0;
         }
 
-        if(!weath->use_cloudCoverMonthly && weath->has_cloudCover) {
-            yearWeather->cloudcov_daily[doy] = weathInput[cloudcovIndex];
-        }
-
-        if(!weath->use_windSpeedMonthly) {
-            if(weath->has_sfcWind) {
-                yearWeather->windspeed_daily[doy] = weathInput[windSpeedIndex];
-
-            } else if(weath->has_windComp) {
-                yearWeather->windspeed_daily[doy] = sqrt(squared(weathInput[windEastIndex]) +
-                                                    squared(weathInput[windNorthIndex]));
-
+        if(!use_cloudCoverMonthly) {
+            if(dailyInputFlags[CLOUD_COV]) {
+                yearWeather->cloudcov_daily[doy] = weathInput[dailyInputIndices[CLOUD_COV]];
             }
         }
 
-        if(!weath->use_humidityMonthly) {
-            if(weath->has_hurs2) {
-                yearWeather->r_humidity_daily[doy] = (weathInput[hursMaxIndex] +
-                                                      weathInput[hursMinIndex]) / 2;
-            } else if(weath->has_hurs) {
-                yearWeather->r_humidity_daily[doy] = weathInput[relHumIndex];
+        if(!use_windSpeedMonthly) {
+            if(dailyInputFlags[WIND_SPEED]) {
+                yearWeather->windspeed_daily[doy] = weathInput[dailyInputIndices[WIND_SPEED]];
+            } else if(dailyInputFlags[WIND_EAST] && dailyInputFlags[WIND_NORTH]) {
+                yearWeather->windspeed_daily[doy] = sqrt(squared(weathInput[dailyInputIndices[WIND_EAST]]) +
+                                                         squared(weathInput[dailyInputIndices[WIND_NORTH]]));
+            }
+        }
 
-            } else if(weath->has_huss) {
+        // Check to see if monthly humidity values are being used
+        // If not, skip entire code block to elimiate unecessary checking of many flags
+        if(!use_humidityMonthly) {
+            if(hasMaxMinRelHumid) {
+                yearWeather->r_humidity_daily[doy] = (weathInput[dailyInputIndices[REL_HUMID_MAX]] +
+                                                      weathInput[dailyInputIndices[REL_HUMID_MIN]]) / 2;
+
+            } else if(dailyInputFlags[REL_HUMID]) {
+                yearWeather->r_humidity_daily[doy] = weathInput[dailyInputIndices[REL_HUMID]];
+
+            } else if(dailyInputFlags[SPEC_HUMID]) {
                 // Specific Humidity (Bolton 1980)
                 es = (6.112 * exp(17.67 * yearWeather->temp_avg[doy]) /
                      (yearWeather->temp_avg[doy] + 243.5));
 
-                e = (weathInput[hussIndex] * 1013.25) /
-                    (.378 * weathInput[hussIndex] + .622);
+                e = (weathInput[dailyInputIndices[SPEC_HUMID]] * 1013.25) /
+                    (.378 * weathInput[dailyInputIndices[SPEC_HUMID]] + .622);
 
                 relHum = e / es;
                 relHum = max(0., relHum);
 
                 yearWeather->r_humidity_daily[doy] = min(100., relHum);
 
+                // Check if a calculation of actual vapor pressure occurred with
+                // bad temperature values (SW_MISSING)
+                if(missing(yearWeather->temp_avg[doy])) {
+
+                    yearWeather->r_humidity_daily[doy] = SW_MISSING;
+                }
+
             }
-        }
 
-        if(!weath->has_vp) {
-            if(weath->has_tdps) {
-                yearWeather->actualVaporPressure[doy] =
-                                actualVaporPressure3(weathInput[dewPointIndex]);
+            // Deal with actual vapor pressure
+            if(dailyInputFlags[ACTUAL_VP]){
 
-            } else if(weath->has_hurs2 && weath->has_temp2) {
+                yearWeather->actualVaporPressure[doy] = weathInput[dailyInputIndices[ACTUAL_VP]];
+
+            } else if(dailyInputFlags[TEMP_DEWPOINT]) {
+                    yearWeather->actualVaporPressure[doy] =
+                                    actualVaporPressure3(weathInput[dailyInputIndices[TEMP_DEWPOINT]]);
+
+            } else if(hasMaxMinTemp && hasMaxMinRelHumid) {
                 yearWeather->actualVaporPressure[doy] =
-                                actualVaporPressure2(weathInput[hursMaxIndex],
-                                                     weathInput[hursMinIndex],
-                                                     weathInput[maxTempIndex],
-                                                     weathInput[minTempIndex]);
-            } else if(weath->has_hurs) {
+                                actualVaporPressure2(weathInput[dailyInputIndices[REL_HUMID_MAX]],
+                                                     weathInput[dailyInputIndices[REL_HUMID_MIN]],
+                                                     weathInput[dailyInputIndices[TEMP_MAX]],
+                                                     weathInput[dailyInputIndices[TEMP_MIN]]);
+
+                // Check if a calculation of relative humidity occurred with
+                // bad temperature values (SW_MISSING)
+                if(missing(yearWeather->temp_max[doy]) || missing(yearWeather->temp_min[doy])) {
+
+                    yearWeather->r_humidity_daily[doy] = SW_MISSING;
+                }
+
+            } else if(dailyInputFlags[REL_HUMID] || dailyInputFlags[SPEC_HUMID]) {
                 yearWeather->actualVaporPressure[doy] =
                              actualVaporPressure1(yearWeather->r_humidity_daily[doy],
                                                   yearWeather->temp_avg[doy]);
             }
-        } else {
-            yearWeather->actualVaporPressure[doy] = weathInput[vaporPressIndex];
+
+            // Check if a better calculation of relative humidity is available
+            // (using dewpoint temperature or the daily actual vapor pressure input value)
+            if(dailyInputFlags[ACTUAL_VP] || dailyInputFlags[TEMP_DEWPOINT]) {
+
+                svpVal = svp(yearWeather->temp_avg[doy], &tempSlope);
+
+                yearWeather->r_humidity_daily[doy] =
+                                    yearWeather->actualVaporPressure[doy] / svpVal;
+             }
         }
-
-        // Check if a better calculation of relative humisity is available
-        // (using dewpoint temperature or the daily actual vapor pressure input value)
-        if((!weath->use_humidityMonthly && missing(yearWeather->r_humidity_daily[doy]))
-                                        && (weath->has_vp || weath->has_tdps)) {
-
-            svpVal = svp(yearWeather->temp_avg[doy], &tempSlope);
-
-            yearWeather->r_humidity_daily[doy] =
-                                yearWeather->actualVaporPressure[doy] / svpVal;
-         }
 
 
     // Calculate annual average temperature based on historical input, i.e.,
