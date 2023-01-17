@@ -782,6 +782,11 @@ void scaleAllWeather(
      1. Pass through (`method` = 0)
      2. Imputation by last-value-carried forward "LOCF" (`method` = 1)
         - for minimum and maximum temperature
+        - cloud cover
+        - wind speed
+        - relative humidity
+        - downard surface shortwave radiation
+        - actual vapor pressure
         - precipitation is set to 0
         - error if more than `optLOCF_nMax` days per calendar year are missing
      3. First-order Markov weather generator (`method` = 2)
@@ -952,12 +957,6 @@ void checkAllWeather(SW_WEATHER *weather) {
     SW_WEATHER_HIST **weathHist = weather->allHist;
 
     double dailyMinTemp, dailyMaxTemp;
-
-    // Check if minimum or maximum temperature, or precipitation flags are 0
-    if(!weather->has_temp2 || !weather->has_ppt) {
-        // Fail
-        LogError(logfp, LOGFATAL, "Temperature and/or precipitation flag(s) are unset.");
-    }
 
     // Loop through `allHist` years
     for(year = 0; year < weather->n_years; year++) {
@@ -1439,6 +1438,12 @@ void SW_WTH_setup(void) {
 
 	SW_WeatherPrefix(w->name_prefix);
 	CloseFile(&f);
+
+    // Check if minimum or maximum temperature, or precipitation flags are 0
+    if(!dailyInputFlags[TEMP_MAX] || !dailyInputFlags[TEMP_MIN] || !dailyInputFlags[PPT]) {
+        // Fail
+        LogError(logfp, LOGFATAL, "Temperature and/or precipitation flag(s) are unset.");
+    }
 
 	if (lineno < nitems) {
 		LogError(logfp, LOGFATAL, "%s : Too few input lines.", MyFileName);

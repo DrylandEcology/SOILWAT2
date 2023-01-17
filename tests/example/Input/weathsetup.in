@@ -41,8 +41,7 @@
 0			# Specific humidity [%]
 0			# Dew point temperature [C]
 0			# Actual vapor pressure [kPa]
-0			# Downward surface shortwave radiation [MJ/day]
-
+0			# Downward surface shortwave radiation [W/m2], i.e., flux density for a (hypothetical) flat horizon averaged over the daylight period of the day
 
 #--- Monthly scaling parameters:
 # Month 1 = January, Month 2 = February, etc.
