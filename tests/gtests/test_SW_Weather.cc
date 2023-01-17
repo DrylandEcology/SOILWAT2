@@ -19,18 +19,30 @@
 #include "tests/gtests/sw_testhelpers.h"
 #include "include/SW_Markov.h"
 #include "include/SW_Model.h"
+#include "include/SW_Flow_lib_PET.h"
 
 namespace {
 
     TEST(ReadAllWeatherTest, DefaultValues) {
 
         // Testing to fill allHist from `SW_Weather`
+        SW_SKY_read();
+
         readAllWeather(
           SW_Weather.allHist,
           1980,
           SW_Weather.n_years,
           SW_Weather.use_weathergenerator_only,
-          SW_Weather.name_prefix
+          SW_Weather.name_prefix,
+          SW_Weather.use_cloudCoverMonthly,
+          SW_Weather.use_humidityMonthly,
+          SW_Weather.use_windSpeedMonthly,
+          SW_Weather.n_input_forcings,
+          SW_Weather.dailyInputIndices,
+          SW_Weather.dailyInputFlags,
+          SW_Sky.cloudcov,
+          SW_Sky.windspeed,
+          SW_Sky.r_humidity
         );
 
         // Test first day of first year in `allHist` to make sure correct
@@ -692,12 +704,9 @@ namespace {
            in the use of the appropriate equation used for calculation
          */
 
-         // NOTE: capture behaviors and don't be comprehensive (more than likely keep one `EXPECT_NEAR()`)
-        SW_SKY *sky = &SW_Sky;
-
         // Initialize any variables
-        //int day, year = 1980
-        int yearIndex = 0, midJanDay = 14;
+        int yearIndex = 0, midJanDay = 14, year = 1980;
+        double result, expectedResult;
 
         /* Test if monthly values are not being used */
 
@@ -706,7 +715,6 @@ namespace {
         SW_Weather.use_humidityMonthly = swTRUE;
         SW_Weather.use_windSpeedMonthly = swTRUE;
         SW_Weather.use_cloudCoverMonthly = swTRUE;
-        SW_Weather.has_hurs = swTRUE;
 
         // Read in all weather
         SW_WTH_read();
@@ -716,20 +724,60 @@ namespace {
         // Test the middle of January in year 1980 and see if it's not equal to SW_Sky.r_humidity[0]
         // Note: Daily interpolated values in the middle of a month are equal to the
         // original monthly values from which they were interpolated
-        EXPECT_NEAR(SW_Weather.allHist[yearIndex]->r_humidity_daily[midJanDay], sky->r_humidity[0], tol6);
+        EXPECT_NEAR(SW_Weather.allHist[yearIndex]->r_humidity_daily[midJanDay], SW_Sky.r_humidity[0], tol6);
 
         /* Test correct priority is being given to input values */
 
             /* Test with lesser priority than the input */
 
                 // Switch directory to new inputs folder
+        strcpy(SW_Weather.name_prefix, "Input/data_weather_gridmet/weath");
+
+                // Manually edit index/flag arrays in SW_WEATHER for relative humidity max/min
+                // and turn off monthly flag for humidity
+                // Note: Indices of max/min relative humidity is based on the directory:
+                // Input/data_weather_gridmet/weath.1980
+        SW_Weather.use_humidityMonthly = swFALSE;
+        SW_Weather.dailyInputIndices[REL_HUMID_MAX] = 4;
+        SW_Weather.dailyInputIndices[REL_HUMID_MIN] = 5;
+        SW_Weather.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
+        SW_Weather.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
+        SW_Weather.n_input_forcings = 7;
+        SW_Weather.n_years = 1;
+        SW_Weather.use_weathergenerator_only = swFALSE;
 
                 // Using the new inputs folder, read in year = 1980
+        _read_weather_hist(
+            year,
+            SW_Weather.allHist[0],
+            SW_Weather.name_prefix,
+            SW_Weather.n_input_forcings,
+            SW_Weather.dailyInputIndices,
+            SW_Weather.dailyInputFlags,
+            SW_Weather.use_cloudCoverMonthly,
+            SW_Weather.use_windSpeedMonthly,
+            SW_Weather.use_humidityMonthly
+        );
 
-                // Focusing on hurs max and min, artificially set "has_huss"
+        result = SW_Weather.allHist[yearIndex]->r_humidity_daily[0];
+
+                // Get expected result from Input/data_weather_gridmet/weath.1980 day 1
+                // hursmax_pct and hursmin_pct
+        expectedResult = (74.17 + 31.42) / 2.;
 
                 // Test if the average of relative humidity has been calculated
                 // instead of being based on huss for the first day of 1980
+        EXPECT_NEAR(result, expectedResult, tol3);
+
+        result = SW_Weather.allHist[yearIndex]->actualVaporPressure[0];
+
+                // Get expected result from Input/data_weather_gridmet/weath.1980 day 1
+                // hursmax_pct, hursmin_pct, Tmax_C, and Tmin_C
+        expectedResult = actualVaporPressure2(74.17, 31.42, -3.18, -12.32);
+
+                // Based on the max/min of relative humidity, test if actual vapor pressure
+                // was calculated reasonably
+        EXPECT_NEAR(result, expectedResult, tol6);
     }
 
     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
