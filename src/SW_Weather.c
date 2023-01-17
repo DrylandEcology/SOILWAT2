@@ -938,7 +938,8 @@ void checkAllWeather(SW_WEATHER *weather) {
             dailyMinTemp = weathHist[year]->temp_min[doy];
 
             // Check if minimum temp greater than maximum temp
-            if(dailyMinTemp > dailyMaxTemp) {
+            if(!missing(dailyMaxTemp) && !missing(dailyMinTemp) &&
+               dailyMinTemp > dailyMaxTemp) {
 
                 // Fail
                 LogError(logfp, LOGFATAL, "Daily input value for minumum temperature"
@@ -947,8 +948,11 @@ void checkAllWeather(SW_WEATHER *weather) {
             }
             // Otherwise, check if maximum or minimum temp, or
             // dew point temp is not [-100, 100]
-            else if((dailyMinTemp > 100. || dailyMinTemp < -100.) ||
-                    (dailyMaxTemp > 100. || dailyMaxTemp < -100.)) {
+            else if(
+                     (!missing(dailyMaxTemp) && !missing(dailyMinTemp)) &&
+                     ((dailyMinTemp > 100. || dailyMinTemp < -100.) ||
+                     (dailyMaxTemp > 100. || dailyMaxTemp < -100.))
+                   ) {
 
                 // Fail
                 LogError(logfp, LOGFATAL, "Daily minimum and/or maximum temperature on "
@@ -956,15 +960,18 @@ void checkAllWeather(SW_WEATHER *weather) {
                          doy, year + weather->startYear);
             }
             // Otherwise, check if precipitation is less than 0cm
-            else if(weathHist[year]->ppt[doy] < 0) {
+            else if(!missing(weathHist[year]->ppt[doy]) && weathHist[year]->ppt[doy] < 0) {
 
                 // Fail
                 LogError(logfp, LOGFATAL, "Invalid daily precipitation value: %f cm (< 0) on day %d of year %d.",
                          weathHist[year]->ppt[doy], doy + 1, year + weather->startYear);
             }
             // Otherwise, check if relative humidity is less than 0% or greater than 100%
-            else if(weathHist[year]->r_humidity_daily[doy] < 0. ||
-                    weathHist[year]->r_humidity_daily[doy] > 100.) {
+            else if(
+                     !missing(weathHist[year]->r_humidity_daily[doy]) &&
+                     (weathHist[year]->r_humidity_daily[doy] < 0. ||
+                     weathHist[year]->r_humidity_daily[doy] > 100.)
+                   ) {
 
                 // Fail
                 LogError(logfp, LOGFATAL, "Invalid daily/calculated relative humidity value did"
@@ -973,8 +980,11 @@ void checkAllWeather(SW_WEATHER *weather) {
             }
             // Otherwise, check if cloud cover was input and
             // if the value is less than 0% or greater than 100%
-            else if(weathHist[year]->cloudcov_daily[doy] < 0. ||
-                    weathHist[year]->cloudcov_daily[doy] > 100.) {
+            else if(
+                     !missing(weathHist[year]->cloudcov_daily[doy]) &&
+                     (weathHist[year]->cloudcov_daily[doy] < 0. ||
+                     weathHist[year]->cloudcov_daily[doy] > 100.)
+                   ) {
 
                 // Fail
                 LogError(logfp, LOGFATAL, "Invalid daily/calculated cloud cover value did"
@@ -982,15 +992,17 @@ void checkAllWeather(SW_WEATHER *weather) {
                          weathHist[year]->cloudcov_daily[doy]);
             }
             // Otherwise, check if wind speed is less than 0 m/s
-            else if(weathHist[year]->windspeed_daily[doy] < 0.) {
+            else if(!missing(weathHist[year]->windspeed_daily[doy]) &&
+                    weathHist[year]->windspeed_daily[doy] < 0.) {
 
                 // Fail
                 LogError(logfp, LOGFATAL, "Invalid daily wind speed value is less than zero."
                          "(wind speed = %f) on day %d of year %d. ",
                          weathHist[year]->windspeed_daily[doy], doy + 1, year + weather->startYear);
             }
-            // Otherwise, check if radiation if less than 0 W * m^-2
-            else if(weathHist[year]->shortWaveRad[doy] < 0.) {
+            // Otherwise, check if radiation if less than 0 W/m^2
+            else if(!missing(weathHist[year]->shortWaveRad[doy]) &&
+                    weathHist[year]->shortWaveRad[doy] < 0.) {
 
                 // Fail
                 LogError(logfp, LOGFATAL, "Invalid daily shortwave radiation value is less than zero."
@@ -998,7 +1010,8 @@ void checkAllWeather(SW_WEATHER *weather) {
                          weathHist[year]->shortWaveRad[doy], doy + 1, year + weather->startYear);
             }
             // Otherwise, check if actual vapor pressure is less than 0 kPa
-            else if(weathHist[year]->actualVaporPressure[doy] < 0.) {
+            else if(!missing(weathHist[year]->actualVaporPressure[doy]) &&
+                    weathHist[year]->actualVaporPressure[doy] < 0.) {
 
                 // Fail
                 LogError(logfp, LOGFATAL, "Invalid daily actual vapor pressure value is less than zero."
