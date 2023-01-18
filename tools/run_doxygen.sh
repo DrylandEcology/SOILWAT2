@@ -18,6 +18,13 @@ log=${doc_path}"/log_doxygen.log"         # logfile for doxygen output
 log_tmp=${doc_path}"/log_doxygen_tmp.log"
 doxexcept=${doc_path}"/doxygen_exceptions.txt" # filename that lists exceptions (one per line)
 
+# Warn if bibtex is not available
+# bibtex is required to resolve `\cite` and build bibliography
+if ! type -P bibtex &> /dev/null; then
+  echo "bibtex is not available but required to build bibliography."
+  # exit 1
+fi
+
 # Downgrade/upgrade Doxyfile in case this runs an different doxygen version, e.g.,
 # travis-ci is currently on 1.8.11
 #if [[ $(doxygen --version) != "1.8.17" ]]; then
