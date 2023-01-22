@@ -698,87 +698,232 @@ namespace {
 
     }
 
-    TEST(DailyInsteadOfMonthlyInputTest, InputValueCalculations) {
+    TEST(DailyInsteadOfMonthlyInputTest, MonthlyInputPrioritization) {
         /*
-           This section covers the correct prioritization of input values resulting
-           in the use of the appropriate equation used for calculation
+           This section covers the correct prioritization of monthly input values
+           instead of daily read-in values
          */
 
-        // Initialize any variables
-        int yearIndex = 0, midJanDay = 14, year = 1980;
-        double result, expectedResult;
+         // Initialize any variables
+         int yearIndex = 0, midJanDay = 14;
+         SW_WEATHER *w = &SW_Weather;
 
-        /* Test if monthly values are not being used */
+         /* Test if monthly values are not being used */
+         SW_WTH_setup();
 
-        SW_WTH_setup();
+         // Read in all weather
+         SW_WTH_read();
 
-        SW_Weather.use_humidityMonthly = swTRUE;
-        SW_Weather.use_windSpeedMonthly = swTRUE;
-        SW_Weather.use_cloudCoverMonthly = swTRUE;
+         // Test the middle of January in year 1980 and see if it's not equal to SW_Sky.r_humidity[0],
+         // SW_Sky.cloudcov[0], and SW_Sky.windspeed[0]
+         // Note: Daily interpolated values in the middle of a month are equal to the
+         // original monthly values from which they were interpolated
+         EXPECT_NEAR(w->allHist[yearIndex]->r_humidity_daily[midJanDay], SW_Sky.r_humidity[0], tol6);
+         EXPECT_NEAR(w->allHist[yearIndex]->cloudcov_daily[midJanDay], SW_Sky.cloudcov[0], tol6);
+         EXPECT_NEAR(w->allHist[yearIndex]->windspeed_daily[midJanDay], SW_Sky.windspeed[0], tol6);
+     }
 
-        // Read in all weather
-        SW_WTH_read();
+     TEST(DailyWeatherInputTest, DailyGridMet) {
 
-          /* Only test if monthly values are being used for January in relative humidity */
+         /*
+            This section tests humidity-related values that can be averaged,
+            max/min relative humidity, and the calculation of actual vapor pressure,
+            based on the average relative humidity value, is calculated reasonably.
 
-        // Test the middle of January in year 1980 and see if it's not equal to SW_Sky.r_humidity[0]
-        // Note: Daily interpolated values in the middle of a month are equal to the
-        // original monthly values from which they were interpolated
-        EXPECT_NEAR(SW_Weather.allHist[yearIndex]->r_humidity_daily[midJanDay], SW_Sky.r_humidity[0], tol6);
+            * This section uses the test directory "*_gridmet".
+          */
 
-        /* Test correct priority is being given to input values */
+         SW_WEATHER *w = &SW_Weather;
+         double result, expectedResult;
+         int yearIndex = 0, year = 1980;
 
-            /* Test with lesser priority than the input */
+        /* Test correct priority is being given to input values from DAYMET */
+         SW_WTH_setup();
 
-                // Switch directory to new inputs folder
-        strcpy(SW_Weather.name_prefix, "Input/data_weather_gridmet/weath");
+             // Switch directory to gridmet input folder
+         strcpy(w->name_prefix, "Input/data_weather_gridmet/weath");
 
-                // Manually edit index/flag arrays in SW_WEATHER for relative humidity max/min
-                // and turn off monthly flag for humidity
-                // Note: Indices of max/min relative humidity is based on the directory:
-                // Input/data_weather_gridmet/weath.1980
-        SW_Weather.use_humidityMonthly = swFALSE;
-        SW_Weather.dailyInputIndices[REL_HUMID_MAX] = 4;
-        SW_Weather.dailyInputIndices[REL_HUMID_MIN] = 5;
-        SW_Weather.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
-        SW_Weather.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
-        SW_Weather.n_input_forcings = 7;
-        SW_Weather.n_years = 1;
-        SW_Weather.use_weathergenerator_only = swFALSE;
+             // Manually edit index/flag arrays in SW_WEATHER to make test as
+             // realistic as possible
+             // Note: Indices are based on the directory:
+             // Input/data_weather_gridmet/weath.1980
+         w->dailyInputIndices[WIND_SPEED] = 3;
+         w->dailyInputIndices[REL_HUMID_MAX] = 4;
+         w->dailyInputIndices[REL_HUMID_MIN] = 5;
+         w->dailyInputIndices[SHORT_WR] = 6;
+         w->dailyInputFlags[REL_HUMID_MAX] = swTRUE;
+         w->dailyInputFlags[REL_HUMID_MIN] = swTRUE;
+         w->dailyInputFlags[WIND_SPEED] = swTRUE;
+         w->dailyInputFlags[SHORT_WR] = swTRUE;
+         w->n_input_forcings = 7;
 
-                // Using the new inputs folder, read in year = 1980
-        _read_weather_hist(
-            year,
-            SW_Weather.allHist[0],
-            SW_Weather.name_prefix,
-            SW_Weather.n_input_forcings,
-            SW_Weather.dailyInputIndices,
-            SW_Weather.dailyInputFlags,
-            SW_Weather.use_cloudCoverMonthly,
-            SW_Weather.use_windSpeedMonthly,
-            SW_Weather.use_humidityMonthly
-        );
+             // Using the new inputs folder, read in year = 1980
+         _read_weather_hist(
+             year,
+             w->allHist[0],
+             w->name_prefix,
+             w->n_input_forcings,
+             w->dailyInputIndices,
+             w->dailyInputFlags
+         );
 
-        result = SW_Weather.allHist[yearIndex]->r_humidity_daily[0];
+         result = w->allHist[yearIndex]->r_humidity_daily[0];
 
-                // Get expected result from Input/data_weather_gridmet/weath.1980 day 1
-                // hursmax_pct and hursmin_pct
-        expectedResult = (74.17 + 31.42) / 2.;
+             // Get expected average from Input/data_weather_gridmet/weath.1980 day 1
+             // hursmax_pct and hursmin_pct
+         expectedResult = (74.17 + 31.42) / 2.;
 
-                // Test if the average of relative humidity has been calculated
-                // instead of being based on huss for the first day of 1980
-        EXPECT_NEAR(result, expectedResult, tol3);
+             // Test if the average of relative humidity has been calculated
+             // instead of being based on huss for the first day of 1980
+         EXPECT_NEAR(result, expectedResult, tol3);
 
-        result = SW_Weather.allHist[yearIndex]->actualVaporPressure[0];
+         result = w->allHist[yearIndex]->actualVaporPressure[0];
 
-                // Get expected result from Input/data_weather_gridmet/weath.1980 day 1
-                // hursmax_pct, hursmin_pct, Tmax_C, and Tmin_C
-        expectedResult = actualVaporPressure2(74.17, 31.42, -3.18, -12.32);
+             // Get expected result from Input/data_weather_gridmet/weath.1980 day 1
+             // hursmax_pct, hursmin_pct, Tmax_C, and Tmin_C
+         expectedResult = actualVaporPressure2(74.17, 31.42, -3.18, -12.32);
 
-                // Based on the max/min of relative humidity, test if actual vapor pressure
-                // was calculated reasonably
-        EXPECT_NEAR(result, expectedResult, tol6);
-    }
+             // Based on the max/min of relative humidity, test if actual vapor pressure
+             // was calculated reasonably
+         EXPECT_NEAR(result, expectedResult, tol6);
+
+         // Make sure calculations and set input values are within reasonable range
+         checkAllWeather(w);
+     }
+
+     TEST(DailyWeatherInputTest, DailyDayMet) {
+
+         /*
+            This section covers the assurance that if a daily value is provided
+            (actual vapor pressure in this case), aside from temperature and precipitation,
+            it is correctly set. Along with reasonable calculation of a separate daily value
+            that is dependent on said daily variable (relative humidity in this case).
+
+            * This scenario only happens with humidity-related variables.
+            * This section uses the test directory "*_daymet".
+          */
+
+         SW_WEATHER *w = &SW_Weather;
+         double result, expectedResult, tempSlope;
+         int yearIndex = 0, year = 1980;
+
+         /* Test correct priority is being given to input values from DAYMET */
+         SW_WTH_setup();
+
+                 // Switch directory to daymet input folder
+         strcpy(w->name_prefix, "Input/data_weather_daymet/weath");
+
+                 // Manually edit index/flag arrays in SW_WEATHER to make test as
+                 // realistic as possible
+                 // Note: Indices are based on the directory:
+                 // Input/data_weather_daymet/weath.1980
+         w->dailyInputIndices[ACTUAL_VP] = 3;
+         w->dailyInputIndices[SHORT_WR] = 4;
+         w->dailyInputFlags[ACTUAL_VP] = swTRUE;
+         w->dailyInputFlags[SHORT_WR] = swTRUE;
+         w->dailyInputFlags[REL_HUMID_MAX] = swFALSE;
+         w->dailyInputFlags[REL_HUMID_MIN] = swFALSE;
+         w->n_input_forcings = 5;
+
+                // Fill the first day of relative humidity with SW_MISSING so that
+                // the desired calculation to be tested is able to trigger
+         w->allHist[yearIndex]->r_humidity_daily[0] = SW_MISSING;
+
+                 // Using the new inputs folder, read in year = 1980
+         _read_weather_hist(
+             year,
+             w->allHist[0],
+             w->name_prefix,
+             w->n_input_forcings,
+             w->dailyInputIndices,
+             w->dailyInputFlags
+         );
+
+         result = w->allHist[yearIndex]->actualVaporPressure[0];
+
+                 // Get expected result from Input/data_weather_daymet/weath.1980 day 1
+                 // vp_kPa
+         expectedResult = .3;
+
+                 // Test if actual vapor pressure value was set to the first days
+                 // input value from Input/data_weather_daymet/weath.1980 day 1
+         EXPECT_NEAR(result, expectedResult, tol6);
+
+         result = w->allHist[yearIndex]->r_humidity_daily[0];
+
+                 // Get expected result from Input/data_weather_daymet/weath.1980 day 1
+                 // Tmax_C = -.37, Tmin_C = -9.2, and vp_kPa = .3
+         expectedResult = (-.37 - 9.2) / 2.;
+         expectedResult = svp(expectedResult, &tempSlope);
+         expectedResult = .3 / expectedResult;
+
+                 // Based on actual vapor pressure, test if relative humidity
+                 // was calculated reasonably
+         EXPECT_NEAR(result, expectedResult, tol6);
+
+         // Make sure calculations and set input values are within reasonable range
+         checkAllWeather(w);
+     }
+
+     TEST(DailyWeatherInputTest, DailyMACA) {
+
+         /*
+            This section assures that a variable aside from humidity-related ones,
+            wind speed in this case, is calculated reasonably based on its components.
+
+             * This section uses the test directory "*_maca".
+          */
+
+         SW_WEATHER *w = &SW_Weather;
+         double result, expectedResult;
+         int yearIndex = 0, year = 1980;
+
+         /* Test correct priority is being given to input values from MACA */
+
+         SW_WTH_setup();
+
+                 // Switch directory to daymet input folder
+         strcpy(w->name_prefix, "Input/data_weather_maca/weath");
+
+                 // Manually edit index/flag arrays in SW_WEATHER to make test as
+                 // realistic as possible
+                 // Note: Indices are based on the directory:
+                 // Input/data_weather_maca/weath.1980
+         w->dailyInputIndices[WIND_EAST] = 3;
+         w->dailyInputIndices[WIND_NORTH] = 4;
+         w->dailyInputIndices[REL_HUMID_MAX] = 5;
+         w->dailyInputIndices[REL_HUMID_MIN] = 6;
+         w->dailyInputIndices[ACTUAL_VP] = 7;
+         w->dailyInputFlags[WIND_EAST] = swTRUE;
+         w->dailyInputFlags[WIND_NORTH] = swTRUE;
+         w->dailyInputFlags[REL_HUMID_MAX] = swTRUE;
+         w->dailyInputFlags[REL_HUMID_MIN] = swTRUE;
+         w->dailyInputFlags[ACTUAL_VP] = swTRUE;
+         w->n_input_forcings = 8;
+
+                 // Using the new inputs folder, read in year = 1980
+         _read_weather_hist(
+             year,
+             w->allHist[0],
+             w->name_prefix,
+             w->n_input_forcings,
+             w->dailyInputIndices,
+             w->dailyInputFlags
+         );
+
+         result = w->allHist[yearIndex]->windspeed_daily[0];
+
+                 // Get expected result from Input/data_weather_maca/weath.1980 day 1
+                 // uas_mPERs = 3.31 and vas_mPERs = -.85
+         expectedResult = sqrt(squared(3.31) + squared(-.85));
+
+                 // Test if wind speed was calculated within reasonable range to
+                 // the expected result
+         EXPECT_NEAR(result, expectedResult, tol6);
+
+         // Make sure calculations and set input values are within reasonable range
+         checkAllWeather(w);
+     }
 
     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
         /*
