@@ -1439,85 +1439,120 @@ void SW_WTH_setup(void) {
 	SW_WeatherPrefix(w->name_prefix);
 	CloseFile(&f);
 
-    // Check if minimum or maximum temperature, or precipitation flags are 0
-    if(!dailyInputFlags[TEMP_MAX] || !dailyInputFlags[TEMP_MIN] || !dailyInputFlags[PPT]) {
-        // Fail
-        LogError(logfp, LOGFATAL, "Temperature and/or precipitation flag(s) are unset.");
-    }
+    // Check if temperature max/min flags are unevenly set (1/0) or (0/1)
+     if((dailyInputFlags[TEMP_MAX] && !dailyInputFlags[TEMP_MIN]) ||
+        (!dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN])) {
 
-	if (lineno < nitems) {
-		LogError(logfp, LOGFATAL, "%s : Too few input lines.", MyFileName);
-	}
+         // Fail
+         LogError(logfp, LOGFATAL, "Maximum/minimum temperature flags are unevenly set. "
+                                   "Both flags for temperature must be set.");
 
-    // Calculate value indices for `allHist`
+      }
 
-    // Default n_input_forcings to 0
-    w->n_input_forcings = 0;
+     // Check if minimum and maximum temperature, or precipitation flags are not set
+     if((!dailyInputFlags[TEMP_MAX] && !dailyInputFlags[TEMP_MIN]) || !dailyInputFlags[PPT]) {
+         // Fail
+         LogError(logfp, LOGFATAL, "Both maximum/minimum temperature and/or precipitation flag(s) "
+                                   "are not set. All three flags must be set.");
+     }
 
-        // Loop through MAX_INPUT_COLUMNS (# of input flags)
-    for(currFlag = 0; currFlag < MAX_INPUT_COLUMNS; currFlag++)
-    {
-        // Default the current index to zero
-        w->dailyInputIndices[currFlag] = 0;
+ 	if (lineno < nitems) {
+ 		LogError(logfp, LOGFATAL, "%s : Too few input lines.", MyFileName);
+ 	}
 
-        // Check if current flag is set
-        if(dailyInputFlags[currFlag]) {
-            // Set current index to current number of "n_input_forcings"
-            // which is the current number of flags found
-            w->dailyInputIndices[currFlag] = w->n_input_forcings;
+     // Calculate value indices for `allHist`
 
-            // Increment "n_input_forcings"
-            w->n_input_forcings++;
-        }
-    }
+     // Default n_input_forcings to 0
+     w->n_input_forcings = 0;
 
-    /*
-       Turn off necessary flags. This happens after the calculation of
-       input indices due to the fact that setting before calculating may
-       result in an incorrect `n_input_forcings` in SW_WEATHER, and unexpectedly
-       crash the program in `_read_weather_hist()`.
-    */
+         // Loop through MAX_INPUT_COLUMNS (# of input flags)
+     for(currFlag = 0; currFlag < MAX_INPUT_COLUMNS; currFlag++)
+     {
+         // Default the current index to zero
+         w->dailyInputIndices[currFlag] = 0;
 
-        // Check if monthly flags have been chosen to override daily flags
-        // Asude from checking for a monthly flag, we must make sure we have
-        // daily flags to turn off instead of turning off flags that are already off
-    if(w->use_windSpeedMonthly &&
-        (dailyInputFlags[WIND_SPEED] ||
-         dailyInputFlags[WIND_EAST]  ||
-         dailyInputFlags[WIND_NORTH])) {
+         // Check if current flag is set
+         if(dailyInputFlags[currFlag]) {
 
-        dailyInputFlags[WIND_SPEED] = swFALSE;
-        dailyInputFlags[WIND_EAST] = swFALSE;
-        dailyInputFlags[WIND_NORTH] = swFALSE;
-        monthlyFlagPrioritized = swTRUE;
-    }
+             // Set current index to current number of "n_input_forcings"
+             // which is the current number of flags found
+             w->dailyInputIndices[currFlag] = w->n_input_forcings;
 
-    if(w->use_humidityMonthly) {
-        if(dailyInputFlags[REL_HUMID] || dailyInputFlags[REL_HUMID_MAX]  ||
-           dailyInputFlags[REL_HUMID_MIN] || dailyInputFlags[SPEC_HUMID] ||
-           dailyInputFlags[ACTUAL_VP]) {
+             // Increment "n_input_forcings"
+             w->n_input_forcings++;
+         }
+     }
 
-            dailyInputFlags[REL_HUMID] = swFALSE;
-            dailyInputFlags[REL_HUMID_MAX] = swFALSE;
-            dailyInputFlags[REL_HUMID_MIN] = swFALSE;
-            dailyInputFlags[SPEC_HUMID] = swFALSE;
-            dailyInputFlags[ACTUAL_VP] = swFALSE;
-            monthlyFlagPrioritized = swTRUE;
-        }
-    }
+     /*
+        * Turn off necessary flags. This happens after the calculation of
+          input indices due to the fact that setting before calculating may
+          result in an incorrect `n_input_forcings` in SW_WEATHER, and unexpectedly
+          crash the program in `_read_weather_hist()`.
 
-    if(w->use_cloudCoverMonthly && dailyInputFlags[CLOUD_COV]) {
-        dailyInputFlags[CLOUD_COV] = swFALSE;
-        monthlyFlagPrioritized = swTRUE;
-    }
+        * Check if monthly flags have been chosen to override daily flags.
+        * Aside from checking for purely a monthly flag, we must make sure we have
+          daily flags to turn off instead of attemping to turn off flags that are already off.
+     */
 
-    // Check to see if any daily flags were turned off due to a set monthly flag
-    if(monthlyFlagPrioritized) {
-        // Give the user a generalized note
-        LogError(logfp, LOGNOTE, "One or more daily flags have been turned off due to a set monthly "
-                                 "input flag which overrides daily flags. Please see `weathsetup.in` "
-                                 "to change this if it was not the desired action.");
-    }
+
+     if(w->use_windSpeedMonthly && (dailyInputFlags[WIND_SPEED] ||
+                                    dailyInputFlags[WIND_EAST]  ||
+                                    dailyInputFlags[WIND_NORTH])) {
+
+         dailyInputFlags[WIND_SPEED] = swFALSE;
+         dailyInputFlags[WIND_EAST] = swFALSE;
+         dailyInputFlags[WIND_NORTH] = swFALSE;
+         monthlyFlagPrioritized = swTRUE;
+     }
+
+     if(w->use_humidityMonthly) {
+         if(dailyInputFlags[REL_HUMID] || dailyInputFlags[REL_HUMID_MAX]  ||
+            dailyInputFlags[REL_HUMID_MIN] || dailyInputFlags[SPEC_HUMID] ||
+            dailyInputFlags[ACTUAL_VP]) {
+
+             dailyInputFlags[REL_HUMID] = swFALSE;
+             dailyInputFlags[REL_HUMID_MAX] = swFALSE;
+             dailyInputFlags[REL_HUMID_MIN] = swFALSE;
+             dailyInputFlags[SPEC_HUMID] = swFALSE;
+             dailyInputFlags[ACTUAL_VP] = swFALSE;
+             monthlyFlagPrioritized = swTRUE;
+         }
+     }
+
+     if(w->use_cloudCoverMonthly && dailyInputFlags[CLOUD_COV]) {
+         dailyInputFlags[CLOUD_COV] = swFALSE;
+         monthlyFlagPrioritized = swTRUE;
+     }
+
+     // Check if max/min relative humidity flags are set unevenly (1/0) or (0/1)
+     if((dailyInputFlags[REL_HUMID_MAX] && !dailyInputFlags[REL_HUMID_MIN]) ||
+        (!dailyInputFlags[REL_HUMID_MAX] && dailyInputFlags[REL_HUMID_MIN])) {
+
+         // Fail
+         LogError(logfp, LOGFATAL, "Max/min relative humidity flags are unevenly set. "
+                                   "Both flags for maximum/minimum relative humidity must be the "
+                                   "same (1 or 0).");
+
+      }
+
+     // Check if east/north wind speed flags are set unevenly (1/0) or (0/1)
+     if((dailyInputFlags[WIND_EAST] && !dailyInputFlags[WIND_NORTH]) ||
+        (!dailyInputFlags[WIND_EAST] && dailyInputFlags[WIND_NORTH])) {
+
+         // Fail
+         LogError(logfp, LOGFATAL, "East/north wind speed flags are unevenly set. "
+                                   "Both flags for east/north wind speed components "
+                                   "must be the same (1 or 0).");
+
+      }
+
+     // Check to see if any daily flags were turned off due to a set monthly flag
+     if(monthlyFlagPrioritized) {
+         // Give the user a generalized note
+         LogError(logfp, LOGNOTE, "One or more daily flags have been turned off due to a set monthly "
+                                  "input flag which overrides daily flags. Please see `weathsetup.in` "
+                                  "to change this if it was not the desired action.");
+     }
 }
 
 
