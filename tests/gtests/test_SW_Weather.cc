@@ -925,74 +925,79 @@ namespace {
          checkAllWeather(w);
      }
 
-    TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
-        /*
-           This section covers number of flags and the testing of reasonable results (`checkAllWeather()`).
+     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
+         /*
+            This section covers number of flags and the testing of reasonable results (`checkAllWeather()`).
 
-           An incorrect number of "n_input_forcings" within SW_WEATHER relative to the number of input columns
-           read in should result in a crash.
+            An incorrect number of "n_input_forcings" within SW_WEATHER relative to the number of input columns
+            read in should result in a crash.
 
-           If an input or calculated value is out of range (e.g., range = [-100, 100] C for min/max temperature),
-           `checkAllWeather()` should result in a crash.
-         */
+            If an input or calculated value is out of range (e.g., range = [-100, 100] C for min/max temperature),
+            `checkAllWeather()` should result in a crash.
+          */
 
-         // Initialize any variables
-         //char weathPrefix[] = "weath";
-         //TimeInt year = 1980;
-         double originVal;
+          // Initialize any variables
+          TimeInt year = 1980;
+          double originVal;
+          SW_WEATHER *w = &SW_Weather;
 
-        /* Not the same number of flags as columns */
+         /* Not the same number of flags as columns */
 
-            // Set SW_WEATHER's n_input_forcings to a number that is
-            // not the columns being read in
+             // Set SW_WEATHER's n_input_forcings to a number that is
+             // not the columns being read in
 
-        allocateAllWeather(&SW_Weather);
-        //SW_Weather.n_input_forcings = 0;
-        //SW_Weather.n_years = 1;
+         /* Check for value(s) that are not within reasonable range these
+            tests will make use of `checkAllWeather()` */
 
-            // Run death test
-        // EXPECT_DEATH_IF_SUPPORTED(
-        //     _read_weather_hist(year, SW_Weather.allHist[0], weathPrefix),
-        //     ""
-        // );
+         SW_WTH_read();
 
-        /* Check for value(s) that are not within reasonable range these
-           tests will make use of `checkAllWeather()` */
+         w->n_input_forcings = 0;
 
-        // Edit SW_WEATHER_HIST values from their original value
+             // Run death test
+         EXPECT_DEATH_IF_SUPPORTED(
+             _read_weather_hist(
+                 year,
+                 w->allHist[0],
+                 w->name_prefix,
+                 w->n_input_forcings,
+                 w->dailyInputIndices,
+                 w->dailyInputFlags
+             ), ""
+         );
 
-            // Make temperature unreasonable (not within [-100, 100] or max < min)
-        SW_WTH_read();
+         // Edit SW_WEATHER_HIST values from their original value
 
-        originVal = SW_Weather.allHist[0]->temp_max[0];
+             // Make temperature unreasonable (not within [-100, 100] or max < min)
 
-        SW_Weather.allHist[0]->temp_max[0] = -102.;
+         originVal = SW_Weather.allHist[0]->temp_max[0];
 
-        EXPECT_DEATH_IF_SUPPORTED(
-            checkAllWeather(&SW_Weather),
-            ""
-        );
+         w->allHist[0]->temp_max[0] = -102.;
 
-            // Make precipitation unresonable (< 0)
-        SW_Weather.allHist[0]->temp_max[0] = originVal;
+         EXPECT_DEATH_IF_SUPPORTED(
+             checkAllWeather(w),
+             ""
+         );
 
-        originVal = SW_Weather.allHist[0]->ppt[0];
+             // Make precipitation unresonable (< 0)
+         w->allHist[0]->temp_max[0] = originVal;
 
-        SW_Weather.allHist[0]->ppt[0] = -1.;
+         originVal = SW_Weather.allHist[0]->ppt[0];
 
-        EXPECT_DEATH_IF_SUPPORTED(
-            checkAllWeather(&SW_Weather),
-            ""
-        );
+         w->allHist[0]->ppt[0] = -1.;
 
-            // Make relative humidity unreasonable (< 0%)
-        SW_Weather.allHist[0]->ppt[0] = originVal;
+         EXPECT_DEATH_IF_SUPPORTED(
+             checkAllWeather(w),
+             ""
+         );
 
-        SW_Weather.allHist[0]->r_humidity_daily[0] = -.1252;
+             // Make relative humidity unreasonable (< 0%)
+         w->allHist[0]->ppt[0] = originVal;
 
-        EXPECT_DEATH_IF_SUPPORTED(
-            checkAllWeather(&SW_Weather),
-            ""
-        );
-    }
+         w->allHist[0]->r_humidity_daily[0] = -.1252;
+
+         EXPECT_DEATH_IF_SUPPORTED(
+             checkAllWeather(w),
+             ""
+         );
+     }
 }
