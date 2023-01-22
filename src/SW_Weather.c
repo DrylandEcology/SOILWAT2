@@ -503,12 +503,12 @@ void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYe
  @param[in] use_weathergenerator_only A boolean; if `swFALSE`, code attempts to
    read weather files from disk.
  @param[in] weather_prefix File name of weather data without extension.
- @param[in] use_cloudCoverMonthly A boolean; if `swTRUE`, function will interpolate
- monthly values for cloud cover read-in from disk
- @param[in] use_humidityMonthly A boolean; if `swTRUE`, function will interpolate
- monthly values for humidity read-in from disk
- @param[in] use_windSpeedMonthly A boolean; if `swTRUE`, function will interpolate
- monthly values for wind speed read-in from disk
+ @param[in] use_cloudCoverMonthly A boolean; if `swTRUE`, function will interpolate mean
+ monthly values provided by \ref cloudcov to daily time series
+ @param[in] use_humidityMonthly A boolean; if `swTRUE`, function will interpolate mean
+ monthly values provided by \ref cloudcov to daily time series
+ @param[in] use_windSpeedMonthly A boolean; if `swTRUE`, function will interpolate mean
+ monthly values provided by \ref cloudcov to daily time series
  @param[in] n_input_forcings Number of read-in columns from disk
  @param[in] dailyInputIndices An array of size MAX_INPUT_COLUMNS holding the calculated
  column number of which a certain variable resides
@@ -606,9 +606,16 @@ void finalizeAllWeather(SW_WEATHER *w) {
   if(w->use_humidityMonthly) {
       for(yearIndex = 0; yearIndex < w->n_years; yearIndex++) {
           for(day = 0; day < MAX_DAYS; day++) {
-              w->allHist[yearIndex]->actualVaporPressure[day] =
+
+              // Make sure calculation of actual vapor pressure is not polluted
+              // by values of `SW_MISSING`
+              if(!missing(w->allHist[yearIndex]->r_humidity_daily[day]) &&
+                 !missing(w->allHist[yearIndex]->temp_avg[day])) {
+
+                     w->allHist[yearIndex]->actualVaporPressure[day] =
                               actualVaporPressure1(w->allHist[yearIndex]->r_humidity_daily[day],
                                                    w->allHist[yearIndex]->temp_avg[day]);
+              }
           }
       }
   }
