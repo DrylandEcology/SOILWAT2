@@ -1641,7 +1641,7 @@ void _read_weather_hist(
     int doy;
 	// TimeInt mon, j, k = 0;
 	// RealF acc = 0.0;
-    RealF weathInput[MAX_INPUT_COLUMNS];
+    RealD weathInput[MAX_INPUT_COLUMNS];
 
     Bool hasMaxMinTemp = (Bool) (dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN]);
     Bool hasMaxMinRelHumid = (Bool) (dailyInputFlags[REL_HUMID_MAX] && dailyInputFlags[REL_HUMID_MIN]);
@@ -1663,7 +1663,7 @@ void _read_weather_hist(
 
 	while (GetALine(f, inbuf)) {
 		lineno++;
-		x = sscanf(inbuf, "%d %f %f %f %f %f %f %f %f %f %f %f %f %f %f",
+		x = sscanf(inbuf, "%d %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
                    &doy, &weathInput[0], &weathInput[1], &weathInput[2], &weathInput[3],
                    &weathInput[4], &weathInput[5], &weathInput[6], &weathInput[7],
                    &weathInput[8], &weathInput[9], &weathInput[10], &weathInput[11],

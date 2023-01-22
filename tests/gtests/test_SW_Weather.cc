@@ -216,7 +216,7 @@ namespace {
 
         // Climate variables used for C4 grass cover
         // (stdev of one value is undefined)
-        EXPECT_NEAR(climateOutput.minTemp7thMon_C[0], 2.809999, tol6);
+        EXPECT_DOUBLE_EQ(climateOutput.minTemp7thMon_C[0], 2.81);
         EXPECT_NEAR(climateOutput.frostFree_days[0], 92, tol6);
         EXPECT_NEAR(climateOutput.ddAbove65F_degday[0], 13.546000, tol6);
 
@@ -374,7 +374,7 @@ namespace {
 
         // Climate variables used for C4 grass cover
         // (stdev of one value is undefined)
-        EXPECT_NEAR(climateAverages.minTemp7thMon_C, 2.809999, tol6);
+        EXPECT_DOUBLE_EQ(climateAverages.minTemp7thMon_C, 2.81);
         EXPECT_NEAR(climateAverages.frostFree_days, 92, tol6);
         EXPECT_NEAR(climateAverages.ddAbove65F_degday, 13.546000, tol6);
         EXPECT_TRUE(isnan(climateAverages.sdC4[0]));
@@ -461,7 +461,7 @@ namespace {
 
         // Climate variables used for cheatgrass cover
         // (stdev of one value is undefined)
-        EXPECT_NEAR(climateOutput.PPT7thMon_mm[1], 22.199999, tol6);
+        EXPECT_DOUBLE_EQ(climateOutput.PPT7thMon_mm[1], 22.2);
         EXPECT_NEAR(climateOutput.meanTempDriestQtr_C[0], 0.936387, tol6);
         EXPECT_NEAR(climateOutput.minTemp2ndMon_C[1], 5.1445161, tol6);
 
