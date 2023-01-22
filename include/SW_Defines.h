@@ -59,9 +59,6 @@ extern "C" {
 
 #define SW_MISSING     999.     /**< Value to use as MISSING */
 
-#define MAX_INPUT_COLUMNS 14    /**< Maximum number of columns that can be input in a weath.YYYY file*/
-
-
 // Euler's constant
 #ifdef M_E
   #define swE M_E
@@ -119,7 +116,11 @@ extern "C" {
 #define SW_FORBS 2
 #define SW_GRASS 3
 
-/* Indices to daily input flags/indices (dailyInputFlags & dailyInputIndices in SW_WEATHER)*/
+/*
+   Indices to daily input flags/indices (dailyInputFlags & dailyInputIndices in SW_WEATHER)
+   The order of these indices must match the order of weather input flags within `weathsetup.in`
+*/
+#define MAX_INPUT_COLUMNS 14    /**< Maximum number of columns that can be input in a weath.YYYY file*/
 #define TEMP_MAX      0
 #define TEMP_MIN      1
 #define PPT           2
