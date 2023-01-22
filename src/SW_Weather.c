@@ -574,10 +574,7 @@ void readAllWeather(
               weather_prefix,
               n_input_forcings,
               dailyInputIndices,
-              dailyInputFlags,
-              use_cloudCoverMonthly,
-              use_windSpeedMonthly,
-              use_humidityMonthly
+              dailyInputFlags
             );
         }
     }
@@ -1615,12 +1612,6 @@ void SW_WTH_read(void) {
     column number of which a certain variable resides
     @param dailyInputFlags An array of size MAX_INPUT_COLUMNS holding booleans specifying
     what variable has daily input on disk
-    @param use_cloudCoverMonthly A boolean; specifying whether or not cloud cover monthly values
-    are to be used instead of daily input values
-    @param use_windSpeedMonthly A boolean; specifying whether or not wind speed monthly values
-    are to be used instead of daily input values
-    @param use_humidityMonthly A boolean; specifying whether or not humidity monthly values
-    are to be used instead of daily input values
 */
 void _read_weather_hist(
   TimeInt year,
@@ -1628,10 +1619,7 @@ void _read_weather_hist(
   char weather_prefix[],
   unsigned int n_input_forcings,
   unsigned int *dailyInputIndices,
-  Bool *dailyInputFlags,
-  Bool use_cloudCoverMonthly,
-  Bool use_windSpeedMonthly,
-  Bool use_humidityMonthly
+  Bool *dailyInputFlags
 ) {
 	/* =================================================== */
 	/* Read the historical (measured) weather files.
@@ -1657,6 +1645,11 @@ void _read_weather_hist(
 
     Bool hasMaxMinTemp = (Bool) (dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN]);
     Bool hasMaxMinRelHumid = (Bool) (dailyInputFlags[REL_HUMID_MAX] && dailyInputFlags[REL_HUMID_MIN]);
+
+    // Calculate if daily input values of humidity are to be used instead of
+    // being interpolated from monthly values
+    Bool useHumidityDaily = (Bool) (hasMaxMinRelHumid || dailyInputFlags[REL_HUMID] ||
+                                    dailyInputFlags[SPEC_HUMID] || dailyInputFlags[ACTUAL_VP]);
 
     double es, e, relHum, tempSlope, svpVal;
 
@@ -1697,30 +1690,27 @@ void _read_weather_hist(
 
         // Calculate average air temperature if min/max not missing
         if (!missing(weathInput[dailyInputIndices[TEMP_MAX]]) &&
-            !missing(weathInput[dailyInputIndices[TEMP_MIN]])) {
+                            !missing(weathInput[dailyInputIndices[TEMP_MIN]])) {
 
-          yearWeather->temp_avg[doy] = (weathInput[dailyInputIndices[TEMP_MAX]] +
-                                        weathInput[dailyInputIndices[TEMP_MIN]]) / 2.0;
+              yearWeather->temp_avg[doy] = (weathInput[dailyInputIndices[TEMP_MAX]] +
+                                            weathInput[dailyInputIndices[TEMP_MIN]]) / 2.0;
         }
 
-        if(!use_cloudCoverMonthly) {
-            if(dailyInputFlags[CLOUD_COV]) {
-                yearWeather->cloudcov_daily[doy] = weathInput[dailyInputIndices[CLOUD_COV]];
-            }
+        if(dailyInputFlags[CLOUD_COV]) {
+            yearWeather->cloudcov_daily[doy] = weathInput[dailyInputIndices[CLOUD_COV]];
         }
 
-        if(!use_windSpeedMonthly) {
-            if(dailyInputFlags[WIND_SPEED]) {
-                yearWeather->windspeed_daily[doy] = weathInput[dailyInputIndices[WIND_SPEED]];
-            } else if(dailyInputFlags[WIND_EAST] && dailyInputFlags[WIND_NORTH]) {
-                yearWeather->windspeed_daily[doy] = sqrt(squared(weathInput[dailyInputIndices[WIND_EAST]]) +
-                                                         squared(weathInput[dailyInputIndices[WIND_NORTH]]));
-            }
+        if(dailyInputFlags[WIND_SPEED]) {
+            yearWeather->windspeed_daily[doy] = weathInput[dailyInputIndices[WIND_SPEED]];
+
+        } else if(dailyInputFlags[WIND_EAST] && dailyInputFlags[WIND_NORTH]) {
+
+            yearWeather->windspeed_daily[doy] = sqrt(squared(weathInput[dailyInputIndices[WIND_EAST]]) +
+                                                     squared(weathInput[dailyInputIndices[WIND_NORTH]]));
         }
 
-        // Check to see if monthly humidity values are being used
-        // If not, skip entire code block to elimiate unecessary checking of many flags
-        if(!use_humidityMonthly) {
+        // Check to see if daily humidity values are being used
+        if(useHumidityDaily) {
             if(hasMaxMinRelHumid) {
                 yearWeather->r_humidity_daily[doy] = (weathInput[dailyInputIndices[REL_HUMID_MAX]] +
                                                       weathInput[dailyInputIndices[REL_HUMID_MIN]]) / 2;

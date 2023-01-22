@@ -219,10 +219,7 @@ void _read_weather_hist(
   char weather_prefix[],
   unsigned int n_input_forcings,
   unsigned int *dailyInputIndices,
-  Bool *dailyInputFlags,
-  Bool use_cloudCoverMonthly,
-  Bool use_windSpeedMonthly,
-  Bool use_humidityMonthly
+  Bool *dailyInputFlags
 );
 void readAllWeather(
   SW_WEATHER_HIST **allHist,
