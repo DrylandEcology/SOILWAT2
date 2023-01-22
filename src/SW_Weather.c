@@ -1719,22 +1719,25 @@ void _read_weather_hist(
                 yearWeather->r_humidity_daily[doy] = weathInput[dailyInputIndices[REL_HUMID]];
 
             } else if(dailyInputFlags[SPEC_HUMID]) {
-                // Specific Humidity (Bolton 1980)
-                es = (6.112 * exp(17.67 * yearWeather->temp_avg[doy]) /
-                     (yearWeather->temp_avg[doy] + 243.5));
 
-                e = (weathInput[dailyInputIndices[SPEC_HUMID]] * 1013.25) /
-                    (.378 * weathInput[dailyInputIndices[SPEC_HUMID]] + .622);
+                // Make sure the calculation of relative humidity will not be
+                // executed while average temperature is holding the value "SW_MISSING"
+                if(!missing(yearWeather->temp_avg[doy])) {
 
-                relHum = e / es;
-                relHum = max(0., relHum);
+                    // Specific Humidity (Bolton 1980)
+                    es = (6.112 * exp(17.67 * yearWeather->temp_avg[doy]) /
+                         (yearWeather->temp_avg[doy] + 243.5));
 
-                yearWeather->r_humidity_daily[doy] = min(100., relHum);
+                    e = (weathInput[dailyInputIndices[SPEC_HUMID]] * 1013.25) /
+                        (.378 * weathInput[dailyInputIndices[SPEC_HUMID]] + .622);
 
-                // Check if a calculation of actual vapor pressure occurred with
-                // bad temperature values (SW_MISSING)
-                if(missing(yearWeather->temp_avg[doy])) {
+                    relHum = e / es;
+                    relHum = max(0., relHum);
 
+                    yearWeather->r_humidity_daily[doy] = min(100., relHum);
+
+                } else {
+                    // Set relative humidity to "SW_MISSING"
                     yearWeather->r_humidity_daily[doy] = SW_MISSING;
                 }
 
@@ -1750,17 +1753,20 @@ void _read_weather_hist(
                                     actualVaporPressure3(weathInput[dailyInputIndices[TEMP_DEWPOINT]]);
 
             } else if(hasMaxMinTemp && hasMaxMinRelHumid) {
-                yearWeather->actualVaporPressure[doy] =
-                                actualVaporPressure2(weathInput[dailyInputIndices[REL_HUMID_MAX]],
-                                                     weathInput[dailyInputIndices[REL_HUMID_MIN]],
-                                                     weathInput[dailyInputIndices[TEMP_MAX]],
-                                                     weathInput[dailyInputIndices[TEMP_MIN]]);
 
-                // Check if a calculation of relative humidity occurred with
-                // bad temperature values (SW_MISSING)
-                if(missing(yearWeather->temp_max[doy]) || missing(yearWeather->temp_min[doy])) {
+                // Make sure the calculation of actual vapor pressure will not be
+                // executed while max and min temperature are holding the value "SW_MISSING"
+                if(!missing(yearWeather->temp_max[doy]) &&
+                                            !missing(yearWeather->temp_min[doy])) {
 
-                    yearWeather->r_humidity_daily[doy] = SW_MISSING;
+                    yearWeather->actualVaporPressure[doy] =
+                                    actualVaporPressure2(weathInput[dailyInputIndices[REL_HUMID_MAX]],
+                                                         weathInput[dailyInputIndices[REL_HUMID_MIN]],
+                                                         weathInput[dailyInputIndices[TEMP_MAX]],
+                                                         weathInput[dailyInputIndices[TEMP_MIN]]);
+                } else {
+                    // Set actual vapor pressure to "SW_MISSING"
+                    yearWeather->actualVaporPressure[doy] = SW_MISSING;
                 }
 
             } else if(dailyInputFlags[REL_HUMID] || dailyInputFlags[SPEC_HUMID]) {
@@ -1769,15 +1775,24 @@ void _read_weather_hist(
                                                   yearWeather->temp_avg[doy]);
             }
 
-            // Check if a better calculation of relative humidity is available
-            // (using dewpoint temperature or the daily actual vapor pressure input value)
-            if(dailyInputFlags[ACTUAL_VP] || dailyInputFlags[TEMP_DEWPOINT]) {
+            // Check if a calculation of relative humidity is available using dewpoint temperature
+            // or actual vapor pressure, but only if the daily value of relative humidity
+            // is "SW_MISSING"
+            if(missing(yearWeather->r_humidity_daily[doy]) &&
+                  (dailyInputFlags[ACTUAL_VP] || dailyInputFlags[TEMP_DEWPOINT])) {
 
-                svpVal = svp(yearWeather->temp_avg[doy], &tempSlope);
+                // Make sure the calculation of relative humidity will not be
+                // executed while average temperature and/or actual vapor pressure
+                // hold the value "SW_MISSING"
+                if(!missing(yearWeather->temp_avg[doy]) &&
+                            !missing(yearWeather->actualVaporPressure[doy])) {
 
-                yearWeather->r_humidity_daily[doy] =
-                                    yearWeather->actualVaporPressure[doy] / svpVal;
-             }
+                    svpVal = svp(yearWeather->temp_avg[doy], &tempSlope);
+
+                    yearWeather->r_humidity_daily[doy] =
+                                        yearWeather->actualVaporPressure[doy] / svpVal;
+                }
+            }
         }
 
 
