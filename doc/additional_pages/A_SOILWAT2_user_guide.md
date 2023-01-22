@@ -152,7 +152,7 @@ on your side.
     warnings and errors. The output files are in `.csv` format and can be
     opened by a spreadsheet program (e.g., `LibreOffice` or `Excel`) or
     imported into `R`
-    (e.g., `data <- read.csv("tests/example/sw2_yearly.csv")`).
+    (e.g., `data <- read.csv("tests/example/Output/sw2_yearly.csv")`).
     Outputs are explained in detail
     [here](doc/additional_pages/SOILWAT2_Inputs.md).
 
