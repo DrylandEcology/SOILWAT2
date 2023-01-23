@@ -494,31 +494,31 @@ void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYe
  @brief Reads in all weather data
 
  Reads in weather data from disk (if available) for all years and
- stores values in global SW_Weather's `allHist`.
- If missing, set values to `SW_MISSING`.
+ stores values in global SW_Weather's SW_WEATHER::allHist.
+ If missing, set values to #SW_MISSING.
 
  @param[out] allHist 2D array holding all weather data gathered
  @param[in] startYear Start year of the simulation
  @param[in] n_years Number of years in simulation
- @param[in] use_weathergenerator_only A boolean; if `swFALSE`, code attempts to
+ @param[in] use_weathergenerator_only A boolean; if #swFALSE, code attempts to
    read weather files from disk.
  @param[in] weather_prefix File name of weather data without extension.
- @param[in] use_cloudCoverMonthly A boolean; if `swTRUE`, function will interpolate mean
- monthly values provided by \ref cloudcov to daily time series
- @param[in] use_humidityMonthly A boolean; if `swTRUE`, function will interpolate mean
- monthly values provided by \ref r_humidity to daily time series
- @param[in] use_windSpeedMonthly A boolean; if `swTRUE`, function will interpolate mean
- monthly values provided by \ref windspeed to daily time series
+ @param[in] use_cloudCoverMonthly A boolean; if #swTRUE, function will interpolate mean
+ monthly values provided by \p cloudcov to daily time series
+ @param[in] use_humidityMonthly A boolean; if #swTRUE, function will interpolate mean
+ monthly values provided by \p r_humidity to daily time series
+ @param[in] use_windSpeedMonthly A boolean; if #swTRUE, function will interpolate mean
+ monthly values provided by \p windspeed to daily time series
  @param[in] n_input_forcings Number of read-in columns from disk
- @param[in] dailyInputIndices An array of size MAX_INPUT_COLUMNS holding the calculated
+ @param[in] dailyInputIndices An array of size #MAX_INPUT_COLUMNS holding the calculated
  column number of which a certain variable resides
- @param[in] dailyInputFlags An array of size MAX_INPUT_COLUMNS holding booleans specifying
+ @param[in] dailyInputFlags An array of size #MAX_INPUT_COLUMNS holding booleans specifying
  what variable has daily input on disk
- @param[in] cloudcov Array of size MAX_MONTHS holding monthly cloud cover values
+ @param[in] cloudcov Array of size #MAX_MONTHS holding monthly cloud cover values
  to be interpolated
- @param[in] windspeed Array of size MAX_MONTHS holding monthly wind speed values
+ @param[in] windspeed Array of size #MAX_MONTHS holding monthly wind speed values
  to be interpolated
- @param[in] r_humidity Array of size MAX_MONTHS holding monthly relative humidity values
+ @param[in] r_humidity Array of size #MAX_MONTHS holding monthly relative humidity values
  to be interpolated
 
 */
