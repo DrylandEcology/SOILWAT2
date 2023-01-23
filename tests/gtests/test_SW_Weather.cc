@@ -789,6 +789,9 @@ namespace {
 
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(w);
+
+         // Reset directory to "data_weather"
+         strcpy(w->name_prefix, "Input/data_weather/weath");
      }
 
      TEST(DailyWeatherInputTest, DailyDayMet) {
@@ -863,6 +866,9 @@ namespace {
 
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(w);
+
+         // Reset directory to "data_weather"
+         strcpy(w->name_prefix, "Input/data_weather/weath");
      }
 
      TEST(DailyWeatherInputTest, DailyMACA) {
@@ -923,6 +929,9 @@ namespace {
 
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(w);
+
+         // Reset directory to "data_weather"
+         strcpy(w->name_prefix, "Input/data_weather/weath");
      }
 
      TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
