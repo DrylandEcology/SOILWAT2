@@ -506,9 +506,9 @@ void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYe
  @param[in] use_cloudCoverMonthly A boolean; if `swTRUE`, function will interpolate mean
  monthly values provided by \ref cloudcov to daily time series
  @param[in] use_humidityMonthly A boolean; if `swTRUE`, function will interpolate mean
- monthly values provided by \ref cloudcov to daily time series
+ monthly values provided by \ref r_humidity to daily time series
  @param[in] use_windSpeedMonthly A boolean; if `swTRUE`, function will interpolate mean
- monthly values provided by \ref cloudcov to daily time series
+ monthly values provided by \ref windspeed to daily time series
  @param[in] n_input_forcings Number of read-in columns from disk
  @param[in] dailyInputIndices An array of size MAX_INPUT_COLUMNS holding the calculated
  column number of which a certain variable resides
