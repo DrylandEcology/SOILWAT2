@@ -791,8 +791,8 @@ namespace {
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(w);
 
-         // Reset directory to "data_weather"
-         strcpy(w->name_prefix, "Input/data_weather/weath");
+         // Reset SOILWAT2 for next test
+         Reset_SOILWAT2_after_UnitTest();
      }
 
      TEST(DailyWeatherInputTest, DailyDayMet) {
@@ -868,8 +868,8 @@ namespace {
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(w);
 
-         // Reset directory to "data_weather"
-         strcpy(w->name_prefix, "Input/data_weather/weath");
+         // Reset SOILWAT2 for next test
+         Reset_SOILWAT2_after_UnitTest();
      }
 
      TEST(DailyWeatherInputTest, DailyMACA) {
@@ -931,8 +931,8 @@ namespace {
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(w);
 
-         // Reset directory to "data_weather"
-         strcpy(w->name_prefix, "Input/data_weather/weath");
+         // Reset SOILWAT2 for next test
+         Reset_SOILWAT2_after_UnitTest();
      }
 
      TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
@@ -1009,5 +1009,8 @@ namespace {
              checkAllWeather(w),
              ""
          );
+
+         // Reset SOILWAT2 for next test
+         Reset_SOILWAT2_after_UnitTest();
      }
 }
