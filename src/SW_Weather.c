@@ -51,6 +51,7 @@
 #include "include/SW_SoilWater.h"
 #include "include/SW_Markov.h"
 #include "include/SW_Flow_lib_PET.h"
+#include "include/SW_Sky.h"
 
 #include "include/SW_Weather.h"
 

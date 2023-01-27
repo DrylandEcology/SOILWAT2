@@ -20,6 +20,7 @@
 #include "include/SW_Markov.h"
 #include "include/SW_Model.h"
 #include "include/SW_Flow_lib_PET.h"
+#include "include/SW_Sky.h"
 
 namespace {
 
