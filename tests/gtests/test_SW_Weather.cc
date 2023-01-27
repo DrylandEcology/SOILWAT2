@@ -736,7 +736,7 @@ namespace {
 
          SW_WEATHER *w = &SW_Weather;
          double result, expectedResult;
-         int yearIndex = 0, year = 1980;
+         int yearIndex = 0, year = 1980, midJanDay = 14;
 
         /* Test correct priority is being given to input values from DAYMET */
          SW_WTH_setup();
@@ -778,6 +778,19 @@ namespace {
              // instead of being based on huss for the first day of 1980
          EXPECT_NEAR(result, expectedResult, tol3);
 
+         // Expect that daily relative humidity is derived from hursmax_pct and hursmin_pct
+         // (and is not interpolated from mean monthly values)
+         EXPECT_NEAR(
+             w->allHist[yearIndex]->r_humidity_daily[midJanDay],
+             (88.35 + 34.35) / 2.,
+             tol6
+         );
+
+         EXPECT_NE(
+             w->allHist[yearIndex]->r_humidity_daily[midJanDay],
+             SW_Sky.r_humidity[0]
+         );
+
          result = w->allHist[yearIndex]->actualVaporPressure[0];
 
              // Get expected result from Input/data_weather_gridmet/weath.1980 day 1
@@ -809,7 +822,7 @@ namespace {
 
          SW_WEATHER *w = &SW_Weather;
          double result, expectedResult, tempSlope;
-         int yearIndex = 0, year = 1980;
+         int yearIndex = 0, year = 1980, midJanDay = 14;
 
          /* Test correct priority is being given to input values from DAYMET */
          SW_WTH_setup();
@@ -831,7 +844,10 @@ namespace {
 
                 // Fill the first day of relative humidity with SW_MISSING so that
                 // the desired calculation to be tested is able to trigger
+                // Along with the middle of January to test that monthly values
+                // are not used
          w->allHist[yearIndex]->r_humidity_daily[0] = SW_MISSING;
+         w->allHist[yearIndex]->r_humidity_daily[midJanDay] = SW_MISSING;
 
                  // Using the new inputs folder, read in year = 1980
          _read_weather_hist(
@@ -865,6 +881,23 @@ namespace {
                  // was calculated reasonably
          EXPECT_NEAR(result, expectedResult, tol6);
 
+         // Expect that daily relative humidity is derived from vp_kPa, Tmax_C, and Tmin_C
+         // (and is not interpolated from mean monthly values)
+         expectedResult = (-.81 - 9.7) / 2.;
+         expectedResult = svp(expectedResult, &tempSlope);
+         expectedResult = .29 / expectedResult;
+
+         EXPECT_NEAR(
+             w->allHist[yearIndex]->r_humidity_daily[midJanDay],
+             expectedResult,
+             tol6
+         );
+
+         EXPECT_NE(
+             w->allHist[yearIndex]->r_humidity_daily[midJanDay],
+             SW_Sky.r_humidity[0]
+         );
+
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(w);
 
@@ -883,7 +916,7 @@ namespace {
 
          SW_WEATHER *w = &SW_Weather;
          double result, expectedResult;
-         int yearIndex = 0, year = 1980;
+         int yearIndex = 0, year = 1980, midJanDay = 14;
 
          /* Test correct priority is being given to input values from MACA */
 
@@ -928,6 +961,34 @@ namespace {
                  // the expected result
          EXPECT_NEAR(result, expectedResult, tol6);
 
+         // Expect that daily wind speed is derived from uas_mPERs and vas_mPERs
+         // (and is not interpolated from mean monthly values)
+         expectedResult = sqrt(squared(2.82) + squared(-.4));
+
+         EXPECT_NEAR(
+             w->allHist[yearIndex]->windspeed_daily[midJanDay],
+             expectedResult,
+             tol6
+         );
+
+         EXPECT_NE(
+             w->allHist[yearIndex]->windspeed_daily[midJanDay],
+             SW_Sky.windspeed[0]
+         );
+
+         // Expect that daily relative humidity is derived from hursmax_pct and hursmin_pct
+         // (and is not interpolated from mean monthly values)
+         EXPECT_NEAR(
+             w->allHist[yearIndex]->r_humidity_daily[midJanDay],
+             (80.55 + 32.28) / 2.,
+             tol6
+         );
+
+         EXPECT_NE(
+             w->allHist[yearIndex]->r_humidity_daily[midJanDay],
+             SW_Sky.r_humidity[0]
+         );
+
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(w);
 
@@ -953,14 +1014,10 @@ namespace {
 
          /* Not the same number of flags as columns */
 
-             // Set SW_WEATHER's n_input_forcings to a number that is
-             // not the columns being read in
-
-         /* Check for value(s) that are not within reasonable range these
-            tests will make use of `checkAllWeather()` */
-
          SW_WTH_read();
 
+         // Set SW_WEATHER's n_input_forcings to a number that is
+         // not the columns being read in
          w->n_input_forcings = 0;
 
              // Run death test
@@ -975,9 +1032,11 @@ namespace {
              ), ""
          );
 
-         // Edit SW_WEATHER_HIST values from their original value
+         /* Check for value(s) that are not within reasonable range these
+            tests will make use of `checkAllWeather()` */
 
-             // Make temperature unreasonable (not within [-100, 100] or max < min)
+         // Edit SW_WEATHER_HIST values from their original value
+             // Make temperature unreasonable (not within [-100, 100])
 
          originVal = SW_Weather.allHist[0]->temp_max[0];
 
