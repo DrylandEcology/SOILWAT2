@@ -258,6 +258,7 @@ namespace {
 
         // Reset "SW_Weather.allHist"
         SW_WTH_read();
+		finalizeAllWeather(&SW_Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
@@ -714,6 +715,7 @@ namespace {
 
         // Reset "SW_Weather.allHist"
         SW_WTH_read();
+		finalizeAllWeather(&SW_Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
@@ -1173,6 +1175,7 @@ namespace {
 
         // Reset "SW_Weather.allHist"
         SW_WTH_read();
+		finalizeAllWeather(&SW_Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);

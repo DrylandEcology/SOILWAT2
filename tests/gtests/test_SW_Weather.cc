@@ -53,6 +53,8 @@ namespace {
         EXPECT_NEAR(SW_Weather.allHist[0]->temp_min[0], -15.670000, tol6);
         EXPECT_NEAR(SW_Weather.allHist[0]->ppt[0], .220000, tol6);
 
+        // Reset SOILWAT2
+        Reset_SOILWAT2_after_UnitTest();
     }
 
     TEST(ReadAllWeatherTest, NoMemoryLeakIfDecreasedNumberOfYears) {
@@ -276,6 +278,8 @@ namespace {
 
         // ------ Reset and deallocate
         deallocateClimateStructs(&climateOutput, &climateAverages);
+
+        Reset_SOILWAT2_after_UnitTest();
     }
 
 
@@ -394,6 +398,8 @@ namespace {
 
         // ------ Reset and deallocate
         deallocateClimateStructs(&climateOutput, &climateAverages);
+
+        Reset_SOILWAT2_after_UnitTest();
 
     }
 
@@ -515,6 +521,8 @@ namespace {
 
         // ------ Reset and deallocate
         deallocateClimateStructs(&climateOutput, &climateAverages);
+
+        Reset_SOILWAT2_after_UnitTest();
     }
 
 
@@ -697,6 +705,8 @@ namespace {
 
         EXPECT_FLOAT_EQ(SW_Weather.allHist[0]->temp_max[0], -.52);
 
+        // Reset SOIWLAT2
+        Reset_SOILWAT2_after_UnitTest();
     }
 
     TEST(DailyInsteadOfMonthlyInputTest, MonthlyInputPrioritization) {
@@ -722,6 +732,9 @@ namespace {
          EXPECT_NEAR(w->allHist[yearIndex]->r_humidity_daily[midJanDay], SW_Sky.r_humidity[0], tol6);
          EXPECT_NEAR(w->allHist[yearIndex]->cloudcov_daily[midJanDay], SW_Sky.cloudcov[0], tol6);
          EXPECT_NEAR(w->allHist[yearIndex]->windspeed_daily[midJanDay], SW_Sky.windspeed[0], tol6);
+
+         // Reset SOILWAT2 so that `finalizeAllWeather()` is called
+         Reset_SOILWAT2_after_UnitTest();
      }
 
      TEST(DailyWeatherInputTest, DailyGridMet) {
