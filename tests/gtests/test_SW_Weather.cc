@@ -996,6 +996,57 @@ namespace {
          Reset_SOILWAT2_after_UnitTest();
      }
 
+     TEST(DailyInputLOCFTest, LOCFForDailyValues) {
+
+         /*
+            Since SOILWAT2 now has the ability to deal with more than
+            maximum/minimum temperature and precipitation, part of the weather
+            generator can now perform LOCF on these values (generator method = 1).
+
+            We want to make sure when the weather generator method is equal to 1,
+            LOCF is performed on these variables and not ignored
+         */
+        int numDaysLOCFTolerance = 366, yearIndex = 0, day;
+        double cloudCovTestVal = .5, actVapPressTestVal = 4.23, windSpeedTestVal = 2.12;
+        SW_WEATHER *w = &SW_Weather;
+
+        // Setup and read in weather
+        SW_WTH_setup();
+
+        // Turn off flags for monthly values along with daily flags
+        // so all daily variables aside from max/min temperature and precipiation
+        // are set to SW_MISSING
+        w->use_cloudCoverMonthly = swFALSE;
+        w->use_humidityMonthly = swFALSE;
+        w->use_windSpeedMonthly = swFALSE;
+
+        SW_WTH_read();
+
+        // Setup values/flags for `generateMissingWeather()` to deal with
+        w->generateWeatherMethod = 1;
+        w->allHist[yearIndex]->cloudcov_daily[0] = cloudCovTestVal;
+        w->allHist[yearIndex]->actualVaporPressure[0] = actVapPressTestVal;
+        w->allHist[yearIndex]->windspeed_daily[0] = windSpeedTestVal;
+
+        generateMissingWeather(w->allHist,
+                               1980,
+                               1,
+                               w->generateWeatherMethod,
+                               numDaysLOCFTolerance);
+
+        // Test to see if the first year of cloud cover, actual vapor pressure and
+        // wind speed has been filled with cloudCovTestVal, actVapPressTestVal,
+        // and windSpeedTestVal, respectively
+        for(day = 0; day < MAX_DAYS; day++){
+            EXPECT_EQ(w->allHist[yearIndex]->cloudcov_daily[day], cloudCovTestVal);
+            EXPECT_EQ(w->allHist[yearIndex]->actualVaporPressure[day], actVapPressTestVal);
+            EXPECT_EQ(w->allHist[yearIndex]->windspeed_daily[day], windSpeedTestVal);
+        }
+
+        // Reset rSOILWAT2
+        Reset_SOILWAT2_after_UnitTest();
+     }
+
      TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
          /*
             This section covers number of flags and the testing of reasonable results (`checkAllWeather()`).
