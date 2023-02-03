@@ -770,11 +770,12 @@ namespace {
          w->dailyInputIndices[REL_HUMID_MAX] = 4;
          w->dailyInputIndices[REL_HUMID_MIN] = 5;
          w->dailyInputIndices[SHORT_WR] = 6;
+         w->dailyInputFlags[WIND_SPEED] = swTRUE;
          w->dailyInputFlags[REL_HUMID_MAX] = swTRUE;
          w->dailyInputFlags[REL_HUMID_MIN] = swTRUE;
-         w->dailyInputFlags[WIND_SPEED] = swTRUE;
          w->dailyInputFlags[SHORT_WR] = swTRUE;
          w->n_input_forcings = 7;
+         w->desc_rsds = 1; // gridMET rsds is flux density over 24 hours
 
          // Reset daily weather values
          _clear_hist_weather(w->allHist[0]);
@@ -871,9 +872,8 @@ namespace {
          w->dailyInputIndices[SHORT_WR] = 4;
          w->dailyInputFlags[ACTUAL_VP] = swTRUE;
          w->dailyInputFlags[SHORT_WR] = swTRUE;
-         w->dailyInputFlags[REL_HUMID_MAX] = swFALSE;
-         w->dailyInputFlags[REL_HUMID_MIN] = swFALSE;
          w->n_input_forcings = 5;
+         w->desc_rsds = 2; // DayMet rsds is flux density over daylight period
 
          // Reset daily weather values
          _clear_hist_weather(w->allHist[0]);
@@ -979,6 +979,7 @@ namespace {
          w->dailyInputFlags[REL_HUMID_MIN] = swTRUE;
          w->dailyInputFlags[SHORT_WR] = swTRUE;
          w->n_input_forcings = 8;
+         w->desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
          // Reset daily weather values
          _clear_hist_weather(w->allHist[0]);

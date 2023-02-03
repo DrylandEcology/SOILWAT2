@@ -41,7 +41,17 @@
 0			# Specific humidity [%]
 0			# Dew point temperature [C]
 0			# Actual vapor pressure [kPa]
-0			# Downward surface shortwave radiation [W/m2], i.e., flux density for a (hypothetical) flat horizon averaged over the daylight period of the day
+0			# Downward surface shortwave radiation (see `Daily weather input descriptions`)
+
+
+#--- Daily weather input descriptions
+0			# Description of downward surface shortwave radiation
+			#   * 0: `rsds` represents daily global horizontal irradiation [MJ / m2]
+			#   * 1: `rsds` represents flux density [W / m2] for a
+			#        (hypothetical) flat horizon averaged over an entire day (24 hour period)
+			#   * 2: `rsds` represents flux density [W / m2] for a
+			#        (hypothetical) flat horizon averaged over the daylight period of the day
+
 
 #--- Monthly scaling parameters:
 # Month 1 = January, Month 2 = February, etc.

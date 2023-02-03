@@ -1278,7 +1278,7 @@ void SW_WTH_new_day(void) {
 void SW_WTH_setup(void) {
 	/* =================================================== */
 	SW_WEATHER *w = &SW_Weather;
-	const int nitems = 34;
+	const int nitems = 35;
 	FILE *f;
 	int lineno = 0, month, x, currFlag;
     Bool monthlyFlagPrioritized = swFALSE;
@@ -1411,6 +1411,11 @@ void SW_WTH_setup(void) {
         case 21:
             w->dailyInputFlags[SHORT_WR] = itob(atoi(inbuf));
             break;
+
+        case 22:
+            w->desc_rsds = atoi(inbuf);
+            break;
+
 
 		default:
 			if (lineno == 5 + MAX_MONTHS)
