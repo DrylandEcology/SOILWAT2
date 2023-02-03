@@ -757,6 +757,11 @@ namespace {
              // Switch directory to gridmet input folder
          strcpy(w->name_prefix, "Input/data_weather_gridmet/weath");
 
+        // Turn off monthly flags
+        w->use_cloudCoverMonthly = swFALSE;
+        w->use_windSpeedMonthly = swFALSE;
+        w->use_humidityMonthly = swFALSE;
+
              // Manually edit index/flag arrays in SW_WEATHER to make test as
              // realistic as possible
              // Note: Indices are based on the directory:
@@ -770,6 +775,9 @@ namespace {
          w->dailyInputFlags[WIND_SPEED] = swTRUE;
          w->dailyInputFlags[SHORT_WR] = swTRUE;
          w->n_input_forcings = 7;
+
+         // Reset daily weather values
+         _clear_hist_weather(w->allHist[0]);
 
              // Using the new inputs folder, read in year = 1980
          _read_weather_hist(
@@ -814,8 +822,15 @@ namespace {
              // was calculated reasonably
          EXPECT_NEAR(result, expectedResult, tol6);
 
+
+         // We have observed radiation and missing cloud cover
+         EXPECT_FALSE(missing(w->allHist[yearIndex]->shortWaveRad[0]));
+         EXPECT_TRUE(missing(w->allHist[yearIndex]->cloudcov_daily[0]));
+
+
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(w);
+
 
          // Reset SOILWAT2 for next test
          Reset_SOILWAT2_after_UnitTest();
@@ -843,6 +858,11 @@ namespace {
                  // Switch directory to daymet input folder
          strcpy(w->name_prefix, "Input/data_weather_daymet/weath");
 
+        // Turn off monthly flags
+        w->use_cloudCoverMonthly = swFALSE;
+        w->use_windSpeedMonthly = swFALSE;
+        w->use_humidityMonthly = swFALSE;
+
                  // Manually edit index/flag arrays in SW_WEATHER to make test as
                  // realistic as possible
                  // Note: Indices are based on the directory:
@@ -855,12 +875,8 @@ namespace {
          w->dailyInputFlags[REL_HUMID_MIN] = swFALSE;
          w->n_input_forcings = 5;
 
-                // Fill the first day of relative humidity with SW_MISSING so that
-                // the desired calculation to be tested is able to trigger
-                // Along with the middle of January to test that monthly values
-                // are not used
-         w->allHist[yearIndex]->r_humidity_daily[0] = SW_MISSING;
-         w->allHist[yearIndex]->r_humidity_daily[midJanDay] = SW_MISSING;
+         // Reset daily weather values
+         _clear_hist_weather(w->allHist[0]);
 
                  // Using the new inputs folder, read in year = 1980
          _read_weather_hist(
@@ -911,6 +927,11 @@ namespace {
              SW_Sky.r_humidity[0]
          );
 
+         // We have observed radiation and missing cloud cover
+         EXPECT_FALSE(missing(w->allHist[yearIndex]->shortWaveRad[0]));
+         EXPECT_TRUE(missing(w->allHist[yearIndex]->cloudcov_daily[0]));
+
+
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(w);
 
@@ -938,6 +959,11 @@ namespace {
                  // Switch directory to daymet input folder
          strcpy(w->name_prefix, "Input/data_weather_maca/weath");
 
+        // Turn off monthly flags
+        w->use_cloudCoverMonthly = swFALSE;
+        w->use_windSpeedMonthly = swFALSE;
+        w->use_humidityMonthly = swFALSE;
+
                  // Manually edit index/flag arrays in SW_WEATHER to make test as
                  // realistic as possible
                  // Note: Indices are based on the directory:
@@ -946,13 +972,16 @@ namespace {
          w->dailyInputIndices[WIND_NORTH] = 4;
          w->dailyInputIndices[REL_HUMID_MAX] = 5;
          w->dailyInputIndices[REL_HUMID_MIN] = 6;
-         w->dailyInputIndices[ACTUAL_VP] = 7;
+         w->dailyInputIndices[SHORT_WR] = 7;
          w->dailyInputFlags[WIND_EAST] = swTRUE;
          w->dailyInputFlags[WIND_NORTH] = swTRUE;
          w->dailyInputFlags[REL_HUMID_MAX] = swTRUE;
          w->dailyInputFlags[REL_HUMID_MIN] = swTRUE;
-         w->dailyInputFlags[ACTUAL_VP] = swTRUE;
+         w->dailyInputFlags[SHORT_WR] = swTRUE;
          w->n_input_forcings = 8;
+
+         // Reset daily weather values
+         _clear_hist_weather(w->allHist[0]);
 
                  // Using the new inputs folder, read in year = 1980
          _read_weather_hist(
@@ -1001,6 +1030,11 @@ namespace {
              w->allHist[yearIndex]->r_humidity_daily[midJanDay],
              SW_Sky.r_humidity[0]
          );
+
+         // We have observed radiation and missing cloud cover
+         EXPECT_FALSE(missing(w->allHist[yearIndex]->shortWaveRad[0]));
+         EXPECT_TRUE(missing(w->allHist[yearIndex]->cloudcov_daily[0]));
+
 
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(w);
