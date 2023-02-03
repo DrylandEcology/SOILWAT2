@@ -290,4 +290,50 @@ namespace {
     Reset_SOILWAT2_after_UnitTest();
   }
 
+
+  TEST(WaterBalanceTest, WithGRIDMET) {
+    int i;
+
+    // Point to gridMET weather data
+    strcpy(SW_Weather.name_prefix, "Input/data_weather_gridmet/weath");
+
+    // Adjust simulation years: we have 2 years of gridMET inputs
+    SW_Model.startyr = 1980;
+    SW_Model.endyr = 1981;
+
+    // Describe daily gridMET inputs
+    SW_Weather.use_cloudCoverMonthly = swFALSE;
+    SW_Weather.use_windSpeedMonthly = swFALSE;
+    SW_Weather.use_humidityMonthly = swFALSE;
+
+    SW_Weather.dailyInputIndices[WIND_SPEED] = 3;
+    SW_Weather.dailyInputIndices[REL_HUMID_MAX] = 4;
+    SW_Weather.dailyInputIndices[REL_HUMID_MIN] = 5;
+    SW_Weather.dailyInputIndices[SHORT_WR] = 6;
+    SW_Weather.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
+    SW_Weather.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
+    SW_Weather.dailyInputFlags[WIND_SPEED] = swTRUE;
+    SW_Weather.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_Weather.n_input_forcings = 7;
+    SW_Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
+
+    // Prepare weather data
+    SW_WTH_read();
+    SW_WTH_finalize_all_weather();
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
 } // namespace

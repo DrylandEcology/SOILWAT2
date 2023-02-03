@@ -696,10 +696,11 @@ namespace
 
   // Test solar radiation: global horizontal and tilted
   //   Comparison against examples by Duffie & Beckman 2013 are expected to
-  //   deviate in value, but show similar patterns, because (i) calculations for
-  //   H_oh differ (see `SW2_SolarRadiation_Test.extraterrestrial`), (ii)
-  //   we calculate H_gh while they use measured H_gh values, and (iii)
-  //   separation models differ, etc.
+  //   deviate in value, but show similar patterns, because
+  //   (i) calculations for H_oh differ
+  //       (see `SW2_SolarRadiation_Test.extraterrestrial`),
+  //   (ii) we calculate H_gh while they use measured H_gh values, and
+  //   (iii) separation models differ, etc.
   TEST(SW2SolarRadiationTest, global)
   {
     unsigned int k;
@@ -708,42 +709,55 @@ namespace
     unsigned int doys_Table1_6_1[12] = {
       17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344
     };
+    unsigned int desc_rsds = 0; // `rsds` represents daily irradiation [MJ / m2]
+
     double
       H_gt, H_ot, H_oh, H_gh,
+      rsds,
+      cc, actual_vap_pressure,
+
       // Duffie & Beckman 2013: Example 2.19.1
       H_Ex2_19_1[3][12] = {
-        // H_oh
+        // H_oh [MJ / m2]
         {13.37, 18.81, 26.03, 33.78, 39.42, 41.78, 40.56, 35.92, 28.80, 20.90, 14.62, 11.91},
-        // H_gh
+        // H_gh [MJ / m2]
         {6.44, 9.89, 12.86, 16.05, 21.36, 23.04, 22.58, 20.33, 14.59, 10.48, 6.37, 5.74},
-        // H_gt
+        // H_gt [MJ / m2]
         {13.7, 17.2, 15.8, 14.7, 16.6, 16.5, 16.8, 17.5, 15.6, 15.2, 11.4, 12.7}
       },
       albedo[12] =
         {0.7, 0.7, 0.4, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.4},
+
       // Climate normals for Madison, WI
       // "WMO Climate Normals for MADISON/DANE CO REGIONAL ARPT, WI 1961–1990".
       // National Oceanic and Atmospheric Administration. Retrieved Jul 3, 2020.
       // ftp://ftp.atdd.noaa.gov/pub/GCOS/WMO-Normals/TABLES/REG_IV/US/GROUP4/72641.TXT
-      cloud_cover[12] =
+      cloud_cover1[12] =
         // Element 20:  Sky Cover (Cloud Cover)
         // {66.25, 66.25, 70, 67.5, 65, 60, 57.5, 57.5, 60, 63.75, 72.5, 71.25},
         // replaced observed with estimated values to match `H_Ex2_19_1`:
         // replaced ~ -61 + 1.661 * observed
         {53., 47.5, 54., 53., 40., 35., 35., 30., 46., 50., 63., 52.},
+      cloud_cover2[12] =
+        // derived from observed `rsds` (`H_Ex2_19_1["H_gh"][]`) and calculated `H_gh`
+        // note: this should be identical to `cloud_cover1[]`
+        {39.9, 37.7, 45.6, 49.0, 36.2, 32.9, 30.6, 28.7, 40.6, 41.8, 50.7, 37.6},
         // Element 11:  Relative Humidity (%), MN3HRLY (Statistic 94):  Mean of 3-Hourly Observations
       rel_humidity[12] =
         {74.5, 73.1, 71.4, 66.3, 65.8, 68.3, 71.0, 74.4, 76.8, 73.2, 76.9, 78.5},
         // Element 01:  Dry Bulb Temperature (deg C)
       air_temp_mean[12] =
-        {-8.9, -6.3, 0.2, 7.4, 13.6, 19, 21.7, 20.2, 15.4, 9.4, 1.9, -5.7},
-      // Actual vapor pressure (kPa)
-      actual_vap_pressure;
+        {-8.9, -6.3, 0.2, 7.4, 13.6, 19, 21.7, 20.2, 15.4, 9.4, 1.9, -5.7};
+
 
     // Duffie & Beckman 2013: Example 2.19.1
     for (k = 0; k < 12; k++) {
 
       actual_vap_pressure = actualVaporPressure1(rel_humidity[k], air_temp_mean[k]);
+
+      //--- Test without observed radiation: missing `rsds`; `H_gh` calculated
+      cc = cloud_cover1[k];
+      rsds = SW_MISSING;
 
       H_gt = solar_radiation(
         doys_Table1_6_1[k],
@@ -752,22 +766,88 @@ namespace
         60 * deg_to_rad, // slope
         0., // aspect
         albedo[k],
-        cloud_cover[k],
+        &cc,
         actual_vap_pressure,
+        rsds,
+        desc_rsds,
         &H_oh,
         &H_ot,
         &H_gh
       );
 
       EXPECT_NEAR(H_oh, H_Ex2_19_1[0][k], tol0)
-        << "Duffie & Beckman 2013: Example 2.19.1, H_oh: "
+        << "Duffie & Beckman 2013: Example 2.19.1 (missing rsds), H_oh: "
         << "month = " << k + 1 << "\n";
       // Feb/March deviate by ±1.25; other months by less than ±1
-      EXPECT_NEAR(H_gh, H_Ex2_19_1[1][k], 1.3 * tol0)
-        << "Duffie & Beckman 2013: Example 2.19.1, H_gh: "
+      EXPECT_NEAR(H_gh, H_Ex2_19_1[1][k], 1.25 * tol0)
+        << "Duffie & Beckman 2013: Example 2.19.1 (missing rsds), H_gh: "
         << "month = " << k + 1 << "\n";
-      EXPECT_NEAR(H_gt, H_Ex2_19_1[2][k], 1.3 * tol0)
-        << "Duffie & Beckman 2013: Example 2.19.1, H_gt: "
+      EXPECT_NEAR(H_gt, H_Ex2_19_1[2][k], 1.25 * tol0)
+        << "Duffie & Beckman 2013: Example 2.19.1 (missing rsds), H_gt: "
+        << "month = " << k + 1 << "\n";
+
+
+      //--- Test with previously calculated `H_gh` and missing cloud cover
+      cc = SW_MISSING;
+      rsds = H_gh; // calculated using `cloud_cover1[]`
+
+      H_gt = solar_radiation(
+        doys_Table1_6_1[k],
+        43. * deg_to_rad, // latitude
+        226., // elevation
+        60 * deg_to_rad, // slope
+        0., // aspect
+        albedo[k],
+        &cc,
+        actual_vap_pressure,
+        rsds,
+        desc_rsds,
+        &H_oh,
+        &H_ot,
+        &H_gh
+      );
+
+      // Expect: observed `rsds` (for `desc_rsds = 0`) is equal to `H_gh`
+      EXPECT_DOUBLE_EQ(rsds, H_gh);
+      // Expect: calculated cloud cover is equal to cloud cover previously
+      // used to determine "observed" `rsds`
+      EXPECT_DOUBLE_EQ(cc, cloud_cover1[k]);
+
+
+      //--- Test with observed radiation `rsds` and missing cloud cover
+      cc = SW_MISSING;
+      rsds = H_Ex2_19_1[1][k];
+
+      H_gt = solar_radiation(
+        doys_Table1_6_1[k],
+        43. * deg_to_rad, // latitude
+        226., // elevation
+        60 * deg_to_rad, // slope
+        0., // aspect
+        albedo[k],
+        &cc,
+        actual_vap_pressure,
+        rsds,
+        desc_rsds,
+        &H_oh,
+        &H_ot,
+        &H_gh
+      );
+
+      EXPECT_NEAR(H_oh, H_Ex2_19_1[0][k], tol0)
+        << "Duffie & Beckman 2013: Example 2.19.1 (observed rsds), H_oh: "
+        << "month = " << k + 1 << "\n";
+      EXPECT_NEAR(H_gh, H_Ex2_19_1[1][k], tol0)
+        << "Duffie & Beckman 2013: Example 2.19.1 (observed rsds), H_gh: "
+        << "month = " << k + 1 << "\n";
+      // Nov deviates by -2.8; Oct-Jan by ±1.4; other months by less than ±1
+      EXPECT_NEAR(H_gt, H_Ex2_19_1[2][k], 3 * tol0)
+        << "Duffie & Beckman 2013: Example 2.19.1 (observed rsds), H_gt: "
+        << "month = " << k + 1 << "\n";
+
+      // Cloud cover estimated from observed `rsds` and calculated `H_gh`
+      EXPECT_NEAR(cc, cloud_cover2[k], tol1)
+        << "Duffie & Beckman 2013: Example 2.19.1 (observed rsds), cloud cover: "
         << "month = " << k + 1 << "\n";
     }
 
@@ -815,9 +895,12 @@ namespace
   TEST(SW2PETTest, petfunc)
   {
     int i;
-    unsigned int doy = 2;
+    unsigned int
+      doy = 2,
+      desc_rsds = 0;
     double
       check_pet,
+      rsds = SW_MISSING,
       H_gt, H_oh, H_ot, H_gh,
       lat = 39. * deg_to_rad,
       elev = 1000.,
@@ -849,7 +932,8 @@ namespace
       H_gt = solar_radiation(
         doy,
         lat, elev, slope0, aspect, reflec,
-        cloudcov, actual_vap_pressure,
+        &cloudcov, actual_vap_pressure,
+        rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh
       );
 
@@ -873,7 +957,8 @@ namespace
       H_gt = solar_radiation(
         doy,
         lats[i] * deg_to_rad, elev, slope0, aspect, reflec,
-        cloudcov, e_a,
+        &cloudcov, e_a,
+        rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh
       );
 
@@ -898,7 +983,8 @@ namespace
       H_gt = solar_radiation(
         doy,
         lat, elevs[i], slope0, aspect, reflec,
-        cloudcov, e_a,
+        &cloudcov, e_a,
+        rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh
       );
 
@@ -920,7 +1006,8 @@ namespace
       H_gt = solar_radiation(
         doy,
         lat, elev, slopes[i] * deg_to_rad, aspect, reflec,
-        cloudcov, e_a,
+        &cloudcov, e_a,
+        rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh
       );
 
@@ -947,7 +1034,8 @@ namespace
       H_gt = solar_radiation(
         doy,
         lat, elev, sloped, aspects[i] * deg_to_rad, reflec,
-        cloudcov, e_a,
+        &cloudcov, e_a,
+        rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh
       );
 
@@ -971,7 +1059,8 @@ namespace
       H_gt = solar_radiation(
         doy,
         lat, elev, sloped, aspect, reflecs[i],
-        cloudcov, e_a,
+        &cloudcov, e_a,
+        rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh
       );
 
@@ -995,7 +1084,8 @@ namespace
       H_gt = solar_radiation(
         doy,
         lat, elev, slope0, aspect, reflec,
-        cloudcov, actual_vap_pressure,
+        &cloudcov, actual_vap_pressure,
+        rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh
       );
 
@@ -1015,7 +1105,8 @@ namespace
     H_gt = solar_radiation(
       doy,
       lat, elev, slope0, aspect, reflec,
-      cloudcov, e_a,
+      &cloudcov, e_a,
+      rsds, desc_rsds,
       &H_oh, &H_ot, &H_gh
     );
 
@@ -1040,7 +1131,8 @@ namespace
       H_gt = solar_radiation(
         doy,
         lat, elev, slope0, aspect, reflec,
-        cloudcovs[i], e_a,
+        &cloudcovs[i], e_a,
+        rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh
       );
 
@@ -1068,9 +1160,12 @@ namespace
   {
     int doy, k1, k2, k3, k4, k5;
 
+    unsigned int desc_rsds = 0;
+
     double
       pet,
       temp, RH, windspeed, cloudcover, fH_gt,
+      rsds = SW_MISSING,
       H_gt, H_oh, H_ot, H_gh,
       elev = 0.,
       lat = 40.,
@@ -1120,7 +1215,8 @@ namespace
                 H_gt = fH_gt * solar_radiation(
                   doy,
                   lat, elev, slope, aspect, reflec,
-                  cloudcover, RH, temp,
+                  &cloudcover, RH, temp,
+                  rsds, desc_rsds,
                   &H_oh, &H_ot, &H_gh
                 );
 

@@ -1225,20 +1225,22 @@ void SW_WTH_new_day(void) {
 */
 
     /* get the daily weather from allHist */
-    /*
-     Note: Shortwave radiation needs to check if it was input, this is due to the
-     fact that shortwave radiation is not necessary for any calculations in `_read_weather_hist()`
-     and does not get calculated within `_read_weather_hist()` and is thus expected to
-     hold "SW_MISSING" values if daily input is not provided.
+
+    /* SOILWAT2 simulations requires non-missing values of forcing variables.
+       Exceptions
+         1. shortwave radiation can be missing if cloud cover is not missing
+         2. cloud cover can be missing if shortwave radiation is not missing
     */
     if (
       missing(w->allHist[yearIndex]->temp_avg[day]) ||
       missing(w->allHist[yearIndex]->ppt[day]) ||
-      missing(w->allHist[yearIndex]->cloudcov_daily[day]) ||
       missing(w->allHist[yearIndex]->windspeed_daily[day]) ||
       missing(w->allHist[yearIndex]->r_humidity_daily[day]) ||
-      (missing(w->allHist[yearIndex]->shortWaveRad[day]) && w->dailyInputFlags[SHORT_WR]) ||
-      missing(w->allHist[yearIndex]->actualVaporPressure[day])
+      missing(w->allHist[yearIndex]->actualVaporPressure[day]) ||
+      (
+        missing(w->allHist[yearIndex]->shortWaveRad[day]) &&
+        missing(w->allHist[yearIndex]->cloudcov_daily[day])
+      )
     ) {
       LogError(
         logfp,
