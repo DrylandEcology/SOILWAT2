@@ -1834,6 +1834,11 @@ void _read_weather_hist(
         }
 
 
+        if (dailyInputFlags[SHORT_WR]) {
+          yearWeather->shortWaveRad[doy] = weathInput[dailyInputIndices[SHORT_WR]];
+        }
+
+
     // Calculate annual average temperature based on historical input, i.e.,
     // the `temp_year_avg` calculated here is prospective and unsuitable when
     // the weather generator is used to generate values for the
