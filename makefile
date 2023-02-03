@@ -31,6 +31,8 @@
 # make test_leaks  similar to `make test_severe` with stricter
 #                  sanitizer settings; consider cleaning previous build
 #                  artifacts beforehand, e.g., `make clean_test`
+# make test_reprnd similar to `make test_run`, i.e., execute the test binary
+#                  repeatedly while randomly shuffling tests
 #
 # make bin_debug   similar to `make bin_run` with debug settings;
 #                  consider cleaning previous build artifacts beforehand,
@@ -350,6 +352,10 @@ test_severe :
 .PHONY : test_leaks
 test_leaks :
 		./tools/run_test_leaks.sh
+
+.PHONY : test_reprnd
+test_reprnd : test
+		$(bin_test) --gtest_shuffle --gtest_repeat=-1
 
 .PHONY : bin_debug
 bin_debug :
