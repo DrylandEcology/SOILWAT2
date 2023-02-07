@@ -15,25 +15,14 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "include/myMemory.h"
 // externs `*logfp`, `errstr`, `logged`, `QuietMode`, `EchoInits`
 #include "include/generic.h"
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
-#include "include/rands.h"
-#include "include/Times.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Times.h"
-#include "include/SW_Files.h"
-#include "include/SW_Carbon.h"
 #include "include/SW_Site.h"
-#include "include/SW_VegProd.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_Model.h"
 #include "include/SW_SoilWater.h"
 #include "include/SW_Weather.h"
-#include "include/SW_Markov.h"
-#include "include/SW_Sky.h"
 #include "include/SW_Control.h"
+#include "include/SW_Main_lib.h" // for `sw_check_log()`
 
 #include "tests/gtests/sw_testhelpers.h"
 
@@ -42,18 +31,41 @@
 /** Initialize SOILWAT2 variables and read values from example input file
  */
 void Reset_SOILWAT2_after_UnitTest(void) {
+  /*--- Imitate 'SW_Main.c/main()':
+    we need to initialize and take down SOILWAT2 variables
+    because SOILWAT2 uses (global) states.
+    This is otherwise not comptable with the c++ approach used by googletest.
+  */
+  logged = swFALSE;
+  logfp = NULL;
+
+  QuietMode = swTRUE;
+  EchoInits = swFALSE;
+
   SW_CTL_clear_model(swFALSE);
 
-  SW_CTL_setup_model(_firstfile);
+  SW_CTL_setup_model(_firstfile); // `_firstfile` is here "files.in"
   SW_CTL_read_inputs_from_disk();
+
+  /* Notes on messages during tests
+    - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
+      "example/Output/logfile.log" to disk (based on content of "files.in")
+    - we close "Output/logfile.log"
+    - we set `logfp` to NULL to silence all non-error messages during tests
+    - error messages go directly to stderr (which DeathTests use to match against)
+  */
+  sw_check_log();
+  logfp = NULL;
+
   SW_WTH_finalize_all_weather();
   SW_CTL_init_run();
 
 
-  // Next two function calls will require SW_Output.c
+  // Next functions calls from `main()` require SW_Output.c
   //   (see issue #85 'Make SW_Output.c comptabile with c++ to include in unit testing code')
   // SW_OUT_set_ncol();
   // SW_OUT_set_colnames();
+  // ...
 }
 
 

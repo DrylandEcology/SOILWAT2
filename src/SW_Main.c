@@ -39,19 +39,6 @@
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void check_log(void) {
-	/* =================================================== */
-	/* function to be called by atexit() so it's the last
-	 * to execute before termination.  This is the place to
-	 * do any cleanup or progress reporting.
-	 */
-	if (logfp != stdout && logfp != stderr) {
-		if (logged && !QuietMode)
-			sw_error(0, "\nCheck logfile for error or status messages.\n");
-		CloseFile(&logfp);
-	}
-
-}
 
 
 /* =================================================== */
@@ -67,7 +54,7 @@ int main(int argc, char **argv) {
 	/* =================================================== */
 
 	logged = swFALSE;
-	atexit(check_log);
+	atexit(sw_check_log);
 	logfp = stdout;
 
 	sw_init_args(argc, argv);

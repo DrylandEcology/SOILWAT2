@@ -149,6 +149,7 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
      */
 
     char outfmt[MAX_ERROR] = {0}; /* to prepend err type str */
+    char buf[MAX_ERROR];
     va_list args;
 
     va_start(args, fmt);
@@ -166,26 +167,42 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
     strcat(outfmt, "\n");
 
     #ifdef RSOILWAT
-        char buf[1024];
+        vsnprintf(buf, MAX_ERROR, outfmt, args);
 
-        vsnprintf(buf, sizeof buf, outfmt, args);
-
-        if(LOGEXIT & mode) {
+        if (LOGEXIT & mode) {
+            // exit with error and always show message
             error(buf);
+
         } else if(fp != NULL) {
+            // send warning message only if not silenced (fp is not NULL)
             warning(buf);
         }
 
     #else
-        int check_eof;
-        check_eof = (EOF == vfprintf(fp, outfmt, args));
+        if (isnull(fp)) {
+          // silence messages (fp is NULL) except errors (which go to stderr)
+          if (LOGEXIT & mode) {
+            vsnprintf(buf, MAX_ERROR, outfmt, args);
+            sw_error(-1, buf);
+          }
 
-        if (check_eof)
-            sw_error(0, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
-        fflush(fp);
 
-        if (LOGEXIT & mode) {
-            sw_error(-1, "@ generic.c LogError");
+        } else {
+          // send message to fp
+
+          int check_eof;
+          check_eof = (EOF == vfprintf(fp, outfmt, args));
+
+          if (check_eof) {
+              sw_error(0, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
+          }
+
+          fflush(fp);
+
+          if (LOGEXIT & mode) {
+              // exit with error
+              sw_error(-1, "@ generic.c LogError");
+          }
         }
     #endif
 
