@@ -32,8 +32,8 @@ jobs:
         make clean bin_run
         make clean bin_debug_severe
 
-    - name: Unit tests
-      run: make clean test_run
+    - name: Unit tests (shuffle and repeat 3x)
+      run: make clean test_rep3rnd
 
     - name: Severe unit tests (without sanitizers)
       if: ${{ runner.os == 'macOS' }}
