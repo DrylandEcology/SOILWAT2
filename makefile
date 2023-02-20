@@ -33,6 +33,8 @@
 #                  artifacts beforehand, e.g., `make clean_test`
 # make test_reprnd similar to `make test_run`, i.e., execute the test binary
 #                  repeatedly while randomly shuffling tests
+# make test_rep3rnd   similar to `make test_run`, i.e., execute the test binary
+#                  three times while randomly shuffling tests
 #
 # make bin_debug   similar to `make bin_run` with debug settings;
 #                  consider cleaning previous build artifacts beforehand,
@@ -356,6 +358,10 @@ test_leaks :
 .PHONY : test_reprnd
 test_reprnd : test
 		$(bin_test) --gtest_shuffle --gtest_repeat=-1
+
+.PHONY : test_rep3rnd
+test_rep3rnd : test
+		$(bin_test) --gtest_shuffle --gtest_repeat=3
 
 .PHONY : bin_debug
 bin_debug :

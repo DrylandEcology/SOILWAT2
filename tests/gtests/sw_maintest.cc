@@ -15,25 +15,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "include/myMemory.h"
 // externs `*logfp`, `errstr`, `logged`, `QuietMode`, `EchoInits`
 #include "include/generic.h"
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
-#include "include/rands.h"
-#include "include/Times.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Times.h"
-#include "include/SW_Files.h"
-#include "include/SW_Carbon.h"
-#include "include/SW_Site.h"
-#include "include/SW_VegProd.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_Model.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Weather.h"
-#include "include/SW_Markov.h"
-#include "include/SW_Sky.h"
-
 #include "include/SW_Control.h"
 
 #include "tests/gtests/sw_testhelpers.h"
@@ -66,16 +50,13 @@ int main(int argc, char **argv) {
     because SOILWAT2 uses (global) states.
     This is otherwise not comptable with the c++ approach used by googletest.
   */
-  logged = swFALSE;
-  logfp = stdout;
 
   // Emulate 'sw_init_args()'
   if (!ChDir(dir_test)) {
     swprintf("Invalid project directory (%s)", dir_test);
   }
   strcpy(_firstfile, masterfile_test);
-  QuietMode = swTRUE;
-  EchoInits = swFALSE;
+
 
   // Initialize SOILWAT2 variables and read values from example input file
   Reset_SOILWAT2_after_UnitTest();

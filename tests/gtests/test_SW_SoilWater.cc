@@ -275,7 +275,7 @@ namespace{
     swrc_type = N_SWRCs + 1;
     EXPECT_DEATH_IF_SUPPORTED(
       SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGFATAL),
-      "@ generic.c LogError"
+      "is not implemented"
     );
     EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGWARN),
@@ -287,7 +287,7 @@ namespace{
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
       EXPECT_DEATH_IF_SUPPORTED(
         SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGFATAL),
-        "@ generic.c LogError"
+        "invalid SWC"
       );
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGWARN),
@@ -296,7 +296,7 @@ namespace{
 
       EXPECT_DEATH_IF_SUPPORTED(
         SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGFATAL),
-        "@ generic.c LogError"
+        "invalid SWC"
       );
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGWARN),
@@ -305,7 +305,7 @@ namespace{
 
       EXPECT_DEATH_IF_SUPPORTED(
         SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGFATAL),
-        "@ generic.c LogError"
+        "invalid SWC"
       );
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGWARN),
@@ -325,7 +325,7 @@ namespace{
 
     EXPECT_DEATH_IF_SUPPORTED(
       SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGFATAL),
-      "@ generic.c LogError"
+      "invalid value"
     );
     EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGWARN),
@@ -352,7 +352,7 @@ namespace{
     swrc_type = N_SWRCs + 1;
     EXPECT_DEATH_IF_SUPPORTED(
       SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGFATAL),
-      "@ generic.c LogError"
+      "is not implemented"
     );
     EXPECT_DOUBLE_EQ(
       SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGWARN),
@@ -363,7 +363,7 @@ namespace{
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
       EXPECT_DEATH_IF_SUPPORTED(
         SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGFATAL),
-        "@ generic.c LogError"
+        "invalid SWP"
       );
       EXPECT_DOUBLE_EQ(
         SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGWARN),

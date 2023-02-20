@@ -192,7 +192,7 @@ namespace {
         fc2, wp2, deltaX, theMaxDepth2, nRgr,
         &ptr_stError
       ),
-      "@ generic.c LogError"
+      "SOIL_TEMP FUNCTION ERROR: soil temperature max depth"
     );
 
     // Reset to previous global state
@@ -709,7 +709,7 @@ namespace {
         &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
         &surface_max, &surface_min
       ),
-      "@ generic.c LogError"
+      "SOILWAT2 ERROR soil temperature module was not initialized"
     );
 
     //Reset to global state

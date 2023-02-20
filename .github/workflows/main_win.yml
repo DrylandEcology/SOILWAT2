@@ -42,5 +42,5 @@ jobs:
     - name: Run binary
       run: make clean bin_run
 
-    - name: Unit tests
-      run: make clean test_run
+    - name: Unit tests (shuffle and repeat 3x)
+      run: make clean test_rep3rnd
