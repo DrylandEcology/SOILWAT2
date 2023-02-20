@@ -144,7 +144,7 @@ namespace {
         gravel,
         bdensity
       ),
-      "@ generic.c LogError"
+      "PTF is not implemented in SOILWAT2"
     );
   }
 
@@ -239,7 +239,7 @@ namespace {
 
     EXPECT_DEATH_IF_SUPPORTED(
       SWRC_check_parameters(swrc_type, swrcp),
-      "@ generic.c LogError"
+      "is not implemented"
     );
   }
 
@@ -444,12 +444,18 @@ namespace {
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
     help = SW_Site.lyr[n1]->evap_coeff;
     SW_Site.lyr[n1]->evap_coeff = -0.5;
-    EXPECT_DEATH_IF_SUPPORTED(SW_SIT_init_run(), "@ generic.c LogError");
+    EXPECT_DEATH_IF_SUPPORTED(
+      SW_SIT_init_run(),
+      "'bare-soil evaporation coefficient' has an invalid value"
+    );
     SW_Site.lyr[n1]->evap_coeff = help;
 
     // Check error for bad transpiration coefficient (should be [0-1])
     SW_Site.lyr[n2]->transp_coeff[k] = 1.5;
-    EXPECT_DEATH_IF_SUPPORTED(SW_SIT_init_run(), "@ generic.c LogError");
+    EXPECT_DEATH_IF_SUPPORTED(
+      SW_SIT_init_run(),
+      "'transpiration coefficient' has an invalid value"
+    );
 
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
@@ -617,7 +623,7 @@ namespace {
     // Check error if bulk density too low for coarse fragments
     EXPECT_DEATH_IF_SUPPORTED(
       calculate_soilMatricDensity(1.65, 0.7),
-      "@ generic.c LogError"
+      "is lower than expected"
     );
 
 
@@ -626,7 +632,7 @@ namespace {
 
     EXPECT_DEATH_IF_SUPPORTED(
       SW_SIT_init_run(),
-      "@ generic.c LogError"
+      "Soil density type not recognized"
     );
 
 

@@ -182,7 +182,7 @@ namespace {
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL
     EXPECT_DEATH_IF_SUPPORTED(
       (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.),
-      "@ generic.c LogError"
+      "Bad covariance matrix"
     );
 
     // Reset to previous global state

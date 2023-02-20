@@ -169,7 +169,7 @@ namespace {
         // Error: too many missing values and weather generator turned off
         EXPECT_DEATH_IF_SUPPORTED(
           SW_WTH_finalize_all_weather(),
-          ""
+          "more than 3 days missing in year 1981 and weather generator turned off"
         );
 
         Reset_SOILWAT2_after_UnitTest();

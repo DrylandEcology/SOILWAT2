@@ -17,7 +17,7 @@ extern "C" {
 /* --------------------------------------------------- */
 void sw_init_args(int argc, char **argv);
 void sw_print_version(void);
-
+void sw_check_log(void);
 
 #ifdef __cplusplus
 }
