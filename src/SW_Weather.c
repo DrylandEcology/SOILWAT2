@@ -978,7 +978,7 @@ void checkAllWeather(SW_WEATHER *weather) {
                dailyMinTemp > dailyMaxTemp) {
 
                 // Fail
-                LogError(logfp, LOGFATAL, "Daily input value for minumum temperature"
+                LogError(logfp, LOGFATAL, "Daily input value for minimum temperature"
                          " is greater than daily input value for maximum temperature (minimum = %f, maximum = %f)"
                          " on day %d of year %d.", dailyMinTemp, dailyMaxTemp, doy + 1, year + weather->startYear);
             }

@@ -1093,7 +1093,8 @@ namespace {
                  w->n_input_forcings,
                  w->dailyInputIndices,
                  w->dailyInputFlags
-             ), ""
+             ),
+             "Incomplete record 1"
          );
 
          /* Check for value(s) that are not within reasonable range these
@@ -1108,7 +1109,7 @@ namespace {
 
          EXPECT_DEATH_IF_SUPPORTED(
              checkAllWeather(w),
-             ""
+             "Daily input value for minimum temperature is greater than daily input value for maximum temperature"
          );
 
              // Make precipitation unresonable (< 0)
@@ -1120,7 +1121,7 @@ namespace {
 
          EXPECT_DEATH_IF_SUPPORTED(
              checkAllWeather(w),
-             ""
+             "Invalid daily precipitation value"
          );
 
              // Make relative humidity unreasonable (< 0%)
@@ -1130,7 +1131,7 @@ namespace {
 
          EXPECT_DEATH_IF_SUPPORTED(
              checkAllWeather(w),
-             ""
+             "relative humidity value did not fall in the range"
          );
 
          // Reset SOILWAT2 for next test
