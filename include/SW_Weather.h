@@ -167,7 +167,8 @@ typedef struct {
   Bool dailyInputFlags[MAX_INPUT_COLUMNS];
 
   unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
- 			   n_input_forcings; // Number of input columns found in weath.YYYY
+ 			   n_input_forcings, // Number of input columns found in weath.YYYY
+    desc_rsds; /**< Description of units and definition of daily inputs of observed shortwave radiation, see `solar_radiation()` */
 
 	/* This section is required for computing the output quantities.  */
 	SW_WEATHER_OUTPUTS

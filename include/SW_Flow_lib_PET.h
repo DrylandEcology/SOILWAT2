@@ -35,11 +35,15 @@ double overcast_attenuation_KastenCzeplak1980(double cloud_cover);
 double overcast_attenuation_Angstrom1924(double sunshine_fraction);
 double clearsky_directbeam(double P, double e_a, double int_sin_beta);
 double clearnessindex_diffuse(double K_b);
+double actual_horizontal_transmissivityindex(double tau);
 
-double solar_radiation(unsigned int doy,
+double solar_radiation(
+  unsigned int doy,
   double lat, double elev, double slope, double aspect,
-  double albedo, double cloud_cover, double e_a,
-  double *H_oh, double *H_ot, double *H_gh);
+  double albedo, double *cloud_cover, double e_a,
+  double rsds, unsigned int desc_rsds,
+  double *H_oh, double *H_ot, double *H_gh
+);
 
 
 double blackbody_radiation(double T);
