@@ -445,7 +445,7 @@ namespace {
     help = SW_Site.lyr[n1]->evap_coeff;
     SW_Site.lyr[n1]->evap_coeff = -0.5;
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(),
+      SW_SIT_init_run(&SW_All.VegProd),
       "'bare-soil evaporation coefficient' has an invalid value"
     );
     SW_Site.lyr[n1]->evap_coeff = help;
@@ -453,7 +453,7 @@ namespace {
     // Check error for bad transpiration coefficient (should be [0-1])
     SW_Site.lyr[n2]->transp_coeff[k] = 1.5;
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(),
+      SW_SIT_init_run(&SW_All.VegProd),
       "'transpiration coefficient' has an invalid value"
     );
 
@@ -593,7 +593,7 @@ namespace {
     // Inputs represent matric density
     SW_Site.type_soilDensityInput = SW_MATRIC;
     SW_Site.lyr[0]->fractionVolBulk_gravel = fcoarse;
-    SW_SIT_init_run();
+    SW_SIT_init_run(&SW_All.VegProd);
 
     EXPECT_GT(
       SW_Site.lyr[0]->soilBulk_density,
@@ -604,7 +604,7 @@ namespace {
     // Inputs represent bulk density
     SW_Site.type_soilDensityInput = SW_BULK;
     SW_Site.lyr[0]->fractionVolBulk_gravel = fcoarse;
-    SW_SIT_init_run();
+    SW_SIT_init_run(&SW_All.VegProd);
 
     EXPECT_GT(
       SW_Site.lyr[0]->soilBulk_density,
@@ -631,7 +631,7 @@ namespace {
     SW_Site.type_soilDensityInput = SW_MISSING;
 
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(),
+      SW_SIT_init_run(&SW_All.VegProd),
       "Soil density type not recognized"
     );
 

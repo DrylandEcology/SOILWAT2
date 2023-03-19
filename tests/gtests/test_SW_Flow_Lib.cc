@@ -43,7 +43,6 @@
 
 
 pcg32_random_t flow_rng;
-SW_VEGPROD *v = &SW_VegProd;
 SW_SITE *s = &SW_Site;
 SW_SOILWAT *sw = &SW_Soilwat;
 //SW_SOILWAT_OUTPUTS *swo = NULL;
@@ -67,7 +66,7 @@ namespace
       bLAI = 0.0, ppt = 5.0, pptleft = ppt, store = 0.0;
 
       veg_intercepted_water(&pptleft, &wintveg, &store,
-        m, v->veg[k].veg_kSmax, bLAI, scale);
+        m, SW_All.VegProd.veg[k].veg_kSmax, bLAI, scale);
 
       EXPECT_EQ(0, wintveg); // When there is no veg, interception should be 0
       EXPECT_EQ(0, store); // When there is no veg, stored interception should be 0
@@ -78,7 +77,7 @@ namespace
       bLAI = 1.5, ppt = 0.0, pptleft = ppt, store = 0.0;
 
       veg_intercepted_water(&pptleft, &wintveg, &store,
-        m, v->veg[k].veg_kSmax, bLAI, scale);
+        m, SW_All.VegProd.veg[k].veg_kSmax, bLAI, scale);
 
       EXPECT_EQ(0, wintveg);  // When there is no ppt, interception should be 0
       EXPECT_EQ(0, store);  // When there is no ppt, stored interception should be 0
@@ -89,7 +88,7 @@ namespace
       bLAI = 1.5, ppt = 5.0, pptleft = ppt, store = 0.0;
 
       veg_intercepted_water(&pptleft, &wintveg, &store,
-        m, v->veg[k].veg_kSmax, bLAI, scale);
+        m, SW_All.VegProd.veg[k].veg_kSmax, bLAI, scale);
 
       EXPECT_GT(wintveg, 0); // interception by veg should be greater than 0
       EXPECT_LE(wintveg, ppt); // interception by veg should be less than or equal to ppt
@@ -115,7 +114,7 @@ namespace
       blitter = 0.0, ppt = 5.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
 
       litter_intercepted_water(&pptleft, &wintlit, &store,
-        m, v->veg[k].lit_kSmax, blitter, scale);
+        m, SW_All.VegProd.veg[k].lit_kSmax, blitter, scale);
 
       EXPECT_EQ(0, wintlit); // When litter is 0, interception should be 0
       EXPECT_EQ(0, store); // When litter is 0, stored interception should be 0
@@ -130,7 +129,7 @@ namespace
       blitter = 200.0, ppt = 0.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
 
       litter_intercepted_water(&pptleft, &wintlit, &store,
-        m, v->veg[k].lit_kSmax, blitter, scale);
+        m, SW_All.VegProd.veg[k].lit_kSmax, blitter, scale);
 
       EXPECT_EQ(0, pptleft); // When there is no ppt, pptleft should be 0
       EXPECT_EQ(0, wintlit); // When there is no ppt, interception should be 0
@@ -142,7 +141,7 @@ namespace
       blitter = 200.0, ppt = 5.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
 
       litter_intercepted_water(&pptleft, &wintlit, &store,
-        m, v->veg[k].lit_kSmax, blitter, scale);
+        m, SW_All.VegProd.veg[k].lit_kSmax, blitter, scale);
 
       EXPECT_GT(wintlit, 0); // interception by litter should be greater than 0
       EXPECT_LE(wintlit, pptleft); // interception by lit should be less than or equal to ppt

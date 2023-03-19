@@ -19,6 +19,7 @@
 #include "include/generic.h"
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "include/SW_Control.h"
+#include "include/SW_SoilWater.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
@@ -30,6 +31,8 @@
 */
 const char * dir_test = "./tests/example";
 const char * masterfile_test = "files.in"; // relative to 'dir_test'
+
+SW_ALL SW_All;
 
 
 /* Naming scheme for unit tests
@@ -73,7 +76,7 @@ int main(int argc, char **argv) {
 
 
   //--- Take down SOILWAT2 variables
-  SW_CTL_clear_model(swTRUE); // de-allocate all memory
+  SW_CTL_clear_model(swTRUE, &SW_All); // de-allocate all memory
 
   //--- Return output of 'RUN_ALL_TESTS()', see https://github.com/google/googletest/blob/master/googletest/docs/FAQ.md#my-compiler-complains-about-ignoring-return-value-when-i-call-run_all_tests-why
   return res;

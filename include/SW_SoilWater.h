@@ -49,6 +49,7 @@ extern "C" {
 #include "include/SW_Defines.h"
 #include "include/SW_Times.h"
 #include "include/SW_Site.h"
+#include "include/SW_VegProd.h"
 
 typedef enum {
 	SW_Adjust_Avg = 1, SW_Adjust_StdErr
@@ -137,6 +138,11 @@ typedef struct {
 
 } SW_SOILWAT;
 
+typedef struct {
+	SW_VEGPROD VegProd;
+
+} SW_ALL;
+
 
 /* =================================================== */
 /*            Externed Global Variables                */
@@ -153,15 +159,15 @@ void SW_SWC_new_year(void);
 void SW_SWC_read(void);
 void SW_SWC_init_run(void);
 void _read_swc_hist(TimeInt year);
-void SW_SWC_water_flow(void);
-void calculate_repartitioned_soilwater(void);
+void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd);
+void calculate_repartitioned_soilwater(SW_VEGPROD* SW_VegProd);
 void SW_SWC_adjust_swc(TimeInt doy);
 void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
   RealD *snow, RealD *snowmelt);
 RealD SW_SWC_snowloss(RealD pet, RealD *snowpack);
 RealD SW_SnowDepth(RealD SWE, RealD snowdensity);
 void SW_SWC_end_day(void);
-void get_dSWAbulk(int i);
+void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd);
 
 double SW_SWRC_SWCtoSWP(double swcBulk, SW_LAYER_INFO *lyr);
 double SWRC_SWCtoSWP(

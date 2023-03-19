@@ -52,6 +52,7 @@
 */
 int main(int argc, char **argv) {
 	/* =================================================== */
+	SW_ALL sw;
 
 	logged = swFALSE;
 	atexit(sw_check_log);
@@ -65,16 +66,16 @@ int main(int argc, char **argv) {
 	}
 
   // setup and construct model (independent of inputs)
-	SW_CTL_setup_model(_firstfile);
+	SW_CTL_setup_model(_firstfile, &sw);
 
 	// read user inputs
-	SW_CTL_read_inputs_from_disk();
+	SW_CTL_read_inputs_from_disk(&sw);
 
 	// finalize daily weather
 	SW_WTH_finalize_all_weather();
 
 	// initialize simulation run (based on user inputs)
-	SW_CTL_init_run();
+	SW_CTL_init_run(&sw);
 
   // initialize output
 	SW_OUT_set_ncol();
@@ -82,13 +83,13 @@ int main(int argc, char **argv) {
 	SW_OUT_create_files(); // only used with SOILWAT2
 
   // run simulation: loop through each year
-	SW_CTL_main();
+	SW_CTL_main(&sw);
 
   // finish-up output
 	SW_OUT_close_files(); // not used with rSOILWAT2
 
 	// de-allocate all memory
-	SW_CTL_clear_model(swTRUE);
+	SW_CTL_clear_model(swTRUE, &sw);
 
 	return 0;
 }

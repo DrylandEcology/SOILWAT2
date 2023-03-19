@@ -39,7 +39,6 @@
 #include "include/SW_Flow.h"
 #include "include/SW_SoilWater.h"
 #include "include/SW_VegEstab.h" // externs SW_VegEstab
-#include "include/SW_VegProd.h" // externs SW_VegProd
 #include "include/SW_Weather.h"  // externs SW_Weather
 #include "include/SW_Markov.h"
 #include "include/SW_Sky.h"
@@ -55,14 +54,14 @@
       In addition to the timekeeper (Model), usually only modules
       that read input yearly or produce output need to have this call.
 */
-static void _begin_year(void) {
+static void _begin_year(SW_VEGPROD* SW_VegProd) {
 	// SW_F_new_year() not needed
 	SW_MDL_new_year(); // call first to set up time-related arrays for this year
 	// SW_MKV_new_year() not needed
 	SW_SKY_new_year(); // Update daily climate variables from monthly values
 	//SW_SIT_new_year() not needed
 	SW_VES_new_year();
-	SW_VPD_new_year(); // Dynamic CO2 effects on vegetation
+	SW_VPD_new_year(SW_VegProd); // Dynamic CO2 effects on vegetation
 	// SW_FLW_new_year() not needed
 	SW_SWC_new_year();
 	// SW_CBN_new_year() not needed
@@ -74,8 +73,8 @@ static void _begin_day(void) {
 	SW_WTH_new_day();
 }
 
-static void _end_day(void) {
-	_collect_values();
+static void _end_day(SW_VEGPROD* SW_VegProd) {
+	_collect_values(SW_VegProd);
 	SW_SWC_end_day();
 }
 
@@ -88,7 +87,7 @@ static void _end_day(void) {
           which calls 'SW_SWC_water_flow' for each day.
 */
 
-void SW_CTL_main(void) {
+void SW_CTL_main(SW_ALL* sw) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -100,13 +99,13 @@ void SW_CTL_main(void) {
     if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
     #endif
 
-    SW_CTL_run_current_year();
+    SW_CTL_run_current_year(&sw->VegProd);
   }
 } /******* End Main Loop *********/
 
 /** @brief Setup and construct model (independent of inputs)
  */
-void SW_CTL_setup_model(const char *firstfile) {
+void SW_CTL_setup_model(const char *firstfile, SW_ALL* sw) {
 
 	SW_F_construct(firstfile);
 	SW_MDL_construct();
@@ -115,7 +114,7 @@ void SW_CTL_setup_model(const char *firstfile) {
 	// SW_SKY_construct() not need
 	SW_SIT_construct();
 	SW_VES_construct();
-	SW_VPD_construct();
+	SW_VPD_construct(&sw->VegProd);
 	// SW_FLW_construct() not needed
 	SW_OUT_construct();
 	SW_SWC_construct();
@@ -131,14 +130,14 @@ void SW_CTL_setup_model(const char *firstfile) {
 						`STEPWAT2`
 			* if `TRUE`, de-allocate all memory including output arrays.
 */
-void SW_CTL_clear_model(Bool full_reset) {
+void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
 	SW_F_deconstruct();
 	SW_MDL_deconstruct();
 	SW_WTH_deconstruct(); // calls SW_MKV_deconstruct() if needed
 	// SW_SKY_deconstruct() not needed
 	SW_SIT_deconstruct();
 	SW_VES_deconstruct();
-	SW_VPD_deconstruct();
+	SW_VPD_deconstruct(&sw->VegProd);
 	// SW_FLW_deconstruct() not needed
 	SW_OUT_deconstruct(full_reset);
 	SW_SWC_deconstruct();
@@ -149,7 +148,7 @@ void SW_CTL_clear_model(Bool full_reset) {
   Note: Time will only be set up correctly while carrying out a
   simulation year, i.e., after calling _begin_year()
 */
-void SW_CTL_init_run(void) {
+void SW_CTL_init_run(SW_ALL* sw) {
 
 	// SW_F_init_run() not needed
 	// SW_MDL_init_run() not needed
@@ -157,22 +156,22 @@ void SW_CTL_init_run(void) {
 	// SW_MKV_init_run() not needed
 	SW_PET_init_run();
 	// SW_SKY_init_run() not needed
-	SW_SIT_init_run();
+	SW_SIT_init_run(&sw->VegProd);
 	SW_VES_init_run(); // must run after `SW_SIT_init_run()`
-	SW_VPD_init_run();
+	SW_VPD_init_run(&sw->VegProd);
 	SW_FLW_init_run();
 	SW_ST_init_run();
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
 	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
 	SW_SWC_init_run();
-	SW_CBN_init_run();
+	SW_CBN_init_run(&sw->VegProd);
 }
 
 
 /**
 @brief Calls 'SW_SWC_water_flow' for each day.
 */
-void SW_CTL_run_current_year(void) {
+void SW_CTL_run_current_year(SW_VEGPROD* SW_VegProd) {
   /*=======================================================*/
   TimeInt *doy = &SW_Model.doy; // base1
   #ifdef SWDEBUG
@@ -182,7 +181,7 @@ void SW_CTL_run_current_year(void) {
   #ifdef SWDEBUG
   if (debug) swprintf("\n'SW_CTL_run_current_year': begin new year\n");
   #endif
-  _begin_year();
+  _begin_year(SW_VegProd);
 
   for (*doy = SW_Model.firstdoy; *doy <= SW_Model.lastdoy; (*doy)++) {
     #ifdef SWDEBUG
@@ -193,11 +192,11 @@ void SW_CTL_run_current_year(void) {
     #ifdef SWDEBUG
     if (debug) swprintf("simulate water ... ");
     #endif
-    SW_SWC_water_flow();
+    SW_SWC_water_flow(SW_VegProd);
 
     // Only run this function if SWA output is asked for
-    if (SW_VegProd.use_SWA) {
-      calculate_repartitioned_soilwater();
+    if (SW_VegProd->use_SWA) {
+      calculate_repartitioned_soilwater(SW_VegProd);
     }
 
     if (SW_VegEstab.use) {
@@ -207,7 +206,7 @@ void SW_CTL_run_current_year(void) {
     #ifdef SWDEBUG
     if (debug) swprintf("ending day ... ");
     #endif
-    _end_day();
+    _end_day(SW_VegProd);
 
     #ifdef SWDEBUG
     if (debug) swprintf("doy = %d completed.\n", *doy);
@@ -217,7 +216,7 @@ void SW_CTL_run_current_year(void) {
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_run_current_year': flush output\n");
   #endif
-  SW_OUT_flush();
+  SW_OUT_flush(SW_VegProd);
 
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_run_current_year': completed.\n");
@@ -229,7 +228,7 @@ void SW_CTL_run_current_year(void) {
 @brief Reads inputs from disk and makes a print statement if there is an error
         in doing so.
 */
-void SW_CTL_read_inputs_from_disk(void) {
+void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -269,8 +268,8 @@ void SW_CTL_read_inputs_from_disk(void) {
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather read'");
   #endif
-    
-  SW_VPD_read();
+
+  SW_VPD_read(&sw->VegProd);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'veg'");
   #endif
@@ -295,7 +294,7 @@ void SW_CTL_read_inputs_from_disk(void) {
   if (debug) swprintf(" > 'establishment'");
   #endif
 
-  SW_OUT_read();
+  SW_OUT_read(&sw->VegProd);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'ouput'");
   #endif

@@ -38,7 +38,6 @@
 #include "include/SW_Times.h"
 #include "include/SW_Weather.h"  // externs SW_Weather
 #include "include/SW_VegEstab.h" // externs SW_VegEstab
-#include "include/SW_VegProd.h" // externs SW_VegProd
 
 #include "include/SW_Output.h" // externs `_Sep`, `tOffset`, `ncol_OUT`
 
@@ -147,9 +146,8 @@ void get_none(OutPeriod pd)
 
 @param pd Period.
 */
-void get_co2effects_text(OutPeriod pd) {
+void get_co2effects_text(OutPeriod pd, SW_VEGPROD SW_VegProd) {
 	int k;
-	SW_VEGPROD *v = &SW_VegProd;
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -158,21 +156,20 @@ void get_co2effects_text(OutPeriod pd) {
 
 	ForEachVegType(k) {
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS,
-			v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
+			SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
 		strcat(sw_outstr, str);
 	}
 	ForEachVegType(k) {
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS,
-			v->veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
+			SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
 		strcat(sw_outstr, str);
 	}
 }
 #endif
 
 #if defined(RSOILWAT)
-void get_co2effects_mem(OutPeriod pd) {
+void get_co2effects_mem(OutPeriod pd, SW_VEGPROD SW_VegProd) {
 	int k;
-	SW_VEGPROD *v = &SW_VegProd;
 
 	RealD *p = p_OUT[eSW_CO2Effects][pd];
 	get_outvalleader(p, pd);
@@ -180,15 +177,16 @@ void get_co2effects_mem(OutPeriod pd) {
 	// No averaging or summing required:
 	ForEachVegType(k)
 	{
-		p[iOUT(k, pd)] = v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear];
-		p[iOUT(k + NVEGTYPES, pd)] = v->veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear];
+		p[iOUT(k, pd)] =
+			SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear];
+		p[iOUT(k + NVEGTYPES, pd)] =
+			SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear];
 	}
 }
 
 #elif defined(STEPWAT)
-void get_co2effects_agg(OutPeriod pd) {
+void get_co2effects_agg(OutPeriod pd, SW_VEGPROD SW_VegProd) {
 	int k;
-	SW_VEGPROD *v = &SW_VegProd;
 
 	RealD
 		*p = p_OUT[eSW_CO2Effects][pd],
@@ -197,9 +195,9 @@ void get_co2effects_agg(OutPeriod pd) {
 	ForEachVegType(k)
 	{
 		do_running_agg(p, psd, iOUT(k, pd), Globals->currIter,
-			v->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
+			SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
 		do_running_agg(p, psd, iOUT(k + NVEGTYPES, pd), Globals->currIter,
-			v->veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
+			SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
 	}
 
 	if (print_IterationSummary) {
@@ -212,19 +210,18 @@ void get_co2effects_agg(OutPeriod pd) {
 
 //------ eSW_Biomass
 #ifdef SW_OUTTEXT
-void get_biomass_text(OutPeriod pd) {
+void get_biomass_text(OutPeriod pd, SW_VEGPROD SW_VegProd) {
 	int k;
-	SW_VEGPROD *v = &SW_VegProd;
 	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
 
 	// fCover for NVEGTYPES plus bare-ground
-	snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, v->bare_cov.fCover);
+	snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, SW_VegProd.bare_cov.fCover);
 	strcat(sw_outstr, str);
 	ForEachVegType(k) {
-		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, v->veg[k].cov.fCover);
+		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, SW_VegProd.veg[k].cov.fCover);
 		strcat(sw_outstr, str);
 	}
 
@@ -253,7 +250,7 @@ void get_biomass_text(OutPeriod pd) {
 #endif
 
 #if defined(RSOILWAT)
-void get_biomass_mem(OutPeriod pd) {
+void get_biomass_mem(OutPeriod pd, SW_VEGPROD SW_VegProd) {
 	int k, i;
 	SW_VEGPROD *v = &SW_VegProd;
 	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
@@ -262,11 +259,11 @@ void get_biomass_mem(OutPeriod pd) {
 	get_outvalleader(p, pd);
 
 	// fCover for NVEGTYPES plus bare-ground
-	p[iOUT(0, pd)] = v->bare_cov.fCover;
+	p[iOUT(0, pd)] = SW_VegProd.bare_cov.fCover;
 	i = 1;
 	ForEachVegType(k)
 	{
-		p[iOUT(i + k, pd)] = v->veg[k].cov.fCover;
+		p[iOUT(i + k, pd)] = SW_VegProd.veg[k].cov.fCover;
 	}
 
 	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
@@ -289,7 +286,7 @@ void get_biomass_mem(OutPeriod pd) {
 }
 
 #elif defined(STEPWAT)
-void get_biomass_agg(OutPeriod pd) {
+void get_biomass_agg(OutPeriod pd, SW_VEGPROD SW_VegProd) {
 	int k, i;
 	SW_VEGPROD *v = &SW_VegProd;
 	SW_VEGPROD_OUTPUTS *vo = SW_VegProd.p_oagg[pd];
@@ -299,12 +296,12 @@ void get_biomass_agg(OutPeriod pd) {
 		*psd = p_OUTsd[eSW_Biomass][pd];
 
 	// fCover for NVEGTYPES plus bare-ground
-	do_running_agg(p, psd, iOUT(0, pd), Globals->currIter, v->bare_cov.fCover);
+	do_running_agg(p, psd, iOUT(0, pd), Globals->currIter, SW_VegProd.bare_cov.fCover);
 	i = 1;
 	ForEachVegType(k)
 	{
 		do_running_agg(p, psd, iOUT(i + k, pd), Globals->currIter,
-			v->veg[k].cov.fCover);
+			SW_VegProd.veg[k].cov.fCover);
 	}
 
 	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter

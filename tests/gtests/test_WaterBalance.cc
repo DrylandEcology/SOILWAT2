@@ -49,7 +49,7 @@ namespace {
     int i;
 
     // Run the simulation
-    SW_CTL_main();
+    SW_CTL_main(&SW_All);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -70,7 +70,7 @@ namespace {
     SW_Site.use_soil_temp = swTRUE;
 
     // Run the simulation
-    SW_CTL_main();
+    SW_CTL_main(&SW_All);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -93,7 +93,7 @@ namespace {
     SW_Site.percentRunon = 1.25;
 
     // Run the simulation
-    SW_CTL_main();
+    SW_CTL_main(&SW_All);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -126,7 +126,7 @@ namespace {
     SW_WTH_finalize_all_weather();
 
     // Run the simulation
-    SW_CTL_main();
+    SW_CTL_main(&SW_All);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -157,7 +157,7 @@ namespace {
     SW_WTH_finalize_all_weather();
 
     // Run the simulation
-    SW_CTL_main();
+    SW_CTL_main(&SW_All);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -182,10 +182,10 @@ namespace {
     }
 
     // Re-calculate soils
-    SW_SIT_init_run();
+    SW_SIT_init_run(&SW_All.VegProd);
 
     // Run the simulation
-    SW_CTL_main();
+    SW_CTL_main(&SW_All);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -203,13 +203,13 @@ namespace {
     int i;
 
     // Select method to estimate vegetation from long-term climate
-    SW_VegProd.veg_method = 1;
+    SW_All.VegProd.veg_method = 1;
 
     // Re-calculate vegetation
-    SW_VPD_init_run();
+    SW_VPD_init_run(&SW_All.VegProd);
 
     // Run the simulation
-    SW_CTL_main();
+    SW_CTL_main(&SW_All);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -239,10 +239,10 @@ namespace {
     SW_SWRC_read();
 
     // Update soils
-    SW_SIT_init_run();
+    SW_SIT_init_run(&SW_All.VegProd);
 
     // Run the simulation
-    SW_CTL_main();
+    SW_CTL_main(&SW_All);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -274,10 +274,10 @@ namespace {
     SW_SWRC_read();
 
     // Update soils
-    SW_SIT_init_run();
+    SW_SIT_init_run(&SW_All.VegProd);
 
     // Run the simulation
-    SW_CTL_main();
+    SW_CTL_main(&SW_All);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -322,7 +322,7 @@ namespace {
     SW_WTH_finalize_all_weather();
 
     // Run the simulation
-    SW_CTL_main();
+    SW_CTL_main(&SW_All);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {

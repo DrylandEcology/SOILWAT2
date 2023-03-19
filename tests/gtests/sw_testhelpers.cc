@@ -42,10 +42,12 @@ void Reset_SOILWAT2_after_UnitTest(void) {
   QuietMode = swTRUE;
   EchoInits = swFALSE;
 
-  SW_CTL_clear_model(swFALSE);
+  memset(&SW_All, 0, sizeof(SW_ALL));
 
-  SW_CTL_setup_model(_firstfile); // `_firstfile` is here "files.in"
-  SW_CTL_read_inputs_from_disk();
+  SW_CTL_clear_model(swFALSE, &SW_All);
+
+  SW_CTL_setup_model(_firstfile, &SW_All); // `_firstfile` is here "files.in"
+  SW_CTL_read_inputs_from_disk(&SW_All);
 
   /* Notes on messages during tests
     - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
@@ -58,7 +60,7 @@ void Reset_SOILWAT2_after_UnitTest(void) {
   logfp = NULL;
 
   SW_WTH_finalize_all_weather();
-  SW_CTL_init_run();
+  SW_CTL_init_run(&SW_All);
 
 
   // Next functions calls from `main()` require SW_Output.c
@@ -127,5 +129,5 @@ void create_test_soillayers(unsigned int nlayers) {
   set_soillayers(nlayers, dmax, bulkd, f_gravel,
     evco, trco_grass, trco_shrub, trco_tree,
     trco_forb, psand, pclay, imperm, soiltemp,
-    nRegions, regionLowerBounds);
+    nRegions, regionLowerBounds, &SW_All.VegProd);
 }

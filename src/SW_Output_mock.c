@@ -32,7 +32,6 @@
 #include "include/SW_Output.h"
 #include "include/SW_Weather.h"  // externs SW_Weather
 #include "include/SW_VegEstab.h" // externs SW_VegEstab
-#include "include/SW_VegProd.h" // externs SW_VegProd
 
 
 
@@ -81,27 +80,27 @@ void SW_OUT_deconstruct(Bool full_reset)
 void SW_OUT_new_year(void)
 {}
 
-void SW_OUT_read(void)
+void SW_OUT_read(SW_VEGPROD* SW_VegProd)
 {}
 
 /**
 @brief This is a blank function.
 */
-void _collect_values(void)
+void _collect_values(SW_VEGPROD* SW_VegProd)
 {}
 
-void SW_OUT_flush(void)
+void SW_OUT_flush(SW_VEGPROD* SW_VegProd)
 {
-	_collect_values();
+	_collect_values(SW_VegProd);
 }
 
-void SW_OUT_sum_today(ObjType otyp)
+void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd)
 {
 	ObjType x = otyp;
 	if (x == eF) {}
 }
 
-void SW_OUT_write_today(void)
+void SW_OUT_write_today(SW_VEGPROD* SW_VegProd)
 {}
 
 void get_none(OutPeriod pd)
@@ -109,12 +108,12 @@ void get_none(OutPeriod pd)
 	if (pd) {}
 }
 
-void get_co2effects_text(OutPeriod pd)
+void get_co2effects_text(OutPeriod pd, SW_VEGPROD SW_VegProd)
 {
 	if (pd) {}
 }
 
-void get_biomass_text(OutPeriod pd)
+void get_biomass_text(OutPeriod pd, SW_VEGPROD SW_VegProd)
 {
 	if (pd) {}
 }
@@ -281,22 +280,22 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 }
 
 
-static void average_for(ObjType otyp, OutPeriod pd)
+static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd)
 {
 	if (pd == eSW_Day) {}
-	SW_OUT_sum_today(otyp);
+	SW_OUT_sum_today(otyp, SW_VegProd);
 }
 
-static void collect_sums(ObjType otyp, OutPeriod op)
+static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd)
 {
 	if (op == eSW_Day) {}
-	SW_OUT_sum_today(otyp);
+	SW_OUT_sum_today(otyp, SW_VegProd);
 }
 
 /**
 @brief Runs get commands for each eSW_Year.
 */
-void _echo_outputs(void)
+void _echo_outputs(SW_VEGPROD SW_VegProd)
 {
 	OutPeriod pd = eSW_Year;
 
@@ -326,8 +325,8 @@ void _echo_outputs(void)
 	get_deepswc_text(pd);
 	get_soiltemp_text(pd);
     get_frozen_text(pd);
-	get_co2effects_text(pd);
-	get_biomass_text(pd);
+	get_co2effects_text(pd, SW_VegProd);
+	get_biomass_text(pd, SW_VegProd);
 
 	OutKey k = eSW_NoKey;
 	SW_VEGPROD *vveg = NULL;
@@ -346,8 +345,8 @@ void _echo_outputs(void)
 
 	ObjType otyp = eF;
 
-	average_for(otyp, pd);
-	collect_sums(otyp, pd);
+	average_for(otyp, pd, &SW_VegProd);
+	collect_sums(otyp, pd, &SW_VegProd);
 }
 
 

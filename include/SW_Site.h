@@ -48,6 +48,7 @@
 #define SW_SITE_H
 
 #include "include/SW_Defines.h"
+#include "include/SW_VegProd.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -357,7 +358,7 @@ void SW_SIT_construct(void);
 void SW_SIT_deconstruct(void);
 void SW_SIT_init_counts(void);
 void SW_SIT_read(void);
-void SW_SIT_init_run(void);
+void SW_SIT_init_run(SW_VEGPROD* SW_VegProd);
 void _echo_inputs(void);
 
 /* these used to be in Layers */
@@ -370,7 +371,7 @@ void add_deepdrain_layer(void);
 void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
   RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
   RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp,
-  int nRegions, RealD *regionLowerBounds);
+  int nRegions, RealD *regionLowerBounds, SW_VEGPROD* SW_VegProd);
 void derive_soilRegions(int nRegions, RealD *regionLowerBounds);
 
 #ifdef DEBUG_MEM

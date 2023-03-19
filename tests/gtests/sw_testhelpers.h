@@ -1,5 +1,6 @@
 #include <cmath>
 #include "gtest/gtest.h"
+#include "include/SW_SoilWater.h"
 
 
 #define length(array) (sizeof(array) / sizeof(*(array))) //get length of an array
@@ -17,6 +18,7 @@ static const double
 #undef missing
 #define missing(x)  ( EQ( fabs( (x) ), SW_MISSING ) || !std::isfinite( (x) ) )
 
+extern SW_ALL SW_All;
 
 /* Functions for unit tests */
 

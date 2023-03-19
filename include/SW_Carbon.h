@@ -8,6 +8,7 @@
 #define CARBON
 
 #include "include/SW_Defines.h"
+#include "include/SW_VegProd.h"
 
 
 #ifdef __cplusplus
@@ -43,7 +44,7 @@ extern SW_CARBON SW_Carbon;
 void SW_CBN_construct(void);
 void SW_CBN_deconstruct(void);
 void SW_CBN_read(void);
-void SW_CBN_init_run(void);
+void SW_CBN_init_run(SW_VEGPROD* SW_VegProd);
 
 
 #ifdef __cplusplus

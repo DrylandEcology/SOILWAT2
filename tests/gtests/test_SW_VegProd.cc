@@ -38,14 +38,14 @@
 
 
 
-static void assert_decreasing_SWPcrit(void);
-static void assert_decreasing_SWPcrit(void)
+static void assert_decreasing_SWPcrit(SW_VEGPROD* SW_VegProd);
+static void assert_decreasing_SWPcrit(SW_VEGPROD* SW_VegProd)
 {
 	int rank, vegtype;
 
 	for (rank = 0; rank < NVEGTYPES - 1; rank++)
 	{
-		vegtype = SW_VegProd.rank_SWPcrits[rank];
+		vegtype = SW_VegProd->rank_SWPcrits[rank];
 
 		/*
 		swprintf("Rank=%d is vegtype=%d with SWPcrit=%f\n",
@@ -56,8 +56,8 @@ static void assert_decreasing_SWPcrit(void)
 		// Check that SWPcrit of `vegtype` is larger or equal to
 		// SWPcrit of the vegetation type with the next larger rank
 		ASSERT_GE(
-			SW_VegProd.critSoilWater[vegtype],
-			SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[rank + 1]]);
+			SW_VegProd->critSoilWater[vegtype],
+			SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[rank + 1]]);
 	}
 }
 
@@ -111,20 +111,19 @@ static void calcGrassCoverFromL0(double grass[], double L0[]) {
 
 
 namespace {
-  SW_VEGPROD *v = &SW_VegProd;
   int k;
 
   // Test the SW_VEGPROD constructor 'SW_VPD_construct'
   TEST(VegTest, Constructor) {
-    SW_VPD_construct();
-    SW_VPD_init_run();
+    SW_VPD_construct(&SW_All.VegProd);
+    SW_VPD_init_run(&SW_All.VegProd);
 
     ForEachVegType(k) {
-      EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[BIO_INDEX][0]);
-      EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]);
+      EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[BIO_INDEX][0]);
+      EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]);
 
-      EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[WUE_INDEX][0]);
-      EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
+      EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[WUE_INDEX][0]);
+      EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
     }
 
     // Reset to previous global state
@@ -143,7 +142,7 @@ namespace {
     }
 
     // One example
-    x = v->veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_Model.startyr + SW_Model.addtl_yr];
+    x = SW_All.VegProd.veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_Model.startyr + SW_Model.addtl_yr];
     apply_biomassCO2effect(biom2, biom1, x);
 
     for (i = 0; i < 12; i++) {
@@ -169,38 +168,38 @@ namespace {
 	TEST(VegTest, rank) {
 		int k;
 		// Check `get_critical_rank` for normal inputs, e.g., -2.0, -2.0, -3.5, -3.9
-		get_critical_rank();
-		assert_decreasing_SWPcrit();
+		get_critical_rank(&SW_All.VegProd);
+		assert_decreasing_SWPcrit(&SW_All.VegProd);
 
 
 		// Check `get_critical_rank` for constant values
 		ForEachVegType(k)
 		{
-			SW_VegProd.critSoilWater[k] = 0.;
+			SW_All.VegProd.critSoilWater[k] = 0.;
 		}
 
-		get_critical_rank();
-		assert_decreasing_SWPcrit();
+		get_critical_rank(&SW_All.VegProd);
+		assert_decreasing_SWPcrit(&SW_All.VegProd);
 
 
 		// Check `get_critical_rank` for increasing values
 		ForEachVegType(k)
 		{
-			SW_VegProd.critSoilWater[k] = k;
+			SW_All.VegProd.critSoilWater[k] = k;
 		}
 
-		get_critical_rank();
-		assert_decreasing_SWPcrit();
+		get_critical_rank(&SW_All.VegProd);
+		assert_decreasing_SWPcrit(&SW_All.VegProd);
 
 
 		// Check `get_critical_rank` for decreasing values
 		ForEachVegType(k)
 		{
-			SW_VegProd.critSoilWater[k] = NVEGTYPES - k;
+			SW_All.VegProd.critSoilWater[k] = NVEGTYPES - k;
 		}
 
-		get_critical_rank();
-		assert_decreasing_SWPcrit();
+		get_critical_rank(&SW_All.VegProd);
+		assert_decreasing_SWPcrit(&SW_All.VegProd);
 
 
 		// Reset to previous global state

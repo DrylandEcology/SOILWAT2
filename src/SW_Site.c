@@ -68,8 +68,6 @@
 #include "include/SW_Site.h" // externs SW_Site
 #include "include/SW_SoilWater.h"
 
-#include "include/SW_VegProd.h" // externs SW_VegProd, key2veg
-
 
 
 /* =================================================== */
@@ -1722,7 +1720,7 @@ void SW_LYR_read(void) {
 void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
   RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
   RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp,
-  int nRegions, RealD *regionLowerBounds)
+  int nRegions, RealD *regionLowerBounds, SW_VEGPROD* SW_VegProd)
 {
 
   RealF dmin = 0.0;
@@ -1778,7 +1776,7 @@ void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
   derive_soilRegions(nRegions, regionLowerBounds);
 
   // Re-initialize site parameters based on new soil layers
-  SW_SIT_init_run();
+  SW_SIT_init_run(SW_VegProd);
 }
 
 
@@ -1943,7 +1941,7 @@ void SW_SWRC_read(void) {
 
 	@sideeffect Values stored in global variable `SW_Site`.
 */
-void SW_SIT_init_run(void) {
+void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 	/* =================================================== */
 	/* potentially this routine can be called whether the
 	 * layer data came from a file or a function call which
@@ -2204,7 +2202,7 @@ void SW_SIT_init_run(void) {
 			trsum_veg[k] += lyr->transp_coeff[k];
 			/* calculate soil water content at SWPcrit for each vegetation type */
 			lyr->swcBulk_atSWPcrit[k] = SW_SWRC_SWPtoSWC(
-				SW_VegProd.veg[k].SWPcrit,
+				SW_VegProd->veg[k].SWPcrit,
 				lyr
 			);
 
@@ -2213,7 +2211,7 @@ void SW_SIT_init_run(void) {
 
 				// lower SWcrit [-bar] to SWP-equivalent of swBulk_min
 				tmp = fmin(
-					SW_VegProd.veg[k].SWPcrit,
+					SW_VegProd->veg[k].SWPcrit,
 					SW_SWRC_SWCtoSWP(lyr->swcBulk_min, lyr)
 				);
 
@@ -2226,13 +2224,13 @@ void SW_SIT_init_run(void) {
 					"(and swcBulk_atSWPcrit in every layer will be re-calculated).\n",
 					MyFileName, lyr->id + 1, k + 1,
 					lyr->swcBulk_atSWPcrit[k],
-					-0.1 * SW_VegProd.veg[k].SWPcrit,
+					-0.1 * SW_VegProd->veg[k].SWPcrit,
 					lyr->swcBulk_min,
 					-0.1 * SW_SWRC_SWCtoSWP(lyr->swcBulk_min, lyr),
 					-0.1 * tmp
 				);
 
-				SW_VegProd.veg[k].SWPcrit = tmp;
+				SW_VegProd->veg[k].SWPcrit = tmp;
 			}
 
 			/* Find which transpiration region the current soil layer
@@ -2282,7 +2280,7 @@ void SW_SIT_init_run(void) {
 			{
 				/* calculate soil water content at adjusted SWPcrit */
 				lyr->swcBulk_atSWPcrit[k] = SW_SWRC_SWPtoSWC(
-					SW_VegProd.veg[k].SWPcrit,
+					SW_VegProd->veg[k].SWPcrit,
 					lyr
 				);
 
@@ -2296,7 +2294,7 @@ void SW_SIT_init_run(void) {
 						MyFileName, lyr->id + 1, k + 1,
 						lyr->swcBulk_atSWPcrit[k],
 						lyr->swcBulk_min,
-						-0.1 * SW_VegProd.veg[k].SWPcrit
+						-0.1 * SW_VegProd->veg[k].SWPcrit
 					);
 				}
 			}
@@ -2305,9 +2303,9 @@ void SW_SIT_init_run(void) {
 		/* Update values for `get_swa()` */
 		ForEachVegType(k)
 		{
-			SW_VegProd.critSoilWater[k] = -0.1 * SW_VegProd.veg[k].SWPcrit;
+			SW_VegProd->critSoilWater[k] = -0.1 * SW_VegProd->veg[k].SWPcrit;
 		}
-		get_critical_rank();
+		get_critical_rank(SW_VegProd);
 	}
 
 	/* normalize the evap and transp coefficients separately

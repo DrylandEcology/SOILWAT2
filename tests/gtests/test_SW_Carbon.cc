@@ -41,7 +41,6 @@
 
 namespace {
   SW_CARBON *c = &SW_Carbon;
-  SW_VEGPROD *v  = &SW_VegProd;
   TimeInt simendyr = SW_Model.endyr + SW_Model.addtl_yr;
 
   // Test the SW_Carbon constructor 'SW_CBN_construct'
@@ -107,12 +106,12 @@ namespace {
     SW_Model.addtl_yr = 0;
 
     SW_CBN_read();
-    SW_CBN_init_run();
+    SW_CBN_init_run(&SW_All.VegProd);
 
     for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= simendyr; year++) {
       ForEachVegType(k) {
-        EXPECT_GT(v->veg[k].co2_multipliers[BIO_INDEX][year], 0.);
-        EXPECT_GT(v->veg[k].co2_multipliers[WUE_INDEX][year], 0.);
+        EXPECT_GT(SW_All.VegProd.veg[k].co2_multipliers[BIO_INDEX][year], 0.);
+        EXPECT_GT(SW_All.VegProd.veg[k].co2_multipliers[WUE_INDEX][year], 0.);
       }
     }
 

@@ -3,6 +3,7 @@
 #include "include/generic.h" // for `Bool`, `swTRUE`, `swFALSE`
 #include "include/SW_Control.h" // for `SW_CTL_main()`
 #include "include/SW_VegEstab.h" // for `SW_VegEstab`, `SW_VES_read2()`
+#include "include/SW_SoilWater.h"
 
 #include "tests/gtests/sw_testhelpers.h" // for `Reset_SOILWAT2_after_UnitTest()`
 
@@ -19,7 +20,7 @@ namespace {
     EXPECT_GT(SW_VegEstab.count, 0);
 
     // Run the simulation
-    SW_CTL_main();
+    SW_CTL_main(&SW_All);
 
     // Expect valid 'day of year' 1-366 output for each species from the
     // vegetation establishment calculations

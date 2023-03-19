@@ -247,14 +247,15 @@ void SW_OUT_deconstruct(Bool full_reset);
 void SW_OUT_set_ncol(void);
 void SW_OUT_set_colnames(void);
 void SW_OUT_new_year(void);
-int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last, char msg[], size_t sizeof_msg);
-void SW_OUT_read(void);
-void SW_OUT_sum_today(ObjType otyp);
-void SW_OUT_write_today(void);
+int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
+					   char msg[], size_t sizeof_msg, SW_VEGPROD* SW_VegProd);
+void SW_OUT_read(SW_VEGPROD* SW_VegProd);
+void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd);
+void SW_OUT_write_today(SW_VEGPROD* SW_VegProd);
 void SW_OUT_write_year(void);
-void SW_OUT_flush(void);
-void _collect_values(void);
-void _echo_outputs(void);
+void SW_OUT_flush(SW_VEGPROD* SW_VegProd);
+void _collect_values(SW_VEGPROD* SW_VegProd);
+void _echo_outputs(SW_VEGPROD SW_VegProd);
 
 void find_OutPeriods_inUse(void);
 Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k);
@@ -310,8 +311,8 @@ void get_deepswc_text(OutPeriod pd);
 void get_estab_text(OutPeriod pd);
 void get_soiltemp_text(OutPeriod pd);
 void get_frozen_text(OutPeriod pd);
-void get_co2effects_text(OutPeriod pd);
-void get_biomass_text(OutPeriod pd);
+void get_co2effects_text(OutPeriod pd, SW_VEGPROD SW_VegProd);
+void get_biomass_text(OutPeriod pd, SW_VEGPROD SW_VegProd);
 #endif
 
 #if defined(RSOILWAT)
@@ -341,8 +342,8 @@ void get_deepswc_mem(OutPeriod pd);
 void get_estab_mem(OutPeriod pd);
 void get_soiltemp_mem(OutPeriod pd);
 void get_frozen_mem(OutPeriod pd);
-void get_co2effects_mem(OutPeriod pd);
-void get_biomass_mem(OutPeriod pd);
+void get_co2effects_mem(OutPeriod pd, SW_VEGPROD SW_VegProd);
+void get_biomass_mem(OutPeriod pd, SW_VEGPROD SW_VegProd);
 
 #elif defined(STEPWAT)
 void get_temp_agg(OutPeriod pd);
@@ -371,8 +372,8 @@ void get_deepswc_agg(OutPeriod pd);
 void get_estab_agg(OutPeriod pd);
 void get_soiltemp_agg(OutPeriod pd);
 void get_frozen_agg(OutPeriod pd);
-void get_co2effects_agg(OutPeriod pd);
-void get_biomass_agg(OutPeriod pd);
+void get_co2effects_agg(OutPeriod pd, SW_VEGPROD SW_VegProd);
+void get_biomass_agg(OutPeriod pd, SW_VEGPROD SW_VegProd);
 
 void get_temp_SXW(OutPeriod pd);
 void get_precip_SXW(OutPeriod pd);
@@ -400,8 +401,8 @@ void get_deepswc_SXW(OutPeriod pd);
 void get_estab_SXW(OutPeriod pd);
 void get_soiltemp_SXW(OutPeriod pd);
 void get_frozen_SXW(OutPeriod pd);
-void get_co2effects_SXW(OutPeriod pd);
-void get_biomass_SXW(OutPeriod pd);
+void get_co2effects_SXW(OutPeriod pd, SW_VEGPROD SW_VegProd);
+void get_biomass_SXW(OutPeriod pd, SW_VEGPROD SW_VegProd);
 #endif
 
 

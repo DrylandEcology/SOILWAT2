@@ -50,7 +50,6 @@
 #include "include/SW_Site.h" // externs SW_Site
 #include "include/SW_Flow.h"
 #include "include/SW_SoilWater.h"
-#include "include/SW_VegProd.h" // externs SW_VegProd
 #ifdef SWDEBUG
   #include "include/SW_Weather.h"   // externs SW_Weather
 #endif
@@ -654,7 +653,7 @@ void SW_SWC_deconstruct(void)
 @brief Adjust SWC according to historical (measured) data if available, compute
     water flow, and check if swc is above threshold for "wet" condition.
 */
-void SW_SWC_water_flow(void) {
+void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd) {
 	/* =================================================== */
 
 
@@ -688,7 +687,7 @@ void SW_SWC_water_flow(void) {
     #ifdef SWDEBUG
     if (debug) swprintf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
     #endif
-		SW_Water_Flow();
+		SW_Water_Flow(SW_VegProd);
 	}
 
   #ifdef SWDEBUG
@@ -708,7 +707,7 @@ void SW_SWC_water_flow(void) {
     Must be call after `SW_SWC_water_flow()` is executed.
 */
 /***********************************************************/
-void calculate_repartitioned_soilwater(void){
+void calculate_repartitioned_soilwater(SW_VEGPROD* SW_VegProd) {
   // this will run for every day of every year
   SW_SOILWAT *v = &SW_Soilwat;
 	LyrIndex i;
@@ -719,7 +718,7 @@ void calculate_repartitioned_soilwater(void){
   ForEachSoilLayer(i){
     val = v->swcBulk[Today][i];
     ForEachVegType(j){
-      if(SW_VegProd.veg[j].cov.fCover != 0)
+      if(SW_VegProd->veg[j].cov.fCover != 0)
         v->swa_master[j][j][i] = fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[j]);
       else
         v->swa_master[j][j][i] = 0.;
@@ -730,14 +729,14 @@ void calculate_repartitioned_soilwater(void){
     //(i.e. if shrub=-3.9 then it also has access to -3.5 and -2.0)
     // go through each veg type
     for(j=0; j<NVEGTYPES; j++){
-      curr_crit_val = SW_VegProd.critSoilWater[j]; // get critical value for current veg type
+      curr_crit_val = SW_VegProd->critSoilWater[j]; // get critical value for current veg type
       // go through each critical value to see which ones need to be set for each veg_type
       for(k=0; k<NVEGTYPES; k++){
         if(k == j){
           // dont need to check for its own critical value
         }
         else{
-          new_crit_val = SW_VegProd.critSoilWater[k];
+          new_crit_val = SW_VegProd->critSoilWater[k];
           if(curr_crit_val < new_crit_val){ // need to store this value since it has access to it
             v->swa_master[j][k][i] = v->swa_master[k][k][i]; // itclp(veg_type, new_critical_value, layer, timeperiod)
           }
@@ -750,7 +749,7 @@ void calculate_repartitioned_soilwater(void){
         }
       }
     }
-    get_dSWAbulk(i); // call function to get repartioned swa values
+    get_dSWAbulk(i, SW_VegProd); // call function to get repartioned swa values
   }
 }
 
@@ -763,13 +762,13 @@ void calculate_repartitioned_soilwater(void){
 @param i Integer value for soil layer
 */
 /***********************************************************/
-void get_dSWAbulk(int i){
+void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd) {
   SW_SOILWAT *v = &SW_Soilwat;
 	int j,kv,curr_vegType,curr_crit_rank_index,kv_veg_type,prev_crit_veg_type,greater_veg_type;
 	float crit_val, prev_crit_val, smallestCritVal, vegFractionSum, newFraction;
 	float veg_type_in_use; // set to current veg type fraction value to avoid multiple if loops. should just need 1 instead of 3 now.
 	float inner_loop_veg_type; // set to inner loop veg type
-	smallestCritVal = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[0]];
+	smallestCritVal = SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[0]];
 	RealF dSWA_bulk[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES][MAX_LAYERS];
 	RealF dSWA_bulk_repartioned[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES][MAX_LAYERS];
 
@@ -784,19 +783,19 @@ void get_dSWAbulk(int i){
 	// loop through each veg type to get dSWAbulk
 	for(curr_vegType = (NVEGTYPES - 1); curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
     v->dSWA_repartitioned_sum[curr_vegType][i] = 0.;
-    curr_crit_rank_index = SW_VegProd.rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
-		veg_type_in_use = SW_VegProd.veg[curr_crit_rank_index].cov.fCover; // set veg type fraction here
+    curr_crit_rank_index = SW_VegProd->rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
+		veg_type_in_use = SW_VegProd->veg[curr_crit_rank_index].cov.fCover; // set veg type fraction here
 
 		for(kv = curr_vegType; kv>=0; kv--){
-			crit_val = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[kv]]; // get crit value at current index
-			kv_veg_type = SW_VegProd.rank_SWPcrits[kv]; // get index for veg_type. dont want to access v->swa_master at rank_SWPcrits index
+			crit_val = SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[kv]]; // get crit value at current index
+			kv_veg_type = SW_VegProd->rank_SWPcrits[kv]; // get index for veg_type. dont want to access v->swa_master at rank_SWPcrits index
 			if(kv != 0){
-				prev_crit_val = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[kv-1]]; // get crit value for index lower
-				prev_crit_veg_type = SW_VegProd.rank_SWPcrits[kv-1]; // get veg type that belongs to the corresponding critical value
+				prev_crit_val = SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[kv-1]]; // get crit value for index lower
+				prev_crit_veg_type = SW_VegProd->rank_SWPcrits[kv-1]; // get veg type that belongs to the corresponding critical value
 			}
 			else{
-				prev_crit_val = SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[kv]]; // get crit value for index lower
-				prev_crit_veg_type = SW_VegProd.rank_SWPcrits[kv]; // get veg type that belongs to the corresponding critical value
+				prev_crit_val = SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[kv]]; // get crit value for index lower
+				prev_crit_veg_type = SW_VegProd->rank_SWPcrits[kv]; // get veg type that belongs to the corresponding critical value
 			}
 			if(veg_type_in_use == 0){ // [0=tree(-2.0,off), 1=shrub(-3.9,on), 2=grass(-3.5,on), 3=forb(-2.0,on)]
 				dSWA_bulk[curr_crit_rank_index][kv_veg_type][i] = 0.; // set to 0 to ensure no absent values
@@ -835,9 +834,9 @@ void get_dSWAbulk(int i){
 						// need to calculute new fraction for these since sum of them no longer adds up to 1. do this by adding fractions values
 						// of veg types who have access and then dividing these fraction values by the total sum. keeps the ratio and adds up to 1
 						for(j = (NVEGTYPES - 1); j >= 0; j--){ // go through all critical values and sum the fractions of the veg types who have access
-							inner_loop_veg_type = SW_VegProd.veg[j].cov.fCover; // set veg type fraction here
+							inner_loop_veg_type = SW_VegProd->veg[j].cov.fCover; // set veg type fraction here
 
-							if(SW_VegProd.critSoilWater[j] <= crit_val)
+							if(SW_VegProd->critSoilWater[j] <= crit_val)
 								vegFractionSum += inner_loop_veg_type;
 						}
 						newFraction = veg_type_in_use / vegFractionSum; // divide veg fraction by sum to get new fraction value
@@ -850,8 +849,8 @@ void get_dSWAbulk(int i){
 		// setting all the veg types above current to 0 since they do not have access to those
 		// ex: if forb=-2.0 grass=-3.5 & shrub=-3.9 then need to set grass and shrub to 0 for forb
 		for(j = curr_vegType + 1; j < NVEGTYPES; j++){
-			greater_veg_type = SW_VegProd.rank_SWPcrits[j];
-			if(SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[j-1]] > SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[j]]){
+			greater_veg_type = SW_VegProd->rank_SWPcrits[j];
+			if(SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[j-1]] > SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[j]]){
 				dSWA_bulk[curr_crit_rank_index][greater_veg_type][i] = 0.;
 				dSWA_bulk_repartioned[curr_crit_rank_index][greater_veg_type][i] = 0.;
 			}
@@ -860,7 +859,7 @@ void get_dSWAbulk(int i){
 
 	for(curr_vegType = 0; curr_vegType < NVEGTYPES; curr_vegType++){
 		for(kv = 0; kv < NVEGTYPES; kv++){
-			if(SW_VegProd.veg[curr_vegType].cov.fCover == 0.)
+			if(SW_VegProd->veg[curr_vegType].cov.fCover == 0.)
 				v->dSWA_repartitioned_sum[curr_vegType][i] = 0.;
 			else
 				v->dSWA_repartitioned_sum[curr_vegType][i] += dSWA_bulk_repartioned[curr_vegType][kv][i];
