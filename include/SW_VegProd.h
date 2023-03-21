@@ -36,6 +36,7 @@
 
 #include "include/SW_Defines.h"    /* for tanfunc_t*/
 #include "include/Times.h" 				// for MAX_MONTHS
+#include "include/SW_Weather.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -258,8 +259,9 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd);
 void SW_VPD_new_year(SW_VEGPROD* SW_VegProd);
 void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd);
 void SW_VPD_construct(SW_VEGPROD* SW_VegProd);
-void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYear,
-                                   int veg_method, double latitude);
+void estimateVegetationFromClimate(SW_VEGPROD *vegProd, SW_WEATHER* SW_Weather,
+								                   int startYear, int endYear, int veg_method,
+								                   double latitude);
 void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTempMon_C[],
     double PPTMon_cm[], double inputValues[], double shrubLimit, double SumGrassesFraction,
     double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorthHem, Bool warnExtrapolation,
@@ -267,7 +269,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
 double cutZeroInf(double testValue);
 void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTwoSize,
                    int *finalIndexArray, int *finalIndexArraySize);
-void SW_VPD_init_run(SW_VEGPROD* SW_VegProd);
+void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather);
 void SW_VPD_deconstruct(SW_VEGPROD* SW_VegProd);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
 RealD sum_across_vegtypes(RealD *x);

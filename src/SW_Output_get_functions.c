@@ -437,7 +437,7 @@ void get_estab_agg(OutPeriod pd)
 
 @param pd Period.
 */
-void get_temp_text(OutPeriod pd)
+void get_temp_text(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
 
@@ -459,7 +459,7 @@ void get_temp_text(OutPeriod pd)
 
 @param pd Period.
 */
-void get_temp_mem(OutPeriod pd)
+void get_temp_mem(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
 
@@ -481,7 +481,7 @@ void get_temp_mem(OutPeriod pd)
 
 @param pd Period.
 */
-void get_temp_agg(OutPeriod pd)
+void get_temp_agg(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
 
@@ -507,7 +507,7 @@ void get_temp_agg(OutPeriod pd)
 
 @param pd Period.
 */
-void get_temp_SXW(OutPeriod pd)
+void get_temp_SXW(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	if (pd == eSW_Month || pd == eSW_Year) {
 		SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -531,7 +531,7 @@ void get_temp_SXW(OutPeriod pd)
 
 @param pd Period.
 */
-void get_precip_text(OutPeriod pd)
+void get_precip_text(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
 
@@ -552,7 +552,7 @@ void get_precip_text(OutPeriod pd)
 
 @param pd Period.
 */
-void get_precip_mem(OutPeriod pd)
+void get_precip_mem(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
 
@@ -573,7 +573,7 @@ void get_precip_mem(OutPeriod pd)
 
 @param pd Period.
 */
-void get_precip_agg(OutPeriod pd)
+void get_precip_agg(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
 
@@ -598,7 +598,7 @@ void get_precip_agg(OutPeriod pd)
 
 @param pd Period.
 */
-void get_precip_SXW(OutPeriod pd)
+void get_precip_SXW(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	if (pd == eSW_Month || pd == eSW_Year) {
 		SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -1264,7 +1264,7 @@ void get_surfaceWater_agg(OutPeriod pd)
 
 @param pd Period.
 */
-void get_runoffrunon_text(OutPeriod pd)
+void get_runoffrunon_text(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	RealD net;
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -1287,7 +1287,7 @@ void get_runoffrunon_text(OutPeriod pd)
 
 @param pd Period.
 */
-void get_runoffrunon_mem(OutPeriod pd)
+void get_runoffrunon_mem(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	RealD net;
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -1310,7 +1310,7 @@ void get_runoffrunon_mem(OutPeriod pd)
 
 @param pd Period.
 */
-void get_runoffrunon_agg(OutPeriod pd)
+void get_runoffrunon_agg(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	RealD net;
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
@@ -1733,7 +1733,7 @@ void get_interception_agg(OutPeriod pd)
 
 @param pd Period.
 */
-void get_soilinf_text(OutPeriod pd)
+void get_soilinf_text(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	/* 20100202 (drs) added */
 	/* 20110219 (drs) added runoff */
@@ -1752,7 +1752,7 @@ void get_soilinf_text(OutPeriod pd)
 
 @param pd Period.
 */
-void get_soilinf_mem(OutPeriod pd)
+void get_soilinf_mem(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
 
@@ -1769,7 +1769,7 @@ void get_soilinf_mem(OutPeriod pd)
 
 @param pd Period.
 */
-void get_soilinf_agg(OutPeriod pd)
+void get_soilinf_agg(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	SW_WEATHER_OUTPUTS *vo = SW_Weather.p_oagg[pd];
 
@@ -1985,7 +1985,7 @@ void get_hydred_agg(OutPeriod pd)
 
 @param pd Period.
 */
-void get_aet_text(OutPeriod pd)
+void get_aet_text(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
 	SW_WEATHER_OUTPUTS *vo2 = SW_Weather.p_oagg[pd];
@@ -2013,7 +2013,7 @@ void get_aet_text(OutPeriod pd)
 
 @param pd Period.
 */
-void get_aet_mem(OutPeriod pd)
+void get_aet_mem(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
 	SW_WEATHER_OUTPUTS *vo2 = SW_Weather.p_oagg[pd];
@@ -2036,7 +2036,7 @@ void get_aet_mem(OutPeriod pd)
 
 @param pd Period.
 */
-void get_aet_agg(OutPeriod pd)
+void get_aet_agg(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
 	SW_WEATHER_OUTPUTS *vo2 = SW_Weather.p_oagg[pd];
@@ -2064,7 +2064,7 @@ void get_aet_agg(OutPeriod pd)
 
 @param pd Period.
 */
-void get_aet_SXW(OutPeriod pd)
+void get_aet_SXW(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	if (pd == eSW_Year) {
 		SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];

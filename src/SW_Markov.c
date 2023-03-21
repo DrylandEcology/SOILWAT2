@@ -201,7 +201,7 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 /**
 @brief Markov constructor for global variables.
 */
-void SW_MKV_construct(void) {
+void SW_MKV_construct(SW_WEATHER* SW_Weather) {
 	/* =================================================== */
 	SW_MARKOV *m = &SW_Markov;
 	size_t s = sizeof(RealD);
@@ -212,7 +212,7 @@ void SW_MKV_construct(void) {
 	  - rSOILWAT2: R API handles RNGs
 	*/
 	#if defined(SOILWAT)
-	RandSeed(SW_Weather.rng_seed, 1u, &markov_rng);
+	RandSeed(SW_Weather->rng_seed, 1u, &markov_rng);
 	#endif
 
 	m->ppt_events = 0;
@@ -594,10 +594,10 @@ Bool SW_MKV_read_cov(void) {
 }
 
 
-void SW_MKV_setup(void) {
-  SW_MKV_construct();
+void SW_MKV_setup(SW_WEATHER* SW_Weather) {
+  SW_MKV_construct(SW_Weather);
 
-  if (!SW_MKV_read_prob() && SW_Weather.generateWeatherMethod == 2) {
+  if (!SW_MKV_read_prob() && SW_Weather->generateWeatherMethod == 2) {
     LogError(
       logfp,
       LOGFATAL,
@@ -606,7 +606,7 @@ void SW_MKV_setup(void) {
     );
   }
 
-  if (!SW_MKV_read_cov() && SW_Weather.generateWeatherMethod == 2) {
+  if (!SW_MKV_read_cov() && SW_Weather->generateWeatherMethod == 2) {
     LogError(
       logfp,
       LOGFATAL,

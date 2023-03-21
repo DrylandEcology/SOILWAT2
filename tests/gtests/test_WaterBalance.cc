@@ -112,18 +112,18 @@ namespace {
     int i;
 
     // Turn on Markov weather generator (and turn off use of historical weather)
-    SW_Weather.generateWeatherMethod = 2;
-    SW_Weather.use_weathergenerator_only = swTRUE;
+    SW_All.Weather.generateWeatherMethod = 2;
+    SW_All.Weather.use_weathergenerator_only = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup();
+    SW_MKV_setup(&SW_All.Weather);
 
     // Point to nonexisting weather data
-    strcpy(SW_Weather.name_prefix, "Input/data_weather_nonexisting/weath");
+    strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
     // Prepare weather data
-    SW_WTH_read();
-    SW_WTH_finalize_all_weather();
+    SW_WTH_read(&SW_All.Weather);
+    SW_WTH_finalize_all_weather(&SW_All.Weather);
 
     // Run the simulation
     SW_CTL_main(&SW_All);
@@ -144,17 +144,17 @@ namespace {
     int i;
 
     // Turn on Markov weather generator
-    SW_Weather.generateWeatherMethod = 2;
+    SW_All.Weather.generateWeatherMethod = 2;
 
     // Point to partial weather data
-    strcpy(SW_Weather.name_prefix, "Input/data_weather_missing/weath");
+    strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
     // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup();
+    SW_MKV_setup(&SW_All.Weather);
 
     // Prepare weather data
-    SW_WTH_read();
-    SW_WTH_finalize_all_weather();
+    SW_WTH_read(&SW_All.Weather);
+    SW_WTH_finalize_all_weather(&SW_All.Weather);
 
     // Run the simulation
     SW_CTL_main(&SW_All);
@@ -206,7 +206,7 @@ namespace {
     SW_All.VegProd.veg_method = 1;
 
     // Re-calculate vegetation
-    SW_VPD_init_run(&SW_All.VegProd);
+    SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather);
 
     // Run the simulation
     SW_CTL_main(&SW_All);
@@ -295,31 +295,31 @@ namespace {
     int i;
 
     // Point to gridMET weather data
-    strcpy(SW_Weather.name_prefix, "Input/data_weather_gridmet/weath");
+    strcpy(SW_All.Weather.name_prefix, "Input/data_weather_gridmet/weath");
 
     // Adjust simulation years: we have 2 years of gridMET inputs
     SW_Model.startyr = 1980;
     SW_Model.endyr = 1981;
 
     // Describe daily gridMET inputs
-    SW_Weather.use_cloudCoverMonthly = swFALSE;
-    SW_Weather.use_windSpeedMonthly = swFALSE;
-    SW_Weather.use_humidityMonthly = swFALSE;
+    SW_All.Weather.use_cloudCoverMonthly = swFALSE;
+    SW_All.Weather.use_windSpeedMonthly = swFALSE;
+    SW_All.Weather.use_humidityMonthly = swFALSE;
 
-    SW_Weather.dailyInputIndices[WIND_SPEED] = 3;
-    SW_Weather.dailyInputIndices[REL_HUMID_MAX] = 4;
-    SW_Weather.dailyInputIndices[REL_HUMID_MIN] = 5;
-    SW_Weather.dailyInputIndices[SHORT_WR] = 6;
-    SW_Weather.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
-    SW_Weather.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
-    SW_Weather.dailyInputFlags[WIND_SPEED] = swTRUE;
-    SW_Weather.dailyInputFlags[SHORT_WR] = swTRUE;
-    SW_Weather.n_input_forcings = 7;
-    SW_Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
+    SW_All.Weather.dailyInputIndices[WIND_SPEED] = 3;
+    SW_All.Weather.dailyInputIndices[REL_HUMID_MAX] = 4;
+    SW_All.Weather.dailyInputIndices[REL_HUMID_MIN] = 5;
+    SW_All.Weather.dailyInputIndices[SHORT_WR] = 6;
+    SW_All.Weather.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
+    SW_All.Weather.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
+    SW_All.Weather.dailyInputFlags[WIND_SPEED] = swTRUE;
+    SW_All.Weather.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_All.Weather.n_input_forcings = 7;
+    SW_All.Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
 
     // Prepare weather data
-    SW_WTH_read();
-    SW_WTH_finalize_all_weather();
+    SW_WTH_read(&SW_All.Weather);
+    SW_WTH_finalize_all_weather(&SW_All.Weather);
 
     // Run the simulation
     SW_CTL_main(&SW_All);

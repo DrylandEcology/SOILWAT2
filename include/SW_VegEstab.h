@@ -17,6 +17,7 @@
 
 #include "include/SW_Defines.h"
 #include "include/SW_Times.h"
+#include "include/SW_SoilWater.h"
 
 
 #ifdef __cplusplus
@@ -106,7 +107,7 @@ void SW_VES_construct(void);
 void SW_VES_deconstruct(void);
 void SW_VES_init_run(void);
 void SW_VegEstab_construct(void);
-void SW_VES_checkestab(void);
+void SW_VES_checkestab(SW_WEATHER* SW_Weather);
 void SW_VES_new_year(void);
 void _spp_init(unsigned int sppnum);
 unsigned int _new_species(void);

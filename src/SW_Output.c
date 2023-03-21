@@ -178,12 +178,14 @@ static OutPeriod str2period(char *s);
 static OutKey str2key(char *s);
 static OutSum str2stype(char *s);
 
-static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd);
+static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
+						 SW_WEATHER* SW_Weather);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
 static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k);
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k);
-static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd);
+static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
+						SW_WEATHER* SW_Weather);
 
 #ifdef STEPWAT
 static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
@@ -548,9 +550,9 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
    is completed, so the current week and month will be
    one greater than the period being summarized.
 */
-static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd) {
+static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
+						SW_WEATHER* SW_Weather) {
 	SW_SOILWAT *s = &SW_Soilwat;
-	SW_WEATHER *w = &SW_Weather;
 	TimeInt curr_pd = 0;
 	RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
 	OutKey k;
@@ -571,7 +573,7 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd) {
 				s->p_oagg[pd] = s->p_accu[pd];
 				break;
 			case eWTH:
-				w->p_oagg[pd] = w->p_accu[pd];
+				SW_Weather->p_oagg[pd] = SW_Weather->p_accu[pd];
 				break;
 			case eVPD:
 				SW_VegProd->p_oagg[pd] = SW_VegProd->p_accu[pd];
@@ -626,30 +628,30 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd) {
 			{
 
 			case eSW_Temp:
-				w->p_oagg[pd]->temp_max = w->p_accu[pd]->temp_max / div;
-				w->p_oagg[pd]->temp_min = w->p_accu[pd]->temp_min / div;
-				w->p_oagg[pd]->temp_avg = w->p_accu[pd]->temp_avg / div;
-				w->p_oagg[pd]->surfaceAvg = w->p_accu[pd]->surfaceAvg / div;
-                w->p_oagg[pd]->surfaceMax = w->p_accu[pd]->surfaceMax / div;
-                w->p_oagg[pd]->surfaceMin = w->p_accu[pd]->surfaceMin / div;
+				SW_Weather->p_oagg[pd]->temp_max = SW_Weather->p_accu[pd]->temp_max / div;
+				SW_Weather->p_oagg[pd]->temp_min = SW_Weather->p_accu[pd]->temp_min / div;
+				SW_Weather->p_oagg[pd]->temp_avg = SW_Weather->p_accu[pd]->temp_avg / div;
+				SW_Weather->p_oagg[pd]->surfaceAvg = SW_Weather->p_accu[pd]->surfaceAvg / div;
+                SW_Weather->p_oagg[pd]->surfaceMax = SW_Weather->p_accu[pd]->surfaceMax / div;
+                SW_Weather->p_oagg[pd]->surfaceMin = SW_Weather->p_accu[pd]->surfaceMin / div;
 				break;
 
 			case eSW_Precip:
-				w->p_oagg[pd]->ppt = w->p_accu[pd]->ppt / div;
-				w->p_oagg[pd]->rain = w->p_accu[pd]->rain / div;
-				w->p_oagg[pd]->snow = w->p_accu[pd]->snow / div;
-				w->p_oagg[pd]->snowmelt = w->p_accu[pd]->snowmelt / div;
-				w->p_oagg[pd]->snowloss = w->p_accu[pd]->snowloss / div;
+				SW_Weather->p_oagg[pd]->ppt = SW_Weather->p_accu[pd]->ppt / div;
+				SW_Weather->p_oagg[pd]->rain = SW_Weather->p_accu[pd]->rain / div;
+				SW_Weather->p_oagg[pd]->snow = SW_Weather->p_accu[pd]->snow / div;
+				SW_Weather->p_oagg[pd]->snowmelt = SW_Weather->p_accu[pd]->snowmelt / div;
+				SW_Weather->p_oagg[pd]->snowloss = SW_Weather->p_accu[pd]->snowloss / div;
 				break;
 
 			case eSW_SoilInf:
-				w->p_oagg[pd]->soil_inf = w->p_accu[pd]->soil_inf / div;
+				SW_Weather->p_oagg[pd]->soil_inf = SW_Weather->p_accu[pd]->soil_inf / div;
 				break;
 
 			case eSW_Runoff:
-				w->p_oagg[pd]->snowRunoff = w->p_accu[pd]->snowRunoff / div;
-				w->p_oagg[pd]->surfaceRunoff = w->p_accu[pd]->surfaceRunoff / div;
-				w->p_oagg[pd]->surfaceRunon = w->p_accu[pd]->surfaceRunon / div;
+				SW_Weather->p_oagg[pd]->snowRunoff = SW_Weather->p_accu[pd]->snowRunoff / div;
+				SW_Weather->p_oagg[pd]->surfaceRunoff = SW_Weather->p_accu[pd]->surfaceRunoff / div;
+				SW_Weather->p_oagg[pd]->surfaceRunon = SW_Weather->p_accu[pd]->surfaceRunon / div;
 				break;
 
 			case eSW_SoilTemp:
@@ -869,10 +871,10 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd) {
 }
 
 
-static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd)
+static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
+						 SW_WEATHER* SW_Weather)
 {
 	SW_SOILWAT *s = &SW_Soilwat;
-	SW_WEATHER *w = &SW_Weather;
 	SW_VEGESTAB *v = &SW_VegEstab;
 
 	TimeInt pd = 0;
@@ -932,7 +934,7 @@ static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd)
 				break;
 
 			case eWTH:
-				sumof_wth(w, w->p_accu[op], k);
+				sumof_wth(SW_Weather, SW_Weather->p_accu[op], k);
 				break;
 
 			case eVES:
@@ -2056,7 +2058,7 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
           `PERIOD` for each output variable. Note: only one time step per output variable
           can be specified.
  */
-void SW_OUT_read(SW_VEGPROD* SW_VegProd)
+void SW_OUT_read(SW_ALL* sw)
 {
 	/* =================================================== */
 	/* read input file for output parameter setup info.
@@ -2180,7 +2182,7 @@ void SW_OUT_read(SW_VEGPROD* SW_VegProd)
 			!Str_CompareI("END", (char *)last) ? 366 : atoi(last),
 			msg,
 			sizeof msg,
-			SW_VegProd
+			&sw->VegProd
 		);
 
 		if (msg_type != 0) {
@@ -2227,29 +2229,29 @@ void SW_OUT_read(SW_VEGPROD* SW_VegProd)
 	CloseFile(&f);
 
 	if (EchoInits)
-		_echo_outputs(*SW_VegProd);
+		_echo_outputs(sw);
 }
 
 
 
-void _collect_values(SW_VEGPROD* SW_VegProd) {
-	SW_OUT_sum_today(eSWC, SW_VegProd);
-	SW_OUT_sum_today(eWTH, SW_VegProd);
-	SW_OUT_sum_today(eVES, SW_VegProd);
-	SW_OUT_sum_today(eVPD, SW_VegProd);
+void _collect_values(SW_ALL* sw) {
+	SW_OUT_sum_today(eSWC, &sw->VegProd, &sw->Weather);
+	SW_OUT_sum_today(eWTH, &sw->VegProd, &sw->Weather);
+	SW_OUT_sum_today(eVES, &sw->VegProd, &sw->Weather);
+	SW_OUT_sum_today(eVPD, &sw->VegProd, &sw->Weather);
 
-	SW_OUT_write_today(SW_VegProd);
+	SW_OUT_write_today(sw);
 }
 
 
 /** called at year end to process the remainder of the output
     period.  This sets two module-level flags: bFlush_output and
     tOffset to be used in the appropriate subs.*/
-void SW_OUT_flush(SW_VEGPROD* SW_VegProd) {
+void SW_OUT_flush(SW_ALL* sw) {
 	bFlush_output = swTRUE;
 	tOffset = 0;
 
-	_collect_values(SW_VegProd);
+	_collect_values(sw);
 
 	bFlush_output = swFALSE;
 	tOffset = 1;
@@ -2263,10 +2265,9 @@ void SW_OUT_flush(SW_VEGPROD* SW_VegProd) {
     prior to today's calculations, but there's no logical
     need to perform _new_day() on the soilwater.
 */
-void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd)
+void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather)
 {
 	SW_SOILWAT *s = &SW_Soilwat;
-	SW_WEATHER *w = &SW_Weather;
 	/*  SW_VEGESTAB *v = &SW_VegEstab;  -> we don't need to sum daily for this */
 
 	OutPeriod pd;
@@ -2275,7 +2276,7 @@ void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd)
 	{
 		if (bFlush_output || SW_Model.newperiod[pd]) // `newperiod[eSW_Day]` is always TRUE
 		{
-			average_for(otyp, pd, SW_VegProd);
+			average_for(otyp, pd, SW_VegProd, SW_Weather);
 
 			switch (otyp)
 			{
@@ -2283,7 +2284,7 @@ void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd)
 					memset(s->p_accu[pd], 0, sizeof(SW_SOILWAT_OUTPUTS));
 					break;
 				case eWTH:
-					memset(w->p_accu[pd], 0, sizeof(SW_WEATHER_OUTPUTS));
+					memset(SW_Weather->p_accu[pd], 0, sizeof(SW_WEATHER_OUTPUTS));
 					break;
 				case eVES:
 					break;
@@ -2301,7 +2302,7 @@ void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd)
 	{
 		ForEachOutPeriod(pd)
 		{
-			collect_sums(otyp, pd, SW_VegProd);
+			collect_sums(otyp, pd, SW_VegProd, SW_Weather);
 		}
 	}
 }
@@ -2312,7 +2313,7 @@ void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd)
       - `SW_OUT_flush` at the end of every year with
         values of `bFlush_output` set to TRUE and `tOffset` set to 0
 */
-void SW_OUT_write_today(SW_VEGPROD* SW_VegProd)
+void SW_OUT_write_today(SW_ALL* sw)
 {
 	/* --------------------------------------------------- */
 	/* all output values must have been summed, averaged or
@@ -2415,12 +2416,32 @@ void SW_OUT_write_today(SW_VEGPROD* SW_VegProd)
 			if (debug) swprintf(" call pfunc_text(%d=%s))",
 				timeSteps[k][i], pd2str[timeSteps[k][i]]);
 			#endif
-			if(k == eSW_CO2Effects){
-				get_co2effects_text(timeSteps[k][i], *SW_VegProd);
-			} else if(k == eSW_Biomass) {
-				get_biomass_text(timeSteps[k][i], *SW_VegProd);
-			} else {
-				((void (*)(OutPeriod)) SW_Output[k].pfunc_text)(timeSteps[k][i]);
+			switch(k){
+				case eSW_CO2Effects:
+					get_co2effects_text(timeSteps[k][i], sw->VegProd);
+					break;
+				case eSW_Biomass:
+					get_biomass_text(timeSteps[k][i], sw->VegProd);
+					break;
+				case eSW_Temp:
+					get_temp_text(timeSteps[k][i], sw->Weather);
+					break;
+				case eSW_Precip:
+					get_precip_text(timeSteps[k][i], sw->Weather);
+					break;
+				case eSW_SoilInf:
+					get_soilinf_text(timeSteps[k][i], sw->Weather);
+					break;
+				case eSW_Runoff:
+					get_runoffrunon_text(timeSteps[k][i], sw->Weather);
+					break;
+				case eSW_AET:
+					get_aet_text(timeSteps[k][i], sw->Weather);
+				default:
+					((void (*)(OutPeriod)) SW_Output[k].pfunc_text)
+															(timeSteps[k][i]);
+					break;
+
 			}
 
 			#elif RSOILWAT
@@ -2556,7 +2577,7 @@ void SW_OUT_write_today(SW_VEGPROD* SW_VegProd)
 }
 
 
-void _echo_outputs(SW_VEGPROD SW_VegProd)
+void _echo_outputs(SW_ALL* sw)
 {
 	OutKey k;
 	char str[OUTSTRLEN];

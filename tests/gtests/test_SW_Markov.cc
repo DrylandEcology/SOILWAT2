@@ -46,7 +46,7 @@ namespace {
 
   // Test the SW_MARKOV constructor 'SW_MKV_construct'
   TEST(WGTest, Constructor) {
-    SW_MKV_construct();
+    SW_MKV_construct(&SW_All.Weather);
 
     // Check that at least first array elements are initialized to zero
     EXPECT_DOUBLE_EQ(0., m->wetprob[0]);
@@ -73,14 +73,14 @@ namespace {
       ppt, *ppt0 = new double[n];
 
     // Turn on Markov weather generator
-    SW_Weather.generateWeatherMethod = 2;
+    SW_All.Weather.generateWeatherMethod = 2;
 
 
     //--- Generate some weather values with fixed seed ------
 
     // Initialize weather generator
-    SW_Weather.rng_seed = seed;
-    SW_MKV_setup();
+    SW_All.Weather.rng_seed = seed;
+    SW_MKV_setup(&SW_All.Weather);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
@@ -94,8 +94,8 @@ namespace {
 
     //--- Expect that generated weather is different with time-varying seed ----
     // Re-initialize weather generator
-    SW_Weather.rng_seed = 0;
-    SW_MKV_setup();
+    SW_All.Weather.rng_seed = 0;
+    SW_MKV_setup(&SW_All.Weather);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
@@ -114,8 +114,8 @@ namespace {
 
     //--- Expect that generated weather is reproducible with same seed ------
     // Re-initialize weather generator
-    SW_Weather.rng_seed = seed;
-    SW_MKV_setup();
+    SW_All.Weather.rng_seed = seed;
+    SW_MKV_setup(&SW_All.Weather);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
@@ -142,7 +142,7 @@ namespace {
     short k, n = 3;
     RealD tmax = 0., tmin = 0., tval;
 
-    SW_MKV_construct(); // initialize markov_rng
+    SW_MKV_construct(&SW_All.Weather); // initialize markov_rng
 
     for (k = 0; k < n; k++) {
       // Create temperature values: here with n = 3: -10, 0, +10
@@ -177,7 +177,7 @@ namespace {
   TEST(WGDeathTest, mvnorm) {
     RealD tmax = 0., tmin = 0.;
 
-    SW_MKV_construct(); // initialize markov_rng
+    SW_MKV_construct(&SW_All.Weather); // initialize markov_rng
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL
     EXPECT_DEATH_IF_SUPPORTED(
@@ -198,7 +198,7 @@ namespace {
       wet = 1., dry = 0.,
       cf0 = 0., cf_pos = 5., cf_neg = -5.;
 
-    SW_MKV_construct(); // initialize markov_rng
+    SW_MKV_construct(&SW_All.Weather); // initialize markov_rng
 
     // Case: tmax = tmin; wet; cf_*_wet = 0 ==> input = output
     tmax = t0;

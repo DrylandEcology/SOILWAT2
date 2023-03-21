@@ -348,10 +348,9 @@ static double itp_FXW_for_phi(double theta, double *swrcp) {
 /* --------------------------------------------------- */
 
 #ifdef SWDEBUG
-void SW_WaterBalance_Checks(void)
+void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather)
 {
   SW_SOILWAT *sw = &SW_Soilwat;
-	SW_WEATHER *w = &SW_Weather;
 
   IntUS i, k;
   int debugi[N_WBCHECKS] = {1, 1, 1, 1, 1, 1, 1, 1, 1}; // print output for each check yes/no
@@ -409,22 +408,22 @@ void SW_WaterBalance_Checks(void)
   // Get evaporation values
   Elitter = sw->litter_evap;
   Eponded = sw->surfaceWater_evap;
-  Esnow = w->snowloss;
+  Esnow = SW_Weather->snowloss;
   Etotalint = Eveg + Elitter;
   Etotalsurf = Etotalint + Eponded;
   Etotal = Etotalsurf + Esoil + Esnow;
 
   // Get other water flux values
-  infiltration = w->soil_inf;
+  infiltration = SW_Weather->soil_inf;
   deepDrainage = sw->swcBulk[Today][SW_Site.deep_lyr]; // see issue #137
 
   percolationIn[0] = infiltration;
   percolationOut[SW_Site.n_layers] = deepDrainage;
 
-  runoff = w->snowRunoff + w->surfaceRunoff;
-  runon = w->surfaceRunon;
-  snowmelt = w->snowmelt;
-  rain = w->now.rain;
+  runoff = SW_Weather->snowRunoff + SW_Weather->surfaceRunoff;
+  runon = SW_Weather->surfaceRunon;
+  snowmelt = SW_Weather->snowmelt;
+  rain = SW_Weather->now.rain;
 
   arriving_water = rain + snowmelt + runon;
 
@@ -653,7 +652,7 @@ void SW_SWC_deconstruct(void)
 @brief Adjust SWC according to historical (measured) data if available, compute
     water flow, and check if swc is above threshold for "wet" condition.
 */
-void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd) {
+void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather) {
 	/* =================================================== */
 
 
@@ -687,12 +686,12 @@ void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd) {
     #ifdef SWDEBUG
     if (debug) swprintf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
     #endif
-		SW_Water_Flow(SW_VegProd);
+		SW_Water_Flow(SW_VegProd, SW_Weather);
 	}
 
   #ifdef SWDEBUG
   if (debug) swprintf("\n'SW_SWC_water_flow': check water balance.\n");
-  SW_WaterBalance_Checks();
+  SW_WaterBalance_Checks(SW_Weather);
 
   if (debug) swprintf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
   #endif

@@ -19,7 +19,6 @@
 #define SW_CONTROL_H
 
 #include "include/generic.h" // for `Bool`, `swTRUE`, `swFALSE`
-#include "include/SW_VegProd.h"
 #include "include/SW_SoilWater.h"
 
 #ifdef __cplusplus
@@ -35,7 +34,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw);
 void SW_CTL_init_run(SW_ALL* sw);
 void SW_CTL_read_inputs_from_disk(SW_ALL* sw);
 void SW_CTL_main(SW_ALL* sw); /* main controlling loop for SOILWAT  */
-void SW_CTL_run_current_year(SW_VEGPROD* SW_VegProd);
+void SW_CTL_run_current_year(SW_ALL* sw);
 
 #ifdef DEBUG_MEM
 void SW_CTL_SetMemoryRefs(void);

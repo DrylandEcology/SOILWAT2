@@ -186,18 +186,11 @@ typedef struct {
 } SW_WEATHER;
 
 
-
-/* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern SW_WEATHER SW_Weather;
-
-
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_WTH_setup(void);
-void SW_WTH_read(void);
+void SW_WTH_setup(SW_WEATHER* SW_Weather);
+void SW_WTH_read(SW_WEATHER* SW_Weather);
 void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
                                SW_CLIMATE_CLIM *climateAverages);
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
@@ -263,11 +256,11 @@ void checkAllWeather(SW_WEATHER *weather);
 void allocateAllWeather(SW_WEATHER *w);
 void deallocateAllWeather(SW_WEATHER *w);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
-void SW_WTH_finalize_all_weather(void);
-void SW_WTH_init_run(void);
-void SW_WTH_construct(void);
-void SW_WTH_deconstruct(void);
-void SW_WTH_new_day(void);
+void SW_WTH_finalize_all_weather(SW_WEATHER* SW_Weather);
+void SW_WTH_init_run(SW_WEATHER* SW_Weather);
+void SW_WTH_construct(SW_WEATHER* SW_Weather);
+void SW_WTH_deconstruct(SW_WEATHER* SW_Weather);
+void SW_WTH_new_day(SW_WEATHER* SW_Weather);
 void SW_WTH_sum_today(void);
 
 

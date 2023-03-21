@@ -80,27 +80,28 @@ void SW_OUT_deconstruct(Bool full_reset)
 void SW_OUT_new_year(void)
 {}
 
-void SW_OUT_read(SW_VEGPROD* SW_VegProd)
+void SW_OUT_read(SW_ALL* sw)
 {}
 
 /**
 @brief This is a blank function.
 */
-void _collect_values(SW_VEGPROD* SW_VegProd)
+void _collect_values(SW_ALL* sw)
 {}
 
-void SW_OUT_flush(SW_VEGPROD* SW_VegProd)
+void SW_OUT_flush(SW_ALL* sw)
 {
-	_collect_values(SW_VegProd);
+	_collect_values(sw);
 }
 
-void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd)
+void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd,
+					  SW_WEATHER* SW_Weather)
 {
 	ObjType x = otyp;
 	if (x == eF) {}
 }
 
-void SW_OUT_write_today(SW_VEGPROD* SW_VegProd)
+void SW_OUT_write_today(SW_ALL* sw)
 {}
 
 void get_none(OutPeriod pd)
@@ -123,12 +124,12 @@ void get_estab_text(OutPeriod pd)
 	if (pd) {}
 }
 
-void get_temp_text(OutPeriod pd)
+void get_temp_text(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	if (pd) {}
 }
 
-void get_precip_text(OutPeriod pd)
+void get_precip_text(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	if (pd) {}
 }
@@ -168,7 +169,7 @@ void get_surfaceWater_text(OutPeriod pd)
 	if (pd) {}
 }
 
-void get_runoffrunon_text(OutPeriod pd)
+void get_runoffrunon_text(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	if (pd) {}
 }
@@ -193,7 +194,7 @@ void get_interception_text(OutPeriod pd)
 	if (pd) {}
 }
 
-void get_soilinf_text(OutPeriod pd)
+void get_soilinf_text(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	if (pd) {}
 }
@@ -208,7 +209,7 @@ void get_hydred_text(OutPeriod pd)
 	if (pd) {}
 }
 
-void get_aet_text(OutPeriod pd)
+void get_aet_text(OutPeriod pd, SW_WEATHER SW_Weather)
 {
 	if (pd) {}
 }
@@ -280,29 +281,31 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 }
 
 
-static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd)
+static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
+						SW_WEATHER* SW_Weather)
 {
 	if (pd == eSW_Day) {}
-	SW_OUT_sum_today(otyp, SW_VegProd);
+	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather);
 }
 
-static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd)
+static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
+						 SW_WEATHER* SW_Weather)
 {
 	if (op == eSW_Day) {}
-	SW_OUT_sum_today(otyp, SW_VegProd);
+	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather);
 }
 
 /**
 @brief Runs get commands for each eSW_Year.
 */
-void _echo_outputs(SW_VEGPROD SW_VegProd)
+void _echo_outputs(SW_ALL* sw)
 {
 	OutPeriod pd = eSW_Year;
 
 	get_none(pd);
 	get_estab_text(pd);
-	get_temp_text(pd);
-	get_precip_text(pd);
+	get_temp_text(pd, sw->Weather);
+	get_precip_text(pd, sw->Weather);
 	get_vwcBulk_text(pd);
 	get_vwcMatric_text(pd);
 	get_swcBulk_text(pd);
@@ -310,23 +313,23 @@ void _echo_outputs(SW_VEGPROD SW_VegProd)
 	get_swaBulk_text(pd);
 	get_swaMatric_text(pd);
 	get_surfaceWater_text(pd);
-	get_runoffrunon_text(pd);
+	get_runoffrunon_text(pd, sw->Weather);
 	get_transp_text(pd);
 	get_evapSoil_text(pd);
 	get_evapSurface_text(pd);
 	get_interception_text(pd);
-	get_soilinf_text(pd);
+	get_soilinf_text(pd, sw->Weather);
 	get_lyrdrain_text(pd);
 	get_hydred_text(pd);
-	get_aet_text(pd);
+	get_aet_text(pd, sw->Weather);
 	get_pet_text(pd);
 	get_wetdays_text(pd);
 	get_snowpack_text(pd);
 	get_deepswc_text(pd);
 	get_soiltemp_text(pd);
     get_frozen_text(pd);
-	get_co2effects_text(pd, SW_VegProd);
-	get_biomass_text(pd, SW_VegProd);
+	get_co2effects_text(pd, sw->VegProd);
+	get_biomass_text(pd, sw->VegProd);
 
 	OutKey k = eSW_NoKey;
 	SW_VEGPROD *vveg = NULL;
@@ -345,8 +348,8 @@ void _echo_outputs(SW_VEGPROD SW_VegProd)
 
 	ObjType otyp = eF;
 
-	average_for(otyp, pd, &SW_VegProd);
-	collect_sums(otyp, pd, &SW_VegProd);
+	average_for(otyp, pd, &sw->VegProd, &sw->Weather);
+	collect_sums(otyp, pd, &sw->VegProd, &sw->Weather);
 }
 
 

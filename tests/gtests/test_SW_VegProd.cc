@@ -116,7 +116,7 @@ namespace {
   // Test the SW_VEGPROD constructor 'SW_VPD_construct'
   TEST(VegTest, Constructor) {
     SW_VPD_construct(&SW_All.VegProd);
-    SW_VPD_init_run(&SW_All.VegProd);
+    SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather);
 
     ForEachVegType(k) {
       EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[BIO_INDEX][0]);
@@ -255,15 +255,15 @@ namespace {
         double grassOutputExpected[3];
 
 
-        // Reset "SW_Weather.allHist"
-        SW_WTH_read();
-		finalizeAllWeather(&SW_Weather);
+        // Reset "SW_All.Weather.allHist"
+        SW_WTH_read(&SW_All.Weather);
+		    finalizeAllWeather(&SW_All.Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
 
         // Calculate climate of the site and add results to "climateOutput"
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
+        calcSiteClimate(SW_All.Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
 
         // Average values from "climateOutput" and put them in "climateAverages"
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
@@ -509,7 +509,8 @@ namespace {
         RelAbundanceL1Expected[bareGroundL1] = 0.;
 
 
-        estimateVegetationFromClimate(&vegProd, startYear, endYear, veg_method, latitude);
+        estimateVegetationFromClimate(&vegProd, &SW_All.Weather, startYear,
+                                      endYear, veg_method, latitude);
 
         // Loop through RelAbundanceL1 and test results
         for(index = 0; index < 4; index++) {
@@ -533,7 +534,7 @@ namespace {
 
         // Recalculate climate of the site in southern hemisphere and add results to "climateOutput"
         inNorthHem = swFALSE;
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
+        calcSiteClimate(SW_All.Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
 
 
         inputValues[treeIndex] = .0549;
@@ -712,15 +713,16 @@ namespace {
         Bool fixBareGround = swTRUE;
 
 
-        // Reset "SW_Weather.allHist"
-        SW_WTH_read();
-		finalizeAllWeather(&SW_Weather);
+        // Reset "SW_All.Weather.allHist"
+        SW_WTH_read(&SW_All.Weather);
+		    finalizeAllWeather(&SW_All.Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
 
         // Calculate climate of the site and add results to "climateOutput"
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
+        calcSiteClimate(SW_All.Weather.allHist, 31, 1980,
+                                                  inNorthHem, &climateOutput);
 
         // Average values from "climateOutput" and put them in "climateAverages"
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
@@ -1172,15 +1174,15 @@ namespace {
         // Array holding all values from estimation minus grasses
         double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
-        // Reset "SW_Weather.allHist"
-        SW_WTH_read();
-		finalizeAllWeather(&SW_Weather);
+        // Reset "SW_All.Weather.allHist"
+        SW_WTH_read(&SW_All.Weather);
+		    finalizeAllWeather(&SW_All.Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
 
         // Calculate climate of the site and add results to "climateOutput"
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
+        calcSiteClimate(SW_All.Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
 
         // Average values from "climateOutput" and put them in "climateAverages"
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);

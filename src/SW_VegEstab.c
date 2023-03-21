@@ -68,7 +68,8 @@ static char *MyFileName;
 /* --------------------------------------------------- */
 static void _sanity_check(unsigned int sppnum);
 static void _read_spp(const char *infile);
-static void _checkit(TimeInt doy, unsigned int sppnum);
+static void _checkit(TimeInt doy, unsigned int sppnum,
+												SW_WEATHER* SW_Weather);
 static void _zero_state(unsigned int sppnum);
 
 
@@ -271,12 +272,12 @@ void SW_VES_init_run(void) {
 /**
 @brief Check that each count coincides with a day of the year.
 */
-void SW_VES_checkestab(void) {
+void SW_VES_checkestab(SW_WEATHER* SW_Weather) {
 	/* =================================================== */
 	IntUS i;
 
 	for (i = 0; i < SW_VegEstab.count; i++)
-		_checkit(SW_Model.doy, i);
+		_checkit(SW_Model.doy, i, SW_Weather);
 }
 
 
@@ -285,10 +286,11 @@ void SW_VES_checkestab(void) {
 /*            Local Function Definitions               */
 /* --------------------------------------------------- */
 
-static void _checkit(TimeInt doy, unsigned int sppnum) {
+static void _checkit(TimeInt doy, unsigned int sppnum,
+												SW_WEATHER* SW_Weather) {
 
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
-	SW_WEATHER_NOW *wn = &SW_Weather.now;
+	SW_WEATHER_NOW *wn = &SW_Weather->now;
 	SW_SOILWAT *sw = &SW_Soilwat;
 
 	IntU i;

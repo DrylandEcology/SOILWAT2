@@ -579,7 +579,7 @@ void SW_VPD_construct(SW_VEGPROD* SW_VegProd) {
 
 
 
-void SW_VPD_init_run(SW_VEGPROD* SW_VegProd) {
+void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather) {
     TimeInt year;
     int k, veg_method;
 
@@ -601,7 +601,8 @@ void SW_VPD_init_run(SW_VEGPROD* SW_VegProd) {
     }
 
     if(veg_method > 0) {
-        estimateVegetationFromClimate(SW_VegProd, model->startyr, model->endyr, veg_method, latitude);
+        estimateVegetationFromClimate(SW_VegProd, SW_Weather,model->startyr,
+									  model->endyr, veg_method, latitude);
     }
 
 }
@@ -898,8 +899,9 @@ void get_critical_rank(SW_VEGPROD* SW_VegProd){
  @param[in] latitude Value of type double specifying latitude coordinate the current site is located at
  */
 
-void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYear,
-                                   int veg_method, double latitude) {
+void estimateVegetationFromClimate(SW_VEGPROD *vegProd, SW_WEATHER* SW_Weather,
+								   int startYear, int endYear, int veg_method,
+								   double latitude) {
 
     int numYears = endYear - startYear + 1, k, bareGroundIndex = 7;
 
@@ -925,7 +927,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, int startYear, int endYe
     // Allocate climate structs' memory
     allocateClimateStructs(numYears, &climateOutput, &climateAverages);
 
-    calcSiteClimate(SW_Weather.allHist, numYears, startYear, inNorthHem, &climateOutput);
+    calcSiteClimate(SW_Weather->allHist, numYears, startYear, inNorthHem, &climateOutput);
 
     averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);
 

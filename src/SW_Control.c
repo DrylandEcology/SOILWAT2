@@ -68,13 +68,13 @@ static void _begin_year(SW_VEGPROD* SW_VegProd) {
 	SW_OUT_new_year();
 }
 
-static void _begin_day(void) {
+static void _begin_day(SW_ALL* sw) {
 	SW_MDL_new_day();
-	SW_WTH_new_day();
+	SW_WTH_new_day(&sw->Weather);
 }
 
-static void _end_day(SW_VEGPROD* SW_VegProd) {
-	_collect_values(SW_VegProd);
+static void _end_day(SW_ALL* sw) {
+	_collect_values(sw);
 	SW_SWC_end_day();
 }
 
@@ -99,7 +99,7 @@ void SW_CTL_main(SW_ALL* sw) {
     if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
     #endif
 
-    SW_CTL_run_current_year(&sw->VegProd);
+    SW_CTL_run_current_year(sw);
   }
 } /******* End Main Loop *********/
 
@@ -109,7 +109,7 @@ void SW_CTL_setup_model(const char *firstfile, SW_ALL* sw) {
 
 	SW_F_construct(firstfile);
 	SW_MDL_construct();
-	SW_WTH_construct();
+	SW_WTH_construct(&sw->Weather);
 	// delay SW_MKV_construct() until we know from inputs whether we need it
 	// SW_SKY_construct() not need
 	SW_SIT_construct();
@@ -133,7 +133,7 @@ void SW_CTL_setup_model(const char *firstfile, SW_ALL* sw) {
 void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
 	SW_F_deconstruct();
 	SW_MDL_deconstruct();
-	SW_WTH_deconstruct(); // calls SW_MKV_deconstruct() if needed
+	SW_WTH_deconstruct(&sw->Weather); // calls SW_MKV_deconstruct() if needed
 	// SW_SKY_deconstruct() not needed
 	SW_SIT_deconstruct();
 	SW_VES_deconstruct();
@@ -152,13 +152,13 @@ void SW_CTL_init_run(SW_ALL* sw) {
 
 	// SW_F_init_run() not needed
 	// SW_MDL_init_run() not needed
-	SW_WTH_init_run();
+	SW_WTH_init_run(&sw->Weather);
 	// SW_MKV_init_run() not needed
 	SW_PET_init_run();
 	// SW_SKY_init_run() not needed
 	SW_SIT_init_run(&sw->VegProd);
 	SW_VES_init_run(); // must run after `SW_SIT_init_run()`
-	SW_VPD_init_run(&sw->VegProd);
+	SW_VPD_init_run(&sw->VegProd, &sw->Weather);
 	SW_FLW_init_run();
 	SW_ST_init_run();
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
@@ -171,7 +171,7 @@ void SW_CTL_init_run(SW_ALL* sw) {
 /**
 @brief Calls 'SW_SWC_water_flow' for each day.
 */
-void SW_CTL_run_current_year(SW_VEGPROD* SW_VegProd) {
+void SW_CTL_run_current_year(SW_ALL* sw) {
   /*=======================================================*/
   TimeInt *doy = &SW_Model.doy; // base1
   #ifdef SWDEBUG
@@ -181,32 +181,32 @@ void SW_CTL_run_current_year(SW_VEGPROD* SW_VegProd) {
   #ifdef SWDEBUG
   if (debug) swprintf("\n'SW_CTL_run_current_year': begin new year\n");
   #endif
-  _begin_year(SW_VegProd);
+  _begin_year(&sw->VegProd);
 
   for (*doy = SW_Model.firstdoy; *doy <= SW_Model.lastdoy; (*doy)++) {
     #ifdef SWDEBUG
     if (debug) swprintf("\t: begin doy = %d ... ", *doy);
     #endif
-    _begin_day();
+    _begin_day(sw);
 
     #ifdef SWDEBUG
     if (debug) swprintf("simulate water ... ");
     #endif
-    SW_SWC_water_flow(SW_VegProd);
+    SW_SWC_water_flow(&sw->VegProd, &sw->Weather);
 
     // Only run this function if SWA output is asked for
-    if (SW_VegProd->use_SWA) {
-      calculate_repartitioned_soilwater(SW_VegProd);
+    if (sw->VegProd.use_SWA) {
+      calculate_repartitioned_soilwater(&sw->VegProd);
     }
 
     if (SW_VegEstab.use) {
-      SW_VES_checkestab();
+      SW_VES_checkestab(&sw->Weather);
     }
 
     #ifdef SWDEBUG
     if (debug) swprintf("ending day ... ");
     #endif
-    _end_day(SW_VegProd);
+    _end_day(sw);
 
     #ifdef SWDEBUG
     if (debug) swprintf("doy = %d completed.\n", *doy);
@@ -216,7 +216,7 @@ void SW_CTL_run_current_year(SW_VEGPROD* SW_VegProd) {
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_run_current_year': flush output\n");
   #endif
-  SW_OUT_flush(SW_VegProd);
+  SW_OUT_flush(sw);
 
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_run_current_year': completed.\n");
@@ -247,7 +247,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   if (debug) swprintf(" > 'model'");
   #endif
 
-  SW_WTH_setup();
+  SW_WTH_setup(&sw->Weather);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather setup'");
   #endif
@@ -257,14 +257,14 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   if (debug) swprintf(" > 'climate'");
   #endif
 
-  if (SW_Weather.generateWeatherMethod == 2) {
-    SW_MKV_setup();
+  if (sw->Weather.generateWeatherMethod == 2) {
+    SW_MKV_setup(&sw->Weather);
     #ifdef SWDEBUG
     if (debug) swprintf(" > 'weather generator'");
     #endif
   }
 
-  SW_WTH_read();
+  SW_WTH_read(&sw->Weather);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather read'");
   #endif
@@ -294,7 +294,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   if (debug) swprintf(" > 'establishment'");
   #endif
 
-  SW_OUT_read(&sw->VegProd);
+  SW_OUT_read(sw);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'ouput'");
   #endif

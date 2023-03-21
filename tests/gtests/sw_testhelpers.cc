@@ -59,7 +59,7 @@ void Reset_SOILWAT2_after_UnitTest(void) {
   sw_check_log();
   logfp = NULL;
 
-  SW_WTH_finalize_all_weather();
+  SW_WTH_finalize_all_weather(&SW_All.Weather);
   SW_CTL_init_run(&SW_All);
 
 
