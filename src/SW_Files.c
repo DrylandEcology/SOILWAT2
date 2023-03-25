@@ -303,19 +303,6 @@ void SW_WeatherPrefix(char prefix[]) {
 	strcpy(prefix, weather_prefix);
 }
 
-/**
-@brief Creates a string for output of OutputPrefix
-
-@param prefix Array of chars.
-*/
-void SW_OutputPrefix(char prefix[]) {
-
-	if (strcmp(output_prefix, "/") == 0)
-		prefix[0] = '\0';
-	else
-		strcpy(prefix, output_prefix);
-}
-
 #ifdef DEBUG_MEM
 #include "include/myMemory.h"
 /*======================================================*/
