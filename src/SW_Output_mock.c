@@ -81,13 +81,14 @@ void SW_OUT_new_year(void)
 {}
 
 void SW_OUT_read(SW_ALL* sw)
-{}
+{
+	(void) sw; // use sw to silence compiler warnings
+}
 
-/**
-@brief This is a blank function.
-*/
 void _collect_values(SW_ALL* sw)
-{}
+{
+	(void) sw; // use sw to silence compiler warnings
+}
 
 void SW_OUT_flush(SW_ALL* sw)
 {
@@ -99,149 +100,181 @@ void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd,
 {
 	ObjType x = otyp;
 	if (x == eF) {}
+	(void) SW_VegProd; // use sw to silence compiler warnings
+	(void) SW_Weather; // use sw to silence compiler warnings
 }
 
 void SW_OUT_write_today(SW_ALL* sw)
-{}
-
-void get_none(OutPeriod pd)
 {
-	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_co2effects_text(OutPeriod pd, SW_VEGPROD SW_VegProd)
+void get_none(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_biomass_text(OutPeriod pd, SW_VEGPROD SW_VegProd)
+void get_co2effects_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_estab_text(OutPeriod pd)
+void get_biomass_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_temp_text(OutPeriod pd, SW_WEATHER SW_Weather)
+void get_estab_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_precip_text(OutPeriod pd, SW_WEATHER SW_Weather)
+void get_temp_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_vwcBulk_text(OutPeriod pd)
+void get_precip_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_vwcMatric_text(OutPeriod pd)
+void get_vwcBulk_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_swcBulk_text(OutPeriod pd)
+void get_vwcMatric_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_swpMatric_text(OutPeriod pd)
+void get_swcBulk_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_swaBulk_text(OutPeriod pd)
+void get_swpMatric_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_swaMatric_text(OutPeriod pd)
+void get_swaBulk_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_surfaceWater_text(OutPeriod pd)
+void get_swaMatric_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_runoffrunon_text(OutPeriod pd, SW_WEATHER SW_Weather)
+void get_surfaceWater_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_transp_text(OutPeriod pd)
+void get_runoffrunon_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_evapSoil_text(OutPeriod pd)
+void get_transp_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_evapSurface_text(OutPeriod pd)
+void get_evapSoil_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_interception_text(OutPeriod pd)
+void get_evapSurface_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_soilinf_text(OutPeriod pd, SW_WEATHER SW_Weather)
+void get_interception_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_lyrdrain_text(OutPeriod pd)
+void get_soilinf_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_hydred_text(OutPeriod pd)
+void get_lyrdrain_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_aet_text(OutPeriod pd, SW_WEATHER SW_Weather)
+void get_hydred_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_pet_text(OutPeriod pd)
+void get_aet_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_wetdays_text(OutPeriod pd)
+void get_pet_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_snowpack_text(OutPeriod pd)
+void get_wetdays_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_deepswc_text(OutPeriod pd)
+void get_snowpack_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_soiltemp_text(OutPeriod pd)
+void get_deepswc_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_frozen_text(OutPeriod pd)
+void get_soiltemp_text(OutPeriod pd, SW_ALL* sw)
+{
+	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
+}
+
+void get_frozen_text(OutPeriod pd, SW_ALL* sw)
 {
     if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
@@ -302,34 +335,34 @@ void _echo_outputs(SW_ALL* sw)
 {
 	OutPeriod pd = eSW_Year;
 
-	get_none(pd);
-	get_estab_text(pd);
-	get_temp_text(pd, sw->Weather);
-	get_precip_text(pd, sw->Weather);
-	get_vwcBulk_text(pd);
-	get_vwcMatric_text(pd);
-	get_swcBulk_text(pd);
-	get_swpMatric_text(pd);
-	get_swaBulk_text(pd);
-	get_swaMatric_text(pd);
-	get_surfaceWater_text(pd);
-	get_runoffrunon_text(pd, sw->Weather);
-	get_transp_text(pd);
-	get_evapSoil_text(pd);
-	get_evapSurface_text(pd);
-	get_interception_text(pd);
-	get_soilinf_text(pd, sw->Weather);
-	get_lyrdrain_text(pd);
-	get_hydred_text(pd);
-	get_aet_text(pd, sw->Weather);
-	get_pet_text(pd);
-	get_wetdays_text(pd);
-	get_snowpack_text(pd);
-	get_deepswc_text(pd);
-	get_soiltemp_text(pd);
-    get_frozen_text(pd);
-	get_co2effects_text(pd, sw->VegProd);
-	get_biomass_text(pd, sw->VegProd);
+	get_none(pd, sw);
+	get_estab_text(pd, sw);
+	get_temp_text(pd, sw);
+	get_precip_text(pd, sw);
+	get_vwcBulk_text(pd, sw);
+	get_vwcMatric_text(pd, sw);
+	get_swcBulk_text(pd, sw);
+	get_swpMatric_text(pd, sw);
+	get_swaBulk_text(pd, sw);
+	get_swaMatric_text(pd, sw);
+	get_surfaceWater_text(pd, sw);
+	get_runoffrunon_text(pd, sw);
+	get_transp_text(pd, sw);
+	get_evapSoil_text(pd, sw);
+	get_evapSurface_text(pd, sw);
+	get_interception_text(pd, sw);
+	get_soilinf_text(pd, sw);
+	get_lyrdrain_text(pd, sw);
+	get_hydred_text(pd, sw);
+	get_aet_text(pd, sw);
+	get_pet_text(pd, sw);
+	get_wetdays_text(pd, sw);
+	get_snowpack_text(pd, sw);
+	get_deepswc_text(pd, sw);
+	get_soiltemp_text(pd, sw);
+    get_frozen_text(pd, sw);
+	get_co2effects_text(pd, sw);
+	get_biomass_text(pd, sw);
 
 	OutKey k = eSW_NoKey;
 	SW_VEGPROD *vveg = NULL;
