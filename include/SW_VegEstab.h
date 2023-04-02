@@ -15,9 +15,7 @@
 #ifndef SW_VEGESTAB_H
 #define SW_VEGESTAB_H
 
-#include "include/SW_Defines.h"
-#include "include/SW_Times.h"
-#include "include/SW_SoilWater.h"
+#include "include/SW_datastructs.h"
 
 
 #ifdef __cplusplus
@@ -28,69 +26,6 @@ extern "C" {
 /* indices to bars[] */
 #define SW_GERM_BARS 0
 #define SW_ESTAB_BARS 1
-
-
-typedef struct {
-
-	/* see COMMENT-1 below for more information on these vars */
-
-	/* THESE VARIABLES CAN CHANGE VALUE IN THE MODEL */
-	TimeInt estab_doy, /* day of establishment for this plant */
-			germ_days, /* elapsed days since germination with no estab */
-			drydays_postgerm, /* did sprout get too dry for estab? */
-			wetdays_for_germ, /* keep track of consecutive wet days */
-			wetdays_for_estab;
-	Bool germd, /* has this plant germinated yet?  */
-		no_estab; /* if swTRUE, can't attempt estab for remainder of year */
-
-	/* THESE VARIABLES DO NOT CHANGE DURING THE NORMAL MODEL RUN */
-	char sppFileName[MAX_FILENAMESIZE]; /* Store the file Name and Path, Mostly for Rsoilwat */
-	char sppname[MAX_SPECIESNAMELEN + 1]; /* one set of parms per species */
-	unsigned int vegType; /**< Vegetation type of species (see "Indices to vegetation types") */
-	TimeInt min_pregerm_days, /* first possible day of germination */
-			max_pregerm_days, /* last possible day of germination */
-			min_wetdays_for_germ, 	/* number of consecutive days top layer must be */
-									/* "wet" in order for germination to occur. */
-			max_drydays_postgerm, 	/* maximum number of consecutive dry days after */
-									/* germination before establishment can no longer occur. */
-			min_wetdays_for_estab, 	/* minimum number of consecutive days the top layer */
-									/* must be "wet" in order to establish */
-			min_days_germ2estab, 	/* minimum number of days to wait after germination */
-									/* and seminal roots wet before check for estab. */
-			max_days_germ2estab; 	/* maximum number of days after germination to wait */
-									/* for establishment */
-
-	unsigned int estab_lyrs;	/* estab could conceivably need more than one layer */
-								/* swc is averaged over these top layers to compare to */
-								/* the converted value from min_swc_estab */
-	RealF bars[2], 			/* read from input, saved for reporting */
-			min_swc_germ, 	/* wetting point required for germination converted from */
-							/* bars to cm per layer for efficiency in the loop */
-			min_swc_estab, 	/* same as min_swc_germ but for establishment */
-							/* this is the average of the swc of the first estab_lyrs */
-			min_temp_germ, 	/* min avg daily temp req't for germination */
-			max_temp_germ, 	/* max temp for germ in degC */
-			min_temp_estab, /* min avg daily temp req't for establishment */
-			max_temp_estab; /* max temp for estab in degC */
-
-} SW_VEGESTAB_INFO;
-
-typedef struct {
-	TimeInt *days;	/* only output the day of estab for each species in the input */
-					/* this array is allocated via `SW_VegEstab_construct()` */
-					/* each day in the array corresponds to the ordered species list */
-} SW_VEGESTAB_OUTPUTS;
-
-typedef struct {
-  Bool use;      /* if swTRUE use establishment parms and chkestab() */
-  IntU count;  /* number of species to check */
-  SW_VEGESTAB_INFO **parms;  /* dynamic array of parms for each species */
-  SW_VEGESTAB_OUTPUTS  /* only yearly element will be used */
-		*p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time period
-		*p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
-
-} SW_VEGESTAB;
-
 
 /* =================================================== */
 /*            Externed Global Variables                */

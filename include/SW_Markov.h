@@ -14,32 +14,11 @@
 #define SW_MARKOV_H
 
 #include "external/pcg/pcg_basic.h"
+#include "include/SW_datastructs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct {
-
-	/* pointers to arrays of probabilities for each day saves some space */
-	/* by not being allocated if markov weather not requested by user */
-	/* alas, multi-dimensional arrays aren't so convenient */
-  RealD
-    *wetprob, /* probability of being wet today given a wet yesterday */
-    *dryprob, /* probability of being wet today given a dry yesterday */
-    *avg_ppt, /* mean precip (cm) of wet days */
-    *std_ppt, /* std dev. for precip of wet days */
-    *cfxw, /*correction factor for tmax for wet days */
-    *cfxd, /*correction factor for tmax for dry days */
-    *cfnw, /*correction factor for tmin for wet days */
-    *cfnd, /*correction factor for tmin for dry days */
-    u_cov[MAX_WEEKS][2], /* mean weekly maximum and minimum temperature in degree Celsius */
-    v_cov[MAX_WEEKS][2][2]; /* covariance matrix */
-  int ppt_events; /* number of ppt events generated this year */
-
-} SW_MARKOV;
-
-
 
 /* =================================================== */
 /*            Externed Global Variables                */

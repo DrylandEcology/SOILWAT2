@@ -13,14 +13,15 @@
 #include <stdio.h>
 #include <float.h>
 #include "external/pcg/pcg_basic.h" // see https://github.com/imneme/pcg-c-basic
+#include "include/SW_datastructs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/***************************************************
- * Basic definitions
- ***************************************************/
+/* =================================================== */
+/*                    Local Types                      */
+/* --------------------------------------------------- */
 
 typedef long RandListType;
 

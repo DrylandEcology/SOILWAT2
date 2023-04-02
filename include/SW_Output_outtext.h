@@ -16,35 +16,11 @@
 #ifndef SW_OUTPUT_TXT_H
 #define SW_OUTPUT_TXT_H
 
+#include "include/SW_datastructs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-typedef struct {
-	Bool make_soil[SW_OUTNPERIODS], make_regular[SW_OUTNPERIODS];
-
-	#ifdef STEPWAT
-	// average/sd across iteration/repetitions
-	FILE *fp_reg_agg[SW_OUTNPERIODS];
-	char buf_reg_agg[SW_OUTNPERIODS][OUTSTRLEN];
-	// output file for variables with values for each soil layer
-	FILE *fp_soil_agg[SW_OUTNPERIODS];
-	char buf_soil_agg[SW_OUTNPERIODS][MAX_LAYERS * OUTSTRLEN];
-	#endif
-
-	// if SOILWAT: "regular" output file
-	// if STEPWAT: "regular" output file; new file for each iteration/repetition
-	FILE *fp_reg[SW_OUTNPERIODS];
-	char buf_reg[SW_OUTNPERIODS][OUTSTRLEN];
-	// if SOILWAT: output file for variables with values for each soil layer
-	// if STEPWAT: new file for each iteration/repetition of STEPWAT
-	FILE *fp_soil[SW_OUTNPERIODS];
-	char buf_soil[SW_OUTNPERIODS][MAX_LAYERS * OUTSTRLEN];
-
-} SW_FILE_STATUS;
-
-
 
 /* =================================================== */
 /*            Externed Global Variables                */

@@ -1,8 +1,7 @@
 #ifndef SW_FLOW_H
 #define SW_FLOW_H
 
-#include "include/SW_VegProd.h" // externs key2veg
-#include "include/SW_Weather.h"
+#include "include/SW_datastructs.h"
 
 #ifdef __cplusplus
 extern "C" {

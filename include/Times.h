@@ -41,17 +41,16 @@
 #define TIMES_H
 
 #include <time.h>
-#include "include/generic.h"
+#include "include/SW_datastructs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-/*---------------------------------------------------------------*/
-#define MAX_MONTHS 12
-#define MAX_WEEKS 53
-#define MAX_DAYS 366
+/* =================================================== */
+/*                    Local Defines                    */
+/* --------------------------------------------------- */
 
 /* constants for each month; this was previously a typedef enum.
  * Note: this has to be base0 and continuous. */
@@ -70,19 +69,7 @@ extern "C" {
 #define NoMonth 12
 
 #define NoDay 999
-
-typedef unsigned int TimeInt;
-
 #define WKDAYS 7
-/* number of days in each week. unlikely to change, but
- * useful as a readable indicator of usage where it occurs.
- * On the other hand, it is conceivable that one might be
- * interested in 4, 5, or 6 day periods, but redefine it
- * in specific programs and take responsibility there,
- * not here.
- */
-
-
 
 /* =================================================== */
 /*             Global Function Declarations            */

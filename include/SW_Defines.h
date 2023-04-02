@@ -89,6 +89,8 @@ extern "C" {
 
 #define SEC_PER_DAY	86400. // the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400 seconds)
 
+#define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
+#define OUT_DIGITS 6 // number of floating point decimal digits written to output files
 
 //was 256 & 1024...
 #define MAX_FILENAMESIZE 512
@@ -115,6 +117,20 @@ extern "C" {
 #define SW_SHRUB 1
 #define SW_FORBS 2
 #define SW_GRASS 3
+
+/* Constants for number of months, weeks, and days in a year */
+  /* number of days in each week. unlikely to change, but
+  * useful as a readable indicator of usage where it occurs.
+  * On the other hand, it is conceivable that one might be
+  * interested in 4, 5, or 6 day periods, but redefine it
+  * in specific programs and take responsibility there,
+  * not here.
+  */
+#define MAX_MONTHS 12
+#define MAX_WEEKS 53
+#define MAX_DAYS 366
+
+#define SWRC_PARAM_NMAX 6 /**< Maximal number of SWRC parameters implemented */
 
 /*
    Indices to daily input flags/indices (dailyInputFlags & dailyInputIndices in SW_WEATHER)

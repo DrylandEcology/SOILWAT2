@@ -124,6 +124,15 @@ static Bool do_once_at_soiltempError;
 static double delta_time;
 
 
+// based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
+// const double TCORRECTION = 0.02; // correction factor for eq. 3 [unitless]; estimate based on data from CPER/SGS LTER -- * Currently not used*
+// const double FUSIONHEAT_H2O = 80.; // Eitzinger et al. (2000): fusion energy of water; units = [cal cm-3] -- Currently not used
+const double FREEZING_TEMP_C = -1.; // freezing point of water in soil [C]; based on Parton 1984
+
+// based on Parton, W. J., M. Hartman, D. Ojima, and D. Schimel. 1998. DAYCENT and its land surface submodel: description and testing. Global and Planetary Change 19:35-48.
+const double MIN_VWC_TO_FREEZE = 0.13;
+
+
 
 /* =================================================== */
 /*             Global Function Definitions             */

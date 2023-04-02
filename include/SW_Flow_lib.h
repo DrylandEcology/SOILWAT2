@@ -37,37 +37,11 @@
 #ifndef SW_WATERSUBS_H
 #define SW_WATERSUBS_H
 
+#include "include/SW_datastructs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
-#define TCORRECTION			0.02 	// correction factor for eq. 3 [unitless]; estimate based on data from CPER/SGS LTER
-#define FREEZING_TEMP_C		-1.		// freezing point of water in soil [C]; based on Parton 1984
-#define FUSIONHEAT_H2O		80.		// Eitzinger et al. (2000): fusion energy of water; units = [cal cm-3]
-
-// based on Parton, W. J., M. Hartman, D. Ojima, and D. Schimel. 1998. DAYCENT and its land surface submodel: description and testing. Global and Planetary Change 19:35-48.
-#define MIN_VWC_TO_FREEZE	0.13
-
-// this structure is for keeping track of the variables used in the soil_temperature function (mainly the regressions)
-typedef struct {
-
-	double depths[MAX_LAYERS],  //soil layer depths of SoilWat soil
-	       depthsR[MAX_ST_RGR],//evenly spaced soil layer depths for soil temperature calculations
-		   	 fcR[MAX_ST_RGR],//field capacity of soil layers for soil temperature calculations
-		   	 wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
-		   	 bDensityR[MAX_ST_RGR],//bulk density of the whole soil per soil layer for soil temperature calculations
-		   	 oldsFusionPool_actual[MAX_LAYERS],
-             oldavgLyrTempR[MAX_ST_RGR];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
-    
-	double tlyrs_by_slyrs[MAX_ST_RGR][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers
-
-	/*unsigned int x1BoundsR[MAX_ST_RGR],
-	             x2BoundsR[MAX_ST_RGR],
-				 x1Bounds[MAX_LAYERS],
-				 x2Bounds[MAX_LAYERS];*/
-} ST_RGR_VALUES;
-
 
 /* =================================================== */
 /*            Externed Global Variables                */

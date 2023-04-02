@@ -19,6 +19,7 @@
 #define SW_CONTROL_H
 
 #include "include/generic.h" // for `Bool`, `swTRUE`, `swFALSE`
+#include "include/SW_datastructs.h"
 #include "include/SW_SoilWater.h"
 
 #ifdef __cplusplus

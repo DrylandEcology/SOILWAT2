@@ -18,25 +18,11 @@
 #ifndef SW_SKY_H
 #define SW_SKY_H
 
-#include "include/SW_Times.h"
+#include "include/SW_datastructs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-typedef struct {
-    RealD cloudcov     [MAX_MONTHS], /* monthly cloud cover (frac) */
-          windspeed    [MAX_MONTHS], /* windspeed (m/s) */
-          r_humidity   [MAX_MONTHS], /* relative humidity (%) */
-          snow_density [MAX_MONTHS], /* snow density (kg/m3) */
-          n_rain_per_day[MAX_MONTHS]; /* number of precipitation events per month (currently used in interception functions) */
-
-    RealD snow_density_daily	[MAX_DAYS+1];	/* interpolated daily snow density (kg/m3) */
-
-} SW_SKY;
-
-
 
 /* =================================================== */
 /*            Externed Global Variables                */

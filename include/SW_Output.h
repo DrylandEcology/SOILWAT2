@@ -56,30 +56,11 @@
 #ifndef SW_OUTPUT_H
 #define SW_OUTPUT_H
 
-#include "include/Times.h"
-#include "include/SW_Defines.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_VegProd.h"
+#include "include/SW_datastructs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-// Array-based output:
-#if defined(RSOILWAT) || defined(STEPWAT)
-#define SW_OUTARRAY
-#endif
-
-// Text-based output:
-#if defined(SOILWAT) || defined(STEPWAT)
-#define SW_OUTTEXT
-#endif
-
-
-
-#define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
-#define OUT_DIGITS 6 // number of floating point decimal digits written to output files
 
 /* These are the keywords to be found in the output setup file */
 /* some of them are from the old fortran model and are no longer */
@@ -121,87 +102,12 @@ extern "C" {
 
 #define SW_OUTNKEYS 32 /* must also match number of items in enum (minus eSW_NoKey and eSW_LastKey) */
 
-/* these are the code analog of the above */
-/* see also key2str[] in Output.c */
-/* take note of boundary conditions in ForEach...() loops below */
-typedef enum {
-	eSW_NoKey = -1,
-	/* weather/atmospheric quantities */
-	eSW_AllWthr, /* includes all weather vars */
-	eSW_Temp,
-	eSW_Precip,
-	eSW_SoilInf,
-	eSW_Runoff,
-	/* soil related water quantities */
-	eSW_AllH2O,
-	eSW_VWCBulk,
-	eSW_VWCMatric,
-	eSW_SWCBulk,
-	eSW_SWABulk,
-	eSW_SWAMatric,
-	eSW_SWA,
-	eSW_SWPMatric,
-	eSW_SurfaceWater,
-	eSW_Transp,
-	eSW_EvapSoil,
-	eSW_EvapSurface,
-	eSW_Interception,
-	eSW_LyrDrain,
-	eSW_HydRed,
-	eSW_ET,
-	eSW_AET,
-	eSW_PET, /* really belongs in wth, but for historical reasons we'll keep it here */
-	eSW_WetDays,
-	eSW_SnowPack,
-	eSW_DeepSWC,
-	eSW_SoilTemp,
-    eSW_Frozen,
-	/* vegetation quantities */
-	eSW_AllVeg,
-	eSW_Estab,
-	// vegetation other */
-	eSW_CO2Effects,
-	eSW_Biomass,
-	eSW_LastKey /* make sure this is the last one */
-} OutKey;
-
-
 /* summary methods */
 #define SW_SUM_OFF "OFF"  /* don't output */
 #define SW_SUM_SUM "SUM"  /* sum for period */
 #define SW_SUM_AVG "AVG"  /* arith. avg for period */
 #define SW_SUM_FNL "FIN"  /* value on last day in period */
 #define SW_NSUMTYPES 4
-
-typedef enum {
-	eSW_Off, eSW_Sum, eSW_Avg, eSW_Fnl
-} OutSum;
-
-typedef struct {
-	OutKey mykey;
-	ObjType myobj;
-	OutSum sumtype;
-	Bool
-		use,		// TRUE if output is requested
-		has_sl;	// TRUE if output key/type produces output for each soil layer
-	TimeInt
-		first, last, 			/* first/last doy of current year, i.e., updated for each year */
-		first_orig, last_orig; /* first/last doy that were originally requested */
-
-	#ifdef SW_OUTTEXT
-	void (*pfunc_text)(OutPeriod, SW_ALL*); /* pointer to output routine for text output */
-	#endif
-
-	#if defined(RSOILWAT)
-	void (*pfunc_mem)(OutPeriod); /* pointer to output routine for array output */
-	char *outfile; /* name of output */ //could probably be removed
-
-	#elif defined(STEPWAT)
-	void (*pfunc_agg)(OutPeriod); /* pointer to output routine for aggregated output across STEPWAT iterations */
-	void (*pfunc_SXW)(OutPeriod); /* pointer to output routine for STEPWAT in-memory output */
-	#endif
-} SW_OUTPUT;
-
 
 /* convenience loops for consistency.
  * k must be a defined variable, either of OutKey type
@@ -235,9 +141,6 @@ extern IntUS ncol_OUT[SW_OUTNKEYS];
 extern char const *key2str[];
 extern char const *pd2longstr[];
 extern char const *styp2str[];
-
-
-
 
 /* =================================================== */
 /*             Global Function Declarations            */

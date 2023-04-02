@@ -16,10 +16,16 @@
 #ifndef SW_OUTPUT_ARRAY_H
 #define SW_OUTPUT_ARRAY_H
 
+#include "include/SW_datastructs.h"
+#include "include/SW_Output.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/* =================================================== */
+/*                    Local Defines                    */
+/* --------------------------------------------------- */
 
 /** iOUT returns the index to the `i`-th column for time period `pd` in an
   output array that is organized by columns where `i` is base0 and

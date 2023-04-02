@@ -16,6 +16,8 @@
 #ifndef SW_FILES_H
 #define SW_FILES_H
 
+#include "include/SW_datastructs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
