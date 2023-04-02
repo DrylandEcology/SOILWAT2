@@ -767,12 +767,12 @@ typedef struct {
 	#endif
 
 	#if defined(RSOILWAT)
-	void (*pfunc_mem)(OutPeriod); /* pointer to output routine for array output */
+	void (*pfunc_mem)(OutPeriod, SW_ALL*); /* pointer to output routine for array output */
 	char *outfile; /* name of output */ //could probably be removed
 
 	#elif defined(STEPWAT)
-	void (*pfunc_agg)(OutPeriod); /* pointer to output routine for aggregated output across STEPWAT iterations */
-	void (*pfunc_SXW)(OutPeriod); /* pointer to output routine for STEPWAT in-memory output */
+	void (*pfunc_agg)(OutPeriod, SW_ALL*); /* pointer to output routine for aggregated output across STEPWAT iterations */
+	void (*pfunc_SXW)(OutPeriod, SW_ALL*); /* pointer to output routine for STEPWAT in-memory output */
 	#endif
 } SW_OUTPUT;
 
