@@ -363,6 +363,8 @@ void get_estab_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%d", _Sep, v->parms[i]->estab_doy);
 		strcat(sw_outstr, str);
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -631,6 +633,8 @@ void get_vwcBulk_text(OutPeriod pd, SW_ALL* sw)
 			_Sep, OUT_DIGITS, vo->vwcBulk[i] / SW_Site.lyr[i]->width);
 		strcat(sw_outstr, str);
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -710,6 +714,8 @@ void get_vwcMatric_text(OutPeriod pd, SW_ALL* sw)
 			_Sep, OUT_DIGITS, vo->vwcMatric[i] * convert);
 		strcat(sw_outstr, str);
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -795,6 +801,8 @@ void get_swa_text(OutPeriod pd, SW_ALL* sw)
 			strcat(sw_outstr, str);
 		}
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -878,6 +886,8 @@ void get_swcBulk_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->swcBulk[i]);
 		strcat(sw_outstr, str);
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -978,6 +988,8 @@ void get_swpMatric_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, val);
 		strcat(sw_outstr, str);
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1056,6 +1068,8 @@ void get_swaBulk_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->swaBulk[i]);
 		strcat(sw_outstr, str);
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1133,6 +1147,8 @@ void get_swaMatric_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->swaMatric[i] * convert);
 		strcat(sw_outstr, str);
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1207,6 +1223,8 @@ void get_surfaceWater_text(OutPeriod pd, SW_ALL* sw)
 
 	sw_outstr[0] = '\0';
 	snprintf(sw_outstr, sizeof sw_outstr,"%c%.*f", _Sep, OUT_DIGITS, vo->surfaceWater);
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1362,6 +1380,8 @@ void get_transp_text(OutPeriod pd, SW_ALL* sw)
 			strcat(sw_outstr, str);
 		}
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1494,6 +1514,8 @@ void get_evapSoil_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->evap[i]);
 		strcat(sw_outstr, str);
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1574,6 +1596,8 @@ void get_evapSurface_text(OutPeriod pd, SW_ALL* sw)
 		_Sep, OUT_DIGITS, vo->litter_evap,
 		_Sep, OUT_DIGITS, vo->surfaceWater_evap);
 	strcat(sw_outstr, str);
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1662,6 +1686,8 @@ void get_interception_text(OutPeriod pd, SW_ALL* sw)
 
 	snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->litter_int);
 	strcat(sw_outstr, str);
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1805,6 +1831,8 @@ void get_lyrdrain_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->lyrdrain[i]);
 		strcat(sw_outstr, str);
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1892,6 +1920,8 @@ void get_hydred_text(OutPeriod pd, SW_ALL* sw)
 			strcat(sw_outstr, str);
 		}
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -2095,6 +2125,8 @@ void get_pet_text(OutPeriod pd, SW_ALL* sw)
 		_Sep, OUT_DIGITS, vo->H_gh,
 		_Sep, OUT_DIGITS, vo->H_gt
 	);
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -2179,6 +2211,8 @@ void get_wetdays_text(OutPeriod pd, SW_ALL* sw)
 			strcat(sw_outstr, str);
 		}
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -2267,6 +2301,8 @@ void get_snowpack_text(OutPeriod pd, SW_ALL* sw)
 	snprintf(sw_outstr, sizeof sw_outstr,"%c%.*f%c%.*f",
 		_Sep, OUT_DIGITS, vo->snowpack,
 		_Sep, OUT_DIGITS, vo->snowdepth);
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -2328,6 +2364,8 @@ void get_deepswc_text(OutPeriod pd, SW_ALL* sw)
 
 	sw_outstr[0] = '\0';
 	snprintf(sw_outstr, sizeof sw_outstr,"%c%.*f", _Sep, OUT_DIGITS, vo->deep);
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -2400,6 +2438,8 @@ void get_soiltemp_text(OutPeriod pd, SW_ALL* sw)
         snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->avgLyrTemp[i]);
         strcat(sw_outstr, str);
 	}
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -2477,6 +2517,8 @@ void get_frozen_text(OutPeriod pd, SW_ALL* sw)
         snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->lyrFrozen[i]);
         strcat(sw_outstr, str);
     }
+
+	(void) sw; // Temporary to silence compiler
 }
 #endif
 
