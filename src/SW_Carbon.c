@@ -15,15 +15,11 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "include/generic.h"
 #include "include/filefuncs.h"
-#include "include/myMemory.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Times.h"
 #include "include/SW_Files.h"
 #include "include/SW_Carbon.h" // externs SW_Carbon
-#include "include/SW_Site.h"
 #include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_VegProd.h"
 
 
 

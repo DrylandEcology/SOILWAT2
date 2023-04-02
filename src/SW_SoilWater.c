@@ -41,15 +41,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "include/generic.h"
 #include "include/filefuncs.h"
 #include "include/myMemory.h"
-#include "include/SW_Defines.h"
 #include "include/SW_Files.h"
 #include "include/SW_Model.h" // externs SW_Model
 #include "include/SW_Site.h" // externs SW_Site
 #include "include/SW_Flow.h"
 #include "include/SW_SoilWater.h"
+#include "include/SW_Times.h"
+#include "include/Times.h"
 #ifdef SWDEBUG
   #include "include/SW_Weather.h"   // externs SW_Weather
 #endif

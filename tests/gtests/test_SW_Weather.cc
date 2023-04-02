@@ -19,6 +19,7 @@
 #include "tests/gtests/sw_testhelpers.h"
 #include "include/SW_Markov.h"
 #include "include/SW_Model.h"
+#include "include/Times.h"
 #include "include/SW_Flow_lib_PET.h"
 #include "include/SW_Sky.h"
 

@@ -36,18 +36,14 @@
 #include "include/generic.h" // externs `QuietMode`, `EchoInits`
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "include/myMemory.h"
+#include "include/SW_Times.h"
 #include "include/Times.h"
 
-#include "include/SW_Carbon.h" // externs SW_Carbon
-#include "include/SW_Defines.h"
 #include "include/SW_Files.h"
 #include "include/SW_Model.h" // externs SW_Model
 #include "include/SW_Site.h" // externs SW_Site
-#include "include/SW_SoilWater.h" // externs SW_Soilwat
-#include "include/SW_Times.h"
-#include "include/SW_Weather.h"  // externs SW_Weather
 #include "include/SW_VegEstab.h" // externs SW_VegEstab
-#include "include/SW_Flow_lib.h" // externs stValues
+#include "include/SW_SoilWater.h"
 
 #include "include/SW_Output.h"
 

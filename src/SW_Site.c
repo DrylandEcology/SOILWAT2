@@ -61,7 +61,7 @@
 #include "include/generic.h" // externs `QuietMode`, `EchoInits`
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "include/myMemory.h"
-#include "include/SW_Defines.h"
+#include "include/SW_VegProd.h"
 
 #include "include/SW_Carbon.h" // externs SW_Carbon
 #include "include/SW_Files.h"

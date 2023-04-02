@@ -91,9 +91,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "include/generic.h"
 #include "include/filefuncs.h"
-#include "include/SW_Defines.h"
+#include "include/SW_Times.h"
 #include "include/SW_Site.h" // externs SW_Site
 #include "include/SW_Flow_lib.h"
 #include "include/SW_SoilWater.h" // externs SW_Soilwat

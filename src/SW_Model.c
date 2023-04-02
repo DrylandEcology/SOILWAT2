@@ -39,9 +39,7 @@
 #include "include/filefuncs.h"
 #include "include/rands.h"
 #include "include/Times.h"
-#include "include/myMemory.h"
 
-#include "include/SW_Defines.h"
 #include "include/SW_Files.h"
 #include "include/SW_Site.h" // externs SW_Site
 #include "include/SW_SoilWater.h"  /* for setup_new_year() */

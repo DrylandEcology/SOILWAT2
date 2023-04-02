@@ -14,8 +14,6 @@
 /* --------------------------------------------------- */
 
 #include <math.h>
-#include "include/generic.h"
-#include "include/SW_Defines.h"
 #include "include/filefuncs.h"
 
 #include "include/SW_Flow_lib_PET.h"

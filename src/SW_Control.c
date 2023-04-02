@@ -24,11 +24,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "include/generic.h"
+#include "include/SW_VegProd.h"
 #include "include/Times.h"
-#include "include/filefuncs.h"
-#include "include/rands.h"
-#include "include/SW_Defines.h"
 #include "include/SW_Files.h"
 #include "include/SW_Control.h"
 #include "include/SW_Model.h" // externs SW_Model
@@ -37,7 +34,6 @@
 #include "include/SW_Flow_lib.h"
 #include "include/SW_Flow_lib_PET.h"
 #include "include/SW_Flow.h"
-#include "include/SW_SoilWater.h"
 #include "include/SW_VegEstab.h" // externs SW_VegEstab
 #include "include/SW_Weather.h"  // externs SW_Weather
 #include "include/SW_Markov.h"

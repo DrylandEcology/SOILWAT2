@@ -41,11 +41,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "include/generic.h"
 #include "include/filefuncs.h"
 #include "include/myMemory.h"
 #include "include/Times.h"
-#include "include/SW_Defines.h"
 #include "include/SW_Files.h"
 #include "include/SW_Model.h" // externs SW_Model
 #include "include/SW_SoilWater.h"

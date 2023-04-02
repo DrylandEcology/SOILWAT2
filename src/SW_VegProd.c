@@ -48,9 +48,8 @@ changed _echo_inits() to now display the bare ground components in logfile.log
 #include "include/generic.h" // externs `QuietMode`, `EchoInits`
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "include/myMemory.h"
-#include "include/SW_Defines.h"
+#include "include/Times.h"
 #include "include/SW_Files.h"
-#include "include/SW_Times.h"
 #include "include/SW_VegProd.h"
 #include "include/SW_Model.h" // externs SW_Model
 #include "include/SW_Weather.h"

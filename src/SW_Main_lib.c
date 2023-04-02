@@ -25,10 +25,6 @@
 #endif
 #include "include/generic.h" // externs `QuietMode`, `EchoInits`
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
-#include "include/SW_Defines.h"
-#include "include/SW_Control.h"
-#include "include/SW_Site.h"
-#include "include/SW_Weather.h"
 #include "include/SW_Main_lib.h"
 
 

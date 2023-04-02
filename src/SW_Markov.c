@@ -23,17 +23,13 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "include/generic.h"
 #include "include/filefuncs.h"
 #include "include/rands.h"
 #include "include/Times.h"
 #include "include/myMemory.h"
-#include "include/SW_Defines.h"
 #include "include/SW_Files.h"
-#include "include/SW_Weather.h"
 #include "include/SW_Model.h" // externs SW_Model
 #include "include/SW_Markov.h"
-#include "external/pcg/pcg_basic.h"
 
 
 /* =================================================== */
