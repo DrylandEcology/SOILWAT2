@@ -604,16 +604,6 @@ typedef struct {
 } SW_WEATHER;
 
 /* =================================================== */
-/*                 Comprehensive struct                */
-/* --------------------------------------------------- */
-
-typedef struct {
-	SW_VEGPROD VegProd;
-	SW_WEATHER Weather;
-
-} SW_ALL;
-
-/* =================================================== */
 /*                   Soilwat structs                   */
 /* --------------------------------------------------- */
 
@@ -698,6 +688,17 @@ typedef struct {
 	SW_SOILWAT_HIST hist;
 
 } SW_SOILWAT;
+
+/* =================================================== */
+/*                 Comprehensive struct                */
+/* --------------------------------------------------- */
+
+typedef struct {
+	SW_VEGPROD VegProd;
+	SW_WEATHER Weather;
+	SW_SOILWAT SoilWat;
+
+} SW_ALL;
 
 /* =================================================== */
 /*                 Output struct/enums                 */

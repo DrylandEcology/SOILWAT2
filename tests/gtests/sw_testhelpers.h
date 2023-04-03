@@ -1,6 +1,6 @@
 #include <cmath>
 #include "gtest/gtest.h"
-#include "include/SW_SoilWater.h"
+#include "include/SW_datastructs.h"
 
 
 #define length(array) (sizeof(array) / sizeof(*(array))) //get length of an array

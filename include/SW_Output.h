@@ -153,7 +153,8 @@ void SW_OUT_new_year(void);
 int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 					   char msg[], size_t sizeof_msg, SW_VEGPROD* SW_VegProd);
 void SW_OUT_read(SW_ALL* sw);
-void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather);
+void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
+					  SW_SOILWAT* SW_SoilWat);
 void SW_OUT_write_today(SW_ALL* sw);
 void SW_OUT_write_year(void);
 void SW_OUT_flush(SW_ALL* sw);

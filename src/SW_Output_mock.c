@@ -96,12 +96,13 @@ void SW_OUT_flush(SW_ALL* sw)
 }
 
 void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd,
-					  SW_WEATHER* SW_Weather)
+					  SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat)
 {
 	ObjType x = otyp;
 	if (x == eF) {}
 	(void) SW_VegProd; // use sw to silence compiler warnings
 	(void) SW_Weather; // use sw to silence compiler warnings
+	(void) SW_SoilWat;
 }
 
 void SW_OUT_write_today(SW_ALL* sw)
@@ -315,17 +316,17 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 
 
 static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
-						SW_WEATHER* SW_Weather)
+						SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat)
 {
 	if (pd == eSW_Day) {}
-	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather);
+	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather, SW_SoilWat);
 }
 
 static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
-						 SW_WEATHER* SW_Weather)
+						 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat)
 {
 	if (op == eSW_Day) {}
-	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather);
+	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather, SW_SoilWat);
 }
 
 /**
@@ -381,8 +382,8 @@ void _echo_outputs(SW_ALL* sw)
 
 	ObjType otyp = eF;
 
-	average_for(otyp, pd, &sw->VegProd, &sw->Weather);
-	collect_sums(otyp, pd, &sw->VegProd, &sw->Weather);
+	average_for(otyp, pd, &sw->VegProd, &sw->Weather, &sw->SoilWat);
+	collect_sums(otyp, pd, &sw->VegProd, &sw->Weather, &sw->SoilWat);
 }
 
 

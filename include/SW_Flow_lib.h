@@ -59,8 +59,9 @@ void veg_intercepted_water(double *ppt_incident, double *int_veg, double *s_veg,
 void litter_intercepted_water(double *ppt_through, double *int_lit, double *s_lit,
   double m, double kSmax, double blitter, double scale);
 
-void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft, int nlyrs, double swcfc[], double swcsat[], double impermeability[],
-		double *standingWater);
+void infiltrate_water_high(double swc[], double drain[], double *drainout,
+	double pptleft, int nlyrs, double swcfc[], double swcsat[],
+	double impermeability[], double *standingWater, SW_SOILWAT* SW_SoilWat);
 
 void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n_layers, unsigned int tr_regions[], double tr_coeff[], double swc[]);
 
@@ -81,7 +82,8 @@ void evap_litter_veg_surfaceWater(double *cwlit, double *cwstcr, double *standin
 
 void evap_fromSurface(double *water_pool, double *evap_rate, double *aet);
 
-void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyrs, double ecoeff[], double rate, double swcmin[]);
+void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyrs,
+    		double coeff[], double rate, double swcmin[], SW_SOILWAT* SW_SoilWat);
 
 void percolate_unsaturated(
 	double swc[],
@@ -140,7 +142,8 @@ void soil_temperature(double airTemp,
                       double minLyrTemperature[],
                       double maxLyrTemperature[],
                       double *surface_max,
-                      double *surface_min);
+                      double *surface_min,
+					  SW_SOILWAT* SW_SoilWat);
 
 void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
   unsigned int nlyrTemp, double depth_Temp[], double avgLyrTempR[], unsigned int nlyrSoil,
@@ -174,7 +177,8 @@ void SW_ST_setup_run(
 	double deltaX,
 	double theMaxDepth,
 	unsigned int nRgr,
-	Bool *ptr_stError
+	Bool *ptr_stError,
+	SW_SOILWAT* SW_SoilWat
 );
 
 void soil_temperature_setup(double bDensity[], double width[], double oldavgLyrTemp[],
@@ -182,7 +186,7 @@ void soil_temperature_setup(double bDensity[], double width[], double oldavgLyrT
 	double theMaxDepth, unsigned int nRgr, Bool *ptr_stError);
 
 void set_frozen_unfrozen(unsigned int nlyrs, double avgLyrTemp[], double swc[],
-		double swc_sat[], double width[]);
+						 double swc_sat[], double width[], SW_SOILWAT* SW_SoilWat);
 
 unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double avgLyrTemp[],
 		double shParam, unsigned int nlyrs, double vwc[], double bDensity[]);

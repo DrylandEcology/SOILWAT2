@@ -59,29 +59,25 @@ typedef enum {
 #define FXW_hr 1500. /**< Pressure head at residual water content [cm] of FXW SWRC */
 
 /* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern SW_SOILWAT SW_Soilwat;
-
-
-/* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_SWC_construct(void);
-void SW_SWC_deconstruct(void);
-void SW_SWC_new_year(void);
-void SW_SWC_read(void);
-void SW_SWC_init_run(void);
-void _read_swc_hist(TimeInt year);
-void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather);
-void calculate_repartitioned_soilwater(SW_VEGPROD* SW_VegProd);
-void SW_SWC_adjust_swc(TimeInt doy);
+void SW_SWC_construct(SW_SOILWAT* SW_SoilWat);
+void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat);
+void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat);
+void SW_SWC_read(SW_SOILWAT* SW_SoilWat);
+void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat);
+void _read_swc_hist(TimeInt year, SW_SOILWAT* SW_SoilWat);
+void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
+					   SW_SOILWAT* SW_SoilWat);
+void calculate_repartitioned_soilwater(SW_VEGPROD* SW_VegProd,
+									   SW_SOILWAT* SW_SoilWat);
+void SW_SWC_adjust_swc(TimeInt doy, SW_SOILWAT* SW_SoilWat);
 void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
-  RealD *snow, RealD *snowmelt);
+	RealD *snow, RealD *snowmelt, SW_SOILWAT* SW_SoilWat);
 RealD SW_SWC_snowloss(RealD pet, RealD *snowpack);
 RealD SW_SnowDepth(RealD SWE, RealD snowdensity);
-void SW_SWC_end_day(void);
-void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd);
+void SW_SWC_end_day(SW_SOILWAT* SW_SoilWat);
+void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd, SW_SOILWAT* SW_SoilWat);
 
 double SW_SWRC_SWCtoSWP(double swcBulk, SW_LAYER_INFO *lyr);
 double SWRC_SWCtoSWP(
@@ -143,7 +139,7 @@ double SWRC_SWPtoSWC_FXW(
 );
 
 #ifdef SWDEBUG
-void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather);
+void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat);
 #endif
 
 #ifdef DEBUG_MEM

@@ -622,7 +622,7 @@ void get_precip_SXW(OutPeriod pd, SW_ALL* sw)
 void get_vwcBulk_text(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -633,8 +633,6 @@ void get_vwcBulk_text(OutPeriod pd, SW_ALL* sw)
 			_Sep, OUT_DIGITS, vo->vwcBulk[i] / SW_Site.lyr[i]->width);
 		strcat(sw_outstr, str);
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -648,7 +646,7 @@ void get_vwcBulk_text(OutPeriod pd, SW_ALL* sw)
 void get_vwcBulk_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_VWCBulk][pd];
 	get_outvalleader(p, pd);
@@ -669,7 +667,7 @@ void get_vwcBulk_mem(OutPeriod pd, SW_ALL* sw)
 void get_vwcBulk_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_VWCBulk][pd],
@@ -701,7 +699,7 @@ void get_vwcMatric_text(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	RealD convert;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -714,8 +712,6 @@ void get_vwcMatric_text(OutPeriod pd, SW_ALL* sw)
 			_Sep, OUT_DIGITS, vo->vwcMatric[i] * convert);
 		strcat(sw_outstr, str);
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -730,7 +726,7 @@ void get_vwcMatric_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	RealD convert;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_VWCMatric][pd];
 	get_outvalleader(p, pd);
@@ -753,7 +749,7 @@ void get_vwcMatric_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	RealD convert;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_VWCMatric][pd],
@@ -788,7 +784,7 @@ void get_swa_text(OutPeriod pd, SW_ALL* sw)
 	/* added 21-Oct-03, cwb */
 	LyrIndex i;
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -801,8 +797,6 @@ void get_swa_text(OutPeriod pd, SW_ALL* sw)
 			strcat(sw_outstr, str);
 		}
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -817,7 +811,7 @@ void get_swa_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_SWA][pd];
 	get_outvalleader(p, pd);
@@ -842,7 +836,7 @@ void get_swa_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_SWA][pd],
@@ -876,7 +870,7 @@ void get_swcBulk_text(OutPeriod pd, SW_ALL* sw)
 {
 	/* added 21-Oct-03, cwb */
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -886,8 +880,6 @@ void get_swcBulk_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->swcBulk[i]);
 		strcat(sw_outstr, str);
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -901,7 +893,7 @@ void get_swcBulk_text(OutPeriod pd, SW_ALL* sw)
 void get_swcBulk_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_SWCBulk][pd];
 	get_outvalleader(p, pd);
@@ -922,7 +914,7 @@ void get_swcBulk_mem(OutPeriod pd, SW_ALL* sw)
 void get_swcBulk_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_SWCBulk][pd],
@@ -948,7 +940,7 @@ void get_swcBulk_SXW(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd == eSW_Month) {
 		LyrIndex i;
-		SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 		ForEachSoilLayer(i)
 		{
@@ -974,7 +966,7 @@ void get_swpMatric_text(OutPeriod pd, SW_ALL* sw)
 {
 	RealD val;
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -988,8 +980,6 @@ void get_swpMatric_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, val);
 		strcat(sw_outstr, str);
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1003,7 +993,7 @@ void get_swpMatric_text(OutPeriod pd, SW_ALL* sw)
 void get_swpMatric_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_SWPMatric][pd];
 	get_outvalleader(p, pd);
@@ -1026,7 +1016,7 @@ void get_swpMatric_agg(OutPeriod pd, SW_ALL* sw)
 {
 	RealD val;
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_SWPMatric][pd],
@@ -1058,7 +1048,7 @@ void get_swpMatric_agg(OutPeriod pd, SW_ALL* sw)
 void get_swaBulk_text(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -1068,8 +1058,6 @@ void get_swaBulk_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->swaBulk[i]);
 		strcat(sw_outstr, str);
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1083,7 +1071,7 @@ void get_swaBulk_text(OutPeriod pd, SW_ALL* sw)
 void get_swaBulk_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_SWABulk][pd];
 	get_outvalleader(p, pd);
@@ -1104,7 +1092,7 @@ void get_swaBulk_mem(OutPeriod pd, SW_ALL* sw)
 void get_swaBulk_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_SWABulk][pd],
@@ -1134,7 +1122,7 @@ void get_swaMatric_text(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	RealD convert;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -1147,8 +1135,6 @@ void get_swaMatric_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->swaMatric[i] * convert);
 		strcat(sw_outstr, str);
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1163,7 +1149,7 @@ void get_swaMatric_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	RealD convert;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_SWAMatric][pd];
 	get_outvalleader(p, pd);
@@ -1187,7 +1173,7 @@ void get_swaMatric_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	RealD convert;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_SWAMatric][pd],
@@ -1219,12 +1205,10 @@ void get_swaMatric_agg(OutPeriod pd, SW_ALL* sw)
 */
 void get_surfaceWater_text(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	sw_outstr[0] = '\0';
 	snprintf(sw_outstr, sizeof sw_outstr,"%c%.*f", _Sep, OUT_DIGITS, vo->surfaceWater);
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1237,7 +1221,7 @@ void get_surfaceWater_text(OutPeriod pd, SW_ALL* sw)
 */
 void get_surfaceWater_mem(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_SurfaceWater][pd];
 	get_outvalleader(p, pd);
@@ -1254,7 +1238,7 @@ void get_surfaceWater_mem(OutPeriod pd, SW_ALL* sw)
 */
 void get_surfaceWater_agg(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_SurfaceWater][pd],
@@ -1359,7 +1343,7 @@ void get_transp_text(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -1380,8 +1364,6 @@ void get_transp_text(OutPeriod pd, SW_ALL* sw)
 			strcat(sw_outstr, str);
 		}
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1396,7 +1378,7 @@ void get_transp_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_Transp][pd];
 	get_outvalleader(p, pd);
@@ -1428,7 +1410,7 @@ void get_transp_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_Transp][pd],
@@ -1472,7 +1454,7 @@ void get_transp_SXW(OutPeriod pd, SW_ALL* sw)
 	if (pd == eSW_Month) {
 		LyrIndex i;
 		int k;
-		SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 		/* total transpiration */
 		ForEachSoilLayer(i)
@@ -1504,7 +1486,7 @@ void get_transp_SXW(OutPeriod pd, SW_ALL* sw)
 void get_evapSoil_text(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -1514,8 +1496,6 @@ void get_evapSoil_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->evap[i]);
 		strcat(sw_outstr, str);
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1529,7 +1509,7 @@ void get_evapSoil_text(OutPeriod pd, SW_ALL* sw)
 void get_evapSoil_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_EvapSoil][pd];
 	get_outvalleader(p, pd);
@@ -1550,7 +1530,7 @@ void get_evapSoil_mem(OutPeriod pd, SW_ALL* sw)
 void get_evapSoil_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_EvapSoil][pd],
@@ -1580,7 +1560,7 @@ void get_evapSoil_agg(OutPeriod pd, SW_ALL* sw)
 void get_evapSurface_text(OutPeriod pd, SW_ALL* sw)
 {
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -1596,8 +1576,6 @@ void get_evapSurface_text(OutPeriod pd, SW_ALL* sw)
 		_Sep, OUT_DIGITS, vo->litter_evap,
 		_Sep, OUT_DIGITS, vo->surfaceWater_evap);
 	strcat(sw_outstr, str);
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1611,7 +1589,7 @@ void get_evapSurface_text(OutPeriod pd, SW_ALL* sw)
 void get_evapSurface_mem(OutPeriod pd, SW_ALL* sw)
 {
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_EvapSurface][pd];
 	get_outvalleader(p, pd);
@@ -1636,7 +1614,7 @@ void get_evapSurface_mem(OutPeriod pd, SW_ALL* sw)
 void get_evapSurface_agg(OutPeriod pd, SW_ALL* sw)
 {
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_EvapSurface][pd],
@@ -1672,7 +1650,7 @@ void get_evapSurface_agg(OutPeriod pd, SW_ALL* sw)
 void get_interception_text(OutPeriod pd, SW_ALL* sw)
 {
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -1686,8 +1664,6 @@ void get_interception_text(OutPeriod pd, SW_ALL* sw)
 
 	snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->litter_int);
 	strcat(sw_outstr, str);
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1701,7 +1677,7 @@ void get_interception_text(OutPeriod pd, SW_ALL* sw)
 void get_interception_mem(OutPeriod pd, SW_ALL* sw)
 {
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_Interception][pd];
 	get_outvalleader(p, pd);
@@ -1725,7 +1701,7 @@ void get_interception_mem(OutPeriod pd, SW_ALL* sw)
 void get_interception_agg(OutPeriod pd, SW_ALL* sw)
 {
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_Interception][pd],
@@ -1821,7 +1797,7 @@ void get_lyrdrain_text(OutPeriod pd, SW_ALL* sw)
 {
 	/* 20100202 (drs) added */
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -1831,8 +1807,6 @@ void get_lyrdrain_text(OutPeriod pd, SW_ALL* sw)
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->lyrdrain[i]);
 		strcat(sw_outstr, str);
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1846,7 +1820,7 @@ void get_lyrdrain_text(OutPeriod pd, SW_ALL* sw)
 void get_lyrdrain_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_LyrDrain][pd];
 	get_outvalleader(p, pd);
@@ -1867,7 +1841,7 @@ void get_lyrdrain_mem(OutPeriod pd, SW_ALL* sw)
 void get_lyrdrain_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_LyrDrain][pd],
@@ -1899,7 +1873,7 @@ void get_hydred_text(OutPeriod pd, SW_ALL* sw)
 	/* 20101020 (drs) added */
 	LyrIndex i;
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -1920,8 +1894,6 @@ void get_hydred_text(OutPeriod pd, SW_ALL* sw)
 			strcat(sw_outstr, str);
 		}
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -1936,7 +1908,7 @@ void get_hydred_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_HydRed][pd];
 	get_outvalleader(p, pd);
@@ -1968,7 +1940,7 @@ void get_hydred_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	int k;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_HydRed][pd],
@@ -2013,7 +1985,7 @@ void get_hydred_agg(OutPeriod pd, SW_ALL* sw)
 */
 void get_aet_text(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 	SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
 
 	sw_outstr[0] = '\0';
@@ -2041,7 +2013,7 @@ void get_aet_text(OutPeriod pd, SW_ALL* sw)
 */
 void get_aet_mem(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 	SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_AET][pd];
@@ -2064,7 +2036,7 @@ void get_aet_mem(OutPeriod pd, SW_ALL* sw)
 */
 void get_aet_agg(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 	SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
 
 	RealD
@@ -2093,7 +2065,7 @@ void get_aet_agg(OutPeriod pd, SW_ALL* sw)
 void get_aet_SXW(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd == eSW_Year) {
-		SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 		SXW->aet = vo->aet;
 	}
@@ -2112,7 +2084,7 @@ void get_aet_SXW(OutPeriod pd, SW_ALL* sw)
 */
 void get_pet_text(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	sw_outstr[0] = '\0';
 	snprintf(
@@ -2125,8 +2097,6 @@ void get_pet_text(OutPeriod pd, SW_ALL* sw)
 		_Sep, OUT_DIGITS, vo->H_gh,
 		_Sep, OUT_DIGITS, vo->H_gt
 	);
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -2140,7 +2110,7 @@ void get_pet_text(OutPeriod pd, SW_ALL* sw)
 */
 void get_pet_mem(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_PET][pd];
 	get_outvalleader(p, pd);
@@ -2160,7 +2130,7 @@ void get_pet_mem(OutPeriod pd, SW_ALL* sw)
 */
 void get_pet_agg(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_PET][pd],
@@ -2198,21 +2168,19 @@ void get_wetdays_text(OutPeriod pd, SW_ALL* sw)
 	if (pd == eSW_Day)
 	{
 		ForEachSoilLayer(i) {
-			snprintf(str, OUTSTRLEN, "%c%i", _Sep, (SW_Soilwat.is_wet[i]) ? 1 : 0);
+			snprintf(str, OUTSTRLEN, "%c%i", _Sep, (sw->SoilWat.is_wet[i]) ? 1 : 0);
 			strcat(sw_outstr, str);
 		}
 
 	} else
 	{
-		SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 		ForEachSoilLayer(i) {
 			snprintf(str, OUTSTRLEN, "%c%i", _Sep, (int) vo->wetdays[i]);
 			strcat(sw_outstr, str);
 		}
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -2233,12 +2201,12 @@ void get_wetdays_mem(OutPeriod pd, SW_ALL* sw)
 	if (pd == eSW_Day)
 	{
 		ForEachSoilLayer(i) {
-			p[iOUT(i, pd)] = (SW_Soilwat.is_wet[i]) ? 1 : 0;
+			p[iOUT(i, pd)] = (sw->SoilWat.is_wet[i]) ? 1 : 0;
 		}
 
 	} else
 	{
-		SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 		ForEachSoilLayer(i) {
 			p[iOUT(i, pd)] = (int) vo->wetdays[i];
@@ -2265,12 +2233,12 @@ void get_wetdays_agg(OutPeriod pd, SW_ALL* sw)
 	{
 		ForEachSoilLayer(i) {
 			do_running_agg(p, psd, iOUT(i, pd), Globals->currIter,
-				(SW_Soilwat.is_wet[i]) ? 1 : 0);
+				(sw->SoilWat.is_wet[i]) ? 1 : 0);
 		}
 
 	} else
 	{
-		SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 		ForEachSoilLayer(i) {
 			do_running_agg(p, psd, iOUT(i, pd), Globals->currIter, vo->wetdays[i]);
@@ -2295,14 +2263,12 @@ void get_wetdays_agg(OutPeriod pd, SW_ALL* sw)
 */
 void get_snowpack_text(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	sw_outstr[0] = '\0';
 	snprintf(sw_outstr, sizeof sw_outstr,"%c%.*f%c%.*f",
 		_Sep, OUT_DIGITS, vo->snowpack,
 		_Sep, OUT_DIGITS, vo->snowdepth);
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -2315,7 +2281,7 @@ void get_snowpack_text(OutPeriod pd, SW_ALL* sw)
 */
 void get_snowpack_mem(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_SnowPack][pd];
 	get_outvalleader(p, pd);
@@ -2333,7 +2299,7 @@ void get_snowpack_mem(OutPeriod pd, SW_ALL* sw)
 */
 void get_snowpack_agg(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_SnowPack][pd],
@@ -2360,12 +2326,10 @@ void get_snowpack_agg(OutPeriod pd, SW_ALL* sw)
 */
 void get_deepswc_text(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	sw_outstr[0] = '\0';
 	snprintf(sw_outstr, sizeof sw_outstr,"%c%.*f", _Sep, OUT_DIGITS, vo->deep);
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -2378,7 +2342,7 @@ void get_deepswc_text(OutPeriod pd, SW_ALL* sw)
 */
 void get_deepswc_mem(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_DeepSWC][pd];
 	get_outvalleader(p, pd);
@@ -2395,7 +2359,7 @@ void get_deepswc_mem(OutPeriod pd, SW_ALL* sw)
 */
 void get_deepswc_agg(OutPeriod pd, SW_ALL* sw)
 {
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_DeepSWC][pd],
@@ -2422,7 +2386,7 @@ void get_deepswc_agg(OutPeriod pd, SW_ALL* sw)
 void get_soiltemp_text(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
@@ -2438,8 +2402,6 @@ void get_soiltemp_text(OutPeriod pd, SW_ALL* sw)
         snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->avgLyrTemp[i]);
         strcat(sw_outstr, str);
 	}
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -2453,7 +2415,7 @@ void get_soiltemp_text(OutPeriod pd, SW_ALL* sw)
 void get_soiltemp_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD *p = p_OUT[eSW_SoilTemp][pd];
 	get_outvalleader(p, pd);
@@ -2476,7 +2438,7 @@ void get_soiltemp_mem(OutPeriod pd, SW_ALL* sw)
 void get_soiltemp_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 	RealD
 		*p = p_OUT[eSW_SoilTemp][pd],
@@ -2507,7 +2469,7 @@ void get_soiltemp_agg(OutPeriod pd, SW_ALL* sw)
 void get_frozen_text(OutPeriod pd, SW_ALL* sw)
 {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
     char str[OUTSTRLEN];
     sw_outstr[0] = '\0';
@@ -2517,8 +2479,6 @@ void get_frozen_text(OutPeriod pd, SW_ALL* sw)
         snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->lyrFrozen[i]);
         strcat(sw_outstr, str);
     }
-
-	(void) sw; // Temporary to silence compiler
 }
 #endif
 
@@ -2532,7 +2492,7 @@ void get_frozen_text(OutPeriod pd, SW_ALL* sw)
 void get_frozen_mem(OutPeriod pd, SW_ALL* sw)
 {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
     RealD *p = p_OUT[eSW_Frozen][pd];
     get_outvalleader(p, pd);
@@ -2553,7 +2513,7 @@ void get_frozen_mem(OutPeriod pd, SW_ALL* sw)
 void get_frozen_agg(OutPeriod pd, SW_ALL* sw)
 {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = SW_Soilwat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
     RealD
         *p = p_OUT[eSW_Frozen][pd],

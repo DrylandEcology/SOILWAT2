@@ -53,9 +53,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
         "Water balance error in test " <<
-        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -74,9 +74,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
         "Water balance error in test " <<
-        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -97,9 +97,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
         "Water balance error in test " <<
-        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -130,9 +130,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
         "Water balance error in test " <<
-        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -161,9 +161,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
         "Water balance error in test " <<
-        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -189,9 +189,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
         "Water balance error in test " <<
-        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -213,9 +213,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
         "Water balance error in test " <<
-        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -246,9 +246,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
         "Water balance error in test " <<
-        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -281,9 +281,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
         "Water balance error in test " <<
-        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
 
     // Reset to previous global state
@@ -326,9 +326,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
         "Water balance error in test " <<
-        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
 
     // Reset to previous global state
