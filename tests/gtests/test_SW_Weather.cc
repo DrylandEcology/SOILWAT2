@@ -83,7 +83,7 @@ namespace {
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
-        SW_MKV_setup(&SW_All.Weather);
+        SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
 
         SW_WTH_read(&SW_All.Weather);
         SW_WTH_finalize_all_weather(&SW_All.Weather);
@@ -108,7 +108,7 @@ namespace {
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
-        SW_MKV_setup(&SW_All.Weather);
+        SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
 
         SW_Model.startyr = 1981;
         SW_Model.endyr = 1982;
@@ -135,7 +135,7 @@ namespace {
         SW_All.Weather.generateWeatherMethod = 2;
         SW_All.Weather.use_weathergenerator_only = swTRUE;
 
-        SW_MKV_setup(&SW_All.Weather);
+        SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
 
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");

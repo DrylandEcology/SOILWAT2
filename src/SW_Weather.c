@@ -1185,7 +1185,7 @@ void SW_WTH_init_run(SW_WEATHER* SW_Weather) {
 /**
 @brief Guarantees that today's weather will not be invalid via -_todays_weth().
 */
-void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat) {
+void SW_WTH_new_day(SW_WEATHER* SW_Weather, RealD snowpack[]) {
 	/* =================================================== */
 	/*  History
 	 *
@@ -1259,7 +1259,8 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat) {
     if (SW_Weather->use_snow)
     {
         SW_SWC_adjust_snow(wn->temp_min, wn->temp_max, wn->ppt,
-          &wn->rain, &SW_Weather->snow, &SW_Weather->snowmelt, SW_SoilWat);
+          &wn->rain, &SW_Weather->snow, &SW_Weather->snowmelt,
+          snowpack);
     } else {
         wn->rain = wn->ppt;
     }

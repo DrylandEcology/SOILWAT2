@@ -512,7 +512,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 	CloseFile(&f);
 
 	if (EchoInits)
-		_echo_VegProd(SW_VegProd);
+		_echo_VegProd(SW_VegProd->veg, SW_VegProd->bare_cov);
 }
 
 /**
@@ -600,8 +600,8 @@ void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather) {
     }
 
     if(veg_method > 0) {
-        estimateVegetationFromClimate(SW_VegProd, SW_Weather,model->startyr,
-									  model->endyr, veg_method, latitude);
+        estimateVegetationFromClimate(SW_VegProd, SW_Weather->allHist,
+						model->startyr, model->endyr, veg_method, latitude);
     }
 
 }
@@ -792,7 +792,7 @@ RealD sum_across_vegtypes(RealD *x)
 /**
 @brief Text output for VegProd.
 */
-void _echo_VegProd(SW_VEGPROD* SW_VegProd) {
+void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
 	/* ================================================== */
 
 	char outstr[1500];
@@ -814,9 +814,9 @@ void _echo_VegProd(SW_VEGPROD* SW_VegProd) {
 			"%s component\t= %1.2f\n"
 			"\tAlbedo\t= %1.2f\n"
 			"\tHydraulic redistribution flag\t= %d\n",
-			key2veg[k], SW_VegProd->veg[k].cov.fCover,
-			SW_VegProd->veg[k].cov.albedo,
-			SW_VegProd->veg[k].flagHydraulicRedistribution
+			key2veg[k], VegProd_veg[k].cov.fCover,
+			VegProd_veg[k].cov.albedo,
+			VegProd_veg[k].flagHydraulicRedistribution
 		);
 		strcpy(outstr, errstr);
 		LogError(logfp, LOGNOTE, outstr);
@@ -827,8 +827,8 @@ void _echo_VegProd(SW_VEGPROD* SW_VegProd) {
 		MAX_ERROR,
 		"Bare Ground component\t= %1.2f\n"
 		"\tAlbedo\t= %1.2f\n",
-		SW_VegProd->bare_cov.fCover,
-		SW_VegProd->bare_cov.albedo
+		VegProd_bare_cov.fCover,
+		VegProd_bare_cov.albedo
 	);
 	strcpy(outstr, errstr);
 	LogError(logfp, LOGNOTE, outstr);
@@ -898,7 +898,7 @@ void get_critical_rank(SW_VEGPROD* SW_VegProd){
  @param[in] latitude Value of type double specifying latitude coordinate the current site is located at
  */
 
-void estimateVegetationFromClimate(SW_VEGPROD *vegProd, SW_WEATHER* SW_Weather,
+void estimateVegetationFromClimate(SW_VEGPROD *vegProd, SW_WEATHER_HIST** Weather_hist,
 								   int startYear, int endYear, int veg_method,
 								   double latitude) {
 
@@ -926,7 +926,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, SW_WEATHER* SW_Weather,
     // Allocate climate structs' memory
     allocateClimateStructs(numYears, &climateOutput, &climateAverages);
 
-    calcSiteClimate(SW_Weather->allHist, numYears, startYear, inNorthHem, &climateOutput);
+    calcSiteClimate(Weather_hist, numYears, startYear, inNorthHem, &climateOutput);
 
     averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);
 

@@ -70,14 +70,15 @@ static RealD temp_snow;
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void _clear_hist(SW_SOILWAT* SW_SoilWat) {
+static void _clear_hist(RealD SoilWat_hist_swc[][MAX_LAYERS],
+						RealD SoilWat_hist_std_err[][MAX_LAYERS]) {
 	TimeInt d;
 	LyrIndex z;
 	for (d = 0; d < MAX_DAYS; d++) {
 		for(z=0; z<MAX_LAYERS; z++)
 		{
-			SW_SoilWat->hist.swc[d][z] = SW_MISSING;
-			SW_SoilWat->hist.std_err[d][z] = SW_MISSING;
+			SoilWat_hist_swc[d][z] = SW_MISSING;
+			SoilWat_hist_std_err[d][z] = SW_MISSING;
 		}
 	}
 }
@@ -668,7 +669,7 @@ void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
       #ifdef SWDEBUG
       if (debug) swprintf("\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n");
       #endif
-      SW_SWC_adjust_swc(SW_Model.doy, SW_SoilWat);
+      SW_SWC_adjust_swc(SW_Model.doy, SW_SoilWat->swcBulk, SW_SoilWat->hist);
 
 		} else {
 			LogError(logfp, LOGWARN, "Attempt to set SWC on start day of first year of simulation disallowed.");
@@ -741,7 +742,7 @@ void calculate_repartitioned_soilwater(SW_VEGPROD* SW_VegProd,
         }
       }
     }
-    get_dSWAbulk(i, SW_VegProd, SW_SoilWat); // call function to get repartioned swa values
+    get_dSWAbulk(i, SW_VegProd, SW_SoilWat->swa_master, SW_SoilWat->dSWA_repartitioned_sum); // call function to get repartioned swa values
   }
 }
 
@@ -754,7 +755,10 @@ void calculate_repartitioned_soilwater(SW_VEGPROD* SW_VegProd,
 @param i Integer value for soil layer
 */
 /***********************************************************/
-void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd, SW_SOILWAT* SW_SoilWat) {
+void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd,
+		RealF swa_master[][NVEGTYPES][MAX_LAYERS],
+		RealF dSWA_repart_sum[][MAX_LAYERS]) {
+
 	int j,kv,curr_vegType,curr_crit_rank_index,kv_veg_type,prev_crit_veg_type,greater_veg_type;
 	float crit_val, prev_crit_val, smallestCritVal, vegFractionSum, newFraction;
 	float veg_type_in_use; // set to current veg type fraction value to avoid multiple if loops. should just need 1 instead of 3 now.
@@ -773,7 +777,7 @@ void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd, SW_SOILWAT* SW_SoilWat) {
 
 	// loop through each veg type to get dSWAbulk
 	for(curr_vegType = (NVEGTYPES - 1); curr_vegType >= 0; curr_vegType--){ // go through each veg type and recalculate if necessary. starts at smallest
-    SW_SoilWat->dSWA_repartitioned_sum[curr_vegType][i] = 0.;
+    dSWA_repart_sum[curr_vegType][i] = 0.;
     curr_crit_rank_index = SW_VegProd->rank_SWPcrits[curr_vegType]; // get rank index for start of next loop
 		veg_type_in_use = SW_VegProd->veg[curr_crit_rank_index].cov.fCover; // set veg type fraction here
 
@@ -790,21 +794,22 @@ void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd, SW_SOILWAT* SW_SoilWat) {
 			}
 			if(veg_type_in_use == 0){ // [0=tree(-2.0,off), 1=shrub(-3.9,on), 2=grass(-3.5,on), 3=forb(-2.0,on)]
 				dSWA_bulk[curr_crit_rank_index][kv_veg_type][i] = 0.; // set to 0 to ensure no absent values
-				SW_SoilWat->swa_master[curr_crit_rank_index][kv_veg_type][i] = 0.;
+				swa_master[curr_crit_rank_index][kv_veg_type][i] = 0.;
 				dSWA_bulk_repartioned[curr_crit_rank_index][kv_veg_type][i] = 0.;
 			}
 			else{ // check if need to recalculate for veg types in use
 				if(crit_val < prev_crit_val){ // if true then we need to recalculate
-					if(SW_SoilWat->swa_master[curr_crit_rank_index][kv_veg_type][i] == 0){
+					if(swa_master[curr_crit_rank_index][kv_veg_type][i] == 0){
 						dSWA_bulk[curr_crit_rank_index][kv_veg_type][i] = 0.;
 					}
 					else{
 						dSWA_bulk[curr_crit_rank_index][kv_veg_type][i] =
-							SW_SoilWat->swa_master[curr_crit_rank_index][kv_veg_type][i] - SW_SoilWat->swa_master[curr_crit_rank_index][prev_crit_veg_type][i];
+							swa_master[curr_crit_rank_index][kv_veg_type][i] -
+									swa_master[curr_crit_rank_index][prev_crit_veg_type][i];
 						}
 				}
 				else if(crit_val == prev_crit_val){ // critical values equal just set to itself
-					dSWA_bulk[curr_crit_rank_index][kv_veg_type][i] = SW_SoilWat->swa_master[curr_crit_rank_index][kv_veg_type][i];
+					dSWA_bulk[curr_crit_rank_index][kv_veg_type][i] = swa_master[curr_crit_rank_index][kv_veg_type][i];
 				}
 				else{
 					// do nothing if crit val >. this will be handled later
@@ -851,9 +856,9 @@ void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd, SW_SOILWAT* SW_SoilWat) {
 	for(curr_vegType = 0; curr_vegType < NVEGTYPES; curr_vegType++){
 		for(kv = 0; kv < NVEGTYPES; kv++){
 			if(SW_VegProd->veg[curr_vegType].cov.fCover == 0.)
-				SW_SoilWat->dSWA_repartitioned_sum[curr_vegType][i] = 0.;
+				dSWA_repart_sum[curr_vegType][i] = 0.;
 			else
-				SW_SoilWat->dSWA_repartitioned_sum[curr_vegType][i] += dSWA_bulk_repartioned[curr_vegType][kv][i];
+				dSWA_repart_sum[curr_vegType][i] += dSWA_bulk_repartioned[curr_vegType][kv][i];
 		}
 	}
 
@@ -870,14 +875,15 @@ void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd, SW_SOILWAT* SW_SoilWat) {
 /**
 @brief Copies today's values so that the values for swcBulk and snowpack become yesterday's values.
 */
-void SW_SWC_end_day(SW_SOILWAT* SW_SoilWat) {
+void SW_SWC_end_day(RealD swcBulk[][MAX_LAYERS],
+					RealD snowpack[]) {
 	/* =================================================== */
 	LyrIndex i;
 
 	ForEachSoilLayer(i)
-		SW_SoilWat->swcBulk[Yesterday][i] = SW_SoilWat->swcBulk[Today][i];
+		swcBulk[Yesterday][i] =	swcBulk[Today][i];
 
-	SW_SoilWat->snowpack[Yesterday] = SW_SoilWat->snowpack[Today];
+	snowpack[Yesterday] = snowpack[Today];
 
 }
 
@@ -920,10 +926,10 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat) {
 	/* update historical (measured) values, if needed */
 	if (SW_SoilWat->hist_use && year >= SW_SoilWat->hist.yr.first) {
 		#ifndef RSOILWAT
-			_read_swc_hist(year, SW_SoilWat);
+			_read_swc_hist(year, SW_SoilWat->hist);
 		#else
 			if (useFiles) {
-				_read_swc_hist(year, SW_SoilWat);
+				_read_swc_hist(year, SW_SoilWat->hist);
 			} else {
 				onSet_SW_SWC_hist();
 			}
@@ -993,7 +999,7 @@ void SW_SWC_read(SW_SOILWAT* SW_SoilWat) {
 
 @param year Four digit number for desired year, measured in years.
 */
-void _read_swc_hist(TimeInt year, SW_SOILWAT* SW_SoilWat) {
+void _read_swc_hist(TimeInt year, SW_SOILWAT_HIST SoilWat_hist) {
 	/* =================================================== */
 	/* read a file containing historical swc measurements.
 	 * Enter with year a four digit year number.  This is
@@ -1027,7 +1033,7 @@ void _read_swc_hist(TimeInt year, SW_SOILWAT* SW_SoilWat) {
 	RealF swc, st_err;
 	char fname[MAX_FILENAMESIZE];
 
-	snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", SW_SoilWat->hist.file_prefix, year);
+	snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", SoilWat_hist.file_prefix, year);
 
 	if (!FileExists(fname)) {
 		LogError(logfp, LOGWARN, "Historical SWC file %s not found.", fname);
@@ -1036,7 +1042,7 @@ void _read_swc_hist(TimeInt year, SW_SOILWAT* SW_SoilWat) {
 
 	f = OpenFile(fname, "r");
 
-	_clear_hist(SW_SoilWat);
+	_clear_hist(SoilWat_hist.swc, SoilWat_hist.std_err);
 
 	while (GetALine(f, inbuf)) {
 		recno++;
@@ -1058,8 +1064,8 @@ void _read_swc_hist(TimeInt year, SW_SOILWAT* SW_SoilWat) {
 			LogError(logfp, LOGFATAL, "%s : Layer number out of range (%d > %d), record %d\n", fname, lyr, MAX_LAYERS, recno);
 		}
 
-		SW_SoilWat->hist.swc[doy - 1][lyr - 1] = swc;
-		SW_SoilWat->hist.std_err[doy - 1][lyr - 1] = st_err;
+		SoilWat_hist.swc[doy - 1][lyr - 1] = swc;
+		SoilWat_hist.std_err[doy - 1][lyr - 1] = st_err;
 
 	}
 	CloseFile(&f);
@@ -1070,7 +1076,8 @@ void _read_swc_hist(TimeInt year, SW_SOILWAT* SW_SoilWat) {
 
 @param doy Day of the year, measured in days.
 */
-void SW_SWC_adjust_swc(TimeInt doy, SW_SOILWAT* SW_SoilWat) {
+void SW_SWC_adjust_swc(TimeInt doy, RealD swcBulk[][MAX_LAYERS],
+					   SW_SOILWAT_HIST SoilWat_hist) {
 	/* =================================================== */
 	/* 01/07/02 (cwb) added final loop to guarantee swc > swcBulk_min
 	 */
@@ -1078,24 +1085,24 @@ void SW_SWC_adjust_swc(TimeInt doy, SW_SOILWAT* SW_SoilWat) {
 	LyrIndex lyr;
 	TimeInt dy = doy - 1;
 
-	switch (SW_SoilWat->hist.method) {
+	switch (SoilWat_hist.method) {
 	case SW_Adjust_Avg:
 		ForEachSoilLayer(lyr)
 		{
-			SW_SoilWat->swcBulk[Today][lyr] += SW_SoilWat->hist.swc[dy][lyr];
-			SW_SoilWat->swcBulk[Today][lyr] /= 2.;
+			swcBulk[Today][lyr] += SoilWat_hist.swc[dy][lyr];
+			swcBulk[Today][lyr] /= 2.;
 		}
 		break;
 
 	case SW_Adjust_StdErr:
 		ForEachSoilLayer(lyr)
 		{
-			upper = SW_SoilWat->hist.swc[dy][lyr] + SW_SoilWat->hist.std_err[dy][lyr];
-			lower = SW_SoilWat->hist.swc[dy][lyr] - SW_SoilWat->hist.std_err[dy][lyr];
-			if (GT(SW_SoilWat->swcBulk[Today][lyr], upper))
-				SW_SoilWat->swcBulk[Today][lyr] = upper;
-			else if (LT(SW_SoilWat->swcBulk[Today][lyr], lower))
-				SW_SoilWat->swcBulk[Today][lyr] = lower;
+			upper = SoilWat_hist.swc[dy][lyr] + SoilWat_hist.std_err[dy][lyr];
+			lower = SoilWat_hist.swc[dy][lyr] - SoilWat_hist.std_err[dy][lyr];
+			if (GT(swcBulk[Today][lyr], upper))
+				swcBulk[Today][lyr] = upper;
+			else if (LT(swcBulk[Today][lyr], lower))
+				swcBulk[Today][lyr] = lower;
 		}
 		break;
 
@@ -1106,7 +1113,7 @@ void SW_SWC_adjust_swc(TimeInt doy, SW_SOILWAT* SW_SoilWat) {
 	/* this will guarantee that any method will not lower swc */
 	/* below the minimum defined for the soil layers          */
 	ForEachSoilLayer(lyr){
-		SW_SoilWat->swcBulk[Today][lyr] = fmax(SW_SoilWat->swcBulk[Today][lyr], SW_Site.lyr[lyr]->swcBulk_min);
+		swcBulk[Today][lyr] = fmax(swcBulk[Today][lyr], SW_Site.lyr[lyr]->swcBulk_min);
   }
 
 }
@@ -1130,7 +1137,7 @@ Equations based on SWAT2K routines. @cite Neitsch2005
 */
 
 void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
-	RealD *snow, RealD *snowmelt, SW_SOILWAT* SW_SoilWat) {
+	RealD *snow, RealD *snowmelt, RealD snowpack[]) {
 
 /*************************************************************************************************
 History:
@@ -1141,7 +1148,7 @@ replaced SW_SWC_snow_accumulation, SW_SWC_snow_sublimation, and SW_SWC_snow_melt
 
     **************************************************************************************************/
 
-	RealD *snowpack = &SW_SoilWat->snowpack[Today],
+	RealD *snowpack_today = &snowpack[Today],
 		doy = SW_Model.doy, temp_ave,
 		Rmelt, SnowAccu = 0., SnowMelt = 0.;
 
@@ -1156,19 +1163,19 @@ replaced SW_SWC_snow_accumulation, SW_SWC_snow_sublimation, and SW_SWC_snow_melt
 	}
 	*rain = fmax(0., ppt - SnowAccu);
 	*snow = fmax(0., SnowAccu);
-	*snowpack += SnowAccu;
+	*snowpack_today += SnowAccu;
 
 	/* snow melt */
 	Rmelt = (SW_Site.RmeltMax + SW_Site.RmeltMin) / 2. + sin((doy - 81.) / 58.09) * (SW_Site.RmeltMax - SW_Site.RmeltMin) / 2.;
   temp_snow = temp_snow * (1 - SW_Site.lambdasnow) + temp_ave * SW_Site.lambdasnow;
 	if (GT(temp_snow, SW_Site.TmaxCrit)) {
-		SnowMelt = fmin( *snowpack, Rmelt * snow_cov * ((temp_snow + temp_max)/2. - SW_Site.TmaxCrit) );
+		SnowMelt = fmin( *snowpack_today, Rmelt * snow_cov * ((temp_snow + temp_max)/2. - SW_Site.TmaxCrit) );
 	} else {
 		SnowMelt = 0.;
 	}
-	if (GT(*snowpack, 0.)) {
+	if (GT(*snowpack_today, 0.)) {
 		*snowmelt = fmax(0., SnowMelt);
-		*snowpack = fmax(0., *snowpack - *snowmelt );
+		*snowpack_today = fmax(0., *snowpack_today - *snowmelt );
 	} else {
 		*snowmelt = 0.;
 	}

@@ -66,8 +66,8 @@ static char *MyFileName;
 /* --------------------------------------------------- */
 static void _sanity_check(unsigned int sppnum);
 static void _read_spp(const char *infile);
-static void _checkit(TimeInt doy, unsigned int sppnum,
-					 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat);
+static void _checkit(TimeInt doy, unsigned int sppnum, SW_WEATHER_NOW* wn,
+					 RealD swcBulk[][MAX_LAYERS]);
 static void _zero_state(unsigned int sppnum);
 
 
@@ -270,12 +270,13 @@ void SW_VES_init_run(void) {
 /**
 @brief Check that each count coincides with a day of the year.
 */
-void SW_VES_checkestab(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat) {
+void SW_VES_checkestab(SW_WEATHER* SW_Weather,
+										RealD swcBulk[][MAX_LAYERS]) {
 	/* =================================================== */
 	IntUS i;
 
 	for (i = 0; i < SW_VegEstab.count; i++)
-		_checkit(SW_Model.doy, i, SW_Weather, SW_SoilWat);
+		_checkit(SW_Model.doy, i, &SW_Weather->now, swcBulk);
 }
 
 
@@ -284,11 +285,10 @@ void SW_VES_checkestab(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat) {
 /*            Local Function Definitions               */
 /* --------------------------------------------------- */
 
-static void _checkit(TimeInt doy, unsigned int sppnum,
-					 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat) {
+static void _checkit(TimeInt doy, unsigned int sppnum, SW_WEATHER_NOW* wn,
+					 RealD swcBulk[][MAX_LAYERS]) {
 
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
-	SW_WEATHER_NOW *wn = &SW_Weather->now;
 
 	IntU i;
 	RealF avgtemp = wn->temp_avg, /* avg of today's min/max temp */
@@ -302,7 +302,7 @@ static void _checkit(TimeInt doy, unsigned int sppnum,
 		goto LBL_Normal_Exit;
 
 	/* keep up with germinating wetness regardless of current state */
-	if (GT(SW_SoilWat->swcBulk[Today][0], v->min_swc_germ))
+	if (GT(swcBulk[Today][0], v->min_swc_germ))
 		v->wetdays_for_germ++;
 	else
 		v->wetdays_for_germ = 0;
@@ -331,7 +331,7 @@ static void _checkit(TimeInt doy, unsigned int sppnum,
 		/* any dry period (> max_drydays) or temp out of range
 		 * after germination means restart */
 		for (i = avgswc = 0; i < v->estab_lyrs;)
-			avgswc += SW_SoilWat->swcBulk[Today][i++];
+			avgswc += swcBulk[Today][i++];
 		avgswc /= (RealF) v->estab_lyrs;
 		if (LT(avgswc, v->min_swc_estab)) {
 			v->drydays_postgerm++;

@@ -106,7 +106,7 @@ namespace {
     SW_Model.addtl_yr = 0;
 
     SW_CBN_read();
-    SW_CBN_init_run(&SW_All.VegProd);
+    SW_CBN_init_run(SW_All.VegProd.veg);
 
     for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= simendyr; year++) {
       ForEachVegType(k) {

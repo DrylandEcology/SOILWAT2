@@ -234,7 +234,7 @@ void SW_CBN_read(void)
  * default value of 1.0. Multipliers are only calculated for the years that will
  * be simulated.
  */
-void SW_CBN_init_run(SW_VEGPROD* SW_VegProd) {
+void SW_CBN_init_run(VegType VegProd_veg[]) {
   int k;
   TimeInt year,
     simendyr = SW_Model.endyr + SW_Model.addtl_yr;
@@ -268,24 +268,24 @@ void SW_CBN_init_run(SW_VEGPROD* SW_VegProd) {
     // Calculate multipliers per PFT
     if (c->use_bio_mult) {
       ForEachVegType(k) {
-        SW_VegProd->veg[k].co2_multipliers[BIO_INDEX][year] =
-                                              SW_VegProd->veg[k].co2_bio_coeff1
-                                              * pow(ppm, SW_VegProd->veg[k].co2_bio_coeff2);
+        VegProd_veg[k].co2_multipliers[BIO_INDEX][year] =
+                                              VegProd_veg[k].co2_bio_coeff1
+                                              * pow(ppm, VegProd_veg[k].co2_bio_coeff2);
       }
     }
 
     #ifdef SWDEBUG
     if (debug) {
       swprintf("Shrub: use%d: bio_mult[%d] = %1.3f / coeff1 = %1.3f / coeff2 = %1.3f / ppm = %3.2f\n",
-        c->use_bio_mult, year, SW_VegProd->veg[SW_SHRUB].co2_multipliers[BIO_INDEX][year],
-        SW_VegProd->veg[SW_SHRUB].co2_bio_coeff1, SW_VegProd->veg[SW_SHRUB].co2_bio_coeff2, ppm);
+        c->use_bio_mult, year, VegProd_veg[SW_SHRUB].co2_multipliers[BIO_INDEX][year],
+        VegProd_veg[SW_SHRUB].co2_bio_coeff1, VegProd_veg[SW_SHRUB].co2_bio_coeff2, ppm);
     }
     #endif
 
     if (c->use_wue_mult) {
       ForEachVegType(k) {
-        SW_VegProd->veg[k].co2_multipliers[WUE_INDEX][year] = SW_VegProd->veg[k].co2_wue_coeff1 *
-          pow(ppm, SW_VegProd->veg[k].co2_wue_coeff2);
+        VegProd_veg[k].co2_multipliers[WUE_INDEX][year] = VegProd_veg[k].co2_wue_coeff1 *
+          pow(ppm, VegProd_veg[k].co2_wue_coeff2);
       }
     }
   }

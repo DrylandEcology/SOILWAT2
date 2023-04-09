@@ -1969,7 +1969,7 @@ void SW_OUT_new_year(void)
 
 
 int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
-					   char msg[], size_t sizeof_msg, SW_VEGPROD* SW_VegProd)
+					   char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA)
 {
 	int res = 0; // return value indicating type of message if any
 
@@ -2007,7 +2007,7 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 	// Used in SW_Control to run the functions to get the recalculated values only if SWA is used
 	// This function is run prior to the control functions so thats why it is here.
 	if (k == eSW_SWA) {
-		SW_VegProd->use_SWA = swTRUE;
+		*VegProd_use_SWA = swTRUE;
 	}
 
 	/* Check validity of output key */
@@ -2205,7 +2205,7 @@ void SW_OUT_read(SW_ALL* sw)
 			!Str_CompareI("END", (char *)last) ? 366 : atoi(last),
 			msg,
 			sizeof msg,
-			&sw->VegProd
+			&sw->VegProd.use_SWA
 		);
 
 		if (msg_type != 0) {

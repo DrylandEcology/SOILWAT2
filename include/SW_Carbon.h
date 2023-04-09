@@ -26,7 +26,7 @@ extern SW_CARBON SW_Carbon;
 void SW_CBN_construct(void);
 void SW_CBN_deconstruct(void);
 void SW_CBN_read(void);
-void SW_CBN_init_run(SW_VEGPROD* SW_VegProd);
+void SW_CBN_init_run(VegType VegProd_veg[]);
 
 
 #ifdef __cplusplus

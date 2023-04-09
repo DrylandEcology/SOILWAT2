@@ -116,7 +116,7 @@ namespace {
     SW_All.Weather.use_weathergenerator_only = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup(&SW_All.Weather);
+    SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
 
     // Point to nonexisting weather data
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
@@ -150,7 +150,7 @@ namespace {
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
     // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup(&SW_All.Weather);
+    SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather);

@@ -509,7 +509,7 @@ namespace {
         RelAbundanceL1Expected[bareGroundL1] = 0.;
 
 
-        estimateVegetationFromClimate(&vegProd, &SW_All.Weather, startYear,
+        estimateVegetationFromClimate(&vegProd, SW_All.Weather.allHist, startYear,
                                       endYear, veg_method, latitude);
 
         // Loop through RelAbundanceL1 and test results

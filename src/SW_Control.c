@@ -50,28 +50,28 @@
       In addition to the timekeeper (Model), usually only modules
       that read input yearly or produce output need to have this call.
 */
-static void _begin_year(SW_VEGPROD* SW_VegProd, SW_SOILWAT* SW_SoilWat) {
+static void _begin_year(SW_ALL* sw) {
 	// SW_F_new_year() not needed
 	SW_MDL_new_year(); // call first to set up time-related arrays for this year
 	// SW_MKV_new_year() not needed
 	SW_SKY_new_year(); // Update daily climate variables from monthly values
 	//SW_SIT_new_year() not needed
 	SW_VES_new_year();
-	SW_VPD_new_year(SW_VegProd); // Dynamic CO2 effects on vegetation
+	SW_VPD_new_year(&sw->VegProd); // Dynamic CO2 effects on vegetation
 	// SW_FLW_new_year() not needed
-	SW_SWC_new_year(SW_SoilWat);
+	SW_SWC_new_year(&sw->SoilWat);
 	// SW_CBN_new_year() not needed
 	SW_OUT_new_year();
 }
 
 static void _begin_day(SW_ALL* sw) {
 	SW_MDL_new_day();
-	SW_WTH_new_day(&sw->Weather, &sw->SoilWat);
+	SW_WTH_new_day(&sw->Weather, sw->SoilWat.snowpack);
 }
 
 static void _end_day(SW_ALL* sw) {
 	_collect_values(sw);
-	SW_SWC_end_day(&sw->SoilWat);
+	SW_SWC_end_day(sw->SoilWat.swcBulk, sw->SoilWat.snowpack);
 }
 
 
@@ -160,7 +160,7 @@ void SW_CTL_init_run(SW_ALL* sw) {
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
 	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
 	SW_SWC_init_run(&sw->SoilWat);
-	SW_CBN_init_run(&sw->VegProd);
+	SW_CBN_init_run(sw->VegProd.veg);
 }
 
 
@@ -177,7 +177,7 @@ void SW_CTL_run_current_year(SW_ALL* sw) {
   #ifdef SWDEBUG
   if (debug) swprintf("\n'SW_CTL_run_current_year': begin new year\n");
   #endif
-  _begin_year(&sw->VegProd, &sw->SoilWat);
+  _begin_year(sw);
 
   for (*doy = SW_Model.firstdoy; *doy <= SW_Model.lastdoy; (*doy)++) {
     #ifdef SWDEBUG
@@ -196,7 +196,7 @@ void SW_CTL_run_current_year(SW_ALL* sw) {
     }
 
     if (SW_VegEstab.use) {
-      SW_VES_checkestab(&sw->Weather, &sw->SoilWat);
+      SW_VES_checkestab(&sw->Weather, sw->SoilWat.swcBulk);
     }
 
     #ifdef SWDEBUG
@@ -254,7 +254,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   #endif
 
   if (sw->Weather.generateWeatherMethod == 2) {
-    SW_MKV_setup(&sw->Weather);
+    SW_MKV_setup(sw->Weather.rng_seed, sw->Weather.generateWeatherMethod);
     #ifdef SWDEBUG
     if (debug) swprintf(" > 'weather generator'");
     #endif

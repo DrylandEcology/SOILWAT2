@@ -164,7 +164,7 @@ namespace
       impermeability[1] = {0.}, drain[1] = {0.};
 
     infiltrate_water_high(swc, drain, &drainout, pptleft, nlyrs, swcfc, swcsat,
-      impermeability, &standingWater, &SW_All.SoilWat);
+      impermeability, &standingWater, SW_All.SoilWat.lyrFrozen);
 
     EXPECT_GE(drain[0], 0); // drainage should be greater than or equal to 0 when soil layers are 1 and ppt > 1
     EXPECT_LE(swc[0], swcsat[0]); // swc should be less than or equal to swcsat
@@ -175,7 +175,7 @@ namespace
     swcfc[0] = 1.1, swcsat[0] = 1.6;
 
     infiltrate_water_high(swc, drain, &drainout, pptleft, nlyrs, swcfc, swcsat,
-      impermeability, &standingWater, &SW_All.SoilWat);
+      impermeability, &standingWater, SW_All.SoilWat.lyrFrozen);
 
     EXPECT_DOUBLE_EQ(0, drain[0]); // drainage should be 0
 
@@ -186,7 +186,7 @@ namespace
     swc[0] = 0.8, drain[0] = 0.;
 
     infiltrate_water_high(swc, drain, &drainout, pptleft, nlyrs, swcfc, swcsat,
-      impermeability, &standingWater, &SW_All.SoilWat);
+      impermeability, &standingWater, SW_All.SoilWat.lyrFrozen);
 
     EXPECT_DOUBLE_EQ(0., drain[0]); //When impermeability is 1, drainage should be 0
     EXPECT_DOUBLE_EQ(standingWater, (pptleft + 0.8) - swcsat[0]); /* When impermeability is 1,
@@ -217,7 +217,7 @@ namespace
     }
 
     infiltrate_water_high(swc2, drain2, &drainout, pptleft, nlyrs, swcfc2,
-      swcsat2, impermeability2, &standingWater, &SW_All.SoilWat);
+      swcsat2, impermeability2, &standingWater, SW_All.SoilWat.lyrFrozen);
 
     EXPECT_EQ(drainout, drain2[MAX_LAYERS - 1]); /* drainout and drain should be
       equal in the last layer */
@@ -245,7 +245,7 @@ namespace
     }
 
     infiltrate_water_high(swc3, drain3, &drainout, pptleft, nlyrs, swcfc3,
-      swcsat3, impermeability2, &standingWater, &SW_All.SoilWat);
+      swcsat3, impermeability2, &standingWater, SW_All.SoilWat.lyrFrozen);
 
     for (i = 0; i < MAX_LAYERS; i++)
     {
@@ -272,7 +272,7 @@ namespace
     swc4[0] = 0.8; // Need to hard code this value because swc4 is altered by function
 
     infiltrate_water_high(swc4, drain4, &drainout, pptleft, nlyrs, swcfc4,
-      swcsat4, impermeability4, &standingWater, &SW_All.SoilWat);
+      swcsat4, impermeability4, &standingWater, SW_All.SoilWat.lyrFrozen);
 
     EXPECT_DOUBLE_EQ(standingWater, (pptleft + 0.8) - swcsat4[0]); /* When impermeability is 1,
       standingWater should be equivalent to  pptLeft + swc[0] - swcsat[0]) */
@@ -300,7 +300,7 @@ namespace
     }
 
     infiltrate_water_high(swc5, drain5, &drainout, pptleft, nlyrs, swcfc5,
-      swcsat5, impermeability5, &standingWater, &SW_All.SoilWat);
+      swcsat5, impermeability5, &standingWater, SW_All.SoilWat.lyrFrozen);
 
     for (i = 0; i < MAX_LAYERS; i++)
     {
@@ -774,7 +774,7 @@ namespace
 
       // Call function to test: use coeffZero instead of coeff
       remove_from_soil(swc, qty, &aet, nlyrs, coeffZero, rate,
-                       swcmin, &SW_All.SoilWat);
+                       swcmin, SW_All.SoilWat.lyrFrozen);
 
       // Check expectation of no change from original values
       qty_sum = 0.;
@@ -807,7 +807,7 @@ namespace
 
       // Call function to test
       remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate,
-                       swcmin, &SW_All.SoilWat);
+                       swcmin, SW_All.SoilWat.lyrFrozen);
 
       // Check expectation of no change from original values
       qty_sum = 0.;
@@ -840,7 +840,7 @@ namespace
 
       // Call function to test
       remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate,
-                       swcmin, &SW_All.SoilWat);
+                       swcmin, SW_All.SoilWat.lyrFrozen);
 
       // Check values of qty[] and swc[]
       qty_sum = 0.;
