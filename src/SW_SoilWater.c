@@ -752,7 +752,12 @@ void calculate_repartitioned_soilwater(SW_VEGPROD* SW_VegProd,
       soilwater for each vegtype is calculated based on size of the critical soilwater based on the input files.
       This goes through the ranked critical values, starting at the deepest and moving up
       The deepest veg type has access to the available soilwater of each veg type above so start at bottom move up.
+
 @param i Integer value for soil layer
+@param SW_VegProd Struct of type SW_VEGPROD describing surface cover of
+				  a SOILWAT2 simulation run
+@param swa_master Holds information of veg_type, crit_val, and layer
+@param dSWA_repart_sum Repartioned swa values
 */
 /***********************************************************/
 void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd,
@@ -875,8 +880,7 @@ void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd,
 /**
 @brief Copies today's values so that the values for swcBulk and snowpack become yesterday's values.
 */
-void SW_SWC_end_day(RealD swcBulk[][MAX_LAYERS],
-					RealD snowpack[]) {
+void SW_SWC_end_day(RealD swcBulk[][MAX_LAYERS], RealD snowpack[]) {
 	/* =================================================== */
 	LyrIndex i;
 
@@ -998,6 +1002,8 @@ void SW_SWC_read(SW_SOILWAT* SW_SoilWat) {
       digit year number.  This is appended to the swc prefix to make the input file name.
 
 @param year Four digit number for desired year, measured in years.
+@param SoilWat_hist Struct of type SW_SOILWAT_HIST holding parameters for
+					historical (measured) swc values
 */
 void _read_swc_hist(TimeInt year, SW_SOILWAT_HIST SoilWat_hist) {
 	/* =================================================== */
@@ -1075,6 +1081,9 @@ void _read_swc_hist(TimeInt year, SW_SOILWAT_HIST SoilWat_hist) {
 @brief Adjusts swc based on day of the year.
 
 @param doy Day of the year, measured in days.
+@param swcBulk Soil water content in the layer [cm]
+@param SoilWat_hist Struct of type SW_SOILWAT_HIST holding parameters for
+					historical (measured) swc values
 */
 void SW_SWC_adjust_swc(TimeInt doy, RealD swcBulk[][MAX_LAYERS],
 					   SW_SOILWAT_HIST SoilWat_hist) {
@@ -1129,7 +1138,7 @@ Equations based on SWAT2K routines. @cite Neitsch2005
 @param *rain Daily rainfall (cm)
 @param *snow Daily snow-water equivalent of snowfall (cm)
 @param *snowmelt  Daily snow-water equivalent of snowmelt (cm)
-@param *SW_SoilWat Pointer to program instance of SW_SOILWAT type
+@param snowpack[] swe of snowpack, assuming accumulation is turned on
 
 @sideeffect *rain Updated daily rainfall (cm)
 @sideeffect *snow Updated snow-water equivalent of snowfall (cm)

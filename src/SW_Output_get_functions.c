@@ -124,6 +124,7 @@ static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
 			This just gives the main output loop something to call, rather than an
 			empty pointer.
 @param pd Period.
+@param sw Comprehensive structure holding all information dealt with in SOILWAT2
 */
 void get_none(OutPeriod pd, SW_ALL* sw)
 {

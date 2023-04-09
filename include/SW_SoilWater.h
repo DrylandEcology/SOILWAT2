@@ -77,8 +77,7 @@ void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
 	RealD *snow, RealD *snowmelt, RealD snowpack[]);
 RealD SW_SWC_snowloss(RealD pet, RealD *snowpack);
 RealD SW_SnowDepth(RealD SWE, RealD snowdensity);
-void SW_SWC_end_day(RealD swcBulk[][MAX_LAYERS],
-					RealD snowpack[]);
+void SW_SWC_end_day(RealD swcBulk[][MAX_LAYERS], RealD snowpack[]);
 void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd,
 		RealF swa_master[][NVEGTYPES][MAX_LAYERS],
 		RealF dSWA_repart_sum[][MAX_LAYERS]);

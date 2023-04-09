@@ -17,8 +17,6 @@ extern "C" {
 #define bGarbage 0xCC
 /*typedef unsigned char byte*/
 
-/* ------------------------------------------------------------------
-
 flag fCreateBlockInfo(byte *pbNew, size_t sizeNew);
 void FreeBlockInfo(byte *pbToFree);
 void UpdateBlockInfo(byte *pbOld, byte *pbNew, size_t sizeNew);

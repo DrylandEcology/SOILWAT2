@@ -891,6 +891,7 @@ void get_critical_rank(SW_VEGPROD* SW_VegProd){
  @brief Wrapper function for estimating natural vegetation. First, climate is calculated and averaged, then values are estimated
 
  @param[in,out] vegProd Structure holding all values for vegetation cover of simulation
+ @param[in,out] Weather_hist Array containing all historical data of a site
  @param[in] startYear Starting year of the simulation
  @param[in] endYear Ending year of the simulation
  @param[in] veg_method User specified value determining method of vegetation estimation with the current option(s):

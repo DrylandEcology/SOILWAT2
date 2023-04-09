@@ -125,6 +125,7 @@ void SW_CTL_setup_model(const char *firstfile, SW_ALL* sw) {
 						`SW_OUTARRAY` to pass output in-memory to `rSOILWAT2` and to
 						`STEPWAT2`
 			* if `TRUE`, de-allocate all memory including output arrays.
+    @param sw Comprehensive structure holding all information dealt with in SOILWAT2
 */
 void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
 	SW_F_deconstruct();

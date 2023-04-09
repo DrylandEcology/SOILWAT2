@@ -1709,6 +1709,8 @@ void SW_LYR_read(void) {
     depth [cm] of each region in ascending (in value) order. If you think about
     this from the perspective of soil, it would mean the shallowest bound is at
     `lowerBounds[0]`.
+  @param[in] SW_VegProd Struct of type SW_VEGPROD describing surface cover of
+  					the SOILWAT2 simulation run
 
   @sideeffect After deleting any previous data in the soil layer array
     SW_Site.lyr, it creates new soil layers based on the argument inputs.
@@ -1938,6 +1940,9 @@ void SW_SWRC_read(void) {
 
 	sand + clay + silt must equal one.
 	Fraction of silt is calculated: 1 - (sand + clay).
+
+	@param SW_VegProd Struct of type SW_VEGPROD describing surface cover of
+				      a SOILWAT2 simulation run
 
 	@sideeffect Values stored in global variable `SW_Site`.
 */

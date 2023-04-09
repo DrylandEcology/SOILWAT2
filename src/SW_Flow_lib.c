@@ -262,6 +262,7 @@ void litter_intercepted_water(double *ppt_through, double *int_lit,
 @param swcsat Soilwater content in each layer at saturation (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param impermeability Impermeability measures for each layer.
 @param *standingWater Remaining water on the surface (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param lyrFrozen Frozen information at each layer.
 
 @sideeffect
   - drain Updated drainage amount in each layer (cm/day).
@@ -727,6 +728,7 @@ Based on equations from Parton 1978. @cite Parton1978
 @param coeff Coefficients of removal for removal layers.
 @param rate Removal rate, either soil_evap_rate or soil_transp_rate.
 @param swcmin Lower limit on soilwater content per layer.
+@param lyrFrozen Frozen information at each layer.
 
 @sideeffect
   - swc Updated soil water content adjusted after evaporation.
@@ -1424,6 +1426,7 @@ void SW_ST_init_run(void) {
 	@param nRgr Number of regressions
 		(1 extra is needed for the avgLyrTempR and oldavgLyrTempR for the last layer.
 	@param *ptr_stError Boolean indicating whether there was an error.
+	@param lyrFrozen Frozen information at each layer.
 
 	@sideeffect *ptr_stError Updated boolean indicating if there was an error.
 */
@@ -1674,6 +1677,7 @@ Equations based on Parton 1998. @cite Parton1998
 @param swc The soil water content of the soil layers (cm/cm).
 @param swc_sat The satured soil water content of the soil layers (cm/cm).
 @param width The width of them soil layers (cm).
+@param lyrFrozen Frozen information at each layer.
 
 @sideeffect update module level variable ST_RGR_VALUES.lyrFrozen. lyrFrozen
     is a Boolean (0 for not frozen, 1 for frozen)
@@ -2130,6 +2134,7 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param minLyrTemperature An array holding all of the layers minimum temperature (&deg;C)
 @param *surface_max Maxmimum surface temperature (&deg;C)
 @param *surface_min Minimum surface temperature (&deg;C)
+@param lyrFrozen Frozen information at each layer.
 
 @sideeffect *ptr_stError Updated boolean indicating whether there was an error.
 
