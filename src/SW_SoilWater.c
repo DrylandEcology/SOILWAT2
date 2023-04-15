@@ -623,11 +623,6 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat)
 		SW_SoilWat->hist.file_prefix = NULL;
 	}
 
-	if (!isnull(SW_SoilWat->hist.file_prefix)) {
-		Mem_Free(SW_SoilWat->hist.file_prefix);
-		SW_SoilWat->hist.file_prefix = NULL;
-	}
-
 	#ifdef SWDEBUG
 	IntU i;
 
