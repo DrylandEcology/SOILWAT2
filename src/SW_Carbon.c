@@ -66,7 +66,7 @@ void SW_CBN_deconstruct(void)
  *   4. Missing year.
  *   5. Negative year.
  */
-void SW_CBN_read(void)
+void SW_CBN_read(SW_MODEL* SW_Model)
 {
   #ifdef SWDEBUG
   short debug = 0;
@@ -89,8 +89,8 @@ void SW_CBN_read(void)
   FILE *f;
   char scenario[64];
   int year,
-    simstartyr = (int) SW_Model.startyr + SW_Model.addtl_yr,
-    simendyr = (int) SW_Model.endyr + SW_Model.addtl_yr;
+    simstartyr = (int) SW_Model->startyr + SW_Model->addtl_yr,
+    simendyr = (int) SW_Model->endyr + SW_Model->addtl_yr;
 
   // The following variables must be initialized to show if they've been changed or not
   double ppm = 1.;
@@ -234,10 +234,9 @@ void SW_CBN_read(void)
  * default value of 1.0. Multipliers are only calculated for the years that will
  * be simulated.
  */
-void SW_CBN_init_run(VegType VegProd_veg[]) {
+void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model) {
   int k;
-  TimeInt year,
-    simendyr = SW_Model.endyr + SW_Model.addtl_yr;
+  TimeInt year, simendyr = SW_Model->endyr + SW_Model->addtl_yr;
   double ppm;
   SW_CARBON  *c  = &SW_Carbon;
   #ifdef SWDEBUG
@@ -250,7 +249,7 @@ void SW_CBN_init_run(VegType VegProd_veg[]) {
   }
 
   // Only iterate through the years that we know will be used
-  for (year = SW_Model.startyr + SW_Model.addtl_yr; year <= simendyr; year++)
+  for (year = SW_Model->startyr + SW_Model->addtl_yr; year <= simendyr; year++)
   {
     ppm = c->ppm[year];
 

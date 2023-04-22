@@ -77,8 +77,11 @@ void SW_OUT_deconstruct(Bool full_reset)
 	if (full_reset) {}
 }
 
-void SW_OUT_new_year(void)
-{}
+void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy)
+{
+	if(EQ(0, firstdoy)) {}
+	if(EQ(0, lastdoy)) {}
+}
 
 void SW_OUT_read(SW_ALL* sw)
 {
@@ -94,15 +97,17 @@ void SW_OUT_flush(SW_ALL* sw)
 {
 	_collect_values(sw);
 }
-
-void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd,
-					  SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat)
+void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
+					  SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model)
 {
 	ObjType x = otyp;
 	if (x == eF) {}
-	(void) SW_VegProd; // use sw to silence compiler warnings
-	(void) SW_Weather; // use sw to silence compiler warnings
+
+	/* silence compiler warnings */
+	(void) SW_VegProd;
+	(void) SW_Weather;
 	(void) SW_SoilWat;
+	(void) SW_Model;
 }
 
 void SW_OUT_write_today(SW_ALL* sw)
@@ -278,13 +283,14 @@ void get_frozen_text(OutPeriod pd, SW_ALL* sw)
 	(void) sw; // use sw to silence compiler warnings
 }
 
-static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
+static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy)
 {
 	OutKey x = k;
 	if ((int)x == 1) {}
 
 	if (EQ(0., v->bare_cov.fCover)) {}
 	if (EQ(0., s->veg[SW_GRASS].biomass_inveg)) {}
+	if (EQ(0, doy)) {}
 }
 
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
@@ -316,17 +322,19 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 
 
 static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
-						SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat)
+						SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
+						SW_MODEL* SW_Model)
 {
 	if (pd == eSW_Day) {}
-	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather, SW_SoilWat);
+	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather, SW_SoilWat, SW_Model);
 }
 
 static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
-						 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat)
+						 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
+						 SW_MODEL* SW_Model)
 {
 	if (op == eSW_Day) {}
-	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather, SW_SoilWat);
+	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather, SW_SoilWat, SW_Model);
 }
 
 /**
@@ -375,15 +383,15 @@ void _echo_outputs(SW_ALL* sw)
 	SW_SOILWAT *vswc = NULL;
 	SW_SOILWAT_OUTPUTS *sswc = NULL;
 
-	sumof_vpd(vveg, sveg, k);
+	sumof_vpd(vveg, sveg, k, sw->Model.doy);
 	sumof_ves(vestab, sestab, k);
 	sumof_wth(vweath, sweath, k);
 	sumof_swc(vswc, sswc, k);
 
 	ObjType otyp = eF;
 
-	average_for(otyp, pd, &sw->VegProd, &sw->Weather, &sw->SoilWat);
-	collect_sums(otyp, pd, &sw->VegProd, &sw->Weather, &sw->SoilWat);
+	average_for(otyp, pd, &sw->VegProd, &sw->Weather, &sw->SoilWat, &sw->Model);
+	collect_sums(otyp, pd, &sw->VegProd, &sw->Weather, &sw->SoilWat, &sw->Model);
 }
 
 

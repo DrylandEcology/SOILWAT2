@@ -35,7 +35,8 @@ void SW_MKV_deconstruct(void);
 Bool SW_MKV_read_prob(void);
 Bool SW_MKV_read_cov(void);
 void SW_MKV_setup(unsigned long Weather_rng_seed, int Weather_genWeathMethod);
-void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain);
+void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain,
+				  TimeInt year);
 
 #ifdef DEBUG_MEM
 void SW_MKV_SetMemoryRefs( void);

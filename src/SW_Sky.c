@@ -114,8 +114,7 @@ void SW_SKY_read(void) {
   Note: time must be set with SW_MDL_new_year() or Time_new_year()
   prior to this function.
 */
-void SW_SKY_new_year(void) {
-	TimeInt year = SW_Model.year;
+void SW_SKY_new_year(TimeInt year, TimeInt startyr) {
 	SW_SKY *v = &SW_Sky;
     Bool interpAsBase1 = swTRUE;
 
@@ -123,7 +122,7 @@ void SW_SKY_new_year(void) {
      if previous year was different from current year in leap/noleap status
   */
 
-  if (year == SW_Model.startyr || isleapyear(year) != isleapyear(year - 1)) {
+  if (year == startyr || isleapyear(year) != isleapyear(year - 1)) {
     interpolate_monthlyValues(v->snow_density, interpAsBase1, v->snow_density_daily);
   }
 }

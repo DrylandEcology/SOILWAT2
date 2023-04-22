@@ -67,7 +67,7 @@ static char *MyFileName;
 static void _sanity_check(unsigned int sppnum);
 static void _read_spp(const char *infile);
 static void _checkit(TimeInt doy, unsigned int sppnum, SW_WEATHER_NOW* wn,
-					 RealD swcBulk[][MAX_LAYERS]);
+					 RealD swcBulk[][MAX_LAYERS], TimeInt firstdoy);
 static void _zero_state(unsigned int sppnum);
 
 
@@ -270,13 +270,13 @@ void SW_VES_init_run(void) {
 /**
 @brief Check that each count coincides with a day of the year.
 */
-void SW_VES_checkestab(SW_WEATHER* SW_Weather,
-										RealD swcBulk[][MAX_LAYERS]) {
+void SW_VES_checkestab(SW_WEATHER* SW_Weather, RealD swcBulk[][MAX_LAYERS],
+					   TimeInt doy, TimeInt firstdoy) {
 	/* =================================================== */
 	IntUS i;
 
 	for (i = 0; i < SW_VegEstab.count; i++)
-		_checkit(SW_Model.doy, i, &SW_Weather->now, swcBulk);
+		_checkit(doy, i, &SW_Weather->now, swcBulk, firstdoy);
 }
 
 
@@ -286,7 +286,7 @@ void SW_VES_checkestab(SW_WEATHER* SW_Weather,
 /* --------------------------------------------------- */
 
 static void _checkit(TimeInt doy, unsigned int sppnum, SW_WEATHER_NOW* wn,
-					 RealD swcBulk[][MAX_LAYERS]) {
+					 RealD swcBulk[][MAX_LAYERS], TimeInt firstdoy) {
 
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
 
@@ -294,7 +294,7 @@ static void _checkit(TimeInt doy, unsigned int sppnum, SW_WEATHER_NOW* wn,
 	RealF avgtemp = wn->temp_avg, /* avg of today's min/max temp */
 	avgswc; /* avg_swc today */
 
-	if (doy == SW_Model.firstdoy) {
+	if (doy == firstdoy) {
 		_zero_state(sppnum);
 	}
 
@@ -356,7 +356,7 @@ static void _checkit(TimeInt doy, unsigned int sppnum, SW_WEATHER_NOW* wn,
 		if (v->germ_days > v->max_days_germ2estab)
 			goto LBL_EstabFailed_Exit;
 
-		v->estab_doy = SW_Model.doy;
+		v->estab_doy = doy;
 		goto LBL_Normal_Exit;
 	}
 

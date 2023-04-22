@@ -34,7 +34,7 @@ extern SW_SKY SW_Sky;
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_SKY_read(void);
-void SW_SKY_new_year(void);
+void SW_SKY_new_year(TimeInt year, TimeInt startyr);
 
 #ifdef __cplusplus
 }

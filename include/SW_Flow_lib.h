@@ -103,11 +103,13 @@ void hydraulic_redistribution(
 	unsigned int vegk,
 	unsigned int nlyrs,
 	SW_LAYER_INFO *lyr[],
-	double lyrFrozen[],
+    double lyrFrozen[],
 	double maxCondroot,
 	double swp50,
 	double shapeCond,
-	double scale
+	double scale,
+	TimeInt year,
+	TimeInt doy
 );
 
 void soil_temperature(double airTemp,
@@ -143,7 +145,10 @@ void soil_temperature(double airTemp,
                       double maxLyrTemperature[],
                       double *surface_max,
                       double *surface_min,
-					  double lyrFrozen[]);
+					  double lyrFrozen[],
+					  TimeInt year,
+					  TimeInt doy
+					  );
 
 void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
   unsigned int nlyrTemp, double depth_Temp[], double avgLyrTempR[], unsigned int nlyrSoil,
@@ -192,9 +197,10 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double
 		double shParam, unsigned int nlyrs, double vwc[], double bDensity[]);
 
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
-    int nRgr, double avgLyrTempR[], double oldavgLyrTempR[], double vwcR[], double wpR[], double fcR[],
-    double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError,
-    double surface_range, double temperatureRangeR[], double depthsR[]);
+	int nRgr, double avgLyrTempR[], double oldavgLyrTempR[], double vwcR[], double wpR[], double fcR[],
+	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError,
+    double surface_range, double temperatureRangeR[], double depthsR[], TimeInt year,
+	TimeInt doy);
 
 #ifdef __cplusplus
 }

@@ -84,7 +84,7 @@ namespace {
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-      SW_MKV_today(k, &tmax0[k], &tmin0[k], &ppt);
+      SW_MKV_today(k, &tmax0[k], &tmin0[k], &ppt, SW_All.Model.year);
       ppt0[k] = ppt;
     }
 
@@ -99,7 +99,7 @@ namespace {
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-      SW_MKV_today(k, &tmax, &tmin, &ppt);
+      SW_MKV_today(k, &tmax, &tmin, &ppt, SW_All.Model.year);
 
       EXPECT_NE(tmax, tmax0[k]);
       EXPECT_NE(tmin, tmin0[k]);
@@ -119,7 +119,7 @@ namespace {
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-      SW_MKV_today(k, &tmax, &tmin, &ppt);
+      SW_MKV_today(k, &tmax, &tmin, &ppt, SW_All.Model.year);
 
       EXPECT_DOUBLE_EQ(tmax, tmax0[k]);
       EXPECT_DOUBLE_EQ(tmin, tmin0[k]);

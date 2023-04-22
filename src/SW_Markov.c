@@ -276,12 +276,14 @@ void SW_MKV_deconstruct(void)
 @param *tmax Maximum temperature (&deg;C).
 @param *tmin Mininum temperature (&deg;C).
 @param *rain Rainfall (cm).
+@param year Current year in simulation
 
 @sideeffect *tmax Updated maximum temperature (&deg;C).
 @sideeffect *tmin Updated minimum temperature (&deg;C).
 @sideeffect *rain Updated rainfall (cm).
 */
-void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
+void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain,
+				  TimeInt year) {
 	/* =================================================== */
 	/* enter with rain == yesterday's ppt, doy0 as array index: [0, 365] = doy - 1
 	 * leave with rain == today's ppt
@@ -297,7 +299,7 @@ void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 	if (debug) {
 		swprintf(
 			"mkv(before): yr=%u/doy0=%u: ppt=%.3f, tmax=%.3f, tmin=%.3f\n",
-			SW_Model.year, doy0, *rain, *tmax, *tmin
+			year, doy0, *rain, *tmax, *tmin
 		);
 	}
 	#endif
@@ -342,9 +344,12 @@ void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 	if (debug) {
 		swprintf(
 			"mkv(after): yr=%u/doy0=%u/week=%u: ppt=%.3f, tmax=%.3f, tmin=%.3f\n",
-			SW_Model.year, doy0, week, *rain, *tmax, *tmin
+			year, doy0, week, *rain, *tmax, *tmin
 		);
 	}
+	#else
+		/* Silence compiler for year not being used if SWDEBUG isn't defined */
+		(void) year;
 	#endif
 
 }

@@ -697,6 +697,7 @@ typedef struct {
 	SW_VEGPROD VegProd;
 	SW_WEATHER Weather;
 	SW_SOILWAT SoilWat;
+	SW_MODEL Model;
 
 } SW_ALL;
 

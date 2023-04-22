@@ -116,7 +116,8 @@ namespace {
   // Test the SW_VEGPROD constructor 'SW_VPD_construct'
   TEST(VegTest, Constructor) {
     SW_VPD_construct(&SW_All.VegProd);
-    SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather);
+    SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather,
+                    SW_All.Model.startyr, SW_All.Model.endyr);
 
     ForEachVegType(k) {
       EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[BIO_INDEX][0]);
@@ -142,7 +143,7 @@ namespace {
     }
 
     // One example
-    x = SW_All.VegProd.veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_Model.startyr + SW_Model.addtl_yr];
+    x = SW_All.VegProd.veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_All.Model.startyr + SW_All.Model.addtl_yr];
     apply_biomassCO2effect(biom2, biom1, x);
 
     for (i = 0; i < 12; i++) {
@@ -256,7 +257,7 @@ namespace {
 
 
         // Reset "SW_All.Weather.allHist"
-        SW_WTH_read(&SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
 		    finalizeAllWeather(&SW_All.Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
@@ -714,7 +715,7 @@ namespace {
 
 
         // Reset "SW_All.Weather.allHist"
-        SW_WTH_read(&SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
 		    finalizeAllWeather(&SW_All.Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
@@ -1175,7 +1176,7 @@ namespace {
         double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
         // Reset "SW_All.Weather.allHist"
-        SW_WTH_read(&SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
 		    finalizeAllWeather(&SW_All.Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`

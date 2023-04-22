@@ -52,21 +52,22 @@
 */
 static void _begin_year(SW_ALL* sw) {
 	// SW_F_new_year() not needed
-	SW_MDL_new_year(); // call first to set up time-related arrays for this year
+	SW_MDL_new_year(&sw->Model); // call first to set up time-related arrays for this year
 	// SW_MKV_new_year() not needed
-	SW_SKY_new_year(); // Update daily climate variables from monthly values
+	SW_SKY_new_year(sw->Model.year, sw->Model.startyr); // Update daily climate variables from monthly values
 	//SW_SIT_new_year() not needed
 	SW_VES_new_year();
-	SW_VPD_new_year(&sw->VegProd); // Dynamic CO2 effects on vegetation
+	SW_VPD_new_year(&sw->VegProd, sw->Model.simyear); // Dynamic CO2 effects on vegetation
 	// SW_FLW_new_year() not needed
-	SW_SWC_new_year(&sw->SoilWat);
+	SW_SWC_new_year(&sw->SoilWat, sw->Model.year);
 	// SW_CBN_new_year() not needed
-	SW_OUT_new_year();
+	SW_OUT_new_year(sw->Model.firstdoy, sw->Model.lastdoy);
 }
 
 static void _begin_day(SW_ALL* sw) {
-	SW_MDL_new_day();
-	SW_WTH_new_day(&sw->Weather, sw->SoilWat.snowpack);
+	SW_MDL_new_day(&sw->Model);
+	SW_WTH_new_day(&sw->Weather, sw->SoilWat.snowpack,
+                  sw->Model.doy, sw->Model.year);
 }
 
 static void _end_day(SW_ALL* sw) {
@@ -88,9 +89,9 @@ void SW_CTL_main(SW_ALL* sw) {
   int debug = 0;
   #endif
 
-  TimeInt *cur_yr = &SW_Model.year;
+  TimeInt *cur_yr = &sw->Model.year;
 
-  for (*cur_yr = SW_Model.startyr; *cur_yr <= SW_Model.endyr; (*cur_yr)++) {
+  for (*cur_yr = sw->Model.startyr; *cur_yr <= sw->Model.endyr; (*cur_yr)++) {
     #ifdef SWDEBUG
     if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
     #endif
@@ -104,7 +105,7 @@ void SW_CTL_main(SW_ALL* sw) {
 void SW_CTL_setup_model(const char *firstfile, SW_ALL* sw) {
 
 	SW_F_construct(firstfile);
-	SW_MDL_construct();
+	SW_MDL_construct(sw->Model.newperiod);
 	SW_WTH_construct(&sw->Weather);
 	// delay SW_MKV_construct() until we know from inputs whether we need it
 	// SW_SKY_construct() not need
@@ -155,13 +156,13 @@ void SW_CTL_init_run(SW_ALL* sw) {
 	// SW_SKY_init_run() not needed
 	SW_SIT_init_run(&sw->VegProd);
 	SW_VES_init_run(); // must run after `SW_SIT_init_run()`
-	SW_VPD_init_run(&sw->VegProd, &sw->Weather);
+	SW_VPD_init_run(&sw->VegProd, &sw->Weather, sw->Model.startyr, sw->Model.endyr);
 	SW_FLW_init_run();
 	SW_ST_init_run();
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
 	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
 	SW_SWC_init_run(&sw->SoilWat);
-	SW_CBN_init_run(sw->VegProd.veg);
+	SW_CBN_init_run(sw->VegProd.veg, &sw->Model);
 }
 
 
@@ -170,7 +171,7 @@ void SW_CTL_init_run(SW_ALL* sw) {
 */
 void SW_CTL_run_current_year(SW_ALL* sw) {
   /*=======================================================*/
-  TimeInt *doy = &SW_Model.doy; // base1
+  TimeInt *doy = &sw->Model.doy; // base1
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -180,7 +181,7 @@ void SW_CTL_run_current_year(SW_ALL* sw) {
   #endif
   _begin_year(sw);
 
-  for (*doy = SW_Model.firstdoy; *doy <= SW_Model.lastdoy; (*doy)++) {
+  for (*doy = sw->Model.firstdoy; *doy <= sw->Model.lastdoy; (*doy)++) {
     #ifdef SWDEBUG
     if (debug) swprintf("\t: begin doy = %d ... ", *doy);
     #endif
@@ -189,7 +190,7 @@ void SW_CTL_run_current_year(SW_ALL* sw) {
     #ifdef SWDEBUG
     if (debug) swprintf("simulate water ... ");
     #endif
-    SW_SWC_water_flow(&sw->VegProd, &sw->Weather, &sw->SoilWat);
+    SW_SWC_water_flow(&sw->VegProd, &sw->Weather, &sw->SoilWat, &sw->Model);
 
     // Only run this function if SWA output is asked for
     if (sw->VegProd.use_SWA) {
@@ -197,7 +198,8 @@ void SW_CTL_run_current_year(SW_ALL* sw) {
     }
 
     if (SW_VegEstab.use) {
-      SW_VES_checkestab(&sw->Weather, sw->SoilWat.swcBulk);
+      SW_VES_checkestab(&sw->Weather, sw->SoilWat.swcBulk, sw->Model.doy,
+                        sw->Model.firstdoy);
     }
 
     #ifdef SWDEBUG
@@ -239,7 +241,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   if (debug) swprintf(" 'files'");
   #endif
 
-  SW_MDL_read();
+  SW_MDL_read(&sw->Model);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'model'");
   #endif
@@ -261,7 +263,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
     #endif
   }
 
-  SW_WTH_read(&sw->Weather);
+  SW_WTH_read(&sw->Weather, sw->Model.startyr, sw->Model.endyr);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather read'");
   #endif
@@ -296,12 +298,12 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   if (debug) swprintf(" > 'ouput'");
   #endif
 
-  SW_CBN_read();
+  SW_CBN_read(&sw->Model);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'CO2'");
   #endif
 
-  SW_SWC_read(&sw->SoilWat);
+  SW_SWC_read(&sw->SoilWat, sw->Model.endyr);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'swc'");
   if (debug) swprintf(" completed.\n");

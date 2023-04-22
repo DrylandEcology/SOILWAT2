@@ -64,11 +64,11 @@ namespace {
         EXPECT_EQ(SW_All.Weather.n_years, 31);
 
         // Decrease number of years
-        SW_Model.startyr = 1981;
-        SW_Model.endyr = 1982;
+        SW_All.Model.startyr = 1981;
+        SW_All.Model.endyr = 1982;
 
         // Real expectation is that there is no memory leak for `allHist`
-        SW_WTH_read(&SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
 
         EXPECT_EQ(SW_All.Weather.n_years, 2);
 
@@ -85,7 +85,7 @@ namespace {
 
         SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
 
-        SW_WTH_read(&SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
         SW_WTH_finalize_all_weather(&SW_All.Weather);
 
 
@@ -110,10 +110,10 @@ namespace {
 
         SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
 
-        SW_Model.startyr = 1981;
-        SW_Model.endyr = 1982;
+        SW_All.Model.startyr = 1981;
+        SW_All.Model.endyr = 1982;
 
-        SW_WTH_read(&SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
         SW_WTH_finalize_all_weather(&SW_All.Weather);
 
 
@@ -140,7 +140,7 @@ namespace {
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
-        SW_WTH_read(&SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
         SW_WTH_finalize_all_weather(&SW_All.Weather);
 
         // Check everyday's value and test if it's `MISSING`
@@ -162,10 +162,10 @@ namespace {
         // Set LOCF (temp) + 0 (PPT) method
         SW_All.Weather.generateWeatherMethod = 1;
 
-        SW_Model.startyr = 1981;
-        SW_Model.endyr = 1981;
+        SW_All.Model.startyr = 1981;
+        SW_All.Model.endyr = 1981;
 
-        SW_WTH_read(&SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
 
         // Error: too many missing values and weather generator turned off
         EXPECT_DEATH_IF_SUPPORTED(
@@ -702,7 +702,7 @@ namespace {
 
     TEST(WeatherReadTest, Initialization) {
 
-        SW_WTH_read(&SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
 
         EXPECT_FLOAT_EQ(SW_All.Weather.allHist[0]->temp_max[0], -.52);
 
@@ -723,7 +723,7 @@ namespace {
          SW_WTH_setup(&SW_All.Weather);
 
          // Read in all weather
-         SW_WTH_read(&SW_All.Weather);
+         SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
 
          // Test the middle of January in year 1980 and see if it's not equal to SW_Sky.r_humidity[0],
          // SW_Sky.cloudcov[0], and SW_Sky.windspeed[0]
@@ -1064,7 +1064,7 @@ namespace {
         SW_All.Weather.use_humidityMonthly = swFALSE;
         SW_All.Weather.use_windSpeedMonthly = swFALSE;
 
-        SW_WTH_read(&SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
 
         // Setup values/flags for `generateMissingWeather()` to deal with
         SW_All.Weather.generateWeatherMethod = 1;
@@ -1108,7 +1108,7 @@ namespace {
 
          /* Not the same number of flags as columns */
 
-         SW_WTH_read(&SW_All.Weather);
+         SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
 
          // Set SW_WEATHER's n_input_forcings to a number that is
          // not the columns being read in

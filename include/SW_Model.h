@@ -26,21 +26,14 @@
 extern "C" {
 #endif
 
-
-/* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern SW_MODEL SW_Model;
-
-
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_MDL_read(void);
-void SW_MDL_construct(void);
+void SW_MDL_read(SW_MODEL* SW_Model);
+void SW_MDL_construct(Bool newperiod[]);
 void SW_MDL_deconstruct(void);
-void SW_MDL_new_year(void);
-void SW_MDL_new_day(void);
+void SW_MDL_new_year(SW_MODEL* SW_Model);
+void SW_MDL_new_day(SW_MODEL* SW_Model);
 
 
 #ifdef __cplusplus

@@ -336,24 +336,25 @@ void SW_OUT_create_iteration_files(int iteration) {
 		Also, see note on test value in _write_today() for
 		explanation of the +1.
 */
-void get_outstrleader(OutPeriod pd, char *str, size_t sizeof_str) {
+void get_outstrleader(OutPeriod pd, char *str, size_t sizeof_str,
+					  SW_MODEL* SW_Model) {
 	switch (pd) {
 		case eSW_Day:
-			snprintf(str, sizeof_str, "%d%c%d", SW_Model.simyear, _Sep, SW_Model.doy);
+			snprintf(str, sizeof_str, "%d%c%d", SW_Model->simyear, _Sep, SW_Model->doy);
 			break;
 
 		case eSW_Week:
-			snprintf(str, sizeof_str, "%d%c%d", SW_Model.simyear, _Sep,
-				(SW_Model.week + 1) - tOffset);
+			snprintf(str, sizeof_str, "%d%c%d", SW_Model->simyear, _Sep,
+				(SW_Model->week + 1) - tOffset);
 			break;
 
 		case eSW_Month:
-			snprintf(str, sizeof_str, "%d%c%d", SW_Model.simyear, _Sep,
-				(SW_Model.month + 1) - tOffset);
+			snprintf(str, sizeof_str, "%d%c%d", SW_Model->simyear, _Sep,
+				(SW_Model->month + 1) - tOffset);
 			break;
 
 		case eSW_Year:
-			snprintf(str, sizeof_str, "%d", SW_Model.simyear);
+			snprintf(str, sizeof_str, "%d", SW_Model->simyear);
 			break;
 	}
 }

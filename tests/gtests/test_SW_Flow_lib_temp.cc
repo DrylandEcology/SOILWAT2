@@ -394,7 +394,7 @@ namespace {
 
     soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR, oldsTempR,
       vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError, surface_range,
-      temperatureRangeR, depthsR);
+      temperatureRangeR, depthsR, SW_All.Model.year, SW_All.Model.doy);
 
     // Check that values that are set, are set right.
     EXPECT_EQ(sTempR[0], T1);
@@ -422,7 +422,7 @@ namespace {
 
     soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, sTempR2, oldsTempR3,
         vwcR, wpR, fcR, bDensityR, csParam1, csParam2, shParam, &ptr_stError, surface_range,
-        temperatureRangeR, depthsR);
+        temperatureRangeR, depthsR, SW_All.Model.year, SW_All.Model.doy);
 
     //Check that ptr_stError is TRUE
     EXPECT_EQ(ptr_stError, 1);
@@ -470,7 +470,7 @@ namespace {
       oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
-      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen);
+      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen, SW_All.Model.year, SW_All.Model.doy);
 
 
     // Expect that surface temp equals surface_temperature_under_snow() because snow > 0
@@ -485,7 +485,7 @@ namespace {
       oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
-      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen);
+      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen, SW_All.Model.year, SW_All.Model.doy);
 
     EXPECT_EQ(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
@@ -498,7 +498,7 @@ namespace {
       oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
-      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen);
+      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen, SW_All.Model.year, SW_All.Model.doy);
 
     EXPECT_EQ(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
@@ -550,7 +550,7 @@ namespace {
       oldsTemp2, sTemp2, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
-      &surface_max, &surface_max, SW_All.SoilWat.lyrFrozen);
+      &surface_max, &surface_max, SW_All.SoilWat.lyrFrozen, SW_All.Model.year, SW_All.Model.doy);
 
     // Check that error has occurred as indicated by ptr_stError
     EXPECT_EQ(ptr_stError, swTRUE);
@@ -625,7 +625,7 @@ namespace {
       oldsTemp3, sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
-      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen);
+      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen, SW_All.Model.year, SW_All.Model.doy);
 
     EXPECT_EQ(surfaceTemp[Today], surface_temperature_under_snow(airTemp, snow));
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
@@ -639,7 +639,7 @@ namespace {
       oldsTemp3, sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
-      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen);
+      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen, SW_All.Model.year, SW_All.Model.doy);
 
     EXPECT_EQ(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
@@ -652,7 +652,7 @@ namespace {
       oldsTemp3, sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
-      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen);
+      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen, SW_All.Model.year, SW_All.Model.doy);
 
     EXPECT_EQ(surfaceTemp[Today], airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp[Today], airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
@@ -707,7 +707,8 @@ namespace {
         t1Param3, csParam1, csParam2, shParam, snowdepth,
         sTconst, deltaX, theMaxDepth, nRgr, snow,
         &ptr_stError, max_air_temp, min_air_temp, H_gt, min_temp, max_temp,
-        &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen
+        &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
+        SW_All.Model.year, SW_All.Model.doy
       ),
       "SOILWAT2 ERROR soil temperature module was not initialized"
     );

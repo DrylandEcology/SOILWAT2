@@ -867,7 +867,8 @@ void generateMissingWeather(
             day,
             &allHist[yearIndex]->temp_max[day],
             &allHist[yearIndex]->temp_min[day],
-            &allHist[yearIndex]->ppt[day]
+            &allHist[yearIndex]->ppt[day],
+            year
           );
 
         } else if (method == 1) {
@@ -1185,7 +1186,8 @@ void SW_WTH_init_run(SW_WEATHER* SW_Weather) {
 /**
 @brief Guarantees that today's weather will not be invalid via -_todays_weth().
 */
-void SW_WTH_new_day(SW_WEATHER* SW_Weather, RealD snowpack[]) {
+void SW_WTH_new_day(SW_WEATHER* SW_Weather, RealD snowpack[], TimeInt doy,
+                    TimeInt year) {
 	/* =================================================== */
 	/*  History
 	 *
@@ -1203,8 +1205,9 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, RealD snowpack[]) {
 
     /* Indices to today's weather record in `allHist` */
     TimeInt
-      day = SW_Model.doy - 1,
-      yearIndex = SW_Model.year - SW_Weather->startYear;
+      doy0 = doy - 1,
+      doy1 = doy, // Used for call to SW_SWC_adjust_snow()
+      yearIndex = year - SW_Weather->startYear;
 
 /*
 #ifdef STEPWAT
@@ -1222,35 +1225,35 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, RealD snowpack[]) {
          2. cloud cover can be missing if shortwave radiation is not missing
     */
     if (
-      missing(SW_Weather->allHist[yearIndex]->temp_avg[day]) ||
-      missing(SW_Weather->allHist[yearIndex]->ppt[day]) ||
-      missing(SW_Weather->allHist[yearIndex]->windspeed_daily[day]) ||
-      missing(SW_Weather->allHist[yearIndex]->r_humidity_daily[day]) ||
-      missing(SW_Weather->allHist[yearIndex]->actualVaporPressure[day]) ||
+      missing(SW_Weather->allHist[yearIndex]->temp_avg[doy0]) ||
+      missing(SW_Weather->allHist[yearIndex]->ppt[doy0]) ||
+      missing(SW_Weather->allHist[yearIndex]->windspeed_daily[doy0]) ||
+      missing(SW_Weather->allHist[yearIndex]->r_humidity_daily[doy0]) ||
+      missing(SW_Weather->allHist[yearIndex]->actualVaporPressure[doy0]) ||
       (
-        missing(SW_Weather->allHist[yearIndex]->shortWaveRad[day]) &&
-        missing(SW_Weather->allHist[yearIndex]->cloudcov_daily[day])
+        missing(SW_Weather->allHist[yearIndex]->shortWaveRad[doy0]) &&
+        missing(SW_Weather->allHist[yearIndex]->cloudcov_daily[doy0])
       )
     ) {
       LogError(
         logfp,
         LOGFATAL,
         "Missing weather data (day %u - %u) during simulation.",
-        SW_Model.year,
-        SW_Model.doy
+        year,
+        doy0
       );
     }
 
-    wn->temp_max = SW_Weather->allHist[yearIndex]->temp_max[day];
-    wn->temp_min = SW_Weather->allHist[yearIndex]->temp_min[day];
-    wn->ppt = SW_Weather->allHist[yearIndex]->ppt[day];
-    wn->cloudCover = SW_Weather->allHist[yearIndex]->cloudcov_daily[day];
-    wn->windSpeed = SW_Weather->allHist[yearIndex]->windspeed_daily[day];
-    wn->relHumidity = SW_Weather->allHist[yearIndex]->r_humidity_daily[day];
-    wn->shortWaveRad = SW_Weather->allHist[yearIndex]->shortWaveRad[day];
-    wn->actualVaporPressure = SW_Weather->allHist[yearIndex]->actualVaporPressure[day];
+    wn->temp_max = SW_Weather->allHist[yearIndex]->temp_max[doy0];
+    wn->temp_min = SW_Weather->allHist[yearIndex]->temp_min[doy0];
+    wn->ppt = SW_Weather->allHist[yearIndex]->ppt[doy0];
+    wn->cloudCover = SW_Weather->allHist[yearIndex]->cloudcov_daily[doy0];
+    wn->windSpeed = SW_Weather->allHist[yearIndex]->windspeed_daily[doy0];
+    wn->relHumidity = SW_Weather->allHist[yearIndex]->r_humidity_daily[doy0];
+    wn->shortWaveRad = SW_Weather->allHist[yearIndex]->shortWaveRad[doy0];
+    wn->actualVaporPressure = SW_Weather->allHist[yearIndex]->actualVaporPressure[doy0];
 
-    wn->temp_avg = SW_Weather->allHist[yearIndex]->temp_avg[day];
+    wn->temp_avg = SW_Weather->allHist[yearIndex]->temp_avg[doy0];
 
     SW_Weather->snow = SW_Weather->snowmelt = SW_Weather->snowloss = 0.;
     SW_Weather->snowRunoff = SW_Weather->surfaceRunoff =
@@ -1260,7 +1263,7 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, RealD snowpack[]) {
     {
         SW_SWC_adjust_snow(wn->temp_min, wn->temp_max, wn->ppt,
           &wn->rain, &SW_Weather->snow, &SW_Weather->snowmelt,
-          snowpack);
+          snowpack, doy1);
     } else {
         wn->rain = wn->ppt;
     }
@@ -1565,7 +1568,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
   The weather generator is not run and daily values are not scaled with
   monthly climate parameters, see `SW_WTH_finalize_all_weather()` instead.
 */
-void SW_WTH_read(SW_WEATHER* SW_Weather) {
+void SW_WTH_read(SW_WEATHER* SW_Weather, TimeInt startyr, TimeInt endyr) {
 
     // Deallocate (previous, if any) `allHist`
     // (using value of `SW_Weather.n_years` previously used to allocate)
@@ -1573,8 +1576,8 @@ void SW_WTH_read(SW_WEATHER* SW_Weather) {
     deallocateAllWeather(SW_Weather);
 
     // Update number of years and first calendar year represented
-    SW_Weather->n_years = SW_Model.endyr - SW_Model.startyr + 1;
-    SW_Weather->startYear = SW_Model.startyr;
+    SW_Weather->n_years = endyr - startyr + 1;
+    SW_Weather->startYear = startyr;
 
     // Allocate new `allHist` (based on current `SW_Weather.n_years`)
     allocateAllWeather(SW_Weather);

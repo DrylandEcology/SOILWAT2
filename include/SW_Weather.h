@@ -42,7 +42,7 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_WTH_setup(SW_WEATHER* SW_Weather);
-void SW_WTH_read(SW_WEATHER* SW_Weather);
+void SW_WTH_read(SW_WEATHER* SW_Weather, TimeInt startyr, TimeInt endyr);
 void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
                                SW_CLIMATE_CLIM *climateAverages);
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
@@ -112,7 +112,8 @@ void SW_WTH_finalize_all_weather(SW_WEATHER* SW_Weather);
 void SW_WTH_init_run(SW_WEATHER* SW_Weather);
 void SW_WTH_construct(SW_WEATHER* SW_Weather);
 void SW_WTH_deconstruct(SW_WEATHER* SW_Weather);
-void SW_WTH_new_day(SW_WEATHER* SW_Weather, RealD snowpack[]);
+void SW_WTH_new_day(SW_WEATHER* SW_Weather, RealD snowpack[], TimeInt doy,
+                    TimeInt year);
 void SW_WTH_sum_today(void);
 
 

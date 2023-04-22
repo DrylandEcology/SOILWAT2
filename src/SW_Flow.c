@@ -180,7 +180,7 @@ static RealD
 /* --------------------------------------------------- */
 
 static void records2arrays(RealD swcBulk[][MAX_LAYERS],
-						   RealD avgLyrTemp[]) {
+	RealD avgLyrTemp[], TimeInt doy, TimeInt firstdoy) {
 	/* some values are unchanged by the water subs but
 	 * are still required in an array format.
 	 * Also, some arrays start out empty and are
@@ -204,7 +204,7 @@ static void records2arrays(RealD swcBulk[][MAX_LAYERS],
 		lyroldavgLyrTemp[i] = avgLyrTemp[i];
 	}
 
-	if (SW_Model.doy == SW_Model.firstdoy) {
+	if (doy == firstdoy) {
 		ForEachSoilLayer(i)
 		{
 			lyrSWCBulk_FieldCaps[i] = SW_Site.lyr[i]->swcBulk_fieldcap;
@@ -327,7 +327,7 @@ void SW_FLW_init_run(void) {
 /*            The Water Flow                           */
 /* --------------------------------------------------- */
 void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-				   SW_SOILWAT* SW_SoilWat) {
+				   SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model) {
 	#ifdef SWDEBUG
 	IntUS debug = 0, debug_year = 1980, debug_doy = 350;
 	double Eveg, Tveg, HRveg;
@@ -345,14 +345,15 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	int doy, month, k;
 	LyrIndex i;
 
-	doy = SW_Model.doy; /* base1 */
-	month = SW_Model.month; /* base0 */
+	doy = SW_Model->doy; /* base1 */
+	month = SW_Model->month; /* base0 */
 
-	records2arrays(SW_SoilWat->swcBulk, SW_SoilWat->avgLyrTemp);
+	records2arrays(SW_SoilWat->swcBulk, SW_SoilWat->avgLyrTemp,
+				   SW_Model->doy, SW_Model->firstdoy);
 
 	#ifdef SWDEBUG
-	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {
-		swprintf("Flow (%d-%d): start:", SW_Model.year, SW_Model.doy);
+	if (debug && SW_Model->year == debug_year && SW_Model->doy == debug_doy) {
+		swprintf("Flow (%d-%d): start:", SW_Model->year, SW_Model->doy);
 		ForEachSoilLayer(i) {
 			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
 		}
@@ -526,8 +527,8 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	SW_Weather->soil_inf -= standingWater[Today]; // adjust soil_infiltration for not infiltrated surface water
 
 	#ifdef SWDEBUG
-	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {
-		swprintf("Flow (%d-%d): satperc:", SW_Model.year, SW_Model.doy);
+	if (debug && SW_Model->year == debug_year && SW_Model->doy == debug_doy) {
+		swprintf("Flow (%d-%d): satperc:", SW_Model->year, SW_Model->doy);
 		ForEachSoilLayer(i) {
 			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
 		}
@@ -598,7 +599,7 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 				SW_VegProd->veg[k].shade_scale, SW_VegProd->veg[k].shade_deadmax,
 				SW_VegProd->veg[k].tr_shade_effects.xinflec, SW_VegProd->veg[k].tr_shade_effects.slope,
 				SW_VegProd->veg[k].tr_shade_effects.yinflec, SW_VegProd->veg[k].tr_shade_effects.range,
-				SW_VegProd->veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
+				SW_VegProd->veg[k].co2_multipliers[WUE_INDEX][SW_Model->simyear]);
 
 			transp_rate[k] *= scale_veg[k];
 
@@ -679,8 +680,8 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	}
 
 	#ifdef SWDEBUG
-	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {
-		swprintf("Flow (%d-%d): Esoil:", SW_Model.year, SW_Model.doy);
+	if (debug && SW_Model->year == debug_year && SW_Model->doy == debug_doy) {
+		swprintf("Flow (%d-%d): Esoil:", SW_Model->year, SW_Model->doy);
 		ForEachSoilLayer(i) {
 			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
 		}
@@ -713,8 +714,8 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	}
 
 	#ifdef SWDEBUG
-	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {
-		swprintf("Flow (%d-%d): ETveg:", SW_Model.year, SW_Model.doy);
+	if (debug && SW_Model->year == debug_year && SW_Model->doy == debug_doy) {
+		swprintf("Flow (%d-%d): ETveg:", SW_Model->year, SW_Model->doy);
 		ForEachSoilLayer(i) {
 			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
 		}
@@ -750,7 +751,9 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 				SW_VegProd->veg[k].maxCondroot,
 				SW_VegProd->veg[k].swpMatric50,
 				SW_VegProd->veg[k].shapeCond,
-				SW_VegProd->veg[k].cov.fCover
+				SW_VegProd->veg[k].cov.fCover,
+				SW_Model->year,
+				SW_Model->doy
 			);
 
 		} else {
@@ -762,8 +765,8 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	}
 
 	#ifdef SWDEBUG
-	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {
-		swprintf("Flow (%d-%d): HR:", SW_Model.year, SW_Model.doy);
+	if (debug && SW_Model->year == debug_year && SW_Model->doy == debug_doy) {
+		swprintf("Flow (%d-%d): HR:", SW_Model->year, SW_Model->doy);
 		ForEachSoilLayer(i) {
 			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
 		}
@@ -805,8 +808,8 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	SW_SoilWat->surfaceWater = standingWater[Today];
 
 	#ifdef SWDEBUG
-	if (debug && SW_Model.year == debug_year && SW_Model.doy == debug_doy) {
-		swprintf("Flow (%d-%d): unsatperc:", SW_Model.year, SW_Model.doy);
+	if (debug && SW_Model->year == debug_year && SW_Model->doy == debug_doy) {
+		swprintf("Flow (%d-%d): unsatperc:", SW_Model->year, SW_Model->doy);
 		ForEachSoilLayer(i) {
 			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
 		}
@@ -847,7 +850,8 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 			&SW_SoilWat->soiltempError, SW_Weather->now.temp_max,
 			SW_Weather->now.temp_min, SW_SoilWat->H_gt,
 			SW_SoilWat->maxLyrTemperature, SW_SoilWat->minLyrTemperature,
-			&SW_Weather->surfaceMax, &SW_Weather->surfaceMin, SW_SoilWat->lyrFrozen);
+			&SW_Weather->surfaceMax, &SW_Weather->surfaceMin, SW_SoilWat->lyrFrozen,
+			SW_Model->year, SW_Model->doy);
 	}
 
 	/* Soil Temperature ends here */

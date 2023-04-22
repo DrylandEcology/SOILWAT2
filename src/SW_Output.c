@@ -175,13 +175,15 @@ static OutKey str2key(char *s);
 static OutSum str2stype(char *s);
 
 static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
-						 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat);
+						 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
+						 SW_MODEL* SW_Model);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
 static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k);
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
-static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k);
+static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy);
 static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
-						SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat);
+						SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
+						SW_MODEL* SW_Model);
 
 #ifdef STEPWAT
 static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
@@ -293,7 +295,7 @@ Bool has_keyname_soillayers(const char *var) {
 
 
 
-static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
+static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy)
 {
 	int ik;
 	RealD tmp;
@@ -306,20 +308,20 @@ static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
 		// scale biomass by fCover to obtain biomass as observed in total vegetation
 		case eSW_Biomass:
 			ForEachVegType(ik) {
-				tmp = v->veg[ik].biomass_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+				tmp = v->veg[ik].biomass_daily[doy] * v->veg[ik].cov.fCover;
 				s->veg[ik].biomass_inveg += tmp;
 				s->biomass_total += tmp;
 
-				tmp = v->veg[ik].litter_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+				tmp = v->veg[ik].litter_daily[doy] * v->veg[ik].cov.fCover;
 				s->veg[ik].litter_inveg += tmp;
 				s->litter_total += tmp;
 
-				tmp = v->veg[ik].biolive_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+				tmp = v->veg[ik].biolive_daily[doy] * v->veg[ik].cov.fCover;
 				s->veg[ik].biolive_inveg += tmp;
 				s->biolive_total += tmp;
 
 				s->LAI +=
-					v->veg[ik].lai_live_daily[SW_Model.doy] * v->veg[ik].cov.fCover;
+					v->veg[ik].lai_live_daily[doy] * v->veg[ik].cov.fCover;
 			}
 			break;
 
@@ -547,7 +549,8 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
    one greater than the period being summarized.
 */
 static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
-						SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat) {
+						SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
+						SW_MODEL* SW_Model) {
 	TimeInt curr_pd = 0;
 	RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
 	OutKey k;
@@ -592,13 +595,13 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 			switch (pd)
 			{
 				case eSW_Week:
-					curr_pd = (SW_Model.week + 1) - tOffset;
-					div = (bFlush_output) ? SW_Model.lastdoy % WKDAYS : WKDAYS;
+					curr_pd = (SW_Model->week + 1) - tOffset;
+					div = (bFlush_output) ? SW_Model->lastdoy % WKDAYS : WKDAYS;
 					break;
 
 				case eSW_Month:
-					curr_pd = (SW_Model.month + 1) - tOffset;
-					div = Time_days_in_month(SW_Model.month - tOffset);
+					curr_pd = (SW_Model->month + 1) - tOffset;
+					div = Time_days_in_month(SW_Model->month - tOffset);
 					break;
 
 				case eSW_Year:
@@ -867,7 +870,8 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 
 
 static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
-						 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat)
+						 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
+						 SW_MODEL* SW_Model)
 {
 	SW_VEGESTAB *v = &SW_VegEstab;
 
@@ -879,16 +883,16 @@ static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
 	switch (op)
 	{
 		case eSW_Day:
-			pd = SW_Model.doy;
+			pd = SW_Model->doy;
 			break;
 		case eSW_Week:
-			pd = SW_Model.week + 1;
+			pd = SW_Model->week + 1;
 			break;
 		case eSW_Month:
-			pd = SW_Model.month + 1;
+			pd = SW_Model->month + 1;
 			break;
 		case eSW_Year:
-			pd = SW_Model.doy;
+			pd = SW_Model->doy;
 			break;
 		default:
 			LogError(logfp, LOGFATAL, "PGMR: Invalid outperiod in collect_sums()");
@@ -938,7 +942,7 @@ static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
 				break;
 
 			case eVPD:
-				sumof_vpd(SW_VegProd, SW_VegProd->p_accu[op], k);
+				sumof_vpd(SW_VegProd, SW_VegProd->p_accu[op], k, SW_Model->doy);
 				break;
 
 			default:
@@ -1938,7 +1942,7 @@ void SW_OUT_set_colnames(void) {
 }
 
 
-void SW_OUT_new_year(void)
+void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy)
 {
 	/* =================================================== */
 	/* reset the terminal output days each year  */
@@ -1951,14 +1955,14 @@ void SW_OUT_new_year(void)
 			continue;
 		}
 
-		if (SW_Output[k].first_orig <= SW_Model.firstdoy) {
-			SW_Output[k].first = SW_Model.firstdoy;
+		if (SW_Output[k].first_orig <= firstdoy) {
+			SW_Output[k].first = firstdoy;
 		} else {
 			SW_Output[k].first = SW_Output[k].first_orig;
 		}
 
-		if (SW_Output[k].last_orig >= SW_Model.lastdoy) {
-			SW_Output[k].last = SW_Model.lastdoy;
+		if (SW_Output[k].last_orig >= lastdoy) {
+			SW_Output[k].last = lastdoy;
 		} else {
 			SW_Output[k].last = SW_Output[k].last_orig;
 		}
@@ -2258,10 +2262,18 @@ void SW_OUT_read(SW_ALL* sw)
 
 
 void _collect_values(SW_ALL* sw) {
-	SW_OUT_sum_today(eSWC, &sw->VegProd, &sw->Weather, &sw->SoilWat);
-	SW_OUT_sum_today(eWTH, &sw->VegProd, &sw->Weather, &sw->SoilWat);
-	SW_OUT_sum_today(eVES, &sw->VegProd, &sw->Weather, &sw->SoilWat);
-	SW_OUT_sum_today(eVPD, &sw->VegProd, &sw->Weather, &sw->SoilWat);
+	SW_OUT_sum_today(eSWC, &sw->VegProd, &sw->Weather, &sw->SoilWat,
+															&sw->Model);
+
+	SW_OUT_sum_today(eWTH, &sw->VegProd, &sw->Weather, &sw->SoilWat,
+															&sw->Model);
+
+	SW_OUT_sum_today(eVES, &sw->VegProd, &sw->Weather, &sw->SoilWat,
+															&sw->Model);
+
+	SW_OUT_sum_today(eVPD, &sw->VegProd, &sw->Weather, &sw->SoilWat,
+															&sw->Model);
+
 
 	SW_OUT_write_today(sw);
 }
@@ -2289,16 +2301,16 @@ void SW_OUT_flush(SW_ALL* sw) {
     need to perform _new_day() on the soilwater.
 */
 void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					  SW_SOILWAT* SW_SoilWat)
+					  SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model)
 {
 	/*  SW_VEGESTAB *v = &SW_VegEstab;  -> we don't need to sum daily for this */
 	OutPeriod pd;
 
 	ForEachOutPeriod(pd)
 	{
-		if (bFlush_output || SW_Model.newperiod[pd]) // `newperiod[eSW_Day]` is always TRUE
+		if (bFlush_output || SW_Model->newperiod[pd]) // `newperiod[eSW_Day]` is always TRUE
 		{
-			average_for(otyp, pd, SW_VegProd, SW_Weather, SW_SoilWat);
+			average_for(otyp, pd, SW_VegProd, SW_Weather, SW_SoilWat, SW_Model);
 
 			switch (otyp)
 			{
@@ -2324,7 +2336,7 @@ void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weath
 	{
 		ForEachOutPeriod(pd)
 		{
-			collect_sums(otyp, pd, SW_VegProd, SW_Weather, SW_SoilWat);
+			collect_sums(otyp, pd, SW_VegProd, SW_Weather, SW_SoilWat, SW_Model);
 		}
 	}
 }
@@ -2397,11 +2409,11 @@ void SW_OUT_write_today(SW_ALL* sw)
 
 
 	// Determine which output periods should get formatted and output (if they are active)
-	t = SW_Model.doy;
+	t = sw->Model.doy;
 	writeit[eSW_Day] = (Bool) (t < SW_Output[0].first || t > SW_Output[0].last); // `csv`-files assume anyhow that first/last are identical for every output type/key
-	writeit[eSW_Week] = (Bool) (writeit[eSW_Day] && (SW_Model.newperiod[eSW_Week] || bFlush_output));
-	writeit[eSW_Month] = (Bool) (writeit[eSW_Day] && (SW_Model.newperiod[eSW_Month] || bFlush_output));
-	writeit[eSW_Year] = (Bool) (SW_Model.newperiod[eSW_Year] || bFlush_output);
+	writeit[eSW_Week] = (Bool) (writeit[eSW_Day] && (sw->Model.newperiod[eSW_Week] || bFlush_output));
+	writeit[eSW_Month] = (Bool) (writeit[eSW_Day] && (sw->Model.newperiod[eSW_Month] || bFlush_output));
+	writeit[eSW_Year] = (Bool) (sw->Model.newperiod[eSW_Year] || bFlush_output);
 	// update daily: don't process daily output if `bFlush_output` is TRUE
 	// because `_end_day` was already called and produced daily output
 	writeit[eSW_Day] = (Bool) (writeit[eSW_Day] && !bFlush_output);
@@ -2518,7 +2530,7 @@ void SW_OUT_write_today(SW_ALL* sw)
 	{
 		if (use_OutPeriod[p] && writeit[p])
 		{
-			get_outstrleader(p, str_time, sizeof str_time);
+			get_outstrleader(p, str_time, sizeof str_time, &sw->Model);
 
 			if (SW_OutFiles.make_regular[p])
 			{

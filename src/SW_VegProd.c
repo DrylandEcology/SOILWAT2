@@ -578,11 +578,11 @@ void SW_VPD_construct(SW_VEGPROD* SW_VegProd) {
 
 
 
-void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather) {
+void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
+					 TimeInt startyr, TimeInt endyr) {
     TimeInt year;
     int k, veg_method;
 
-    SW_MODEL *model = &SW_Model;
     SW_SITE *site = &SW_Site;
 
     veg_method = SW_VegProd->veg_method;
@@ -601,7 +601,7 @@ void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather) {
 
     if(veg_method > 0) {
         estimateVegetationFromClimate(SW_VegProd, SW_Weather->allHist,
-						model->startyr, model->endyr, veg_method, latitude);
+									  startyr, endyr, veg_method, latitude);
     }
 
 }
@@ -652,7 +652,7 @@ void apply_biomassCO2effect(double new_biomass[], double biomass[], double multi
 /**
 @brief Update vegetation parameters for new year
 */
-void SW_VPD_new_year(SW_VEGPROD* SW_VegProd) {
+void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, TimeInt simyear) {
 	/* ================================================== */
 	/*
 	* History:
@@ -693,7 +693,7 @@ void SW_VPD_new_year(SW_VEGPROD* SW_VegProd) {
 				apply_biomassCO2effect(
 					biomass_after_CO2,
 					SW_VegProd->veg[k].pct_live,
-					SW_VegProd->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]
+					SW_VegProd->veg[k].co2_multipliers[BIO_INDEX][simyear]
 				);
 
 				interpolate_monthlyValues(biomass_after_CO2, interpAsBase1, SW_VegProd->veg[k].pct_live_daily);
@@ -705,7 +705,7 @@ void SW_VPD_new_year(SW_VEGPROD* SW_VegProd) {
 				apply_biomassCO2effect(
 					biomass_after_CO2,
 					SW_VegProd->veg[k].biomass,
-					SW_VegProd->veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]
+					SW_VegProd->veg[k].co2_multipliers[BIO_INDEX][simyear]
 				);
 
 				interpolate_monthlyValues(biomass_after_CO2, interpAsBase1, SW_VegProd->veg[k].biomass_daily);

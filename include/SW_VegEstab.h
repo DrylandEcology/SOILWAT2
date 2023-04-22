@@ -42,8 +42,8 @@ void SW_VES_construct(void);
 void SW_VES_deconstruct(void);
 void SW_VES_init_run(void);
 void SW_VegEstab_construct(void);
-void SW_VES_checkestab(SW_WEATHER* SW_Weather,
-										RealD swcBulk[][MAX_LAYERS]);
+void SW_VES_checkestab(SW_WEATHER* SW_Weather, RealD swcBulk[][MAX_LAYERS],
+					   TimeInt doy, TimeInt firstdoy);
 void SW_VES_new_year(void);
 void _spp_init(unsigned int sppnum);
 unsigned int _new_species(void);

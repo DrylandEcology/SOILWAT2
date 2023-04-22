@@ -925,6 +925,8 @@ void percolate_unsaturated(
 	@param shapeCond Shaping parameter for the empirical relationship from van Genuchten to
 				model relative soil-root conductance for water.
 	@param scale Fraction of vegetation type to scale hydred.
+	@param year Current year in simulation
+	@param doy  Current day in simulation
 
 	@sideeffect
 		- swc Updated soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
@@ -941,7 +943,9 @@ void hydraulic_redistribution(
 	double maxCondroot,
 	double swp50,
 	double shapeCond,
-	double scale
+	double scale,
+	TimeInt year,
+	TimeInt doy
 ) {
 	/**********************************************************************
 	 HISTORY:
@@ -967,7 +971,7 @@ void hydraulic_redistribution(
 
 	#ifdef SWDEBUG
 	if (debug) {
-		swprintf("hydred[%d-%d/veg(%d)]: \n", SW_Model.year, SW_Model.doy, vegk);
+		swprintf("hydred[%d-%d/veg(%d)]: \n", year, doy, vegk);
 	}
 	#endif
 
@@ -1139,7 +1143,7 @@ void hydraulic_redistribution(
 			logfp, LOGFATAL,
 			"[%d-%d/veg(%d)]: "
 			"hydraulic redistribution failed to constrain to swc_min.",
-			SW_Model.year, SW_Model.doy, vegk
+			year, doy, vegk
 		);
 	}
 
@@ -1832,6 +1836,8 @@ The algorithm selects a shorter time step if required for a stable solution
 @param[in] surface_range Temperature range at the surface (&deg;C)
 @param[in,out] temperatureRangeR An array of temperature ranges at each (regression)-layer to be interpolated (&deg;C)
 @param[in] depthsR Evenly spaced depths of the soil temperature profile (cm).
+@param[in] year Current year being run in simulation
+@param[in] doy Current day being run in simulation
 
 @note
 	avgLyrTempR[0] and temperatureRangeR[0] represent soil surface conditions.
@@ -1845,7 +1851,8 @@ The algorithm selects a shorter time step if required for a stable solution
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
 	int nRgr, double avgLyrTempR[], double oldavgLyrTempR[], double vwcR[], double wpR[], double fcR[],
 	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError,
-    double surface_range, double temperatureRangeR[], double depthsR[]) {
+    double surface_range, double temperatureRangeR[], double depthsR[], TimeInt year,
+	TimeInt doy) {
 
 	int i, k, m, Nsteps_per_day = 1;
 	double pe, cs, sh, dT_to_dX2, alpha, part2;
@@ -1853,12 +1860,16 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 
     Bool Tsoil_not_exploded = swTRUE;
 
-  #ifdef SWDEBUG
-  int debug = 0;
-  if (SW_Model.year == 1981 && SW_Model.doy > 180 && SW_Model.doy < 191) {
-    debug = 0;
-  }
-  #endif
+	#ifdef SWDEBUG
+	int debug = 0;
+	if (year == 1981 && doy > 180 && doy < 191) {
+		debug = 0;
+	}
+	#else
+		/* Silence compiler for year/doy not being used if SWDEBUG isn't defined */
+		(void) year;
+		(void) doy;
+	#endif
 
 	// upper boundary condition; index 0 indicates surface and not first layer
 	// --> required for interpolation from soil temperature layers to soil layers
@@ -2135,6 +2146,8 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param *surface_max Maxmimum surface temperature (&deg;C)
 @param *surface_min Minimum surface temperature (&deg;C)
 @param lyrFrozen Frozen information at each layer.
+@param year Current year in simulation
+@param doy Current day in simulation
 
 @sideeffect *ptr_stError Updated boolean indicating whether there was an error.
 
@@ -2149,12 +2162,12 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	double theMaxDepth, unsigned int nRgr, double snow, Bool *ptr_stError,
     double max_air_temp, double min_air_temp, double H_gt, double maxLyrTemperature[],
     double minLyrTemperature[], double *surface_max, double *surface_min,
-	double lyrFrozen[]) {
+	double lyrFrozen[], TimeInt year, TimeInt doy) {
 
 	unsigned int i, sFadjusted_avgLyrTemp;
   #ifdef SWDEBUG
   int debug = 0;
-  if (SW_Model.year == 1980 && SW_Model.doy < 10) {
+  if (year == 1980 && doy < 10) {
     debug = 0;
   }
   #endif
@@ -2305,7 +2318,7 @@ void soil_temperature(double airTemp, double pet, double aet, double biomass,
 	// calculate the new soil temperature for each layer
 	soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, avgLyrTempR, st->oldavgLyrTempR,
 		vwcR, st->wpR, st->fcR, st->bDensityR, csParam1, csParam2, shParam, ptr_stError,
-        surface_range, temperatureRangeR, st->depthsR);
+        surface_range, temperatureRangeR, st->depthsR, year, doy);
 
 	// question: should we ever reset delta_time to SEC_PER_DAY?
 

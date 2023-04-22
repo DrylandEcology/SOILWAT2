@@ -147,17 +147,18 @@ void get_co2effects_text(OutPeriod pd, SW_ALL* sw) {
 
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
+	TimeInt simyear = sw->Model.simyear;
 
 	if (pd) {} // hack to silence "-Wunused-parameter"
 
 	ForEachVegType(k) {
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS,
-			sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][SW_Model.simyear]);
+			sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][simyear]);
 		strcat(sw_outstr, str);
 	}
 	ForEachVegType(k) {
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS,
-			sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][SW_Model.simyear]);
+			sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][simyear]);
 		strcat(sw_outstr, str);
 	}
 }

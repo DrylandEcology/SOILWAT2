@@ -1164,7 +1164,8 @@ namespace
         nlyrs,
         SW_Site.lyr,
         SW_All.SoilWat.lyrFrozen,
-        maxCondroot, swp50, shapeCond, scale
+        maxCondroot, swp50, shapeCond, scale,
+        SW_All.Model.year, SW_All.Model.doy
       );
 
       // Expection: no hydred in top layer

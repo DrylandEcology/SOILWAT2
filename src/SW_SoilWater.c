@@ -341,7 +341,8 @@ static double itp_FXW_for_phi(double theta, double *swrcp) {
 /* --------------------------------------------------- */
 
 #ifdef SWDEBUG
-void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat)
+void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
+							SW_MODEL* SW_Model)
 {
 
   IntUS i, k;
@@ -364,7 +365,7 @@ void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat)
 
   // re-init static variables on first day of each simulation
   // to prevent carry-over
-  if (SW_Model.year == SW_Model.startyr && SW_Model.doy == SW_Model.firstdoy) {
+  if (SW_Model->year == SW_Model->startyr && SW_Model->doy == SW_Model->firstdoy) {
     surfaceWater_yesterday = 0.;
   }
 
@@ -434,7 +435,7 @@ void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat)
   }
 
   if (debug) {
-    snprintf(flag, sizeof flag, "WB (%d-%d)", SW_Model.year, SW_Model.doy);
+    snprintf(flag, sizeof flag, "WB (%d-%d)", SW_Model->year, SW_Model->doy);
   }
 
 
@@ -640,7 +641,7 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat)
     water flow, and check if swc is above threshold for "wet" condition.
 */
 void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					   SW_SOILWAT* SW_SoilWat) {
+					   SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model) {
 	/* =================================================== */
 
 
@@ -657,14 +658,14 @@ void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	 10/25/2010	(drs)	in SW_SWC_water_flow(): replaced test that "swc can't be adjusted on day 1 of year 1" to "swc can't be adjusted on start day of first year of simulation"
 	 */
 
-	if (SW_SoilWat->hist_use && !missing( SW_SoilWat->hist.swc[SW_Model.doy-1][1])) {
+	if (SW_SoilWat->hist_use && !missing( SW_SoilWat->hist.swc[SW_Model->doy-1][1])) {
 
-		if (!(SW_Model.doy == SW_Model.startstart && SW_Model.year == SW_Model.startyr)) {
+		if (!(SW_Model->doy == SW_Model->startstart && SW_Model->year == SW_Model->startyr)) {
 
       #ifdef SWDEBUG
       if (debug) swprintf("\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n");
       #endif
-      SW_SWC_adjust_swc(SW_Model.doy, SW_SoilWat->swcBulk, SW_SoilWat->hist);
+      SW_SWC_adjust_swc(SW_Model->doy, SW_SoilWat->swcBulk, SW_SoilWat->hist);
 
 		} else {
 			LogError(logfp, LOGWARN, "Attempt to set SWC on start day of first year of simulation disallowed.");
@@ -674,12 +675,12 @@ void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
     #ifdef SWDEBUG
     if (debug) swprintf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
     #endif
-		SW_Water_Flow(SW_VegProd, SW_Weather, SW_SoilWat);
+		SW_Water_Flow(SW_VegProd, SW_Weather, SW_SoilWat, SW_Model);
 	}
 
   #ifdef SWDEBUG
   if (debug) swprintf("\n'SW_SWC_water_flow': check water balance.\n");
-  SW_WaterBalance_Checks(SW_Weather, SW_SoilWat);
+  SW_WaterBalance_Checks(SW_Weather, SW_SoilWat, SW_Model);
 
   if (debug) swprintf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
   #endif
@@ -903,10 +904,9 @@ void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat) {
 @brief init first doy swc, either by the computed init value or by the last day of last
       year, which is also, coincidentally, Yesterday
 */
-void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat) {
+void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, TimeInt year) {
 
 	LyrIndex lyr;
-	TimeInt year = SW_Model.year;
 
   if (SW_Site.reset_yr) {
     _reset_swc(SW_SoilWat);
@@ -940,7 +940,7 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat) {
 @brief Like all of the other functions, read() reads in the setup parameters. See
       _read_swc_hist() for reading historical files.
 */
-void SW_SWC_read(SW_SOILWAT* SW_SoilWat) {
+void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr) {
 	/* =================================================== */
 	/* HISTORY
 	 *  1/25/02 - cwb - removed unused records of logfile and
@@ -987,7 +987,7 @@ void SW_SWC_read(SW_SOILWAT* SW_SoilWat) {
 		CloseFile(&f);
 		LogError(logfp, LOGFATAL, "%s : Invalid swc adjustment method.", MyFileName);
 	}
-	SW_SoilWat->hist.yr.last = SW_Model.endyr;
+	SW_SoilWat->hist.yr.last = endyr;
 	SW_SoilWat->hist.yr.total = SW_SoilWat->hist.yr.last - SW_SoilWat->hist.yr.first + 1;
 	CloseFile(&f);
 }
@@ -1134,6 +1134,7 @@ Equations based on SWAT2K routines. @cite Neitsch2005
 @param *snow Daily snow-water equivalent of snowfall (cm)
 @param *snowmelt  Daily snow-water equivalent of snowmelt (cm)
 @param snowpack[] swe of snowpack, assuming accumulation is turned on
+@param doy Current day in simulation
 
 @sideeffect *rain Updated daily rainfall (cm)
 @sideeffect *snow Updated snow-water equivalent of snowfall (cm)
@@ -1141,7 +1142,7 @@ Equations based on SWAT2K routines. @cite Neitsch2005
 */
 
 void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
-	RealD *snow, RealD *snowmelt, RealD snowpack[]) {
+	RealD *snow, RealD *snowmelt, RealD snowpack[], TimeInt doy) {
 
 /*************************************************************************************************
 History:
@@ -1152,8 +1153,7 @@ replaced SW_SWC_snow_accumulation, SW_SWC_snow_sublimation, and SW_SWC_snow_melt
 
     **************************************************************************************************/
 
-	RealD *snowpack_today = &snowpack[Today],
-		doy = SW_Model.doy, temp_ave,
+	RealD *snowpack_today = &snowpack[Today], temp_ave,
 		Rmelt, SnowAccu = 0., SnowMelt = 0.;
 
 	static RealD snow_cov = 1.;
