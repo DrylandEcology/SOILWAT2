@@ -67,7 +67,7 @@ namespace {
     int i;
 
     // Turn on soil temperature simulations
-    SW_Site.use_soil_temp = swTRUE;
+    SW_All.Site.use_soil_temp = swTRUE;
 
     // Run the simulation
     SW_CTL_main(&SW_All);
@@ -88,9 +88,9 @@ namespace {
     int i;
 
     // Turn on impermeability of first soil layer, runon, and runoff
-    SW_Site.lyr[0]->impermeability = 0.95;
-    SW_Site.percentRunoff = 0.5;
-    SW_Site.percentRunon = 1.25;
+    SW_All.Site.lyr[0]->impermeability = 0.95;
+    SW_All.Site.percentRunoff = 0.5;
+    SW_All.Site.percentRunon = 1.25;
 
     // Run the simulation
     SW_CTL_main(&SW_All);
@@ -176,13 +176,13 @@ namespace {
     LyrIndex s;
 
     // Set high gravel volume in all soil layers
-    ForEachSoilLayer(s)
+    ForEachSoilLayer(s, SW_All.Site.n_layers)
     {
-      SW_Site.lyr[s]->fractionVolBulk_gravel = 0.99;
+      SW_All.Site.lyr[s]->fractionVolBulk_gravel = 0.99;
     }
 
     // Re-calculate soils
-    SW_SIT_init_run(&SW_All.VegProd);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site);
 
     // Run the simulation
     SW_CTL_main(&SW_All);
@@ -206,7 +206,8 @@ namespace {
     SW_All.VegProd.veg_method = 1;
 
     // Re-calculate vegetation
-    SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
+    SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather, SW_All.Model.startyr,
+                    SW_All.Model.endyr, SW_All.Site.latitude);
 
     // Run the simulation
     SW_CTL_main(&SW_All);
@@ -226,20 +227,20 @@ namespace {
     int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)
-    strcpy(SW_Site.site_swrc_name, (char *) "vanGenuchten1980");
-    SW_Site.site_swrc_type = encode_str2swrc(SW_Site.site_swrc_name);
-    strcpy(SW_Site.site_ptf_name, (char *) "Rosetta3");
-    SW_Site.site_ptf_type = encode_str2ptf(SW_Site.site_ptf_name);
-    SW_Site.site_has_swrcp = swTRUE;
+    strcpy(SW_All.Site.site_swrc_name, (char *) "vanGenuchten1980");
+    SW_All.Site.site_swrc_type = encode_str2swrc(SW_All.Site.site_swrc_name);
+    strcpy(SW_All.Site.site_ptf_name, (char *) "Rosetta3");
+    SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
+    SW_All.Site.site_has_swrcp = swTRUE;
 
     Mem_Free(InFiles[eSWRCp]);
     InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in");
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read();
+    SW_SWRC_read(&SW_All.Site);
 
     // Update soils
-    SW_SIT_init_run(&SW_All.VegProd);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site);
 
     // Run the simulation
     SW_CTL_main(&SW_All);
@@ -261,20 +262,20 @@ namespace {
     int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)
-    strcpy(SW_Site.site_swrc_name, (char *) "FXW");
-    SW_Site.site_swrc_type = encode_str2swrc(SW_Site.site_swrc_name);
-    strcpy(SW_Site.site_ptf_name, (char *) "neuroFX2021");
-    SW_Site.site_ptf_type = encode_str2ptf(SW_Site.site_ptf_name);
-    SW_Site.site_has_swrcp = swTRUE;
+    strcpy(SW_All.Site.site_swrc_name, (char *) "FXW");
+    SW_All.Site.site_swrc_type = encode_str2swrc(SW_All.Site.site_swrc_name);
+    strcpy(SW_All.Site.site_ptf_name, (char *) "neuroFX2021");
+    SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
+    SW_All.Site.site_has_swrcp = swTRUE;
 
     Mem_Free(InFiles[eSWRCp]);
     InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in");
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read();
+    SW_SWRC_read(&SW_All.Site);
 
     // Update soils
-    SW_SIT_init_run(&SW_All.VegProd);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site);
 
     // Run the simulation
     SW_CTL_main(&SW_All);

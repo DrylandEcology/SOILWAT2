@@ -153,7 +153,6 @@ extern "C" {
 /* =================================================== */
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
-extern SW_SITE SW_Site;
 extern LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
 extern RealD _SWCInitVal, _SWCWetVal, _SWCMinVal;
 
@@ -224,28 +223,31 @@ void PTF_RawlsBrakensiek1985(
 
 RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
 RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel);
-LyrIndex nlayers_bsevap(void);
-void nlayers_vegroots(LyrIndex n_transp_lyrs[]);
+LyrIndex nlayers_bsevap(SW_LAYER_INFO** lyr, LyrIndex n_layers);
+void nlayers_vegroots(LyrIndex n_transp_lyrs[], LyrIndex n_layers,
+					  SW_LAYER_INFO** lyr);
 
-void SW_SIT_construct(void);
-void SW_SIT_deconstruct(void);
-void SW_SIT_init_counts(void);
-void SW_SIT_read(void);
-void SW_SIT_init_run(SW_VEGPROD* SW_VegProd);
-void _echo_inputs(void);
+void SW_SIT_construct(SW_SITE* SW_Site);
+void SW_SIT_deconstruct(SW_SITE* SW_Site);
+void SW_SIT_init_counts(SW_SITE* SW_Site);
+void SW_SIT_read(SW_SITE* SW_Site);
+void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site);
+void _echo_inputs(SW_SITE* SW_Site);
 
 /* these used to be in Layers */
-void SW_LYR_read(void);
-void SW_SWRC_read(void);
-void SW_SIT_clear_layers(void);
-LyrIndex _newlayer(void);
-void add_deepdrain_layer(void);
+void SW_LYR_read(SW_SITE* SW_Site);
+void SW_SWRC_read(SW_SITE* SW_Site);
+void SW_SIT_clear_layers(SW_SITE* SW_Site);
+LyrIndex _newlayer(SW_SITE* SW_Site);
+void add_deepdrain_layer(SW_SITE* SW_Site);
 
 void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
   RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
   RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp,
-  int nRegions, RealD *regionLowerBounds, SW_VEGPROD* SW_VegProd);
-void derive_soilRegions(int nRegions, RealD *regionLowerBounds);
+  int nRegions, RealD *regionLowerBounds, SW_VEGPROD* SW_VegProd,
+  SW_SITE* SW_Site);
+void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
+						RealD *regionLowerBounds);
 
 #ifdef DEBUG_MEM
 	void SW_SIT_SetMemoryRefs(void);

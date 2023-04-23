@@ -74,8 +74,6 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-SW_SITE SW_Site;
-
 
 /* transpiration regions  shallow, moderately shallow,  */
 /* deep and very deep. units are in layer numbers. */
@@ -1218,13 +1216,12 @@ RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel) {
 
   The count stops at first layer with 0.
 */
-LyrIndex nlayers_bsevap(void) {
-	SW_SITE *v = &SW_Site;
+LyrIndex nlayers_bsevap(SW_LAYER_INFO** lyr, LyrIndex n_layers) {
 	LyrIndex s, n = 0;
 
-	ForEachSoilLayer(s)
+	ForEachSoilLayer(s, n_layers)
 	{
-		if (GT(v->lyr[s]->evap_coeff, 0.0))
+		if (GT(lyr[s]->evap_coeff, 0.0))
 		{
 			n++;
 		} else{
@@ -1241,8 +1238,8 @@ LyrIndex nlayers_bsevap(void) {
 
   The count stops at first layer with 0 per vegetation type.
 */
-void nlayers_vegroots(LyrIndex n_transp_lyrs[]) {
-	SW_SITE *v = &SW_Site;
+void nlayers_vegroots(LyrIndex n_transp_lyrs[], LyrIndex n_layers,
+					  SW_LAYER_INFO** lyr) {
 	LyrIndex s;
 	int k;
 
@@ -1250,9 +1247,9 @@ void nlayers_vegroots(LyrIndex n_transp_lyrs[]) {
 	{
 		n_transp_lyrs[k] = 0;
 
-		ForEachSoilLayer(s)
+		ForEachSoilLayer(s, n_layers)
 		{
-			if (GT(v->lyr[s]->transp_coeff[k], 0.0)) {
+			if (GT(lyr[s]->transp_coeff[k], 0.0)) {
 				n_transp_lyrs[k]++;
 			} else {
 				break;
@@ -1265,27 +1262,27 @@ void nlayers_vegroots(LyrIndex n_transp_lyrs[]) {
 /**
   @brief Adds a dummy soil layer to handle deep drainage
 */
-void add_deepdrain_layer(void) {
+void add_deepdrain_layer(SW_SITE* SW_Site) {
 
-	if (SW_Site.deepdrain) {
+	if (SW_Site->deepdrain) {
 
 		/* check if deep drain dummy layer was already added */
-		if (SW_Site.deep_lyr == 0) {
+		if (SW_Site->deep_lyr == 0) {
 			/* `_newlayer()` sets n_layers */
-			LyrIndex s = _newlayer();
-			SW_Site.lyr[s]->width = 1.0;
+			LyrIndex s = _newlayer(SW_Site);
+			SW_Site->lyr[s]->width = 1.0;
 
 			/* sp->deepdrain indicates an extra (dummy) layer for deep drainage
 			* has been added, so n_layers really should be n_layers -1
 			* NOTE: deep_lyr is base0, n_layers is BASE1
 			*/
-			SW_Site.deep_lyr = --SW_Site.n_layers;
+			SW_Site->deep_lyr = --SW_Site->n_layers;
 		}
 
 	} else {
 
 		/* no deep drainage */
-		SW_Site.deep_lyr = 0;
+		SW_Site->deep_lyr = 0;
 	}
 }
 
@@ -1295,19 +1292,19 @@ void add_deepdrain_layer(void) {
  not initialized yet, malloc() required.  For each
  layer thereafter realloc() is called.
 */
-LyrIndex _newlayer(void) {
+LyrIndex _newlayer(SW_SITE* SW_Site) {
+	int n_layers = SW_Site->n_layers;
 
-	SW_SITE *v = &SW_Site;
-	v->n_layers++;
+	SW_Site->n_layers++;
 
-	v->lyr = (!v->lyr) /* if not yet defined */
-		? (SW_LAYER_INFO **) Mem_Calloc(v->n_layers, sizeof(SW_LAYER_INFO *), "_newlayer()") /* malloc() it  */
-		: (SW_LAYER_INFO **) Mem_ReAlloc(v->lyr, sizeof(SW_LAYER_INFO *) * (v->n_layers)); /* else realloc() */
+	SW_Site->lyr = (!SW_Site->lyr) /* if not yet defined */
+		? (SW_LAYER_INFO **) Mem_Calloc(SW_Site->n_layers, sizeof(SW_LAYER_INFO *), "_newlayer()") /* malloc() it  */
+		: (SW_LAYER_INFO **) Mem_ReAlloc(SW_Site->lyr, sizeof(SW_LAYER_INFO *) * (SW_Site->n_layers)); /* else realloc() */
 
-	v->lyr[v->n_layers - 1] = (SW_LAYER_INFO *) Mem_Calloc(1, sizeof(SW_LAYER_INFO), "_newlayer()");
-	v->lyr[v->n_layers - 1]->id = v->n_layers - 1;
+	SW_Site->lyr[n_layers] = (SW_LAYER_INFO *) Mem_Calloc(1, sizeof(SW_LAYER_INFO), "_newlayer()");
+	SW_Site->lyr[n_layers]->id = n_layers;
 
-	return v->n_layers - 1;
+	return n_layers;
 }
 
 /*static void _clear_layer(LyrIndex n) {
@@ -1328,30 +1325,29 @@ LyrIndex _newlayer(void) {
 			(better called clean() or something) will need to free all allocated
 			memory first before clearing structure.
 */
-void SW_SIT_construct(void) {
+void SW_SIT_construct(SW_SITE* SW_Site) {
 	/* =================================================== */
 
-	memset(&SW_Site, 0, sizeof(SW_Site));
-	SW_SIT_init_counts();
+	memset(SW_Site, 0, sizeof(SW_SITE));
+	SW_SIT_init_counts(SW_Site);
 }
 
 /**
 @brief Runs SW_SIT_clear_layers.
 */
-void SW_SIT_deconstruct(void)
+void SW_SIT_deconstruct(SW_SITE* SW_Site)
 {
-	SW_SIT_clear_layers();
+	SW_SIT_clear_layers(SW_Site);
 }
 
 /**
 @brief Reads in file for input values.
 */
-void SW_SIT_read(void) {
+void SW_SIT_read(SW_SITE* SW_Site) {
 	/* =================================================== */
 	/* 5-Feb-2002 (cwb) Removed rgntop requirement in
 	 *    transpiration regions section of input
 	 */
-	SW_SITE *v = &SW_Site;
 	SW_CARBON *c = &SW_Carbon;
 	FILE *f;
 	int lineno = 0, x,
@@ -1381,113 +1377,113 @@ void SW_SIT_read(void) {
 			_SWCWetVal = atof(inbuf);
 			break;
 		case 3:
-			v->reset_yr = itob(atoi(inbuf));
+			SW_Site->reset_yr = itob(atoi(inbuf));
 			break;
 		case 4:
-			v->deepdrain = itob(atoi(inbuf));
+			SW_Site->deepdrain = itob(atoi(inbuf));
 			break;
 		case 5:
-			v->pet_scale = atof(inbuf);
+			SW_Site->pet_scale = atof(inbuf);
 			break;
 		case 6:
-			v->percentRunoff = atof(inbuf);
+			SW_Site->percentRunoff = atof(inbuf);
 			break;
 		case 7:
-			v->percentRunon = atof(inbuf);
+			SW_Site->percentRunon = atof(inbuf);
 			break;
 		case 8:
-			v->TminAccu2 = atof(inbuf);
+			SW_Site->TminAccu2 = atof(inbuf);
 			break;
 		case 9:
-			v->TmaxCrit = atof(inbuf);
+			SW_Site->TmaxCrit = atof(inbuf);
 			break;
 		case 10:
-			v->lambdasnow = atof(inbuf);
+			SW_Site->lambdasnow = atof(inbuf);
 			break;
 		case 11:
-			v->RmeltMin = atof(inbuf);
+			SW_Site->RmeltMin = atof(inbuf);
 			break;
 		case 12:
-			v->RmeltMax = atof(inbuf);
+			SW_Site->RmeltMax = atof(inbuf);
 			break;
 		case 13:
-			v->slow_drain_coeff = atof(inbuf);
+			SW_Site->slow_drain_coeff = atof(inbuf);
 			break;
 		case 14:
-			v->evap.xinflec = atof(inbuf);
+			SW_Site->evap.xinflec = atof(inbuf);
 			break;
 		case 15:
-			v->evap.slope = atof(inbuf);
+			SW_Site->evap.slope = atof(inbuf);
 			break;
 		case 16:
-			v->evap.yinflec = atof(inbuf);
+			SW_Site->evap.yinflec = atof(inbuf);
 			break;
 		case 17:
-			v->evap.range = atof(inbuf);
+			SW_Site->evap.range = atof(inbuf);
 			break;
 		case 18:
-			v->transp.xinflec = atof(inbuf);
+			SW_Site->transp.xinflec = atof(inbuf);
 			break;
 		case 19:
-			v->transp.slope = atof(inbuf);
+			SW_Site->transp.slope = atof(inbuf);
 			break;
 		case 20:
-			v->transp.yinflec = atof(inbuf);
+			SW_Site->transp.yinflec = atof(inbuf);
 			break;
 		case 21:
-			v->transp.range = atof(inbuf);
+			SW_Site->transp.range = atof(inbuf);
 			break;
 		case 22:
 			// longitude is currently not used by the code, but may be used in the future
 			// it is present in the `siteparam.in` input file to completely document
 			// site location
-			v->longitude = atof(inbuf) * deg_to_rad;
+			SW_Site->longitude = atof(inbuf) * deg_to_rad;
 			break;
 		case 23:
-			v->latitude = atof(inbuf) * deg_to_rad;
+			SW_Site->latitude = atof(inbuf) * deg_to_rad;
 			break;
 		case 24:
-			v->altitude = atof(inbuf);
+			SW_Site->altitude = atof(inbuf);
 			break;
 		case 25:
-			v->slope = atof(inbuf) * deg_to_rad;
+			SW_Site->slope = atof(inbuf) * deg_to_rad;
 			break;
 		case 26:
 			tmp = atof(inbuf);
-			v->aspect = missing(tmp) ? tmp : tmp * deg_to_rad;
+			SW_Site->aspect = missing(tmp) ? tmp : tmp * deg_to_rad;
 			break;
 		case 27:
-			v->bmLimiter = atof(inbuf);
+			SW_Site->bmLimiter = atof(inbuf);
 			break;
 		case 28:
-			v->t1Param1 = atof(inbuf);
+			SW_Site->t1Param1 = atof(inbuf);
 			break;
 		case 29:
-			v->t1Param2 = atof(inbuf);
+			SW_Site->t1Param2 = atof(inbuf);
 			break;
 		case 30:
-			v->t1Param3 = atof(inbuf);
+			SW_Site->t1Param3 = atof(inbuf);
 			break;
 		case 31:
-			v->csParam1 = atof(inbuf);
+			SW_Site->csParam1 = atof(inbuf);
 			break;
 		case 32:
-			v->csParam2 = atof(inbuf);
+			SW_Site->csParam2 = atof(inbuf);
 			break;
 		case 33:
-			v->shParam = atof(inbuf);
+			SW_Site->shParam = atof(inbuf);
 			break;
 		case 34:
-			v->Tsoil_constant = atof(inbuf);
+			SW_Site->Tsoil_constant = atof(inbuf);
 			break;
 		case 35:
-			v->stDeltaX = atof(inbuf);
+			SW_Site->stDeltaX = atof(inbuf);
 			break;
 		case 36:
-			v->stMaxDepth = atof(inbuf);
+			SW_Site->stMaxDepth = atof(inbuf);
 			break;
 		case 37:
-			v->use_soil_temp = itob(atoi(inbuf));
+			SW_Site->use_soil_temp = itob(atoi(inbuf));
 			break;
 		case 38:
 			c->use_bio_mult = itob(atoi(inbuf));
@@ -1508,25 +1504,25 @@ void SW_SIT_read(void) {
 			#endif
 			break;
 		case 41:
-			v->type_soilDensityInput = atoi(inbuf);
+			SW_Site->type_soilDensityInput = atoi(inbuf);
 			break;
 		case 42:
-			strcpy(v->site_swrc_name, inbuf);
-			v->site_swrc_type = encode_str2swrc(v->site_swrc_name);
+			strcpy(SW_Site->site_swrc_name, inbuf);
+			SW_Site->site_swrc_type = encode_str2swrc(SW_Site->site_swrc_name);
 			break;
 		case 43:
-			strcpy(v->site_ptf_name, inbuf);
-			v->site_ptf_type = encode_str2ptf(v->site_ptf_name);
+			strcpy(SW_Site->site_ptf_name, inbuf);
+			SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
 			break;
 		case 44:
-			v->site_has_swrcp = itob(atoi(inbuf));
+			SW_Site->site_has_swrcp = itob(atoi(inbuf));
 			break;
 
 		default:
 			if (lineno > 44 + MAX_TRANSP_REGIONS)
 				break; /* skip extra lines */
 
-			if (MAX_TRANSP_REGIONS < v->n_transp_rgn) {
+			if (MAX_TRANSP_REGIONS < SW_Site->n_transp_rgn) {
 				too_many_regions = swTRUE;
 				goto Label_End_Read;
 			}
@@ -1536,7 +1532,7 @@ void SW_SIT_read(void) {
 				LogError(logfp, LOGFATAL, "%s : Bad record %d.\n", MyFileName, lineno);
 			}
 			_TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
-			v->n_transp_rgn++;
+			SW_Site->n_transp_rgn++;
 		}
 
 		lineno++;
@@ -1546,23 +1542,23 @@ void SW_SIT_read(void) {
 
 	CloseFile(&f);
 
-	if (LT(v->percentRunoff, 0.) || GT(v->percentRunoff, 1.)) {
+	if (LT(SW_Site->percentRunoff, 0.) || GT(SW_Site->percentRunoff, 1.)) {
 		LogError(
 			logfp,
 			LOGFATAL,
 			"%s : proportion of ponded surface water removed as daily"
 			"runoff = %f (value ranges between 0 and 1)\n",
-			MyFileName, v->percentRunoff
+			MyFileName, SW_Site->percentRunoff
 		);
 	}
 
-	if (LT(v->percentRunon, 0.)) {
+	if (LT(SW_Site->percentRunon, 0.)) {
 		LogError(
 			logfp,
 			LOGFATAL,
 			"%s : proportion of water that arrives at surface added "
 			"as daily runon = %f (value ranges between 0 and +inf)\n",
-			MyFileName, v->percentRunon
+			MyFileName, SW_Site->percentRunon
 		);
 	}
 
@@ -1572,12 +1568,12 @@ void SW_SIT_read(void) {
 			LOGFATAL,
 			"%s : Number of transpiration regions"
 			" exceeds maximum allowed (%d > %d)\n",
-			MyFileName, v->n_transp_rgn, MAX_TRANSP_REGIONS
+			MyFileName, SW_Site->n_transp_rgn, MAX_TRANSP_REGIONS
 		);
 	}
 
 	/* check for any discontinuities (reversals) in the transpiration regions */
-	for (r = 1; r < v->n_transp_rgn; r++) {
+	for (r = 1; r < SW_Site->n_transp_rgn; r++) {
 		if (_TranspRgnBounds[r - 1] >= _TranspRgnBounds[r]) {
 			LogError(
 				logfp,
@@ -1595,11 +1591,10 @@ void SW_SIT_read(void) {
 
 		@note Previously, the function was static and named `_read_layers()`.
 */
-void SW_LYR_read(void) {
+void SW_LYR_read(SW_SITE* SW_Site) {
 	/* =================================================== */
 	/* 5-Feb-2002 (cwb) removed dmin requirement in input file */
 
-	SW_SITE *v = &SW_Site;
 	FILE *f;
 	LyrIndex lyrno;
 	int x, k;
@@ -1612,7 +1607,7 @@ void SW_LYR_read(void) {
 	f = OpenFile(MyFileName, "r");
 
 	while (GetALine(f, inbuf)) {
-		lyrno = _newlayer();
+		lyrno = _newlayer(SW_Site);
 
 		x = sscanf(
 			inbuf,
@@ -1640,24 +1635,24 @@ void SW_LYR_read(void) {
 			);
 		}
 
-		v->lyr[lyrno]->width = dmax - dmin;
+		SW_Site->lyr[lyrno]->width = dmax - dmin;
 
 		/* checks for valid values now carried out by `SW_SIT_init_run()` */
 
 		dmin = dmax;
-		v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel;
-		v->lyr[lyrno]->soilDensityInput = soildensity;
-		v->lyr[lyrno]->evap_coeff = evco;
+		SW_Site->lyr[lyrno]->fractionVolBulk_gravel = f_gravel;
+		SW_Site->lyr[lyrno]->soilDensityInput = soildensity;
+		SW_Site->lyr[lyrno]->evap_coeff = evco;
 
 		ForEachVegType(k)
 		{
-			v->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
+			SW_Site->lyr[lyrno]->transp_coeff[k] = trco_veg[k];
 		}
 
-		v->lyr[lyrno]->fractionWeightMatric_sand = psand;
-		v->lyr[lyrno]->fractionWeightMatric_clay = pclay;
-		v->lyr[lyrno]->impermeability = imperm;
-		v->lyr[lyrno]->avgLyrTemp = soiltemp;
+		SW_Site->lyr[lyrno]->fractionWeightMatric_sand = psand;
+		SW_Site->lyr[lyrno]->fractionWeightMatric_clay = pclay;
+		SW_Site->lyr[lyrno]->impermeability = imperm;
+		SW_Site->lyr[lyrno]->avgLyrTemp = soiltemp;
 
 		if (lyrno >= MAX_LAYERS) {
 			CloseFile(&f);
@@ -1711,6 +1706,7 @@ void SW_LYR_read(void) {
     `lowerBounds[0]`.
   @param[in] SW_VegProd Struct of type SW_VEGPROD describing surface cover of
   					the SOILWAT2 simulation run
+  @param[in] SW_Site
 
   @sideeffect After deleting any previous data in the soil layer array
     SW_Site.lyr, it creates new soil layers based on the argument inputs.
@@ -1722,63 +1718,63 @@ void SW_LYR_read(void) {
 void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
   RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
   RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp,
-  int nRegions, RealD *regionLowerBounds, SW_VEGPROD* SW_VegProd)
+  int nRegions, RealD *regionLowerBounds, SW_VEGPROD* SW_VegProd,
+  SW_SITE* SW_Site)
 {
 
   RealF dmin = 0.0;
-  SW_SITE *v = &SW_Site;
 
   LyrIndex lyrno;
   unsigned int i, k;
 
   // De-allocate and delete previous soil layers and reset counters
-  SW_SIT_clear_layers();
-  SW_SIT_init_counts();
+  SW_SIT_clear_layers(SW_Site);
+  SW_SIT_init_counts(SW_Site);
 
   // Create new soil
   for (i = 0; i < nlyrs; i++)
   {
     // Create the next soil layer
-    lyrno = _newlayer();
+    lyrno = _newlayer(SW_Site);
 
-    v->lyr[lyrno]->width = dmax[i] - dmin;
+    SW_Site->lyr[lyrno]->width = dmax[i] - dmin;
     dmin = dmax[i];
-    v->lyr[lyrno]->soilDensityInput = bd[i];
-    v->type_soilDensityInput = SW_BULK;
-    v->lyr[lyrno]->fractionVolBulk_gravel = f_gravel[i];
-    v->lyr[lyrno]->evap_coeff = evco[i];
+    SW_Site->lyr[lyrno]->soilDensityInput = bd[i];
+    SW_Site->type_soilDensityInput = SW_BULK;
+    SW_Site->lyr[lyrno]->fractionVolBulk_gravel = f_gravel[i];
+    SW_Site->lyr[lyrno]->evap_coeff = evco[i];
 
     ForEachVegType(k)
     {
       switch (k)
       {
         case SW_TREES:
-          v->lyr[lyrno]->transp_coeff[k] = trco_tree[i];
+          SW_Site->lyr[lyrno]->transp_coeff[k] = trco_tree[i];
           break;
         case SW_SHRUB:
-          v->lyr[lyrno]->transp_coeff[k] = trco_shrub[i];
+          SW_Site->lyr[lyrno]->transp_coeff[k] = trco_shrub[i];
           break;
         case SW_FORBS:
-          v->lyr[lyrno]->transp_coeff[k] = trco_forb[i];
+          SW_Site->lyr[lyrno]->transp_coeff[k] = trco_forb[i];
           break;
         case SW_GRASS:
-          v->lyr[lyrno]->transp_coeff[k] = trco_grass[i];
+          SW_Site->lyr[lyrno]->transp_coeff[k] = trco_grass[i];
           break;
       }
     }
 
-    v->lyr[lyrno]->fractionWeightMatric_sand = psand[i];
-    v->lyr[lyrno]->fractionWeightMatric_clay = pclay[i];
-    v->lyr[lyrno]->impermeability = imperm[i];
-    v->lyr[lyrno]->avgLyrTemp = soiltemp[i];
+    SW_Site->lyr[lyrno]->fractionWeightMatric_sand = psand[i];
+    SW_Site->lyr[lyrno]->fractionWeightMatric_clay = pclay[i];
+    SW_Site->lyr[lyrno]->impermeability = imperm[i];
+    SW_Site->lyr[lyrno]->avgLyrTemp = soiltemp[i];
   }
 
 
   // Guess soil transpiration regions
-  derive_soilRegions(nRegions, regionLowerBounds);
+  derive_soilRegions(SW_Site, nRegions, regionLowerBounds);
 
   // Re-initialize site parameters based on new soil layers
-  SW_SIT_init_run(SW_VegProd);
+  SW_SIT_init_run(SW_VegProd, SW_Site);
 }
 
 
@@ -1786,6 +1782,7 @@ void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
 /**
   @brief Resets soil regions based on input parameters.
 
+  @param[in,out] SW_Site Struct of type SW_SITE describing the site in question
   @param nRegions The number of transpiration regions to create. Must be between
     1 and \ref MAX_TRANSP_REGIONS.
   @param[in] regionLowerBounds Array of size \p nRegions containing the lower
@@ -1803,9 +1800,9 @@ void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
     input parameters are `(4, { 10, 20, 40 })`, but there is a soil layer from
     41 to 60 cm, it will be placed in `_TranspRgnBounds[4]`.
 */
-void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
+void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
+						RealD *regionLowerBounds){
 	int i, j;
-	SW_SITE *v = &SW_Site;
 	RealD totalDepth = 0;
 	LyrIndex layer, UNDEFINED_LAYER = 999;
 
@@ -1831,9 +1828,9 @@ void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 		// Find the layer that pushes us out of the region.
 		// It becomes the bound.
 		while(totalDepth < regionLowerBounds[i] &&
-		      layer < v->n_layers &&
-		      sum_across_vegtypes(v->lyr[layer]->transp_coeff)) {
-			totalDepth += v->lyr[layer]->width;
+		      layer < SW_Site->n_layers &&
+		      sum_across_vegtypes(SW_Site->lyr[layer]->transp_coeff)) {
+			totalDepth += SW_Site->lyr[layer]->width;
 			_TranspRgnBounds[i] = layer;
 			layer++;
 		}
@@ -1852,10 +1849,10 @@ void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 	}
 
 	/* -------------- Derive n_transp_rgn --------------- */
-	v->n_transp_rgn = 0;
-	while(v->n_transp_rgn < MAX_TRANSP_REGIONS &&
-	      _TranspRgnBounds[v->n_transp_rgn] != UNDEFINED_LAYER) {
-		v->n_transp_rgn++;
+	SW_Site->n_transp_rgn = 0;
+	while(SW_Site->n_transp_rgn < MAX_TRANSP_REGIONS &&
+	      _TranspRgnBounds[SW_Site->n_transp_rgn] != UNDEFINED_LAYER) {
+		SW_Site->n_transp_rgn++;
 	}
 }
 
@@ -1863,10 +1860,10 @@ void derive_soilRegions(int nRegions, RealD *regionLowerBounds){
 
 /** Obtain soil water retention curve parameters from disk
 */
-void SW_SWRC_read(void) {
+void SW_SWRC_read(SW_SITE* SW_Site) {
 
 	/* Don't read values from disk if they will be estimated via a PTF */
-	if (!SW_Site.site_has_swrcp) return;
+	if (!SW_Site->site_has_swrcp) return;
 
 	FILE *f;
 	LyrIndex lyrno = 0, k;
@@ -1904,20 +1901,20 @@ void SW_SWRC_read(void) {
 		}
 
 		/* Check that we are within `SW_Site.n_layers` */
-		if (lyrno >= SW_Site.n_layers) {
+		if (lyrno >= SW_Site->n_layers) {
 			CloseFile(&f);
 			LogError(
 				logfp,
 				LOGFATAL,
 				"%s : Number of layers with SWRC parameters (%d) "
 				"must match number of soil layers (%d)\n",
-				MyFileName, lyrno + 1, SW_Site.n_layers
+				MyFileName, lyrno + 1, SW_Site->n_layers
 			);
 		}
 
 		/* Copy values into structure */
 		for (k = 0; k < SWRC_PARAM_NMAX; k++) {
-			SW_Site.lyr[lyrno]->swrcp[k] = tmp_swrcp[k];
+			SW_Site->lyr[lyrno]->swrcp[k] = tmp_swrcp[k];
 		}
 
 		lyrno++;
@@ -1943,10 +1940,11 @@ void SW_SWRC_read(void) {
 
 	@param SW_VegProd Struct of type SW_VEGPROD describing surface cover of
 				      a SOILWAT2 simulation run
+	@param SW_Site Struct of type SW_SITE describing the site in question
 
 	@sideeffect Values stored in global variable `SW_Site`.
 */
-void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
+void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site) {
 	/* =================================================== */
 	/* potentially this routine can be called whether the
 	 * layer data came from a file or a function call which
@@ -1955,7 +1953,6 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 	/* 5-Mar-2002 (cwb) added normalization for ev and tr coefficients */
 	/* 1-Oct-03 (cwb) removed sum_evap_coeff and sum_transp_coeff  */
 
-	SW_SITE *sp = &SW_Site;
 	SW_LAYER_INFO *lyr;
 	LyrIndex s, r, curregion;
 	int k, flagswpcrit = 0;
@@ -1969,39 +1966,39 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 
 	/* Determine number of layers with potential for
 		 bare-soil evaporation and transpiration */
-	sp->n_evap_lyrs = nlayers_bsevap();
-	nlayers_vegroots(sp->n_transp_lyrs);
+	SW_Site->n_evap_lyrs = nlayers_bsevap(SW_Site->lyr, SW_Site->n_layers);
+	nlayers_vegroots(SW_Site->n_transp_lyrs, SW_Site->n_layers, SW_Site->lyr);
 
 
 	/* Manage deep drainage */
-	add_deepdrain_layer();
+	add_deepdrain_layer(SW_Site);
 
 
 	/* Check compatibility between selected SWRC and PTF */
-	if (!sp->site_has_swrcp) {
-		if (!check_SWRC_vs_PTF(sp->site_swrc_name, sp->site_ptf_name)) {
+	if (!SW_Site->site_has_swrcp) {
+		if (!check_SWRC_vs_PTF(SW_Site->site_swrc_name, SW_Site->site_ptf_name)) {
 			LogError(
 				logfp,
 				LOGFATAL,
 				"Selected PTF '%s' is incompatible with selected SWRC '%s'\n",
-				sp->site_ptf_name,
-				sp->site_swrc_name
+				SW_Site->site_ptf_name,
+				SW_Site->site_swrc_name
 			);
 		}
 	}
 
 
 	/* Loop over soil layers check variables and calculate parameters */
-	ForEachSoilLayer(s)
+	ForEachSoilLayer(s, SW_Site->n_layers)
 	{
-		lyr = sp->lyr[s];
+		lyr = SW_Site->lyr[s];
 
 		/* Copy site-level SWRC/PTF information to each layer:
 		   We currently allow specifying one SWRC/PTF for a site for all layers;
 		   remove in the future if we allow SWRC/PTF to vary by soil layer
 		*/
-		lyr->swrc_type = sp->site_swrc_type;
-		lyr->ptf_type = sp->site_ptf_type;
+		lyr->swrc_type = SW_Site->site_swrc_type;
+		lyr->ptf_type = SW_Site->site_ptf_type;
 
 
 		/* Check soil properties for valid values */
@@ -2016,7 +2013,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 
 
 		/* Update soil density depending on inputs */
-		switch (SW_Site.type_soilDensityInput) {
+		switch (SW_Site->type_soilDensityInput) {
 
 			case SW_BULK:
 				lyr->soilBulk_density = lyr->soilDensityInput;
@@ -2043,14 +2040,14 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 				logfp,
 				LOGFATAL,
 				"Soil density type not recognized",
-				SW_Site.type_soilDensityInput
+				SW_Site->type_soilDensityInput
 			);
 		}
 
 
 
 
-		if (!sp->site_has_swrcp) {
+		if (!SW_Site->site_has_swrcp) {
 			/* Use pedotransfer function PTF
 			   to estimate parameters of soil water retention curve (SWRC) for layer.
 			   If `has_swrcp`, then parameters already obtained from disk
@@ -2242,7 +2239,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 			 * is in and check validity of result. Region bounds are
 			 * base1 but s is base0.*/
 			curregion = 0;
-			ForEachTranspRegion(r)
+			ForEachTranspRegion(r, SW_Site->n_transp_rgn)
 			{
 				if (s < _TranspRgnBounds[r]) {
 					if (ZRO(lyr->transp_coeff[k]))
@@ -2254,12 +2251,12 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 
 			if (curregion || _TranspRgnBounds[curregion] == 0) {
 				lyr->my_transp_rgn[k] = curregion;
-				sp->n_transp_lyrs[k] = max(sp->n_transp_lyrs[k], s);
+				SW_Site->n_transp_lyrs[k] = max(SW_Site->n_transp_lyrs[k], s);
 
 			} else if (s == 0) {
 				LogError(logfp, LOGFATAL, "%s : Top soil layer must be included\n"
 						"  in %s tranpiration regions.\n", SW_F_name(eSite), key2veg[k]);
-			} else if (r < sp->n_transp_rgn) {
+			} else if (r < SW_Site->n_transp_rgn) {
 				LogError(logfp, LOGFATAL, "%s : Transpiration region %d \n"
 						"  is deeper than the deepest layer with a\n"
 						"  %s transpiration coefficient > 0 (%d) in '%s'.\n"
@@ -2277,9 +2274,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 			using adjusted `SWPcrit`
 	*/
 	if (flagswpcrit) {
-		ForEachSoilLayer(s)
+		ForEachSoilLayer(s, SW_Site->n_layers)
 		{
-			lyr = sp->lyr[s];
+			lyr = SW_Site->lyr[s];
 
 			ForEachVegType(k)
 			{
@@ -2326,15 +2323,15 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 			evsum
 		);
 
-		ForEachEvapLayer(s)
+		ForEachEvapLayer(s, SW_Site->n_evap_lyrs)
 		{
-			SW_Site.lyr[s]->evap_coeff /= evsum;
+			SW_Site->lyr[s]->evap_coeff /= evsum;
 			LogError(
 				logfp,
 				LOGNOTE,
 				"  Layer %2d : %.4f",
-				SW_Site.lyr[s]->id + 1,
-				SW_Site.lyr[s]->evap_coeff
+				SW_Site->lyr[s]->id + 1,
+				SW_Site->lyr[s]->evap_coeff
 			);
 		}
 
@@ -2354,17 +2351,17 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 				MyFileName, key2veg[k], trsum_veg[k]
 			);
 
-			ForEachSoilLayer(s)
+			ForEachSoilLayer(s, SW_Site->n_layers)
 			{
-				if (GT(SW_Site.lyr[s]->transp_coeff[k], 0.))
+				if (GT(SW_Site->lyr[s]->transp_coeff[k], 0.))
 				{
-					SW_Site.lyr[s]->transp_coeff[k] /= trsum_veg[k];
+					SW_Site->lyr[s]->transp_coeff[k] /= trsum_veg[k];
 					LogError(
 						logfp,
 						LOGNOTE,
 						"  Layer %2d : %.4f",
-						SW_Site.lyr[s]->id + 1,
-						SW_Site.lyr[s]->transp_coeff[k]
+						SW_Site->lyr[s]->id + 1,
+						SW_Site->lyr[s]->transp_coeff[k]
 					);
 				}
 			}
@@ -2374,10 +2371,10 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 	}
 
 	// getting the number of regressions, for use in the soil_temperature function
-	sp->stNRGR = (sp->stMaxDepth / sp->stDeltaX) - 1;
-	Bool too_many_RGR = (Bool) (sp->stNRGR + 1 >= MAX_ST_RGR);
+	SW_Site->stNRGR = (SW_Site->stMaxDepth / SW_Site->stDeltaX) - 1;
+	Bool too_many_RGR = (Bool) (SW_Site->stNRGR + 1 >= MAX_ST_RGR);
 
-	if (!EQ(fmod(sp->stMaxDepth, sp->stDeltaX), 0.0) || too_many_RGR) {
+	if (!EQ(fmod(SW_Site->stMaxDepth, SW_Site->stDeltaX), 0.0) || too_many_RGR) {
 
 		if (too_many_RGR)
 		{ // because we will use loops such `for (i = 0; i <= nRgr + 1; i++)`
@@ -2401,15 +2398,15 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 		}
 
 		// resets it to the default values
-		sp->stMaxDepth = 180.0;
-		sp->stNRGR = 11;
-		sp->stDeltaX = 15.0;
+		SW_Site->stMaxDepth = 180.0;
+		SW_Site->stNRGR = 11;
+		SW_Site->stDeltaX = 15.0;
 	}
 
 
 	if (EchoInits)
 	{
-		_echo_inputs();
+		_echo_inputs(SW_Site);
 	}
 }
 
@@ -2417,98 +2414,95 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd) {
 @brief For multiple runs with the shared library, the need to remove the allocated
 			soil layers arises to avoid leaks. (rjm 2013)
 */
-void SW_SIT_clear_layers(void) {
-	SW_SITE *s = &SW_Site;
+void SW_SIT_clear_layers(SW_SITE* SW_Site) {
 	LyrIndex i, j;
 
-	j = SW_Site.n_layers;
+	j = SW_Site->n_layers;
 
-	if (s->deepdrain && s->deep_lyr > 0) {
+	if (SW_Site->deepdrain && SW_Site->deep_lyr > 0) {
 		j++;
 	}
 
 	for (i = 0; i < j; i++) {
-		free(s->lyr[i]);
-		s->lyr[i] = NULL;
+		free(SW_Site->lyr[i]);
+		SW_Site->lyr[i] = NULL;
 	}
-	free(s->lyr);
-	s->lyr = NULL;
+	free(SW_Site->lyr);
+	SW_Site->lyr = NULL;
 }
 
 
 /**
 	@brief Reset counts of `SW_Site` to zero
 */
-void SW_SIT_init_counts(void) {
+void SW_SIT_init_counts(SW_SITE* SW_Site) {
 	int k;
-	SW_SITE *s = &SW_Site;
 
 	// Reset counts
-	s->n_layers = 0;
-	s->n_evap_lyrs = 0;
-	s->deep_lyr = 0;
-	s->n_transp_rgn = 0;
+	SW_Site->n_layers = 0;
+	SW_Site->n_evap_lyrs = 0;
+	SW_Site->deep_lyr = 0;
+	SW_Site->n_transp_rgn = 0;
 
 	ForEachVegType(k)
 	{
-		s->n_transp_lyrs[k] = 0;
+		SW_Site->n_transp_lyrs[k] = 0;
 	}
 }
 
 /**
 @brief Print site-parameters and soil characteristics.
 */
-void _echo_inputs(void) {
+void _echo_inputs(SW_SITE* SW_Site) {
 	/* =================================================== */
-	SW_SITE *s = &SW_Site;
 	LyrIndex i;
 
 	LogError(logfp, LOGNOTE, "\n\n=====================================================\n"
 			"Site Related Parameters:\n"
 			"---------------------\n");
 	LogError(logfp, LOGNOTE, "  Site File: %s\n", SW_F_name(eSite));
-	LogError(logfp, LOGNOTE, "  Reset SWC values each year: %s\n", (s->reset_yr) ? "swTRUE" : "swFALSE");
-	LogError(logfp, LOGNOTE, "  Use deep drainage reservoir: %s\n", (s->deepdrain) ? "swTRUE" : "swFALSE");
-	LogError(logfp, LOGNOTE, "  Slow Drain Coefficient: %5.4f\n", s->slow_drain_coeff);
-	LogError(logfp, LOGNOTE, "  PET Scale: %5.4f\n", s->pet_scale);
-	LogError(logfp, LOGNOTE, "  Runoff: proportion of surface water lost: %5.4f\n", s->percentRunoff);
-	LogError(logfp, LOGNOTE, "  Runon: proportion of new surface water gained: %5.4f\n", s->percentRunon);
-	LogError(logfp, LOGNOTE, "  Longitude (degree): %4.2f\n", s->longitude * rad_to_deg);
-	LogError(logfp, LOGNOTE, "  Latitude (degree): %4.2f\n", s->latitude * rad_to_deg);
-	LogError(logfp, LOGNOTE, "  Altitude (m a.s.l.): %4.2f \n", s->altitude);
-	LogError(logfp, LOGNOTE, "  Slope (degree): %4.2f\n", s->slope * rad_to_deg);
-	LogError(logfp, LOGNOTE, "  Aspect (degree): %4.2f\n", s->aspect * rad_to_deg);
+	LogError(logfp, LOGNOTE, "  Reset SWC values each year: %s\n", (SW_Site->reset_yr) ? "swTRUE" : "swFALSE");
+	LogError(logfp, LOGNOTE, "  Use deep drainage reservoir: %s\n", (SW_Site->deepdrain) ? "swTRUE" : "swFALSE");
+	LogError(logfp, LOGNOTE, "  Slow Drain Coefficient: %5.4f\n", SW_Site->slow_drain_coeff);
+	LogError(logfp, LOGNOTE, "  PET Scale: %5.4f\n", SW_Site->pet_scale);
+	LogError(logfp, LOGNOTE, "  Runoff: proportion of surface water lost: %5.4f\n", SW_Site->percentRunoff);
+	LogError(logfp, LOGNOTE, "  Runon: proportion of new surface water gained: %5.4f\n", SW_Site->percentRunon);
+	LogError(logfp, LOGNOTE, "  Longitude (degree): %4.2f\n", SW_Site->longitude * rad_to_deg);
+	LogError(logfp, LOGNOTE, "  Latitude (degree): %4.2f\n", SW_Site->latitude * rad_to_deg);
+	LogError(logfp, LOGNOTE, "  Altitude (m a.s.l.): %4.2f \n", SW_Site->altitude);
+	LogError(logfp, LOGNOTE, "  Slope (degree): %4.2f\n", SW_Site->slope * rad_to_deg);
+	LogError(logfp, LOGNOTE, "  Aspect (degree): %4.2f\n", SW_Site->aspect * rad_to_deg);
 
 	LogError(logfp, LOGNOTE, "\nSnow simulation parameters (SWAT2K model):\n----------------------\n");
-	LogError(logfp, LOGNOTE, "  Avg. air temp below which ppt is snow ( C): %5.4f\n", s->TminAccu2);
-	LogError(logfp, LOGNOTE, "  Snow temperature at which snow melt starts ( C): %5.4f\n", s->TmaxCrit);
-	LogError(logfp, LOGNOTE, "  Relative contribution of avg. air temperature to todays snow temperture vs. yesterday's snow temperature (0-1): %5.4f\n", s->lambdasnow);
-	LogError(logfp, LOGNOTE, "  Minimum snow melt rate on winter solstice (cm/day/C): %5.4f\n", s->RmeltMin);
-	LogError(logfp, LOGNOTE, "  Maximum snow melt rate on summer solstice (cm/day/C): %5.4f\n", s->RmeltMax);
+	LogError(logfp, LOGNOTE, "  Avg. air temp below which ppt is snow ( C): %5.4f\n", SW_Site->TminAccu2);
+	LogError(logfp, LOGNOTE, "  Snow temperature at which snow melt starts ( C): %5.4f\n", SW_Site->TmaxCrit);
+	LogError(logfp, LOGNOTE, "  Relative contribution of avg. air temperature to todays snow temperture vs. yesterday's snow temperature (0-1): %5.4f\n", SW_Site->lambdasnow);
+	LogError(logfp, LOGNOTE, "  Minimum snow melt rate on winter solstice (cm/day/C): %5.4f\n", SW_Site->RmeltMin);
+	LogError(logfp, LOGNOTE, "  Maximum snow melt rate on summer solstice (cm/day/C): %5.4f\n", SW_Site->RmeltMax);
 
 	LogError(logfp, LOGNOTE, "\nSoil Temperature Constants:\n----------------------\n");
-	LogError(logfp, LOGNOTE, "  Biomass Limiter constant: %5.4f\n", s->bmLimiter);
-	LogError(logfp, LOGNOTE, "  T1Param1: %5.4f\n", s->t1Param1);
-	LogError(logfp, LOGNOTE, "  T1Param2: %5.4f\n", s->t1Param2);
-	LogError(logfp, LOGNOTE, "  T1Param3: %5.4f\n", s->t1Param3);
-	LogError(logfp, LOGNOTE, "  csParam1: %5.4f\n", s->csParam1);
-	LogError(logfp, LOGNOTE, "  csParam2: %5.4f\n", s->csParam2);
-	LogError(logfp, LOGNOTE, "  shParam: %5.4f\n", s->shParam);
-	LogError(logfp, LOGNOTE, "  Tsoil_constant: %5.4f\n", s->Tsoil_constant);
-	LogError(logfp, LOGNOTE, "  deltaX: %5.4f\n", s->stDeltaX);
-	LogError(logfp, LOGNOTE, "  max depth: %5.4f\n", s->stMaxDepth);
-	LogError(logfp, LOGNOTE, "  Make soil temperature calculations: %s\n", (s->use_soil_temp) ? "swTRUE" : "swFALSE");
-	LogError(logfp, LOGNOTE, "  Number of regressions for the soil temperature function: %d\n", s->stNRGR);
+	LogError(logfp, LOGNOTE, "  Biomass Limiter constant: %5.4f\n", SW_Site->bmLimiter);
+	LogError(logfp, LOGNOTE, "  T1Param1: %5.4f\n", SW_Site->t1Param1);
+	LogError(logfp, LOGNOTE, "  T1Param2: %5.4f\n", SW_Site->t1Param2);
+	LogError(logfp, LOGNOTE, "  T1Param3: %5.4f\n", SW_Site->t1Param3);
+	LogError(logfp, LOGNOTE, "  csParam1: %5.4f\n", SW_Site->csParam1);
+	LogError(logfp, LOGNOTE, "  csParam2: %5.4f\n", SW_Site->csParam2);
+	LogError(logfp, LOGNOTE, "  shParam: %5.4f\n", SW_Site->shParam);
+	LogError(logfp, LOGNOTE, "  Tsoil_constant: %5.4f\n", SW_Site->Tsoil_constant);
+	LogError(logfp, LOGNOTE, "  deltaX: %5.4f\n", SW_Site->stDeltaX);
+	LogError(logfp, LOGNOTE, "  max depth: %5.4f\n", SW_Site->stMaxDepth);
+	LogError(logfp, LOGNOTE, "  Make soil temperature calculations: %s\n", (SW_Site->use_soil_temp) ? "swTRUE" : "swFALSE");
+	LogError(logfp, LOGNOTE, "  Number of regressions for the soil temperature function: %d\n", SW_Site->stNRGR);
 
 	LogError(logfp, LOGNOTE, "\nLayer Related Values:\n----------------------\n");
 	LogError(logfp, LOGNOTE, "  Soils File: %s\n", SW_F_name(eLayers));
-	LogError(logfp, LOGNOTE, "  Number of soil layers: %d\n", s->n_layers);
-	LogError(logfp, LOGNOTE, "  Number of evaporation layers: %d\n", s->n_evap_lyrs);
-	LogError(logfp, LOGNOTE, "  Number of forb transpiration layers: %d\n", s->n_transp_lyrs[SW_FORBS]);
-	LogError(logfp, LOGNOTE, "  Number of tree transpiration layers: %d\n", s->n_transp_lyrs[SW_TREES]);
-	LogError(logfp, LOGNOTE, "  Number of shrub transpiration layers: %d\n", s->n_transp_lyrs[SW_SHRUB]);
-	LogError(logfp, LOGNOTE, "  Number of grass transpiration layers: %d\n", s->n_transp_lyrs[SW_GRASS]);
-	LogError(logfp, LOGNOTE, "  Number of transpiration regions: %d\n", s->n_transp_rgn);
+	LogError(logfp, LOGNOTE, "  Number of soil layers: %d\n", SW_Site->n_layers);
+	LogError(logfp, LOGNOTE, "  Number of evaporation layers: %d\n", SW_Site->n_evap_lyrs);
+	LogError(logfp, LOGNOTE, "  Number of forb transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_FORBS]);
+	LogError(logfp, LOGNOTE, "  Number of tree transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_TREES]);
+	LogError(logfp, LOGNOTE, "  Number of shrub transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_SHRUB]);
+	LogError(logfp, LOGNOTE, "  Number of grass transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_GRASS]);
+	LogError(logfp, LOGNOTE, "  Number of transpiration regions: %d\n", SW_Site->n_transp_rgn);
 
 	LogError(logfp, LOGNOTE, "\nLayer Specific Values:\n----------------------\n");
 	LogError(logfp, LOGNOTE, "\n  Layer information on a per centimeter depth basis:\n");
@@ -2518,18 +2512,18 @@ void _echo_inputs(void) {
 			"       (cm)   (g/cm^3)  (prop)    (cm/cm)  (cm/cm)   (prop) (prop)  (cm/cm)			(cm/cm)                (cm/cm)            		(cm/cm)         (prop)    (prop)      (prop)     (prop)    (prop)        (int)           (int) 	      	(int) 	    (int) 	    (cm/cm)  (cm/cm)  (cm/cm)  (cm/cm)      (frac)\n");
 	LogError(logfp, LOGNOTE,
 			"  --- -----   ------    ------     ------   ------   -----  ------   ------                	-------			------            		------          ------    ------      ------      ------   ------       ------   	 -----	        -----       -----   	 ----     ----     ----    ----         ----\n");
-	ForEachSoilLayer(i)
+	ForEachSoilLayer(i, SW_Site->n_layers)
 	{
 		LogError(logfp, LOGNOTE,
 				"  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f %9.2f %9.2f %9.2f %9.2f %9.2f %10d %10d %15d %15d %15.4f %9.4f %9.4f %9.4f %9.4f\n",
-				i + 1, s->lyr[i]->width, s->lyr[i]->soilBulk_density, s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_fieldcap / s->lyr[i]->width,
-				s->lyr[i]->swcBulk_wiltpt / s->lyr[i]->width, s->lyr[i]->fractionWeightMatric_sand, s->lyr[i]->fractionWeightMatric_clay,
-				s->lyr[i]->swcBulk_atSWPcrit[SW_FORBS] / s->lyr[i]->width, s->lyr[i]->swcBulk_atSWPcrit[SW_TREES] / s->lyr[i]->width,
-				s->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB] / s->lyr[i]->width, s->lyr[i]->swcBulk_atSWPcrit[SW_GRASS] / s->lyr[i]->width, s->lyr[i]->evap_coeff,
-				s->lyr[i]->transp_coeff[SW_FORBS], s->lyr[i]->transp_coeff[SW_TREES], s->lyr[i]->transp_coeff[SW_SHRUB], s->lyr[i]->transp_coeff[SW_GRASS], s->lyr[i]->my_transp_rgn[SW_FORBS],
-				s->lyr[i]->my_transp_rgn[SW_TREES], s->lyr[i]->my_transp_rgn[SW_SHRUB], s->lyr[i]->my_transp_rgn[SW_GRASS], s->lyr[i]->swcBulk_wet / s->lyr[i]->width,
-				s->lyr[i]->swcBulk_min / s->lyr[i]->width, s->lyr[i]->swcBulk_init / s->lyr[i]->width, s->lyr[i]->swcBulk_saturated / s->lyr[i]->width,
-				s->lyr[i]->impermeability);
+				i + 1, SW_Site->lyr[i]->width, SW_Site->lyr[i]->soilBulk_density, SW_Site->lyr[i]->fractionVolBulk_gravel, SW_Site->lyr[i]->swcBulk_fieldcap / SW_Site->lyr[i]->width,
+				SW_Site->lyr[i]->swcBulk_wiltpt / SW_Site->lyr[i]->width, SW_Site->lyr[i]->fractionWeightMatric_sand, SW_Site->lyr[i]->fractionWeightMatric_clay,
+				SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_FORBS] / SW_Site->lyr[i]->width, SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_TREES] / SW_Site->lyr[i]->width,
+				SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB] / SW_Site->lyr[i]->width, SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_GRASS] / SW_Site->lyr[i]->width, SW_Site->lyr[i]->evap_coeff,
+				SW_Site->lyr[i]->transp_coeff[SW_FORBS], SW_Site->lyr[i]->transp_coeff[SW_TREES], SW_Site->lyr[i]->transp_coeff[SW_SHRUB], SW_Site->lyr[i]->transp_coeff[SW_GRASS], SW_Site->lyr[i]->my_transp_rgn[SW_FORBS],
+				SW_Site->lyr[i]->my_transp_rgn[SW_TREES], SW_Site->lyr[i]->my_transp_rgn[SW_SHRUB], SW_Site->lyr[i]->my_transp_rgn[SW_GRASS], SW_Site->lyr[i]->swcBulk_wet / SW_Site->lyr[i]->width,
+				SW_Site->lyr[i]->swcBulk_min / SW_Site->lyr[i]->width, SW_Site->lyr[i]->swcBulk_init / SW_Site->lyr[i]->width, SW_Site->lyr[i]->swcBulk_saturated / SW_Site->lyr[i]->width,
+				SW_Site->lyr[i]->impermeability);
 
 	}
 	LogError(logfp, LOGNOTE, "\n  Actual per-layer values:\n");
@@ -2540,12 +2534,12 @@ void _echo_inputs(void) {
 	LogError(logfp, LOGNOTE,
 			"  --- -----  -------	------   ------   ------ ------ ------   ------        	------            	------          ----   		----     ----     ----    ----		----\n");
 
-	ForEachSoilLayer(i)
+	ForEachSoilLayer(i, SW_Site->n_layers)
 	{
-		LogError(logfp, LOGNOTE, "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %8.4f %7.4f %5.4f\n", i + 1, s->lyr[i]->width,
-				s->lyr[i]->soilBulk_density, s->lyr[i]->fractionVolBulk_gravel, s->lyr[i]->swcBulk_fieldcap, s->lyr[i]->swcBulk_wiltpt, s->lyr[i]->fractionWeightMatric_sand,
-				s->lyr[i]->fractionWeightMatric_clay, s->lyr[i]->swcBulk_atSWPcrit[SW_FORBS], s->lyr[i]->swcBulk_atSWPcrit[SW_TREES], s->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB],
-				s->lyr[i]->swcBulk_atSWPcrit[SW_GRASS], s->lyr[i]->swcBulk_wet, s->lyr[i]->swcBulk_min, s->lyr[i]->swcBulk_init, s->lyr[i]->swcBulk_saturated, s->lyr[i]->avgLyrTemp);
+		LogError(logfp, LOGNOTE, "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %8.4f %7.4f %5.4f\n", i + 1, SW_Site->lyr[i]->width,
+				SW_Site->lyr[i]->soilBulk_density, SW_Site->lyr[i]->fractionVolBulk_gravel, SW_Site->lyr[i]->swcBulk_fieldcap, SW_Site->lyr[i]->swcBulk_wiltpt, SW_Site->lyr[i]->fractionWeightMatric_sand,
+				SW_Site->lyr[i]->fractionWeightMatric_clay, SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_FORBS], SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_TREES], SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB],
+				SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_GRASS], SW_Site->lyr[i]->swcBulk_wet, SW_Site->lyr[i]->swcBulk_min, SW_Site->lyr[i]->swcBulk_init, SW_Site->lyr[i]->swcBulk_saturated, SW_Site->lyr[i]->avgLyrTemp);
 	}
 
 	LogError(logfp, LOGNOTE, "\n  Water Potential values:\n");
@@ -2555,22 +2549,22 @@ void _echo_inputs(void) {
 	LogError(logfp, LOGNOTE,
 			"  ---       -----------      ------------      -----------      -----------      -----------      -----------      -----------    -----------    --------------    --------------\n");
 
-	ForEachSoilLayer(i)
+	ForEachSoilLayer(i, SW_Site->n_layers)
 	{
 		LogError(
 			logfp,
 			LOGNOTE,
 			"  %3d   %15.4f   %15.4f  %15.4f %15.4f  %15.4f  %15.4f  %15.4f   %15.4f   %15.4f\n",
 			i + 1,
-			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_fieldcap, s->lyr[i]),
-			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_wiltpt, s->lyr[i]),
-			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_atSWPcrit[SW_FORBS], s->lyr[i]),
-			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_atSWPcrit[SW_TREES], s->lyr[i]),
-			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB], s->lyr[i]),
-			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB], s->lyr[i]),
-			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_atSWPcrit[SW_GRASS], s->lyr[i]),
-			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_min, s->lyr[i]),
-			SW_SWRC_SWCtoSWP(s->lyr[i]->swcBulk_init, s->lyr[i])
+			SW_SWRC_SWCtoSWP(SW_Site->lyr[i]->swcBulk_fieldcap, SW_Site->lyr[i]),
+			SW_SWRC_SWCtoSWP(SW_Site->lyr[i]->swcBulk_wiltpt, SW_Site->lyr[i]),
+			SW_SWRC_SWCtoSWP(SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_FORBS], SW_Site->lyr[i]),
+			SW_SWRC_SWCtoSWP(SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_TREES], SW_Site->lyr[i]),
+			SW_SWRC_SWCtoSWP(SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB], SW_Site->lyr[i]),
+			SW_SWRC_SWCtoSWP(SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_SHRUB], SW_Site->lyr[i]),
+			SW_SWRC_SWCtoSWP(SW_Site->lyr[i]->swcBulk_atSWPcrit[SW_GRASS], SW_Site->lyr[i]),
+			SW_SWRC_SWCtoSWP(SW_Site->lyr[i]->swcBulk_min, SW_Site->lyr[i]),
+			SW_SWRC_SWCtoSWP(SW_Site->lyr[i]->swcBulk_init, SW_Site->lyr[i])
 		);
 	}
 
@@ -2583,15 +2577,15 @@ void _echo_inputs(void) {
 		logfp,
 		LOGNOTE,
 		"  SWRC type: %d (%s)\n",
-		s->site_swrc_type,
-		s->site_swrc_name
+		SW_Site->site_swrc_type,
+		SW_Site->site_swrc_name
 	);
 	LogError(
 		logfp,
 		LOGNOTE,
 		"  PTF type: %d (%s)\n",
-		s->site_ptf_type,
-		s->site_ptf_name
+		SW_Site->site_ptf_type,
+		SW_Site->site_ptf_name
 	);
 
 	LogError(
@@ -2599,19 +2593,19 @@ void _echo_inputs(void) {
 		LOGNOTE,
 		"  Lyr     Param1     Param2     Param3     Param4     Param5     Param6\n"
 	);
-	ForEachSoilLayer(i)
+	ForEachSoilLayer(i, SW_Site->n_layers)
 	{
 		LogError(
 			logfp,
 			LOGNOTE,
 			"  %3d%11.4f%11.4f%11.4f%11.4f%11.4f%11.4f\n",
 			i + 1,
-			s->lyr[i]->swrcp[0],
-			s->lyr[i]->swrcp[1],
-			s->lyr[i]->swrcp[2],
-			s->lyr[i]->swrcp[3],
-			s->lyr[i]->swrcp[4],
-			s->lyr[i]->swrcp[5]
+			SW_Site->lyr[i]->swrcp[0],
+			SW_Site->lyr[i]->swrcp[1],
+			SW_Site->lyr[i]->swrcp[2],
+			SW_Site->lyr[i]->swrcp[3],
+			SW_Site->lyr[i]->swrcp[4],
+			SW_Site->lyr[i]->swrcp[5]
 		);
 	}
 

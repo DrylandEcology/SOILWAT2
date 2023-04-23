@@ -178,13 +178,12 @@ typedef IntUS OutPeriod;
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */
 /* Note the loop var must be declared as LyrIndex */
-#define ForEachSoilLayer(i)     for((i)=0; (i) < SW_Site.n_layers;      (i)++)
-#define ForEachEvapLayer(i)     for((i)=0; (i) < SW_Site.n_evap_lyrs;   (i)++)
-#define ForEachTreeTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_TREES]; (i)++)
-#define ForEachShrubTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_SHRUB]; (i)++)
-#define ForEachGrassTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_GRASS]; (i)++)
-#define ForEachForbTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_FORBS]; (i)++)
-#define ForEachTranspRegion(r)  for((r)=0; (r) < SW_Site.n_transp_rgn;  (r)++)
+#define ForEachSoilLayer(i, n_layers)     for((i)=0; (i) < (n_layers);      (i)++)
+#define ForEachEvapLayer(i, n_evap_lyrs)     for((i)=0; (i) < (n_evap_lyrs);   (i)++)
+#ifdef STEPWAT
+#define ForEachTranspLayer(i, n_transp_lyrs, veg_index)   for((i)=0; (i) < (n_transp_lyrs)[(veg_index)]; (i)++)
+#endif
+#define ForEachTranspRegion(r, n_transp_rgn)  for((r)=0; (r) < ((unsigned int)n_transp_rgn);  (r)++)
 #define ForEachVegType(k)  for ((k) = 0; (k) < NVEGTYPES; (k)++)
 #define ForEachVegTypeBottomUp(k)  for ((k) = NVEGTYPES - 1; (k) >= 0; (k)--)
 /* define m as Months */

@@ -579,15 +579,13 @@ void SW_VPD_construct(SW_VEGPROD* SW_VegProd) {
 
 
 void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					 TimeInt startyr, TimeInt endyr) {
+					 TimeInt startyr, TimeInt endyr, RealD site_latitude) {
     TimeInt year;
     int k, veg_method;
 
-    SW_SITE *site = &SW_Site;
-
     veg_method = SW_VegProd->veg_method;
 
-    double latitude = site->latitude;
+    double latitude = site_latitude;
 
     /* Set co2-multipliers to default */
     for (year = 0; year < MAX_NYEAR; year++)

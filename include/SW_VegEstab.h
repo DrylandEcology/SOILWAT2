@@ -40,14 +40,15 @@ void SW_VES_read(void);
 void SW_VES_read2(Bool use_VegEstab, Bool consider_InputFlag);
 void SW_VES_construct(void);
 void SW_VES_deconstruct(void);
-void SW_VES_init_run(void);
+void SW_VES_init_run(SW_LAYER_INFO** site_lyr, LyrIndex site_n_transp_lyrs[]);
 void SW_VegEstab_construct(void);
 void SW_VES_checkestab(SW_WEATHER* SW_Weather, RealD swcBulk[][MAX_LAYERS],
 					   TimeInt doy, TimeInt firstdoy);
 void SW_VES_new_year(void);
-void _spp_init(unsigned int sppnum);
+void _spp_init(unsigned int sppnum, SW_LAYER_INFO** lyr,
+			   LyrIndex n_transp_lyrs[]);
 unsigned int _new_species(void);
-void _echo_VegEstab(void);
+void _echo_VegEstab(SW_LAYER_INFO** lyr);
 
 
 /* COMMENT-1

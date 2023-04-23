@@ -442,18 +442,18 @@ namespace {
     RealD help;
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
-    help = SW_Site.lyr[n1]->evap_coeff;
-    SW_Site.lyr[n1]->evap_coeff = -0.5;
+    help = SW_All.Site.lyr[n1]->evap_coeff;
+    SW_All.Site.lyr[n1]->evap_coeff = -0.5;
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd),
+      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site),
       "'bare-soil evaporation coefficient' has an invalid value"
     );
-    SW_Site.lyr[n1]->evap_coeff = help;
+    SW_All.Site.lyr[n1]->evap_coeff = help;
 
     // Check error for bad transpiration coefficient (should be [0-1])
-    SW_Site.lyr[n2]->transp_coeff[k] = 1.5;
+    SW_All.Site.lyr[n2]->transp_coeff[k] = 1.5;
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd),
+      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site),
       "'transpiration coefficient' has an invalid value"
     );
 
@@ -484,13 +484,13 @@ namespace {
     // Check that "default" values do not change region bounds
     nRegions = 3;
     RealD regionLowerBounds1[] = {20., 40., 100.};
-    derive_soilRegions(nRegions, regionLowerBounds1);
+    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds1);
 
     for (i = 0; i < nRegions; ++i) {
       // Quickly calculate soil depth for current region as output information
       soildepth = 0.;
       for (id = 0; id <= _TranspRgnBounds[i]; ++id) {
-        soildepth += SW_Site.lyr[id]->width;
+        soildepth += SW_All.Site.lyr[id]->width;
       }
 
       EXPECT_EQ(prev_TranspRgnBounds[i], _TranspRgnBounds[i]) <<
@@ -502,18 +502,18 @@ namespace {
     // Check that setting one region for all soil layers works
     nRegions = 1;
     RealD regionLowerBounds2[] = {100.};
-    derive_soilRegions(nRegions, regionLowerBounds2);
+    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds2);
 
     for (i = 0; i < nRegions; ++i) {
-      EXPECT_EQ(SW_Site.n_layers - 1, _TranspRgnBounds[i]) <<
+      EXPECT_EQ(SW_All.Site.n_layers - 1, _TranspRgnBounds[i]) <<
         "for a single transpiration region across all soil layers";
     }
 
 
     // Check that setting one region for one soil layer works
     nRegions = 1;
-    RealD regionLowerBounds3[] = {SW_Site.lyr[0]->width};
-    derive_soilRegions(nRegions, regionLowerBounds3);
+    RealD regionLowerBounds3[] = {SW_All.Site.lyr[0]->width};
+    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds3);
 
     for (i = 0; i < nRegions; ++i) {
       EXPECT_EQ(0, _TranspRgnBounds[i]) <<
@@ -527,10 +527,10 @@ namespace {
     // Example: one region each for the topmost soil layers
     soildepth = 0.;
     for (i = 0; i < nRegions; ++i) {
-      soildepth += SW_Site.lyr[i]->width;
+      soildepth += SW_All.Site.lyr[i]->width;
       regionLowerBounds4[i] = soildepth;
     }
-    derive_soilRegions(nRegions, regionLowerBounds4);
+    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds4);
 
     for (i = 0; i < nRegions; ++i) {
       EXPECT_EQ(i, _TranspRgnBounds[i]) <<
@@ -591,24 +591,24 @@ namespace {
 
 
     // Inputs represent matric density
-    SW_Site.type_soilDensityInput = SW_MATRIC;
-    SW_Site.lyr[0]->fractionVolBulk_gravel = fcoarse;
-    SW_SIT_init_run(&SW_All.VegProd);
+    SW_All.Site.type_soilDensityInput = SW_MATRIC;
+    SW_All.Site.lyr[0]->fractionVolBulk_gravel = fcoarse;
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site);
 
     EXPECT_GT(
-      SW_Site.lyr[0]->soilBulk_density,
-      SW_Site.lyr[0]->soilMatric_density
+      SW_All.Site.lyr[0]->soilBulk_density,
+      SW_All.Site.lyr[0]->soilMatric_density
     );
 
 
     // Inputs represent bulk density
-    SW_Site.type_soilDensityInput = SW_BULK;
-    SW_Site.lyr[0]->fractionVolBulk_gravel = fcoarse;
-    SW_SIT_init_run(&SW_All.VegProd);
+    SW_All.Site.type_soilDensityInput = SW_BULK;
+    SW_All.Site.lyr[0]->fractionVolBulk_gravel = fcoarse;
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site);
 
     EXPECT_GT(
-      SW_Site.lyr[0]->soilBulk_density,
-      SW_Site.lyr[0]->soilMatric_density
+      SW_All.Site.lyr[0]->soilBulk_density,
+      SW_All.Site.lyr[0]->soilMatric_density
     );
 
 
@@ -628,10 +628,10 @@ namespace {
 
 
     // Check error if type_soilDensityInput not implemented
-    SW_Site.type_soilDensityInput = SW_MISSING;
+    SW_All.Site.type_soilDensityInput = SW_MISSING;
 
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd),
+      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site),
       "Soil density type not recognized"
     );
 

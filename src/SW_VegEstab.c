@@ -64,7 +64,8 @@ static char *MyFileName;
 /* =================================================== */
 /*             Private Function Declarations           */
 /* --------------------------------------------------- */
-static void _sanity_check(unsigned int sppnum);
+static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
+						  LyrIndex n_transp_lyrs[]);
 static void _read_spp(const char *infile);
 static void _checkit(TimeInt doy, unsigned int sppnum, SW_WEATHER_NOW* wn,
 					 RealD swcBulk[][MAX_LAYERS], TimeInt firstdoy);
@@ -253,15 +254,15 @@ void SW_VegEstab_construct(void)
 		* species establishment parameters are read from file by `SW_VES_read()`
 		* soil layers are initialized by `SW_SIT_init_run()`
 */
-void SW_VES_init_run(void) {
+void SW_VES_init_run(SW_LAYER_INFO** site_lyr, LyrIndex site_n_transp_lyrs[]) {
 	IntU i;
 
 	for (i = 0; i < SW_VegEstab.count; i++) {
-		_spp_init(i);
+		_spp_init(i, site_lyr, site_n_transp_lyrs);
 	}
 
 	if (EchoInits) {
-		_echo_VegEstab();
+		_echo_VegEstab(site_lyr);
 	}
 }
 
@@ -474,11 +475,14 @@ static void _read_spp(const char *infile) {
 			other function call.
 
 @param sppnum Index for which paramater is beign initialized.
+@param **lyr Struct list of type SW_LAYER_INFO holding information about
+	every soil layer in the simulation
+@param n_transp_lyrs Layer index of deepest transp. region.
 */
-void _spp_init(unsigned int sppnum) {
+void _spp_init(unsigned int sppnum, SW_LAYER_INFO** lyr,
+			   LyrIndex n_transp_lyrs[]) {
 
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
-	SW_LAYER_INFO **lyr = SW_Site.lyr;
 	IntU i;
 
 	/* The thetas and psis etc should be initialized by now */
@@ -495,13 +499,13 @@ void _spp_init(unsigned int sppnum) {
 	}
 	v->min_swc_estab /= v->estab_lyrs;
 
-	_sanity_check(sppnum);
+	_sanity_check(sppnum, lyr, n_transp_lyrs);
 
 }
 
-static void _sanity_check(unsigned int sppnum) {
+static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
+						  LyrIndex n_transp_lyrs[]) {
 	/* =================================================== */
-	SW_LAYER_INFO **lyr = SW_Site.lyr;
 	SW_VEGESTAB_INFO *v = SW_VegEstab.parms[sppnum];
 
 	double mean_wiltpt;
@@ -518,7 +522,7 @@ static void _sanity_check(unsigned int sppnum) {
 		);
 	}
 
-	if (v->estab_lyrs > SW_Site.n_transp_lyrs[v->vegType]) {
+	if (v->estab_lyrs > n_transp_lyrs[v->vegType]) {
 		LogError(
 			logfp,
 			LOGFATAL,
@@ -527,7 +531,7 @@ static void _sanity_check(unsigned int sppnum) {
 			MyFileName,
 			v->sppname,
 			v->estab_lyrs,
-			SW_Site.n_transp_lyrs[v->vegType]
+			n_transp_lyrs[v->vegType]
 		);
 	}
 
@@ -610,10 +614,9 @@ unsigned int _new_species(void) {
 /**
 @brief Text output for VegEstab.
 */
-void _echo_VegEstab(void) {
+void _echo_VegEstab(SW_LAYER_INFO** lyr) {
 	/* --------------------------------------------------- */
 	SW_VEGESTAB_INFO **v = SW_VegEstab.parms;
-	SW_LAYER_INFO **lyr = SW_Site.lyr;
 	IntU i;
 	char outstr[2048];
 

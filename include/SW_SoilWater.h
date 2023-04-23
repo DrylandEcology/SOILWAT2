@@ -63,21 +63,25 @@ typedef enum {
 /* --------------------------------------------------- */
 void SW_SWC_construct(SW_SOILWAT* SW_SoilWat);
 void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat);
-void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, TimeInt year);
-void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr);
-void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat);
+void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year);
+void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
+				 LyrIndex n_layers);
+void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site);
 void _read_swc_hist(TimeInt year, SW_SOILWAT_HIST SoilWat_hist);
 void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					   SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model);
+					   SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model, SW_SITE* SW_Site);
 void calculate_repartitioned_soilwater(SW_VEGPROD* SW_VegProd,
-									   SW_SOILWAT* SW_SoilWat);
+	SW_SOILWAT* SW_SoilWat, SW_LAYER_INFO** lyr, LyrIndex n_layers);
 void SW_SWC_adjust_swc(TimeInt doy, RealD swcBulk[][MAX_LAYERS],
-					   SW_SOILWAT_HIST SoilWat_hist);
-void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
-	RealD *snow, RealD *snowmelt, RealD snowpack[], TimeInt doy);
+					   SW_SOILWAT_HIST SoilWat_hist, SW_LAYER_INFO** site_lyr,
+					   LyrIndex n_layers);
+void SW_SWC_adjust_snow(SW_SITE* SW_Site, RealD temp_min, RealD temp_max,
+	RealD ppt, RealD *rain, RealD *snow, RealD *snowmelt, RealD snowpack[],
+	TimeInt doy);
 RealD SW_SWC_snowloss(RealD pet, RealD *snowpack);
 RealD SW_SnowDepth(RealD SWE, RealD snowdensity);
-void SW_SWC_end_day(RealD swcBulk[][MAX_LAYERS], RealD snowpack[]);
+void SW_SWC_end_day(RealD swcBulk[][MAX_LAYERS], RealD snowpack[],
+					LyrIndex n_layers);
 void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd,
 		RealF swa_master[][NVEGTYPES][MAX_LAYERS],
 		RealF dSWA_repart_sum[][MAX_LAYERS]);
@@ -143,7 +147,7 @@ double SWRC_SWPtoSWC_FXW(
 
 #ifdef SWDEBUG
 void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
-							SW_MODEL* SW_Model);
+							SW_MODEL* SW_Model, SW_SITE* SW_Site);
 #endif
 
 #ifdef DEBUG_MEM

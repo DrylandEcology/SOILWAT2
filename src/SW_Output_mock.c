@@ -63,14 +63,22 @@ char const *pd2longstr[] = {"SW_MISSING"};
 /*             Global Function Definitions             */
 /*             (declared in SW_Output.h)               */
 /* --------------------------------------------------- */
-void SW_OUT_set_colnames(void)
-{}
+void SW_OUT_set_colnames(int tLayers)
+{
+	(void) tLayers; // Silence compiler
+}
 
-void SW_OUT_set_ncol(void)
-{}
+void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs)
+{
+	/* Silence compiler */
+	(void) tLayers;
+	(void) n_evap_lyrs;
+}
 
-void SW_OUT_construct(void)
-{}
+void SW_OUT_construct(LyrIndex tLayers)
+{
+	(void) tLayers; // Silence compiler
+}
 
 void SW_OUT_deconstruct(Bool full_reset)
 {
@@ -97,8 +105,9 @@ void SW_OUT_flush(SW_ALL* sw)
 {
 	_collect_values(sw);
 }
+
 void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					  SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model)
+					  SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model, SW_SITE* SW_Site)
 {
 	ObjType x = otyp;
 	if (x == eF) {}
@@ -108,6 +117,7 @@ void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weath
 	(void) SW_Weather;
 	(void) SW_SoilWat;
 	(void) SW_Model;
+	(void) SW_Site;
 }
 
 void SW_OUT_write_today(SW_ALL* sw)
@@ -323,18 +333,20 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 
 static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 						SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
-						SW_MODEL* SW_Model)
+						SW_MODEL* SW_Model, SW_SITE* SW_Site)
 {
 	if (pd == eSW_Day) {}
-	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather, SW_SoilWat, SW_Model);
+	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather, SW_SoilWat,
+					 SW_Model, SW_Site);
 }
 
 static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
 						 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
-						 SW_MODEL* SW_Model)
+						 SW_MODEL* SW_Model, SW_SITE* SW_Site)
 {
 	if (op == eSW_Day) {}
-	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather, SW_SoilWat, SW_Model);
+	SW_OUT_sum_today(otyp, SW_VegProd, SW_Weather, SW_SoilWat,
+					 SW_Model, SW_Site);
 }
 
 /**
@@ -390,8 +402,11 @@ void _echo_outputs(SW_ALL* sw)
 
 	ObjType otyp = eF;
 
-	average_for(otyp, pd, &sw->VegProd, &sw->Weather, &sw->SoilWat, &sw->Model);
-	collect_sums(otyp, pd, &sw->VegProd, &sw->Weather, &sw->SoilWat, &sw->Model);
+	average_for(otyp, pd, &sw->VegProd, &sw->Weather, &sw->SoilWat,
+				&sw->Model, &sw->Site);
+
+	collect_sums(otyp, pd, &sw->VegProd, &sw->Weather, &sw->SoilWat,
+				&sw->Model, &sw->Site);
 }
 
 

@@ -68,7 +68,7 @@ double cutZeroInf(double testValue);
 void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTwoSize,
                    int *finalIndexArray, int *finalIndexArraySize);
 void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					 TimeInt startyr, TimeInt endyr);
+					 TimeInt startyr, TimeInt endyr, RealD site_latitude);
 void SW_VPD_deconstruct(SW_VEGPROD* SW_VegProd);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
 RealD sum_across_vegtypes(RealD *x);

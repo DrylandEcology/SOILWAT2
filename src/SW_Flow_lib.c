@@ -342,12 +342,16 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
         to represent shallow, mid, & deep depths to compute transpiration rate.
 @param tr_coeff  Transpiration coefficient for each layer.
 @param swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
+	in the simulation
 
 @sideeffect *swp_avg Weighted average of soilwater potential and transpiration coefficients (-bar).
 
 */
 
-void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n_layers, unsigned int tr_regions[], double tr_coeff[], double swc[]) {
+void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, LyrIndex n_layers,
+						 unsigned int tr_regions[], double tr_coeff[], double swc[],
+						 SW_LAYER_INFO** lyr) {
 	/**********************************************************************
 
 	 HISTORY:
@@ -379,7 +383,7 @@ void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n
 
 		for (i = 0; i < n_layers; i++) {
 			if (tr_regions[i] == r) {
-				swp += tr_coeff[i] * SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
+				swp += tr_coeff[i] * SW_SWRC_SWCtoSWP(swc[i], lyr[i]);
 				sumco += tr_coeff[i];
 			}
 		}
@@ -449,6 +453,8 @@ Based on equations from Parton 1978. @cite Parton1978
 @param swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param Es_param_limit Parameter to determine when soil surface is completely covered with
     litter and that bare soil evaporation is inhibited.
+@param **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
+	in the simulation
 
 @sideeffect *bserate Updated bare soil evaporation loss rate (cm/day).
 
@@ -456,7 +462,7 @@ Based on equations from Parton 1978. @cite Parton1978
 
 void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double totagb,
   double fbse, double petday, double shift, double shape, double inflec, double range,
-		double width[], double swc[], double Es_param_limit) {
+		double width[], double swc[], double Es_param_limit, SW_LAYER_INFO** lyr) {
 	/**********************************************************************
 	 HISTORY:
 	 4/30/92  (SLC)
@@ -491,7 +497,7 @@ void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double
 	  }
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
-		avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
+		avswp += x * SW_SWRC_SWCtoSWP(swc[i], lyr[i]);
 	}
 
   // Note: avswp = 0 if swc = 0 because that is the return value of SW_SWRC_SWCtoSWP
@@ -505,7 +511,8 @@ void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double
 	if (GE(totagb, Es_param_limit) || ZRO(avswp)) {
 		*bserate = 0.;
 	} else {
-		*bserate = petday * watrate(avswp, petday, shift, shape, inflec, range) * (1. - (totagb / Es_param_limit)) * fbse;
+		*bserate = petday * watrate(avswp, petday, shift, shape, inflec, range)
+				   * (1. - (totagb / Es_param_limit)) * fbse;
 	}
 
 }
@@ -517,6 +524,8 @@ void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double
 Based on equations from Parton 1978. @cite Parton1978
 
 @param[in,out] *bserate Bare soil evaporation loss rate (cm/day).
+@param[in,out] **lyr Struct list of type SW_LAYER_INFO holding information
+	about every soil layer in the simulation
 @param[in] nelyrs Number of layers to consider in evaporation.
 @param[in] ecoeff Array of evaporation coefficients.
 @param[in] petday Potential evapotranspiration rate (cm/day).
@@ -529,9 +538,9 @@ Based on equations from Parton 1978. @cite Parton1978
 
 */
 
-void pot_soil_evap_bs(double *bserate, unsigned int nelyrs, double ecoeff[], double petday,
-  double shift, double shape, double inflec, double range, double width[],
-		double swc[]) {
+void pot_soil_evap_bs(double *bserate, SW_LAYER_INFO** lyr, unsigned int nelyrs,
+  double ecoeff[], double petday, double shift, double shape, double inflec,
+  double range, double width[], double swc[]) {
 	/**********************************************************************
 	 LOCAL:
 	 avswp     - average soil water potential over all layers
@@ -549,7 +558,7 @@ void pot_soil_evap_bs(double *bserate, unsigned int nelyrs, double ecoeff[], dou
 	for (i = 0; i < nelyrs; i++) {
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
-		avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
+		avswp += x * SW_SWRC_SWCtoSWP(swc[i], lyr[i]);
 	}
 
 	avswp /= sumwidth;
@@ -729,6 +738,8 @@ Based on equations from Parton 1978. @cite Parton1978
 @param rate Removal rate, either soil_evap_rate or soil_transp_rate.
 @param swcmin Lower limit on soilwater content per layer.
 @param lyrFrozen Frozen information at each layer.
+@param **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
+	in the simulation
 
 @sideeffect
   - swc Updated soil water content adjusted after evaporation.
@@ -737,7 +748,8 @@ Based on equations from Parton 1978. @cite Parton1978
 */
 
 void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyrs,
-    double coeff[], double rate, double swcmin[], double lyrFrozen[]) {
+    double coeff[], double rate, double swcmin[], double lyrFrozen[],
+	SW_LAYER_INFO** lyr) {
 	/**********************************************************************
   HISTORY: 10 Jan 2002 - cwb - replaced two previous functions with
 	 this one.
@@ -753,7 +765,7 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q, tmpswp;
 
 	for (i = 0; i < nlyrs; i++) {
-		tmpswp = SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
+		tmpswp = SW_SWRC_SWCtoSWP(swc[i], lyr[i]);
 		if (GT(tmpswp, 0.)) {
 			swpfrac[i] = coeff[i] / tmpswp;
 		} else {
@@ -985,7 +997,7 @@ void hydraulic_redistribution(
 			swc[i] - fmin(lyr[i]->swcBulk_wiltpt, lyr[i]->swcBulk_atSWPcrit[vegk])
 		);
 
-		swp[i] = SW_SWRC_SWCtoSWP(swc[i], SW_Site.lyr[i]);
+		swp[i] = SW_SWRC_SWCtoSWP(swc[i], lyr[i]);
 
 		/* Ryel et al. 2002: eq. 7 relative soil-root conductance */
 		relCondroot[i] = fmin(

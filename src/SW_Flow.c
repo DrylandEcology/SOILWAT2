@@ -180,7 +180,8 @@ static RealD
 /* --------------------------------------------------- */
 
 static void records2arrays(RealD swcBulk[][MAX_LAYERS],
-	RealD avgLyrTemp[], TimeInt doy, TimeInt firstdoy) {
+				RealD avgLyrTemp[], TimeInt doy, TimeInt firstdoy,
+				SW_SITE* SW_Site) {
 	/* some values are unchanged by the water subs but
 	 * are still required in an array format.
 	 * Also, some arrays start out empty and are
@@ -198,48 +199,49 @@ static void records2arrays(RealD swcBulk[][MAX_LAYERS],
 	LyrIndex i;
 	int k;
 
-	ForEachSoilLayer(i)
+	ForEachSoilLayer(i, SW_Site->n_layers)
 	{
 		lyrSWCBulk[i] = swcBulk[Today][i];
 		lyroldavgLyrTemp[i] = avgLyrTemp[i];
 	}
 
 	if (doy == firstdoy) {
-		ForEachSoilLayer(i)
+		ForEachSoilLayer(i, SW_Site->n_layers)
 		{
-			lyrSWCBulk_FieldCaps[i] = SW_Site.lyr[i]->swcBulk_fieldcap;
-			lyrWidths[i] = SW_Site.lyr[i]->width;
-			lyrSWCBulk_Wiltpts[i] = SW_Site.lyr[i]->swcBulk_wiltpt;
-			lyrSWCBulk_HalfWiltpts[i] = SW_Site.lyr[i]->swcBulk_halfwiltpt;
-			lyrSWCBulk_Mins[i] = SW_Site.lyr[i]->swcBulk_min;
-			lyrImpermeability[i] = SW_Site.lyr[i]->impermeability;
-			lyrSWCBulk_Saturated[i] = SW_Site.lyr[i]->swcBulk_saturated;
-			lyrbDensity[i] = SW_Site.lyr[i]->soilBulk_density;
+			lyrSWCBulk_FieldCaps[i] = SW_Site->lyr[i]->swcBulk_fieldcap;
+			lyrWidths[i] = SW_Site->lyr[i]->width;
+			lyrSWCBulk_Wiltpts[i] = SW_Site->lyr[i]->swcBulk_wiltpt;
+			lyrSWCBulk_HalfWiltpts[i] = SW_Site->lyr[i]->swcBulk_halfwiltpt;
+			lyrSWCBulk_Mins[i] = SW_Site->lyr[i]->swcBulk_min;
+			lyrImpermeability[i] = SW_Site->lyr[i]->impermeability;
+			lyrSWCBulk_Saturated[i] = SW_Site->lyr[i]->swcBulk_saturated;
+			lyrbDensity[i] = SW_Site->lyr[i]->soilBulk_density;
 
 			ForEachVegType(k)
 			{
-				lyrTrRegions[k][i] = SW_Site.lyr[i]->my_transp_rgn[k];
-				lyrSWCBulk_atSWPcrit[k][i] = SW_Site.lyr[i]->swcBulk_atSWPcrit[k];
-				lyrTranspCo[k][i] = SW_Site.lyr[i]->transp_coeff[k];
+				lyrTrRegions[k][i] = SW_Site->lyr[i]->my_transp_rgn[k];
+				lyrSWCBulk_atSWPcrit[k][i] = SW_Site->lyr[i]->swcBulk_atSWPcrit[k];
+				lyrTranspCo[k][i] = SW_Site->lyr[i]->transp_coeff[k];
 			}
 		}
 
-		ForEachEvapLayer(i) {
-			lyrEvapCo[i] = SW_Site.lyr[i]->evap_coeff;
+		ForEachEvapLayer(i, SW_Site->n_evap_lyrs) {
+			lyrEvapCo[i] = SW_Site->lyr[i]->evap_coeff;
 		}
 
 	} /* end firsttime stuff */
 
 }
 
-static void arrays2records(RealD* Weather_surfaceAvg, SW_SOILWAT* SW_SoilWat) {
+static void arrays2records(RealD* Weather_surfaceAvg, SW_SOILWAT* SW_SoilWat,
+						   SW_SITE* SW_Site) {
 	/* move output quantities from arrays to
 	 * the appropriate records.
 	 */
 	LyrIndex i;
 	int k;
 
-	ForEachSoilLayer(i)
+	ForEachSoilLayer(i, SW_Site->n_layers)
 	{
 		SW_SoilWat->swcBulk[Today][i] = lyrSWCBulk[i];
 		SW_SoilWat->drain[i] = lyrDrain[i];
@@ -252,11 +254,11 @@ static void arrays2records(RealD* Weather_surfaceAvg, SW_SOILWAT* SW_SoilWat) {
 	}
 	*Weather_surfaceAvg = surfaceAvg[Today];
 
-	if (SW_Site.deepdrain)
-		SW_SoilWat->swcBulk[Today][SW_Site.deep_lyr] = drainout;
+	if (SW_Site->deepdrain)
+		SW_SoilWat->swcBulk[Today][SW_Site->deep_lyr] = drainout;
 
 
-	ForEachEvapLayer(i)
+	ForEachEvapLayer(i, SW_Site->n_evap_lyrs)
 	{
 		SW_SoilWat->evaporation[i] = lyrEvap_BareGround[i];
 		ForEachVegType(k)
@@ -327,7 +329,7 @@ void SW_FLW_init_run(void) {
 /*            The Water Flow                           */
 /* --------------------------------------------------- */
 void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-				   SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model) {
+				SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model, SW_SITE* SW_Site) {
 	#ifdef SWDEBUG
 	IntUS debug = 0, debug_year = 1980, debug_doy = 350;
 	double Eveg, Tveg, HRveg;
@@ -343,18 +345,18 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 		pet2, peti, rate_help, x;
 
 	int doy, month, k;
-	LyrIndex i;
+	LyrIndex i, n_layers = SW_Site->n_layers;
 
 	doy = SW_Model->doy; /* base1 */
 	month = SW_Model->month; /* base0 */
 
 	records2arrays(SW_SoilWat->swcBulk, SW_SoilWat->avgLyrTemp,
-				   SW_Model->doy, SW_Model->firstdoy);
+				   SW_Model->doy, SW_Model->firstdoy, SW_Site);
 
 	#ifdef SWDEBUG
 	if (debug && SW_Model->year == debug_year && SW_Model->doy == debug_doy) {
 		swprintf("Flow (%d-%d): start:", SW_Model->year, SW_Model->doy);
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
 		}
 		swprintf("\n");
@@ -362,7 +364,7 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	#endif
 
 
-	if (SW_Site.use_soil_temp && !soil_temp_init) {
+	if (SW_Site->use_soil_temp && !soil_temp_init) {
 		/* We initialize soil temperature (and un/frozen state of soil layers)
 			 before water flow of first day because we use un/frozen states), but
 			 calculate soil temperature at end of each day
@@ -375,13 +377,13 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 			lyrWidths,
 			lyroldavgLyrTemp,
 			surfaceAvg,
-			SW_Site.n_layers,
+			n_layers,
 			lyrSWCBulk_FieldCaps,
 			lyrSWCBulk_Wiltpts,
-			SW_Site.Tsoil_constant,
-			SW_Site.stDeltaX,
-			SW_Site.stMaxDepth,
-			SW_Site.stNRGR,
+			SW_Site->Tsoil_constant,
+			SW_Site->stDeltaX,
+			SW_Site->stMaxDepth,
+			SW_Site->stNRGR,
 			&SW_SoilWat->soiltempError,
 			SW_SoilWat->lyrFrozen
 		);
@@ -397,10 +399,10 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 
 	SW_SoilWat->H_gt = solar_radiation(
 		doy,
-		SW_Site.latitude,
-		SW_Site.altitude,
-		SW_Site.slope,
-		SW_Site.aspect,
+		SW_Site->latitude,
+		SW_Site->altitude,
+		SW_Site->slope,
+		SW_Site->aspect,
 		x,
         &SW_Weather->now.cloudCover,
         SW_Weather->now.actualVaporPressure,
@@ -411,10 +413,10 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 		&SW_SoilWat->H_gh
 	);
 
-	SW_SoilWat->pet = SW_Site.pet_scale * petfunc(
+	SW_SoilWat->pet = SW_Site->pet_scale * petfunc(
 		SW_SoilWat->H_gt,
 		SW_Weather->now.temp_avg,
-		SW_Site.altitude,
+		SW_Site->altitude,
 		x,
         SW_Weather->now.relHumidity,
         SW_Weather->now.windSpeed,
@@ -492,10 +494,10 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 			@param percentRunon Value ranges between 0 and +inf; 0 = no runon,
 				>0 runon is occurring.
 	*/
-	if (GT(SW_Site.percentRunon, 0.)) {
+	if (GT(SW_Site->percentRunon, 0.)) {
 		// Calculate 'rain + snowmelt - interception - infiltration' for upslope neighbor
 		// Copy values to simulate identical upslope neighbor site
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			UpNeigh_lyrSWCBulk[i] = lyrSWCBulk[i];
 			UpNeigh_lyrDrain[i] = lyrDrain[i];
 		}
@@ -504,12 +506,12 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 
 		// Infiltrate for upslope neighbor under saturated soil conditions
 		infiltrate_water_high(UpNeigh_lyrSWCBulk, UpNeigh_lyrDrain,
-				&UpNeigh_drainout, h2o_for_soil, SW_Site.n_layers,
+				&UpNeigh_drainout, h2o_for_soil, n_layers,
 				lyrSWCBulk_FieldCaps, lyrSWCBulk_Saturated, lyrImpermeability,
 				&UpNeigh_standingWater, SW_SoilWat->lyrFrozen);
 
 		// Runon as percentage from today's surface water addition on upslope neighbor
-		SW_Weather->surfaceRunon = fmax(0., (UpNeigh_standingWater - standingWater[Yesterday]) * SW_Site.percentRunon);
+		SW_Weather->surfaceRunon = fmax(0., (UpNeigh_standingWater - standingWater[Yesterday]) * SW_Site->percentRunon);
 		standingWater[Today] += SW_Weather->surfaceRunon;
 
 	} else {
@@ -522,18 +524,18 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	/* Percolation under saturated soil conditions */
 	SW_Weather->soil_inf += standingWater[Today];
 	infiltrate_water_high(lyrSWCBulk, lyrDrain, &drainout, h2o_for_soil,
-			SW_Site.n_layers, lyrSWCBulk_FieldCaps, lyrSWCBulk_Saturated,
+			n_layers, lyrSWCBulk_FieldCaps, lyrSWCBulk_Saturated,
 			lyrImpermeability, &standingWater[Today], SW_SoilWat->lyrFrozen);
 	SW_Weather->soil_inf -= standingWater[Today]; // adjust soil_infiltration for not infiltrated surface water
 
 	#ifdef SWDEBUG
 	if (debug && SW_Model->year == debug_year && SW_Model->doy == debug_doy) {
 		swprintf("Flow (%d-%d): satperc:", SW_Model->year, SW_Model->doy);
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
 		}
 		swprintf("\n              : satperc:");
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			swprintf(" perc[%d]=%1.3f", i, lyrDrain[i]);
 		}
 		swprintf("\n");
@@ -545,8 +547,8 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 			@param percentRunoff Value ranges between 0 and 1; 0 = no loss of surface water,
 			1 = all ponded water lost via runoff.
 	*/
-	if (GT(SW_Site.percentRunoff, 0.)) {
-		SW_Weather->surfaceRunoff = standingWater[Today] * SW_Site.percentRunoff;
+	if (GT(SW_Site->percentRunoff, 0.)) {
+		SW_Weather->surfaceRunoff = standingWater[Today] * SW_Site->percentRunoff;
 		standingWater[Today] = fmax(0.0, (standingWater[Today] - SW_Weather->surfaceRunoff));
 
 	} else {
@@ -559,9 +561,9 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	/* Potential bare-soil evaporation rates */
 	if (GT(SW_VegProd->bare_cov.fCover, 0.) && EQ(SW_SoilWat->snowpack[Today], 0.)) /* bare ground present AND no snow on ground */
 	{
-		pot_soil_evap_bs(&soil_evap_rate_bs, SW_Site.n_evap_lyrs, lyrEvapCo, SW_SoilWat->pet,
-			SW_Site.evap.xinflec, SW_Site.evap.slope, SW_Site.evap.yinflec,
-			SW_Site.evap.range, lyrWidths, lyrSWCBulk);
+		pot_soil_evap_bs(&soil_evap_rate_bs, SW_Site->lyr, SW_Site->n_evap_lyrs,
+			lyrEvapCo, SW_SoilWat->pet, SW_Site->evap.xinflec, SW_Site->evap.slope,
+			SW_Site->evap.yinflec, SW_Site->evap.range, lyrWidths, lyrSWCBulk);
 		soil_evap_rate_bs *= SW_VegProd->bare_cov.fCover;
 
 	} else {
@@ -578,10 +580,10 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 				SW_VegProd->veg[k].EsTpartitioning_param);
 
 			if (EQ(SW_SoilWat->snowpack[Today], 0.)) { /* bare-soil evaporation only when no snow */
-				pot_soil_evap(&soil_evap_rate[k], SW_Site.n_evap_lyrs, lyrEvapCo,
+				pot_soil_evap(&soil_evap_rate[k], SW_Site->n_evap_lyrs, lyrEvapCo,
 					SW_VegProd->veg[k].total_agb_daily[doy], soil_evap[k], SW_SoilWat->pet,
-					SW_Site.evap.xinflec, SW_Site.evap.slope, SW_Site.evap.yinflec, SW_Site.evap.range,
-					lyrWidths, lyrSWCBulk, SW_VegProd->veg[k].Es_param_limit);
+					SW_Site->evap.xinflec, SW_Site->evap.slope, SW_Site->evap.yinflec, SW_Site->evap.range,
+					lyrWidths, lyrSWCBulk, SW_VegProd->veg[k].Es_param_limit, SW_Site->lyr);
 
 				soil_evap_rate[k] *= SW_VegProd->veg[k].cov.fCover;
 
@@ -589,13 +591,13 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 				soil_evap_rate[k] = 0.;
 			}
 
-			transp_weighted_avg(&swpot_avg[k], SW_Site.n_transp_rgn, SW_Site.n_transp_lyrs[k],
-				lyrTrRegions[k], lyrTranspCo[k], lyrSWCBulk);
+			transp_weighted_avg(&swpot_avg[k], SW_Site->n_transp_rgn, SW_Site->n_transp_lyrs[k],
+				lyrTrRegions[k], lyrTranspCo[k], lyrSWCBulk, SW_Site->lyr);
 
 			pot_transp(&transp_rate[k], swpot_avg[k],
 				SW_VegProd->veg[k].biolive_daily[doy], SW_VegProd->veg[k].biodead_daily[doy],
 				transp_veg[k], SW_SoilWat->pet,
-				SW_Site.transp.xinflec, SW_Site.transp.slope, SW_Site.transp.yinflec, SW_Site.transp.range,
+				SW_Site->transp.xinflec, SW_Site->transp.slope, SW_Site->transp.yinflec, SW_Site->transp.range,
 				SW_VegProd->veg[k].shade_scale, SW_VegProd->veg[k].shade_deadmax,
 				SW_VegProd->veg[k].tr_shade_effects.xinflec, SW_VegProd->veg[k].tr_shade_effects.slope,
 				SW_VegProd->veg[k].tr_shade_effects.yinflec, SW_VegProd->veg[k].tr_shade_effects.range,
@@ -669,12 +671,13 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	/* bare-soil evaporation */
 	if (GT(SW_VegProd->bare_cov.fCover, 0.) && EQ(SW_SoilWat->snowpack[Today], 0.)) {
 		/* remove bare-soil evap from swv */
-		remove_from_soil(lyrSWCBulk, lyrEvap_BareGround, &SW_SoilWat->aet, SW_Site.n_evap_lyrs,
-			lyrEvapCo, soil_evap_rate_bs, lyrSWCBulk_HalfWiltpts, SW_SoilWat->lyrFrozen);
+		remove_from_soil(lyrSWCBulk, lyrEvap_BareGround, &SW_SoilWat->aet, SW_Site->n_evap_lyrs,
+			lyrEvapCo, soil_evap_rate_bs, lyrSWCBulk_HalfWiltpts, SW_SoilWat->lyrFrozen,
+			SW_Site->lyr);
 
 	} else {
 		/* Set daily array to zero, no evaporation */
-		ForEachEvapLayer(i) {
+		ForEachEvapLayer(i, SW_Site->n_evap_lyrs) {
 			lyrEvap_BareGround[i] = 0.;
 		}
 	}
@@ -682,11 +685,11 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	#ifdef SWDEBUG
 	if (debug && SW_Model->year == debug_year && SW_Model->doy == debug_doy) {
 		swprintf("Flow (%d-%d): Esoil:", SW_Model->year, SW_Model->doy);
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
 		}
 		swprintf("\n              : Esoil:");
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			swprintf(" Esoil[%d]=%1.3f", i, lyrEvap_BareGround[i]);
 		}
 		swprintf("\n");
@@ -698,16 +701,18 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	{
 		if (GT(scale_veg[k], 0.)) {
 			/* remove bare-soil evap from swc */
-			remove_from_soil(lyrSWCBulk, lyrEvap[k], &SW_SoilWat->aet, SW_Site.n_evap_lyrs,
-				lyrEvapCo, soil_evap_rate[k], lyrSWCBulk_HalfWiltpts, SW_SoilWat->lyrFrozen);
+			remove_from_soil(lyrSWCBulk, lyrEvap[k], &SW_SoilWat->aet, SW_Site->n_evap_lyrs,
+				lyrEvapCo, soil_evap_rate[k], lyrSWCBulk_HalfWiltpts, SW_SoilWat->lyrFrozen,
+				SW_Site->lyr);
 
 			/* remove transp from swc */
-			remove_from_soil(lyrSWCBulk, lyrTransp[k], &SW_SoilWat->aet, SW_Site.n_transp_lyrs[k],
-				lyrTranspCo[k], transp_rate[k], lyrSWCBulk_atSWPcrit[k], SW_SoilWat->lyrFrozen);
+			remove_from_soil(lyrSWCBulk, lyrTransp[k], &SW_SoilWat->aet, SW_Site->n_transp_lyrs[k],
+				lyrTranspCo[k], transp_rate[k], lyrSWCBulk_atSWPcrit[k], SW_SoilWat->lyrFrozen,
+				SW_Site->lyr);
 
 		} else {
 			/* Set daily array to zero, no evaporation or transpiration */
-			ForEachSoilLayer(i) {
+			ForEachSoilLayer(i, n_layers) {
 				lyrTransp[k][i] = lyrEvap[k][i] = 0.;
 			}
 		}
@@ -716,11 +721,11 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	#ifdef SWDEBUG
 	if (debug && SW_Model->year == debug_year && SW_Model->doy == debug_doy) {
 		swprintf("Flow (%d-%d): ETveg:", SW_Model->year, SW_Model->doy);
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
 		}
 		swprintf("\n              : ETveg:");
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			Eveg = Tveg = 0.;
 			ForEachVegType(k) {
 				Eveg += lyrEvap[k][i];
@@ -745,8 +750,8 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 				lyrSWCBulk,
 				lyrHydRed[k],
 				k,
-				SW_Site.n_layers,
-				SW_Site.lyr,
+				n_layers,
+				SW_Site->lyr,
 				SW_SoilWat->lyrFrozen,
 				SW_VegProd->veg[k].maxCondroot,
 				SW_VegProd->veg[k].swpMatric50,
@@ -758,7 +763,7 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 
 		} else {
 			/* Set daily array to zero */
-			ForEachSoilLayer(i) {
+			ForEachSoilLayer(i, n_layers) {
 				lyrHydRed[k][i] = 0.;
 			}
 		}
@@ -767,11 +772,11 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	#ifdef SWDEBUG
 	if (debug && SW_Model->year == debug_year && SW_Model->doy == debug_doy) {
 		swprintf("Flow (%d-%d): HR:", SW_Model->year, SW_Model->doy);
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
 		}
 		swprintf("\n              : HR:");
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			HRveg = 0.;
 			ForEachVegType(k) {
 				HRveg += lyrHydRed[k][i];
@@ -795,10 +800,10 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 		lyrDrain,
 		&drainout,
 		&standingWater[Today],
-		SW_Site.n_layers,
-		SW_Site.lyr,
+		n_layers,
+		SW_Site->lyr,
 		SW_SoilWat->lyrFrozen,
-		SW_Site.slow_drain_coeff,
+		SW_Site->slow_drain_coeff,
 		SLOW_DRAIN_DEPTH
 	);
 
@@ -810,11 +815,11 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	#ifdef SWDEBUG
 	if (debug && SW_Model->year == debug_year && SW_Model->doy == debug_doy) {
 		swprintf("Flow (%d-%d): unsatperc:", SW_Model->year, SW_Model->doy);
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			swprintf(" swc[%i]=%1.3f", i, lyrSWCBulk[i]);
 		}
 		swprintf("\n              : satperc:");
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			swprintf(" perc[%d]=%1.3f", i, lyrDrain[i]);
 		}
 		swprintf("\n");
@@ -838,15 +843,15 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 
 	// soil_temperature function computes the soil temp for each layer and stores it in lyravgLyrTemp
 	// doesn't affect SWC at all (yet), but needs it for the calculation, so therefore the temperature is the last calculation done
-	if (SW_Site.use_soil_temp) {
+	if (SW_Site->use_soil_temp) {
 		soil_temperature(SW_Weather->now.temp_avg, SW_SoilWat->pet,
 			SW_SoilWat->aet, x, lyrSWCBulk, lyrSWCBulk_Saturated, lyrbDensity,
 			lyrWidths, lyroldavgLyrTemp, lyravgLyrTemp, surfaceAvg,
-			SW_Site.n_layers, SW_Site.bmLimiter,
-			SW_Site.t1Param1, SW_Site.t1Param2, SW_Site.t1Param3,
-			SW_Site.csParam1, SW_Site.csParam2, SW_Site.shParam,
-			SW_SoilWat->snowdepth, SW_Site.Tsoil_constant, SW_Site.stDeltaX,
-			SW_Site.stMaxDepth, SW_Site.stNRGR, SW_SoilWat->snowpack[Today],
+			n_layers, SW_Site->bmLimiter,
+			SW_Site->t1Param1, SW_Site->t1Param2, SW_Site->t1Param3,
+			SW_Site->csParam1, SW_Site->csParam2, SW_Site->shParam,
+			SW_SoilWat->snowdepth, SW_Site->Tsoil_constant, SW_Site->stDeltaX,
+			SW_Site->stMaxDepth, SW_Site->stNRGR, SW_SoilWat->snowpack[Today],
 			&SW_SoilWat->soiltempError, SW_Weather->now.temp_max,
 			SW_Weather->now.temp_min, SW_SoilWat->H_gt,
 			SW_SoilWat->maxLyrTemperature, SW_SoilWat->minLyrTemperature,
@@ -857,7 +862,7 @@ void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	/* Soil Temperature ends here */
 
 	/* Move local values into main arrays */
-	arrays2records(&SW_Weather->surfaceAvg, SW_SoilWat);
+	arrays2records(&SW_Weather->surfaceAvg, SW_SoilWat, SW_Site);
 
 	standingWater[Yesterday] = standingWater[Today];
 

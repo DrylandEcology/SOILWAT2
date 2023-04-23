@@ -63,15 +63,19 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 	int nlyrs, double swcfc[], double swcsat[], double impermeability[],
 	double *standingWater, double lyrFrozen[]);
 
-void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n_layers, unsigned int tr_regions[], double tr_coeff[], double swc[]);
+void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, LyrIndex n_layers,
+						 unsigned int tr_regions[], double tr_coeff[], double swc[],
+						 SW_LAYER_INFO** lyr);
 
 void EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param);
 
-void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double totagb, double fbse, double petday, double shift, double shape, double inflec, double range,
-		double width[], double swc[], double Es_param_limit);
+void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double totagb,
+  double fbse, double petday, double shift, double shape, double inflec, double range,
+		double width[], double swc[], double Es_param_limit, SW_LAYER_INFO** lyr);
 
-void pot_soil_evap_bs(double *bserate, unsigned int nelyrs, double ecoeff[], double petday, double shift, double shape, double inflec, double range, double width[],
-		double swc[]);
+void pot_soil_evap_bs(double *bserate, SW_LAYER_INFO** lyr, unsigned int nelyrs,
+  double ecoeff[], double petday, double shift, double shape, double inflec,
+  double range, double width[], double swc[]);
 
 void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, double fbst, double petday, double swp_shift, double swp_shape, double swp_inflec,
 		double swp_range, double shade_scale, double shade_deadmax, double shade_xinflex, double shade_slope, double shade_yinflex, double shade_range, double co2_wue_multiplier);
@@ -83,7 +87,8 @@ void evap_litter_veg_surfaceWater(double *cwlit, double *cwstcr, double *standin
 void evap_fromSurface(double *water_pool, double *evap_rate, double *aet);
 
 void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyrs,
-    double coeff[], double rate, double swcmin[], double lyrFrozen[]);
+    double coeff[], double rate, double swcmin[], double lyrFrozen[],
+	SW_LAYER_INFO** lyr);
 
 void percolate_unsaturated(
 	double swc[],

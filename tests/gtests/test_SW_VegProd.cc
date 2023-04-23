@@ -117,7 +117,8 @@ namespace {
   TEST(VegTest, Constructor) {
     SW_VPD_construct(&SW_All.VegProd);
     SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather,
-                    SW_All.Model.startyr, SW_All.Model.endyr);
+                    SW_All.Model.startyr, SW_All.Model.endyr,
+                    SW_All.Site.latitude);
 
     ForEachVegType(k) {
       EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[BIO_INDEX][0]);

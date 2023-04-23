@@ -16,7 +16,6 @@
 #include "include/SW_Site.h"
 #include "include/SW_SoilWater.h"
 #include "include/SW_VegProd.h"
-#include "include/SW_Site.h"
 #include "include/SW_Flow_lib.h"
 #include "tests/gtests/sw_testhelpers.h"
 
@@ -24,49 +23,49 @@ namespace{
   // Test the 'SW_SoilWater' function 'SW_SWC_adjust_snow'
   TEST(SWSoilWaterTest, SWCadjustSnow){
     // setup mock variables
-    SW_Site.TminAccu2 = 0;
+    SW_All.Site.TminAccu2 = 0;
     SW_All.Model.doy = 1;
-    SW_Site.RmeltMax = 1;
-    SW_Site.RmeltMin = 0;
-    SW_Site.lambdasnow = .1;
-    SW_Site.TmaxCrit = 1;
+    SW_All.Site.RmeltMax = 1;
+    SW_All.Site.RmeltMin = 0;
+    SW_All.Site.lambdasnow = .1;
+    SW_All.Site.TmaxCrit = 1;
 
     RealD temp_min = 0, temp_max = 10, ppt = 1, rain = 1.5, snow = 1.5,
     snowmelt = 1.2;
 
-    SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow,
+    SW_SWC_adjust_snow(&SW_All.Site, temp_min, temp_max, ppt, &rain, &snow,
                        &snowmelt, SW_All.SoilWat.snowpack, SW_All.Model.doy);
     // when average temperature >= SW_Site.TminAccu2, we expect rain == ppt
     EXPECT_EQ(rain, 1);
-    // when average temperature >= SW_Site.TminAccu2, we expect snow == 0
+    // when average temperature >= SW_All.Site.TminAccu2, we expect snow == 0
     EXPECT_EQ(snow, 0);
-    // when temp_snow <= SW_Site.TmaxCrit, we expect snowmelt == 0
+    // when temp_snow <= SW_All.Site.TmaxCrit, we expect snowmelt == 0
     EXPECT_EQ(snowmelt, 0);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
-    SW_Site.TminAccu2 = 6;
+    SW_All.Site.TminAccu2 = 6;
 
-    SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow,
+    SW_SWC_adjust_snow(&SW_All.Site, temp_min, temp_max, ppt, &rain, &snow,
                        &snowmelt, SW_All.SoilWat.snowpack, SW_All.Model.doy);
     // when average temperature < SW_Site.TminAccu2, we expect rain == 0
     EXPECT_EQ(rain, 0);
-    // when average temperature < SW_Site.TminAccu2, we expect snow == ppt
+    // when average temperature < SW_All.Site.TminAccu2, we expect snow == ppt
     EXPECT_EQ(snow, 1);
-    // when temp_snow > SW_Site.TmaxCrit, we expect snowmelt == fmax(0, *snowpack - *snowmelt )
+    // when temp_snow > SW_All.Site.TmaxCrit, we expect snowmelt == fmax(0, *snowpack - *snowmelt )
     EXPECT_EQ(snowmelt, 0);
     // Reset to previous global states
     Reset_SOILWAT2_after_UnitTest();
 
     temp_max = 22;
 
-    SW_SWC_adjust_snow(temp_min, temp_max, ppt, &rain, &snow,
+    SW_SWC_adjust_snow(&SW_All.Site, temp_min, temp_max, ppt, &rain, &snow,
                        &snowmelt, SW_All.SoilWat.snowpack, SW_All.Model.doy);
     // when average temperature >= SW_Site.TminAccu2, we expect rain == ppt
     EXPECT_EQ(rain, 1);
-    // when average temperature >= SW_Site.TminAccu2, we expect snow == 0
+    // when average temperature >= SW_All.Site.TminAccu2, we expect snow == 0
     EXPECT_EQ(snow, 0);
-    // when temp_snow > SW_Site.TmaxCrit, we expect snowmelt == 0
+    // when temp_snow > SW_All.Site.TmaxCrit, we expect snowmelt == 0
     EXPECT_EQ(snowmelt, 0);
   }
 

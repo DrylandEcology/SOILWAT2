@@ -176,14 +176,15 @@ static OutSum str2stype(char *s);
 
 static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
 						 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
-						 SW_MODEL* SW_Model);
+						 SW_MODEL* SW_Model, SW_SITE* SW_Site);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
-static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k);
+static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
+					  SW_SITE* SW_Site);
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy);
 static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 						SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
-						SW_MODEL* SW_Model);
+						SW_MODEL* SW_Model, SW_SITE* SW_Site);
 
 #ifdef STEPWAT
 static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
@@ -382,48 +383,51 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 
 }
 
-static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
+static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
+					  SW_SITE* SW_Site)
 {
 	LyrIndex i;
 	int j; // for use with ForEachVegType
+	LyrIndex n_layers = (LyrIndex) SW_Site->n_layers,
+				 n_evap_layers = (LyrIndex) SW_Site->n_evap_lyrs;
 
 	switch (k)
 	{
 
 	case eSW_VWCBulk: /* get swcBulk and convert later */
-		ForEachSoilLayer(i)
+		ForEachSoilLayer(i, n_layers)
 			s->vwcBulk[i] += v->swcBulk[Today][i];
 		break;
 
 	case eSW_VWCMatric: /* get swcBulk and convert later */
-		ForEachSoilLayer(i)
+		ForEachSoilLayer(i, n_layers)
 			s->vwcMatric[i] += v->swcBulk[Today][i];
 		break;
 
 	case eSW_SWCBulk:
-		ForEachSoilLayer(i)
+		ForEachSoilLayer(i, n_layers)
 			s->swcBulk[i] += v->swcBulk[Today][i];
 		break;
 
 	case eSW_SWPMatric: /* can't avg swp so get swcBulk and convert later */
-		ForEachSoilLayer(i)
+		ForEachSoilLayer(i, n_layers)
 			s->swpMatric[i] += v->swcBulk[Today][i];
 		break;
 
 	case eSW_SWABulk:
-		ForEachSoilLayer(i)
+		ForEachSoilLayer(i, n_layers)
 			s->swaBulk[i] += fmax(
-					v->swcBulk[Today][i] - SW_Site.lyr[i]->swcBulk_wiltpt, 0.);
+					v->swcBulk[Today][i] - SW_Site->lyr[i]->swcBulk_wiltpt, 0.);
 		break;
 
 	case eSW_SWAMatric: /* get swaBulk and convert later */
-		ForEachSoilLayer(i)
+		ForEachSoilLayer(i, n_layers)
 			s->swaMatric[i] += fmax(
-					v->swcBulk[Today][i] - SW_Site.lyr[i]->swcBulk_wiltpt, 0.);
+					v->swcBulk[Today][i] - SW_Site->lyr[i]->swcBulk_wiltpt, 0.);
 		break;
 
 	case eSW_SWA: /* get swaBulk and convert later */
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			ForEachVegType(j) {
 				s->SWA_VegType[j][i] += v->dSWA_repartitioned_sum[j][i];
 			}
@@ -435,7 +439,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	case eSW_Transp:
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			ForEachVegType(j) {
 				s->transp_total[i] += v->transpiration[j][i];
 				s->transp[j][i] += v->transpiration[j][i];
@@ -444,7 +448,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	case eSW_EvapSoil:
-		ForEachEvapLayer(i)
+		ForEachEvapLayer(i, n_evap_layers)
 			s->evap[i] += v->evaporation[i];
 		break;
 
@@ -468,12 +472,12 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	case eSW_LyrDrain:
-		for (i = 0; i < SW_Site.n_layers - 1; i++)
+		for (i = 0; i < n_layers - 1; i++)
 			s->lyrdrain[i] += v->drain[i];
 		break;
 
 	case eSW_HydRed:
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			ForEachVegType(j) {
 				s->hydred_total[i] += v->hydred[j][i];
 				s->hydred[j][i] += v->hydred[j][i];
@@ -483,12 +487,12 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 
 	case eSW_AET:
 		s->aet += v->aet;
-		ForEachSoilLayer(i) {
+		ForEachSoilLayer(i, n_layers) {
 			ForEachVegType(j) {
 				s->tran += v->transpiration[j][i];
 			}
 		}
-		ForEachEvapLayer(i) {
+		ForEachEvapLayer(i, n_evap_layers) {
 			s->esoil += v->evaporation[i];
 		}
 		ForEachVegType(j) {
@@ -508,7 +512,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	case eSW_WetDays:
-		ForEachSoilLayer(i)
+		ForEachSoilLayer(i, n_layers)
 			if (v->is_wet[i])
 				s->wetdays[i]++;
 		break;
@@ -519,11 +523,11 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
 	case eSW_DeepSWC:
-		s->deep += v->swcBulk[Today][SW_Site.deep_lyr];
+		s->deep += v->swcBulk[Today][SW_Site->deep_lyr];
 		break;
 
 	case eSW_SoilTemp:
-            ForEachSoilLayer(i) {
+            ForEachSoilLayer(i, n_layers) {
                 s->avgLyrTemp[i] += v->avgLyrTemp[i];
                 s->minLyrTemperature[i] += v->minLyrTemperature[i];
                 s->maxLyrTemperature[i] += v->maxLyrTemperature[i];
@@ -531,7 +535,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 		break;
 
     case eSW_Frozen:
-        ForEachSoilLayer(i)
+        ForEachSoilLayer(i, n_layers)
             s->lyrFrozen[i] += v->lyrFrozen[i];
         break;
 
@@ -550,12 +554,13 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 */
 static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 						SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
-						SW_MODEL* SW_Model) {
+						SW_MODEL* SW_Model, SW_SITE* SW_Site) {
 	TimeInt curr_pd = 0;
 	RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
 	OutKey k;
 	LyrIndex i;
 	int j;
+	LyrIndex n_layers = SW_Site->n_layers, n_evap_layers = SW_Site->n_evap_lyrs;
 
 	if (otyp == eVES)
 		return;
@@ -653,7 +658,7 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 				break;
 
 			case eSW_SoilTemp:
-				ForEachSoilLayer(i) {
+				ForEachSoilLayer(i, n_layers) {
 					SW_SoilWat->p_oagg[pd]->avgLyrTemp[i] =
 							(SW_Output[k].sumtype == eSW_Fnl) ?
 									SW_SoilWat->avgLyrTemp[i] :
@@ -670,7 +675,7 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 				break;
 
             case eSW_Frozen:
-                    ForEachSoilLayer(i) {
+                    ForEachSoilLayer(i, n_layers) {
                         SW_SoilWat->p_oagg[pd]->lyrFrozen[i] = (SW_Output[k].sumtype == eSW_Fnl) ?
                                             SW_SoilWat->lyrFrozen[i] :
                                             SW_SoilWat->p_accu[pd]->lyrFrozen[i] / div;
@@ -678,7 +683,7 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
                     break;
 
 			case eSW_VWCBulk:
-				ForEachSoilLayer(i) {
+				ForEachSoilLayer(i, n_layers) {
 					/* vwcBulk at this point is identical to swcBulk */
 					SW_SoilWat->p_oagg[pd]->vwcBulk[i] =
 							(SW_Output[k].sumtype == eSW_Fnl) ?
@@ -688,7 +693,7 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 				break;
 
 			case eSW_VWCMatric:
-				ForEachSoilLayer(i) {
+				ForEachSoilLayer(i, n_layers) {
 					/* vwcMatric at this point is identical to swcBulk */
 					SW_SoilWat->p_oagg[pd]->vwcMatric[i] =
 							(SW_Output[k].sumtype == eSW_Fnl) ?
@@ -698,7 +703,7 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 				break;
 
 			case eSW_SWCBulk:
-				ForEachSoilLayer(i) {
+				ForEachSoilLayer(i, n_layers) {
 					SW_SoilWat->p_oagg[pd]->swcBulk[i] =
 							(SW_Output[k].sumtype == eSW_Fnl) ?
 									SW_SoilWat->swcBulk[Yesterday][i] :
@@ -707,7 +712,7 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 				break;
 
 			case eSW_SWPMatric:
-				ForEachSoilLayer(i) {
+				ForEachSoilLayer(i, n_layers) {
 					/* swpMatric at this point is identical to swcBulk */
 					SW_SoilWat->p_oagg[pd]->swpMatric[i] =
 							(SW_Output[k].sumtype == eSW_Fnl) ?
@@ -717,31 +722,31 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 				break;
 
 			case eSW_SWABulk:
-				ForEachSoilLayer(i) {
+				ForEachSoilLayer(i, n_layers) {
 					SW_SoilWat->p_oagg[pd]->swaBulk[i] =
 							(SW_Output[k].sumtype == eSW_Fnl) ?
 									fmax(
 											SW_SoilWat->swcBulk[Yesterday][i]
-													- SW_Site.lyr[i]->swcBulk_wiltpt,
+													- SW_Site->lyr[i]->swcBulk_wiltpt,
 											0.) :
 									SW_SoilWat->p_accu[pd]->swaBulk[i] / div;
 				}
 				break;
 
 			case eSW_SWAMatric: /* swaMatric at this point is identical to swaBulk */
-				ForEachSoilLayer(i) {
+				ForEachSoilLayer(i, n_layers) {
 					SW_SoilWat->p_oagg[pd]->swaMatric[i] =
 							(SW_Output[k].sumtype == eSW_Fnl) ?
 									fmax(
 											SW_SoilWat->swcBulk[Yesterday][i]
-													- SW_Site.lyr[i]->swcBulk_wiltpt,
+													- SW_Site->lyr[i]->swcBulk_wiltpt,
 											0.) :
 									SW_SoilWat->p_accu[pd]->swaMatric[i] / div;
 				}
 				break;
 
 			case eSW_SWA:
-				ForEachSoilLayer(i) {
+				ForEachSoilLayer(i, n_layers) {
 					ForEachVegType(j) {
 						SW_SoilWat->p_oagg[pd]->SWA_VegType[j][i] =
 								(SW_Output[k].sumtype == eSW_Fnl) ?
@@ -754,7 +759,7 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 			case eSW_DeepSWC:
 				SW_SoilWat->p_oagg[pd]->deep =
 						(SW_Output[k].sumtype == eSW_Fnl) ?
-								SW_SoilWat->swcBulk[Yesterday][SW_Site.deep_lyr] :
+								SW_SoilWat->swcBulk[Yesterday][SW_Site->deep_lyr] :
 								SW_SoilWat->p_accu[pd]->deep / div;
 				break;
 
@@ -763,7 +768,7 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 				break;
 
 			case eSW_Transp:
-				ForEachSoilLayer(i)
+				ForEachSoilLayer(i, n_layers)
 				{
 					SW_SoilWat->p_oagg[pd]->transp_total[i] = SW_SoilWat->p_accu[pd]->transp_total[i] / div;
 					ForEachVegType(j) {
@@ -773,7 +778,7 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 				break;
 
 			case eSW_EvapSoil:
-				ForEachEvapLayer(i)
+				ForEachEvapLayer(i, n_evap_layers)
 					SW_SoilWat->p_oagg[pd]->evap[i] = SW_SoilWat->p_accu[pd]->evap[i] / div;
 				break;
 
@@ -804,12 +809,12 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 				break;
 
 			case eSW_LyrDrain:
-				for (i = 0; i < SW_Site.n_layers - 1; i++)
+				for (i = 0; i < n_layers - 1; i++)
 					SW_SoilWat->p_oagg[pd]->lyrdrain[i] = SW_SoilWat->p_accu[pd]->lyrdrain[i] / div;
 				break;
 
 			case eSW_HydRed:
-				ForEachSoilLayer(i)
+				ForEachSoilLayer(i, n_layers)
 				{
 					SW_SoilWat->p_oagg[pd]->hydred_total[i] = SW_SoilWat->p_accu[pd]->hydred_total[i] / div;
 					ForEachVegType(j) {
@@ -827,7 +832,7 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 				break;
 
 			case eSW_WetDays:
-				ForEachSoilLayer(i)
+				ForEachSoilLayer(i, n_layers)
 					SW_SoilWat->p_oagg[pd]->wetdays[i] = SW_SoilWat->p_accu[pd]->wetdays[i] / div;
 				break;
 
@@ -871,7 +876,7 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 
 static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
 						 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
-						 SW_MODEL* SW_Model)
+						 SW_MODEL* SW_Model, SW_SITE* SW_Site)
 {
 	SW_VEGESTAB *v = &SW_VegEstab;
 
@@ -928,7 +933,7 @@ static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
 			switch (otyp)
 			{
 			case eSWC:
-				sumof_swc(SW_SoilWat, SW_SoilWat->p_accu[op], k);
+				sumof_swc(SW_SoilWat, SW_SoilWat->p_accu[op], k, SW_Site);
 				break;
 
 			case eWTH:
@@ -1103,7 +1108,7 @@ void SW_OUT_set_SXWrequests(void)
 #endif
 
 
-void SW_OUT_construct(void)
+void SW_OUT_construct(LyrIndex n_layers)
 {
 	/* =================================================== */
 	OutKey k;
@@ -1131,7 +1136,7 @@ void SW_OUT_construct(void)
 	bFlush_output = swFALSE;
 	tOffset = 1;
 
-	ForEachSoilLayer(i) {
+	ForEachSoilLayer(i, n_layers) {
 		ForEachVegType(j) {
 			s->SWA_VegType[j][i] = 0.;
 		}
@@ -1601,8 +1606,7 @@ void SW_OUT_deconstruct(Bool full_reset)
 
 
 
-void SW_OUT_set_ncol(void) {
-	int tLayers = SW_Site.n_layers;
+void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs) {
 
 	ncol_OUT[eSW_AllWthr] = 0;
 	ncol_OUT[eSW_Temp] = 6;
@@ -1619,7 +1623,7 @@ void SW_OUT_set_ncol(void) {
 	ncol_OUT[eSW_SWPMatric] = tLayers;
 	ncol_OUT[eSW_SurfaceWater] = 1;
 	ncol_OUT[eSW_Transp] = tLayers * (NVEGTYPES + 1); // NVEGTYPES plus totals
-	ncol_OUT[eSW_EvapSoil] = SW_Site.n_evap_lyrs;
+	ncol_OUT[eSW_EvapSoil] = n_evap_lyrs;
 	ncol_OUT[eSW_EvapSurface] = NVEGTYPES + 3; // NVEGTYPES plus totals, litter, surface water
 	ncol_OUT[eSW_Interception] = NVEGTYPES + 2; // NVEGTYPES plus totals, litter
 	ncol_OUT[eSW_LyrDrain] = tLayers - 1;
@@ -1655,9 +1659,8 @@ void SW_OUT_set_ncol(void) {
 
   @sideeffect Set values of colnames_OUT
 */
-void SW_OUT_set_colnames(void) {
+void SW_OUT_set_colnames(int tLayers) {
 	IntUS i, j;
-	LyrIndex tLayers = SW_Site.n_layers;
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -1973,7 +1976,8 @@ void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy)
 
 
 int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
-					   char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA)
+					   char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA,
+					   Bool deepdrain)
 {
 	int res = 0; // return value indicating type of message if any
 
@@ -2035,7 +2039,7 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 	}
 
 	/* verify deep drainage parameters */
-	if (k == eSW_DeepSWC && SW_Output[k].sumtype != eSW_Off && !SW_Site.deepdrain)
+	if (k == eSW_DeepSWC && SW_Output[k].sumtype != eSW_Off && !deepdrain)
 	{
 		SW_Output[k].use = swFALSE;
 
@@ -2209,7 +2213,8 @@ void SW_OUT_read(SW_ALL* sw)
 			!Str_CompareI("END", (char *)last) ? 366 : atoi(last),
 			msg,
 			sizeof msg,
-			&sw->VegProd.use_SWA
+			&sw->VegProd.use_SWA,
+			sw->Site.deepdrain
 		);
 
 		if (msg_type != 0) {
@@ -2263,17 +2268,16 @@ void SW_OUT_read(SW_ALL* sw)
 
 void _collect_values(SW_ALL* sw) {
 	SW_OUT_sum_today(eSWC, &sw->VegProd, &sw->Weather, &sw->SoilWat,
-															&sw->Model);
+											&sw->Model, &sw->Site);
 
 	SW_OUT_sum_today(eWTH, &sw->VegProd, &sw->Weather, &sw->SoilWat,
-															&sw->Model);
+											&sw->Model, &sw->Site);
 
 	SW_OUT_sum_today(eVES, &sw->VegProd, &sw->Weather, &sw->SoilWat,
-															&sw->Model);
+											&sw->Model, &sw->Site);
 
 	SW_OUT_sum_today(eVPD, &sw->VegProd, &sw->Weather, &sw->SoilWat,
-															&sw->Model);
-
+											&sw->Model, &sw->Site);
 
 	SW_OUT_write_today(sw);
 }
@@ -2301,7 +2305,7 @@ void SW_OUT_flush(SW_ALL* sw) {
     need to perform _new_day() on the soilwater.
 */
 void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					  SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model)
+					  SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model, SW_SITE* SW_Site)
 {
 	/*  SW_VEGESTAB *v = &SW_VegEstab;  -> we don't need to sum daily for this */
 	OutPeriod pd;
@@ -2310,7 +2314,7 @@ void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weath
 	{
 		if (bFlush_output || SW_Model->newperiod[pd]) // `newperiod[eSW_Day]` is always TRUE
 		{
-			average_for(otyp, pd, SW_VegProd, SW_Weather, SW_SoilWat, SW_Model);
+			average_for(otyp, pd, SW_VegProd, SW_Weather, SW_SoilWat, SW_Model, SW_Site);
 
 			switch (otyp)
 			{
@@ -2336,7 +2340,7 @@ void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weath
 	{
 		ForEachOutPeriod(pd)
 		{
-			collect_sums(otyp, pd, SW_VegProd, SW_Weather, SW_SoilWat, SW_Model);
+			collect_sums(otyp, pd, SW_VegProd, SW_Weather, SW_SoilWat, SW_Model, SW_Site);
 		}
 	}
 }

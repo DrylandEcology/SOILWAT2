@@ -87,11 +87,12 @@ char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil, Bool does_agg) {
+static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
+								Bool does_agg, LyrIndex n_layers) {
 	unsigned int i;
 	char key[50],
-		str_help1[SW_Site.n_layers * OUTSTRLEN],
-		str_help2[SW_Site.n_layers * OUTSTRLEN];
+		str_help1[n_layers * OUTSTRLEN],
+		str_help2[n_layers * OUTSTRLEN];
 	OutKey k;
 
 	// Initialize headers
@@ -285,7 +286,7 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd)
     @note Call this routine at the beginning of the main program run, but
     after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
-void SW_OUT_create_files(void) {
+void SW_OUT_create_files(LyrIndex n_layers) {
 	OutPeriod pd;
 
 	ForEachOutPeriod(pd) {
@@ -293,7 +294,7 @@ void SW_OUT_create_files(void) {
 			_create_csv_files(pd);
 
 			write_headers_to_csv(pd, SW_OutFiles.fp_reg[pd], SW_OutFiles.fp_soil[pd],
-				swFALSE);
+				swFALSE, n_layers);
 		}
 	}
 }
@@ -309,7 +310,7 @@ void SW_OUT_create_summary_files(void) {
 			_create_csv_file_ST(-1, p);
 
 			write_headers_to_csv(p, SW_OutFiles.fp_reg_agg[p],
-				SW_OutFiles.fp_soil_agg[p], swTRUE);
+				SW_OutFiles.fp_soil_agg[p], swTRUE, n_layers);
 		}
 	}
 }
@@ -322,7 +323,7 @@ void SW_OUT_create_iteration_files(int iteration) {
 			_create_csv_file_ST(iteration, p);
 
 			write_headers_to_csv(p, SW_OutFiles.fp_reg[p],
-				SW_OutFiles.fp_soil[p], swFALSE);
+				SW_OutFiles.fp_soil[p], swFALSE, n_layers);
 		}
 	}
 }
@@ -376,19 +377,21 @@ void get_outstrleader(OutPeriod pd, char *str, size_t sizeof_str,
   \param fp_soil name of file.
   \param does_agg Indicate whether output is aggregated (`-o` option) or
     for each SOILWAT2 run (`-i` option)
+  \param n_layers Number of soil layers being dealt with in a simulation
 
 */
-void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_agg) {
+void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
+						  Bool does_agg, LyrIndex n_layers) {
 	char str_time[20];
 	char
 		// 3500 characters required for does_agg = TRUE
 		header_reg[2 * OUTSTRLEN],
 		// 26500 characters required for 25 soil layers and does_agg = TRUE
-		header_soil[SW_Site.n_layers * OUTSTRLEN];
+		header_soil[n_layers * OUTSTRLEN];
 
 	// Acquire headers
 	get_outstrheader(pd, str_time, sizeof str_time);
-	_create_csv_headers(pd, header_reg, header_soil, does_agg);
+	_create_csv_headers(pd, header_reg, header_soil, does_agg, n_layers);
 
 	// Write headers to files
 	if (SW_OutFiles.make_regular[pd]) {

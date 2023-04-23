@@ -129,5 +129,5 @@ void create_test_soillayers(unsigned int nlayers) {
   set_soillayers(nlayers, dmax, bulkd, f_gravel,
     evco, trco_grass, trco_shrub, trco_tree,
     trco_forb, psand, pclay, imperm, soiltemp,
-    nRegions, regionLowerBounds, &SW_All.VegProd);
+    nRegions, regionLowerBounds, &SW_All.VegProd, &SW_All.Site);
 }

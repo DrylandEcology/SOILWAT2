@@ -145,16 +145,17 @@ extern char const *styp2str[];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_OUT_construct(void);
+void SW_OUT_construct(LyrIndex n_layers);
 void SW_OUT_deconstruct(Bool full_reset);
-void SW_OUT_set_ncol(void);
-void SW_OUT_set_colnames(void);
+void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs);
+void SW_OUT_set_colnames(int tLayers);
 void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy);
 int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
-					   char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA);
+					   char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA,
+					   Bool deepdrain);
 void SW_OUT_read(SW_ALL* sw);
 void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					  SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model);
+					  SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model, SW_SITE* SW_Site);
 void SW_OUT_write_today(SW_ALL* sw);
 void SW_OUT_write_year(void);
 void SW_OUT_flush(SW_ALL* sw);

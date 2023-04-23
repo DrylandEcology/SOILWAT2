@@ -78,9 +78,9 @@ int main(int argc, char **argv) {
 	SW_CTL_init_run(&sw);
 
   // initialize output
-	SW_OUT_set_ncol();
-	SW_OUT_set_colnames();
-	SW_OUT_create_files(); // only used with SOILWAT2
+	SW_OUT_set_ncol(sw.Site.n_layers, sw.Site.n_evap_lyrs);
+	SW_OUT_set_colnames(sw.Site.n_layers);
+	SW_OUT_create_files(sw.Site.n_layers); // only used with SOILWAT2
 
   // run simulation: loop through each year
 	SW_CTL_main(&sw);

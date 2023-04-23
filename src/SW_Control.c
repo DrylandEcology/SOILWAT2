@@ -59,20 +59,20 @@ static void _begin_year(SW_ALL* sw) {
 	SW_VES_new_year();
 	SW_VPD_new_year(&sw->VegProd, sw->Model.simyear); // Dynamic CO2 effects on vegetation
 	// SW_FLW_new_year() not needed
-	SW_SWC_new_year(&sw->SoilWat, sw->Model.year);
+	SW_SWC_new_year(&sw->SoilWat, &sw->Site, sw->Model.year);
 	// SW_CBN_new_year() not needed
 	SW_OUT_new_year(sw->Model.firstdoy, sw->Model.lastdoy);
 }
 
 static void _begin_day(SW_ALL* sw) {
 	SW_MDL_new_day(&sw->Model);
-	SW_WTH_new_day(&sw->Weather, sw->SoilWat.snowpack,
+	SW_WTH_new_day(&sw->Weather, &sw->Site, sw->SoilWat.snowpack,
                   sw->Model.doy, sw->Model.year);
 }
 
 static void _end_day(SW_ALL* sw) {
 	_collect_values(sw);
-	SW_SWC_end_day(sw->SoilWat.swcBulk, sw->SoilWat.snowpack);
+	SW_SWC_end_day(sw->SoilWat.swcBulk, sw->SoilWat.snowpack, sw->Site.n_layers);
 }
 
 
@@ -109,11 +109,11 @@ void SW_CTL_setup_model(const char *firstfile, SW_ALL* sw) {
 	SW_WTH_construct(&sw->Weather);
 	// delay SW_MKV_construct() until we know from inputs whether we need it
 	// SW_SKY_construct() not need
-	SW_SIT_construct();
+	SW_SIT_construct(&sw->Site);
 	SW_VES_construct();
 	SW_VPD_construct(&sw->VegProd);
 	// SW_FLW_construct() not needed
-	SW_OUT_construct();
+	SW_OUT_construct(sw->Site.n_layers);
 	SW_SWC_construct(&sw->SoilWat);
 	SW_CBN_construct();
 }
@@ -133,7 +133,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
 	SW_MDL_deconstruct();
 	SW_WTH_deconstruct(&sw->Weather); // calls SW_MKV_deconstruct() if needed
 	// SW_SKY_deconstruct() not needed
-	SW_SIT_deconstruct();
+	SW_SIT_deconstruct(&sw->Site);
 	SW_VES_deconstruct();
 	SW_VPD_deconstruct(&sw->VegProd);
 	// SW_FLW_deconstruct() not needed
@@ -154,14 +154,15 @@ void SW_CTL_init_run(SW_ALL* sw) {
 	// SW_MKV_init_run() not needed
 	SW_PET_init_run();
 	// SW_SKY_init_run() not needed
-	SW_SIT_init_run(&sw->VegProd);
-	SW_VES_init_run(); // must run after `SW_SIT_init_run()`
-	SW_VPD_init_run(&sw->VegProd, &sw->Weather, sw->Model.startyr, sw->Model.endyr);
+	SW_SIT_init_run(&sw->VegProd, &sw->Site);
+	SW_VES_init_run(sw->Site.lyr, sw->Site.n_transp_lyrs); // must run after `SW_SIT_init_run()`
+	SW_VPD_init_run(&sw->VegProd, &sw->Weather, sw->Model.startyr,
+                  sw->Model.endyr, sw->Site.latitude);
 	SW_FLW_init_run();
 	SW_ST_init_run();
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
 	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
-	SW_SWC_init_run(&sw->SoilWat);
+	SW_SWC_init_run(&sw->SoilWat, &sw->Site);
 	SW_CBN_init_run(sw->VegProd.veg, &sw->Model);
 }
 
@@ -190,11 +191,12 @@ void SW_CTL_run_current_year(SW_ALL* sw) {
     #ifdef SWDEBUG
     if (debug) swprintf("simulate water ... ");
     #endif
-    SW_SWC_water_flow(&sw->VegProd, &sw->Weather, &sw->SoilWat, &sw->Model);
+    SW_SWC_water_flow(&sw->VegProd, &sw->Weather, &sw->SoilWat, &sw->Model, &sw->Site);
 
     // Only run this function if SWA output is asked for
     if (sw->VegProd.use_SWA) {
-      calculate_repartitioned_soilwater(&sw->VegProd, &sw->SoilWat);
+      calculate_repartitioned_soilwater(&sw->VegProd, &sw->SoilWat,
+                                        sw->Site.lyr, sw->Site.n_layers);
     }
 
     if (SW_VegEstab.use) {
@@ -273,17 +275,17 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   if (debug) swprintf(" > 'veg'");
   #endif
 
-  SW_SIT_read();
+  SW_SIT_read(&sw->Site);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'site'");
   #endif
 
-  SW_LYR_read();
+  SW_LYR_read(&sw->Site);
   #ifdef RSWDEBUG
   if (debug) swprintf(" > 'soils'");
   #endif
 
-  SW_SWRC_read();
+  SW_SWRC_read(&sw->Site);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'swrc parameters'");
   #endif
@@ -303,7 +305,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   if (debug) swprintf(" > 'CO2'");
   #endif
 
-  SW_SWC_read(&sw->SoilWat, sw->Model.endyr);
+  SW_SWC_read(&sw->SoilWat, sw->Model.endyr, sw->Site.lyr, sw->Site.n_layers);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'swc'");
   if (debug) swprintf(" completed.\n");

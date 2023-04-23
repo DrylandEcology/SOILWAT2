@@ -39,7 +39,7 @@ extern char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 #if defined(SOILWAT)
-void SW_OUT_create_files(void);
+void SW_OUT_create_files(LyrIndex n_layers);
 
 #elif defined(STEPWAT)
 void SW_OUT_create_summary_files(void);
@@ -47,8 +47,9 @@ void SW_OUT_create_iteration_files(int iteration);
 #endif
 
 void get_outstrleader(OutPeriod pd, char *str, size_t sizeof_str,
-					  SW_MODEL* SW_Model);
-void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil, Bool does_agg);
+					            SW_MODEL* SW_Model);
+void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
+						  Bool does_agg, LyrIndex n_layers);
 void find_TXToutputSoilReg_inUse(void);
 void SW_OUT_close_files(void);
 

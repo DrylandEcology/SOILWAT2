@@ -83,15 +83,15 @@ static void _clear_hist(RealD SoilWat_hist_swc[][MAX_LAYERS],
 	}
 }
 
-static void _reset_swc(SW_SOILWAT* SW_SoilWat) {
+static void _reset_swc(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site) {
 	LyrIndex lyr;
 
 	/* reset swc */
-	ForEachSoilLayer(lyr)
+	ForEachSoilLayer(lyr, SW_Site->n_layers)
 	{
 		SW_SoilWat->swcBulk[Today][lyr] =
 							SW_SoilWat->swcBulk[Yesterday][lyr] =
-												SW_Site.lyr[lyr]->swcBulk_init;
+												SW_Site->lyr[lyr]->swcBulk_init;
 		SW_SoilWat->drain[lyr] = 0.;
 	}
 
@@ -99,8 +99,8 @@ static void _reset_swc(SW_SOILWAT* SW_SoilWat) {
 	SW_SoilWat->snowpack[Today] = SW_SoilWat->snowpack[Yesterday] = 0.;
 
 	/* reset deep drainage */
-	if (SW_Site.deepdrain) {
-		SW_SoilWat->swcBulk[Today][SW_Site.deep_lyr] = 0.;
+	if (SW_Site->deepdrain) {
+		SW_SoilWat->swcBulk[Today][SW_Site->deep_lyr] = 0.;
   }
 }
 
@@ -342,7 +342,7 @@ static double itp_FXW_for_phi(double theta, double *swrcp) {
 
 #ifdef SWDEBUG
 void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
-							SW_MODEL* SW_Model)
+							SW_MODEL* SW_Model, SW_SITE* SW_Site)
 {
 
   IntUS i, k;
@@ -361,6 +361,7 @@ void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
 
   static RealD surfaceWater_yesterday;
   static Bool debug = swFALSE;
+  LyrIndex n_layers = SW_Site->n_layers;
 
 
   // re-init static variables on first day of each simulation
@@ -370,7 +371,7 @@ void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
   }
 
   // Sum up variables
-  ForEachSoilLayer(i)
+  ForEachSoilLayer(i, n_layers)
   {
     percolationIn[i + 1] = SW_SoilWat->drain[i];
     percolationOut[i] = SW_SoilWat->drain[i];
@@ -387,7 +388,7 @@ void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
     }
   }
 
-  ForEachEvapLayer(i)
+  ForEachEvapLayer(i, SW_Site->n_evap_lyrs)
   {
     Esoil += SW_SoilWat->evaporation[i];
   }
@@ -408,10 +409,10 @@ void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
 
   // Get other water flux values
   infiltration = SW_Weather->soil_inf;
-  deepDrainage = SW_SoilWat->swcBulk[Today][SW_Site.deep_lyr]; // see issue #137
+  deepDrainage = SW_SoilWat->swcBulk[Today][SW_Site->deep_lyr]; // see issue #137
 
   percolationIn[0] = infiltration;
-  percolationOut[SW_Site.n_layers] = deepDrainage;
+  percolationOut[SW_Site->n_layers] = deepDrainage;
 
   runoff = SW_Weather->snowRunoff + SW_Weather->surfaceRunoff;
   runon = SW_Weather->surfaceRunon;
@@ -528,7 +529,7 @@ void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
   if (!SW_SoilWat->is_wbError_init) {
     SW_SoilWat->wbErrorNames[7] = Str_Dup("delta_swc[i] == perc_in[i] + hydred[i] - (perc_out[i] + Ttot[i] + Esoil[i]))");
   }
-  ForEachSoilLayer(i)
+  ForEachSoilLayer(i, n_layers)
   {
     rhs = percolationIn[i] + hydraulicRedistribution[i] -
       (percolationOut[i] + Ttotalj[i] + SW_SoilWat->evaporation[i]);
@@ -545,20 +546,20 @@ void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
   if (!SW_SoilWat->is_wbError_init) {
     SW_SoilWat->wbErrorNames[8] = Str_Dup("swc[i] => swc_min[i] && swc[i] <= swc_sat[i]");
   }
-  ForEachSoilLayer(i)
+  ForEachSoilLayer(i, n_layers)
   {
     if (
-      LT(SW_SoilWat->swcBulk[Today][i], SW_Site.lyr[i]->swcBulk_min) ||
-      GT(SW_SoilWat->swcBulk[Today][i], SW_Site.lyr[i]->swcBulk_saturated)
+      LT(SW_SoilWat->swcBulk[Today][i], SW_Site->lyr[i]->swcBulk_min) ||
+      GT(SW_SoilWat->swcBulk[Today][i], SW_Site->lyr[i]->swcBulk_saturated)
     ) {
       SW_SoilWat->wbError[8]++;
       if (debugi[8]) {
         swprintf(
           "%s sl=%d: swc_min(%f) <= swc(%f) <= swc_sat(%f)\n",
           flag, i,
-          SW_Site.lyr[i]->swcBulk_min,
+          SW_Site->lyr[i]->swcBulk_min,
           SW_SoilWat->swcBulk[Today][i],
-          SW_Site.lyr[i]->swcBulk_saturated
+          SW_Site->lyr[i]->swcBulk_saturated
         );
       }
     }
@@ -641,7 +642,8 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat)
     water flow, and check if swc is above threshold for "wet" condition.
 */
 void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					   SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model) {
+					   SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model,
+					   SW_SITE* SW_Site) {
 	/* =================================================== */
 
 
@@ -665,7 +667,8 @@ void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
       #ifdef SWDEBUG
       if (debug) swprintf("\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n");
       #endif
-      SW_SWC_adjust_swc(SW_Model->doy, SW_SoilWat->swcBulk, SW_SoilWat->hist);
+      SW_SWC_adjust_swc(SW_Model->doy, SW_SoilWat->swcBulk, SW_SoilWat->hist,
+	  					SW_Site->lyr, SW_Site->n_layers);
 
 		} else {
 			LogError(logfp, LOGWARN, "Attempt to set SWC on start day of first year of simulation disallowed.");
@@ -675,18 +678,18 @@ void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
     #ifdef SWDEBUG
     if (debug) swprintf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
     #endif
-		SW_Water_Flow(SW_VegProd, SW_Weather, SW_SoilWat, SW_Model);
+		SW_Water_Flow(SW_VegProd, SW_Weather, SW_SoilWat, SW_Model, SW_Site);
 	}
 
   #ifdef SWDEBUG
   if (debug) swprintf("\n'SW_SWC_water_flow': check water balance.\n");
-  SW_WaterBalance_Checks(SW_Weather, SW_SoilWat, SW_Model);
+  SW_WaterBalance_Checks(SW_Weather, SW_SoilWat, SW_Model, SW_Site);
 
   if (debug) swprintf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
   #endif
-	ForEachSoilLayer(i)
+	ForEachSoilLayer(i, SW_Site->n_layers)
 		SW_SoilWat->is_wet[i] = (Bool) (GE( SW_SoilWat->swcBulk[Today][i],
-				SW_Site.lyr[i]->swcBulk_wet));
+				SW_Site->lyr[i]->swcBulk_wet));
 }
 
 /**
@@ -696,19 +699,19 @@ void SW_SWC_water_flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 */
 /***********************************************************/
 void calculate_repartitioned_soilwater(SW_VEGPROD* SW_VegProd,
-									   SW_SOILWAT* SW_SoilWat) {
+	SW_SOILWAT* SW_SoilWat, SW_LAYER_INFO** lyr, LyrIndex n_layers) {
   // this will run for every day of every year
   LyrIndex i;
   RealD val = SW_MISSING;
   int j, k;
   float curr_crit_val, new_crit_val;
 
-  ForEachSoilLayer(i){
+  ForEachSoilLayer(i, n_layers){
     val = SW_SoilWat->swcBulk[Today][i];
     ForEachVegType(j){
       if(SW_VegProd->veg[j].cov.fCover != 0)
         SW_SoilWat->swa_master[j][j][i] =
-						fmax(0., val - SW_Site.lyr[i]->swcBulk_atSWPcrit[j]);
+						fmax(0., val - lyr[i]->swcBulk_atSWPcrit[j]);
       else
         SW_SoilWat->swa_master[j][j][i] = 0.;
       SW_SoilWat->dSWA_repartitioned_sum[j][i] = 0.; // need to reset to 0 each time
@@ -876,18 +879,19 @@ void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd,
 /**
 @brief Copies today's values so that the values for swcBulk and snowpack become yesterday's values.
 */
-void SW_SWC_end_day(RealD swcBulk[][MAX_LAYERS], RealD snowpack[]) {
+void SW_SWC_end_day(RealD swcBulk[][MAX_LAYERS], RealD snowpack[],
+					LyrIndex n_layers) {
 	/* =================================================== */
 	LyrIndex i;
 
-	ForEachSoilLayer(i)
+	ForEachSoilLayer(i, n_layers)
 		swcBulk[Yesterday][i] =	swcBulk[Today][i];
 
 	snowpack[Yesterday] = snowpack[Today];
 
 }
 
-void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat) {
+void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site) {
 
 	SW_SoilWat->soiltempError = swFALSE;
 
@@ -897,23 +901,23 @@ void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat) {
 
 	temp_snow = 0.; // module-level snow temperature
 
-  _reset_swc(SW_SoilWat);
+  _reset_swc(SW_SoilWat, SW_Site);
 }
 
 /**
 @brief init first doy swc, either by the computed init value or by the last day of last
       year, which is also, coincidentally, Yesterday
 */
-void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, TimeInt year) {
+void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year) {
 
 	LyrIndex lyr;
 
-  if (SW_Site.reset_yr) {
-    _reset_swc(SW_SoilWat);
+  if (SW_Site->reset_yr) {
+    _reset_swc(SW_SoilWat, SW_Site);
 
   } else {
     /* update swc */
-    ForEachSoilLayer(lyr)
+    ForEachSoilLayer(lyr, SW_Site->n_layers)
     {
       SW_SoilWat->swcBulk[Today][lyr] = SW_SoilWat->swcBulk[Yesterday][lyr];
     }
@@ -940,7 +944,8 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, TimeInt year) {
 @brief Like all of the other functions, read() reads in the setup parameters. See
       _read_swc_hist() for reading historical files.
 */
-void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr) {
+void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
+				 LyrIndex n_layers) {
 	/* =================================================== */
 	/* HISTORY
 	 *  1/25/02 - cwb - removed unused records of logfile and
@@ -952,8 +957,8 @@ void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr) {
 // gets the soil temperatures from where they are read in the SW_Site struct for use later
 // SW_Site.c must call it's read function before this, or it won't work
 	LyrIndex i;
-	ForEachSoilLayer(i)
-		SW_SoilWat->avgLyrTemp[i] = SW_Site.lyr[i]->avgLyrTemp;
+	ForEachSoilLayer(i, n_layers)
+		SW_SoilWat->avgLyrTemp[i] = lyr[i]->avgLyrTemp;
 
 	MyFileName = SW_F_name(eSoilwat);
 	f = OpenFile(MyFileName, "r");
@@ -1079,34 +1084,38 @@ void _read_swc_hist(TimeInt year, SW_SOILWAT_HIST SoilWat_hist) {
 @param swcBulk Soil water content in the layer [cm]
 @param SoilWat_hist Struct of type SW_SOILWAT_HIST holding parameters for
 					historical (measured) swc values
+@param **lyr Struct list of type SW_LAYER_INFO holding information about
+	every soil layer in the simulation
+@param n_layers Total number of soil layers in simulation
 */
 void SW_SWC_adjust_swc(TimeInt doy, RealD swcBulk[][MAX_LAYERS],
-					   SW_SOILWAT_HIST SoilWat_hist) {
+					   SW_SOILWAT_HIST SoilWat_hist, SW_LAYER_INFO** lyr,
+					   LyrIndex n_layers) {
 	/* =================================================== */
 	/* 01/07/02 (cwb) added final loop to guarantee swc > swcBulk_min
 	 */
 	RealD lower, upper;
-	LyrIndex lyr;
+	LyrIndex lyrIndex;
 	TimeInt dy = doy - 1;
 
 	switch (SoilWat_hist.method) {
 	case SW_Adjust_Avg:
-		ForEachSoilLayer(lyr)
+		ForEachSoilLayer(lyrIndex, n_layers)
 		{
-			swcBulk[Today][lyr] += SoilWat_hist.swc[dy][lyr];
-			swcBulk[Today][lyr] /= 2.;
+			swcBulk[Today][lyrIndex] += SoilWat_hist.swc[dy][lyrIndex];
+			swcBulk[Today][lyrIndex] /= 2.;
 		}
 		break;
 
 	case SW_Adjust_StdErr:
-		ForEachSoilLayer(lyr)
+		ForEachSoilLayer(lyrIndex, n_layers)
 		{
-			upper = SoilWat_hist.swc[dy][lyr] + SoilWat_hist.std_err[dy][lyr];
-			lower = SoilWat_hist.swc[dy][lyr] - SoilWat_hist.std_err[dy][lyr];
-			if (GT(swcBulk[Today][lyr], upper))
-				swcBulk[Today][lyr] = upper;
-			else if (LT(swcBulk[Today][lyr], lower))
-				swcBulk[Today][lyr] = lower;
+			upper = SoilWat_hist.swc[dy][lyrIndex] + SoilWat_hist.std_err[dy][lyrIndex];
+			lower = SoilWat_hist.swc[dy][lyrIndex] - SoilWat_hist.std_err[dy][lyrIndex];
+			if (GT(swcBulk[Today][lyrIndex], upper))
+				swcBulk[Today][lyrIndex] = upper;
+			else if (LT(swcBulk[Today][lyrIndex], lower))
+				swcBulk[Today][lyrIndex] = lower;
 		}
 		break;
 
@@ -1116,8 +1125,8 @@ void SW_SWC_adjust_swc(TimeInt doy, RealD swcBulk[][MAX_LAYERS],
 
 	/* this will guarantee that any method will not lower swc */
 	/* below the minimum defined for the soil layers          */
-	ForEachSoilLayer(lyr){
-		swcBulk[Today][lyr] = fmax(swcBulk[Today][lyr], SW_Site.lyr[lyr]->swcBulk_min);
+	ForEachSoilLayer(lyrIndex, n_layers){
+		swcBulk[Today][lyrIndex] = fmax(swcBulk[Today][lyrIndex], lyr[lyrIndex]->swcBulk_min);
   }
 
 }
@@ -1127,6 +1136,7 @@ void SW_SWC_adjust_swc(TimeInt doy, RealD swcBulk[][MAX_LAYERS],
 
 Equations based on SWAT2K routines. @cite Neitsch2005
 
+@param SW_Site Struct of type SW_SITE describing the site in question
 @param temp_min Daily minimum temperature (C)
 @param temp_max Daily maximum temperature (C)
 @param ppt Daily precipitation (cm)
@@ -1141,8 +1151,9 @@ Equations based on SWAT2K routines. @cite Neitsch2005
 @sideeffect *snowmelt Updated snow-water equivalent of daily snowmelt (cm)
 */
 
-void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
-	RealD *snow, RealD *snowmelt, RealD snowpack[], TimeInt doy) {
+void SW_SWC_adjust_snow(SW_SITE* SW_Site, RealD temp_min, RealD temp_max,
+	RealD ppt, RealD *rain, RealD *snow, RealD *snowmelt, RealD snowpack[],
+	TimeInt doy) {
 
 /*************************************************************************************************
 History:
@@ -1160,7 +1171,7 @@ replaced SW_SWC_snow_accumulation, SW_SWC_snow_sublimation, and SW_SWC_snow_melt
 	temp_ave = (temp_min + temp_max) / 2.;
 
 	/* snow accumulation */
-	if (LE(temp_ave, SW_Site.TminAccu2)) {
+	if (LE(temp_ave, SW_Site->TminAccu2)) {
 		SnowAccu = ppt;
 	} else {
 		SnowAccu = 0.;
@@ -1170,10 +1181,10 @@ replaced SW_SWC_snow_accumulation, SW_SWC_snow_sublimation, and SW_SWC_snow_melt
 	*snowpack_today += SnowAccu;
 
 	/* snow melt */
-	Rmelt = (SW_Site.RmeltMax + SW_Site.RmeltMin) / 2. + sin((doy - 81.) / 58.09) * (SW_Site.RmeltMax - SW_Site.RmeltMin) / 2.;
-  temp_snow = temp_snow * (1 - SW_Site.lambdasnow) + temp_ave * SW_Site.lambdasnow;
-	if (GT(temp_snow, SW_Site.TmaxCrit)) {
-		SnowMelt = fmin( *snowpack_today, Rmelt * snow_cov * ((temp_snow + temp_max)/2. - SW_Site.TmaxCrit) );
+	Rmelt = (SW_Site->RmeltMax + SW_Site->RmeltMin) / 2. + sin((doy - 81.) / 58.09) * (SW_Site->RmeltMax - SW_Site->RmeltMin) / 2.;
+  temp_snow = temp_snow * (1 - SW_Site->lambdasnow) + temp_ave * SW_Site->lambdasnow;
+	if (GT(temp_snow, SW_Site->TmaxCrit)) {
+		SnowMelt = fmin( *snowpack_today, Rmelt * snow_cov * ((temp_snow + temp_max)/2. - SW_Site->TmaxCrit) );
 	} else {
 		SnowMelt = 0.;
 	}
