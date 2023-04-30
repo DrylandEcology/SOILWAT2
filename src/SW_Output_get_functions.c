@@ -352,7 +352,6 @@ void get_biomass_agg(OutPeriod pd, SW_ALL* sw) {
 */
 void get_estab_text(OutPeriod pd, SW_ALL* sw)
 {
-	SW_VEGESTAB *v = &SW_VegEstab;
 	IntU i;
 
 	char str[OUTSTRLEN];
@@ -360,9 +359,9 @@ void get_estab_text(OutPeriod pd, SW_ALL* sw)
 
 	i = (IntU) pd; // silence `-Wunused-parameter`
 
-	for (i = 0; i < v->count; i++)
+	for (i = 0; i < sw->VegEstab.count; i++)
 	{
-		snprintf(str, OUTSTRLEN, "%c%d", _Sep, v->parms[i]->estab_doy);
+		snprintf(str, OUTSTRLEN, "%c%d", _Sep, sw->VegEstab.parms[i]->estab_doy);
 		strcat(sw_outstr, str);
 	}
 
@@ -383,15 +382,14 @@ void get_estab_text(OutPeriod pd, SW_ALL* sw)
 */
 void get_estab_mem(OutPeriod pd, SW_ALL* sw)
 {
-	SW_VEGESTAB *v = &SW_VegEstab;
 	IntU i;
 
 	RealD *p = p_OUT[eSW_Estab][pd];
 	get_outvalleader(p, pd);
 
-	for (i = 0; i < v->count; i++)
+	for (i = 0; i < sw->VegEstab.count; i++)
 	{
-		p[iOUT(i, pd)] = v->parms[i]->estab_doy;
+		p[iOUT(i, pd)] = sw->VegEstab.parms[i]->estab_doy;
 	}
 }
 
@@ -408,17 +406,16 @@ void get_estab_mem(OutPeriod pd, SW_ALL* sw)
 */
 void get_estab_agg(OutPeriod pd, SW_ALL* sw)
 {
-	SW_VEGESTAB *v = &SW_VegEstab;
 	IntU i;
 
 	RealD
 		*p = p_OUT[eSW_Estab][pd],
 		*psd = p_OUTsd[eSW_Estab][pd];
 
-	for (i = 0; i < v->count; i++)
+	for (i = 0; i < sw->VegEstab.count; i++)
 	{
 		do_running_agg(p, psd, iOUT(i, pd), Globals->currIter,
-			v->parms[i]->estab_doy);
+			sw->VegEstab.parms[i]->estab_doy);
 	}
 
 	if (print_IterationSummary) {

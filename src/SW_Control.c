@@ -56,7 +56,7 @@ static void _begin_year(SW_ALL* sw) {
 	// SW_MKV_new_year() not needed
 	SW_SKY_new_year(sw->Model.year, sw->Model.startyr); // Update daily climate variables from monthly values
 	//SW_SIT_new_year() not needed
-	SW_VES_new_year();
+	SW_VES_new_year(sw->VegEstab.count);
 	SW_VPD_new_year(&sw->VegProd, sw->Model.simyear); // Dynamic CO2 effects on vegetation
 	// SW_FLW_new_year() not needed
 	SW_SWC_new_year(&sw->SoilWat, &sw->Site, sw->Model.year);
@@ -110,7 +110,7 @@ void SW_CTL_setup_model(const char *firstfile, SW_ALL* sw) {
 	// delay SW_MKV_construct() until we know from inputs whether we need it
 	// SW_SKY_construct() not need
 	SW_SIT_construct(&sw->Site);
-	SW_VES_construct();
+	SW_VES_construct(&sw->VegEstab);
 	SW_VPD_construct(&sw->VegProd);
 	// SW_FLW_construct() not needed
 	SW_OUT_construct(sw->Site.n_layers);
@@ -134,7 +134,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
 	SW_WTH_deconstruct(&sw->Weather); // calls SW_MKV_deconstruct() if needed
 	// SW_SKY_deconstruct() not needed
 	SW_SIT_deconstruct(&sw->Site);
-	SW_VES_deconstruct();
+	SW_VES_deconstruct(&sw->VegEstab);
 	SW_VPD_deconstruct(&sw->VegProd);
 	// SW_FLW_deconstruct() not needed
 	SW_OUT_deconstruct(full_reset);
@@ -155,7 +155,8 @@ void SW_CTL_init_run(SW_ALL* sw) {
 	SW_PET_init_run();
 	// SW_SKY_init_run() not needed
 	SW_SIT_init_run(&sw->VegProd, &sw->Site);
-	SW_VES_init_run(sw->Site.lyr, sw->Site.n_transp_lyrs); // must run after `SW_SIT_init_run()`
+	SW_VES_init_run(sw->Site.lyr, sw->Site.n_transp_lyrs,
+                  sw->VegEstab.parms, sw->VegEstab.count); // must run after `SW_SIT_init_run()`
 	SW_VPD_init_run(&sw->VegProd, &sw->Weather, sw->Model.startyr,
                   sw->Model.endyr, sw->Site.latitude);
 	SW_FLW_init_run();
@@ -199,9 +200,9 @@ void SW_CTL_run_current_year(SW_ALL* sw) {
                                         sw->Site.lyr, sw->Site.n_layers);
     }
 
-    if (SW_VegEstab.use) {
-      SW_VES_checkestab(&sw->Weather, sw->SoilWat.swcBulk, sw->Model.doy,
-                        sw->Model.firstdoy);
+    if (sw->VegEstab.use) {
+      SW_VES_checkestab(sw->VegEstab.parms, &sw->Weather, sw->SoilWat.swcBulk,
+                        sw->Model.doy, sw->Model.firstdoy, sw->VegEstab.count);
     }
 
     #ifdef SWDEBUG
@@ -290,7 +291,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   if (debug) swprintf(" > 'swrc parameters'");
   #endif
 
-  SW_VES_read();
+  SW_VES_read(&sw->VegEstab);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'establishment'");
   #endif

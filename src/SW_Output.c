@@ -176,7 +176,8 @@ static OutSum str2stype(char *s);
 
 static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
 						 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
-						 SW_MODEL* SW_Model, SW_SITE* SW_Site);
+						 SW_MODEL* SW_Model, SW_SITE* SW_Site,
+						 SW_VEGESTAB* Veg_Estab);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
 static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
 					  SW_SITE* SW_Site);
@@ -876,10 +877,9 @@ static void average_for(ObjType otyp, OutPeriod pd, SW_VEGPROD* SW_VegProd,
 
 static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
 						 SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
-						 SW_MODEL* SW_Model, SW_SITE* SW_Site)
+						 SW_MODEL* SW_Model, SW_SITE* SW_Site,
+						 SW_VEGESTAB* SW_VegEstab)
 {
-	SW_VEGESTAB *v = &SW_VegEstab;
-
 	TimeInt pd = 0;
 	OutKey k;
 	IntUS i;
@@ -942,7 +942,7 @@ static void collect_sums(ObjType otyp, OutPeriod op, SW_VEGPROD* SW_VegProd,
 
 			case eVES:
 				if (op == eSW_Year) {
-					sumof_ves(v, v->p_accu[eSW_Year], k); /* yearly, y'see */
+					sumof_ves(SW_VegEstab, SW_VegEstab->p_accu[eSW_Year], k); /* yearly, y'see */
 				}
 				break;
 
@@ -1606,7 +1606,7 @@ void SW_OUT_deconstruct(Bool full_reset)
 
 
 
-void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs) {
+void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count) {
 
 	ncol_OUT[eSW_AllWthr] = 0;
 	ncol_OUT[eSW_Temp] = 6;
@@ -1637,7 +1637,7 @@ void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs) {
 	ncol_OUT[eSW_SoilTemp] = (tLayers * 3); // 3 for three new column names for each layer
     ncol_OUT[eSW_Frozen] = tLayers;
 	ncol_OUT[eSW_AllVeg] = 0;
-	ncol_OUT[eSW_Estab] = SW_VegEstab.count;
+	ncol_OUT[eSW_Estab] = count;
 	ncol_OUT[eSW_CO2Effects] = 2 * NVEGTYPES;
 	ncol_OUT[eSW_Biomass] = NVEGTYPES + 1 +  // fCover for NVEGTYPES plus bare-ground
 		NVEGTYPES + 2 +  // biomass for NVEGTYPES plus totals and litter
@@ -1659,7 +1659,7 @@ void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs) {
 
   @sideeffect Set values of colnames_OUT
 */
-void SW_OUT_set_colnames(int tLayers) {
+void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** params) {
 	IntUS i, j;
   #ifdef SWDEBUG
   int debug = 0;
@@ -1897,7 +1897,7 @@ void SW_OUT_set_colnames(int tLayers) {
 	if (debug) swprintf(" 'eSW_Estab' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_Estab]; i++) {
-		colnames_OUT[eSW_Estab][i] = Str_Dup(SW_VegEstab.parms[i]->sppname);
+		colnames_OUT[eSW_Estab][i] = Str_Dup(params[i]->sppname);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_CO2Effects' ...");
@@ -2268,16 +2268,16 @@ void SW_OUT_read(SW_ALL* sw)
 
 void _collect_values(SW_ALL* sw) {
 	SW_OUT_sum_today(eSWC, &sw->VegProd, &sw->Weather, &sw->SoilWat,
-											&sw->Model, &sw->Site);
+									&sw->Model, &sw->Site, &sw->VegEstab);
 
 	SW_OUT_sum_today(eWTH, &sw->VegProd, &sw->Weather, &sw->SoilWat,
-											&sw->Model, &sw->Site);
+									&sw->Model, &sw->Site, &sw->VegEstab);
 
 	SW_OUT_sum_today(eVES, &sw->VegProd, &sw->Weather, &sw->SoilWat,
-											&sw->Model, &sw->Site);
+									&sw->Model, &sw->Site, &sw->VegEstab);
 
 	SW_OUT_sum_today(eVPD, &sw->VegProd, &sw->Weather, &sw->SoilWat,
-											&sw->Model, &sw->Site);
+									&sw->Model, &sw->Site, &sw->VegEstab);
 
 	SW_OUT_write_today(sw);
 }
@@ -2305,7 +2305,8 @@ void SW_OUT_flush(SW_ALL* sw) {
     need to perform _new_day() on the soilwater.
 */
 void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					  SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model, SW_SITE* SW_Site)
+					  SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model, SW_SITE* SW_Site,
+					  SW_VEGESTAB* SW_VegEstab)
 {
 	/*  SW_VEGESTAB *v = &SW_VegEstab;  -> we don't need to sum daily for this */
 	OutPeriod pd;
@@ -2340,7 +2341,8 @@ void SW_OUT_sum_today(ObjType otyp, SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weath
 	{
 		ForEachOutPeriod(pd)
 		{
-			collect_sums(otyp, pd, SW_VegProd, SW_Weather, SW_SoilWat, SW_Model, SW_Site);
+			collect_sums(otyp, pd, SW_VegProd, SW_Weather, SW_SoilWat, SW_Model, SW_Site,
+						 SW_VegEstab);
 		}
 	}
 }

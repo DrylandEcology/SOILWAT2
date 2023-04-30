@@ -28,27 +28,25 @@ extern "C" {
 #define SW_ESTAB_BARS 1
 
 /* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern SW_VEGESTAB SW_VegEstab;
-
-
-/* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_VES_read(void);
-void SW_VES_read2(Bool use_VegEstab, Bool consider_InputFlag);
-void SW_VES_construct(void);
-void SW_VES_deconstruct(void);
-void SW_VES_init_run(SW_LAYER_INFO** site_lyr, LyrIndex site_n_transp_lyrs[]);
-void SW_VegEstab_construct(void);
-void SW_VES_checkestab(SW_WEATHER* SW_Weather, RealD swcBulk[][MAX_LAYERS],
-					   TimeInt doy, TimeInt firstdoy);
-void SW_VES_new_year(void);
-void _spp_init(unsigned int sppnum, SW_LAYER_INFO** lyr,
-			   LyrIndex n_transp_lyrs[]);
-unsigned int _new_species(void);
-void _echo_VegEstab(SW_LAYER_INFO** lyr);
+void SW_VES_read(SW_VEGESTAB* SW_VegEstab);
+void SW_VES_read2(Bool use_VegEstab, Bool consider_InputFlag,
+				  SW_VEGESTAB* SW_VegEstab);
+void SW_VES_construct(SW_VEGESTAB* SW_VegEstab);
+void SW_VES_deconstruct(SW_VEGESTAB* SW_VegEstab);
+void SW_VES_init_run(SW_LAYER_INFO** site_lyr, LyrIndex site_n_transp_lyrs[],
+					 SW_VEGESTAB_INFO** parms, IntU count);
+void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab);
+void SW_VES_checkestab(SW_VEGESTAB_INFO** parms, SW_WEATHER* SW_Weather,
+					   RealD swcBulk[][MAX_LAYERS], TimeInt doy,
+					   TimeInt firstdoy, IntU count);
+void SW_VES_new_year(IntU count);
+void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
+			   SW_LAYER_INFO** lyr, LyrIndex n_transp_lyrs[]);
+IntU _new_species(SW_VEGESTAB* SW_VegEstab);
+void _echo_VegEstab(SW_LAYER_INFO** lyr, SW_VEGESTAB_INFO** parms,
+					IntU count);
 
 
 /* COMMENT-1
