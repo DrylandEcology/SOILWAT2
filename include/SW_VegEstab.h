@@ -31,8 +31,11 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_VES_read(SW_VEGESTAB* SW_VegEstab);
-void SW_VES_read2(Bool use_VegEstab, Bool consider_InputFlag,
-				  SW_VEGESTAB* SW_VegEstab);
+void SW_VES_read2(
+	SW_VEGESTAB* SW_VegEstab,
+	Bool use_VegEstab,
+	Bool consider_InputFlag
+);
 void SW_VES_construct(SW_VEGESTAB* SW_VegEstab);
 void SW_VES_deconstruct(SW_VEGESTAB* SW_VegEstab);
 void SW_VES_init_run(SW_LAYER_INFO** site_lyr, LyrIndex site_n_transp_lyrs[],
