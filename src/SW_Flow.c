@@ -148,10 +148,7 @@ static RealD
 	lyrSWCBulk_Saturated[MAX_LAYERS],
 	lyrSWCBulk_Wiltpts[MAX_LAYERS],
 	lyrSWCBulk_HalfWiltpts[MAX_LAYERS],
-	lyrSWCBulk_Mins[MAX_LAYERS],
-
-	lyroldavgLyrTemp[MAX_LAYERS],
-	lyravgLyrTemp[MAX_LAYERS];
+	lyrSWCBulk_Mins[MAX_LAYERS];
 
 
 // variables to help calculate runon from a (hypothetical) upslope neighboring (UpNeigh) site
@@ -175,7 +172,6 @@ static RealD
 /* --------------------------------------------------- */
 
 static void records2arrays(
-	RealD avgLyrTemp[], 
 	TimeInt doy,
 	TimeInt firstdoy,
 	SW_SITE* SW_Site
@@ -196,11 +192,6 @@ static void records2arrays(
 	 */
 	LyrIndex i;
 	int k;
-
-	ForEachSoilLayer(i, SW_Site->n_layers)
-	{
-		lyroldavgLyrTemp[i] = avgLyrTemp[i];
-	}
 
 	if (doy == firstdoy) {
 		ForEachSoilLayer(i, SW_Site->n_layers)
@@ -243,7 +234,6 @@ static void arrays2records(
 
 	ForEachSoilLayer(i, SW_Site->n_layers)
 	{
-		SW_SoilWat->avgLyrTemp[i] = lyravgLyrTemp[i];
 		ForEachVegType(k)
 		{
 			SW_SoilWat->hydred[k][i] = lyrHydRed[k][i];
@@ -301,7 +291,7 @@ void SW_FLW_init_run(SW_SOILWAT* SW_SoilWat) {
 		lyrWidths[i] = lyrSWCBulk_Wiltpts[i] = lyrSWCBulk_HalfWiltpts[i] = 0;
 		lyrSWCBulk_Mins[i] = 0;
 		lyrImpermeability[i] = lyrSWCBulk_Saturated[i] = 0;
-		lyroldavgLyrTemp[i] = lyravgLyrTemp[i] = lyrbDensity[i] = 0;
+		lyrbDensity[i] = 0;
 	}
 
 	for(i=0; i<= MAX_TRANSP_REGIONS; i++)
@@ -344,8 +334,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 	doy = sw->Model.doy; /* base1 */
 	month = sw->Model.month; /* base0 */
 
-	records2arrays(sw->SoilWat.avgLyrTemp,
-				   sw->Model.doy, sw->Model.firstdoy, &sw->Site);
+	records2arrays(sw->Model.doy, sw->Model.firstdoy, &sw->Site);
 
 	#ifdef SWDEBUG
 	if (debug && sw->Model.year == debug_year && sw->Model.doy == debug_doy) {
@@ -369,7 +358,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 			lyrSWCBulk_Saturated,
 			lyrbDensity,
 			lyrWidths,
-			lyroldavgLyrTemp, // yesterday's soil temperature values
+			sw->SoilWat.avgLyrTemp, // yesterday's soil temperature values
 			surfaceAvg,
 			n_layers,
 			lyrSWCBulk_FieldCaps,
@@ -842,7 +831,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 		soil_temperature(&sw->Weather.surfaceMax, &sw->Weather.surfaceMin,
 			sw->SoilWat.lyrFrozen, sw->Weather.now.temp_avg, sw->SoilWat.pet,
 			sw->SoilWat.aet, x, sw->SoilWat.swcBulk[Today], lyrSWCBulk_Saturated, lyrbDensity,
-			lyrWidths, lyravgLyrTemp, surfaceAvg,
+			lyrWidths, sw->SoilWat.avgLyrTemp, surfaceAvg,
 			n_layers, sw->Site.bmLimiter, sw->Site.t1Param1, sw->Site.t1Param2,
 			sw->Site.t1Param3, sw->Site.csParam1, sw->Site.csParam2,
 			sw->Site.shParam, sw->SoilWat.snowdepth, sw->Site.Tsoil_constant,
