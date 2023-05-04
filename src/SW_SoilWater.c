@@ -894,15 +894,14 @@ void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd,
 @param[in,out] snowpack swe of snowpack, assuming accumulation is turned on
 @param[in] n_layers Number of layers of soil within the simulation run
 */
-void SW_SWC_end_day(RealD swcBulk[][MAX_LAYERS], RealD snowpack[],
-					LyrIndex n_layers) {
+void SW_SWC_end_day(SW_SOILWAT* SW_SoilWat, LyrIndex n_layers) {
 	/* =================================================== */
 	LyrIndex i;
 
 	ForEachSoilLayer(i, n_layers)
-		swcBulk[Yesterday][i] =	swcBulk[Today][i];
+		SW_SoilWat->swcBulk[Yesterday][i] =	SW_SoilWat->swcBulk[Today][i];
 
-	snowpack[Yesterday] = snowpack[Today];
+	SW_SoilWat->snowpack[Yesterday] = SW_SoilWat->snowpack[Today];
 
 }
 
