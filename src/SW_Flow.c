@@ -374,7 +374,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 			lyrSWCBulk_Saturated,
 			lyrbDensity,
 			lyrWidths,
-			lyroldavgLyrTemp,
+			lyroldavgLyrTemp, // yesterday's soil temperature values
 			surfaceAvg,
 			n_layers,
 			lyrSWCBulk_FieldCaps,
@@ -847,7 +847,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 		soil_temperature(&sw->Weather.surfaceMax, &sw->Weather.surfaceMin,
 			sw->SoilWat.lyrFrozen, sw->Weather.now.temp_avg, sw->SoilWat.pet,
 			sw->SoilWat.aet, x, lyrSWCBulk, lyrSWCBulk_Saturated, lyrbDensity,
-			lyrWidths, lyroldavgLyrTemp, lyravgLyrTemp, surfaceAvg,
+			lyrWidths, lyravgLyrTemp, surfaceAvg,
 			n_layers, sw->Site.bmLimiter, sw->Site.t1Param1, sw->Site.t1Param2,
 			sw->Site.t1Param3, sw->Site.csParam1, sw->Site.csParam2,
 			sw->Site.shParam, sw->SoilWat.snowdepth, sw->Site.Tsoil_constant,

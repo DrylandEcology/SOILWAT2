@@ -2137,7 +2137,8 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
   (g/cm<SUP>3</SUP>).
 @param[in] width The width of the layers (cm).
 @param[in] oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
-@param[in] avgLyrTemp Temperatature values of soil layers (&deg;C).
+@param[in,out] avgLyrTemp Temperatature values of soil layers 
+(yesterday's values for input; today's values as output)  (&deg;C).
 @param[in] surfaceAvg Current surface air temperatature (&deg;C).
 @param[in] nlyrs Number of layers in the soil profile.
 @param[in] bmLimiter Biomass limiter constant (300 g/m<SUP>2</SUP>).
@@ -2167,7 +2168,7 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 
 void soil_temperature(double *surface_max, double *surface_min,
 	double lyrFrozen[], double airTemp, double pet, double aet, double biomass,
-	double swc[], double swc_sat[], double bDensity[], double width[], double oldavgLyrTemp[],
+	double swc[], double swc_sat[], double bDensity[], double width[], 
 	double avgLyrTemp[], double surfaceAvg[2], unsigned int nlyrs,
 	double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1,
 	double csParam2, double shParam, double snowdepth, double sTconst, double deltaX,
@@ -2182,7 +2183,7 @@ void soil_temperature(double *surface_max, double *surface_min,
     debug = 0;
   }
   #endif
-	double T1, vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], avgLyrTempR[MAX_ST_RGR],
+	double T1, oldavgLyrTemp[MAX_LAYERS], vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], avgLyrTempR[MAX_ST_RGR],
     temperatureRangeR[MAX_ST_RGR], temperatureRange[MAX_LAYERS], surface_range;
 
 
@@ -2302,9 +2303,13 @@ void soil_temperature(double *surface_max, double *surface_min,
 	}
 
 
-	// calculate volumetric soil water content for soil temperature layers
+	
 	for (i = 0; i < nlyrs; i++) {
+		// calculate volumetric soil water content for soil temperature layers
 		vwc[i] = swc[i] / width[i];
+		
+		// save yesterday's values for later use
+		oldavgLyrTemp[i] = avgLyrTemp[i];
 	}
 
 	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, vwc, nRgr, deltaX, vwcR);
@@ -2349,6 +2354,7 @@ void soil_temperature(double *surface_max, double *surface_min,
 		swprintf("\n");
 	}
 	#endif
+
 
 	// convert soil temperature of soil temperature profile 'avgLyrTempR' to soil profile layers 'avgLyrTemp'
 	lyrTemp_to_lyrSoil_temperature(st->tlyrs_by_slyrs, nRgr, st->depthsR, avgLyrTempR, nlyrs,

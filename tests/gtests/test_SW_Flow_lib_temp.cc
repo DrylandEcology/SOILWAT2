@@ -454,7 +454,8 @@ namespace {
     Bool ptr_stError = swFALSE;
 
     double swc[] = {1.0}, swc_sat[] = {1.5}, bDensity[] = {1.8}, width[] = {20},
-    oldsTemp[] = {5.0}, sTemp[] = {4.0}, fc[] = {2.6}, wp[] = {1.0}, min_temp[] = {10.0}, max_temp[] = {1.0};
+    oldsTemp[] = {5.0}, sTemp[1], fc[] = {2.6}, wp[] = {1.0}, min_temp[] = {10.0}, max_temp[] = {1.0};
+
 
     SW_ST_setup_run(
       airTemp,
@@ -466,9 +467,13 @@ namespace {
       nRgr, &ptr_stError, SW_All.SoilWat.lyrFrozen
     );
 
+    for (k = 0; k < nlyrs; k++) {
+      sTemp[k] = oldsTemp[k];
+    }
+
     soil_temperature(&surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-      oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
+      sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
       theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       SW_All.Model.year, SW_All.Model.doy, min_temp, max_temp, &ptr_stError);
@@ -482,9 +487,13 @@ namespace {
     // Test surface temp equals equation when biomass < blimititer & snow = 0
     snowdepth = 0;
 
+    for (k = 0; k < nlyrs; k++) {
+      sTemp[k] = oldsTemp[k];
+    }
+
     soil_temperature(&surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-      oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
+      sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
       theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       SW_All.Model.year, SW_All.Model.doy, min_temp, max_temp, &ptr_stError);
@@ -496,9 +505,13 @@ namespace {
     //Test surface temp equals equation when biomass > blimititer & snow = 0
     biomass = 305;
 
+    for (k = 0; k < nlyrs; k++) {
+      sTemp[k] = oldsTemp[k];
+    }
+
     soil_temperature(&surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-      oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
+      sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
       theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       SW_All.Model.year, SW_All.Model.doy, min_temp, max_temp, &ptr_stError);
@@ -550,7 +563,7 @@ namespace {
     EXPECT_EQ(ptr_stError, swFALSE);
 
     soil_temperature(&surface_max, &surface_max, SW_All.SoilWat.lyrFrozen,
-      airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width, oldsTemp2,
+      airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       sTemp2, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2, t1Param3,
       csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, max_air_temp, min_air_temp, H_gt, SW_All.Model.year,
@@ -587,7 +600,7 @@ namespace {
     unsigned int nlyrs2 = MAX_LAYERS;
     double width2[] = {5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double oldsTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
-    double sTemp3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double sTemp3[MAX_LAYERS];
     double bDensity2[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
     // we don't need soil texture, but we need SWC(sat), SWC(field capacity),
@@ -625,9 +638,13 @@ namespace {
     // Test surface temp equals surface_temperature_under_snow() because snow > 0
     snowdepth = 5;
 
+    for (k = 0; k < nlyrs2; k++) {
+      sTemp3[k] = oldsTemp3[k];
+    }
+
     soil_temperature(&surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
-      oldsTemp3, sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
+      sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, max_air_temp, min_air_temp, H_gt, SW_All.Model.year,
       SW_All.Model.doy, min_temp, max_temp, &ptr_stError);
@@ -639,10 +656,13 @@ namespace {
     //Test surface temp equals equatin when biomass < blimititer & snow = 0
     snowdepth = 0;
     biomass = 100;
+    for (k = 0; k < nlyrs2; k++) {
+      sTemp3[k] = oldsTemp3[k];
+    }
 
     soil_temperature(&surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
-      oldsTemp3, sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
+      sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, max_air_temp, min_air_temp, H_gt, SW_All.Model.year,
       SW_All.Model.doy, min_temp, max_temp, &ptr_stError);
@@ -653,10 +673,13 @@ namespace {
 
     //Test surface temp equals equation when biomass < blimititer & snow = 0
     biomass = 305;
+    for (k = 0; k < nlyrs2; k++) {
+      sTemp3[k] = oldsTemp3[k];
+    }
 
     soil_temperature(&surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
-      oldsTemp3, sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
+      sTemp3, surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, max_air_temp, min_air_temp, H_gt, SW_All.Model.year,
       SW_All.Model.doy, min_temp, max_temp, &ptr_stError);
@@ -704,14 +727,14 @@ namespace {
     Bool ptr_stError = swFALSE;
 
     double swc[] = {1.0}, swc_sat[] = {1.5}, bDensity[] = {1.8}, width[] = {20},
-      oldsTemp[] = {5.0}, sTemp[] = {4.0}, min_temp[] = {10.0}, max_temp[] = {1.0};
+      sTemp[1], min_temp[] = {10.0}, max_temp[] = {1.0};
 
     // Should fail when soil_temperature was not initialized
     EXPECT_DEATH_IF_SUPPORTED(
       soil_temperature(
         &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
         airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-        oldsTemp, sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
+        sTemp, surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
         t1Param3, csParam1, csParam2, shParam, snowdepth,
         sTconst, deltaX, theMaxDepth, nRgr, snow, max_air_temp,
         min_air_temp, H_gt, SW_All.Model.year, SW_All.Model.doy,
