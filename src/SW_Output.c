@@ -2410,7 +2410,7 @@ void SW_OUT_write_today(SW_ALL* sw)
 
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_OUT_write_today': %dyr-%dmon-%dwk-%ddoy: ",
-    SW_Model.year, SW_Model.month, SW_Model.week, SW_Model.doy);
+    sw->Model.year, sw->Model.month, sw->Model.week, sw->Model.doy);
   #endif
 
 
