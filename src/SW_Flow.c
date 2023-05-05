@@ -160,7 +160,6 @@ static RealD
 
 
 static RealD
-	surfaceAvg[TWO_DAYS],
 	veg_int_storage[NVEGTYPES], // storage of intercepted rain by the vegetation
 	litter_int_storage, // storage of intercepted rain by the litter layer
 	standingWater[TWO_DAYS]; /* water on soil surface if layer below is saturated */
@@ -222,7 +221,6 @@ static void records2arrays(
 }
 
 static void arrays2records(
-	RealD* Weather_surfaceAvg, 
 	SW_SOILWAT* SW_SoilWat,
 	SW_SITE* SW_Site
 ) {
@@ -240,7 +238,6 @@ static void arrays2records(
 			SW_SoilWat->transpiration[k][i] = lyrTransp[k][i];
 		}
 	}
-	*Weather_surfaceAvg = surfaceAvg[Today];
 
 	ForEachEvapLayer(i, SW_Site->n_evap_lyrs)
 	{
@@ -298,7 +295,6 @@ void SW_FLW_init_run(SW_SOILWAT* SW_SoilWat) {
 		lyrSumTrCo[i] = 0;
 
 	//When running as a library make sure these are set to zero.
-	surfaceAvg[0] = surfaceAvg[1] = 0.;
 	standingWater[0] = standingWater[1] = 0.;
 	litter_int_storage = 0.;
 
@@ -359,7 +355,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 			lyrbDensity,
 			lyrWidths,
 			sw->SoilWat.avgLyrTemp, // yesterday's soil temperature values
-			surfaceAvg,
+			&sw->Weather.surfaceAvg, // yesterday's soil surface temperature
 			n_layers,
 			lyrSWCBulk_FieldCaps,
 			lyrSWCBulk_Wiltpts,
@@ -831,7 +827,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 		soil_temperature(&sw->Weather.surfaceMax, &sw->Weather.surfaceMin,
 			sw->SoilWat.lyrFrozen, sw->Weather.now.temp_avg, sw->SoilWat.pet,
 			sw->SoilWat.aet, x, sw->SoilWat.swcBulk[Today], lyrSWCBulk_Saturated, lyrbDensity,
-			lyrWidths, sw->SoilWat.avgLyrTemp, surfaceAvg,
+			lyrWidths, sw->SoilWat.avgLyrTemp, &sw->Weather.surfaceAvg,
 			n_layers, sw->Site.bmLimiter, sw->Site.t1Param1, sw->Site.t1Param2,
 			sw->Site.t1Param3, sw->Site.csParam1, sw->Site.csParam2,
 			sw->Site.shParam, sw->SoilWat.snowdepth, sw->Site.Tsoil_constant,
@@ -845,7 +841,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 	/* Soil Temperature ends here */
 
 	/* Move local values into main arrays */
-	arrays2records(&sw->Weather.surfaceAvg, &sw->SoilWat, &sw->Site);
+	arrays2records(&sw->SoilWat, &sw->Site);
 
 	if (sw->Site.deepdrain) {
 		sw->SoilWat.swcBulk[Today][sw->Site.deep_lyr] = drainout;
