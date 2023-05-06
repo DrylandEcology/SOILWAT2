@@ -132,7 +132,6 @@
 static IntU lyrTrRegions[NVEGTYPES][MAX_LAYERS];
 
 static RealD
-	lyrTransp[NVEGTYPES][MAX_LAYERS],
 	lyrTranspCo[NVEGTYPES][MAX_LAYERS],
 	lyrEvap[NVEGTYPES][MAX_LAYERS],
 	lyrEvap_BareGround[MAX_LAYERS],
@@ -229,14 +228,6 @@ static void arrays2records(
 	LyrIndex i;
 	int k;
 
-	ForEachSoilLayer(i, SW_Site->n_layers)
-	{
-		ForEachVegType(k)
-		{
-			SW_SoilWat->transpiration[k][i] = lyrTransp[k][i];
-		}
-	}
-
 	ForEachEvapLayer(i, SW_Site->n_evap_lyrs)
 	{
 		SW_SoilWat->evaporation[i] = lyrEvap_BareGround[i];
@@ -272,7 +263,7 @@ void SW_FLW_init_run(SW_SOILWAT* SW_SoilWat) {
 	for (i = 0; i < MAX_LAYERS; i++) {
 		ForEachVegType(k) {
 			lyrTrRegions[k][i] = 0;
-			lyrTransp[k][i] = 0.;
+			SW_SoilWat->transpiration[k][i] = 0.;
 			lyrTranspCo[k][i] = 0.;
 			lyrEvap[k][i] = 0.;
 			lyrSWCBulk_atSWPcrit[k][i] = 0.;
@@ -684,14 +675,14 @@ void SW_Water_Flow(SW_ALL* sw) {
 				sw->Site.lyr);
 
 			/* remove transp from swc */
-			remove_from_soil(sw->SoilWat.swcBulk[Today], lyrTransp[k], &sw->SoilWat.aet, sw->Site.n_transp_lyrs[k],
+			remove_from_soil(sw->SoilWat.swcBulk[Today], sw->SoilWat.transpiration[k], &sw->SoilWat.aet, sw->Site.n_transp_lyrs[k],
 				lyrTranspCo[k], transp_rate[k], lyrSWCBulk_atSWPcrit[k], sw->SoilWat.lyrFrozen,
 				sw->Site.lyr);
 
 		} else {
 			/* Set daily array to zero, no evaporation or transpiration */
 			ForEachSoilLayer(i, n_layers) {
-				lyrTransp[k][i] = lyrEvap[k][i] = 0.;
+				sw->SoilWat.transpiration[k][i] = lyrEvap[k][i] = 0.;
 			}
 		}
 	}
@@ -707,7 +698,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 			Eveg = Tveg = 0.;
 			ForEachVegType(k) {
 				Eveg += lyrEvap[k][i];
-				Tveg += lyrTransp[k][i];
+				Tveg += sw->SoilWat.transpiration[k][i];
 			}
 			swprintf(" Tveg[%d]=%1.3f/Eveg=%1.3f", i, Tveg, Eveg);
 		}
