@@ -230,10 +230,10 @@ static void arrays2records(
 
 	ForEachEvapLayer(i, SW_Site->n_evap_lyrs)
 	{
-		SW_SoilWat->evaporation[i] = lyrEvap_BareGround[i];
+		SW_SoilWat->evap_baresoil[i] = lyrEvap_BareGround[i];
 		ForEachVegType(k)
 		{
-			SW_SoilWat->evaporation[i] += lyrEvap[k][i];
+			SW_SoilWat->evap_baresoil[i] += lyrEvap[k][i];
 		}
 	}
 
