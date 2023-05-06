@@ -137,7 +137,6 @@ static RealD
 	lyrEvap[NVEGTYPES][MAX_LAYERS],
 	lyrEvap_BareGround[MAX_LAYERS],
 	lyrSWCBulk_atSWPcrit[NVEGTYPES][MAX_LAYERS],
-	lyrHydRed[NVEGTYPES][MAX_LAYERS],
 
 	lyrbDensity[MAX_LAYERS],
 	lyrWidths[MAX_LAYERS],
@@ -234,7 +233,6 @@ static void arrays2records(
 	{
 		ForEachVegType(k)
 		{
-			SW_SoilWat->hydred[k][i] = lyrHydRed[k][i];
 			SW_SoilWat->transpiration[k][i] = lyrTransp[k][i];
 		}
 	}
@@ -278,7 +276,7 @@ void SW_FLW_init_run(SW_SOILWAT* SW_SoilWat) {
 			lyrTranspCo[k][i] = 0.;
 			lyrEvap[k][i] = 0.;
 			lyrSWCBulk_atSWPcrit[k][i] = 0.;
-			lyrHydRed[k][i] = 0;
+			SW_SoilWat->hydred[k][i] = 0;
 		}
 
 		SW_SoilWat->swcBulk[Today][i] = 0.;
@@ -728,7 +726,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 
 			hydraulic_redistribution(
 				sw->SoilWat.swcBulk[Today],
-				lyrHydRed[k],
+				sw->SoilWat.hydred[k],
 				k,
 				n_layers,
 				sw->Site.lyr,
@@ -744,7 +742,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 		} else {
 			/* Set daily array to zero */
 			ForEachSoilLayer(i, n_layers) {
-				lyrHydRed[k][i] = 0.;
+				sw->SoilWat.hydred[k][i] = 0.;
 			}
 		}
 	}
@@ -759,7 +757,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 		ForEachSoilLayer(i, n_layers) {
 			HRveg = 0.;
 			ForEachVegType(k) {
-				HRveg += lyrHydRed[k][i];
+				HRveg += sw->SoilWat.hydred[k][i];
 			}
 			swprintf(" HRveg[%d]=%1.3f", i, HRveg);
 		}
