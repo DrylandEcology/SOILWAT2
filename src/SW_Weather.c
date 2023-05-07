@@ -1080,6 +1080,9 @@ void _clear_hist_weather(SW_WEATHER_HIST *yearWeather) {
 
 /**
 @brief Constructor for SW_Weather.
+
+@param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
+		information pretaining to meteorological input data
 */
 void SW_WTH_construct(SW_WEATHER* SW_Weather) {
 	/* =================================================== */
@@ -1103,6 +1106,9 @@ void SW_WTH_construct(SW_WEATHER* SW_Weather) {
 
 /**
 @brief Deconstructor for SW_Weather and SW_Markov (if used)
+
+@param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
+		information pretaining to meteorological input data
 */
 void SW_WTH_deconstruct(SW_WEATHER* SW_Weather)
 {
@@ -1132,6 +1138,9 @@ void SW_WTH_deconstruct(SW_WEATHER* SW_Weather)
 
 /**
   @brief Allocate memory for `allHist` for `w` based on `n_years`
+
+  @param[out] w Struct of type SW_WEATHER holding all relevant
+    information pretaining to weather input data
 */
 void allocateAllWeather(SW_WEATHER *w) {
   unsigned int year;
@@ -1147,6 +1156,9 @@ void allocateAllWeather(SW_WEATHER *w) {
 
 /**
  @brief Helper function to SW_WTH_deconstruct to deallocate `allHist` of `w`.
+
+ @param[out] w Struct of type SW_WEATHER holding all relevant
+    information pretaining to weather input data
  */
 
 void deallocateAllWeather(SW_WEATHER *w) {
@@ -1167,6 +1179,9 @@ void deallocateAllWeather(SW_WEATHER *w) {
 @brief Initialize weather variables for a simulation run
 
   They are used as default if weather for the first day is missing
+
+@param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
+		information pretaining to meteorological input data
 */
 void SW_WTH_init_run(SW_WEATHER* SW_Weather) {
 	/* setup today's weather because it's used as a default
@@ -1185,6 +1200,13 @@ void SW_WTH_init_run(SW_WEATHER* SW_Weather) {
 
 /**
 @brief Guarantees that today's weather will not be invalid via -_todays_weth().
+
+@param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
+		information pretaining to meteorological input data
+@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] snowpack[] swe of snowpack, assuming accumulation is turned on
+@param[in] doy Day of the year (base1) [1-366]
+@param[in] year Current year being run in the simulation
 */
 void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
                     TimeInt doy, TimeInt year) {
@@ -1261,9 +1283,9 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
 
     if (SW_Weather->use_snow)
     {
-        SW_SWC_adjust_snow(SW_Site, wn->temp_min, wn->temp_max, wn->ppt,
-          &wn->rain, &SW_Weather->snow, &SW_Weather->snowmelt,
-          snowpack, doy1);
+        SW_SWC_adjust_snow(snowpack, SW_Site, wn->temp_min, wn->temp_max,
+          wn->ppt, doy1, &wn->rain, &SW_Weather->snow,
+          &SW_Weather->snowmelt);
     } else {
         wn->rain = wn->ppt;
     }
@@ -1271,6 +1293,9 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
 
 /**
 @brief Reads in file for SW_Weather.
+
+@param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
+		information pretaining to meteorological input data
 */
 void SW_WTH_setup(SW_WEATHER* SW_Weather) {
 	/* =================================================== */
@@ -1567,6 +1592,11 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
 
   The weather generator is not run and daily values are not scaled with
   monthly climate parameters, see `SW_WTH_finalize_all_weather()` instead.
+
+  @param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
+		information pretaining to meteorological input data
+  @param[in] startyr Beginning year for model run
+  @param[in] endyr Ending year for model run
 */
 void SW_WTH_read(SW_WEATHER* SW_Weather, TimeInt startyr, TimeInt endyr) {
 

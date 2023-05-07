@@ -1215,6 +1215,10 @@ RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel) {
   @brief Count soil layers with bare-soil evaporation potential
 
   The count stops at first layer with 0.
+
+  @param[in] **lyr Struct list of type SW_LAYER_INFO holding information about
+	every soil layer in the simulation
+  @param[in] n_layers Number of layers of soil within the simulation run
 */
 LyrIndex nlayers_bsevap(SW_LAYER_INFO** lyr, LyrIndex n_layers) {
 	LyrIndex s, n = 0;
@@ -1237,8 +1241,13 @@ LyrIndex nlayers_bsevap(SW_LAYER_INFO** lyr, LyrIndex n_layers) {
          transpiration
 
   The count stops at first layer with 0 per vegetation type.
+
+  @param[in] n_layers Number of layers of soil within the simulation run
+  @param[in] **lyr Struct list of type SW_LAYER_INFO holding information about
+	every soil layer in the simulation
+  @param[out] n_transp_lyrs Index of the deepest transp. region
 */
-void nlayers_vegroots(LyrIndex n_transp_lyrs[], LyrIndex n_layers,
+void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
 					  SW_LAYER_INFO** lyr) {
 	LyrIndex s;
 	int k;
@@ -1291,6 +1300,8 @@ void add_deepdrain_layer(SW_SITE* SW_Site) {
 @brief First time called with no layers so SW_Site.lyr
  not initialized yet, malloc() required.  For each
  layer thereafter realloc() is called.
+
+@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 */
 LyrIndex _newlayer(SW_SITE* SW_Site) {
 	int n_layers = SW_Site->n_layers;
@@ -1342,6 +1353,8 @@ void SW_SIT_deconstruct(SW_SITE* SW_Site)
 
 /**
 @brief Reads in file for input values.
+
+@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 */
 void SW_SIT_read(SW_SITE* SW_Site) {
 	/* =================================================== */
@@ -1589,7 +1602,9 @@ void SW_SIT_read(SW_SITE* SW_Site) {
 
 /** Reads soil layers and soil properties from input file
 
-		@note Previously, the function was static and named `_read_layers()`.
+	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+
+	@note Previously, the function was static and named `_read_layers()`.
 */
 void SW_LYR_read(SW_SITE* SW_Site) {
 	/* =================================================== */
@@ -1676,7 +1691,10 @@ void SW_LYR_read(SW_SITE* SW_Site) {
   @brief Creates soil layers based on function arguments (instead of reading
     them from an input file as _read_layers() does)
 
-  @param nlyrs The number of soil layers to create.
+  @param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
+	cover conditions in the simulation
+  @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+  @param[in] nlyrs The number of soil layers to create.
   @param[in] dmax Array of size \p nlyrs for depths [cm] of each soil layer
     measured from the surface
   @param[in] bd Array of size \p nlyrs of soil bulk density [g/cm3]
@@ -1704,9 +1722,6 @@ void SW_LYR_read(SW_SITE* SW_Site) {
     depth [cm] of each region in ascending (in value) order. If you think about
     this from the perspective of soil, it would mean the shallowest bound is at
     `lowerBounds[0]`.
-  @param[in] SW_VegProd Struct of type SW_VEGPROD describing surface cover of
-  					the SOILWAT2 simulation run
-  @param[in] SW_Site
 
   @sideeffect After deleting any previous data in the soil layer array
     SW_Site.lyr, it creates new soil layers based on the argument inputs.
@@ -1715,11 +1730,11 @@ void SW_LYR_read(SW_SITE* SW_Site) {
     - This function is a modified version of the function _read_layers() in
       SW_Site.c.
 */
-void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
-  RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
-  RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp,
-  int nRegions, RealD *regionLowerBounds, SW_VEGPROD* SW_VegProd,
-  SW_SITE* SW_Site)
+void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LyrIndex nlyrs,
+  RealF *dmax, RealF *bd, RealF *f_gravel, RealF *evco, RealF *trco_grass,
+  RealF *trco_shrub, RealF *trco_tree, RealF *trco_forb, RealF *psand,
+  RealF *pclay, RealF *imperm, RealF *soiltemp, int nRegions,
+  RealD *regionLowerBounds)
 {
 
   RealF dmin = 0.0;
@@ -1782,8 +1797,8 @@ void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
 /**
   @brief Resets soil regions based on input parameters.
 
-  @param[in,out] SW_Site Struct of type SW_SITE describing the site in question
-  @param nRegions The number of transpiration regions to create. Must be between
+  @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+  @param[in] nRegions The number of transpiration regions to create. Must be between
     1 and \ref MAX_TRANSP_REGIONS.
   @param[in] regionLowerBounds Array of size \p nRegions containing the lower
     depth [cm] of each region in ascending (in value) order. If you think about
@@ -1938,9 +1953,9 @@ void SW_SWRC_read(SW_SITE* SW_Site) {
 	sand + clay + silt must equal one.
 	Fraction of silt is calculated: 1 - (sand + clay).
 
-	@param SW_VegProd Struct of type SW_VEGPROD describing surface cover of
-				      a SOILWAT2 simulation run
-	@param SW_Site Struct of type SW_SITE describing the site in question
+	@param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
+		cover conditions in the simulation
+	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 
 	@sideeffect Values stored in global variable `SW_Site`.
 */
@@ -1967,7 +1982,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site) {
 	/* Determine number of layers with potential for
 		 bare-soil evaporation and transpiration */
 	SW_Site->n_evap_lyrs = nlayers_bsevap(SW_Site->lyr, SW_Site->n_layers);
-	nlayers_vegroots(SW_Site->n_transp_lyrs, SW_Site->n_layers, SW_Site->lyr);
+	nlayers_vegroots(SW_Site->n_layers, SW_Site->n_transp_lyrs, SW_Site->lyr);
 
 
 	/* Manage deep drainage */
@@ -2413,6 +2428,8 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site) {
 /**
 @brief For multiple runs with the shared library, the need to remove the allocated
 			soil layers arises to avoid leaks. (rjm 2013)
+
+@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 */
 void SW_SIT_clear_layers(SW_SITE* SW_Site) {
 	LyrIndex i, j;
@@ -2434,6 +2451,8 @@ void SW_SIT_clear_layers(SW_SITE* SW_Site) {
 
 /**
 	@brief Reset counts of `SW_Site` to zero
+
+	@param[out] SW_Site Struct of type SW_SITE describing the simulated site
 */
 void SW_SIT_init_counts(SW_SITE* SW_Site) {
 	int k;
@@ -2452,6 +2471,8 @@ void SW_SIT_init_counts(SW_SITE* SW_Site) {
 
 /**
 @brief Print site-parameters and soil characteristics.
+
+@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 */
 void _echo_inputs(SW_SITE* SW_Site) {
 	/* =================================================== */

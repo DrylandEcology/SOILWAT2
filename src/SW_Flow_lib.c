@@ -335,14 +335,14 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 @brief Compute weighted average of soilwater potential to be
     used for transpiration calculations.
 
-@param *swp_avg Weighted average of soilwater potential and transpiration coefficients (-bar).
-@param n_tr_rgns Array of n_lyrs elements of transpiration regions that each soil layer belongs to.
-@param n_layers Number of soil layers.
-@param tr_regions Number of layer regions used in weighted average, typically 3;<BR>
+@param[in,out] *swp_avg Weighted average of soilwater potential and transpiration coefficients (-bar).
+@param[in] n_tr_rgns Array of n_lyrs elements of transpiration regions that each soil layer belongs to.
+@param[in] n_layers Number of soil layers.
+@param[in] tr_regions Number of layer regions used in weighted average, typically 3;<BR>
         to represent shallow, mid, & deep depths to compute transpiration rate.
-@param tr_coeff  Transpiration coefficient for each layer.
-@param swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
+@param[in] tr_coeff  Transpiration coefficient for each layer.
+@param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param[in] **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
 	in the simulation
 
 @sideeffect *swp_avg Weighted average of soilwater potential and transpiration coefficients (-bar).
@@ -439,30 +439,31 @@ void EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_pa
 
 Based on equations from Parton 1978. @cite Parton1978
 
-@param *bserate Bare soil evaporation loss rate (cm/day).
-@param nelyrs Number of layers to consider in evaporation.
-@param ecoeff Evaporation coefficients.
-@param totagb Sum of above ground biomass and litter.
-@param fbse Fraction of water loss from bare soil evaporation.
-@param petday Potential evapotranspiration rate (cm/day).
-@param shift Displacement of the inflection point in order to shift the function up, down, left, or right; in relation to the macro tanfunc.
-@param shape Slope of the line at the inflection point.
-@param inflec Y-value of the inflection point.
-@param range Max y-value - min y-value at the limits.
-@param width Width of each layer (cm).
-@param swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param Es_param_limit Parameter to determine when soil surface is completely covered with
+@param[in] nelyrs Number of layers to consider in evaporation.
+@param[in] ecoeff Evaporation coefficients.
+@param[in] totagb Sum of above ground biomass and litter.
+@param[in] fbse Fraction of water loss from bare soil evaporation.
+@param[in] petday Potential evapotranspiration rate (cm/day).
+@param[in] shift Displacement of the inflection point in order to shift the function up, down, left, or right; in relation to the macro tanfunc.
+@param[in] shape Slope of the line at the inflection point.
+@param[in] inflec Y-value of the inflection point.
+@param[in] range Max y-value - min y-value at the limits.
+@param[in] width Width of each layer (cm).
+@param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param[in] Es_param_limit Parameter to determine when soil surface is completely covered with
     litter and that bare soil evaporation is inhibited.
-@param **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
+@param[in] **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
 	in the simulation
+@param[out] *bserate Bare soil evaporation loss rate (cm/day).
 
 @sideeffect *bserate Updated bare soil evaporation loss rate (cm/day).
 
 */
 
-void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double totagb,
+void pot_soil_evap(unsigned int nelyrs, double ecoeff[], double totagb,
   double fbse, double petday, double shift, double shape, double inflec, double range,
-		double width[], double swc[], double Es_param_limit, SW_LAYER_INFO** lyr) {
+  double width[], double swc[], double Es_param_limit, SW_LAYER_INFO** lyr,
+  double *bserate) {
 	/**********************************************************************
 	 HISTORY:
 	 4/30/92  (SLC)
@@ -730,15 +731,15 @@ void evap_fromSurface(double *water_pool, double *evap_rate, double *aet) {
 
 Based on equations from Parton 1978. @cite Parton1978
 
-@param swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param qty Removal quanity from each layer, evaporation or transpiration (mm/day).
-@param *aet Actual evapotranspiration (cm/day).
-@param nlyrs Number of layers considered in water removal.
-@param coeff Coefficients of removal for removal layers.
-@param rate Removal rate, either soil_evap_rate or soil_transp_rate.
-@param swcmin Lower limit on soilwater content per layer.
-@param lyrFrozen Frozen information at each layer.
-@param **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
+@param[in,out] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param[in,out] qty Removal quanity from each layer, evaporation or transpiration (mm/day).
+@param[in,out] *aet Actual evapotranspiration (cm/day).
+@param[in] nlyrs Number of layers considered in water removal.
+@param[in] coeff Coefficients of removal for removal layers.
+@param[in] rate Removal rate, either soil_evap_rate or soil_transp_rate.
+@param[in] swcmin Lower limit on soilwater content per layer.
+@param[in] lyrFrozen Frozen information at each layer.
+@param[in] **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
 	in the simulation
 
 @sideeffect
@@ -928,17 +929,17 @@ void percolate_unsaturated(
 
 	@param[in,out] swc Soil water content in each layer (m<SUP>3</SUP> H<SUB>2</SUB>O).
 	@param[out] hydred Hydraulic redistribtion for each soil layer (cm/day/layer).
-	@param vegk Index to vegetation type (used to access rooting profile) [1].
-	@param nlyrs Number of layers in the soil profile [1].
+	@param[in] vegk Index to vegetation type (used to access rooting profile) [1].
+	@param[in] nlyrs Number of layers in the soil profile [1].
 	@param[in] *lyr Soil characteristics for each soil layer.
 	@param[in] *lyrFrozen Frozen/unfrozen status for each soil layer.
-	@param maxCondroot Maximum radial soil-root conductance of the entire active root system for water (cm/-bar/day).
-	@param swp50 Soil water potential (-bar) where conductance is reduced by 50%.
-	@param shapeCond Shaping parameter for the empirical relationship from van Genuchten to
+	@param[in] maxCondroot Maximum radial soil-root conductance of the entire active root system for water (cm/-bar/day).
+	@param[in] swp50 Soil water potential (-bar) where conductance is reduced by 50%.
+	@param[in] shapeCond Shaping parameter for the empirical relationship from van Genuchten to
 				model relative soil-root conductance for water.
-	@param scale Fraction of vegetation type to scale hydred.
-	@param year Current year in simulation
-	@param doy  Current day in simulation
+	@param[in] scale Fraction of vegetation type to scale hydred.
+	@param[in] year Current year in simulation
+	@param[in] doy  Day of the year (base1) [1-366]
 
 	@sideeffect
 		- swc Updated soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
@@ -1848,8 +1849,8 @@ The algorithm selects a shorter time step if required for a stable solution
 @param[in] surface_range Temperature range at the surface (&deg;C)
 @param[in,out] temperatureRangeR An array of temperature ranges at each (regression)-layer to be interpolated (&deg;C)
 @param[in] depthsR Evenly spaced depths of the soil temperature profile (cm).
-@param[in] year Current year being run in simulation
-@param[in] doy Current day being run in simulation
+@param[in] year Current year being run in the simulation
+@param[in] doy Day of the year (base1) [1-366]
 
 @note
 	avgLyrTempR[0] and temperatureRangeR[0] represent soil surface conditions.
@@ -2123,58 +2124,56 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 
 Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Parton 1978. @cite Parton1978, Parton 1984. @cite Parton1984
 
-@param airTemp Average daily air temperature (&deg;C).
-@param pet Potential evapotranspiration rate (cm/day).
-@param *aet Actual evapotranspiration (cm/day).
-@param biomass Standing-crop biomass (g/m<SUP>2</SUP>).
-@param swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param swc_sat The satured soil water content of the soil layers (cm/cm).
-@param bDensity An array of the bulk density of the whole soil per soil layer
+@param[in,out] *surface_max Maxmimum surface temperature (&deg;C)
+@param[in,out] *surface_min Minimum surface temperature (&deg;C)
+@param[in,out] lyrFrozen Frozen information at each layer.
+@param[in] airTemp Average daily air temperature (&deg;C).
+@param[in] pet Potential evapotranspiration rate (cm/day).
+@param[in] aet Actual evapotranspiration (cm/day).
+@param[in] biomass Standing-crop biomass (g/m<SUP>2</SUP>).
+@param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param[in] swc_sat The satured soil water content of the soil layers (cm/cm).
+@param[in] bDensity An array of the bulk density of the whole soil per soil layer
   (g/cm<SUP>3</SUP>).
-@param width The width of the layers (cm).
-@param oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
-@param avgLyrTemp Temperatature values of soil layers (&deg;C).
-@param surfaceAvg Current surface air temperatature (&deg;C).
-@param nlyrs Number of layers in the soil profile.
-@param bmLimiter Biomass limiter constant (300 g/m<SUP>2</SUP>).
-@param t1Param1 Constant for the avg temp at the top of soil equation (15).
-@param t1Param2 Constant for the avg temp at the top of soil equation (-4).
-@param t1Param3 Constant for the avg temp at the top of soil equation (600).
-@param csParam1 Constant for the soil thermal conductivity equation (0.00070).
-@param csParam2 Constant for the soil thermal conductivity equation (0.00030).
-@param shParam Constant for the specific heat capacity equation (0.18).
-@param snowdepth Depth of snow cover (cm)
-@param sTconst Constant soil temperature (&deg;C).
-@param deltaX Distance between profile points (default is 15 cm from Parton's equation @cite Parton1984).
-@param theMaxDepth Lower bound of the equation (default is 180 cm from Parton's equation @cite Parton1984).
-@param nRgr Number of regressions (1 extra value is needed for the avgLyrTempR and oldavgLyrTempR for the last layer.
-@param snow Snow-water-equivalent of the area (cm).
-@param *ptr_stError Boolean indicating whether there was an error.
-@param max_air_temp Maximum air temperature of Today (&deg;C)
-@param min_air_temp Minimum air temperature of Today (&deg;C)
-@param H_gt Daily global (tilted) irradiation [MJ / m2]
-@param maxLyrTemperature An array holding all of the layers maximum temperature (&deg;C)
-@param minLyrTemperature An array holding all of the layers minimum temperature (&deg;C)
-@param *surface_max Maxmimum surface temperature (&deg;C)
-@param *surface_min Minimum surface temperature (&deg;C)
-@param lyrFrozen Frozen information at each layer.
-@param year Current year in simulation
-@param doy Current day in simulation
+@param[in] width The width of the layers (cm).
+@param[in] oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
+@param[in] avgLyrTemp Temperatature values of soil layers (&deg;C).
+@param[in] surfaceAvg Current surface air temperatature (&deg;C).
+@param[in] nlyrs Number of layers in the soil profile.
+@param[in] bmLimiter Biomass limiter constant (300 g/m<SUP>2</SUP>).
+@param[in] t1Param1 Constant for the avg temp at the top of soil equation (15).
+@param[in] t1Param2 Constant for the avg temp at the top of soil equation (-4).
+@param[in] t1Param3 Constant for the avg temp at the top of soil equation (600).
+@param[in] csParam1 Constant for the soil thermal conductivity equation (0.00070).
+@param[in] csParam2 Constant for the soil thermal conductivity equation (0.00030).
+@param[in] shParam Constant for the specific heat capacity equation (0.18).
+@param[in] snowdepth Depth of snow cover (cm)
+@param[in] sTconst Constant soil temperature (&deg;C).
+@param[in] deltaX Distance between profile points (default is 15 cm from Parton's equation @cite Parton1984).
+@param[in] theMaxDepth Lower bound of the equation (default is 180 cm from Parton's equation @cite Parton1984).
+@param[in] nRgr Number of regressions (1 extra value is needed for the avgLyrTempR and oldavgLyrTempR for the last layer.
+@param[in] snow Snow-water-equivalent of the area (cm).
+@param[in] max_air_temp Maximum air temperature of Today (&deg;C)
+@param[in] min_air_temp Minimum air temperature of Today (&deg;C)
+@param[in] H_gt Daily global (tilted) irradiation [MJ / m2]
+@param[in] year Current year in simulation
+@param[in] doy Day of the year (base1) [1-366]
+@param[out] maxLyrTemperature An array holding all of the layers maximum temperature (&deg;C)
+@param[out] minLyrTemperature An array holding all of the layers minimum temperature (&deg;C)
+@param[out] *ptr_stError Boolean indicating whether there was an error.
 
 @sideeffect *ptr_stError Updated boolean indicating whether there was an error.
-
-
 */
 
-void soil_temperature(double airTemp, double pet, double aet, double biomass,
+void soil_temperature(double *surface_max, double *surface_min,
+	double lyrFrozen[], double airTemp, double pet, double aet, double biomass,
 	double swc[], double swc_sat[], double bDensity[], double width[], double oldavgLyrTemp[],
 	double avgLyrTemp[], double surfaceAvg[2], unsigned int nlyrs,
 	double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1,
 	double csParam2, double shParam, double snowdepth, double sTconst, double deltaX,
-	double theMaxDepth, unsigned int nRgr, double snow, Bool *ptr_stError,
-    double max_air_temp, double min_air_temp, double H_gt, double maxLyrTemperature[],
-    double minLyrTemperature[], double *surface_max, double *surface_min,
-	double lyrFrozen[], TimeInt year, TimeInt doy) {
+	double theMaxDepth, unsigned int nRgr, double snow, double max_air_temp,
+	double min_air_temp, double H_gt, TimeInt year, TimeInt doy,
+    double maxLyrTemperature[], double minLyrTemperature[], Bool *ptr_stError) {
 
 	unsigned int i, sFadjusted_avgLyrTemp;
   #ifdef SWDEBUG

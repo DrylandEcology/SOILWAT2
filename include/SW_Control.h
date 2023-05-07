@@ -29,8 +29,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_CTL_setup_model(const char *firstfile,
-                        SW_ALL* sw);
+void SW_CTL_setup_model(SW_ALL* sw, const char *firstfile);
 void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw);
 void SW_CTL_init_run(SW_ALL* sw);
 void SW_CTL_read_inputs_from_disk(SW_ALL* sw);

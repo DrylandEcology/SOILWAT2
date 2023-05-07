@@ -67,6 +67,9 @@ static TimeInt
 
 /**
 @brief MDL constructor for global variables.
+
+@param[out] newperiod newperiod[] Specifies when a new day/week/month/year
+	has started
 */
 void SW_MDL_construct(Bool newperiod[]) {
 	/* =================================================== */
@@ -94,6 +97,9 @@ void SW_MDL_deconstruct(void)
 
 /**
 @brief Reads in MDL file and displays error message if file is incorrect.
+
+@param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
+		about the simulation
 */
 void SW_MDL_read(SW_MODEL* SW_Model) {
 	/* =================================================== */
@@ -217,6 +223,9 @@ void SW_MDL_read(SW_MODEL* SW_Model) {
 
 /**
 @brief Sets up time structures and calls modules that have yearly init routines.
+
+@param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
+		about the simulation
 */
 void SW_MDL_new_year(SW_MODEL* SW_Model) {
 	/* =================================================== */

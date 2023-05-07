@@ -78,6 +78,9 @@ static char *MyFileName;
 
 /**
 @brief Reads file for SW_VegProd->
+
+@param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
+	cover conditions in the simulation
 */
 void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 	/* =================================================== */
@@ -518,6 +521,9 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 /**
   \brief Check that sum of land cover is 1; adjust if not.
 
+  @param[in,out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
+	cover conditions in the simulation
+
   \sideeffect
     - Adjusts `SW_VegProd->bare_cov.fCover` and `SW_VegProd->veg[k].cov.fCover`
       to sum to 1.
@@ -556,6 +562,9 @@ void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd)
 
 /**
 @brief Constructor for SW_VegProd->
+
+@param[out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
+	cover conditions in the simulation
 */
 void SW_VPD_construct(SW_VEGPROD* SW_VegProd) {
 	/* =================================================== */
@@ -607,6 +616,9 @@ void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 
 /**
 @brief Deconstructor for SW_VegProd->
+
+@param[out] SW_VegProd Struct of type SW_VEGPROD describing surface
+	cover conditions in the simulation
 */
 void SW_VPD_deconstruct(SW_VEGPROD* SW_VegProd)
 {
@@ -649,6 +661,10 @@ void apply_biomassCO2effect(double new_biomass[], double biomass[], double multi
 
 /**
 @brief Update vegetation parameters for new year
+
+@param[in,out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
+	cover conditions in the simulation
+@param[in] simyear Current year in simulation + additional year
 */
 void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, TimeInt simyear) {
 	/* ================================================== */
@@ -789,6 +805,11 @@ RealD sum_across_vegtypes(RealD *x)
 
 /**
 @brief Text output for VegProd.
+
+@param[in] VegProd_veg Biomass [g/m2] per vegetation type as
+	observed in total vegetation
+@param[in] VegProd_bare_cov Bare-ground cover of plot that is not
+	occupied by vegetation
 */
 void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
 	/* ================================================== */
@@ -834,6 +855,9 @@ void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
 
 
 /** @brief Determine vegetation type of decreasingly ranked the critical SWP
+
+  @param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
+	cover conditions in the simulation
 
   @sideeffect Sets `SW_VegProd->rank_SWPcrits[]` based on
     `SW_VegProd->critSoilWater[]`

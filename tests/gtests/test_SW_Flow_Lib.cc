@@ -478,8 +478,9 @@ namespace
 
       // Begin TEST if (totagb >= Es_param_limit)
       totagb = Es_param_limit + 1.;
-      pot_soil_evap(&bserate, nelyrs, lyrEvapCo, totagb, fbse, petday, shift,
-        shape, inflec, range, width, swc, Es_param_limit, SW_All.Site.lyr);
+      pot_soil_evap(nelyrs, lyrEvapCo, totagb, fbse, petday, shift,
+        shape, inflec, range, width, swc, Es_param_limit, SW_All.Site.lyr,
+        &bserate);
 
       // expect baresoil evaporation rate = 0 if totagb >= Es_param_limit
       EXPECT_DOUBLE_EQ(bserate, 0.) <<
@@ -490,8 +491,9 @@ namespace
       totagb = Es_param_limit / 2;
 
       // Begin TEST if (PET = 0)
-      pot_soil_evap(&bserate, nelyrs, lyrEvapCo, totagb, fbse, petday0, shift,
-        shape, inflec, range, width, swc, Es_param_limit, SW_All.Site.lyr);
+      pot_soil_evap(nelyrs, lyrEvapCo, totagb, fbse, petday0, shift,
+        shape, inflec, range, width, swc, Es_param_limit, SW_All.Site.lyr,
+        &bserate);
 
       // expect baresoil evaporation rate = 0 if PET = 0
       EXPECT_DOUBLE_EQ(bserate, 0.) <<
@@ -499,8 +501,9 @@ namespace
 
 
       // Begin TEST if (potential baresoil rate = 0)
-      pot_soil_evap(&bserate, nelyrs, lyrEvapCo, totagb, fbse0, petday, shift,
-        shape, inflec, range, width, swc, Es_param_limit, SW_All.Site.lyr);
+      pot_soil_evap(nelyrs, lyrEvapCo, totagb, fbse0, petday, shift,
+        shape, inflec, range, width, swc, Es_param_limit, SW_All.Site.lyr,
+        &bserate);
 
       // expect baresoil evaporation rate = 0 if fbse = 0
       EXPECT_DOUBLE_EQ(bserate, 0.) <<
@@ -508,8 +511,9 @@ namespace
 
 
       // Begin TEST if (totagb < Es_param_limit)
-      pot_soil_evap(&bserate, nelyrs, lyrEvapCo, totagb, fbse, petday, shift,
-        shape, inflec, range, width, swc, Es_param_limit, SW_All.Site.lyr);
+      pot_soil_evap(nelyrs, lyrEvapCo, totagb, fbse, petday, shift,
+        shape, inflec, range, width, swc, Es_param_limit, SW_All.Site.lyr,
+        &bserate);
 
       // expect baresoil evaporation rate > 0
       // if totagb >= Es_param_limit & swc > 0

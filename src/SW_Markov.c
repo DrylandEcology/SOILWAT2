@@ -196,8 +196,10 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 
 /**
 @brief Markov constructor for global variables.
+
+@param[in] rng_seed Initial state for Markov
 */
-void SW_MKV_construct(unsigned long Weather_rng_seed) {
+void SW_MKV_construct(unsigned long rng_seed) {
 	/* =================================================== */
 	SW_MARKOV *m = &SW_Markov;
 	size_t s = sizeof(RealD);
@@ -208,7 +210,7 @@ void SW_MKV_construct(unsigned long Weather_rng_seed) {
 	  - rSOILWAT2: R API handles RNGs
 	*/
 	#if defined(SOILWAT)
-	RandSeed(Weather_rng_seed, 1u, &markov_rng);
+	RandSeed(rng_seed, 1u, &markov_rng);
 	#endif
 
 	m->ppt_events = 0;

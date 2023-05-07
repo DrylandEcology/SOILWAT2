@@ -49,6 +49,9 @@
 @brief Initiate/update variables for a new simulation year.
       In addition to the timekeeper (Model), usually only modules
       that read input yearly or produce output need to have this call.
+
+@param[in,out] sw Comprehensive struct of type SW_ALL containing all
+  information in the simulation
 */
 static void _begin_year(SW_ALL* sw) {
 	// SW_F_new_year() not needed
@@ -82,6 +85,9 @@ static void _end_day(SW_ALL* sw) {
 /**
 @brief Calls 'SW_CTL_run_current_year' for each year
           which calls 'SW_SWC_water_flow' for each day.
+
+@param[in,out] sw Comprehensive struct of type SW_ALL containing all
+  information in the simulation
 */
 
 void SW_CTL_main(SW_ALL* sw) {
@@ -101,8 +107,12 @@ void SW_CTL_main(SW_ALL* sw) {
 } /******* End Main Loop *********/
 
 /** @brief Setup and construct model (independent of inputs)
+ *
+ * @param[in,out] sw Comprehensive struct of type SW_ALL containing all
+ * information in the simulation
+ * @param[in] firstfile First input file
  */
-void SW_CTL_setup_model(const char *firstfile, SW_ALL* sw) {
+void SW_CTL_setup_model(SW_ALL* sw, const char *firstfile) {
 
 	SW_F_construct(firstfile);
 	SW_MDL_construct(sw->Model.newperiod);
@@ -119,14 +129,17 @@ void SW_CTL_setup_model(const char *firstfile, SW_ALL* sw) {
 }
 
 
-/** @brief Free allocated memory
-		@param full_reset
-			* If `FALSE`, de-allocate memory for `SOILWAT2` variables, but
-					* do not reset output arrays `p_OUT` and `p_OUTsd` which are used under
-						`SW_OUTARRAY` to pass output in-memory to `rSOILWAT2` and to
-						`STEPWAT2`
-			* if `TRUE`, de-allocate all memory including output arrays.
-    @param sw Comprehensive structure holding all information dealt with in SOILWAT2
+/**
+  @brief Free allocated memory
+
+  @param full_reset
+    * If `FALSE`, de-allocate memory for `SOILWAT2` variables, but
+        * do not reset output arrays `p_OUT` and `p_OUTsd` which are used under
+          `SW_OUTARRAY` to pass output in-memory to `rSOILWAT2` and to
+          `STEPWAT2`
+    * if `TRUE`, de-allocate all memory including output arrays.
+  @param[in,out] sw Comprehensive structure holding all information
+    dealt with in SOILWAT2
 */
 void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
 	SW_F_deconstruct();
@@ -145,6 +158,9 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
 /** @brief Initialize simulation run (based on user inputs)
   Note: Time will only be set up correctly while carrying out a
   simulation year, i.e., after calling _begin_year()
+
+  @param[in,out] sw Comprehensive structure holding all information
+    dealt with in SOILWAT2
 */
 void SW_CTL_init_run(SW_ALL* sw) {
 
@@ -155,8 +171,8 @@ void SW_CTL_init_run(SW_ALL* sw) {
 	SW_PET_init_run();
 	// SW_SKY_init_run() not needed
 	SW_SIT_init_run(&sw->VegProd, &sw->Site);
-	SW_VES_init_run(sw->Site.lyr, sw->Site.n_transp_lyrs,
-                  sw->VegEstab.parms, sw->VegEstab.count); // must run after `SW_SIT_init_run()`
+	SW_VES_init_run(sw->VegEstab.parms, sw->Site.lyr,
+                  sw->Site.n_transp_lyrs, sw->VegEstab.count); // must run after `SW_SIT_init_run()`
 	SW_VPD_init_run(&sw->VegProd, &sw->Weather, sw->Model.startyr,
                   sw->Model.endyr, sw->Site.latitude);
 	SW_FLW_init_run();
@@ -170,6 +186,9 @@ void SW_CTL_init_run(SW_ALL* sw) {
 
 /**
 @brief Calls 'SW_SWC_water_flow' for each day.
+
+@param[in,out] sw Comprehensive struct of type SW_ALL containing
+  all information in the simulation
 */
 void SW_CTL_run_current_year(SW_ALL* sw) {
   /*=======================================================*/
@@ -192,11 +211,11 @@ void SW_CTL_run_current_year(SW_ALL* sw) {
     #ifdef SWDEBUG
     if (debug) swprintf("simulate water ... ");
     #endif
-    SW_SWC_water_flow(&sw->VegProd, &sw->Weather, &sw->SoilWat, &sw->Model, &sw->Site);
+    SW_SWC_water_flow(sw);
 
     // Only run this function if SWA output is asked for
     if (sw->VegProd.use_SWA) {
-      calculate_repartitioned_soilwater(&sw->VegProd, &sw->SoilWat,
+      calculate_repartitioned_soilwater(&sw->SoilWat, &sw->VegProd,
                                         sw->Site.lyr, sw->Site.n_layers);
     }
 
@@ -229,6 +248,9 @@ void SW_CTL_run_current_year(SW_ALL* sw) {
 /**
 @brief Reads inputs from disk and makes a print statement if there is an error
         in doing so.
+
+@param[in,out] sw Comprehensive struct of type SW_ALL containing
+  all information in the simulation
 */
 void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   #ifdef SWDEBUG

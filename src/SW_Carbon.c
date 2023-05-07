@@ -233,6 +233,12 @@ void SW_CBN_read(SW_MODEL* SW_Model)
  * its own set of coefficients. If a multiplier is disabled, its value is kept at the
  * default value of 1.0. Multipliers are only calculated for the years that will
  * be simulated.
+ *
+ * @param[in,out] VegProd_veg Array of size NVEGTYPES holding data for each
+ *  vegetation type
+ * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
+ *	about the simulation
+ *
  */
 void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model) {
   int k;

@@ -73,7 +73,7 @@ static void _zero_state(unsigned int sppnum, SW_VEGESTAB_INFO** parms);
 /**
 @brief Constructor for SW_VegEstab.
 
-@param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all
+@param[out] SW_VegEstab Struct of type SW_VEGESTAB holding all
   information about vegetation within the simulation
 */
 void SW_VES_construct(SW_VEGESTAB* SW_VegEstab) {
@@ -168,8 +168,8 @@ void SW_VES_new_year(IntU count) {
 /**
 @brief Reads in file for SW_VegEstab and species establishment parameters
 
-@param[in] SW_VegEstab Struct of type SW_VEGESTAB holding all information about
-  vegetation within the simulation
+@param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all information about
+  vegetation establishment within the simulation
 */
 void SW_VES_read(SW_VEGESTAB* SW_VegEstab) {
 	SW_VES_read2(SW_VegEstab, swTRUE, swTRUE);
@@ -179,7 +179,7 @@ void SW_VES_read(SW_VEGESTAB* SW_VegEstab) {
 @brief Reads in file for SW_VegEstab and species establishment parameters
 
 @param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all information about
-  vegetation within the simulation
+  vegetation establishment within the simulation
 @param[in] use_VegEstab Overall decision if user inputs for vegetation establishment
   should be processed.
 @param[in] consider_InputFlag Should the user input flag read from `"estab.in"` be
@@ -265,16 +265,16 @@ void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab)
 		* species establishment parameters are read from file by `SW_VES_read()`
 		* soil layers are initialized by `SW_SIT_init_run()`
 
+	@param[in,out] **parms List of structs of type SW_VEGESTAB_INFO holding information
+		about every vegetation species
 	@param[in] **lyr Struct list of type SW_LAYER_INFO holding information about
 		every soil layer in the simulation
 	@param[in] n_transp_lyrs Index of the deepest transp. region
-	@param[in] **parms List of structs of type SW_VEGESTAB_INFO holding information
-		about every vegetation species
 	@param[in] count Held within type SW_VEGESTAB to determine
 		how many species to check
 */
-void SW_VES_init_run(SW_LAYER_INFO** lyr, LyrIndex n_transp_lyrs[],
-					 SW_VEGESTAB_INFO** parms, IntU count) {
+void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_LAYER_INFO** lyr,
+					 LyrIndex n_transp_lyrs[], IntU count) {
 	IntU i;
 
 	for (i = 0; i < count; i++) {
@@ -291,10 +291,10 @@ void SW_VES_init_run(SW_LAYER_INFO** lyr, LyrIndex n_transp_lyrs[],
 /**
 @brief Check that each count coincides with a day of the year.
 
-@param[in] **parms List of structs of type SW_VEGESTAB_INFO holding
+@param[in,out] **parms List of structs of type SW_VEGESTAB_INFO holding
 	information about every vegetation species
 @param[in] SW_Weather Struct of type SW_WEATHER holding all relevant
-	information pretaining to weather input data
+		information pretaining to meteorological input data
 @param[in] swcBulk Soil water content in the layer [cm]
 @param[in] doy Day of the year (base1) [1-366]
 @param[in] firstdoy First day of current year

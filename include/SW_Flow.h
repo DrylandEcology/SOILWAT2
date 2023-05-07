@@ -11,9 +11,7 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_FLW_init_run(void);
-void SW_Water_Flow(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-				   SW_SOILWAT* SW_SoilWat, SW_MODEL* SW_Model,
-				   SW_SITE* SW_Site);
+void SW_Water_Flow(SW_ALL* sw);
 
 
 #ifdef __cplusplus

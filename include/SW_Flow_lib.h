@@ -69,9 +69,10 @@ void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, LyrIndex n_lay
 
 void EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param);
 
-void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double totagb,
+void pot_soil_evap(unsigned int nelyrs, double ecoeff[], double totagb,
   double fbse, double petday, double shift, double shape, double inflec, double range,
-		double width[], double swc[], double Es_param_limit, SW_LAYER_INFO** lyr);
+  double width[], double swc[], double Es_param_limit, SW_LAYER_INFO** lyr,
+  double *bserate);
 
 void pot_soil_evap_bs(double *bserate, SW_LAYER_INFO** lyr, unsigned int nelyrs,
   double ecoeff[], double petday, double shift, double shape, double inflec,
@@ -117,7 +118,10 @@ void hydraulic_redistribution(
 	TimeInt doy
 );
 
-void soil_temperature(double airTemp,
+void soil_temperature(double *surface_max,
+                      double *surface_min,
+					  double lyrFrozen[],
+					  double airTemp,
 		              double pet,
 					  double aet,
 					  double biomass,
@@ -141,18 +145,15 @@ void soil_temperature(double airTemp,
 					  double deltaX,
 					  double theMaxDepth,
 					  unsigned int nRgr,
-						double snow,
-						Bool *ptr_stError,
+					  double snow,
                       double maxAirTemp,
                       double minAirTemp,
                       double H_gt,
+					  TimeInt year,
+					  TimeInt doy,
                       double minLyrTemperature[],
                       double maxLyrTemperature[],
-                      double *surface_max,
-                      double *surface_min,
-					  double lyrFrozen[],
-					  TimeInt year,
-					  TimeInt doy
+					  Bool *ptr_stError
 					  );
 
 void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],

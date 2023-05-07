@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 	}
 
   // setup and construct model (independent of inputs)
-	SW_CTL_setup_model(_firstfile, &sw);
+	SW_CTL_setup_model(&sw, _firstfile);
 
 	// read user inputs
 	SW_CTL_read_inputs_from_disk(&sw);

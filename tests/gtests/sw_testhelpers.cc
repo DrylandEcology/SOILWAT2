@@ -46,7 +46,7 @@ void Reset_SOILWAT2_after_UnitTest(void) {
 
   SW_CTL_clear_model(swFALSE, &SW_All);
 
-  SW_CTL_setup_model(_firstfile, &SW_All); // `_firstfile` is here "files.in"
+  SW_CTL_setup_model(&SW_All, _firstfile); // `_firstfile` is here "files.in"
   SW_CTL_read_inputs_from_disk(&SW_All);
 
   /* Notes on messages during tests
@@ -126,8 +126,8 @@ void create_test_soillayers(unsigned int nlayers) {
   int nRegions = 3;
   RealD regionLowerBounds[3] = {20., 50., 100.};
 
-  set_soillayers(nlayers, dmax, bulkd, f_gravel,
-    evco, trco_grass, trco_shrub, trco_tree,
-    trco_forb, psand, pclay, imperm, soiltemp,
-    nRegions, regionLowerBounds, &SW_All.VegProd, &SW_All.Site);
+  set_soillayers(&SW_All.VegProd, &SW_All.Site, nlayers, dmax,
+    bulkd, f_gravel, evco, trco_grass, trco_shrub, trco_tree,
+    trco_forb, psand, pclay, imperm, soiltemp, nRegions,
+    regionLowerBounds);
 }

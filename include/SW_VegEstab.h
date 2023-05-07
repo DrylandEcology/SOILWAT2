@@ -38,8 +38,8 @@ void SW_VES_read2(
 );
 void SW_VES_construct(SW_VEGESTAB* SW_VegEstab);
 void SW_VES_deconstruct(SW_VEGESTAB* SW_VegEstab);
-void SW_VES_init_run(SW_LAYER_INFO** site_lyr, LyrIndex site_n_transp_lyrs[],
-					 SW_VEGESTAB_INFO** parms, IntU count);
+void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_LAYER_INFO** lyr,
+					 LyrIndex n_transp_lyrs[], IntU count);
 void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab);
 void SW_VES_checkestab(SW_VEGESTAB_INFO** parms, SW_WEATHER* SW_Weather,
 					   RealD swcBulk[][MAX_LAYERS], TimeInt doy,

@@ -336,9 +336,15 @@ void SW_OUT_create_iteration_files(int iteration) {
 		printing for the PREVIOUS month or week.
 		Also, see note on test value in _write_today() for
 		explanation of the +1.
+
+	@param[in] pd Time period in simulation output (day/week/month/year)
+	@param[in] sizeof_str Size of parameter "str"
+	@param[in] SW_Model Struct of type SW_MODEL holding basic time information
+		about the simulation
+	@param[out] str String header buffer for every output row
 */
-void get_outstrleader(OutPeriod pd, char *str, size_t sizeof_str,
-					  SW_MODEL* SW_Model) {
+void get_outstrleader(OutPeriod pd, size_t sizeof_str,
+					  SW_MODEL* SW_Model, char *str) {
 	switch (pd) {
 		case eSW_Day:
 			snprintf(str, sizeof_str, "%d%c%d", SW_Model->simyear, _Sep, SW_Model->doy);

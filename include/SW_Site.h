@@ -224,7 +224,7 @@ void PTF_RawlsBrakensiek1985(
 RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
 RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel);
 LyrIndex nlayers_bsevap(SW_LAYER_INFO** lyr, LyrIndex n_layers);
-void nlayers_vegroots(LyrIndex n_transp_lyrs[], LyrIndex n_layers,
+void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
 					  SW_LAYER_INFO** lyr);
 
 void SW_SIT_construct(SW_SITE* SW_Site);
@@ -241,11 +241,11 @@ void SW_SIT_clear_layers(SW_SITE* SW_Site);
 LyrIndex _newlayer(SW_SITE* SW_Site);
 void add_deepdrain_layer(SW_SITE* SW_Site);
 
-void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
-  RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
-  RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp,
-  int nRegions, RealD *regionLowerBounds, SW_VEGPROD* SW_VegProd,
-  SW_SITE* SW_Site);
+void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LyrIndex nlyrs,
+  RealF *dmax, RealF *bd, RealF *f_gravel, RealF *evco, RealF *trco_grass,
+  RealF *trco_shrub, RealF *trco_tree, RealF *trco_forb, RealF *psand,
+  RealF *pclay, RealF *imperm, RealF *soiltemp, int nRegions,
+  RealD *regionLowerBounds);
 void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
 						RealD *regionLowerBounds);
 

@@ -111,6 +111,9 @@ void SW_SKY_read(void) {
   @brief Interpolate monthly input values to daily records
   (depends on "current" year)
 
+  @param[in] year Current year being run in the simulation
+  @param[in] startyr Beginning year for model run
+
   Note: time must be set with SW_MDL_new_year() or Time_new_year()
   prior to this function.
 */
