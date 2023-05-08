@@ -144,8 +144,7 @@ double SWRC_SWPtoSWC_FXW(
 );
 
 #ifdef SWDEBUG
-void SW_WaterBalance_Checks(SW_WEATHER* SW_Weather, SW_SOILWAT* SW_SoilWat,
-							SW_MODEL* SW_Model, SW_SITE* SW_Site);
+void SW_WaterBalance_Checks(SW_ALL* sw);
 #endif
 
 #ifdef DEBUG_MEM
