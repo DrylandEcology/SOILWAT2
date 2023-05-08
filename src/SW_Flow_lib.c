@@ -732,8 +732,9 @@ void evap_fromSurface(double *water_pool, double *evap_rate, double *aet) {
 Based on equations from Parton 1978. @cite Parton1978
 
 @param[in,out] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param[in,out] qty Removal quanity from each layer, evaporation or transpiration (mm/day).
-@param[in,out] *aet Actual evapotranspiration (cm/day).
+@param[in,out] qty Updated removal quantity from each layer, evaporation or transpiration,
+added to input value (mm/day).
+@param[in,out] *aet Actual evapotranspiration, added to input value (cm/day).
 @param[in] nlyrs Number of layers considered in water removal.
 @param[in] coeff Coefficients of removal for removal layers.
 @param[in] rate Removal rate, either soil_evap_rate or soil_transp_rate.
@@ -763,7 +764,7 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	 **********************************************************************/
 
 	unsigned int i;
-	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q, tmpswp;
+	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q, tmpswp, d = 0.;
 
 	for (i = 0; i < nlyrs; i++) {
 		tmpswp = SW_SWRC_SWCtoSWP(swc[i], lyr[i]);
@@ -782,15 +783,17 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	for (i = 0; i < nlyrs; i++) {
 		if (!ZRO(lyrFrozen[i])) {
 			// no water extraction, i.e., evaporation and transpiration, from a frozen soil layer
-			qty[i] = 0.;
+			d = 0.;
 
 		} else {
 			q = (swpfrac[i] / sumswp) * rate;
 			swc_avail = fmax(0., swc[i] - swcmin[i]);
-			qty[i] = fmin( q, swc_avail);
-			swc[i] -= qty[i];
-			*aet += qty[i];
+			d = fmin( q, swc_avail);
+			swc[i] -= d;
+			*aet += d;
 		}
+
+		qty[i] += d;
 	}
 }
 

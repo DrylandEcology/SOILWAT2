@@ -133,8 +133,6 @@ static IntU lyrTrRegions[NVEGTYPES][MAX_LAYERS];
 
 static RealD
 	lyrTranspCo[NVEGTYPES][MAX_LAYERS],
-	lyrEvap[NVEGTYPES][MAX_LAYERS],
-	lyrEvap_BareGround[MAX_LAYERS],
 	lyrSWCBulk_atSWPcrit[NVEGTYPES][MAX_LAYERS],
 
 	lyrbDensity[MAX_LAYERS],
@@ -218,26 +216,6 @@ static void records2arrays(
 
 }
 
-static void arrays2records(
-	SW_SOILWAT* SW_SoilWat,
-	SW_SITE* SW_Site
-) {
-	/* move output quantities from arrays to
-	 * the appropriate records.
-	 */
-	LyrIndex i;
-	int k;
-
-	ForEachEvapLayer(i, SW_Site->n_evap_lyrs)
-	{
-		SW_SoilWat->evap_baresoil[i] = lyrEvap_BareGround[i];
-		ForEachVegType(k)
-		{
-			SW_SoilWat->evap_baresoil[i] += lyrEvap[k][i];
-		}
-	}
-
-}
 
 
 
@@ -265,14 +243,12 @@ void SW_FLW_init_run(SW_SOILWAT* SW_SoilWat) {
 			lyrTrRegions[k][i] = 0;
 			SW_SoilWat->transpiration[k][i] = 0.;
 			lyrTranspCo[k][i] = 0.;
-			lyrEvap[k][i] = 0.;
 			lyrSWCBulk_atSWPcrit[k][i] = 0.;
 			SW_SoilWat->hydred[k][i] = 0;
 		}
 
 		SW_SoilWat->swcBulk[Today][i] = 0.;
 		SW_SoilWat->drain[i] = 0.;
-		lyrEvap_BareGround[i] = 0;
 		lyrEvapCo[i] = lyrSWCBulk_FieldCaps[i] = 0;
 		lyrWidths[i] = lyrSWCBulk_Wiltpts[i] = lyrSWCBulk_HalfWiltpts[i] = 0;
 		lyrSWCBulk_Mins[i] = 0;
@@ -637,18 +613,17 @@ void SW_Water_Flow(SW_ALL* sw) {
 	sw->SoilWat.litter_evap = surface_evap_litter_rate;
 	sw->SoilWat.surfaceWater_evap = surface_evap_standingWater_rate;
 
+
 	/* bare-soil evaporation */
+	ForEachEvapLayer(i, sw->Site.n_evap_lyrs) {
+		sw->SoilWat.evap_baresoil[i] = 0; // init to zero for today
+	}
+
 	if (GT(sw->VegProd.bare_cov.fCover, 0.) && EQ(sw->SoilWat.snowpack[Today], 0.)) {
 		/* remove bare-soil evap from swv */
-		remove_from_soil(sw->SoilWat.swcBulk[Today], lyrEvap_BareGround, &sw->SoilWat.aet, sw->Site.n_evap_lyrs,
+		remove_from_soil(sw->SoilWat.swcBulk[Today], sw->SoilWat.evap_baresoil, &sw->SoilWat.aet, sw->Site.n_evap_lyrs,
 			lyrEvapCo, soil_evap_rate_bs, lyrSWCBulk_HalfWiltpts, sw->SoilWat.lyrFrozen,
 			sw->Site.lyr);
-
-	} else {
-		/* Set daily array to zero, no evaporation */
-		ForEachEvapLayer(i, sw->Site.n_evap_lyrs) {
-			lyrEvap_BareGround[i] = 0.;
-		}
 	}
 
 	#ifdef SWDEBUG
@@ -659,7 +634,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 		}
 		swprintf("\n              : Esoil:");
 		ForEachSoilLayer(i, n_layers) {
-			swprintf(" Esoil[%d]=%1.3f", i, lyrEvap_BareGround[i]);
+			swprintf(" Esoil[%d]=%1.3f", i, sw->SoilWat.evap_baresoil[i]);
 		}
 		swprintf("\n");
 	}
@@ -668,9 +643,13 @@ void SW_Water_Flow(SW_ALL* sw) {
 	/* Vegetation transpiration and bare-soil evaporation */
 	ForEachVegType(k)
 	{
+		ForEachSoilLayer(i, n_layers) {
+			sw->SoilWat.transpiration[k][i] = 0; // init to zero for today
+		}
+
 		if (GT(scale_veg[k], 0.)) {
 			/* remove bare-soil evap from swc */
-			remove_from_soil(sw->SoilWat.swcBulk[Today], lyrEvap[k], &sw->SoilWat.aet, sw->Site.n_evap_lyrs,
+			remove_from_soil(sw->SoilWat.swcBulk[Today], sw->SoilWat.evap_baresoil, &sw->SoilWat.aet, sw->Site.n_evap_lyrs,
 				lyrEvapCo, soil_evap_rate[k], lyrSWCBulk_HalfWiltpts, sw->SoilWat.lyrFrozen,
 				sw->Site.lyr);
 
@@ -678,12 +657,6 @@ void SW_Water_Flow(SW_ALL* sw) {
 			remove_from_soil(sw->SoilWat.swcBulk[Today], sw->SoilWat.transpiration[k], &sw->SoilWat.aet, sw->Site.n_transp_lyrs[k],
 				lyrTranspCo[k], transp_rate[k], lyrSWCBulk_atSWPcrit[k], sw->SoilWat.lyrFrozen,
 				sw->Site.lyr);
-
-		} else {
-			/* Set daily array to zero, no evaporation or transpiration */
-			ForEachSoilLayer(i, n_layers) {
-				sw->SoilWat.transpiration[k][i] = lyrEvap[k][i] = 0.;
-			}
 		}
 	}
 
@@ -694,10 +667,11 @@ void SW_Water_Flow(SW_ALL* sw) {
 			swprintf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
 		}
 		swprintf("\n              : ETveg:");
+		Eveg = 0.;
 		ForEachSoilLayer(i, n_layers) {
-			Eveg = Tveg = 0.;
+			Tveg = 0.;
+			Eveg += sw->SoilWat.evap_baresoil[i];
 			ForEachVegType(k) {
-				Eveg += lyrEvap[k][i];
 				Tveg += sw->SoilWat.transpiration[k][i];
 			}
 			swprintf(" Tveg[%d]=%1.3f/Eveg=%1.3f", i, Tveg, Eveg);
@@ -829,9 +803,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 
 	/* Soil Temperature ends here */
 
-	/* Move local values into main arrays */
-	arrays2records(&sw->SoilWat, &sw->Site);
-
+	/* Finalize "flow" of today */
 	if (sw->Site.deepdrain) {
 		sw->SoilWat.swcBulk[Today][sw->Site.deep_lyr] = drainout;
 	}
