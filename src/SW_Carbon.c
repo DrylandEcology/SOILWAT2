@@ -59,6 +59,9 @@ void SW_CBN_deconstruct(void)
 /**
  * @brief Reads yearly carbon data from disk file 'Input/carbon.in'
  *
+ * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
+ *	about the simulation
+ *
  * Additionally, check for the following issues:
  *   1. Duplicate entries.
  *   2. Empty file.
