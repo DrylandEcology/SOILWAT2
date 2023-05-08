@@ -25,16 +25,11 @@ extern "C" {
 #endif
 
 /* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern SW_SKY SW_Sky;
-
-
-/* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_SKY_read(void);
-void SW_SKY_new_year(TimeInt year, TimeInt startyr);
+void SW_SKY_read(SW_SKY* SW_Sky);
+void SW_SKY_new_year(TimeInt year, TimeInt startyr, RealD snow_density[MAX_MONTHS],
+					 RealD snow_density_daily[MAX_MONTHS]);
 
 #ifdef __cplusplus
 }

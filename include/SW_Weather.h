@@ -42,7 +42,8 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_WTH_setup(SW_WEATHER* SW_Weather);
-void SW_WTH_read(SW_WEATHER* SW_Weather, TimeInt startyr, TimeInt endyr);
+void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, TimeInt startyr,
+                 TimeInt endyr);
 void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
                                SW_CLIMATE_CLIM *climateAverages);
 void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,

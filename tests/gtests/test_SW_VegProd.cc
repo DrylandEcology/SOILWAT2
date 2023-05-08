@@ -258,7 +258,7 @@ namespace {
 
 
         // Reset "SW_All.Weather.allHist"
-        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
 		    finalizeAllWeather(&SW_All.Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
@@ -716,7 +716,7 @@ namespace {
 
 
         // Reset "SW_All.Weather.allHist"
-        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
 		    finalizeAllWeather(&SW_All.Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
@@ -1177,7 +1177,7 @@ namespace {
         double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
         // Reset "SW_All.Weather.allHist"
-        SW_WTH_read(&SW_All.Weather, SW_All.Model.startyr, SW_All.Model.endyr);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
 		    finalizeAllWeather(&SW_All.Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`

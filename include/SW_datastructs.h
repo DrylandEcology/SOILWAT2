@@ -780,6 +780,7 @@ typedef struct {
 	SW_MODEL Model;
 	SW_SITE Site;
 	SW_VEGESTAB VegEstab;
+	SW_SKY Sky;
 
 } SW_ALL;
 

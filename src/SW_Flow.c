@@ -425,7 +425,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 
 	/* snowdepth scaling */
 	sw->SoilWat.snowdepth = SW_SnowDepth(sw->SoilWat.snowpack[Today],
-											SW_Sky.snow_density_daily[doy]);
+											sw->Sky.snow_density_daily[doy]);
 	/* if snow depth is deeper than vegetation height then
 	 - rain and snowmelt infiltrates directly to soil (no vegetation or litter interception of today)
 	 only
@@ -453,7 +453,7 @@ void SW_Water_Flow(SW_ALL* sw) {
           plants are taller than snowpack depth */
       veg_intercepted_water(&h2o_for_soil,
         &sw->SoilWat.int_veg[k], &veg_int_storage[k],
-        SW_Sky.n_rain_per_day[month], sw->VegProd.veg[k].veg_kSmax,
+        sw->Sky.n_rain_per_day[month], sw->VegProd.veg[k].veg_kSmax,
         sw->VegProd.veg[k].bLAI_total_daily[doy], scale_veg[k]);
 
     } else {
@@ -470,7 +470,7 @@ void SW_Water_Flow(SW_ALL* sw) {
       if (GT(sw->VegProd.veg[k].cov.fCover, 0.)) {
         litter_intercepted_water(&h2o_for_soil,
           &sw->SoilWat.litter_int, &litter_int_storage,
-          SW_Sky.n_rain_per_day[month], sw->VegProd.veg[k].lit_kSmax,
+          sw->Sky.n_rain_per_day[month], sw->VegProd.veg[k].lit_kSmax,
           sw->VegProd.veg[k].litter_daily[doy], sw->VegProd.veg[k].cov.fCover);
       }
     }

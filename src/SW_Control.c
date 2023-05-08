@@ -57,7 +57,8 @@ static void _begin_year(SW_ALL* sw) {
 	// SW_F_new_year() not needed
 	SW_MDL_new_year(&sw->Model); // call first to set up time-related arrays for this year
 	// SW_MKV_new_year() not needed
-	SW_SKY_new_year(sw->Model.year, sw->Model.startyr); // Update daily climate variables from monthly values
+	SW_SKY_new_year(sw->Model.year, sw->Model.startyr, sw->Sky.snow_density,
+                  sw->Sky.snow_density_daily); // Update daily climate variables from monthly values
 	//SW_SIT_new_year() not needed
 	SW_VES_new_year(sw->VegEstab.count);
 	SW_VPD_new_year(&sw->VegProd, sw->Model.simyear); // Dynamic CO2 effects on vegetation
@@ -276,7 +277,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   if (debug) swprintf(" > 'weather setup'");
   #endif
 
-  SW_SKY_read();
+  SW_SKY_read(&sw->Sky);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'climate'");
   #endif
@@ -288,7 +289,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
     #endif
   }
 
-  SW_WTH_read(&sw->Weather, sw->Model.startyr, sw->Model.endyr);
+  SW_WTH_read(&sw->Weather, &sw->Sky, sw->Model.startyr, sw->Model.endyr);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather read'");
   #endif

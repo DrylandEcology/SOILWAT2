@@ -1595,10 +1595,13 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
 
   @param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
+  @param[in] SW_Sky Struct of type SW_SKY which describes sky conditions
+	  of the simulated site
   @param[in] startyr Beginning year for model run
   @param[in] endyr Ending year for model run
 */
-void SW_WTH_read(SW_WEATHER* SW_Weather, TimeInt startyr, TimeInt endyr) {
+void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, TimeInt startyr,
+                 TimeInt endyr) {
 
     // Deallocate (previous, if any) `allHist`
     // (using value of `SW_Weather.n_years` previously used to allocate)
@@ -1625,9 +1628,9 @@ void SW_WTH_read(SW_WEATHER* SW_Weather, TimeInt startyr, TimeInt endyr) {
       SW_Weather->n_input_forcings,
       SW_Weather->dailyInputIndices,
       SW_Weather->dailyInputFlags,
-      SW_Sky.cloudcov,
-      SW_Sky.windspeed,
-      SW_Sky.r_humidity
+      SW_Sky->cloudcov,
+      SW_Sky->windspeed,
+      SW_Sky->r_humidity
     );
 }
 
