@@ -781,6 +781,7 @@ typedef struct {
 	SW_SITE Site;
 	SW_VEGESTAB VegEstab;
 	SW_SKY Sky;
+	SW_CARBON Carbon;
 
 } SW_ALL;
 

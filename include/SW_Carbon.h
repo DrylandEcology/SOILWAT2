@@ -14,19 +14,15 @@
 extern "C" {
 #endif
 
-/* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern SW_CARBON SW_Carbon;
-
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_CBN_construct(void);
+void SW_CBN_construct(SW_CARBON* SW_Carbon);
 void SW_CBN_deconstruct(void);
-void SW_CBN_read(SW_MODEL* SW_Model);
-void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model);
+void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model);
+void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
+                     SW_CARBON* SW_Carbon);
 
 
 #ifdef __cplusplus

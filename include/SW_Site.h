@@ -230,7 +230,7 @@ void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
 void SW_SIT_construct(SW_SITE* SW_Site);
 void SW_SIT_deconstruct(SW_SITE* SW_Site);
 void SW_SIT_init_counts(SW_SITE* SW_Site);
-void SW_SIT_read(SW_SITE* SW_Site);
+void SW_SIT_read(SW_SITE* SW_Site, SW_CARBON* SW_Carbon);
 void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site);
 void _echo_inputs(SW_SITE* SW_Site);
 

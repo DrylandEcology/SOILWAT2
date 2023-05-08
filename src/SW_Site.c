@@ -1355,13 +1355,13 @@ void SW_SIT_deconstruct(SW_SITE* SW_Site)
 @brief Reads in file for input values.
 
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+@param[out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
 */
-void SW_SIT_read(SW_SITE* SW_Site) {
+void SW_SIT_read(SW_SITE* SW_Site, SW_CARBON* SW_Carbon) {
 	/* =================================================== */
 	/* 5-Feb-2002 (cwb) Removed rgntop requirement in
 	 *    transpiration regions section of input
 	 */
-	SW_CARBON *c = &SW_Carbon;
 	FILE *f;
 	int lineno = 0, x,
 		rgnlow, /* lower layer of region */
@@ -1499,21 +1499,21 @@ void SW_SIT_read(SW_SITE* SW_Site) {
 			SW_Site->use_soil_temp = itob(atoi(inbuf));
 			break;
 		case 38:
-			c->use_bio_mult = itob(atoi(inbuf));
+			SW_Carbon->use_bio_mult = itob(atoi(inbuf));
 			#ifdef SWDEBUG
-			if (debug) swprintf("'SW_SIT_read': use_bio_mult = %d\n", c->use_bio_mult);
+			if (debug) swprintf("'SW_SIT_read': use_bio_mult = %d\n", SW_Carbon->use_bio_mult);
 			#endif
 			break;
 		case 39:
-			c->use_wue_mult = itob(atoi(inbuf));
+			SW_Carbon->use_wue_mult = itob(atoi(inbuf));
 			#ifdef SWDEBUG
-			if (debug) swprintf("'SW_SIT_read': use_wue_mult = %d\n", c->use_wue_mult);
+			if (debug) swprintf("'SW_SIT_read': use_wue_mult = %d\n", SW_Carbon->use_wue_mult);
 			#endif
 			break;
 		case 40:
-			strcpy(c->scenario, inbuf);
+			strcpy(SW_Carbon->scenario, inbuf);
 			#ifdef SWDEBUG
-			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", c->scenario);
+			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", SW_Carbon->scenario);
 			#endif
 			break;
 		case 41:

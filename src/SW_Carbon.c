@@ -22,14 +22,6 @@
 #include "include/SW_VegProd.h"
 
 
-
-/* =================================================== */
-/*                  Global Variables                   */
-/* --------------------------------------------------- */
-
-SW_CARBON SW_Carbon;
-
-
 /* =================================================== */
 /*                  Local Variables                    */
 /* --------------------------------------------------- */
@@ -43,12 +35,15 @@ static char *MyFileName;
 
 /**
  * @brief Initializes the multipliers of the SW_CARBON structure.
+ *
+ * @param[out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
+ *
  * @note The spin-up year has been known to have the multipliers equal
  *       to 0 without this constructor.
  */
-void SW_CBN_construct(void)
+void SW_CBN_construct(SW_CARBON* SW_Carbon)
 {
-  memset(&SW_Carbon, 0, sizeof(SW_Carbon));
+  memset(SW_Carbon, 0, sizeof(SW_CARBON));
 }
 
 void SW_CBN_deconstruct(void)
@@ -59,6 +54,7 @@ void SW_CBN_deconstruct(void)
 /**
  * @brief Reads yearly carbon data from disk file 'Input/carbon.in'
  *
+ * @param[in,out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
  *
@@ -69,16 +65,15 @@ void SW_CBN_deconstruct(void)
  *   4. Missing year.
  *   5. Negative year.
  */
-void SW_CBN_read(SW_MODEL* SW_Model)
+void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model)
 {
   #ifdef SWDEBUG
   short debug = 0;
   #endif
-  SW_CARBON  *c   = &SW_Carbon;
 
   // For efficiency, don't read carbon.in if neither multiplier is being used
   // We can do this because SW_VPD_construct already populated the multipliers with default values
-  if (!c->use_bio_mult && !c->use_wue_mult)
+  if (!SW_Carbon->use_bio_mult && !SW_Carbon->use_wue_mult)
   {
     #ifdef SWDEBUG
     if (debug) {
@@ -126,7 +121,7 @@ void SW_CBN_read(SW_MODEL* SW_Model)
       sscanf(inbuf, "%d %63s", &year, scenario);
       continue;  // Skip to the ppm values
     }
-    if (strcmp(scenario, c->scenario) != 0)
+    if (strcmp(scenario, SW_Carbon->scenario) != 0)
     {
       continue;  // Keep searching for the right scenario
     }
@@ -146,14 +141,14 @@ void SW_CBN_read(SW_MODEL* SW_Model)
         "(SW_Carbon) Year %d in scenario '%.64s' is negative; "
         "only positive values are allowed.\n",
         year,
-        c->scenario
+        SW_Carbon->scenario
       );
       LogError(logfp, LOGFATAL, errstr);
     }
 
-    c->ppm[year] = ppm;
+    SW_Carbon->ppm[year] = ppm;
     #ifdef SWDEBUG
-    if (debug) swprintf("  ==> c->ppm[%d] = %3.2f", year, c->ppm[year]);
+    if (debug) swprintf("  ==> SW_Carbon->ppm[%d] = %3.2f", year, SW_Carbon->ppm[year]);
     #endif
 
     /* Has this year already been calculated?
@@ -171,7 +166,7 @@ void SW_CBN_read(SW_MODEL* SW_Model)
         "(SW_Carbon) Year %d in scenario '%.64s' is entered more than once; "
         "only one entry is allowed.\n",
         year,
-        c->scenario
+        SW_Carbon->scenario
       );
       LogError(logfp, LOGFATAL, errstr);
     }
@@ -203,7 +198,7 @@ void SW_CBN_read(SW_MODEL* SW_Model)
       errstr,
       MAX_ERROR,
       "(SW_Carbon) The scenario '%.64s' was not found in carbon.in\n",
-      c->scenario
+      SW_Carbon->scenario
     );
     LogError(logfp, LOGFATAL, errstr);
   }
@@ -219,7 +214,7 @@ void SW_CBN_read(SW_MODEL* SW_Model)
         "(SW_Carbon) missing CO2 data for year %d; "
         "ensure that ppm values for this year exist in scenario '%.64s'\n",
         year,
-        c->scenario
+        SW_Carbon->scenario
       );
       LogError(logfp, LOGFATAL, errstr);
     }
@@ -241,18 +236,19 @@ void SW_CBN_read(SW_MODEL* SW_Model)
  *  vegetation type
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
+ * @param[in] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
  *
  */
-void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model) {
+void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
+                     SW_CARBON* SW_Carbon) {
   int k;
   TimeInt year, simendyr = SW_Model->endyr + SW_Model->addtl_yr;
   double ppm;
-  SW_CARBON  *c  = &SW_Carbon;
   #ifdef SWDEBUG
   short debug = 0;
   #endif
 
-  if (!c->use_bio_mult && !c->use_wue_mult)
+  if (!SW_Carbon->use_bio_mult && !SW_Carbon->use_wue_mult)
   {
     return;
   }
@@ -260,7 +256,7 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model) {
   // Only iterate through the years that we know will be used
   for (year = SW_Model->startyr + SW_Model->addtl_yr; year <= simendyr; year++)
   {
-    ppm = c->ppm[year];
+    ppm = SW_Carbon->ppm[year];
 
     if (LT(ppm, 0.))  // CO2 concentration must not be negative values
     {
@@ -274,7 +270,7 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model) {
     }
 
     // Calculate multipliers per PFT
-    if (c->use_bio_mult) {
+    if (SW_Carbon->use_bio_mult) {
       ForEachVegType(k) {
         VegProd_veg[k].co2_multipliers[BIO_INDEX][year] =
                                               VegProd_veg[k].co2_bio_coeff1
@@ -285,12 +281,12 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model) {
     #ifdef SWDEBUG
     if (debug) {
       swprintf("Shrub: use%d: bio_mult[%d] = %1.3f / coeff1 = %1.3f / coeff2 = %1.3f / ppm = %3.2f\n",
-        c->use_bio_mult, year, VegProd_veg[SW_SHRUB].co2_multipliers[BIO_INDEX][year],
+        SW_Carbon->use_bio_mult, year, VegProd_veg[SW_SHRUB].co2_multipliers[BIO_INDEX][year],
         VegProd_veg[SW_SHRUB].co2_bio_coeff1, VegProd_veg[SW_SHRUB].co2_bio_coeff2, ppm);
     }
     #endif
 
-    if (c->use_wue_mult) {
+    if (SW_Carbon->use_wue_mult) {
       ForEachVegType(k) {
         VegProd_veg[k].co2_multipliers[WUE_INDEX][year] = VegProd_veg[k].co2_wue_coeff1 *
           pow(ppm, VegProd_veg[k].co2_wue_coeff2);

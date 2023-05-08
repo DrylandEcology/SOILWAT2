@@ -126,7 +126,7 @@ void SW_CTL_setup_model(SW_ALL* sw, const char *firstfile) {
 	// SW_FLW_construct() not needed
 	SW_OUT_construct(sw->Site.n_layers);
 	SW_SWC_construct(&sw->SoilWat);
-	SW_CBN_construct();
+	SW_CBN_construct(&sw->Carbon);
 }
 
 
@@ -181,7 +181,7 @@ void SW_CTL_init_run(SW_ALL* sw) {
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
 	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
 	SW_SWC_init_run(&sw->SoilWat, &sw->Site);
-	SW_CBN_init_run(sw->VegProd.veg, &sw->Model);
+	SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->Carbon);
 }
 
 
@@ -299,7 +299,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   if (debug) swprintf(" > 'veg'");
   #endif
 
-  SW_SIT_read(&sw->Site);
+  SW_SIT_read(&sw->Site, &sw->Carbon);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'site'");
   #endif
@@ -324,7 +324,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   if (debug) swprintf(" > 'ouput'");
   #endif
 
-  SW_CBN_read(&sw->Model);
+  SW_CBN_read(&sw->Carbon, &sw->Model);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'CO2'");
   #endif
