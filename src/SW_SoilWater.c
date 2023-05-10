@@ -890,8 +890,8 @@ void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd,
 /**
 @brief Copies today's values so that the values for swcBulk and snowpack become yesterday's values.
 
-@param[in,out] swcBulk Soil water content in the layer [cm]
-@param[in,out] snowpack swe of snowpack, assuming accumulation is turned on
+@param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing soil water
+	related values
 @param[in] n_layers Number of layers of soil within the simulation run
 */
 void SW_SWC_end_day(SW_SOILWAT* SW_SoilWat, LyrIndex n_layers) {

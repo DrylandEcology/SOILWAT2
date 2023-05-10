@@ -2139,10 +2139,9 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param[in] bDensity An array of the bulk density of the whole soil per soil layer
   (g/cm<SUP>3</SUP>).
 @param[in] width The width of the layers (cm).
-@param[in] oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
-@param[in,out] avgLyrTemp Temperatature values of soil layers 
+@param[in,out] avgLyrTemp Temperatature values of soil layers
 (yesterday's values for input; today's values as output)  (&deg;C).
-@param[in,out] surfaceAvg Average daily surface air temperatature 
+@param[in,out] surfaceAvg Average daily surface air temperatature
 (yesterday's value for input; today's value as output) (&deg;C).
 @param[in] nlyrs Number of layers in the soil profile.
 @param[in] bmLimiter Biomass limiter constant (300 g/m<SUP>2</SUP>).
@@ -2172,7 +2171,7 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 
 void soil_temperature(double *surface_max, double *surface_min,
 	double lyrFrozen[], double airTemp, double pet, double aet, double biomass,
-	double swc[], double swc_sat[], double bDensity[], double width[], 
+	double swc[], double swc_sat[], double bDensity[], double width[],
 	double avgLyrTemp[], double *surfaceAvg, unsigned int nlyrs,
 	double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1,
 	double csParam2, double shParam, double snowdepth, double sTconst, double deltaX,
