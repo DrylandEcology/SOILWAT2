@@ -626,7 +626,7 @@ typedef struct {
 	SWA_VegType[NVEGTYPES][MAX_LAYERS],
 	swaMatric[MAX_LAYERS],
 	transp_total[MAX_LAYERS], transp[NVEGTYPES][MAX_LAYERS],
-	evap[MAX_LAYERS],
+	evap_baresoil[MAX_LAYERS], /* bare-soil evaporation [cm/layer] */
 	lyrdrain[MAX_LAYERS],
 	hydred_total[MAX_LAYERS], hydred[NVEGTYPES][MAX_LAYERS], /* hydraulic redistribution cm/layer */
 	surfaceWater, surfaceWater_evap,
@@ -657,7 +657,7 @@ typedef struct {
 		snowpack[TWO_DAYS], /* swe of snowpack, if accumulation flag set */
 		snowdepth,
 		transpiration[NVEGTYPES][MAX_LAYERS],
-		evaporation[MAX_LAYERS],
+		evap_baresoil[MAX_LAYERS], /* bare-soil evaporation [cm/layer] */
 		drain[MAX_LAYERS], /* amt of swc able to drain from curr layer to next */
 		hydred[NVEGTYPES][MAX_LAYERS], /* hydraulic redistribution cm/layer */
 		surfaceWater, surfaceWater_evap,

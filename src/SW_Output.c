@@ -445,7 +445,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
 
 	case eSW_EvapSoil:
 		ForEachEvapLayer(i, n_evap_layers)
-			s->evap[i] += v->evaporation[i];
+			s->evap_baresoil[i] += v->evap_baresoil[i];
 		break;
 
 	case eSW_EvapSurface:
@@ -489,7 +489,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
 			}
 		}
 		ForEachEvapLayer(i, n_evap_layers) {
-			s->esoil += v->evaporation[i];
+			s->esoil += v->evap_baresoil[i];
 		}
 		ForEachVegType(j) {
 			s->ecnw += v->evap_veg[j];
@@ -778,7 +778,7 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd) {
 
 			case eSW_EvapSoil:
 				ForEachEvapLayer(i, n_evap_layers)
-					sw->SoilWat.p_oagg[pd]->evap[i] = sw->SoilWat.p_accu[pd]->evap[i] / div;
+					sw->SoilWat.p_oagg[pd]->evap_baresoil[i] = sw->SoilWat.p_accu[pd]->evap_baresoil[i] / div;
 				break;
 
 			case eSW_EvapSurface:
@@ -2410,7 +2410,7 @@ void SW_OUT_write_today(SW_ALL* sw)
 
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_OUT_write_today': %dyr-%dmon-%dwk-%ddoy: ",
-    SW_Model.year, SW_Model.month, SW_Model.week, SW_Model.doy);
+    sw->Model.year, sw->Model.month, sw->Model.week, sw->Model.doy);
   #endif
 
 

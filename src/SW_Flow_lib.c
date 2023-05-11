@@ -732,8 +732,9 @@ void evap_fromSurface(double *water_pool, double *evap_rate, double *aet) {
 Based on equations from Parton 1978. @cite Parton1978
 
 @param[in,out] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param[in,out] qty Removal quanity from each layer, evaporation or transpiration (mm/day).
-@param[in,out] *aet Actual evapotranspiration (cm/day).
+@param[in,out] qty Updated removal quantity from each layer, evaporation or transpiration,
+added to input value (mm/day).
+@param[in,out] *aet Actual evapotranspiration, added to input value (cm/day).
 @param[in] nlyrs Number of layers considered in water removal.
 @param[in] coeff Coefficients of removal for removal layers.
 @param[in] rate Removal rate, either soil_evap_rate or soil_transp_rate.
@@ -763,7 +764,7 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	 **********************************************************************/
 
 	unsigned int i;
-	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q, tmpswp;
+	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q, tmpswp, d = 0.;
 
 	for (i = 0; i < nlyrs; i++) {
 		tmpswp = SW_SWRC_SWCtoSWP(swc[i], lyr[i]);
@@ -782,15 +783,17 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	for (i = 0; i < nlyrs; i++) {
 		if (!ZRO(lyrFrozen[i])) {
 			// no water extraction, i.e., evaporation and transpiration, from a frozen soil layer
-			qty[i] = 0.;
+			d = 0.;
 
 		} else {
 			q = (swpfrac[i] / sumswp) * rate;
 			swc_avail = fmax(0., swc[i] - swcmin[i]);
-			qty[i] = fmin( q, swc_avail);
-			swc[i] -= qty[i];
-			*aet += qty[i];
+			d = fmin( q, swc_avail);
+			swc[i] -= d;
+			*aet += d;
 		}
+
+		qty[i] += d;
 	}
 }
 
@@ -1431,7 +1434,7 @@ void SW_ST_init_run(void) {
 		(g/cm<SUP>3</SUP>).
 	@param width The width of the layers (cm).
 	@param oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
-	@param surfaceAvg Current surface air temperatature (&deg;C).
+	@param[out] surfaceAvg Initialized surface air temperatature (&deg;C).
 	@param nlyrs Number of layers in the soil profile.
 	@param fc An array of the field capacity of the soil layers (cm/layer).
 	@param wp An array of the wilting point of the soil layers (cm/layer).
@@ -1454,7 +1457,7 @@ void SW_ST_setup_run(
 	double bDensity[],
 	double width[],
 	double oldavgLyrTemp[],
-	double surfaceAvg[2],
+	double *surfaceAvg,
 	unsigned int nlyrs,
 	double fc[],
 	double wp[],
@@ -1477,7 +1480,7 @@ void SW_ST_setup_run(
 		}
 		#endif
 
-		surfaceAvg[Today] = airTemp;
+		*surfaceAvg = airTemp;
 		soil_temperature_setup(
 			bDensity, width,
 			oldavgLyrTemp, sTconst,
@@ -2136,9 +2139,10 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param[in] bDensity An array of the bulk density of the whole soil per soil layer
   (g/cm<SUP>3</SUP>).
 @param[in] width The width of the layers (cm).
-@param[in] oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
-@param[in] avgLyrTemp Temperatature values of soil layers (&deg;C).
-@param[in] surfaceAvg Current surface air temperatature (&deg;C).
+@param[in,out] avgLyrTemp Temperatature values of soil layers
+(yesterday's values for input; today's values as output)  (&deg;C).
+@param[in,out] surfaceAvg Average daily surface air temperatature
+(yesterday's value for input; today's value as output) (&deg;C).
 @param[in] nlyrs Number of layers in the soil profile.
 @param[in] bmLimiter Biomass limiter constant (300 g/m<SUP>2</SUP>).
 @param[in] t1Param1 Constant for the avg temp at the top of soil equation (15).
@@ -2167,8 +2171,8 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 
 void soil_temperature(double *surface_max, double *surface_min,
 	double lyrFrozen[], double airTemp, double pet, double aet, double biomass,
-	double swc[], double swc_sat[], double bDensity[], double width[], double oldavgLyrTemp[],
-	double avgLyrTemp[], double surfaceAvg[2], unsigned int nlyrs,
+	double swc[], double swc_sat[], double bDensity[], double width[],
+	double avgLyrTemp[], double *surfaceAvg, unsigned int nlyrs,
 	double bmLimiter, double t1Param1, double t1Param2, double t1Param3, double csParam1,
 	double csParam2, double shParam, double snowdepth, double sTconst, double deltaX,
 	double theMaxDepth, unsigned int nRgr, double snow, double max_air_temp,
@@ -2182,7 +2186,7 @@ void soil_temperature(double *surface_max, double *surface_min,
     debug = 0;
   }
   #endif
-	double T1, vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], avgLyrTempR[MAX_ST_RGR],
+	double oldavgLyrTemp[MAX_LAYERS], vwc[MAX_LAYERS], vwcR[MAX_ST_RGR], avgLyrTempR[MAX_ST_RGR],
     temperatureRangeR[MAX_ST_RGR], temperatureRange[MAX_LAYERS], surface_range;
 
 
@@ -2190,7 +2194,7 @@ void soil_temperature(double *surface_max, double *surface_min,
 
 	/* local variables explained:
 	 debug - 1 to print out debug messages & then exit the program after completing the function, 0 to not.  default is 0.
-	 T1 - the average daily temperature at the top of the soil in celsius
+	 T1 = surfaceAvg - the average daily temperature at the top of the soil in celsius
 	 vwc - volumetric soil-water content
 	 pe - ratio of the difference between volumetric soil-water content & soil-water content
 	 at the wilting point to the difference between soil water content at field capacity &
@@ -2220,14 +2224,14 @@ void soil_temperature(double *surface_max, double *surface_min,
 	// calculating min/mean/max surface temperature
 	if (GT(snowdepth, 0.0)) {
 		// underneath snow, based on Parton 1998
-		T1 = surface_temperature_under_snow(airTemp, snow);
-		*surface_min = *surface_max = T1;
+		*surfaceAvg = surface_temperature_under_snow(airTemp, snow);
+		*surface_min = *surface_max = *surfaceAvg;
 
 		#ifdef SWDEBUG
 		if (debug) {
 			swprintf(
 				"\nTsurface (min/mean/max) = %f/%f/%f (underneath snowpack)\n",
-				*surface_min, T1, *surface_max
+				*surface_min, *surfaceAvg, *surface_max
 			);
 		}
 		#endif
@@ -2244,36 +2248,33 @@ void soil_temperature(double *surface_max, double *surface_min,
         *surface_min = min_air_temp + (.006 * biomass) - 1.82;
 
 		if (LE(biomass, bmLimiter)) { // bmLimiter = 300
-			T1 = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
+			*surfaceAvg = airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))); // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of Parton 1978's 2.20 equation (the printed version misses a closing parenthesis) removes a jump of T1 for biomass = bmLimiter
 
 			#ifdef SWDEBUG
 			if (debug) {
 				swprintf(
 					"\nTsurface (min/mean/max) = %f/%f/%f "
 					"\n  mean = %f + (%f * %f * (1 - (%f / %f)) * (1 - (%f / %f)) ) )\n",
-					*surface_min, T1, *surface_max,
+					*surface_min, *surfaceAvg, *surface_max,
 					airTemp, t1Param1, pet, aet, pet, biomass, bmLimiter
 				);
 			}
 			#endif
 
 		} else {
-			T1 = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
+			*surfaceAvg = airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3); // t1Param2 = -4, t1Param3 = 600; math is correct
 			#ifdef SWDEBUG
 			if (debug) {
 				swprintf(
 					"\nTsurface (min/mean/max) = %f/%f/%f "
 					"\n  mean= %f + ((%f * (%f - %f)) / %f)\n",
-					*surface_min, T1, *surface_max,
+					*surface_min, *surfaceAvg, *surface_max,
 					airTemp, t1Param2, biomass, bmLimiter, t1Param3
 				);
 			}
 			#endif
 		}
 	}
-
-	surfaceAvg[Yesterday] = surfaceAvg[Today];
-	surfaceAvg[Today] = T1;
 
 	surface_range = *surface_max - *surface_min;
 
@@ -2302,9 +2303,13 @@ void soil_temperature(double *surface_max, double *surface_min,
 	}
 
 
-	// calculate volumetric soil water content for soil temperature layers
+	
 	for (i = 0; i < nlyrs; i++) {
+		// calculate volumetric soil water content for soil temperature layers
 		vwc[i] = swc[i] / width[i];
+		
+		// save yesterday's values for later use
+		oldavgLyrTemp[i] = avgLyrTemp[i];
 	}
 
 	lyrSoil_to_lyrTemp(st->tlyrs_by_slyrs, nlyrs, width, vwc, nRgr, deltaX, vwcR);
@@ -2327,7 +2332,7 @@ void soil_temperature(double *surface_max, double *surface_min,
 	#endif
 
 	// calculate the new soil temperature for each layer
-	soil_temperature_today(&delta_time, deltaX, T1, sTconst, nRgr, avgLyrTempR, st->oldavgLyrTempR,
+	soil_temperature_today(&delta_time, deltaX, *surfaceAvg, sTconst, nRgr, avgLyrTempR, st->oldavgLyrTempR,
 		vwcR, st->wpR, st->fcR, st->bDensityR, csParam1, csParam2, shParam, ptr_stError,
         surface_range, temperatureRangeR, st->depthsR, year, doy);
 
@@ -2349,6 +2354,7 @@ void soil_temperature(double *surface_max, double *surface_min,
 		swprintf("\n");
 	}
 	#endif
+
 
 	// convert soil temperature of soil temperature profile 'avgLyrTempR' to soil profile layers 'avgLyrTemp'
 	lyrTemp_to_lyrSoil_temperature(st->tlyrs_by_slyrs, nRgr, st->depthsR, avgLyrTempR, nlyrs,
@@ -2376,7 +2382,7 @@ void soil_temperature(double *surface_max, double *surface_min,
 	#ifdef SWDEBUG
 	if (debug) {
 		swprintf("\navgLyrTemp %f surface; soil temperature adjusted by freeze/thaw: %i",
-			surfaceAvg[Today], sFadjusted_avgLyrTemp);
+			*surfaceAvg, sFadjusted_avgLyrTemp);
 
 		swprintf("\nSoil temperature profile values:");
 		for (i = 0; i <= nRgr + 1; i++) {

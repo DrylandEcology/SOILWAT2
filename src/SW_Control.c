@@ -76,7 +76,7 @@ static void _begin_day(SW_ALL* sw) {
 
 static void _end_day(SW_ALL* sw) {
 	_collect_values(sw);
-	SW_SWC_end_day(sw->SoilWat.swcBulk, sw->SoilWat.snowpack, sw->Site.n_layers);
+	SW_SWC_end_day(&sw->SoilWat, sw->Site.n_layers);
 }
 
 
@@ -176,7 +176,7 @@ void SW_CTL_init_run(SW_ALL* sw) {
                   sw->Site.n_transp_lyrs, sw->VegEstab.count); // must run after `SW_SIT_init_run()`
 	SW_VPD_init_run(&sw->VegProd, &sw->Weather, sw->Model.startyr,
                   sw->Model.endyr, sw->Site.latitude);
-	SW_FLW_init_run();
+	SW_FLW_init_run(&sw->SoilWat);
 	SW_ST_init_run();
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
 	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications

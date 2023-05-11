@@ -389,7 +389,7 @@ void SW_WaterBalance_Checks(SW_ALL* sw)
 
   ForEachEvapLayer(i, sw->Site.n_evap_lyrs)
   {
-    Esoil += sw->SoilWat.evaporation[i];
+    Esoil += sw->SoilWat.evap_baresoil[i];
   }
 
   ForEachVegType(k)
@@ -524,20 +524,20 @@ void SW_WaterBalance_Checks(SW_ALL* sw)
 
   // for every soil layer j: delta(swc) =
   //   = infiltration/percolationIn + hydraulicRedistribution -
-  //     (percolationOut/deepDrainage + transpiration + evaporation)
+  //     (percolationOut/deepDrainage + transpiration + baresoil_evaporation)
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[7] = Str_Dup("delta_swc[i] == perc_in[i] + hydred[i] - (perc_out[i] + Ttot[i] + Esoil[i]))");
   }
   ForEachSoilLayer(i, n_layers)
   {
     rhs = percolationIn[i] + hydraulicRedistribution[i] -
-      (percolationOut[i] + Ttotalj[i] + sw->SoilWat.evaporation[i]);
+      (percolationOut[i] + Ttotalj[i] + sw->SoilWat.evap_baresoil[i]);
     if (!EQ_w_tol(delta_swcj[i], rhs, wbtol))
     {
       sw->SoilWat.wbError[7]++;
       if (debugi[7]) swprintf("%s sl=%d: delta_swc(%f) == %f == perc_in(%f) + hydred(%f) - (perc_out(%f) + Ttot(%f) + Esoil(%f))\n",
         flag, i, delta_swcj[i], rhs, percolationIn[i], hydraulicRedistribution[i],
-        percolationOut[i], Ttotalj[i], sw->SoilWat.evaporation[i]);
+        percolationOut[i], Ttotalj[i], sw->SoilWat.evap_baresoil[i]);
     }
   }
 
@@ -890,19 +890,18 @@ void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd,
 /**
 @brief Copies today's values so that the values for swcBulk and snowpack become yesterday's values.
 
-@param[in,out] swcBulk Soil water content in the layer [cm]
-@param[in,out] snowpack swe of snowpack, assuming accumulation is turned on
+@param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing soil water
+	related values
 @param[in] n_layers Number of layers of soil within the simulation run
 */
-void SW_SWC_end_day(RealD swcBulk[][MAX_LAYERS], RealD snowpack[],
-					LyrIndex n_layers) {
+void SW_SWC_end_day(SW_SOILWAT* SW_SoilWat, LyrIndex n_layers) {
 	/* =================================================== */
 	LyrIndex i;
 
 	ForEachSoilLayer(i, n_layers)
-		swcBulk[Yesterday][i] =	swcBulk[Today][i];
+		SW_SoilWat->swcBulk[Yesterday][i] =	SW_SoilWat->swcBulk[Today][i];
 
-	snowpack[Yesterday] = snowpack[Today];
+	SW_SoilWat->snowpack[Yesterday] = SW_SoilWat->snowpack[Today];
 
 }
 

@@ -1581,7 +1581,7 @@ void get_evapSoil_text(OutPeriod pd, SW_ALL* sw)
 
 	ForEachEvapLayer(i, sw->Site.n_evap_lyrs)
 	{
-		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->evap[i]);
+		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, vo->evap_baresoil[i]);
 		strcat(sw_outstr, str);
 	}
 }
@@ -1606,7 +1606,7 @@ void get_evapSoil_mem(OutPeriod pd, SW_ALL* sw)
 
 	ForEachEvapLayer(i, sw->Site.n_evap_layers)
 	{
-		p[iOUT(i, pd)] = vo->evap[i];
+		p[iOUT(i, pd)] = vo->evap_baresoil[i];
 	}
 }
 
@@ -1630,7 +1630,7 @@ void get_evapSoil_agg(OutPeriod pd, SW_ALL* sw)
 
 	ForEachEvapLayer(i, sw->Site.n_evap_layers)
 	{
-		do_running_agg(p, psd, iOUT(i, pd), Globals->currIter, vo->evap[i]);
+		do_running_agg(p, psd, iOUT(i, pd), Globals->currIter, vo->evap_baresoil[i]);
 	}
 
 	if (print_IterationSummary) {
