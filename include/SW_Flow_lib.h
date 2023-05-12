@@ -46,7 +46,6 @@ extern "C" {
 /* =================================================== */
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
-extern ST_RGR_VALUES stValues;
 extern unsigned int soil_temp_init;
 
 
@@ -118,7 +117,8 @@ void hydraulic_redistribution(
 	TimeInt doy
 );
 
-void soil_temperature(double *surface_max,
+void soil_temperature(ST_RGR_VALUES* SW_StRegValues,
+					  double *surface_max,
                       double *surface_min,
 					  double lyrFrozen[],
 					  double airTemp,
@@ -173,13 +173,14 @@ double surface_temperature_under_snow(double airTempAvg, double snow);
 void SW_ST_init_run(void);
 
 void SW_ST_setup_run(
+	ST_RGR_VALUES* SW_StRegValues,
+	Bool *ptr_stError,
 	double airTemp,
 	double swc[],
 	double swc_sat[],
 	double bDensity[],
 	double width[],
 	double oldavgLyrTemp[],
-	double *surfaceAvg,
 	unsigned int nlyrs,
 	double fc[],
 	double wp[],
@@ -187,13 +188,14 @@ void SW_ST_setup_run(
 	double deltaX,
 	double theMaxDepth,
 	unsigned int nRgr,
-	Bool *ptr_stError,
+	double *surfaceAvg,
 	double* lyrFrozen
 );
 
-void soil_temperature_setup(double bDensity[], double width[], double oldavgLyrTemp[],
-	double sTconst, unsigned int nlyrs, double fc[], double wp[], double deltaX,
-	double theMaxDepth, unsigned int nRgr, Bool *ptr_stError);
+void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
+	double width[], double oldavgLyrTemp[], double sTconst, unsigned int nlyrs,
+	double fc[], double wp[], double deltaX, double theMaxDepth,
+	unsigned int nRgr, Bool *ptr_stError);
 
 void set_frozen_unfrozen(unsigned int nlyrs, double avgLyrTemp[], double swc[],
 						 double swc_sat[], double width[], double lyrFrozen[]);

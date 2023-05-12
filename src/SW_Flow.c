@@ -314,13 +314,14 @@ void SW_Water_Flow(SW_ALL* sw) {
 			 calculate soil temperature at end of each day
 		*/
 		SW_ST_setup_run(
+			&sw->StRegValues,
+			&sw->SoilWat.soiltempError,
 			sw->Weather.now.temp_avg,
 			sw->SoilWat.swcBulk[Today],
 			lyrSWCBulk_Saturated,
 			lyrbDensity,
 			lyrWidths,
 			sw->SoilWat.avgLyrTemp, // yesterday's soil temperature values
-			&sw->Weather.surfaceAvg, // yesterday's soil surface temperature
 			n_layers,
 			lyrSWCBulk_FieldCaps,
 			lyrSWCBulk_Wiltpts,
@@ -328,7 +329,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 			sw->Site.stDeltaX,
 			sw->Site.stMaxDepth,
 			sw->Site.stNRGR,
-			&sw->SoilWat.soiltempError,
+			&sw->Weather.surfaceAvg, // yesterday's soil surface temperature
 			sw->SoilWat.lyrFrozen
 		);
 	}
@@ -787,9 +788,10 @@ void SW_Water_Flow(SW_ALL* sw) {
 	// soil_temperature function computes the soil temp for each layer and stores it in lyravgLyrTemp
 	// doesn't affect SWC at all (yet), but needs it for the calculation, so therefore the temperature is the last calculation done
 	if (sw->Site.use_soil_temp) {
-		soil_temperature(&sw->Weather.surfaceMax, &sw->Weather.surfaceMin,
-			sw->SoilWat.lyrFrozen, sw->Weather.now.temp_avg, sw->SoilWat.pet,
-			sw->SoilWat.aet, x, sw->SoilWat.swcBulk[Today], lyrSWCBulk_Saturated, lyrbDensity,
+		soil_temperature(&sw->StRegValues,&sw->Weather.surfaceMax,
+			&sw->Weather.surfaceMin, sw->SoilWat.lyrFrozen,
+			sw->Weather.now.temp_avg, sw->SoilWat.pet, sw->SoilWat.aet,
+			x, sw->SoilWat.swcBulk[Today], lyrSWCBulk_Saturated, lyrbDensity,
 			lyrWidths, sw->SoilWat.avgLyrTemp, &sw->Weather.surfaceAvg,
 			n_layers, sw->Site.bmLimiter, sw->Site.t1Param1, sw->Site.t1Param2,
 			sw->Site.t1Param3, sw->Site.csParam1, sw->Site.csParam2,

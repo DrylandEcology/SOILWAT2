@@ -104,21 +104,21 @@ namespace {
     wp[0]= fc[0] - 0.6; // wp will always be less than fc
 
     /// test standard conditions
-    soil_temperature_setup(bDensity, width, oldsTemp, sTconst, nlyrs,
+    soil_temperature_setup(&SW_All.StRegValues, bDensity, width, oldsTemp, sTconst, nlyrs,
       fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError);
 
     //Structure Tests
-    EXPECT_EQ(sizeof(stValues.tlyrs_by_slyrs),
+    EXPECT_EQ(sizeof(SW_All.StRegValues.tlyrs_by_slyrs),
       sizeof(double) * MAX_ST_RGR * (MAX_LAYERS + 1));
 
-    for(unsigned int i = ceil(stValues.depths[nlyrs - 1]/deltaX); i < nRgr + 1; i++){
-        EXPECT_EQ(stValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
+    for(unsigned int i = ceil(SW_All.StRegValues.depths[nlyrs - 1]/deltaX); i < nRgr + 1; i++){
+        EXPECT_EQ(SW_All.StRegValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
         //Values should be equal to -deltaX when i > the depth of the soil profile/deltaX and j is == nlyrs
     }
 
     // Other init test
-    EXPECT_EQ(stValues.depths[nlyrs - 1], 20); // sum of inputs width = maximum depth; in my example 20
-    EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
+    EXPECT_EQ(SW_All.StRegValues.depths[nlyrs - 1], 20); // sum of inputs width = maximum depth; in my example 20
+    EXPECT_EQ((SW_All.StRegValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
@@ -139,21 +139,21 @@ namespace {
       wp2[i] = fc2[i] - 0.6; // wp will always be less than fc
     }
 
-    soil_temperature_setup(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
+    soil_temperature_setup(&SW_All.StRegValues, bDensity2, width2, oldsTemp2, sTconst, nlyrs,
       fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError);
 
     //Structure Tests
-    EXPECT_EQ(sizeof(stValues.tlyrs_by_slyrs),
+    EXPECT_EQ(sizeof(SW_All.StRegValues.tlyrs_by_slyrs),
       sizeof(double) * MAX_ST_RGR * (MAX_LAYERS + 1));
 
-    for(unsigned int i = ceil(stValues.depths[nlyrs - 1]/deltaX); i < nRgr + 1; i++){
-        EXPECT_EQ(stValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
+    for(unsigned int i = ceil(SW_All.StRegValues.depths[nlyrs - 1]/deltaX); i < nRgr + 1; i++){
+        EXPECT_EQ(SW_All.StRegValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
         //Values should be equal to -deltaX when i > the depth of the soil profile/deltaX and j is == nlyrs
     }
 
     // Other init test
-    EXPECT_EQ(stValues.depths[nlyrs - 1], 295); // sum of inputs width = maximum depth; in my example 295
-    EXPECT_EQ((stValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
+    EXPECT_EQ(SW_All.StRegValues.depths[nlyrs - 1], 295); // sum of inputs width = maximum depth; in my example 295
+    EXPECT_EQ((SW_All.StRegValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
 
     // Reset to previous global state
     Reset_SOILWAT2_after_UnitTest();
@@ -188,7 +188,7 @@ namespace {
     // We expect death when max depth < last layer
     EXPECT_DEATH_IF_SUPPORTED(
       soil_temperature_setup(
-        bDensity2, width2, oldsTemp2, sTconst, nlyrs,
+        &SW_All.StRegValues, bDensity2, width2, oldsTemp2, sTconst, nlyrs,
         fc2, wp2, deltaX, theMaxDepth2, nRgr,
         &ptr_stError
       ),
@@ -223,36 +223,36 @@ namespace {
 
     wp[0]= fmax(fc[0] - 0.6, .1); // wp will always be less than fc
 
-    soil_temperature_setup(bDensity, width, oldsTemp, sTconst, nlyrs,
+    soil_temperature_setup(&SW_All.StRegValues, bDensity, width, oldsTemp, sTconst, nlyrs,
       fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError);
 
     // lyrSoil_to_lyrTemp tests: This function is used in soil_temperature_setup
     // to transfer the soil layer values of bdensity, fc, and wp, to the "temperature layer"
     // which are contained in bdensityR, fcR, and wpR. Thus we check these values.
     for (i = 0; i < nRgr + 1; i++) {  // all Values should be greater than 0
-      EXPECT_GT(stValues.bDensityR[i], 0);
-      EXPECT_GT(stValues.fcR[i], 0);
-      EXPECT_GT(stValues.wpR[i], 0);
+      EXPECT_GT(SW_All.StRegValues.bDensityR[i], 0);
+      EXPECT_GT(SW_All.StRegValues.fcR[i], 0);
+      EXPECT_GT(SW_All.StRegValues.wpR[i], 0);
     }
 
-    for (i = ceil(stValues.depths[nlyrs - 1]/deltaX) + 1; i < nRgr + 1; i++) {
+    for (i = ceil(SW_All.StRegValues.depths[nlyrs - 1]/deltaX) + 1; i < nRgr + 1; i++) {
       //The TempLayer values that are at depths greater than the max SoilLayer depth should be uniform
-      EXPECT_EQ(stValues.bDensityR[i], stValues.bDensityR[i - 1]);
-      EXPECT_EQ(stValues.fcR[i], stValues.fcR[i - 1]);
-      EXPECT_EQ(stValues.wpR[i], stValues.wpR[i - 1]);
+      EXPECT_EQ(SW_All.StRegValues.bDensityR[i], SW_All.StRegValues.bDensityR[i - 1]);
+      EXPECT_EQ(SW_All.StRegValues.fcR[i], SW_All.StRegValues.fcR[i - 1]);
+      EXPECT_EQ(SW_All.StRegValues.wpR[i], SW_All.StRegValues.wpR[i - 1]);
     }
 
     // lyrSoil_to_lyrTemp_temperature tests
     double maxvalR = 0.;
     for (i = 0; i < nRgr + 1; i++) {
-      EXPECT_GT(stValues.oldavgLyrTempR[i], -100); //Values interpolated into oldsTempR should be realistic
-      EXPECT_LT(stValues.oldavgLyrTempR[i], 100); //Values interpolated into oldsTempR should be realistic
-      if(GT(stValues.oldavgLyrTempR[i], maxvalR)) {
-        maxvalR = stValues.oldavgLyrTempR[i];
+      EXPECT_GT(SW_All.StRegValues.oldavgLyrTempR[i], -100); //Values interpolated into oldsTempR should be realistic
+      EXPECT_LT(SW_All.StRegValues.oldavgLyrTempR[i], 100); //Values interpolated into oldsTempR should be realistic
+      if(GT(SW_All.StRegValues.oldavgLyrTempR[i], maxvalR)) {
+        maxvalR = SW_All.StRegValues.oldavgLyrTempR[i];
       }
     }
     EXPECT_LE(maxvalR, sTconst);//Maximum interpolated oldsTempR value should be less than or equal to maximum in oldsTemp2 (sTconst = last layer)
-    EXPECT_EQ(stValues.oldavgLyrTempR[nRgr + 1], sTconst); //Temperature in last interpolated layer should equal sTconst
+    EXPECT_EQ(SW_All.StRegValues.oldavgLyrTempR[nRgr + 1], sTconst); //Temperature in last interpolated layer should equal sTconst
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
@@ -272,34 +272,34 @@ namespace {
       EXPECT_GT(wp2[i], 0);
     }
 
-    soil_temperature_setup(bDensity2, width2, oldsTemp2, sTconst, nlyrs,
+    soil_temperature_setup(&SW_All.StRegValues, bDensity2, width2, oldsTemp2, sTconst, nlyrs,
       fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError);
 
     // lyrSoil_to_lyrTemp tests
     for (i = 0; i < nRgr + 1; i++) {  // all Values should be greater than 0
-      EXPECT_GT(stValues.bDensityR[i], 0);
-      EXPECT_GT(stValues.fcR[i], 0);
-      EXPECT_GT(stValues.wpR[i], 0);
+      EXPECT_GT(SW_All.StRegValues.bDensityR[i], 0);
+      EXPECT_GT(SW_All.StRegValues.fcR[i], 0);
+      EXPECT_GT(SW_All.StRegValues.wpR[i], 0);
     }
 
-    for (i = ceil(stValues.depths[nlyrs - 1]/deltaX) + 1; i < nRgr + 1; i++) {
+    for (i = ceil(SW_All.StRegValues.depths[nlyrs - 1]/deltaX) + 1; i < nRgr + 1; i++) {
       //The TempLayer values that are at depths greater than the max SoilLayer depth should be uniform
-      EXPECT_EQ(stValues.bDensityR[i], stValues.bDensityR[i - 1]);
-      EXPECT_EQ(stValues.fcR[i], stValues.fcR[i - 1]);
-      EXPECT_EQ(stValues.wpR[i], stValues.wpR[i - 1]);
+      EXPECT_EQ(SW_All.StRegValues.bDensityR[i], SW_All.StRegValues.bDensityR[i - 1]);
+      EXPECT_EQ(SW_All.StRegValues.fcR[i], SW_All.StRegValues.fcR[i - 1]);
+      EXPECT_EQ(SW_All.StRegValues.wpR[i], SW_All.StRegValues.wpR[i - 1]);
     }
 
     // lyrSoil_to_lyrTemp_temperature tests
     maxvalR = 0.;
     for (i = 0; i <= nRgr + 1; i++) {
-      EXPECT_GT(stValues.oldavgLyrTempR[i], -200); //Values interpolated into oldsTempR should be realistic
-      EXPECT_LT(stValues.oldavgLyrTempR[i], 200); //Values interpolated into oldsTempR should be realistic
-      if(GT(stValues.oldavgLyrTempR[i], maxvalR)) {
-        maxvalR = stValues.oldavgLyrTempR[i];
+      EXPECT_GT(SW_All.StRegValues.oldavgLyrTempR[i], -200); //Values interpolated into oldsTempR should be realistic
+      EXPECT_LT(SW_All.StRegValues.oldavgLyrTempR[i], 200); //Values interpolated into oldsTempR should be realistic
+      if(GT(SW_All.StRegValues.oldavgLyrTempR[i], maxvalR)) {
+        maxvalR = SW_All.StRegValues.oldavgLyrTempR[i];
       }
     }
     EXPECT_LE(maxvalR, sTconst);//Maximum interpolated oldsTempR value should be less than or equal to maximum in oldsTemp2 (sTconst = last layer)
-    EXPECT_EQ(stValues.oldavgLyrTempR[nRgr + 1], sTconst); //Temperature in last interpolated layer should equal sTconst
+    EXPECT_EQ(SW_All.StRegValues.oldavgLyrTempR[nRgr + 1], sTconst); //Temperature in last interpolated layer should equal sTconst
 
     //Reset to global state
     Reset_SOILWAT2_after_UnitTest();
@@ -458,21 +458,21 @@ namespace {
 
 
     SW_ST_setup_run(
-      airTemp,
-      swc, swc_sat,
+      &SW_All.StRegValues, &ptr_stError,
+      airTemp, swc, swc_sat,
       bDensity, width,
       oldsTemp,
-      &surfaceTemp,
       nlyrs, fc, wp,
       sTconst, deltaX, theMaxDepth,
-      nRgr, &ptr_stError, SW_All.SoilWat.lyrFrozen
+      nRgr, &surfaceTemp, SW_All.SoilWat.lyrFrozen
     );
 
     for (k = 0; k < nlyrs; k++) {
       sTemp[k] = oldsTemp[k];
     }
 
-    soil_temperature(&surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
+    soil_temperature(&SW_All.StRegValues,
+      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
@@ -492,7 +492,8 @@ namespace {
       sTemp[k] = oldsTemp[k];
     }
 
-    soil_temperature(&surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
+    soil_temperature(&SW_All.StRegValues,
+      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
@@ -510,7 +511,8 @@ namespace {
       sTemp[k] = oldsTemp[k];
     }
 
-    soil_temperature(&surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
+    soil_temperature(&SW_All.StRegValues,
+      &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
@@ -531,8 +533,8 @@ namespace {
     // Expect that oldsTempR is updated to sTempR for the next day
     for (k = 0; k <= nRgr + 1; k++)
     {
-      //swprintf("\n k %u, newoldtempR %f", k, stValues.oldavgLyrTempR[k]);
-      EXPECT_NE(stValues.oldavgLyrTempR[k], SW_MISSING);
+      //swprintf("\n k %u, newoldtempR %f", k, SW_All.StRegValues.oldavgLyrTempR[k]);
+      EXPECT_NE(SW_All.StRegValues.oldavgLyrTempR[k], SW_MISSING);
     }
 
     //Reset to global state
@@ -552,19 +554,18 @@ namespace {
     }
 
     SW_ST_setup_run(
-      airTemp,
-      swc, swc_sat,
+      &SW_All.StRegValues, &ptr_stError,
+      airTemp, swc, swc_sat,
       bDensity, width,
       oldsTemp,
-      &surfaceTemp,
       nlyrs, fc, wp,
       sTconst, deltaX, theMaxDepth,
-      nRgr, &ptr_stError, SW_All.SoilWat.lyrFrozen
+      nRgr, &surfaceTemp, SW_All.SoilWat.lyrFrozen
     );
 
     EXPECT_EQ(ptr_stError, swFALSE);
 
-    soil_temperature(&surface_max, &surface_max, SW_All.SoilWat.lyrFrozen,
+    soil_temperature(&SW_All.StRegValues, &surface_max, &surface_max, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       sTemp2, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2, t1Param3,
       csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
@@ -628,14 +629,13 @@ namespace {
     }
 
     SW_ST_setup_run(
-      airTemp,
-      swc2, swc_sat2,
+      &SW_All.StRegValues, &ptr_stError,
+      airTemp, swc2, swc_sat2,
       bDensity2, width2,
       oldsTemp3,
-      &surfaceTemp,
       nlyrs2, fc2, wp2,
       sTconst, deltaX, theMaxDepth,
-      nRgr, &ptr_stError, SW_All.SoilWat.lyrFrozen
+      nRgr, &surfaceTemp, SW_All.SoilWat.lyrFrozen
     );
 
     // Test surface temp equals surface_temperature_under_snow() because snow > 0
@@ -645,7 +645,7 @@ namespace {
       sTemp3[k] = oldsTemp3[k];
     }
 
-    soil_temperature(&surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
+    soil_temperature(&SW_All.StRegValues, &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
       sTemp3, &surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
@@ -663,7 +663,7 @@ namespace {
       sTemp3[k] = oldsTemp3[k];
     }
 
-    soil_temperature(&surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
+    soil_temperature(&SW_All.StRegValues, &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
       sTemp3, &surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
@@ -680,7 +680,7 @@ namespace {
       sTemp3[k] = oldsTemp3[k];
     }
 
-    soil_temperature(&surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
+    soil_temperature(&SW_All.StRegValues, &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
       sTemp3, &surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
@@ -705,8 +705,8 @@ namespace {
     // Expect that oldsTempR is updated to sTempR for the next day
     for (k = 0; k <= nRgr + 1; k++)
     {
-      //swprintf("\n k %u, newoldtempR %f", k, stValues.oldavgLyrTempR[k]);
-      EXPECT_NE(stValues.oldavgLyrTempR[k], SW_MISSING);
+      //swprintf("\n k %u, newoldtempR %f", k, SW_All.StRegValues.oldavgLyrTempR[k]);
+      EXPECT_NE(SW_All.StRegValues.oldavgLyrTempR[k], SW_MISSING);
     }
 
     double *array_list[] = { swc2, swc_sat2, fc2, wp2, min_temp, max_temp};
@@ -734,7 +734,7 @@ namespace {
 
     // Should fail when soil_temperature was not initialized
     EXPECT_DEATH_IF_SUPPORTED(
-      soil_temperature(
+      soil_temperature(&SW_All.StRegValues,
         &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
         airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
         sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,

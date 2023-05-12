@@ -782,6 +782,7 @@ typedef struct {
 	SW_VEGESTAB VegEstab;
 	SW_SKY Sky;
 	SW_CARBON Carbon;
+	ST_RGR_VALUES StRegValues;
 
 } SW_ALL;
 
