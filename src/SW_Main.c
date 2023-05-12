@@ -80,13 +80,13 @@ int main(int argc, char **argv) {
   // initialize output
 	SW_OUT_set_ncol(sw.Site.n_layers, sw.Site.n_evap_lyrs, sw.VegEstab.count);
 	SW_OUT_set_colnames(sw.Site.n_layers, sw.VegEstab.parms);
-	SW_OUT_create_files(sw.Site.n_layers); // only used with SOILWAT2
+	SW_OUT_create_files(&sw.FileStatus, sw.Site.n_layers); // only used with SOILWAT2
 
   // run simulation: loop through each year
 	SW_CTL_main(&sw);
 
   // finish-up output
-	SW_OUT_close_files(); // not used with rSOILWAT2
+	SW_OUT_close_files(&sw.FileStatus); // not used with rSOILWAT2
 
 	// de-allocate all memory
 	SW_CTL_clear_model(swTRUE, &sw);

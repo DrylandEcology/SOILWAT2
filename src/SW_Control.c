@@ -124,7 +124,8 @@ void SW_CTL_setup_model(SW_ALL* sw, const char *firstfile) {
 	SW_VES_construct(&sw->VegEstab);
 	SW_VPD_construct(&sw->VegProd);
 	// SW_FLW_construct() not needed
-	SW_OUT_construct(sw->Site.n_layers);
+	SW_OUT_construct(sw->FileStatus.make_soil, sw->FileStatus.make_regular,
+                   sw->Site.n_layers);
 	SW_SWC_construct(&sw->SoilWat);
 	SW_CBN_construct(&sw->Carbon);
 }

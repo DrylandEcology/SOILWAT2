@@ -35,13 +35,6 @@
 #include "include/SW_Output_outtext.h"
 
 
-
-/* =================================================== */
-/*                  Global Variables                   */
-/* --------------------------------------------------- */
-SW_FILE_STATUS SW_OutFiles;
-
-
 Bool
   /** `print_IterationSummary` is TRUE if STEPWAT2 is called with `-o` flag
       and if STEPWAT2 is currently in its last iteration/repetition */
@@ -142,22 +135,25 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 /**
   \brief Create `csv` output files for specified time step
 
-  \param pd The output time step.
+  \param SW_FileStatus[in,out] SW_FileStatus Struct of type
+	SW_FILE_STATUS which holds basic information about output files
+	and values
+  \param pd[in] The output time step.
 */
 /***********************************************************/
-static void _create_csv_files(OutPeriod pd)
+static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd)
 {
 	// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
 	// a specific order of `SW_FileIndex` --> fix and create something that
 	// allows subsetting such as `eOutputFile[pd]` or append time period to
 	// a basename, etc.
 
-	if (SW_OutFiles.make_regular[pd]) {
-		SW_OutFiles.fp_reg[pd] = OpenFile(SW_F_name(eOutputDaily + pd), "w");
+	if (SW_FileStatus->make_regular[pd]) {
+		SW_FileStatus->fp_reg[pd] = OpenFile(SW_F_name(eOutputDaily + pd), "w");
 	}
 
-	if (SW_OutFiles.make_soil[pd]) {
-		SW_OutFiles.fp_soil[pd] = OpenFile(SW_F_name(eOutputDaily_soil + pd), "w");
+	if (SW_FileStatus->make_soil[pd]) {
+		SW_FileStatus->fp_soil[pd] = OpenFile(SW_F_name(eOutputDaily_soil + pd), "w");
 	}
 }
 #endif
@@ -283,18 +279,25 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd)
 #if defined(SOILWAT)
 
 /** @brief create all of the user-specified output files.
-    @note Call this routine at the beginning of the main program run, but
-    after SW_OUT_read() which sets the global variable use_OutPeriod.
+ *
+ * @param[in,out] SW_FileStatus Struct of type
+ *	SW_FILE_STATUS which holds basic information about output files
+ *	and values
+ * @param[in] n_layers Number of layers of soil within the simulation run
+ *
+ *  @note Call this routine at the beginning of the main program run, but
+ *  after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
-void SW_OUT_create_files(LyrIndex n_layers) {
+void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, LyrIndex n_layers) {
 	OutPeriod pd;
 
 	ForEachOutPeriod(pd) {
 		if (use_OutPeriod[pd]) {
-			_create_csv_files(pd);
+			_create_csv_files(SW_FileStatus, pd);
 
-			write_headers_to_csv(pd, SW_OutFiles.fp_reg[pd], SW_OutFiles.fp_soil[pd],
-				swFALSE, n_layers);
+			write_headers_to_csv(pd, SW_FileStatus->fp_reg[pd],
+				SW_FileStatus->fp_soil[pd], swFALSE, SW_FileStatus->make_soil,
+				SW_FileStatus->make_regular, n_layers);
 		}
 	}
 }
@@ -309,8 +312,8 @@ void SW_OUT_create_summary_files(void) {
 		if (use_OutPeriod[p]) {
 			_create_csv_file_ST(-1, p);
 
-			write_headers_to_csv(p, SW_OutFiles.fp_reg_agg[p],
-				SW_OutFiles.fp_soil_agg[p], swTRUE, n_layers);
+			write_headers_to_csv(p, SW_FileStatus->fp_reg_agg[p],
+				SW_FileStatus->fp_soil_agg[p], swTRUE, n_layers);
 		}
 	}
 }
@@ -322,8 +325,8 @@ void SW_OUT_create_iteration_files(int iteration) {
 		if (use_OutPeriod[p]) {
 			_create_csv_file_ST(iteration, p);
 
-			write_headers_to_csv(p, SW_OutFiles.fp_reg[p],
-				SW_OutFiles.fp_soil[p], swFALSE, n_layers);
+			write_headers_to_csv(p, SW_FileStatus->fp_reg[p],
+				SW_FileStatus->fp_soil[p], swFALSE, n_layers);
 		}
 	}
 }
@@ -384,10 +387,14 @@ void get_outstrleader(OutPeriod pd, size_t sizeof_str,
   \param does_agg Indicate whether output is aggregated (`-o` option) or
     for each SOILWAT2 run (`-i` option)
   \param n_layers Number of soil layers being dealt with in a simulation
+  \param make_regular Array of size SW_OUTNPERIODS which holds boolean values
+	specifying to output "regular" header names
+  \param make_soil Array of size SW_OUTNPERIODS which holds boolean values
+	specifying to output a soil-related header names
 
 */
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
-						  Bool does_agg, LyrIndex n_layers) {
+	Bool does_agg, Bool make_regular[], Bool make_soil[],  LyrIndex n_layers) {
 	char str_time[20];
 	char
 		// 3500 characters required for does_agg = TRUE
@@ -400,28 +407,26 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 	_create_csv_headers(pd, header_reg, header_soil, does_agg, n_layers);
 
 	// Write headers to files
-	if (SW_OutFiles.make_regular[pd]) {
+	if (make_regular[pd]) {
 		fprintf(fp_reg, "%s%s\n", str_time, header_reg);
 		fflush(fp_reg);
 	}
 
-	if (SW_OutFiles.make_soil[pd]) {
+	if (make_soil[pd]) {
 		fprintf(fp_soil, "%s%s\n", str_time, header_soil);
 		fflush(fp_soil);
 	}
 }
 
-
-
-void find_TXToutputSoilReg_inUse(void)
+void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[])
 {
 	IntUS i;
 	OutKey k;
 
 	ForEachOutPeriod(i)
 	{
-		SW_OutFiles.make_soil[i] = swFALSE;
-		SW_OutFiles.make_regular[i] = swFALSE;
+		make_soil[i] = swFALSE;
+		make_regular[i] = swFALSE;
 	}
 
 	ForEachOutKey(k)
@@ -432,10 +437,10 @@ void find_TXToutputSoilReg_inUse(void)
 			{
 				if (SW_Output[k].has_sl)
 				{
-					SW_OutFiles.make_soil[timeSteps[k][i]] = swTRUE;
+					make_soil[timeSteps[k][i]] = swTRUE;
 				} else
 				{
-					SW_OutFiles.make_regular[timeSteps[k][i]] = swTRUE;
+					make_regular[timeSteps[k][i]] = swTRUE;
 				}
 			}
 		}
@@ -445,40 +450,44 @@ void find_TXToutputSoilReg_inUse(void)
 
 /** @brief close all of the user-specified output files.
     call this routine at the end of the program run.
+
+	@param[in,out] SW_FileStatus Struct of type
+		SW_FILE_STATUS which holds basic information about output files
+		and values
 */
-void SW_OUT_close_files(void) {
+void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus) {
 	Bool close_regular, close_layers, close_aggs;
 	OutPeriod p;
 
 
 	ForEachOutPeriod(p) {
 		#if defined(SOILWAT)
-		close_regular = SW_OutFiles.make_regular[p];
-		close_layers = SW_OutFiles.make_soil[p];
+		close_regular = SW_FileStatus->make_regular[p];
+		close_layers = SW_FileStatus->make_soil[p];
 		close_aggs = swFALSE;
 
 		#elif defined(STEPWAT)
-		close_regular = (Bool) (SW_OutFiles.make_regular[p] && storeAllIterations);
-		close_layers = (Bool) (SW_OutFiles.make_soil[p] && storeAllIterations);
-		close_aggs = (Bool) ((SW_OutFiles.make_regular[p] || SW_OutFiles.make_soil[p])
+		close_regular = (Bool) (SW_FileStatus->make_regular[p] && storeAllIterations);
+		close_layers = (Bool) (SW_FileStatus->make_soil[p] && storeAllIterations);
+		close_aggs = (Bool) ((SW_FileStatus->make_regular[p] || SW_FileStatus->make_soil[p])
 			&& prepare_IterationSummary);
 		#endif
 
 		if (use_OutPeriod[p]) {
 			if (close_regular) {
-				CloseFile(&SW_OutFiles.fp_reg[p]);
+				CloseFile(&SW_FileStatus->fp_reg[p]);
 			}
 
 			if (close_layers) {
-				CloseFile(&SW_OutFiles.fp_soil[p]);
+				CloseFile(&SW_FileStatus->fp_soil[p]);
 			}
 
 			if (close_aggs) {
 				#ifdef STEPWAT
-				CloseFile(&SW_OutFiles.fp_reg_agg[p]);
+				CloseFile(&SW_FileStatus->fp_reg_agg[p]);
 
 				if (close_layers) {
-					CloseFile(&SW_OutFiles.fp_soil_agg[p]);
+					CloseFile(&SW_FileStatus->fp_soil_agg[p]);
 				}
 				#endif
 			}

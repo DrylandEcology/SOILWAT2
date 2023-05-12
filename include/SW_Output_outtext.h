@@ -25,7 +25,6 @@ extern "C" {
 /* =================================================== */
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
-extern SW_FILE_STATUS SW_OutFiles;
 extern Bool print_IterationSummary;
 extern Bool print_SW_Output;
 extern char sw_outstr[MAX_LAYERS * OUTSTRLEN];
@@ -39,7 +38,7 @@ extern char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 #if defined(SOILWAT)
-void SW_OUT_create_files(LyrIndex n_layers);
+void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, LyrIndex n_layers);
 
 #elif defined(STEPWAT)
 void SW_OUT_create_summary_files(void);
@@ -49,9 +48,9 @@ void SW_OUT_create_iteration_files(int iteration);
 void get_outstrleader(OutPeriod pd, size_t sizeof_str,
 					  SW_MODEL* SW_Model, char *str);
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
-						  Bool does_agg, LyrIndex n_layers);
-void find_TXToutputSoilReg_inUse(void);
-void SW_OUT_close_files(void);
+	Bool does_agg, Bool make_regular[], Bool make_soil[],  LyrIndex n_layers);
+void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[]);
+void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus);
 
 
 #ifdef __cplusplus

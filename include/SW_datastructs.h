@@ -783,6 +783,7 @@ typedef struct {
 	SW_SKY Sky;
 	SW_CARBON Carbon;
 	ST_RGR_VALUES StRegValues;
+	SW_FILE_STATUS FileStatus;
 
 } SW_ALL;
 

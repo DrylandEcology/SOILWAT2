@@ -78,9 +78,12 @@ void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count)
 	(void) count;
 }
 
-void SW_OUT_construct(LyrIndex tLayers)
+void SW_OUT_construct(Bool make_soil[], Bool make_regular[], LyrIndex tLayers)
 {
-	(void) tLayers; // Silence compiler
+	/* Silence compiler */
+	(void) tLayers;
+	(void) make_soil;
+	(void) make_regular;
 }
 
 void SW_OUT_deconstruct(Bool full_reset)

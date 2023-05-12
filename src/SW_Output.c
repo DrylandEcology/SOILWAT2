@@ -1103,7 +1103,8 @@ void SW_OUT_set_SXWrequests(void)
 #endif
 
 
-void SW_OUT_construct(LyrIndex n_layers)
+void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
+					  LyrIndex n_layers)
 {
 	/* =================================================== */
 	OutKey k;
@@ -1123,8 +1124,8 @@ void SW_OUT_construct(LyrIndex n_layers)
 	#ifdef SW_OUTTEXT
 	ForEachOutPeriod(p)
 	{
-		SW_OutFiles.make_soil[p] = swFALSE;
-		SW_OutFiles.make_regular[p] = swFALSE;
+		make_soil[p] = swFALSE;
+		make_regular[p] = swFALSE;
 	}
 	#endif
 
@@ -2249,7 +2250,8 @@ void SW_OUT_read(SW_ALL* sw)
 	#ifdef SW_OUTTEXT
 	// Determine for which output periods text output per soil layer or 'regular'
 	// is requested:
-	find_TXToutputSoilReg_inUse();
+	find_TXToutputSoilReg_inUse(sw->FileStatus.make_soil,
+								sw->FileStatus.make_regular);
 	#endif
 
 	#ifdef STEPWAT
@@ -2398,12 +2400,12 @@ void SW_OUT_write_today(SW_ALL* sw)
 	// We don't really need all of these buffers to init every day
 	ForEachOutPeriod(p)
 	{
-		SW_OutFiles.buf_reg[p][0] = '\0';
-		SW_OutFiles.buf_soil[p][0] = '\0';
+		sw->FileStatus.buf_reg[p][0] = '\0';
+		sw->FileStatus.buf_soil[p][0] = '\0';
 
 		#ifdef STEPWAT
-		SW_OutFiles.buf_reg_agg[p][0] = '\0';
-		SW_OutFiles.buf_soil_agg[p][0] = '\0';
+		sw->FileStatus.buf_reg_agg[p][0] = '\0';
+		sw->FileStatus.buf_soil_agg[p][0] = '\0';
 		#endif
 	}
 	#endif
@@ -2510,9 +2512,9 @@ void SW_OUT_write_today(SW_ALL* sw)
 			if (print_SW_Output)
 			{
 				if (SW_Output[k].has_sl) {
-					strcat(SW_OutFiles.buf_soil[timeSteps[k][i]], sw_outstr);
+					strcat(sw->FileStatus.buf_soil[timeSteps[k][i]], sw_outstr);
 				} else {
-					strcat(SW_OutFiles.buf_reg[timeSteps[k][i]], sw_outstr);
+					strcat(sw->FileStatus.buf_reg[timeSteps[k][i]], sw_outstr);
 				}
 			}
 
@@ -2520,9 +2522,9 @@ void SW_OUT_write_today(SW_ALL* sw)
 			if (print_IterationSummary)
 			{
 				if (SW_Output[k].has_sl) {
-					strcat(SW_OutFiles.buf_soil_agg[timeSteps[k][i]], sw_outstr_agg);
+					strcat(sw->FileStatus.buf_soil_agg[timeSteps[k][i]], sw_outstr_agg);
 				} else {
-					strcat(SW_OutFiles.buf_reg_agg[timeSteps[k][i]], sw_outstr_agg);
+					strcat(sw->FileStatus.buf_reg_agg[timeSteps[k][i]], sw_outstr_agg);
 				}
 			}
 			#endif
@@ -2538,35 +2540,35 @@ void SW_OUT_write_today(SW_ALL* sw)
 		{
 			get_outstrleader(p, sizeof str_time, &sw->Model, str_time);
 
-			if (SW_OutFiles.make_regular[p])
+			if (sw->FileStatus.make_regular[p])
 			{
 				if (print_SW_Output) {
-					fprintf(SW_OutFiles.fp_reg[p], "%s%s\n",
-						str_time, SW_OutFiles.buf_reg[p]);
+					fprintf(sw->FileStatus.fp_reg[p], "%s%s\n",
+						str_time, sw->FileStatus.buf_reg[p]);
 					// STEPWAT2 needs a fflush for yearly output;
 					// other time steps, the soil-layer files, and SOILWAT2 work fine without it...
-					fflush(SW_OutFiles.fp_reg[p]);
+					fflush(sw->FileStatus.fp_reg[p]);
 				}
 
 				#ifdef STEPWAT
 				if (print_IterationSummary) {
-					fprintf(SW_OutFiles.fp_reg_agg[p], "%s%s\n",
-						str_time, SW_OutFiles.buf_reg_agg[p]);
+					fprintf(sw->FileStatus.fp_reg_agg[p], "%s%s\n",
+						str_time, sw->FileStatus.buf_reg_agg[p]);
 				}
 				#endif
 			}
 
-			if (SW_OutFiles.make_soil[p])
+			if (sw->FileStatus.make_soil[p])
 			{
 				if (print_SW_Output) {
-					fprintf(SW_OutFiles.fp_soil[p], "%s%s\n",
-						str_time, SW_OutFiles.buf_soil[p]);
+					fprintf(sw->FileStatus.fp_soil[p], "%s%s\n",
+						str_time, sw->FileStatus.buf_soil[p]);
 				}
 
 				#ifdef STEPWAT
 				if (print_IterationSummary) {
-					fprintf(SW_OutFiles.fp_soil_agg[p], "%s%s\n",
-						str_time, SW_OutFiles.buf_soil_agg[p]);
+					fprintf(sw->FileStatus.fp_soil_agg[p], "%s%s\n",
+						str_time, sw->FileStatus.buf_soil_agg[p]);
 				}
 				#endif
 

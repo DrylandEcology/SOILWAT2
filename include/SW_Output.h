@@ -145,7 +145,8 @@ extern char const *styp2str[];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_OUT_construct(LyrIndex n_layers);
+void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
+					  LyrIndex n_layers);
 void SW_OUT_deconstruct(Bool full_reset);
 void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count);
 void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms);
