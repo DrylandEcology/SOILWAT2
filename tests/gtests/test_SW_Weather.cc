@@ -83,10 +83,11 @@ namespace {
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
-        SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
+        SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+                     SW_All.Weather.generateWeatherMethod);
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
-        SW_WTH_finalize_all_weather(&SW_All.Weather);
+        SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather);
 
 
         // Expect that missing input values (from 1980) are filled by the weather generator
@@ -108,13 +109,14 @@ namespace {
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
-        SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
+        SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+                     SW_All.Weather.generateWeatherMethod);
 
         SW_All.Model.startyr = 1981;
         SW_All.Model.endyr = 1982;
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
-        SW_WTH_finalize_all_weather(&SW_All.Weather);
+        SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather);
 
 
         // Check everyday's value and test if it's `MISSING`
@@ -135,13 +137,14 @@ namespace {
         SW_All.Weather.generateWeatherMethod = 2;
         SW_All.Weather.use_weathergenerator_only = swTRUE;
 
-        SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
+        SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+                     SW_All.Weather.generateWeatherMethod);
 
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
-        SW_WTH_finalize_all_weather(&SW_All.Weather);
+        SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather);
 
         // Check everyday's value and test if it's `MISSING`
         for(year = 0; year < 31; year++) {
@@ -169,7 +172,7 @@ namespace {
 
         // Error: too many missing values and weather generator turned off
         EXPECT_DEATH_IF_SUPPORTED(
-          SW_WTH_finalize_all_weather(&SW_All.Weather),
+          SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather),
           "more than 3 days missing in year 1981 and weather generator turned off"
         );
 
@@ -1072,9 +1075,8 @@ namespace {
         SW_All.Weather.allHist[yearIndex]->actualVaporPressure[0] = actVapPressTestVal;
         SW_All.Weather.allHist[yearIndex]->windspeed_daily[0] = windSpeedTestVal;
 
-        generateMissingWeather(SW_All.Weather.allHist,
-                               1980,
-                               1,
+        generateMissingWeather(&SW_All.Markov, SW_All.Weather.allHist,
+                               1980, 1,
                                SW_All.Weather.generateWeatherMethod,
                                numDaysLOCFTolerance);
 

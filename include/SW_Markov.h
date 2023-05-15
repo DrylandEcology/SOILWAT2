@@ -23,20 +23,20 @@ extern "C" {
 /* =================================================== */
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
-extern SW_MARKOV SW_Markov;
 extern pcg32_random_t markov_rng; // used by STEPWAT2
 
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_MKV_construct(unsigned long Weather_rng_seed);
-void SW_MKV_deconstruct(void);
-Bool SW_MKV_read_prob(void);
-Bool SW_MKV_read_cov(void);
-void SW_MKV_setup(unsigned long Weather_rng_seed, int Weather_genWeathMethod);
-void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain,
-				  TimeInt year);
+void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov);
+void SW_MKV_deconstruct(SW_MARKOV* SW_Markov);
+Bool SW_MKV_read_prob(SW_MARKOV* SW_Markov);
+Bool SW_MKV_read_cov(SW_MARKOV* SW_Markov);
+void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
+	              int Weather_genWeathMethod);
+void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
+				  RealD *tmax, RealD *tmin, RealD *rain);
 
 #ifdef DEBUG_MEM
 void SW_MKV_SetMemoryRefs( void);

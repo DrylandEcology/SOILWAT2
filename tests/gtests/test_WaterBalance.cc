@@ -116,14 +116,14 @@ namespace {
     SW_All.Weather.use_weathergenerator_only = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
+    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
 
     // Point to nonexisting weather data
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
-    SW_WTH_finalize_all_weather(&SW_All.Weather);
+    SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather);
 
     // Run the simulation
     SW_CTL_main(&SW_All);
@@ -150,11 +150,11 @@ namespace {
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
     // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
+    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
-    SW_WTH_finalize_all_weather(&SW_All.Weather);
+    SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather);
 
     // Run the simulation
     SW_CTL_main(&SW_All);
@@ -320,7 +320,7 @@ namespace {
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
-    SW_WTH_finalize_all_weather(&SW_All.Weather);
+    SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather);
 
     // Run the simulation
     SW_CTL_main(&SW_All);

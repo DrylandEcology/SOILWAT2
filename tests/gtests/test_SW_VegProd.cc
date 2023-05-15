@@ -259,7 +259,7 @@ namespace {
 
         // Reset "SW_All.Weather.allHist"
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
-		    finalizeAllWeather(&SW_All.Weather);
+		    finalizeAllWeather(&SW_All.Markov, &SW_All.Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
@@ -717,7 +717,7 @@ namespace {
 
         // Reset "SW_All.Weather.allHist"
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
-		    finalizeAllWeather(&SW_All.Weather);
+		    finalizeAllWeather(&SW_All.Markov, &SW_All.Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
@@ -1178,7 +1178,7 @@ namespace {
 
         // Reset "SW_All.Weather.allHist"
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
-		    finalizeAllWeather(&SW_All.Weather);
+		    finalizeAllWeather(&SW_All.Markov, &SW_All.Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);

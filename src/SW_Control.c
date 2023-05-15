@@ -146,7 +146,7 @@ void SW_CTL_setup_model(SW_ALL* sw, const char *firstfile) {
 void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
 	SW_F_deconstruct();
 	SW_MDL_deconstruct();
-	SW_WTH_deconstruct(&sw->Weather); // calls SW_MKV_deconstruct() if needed
+	SW_WTH_deconstruct(&sw->Markov, &sw->Weather); // calls SW_MKV_deconstruct() if needed
 	// SW_SKY_deconstruct() not needed
 	SW_SIT_deconstruct(&sw->Site);
 	SW_VES_deconstruct(&sw->VegEstab);
@@ -284,7 +284,8 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   #endif
 
   if (sw->Weather.generateWeatherMethod == 2) {
-    SW_MKV_setup(sw->Weather.rng_seed, sw->Weather.generateWeatherMethod);
+    SW_MKV_setup(&sw->Markov, sw->Weather.rng_seed,
+                  sw->Weather.generateWeatherMethod);
     #ifdef SWDEBUG
     if (debug) swprintf(" > 'weather generator'");
     #endif

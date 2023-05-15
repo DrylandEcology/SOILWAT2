@@ -770,6 +770,30 @@ typedef struct {
 } SW_VEGESTAB;
 
 /* =================================================== */
+/*                   Markov struct                     */
+/* --------------------------------------------------- */
+
+typedef struct {
+
+	/* pointers to arrays of probabilities for each day saves some space */
+	/* by not being allocated if markov weather not requested by user */
+	/* alas, multi-dimensional arrays aren't so convenient */
+  RealD
+    *wetprob, /* probability of being wet today given a wet yesterday */
+    *dryprob, /* probability of being wet today given a dry yesterday */
+    *avg_ppt, /* mean precip (cm) of wet days */
+    *std_ppt, /* std dev. for precip of wet days */
+    *cfxw, /*correction factor for tmax for wet days */
+    *cfxd, /*correction factor for tmax for dry days */
+    *cfnw, /*correction factor for tmin for wet days */
+    *cfnd, /*correction factor for tmin for dry days */
+    u_cov[MAX_WEEKS][2], /* mean weekly maximum and minimum temperature in degree Celsius */
+    v_cov[MAX_WEEKS][2][2]; /* covariance matrix */
+  int ppt_events; /* number of ppt events generated this year */
+
+} SW_MARKOV;
+
+/* =================================================== */
 /*                 Comprehensive struct                */
 /* --------------------------------------------------- */
 
@@ -784,6 +808,7 @@ typedef struct {
 	SW_CARBON Carbon;
 	ST_RGR_VALUES StRegValues;
 	SW_FILE_STATUS FileStatus;
+	SW_MARKOV Markov;
 
 } SW_ALL;
 
@@ -863,30 +888,6 @@ typedef struct {
 	void (*pfunc_SXW)(OutPeriod, SW_ALL*); /* pointer to output routine for STEPWAT in-memory output */
 	#endif
 } SW_OUTPUT;
-
-/* =================================================== */
-/*                   Markov struct                     */
-/* --------------------------------------------------- */
-
-typedef struct {
-
-	/* pointers to arrays of probabilities for each day saves some space */
-	/* by not being allocated if markov weather not requested by user */
-	/* alas, multi-dimensional arrays aren't so convenient */
-  RealD
-    *wetprob, /* probability of being wet today given a wet yesterday */
-    *dryprob, /* probability of being wet today given a dry yesterday */
-    *avg_ppt, /* mean precip (cm) of wet days */
-    *std_ppt, /* std dev. for precip of wet days */
-    *cfxw, /*correction factor for tmax for wet days */
-    *cfxd, /*correction factor for tmax for dry days */
-    *cfnw, /*correction factor for tmin for wet days */
-    *cfnd, /*correction factor for tmin for dry days */
-    u_cov[MAX_WEEKS][2], /* mean weekly maximum and minimum temperature in degree Celsius */
-    v_cov[MAX_WEEKS][2][2]; /* covariance matrix */
-  int ppt_events; /* number of ppt events generated this year */
-
-} SW_MARKOV;
 
 /* =================================================== */
 /*                 Block info struct                   */

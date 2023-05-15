@@ -577,16 +577,22 @@ void readAllWeather(
 /**
   @brief Impute missing values and scale with monthly parameters
 
+  @param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
+    related to temperature and weather generator
+  @param[in,out] w Struct of type SW_WEATHER holding all relevant
+		information pretaining to meteorological input data
+
   Finalize weather values after they have been read in via
   `readAllWeather()` or `SW_WTH_read()`
   (the latter also handles (re-)allocation).
 */
-void finalizeAllWeather(SW_WEATHER *w) {
+void finalizeAllWeather(SW_MARKOV* SW_Markov, SW_WEATHER *w) {
 
   unsigned int day, yearIndex;
 
   // Impute missing values
   generateMissingWeather(
+    SW_Markov,
     w->allHist,
     w->startYear,
     w->n_years,
@@ -634,8 +640,8 @@ void finalizeAllWeather(SW_WEATHER *w) {
 }
 
 
-void SW_WTH_finalize_all_weather(SW_WEATHER* SW_Weather) {
-  finalizeAllWeather(SW_Weather);
+void SW_WTH_finalize_all_weather(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather) {
+  finalizeAllWeather(SW_Markov, SW_Weather);
 }
 
 
@@ -796,6 +802,8 @@ void scaleAllWeather(
   this requires that appropriate structures are initialized.
 
   @param[in,out] allHist 2D array holding all weather data
+  @param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
+	  related to temperature and weather generator
   @param[in] startYear Start year of the simulation
   @param[in] n_years Number of years in simulation
   @param[in] method Number to identify which method to apply to generate
@@ -804,6 +812,7 @@ void scaleAllWeather(
     before imputation by `LOCF` throws an error.
 */
 void generateMissingWeather(
+  SW_MARKOV* SW_Markov,
   SW_WEATHER_HIST **allHist,
   int startYear,
   unsigned int n_years,
@@ -864,11 +873,10 @@ void generateMissingWeather(
           // Weather generator
           allHist[yearIndex]->ppt[day] = yesterdayPPT;
           SW_MKV_today(
-            day,
+            SW_Markov, day, year,
             &allHist[yearIndex]->temp_max[day],
             &allHist[yearIndex]->temp_min[day],
-            &allHist[yearIndex]->ppt[day],
-            year
+            &allHist[yearIndex]->ppt[day]
           );
 
         } else if (method == 1) {
@@ -1107,10 +1115,12 @@ void SW_WTH_construct(SW_WEATHER* SW_Weather) {
 /**
 @brief Deconstructor for SW_Weather and SW_Markov (if used)
 
+@param[out] SW_Markov Struct of type SW_MARKOV which holds values
+	related to temperature and weather generator
 @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
 */
-void SW_WTH_deconstruct(SW_WEATHER* SW_Weather)
+void SW_WTH_deconstruct(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather)
 {
 	OutPeriod pd;
 
@@ -1129,7 +1139,7 @@ void SW_WTH_deconstruct(SW_WEATHER* SW_Weather)
 	}
 
 	if (SW_Weather->generateWeatherMethod == 2) {
-		SW_MKV_deconstruct();
+		SW_MKV_deconstruct(SW_Markov);
 	}
 
     deallocateAllWeather(SW_Weather);

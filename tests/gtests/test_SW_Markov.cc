@@ -42,25 +42,23 @@ extern void (*test_temp_correct_wetdry)(RealD *, RealD *, RealD, RealD, RealD, R
 
 
 namespace {
-  SW_MARKOV *m = &SW_Markov;
-
   // Test the SW_MARKOV constructor 'SW_MKV_construct'
   TEST(WGTest, Constructor) {
-    SW_MKV_construct(SW_All.Weather.rng_seed);
+    SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov);
 
     // Check that at least first array elements are initialized to zero
-    EXPECT_DOUBLE_EQ(0., m->wetprob[0]);
-    EXPECT_DOUBLE_EQ(0., m->dryprob[0]);
-    EXPECT_DOUBLE_EQ(0., m->avg_ppt[0]);
-    EXPECT_DOUBLE_EQ(0., m->std_ppt[0]);
-    EXPECT_DOUBLE_EQ(0., m->cfxw[0]);
-    EXPECT_DOUBLE_EQ(0., m->cfxd[0]);
-    EXPECT_DOUBLE_EQ(0., m->cfnw[0]);
-    EXPECT_DOUBLE_EQ(0., m->cfnd[0]);
+    EXPECT_DOUBLE_EQ(0., SW_All.Markov.wetprob[0]);
+    EXPECT_DOUBLE_EQ(0., SW_All.Markov.dryprob[0]);
+    EXPECT_DOUBLE_EQ(0., SW_All.Markov.avg_ppt[0]);
+    EXPECT_DOUBLE_EQ(0., SW_All.Markov.std_ppt[0]);
+    EXPECT_DOUBLE_EQ(0., SW_All.Markov.cfxw[0]);
+    EXPECT_DOUBLE_EQ(0., SW_All.Markov.cfxd[0]);
+    EXPECT_DOUBLE_EQ(0., SW_All.Markov.cfnw[0]);
+    EXPECT_DOUBLE_EQ(0., SW_All.Markov.cfnd[0]);
 
     // Reset to previous global state
     // Reset_SOILWAT2_after_UnitTest();
-    SW_MKV_deconstruct();
+    SW_MKV_deconstruct(&SW_All.Markov);
   }
 
 
@@ -80,26 +78,27 @@ namespace {
 
     // Initialize weather generator
     SW_All.Weather.rng_seed = seed;
-    SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
+    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-      SW_MKV_today(k, &tmax0[k], &tmin0[k], &ppt, SW_All.Model.year);
+      SW_MKV_today(&SW_All.Markov, k, SW_All.Model.year, &tmax0[k], &tmin0[k], &ppt);
       ppt0[k] = ppt;
     }
 
     // Reset weather generator
-    SW_MKV_deconstruct();
+    SW_MKV_deconstruct(&SW_All.Markov);
 
 
     //--- Expect that generated weather is different with time-varying seed ----
     // Re-initialize weather generator
     SW_All.Weather.rng_seed = 0;
-    SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
+    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+                 SW_All.Weather.generateWeatherMethod);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-      SW_MKV_today(k, &tmax, &tmin, &ppt, SW_All.Model.year);
+      SW_MKV_today(&SW_All.Markov, k, SW_All.Model.year, &tmax, &tmin, &ppt);
 
       EXPECT_NE(tmax, tmax0[k]);
       EXPECT_NE(tmin, tmin0[k]);
@@ -109,17 +108,18 @@ namespace {
     }
 
     // Reset weather generator
-    SW_MKV_deconstruct();
+    SW_MKV_deconstruct(&SW_All.Markov);
 
 
     //--- Expect that generated weather is reproducible with same seed ------
     // Re-initialize weather generator
     SW_All.Weather.rng_seed = seed;
-    SW_MKV_setup(SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
+    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+                 SW_All.Weather.generateWeatherMethod);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-      SW_MKV_today(k, &tmax, &tmin, &ppt, SW_All.Model.year);
+      SW_MKV_today(&SW_All.Markov, k, SW_All.Model.year, &tmax, &tmin, &ppt);
 
       EXPECT_DOUBLE_EQ(tmax, tmax0[k]);
       EXPECT_DOUBLE_EQ(tmin, tmin0[k]);
@@ -142,7 +142,7 @@ namespace {
     short k, n = 3;
     RealD tmax = 0., tmin = 0., tval;
 
-    SW_MKV_construct(SW_All.Weather.rng_seed); // initialize markov_rng
+    SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov); // initialize markov_rng
 
     for (k = 0; k < n; k++) {
       // Create temperature values: here with n = 3: -10, 0, +10
@@ -171,13 +171,13 @@ namespace {
 
     // Reset to previous global state
     // Reset_SOILWAT2_after_UnitTest();
-    SW_MKV_deconstruct();
+    SW_MKV_deconstruct(&SW_All.Markov);
   }
 
   TEST(WGDeathTest, mvnorm) {
     RealD tmax = 0., tmin = 0.;
 
-    SW_MKV_construct(SW_All.Weather.rng_seed); // initialize markov_rng
+    SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov); // initialize markov_rng
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL
     EXPECT_DEATH_IF_SUPPORTED(
@@ -187,7 +187,7 @@ namespace {
 
     // Reset to previous global state
     // Reset_SOILWAT2_after_UnitTest();
-    SW_MKV_deconstruct();
+    SW_MKV_deconstruct(&SW_All.Markov);
   }
 
 
@@ -198,7 +198,7 @@ namespace {
       wet = 1., dry = 0.,
       cf0 = 0., cf_pos = 5., cf_neg = -5.;
 
-    SW_MKV_construct(SW_All.Weather.rng_seed); // initialize markov_rng
+    SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov); // initialize markov_rng
 
     // Case: tmax = tmin; wet; cf_*_wet = 0 ==> input = output
     tmax = t0;
@@ -232,7 +232,7 @@ namespace {
 
     // Reset to previous global state
     // Reset_SOILWAT2_after_UnitTest();
-    SW_MKV_deconstruct();
+    SW_MKV_deconstruct(&SW_All.Markov);
   }
 
 } // namespace
