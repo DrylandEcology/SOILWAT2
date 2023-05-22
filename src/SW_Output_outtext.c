@@ -81,7 +81,7 @@ char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
 /* --------------------------------------------------- */
 
 static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
-								Bool does_agg, LyrIndex n_layers) {
+		Bool does_agg, LyrIndex n_layers, SW_OUTPUT* SW_Output) {
 	unsigned int i;
 	char key[50],
 		str_help1[n_layers * OUTSTRLEN],
@@ -283,12 +283,15 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd)
  * @param[in,out] SW_FileStatus Struct of type
  *	SW_FILE_STATUS which holds basic information about output files
  *	and values
+ * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
+ * 	basic output information for all output keys
  * @param[in] n_layers Number of layers of soil within the simulation run
  *
  *  @note Call this routine at the beginning of the main program run, but
  *  after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
-void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, LyrIndex n_layers) {
+void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
+						 LyrIndex n_layers) {
 	OutPeriod pd;
 
 	ForEachOutPeriod(pd) {
@@ -297,7 +300,7 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, LyrIndex n_layers) {
 
 			write_headers_to_csv(pd, SW_FileStatus->fp_reg[pd],
 				SW_FileStatus->fp_soil[pd], swFALSE, SW_FileStatus->make_soil,
-				SW_FileStatus->make_regular, n_layers);
+				SW_FileStatus->make_regular, SW_Output, n_layers);
 		}
 	}
 }
@@ -305,7 +308,7 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, LyrIndex n_layers) {
 
 #elif defined(STEPWAT)
 
-void SW_OUT_create_summary_files(void) {
+void SW_OUT_create_summary_files(SW_OUTPUT* SW_Output) {
 	OutPeriod p;
 
 	ForEachOutPeriod(p) {
@@ -313,12 +316,12 @@ void SW_OUT_create_summary_files(void) {
 			_create_csv_file_ST(-1, p);
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg_agg[p],
-				SW_FileStatus->fp_soil_agg[p], swTRUE, n_layers);
+				SW_FileStatus->fp_soil_agg[p], swTRUE, SW_Output, n_layers);
 		}
 	}
 }
 
-void SW_OUT_create_iteration_files(int iteration) {
+void SW_OUT_create_iteration_files(SW_OUTPUT* SW_Output, int iteration) {
 	OutPeriod p;
 
 	ForEachOutPeriod(p) {
@@ -326,7 +329,7 @@ void SW_OUT_create_iteration_files(int iteration) {
 			_create_csv_file_ST(iteration, p);
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg[p],
-				SW_FileStatus->fp_soil[p], swFALSE, n_layers);
+				SW_FileStatus->fp_soil[p], swFALSE, SW_Output, n_layers);
 		}
 	}
 }
@@ -391,10 +394,14 @@ void get_outstrleader(OutPeriod pd, size_t sizeof_str,
 	specifying to output "regular" header names
   \param make_soil Array of size SW_OUTNPERIODS which holds boolean values
 	specifying to output a soil-related header names
+  \param SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds basic output
+	information for all output keys
 
 */
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
-	Bool does_agg, Bool make_regular[], Bool make_soil[],  LyrIndex n_layers) {
+	Bool does_agg, Bool make_regular[], Bool make_soil[], SW_OUTPUT* SW_Output,
+	LyrIndex n_layers) {
+
 	char str_time[20];
 	char
 		// 3500 characters required for does_agg = TRUE
@@ -404,7 +411,8 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 
 	// Acquire headers
 	get_outstrheader(pd, str_time, sizeof str_time);
-	_create_csv_headers(pd, header_reg, header_soil, does_agg, n_layers);
+	_create_csv_headers(pd, header_reg, header_soil, does_agg,
+						n_layers, SW_Output);
 
 	// Write headers to files
 	if (make_regular[pd]) {
@@ -418,7 +426,8 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 	}
 }
 
-void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[])
+void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
+								 SW_OUTPUT* SW_Output)
 {
 	IntUS i;
 	OutKey k;

@@ -19,6 +19,7 @@ static const double
 #define missing(x)  ( EQ( fabs( (x) ), SW_MISSING ) || !std::isfinite( (x) ) )
 
 extern SW_ALL SW_All;
+extern SW_OUTPUT_POINTERS SW_OutputPtrs;
 
 /* Functions for unit tests */
 

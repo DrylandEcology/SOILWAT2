@@ -26,7 +26,7 @@
 
 #include "tests/gtests/sw_testhelpers.h"
 
-
+SW_OUTPUT_POINTERS SW_OutputPtrs;
 
 /** Initialize SOILWAT2 variables and read values from example input file
  */
@@ -46,7 +46,7 @@ void Reset_SOILWAT2_after_UnitTest(void) {
 
   SW_CTL_clear_model(swFALSE, &SW_All);
 
-  SW_CTL_setup_model(&SW_All, _firstfile); // `_firstfile` is here "files.in"
+  SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, _firstfile); // `_firstfile` is here "files.in"
   SW_CTL_read_inputs_from_disk(&SW_All);
 
   /* Notes on messages during tests

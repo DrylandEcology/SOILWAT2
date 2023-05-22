@@ -65,7 +65,7 @@ static void _begin_year(SW_ALL* sw) {
 	// SW_FLW_new_year() not needed
 	SW_SWC_new_year(&sw->SoilWat, &sw->Site, sw->Model.year);
 	// SW_CBN_new_year() not needed
-	SW_OUT_new_year(sw->Model.firstdoy, sw->Model.lastdoy);
+	SW_OUT_new_year(sw->Model.firstdoy, sw->Model.lastdoy, sw->Output);
 }
 
 static void _begin_day(SW_ALL* sw) {
@@ -74,8 +74,8 @@ static void _begin_day(SW_ALL* sw) {
                   sw->Model.doy, sw->Model.year);
 }
 
-static void _end_day(SW_ALL* sw) {
-	_collect_values(sw);
+static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
+	_collect_values(sw, SW_OutputPtrs);
 	SW_SWC_end_day(&sw->SoilWat, sw->Site.n_layers);
 }
 
@@ -89,9 +89,11 @@ static void _end_day(SW_ALL* sw) {
 
 @param[in,out] sw Comprehensive struct of type SW_ALL containing all
   information in the simulation
+@param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
+  hold pointers to subroutines for output keys
 */
 
-void SW_CTL_main(SW_ALL* sw) {
+void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -103,17 +105,20 @@ void SW_CTL_main(SW_ALL* sw) {
     if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
     #endif
 
-    SW_CTL_run_current_year(sw);
+    SW_CTL_run_current_year(sw, SW_OutputPtrs);
   }
 } /******* End Main Loop *********/
 
 /** @brief Setup and construct model (independent of inputs)
  *
  * @param[in,out] sw Comprehensive struct of type SW_ALL containing all
- * information in the simulation
+ *  information in the simulation
+ * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
+ *  hold pointers to subroutines for output keys
  * @param[in] firstfile First input file
  */
-void SW_CTL_setup_model(SW_ALL* sw, const char *firstfile) {
+void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+                        const char *firstfile) {
 
 	SW_F_construct(firstfile);
 	SW_MDL_construct(sw->Model.newperiod);
@@ -125,7 +130,7 @@ void SW_CTL_setup_model(SW_ALL* sw, const char *firstfile) {
 	SW_VPD_construct(&sw->VegProd);
 	// SW_FLW_construct() not needed
 	SW_OUT_construct(sw->FileStatus.make_soil, sw->FileStatus.make_regular,
-                   sw->Site.n_layers);
+                   SW_OutputPtrs, sw->Output, sw->Site.n_layers);
 	SW_SWC_construct(&sw->SoilWat);
 	SW_CBN_construct(&sw->Carbon);
 }
@@ -191,8 +196,10 @@ void SW_CTL_init_run(SW_ALL* sw) {
 
 @param[in,out] sw Comprehensive struct of type SW_ALL containing
   all information in the simulation
+@param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
+  hold pointers to subroutines for output keys
 */
-void SW_CTL_run_current_year(SW_ALL* sw) {
+void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
   /*=======================================================*/
   TimeInt *doy = &sw->Model.doy; // base1
   #ifdef SWDEBUG
@@ -229,7 +236,7 @@ void SW_CTL_run_current_year(SW_ALL* sw) {
     #ifdef SWDEBUG
     if (debug) swprintf("ending day ... ");
     #endif
-    _end_day(sw);
+    _end_day(sw, SW_OutputPtrs);
 
     #ifdef SWDEBUG
     if (debug) swprintf("doy = %d completed.\n", *doy);
@@ -239,7 +246,7 @@ void SW_CTL_run_current_year(SW_ALL* sw) {
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_run_current_year': flush output\n");
   #endif
-  SW_OUT_flush(sw);
+  SW_OUT_flush(sw, SW_OutputPtrs);
 
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_run_current_year': completed.\n");

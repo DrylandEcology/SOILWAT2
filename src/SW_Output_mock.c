@@ -39,9 +39,6 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-// Copy-paste definitions from SW_Output.c (lines 81-103)
-SW_OUTPUT SW_Output[SW_OUTNKEYS];
-
 char _Sep;
 TimeInt tOffset;
 
@@ -78,12 +75,16 @@ void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count)
 	(void) count;
 }
 
-void SW_OUT_construct(Bool make_soil[], Bool make_regular[], LyrIndex tLayers)
+void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
+		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
+		LyrIndex n_layers)
 {
 	/* Silence compiler */
-	(void) tLayers;
 	(void) make_soil;
 	(void) make_regular;
+	(void) SW_OutputPtrs;
+	(void) SW_Output;
+	(void) n_layers;
 }
 
 void SW_OUT_deconstruct(Bool full_reset)
@@ -91,10 +92,14 @@ void SW_OUT_deconstruct(Bool full_reset)
 	if (full_reset) {}
 }
 
-void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy)
+void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
+					 SW_OUTPUT* SW_Output)
 {
+	/* silence compiler warnings */
 	if(EQ(0, firstdoy)) {}
 	if(EQ(0, lastdoy)) {}
+
+	(void) SW_Output;
 }
 
 void SW_OUT_read(SW_ALL* sw)
@@ -102,14 +107,16 @@ void SW_OUT_read(SW_ALL* sw)
 	(void) sw; // use sw to silence compiler warnings
 }
 
-void _collect_values(SW_ALL* sw)
+void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs)
 {
-	(void) sw; // use sw to silence compiler warnings
+	/* silence compiler warnings */
+	(void) sw;
+	(void) SW_OutputPtrs;
 }
 
-void SW_OUT_flush(SW_ALL* sw)
+void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs)
 {
-	_collect_values(sw);
+	_collect_values(sw, SW_OutputPtrs);
 }
 
 void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp)
@@ -121,9 +128,11 @@ void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp)
 	(void) sw;
 }
 
-void SW_OUT_write_today(SW_ALL* sw)
+void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs)
 {
-	(void) sw; // use sw to silence compiler warnings
+	/* silence compiler warnings */
+	(void) sw;
+	(void) SW_OutputPtrs;
 }
 
 void get_none(OutPeriod pd, SW_ALL* sw)

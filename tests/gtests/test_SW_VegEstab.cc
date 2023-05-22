@@ -20,7 +20,7 @@ namespace {
     EXPECT_GT(SW_All.VegEstab.count, 0);
 
     // Run the simulation
-    SW_CTL_main(&SW_All);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs);
 
     // Expect valid 'day of year' 1-366 output for each species from the
     // vegetation establishment calculations

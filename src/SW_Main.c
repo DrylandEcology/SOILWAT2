@@ -53,6 +53,7 @@
 int main(int argc, char **argv) {
 	/* =================================================== */
 	SW_ALL sw;
+	SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
 
 	logged = swFALSE;
 	atexit(sw_check_log);
@@ -66,7 +67,7 @@ int main(int argc, char **argv) {
 	}
 
   // setup and construct model (independent of inputs)
-	SW_CTL_setup_model(&sw, _firstfile);
+	SW_CTL_setup_model(&sw, SW_OutputPtrs, _firstfile);
 
 	// read user inputs
 	SW_CTL_read_inputs_from_disk(&sw);
@@ -80,10 +81,10 @@ int main(int argc, char **argv) {
   // initialize output
 	SW_OUT_set_ncol(sw.Site.n_layers, sw.Site.n_evap_lyrs, sw.VegEstab.count);
 	SW_OUT_set_colnames(sw.Site.n_layers, sw.VegEstab.parms);
-	SW_OUT_create_files(&sw.FileStatus, sw.Site.n_layers); // only used with SOILWAT2
+	SW_OUT_create_files(&sw.FileStatus, sw.Output, sw.Site.n_layers); // only used with SOILWAT2
 
   // run simulation: loop through each year
-	SW_CTL_main(&sw);
+	SW_CTL_main(&sw, SW_OutputPtrs);
 
   // finish-up output
 	SW_OUT_close_files(&sw.FileStatus); // not used with rSOILWAT2

@@ -794,25 +794,6 @@ typedef struct {
 } SW_MARKOV;
 
 /* =================================================== */
-/*                 Comprehensive struct                */
-/* --------------------------------------------------- */
-
-typedef struct {
-	SW_VEGPROD VegProd;
-	SW_WEATHER Weather;
-	SW_SOILWAT SoilWat;
-	SW_MODEL Model;
-	SW_SITE Site;
-	SW_VEGESTAB VegEstab;
-	SW_SKY Sky;
-	SW_CARBON Carbon;
-	ST_RGR_VALUES StRegValues;
-	SW_FILE_STATUS FileStatus;
-	SW_MARKOV Markov;
-
-} SW_ALL;
-
-/* =================================================== */
 /*                 Output struct/enums                 */
 /* --------------------------------------------------- */
 
@@ -875,19 +856,49 @@ typedef struct {
 		first, last, 			/* first/last doy of current year, i.e., updated for each year */
 		first_orig, last_orig; /* first/last doy that were originally requested */
 
+	#if defined(RSOILWAT)
+	char *outfile; /* name of output */ //could probably be removed
+	#endif
+} SW_OUTPUT;
+
+/* =================================================== */
+/*                 Comprehensive struct                */
+/* --------------------------------------------------- */
+
+typedef struct {
+	SW_VEGPROD VegProd;
+	SW_WEATHER Weather;
+	SW_SOILWAT SoilWat;
+	SW_MODEL Model;
+	SW_SITE Site;
+	SW_VEGESTAB VegEstab;
+	SW_SKY Sky;
+	SW_CARBON Carbon;
+	ST_RGR_VALUES StRegValues;
+	SW_FILE_STATUS FileStatus;
+	SW_MARKOV Markov;
+	SW_OUTPUT Output[SW_OUTNKEYS];
+
+} SW_ALL;
+
+/* =================================================== */
+/*                 Output struct/enums                 */
+/* --------------------------------------------------- */
+
+typedef struct {
+
 	#ifdef SW_OUTTEXT
 	void (*pfunc_text)(OutPeriod, SW_ALL*); /* pointer to output routine for text output */
 	#endif
 
 	#if defined(RSOILWAT)
 	void (*pfunc_mem)(OutPeriod, SW_ALL*); /* pointer to output routine for array output */
-	char *outfile; /* name of output */ //could probably be removed
 
 	#elif defined(STEPWAT)
 	void (*pfunc_agg)(OutPeriod, SW_ALL*); /* pointer to output routine for aggregated output across STEPWAT iterations */
 	void (*pfunc_SXW)(OutPeriod, SW_ALL*); /* pointer to output routine for STEPWAT in-memory output */
 	#endif
-} SW_OUTPUT;
+} SW_OUTPUT_POINTERS;
 
 /* =================================================== */
 /*                 Block info struct                   */

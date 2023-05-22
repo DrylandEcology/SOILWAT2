@@ -174,6 +174,12 @@ extern "C" {
 // macro `ForEachOutPeriod` --> instead, define as type `IntUS`
 typedef IntUS OutPeriod;
 
+/*
+  * Number of output keys
+
+  * Must match number of items in output enum (minus eSW_NoKey and eSW_LastKey)
+*/
+#define SW_OUTNKEYS 32
 
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */
