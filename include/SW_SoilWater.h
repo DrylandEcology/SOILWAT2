@@ -67,7 +67,7 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year);
 void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
 				 LyrIndex n_layers);
 void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site);
-void _read_swc_hist(SW_SOILWAT_HIST SoilWat_hist, TimeInt year);
+void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year);
 void SW_SWC_water_flow(SW_ALL* sw);
 void calculate_repartitioned_soilwater(SW_SOILWAT* SW_SoilWat,
 	SW_VEGPROD* SW_VegProd, SW_LAYER_INFO** lyr, LyrIndex n_layers);

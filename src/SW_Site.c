@@ -63,9 +63,9 @@
 #include "include/myMemory.h"
 #include "include/SW_VegProd.h"
 
-#include "include/SW_Carbon.h" // externs SW_Carbon
+#include "include/SW_Carbon.h"
 #include "include/SW_Files.h"
-#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_Site.h"
 #include "include/SW_SoilWater.h"
 
 

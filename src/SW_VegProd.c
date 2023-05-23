@@ -51,7 +51,7 @@ changed _echo_inits() to now display the bare ground components in logfile.log
 #include "include/Times.h"
 #include "include/SW_Files.h"
 #include "include/SW_VegProd.h"
-#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Model.h"
 #include "include/SW_Weather.h"
 #include "include/SW_Site.h"
 

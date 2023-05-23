@@ -41,10 +41,10 @@
 #include "include/Times.h"
 
 #include "include/SW_Files.h"
-#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_Site.h"
 #include "include/SW_SoilWater.h"  /* for setup_new_year() */
 #include "include/SW_Times.h"
-#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Model.h"
 
 
 /* =================================================== */
@@ -99,7 +99,7 @@ void SW_MDL_deconstruct(void)
 @brief Reads in MDL file and displays error message if file is incorrect.
 
 @param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
-		about the simulation
+	about the simulation
 */
 void SW_MDL_read(SW_MODEL* SW_Model) {
 	/* =================================================== */

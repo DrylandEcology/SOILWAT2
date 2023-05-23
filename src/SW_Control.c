@@ -28,16 +28,17 @@
 #include "include/Times.h"
 #include "include/SW_Files.h"
 #include "include/SW_Control.h"
-#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Model.h"
 #include "include/SW_Output.h"
-#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_Site.h"
 #include "include/SW_Flow_lib.h"
 #include "include/SW_Flow_lib_PET.h"
 #include "include/SW_Flow.h"
-#include "include/SW_VegEstab.h" // externs SW_VegEstab
-#include "include/SW_Weather.h"  // externs SW_Weather
+#include "include/SW_VegEstab.h"
+#include "include/SW_Weather.h"
 #include "include/SW_Markov.h"
 #include "include/SW_Sky.h"
+#include "include/SW_SoilWater.h"
 #include "include/SW_Carbon.h"
 
 

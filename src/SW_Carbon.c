@@ -17,8 +17,8 @@
 #include <string.h>
 #include "include/filefuncs.h"
 #include "include/SW_Files.h"
-#include "include/SW_Carbon.h" // externs SW_Carbon
-#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Carbon.h"
+#include "include/SW_Model.h"
 #include "include/SW_VegProd.h"
 
 

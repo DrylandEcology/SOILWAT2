@@ -109,12 +109,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "include/SW_Model.h" // externs SW_Model
-#include "include/SW_Site.h" // externs SW_Site
-#include "include/SW_SoilWater.h" // externs SW_Soilwat
-#include "include/SW_Flow_lib.h" // externs stValues, soil_temp_init
+#include "include/SW_Model.h"
+#include "include/SW_Site.h"
+#include "include/SW_SoilWater.h"
+#include "include/SW_Flow_lib.h"
 #include "include/SW_VegProd.h"
-#include "include/SW_Sky.h" // externs SW_Sky
+#include "include/SW_Sky.h"
 #include "include/SW_Times.h"
 
 #include "include/SW_Flow_lib_PET.h"

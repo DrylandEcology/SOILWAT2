@@ -64,16 +64,16 @@ extern const IntUS ncol_TimeOUT[SW_OUTNPERIODS];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_OUT_set_nrow(void);
+void SW_OUT_set_nrow(SW_MODEL* SW_Model);
 void SW_OUT_deconstruct_outarray(void);
 
 #ifdef RSOILWAT
-void get_outvalleader(RealD *p, OutPeriod pd);
+void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd, RealD *p);
 #endif
 
 #ifdef STEPWAT
 void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x);
-void setGlobalSTEPWAT2_OutputVariables(void);
+void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output);
 #endif
 
 

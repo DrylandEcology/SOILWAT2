@@ -19,7 +19,7 @@
 #include "include/generic.h"
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "include/SW_Control.h"
-#include "include/SW_SoilWater.h"
+#include "include/SW_datastructs.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 

@@ -40,9 +40,9 @@
 #include "include/Times.h"
 
 #include "include/SW_Files.h"
-#include "include/SW_Model.h" // externs SW_Model
-#include "include/SW_Site.h" // externs SW_Site
-#include "include/SW_VegEstab.h" // externs SW_VegEstab
+#include "include/SW_Model.h"
+#include "include/SW_Site.h"
+#include "include/SW_VegEstab.h"
 #include "include/SW_SoilWater.h"
 
 #include "include/SW_Output.h"
@@ -2079,7 +2079,8 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 }
 
 
-/** Read output setup from file `outsetup.in`.
+/**
+	Read output setup from file `outsetup.in`.
 
     Output can be generated for four different time steps: daily (DY), weekly (WK),
     monthly (MO), and yearly (YR).
@@ -2092,6 +2093,9 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
         - A different time step for each output: Specify the time step in the column
           `PERIOD` for each output variable. Note: only one time step per output variable
           can be specified.
+
+	@param[in,out] sw Comprehensive structure holding all information
+    	dealt with in SOILWAT2
  */
 void SW_OUT_read(SW_ALL* sw)
 {
@@ -2262,7 +2266,7 @@ void SW_OUT_read(SW_ALL* sw)
 
 	#ifdef STEPWAT
 	// Determine number of used years/months/weeks/days in simulation period
-	SW_OUT_set_nrow();
+	SW_OUT_set_nrow(&sw->Model);
 	#endif
 
 	CloseFile(&f);
@@ -2288,8 +2292,14 @@ void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
 
 
 /** called at year end to process the remainder of the output
-    period.  This sets two module-level flags: bFlush_output and
-    tOffset to be used in the appropriate subs.*/
+    period. This sets two module-level flags: bFlush_output and
+    tOffset to be used in the appropriate subs.
+
+	@param[in,out] sw Comprehensive struct of type SW_ALL containing
+  		all information in the simulation
+	@param[in] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
+ 		hold pointers to subroutines for output keys
+*/
 void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
 	bFlush_output = swTRUE;
 	tOffset = 0;

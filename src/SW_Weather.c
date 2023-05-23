@@ -45,7 +45,7 @@
 #include "include/myMemory.h"
 #include "include/Times.h"
 #include "include/SW_Files.h"
-#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Model.h"
 #include "include/SW_Markov.h"
 #include "include/SW_SoilWater.h"
 #include "include/SW_Flow_lib_PET.h"

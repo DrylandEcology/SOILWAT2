@@ -93,13 +93,13 @@
 #include <string.h>
 #include "include/filefuncs.h"
 #include "include/SW_Times.h"
-#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_Site.h"
 #include "include/SW_Flow_lib.h"
 #include "include/SW_SoilWater.h"
-#include "include/SW_Carbon.h" // externs SW_Carbon
+#include "include/SW_Carbon.h"
 #include "include/Times.h"
 
-#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Model.h"
 
 
 
@@ -1735,13 +1735,15 @@ Based on equations from Eitzinger 2000. @cite Eitzinger2000
 @param vwc An array of temperature-layer VWC values (cm/layer).
 @param bDensity An array of the bulk density of the whole soil per soil layer
   (g/cm<SUP>3</SUP>).
+@param oldsFusionPool_actual Yesterdays actual fusion pool at each soil layer
 
 @return sFadjusted_avgLyrTemp Adjusted soil layer temperature due to freezing/thawing
 
 */
 
 unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double avgLyrTemp[],
-	double shParam, unsigned int nlyrs, double vwc[], double bDensity[]){
+	double shParam, unsigned int nlyrs, double vwc[], double bDensity[],
+	double oldsFusionPool_actual[]) {
 	// Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
 	// based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 
@@ -1753,7 +1755,6 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double
 	temp = oldavgLyrTemp[0] + avgLyrTemp[0] + shParam + nlyrs + vwc[0] + bDensity[0];
 	temp += temp;
 	// end avoid compiler warnings
-	ST_RGR_VALUES dummyInstance;
 
 	unsigned int i, sFadjusted_avgLyrTemp;
 
@@ -1769,7 +1770,7 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double
 
 	if (!fusion_pool_init) {
 		for (i = 0; i < nlyrs; i++)
-			dummyInstance.oldsFusionPool_actual[i] = 0.;
+			oldsFusionPool_actual[i] = 0.;
 		fusion_pool_init = 1;
 	}
 
@@ -2365,7 +2366,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 
 	// Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
 	sFadjusted_avgLyrTemp = adjust_Tsoil_by_freezing_and_thawing(oldavgLyrTemp, avgLyrTemp, shParam,
-		nlyrs, vwc, bDensity);
+		nlyrs, vwc, bDensity, SW_StRegValues->oldsFusionPool_actual);
 
 	// update avgLyrTempR if avgLyrTemp were changed due to soil freezing/thawing
 	if (sFadjusted_avgLyrTemp) {

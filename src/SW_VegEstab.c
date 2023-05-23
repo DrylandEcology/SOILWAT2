@@ -40,9 +40,9 @@
 #include "include/myMemory.h"
 #include "include/SW_Times.h"
 #include "include/SW_Files.h"
-#include "include/SW_Site.h" // externs SW_Site
-#include "include/SW_Model.h" // externs SW_Model
-#include "include/SW_SoilWater.h" // externs SW_Soilwat
+#include "include/SW_Site.h"
+#include "include/SW_Model.h"
+#include "include/SW_SoilWater.h"
 #include "include/SW_VegProd.h" // externs `key2veg[]`
 #include "include/SW_VegEstab.h"
 

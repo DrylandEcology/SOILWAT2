@@ -44,14 +44,14 @@
 #include "include/filefuncs.h"
 #include "include/myMemory.h"
 #include "include/SW_Files.h"
-#include "include/SW_Model.h" // externs SW_Model
-#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_Model.h"
+#include "include/SW_Site.h"
 #include "include/SW_Flow.h"
 #include "include/SW_SoilWater.h"
 #include "include/SW_Times.h"
 #include "include/Times.h"
 #ifdef SWDEBUG
-  #include "include/SW_Weather.h"   // externs SW_Weather
+  #include "include/SW_Weather.h"
 #endif
 #ifdef RSOILWAT
   #include "rSW_SoilWater.h" // for onSet_SW_SWC_hist()
@@ -948,10 +948,10 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year) {
 	/* update historical (measured) values, if needed */
 	if (SW_SoilWat->hist_use && year >= SW_SoilWat->hist.yr.first) {
 		#ifndef RSOILWAT
-			_read_swc_hist(SW_SoilWat->hist, year);
+			_read_swc_hist(&SW_SoilWat->hist, year);
 		#else
 			if (useFiles) {
-				_read_swc_hist(SW_SoilWat->hist, year);
+				_read_swc_hist(&SW_SoilWat->hist, year);
 			} else {
 				onSet_SW_SWC_hist();
 			}
@@ -1031,7 +1031,7 @@ void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
 	historical (measured) swc values
 @param[in] year Four digit number for desired year, measured in years.
 */
-void _read_swc_hist(SW_SOILWAT_HIST SoilWat_hist, TimeInt year) {
+void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year) {
 	/* =================================================== */
 	/* read a file containing historical swc measurements.
 	 * Enter with year a four digit year number.  This is
@@ -1065,7 +1065,7 @@ void _read_swc_hist(SW_SOILWAT_HIST SoilWat_hist, TimeInt year) {
 	RealF swc, st_err;
 	char fname[MAX_FILENAMESIZE];
 
-	snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", SoilWat_hist.file_prefix, year);
+	snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", SoilWat_hist->file_prefix, year);
 
 	if (!FileExists(fname)) {
 		LogError(logfp, LOGWARN, "Historical SWC file %s not found.", fname);
@@ -1074,7 +1074,7 @@ void _read_swc_hist(SW_SOILWAT_HIST SoilWat_hist, TimeInt year) {
 
 	f = OpenFile(fname, "r");
 
-	_clear_hist(SoilWat_hist.swc, SoilWat_hist.std_err);
+	_clear_hist(SoilWat_hist->swc, SoilWat_hist->std_err);
 
 	while (GetALine(f, inbuf)) {
 		recno++;
@@ -1096,8 +1096,8 @@ void _read_swc_hist(SW_SOILWAT_HIST SoilWat_hist, TimeInt year) {
 			LogError(logfp, LOGFATAL, "%s : Layer number out of range (%d > %d), record %d\n", fname, lyr, MAX_LAYERS, recno);
 		}
 
-		SoilWat_hist.swc[doy - 1][lyr - 1] = swc;
-		SoilWat_hist.std_err[doy - 1][lyr - 1] = st_err;
+		SoilWat_hist->swc[doy - 1][lyr - 1] = swc;
+		SoilWat_hist->std_err[doy - 1][lyr - 1] = st_err;
 
 	}
 	CloseFile(&f);

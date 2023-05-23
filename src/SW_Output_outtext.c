@@ -25,8 +25,8 @@
 #include "include/filefuncs.h"
 
 #include "include/SW_Files.h"
-#include "include/SW_Model.h" // externs SW_Model
-#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_Model.h"
+#include "include/SW_Site.h"
 
 // externs `SW_Output`, `_Sep`, `tOffset`, `use_OutPeriod`, `used_OUTNPERIODS`,
 //         `timeSteps`, `colnames_OUT`, `ncol_OUT`, `key2str`, `pd2longstr`,
@@ -308,7 +308,9 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 
 #elif defined(STEPWAT)
 
-void SW_OUT_create_summary_files(SW_OUTPUT* SW_Output) {
+void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
+								 SW_OUTPUT* SW_Output) {
+
 	OutPeriod p;
 
 	ForEachOutPeriod(p) {
@@ -316,12 +318,15 @@ void SW_OUT_create_summary_files(SW_OUTPUT* SW_Output) {
 			_create_csv_file_ST(-1, p);
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg_agg[p],
-				SW_FileStatus->fp_soil_agg[p], swTRUE, SW_Output, n_layers);
+				SW_FileStatus->fp_soil_agg[p], swTRUE, SW_FileStatus->make_soil,
+				SW_FileStatus->make_regular, SW_Output, n_layers);
 		}
 	}
 }
 
-void SW_OUT_create_iteration_files(SW_OUTPUT* SW_Output, int iteration) {
+void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
+								   SW_OUTPUT* SW_Output, int iteration) {
+
 	OutPeriod p;
 
 	ForEachOutPeriod(p) {
@@ -329,7 +334,8 @@ void SW_OUT_create_iteration_files(SW_OUTPUT* SW_Output, int iteration) {
 			_create_csv_file_ST(iteration, p);
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg[p],
-				SW_FileStatus->fp_soil[p], swFALSE, SW_Output, n_layers);
+				SW_FileStatus->fp_soil[p], swTRUE, SW_FileStatus->make_soil,
+				SW_FileStatus->make_regular, SW_Output, n_layers);
 		}
 	}
 }

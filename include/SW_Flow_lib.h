@@ -201,7 +201,8 @@ void set_frozen_unfrozen(unsigned int nlyrs, double avgLyrTemp[], double swc[],
 						 double swc_sat[], double width[], double lyrFrozen[]);
 
 unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double avgLyrTemp[],
-		double shParam, unsigned int nlyrs, double vwc[], double bDensity[]);
+	double shParam, unsigned int nlyrs, double vwc[], double bDensity[],
+	double oldsFusionPool_actual[]);
 
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
 	int nRgr, double avgLyrTempR[], double oldavgLyrTempR[], double vwcR[], double wpR[], double fcR[],
