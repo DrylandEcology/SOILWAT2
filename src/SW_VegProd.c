@@ -65,13 +65,6 @@ changed _echo_inits() to now display the bare ground components in logfile.log
 char const *key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 
 
-
-/* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-static char *MyFileName;
-
-
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -90,7 +83,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 	const int line_help = 28; // last case line number before monthly biomass densities
 	RealF help_veg[NVEGTYPES], help_bareGround, litt, biom, pctl, laic;
 
-	MyFileName = SW_F_name(eVegProd);
+	char *MyFileName = SW_F_name(eVegProd);
 	f = OpenFile(MyFileName, "r");
 
 	while (GetALine(f, inbuf)) {

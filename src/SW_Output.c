@@ -158,7 +158,6 @@ char const *styp2str[] =
 /* =================================================== */
 /*                  Local Variables                    */
 /* --------------------------------------------------- */
-static char *MyFileName;
 
 static int useTimeStep; /* flag to determine whether or not the line TIMESTEP exists */
 static Bool bFlush_output; /* process partial period ? */
@@ -1985,7 +1984,7 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 {
 	int res = 0; // return value indicating type of message if any
 
-	MyFileName = SW_F_name(eOutput);
+	char *MyFileName = SW_F_name(eOutput);
 	msg[0] = '\0';
 
 	// Convert strings to index numbers
@@ -2128,7 +2127,7 @@ void SW_OUT_read(SW_ALL* sw)
 			upkey[50], upsum[4]; /* space for uppercase conversion */
 	int first; /* first doy for output */
 
-	MyFileName = SW_F_name(eOutput);
+	char *MyFileName = SW_F_name(eOutput);
 	f = OpenFile(MyFileName, "r");
 	itemno = 0;
 

@@ -58,10 +58,6 @@
   #include "SW_R_lib.h" // externs `useFiles`
 #endif
 
-/* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-static char *MyFileName;
 static RealD temp_snow;
 
 
@@ -986,7 +982,7 @@ void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
 	ForEachSoilLayer(i, n_layers)
 		SW_SoilWat->avgLyrTemp[i] = lyr[i]->avgLyrTemp;
 
-	MyFileName = SW_F_name(eSoilwat);
+	char *MyFileName = SW_F_name(eSoilwat);
 	f = OpenFile(MyFileName, "r");
 
 	while (GetALine(f, inbuf)) {

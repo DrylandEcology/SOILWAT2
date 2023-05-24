@@ -113,13 +113,6 @@ char const *ptf2str[N_PTFs] = {
 	"Cosby1984"
 };
 
-
-/* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-static char *MyFileName;
-
-
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -1374,7 +1367,7 @@ void SW_SIT_read(SW_SITE* SW_Site, SW_CARBON* SW_Carbon) {
 	RealD tmp;
 
 	/* note that Files.read() must be called prior to this. */
-	MyFileName = SW_F_name(eSite);
+	char *MyFileName = SW_F_name(eSite);
 
 	f = OpenFile(MyFileName, "r");
 
@@ -1617,7 +1610,7 @@ void SW_LYR_read(SW_SITE* SW_Site) {
 		soiltemp, f_gravel;
 
 	/* note that Files.read() must be called prior to this. */
-	MyFileName = SW_F_name(eLayers);
+	char *MyFileName = SW_F_name(eLayers);
 
 	f = OpenFile(MyFileName, "r");
 
@@ -1886,7 +1879,7 @@ void SW_SWRC_read(SW_SITE* SW_Site) {
 	RealF tmp_swrcp[SWRC_PARAM_NMAX];
 
 	/* note that Files.read() must be called prior to this. */
-	MyFileName = SW_F_name(eSWRCp);
+	char *MyFileName = SW_F_name(eSWRCp);
 
 	f = OpenFile(MyFileName, "r");
 
@@ -1911,7 +1904,7 @@ void SW_SWRC_read(SW_SITE* SW_Site) {
 				logfp,
 				LOGFATAL,
 				"%s : Bad number of SWRC parameters %d -- must be %d.\n",
-				MyFileName, x, SWRC_PARAM_NMAX
+				"Site", x, SWRC_PARAM_NMAX
 			);
 		}
 
@@ -1923,7 +1916,7 @@ void SW_SWRC_read(SW_SITE* SW_Site) {
 				LOGFATAL,
 				"%s : Number of layers with SWRC parameters (%d) "
 				"must match number of soil layers (%d)\n",
-				MyFileName, lyrno + 1, SW_Site->n_layers
+				"Site", lyrno + 1, SW_Site->n_layers
 			);
 		}
 
@@ -2150,7 +2143,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site) {
 				"%s : Layer %d\n"
 				"  calculated `swcBulk_init` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
 				"  Recheck parameters and try again.\n",
-				MyFileName, lyr->id + 1, lyr->swcBulk_init, lyr->swcBulk_min
+				"Site", lyr->id + 1, lyr->swcBulk_init, lyr->swcBulk_min
 			);
 		}
 
@@ -2160,7 +2153,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site) {
 				"%s : Layer %d\n"
 				"  calculated `swcBulk_wiltpt` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
 				"  Recheck parameters and try again.\n",
-				MyFileName, lyr->id + 1, lyr->swcBulk_wiltpt, lyr->swcBulk_min
+				"Site", lyr->id + 1, lyr->swcBulk_wiltpt, lyr->swcBulk_min
 			);
 		}
 
@@ -2171,7 +2164,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site) {
 				"  calculated `swcBulk_halfwiltpt` (%.4f cm / %.2f MPa)\n"
 				"          <= `swcBulk_min` (%.4f cm / %.2f MPa).\n"
 				"  `swcBulk_halfwiltpt` was set to `swcBulk_min`.\n",
-				MyFileName, lyr->id + 1,
+				"Site", lyr->id + 1,
 				lyr->swcBulk_halfwiltpt,
 				-0.1 * SW_SWRC_SWCtoSWP(lyr->swcBulk_halfwiltpt, lyr),
 				lyr->swcBulk_min,
@@ -2187,7 +2180,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site) {
 				"%s : Layer %d\n"
 				"  calculated `swcBulk_wet` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
 				"  Recheck parameters and try again.\n",
-				MyFileName, lyr->id + 1, lyr->swcBulk_wet, lyr->swcBulk_min
+				"Site", lyr->id + 1, lyr->swcBulk_wet, lyr->swcBulk_min
 			);
 		}
 
@@ -2239,7 +2232,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site) {
 					"          <= `swcBulk_min` (%.4f cm / %.4f MPa).\n"
 					"  `SWcrit` adjusted to %.4f MPa "
 					"(and swcBulk_atSWPcrit in every layer will be re-calculated).\n",
-					MyFileName, lyr->id + 1, k + 1,
+					"Site", lyr->id + 1, k + 1,
 					lyr->swcBulk_atSWPcrit[k],
 					-0.1 * SW_VegProd->veg[k].SWPcrit,
 					lyr->swcBulk_min,
@@ -2308,7 +2301,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site) {
 						"  calculated `swcBulk_atSWPcrit` (%.4f cm)\n"
 						"          <= `swcBulk_min` (%.4f cm).\n"
 						"  even with adjusted `SWcrit` (%.4f MPa).\n",
-						MyFileName, lyr->id + 1, k + 1,
+						"Site", lyr->id + 1, k + 1,
 						lyr->swcBulk_atSWPcrit[k],
 						lyr->swcBulk_min,
 						-0.1 * SW_VegProd->veg[k].SWPcrit
@@ -2334,7 +2327,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site) {
 			"%s : Evaporation coefficients were normalized:\n"
 			"\tSum of coefficients was %.4f, but must be 1.0. "
 			"New coefficients are:",
-			MyFileName,
+			"Site",
 			evsum
 		);
 
@@ -2363,7 +2356,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site) {
 				"%s : Transpiration coefficients were normalized for %s:\n"
 				"\tSum of coefficients was %.4f, but must be 1.0. "
 				"New coefficients are:",
-				MyFileName, key2veg[k], trsum_veg[k]
+				"Site", key2veg[k], trsum_veg[k]
 			);
 
 			ForEachSoilLayer(s, SW_Site->n_layers)

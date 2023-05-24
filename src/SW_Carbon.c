@@ -23,13 +23,6 @@
 
 
 /* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-
-static char *MyFileName;
-
-
-/* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
@@ -95,7 +88,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model)
   int existing_years[MAX_NYEAR] = {0};
   short fileWasEmpty = 1;
 
-  MyFileName = SW_F_name(eCarbon);
+  char *MyFileName = SW_F_name(eCarbon);
   f = OpenFile(MyFileName, "r");
 
   #ifdef SWDEBUG

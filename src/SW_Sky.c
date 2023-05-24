@@ -31,13 +31,6 @@
 #include "include/SW_Sky.h"
 
 /* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-static char *MyFileName;
-
-
-
-/* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
@@ -56,7 +49,7 @@ void SW_SKY_read(SW_SKY* SW_Sky) {
 	FILE *f;
 	int lineno = 0, x = 0;
 
-	MyFileName = SW_F_name(eSky);
+	char *MyFileName = SW_F_name(eSky);
 	f = OpenFile(MyFileName, "r");
 
 	while (GetALine(f, inbuf)) {

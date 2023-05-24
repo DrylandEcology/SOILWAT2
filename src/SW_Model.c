@@ -50,7 +50,6 @@
 /* =================================================== */
 /*                  Local Variables                    */
 /* --------------------------------------------------- */
-static char *MyFileName;
 
 /* these are set in _new_day() */
 static TimeInt
@@ -121,7 +120,7 @@ void SW_MDL_read(SW_MODEL* SW_Model) {
 	char *p, enddyval[6];
 	Bool fstartdy = swFALSE, fenddy = swFALSE, fhemi = swFALSE;
 
-	MyFileName = SW_F_name(eModel);
+	char *MyFileName = SW_F_name(eModel);
 	f = OpenFile(MyFileName, "r");
 
 	/* ----- beginning year */

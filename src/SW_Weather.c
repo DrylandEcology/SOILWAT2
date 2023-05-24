@@ -55,13 +55,6 @@
 
 
 /* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-
-static char *MyFileName;
-
-
-/* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
@@ -1318,7 +1311,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
 
     Bool *dailyInputFlags = SW_Weather->dailyInputFlags;
 
-	MyFileName = SW_F_name(eWeather);
+	char *MyFileName = SW_F_name(eWeather);
 	f = OpenFile(MyFileName, "r");
 
 	while (GetALine(f, inbuf)) {

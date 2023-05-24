@@ -48,12 +48,6 @@
 
 
 /* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-static char *MyFileName;
-
-
-/* =================================================== */
 /*             Private Function Declarations           */
 /* --------------------------------------------------- */
 static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
@@ -208,7 +202,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 		FILE *f;
 		char buf[FILENAME_MAX];
 
-		MyFileName = SW_F_name(eVegEstab);
+		char *MyFileName = SW_F_name(eVegEstab);
 		f = OpenFile(MyFileName, "r");
 
 		if (!GetALine(f, inbuf) || (consider_InputFlag && *inbuf == '0')) {
@@ -550,7 +544,7 @@ static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
 			logfp,
 			LOGFATAL,
 			"%s (%s) : Specified vegetation type (%d) is not implemented.",
-			MyFileName,
+			"VegEstab",
 			parms_sppnum->sppname,
 			parms_sppnum->vegType
 		);
@@ -562,7 +556,7 @@ static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
 			LOGFATAL,
 			"%s (%s) : Layers requested (estab_lyrs = %d) > "
 			"(# transpiration layers = %d).",
-			MyFileName,
+			"VegEstab",
 			parms_sppnum->sppname,
 			parms_sppnum->estab_lyrs,
 			n_transp_lyrs[parms_sppnum->vegType]
@@ -574,7 +568,7 @@ static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
 			logfp,
 			LOGFATAL,
 			"%s (%s) : First day of germination > last day of germination.",
-			MyFileName,
+			"VegEstab",
 			parms_sppnum->sppname
 		);
 	}
@@ -585,7 +579,7 @@ static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
 			LOGFATAL,
 			"%s (%s) : Minimum wetdays after germination (%d) > "
 			"maximum days allowed for establishment (%d).",
-			MyFileName,
+			"VegEstab",
 			parms_sppnum->sppname,
 			parms_sppnum->min_wetdays_for_estab,
 			parms_sppnum->max_days_germ2estab
@@ -597,7 +591,7 @@ static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
 			logfp,
 			LOGFATAL,
 			"%s (%s) : Minimum swc for germination (%.4f) < wiltpoint (%.4f)",
-			MyFileName,
+			"VegEstab",
 			parms_sppnum->sppname,
 			parms_sppnum->min_swc_germ,
 			lyr[0]->swcBulk_wiltpt
@@ -615,7 +609,7 @@ static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
 			logfp,
 			LOGFATAL,
 			"%s (%s) : Minimum swc for establishment (%.4f) < wiltpoint (%.4f)",
-			MyFileName,
+			"VegEstab",
 			parms_sppnum->sppname,
 			parms_sppnum->min_swc_estab,
 			mean_wiltpt

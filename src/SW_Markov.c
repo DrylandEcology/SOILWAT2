@@ -38,16 +38,6 @@
 
 pcg32_random_t markov_rng; // used by STEPWAT2
 
-
-
-/* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-
-static char *MyFileName;
-
-
-
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -377,7 +367,7 @@ Bool SW_MKV_read_prob(SW_MARKOV* SW_Markov) {
 	RealF wet, dry, avg, std;
 
 	/* note that Files.read() must be called prior to this. */
-	MyFileName = SW_F_name(eMarkovProb);
+	char *MyFileName = SW_F_name(eMarkovProb);
 
 	if (NULL == (f = fopen(MyFileName, "r")))
 		return swFALSE;
@@ -487,7 +477,7 @@ Bool SW_MKV_read_cov(SW_MARKOV* SW_Markov) {
 	char msg[200]; // error message
 	RealF t1, t2, t3, t4, t5, t6, cfxw, cfxd, cfnw, cfnd;
 
-	MyFileName = SW_F_name(eMarkovCov);
+	char *MyFileName = SW_F_name(eMarkovCov);
 
 	if (NULL == (f = fopen(MyFileName, "r")))
 		return swFALSE;

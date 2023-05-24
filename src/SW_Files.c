@@ -38,14 +38,6 @@ char _ProjDir[FILENAME_MAX];
 char weather_prefix[FILENAME_MAX];
 char output_prefix[FILENAME_MAX];
 
-
-/* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-
-static char *MyFileName;
-
-
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -136,7 +128,7 @@ void SW_F_read(const char *s) {
 	if (!isnull(s))
 		init(s); /* init should be run by SW_F_Construct() */
 
-	MyFileName = SW_F_name(eFirst);
+	char *MyFileName = SW_F_name(eFirst);
 	f = OpenFile(MyFileName, "r");
 
 	while (GetALine(f, inbuf)) {
