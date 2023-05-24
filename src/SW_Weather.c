@@ -1286,9 +1286,9 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
 
     if (SW_Weather->use_snow)
     {
-        SW_SWC_adjust_snow(snowpack, SW_Site, wn->temp_min, wn->temp_max,
-          wn->ppt, doy1, &wn->rain, &SW_Weather->snow,
-          &SW_Weather->snowmelt);
+        SW_SWC_adjust_snow(&SW_Weather->temp_snow, snowpack, SW_Site,
+          wn->temp_min, wn->temp_max, wn->ppt, doy1, &wn->rain,
+          &SW_Weather->snow, &SW_Weather->snowmelt);
     } else {
         wn->rain = wn->ppt;
     }

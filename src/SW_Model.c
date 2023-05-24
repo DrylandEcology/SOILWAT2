@@ -48,17 +48,10 @@
 
 
 /* =================================================== */
-/*                  Local Variables                    */
+/*                   Local Variable                    */
 /* --------------------------------------------------- */
 
-/* these are set in _new_day() */
-static TimeInt
-  _prevweek, /* check for new week */
-  _prevmonth, /* check for new month */
-  _prevyear, /* check for new year */
-  _notime = 0xffff; /* init value for _prev* */
-
-
+const TimeInt _notime = 0xffff; /* init value for _prev* */
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -232,7 +225,7 @@ void SW_MDL_new_year(SW_MODEL* SW_Model) {
 	 */
 	TimeInt year = SW_Model->year;
 
-	_prevweek = _prevmonth = _prevyear = _notime;
+	SW_Model->_prevweek = SW_Model->_prevmonth = SW_Model->_prevyear = _notime;
 
 	Time_new_year(year);
 	SW_Model->simyear = SW_Model->year + SW_Model->addtl_yr;
@@ -262,16 +255,16 @@ void SW_MDL_new_day(SW_MODEL* SW_Model) {
 		return;
 	}
 
-	if (SW_Model->month != _prevmonth) {
-		SW_Model->newperiod[eSW_Month] = (_prevmonth != _notime) ? swTRUE : swFALSE;
-		_prevmonth = SW_Model->month;
+	if (SW_Model->month != SW_Model->_prevmonth) {
+		SW_Model->newperiod[eSW_Month] = (SW_Model->_prevmonth != _notime) ? swTRUE : swFALSE;
+		SW_Model->_prevmonth = SW_Model->month;
 	} else
 		SW_Model->newperiod[eSW_Month] = swFALSE;
 
 	/*  if (SW_Model.week != _prevweek || SW_Model.month == NoMonth) { */
-	if (SW_Model->week != _prevweek) {
-		SW_Model->newperiod[eSW_Week] = (_prevweek != _notime) ? swTRUE : swFALSE;
-		_prevweek = SW_Model->week;
+	if (SW_Model->week != SW_Model->_prevweek) {
+		SW_Model->newperiod[eSW_Week] = (SW_Model->_prevweek != _notime) ? swTRUE : swFALSE;
+		SW_Model->_prevweek = SW_Model->week;
 	} else
 		SW_Model->newperiod[eSW_Week] = swFALSE;
 

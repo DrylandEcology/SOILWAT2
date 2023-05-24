@@ -33,9 +33,9 @@ namespace{
     RealD temp_min = 0, temp_max = 10, ppt = 1, rain = 1.5, snow = 1.5,
     snowmelt = 1.2;
 
-    SW_SWC_adjust_snow(SW_All.SoilWat.snowpack, &SW_All.Site, temp_min,
-                      temp_max, ppt, SW_All.Model.doy, &rain, &snow,
-                      &snowmelt);
+    SW_SWC_adjust_snow(&SW_All.Weather.temp_snow, SW_All.SoilWat.snowpack,
+                       &SW_All.Site, temp_min, temp_max, ppt,
+                       SW_All.Model.doy, &rain, &snow, &snowmelt);
     // when average temperature >= SW_Site.TminAccu2, we expect rain == ppt
     EXPECT_EQ(rain, 1);
     // when average temperature >= SW_All.Site.TminAccu2, we expect snow == 0
@@ -47,9 +47,9 @@ namespace{
 
     SW_All.Site.TminAccu2 = 6;
 
-    SW_SWC_adjust_snow(SW_All.SoilWat.snowpack, &SW_All.Site, temp_min,
-                      temp_max, ppt, SW_All.Model.doy, &rain, &snow,
-                      &snowmelt);
+    SW_SWC_adjust_snow(&SW_All.Weather.temp_snow, SW_All.SoilWat.snowpack,
+                       &SW_All.Site, temp_min, temp_max, ppt,
+                       SW_All.Model.doy, &rain, &snow, &snowmelt);
     // when average temperature < SW_Site.TminAccu2, we expect rain == 0
     EXPECT_EQ(rain, 0);
     // when average temperature < SW_All.Site.TminAccu2, we expect snow == ppt
@@ -61,9 +61,9 @@ namespace{
 
     temp_max = 22;
 
-    SW_SWC_adjust_snow(SW_All.SoilWat.snowpack, &SW_All.Site, temp_min,
-                      temp_max, ppt, SW_All.Model.doy, &rain, &snow,
-                      &snowmelt);
+    SW_SWC_adjust_snow(&SW_All.Weather.temp_snow, SW_All.SoilWat.snowpack,
+                       &SW_All.Site, temp_min, temp_max, ppt,
+                       SW_All.Model.doy, &rain, &snow, &snowmelt);
     // when average temperature >= SW_Site.TminAccu2, we expect rain == ppt
     EXPECT_EQ(rain, 1);
     // when average temperature >= SW_All.Site.TminAccu2, we expect snow == 0

@@ -86,7 +86,10 @@ typedef struct {
 	/* current year dates */
 	firstdoy, /* start day for this year */
 	lastdoy, /* 366 if leapyear or endend if endyr */
-	doy, week, month, year, simyear; /* current model time */
+	doy, week, month, year, simyear, /* current model time */
+	_prevweek, /* check for new week */
+  	_prevmonth, /* check for new month */
+  	_prevyear; /* check for new year */
 	/* however, week and month are base0 because they
 	 * are used as array indices, so take care.
 	 * doy and year are base1. */
@@ -580,6 +583,7 @@ typedef struct {
 	char name_prefix[MAX_FILENAMESIZE - 5]; // subtract 4-digit 'year' file type extension
 	RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
 	RealD snow, snowmelt, snowloss, surfaceMax, surfaceMin;
+	RealD temp_snow; // Module-level snow temperature
 
   Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly;
   Bool dailyInputFlags[MAX_INPUT_COLUMNS];

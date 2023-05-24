@@ -58,10 +58,6 @@
   #include "SW_R_lib.h" // externs `useFiles`
 #endif
 
-static RealD temp_snow;
-
-
-
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -901,7 +897,8 @@ void SW_SWC_end_day(SW_SOILWAT* SW_SoilWat, LyrIndex n_layers) {
 
 }
 
-void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site) {
+void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site,
+					 RealD* temp_snow) {
 
 	SW_SoilWat->soiltempError = swFALSE;
 
@@ -909,7 +906,7 @@ void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site) {
 		SW_SoilWat->is_wbError_init = swFALSE;
 	#endif
 
-	temp_snow = 0.; // module-level snow temperature
+	*temp_snow = 0.; // module-level snow temperature
 
   _reset_swc(SW_SoilWat, SW_Site);
 }
@@ -1159,6 +1156,7 @@ void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], TimeInt doy,
 Equations based on SWAT2K routines. @cite Neitsch2005
 
 @param[in,out] snowpack[] swe of snowpack, assuming accumulation is turned on
+@param[in,out] *temp_snow Module-level snow temperature (C)
 @param[in] SW_Site Struct of type SW_SITE describing the site in question
 @param[in] temp_min Daily minimum temperature (C)
 @param[in] temp_max Daily maximum temperature (C)
@@ -1173,9 +1171,9 @@ Equations based on SWAT2K routines. @cite Neitsch2005
 @sideeffect *snowmelt Updated snow-water equivalent of daily snowmelt (cm)
 */
 
-void SW_SWC_adjust_snow(RealD snowpack[], SW_SITE* SW_Site, RealD temp_min,
-	RealD temp_max, RealD ppt, TimeInt doy, RealD *rain, RealD *snow,
-	RealD *snowmelt) {
+void SW_SWC_adjust_snow(RealD *temp_snow, RealD snowpack[], SW_SITE* SW_Site,
+	RealD temp_min, RealD temp_max, RealD ppt, TimeInt doy, RealD *rain,
+	RealD *snow, RealD *snowmelt) {
 
 /*************************************************************************************************
 History:
@@ -1204,9 +1202,9 @@ replaced SW_SWC_snow_accumulation, SW_SWC_snow_sublimation, and SW_SWC_snow_melt
 
 	/* snow melt */
 	Rmelt = (SW_Site->RmeltMax + SW_Site->RmeltMin) / 2. + sin((doy - 81.) / 58.09) * (SW_Site->RmeltMax - SW_Site->RmeltMin) / 2.;
-  temp_snow = temp_snow * (1 - SW_Site->lambdasnow) + temp_ave * SW_Site->lambdasnow;
-	if (GT(temp_snow, SW_Site->TmaxCrit)) {
-		SnowMelt = fmin( *snowpack_today, Rmelt * snow_cov * ((temp_snow + temp_max)/2. - SW_Site->TmaxCrit) );
+	*temp_snow = *temp_snow * (1 - SW_Site->lambdasnow) + temp_ave * SW_Site->lambdasnow;
+	if (GT(*temp_snow, SW_Site->TmaxCrit)) {
+		SnowMelt = fmin( *snowpack_today, Rmelt * snow_cov * ((*temp_snow + temp_max)/2. - SW_Site->TmaxCrit) );
 	} else {
 		SnowMelt = 0.;
 	}

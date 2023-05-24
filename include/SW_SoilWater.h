@@ -66,7 +66,8 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat);
 void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year);
 void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
 				 LyrIndex n_layers);
-void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site);
+void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site,
+					 RealD* temp_snow);
 void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year);
 void SW_SWC_water_flow(SW_ALL* sw);
 void calculate_repartitioned_soilwater(SW_SOILWAT* SW_SoilWat,
@@ -74,9 +75,9 @@ void calculate_repartitioned_soilwater(SW_SOILWAT* SW_SoilWat,
 void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], TimeInt doy,
 					   SW_SOILWAT_HIST SoilWat_hist, SW_LAYER_INFO** lyr,
 					   LyrIndex n_layers);
-void SW_SWC_adjust_snow(RealD snowpack[], SW_SITE* SW_Site, RealD temp_min,
-	RealD temp_max, RealD ppt, TimeInt doy, RealD *rain, RealD *snow,
-	RealD *snowmelt);
+void SW_SWC_adjust_snow(RealD *temp_snow, RealD snowpack[], SW_SITE* SW_Site,
+	RealD temp_min, RealD temp_max, RealD ppt, TimeInt doy, RealD *rain,
+	RealD *snow, RealD *snowmelt);
 RealD SW_SWC_snowloss(RealD pet, RealD *snowpack);
 RealD SW_SnowDepth(RealD SWE, RealD snowdensity);
 void SW_SWC_end_day(SW_SOILWAT* SW_SoilWat, LyrIndex n_layers);
