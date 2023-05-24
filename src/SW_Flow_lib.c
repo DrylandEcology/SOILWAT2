@@ -101,25 +101,9 @@
 
 #include "include/SW_Model.h"
 
-
-
-/* =================================================== */
-/*                  Global Variables                   */
-/* --------------------------------------------------- */
-
-unsigned int soil_temp_init;   // simply keeps track of whether or not the values for the soil_temperature function have been initialized.  0 for no, 1 for yes.
-
-
-
 /* =================================================== */
 /*                  Local Variables                    */
 /* --------------------------------------------------- */
-static unsigned int fusion_pool_init;   // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.  0 for no, 1 for yes.
-
-static Bool do_once_at_soiltempError;
-// last successful time step in seconds; start out with 1 day
-static double delta_time;
-
 
 // based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 // const double TCORRECTION = 0.02; // correction factor for eq. 3 [unitless]; estimate based on data from CPER/SGS LTER -- * Currently not used*
@@ -1413,11 +1397,11 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 }
 
 
-void SW_ST_init_run(void) {
-	soil_temp_init = 0;
-	fusion_pool_init = 0;
-	do_once_at_soiltempError = swTRUE;
-	delta_time = SEC_PER_DAY;
+void SW_ST_init_run(SW_FLOW_LIB_VALUES* SW_FlowLibValues) {
+	SW_FlowLibValues->soil_temp_init = swFALSE;
+	SW_FlowLibValues->fusion_pool_init = swFALSE;
+	SW_FlowLibValues->do_once_at_soiltempError = swTRUE;
+	SW_FlowLibValues->delta_time = SEC_PER_DAY;
 }
 
 
@@ -1426,7 +1410,9 @@ void SW_ST_init_run(void) {
 
 	@param[in,out] SW_StRegValues Struct of type SW_StRegValues which keeps
 		track of variables used within `soil_temperature()`
-	@param[in,out] *ptr_stError Boolean indicating whether there was an error.
+	@param[in,out] ptr_stError Boolean indicating whether there was an error.
+	@param[in,out] soil_temp_init Flag specifying if the values for
+		`soil_temperature()` have been initialized
 	@param[in] airTemp Average daily air temperature (&deg;C).
 	@param[in] swc Soilwater content in each layer before drainage
 		(m<SUP>3</SUP> H<SUB>2</SUB>O).
@@ -1453,6 +1439,7 @@ void SW_ST_init_run(void) {
 void SW_ST_setup_run(
 	ST_RGR_VALUES* SW_StRegValues,
 	Bool *ptr_stError,
+	Bool *soil_temp_init,
 	double airTemp,
 	double swc[],
 	double swc_sat[],
@@ -1474,7 +1461,7 @@ void SW_ST_setup_run(
 	int debug = 0;
 	#endif
 
-	if (!soil_temp_init) {
+	if (!(*soil_temp_init)) {
 		#ifdef SWDEBUG
 		if (debug) {
 			swprintf("\nCalling soil_temperature_setup\n");
@@ -1487,8 +1474,9 @@ void SW_ST_setup_run(
 			width, oldavgLyrTemp, sTconst,
 			nlyrs, fc, wp,
 			deltaX, theMaxDepth, nRgr,
-			ptr_stError
+			ptr_stError, soil_temp_init
 		);
+
 		set_frozen_unfrozen(nlyrs, oldavgLyrTemp, swc, swc_sat,
 															width, lyrFrozen);
 	}
@@ -1504,7 +1492,7 @@ void SW_ST_setup_run(
 @param width The width of the layers (cm).
 @param oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
 @param sTconst The soil temperature at a soil depth where it stays constant as
-		lower boundary condition (&deg;C).
+	lower boundary condition (&deg;C).
 @param nlyrs The number of layers in the soil profile.
 @param fc An array of the field capacity of the soil layers (cm/layer).
 @param wp An array of the wilting point of the soil layers (cm/layer).
@@ -1512,6 +1500,8 @@ void SW_ST_setup_run(
 @param theMaxDepth the lower bound of the equation (cm).
 @param nRgr the number of regressions (1 extra value is needed for the avgLyrTempR).
 @param ptr_stError Booleans status of soil temperature error in *ptr_stError.
+@param soil_temp_init Flag specifying if the values for
+	`soil_temperature()` have been initialized
 
 @sideeffect
   - *ptr_stError Updated booleans status of soil temperature error in *ptr_stError.
@@ -1523,7 +1513,7 @@ void SW_ST_setup_run(
 void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 	double width[], double oldavgLyrTemp[], double sTconst, unsigned int nlyrs,
 	double fc[], double wp[], double deltaX, double theMaxDepth,
-	unsigned int nRgr, Bool *ptr_stError) {
+	unsigned int nRgr, Bool *ptr_stError, Bool *soil_temp_init) {
 
 	// local vars
 	unsigned int x1 = 0, x2 = 0, j = 0, i;
@@ -1536,7 +1526,7 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 
 	// set `soil_temp_init` to 1 to indicate that this function was already called
 	// and shouldn't be called again
-	soil_temp_init = 1;
+	*soil_temp_init = swTRUE;
 
 
 	#ifdef SWDEBUG
@@ -1734,7 +1724,9 @@ Based on equations from Eitzinger 2000. @cite Eitzinger2000
 @param nlyrs Number of layers available.
 @param vwc An array of temperature-layer VWC values (cm/layer).
 @param bDensity An array of the bulk density of the whole soil per soil layer
-  (g/cm<SUP>3</SUP>).
+	(g/cm<SUP>3</SUP>).
+@param[in] fusion_pool_init Specifies if the values for the soil fusion
+	(thawing/freezing) section of `soil_temperature()` have been initialized
 @param oldsFusionPool_actual Yesterdays actual fusion pool at each soil layer
 
 @return sFadjusted_avgLyrTemp Adjusted soil layer temperature due to freezing/thawing
@@ -1743,7 +1735,7 @@ Based on equations from Eitzinger 2000. @cite Eitzinger2000
 
 unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double avgLyrTemp[],
 	double shParam, unsigned int nlyrs, double vwc[], double bDensity[],
-	double oldsFusionPool_actual[]) {
+	Bool fusion_pool_init, double oldsFusionPool_actual[]) {
 	// Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
 	// based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
 
@@ -1771,7 +1763,7 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double
 	if (!fusion_pool_init) {
 		for (i = 0; i < nlyrs; i++)
 			oldsFusionPool_actual[i] = 0.;
-		fusion_pool_init = 1;
+		fusion_pool_init = swTRUE;
 	}
 
 	sFadjusted_avgLyrTemp = 0;
@@ -2128,11 +2120,14 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 
 Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Parton 1978. @cite Parton1978, Parton 1984. @cite Parton1984
 
+@param[in,out] SW_FlowLibValues Struct of type SW_FLOW_LIB_VALUES
+	which keeps track of flags and length of time for Flow_lib related
+	operations (type SW_FLOW_LIB_VALUES)
+@param[in,out] SW_StRegValues Struct of type SW_StRegValues which keeps
+	track of variables used within `soil_temperature()`
 @param[in,out] *surface_max Maxmimum surface temperature (&deg;C)
 @param[in,out] *surface_min Minimum surface temperature (&deg;C)
 @param[in,out] lyrFrozen Frozen information at each layer.
-@param[in,out] SW_StRegValues Struct of type SW_StRegValues which keeps
-	track of variables used within `soil_temperature()`
 @param[in] airTemp Average daily air temperature (&deg;C).
 @param[in] pet Potential evapotranspiration rate (cm/day).
 @param[in] aet Actual evapotranspiration (cm/day).
@@ -2172,7 +2167,8 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @sideeffect *ptr_stError Updated boolean indicating whether there was an error.
 */
 
-void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
+void soil_temperature(SW_FLOW_LIB_VALUES* SW_FlowLibValues,
+	ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 	double *surface_min, double lyrFrozen[], double airTemp, double pet,
 	double aet, double biomass, double swc[], double swc_sat[],
 	double bDensity[], double width[], double avgLyrTemp[], double *surfaceAvg,
@@ -2212,7 +2208,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 	}
 	#endif
 
-	if (!soil_temp_init) {
+	if (!SW_FlowLibValues->soil_temp_init) {
 		*ptr_stError = swTRUE;
 
 		LogError(
@@ -2283,7 +2279,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 	if (*ptr_stError) {
 		/* we return early (but after calculating surface temperature) and
 				without attempt to calculate soil temperature again */
-		if (do_once_at_soiltempError) {
+		if (SW_FlowLibValues->do_once_at_soiltempError) {
 			for (i = 0; i < nlyrs; i++) {
 				// reset soil temperature values
 				avgLyrTemp[i] = SW_MISSING;
@@ -2291,7 +2287,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 				lyrFrozen[i] = swFALSE;
 			}
 
-			do_once_at_soiltempError = swFALSE;
+			SW_FlowLibValues->do_once_at_soiltempError = swFALSE;
 		}
 
 		#ifdef SWDEBUG
@@ -2333,18 +2329,18 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 	#endif
 
 	// calculate the new soil temperature for each layer
-	soil_temperature_today(&delta_time, deltaX, *surfaceAvg, sTconst, nRgr,
-		avgLyrTempR, SW_StRegValues->oldavgLyrTempR, vwcR, SW_StRegValues->wpR,
-		SW_StRegValues->fcR, SW_StRegValues->bDensityR, csParam1, csParam2,
-		shParam, ptr_stError, surface_range, temperatureRangeR,
-		SW_StRegValues->depthsR, year, doy);
+	soil_temperature_today(&SW_FlowLibValues->delta_time, deltaX, *surfaceAvg,
+		sTconst, nRgr, avgLyrTempR, SW_StRegValues->oldavgLyrTempR, vwcR,
+		SW_StRegValues->wpR, SW_StRegValues->fcR, SW_StRegValues->bDensityR,
+		csParam1, csParam2, shParam, ptr_stError, surface_range,
+		temperatureRangeR, SW_StRegValues->depthsR, year, doy);
 
 	// question: should we ever reset delta_time to SEC_PER_DAY?
 
 	if (*ptr_stError) {
 		LogError(logfp, LOGWARN, "SOILWAT2 ERROR in soil temperature module: "
 			"stability criterion failed despite reduced time step = %f seconds; "
-			"soil temperature is being turned off\n", delta_time);
+			"soil temperature is being turned off\n", SW_FlowLibValues->delta_time);
 	}
 
 	#ifdef SWDEBUG
@@ -2365,8 +2361,10 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 		width, avgLyrTemp, temperatureRangeR, temperatureRange);
 
 	// Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
-	sFadjusted_avgLyrTemp = adjust_Tsoil_by_freezing_and_thawing(oldavgLyrTemp, avgLyrTemp, shParam,
-		nlyrs, vwc, bDensity, SW_StRegValues->oldsFusionPool_actual);
+	sFadjusted_avgLyrTemp =
+			adjust_Tsoil_by_freezing_and_thawing(oldavgLyrTemp, avgLyrTemp,
+				shParam, nlyrs, vwc, bDensity, SW_FlowLibValues->fusion_pool_init,
+				SW_StRegValues->oldsFusionPool_actual);
 
 	// update avgLyrTempR if avgLyrTemp were changed due to soil freezing/thawing
 	if (sFadjusted_avgLyrTemp) {

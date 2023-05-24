@@ -50,7 +50,7 @@ typedef struct {
 } SW_CARBON;
 
 /* =================================================== */
-/*                   Flowlib struct                    */
+/*                  Flowlib structs                    */
 /* --------------------------------------------------- */
 
 // this structure is for keeping track of the variables used in the soil_temperature function (mainly the regressions)
@@ -71,6 +71,14 @@ typedef struct {
 				 x1Bounds[MAX_LAYERS],
 				 x2Bounds[MAX_LAYERS];*/
 } ST_RGR_VALUES;
+
+typedef struct {
+	Bool soil_temp_init;  // simply keeps track of whether or not the values for the soil_temperature function have been initialized.
+	Bool do_once_at_soiltempError;
+	Bool fusion_pool_init;  // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.
+
+	double delta_time; // last successful time step in seconds; start out with 1 day
+} SW_FLOW_LIB_VALUES;
 
 /* =================================================== */
 /*                    Model structs                    */
@@ -882,6 +890,8 @@ typedef struct {
 	SW_FILE_STATUS FileStatus;
 	SW_MARKOV Markov;
 	SW_OUTPUT Output[SW_OUTNKEYS];
+
+	SW_FLOW_LIB_VALUES FlowLibValues;
 
 } SW_ALL;
 

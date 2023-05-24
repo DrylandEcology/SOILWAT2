@@ -104,8 +104,9 @@ namespace {
     wp[0]= fc[0] - 0.6; // wp will always be less than fc
 
     /// test standard conditions
-    soil_temperature_setup(&SW_All.StRegValues, bDensity, width, oldsTemp, sTconst, nlyrs,
-      fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError);
+    soil_temperature_setup(&SW_All.StRegValues, bDensity, width, oldsTemp,
+      sTconst, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError,
+      &SW_All.FlowLibValues.soil_temp_init);
 
     //Structure Tests
     EXPECT_EQ(sizeof(SW_All.StRegValues.tlyrs_by_slyrs),
@@ -140,7 +141,7 @@ namespace {
     }
 
     soil_temperature_setup(&SW_All.StRegValues, bDensity2, width2, oldsTemp2, sTconst, nlyrs,
-      fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError);
+      fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError, &SW_All.FlowLibValues.soil_temp_init);
 
     //Structure Tests
     EXPECT_EQ(sizeof(SW_All.StRegValues.tlyrs_by_slyrs),
@@ -190,7 +191,7 @@ namespace {
       soil_temperature_setup(
         &SW_All.StRegValues, bDensity2, width2, oldsTemp2, sTconst, nlyrs,
         fc2, wp2, deltaX, theMaxDepth2, nRgr,
-        &ptr_stError
+        &ptr_stError, &SW_All.FlowLibValues.soil_temp_init
       ),
       "SOIL_TEMP FUNCTION ERROR: soil temperature max depth"
     );
@@ -223,8 +224,9 @@ namespace {
 
     wp[0]= fmax(fc[0] - 0.6, .1); // wp will always be less than fc
 
-    soil_temperature_setup(&SW_All.StRegValues, bDensity, width, oldsTemp, sTconst, nlyrs,
-      fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError);
+    soil_temperature_setup(&SW_All.StRegValues, bDensity, width, oldsTemp,
+      sTconst, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError,
+      &SW_All.FlowLibValues.soil_temp_init);
 
     // lyrSoil_to_lyrTemp tests: This function is used in soil_temperature_setup
     // to transfer the soil layer values of bdensity, fc, and wp, to the "temperature layer"
@@ -273,7 +275,7 @@ namespace {
     }
 
     soil_temperature_setup(&SW_All.StRegValues, bDensity2, width2, oldsTemp2, sTconst, nlyrs,
-      fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError);
+      fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError, &SW_All.FlowLibValues.soil_temp_init);
 
     // lyrSoil_to_lyrTemp tests
     for (i = 0; i < nRgr + 1; i++) {  // all Values should be greater than 0
@@ -458,7 +460,7 @@ namespace {
 
 
     SW_ST_setup_run(
-      &SW_All.StRegValues, &ptr_stError,
+      &SW_All.StRegValues, &ptr_stError, &SW_All.FlowLibValues.soil_temp_init,
       airTemp, swc, swc_sat,
       bDensity, width,
       oldsTemp,
@@ -466,19 +468,18 @@ namespace {
       sTconst, deltaX, theMaxDepth,
       nRgr, &surfaceTemp, SW_All.SoilWat.lyrFrozen
     );
-
+    printf("ASDf\n");
     for (k = 0; k < nlyrs; k++) {
       sTemp[k] = oldsTemp[k];
     }
 
-    soil_temperature(&SW_All.StRegValues,
+    soil_temperature(&SW_All.FlowLibValues, &SW_All.StRegValues,
       &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
       theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       SW_All.Model.year, SW_All.Model.doy, min_temp, max_temp, &ptr_stError);
-
 
     // Expect that surface temp equals surface_temperature_under_snow() because snow > 0
     EXPECT_EQ(surfaceTemp, surface_temperature_under_snow(airTemp, snow));
@@ -492,7 +493,7 @@ namespace {
       sTemp[k] = oldsTemp[k];
     }
 
-    soil_temperature(&SW_All.StRegValues,
+    soil_temperature(&SW_All.FlowLibValues, &SW_All.StRegValues,
       &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
@@ -511,7 +512,7 @@ namespace {
       sTemp[k] = oldsTemp[k];
     }
 
-    soil_temperature(&SW_All.StRegValues,
+    soil_temperature(&SW_All.FlowLibValues, &SW_All.StRegValues,
       &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
@@ -554,7 +555,7 @@ namespace {
     }
 
     SW_ST_setup_run(
-      &SW_All.StRegValues, &ptr_stError,
+      &SW_All.StRegValues, &ptr_stError, &SW_All.FlowLibValues.soil_temp_init,
       airTemp, swc, swc_sat,
       bDensity, width,
       oldsTemp,
@@ -565,7 +566,8 @@ namespace {
 
     EXPECT_EQ(ptr_stError, swFALSE);
 
-    soil_temperature(&SW_All.StRegValues, &surface_max, &surface_max, SW_All.SoilWat.lyrFrozen,
+    soil_temperature(&SW_All.FlowLibValues, &SW_All.StRegValues,
+      &surface_max, &surface_max, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
       sTemp2, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2, t1Param3,
       csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
@@ -629,7 +631,7 @@ namespace {
     }
 
     SW_ST_setup_run(
-      &SW_All.StRegValues, &ptr_stError,
+      &SW_All.StRegValues, &ptr_stError, &SW_All.FlowLibValues.soil_temp_init,
       airTemp, swc2, swc_sat2,
       bDensity2, width2,
       oldsTemp3,
@@ -645,7 +647,7 @@ namespace {
       sTemp3[k] = oldsTemp3[k];
     }
 
-    soil_temperature(&SW_All.StRegValues, &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
+    soil_temperature(&SW_All.FlowLibValues, &SW_All.StRegValues, &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
       sTemp3, &surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
@@ -663,7 +665,7 @@ namespace {
       sTemp3[k] = oldsTemp3[k];
     }
 
-    soil_temperature(&SW_All.StRegValues, &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
+    soil_temperature(&SW_All.FlowLibValues, &SW_All.StRegValues, &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
       sTemp3, &surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
@@ -680,7 +682,7 @@ namespace {
       sTemp3[k] = oldsTemp3[k];
     }
 
-    soil_temperature(&SW_All.StRegValues, &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
+    soil_temperature(&SW_All.FlowLibValues, &SW_All.StRegValues, &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
       airTemp, pet, aet, biomass, swc2, swc_sat2, bDensity2, width2,
       sTemp3, &surfaceTemp, nlyrs2, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
@@ -734,7 +736,7 @@ namespace {
 
     // Should fail when soil_temperature was not initialized
     EXPECT_DEATH_IF_SUPPORTED(
-      soil_temperature(&SW_All.StRegValues,
+      soil_temperature(&SW_All.FlowLibValues, &SW_All.StRegValues,
         &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
         airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
         sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,

@@ -43,11 +43,6 @@
 extern "C" {
 #endif
 
-/* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern unsigned int soil_temp_init;
-
 
 /* =================================================== */
 /*             Global Function Declarations            */
@@ -117,7 +112,8 @@ void hydraulic_redistribution(
 	TimeInt doy
 );
 
-void soil_temperature(ST_RGR_VALUES* SW_StRegValues,
+void soil_temperature(SW_FLOW_LIB_VALUES* SW_FlowLibValues,
+					  ST_RGR_VALUES* SW_StRegValues,
 					  double *surface_max,
                       double *surface_min,
 					  double lyrFrozen[],
@@ -170,11 +166,12 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR][MAX_LAYERS + 1], unsigned int nly
 
 double surface_temperature_under_snow(double airTempAvg, double snow);
 
-void SW_ST_init_run(void);
+void SW_ST_init_run(SW_FLOW_LIB_VALUES* SW_FlowLibValues);
 
 void SW_ST_setup_run(
 	ST_RGR_VALUES* SW_StRegValues,
 	Bool *ptr_stError,
+	Bool *soil_temp_init,
 	double airTemp,
 	double swc[],
 	double swc_sat[],
@@ -195,14 +192,14 @@ void SW_ST_setup_run(
 void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 	double width[], double oldavgLyrTemp[], double sTconst, unsigned int nlyrs,
 	double fc[], double wp[], double deltaX, double theMaxDepth,
-	unsigned int nRgr, Bool *ptr_stError);
+	unsigned int nRgr, Bool *ptr_stError, Bool *soil_temp_init);
 
 void set_frozen_unfrozen(unsigned int nlyrs, double avgLyrTemp[], double swc[],
 						 double swc_sat[], double width[], double lyrFrozen[]);
 
 unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double avgLyrTemp[],
 	double shParam, unsigned int nlyrs, double vwc[], double bDensity[],
-	double oldsFusionPool_actual[]);
+	Bool fusion_pool_init, double oldsFusionPool_actual[]);
 
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
 	int nRgr, double avgLyrTempR[], double oldavgLyrTempR[], double vwcR[], double wpR[], double fcR[],
