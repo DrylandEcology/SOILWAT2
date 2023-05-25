@@ -1184,10 +1184,10 @@ replaced SW_SWC_snow_accumulation, SW_SWC_snow_sublimation, and SW_SWC_snow_melt
 
     **************************************************************************************************/
 
+	const RealD snow_cov = 1.;
 	RealD *snowpack_today = &snowpack[Today], temp_ave,
 		Rmelt, SnowAccu = 0., SnowMelt = 0.;
 
-	static RealD snow_cov = 1.;
 	temp_ave = (temp_min + temp_max) / 2.;
 
 	/* snow accumulation */
@@ -1230,8 +1230,8 @@ Equations based on SWAT2K routines. @cite Neitsch2005
 
 */
 RealD SW_SWC_snowloss(RealD pet, RealD *snowpack) {
+	const RealD cov_soil = 0.5;
 	RealD snowloss;
-	static RealD cov_soil = 0.5;
 
 	if (GT(*snowpack, 0.)) {
 		snowloss = fmax(0., fmin(*snowpack, cov_soil * pet));
