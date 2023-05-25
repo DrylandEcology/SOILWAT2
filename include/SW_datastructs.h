@@ -682,6 +682,11 @@ typedef struct {
         minLyrTemperature[MAX_LAYERS], // Holds the minimum temperature estimation of each layer
         maxLyrTemperature[MAX_LAYERS]; // Holds the maximum temperature estimation of each layer
 
+	RealD
+		veg_int_storage[NVEGTYPES], // storage of intercepted rain by the vegetation
+		litter_int_storage, // storage of intercepted rain by the litter layer
+		standingWater[TWO_DAYS]; /* water on soil surface if layer below is saturated */
+
 	RealF swa_master[NVEGTYPES][NVEGTYPES][MAX_LAYERS]; // veg_type, crit_val, layer
 	RealF dSWA_repartitioned_sum[NVEGTYPES][MAX_LAYERS];
 
