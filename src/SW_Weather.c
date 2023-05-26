@@ -1283,7 +1283,6 @@ void SW_WTH_setup(void) {
 	const int nitems = 35;
 	FILE *f;
 	int lineno = 0, month, x, currFlag;
-    Bool monthlyFlagPrioritized = swFALSE;
 	RealF sppt, stmax, stmin;
 	RealF sky, wind, rH, actVP, shortWaveRad;
 
@@ -1451,23 +1450,6 @@ void SW_WTH_setup(void) {
 	SW_WeatherPrefix(w->name_prefix);
 	CloseFile(&f);
 
-    // Check if temperature max/min flags are unevenly set (1/0) or (0/1)
-     if((dailyInputFlags[TEMP_MAX] && !dailyInputFlags[TEMP_MIN]) ||
-        (!dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN])) {
-
-         // Fail
-         LogError(logfp, LOGFATAL, "Maximum/minimum temperature flags are unevenly set. "
-                                   "Both flags for temperature must be set.");
-
-      }
-
-     // Check if minimum and maximum temperature, or precipitation flags are not set
-     if((!dailyInputFlags[TEMP_MAX] && !dailyInputFlags[TEMP_MIN]) || !dailyInputFlags[PPT]) {
-         // Fail
-         LogError(logfp, LOGFATAL, "Both maximum/minimum temperature and/or precipitation flag(s) "
-                                   "are not set. All three flags must be set.");
-     }
-
  	if (lineno < nitems) {
  		LogError(logfp, LOGFATAL, "%s : Too few input lines.", MyFileName);
  	}
@@ -1495,19 +1477,51 @@ void SW_WTH_setup(void) {
          }
      }
 
-     /*
-        * Turn off necessary flags. This happens after the calculation of
-          input indices due to the fact that setting before calculating may
-          result in an incorrect `n_input_forcings` in SW_WEATHER, and unexpectedly
-          crash the program in `_read_weather_hist()`.
-
-        * Check if monthly flags have been chosen to override daily flags.
-        * Aside from checking for purely a monthly flag, we must make sure we have
-          daily flags to turn off instead of attemping to turn off flags that are already off.
-     */
+    check_and_update_dailyInputFlags(
+      w->use_windSpeedMonthly,
+      w->use_humidityMonthly,
+      w->use_windSpeedMonthly,
+      dailyInputFlags
+    );
+}
 
 
-     if(w->use_windSpeedMonthly && (dailyInputFlags[WIND_SPEED] ||
+/*
+  * Turn off necessary flags. This happens after the calculation of
+    input indices due to the fact that setting before calculating may
+    result in an incorrect `n_input_forcings` in SW_WEATHER, and unexpectedly
+    crash the program in `_read_weather_hist()`.
+
+  * Check if monthly flags have been chosen to override daily flags.
+  * Aside from checking for purely a monthly flag, we must make sure we have
+    daily flags to turn off instead of attemping to turn off flags that are already off.
+*/
+void check_and_update_dailyInputFlags(
+  Bool use_cloudCoverMonthly,
+  Bool use_humidityMonthly,
+  Bool use_windSpeedMonthly,
+  Bool *dailyInputFlags
+) {
+    Bool monthlyFlagPrioritized = swFALSE;
+
+    // Check if temperature max/min flags are unevenly set (1/0) or (0/1)
+     if((dailyInputFlags[TEMP_MAX] && !dailyInputFlags[TEMP_MIN]) ||
+        (!dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN])) {
+
+         // Fail
+         LogError(logfp, LOGFATAL, "Maximum/minimum temperature flags are unevenly set. "
+                                   "Both flags for temperature must be set.");
+
+      }
+
+     // Check if minimum and maximum temperature, or precipitation flags are not set
+     if((!dailyInputFlags[TEMP_MAX] && !dailyInputFlags[TEMP_MIN]) || !dailyInputFlags[PPT]) {
+         // Fail
+         LogError(logfp, LOGFATAL, "Both maximum/minimum temperature and/or precipitation flag(s) "
+                                   "are not set. All three flags must be set.");
+     }
+
+     if(use_windSpeedMonthly && (dailyInputFlags[WIND_SPEED] ||
                                     dailyInputFlags[WIND_EAST]  ||
                                     dailyInputFlags[WIND_NORTH])) {
 
@@ -1517,7 +1531,7 @@ void SW_WTH_setup(void) {
          monthlyFlagPrioritized = swTRUE;
      }
 
-     if(w->use_humidityMonthly) {
+     if(use_humidityMonthly) {
          if(dailyInputFlags[REL_HUMID] || dailyInputFlags[REL_HUMID_MAX]  ||
             dailyInputFlags[REL_HUMID_MIN] || dailyInputFlags[SPEC_HUMID] ||
             dailyInputFlags[ACTUAL_VP]) {
@@ -1531,7 +1545,7 @@ void SW_WTH_setup(void) {
          }
      }
 
-     if(w->use_cloudCoverMonthly && dailyInputFlags[CLOUD_COV]) {
+     if(use_cloudCoverMonthly && dailyInputFlags[CLOUD_COV]) {
          dailyInputFlags[CLOUD_COV] = swFALSE;
          monthlyFlagPrioritized = swTRUE;
      }

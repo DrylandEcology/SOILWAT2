@@ -197,6 +197,12 @@ extern SW_WEATHER SW_Weather;
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_WTH_setup(void);
+void check_and_update_dailyInputFlags(
+  Bool use_cloudCoverMonthly,
+  Bool use_humidityMonthly,
+  Bool use_windSpeedMonthly,
+  Bool *dailyInputFlags
+);
 void SW_WTH_read(void);
 void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
                                SW_CLIMATE_CLIM *climateAverages);
