@@ -581,7 +581,7 @@ void SW_VPD_construct(SW_VEGPROD* SW_VegProd) {
 
 
 void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					 TimeInt startyr, TimeInt endyr, RealD site_latitude) {
+					 SW_MODEL* SW_Model, RealD site_latitude) {
     TimeInt year;
     int k, veg_method;
 
@@ -601,7 +601,7 @@ void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 
     if(veg_method > 0) {
         estimateVegetationFromClimate(SW_VegProd, SW_Weather->allHist,
-									  startyr, endyr, veg_method, latitude);
+									  SW_Model, veg_method, latitude);
     }
 
 }
@@ -657,9 +657,10 @@ void apply_biomassCO2effect(double new_biomass[], double biomass[], double multi
 
 @param[in,out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
-@param[in] simyear Current year in simulation + additional year
+@param[in] SW_Model Struct of type SW_MODEL holding basic time information
+	about the simulation
 */
-void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, TimeInt simyear) {
+void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, SW_MODEL* SW_Model) {
 	/* ================================================== */
 	/*
 	* History:
@@ -679,6 +680,7 @@ void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, TimeInt simyear) {
 	*/
 
 	TimeInt doy; /* base1 */
+	TimeInt simyear = SW_Model->simyear;
     int k;
 
     // Interpolation is to be in base1 in `interpolate_monthlyValues()`
@@ -703,8 +705,12 @@ void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, TimeInt simyear) {
 					SW_VegProd->veg[k].co2_multipliers[BIO_INDEX][simyear]
 				);
 
-				interpolate_monthlyValues(biomass_after_CO2, interpAsBase1, SW_VegProd->veg[k].pct_live_daily);
-				interpolate_monthlyValues(SW_VegProd->veg[k].biomass, interpAsBase1, SW_VegProd->veg[k].biomass_daily);
+				interpolate_monthlyValues(biomass_after_CO2, interpAsBase1,
+							SW_Model->cum_monthdays, SW_Model->days_in_month,
+							SW_VegProd->veg[k].pct_live_daily);
+				interpolate_monthlyValues(SW_VegProd->veg[k].biomass, interpAsBase1,
+							SW_Model->cum_monthdays, SW_Model->days_in_month,
+							SW_VegProd->veg[k].biomass_daily);
 
 			} else {
 				// CO2 effects on biomass applied to total biomass, i.e.,
@@ -715,13 +721,21 @@ void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, TimeInt simyear) {
 					SW_VegProd->veg[k].co2_multipliers[BIO_INDEX][simyear]
 				);
 
-				interpolate_monthlyValues(biomass_after_CO2, interpAsBase1, SW_VegProd->veg[k].biomass_daily);
-				interpolate_monthlyValues(SW_VegProd->veg[k].pct_live, interpAsBase1, SW_VegProd->veg[k].pct_live_daily);
+				interpolate_monthlyValues(biomass_after_CO2, interpAsBase1,
+							SW_Model->cum_monthdays, SW_Model->days_in_month,
+							SW_VegProd->veg[k].biomass_daily);
+				interpolate_monthlyValues(SW_VegProd->veg[k].pct_live, interpAsBase1,
+							SW_Model->cum_monthdays, SW_Model->days_in_month,
+							SW_VegProd->veg[k].pct_live_daily);
 			}
 
 			// Interpolation of remaining variables from monthly to daily values
-			interpolate_monthlyValues(SW_VegProd->veg[k].litter, interpAsBase1, SW_VegProd->veg[k].litter_daily);
-			interpolate_monthlyValues(SW_VegProd->veg[k].lai_conv, interpAsBase1, SW_VegProd->veg[k].lai_conv_daily);
+			interpolate_monthlyValues(SW_VegProd->veg[k].litter, interpAsBase1,
+							SW_Model->cum_monthdays, SW_Model->days_in_month,
+							SW_VegProd->veg[k].litter_daily);
+			interpolate_monthlyValues(SW_VegProd->veg[k].lai_conv, interpAsBase1,
+							SW_Model->cum_monthdays, SW_Model->days_in_month,
+							SW_VegProd->veg[k].lai_conv_daily);
 		}
 	}
 
@@ -907,18 +921,19 @@ void get_critical_rank(SW_VEGPROD* SW_VegProd){
 
  @param[in,out] vegProd Structure holding all values for vegetation cover of simulation
  @param[in,out] Weather_hist Array containing all historical data of a site
- @param[in] startYear Starting year of the simulation
- @param[in] endYear Ending year of the simulation
+ @param[in] SW_Model Struct of type SW_MODEL holding basic time information
+	about the simulation
  @param[in] veg_method User specified value determining method of vegetation estimation with the current option(s):
  1 - Estimate fixed vegetation composition (fractional cover) from long-term climate conditions
  @param[in] latitude Value of type double specifying latitude coordinate the current site is located at
  */
 
-void estimateVegetationFromClimate(SW_VEGPROD *vegProd, SW_WEATHER_HIST** Weather_hist,
-								   int startYear, int endYear, int veg_method,
-								   double latitude) {
+void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
+	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model, int veg_method,
+	double latitude) {
 
-    int numYears = endYear - startYear + 1, k, bareGroundIndex = 7;
+    int numYears = SW_Model->endyr - SW_Model->startyr + 1,
+	k, bareGroundIndex = 7;
 
     SW_CLIMATE_YEARLY climateOutput;
     SW_CLIMATE_CLIM climateAverages;
@@ -942,7 +957,9 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd, SW_WEATHER_HIST** Weathe
     // Allocate climate structs' memory
     allocateClimateStructs(numYears, &climateOutput, &climateAverages);
 
-    calcSiteClimate(Weather_hist, numYears, startYear, inNorthHem, &climateOutput);
+    calcSiteClimate(Weather_hist, SW_Model->cum_monthdays,
+					SW_Model->days_in_month, numYears, SW_Model->startyr,
+					inNorthHem, &climateOutput);
 
     averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);
 

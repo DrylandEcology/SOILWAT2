@@ -58,11 +58,11 @@ static void _begin_year(SW_ALL* sw) {
 	// SW_F_new_year() not needed
 	SW_MDL_new_year(&sw->Model); // call first to set up time-related arrays for this year
 	// SW_MKV_new_year() not needed
-	SW_SKY_new_year(sw->Model.year, sw->Model.startyr, sw->Sky.snow_density,
+	SW_SKY_new_year(&sw->Model, sw->Sky.snow_density,
                   sw->Sky.snow_density_daily); // Update daily climate variables from monthly values
 	//SW_SIT_new_year() not needed
 	SW_VES_new_year(sw->VegEstab.count);
-	SW_VPD_new_year(&sw->VegProd, sw->Model.simyear); // Dynamic CO2 effects on vegetation
+	SW_VPD_new_year(&sw->VegProd, &sw->Model); // Dynamic CO2 effects on vegetation
 	// SW_FLW_new_year() not needed
 	SW_SWC_new_year(&sw->SoilWat, &sw->Site, sw->Model.year);
 	// SW_CBN_new_year() not needed
@@ -122,7 +122,7 @@ void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         const char *firstfile) {
 
 	SW_F_construct(firstfile);
-	SW_MDL_construct(sw->Model.newperiod);
+	SW_MDL_construct(sw->Model.newperiod, sw->Model.days_in_month);
 	SW_WTH_construct(&sw->Weather);
 	// delay SW_MKV_construct() until we know from inputs whether we need it
 	// SW_SKY_construct() not need
@@ -181,8 +181,7 @@ void SW_CTL_init_run(SW_ALL* sw) {
 	SW_SIT_init_run(&sw->VegProd, &sw->Site);
 	SW_VES_init_run(sw->VegEstab.parms, sw->Site.lyr,
                   sw->Site.n_transp_lyrs, sw->VegEstab.count); // must run after `SW_SIT_init_run()`
-	SW_VPD_init_run(&sw->VegProd, &sw->Weather, sw->Model.startyr,
-                  sw->Model.endyr, sw->Site.latitude);
+	SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model, sw->Site.latitude);
 	SW_FLW_init_run(&sw->SoilWat);
 	SW_ST_init_run(&sw->FlowLibValues);
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
@@ -299,7 +298,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
     #endif
   }
 
-  SW_WTH_read(&sw->Weather, &sw->Sky, sw->Model.startyr, sw->Model.endyr);
+  SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather read'");
   #endif

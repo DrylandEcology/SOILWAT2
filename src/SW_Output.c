@@ -602,7 +602,8 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd) {
 
 				case eSW_Month:
 					curr_pd = (sw->Model.month + 1) - tOffset;
-					div = Time_days_in_month(sw->Model.month - tOffset);
+					div = Time_days_in_month(sw->Model.month - tOffset,
+											 sw->Model.days_in_month);
 					break;
 
 				case eSW_Year:

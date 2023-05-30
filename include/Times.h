@@ -74,21 +74,23 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void Time_init_model(void);
-void Time_new_year(TimeInt year);
+void Time_init_model(TimeInt days_in_month[]);
+void Time_new_year(TimeInt year, TimeInt days_in_month[],
+                   TimeInt cum_monthdays[]);
 
-TimeInt Time_days_in_month(TimeInt month);
+TimeInt Time_days_in_month(TimeInt month, TimeInt days_in_month[]);
 TimeInt Time_get_lastdoy_y(TimeInt year);
 
-TimeInt doy2month(const TimeInt doy);
-TimeInt doy2mday(const TimeInt doy);
+TimeInt doy2month(const TimeInt doy, TimeInt cum_monthdays[]);
+TimeInt doy2mday(const TimeInt doy, TimeInt cum_monthdays[],
+                 TimeInt days_in_month[]);
 TimeInt doy2week(TimeInt doy);
 TimeInt yearto4digit(TimeInt yr);
 
 Bool isleapyear(const TimeInt year);
 
 void interpolate_monthlyValues(double monthlyValues[], Bool interpAsBase1,
-                               double dailyValues[]);
+  TimeInt cum_monthdays[], TimeInt days_in_month[], double dailyValues[]);
 
 
 #ifdef __cplusplus

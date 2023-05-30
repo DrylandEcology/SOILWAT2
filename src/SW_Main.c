@@ -73,7 +73,8 @@ int main(int argc, char **argv) {
 	SW_CTL_read_inputs_from_disk(&sw);
 
 	// finalize daily weather
-	SW_WTH_finalize_all_weather(&sw.Markov, &sw.Weather);
+	SW_WTH_finalize_all_weather(&sw.Markov, &sw.Weather, sw.Model.cum_monthdays,
+								sw.Model.days_in_month);
 
 	// initialize simulation run (based on user inputs)
 	SW_CTL_init_run(&sw);

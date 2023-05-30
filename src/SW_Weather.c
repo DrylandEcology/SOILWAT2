@@ -128,6 +128,8 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
  | 2020 | 2020 | 2020 Jan 1 | 2020 Dec 31 | 2020 | 2020 July 1 | 2021 June 30 |
 
  @param[in] allHist Array containing all historical data of a site
+ @param[in] cum_monthdays Monthly cumulative number of days for "current" year
+ @param[in] days_in_month Number of days per month for "current" year
  @param[in] numYears Number of years represented within simulation
  @param[in] startYear Calendar year corresponding to first year of `allHist`
  @param[in] inNorthHem Boolean value specifying if site is in northern hemisphere
@@ -135,7 +137,8 @@ void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
  like monthly/yearly temperature and precipitation values
  */
 
-void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
+void calcSiteClimate(SW_WEATHER_HIST **allHist, TimeInt cum_monthdays[],
+                     TimeInt days_in_month[], int numYears, int startYear,
                      Bool inNorthHem, SW_CLIMATE_YEARLY *climateOutput) {
 
     int month, yearIndex, year, day, numDaysYear, currMonDay;
@@ -157,18 +160,19 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     memset(climateOutput->minTemp2ndMon_C, 0., sizeof(double) * numYears);
     memset(climateOutput->minTemp7thMon_C, 0., sizeof(double) * numYears);
 
-    calcSiteClimateLatInvariants(allHist, numYears, startYear, climateOutput);
+    calcSiteClimateLatInvariants(allHist, cum_monthdays, days_in_month,
+                                 numYears, startYear, climateOutput);
 
     // Set starting conditions that are dependent on north/south before main loop is entered
     if(inNorthHem) {
         secondMonth = Feb;
         seventhMonth = Jul;
-        numDaysMonth = Time_days_in_month(Jan);
+        numDaysMonth = Time_days_in_month(Jan, days_in_month);
         adjustedStartYear = 0;
     } else {
         secondMonth = Aug;
         seventhMonth = Jan;
-        numDaysMonth = Time_days_in_month(Jul);
+        numDaysMonth = Time_days_in_month(Jul, days_in_month);
         adjustedStartYear = 1;
         climateOutput->minTemp7thMon_C[0] = SW_MISSING;
         climateOutput->PPT7thMon_mm[0] = SW_MISSING;
@@ -179,7 +183,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
     // Loop through all years of data starting at "adjustedStartYear"
     for(yearIndex = adjustedStartYear; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
-        Time_new_year(year);
+        Time_new_year(year, days_in_month, cum_monthdays);
         numDaysYear = Time_get_lastdoy_y(year);
         month = (inNorthHem) ? Jan : Jul;
         currMonDay = 0;
@@ -206,7 +210,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
 
                 if(adjustedDoy == 0) {
                     adjustedYear++;
-                    Time_new_year(year);
+                    Time_new_year(year, days_in_month, cum_monthdays);
                 }
             }
 
@@ -255,7 +259,7 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
                 if(month == secondMonth) climateOutput->minTemp2ndMon_C[yearIndex] /= numDaysMonth;
 
                 month = (month + 1) % 12;
-                numDaysMonth = Time_days_in_month(month);
+                numDaysMonth = Time_days_in_month(month, days_in_month);
                 currMonDay = 0;
             }
 
@@ -292,21 +296,24 @@ void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
  being in the northern/southern hemisphere.
 
  @param[in] allHist Array containing all historical data of a site
+ @param[in] cum_monthdays Monthly cumulative number of days for "current" year
+ @param[in] days_in_month Number of days per month for "current" year
  @param[in] numYears Number of years represented within simulation
  @param[in] startYear Calendar year corresponding to first year of `allHist`
  @param[out] climateOutput Structure of type SW_CLIMATE_YEARLY that holds all output from `calcSiteClimate()`
  like monthly/yearly temperature and precipitation values
  */
 
-void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                                  SW_CLIMATE_YEARLY *climateOutput) {
+void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist,
+    TimeInt cum_monthdays[], TimeInt days_in_month[], int numYears,
+    int startYear, SW_CLIMATE_YEARLY *climateOutput) {
 
-    int month = Jan, numDaysMonth = Time_days_in_month(month), yearIndex,
-    day, numDaysYear, currMonDay, year;
+    int month = Jan, numDaysMonth = Time_days_in_month(month, days_in_month),
+    yearIndex, day, numDaysYear, currMonDay, year;
 
     for(yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
-        Time_new_year(year);
+        Time_new_year(year, days_in_month, cum_monthdays);
         numDaysYear = Time_get_lastdoy_y(year);
         currMonDay = 0;
         for(day = 0; day < numDaysYear; day++) {
@@ -324,7 +331,7 @@ void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int s
                 climateOutput->minTempMon_C[month][yearIndex] /= numDaysMonth;
 
                 month = (month + 1) % MAX_MONTHS;
-                numDaysMonth = Time_days_in_month(month);
+                numDaysMonth = Time_days_in_month(month, days_in_month);
                 currMonDay = 0;
             }
         }
@@ -505,6 +512,8 @@ void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYe
  to be interpolated
  @param[in] r_humidity Array of size #MAX_MONTHS holding monthly relative humidity values
  to be interpolated
+ @param[in] cum_monthdays Monthly cumulative number of days for "current" year
+ @param[in] days_in_month Number of days per month for "current" year
 
 */
 void readAllWeather(
@@ -521,7 +530,9 @@ void readAllWeather(
   Bool *dailyInputFlags,
   RealD *cloudcov,
   RealD *windspeed,
-  RealD *r_humidity
+  RealD *r_humidity,
+  TimeInt cum_monthdays[],
+  TimeInt days_in_month[]
 ) {
     unsigned int yearIndex, year;
 
@@ -536,18 +547,21 @@ void readAllWeather(
 
         // Update yearly day/month information needed when interpolating
         // cloud cover, wind speed, and relative humidity if necessary
-        Time_new_year(year);
+        Time_new_year(year, days_in_month, cum_monthdays);
 
         if(use_cloudCoverMonthly) {
-            interpolate_monthlyValues(cloudcov, interpAsBase1, allHist[yearIndex]->cloudcov_daily);
+            interpolate_monthlyValues(cloudcov, interpAsBase1,
+            cum_monthdays, days_in_month, allHist[yearIndex]->cloudcov_daily);
         }
 
         if(use_humidityMonthly) {
-            interpolate_monthlyValues(r_humidity, interpAsBase1, allHist[yearIndex]->r_humidity_daily);
+            interpolate_monthlyValues(r_humidity, interpAsBase1,
+            cum_monthdays, days_in_month, allHist[yearIndex]->r_humidity_daily);
         }
 
         if(use_windSpeedMonthly) {
-            interpolate_monthlyValues(windspeed, interpAsBase1, allHist[yearIndex]->windspeed_daily);
+            interpolate_monthlyValues(windspeed, interpAsBase1,
+            cum_monthdays, days_in_month, allHist[yearIndex]->windspeed_daily);
         }
 
         // Read daily weather values from disk
@@ -574,12 +588,15 @@ void readAllWeather(
     related to temperature and weather generator
   @param[in,out] w Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
+  @param[in] cum_monthdays Monthly cumulative number of days for "current" year
+  @param[in] days_in_month Number of days per month for "current" year
 
   Finalize weather values after they have been read in via
   `readAllWeather()` or `SW_WTH_read()`
   (the latter also handles (re-)allocation).
 */
-void finalizeAllWeather(SW_MARKOV* SW_Markov, SW_WEATHER *w) {
+void finalizeAllWeather(SW_MARKOV* SW_Markov, SW_WEATHER *w,
+                        TimeInt cum_monthdays[], TimeInt days_in_month[]) {
 
   unsigned int day, yearIndex;
 
@@ -624,7 +641,9 @@ void finalizeAllWeather(SW_MARKOV* SW_Markov, SW_WEATHER *w) {
     w->scale_wind,
     w->scale_rH,
     w->scale_actVapPress,
-    w->scale_shortWaveRad
+    w->scale_shortWaveRad,
+    cum_monthdays,
+    days_in_month
   );
 
   // Make sure all input, scaled, generated, and calculated daily weather values
@@ -633,8 +652,10 @@ void finalizeAllWeather(SW_MARKOV* SW_Markov, SW_WEATHER *w) {
 }
 
 
-void SW_WTH_finalize_all_weather(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather) {
-  finalizeAllWeather(SW_Markov, SW_Weather);
+void SW_WTH_finalize_all_weather(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather,
+                            TimeInt cum_monthdays[], TimeInt days_in_month[]) {
+
+  finalizeAllWeather(SW_Markov, SW_Weather, cum_monthdays, days_in_month);
 }
 
 
@@ -656,6 +677,8 @@ void SW_WTH_finalize_all_weather(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather) {
  @param[in] scale_rH Array of monthly, additive scaling parameters to modify daily relative humidity [%]
  @param[in] scale_actVapPress Array of monthly, multiplicitive scaling parameters to modify daily actual vapor pressure [-]
  @param[in] scale_shortWaveRad Array of monthly, multiplicitive scaling parameters to modify daily shortwave radiation [%]
+ @param[in] cum_monthdays Monthly cumulative number of days for "current" year
+ @param[in] days_in_month Number of days per month for "current" year
 
   @note Daily average air temperature is re-calculated after scaling
     minimum and maximum air temperature.
@@ -673,7 +696,9 @@ void scaleAllWeather(
   double *scale_wind,
   double *scale_rH,
   double *scale_actVapPress,
-  double *scale_shortWaveRad
+  double *scale_shortWaveRad,
+  TimeInt cum_monthdays[],
+  TimeInt days_in_month[]
 ) {
 
   int year, month;
@@ -694,11 +719,11 @@ void scaleAllWeather(
     // Apply scaling parameters to each day of `allHist`
     for (yearIndex = 0; yearIndex < n_years; yearIndex++) {
       year = yearIndex + startYear;
-      Time_new_year(year); // required for `doy2month()`
+      Time_new_year(year, days_in_month, cum_monthdays); // required for `doy2month()`
       numDaysYear = Time_get_lastdoy_y(year);
 
       for (day = 0; day < numDaysYear; day++) {
-        month = doy2month(day + 1);
+        month = doy2month(day + 1, cum_monthdays);
 
         if (!missing(allHist[yearIndex]->temp_max[day])) {
           allHist[yearIndex]->temp_max[day] += scale_temp_max[month];
@@ -1600,11 +1625,10 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
 		information pretaining to meteorological input data
   @param[in] SW_Sky Struct of type SW_SKY which describes sky conditions
 	  of the simulated site
-  @param[in] startyr Beginning year for model run
-  @param[in] endyr Ending year for model run
+  @param[in] SW_Model Struct of type SW_MODEL holding basic time information
+		about the simulation
 */
-void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, TimeInt startyr,
-                 TimeInt endyr) {
+void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model) {
 
     // Deallocate (previous, if any) `allHist`
     // (using value of `SW_Weather.n_years` previously used to allocate)
@@ -1612,8 +1636,8 @@ void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, TimeInt startyr,
     deallocateAllWeather(SW_Weather);
 
     // Update number of years and first calendar year represented
-    SW_Weather->n_years = endyr - startyr + 1;
-    SW_Weather->startYear = startyr;
+    SW_Weather->n_years = SW_Model->endyr - SW_Model->startyr + 1;
+    SW_Weather->startYear = SW_Model->startyr;
 
     // Allocate new `allHist` (based on current `SW_Weather.n_years`)
     allocateAllWeather(SW_Weather);
@@ -1633,7 +1657,9 @@ void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, TimeInt startyr,
       SW_Weather->dailyInputFlags,
       SW_Sky->cloudcov,
       SW_Sky->windspeed,
-      SW_Sky->r_humidity
+      SW_Sky->r_humidity,
+      SW_Model->cum_monthdays,
+      SW_Model->days_in_month
     );
 }
 

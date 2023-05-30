@@ -114,6 +114,10 @@ typedef struct {
 	 * doy and year are base1. */
 	/* simyear = year + addtl_yr */
 
+	TimeInt
+		days_in_month[MAX_MONTHS], /* number of days per month for "current" year */
+		cum_monthdays[MAX_MONTHS]; /* monthly cumulative number of days for "current" year */
+
   int addtl_yr; /**< An integer representing how many years in the future we are simulating. Currently, only used to support rSFSW2 functionality where scenario runs are based on an 'ambient' run plus number of years in the future*/
 
 	/* first day of new week/month is checked for

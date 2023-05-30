@@ -35,16 +35,10 @@
 /* --------------------------------------------------- */
 
 
-static TimeInt
+const TimeInt
   /* mark February to catch use cases without properly setting arrays via
     a call to Time_new_year() */
-  monthdays[12] = { 31, NoDay, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-
-static TimeInt
-  days_in_month[MAX_MONTHS], /* number of days per month for "current" year */
-  cum_monthdays[MAX_MONTHS]; /* monthly cumulative number of days for "current" year */
-
-
+  monthdays[MAX_MONTHS] = { 31, NoDay, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 
 /* =================================================== */
@@ -53,8 +47,10 @@ static TimeInt
 
 /**
 @brief Setup time array.
+
+@param[out] days_in_month Number of days per month for "current" year
 */
-void Time_init_model(void) {
+void Time_init_model(TimeInt days_in_month[]) {
   // called by `SW_MDL_construct()`
 
 	memcpy(days_in_month, monthdays, sizeof(TimeInt) * MAX_MONTHS);
@@ -66,9 +62,13 @@ void Time_init_model(void) {
   This function must be called prior to using Time_days_in_month(),
   doy2month(), doy2mday(), or interpolate_monthlyValues().
 
-  @param year A (Gregorian) calendar year; not abbreviated.
+  @param[in] year A (Gregorian) calendar year; not abbreviated.
+  @param[out] days_in_month Number of days per month for "current" year
+  @param[out] cum_monthdays Monthly cumulative number of days for "current" year
 */
-void Time_new_year(TimeInt year) {
+void Time_new_year(TimeInt year, TimeInt days_in_month[],
+                   TimeInt cum_monthdays[]) {
+
   // called by `SW_MDL_new_year()`
 
 	/* set the year's month-days arrays depending on leap/noleap year */
@@ -87,11 +87,12 @@ void Time_new_year(TimeInt year) {
 /**
   @brief Determine how many days a month has.
 
-  @param month Number of month (base0) [Jan-Dec = 0-11]
+  @param[in] month Number of month (base0) [Jan-Dec = 0-11]
+  @param[in] days_in_month Number of days per month for "current" year
 
   @return Number of days [1-366].
 */
-TimeInt Time_days_in_month(TimeInt month) {
+TimeInt Time_days_in_month(TimeInt month, TimeInt days_in_month[]) {
   // called by `average_for()`
 
 	return days_in_month[month];
@@ -111,11 +112,13 @@ TimeInt Time_get_lastdoy_y(TimeInt year) {
 /**
   @brief Determine month of the year
 
-  @param doy Day of the year (base1) [1-366].
+  @param[in] doy Day of the year (base1) [1-366].
+  @param[in] cum_monthdays Monthly cumulative number of days for "current" year
+
   @return Month (base0) [Jan-Dec = 0-11].
 
 */
-TimeInt doy2month(const TimeInt doy) {
+TimeInt doy2month(const TimeInt doy, TimeInt cum_monthdays[]) {
 	TimeInt mon;
 
 	for (mon = Jan; mon < Dec && doy > cum_monthdays[mon]; mon++)
@@ -127,10 +130,17 @@ TimeInt doy2month(const TimeInt doy) {
   @brief Determine day of the month
 
   @param doy Day of the year (base1) [1-366].
+  @param[in] cum_monthdays Monthly cumulative number of days for "current" year
+  @param[in] days_in_month Number of days per month for "current" year
+
   @return Day of the month [1-31].
 */
-TimeInt doy2mday(const TimeInt doy) {
-  return (doy <= days_in_month[Jan]) ? doy : doy - cum_monthdays[doy2month(doy) - 1];
+TimeInt doy2mday(const TimeInt doy, TimeInt cum_monthdays[],
+                 TimeInt days_in_month[]) {
+
+  TimeInt new_doy0 = doy2month(doy, cum_monthdays) - 1;
+
+  return (doy <= days_in_month[Jan]) ? doy : doy - cum_monthdays[new_doy0];
 }
 
 /**
@@ -179,6 +189,8 @@ Bool isleapyear(const TimeInt year) {
 
  @param[in] monthlyValues Array with values for each month
  @param[in] interpAsBase1 Boolean value specifying if "dailyValues" should be base1 or base0
+ @param[in] cum_monthdays Monthly cumulative number of days for "current" year
+ @param[in] days_in_month Number of days per month for "current" year
  @param[out] dailyValues Array with linearly interpolated values for each day
 
  @note If `interpAsBase1` is TRUE, then `dailyValues[0]` is ignored (with a value of 0) because a `base1`
@@ -187,7 +199,7 @@ Bool isleapyear(const TimeInt year) {
  i.e., the value on the first day of year (`doy = 0`) is located in `dailyValues[0]`.
  **/
 void interpolate_monthlyValues(double monthlyValues[], Bool interpAsBase1,
-                               double dailyValues[]) {
+  TimeInt cum_monthdays[], TimeInt days_in_month[], double dailyValues[]) {
 	unsigned int doy, mday, month, month2 = NoMonth, nmdays;
     unsigned int startdoy = 1, endDay = MAX_DAYS, doyOffset = 0;
 	double sign = 1.;
@@ -202,8 +214,8 @@ void interpolate_monthlyValues(double monthlyValues[], Bool interpAsBase1,
     }
 
 	for (doy = startdoy; doy <= endDay; doy++) {
-		mday = doy2mday(doy + doyOffset);
-		month = doy2month(doy + doyOffset);
+		mday = doy2mday(doy + doyOffset, cum_monthdays, days_in_month);
+		month = doy2month(doy + doyOffset, cum_monthdays);
 
 		if (mday == 15) {
 			dailyValues[doy] = monthlyValues[month];

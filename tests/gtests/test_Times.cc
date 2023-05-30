@@ -30,24 +30,29 @@ namespace{
 
     // Loop through years and tests
     for (k = 0; k < length(years); k++) {
-      Time_new_year(years[k]);
+      Time_new_year(years[k], SW_All.Model.days_in_month,
+                    SW_All.Model.cum_monthdays);
       kleap = isleapyear(years[k]);
 
       lpadd = kleap ? 1 : 0;
 
       EXPECT_EQ(kleap, isleap[k]);
-      EXPECT_EQ(Time_days_in_month(Feb), 28 + lpadd);
+      EXPECT_EQ(Time_days_in_month(Feb, SW_All.Model.days_in_month), 28 + lpadd);
       EXPECT_EQ(Time_get_lastdoy_y(years[k]), 365 + lpadd);
 
-      EXPECT_EQ(doy2month(1), Jan); // first day of January
-      EXPECT_EQ(doy2month(59 + lpadd), Feb); // last day of February
-      EXPECT_EQ(doy2month(60 + lpadd), Mar); // first day of March
-      EXPECT_EQ(doy2month(365 + lpadd), Dec); // last day of December
+      EXPECT_EQ(doy2month(1, SW_All.Model.cum_monthdays), Jan); // first day of January
+      EXPECT_EQ(doy2month(59 + lpadd, SW_All.Model.cum_monthdays), Feb); // last day of February
+      EXPECT_EQ(doy2month(60 + lpadd, SW_All.Model.cum_monthdays), Mar); // first day of March
+      EXPECT_EQ(doy2month(365 + lpadd, SW_All.Model.cum_monthdays), Dec); // last day of December
 
-      EXPECT_EQ(doy2mday(1), 1); // first day of January
-      EXPECT_EQ(doy2mday(59 + lpadd), 28 + lpadd); // last day of February
-      EXPECT_EQ(doy2mday(60 + lpadd), 1); // first day of March
-      EXPECT_EQ(doy2mday(365 + lpadd), 31); // last day of December
+      EXPECT_EQ(doy2mday(1, SW_All.Model.cum_monthdays,
+                        SW_All.Model.days_in_month), 1); // first day of January
+      EXPECT_EQ(doy2mday(59 + lpadd, SW_All.Model.cum_monthdays,
+                        SW_All.Model.days_in_month), 28 + lpadd); // last day of February
+      EXPECT_EQ(doy2mday(60 + lpadd, SW_All.Model.cum_monthdays,
+                        SW_All.Model.days_in_month), 1); // first day of March
+      EXPECT_EQ(doy2mday(365 + lpadd, SW_All.Model.cum_monthdays,
+                        SW_All.Model.days_in_month), 31); // last day of December
 
       EXPECT_EQ(doy2week(1), 0); // first day of first (base0) 7-day period
       EXPECT_EQ(doy2week(7), 0); // last day of first 7-day period
@@ -76,7 +81,8 @@ namespace{
 
     // Loop through years and tests
     for (k = 0; k < length(years); k++) {
-      Time_new_year(years[k]);
+      Time_new_year(years[k], SW_All.Model.days_in_month,
+                    SW_All.Model.cum_monthdays);
       lpadd = isleapyear(years[k]) ? 1 : 0;
 
       // Test: all monthlyValues equal to 10
@@ -87,7 +93,8 @@ namespace{
         xintpl_weather[0] -> cloudcov_daily[0] = SW_MISSING;
 
       interpolate_monthlyValues(xintpl->cloudcov, interpAsBase1,
-                                xintpl_weather[0] -> cloudcov_daily);
+        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month,
+        xintpl_weather[0] -> cloudcov_daily);
 
       // value for daily index 0 is 10 to make sure base0 is working correctly
       EXPECT_NEAR(xintpl_weather[0] -> cloudcov_daily[0], 10.0, tol9);
@@ -100,7 +107,9 @@ namespace{
       // Zero the first value in "cloudcov_daily" for testing on base1 interpolation
       xintpl_weather[0] -> cloudcov_daily[0] = 0.;
 
-      interpolate_monthlyValues(xintpl->cloudcov, swTRUE, xintpl_weather[0] -> cloudcov_daily);
+      interpolate_monthlyValues(xintpl->cloudcov, swTRUE,
+        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month,
+        xintpl_weather[0] -> cloudcov_daily);
 
       // Value for daily index 0 is unchanged because we use here a base1 index
       EXPECT_NEAR(xintpl_weather[0] -> cloudcov_daily[0], 0, tol9);
@@ -112,7 +121,8 @@ namespace{
       xintpl -> cloudcov[Dec] = 20;
 
       interpolate_monthlyValues(xintpl -> cloudcov, interpAsBase1,
-                                xintpl_weather[0] -> cloudcov_daily);
+        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month,
+        xintpl_weather[0] -> cloudcov_daily);
 
       /* for (doy = 1; doy <= Time_get_lastdoy_y(years[k]); doy++) {
         printf(
@@ -133,7 +143,8 @@ namespace{
       for (doy = 0; doy < 15; doy++) {
         EXPECT_NEAR(
           xintpl_weather[0] -> cloudcov_daily[doy],
-          valXd(10, 20, -1, doy2mday(doy + 1), 31),
+          valXd(10, 20, -1, doy2mday(doy + 1, SW_All.Model.cum_monthdays,
+                                     SW_All.Model.days_in_month), 31),
           tol9
         );
       }
@@ -152,11 +163,13 @@ namespace{
             isMon1 ? 10 : 20,
             isMon1 ? 20 : 10,
             isMon1 ? 1 : -1,
-            doy2mday(doy + 1),
+            doy2mday(doy + 1, SW_All.Model.cum_monthdays,
+                     SW_All.Model.days_in_month),
             28 + lpadd
           ),
           tol9
-        ) << "year = " << years[k] << " doy = " << doy << " mday = " << doy2mday(doy + 1);
+        ) << "year = " << years[k] << " doy = " << doy << " mday = " << doy2mday(doy + 1,
+                                    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
       }
 
       // Expect Apr 15 to Nov 15 to have same values as the constant input
@@ -173,11 +186,13 @@ namespace{
             20, // Dec value
             10, // Nov or Jan value
             isMon1 ? -1 : 1,
-            doy2mday(doy + 1),
+            doy2mday(doy + 1, SW_All.Model.cum_monthdays,
+                     SW_All.Model.days_in_month),
             isMon1 ? 30 : 31
           ),
           tol9
-        ) << "year = " << years[k] << " doy = " << doy << " mday = " << doy2mday(doy + 1);
+        ) << "year = " << years[k] << " doy = " << doy << " mday = " << doy2mday(doy + 1,
+                                    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
       }
 
 

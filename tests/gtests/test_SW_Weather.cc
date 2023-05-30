@@ -44,7 +44,9 @@ namespace {
           SW_All.Weather.dailyInputFlags,
           SW_All.Sky.cloudcov,
           SW_All.Sky.windspeed,
-          SW_All.Sky.r_humidity
+          SW_All.Sky.r_humidity,
+          SW_All.Model.cum_monthdays,
+          SW_All.Model.days_in_month
         );
 
         // Test first day of first year in `allHist` to make sure correct
@@ -68,7 +70,7 @@ namespace {
         SW_All.Model.endyr = 1982;
 
         // Real expectation is that there is no memory leak for `allHist`
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
 
         EXPECT_EQ(SW_All.Weather.n_years, 2);
 
@@ -86,8 +88,9 @@ namespace {
         SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                      SW_All.Weather.generateWeatherMethod);
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
-        SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+        SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
+        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
 
 
         // Expect that missing input values (from 1980) are filled by the weather generator
@@ -115,8 +118,9 @@ namespace {
         SW_All.Model.startyr = 1981;
         SW_All.Model.endyr = 1982;
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
-        SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+        SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
+        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
 
 
         // Check everyday's value and test if it's `MISSING`
@@ -143,8 +147,9 @@ namespace {
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
-        SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+        SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
+        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
 
         // Check everyday's value and test if it's `MISSING`
         for(year = 0; year < 31; year++) {
@@ -168,11 +173,12 @@ namespace {
         SW_All.Model.startyr = 1981;
         SW_All.Model.endyr = 1981;
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
 
         // Error: too many missing values and weather generator turned off
         EXPECT_DEATH_IF_SUPPORTED(
-          SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather),
+          SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
+          SW_All.Model.cum_monthdays, SW_All.Model.days_in_month),
           "more than 3 days missing in year 1981 and weather generator turned off"
         );
 
@@ -212,7 +218,8 @@ namespace {
          ```
         */
 
-        calcSiteClimate(SW_All.Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
+        calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
+            SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
 
         EXPECT_NEAR(climateOutput.meanTempMon_C[Jan][0], -8.432581, tol6);
         EXPECT_NEAR(climateOutput.maxTempMon_C[Jan][0], -2.562581, tol6);
@@ -315,7 +322,8 @@ namespace {
          ```
         */
 
-        calcSiteClimate(SW_All.Weather.allHist, 1, 1980, inNorthHem, &climateOutput);
+        calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
+            SW_All.Model.days_in_month, 1, 1980, inNorthHem, &climateOutput);
         averageClimateAcrossYears(&climateOutput, 1, &climateAverages);
 
         // Expect that aggregated values across one year are identical
@@ -454,7 +462,8 @@ namespace {
         ```
         */
 
-        calcSiteClimate(SW_All.Weather.allHist, 31, 1980, inSouthHem, &climateOutput);
+        calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
+            SW_All.Model.days_in_month, 31, 1980, inSouthHem, &climateOutput);
 
         EXPECT_NEAR(climateOutput.meanTempMon_C[Jan][0], -8.432581, tol6);
         EXPECT_NEAR(climateOutput.maxTempMon_C[Jan][0], -2.562581, tol6);
@@ -567,7 +576,8 @@ namespace {
         }
 
         // --- Annual time-series of climate variables ------
-        calcSiteClimate(allHist, 2, 1980, inNorthHem, &climateOutput);
+        calcSiteClimate(allHist, SW_All.Model.cum_monthdays,
+            SW_All.Model.days_in_month, 2, 1980, inNorthHem, &climateOutput);
 
         EXPECT_DOUBLE_EQ(climateOutput.meanTempMon_C[Jan][0], 1.);
         EXPECT_DOUBLE_EQ(climateOutput.maxTempMon_C[Jan][0], 1.);
@@ -705,7 +715,7 @@ namespace {
 
     TEST(WeatherReadTest, Initialization) {
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
 
         EXPECT_FLOAT_EQ(SW_All.Weather.allHist[0]->temp_max[0], -.52);
 
@@ -726,7 +736,7 @@ namespace {
          SW_WTH_setup(&SW_All.Weather);
 
          // Read in all weather
-         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
+         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
 
          // Test the middle of January in year 1980 and see if it's not equal to SW_All.Sky.r_humidity[0],
          // SW_All.Sky.cloudcov[0], and SW_All.Sky.windspeed[0]
@@ -1067,7 +1077,7 @@ namespace {
         SW_All.Weather.use_humidityMonthly = swFALSE;
         SW_All.Weather.use_windSpeedMonthly = swFALSE;
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
 
         // Setup values/flags for `generateMissingWeather()` to deal with
         SW_All.Weather.generateWeatherMethod = 1;
@@ -1110,7 +1120,7 @@ namespace {
 
          /* Not the same number of flags as columns */
 
-         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, SW_All.Model.startyr, SW_All.Model.endyr);
+         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
 
          // Set SW_WEATHER's n_input_forcings to a number that is
          // not the columns being read in

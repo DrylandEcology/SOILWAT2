@@ -42,14 +42,15 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_WTH_setup(SW_WEATHER* SW_Weather);
-void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, TimeInt startyr,
-                 TimeInt endyr);
+void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model);
 void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
                                SW_CLIMATE_CLIM *climateAverages);
-void calcSiteClimate(SW_WEATHER_HIST **allHist, int numYears, int startYear,
+void calcSiteClimate(SW_WEATHER_HIST **allHist, TimeInt cum_monthdays[],
+                     TimeInt days_in_month[], int numYears, int startYear,
                      Bool inNorthHem, SW_CLIMATE_YEARLY *climateOutput);
-void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist, int numYears, int startYear,
-                         SW_CLIMATE_YEARLY *climateOutput);
+void calcSiteClimateLatInvariants(SW_WEATHER_HIST **allHist,
+    TimeInt cum_monthdays[], TimeInt days_in_month[], int numYears,
+    int startYear, SW_CLIMATE_YEARLY *climateOutput);
 void findDriestQtr(int numYears, Bool inNorthHem, double *meanTempDriestQtr_C,
                    double **meanTempMon_C, double **PPTMon_cm);
 void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYearOne,
@@ -81,9 +82,12 @@ void readAllWeather(
   Bool *dailyInputFlags,
   RealD *cloudcov,
   RealD *windspeed,
-  RealD *r_humidity
+  RealD *r_humidity,
+  TimeInt cum_monthdays[],
+  TimeInt days_in_month[]
 );
-void finalizeAllWeather(SW_MARKOV* SW_Markov, SW_WEATHER *w);
+void finalizeAllWeather(SW_MARKOV* SW_Markov, SW_WEATHER *w,
+                        TimeInt cum_monthdays[], TimeInt days_in_month[]);
 
 void scaleAllWeather(
   SW_WEATHER_HIST **allHist,
@@ -96,7 +100,9 @@ void scaleAllWeather(
   double *scale_wind,
   double *scale_rH,
   double *scale_actVapPress,
-  double *scale_shortWaveRad
+  double *scale_shortWaveRad,
+  TimeInt cum_monthdays[],
+  TimeInt days_in_month[]
 );
 void generateMissingWeather(
   SW_MARKOV* SW_Markov,
@@ -110,7 +116,8 @@ void checkAllWeather(SW_WEATHER *weather);
 void allocateAllWeather(SW_WEATHER *w);
 void deallocateAllWeather(SW_WEATHER *w);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
-void SW_WTH_finalize_all_weather(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather);
+void SW_WTH_finalize_all_weather(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather,
+                            TimeInt cum_monthdays[], TimeInt days_in_month[]);
 void SW_WTH_init_run(SW_WEATHER* SW_Weather);
 void SW_WTH_construct(SW_WEATHER* SW_Weather);
 void SW_WTH_deconstruct(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather);

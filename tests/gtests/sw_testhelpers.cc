@@ -59,7 +59,8 @@ void Reset_SOILWAT2_after_UnitTest(void) {
   sw_check_log();
   logfp = NULL;
 
-  SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather);
+  SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
+        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
   SW_CTL_init_run(&SW_All);
 
 

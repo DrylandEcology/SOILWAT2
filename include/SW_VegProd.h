@@ -54,12 +54,12 @@ extern char const *key2veg[NVEGTYPES];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_VPD_read(SW_VEGPROD* SW_VegProd);
-void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, TimeInt simyear);
+void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, SW_MODEL* SW_Model);
 void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd);
 void SW_VPD_construct(SW_VEGPROD* SW_VegProd);
-void estimateVegetationFromClimate(SW_VEGPROD *vegProd, SW_WEATHER_HIST** Weather_hist,
-								   int startYear, int endYear, int veg_method,
-								   double latitude);
+void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
+	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model, int veg_method,
+	double latitude);
 void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTempMon_C[],
     double PPTMon_cm[], double inputValues[], double shrubLimit, double SumGrassesFraction,
     double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorthHem, Bool warnExtrapolation,
@@ -68,7 +68,7 @@ double cutZeroInf(double testValue);
 void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTwoSize,
                    int *finalIndexArray, int *finalIndexArraySize);
 void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					 TimeInt startyr, TimeInt endyr, RealD site_latitude);
+					 SW_MODEL* SW_Model, RealD site_latitude);
 void SW_VPD_deconstruct(SW_VEGPROD* SW_VegProd);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
 RealD sum_across_vegtypes(RealD *x);

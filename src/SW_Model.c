@@ -62,8 +62,9 @@ const TimeInt _notime = 0xffff; /* init value for _prev* */
 
 @param[out] newperiod newperiod[] Specifies when a new day/week/month/year
 	has started
+@param[out] days_in_month[] Number of days per month for "current" year
 */
-void SW_MDL_construct(Bool newperiod[]) {
+void SW_MDL_construct(Bool newperiod[], TimeInt days_in_month[]) {
 	/* =================================================== */
 	/* note that an initializer that is called during
 	 * execution (better called clean() or something)
@@ -72,7 +73,7 @@ void SW_MDL_construct(Bool newperiod[]) {
 	 */
 	OutPeriod pd;
 
-	Time_init_model(); // values of time are correct only after Time_new_year()
+	Time_init_model(days_in_month); // values of time are correct only after Time_new_year()
 
 	ForEachOutPeriod(pd)
 	{
@@ -227,7 +228,7 @@ void SW_MDL_new_year(SW_MODEL* SW_Model) {
 
 	SW_Model->_prevweek = SW_Model->_prevmonth = SW_Model->_prevyear = _notime;
 
-	Time_new_year(year);
+	Time_new_year(year, SW_Model->days_in_month, SW_Model->cum_monthdays);
 	SW_Model->simyear = SW_Model->year + SW_Model->addtl_yr;
 
 	SW_Model->firstdoy = (year == SW_Model->startyr) ? SW_Model->startstart : 1;
@@ -241,7 +242,7 @@ void SW_MDL_new_day(SW_MODEL* SW_Model) {
 
 	OutPeriod pd;
 
-	SW_Model->month = doy2month(SW_Model->doy); /* base0 */
+	SW_Model->month = doy2month(SW_Model->doy, SW_Model->cum_monthdays); /* base0 */
 	SW_Model->week = doy2week(SW_Model->doy); /* base0; more often an index */
 
 	/* in this case, we've finished the daily loop and are about
