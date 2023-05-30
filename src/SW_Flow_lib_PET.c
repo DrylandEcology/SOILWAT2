@@ -18,18 +18,9 @@
 
 #include "include/SW_Flow_lib_PET.h"
 
-
-
 /* =================================================== */
 /*                  Local Variables                    */
 /* --------------------------------------------------- */
-
-static double
-  memoized_G_o[366][2],
-  msun_angles[366][7],
-  memoized_int_cos_theta[366][2],
-  memoized_int_sin_beta[366][2];
-
 
 /** @brief Solar constant
 
@@ -51,20 +42,25 @@ static const double G_sc = 118.1088;
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
-/** @brief Initialize global and memoized variables
+/** @brief Initialize memoized variables pertaining to atmospheric demand
+ *
+ * @param[in,out] SW_AtmDem Memoized variables pertaining to atmospheric demand
 */
-void SW_PET_init_run(void) {
+void SW_PET_init_run(SW_ATMD *SW_AtmDem) {
   int k1, k2;
 
   for (k1 = 0; k1 < 366; k1++)
   {
-    memoized_G_o[k1][0] = memoized_G_o[k1][1] = SW_MISSING;
-    memoized_int_cos_theta[k1][0] = memoized_int_cos_theta[k1][1] = 0.;
-    memoized_int_sin_beta[k1][0] = memoized_int_sin_beta[k1][1] = 0.;
+    SW_AtmDem->memoized_G_o[k1][0] =
+                            SW_AtmDem->memoized_G_o[k1][1] = SW_MISSING;
+    SW_AtmDem->memoized_int_cos_theta[k1][0] =
+                            SW_AtmDem->memoized_int_cos_theta[k1][1] = 0.;
+    SW_AtmDem->memoized_int_sin_beta[k1][0] =
+                            SW_AtmDem->memoized_int_sin_beta[k1][1] = 0.;
 
     for (k2 = 0; k2 < 7; k2++)
     {
-      msun_angles[k1][k2] = SW_MISSING;
+      SW_AtmDem->msun_angles[k1][k2] = SW_MISSING;
     }
   }
 }
@@ -174,6 +170,7 @@ double sunset_hourangle(double lat, double declin)
     if the input surface, defined by `slope` and `aspect`, is horizontal.
 
 
+  @param[in,out] SW_AtmDem Memoized variables pertaining to atmospheric demand.
   @param[in] doy Day of year [1-365].
   @param[in] lat Latitude of the site [radians].
   @param[in] slope Slope of the site
@@ -208,15 +205,15 @@ double sunset_hourangle(double lat, double declin)
     of the sine of the sun angle (= solar altitude angle)
     above a horizontal (1st element) and tilted (2nd element) surface [-]
 */
-void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
- double sun_angles[], double int_cos_theta[], double int_sin_beta[])
+void sun_hourangles(SW_ATMD* SW_AtmDem, unsigned int doy, double lat,
+  double slope, double aspect, double sun_angles[], double int_cos_theta[],
+  double int_sin_beta[])
 {
   unsigned int
     i,
     doy0 = doy - 1; // doy is base1
 
-
-  if (missing(msun_angles[doy0][0])) {
+  if (missing(SW_AtmDem->msun_angles[doy0][0])) {
 
     // (drs) set tolerance to 1e-9 instead of 1e-3 to minimize "edge" effects
     static const double tol = 1e-9;
@@ -238,28 +235,29 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
     //------ Horizontal surfaces: sunset and sunrise angles
     if ((declin + lat > swPI_half) || (declin + lat < -swPI_half)) {
       // sun never sets
-      msun_angles[doy0][0] = 0;
-      msun_angles[doy0][6] = msun_angles[doy0][5] = swPI;
+      SW_AtmDem->msun_angles[doy0][0] = 0;
+      SW_AtmDem->msun_angles[doy0][6] = SW_AtmDem->msun_angles[doy0][5] = swPI;
 
     } else if ((declin - lat > swPI_half) || (declin - lat < -swPI_half)) {
       // sun never rises
-      msun_angles[doy0][0] = -2;
-      msun_angles[doy0][6] = msun_angles[doy0][5] = 0.;
+      SW_AtmDem->msun_angles[doy0][0] = -2;
+      SW_AtmDem->msun_angles[doy0][6] = SW_AtmDem->msun_angles[doy0][5] = 0.;
 
     } else {
-      msun_angles[doy0][0] = 1;
-      msun_angles[doy0][6] = msun_angles[doy0][5] = sunset_hourangle(lat, declin);
+      SW_AtmDem->msun_angles[doy0][0] = 1;
+      SW_AtmDem->msun_angles[doy0][6] = SW_AtmDem->msun_angles[doy0][5] =
+                                        sunset_hourangle(lat, declin);
     }
 
 
     // Sunrise hour angle on horizontal surface is
     // equal to the negative of the sunset hour angle
-    msun_angles[doy0][1] = -msun_angles[doy0][6];
-    msun_angles[doy0][2] = -msun_angles[doy0][5];
+    SW_AtmDem->msun_angles[doy0][1] = -SW_AtmDem->msun_angles[doy0][6];
+    SW_AtmDem->msun_angles[doy0][2] = -SW_AtmDem->msun_angles[doy0][5];
 
 
     // Check that we have daylight
-    if (GE(msun_angles[doy0][0], 0.)) {
+    if (GE(SW_AtmDem->msun_angles[doy0][0], 0.)) {
 
       //------ Integrate on a horizontal surface from sunrise to sunset
       g = sin(declin) * sin(lat);
@@ -268,21 +266,21 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
 
       // Integrate the sine of the sun angle (= solar altitude angle)
       // above a horizontal surface from sunrise to sunset
-      tmp1 = 2. * squared(g) * msun_angles[doy0][6] \
-           + 4. * g * h * sin(msun_angles[doy0][6]) \
+      tmp1 = 2. * squared(g) * SW_AtmDem->msun_angles[doy0][6] \
+           + 4. * g * h * sin(SW_AtmDem->msun_angles[doy0][6]) \
            + squared(h) *
-             (msun_angles[doy0][6] + 0.5 * sin(2. * msun_angles[doy0][6]));
-      tmp2 = g * msun_angles[doy0][6] + h * sin(msun_angles[doy0][6]);
+             (SW_AtmDem->msun_angles[doy0][6] + 0.5 * sin(2. * SW_AtmDem->msun_angles[doy0][6]));
+      tmp2 = g * SW_AtmDem->msun_angles[doy0][6] + h * sin(SW_AtmDem->msun_angles[doy0][6]);
 
       // Allen et al. 2006: eq. 26
-      memoized_int_sin_beta[doy0][0] = fmax(0., tmp1 / (2. * tmp2));
+      SW_AtmDem->memoized_int_sin_beta[doy0][0] = fmax(0., tmp1 / (2. * tmp2));
 
 
       // Integrate the cosine of the solar incidence angle on a
       // horizontal surface from sunrise to sunset: Allen et al. 2006: eq. 35
       // (drs): re-expressed eq. 35 with `g` and `h` via eq. 26
       // (drs): standardize by pi because integral is for half day (0 to sunset)
-      memoized_int_cos_theta[doy0][0] = tmp2 / swPI;
+      SW_AtmDem->memoized_int_cos_theta[doy0][0] = tmp2 / swPI;
 
 
 
@@ -304,9 +302,9 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
         // Calculate angle of indicence on tilted surface at
         // horizontal sunrise and sunrise hour angles
         cos_theta_sunrise =
-          -a + b * cos(msun_angles[doy0][1]) + c * sin(msun_angles[doy0][1]);
+          -a + b * cos(SW_AtmDem->msun_angles[doy0][1]) + c * sin(SW_AtmDem->msun_angles[doy0][1]);
         cos_theta_sunset =
-          -a + b * cos(msun_angles[doy0][6]) + c * sin(msun_angles[doy0][6]);
+          -a + b * cos(SW_AtmDem->msun_angles[doy0][6]) + c * sin(SW_AtmDem->msun_angles[doy0][6]);
 
 
         // Calculate candidate sunrise and sunset hour angles
@@ -352,7 +350,7 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
         ) {
 
           // Sunrise on tilted surface is after sunrise on horizontal surface
-          msun_angles[doy0][2] = omega1;
+          SW_AtmDem->msun_angles[doy0][2] = omega1;
 
         } else {
           // Sunsrise occurs with the sun above the tilted surface
@@ -362,19 +360,19 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
           if (
             (cos_theta1x > tol) ||
             ((cos_theta1x <= tol) &&
-            ((omega1x < msun_angles[doy0][1]) ||
-            EQ_w_tol(omega1x, msun_angles[doy0][1], tol)))
+            ((omega1x < SW_AtmDem->msun_angles[doy0][1]) ||
+            EQ_w_tol(omega1x, SW_AtmDem->msun_angles[doy0][1], tol)))
           ) {
-            msun_angles[doy0][2] = msun_angles[doy0][1];
+            SW_AtmDem->msun_angles[doy0][2] = SW_AtmDem->msun_angles[doy0][1];
 
           } else {
-            msun_angles[doy0][2] = omega1x;
+            SW_AtmDem->msun_angles[doy0][2] = omega1x;
           }
         }
 
-        if (msun_angles[doy0][2] < msun_angles[doy0][1]) {
+        if (SW_AtmDem->msun_angles[doy0][2] < SW_AtmDem->msun_angles[doy0][1]) {
           // prevent "transparent" earth
-          msun_angles[doy0][2] = msun_angles[doy0][1];
+          SW_AtmDem->msun_angles[doy0][2] = SW_AtmDem->msun_angles[doy0][1];
         }
 
 
@@ -387,7 +385,7 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
         ) {
 
           // Sunrise on tilted surface is before sunset on horizontal surface
-          msun_angles[doy0][5] = omega2;
+          SW_AtmDem->msun_angles[doy0][5] = omega2;
 
         } else {
           // Sunset occurs with the sun above the tilted surface
@@ -397,19 +395,19 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
           if (
             (cos_theta2x > tol) ||
             ((cos_theta2x <= tol) &&
-            ((omega2x > msun_angles[doy0][6]) ||
-            EQ_w_tol(omega2x, msun_angles[doy0][6], tol)))
+            ((omega2x > SW_AtmDem->msun_angles[doy0][6]) ||
+            EQ_w_tol(omega2x, SW_AtmDem->msun_angles[doy0][6], tol)))
           ) {
-            msun_angles[doy0][5] = msun_angles[doy0][6];
+            SW_AtmDem->msun_angles[doy0][5] = SW_AtmDem->msun_angles[doy0][6];
 
           } else {
-            msun_angles[doy0][5] = omega2x;
+            SW_AtmDem->msun_angles[doy0][5] = omega2x;
           }
         }
 
-        if (msun_angles[doy0][5] > msun_angles[doy0][6]) {
+        if (SW_AtmDem->msun_angles[doy0][5] > SW_AtmDem->msun_angles[doy0][6]) {
           // prevent "transparent" earth
-          msun_angles[doy0][5] = msun_angles[doy0][6];
+          SW_AtmDem->msun_angles[doy0][5] = SW_AtmDem->msun_angles[doy0][6];
         }
 
 
@@ -459,16 +457,16 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
         // Step D. Additional limits for numerical stability and
         // twice per day periods of sun
 
-        if (msun_angles[doy0][2] >= msun_angles[doy0][5]) {
+        if (SW_AtmDem->msun_angles[doy0][2] >= SW_AtmDem->msun_angles[doy0][5]) {
           // slope is always shaded
-          msun_angles[doy0][0] = -1;
-          msun_angles[doy0][2] = 0.;
-          msun_angles[doy0][5] = 0.;
+          SW_AtmDem->msun_angles[doy0][0] = -1;
+          SW_AtmDem->msun_angles[doy0][2] = 0.;
+          SW_AtmDem->msun_angles[doy0][5] = 0.;
         }
 
 
         // Check that we have daylight
-        if (GE(msun_angles[doy0][0], 0.)) {
+        if (GE(SW_AtmDem->msun_angles[doy0][0], 0.)) {
 
           // Allen et al. 2006: eq. 7
           // (drs): take absolute of rhs so that this checks correctly not
@@ -492,10 +490,10 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
             }
 
             if (
-              ((omega2b > msun_angles[doy0][2]) ||
-              EQ_w_tol(omega2b, msun_angles[doy0][2], tol)) &&
-              ((omega1b < msun_angles[doy0][5]) ||
-              EQ_w_tol(omega1b, msun_angles[doy0][5], tol))
+              ((omega2b > SW_AtmDem->msun_angles[doy0][2]) ||
+              EQ_w_tol(omega2b, SW_AtmDem->msun_angles[doy0][2], tol)) &&
+              ((omega1b < SW_AtmDem->msun_angles[doy0][5]) ||
+              EQ_w_tol(omega1b, SW_AtmDem->msun_angles[doy0][5], tol))
             ) {
               // two periods of sunshine are still possible
               // Allen et al. 2006: eq. 50
@@ -506,41 +504,41 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
 
               if (LT(X, 0.)) {
                 // indeed two periods of sunshine
-                msun_angles[doy0][0] = 2;
-                msun_angles[doy0][3] = omega2b;
-                msun_angles[doy0][4] = omega1b;
+                SW_AtmDem->msun_angles[doy0][0] = 2;
+                SW_AtmDem->msun_angles[doy0][3] = omega2b;
+                SW_AtmDem->msun_angles[doy0][4] = omega1b;
               }
             }
           }
 
 
           // Integrate from (first) sunrise to (last) sunset
-          if (EQ(msun_angles[doy0][0], 2.)) {
+          if (EQ(SW_AtmDem->msun_angles[doy0][0], 2.)) {
             // Two periods of sunshine
-            f1 = sin(msun_angles[doy0][3]) - sin(msun_angles[doy0][2]) \
-               + sin(msun_angles[doy0][5]) - sin(msun_angles[doy0][4]);
-            f2 = cos(msun_angles[doy0][3]) - cos(msun_angles[doy0][2]) \
-               + cos(msun_angles[doy0][5]) - cos(msun_angles[doy0][4]);
-            f3 = msun_angles[doy0][3] - msun_angles[doy0][2] + \
-                 msun_angles[doy0][5] - msun_angles[doy0][4];
-            f4 = sin(2. * msun_angles[doy0][3]) \
-               - sin(2. * msun_angles[doy0][2]) \
-               + sin(2. * msun_angles[doy0][5]) \
-               - sin(2. * msun_angles[doy0][4]);
-            f5 = squared(sin(msun_angles[doy0][3])) \
-               - squared(sin(msun_angles[doy0][2])) \
-               + squared(sin(msun_angles[doy0][5])) \
-               - squared(sin(msun_angles[doy0][4]));
+            f1 = sin(SW_AtmDem->msun_angles[doy0][3]) - sin(SW_AtmDem->msun_angles[doy0][2]) \
+               + sin(SW_AtmDem->msun_angles[doy0][5]) - sin(SW_AtmDem->msun_angles[doy0][4]);
+            f2 = cos(SW_AtmDem->msun_angles[doy0][3]) - cos(SW_AtmDem->msun_angles[doy0][2]) \
+               + cos(SW_AtmDem->msun_angles[doy0][5]) - cos(SW_AtmDem->msun_angles[doy0][4]);
+            f3 = SW_AtmDem->msun_angles[doy0][3] - SW_AtmDem->msun_angles[doy0][2] + \
+                 SW_AtmDem->msun_angles[doy0][5] - SW_AtmDem->msun_angles[doy0][4];
+            f4 = sin(2. * SW_AtmDem->msun_angles[doy0][3]) \
+               - sin(2. * SW_AtmDem->msun_angles[doy0][2]) \
+               + sin(2. * SW_AtmDem->msun_angles[doy0][5]) \
+               - sin(2. * SW_AtmDem->msun_angles[doy0][4]);
+            f5 = squared(sin(SW_AtmDem->msun_angles[doy0][3])) \
+               - squared(sin(SW_AtmDem->msun_angles[doy0][2])) \
+               + squared(sin(SW_AtmDem->msun_angles[doy0][5])) \
+               - squared(sin(SW_AtmDem->msun_angles[doy0][4]));
 
           } else {
             // One period of sunshine
-            f1 = sin(msun_angles[doy0][5]) - sin(msun_angles[doy0][2]);
-            f2 = cos(msun_angles[doy0][5]) - cos(msun_angles[doy0][2]);
-            f3 = msun_angles[doy0][5] - msun_angles[doy0][2];
-            f4 = sin(2. * msun_angles[doy0][5]) \
-               - sin(2. * msun_angles[doy0][2]);
-            f5 = squared(sin(msun_angles[doy0][5])) \
-               - squared(sin(msun_angles[doy0][2]));
+            f1 = sin(SW_AtmDem->msun_angles[doy0][5]) - sin(SW_AtmDem->msun_angles[doy0][2]);
+            f2 = cos(SW_AtmDem->msun_angles[doy0][5]) - cos(SW_AtmDem->msun_angles[doy0][2]);
+            f3 = SW_AtmDem->msun_angles[doy0][5] - SW_AtmDem->msun_angles[doy0][2];
+            f4 = sin(2. * SW_AtmDem->msun_angles[doy0][5]) \
+               - sin(2. * SW_AtmDem->msun_angles[doy0][2]);
+            f5 = squared(sin(SW_AtmDem->msun_angles[doy0][5])) \
+               - squared(sin(SW_AtmDem->msun_angles[doy0][2]));
           }
 
 
@@ -553,32 +551,32 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
                + f5 * 0.5 * c * h;
           tmp2 = b * f1 - c * f2 - a * f3;
           //  Allen et al. 2006: eq. 22
-          memoized_int_sin_beta[doy0][1] = fmax(0., tmp1 / tmp2);
+          SW_AtmDem->memoized_int_sin_beta[doy0][1] = fmax(0., tmp1 / tmp2);
 
           // Integrate the cosine of the solar incidence angle on tilted surface
           // from (first) sunrise to (last) sunset
           // Allen et al. 2006: eqs 5 (one sunshine period) and 51 (two periods)
           // (drs): re-expressed eq. 5 with `abc` and `f1-3` via eq. 22
           // (drs): standardize by 2 * pi because integral is across full day
-          memoized_int_cos_theta[doy0][1] = tmp2 / swPI2;
+          SW_AtmDem->memoized_int_cos_theta[doy0][1] = tmp2 / swPI2;
         }
 
       } else {
         // Horizontal surface: grab horizontal values
-        memoized_int_sin_beta[doy0][1] = memoized_int_sin_beta[doy0][0];
-        memoized_int_cos_theta[doy0][1] = memoized_int_cos_theta[doy0][0];
+        SW_AtmDem->memoized_int_sin_beta[doy0][1] = SW_AtmDem->memoized_int_sin_beta[doy0][0];
+        SW_AtmDem->memoized_int_cos_theta[doy0][1] = SW_AtmDem->memoized_int_cos_theta[doy0][0];
       }
     }
   }
 
   // Grab memoized values
-  int_cos_theta[0] = memoized_int_cos_theta[doy0][0];
-  int_cos_theta[1] = memoized_int_cos_theta[doy0][1];
-  int_sin_beta[0] = memoized_int_sin_beta[doy0][0];
-  int_sin_beta[1] = memoized_int_sin_beta[doy0][1];
+  int_cos_theta[0] = SW_AtmDem->memoized_int_cos_theta[doy0][0];
+  int_cos_theta[1] = SW_AtmDem->memoized_int_cos_theta[doy0][1];
+  int_sin_beta[0] = SW_AtmDem->memoized_int_sin_beta[doy0][0];
+  int_sin_beta[1] = SW_AtmDem->memoized_int_sin_beta[doy0][1];
 
   for (i = 0; i < 7; i++) {
-    sun_angles[i] = msun_angles[doy0][i];
+    sun_angles[i] = SW_AtmDem->msun_angles[doy0][i];
   }
 }
 
@@ -596,6 +594,10 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
     for any given SOILWAT2 run where latitude, slope, and aspect are fixed.
     Call \ref SW_PET_init_run to initialize the memoization.
 
+  @param[in,out] memoized_G_o Memoized daily extraterrestrial solar
+    irradiation incident on a horizontal plane at the top of the
+    atmosphere [MJ / m2]
+
   @param[in] doy Day of year [1-365].
   @param[in] int_cos_theta Array of length 2 with
     daily integral during sunshine (one or two periods)
@@ -609,8 +611,8 @@ void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
     2. G_ot Horizontal irradiation but corrected for sunshine duration
        on tilted surface (topographic correction)
 */
-void solar_radiation_extraterrestrial(unsigned int doy, double int_cos_theta[],
-  double G_o[])
+void solar_radiation_extraterrestrial(double memoized_G_o[][TWO_DAYS],
+  unsigned int doy, double int_cos_theta[], double G_o[])
 {
 
   unsigned int doy0 = doy - 1; // doy is base1
@@ -813,7 +815,7 @@ double clearnessindex_diffuse(double K_b)
           i.e., equal to \ref SW_MISSING, then `cloud_cover` is estimated
           from both observed radiation and expected cloud-less radiation.
 
-
+  @param[in,out] SW_AtmDem Memoized variables pertaining to atmospheric demand.
   @param[in] doy Day of year [1-365].
   @param[in] lat Latitude of the site [radians].
   @param[in] elev Elevation of the site [m a.s.l.].
@@ -843,7 +845,7 @@ double clearnessindex_diffuse(double K_b)
   @return H_gt Daily global (tilted) irradiation [MJ / m2]
 */
 double solar_radiation(
-  unsigned int doy,
+  SW_ATMD *SW_AtmDem, unsigned int doy,
   double lat, double elev, double slope, double aspect,
   double albedo, double *cloud_cover, double e_a,
   double rsds, unsigned int desc_rsds,
@@ -866,6 +868,7 @@ double solar_radiation(
   //--- Calculate daily integration of cos(theta) and sin(beta)
   //    for horizontal and tilted surfaces
   sun_hourangles(
+    SW_AtmDem,
     doy, lat, slope, aspect,
     sun_angles,
     int_cos_theta,
@@ -874,7 +877,7 @@ double solar_radiation(
 
 
   //--- Daily extraterrestrial irradiation H_o [H_oh, H_ot]
-  solar_radiation_extraterrestrial(doy, int_cos_theta, H_o);
+  solar_radiation_extraterrestrial(SW_AtmDem->memoized_G_o, doy, int_cos_theta, H_o);
   *H_oh = H_o[0];
   *H_ot = H_o[1];
 

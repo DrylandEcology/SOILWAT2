@@ -11,6 +11,8 @@
 #ifndef SW_PET_H
 #define SW_PET_H
 
+#include "include/SW_datastructs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -19,17 +21,18 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_PET_init_run(void);
+void SW_PET_init_run(SW_ATMD *SW_AtmDem);
 
 double sun_earth_distance_squaredinverse(unsigned int doy);
 double solar_declination(unsigned int doy);
 double sunset_hourangle(double lat, double declin);
 
-void sun_hourangles(unsigned int doy, double lat, double slope, double aspect,
-  double sun_angles[], double int_cos_theta[], double int_sin_beta[]);
+void sun_hourangles(SW_ATMD* SW_AtmDem, unsigned int doy, double lat,
+  double slope, double aspect, double sun_angles[], double int_cos_theta[],
+  double int_sin_beta[]);
 
-void solar_radiation_extraterrestrial(unsigned int doy, double int_cos_theta[],
-  double G_o[]);
+void solar_radiation_extraterrestrial(double memoized_G_o[][TWO_DAYS],
+  unsigned int doy, double int_cos_theta[], double G_o[]);
 
 double overcast_attenuation_KastenCzeplak1980(double cloud_cover);
 double overcast_attenuation_Angstrom1924(double sunshine_fraction);
@@ -38,7 +41,7 @@ double clearnessindex_diffuse(double K_b);
 double actual_horizontal_transmissivityindex(double tau);
 
 double solar_radiation(
-  unsigned int doy,
+  SW_ATMD *SW_AtmDem, unsigned int doy,
   double lat, double elev, double slope, double aspect,
   double albedo, double *cloud_cover, double e_a,
   double rsds, unsigned int desc_rsds,

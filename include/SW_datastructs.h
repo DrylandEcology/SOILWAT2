@@ -81,6 +81,17 @@ typedef struct {
 } SW_FLOW_LIB_VALUES;
 
 /* =================================================== */
+/*                FlowlibPET struct                    */
+/* --------------------------------------------------- */
+typedef struct {
+	double
+		memoized_G_o[MAX_DAYS][TWO_DAYS],
+		msun_angles[MAX_DAYS][7],
+		memoized_int_cos_theta[MAX_DAYS][TWO_DAYS],
+		memoized_int_sin_beta[MAX_DAYS][TWO_DAYS];
+} SW_ATMD;
+
+/* =================================================== */
 /*                    Model structs                    */
 /* --------------------------------------------------- */
 
@@ -897,6 +908,7 @@ typedef struct {
 	SW_OUTPUT Output[SW_OUTNKEYS];
 
 	SW_FLOW_LIB_VALUES FlowLibValues;
+	SW_ATMD AtmDemand;
 
 } SW_ALL;
 

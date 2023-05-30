@@ -338,6 +338,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 	}
 
 	sw->SoilWat.H_gt = solar_radiation(
+		&sw->AtmDemand,
 		doy,
 		sw->Site.latitude,
 		sw->Site.altitude,

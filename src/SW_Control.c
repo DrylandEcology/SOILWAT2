@@ -176,7 +176,7 @@ void SW_CTL_init_run(SW_ALL* sw) {
 	// SW_MDL_init_run() not needed
 	SW_WTH_init_run(&sw->Weather);
 	// SW_MKV_init_run() not needed
-	SW_PET_init_run();
+	SW_PET_init_run(&sw->AtmDemand);
 	// SW_SKY_init_run() not needed
 	SW_SIT_init_run(&sw->VegProd, &sw->Site);
 	SW_VES_init_run(sw->VegEstab.parms, sw->Site.lyr,
