@@ -66,19 +66,17 @@ typedef struct {
 
 	double tlyrs_by_slyrs[MAX_ST_RGR][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers
 
-	/*unsigned int x1BoundsR[MAX_ST_RGR],
-	             x2BoundsR[MAX_ST_RGR],
-				 x1Bounds[MAX_LAYERS],
-				 x2Bounds[MAX_LAYERS];*/
-} ST_RGR_VALUES;
-
-typedef struct {
 	Bool soil_temp_init;  // simply keeps track of whether or not the values for the soil_temperature function have been initialized.
 	Bool do_once_at_soiltempError;
 	Bool fusion_pool_init;  // simply keeps track of whether or not the values for the soil fusion (thawing/freezing) section of the soil_temperature function have been initialized.
 
 	double delta_time; // last successful time step in seconds; start out with 1 day
-} SW_FLOW_LIB_VALUES;
+
+	/*unsigned int x1BoundsR[MAX_ST_RGR],
+	             x2BoundsR[MAX_ST_RGR],
+				 x1Bounds[MAX_LAYERS],
+				 x2Bounds[MAX_LAYERS];*/
+} ST_RGR_VALUES;
 
 /* =================================================== */
 /*                FlowlibPET struct                    */
@@ -911,7 +909,6 @@ typedef struct {
 	SW_MARKOV Markov;
 	SW_OUTPUT Output[SW_OUTNKEYS];
 
-	SW_FLOW_LIB_VALUES FlowLibValues;
 	SW_ATMD AtmDemand;
 
 } SW_ALL;

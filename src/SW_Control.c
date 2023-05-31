@@ -183,7 +183,7 @@ void SW_CTL_init_run(SW_ALL* sw) {
                   sw->Site.n_transp_lyrs, sw->VegEstab.count); // must run after `SW_SIT_init_run()`
 	SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model, sw->Site.latitude);
 	SW_FLW_init_run(&sw->SoilWat);
-	SW_ST_init_run(&sw->FlowLibValues);
+	SW_ST_init_run(&sw->StRegValues);
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
 	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
 	SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->Weather.temp_snow);

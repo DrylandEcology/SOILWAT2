@@ -302,7 +302,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 	#endif
 
 
-	if (sw->Site.use_soil_temp && !sw->FlowLibValues.soil_temp_init) {
+	if (sw->Site.use_soil_temp && !sw->StRegValues.soil_temp_init) {
 		/* We initialize soil temperature (and un/frozen state of soil layers)
 			 before water flow of first day because we use un/frozen states), but
 			 calculate soil temperature at end of each day
@@ -310,7 +310,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 		SW_ST_setup_run(
 			&sw->StRegValues,
 			&sw->SoilWat.soiltempError,
-			&sw->FlowLibValues.soil_temp_init,
+			&sw->StRegValues.soil_temp_init,
 			sw->Weather.now.temp_avg,
 			sw->SoilWat.swcBulk[Today],
 			lyrSWCBulk_Saturated,
@@ -789,7 +789,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 	// soil_temperature function computes the soil temp for each layer and stores it in lyravgLyrTemp
 	// doesn't affect SWC at all (yet), but needs it for the calculation, so therefore the temperature is the last calculation done
 	if (sw->Site.use_soil_temp) {
-		soil_temperature(&sw->FlowLibValues, &sw->StRegValues,
+		soil_temperature(&sw->StRegValues,
 			&sw->Weather.surfaceMax, &sw->Weather.surfaceMin,
 			sw->SoilWat.lyrFrozen, sw->Weather.now.temp_avg, sw->SoilWat.pet,
 			sw->SoilWat.aet, x, sw->SoilWat.swcBulk[Today],

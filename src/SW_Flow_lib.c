@@ -1397,11 +1397,11 @@ double surface_temperature_under_snow(double airTempAvg, double snow){
 }
 
 
-void SW_ST_init_run(SW_FLOW_LIB_VALUES* SW_FlowLibValues) {
-	SW_FlowLibValues->soil_temp_init = swFALSE;
-	SW_FlowLibValues->fusion_pool_init = swFALSE;
-	SW_FlowLibValues->do_once_at_soiltempError = swTRUE;
-	SW_FlowLibValues->delta_time = SEC_PER_DAY;
+void SW_ST_init_run(ST_RGR_VALUES* StRegValues) {
+	StRegValues->soil_temp_init = swFALSE;
+	StRegValues->fusion_pool_init = swFALSE;
+	StRegValues->do_once_at_soiltempError = swTRUE;
+	StRegValues->delta_time = SEC_PER_DAY;
 }
 
 
@@ -2120,9 +2120,6 @@ void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double
 
 Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Parton 1978. @cite Parton1978, Parton 1984. @cite Parton1984
 
-@param[in,out] SW_FlowLibValues Struct of type SW_FLOW_LIB_VALUES
-	which keeps track of flags and length of time for Flow_lib related
-	operations (type SW_FLOW_LIB_VALUES)
 @param[in,out] SW_StRegValues Struct of type SW_StRegValues which keeps
 	track of variables used within `soil_temperature()`
 @param[in,out] *surface_max Maxmimum surface temperature (&deg;C)
@@ -2167,8 +2164,7 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @sideeffect *ptr_stError Updated boolean indicating whether there was an error.
 */
 
-void soil_temperature(SW_FLOW_LIB_VALUES* SW_FlowLibValues,
-	ST_RGR_VALUES* SW_StRegValues, double *surface_max,
+void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 	double *surface_min, double lyrFrozen[], double airTemp, double pet,
 	double aet, double biomass, double swc[], double swc_sat[],
 	double bDensity[], double width[], double avgLyrTemp[], double *surfaceAvg,
@@ -2208,7 +2204,7 @@ void soil_temperature(SW_FLOW_LIB_VALUES* SW_FlowLibValues,
 	}
 	#endif
 
-	if (!SW_FlowLibValues->soil_temp_init) {
+	if (!SW_StRegValues->soil_temp_init) {
 		*ptr_stError = swTRUE;
 
 		LogError(
@@ -2279,7 +2275,7 @@ void soil_temperature(SW_FLOW_LIB_VALUES* SW_FlowLibValues,
 	if (*ptr_stError) {
 		/* we return early (but after calculating surface temperature) and
 				without attempt to calculate soil temperature again */
-		if (SW_FlowLibValues->do_once_at_soiltempError) {
+		if (SW_StRegValues->do_once_at_soiltempError) {
 			for (i = 0; i < nlyrs; i++) {
 				// reset soil temperature values
 				avgLyrTemp[i] = SW_MISSING;
@@ -2287,7 +2283,7 @@ void soil_temperature(SW_FLOW_LIB_VALUES* SW_FlowLibValues,
 				lyrFrozen[i] = swFALSE;
 			}
 
-			SW_FlowLibValues->do_once_at_soiltempError = swFALSE;
+			SW_StRegValues->do_once_at_soiltempError = swFALSE;
 		}
 
 		#ifdef SWDEBUG
@@ -2329,7 +2325,7 @@ void soil_temperature(SW_FLOW_LIB_VALUES* SW_FlowLibValues,
 	#endif
 
 	// calculate the new soil temperature for each layer
-	soil_temperature_today(&SW_FlowLibValues->delta_time, deltaX, *surfaceAvg,
+	soil_temperature_today(&SW_StRegValues->delta_time, deltaX, *surfaceAvg,
 		sTconst, nRgr, avgLyrTempR, SW_StRegValues->oldavgLyrTempR, vwcR,
 		SW_StRegValues->wpR, SW_StRegValues->fcR, SW_StRegValues->bDensityR,
 		csParam1, csParam2, shParam, ptr_stError, surface_range,
@@ -2340,7 +2336,7 @@ void soil_temperature(SW_FLOW_LIB_VALUES* SW_FlowLibValues,
 	if (*ptr_stError) {
 		LogError(logfp, LOGWARN, "SOILWAT2 ERROR in soil temperature module: "
 			"stability criterion failed despite reduced time step = %f seconds; "
-			"soil temperature is being turned off\n", SW_FlowLibValues->delta_time);
+			"soil temperature is being turned off\n", SW_StRegValues->delta_time);
 	}
 
 	#ifdef SWDEBUG
@@ -2363,7 +2359,7 @@ void soil_temperature(SW_FLOW_LIB_VALUES* SW_FlowLibValues,
 	// Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
 	sFadjusted_avgLyrTemp =
 			adjust_Tsoil_by_freezing_and_thawing(oldavgLyrTemp, avgLyrTemp,
-				shParam, nlyrs, vwc, bDensity, SW_FlowLibValues->fusion_pool_init,
+				shParam, nlyrs, vwc, bDensity, SW_StRegValues->fusion_pool_init,
 				SW_StRegValues->oldsFusionPool_actual);
 
 	// update avgLyrTempR if avgLyrTemp were changed due to soil freezing/thawing
