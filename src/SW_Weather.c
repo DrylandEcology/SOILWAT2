@@ -1478,7 +1478,7 @@ void SW_WTH_setup(void) {
      }
 
     check_and_update_dailyInputFlags(
-      w->use_windSpeedMonthly,
+      w->use_cloudCoverMonthly,
       w->use_humidityMonthly,
       w->use_windSpeedMonthly,
       dailyInputFlags
