@@ -197,6 +197,11 @@ extern SW_WEATHER SW_Weather;
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_WTH_setup(void);
+void set_dailyInputIndices(
+  Bool dailyInputFlags[MAX_INPUT_COLUMNS],
+  unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
+  unsigned int *n_input_forcings
+);
 void check_and_update_dailyInputFlags(
   Bool use_cloudCoverMonthly,
   Bool use_humidityMonthly,

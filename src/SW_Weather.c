@@ -1282,7 +1282,7 @@ void SW_WTH_setup(void) {
 	SW_WEATHER *w = &SW_Weather;
 	const int nitems = 35;
 	FILE *f;
-	int lineno = 0, month, x, currFlag;
+	int lineno = 0, month, x;
 	RealF sppt, stmax, stmin;
 	RealF sky, wind, rH, actVP, shortWaveRad;
 
@@ -1455,27 +1455,11 @@ void SW_WTH_setup(void) {
  	}
 
      // Calculate value indices for `allHist`
-
-     // Default n_input_forcings to 0
-     w->n_input_forcings = 0;
-
-         // Loop through MAX_INPUT_COLUMNS (# of input flags)
-     for(currFlag = 0; currFlag < MAX_INPUT_COLUMNS; currFlag++)
-     {
-         // Default the current index to zero
-         w->dailyInputIndices[currFlag] = 0;
-
-         // Check if current flag is set
-         if(dailyInputFlags[currFlag]) {
-
-             // Set current index to current number of "n_input_forcings"
-             // which is the current number of flags found
-             w->dailyInputIndices[currFlag] = w->n_input_forcings;
-
-             // Increment "n_input_forcings"
-             w->n_input_forcings++;
-         }
-     }
+    set_dailyInputIndices(
+      dailyInputFlags,
+      w->dailyInputIndices,
+      &w->n_input_forcings
+    );
 
     check_and_update_dailyInputFlags(
       w->use_cloudCoverMonthly,
@@ -1483,6 +1467,45 @@ void SW_WTH_setup(void) {
       w->use_windSpeedMonthly,
       dailyInputFlags
     );
+}
+
+
+/**
+  @brief Set and count indices of daily inputs based on user-set flags
+
+  @param[in] dailyInputFlags An array of size #MAX_INPUT_COLUMNS
+    indicating which daily input variable is active (TRUE).
+  @param[out] dailyInputIndices An array of size #MAX_INPUT_COLUMNS
+    with the calculated column number of all possible daily input variables.
+  @param[out] n_input_forcings The number of active daily input variables.
+*/
+void set_dailyInputIndices(
+  Bool dailyInputFlags[MAX_INPUT_COLUMNS],
+  unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
+  unsigned int *n_input_forcings
+) {
+  int currFlag;
+
+     // Default n_input_forcings to 0
+     *n_input_forcings = 0;
+
+         // Loop through MAX_INPUT_COLUMNS (# of input flags)
+     for(currFlag = 0; currFlag < MAX_INPUT_COLUMNS; currFlag++)
+     {
+         // Default the current index to zero
+         dailyInputIndices[currFlag] = 0;
+
+         // Check if current flag is set
+         if (dailyInputFlags[currFlag]) {
+
+             // Set current index to current number of "n_input_forcings"
+             // which is the current number of flags found
+             dailyInputIndices[currFlag] = *n_input_forcings;
+
+             // Increment "n_input_forcings"
+             (*n_input_forcings)++;
+         }
+     }
 }
 
 
