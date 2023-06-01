@@ -779,22 +779,32 @@ void scaleAllWeather(
   such as by a weather generator (which has separate input requirements).
 
   SOILWAT2 handles three scenarios of missing data:
-     1. Some individual days are missing (values correspond to #SW_MISSING)
+     1. Some individual days are missing (values correspond to #SW_MISSING);
+        if any relevant variable is missing on a day, then all relevant
+        variables are imputed
      2. An entire year is missing (file `weath.xxxx` for year `xxxx` is absent)
      3. No daily weather input files are available
 
   Available methods to generate weather:
      1. Pass through (`method` = 0)
      2. Imputation by last-value-carried forward "LOCF" (`method` = 1)
-        - for minimum and maximum temperature
-        - cloud cover
-        - wind speed
-        - relative humidity
-        - downard surface shortwave radiation
-        - actual vapor pressure
-        - precipitation is set to 0
+        - affected variables (all implemented):
+            - minimum and maximum temperature
+            - precipitation (which is set to 0 instead of "LOCF")
+            - cloud cover
+            - wind speed
+            - relative humidity
+            - downard surface shortwave radiation
+            - actual vapor pressure
+        - missing values are imputed individually
         - error if more than `optLOCF_nMax` days per calendar year are missing
      3. First-order Markov weather generator (`method` = 2)
+        - affected variables (others are passed through as is):
+            - minimum and maximum temperature
+            - precipitation
+        - if a day contains any missing values (of affected variables), then
+          values for all of these variables are replaced by values created by
+          the weather generator
 
   The user can specify that SOILWAT2 generates all weather without reading
   any historical weather data files from disk
@@ -827,8 +837,12 @@ void generateMissingWeather(
          yesterdayCloudCov = 0., yesterdayWindSpeed = 0., yesterdayRelHum = 0.,
          yesterdayShortWR = 0., yesterdayActVP = 0.;
 
-  Bool any_missing, missing_Tmax, missing_Tmin, missing_PPT, missing_CloudCov,
-       missing_WindSpeed, missing_RelHum, missing_ShortWR, missing_ActVP;
+  Bool
+    any_missing,
+    missing_Tmax = swFALSE, missing_Tmin = swFALSE, missing_PPT = swFALSE,
+    missing_CloudCov = swFALSE, missing_WindSpeed = swFALSE,
+    missing_RelHum = swFALSE, missing_ActVP = swFALSE,
+    missing_ShortWR = swFALSE;
 
 
   // Pass through method: return early
@@ -856,11 +870,15 @@ void generateMissingWeather(
       missing_Tmax = (Bool) missing(allHist[yearIndex]->temp_max[day]);
       missing_Tmin = (Bool) missing(allHist[yearIndex]->temp_min[day]);
       missing_PPT = (Bool) missing(allHist[yearIndex]->ppt[day]);
-      missing_CloudCov = (Bool) missing(allHist[yearIndex]->cloudcov_daily[day]);
-      missing_WindSpeed = (Bool) missing(allHist[yearIndex]->windspeed_daily[day]);
-      missing_RelHum = (Bool) missing(allHist[yearIndex]->r_humidity_daily[day]);
-      missing_ShortWR = (Bool) missing(allHist[yearIndex]->shortWaveRad[day]);
-      missing_ActVP = (Bool) missing(allHist[yearIndex]->actualVaporPressure[day]);
+
+      if (method != 2) {
+        // `SW_MKV_today()` currently generates only Tmax, Tmin, and PPT
+        missing_CloudCov = (Bool) missing(allHist[yearIndex]->cloudcov_daily[day]);
+        missing_WindSpeed = (Bool) missing(allHist[yearIndex]->windspeed_daily[day]);
+        missing_RelHum = (Bool) missing(allHist[yearIndex]->r_humidity_daily[day]);
+        missing_ShortWR = (Bool) missing(allHist[yearIndex]->shortWaveRad[day]);
+        missing_ActVP = (Bool) missing(allHist[yearIndex]->actualVaporPressure[day]);
+      }
 
       any_missing = (Bool) (missing_Tmax || missing_Tmin || missing_PPT ||
                             missing_CloudCov || missing_WindSpeed || missing_RelHum ||
@@ -1245,9 +1263,17 @@ void SW_WTH_new_day(void) {
       LogError(
         logfp,
         LOGFATAL,
-        "Missing weather data (day %u - %u) during simulation.",
+        "Missing weather data (day %u - %u) during simulation: "
+        "Tavg=%.2f, ppt=%.2f, wind=%.2f, rH=%.2f, vp=%.2f, rsds=%.2f / cloud=%.2f\n",
         SW_Model.year,
-        SW_Model.doy
+        SW_Model.doy,
+        w->allHist[yearIndex]->temp_avg[day],
+        w->allHist[yearIndex]->ppt[day],
+        w->allHist[yearIndex]->windspeed_daily[day],
+        w->allHist[yearIndex]->r_humidity_daily[day],
+        w->allHist[yearIndex]->actualVaporPressure[day],
+        w->allHist[yearIndex]->shortWaveRad[day],
+        w->allHist[yearIndex]->cloudcov_daily[day]
       );
     }
 
