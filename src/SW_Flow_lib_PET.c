@@ -945,7 +945,7 @@ double solar_radiation(
 
         // Daily global horizontal irradiation [MJ/m2] from observed rsds [W/m2]
         // 1e-6 [M] * dl [radian] * (12 * 60 * 60 / pi) [s/radian] * rsds [W/m2]
-        convert_rsds_to_H_gh = 0.0432 * dl;
+        convert_rsds_to_H_gh = 0.01375099 * dl;
         break;
 
       default:
@@ -958,6 +958,21 @@ double solar_radiation(
     }
 
     *H_gh = convert_rsds_to_H_gh * rsds;
+
+
+    if (!(*H_gh >= 0. && *H_gh <= *H_oh)) {
+      LogError(
+        logfp,
+        LOGWARN,
+        "\nInput global horizontal irradiation (%f) reset to be equal to "
+        "theoretical extraterrestrial radiation (%.0f MJ m-2) "
+        "because it was larger.\n",
+        *H_gh,
+        *H_oh
+      );
+
+      *H_gh = *H_oh;
+    }
 
 
     //--- Derive cloud cover if missing
@@ -1042,12 +1057,14 @@ double solar_radiation(
   }
 
 
-  // Check for valid range of radiation [MJ/m2]
-  if (!(H_g >= 0. && H_g <= 45.)) {
+  // Check for reasonable range of radiation [MJ/m2]
+  //   - 50 MJ/m2 estimated as upper limit of H_oh from
+  //     Duffie & Beckman 2013: Table 1.10.1
+  if (!(H_g >= 0. && H_g <= 50)) {
     LogError(
       logfp,
       LOGFATAL,
-      "\nSolar radiation (%f) out of valid range (0-45 MJ m-2)\n",
+      "\nSolar radiation (%f) out of valid range (0-50 MJ m-2)\n",
       H_g
     );
   }
