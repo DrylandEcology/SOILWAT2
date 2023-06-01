@@ -291,6 +291,47 @@ namespace {
   }
 
 
+  TEST(WaterBalanceTest, WithDaymet) {
+    int i;
+
+    // Point to Daymet weather data
+    strcpy(SW_Weather.name_prefix, "Input/data_weather_daymet/weath");
+
+    // Adjust simulation years: we have 2 years of Daymet inputs
+    SW_Model.startyr = 1980;
+    SW_Model.endyr = 1981;
+
+    // Describe daily Daymet inputs
+    SW_Weather.use_cloudCoverMonthly = swFALSE;
+    SW_Weather.use_windSpeedMonthly = swTRUE;
+    SW_Weather.use_humidityMonthly = swFALSE;
+
+    SW_Weather.dailyInputIndices[ACTUAL_VP] = 3;
+    SW_Weather.dailyInputIndices[SHORT_WR] = 4;
+    SW_Weather.dailyInputFlags[ACTUAL_VP] = swTRUE;
+    SW_Weather.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_Weather.n_input_forcings = 5;
+    SW_Weather.desc_rsds = 2; // Daymet rsds is flux density over daylight period
+
+    // Prepare weather data
+    SW_WTH_read();
+    SW_WTH_finalize_all_weather();
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
   TEST(WaterBalanceTest, WithGRIDMET) {
     int i;
 
@@ -316,6 +357,53 @@ namespace {
     SW_Weather.dailyInputFlags[SHORT_WR] = swTRUE;
     SW_Weather.n_input_forcings = 7;
     SW_Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
+
+    // Prepare weather data
+    SW_WTH_read();
+    SW_WTH_finalize_all_weather();
+
+    // Run the simulation
+    SW_CTL_main();
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_Soilwat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_Soilwat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
+  TEST(WaterBalanceTest, WithMACA) {
+    int i;
+
+    // Point to MACA weather data
+    strcpy(SW_Weather.name_prefix, "Input/data_weather_maca/weath");
+
+    // Adjust simulation years: we have 2 years of MACA inputs
+    SW_Model.startyr = 1980;
+    SW_Model.endyr = 1981;
+
+    // Describe daily MACA inputs
+    SW_Weather.use_cloudCoverMonthly = swFALSE;
+    SW_Weather.use_windSpeedMonthly = swFALSE;
+    SW_Weather.use_humidityMonthly = swFALSE;
+
+    SW_Weather.dailyInputIndices[WIND_EAST] = 3;
+    SW_Weather.dailyInputIndices[WIND_NORTH] = 4;
+    SW_Weather.dailyInputIndices[REL_HUMID_MAX] = 5;
+    SW_Weather.dailyInputIndices[REL_HUMID_MIN] = 6;
+    SW_Weather.dailyInputIndices[SHORT_WR] = 7;
+    SW_Weather.dailyInputFlags[WIND_EAST] = swTRUE;
+    SW_Weather.dailyInputFlags[WIND_NORTH] = swTRUE;
+    SW_Weather.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
+    SW_Weather.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
+    SW_Weather.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_Weather.n_input_forcings = 8;
+    SW_Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Prepare weather data
     SW_WTH_read();
