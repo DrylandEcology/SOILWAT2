@@ -861,7 +861,7 @@ namespace {
 
         // Turn off monthly flags
         w->use_cloudCoverMonthly = swFALSE;
-        w->use_windSpeedMonthly = swFALSE;
+        w->use_windSpeedMonthly = swTRUE;
         w->use_humidityMonthly = swFALSE;
 
                  // Manually edit index/flag arrays in SW_WEATHER to make test as
