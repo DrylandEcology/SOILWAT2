@@ -81,7 +81,8 @@ char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
 /* --------------------------------------------------- */
 
 static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
-		Bool does_agg, LyrIndex n_layers, SW_OUTPUT* SW_Output) {
+		Bool does_agg, LyrIndex n_layers, SW_OUTPUT* SW_Output,
+		LOG_INFO* LogInfo) {
 	unsigned int i;
 	char key[50],
 		str_help1[n_layers * OUTSTRLEN],
@@ -94,7 +95,7 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 
 	#ifdef SOILWAT
 	if (does_agg) {
-		LogError(logfp, LOGFATAL, "'_create_csv_headers': value TRUE for "\
+		LogError(LogInfo, LOGFATAL, "'_create_csv_headers': value TRUE for "\
 			"argument 'does_agg' is not implemented for SOILWAT2-standalone.");
 	}
 	#endif
@@ -141,7 +142,8 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
   \param pd[in] The output time step.
 */
 /***********************************************************/
-static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd)
+static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
+							  LOG_INFO* LogInfo)
 {
 	// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
 	// a specific order of `SW_FileIndex` --> fix and create something that
@@ -149,11 +151,13 @@ static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd)
 	// a basename, etc.
 
 	if (SW_FileStatus->make_regular[pd]) {
-		SW_FileStatus->fp_reg[pd] = OpenFile(SW_F_name(eOutputDaily + pd), "w");
+		SW_FileStatus->fp_reg[pd] =
+					OpenFile(SW_F_name(eOutputDaily + pd), "w", LogInfo);
 	}
 
 	if (SW_FileStatus->make_soil[pd]) {
-		SW_FileStatus->fp_soil[pd] = OpenFile(SW_F_name(eOutputDaily_soil + pd), "w");
+		SW_FileStatus->fp_soil[pd] =
+					OpenFile(SW_F_name(eOutputDaily_soil + pd), "w", LogInfo);
 	}
 }
 #endif
@@ -291,16 +295,16 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd)
  *  after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
 void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
-						 LyrIndex n_layers) {
+						 LyrIndex n_layers, LOG_INFO* LogInfo) {
 	OutPeriod pd;
 
 	ForEachOutPeriod(pd) {
 		if (use_OutPeriod[pd]) {
-			_create_csv_files(SW_FileStatus, pd);
+			_create_csv_files(SW_FileStatus, pd, LogInfo);
 
 			write_headers_to_csv(pd, SW_FileStatus->fp_reg[pd],
 				SW_FileStatus->fp_soil[pd], swFALSE, SW_FileStatus->make_soil,
-				SW_FileStatus->make_regular, SW_Output, n_layers);
+				SW_FileStatus->make_regular, SW_Output, n_layers, LogInfo);
 		}
 	}
 }
@@ -309,7 +313,7 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 #elif defined(STEPWAT)
 
 void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
-								 SW_OUTPUT* SW_Output) {
+			SW_OUTPUT* SW_Output, LOG_INFO* LogInfo) {
 
 	OutPeriod p;
 
@@ -319,13 +323,13 @@ void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg_agg[p],
 				SW_FileStatus->fp_soil_agg[p], swTRUE, SW_FileStatus->make_soil,
-				SW_FileStatus->make_regular, SW_Output, n_layers);
+				SW_FileStatus->make_regular, SW_Output, n_layers, LogInfo);
 		}
 	}
 }
 
 void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
-								   SW_OUTPUT* SW_Output, int iteration) {
+			SW_OUTPUT* SW_Output, int iteration, LOG_INFO* LogInfo) {
 
 	OutPeriod p;
 
@@ -335,7 +339,7 @@ void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg[p],
 				SW_FileStatus->fp_soil[p], swTRUE, SW_FileStatus->make_soil,
-				SW_FileStatus->make_regular, SW_Output, n_layers);
+				SW_FileStatus->make_regular, SW_Output, n_layers, LogInfo);
 		}
 	}
 }
@@ -402,11 +406,12 @@ void get_outstrleader(OutPeriod pd, size_t sizeof_str,
 	specifying to output a soil-related header names
   \param SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds basic output
 	information for all output keys
+  \param LogInfo Holds information dealing with logfile output
 
 */
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 	Bool does_agg, Bool make_regular[], Bool make_soil[], SW_OUTPUT* SW_Output,
-	LyrIndex n_layers) {
+	LyrIndex n_layers, LOG_INFO* LogInfo) {
 
 	char str_time[20];
 	char
@@ -418,7 +423,7 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 	// Acquire headers
 	get_outstrheader(pd, str_time, sizeof str_time);
 	_create_csv_headers(pd, header_reg, header_soil, does_agg,
-						n_layers, SW_Output);
+						n_layers, SW_Output, LogInfo);
 
 	// Write headers to files
 	if (make_regular[pd]) {
@@ -469,8 +474,9 @@ void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 	@param[in,out] SW_FileStatus Struct of type
 		SW_FILE_STATUS which holds basic information about output files
 		and values
+	@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus) {
+void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, LOG_INFO* LogInfo) {
 	Bool close_regular, close_layers, close_aggs;
 	OutPeriod p;
 
@@ -490,11 +496,11 @@ void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus) {
 
 		if (use_OutPeriod[p]) {
 			if (close_regular) {
-				CloseFile(&SW_FileStatus->fp_reg[p]);
+				CloseFile(&SW_FileStatus->fp_reg[p], LogInfo);
 			}
 
 			if (close_layers) {
-				CloseFile(&SW_FileStatus->fp_soil[p]);
+				CloseFile(&SW_FileStatus->fp_soil[p], LogInfo);
 			}
 
 			if (close_aggs) {

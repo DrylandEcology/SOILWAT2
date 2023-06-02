@@ -27,7 +27,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_SKY_read(SW_SKY* SW_Sky);
+void SW_SKY_read(LOG_INFO* LogInfo, SW_SKY* SW_Sky);
 void SW_SKY_new_year(SW_MODEL* SW_Model, RealD snow_density[MAX_MONTHS],
 					 RealD snow_density_daily[MAX_MONTHS]);
 

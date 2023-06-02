@@ -33,7 +33,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "include/generic.h" // externs `QuietMode`, `EchoInits`
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "include/myMemory.h"
 #include "include/SW_Times.h"
@@ -44,6 +43,7 @@
 #include "include/SW_Site.h"
 #include "include/SW_VegEstab.h"
 #include "include/SW_SoilWater.h"
+#include "include/SW_VegProd.h"
 
 #include "include/SW_Output.h"
 
@@ -168,16 +168,20 @@ static Bool bFlush_output; /* process partial period ? */
 /* --------------------------------------------------- */
 
 static OutPeriod str2period(char *s);
-static OutKey str2key(char *s);
-static OutSum str2stype(char *s);
+static OutKey str2key(char *s, LOG_INFO* LogInfo);
+static OutSum str2stype(char *s, LOG_INFO* LogInfo);
 
-static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op);
-static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k);
+static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
+						 LOG_INFO* LogInfo);
+static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k,
+					  LOG_INFO *LogInfo);
 static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
-					  SW_SITE* SW_Site);
+					  SW_SITE* SW_Site, LOG_INFO *LogInfo);
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
-static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy);
-static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd);
+static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy,
+					  LOG_INFO *LogInfo);
+static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
+						ObjType otyp, OutPeriod pd);
 
 #ifdef STEPWAT
 static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
@@ -201,28 +205,28 @@ static OutPeriod str2period(char *s)
 
 /** Convert string representation of output type to `OutKey` value.
 */
-static OutKey str2key(char *s)
+static OutKey str2key(char *s, LOG_INFO* LogInfo)
 {
 	IntUS key;
 
 	for (key = 0; key < SW_OUTNKEYS && Str_CompareI(s, (char *)key2str[key]); key++) ;
 	if (key == SW_OUTNKEYS)
 	{
-		LogError(logfp, LOGFATAL, "%s : Invalid key (%s) in %s", SW_F_name(eOutput), s);
+		LogError(LogInfo, LOGFATAL, "%s : Invalid key (%s) in %s", SW_F_name(eOutput), s);
 	}
 	return (OutKey) key;
 }
 
 /** Convert string representation of output aggregation function to `OutSum` value.
 */
-static OutSum str2stype(char *s)
+static OutSum str2stype(char *s, LOG_INFO* LogInfo)
 {
 	IntUS styp;
 
 	for (styp = eSW_Off; styp < SW_NSUMTYPES && Str_CompareI(s, (char *)styp2str[styp]); styp++) ;
 	if (styp == SW_NSUMTYPES)
 	{
-		LogError(logfp, LOGFATAL, "%s : Invalid summary type (%s)\n", SW_F_name(eOutput), s);
+		LogError(LogInfo, LOGFATAL, "%s : Invalid summary type (%s)\n", SW_F_name(eOutput), s);
 	}
 	return (OutSum) styp;
 }
@@ -289,7 +293,8 @@ Bool has_keyname_soillayers(const char *var) {
 
 
 
-static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy)
+static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy,
+					  LOG_INFO *LogInfo)
 {
 	int ik;
 	RealD tmp;
@@ -320,7 +325,7 @@ static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt do
 			break;
 
 		default:
-			LogError(logfp, LOGFATAL, "PGMR: Invalid key in sumof_vpd(%s)", key2str[k]);
+			LogError(LogInfo, LOGFATAL, "PGMR: Invalid key in sumof_vpd(%s)", key2str[k]);
 	}
 }
 
@@ -341,7 +346,8 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
   if (0 == s->days) {}
 }
 
-static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
+static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k,
+					  LOG_INFO *LogInfo)
 {
 	switch (k)
 	{
@@ -371,13 +377,13 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k)
 		s->surfaceRunon += v->surfaceRunon;
 		break;
 	default:
-		LogError(logfp, LOGFATAL, "PGMR: Invalid key in sumof_wth(%s)", key2str[k]);
+		LogError(LogInfo, LOGFATAL, "PGMR: Invalid key in sumof_wth(%s)", key2str[k]);
 	}
 
 }
 
 static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
-					  SW_SITE* SW_Site)
+					  SW_SITE* SW_Site, LOG_INFO *LogInfo)
 {
 	LyrIndex i;
 	int j; // for use with ForEachVegType
@@ -533,7 +539,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
         break;
 
 	default:
-		LogError(logfp, LOGFATAL, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
+		LogError(LogInfo, LOGFATAL, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
 	}
 }
 
@@ -547,10 +553,13 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
 
    @param[in,out] sw Comprehensive struct of type SW_ALL containing
    		all information in the simulation.
+   @param[in] LogInfo Holds information dealing with logfile output
    @param[in] otyp Identifies the current module/object
    @param[in] pd Time period in simulation output (day/week/month/year)
 */
-static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd) {
+static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
+						ObjType otyp, OutPeriod pd) {
+
 	TimeInt curr_pd = 0;
 	RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
 	OutKey k;
@@ -580,7 +589,7 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd) {
 			case eVES:
 				break;
 			default:
-				LogError(logfp, LOGFATAL,
+				LogError(LogInfo, LOGFATAL,
 						"Invalid object type in average_for().");
 		}
 
@@ -612,7 +621,7 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd) {
 					break;
 
 				default:
-					LogError(logfp, LOGFATAL, "Programmer: Invalid period in average_for().");
+					LogError(LogInfo, LOGFATAL, "Programmer: Invalid period in average_for().");
 			} /* end switch(pd) */
 
 			if (sw->Output[k].myobj != otyp
@@ -863,7 +872,7 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd) {
 				break;
 
 			default:
-				LogError(logfp, LOGFATAL, "PGMR: Invalid key in average_for(%SW_SoilWat)", key2str[k]);
+				LogError(LogInfo, LOGFATAL, "PGMR: Invalid key in average_for(%SW_SoilWat)", key2str[k]);
 			}
 
 		} /* end ForEachKey */
@@ -871,7 +880,8 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd) {
 }
 
 
-static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op)
+static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
+						 LOG_INFO* LogInfo)
 {
 	TimeInt pd = 0;
 	OutKey k;
@@ -893,7 +903,7 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op)
 			pd = sw->Model.doy;
 			break;
 		default:
-			LogError(logfp, LOGFATAL, "PGMR: Invalid outperiod in collect_sums()");
+			LogError(LogInfo, LOGFATAL, "PGMR: Invalid outperiod in collect_sums()");
 	}
 
 
@@ -926,11 +936,13 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op)
 			switch (otyp)
 			{
 			case eSWC:
-				sumof_swc(&sw->SoilWat, sw->SoilWat.p_accu[op], k, &sw->Site);
+				sumof_swc(&sw->SoilWat, sw->SoilWat.p_accu[op], k, &sw->Site,
+														  			LogInfo);
 				break;
 
 			case eWTH:
-				sumof_wth(&sw->Weather, sw->Weather.p_accu[op], k);
+				sumof_wth(&sw->Weather, sw->Weather.p_accu[op], k,
+											   				LogInfo);
 				break;
 
 			case eVES:
@@ -940,7 +952,8 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op)
 				break;
 
 			case eVPD:
-				sumof_vpd(&sw->VegProd, sw->VegProd.p_accu[op], k, sw->Model.doy);
+				sumof_vpd(&sw->VegProd, sw->VegProd.p_accu[op], k, sw->Model.doy,
+															  			LogInfo);
 				break;
 
 			default:
@@ -967,7 +980,7 @@ static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
 	if (SW_Output[k].sumtype != aggfun) {
 		if (warn && SW_Output[k].sumtype != eSW_Off)
 		{
-			LogError(logfp, LOGWARN, "STEPWAT2 requires %s of %s, " \
+			LogError(LogInfo, LOGWARN, "STEPWAT2 requires %s of %s, " \
 				"but this is currently set to '%s': changed to '%s'.",
 				styp2str[aggfun], str, styp2str[SW_Output[k].sumtype], styp2str[aggfun]);
 		}
@@ -1659,10 +1672,11 @@ void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count) {
   @param[in] tLayers Total number of soil layers
   @param[in] **parms List of structs of type SW_VEGESTAB_INFO holding
   	information about every vegetation species
+  @param[in] LogInfo Holds information dealing with logfile output
 
   @sideeffect Set values of colnames_OUT
 */
-void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms) {
+void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms, LOG_INFO* LogInfo) {
 	IntUS i, j;
   #ifdef SWDEBUG
   int debug = 0;
@@ -1710,50 +1724,50 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms) {
             strcat(ctemp, cnames_eSW_Temp[i % 3]);
         }
 
-        colnames_OUT[eSW_Temp][i] = Str_Dup(ctemp);
+        colnames_OUT[eSW_Temp][i] = Str_Dup(ctemp, LogInfo);
 
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Precip' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_Precip]; i++) {
-		colnames_OUT[eSW_Precip][i] = Str_Dup(cnames_eSW_Precip[i]);
+		colnames_OUT[eSW_Precip][i] = Str_Dup(cnames_eSW_Precip[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SoilInf' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SoilInf]; i++) {
-		colnames_OUT[eSW_SoilInf][i] = Str_Dup(cnames_eSW_SoilInf[i]);
+		colnames_OUT[eSW_SoilInf][i] = Str_Dup(cnames_eSW_SoilInf[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Runoff' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_Runoff]; i++) {
-		colnames_OUT[eSW_Runoff][i] = Str_Dup(cnames_eSW_Runoff[i]);
+		colnames_OUT[eSW_Runoff][i] = Str_Dup(cnames_eSW_Runoff[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_VWCBulk' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_VWCBulk]; i++) {
-		colnames_OUT[eSW_VWCBulk][i] = Str_Dup(Layers_names[i]);
+		colnames_OUT[eSW_VWCBulk][i] = Str_Dup(Layers_names[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_VWCMatric' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_VWCMatric]; i++) {
-		colnames_OUT[eSW_VWCMatric][i] = Str_Dup(Layers_names[i]);
+		colnames_OUT[eSW_VWCMatric][i] = Str_Dup(Layers_names[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWCBulk' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SWCBulk]; i++) {
-		colnames_OUT[eSW_SWCBulk][i] = Str_Dup(Layers_names[i]);
+		colnames_OUT[eSW_SWCBulk][i] = Str_Dup(Layers_names[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWABulk' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SWABulk]; i++) {
-		colnames_OUT[eSW_SWABulk][i] = Str_Dup(Layers_names[i]);
+		colnames_OUT[eSW_SWABulk][i] = Str_Dup(Layers_names[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWA' ...");
@@ -1765,26 +1779,26 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms) {
 			strcat(ctemp, "_");
 			strcat(ctemp, Layers_names[i]);
 
-			colnames_OUT[eSW_SWA][i + j * tLayers] = Str_Dup(ctemp);
+			colnames_OUT[eSW_SWA][i + j * tLayers] = Str_Dup(ctemp, LogInfo);
 		}
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWAMatric' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SWAMatric]; i++) {
-		colnames_OUT[eSW_SWAMatric][i] = Str_Dup(Layers_names[i]);
+		colnames_OUT[eSW_SWAMatric][i] = Str_Dup(Layers_names[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWPMatric' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SWPMatric]; i++) {
-		colnames_OUT[eSW_SWPMatric][i] = Str_Dup(Layers_names[i]);
+		colnames_OUT[eSW_SWPMatric][i] = Str_Dup(Layers_names[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SurfaceWater' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SurfaceWater]; i++) {
-		colnames_OUT[eSW_SurfaceWater][i] = Str_Dup(cnames_eSW_SurfaceWater[i]);
+		colnames_OUT[eSW_SurfaceWater][i] = Str_Dup(cnames_eSW_SurfaceWater[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Transp' ...");
@@ -1796,14 +1810,14 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms) {
 			strcat(ctemp, "_");
 			strcat(ctemp, Layers_names[i]);
 
-			colnames_OUT[eSW_Transp][i + j * tLayers] = Str_Dup(ctemp);
+			colnames_OUT[eSW_Transp][i + j * tLayers] = Str_Dup(ctemp, LogInfo);
 		}
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_EvapSoil' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_EvapSoil]; i++) {
-		colnames_OUT[eSW_EvapSoil][i] = Str_Dup(Layers_names[i]);
+		colnames_OUT[eSW_EvapSoil][i] = Str_Dup(Layers_names[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_EvapSurface' ...");
@@ -1811,10 +1825,10 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms) {
 	for (i = 0; i < NVEGTYPES + 2; i++) {
 		strcpy(ctemp, "evap_");
 		strcat(ctemp, cnames_VegTypes[i]);
-		colnames_OUT[eSW_EvapSurface][i] = Str_Dup(ctemp);
+		colnames_OUT[eSW_EvapSurface][i] = Str_Dup(ctemp, LogInfo);
 	}
 	for (i = 0; i < ncol_OUT[eSW_EvapSurface] - (NVEGTYPES + 2); i++) {
-		colnames_OUT[eSW_EvapSurface][NVEGTYPES + 2 + i] = Str_Dup(cnames_add_eSW_EvapSurface[i]);
+		colnames_OUT[eSW_EvapSurface][NVEGTYPES + 2 + i] = Str_Dup(cnames_add_eSW_EvapSurface[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Interception' ...");
@@ -1822,13 +1836,13 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms) {
 	for (i = 0; i < NVEGTYPES + 2; i++) {
 		strcpy(ctemp, "int_");
 		strcat(ctemp, cnames_VegTypes[i]);
-		colnames_OUT[eSW_Interception][i] = Str_Dup(ctemp);
+		colnames_OUT[eSW_Interception][i] = Str_Dup(ctemp, LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_LyrDrain' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_LyrDrain]; i++) {
-		colnames_OUT[eSW_LyrDrain][i] = Str_Dup(Layers_names[i]);
+		colnames_OUT[eSW_LyrDrain][i] = Str_Dup(Layers_names[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_HydRed' ...");
@@ -1838,38 +1852,38 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms) {
 			strcpy(ctemp, cnames_VegTypes[j]);
 			strcat(ctemp, "_");
 			strcat(ctemp, Layers_names[i]);
-			colnames_OUT[eSW_HydRed][i + j * tLayers] = Str_Dup(ctemp);
+			colnames_OUT[eSW_HydRed][i + j * tLayers] = Str_Dup(ctemp, LogInfo);
 		}
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_AET' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_AET]; i++) {
-		colnames_OUT[eSW_AET][i] = Str_Dup(cnames_eSW_AET[i]);
+		colnames_OUT[eSW_AET][i] = Str_Dup(cnames_eSW_AET[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_PET' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_PET]; i++) {
-		colnames_OUT[eSW_PET][i] = Str_Dup(cnames_eSW_PET[i]);
+		colnames_OUT[eSW_PET][i] = Str_Dup(cnames_eSW_PET[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_WetDays' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_WetDays]; i++) {
-		colnames_OUT[eSW_WetDays][i] = Str_Dup(Layers_names[i]);
+		colnames_OUT[eSW_WetDays][i] = Str_Dup(Layers_names[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SnowPack' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SnowPack]; i++) {
-		colnames_OUT[eSW_SnowPack][i] = Str_Dup(cnames_eSW_SnowPack[i]);
+		colnames_OUT[eSW_SnowPack][i] = Str_Dup(cnames_eSW_SnowPack[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_DeepSWC' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_DeepSWC]; i++) {
-		colnames_OUT[eSW_DeepSWC][i] = Str_Dup(cnames_eSW_DeepSWC[i]);
+		colnames_OUT[eSW_DeepSWC][i] = Str_Dup(cnames_eSW_DeepSWC[i], LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SoilTemp' ...");
@@ -1886,7 +1900,7 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms) {
         strcat(ctemp, "_");
         strcat(ctemp, cnames_eSW_Temp[i % 3]);
 
-        colnames_OUT[eSW_SoilTemp][i] = Str_Dup(ctemp);
+        colnames_OUT[eSW_SoilTemp][i] = Str_Dup(ctemp, LogInfo);
 
     }
 
@@ -1894,13 +1908,13 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms) {
     if (debug) swprintf(" 'eSW_Frozen' ...");
     #endif
         for (i = 0; i < ncol_OUT[eSW_Frozen]; i++) {
-                colnames_OUT[eSW_Frozen][i] = Str_Dup(Layers_names[i]);
+                colnames_OUT[eSW_Frozen][i] = Str_Dup(Layers_names[i], LogInfo);
     }
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Estab' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_Estab]; i++) {
-		colnames_OUT[eSW_Estab][i] = Str_Dup(parms[i]->sppname);
+		colnames_OUT[eSW_Estab][i] = Str_Dup(parms[i]->sppname, LogInfo);
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_CO2Effects' ...");
@@ -1910,7 +1924,7 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms) {
 			strcpy(ctemp, cnames_eSW_CO2Effects[i]);
 			strcat(ctemp, "_");
 			strcat(ctemp, cnames_VegTypes[j + 1]); // j+1 since no total column
-			colnames_OUT[eSW_CO2Effects][j + i * NVEGTYPES] = Str_Dup(ctemp);
+			colnames_OUT[eSW_CO2Effects][j + i * NVEGTYPES] = Str_Dup(ctemp, LogInfo);
 		}
 	}
 
@@ -1919,28 +1933,28 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms) {
 	#endif
 	i = 0;
 	strcpy(ctemp, "fCover_BareGround");
-	colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp);
+	colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp, LogInfo);
 	i = 1;
 	for (j = 0; j < NVEGTYPES; j++) {
 		strcpy(ctemp, "fCover_");
 		strcat(ctemp, cnames_VegTypes[j + 1]); // j+1 since no total column
-		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp);
+		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp, LogInfo);
 	}
 	i += j;
 	for (j = 0; j < NVEGTYPES + 2; j++) {
 		strcpy(ctemp, "Biomass_");
 		strcat(ctemp, cnames_VegTypes[j]);
-		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp);
+		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp, LogInfo);
 	}
 	i += j;
 	for (j = 0; j < NVEGTYPES + 1; j++) {
 		strcpy(ctemp, "Biolive_");
 		strcat(ctemp, cnames_VegTypes[j]);
-		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp);
+		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp, LogInfo);
 	}
 	i += j;
 	strcpy(ctemp, "LAI_total");
-    colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp);
+    colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp, LogInfo);
 
 	#ifdef SWDEBUG
 	if (debug) swprintf(" completed.\n");
@@ -2096,8 +2110,9 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 
 	@param[in,out] sw Comprehensive structure holding all information
     	dealt with in SOILWAT2
+	@param[in] LogInfo Holds information dealing with logfile output
  */
-void SW_OUT_read(SW_ALL* sw)
+void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo)
 {
 	/* =================================================== */
 	/* read input file for output parameter setup info.
@@ -2129,7 +2144,7 @@ void SW_OUT_read(SW_ALL* sw)
 	int first; /* first doy for output */
 
 	char *MyFileName = SW_F_name(eOutput);
-	f = OpenFile(MyFileName, "r");
+	f = OpenFile(MyFileName, "r", LogInfo);
 	itemno = 0;
 
 	_Sep = ','; /* default in case it doesn't show up in the file */
@@ -2160,8 +2175,8 @@ void SW_OUT_read(SW_ALL* sw)
 
 				if (used_OUTNPERIODS > SW_OUTNPERIODS)
 				{
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, "SW_OUT_read: used_OUTNPERIODS = %d > " \
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, "SW_OUT_read: used_OUTNPERIODS = %d > " \
 						"SW_OUTNPERIODS = %d which is illegal.\n",
 						used_OUTNPERIODS, SW_OUTNPERIODS);
 				}
@@ -2195,15 +2210,15 @@ void SW_OUT_read(SW_ALL* sw)
 		// make sure that we got enough input
 		if (x < 6)
 		{
-			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "%s : Insufficient input for key %s item %d.",
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGFATAL, "%s : Insufficient input for key %s item %d.",
 				MyFileName, keyname, itemno);
 
 			continue; //read next line of `outsetup.in`
 		}
 
 		// Convert strings to index numbers
-		k = str2key(Str_ToUpper(keyname, upkey));
+		k = str2key(Str_ToUpper(keyname, upkey), LogInfo);
 
 		// For now: rSOILWAT2's function `onGet_SW_OUT` requires that
 		// `sw->Output[k].outfile` is allocated here
@@ -2216,7 +2231,7 @@ void SW_OUT_read(SW_ALL* sw)
 		// Fill information into `sw->Output[k]`
 		msg_type = SW_OUT_read_onekey(
 			k,
-			str2stype(Str_ToUpper(sumtype, upsum)),
+			str2stype(Str_ToUpper(sumtype, upsum), LogInfo),
 			first,
 			!Str_CompareI("END", (char *)last) ? 366 : atoi(last),
 			msg,
@@ -2229,9 +2244,9 @@ void SW_OUT_read(SW_ALL* sw)
 		if (msg_type != 0) {
 			if (msg_type > 0) {
 				if (msg_type == LOGFATAL) {
-					CloseFile(&f);
+					CloseFile(&f, LogInfo);
 				}
-				LogError(logfp, msg_type, "%s", msg);
+				LogError(LogInfo, msg_type, "%s", msg);
 			}
 
 			continue;
@@ -2269,23 +2284,21 @@ void SW_OUT_read(SW_ALL* sw)
 	SW_OUT_set_nrow(&sw->Model);
 	#endif
 
-	CloseFile(&f);
-
-	if (EchoInits)
-		_echo_outputs(sw);
+	CloseFile(&f, LogInfo);
 }
 
 
 
-void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
+void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+					 LOG_INFO* LogInfo) {
 
-	SW_OUT_sum_today(sw, eSWC);
+	SW_OUT_sum_today(sw, LogInfo, eSWC);
 
-	SW_OUT_sum_today(sw, eWTH);
+	SW_OUT_sum_today(sw, LogInfo, eWTH);
 
-	SW_OUT_sum_today(sw, eVES);
+	SW_OUT_sum_today(sw, LogInfo, eVES);
 
-	SW_OUT_sum_today(sw, eVPD);
+	SW_OUT_sum_today(sw, LogInfo, eVPD);
 
 	SW_OUT_write_today(sw, SW_OutputPtrs);
 }
@@ -2299,12 +2312,14 @@ void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
   		all information in the simulation
 	@param[in] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  		hold pointers to subroutines for output keys
+	@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
+void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+				  LOG_INFO* LogInfo) {
 	bFlush_output = swTRUE;
 	tOffset = 0;
 
-	_collect_values(sw, SW_OutputPtrs);
+	_collect_values(sw, SW_OutputPtrs, LogInfo);
 
 	bFlush_output = swFALSE;
 	tOffset = 1;
@@ -2320,9 +2335,10 @@ void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
 
 	@param[in,out] sw Comprehensive struct of type SW_ALL containing
 		all information in the simulation
+	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] otyp Identifies the current module/object
 */
-void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp)
+void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp)
 {
 	/*  SW_VEGESTAB *v = &SW_VegEstab;  -> we don't need to sum daily for this */
 	OutPeriod pd;
@@ -2331,7 +2347,7 @@ void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp)
 	{
 		if (bFlush_output || sw->Model.newperiod[pd]) // `newperiod[eSW_Day]` is always TRUE
 		{
-			average_for(sw, otyp, pd);
+			average_for(sw, LogInfo, otyp, pd);
 
 			switch (otyp)
 			{
@@ -2347,7 +2363,7 @@ void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp)
 					memset(sw->VegProd.p_accu[pd], 0, sizeof(SW_VEGPROD_OUTPUTS));
 					break;
 				default:
-					LogError(logfp, LOGFATAL,
+					LogError(LogInfo, LOGFATAL,
 							"Invalid object type in SW_OUT_sum_today().");
 			}
 		}
@@ -2357,7 +2373,7 @@ void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp)
 	{
 		ForEachOutPeriod(pd)
 		{
-			collect_sums(sw, otyp, pd);
+			collect_sums(sw, otyp, pd, LogInfo);
 		}
 	}
 }
@@ -2612,10 +2628,10 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs)
 }
 
 
-void _echo_outputs(SW_ALL* sw)
+void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
 {
 	OutKey k;
-	char str[OUTSTRLEN];
+	char str[OUTSTRLEN], errstr[MAX_ERROR];
 
 	strcpy(errstr, "\n===============================================\n"
 			"  Output Configuration:\n");
@@ -2635,9 +2651,15 @@ void _echo_outputs(SW_ALL* sw)
 	}
 
 	strcat(errstr, "\n----------  End of Output Configuration ---------- \n");
-	LogError(logfp, LOGNOTE, errstr);
+	LogError(LogInfo, LOGNOTE, errstr);
+}
 
-	(void) sw; // Silence compiler
+void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo) {
+
+	_echo_inputs(&sw->Site, LogInfo);
+	_echo_VegEstab(sw->Site.lyr, sw->VegEstab.parms, LogInfo, sw->VegEstab.count);
+	_echo_VegProd(LogInfo, sw->VegProd.veg, sw->VegProd.bare_cov);
+	_echo_outputs(sw, LogInfo);
 }
 
 

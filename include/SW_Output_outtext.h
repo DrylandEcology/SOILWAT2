@@ -38,22 +38,24 @@ extern char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 #if defined(SOILWAT)
-void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus,
-                         SW_OUTPUT* SW_Output, LyrIndex n_layers);
+void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
+						 LyrIndex n_layers, LOG_INFO* LogInfo);
 
 #elif defined(STEPWAT)
-void SW_OUT_create_summary_files(void);
-void SW_OUT_create_iteration_files(int iteration);
+void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
+			SW_OUTPUT* SW_Output, LOG_INFO* LogInfo);
+void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
+			SW_OUTPUT* SW_Output, int iteration, LOG_INFO* LogInfo);
 #endif
 
 void get_outstrleader(OutPeriod pd, size_t sizeof_str,
 					            SW_MODEL* SW_Model, char *str);
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 	Bool does_agg, Bool make_regular[], Bool make_soil[], SW_OUTPUT* SW_Output,
-	LyrIndex n_layers);
+	LyrIndex n_layers, LOG_INFO* LogInfo);
 void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 								                 SW_OUTPUT* SW_Output);
-void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus);
+void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, LOG_INFO* LogInfo);
 
 
 #ifdef __cplusplus

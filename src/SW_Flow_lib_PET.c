@@ -816,6 +816,7 @@ double clearnessindex_diffuse(double K_b)
           from both observed radiation and expected cloud-less radiation.
 
   @param[in,out] SW_AtmDem Memoized variables pertaining to atmospheric demand.
+  @param[in] LogInfo Holds information dealing with logfile output
   @param[in] doy Day of year [1-365].
   @param[in] lat Latitude of the site [radians].
   @param[in] elev Elevation of the site [m a.s.l.].
@@ -845,7 +846,7 @@ double clearnessindex_diffuse(double K_b)
   @return H_gt Daily global (tilted) irradiation [MJ / m2]
 */
 double solar_radiation(
-  SW_ATMD *SW_AtmDem, unsigned int doy,
+  SW_ATMD *SW_AtmDem, LOG_INFO* LogInfo, unsigned int doy,
   double lat, double elev, double slope, double aspect,
   double albedo, double *cloud_cover, double e_a,
   double rsds, unsigned int desc_rsds,
@@ -951,7 +952,7 @@ double solar_radiation(
 
       default:
         LogError(
-          logfp,
+          LogInfo,
           LOGFATAL,
           "`desc_rsds` has an unrecognized value: %u",
           desc_rsds
@@ -1046,7 +1047,7 @@ double solar_radiation(
   // Check for valid range of radiation [MJ/m2]
   if (!(H_g >= 0. && H_g <= 45.)) {
     LogError(
-      logfp,
+      LogInfo,
       LOGFATAL,
       "\nSolar radiation (%f) out of valid range (0-45 MJ m-2)\n",
       H_g
@@ -1220,7 +1221,7 @@ double actualVaporPressure3(double dewpointTemp) {
   Note: Penman 1948 @cite Penman1948 assumes that net heat and vapor exchange
   with ground and surrounding areas is negligible over a daily time step.
 
-
+  @param[in] LogInfo Holds information dealing with logfile output
   @param H_g Global horizontal/tilted irradiation [MJ / m2]
   @param avgtemp Average air temperature [C]
   @param elev Elevation of site [m asl]
@@ -1231,8 +1232,8 @@ double actualVaporPressure3(double dewpointTemp) {
 
   @return Potential evapotranspiration [cm / day]
 */
-double petfunc(double H_g, double avgtemp, double elev,
-  double reflec, double humid, double windsp, double cloudcov)
+double petfunc(LOG_INFO* LogInfo, double H_g, double avgtemp,
+  double elev, double reflec, double humid, double windsp, double cloudcov)
 {
 
   double Ea, Rn, Rc, Rbb, delta, clrsky, ea, P_kPa, gamma, pet;
@@ -1276,7 +1277,7 @@ double petfunc(double H_g, double avgtemp, double elev,
 
   if (missing(cloudcov)) {
     LogError(
-      logfp,
+      LogInfo,
       LOGFATAL,
       "Cloud cover is missing."
     );

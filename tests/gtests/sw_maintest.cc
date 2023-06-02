@@ -17,7 +17,7 @@
 
 // externs `*logfp`, `errstr`, `QuietMode`
 #include "include/generic.h"
-#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
+#include "include/filefuncs.h" // externs `_firstfile`
 #include "include/SW_Control.h"
 #include "include/SW_datastructs.h"
 

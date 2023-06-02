@@ -41,8 +41,9 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_WTH_setup(SW_WEATHER* SW_Weather);
-void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model);
+void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo);
+void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
+                 LOG_INFO* LogInfo);
 void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
                                SW_CLIMATE_CLIM *climateAverages);
 void calcSiteClimate(SW_WEATHER_HIST **allHist, TimeInt cum_monthdays[],
@@ -66,7 +67,8 @@ void _read_weather_hist(
   char weather_prefix[],
   unsigned int n_input_forcings,
   unsigned int *dailyInputIndices,
-  Bool *dailyInputFlags
+  Bool *dailyInputFlags,
+  LOG_INFO* LogInfo
 );
 void readAllWeather(
   SW_WEATHER_HIST **allHist,
@@ -84,10 +86,11 @@ void readAllWeather(
   RealD *windspeed,
   RealD *r_humidity,
   TimeInt cum_monthdays[],
-  TimeInt days_in_month[]
+  TimeInt days_in_month[],
+  LOG_INFO* LogInfo
 );
 void finalizeAllWeather(SW_MARKOV* SW_Markov, SW_WEATHER *w,
-                        TimeInt cum_monthdays[], TimeInt days_in_month[]);
+          TimeInt cum_monthdays[], TimeInt days_in_month[], LOG_INFO* LogInfo);
 
 void scaleAllWeather(
   SW_WEATHER_HIST **allHist,
@@ -110,19 +113,20 @@ void generateMissingWeather(
   int startYear,
   unsigned int n_years,
   unsigned int method,
-  unsigned int optLOCF_nMax
+  unsigned int optLOCF_nMax,
+  LOG_INFO* LogInfo
 );
-void checkAllWeather(SW_WEATHER *weather);
+void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo);
 void allocateAllWeather(SW_WEATHER *w);
 void deallocateAllWeather(SW_WEATHER *w);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
 void SW_WTH_finalize_all_weather(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather,
-                            TimeInt cum_monthdays[], TimeInt days_in_month[]);
+              TimeInt cum_monthdays[], TimeInt days_in_month[], LOG_INFO* LogInfo);
 void SW_WTH_init_run(SW_WEATHER* SW_Weather);
-void SW_WTH_construct(SW_WEATHER* SW_Weather);
+void SW_WTH_construct(LOG_INFO* LogInfo, SW_WEATHER* SW_Weather);
 void SW_WTH_deconstruct(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather);
 void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
-                    TimeInt doy, TimeInt year);
+                    TimeInt doy, TimeInt year, LOG_INFO* LogInfo);
 void SW_WTH_sum_today(void);
 
 

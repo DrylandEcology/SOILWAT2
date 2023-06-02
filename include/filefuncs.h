@@ -10,7 +10,7 @@
 #define FILEFUNCS_H
 
 #include "include/generic.h"
-#include "include/SW_Defines.h"
+#include "include/SW_datastructs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,8 +28,8 @@ extern char _firstfile[MAX_FILENAMESIZE]; /* defined in SW_Main_lib.c */
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-FILE * OpenFile(const char *, const char *);
-void CloseFile(FILE **);
+FILE * OpenFile(const char *name, const char *mode, LOG_INFO* LogInfo);
+void CloseFile(FILE **f, LOG_INFO* LogInfo);
 Bool GetALine(FILE *f, char buf[]);
 char *DirName(const char *p);
 const char *BaseName(const char *p);

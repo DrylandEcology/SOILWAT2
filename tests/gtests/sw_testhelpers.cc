@@ -17,7 +17,7 @@
 
 // externs `*logfp`, `errstr`, `logged`, `QuietMode`
 #include "include/generic.h"
-#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
+#include "include/filefuncs.h" // externs `_firstfile`
 #include "include/SW_Site.h"
 #include "include/SW_SoilWater.h"
 #include "include/SW_Weather.h"
@@ -36,18 +36,17 @@ void Reset_SOILWAT2_after_UnitTest(void) {
     because SOILWAT2 uses (global) states.
     This is otherwise not comptable with the c++ approach used by googletest.
   */
-  logged = swFALSE;
-  logfp = NULL;
+  LogInfo.logged = swFALSE;
+  LogInfo.logfp = NULL;
 
-  QuietMode = swTRUE;
-  EchoInits = swFALSE;
+  Bool EchoInits = swFALSE;
 
   memset(&SW_All, 0, sizeof(SW_ALL));
 
   SW_CTL_clear_model(swFALSE, &SW_All);
 
-  SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, _firstfile); // `_firstfile` is here "files.in"
-  SW_CTL_read_inputs_from_disk(&SW_All);
+  SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &LogInfo, _firstfile); // `_firstfile` is here "files.in"
+  SW_CTL_read_inputs_from_disk(&SW_All, &LogInfo, EchoInits);
 
   /* Notes on messages during tests
     - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
@@ -56,12 +55,12 @@ void Reset_SOILWAT2_after_UnitTest(void) {
     - we set `logfp` to NULL to silence all non-error messages during tests
     - error messages go directly to stderr (which DeathTests use to match against)
   */
-  sw_check_log();
-  logfp = NULL;
+
+  LogInfo.logfp = NULL;
 
   SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
-  SW_CTL_init_run(&SW_All);
+        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+  SW_CTL_init_run(&SW_All, &LogInfo);
 
 
   // Next functions calls from `main()` require SW_Output.c
@@ -77,7 +76,7 @@ void Reset_SOILWAT2_after_UnitTest(void) {
 void create_test_soillayers(unsigned int nlayers) {
 
   if (nlayers <= 0 || nlayers > MAX_LAYERS) {
-    LogError(logfp, LOGFATAL, "create_test_soillayers(): "
+    LogError(&LogInfo, LOGFATAL, "create_test_soillayers(): "
       "requested number of soil layers (n = %d) is not accepted.\n", nlayers);
   }
 
@@ -127,7 +126,7 @@ void create_test_soillayers(unsigned int nlayers) {
   int nRegions = 3;
   RealD regionLowerBounds[3] = {20., 50., 100.};
 
-  set_soillayers(&SW_All.VegProd, &SW_All.Site, nlayers, dmax,
+  set_soillayers(&SW_All.VegProd, &SW_All.Site, &LogInfo, nlayers, dmax,
     bulkd, f_gravel, evco, trco_grass, trco_shrub, trco_tree,
     trco_forb, psand, pclay, imperm, soiltemp, nRegions,
     regionLowerBounds);

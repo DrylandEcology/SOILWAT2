@@ -64,12 +64,12 @@ extern char output_prefix[FILENAME_MAX];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_F_read(const char *s);
+void SW_F_read(const char *s, LOG_INFO* LogInfo);
 char *SW_F_name(SW_FileIndex i);
-void SW_F_construct(const char *firstfile);
+void SW_F_construct(const char *firstfile, LOG_INFO* LogInfo);
 void SW_F_deconstruct(void);
 void SW_WeatherPrefix(char prefix[]);
-void SW_CSV_F_INIT(const char *s);
+void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo);
 
 #ifdef DEBUG_MEM
 void SW_F_SetMemoryRefs(void);

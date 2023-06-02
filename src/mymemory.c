@@ -51,7 +51,7 @@ void mem_DelNode( void *handle);
 /* --------------------------------------------------- */
 
 /*****************************************************/
-char *Str_Dup(const char *s) {
+char *Str_Dup(const char *s, LOG_INFO* LogInfo) {
 	/*-------------------------------------------
 	 Duplicate a string s by allocating memory for
 	 it, copying s to the new location and
@@ -65,7 +65,7 @@ char *Str_Dup(const char *s) {
 
 	char *p;
 
-	p = (char *) Mem_Malloc(strlen(s) + 1, "Str_Dup()");
+	p = (char *) Mem_Malloc(strlen(s) + 1, "Str_Dup()", LogInfo);
 
 	strcpy(p, s);
 
@@ -74,7 +74,7 @@ char *Str_Dup(const char *s) {
 }
 
 /*****************************************************/
-void *Mem_Malloc(size_t size, const char *funcname) {
+void *Mem_Malloc(size_t size, const char *funcname, LOG_INFO* LogInfo) {
 	/*-------------------------------------------
 	 Provide a generic malloc that tests for failure.
 
@@ -114,7 +114,7 @@ void *Mem_Malloc(size_t size, const char *funcname) {
 #endif
 
 	if (p == NULL )
-		LogError(logfp, LOGFATAL, "Out of memory in %s()", funcname);
+		LogError(LogInfo, LOGFATAL, "Out of memory in %s()", funcname);
 
 #ifdef DEBUG_MEM
 	{
@@ -143,7 +143,8 @@ void *Mem_Malloc(size_t size, const char *funcname) {
 }
 
 /*****************************************************/
-void *Mem_Calloc(size_t nobjs, size_t size, const char *funcname) {
+void *Mem_Calloc(size_t nobjs, size_t size, const char *funcname,
+				 LOG_INFO* LogInfo) {
 	/*-------------------------------------------
 	 Duplicates the behavior of calloc() similar to
 	 Mem_Malloc.
@@ -153,7 +154,7 @@ void *Mem_Calloc(size_t nobjs, size_t size, const char *funcname) {
 
 	void *p;
 
-	p = Mem_Malloc(size * nobjs, funcname);
+	p = Mem_Malloc(size * nobjs, funcname, LogInfo);
 
 #ifndef DEBUG_MEM
 	/* if using mcguire's code, no need to memset after
@@ -167,7 +168,7 @@ void *Mem_Calloc(size_t nobjs, size_t size, const char *funcname) {
 }
 
 /*****************************************************/
-void *Mem_ReAlloc(void *block, size_t sizeNew) {
+void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO* LogInfo) {
 	/*-------------------------------------------
 	 Provide a wrapper for realloc() that facilitates debugging.
 	 Copied from Macguire.
@@ -231,7 +232,7 @@ void *Mem_ReAlloc(void *block, size_t sizeNew) {
 
 		p = pNew;
 	} else
-		LogError(logfp, LOGFATAL, "realloc failed in Mem_ReAlloc()");
+		LogError(LogInfo, LOGFATAL, "realloc failed in Mem_ReAlloc()");
 
 	return p;
 }

@@ -37,14 +37,14 @@
 
 
 
-extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD);
+extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD, LOG_INFO*);
 extern void (*test_temp_correct_wetdry)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD);
 
 
 namespace {
   // Test the SW_MARKOV constructor 'SW_MKV_construct'
   TEST(WGTest, Constructor) {
-    SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov);
+    SW_MKV_construct(SW_All.Weather.rng_seed, &LogInfo, &SW_All.Markov);
 
     // Check that at least first array elements are initialized to zero
     EXPECT_DOUBLE_EQ(0., SW_All.Markov.wetprob[0]);
@@ -78,11 +78,13 @@ namespace {
 
     // Initialize weather generator
     SW_All.Weather.rng_seed = seed;
-    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
+    SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
+                 SW_All.Weather.generateWeatherMethod);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-      SW_MKV_today(&SW_All.Markov, k, SW_All.Model.year, &tmax0[k], &tmin0[k], &ppt);
+      SW_MKV_today(&SW_All.Markov, k, SW_All.Model.year, &LogInfo,
+                   &tmax0[k], &tmin0[k], &ppt);
       ppt0[k] = ppt;
     }
 
@@ -93,12 +95,13 @@ namespace {
     //--- Expect that generated weather is different with time-varying seed ----
     // Re-initialize weather generator
     SW_All.Weather.rng_seed = 0;
-    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+    SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
                  SW_All.Weather.generateWeatherMethod);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-      SW_MKV_today(&SW_All.Markov, k, SW_All.Model.year, &tmax, &tmin, &ppt);
+      SW_MKV_today(&SW_All.Markov, k, SW_All.Model.year, &LogInfo,
+                   &tmax, &tmin, &ppt);
 
       EXPECT_NE(tmax, tmax0[k]);
       EXPECT_NE(tmin, tmin0[k]);
@@ -114,12 +117,13 @@ namespace {
     //--- Expect that generated weather is reproducible with same seed ------
     // Re-initialize weather generator
     SW_All.Weather.rng_seed = seed;
-    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+    SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
                  SW_All.Weather.generateWeatherMethod);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-      SW_MKV_today(&SW_All.Markov, k, SW_All.Model.year, &tmax, &tmin, &ppt);
+      SW_MKV_today(&SW_All.Markov, k, SW_All.Model.year, &LogInfo,
+                   &tmax, &tmin, &ppt);
 
       EXPECT_DOUBLE_EQ(tmax, tmax0[k]);
       EXPECT_DOUBLE_EQ(tmin, tmin0[k]);
@@ -142,30 +146,30 @@ namespace {
     short k, n = 3;
     RealD tmax = 0., tmin = 0., tval;
 
-    SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov); // initialize markov_rng
+    SW_MKV_construct(SW_All.Weather.rng_seed, &LogInfo, &SW_All.Markov); // initialize markov_rng
 
     for (k = 0; k < n; k++) {
       // Create temperature values: here with n = 3: -10, 0, +10
       tval = -10. + 10. * k;
 
       // Case: wtmax = wtmin, variance = 0, covar = 0 ==> input = output
-      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 0.);
+      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 0., &LogInfo);
       EXPECT_DOUBLE_EQ(tmax, tval);
       EXPECT_DOUBLE_EQ(tmin, tval);
       EXPECT_DOUBLE_EQ(tmin, tmax);
 
       // Case: wtmax = wtmin, variance = 0, covar > 0 ==> input = output
-      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 1.);
+      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 1., &LogInfo);
       EXPECT_DOUBLE_EQ(tmax, tval);
       EXPECT_DOUBLE_EQ(tmin, tval);
       EXPECT_DOUBLE_EQ(tmin, tmax);
 
       // Case: wtmax > wtmin, variance > 0, covar > 0 ==> tmin <= tmax
-      (test_mvnorm)(&tmax, &tmin, tval + 1., tval, 1., 1., 1.);
+      (test_mvnorm)(&tmax, &tmin, tval + 1., tval, 1., 1., 1., &LogInfo);
       EXPECT_LE(tmin, tmax);
 
       // Case: wtmax < wtmin, variance > 0, covar > 0 ==> tmin == tmax
-      (test_mvnorm)(&tmax, &tmin, tval - 1., tval, 1., 1., 1.);
+      (test_mvnorm)(&tmax, &tmin, tval - 1., tval, 1., 1., 1., &LogInfo);
       EXPECT_DOUBLE_EQ(tmin, tmax);
     }
 
@@ -177,11 +181,11 @@ namespace {
   TEST(WGDeathTest, mvnorm) {
     RealD tmax = 0., tmin = 0.;
 
-    SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov); // initialize markov_rng
+    SW_MKV_construct(SW_All.Weather.rng_seed, &LogInfo, &SW_All.Markov); // initialize markov_rng
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL
     EXPECT_DEATH_IF_SUPPORTED(
-      (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.),
+      (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2., &LogInfo),
       "Bad covariance matrix"
     );
 
@@ -198,7 +202,7 @@ namespace {
       wet = 1., dry = 0.,
       cf0 = 0., cf_pos = 5., cf_neg = -5.;
 
-    SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov); // initialize markov_rng
+    SW_MKV_construct(SW_All.Weather.rng_seed, &LogInfo, &SW_All.Markov); // initialize markov_rng
 
     // Case: tmax = tmin; wet; cf_*_wet = 0 ==> input = output
     tmax = t0;

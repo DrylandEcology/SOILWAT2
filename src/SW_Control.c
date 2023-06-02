@@ -53,8 +53,9 @@
 
 @param[in,out] sw Comprehensive struct of type SW_ALL containing all
   information in the simulation
+@param[in] LogInfo Holds information dealing with logfile output
 */
-static void _begin_year(SW_ALL* sw) {
+static void _begin_year(SW_ALL* sw, LOG_INFO* LogInfo) {
 	// SW_F_new_year() not needed
 	SW_MDL_new_year(&sw->Model); // call first to set up time-related arrays for this year
 	// SW_MKV_new_year() not needed
@@ -64,19 +65,21 @@ static void _begin_year(SW_ALL* sw) {
 	SW_VES_new_year(sw->VegEstab.count);
 	SW_VPD_new_year(&sw->VegProd, &sw->Model); // Dynamic CO2 effects on vegetation
 	// SW_FLW_new_year() not needed
-	SW_SWC_new_year(&sw->SoilWat, &sw->Site, sw->Model.year);
+	SW_SWC_new_year(&sw->SoilWat, &sw->Site, sw->Model.year, LogInfo);
 	// SW_CBN_new_year() not needed
 	SW_OUT_new_year(sw->Model.firstdoy, sw->Model.lastdoy, sw->Output);
 }
 
-static void _begin_day(SW_ALL* sw) {
+static void _begin_day(SW_ALL* sw, LOG_INFO* LogInfo) {
 	SW_MDL_new_day(&sw->Model);
 	SW_WTH_new_day(&sw->Weather, &sw->Site, sw->SoilWat.snowpack,
-                  sw->Model.doy, sw->Model.year);
+                  sw->Model.doy, sw->Model.year, LogInfo);
 }
 
-static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
-	_collect_values(sw, SW_OutputPtrs);
+static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+                     LOG_INFO* LogInfo) {
+
+	_collect_values(sw, SW_OutputPtrs, LogInfo);
 	SW_SWC_end_day(&sw->SoilWat, sw->Site.n_layers);
 }
 
@@ -92,9 +95,11 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
   information in the simulation
 @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   hold pointers to subroutines for output keys
+@param[in] LogInfo Holds information dealing with logfile output
 */
 
-void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
+void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+                 LOG_INFO* LogInfo) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -106,7 +111,7 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
     if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
     #endif
 
-    SW_CTL_run_current_year(sw, SW_OutputPtrs);
+    SW_CTL_run_current_year(sw, SW_OutputPtrs, LogInfo);
   }
 } /******* End Main Loop *********/
 
@@ -116,23 +121,24 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
  *  information in the simulation
  * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  *  hold pointers to subroutines for output keys
+ * @param[in] LogInfo Holds information dealing with logfile output
  * @param[in] firstfile First input file
  */
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-                        const char *firstfile) {
+                        LOG_INFO* LogInfo, const char *firstfile) {
 
-	SW_F_construct(firstfile);
+	SW_F_construct(firstfile, LogInfo);
 	SW_MDL_construct(sw->Model.newperiod, sw->Model.days_in_month);
-	SW_WTH_construct(&sw->Weather);
+	SW_WTH_construct(LogInfo, &sw->Weather);
 	// delay SW_MKV_construct() until we know from inputs whether we need it
 	// SW_SKY_construct() not need
 	SW_SIT_construct(&sw->Site);
-	SW_VES_construct(&sw->VegEstab);
-	SW_VPD_construct(&sw->VegProd);
+	SW_VES_construct(&sw->VegEstab, LogInfo);
+	SW_VPD_construct(&sw->VegProd, LogInfo);
 	// SW_FLW_construct() not needed
 	SW_OUT_construct(sw->FileStatus.make_soil, sw->FileStatus.make_regular,
                    SW_OutputPtrs, sw->Output, sw->Site.n_layers);
-	SW_SWC_construct(&sw->SoilWat);
+	SW_SWC_construct(&sw->SoilWat, LogInfo);
 	SW_CBN_construct(&sw->Carbon);
 }
 
@@ -169,8 +175,9 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
 
   @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
+  @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_init_run(SW_ALL* sw) {
+void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
 
 	// SW_F_init_run() not needed
 	// SW_MDL_init_run() not needed
@@ -178,16 +185,17 @@ void SW_CTL_init_run(SW_ALL* sw) {
 	// SW_MKV_init_run() not needed
 	SW_PET_init_run(&sw->AtmDemand);
 	// SW_SKY_init_run() not needed
-	SW_SIT_init_run(&sw->VegProd, &sw->Site);
+	SW_SIT_init_run(&sw->VegProd, &sw->Site, LogInfo);
 	SW_VES_init_run(sw->VegEstab.parms, sw->Site.lyr,
-                  sw->Site.n_transp_lyrs, sw->VegEstab.count); // must run after `SW_SIT_init_run()`
-	SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model, sw->Site.latitude);
+                  sw->Site.n_transp_lyrs, LogInfo, sw->VegEstab.count); // must run after `SW_SIT_init_run()`
+	SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model,
+                  sw->Site.latitude, LogInfo);
 	SW_FLW_init_run(&sw->SoilWat);
 	SW_ST_init_run(&sw->StRegValues);
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
 	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
 	SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->Weather.temp_snow);
-	SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->Carbon);
+	SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->Carbon, LogInfo);
 }
 
 
@@ -198,8 +206,10 @@ void SW_CTL_init_run(SW_ALL* sw) {
   all information in the simulation
 @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   hold pointers to subroutines for output keys
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
+void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+                             LOG_INFO* LogInfo) {
   /*=======================================================*/
   TimeInt *doy = &sw->Model.doy; // base1
   #ifdef SWDEBUG
@@ -209,18 +219,18 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
   #ifdef SWDEBUG
   if (debug) swprintf("\n'SW_CTL_run_current_year': begin new year\n");
   #endif
-  _begin_year(sw);
+  _begin_year(sw, LogInfo);
 
   for (*doy = sw->Model.firstdoy; *doy <= sw->Model.lastdoy; (*doy)++) {
     #ifdef SWDEBUG
     if (debug) swprintf("\t: begin doy = %d ... ", *doy);
     #endif
-    _begin_day(sw);
+    _begin_day(sw, LogInfo);
 
     #ifdef SWDEBUG
     if (debug) swprintf("simulate water ... ");
     #endif
-    SW_SWC_water_flow(sw);
+    SW_SWC_water_flow(sw, LogInfo);
 
     // Only run this function if SWA output is asked for
     if (sw->VegProd.use_SWA) {
@@ -236,7 +246,7 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
     #ifdef SWDEBUG
     if (debug) swprintf("ending day ... ");
     #endif
-    _end_day(sw, SW_OutputPtrs);
+    _end_day(sw, SW_OutputPtrs, LogInfo);
 
     #ifdef SWDEBUG
     if (debug) swprintf("doy = %d completed.\n", *doy);
@@ -246,7 +256,7 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_run_current_year': flush output\n");
   #endif
-  SW_OUT_flush(sw, SW_OutputPtrs);
+  SW_OUT_flush(sw, SW_OutputPtrs, LogInfo);
 
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_run_current_year': completed.\n");
@@ -260,8 +270,10 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs) {
 
 @param[in,out] sw Comprehensive struct of type SW_ALL containing
   all information in the simulation
+@param[in] LogInfo Holds information dealing with logfile output
+@param[in] EchoInits Flag to control if inputs are to be output to the user
 */
-void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
+void SW_CTL_read_inputs_from_disk(SW_ALL* sw, LOG_INFO* LogInfo, Bool EchoInits) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -270,75 +282,76 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw) {
   if (debug) swprintf("'SW_CTL_read_inputs_from_disk': Read input from disk:");
   #endif
 
-  SW_F_read(NULL);
+  SW_F_read(NULL, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" 'files'");
   #endif
 
-  SW_MDL_read(&sw->Model);
+  SW_MDL_read(&sw->Model, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'model'");
   #endif
 
-  SW_WTH_setup(&sw->Weather);
+  SW_WTH_setup(&sw->Weather, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather setup'");
   #endif
 
-  SW_SKY_read(&sw->Sky);
+  SW_SKY_read(LogInfo, &sw->Sky);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'climate'");
   #endif
 
   if (sw->Weather.generateWeatherMethod == 2) {
-    SW_MKV_setup(&sw->Markov, sw->Weather.rng_seed,
+    SW_MKV_setup(LogInfo, &sw->Markov, sw->Weather.rng_seed,
                   sw->Weather.generateWeatherMethod);
     #ifdef SWDEBUG
     if (debug) swprintf(" > 'weather generator'");
     #endif
   }
 
-  SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model);
+  SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather read'");
   #endif
 
-  SW_VPD_read(&sw->VegProd);
+  SW_VPD_read(&sw->VegProd, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'veg'");
   #endif
 
-  SW_SIT_read(&sw->Site, &sw->Carbon);
+  SW_SIT_read(&sw->Site, LogInfo, &sw->Carbon);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'site'");
   #endif
 
-  SW_LYR_read(&sw->Site);
+  SW_LYR_read(&sw->Site, LogInfo);
   #ifdef RSWDEBUG
   if (debug) swprintf(" > 'soils'");
   #endif
 
-  SW_SWRC_read(&sw->Site);
+  SW_SWRC_read(&sw->Site, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'swrc parameters'");
   #endif
 
-  SW_VES_read(&sw->VegEstab);
+  SW_VES_read(&sw->VegEstab, LogInfo, EchoInits);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'establishment'");
   #endif
 
-  SW_OUT_read(sw);
+  SW_OUT_read(sw, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'ouput'");
   #endif
 
-  SW_CBN_read(&sw->Carbon, &sw->Model);
+  SW_CBN_read(&sw->Carbon, &sw->Model, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'CO2'");
   #endif
 
-  SW_SWC_read(&sw->SoilWat, sw->Model.endyr, sw->Site.lyr, sw->Site.n_layers);
+  SW_SWC_read(&sw->SoilWat, sw->Model.endyr, sw->Site.lyr,
+              sw->Site.n_layers, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'swc'");
   if (debug) swprintf(" completed.\n");

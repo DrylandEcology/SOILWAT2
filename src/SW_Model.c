@@ -93,8 +93,9 @@ void SW_MDL_deconstruct(void)
 
 @param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_MDL_read(SW_MODEL* SW_Model) {
+void SW_MDL_read(SW_MODEL* SW_Model, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/*
 	 * 1/24/02 - added code for partial start and end years
@@ -111,40 +112,40 @@ void SW_MDL_read(SW_MODEL* SW_Model) {
 	FILE *f;
 	int y, cnt;
 	TimeInt d;
-	char *p, enddyval[6];
+	char *p, enddyval[6], errstr[MAX_ERROR], *MyFileName;
 	Bool fstartdy = swFALSE, fenddy = swFALSE, fhemi = swFALSE;
 
-	char *MyFileName = SW_F_name(eModel);
-	f = OpenFile(MyFileName, "r");
+	MyFileName = SW_F_name(eModel);
+	f = OpenFile(MyFileName, "r", LogInfo);
 
 	/* ----- beginning year */
 	if (!GetALine(f, inbuf)) {
-		CloseFile(&f);
-		LogError(logfp, LOGFATAL, "%s: No input.", MyFileName);
+		CloseFile(&f, LogInfo);
+		LogError(LogInfo, LOGFATAL, "%s: No input.", MyFileName);
 	}
 	y = atoi(inbuf);
 	if (y < 0) {
-		CloseFile(&f);
-		LogError(logfp, LOGFATAL, "%s: Negative start year (%d)", MyFileName, y);
+		CloseFile(&f, LogInfo);
+		LogError(LogInfo, LOGFATAL, "%s: Negative start year (%d)", MyFileName, y);
 	}
 	SW_Model->startyr = yearto4digit((TimeInt) y);
 	SW_Model->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
 
 	/* ----- ending year */
 	if (!GetALine(f, inbuf)) {
-		CloseFile(&f);
-		LogError(logfp, LOGFATAL, "%s: Ending year not found.", MyFileName);
+		CloseFile(&f, LogInfo);
+		LogError(LogInfo, LOGFATAL, "%s: Ending year not found.", MyFileName);
 	}
 	y = atoi(inbuf);
 	//assert(y > 0);
 	if (y < 0) {
-		CloseFile(&f);
-		LogError(logfp, LOGFATAL, "%s: Negative ending year (%d)", MyFileName, y);
+		CloseFile(&f, LogInfo);
+		LogError(LogInfo, LOGFATAL, "%s: Negative ending year (%d)", MyFileName, y);
 	}
 	SW_Model->endyr = yearto4digit((TimeInt) y);
 	if (SW_Model->endyr < SW_Model->startyr) {
-		CloseFile(&f);
-		LogError(logfp, LOGFATAL, "%s: Start Year > End Year", MyFileName);
+		CloseFile(&f, LogInfo);
+		LogError(LogInfo, LOGFATAL, "%s: Start Year > End Year", MyFileName);
 	}
 
 	/* ----- Start checking for model time parameters */
@@ -198,7 +199,7 @@ void SW_MDL_read(SW_MODEL* SW_Model) {
 			SW_Model->isnorth = swTRUE;
 		}
 		strcat(errstr, "Continuing.\n");
-		LogError(logfp, LOGWARN, errstr);
+		LogError(LogInfo, LOGWARN, errstr);
 	}
 
 	SW_Model->startstart += ((SW_Model->isnorth) ? DAYFIRST_NORTH : DAYFIRST_SOUTH) - 1;
@@ -210,7 +211,7 @@ void SW_MDL_read(SW_MODEL* SW_Model) {
 	}
 
 	SW_Model->daymid = (SW_Model->isnorth) ? DAYMID_NORTH : DAYMID_SOUTH;
-	CloseFile(&f);
+	CloseFile(&f, LogInfo);
 
 }
 

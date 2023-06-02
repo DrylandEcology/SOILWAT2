@@ -37,10 +37,11 @@
 /**
 @brief Reads in file for sky.
 
+@param[in] LogInfo Holds information dealing with logfile output
 @param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
 	over the simulated site
 */
-void SW_SKY_read(SW_SKY* SW_Sky) {
+void SW_SKY_read(LOG_INFO* LogInfo, SW_SKY* SW_Sky) {
 	/* =================================================== */
 	/* 6-Oct-03 (cwb) - all this time I had lines 1 & 3
 	 *                  switched!
@@ -48,9 +49,10 @@ void SW_SKY_read(SW_SKY* SW_Sky) {
 	 */
 	FILE *f;
 	int lineno = 0, x = 0;
+	char errstr[MAX_ERROR], *MyFileName;
 
-	char *MyFileName = SW_F_name(eSky);
-	f = OpenFile(MyFileName, "r");
+	MyFileName = SW_F_name(eSky);
+	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
@@ -88,16 +90,16 @@ void SW_SKY_read(SW_SKY* SW_Sky) {
 		}
 
 		if (x < 12) {
-			CloseFile(&f);
+			CloseFile(&f, LogInfo);
 			snprintf(errstr, MAX_ERROR, "%s : invalid record %d.\n", MyFileName, lineno);
-			LogError(logfp, LOGFATAL, errstr);
+			LogError(LogInfo, LOGFATAL, errstr);
 		}
 
 		x = 0;
 		lineno++;
 	}
 
-	CloseFile(&f);
+	CloseFile(&f, LogInfo);
 }
 
 /**

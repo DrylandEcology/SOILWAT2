@@ -28,7 +28,7 @@ namespace {
     TEST(ReadAllWeatherTest, DefaultValues) {
 
         // Testing to fill allHist from `SW_Weather`
-        SW_SKY_read(&SW_All.Sky);
+        SW_SKY_read(&LogInfo, &SW_All.Sky);
 
         readAllWeather(
           SW_All.Weather.allHist,
@@ -46,7 +46,8 @@ namespace {
           SW_All.Sky.windspeed,
           SW_All.Sky.r_humidity,
           SW_All.Model.cum_monthdays,
-          SW_All.Model.days_in_month
+          SW_All.Model.days_in_month,
+          &LogInfo
         );
 
         // Test first day of first year in `allHist` to make sure correct
@@ -70,7 +71,7 @@ namespace {
         SW_All.Model.endyr = 1982;
 
         // Real expectation is that there is no memory leak for `allHist`
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 
         EXPECT_EQ(SW_All.Weather.n_years, 2);
 
@@ -85,12 +86,12 @@ namespace {
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
-        SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+        SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
                      SW_All.Weather.generateWeatherMethod);
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
         SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
+        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
 
         // Expect that missing input values (from 1980) are filled by the weather generator
@@ -112,15 +113,15 @@ namespace {
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
-        SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+        SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
                      SW_All.Weather.generateWeatherMethod);
 
         SW_All.Model.startyr = 1981;
         SW_All.Model.endyr = 1982;
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
         SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
+        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
 
         // Check everyday's value and test if it's `MISSING`
@@ -141,15 +142,15 @@ namespace {
         SW_All.Weather.generateWeatherMethod = 2;
         SW_All.Weather.use_weathergenerator_only = swTRUE;
 
-        SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+        SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
                      SW_All.Weather.generateWeatherMethod);
 
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
         SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
+        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
         // Check everyday's value and test if it's `MISSING`
         for(year = 0; year < 31; year++) {
@@ -173,12 +174,12 @@ namespace {
         SW_All.Model.startyr = 1981;
         SW_All.Model.endyr = 1981;
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 
         // Error: too many missing values and weather generator turned off
         EXPECT_DEATH_IF_SUPPORTED(
           SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-          SW_All.Model.cum_monthdays, SW_All.Model.days_in_month),
+          SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo),
           "more than 3 days missing in year 1981 and weather generator turned off"
         );
 
@@ -715,7 +716,7 @@ namespace {
 
     TEST(WeatherReadTest, Initialization) {
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 
         EXPECT_FLOAT_EQ(SW_All.Weather.allHist[0]->temp_max[0], -.52);
 
@@ -733,10 +734,10 @@ namespace {
          int yearIndex = 0, midJanDay = 14;
 
          /* Test if monthly values are not being used */
-         SW_WTH_setup(&SW_All.Weather);
+         SW_WTH_setup(&SW_All.Weather, &LogInfo);
 
          // Read in all weather
-         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 
          // Test the middle of January in year 1980 and see if it's not equal to SW_All.Sky.r_humidity[0],
          // SW_All.Sky.cloudcov[0], and SW_All.Sky.windspeed[0]
@@ -764,7 +765,7 @@ namespace {
          int yearIndex = 0, year = 1980, midJanDay = 14;
 
         /* Test correct priority is being given to input values from DAYMET */
-         SW_WTH_setup(&SW_All.Weather);
+         SW_WTH_setup(&SW_All.Weather, &LogInfo);
 
              // Switch directory to gridmet input folder
          strcpy(SW_All.Weather.name_prefix, "Input/data_weather_gridmet/weath");
@@ -799,7 +800,8 @@ namespace {
              SW_All.Weather.name_prefix,
              SW_All.Weather.n_input_forcings,
              SW_All.Weather.dailyInputIndices,
-             SW_All.Weather.dailyInputFlags
+             SW_All.Weather.dailyInputFlags,
+             &LogInfo
          );
 
          result = SW_All.Weather.allHist[yearIndex]->r_humidity_daily[0];
@@ -842,7 +844,7 @@ namespace {
 
 
          // Make sure calculations and set input values are within reasonable range
-         checkAllWeather(&SW_All.Weather);
+         checkAllWeather(&SW_All.Weather, &LogInfo);
 
 
          // Reset SOILWAT2 for next test
@@ -865,7 +867,7 @@ namespace {
          int yearIndex = 0, year = 1980, midJanDay = 14;
 
          /* Test correct priority is being given to input values from DAYMET */
-         SW_WTH_setup(&SW_All.Weather);
+         SW_WTH_setup(&SW_All.Weather, &LogInfo);
 
                  // Switch directory to daymet input folder
          strcpy(SW_All.Weather.name_prefix, "Input/data_weather_daymet/weath");
@@ -896,7 +898,8 @@ namespace {
              SW_All.Weather.name_prefix,
              SW_All.Weather.n_input_forcings,
              SW_All.Weather.dailyInputIndices,
-             SW_All.Weather.dailyInputFlags
+             SW_All.Weather.dailyInputFlags,
+             &LogInfo
          );
 
          result = SW_All.Weather.allHist[yearIndex]->actualVaporPressure[0];
@@ -944,7 +947,7 @@ namespace {
 
 
          // Make sure calculations and set input values are within reasonable range
-         checkAllWeather(&SW_All.Weather);
+         checkAllWeather(&SW_All.Weather, &LogInfo);
 
          // Reset SOILWAT2 for next test
          Reset_SOILWAT2_after_UnitTest();
@@ -964,7 +967,7 @@ namespace {
 
          /* Test correct priority is being given to input values from MACA */
 
-         SW_WTH_setup(&SW_All.Weather);
+         SW_WTH_setup(&SW_All.Weather, &LogInfo);
 
                  // Switch directory to daymet input folder
          strcpy(SW_All.Weather.name_prefix, "Input/data_weather_maca/weath");
@@ -1001,7 +1004,8 @@ namespace {
              SW_All.Weather.name_prefix,
              SW_All.Weather.n_input_forcings,
              SW_All.Weather.dailyInputIndices,
-             SW_All.Weather.dailyInputFlags
+             SW_All.Weather.dailyInputFlags,
+             &LogInfo
          );
 
          result = SW_All.Weather.allHist[yearIndex]->windspeed_daily[0];
@@ -1048,7 +1052,7 @@ namespace {
 
 
          // Make sure calculations and set input values are within reasonable range
-         checkAllWeather(&SW_All.Weather);
+         checkAllWeather(&SW_All.Weather, &LogInfo);
 
          // Reset SOILWAT2 for next test
          Reset_SOILWAT2_after_UnitTest();
@@ -1068,7 +1072,7 @@ namespace {
         double cloudCovTestVal = .5, actVapPressTestVal = 4.23, windSpeedTestVal = 2.12;
 
         // Setup and read in weather
-        SW_WTH_setup(&SW_All.Weather);
+        SW_WTH_setup(&SW_All.Weather, &LogInfo);
 
         // Turn off flags for monthly values along with daily flags
         // so all daily variables aside from max/min temperature and precipiation
@@ -1077,7 +1081,7 @@ namespace {
         SW_All.Weather.use_humidityMonthly = swFALSE;
         SW_All.Weather.use_windSpeedMonthly = swFALSE;
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 
         // Setup values/flags for `generateMissingWeather()` to deal with
         SW_All.Weather.generateWeatherMethod = 1;
@@ -1088,7 +1092,7 @@ namespace {
         generateMissingWeather(&SW_All.Markov, SW_All.Weather.allHist,
                                1980, 1,
                                SW_All.Weather.generateWeatherMethod,
-                               numDaysLOCFTolerance);
+                               numDaysLOCFTolerance, &LogInfo);
 
         // Test to see if the first year of cloud cover, actual vapor pressure and
         // wind speed has been filled with cloudCovTestVal, actVapPressTestVal,
@@ -1120,7 +1124,7 @@ namespace {
 
          /* Not the same number of flags as columns */
 
-         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 
          // Set SW_WEATHER's n_input_forcings to a number that is
          // not the columns being read in
@@ -1134,7 +1138,8 @@ namespace {
                  SW_All.Weather.name_prefix,
                  SW_All.Weather.n_input_forcings,
                  SW_All.Weather.dailyInputIndices,
-                 SW_All.Weather.dailyInputFlags
+                 SW_All.Weather.dailyInputFlags,
+                 &LogInfo
              ),
              "Incomplete record 1"
          );
@@ -1150,7 +1155,7 @@ namespace {
          SW_All.Weather.allHist[0]->temp_max[0] = -102.;
 
          EXPECT_DEATH_IF_SUPPORTED(
-             checkAllWeather(&SW_All.Weather),
+             checkAllWeather(&SW_All.Weather, &LogInfo),
              "Daily input value for minimum temperature is greater than daily input value for maximum temperature"
          );
 
@@ -1162,7 +1167,7 @@ namespace {
          SW_All.Weather.allHist[0]->ppt[0] = -1.;
 
          EXPECT_DEATH_IF_SUPPORTED(
-             checkAllWeather(&SW_All.Weather),
+             checkAllWeather(&SW_All.Weather, &LogInfo),
              "Invalid daily precipitation value"
          );
 
@@ -1172,7 +1177,7 @@ namespace {
          SW_All.Weather.allHist[0]->r_humidity_daily[0] = -.1252;
 
          EXPECT_DEATH_IF_SUPPORTED(
-             checkAllWeather(&SW_All.Weather),
+             checkAllWeather(&SW_All.Weather, &LogInfo),
              "relative humidity value did not fall in the range"
          );
 

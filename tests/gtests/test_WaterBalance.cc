@@ -49,7 +49,7 @@ namespace {
     int i;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -70,7 +70,7 @@ namespace {
     SW_All.Site.use_soil_temp = swTRUE;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -93,7 +93,7 @@ namespace {
     SW_All.Site.percentRunon = 1.25;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -116,18 +116,19 @@ namespace {
     SW_All.Weather.use_weathergenerator_only = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
+    SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
+                 SW_All.Weather.generateWeatherMethod);
 
     // Point to nonexisting weather data
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
     // Prepare weather data
-    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
+    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -151,15 +152,16 @@ namespace {
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
     // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed, SW_All.Weather.generateWeatherMethod);
+    SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
+                 SW_All.Weather.generateWeatherMethod);
 
     // Prepare weather data
-    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
+    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -184,10 +186,10 @@ namespace {
     }
 
     // Re-calculate soils
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -209,10 +211,10 @@ namespace {
 
     // Re-calculate vegetation
     SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather, &SW_All.Model,
-                    SW_All.Site.latitude);
+                    SW_All.Site.latitude, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -230,22 +232,22 @@ namespace {
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     strcpy(SW_All.Site.site_swrc_name, (char *) "vanGenuchten1980");
-    SW_All.Site.site_swrc_type = encode_str2swrc(SW_All.Site.site_swrc_name);
+    SW_All.Site.site_swrc_type = encode_str2swrc(SW_All.Site.site_swrc_name, &LogInfo);
     strcpy(SW_All.Site.site_ptf_name, (char *) "Rosetta3");
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
     Mem_Free(InFiles[eSWRCp]);
-    InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in");
+    InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_All.Site);
+    SW_SWRC_read(&SW_All.Site, &LogInfo);
 
     // Update soils
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -265,22 +267,22 @@ namespace {
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     strcpy(SW_All.Site.site_swrc_name, (char *) "FXW");
-    SW_All.Site.site_swrc_type = encode_str2swrc(SW_All.Site.site_swrc_name);
+    SW_All.Site.site_swrc_type = encode_str2swrc(SW_All.Site.site_swrc_name, &LogInfo);
     strcpy(SW_All.Site.site_ptf_name, (char *) "neuroFX2021");
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
     Mem_Free(InFiles[eSWRCp]);
-    InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in");
+    InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_All.Site);
+    SW_SWRC_read(&SW_All.Site, &LogInfo);
 
     // Update soils
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -321,12 +323,12 @@ namespace {
     SW_All.Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
 
     // Prepare weather data
-    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model);
+    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
+    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {

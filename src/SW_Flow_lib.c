@@ -326,6 +326,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 @param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param[in] **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
 	in the simulation
+@param[in] LogInfo Holds information dealing with logfile output
 
 @sideeffect *swp_avg Weighted average of soilwater potential and transpiration coefficients (-bar).
 
@@ -333,7 +334,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
 
 void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, LyrIndex n_layers,
 						 unsigned int tr_regions[], double tr_coeff[], double swc[],
-						 SW_LAYER_INFO** lyr) {
+						 SW_LAYER_INFO** lyr, LOG_INFO* LogInfo) {
 	/**********************************************************************
 
 	 HISTORY:
@@ -365,7 +366,7 @@ void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, LyrIndex n_lay
 
 		for (i = 0; i < n_layers; i++) {
 			if (tr_regions[i] == r) {
-				swp += tr_coeff[i] * SW_SWRC_SWCtoSWP(swc[i], lyr[i]);
+				swp += tr_coeff[i] * SW_SWRC_SWCtoSWP(swc[i], lyr[i], LogInfo);
 				sumco += tr_coeff[i];
 			}
 		}
@@ -436,6 +437,7 @@ Based on equations from Parton 1978. @cite Parton1978
     litter and that bare soil evaporation is inhibited.
 @param[in] **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
 	in the simulation
+@param[in] LogInfo Holds information dealing with logfile output
 @param[out] *bserate Bare soil evaporation loss rate (cm/day).
 
 @sideeffect *bserate Updated bare soil evaporation loss rate (cm/day).
@@ -445,7 +447,7 @@ Based on equations from Parton 1978. @cite Parton1978
 void pot_soil_evap(unsigned int nelyrs, double ecoeff[], double totagb,
   double fbse, double petday, double shift, double shape, double inflec, double range,
   double width[], double swc[], double Es_param_limit, SW_LAYER_INFO** lyr,
-  double *bserate) {
+  LOG_INFO* LogInfo, double *bserate) {
 	/**********************************************************************
 	 HISTORY:
 	 4/30/92  (SLC)
@@ -480,7 +482,7 @@ void pot_soil_evap(unsigned int nelyrs, double ecoeff[], double totagb,
 	  }
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
-		avswp += x * SW_SWRC_SWCtoSWP(swc[i], lyr[i]);
+		avswp += x * SW_SWRC_SWCtoSWP(swc[i], lyr[i], LogInfo);
 	}
 
   // Note: avswp = 0 if swc = 0 because that is the return value of SW_SWRC_SWCtoSWP
@@ -509,6 +511,7 @@ Based on equations from Parton 1978. @cite Parton1978
 @param[in,out] *bserate Bare soil evaporation loss rate (cm/day).
 @param[in,out] **lyr Struct list of type SW_LAYER_INFO holding information
 	about every soil layer in the simulation
+@param[in] LogInfo Holds information dealing with logfile output
 @param[in] nelyrs Number of layers to consider in evaporation.
 @param[in] ecoeff Array of evaporation coefficients.
 @param[in] petday Potential evapotranspiration rate (cm/day).
@@ -521,9 +524,9 @@ Based on equations from Parton 1978. @cite Parton1978
 
 */
 
-void pot_soil_evap_bs(double *bserate, SW_LAYER_INFO** lyr, unsigned int nelyrs,
-  double ecoeff[], double petday, double shift, double shape, double inflec,
-  double range, double width[], double swc[]) {
+void pot_soil_evap_bs(double *bserate, SW_LAYER_INFO** lyr, LOG_INFO* LogInfo,
+	unsigned int nelyrs, double ecoeff[], double petday, double shift,
+	double shape, double inflec, double range, double width[], double swc[]) {
 	/**********************************************************************
 	 LOCAL:
 	 avswp     - average soil water potential over all layers
@@ -541,7 +544,7 @@ void pot_soil_evap_bs(double *bserate, SW_LAYER_INFO** lyr, unsigned int nelyrs,
 	for (i = 0; i < nelyrs; i++) {
 		x = width[i] * ecoeff[i];
 		sumwidth += x;
-		avswp += x * SW_SWRC_SWCtoSWP(swc[i], lyr[i]);
+		avswp += x * SW_SWRC_SWCtoSWP(swc[i], lyr[i], LogInfo);
 	}
 
 	avswp /= sumwidth;
@@ -724,6 +727,7 @@ added to input value (mm/day).
 @param[in] lyrFrozen Frozen information at each layer.
 @param[in] **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
 	in the simulation
+@param[in] LogInfo Holds information dealing with logfile output
 
 @sideeffect
   - swc Updated soil water content adjusted after evaporation.
@@ -733,7 +737,7 @@ added to input value (mm/day).
 
 void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyrs,
     double coeff[], double rate, double swcmin[], double lyrFrozen[],
-	SW_LAYER_INFO** lyr) {
+	SW_LAYER_INFO** lyr, LOG_INFO* LogInfo) {
 	/**********************************************************************
   HISTORY: 10 Jan 2002 - cwb - replaced two previous functions with
 	 this one.
@@ -749,7 +753,7 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q, tmpswp, d = 0.;
 
 	for (i = 0; i < nlyrs; i++) {
-		tmpswp = SW_SWRC_SWCtoSWP(swc[i], lyr[i]);
+		tmpswp = SW_SWRC_SWCtoSWP(swc[i], lyr[i], LogInfo);
 		if (GT(tmpswp, 0.)) {
 			swpfrac[i] = coeff[i] / tmpswp;
 		} else {
@@ -925,6 +929,7 @@ void percolate_unsaturated(
 	@param[in] scale Fraction of vegetation type to scale hydred.
 	@param[in] year Current year in simulation
 	@param[in] doy  Day of the year (base1) [1-366]
+	@param[in] LogInfo Holds information dealing with logfile output
 
 	@sideeffect
 		- swc Updated soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
@@ -943,7 +948,8 @@ void hydraulic_redistribution(
 	double shapeCond,
 	double scale,
 	TimeInt year,
-	TimeInt doy
+	TimeInt doy,
+	LOG_INFO* LogInfo
 ) {
 	/**********************************************************************
 	 HISTORY:
@@ -983,7 +989,7 @@ void hydraulic_redistribution(
 			swc[i] - fmin(lyr[i]->swcBulk_wiltpt, lyr[i]->swcBulk_atSWPcrit[vegk])
 		);
 
-		swp[i] = SW_SWRC_SWCtoSWP(swc[i], lyr[i]);
+		swp[i] = SW_SWRC_SWCtoSWP(swc[i], lyr[i], LogInfo);
 
 		/* Ryel et al. 2002: eq. 7 relative soil-root conductance */
 		relCondroot[i] = fmin(
@@ -1138,7 +1144,7 @@ void hydraulic_redistribution(
 
 	if (is_hd_adj) {
 		LogError(
-			logfp, LOGFATAL,
+			LogInfo, LOGFATAL,
 			"[%d-%d/veg(%d)]: "
 			"hydraulic redistribution failed to constrain to swc_min.",
 			year, doy, vegk
@@ -1431,6 +1437,7 @@ void SW_ST_init_run(ST_RGR_VALUES* StRegValues) {
 		(default is 180 cm from Parton's equation @cite Parton1984).
 	@param[in] nRgr Number of regressions
 		(1 extra is needed for the avgLyrTempR and oldavgLyrTempR for the last layer.
+	@param[in] LogInfo Holds information dealing with logfile output
 	@param[out] surfaceAvg Initialized surface air temperatature (&deg;C).
 	@param[out] lyrFrozen Frozen information at each layer.
 
@@ -1453,6 +1460,7 @@ void SW_ST_setup_run(
 	double deltaX,
 	double theMaxDepth,
 	unsigned int nRgr,
+	LOG_INFO* LogInfo,
 	double *surfaceAvg,
 	double* lyrFrozen
 ) {
@@ -1474,6 +1482,7 @@ void SW_ST_setup_run(
 			width, oldavgLyrTemp, sTconst,
 			nlyrs, fc, wp,
 			deltaX, theMaxDepth, nRgr,
+			LogInfo,
 			ptr_stError, soil_temp_init
 		);
 
@@ -1499,6 +1508,7 @@ void SW_ST_setup_run(
 @param deltaX The depth increment for the soil temperature calculations (cm).
 @param theMaxDepth the lower bound of the equation (cm).
 @param nRgr the number of regressions (1 extra value is needed for the avgLyrTempR).
+@param[in] LogInfo Holds information dealing with logfile output
 @param ptr_stError Booleans status of soil temperature error in *ptr_stError.
 @param soil_temp_init Flag specifying if the values for
 	`soil_temperature()` have been initialized
@@ -1513,7 +1523,7 @@ void SW_ST_setup_run(
 void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 	double width[], double oldavgLyrTemp[], double sTconst, unsigned int nlyrs,
 	double fc[], double wp[], double deltaX, double theMaxDepth,
-	unsigned int nRgr, Bool *ptr_stError, Bool *soil_temp_init) {
+	unsigned int nRgr, LOG_INFO* LogInfo, Bool *ptr_stError, Bool *soil_temp_init) {
 
 	// local vars
 	unsigned int x1 = 0, x2 = 0, j = 0, i;
@@ -1542,7 +1552,7 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 			(*ptr_stError) = swTRUE;
 
 			// if the error hasn't been reported yet... print an error to the logfile
-			LogError(logfp, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: "\
+			LogError(LogInfo, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: "\
 				"too many (n = %d) regression layers requested... "\
 				"soil temperature will NOT be calculated\n", nRgr);
 		}
@@ -1588,7 +1598,7 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 			(*ptr_stError) = swTRUE;
 
 			// if the error hasn't been reported yet... print an error to the logfile
-        LogError(logfp, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, SW_StRegValues->depths[nlyrs - 1]);
+        LogError(LogInfo, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, SW_StRegValues->depths[nlyrs - 1]);
 
 		}
 
@@ -2157,6 +2167,7 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param[in] H_gt Daily global (tilted) irradiation [MJ / m2]
 @param[in] year Current year in simulation
 @param[in] doy Day of the year (base1) [1-366]
+@param[in] LogInfo Holds information dealing with logfile output
 @param[out] maxLyrTemperature An array holding all of the layers maximum temperature (&deg;C)
 @param[out] minLyrTemperature An array holding all of the layers minimum temperature (&deg;C)
 @param[out] *ptr_stError Boolean indicating whether there was an error.
@@ -2172,8 +2183,8 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 	double t1Param3, double csParam1, double csParam2, double shParam,
 	double snowdepth, double sTconst, double deltaX, double theMaxDepth,
 	unsigned int nRgr, double snow, double max_air_temp, double min_air_temp,
-	double H_gt, TimeInt year, TimeInt doy, double maxLyrTemperature[],
-	double minLyrTemperature[], Bool *ptr_stError) {
+	double H_gt, TimeInt year, TimeInt doy, LOG_INFO* LogInfo,
+	double maxLyrTemperature[], double minLyrTemperature[], Bool *ptr_stError) {
 
 	unsigned int i, sFadjusted_avgLyrTemp;
   #ifdef SWDEBUG
@@ -2208,7 +2219,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 		*ptr_stError = swTRUE;
 
 		LogError(
-			logfp,
+			LogInfo,
 			LOGFATAL,
 			"SOILWAT2 ERROR soil temperature module was not initialized.\n"
 		);
@@ -2334,7 +2345,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 	// question: should we ever reset delta_time to SEC_PER_DAY?
 
 	if (*ptr_stError) {
-		LogError(logfp, LOGWARN, "SOILWAT2 ERROR in soil temperature module: "
+		LogError(LogInfo, LOGWARN, "SOILWAT2 ERROR in soil temperature module: "
 			"stability criterion failed despite reduced time step = %f seconds; "
 			"soil temperature is being turned off\n", SW_StRegValues->delta_time);
 	}

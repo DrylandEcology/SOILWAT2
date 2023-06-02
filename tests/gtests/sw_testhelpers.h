@@ -20,6 +20,7 @@ static const double
 
 extern SW_ALL SW_All;
 extern SW_OUTPUT_POINTERS SW_OutputPtrs;
+extern LOG_INFO LogInfo;
 
 /* Functions for unit tests */
 

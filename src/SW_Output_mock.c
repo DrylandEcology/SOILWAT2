@@ -18,7 +18,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "include/generic.h"
-#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
+#include "include/filefuncs.h" // externs `_firstfile`
 #include "include/myMemory.h"
 #include "include/Times.h"
 
@@ -60,11 +60,13 @@ char const *pd2longstr[] = {"SW_MISSING"};
 /*             Global Function Definitions             */
 /*             (declared in SW_Output.h)               */
 /* --------------------------------------------------- */
-void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms)
+void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
+						 LOG_INFO* LogInfo)
 {
 	/* Silence compiler */
 	(void) tLayers;
 	(void) parms;
+	(void) LogInfo;
 }
 
 void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count)
@@ -102,21 +104,26 @@ void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 	(void) SW_Output;
 }
 
-void SW_OUT_read(SW_ALL* sw)
+void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo)
 {
-	(void) sw; // use sw to silence compiler warnings
+	/* use sw to silence compiler warnings */
+	(void) sw;
+	(void) LogInfo;
 }
 
-void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs)
+void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+					 LOG_INFO* LogInfo)
 {
 	/* silence compiler warnings */
 	(void) sw;
 	(void) SW_OutputPtrs;
+	(void) LogInfo;
 }
 
-void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs)
+void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+				  LOG_INFO* LogInfo)
 {
-	_collect_values(sw, SW_OutputPtrs);
+	_collect_values(sw, SW_OutputPtrs, LogInfo);
 }
 
 void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp)

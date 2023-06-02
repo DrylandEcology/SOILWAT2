@@ -79,7 +79,7 @@ namespace {
     //--- Matching PTF-SWRC pairs
     // (k starts at 1 because 0 holds the SWRC)
 
-    swrc_type = encode_str2swrc((char *) ns_ptfca2C1974[0]);
+    swrc_type = encode_str2swrc((char *) ns_ptfca2C1974[0], &LogInfo);
     for (k = 1; k < length(ns_ptfca2C1974); k++) {
       SWRC_PTF_estimate_parameters(
         encode_str2ptf((char *) ns_ptfca2C1974[k]),
@@ -87,12 +87,13 @@ namespace {
         sand,
         clay,
         gravel,
-        bdensity
+        bdensity,
+        &LogInfo
       );
-      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     }
 
-    swrc_type = encode_str2swrc((char *) ns_ptfc2vG1980[0]);
+    swrc_type = encode_str2swrc((char *) ns_ptfc2vG1980[0], &LogInfo);
     for (k = 1; k < length(ns_ptfc2vG1980); k++) {
       SWRC_PTF_estimate_parameters(
         encode_str2ptf((char *) ns_ptfc2vG1980[k]),
@@ -100,12 +101,13 @@ namespace {
         sand,
         clay,
         gravel,
-        bdensity
+        bdensity,
+        &LogInfo
       );
-      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     }
 
-    swrc_type = encode_str2swrc((char *) ns_ptfc2FXW[0]);
+    swrc_type = encode_str2swrc((char *) ns_ptfc2FXW[0], &LogInfo);
     for (k = 1; k < length(ns_ptfc2FXW); k++) {
       SWRC_PTF_estimate_parameters(
         encode_str2ptf((char *) ns_ptfc2FXW[k]),
@@ -113,9 +115,10 @@ namespace {
         sand,
         clay,
         gravel,
-        bdensity
+        bdensity,
+        &LogInfo
       );
-      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     }
   }
 
@@ -142,7 +145,8 @@ namespace {
         sand,
         clay,
         gravel,
-        bdensity
+        bdensity,
+        &LogInfo
       ),
       "PTF is not implemented in SOILWAT2"
     );
@@ -238,7 +242,7 @@ namespace {
     swrc_type = N_SWRCs + 1;
 
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_check_parameters(swrc_type, swrcp),
+      SWRC_check_parameters(swrc_type, swrcp, &LogInfo),
       "is not implemented"
     );
   }
@@ -255,75 +259,75 @@ namespace {
 
 
     //--- SWRC: Campbell1974
-    swrc_type = encode_str2swrc((char *) "Campbell1974");
+    swrc_type = encode_str2swrc((char *) "Campbell1974", &LogInfo);
     memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 24.2159;
     swrcp[1] = 0.4436;
     swrcp[2] = 10.3860;
     swrcp[3] = 14.14351;
-    EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
 
     // Param1 = psi_sat (> 0)
     tmp = swrcp[0];
     swrcp[0] = -1.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[0] = tmp;
 
     // Param2 = theta_sat (0-1)
     tmp = swrcp[1];
     swrcp[1] = -1.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[1] = 1.5;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[1] = tmp;
 
     // Param3 = beta (!= 0)
     tmp = swrcp[2];
     swrcp[2] = 0.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[2] = tmp;
 
 
 
     //--- Fail SWRC: vanGenuchten1980
-    swrc_type = encode_str2swrc((char *) "vanGenuchten1980");
+    swrc_type = encode_str2swrc((char *) "vanGenuchten1980", &LogInfo);
     memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 0.1246;
     swrcp[1] = 0.4445;
     swrcp[2] = 0.0112;
     swrcp[3] = 1.2673;
     swrcp[4] = 7.7851;
-    EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
 
 
     // Param1 = theta_res (0-1)
     tmp = swrcp[0];
     swrcp[0] = -1.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[0] = 1.5;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[0] = tmp;
 
     // Param2 = theta_sat (0-1 & > theta_res)
     tmp = swrcp[1];
     swrcp[1] = -1.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[1] = 1.5;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[1] = 0.5 * swrcp[0];
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[1] = tmp;
 
     // Param3 = alpha (> 0)
     tmp = swrcp[2];
     swrcp[2] = 0.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[2] = tmp;
 
     // Param4 = n (> 1)
     tmp = swrcp[3];
     swrcp[3] = 1.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[3] = tmp;
 
 
@@ -331,7 +335,7 @@ namespace {
 
 
     //--- Fail SWRC: FXW
-    swrc_type = encode_str2swrc((char *) "FXW");
+    swrc_type = encode_str2swrc((char *) "FXW", &LogInfo);
     memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 0.437461;
     swrcp[1] = 0.050757;
@@ -339,45 +343,45 @@ namespace {
     swrcp[3] = 0.308681;
     swrcp[4] = 22.985379;
     swrcp[5] = 2.697338;
-    EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
 
 
     // Param1 = theta_sat (0-1)
     tmp = swrcp[0];
     swrcp[0] = -1.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[0] = 1.5;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[0] = tmp;
 
     // Param2 = alpha (> 0)
     tmp = swrcp[1];
     swrcp[1] = 0.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[1] = tmp;
 
     // Param3 = n (> 1)
     tmp = swrcp[2];
     swrcp[2] = 1.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[2] = tmp;
 
     // Param4 = m (> 0)
     tmp = swrcp[3];
     swrcp[3] = 0.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[3] = tmp;
 
     // Param5 = Ksat (> 0)
     tmp = swrcp[4];
     swrcp[4] = 0.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[4] = tmp;
 
     // Param6 = L (> 0)
     tmp = swrcp[5];
     swrcp[5] = 0.;
-    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp));
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     swrcp[5] = tmp;
   }
 
@@ -394,22 +398,22 @@ namespace {
 
     //--- EXPECT SW_MISSING if soil texture is out of range
     // within range: sand [0.05, 0.7], clay [0.05, 0.6], porosity [0.1, 1[
-    PTF_RawlsBrakensiek1985(&theta_min, 0., clay, porosity);
+    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, 0., clay, porosity);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, 0.75, clay, porosity);
+    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, 0.75, clay, porosity);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, sand, 0., porosity);
+    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, sand, 0., porosity);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, sand, 0.65, porosity);
+    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, sand, 0.65, porosity);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 0.);
+    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, sand, clay, 0.);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 1.);
+    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, sand, clay, 1.);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
 
@@ -423,7 +427,7 @@ namespace {
         for (k3 = 0; k3 <= 5; k3++) {
           porosity = 0.1 + (double) k3 / 5. * (0.99 - 0.1);
 
-          PTF_RawlsBrakensiek1985(&theta_min, sand, clay, porosity);
+          PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, sand, clay, porosity);
           EXPECT_GE(theta_min, 0.);
           EXPECT_LT(theta_min, porosity);
         }
@@ -431,7 +435,7 @@ namespace {
     }
 
     // Expect theta_min = 0 if sand = 0.4, clay = 0.5, and porosity = 0.1
-    PTF_RawlsBrakensiek1985(&theta_min, 0.4, 0.5, 0.1);
+    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, 0.4, 0.5, 0.1);
     EXPECT_DOUBLE_EQ(theta_min, 0);
   }
 
@@ -445,7 +449,7 @@ namespace {
     help = SW_All.Site.lyr[n1]->evap_coeff;
     SW_All.Site.lyr[n1]->evap_coeff = -0.5;
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site),
+      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo),
       "'bare-soil evaporation coefficient' has an invalid value"
     );
     SW_All.Site.lyr[n1]->evap_coeff = help;
@@ -453,7 +457,7 @@ namespace {
     // Check error for bad transpiration coefficient (should be [0-1])
     SW_All.Site.lyr[n2]->transp_coeff[k] = 1.5;
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site),
+      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo),
       "'transpiration coefficient' has an invalid value"
     );
 
@@ -484,7 +488,7 @@ namespace {
     // Check that "default" values do not change region bounds
     nRegions = 3;
     RealD regionLowerBounds1[] = {20., 40., 100.};
-    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds1);
+    derive_soilRegions(&SW_All.Site, &LogInfo, nRegions, regionLowerBounds1);
 
     for (i = 0; i < nRegions; ++i) {
       // Quickly calculate soil depth for current region as output information
@@ -502,7 +506,7 @@ namespace {
     // Check that setting one region for all soil layers works
     nRegions = 1;
     RealD regionLowerBounds2[] = {100.};
-    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds2);
+    derive_soilRegions(&SW_All.Site, &LogInfo, nRegions, regionLowerBounds2);
 
     for (i = 0; i < nRegions; ++i) {
       EXPECT_EQ(SW_All.Site.n_layers - 1, _TranspRgnBounds[i]) <<
@@ -513,7 +517,7 @@ namespace {
     // Check that setting one region for one soil layer works
     nRegions = 1;
     RealD regionLowerBounds3[] = {SW_All.Site.lyr[0]->width};
-    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds3);
+    derive_soilRegions(&SW_All.Site, &LogInfo, nRegions, regionLowerBounds3);
 
     for (i = 0; i < nRegions; ++i) {
       EXPECT_EQ(0, _TranspRgnBounds[i]) <<
@@ -530,7 +534,7 @@ namespace {
       soildepth += SW_All.Site.lyr[i]->width;
       regionLowerBounds4[i] = soildepth;
     }
-    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds4);
+    derive_soilRegions(&SW_All.Site, &LogInfo, nRegions, regionLowerBounds4);
 
     for (i = 0; i < nRegions; ++i) {
       EXPECT_EQ(i, _TranspRgnBounds[i]) <<
@@ -553,7 +557,7 @@ namespace {
 
     // Check that matric density is zero if coarse fragments is 100%
     EXPECT_DOUBLE_EQ(
-      calculate_soilMatricDensity(soildensity, 1.),
+      calculate_soilMatricDensity(soildensity, 1., &LogInfo),
       0.
     );
 
@@ -561,14 +565,14 @@ namespace {
     // Check that bulk and matric soil density are equal if no coarse fragments
     EXPECT_DOUBLE_EQ(
       calculate_soilBulkDensity(soildensity, 0.),
-      calculate_soilMatricDensity(soildensity, 0.)
+      calculate_soilMatricDensity(soildensity, 0., &LogInfo)
     );
 
 
     // Check that bulk and matric density calculations are inverse to each other
     EXPECT_DOUBLE_EQ(
       calculate_soilBulkDensity(
-        calculate_soilMatricDensity(soildensity, fcoarse),
+        calculate_soilMatricDensity(soildensity, fcoarse, &LogInfo),
         fcoarse
       ),
       soildensity
@@ -577,7 +581,8 @@ namespace {
     EXPECT_DOUBLE_EQ(
       calculate_soilMatricDensity(
         calculate_soilBulkDensity(soildensity, fcoarse),
-        fcoarse
+        fcoarse,
+        &LogInfo
       ),
       soildensity
     );
@@ -593,7 +598,7 @@ namespace {
     // Inputs represent matric density
     SW_All.Site.type_soilDensityInput = SW_MATRIC;
     SW_All.Site.lyr[0]->fractionVolBulk_gravel = fcoarse;
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     EXPECT_GT(
       SW_All.Site.lyr[0]->soilBulk_density,
@@ -604,7 +609,7 @@ namespace {
     // Inputs represent bulk density
     SW_All.Site.type_soilDensityInput = SW_BULK;
     SW_All.Site.lyr[0]->fractionVolBulk_gravel = fcoarse;
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     EXPECT_GT(
       SW_All.Site.lyr[0]->soilBulk_density,
@@ -622,7 +627,7 @@ namespace {
 
     // Check error if bulk density too low for coarse fragments
     EXPECT_DEATH_IF_SUPPORTED(
-      calculate_soilMatricDensity(1.65, 0.7),
+      calculate_soilMatricDensity(1.65, 0.7, &LogInfo),
       "is lower than expected"
     );
 
@@ -631,7 +636,7 @@ namespace {
     SW_All.Site.type_soilDensityInput = SW_MISSING;
 
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site),
+      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo),
       "Soil density type not recognized"
     );
 

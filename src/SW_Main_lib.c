@@ -34,7 +34,6 @@
 
 // externed by "SW_Main_lib.h"
 char _firstfile[MAX_FILENAMESIZE];
-char errstr[MAX_ERROR]; /* used to compose an error msg    */
 
 // externed by "filefuncs.h"
 char inbuf[MAX_FILENAMESIZE]; /* buffer used by input statements */
@@ -161,7 +160,7 @@ void sw_init_args(int argc, char **argv, LOG_INFO* LogInfo,
 			switch (op) {
 				case 0: /* -d */
 					if (!ChDir(str)) {
-						LogError(logfp, LOGFATAL, "Invalid project directory (%s)", str);
+						LogError(LogInfo, LOGFATAL, "Invalid project directory (%s)", str);
 					}
 					break;
 
@@ -189,7 +188,7 @@ void sw_init_args(int argc, char **argv, LOG_INFO* LogInfo,
 
 				default:
 					LogError(
-						logfp,
+						LogInfo,
 						LOGFATAL,
 						"Programmer: bad option in main:sw_init_args:switch"
 					);

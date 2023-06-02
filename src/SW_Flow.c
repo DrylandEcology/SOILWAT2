@@ -265,7 +265,7 @@ void SW_FLW_init_run(SW_SOILWAT* SW_SoilWat) {
 /* *************************************************** */
 /*            The Water Flow                           */
 /* --------------------------------------------------- */
-void SW_Water_Flow(SW_ALL* sw) {
+void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 	#ifdef SWDEBUG
 	IntUS debug = 0, debug_year = 1980, debug_doy = 350;
 	double Eveg, Tveg, HRveg;
@@ -324,6 +324,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 			sw->Site.stDeltaX,
 			sw->Site.stMaxDepth,
 			sw->Site.stNRGR,
+			LogInfo,
 			&sw->Weather.surfaceAvg, // yesterday's soil surface temperature
 			sw->SoilWat.lyrFrozen
 		);
@@ -339,6 +340,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 
 	sw->SoilWat.H_gt = solar_radiation(
 		&sw->AtmDemand,
+		LogInfo,
 		doy,
 		sw->Site.latitude,
 		sw->Site.altitude,
@@ -355,6 +357,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 	);
 
 	sw->SoilWat.pet = sw->Site.pet_scale * petfunc(
+		LogInfo,
 		sw->SoilWat.H_gt,
 		sw->Weather.now.temp_avg,
 		sw->Site.altitude,
@@ -507,9 +510,10 @@ void SW_Water_Flow(SW_ALL* sw) {
 	/* Potential bare-soil evaporation rates */
 	if (GT(sw->VegProd.bare_cov.fCover, 0.) && EQ(sw->SoilWat.snowpack[Today], 0.)) /* bare ground present AND no snow on ground */
 	{
-		pot_soil_evap_bs(&soil_evap_rate_bs, sw->Site.lyr, sw->Site.n_evap_lyrs,
-			lyrEvapCo, sw->SoilWat.pet, sw->Site.evap.xinflec, sw->Site.evap.slope,
-			sw->Site.evap.yinflec, sw->Site.evap.range, lyrWidths, sw->SoilWat.swcBulk[Today]);
+		pot_soil_evap_bs(&soil_evap_rate_bs, sw->Site.lyr, LogInfo,
+			sw->Site.n_evap_lyrs, lyrEvapCo, sw->SoilWat.pet,
+			sw->Site.evap.xinflec, sw->Site.evap.slope, sw->Site.evap.yinflec,
+			sw->Site.evap.range, lyrWidths, sw->SoilWat.swcBulk[Today]);
 		soil_evap_rate_bs *= sw->VegProd.bare_cov.fCover;
 
 	} else {
@@ -530,7 +534,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 					sw->VegProd.veg[k].total_agb_daily[doy], soil_evap[k], sw->SoilWat.pet,
 					sw->Site.evap.xinflec, sw->Site.evap.slope, sw->Site.evap.yinflec, sw->Site.evap.range,
 					lyrWidths, sw->SoilWat.swcBulk[Today], sw->VegProd.veg[k].Es_param_limit, sw->Site.lyr,
-					&soil_evap_rate[k]);
+					LogInfo, &soil_evap_rate[k]);
 
 				soil_evap_rate[k] *= sw->VegProd.veg[k].cov.fCover;
 
@@ -539,7 +543,8 @@ void SW_Water_Flow(SW_ALL* sw) {
 			}
 
 			transp_weighted_avg(&swpot_avg[k], sw->Site.n_transp_rgn, sw->Site.n_transp_lyrs[k],
-				lyrTrRegions[k], lyrTranspCo[k], sw->SoilWat.swcBulk[Today], sw->Site.lyr);
+				lyrTrRegions[k], lyrTranspCo[k], sw->SoilWat.swcBulk[Today], sw->Site.lyr,
+				LogInfo);
 
 			pot_transp(&transp_rate[k], swpot_avg[k],
 				sw->VegProd.veg[k].biolive_daily[doy], sw->VegProd.veg[k].biodead_daily[doy],
@@ -625,7 +630,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 		/* remove bare-soil evap from swv */
 		remove_from_soil(sw->SoilWat.swcBulk[Today], sw->SoilWat.evap_baresoil, &sw->SoilWat.aet, sw->Site.n_evap_lyrs,
 			lyrEvapCo, soil_evap_rate_bs, lyrSWCBulk_HalfWiltpts, sw->SoilWat.lyrFrozen,
-			sw->Site.lyr);
+			sw->Site.lyr, LogInfo);
 	}
 
 	#ifdef SWDEBUG
@@ -653,12 +658,12 @@ void SW_Water_Flow(SW_ALL* sw) {
 			/* remove bare-soil evap from swc */
 			remove_from_soil(sw->SoilWat.swcBulk[Today], sw->SoilWat.evap_baresoil, &sw->SoilWat.aet, sw->Site.n_evap_lyrs,
 				lyrEvapCo, soil_evap_rate[k], lyrSWCBulk_HalfWiltpts, sw->SoilWat.lyrFrozen,
-				sw->Site.lyr);
+				sw->Site.lyr, LogInfo);
 
 			/* remove transp from swc */
 			remove_from_soil(sw->SoilWat.swcBulk[Today], sw->SoilWat.transpiration[k], &sw->SoilWat.aet, sw->Site.n_transp_lyrs[k],
 				lyrTranspCo[k], transp_rate[k], lyrSWCBulk_atSWPcrit[k], sw->SoilWat.lyrFrozen,
-				sw->Site.lyr);
+				sw->Site.lyr, LogInfo);
 		}
 	}
 
@@ -703,7 +708,8 @@ void SW_Water_Flow(SW_ALL* sw) {
 				sw->VegProd.veg[k].shapeCond,
 				sw->VegProd.veg[k].cov.fCover,
 				sw->Model.year,
-				sw->Model.doy
+				sw->Model.doy,
+				LogInfo
 			);
 
 		} else {
@@ -801,7 +807,7 @@ void SW_Water_Flow(SW_ALL* sw) {
 			sw->Site.stDeltaX, sw->Site.stMaxDepth, sw->Site.stNRGR,
 			sw->SoilWat.snowpack[Today], sw->Weather.now.temp_max,
 			sw->Weather.now.temp_min, sw->SoilWat.H_gt, sw->Model.year,
-			sw->Model.doy, sw->SoilWat.maxLyrTemperature,
+			sw->Model.doy, LogInfo, sw->SoilWat.maxLyrTemperature,
 			sw->SoilWat.minLyrTemperature, &sw->SoilWat.soiltempError);
 	}
 

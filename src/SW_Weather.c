@@ -514,6 +514,7 @@ void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYe
  to be interpolated
  @param[in] cum_monthdays Monthly cumulative number of days for "current" year
  @param[in] days_in_month Number of days per month for "current" year
+ @param[in] LogInfo Holds information dealing with logfile output
 
 */
 void readAllWeather(
@@ -532,7 +533,8 @@ void readAllWeather(
   RealD *windspeed,
   RealD *r_humidity,
   TimeInt cum_monthdays[],
-  TimeInt days_in_month[]
+  TimeInt days_in_month[],
+  LOG_INFO* LogInfo
 ) {
     unsigned int yearIndex, year;
 
@@ -573,7 +575,8 @@ void readAllWeather(
               weather_prefix,
               n_input_forcings,
               dailyInputIndices,
-              dailyInputFlags
+              dailyInputFlags,
+              LogInfo
             );
         }
     }
@@ -590,13 +593,14 @@ void readAllWeather(
 		information pretaining to meteorological input data
   @param[in] cum_monthdays Monthly cumulative number of days for "current" year
   @param[in] days_in_month Number of days per month for "current" year
+  @param[in] LogInfo Holds information dealing with logfile output
 
   Finalize weather values after they have been read in via
   `readAllWeather()` or `SW_WTH_read()`
   (the latter also handles (re-)allocation).
 */
 void finalizeAllWeather(SW_MARKOV* SW_Markov, SW_WEATHER *w,
-                        TimeInt cum_monthdays[], TimeInt days_in_month[]) {
+          TimeInt cum_monthdays[], TimeInt days_in_month[], LOG_INFO* LogInfo) {
 
   unsigned int day, yearIndex;
 
@@ -607,7 +611,8 @@ void finalizeAllWeather(SW_MARKOV* SW_Markov, SW_WEATHER *w,
     w->startYear,
     w->n_years,
     w->generateWeatherMethod,
-    3 // optLOCF_nMax (TODO: make this user input)
+    3, // optLOCF_nMax (TODO: make this user input)
+    LogInfo
   );
 
   // Check to see if actual vapor pressure needs to be calculated
@@ -648,14 +653,14 @@ void finalizeAllWeather(SW_MARKOV* SW_Markov, SW_WEATHER *w,
 
   // Make sure all input, scaled, generated, and calculated daily weather values
   // are within reason
-  checkAllWeather(w);
+  checkAllWeather(w, LogInfo);
 }
 
 
 void SW_WTH_finalize_all_weather(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather,
-                            TimeInt cum_monthdays[], TimeInt days_in_month[]) {
+              TimeInt cum_monthdays[], TimeInt days_in_month[], LOG_INFO* LogInfo) {
 
-  finalizeAllWeather(SW_Markov, SW_Weather, cum_monthdays, days_in_month);
+  finalizeAllWeather(SW_Markov, SW_Weather, cum_monthdays, days_in_month, LogInfo);
 }
 
 
@@ -828,6 +833,7 @@ void scaleAllWeather(
     missing values (see details).
   @param[in] optLOCF_nMax Maximum number of missing days per year (e.g., 5)
     before imputation by `LOCF` throws an error.
+  @param[in] LogInfo Holds information dealing with logfile output
 */
 void generateMissingWeather(
   SW_MARKOV* SW_Markov,
@@ -835,7 +841,8 @@ void generateMissingWeather(
   int startYear,
   unsigned int n_years,
   unsigned int method,
-  unsigned int optLOCF_nMax
+  unsigned int optLOCF_nMax,
+  LOG_INFO* LogInfo
 ) {
 
   int year;
@@ -856,7 +863,7 @@ void generateMissingWeather(
   // Error out if method not implemented
   if (method > 2) {
     LogError(
-      logfp,
+      LogInfo,
       LOGFATAL,
       "generateMissingWeather(): method = %u is not implemented.\n",
       method
@@ -892,6 +899,7 @@ void generateMissingWeather(
           allHist[yearIndex]->ppt[day] = yesterdayPPT;
           SW_MKV_today(
             SW_Markov, day, year,
+            LogInfo,
             &allHist[yearIndex]->temp_max[day],
             &allHist[yearIndex]->temp_min[day],
             &allHist[yearIndex]->ppt[day]
@@ -938,7 +946,7 @@ void generateMissingWeather(
 
           if (iMissing > optLOCF_nMax) {
             LogError(
-              logfp,
+              LogInfo,
               LOGFATAL,
               "generateMissingWeather(): more than %u days missing in year %u "
               "and weather generator turned off.\n",
@@ -972,8 +980,9 @@ void generateMissingWeather(
  after possible weather generation and scaling. If a value is to be found unreasonable, the function will execute a program crash.
 
  @param weather Struct of type SW_WEATHER holding all relevant information pretaining to weather input data
+ @param[in] LogInfo Holds information dealing with logfile output
  */
-void checkAllWeather(SW_WEATHER *weather) {
+void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
 
     // Initialize any variables
     TimeInt year, doy, numDaysInYear;
@@ -996,7 +1005,7 @@ void checkAllWeather(SW_WEATHER *weather) {
                dailyMinTemp > dailyMaxTemp) {
 
                 // Fail
-                LogError(logfp, LOGFATAL, "Daily input value for minimum temperature"
+                LogError(LogInfo, LOGFATAL, "Daily input value for minimum temperature"
                          " is greater than daily input value for maximum temperature (minimum = %f, maximum = %f)"
                          " on day %d of year %d.", dailyMinTemp, dailyMaxTemp, doy + 1, year + weather->startYear);
             }
@@ -1009,7 +1018,7 @@ void checkAllWeather(SW_WEATHER *weather) {
                    ) {
 
                 // Fail
-                LogError(logfp, LOGFATAL, "Daily minimum and/or maximum temperature on "
+                LogError(LogInfo, LOGFATAL, "Daily minimum and/or maximum temperature on "
                          "day %d of year %d do not fit in the range of [-100, 100] C.",
                          doy, year + weather->startYear);
             }
@@ -1017,7 +1026,7 @@ void checkAllWeather(SW_WEATHER *weather) {
             else if(!missing(weathHist[year]->ppt[doy]) && weathHist[year]->ppt[doy] < 0) {
 
                 // Fail
-                LogError(logfp, LOGFATAL, "Invalid daily precipitation value: %f cm (< 0) on day %d of year %d.",
+                LogError(LogInfo, LOGFATAL, "Invalid daily precipitation value: %f cm (< 0) on day %d of year %d.",
                          weathHist[year]->ppt[doy], doy + 1, year + weather->startYear);
             }
             // Otherwise, check if relative humidity is less than 0% or greater than 100%
@@ -1028,7 +1037,7 @@ void checkAllWeather(SW_WEATHER *weather) {
                    ) {
 
                 // Fail
-                LogError(logfp, LOGFATAL, "Invalid daily/calculated relative humidity value did"
+                LogError(LogInfo, LOGFATAL, "Invalid daily/calculated relative humidity value did"
                          " not fall in the range [0, 100] % (relative humidity = %f). ",
                          weathHist[year]->r_humidity_daily[doy]);
             }
@@ -1041,7 +1050,7 @@ void checkAllWeather(SW_WEATHER *weather) {
                    ) {
 
                 // Fail
-                LogError(logfp, LOGFATAL, "Invalid daily/calculated cloud cover value did"
+                LogError(LogInfo, LOGFATAL, "Invalid daily/calculated cloud cover value did"
                          " not fall in the range [0, 100] % (cloud cover = %f). ",
                          weathHist[year]->cloudcov_daily[doy]);
             }
@@ -1050,7 +1059,7 @@ void checkAllWeather(SW_WEATHER *weather) {
                     weathHist[year]->windspeed_daily[doy] < 0.) {
 
                 // Fail
-                LogError(logfp, LOGFATAL, "Invalid daily wind speed value is less than zero."
+                LogError(LogInfo, LOGFATAL, "Invalid daily wind speed value is less than zero."
                          "(wind speed = %f) on day %d of year %d. ",
                          weathHist[year]->windspeed_daily[doy], doy + 1, year + weather->startYear);
             }
@@ -1059,7 +1068,7 @@ void checkAllWeather(SW_WEATHER *weather) {
                     weathHist[year]->shortWaveRad[doy] < 0.) {
 
                 // Fail
-                LogError(logfp, LOGFATAL, "Invalid daily shortwave radiation value is less than zero."
+                LogError(LogInfo, LOGFATAL, "Invalid daily shortwave radiation value is less than zero."
                          "(shortwave radation = %f) on day %d of year %d. ",
                          weathHist[year]->shortWaveRad[doy], doy + 1, year + weather->startYear);
             }
@@ -1068,7 +1077,7 @@ void checkAllWeather(SW_WEATHER *weather) {
                     weathHist[year]->actualVaporPressure[doy] < 0.) {
 
                 // Fail
-                LogError(logfp, LOGFATAL, "Invalid daily actual vapor pressure value is less than zero."
+                LogError(LogInfo, LOGFATAL, "Invalid daily actual vapor pressure value is less than zero."
                          "(actual vapor pressure = %f) on day %d of year %d. ",
                          weathHist[year]->actualVaporPressure[doy], doy + 1, year + weather->startYear);
             }
@@ -1107,10 +1116,11 @@ void _clear_hist_weather(SW_WEATHER_HIST *yearWeather) {
 /**
 @brief Constructor for SW_Weather.
 
+@param[in] LogInfo Holds information dealing with logfile output
 @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
 */
-void SW_WTH_construct(SW_WEATHER* SW_Weather) {
+void SW_WTH_construct(LOG_INFO* LogInfo, SW_WEATHER* SW_Weather) {
 	/* =================================================== */
 	OutPeriod pd;
 
@@ -1121,10 +1131,10 @@ void SW_WTH_construct(SW_WEATHER* SW_Weather) {
 	ForEachOutPeriod(pd)
 	{
 		SW_Weather->p_accu[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()");
+			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()", LogInfo);
 		if (pd > eSW_Day) {
 			SW_Weather->p_oagg[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
-				sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()");
+				sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()", LogInfo);
 		}
 	}
     SW_Weather->n_years = 0;
@@ -1235,9 +1245,10 @@ void SW_WTH_init_run(SW_WEATHER* SW_Weather) {
 @param[in] snowpack[] swe of snowpack, assuming accumulation is turned on
 @param[in] doy Day of the year (base1) [1-366]
 @param[in] year Current year being run in the simulation
+@param[in] LogInfo Holds information dealing with logfile output
 */
 void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
-                    TimeInt doy, TimeInt year) {
+                    TimeInt doy, TimeInt year, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/*  History
 	 *
@@ -1286,7 +1297,7 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
       )
     ) {
       LogError(
-        logfp,
+        LogInfo,
         LOGFATAL,
         "Missing weather data (day %u - %u) during simulation.",
         year,
@@ -1324,8 +1335,9 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
 
 @param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_WTH_setup(SW_WEATHER* SW_Weather) {
+void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	const int nitems = 35;
 	FILE *f;
@@ -1337,7 +1349,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
     Bool *dailyInputFlags = SW_Weather->dailyInputFlags;
 
 	char *MyFileName = SW_F_name(eWeather);
-	f = OpenFile(MyFileName, "r");
+	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
@@ -1378,9 +1390,9 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
 					break;
 
 				default:
-					CloseFile(&f);
+					CloseFile(&f, LogInfo);
 					LogError(
-						logfp,
+						LogInfo,
 						LOGFATAL,
 						"%s : Bad missing weather method %d.",
 						MyFileName,
@@ -1477,8 +1489,8 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
 			);
 
 			if (x != 9) {
-				CloseFile(&f);
-				LogError(logfp, LOGFATAL, "%s : Bad record %d.", MyFileName, lineno);
+				CloseFile(&f, LogInfo);
+				LogError(LogInfo, LOGFATAL, "%s : Bad record %d.", MyFileName, lineno);
 			}
 
 			month--; // convert to base0
@@ -1496,14 +1508,14 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
 	}
 
 	SW_WeatherPrefix(SW_Weather->name_prefix);
-	CloseFile(&f);
+	CloseFile(&f, LogInfo);
 
     // Check if temperature max/min flags are unevenly set (1/0) or (0/1)
      if((dailyInputFlags[TEMP_MAX] && !dailyInputFlags[TEMP_MIN]) ||
         (!dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN])) {
 
          // Fail
-         LogError(logfp, LOGFATAL, "Maximum/minimum temperature flags are unevenly set. "
+         LogError(LogInfo, LOGFATAL, "Maximum/minimum temperature flags are unevenly set. "
                                    "Both flags for temperature must be set.");
 
       }
@@ -1511,12 +1523,12 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
      // Check if minimum and maximum temperature, or precipitation flags are not set
      if((!dailyInputFlags[TEMP_MAX] && !dailyInputFlags[TEMP_MIN]) || !dailyInputFlags[PPT]) {
          // Fail
-         LogError(logfp, LOGFATAL, "Both maximum/minimum temperature and/or precipitation flag(s) "
+         LogError(LogInfo, LOGFATAL, "Both maximum/minimum temperature and/or precipitation flag(s) "
                                    "are not set. All three flags must be set.");
      }
 
  	if (lineno < nitems) {
- 		LogError(logfp, LOGFATAL, "%s : Too few input lines.", MyFileName);
+ 		LogError(LogInfo, LOGFATAL, "%s : Too few input lines.", MyFileName);
  	}
 
      // Calculate value indices for `allHist`
@@ -1588,7 +1600,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
         (!dailyInputFlags[REL_HUMID_MAX] && dailyInputFlags[REL_HUMID_MIN])) {
 
          // Fail
-         LogError(logfp, LOGFATAL, "Max/min relative humidity flags are unevenly set. "
+         LogError(LogInfo, LOGFATAL, "Max/min relative humidity flags are unevenly set. "
                                    "Both flags for maximum/minimum relative humidity must be the "
                                    "same (1 or 0).");
 
@@ -1599,7 +1611,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
         (!dailyInputFlags[WIND_EAST] && dailyInputFlags[WIND_NORTH])) {
 
          // Fail
-         LogError(logfp, LOGFATAL, "East/north wind speed flags are unevenly set. "
+         LogError(LogInfo, LOGFATAL, "East/north wind speed flags are unevenly set. "
                                    "Both flags for east/north wind speed components "
                                    "must be the same (1 or 0).");
 
@@ -1608,7 +1620,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
      // Check to see if any daily flags were turned off due to a set monthly flag
      if(monthlyFlagPrioritized) {
          // Give the user a generalized note
-         LogError(logfp, LOGNOTE, "One or more daily flags have been turned off due to a set monthly "
+         LogError(LogInfo, LOGNOTE, "One or more daily flags have been turned off due to a set monthly "
                                   "input flag which overrides daily flags. Please see `weathsetup.in` "
                                   "to change this if it was not the desired action.");
      }
@@ -1627,8 +1639,10 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather) {
 	  of the simulated site
   @param[in] SW_Model Struct of type SW_MODEL holding basic time information
 		about the simulation
+  @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model) {
+void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
+                 LOG_INFO* LogInfo) {
 
     // Deallocate (previous, if any) `allHist`
     // (using value of `SW_Weather.n_years` previously used to allocate)
@@ -1659,7 +1673,8 @@ void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model) {
       SW_Sky->windspeed,
       SW_Sky->r_humidity,
       SW_Model->cum_monthdays,
-      SW_Model->days_in_month
+      SW_Model->days_in_month,
+      LogInfo
     );
 }
 
@@ -1683,6 +1698,7 @@ void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model) {
     column number of which a certain variable resides
     @param dailyInputFlags An array of size MAX_INPUT_COLUMNS holding booleans specifying
     what variable has daily input on disk
+    @param[in] LogInfo Holds information dealing with logfile output
 */
 void _read_weather_hist(
   TimeInt year,
@@ -1690,7 +1706,8 @@ void _read_weather_hist(
   char weather_prefix[],
   unsigned int n_input_forcings,
   unsigned int *dailyInputIndices,
-  Bool *dailyInputFlags
+  Bool *dailyInputFlags,
+  LOG_INFO* LogInfo
 ) {
 	/* =================================================== */
 	/* Read the historical (measured) weather files.
@@ -1742,16 +1759,16 @@ void _read_weather_hist(
                    &weathInput[12], &weathInput[13]);
 
 		if (x != n_input_forcings + 1) {
-			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "%s : Incomplete record %d (doy=%d).", fname, lineno, doy);
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGFATAL, "%s : Incomplete record %d (doy=%d).", fname, lineno, doy);
 		}
 		if (x > MAX_INPUT_COLUMNS + 1) {
-			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "%s : Too many values in record %d (doy=%d).", fname, lineno, doy);
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGFATAL, "%s : Too many values in record %d (doy=%d).", fname, lineno, doy);
 		}
 		if (doy < 1 || doy > MAX_DAYS) {
-			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "%s : Day of year out of range, line %d.", fname, lineno);
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGFATAL, "%s : Day of year out of range, line %d.", fname, lineno);
 		}
 
 		/* --- Make the assignments ---- */

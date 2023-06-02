@@ -50,6 +50,7 @@ void SW_CBN_deconstruct(void)
  * @param[in,out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
+ * @param[in] LogInfo Holds information dealing with logfile output
  *
  * Additionally, check for the following issues:
  *   1. Duplicate entries.
@@ -58,7 +59,7 @@ void SW_CBN_deconstruct(void)
  *   4. Missing year.
  *   5. Negative year.
  */
-void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model)
+void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, LOG_INFO* LogInfo)
 {
   #ifdef SWDEBUG
   short debug = 0;
@@ -87,9 +88,10 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model)
   double ppm = 1.;
   int existing_years[MAX_NYEAR] = {0};
   short fileWasEmpty = 1;
+  char errstr[MAX_ERROR], *MyFileName;
 
-  char *MyFileName = SW_F_name(eCarbon);
-  f = OpenFile(MyFileName, "r");
+  MyFileName = SW_F_name(eCarbon);
+  f = OpenFile(MyFileName, "r", LogInfo);
 
   #ifdef SWDEBUG
   if (debug) {
@@ -127,7 +129,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model)
 
     if (year < 0)
     {
-      CloseFile(&f);
+      CloseFile(&f, LogInfo);
       snprintf(
         errstr,
         MAX_ERROR,
@@ -136,7 +138,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model)
         year,
         SW_Carbon->scenario
       );
-      LogError(logfp, LOGFATAL, errstr);
+      LogError(LogInfo, LOGFATAL, errstr);
     }
 
     SW_Carbon->ppm[year] = ppm;
@@ -152,7 +154,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model)
        and the chance that a multiplier of 1.0 was actually calculated */
     if (existing_years[year] != 0)
     {
-      CloseFile(&f);
+      CloseFile(&f, LogInfo);
       snprintf(
         errstr,
         MAX_ERROR,
@@ -161,12 +163,12 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model)
         year,
         SW_Carbon->scenario
       );
-      LogError(logfp, LOGFATAL, errstr);
+      LogError(LogInfo, LOGFATAL, errstr);
     }
     existing_years[year] = 1;
   }
 
-  CloseFile(&f);
+  CloseFile(&f, LogInfo);
 
 
   /* Error checking */
@@ -182,7 +184,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model)
       "for debugging purposes, SOILWAT2 read in file '%s'\n",
       MyFileName
     );
-    LogError(logfp, LOGFATAL, errstr);
+    LogError(LogInfo, LOGFATAL, errstr);
   }
 
   if (EQ(ppm, -1.))  // A scenario must be found in order for ppm to have a positive value
@@ -193,7 +195,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model)
       "(SW_Carbon) The scenario '%.64s' was not found in carbon.in\n",
       SW_Carbon->scenario
     );
-    LogError(logfp, LOGFATAL, errstr);
+    LogError(LogInfo, LOGFATAL, errstr);
   }
 
   // Ensure that the desired years were calculated
@@ -209,7 +211,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model)
         year,
         SW_Carbon->scenario
       );
-      LogError(logfp, LOGFATAL, errstr);
+      LogError(LogInfo, LOGFATAL, errstr);
     }
   }
 }
@@ -230,13 +232,15 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model)
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
  * @param[in] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
+ * @param[in] LogInfo Holds information dealing with logfile output
  *
  */
 void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
-                     SW_CARBON* SW_Carbon) {
+                     SW_CARBON* SW_Carbon, LOG_INFO* LogInfo) {
   int k;
   TimeInt year, simendyr = SW_Model->endyr + SW_Model->addtl_yr;
   double ppm;
+  char errstr[MAX_ERROR];
   #ifdef SWDEBUG
   short debug = 0;
   #endif
@@ -259,7 +263,7 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
         "(SW_Carbon) No CO2 ppm data was provided for year %d\n",
         year
       );
-      LogError(logfp, LOGFATAL, errstr);
+      LogError(LogInfo, LOGFATAL, errstr);
     }
 
     // Calculate multipliers per PFT

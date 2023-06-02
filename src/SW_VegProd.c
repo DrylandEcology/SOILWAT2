@@ -46,7 +46,7 @@ changed _echo_inits() to now display the bare ground components in logfile.log
 #include <stdlib.h>
 #include <string.h>
 #include "include/generic.h"
-#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
+#include "include/filefuncs.h" // externs `_firstfile`
 #include "include/myMemory.h"
 #include "include/Times.h"
 #include "include/SW_Files.h"
@@ -74,17 +74,19 @@ char const *key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 
 @param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
+void SW_VPD_read(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	FILE *f;
 	TimeInt mon = Jan;
 	int x, k, lineno = 0, veg_method;
 	const int line_help = 28; // last case line number before monthly biomass densities
 	RealF help_veg[NVEGTYPES], help_bareGround, litt, biom, pctl, laic;
+	char errstr[MAX_ERROR], *MyFileName;
 
-	char *MyFileName = SW_F_name(eVegProd);
-	f = OpenFile(MyFileName, "r");
+	MyFileName = SW_F_name(eVegProd);
+	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {
 		if (lineno++ < line_help) {
@@ -93,8 +95,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
                 x = sscanf(inbuf, "%d", &veg_method);
                 if(x != 1) {
                     snprintf(errstr, MAX_ERROR, "ERROR: invalid record in vegetation type components in %s\n", MyFileName);
-                    CloseFile(&f);
-                    LogError(logfp, LOGFATAL, errstr);
+                    CloseFile(&f, LogInfo);
+                    LogError(LogInfo, LOGFATAL, errstr);
                 }
                 SW_VegProd->veg_method = veg_method;
                 break;
@@ -104,8 +106,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS], &help_bareGround);
 				if (x < NVEGTYPES + 1) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in vegetation type components in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cov.fCover = help_veg[k];
@@ -119,8 +121,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS], &help_bareGround);
 				if (x < NVEGTYPES + 1) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in albedo values in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cov.albedo = help_veg[k];
@@ -134,8 +136,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy xinflec in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cnpy.xinflec = help_veg[k];
@@ -146,8 +148,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy yinflec in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cnpy.yinflec = help_veg[k];
@@ -158,8 +160,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy range in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cnpy.range = help_veg[k];
@@ -170,8 +172,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy slope in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cnpy.slope = help_veg[k];
@@ -182,8 +184,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy height constant option in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].canopy_height_constant = help_veg[k];
@@ -196,8 +198,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in interception parameter kSmax(veg) in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].veg_kSmax = help_veg[k];
@@ -208,8 +210,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in interception parameter kdead(veg) in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].veg_kdead = help_veg[k];
@@ -222,8 +224,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in litter interception parameter kSmax(litter) in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].lit_kSmax = help_veg[k];
@@ -236,8 +238,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in parameter for partitioning of bare-soil evaporation and transpiration in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].EsTpartitioning_param = help_veg[k];
@@ -250,8 +252,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in parameter for Parameter for scaling and limiting bare soil evaporation rate in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].Es_param_limit = help_veg[k];
@@ -264,8 +266,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade scale in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].shade_scale = help_veg[k];
@@ -276,8 +278,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade max dead biomass in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].shade_deadmax = help_veg[k];
@@ -288,8 +290,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade xinflec in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].tr_shade_effects.xinflec = help_veg[k];
@@ -300,8 +302,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade yinflec in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].tr_shade_effects.yinflec = help_veg[k];
@@ -312,8 +314,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade range in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].tr_shade_effects.range = help_veg[k];
@@ -324,8 +326,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade slope in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].tr_shade_effects.slope = help_veg[k];
@@ -338,8 +340,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in hydraulic redistribution: flag in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].flagHydraulicRedistribution = (Bool) EQ(help_veg[k], 1.);
@@ -350,8 +352,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in hydraulic redistribution: maxCondroot in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].maxCondroot = help_veg[k];
@@ -362,8 +364,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in hydraulic redistribution: swpMatric50 in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].swpMatric50 = help_veg[k];
@@ -374,8 +376,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in hydraulic redistribution: shapeCond in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].shapeCond = help_veg[k];
@@ -388,8 +390,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in critical soil water potentials: flag in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].SWPcrit = -10. * help_veg[k];
@@ -405,8 +407,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: Not enough arguments for CO2 Biomass Coefficient 1 in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].co2_bio_coeff1 = help_veg[k];
@@ -418,8 +420,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: Not enough arguments for CO2 Biomass Coefficient 2 in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].co2_bio_coeff2 = help_veg[k];
@@ -433,8 +435,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: Not enough arguments for CO2 WUE Coefficient 1 in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].co2_wue_coeff1 = help_veg[k];
@@ -446,8 +448,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					snprintf(errstr, MAX_ERROR, "ERROR: Not enough arguments for CO2 WUE Coefficient 2 in %s\n", MyFileName);
-					CloseFile(&f);
-					LogError(logfp, LOGFATAL, errstr);
+					CloseFile(&f, LogInfo);
+					LogError(LogInfo, LOGFATAL, errstr);
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].co2_wue_coeff2 = help_veg[k];
@@ -465,8 +467,8 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 			x = sscanf(inbuf, "%f %f %f %f", &litt, &biom, &pctl, &laic);
 			if (x < NVEGTYPES) {
 				snprintf(errstr, MAX_ERROR, "ERROR: invalid record %d in %s\n", mon + 1, MyFileName);
-				CloseFile(&f);
-				LogError(logfp, LOGFATAL, errstr);
+				CloseFile(&f, LogInfo);
+				LogError(LogInfo, LOGFATAL, errstr);
 			}
 			if (lineno > line_help + 12 * 3 && lineno <= line_help + 12 * 4) {
 				SW_VegProd->veg[SW_FORBS].litter[mon] = litt;
@@ -500,15 +502,12 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 
 	if (mon < Dec) {
 		snprintf(errstr, MAX_ERROR, "No Veg Production values after month %d", mon + 1);
-		LogError(logfp, LOGWARN, errstr);
+		LogError(LogInfo, LOGWARN, errstr);
 	}
 
-  SW_VPD_fix_cover(SW_VegProd);
+  SW_VPD_fix_cover(SW_VegProd, LogInfo);
 
-	CloseFile(&f);
-
-	if (EchoInits)
-		_echo_VegProd(SW_VegProd->veg, SW_VegProd->bare_cov);
+	CloseFile(&f, LogInfo);
 }
 
 /**
@@ -516,13 +515,14 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd) {
 
   @param[in,out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
+  @param[in] LogInfo Holds information dealing with logfile output
 
   \sideeffect
     - Adjusts `SW_VegProd->bare_cov.fCover` and `SW_VegProd->veg[k].cov.fCover`
       to sum to 1.
     - Print a warning that values are adjusted and notes with the new values.
 */
-void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd)
+void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo)
 {
   int k;
   RealD fraction_sum = 0.;
@@ -535,21 +535,21 @@ void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd)
   if (!EQ_w_tol(fraction_sum, 1.0, 1e-4)) {
     // inputs are never more precise than at most 3-4 digits
 
-    LogError(logfp, LOGWARN,
+    LogError(LogInfo, LOGWARN,
       "Fractions of land cover components were normalized:\n" \
       "\tSum of fractions was %.4f instead of 1.0. " \
       "New coefficients are:", fraction_sum);
 
     SW_VegProd->bare_cov.fCover /= fraction_sum;
-    LogError(logfp, LOGNOTE, "Bare ground fraction = %.4f", SW_VegProd->bare_cov.fCover);
+    LogError(LogInfo, LOGNOTE, "Bare ground fraction = %.4f", SW_VegProd->bare_cov.fCover);
 
     ForEachVegType(k) {
       SW_VegProd->veg[k].cov.fCover /= fraction_sum;
-      LogError(logfp, LOGNOTE, "%s fraction = %.4f",
+      LogError(LogInfo, LOGNOTE, "%s fraction = %.4f",
         key2veg[k], SW_VegProd->veg[k].cov.fCover);
     }
 
-    LogError(logfp, LOGQUIET, "");
+    LogError(LogInfo, LOGQUIET, "");
   }
 }
 
@@ -558,8 +558,9 @@ void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd)
 
 @param[out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_VPD_construct(SW_VEGPROD* SW_VegProd) {
+void SW_VPD_construct(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	OutPeriod pd;
 
@@ -570,10 +571,10 @@ void SW_VPD_construct(SW_VEGPROD* SW_VegProd) {
 	ForEachOutPeriod(pd)
 	{
 		SW_VegProd->p_accu[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()");
+			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()", LogInfo);
 		if (pd > eSW_Day) {
 			SW_VegProd->p_oagg[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
-				sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()");
+				sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()", LogInfo);
 		}
 	}
 }
@@ -581,8 +582,9 @@ void SW_VPD_construct(SW_VEGPROD* SW_VegProd) {
 
 
 void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-					 SW_MODEL* SW_Model, RealD site_latitude) {
-    TimeInt year;
+	SW_MODEL* SW_Model, RealD site_latitude, LOG_INFO* LogInfo) {
+
+	TimeInt year;
     int k, veg_method;
 
     veg_method = SW_VegProd->veg_method;
@@ -601,7 +603,7 @@ void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 
     if(veg_method > 0) {
         estimateVegetationFromClimate(SW_VegProd, SW_Weather->allHist,
-									  SW_Model, veg_method, latitude);
+									  SW_Model, LogInfo, veg_method, latitude);
     }
 
 }
@@ -813,15 +815,17 @@ RealD sum_across_vegtypes(RealD *x)
 /**
 @brief Text output for VegProd.
 
+@param[in] LogInfo Holds information dealing with logfile output
 @param[in] VegProd_veg Biomass [g/m2] per vegetation type as
 	observed in total vegetation
 @param[in] VegProd_bare_cov Bare-ground cover of plot that is not
 	occupied by vegetation
 */
-void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
+void _echo_VegProd(LOG_INFO* LogInfo, VegType VegProd_veg[],
+				   CoverType VegProd_bare_cov) {
 	/* ================================================== */
 
-	char outstr[1500];
+	char outstr[1500], errstr[MAX_ERROR];
 	int k;
 
 	snprintf(
@@ -831,7 +835,7 @@ void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
 		"Vegetation Production Parameters\n\n"
 	);
 	strcpy(outstr, errstr);
-	LogError(logfp, LOGNOTE, outstr);
+	LogError(LogInfo, LOGNOTE, outstr);
 
 	ForEachVegType(k) {
 		snprintf(
@@ -845,7 +849,7 @@ void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
 			VegProd_veg[k].flagHydraulicRedistribution
 		);
 		strcpy(outstr, errstr);
-		LogError(logfp, LOGNOTE, outstr);
+		LogError(LogInfo, LOGNOTE, outstr);
 	}
 
 	snprintf(
@@ -857,7 +861,7 @@ void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
 		VegProd_bare_cov.albedo
 	);
 	strcpy(outstr, errstr);
-	LogError(logfp, LOGNOTE, outstr);
+	LogError(LogInfo, LOGNOTE, outstr);
 }
 
 
@@ -923,14 +927,15 @@ void get_critical_rank(SW_VEGPROD* SW_VegProd){
  @param[in,out] Weather_hist Array containing all historical data of a site
  @param[in] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
+ @param[in] LogInfo Holds information dealing with logfile output
  @param[in] veg_method User specified value determining method of vegetation estimation with the current option(s):
  1 - Estimate fixed vegetation composition (fractional cover) from long-term climate conditions
  @param[in] latitude Value of type double specifying latitude coordinate the current site is located at
  */
 
 void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
-	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model, int veg_method,
-	double latitude) {
+	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model, LOG_INFO* LogInfo,
+	int veg_method, double latitude) {
 
     int numYears = SW_Model->endyr - SW_Model->startyr + 1,
 	k, bareGroundIndex = 7;
@@ -969,11 +974,12 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
         C4Variables[1] = climateAverages.ddAbove65F_degday;
         C4Variables[2] = climateAverages.frostFree_days;
 
-        estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
-                        climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, coverValues,
-                        shrubLimit, SumGrassesFraction, C4Variables, fillEmptyWithBareGround,
-                        inNorthHem, warnExtrapolation, fixBareGround, grassOutput,
-                        RelAbundanceL0, RelAbundanceL1);
+        estimatePotNatVegComposition(LogInfo, climateAverages.meanTemp_C,
+				climateAverages.PPT_cm, climateAverages.meanTempMon_C,
+				climateAverages.PPTMon_cm, coverValues, shrubLimit,
+				SumGrassesFraction, C4Variables, fillEmptyWithBareGround,
+                inNorthHem, warnExtrapolation, fixBareGround, grassOutput,
+                RelAbundanceL0, RelAbundanceL1);
 
         ForEachVegType(k) {
             vegProd->veg[k].cov.fCover = RelAbundanceL1[k];
@@ -1010,6 +1016,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
 
  `calcSiteClimate()` and `averageClimateAcrossYears()` can be used to calculate climate variables required as inputs.`
 
+ @param[in] LogInfo Holds information dealing with logfile output
  @param[in] meanTemp_C Value containing the long-term average of yearly temperatures [C]
  @param[in] PPT_cm Value containing the long-term average of yearly precipitation [cm]
  @param[in] meanTempMon_C Array of size MAX_MONTHS containing long-term average monthly mean temperatures [C]
@@ -1039,10 +1046,12 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
  for C4 grasses, an equation by Teeri & Stowe (1976) @cite teeri1976O.
  */
 
-void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanTempMon_C[],
-    double PPTMon_cm[], double inputValues[], double shrubLimit, double SumGrassesFraction,
-    double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorthHem, Bool warnExtrapolation,
-    Bool fixBareGround, double *grassOutput, double *RelAbundanceL0, double *RelAbundanceL1) {
+void estimatePotNatVegComposition(LOG_INFO* LogInfo, double meanTemp_C,
+	double PPT_cm, double meanTempMon_C[], double PPTMon_cm[],
+	double inputValues[], double shrubLimit, double SumGrassesFraction,
+    double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorthHem,
+	Bool warnExtrapolation, Bool fixBareGround, double *grassOutput,
+	double *RelAbundanceL0, double *RelAbundanceL1) {
 
     const int nTypes = 8;
     int winterMonths[3], summerMonths[3];
@@ -1074,7 +1083,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
         inputValues[isetIndices[index]] = 0.;
 
         LogError(
-          logfp,
+          LogInfo,
           LOGWARN,
           "No equation for requested cover type '%s': cover set to 0.\n",
           txt_isetIndices[index]
@@ -1104,7 +1113,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
 
         // Check if totalSumGrasses is less than zero
         if(totalSumGrasses < 0){
-            LogError(logfp, LOGFATAL, "'estimate_PotNatVeg_composition': "
+            LogError(LogInfo, LOGFATAL, "'estimate_PotNatVeg_composition': "
                      "User defined grass values including C3, C4, and annuals "
                      "sum to more than user defined total grass cover.");
         }
@@ -1159,7 +1168,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
     }
 
     if(GT(initialVegSum, 1.)) {
-        LogError(logfp, LOGFATAL, "'estimate_PotNatVeg_composition': "
+        LogError(LogInfo, LOGFATAL, "'estimate_PotNatVeg_composition': "
                  "User defined relative abundance values sum to more than "
                  "1 = full land cover.");
     }
@@ -1174,7 +1183,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
                 // at index `bareGround`)
                 inputValues[bareGround] = 1 - (initialVegSum - estimCover[bareGround]);
             } else if(initialVegSum < 1) {
-                LogError(logfp, LOGFATAL, "'estimate_PotNatVeg_composition': "
+                LogError(LogInfo, LOGFATAL, "'estimate_PotNatVeg_composition': "
                          "User defined relative abundance values are all fixed, "
                          "but their sum is smaller than 1 = full land cover.");
             }
@@ -1216,19 +1225,19 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
 
             if(warnExtrapolation) {
                 if(meanTemp_C < 1) {
-                    LogError(logfp, LOGWARN, "Equations used outside supported range"
+                    LogError(LogInfo, LOGWARN, "Equations used outside supported range"
                              "(2 - 21.2 C): MAT = %2f, C reset to 1C", meanTemp_C);
 
                     meanTemp_C = 1;
                 }
 
                 if(meanTemp_C > 21.2) {
-                    LogError(logfp, LOGWARN, "Equations used outside supported range"
+                    LogError(LogInfo, LOGWARN, "Equations used outside supported range"
                              "(2 - 21.2 C): MAT = %2f C", meanTemp_C);
                 }
 
                 if(PPT_cm * 10 < 117 || PPT_cm * 10 > 1011) {
-                    LogError(logfp, LOGWARN, "Equations used outside supported range"
+                    LogError(LogInfo, LOGWARN, "Equations used outside supported range"
                              "(117 - 1011 mm): MAP = %3f mm", PPT_cm * 10);
                 }
             }
@@ -1329,7 +1338,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
                         estimCover[grassesEstim[index]] = (totalSumGrasses / grassEstimSize);
                     }
 
-                    LogError(logfp, LOGWARN, "'estimate_PotNatVeg_composition': "
+                    LogError(LogInfo, LOGWARN, "'estimate_PotNatVeg_composition': "
                                 "Total grass cover set, but no grass cover estimated; "
                                 "requested cover evenly divided among grass types.");
                 }
@@ -1393,7 +1402,7 @@ void estimatePotNatVegComposition(double meanTemp_C, double PPT_cm, double meanT
                             inputValues[bareGround] -= estimCover[index];
                         }
                     } else {
-                        LogError(logfp, LOGFATAL, "'estimate_PotNatVeg_composition': "
+                        LogError(LogInfo, LOGFATAL, "'estimate_PotNatVeg_composition': "
                                     "The estimated vegetation cover values are 0, "
                                     "the user fixed relative abundance values sum to less than 1, "
                                     "and bare-ground is fixed. "

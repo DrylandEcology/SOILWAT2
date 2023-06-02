@@ -1020,13 +1020,17 @@ void get_swpMatric_text(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
+	/* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it */
+	LOG_INFO local_log;
+	local_log.logfp = NULL;
+
 	char str[OUTSTRLEN];
 	sw_outstr[0] = '\0';
 
 	ForEachSoilLayer(i, sw->Site.n_layers)
 	{
 		/* swpMatric at this point is identical to swcBulk */
-		val = SW_SWRC_SWCtoSWP(vo->swpMatric[i], sw->Site.lyr[i]);
+		val = SW_SWRC_SWCtoSWP(vo->swpMatric[i], sw->Site.lyr[i], &local_log);
 
 
 		snprintf(str, OUTSTRLEN, "%c%.*f", _Sep, OUT_DIGITS, val);

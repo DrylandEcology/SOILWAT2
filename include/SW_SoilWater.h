@@ -61,20 +61,21 @@ typedef enum {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_SWC_construct(SW_SOILWAT* SW_SoilWat);
+void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo);
 void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat);
-void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year);
+void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
+					 LOG_INFO* LogInfo);
 void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
-				 LyrIndex n_layers);
+				 LyrIndex n_layers, LOG_INFO* LogInfo);
 void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site,
 					 RealD* temp_snow);
-void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year);
-void SW_SWC_water_flow(SW_ALL* sw);
+void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year, LOG_INFO* LogInfo);
+void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo);
 void calculate_repartitioned_soilwater(SW_SOILWAT* SW_SoilWat,
 	SW_VEGPROD* SW_VegProd, SW_LAYER_INFO** lyr, LyrIndex n_layers);
 void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], TimeInt doy,
 					   SW_SOILWAT_HIST SoilWat_hist, SW_LAYER_INFO** lyr,
-					   LyrIndex n_layers);
+					   LOG_INFO* LogInfo, LyrIndex n_layers);
 void SW_SWC_adjust_snow(RealD *temp_snow, RealD snowpack[], SW_SITE* SW_Site,
 	RealD temp_min, RealD temp_max, RealD ppt, TimeInt doy, RealD *rain,
 	RealD *snow, RealD *snowmelt);
@@ -85,16 +86,18 @@ void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd,
 		RealF swa_master[][NVEGTYPES][MAX_LAYERS],
 		RealF dSWA_repart_sum[][MAX_LAYERS]);
 
-double SW_SWRC_SWCtoSWP(double swcBulk, SW_LAYER_INFO *lyr);
+RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_LAYER_INFO *lyr, LOG_INFO* LogInfo);
 double SWRC_SWCtoSWP(
 	double swcBulk,
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 );
 double SWRC_SWCtoSWP_Campbell1974(
+	LOG_INFO* LogInfo,
 	double swcBulk,
 	double *swrcp,
 	double gravel,
@@ -102,6 +105,7 @@ double SWRC_SWCtoSWP_Campbell1974(
 	const int errmode
 );
 double SWRC_SWCtoSWP_vanGenuchten1980(
+	LOG_INFO* LogInfo,
 	double swcBulk,
 	double *swrcp,
 	double gravel,
@@ -113,11 +117,14 @@ double SWRC_SWCtoSWP_FXW(
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 );
 
-RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr);
+RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr,
+					   LOG_INFO* LogInfo);
 double SWRC_SWPtoSWC(
+	LOG_INFO* LogInfo,
 	double swpMatric,
 	unsigned int swrc_type,
 	double *swrcp,
@@ -145,7 +152,7 @@ double SWRC_SWPtoSWC_FXW(
 );
 
 #ifdef SWDEBUG
-void SW_WaterBalance_Checks(SW_ALL* sw);
+void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo);
 #endif
 
 #ifdef DEBUG_MEM
