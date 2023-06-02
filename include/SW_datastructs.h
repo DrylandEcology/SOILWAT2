@@ -719,6 +719,15 @@ typedef struct {
 
 } SW_SOILWAT;
 
+typedef struct {
+	FILE *logfp; /* REQUIRED; defined in SW_Main_lib.c */
+	// This is the pointer to the log file.
+
+	Bool logged; /* REQUIRED; defined in SW_Main_lib.c */
+	// Indicates logfile written to via LogError.
+
+} LOG_INFO;
+
 /* =================================================== */
 /*                    Sky structs                      */
 /* --------------------------------------------------- */

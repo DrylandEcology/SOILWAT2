@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "include/generic.h" // externs `QuietMode`, `EchoInits`
+#include "include/generic.h"
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "include/myMemory.h"
 #include "include/SW_Times.h"

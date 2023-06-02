@@ -23,7 +23,7 @@
 #else
 #include <unistd.h>
 #endif
-#include "include/generic.h" // externs `QuietMode`, `EchoInits`
+#include "include/generic.h"
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "include/SW_Defines.h"
 #include "include/SW_Control.h"
@@ -54,12 +54,13 @@ int main(int argc, char **argv) {
 	/* =================================================== */
 	SW_ALL sw;
 	SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
+	LOG_INFO LogInfo;
+	Bool EchoInits, QuietMode;
 
-	logged = swFALSE;
-	atexit(sw_check_log);
-	logfp = stdout;
+	LogInfo.logged = swFALSE;
+	LogInfo.logfp = stdout;
 
-	sw_init_args(argc, argv);
+	sw_init_args(argc, argv, &LogInfo, &QuietMode, &EchoInits);
 
 	// Print version if not in quiet mode
 	if (!QuietMode) {
@@ -67,31 +68,38 @@ int main(int argc, char **argv) {
 	}
 
   // setup and construct model (independent of inputs)
-	SW_CTL_setup_model(&sw, SW_OutputPtrs, _firstfile);
+	SW_CTL_setup_model(&sw, SW_OutputPtrs, &LogInfo, _firstfile);
 
 	// read user inputs
-	SW_CTL_read_inputs_from_disk(&sw);
+	SW_CTL_read_inputs_from_disk(&sw, &LogInfo, EchoInits);
 
 	// finalize daily weather
 	SW_WTH_finalize_all_weather(&sw.Markov, &sw.Weather, sw.Model.cum_monthdays,
-								sw.Model.days_in_month);
+								sw.Model.days_in_month, &LogInfo);
 
 	// initialize simulation run (based on user inputs)
-	SW_CTL_init_run(&sw);
+	SW_CTL_init_run(&sw, &LogInfo);
 
   // initialize output
 	SW_OUT_set_ncol(sw.Site.n_layers, sw.Site.n_evap_lyrs, sw.VegEstab.count);
-	SW_OUT_set_colnames(sw.Site.n_layers, sw.VegEstab.parms);
-	SW_OUT_create_files(&sw.FileStatus, sw.Output, sw.Site.n_layers); // only used with SOILWAT2
+	SW_OUT_set_colnames(sw.Site.n_layers, sw.VegEstab.parms, &LogInfo);
+	SW_OUT_create_files(&sw.FileStatus, sw.Output, sw.Site.n_layers, &LogInfo); // only used with SOILWAT2
+
+	if(EchoInits) {
+		_echo_all_inputs(&sw, &LogInfo);
+	}
 
   // run simulation: loop through each year
-	SW_CTL_main(&sw, SW_OutputPtrs);
+	SW_CTL_main(&sw, SW_OutputPtrs, &LogInfo);
 
   // finish-up output
-	SW_OUT_close_files(&sw.FileStatus); // not used with rSOILWAT2
+	SW_OUT_close_files(&sw.FileStatus, &LogInfo); // not used with rSOILWAT2
 
 	// de-allocate all memory
 	SW_CTL_clear_model(swTRUE, &sw);
+
+	// Mention to the user if something was logged
+	sw_check_log(&LogInfo, QuietMode);
 
 	return 0;
 }

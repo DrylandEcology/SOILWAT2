@@ -23,7 +23,7 @@
 #else
 #include <unistd.h>
 #endif
-#include "include/generic.h" // externs `QuietMode`, `EchoInits`
+#include "include/generic.h"
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "include/SW_Main_lib.h"
 
@@ -34,14 +34,7 @@
 
 // externed by "SW_Main_lib.h"
 char _firstfile[MAX_FILENAMESIZE];
-Bool QuietMode = swTRUE;
-Bool EchoInits = swFALSE; /* if true, echo inits to logfile */
-
-
-// externed by "generic.h"
 char errstr[MAX_ERROR]; /* used to compose an error msg    */
-FILE *logfp; /* file handle for logging messages */
-int logged = 0; /* boolean: true = we logged a msg; if true, write indicator to stderr */
 
 // externed by "filefuncs.h"
 char inbuf[MAX_FILENAMESIZE]; /* buffer used by input statements */
@@ -95,10 +88,14 @@ void sw_print_version(void) {
 
 @param argc Argument C.
 @param argv Argument V.
+@param[in] LogInfo Holds information dealing with logfile output
+@param[out] QuietMode Flag to control if the program version is displayed
+@param[out] EchoInits Flag to control if inputs are to be output to the user
 
 @sideeffect argv Updated argument V.
 */
-void sw_init_args(int argc, char **argv) {
+void sw_init_args(int argc, char **argv, LOG_INFO* LogInfo,
+				  Bool *QuietMode, Bool *EchoInits) {
 	/* =================================================== */
 	/* to add an option:
 	 *  - include it in opts[]
@@ -123,7 +120,7 @@ void sw_init_args(int argc, char **argv) {
 
 	/* Defaults */
 	strcpy(_firstfile, DFLT_FIRSTFILE);
-	QuietMode = EchoInits = swFALSE;
+	*QuietMode = *EchoInits = swFALSE;
 
 	a = 1;
 	for (i = 1; i <= nopts; i++) {
@@ -173,11 +170,11 @@ void sw_init_args(int argc, char **argv) {
 					break;
 
 				case 2: /* -e */
-					EchoInits = swTRUE;
+					*EchoInits = swTRUE;
 					break;
 
 				case 3: /* -q */
-					QuietMode = swTRUE;
+					*QuietMode = swTRUE;
 					break;
 
 				case 4: /* -v */
@@ -205,15 +202,15 @@ void sw_init_args(int argc, char **argv) {
 }
 
 
-void sw_check_log(void) {
+void sw_check_log(LOG_INFO* LogInfo, Bool QuietMode) {
 	/* =================================================== */
 	/* function to be called by atexit() so it's the last
 	 * to execute before termination.  This is the place to
 	 * do any cleanup or progress reporting.
 	 */
-	if (logfp != stdout && logfp != stderr) {
-		CloseFile(&logfp);
-		if (logged && !QuietMode) {
+	if (LogInfo->logfp != stdout && LogInfo->logfp != stderr) {
+		CloseFile(&LogInfo->logfp, LogInfo);
+		if (LogInfo->logged && !QuietMode) {
 			sw_error(0, "\nCheck logfile for error or status messages.\n");
 		}
 	}

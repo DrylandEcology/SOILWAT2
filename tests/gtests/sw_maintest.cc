@@ -15,7 +15,7 @@
 #include <time.h>
 #include <unistd.h>
 
-// externs `*logfp`, `errstr`, `logged`, `QuietMode`, `EchoInits`
+// externs `*logfp`, `errstr`, `QuietMode`
 #include "include/generic.h"
 #include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
 #include "include/SW_Control.h"

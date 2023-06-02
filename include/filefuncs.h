@@ -37,9 +37,9 @@ Bool FileExists(const char *f);
 Bool DirExists(const char *d);
 Bool ChDir(const char *d);
 Bool MkDir(const char *d);
-Bool RemoveFiles(const char *fspec);
+Bool RemoveFiles(const char *fspec, LOG_INFO* LogInfo);
 void sw_error(int errorcode, const char *format, ...);
-void LogError(FILE *fp, const int mode, const char *fmt, ...);
+void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...);
 
 
 #ifdef __cplusplus
