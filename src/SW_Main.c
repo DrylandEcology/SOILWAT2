@@ -24,7 +24,7 @@
 #include <unistd.h>
 #endif
 #include "include/generic.h"
-#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
+#include "include/filefuncs.h" // externs `_firstfile`
 #include "include/SW_Defines.h"
 #include "include/SW_Control.h"
 #include "include/SW_Site.h"

@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
+#include "include/filefuncs.h" // externs `_firstfile`
 #include "include/myMemory.h"
 #include "include/SW_Times.h"
 #include "include/Times.h"
@@ -2140,7 +2140,8 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo)
 			last[4], /* last doy for output, if "end", ==366 */
 			outfile[MAX_FILENAMESIZE],
 			msg[200], // message to print
-			upkey[50], upsum[4]; /* space for uppercase conversion */
+			upkey[50], upsum[4], /* space for uppercase conversion */
+			inbuf[MAX_FILENAMESIZE];
 	int first; /* first doy for output */
 
 	char *MyFileName = SW_F_name(eOutput);

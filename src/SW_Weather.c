@@ -1345,6 +1345,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
     Bool monthlyFlagPrioritized = swFALSE;
 	RealF sppt, stmax, stmin;
 	RealF sky, wind, rH, actVP, shortWaveRad;
+  char inbuf[MAX_FILENAMESIZE];
 
     Bool *dailyInputFlags = SW_Weather->dailyInputFlags;
 
@@ -1742,7 +1743,7 @@ void _read_weather_hist(
 
     double es, e, relHum, tempSlope, svpVal;
 
-	char fname[MAX_FILENAMESIZE];
+	char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE];
 
   // Create file name: `[weather-file prefix].[year]`
 	snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", weather_prefix, year);

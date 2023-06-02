@@ -1397,6 +1397,7 @@ void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 	LyrIndex r;
 	Bool too_many_regions = swFALSE;
 	RealD tmp;
+	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
 	char *MyFileName = SW_F_name(eSite);
@@ -1642,6 +1643,7 @@ void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 	int x, k;
 	RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay, soildensity, imperm,
 		soiltemp, f_gravel;
+	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
 	char *MyFileName = SW_F_name(eLayers);
@@ -1913,6 +1915,7 @@ void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 	LyrIndex lyrno = 0, k;
 	int x;
 	RealF tmp_swrcp[SWRC_PARAM_NMAX];
+	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
 	char *MyFileName = SW_F_name(eSWRCp);

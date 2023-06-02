@@ -83,7 +83,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
 	int x, k, lineno = 0, veg_method;
 	const int line_help = 28; // last case line number before monthly biomass densities
 	RealF help_veg[NVEGTYPES], help_bareGround, litt, biom, pctl, laic;
-	char errstr[MAX_ERROR], *MyFileName;
+	char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 
 	MyFileName = SW_F_name(eVegProd);
 	f = OpenFile(MyFileName, "r", LogInfo);

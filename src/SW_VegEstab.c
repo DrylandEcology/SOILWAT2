@@ -207,7 +207,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo,
 	SW_VegEstab->count = 0;
 	SW_VegEstab->use = use_VegEstab;
 
-	char buf[FILENAME_MAX];
+	char buf[FILENAME_MAX], inbuf[MAX_FILENAMESIZE];
 	FILE *f;
 
 	if (SW_VegEstab->use) {
@@ -425,6 +425,7 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 	FILE *f;
 	int lineno = 0;
 	char name[80]; /* only allow 4 char sppnames */
+	char inbuf[MAX_FILENAMESIZE];
 
 	f = OpenFile(infile, "r", LogInfo);
 

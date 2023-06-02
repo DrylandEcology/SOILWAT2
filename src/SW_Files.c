@@ -85,6 +85,8 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
 	 *  remove old output and/or create the output directories if needed */
 	/* borrow inbuf for filenames */
 
+	char inbuf[MAX_FILENAMESIZE];
+
 	if (DirExists(DirName(s)))
 	{
 		strcpy(inbuf, s);
@@ -121,7 +123,7 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
 void SW_F_read(const char *s, LOG_INFO* LogInfo) {
 	FILE *f;
 	int lineno = 0, fileno = 0;
-	char buf[FILENAME_MAX];
+	char buf[FILENAME_MAX], inbuf[MAX_FILENAMESIZE];
   #ifdef SWDEBUG
   int debug = 0;
   #endif

@@ -979,6 +979,7 @@ void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
 	 */
 	FILE *f;
 	int lineno = 0, nitems = 4;
+	char inbuf[MAX_FILENAMESIZE];
 // gets the soil temperatures from where they are read in the SW_Site struct for use later
 // SW_Site.c must call it's read function before this, or it won't work
 	LyrIndex i;
@@ -1064,7 +1065,7 @@ void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 	FILE *f;
 	int x, lyr, recno = 0, doy;
 	RealF swc, st_err;
-	char fname[MAX_FILENAMESIZE];
+	char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE];
 
 	snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", SoilWat_hist->file_prefix, year);
 

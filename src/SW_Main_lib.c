@@ -24,7 +24,7 @@
 #include <unistd.h>
 #endif
 #include "include/generic.h"
-#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
+#include "include/filefuncs.h" // externs `_firstfile`
 #include "include/SW_Main_lib.h"
 
 
@@ -34,9 +34,6 @@
 
 // externed by "SW_Main_lib.h"
 char _firstfile[MAX_FILENAMESIZE];
-
-// externed by "filefuncs.h"
-char inbuf[MAX_FILENAMESIZE]; /* buffer used by input statements */
 
 
 

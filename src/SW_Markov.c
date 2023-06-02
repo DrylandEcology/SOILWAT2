@@ -378,6 +378,7 @@ Bool SW_MKV_read_prob(LOG_INFO* LogInfo, SW_MARKOV* SW_Markov) {
 	int lineno = 0, day, x, msg_type = 0;
 	char msg[200]; // error message
 	RealF wet, dry, avg, std;
+	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
 	char *MyFileName = SW_F_name(eMarkovProb);
@@ -489,6 +490,7 @@ Bool SW_MKV_read_cov(LOG_INFO* LogInfo, SW_MARKOV* SW_Markov) {
 	FILE *f;
 	int lineno = 0, week, x, msg_type = 0;
 	char msg[200]; // error message
+	char inbuf[MAX_FILENAMESIZE];
 	RealF t1, t2, t3, t4, t5, t6, cfxw, cfxd, cfnw, cfnd;
 
 	char *MyFileName = SW_F_name(eMarkovCov);

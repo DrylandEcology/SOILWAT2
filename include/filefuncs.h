@@ -21,7 +21,6 @@ extern "C" {
 /* =================================================== */
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
-extern char inbuf[MAX_FILENAMESIZE]; /* defined in SW_Main_lib.c */
 extern char _firstfile[MAX_FILENAMESIZE]; /* defined in SW_Main_lib.c */
 
 

@@ -49,7 +49,7 @@ void SW_SKY_read(LOG_INFO* LogInfo, SW_SKY* SW_Sky) {
 	 */
 	FILE *f;
 	int lineno = 0, x = 0;
-	char errstr[MAX_ERROR], *MyFileName;
+	char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 
 	MyFileName = SW_F_name(eSky);
 	f = OpenFile(MyFileName, "r", LogInfo);
