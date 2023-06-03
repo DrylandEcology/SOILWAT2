@@ -30,42 +30,6 @@
 
 
 /* =================================================== */
-/*                  Global Variables                   */
-/* --------------------------------------------------- */
-
-char *InFiles[SW_NFILES];
-char _ProjDir[FILENAME_MAX];
-char weather_prefix[FILENAME_MAX];
-char output_prefix[FILENAME_MAX];
-
-/* =================================================== */
-/*             Local Function Definitions              */
-/* --------------------------------------------------- */
-
-static void init(const char *s, LOG_INFO* LogInfo) {
-	/* --------------------------------------------------- */
-	/* sets the name of the first input file. If called
-	 * with s==NULL the name is set to "files.in".
-	 *
-	 * 1/24/02 - replaced [re]alloc with StrDup()
-	 */
-	char fname[MAX_FILENAMESIZE] = { '\0' };
-
-	if (NULL == InFiles[eFirst])
-		strcpy(fname, (s ? s : DFLT_FIRSTFILE));
-	else if (s && strcmp(s, InFiles[eFirst]))
-		strcpy(fname, s);
-
-	if (*fname) {
-		if (!isnull(InFiles[eFirst]))
-			Mem_Free(InFiles[eFirst]);
-		InFiles[eFirst] = Str_Dup(fname, LogInfo);
-	}
-
-}
-
-
-/* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
@@ -126,10 +90,6 @@ void SW_F_read(LOG_INFO* LogInfo, PATH_INFO* PathInfo) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
-
-
-	if (!isnull(s))
-		init(s, LogInfo); /* init should be run by SW_F_Construct() */
 
 	char *MyFileName = SW_F_name(eFirst, PathInfo->InFiles);
 	f = OpenFile(MyFileName, "r", LogInfo);
@@ -264,7 +224,6 @@ void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[]) {
 	char *c, *p;
 	int file;
 
-	init(firstfile, LogInfo);
 	// Initialize `InFile` pointers to all NULL aside from index eFirst
 	for(file = 1; file < SW_NFILES; file++) {
 		InFiles[file] = NULL;
