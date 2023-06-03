@@ -153,9 +153,6 @@ extern "C" {
 /* =================================================== */
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
-extern LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
-extern RealD _SWCInitVal, _SWCWetVal, _SWCMinVal;
-
 extern char const *swrc2str[];
 extern char const *ptf2str[];
 
@@ -212,7 +209,8 @@ double SW_swcBulk_minimum(
 	double sand,
 	double clay,
 	double swcBulk_sat,
-	LOG_INFO* LogInfo
+	LOG_INFO* LogInfo,
+	RealD _SWCMinVal
 );
 void PTF_Saxton2006(
 	LOG_INFO* LogInfo,

@@ -268,6 +268,14 @@ typedef struct {
 
 	Bool site_has_swrcp; /**< Are `swrcp` already (TRUE) or not yet estimated (FALSE)? */
 
+	/* transpiration regions  shallow, moderately shallow,  */
+	/* deep and very deep. units are in layer numbers. */
+	LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
+	RealD
+		_SWCInitVal, /* initialization value for swc */
+		_SWCWetVal, /* value for a "wet" day,       */
+		_SWCMinVal; /* lower bound on swc.          */
+
 } SW_SITE;
 
 /* =================================================== */

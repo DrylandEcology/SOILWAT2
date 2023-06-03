@@ -481,7 +481,7 @@ namespace {
       soildepth;
 
     for (i = 0; i < MAX_TRANSP_REGIONS; ++i) {
-      prev_TranspRgnBounds[i] = _TranspRgnBounds[i];
+      prev_TranspRgnBounds[i] = SW_All.Site._TranspRgnBounds[i];
     }
 
 
@@ -493,11 +493,11 @@ namespace {
     for (i = 0; i < nRegions; ++i) {
       // Quickly calculate soil depth for current region as output information
       soildepth = 0.;
-      for (id = 0; id <= _TranspRgnBounds[i]; ++id) {
+      for (id = 0; id <= SW_All.Site._TranspRgnBounds[i]; ++id) {
         soildepth += SW_All.Site.lyr[id]->width;
       }
 
-      EXPECT_EQ(prev_TranspRgnBounds[i], _TranspRgnBounds[i]) <<
+      EXPECT_EQ(prev_TranspRgnBounds[i], SW_All.Site._TranspRgnBounds[i]) <<
         "for transpiration region = " << i + 1 <<
         " at a soil depth of " << soildepth << " cm";
     }
@@ -509,7 +509,7 @@ namespace {
     derive_soilRegions(&SW_All.Site, &LogInfo, nRegions, regionLowerBounds2);
 
     for (i = 0; i < nRegions; ++i) {
-      EXPECT_EQ(SW_All.Site.n_layers - 1, _TranspRgnBounds[i]) <<
+      EXPECT_EQ(SW_All.Site.n_layers - 1, SW_All.Site._TranspRgnBounds[i]) <<
         "for a single transpiration region across all soil layers";
     }
 
@@ -520,7 +520,7 @@ namespace {
     derive_soilRegions(&SW_All.Site, &LogInfo, nRegions, regionLowerBounds3);
 
     for (i = 0; i < nRegions; ++i) {
-      EXPECT_EQ(0, _TranspRgnBounds[i]) <<
+      EXPECT_EQ(0, SW_All.Site._TranspRgnBounds[i]) <<
         "for a single transpiration region for the shallowest soil layer";
     }
 
@@ -537,7 +537,7 @@ namespace {
     derive_soilRegions(&SW_All.Site, &LogInfo, nRegions, regionLowerBounds4);
 
     for (i = 0; i < nRegions; ++i) {
-      EXPECT_EQ(i, _TranspRgnBounds[i]) <<
+      EXPECT_EQ(i, SW_All.Site._TranspRgnBounds[i]) <<
         "for transpiration region for the " << i + 1 << "-th soil layer";
     }
 

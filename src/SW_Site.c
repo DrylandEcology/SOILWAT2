@@ -74,19 +74,6 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-
-/* transpiration regions  shallow, moderately shallow,  */
-/* deep and very deep. units are in layer numbers. */
-LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
-
-
-/* for these three, units are cm/cm if < 1, -bars if >= 1 */
-RealD
-  _SWCInitVal, /* initialization value for swc */
-  _SWCWetVal, /* value for a "wet" day,       */
-  _SWCMinVal; /* lower bound on swc.          */
-
-
 /** Character representation of implemented Soil Water Retention Curves (SWRC)
 
 	@note Code maintenance:
@@ -244,7 +231,7 @@ static double lower_limit_of_theta_min(
 	@brief User-input based minimum volumetric water content
 
 	This function returns minimum soil water content `theta_min` determined
-	by user input via #_SWCMinVal as
+	by user input via #SW_SITE._SWCMinVal as
 		* a fixed VWC value,
 		* a fixed SWP value, or
 		* a realistic lower limit from `lower_limit_of_theta_min()`,
@@ -255,7 +242,7 @@ static double lower_limit_of_theta_min(
 			(independently of the selected SWRC).
 
 	@param[in] ui_sm_min User input of requested minimum soil moisture,
-		see #_SWCMinVal
+		see _SWCMinVal
 	@param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
 		of the whole soil [m3/m3]
 	@param[in] width Soil layer width [cm]
@@ -265,6 +252,7 @@ static double lower_limit_of_theta_min(
 	@param[in] swrc_type Identification number of selected SWRC
 	@param[in] *swrcp Vector of SWRC parameters
 	@param[in] legacy_mode If true then legacy behavior (see details)
+	@param[in] _SWCMinVal Lower bound on swc.
 
 	@return Minimum volumetric water content of the matric soil [cm / cm]
 */
@@ -278,7 +266,8 @@ static double ui_theta_min(
 	double swcBulk_sat,
 	unsigned int swrc_type,
 	double *swrcp,
-	Bool legacy_mode
+	Bool legacy_mode,
+	RealD _SWCMinVal
 ) {
 	double vwc_min = SW_MISSING, tmp_vwcmin;
 
@@ -591,11 +580,12 @@ double SW_swcBulk_saturated(
 	@param[in] width Soil layer width [cm]
 	@param[in] ptf_type Identification number of selected PTF
 	@param[in] ui_sm_min User input of requested minimum soil moisture,
-		see #_SWCMinVal
+		see #SW_SITE._SWCMinVal
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] swcBulk_sat Saturated water content of the bulk soil [cm]
 	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in] _SWCMinVal Lower bound on swc.
 
 	@return Minimum water content of the bulk soil [cm]
 */
@@ -609,7 +599,8 @@ double SW_swcBulk_minimum(
 	double sand,
 	double clay,
 	double swcBulk_sat,
-	LOG_INFO* LogInfo
+	LOG_INFO* LogInfo,
+	RealD _SWCMinVal
 ) {
 	double theta_min_sim, theta_min_theoretical = SW_MISSING;
 
@@ -650,7 +641,8 @@ double SW_swcBulk_minimum(
 		swrcp,
 		// `(Bool) ptf_type == sw_Cosby1984AndOthers` doesn't work for unit test:
 		//   error: "no known conversion from 'bool' to 'Bool'"
-		ptf_type == sw_Cosby1984AndOthers ? swTRUE : swFALSE
+		ptf_type == sw_Cosby1984AndOthers ? swTRUE : swFALSE,
+		_SWCMinVal
 	);
 
 	/* `theta_min_sim` must be strictly larger than `theta_min_theoretical` */
@@ -1408,13 +1400,13 @@ void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
 		case 0:
-			_SWCMinVal = atof(inbuf);
+			SW_Site->_SWCMinVal = atof(inbuf);
 			break;
 		case 1:
-			_SWCInitVal = atof(inbuf);
+			SW_Site->_SWCInitVal = atof(inbuf);
 			break;
 		case 2:
-			_SWCWetVal = atof(inbuf);
+			SW_Site->_SWCWetVal = atof(inbuf);
 			break;
 		case 3:
 			SW_Site->reset_yr = itob(atoi(inbuf));
@@ -1572,7 +1564,7 @@ void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 				CloseFile(&f, LogInfo);
 				LogError(LogInfo, LOGFATAL, "%s : Bad record %d.\n", MyFileName, lineno);
 			}
-			_TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
+			SW_Site->_TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
 			SW_Site->n_transp_rgn++;
 		}
 
@@ -1615,7 +1607,7 @@ void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 
 	/* check for any discontinuities (reversals) in the transpiration regions */
 	for (r = 1; r < SW_Site->n_transp_rgn; r++) {
-		if (_TranspRgnBounds[r - 1] >= _TranspRgnBounds[r]) {
+		if (SW_Site->_TranspRgnBounds[r - 1] >= SW_Site->_TranspRgnBounds[r]) {
 			LogError(
 				LogInfo,
 				LOGFATAL,
@@ -1841,7 +1833,7 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
     `lowerBounds[0]`.
 
   @sideeffect
-    \ref _TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
+    \ref SW_SITE._TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
     derived from the input and from the soil information.
 
   @note
@@ -1866,7 +1858,7 @@ void derive_soilRegions(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 	for(i = 0; i < MAX_TRANSP_REGIONS; ++i){
 		// Setting bounds to a ridiculous number so we
 		// know how many get set.
-		_TranspRgnBounds[i] = UNDEFINED_LAYER;
+		SW_Site->_TranspRgnBounds[i] = UNDEFINED_LAYER;
 	}
 
 	/* ----------------- Derive Regions ------------------- */
@@ -1874,14 +1866,14 @@ void derive_soilRegions(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 	layer = 0; // SW_Site.lyr is base0-indexed
 	totalDepth = 0;
 	for(i = 0; i < nRegions; ++i){
-		_TranspRgnBounds[i] = layer;
+		SW_Site->_TranspRgnBounds[i] = layer;
 		// Find the layer that pushes us out of the region.
 		// It becomes the bound.
 		while(totalDepth < regionLowerBounds[i] &&
 		      layer < SW_Site->n_layers &&
 		      sum_across_vegtypes(SW_Site->lyr[layer]->transp_coeff)) {
 			totalDepth += SW_Site->lyr[layer]->width;
-			_TranspRgnBounds[i] = layer;
+			SW_Site->_TranspRgnBounds[i] = layer;
 			layer++;
 		}
 	}
@@ -1890,18 +1882,18 @@ void derive_soilRegions(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 	for(i = 0; i < nRegions - 1; ++i){
 		// If there is a duplicate bound we will remove it by left shifting the
 		// array, overwriting the duplicate.
-		if(_TranspRgnBounds[i] == _TranspRgnBounds[i + 1]){
+		if(SW_Site->_TranspRgnBounds[i] == SW_Site->_TranspRgnBounds[i + 1]){
 			for(j = i + 1; j < nRegions - 1; ++j){
-				_TranspRgnBounds[j] = _TranspRgnBounds[j + 1];
+				SW_Site->_TranspRgnBounds[j] = SW_Site->_TranspRgnBounds[j + 1];
 			}
-			_TranspRgnBounds[MAX_TRANSP_REGIONS - 1] = UNDEFINED_LAYER;
+			SW_Site->_TranspRgnBounds[MAX_TRANSP_REGIONS - 1] = UNDEFINED_LAYER;
 		}
 	}
 
 	/* -------------- Derive n_transp_rgn --------------- */
 	SW_Site->n_transp_rgn = 0;
 	while(SW_Site->n_transp_rgn < MAX_TRANSP_REGIONS &&
-	      _TranspRgnBounds[SW_Site->n_transp_rgn] != UNDEFINED_LAYER) {
+	      SW_Site->_TranspRgnBounds[SW_Site->n_transp_rgn] != UNDEFINED_LAYER) {
 		SW_Site->n_transp_rgn++;
 	}
 }
@@ -2167,23 +2159,24 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 			lyr->fractionVolBulk_gravel,
 			lyr->width,
 			lyr->ptf_type,
-			_SWCMinVal,
+			SW_Site->_SWCMinVal,
 			lyr->fractionWeightMatric_sand,
 			lyr->fractionWeightMatric_clay,
 			lyr->swcBulk_saturated,
-			LogInfo
+			LogInfo,
+			SW_Site->_SWCMinVal
 		);
 
 
 		/* Calculate wet limit of SWC for what inputs defined as wet */
-		lyr->swcBulk_wet = GE(_SWCWetVal, 1.0) ?
-			SW_SWRC_SWPtoSWC(_SWCWetVal, lyr, LogInfo) :
-			_SWCWetVal * lyr->width;
+		lyr->swcBulk_wet = GE(SW_Site->_SWCWetVal, 1.0) ?
+			SW_SWRC_SWPtoSWC(SW_Site->_SWCWetVal, lyr, LogInfo) :
+			SW_Site->_SWCWetVal * lyr->width;
 
 		/* Calculate initial SWC based on inputs */
-		lyr->swcBulk_init = GE(_SWCInitVal, 1.0) ?
-			SW_SWRC_SWPtoSWC(_SWCInitVal, lyr, LogInfo) :
-			_SWCInitVal * lyr->width;
+		lyr->swcBulk_init = GE(SW_Site->_SWCInitVal, 1.0) ?
+			SW_SWRC_SWPtoSWC(SW_Site->_SWCInitVal, lyr, LogInfo) :
+			SW_Site->_SWCInitVal * lyr->width;
 
 
 		/* test validity of values */
@@ -2300,7 +2293,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 			curregion = 0;
 			ForEachTranspRegion(r, SW_Site->n_transp_rgn)
 			{
-				if (s < _TranspRgnBounds[r]) {
+				if (s < SW_Site->_TranspRgnBounds[r]) {
 					if (ZRO(lyr->transp_coeff[k]))
 						break; /* end of transpiring layers */
 					curregion = r + 1;
@@ -2308,7 +2301,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 				}
 			}
 
-			if (curregion || _TranspRgnBounds[curregion] == 0) {
+			if (curregion || SW_Site->_TranspRgnBounds[curregion] == 0) {
 				lyr->my_transp_rgn[k] = curregion;
 				SW_Site->n_transp_lyrs[k] = max(SW_Site->n_transp_lyrs[k], s);
 
