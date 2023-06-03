@@ -24,18 +24,9 @@
 #include <unistd.h>
 #endif
 #include "include/generic.h"
-#include "include/filefuncs.h" // externs `_firstfile`
+#include "include/filefuncs.h"
 #include "include/SW_Main_lib.h"
-
-
-/* =================================================== */
-/*                  Global Variables                   */
-/* --------------------------------------------------- */
-
-// externed by "SW_Main_lib.h"
-char _firstfile[MAX_FILENAMESIZE];
-
-
+#include "include/myMemory.h"
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -87,11 +78,12 @@ void sw_print_version(void) {
 @param[in] LogInfo Holds information dealing with logfile output
 @param[out] QuietMode Flag to control if the program version is displayed
 @param[out] EchoInits Flag to control if inputs are to be output to the user
+@param[out] _firstfile First file name to be filled in the program run
 
 @sideeffect argv Updated argument V.
 */
 void sw_init_args(int argc, char **argv, LOG_INFO* LogInfo,
-				  Bool *QuietMode, Bool *EchoInits) {
+	Bool *QuietMode, Bool *EchoInits, char **_firstfile) {
 	/* =================================================== */
 	/* to add an option:
 	 *  - include it in opts[]
@@ -115,7 +107,7 @@ void sw_init_args(int argc, char **argv, LOG_INFO* LogInfo,
 	nopts = sizeof(opts) / sizeof(char *);
 
 	/* Defaults */
-	strcpy(_firstfile, DFLT_FIRSTFILE);
+	*_firstfile = Str_Dup(DFLT_FIRSTFILE, LogInfo);
 	*QuietMode = *EchoInits = swFALSE;
 
 	a = 1;
@@ -162,7 +154,7 @@ void sw_init_args(int argc, char **argv, LOG_INFO* LogInfo,
 					break;
 
 				case 1: /* -f */
-					strcpy(_firstfile, str);
+					strcpy(*_firstfile, str);
 					break;
 
 				case 2: /* -e */

@@ -150,9 +150,9 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms, LOG_INFO* LogInf
 void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 					 SW_OUTPUT* SW_Output);
 int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
-					   char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA,
-					   Bool deepdrain, SW_OUTPUT* SW_Output);
-void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo);
+	char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA, Bool deepdrain,
+	SW_OUTPUT* SW_Output, char *InFiles[]);
+void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]);
 void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp);
 void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs);
 void SW_OUT_write_year(void);
@@ -161,7 +161,7 @@ void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 					 LOG_INFO* LogInfo);
 void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo);
-void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo);
+void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]);
 
 void find_OutPeriods_inUse(SW_OUTPUT* SW_Output);
 Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k);

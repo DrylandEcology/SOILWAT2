@@ -95,11 +95,12 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   information in the simulation
 @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   hold pointers to subroutines for output keys
+@param[in,out] PathInfo Struct holding all information about the programs path/files
 @param[in] LogInfo Holds information dealing with logfile output
 */
 
 void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-                 LOG_INFO* LogInfo) {
+                 PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -111,7 +112,7 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
     if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
     #endif
 
-    SW_CTL_run_current_year(sw, SW_OutputPtrs, LogInfo);
+    SW_CTL_run_current_year(sw, SW_OutputPtrs, LogInfo, PathInfo);
   }
 } /******* End Main Loop *********/
 
@@ -121,13 +122,13 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
  *  information in the simulation
  * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  *  hold pointers to subroutines for output keys
+ * @param[in,out] PathInfo Struct holding all information about the programs path/files
  * @param[in] LogInfo Holds information dealing with logfile output
- * @param[in] firstfile First input file
  */
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-                        LOG_INFO* LogInfo, const char *firstfile) {
+                        PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 
-	SW_F_construct(firstfile, LogInfo);
+	SW_F_construct(PathInfo->InFiles, PathInfo->InFiles[eFirst], PathInfo->_ProjDir);
 	SW_MDL_construct(sw->Model.newperiod, sw->Model.days_in_month);
 	SW_WTH_construct(LogInfo, &sw->Weather);
 	// delay SW_MKV_construct() until we know from inputs whether we need it
@@ -154,9 +155,10 @@ void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
     * if `TRUE`, de-allocate all memory including output arrays.
   @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
+  @param[in] PathInfo Struct holding all information about the programs path/files
 */
-void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
-	SW_F_deconstruct();
+void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw, PATH_INFO* PathInfo) {
+	SW_F_deconstruct(PathInfo->InFiles);
 	SW_MDL_deconstruct();
 	SW_WTH_deconstruct(&sw->Markov, &sw->Weather); // calls SW_MKV_deconstruct() if needed
 	// SW_SKY_deconstruct() not needed
@@ -176,8 +178,9 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
   @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
   @param[in] LogInfo Holds information dealing with logfile output
+  @param[in] PathInfo Struct holding all information about the programs path/files
 */
-void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
+void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo, PATH_INFO* PathInfo) {
 
 	// SW_F_init_run() not needed
 	// SW_MDL_init_run() not needed
@@ -185,7 +188,7 @@ void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
 	// SW_MKV_init_run() not needed
 	SW_PET_init_run(&sw->AtmDemand);
 	// SW_SKY_init_run() not needed
-	SW_SIT_init_run(&sw->VegProd, &sw->Site, LogInfo);
+	SW_SIT_init_run(&sw->VegProd, &sw->Site, LogInfo, PathInfo->InFiles);
 	SW_VES_init_run(sw->VegEstab.parms, sw->Site.lyr,
                   sw->Site.n_transp_lyrs, LogInfo, sw->VegEstab.count); // must run after `SW_SIT_init_run()`
 	SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model,
@@ -207,9 +210,10 @@ void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
 @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   hold pointers to subroutines for output keys
 @param[in] LogInfo Holds information dealing with logfile output
+@param[in] PathInfo Struct holding all information about the programs path/files
 */
 void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-                             LOG_INFO* LogInfo) {
+                             LOG_INFO* LogInfo, PATH_INFO* PathInfo) {
   /*=======================================================*/
   TimeInt *doy = &sw->Model.doy; // base1
   #ifdef SWDEBUG
@@ -230,7 +234,7 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
     #ifdef SWDEBUG
     if (debug) swprintf("simulate water ... ");
     #endif
-    SW_SWC_water_flow(sw, LogInfo);
+    SW_SWC_water_flow(sw, LogInfo, PathInfo->InFiles);
 
     // Only run this function if SWA output is asked for
     if (sw->VegProd.use_SWA) {
@@ -270,10 +274,12 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 @param[in,out] sw Comprehensive struct of type SW_ALL containing
   all information in the simulation
+@param[in,out] PathInfo Struct holding all information about the programs path/files
 @param[in] LogInfo Holds information dealing with logfile output
 @param[in] EchoInits Flag to control if inputs are to be output to the user
 */
-void SW_CTL_read_inputs_from_disk(SW_ALL* sw, LOG_INFO* LogInfo, Bool EchoInits) {
+void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
+                                  LOG_INFO* LogInfo, Bool EchoInits) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -282,29 +288,30 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, LOG_INFO* LogInfo, Bool EchoInits)
   if (debug) swprintf("'SW_CTL_read_inputs_from_disk': Read input from disk:");
   #endif
 
-  SW_F_read(NULL, LogInfo);
+  SW_F_read(LogInfo, PathInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" 'files'");
   #endif
 
-  SW_MDL_read(&sw->Model, LogInfo);
+  SW_MDL_read(&sw->Model, LogInfo, PathInfo->InFiles);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'model'");
   #endif
 
-  SW_WTH_setup(&sw->Weather, LogInfo);
+  SW_WTH_setup(&sw->Weather, LogInfo, PathInfo->InFiles,
+               PathInfo->weather_prefix);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather setup'");
   #endif
 
-  SW_SKY_read(LogInfo, &sw->Sky);
+  SW_SKY_read(LogInfo, PathInfo->InFiles, &sw->Sky);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'climate'");
   #endif
 
   if (sw->Weather.generateWeatherMethod == 2) {
     SW_MKV_setup(LogInfo, &sw->Markov, sw->Weather.rng_seed,
-                  sw->Weather.generateWeatherMethod);
+                  sw->Weather.generateWeatherMethod, PathInfo->InFiles);
     #ifdef SWDEBUG
     if (debug) swprintf(" > 'weather generator'");
     #endif
@@ -315,43 +322,44 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, LOG_INFO* LogInfo, Bool EchoInits)
   if (debug) swprintf(" > 'weather read'");
   #endif
 
-  SW_VPD_read(&sw->VegProd, LogInfo);
+  SW_VPD_read(&sw->VegProd, LogInfo, PathInfo->InFiles);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'veg'");
   #endif
 
-  SW_SIT_read(&sw->Site, LogInfo, &sw->Carbon);
+  SW_SIT_read(&sw->Site, LogInfo, PathInfo->InFiles, &sw->Carbon);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'site'");
   #endif
 
-  SW_LYR_read(&sw->Site, LogInfo);
+  SW_LYR_read(&sw->Site, LogInfo, PathInfo->InFiles);
   #ifdef RSWDEBUG
   if (debug) swprintf(" > 'soils'");
   #endif
 
-  SW_SWRC_read(&sw->Site, LogInfo);
+  SW_SWRC_read(&sw->Site, LogInfo, PathInfo->InFiles);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'swrc parameters'");
   #endif
 
-  SW_VES_read(&sw->VegEstab, LogInfo, EchoInits);
+  SW_VES_read(&sw->VegEstab, LogInfo, EchoInits,
+              PathInfo->InFiles, PathInfo->_ProjDir);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'establishment'");
   #endif
 
-  SW_OUT_read(sw, LogInfo);
+  SW_OUT_read(sw, LogInfo, PathInfo->InFiles);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'ouput'");
   #endif
 
-  SW_CBN_read(&sw->Carbon, &sw->Model, LogInfo);
+  SW_CBN_read(&sw->Carbon, &sw->Model, LogInfo, PathInfo->InFiles);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'CO2'");
   #endif
 
   SW_SWC_read(&sw->SoilWat, sw->Model.endyr, sw->Site.lyr,
-              sw->Site.n_layers, LogInfo);
+              sw->Site.n_layers, LogInfo, PathInfo->InFiles);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'swc'");
   if (debug) swprintf(" completed.\n");

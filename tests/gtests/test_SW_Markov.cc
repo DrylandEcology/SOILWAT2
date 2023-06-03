@@ -79,7 +79,7 @@ namespace {
     // Initialize weather generator
     SW_All.Weather.rng_seed = seed;
     SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
-                 SW_All.Weather.generateWeatherMethod);
+                 SW_All.Weather.generateWeatherMethod, PathInfo.InFiles);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
@@ -96,7 +96,7 @@ namespace {
     // Re-initialize weather generator
     SW_All.Weather.rng_seed = 0;
     SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
-                 SW_All.Weather.generateWeatherMethod);
+                 SW_All.Weather.generateWeatherMethod, PathInfo.InFiles);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
@@ -118,7 +118,7 @@ namespace {
     // Re-initialize weather generator
     SW_All.Weather.rng_seed = seed;
     SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
-                 SW_All.Weather.generateWeatherMethod);
+                 SW_All.Weather.generateWeatherMethod, PathInfo.InFiles);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {

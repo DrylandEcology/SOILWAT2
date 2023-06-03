@@ -140,10 +140,12 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 	SW_FILE_STATUS which holds basic information about output files
 	and values
   \param pd[in] The output time step.
+  \param[in] LogInfo Holds information dealing with logfile output
+  \param[in] InFiles Array of program input files
 */
 /***********************************************************/
 static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
-							  LOG_INFO* LogInfo)
+							  LOG_INFO* LogInfo, char *InFiles[])
 {
 	// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
 	// a specific order of `SW_FileIndex` --> fix and create something that
@@ -152,12 +154,12 @@ static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
 
 	if (SW_FileStatus->make_regular[pd]) {
 		SW_FileStatus->fp_reg[pd] =
-					OpenFile(SW_F_name(eOutputDaily + pd), "w", LogInfo);
+			OpenFile(SW_F_name(eOutputDaily + pd, InFiles), "w", LogInfo);
 	}
 
 	if (SW_FileStatus->make_soil[pd]) {
 		SW_FileStatus->fp_soil[pd] =
-					OpenFile(SW_F_name(eOutputDaily_soil + pd), "w", LogInfo);
+			OpenFile(SW_F_name(eOutputDaily_soil + pd, InFiles), "w", LogInfo);
 	}
 }
 #endif
@@ -295,12 +297,12 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd)
  *  after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
 void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
-						 LyrIndex n_layers, LOG_INFO* LogInfo) {
+				LyrIndex n_layers, LOG_INFO* LogInfo, char *InFiles[]) {
 	OutPeriod pd;
 
 	ForEachOutPeriod(pd) {
 		if (use_OutPeriod[pd]) {
-			_create_csv_files(SW_FileStatus, pd, LogInfo);
+			_create_csv_files(SW_FileStatus, pd, LogInfo, InFiles);
 
 			write_headers_to_csv(pd, SW_FileStatus->fp_reg[pd],
 				SW_FileStatus->fp_soil[pd], swFALSE, SW_FileStatus->make_soil,

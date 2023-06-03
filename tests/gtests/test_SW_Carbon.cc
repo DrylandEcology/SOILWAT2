@@ -67,7 +67,7 @@ namespace {
     SW_All.Carbon.use_wue_mult = 0;
     SW_All.Carbon.use_bio_mult = 0;
 
-    SW_CBN_read(&SW_All.Carbon, &SW_All.Model, &LogInfo);
+    SW_CBN_read(&SW_All.Carbon, &SW_All.Model, &LogInfo, PathInfo.InFiles);
 
     sum_CO2 = 0.;
     for (year = 0; year < MAX_NYEAR; year++) {
@@ -82,7 +82,7 @@ namespace {
     SW_All.Carbon.use_bio_mult = 1;
     SW_All.Model.addtl_yr = 0;
 
-    SW_CBN_read(&SW_All.Carbon, &SW_All.Model, &LogInfo);
+    SW_CBN_read(&SW_All.Carbon, &SW_All.Model, &LogInfo, PathInfo.InFiles);
 
     for (year = SW_All.Model.startyr + SW_All.Model.addtl_yr; year <= simendyr; year++) {
       EXPECT_GT(SW_All.Carbon.ppm[year], 0.);
@@ -104,7 +104,7 @@ namespace {
     SW_All.Carbon.use_bio_mult = 1;
     SW_All.Model.addtl_yr = 0;
 
-    SW_CBN_read(&SW_All.Carbon, &SW_All.Model, &LogInfo);
+    SW_CBN_read(&SW_All.Carbon, &SW_All.Model, &LogInfo, PathInfo.InFiles);
     SW_CBN_init_run(SW_All.VegProd.veg, &SW_All.Model, &SW_All.Carbon, &LogInfo);
 
     for (year = SW_All.Model.startyr + SW_All.Model.addtl_yr; year <= simendyr; year++) {

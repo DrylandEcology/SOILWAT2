@@ -1336,8 +1336,11 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
 @param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
 @param[in] LogInfo Holds information dealing with logfile output
+@param[in] InFiles Array of program input files
+@param[out] _weather_prefix File name of weather data without extension.
 */
-void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
+void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo,
+                  char *InFiles[], char *_weather_prefix) {
 	/* =================================================== */
 	const int nitems = 35;
 	FILE *f;
@@ -1349,7 +1352,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
 
     Bool *dailyInputFlags = SW_Weather->dailyInputFlags;
 
-	char *MyFileName = SW_F_name(eWeather);
+	char *MyFileName = SW_F_name(eWeather, InFiles);
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {
@@ -1508,7 +1511,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
 		lineno++;
 	}
 
-	SW_WeatherPrefix(SW_Weather->name_prefix);
+	SW_WeatherPrefix(SW_Weather->name_prefix, _weather_prefix);
 	CloseFile(&f, LogInfo);
 
     // Check if temperature max/min flags are unevenly set (1/0) or (0/1)

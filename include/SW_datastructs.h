@@ -28,6 +28,8 @@ typedef unsigned int TimeInt;
 typedef unsigned int LyrIndex;
 typedef signed char flag;
 
+#define SW_NFILES 23 // For `InFiles`
+
 /* =================================================== */
 /*                   Carbon structs                    */
 /* --------------------------------------------------- */
@@ -727,6 +729,13 @@ typedef struct {
 	// Indicates logfile written to via LogError.
 
 } LOG_INFO;
+
+typedef struct {
+	char *InFiles[SW_NFILES];
+	char _ProjDir[FILENAME_MAX];
+	char weather_prefix[FILENAME_MAX];
+	char output_prefix[FILENAME_MAX];
+} PATH_INFO;
 
 /* =================================================== */
 /*                    Sky structs                      */

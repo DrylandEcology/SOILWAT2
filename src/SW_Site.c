@@ -1379,10 +1379,11 @@ void SW_SIT_deconstruct(SW_SITE* SW_Site)
 
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] LogInfo Holds information dealing with logfile output
+@param[in] InFiles Array of program input files
 @param[out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
 */
 void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
-				 SW_CARBON* SW_Carbon) {
+				char *InFiles[], SW_CARBON* SW_Carbon) {
 	/* =================================================== */
 	/* 5-Feb-2002 (cwb) Removed rgntop requirement in
 	 *    transpiration regions section of input
@@ -1400,7 +1401,7 @@ void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
-	char *MyFileName = SW_F_name(eSite);
+	char *MyFileName = SW_F_name(eSite, InFiles);
 
 	f = OpenFile(MyFileName, "r", LogInfo);
 
@@ -1619,7 +1620,7 @@ void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 				LogInfo,
 				LOGFATAL,
 				"%s : Discontinuity/reversal in transpiration regions.\n",
-				SW_F_name(eSite)
+				SW_F_name(eSite, InFiles)
 			);
 		}
 	}
@@ -1631,10 +1632,11 @@ void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 
 	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in] InFiles Array of program input files
 
 	@note Previously, the function was static and named `_read_layers()`.
 */
-void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
+void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
 	/* =================================================== */
 	/* 5-Feb-2002 (cwb) removed dmin requirement in input file */
 
@@ -1646,7 +1648,7 @@ void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
-	char *MyFileName = SW_F_name(eLayers);
+	char *MyFileName = SW_F_name(eLayers, InFiles);
 
 	f = OpenFile(MyFileName, "r", LogInfo);
 
@@ -1752,6 +1754,7 @@ void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
     depth [cm] of each region in ascending (in value) order. If you think about
     this from the perspective of soil, it would mean the shallowest bound is at
     `lowerBounds[0]`.
+  @param[in] InFiles Array of program input files
 
   @sideeffect After deleting any previous data in the soil layer array
     SW_Site.lyr, it creates new soil layers based on the argument inputs.
@@ -1764,7 +1767,8 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 	LOG_INFO* LogInfo, LyrIndex nlyrs, RealF *dmax, RealF *bd,
 	RealF *f_gravel, RealF *evco, RealF *trco_grass, RealF *trco_shrub,
 	RealF *trco_tree, RealF *trco_forb, RealF *psand, RealF *pclay,
-	RealF *imperm, RealF *soiltemp, int nRegions, RealD *regionLowerBounds)
+	RealF *imperm, RealF *soiltemp, int nRegions, RealD *regionLowerBounds,
+	char *InFiles[])
 {
 
   RealF dmin = 0.0;
@@ -1819,7 +1823,7 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
   derive_soilRegions(SW_Site, LogInfo, nRegions, regionLowerBounds);
 
   // Re-initialize site parameters based on new soil layers
-  SW_SIT_init_run(SW_VegProd, SW_Site, LogInfo);
+  SW_SIT_init_run(SW_VegProd, SW_Site, LogInfo, InFiles);
 }
 
 
@@ -1906,7 +1910,7 @@ void derive_soilRegions(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 
 /** Obtain soil water retention curve parameters from disk
 */
-void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
+void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
 
 	/* Don't read values from disk if they will be estimated via a PTF */
 	if (!SW_Site->site_has_swrcp) return;
@@ -1918,7 +1922,7 @@ void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
-	char *MyFileName = SW_F_name(eSWRCp);
+	char *MyFileName = SW_F_name(eSWRCp, InFiles);
 
 	f = OpenFile(MyFileName, "r", LogInfo);
 
@@ -1989,11 +1993,12 @@ void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 		cover conditions in the simulation
 	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in] InFiles Array of program input files
 
 	@sideeffect Values stored in global variable `SW_Site`.
 */
 void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
-					 LOG_INFO* LogInfo) {
+					 LOG_INFO* LogInfo, char *InFiles[]) {
 	/* =================================================== */
 	/* potentially this routine can be called whether the
 	 * layer data came from a file or a function call which
@@ -2309,13 +2314,14 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 
 			} else if (s == 0) {
 				LogError(LogInfo, LOGFATAL, "%s : Top soil layer must be included\n"
-						"  in %s tranpiration regions.\n", SW_F_name(eSite), key2veg[k]);
+						"  in %s tranpiration regions.\n", SW_F_name(eSite, InFiles), key2veg[k]);
 			} else if (r < SW_Site->n_transp_rgn) {
 				LogError(LogInfo, LOGFATAL, "%s : Transpiration region %d \n"
 						"  is deeper than the deepest layer with a\n"
 						"  %s transpiration coefficient > 0 (%d) in '%s'.\n"
 						"  Please fix the discrepancy and try again.\n",
-						SW_F_name(eSite), r + 1, key2veg[k], s, SW_F_name(eLayers));
+						SW_F_name(eSite, InFiles), r + 1, key2veg[k], s,
+								  SW_F_name(eLayers, InFiles));
 			} else {
 				lyr->my_transp_rgn[k] = 0;
 			}
@@ -2508,15 +2514,16 @@ void SW_SIT_init_counts(SW_SITE* SW_Site) {
 
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] LogInfo Holds information dealing with logfile output
+@param[in] InFiles Array of program input files
 */
-void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
+void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
 	/* =================================================== */
 	LyrIndex i;
 
 	LogError(LogInfo, LOGNOTE, "\n\n=====================================================\n"
 			"Site Related Parameters:\n"
 			"---------------------\n");
-	LogError(LogInfo, LOGNOTE, "  Site File: %s\n", SW_F_name(eSite));
+	LogError(LogInfo, LOGNOTE, "  Site File: %s\n", SW_F_name(eSite, InFiles));
 	LogError(LogInfo, LOGNOTE, "  Reset SWC values each year: %s\n", (SW_Site->reset_yr) ? "swTRUE" : "swFALSE");
 	LogError(LogInfo, LOGNOTE, "  Use deep drainage reservoir: %s\n", (SW_Site->deepdrain) ? "swTRUE" : "swFALSE");
 	LogError(LogInfo, LOGNOTE, "  Slow Drain Coefficient: %5.4f\n", SW_Site->slow_drain_coeff);
@@ -2551,7 +2558,7 @@ void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 	LogError(LogInfo, LOGNOTE, "  Number of regressions for the soil temperature function: %d\n", SW_Site->stNRGR);
 
 	LogError(LogInfo, LOGNOTE, "\nLayer Related Values:\n----------------------\n");
-	LogError(LogInfo, LOGNOTE, "  Soils File: %s\n", SW_F_name(eLayers));
+	LogError(LogInfo, LOGNOTE, "  Soils File: %s\n", SW_F_name(eLayers, InFiles));
 	LogError(LogInfo, LOGNOTE, "  Number of soil layers: %d\n", SW_Site->n_layers);
 	LogError(LogInfo, LOGNOTE, "  Number of evaporation layers: %d\n", SW_Site->n_evap_lyrs);
 	LogError(LogInfo, LOGNOTE, "  Number of forb transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_FORBS]);

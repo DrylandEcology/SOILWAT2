@@ -20,7 +20,8 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_CBN_construct(SW_CARBON* SW_Carbon);
 void SW_CBN_deconstruct(void);
-void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, LOG_INFO* LogInfo);
+void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, LOG_INFO* LogInfo,
+                 char *InFiles[]);
 void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
                      SW_CARBON* SW_Carbon, LOG_INFO* LogInfo) ;
 

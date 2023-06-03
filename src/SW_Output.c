@@ -168,8 +168,8 @@ static Bool bFlush_output; /* process partial period ? */
 /* --------------------------------------------------- */
 
 static OutPeriod str2period(char *s);
-static OutKey str2key(char *s, LOG_INFO* LogInfo);
-static OutSum str2stype(char *s, LOG_INFO* LogInfo);
+static OutKey str2key(char *s, LOG_INFO* LogInfo, char *InFiles[]);
+static OutSum str2stype(char *s, LOG_INFO* LogInfo, char *InFiles[]);
 
 static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 						 LOG_INFO* LogInfo);
@@ -205,28 +205,28 @@ static OutPeriod str2period(char *s)
 
 /** Convert string representation of output type to `OutKey` value.
 */
-static OutKey str2key(char *s, LOG_INFO* LogInfo)
+static OutKey str2key(char *s, LOG_INFO* LogInfo, char *InFiles[])
 {
 	IntUS key;
 
 	for (key = 0; key < SW_OUTNKEYS && Str_CompareI(s, (char *)key2str[key]); key++) ;
 	if (key == SW_OUTNKEYS)
 	{
-		LogError(LogInfo, LOGFATAL, "%s : Invalid key (%s) in %s", SW_F_name(eOutput), s);
+		LogError(LogInfo, LOGFATAL, "%s : Invalid key (%s) in %s", SW_F_name(eOutput, InFiles), s);
 	}
 	return (OutKey) key;
 }
 
 /** Convert string representation of output aggregation function to `OutSum` value.
 */
-static OutSum str2stype(char *s, LOG_INFO* LogInfo)
+static OutSum str2stype(char *s, LOG_INFO* LogInfo, char *InFiles[])
 {
 	IntUS styp;
 
 	for (styp = eSW_Off; styp < SW_NSUMTYPES && Str_CompareI(s, (char *)styp2str[styp]); styp++) ;
 	if (styp == SW_NSUMTYPES)
 	{
-		LogError(LogInfo, LOGFATAL, "%s : Invalid summary type (%s)\n", SW_F_name(eOutput), s);
+		LogError(LogInfo, LOGFATAL, "%s : Invalid summary type (%s)\n", SW_F_name(eOutput, InFiles), s);
 	}
 	return (OutSum) styp;
 }
@@ -1994,12 +1994,12 @@ void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 
 
 int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
-					   char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA,
-					   Bool deepdrain, SW_OUTPUT* SW_Output)
+	char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA, Bool deepdrain,
+	SW_OUTPUT* SW_Output, char *InFiles[])
 {
 	int res = 0; // return value indicating type of message if any
 
-	char *MyFileName = SW_F_name(eOutput);
+	char *MyFileName = SW_F_name(eOutput, InFiles);
 	msg[0] = '\0';
 
 	// Convert strings to index numbers
@@ -2067,7 +2067,7 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 			"%s : DEEPSWC cannot produce output if deep drainage is " \
 			"not simulated (flag not set in %s).",
 			MyFileName,
-			SW_F_name(eSite)
+			SW_F_name(eSite, InFiles)
 		);
 		return(LOGWARN);
 	}
@@ -2111,8 +2111,9 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 	@param[in,out] sw Comprehensive structure holding all information
     	dealt with in SOILWAT2
 	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in] InFiles Array of program input files
  */
-void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo)
+void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 {
 	/* =================================================== */
 	/* read input file for output parameter setup info.
@@ -2144,7 +2145,7 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo)
 			inbuf[MAX_FILENAMESIZE];
 	int first; /* first doy for output */
 
-	char *MyFileName = SW_F_name(eOutput);
+	char *MyFileName = SW_F_name(eOutput, InFiles);
 	f = OpenFile(MyFileName, "r", LogInfo);
 	itemno = 0;
 
@@ -2219,7 +2220,7 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo)
 		}
 
 		// Convert strings to index numbers
-		k = str2key(Str_ToUpper(keyname, upkey), LogInfo);
+		k = str2key(Str_ToUpper(keyname, upkey), LogInfo, InFiles);
 
 		// For now: rSOILWAT2's function `onGet_SW_OUT` requires that
 		// `sw->Output[k].outfile` is allocated here
@@ -2232,14 +2233,15 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo)
 		// Fill information into `sw->Output[k]`
 		msg_type = SW_OUT_read_onekey(
 			k,
-			str2stype(Str_ToUpper(sumtype, upsum), LogInfo),
+			str2stype(Str_ToUpper(sumtype, upsum), LogInfo, InFiles),
 			first,
 			!Str_CompareI("END", (char *)last) ? 366 : atoi(last),
 			msg,
 			sizeof msg,
 			&sw->VegProd.use_SWA,
 			sw->Site.deepdrain,
-			sw->Output
+			sw->Output,
+			InFiles
 		);
 
 		if (msg_type != 0) {
@@ -2655,9 +2657,9 @@ void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
 	LogError(LogInfo, LOGNOTE, errstr);
 }
 
-void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo) {
+void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]) {
 
-	_echo_inputs(&sw->Site, LogInfo);
+	_echo_inputs(&sw->Site, LogInfo, InFiles);
 	_echo_VegEstab(sw->Site.lyr, sw->VegEstab.parms, LogInfo, sw->VegEstab.count);
 	_echo_VegProd(LogInfo, sw->VegProd.veg, sw->VegProd.bare_cov);
 	_echo_outputs(sw, LogInfo);

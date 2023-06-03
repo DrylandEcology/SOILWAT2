@@ -49,7 +49,7 @@ namespace {
     int i;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -70,7 +70,7 @@ namespace {
     SW_All.Site.use_soil_temp = swTRUE;
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -93,7 +93,7 @@ namespace {
     SW_All.Site.percentRunon = 1.25;
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -117,7 +117,7 @@ namespace {
 
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
-                 SW_All.Weather.generateWeatherMethod);
+                 SW_All.Weather.generateWeatherMethod, PathInfo.InFiles);
 
     // Point to nonexisting weather data
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
@@ -128,7 +128,7 @@ namespace {
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -153,7 +153,7 @@ namespace {
 
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
-                 SW_All.Weather.generateWeatherMethod);
+                 SW_All.Weather.generateWeatherMethod, PathInfo.InFiles);
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
@@ -161,7 +161,7 @@ namespace {
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -186,10 +186,10 @@ namespace {
     }
 
     // Re-calculate soils
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo, PathInfo.InFiles);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -214,7 +214,7 @@ namespace {
                     SW_All.Site.latitude, &LogInfo);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -237,17 +237,17 @@ namespace {
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
-    Mem_Free(InFiles[eSWRCp]);
-    InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
+    Mem_Free(PathInfo.InFiles[eSWRCp]);
+    PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_All.Site, &LogInfo);
+    SW_SWRC_read(&SW_All.Site, &LogInfo, PathInfo.InFiles);
 
     // Update soils
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo, PathInfo.InFiles);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -272,17 +272,17 @@ namespace {
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
-    Mem_Free(InFiles[eSWRCp]);
-    InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
+    Mem_Free(PathInfo.InFiles[eSWRCp]);
+    PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_All.Site, &LogInfo);
+    SW_SWRC_read(&SW_All.Site, &LogInfo, PathInfo.InFiles);
 
     // Update soils
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo, PathInfo.InFiles);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -328,7 +328,7 @@ namespace {
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {

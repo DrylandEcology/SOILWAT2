@@ -39,7 +39,7 @@ extern char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 /* --------------------------------------------------- */
 #if defined(SOILWAT)
 void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
-						 LyrIndex n_layers, LOG_INFO* LogInfo);
+				LyrIndex n_layers, LOG_INFO* LogInfo, char *InFiles[]);
 
 #elif defined(STEPWAT)
 void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,

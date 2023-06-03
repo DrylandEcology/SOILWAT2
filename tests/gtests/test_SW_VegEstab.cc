@@ -13,14 +13,15 @@ namespace {
   // Run a simulation with vegetation establishment turn on
   TEST(VegEstabTest, SimulateWithVegEstab) {
     // Turn on vegetation establishment and process inputs (but ignore use flag)
-    SW_VES_read2(&SW_All.VegEstab, &LogInfo, swTRUE, swFALSE, swFALSE);
+    SW_VES_read2(&SW_All.VegEstab, &LogInfo, swTRUE, swFALSE, swFALSE,
+                 PathInfo.InFiles, PathInfo._ProjDir);
 
     // Expect that vegetation establishment is turn on and contains species
     EXPECT_TRUE(SW_All.VegEstab.use);
     EXPECT_GT(SW_All.VegEstab.count, 0);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
     // Expect valid 'day of year' 1-366 output for each species from the
     // vegetation establishment calculations

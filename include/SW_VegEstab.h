@@ -31,13 +31,15 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_VES_read(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo,
-				 Bool EchoInits);
+				 Bool EchoInits, char *InFiles[], char *_ProjDir);
 void SW_VES_read2(
 	SW_VEGESTAB* SW_VegEstab,
 	LOG_INFO* LogInfo,
 	Bool use_VegEstab,
 	Bool consider_InputFlag,
-	Bool EchoInits
+	Bool EchoInits,
+	char *InFiles[],
+	char *_ProjDir
 );
 void SW_VES_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
 void SW_VES_deconstruct(SW_VEGESTAB* SW_VegEstab);

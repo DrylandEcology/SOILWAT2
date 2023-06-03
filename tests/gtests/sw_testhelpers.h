@@ -21,9 +21,10 @@ static const double
 extern SW_ALL SW_All;
 extern SW_OUTPUT_POINTERS SW_OutputPtrs;
 extern LOG_INFO LogInfo;
+extern PATH_INFO PathInfo;
 
 /* Functions for unit tests */
 
 void Reset_SOILWAT2_after_UnitTest(void);
 
-void create_test_soillayers(unsigned int nlayers);
+void create_test_soillayers(unsigned int nlayers, char *InFiles[]);

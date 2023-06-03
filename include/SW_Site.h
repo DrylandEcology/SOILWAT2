@@ -240,14 +240,14 @@ void SW_SIT_construct(SW_SITE* SW_Site);
 void SW_SIT_deconstruct(SW_SITE* SW_Site);
 void SW_SIT_init_counts(SW_SITE* SW_Site);
 void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
-				 SW_CARBON* SW_Carbon);
+				char *InFiles[], SW_CARBON* SW_Carbon);
 void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
-					 LOG_INFO* LogInfo);
-void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo);
+					 LOG_INFO* LogInfo, char *InFiles[]);
+void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]);
 
 /* these used to be in Layers */
-void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo);
-void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo);
+void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]);
+void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]);
 void SW_SIT_clear_layers(SW_SITE* SW_Site);
 LyrIndex _newlayer(SW_SITE* SW_Site, LOG_INFO* LogInfo);
 void add_deepdrain_layer(SW_SITE* SW_Site, LOG_INFO* LogInfo);
@@ -256,7 +256,8 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 	LOG_INFO* LogInfo, LyrIndex nlyrs, RealF *dmax, RealF *bd,
 	RealF *f_gravel, RealF *evco, RealF *trco_grass, RealF *trco_shrub,
 	RealF *trco_tree, RealF *trco_forb, RealF *psand, RealF *pclay,
-	RealF *imperm, RealF *soiltemp, int nRegions, RealD *regionLowerBounds);
+	RealF *imperm, RealF *soiltemp, int nRegions, RealD *regionLowerBounds,
+	char *InFiles[]);
 void derive_soilRegions(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 						int nRegions, RealD *regionLowerBounds);
 

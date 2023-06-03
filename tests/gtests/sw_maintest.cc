@@ -19,6 +19,8 @@
 #include "include/generic.h"
 #include "include/filefuncs.h" // externs `_firstfile`
 #include "include/SW_Control.h"
+#include "include/SW_Files.h"
+#include "include/myMemory.h"
 #include "include/SW_datastructs.h"
 
 #include "tests/gtests/sw_testhelpers.h"
@@ -58,7 +60,8 @@ int main(int argc, char **argv) {
   if (!ChDir(dir_test)) {
     swprintf("Invalid project directory (%s)", dir_test);
   }
-  strcpy(_firstfile, masterfile_test);
+
+  PathInfo.InFiles[eFirst] = Str_Dup(masterfile_test, &LogInfo);
 
 
   // Initialize SOILWAT2 variables and read values from example input file
@@ -76,7 +79,7 @@ int main(int argc, char **argv) {
 
 
   //--- Take down SOILWAT2 variables
-  SW_CTL_clear_model(swTRUE, &SW_All); // de-allocate all memory
+  SW_CTL_clear_model(swTRUE, &SW_All, &PathInfo); // de-allocate all memory
 
   //--- Return output of 'RUN_ALL_TESTS()', see https://github.com/google/googletest/blob/master/googletest/docs/FAQ.md#my-compiler-complains-about-ignoring-return-value-when-i-call-run_all_tests-why
   return res;

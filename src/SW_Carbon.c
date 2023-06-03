@@ -51,6 +51,7 @@ void SW_CBN_deconstruct(void)
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
  * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in] InFiles Array of program input files
  *
  * Additionally, check for the following issues:
  *   1. Duplicate entries.
@@ -59,7 +60,8 @@ void SW_CBN_deconstruct(void)
  *   4. Missing year.
  *   5. Negative year.
  */
-void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, LOG_INFO* LogInfo)
+void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, LOG_INFO* LogInfo,
+                 char *InFiles[])
 {
   #ifdef SWDEBUG
   short debug = 0;
@@ -90,7 +92,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, LOG_INFO* LogInfo)
   short fileWasEmpty = 1;
   char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 
-  MyFileName = SW_F_name(eCarbon);
+  MyFileName = SW_F_name(eCarbon, InFiles);
   f = OpenFile(MyFileName, "r", LogInfo);
 
   #ifdef SWDEBUG

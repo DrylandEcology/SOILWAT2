@@ -38,10 +38,11 @@
 @brief Reads in file for sky.
 
 @param[in] LogInfo Holds information dealing with logfile output
+@param[in] InFiles Array of program input files
 @param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
 	over the simulated site
 */
-void SW_SKY_read(LOG_INFO* LogInfo, SW_SKY* SW_Sky) {
+void SW_SKY_read(LOG_INFO* LogInfo, char *InFiles[], SW_SKY* SW_Sky) {
 	/* =================================================== */
 	/* 6-Oct-03 (cwb) - all this time I had lines 1 & 3
 	 *                  switched!
@@ -51,7 +52,7 @@ void SW_SKY_read(LOG_INFO* LogInfo, SW_SKY* SW_Sky) {
 	int lineno = 0, x = 0;
 	char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 
-	MyFileName = SW_F_name(eSky);
+	MyFileName = SW_F_name(eSky, InFiles);
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {

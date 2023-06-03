@@ -22,11 +22,16 @@
 #include "include/SW_SoilWater.h"
 #include "include/SW_Weather.h"
 #include "include/SW_Control.h"
+#include "include/SW_Files.h"
+#include "include/myMemory.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
 SW_OUTPUT_POINTERS SW_OutputPtrs;
 LOG_INFO LogInfo;
+PATH_INFO PathInfo;
+
+const char *testmaster_file = "files.in";
 
 /** Initialize SOILWAT2 variables and read values from example input file
  */
@@ -36,6 +41,7 @@ void Reset_SOILWAT2_after_UnitTest(void) {
     because SOILWAT2 uses (global) states.
     This is otherwise not comptable with the c++ approach used by googletest.
   */
+
   LogInfo.logged = swFALSE;
   LogInfo.logfp = NULL;
 
@@ -43,10 +49,12 @@ void Reset_SOILWAT2_after_UnitTest(void) {
 
   memset(&SW_All, 0, sizeof(SW_ALL));
 
-  SW_CTL_clear_model(swFALSE, &SW_All);
+  SW_CTL_clear_model(swFALSE, &SW_All, &PathInfo);
 
-  SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &LogInfo, _firstfile); // `_firstfile` is here "files.in"
-  SW_CTL_read_inputs_from_disk(&SW_All, &LogInfo, EchoInits);
+  PathInfo.InFiles[eFirst] = Str_Dup(testmaster_file, &LogInfo);
+
+  SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+  SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo, EchoInits);
 
   /* Notes on messages during tests
     - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
@@ -60,7 +68,7 @@ void Reset_SOILWAT2_after_UnitTest(void) {
 
   SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
         SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
-  SW_CTL_init_run(&SW_All, &LogInfo);
+  SW_CTL_init_run(&SW_All, &LogInfo, &PathInfo);
 
 
   // Next functions calls from `main()` require SW_Output.c
@@ -73,7 +81,7 @@ void Reset_SOILWAT2_after_UnitTest(void) {
 
 
 
-void create_test_soillayers(unsigned int nlayers) {
+void create_test_soillayers(unsigned int nlayers, char *InFiles[]) {
 
   if (nlayers <= 0 || nlayers > MAX_LAYERS) {
     LogError(&LogInfo, LOGFATAL, "create_test_soillayers(): "
@@ -129,5 +137,5 @@ void create_test_soillayers(unsigned int nlayers) {
   set_soillayers(&SW_All.VegProd, &SW_All.Site, &LogInfo, nlayers, dmax,
     bulkd, f_gravel, evco, trco_grass, trco_shrub, trco_tree,
     trco_forb, psand, pclay, imperm, soiltemp, nRegions,
-    regionLowerBounds);
+    regionLowerBounds, InFiles);
 }

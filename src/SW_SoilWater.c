@@ -640,8 +640,9 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat)
 @param[in,out] sw Comprehensive struct of type SW_ALL containing all information
   in the simulation.
 @param[in] LogInfo Holds information dealing with logfile output
+@param[in] InFiles Array of program input files
 */
-void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo) {
+void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]) {
 	/* =================================================== */
 
 
@@ -666,7 +667,7 @@ void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo) {
       if (debug) swprintf("\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n");
       #endif
       SW_SWC_adjust_swc(sw->SoilWat.swcBulk, sw->Model.doy, sw->SoilWat.hist,
-	  					sw->Site.lyr, LogInfo, sw->Site.n_layers);
+	  					sw->Site.lyr, LogInfo, sw->Site.n_layers, InFiles);
 
 		} else {
 			LogError(LogInfo, LOGWARN, "Attempt to set SWC on start day of first year of simulation disallowed.");
@@ -968,9 +969,10 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 	every soil layer in the simulation
 @param[in] n_layers Number of layers of soil within the simulation run
 @param[in] LogInfo Holds information dealing with logfile output
+@param[in] InFiles Array of program input files
 */
 void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
-				 LyrIndex n_layers, LOG_INFO* LogInfo) {
+				 LyrIndex n_layers, LOG_INFO* LogInfo, char *InFiles[]) {
 	/* =================================================== */
 	/* HISTORY
 	 *  1/25/02 - cwb - removed unused records of logfile and
@@ -986,7 +988,7 @@ void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
 	ForEachSoilLayer(i, n_layers)
 		SW_SoilWat->avgLyrTemp[i] = lyr[i]->avgLyrTemp;
 
-	char *MyFileName = SW_F_name(eSoilwat);
+	char *MyFileName = SW_F_name(eSoilwat, InFiles);
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {
@@ -1116,10 +1118,11 @@ void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 	every soil layer in the simulation
 @param[in] LogInfo Holds information dealing with logfile output
 @param[in] n_layers Total number of soil layers in simulation
+@param[in] InFiles Array of program input files
 */
 void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], TimeInt doy,
-					   SW_SOILWAT_HIST SoilWat_hist, SW_LAYER_INFO** lyr,
-					   LOG_INFO* LogInfo, LyrIndex n_layers) {
+		SW_SOILWAT_HIST SoilWat_hist, SW_LAYER_INFO** lyr, LOG_INFO* LogInfo,
+		LyrIndex n_layers, char *InFiles[]) {
 	/* =================================================== */
 	/* 01/07/02 (cwb) added final loop to guarantee swc > swcBulk_min
 	 */
@@ -1150,7 +1153,7 @@ void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], TimeInt doy,
 
 	default:
 		LogError(LogInfo, LOGFATAL,
-				 "%s : Invalid SWC adjustment method.", SW_F_name(eSoilwat));
+				 "%s : Invalid SWC adjustment method.", SW_F_name(eSoilwat, InFiles));
 	}
 
 	/* this will guarantee that any method will not lower swc */

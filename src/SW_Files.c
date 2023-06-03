@@ -106,21 +106,20 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
 
 /** Read `first` input file `eFirst` that contains names of the remaining input files.
 
-    @param s Name of the first file to read for filenames, or NULL. If NULL, then read
-      from DFLT_FIRSTFILE or whichever filename was set previously.
 	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[in,out] PathInfo truct holding all information about the programs path/files
 
     @note If input file `eFirst` changes, particularly if the locations of the
       `weather_prefix` and/or `output_prefix` change; then update the hard-coded line
       numbers.
 
-    @sideeffect Update values of global variables:
+    @sideeffect Update values of variables within PATH_INFO:
       - `weather_prefix`
       - `output_prefix`
       - `InFiles`
       - `logfp` for SOILWAT2-standalone
   */
-void SW_F_read(const char *s, LOG_INFO* LogInfo) {
+void SW_F_read(LOG_INFO* LogInfo, PATH_INFO* PathInfo) {
 	FILE *f;
 	int lineno = 0, fileno = 0;
 	char buf[FILENAME_MAX], inbuf[MAX_FILENAMESIZE];
@@ -132,7 +131,7 @@ void SW_F_read(const char *s, LOG_INFO* LogInfo) {
 	if (!isnull(s))
 		init(s, LogInfo); /* init should be run by SW_F_Construct() */
 
-	char *MyFileName = SW_F_name(eFirst);
+	char *MyFileName = SW_F_name(eFirst, PathInfo->InFiles);
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {
@@ -143,67 +142,68 @@ void SW_F_read(const char *s, LOG_INFO* LogInfo) {
 
 		switch (lineno) {
 		case 6:
-			strcpy(weather_prefix, inbuf);
+			strcpy(PathInfo->weather_prefix, inbuf);
 			break;
 		case 14:
-			strcpy(output_prefix, inbuf);
+			strcpy(PathInfo->output_prefix, inbuf);
 			break;
 		case 16:
-			InFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(InFiles[eOutputDaily], LogInfo);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily], LogInfo);
 			break;
 		case 17:
-			InFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(InFiles[eOutputWeekly], LogInfo);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
 		case 18:
-			InFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(InFiles[eOutputMonthly], LogInfo);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
 		case 19:
-			InFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(InFiles[eOutputYearly], LogInfo);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly], LogInfo);
 			break;
 		case 20:
-			InFiles[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(InFiles[eOutputDaily_soil], LogInfo);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily_soil], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputDaily]);
 			break;
 		case 21:
-			InFiles[eOutputWeekly_soil] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputWeekly_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(InFiles[eOutputWeekly_soil], LogInfo);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly_soil], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
 		case 22:
-			InFiles[eOutputMonthly_soil] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputMonthly_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(InFiles[eOutputMonthly_soil], LogInfo);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly_soil], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
 		case 23:
-			InFiles[eOutputYearly_soil] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputYearly_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(InFiles[eOutputYearly_soil], LogInfo);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly_soil], LogInfo);
 			break;
 
 		default:
 			if (++fileno == SW_NFILES)
 				break;
 
-			if (!isnull(InFiles[fileno]))
-				Mem_Free(InFiles[fileno]);
+			if (!isnull(PathInfo->InFiles[fileno])) {
+				Mem_Free(PathInfo->InFiles[fileno]);
+			}
 
-			strcpy(buf, _ProjDir);
+			strcpy(buf, PathInfo->_ProjDir);
 			strcat(buf, inbuf);
-			InFiles[fileno] = Str_Dup(buf, LogInfo);
+			PathInfo->InFiles[fileno] = Str_Dup(buf, LogInfo);
 		}
 
 		lineno++;
@@ -217,12 +217,13 @@ void SW_F_read(const char *s, LOG_INFO* LogInfo) {
 	CloseFile(&f, LogInfo);
 
 #ifdef SOILWAT
-	if (0 == strcmp(InFiles[eLog], "stdout")) {
+	if (0 == strcmp(PathInfo->InFiles[eLog], "stdout")) {
 		LogInfo->logfp = stdout;
-	} else if (0 == strcmp(InFiles[eLog], "stderr")) {
+	} else if (0 == strcmp(PathInfo->InFiles[eLog], "stderr")) {
 		LogInfo->logfp = stderr;
 	} else {
-		LogInfo->logfp = OpenFile(SW_F_name(eLog), "w", LogInfo);
+		LogInfo->logfp =
+				OpenFile(SW_F_name(eLog, PathInfo->InFiles), "w", LogInfo);
 	}
 #endif
 
@@ -232,10 +233,11 @@ void SW_F_read(const char *s, LOG_INFO* LogInfo) {
 @brief Adds FileIndex parameter i to array InFiles
 
 @param i Index parameter.
+@param[in] InFiles Array of program input files
 
 @return InFiles Array of index parameters.
 */
-char *SW_F_name(SW_FileIndex i) {
+char *SW_F_name(SW_FileIndex i, char *InFiles[]) {
 	/* =================================================== */
 	return InFiles[i];
 
@@ -243,15 +245,16 @@ char *SW_F_name(SW_FileIndex i) {
 /**
 @brief Determines string length of file being read in combined with _ProjDir.
 
+@param[in,out] InFiles Array of program input files
 @param[out] *firstfile File to be read in.
-@param[in] LogInfo Holds information dealing with logfile output
+@param[out] _ProjDir Project directory
 
 @sideeffect
 	- *firstfile File to be read in.
 	- *c Counter parameter for the firstfile.
 	- *p Parameter for length of project directory plus *c
 */
-void SW_F_construct(const char *firstfile, LOG_INFO* LogInfo) {
+void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[]) {
 	/* =================================================== */
 	/* 10-May-02 (cwb) enhancement allows model to be run
 	 *    in one directory while getting its input from another.
@@ -259,8 +262,13 @@ void SW_F_construct(const char *firstfile, LOG_INFO* LogInfo) {
 	 *    it could be useful in a standalone run.
 	 */
 	char *c, *p;
+	int file;
 
 	init(firstfile, LogInfo);
+	// Initialize `InFile` pointers to all NULL aside from index eFirst
+	for(file = 1; file < SW_NFILES; file++) {
+		InFiles[file] = NULL;
+	}
 
 	if ((c = DirName(firstfile))) {
 		strcpy(_ProjDir, c);
@@ -276,8 +284,10 @@ void SW_F_construct(const char *firstfile, LOG_INFO* LogInfo) {
 
 /**
 @brief Deconstructor for each of the SW_NFILES.
+
+@param[in,out] InFiles Array of program input files
 */
-void SW_F_deconstruct(void) {
+void SW_F_deconstruct(char *InFiles[]) {
 	IntUS i;
 
 	for (i = 0; i < SW_NFILES; i++)
@@ -293,8 +303,9 @@ void SW_F_deconstruct(void) {
 @brief Copies the prefix string to the weather_prefix.
 
 @param prefix Array of chars.
+@param[out] weather_prefix File name of weather data without extension.
 */
-void SW_WeatherPrefix(char prefix[]) {
+void SW_WeatherPrefix(char prefix[], char weather_prefix[]) {
 	strcpy(prefix, weather_prefix);
 }
 

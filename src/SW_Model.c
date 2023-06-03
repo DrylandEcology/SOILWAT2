@@ -94,8 +94,9 @@ void SW_MDL_deconstruct(void)
 @param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
 @param[in] LogInfo Holds information dealing with logfile output
+@param[in] InFiles Array of program input files
 */
-void SW_MDL_read(SW_MODEL* SW_Model, LOG_INFO* LogInfo) {
+void SW_MDL_read(SW_MODEL* SW_Model, LOG_INFO* LogInfo, char *InFiles[]) {
 	/* =================================================== */
 	/*
 	 * 1/24/02 - added code for partial start and end years
@@ -115,7 +116,7 @@ void SW_MDL_read(SW_MODEL* SW_Model, LOG_INFO* LogInfo) {
 	char *p, enddyval[6], errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 	Bool fstartdy = swFALSE, fenddy = swFALSE, fhemi = swFALSE;
 
-	MyFileName = SW_F_name(eModel);
+	MyFileName = SW_F_name(eModel, InFiles);
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	/* ----- beginning year */

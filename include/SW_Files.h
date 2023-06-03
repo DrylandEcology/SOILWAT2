@@ -22,8 +22,6 @@
 extern "C" {
 #endif
 
-#define SW_NFILES 23
-
 /* The number of enum elements between eNoFile and
  * eEndFile (not inclusive) must match SW_NFILES.
  * also, these elements must match the order of
@@ -51,24 +49,14 @@ typedef enum {
 	eEndFile
 } SW_FileIndex;
 
-
-/* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern char *InFiles[SW_NFILES];
-extern char _ProjDir[FILENAME_MAX];
-extern char weather_prefix[FILENAME_MAX];
-extern char output_prefix[FILENAME_MAX];
-
-
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_F_read(const char *s, LOG_INFO* LogInfo);
-char *SW_F_name(SW_FileIndex i);
-void SW_F_construct(const char *firstfile, LOG_INFO* LogInfo);
-void SW_F_deconstruct(void);
-void SW_WeatherPrefix(char prefix[]);
+void SW_F_read(LOG_INFO* LogInfo, PATH_INFO* PathInfo);
+char *SW_F_name(SW_FileIndex i, char *InFiles[]);
+void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[]);
+void SW_F_deconstruct(char *InFiles[]);
+void SW_WeatherPrefix(char prefix[], char weather_prefix[]);
 void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo);
 
 #ifdef DEBUG_MEM
