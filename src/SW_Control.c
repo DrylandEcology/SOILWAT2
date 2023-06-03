@@ -79,7 +79,7 @@ static void _begin_day(SW_ALL* sw, LOG_INFO* LogInfo) {
 static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                      LOG_INFO* LogInfo) {
 
-	_collect_values(sw, SW_OutputPtrs, LogInfo);
+	_collect_values(sw, SW_OutputPtrs, LogInfo, swFALSE);
 	SW_SWC_end_day(&sw->SoilWat, sw->Site.n_layers);
 }
 

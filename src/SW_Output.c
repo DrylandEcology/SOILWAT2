@@ -156,14 +156,6 @@ char const *styp2str[] =
 
 
 /* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-
-static int useTimeStep; /* flag to determine whether or not the line TIMESTEP exists */
-static Bool bFlush_output; /* process partial period ? */
-
-
-/* =================================================== */
 /*             Private Function Declarations            */
 /* --------------------------------------------------- */
 
@@ -181,7 +173,7 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy,
 					  LOG_INFO *LogInfo);
 static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
-						ObjType otyp, OutPeriod pd);
+		ObjType otyp, OutPeriod pd, Bool bFlush_output);
 
 #ifdef STEPWAT
 static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
@@ -556,9 +548,11 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
    @param[in] LogInfo Holds information dealing with logfile output
    @param[in] otyp Identifies the current module/object
    @param[in] pd Time period in simulation output (day/week/month/year)
+   @param[in] bFlush_output Determines if output should be created for
+		a specific output key
 */
 static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
-						ObjType otyp, OutPeriod pd) {
+		ObjType otyp, OutPeriod pd, Bool bFlush_output) {
 
 	TimeInt curr_pd = 0;
 	RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
@@ -1145,7 +1139,6 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	}
 	#endif
 
-	bFlush_output = swFALSE;
 	tOffset = 1;
 
 	ForEachSoilLayer(i, n_layers) {
@@ -2130,6 +2123,7 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 	OutKey k;
 	int x, itemno, msg_type;
 	IntUS i;
+	Bool useTimeStep = swFALSE;
 
 	/* these dims come from the orig format str */
 	/* except for the uppercase space. */
@@ -2151,7 +2145,6 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 
 	_Sep = ','; /* default in case it doesn't show up in the file */
 	used_OUTNPERIODS = 1; // if 'TIMESTEP' is not specified in input file, then only one time step = period can be specified
-	useTimeStep = 0;
 
 
 	while (GetALine(f, inbuf))
@@ -2173,7 +2166,7 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 			if (used_OUTNPERIODS > 0)
 			{ // make sure that `TIMESTEP` line did contain time periods;
 				// otherwise, use values from the `period` column
-				useTimeStep = 1;
+				useTimeStep = swTRUE;
 
 				if (used_OUTNPERIODS > SW_OUTNPERIODS)
 				{
@@ -2293,17 +2286,17 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 
 
 void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-					 LOG_INFO* LogInfo) {
+					 LOG_INFO* LogInfo, Bool bFlush_output) {
 
-	SW_OUT_sum_today(sw, LogInfo, eSWC);
+	SW_OUT_sum_today(sw, LogInfo, eSWC, bFlush_output);
 
-	SW_OUT_sum_today(sw, LogInfo, eWTH);
+	SW_OUT_sum_today(sw, LogInfo, eWTH, bFlush_output);
 
-	SW_OUT_sum_today(sw, LogInfo, eVES);
+	SW_OUT_sum_today(sw, LogInfo, eVES, bFlush_output);
 
-	SW_OUT_sum_today(sw, LogInfo, eVPD);
+	SW_OUT_sum_today(sw, LogInfo, eVPD, bFlush_output);
 
-	SW_OUT_write_today(sw, SW_OutputPtrs);
+	SW_OUT_write_today(sw, SW_OutputPtrs, bFlush_output);
 }
 
 
@@ -2319,12 +2312,10 @@ void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 */
 void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				  LOG_INFO* LogInfo) {
-	bFlush_output = swTRUE;
 	tOffset = 0;
 
-	_collect_values(sw, SW_OutputPtrs, LogInfo);
+	_collect_values(sw, SW_OutputPtrs, LogInfo, swTRUE);
 
-	bFlush_output = swFALSE;
 	tOffset = 1;
 }
 
@@ -2340,8 +2331,11 @@ void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 		all information in the simulation
 	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] otyp Identifies the current module/object
+	@param[in] bFlush_output Determines if output should be created for
+		a specific output key
 */
-void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp)
+void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
+					  Bool bFlush_output)
 {
 	/*  SW_VEGESTAB *v = &SW_VegEstab;  -> we don't need to sum daily for this */
 	OutPeriod pd;
@@ -2350,7 +2344,7 @@ void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp)
 	{
 		if (bFlush_output || sw->Model.newperiod[pd]) // `newperiod[eSW_Day]` is always TRUE
 		{
-			average_for(sw, LogInfo, otyp, pd);
+			average_for(sw, LogInfo, otyp, pd, bFlush_output);
 
 			switch (otyp)
 			{
@@ -2391,8 +2385,11 @@ void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp)
   		in the simulation
 	@param[in] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   		hold pointers to subroutines for output keys
+	@param[in] bFlush_output Determines if output should be created for
+		a specific output key
 */
-void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs)
+void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+						Bool bFlush_output)
 {
 	/* --------------------------------------------------- */
 	/* all output values must have been summed, averaged or

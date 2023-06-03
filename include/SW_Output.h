@@ -153,13 +153,15 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 	char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA, Bool deepdrain,
 	SW_OUTPUT* SW_Output, char *InFiles[]);
 void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]);
-void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp);
-void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs);
+void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
+					  Bool bFlush_output);
+void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+						Bool bFlush_output);
 void SW_OUT_write_year(void);
 void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				  LOG_INFO* LogInfo);
 void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-					 LOG_INFO* LogInfo);
+					 LOG_INFO* LogInfo, Bool bFlush_output);
 void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo);
 void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]);
 

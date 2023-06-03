@@ -113,34 +113,40 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 }
 
 void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-					 LOG_INFO* LogInfo)
+					 LOG_INFO* LogInfo, Bool bFlush_output)
 {
 	/* silence compiler warnings */
 	(void) sw;
 	(void) SW_OutputPtrs;
 	(void) LogInfo;
+	(void) bFlush_output;
 }
 
 void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				  LOG_INFO* LogInfo)
 {
-	_collect_values(sw, SW_OutputPtrs, LogInfo);
+	_collect_values(sw, SW_OutputPtrs, LogInfo, swFALSE);
 }
 
-void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp)
+void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
+					  Bool bFlush_output)
 {
 	ObjType x = otyp;
 	if (x == eF) {}
 
 	/* silence compiler warnings */
 	(void) sw;
+	(void) LogInfo;
+	(void) bFlush_output;
 }
 
-void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs)
+void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+						Bool bFlush_output)
 {
 	/* silence compiler warnings */
 	(void) sw;
 	(void) SW_OutputPtrs;
+	(void) bFlush_output;
 }
 
 void get_none(OutPeriod pd, SW_ALL* sw)
@@ -349,22 +355,23 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 }
 
 
-static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd)
+static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
+		ObjType otyp, OutPeriod pd, Bool bFlush_output)
 {
 	if (pd == eSW_Day) {}
-	SW_OUT_sum_today(sw, otyp);
+	SW_OUT_sum_today(sw, LogInfo, otyp, bFlush_output);
 }
 
 static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op)
 {
 	if (op == eSW_Day) {}
-	SW_OUT_sum_today(sw, otyp);
+	SW_OUT_sum_today(sw, NULL, otyp, swFALSE);
 }
 
 /**
 @brief Runs get commands for each eSW_Year.
 */
-void _echo_outputs(SW_ALL* sw)
+void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
 {
 	OutPeriod pd = eSW_Year;
 
@@ -414,7 +421,7 @@ void _echo_outputs(SW_ALL* sw)
 
 	ObjType otyp = eF;
 
-	average_for(sw, otyp, pd);
+	average_for(sw, LogInfo, otyp, pd, swFALSE);
 
 	collect_sums(sw, otyp, pd);
 }
