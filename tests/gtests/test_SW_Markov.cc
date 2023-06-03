@@ -37,7 +37,8 @@
 
 
 
-extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD, LOG_INFO*);
+extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD,
+                           LOG_INFO*, pcg32_random_t*);
 extern void (*test_temp_correct_wetdry)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD);
 
 
@@ -153,23 +154,27 @@ namespace {
       tval = -10. + 10. * k;
 
       // Case: wtmax = wtmin, variance = 0, covar = 0 ==> input = output
-      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 0., &LogInfo);
+      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 0.,
+                    &LogInfo, &SW_All.Markov.markov_rng);
       EXPECT_DOUBLE_EQ(tmax, tval);
       EXPECT_DOUBLE_EQ(tmin, tval);
       EXPECT_DOUBLE_EQ(tmin, tmax);
 
       // Case: wtmax = wtmin, variance = 0, covar > 0 ==> input = output
-      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 1., &LogInfo);
+      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 1.,
+                    &LogInfo, &SW_All.Markov.markov_rng);
       EXPECT_DOUBLE_EQ(tmax, tval);
       EXPECT_DOUBLE_EQ(tmin, tval);
       EXPECT_DOUBLE_EQ(tmin, tmax);
 
       // Case: wtmax > wtmin, variance > 0, covar > 0 ==> tmin <= tmax
-      (test_mvnorm)(&tmax, &tmin, tval + 1., tval, 1., 1., 1., &LogInfo);
+      (test_mvnorm)(&tmax, &tmin, tval + 1., tval, 1., 1., 1.,
+                    &LogInfo, &SW_All.Markov.markov_rng);
       EXPECT_LE(tmin, tmax);
 
       // Case: wtmax < wtmin, variance > 0, covar > 0 ==> tmin == tmax
-      (test_mvnorm)(&tmax, &tmin, tval - 1., tval, 1., 1., 1., &LogInfo);
+      (test_mvnorm)(&tmax, &tmin, tval - 1., tval, 1., 1., 1.,
+                    &LogInfo, &SW_All.Markov.markov_rng);
       EXPECT_DOUBLE_EQ(tmin, tmax);
     }
 
@@ -185,7 +190,8 @@ namespace {
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL
     EXPECT_DEATH_IF_SUPPORTED(
-      (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2., &LogInfo),
+      (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.,
+                                &LogInfo, &SW_All.Markov.markov_rng),
       "Bad covariance matrix"
     );
 

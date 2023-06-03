@@ -13,6 +13,7 @@
 #define DATATYPES_H
 
 #include "include/SW_Defines.h"
+#include "external/pcg/pcg_basic.h"
 
 // Array-based output:
 #if defined(RSOILWAT) || defined(STEPWAT)
@@ -846,6 +847,7 @@ typedef struct {
     u_cov[MAX_WEEKS][2], /* mean weekly maximum and minimum temperature in degree Celsius */
     v_cov[MAX_WEEKS][2][2]; /* covariance matrix */
   int ppt_events; /* number of ppt events generated this year */
+  pcg32_random_t markov_rng; // used by STEPWAT2
 
 } SW_MARKOV;
 

@@ -13,18 +13,11 @@
 #ifndef SW_MARKOV_H
 #define SW_MARKOV_H
 
-#include "external/pcg/pcg_basic.h"
 #include "include/SW_datastructs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern pcg32_random_t markov_rng; // used by STEPWAT2
-
 
 /* =================================================== */
 /*             Global Function Declarations            */

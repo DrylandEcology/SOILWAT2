@@ -33,12 +33,6 @@
 
 
 /* =================================================== */
-/*                  Global Variables                   */
-/* --------------------------------------------------- */
-
-pcg32_random_t markov_rng; // used by STEPWAT2
-
-/* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
@@ -109,11 +103,14 @@ static void temp_correct_wetdry(RealD *tmax, RealD *tmin, RealD rain,
            previously `vc11 = _vcov[1][1]`
     @param wT_covar Mean weekly covariance between maximum and minimum
            daily temperature; previously `vc10 = _vcov[1][0]`
+	@param markov_rng Random number generator of the weather
+		   generator
 
     @return Daily minimum (*tmin) and maximum (*tmax) temperature.
 */
 static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
-	RealD wTmax_var, RealD wTmin_var, RealD wT_covar, LOG_INFO* LogInfo) {
+	RealD wTmax_var, RealD wTmin_var, RealD wT_covar, LOG_INFO* LogInfo,
+	pcg32_random_t *markov_rng) {
 	/* --------------------------------------------------- */
 	/* This proc is distilled from a much more general function
 	 * in the original fortran version which was prepared to
@@ -153,8 +150,8 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 	//   vc11 = sqrt(var2 - covar ^ 2 / var1)
 
 	// Generate two independent standard normal random numbers
-	z1 = RandNorm(0., 1., &markov_rng);
-	z2 = RandNorm(0., 1., &markov_rng);
+	z1 = RandNorm(0., 1., markov_rng);
+	z2 = RandNorm(0., 1., markov_rng);
 
 	wTmax_sd = sqrt(wTmax_var);
 	vc10 = (GT(wTmax_sd, 0.)) ? wT_covar / wTmax_sd : 0;
@@ -174,7 +171,8 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 #ifdef SWDEBUG
   // since `mvnorm` is static we cannot do unit tests unless we set it up
   // as an externed function pointer
-  void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD, LOG_INFO*) = &mvnorm;
+  void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD,
+  				      RealD, LOG_INFO*, pcg32_random_t*) = &mvnorm;
 #endif
 
 
@@ -202,7 +200,7 @@ void SW_MKV_construct(unsigned long rng_seed, LOG_INFO* LogInfo,
 	  - rSOILWAT2: R API handles RNGs
 	*/
 	#if defined(SOILWAT)
-	RandSeed(rng_seed, 1u, &markov_rng);
+	RandSeed(rng_seed, 1u, &SW_Markov->markov_rng);
 	#endif
 
 	SW_Markov->ppt_events = 0;
@@ -318,9 +316,10 @@ void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 			whether it was dry yesterday `dryprob` */
 	prob = (GT(*rain, 0.0)) ? SW_Markov->wetprob[doy0] : SW_Markov->dryprob[doy0];
 
-	p = RandUni(&markov_rng);
+	p = RandUni(&SW_Markov->markov_rng);
 	if (LE(p, prob)) {
-		x = RandNorm(SW_Markov->avg_ppt[doy0], SW_Markov->std_ppt[doy0], &markov_rng);
+		x = RandNorm(SW_Markov->avg_ppt[doy0],
+							SW_Markov->std_ppt[doy0], &SW_Markov->markov_rng);
 		*rain = fmax(0., x);
 	} else {
 		*rain = 0.;
@@ -339,7 +338,8 @@ void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 		SW_Markov->v_cov[week][0][0],  // mean weekly variance of maximum daily temp
 		SW_Markov->v_cov[week][1][1],  // mean weekly variance of minimum daily temp
 		SW_Markov->v_cov[week][1][0],  // mean weekly covariance of min/max daily temp
-		LogInfo
+		LogInfo,
+		&SW_Markov->markov_rng
 	);
 
 	temp_correct_wetdry(tmax, tmin, *rain,
