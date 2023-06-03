@@ -146,14 +146,6 @@ static RealD
 	lyrSWCBulk_HalfWiltpts[MAX_LAYERS],
 	lyrSWCBulk_Mins[MAX_LAYERS];
 
-
-// variables to help calculate runon from a (hypothetical) upslope neighboring (UpNeigh) site
-static RealD
-	UpNeigh_lyrSWCBulk[MAX_LAYERS],
-	UpNeigh_lyrDrain[MAX_LAYERS],
-	UpNeigh_drainout,
-	UpNeigh_standingWater;
-
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -285,6 +277,9 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 
 	int doy, month, k;
 	LyrIndex i, n_layers = sw->Site.n_layers;
+
+	RealD UpNeigh_lyrSWCBulk[MAX_LAYERS], UpNeigh_lyrDrain[MAX_LAYERS];
+	RealD UpNeigh_drainout, UpNeigh_standingWater;
 
 	doy = sw->Model.doy; /* base1 */
 	month = sw->Model.month; /* base0 */
