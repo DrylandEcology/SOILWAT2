@@ -68,31 +68,6 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
-
-
-// Global variables describing output periods:
-/** `timeSteps` is the array that keeps track of the output time periods that
-    are required for `text` and/or `array`-based output for each output key. */
-OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
-
-/** The number of different time steps/periods that are used/requested
-		Note: Under STEPWAT2, this may be larger than the sum of `use_OutPeriod`
-			because it also incorporates information from `timeSteps_SXW`. */
-IntUS used_OUTNPERIODS;
-
-/** TRUE if time step/period is active for any output key. */
-Bool use_OutPeriod[SW_OUTNPERIODS];
-
-
-// Global variables describing size and names of output
-/** names of output columns for each output key; number is an expensive guess */
-char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
-
-/** number of output columns for each output key */
-IntUS ncol_OUT[SW_OUTNKEYS];
-
-
 
 #ifdef STEPWAT
 /** `timeSteps_SXW` is the array that keeps track of the output time periods
@@ -163,7 +138,8 @@ static OutKey str2key(char *s, LOG_INFO* LogInfo, char *InFiles[]);
 static OutSum str2stype(char *s, LOG_INFO* LogInfo, char *InFiles[]);
 
 static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
-						 LOG_INFO* LogInfo);
+	LOG_INFO* LogInfo, OutPeriod timeSteps[][SW_OUTNPERIODS],
+	IntUS used_OUTNPERIODS);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k,
 					  LOG_INFO *LogInfo);
 static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
@@ -172,7 +148,8 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy,
 					  LOG_INFO *LogInfo);
 static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
-		ObjType otyp, OutPeriod pd, Bool bFlush_output);
+		ObjType otyp, OutPeriod pd, Bool bFlush_output,
+		TimeInt tOffset);
 
 #ifdef STEPWAT
 static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
@@ -549,9 +526,11 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
    @param[in] pd Time period in simulation output (day/week/month/year)
    @param[in] bFlush_output Determines if output should be created for
 		a specific output key
+   @param[in] tOffset Offset describing with the previous or current period
 */
 static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
-		ObjType otyp, OutPeriod pd, Bool bFlush_output) {
+		ObjType otyp, OutPeriod pd, Bool bFlush_output,
+		TimeInt tOffset) {
 
 	TimeInt curr_pd = 0;
 	RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
@@ -874,7 +853,8 @@ static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
 
 
 static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
-						 LOG_INFO* LogInfo)
+	LOG_INFO* LogInfo, OutPeriod timeSteps[][SW_OUTNPERIODS],
+	IntUS used_OUTNPERIODS)
 {
 	TimeInt pd = 0;
 	OutKey k;
@@ -995,29 +975,32 @@ static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
  	@brief Tally for which output time periods at least one output key/type is
 		active
 
+	@param[in,out] GenOutput Holds general variables that deal with output
 	@param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
 		basic output information for all output keys
 
 	@sideeffect Uses global variables SW_Output.use and timeSteps to set
 		elements of use_OutPeriod
 */
-void find_OutPeriods_inUse(SW_OUTPUT* SW_Output)
+void find_OutPeriods_inUse(SW_GEN_OUT* GenOutput, SW_OUTPUT* SW_Output)
 {
 	OutKey k;
 	OutPeriod p;
-	IntUS i;
+	IntUS i, timeStepInd;
 
 	ForEachOutPeriod(p) {
-		use_OutPeriod[p] = swFALSE;
+		GenOutput->use_OutPeriod[p] = swFALSE;
 	}
 
 	ForEachOutKey(k) {
-		for (i = 0; i < used_OUTNPERIODS; i++) {
+		for (i = 0; i < GenOutput->used_OUTNPERIODS; i++) {
 			if (SW_Output[k].use)
 			{
-				if (timeSteps[k][i] != eSW_NoTime)
+				if (GenOutput->timeSteps[k][i] != eSW_NoTime)
 				{
-					use_OutPeriod[timeSteps[k][i]] = swTRUE;
+					timeStepInd = GenOutput->timeSteps[k][i];
+
+					GenOutput->use_OutPeriod[timeStepInd] = swTRUE;
 				}
 			}
 		}
@@ -1026,7 +1009,8 @@ void find_OutPeriods_inUse(SW_OUTPUT* SW_Output)
 
 /** Determine whether output period `pd` is active for output key `k`
 */
-Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k)
+Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k, IntUS used_OUTNPERIODS,
+						 OutPeriod timeSteps[][SW_OUTNPERIODS])
 {
 	int i;
 	Bool has_timeStep = swFALSE;
@@ -1113,7 +1097,8 @@ void SW_OUT_set_SXWrequests(void)
 
 void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
-		LyrIndex n_layers)
+		LyrIndex n_layers, TimeInt *tOffset,
+		OutPeriod timeSteps[][SW_OUTNPERIODS])
 {
 	/* =================================================== */
 	OutKey k;
@@ -1138,7 +1123,7 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	}
 	#endif
 
-	tOffset = 1;
+	*tOffset = 1;
 
 	ForEachSoilLayer(i, n_layers) {
 		ForEachVegType(j) {
@@ -1572,7 +1557,8 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 }
 
 
-void SW_OUT_deconstruct(Bool full_reset)
+void SW_OUT_deconstruct(Bool full_reset,
+						char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS])
 {
 	#if defined(SW_OUTARRAY) || defined(RSOILWAT)
 	OutKey k;
@@ -1604,13 +1590,16 @@ void SW_OUT_deconstruct(Bool full_reset)
 	}
 
 	#else
-	if (full_reset) {} // avoid ``-Wunused-parameter` warning
+	/* Avoid ``-Wunused-parameter` warning */
+	if (full_reset) {}
+	(void) colnames_OUT;
 	#endif
 }
 
 
 
-void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count) {
+void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
+					 IntUS ncol_OUT[]) {
 
 	ncol_OUT[eSW_AllWthr] = 0;
 	ncol_OUT[eSW_Temp] = 6;
@@ -1665,10 +1654,13 @@ void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count) {
   @param[in] **parms List of structs of type SW_VEGESTAB_INFO holding
   	information about every vegetation species
   @param[in] LogInfo Holds information dealing with logfile output
+  @param[in] ncol_OUT Number of output columns for each output key
+  @param[out] colnames_OUT Names of output columns for each output key
 
   @sideeffect Set values of colnames_OUT
 */
-void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms, LOG_INFO* LogInfo) {
+void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms, LOG_INFO* LogInfo,
+	IntUS ncol_OUT[], char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS]) {
 	IntUS i, j;
   #ifdef SWDEBUG
   int debug = 0;
@@ -2104,8 +2096,13 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
     	dealt with in SOILWAT2
 	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] InFiles Array of program input files
+	@param[in] timeSteps Keeps track of the output time periods that
+		are required for each output key
+	@param[out] used_OUTNPERIODS The number of different time steps/periods
+		 that are used/requested
  */
-void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
+void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[],
+	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS)
 {
 	/* =================================================== */
 	/* read input file for output parameter setup info.
@@ -2142,7 +2139,7 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 	f = OpenFile(MyFileName, "r", LogInfo);
 	itemno = 0;
 
-	used_OUTNPERIODS = 1; // if 'TIMESTEP' is not specified in input file, then only one time step = period can be specified
+	*used_OUTNPERIODS = 1; // if 'TIMESTEP' is not specified in input file, then only one time step = period can be specified
 
 
 	while (GetALine(f, inbuf))
@@ -2157,21 +2154,21 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 		{
 			// condition to read in the TIMESTEP line in outsetup.in
 			// need to rescan the line because you are looking for all strings, unlike the original scan
-			used_OUTNPERIODS = sscanf(inbuf, "%s %s %s %s %s", keyname, timeStep[0],
+			*used_OUTNPERIODS = sscanf(inbuf, "%s %s %s %s %s", keyname, timeStep[0],
 					timeStep[1], timeStep[2], timeStep[3]);	// maximum number of possible timeStep is SW_OUTNPERIODS
-			used_OUTNPERIODS--; // decrement the count to make sure to not count keyname in the number of periods
+			(*used_OUTNPERIODS)--; // decrement the count to make sure to not count keyname in the number of periods
 
-			if (used_OUTNPERIODS > 0)
+			if (*used_OUTNPERIODS > 0)
 			{ // make sure that `TIMESTEP` line did contain time periods;
 				// otherwise, use values from the `period` column
 				useTimeStep = swTRUE;
 
-				if (used_OUTNPERIODS > SW_OUTNPERIODS)
+				if (*used_OUTNPERIODS > SW_OUTNPERIODS)
 				{
 					CloseFile(&f, LogInfo);
 					LogError(LogInfo, LOGFATAL, "SW_OUT_read: used_OUTNPERIODS = %d > " \
 						"SW_OUTNPERIODS = %d which is illegal.\n",
-						used_OUTNPERIODS, SW_OUTNPERIODS);
+						*used_OUTNPERIODS, SW_OUTNPERIODS);
 				}
 			}
 
@@ -2242,7 +2239,7 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 		{
 			if (useTimeStep) {
 				// `timeStep` was read in earlier on the `TIMESTEP` line; ignore `period`
-				for (i = 0; i < used_OUTNPERIODS; i++) {
+				for (i = 0; i < *used_OUTNPERIODS; i++) {
 					timeSteps[k][i] = str2period(Str_ToUpper(timeStep[i], ext));
 				}
 
@@ -2254,19 +2251,20 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 
 
 	// Determine which output periods are turned on for at least one output key
-	find_OutPeriods_inUse(sw->Output);
+	find_OutPeriods_inUse(&sw->GenOutput, sw->Output);
 
 	#ifdef SW_OUTTEXT
 	// Determine for which output periods text output per soil layer or 'regular'
 	// is requested:
 	find_TXToutputSoilReg_inUse(sw->FileStatus.make_soil,
 								sw->FileStatus.make_regular,
-								sw->Output);
+								sw->Output, sw->GenOutput.timeSteps,
+								sw->GenOutput.used_OUTNPERIODS);
 	#endif
 
 	#ifdef STEPWAT
 	// Determine number of used years/months/weeks/days in simulation period
-	SW_OUT_set_nrow(&sw->Model);
+	SW_OUT_set_nrow(&sw->Model, sw->GenOutput->use_OutPeriod);
 	#endif
 
 	CloseFile(&f, LogInfo);
@@ -2275,17 +2273,17 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 
 
 void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-					 LOG_INFO* LogInfo, Bool bFlush_output) {
+		LOG_INFO* LogInfo, Bool bFlush_output, TimeInt tOffset) {
 
-	SW_OUT_sum_today(sw, LogInfo, eSWC, bFlush_output);
+	SW_OUT_sum_today(sw, LogInfo, eSWC, bFlush_output, tOffset);
 
-	SW_OUT_sum_today(sw, LogInfo, eWTH, bFlush_output);
+	SW_OUT_sum_today(sw, LogInfo, eWTH, bFlush_output, tOffset);
 
-	SW_OUT_sum_today(sw, LogInfo, eVES, bFlush_output);
+	SW_OUT_sum_today(sw, LogInfo, eVES, bFlush_output, tOffset);
 
-	SW_OUT_sum_today(sw, LogInfo, eVPD, bFlush_output);
+	SW_OUT_sum_today(sw, LogInfo, eVPD, bFlush_output, tOffset);
 
-	SW_OUT_write_today(sw, SW_OutputPtrs, bFlush_output);
+	SW_OUT_write_today(sw, SW_OutputPtrs, bFlush_output, tOffset);
 }
 
 
@@ -2301,11 +2299,9 @@ void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 */
 void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				  LOG_INFO* LogInfo) {
-	tOffset = 0;
+	TimeInt localTOffset = 0;
 
-	_collect_values(sw, SW_OutputPtrs, LogInfo, swTRUE);
-
-	tOffset = 1;
+	_collect_values(sw, SW_OutputPtrs, LogInfo, swTRUE, localTOffset);
 }
 
 /** adds today's output values to week, month and year
@@ -2322,9 +2318,10 @@ void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	@param[in] otyp Identifies the current module/object
 	@param[in] bFlush_output Determines if output should be created for
 		a specific output key
+	@param[in] tOffset Offset describing with the previous or current period
 */
 void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
-					  Bool bFlush_output)
+		Bool bFlush_output, TimeInt tOffset)
 {
 	/*  SW_VEGESTAB *v = &SW_VegEstab;  -> we don't need to sum daily for this */
 	OutPeriod pd;
@@ -2333,7 +2330,7 @@ void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
 	{
 		if (bFlush_output || sw->Model.newperiod[pd]) // `newperiod[eSW_Day]` is always TRUE
 		{
-			average_for(sw, LogInfo, otyp, pd, bFlush_output);
+			average_for(sw, LogInfo, otyp, pd, bFlush_output, tOffset);
 
 			switch (otyp)
 			{
@@ -2359,7 +2356,8 @@ void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
 	{
 		ForEachOutPeriod(pd)
 		{
-			collect_sums(sw, otyp, pd, LogInfo);
+			collect_sums(sw, otyp, pd, LogInfo, sw->GenOutput.timeSteps,
+						 sw->GenOutput.used_OUTNPERIODS);
 		}
 	}
 }
@@ -2376,9 +2374,10 @@ void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
   		hold pointers to subroutines for output keys
 	@param[in] bFlush_output Determines if output should be created for
 		a specific output key
+	@param[in] tOffset Offset describing with the previous or current period
 */
 void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-						Bool bFlush_output)
+						Bool bFlush_output, TimeInt tOffset)
 {
 	/* --------------------------------------------------- */
 	/* all output values must have been summed, averaged or
@@ -2411,7 +2410,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	#ifdef STEPWAT
 	Bool use_help_txt, use_help_SXW;
 	#endif
-	IntUS i;
+	IntUS i, timeStepIndex;
 
 	#ifdef SWDEBUG
   int debug = 0;
@@ -2462,9 +2461,10 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			continue;
 		}
 
-		for (i = 0; i < used_OUTNPERIODS; i++)
+		for (i = 0; i < sw->GenOutput.used_OUTNPERIODS; i++)
 		{
-			use_help = (Bool) (timeSteps[k][i] != eSW_NoTime && writeit[timeSteps[k][i]]);
+			use_help = (Bool) (sw->GenOutput.timeSteps[k][i] !=
+						eSW_NoTime && writeit[sw->GenOutput.timeSteps[k][i]]);
 
 			#ifdef STEPWAT
 			use_help_txt = use_help;
@@ -2482,7 +2482,8 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				timeSteps[k][i], pd2str[timeSteps[k][i]]);
 			#endif
 
-			((void (*)(OutPeriod, SW_ALL*)) SW_OutputPtrs[k].pfunc_text)(timeSteps[k][i], sw);
+			((void (*)(OutPeriod, SW_ALL*)) SW_OutputPtrs[k].pfunc_text)
+						(sw->GenOutput.timeSteps[k][i], sw);
 
 			#elif RSOILWAT
 			#ifdef SWDEBUG
@@ -2534,10 +2535,11 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			/* concatenate formatted output for one row of `csv`- files */
 			if (print_SW_Output)
 			{
+				timeStepIndex = sw->GenOutput.timeSteps[k][i];
 				if (sw->Output[k].has_sl) {
-					strcat(sw->FileStatus.buf_soil[timeSteps[k][i]], sw_outstr);
+					strcat(sw->FileStatus.buf_soil[timeStepIndex], sw_outstr);
 				} else {
-					strcat(sw->FileStatus.buf_reg[timeSteps[k][i]], sw_outstr);
+					strcat(sw->FileStatus.buf_reg[timeStepIndex], sw_outstr);
 				}
 			}
 
@@ -2559,9 +2561,10 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	// write formatted output to csv-files
 	ForEachOutPeriod(p)
 	{
-		if (use_OutPeriod[p] && writeit[p])
+		if (sw->GenOutput.use_OutPeriod[p] && writeit[p])
 		{
-			get_outstrleader(p, sizeof str_time, &sw->Model, str_time);
+			get_outstrleader(p, sizeof str_time, &sw->Model,
+							 tOffset, str_time);
 
 			if (sw->FileStatus.make_regular[p])
 			{

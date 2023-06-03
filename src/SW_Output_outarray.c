@@ -23,9 +23,6 @@
 #include <string.h>
 
 #include "include/SW_Model.h"
-
-// externs `SW_Output`, `tOffset` `use_OutPeriod`, `used_OUTNPERIODS`,
-//         `timeSteps`, `ncol_OUT`
 #include "include/SW_Output_outarray.h"
 
 #ifdef STEPWAT
@@ -78,11 +75,12 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time hea
 
 	@param[in] SW_Model Struct of type SW_MODEL holding basic time information
 		about the simulation
+	@param[in] use_OutPeriod Describes which time period is currently active
 
 	@sideeffect Set nrow_OUT using global variables SW_Model,
 		SuperGlobals if compiled for STEPWAT2, and use_OutPeriod
 */
-void SW_OUT_set_nrow(SW_MODEL* SW_Model)
+void SW_OUT_set_nrow(SW_MODEL* SW_Model, Bool use_OutPeriod[])
 {
 	TimeInt i;
 	size_t n_yrs;

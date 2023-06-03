@@ -79,7 +79,7 @@ static void _begin_day(SW_ALL* sw, LOG_INFO* LogInfo) {
 static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                      LOG_INFO* LogInfo) {
 
-	_collect_values(sw, SW_OutputPtrs, LogInfo, swFALSE);
+	_collect_values(sw, SW_OutputPtrs, LogInfo, swFALSE, sw->GenOutput.tOffset);
 	SW_SWC_end_day(&sw->SoilWat, sw->Site.n_layers);
 }
 
@@ -138,7 +138,8 @@ void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	SW_VPD_construct(&sw->VegProd, LogInfo);
 	// SW_FLW_construct() not needed
 	SW_OUT_construct(sw->FileStatus.make_soil, sw->FileStatus.make_regular,
-                   SW_OutputPtrs, sw->Output, sw->Site.n_layers);
+      SW_OutputPtrs, sw->Output, sw->Site.n_layers, &sw->GenOutput.tOffset,
+      sw->GenOutput.timeSteps);
 	SW_SWC_construct(&sw->SoilWat, LogInfo);
 	SW_CBN_construct(&sw->Carbon);
 }
@@ -166,7 +167,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw, PATH_INFO* PathInfo) {
 	SW_VES_deconstruct(&sw->VegEstab);
 	SW_VPD_deconstruct(&sw->VegProd);
 	// SW_FLW_deconstruct() not needed
-	SW_OUT_deconstruct(full_reset);
+	SW_OUT_deconstruct(full_reset, sw->GenOutput.colnames_OUT);
 	SW_SWC_deconstruct(&sw->SoilWat);
 	SW_CBN_deconstruct();
 }
@@ -348,7 +349,9 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
   if (debug) swprintf(" > 'establishment'");
   #endif
 
-  SW_OUT_read(sw, LogInfo, PathInfo->InFiles);
+  SW_OUT_read(sw, LogInfo, PathInfo->InFiles, sw->GenOutput.timeSteps,
+              &sw->GenOutput.used_OUTNPERIODS);
+
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'ouput'");
   #endif

@@ -39,16 +39,6 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-TimeInt tOffset;
-
-OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
-IntUS used_OUTNPERIODS;
-Bool use_OutPeriod[SW_OUTNPERIODS];
-
-char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
-IntUS ncol_OUT[SW_OUTNKEYS];
-
-
 // Mock definitions
 char const *key2str[] = {"SW_MISSING"};
 char const *pd2longstr[] = {"SW_MISSING"};
@@ -60,25 +50,31 @@ char const *pd2longstr[] = {"SW_MISSING"};
 /*             (declared in SW_Output.h)               */
 /* --------------------------------------------------- */
 void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
-						 LOG_INFO* LogInfo)
+	LOG_INFO* LogInfo, IntUS ncol_OUT[],
+	char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS])
 {
 	/* Silence compiler */
 	(void) tLayers;
 	(void) parms;
 	(void) LogInfo;
+	(void) ncol_OUT;
+	(void) colnames_OUT;
 }
 
-void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count)
+void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
+					 IntUS ncol_OUT[])
 {
 	/* Silence compiler */
 	(void) tLayers;
 	(void) n_evap_lyrs;
 	(void) count;
+	(void) ncol_OUT;
 }
 
 void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
-		LyrIndex n_layers)
+		LyrIndex n_layers, TimeInt *tOffset,
+		OutPeriod timeSteps[][SW_OUTNPERIODS])
 {
 	/* Silence compiler */
 	(void) make_soil;
@@ -86,11 +82,15 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	(void) SW_OutputPtrs;
 	(void) SW_Output;
 	(void) n_layers;
+	(void) timeSteps;
+	(void) tOffset;
 }
 
-void SW_OUT_deconstruct(Bool full_reset)
+void SW_OUT_deconstruct(Bool full_reset,
+						char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS])
 {
 	if (full_reset) {}
+	(void) colnames_OUT;
 }
 
 void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
@@ -103,32 +103,38 @@ void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 	(void) SW_Output;
 }
 
-void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
+void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[],
+	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS)
 {
 	/* use sw to silence compiler warnings */
 	(void) sw;
 	(void) LogInfo;
 	(void) InFiles;
+	(void) timeSteps;
+	(void) used_OUTNPERIODS;
 }
 
 void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-					 LOG_INFO* LogInfo, Bool bFlush_output)
+		LOG_INFO* LogInfo, Bool bFlush_output, TimeInt tOffset)
 {
 	/* silence compiler warnings */
 	(void) sw;
 	(void) SW_OutputPtrs;
 	(void) LogInfo;
 	(void) bFlush_output;
+	(void) tOffset;
 }
 
 void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				  LOG_INFO* LogInfo)
 {
-	_collect_values(sw, SW_OutputPtrs, LogInfo, swFALSE);
+	TimeInt tOffset = 0;
+
+	_collect_values(sw, SW_OutputPtrs, LogInfo, swFALSE, tOffset);
 }
 
 void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
-					  Bool bFlush_output)
+		Bool bFlush_output, TimeInt tOffset)
 {
 	ObjType x = otyp;
 	if (x == eF) {}
@@ -137,6 +143,7 @@ void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
 	(void) sw;
 	(void) LogInfo;
 	(void) bFlush_output;
+	(void) tOffset;
 }
 
 void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
@@ -355,16 +362,25 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 
 
 static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
-		ObjType otyp, OutPeriod pd, Bool bFlush_output)
+		ObjType otyp, OutPeriod pd, Bool bFlush_output,
+		TimeInt tOffset)
 {
 	if (pd == eSW_Day) {}
-	SW_OUT_sum_today(sw, LogInfo, otyp, bFlush_output);
+	SW_OUT_sum_today(sw, LogInfo, otyp, bFlush_output, tOffset);
 }
 
-static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op)
+static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
+	LOG_INFO* LogInfo, OutPeriod timeSteps[][SW_OUTNPERIODS],
+	IntUS used_OUTNPERIODS)
 {
+	TimeInt tOffset = 0;
+
 	if (op == eSW_Day) {}
-	SW_OUT_sum_today(sw, NULL, otyp, swFALSE);
+	SW_OUT_sum_today(sw, NULL, otyp, swFALSE, tOffset);
+
+	(void) timeSteps;
+	(void) used_OUTNPERIODS;
+	(void) LogInfo;
 }
 
 /**
@@ -420,18 +436,23 @@ void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
 
 	ObjType otyp = eF;
 
-	average_for(sw, LogInfo, otyp, pd, swFALSE);
+	average_for(sw, LogInfo, otyp, pd, swFALSE, sw->GenOutput.tOffset);
 
-	collect_sums(sw, otyp, pd);
+	collect_sums(sw, otyp, pd, LogInfo, sw->GenOutput.timeSteps,
+				 sw->GenOutput.used_OUTNPERIODS);
 }
 
 
-Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k)
+Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k, IntUS used_OUTNPERIODS,
+						 OutPeriod timeSteps[][SW_OUTNPERIODS])
 {
 	Bool res = swTRUE;
 
 	if (k) {}
 	if (pd) {}
+
+	(void) used_OUTNPERIODS;
+	(void) timeSteps;
 
 	return res;
 }

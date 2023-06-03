@@ -84,10 +84,12 @@ int main(int argc, char **argv) {
 	SW_CTL_init_run(&sw, &LogInfo, &PathInfo);
 
   // initialize output
-	SW_OUT_set_ncol(sw.Site.n_layers, sw.Site.n_evap_lyrs, sw.VegEstab.count);
-	SW_OUT_set_colnames(sw.Site.n_layers, sw.VegEstab.parms, &LogInfo);
+	SW_OUT_set_ncol(sw.Site.n_layers, sw.Site.n_evap_lyrs, sw.VegEstab.count,
+					sw.GenOutput.ncol_OUT);
+	SW_OUT_set_colnames(sw.Site.n_layers, sw.VegEstab.parms, &LogInfo,
+						sw.GenOutput.ncol_OUT, sw.GenOutput.colnames_OUT);
 	SW_OUT_create_files(&sw.FileStatus, sw.Output, sw.Site.n_layers,
-	                    &LogInfo, PathInfo.InFiles); // only used with SOILWAT2
+	                    &LogInfo, PathInfo.InFiles, &sw.GenOutput); // only used with SOILWAT2
 
 	if(EchoInits) {
 		_echo_all_inputs(&sw, &LogInfo, PathInfo.InFiles);
@@ -97,7 +99,7 @@ int main(int argc, char **argv) {
 	SW_CTL_main(&sw, SW_OutputPtrs, &PathInfo, &LogInfo);
 
   // finish-up output
-	SW_OUT_close_files(&sw.FileStatus, &LogInfo); // not used with rSOILWAT2
+	SW_OUT_close_files(&sw.FileStatus, &LogInfo, sw.GenOutput.use_OutPeriod); // not used with rSOILWAT2
 
 	// de-allocate all memory
 	SW_CTL_clear_model(swTRUE, &sw, &PathInfo);

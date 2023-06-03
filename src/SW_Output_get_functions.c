@@ -33,7 +33,7 @@
 #include "include/SW_VegEstab.h"
 #include "include/SW_VegProd.h"
 
-#include "include/SW_Output.h" // externs `_OUTSEP`, `tOffset`, `ncol_OUT`
+#include "include/SW_Output.h"
 
 #ifdef RSOILWAT
 #include <R.h>
@@ -522,8 +522,11 @@ void get_temp_agg(OutPeriod pd, SW_ALL* sw)
 */
 void get_temp_SXW(OutPeriod pd, SW_ALL* sw)
 {
+	TimeInt tOffset;
+
 	if (pd == eSW_Month || pd == eSW_Year) {
 		SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+		tOffset = sw->GenOutput.tOffset;
 
 		if (pd == eSW_Month) {
 			SXW->temp_monthly[sw->Model.month - tOffset] = vo->temp_avg;
@@ -621,8 +624,11 @@ void get_precip_agg(OutPeriod pd, SW_ALL* sw)
 */
 void get_precip_SXW(OutPeriod pd, SW_ALL* sw)
 {
+	TimeInt tOffset;
+
 	if (pd == eSW_Month || pd == eSW_Year) {
 		SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+		tOffset = sw->GenOutput.tOffset;
 
 		if (pd == eSW_Month) {
 			SXW->ppt_monthly[sw->Model.month - tOffset] = vo->ppt;
@@ -988,9 +994,12 @@ void get_swcBulk_agg(OutPeriod pd, SW_ALL* sw)
 */
 void get_swcBulk_SXW(OutPeriod pd, SW_ALL* sw)
 {
+	TimeInt tOffset;
+
 	if (pd == eSW_Month) {
 		LyrIndex i;
 		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+		tOffset = sw->GenOutput.tOffset;
 
 		ForEachSoilLayer(i, sw->Site.n_layers)
 		{
@@ -1543,10 +1552,13 @@ void get_transp_agg(OutPeriod pd, SW_ALL* sw)
 */
 void get_transp_SXW(OutPeriod pd, SW_ALL* sw)
 {
+	TimeInt tOffset;
+
 	if (pd == eSW_Month) {
 		LyrIndex i;
 		int k;
 		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+		tOffset = sw->GenOutput.tOffset;
 
 		/* total transpiration */
 		ForEachSoilLayer(i, sw->Site.n_layers)

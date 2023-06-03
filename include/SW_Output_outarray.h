@@ -64,7 +64,7 @@ extern const IntUS ncol_TimeOUT[SW_OUTNPERIODS];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_OUT_set_nrow(SW_MODEL* SW_Model);
+void SW_OUT_set_nrow(SW_MODEL* SW_Model, Bool use_OutPeriod[]);
 void SW_OUT_deconstruct_outarray(void);
 
 #ifdef RSOILWAT

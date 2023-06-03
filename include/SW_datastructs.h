@@ -909,6 +909,32 @@ typedef struct {
 	#endif
 } SW_OUTPUT;
 
+typedef struct {
+	TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
+
+
+	// Variables describing output periods:
+	/** `timeSteps` is the array that keeps track of the output time periods that
+		are required for `text` and/or `array`-based output for each output key. */
+	OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
+
+	/** The number of different time steps/periods that are used/requested
+			Note: Under STEPWAT2, this may be larger than the sum of `use_OutPeriod`
+				because it also incorporates information from `timeSteps_SXW`. */
+	IntUS used_OUTNPERIODS;
+
+	/** TRUE if time step/period is active for any output key. */
+	Bool use_OutPeriod[SW_OUTNPERIODS];
+
+
+	// Variables describing size and names of output
+	/** names of output columns for each output key; number is an expensive guess */
+	char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
+
+	/** number of output columns for each output key */
+	IntUS ncol_OUT[SW_OUTNKEYS];
+} SW_GEN_OUT;
+
 /* =================================================== */
 /*                 Comprehensive struct                */
 /* --------------------------------------------------- */
@@ -928,6 +954,7 @@ typedef struct {
 	SW_OUTPUT Output[SW_OUTNKEYS];
 
 	SW_ATMD AtmDemand;
+	SW_GEN_OUT GenOutput;
 
 } SW_ALL;
 
