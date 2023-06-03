@@ -119,7 +119,6 @@ extern "C" {
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
 
-extern char _Sep;
 extern TimeInt tOffset;
 
 extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];

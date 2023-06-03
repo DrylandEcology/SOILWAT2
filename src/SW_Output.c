@@ -68,7 +68,6 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-char _Sep; /* output delimiter */
 TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
 
 
@@ -2143,7 +2142,6 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 	f = OpenFile(MyFileName, "r", LogInfo);
 	itemno = 0;
 
-	_Sep = ','; /* default in case it doesn't show up in the file */
 	used_OUTNPERIODS = 1; // if 'TIMESTEP' is not specified in input file, then only one time step = period can be specified
 
 
@@ -2182,21 +2180,12 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[])
 
 		if (Str_CompareI(keyname, (char *)"OUTSEP") == 0)
 		{
-			// condition to read in the OUTSEP line in outsetup.in
-			switch ((int) *sumtype)
-			{
-				case 't':
-					_Sep = '\t';
-					break;
-				case 's':
-					_Sep = ' ';
-					break;
-				case 'c':
-					_Sep = ',';
-					break;
-				default:
-					_Sep = *sumtype;
-			}
+			// Notify the user that this functionality has been removed
+			LogError(LogInfo, LOGWARN,
+					"`outsetup.in`: The functionality to specify a separation " \
+				    "character in output files has been removed. Only CSV "\
+					"files will be created. It is recommended to " \
+					"remove the \'OUTSEP\' line from your file.");
 
 			continue; //read next line of `outsetup.in`
 		}

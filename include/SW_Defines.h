@@ -91,6 +91,7 @@ extern "C" {
 
 #define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
 #define OUT_DIGITS 6 // number of floating point decimal digits written to output files
+#define _OUTSEP ',' // Separator used when generating output files
 
 //was 256 & 1024...
 #define MAX_FILENAMESIZE 512

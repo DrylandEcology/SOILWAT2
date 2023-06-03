@@ -39,7 +39,6 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-char _Sep;
 TimeInt tOffset;
 
 OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];

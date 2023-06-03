@@ -28,7 +28,7 @@
 #include "include/SW_Model.h"
 #include "include/SW_Site.h"
 
-// externs `SW_Output`, `_Sep`, `tOffset`, `use_OutPeriod`, `used_OUTNPERIODS`,
+// externs `tOffset`, `use_OutPeriod`, `used_OUTNPERIODS`,
 //         `timeSteps`, `colnames_OUT`, `ncol_OUT`, `key2str`, `pd2longstr`,
 //         `prepare_IterationSummary`, `storeAllIterations`
 #include "include/SW_Output.h"
@@ -113,11 +113,11 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 							str_help1,
 							sizeof str_help1,
 							"%c%s_%s_Mean%c%s_%s_SD",
-							_Sep, key, colnames_OUT[k][i], _Sep, key, colnames_OUT[k][i]
+							_OUTSEP, key, colnames_OUT[k][i], _OUTSEP, key, colnames_OUT[k][i]
 						);
 						strcat(str_help2, str_help1);
 				} else {
-					snprintf(str_help1, sizeof str_help1, "%c%s_%s", _Sep, key, colnames_OUT[k][i]);
+					snprintf(str_help1, sizeof str_help1, "%c%s_%s", _OUTSEP, key, colnames_OUT[k][i]);
 					strcat(str_help2, str_help1);
 				}
 			}
@@ -168,15 +168,15 @@ static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
 static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
 	switch (pd) {
 		case eSW_Day:
-			snprintf(str, sizeof_str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Day]);
+			snprintf(str, sizeof_str, "%s%c%s", "Year", _OUTSEP, pd2longstr[eSW_Day]);
 			break;
 
 		case eSW_Week:
-			snprintf(str, sizeof_str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Week]);
+			snprintf(str, sizeof_str, "%s%c%s", "Year", _OUTSEP, pd2longstr[eSW_Week]);
 			break;
 
 		case eSW_Month:
-			snprintf(str, sizeof_str, "%s%c%s", "Year", _Sep, pd2longstr[eSW_Month]);
+			snprintf(str, sizeof_str, "%s%c%s", "Year", _OUTSEP, pd2longstr[eSW_Month]);
 			break;
 
 		case eSW_Year:
@@ -365,16 +365,16 @@ void get_outstrleader(OutPeriod pd, size_t sizeof_str,
 					  SW_MODEL* SW_Model, char *str) {
 	switch (pd) {
 		case eSW_Day:
-			snprintf(str, sizeof_str, "%d%c%d", SW_Model->simyear, _Sep, SW_Model->doy);
+			snprintf(str, sizeof_str, "%d%c%d", SW_Model->simyear, _OUTSEP, SW_Model->doy);
 			break;
 
 		case eSW_Week:
-			snprintf(str, sizeof_str, "%d%c%d", SW_Model->simyear, _Sep,
+			snprintf(str, sizeof_str, "%d%c%d", SW_Model->simyear, _OUTSEP,
 				(SW_Model->week + 1) - tOffset);
 			break;
 
 		case eSW_Month:
-			snprintf(str, sizeof_str, "%d%c%d", SW_Model->simyear, _Sep,
+			snprintf(str, sizeof_str, "%d%c%d", SW_Model->simyear, _OUTSEP,
 				(SW_Model->month + 1) - tOffset);
 			break;
 
