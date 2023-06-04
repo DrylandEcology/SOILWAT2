@@ -38,7 +38,8 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 	 * nfound is the number of files found, also, num elements in flist
 	 */
 
-	char **flist = NULL, *dname, *fname, *fn1, *fn2, *p2;
+	char **flist = NULL, *fname, *fn1, *fn2, *p2;
+	char dname[FILENAME_MAX];
 
 	int len1, len2;
 	Bool match, alloc = swFALSE;
@@ -48,7 +49,7 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 
 	assert(fspec != NULL);
 
-	dname = Str_Dup(DirName(fspec), LogInfo);
+	DirName(fspec, dname); // Copy `fspec` into `dname`
 	fname = Str_Dup(BaseName(fspec), LogInfo);
 
 	if (strchr(fname, '*')) {
@@ -88,7 +89,6 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 	}
 
 	closedir(dir);
-	free(dname);
 	free(fname);
 
 	return flist;
@@ -232,26 +232,24 @@ Bool GetALine(FILE *f, char buf[]) {
 }
 
 /**************************************************************/
-char *DirName(const char *p) {
+void DirName(const char *p, char *outString) {
 	/* copy path (if any) to a static buffer.
 	 * Be sure to copy the return value to a more stable buffer
 	 * before moving on.
 	 */
-	static char s[FILENAME_MAX];
 	char *c;
 	int l;
 	char sep1 = '/', sep2 = '\\';
 
-	*s = '\0';
+	*outString = '\0';
 	if (!(c = (char*) strrchr(p, (int) sep1)))
 		c = (char*) strrchr(p, (int) sep2);
 
 	if (c) {
 		l = c - p + 1;
-		strncpy(s, p, l);
-		s[l] = '\0';
+		strncpy(outString, p, l);
+		outString[l] = '\0';
 	}
-	return s;
 }
 
 /**************************************************************/
@@ -418,14 +416,14 @@ Bool RemoveFiles(const char *fspec, LOG_INFO* LogInfo) {
 	 * Check errno if return is FALSE.
 	 */
 
-	char **flist, fname[1024];
+	char **flist, fname[FILENAME_MAX];
 	int i, nfiles, dlen, result = swTRUE;
 
 	if (fspec == NULL )
 		return swTRUE;
 
 	if ((flist = getfiles(fspec, &nfiles, LogInfo))) {
-		strcpy(fname, DirName(fspec));
+		DirName(fspec, fname); // Transfer `fspec` into `fname`
 		dlen = strlen(fname);
 		for (i = 0; i < nfiles; i++) {
 			strcpy(fname + dlen, flist[i]);

@@ -49,9 +49,11 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
 	 *  remove old output and/or create the output directories if needed */
 	/* borrow inbuf for filenames */
 
-	char inbuf[MAX_FILENAMESIZE];
+	char inbuf[MAX_FILENAMESIZE], dirString[FILENAME_MAX];
 
-	if (DirExists(DirName(s)))
+	DirName(s, dirString);
+
+	if (DirExists(dirString))
 	{
 		strcpy(inbuf, s);
 		if (!RemoveFiles(inbuf, LogInfo))
@@ -60,10 +62,10 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
 			printf("Can't remove old csv output file: %s\n", s);
 		}
 	}
-	else if (!MkDir(DirName(s)))
+	else if (!MkDir(dirString))
 	{
-		LogError(LogInfo, LOGFATAL, "Can't make output path for csv file: %s\n", DirName(s));
-		printf("Can't make output path for csv file: %s\n", DirName(s));
+		LogError(LogInfo, LOGFATAL, "Can't make output path for csv file: %s\n", dirString);
+		printf("Can't make output path for csv file: %s\n", dirString);
 	}
 }
 
@@ -221,7 +223,7 @@ void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[]) {
 	 *    This was done mostly in support of STEPWAT but
 	 *    it could be useful in a standalone run.
 	 */
-	char *c, *p;
+	char *c, *p, dirString[FILENAME_MAX];
 	int file;
 
 	// Initialize `InFile` pointers to all NULL aside from index eFirst
@@ -229,7 +231,9 @@ void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[]) {
 		InFiles[file] = NULL;
 	}
 
-	if ((c = DirName(firstfile))) {
+	DirName(firstfile, dirString);
+
+	if ((c = dirString)) {
 		strcpy(_ProjDir, c);
 		c = (char *) firstfile;
 		p = c + strlen(_ProjDir);

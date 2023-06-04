@@ -23,7 +23,7 @@ extern "C" {
 FILE * OpenFile(const char *name, const char *mode, LOG_INFO* LogInfo);
 void CloseFile(FILE **f, LOG_INFO* LogInfo);
 Bool GetALine(FILE *f, char buf[]);
-char *DirName(const char *p);
+void DirName(const char *p, char *outString);
 const char *BaseName(const char *p);
 Bool FileExists(const char *f);
 Bool DirExists(const char *d);
