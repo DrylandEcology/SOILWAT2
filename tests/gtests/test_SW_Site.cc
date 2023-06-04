@@ -26,7 +26,7 @@
 #include "include/SW_Times.h"
 #include "include/SW_Files.h"
 #include "include/SW_Carbon.h"
-#include "include/SW_Site.h" // externs `_TranspRgnBounds`
+#include "include/SW_Site.h"
 #include "include/SW_VegProd.h"
 #include "include/SW_VegEstab.h"
 #include "include/SW_Model.h"

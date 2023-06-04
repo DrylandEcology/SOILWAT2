@@ -59,7 +59,7 @@
 #include <string.h>
 
 #include "include/generic.h"
-#include "include/filefuncs.h" // externs `_firstfile`
+#include "include/filefuncs.h"
 #include "include/myMemory.h"
 #include "include/SW_VegProd.h"
 

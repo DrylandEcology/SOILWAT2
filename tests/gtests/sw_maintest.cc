@@ -15,9 +15,8 @@
 #include <time.h>
 #include <unistd.h>
 
-// externs `*logfp`, `errstr`, `QuietMode`
 #include "include/generic.h"
-#include "include/filefuncs.h" // externs `_firstfile`
+#include "include/filefuncs.h"
 #include "include/SW_Control.h"
 #include "include/SW_Files.h"
 #include "include/myMemory.h"

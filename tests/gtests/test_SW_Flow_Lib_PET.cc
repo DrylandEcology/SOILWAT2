@@ -26,7 +26,7 @@
 #include "include/Times.h"
 #include "include/SW_Defines.h"
 #include "include/SW_Times.h"
-#include "include/SW_Files.h" // externs `output_prefix`
+#include "include/SW_Files.h"
 #include "include/SW_Carbon.h"
 #include "include/SW_Site.h"
 #include "include/SW_VegProd.h"

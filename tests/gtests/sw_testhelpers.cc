@@ -15,9 +15,8 @@
 #include <time.h>
 #include <unistd.h>
 
-// externs `*logfp`, `errstr`, `logged`, `QuietMode`
 #include "include/generic.h"
-#include "include/filefuncs.h" // externs `_firstfile`
+#include "include/filefuncs.h"
 #include "include/SW_Site.h"
 #include "include/SW_SoilWater.h"
 #include "include/SW_Weather.h"
