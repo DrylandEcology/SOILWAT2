@@ -2391,7 +2391,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	#ifdef STEPWAT
 	Bool use_help_txt, use_help_SXW;
 	#endif
-	IntUS i, timeStepIndex;
+	IntUS i, outPeriod;
 
 	#ifdef SWDEBUG
   int debug = 0;
@@ -2444,8 +2444,8 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 		for (i = 0; i < sw->GenOutput.used_OUTNPERIODS; i++)
 		{
-			use_help = (Bool) (sw->GenOutput.timeSteps[k][i] !=
-						eSW_NoTime && writeit[sw->GenOutput.timeSteps[k][i]]);
+			outPeriod = sw->GenOutput.timeSteps[k][i];
+			use_help = (Bool) (outPeriod != eSW_NoTime && writeit[outPeriod]);
 
 			#ifdef STEPWAT
 			use_help_txt = use_help;
@@ -2461,29 +2461,30 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			#ifdef SOILWAT
 			#ifdef SWDEBUG
 			if (debug) swprintf(" call pfunc_text(%d=%s))",
-				timeSteps[k][i], pd2str[timeSteps[k][i]]);
+								outPeriod, pd2str[outPeriod]);
 			#endif
 
 			((void (*)(OutPeriod, SW_ALL*)) SW_OutputPtrs[k].pfunc_text)
-						(sw->GenOutput.timeSteps[k][i], sw);
+															(outPeriod, sw);
 
 			#elif RSOILWAT
 			#ifdef SWDEBUG
 			if (debug) swprintf(" call pfunc_mem(%d=%s))",
-				timeSteps[k][i], pd2str[timeSteps[k][i]]);
+				outPeriod, pd2str[outPeriod]);
 			#endif
-			((void (*)(OutPeriod, SW_ALL*)) SW_OutputPtrs[k].pfunc_mem)(timeSteps[k][i]);
+			((void (*)(OutPeriod, SW_ALL*)) SW_OutputPtrs[k].pfunc_mem)
+															(outPeriod, sw);
 
 			#elif defined(STEPWAT)
 			if (use_help_SXW)
 			{
 				#ifdef SWDEBUG
 				if (debug) swprintf(" call pfunc_SXW(%d=%s))",
-					sw->GenOutputtimeSteps_SXW[k][i],
-									pd2str[sw->GenOutputtimeSteps_SXW[k][i]]);
+									sw->GenOutput.timeSteps_SXW[k][i],
+									pd2str[sw->GenOutput.timeSteps_SXW[k][i]]);
 				#endif
 				((void (*)(OutPeriod, SW_ALL*)) SW_OutputPtrs[k].pfunc_SXW)
-											(sw->GenOutput.timeSteps_SXW[k][i]);
+										(sw->GenOutput.timeSteps_SXW[k][i], sw);
 			}
 
 			if (!use_help_txt)
@@ -2495,18 +2496,19 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				{
 					#ifdef SWDEBUG
 					if (debug) swprintf(" call pfunc_agg(%d=%s))",
-						timeSteps[k][i], pd2str[timeSteps[k][i]]);
+										outPeriod, pd2str[outPeriod]);
 					#endif
-					((void (*)(OutPeriod, SW_ALL*)) SW_Output[k].pfunc_agg)(timeSteps[k][i]);
+					((void (*)(OutPeriod, SW_ALL*)) sw->SW_Output[k].pfunc_agg) (outPeriod, sw);
 				}
 
 				if (GenOutput->print_SW_Output)
 				{
+					outPeriod = sw->GenOutput.timeSteps[k][i];
 					#ifdef SWDEBUG
 					if (debug) swprintf(" call pfunc_text(%d=%s))",
-						timeSteps[k][i], pd2str[timeSteps[k][i]]);
+										outPeriod, pd2str[outPeriod]);
 					#endif
-					((void (*)(OutPeriod, SW_ALL*)) SW_Output[k].pfunc_text)(timeSteps[k][i]);
+					((void (*)(OutPeriod, SW_ALL*)) SW_Output[k].pfunc_text) (outPeriod, sw);
 				}
 			}
 			#endif
@@ -2519,11 +2521,12 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			/* concatenate formatted output for one row of `csv`- files */
 			if (sw->GenOutput.print_SW_Output)
 			{
-				timeStepIndex = sw->GenOutput.timeSteps[k][i];
 				if (sw->Output[k].has_sl) {
-					strcat(sw->FileStatus.buf_soil[timeStepIndex], sw->GenOutput.sw_outstr);
+					strcat(sw->FileStatus.buf_soil[outPeriod],
+												sw->GenOutput.sw_outstr);
 				} else {
-					strcat(sw->FileStatus.buf_reg[timeStepIndex], sw->GenOutput.sw_outstr);
+					strcat(sw->FileStatus.buf_reg[outPeriod],
+												sw->GenOutput.sw_outstr);
 				}
 			}
 
@@ -2531,11 +2534,11 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			if (GenOutput->print_IterationSummary)
 			{
 				if (SW_Output[k].has_sl) {
-					strcat(sw->FileStatus.buf_soil_agg[timeSteps[k][i]],
-													GenOutput->sw_outstr_agg);
+					strcat(sw->FileStatus.buf_soil_agg[outPeriod],
+												sw->GenOutput.sw_outstr_agg);
 				} else {
-					strcat(sw->FileStatus.buf_reg_agg[timeSteps[k][i]],
-													GenOutput->sw_outstr_agg);
+					strcat(sw->FileStatus.buf_reg_agg[outPeriod],
+												sw->GenOutput.sw_outstr_agg);
 				}
 			}
 			#endif
@@ -2593,7 +2596,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	// increment row counts
 	ForEachOutPeriod(p)
 	{
-		if (use_OutPeriod[p] && writeit[p])
+		if (sw->GenOutput.use_OutPeriod[p] && writeit[p])
 		{
 			sw->GenOutput.irow_OUT[p]++;
 		}
@@ -2652,7 +2655,7 @@ void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]) {
   will be checked via CheckMemoryRefs() after this, most
   likely in the main() function.
 */
-void SW_OUT_SetMemoryRefs( void)
+void SW_OUT_SetMemoryRefs(SW_OUTPUT SW_Output[])
 {
 	OutKey k;
 

@@ -381,14 +381,14 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
       checked via CheckMemoryRefs() after this, most likely in
       the main() function.
 */
-void SW_CTL_SetMemoryRefs( void) {
+void SW_CTL_SetMemoryRefs(SW_OUTPUT SW_Output[]) {
 	/* when debugging memory problems, use the bookkeeping
 	 code in myMemory.c
 
 	 */
 
 	SW_F_SetMemoryRefs();
-	SW_OUT_SetMemoryRefs();
+	SW_OUT_SetMemoryRefs(SW_Output);
 	SW_SWC_SetMemoryRefs();
 	SW_SIT_SetMemoryRefs();
 	SW_WTH_SetMemoryRefs();
