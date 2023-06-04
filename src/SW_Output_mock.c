@@ -73,8 +73,7 @@ void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
 
 void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
-		LyrIndex n_layers, TimeInt *tOffset,
-		OutPeriod timeSteps[][SW_OUTNPERIODS])
+		LyrIndex n_layers, SW_GEN_OUT *GenOutput)
 {
 	/* Silence compiler */
 	(void) make_soil;
@@ -82,8 +81,7 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	(void) SW_OutputPtrs;
 	(void) SW_Output;
 	(void) n_layers;
-	(void) timeSteps;
-	(void) tOffset;
+	(void) GenOutput;
 }
 
 void SW_OUT_deconstruct(Bool full_reset,

@@ -23,18 +23,6 @@ extern "C" {
 #endif
 
 /* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern Bool print_IterationSummary;
-extern Bool print_SW_Output;
-extern char sw_outstr[MAX_LAYERS * OUTSTRLEN];
-
-#ifdef STEPWAT
-  extern char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
-#endif
-
-
-/* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 #if defined(SOILWAT)

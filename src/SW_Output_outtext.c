@@ -34,23 +34,6 @@
 #include "include/SW_Output_outtext.h"
 
 
-Bool
-  /** `print_IterationSummary` is TRUE if STEPWAT2 is called with `-o` flag
-      and if STEPWAT2 is currently in its last iteration/repetition */
-  print_IterationSummary,
-  /** `print_SW_Output` is TRUE for SOILWAT2 and
-      if STEPWAT2 is called with `-i` flag */
-  print_SW_Output;
-
-
-/** \brief Formatted output string for single run output
-
-  Used for output as returned from any function `get_XXX_text` which are used
-  for SOILWAT2-standalone and for a single iteration/repeat for STEPWAT2
-*/
-char sw_outstr[MAX_LAYERS * OUTSTRLEN];
-
-
 /** \brief Formatted output string for aggregated output
 
   Defined as char `sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];`
@@ -58,14 +41,10 @@ char sw_outstr[MAX_LAYERS * OUTSTRLEN];
   Used for output as returned from any function `get_XXX_agg` which
   aggregates output across iterations/repeats for STEPWAT2
 
-  Active if \ref print_IterationSummary is TRUE
+  Active if \ref SW_GEN_OUT.print_IterationSummary is TRUE
 */
 #define sw_outstr_agg
 #undef sw_outstr_agg
-
-#ifdef STEPWAT
-char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
-#endif
 
 
 

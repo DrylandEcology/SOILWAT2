@@ -960,6 +960,14 @@ typedef struct {
 
 	size_t nrow_OUT[SW_OUTNPERIODS];
 	size_t irow_OUT[SW_OUTNPERIODS];
+
+	Bool print_IterationSummary;
+	Bool print_SW_Output;
+	char sw_outstr[MAX_LAYERS * OUTSTRLEN];
+
+	#ifdef STEPWAT
+	char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
+	#endif
 } SW_GEN_OUT;
 
 /* =================================================== */

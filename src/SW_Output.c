@@ -54,8 +54,7 @@
 
 // Text-based output declarations:
 #ifdef SW_OUTTEXT
-// externs `SW_OutFiles`, `print_IterationSummary`, `print_SW_Output`,
-//         `sw_outstr`, `sw_outstr_agg`
+
 #include "include/SW_Output_outtext.h"
 #endif
 
@@ -1107,10 +1106,10 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	int j;
 
 	#if defined(SOILWAT)
-	print_SW_Output = swTRUE;
-	print_IterationSummary = swFALSE;
+	GenOutput->print_SW_Output = swTRUE;
+	GenOutput->print_IterationSummary = swFALSE;
 	#elif defined(STEPWAT)
-	print_SW_Output = (Bool) storeAllIterations;
+	GenOutput->print_SW_Output = (Bool) storeAllIterations;
 	// `print_IterationSummary` is set by STEPWAT2's `main` function
 	#endif
 
@@ -2516,7 +2515,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 					((void (*)(OutPeriod, SW_ALL*)) SW_Output[k].pfunc_agg)(timeSteps[k][i]);
 				}
 
-				if (print_SW_Output)
+				if (GenOutput->print_SW_Output)
 				{
 					#ifdef SWDEBUG
 					if (debug) swprintf(" call pfunc_text(%d=%s))",
@@ -2533,23 +2532,25 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 			#ifdef SW_OUTTEXT
 			/* concatenate formatted output for one row of `csv`- files */
-			if (print_SW_Output)
+			if (sw->GenOutput.print_SW_Output)
 			{
 				timeStepIndex = sw->GenOutput.timeSteps[k][i];
 				if (sw->Output[k].has_sl) {
-					strcat(sw->FileStatus.buf_soil[timeStepIndex], sw_outstr);
+					strcat(sw->FileStatus.buf_soil[timeStepIndex], sw->GenOutput.sw_outstr);
 				} else {
-					strcat(sw->FileStatus.buf_reg[timeStepIndex], sw_outstr);
+					strcat(sw->FileStatus.buf_reg[timeStepIndex], sw->GenOutput.sw_outstr);
 				}
 			}
 
 			#ifdef STEPWAT
-			if (print_IterationSummary)
+			if (GenOutput->print_IterationSummary)
 			{
 				if (SW_Output[k].has_sl) {
-					strcat(sw->FileStatus.buf_soil_agg[timeSteps[k][i]], sw_outstr_agg);
+					strcat(sw->FileStatus.buf_soil_agg[timeSteps[k][i]],
+													GenOutput->sw_outstr_agg);
 				} else {
-					strcat(sw->FileStatus.buf_reg_agg[timeSteps[k][i]], sw_outstr_agg);
+					strcat(sw->FileStatus.buf_reg_agg[timeSteps[k][i]],
+													GenOutput->sw_outstr_agg);
 				}
 			}
 			#endif
@@ -2568,7 +2569,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 			if (sw->FileStatus.make_regular[p])
 			{
-				if (print_SW_Output) {
+				if (sw->GenOutput.print_SW_Output) {
 					fprintf(sw->FileStatus.fp_reg[p], "%s%s\n",
 						str_time, sw->FileStatus.buf_reg[p]);
 					// STEPWAT2 needs a fflush for yearly output;
@@ -2577,7 +2578,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				}
 
 				#ifdef STEPWAT
-				if (print_IterationSummary) {
+				if (GenOutput->) {
 					fprintf(sw->FileStatus.fp_reg_agg[p], "%s%s\n",
 						str_time, sw->FileStatus.buf_reg_agg[p]);
 				}
@@ -2586,13 +2587,13 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 			if (sw->FileStatus.make_soil[p])
 			{
-				if (print_SW_Output) {
+				if (sw->GenOutput.print_SW_Output) {
 					fprintf(sw->FileStatus.fp_soil[p], "%s%s\n",
 						str_time, sw->FileStatus.buf_soil[p]);
 				}
 
 				#ifdef STEPWAT
-				if (print_IterationSummary) {
+				if (GenOutput->print_IterationSummary) {
 					fprintf(sw->FileStatus.fp_soil_agg[p], "%s%s\n",
 						str_time, sw->FileStatus.buf_soil_agg[p]);
 				}
@@ -2726,7 +2727,7 @@ void SW_OUT_SetMemoryRefs( void)
   functions `get_XXX` in file \ref SW_Output_get_functions.c
     - output to text files of current simulation:
       - output formatter function such as `get_XXX_text` which prepare a
-        formatted text string in the global variable \ref sw_outstr which is
+        formatted text string in the global variable \ref SW_GEN_OUT.sw_outstr which is
         concatenated and written to the text files by SW_OUT_write_today()
       - these output formatter functions are assigned to pointers
         `SW_Output[k].pfunc_text` and called by SW_OUT_write_today()
