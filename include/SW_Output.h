@@ -129,8 +129,8 @@ extern char const *styp2str[];
 void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
 		LyrIndex n_layers, SW_GEN_OUT *GenOutput);
-void SW_OUT_deconstruct(Bool full_reset,
-						char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS]);
+void SW_OUT_deconstruct(Bool full_reset, SW_OUTPUT SW_Output[],
+						SW_GEN_OUT *GenOutput);
 void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
 					 IntUS ncol_OUT[]);
 void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms, LOG_INFO* LogInfo,

@@ -84,11 +84,12 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	(void) GenOutput;
 }
 
-void SW_OUT_deconstruct(Bool full_reset,
-						char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS])
+void SW_OUT_deconstruct(Bool full_reset, SW_OUTPUT SW_Output[],
+						SW_GEN_OUT *GenOutput)
 {
 	if (full_reset) {}
-	(void) colnames_OUT;
+	(void) SW_Output;
+	(void) GenOutput;
 }
 
 void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,

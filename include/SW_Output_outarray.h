@@ -58,7 +58,7 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS];
 /* --------------------------------------------------- */
 void SW_OUT_set_nrow(SW_MODEL* SW_Model, Bool use_OutPeriod[],
 					           size_t nrow_OUT[]);
-void SW_OUT_deconstruct_outarray(RealD *p_OUT[][SW_OUTNPERIODS]);
+void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput);
 
 #ifdef RSOILWAT
 void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,

@@ -1537,8 +1537,8 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 }
 
 
-void SW_OUT_deconstruct(Bool full_reset,
-						char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS])
+void SW_OUT_deconstruct(Bool full_reset, SW_OUTPUT SW_Output[],
+						SW_GEN_OUT *GenOutput)
 {
 	#if defined(SW_OUTARRAY) || defined(RSOILWAT)
 	OutKey k;
@@ -1550,9 +1550,9 @@ void SW_OUT_deconstruct(Bool full_reset,
 		{
 			for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++)
 			{
-				if (!isnull(colnames_OUT[k][i])) {
-					Mem_Free(colnames_OUT[k][i]);
-					colnames_OUT[k][i] = NULL;
+				if (!isnull(cGenOutput->olnames_OUT[k][i])) {
+					Mem_Free(GenOutput->colnames_OUT[k][i]);
+					GenOutput->colnames_OUT[k][i] = NULL;
 				}
 			}
 		}
@@ -1566,13 +1566,14 @@ void SW_OUT_deconstruct(Bool full_reset,
 	}
 
 	if (full_reset) {
-		SW_OUT_deconstruct_outarray();
+		SW_OUT_deconstruct_outarray(GenOutput);
 	}
 
 	#else
 	/* Avoid ``-Wunused-parameter` warning */
 	if (full_reset) {}
-	(void) colnames_OUT;
+	(void) SW_Output;
+	(void) GenOutput;
 	#endif
 }
 

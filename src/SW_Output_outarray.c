@@ -131,22 +131,21 @@ void SW_OUT_set_nrow(SW_MODEL* SW_Model, Bool use_OutPeriod[],
 /**
 	@brief For each out key, the p_OUT array is set to NULL.
 
-	@param[in,out] p_OUT Allocated arrays, for running means
-		for every out key and period
+	@param[in,out] GenOutput Holds general variables that deal with output
 */
-void SW_OUT_deconstruct_outarray(RealD *p_OUT[][SW_OUTNPERIODS])
+void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput)
 {
 	IntUS i;
 	OutKey k;
 
 	ForEachOutKey(k) {
 		for (i = 0; i < SW_OUTNPERIODS; i++) {
-			Mem_Free(p_OUT[k][i]);
-			p_OUT[k][i] = NULL;
+			Mem_Free(GenOutput->p_OUT[k][i]);
+			GenOutput->p_OUT[k][i] = NULL;
 
 			#ifdef STEPWAT
-			Mem_Free(p_OUTsd[k][i]);
-			p_OUTsd[k][i] = NULL;
+			Mem_Free(GenOutput->p_OUTsd[k][i]);
+			GenOutput->p_OUTsd[k][i] = NULL;
 			#endif
 		}
 	}
