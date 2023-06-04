@@ -1284,6 +1284,9 @@ void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
 
 /**
   @brief Adds a dummy soil layer to handle deep drainage
+
+  @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+  @param[in] LogInfo Holds information dealing with logfile output
 */
 void add_deepdrain_layer(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 
@@ -1371,7 +1374,7 @@ void SW_SIT_deconstruct(SW_SITE* SW_Site)
 
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] LogInfo Holds information dealing with logfile output
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 @param[out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
 */
 void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
@@ -1624,7 +1627,7 @@ void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 
 	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in] LogInfo Holds information dealing with logfile output
-	@param[in] InFiles Array of program input files
+	@param[in] InFiles Array of program in/output files
 
 	@note Previously, the function was static and named `_read_layers()`.
 */
@@ -1746,7 +1749,7 @@ void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
     depth [cm] of each region in ascending (in value) order. If you think about
     this from the perspective of soil, it would mean the shallowest bound is at
     `lowerBounds[0]`.
-  @param[in] InFiles Array of program input files
+  @param[in] InFiles Array of program in/output files
 
   @sideeffect After deleting any previous data in the soil layer array
     SW_Site.lyr, it creates new soil layers based on the argument inputs.
@@ -1901,6 +1904,11 @@ void derive_soilRegions(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 
 
 /** Obtain soil water retention curve parameters from disk
+ *
+ * @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+ * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in] InFiles Array of program in/output files
+ *
 */
 void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
 
@@ -1985,7 +1993,7 @@ void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
 		cover conditions in the simulation
 	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in] LogInfo Holds information dealing with logfile output
-	@param[in] InFiles Array of program input files
+	@param[in] InFiles Array of program in/output files
 
 	@sideeffect Values stored in global variable `SW_Site`.
 */
@@ -2507,7 +2515,7 @@ void SW_SIT_init_counts(SW_SITE* SW_Site) {
 
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] LogInfo Holds information dealing with logfile output
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 */
 void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
 	/* =================================================== */

@@ -470,7 +470,7 @@ namespace {
       sTconst, deltaX, theMaxDepth,
       nRgr, &LogInfo, &surfaceTemp, SW_All.SoilWat.lyrFrozen
     );
-    printf("ASDf\n");
+
     for (k = 0; k < nlyrs; k++) {
       sTemp[k] = oldsTemp[k];
     }

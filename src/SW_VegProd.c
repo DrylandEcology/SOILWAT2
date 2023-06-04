@@ -75,7 +75,7 @@ char const *key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 @param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
 @param[in] LogInfo Holds information dealing with logfile output
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 */
 void SW_VPD_read(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo, char *InFiles[]) {
 	/* =================================================== */

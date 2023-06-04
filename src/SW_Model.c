@@ -94,7 +94,7 @@ void SW_MDL_deconstruct(void)
 @param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
 @param[in] LogInfo Holds information dealing with logfile output
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 */
 void SW_MDL_read(SW_MODEL* SW_Model, LOG_INFO* LogInfo, char *InFiles[]) {
 	/* =================================================== */
@@ -238,7 +238,10 @@ void SW_MDL_new_year(SW_MODEL* SW_Model) {
 }
 
 /**
-@brief Sets the output period elements of SW_Model based on current day.
+	@brief Sets the output period elements of SW_Model based on current day.
+
+	@param[in,out] SW_Model Struct of type SW_MODEL holding basic time
+		information about the simulation
 */
 void SW_MDL_new_day(SW_MODEL* SW_Model) {
 

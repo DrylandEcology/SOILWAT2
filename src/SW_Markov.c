@@ -103,6 +103,7 @@ static void temp_correct_wetdry(RealD *tmax, RealD *tmin, RealD rain,
            previously `vc11 = _vcov[1][1]`
     @param wT_covar Mean weekly covariance between maximum and minimum
            daily temperature; previously `vc10 = _vcov[1][0]`
+	@param LogInfo Holds information dealing with logfile output
 	@param markov_rng Random number generator of the weather
 		   generator
 
@@ -366,7 +367,7 @@ void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 @brief Reads prob file in and checks input variables for errors, then stores files in SW_Markov.
 
 @param[in] LogInfo Holds information dealing with logfile output
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
 
@@ -481,7 +482,7 @@ Bool SW_MKV_read_prob(LOG_INFO* LogInfo, char *InFiles[],
 @brief Reads cov file in and checks input variables for errors, then stores files in SW_Markov.
 
 @param[in] LogInfo Holds information dealing with logfile output
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
 

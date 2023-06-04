@@ -979,7 +979,7 @@ void generateMissingWeather(
  @brief Check weather through all years/days within simultation and make sure all input values are reasonable
  after possible weather generation and scaling. If a value is to be found unreasonable, the function will execute a program crash.
 
- @param weather Struct of type SW_WEATHER holding all relevant information pretaining to weather input data
+ @param[in] weather Struct of type SW_WEATHER holding all relevant information pretaining to weather input data
  @param[in] LogInfo Holds information dealing with logfile output
  */
 void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
@@ -1336,7 +1336,7 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
 @param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
 @param[in] LogInfo Holds information dealing with logfile output
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 @param[out] _weather_prefix File name of weather data without extension.
 */
 void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo,

@@ -382,7 +382,11 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 }
 
 /**
-@brief Runs get commands for each eSW_Year.
+	@brief Runs get commands for each eSW_Year.
+
+	@param sw Comprehensive structure holding all information
+		dealt with in SOILWAT2
+	@param LogInfo Holds information dealing with logfile output
 */
 void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
 {

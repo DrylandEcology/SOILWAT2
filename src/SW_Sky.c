@@ -38,7 +38,7 @@
 @brief Reads in file for sky.
 
 @param[in] LogInfo Holds information dealing with logfile output
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 @param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
 	over the simulated site
 */

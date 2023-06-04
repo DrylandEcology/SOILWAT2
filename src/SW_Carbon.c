@@ -51,7 +51,7 @@ void SW_CBN_deconstruct(void)
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
  * @param[in] LogInfo Holds information dealing with logfile output
- * @param[in] InFiles Array of program input files
+ * @param[in] InFiles Array of program in/output files
  *
  * Additionally, check for the following issues:
  *   1. Duplicate entries.

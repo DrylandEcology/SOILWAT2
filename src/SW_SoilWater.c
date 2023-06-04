@@ -640,7 +640,7 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat)
 @param[in,out] sw Comprehensive struct of type SW_ALL containing all information
   in the simulation.
 @param[in] LogInfo Holds information dealing with logfile output
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 */
 void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]) {
 	/* =================================================== */
@@ -969,7 +969,7 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 	every soil layer in the simulation
 @param[in] n_layers Number of layers of soil within the simulation run
 @param[in] LogInfo Holds information dealing with logfile output
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 */
 void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
 				 LyrIndex n_layers, LOG_INFO* LogInfo, char *InFiles[]) {
@@ -1118,7 +1118,7 @@ void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 	every soil layer in the simulation
 @param[in] LogInfo Holds information dealing with logfile output
 @param[in] n_layers Total number of soil layers in simulation
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 */
 void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], TimeInt doy,
 		SW_SOILWAT_HIST SoilWat_hist, SW_LAYER_INFO** lyr, LOG_INFO* LogInfo,

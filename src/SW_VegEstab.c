@@ -169,7 +169,7 @@ void SW_VES_new_year(IntU count) {
   vegetation establishment within the simulation
 @param[in] LogInfo Holds information dealing with logfile output
 @param[in] EchoInits Flag to control if inputs are to be output to the user
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 @param[in] _ProjDir Project directory
 */
 void SW_VES_read(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo,
@@ -190,7 +190,7 @@ void SW_VES_read(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo,
 @param[in] consider_InputFlag Should the user input flag read from `"estab.in"` be
   considered for turning on/off calculations of vegetation establishment.
 @param[in] EchoInits Flag to control if inputs are to be output to the user
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 @param[in] _ProjDir Project directory
 
 @note

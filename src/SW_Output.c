@@ -2075,7 +2075,7 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 	@param[in,out] sw Comprehensive structure holding all information
     	dealt with in SOILWAT2
 	@param[in] LogInfo Holds information dealing with logfile output
-	@param[in] InFiles Array of program input files
+	@param[in] InFiles Array of program in/output files
 	@param[in] timeSteps Keeps track of the output time periods that
 		are required for each output key
 	@param[out] used_OUTNPERIODS The number of different time steps/periods

@@ -195,7 +195,7 @@ void SW_F_read(LOG_INFO* LogInfo, PATH_INFO* PathInfo) {
 @brief Adds FileIndex parameter i to array InFiles
 
 @param i Index parameter.
-@param[in] InFiles Array of program input files
+@param[in] InFiles Array of program in/output files
 
 @return InFiles Array of index parameters.
 */
@@ -207,7 +207,7 @@ char *SW_F_name(SW_FileIndex i, char *InFiles[]) {
 /**
 @brief Determines string length of file being read in combined with _ProjDir.
 
-@param[in,out] InFiles Array of program input files
+@param[in,out] InFiles Array of program in/output files
 @param[out] *firstfile File to be read in.
 @param[out] _ProjDir Project directory
 
@@ -248,7 +248,7 @@ void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[]) {
 /**
 @brief Deconstructor for each of the SW_NFILES.
 
-@param[in,out] InFiles Array of program input files
+@param[in,out] InFiles Array of program in/output files
 */
 void SW_F_deconstruct(char *InFiles[]) {
 	IntUS i;

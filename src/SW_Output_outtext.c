@@ -117,12 +117,12 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 /**
   \brief Create `csv` output files for specified time step
 
-  \param SW_FileStatus[in,out] SW_FileStatus Struct of type
+  \param[in,out] SW_FileStatus SW_FileStatus Struct of type
 	SW_FILE_STATUS which holds basic information about output files
 	and values
-  \param pd[in] The output time step.
+  \param[in] pd The output time step.
   \param[in] LogInfo Holds information dealing with logfile output
-  \param[in] InFiles Array of program input files
+  \param[in] InFiles Array of program in/output files
 */
 /***********************************************************/
 static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
@@ -273,6 +273,8 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd)
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  * 	basic output information for all output keys
  * @param[in] n_layers Number of layers of soil within the simulation run
+ * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in] InFiles Array of program in/output files
  * @param[in] GenOutput Holds general variables that deal with output
  *
  *  @note Call this routine at the beginning of the main program run, but

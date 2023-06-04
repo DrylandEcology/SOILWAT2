@@ -214,7 +214,10 @@ static void records2arrays(
  */
 
 /**
-@brief Initialize global variables between consecutive calls to SOILWAT.
+	@brief Initialize global variables between consecutive calls to SOILWAT.
+
+	@param[out] SW_SoilWat Struct of type SW_SOILWAT containing
+		soil water related values
 */
 void SW_FLW_init_run(SW_SOILWAT* SW_SoilWat) {
 	/* 06/26/2013	(rjm) added function SW_FLW_init_run() to init global variables between consecutive calls to SoilWat as dynamic library */
