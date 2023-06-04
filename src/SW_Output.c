@@ -2269,7 +2269,7 @@ void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 
 /** called at year end to process the remainder of the output
-    period. This sets two module-level flags: bFlush_output and
+    period. This sets two flags: bFlush_output and
     tOffset to be used in the appropriate subs.
 
 	@param[in,out] sw Comprehensive struct of type SW_ALL containing

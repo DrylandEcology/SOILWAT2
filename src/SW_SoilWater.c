@@ -910,7 +910,7 @@ void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site,
 		SW_SoilWat->is_wbError_init = swFALSE;
 	#endif
 
-	*temp_snow = 0.; // module-level snow temperature
+	*temp_snow = 0.; // Snow temperature
 
   _reset_swc(SW_SoilWat, SW_Site);
 }

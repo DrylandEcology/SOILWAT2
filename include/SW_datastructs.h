@@ -615,7 +615,7 @@ typedef struct {
 	char name_prefix[MAX_FILENAMESIZE - 5]; // subtract 4-digit 'year' file type extension
 	RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
 	RealD snow, snowmelt, snowloss, surfaceMax, surfaceMin;
-	RealD temp_snow; // Module-level snow temperature
+	RealD temp_snow; // Snow temperature
 
   Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly;
   Bool dailyInputFlags[MAX_INPUT_COLUMNS];
