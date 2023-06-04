@@ -138,8 +138,7 @@ void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	SW_VPD_construct(&sw->VegProd, LogInfo);
 	// SW_FLW_construct() not needed
 	SW_OUT_construct(sw->FileStatus.make_soil, sw->FileStatus.make_regular,
-      SW_OutputPtrs, sw->Output, sw->Site.n_layers, &sw->GenOutput.tOffset,
-      sw->GenOutput.timeSteps);
+      SW_OutputPtrs, sw->Output, sw->Site.n_layers, &sw->GenOutput);
 	SW_SWC_construct(&sw->SoilWat, LogInfo);
 	SW_CBN_construct(&sw->Carbon);
 }

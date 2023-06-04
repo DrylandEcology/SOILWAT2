@@ -943,6 +943,23 @@ typedef struct {
 
 	/** number of output columns for each output key */
 	IntUS ncol_OUT[SW_OUTNKEYS];
+
+		/** \brief A 2-dim array of pointers to output arrays.
+
+	\note This should be initialized to NULL because they are defined globally
+		and thus have `static storage duration`.
+
+	The variable p_OUT used by rSOILWAT2 for output and by STEPWAT2 for
+	mean aggregation.
+	*/
+	RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
+
+	#ifdef STEPWAT
+	RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
+	#endif
+
+	size_t nrow_OUT[SW_OUTNPERIODS];
+	size_t irow_OUT[SW_OUTNPERIODS];
 } SW_GEN_OUT;
 
 /* =================================================== */

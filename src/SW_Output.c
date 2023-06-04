@@ -1097,8 +1097,7 @@ void SW_OUT_set_SXWrequests(void)
 
 void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
-		LyrIndex n_layers, TimeInt *tOffset,
-		OutPeriod timeSteps[][SW_OUTNPERIODS])
+		LyrIndex n_layers, SW_GEN_OUT *GenOutput)
 {
 	/* =================================================== */
 	OutKey k;
@@ -1123,7 +1122,7 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	}
 	#endif
 
-	*tOffset = 1;
+	GenOutput->tOffset = 1;
 
 	ForEachSoilLayer(i, n_layers) {
 		ForEachVegType(j) {
@@ -1134,8 +1133,8 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	#ifdef SW_OUTARRAY
 	ForEachOutPeriod(p)
 	{
-		nrow_OUT[p] = 0;
-		irow_OUT[p] = 0;
+		GenOutput->nrow_OUT[p] = 0;
+		GenOutput->irow_OUT[p] = 0;
 	}
 	#endif
 
@@ -1157,9 +1156,9 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	{
 		ForEachOutPeriod(p)
 		{
-			timeSteps[k][p] = eSW_NoTime;
+			GenOutput->timeSteps[k][p] = eSW_NoTime;
 			#ifdef STEPWAT
-			timeSteps_SXW[k][p] = eSW_NoTime;
+			GenOutput->timeSteps_SXW[k][p] = eSW_NoTime;
 			#endif
 		}
 
@@ -2264,7 +2263,8 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[],
 
 	#ifdef STEPWAT
 	// Determine number of used years/months/weeks/days in simulation period
-	SW_OUT_set_nrow(&sw->Model, sw->GenOutput->use_OutPeriod);
+	SW_OUT_set_nrow(&sw->Model, sw->GenOutput->use_OutPeriod,
+					sw->GenOutput->nrow_OUT);
 	#endif
 
 	CloseFile(&f, LogInfo);
@@ -2609,7 +2609,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	{
 		if (use_OutPeriod[p] && writeit[p])
 		{
-			irow_OUT[p]++;
+			sw->GenOutput.irow_OUT[p]++;
 		}
 	}
 	#endif
@@ -2737,7 +2737,7 @@ void SW_OUT_SetMemoryRefs( void)
       simulations (mean and SD of values)
       - output formatter function such as `get_XXX_agg` which
         - calculate a cumulative running mean and SD for the output values in
-          the pointer array variables \ref p_OUT and \ref p_OUTsd
+          the pointer array variables \ref SW_GEN_OUT.p_OUT and \ref SW_GEN_OUT.p_OUTsd
         - if `print_IterationSummary` is `TRUE` (i.e., for the last simulation
           run = last iteration in `STEPWAT2` terminology),
           prepare a formatted text string in the global variable
@@ -2759,9 +2759,9 @@ void SW_OUT_SetMemoryRefs( void)
       - currently used by `STEPWAT2` if executed with its `-s flag`, i.e.,
         whenever `STEPWAT2` is run with `SOILWAT2`
 
-    - in-memory output via pointer array variable \ref p_OUT
+    - in-memory output via pointer array variable \ref SW_GEN_OUT.p_OUT
       - output formatter function such as `get_XXX_mem` which store the correct
-        values directly in the appropriate elements of \ref p_OUT
+        values directly in the appropriate elements of \ref SW_GEN_OUT.p_OUT
       - these output formatter functions are assigned to pointers
         `SW_Output[k].pfunc_mem` and called by SW_OUT_write_today()
       - currently used by `rSOILWAT2`

@@ -34,23 +34,13 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-/** \brief A 2-dim array of pointers to output arrays.
-
-  \note This should be initialized to NULL because they are defined globally
-    and thus have `static storage duration`.
-
-  The variable p_OUT used by rSOILWAT2 for output and by STEPWAT2 for
-  mean aggregation.
-*/
-RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
-
 /** \brief A 2-dim array of pointers to output arrays of standard deviations.
 
   \note This should be initialized to NULL because they are defined globally
     and thus have `static storage duration`.
 
   The variable p_OUTsd is used by STEPWAT2 for standard-deviation during
-  aggregation. See also \ref p_OUT
+  aggregation. See also \ref SW_GEN_OUT.p_OUT
 */
 #define p_OUTsd
 #undef p_OUTsd
@@ -58,11 +48,8 @@ RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
 #ifdef STEPWAT
 extern GlobalType SuperGlobals;
-RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
 #endif
 
-size_t nrow_OUT[SW_OUTNPERIODS]; // number of years/months/weeks/days
-size_t irow_OUT[SW_OUTNPERIODS]; // row index of current year/month/week/day output; incremented at end of each day
 const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time header columns for each output period
 
 
@@ -76,11 +63,13 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time hea
 	@param[in] SW_Model Struct of type SW_MODEL holding basic time information
 		about the simulation
 	@param[in] use_OutPeriod Describes which time period is currently active
+	@param[out] nrow_OUT Number of output rows for each output period
 
 	@sideeffect Set nrow_OUT using global variables SW_Model,
 		SuperGlobals if compiled for STEPWAT2, and use_OutPeriod
 */
-void SW_OUT_set_nrow(SW_MODEL* SW_Model, Bool use_OutPeriod[])
+void SW_OUT_set_nrow(SW_MODEL* SW_Model, Bool use_OutPeriod[],
+					 size_t nrow_OUT[])
 {
 	TimeInt i;
 	size_t n_yrs;
@@ -140,9 +129,12 @@ void SW_OUT_set_nrow(SW_MODEL* SW_Model, Bool use_OutPeriod[])
 }
 
 /**
-@brief For each out key, the p_OUT array is set to NULL.
+	@brief For each out key, the p_OUT array is set to NULL.
+
+	@param[in,out] p_OUT Allocated arrays, for running means
+		for every out key and period
 */
-void SW_OUT_deconstruct_outarray(void)
+void SW_OUT_deconstruct_outarray(RealD *p_OUT[][SW_OUTNPERIODS])
 {
 	IntUS i;
 	OutKey k;
@@ -168,9 +160,12 @@ void SW_OUT_deconstruct_outarray(void)
 	@param[in] SW_Model Struct of type SW_MODEL holding basic time information
 		about the simulation
 	@param[in] pd Time period in simulation output (day/week/month/year)
+	@param[in] irow_OUT Number of output rows for each output period
+	@param[in] nrow_OUT Number of output rows for each output period
     @param[out] p Allocated array to hold output periods for every output key
 */
-void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd, RealD *p) {
+void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,
+					  size_t irow_OUT[], size_t nrow_OUT[], RealD *p) {
 	p[irow_OUT[pd] + nrow_OUT[pd] * 0] = SW_Model->simyear;
 
 	switch (pd) {
@@ -213,13 +208,18 @@ void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
 
     @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
 		basic output information for all output keys
+	@param[out] p_OUT Allocated arrays, for running means
+		for every out key and period
+	@param[out] p_OUTsd Allocated arrays, for running standard deviations
+		for every out key and period
 
 	Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in `rSW_Output.c`
 
 	@sideeffect: `*p_OUT` and `*p_OUTsd` pointing to allocated arrays for
 		each output period and output key.
 	*/
-void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output)
+void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output,
+		RealD *p_OUT[][SW_OUTNPERIODS], RealD *p_OUTsd[][SW_OUTNPERIODS])
 {
 	IntUS i;
 	size_t
