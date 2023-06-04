@@ -119,15 +119,6 @@ extern "C" {
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
 
-extern TimeInt tOffset;
-
-extern OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
-extern IntUS used_OUTNPERIODS;
-extern Bool use_OutPeriod[SW_OUTNPERIODS];
-
-extern char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
-extern IntUS ncol_OUT[SW_OUTNKEYS];
-
 extern char const *key2str[];
 extern char const *pd2longstr[];
 extern char const *styp2str[];
