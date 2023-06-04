@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
 	SW_CTL_main(&sw, SW_OutputPtrs, &PathInfo, &LogInfo);
 
   // finish-up output
-	SW_OUT_close_files(&sw.FileStatus, &LogInfo, sw.GenOutput.use_OutPeriod); // not used with rSOILWAT2
+	SW_OUT_close_files(&sw.FileStatus, &LogInfo, &sw.GenOutput); // not used with rSOILWAT2
 
 	// de-allocate all memory
 	SW_CTL_clear_model(swTRUE, &sw, &PathInfo);

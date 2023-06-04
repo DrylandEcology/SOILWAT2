@@ -968,6 +968,23 @@ typedef struct {
 	#ifdef STEPWAT
 	char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
 	#endif
+
+	#ifdef STEPWAT
+	/** `timeSteps_SXW` is the array that keeps track of the output time periods
+		that are required for `SXW` in-memory output for each output key.
+		Compare with `timeSteps` */
+	OutPeriod timeSteps_SXW[SW_OUTNKEYS][SW_OUTNPERIODS];
+
+	/** `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
+		 if TRUE, then write to disk the SOILWAT2 output
+		for each STEPWAT2 iteration/repeat to separate files */
+	Bool storeAllIterations;
+
+	/** `prepare_IterationSummary` is set to TRUE if STEPWAT2 is called with
+		 `-o` flag; if TRUE, then calculate/write to disk the running mean and sd
+		across iterations/repeats */
+	Bool prepare_IterationSummary;
+	#endif
 } SW_GEN_OUT;
 
 /* =================================================== */

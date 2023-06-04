@@ -128,11 +128,6 @@ extern Bool use_OutPeriod[SW_OUTNPERIODS];
 extern char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
 extern IntUS ncol_OUT[SW_OUTNKEYS];
 
-#ifdef STEPWAT
-  extern Bool prepare_IterationSummary;
-  extern Bool storeAllIterations;
-#endif
-
 extern char const *key2str[];
 extern char const *pd2longstr[];
 extern char const *styp2str[];
@@ -176,8 +171,9 @@ Bool has_key_soillayers(OutKey k);
 
 #ifdef STEPWAT
 void find_OutPeriods_inUse2(void);
-Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k);
-void SW_OUT_set_SXWrequests(void);
+Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k,
+						  OutPeriod timeSteps_SXW[][SW_OUTNPERIODS]);
+void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS]);
 #endif
 
 

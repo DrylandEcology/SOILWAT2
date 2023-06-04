@@ -67,25 +67,6 @@
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
 
-
-#ifdef STEPWAT
-/** `timeSteps_SXW` is the array that keeps track of the output time periods
-    that are required for `SXW` in-memory output for each output key.
-    Compare with `timeSteps` */
-OutPeriod timeSteps_SXW[SW_OUTNKEYS][SW_OUTNPERIODS];
-
-/** `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
-     if TRUE, then write to disk the SOILWAT2 output
-     for each STEPWAT2 iteration/repeat to separate files */
-Bool storeAllIterations;
-
-/** `prepare_IterationSummary` is set to TRUE if STEPWAT2 is called with
-      `-o` flag; if TRUE, then calculate/write to disk the running mean and sd
-      across iterations/repeats */
-Bool prepare_IterationSummary;
-#endif
-
-
 // Convert from IDs to strings
 /* These MUST be in the same order as enum OutKey in
  * SW_Output.h */
@@ -893,7 +874,7 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 			use_help = (Bool) op == timeSteps[k][i];
 
 			#ifdef STEPWAT
-			use_help = (Bool) (use_help || op == timeSteps_SXW[k][i]);
+			use_help = (Bool) (use_help || op == sw->GenOutput.timeSteps_SXW[k][i]);
 			#endif
 
 			if (use_help)
@@ -940,7 +921,7 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 
 #ifdef STEPWAT
 static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
-	const char *str, SW_OUTPUT* SW_Output)
+	const char *str, SW_OUTPUT* SW_Output, OutPeriod timeSteps_SXW[][SW_OUTNPERIODS])
 {
 	Bool warn = SW_Output[k].use;
 
@@ -1033,7 +1014,8 @@ void find_OutPeriods_inUse2(void)
 /** Determine whether output period `pd` is active for output key `k` while
 		accounting for output needs of `SXW`
 */
-Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k)
+Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k,
+						  OutPeriod timeSteps_SXW[][SW_OUTNPERIODS])
 {
 	int i;
 	Bool has_timeStep2 = has_OutPeriod_inUse(pd, k);
@@ -1063,7 +1045,7 @@ Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k)
 			and adjusts variables `use`, `sumtype` (with a warning), `first_orig`,
 			and `last_orig` of `SW_Output`.
 */
-void SW_OUT_set_SXWrequests(void)
+void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS])
 {
 	// Update `used_OUTNPERIODS`:
 	// SXW uses up to 2 time periods for the same output key: monthly and yearly
@@ -1109,7 +1091,7 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	GenOutput->print_SW_Output = swTRUE;
 	GenOutput->print_IterationSummary = swFALSE;
 	#elif defined(STEPWAT)
-	GenOutput->print_SW_Output = (Bool) storeAllIterations;
+	GenOutput->print_SW_Output = (Bool) GenOutput->storeAllIterations;
 	// `print_IterationSummary` is set by STEPWAT2's `main` function
 	#endif
 
@@ -2467,7 +2449,8 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 			#ifdef STEPWAT
 			use_help_txt = use_help;
-			use_help_SXW = (Bool) (timeSteps_SXW[k][i] != eSW_NoTime && writeit[timeSteps_SXW[k][i]]);
+			use_help_SXW = (Bool) (sw->GenOutput.timeSteps_SXW[k][i] != eSW_NoTime &&
+								   writeit[sw->GenOutput.timeSteps_SXW[k][i]]);
 			use_help = (Bool) use_help_txt || use_help_SXW;
 			#endif
 
@@ -2496,9 +2479,11 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			{
 				#ifdef SWDEBUG
 				if (debug) swprintf(" call pfunc_SXW(%d=%s))",
-					timeSteps_SXW[k][i], pd2str[timeSteps_SXW[k][i]]);
+					sw->GenOutputtimeSteps_SXW[k][i],
+									pd2str[sw->GenOutputtimeSteps_SXW[k][i]]);
 				#endif
-				((void (*)(OutPeriod, SW_ALL*)) SW_OutputPtrs[k].pfunc_SXW)(timeSteps_SXW[k][i]);
+				((void (*)(OutPeriod, SW_ALL*)) SW_OutputPtrs[k].pfunc_SXW)
+											(sw->GenOutput.timeSteps_SXW[k][i]);
 			}
 
 			if (!use_help_txt)
@@ -2506,7 +2491,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				continue;  // SXW output complete; skip to next output period
 			}
 			else {
-				if (prepare_IterationSummary)
+				if (sw->GenOutput.prepare_IterationSummary)
 				{
 					#ifdef SWDEBUG
 					if (debug) swprintf(" call pfunc_agg(%d=%s))",

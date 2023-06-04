@@ -28,8 +28,7 @@
 #include "include/SW_Model.h"
 #include "include/SW_Site.h"
 
-// externs `key2str`, `pd2longstr`, `prepare_IterationSummary`,
-//         `storeAllIterations`
+// externs `key2str`, `pd2longstr`
 #include "include/SW_Output.h"
 #include "include/SW_Output_outtext.h"
 
@@ -470,10 +469,10 @@ void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 		SW_FILE_STATUS which holds basic information about output files
 		and values
 	@param[in] LogInfo Holds information dealing with logfile output
-	@param[in] use_OutPeriod Describes which time period is currently active
+	@param[in] GenOutput Holds general variables that deal with output
 */
 void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, LOG_INFO* LogInfo,
-						Bool use_OutPeriod[SW_OUTNPERIODS]) {
+						SW_GEN_OUT* GenOutput) {
 
 	Bool close_regular, close_layers, close_aggs;
 	OutPeriod p;
@@ -486,13 +485,13 @@ void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, LOG_INFO* LogInfo,
 		close_aggs = swFALSE;
 
 		#elif defined(STEPWAT)
-		close_regular = (Bool) (SW_FileStatus->make_regular[p] && storeAllIterations);
-		close_layers = (Bool) (SW_FileStatus->make_soil[p] && storeAllIterations);
+		close_regular = (Bool) (SW_FileStatus->make_regular[p] && GenOutput->storeAllIterations);
+		close_layers = (Bool) (SW_FileStatus->make_soil[p] && GenOutput->storeAllIterations);
 		close_aggs = (Bool) ((SW_FileStatus->make_regular[p] || SW_FileStatus->make_soil[p])
 			&& prepare_IterationSummary);
 		#endif
 
-		if (use_OutPeriod[p]) {
+		if (GenOutput->use_OutPeriod[p]) {
 			if (close_regular) {
 				CloseFile(&SW_FileStatus->fp_reg[p], LogInfo);
 			}

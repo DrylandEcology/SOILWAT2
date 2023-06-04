@@ -48,7 +48,7 @@ void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT* SW_Output, OutPeriod timeSteps[][SW_OUTNPERIODS],
 		IntUS used_OUTNPERIODS);
 void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, LOG_INFO* LogInfo,
-						Bool use_OutPeriod[SW_OUTNPERIODS]);
+						SW_GEN_OUT* GenOutput);
 
 
 #ifdef __cplusplus
