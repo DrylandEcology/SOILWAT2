@@ -32,7 +32,9 @@ extern "C" {
   `pd` is `OutPeriod`. The index order has to match up with column names as
   defined by `SW_OUT_set_colnames`.
 */
-#define iOUT(i, pd) (irow_OUT[(pd)] + nrow_OUT[(pd)] * (ncol_TimeOUT[(pd)] + (i)))
+#define iOUT(i, k, pd, GenOutput, n_layers) \
+            ((GenOutput.irow_OUT[(pd)]) + (GenOutput.nrow_OUT[(pd)]) * \
+            (ncol_TimeOUT[(pd)] + (i)))
 
 /** iOUT2 returns the index to the `i`-th (soil layer) column
   within the `k`-th (vegetation type) column block for time period `pd` in an
@@ -40,8 +42,9 @@ extern "C" {
   `pd` is `OutPeriod`. The index order has to match up with column names as
   defined by `SW_OUT_set_colnames`.
 */
-#define iOUT2(i, k, pd) (irow_OUT[(pd)] + nrow_OUT[(pd)] * \
-	(ncol_TimeOUT[(pd)] + (i) + SW_Site.n_layers * (k)))
+#define iOUT2(i, k, pd, GenOutput, n_layers) \
+              ((GenOutput.irow_OUT[(pd)]) + (GenOutput.nrow_OUT[(pd)]) * (ncol_TimeOUT[(pd)] + \
+               (i) + (n_layers) * (k)))
 
 
 /* =================================================== */
