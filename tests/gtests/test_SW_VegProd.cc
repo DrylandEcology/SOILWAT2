@@ -258,6 +258,7 @@ namespace {
 
         // Reset "SW_Weather.allHist"
         SW_WTH_read();
+		finalizeAllWeather(&SW_Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
@@ -714,6 +715,7 @@ namespace {
 
         // Reset "SW_Weather.allHist"
         SW_WTH_read();
+		finalizeAllWeather(&SW_Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
@@ -1173,6 +1175,7 @@ namespace {
 
         // Reset "SW_Weather.allHist"
         SW_WTH_read();
+		finalizeAllWeather(&SW_Weather);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
@@ -1221,7 +1224,7 @@ namespace {
                     climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
                     SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
                     fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);,
-          ""
+          "User defined relative abundance values sum to more than 1 = full land cover"
         );
 
         // Free allocated data

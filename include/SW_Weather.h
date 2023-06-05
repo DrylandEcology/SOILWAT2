@@ -41,12 +41,15 @@ extern "C" {
 
 typedef struct {
 	/* Weather values of the current simulation day */
-	RealD temp_avg, temp_max, temp_min, ppt, rain;
+	RealD temp_avg, temp_max, temp_min, ppt, rain, cloudCover, windSpeed, relHumidity,
+    shortWaveRad, actualVaporPressure;
 } SW_WEATHER_NOW;
 
 typedef struct {
 	/* Daily weather values for one year */
-	RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS], ppt[MAX_DAYS];
+	RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS], ppt[MAX_DAYS],
+    cloudcov_daily[MAX_DAYS], windspeed_daily[MAX_DAYS], r_humidity_daily[MAX_DAYS],
+    shortWaveRad[MAX_DAYS], actualVaporPressure[MAX_DAYS];
 	// RealD temp_month_avg[MAX_MONTHS], temp_year_avg; // currently not used
 } SW_WEATHER_HIST;
 
@@ -153,10 +156,19 @@ typedef struct {
     scale_temp_min[MAX_MONTHS],
     scale_skyCover[MAX_MONTHS],
     scale_wind[MAX_MONTHS],
-    scale_rH[MAX_MONTHS];
+    scale_rH[MAX_MONTHS],
+    scale_actVapPress[MAX_MONTHS],
+    scale_shortWaveRad[MAX_MONTHS];
 	char name_prefix[MAX_FILENAMESIZE - 5]; // subtract 4-digit 'year' file type extension
 	RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
 	RealD snow, snowmelt, snowloss, surfaceMax, surfaceMin;
+
+  Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly;
+  Bool dailyInputFlags[MAX_INPUT_COLUMNS];
+
+  unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
+ 			   n_input_forcings, // Number of input columns found in weath.YYYY
+    desc_rsds; /**< Description of units and definition of daily inputs of observed shortwave radiation, see `solar_radiation()` */
 
 	/* This section is required for computing the output quantities.  */
 	SW_WEATHER_OUTPUTS
@@ -185,6 +197,17 @@ extern SW_WEATHER SW_Weather;
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_WTH_setup(void);
+void set_dailyInputIndices(
+  Bool dailyInputFlags[MAX_INPUT_COLUMNS],
+  unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
+  unsigned int *n_input_forcings
+);
+void check_and_update_dailyInputFlags(
+  Bool use_cloudCoverMonthly,
+  Bool use_humidityMonthly,
+  Bool use_windSpeedMonthly,
+  Bool *dailyInputFlags
+);
 void SW_WTH_read(void);
 void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
                                SW_CLIMATE_CLIM *climateAverages);
@@ -204,14 +227,26 @@ void deallocateClimateStructs(SW_CLIMATE_YEARLY *climateOutput,
 void _read_weather_hist(
   TimeInt year,
   SW_WEATHER_HIST *yearWeather,
-  char weather_prefix[]
+  char weather_prefix[],
+  unsigned int n_input_forcings,
+  unsigned int *dailyInputIndices,
+  Bool *dailyInputFlags
 );
 void readAllWeather(
   SW_WEATHER_HIST **allHist,
   int startYear,
   unsigned int n_years,
   Bool use_weathergenerator_only,
-  char weather_prefix[]
+  char weather_prefix[],
+  Bool use_cloudCoverMonthly,
+  Bool use_humidityMonthly,
+  Bool use_windSpeedMonthly,
+  unsigned int n_input_forcings,
+  unsigned int *dailyInputIndices,
+  Bool *dailyInputFlags,
+  RealD *cloudcov,
+  RealD *windspeed,
+  RealD *r_humidity
 );
 void finalizeAllWeather(SW_WEATHER *w);
 
@@ -221,7 +256,12 @@ void scaleAllWeather(
   unsigned int n_years,
   double *scale_temp_max,
   double *scale_temp_min,
-  double *scale_precip
+  double *scale_precip,
+  double *scale_skyCover,
+  double *scale_wind,
+  double *scale_rH,
+  double *scale_actVapPress,
+  double *scale_shortWaveRad
 );
 void generateMissingWeather(
   SW_WEATHER_HIST **allHist,
@@ -230,6 +270,7 @@ void generateMissingWeather(
   unsigned int method,
   unsigned int optLOCF_nMax
 );
+void checkAllWeather(SW_WEATHER *weather);
 void allocateAllWeather(SW_WEATHER *w);
 void deallocateAllWeather(SW_WEATHER *w);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);

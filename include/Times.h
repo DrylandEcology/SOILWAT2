@@ -100,7 +100,8 @@ TimeInt yearto4digit(TimeInt yr);
 
 Bool isleapyear(const TimeInt year);
 
-void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]);
+void interpolate_monthlyValues(double monthlyValues[], Bool interpAsBase1,
+                               double dailyValues[]);
 
 
 #ifdef __cplusplus

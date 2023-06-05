@@ -16,6 +16,7 @@
 #include <math.h>
 #include "include/generic.h"
 #include "include/SW_Defines.h"
+#include "include/filefuncs.h"
 
 #include "include/SW_Flow_lib_PET.h"
 
@@ -731,6 +732,34 @@ double clearsky_directbeam(double P, double e_a, double int_sin_beta)
   return fmax(0., fmin(1., K_b));
 }
 
+
+/**
+  @brief Transmissivity index for actual direct beam radiation
+  on the horizontal surface
+
+  Based on Allen et al. 2006 @cite allen2006AaFM
+
+  @param tau Observed atmospheric transmissivity (direct + diffuse)
+    for the horizontal surface [-]
+*/
+double actual_horizontal_transmissivityindex(double tau) {
+  double K_bh;
+
+  // Allen et al. 2006: eq. 41a-41c
+  if (tau >= 0.42) {
+    K_bh = 1.56 * tau - 0.55;
+
+  } else if (tau <= 0.175) {
+    K_bh = 0.016 * tau;
+
+  } else {
+    K_bh = 0.022 - 0.280 * tau + 0.828 * squared(tau) + 0.765 * powe(tau, 3.);
+  }
+
+  return fmax(0., fmin(1., K_bh));
+}
+
+
 /** @brief Clearness index of diffuse radiation
 
   Based on relationships developed by Boes (1981) and ASCE-EWRI 2005 updated
@@ -773,6 +802,20 @@ double clearnessindex_diffuse(double K_b)
   (Reindl et al. 1990 @cite reindl1990SE) to
   transpose direct and diffuse radiation to a tilted surface.
 
+  @note
+    - Surface irradiation is estimated from extraterrestrial radiation
+      if observed downward surface shortwave radiation `rsds` is not available,
+      i.e., equal to \ref SW_MISSING.
+        - If observed `cloud_cover` is available, then additional cloud effects
+          are estimated as part of atmospheric attenuation; otherwise, they are
+          ignored.
+    - Surface irradiation is derived from observed downward surface shortwave
+      radiation `rsds`, if available.
+        - If observed `cloud_cover` is not available,
+          i.e., equal to \ref SW_MISSING, then `cloud_cover` is estimated
+          from both observed radiation and expected cloud-less radiation.
+
+
   @param[in] doy Day of year [1-365].
   @param[in] lat Latitude of the site [radians].
   @param[in] elev Elevation of the site [m a.s.l.].
@@ -783,27 +826,42 @@ double clearnessindex_diffuse(double K_b)
     South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi.
   @param[in] albedo Average albedo of the surrounding ground surface
     below the inclined surface [0-1].
-  @param[in] cloud_cover Fraction of sky covered by clouds [0-1].
-  @param[in] rel_humidity Daily mean relative humidity [%]
-  @param[in] air_temp_mean Daily mean air temperature [C]
+  @param[in,out] cloud_cover Percent of sky covered by clouds [0-100];
+    optional, see notes
+  @param[in] e_a Actual vapor pressure [kPa]
+
+  @param[in] rsds Observed downward surface shortwave radiation;
+    optional, see notes and `type_rsds` for units and definitions
+  @param[in] desc_rsds Description of the exact type and units of `rsds` with
+    - 0: `rsds` represents daily global horizontal irradiation [MJ / m2]
+    - 1: `rsds` represents flux density [W / m2] for a
+      (hypothetical) flat horizon averaged over an entire day (24 hour period)
+    - 2: `rsds` represents flux density [W / m2] for a
+      (hypothetical) flat horizon averaged over the daylight period of the day
 
   @param[out] H_oh Daily extraterrestrial horizontal irradiation [MJ / m2]
   @param[out] H_ot Daily extraterrestrial tilted irradiation [MJ / m2]
   @param[out] H_gh Daily global horizontal irradiation [MJ / m2]
   @return H_gt Daily global (tilted) irradiation [MJ / m2]
 */
-double solar_radiation(unsigned int doy,
+double solar_radiation(
+  unsigned int doy,
   double lat, double elev, double slope, double aspect,
-  double albedo, double cloud_cover, double rel_humidity, double air_temp_mean,
-  double *H_oh, double *H_ot, double *H_gh)
-{
+  double albedo, double *cloud_cover, double e_a,
+  double rsds, unsigned int desc_rsds,
+  double *H_oh, double *H_ot, double *H_gh
+) {
   double
-    P, e_a,
+    P,
     sun_angles[7], int_cos_theta[2], int_sin_beta[2],
     H_o[2],
-    k_c,
-    H_bh, H_dh, K_bh, K_dh,
-    H_bt, H_dt, H_rt, K_bt, f_ia, f_i, f_B,
+    k_c = SW_MISSING,
+    dl,
+    convert_rsds_to_H_gh = 1.,
+    tau_h_obs,
+    H_bh_calc, H_dh_calc, K_bh_calc, K_dh_calc,
+    K_bh_obs, K_dh_obs,
+    H_bt, H_dt, H_rt, K_bt_calc, f_ia, f_i, f_B,
     H_g;
 
 
@@ -827,63 +885,170 @@ double solar_radiation(unsigned int doy,
   // Calculate atmospheric pressure
   P = atmospheric_pressure(elev);
 
-  // Actual vapor pressure [kPa] estimated from daily mean air temperature and
-  // mean monthly relative humidity
-  // Allen et al. 2005: eqs 7 and 14
-  e_a = rel_humidity / 100. *
-    0.6108 * exp((17.27 * air_temp_mean) / (air_temp_mean + 237.3));
-
-
-  // Atmospheric attenuation: additional cloud effects
-  //k_c = overcast_attenuation_KastenCzeplak1980(cloud_cover / 100.);
-
-  // TODO: improve estimation of sunshine_fraction n/N
-  // e.g., Essa and Etman 2004 (Meteorol Atmos Physics) and
-  // Matuszko 2012 (Int J Climatol) suggest that n/N != 1 - C
-  k_c = overcast_attenuation_Angstrom1924(1. - cloud_cover / 100.);
-
-
+  //--- Calculate expected H_gh components from extraterrestrial radiation
   //--- Separation/decomposition: separate global horizontal irradiation H_gh
   // into direct and diffuse radiation components
 
   // Atmospheric attenuation: clear-sky model for direct beam irradiation
-  K_bh = clearsky_directbeam(P, e_a, int_sin_beta[0]);
-  H_bh = K_bh * k_c * (*H_oh); // Allen et al. 2006: eq. 24 + k_c
+  K_bh_calc = clearsky_directbeam(P, e_a, int_sin_beta[0]);
+  H_bh_calc = K_bh_calc * (*H_oh); // Allen et al. 2006: eq. 24
 
   // Diffuse irradiation
-  K_dh = clearnessindex_diffuse(K_bh);
-  H_dh = K_dh * k_c * (*H_oh); // Allen et al. 2006: eq. 25 + k_c
-
-  // Global horizontal irradiation: Allen et al. 2006: eq. 23
-  *H_gh = H_bh + H_dh;
+  K_dh_calc = clearnessindex_diffuse(K_bh_calc);
+  H_dh_calc = K_dh_calc * (*H_oh); // Allen et al. 2006: eq. 25
 
 
+  //--- Global horizontal irradiation
+  if (missing(rsds)) {
+    // Atmospheric attenuation: additional cloud effects
+    if (missing(*cloud_cover)) {
+      k_c = 1.; // ignore additional cloud cover effects
+
+    } else {
+      //k_c = overcast_attenuation_KastenCzeplak1980(*cloud_cover / 100.);
+
+      // TODO: improve estimation of sunshine_fraction n/N
+      // e.g., Essa and Etman 2004 (Meteorol Atmos Physics) and
+      // Matuszko 2012 (Int J Climatol) suggest that n/N != 1 - C
+
+      // Note: if `overcast_attenuation_Angstrom1924()` is changed, then
+      // reflect updates in section `derive cloud cover if missing`
+      k_c = overcast_attenuation_Angstrom1924(1. - *cloud_cover / 100.);
+    }
+
+    // Use calculated expected radiation for H_gh
+    *H_gh = k_c * (H_bh_calc + H_dh_calc); // Allen et al. 2006: eq. 23 + k_c
+
+  } else {
+    // Use observed radiation for H_gh
+
+    //--- Deal with specific type and units of observed `rsds`
+    switch (desc_rsds) {
+      // 0: `rsds` represents daily global horizontal irradiation [MJ / m2]
+      case 0:
+        convert_rsds_to_H_gh = 1.;
+        break;
+
+      // 1: `rsds` represents flux density [W / m2] for a (hypothetical)
+      // flat horizon averaged over an entire day (24 hour period)
+      case 1:
+        // Daily global horizontal irradiation [MJ/m2] from observed rsds [W/m2]
+        // 1e-6 [M] * (24 * 60 * 60) [s/day] * rsds [W/m2]
+        convert_rsds_to_H_gh = 0.0864;
+        break;
+
+      // 2: `rsds` represents flux density [W / m2] for a (hypothetical)
+      //    flat horizon averaged over the daylight period of the day
+      case 2:
+        // Day length [radian] when sun is above a hypothetical flat horizon
+        dl = sun_angles[6] - sun_angles[1];
+
+        // Daily global horizontal irradiation [MJ/m2] from observed rsds [W/m2]
+        // 1e-6 [M] * dl [radian] * (12 * 60 * 60 / pi) [s/radian] * rsds [W/m2]
+        convert_rsds_to_H_gh = 0.01375099 * dl;
+        break;
+
+      default:
+        LogError(
+          logfp,
+          LOGFATAL,
+          "`desc_rsds` has an unrecognized value: %u",
+          desc_rsds
+        );
+    }
+
+    *H_gh = convert_rsds_to_H_gh * rsds;
+
+
+    if (!(*H_gh >= 0. && *H_gh <= *H_oh)) {
+      LogError(
+        logfp,
+        LOGWARN,
+        "\nInput global horizontal irradiation (%f) reset to be equal to "
+        "theoretical extraterrestrial radiation (%.0f MJ m-2) "
+        "because it was larger.\n",
+        *H_gh,
+        *H_oh
+      );
+
+      *H_gh = *H_oh;
+    }
+
+
+    //--- Derive cloud cover if missing
+    if (missing(*cloud_cover)) {
+      // Estimate cloud cover from calculated cloud-less H_gh and observed H_gh
+      k_c = fmax(0., fmin(1., *H_gh / (H_bh_calc + H_dh_calc)));
+
+      // Inverse of `overcast_attenuation_Angstrom1924(1. - cloud_cover / 100.)`
+      *cloud_cover = fmax(0., fmin(100., 100. * (1. - (k_c - 0.25) / 0.75)));
+    }
+  }
+
+
+
+  //--- Global tilted irradiation ------
   //--- Transposition: transpose direct and diffuse radiation to tilted surface
   if (has_tilted_surface(slope, aspect)) {
 
-    // Direct beam irradiation
-    K_bt = clearsky_directbeam(P, e_a, int_sin_beta[1]);
-    H_bt = K_bt * k_c * (*H_ot); // Allen et al. 2006: eq. 30 + k_c
+    // Tilted direct beam transmissivity index
+    K_bt_calc = clearsky_directbeam(P, e_a, int_sin_beta[1]);
 
-    // Diffuse irradiation (isotropic)
+    // Ratio of expected direct beam radiation on slope vs horizontal surface
+    f_B = K_bt_calc / K_bh_calc * (*H_ot) / (*H_oh); // Allen et al. 2006: eq. 34
+
+    // Factor for diffuse irradiation (isotropic)
     f_i = 0.75 + 0.25 * cos(slope) - slope / swPI2; // Allen et al. 2006: eq. 32
 
 
-    // Diffuse irradiation (anisotropic): HDKR model (Reindl et al. 1990)
-    f_B = K_bt / K_bh * (*H_ot) / (*H_oh); // Allen et al. 2006: eq. 34
+    if (missing(rsds)) {
+      //--- Estimate (expected) H_gt components from extraterrestrial radiation
 
-    f_ia = f_i * (1. - K_bh) \
-      * (1. + sqrt(K_bh / (K_bh + K_dh)) * pow(sin(slope / 2.), 3.)) \
-      + f_B * K_bh; // Allen et al. 2006: eq. 33
+      // Direct beam irradiation
+      H_bt = K_bt_calc * k_c * (*H_ot); // Allen et al. 2006: eq. 30 + k_c
 
-    H_dt = f_ia * H_dh; // Allen et al. 2006: eq. 31
+      // Diffuse irradiation (anisotropic): HDKR model (Reindl et al. 1990)
+      f_ia = f_i * (1. - K_bh_calc) \
+        * (1. + sqrt(K_bh_calc / (K_bh_calc + K_dh_calc)) * pow(sin(slope / 2.), 3.)) \
+        + f_B * K_bh_calc; // Allen et al. 2006: eq. 33
+
+      H_dt = f_ia * k_c * H_dh_calc; // Allen et al. 2006: eq. 31
+
+    } else {
+      //--- Estimate H_gt components from observed radiation
+
+      // Observed atmospheric transmissivity for the horizontal surface
+
+      // direct + diffuse transmissivity
+      tau_h_obs = (*H_gh) / (*H_oh); // Allen et al. 2006: eq. 39
+
+      // direct beam transmissivity index: Allen et al. 2006: eq. 41
+      K_bh_obs = actual_horizontal_transmissivityindex(tau_h_obs);
+
+      // diffuse transmissivity index
+      K_dh_obs = tau_h_obs - K_bh_obs; // Allen et al. 2006: eq. 42
 
 
-    // Reflected irradiation; Allen et al. 2006: eq. 36
+      // Direct beam irradiation
+      H_bt = f_B * K_bh_obs * (*H_oh); // Allen et al. 2006: eq. 38 part 1
+
+      // Diffuse irradiation
+      f_ia = f_i * (1. - K_bh_obs) \
+        * (1. + sqrt(K_bh_obs / (K_bh_obs + K_dh_obs)) * pow(sin(slope / 2.), 3.)) \
+        + f_B * K_bh_obs; // Allen et al. 2006: eq. 40 (see eq. 33)
+
+      H_dt = f_ia * K_dh_obs * (*H_oh); // Allen et al. 2006: eq. 38 part 2
+    }
+
+
+    // Reflected irradiation
+    // based on Allen et al. 2006: eq. 36 if H_gh derived from H_oh
+    // based on Allen et al. 2006: eq. 38 part 3 if observed H_gh
     H_rt = albedo * (1. - f_i) * (*H_gh);
 
-
-    //--- Daily global titled irradiation: Allen et al. 2006: eq. 29
+    // Daily global tilted irradiation H_gt
+    // if H_* are derived from H_oh: Allen et al. 2006: eq. 29
+    // if H_* are derived from observed: Allen et al. 2006: eq. 38
     H_g = H_bt + H_dt + H_rt;
 
   } else {
@@ -891,6 +1056,18 @@ double solar_radiation(unsigned int doy,
     H_g = *H_gh;
   }
 
+
+  // Check for reasonable range of radiation [MJ/m2]
+  //   - 50 MJ/m2 estimated as upper limit of H_oh from
+  //     Duffie & Beckman 2013: Table 1.10.1
+  if (!(H_g >= 0. && H_g <= 50)) {
+    LogError(
+      logfp,
+      LOGFATAL,
+      "\nSolar radiation (%f) out of valid range (0-50 MJ m-2)\n",
+      H_g
+    );
+  }
 
   return H_g;
 }
@@ -988,6 +1165,67 @@ double svp(double T, double *slope_svp_to_t) {
   return 1e-3 * svp;
 }
 
+/**
+  @brief Saturation vapor pressure for calculation of actual vapor pressure
+
+  Implements equation 7 by Allen et al. (2005) @cite ASCE2005
+
+  @param[in] temp Daily mean, minimum, or maximum temperature or dewpoint temperature [C]
+
+  @return Saturation vapor pressure [kPa]
+*/
+double svp2(double temp) {
+    // Allen et al. 2005 eq 7
+    return .6108 * exp((17.27 * temp) / (temp + 237.3));
+}
+
+/**
+ @brief Calculate actual vapor pressure based on relative humidity and mean temperature
+
+ Implements equation 7 and 14 by Allen et al. (2005) @cite ASCE2005
+
+ @param hurs Daily mean relative humidity [%]
+ @param meanTemp Daily mean air temperature [C]
+
+ @return Calculated actual vapor pressure [kPa]
+ */
+double actualVaporPressure1(double hurs, double meanTemp) {
+    // Allen et al. 2005 eqs 7 and 14
+    return (hurs / 100.) * svp2(meanTemp);
+}
+
+/**
+ @brief Calculate actual vapor pressure from daily minimum and maximum of
+ air temperature and relative humidity
+
+ Implements equation 7 and 11 by Allen et al. (2005) @cite ASCE2005
+
+ @param maxHurs Daily maximum relative humidity [%]
+ @param minHurs Daily minimum relative humidity [%]
+ @param maxTemp Daily minimum air temperature [C]
+ @param minTemp Daily maximum air temperature [C]
+
+ @return Calculated actual vapor pressure [kPa]
+ */
+double actualVaporPressure2(double maxHurs, double minHurs, double maxTemp, double minTemp) {
+    // Allen et al. 2005 eqs 7 and 11
+    return (actualVaporPressure1(minHurs, maxTemp) + actualVaporPressure1(maxHurs, minTemp)) / 2;
+}
+
+/**
+ @brief Calculate actual vapor pressure based on dew point temperature
+
+ Implements equation 7 and 8 by Allen et al. (2005) @cite ASCE2005
+
+ @param dewpointTemp 2m dew point temperature [C]
+
+ @return Calculated actual vapor pressure [kPa]
+ */
+double actualVaporPressure3(double dewpointTemp) {
+    // Allen et al. 2005 eqs 7 and 8
+    return svp2(dewpointTemp);
+}
+
 
 
 /**
@@ -1051,6 +1289,15 @@ double petfunc(double H_g, double avgtemp, double elev,
   // Penman (1948): n/N = clrsky =
   //  = Ratio of actual/possible hours of sunshine =
   //  approximate with 1 - m/10 = 1 - fraction of sky covered by cloud
+
+  if (missing(cloudcov)) {
+    LogError(
+      logfp,
+      LOGFATAL,
+      "Cloud cover is missing."
+    );
+  }
+
   clrsky = 1. - cloudcov / 100.;
 
   // Wind speed (2 meters above ground)

@@ -109,33 +109,6 @@ void SW_SKY_read(void) {
 	CloseFile(&f);
 }
 
-/** @brief Scale mean monthly climate values
-*/
-void SW_SKY_init_run(void) {
-	TimeInt mon;
-	SW_SKY *v = &SW_Sky;
-	SW_WEATHER *w = &SW_Weather;
-
-	for (mon = Jan; mon <= Dec; mon++)
-	{
-		v->cloudcov[mon] = fmin(
-		  100.,
-		  fmax(0.0, w->scale_skyCover[mon] + v->cloudcov[mon])
-		);
-
-		v->windspeed[mon] = fmax(
-		  0.0,
-		  w->scale_wind[mon] * v->windspeed[mon]
-		);
-
-		v->r_humidity[mon] = fmin(
-		  100.,
-		  fmax(0.0, w->scale_rH[mon] + v->r_humidity[mon])
-		);
-	}
-}
-
-
 /**
   @brief Interpolate monthly input values to daily records
   (depends on "current" year)
@@ -146,15 +119,13 @@ void SW_SKY_init_run(void) {
 void SW_SKY_new_year(void) {
 	TimeInt year = SW_Model.year;
 	SW_SKY *v = &SW_Sky;
+    Bool interpAsBase1 = swTRUE;
 
   /* We only need to re-calculate values if this is first year or
      if previous year was different from current year in leap/noleap status
   */
 
   if (year == SW_Model.startyr || isleapyear(year) != isleapyear(year - 1)) {
-    interpolate_monthlyValues(v->cloudcov, v->cloudcov_daily);
-    interpolate_monthlyValues(v->windspeed, v->windspeed_daily);
-    interpolate_monthlyValues(v->r_humidity, v->r_humidity_daily);
-    interpolate_monthlyValues(v->snow_density, v->snow_density_daily);
+    interpolate_monthlyValues(v->snow_density, interpAsBase1, v->snow_density_daily);
   }
 }

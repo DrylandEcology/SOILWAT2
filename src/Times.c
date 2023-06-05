@@ -179,19 +179,32 @@ Bool isleapyear(const TimeInt year) {
  @date 09/22/2011
 
  @param[in] monthlyValues Array with values for each month
+ @param[in] interpAsBase1 Boolean value specifying if "dailyValues" should be base1 or base0
  @param[out] dailyValues Array with linearly interpolated values for each day
 
- @note dailyValues[0] will always be 0 as the function does not modify it
-   since there is no day 0 (doy is base1), furthermore dailyValues is
-   only sub-setted by base1 objects in the model.
+ @note If `interpAsBase1` is TRUE, then `dailyValues[0]` is ignored (with a value of 0) because a `base1`
+ index for "day of year" (doy) is used, i.e., the value on the first day of year (`doy = 1`) is located in `dailyValues[1]`.
+ If `interpAsBase1` is FALSE, then `dailyValues[0]` is utilized because a `base0` index for "day of year" (doy) is used,
+ i.e., the value on the first day of year (`doy = 0`) is located in `dailyValues[0]`.
  **/
-void interpolate_monthlyValues(double monthlyValues[], double dailyValues[]) {
+void interpolate_monthlyValues(double monthlyValues[], Bool interpAsBase1,
+                               double dailyValues[]) {
 	unsigned int doy, mday, month, month2 = NoMonth, nmdays;
+    unsigned int startdoy = 1, endDay = MAX_DAYS, doyOffset = 0;
 	double sign = 1.;
 
-	for (doy = 1; doy <= MAX_DAYS; doy++) {
-		mday = doy2mday(doy);
-		month = doy2month(doy);
+    // Check if we are interpolating values as base1
+    if(!interpAsBase1) {
+
+        // Make `dailyValues` base0
+        startdoy = 0;
+        endDay = MAX_DAYS - 1;
+        doyOffset = 1;
+    }
+
+	for (doy = startdoy; doy <= endDay; doy++) {
+		mday = doy2mday(doy + doyOffset);
+		month = doy2month(doy + doyOffset);
 
 		if (mday == 15) {
 			dailyValues[doy] = monthlyValues[month];

@@ -156,7 +156,7 @@ void SW_CTL_init_run(void) {
 	SW_WTH_init_run();
 	// SW_MKV_init_run() not needed
 	SW_PET_init_run();
-	SW_SKY_init_run();
+	// SW_SKY_init_run() not needed
 	SW_SIT_init_run();
 	SW_VES_init_run(); // must run after `SW_SIT_init_run()`
 	SW_VPD_init_run();

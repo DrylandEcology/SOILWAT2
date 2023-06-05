@@ -406,9 +406,10 @@ void SW_Water_Flow(void) {
 		SW_Site.slope,
 		SW_Site.aspect,
 		x,
-		SW_Sky.cloudcov_daily[doy],
-		SW_Sky.r_humidity_daily[doy],
-		w->now.temp_avg,
+        &w->now.cloudCover,
+        w->now.actualVaporPressure,
+        w->now.shortWaveRad,
+        w->desc_rsds,
 		&sw->H_oh,
 		&sw->H_ot,
 		&sw->H_gh
@@ -419,9 +420,9 @@ void SW_Water_Flow(void) {
 		w->now.temp_avg,
 		SW_Site.altitude,
 		x,
-		SW_Sky.r_humidity_daily[doy],
-		SW_Sky.windspeed_daily[doy],
-		SW_Sky.cloudcov_daily[doy]
+        w->now.relHumidity,
+        w->now.windSpeed,
+        w->now.cloudCover
 	);
 
 
