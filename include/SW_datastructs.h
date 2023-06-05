@@ -740,10 +740,10 @@ typedef struct {
 } SW_SOILWAT;
 
 typedef struct {
-	FILE *logfp; /* REQUIRED; defined in SW_Main_lib.c */
+	FILE *logfp;
 	// This is the pointer to the log file.
 
-	Bool logged; /* REQUIRED; defined in SW_Main_lib.c */
+	Bool logged;
 	// Indicates logfile written to via LogError.
 
 } LOG_INFO;
