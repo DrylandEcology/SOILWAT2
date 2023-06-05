@@ -27,4 +27,5 @@ extern PATH_INFO PathInfo;
 
 void Reset_SOILWAT2_after_UnitTest(void);
 
-void create_test_soillayers(unsigned int nlayers, char *InFiles[]);
+void create_test_soillayers(unsigned int nlayers, char *InFiles[],
+      SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site);
