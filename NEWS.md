@@ -1,6 +1,6 @@
 # NEWS
 
-# SOILWAT2 v7.0.0-9000
+# SOILWAT2 v7.0.0
 * This version produces nearly identical simulation output
   as the previous release under default values for the new inputs.
   Small deviations arise due to a fix in the handling of soil moisture values
@@ -44,7 +44,7 @@
     * Wind speed (can be replaced by wind components)
     * Wind speed eastward component (optional)
     * Wind speed northward component (optional)
-    * Relative humidity (can be replaced by max/min humidity, specific humidity
+    * Relative humidity (can be replaced by max/min humidity, specific humidity,
       dew point temperature, or vapor pressure)
     * Maximum relative humidity (optional)
     * Minimum relative humidity (optional)
@@ -94,7 +94,8 @@
 * New inputs via `"weathsetup.in"` determine whether monthly or daily inputs
   for cloud cover, relative humidity, and wind speed are utilized;
   describe which daily weather variables are contained in the weather input
-  files `weath.YYYY`; and describe units of (optiona) input shortwave radiation.
+  files `weath.YYYY`; and describe units of (optional) input shortwave
+  radiation.
 * New (optional) variables (columns) in weather input files `weath.YYYY` that
   are described via `"weathsetup.in"`.
 * New inputs via `"siteparam.in"` select a soil water release curve `swrc_name`
