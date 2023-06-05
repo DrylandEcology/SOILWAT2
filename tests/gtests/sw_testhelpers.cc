@@ -46,9 +46,9 @@ void Reset_SOILWAT2_after_UnitTest(void) {
 
   Bool EchoInits = swFALSE;
 
-  memset(&SW_All, 0, sizeof(SW_ALL));
-
   SW_CTL_clear_model(swFALSE, &SW_All, &PathInfo);
+
+  memset(&SW_All, 0, sizeof(SW_ALL));
 
   PathInfo.InFiles[eFirst] = Str_Dup(testmaster_file, &LogInfo);
 
