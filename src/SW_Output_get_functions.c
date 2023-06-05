@@ -43,8 +43,6 @@
 
 #ifdef STEPWAT
 #include <math.h>
-#include "sxw.h" // externs `*SXW`
-#include "ST_globals.h" // externs `*Globals`, `SuperGlobals`
 #endif
 
 // Array-based output declarations:
@@ -77,7 +75,7 @@ static void format_IterationSummary(RealD *p, RealD *psd, OutPeriod pd, IntUS N,
 	for (i = 0; i < N; i++)
 	{
 		n = iOUT(i, pd, sw->GenOutput);
-		sd = final_running_sd(SuperGlobals.runModelIterations, psd[n]);
+		sd = final_running_sd(sw->Model.SuperGlobals.runModelIterations, psd[n]);
 
 		snprintf(
 			str,
@@ -90,7 +88,7 @@ static void format_IterationSummary(RealD *p, RealD *psd, OutPeriod pd, IntUS N,
 }
 
 static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
-	IntUS N1, IntUS N2, IntUS offset)
+	IntUS N1, IntUS N2, IntUS offset, GlobalType *SuperGlobals)
 {
 	IntUS k, i;
 	size_t n;
@@ -911,7 +909,8 @@ void get_swa_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary2(p, psd, pd, NVEGTYPES, sw->Site.n_layers, 0);
+		format_IterationSummary2(p, psd, pd, NVEGTYPES, sw->Site.n_layers, 0,
+								 &sw->Model.SuperGlobals);
 	}
 }
 #endif
@@ -1557,7 +1556,8 @@ void get_transp_agg(OutPeriod pd, SW_ALL* sw)
 	}
 
 	if (sw->GenOutput.print_IterationSummary) {
-		format_IterationSummary2(p, psd, pd, NVEGTYPES, n_layers, 1);
+		format_IterationSummary2(p, psd, pd, NVEGTYPES, n_layers, 1,
+								 &sw->Model.SuperGlobals);
 	}
 }
 
@@ -2136,7 +2136,8 @@ void get_hydred_agg(OutPeriod pd, SW_ALL* sw)
 	}
 
 	if (sw->GenOutput.print_IterationSummary) {
-		format_IterationSummary2(p, psd, pd, NVEGTYPES, n_layers, 1);
+		format_IterationSummary2(p, psd, pd, NVEGTYPES, n_layers, 1,
+								 &sw->Model.SuperGlobals);
 	}
 }
 #endif

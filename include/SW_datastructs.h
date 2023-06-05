@@ -15,6 +15,11 @@
 #include "include/SW_Defines.h"
 #include "external/pcg/pcg_basic.h"
 
+#ifdef STEPWAT
+#include "sxw.h" // For type `SXW_t`
+#include "ST_defines.h" // For types `ModelType` and `GlobalType`
+#endif
+
 // Array-based output:
 #if defined(RSOILWAT) || defined(STEPWAT)
 #define SW_OUTARRAY
@@ -125,6 +130,10 @@ typedef struct {
 	 * printing and summing weekly/monthly values */
 	Bool newperiod[SW_OUTNPERIODS];
 	Bool isnorth;
+
+	#ifdef STEPWAT
+	GlobalType SuperGlobals;
+	#endif
 
 } SW_MODEL;
 
@@ -954,10 +963,6 @@ typedef struct {
 	*/
 	RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
-	#ifdef STEPWAT
-	RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
-	#endif
-
 	size_t nrow_OUT[SW_OUTNPERIODS];
 	size_t irow_OUT[SW_OUTNPERIODS];
 
@@ -966,10 +971,10 @@ typedef struct {
 	char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 
 	#ifdef STEPWAT
-	char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
-	#endif
+	RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
 
-	#ifdef STEPWAT
+	char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
+
 	/** `timeSteps_SXW` is the array that keeps track of the output time periods
 		that are required for `SXW` in-memory output for each output key.
 		Compare with `timeSteps` */
@@ -984,6 +989,9 @@ typedef struct {
 		 `-o` flag; if TRUE, then calculate/write to disk the running mean and sd
 		across iterations/repeats */
 	Bool prepare_IterationSummary;
+
+	ModelType Globals;
+	SXW_t SXW;
 	#endif
 } SW_GEN_OUT;
 

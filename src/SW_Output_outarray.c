@@ -45,11 +45,6 @@
 #define p_OUTsd
 #undef p_OUTsd
 
-
-#ifdef STEPWAT
-extern GlobalType SuperGlobals;
-#endif
-
 const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time header columns for each output period
 
 
@@ -81,7 +76,7 @@ void SW_OUT_set_nrow(SW_MODEL* SW_Model, Bool use_OutPeriod[],
 	startyear = SW_Model->startyr;
 
 	#ifdef STEPWAT
-	n_yrs = SuperGlobals.runModelYears;
+	n_yrs = SW_Model->SuperGlobals.runModelYears;
 	endyear = startyear + n_yrs + 1;
 
 	#else
