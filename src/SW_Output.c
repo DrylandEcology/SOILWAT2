@@ -1550,7 +1550,7 @@ void SW_OUT_deconstruct(Bool full_reset, SW_OUTPUT SW_Output[],
 		{
 			for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++)
 			{
-				if (!isnull(cGenOutput->olnames_OUT[k][i])) {
+				if (!isnull(GenOutput->colnames_OUT[k][i])) {
 					Mem_Free(GenOutput->colnames_OUT[k][i]);
 					GenOutput->colnames_OUT[k][i] = NULL;
 				}
@@ -2389,6 +2389,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	OutKey k;
 	OutPeriod p;
 	Bool writeit[SW_OUTNPERIODS], use_help;
+	char tempstr[MAX_LAYERS * OUTSTRLEN];
 	#ifdef STEPWAT
 	Bool use_help_txt, use_help_SXW;
 	#endif
@@ -2522,6 +2523,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			/* concatenate formatted output for one row of `csv`- files */
 			if (sw->GenOutput.print_SW_Output)
 			{
+				strcpy(tempstr, sw->GenOutput.sw_outstr);
 				if (sw->Output[k].has_sl) {
 					strcat(sw->FileStatus.buf_soil[outPeriod],
 												sw->GenOutput.sw_outstr);
