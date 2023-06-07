@@ -31,6 +31,7 @@
    of the SOILWAT2 repository
 */
 const char * dir_test = "./tests/example";
+const char * masterfile_test = "files.in"; // relative to 'dir_test'
 
 SW_ALL SW_All;
 SW_OUTPUT_POINTERS SW_OutputPtrs;

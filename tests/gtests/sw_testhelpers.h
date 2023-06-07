@@ -8,8 +8,6 @@
 static const double
   tol0 = 1e-0, tol1 = 1e-1, tol2 = 1e-2, tol3 = 1e-3, tol6 = 1e-6, tol9 = 1e-9;
 
-extern const char * masterfile_test = "files.in"; // relative to 'dir_test'
-
 
 /* SOILWAT2's macro `missing` uses `isfinite` which is C99; however,
    unit tests are compiled with C++ and the corresponding

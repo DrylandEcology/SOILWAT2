@@ -144,12 +144,13 @@ void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
 }
 
 void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-						Bool bFlush_output)
+						Bool bFlush_output, TimeInt tOffset)
 {
 	/* silence compiler warnings */
 	(void) sw;
 	(void) SW_OutputPtrs;
 	(void) bFlush_output;
+	(void) tOffset;
 }
 
 void get_none(OutPeriod pd, SW_ALL* sw)
