@@ -2522,12 +2522,11 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			#ifdef STEPWAT
 			if (GenOutput->print_IterationSummary)
 			{
-				if (SW_Output[k].has_sl) {
-					strcat(sw->FileStatus.buf_soil_agg[outPeriod],
-												sw->GenOutput.sw_outstr_agg);
+				strcpy(tempstr, sw->GenOutput.sw_outstr_agg);
+				if (sw->SW_Output[k].has_sl) {
+					strcat(sw->FileStatus.buf_soil_agg[outPeriod], tempstr);
 				} else {
-					strcat(sw->FileStatus.buf_reg_agg[outPeriod],
-												sw->GenOutput.sw_outstr_agg);
+					strcat(sw->FileStatus.buf_reg_agg[outPeriod], tempstr);
 				}
 			}
 			#endif
