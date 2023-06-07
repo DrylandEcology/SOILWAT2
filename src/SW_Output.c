@@ -44,13 +44,9 @@
 #include "include/SW_VegEstab.h"
 #include "include/SW_SoilWater.h"
 #include "include/SW_VegProd.h"
+#include "include/SW_Output_outarray.h"
 
 #include "include/SW_Output.h"
-
-// Array-based output declarations:
-#ifdef SW_OUTARRAY
-  #include "include/SW_Output_outarray.h"
-#endif
 
 // Text-based output declarations:
 #ifdef SW_OUTTEXT
@@ -1537,43 +1533,35 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 }
 
 
-void SW_OUT_deconstruct(Bool full_reset, SW_OUTPUT SW_Output[],
-						SW_GEN_OUT *GenOutput)
+void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 {
-	#if defined(SW_OUTARRAY) || defined(RSOILWAT)
 	OutKey k;
 	IntU i;
 
 	ForEachOutKey(k)
 	{
-		if (full_reset)
-		{
+		if(full_reset) {
 			for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++)
 			{
-				if (!isnull(GenOutput->colnames_OUT[k][i])) {
-					Mem_Free(GenOutput->colnames_OUT[k][i]);
-					GenOutput->colnames_OUT[k][i] = NULL;
+				if (!isnull(sw->GenOutput.colnames_OUT[k][i])) {
+					Mem_Free(sw->GenOutput.colnames_OUT[k][i]);
+					sw->GenOutput.colnames_OUT[k][i] = NULL;
 				}
 			}
 		}
 
 		#ifdef RSOILWAT
-		if (!isnull(SW_Output[k].outfile)) {
-			Mem_Free(SW_Output[k].outfile);
-			SW_Output[k].outfile = NULL;
+		if (!isnull(sw->SW_Output[k].outfile)) {
+			Mem_Free(sw->SW_Output[k].outfile);
+			sw->SW_Output[k].outfile = NULL;
 		}
 		#endif
 	}
 
+	#if defined(RSOILWAT)
 	if (full_reset) {
-		SW_OUT_deconstruct_outarray(GenOutput);
+		SW_OUT_deconstruct_outarray(&sw->GenOutput);
 	}
-
-	#else
-	/* Avoid ``-Wunused-parameter` warning */
-	if (full_reset) {}
-	(void) SW_Output;
-	(void) GenOutput;
 	#endif
 }
 
@@ -2525,11 +2513,9 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			{
 				strcpy(tempstr, sw->GenOutput.sw_outstr);
 				if (sw->Output[k].has_sl) {
-					strcat(sw->FileStatus.buf_soil[outPeriod],
-												sw->GenOutput.sw_outstr);
+					strcat(sw->FileStatus.buf_soil[outPeriod], tempstr);
 				} else {
-					strcat(sw->FileStatus.buf_reg[outPeriod],
-												sw->GenOutput.sw_outstr);
+					strcat(sw->FileStatus.buf_reg[outPeriod], tempstr);
 				}
 			}
 

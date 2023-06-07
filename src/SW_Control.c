@@ -166,7 +166,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw, PATH_INFO* PathInfo) {
 	SW_VES_deconstruct(&sw->VegEstab);
 	SW_VPD_deconstruct(&sw->VegProd);
 	// SW_FLW_deconstruct() not needed
-	SW_OUT_deconstruct(full_reset, sw->Output, &sw->GenOutput);
+	SW_OUT_deconstruct(full_reset, sw);
 	SW_SWC_deconstruct(&sw->SoilWat);
 	SW_CBN_deconstruct();
 }

@@ -17,7 +17,6 @@
 #define SW_OUTPUT_ARRAY_H
 
 #include "include/SW_datastructs.h"
-#include "include/SW_Output.h"
 
 #ifdef __cplusplus
 extern "C" {
