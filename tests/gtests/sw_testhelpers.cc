@@ -26,12 +26,6 @@
 
 #include "tests/gtests/sw_testhelpers.h"
 
-SW_OUTPUT_POINTERS SW_OutputPtrs;
-LOG_INFO LogInfo;
-PATH_INFO PathInfo;
-
-const char *testmaster_file = "files.in";
-
 /** Initialize SOILWAT2 variables and read values from example input file
  */
 void Reset_SOILWAT2_after_UnitTest(void) {
@@ -50,7 +44,7 @@ void Reset_SOILWAT2_after_UnitTest(void) {
 
   memset(&SW_All, 0, sizeof(SW_ALL));
 
-  PathInfo.InFiles[eFirst] = Str_Dup(testmaster_file, &LogInfo);
+  PathInfo.InFiles[eFirst] = Str_Dup(masterfile_test, &LogInfo);
 
   SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
   SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo, EchoInits);
