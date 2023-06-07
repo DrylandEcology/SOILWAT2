@@ -248,17 +248,6 @@ void SW_F_deconstruct(char *InFiles[]) {
 		}
 	}
 }
-
-/**
-@brief Copies the prefix string to the weather_prefix.
-
-@param prefix Array of chars.
-@param[out] weather_prefix File name of weather data without extension.
-*/
-void SW_WeatherPrefix(char prefix[], char weather_prefix[]) {
-	strcpy(prefix, weather_prefix);
-}
-
 #ifdef DEBUG_MEM
 #include "include/myMemory.h"
 /*======================================================*/

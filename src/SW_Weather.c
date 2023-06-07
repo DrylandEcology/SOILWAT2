@@ -1511,7 +1511,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo,
 		lineno++;
 	}
 
-	SW_WeatherPrefix(SW_Weather->name_prefix, _weather_prefix);
+	strcpy(SW_Weather->name_prefix, _weather_prefix);
 	CloseFile(&f, LogInfo);
 
     // Check if temperature max/min flags are unevenly set (1/0) or (0/1)

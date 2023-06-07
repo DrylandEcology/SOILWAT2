@@ -55,7 +55,6 @@ typedef enum {
 void SW_F_read(LOG_INFO* LogInfo, PATH_INFO* PathInfo);
 void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[]);
 void SW_F_deconstruct(char *InFiles[]);
-void SW_WeatherPrefix(char prefix[], char weather_prefix[]);
 void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo);
 
 #ifdef DEBUG_MEM
