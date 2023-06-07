@@ -52,7 +52,7 @@ void SW_SKY_read(LOG_INFO* LogInfo, char *InFiles[], SW_SKY* SW_Sky) {
 	int lineno = 0, x = 0;
 	char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 
-	MyFileName = SW_F_name(eSky, InFiles);
+	MyFileName = InFiles[eSky];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {

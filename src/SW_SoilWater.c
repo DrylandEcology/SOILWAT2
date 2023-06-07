@@ -988,7 +988,7 @@ void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
 	ForEachSoilLayer(i, n_layers)
 		SW_SoilWat->avgLyrTemp[i] = lyr[i]->avgLyrTemp;
 
-	char *MyFileName = SW_F_name(eSoilwat, InFiles);
+	char *MyFileName = InFiles[eSoilwat];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {
@@ -1153,7 +1153,7 @@ void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], TimeInt doy,
 
 	default:
 		LogError(LogInfo, LOGFATAL,
-				 "%s : Invalid SWC adjustment method.", SW_F_name(eSoilwat, InFiles));
+				 "%s : Invalid SWC adjustment method.", InFiles[eSoilwat]);
 	}
 
 	/* this will guarantee that any method will not lower swc */

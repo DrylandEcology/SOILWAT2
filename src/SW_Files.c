@@ -93,7 +93,7 @@ void SW_F_read(LOG_INFO* LogInfo, PATH_INFO* PathInfo) {
   int debug = 0;
   #endif
 
-	char *MyFileName = SW_F_name(eFirst, PathInfo->InFiles);
+	char *MyFileName = PathInfo->InFiles[eFirst];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {
@@ -185,25 +185,12 @@ void SW_F_read(LOG_INFO* LogInfo, PATH_INFO* PathInfo) {
 		LogInfo->logfp = stderr;
 	} else {
 		LogInfo->logfp =
-				OpenFile(SW_F_name(eLog, PathInfo->InFiles), "w", LogInfo);
+				OpenFile(PathInfo->InFiles[eLog], "w", LogInfo);
 	}
 #endif
 
 }
 
-/**
-@brief Adds FileIndex parameter i to array InFiles
-
-@param i Index parameter.
-@param[in] InFiles Array of program in/output files
-
-@return InFiles Array of index parameters.
-*/
-char *SW_F_name(SW_FileIndex i, char *InFiles[]) {
-	/* =================================================== */
-	return InFiles[i];
-
-}
 /**
 @brief Determines string length of file being read in combined with _ProjDir.
 

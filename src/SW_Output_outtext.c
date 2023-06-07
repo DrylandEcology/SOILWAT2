@@ -135,12 +135,12 @@ static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
 
 	if (SW_FileStatus->make_regular[pd]) {
 		SW_FileStatus->fp_reg[pd] =
-			OpenFile(SW_F_name(eOutputDaily + pd, InFiles), "w", LogInfo);
+			OpenFile(InFiles[eOutputDaily + pd], "w", LogInfo);
 	}
 
 	if (SW_FileStatus->make_soil[pd]) {
 		SW_FileStatus->fp_soil[pd] =
-			OpenFile(SW_F_name(eOutputDaily_soil + pd, InFiles), "w", LogInfo);
+			OpenFile(InFiles[eOutputDaily_soil + pd], "w", LogInfo);
 	}
 }
 #endif
@@ -209,7 +209,7 @@ static void _create_filename_ST(char *str, char *flag, int iteration, char *file
   \param pd The output time step.
 */
 /***********************************************************/
-static void _create_csv_file_ST(int iteration, OutPeriod pd)
+static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[])
 {
 	char filename[FILENAME_MAX];
 
@@ -220,12 +220,12 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd)
 			// a specific order of `SW_FileIndex` --> fix and create something that
 			// allows subsetting such as `eOutputFile[pd]` or append time period to
 			// a basename, etc.
-			_create_filename_ST(SW_F_name(eOutputDaily + pd), "agg", 0, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles[eOutputDaily + pd], "agg", 0, filename, FILENAME_MAX);
 			SW_OutFiles.fp_reg_agg[pd] = OpenFile(filename, "w");
 		}
 
 		if (SW_OutFiles.make_soil[pd]) {
-			_create_filename_ST(SW_F_name(eOutputDaily_soil + pd), "agg", 0, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "agg", 0, filename, FILENAME_MAX);
 			SW_OutFiles.fp_soil_agg[pd] = OpenFile(filename, "w");
 		}
 
@@ -242,12 +242,12 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd)
 		}
 
 		if (SW_OutFiles.make_regular[pd]) {
-			_create_filename_ST(SW_F_name(eOutputDaily + pd), "rep", iteration, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles[eOutputDaily + pd], "rep", iteration, filename, FILENAME_MAX);
 			SW_OutFiles.fp_reg[pd] = OpenFile(filename, "w");
 		}
 
 		if (SW_OutFiles.make_soil[pd]) {
-			_create_filename_ST(SW_F_name(eOutputDaily_soil + pd), "rep", iteration, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "rep", iteration, filename, FILENAME_MAX);
 			SW_OutFiles.fp_soil[pd] = OpenFile(filename, "w");
 		}
 	}
@@ -303,13 +303,13 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 
 void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
 		SW_OUTPUT* SW_Output, LOG_INFO* LogInfo,
-		SW_OUT_GEN GenOutput) {
+		SW_OUT_GEN GenOutput, char *InFiles[]) {
 
 	OutPeriod p;
 
 	ForEachOutPeriod(p) {
 		if (use_OutPeriod[p]) {
-			_create_csv_file_ST(-1, p);
+			_create_csv_file_ST(-1, p, InFiles);
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg_agg[p],
 				SW_FileStatus->fp_soil_agg[p], swTRUE, SW_FileStatus->make_soil,
@@ -321,13 +321,13 @@ void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
 
 void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
 		SW_OUTPUT* SW_Output, int iteration, LOG_INFO* LogInfo,
-		SW_OUT_GEN GenOutput) {
+		SW_OUT_GEN GenOutput, char *InFiles[]) {
 
 	OutPeriod p;
 
 	ForEachOutPeriod(p) {
 		if (use_OutPeriod[p]) {
-			_create_csv_file_ST(iteration, p);
+			_create_csv_file_ST(iteration, p, InFiles);
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg[p],
 				SW_FileStatus->fp_soil[p], swTRUE, SW_FileStatus->make_soil,

@@ -53,7 +53,6 @@ typedef enum {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_F_read(LOG_INFO* LogInfo, PATH_INFO* PathInfo);
-char *SW_F_name(SW_FileIndex i, char *InFiles[]);
 void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[]);
 void SW_F_deconstruct(char *InFiles[]);
 void SW_WeatherPrefix(char prefix[], char weather_prefix[]);

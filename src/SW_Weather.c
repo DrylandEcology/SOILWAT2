@@ -1352,7 +1352,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo,
 
     Bool *dailyInputFlags = SW_Weather->dailyInputFlags;
 
-	char *MyFileName = SW_F_name(eWeather, InFiles);
+	char *MyFileName = InFiles[eWeather];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {

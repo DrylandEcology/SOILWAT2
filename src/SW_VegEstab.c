@@ -217,7 +217,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo,
 	FILE *f;
 
 	if (SW_VegEstab->use) {
-		char *MyFileName = SW_F_name(eVegEstab, InFiles);
+		char *MyFileName = InFiles[eVegEstab];
 		f = OpenFile(MyFileName, "r", LogInfo);
 
 		if (!GetALine(f, inbuf) || (consider_InputFlag && *inbuf == '0')) {

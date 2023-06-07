@@ -92,7 +92,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, LOG_INFO* LogInfo,
   short fileWasEmpty = 1;
   char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 
-  MyFileName = SW_F_name(eCarbon, InFiles);
+  MyFileName = InFiles[eCarbon];
   f = OpenFile(MyFileName, "r", LogInfo);
 
   #ifdef SWDEBUG

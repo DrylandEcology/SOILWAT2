@@ -86,7 +86,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo, char *InFiles[]) {
 	RealF help_veg[NVEGTYPES], help_bareGround, litt, biom, pctl, laic;
 	char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 
-	MyFileName = SW_F_name(eVegProd, InFiles);
+	MyFileName = InFiles[eVegProd];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {

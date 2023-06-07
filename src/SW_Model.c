@@ -116,7 +116,7 @@ void SW_MDL_read(SW_MODEL* SW_Model, LOG_INFO* LogInfo, char *InFiles[]) {
 	char *p, enddyval[6], errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 	Bool fstartdy = swFALSE, fenddy = swFALSE, fhemi = swFALSE;
 
-	MyFileName = SW_F_name(eModel, InFiles);
+	MyFileName = InFiles[eModel];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	/* ----- beginning year */

@@ -384,7 +384,7 @@ Bool SW_MKV_read_prob(LOG_INFO* LogInfo, char *InFiles[],
 	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
-	char *MyFileName = SW_F_name(eMarkovProb, InFiles);
+	char *MyFileName = InFiles[eMarkovProb];
 
 	if (NULL == (f = fopen(MyFileName, "r")))
 		return swFALSE;
@@ -497,7 +497,7 @@ Bool SW_MKV_read_cov(LOG_INFO* LogInfo, char *InFiles[], SW_MARKOV* SW_Markov) {
 	char inbuf[MAX_FILENAMESIZE];
 	RealF t1, t2, t3, t4, t5, t6, cfxw, cfxd, cfnw, cfnd;
 
-	char *MyFileName = SW_F_name(eMarkovCov, InFiles);
+	char *MyFileName = InFiles[eMarkovCov];
 
 	if (NULL == (f = fopen(MyFileName, "r")))
 		return swFALSE;
@@ -627,7 +627,7 @@ void SW_MKV_setup(LOG_INFO* LogInfo, SW_MARKOV* SW_Markov,
       LogInfo,
       LOGFATAL,
       "Weather generator requested but could not open %s",
-      SW_F_name(eMarkovProb, InFiles)
+      InFiles[eMarkovProb]
     );
   }
 
@@ -636,7 +636,7 @@ void SW_MKV_setup(LOG_INFO* LogInfo, SW_MARKOV* SW_Markov,
       LogInfo,
       LOGFATAL,
       "Weather generator requested but could not open %s",
-      SW_F_name(eMarkovCov, InFiles)
+      InFiles[eMarkovCov]
     );
   }
 }

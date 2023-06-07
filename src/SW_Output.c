@@ -160,7 +160,7 @@ static OutKey str2key(char *s, LOG_INFO* LogInfo, char *InFiles[])
 	for (key = 0; key < SW_OUTNKEYS && Str_CompareI(s, (char *)key2str[key]); key++) ;
 	if (key == SW_OUTNKEYS)
 	{
-		LogError(LogInfo, LOGFATAL, "%s : Invalid key (%s) in %s", SW_F_name(eOutput, InFiles), s);
+		LogError(LogInfo, LOGFATAL, "%s : Invalid key (%s) in %s", InFiles[eOutput], s);
 	}
 	return (OutKey) key;
 }
@@ -174,7 +174,7 @@ static OutSum str2stype(char *s, LOG_INFO* LogInfo, char *InFiles[])
 	for (styp = eSW_Off; styp < SW_NSUMTYPES && Str_CompareI(s, (char *)styp2str[styp]); styp++) ;
 	if (styp == SW_NSUMTYPES)
 	{
-		LogError(LogInfo, LOGFATAL, "%s : Invalid summary type (%s)\n", SW_F_name(eOutput, InFiles), s);
+		LogError(LogInfo, LOGFATAL, "%s : Invalid summary type (%s)\n", InFiles[eOutput], s);
 	}
 	return (OutSum) styp;
 }
@@ -1964,7 +1964,7 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 {
 	int res = 0; // return value indicating type of message if any
 
-	char *MyFileName = SW_F_name(eOutput, InFiles);
+	char *MyFileName = InFiles[eOutput];
 	msg[0] = '\0';
 
 	// Convert strings to index numbers
@@ -2032,7 +2032,7 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 			"%s : DEEPSWC cannot produce output if deep drainage is " \
 			"not simulated (flag not set in %s).",
 			MyFileName,
-			SW_F_name(eSite, InFiles)
+			InFiles[eSite]
 		);
 		return(LOGWARN);
 	}
@@ -2116,7 +2116,7 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[],
 			inbuf[MAX_FILENAMESIZE];
 	int first; /* first doy for output */
 
-	char *MyFileName = SW_F_name(eOutput, InFiles);
+	char *MyFileName = InFiles[eOutput];
 	f = OpenFile(MyFileName, "r", LogInfo);
 	itemno = 0;
 
