@@ -1290,17 +1290,16 @@ void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
   @brief Adds a dummy soil layer to handle deep drainage
 
   @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-  @param[in] LogInfo Holds information dealing with logfile output
 */
-void add_deepdrain_layer(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
+void add_deepdrain_layer(SW_SITE* SW_Site) {
 
 	if (SW_Site->deepdrain) {
 
 		/* check if deep drain dummy layer was already added */
 		if (SW_Site->deep_lyr == 0) {
-			/* `_newlayer()` sets n_layers */
-			LyrIndex s = _newlayer(SW_Site, LogInfo);
-			SW_Site->lyr[s]->width = 1.0;
+
+			SW_Site->width[SW_Site->n_layers] = 1.0;
+			SW_Site->n_layers++;
 
 			/* sp->deepdrain indicates an extra (dummy) layer for deep drainage
 			* has been added, so n_layers really should be n_layers -1
@@ -1314,30 +1313,6 @@ void add_deepdrain_layer(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 		/* no deep drainage */
 		SW_Site->deep_lyr = 0;
 	}
-}
-
-
-/**
-@brief First time called with no layers so SW_Site.lyr
- not initialized yet, malloc() required.  For each
- layer thereafter realloc() is called.
-
-@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] LogInfo Holds information dealing with logfile output
-*/
-LyrIndex _newlayer(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
-	int n_layers = SW_Site->n_layers;
-
-	SW_Site->n_layers++;
-
-	SW_Site->lyr = (!SW_Site->lyr) /* if not yet defined */
-		? (SW_LAYER_INFO **) Mem_Calloc(SW_Site->n_layers, sizeof(SW_LAYER_INFO *), "_newlayer()", LogInfo) /* malloc() it  */
-		: (SW_LAYER_INFO **) Mem_ReAlloc(SW_Site->lyr, sizeof(SW_LAYER_INFO *) * (SW_Site->n_layers), LogInfo); /* else realloc() */
-
-	SW_Site->lyr[n_layers] = (SW_LAYER_INFO *) Mem_Calloc(1, sizeof(SW_LAYER_INFO), "_newlayer()", LogInfo);
-	SW_Site->lyr[n_layers]->id = n_layers;
-
-	return n_layers;
 }
 
 /*static void _clear_layer(LyrIndex n) {
@@ -1363,13 +1338,6 @@ void SW_SIT_construct(SW_SITE* SW_Site) {
 
 	memset(SW_Site, 0, sizeof(SW_SITE));
 	SW_SIT_init_counts(SW_Site);
-}
-
-/**
-@brief Runs SW_SIT_clear_layers.
-*/
-void SW_SIT_deconstruct(SW_SITE* SW_Site)
-{
 }
 
 /**
@@ -1651,7 +1619,7 @@ void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {
-		lyrno = _newlayer(SW_Site, LogInfo);
+		lyrno = SW_Site->n_layers++;
 
 		x = sscanf(
 			inbuf,
@@ -1775,14 +1743,13 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
   unsigned int i, k;
 
   // De-allocate and delete previous soil layers and reset counters
-  SW_SIT_clear_layers(SW_Site);
   SW_SIT_init_counts(SW_Site);
 
   // Create new soil
   for (i = 0; i < nlyrs; i++)
   {
-    // Create the next soil layer
-    lyrno = _newlayer(SW_Site, LogInfo);
+    // Increment the number of soil layers
+    lyrno = SW_Site->n_layers++;
 
     SW_Site->width[lyrno] = dmax[i] - dmin;
     dmin = dmax[i];

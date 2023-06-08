@@ -245,7 +245,6 @@ void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]);
 /* these used to be in Layers */
 void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]);
 void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]);
-LyrIndex _newlayer(SW_SITE* SW_Site, LOG_INFO* LogInfo);
 void add_deepdrain_layer(SW_SITE* SW_Site);
 
 void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
