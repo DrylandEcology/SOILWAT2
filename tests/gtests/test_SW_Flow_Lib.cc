@@ -333,7 +333,6 @@ namespace
     unsigned int i;
     unsigned int n_tr_rgns = 1, n_layers = 1;
     unsigned int tr_regions[1] = {1}; // 1-4
-    double tr_coeff[1] = {0.0496}; //trco_grass
     double swc[1] = {12};
 
     //INPUTS for expected outputs
@@ -344,18 +343,15 @@ namespace
 
     ForEachSoilLayer(i, n_layers)
     {
-      // copy soil layer values into arrays so that they can be passed as
-      // arguments to `transp_weighted_avg`
-      tr_coeff[i] = SW_All.Site.lyr[i]->transp_coeff[SW_SHRUB];
 
       // example: swc as mean of wilting point and field capacity
-      swc[i] = (SW_All.Site.lyr[i]->swcBulk_fieldcap +
-                          SW_All.Site.lyr[i]->swcBulk_wiltpt) / 2.;
+      swc[i] = (SW_All.Site.swcBulk_fieldcap[i] +
+                          SW_All.Site.swcBulk_wiltpt[i]) / 2.;
     }
 
     //Begin TEST when n_layers is one
-    transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions, tr_coeff,
-                        swc, SW_All.Site.lyr, &LogInfo);
+    transp_weighted_avg(&swp_avg, &SW_All.Site, n_tr_rgns, n_layers,
+                        tr_regions, swc, SW_SHRUB, &LogInfo);
 
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
     EXPECT_NEAR(swp_avg, swp_avgExpected1, tol6);
@@ -368,7 +364,7 @@ namespace
     swp_avg = 10, n_tr_rgns = 4, n_layers = 25;
     unsigned int tr_regions2[25] = {1,1,1,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,
                                        4,4,4,4,4};
-    double tr_coeff2[25],swc2[25];
+    double swc2[25];
 
     //INPUTS for expected OUTPUTS
     double swp_avgExpectedM = 1.7389131503001496;
@@ -378,18 +374,15 @@ namespace
 
     ForEachSoilLayer(i, n_layers)
     {
-      // copy soil layer values into arrays so that they can be passed as
-      // arguments to `transp_weighted_avg`
-      tr_coeff2[i] = SW_All.Site.lyr[i]->transp_coeff[SW_SHRUB];
 
       // example: swc as mean of wilting point and field capacity
-      swc2[i] = (SW_All.Site.lyr[i]->swcBulk_fieldcap +
-                                      SW_All.Site.lyr[i]->swcBulk_wiltpt) / 2.;
+      swc2[i] = (SW_All.Site.swcBulk_fieldcap[i] +
+                                      SW_All.Site.swcBulk_wiltpt[i]) / 2.;
     }
 
 
-    transp_weighted_avg(&swp_avg, n_tr_rgns, n_layers, tr_regions2, tr_coeff2,
-                        swc2, SW_All.Site.lyr, &LogInfo);
+    transp_weighted_avg(&swp_avg, &SW_All.Site, n_tr_rgns, n_layers,
+                        tr_regions2, swc2, SW_SHRUB, &LogInfo);
 
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
 
@@ -447,7 +440,7 @@ namespace
       fbse = 0.813, fbse0 = 0., petday = 0.1, petday0 = 0.,
       shift = 45, shape = 0.1, inflec = 0.25, range = 0.5;
 
-    double swc[25], width[25], lyrEvapCo[25];
+    double swc[25];
 
     // Loop over tests with varying number of soil layers
     for (k = 0; k < 2; k++)
@@ -466,20 +459,16 @@ namespace
 
       ForEachSoilLayer(i, SW_All.Site.n_layers)
       {
-        // copy soil layer values into arrays so that they can be passed as
-        // arguments to `pot_soil_evap`
-        width[i] = SW_All.Site.lyr[i]->width;
-        lyrEvapCo[i] = SW_All.Site.lyr[i]->evap_coeff;
 
         // example: swc as mean of wilting point and field capacity
-        swc[i] = (SW_All.Site.lyr[i]->swcBulk_fieldcap +
-                                    SW_All.Site.lyr[i]->swcBulk_wiltpt) / 2.;
+        swc[i] = (SW_All.Site.swcBulk_fieldcap[i] +
+                                    SW_All.Site.swcBulk_wiltpt[i]) / 2.;
       }
 
       // Begin TEST if (totagb >= Es_param_limit)
       totagb = Es_param_limit + 1.;
-      pot_soil_evap(nelyrs, lyrEvapCo, totagb, fbse, petday, shift,
-        shape, inflec, range, width, swc, Es_param_limit, SW_All.Site.lyr,
+      pot_soil_evap(&SW_All.Site, nelyrs, totagb, fbse,
+        petday, shift, shape, inflec, range, swc, Es_param_limit,
         &LogInfo, &bserate);
 
       // expect baresoil evaporation rate = 0 if totagb >= Es_param_limit
@@ -491,9 +480,8 @@ namespace
       totagb = Es_param_limit / 2;
 
       // Begin TEST if (PET = 0)
-      pot_soil_evap(nelyrs, lyrEvapCo, totagb, fbse, petday0, shift,
-        shape, inflec, range, width, swc, Es_param_limit, SW_All.Site.lyr,
-        &LogInfo, &bserate);
+      pot_soil_evap(&SW_All.Site, nelyrs, totagb, fbse, petday0, shift,
+        shape, inflec, range, swc, Es_param_limit, &LogInfo, &bserate);
 
       // expect baresoil evaporation rate = 0 if PET = 0
       EXPECT_DOUBLE_EQ(bserate, 0.) <<
@@ -501,9 +489,8 @@ namespace
 
 
       // Begin TEST if (potential baresoil rate = 0)
-      pot_soil_evap(nelyrs, lyrEvapCo, totagb, fbse0, petday, shift,
-        shape, inflec, range, width, swc, Es_param_limit, SW_All.Site.lyr,
-        &LogInfo, &bserate);
+      pot_soil_evap(&SW_All.Site, nelyrs, totagb, fbse0, petday, shift,
+        shape, inflec, range, swc, Es_param_limit, &LogInfo, &bserate);
 
       // expect baresoil evaporation rate = 0 if fbse = 0
       EXPECT_DOUBLE_EQ(bserate, 0.) <<
@@ -511,9 +498,8 @@ namespace
 
 
       // Begin TEST if (totagb < Es_param_limit)
-      pot_soil_evap(nelyrs, lyrEvapCo, totagb, fbse, petday, shift,
-        shape, inflec, range, width, swc, Es_param_limit, SW_All.Site.lyr,
-        &LogInfo, &bserate);
+      pot_soil_evap(&SW_All.Site, nelyrs, totagb, fbse, petday, shift,
+        shape, inflec, range, swc, Es_param_limit, &LogInfo, &bserate);
 
       // expect baresoil evaporation rate > 0
       // if totagb >= Es_param_limit & swc > 0
@@ -542,7 +528,7 @@ namespace
     unsigned int nelyrs,i;
     double bserate = 0, petday = 0.1, shift = 45, shape = 0.1, inflec = 0.25,
       range = 0.8;
-    double ecoeff[25], width[25], swc[25];
+    double swc[25];
 
     // Loop over tests with varying number of soil layers
     for (k = 0; k < 2; k++)
@@ -561,18 +547,14 @@ namespace
 
       ForEachSoilLayer(i, SW_All.Site.n_layers)
       {
-        // copy soil layer values into arrays so that they can be passed as
-        // arguments to `pot_soil_evap`
-        width[i] = SW_All.Site.lyr[i]->width;
-        ecoeff[i] = SW_All.Site.lyr[i]->evap_coeff;
         // example: swc as mean of wilting point and field capacity
-        swc[i] = (SW_All.Site.lyr[i]->swcBulk_fieldcap +
-                                      SW_All.Site.lyr[i]->swcBulk_wiltpt) / 2.;
+        swc[i] = (SW_All.Site.swcBulk_fieldcap[i] +
+                                      SW_All.Site.swcBulk_wiltpt[i]) / 2.;
       }
 
       //Begin TEST for bserate when nelyrs = 1
-      pot_soil_evap_bs(&bserate, SW_All.Site.lyr, &LogInfo, nelyrs, ecoeff,
-                       petday, shift, shape, inflec, range, width, swc);
+      pot_soil_evap_bs(&bserate, &SW_All.Site, &LogInfo, nelyrs,
+                       petday, shift, shape, inflec, range, swc);
       if (nelyrs == 1)
       {
         EXPECT_NEAR(bserate, 0.062997815, tol6) <<
@@ -765,7 +747,7 @@ namespace
       ForEachSoilLayer(i, nlyrs)
       {
         // Setup: initial swc to some example value, here SWC at 20% VWC
-        swc_init[i] = 0.2 * SW_All.Site.lyr[i]->width;
+        swc_init[i] = 0.2 * SW_All.Site.width[i];
         // Setup: water extraction coefficient, some example value, here 0.5
         coeff[i] = 0.5;
       }
@@ -780,8 +762,8 @@ namespace
       }
 
       // Call function to test: use coeffZero instead of coeff
-      remove_from_soil(swc, qty, &aet, nlyrs, coeffZero, rate,
-          swcmin, SW_All.SoilWat.lyrFrozen, SW_All.Site.lyr, &LogInfo);
+      remove_from_soil(swc, qty, &SW_All.Site, &aet, nlyrs, coeffZero,
+          rate, swcmin, SW_All.SoilWat.lyrFrozen, &LogInfo);
 
       // Check expectation of no change from original values
       qty_sum = 0.;
@@ -813,8 +795,8 @@ namespace
       }
 
       // Call function to test
-      remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate,
-          swcmin, SW_All.SoilWat.lyrFrozen, SW_All.Site.lyr, &LogInfo);
+      remove_from_soil(swc, qty, &SW_All.Site, &aet, nlyrs, coeff,
+          rate, swcmin, SW_All.SoilWat.lyrFrozen, &LogInfo);
 
       // Check expectation of no change from original values
       qty_sum = 0.;
@@ -846,8 +828,8 @@ namespace
       }
 
       // Call function to test
-      remove_from_soil(swc, qty, &aet, nlyrs, coeff, rate,
-          swcmin, SW_All.SoilWat.lyrFrozen, SW_All.Site.lyr, &LogInfo);
+      remove_from_soil(swc, qty, &SW_All.Site, &aet, nlyrs, coeff,
+          rate, swcmin, SW_All.SoilWat.lyrFrozen, &LogInfo);
 
       // Check values of qty[] and swc[]
       qty_sum = 0.;
@@ -930,9 +912,9 @@ namespace
       // Initialize soil arrays to be independent of soil texture...
       ForEachSoilLayer(i, nlyrs)
       {
-        SW_All.Site.lyr[i]->swcBulk_fieldcap = 0.25 * SW_All.Site.lyr[i]->width;
-        SW_All.Site.lyr[i]->swcBulk_min = 0.05 * SW_All.Site.lyr[i]->width;
-        SW_All.Site.lyr[i]->swcBulk_saturated = 0.35 * SW_All.Site.lyr[i]->width;
+        SW_All.Site.swcBulk_fieldcap[i] = 0.25 * SW_All.Site.width[i];
+        SW_All.Site.swcBulk_min[i] = 0.05 * SW_All.Site.width[i];
+        SW_All.Site.swcBulk_saturated[i] = 0.35 * SW_All.Site.width[i];
       }
 
 
@@ -946,15 +928,15 @@ namespace
 
       ForEachSoilLayer(i, nlyrs)
       {
-        SW_All.Site.lyr[i]->swcBulk_init = 0.5 * SW_All.Site.lyr[i]->swcBulk_min;
-        swc[i] = SW_All.Site.lyr[i]->swcBulk_init;
+        SW_All.Site.swcBulk_init[i] = 0.5 * SW_All.Site.swcBulk_min[i];
+        swc[i] = SW_All.Site.swcBulk_init[i];
         drain[i] = 0.;
       }
 
       // Call function to test
       percolate_unsaturated(
         swc, drain, &drainout, &standingWater,
-        nlyrs, SW_All.Site.lyr, SW_All.SoilWat.lyrFrozen,
+        nlyrs, SW_All.SoilWat.lyrFrozen, &SW_All.Site,
         SW_All.Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
@@ -969,7 +951,7 @@ namespace
       {
         EXPECT_NEAR(drain[i], 0., tol6) <<
           "percolate_unsaturated: drain != 0 for layer " << 1 + i;
-        EXPECT_NEAR(swc[i], SW_All.Site.lyr[i]->swcBulk_init, tol6) <<
+        EXPECT_NEAR(swc[i], SW_All.Site.swcBulk_init[i], tol6) <<
           "percolate_unsaturated: swc != swc_init for layer " << 1 + i;
       }
 
@@ -984,15 +966,15 @@ namespace
 
       ForEachSoilLayer(i, nlyrs)
       {
-        SW_All.Site.lyr[i]->swcBulk_init = 0.9 * SW_All.Site.lyr[i]->swcBulk_fieldcap;
-        swc[i] = SW_All.Site.lyr[i]->swcBulk_init;
+        SW_All.Site.swcBulk_init[i] = 0.9 * SW_All.Site.swcBulk_fieldcap[i];
+        swc[i] = SW_All.Site.swcBulk_init[i];
         drain[i] = 0.;
       }
 
       // Call function to test
       percolate_unsaturated(
         swc, drain, &drainout, &standingWater,
-        nlyrs, SW_All.Site.lyr, SW_All.SoilWat.lyrFrozen,
+        nlyrs, SW_All.SoilWat.lyrFrozen, &SW_All.Site,
         SW_All.Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
@@ -1008,7 +990,7 @@ namespace
       {
         EXPECT_GT(drain[i], 0.) <<
           "percolate_unsaturated: drain !> 0 for layer " << 1 + i;
-        sum_delta_swc += swc[i] - SW_All.Site.lyr[i]->swcBulk_init;
+        sum_delta_swc += swc[i] - SW_All.Site.swcBulk_init[i];
       }
       EXPECT_LT(sum_delta_swc, 0.) <<
         "percolate_unsaturated: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
@@ -1024,15 +1006,15 @@ namespace
 
       ForEachSoilLayer(i, nlyrs)
       {
-        SW_All.Site.lyr[i]->swcBulk_init = 1.1 * SW_All.Site.lyr[i]->swcBulk_saturated;
-        swc[i] = SW_All.Site.lyr[i]->swcBulk_init;
+        SW_All.Site.swcBulk_init[i] = 1.1 * SW_All.Site.swcBulk_saturated[i];
+        swc[i] = SW_All.Site.swcBulk_init[i];
         drain[i] = 0.;
       }
 
       // Call function to test
       percolate_unsaturated(
         swc, drain, &drainout, &standingWater,
-        nlyrs, SW_All.Site.lyr, SW_All.SoilWat.lyrFrozen,
+        nlyrs, SW_All.SoilWat.lyrFrozen, &SW_All.Site,
         SW_All.Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
@@ -1053,7 +1035,7 @@ namespace
           EXPECT_NEAR(drain[i], SW_All.Site.slow_drain_coeff, tol6) <<
             "percolate_unsaturated: drain != sdrainpar in last layer " << 1 + i;
         }
-        sum_delta_swc += swc[i] - SW_All.Site.lyr[i]->swcBulk_init;
+        sum_delta_swc += swc[i] - SW_All.Site.swcBulk_init[i];
       }
       EXPECT_LT(sum_delta_swc, 0.) <<
         "percolate_unsaturated: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
@@ -1070,8 +1052,8 @@ namespace
 
       ForEachSoilLayer(i, nlyrs)
       {
-        SW_All.Site.lyr[i]->swcBulk_init = 0.9 * SW_All.Site.lyr[i]->swcBulk_fieldcap;
-        swc[i] = SW_All.Site.lyr[i]->swcBulk_init;
+        SW_All.Site.swcBulk_init[i] = 0.9 * SW_All.Site.swcBulk_fieldcap[i];
+        swc[i] = SW_All.Site.swcBulk_init[i];
         drain[i] = 0.;
         SW_All.SoilWat.lyrFrozen[i] = swTRUE;
       }
@@ -1079,7 +1061,7 @@ namespace
       // Call function to test
       percolate_unsaturated(
         swc, drain, &drainout, &standingWater,
-        nlyrs, SW_All.Site.lyr, SW_All.SoilWat.lyrFrozen,
+        nlyrs, SW_All.SoilWat.lyrFrozen, &SW_All.Site,
         SW_All.Site.slow_drain_coeff, SLOW_DRAIN_DEPTH
       );
 
@@ -1098,7 +1080,7 @@ namespace
           "percolate_unsaturated: drain !> 0 for layer " << 1 + i;
         EXPECT_LT(drain[i], small) <<
           "percolate_unsaturated: small !> drain for layer " << 1 + i;
-        EXPECT_NEAR(swc[i], SW_All.Site.lyr[i]->swcBulk_init, small) <<
+        EXPECT_NEAR(swc[i], SW_All.Site.swcBulk_init[i], small) <<
           "percolate_unsaturated: swc !~ swc_init for layer " << 1 + i;
       }
 
@@ -1159,8 +1141,8 @@ namespace
       ForEachSoilLayer(i, nlyrs)
       {
         // example data based on soil:
-        swc[i] = (SW_All.Site.lyr[i]->swcBulk_fieldcap +
-                                      SW_All.Site.lyr[i]->swcBulk_wiltpt) / 2.;
+        swc[i] = (SW_All.Site.swcBulk_fieldcap[i] +
+                                      SW_All.Site.swcBulk_wiltpt[i]) / 2.;
         SW_All.SoilWat.lyrFrozen[i] = swFALSE;
       }
 
@@ -1168,9 +1150,9 @@ namespace
       hydraulic_redistribution(
         swc,
         hydred,
+        &SW_All.Site,
         SW_SHRUB,
         nlyrs,
-        SW_All.Site.lyr,
         SW_All.SoilWat.lyrFrozen,
         maxCondroot, swp50, shapeCond, scale,
         SW_All.Model.year, SW_All.Model.doy,

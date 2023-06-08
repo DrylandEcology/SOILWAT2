@@ -796,17 +796,18 @@ void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, SW_MODEL* SW_Model) {
 /**
   @brief Sum up values across vegetation types
 
-  @param[in] *x Array of size \ref NVEGTYPES
+  @param[in] x Array of size \ref NVEGTYPES
+  @param[in] layerno Current layer which is being worked with
   @return Sum across `*x`
 */
-RealD sum_across_vegtypes(RealD *x)
+RealD sum_across_vegtypes(RealD x[][MAX_LAYERS + 1], LyrIndex layerno)
 {
   unsigned int k;
   RealD sum = 0.;
 
   ForEachVegType(k)
   {
-    sum += x[k];
+    sum += x[k][layerno];
   }
 
   return sum;

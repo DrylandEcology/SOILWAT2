@@ -189,8 +189,8 @@ void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo, PATH_INFO* PathInfo) {
 	SW_PET_init_run(&sw->AtmDemand);
 	// SW_SKY_init_run() not needed
 	SW_SIT_init_run(&sw->VegProd, &sw->Site, LogInfo, PathInfo->InFiles);
-	SW_VES_init_run(sw->VegEstab.parms, sw->Site.lyr,
-                  sw->Site.n_transp_lyrs, LogInfo, sw->VegEstab.count); // must run after `SW_SIT_init_run()`
+	SW_VES_init_run(sw->VegEstab.parms, &sw->Site, sw->Site.n_transp_lyrs,
+                  LogInfo, sw->VegEstab.count); // must run after `SW_SIT_init_run()`
 	SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model,
                   sw->Site.latitude, LogInfo);
 	SW_FLW_init_run(&sw->SoilWat);
@@ -238,8 +238,8 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
     // Only run this function if SWA output is asked for
     if (sw->VegProd.use_SWA) {
-      calculate_repartitioned_soilwater(&sw->SoilWat, &sw->VegProd,
-                                        sw->Site.lyr, sw->Site.n_layers);
+      calculate_repartitioned_soilwater(&sw->SoilWat, sw->Site.swcBulk_atSWPcrit,
+                                        &sw->VegProd, sw->Site.n_layers);
     }
 
     if (sw->VegEstab.use) {
@@ -360,7 +360,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
   if (debug) swprintf(" > 'CO2'");
   #endif
 
-  SW_SWC_read(&sw->SoilWat, sw->Model.endyr, sw->Site.lyr,
+  SW_SWC_read(&sw->SoilWat, sw->Site.avgLyrTemp, sw->Model.endyr,
               sw->Site.n_layers, LogInfo, PathInfo->InFiles);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'swc'");

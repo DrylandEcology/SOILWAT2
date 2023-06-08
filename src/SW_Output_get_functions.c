@@ -667,7 +667,7 @@ void get_vwcBulk_text(OutPeriod pd, SW_ALL* sw)
 	ForEachSoilLayer(i, sw->Site.n_layers) {
 		/* vwcBulk at this point is identical to swcBulk */
 		snprintf(str, OUTSTRLEN, "%c%.*f",
-			_OUTSEP, OUT_DIGITS, vo->vwcBulk[i] / sw->Site.lyr[i]->width);
+			_OUTSEP, OUT_DIGITS, vo->vwcBulk[i] / sw->Site.width[i]);
 		strcat(sw->GenOutput.sw_outstr, str);
 	}
 }
@@ -749,8 +749,8 @@ void get_vwcMatric_text(OutPeriod pd, SW_ALL* sw)
 
 	ForEachSoilLayer(i, sw->Site.n_layers) {
 		/* vwcMatric at this point is identical to swcBulk */
-		convert = 1. / (1. - sw->Site.lyr[i]->fractionVolBulk_gravel) /
-														sw->Site.lyr[i]->width;
+		convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]) /
+														sw->Site.width[i];
 
 		snprintf(str, OUTSTRLEN, "%c%.*f",
 			_OUTSEP, OUT_DIGITS, vo->vwcMatric[i] * convert);
@@ -1049,7 +1049,7 @@ void get_swpMatric_text(OutPeriod pd, SW_ALL* sw)
 	ForEachSoilLayer(i, sw->Site.n_layers)
 	{
 		/* swpMatric at this point is identical to swcBulk */
-		val = SW_SWRC_SWCtoSWP(vo->swpMatric[i], sw->Site.lyr[i], &local_log);
+		val = SW_SWRC_SWCtoSWP(vo->swpMatric[i], &sw->Site, i, &local_log);
 
 
 		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, val);
@@ -1218,7 +1218,7 @@ void get_swaMatric_text(OutPeriod pd, SW_ALL* sw)
 	ForEachSoilLayer(i, sw->Site.n_layers)
 	{
 		/* swaMatric at this point is identical to swaBulk */
-		convert = 1. / (1. - sw->Site.lyr[i]->fractionVolBulk_gravel);
+		convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
 
 		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->swaMatric[i] * convert);
 		strcat(sw->GenOutput.sw_outstr, str);

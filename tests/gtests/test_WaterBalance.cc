@@ -88,7 +88,7 @@ namespace {
     int i;
 
     // Turn on impermeability of first soil layer, runon, and runoff
-    SW_All.Site.lyr[0]->impermeability = 0.95;
+    SW_All.Site.impermeability[0] = 0.95;
     SW_All.Site.percentRunoff = 0.5;
     SW_All.Site.percentRunon = 1.25;
 
@@ -182,7 +182,7 @@ namespace {
     // Set high gravel volume in all soil layers
     ForEachSoilLayer(s, SW_All.Site.n_layers)
     {
-      SW_All.Site.lyr[s]->fractionVolBulk_gravel = 0.99;
+      SW_All.Site.fractionVolBulk_gravel[s] = 0.99;
     }
 
     // Re-calculate soils

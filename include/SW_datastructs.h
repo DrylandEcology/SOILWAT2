@@ -168,53 +168,6 @@ typedef struct {
 /*                     Site structs                    */
 /* --------------------------------------------------- */
 
-typedef struct {
-	/* bulk = relating to the whole soil, i.e., matric + rock/gravel/coarse fragments */
-	/* matric = relating to the < 2 mm fraction of the soil, i.e., sand, clay, and silt */
-
-	LyrIndex id; /**< Number of soil layer: 1 = most shallow, 2 = second shallowest, etc. up to ::MAX_LAYERS */
-
-	RealD
-		/* Inputs */
-		width, /* width of the soil layer (cm) */
-		soilDensityInput, /* soil density [g / cm3]: either of the matric component or bulk soil */
-		evap_coeff, /* prop. of total soil evap from this layer */
-		transp_coeff[NVEGTYPES], /* prop. of total transp from this layer    */
-		fractionVolBulk_gravel, /* gravel content (> 2 mm) as volume-fraction of bulk soil (g/cm3) */
-		fractionWeightMatric_sand, /* sand content (< 2 mm & > . mm) as weight-fraction of matric soil (g/g) */
-		fractionWeightMatric_clay, /* clay content (< . mm & > . mm) as weight-fraction of matric soil (g/g) */
-		impermeability, /* fraction of how impermeable a layer is (0=permeable, 1=impermeable)    */
-		avgLyrTemp, /* initial soil temperature for each soil layer */
-
-		/* Derived soil characteristics */
-		soilMatric_density, /* matric soil density of the < 2 mm fraction, i.e., gravel component excluded, (g/cm3) */
-		soilBulk_density, /* bulk soil density of the whole soil, i.e., including rock/gravel component, (g/cm3) */
-		swcBulk_fieldcap, /* Soil water content (SWC) corresponding to field capacity (SWP = -0.033 MPa) [cm] */
-		swcBulk_wiltpt, /* SWC corresponding to wilting point (SWP = -1.5 MPa) [cm] */
-		swcBulk_halfwiltpt, /* Adjusted half-wilting point used as SWC limit for bare-soil evaporation */
-		swcBulk_min, /* Minimal SWC [cm] */
-		swcBulk_wet, /* SWC considered "wet" [cm] */
-		swcBulk_init, /* Initial SWC for first day of simulation [cm] */
-		swcBulk_atSWPcrit[NVEGTYPES], /* SWC corresponding to critical SWP for transpiration */
-
-		/* Saxton et al. 2006 */
-		swcBulk_saturated; /* saturated bulk SWC [cm] */
-		// currently, not used;
-		//Saxton2006_K_sat_matric, /* saturated matric conductivity [cm / day] */
-		//Saxton2006_K_sat_bulk, /* saturated bulk conductivity [cm / day] */
-		//Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
-		//Saxton2006_lambda; /* Slope of logarithmic tension-moisture curve */
-
-
-	/* Soil water retention curve (SWRC) */
-	unsigned int
-		swrc_type, /**< Type of SWRC (see #swrc2str) */
-		ptf_type; /**< Type of PTF (see #ptf2str) */
-	RealD swrcp[SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation varies with selected SWRC, see `SWRC_check_parameters()` */
-
-	LyrIndex my_transp_rgn[NVEGTYPES]; /* which transp zones from Site am I in? */
-} SW_LAYER_INFO;
-
 
 typedef struct {
 
@@ -264,9 +217,6 @@ typedef struct {
 	 */
 	tanfunc_t evap, transp;
 
-	SW_LAYER_INFO **lyr; 	/* one struct per soil layer pointed to by   */
-							/* a dynamically allocated block of pointers */
-
 	/* Soil water retention curve (SWRC), see `SW_LAYER_INFO` */
 	unsigned int
 		site_swrc_type,
@@ -285,6 +235,49 @@ typedef struct {
 		_SWCInitVal, /* initialization value for swc */
 		_SWCWetVal, /* value for a "wet" day,       */
 		_SWCMinVal; /* lower bound on swc.          */
+
+	/* bulk = relating to the whole soil, i.e., matric + rock/gravel/coarse fragments */
+	/* matric = relating to the < 2 mm fraction of the soil, i.e., sand, clay, and silt */
+
+	RealD
+		/* Inputs */
+		width[MAX_LAYERS + 1], /* width of the soil layer (cm) */
+		soilDensityInput[MAX_LAYERS + 1], /* soil density [g / cm3]: either of the matric component or bulk soil */
+		evap_coeff[MAX_LAYERS + 1], /* prop. of total soil evap from this layer */
+		transp_coeff[NVEGTYPES][MAX_LAYERS + 1], /* prop. of total transp from this layer    */
+		fractionVolBulk_gravel[MAX_LAYERS + 1], /* gravel content (> 2 mm) as volume-fraction of bulk soil (g/cm3) */
+		fractionWeightMatric_sand[MAX_LAYERS + 1], /* sand content (< 2 mm & > . mm) as weight-fraction of matric soil (g/g) */
+		fractionWeightMatric_clay[MAX_LAYERS + 1], /* clay content (< . mm & > . mm) as weight-fraction of matric soil (g/g) */
+		impermeability[MAX_LAYERS + 1], /* fraction of how impermeable a layer is (0=permeable, 1=impermeable)    */
+		avgLyrTemp[MAX_LAYERS + 1], /* initial soil temperature for each soil layer */
+
+		/* Derived soil characteristics */
+		soilMatric_density[MAX_LAYERS + 1], /* matric soil density of the < 2 mm fraction, i.e., gravel component excluded, (g/cm3) */
+		soilBulk_density[MAX_LAYERS + 1], /* bulk soil density of the whole soil, i.e., including rock/gravel component, (g/cm3) */
+		swcBulk_fieldcap[MAX_LAYERS + 1], /* Soil water content (SWC) corresponding to field capacity (SWP = -0.033 MPa) [cm] */
+		swcBulk_wiltpt[MAX_LAYERS + 1], /* SWC corresponding to wilting point (SWP = -1.5 MPa) [cm] */
+		swcBulk_halfwiltpt[MAX_LAYERS + 1], /* Adjusted half-wilting point used as SWC limit for bare-soil evaporation */
+		swcBulk_min[MAX_LAYERS + 1], /* Minimal SWC [cm] */
+		swcBulk_wet[MAX_LAYERS + 1], /* SWC considered "wet" [cm] */
+		swcBulk_init[MAX_LAYERS + 1], /* Initial SWC for first day of simulation [cm] */
+		swcBulk_atSWPcrit[NVEGTYPES][MAX_LAYERS + 1], /* SWC corresponding to critical SWP for transpiration */
+
+		/* Saxton et al. 2006 */
+		swcBulk_saturated[MAX_LAYERS + 1]; /* saturated bulk SWC [cm] */
+		// currently, not used;
+		//Saxton2006_K_sat_matric, /* saturated matric conductivity [cm / day] */
+		//Saxton2006_K_sat_bulk, /* saturated bulk conductivity [cm / day] */
+		//Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
+		//Saxton2006_lambda; /* Slope of logarithmic tension-moisture curve */
+
+
+	/* Soil water retention curve (SWRC) */
+	unsigned int
+		swrc_type[MAX_LAYERS + 1], /**< Type of SWRC (see #swrc2str) */
+		ptf_type[MAX_LAYERS + 1]; /**< Type of PTF (see #ptf2str) */
+	RealD swrcp[MAX_LAYERS + 1][SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation varies with selected SWRC, see `SWRC_check_parameters()` */
+
+	LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS + 1]; /* which transp zones from Site am I in? */
 
 } SW_SITE;
 

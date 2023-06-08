@@ -157,11 +157,19 @@ namespace {
 
   // Test summing values across vegetation types
   TEST(VegTest, Summing) {
-    double x0[NVEGTYPES] = {0.};
-    double x1[NVEGTYPES] = {0.25, 0.25, 0.25, 0.25};
+    int vegIndex;
 
-    EXPECT_DOUBLE_EQ(sum_across_vegtypes(x0), 0.);
-    EXPECT_DOUBLE_EQ(sum_across_vegtypes(x1), 1.);
+    for(vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
+      SW_All.Site.transp_coeff[vegIndex][0] = 0.;
+    }
+
+    EXPECT_DOUBLE_EQ(sum_across_vegtypes(SW_All.Site.transp_coeff, 0), 0.);
+
+    for(vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
+      SW_All.Site.transp_coeff[vegIndex][0] = 0.25;
+    }
+
+    EXPECT_DOUBLE_EQ(sum_across_vegtypes(SW_All.Site.transp_coeff, 0), 1.);
   }
 
 

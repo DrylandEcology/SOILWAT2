@@ -360,13 +360,13 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
 	case eSW_SWABulk:
 		ForEachSoilLayer(i, n_layers)
 			s->swaBulk[i] += fmax(
-					v->swcBulk[Today][i] - SW_Site->lyr[i]->swcBulk_wiltpt, 0.);
+					v->swcBulk[Today][i] - SW_Site->swcBulk_wiltpt[i], 0.);
 		break;
 
 	case eSW_SWAMatric: /* get swaBulk and convert later */
 		ForEachSoilLayer(i, n_layers)
 			s->swaMatric[i] += fmax(
-					v->swcBulk[Today][i] - SW_Site->lyr[i]->swcBulk_wiltpt, 0.);
+					v->swcBulk[Today][i] - SW_Site->swcBulk_wiltpt[i], 0.);
 		break;
 
 	case eSW_SWA: /* get swaBulk and convert later */
@@ -681,7 +681,7 @@ static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
 							(sw->Output[k].sumtype == eSW_Fnl) ?
 									fmax(
 											sw->SoilWat.swcBulk[Yesterday][i]
-													- sw->Site.lyr[i]->swcBulk_wiltpt,
+													- sw->Site.swcBulk_wiltpt[i],
 											0.) :
 									sw->SoilWat.p_accu[pd]->swaBulk[i] / div;
 				}
@@ -693,7 +693,7 @@ static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
 							(sw->Output[k].sumtype == eSW_Fnl) ?
 									fmax(
 											sw->SoilWat.swcBulk[Yesterday][i]
-													- sw->Site.lyr[i]->swcBulk_wiltpt,
+													- sw->Site.swcBulk_wiltpt[i],
 											0.) :
 									sw->SoilWat.p_accu[pd]->swaMatric[i] / div;
 				}
@@ -2626,7 +2626,7 @@ void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
 void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]) {
 
 	_echo_inputs(&sw->Site, LogInfo, InFiles);
-	_echo_VegEstab(sw->Site.lyr, sw->VegEstab.parms, LogInfo, sw->VegEstab.count);
+	_echo_VegEstab(sw->Site.width, sw->VegEstab.parms, LogInfo, sw->VegEstab.count);
 	_echo_VegProd(LogInfo, sw->VegProd.veg, sw->VegProd.bare_cov);
 	_echo_outputs(sw, LogInfo);
 }

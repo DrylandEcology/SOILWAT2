@@ -50,7 +50,7 @@
 /* =================================================== */
 /*             Private Function Declarations           */
 /* --------------------------------------------------- */
-static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
+static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 		LyrIndex n_transp_lyrs[], SW_VEGESTAB_INFO** parms,
 		LOG_INFO* LogInfo);
 static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
@@ -279,20 +279,19 @@ void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo)
 
 	@param[in,out] **parms List of structs of type SW_VEGESTAB_INFO holding information
 		about every vegetation species
-	@param[in] **lyr Struct list of type SW_LAYER_INFO holding information about
-		every soil layer in the simulation
+	@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in] n_transp_lyrs Index of the deepest transp. region
 	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] count Held within type SW_VEGESTAB to determine
 		how many species to check
 */
-void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_LAYER_INFO** lyr,
+void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_SITE *SW_Site,
 	LyrIndex n_transp_lyrs[], LOG_INFO* LogInfo, IntU count) {
 
 	IntU i;
 
 	for (i = 0; i < count; i++) {
-		_spp_init(parms, i, lyr, n_transp_lyrs, LogInfo);
+		_spp_init(parms, i, SW_Site, n_transp_lyrs, LogInfo);
 	}
 }
 
@@ -521,13 +520,12 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 @param[in,out] **parms List of structs of type SW_VEGESTAB_INFO holding information
 	about every vegetation species
 @param[in] sppnum Index for which paramater is beign initialized.
-@param[in] **lyr Struct list of type SW_LAYER_INFO holding information about
-	every soil layer in the simulation
+@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] n_transp_lyrs Layer index of deepest transp. region.
 @param[in] LogInfo Holds information dealing with logfile output
 */
 void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
-	SW_LAYER_INFO** lyr, LyrIndex n_transp_lyrs[], LOG_INFO* LogInfo) {
+	SW_SITE *SW_Site, LyrIndex n_transp_lyrs[], LOG_INFO* LogInfo) {
 
 	SW_VEGESTAB_INFO *parms_sppnum = parms[sppnum];
 	IntU i;
@@ -536,7 +534,7 @@ void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
 	/* because init_layers() must be called prior to this routine */
 	/* (see watereqn() ) */
 	parms_sppnum->min_swc_germ =
-		SW_SWRC_SWPtoSWC(parms_sppnum->bars[SW_GERM_BARS], lyr[0], LogInfo);
+		SW_SWRC_SWPtoSWC(parms_sppnum->bars[SW_GERM_BARS], SW_Site, 0, LogInfo);
 
 	/* due to possible differences in layer textures and widths, we need
 	 * to average the estab swc across the given layers to peoperly
@@ -544,15 +542,15 @@ void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
 	parms_sppnum->min_swc_estab = 0.;
 	for (i = 0; i < parms_sppnum->estab_lyrs; i++) {
 		parms_sppnum->min_swc_estab +=
-		SW_SWRC_SWPtoSWC(parms_sppnum->bars[SW_ESTAB_BARS], lyr[i], LogInfo);
+		SW_SWRC_SWPtoSWC(parms_sppnum->bars[SW_ESTAB_BARS], SW_Site, i, LogInfo);
 	}
 	parms_sppnum->min_swc_estab /= parms_sppnum->estab_lyrs;
 
-	_sanity_check(sppnum, lyr, n_transp_lyrs, parms, LogInfo);
+	_sanity_check(sppnum, SW_Site->swcBulk_wiltpt, n_transp_lyrs, parms, LogInfo);
 
 }
 
-static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
+static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 		LyrIndex n_transp_lyrs[], SW_VEGESTAB_INFO** parms,
 		LOG_INFO* LogInfo) {
 	/* =================================================== */
@@ -608,7 +606,7 @@ static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
 		);
 	}
 
-	if (parms_sppnum->min_swc_germ < lyr[0]->swcBulk_wiltpt) {
+	if (parms_sppnum->min_swc_germ < swcBulk_wiltpt[0]) {
 		LogError(
 			LogInfo,
 			LOGFATAL,
@@ -616,13 +614,13 @@ static void _sanity_check(unsigned int sppnum, SW_LAYER_INFO** lyr,
 			"VegEstab",
 			parms_sppnum->sppname,
 			parms_sppnum->min_swc_germ,
-			lyr[0]->swcBulk_wiltpt
+			swcBulk_wiltpt[0]
 		);
 	}
 
 	mean_wiltpt = 0.;
 	for (i = 0; i < parms_sppnum->estab_lyrs; i++) {
-		mean_wiltpt += lyr[i]->swcBulk_wiltpt;
+		mean_wiltpt += swcBulk_wiltpt[i];
 	}
 	mean_wiltpt /= parms_sppnum->estab_lyrs;
 
@@ -671,15 +669,14 @@ IntU _new_species(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
 /**
 @brief Text output for VegEstab.
 
-@param[in] **lyr Struct list of type SW_LAYER_INFO holding information
-	about every soil layer in the simulation
+@param[in] width Width of the soil layer (cm)
 @param[in] **parms List of structs of type SW_VEGESTAB_INFO holding
 	information about every vegetation species
 @param[in] LogInfo Holds information dealing with logfile output
 @param[in] count Held within type SW_VEGESTAB to determine
 	how many species to check
 */
-void _echo_VegEstab(SW_LAYER_INFO** lyr, SW_VEGESTAB_INFO** parms,
+void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO** parms,
 					LOG_INFO* LogInfo, IntU count) {
 	/* --------------------------------------------------- */
 	IntU i;
@@ -714,7 +711,7 @@ void _echo_VegEstab(SW_LAYER_INFO** lyr, SW_VEGESTAB_INFO** parms,
 			key2veg[parms[i]->vegType],
 			parms[i]->vegType,
 			parms[i]->bars[SW_GERM_BARS],
-			parms[i]->min_swc_germ / lyr[0]->width,
+			parms[i]->min_swc_germ / width[0],
 			parms[i]->min_swc_germ,
 			parms[i]->min_temp_germ,
 			parms[i]->max_temp_germ,

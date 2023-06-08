@@ -43,7 +43,7 @@ void SW_VES_read2(
 );
 void SW_VES_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
 void SW_VES_deconstruct(SW_VEGESTAB* SW_VegEstab);
-void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_LAYER_INFO** lyr,
+void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_SITE *SW_Site,
 	LyrIndex n_transp_lyrs[], LOG_INFO* LogInfo, IntU count);
 void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
 void SW_VES_checkestab(SW_VEGESTAB_INFO** parms, SW_WEATHER* SW_Weather,
@@ -51,9 +51,9 @@ void SW_VES_checkestab(SW_VEGESTAB_INFO** parms, SW_WEATHER* SW_Weather,
 					   TimeInt firstdoy, IntU count);
 void SW_VES_new_year(IntU count);
 void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
-	SW_LAYER_INFO** lyr, LyrIndex n_transp_lyrs[], LOG_INFO* LogInfo);
+	SW_SITE *SW_Site, LyrIndex n_transp_lyrs[], LOG_INFO* LogInfo);
 IntU _new_species(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
-void _echo_VegEstab(SW_LAYER_INFO** lyr, SW_VEGESTAB_INFO** parms,
+void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO** parms,
 					LOG_INFO* LogInfo, IntU count);
 
 

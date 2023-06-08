@@ -318,23 +318,23 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
     used for transpiration calculations.
 
 @param[in,out] *swp_avg Weighted average of soilwater potential and transpiration coefficients (-bar).
+@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] n_tr_rgns Array of n_lyrs elements of transpiration regions that each soil layer belongs to.
 @param[in] n_layers Number of soil layers.
 @param[in] tr_regions Number of layer regions used in weighted average, typically 3;<BR>
         to represent shallow, mid, & deep depths to compute transpiration rate.
-@param[in] tr_coeff  Transpiration coefficient for each layer.
 @param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param[in] **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
-	in the simulation
+@param[in] VegType Current vegetation
 @param[in] LogInfo Holds information dealing with logfile output
 
 @sideeffect *swp_avg Weighted average of soilwater potential and transpiration coefficients (-bar).
 
 */
 
-void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, LyrIndex n_layers,
-						 unsigned int tr_regions[], double tr_coeff[], double swc[],
-						 SW_LAYER_INFO** lyr, LOG_INFO* LogInfo) {
+void transp_weighted_avg(double *swp_avg, SW_SITE *SW_Site,
+	unsigned int n_tr_rgns, LyrIndex n_layers, unsigned int tr_regions[],
+	double swc[], int VegType, LOG_INFO* LogInfo) {
+
 	/**********************************************************************
 
 	 HISTORY:
@@ -366,8 +366,9 @@ void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, LyrIndex n_lay
 
 		for (i = 0; i < n_layers; i++) {
 			if (tr_regions[i] == r) {
-				swp += tr_coeff[i] * SW_SWRC_SWCtoSWP(swc[i], lyr[i], LogInfo);
-				sumco += tr_coeff[i];
+				swp += SW_Site->transp_coeff[VegType][i] *
+								SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+				sumco += SW_Site->transp_coeff[VegType][i];
 			}
 		}
 
@@ -422,8 +423,8 @@ void EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_pa
 
 Based on equations from Parton 1978. @cite Parton1978
 
+@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] nelyrs Number of layers to consider in evaporation.
-@param[in] ecoeff Evaporation coefficients.
 @param[in] totagb Sum of above ground biomass and litter.
 @param[in] fbse Fraction of water loss from bare soil evaporation.
 @param[in] petday Potential evapotranspiration rate (cm/day).
@@ -431,12 +432,9 @@ Based on equations from Parton 1978. @cite Parton1978
 @param[in] shape Slope of the line at the inflection point.
 @param[in] inflec Y-value of the inflection point.
 @param[in] range Max y-value - min y-value at the limits.
-@param[in] width Width of each layer (cm).
 @param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param[in] Es_param_limit Parameter to determine when soil surface is completely covered with
     litter and that bare soil evaporation is inhibited.
-@param[in] **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
-	in the simulation
 @param[in] LogInfo Holds information dealing with logfile output
 @param[out] *bserate Bare soil evaporation loss rate (cm/day).
 
@@ -444,10 +442,10 @@ Based on equations from Parton 1978. @cite Parton1978
 
 */
 
-void pot_soil_evap(unsigned int nelyrs, double ecoeff[], double totagb,
-  double fbse, double petday, double shift, double shape, double inflec, double range,
-  double width[], double swc[], double Es_param_limit, SW_LAYER_INFO** lyr,
-  LOG_INFO* LogInfo, double *bserate) {
+void pot_soil_evap(SW_SITE *SW_Site, unsigned int nelyrs, double totagb,
+  double fbse, double petday, double shift, double shape, double inflec,
+  double range, double swc[], double Es_param_limit, LOG_INFO* LogInfo,
+  double *bserate) {
 	/**********************************************************************
 	 HISTORY:
 	 4/30/92  (SLC)
@@ -477,12 +475,12 @@ void pot_soil_evap(unsigned int nelyrs, double ecoeff[], double totagb,
 
 	/* get the weighted average of swp in the evap layers */
 	for (i = 0; i < nelyrs; i++) {
-	  if (ZRO(ecoeff[i])) {
+	  if (ZRO(SW_Site->evap_coeff[i])) {
 	    break;
 	  }
-		x = width[i] * ecoeff[i];
+		x = SW_Site->width[i] * SW_Site->evap_coeff[i];
 		sumwidth += x;
-		avswp += x * SW_SWRC_SWCtoSWP(swc[i], lyr[i], LogInfo);
+		avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
 	}
 
   // Note: avswp = 0 if swc = 0 because that is the return value of SW_SWRC_SWCtoSWP
@@ -509,24 +507,22 @@ void pot_soil_evap(unsigned int nelyrs, double ecoeff[], double totagb,
 Based on equations from Parton 1978. @cite Parton1978
 
 @param[in,out] *bserate Bare soil evaporation loss rate (cm/day).
-@param[in,out] **lyr Struct list of type SW_LAYER_INFO holding information
-	about every soil layer in the simulation
+@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] LogInfo Holds information dealing with logfile output
 @param[in] nelyrs Number of layers to consider in evaporation.
-@param[in] ecoeff Array of evaporation coefficients.
 @param[in] petday Potential evapotranspiration rate (cm/day).
 @param[in] shift Displacement of the inflection point in order to shift the function up, down, left, or right.
 @param[in] shape Slope of the line at the inflection point.
 @param[in] inflec Y-value of the inflection point.
 @param[in] range Max y-value - min y-value at the limits.
-@param[in] width Width of each layer (cm).
 @param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 
 */
 
-void pot_soil_evap_bs(double *bserate, SW_LAYER_INFO** lyr, LOG_INFO* LogInfo,
-	unsigned int nelyrs, double ecoeff[], double petday, double shift,
-	double shape, double inflec, double range, double width[], double swc[]) {
+void pot_soil_evap_bs(double *bserate, SW_SITE *SW_Site, LOG_INFO* LogInfo,
+	unsigned int nelyrs, double petday, double shift, double shape,
+	double inflec, double range, double swc[]) {
+
 	/**********************************************************************
 	 LOCAL:
 	 avswp     - average soil water potential over all layers
@@ -542,9 +538,9 @@ void pot_soil_evap_bs(double *bserate, SW_LAYER_INFO** lyr, LOG_INFO* LogInfo,
 
 	/* get the weighted average of swp in the evap layers */
 	for (i = 0; i < nelyrs; i++) {
-		x = width[i] * ecoeff[i];
+		x = SW_Site->width[i] * SW_Site->evap_coeff[i];
 		sumwidth += x;
-		avswp += x * SW_SWRC_SWCtoSWP(swc[i], lyr[i], LogInfo);
+		avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
 	}
 
 	avswp /= sumwidth;
@@ -719,15 +715,17 @@ Based on equations from Parton 1978. @cite Parton1978
 @param[in,out] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param[in,out] qty Updated removal quantity from each layer, evaporation or transpiration,
 added to input value (mm/day).
+@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in,out] *aet Actual evapotranspiration, added to input value (cm/day).
 @param[in] nlyrs Number of layers considered in water removal.
 @param[in] coeff Coefficients of removal for removal layers.
 @param[in] rate Removal rate, either soil_evap_rate or soil_transp_rate.
 @param[in] swcmin Lower limit on soilwater content per layer.
 @param[in] lyrFrozen Frozen information at each layer.
-@param[in] **lyr Struct list of type SW_LAYER_INFO holding information about every soil layer
-	in the simulation
 @param[in] LogInfo Holds information dealing with logfile output
+
+@note The variable `SW_Site` is only used as input for another function.
+	  It will not affect other elements passed in from it.
 
 @sideeffect
   - swc Updated soil water content adjusted after evaporation.
@@ -735,9 +733,10 @@ added to input value (mm/day).
   - *aet Updated evapotranspiration (cm/day).
 */
 
-void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyrs,
-    double coeff[], double rate, double swcmin[], double lyrFrozen[],
-	SW_LAYER_INFO** lyr, LOG_INFO* LogInfo) {
+void remove_from_soil(double swc[], double qty[], SW_SITE *SW_Site,
+	double *aet, unsigned int nlyrs, double coeff[], double rate,
+	double swcmin[], double lyrFrozen[], LOG_INFO* LogInfo) {
+
 	/**********************************************************************
   HISTORY: 10 Jan 2002 - cwb - replaced two previous functions with
 	 this one.
@@ -753,7 +752,7 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q, tmpswp, d = 0.;
 
 	for (i = 0; i < nlyrs; i++) {
-		tmpswp = SW_SWRC_SWCtoSWP(swc[i], lyr[i], LogInfo);
+		tmpswp = SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
 		if (GT(tmpswp, 0.)) {
 			swpfrac[i] = coeff[i] / tmpswp;
 		} else {
@@ -801,16 +800,16 @@ void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyr
 	@param[in,out] *drainout Drainage from the last layer [cm / day].
 	@param[in,out] *standingWater Remaining water on the surface [cm].
 	@param nlyrs Number of layers in the soil profile [1].
-	@param[in] *lyr Soil characteristics for each soil layer.
 	@param[in] *lyrFrozen Frozen/unfrozen status for each soil layer.
+	@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 	@param slow_drain_coeff Slow drainage parameter [cm / day].
 	@param slow_drain_depth Slow drainage depth [cm].
 */
 
-void percolate_unsaturated(
-	double swc[], double percolate[], double *drainout, double *standingWater,
-	unsigned int nlyrs, SW_LAYER_INFO *lyr[], double lyrFrozen[],
-	double slow_drain_coeff, double slow_drain_depth
+void percolate_unsaturated( double swc[], double percolate[],
+	double *drainout, double *standingWater, unsigned int nlyrs,
+	double lyrFrozen[], SW_SITE *SW_Site, double slow_drain_coeff,
+	double slow_drain_depth
 ) {
 
 	unsigned int i;
@@ -827,7 +826,7 @@ void percolate_unsaturated(
 	*/
 	for (i = 0; i < nlyrs; i++) {
 		/* calculate potential unsaturated percolation */
-		swc_avail = fmax(0., swc[i] - lyr[i]->swcBulk_min);
+		swc_avail = fmax(0., swc[i] - SW_Site->swcBulk_min[i]);
 
 		if (LE(swc_avail, 0.)) {
 			d[i] = 0.;
@@ -849,7 +848,7 @@ void percolate_unsaturated(
 						`drainage rate = 0.35 * exp(0.7 * (storage - 15.))`
 			*/
 
-			if (LT(swc[i], lyr[i]->swcBulk_fieldcap)) {
+			if (LT(swc[i], SW_Site->swcBulk_fieldcap[i])) {
 				/* Here, we modified eq. 2.9:
 						(i) use scaled swc, i.e., vary from 0 (at swc_min) to swc_fc
 						(ii) modify `exp(.)` to vary from 0 (at swc_min) to 1 (at swc_fc)
@@ -859,11 +858,13 @@ void percolate_unsaturated(
 					0.,
 					fmin(
 						1.,
-						swc_avail / (lyr[i]->swcBulk_fieldcap - lyr[i]->swcBulk_min)
+						swc_avail / (SW_Site->swcBulk_fieldcap[i] -
+													SW_Site->swcBulk_min[i])
 					)
 				);
 
-				tmp1 = slow_drain_depth * lyr[i]->swcBulk_fieldcap / lyr[i]->width;
+				tmp1 = slow_drain_depth *
+							SW_Site->swcBulk_fieldcap[i] / SW_Site->width[i];
 				tmp2 = exp(-tmp1);
 
 				if (LT(tmp2, 1.)) {
@@ -874,7 +875,7 @@ void percolate_unsaturated(
 			}
 
 			d[i] =
-				kunsat_rel * (1. - lyr[i]->impermeability) *
+				kunsat_rel * (1. - SW_Site->impermeability[i]) *
 				fmin(swc_avail, fmax(0., drainpot));
 		}
 
@@ -896,8 +897,8 @@ void percolate_unsaturated(
 	/* adjust (i.e., push water upwards) if water content of a layer is
 		 now above saturated water content */
 	for (j = nlyrs - 1; j >= 0; j--) {
-		if (GT(swc[j], lyr[j]->swcBulk_saturated)) {
-			push = swc[j] - lyr[j]->swcBulk_saturated;
+		if (GT(swc[j], SW_Site->swcBulk_saturated[j])) {
+			push = swc[j] - SW_Site->swcBulk_saturated[j];
 			swc[j] -= push;
 			if (j > 0) {
 				percolate[j - 1] -= push;
@@ -918,9 +919,9 @@ void percolate_unsaturated(
 
 	@param[in,out] swc Soil water content in each layer (m<SUP>3</SUP> H<SUB>2</SUB>O).
 	@param[out] hydred Hydraulic redistribtion for each soil layer (cm/day/layer).
+	@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in] vegk Index to vegetation type (used to access rooting profile) [1].
 	@param[in] nlyrs Number of layers in the soil profile [1].
-	@param[in] *lyr Soil characteristics for each soil layer.
 	@param[in] *lyrFrozen Frozen/unfrozen status for each soil layer.
 	@param[in] maxCondroot Maximum radial soil-root conductance of the entire active root system for water (cm/-bar/day).
 	@param[in] swp50 Soil water potential (-bar) where conductance is reduced by 50%.
@@ -939,9 +940,9 @@ void percolate_unsaturated(
 void hydraulic_redistribution(
 	double swc[],
 	double hydred[],
+	SW_SITE *SW_Site,
 	unsigned int vegk,
 	unsigned int nlyrs,
-	SW_LAYER_INFO *lyr[],
     double lyrFrozen[],
 	double maxCondroot,
 	double swp50,
@@ -986,10 +987,11 @@ void hydraulic_redistribution(
 		*/
 		swa[i] = fmax(
 			0.,
-			swc[i] - fmin(lyr[i]->swcBulk_wiltpt, lyr[i]->swcBulk_atSWPcrit[vegk])
+			swc[i] - fmin(SW_Site->swcBulk_wiltpt[i],
+										SW_Site->swcBulk_atSWPcrit[vegk][i])
 		);
 
-		swp[i] = SW_SWRC_SWCtoSWP(swc[i], lyr[i], LogInfo);
+		swp[i] = SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
 
 		/* Ryel et al. 2002: eq. 7 relative soil-root conductance */
 		relCondroot[i] = fmin(
@@ -1018,8 +1020,8 @@ void hydraulic_redistribution(
 			*/
 			if (
 				(
-					GT(swc[i], lyr[i]->swcBulk_wiltpt) ||
-					GT(swc[j], lyr[j]->swcBulk_wiltpt)
+					GT(swc[i], SW_Site->swcBulk_wiltpt[i]) ||
+					GT(swc[j], SW_Site->swcBulk_wiltpt[j])
 				) &&
 				(lyrFrozen[i] == swFALSE) && (lyrFrozen[j] == swFALSE)
 			) {
@@ -1034,11 +1036,11 @@ void hydraulic_redistribution(
 					-> truncate to source layer width
 					(original equation assumed identical layer widths)
 				*/
-				mlyrRootCo[0] = lyr[idso]->transp_coeff[vegk];
-				mlyrRootCo[1] = lyr[idre]->transp_coeff[vegk];
+				mlyrRootCo[0] = SW_Site->transp_coeff[vegk][idso];
+				mlyrRootCo[1] = SW_Site->transp_coeff[vegk][idre];
 
-				if (LT(lyr[idso]->width, lyr[idre]->width)) {
-					mlyrRootCo[1] *= lyr[idso]->width / lyr[idre]->width;
+				if (LT(SW_Site->width[idso], SW_Site->width[idre])) {
+					mlyrRootCo[1] *= SW_Site->width[idso] / SW_Site->width[idre];
 				}
 
 
@@ -1063,7 +1065,7 @@ void hydraulic_redistribution(
 						"R=%.4f|%.4f"
 						"\n",
 						i, j, idso, idre, tmp,
-						lyr[idso]->width, lyr[idre]->width,
+						SW_Site->width[idso], SW_Site->width[idre],
 						swc[idso], swc[idre],
 						-0.1 * swp[idso], -0.1 * swp[idre],
 						relCondroot[idso], relCondroot[idre],

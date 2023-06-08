@@ -230,9 +230,9 @@ void PTF_RawlsBrakensiek1985(
 RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
 RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel,
 								  LOG_INFO* LogInfo);
-LyrIndex nlayers_bsevap(SW_LAYER_INFO** lyr, LyrIndex n_layers);
+LyrIndex nlayers_bsevap(RealD *evap_coeff, LyrIndex n_layers);
 void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
-					  SW_LAYER_INFO** lyr);
+					  RealD transp_coeff[][MAX_LAYERS + 1]);
 
 void SW_SIT_construct(SW_SITE* SW_Site);
 void SW_SIT_deconstruct(SW_SITE* SW_Site);
@@ -248,7 +248,7 @@ void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]);
 void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]);
 void SW_SIT_clear_layers(SW_SITE* SW_Site);
 LyrIndex _newlayer(SW_SITE* SW_Site, LOG_INFO* LogInfo);
-void add_deepdrain_layer(SW_SITE* SW_Site, LOG_INFO* LogInfo);
+void add_deepdrain_layer(SW_SITE* SW_Site);
 
 void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 	LOG_INFO* LogInfo, LyrIndex nlyrs, RealF *dmax, RealF *bd,

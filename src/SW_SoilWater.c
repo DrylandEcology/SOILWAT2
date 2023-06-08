@@ -83,7 +83,7 @@ static void _reset_swc(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site) {
 	{
 		SW_SoilWat->swcBulk[Today][lyr] =
 							SW_SoilWat->swcBulk[Yesterday][lyr] =
-												SW_Site->lyr[lyr]->swcBulk_init;
+												SW_Site->swcBulk_init[lyr];
 		SW_SoilWat->drain[lyr] = 0.;
 	}
 
@@ -343,7 +343,7 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   RealD
     Etotal, Etotalsurf, Etotalint, Eponded, Elitter, Esnow, Esoil = 0., Eveg = 0.,
     Ttotal = 0., Ttotalj[MAX_LAYERS],
-    percolationIn[MAX_LAYERS + 1], percolationOut[MAX_LAYERS + 1],
+    percolationIn[MAX_LAYERS], percolationOut[MAX_LAYERS],
     hydraulicRedistribution[MAX_LAYERS],
     infiltration, deepDrainage, runoff, runon, snowmelt, rain, arriving_water,
     intercepted, int_veg_total = 0.,
@@ -541,17 +541,17 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   ForEachSoilLayer(i, n_layers)
   {
     if (
-      LT(sw->SoilWat.swcBulk[Today][i], sw->Site.lyr[i]->swcBulk_min) ||
-      GT(sw->SoilWat.swcBulk[Today][i], sw->Site.lyr[i]->swcBulk_saturated)
+      LT(sw->SoilWat.swcBulk[Today][i], sw->Site.swcBulk_min[i]) ||
+      GT(sw->SoilWat.swcBulk[Today][i], sw->Site.swcBulk_saturated[i])
     ) {
       sw->SoilWat.wbError[8]++;
       if (debugi[8]) {
         swprintf(
           "%s sl=%d: swc_min(%f) <= swc(%f) <= swc_sat(%f)\n",
           flag, i,
-          sw->Site.lyr[i]->swcBulk_min,
+          sw->Site.swcBulk_min[i],
           sw->SoilWat.swcBulk[Today][i],
-          sw->Site.lyr[i]->swcBulk_saturated
+          sw->Site.swcBulk_saturated[i]
         );
       }
     }
@@ -666,8 +666,9 @@ void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]) {
       #ifdef SWDEBUG
       if (debug) swprintf("\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n");
       #endif
-      SW_SWC_adjust_swc(sw->SoilWat.swcBulk, sw->Model.doy, sw->SoilWat.hist,
-	  					sw->Site.lyr, LogInfo, sw->Site.n_layers, InFiles);
+      SW_SWC_adjust_swc(sw->SoilWat.swcBulk, sw->Site.swcBulk_min,
+	  					sw->Model.doy, sw->SoilWat.hist, LogInfo,
+						sw->Site.n_layers, InFiles);
 
 		} else {
 			LogError(LogInfo, LOGWARN, "Attempt to set SWC on start day of first year of simulation disallowed.");
@@ -688,7 +689,7 @@ void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]) {
   #endif
 	ForEachSoilLayer(i, sw->Site.n_layers)
 		sw->SoilWat.is_wet[i] = (Bool) (GE( sw->SoilWat.swcBulk[Today][i],
-				sw->Site.lyr[i]->swcBulk_wet));
+				sw->Site.swcBulk_wet[i]));
 }
 
 /**
@@ -698,15 +699,16 @@ void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]) {
 
 @param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
 	soil water related values
+@param[in] swcBulk_atSWPcrit SWC corresponding to critical SWP for transpiration
 @param[in] SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
-@param[in] **lyr Struct list of type SW_LAYER_INFO holding information about
-	every soil layer in the simulation
 @param[in] n_layers Number of layers of soil within the simulation run
 */
 /***********************************************************/
 void calculate_repartitioned_soilwater(SW_SOILWAT* SW_SoilWat,
-	SW_VEGPROD* SW_VegProd, SW_LAYER_INFO** lyr, LyrIndex n_layers) {
+	RealD swcBulk_atSWPcrit[][MAX_LAYERS + 1], SW_VEGPROD* SW_VegProd,
+	LyrIndex n_layers) {
+
   // this will run for every day of every year
   LyrIndex i;
   RealD val = SW_MISSING;
@@ -718,7 +720,7 @@ void calculate_repartitioned_soilwater(SW_SOILWAT* SW_SoilWat,
     ForEachVegType(j){
       if(SW_VegProd->veg[j].cov.fCover != 0)
         SW_SoilWat->swa_master[j][j][i] =
-						fmax(0., val - lyr[i]->swcBulk_atSWPcrit[j]);
+						fmax(0., val - swcBulk_atSWPcrit[j][i]);
       else
         SW_SoilWat->swa_master[j][j][i] = 0.;
       SW_SoilWat->dSWA_repartitioned_sum[j][i] = 0.; // need to reset to 0 each time
@@ -964,15 +966,15 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 
 @param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
 	soil water related values
+@param[in] site_avgLyrTemp Initial soil temperature for each soil layer
 @param[in] endyr Ending year for model run
-@param[in] **lyr Struct list of type SW_LAYER_INFO holding information about
-	every soil layer in the simulation
 @param[in] n_layers Number of layers of soil within the simulation run
 @param[in] LogInfo Holds information dealing with logfile output
 @param[in] InFiles Array of program in/output files
 */
-void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
-				 LyrIndex n_layers, LOG_INFO* LogInfo, char *InFiles[]) {
+void SW_SWC_read(SW_SOILWAT* SW_SoilWat, RealD site_avgLyrTemp[],
+	TimeInt endyr, LyrIndex n_layers, LOG_INFO* LogInfo,
+	char *InFiles[]) {
 	/* =================================================== */
 	/* HISTORY
 	 *  1/25/02 - cwb - removed unused records of logfile and
@@ -986,7 +988,7 @@ void SW_SWC_read(SW_SOILWAT* SW_SoilWat, TimeInt endyr, SW_LAYER_INFO** lyr,
 // SW_Site.c must call it's read function before this, or it won't work
 	LyrIndex i;
 	ForEachSoilLayer(i, n_layers)
-		SW_SoilWat->avgLyrTemp[i] = lyr[i]->avgLyrTemp;
+		SW_SoilWat->avgLyrTemp[i] = site_avgLyrTemp[i];
 
 	char *MyFileName = InFiles[eSoilwat];
 	f = OpenFile(MyFileName, "r", LogInfo);
@@ -1111,18 +1113,18 @@ void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 @brief Adjusts swc based on day of the year.
 
 @param[in,out] swcBulk Soil water content in the layer [cm]
+@param[in] swcBulk_min Minimal SWC [cm]
 @param[in] doy Day of the year, measured in days.
 @param[in] SoilWat_hist Struct of type SW_SOILWAT_HIST holding parameters for
 					historical (measured) swc values
-@param[in] **lyr Struct list of type SW_LAYER_INFO holding information about
-	every soil layer in the simulation
 @param[in] LogInfo Holds information dealing with logfile output
 @param[in] n_layers Total number of soil layers in simulation
 @param[in] InFiles Array of program in/output files
 */
-void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], TimeInt doy,
-		SW_SOILWAT_HIST SoilWat_hist, SW_LAYER_INFO** lyr, LOG_INFO* LogInfo,
-		LyrIndex n_layers, char *InFiles[]) {
+void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], RealD swcBulk_min[],
+	TimeInt doy, SW_SOILWAT_HIST SoilWat_hist, LOG_INFO* LogInfo,
+	LyrIndex n_layers, char *InFiles[]) {
+
 	/* =================================================== */
 	/* 01/07/02 (cwb) added final loop to guarantee swc > swcBulk_min
 	 */
@@ -1159,7 +1161,7 @@ void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], TimeInt doy,
 	/* this will guarantee that any method will not lower swc */
 	/* below the minimum defined for the soil layers          */
 	ForEachSoilLayer(lyrIndex, n_layers){
-		swcBulk[Today][lyrIndex] = fmax(swcBulk[Today][lyrIndex], lyr[lyrIndex]->swcBulk_min);
+		swcBulk[Today][lyrIndex] = fmax(swcBulk[Today][lyrIndex], swcBulk_min[lyrIndex]);
   }
 
 }
@@ -1290,20 +1292,20 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
   See #swrc2str() for implemented SWRCs.
 
   @param[in] swcBulk Soil water content in the layer [cm]
-  @param[in] *lyr Soil information including
-    SWRC type, SWRC parameters,
-    coarse fragments (e.g., gravel), and soil layer width.
+  @param[in] SW_Site Struct of type SW_SITE describing the simulated site
+  @param[in] layerno Current layer which is being worked with
   @param[in] LogInfo Holds information dealing with logfile output
 
   @return Soil water potential [-bar]
 */
-RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_LAYER_INFO *lyr, LOG_INFO* LogInfo) {
+RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_SITE *SW_Site, LyrIndex layerno,
+					   LOG_INFO* LogInfo) {
   return SWRC_SWCtoSWP(
     swcBulk,
-    lyr->swrc_type,
-    lyr->swrcp,
-    lyr->fractionVolBulk_gravel,
-    lyr->width,
+    SW_Site->swrc_type[layerno],
+    SW_Site->swrcp[layerno],
+    SW_Site->fractionVolBulk_gravel[layerno],
+    SW_Site->width[layerno],
     LOGFATAL,
 	LogInfo
   );
@@ -1643,22 +1645,21 @@ double SWRC_SWCtoSWP_FXW(
   See #swrc2str() for implemented SWRCs.
 
   @param[in] swpMatric Soil water potential [-bar]
-  @param[in] *lyr Soil information including
-    SWRC type, SWRC parameters,
-    coarse fragments (e.g., gravel), and soil layer width.
+  @param[in] SW_Site Struct of type SW_SITE describing the simulated site
+  @param[in] layerno Current layer which is being worked with
   @param[in] LogInfo Holds information dealing with logfile output
 
   @return Soil water content in the layer [cm]
 */
-RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr,
-					   LOG_INFO* LogInfo) {
+RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_SITE *SW_Site,
+					   LyrIndex layerno, LOG_INFO* LogInfo) {
   return SWRC_SWPtoSWC(
 	LogInfo,
     swpMatric,
-    lyr->swrc_type,
-    lyr->swrcp,
-    lyr->fractionVolBulk_gravel,
-    lyr->width,
+    SW_Site->swrc_type[layerno],
+    SW_Site->swrcp[layerno],
+    SW_Site->fractionVolBulk_gravel[layerno],
+    SW_Site->width[layerno],
     LOGFATAL
   );
 }
