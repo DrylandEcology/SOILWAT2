@@ -235,7 +235,6 @@ void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
 					  RealD transp_coeff[][MAX_LAYERS + 1]);
 
 void SW_SIT_construct(SW_SITE* SW_Site);
-void SW_SIT_deconstruct(SW_SITE* SW_Site);
 void SW_SIT_init_counts(SW_SITE* SW_Site);
 void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 				char *InFiles[], SW_CARBON* SW_Carbon);
@@ -246,7 +245,6 @@ void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]);
 /* these used to be in Layers */
 void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]);
 void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]);
-void SW_SIT_clear_layers(SW_SITE* SW_Site);
 LyrIndex _newlayer(SW_SITE* SW_Site, LOG_INFO* LogInfo);
 void add_deepdrain_layer(SW_SITE* SW_Site);
 

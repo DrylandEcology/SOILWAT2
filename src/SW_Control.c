@@ -162,7 +162,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw, PATH_INFO* PathInfo) {
 	SW_MDL_deconstruct();
 	SW_WTH_deconstruct(&sw->Markov, &sw->Weather); // calls SW_MKV_deconstruct() if needed
 	// SW_SKY_deconstruct() not needed
-	SW_SIT_deconstruct(&sw->Site);
+	// SW_SIT_deconstruct() not needed
 	SW_VES_deconstruct(&sw->VegEstab);
 	SW_VPD_deconstruct(&sw->VegProd);
 	// SW_FLW_deconstruct() not needed

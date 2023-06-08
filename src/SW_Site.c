@@ -1370,7 +1370,6 @@ void SW_SIT_construct(SW_SITE* SW_Site) {
 */
 void SW_SIT_deconstruct(SW_SITE* SW_Site)
 {
-	SW_SIT_clear_layers(SW_Site);
 }
 
 /**
@@ -2467,29 +2466,6 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 		SW_Site->stNRGR = 11;
 		SW_Site->stDeltaX = 15.0;
 	}
-}
-
-/**
-@brief For multiple runs with the shared library, the need to remove the allocated
-			soil layers arises to avoid leaks. (rjm 2013)
-
-@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-*/
-void SW_SIT_clear_layers(SW_SITE* SW_Site) {
-	LyrIndex i, j;
-
-	j = SW_Site->n_layers;
-
-	if (SW_Site->deepdrain && SW_Site->deep_lyr > 0) {
-		j++;
-	}
-
-	for (i = 0; i < j; i++) {
-		free(SW_Site->lyr[i]);
-		SW_Site->lyr[i] = NULL;
-	}
-	free(SW_Site->lyr);
-	SW_Site->lyr = NULL;
 }
 
 
