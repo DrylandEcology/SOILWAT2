@@ -122,59 +122,6 @@
 
 
 /* =================================================== */
-/*             Local Function Definitions              */
-/* --------------------------------------------------- */
-
-static void records2arrays(
-	TimeInt doy,
-	TimeInt firstdoy,
-	SW_SITE* SW_Site
-) {
-	/* some values are unchanged by the water subs but
-	 * are still required in an array format.
-	 * Also, some arrays start out empty and are
-	 * filled during the water flow.
-	 * See arrays2records() for the modified arrays.
-	 *
-	 * 3/24/2003 - cwb - when running with steppe, the
-	 *       static variable firsttime would only be set once
-	 *       so the firsttime tasks were done only the first
-	 *       year, but what we really want with stepwat is
-	 *       to firsttime tasks on the first day of each year.
-	 * 1-Oct-03 (cwb) - Removed references to sum_transp_coeff.
-	 *       see also Site.c.
-	 */
-	LyrIndex i;
-	int k;
-
-	if (doy == firstdoy) {
-		ForEachSoilLayer(i, SW_Site->n_layers)
-		{
-			lyrSWCBulk_FieldCaps[i] = SW_Site->lyr[i]->swcBulk_fieldcap;
-			lyrWidths[i] = SW_Site->lyr[i]->width;
-			lyrSWCBulk_Wiltpts[i] = SW_Site->lyr[i]->swcBulk_wiltpt;
-			lyrSWCBulk_HalfWiltpts[i] = SW_Site->lyr[i]->swcBulk_halfwiltpt;
-			lyrSWCBulk_Mins[i] = SW_Site->lyr[i]->swcBulk_min;
-			lyrImpermeability[i] = SW_Site->lyr[i]->impermeability;
-			lyrSWCBulk_Saturated[i] = SW_Site->lyr[i]->swcBulk_saturated;
-			lyrbDensity[i] = SW_Site->lyr[i]->soilBulk_density;
-
-			ForEachVegType(k)
-			{
-				lyrTrRegions[k][i] = SW_Site->lyr[i]->my_transp_rgn[k];
-				lyrSWCBulk_atSWPcrit[k][i] = SW_Site->lyr[i]->swcBulk_atSWPcrit[k];
-				lyrTranspCo[k][i] = SW_Site->lyr[i]->transp_coeff[k];
-			}
-		}
-
-		ForEachEvapLayer(i, SW_Site->n_evap_lyrs) {
-			lyrEvapCo[i] = SW_Site->lyr[i]->evap_coeff;
-		}
-
-	} /* end firsttime stuff */
-
-}
-/* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 /* There is only one external function here and it is
@@ -246,8 +193,6 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 
 	doy = sw->Model.doy; /* base1 */
 	month = sw->Model.month; /* base0 */
-
-	records2arrays(sw->Model.doy, sw->Model.firstdoy, &sw->Site);
 
 	#ifdef SWDEBUG
 	if (debug && sw->Model.year == debug_year && sw->Model.doy == debug_doy) {
