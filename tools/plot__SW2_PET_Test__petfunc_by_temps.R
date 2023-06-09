@@ -4,7 +4,7 @@
 
 # Run SOILWAT2 unit tests with appropriate flag
 # ```
-#   CPPFLAGS=-DSW2_PET_Test__petfunc_by_temps make test test_run
+#   CPPFLAGS=-DSW2_PET_Test__petfunc_by_temps make test_run
 # ```
 #
 # Produce plots based on output generated above
@@ -13,7 +13,7 @@
 # ```
 
 #------
-dir_out <- file.path("testing", "Output")
+dir_out <- file.path("tests", "example", "Output")
 
 tag_filename <- "SW2_PET_Test__petfunc_by_temps"
 
@@ -32,7 +32,7 @@ if (length(file_sw2_test_output) == 0) {
 }
 
 
-if (!require("ggplot2", quietly = TRUE)) {
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
   stop("Package 'ggplot2' is required.")
 }
 
@@ -75,26 +75,35 @@ if (do_plot) {
     width = 2 * n_panels[2]
   )
 
-  tmp <- ggplot(
+  tmp <- ggplot2::ggplot(
     data_pet[ids_fH, ],
-    aes(Temperature_C, PET_mm, group = RH_pct, color = RH_pct)
+    ggplot2::aes(Temperature_C, PET_mm, group = RH_pct, color = RH_pct)
   ) +
-    xlim(-10, 40) +
-    labs(x = "Temperature (C)", y = "Annual PET (mm)", color = "RH (%)") +
-    geom_line(size = 0.75) +
-    scale_color_viridis_c(direction = -1) +
-    facet_grid(
+    ggplot2::xlim(-10, 40) +
+    ggplot2::labs(x = "Temperature (C)", y = "Annual PET (mm)", color = "RH (%)") +
+    ggplot2::geom_line(linewidth = 0.75) +
+    ggplot2::scale_color_viridis_c(direction = -1) +
+    ggplot2::facet_grid(
       windspeed_m_per_s ~ cloudcover_pct,
       labeller = all_labeller
-    ) +
-    egg::theme_article() +
-    theme(
+    )
+
+  if (requireNamespace("egg", quietly = TRUE)) {
+    tmp <- tmp +
+      egg::theme_article()
+  } else {
+    tmp <- tmp +
+      ggplot2::theme_classic()
+  }
+
+  tmp <- tmp +
+    ggplot2::theme(
       legend.position = c(
         0.4 / (n_panels[2] + 1),
         1 - 0.4 / (n_panels[1] + 1)
       ),
-      legend.key.size = unit(0.015, units = "npc"),
-      legend.title = element_text(size = 10)
+      legend.key.size = ggplot2::unit(0.015, units = "npc"),
+      legend.title = ggplot2::element_text(size = 10)
     )
 
   plot(tmp)
@@ -113,26 +122,35 @@ if (do_plot) {
     width = 2 * n_panels[2]
   )
 
-  tmp <- ggplot(
+  tmp <- ggplot2::ggplot(
     data_pet[ids_fH, ],
-    aes(Temperature_C, PET_mm, group = cloudcover_pct, color = cloudcover_pct)
+    ggplot2::aes(Temperature_C, PET_mm, group = cloudcover_pct, color = cloudcover_pct)
   ) +
-    xlim(-10, 40) +
-    labs(x = "Temperature (C)", y = "Annual PET (mm)", color = "Clouds (%)") +
-    geom_line(size = 0.75) +
-    scale_color_viridis_c(direction = -1) +
-    facet_grid(
+    ggplot2::xlim(-10, 40) +
+    ggplot2::labs(x = "Temperature (C)", y = "Annual PET (mm)", color = "Clouds (%)") +
+    ggplot2::geom_line(linewidth = 0.75) +
+    ggplot2::scale_color_viridis_c(direction = -1) +
+    ggplot2::facet_grid(
       RH_pct ~ windspeed_m_per_s,
       labeller = all_labeller
-    ) +
-    egg::theme_article() +
-    theme(
+    )
+
+  if (requireNamespace("egg", quietly = TRUE)) {
+    tmp <- tmp +
+      egg::theme_article()
+  } else {
+    tmp <- tmp +
+      ggplot2::theme_classic()
+  }
+
+  tmp <- tmp +
+    ggplot2::theme(
       legend.position = c(
         0.4 / (n_panels[2] + 1),
         1 - 0.4 / (n_panels[1] + 1)
       ),
-      legend.key.size = unit(0.015, units = "npc"),
-      legend.title = element_text(size = 10)
+      legend.key.size = ggplot2::unit(0.015, units = "npc"),
+      legend.title = ggplot2::element_text(size = 10)
     )
 
   plot(tmp)
@@ -151,26 +169,35 @@ if (do_plot) {
     width = 2 * n_panels[2]
   )
 
-  tmp <- ggplot(
+  tmp <- ggplot2::ggplot(
     data_pet[ids_fH, ],
-    aes(Temperature_C, PET_mm, group = windspeed_m_per_s, color = windspeed_m_per_s)
+    ggplot2::aes(Temperature_C, PET_mm, group = windspeed_m_per_s, color = windspeed_m_per_s)
   ) +
-    xlim(-10, 40) +
-    labs(x = "Temperature (C)", y = "Annual PET (mm)", color = "Wind speed (m/s)") +
-    geom_line(size = 0.75) +
-    scale_color_viridis_c(direction = -1) +
-    facet_grid(
+    ggplot2::xlim(-10, 40) +
+    ggplot2::labs(x = "Temperature (C)", y = "Annual PET (mm)", color = "Wind speed (m/s)") +
+    ggplot2::geom_line(linewidth = 0.75) +
+    ggplot2::scale_color_viridis_c(direction = -1) +
+    ggplot2::facet_grid(
       RH_pct ~ cloudcover_pct,
       labeller = all_labeller
-    ) +
-    egg::theme_article() +
-    theme(
+    )
+
+  if (requireNamespace("egg", quietly = TRUE)) {
+    tmp <- tmp +
+      egg::theme_article()
+  } else {
+    tmp <- tmp +
+      ggplot2::theme_classic()
+  }
+
+  tmp <- tmp +
+    ggplot2::theme(
       legend.position = c(
         0.4 / (n_panels[2] + 1),
         1 - 0.4 / (n_panels[1] + 1)
       ),
-      legend.key.size = unit(0.015, units = "npc"),
-      legend.title = element_text(size = 10)
+      legend.key.size = ggplot2::unit(0.015, units = "npc"),
+      legend.title = ggplot2::element_text(size = 10)
     )
 
   plot(tmp)
@@ -192,26 +219,35 @@ if (do_plot) {
     width = 2 * n_panels[2]
   )
 
-  tmp <- ggplot(
+  tmp <- ggplot2::ggplot(
     data_pet[ids_cc, ],
-    aes(Temperature_C, PET_mm, group = factor(fH_gt), color = factor(fH_gt))
+    ggplot2::aes(Temperature_C, PET_mm, group = factor(fH_gt), color = factor(fH_gt))
   ) +
-    xlim(-10, 40) +
-    labs(x = "Temperature (C)", y = "Annual PET (mm)", color = "fRSDS (%)") +
-    geom_line(size = 0.75) +
-    scale_color_viridis_d(direction = -1) +
-    facet_grid(
+    ggplot2::xlim(-10, 40) +
+    ggplot2::labs(x = "Temperature (C)", y = "Annual PET (mm)", color = "fRSDS (%)") +
+    ggplot2::geom_line(linewidth = 0.75) +
+    ggplot2::scale_color_viridis_d(direction = -1) +
+    ggplot2::facet_grid(
       RH_pct ~ windspeed_m_per_s,
       labeller = all_labeller
-    ) +
-    egg::theme_article() +
-    theme(
+    )
+
+  if (requireNamespace("egg", quietly = TRUE)) {
+    tmp <- tmp +
+      egg::theme_article()
+  } else {
+    tmp <- tmp +
+      ggplot2::theme_classic()
+  }
+
+  tmp <- tmp +
+    ggplot2::theme(
       legend.position = c(
         0.4 / (n_panels[2] + 1),
         1 - 0.4 / (n_panels[1] + 1)
       ),
-      legend.key.size = unit(0.015, units = "npc"),
-      legend.title = element_text(size = 10)
+      legend.key.size = ggplot2::unit(0.015, units = "npc"),
+      legend.title = ggplot2::element_text(size = 10)
     )
 
   plot(tmp)

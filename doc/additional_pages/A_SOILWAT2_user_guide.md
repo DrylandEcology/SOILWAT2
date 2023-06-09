@@ -133,18 +133,16 @@ on your side.
 
 
 ### Example
-  * The source code contains a complete example simulation project in `testing/`
-  * Copy the executable to the testing path, modify inputs as desired,
-    and run a simulation, e.g.,
+  * The source code contains a complete example simulation project in
+    `tests/example/`
+  * Modify inputs as desired and run a simulation, e.g.,
 ```{.sh}
-    make bint bint_run
+    make bin_run
 ```
     or, equivalently,
 ```{.sh}
     make bin
-    cp SOILWAT2 testing/
-    cd testing/
-    ./SOILWAT2
+    bin/SOILWAT2 -d ./tests/example -f files.in
 ```
 
   * The inputs comprise the master file `files.in` and the content of the
@@ -154,7 +152,7 @@ on your side.
     warnings and errors. The output files are in `.csv` format and can be
     opened by a spreadsheet program (e.g., `LibreOffice` or `Excel`) or
     imported into `R`
-    (e.g., `data <- read.csv("testing/Output/sw2_yearly.csv")`).
+    (e.g., `data <- read.csv("tests/example/Output/sw2_yearly.csv")`).
     Outputs are explained in detail
     [here](doc/additional_pages/SOILWAT2_Inputs.md).
 

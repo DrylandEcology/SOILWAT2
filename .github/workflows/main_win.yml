@@ -26,12 +26,12 @@ jobs:
       shell: bash
 
     - name: Checkout repository and submodules
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         submodules: recursive
 
     - name: Install cygwin (windows)
-      uses: cygwin/cygwin-install-action@v1
+      uses: cygwin/cygwin-install-action@v3
       with:
         packages: gcc-core gcc-g++ make
 
@@ -40,7 +40,7 @@ jobs:
 
     # AddressSanitizer and LeakSanitizer not available on cygwin
     - name: Run binary
-      run: make clean bin bint_run
+      run: make clean bin_run
 
-    - name: Unit tests
-      run: make clean test test_run
+    - name: Unit tests (shuffle and repeat 3x)
+      run: make clean test_rep3rnd
