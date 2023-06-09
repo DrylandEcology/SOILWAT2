@@ -1,5 +1,7 @@
 # NEWS
 
+# SOILWAT2 v7.1.0-9000
+
 # SOILWAT2 v7.0.0
 * This version produces nearly identical simulation output
   as the previous release under default values for the new inputs.
