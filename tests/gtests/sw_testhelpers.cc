@@ -77,10 +77,10 @@ void Reset_SOILWAT2_after_UnitTest(void) {
 
 
 void create_test_soillayers(unsigned int nlayers, char *InFiles[],
-      SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site) {
+      SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo) {
 
   if (nlayers <= 0 || nlayers > MAX_LAYERS) {
-    LogError(&LogInfo, LOGFATAL, "create_test_soillayers(): "
+    LogError(LogInfo, LOGFATAL, "create_test_soillayers(): "
       "requested number of soil layers (n = %d) is not accepted.\n", nlayers);
   }
 
@@ -130,7 +130,7 @@ void create_test_soillayers(unsigned int nlayers, char *InFiles[],
   int nRegions = 3;
   RealD regionLowerBounds[3] = {20., 50., 100.};
 
-  set_soillayers(SW_VegProd, SW_Site, &LogInfo, nlayers, dmax,
+  set_soillayers(SW_VegProd, SW_Site, LogInfo, nlayers, dmax,
     bulkd, f_gravel, evco, trco_grass, trco_shrub, trco_tree,
     trco_forb, psand, pclay, imperm, soiltemp, nRegions,
     regionLowerBounds, InFiles);
