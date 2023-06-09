@@ -44,9 +44,13 @@
 #include "include/SW_VegEstab.h"
 #include "include/SW_SoilWater.h"
 #include "include/SW_VegProd.h"
-#include "include/SW_Output_outarray.h"
 
 #include "include/SW_Output.h"
+
+// Array-based output declarations:
+#ifdef SW_OUTARRAY
+  #include "include/SW_Output_outarray.h"
+#endif
 
 // Text-based output declarations:
 #ifdef SW_OUTTEXT

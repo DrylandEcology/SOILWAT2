@@ -946,7 +946,8 @@ typedef struct {
 	/** number of output columns for each output key */
 	IntUS ncol_OUT[SW_OUTNKEYS];
 
-		/** \brief A 2-dim array of pointers to output arrays.
+	#if defined(RSOILWAT) || defined(STEPWAT)
+	/** \brief A 2-dim array of pointers to output arrays.
 
 	\note This should be initialized to NULL because they are defined globally
 		and thus have `static storage duration`.
@@ -962,6 +963,7 @@ typedef struct {
 	Bool print_IterationSummary;
 	Bool print_SW_Output;
 	char sw_outstr[MAX_LAYERS * OUTSTRLEN];
+	#endif
 
 	#ifdef STEPWAT
 	RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
