@@ -946,6 +946,10 @@ typedef struct {
 	/** number of output columns for each output key */
 	IntUS ncol_OUT[SW_OUTNKEYS];
 
+	Bool print_IterationSummary;
+	Bool print_SW_Output;
+	char sw_outstr[MAX_LAYERS * OUTSTRLEN];
+
 	#if defined(RSOILWAT) || defined(STEPWAT)
 	/** \brief A 2-dim array of pointers to output arrays.
 
@@ -959,10 +963,6 @@ typedef struct {
 
 	size_t nrow_OUT[SW_OUTNPERIODS];
 	size_t irow_OUT[SW_OUTNPERIODS];
-
-	Bool print_IterationSummary;
-	Bool print_SW_Output;
-	char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 	#endif
 
 	#ifdef STEPWAT
