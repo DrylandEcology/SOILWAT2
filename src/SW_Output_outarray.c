@@ -41,7 +41,7 @@
     and thus have `static storage duration`.
 
   The variable p_OUTsd is used by STEPWAT2 for standard-deviation during
-  aggregation. See also \ref SW_GEN_OUT.p_OUT
+  aggregation. See also `SW_GEN_OUT.p_OUT`
 */
 #define p_OUTsd
 #undef p_OUTsd

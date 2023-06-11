@@ -1562,7 +1562,7 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 		#endif
 	}
 
-	#if defined(RSOILWAT)
+	#if defined(SW_OUTARRAY)
 	if (full_reset) {
 		SW_OUT_deconstruct_outarray(&sw->GenOutput);
 	}
@@ -2718,7 +2718,7 @@ void SW_OUT_SetMemoryRefs(SW_OUTPUT SW_Output[])
       simulations (mean and SD of values)
       - output formatter function such as `get_XXX_agg` which
         - calculate a cumulative running mean and SD for the output values in
-          the pointer array variables \ref SW_GEN_OUT.p_OUT and \ref SW_GEN_OUT.p_OUTsd
+          the pointer array variables `SW_GEN_OUT.p_OUT` and `SW_GEN_OUT.p_OUTsd`
         - if `print_IterationSummary` is `TRUE` (i.e., for the last simulation
           run = last iteration in `STEPWAT2` terminology),
           prepare a formatted text string in the global variable
@@ -2740,9 +2740,9 @@ void SW_OUT_SetMemoryRefs(SW_OUTPUT SW_Output[])
       - currently used by `STEPWAT2` if executed with its `-s flag`, i.e.,
         whenever `STEPWAT2` is run with `SOILWAT2`
 
-    - in-memory output via pointer array variable \ref SW_GEN_OUT.p_OUT
+    - in-memory output via pointer array variable `p_OUT`
       - output formatter function such as `get_XXX_mem` which store the correct
-        values directly in the appropriate elements of \ref SW_GEN_OUT.p_OUT
+        values directly in the appropriate elements of `SW_GEN_OUT.p_OUT`
       - these output formatter functions are assigned to pointers
         `SW_Output[k].pfunc_mem` and called by SW_OUT_write_today()
       - currently used by `rSOILWAT2`
