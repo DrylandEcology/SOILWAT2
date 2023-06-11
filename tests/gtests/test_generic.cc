@@ -17,6 +17,7 @@
 
 #include "include/generic.h"
 #include "include/SW_Defines.h"
+#include "tests/gtests/sw_testhelpers.h"
 
 
 namespace {
@@ -31,7 +32,7 @@ namespace {
       2.44949, 2.738613};
   float tol = 1e-6;
 
-  TEST(RunningAggregatorsTest, RunningMean) {
+  TEST_F(AllTest, RunningMean) {
     double m_at_k = 0.;
 
     for (k = 0; k < N; k++)
@@ -41,7 +42,7 @@ namespace {
     }
   }
 
-  TEST(RunningAggregatorsTest, RunningSD) {
+  TEST_F(AllTest, RunningSD) {
     double ss, sd_at_k;
 
     for (k = 0; k < N; k++)
@@ -59,7 +60,7 @@ namespace {
     }
   }
 
-    TEST(StandardDeviationTest, UnexpectedAndExpectedCases) {
+    TEST_F(AllTest, UnexpectedAndExpectedCasesSD) {
         double value[1] = {5.};
         double values[5] = {5.4, 3.4, 7.6, 5.6, 1.8};
         double oneValMissing[5] = {5.4, SW_MISSING, 7.6, 5.6, 1.8};
@@ -86,7 +87,7 @@ namespace {
         EXPECT_NEAR(standardDev, 2.413848, tol);
     }
 
-    TEST(MeanTest, UnexpectedAndExpectedCases) {
+    TEST_F(AllTest, UnexpectedAndExpectedCasesMean) {
 
         double result;
         double values[5] = {1.8, 2.2, 10., 13.5, 3.2};

@@ -49,7 +49,7 @@ namespace
 {
 
   // Test the veg interception function 'veg_intercepted_water'
-  TEST(SWFlowTest, VegInterceptedWater)
+  TEST_F(AllTest, VegInterceptedWater)
   {
 
     ForEachVegType(k)
@@ -90,14 +90,11 @@ namespace
       EXPECT_LE(wintveg, ppt); // interception by veg should be less than or equal to ppt
       EXPECT_GT(store, 0); // stored interception by veg should be greater than 0
       EXPECT_GE(pptleft, 0); // The pptleft (for soil) should be greater than or equal to 0
-
-      // Reset to previous global state
-      Reset_SOILWAT2_after_UnitTest();
     }
   }
 
   // Test the litter interception function 'litter_intercepted_water'
-  TEST(SWFlowTest, LitterInterceptedWater)
+  TEST_F(AllTest, LitterInterceptedWater)
   {
 
     ForEachVegType(k)
@@ -143,14 +140,11 @@ namespace
       EXPECT_LE(wintlit, pptleft); // interception by lit should be less than or equal to ppt
       EXPECT_GT(store, 0); // stored interception by litter should be greater than 0
       EXPECT_GE(pptleft, 0); // The pptleft (for soil) should be greater than or equal to 0
-
-      // Reset to previous global state
-      Reset_SOILWAT2_after_UnitTest();
     }
   }
 
   // Test infiltration under high water function, 'infiltrate_water_high'
-  TEST(SWFlowTest, SaturatedPercolation)
+  TEST_F(AllTest, SaturatedPercolation)
   {
 
     // declare inputs
@@ -190,9 +184,6 @@ namespace
     EXPECT_DOUBLE_EQ(0., drain[0]); //When impermeability is 1, drainage should be 0
     EXPECT_DOUBLE_EQ(standingWater, (pptleft + 0.8) - swcsat[0]); /* When impermeability is 1,
       standingWater should be equivalent to  pptLeft + swc[0] - swcsat[0]) */
-
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
@@ -318,16 +309,13 @@ namespace
     {
       delete[] array_list[i];
     }
-
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
   //Test transp_weighted_avg function.
-  TEST(SWFlowTest, TranspWeightedAvg)
+  TEST_F(AllTest, TranspWeightedAvg)
   {
-    //--- TEST when n_layers is 1 ------
+    //--- TEST_F when n_layers is 1 ------
     //INPUTS
     double swp_avg = 10;
     unsigned int i;
@@ -350,7 +338,7 @@ namespace
                           SW_All.Site.swcBulk_wiltpt[i]) / 2.;
     }
 
-    //Begin TEST when n_layers is one
+    //Begin TEST_F when n_layers is one
     transp_weighted_avg(&swp_avg, &SW_All.Site, n_tr_rgns, n_layers,
                         tr_regions, swc, SW_SHRUB, &LogInfo);
 
@@ -358,9 +346,10 @@ namespace
     EXPECT_NEAR(swp_avg, swp_avgExpected1, tol6);
 
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
 
-    //--- TEST when n_layers is at "max" ------
+
+
+    //--- TEST_F when n_layers is at "max" ------
     //INPUTS
     swp_avg = 10, n_tr_rgns = 4, n_layers = 25;
     unsigned int tr_regions2[25] = {1,1,1,2,2,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,
@@ -392,17 +381,18 @@ namespace
     EXPECT_NEAR(swp_avg, swp_avgExpectedM, tol6);
 
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
+
+
   }
 
 
   //Test EsT_partitioning by manipulating fbse and fbst variables.
-  TEST(SWFlowTest, EsTPartitioning)
+  TEST_F(AllTest, EsTPartitioning)
   {
     //INPUTS
     double fbse = 0, fbst = 0, blivelai = 0.002, lai_param = 2;
 
-    //TEST when fbse > bsemax
+    //TEST_F when fbse > bsemax
     double fbseExpected = 0.995, fbstExpected = 0.005;
     EsT_partitioning(&fbse, &fbst, blivelai, lai_param);
 
@@ -415,9 +405,10 @@ namespace
     EXPECT_DOUBLE_EQ(fbst + fbse, 1); //Must add up to one.
 
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
 
-    //TEST when fbse < bsemax
+
+
+    //TEST_F when fbse < bsemax
     blivelai = 0.0012, lai_param = 5, fbseExpected = 0.994018,
       fbstExpected = 0.005982036;
     EsT_partitioning(&fbse, &fbst, blivelai, lai_param);
@@ -431,11 +422,12 @@ namespace
     EXPECT_LT(fbst, 1); //fbse and fbst must be between zero and one
     EXPECT_DOUBLE_EQ(fbst + fbse, 1);  //Must add up to one.
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
+
+
   }
 
-  // TEST pot_soil_evap
-  TEST(SWFlowTest, PotentialSoilEvaporation)
+  // TEST_F pot_soil_evap
+  TEST_F(AllTest, PotentialSoilEvaporation)
   {
     unsigned int i, k, nelyrs;
     double bserate = 0, totagb, Es_param_limit = 999.,
@@ -468,7 +460,7 @@ namespace
                                     SW_All.Site.swcBulk_wiltpt[i]) / 2.;
       }
 
-      // Begin TEST if (totagb >= Es_param_limit)
+      // Begin TEST_F if (totagb >= Es_param_limit)
       totagb = Es_param_limit + 1.;
       pot_soil_evap(&SW_All.Site, nelyrs, totagb, fbse,
         petday, shift, shape, inflec, range, swc, Es_param_limit,
@@ -482,7 +474,7 @@ namespace
       // Begin TESTs if (totagb < Es_param_limit)
       totagb = Es_param_limit / 2;
 
-      // Begin TEST if (PET = 0)
+      // Begin TEST_F if (PET = 0)
       pot_soil_evap(&SW_All.Site, nelyrs, totagb, fbse, petday0, shift,
         shape, inflec, range, swc, Es_param_limit, &LogInfo, &bserate);
 
@@ -491,7 +483,7 @@ namespace
         "pot_soil_evap != 0 if PET = 0 for " << nelyrs << " soil layers";
 
 
-      // Begin TEST if (potential baresoil rate = 0)
+      // Begin TEST_F if (potential baresoil rate = 0)
       pot_soil_evap(&SW_All.Site, nelyrs, totagb, fbse0, petday, shift,
         shape, inflec, range, swc, Es_param_limit, &LogInfo, &bserate);
 
@@ -500,7 +492,7 @@ namespace
         "pot_soil_evap != 0 if fbse = 0 for " << nelyrs << " soil layers";
 
 
-      // Begin TEST if (totagb < Es_param_limit)
+      // Begin TEST_F if (totagb < Es_param_limit)
       pot_soil_evap(&SW_All.Site, nelyrs, totagb, fbse, petday, shift,
         shape, inflec, range, swc, Es_param_limit, &LogInfo, &bserate);
 
@@ -519,13 +511,14 @@ namespace
 
 
       //Reset to previous global states.
-      Reset_SOILWAT2_after_UnitTest();
+
+
     }
   }
 
 
-  //TEST pot_soil_evap_bs for when nelyrs = 1 and nelyrs = MAX
-  TEST(SWFlowTest, PotentialSoilEvaporation2)
+  //TEST_F pot_soil_evap_bs for when nelyrs = 1 and nelyrs = MAX
+  TEST_F(AllTest, PotentialSoilEvaporation2)
   {
     //INPUTS
     unsigned int nelyrs,i;
@@ -556,7 +549,7 @@ namespace
                                       SW_All.Site.swcBulk_wiltpt[i]) / 2.;
       }
 
-      //Begin TEST for bserate when nelyrs = 1
+      //Begin TEST_F for bserate when nelyrs = 1
       pot_soil_evap_bs(&bserate, &SW_All.Site, &LogInfo, nelyrs,
                        petday, shift, shape, inflec, range, swc);
       if (nelyrs == 1)
@@ -564,7 +557,8 @@ namespace
         EXPECT_NEAR(bserate, 0.062997815, tol6) <<
           "pot_soil_evap_bs != 0.06306041 if nelyr = 1 for " << nelyrs << " soil layesrs";
         //Reset to previous global states.
-        Reset_SOILWAT2_after_UnitTest();
+
+
         // Setup soil layers for next test
       }
       if (nelyrs == 25)
@@ -575,12 +569,13 @@ namespace
     }
 
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
+
+
   }
 
 
   //Test pot_transp by manipulating biolive and biodead input variables
-  TEST(SWFlowTest, PotentialTranspiration)
+  TEST_F(AllTest, PotentialTranspiration)
   {
     //INPUTS
     double bstrate = 0, swpavg = 0.8, biolive = -0.8, biodead = 0.2, fbst = 0.8, petday = 0.1,
@@ -588,7 +583,7 @@ namespace
         shade_deadmax = 0.9, shade_xinflex = 0.4, shade_slope = 0.9, shade_yinflex = 0.3,
           shade_range = 0.8, co2_wue_multiplier = 2.1;
 
-    //Begin TEST for if biolive < 0
+    //Begin TEST_F for if biolive < 0
     pot_transp(&bstrate, swpavg, biolive, biodead, fbst, petday, swp_shift, swp_shape,
       swp_inflec, swp_range, shade_scale, shade_deadmax, shade_xinflex, shade_slope,
         shade_yinflex, shade_range, co2_wue_multiplier);
@@ -599,9 +594,10 @@ namespace
     EXPECT_DOUBLE_EQ(bstrate, 0); //bstrate = 0 if biolove < 0
 
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
 
-    //Begin TEST for if biolive > 0
+
+
+    //Begin TEST_F for if biolive > 0
     biolive = 0.8;
     pot_transp(&bstrate, swpavg, biolive, biodead, fbst, petday, swp_shift, swp_shape,
       swp_inflec, swp_range, shade_scale, shade_deadmax, shade_xinflex, shade_slope,
@@ -611,9 +607,10 @@ namespace
                                    //bstrate is expected to be 0.06596299
 
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
 
-    //Begin TEST for if biodead > shade_deadmax
+
+
+    //Begin TEST_F for if biodead > shade_deadmax
     biodead = 0.95, bstrateExpected = 0.0659629;
     pot_transp(&bstrate, swpavg, biolive, biodead, fbst, petday, swp_shift, swp_shape,
       swp_inflec, swp_range, shade_scale, shade_deadmax, shade_xinflex, shade_slope,
@@ -622,9 +619,10 @@ namespace
     EXPECT_NEAR(bstrate, bstrateExpected, tol6); //bstrate is expected to be 0.06564905
 
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
 
-    //Begin TEST for if biodead < shade_deadmax
+
+
+    //Begin TEST_F for if biodead < shade_deadmax
     biodead = 0.2, bstrateExpected = 0.0659629;
     pot_transp(&bstrate, swpavg, biolive, biodead, fbst, petday, swp_shift, swp_shape,
       swp_inflec, swp_range, shade_scale, shade_deadmax, shade_xinflex, shade_slope,
@@ -634,16 +632,17 @@ namespace
                                    //bstrate is expected to be 0.06596299
 
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
+
+
   }
 
   //Test result for watrate by manipulating variable petday
-  TEST(SWFlowTest, watrate)
+  TEST_F(AllTest, watrate)
   {
     //INPUTS
     double swp = 0.8, petday = 0.1, shift = 45, shape = 0.1, inflec = 0.25, range = 0.8;
 
-    //Begin TEST for if petday < .2
+    //Begin TEST_F for if petday < .2
     double watExpected = 0.630365;
     double wat = watrate(swp, petday, shift, shape, inflec, range);
 
@@ -651,7 +650,7 @@ namespace
     EXPECT_LE(wat, 1); //watrate must be between 0 & 1
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
-    //Begin TEST for if 0.2 < petday < .4
+    //Begin TEST_F for if 0.2 < petday < .4
     petday = 0.3, watExpected = 0.6298786;
     wat = watrate(swp, petday, shift, shape, inflec, range);
 
@@ -660,9 +659,10 @@ namespace
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
 
-    //Begin TEST for if 0.4 < petday < .6
+
+
+    //Begin TEST_F for if 0.4 < petday < .6
     petday = 0.5, watExpected = 0.6285504;
     wat = watrate(swp, petday, shift, shape, inflec, range);
 
@@ -671,9 +671,10 @@ namespace
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
 
-    //Begin TEST for if 0.6 < petday < 1
+
+
+    //Begin TEST_F for if 0.6 < petday < 1
     petday = 0.8, watExpected = 0.627666;
     wat = watrate(swp, petday, shift, shape, inflec, range);
 
@@ -682,16 +683,17 @@ namespace
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
+
+
   }
 
   //Test evap_fromSurface by manipulating water_pool and evap_rate variables
-  TEST(SWFlowTest, SurfaceEvaporation)
+  TEST_F(AllTest, SurfaceEvaporation)
   {
     //INPUTS
     double water_pool = 1, evap_rate = 0.33, aet = 0.53;
 
-    //Begin TEST for when water_pool > evap_rate
+    //Begin TEST_F for when water_pool > evap_rate
     double aetExpected = 0.86, evapExpected = 0.33, waterExpected = 0.67;
     evap_fromSurface(&water_pool, &evap_rate, &aet);
 
@@ -704,7 +706,7 @@ namespace
     EXPECT_NEAR(water_pool, waterExpected, tol6); //Variable water_pool is expected to be 0.67 with current inputs
     EXPECT_GE(water_pool, 0); //water_pool is never negative
 
-    //Begin TEST for when water_pool < evap_rate
+    //Begin TEST_F for when water_pool < evap_rate
     water_pool = 0.1, evap_rate = 0.67, aet = 0.78, aetExpected = 0.88, evapExpected = 0.1;
     evap_fromSurface(&water_pool, &evap_rate, &aet);
 
@@ -718,11 +720,12 @@ namespace
     EXPECT_GE(water_pool, 0); //water_pool is never negative
 
     //Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
+
+
   }
 
   //Test remove_from_soil when nlyrs = 1 and when nlyrs = MAX
-  TEST(SWFlowTest, RemoveFromSoil)
+  TEST_F(AllTest, RemoveFromSoil)
   {
     // INPUTS
     unsigned int nlyrs, i;
@@ -757,7 +760,7 @@ namespace
         coeff[i] = 0.5;
       }
 
-      //------ 1) TEST: if coeff[i] == 0, then expectation: no water extracted
+      //------ 1) TEST_F: if coeff[i] == 0, then expectation: no water extracted
       // Re-set inputs
       aet = aet_init;
       ForEachSoilLayer(i, nlyrs)
@@ -789,7 +792,7 @@ namespace
           "remove_from_soil: sum(qty) != 0 for " << nlyrs << " soil layers";
 
 
-      //------ 2) TEST: if frozen[i], then expectation: no water extracted
+      //------ 2) TEST_F: if frozen[i], then expectation: no water extracted
       // Re-set inputs and set soil layers as frozen
       aet = aet_init;
       ForEachSoilLayer(i, nlyrs)
@@ -822,7 +825,7 @@ namespace
           "remove_from_soil: sum(qty) != 0 for " << nlyrs << " soil layers";
 
 
-      //------ 3) TEST: if coeff[i] > 0 && !frozen[i], then water is extracted
+      //------ 3) TEST_F: if coeff[i] > 0 && !frozen[i], then water is extracted
       // Re-set inputs
       aet = aet_init;
       ForEachSoilLayer(i, nlyrs)
@@ -882,14 +885,11 @@ namespace
           " !<= rate=" << rate <<
           " for " << nlyrs << " soil layers";
     }
-
-    // Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
   //Test when nlyrs = 1 and 25 for outputs; swc, drain, drainout, standing water
-  TEST(SWFlowTest, PercolateUnsaturated)
+  TEST_F(AllTest, PercolateUnsaturated)
   {
     //INPUTS
     unsigned int nlyrs, i, k;
@@ -924,7 +924,7 @@ namespace
       }
 
 
-      //--- (1) TEST:
+      //--- (1) TEST_F:
       //        if swc[i] <= swcmin[i],
       //        then expect drain = 0
 
@@ -962,7 +962,7 @@ namespace
       }
 
 
-      //--- (2) TEST:
+      //--- (2) TEST_F:
       //        if swc_fc > swc[i] > swcmin[i],
       //        then expect drain > 0
 
@@ -1002,7 +1002,7 @@ namespace
         "percolate_unsaturated: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
 
 
-      //--- (3) TEST:
+      //--- (3) TEST_F:
       //        if swc_sat ~ swc[i] > swc_fc[i],
       //        then expect drain < 0 && ponded > 0
 
@@ -1047,7 +1047,7 @@ namespace
         "percolate_unsaturated: sum(delta(swc[i])) !< 0 for layer " << 1 + i;
 
 
-      //--- (4) TEST:
+      //--- (4) TEST_F:
       //        if lyrFrozen[i],
       //        then expect drain[i] to be small
       small = tol3;
@@ -1096,14 +1096,11 @@ namespace
         SW_All.SoilWat.lyrFrozen[i] = swFALSE;
       }
     }
-
-    // Reset to previous global states.
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
-  //TEST for hydraulic_redistribution when nlyrs = MAX_LAYERS and nlyrs = 1
-  TEST(SWFlowTest, HydraulicRedistribution)
+  //TEST_F for hydraulic_redistribution when nlyrs = MAX_LAYERS and nlyrs = 1
+  TEST_F(AllTest, HydraulicRedistribution)
   {
     // INPUTS
     unsigned int nlyrs, i, k;
@@ -1191,9 +1188,6 @@ namespace
           "hydraulic_redistribution: hydred != hydredExpected0 for layer " <<
           1 + i << " out of "<< nlyrs << " soil layers";
       }
-
-      // Reset to previous global states.
-      Reset_SOILWAT2_after_UnitTest();
     }
   }
 }

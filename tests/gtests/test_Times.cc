@@ -21,7 +21,7 @@
 #include "tests/gtests/sw_testhelpers.h"
 
 namespace{
-  TEST(TimesTest, LeapYear) {
+  TEST_F(AllTest, TimesTestLeapYear) {
     unsigned int k, lpadd,
       years[] = {1900, 1980, 1981, 2000}; // noleap, leap, noleap, leap years
 
@@ -67,7 +67,7 @@ namespace{
     return v1 + (v2 - v1) * sign * (mday - 15.) / delta_days;
   }
 
-  TEST(TimesTest, InterpolateMonthlyValues) {
+  TEST_F(AllTest, TimesTestInterpolateMonthlyValues) {
     // point to the structure that contains cloud coverage monthly values
     SW_SKY SW_Sky;
     SW_SKY *xintpl = &SW_Sky;
@@ -194,10 +194,6 @@ namespace{
         ) << "year = " << years[k] << " doy = " << doy << " mday = " << doy2mday(doy + 1,
                                     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month);
       }
-
-
-      // Reset to previous global states
-      Reset_SOILWAT2_after_UnitTest();
     }
   }
 }

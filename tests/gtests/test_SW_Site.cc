@@ -65,7 +65,7 @@ namespace {
   };
 
   // Test pedotransfer functions
-  TEST(SiteTest, PTFs) {
+  TEST_F(AllTest, PTFs) {
     // inputs
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -124,7 +124,7 @@ namespace {
 
 
   // Test fatal failures of PTF estimation
-  TEST(SiteDeathTest, PTFs) {
+  TEST_F(AllTest, PTFsDeathTest) {
 
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -154,7 +154,7 @@ namespace {
 
 
   // Test PTF-SWRC pairings
-  TEST(SiteTest, PTF2SWRC) {
+  TEST_F(AllTest, PTF2SWRC) {
     unsigned int k; // `length()` returns "unsigned long"
 
     for (k = 1; k < length(ns_ptfca2C1974); k++) {
@@ -231,7 +231,7 @@ namespace {
 
 
   // Test fatal failures of SWRC parameter checks
-  TEST(SiteDeathTest, SWRCpChecks) {
+  TEST_F(AllTest, SWRCpChecksDeathTest) {
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
@@ -249,7 +249,7 @@ namespace {
 
 
   // Test nonfatal failures of SWRC parameter checks
-  TEST(SiteTest, SWRCpChecks) {
+  TEST_F(AllTest, SWRCpChecks) {
 
     // inputs
     RealD
@@ -387,7 +387,7 @@ namespace {
 
 
   // Test 'PTF_RawlsBrakensiek1985'
-  TEST(SiteTest, PTFRawlsBrakensiek1985) {
+  TEST_F(AllTest, PTFRawlsBrakensiek1985) {
     //declare mock INPUTS
     double
       theta_min,
@@ -441,7 +441,7 @@ namespace {
 
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST(SiteDeathTest, SoilParameters) {
+  TEST_F(AllTest, SoilParametersDeathTest) {
     LyrIndex n1 = 0, n2 = 1, k = 2;
     RealD help;
 
@@ -460,14 +460,11 @@ namespace {
       SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo, PathInfo.InFiles),
       "'transpiration coefficient' has an invalid value"
     );
-
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
   // Test that soil transpiration regions are derived well
-  TEST(SWSiteTest, SoilTranspirationRegions) {
+  TEST_F(AllTest, SoilTranspirationRegions) {
     /* Notes:
         - SW_Site.n_layers is base1
         - soil layer information in _TranspRgnBounds is base0
@@ -542,14 +539,11 @@ namespace {
     }
 
     delete[] regionLowerBounds4;
-
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
   // Test bulk and matric soil density functionality
-  TEST(SWSiteTest, SoilDensity) {
+  TEST_F(AllTest, SoilDensity) {
     double
       soildensity = 1.4,
       fcoarse = 0.1;
@@ -615,15 +609,11 @@ namespace {
       SW_All.Site.soilBulk_density[0],
       SW_All.Site.soilMatric_density[0]
     );
-
-
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
   // Test that bulk and matric soil density fail
-  TEST(SWSiteDeathTest, SoilDensity) {
+  TEST_F(AllTest, SoilDensityDeathTest) {
 
     // Check error if bulk density too low for coarse fragments
     EXPECT_DEATH_IF_SUPPORTED(
@@ -639,9 +629,5 @@ namespace {
       SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo,  PathInfo.InFiles),
       "Soil density type not recognized"
     );
-
-
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
   }
 } // namespace

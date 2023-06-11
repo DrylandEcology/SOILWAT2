@@ -11,7 +11,7 @@
 
 namespace {
   // Run a simulation with vegetation establishment turn on
-  TEST(VegEstabTest, SimulateWithVegEstab) {
+  TEST_F(AllTest, SimulateWithVegEstab) {
     // Turn on vegetation establishment and process inputs (but ignore use flag)
     SW_VES_read2(&SW_All.VegEstab, &LogInfo, swTRUE, swFALSE, swFALSE,
                  PathInfo.InFiles, PathInfo._ProjDir);
@@ -30,9 +30,6 @@ namespace {
       EXPECT_GE(SW_All.VegEstab.parms[i]->estab_doy, 0);
       EXPECT_LE(SW_All.VegEstab.parms[i]->estab_doy, 366);
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 } // namespace

@@ -114,7 +114,7 @@ namespace {
   int k;
 
   // Test the SW_VEGPROD constructor 'SW_VPD_construct'
-  TEST(VegTest, Constructor) {
+  TEST_F(AllTest, Constructor) {
     SW_VPD_construct(&SW_All.VegProd, &LogInfo);
     SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather,
                     &SW_All.Model, SW_All.Site.latitude, &LogInfo);
@@ -126,14 +126,11 @@ namespace {
       EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[WUE_INDEX][0]);
       EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
   // Test the application of the biomass CO2-effect
-  TEST(VegTest, BiomassCO2effect) {
+  TEST_F(AllTest, BiomassCO2effect) {
     int i;
     double x;
     double biom1[12], biom2[12];
@@ -149,14 +146,11 @@ namespace {
     for (i = 0; i < 12; i++) {
       EXPECT_DOUBLE_EQ(biom2[i], biom1[i] * x);
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
   // Test summing values across vegetation types
-  TEST(VegTest, Summing) {
+  TEST_F(AllTest, Summing) {
     int vegIndex;
 
     for(vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
@@ -174,7 +168,7 @@ namespace {
 
 
 	// Check `get_critical_rank`
-	TEST(VegTest, rank) {
+	TEST_F(AllTest, rank) {
 		int k;
 		// Check `get_critical_rank` for normal inputs, e.g., -2.0, -2.0, -3.5, -3.9
 		get_critical_rank(&SW_All.VegProd);
@@ -209,13 +203,9 @@ namespace {
 
 		get_critical_rank(&SW_All.VegProd);
 		assert_decreasing_SWPcrit(&SW_All.VegProd);
-
-
-		// Reset to previous global state
-		Reset_SOILWAT2_after_UnitTest();
 	}
 
-    TEST(EstimateVegetationTest, NotFullVegetation) {
+    TEST_F(AllTest, NotFullVegetation) {
 
         /*  ================================================================
                     This block of tests deals with input values to
@@ -685,7 +675,7 @@ namespace {
         deallocateClimateStructs(&climateOutput, &climateAverages);
     }
 
-    TEST(EstimateVegetationTest, FullVegetation) {
+    TEST_F(AllTest, FullVegetation) {
 
         /*  ================================================================
                    This block of tests deals with input values to
@@ -1156,7 +1146,7 @@ namespace {
 
     }
 
-    TEST(VegEstimationDeathTest, VegInputGreaterThanOne) {
+    TEST_F(AllTest, VegInputGreaterThanOneDeathTest) {
 
         /*  ================================================================
                    Tests a death case of `estimatePotNatVegComposition()`

@@ -46,7 +46,7 @@ pcg32_random_t flowTemp_rng;
 namespace {
 
   // Test the function 'surface_temperature_under_snow'
-  TEST(SWFlowTempTest, SurfaceTemperatureUnderSnow) {
+  TEST_F(AllTest, SurfaceTemperatureUnderSnow) {
 
     // declare inputs and output
     double snow, airTempAvg;
@@ -81,12 +81,10 @@ namespace {
 
     EXPECT_EQ(-2.0, tSoilAvg); // When there is snow > 6.665 and airTemp >= 0, the return is -2.0
 
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
   // Test the soil temperature initialization function 'soil_temperature_setup'
-  TEST(SWFlowTempTest, SoilTemperatureInit) {
+  TEST_F(AllTest, SoilTemperatureInit) {
 
     // declare inputs and output
     double deltaX = 15.0, theMaxDepth = 990.0, sTconst = 4.15;
@@ -121,10 +119,6 @@ namespace {
     EXPECT_EQ(SW_All.StRegValues.depths[nlyrs - 1], 20); // sum of inputs width = maximum depth; in my example 20
     EXPECT_EQ((SW_All.StRegValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
 
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
-
-
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
     nlyrs = MAX_LAYERS;
@@ -157,13 +151,11 @@ namespace {
     EXPECT_EQ(SW_All.StRegValues.depths[nlyrs - 1], 295); // sum of inputs width = maximum depth; in my example 295
     EXPECT_EQ((SW_All.StRegValues.depthsR[nRgr]/deltaX) - 1, nRgr); // nRgr = (MaxDepth/deltaX) - 1
 
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
     delete[] bDensity2; delete[] fc2; delete[] wp2;
   }
 
   // Death tests for soil_temperature_setup function
-  TEST(SWFlowTempDeathTest, SoilTemperatureInit) {
+  TEST_F(AllTest, SoilTemperatureInitDeathTest) {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     double deltaX = 15.0, sTconst = 4.15;
@@ -197,15 +189,13 @@ namespace {
       "SOIL_TEMP FUNCTION ERROR: soil temperature max depth"
     );
 
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
     delete[] wp2; delete[] fc2; delete[] bDensity2;
   }
 
 
   // Test lyrSoil_to_lyrTemp, lyrSoil_to_lyrTemp_temperature via
   // soil_temperature_setup function
-  TEST(SWFlowTempTest, SoilLayerInterpolationFunctions) {
+  TEST_F(AllTest, SoilLayerInterpolationFunctions) {
 
     // declare inputs and output
     double deltaX = 15.0, theMaxDepth = 990.0, sTconst = 4.15;
@@ -305,13 +295,11 @@ namespace {
     EXPECT_LE(maxvalR, sTconst);//Maximum interpolated oldsTempR value should be less than or equal to maximum in oldsTemp2 (sTconst = last layer)
     EXPECT_EQ(SW_All.StRegValues.oldavgLyrTempR[nRgr + 1], sTconst); //Temperature in last interpolated layer should equal sTconst
 
-    //Reset to global state
-    Reset_SOILWAT2_after_UnitTest();
     delete[] bDensity2; delete[] fc2; delete[] wp2;
   }
 
   // Test set layer to frozen or unfrozen 'set_frozen_unfrozen'
-  TEST(SWFlowTempTest, SetFrozenUnfrozen){
+  TEST_F(AllTest, SetFrozenUnfrozen){
 
     // declare inputs and output
     // *****  Test when nlyrs = 1  ***** //
@@ -330,9 +318,6 @@ namespace {
     set_frozen_unfrozen(nlyrs, sTemp2, swc, swc_sat, width, SW_All.SoilWat.lyrFrozen);
 
     EXPECT_EQ(0,SW_All.SoilWat.lyrFrozen[0]); // Soil should NOT freeze when sTemp is > -1
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     nlyrs = MAX_LAYERS;
@@ -357,13 +342,12 @@ namespace {
       // Test
       EXPECT_EQ(0,SW_All.SoilWat.lyrFrozen[i]);
     }
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
+
     delete[] sTemp3; delete[] sTemp4; delete[] swc2; delete[] swc_sat2;
   }
 
   // Test soil temperature today function 'soil_temperature_today'
-  TEST(SWFlowTempTest, SoilTemperatureTodayFunction) {
+  TEST_F(AllTest, SoilTemperatureTodayFunction) {
 
     // declare inputs and output
     double delta_time = 86400., deltaX = 15.0, T1 = 20.0, sTconst = 4.16, csParam1 = 0.00070,
@@ -434,14 +418,12 @@ namespace {
     for (i = 0; i < length(array_list); i++){
       delete[] array_list[i];
     }
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
   // Test main soil temperature function 'soil_temperature'
   // AND lyrTemp_to_lyrSoil_temperature as this function
   // is only called in the soil_temperature function
-  TEST(SWFlowTempTest, MainSoilTemperatureFunction_Lyr01) {
+  TEST_F(AllTest, MainSoilTemperatureFunction_Lyr01) {
 
     unsigned int k, i;
 
@@ -540,10 +522,6 @@ namespace {
       EXPECT_NE(SW_All.StRegValues.oldavgLyrTempR[k], SW_MISSING);
     }
 
-    //Reset to global state
-    Reset_SOILWAT2_after_UnitTest();
-
-
     // ptr_stError should be set to TRUE if soil_temperature_today fails (i.e. unrealistic temp values)
     double *sTemp2 = new double[nlyrs];
     double *oldsTemp2 = new double[nlyrs];
@@ -579,15 +557,13 @@ namespace {
     // Check that error has occurred as indicated by ptr_stError
     EXPECT_EQ(ptr_stError, swTRUE);
 
-    //Reset to global state
-    Reset_SOILWAT2_after_UnitTest();
     delete[] oldsTemp2; delete[] sTemp2;
   }
 
   // Test main soil temperature function 'soil_temperature'
   // AND lyrTemp_to_lyrSoil_temperature as this function
   // is only called in the soil_temperature function
-  TEST(SWFlowTempTest, MainSoilTemperatureFunction_LyrMAX) {
+  TEST_F(AllTest, MainSoilTemperatureFunction_LyrMAX) {
     // *****  Test when nlyrs = MAX_LAYERS  ***** //
     pcg32_random_t soilTemp_rng;
     RandSeed(0u, 0u, &soilTemp_rng);
@@ -717,13 +693,10 @@ namespace {
     for (i = 0; i < length(array_list); i++){
       delete[] array_list[i];
     }
-
-    // Reset to global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
   // Test that main soil temperature functions fails when it is supposed to
-  TEST(SWFlowTempDeathTest, MainSoilTemperatureFunction) {
+  TEST_F(AllTest, MainSoilTemperatureFunctionDeathTest) {
 
     unsigned int nlyrs = 1, nRgr = 65;
     double airTemp = 25.0, pet = 5.0, aet = 4.0, biomass = 100., surfaceTemp = 15.,
@@ -749,8 +722,5 @@ namespace {
       ),
       "SOILWAT2 ERROR soil temperature module was not initialized"
     );
-
-    //Reset to global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 }

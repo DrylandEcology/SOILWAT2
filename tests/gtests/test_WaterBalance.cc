@@ -45,7 +45,7 @@ namespace {
       ii) Summarize checks added to debugging code of 'SW_SWC_water_flow' (which is
           compiled if flag 'SWDEBUG' is defined)
   */
-  TEST(WaterBalanceTest, Example1) { // default run == 'testing' example1
+  TEST_F(AllTest, Example1) { // default run == 'testing' example1
     int i;
 
     // Run the simulation
@@ -57,13 +57,10 @@ namespace {
         "Water balance error in test " <<
         i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
-  TEST(WaterBalanceTest, WithSoilTemperature) {
+  TEST_F(AllTest, WithSoilTemperature) {
     int i;
 
     // Turn on soil temperature simulations
@@ -78,13 +75,10 @@ namespace {
         "Water balance error in test " <<
         i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
-  TEST(WaterBalanceTest, WithPondedWaterRunonRunoff) {
+  TEST_F(AllTest, WithPondedWaterRunonRunoff) {
     int i;
 
     // Turn on impermeability of first soil layer, runon, and runoff
@@ -101,14 +95,11 @@ namespace {
         "Water balance error in test " <<
         i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
 
-  TEST(WaterBalanceTest, WithWeatherGeneratorOnly) {
+  TEST_F(AllTest, WithWeatherGeneratorOnly) {
     int i;
 
     // Turn on Markov weather generator (and turn off use of historical weather)
@@ -136,13 +127,10 @@ namespace {
         "Water balance error in test " <<
         i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
-  TEST(WaterBalanceTest, WithWeatherGeneratorForSomeMissingValues) {
+  TEST_F(AllTest, WithWeatherGeneratorForSomeMissingValues) {
     int i;
 
     // Turn on Markov weather generator
@@ -169,13 +157,10 @@ namespace {
         "Water balance error in test " <<
         i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
-  TEST(WaterBalanceTest, WithHighGravelVolume) {
+  TEST_F(AllTest, WithHighGravelVolume) {
     int i;
     LyrIndex s;
 
@@ -197,13 +182,10 @@ namespace {
         "Water balance error in test " <<
         i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
-  TEST(WaterBalanceTest, WithVegetationFromClimate1) {
+  TEST_F(AllTest, WithVegetationFromClimate1) {
     int i;
 
     // Select method to estimate vegetation from long-term climate
@@ -222,12 +204,9 @@ namespace {
         "Water balance error in test " <<
         i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
-  TEST(WaterBalanceTest, WithSWRCvanGenuchten1980) {
+  TEST_F(AllTest, WithSWRCvanGenuchten1980) {
     int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)
@@ -255,14 +234,11 @@ namespace {
         "Water balance error in test " <<
         i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
 
-  TEST(WaterBalanceTest, WithSWRCFXW) {
+  TEST_F(AllTest, WithSWRCFXW) {
     int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)
@@ -290,13 +266,10 @@ namespace {
         "Water balance error in test " <<
         i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
-  TEST(WaterBalanceTest, WithDaymet) {
+  TEST_F(AllTest, WaterBalanceWithDaymet) {
     int i;
 
     // Point to Daymet weather data
@@ -332,13 +305,10 @@ namespace {
         "Water balance error in test " <<
         i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
-  TEST(WaterBalanceTest, WithGRIDMET) {
+  TEST_F(AllTest, WaterBalanceWithGRIDMET) {
     int i;
 
     // Point to gridMET weather data
@@ -378,13 +348,10 @@ namespace {
         "Water balance error in test " <<
         i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
-  TEST(WaterBalanceTest, WithMACA) {
+  TEST_F(AllTest, WaterBalanceWithMACA) {
     int i;
 
     // Point to MACA weather data
@@ -426,9 +393,6 @@ namespace {
         "Water balance error in test " <<
         i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 

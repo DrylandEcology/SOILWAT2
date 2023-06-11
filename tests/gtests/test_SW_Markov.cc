@@ -44,7 +44,7 @@ extern void (*test_temp_correct_wetdry)(RealD *, RealD *, RealD, RealD, RealD, R
 
 namespace {
   // Test the SW_MARKOV constructor 'SW_MKV_construct'
-  TEST(WGTest, Constructor) {
+  TEST_F(AllTest, Constructor) {
     SW_MKV_construct(SW_All.Weather.rng_seed, &LogInfo, &SW_All.Markov);
 
     // Check that at least first array elements are initialized to zero
@@ -57,14 +57,12 @@ namespace {
     EXPECT_DOUBLE_EQ(0., SW_All.Markov.cfnw[0]);
     EXPECT_DOUBLE_EQ(0., SW_All.Markov.cfnd[0]);
 
-    // Reset to previous global state
-    // Reset_SOILWAT2_after_UnitTest();
     SW_MKV_deconstruct(&SW_All.Markov);
   }
 
 
   // Check seeding of RNG for weather generator
-  TEST(WGTest, Seeding) {
+  TEST_F(AllTest, Seeding) {
     short k, n = 18, seed = 42;
     RealD
       tmax, *tmax0 = new double[n],
@@ -136,14 +134,11 @@ namespace {
     delete[] tmax0;
     delete[] tmin0;
     delete[] ppt0;
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
   // Test drawing multivariate normal variates for daily maximum/minimum temp
-  TEST(WGTest, mvnorm) {
+  TEST_F(AllTest, mvnorm) {
     short k, n = 3;
     RealD tmax = 0., tmin = 0., tval;
 
@@ -178,12 +173,10 @@ namespace {
       EXPECT_DOUBLE_EQ(tmin, tmax);
     }
 
-    // Reset to previous global state
-    // Reset_SOILWAT2_after_UnitTest();
     SW_MKV_deconstruct(&SW_All.Markov);
   }
 
-  TEST(WGDeathTest, mvnorm) {
+  TEST_F(AllTest, mvnormDeathTest) {
     RealD tmax = 0., tmin = 0.;
 
     SW_MKV_construct(SW_All.Weather.rng_seed, &LogInfo, &SW_All.Markov); // initialize markov_rng
@@ -195,14 +188,12 @@ namespace {
       "Bad covariance matrix"
     );
 
-    // Reset to previous global state
-    // Reset_SOILWAT2_after_UnitTest();
     SW_MKV_deconstruct(&SW_All.Markov);
   }
 
 
   // Test correcting daily temperatures for wet/dry days
-  TEST(WGTest, WetDryTemperatureCorrection) {
+  TEST_F(AllTest, WetDryTemperatureCorrection) {
     RealD
       tmax = 0., tmin = 0., t0 = 0., t10 = 10.,
       wet = 1., dry = 0.,
@@ -240,8 +231,6 @@ namespace {
     EXPECT_DOUBLE_EQ(tmin, fmin(tmax, t10 + cf_pos));
     EXPECT_LE(tmin, tmax);
 
-    // Reset to previous global state
-    // Reset_SOILWAT2_after_UnitTest();
     SW_MKV_deconstruct(&SW_All.Markov);
   }
 

@@ -1,6 +1,10 @@
 #include <cmath>
 #include "gtest/gtest.h"
 #include "include/SW_datastructs.h"
+#include "include/SW_Control.h"
+#include "include/SW_Weather.h"
+#include "include/myMemory.h"
+#include "include/SW_Files.h"
 
 
 #define length(array) (sizeof(array) / sizeof(*(array))) //get length of an array
@@ -18,10 +22,50 @@ static const double
 #undef missing
 #define missing(x)  ( EQ( fabs( (x) ), SW_MISSING ) || !std::isfinite( (x) ) )
 
-extern SW_ALL SW_All;
-extern SW_OUTPUT_POINTERS SW_OutputPtrs;
-extern LOG_INFO LogInfo;
-extern PATH_INFO PathInfo;
+
+class AllTest : public::testing::Test {
+  protected:
+
+    SW_ALL SW_All;
+    PATH_INFO PathInfo;
+    LOG_INFO LogInfo;
+    SW_OUTPUT_POINTERS SW_OutputPtrs;
+
+    void SetUp() override {
+      // `memcpy()` does not work to copy from a global to local attributes
+      // since the function does not copy dynamically allocated memory
+
+      const char * masterfile_test = "files.in"; // relative to 'dir_test'
+      Bool EchoInits = swFALSE;
+
+      // Initialize SOILWAT2 variables and read values from example input file
+      LogInfo.logged = swFALSE;
+      LogInfo.logfp = NULL;
+
+      PathInfo.InFiles[eFirst] = Str_Dup(masterfile_test, &LogInfo);
+
+      SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+      SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo, EchoInits);
+
+      /* Notes on messages during tests
+        - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
+          "example/Output/logfile.log" to disk (based on content of "files.in")
+        - we close "Output/logfile.log"
+        - we set `logfp` to NULL to silence all non-error messages during tests
+        - error messages go directly to stderr (which DeathTests use to match against)
+      */
+
+      LogInfo.logfp = NULL;
+
+      SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
+            SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+      SW_CTL_init_run(&SW_All, &LogInfo, &PathInfo);
+    }
+
+    void TearDown() override {
+      SW_CTL_clear_model(swTRUE, &SW_All, &PathInfo);
+    }
+};
 
 /* Functions for unit tests */
 

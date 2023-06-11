@@ -40,10 +40,8 @@
 
 
 namespace {
-  TimeInt simendyr = SW_All.Model.endyr + SW_All.Model.addtl_yr;
-
   // Test the SW_Carbon constructor 'SW_CBN_construct'
-  TEST(CarbonTest, Constructor) {
+  TEST_F(AllTest, CarbonConstructor) {
     int x;
 
     SW_CBN_construct(&SW_All.Carbon);
@@ -51,15 +49,12 @@ namespace {
     // Test type (and existence)
     EXPECT_EQ(typeid(x), typeid(SW_All.Carbon.use_wue_mult));
     EXPECT_EQ(typeid(x), typeid(SW_All.Carbon.use_bio_mult));
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
   // Test reading yearly CO2 data from disk file
-  TEST(CarbonTest, ReadInputFile) {
-    TimeInt year;
+  TEST_F(AllTest, ReadCarbonInputFile) {
+    TimeInt year, simendyr = SW_All.Model.endyr + SW_All.Model.addtl_yr;
     double sum_CO2;
 
     // Test if CO2-effects are turned off -> no CO2 concentration data are read from file
@@ -87,15 +82,12 @@ namespace {
     for (year = SW_All.Model.startyr + SW_All.Model.addtl_yr; year <= simendyr; year++) {
       EXPECT_GT(SW_All.Carbon.ppm[year], 0.);
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
   // Test the calculation of CO2-effect multipliers
-  TEST(CarbonTest, CO2multipliers) {
-    TimeInt year;
+  TEST_F(AllTest, CO2multipliers) {
+    TimeInt year, simendyr = SW_All.Model.endyr + SW_All.Model.addtl_yr;
     int k;
 
     SW_CBN_construct(&SW_All.Carbon);
@@ -113,9 +105,6 @@ namespace {
         EXPECT_GT(SW_All.VegProd.veg[k].co2_multipliers[WUE_INDEX][year], 0.);
       }
     }
-
-    // Reset to previous global states
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 } // namespace

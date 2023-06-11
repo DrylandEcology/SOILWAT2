@@ -25,7 +25,7 @@
 
 namespace {
 
-    TEST(ReadAllWeatherTest, DefaultValues) {
+    TEST_F(AllTest, DefaultValues) {
 
         // Testing to fill allHist from `SW_Weather`
         SW_SKY_read(&LogInfo, PathInfo.InFiles, &SW_All.Sky);
@@ -56,12 +56,9 @@ namespace {
         EXPECT_NEAR(SW_All.Weather.allHist[0]->temp_avg[0], -8.095000, tol6);
         EXPECT_NEAR(SW_All.Weather.allHist[0]->temp_min[0], -15.670000, tol6);
         EXPECT_NEAR(SW_All.Weather.allHist[0]->ppt[0], .220000, tol6);
-
-        // Reset SOILWAT2
-        Reset_SOILWAT2_after_UnitTest();
     }
 
-    TEST(ReadAllWeatherTest, NoMemoryLeakIfDecreasedNumberOfYears) {
+    TEST_F(AllTest, NoMemoryLeakIfDecreasedNumberOfYears) {
 
         // Default number of years is 31
         EXPECT_EQ(SW_All.Weather.n_years, 31);
@@ -76,10 +73,11 @@ namespace {
         EXPECT_EQ(SW_All.Weather.n_years, 2);
 
 
-        Reset_SOILWAT2_after_UnitTest();
+
+
     }
 
-    TEST(ReadAllWeatherTest, SomeMissingValuesDays) {
+    TEST_F(AllTest, SomeMissingValuesDays) {
 
         SW_All.Weather.generateWeatherMethod = 2;
 
@@ -101,11 +99,12 @@ namespace {
         EXPECT_FALSE(missing(SW_All.Weather.allHist[0]->temp_min[2]));
         EXPECT_FALSE(missing(SW_All.Weather.allHist[0]->ppt[0]));
         EXPECT_FALSE(missing(SW_All.Weather.allHist[0]->ppt[3]));
-        Reset_SOILWAT2_after_UnitTest();
+
+
 
     }
 
-    TEST(ReadAllWeatherTest, SomeMissingValuesYears) {
+    TEST_F(AllTest, SomeMissingValuesYears) {
 
         int year, day;
         SW_All.Weather.generateWeatherMethod = 2;
@@ -131,11 +130,12 @@ namespace {
             }
         }
 
-        Reset_SOILWAT2_after_UnitTest();
+
+
 
     }
 
-    TEST(ReadAllWeatherTest, WeatherGeneratorOnly) {
+    TEST_F(AllTest, WeatherGeneratorOnly) {
 
         int year, day;
 
@@ -159,11 +159,12 @@ namespace {
             }
         }
 
-        Reset_SOILWAT2_after_UnitTest();
+
+
 
     }
 
-    TEST(ReadAllWeatherDeathTest, TooManyMissingForLOCF) {
+    TEST_F(AllTest, TooManyMissingForLOCFDeathTest) {
 
         // Change to directory without input files
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
@@ -183,11 +184,12 @@ namespace {
           "more than 3 days missing in year 1981 and weather generator turned off"
         );
 
-        Reset_SOILWAT2_after_UnitTest();
+
+
 
     }
 
-    TEST(ClimateVariableTest, ClimateFromDefaultWeather) {
+    TEST_F(AllTest, ClimateFromDefaultWeather) {
 
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
@@ -291,12 +293,13 @@ namespace {
         // ------ Reset and deallocate
         deallocateClimateStructs(&climateOutput, &climateAverages);
 
-        Reset_SOILWAT2_after_UnitTest();
+
+
     }
 
 
 
-    TEST(ClimateVariableTest, ClimateFromOneYearWeather) {
+    TEST_F(AllTest, ClimateFromOneYearWeather) {
 
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
@@ -412,11 +415,12 @@ namespace {
         // ------ Reset and deallocate
         deallocateClimateStructs(&climateOutput, &climateAverages);
 
-        Reset_SOILWAT2_after_UnitTest();
+
+
 
     }
 
-    TEST(ClimateVariableTest, ClimateFromDefaultWeatherSouth) {
+    TEST_F(AllTest, ClimateFromDefaultWeatherSouth) {
 
         /* ==================================================================
          Values for these SOILWAT2 tests and in rSOILWAT2 v6.0.0 for
@@ -536,11 +540,12 @@ namespace {
         // ------ Reset and deallocate
         deallocateClimateStructs(&climateOutput, &climateAverages);
 
-        Reset_SOILWAT2_after_UnitTest();
+
+
     }
 
 
-    TEST(ClimateVariableTest, ClimateFromConstantWeather) {
+    TEST_F(AllTest, ClimateFromConstantWeather) {
 
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
@@ -645,7 +650,7 @@ namespace {
     }
 
 
-    TEST(ClimateVariableTest, AverageTemperatureOfDriestQuarterTest) {
+    TEST_F(AllTest, AverageTemperatureOfDriestQuarterTest) {
 
         double monthlyPPT[MAX_MONTHS] = {.5, .5, .1, .4, .9, 1.0, 1.2, 6.5, 7.5, 1.2, 4., .6};
         double monthlyTemp[MAX_MONTHS] = {-3.2, -.4, 1.2, 3.5, 7.5, 4.5, 6.5, 8.2, 2.0, 3., .1, -.3};
@@ -714,17 +719,14 @@ namespace {
 
     }
 
-    TEST(WeatherReadTest, Initialization) {
+    TEST_F(AllTest, Initialization) {
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 
         EXPECT_FLOAT_EQ(SW_All.Weather.allHist[0]->temp_max[0], -.52);
-
-        // Reset SOIWLAT2
-        Reset_SOILWAT2_after_UnitTest();
     }
 
-    TEST(DailyInsteadOfMonthlyInputTest, MonthlyInputPrioritization) {
+    TEST_F(AllTest, MonthlyInputPrioritization) {
         /*
            This section covers the correct prioritization of monthly input values
            instead of daily read-in values
@@ -747,12 +749,9 @@ namespace {
          EXPECT_NEAR(SW_All.Weather.allHist[yearIndex]->r_humidity_daily[midJanDay], SW_All.Sky.r_humidity[0], tol6);
          EXPECT_NEAR(SW_All.Weather.allHist[yearIndex]->cloudcov_daily[midJanDay], SW_All.Sky.cloudcov[0], tol6);
          EXPECT_NEAR(SW_All.Weather.allHist[yearIndex]->windspeed_daily[midJanDay], SW_All.Sky.windspeed[0], tol6);
-
-         // Reset SOILWAT2 so that `finalizeAllWeather()` is called
-         Reset_SOILWAT2_after_UnitTest();
      }
 
-     TEST(DailyWeatherInputTest, DailyGridMet) {
+     TEST_F(AllTest, DailyGridMet) {
 
          /*
             This section tests humidity-related values that can be averaged,
@@ -847,13 +846,9 @@ namespace {
 
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(&SW_All.Weather, &LogInfo);
-
-
-         // Reset SOILWAT2 for next test
-         Reset_SOILWAT2_after_UnitTest();
      }
 
-     TEST(DailyWeatherInputTest, DailyDayMet) {
+     TEST_F(AllTest, DailyDayMet) {
 
          /*
             This section covers the assurance that if a daily value is provided
@@ -951,12 +946,9 @@ namespace {
 
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(&SW_All.Weather, &LogInfo);
-
-         // Reset SOILWAT2 for next test
-         Reset_SOILWAT2_after_UnitTest();
      }
 
-     TEST(DailyWeatherInputTest, DailyMACA) {
+     TEST_F(AllTest, DailyMACA) {
 
          /*
             This section assures that a variable aside from humidity-related ones,
@@ -1057,12 +1049,9 @@ namespace {
 
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(&SW_All.Weather, &LogInfo);
-
-         // Reset SOILWAT2 for next test
-         Reset_SOILWAT2_after_UnitTest();
      }
 
-     TEST(DailyInputLOCFTest, LOCFForDailyValues) {
+     TEST_F(AllTest, LOCFForDailyValues) {
 
          /*
             Since SOILWAT2 now has the ability to deal with more than
@@ -1107,12 +1096,9 @@ namespace {
             EXPECT_EQ(SW_All.Weather.allHist[yearIndex]->actualVaporPressure[day], actVapPressTestVal);
             EXPECT_EQ(SW_All.Weather.allHist[yearIndex]->windspeed_daily[day], windSpeedTestVal);
         }
-
-        // Reset rSOILWAT2
-        Reset_SOILWAT2_after_UnitTest();
      }
 
-     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
+     TEST_F(AllTest, ReasonableValuesAndFlagsDeathTest) {
          /*
             This section covers number of flags and the testing of reasonable results (`checkAllWeather()`).
 
@@ -1185,8 +1171,5 @@ namespace {
              checkAllWeather(&SW_All.Weather, &LogInfo),
              "relative humidity value did not fall in the range"
          );
-
-         // Reset SOILWAT2 for next test
-         Reset_SOILWAT2_after_UnitTest();
      }
 }
