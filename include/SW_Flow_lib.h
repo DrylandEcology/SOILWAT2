@@ -65,12 +65,12 @@ void EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_pa
 
 void pot_soil_evap(SW_SITE *SW_Site, unsigned int nelyrs, double totagb,
   double fbse, double petday, double shift, double shape, double inflec,
-  double range, double swc[], double Es_param_limit, LOG_INFO* LogInfo,
-  double *bserate);
+  double range, double swc[], double Es_param_limit, double *bserate,
+  LOG_INFO* LogInfo);
 
-void pot_soil_evap_bs(double *bserate, SW_SITE *SW_Site, LOG_INFO* LogInfo,
+void pot_soil_evap_bs(double *bserate, SW_SITE *SW_Site,
 	unsigned int nelyrs, double petday, double shift, double shape,
-	double inflec, double range, double swc[]);
+	double inflec, double range, double swc[], LOG_INFO* LogInfo);
 
 void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, double fbst, double petday, double swp_shift, double swp_shape, double swp_inflec,
 		double swp_range, double shade_scale, double shade_deadmax, double shade_xinflex, double shade_slope, double shade_yinflex, double shade_range, double co2_wue_multiplier);
@@ -146,10 +146,10 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues,
 					  double H_gt,
 					  TimeInt year,
 					  TimeInt doy,
-					  LOG_INFO* LogInfo,
 					  double maxLyrTemperature[],
 					  double minLyrTemperature[],
-					  Bool *ptr_stError);
+					  Bool *ptr_stError,
+					  LOG_INFO* LogInfo);
 
 void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
   unsigned int nlyrTemp, double depth_Temp[], double avgLyrTempR[], unsigned int nlyrSoil,
@@ -185,15 +185,15 @@ void SW_ST_setup_run(
 	double deltaX,
 	double theMaxDepth,
 	unsigned int nRgr,
-	LOG_INFO* LogInfo,
 	double *surfaceAvg,
-	double* lyrFrozen
+	double* lyrFrozen,
+	LOG_INFO* LogInfo
 );
 
 void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 	double width[], double oldavgLyrTemp[], double sTconst, unsigned int nlyrs,
 	double fc[], double wp[], double deltaX, double theMaxDepth,
-	unsigned int nRgr, LOG_INFO* LogInfo, Bool *ptr_stError, Bool *soil_temp_init);
+	unsigned int nRgr, Bool *ptr_stError, Bool *soil_temp_init, LOG_INFO* LogInfo);
 
 void set_frozen_unfrozen(unsigned int nlyrs, double avgLyrTemp[], double swc[],
 						 double swc_sat[], double width[], double lyrFrozen[]);

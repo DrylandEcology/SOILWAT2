@@ -52,7 +52,7 @@ typedef enum {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_F_read(LOG_INFO* LogInfo, PATH_INFO* PathInfo);
+void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[]);
 void SW_F_deconstruct(char *InFiles[]);
 void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo);

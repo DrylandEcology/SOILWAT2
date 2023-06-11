@@ -19,7 +19,7 @@ extern "C" {
 void sw_init_args(int argc, char **argv, LOG_INFO* LogInfo,
 	Bool *QuietMode, Bool *EchoInits, char **_firstfile);
 void sw_print_version(void);
-void sw_check_log(LOG_INFO* LogInfo, Bool QuietMode);
+void sw_check_log(Bool QuietMode, LOG_INFO* LogInfo);
 
 #ifdef __cplusplus
 }

@@ -191,12 +191,12 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 @brief Markov constructor for global variables.
 
 @param[in] rng_seed Initial state for Markov
-@param[in] LogInfo Holds information dealing with logfile output
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_MKV_construct(unsigned long rng_seed, LOG_INFO* LogInfo,
-					  SW_MARKOV* SW_Markov) {
+void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
+					  LOG_INFO* LogInfo) {
 	/* =================================================== */
 	size_t s = sizeof(RealD);
 
@@ -285,17 +285,17 @@ void SW_MKV_deconstruct(SW_MARKOV* SW_Markov)
 	related to temperature and weather generator
 @param[in] doy0 Day of the year (base0).
 @param[in] year Current year in simulation
-@param[in] LogInfo Holds information dealing with logfile output
 @param[out] *tmax Maximum temperature (&deg;C).
 @param[out] *tmin Mininum temperature (&deg;C).
 @param[out] *rain Rainfall (cm).
+@param[in] LogInfo Holds information dealing with logfile output
 
 @sideeffect *tmax Updated maximum temperature (&deg;C).
 @sideeffect *tmin Updated minimum temperature (&deg;C).
 @sideeffect *rain Updated rainfall (cm).
 */
 void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
-			    LOG_INFO* LogInfo, RealD *tmax, RealD *tmin, RealD *rain) {
+			RealD *tmax, RealD *tmin, RealD *rain, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* enter with rain == yesterday's ppt, doy0 as array index: [0, 365] = doy - 1
 	 * leave with rain == today's ppt
@@ -371,15 +371,15 @@ void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 /**
 @brief Reads prob file in and checks input variables for errors, then stores files in SW_Markov.
 
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
+@param[in] LogInfo Holds information dealing with logfile output
 
 @return swTRUE Returns true if prob file is correctly opened and closed.
 */
-Bool SW_MKV_read_prob(LOG_INFO* LogInfo, char *InFiles[],
-					  SW_MARKOV* SW_Markov) {
+Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
+					  LOG_INFO* LogInfo) {
 	/* =================================================== */
 	const int nitems = 5;
 	FILE *f;
@@ -486,14 +486,14 @@ Bool SW_MKV_read_prob(LOG_INFO* LogInfo, char *InFiles[],
 /**
 @brief Reads cov file in and checks input variables for errors, then stores files in SW_Markov.
 
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
+@param[in] LogInfo Holds information dealing with logfile output
 
 @return Returns true if cov file is correctly opened and closed.
 */
-Bool SW_MKV_read_cov(LOG_INFO* LogInfo, char *InFiles[], SW_MARKOV* SW_Markov) {
+Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	const int nitems = 11;
 	FILE *f;
@@ -621,13 +621,12 @@ Bool SW_MKV_read_cov(LOG_INFO* LogInfo, char *InFiles[], SW_MARKOV* SW_Markov) {
 }
 
 
-void SW_MKV_setup(LOG_INFO* LogInfo, SW_MARKOV* SW_Markov,
-	unsigned long Weather_rng_seed, int Weather_genWeathMethod,
-	char *InFiles[]) {
+void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
+	int Weather_genWeathMethod, char *InFiles[], LOG_INFO* LogInfo) {
 
-  SW_MKV_construct(Weather_rng_seed, LogInfo, SW_Markov);
+  SW_MKV_construct(Weather_rng_seed, SW_Markov, LogInfo);
 
-  if (!SW_MKV_read_prob(LogInfo, InFiles, SW_Markov) && Weather_genWeathMethod == 2) {
+  if (!SW_MKV_read_prob(InFiles, SW_Markov, LogInfo) && Weather_genWeathMethod == 2) {
     LogError(
       LogInfo,
       LOGFATAL,
@@ -636,7 +635,7 @@ void SW_MKV_setup(LOG_INFO* LogInfo, SW_MARKOV* SW_Markov,
     );
   }
 
-  if (!SW_MKV_read_cov(LogInfo, InFiles, SW_Markov) && Weather_genWeathMethod == 2) {
+  if (!SW_MKV_read_cov(InFiles, SW_Markov, LogInfo) && Weather_genWeathMethod == 2) {
     LogError(
       LogInfo,
       LOGFATAL,

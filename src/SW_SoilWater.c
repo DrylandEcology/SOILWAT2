@@ -639,10 +639,10 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat)
 
 @param[in,out] sw Comprehensive struct of type SW_ALL containing all information
   in the simulation.
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] InFiles Array of program in/output files
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]) {
+void SW_SWC_water_flow(SW_ALL* sw, char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
 
 
@@ -667,8 +667,8 @@ void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]) {
       if (debug) swprintf("\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n");
       #endif
       SW_SWC_adjust_swc(sw->SoilWat.swcBulk, sw->Site.swcBulk_min,
-	  					sw->Model.doy, sw->SoilWat.hist, LogInfo,
-						sw->Site.n_layers, InFiles);
+	  					sw->Model.doy, sw->SoilWat.hist,
+						sw->Site.n_layers, InFiles, LogInfo);
 
 		} else {
 			LogError(LogInfo, LOGWARN, "Attempt to set SWC on start day of first year of simulation disallowed.");
@@ -969,12 +969,12 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 @param[in] site_avgLyrTemp Initial soil temperature for each soil layer
 @param[in] endyr Ending year for model run
 @param[in] n_layers Number of layers of soil within the simulation run
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] InFiles Array of program in/output files
+@param[in] LogInfo Holds information dealing with logfile output
 */
 void SW_SWC_read(SW_SOILWAT* SW_SoilWat, RealD site_avgLyrTemp[],
-	TimeInt endyr, LyrIndex n_layers, LOG_INFO* LogInfo,
-	char *InFiles[]) {
+	TimeInt endyr, LyrIndex n_layers, char *InFiles[],
+	LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* HISTORY
 	 *  1/25/02 - cwb - removed unused records of logfile and
@@ -1117,13 +1117,13 @@ void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 @param[in] doy Day of the year, measured in days.
 @param[in] SoilWat_hist Struct of type SW_SOILWAT_HIST holding parameters for
 					historical (measured) swc values
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] n_layers Total number of soil layers in simulation
 @param[in] InFiles Array of program in/output files
+@param[in] LogInfo Holds information dealing with logfile output
 */
 void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], RealD swcBulk_min[],
-	TimeInt doy, SW_SOILWAT_HIST SoilWat_hist, LOG_INFO* LogInfo,
-	LyrIndex n_layers, char *InFiles[]) {
+	TimeInt doy, SW_SOILWAT_HIST SoilWat_hist, LyrIndex n_layers,
+	char *InFiles[], LOG_INFO* LogInfo) {
 
 	/* =================================================== */
 	/* 01/07/02 (cwb) added final loop to guarantee swc > swcBulk_min
@@ -1361,17 +1361,15 @@ double SWRC_SWCtoSWP(
 	switch (swrc_type) {
 		case sw_Campbell1974:
 			res = SWRC_SWCtoSWP_Campbell1974(
-				LogInfo,
 				swcBulk, swrcp, gravel, width,
-				errmode
+				errmode, LogInfo
 			);
 			break;
 
 		case sw_vanGenuchten1980:
 			res = SWRC_SWCtoSWP_vanGenuchten1980(
-				LogInfo,
 				swcBulk, swrcp, gravel, width,
-				errmode
+				errmode, LogInfo
 			);
 			break;
 
@@ -1416,7 +1414,6 @@ double SWRC_SWCtoSWP(
     the matric potential at the "air-entry suction" point (see `swrcp[0]`)
     is returned whereas 0 bar is returned for larger values.
 
-  @param[in] LogInfo Holds information dealing with logfile output
   @param[in] swcBulk Soil water content in the layer [cm]
   @param[in] *swrcp Vector of SWRC parameters
   @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
@@ -1425,16 +1422,17 @@ double SWRC_SWCtoSWP(
   @param[in] errmode An error code passed to `LogError()`.
     SOILWAT2 uses `LOGFATAL` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
+  @param[in] LogInfo Holds information dealing with logfile output
 
   @return Soil water potential [-bar]
 */
-double SWRC_SWCtoSWP_Campbell1974(
-	LOG_INFO* LogInfo,
+double SWRC_SWCtoSWP_Campbell1974 (
 	double swcBulk,
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 ) {
 	// assume that we have soil moisture
 	double theta, tmp, res;
@@ -1485,7 +1483,6 @@ double SWRC_SWCtoSWP_Campbell1974(
     are the inverse of each other
     for `(phi, theta)` between `(0, theta_sat)` and `(infinity, theta_min)`.
 
-  @param[in] LogInfo Holds information dealing with logfile output
   @param[in] swcBulk Soil water content in the layer [cm]
   @param[in] *swrcp Vector of SWRC parameters
   @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
@@ -1494,16 +1491,17 @@ double SWRC_SWCtoSWP_Campbell1974(
   @param[in] errmode An error code passed to `LogError()`.
     SOILWAT2 uses `LOGFATAL` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
+  @param[in] LogInfo Holds information dealing with logfile output
 
   @return Soil water potential [-bar]
 */
 double SWRC_SWCtoSWP_vanGenuchten1980(
-	LOG_INFO* LogInfo,
 	double swcBulk,
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 ) {
 	double res, tmp, theta;
 
@@ -1654,13 +1652,13 @@ double SWRC_SWCtoSWP_FXW(
 RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_SITE *SW_Site,
 					   LyrIndex layerno, LOG_INFO* LogInfo) {
   return SWRC_SWPtoSWC(
-	LogInfo,
     swpMatric,
     SW_Site->swrc_type[layerno],
     SW_Site->swrcp[layerno],
     SW_Site->fractionVolBulk_gravel[layerno],
     SW_Site->width[layerno],
-    LOGFATAL
+    LOGFATAL,
+	LogInfo
   );
 }
 
@@ -1677,7 +1675,6 @@ RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_SITE *SW_Site,
           - fractionGravel, sand, clay, and sand + clay in [0, 1]
       - SWRC parameters checked by `SWRC_check_parameters()`.
 
-  @param[in] LogInfo Holds information dealing with logfile output
   @param[in] swpMatric Soil water potential [-bar]
   @param[in] swrc_type Identification number of selected SWRC
   @param[in] *swrcp Vector of SWRC parameters
@@ -1687,17 +1684,18 @@ RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_SITE *SW_Site,
   @param[in] errmode An error code passed to `LogError()`.
     SOILWAT2 uses `LOGFATAL` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
+  @param[in] LogInfo Holds information dealing with logfile output
 
   @return Soil water content in the layer [cm]
 */
 double SWRC_SWPtoSWC(
-	LOG_INFO* LogInfo,
 	double swpMatric,
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 ) {
 	double res = SW_MISSING;
 

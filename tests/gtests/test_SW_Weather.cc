@@ -28,7 +28,7 @@ namespace {
     TEST_F(AllTest, DefaultValues) {
 
         // Testing to fill allHist from `SW_Weather`
-        SW_SKY_read(&LogInfo, PathInfo.InFiles, &SW_All.Sky);
+        SW_SKY_read(PathInfo.InFiles, &SW_All.Sky, &LogInfo);
 
         readAllWeather(
           SW_All.Weather.allHist,
@@ -84,8 +84,9 @@ namespace {
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
-        SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
-                     SW_All.Weather.generateWeatherMethod, PathInfo.InFiles);
+        SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+                     SW_All.Weather.generateWeatherMethod,
+                     PathInfo.InFiles, &LogInfo);
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
         SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
@@ -112,8 +113,9 @@ namespace {
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
-        SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
-                     SW_All.Weather.generateWeatherMethod, PathInfo.InFiles);
+        SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+                     SW_All.Weather.generateWeatherMethod,
+                     PathInfo.InFiles, &LogInfo);
 
         SW_All.Model.startyr = 1981;
         SW_All.Model.endyr = 1982;
@@ -142,8 +144,9 @@ namespace {
         SW_All.Weather.generateWeatherMethod = 2;
         SW_All.Weather.use_weathergenerator_only = swTRUE;
 
-        SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
-                     SW_All.Weather.generateWeatherMethod, PathInfo.InFiles);
+        SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+                     SW_All.Weather.generateWeatherMethod,
+                     PathInfo.InFiles, &LogInfo);
 
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
@@ -736,8 +739,8 @@ namespace {
          int yearIndex = 0, midJanDay = 14;
 
          /* Test if monthly values are not being used */
-         SW_WTH_setup(&SW_All.Weather, &LogInfo, PathInfo.InFiles,
-                      PathInfo.weather_prefix);
+         SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
+                      PathInfo.weather_prefix, &LogInfo);
 
          // Read in all weather
          SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
@@ -765,8 +768,8 @@ namespace {
          int yearIndex = 0, year = 1980, midJanDay = 14;
 
         /* Test correct priority is being given to input values from DAYMET */
-         SW_WTH_setup(&SW_All.Weather, &LogInfo, PathInfo.InFiles,
-                      PathInfo.weather_prefix);
+         SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
+                      PathInfo.weather_prefix, &LogInfo);
 
              // Switch directory to gridmet input folder
          strcpy(SW_All.Weather.name_prefix, "Input/data_weather_gridmet/weath");
@@ -864,8 +867,8 @@ namespace {
          int yearIndex = 0, year = 1980, midJanDay = 14;
 
          /* Test correct priority is being given to input values from DAYMET */
-         SW_WTH_setup(&SW_All.Weather, &LogInfo, PathInfo.InFiles,
-                      PathInfo.weather_prefix);
+         SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
+                      PathInfo.weather_prefix, &LogInfo);
 
                  // Switch directory to daymet input folder
          strcpy(SW_All.Weather.name_prefix, "Input/data_weather_daymet/weath");
@@ -962,8 +965,8 @@ namespace {
 
          /* Test correct priority is being given to input values from MACA */
 
-         SW_WTH_setup(&SW_All.Weather, &LogInfo, PathInfo.InFiles,
-                      PathInfo.weather_prefix);
+         SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
+                      PathInfo.weather_prefix, &LogInfo);
 
                  // Switch directory to daymet input folder
          strcpy(SW_All.Weather.name_prefix, "Input/data_weather_maca/weath");
@@ -1065,8 +1068,8 @@ namespace {
         double cloudCovTestVal = .5, actVapPressTestVal = 4.23, windSpeedTestVal = 2.12;
 
         // Setup and read in weather
-        SW_WTH_setup(&SW_All.Weather, &LogInfo, PathInfo.InFiles,
-                     PathInfo.weather_prefix);
+        SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
+                     PathInfo.weather_prefix, &LogInfo);
 
         // Turn off flags for monthly values along with daily flags
         // so all daily variables aside from max/min temperature and precipiation

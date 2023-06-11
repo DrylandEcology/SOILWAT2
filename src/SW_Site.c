@@ -225,8 +225,8 @@ static double lower_limit_of_theta_min(
 	double gravel,
 	double width
 ) {
-	double res = SWRC_SWPtoSWC(LogInfo, 300., swrc_type, swrcp,
-							   gravel, width, LOGFATAL);
+	double res = SWRC_SWPtoSWC(300., swrc_type, swrcp,
+							   gravel, width, LOGFATAL, LogInfo);
 
 	// convert bulk [cm] to matric [cm / cm]
 	return res / ((1. - gravel) * width);
@@ -286,11 +286,11 @@ static double ui_theta_min(
 		if (legacy_mode) {
 			/* residual theta estimated with Rawls & Brakensiek (1985) PTF */
 			PTF_RawlsBrakensiek1985(
-				LogInfo,
 				&tmp_vwcmin,
 				sand,
 				clay,
-				swcBulk_sat / ((1. - gravel) * width)
+				swcBulk_sat / ((1. - gravel) * width),
+				LogInfo
 			);
 
 			/* if `PTF_RawlsBrakensiek1985()` was successful, then take max */
@@ -302,13 +302,13 @@ static double ui_theta_min(
 	} else if (GE(_SWCMinVal, 1.0)) {
 		/* user input: fixed (matric) SWP value; unit(_SWCMinVal) == -bar */
 		vwc_min = SWRC_SWPtoSWC(
-			LogInfo,
 			_SWCMinVal,
 			swrc_type,
 			swrcp,
 			gravel,
 			width,
-			LOGFATAL
+			LOGFATAL,
+			LogInfo
 		) / ((1. - gravel) * width);
 
 	} else {
@@ -533,7 +533,7 @@ double SW_swcBulk_saturated(
 		case sw_Campbell1974:
 			if (ptf_type == sw_Cosby1984AndOthers) {
 				// Cosby1984AndOthers (backwards compatible)
-				PTF_Saxton2006(LogInfo, &theta_sat, sand, clay);
+				PTF_Saxton2006(&theta_sat, sand, clay, LogInfo);
 			} else {
 				theta_sat = swrcp[1];
 			}
@@ -589,8 +589,8 @@ double SW_swcBulk_saturated(
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] swcBulk_sat Saturated water content of the bulk soil [cm]
-	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] _SWCMinVal Lower bound on swc.
+	@param[in] LogInfo Holds information dealing with logfile output
 
 	@return Minimum water content of the bulk soil [cm]
 */
@@ -604,8 +604,8 @@ double SW_swcBulk_minimum(
 	double sand,
 	double clay,
 	double swcBulk_sat,
-	LOG_INFO* LogInfo,
-	RealD _SWCMinVal
+	RealD _SWCMinVal,
+	LOG_INFO* LogInfo
 ) {
 	double theta_min_sim, theta_min_theoretical = SW_MISSING;
 
@@ -1006,17 +1006,17 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO* LogInfo) {
 	@brief Saxton et al. 2006 PTFs \cite Saxton2006
 		to estimate saturated soil water content
 
-	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 	@param[out] *theta_sat Estimated saturated volumetric water content
 		of the matric soil [cm/cm]
+	@param[in] LogInfo Holds information dealing with logfile output
 */
 void PTF_Saxton2006(
-	LOG_INFO* LogInfo,
 	double *theta_sat,
 	double sand,
-	double clay
+	double clay,
+	LOG_INFO* LogInfo
 ) {
 	double
 		OM = 0.,
@@ -1133,19 +1133,19 @@ void PTF_Saxton2006(
 	@note This function is only well-defined for `clay` values in 5-60%,
 		`sand` values in 5-70%, and `porosity` must in 10-<100%.
 
-	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] porosity Pore space of the matric soil (< 2 mm fraction) [cm3/cm3]
 	@param[out] *theta_min Estimated residual volumetric water content
 		of the matric soil [cm/cm]
+	@param[in] LogInfo Holds information dealing with logfile output
 */
 void PTF_RawlsBrakensiek1985(
-	LOG_INFO* LogInfo,
 	double *theta_min,
 	double sand,
 	double clay,
-	double porosity
+	double porosity,
+	LOG_INFO* LogInfo
 ) {
 	if (
 		GE(clay, 0.05) && LE(clay, 0.6) &&
@@ -1344,12 +1344,12 @@ void SW_SIT_construct(SW_SITE* SW_Site) {
 @brief Reads in file for input values.
 
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
-				char *InFiles[], SW_CARBON* SW_Carbon) {
+void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
+				 SW_CARBON* SW_Carbon, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* 5-Feb-2002 (cwb) Removed rgntop requirement in
 	 *    transpiration regions section of input
@@ -1597,12 +1597,12 @@ void SW_SIT_read(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 /** Reads soil layers and soil properties from input file
 
 	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] InFiles Array of program in/output files
+	@param[in] LogInfo Holds information dealing with logfile output
 
 	@note Previously, the function was static and named `_read_layers()`.
 */
-void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
+void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* 5-Feb-2002 (cwb) removed dmin requirement in input file */
 
@@ -1691,7 +1691,6 @@ void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
   @param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
   @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-  @param[in] LogInfo Holds information dealing with logfile output
   @param[in] nlyrs The number of soil layers to create.
   @param[in] dmax Array of size \p nlyrs for depths [cm] of each soil layer
     measured from the surface
@@ -1721,6 +1720,7 @@ void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
     this from the perspective of soil, it would mean the shallowest bound is at
     `lowerBounds[0]`.
   @param[in] InFiles Array of program in/output files
+  @param[in] LogInfo Holds information dealing with logfile output
 
   @sideeffect After deleting any previous data in the soil layer array
     SW_Site.lyr, it creates new soil layers based on the argument inputs.
@@ -1730,11 +1730,10 @@ void SW_LYR_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
       SW_Site.c.
 */
 void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
-	LOG_INFO* LogInfo, LyrIndex nlyrs, RealF *dmax, RealF *bd,
-	RealF *f_gravel, RealF *evco, RealF *trco_grass, RealF *trco_shrub,
-	RealF *trco_tree, RealF *trco_forb, RealF *psand, RealF *pclay,
-	RealF *imperm, RealF *soiltemp, int nRegions, RealD *regionLowerBounds,
-	char *InFiles[])
+	LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel, RealF *evco,
+	RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree, RealF *trco_forb,
+	RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp, int nRegions,
+	RealD *regionLowerBounds, char *InFiles[], LOG_INFO* LogInfo)
 {
 
   RealF dmin = 0.0;
@@ -1785,10 +1784,10 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 
 
   // Guess soil transpiration regions
-  derive_soilRegions(SW_Site, LogInfo, nRegions, regionLowerBounds);
+  derive_soilRegions(SW_Site, nRegions, regionLowerBounds, LogInfo);
 
   // Re-initialize site parameters based on new soil layers
-  SW_SIT_init_run(SW_VegProd, SW_Site, LogInfo, InFiles);
+  SW_SIT_init_run(SW_VegProd, SW_Site, InFiles, LogInfo);
 }
 
 
@@ -1797,13 +1796,13 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
   @brief Resets soil regions based on input parameters.
 
   @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-  @param[in] LogInfo Holds information dealing with logfile output
   @param[in] nRegions The number of transpiration regions to create. Must be between
     1 and \ref MAX_TRANSP_REGIONS.
   @param[in] regionLowerBounds Array of size \p nRegions containing the lower
     depth [cm] of each region in ascending (in value) order. If you think about
     this from the perspective of soil, it would mean the shallowest bound is at
     `lowerBounds[0]`.
+  @param[in] LogInfo Holds information dealing with logfile output
 
   @sideeffect
     \ref SW_SITE._TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
@@ -1815,8 +1814,8 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
     input parameters are `(4, { 10, 20, 40 })`, but there is a soil layer from
     41 to 60 cm, it will be placed in `_TranspRgnBounds[4]`.
 */
-void derive_soilRegions(SW_SITE* SW_Site, LOG_INFO* LogInfo,
-						int nRegions, RealD *regionLowerBounds){
+void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
+						RealD *regionLowerBounds, LOG_INFO* LogInfo){
 	int i, j;
 	RealD totalDepth = 0;
 	LyrIndex layer, UNDEFINED_LAYER = 999;
@@ -1876,11 +1875,11 @@ void derive_soilRegions(SW_SITE* SW_Site, LOG_INFO* LogInfo,
 /** Obtain soil water retention curve parameters from disk
  *
  * @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
- * @param[in] LogInfo Holds information dealing with logfile output
  * @param[in] InFiles Array of program in/output files
+ * @param[in] LogInfo Holds information dealing with logfile output
  *
 */
-void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
+void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 
 	/* Don't read values from disk if they will be estimated via a PTF */
 	if (!SW_Site->site_has_swrcp) return;
@@ -1962,13 +1961,13 @@ void SW_SWRC_read(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
 	@param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
 		cover conditions in the simulation
 	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] InFiles Array of program in/output files
+	@param[in] LogInfo Holds information dealing with logfile output
 
 	@sideeffect Values stored in global variable `SW_Site`.
 */
 void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
-					 LOG_INFO* LogInfo, char *InFiles[]) {
+					 char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* potentially this routine can be called whether the
 	 * layer data came from a file or a function call which
@@ -2140,8 +2139,8 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 			SW_Site->fractionWeightMatric_sand[s],
 			SW_Site->fractionWeightMatric_clay[s],
 			SW_Site->swcBulk_saturated[s],
-			LogInfo,
-			SW_Site->_SWCMinVal
+			SW_Site->_SWCMinVal,
+			LogInfo
 		);
 
 
@@ -2460,10 +2459,10 @@ void SW_SIT_init_counts(SW_SITE* SW_Site) {
 @brief Print site-parameters and soil characteristics.
 
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] InFiles Array of program in/output files
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo, char *InFiles[]) {
+void _echo_inputs(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
 	LyrIndex i;
 

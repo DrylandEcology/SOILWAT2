@@ -176,9 +176,9 @@ namespace{
       // 0 bytes to the right of global variable 'ptf2str'
       //msg << "SWRC/PTF = " << swrc2str[swrc_type] << "/" << ptf2str[ptf_type];
 
-      swc_sat = SWRC_SWPtoSWC(&LogInfo, 0., swrc_type, swrcp, gravel, width, em);
-      swc_fc = SWRC_SWPtoSWC(&LogInfo, 1. / 3., swrc_type, swrcp, gravel, width, em);
-      swc_wp = SWRC_SWPtoSWC(&LogInfo, 15., swrc_type, swrcp, gravel, width, em);
+      swc_sat = SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width, em, &LogInfo);
+      swc_fc = SWRC_SWPtoSWC(1. / 3., swrc_type, swrcp, gravel, width, em, &LogInfo);
+      swc_wp = SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, em, &LogInfo);
 
 
       // if swc = saturation, then we expect phi in [0, fc]
@@ -217,7 +217,7 @@ namespace{
       ) << msg.str();
 
       // if swc < wilting point, then we expect phi > 15 bar
-      swcBulk = SWRC_SWPtoSWC(&LogInfo, 2. * 15., swrc_type, swrcp, gravel, width, em);
+      swcBulk = SWRC_SWPtoSWC(2. * 15., swrc_type, swrcp, gravel, width, em, &LogInfo);
       EXPECT_GT(
         SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width, em, &LogInfo),
         15.
@@ -228,19 +228,19 @@ namespace{
       //------ Tests SWP -> SWC
       // when fractionGravel is 1, we expect theta == 0
       EXPECT_EQ(
-        SWRC_SWPtoSWC(&LogInfo, 15., swrc_type, swrcp, 1., width, em),
+        SWRC_SWPtoSWC(15., swrc_type, swrcp, 1., width, em, &LogInfo),
         0.
       ) << msg.str();
 
       // when width is 0, we expect theta == 0
       EXPECT_EQ(
-        SWRC_SWPtoSWC(&LogInfo, 15., swrc_type, swrcp, gravel, 0., em),
+        SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, 0., em, &LogInfo),
         0.
       ) << msg.str();
 
       // check bounds of swc
       for (k = 0; k < length(swpsb); k++) {
-        swcBulk = SWRC_SWPtoSWC(&LogInfo, swpsb[k], swrc_type, swrcp, gravel, width, em);
+        swcBulk = SWRC_SWPtoSWC(swpsb[k], swrc_type, swrcp, gravel, width, em, &LogInfo);
         EXPECT_GE(swcBulk, 0.) <<
           msg.str() << " at SWP = " << swpsb[k] << " bar";
         EXPECT_LE(swcBulk, width * (1. - gravel)) <<
@@ -253,13 +253,13 @@ namespace{
       // but not necessarily if phi in ]0, fc[;
       // for instance, Campbell1974 is not inverse in ]0, swrcp[0][
       for (k = 0; k < length(swpsi); k++) {
-        swcBulk = SWRC_SWPtoSWC(&LogInfo, swpsi[k], swrc_type, swrcp, gravel, width, em);
+        swcBulk = SWRC_SWPtoSWC(swpsi[k], swrc_type, swrcp, gravel, width, em, &LogInfo);
         swp = SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width, em, &LogInfo);
 
         EXPECT_NEAR(swp, swpsi[k], tol9) <<
           msg.str() << " at SWP = " << swpsi[k] << " bar";
         EXPECT_NEAR(
-          SWRC_SWPtoSWC(&LogInfo, swp, swrc_type, swrcp, gravel, width, em),
+          SWRC_SWPtoSWC(swp, swrc_type, swrcp, gravel, width, em, &LogInfo),
           swcBulk,
           tol9
         ) << msg.str() << " at SWC = " << swcBulk << " cm";
@@ -362,22 +362,22 @@ namespace{
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
     EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWPtoSWC(&LogInfo, 15., swrc_type, swrcp, gravel, width, LOGFATAL),
+      SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
       "is not implemented"
     );
     EXPECT_DOUBLE_EQ(
-      SWRC_SWPtoSWC(&LogInfo, 15., swrc_type, swrcp, gravel, width, LOGWARN),
+      SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
       SW_MISSING
     );
 
     // --- 2) swp < 0: water content cannot be negative (any SWRC)
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
       EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWPtoSWC(&LogInfo, -1., swrc_type, swrcp, gravel, width, LOGFATAL),
+        SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
         "invalid SWP"
       );
       EXPECT_DOUBLE_EQ(
-        SWRC_SWPtoSWC(&LogInfo, -1., swrc_type, swrcp, gravel, width, LOGWARN),
+        SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
         SW_MISSING
       );
     }

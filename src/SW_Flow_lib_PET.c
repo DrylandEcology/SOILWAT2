@@ -816,7 +816,6 @@ double clearnessindex_diffuse(double K_b)
           from both observed radiation and expected cloud-less radiation.
 
   @param[in,out] SW_AtmDem Memoized variables pertaining to atmospheric demand.
-  @param[in] LogInfo Holds information dealing with logfile output
   @param[in] doy Day of year [1-365].
   @param[in] lat Latitude of the site [radians].
   @param[in] elev Elevation of the site [m a.s.l.].
@@ -843,14 +842,17 @@ double clearnessindex_diffuse(double K_b)
   @param[out] H_oh Daily extraterrestrial horizontal irradiation [MJ / m2]
   @param[out] H_ot Daily extraterrestrial tilted irradiation [MJ / m2]
   @param[out] H_gh Daily global horizontal irradiation [MJ / m2]
+  @param[in] LogInfo Holds information dealing with logfile output
+
   @return H_gt Daily global (tilted) irradiation [MJ / m2]
 */
 double solar_radiation(
-  SW_ATMD *SW_AtmDem, LOG_INFO* LogInfo, unsigned int doy,
-  double lat, double elev, double slope, double aspect,
+  SW_ATMD *SW_AtmDem, unsigned int doy, double lat,
+  double elev, double slope, double aspect,
   double albedo, double *cloud_cover, double e_a,
   double rsds, unsigned int desc_rsds,
-  double *H_oh, double *H_ot, double *H_gh
+  double *H_oh, double *H_ot, double *H_gh,
+  LOG_INFO* LogInfo
 ) {
   double
     P,
@@ -1238,7 +1240,6 @@ double actualVaporPressure3(double dewpointTemp) {
   Note: Penman 1948 @cite Penman1948 assumes that net heat and vapor exchange
   with ground and surrounding areas is negligible over a daily time step.
 
-  @param[in] LogInfo Holds information dealing with logfile output
   @param H_g Global horizontal/tilted irradiation [MJ / m2]
   @param avgtemp Average air temperature [C]
   @param elev Elevation of site [m asl]
@@ -1246,11 +1247,12 @@ double actualVaporPressure3(double dewpointTemp) {
   @param humid Average relative humidity [%]
   @param windsp Average wind speed at 2-m above ground [m / s]
   @param cloudcov Average cloud cover [%]
+  @param[in] LogInfo Holds information dealing with logfile output
 
   @return Potential evapotranspiration [cm / day]
 */
-double petfunc(LOG_INFO* LogInfo, double H_g, double avgtemp,
-  double elev, double reflec, double humid, double windsp, double cloudcov)
+double petfunc(double H_g, double avgtemp, double elev, double reflec,
+            double humid, double windsp, double cloudcov, LOG_INFO* LogInfo)
 {
 
   double Ea, Rn, Rc, Rbb, delta, clrsky, ea, P_kPa, gamma, pet;

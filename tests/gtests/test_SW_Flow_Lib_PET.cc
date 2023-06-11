@@ -768,7 +768,6 @@ namespace
 
       H_gt = solar_radiation(
         &SW_All.AtmDemand,
-        &LogInfo,
         doys_Table1_6_1[k],
         43. * deg_to_rad, // latitude
         226., // elevation
@@ -781,7 +780,8 @@ namespace
         desc_rsds,
         &H_oh,
         &H_ot,
-        &H_gh
+        &H_gh,
+        &LogInfo
       );
 
       EXPECT_NEAR(H_oh, H_Ex2_19_1[0][k], tol0)
@@ -802,7 +802,6 @@ namespace
 
       H_gt = solar_radiation(
         &SW_All.AtmDemand,
-        &LogInfo,
         doys_Table1_6_1[k],
         43. * deg_to_rad, // latitude
         226., // elevation
@@ -815,7 +814,8 @@ namespace
         desc_rsds,
         &H_oh,
         &H_ot,
-        &H_gh
+        &H_gh,
+        &LogInfo
       );
 
       // Expect: observed `rsds` (for `desc_rsds = 0`) is equal to `H_gh`
@@ -831,7 +831,6 @@ namespace
 
       H_gt = solar_radiation(
         &SW_All.AtmDemand,
-        &LogInfo,
         doys_Table1_6_1[k],
         43. * deg_to_rad, // latitude
         226., // elevation
@@ -844,7 +843,8 @@ namespace
         desc_rsds,
         &H_oh,
         &H_ot,
-        &H_gh
+        &H_gh,
+        &LogInfo
       );
 
       EXPECT_NEAR(H_oh, H_Ex2_19_1[0][k], tol0)
@@ -943,14 +943,15 @@ namespace
       actual_vap_pressure = actualVaporPressure1(RH, avgtemps[i]);
 
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, &LogInfo, doy,
+        &SW_All.AtmDemand, doy,
         lat, elev, slope0, aspect, reflec,
         &cloudcov, actual_vap_pressure,
         rsds, desc_rsds,
-        &H_oh, &H_ot, &H_gh
+        &H_oh, &H_ot, &H_gh, &LogInfo
       );
 
-      check_pet = petfunc(&LogInfo, H_gt, avgtemps[i], elev, reflec, RH, windsp, cloudcov);
+      check_pet = petfunc(H_gt, avgtemps[i], elev, reflec, RH, windsp,
+                          cloudcov, &LogInfo);
 
       EXPECT_NEAR(check_pet, expected_pet_avgtemps[i], tol3);
     }
@@ -968,14 +969,15 @@ namespace
     for (i = 0; i < 5; i++)
     {
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, &LogInfo, doy,
+        &SW_All.AtmDemand, doy,
         lats[i] * deg_to_rad, elev, slope0, aspect, reflec,
         &cloudcov, e_a,
         rsds, desc_rsds,
-        &H_oh, &H_ot, &H_gh
+        &H_oh, &H_ot, &H_gh, &LogInfo
       );
 
-      check_pet = petfunc(&LogInfo, H_gt, temp, elev, reflec, RH, windsp, cloudcov);
+      check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp,
+                          cloudcov, &LogInfo);
 
       EXPECT_NEAR(check_pet, expected_pet_lats[i], tol3);
 
@@ -994,14 +996,15 @@ namespace
     for (i = 0; i < 5; i++)
     {
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, &LogInfo, doy,
+        &SW_All.AtmDemand, doy,
         lat, elevs[i], slope0, aspect, reflec,
         &cloudcov, e_a,
         rsds, desc_rsds,
-        &H_oh, &H_ot, &H_gh
+        &H_oh, &H_ot, &H_gh, &LogInfo
       );
 
-      check_pet = petfunc(&LogInfo, H_gt, temp, elevs[i], reflec, RH, windsp, cloudcov);
+      check_pet = petfunc(H_gt, temp, elevs[i], reflec, RH, windsp,
+                          cloudcov, &LogInfo);
 
       EXPECT_NEAR(check_pet, expected_pet_elevs[i], tol3);
     }
@@ -1017,14 +1020,15 @@ namespace
     for (i = 0; i < 5; i++)
     {
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, &LogInfo, doy,
+        &SW_All.AtmDemand, doy,
         lat, elev, slopes[i] * deg_to_rad, aspect, reflec,
         &cloudcov, e_a,
         rsds, desc_rsds,
-        &H_oh, &H_ot, &H_gh
+        &H_oh, &H_ot, &H_gh, &LogInfo
       );
 
-      check_pet = petfunc(&LogInfo, H_gt, temp, elev, reflec, RH, windsp, cloudcov);
+      check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp,
+                          cloudcov, &LogInfo);
 
       EXPECT_NEAR(check_pet, expected_pet_slopes[i], tol3);
 
@@ -1045,14 +1049,15 @@ namespace
     for (i = 0; i < 7; i++)
     {
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, &LogInfo, doy,
+        &SW_All.AtmDemand, doy,
         lat, elev, sloped, aspects[i] * deg_to_rad, reflec,
         &cloudcov, e_a,
         rsds, desc_rsds,
-        &H_oh, &H_ot, &H_gh
+        &H_oh, &H_ot, &H_gh, &LogInfo
       );
 
-      check_pet = petfunc(&LogInfo, H_gt, temp, elev, reflec, RH, windsp, cloudcov);
+      check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp,
+                          cloudcov, &LogInfo);
 
       EXPECT_NEAR(check_pet, expected_pet_aspects[i], tol3);
 
@@ -1070,14 +1075,15 @@ namespace
     for (i = 0; i < 5; i++)
     {
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, &LogInfo, doy,
+        &SW_All.AtmDemand, doy,
         lat, elev, sloped, aspect, reflecs[i],
         &cloudcov, e_a,
         rsds, desc_rsds,
-        &H_oh, &H_ot, &H_gh
+        &H_oh, &H_ot, &H_gh, &LogInfo
       );
 
-      check_pet = petfunc(&LogInfo, H_gt, temp, elev, reflecs[i], RH, windsp, cloudcov);
+      check_pet = petfunc(H_gt, temp, elev, reflecs[i], RH, windsp,
+                          cloudcov, &LogInfo);
 
       EXPECT_NEAR(check_pet, expected_pet_reflecs[i], tol3);
     }
@@ -1095,14 +1101,15 @@ namespace
       actual_vap_pressure = actualVaporPressure1(RHs[i], temp);
 
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, &LogInfo, doy,
+        &SW_All.AtmDemand, doy,
         lat, elev, slope0, aspect, reflec,
         &cloudcov, actual_vap_pressure,
         rsds, desc_rsds,
-        &H_oh, &H_ot, &H_gh
+        &H_oh, &H_ot, &H_gh, &LogInfo
       );
 
-      check_pet = petfunc(&LogInfo, H_gt, temp, elev, reflec, RHs[i], windsp, cloudcov);
+      check_pet = petfunc(H_gt, temp, elev, reflec, RHs[i], windsp,
+                          cloudcov, &LogInfo);
 
       EXPECT_NEAR(check_pet, expected_pet_RHs[i], tol3);
     }
@@ -1116,16 +1123,17 @@ namespace
       expected_pet_windsps[] = {0.1016, 0.1426, 0.3070, 0.5124, 0.9232};
 
     H_gt = solar_radiation(
-      &SW_All.AtmDemand, &LogInfo, doy,
+      &SW_All.AtmDemand, doy,
       lat, elev, slope0, aspect, reflec,
       &cloudcov, e_a,
       rsds, desc_rsds,
-      &H_oh, &H_ot, &H_gh
+      &H_oh, &H_ot, &H_gh, &LogInfo
     );
 
     for (i = 0; i < 5; i++)
     {
-      check_pet = petfunc(&LogInfo, H_gt, temp, elev, reflec, RH, windsps[i], cloudcov);
+      check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsps[i],
+                          cloudcov, &LogInfo);
 
       EXPECT_NEAR(check_pet, expected_pet_windsps[i], tol3);
     }
@@ -1142,14 +1150,15 @@ namespace
     for (i = 0; i < 5; i++)
     {
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, &LogInfo, doy,
+        &SW_All.AtmDemand, doy,
         lat, elev, slope0, aspect, reflec,
         &cloudcovs[i], e_a,
         rsds, desc_rsds,
-        &H_oh, &H_ot, &H_gh
+        &H_oh, &H_ot, &H_gh, &LogInfo
       );
 
-      check_pet = petfunc(&LogInfo, H_gt, temp, elev, reflec, RH, windsp, cloudcovs[i]);
+      check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp,
+                          cloudcovs[i], &LogInfo);
 
       EXPECT_NEAR(check_pet, expected_pet_cloudcovs[i], tol3);
     }
@@ -1226,18 +1235,19 @@ namespace
               {
 
                 H_gt = fH_gt * solar_radiation(
-                  doy,
+                  &SW_All.AtmDemand, doy,
                   lat, elev, slope, aspect, reflec,
                   &cloudcover, RH, temp,
                   rsds, desc_rsds,
-                  &H_oh, &H_ot, &H_gh
+                  &H_oh, &H_ot, &H_gh, &LogInfo
                 );
 
                 pet += petfunc(
                   H_gt,
                   temp,
                   elev, reflec,
-                  RH, windspeed, cloudcover
+                  RH, windspeed, cloudcover,
+                  &LogInfo
                 );
               }
 

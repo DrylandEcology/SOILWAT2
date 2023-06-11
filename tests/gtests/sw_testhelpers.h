@@ -45,7 +45,7 @@ class AllTest : public::testing::Test {
       PathInfo.InFiles[eFirst] = Str_Dup(masterfile_test, &LogInfo);
 
       SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
-      SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo, EchoInits);
+      SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, EchoInits, &LogInfo);
 
       /* Notes on messages during tests
         - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
@@ -59,7 +59,7 @@ class AllTest : public::testing::Test {
 
       SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
             SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
-      SW_CTL_init_run(&SW_All, &LogInfo, &PathInfo);
+      SW_CTL_init_run(&SW_All, &PathInfo, &LogInfo);
     }
 
     void TearDown() override {

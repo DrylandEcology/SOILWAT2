@@ -167,16 +167,16 @@ void SW_VES_new_year(IntU count) {
 
 @param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all information about
   vegetation establishment within the simulation
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] EchoInits Flag to control if inputs are to be output to the user
 @param[in] InFiles Array of program in/output files
 @param[in] _ProjDir Project directory
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_VES_read(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo,
-				 Bool EchoInits, char *InFiles[], char *_ProjDir) {
+void SW_VES_read(SW_VEGESTAB* SW_VegEstab, Bool EchoInits,
+	char *InFiles[], char *_ProjDir, LOG_INFO* LogInfo) {
 
-	SW_VES_read2(SW_VegEstab, LogInfo, swTRUE, swTRUE, EchoInits,
-				 InFiles, _ProjDir);
+	SW_VES_read2(SW_VegEstab, swTRUE, swTRUE, EchoInits,
+				 InFiles, _ProjDir, LogInfo);
 }
 
 /**
@@ -184,7 +184,6 @@ void SW_VES_read(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo,
 
 @param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all information about
   vegetation establishment within the simulation
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] use_VegEstab Overall decision if user inputs for vegetation establishment
   should be processed.
 @param[in] consider_InputFlag Should the user input flag read from `"estab.in"` be
@@ -192,6 +191,7 @@ void SW_VES_read(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo,
 @param[in] EchoInits Flag to control if inputs are to be output to the user
 @param[in] InFiles Array of program in/output files
 @param[in] _ProjDir Project directory
+@param[in] LogInfo Holds information dealing with logfile output
 
 @note
   - Establishment is calculated under the following conditions
@@ -203,9 +203,9 @@ void SW_VES_read(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo,
   - Establishment results are included in the output files only
     if `"ESTABL"` is turned on in `"outsetup.in"`
 */
-void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo,
-	Bool use_VegEstab, Bool consider_InputFlag, Bool EchoInits,
-	char *InFiles[], char *_ProjDir) {
+void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
+	Bool consider_InputFlag, Bool EchoInits, char *InFiles[], char *_ProjDir,
+	LOG_INFO* LogInfo) {
 
 	SW_VES_deconstruct(SW_VegEstab);
 	SW_VES_construct(SW_VegEstab, LogInfo);
@@ -281,12 +281,12 @@ void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo)
 		about every vegetation species
 	@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in] n_transp_lyrs Index of the deepest transp. region
-	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] count Held within type SW_VEGESTAB to determine
 		how many species to check
+	@param[in] LogInfo Holds information dealing with logfile output
 */
 void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_SITE *SW_Site,
-	LyrIndex n_transp_lyrs[], LOG_INFO* LogInfo, IntU count) {
+	LyrIndex n_transp_lyrs[], IntU count, LOG_INFO* LogInfo) {
 
 	IntU i;
 
@@ -672,12 +672,12 @@ IntU _new_species(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
 @param[in] width Width of the soil layer (cm)
 @param[in] **parms List of structs of type SW_VEGESTAB_INFO holding
 	information about every vegetation species
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] count Held within type SW_VEGESTAB to determine
 	how many species to check
+@param[in] LogInfo Holds information dealing with logfile output
 */
 void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO** parms,
-					LOG_INFO* LogInfo, IntU count) {
+					IntU count, LOG_INFO* LogInfo) {
 	/* --------------------------------------------------- */
 	IntU i;
 	char outstr[2048], errstr[MAX_ERROR];

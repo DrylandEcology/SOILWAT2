@@ -81,8 +81,8 @@ void create_test_soillayers(unsigned int nlayers, char *InFiles[],
   int nRegions = 3;
   RealD regionLowerBounds[3] = {20., 50., 100.};
 
-  set_soillayers(SW_VegProd, SW_Site, LogInfo, nlayers, dmax,
+  set_soillayers(SW_VegProd, SW_Site, nlayers, dmax,
     bulkd, f_gravel, evco, trco_grass, trco_shrub, trco_tree,
     trco_forb, psand, pclay, imperm, soiltemp, nRegions,
-    regionLowerBounds, InFiles);
+    regionLowerBounds, InFiles, LogInfo);
 }

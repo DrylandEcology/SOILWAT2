@@ -132,26 +132,28 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw);
 void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
 					 IntUS ncol_OUT[]);
-void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms, LOG_INFO* LogInfo,
-	IntUS ncol_OUT[], char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS]);
+void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
+	IntUS ncol_OUT[], char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
+	LOG_INFO* LogInfo);
 void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 					 SW_OUTPUT* SW_Output);
 int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 	char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA, Bool deepdrain,
 	SW_OUTPUT* SW_Output, char *InFiles[]);
-void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[],
-	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS);
-void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
-		Bool bFlush_output, TimeInt tOffset);
+void SW_OUT_read(SW_ALL* sw, char *InFiles[],
+	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS,
+	LOG_INFO* LogInfo);
+void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,
+		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo);
 void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 						Bool bFlush_output, TimeInt tOffset);
 void SW_OUT_write_year(void);
 void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				  LOG_INFO* LogInfo);
 void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-		LOG_INFO* LogInfo, Bool bFlush_output, TimeInt tOffset);
+		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo);
 void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo);
-void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]);
+void _echo_all_inputs(SW_ALL* sw, char *InFiles[], LOG_INFO* LogInfo);
 
 void find_OutPeriods_inUse(SW_GEN_OUT* GenOutput, SW_OUTPUT* SW_Output);
 Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k, IntUS used_OUTNPERIODS,

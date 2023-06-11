@@ -398,22 +398,22 @@ namespace {
 
     //--- EXPECT SW_MISSING if soil texture is out of range
     // within range: sand [0.05, 0.7], clay [0.05, 0.6], porosity [0.1, 1[
-    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, 0., clay, porosity);
+    PTF_RawlsBrakensiek1985(&theta_min, 0., clay, porosity, &LogInfo);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, 0.75, clay, porosity);
+    PTF_RawlsBrakensiek1985(&theta_min, 0.75, clay, porosity, &LogInfo);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, sand, 0., porosity);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, 0., porosity, &LogInfo);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, sand, 0.65, porosity);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, 0.65, porosity, &LogInfo);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, sand, clay, 0.);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 0., &LogInfo);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, sand, clay, 1.);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 1., &LogInfo);
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
 
@@ -427,7 +427,7 @@ namespace {
         for (k3 = 0; k3 <= 5; k3++) {
           porosity = 0.1 + (double) k3 / 5. * (0.99 - 0.1);
 
-          PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, sand, clay, porosity);
+          PTF_RawlsBrakensiek1985(&theta_min, sand, clay, porosity, &LogInfo);
           EXPECT_GE(theta_min, 0.);
           EXPECT_LT(theta_min, porosity);
         }
@@ -435,7 +435,7 @@ namespace {
     }
 
     // Expect theta_min = 0 if sand = 0.4, clay = 0.5, and porosity = 0.1
-    PTF_RawlsBrakensiek1985(&LogInfo, &theta_min, 0.4, 0.5, 0.1);
+    PTF_RawlsBrakensiek1985(&theta_min, 0.4, 0.5, 0.1, &LogInfo);
     EXPECT_DOUBLE_EQ(theta_min, 0);
   }
 
@@ -449,7 +449,7 @@ namespace {
     help = SW_All.Site.evap_coeff[n1];
     SW_All.Site.evap_coeff[n1] = -0.5;
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo, PathInfo.InFiles),
+      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo),
       "'bare-soil evaporation coefficient' has an invalid value"
     );
     SW_All.Site.evap_coeff[n1] = help;
@@ -457,7 +457,7 @@ namespace {
     // Check error for bad transpiration coefficient (should be [0-1])
     SW_All.Site.transp_coeff[k][n2] = 1.5;
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo, PathInfo.InFiles),
+      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo),
       "'transpiration coefficient' has an invalid value"
     );
   }
@@ -485,7 +485,7 @@ namespace {
     // Check that "default" values do not change region bounds
     nRegions = 3;
     RealD regionLowerBounds1[] = {20., 40., 100.};
-    derive_soilRegions(&SW_All.Site, &LogInfo, nRegions, regionLowerBounds1);
+    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds1, &LogInfo);
 
     for (i = 0; i < nRegions; ++i) {
       // Quickly calculate soil depth for current region as output information
@@ -503,7 +503,7 @@ namespace {
     // Check that setting one region for all soil layers works
     nRegions = 1;
     RealD regionLowerBounds2[] = {100.};
-    derive_soilRegions(&SW_All.Site, &LogInfo, nRegions, regionLowerBounds2);
+    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds2, &LogInfo);
 
     for (i = 0; i < nRegions; ++i) {
       EXPECT_EQ(SW_All.Site.n_layers - 1, SW_All.Site._TranspRgnBounds[i]) <<
@@ -514,7 +514,7 @@ namespace {
     // Check that setting one region for one soil layer works
     nRegions = 1;
     RealD regionLowerBounds3[] = {SW_All.Site.width[0]};
-    derive_soilRegions(&SW_All.Site, &LogInfo, nRegions, regionLowerBounds3);
+    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds3, &LogInfo);
 
     for (i = 0; i < nRegions; ++i) {
       EXPECT_EQ(0, SW_All.Site._TranspRgnBounds[i]) <<
@@ -531,7 +531,7 @@ namespace {
       soildepth += SW_All.Site.width[i];
       regionLowerBounds4[i] = soildepth;
     }
-    derive_soilRegions(&SW_All.Site, &LogInfo, nRegions, regionLowerBounds4);
+    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds4, &LogInfo);
 
     for (i = 0; i < nRegions; ++i) {
       EXPECT_EQ(i, SW_All.Site._TranspRgnBounds[i]) <<
@@ -592,7 +592,7 @@ namespace {
     // Inputs represent matric density
     SW_All.Site.type_soilDensityInput = SW_MATRIC;
     SW_All.Site.fractionVolBulk_gravel[0] = fcoarse;
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo, PathInfo.InFiles);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo);
 
     EXPECT_GT(
       SW_All.Site.soilBulk_density[0],
@@ -603,7 +603,7 @@ namespace {
     // Inputs represent bulk density
     SW_All.Site.type_soilDensityInput = SW_BULK;
     SW_All.Site.fractionVolBulk_gravel[0] = fcoarse;
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo, PathInfo.InFiles);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo);
 
     EXPECT_GT(
       SW_All.Site.soilBulk_density[0],
@@ -626,7 +626,7 @@ namespace {
     SW_All.Site.type_soilDensityInput = SW_MISSING;
 
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo,  PathInfo.InFiles),
+      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site,  PathInfo.InFiles, &LogInfo),
       "Soil density type not recognized"
     );
   }

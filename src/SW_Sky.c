@@ -37,12 +37,12 @@
 /**
 @brief Reads in file for sky.
 
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
 	over the simulated site
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_SKY_read(LOG_INFO* LogInfo, char *InFiles[], SW_SKY* SW_Sky) {
+void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* 6-Oct-03 (cwb) - all this time I had lines 1 & 3
 	 *                  switched!

@@ -50,8 +50,8 @@ char const *pd2longstr[] = {"SW_MISSING"};
 /*             (declared in SW_Output.h)               */
 /* --------------------------------------------------- */
 void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
-	LOG_INFO* LogInfo, IntUS ncol_OUT[],
-	char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS])
+	IntUS ncol_OUT[], char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
+	LOG_INFO* LogInfo)
 {
 	/* Silence compiler */
 	(void) tLayers;
@@ -100,8 +100,9 @@ void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 	(void) SW_Output;
 }
 
-void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[],
-	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS)
+void SW_OUT_read(SW_ALL* sw, char *InFiles[],
+	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS,
+	LOG_INFO* LogInfo)
 {
 	/* use sw to silence compiler warnings */
 	(void) sw;
@@ -112,7 +113,7 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[],
 }
 
 void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-		LOG_INFO* LogInfo, Bool bFlush_output, TimeInt tOffset)
+		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo)
 {
 	/* silence compiler warnings */
 	(void) sw;
@@ -127,11 +128,11 @@ void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 {
 	TimeInt tOffset = 0;
 
-	_collect_values(sw, SW_OutputPtrs, LogInfo, swFALSE, tOffset);
+	_collect_values(sw, SW_OutputPtrs, swFALSE, tOffset, LogInfo);
 }
 
-void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
-		Bool bFlush_output, TimeInt tOffset)
+void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,
+		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo)
 {
 	ObjType x = otyp;
 	if (x == eF) {}
@@ -364,7 +365,7 @@ static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
 		TimeInt tOffset)
 {
 	if (pd == eSW_Day) {}
-	SW_OUT_sum_today(sw, LogInfo, otyp, bFlush_output, tOffset);
+	SW_OUT_sum_today(sw, otyp, bFlush_output, tOffset, LogInfo);
 }
 
 static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
@@ -374,7 +375,7 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 	TimeInt tOffset = 0;
 
 	if (op == eSW_Day) {}
-	SW_OUT_sum_today(sw, NULL, otyp, swFALSE, tOffset);
+	SW_OUT_sum_today(sw, otyp, swFALSE, tOffset, LogInfo);
 
 	(void) timeSteps;
 	(void) used_OUTNPERIODS;

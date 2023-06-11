@@ -1626,14 +1626,15 @@ void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
   @param[in] tLayers Total number of soil layers
   @param[in] **parms List of structs of type SW_VEGESTAB_INFO holding
   	information about every vegetation species
-  @param[in] LogInfo Holds information dealing with logfile output
   @param[in] ncol_OUT Number of output columns for each output key
   @param[out] colnames_OUT Names of output columns for each output key
+  @param[in] LogInfo Holds information dealing with logfile output
 
   @sideeffect Set values of colnames_OUT
 */
-void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms, LOG_INFO* LogInfo,
-	IntUS ncol_OUT[], char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS]) {
+void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
+	IntUS ncol_OUT[], char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
+	LOG_INFO* LogInfo) {
 	IntUS i, j;
   #ifdef SWDEBUG
   int debug = 0;
@@ -2067,15 +2068,16 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 
 	@param[in,out] sw Comprehensive structure holding all information
     	dealt with in SOILWAT2
-	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] InFiles Array of program in/output files
 	@param[in] timeSteps Keeps track of the output time periods that
 		are required for each output key
 	@param[out] used_OUTNPERIODS The number of different time steps/periods
 		 that are used/requested
+	@param[in] LogInfo Holds information dealing with logfile output
  */
-void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[],
-	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS)
+void SW_OUT_read(SW_ALL* sw, char *InFiles[],
+	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS,
+	LOG_INFO* LogInfo)
 {
 	/* =================================================== */
 	/* read input file for output parameter setup info.
@@ -2247,15 +2249,15 @@ void SW_OUT_read(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[],
 
 
 void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-		LOG_INFO* LogInfo, Bool bFlush_output, TimeInt tOffset) {
+		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo) {
 
-	SW_OUT_sum_today(sw, LogInfo, eSWC, bFlush_output, tOffset);
+	SW_OUT_sum_today(sw, eSWC, bFlush_output, tOffset, LogInfo);
 
-	SW_OUT_sum_today(sw, LogInfo, eWTH, bFlush_output, tOffset);
+	SW_OUT_sum_today(sw, eWTH, bFlush_output, tOffset, LogInfo);
 
-	SW_OUT_sum_today(sw, LogInfo, eVES, bFlush_output, tOffset);
+	SW_OUT_sum_today(sw, eVES, bFlush_output, tOffset, LogInfo);
 
-	SW_OUT_sum_today(sw, LogInfo, eVPD, bFlush_output, tOffset);
+	SW_OUT_sum_today(sw, eVPD, bFlush_output, tOffset, LogInfo);
 
 	SW_OUT_write_today(sw, SW_OutputPtrs, bFlush_output, tOffset);
 }
@@ -2275,7 +2277,7 @@ void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				  LOG_INFO* LogInfo) {
 	TimeInt localTOffset = 0;
 
-	_collect_values(sw, SW_OutputPtrs, LogInfo, swTRUE, localTOffset);
+	_collect_values(sw, SW_OutputPtrs, swTRUE, localTOffset, LogInfo);
 }
 
 /** adds today's output values to week, month and year
@@ -2288,14 +2290,14 @@ void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 	@param[in,out] sw Comprehensive struct of type SW_ALL containing
 		all information in the simulation
-	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] otyp Identifies the current module/object
 	@param[in] bFlush_output Determines if output should be created for
 		a specific output key
 	@param[in] tOffset Offset describing with the previous or current period
+	@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_OUT_sum_today(SW_ALL* sw, LOG_INFO* LogInfo, ObjType otyp,
-		Bool bFlush_output, TimeInt tOffset)
+void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,
+		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo)
 {
 	/*  SW_VEGESTAB *v = &SW_VegEstab;  -> we don't need to sum daily for this */
 	OutPeriod pd;
@@ -2627,11 +2629,12 @@ void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
 	LogError(LogInfo, LOGNOTE, errstr);
 }
 
-void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]) {
+void _echo_all_inputs(SW_ALL* sw, char *InFiles[], LOG_INFO* LogInfo) {
 
-	_echo_inputs(&sw->Site, LogInfo, InFiles);
-	_echo_VegEstab(sw->Site.width, sw->VegEstab.parms, LogInfo, sw->VegEstab.count);
-	_echo_VegProd(LogInfo, sw->VegProd.veg, sw->VegProd.bare_cov);
+	_echo_inputs(&sw->Site, InFiles, LogInfo);
+	_echo_VegEstab(sw->Site.width, sw->VegEstab.parms,
+				   sw->VegEstab.count, LogInfo);
+	_echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov, LogInfo);
 	_echo_outputs(sw, LogInfo);
 }
 

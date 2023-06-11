@@ -74,38 +74,39 @@ int main(int argc, char **argv) {
 	SW_CTL_setup_model(&sw, SW_OutputPtrs, &PathInfo, &LogInfo);
 
 	// read user inputs
-	SW_CTL_read_inputs_from_disk(&sw, &PathInfo, &LogInfo, EchoInits);
+	SW_CTL_read_inputs_from_disk(&sw, &PathInfo, EchoInits, &LogInfo);
 
 	// finalize daily weather
 	SW_WTH_finalize_all_weather(&sw.Markov, &sw.Weather, sw.Model.cum_monthdays,
 								sw.Model.days_in_month, &LogInfo);
 
 	// initialize simulation run (based on user inputs)
-	SW_CTL_init_run(&sw, &LogInfo, &PathInfo);
+	SW_CTL_init_run(&sw, &PathInfo, &LogInfo);
 
   // initialize output
 	SW_OUT_set_ncol(sw.Site.n_layers, sw.Site.n_evap_lyrs, sw.VegEstab.count,
 					sw.GenOutput.ncol_OUT);
-	SW_OUT_set_colnames(sw.Site.n_layers, sw.VegEstab.parms, &LogInfo,
-						sw.GenOutput.ncol_OUT, sw.GenOutput.colnames_OUT);
+	SW_OUT_set_colnames(sw.Site.n_layers, sw.VegEstab.parms,
+						sw.GenOutput.ncol_OUT, sw.GenOutput.colnames_OUT,
+						&LogInfo);
 	SW_OUT_create_files(&sw.FileStatus, sw.Output, sw.Site.n_layers,
-	                    &LogInfo, PathInfo.InFiles, &sw.GenOutput); // only used with SOILWAT2
+	                    PathInfo.InFiles, &sw.GenOutput, &LogInfo); // only used with SOILWAT2
 
 	if(EchoInits) {
-		_echo_all_inputs(&sw, &LogInfo, PathInfo.InFiles);
+		_echo_all_inputs(&sw, PathInfo.InFiles, &LogInfo);
 	}
 
   // run simulation: loop through each year
 	SW_CTL_main(&sw, SW_OutputPtrs, &PathInfo, &LogInfo);
 
   // finish-up output
-	SW_OUT_close_files(&sw.FileStatus, &LogInfo, &sw.GenOutput); // not used with rSOILWAT2
+	SW_OUT_close_files(&sw.FileStatus, &sw.GenOutput, &LogInfo); // not used with rSOILWAT2
 
 	// de-allocate all memory
 	SW_CTL_clear_model(swTRUE, &sw, &PathInfo);
 
 	// Mention to the user if something was logged
-	sw_check_log(&LogInfo, QuietMode);
+	sw_check_log(QuietMode, &LogInfo);
 
 	return 0;
 }

@@ -13,8 +13,8 @@ namespace {
   // Run a simulation with vegetation establishment turn on
   TEST_F(AllTest, SimulateWithVegEstab) {
     // Turn on vegetation establishment and process inputs (but ignore use flag)
-    SW_VES_read2(&SW_All.VegEstab, &LogInfo, swTRUE, swFALSE, swFALSE,
-                 PathInfo.InFiles, PathInfo._ProjDir);
+    SW_VES_read2(&SW_All.VegEstab, swTRUE, swFALSE, swFALSE,
+                 PathInfo.InFiles, PathInfo._ProjDir, &LogInfo);
 
     // Expect that vegetation establishment is turn on and contains species
     EXPECT_TRUE(SW_All.VegEstab.use);

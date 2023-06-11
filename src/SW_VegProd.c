@@ -74,10 +74,10 @@ char const *key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 
 @param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] InFiles Array of program in/output files
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_VPD_read(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo, char *InFiles[]) {
+void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
 	FILE *f;
 	TimeInt mon = Jan;
@@ -604,7 +604,7 @@ void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 
     if(veg_method > 0) {
         estimateVegetationFromClimate(SW_VegProd, SW_Weather->allHist,
-									  SW_Model, LogInfo, veg_method, latitude);
+									  SW_Model, veg_method, latitude, LogInfo);
     }
 
 }
@@ -817,14 +817,14 @@ RealD sum_across_vegtypes(RealD x[][MAX_LAYERS + 1], LyrIndex layerno)
 /**
 @brief Text output for VegProd.
 
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] VegProd_veg Biomass [g/m2] per vegetation type as
 	observed in total vegetation
 @param[in] VegProd_bare_cov Bare-ground cover of plot that is not
 	occupied by vegetation
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void _echo_VegProd(LOG_INFO* LogInfo, VegType VegProd_veg[],
-				   CoverType VegProd_bare_cov) {
+void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov,
+				   LOG_INFO* LogInfo) {
 	/* ================================================== */
 
 	char outstr[1500], errstr[MAX_ERROR];
@@ -929,15 +929,15 @@ void get_critical_rank(SW_VEGPROD* SW_VegProd){
  @param[in,out] Weather_hist Array containing all historical data of a site
  @param[in] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
- @param[in] LogInfo Holds information dealing with logfile output
  @param[in] veg_method User specified value determining method of vegetation estimation with the current option(s):
  1 - Estimate fixed vegetation composition (fractional cover) from long-term climate conditions
  @param[in] latitude Value of type double specifying latitude coordinate the current site is located at
+ @param[in] LogInfo Holds information dealing with logfile output
  */
 
 void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
-	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model, LOG_INFO* LogInfo,
-	int veg_method, double latitude) {
+	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model, int veg_method,
+	double latitude, LOG_INFO* LogInfo) {
 
     int numYears = SW_Model->endyr - SW_Model->startyr + 1,
 	k, bareGroundIndex = 7;
@@ -976,12 +976,12 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
         C4Variables[1] = climateAverages.ddAbove65F_degday;
         C4Variables[2] = climateAverages.frostFree_days;
 
-        estimatePotNatVegComposition(LogInfo, climateAverages.meanTemp_C,
+        estimatePotNatVegComposition(climateAverages.meanTemp_C,
 				climateAverages.PPT_cm, climateAverages.meanTempMon_C,
 				climateAverages.PPTMon_cm, coverValues, shrubLimit,
 				SumGrassesFraction, C4Variables, fillEmptyWithBareGround,
                 inNorthHem, warnExtrapolation, fixBareGround, grassOutput,
-                RelAbundanceL0, RelAbundanceL1);
+                RelAbundanceL0, RelAbundanceL1, LogInfo);
 
         ForEachVegType(k) {
             vegProd->veg[k].cov.fCover = RelAbundanceL1[k];
@@ -1018,7 +1018,6 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
 
  `calcSiteClimate()` and `averageClimateAcrossYears()` can be used to calculate climate variables required as inputs.`
 
- @param[in] LogInfo Holds information dealing with logfile output
  @param[in] meanTemp_C Value containing the long-term average of yearly temperatures [C]
  @param[in] PPT_cm Value containing the long-term average of yearly precipitation [cm]
  @param[in] meanTempMon_C Array of size MAX_MONTHS containing long-term average monthly mean temperatures [C]
@@ -1042,18 +1041,19 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
  0) Succulents, 1) Forbs, 2) C3, 3) C4, 4) annual grasses, 5) Shrubs, 6) Trees, 7) Bare ground
  @param[out] RelAbundanceL1 Array of size five holding all estimated values aside from grasses (not including sum of grasses).
  The elements are: 0) trees, 1) shrubs 2) sum of forbs and succulents 3) overall sum of grasses 4) bare ground
+ @param[in] LogInfo Holds information dealing with logfile output
 
  @note This function uses equations developed by
  Paruelo & Lauenroth (1996) @cite paruelo1996EA and,
  for C4 grasses, an equation by Teeri & Stowe (1976) @cite teeri1976O.
  */
 
-void estimatePotNatVegComposition(LOG_INFO* LogInfo, double meanTemp_C,
+void estimatePotNatVegComposition(double meanTemp_C,
 	double PPT_cm, double meanTempMon_C[], double PPTMon_cm[],
 	double inputValues[], double shrubLimit, double SumGrassesFraction,
     double C4Variables[], Bool fillEmptyWithBareGround, Bool inNorthHem,
 	Bool warnExtrapolation, Bool fixBareGround, double *grassOutput,
-	double *RelAbundanceL0, double *RelAbundanceL1) {
+	double *RelAbundanceL0, double *RelAbundanceL1, LOG_INFO* LogInfo) {
 
     const int nTypes = 8;
     int winterMonths[3], summerMonths[3];

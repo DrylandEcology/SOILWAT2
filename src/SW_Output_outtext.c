@@ -273,16 +273,16 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[])
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  * 	basic output information for all output keys
  * @param[in] n_layers Number of layers of soil within the simulation run
- * @param[in] LogInfo Holds information dealing with logfile output
  * @param[in] InFiles Array of program in/output files
  * @param[in] GenOutput Holds general variables that deal with output
+ * @param[in] LogInfo Holds information dealing with logfile output
  *
  *  @note Call this routine at the beginning of the main program run, but
  *  after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
 void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
-	LyrIndex n_layers, LOG_INFO* LogInfo, char *InFiles[],
-	SW_GEN_OUT* GenOutput) {
+	LyrIndex n_layers, char *InFiles[], SW_GEN_OUT* GenOutput,
+	LOG_INFO* LogInfo) {
 
 	OutPeriod pd;
 
@@ -292,8 +292,8 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 
 			write_headers_to_csv(pd, SW_FileStatus->fp_reg[pd],
 				SW_FileStatus->fp_soil[pd], swFALSE, SW_FileStatus->make_soil,
-				SW_FileStatus->make_regular, SW_Output, n_layers, LogInfo,
-				GenOutput);
+				SW_FileStatus->make_regular, SW_Output, n_layers, GenOutput,
+				LogInfo);
 		}
 	}
 }
@@ -302,8 +302,8 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 #elif defined(STEPWAT)
 
 void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
-		SW_OUTPUT* SW_Output, LOG_INFO* LogInfo,
-		SW_OUT_GEN GenOutput, char *InFiles[]) {
+		SW_OUTPUT* SW_Output, SW_OUT_GEN GenOutput,
+		char *InFiles[], LOG_INFO* LogInfo) {
 
 	OutPeriod p;
 
@@ -313,15 +313,15 @@ void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg_agg[p],
 				SW_FileStatus->fp_soil_agg[p], swTRUE, SW_FileStatus->make_soil,
-				SW_FileStatus->make_regular, SW_Output, n_layers, LogInfo,
-				GenOutput);
+				SW_FileStatus->make_regular, SW_Output, n_layers, GenOutput,
+				LogInfo);
 		}
 	}
 }
 
 void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
-		SW_OUTPUT* SW_Output, int iteration, LOG_INFO* LogInfo,
-		SW_OUT_GEN GenOutput, char *InFiles[]) {
+		SW_OUTPUT* SW_Output, int iteration, SW_OUT_GEN GenOutput,
+		char *InFiles[], LOG_INFO* LogInfo) {
 
 	OutPeriod p;
 
@@ -331,8 +331,8 @@ void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg[p],
 				SW_FileStatus->fp_soil[p], swTRUE, SW_FileStatus->make_soil,
-				SW_FileStatus->make_regular, SW_Output, n_layers, LogInfo,
-				GenOutput);
+				SW_FileStatus->make_regular, SW_Output, n_layers, GenOutput,
+				LogInfo);
 		}
 	}
 }
@@ -400,13 +400,13 @@ void get_outstrleader(OutPeriod pd, size_t sizeof_str,
 	specifying to output a soil-related header names
   \param SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds basic output
 	information for all output keys
-  \param LogInfo Holds information dealing with logfile output
   \param GenOutput Holds general variables that deal with output
+  \param LogInfo Holds information dealing with logfile output
 
 */
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 	Bool does_agg, Bool make_regular[], Bool make_soil[], SW_OUTPUT* SW_Output,
-	LyrIndex n_layers, LOG_INFO* LogInfo, SW_GEN_OUT* GenOutput) {
+	LyrIndex n_layers, SW_GEN_OUT* GenOutput, LOG_INFO* LogInfo) {
 
 	char str_time[20];
 	char
@@ -470,11 +470,11 @@ void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 	@param[in,out] SW_FileStatus Struct of type
 		SW_FILE_STATUS which holds basic information about output files
 		and values
-	@param[in] LogInfo Holds information dealing with logfile output
 	@param[in] GenOutput Holds general variables that deal with output
+	@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, LOG_INFO* LogInfo,
-						SW_GEN_OUT* GenOutput) {
+void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
+						LOG_INFO* LogInfo) {
 
 	Bool close_regular, close_layers, close_aggs;
 	OutPeriod p;

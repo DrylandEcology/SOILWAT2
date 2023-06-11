@@ -190,7 +190,7 @@ void sw_init_args(int argc, char **argv, LOG_INFO* LogInfo,
 }
 
 
-void sw_check_log(LOG_INFO* LogInfo, Bool QuietMode) {
+void sw_check_log(Bool QuietMode, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* function to be called by atexit() so it's the last
 	 * to execute before termination.  This is the place to

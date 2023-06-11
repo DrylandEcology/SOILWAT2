@@ -464,7 +464,7 @@ namespace
       totagb = Es_param_limit + 1.;
       pot_soil_evap(&SW_All.Site, nelyrs, totagb, fbse,
         petday, shift, shape, inflec, range, swc, Es_param_limit,
-        &LogInfo, &bserate);
+        &bserate, &LogInfo);
 
       // expect baresoil evaporation rate = 0 if totagb >= Es_param_limit
       EXPECT_DOUBLE_EQ(bserate, 0.) <<
@@ -476,7 +476,7 @@ namespace
 
       // Begin TEST_F if (PET = 0)
       pot_soil_evap(&SW_All.Site, nelyrs, totagb, fbse, petday0, shift,
-        shape, inflec, range, swc, Es_param_limit, &LogInfo, &bserate);
+        shape, inflec, range, swc, Es_param_limit, &bserate, &LogInfo);
 
       // expect baresoil evaporation rate = 0 if PET = 0
       EXPECT_DOUBLE_EQ(bserate, 0.) <<
@@ -485,7 +485,7 @@ namespace
 
       // Begin TEST_F if (potential baresoil rate = 0)
       pot_soil_evap(&SW_All.Site, nelyrs, totagb, fbse0, petday, shift,
-        shape, inflec, range, swc, Es_param_limit, &LogInfo, &bserate);
+        shape, inflec, range, swc, Es_param_limit, &bserate, &LogInfo);
 
       // expect baresoil evaporation rate = 0 if fbse = 0
       EXPECT_DOUBLE_EQ(bserate, 0.) <<
@@ -494,7 +494,7 @@ namespace
 
       // Begin TEST_F if (totagb < Es_param_limit)
       pot_soil_evap(&SW_All.Site, nelyrs, totagb, fbse, petday, shift,
-        shape, inflec, range, swc, Es_param_limit, &LogInfo, &bserate);
+        shape, inflec, range, swc, Es_param_limit, &bserate, &LogInfo);
 
       // expect baresoil evaporation rate > 0
       // if totagb >= Es_param_limit & swc > 0
@@ -550,8 +550,8 @@ namespace
       }
 
       //Begin TEST_F for bserate when nelyrs = 1
-      pot_soil_evap_bs(&bserate, &SW_All.Site, &LogInfo, nelyrs,
-                       petday, shift, shape, inflec, range, swc);
+      pot_soil_evap_bs(&bserate, &SW_All.Site, nelyrs, petday, shift, shape,
+                       inflec, range, swc, &LogInfo);
       if (nelyrs == 1)
       {
         EXPECT_NEAR(bserate, 0.062997815, tol6) <<

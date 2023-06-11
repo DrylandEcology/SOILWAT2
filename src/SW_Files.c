@@ -72,8 +72,8 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
 
 /** Read `first` input file `eFirst` that contains names of the remaining input files.
 
-	@param[in,out] LogInfo Holds information dealing with logfile output
 	@param[in,out] PathInfo truct holding all information about the programs path/files
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
     @note If input file `eFirst` changes, particularly if the locations of the
       `weather_prefix` and/or `output_prefix` change; then update the hard-coded line
@@ -85,7 +85,7 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
       - `InFiles`
       - `logfp` for SOILWAT2-standalone
   */
-void SW_F_read(LOG_INFO* LogInfo, PATH_INFO* PathInfo) {
+void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 	FILE *f;
 	int lineno = 0, fileno = 0;
 	char buf[FILENAME_MAX], inbuf[MAX_FILENAMESIZE];

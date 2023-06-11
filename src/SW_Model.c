@@ -93,10 +93,10 @@ void SW_MDL_deconstruct(void)
 
 @param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] InFiles Array of program in/output files
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_MDL_read(SW_MODEL* SW_Model, LOG_INFO* LogInfo, char *InFiles[]) {
+void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/*
 	 * 1/24/02 - added code for partial start and end years

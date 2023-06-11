@@ -41,19 +41,20 @@ double clearnessindex_diffuse(double K_b);
 double actual_horizontal_transmissivityindex(double tau);
 
 double solar_radiation(
-  SW_ATMD *SW_AtmDem, LOG_INFO* LogInfo, unsigned int doy,
-  double lat, double elev, double slope, double aspect,
+  SW_ATMD *SW_AtmDem, unsigned int doy, double lat,
+  double elev, double slope, double aspect,
   double albedo, double *cloud_cover, double e_a,
   double rsds, unsigned int desc_rsds,
-  double *H_oh, double *H_ot, double *H_gh
+  double *H_oh, double *H_ot, double *H_gh,
+  LOG_INFO* LogInfo
 );
 
 
 double blackbody_radiation(double T);
 
 
-double petfunc(LOG_INFO* LogInfo, double H_g, double avgtemp,
-  double elev, double reflec, double humid, double windsp, double cloudcov);
+double petfunc(double H_g, double avgtemp, double elev, double reflec,
+            double humid, double windsp, double cloudcov, LOG_INFO* LogInfo);
 
 double svp(double T, double *slope_svp_to_t);
 double svp2(double temp);

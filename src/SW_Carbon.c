@@ -50,8 +50,8 @@ void SW_CBN_deconstruct(void)
  * @param[in,out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
- * @param[in] LogInfo Holds information dealing with logfile output
  * @param[in] InFiles Array of program in/output files
+ * @param[in] LogInfo Holds information dealing with logfile output
  *
  * Additionally, check for the following issues:
  *   1. Duplicate entries.
@@ -60,8 +60,8 @@ void SW_CBN_deconstruct(void)
  *   4. Missing year.
  *   5. Negative year.
  */
-void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, LOG_INFO* LogInfo,
-                 char *InFiles[])
+void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
+                 LOG_INFO* LogInfo)
 {
   #ifdef SWDEBUG
   short debug = 0;

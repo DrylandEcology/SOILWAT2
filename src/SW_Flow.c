@@ -227,9 +227,9 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 			sw->Site.stDeltaX,
 			sw->Site.stMaxDepth,
 			sw->Site.stNRGR,
-			LogInfo,
 			&sw->Weather.surfaceAvg, // yesterday's soil surface temperature
-			sw->SoilWat.lyrFrozen
+			sw->SoilWat.lyrFrozen,
+			LogInfo
 		);
 	}
 
@@ -243,7 +243,6 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 
 	sw->SoilWat.H_gt = solar_radiation(
 		&sw->AtmDemand,
-		LogInfo,
 		doy,
 		sw->Site.latitude,
 		sw->Site.altitude,
@@ -256,18 +255,19 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
         sw->Weather.desc_rsds,
 		&sw->SoilWat.H_oh,
 		&sw->SoilWat.H_ot,
-		&sw->SoilWat.H_gh
+		&sw->SoilWat.H_gh,
+		LogInfo
 	);
 
 	sw->SoilWat.pet = sw->Site.pet_scale * petfunc(
-		LogInfo,
 		sw->SoilWat.H_gt,
 		sw->Weather.now.temp_avg,
 		sw->Site.altitude,
 		x,
         sw->Weather.now.relHumidity,
         sw->Weather.now.windSpeed,
-        sw->Weather.now.cloudCover
+        sw->Weather.now.cloudCover,
+		LogInfo
 	);
 
 
@@ -416,10 +416,10 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 	/* Potential bare-soil evaporation rates */
 	if (GT(sw->VegProd.bare_cov.fCover, 0.) && EQ(sw->SoilWat.snowpack[Today], 0.)) /* bare ground present AND no snow on ground */
 	{
-		pot_soil_evap_bs(&soil_evap_rate_bs, &sw->Site, LogInfo,
+		pot_soil_evap_bs(&soil_evap_rate_bs, &sw->Site,
 			sw->Site.n_evap_lyrs, sw->SoilWat.pet,
 			sw->Site.evap.xinflec, sw->Site.evap.slope, sw->Site.evap.yinflec,
-			sw->Site.evap.range, sw->SoilWat.swcBulk[Today]);
+			sw->Site.evap.range, sw->SoilWat.swcBulk[Today], LogInfo);
 		soil_evap_rate_bs *= sw->VegProd.bare_cov.fCover;
 
 	} else {
@@ -442,7 +442,7 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 					sw->Site.evap.slope, sw->Site.evap.yinflec,
 					sw->Site.evap.range, sw->SoilWat.swcBulk[Today],
 					sw->VegProd.veg[k].Es_param_limit,
-					LogInfo, &soil_evap_rate[k]);
+					&soil_evap_rate[k], LogInfo);
 
 				soil_evap_rate[k] *= sw->VegProd.veg[k].cov.fCover;
 
@@ -721,8 +721,8 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 			sw->Site.stDeltaX, sw->Site.stMaxDepth, sw->Site.stNRGR,
 			sw->SoilWat.snowpack[Today], sw->Weather.now.temp_max,
 			sw->Weather.now.temp_min, sw->SoilWat.H_gt, sw->Model.year,
-			sw->Model.doy, LogInfo, sw->SoilWat.maxLyrTemperature,
-			sw->SoilWat.minLyrTemperature, &sw->SoilWat.soiltempError);
+			sw->Model.doy, sw->SoilWat.maxLyrTemperature,
+			sw->SoilWat.minLyrTemperature, &sw->SoilWat.soiltempError, LogInfo);
 	}
 
 	/* Soil Temperature ends here */

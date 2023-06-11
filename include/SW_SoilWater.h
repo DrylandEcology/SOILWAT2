@@ -66,18 +66,18 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat);
 void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 					 LOG_INFO* LogInfo);
 void SW_SWC_read(SW_SOILWAT* SW_SoilWat, RealD site_avgLyrTemp[],
-	TimeInt endyr, LyrIndex n_layers, LOG_INFO* LogInfo,
-	char *InFiles[]);
+	TimeInt endyr, LyrIndex n_layers, char *InFiles[],
+	LOG_INFO* LogInfo);
 void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site,
 					 RealD* temp_snow);
 void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year, LOG_INFO* LogInfo);
-void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo, char *InFiles[]);
+void SW_SWC_water_flow(SW_ALL* sw, char *InFiles[], LOG_INFO* LogInfo);
 void calculate_repartitioned_soilwater(SW_SOILWAT* SW_SoilWat,
 	RealD swcBulk_atSWPcrit[][MAX_LAYERS + 1], SW_VEGPROD* SW_VegProd,
 	LyrIndex n_layers);
 void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], RealD swcBulk_min[],
-	TimeInt doy, SW_SOILWAT_HIST SoilWat_hist, LOG_INFO* LogInfo,
-	LyrIndex n_layers, char *InFiles[]);
+	TimeInt doy, SW_SOILWAT_HIST SoilWat_hist, LyrIndex n_layers,
+	char *InFiles[], LOG_INFO* LogInfo);
 void SW_SWC_adjust_snow(RealD *temp_snow, RealD snowpack[], SW_SITE* SW_Site,
 	RealD temp_min, RealD temp_max, RealD ppt, TimeInt doy, RealD *rain,
 	RealD *snow, RealD *snowmelt);
@@ -99,21 +99,21 @@ double SWRC_SWCtoSWP(
 	const int errmode,
 	LOG_INFO* LogInfo
 );
-double SWRC_SWCtoSWP_Campbell1974(
-	LOG_INFO* LogInfo,
+double SWRC_SWCtoSWP_Campbell1974 (
 	double swcBulk,
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 );
 double SWRC_SWCtoSWP_vanGenuchten1980(
-	LOG_INFO* LogInfo,
 	double swcBulk,
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 );
 double SWRC_SWCtoSWP_FXW(
 	double swcBulk,
@@ -127,13 +127,13 @@ double SWRC_SWCtoSWP_FXW(
 RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_SITE *SW_Site,
 					   LyrIndex layerno, LOG_INFO* LogInfo);
 double SWRC_SWPtoSWC(
-	LOG_INFO* LogInfo,
 	double swpMatric,
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 );
 double SWRC_SWPtoSWC_Campbell1974(
 	double swpMatric,

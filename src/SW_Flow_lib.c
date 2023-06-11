@@ -435,8 +435,8 @@ Based on equations from Parton 1978. @cite Parton1978
 @param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param[in] Es_param_limit Parameter to determine when soil surface is completely covered with
     litter and that bare soil evaporation is inhibited.
-@param[in] LogInfo Holds information dealing with logfile output
 @param[out] *bserate Bare soil evaporation loss rate (cm/day).
+@param[in] LogInfo Holds information dealing with logfile output
 
 @sideeffect *bserate Updated bare soil evaporation loss rate (cm/day).
 
@@ -444,8 +444,8 @@ Based on equations from Parton 1978. @cite Parton1978
 
 void pot_soil_evap(SW_SITE *SW_Site, unsigned int nelyrs, double totagb,
   double fbse, double petday, double shift, double shape, double inflec,
-  double range, double swc[], double Es_param_limit, LOG_INFO* LogInfo,
-  double *bserate) {
+  double range, double swc[], double Es_param_limit, double *bserate,
+  LOG_INFO* LogInfo) {
 	/**********************************************************************
 	 HISTORY:
 	 4/30/92  (SLC)
@@ -508,7 +508,6 @@ Based on equations from Parton 1978. @cite Parton1978
 
 @param[in,out] *bserate Bare soil evaporation loss rate (cm/day).
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] nelyrs Number of layers to consider in evaporation.
 @param[in] petday Potential evapotranspiration rate (cm/day).
 @param[in] shift Displacement of the inflection point in order to shift the function up, down, left, or right.
@@ -516,12 +515,13 @@ Based on equations from Parton 1978. @cite Parton1978
 @param[in] inflec Y-value of the inflection point.
 @param[in] range Max y-value - min y-value at the limits.
 @param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param[in] LogInfo Holds information dealing with logfile output
 
 */
 
-void pot_soil_evap_bs(double *bserate, SW_SITE *SW_Site, LOG_INFO* LogInfo,
+void pot_soil_evap_bs(double *bserate, SW_SITE *SW_Site,
 	unsigned int nelyrs, double petday, double shift, double shape,
-	double inflec, double range, double swc[]) {
+	double inflec, double range, double swc[], LOG_INFO* LogInfo) {
 
 	/**********************************************************************
 	 LOCAL:
@@ -1439,9 +1439,9 @@ void SW_ST_init_run(ST_RGR_VALUES* StRegValues) {
 		(default is 180 cm from Parton's equation @cite Parton1984).
 	@param[in] nRgr Number of regressions
 		(1 extra is needed for the avgLyrTempR and oldavgLyrTempR for the last layer.
-	@param[in] LogInfo Holds information dealing with logfile output
 	@param[out] surfaceAvg Initialized surface air temperatature (&deg;C).
 	@param[out] lyrFrozen Frozen information at each layer.
+	@param[in] LogInfo Holds information dealing with logfile output
 
 	@sideeffect *ptr_stError Updated boolean indicating if there was an error.
 */
@@ -1462,9 +1462,9 @@ void SW_ST_setup_run(
 	double deltaX,
 	double theMaxDepth,
 	unsigned int nRgr,
-	LOG_INFO* LogInfo,
 	double *surfaceAvg,
-	double* lyrFrozen
+	double* lyrFrozen,
+	LOG_INFO* LogInfo
 ) {
 
 	#ifdef SWDEBUG
@@ -1484,8 +1484,7 @@ void SW_ST_setup_run(
 			width, oldavgLyrTemp, sTconst,
 			nlyrs, fc, wp,
 			deltaX, theMaxDepth, nRgr,
-			LogInfo,
-			ptr_stError, soil_temp_init
+			ptr_stError, soil_temp_init, LogInfo
 		);
 
 		set_frozen_unfrozen(nlyrs, oldavgLyrTemp, swc, swc_sat,
@@ -1510,10 +1509,10 @@ void SW_ST_setup_run(
 @param deltaX The depth increment for the soil temperature calculations (cm).
 @param theMaxDepth the lower bound of the equation (cm).
 @param nRgr the number of regressions (1 extra value is needed for the avgLyrTempR).
-@param[in] LogInfo Holds information dealing with logfile output
 @param ptr_stError Booleans status of soil temperature error in *ptr_stError.
 @param soil_temp_init Flag specifying if the values for
 	`soil_temperature()` have been initialized
+@param[in] LogInfo Holds information dealing with logfile output
 
 @sideeffect
   - *ptr_stError Updated booleans status of soil temperature error in *ptr_stError.
@@ -1525,7 +1524,7 @@ void SW_ST_setup_run(
 void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 	double width[], double oldavgLyrTemp[], double sTconst, unsigned int nlyrs,
 	double fc[], double wp[], double deltaX, double theMaxDepth,
-	unsigned int nRgr, LOG_INFO* LogInfo, Bool *ptr_stError, Bool *soil_temp_init) {
+	unsigned int nRgr, Bool *ptr_stError, Bool *soil_temp_init, LOG_INFO* LogInfo) {
 
 	// local vars
 	unsigned int x1 = 0, x2 = 0, j = 0, i;
@@ -2169,10 +2168,10 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param[in] H_gt Daily global (tilted) irradiation [MJ / m2]
 @param[in] year Current year in simulation
 @param[in] doy Day of the year (base1) [1-366]
-@param[in] LogInfo Holds information dealing with logfile output
 @param[out] maxLyrTemperature An array holding all of the layers maximum temperature (&deg;C)
 @param[out] minLyrTemperature An array holding all of the layers minimum temperature (&deg;C)
 @param[out] *ptr_stError Boolean indicating whether there was an error.
+@param[in] LogInfo Holds information dealing with logfile output
 
 @sideeffect *ptr_stError Updated boolean indicating whether there was an error.
 */
@@ -2185,8 +2184,8 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 	double t1Param3, double csParam1, double csParam2, double shParam,
 	double snowdepth, double sTconst, double deltaX, double theMaxDepth,
 	unsigned int nRgr, double snow, double max_air_temp, double min_air_temp,
-	double H_gt, TimeInt year, TimeInt doy, LOG_INFO* LogInfo,
-	double maxLyrTemperature[], double minLyrTemperature[], Bool *ptr_stError) {
+	double H_gt, TimeInt year, TimeInt doy, double maxLyrTemperature[],
+	double minLyrTemperature[], Bool *ptr_stError, LOG_INFO* LogInfo) {
 
 	unsigned int i, sFadjusted_avgLyrTemp;
   #ifdef SWDEBUG

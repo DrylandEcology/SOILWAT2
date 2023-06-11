@@ -29,7 +29,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_MDL_read(SW_MODEL* SW_Model, LOG_INFO* LogInfo, char *InFiles[]);
+void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo);
 void SW_MDL_construct(Bool newperiod[], TimeInt days_in_month[]);
 void SW_MDL_deconstruct(void);
 void SW_MDL_new_year(SW_MODEL* SW_Model);

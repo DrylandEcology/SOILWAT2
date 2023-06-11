@@ -917,10 +917,10 @@ void generateMissingWeather(
           allHist[yearIndex]->ppt[day] = yesterdayPPT;
           SW_MKV_today(
             SW_Markov, day, year,
-            LogInfo,
             &allHist[yearIndex]->temp_max[day],
             &allHist[yearIndex]->temp_min[day],
-            &allHist[yearIndex]->ppt[day]
+            &allHist[yearIndex]->ppt[day],
+            LogInfo
           );
 
         } else if (method == 1) {
@@ -1134,11 +1134,11 @@ void _clear_hist_weather(SW_WEATHER_HIST *yearWeather) {
 /**
 @brief Constructor for SW_Weather.
 
-@param[in] LogInfo Holds information dealing with logfile output
 @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_WTH_construct(LOG_INFO* LogInfo, SW_WEATHER* SW_Weather) {
+void SW_WTH_construct(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	OutPeriod pd;
 
@@ -1361,12 +1361,12 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
 
 @param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
-@param[in] LogInfo Holds information dealing with logfile output
 @param[in] InFiles Array of program in/output files
 @param[out] _weather_prefix File name of weather data without extension.
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo,
-                  char *InFiles[], char *_weather_prefix) {
+void SW_WTH_setup(SW_WEATHER* SW_Weather, char *InFiles[],
+                  char *_weather_prefix, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	const int nitems = 35;
 	FILE *f;

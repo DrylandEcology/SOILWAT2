@@ -107,8 +107,9 @@ namespace {
     SW_All.Weather.use_weathergenerator_only = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
-                 SW_All.Weather.generateWeatherMethod, PathInfo.InFiles);
+    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+                 SW_All.Weather.generateWeatherMethod,
+                 PathInfo.InFiles, &LogInfo);
 
     // Point to nonexisting weather data
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
@@ -140,8 +141,9 @@ namespace {
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
     // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup(&LogInfo, &SW_All.Markov, SW_All.Weather.rng_seed,
-                 SW_All.Weather.generateWeatherMethod, PathInfo.InFiles);
+    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
+                 SW_All.Weather.generateWeatherMethod,
+                 PathInfo.InFiles, &LogInfo);
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
@@ -171,7 +173,7 @@ namespace {
     }
 
     // Re-calculate soils
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo, PathInfo.InFiles);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo);
 
     // Run the simulation
      SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
@@ -220,10 +222,10 @@ namespace {
     PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_All.Site, &LogInfo, PathInfo.InFiles);
+    SW_SWRC_read(&SW_All.Site, PathInfo.InFiles, &LogInfo);
 
     // Update soils
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo, PathInfo.InFiles);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo);
 
     // Run the simulation
      SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
@@ -252,10 +254,10 @@ namespace {
     PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_All.Site, &LogInfo, PathInfo.InFiles);
+    SW_SWRC_read(&SW_All.Site, PathInfo.InFiles, &LogInfo);
 
     // Update soils
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo, PathInfo.InFiles);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo);
 
     // Run the simulation
      SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
