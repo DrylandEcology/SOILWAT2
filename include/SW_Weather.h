@@ -45,6 +45,18 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo,
                   char *InFiles[], char *_weather_prefix);
 void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
                  LOG_INFO* LogInfo);
+void set_dailyInputIndices(
+  Bool dailyInputFlags[MAX_INPUT_COLUMNS],
+  unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
+  unsigned int *n_input_forcings
+);
+void check_and_update_dailyInputFlags(
+  Bool use_cloudCoverMonthly,
+  Bool use_humidityMonthly,
+  Bool use_windSpeedMonthly,
+  Bool *dailyInputFlags,
+  LOG_INFO *LogInfo
+);
 void averageClimateAcrossYears(SW_CLIMATE_YEARLY *climateOutput, int numYears,
                                SW_CLIMATE_CLIM *climateAverages);
 void calcSiteClimate(SW_WEATHER_HIST **allHist, TimeInt cum_monthdays[],

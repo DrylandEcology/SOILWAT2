@@ -296,6 +296,48 @@ namespace {
   }
 
 
+  TEST(WaterBalanceTest, WithDaymet) {
+    int i;
+
+    // Point to Daymet weather data
+    strcpy(SW_All.Weather.name_prefix, "Input/data_weather_daymet/weath");
+
+    // Adjust simulation years: we have 2 years of Daymet inputs
+    SW_All.Model.startyr = 1980;
+    SW_All.Model.endyr = 1981;
+
+    // Describe daily Daymet inputs
+    SW_All.Weather.use_cloudCoverMonthly = swFALSE;
+    SW_All.Weather.use_windSpeedMonthly = swTRUE;
+    SW_All.Weather.use_humidityMonthly = swFALSE;
+
+    SW_All.Weather.dailyInputIndices[ACTUAL_VP] = 3;
+    SW_All.Weather.dailyInputIndices[SHORT_WR] = 4;
+    SW_All.Weather.dailyInputFlags[ACTUAL_VP] = swTRUE;
+    SW_All.Weather.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_All.Weather.n_input_forcings = 5;
+    SW_All.Weather.desc_rsds = 2; // Daymet rsds is flux density over daylight period
+
+    // Prepare weather data
+    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+    SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
+    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+
+    // Run the simulation
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
   TEST(WaterBalanceTest, WithGRIDMET) {
     int i;
 
@@ -329,6 +371,54 @@ namespace {
 
     // Run the simulation
      SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+    }
+
+    // Reset to previous global state
+    Reset_SOILWAT2_after_UnitTest();
+  }
+
+
+  TEST(WaterBalanceTest, WithMACA) {
+    int i;
+
+    // Point to MACA weather data
+    strcpy(SW_All.Weather.name_prefix, "Input/data_weather_maca/weath");
+
+    // Adjust simulation years: we have 2 years of MACA inputs
+    SW_All.Model.startyr = 1980;
+    SW_All.Model.endyr = 1981;
+
+    // Describe daily MACA inputs
+    SW_All.Weather.use_cloudCoverMonthly = swFALSE;
+    SW_All.Weather.use_windSpeedMonthly = swFALSE;
+    SW_All.Weather.use_humidityMonthly = swFALSE;
+
+    SW_All.Weather.dailyInputIndices[WIND_EAST] = 3;
+    SW_All.Weather.dailyInputIndices[WIND_NORTH] = 4;
+    SW_All.Weather.dailyInputIndices[REL_HUMID_MAX] = 5;
+    SW_All.Weather.dailyInputIndices[REL_HUMID_MIN] = 6;
+    SW_All.Weather.dailyInputIndices[SHORT_WR] = 7;
+    SW_All.Weather.dailyInputFlags[WIND_EAST] = swTRUE;
+    SW_All.Weather.dailyInputFlags[WIND_NORTH] = swTRUE;
+    SW_All.Weather.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
+    SW_All.Weather.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
+    SW_All.Weather.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_All.Weather.n_input_forcings = 8;
+    SW_All.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
+
+    // Prepare weather data
+    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+    SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
+    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+
+    // Run the simulation
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {

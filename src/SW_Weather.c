@@ -799,22 +799,32 @@ void scaleAllWeather(
   such as by a weather generator (which has separate input requirements).
 
   SOILWAT2 handles three scenarios of missing data:
-     1. Some individual days are missing (values correspond to #SW_MISSING)
+     1. Some individual days are missing (values correspond to #SW_MISSING);
+        if any relevant variable is missing on a day, then all relevant
+        variables are imputed
      2. An entire year is missing (file `weath.xxxx` for year `xxxx` is absent)
      3. No daily weather input files are available
 
   Available methods to generate weather:
      1. Pass through (`method` = 0)
      2. Imputation by last-value-carried forward "LOCF" (`method` = 1)
-        - for minimum and maximum temperature
-        - cloud cover
-        - wind speed
-        - relative humidity
-        - downard surface shortwave radiation
-        - actual vapor pressure
-        - precipitation is set to 0
+        - affected variables (all implemented):
+            - minimum and maximum temperature
+            - precipitation (which is set to 0 instead of "LOCF")
+            - cloud cover
+            - wind speed
+            - relative humidity
+            - downard surface shortwave radiation
+            - actual vapor pressure
+        - missing values are imputed individually
         - error if more than `optLOCF_nMax` days per calendar year are missing
      3. First-order Markov weather generator (`method` = 2)
+        - affected variables (others are passed through as is):
+            - minimum and maximum temperature
+            - precipitation
+        - if a day contains any missing values (of affected variables), then
+          values for all of these variables are replaced by values created by
+          the weather generator
 
   The user can specify that SOILWAT2 generates all weather without reading
   any historical weather data files from disk
@@ -852,8 +862,12 @@ void generateMissingWeather(
          yesterdayCloudCov = 0., yesterdayWindSpeed = 0., yesterdayRelHum = 0.,
          yesterdayShortWR = 0., yesterdayActVP = 0.;
 
-  Bool any_missing, missing_Tmax, missing_Tmin, missing_PPT, missing_CloudCov,
-       missing_WindSpeed, missing_RelHum, missing_ShortWR, missing_ActVP;
+  Bool
+    any_missing,
+    missing_Tmax = swFALSE, missing_Tmin = swFALSE, missing_PPT = swFALSE,
+    missing_CloudCov = swFALSE, missing_WindSpeed = swFALSE,
+    missing_RelHum = swFALSE, missing_ActVP = swFALSE,
+    missing_ShortWR = swFALSE;
 
 
   // Pass through method: return early
@@ -881,11 +895,15 @@ void generateMissingWeather(
       missing_Tmax = (Bool) missing(allHist[yearIndex]->temp_max[day]);
       missing_Tmin = (Bool) missing(allHist[yearIndex]->temp_min[day]);
       missing_PPT = (Bool) missing(allHist[yearIndex]->ppt[day]);
-      missing_CloudCov = (Bool) missing(allHist[yearIndex]->cloudcov_daily[day]);
-      missing_WindSpeed = (Bool) missing(allHist[yearIndex]->windspeed_daily[day]);
-      missing_RelHum = (Bool) missing(allHist[yearIndex]->r_humidity_daily[day]);
-      missing_ShortWR = (Bool) missing(allHist[yearIndex]->shortWaveRad[day]);
-      missing_ActVP = (Bool) missing(allHist[yearIndex]->actualVaporPressure[day]);
+
+      if (method != 2) {
+        // `SW_MKV_today()` currently generates only Tmax, Tmin, and PPT
+        missing_CloudCov = (Bool) missing(allHist[yearIndex]->cloudcov_daily[day]);
+        missing_WindSpeed = (Bool) missing(allHist[yearIndex]->windspeed_daily[day]);
+        missing_RelHum = (Bool) missing(allHist[yearIndex]->r_humidity_daily[day]);
+        missing_ShortWR = (Bool) missing(allHist[yearIndex]->shortWaveRad[day]);
+        missing_ActVP = (Bool) missing(allHist[yearIndex]->actualVaporPressure[day]);
+      }
 
       any_missing = (Bool) (missing_Tmax || missing_Tmin || missing_PPT ||
                             missing_CloudCov || missing_WindSpeed || missing_RelHum ||
@@ -1299,9 +1317,17 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
       LogError(
         LogInfo,
         LOGFATAL,
-        "Missing weather data (day %u - %u) during simulation.",
+        "Missing weather data (day %u - %u) during simulation: "
+        "Tavg=%.2f, ppt=%.2f, wind=%.2f, rH=%.2f, vp=%.2f, rsds=%.2f / cloud=%.2f\n",
         year,
-        doy0
+        doy,
+        SW_Weather->allHist[yearIndex]->temp_avg[doy0],
+        SW_Weather->allHist[yearIndex]->ppt[doy0],
+        SW_Weather->allHist[yearIndex]->windspeed_daily[doy0],
+        SW_Weather->allHist[yearIndex]->r_humidity_daily[doy0],
+        SW_Weather->allHist[yearIndex]->actualVaporPressure[doy0],
+        SW_Weather->allHist[yearIndex]->shortWaveRad[doy0],
+        SW_Weather->allHist[yearIndex]->cloudcov_daily[doy0]
       );
     }
 
@@ -1344,8 +1370,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo,
 	/* =================================================== */
 	const int nitems = 35;
 	FILE *f;
-	int lineno = 0, month, x, currFlag;
-    Bool monthlyFlagPrioritized = swFALSE;
+	int lineno = 0, month, x;
 	RealF sppt, stmax, stmin;
 	RealF sky, wind, rH, actVP, shortWaveRad;
   char inbuf[MAX_FILENAMESIZE];
@@ -1514,6 +1539,85 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo,
 	strcpy(SW_Weather->name_prefix, _weather_prefix);
 	CloseFile(&f, LogInfo);
 
+ 	if (lineno < nitems) {
+ 		LogError(LogInfo, LOGFATAL, "%s : Too few input lines.", MyFileName);
+ 	}
+
+     // Calculate value indices for `allHist`
+    set_dailyInputIndices(
+      dailyInputFlags,
+      SW_Weather->dailyInputIndices,
+      &SW_Weather->n_input_forcings
+    );
+
+    check_and_update_dailyInputFlags(
+      SW_Weather->use_cloudCoverMonthly,
+      SW_Weather->use_humidityMonthly,
+      SW_Weather->use_windSpeedMonthly,
+      dailyInputFlags,
+      LogInfo
+    );
+}
+
+
+/**
+  @brief Set and count indices of daily inputs based on user-set flags
+
+  @param[in] dailyInputFlags An array of size #MAX_INPUT_COLUMNS
+    indicating which daily input variable is active (TRUE).
+  @param[out] dailyInputIndices An array of size #MAX_INPUT_COLUMNS
+    with the calculated column number of all possible daily input variables.
+  @param[out] n_input_forcings The number of active daily input variables.
+*/
+void set_dailyInputIndices(
+  Bool dailyInputFlags[MAX_INPUT_COLUMNS],
+  unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
+  unsigned int *n_input_forcings
+) {
+  int currFlag;
+
+     // Default n_input_forcings to 0
+     *n_input_forcings = 0;
+
+         // Loop through MAX_INPUT_COLUMNS (# of input flags)
+     for(currFlag = 0; currFlag < MAX_INPUT_COLUMNS; currFlag++)
+     {
+         // Default the current index to zero
+         dailyInputIndices[currFlag] = 0;
+
+         // Check if current flag is set
+         if (dailyInputFlags[currFlag]) {
+
+             // Set current index to current number of "n_input_forcings"
+             // which is the current number of flags found
+             dailyInputIndices[currFlag] = *n_input_forcings;
+
+             // Increment "n_input_forcings"
+             (*n_input_forcings)++;
+         }
+     }
+}
+
+
+/*
+  * Turn off necessary flags. This happens after the calculation of
+    input indices due to the fact that setting before calculating may
+    result in an incorrect `n_input_forcings` in SW_WEATHER, and unexpectedly
+    crash the program in `_read_weather_hist()`.
+
+  * Check if monthly flags have been chosen to override daily flags.
+  * Aside from checking for purely a monthly flag, we must make sure we have
+    daily flags to turn off instead of attemping to turn off flags that are already off.
+*/
+void check_and_update_dailyInputFlags(
+  Bool use_cloudCoverMonthly,
+  Bool use_humidityMonthly,
+  Bool use_windSpeedMonthly,
+  Bool *dailyInputFlags,
+  LOG_INFO *LogInfo
+) {
+    Bool monthlyFlagPrioritized = swFALSE;
+
     // Check if temperature max/min flags are unevenly set (1/0) or (0/1)
      if((dailyInputFlags[TEMP_MAX] && !dailyInputFlags[TEMP_MIN]) ||
         (!dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN])) {
@@ -1531,46 +1635,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo,
                                    "are not set. All three flags must be set.");
      }
 
- 	if (lineno < nitems) {
- 		LogError(LogInfo, LOGFATAL, "%s : Too few input lines.", MyFileName);
- 	}
-
-     // Calculate value indices for `allHist`
-
-     // Default n_input_forcings to 0
-     SW_Weather->n_input_forcings = 0;
-
-         // Loop through MAX_INPUT_COLUMNS (# of input flags)
-     for(currFlag = 0; currFlag < MAX_INPUT_COLUMNS; currFlag++)
-     {
-         // Default the current index to zero
-         SW_Weather->dailyInputIndices[currFlag] = 0;
-
-         // Check if current flag is set
-         if(dailyInputFlags[currFlag]) {
-
-             // Set current index to current number of "n_input_forcings"
-             // which is the current number of flags found
-             SW_Weather->dailyInputIndices[currFlag] = SW_Weather->n_input_forcings;
-
-             // Increment "n_input_forcings"
-             SW_Weather->n_input_forcings++;
-         }
-     }
-
-     /*
-        * Turn off necessary flags. This happens after the calculation of
-          input indices due to the fact that setting before calculating may
-          result in an incorrect `n_input_forcings` in SW_WEATHER, and unexpectedly
-          crash the program in `_read_weather_hist()`.
-
-        * Check if monthly flags have been chosen to override daily flags.
-        * Aside from checking for purely a monthly flag, we must make sure we have
-          daily flags to turn off instead of attemping to turn off flags that are already off.
-     */
-
-
-     if(SW_Weather->use_windSpeedMonthly && (dailyInputFlags[WIND_SPEED] ||
+     if(use_windSpeedMonthly && (dailyInputFlags[WIND_SPEED] ||
                                     dailyInputFlags[WIND_EAST]  ||
                                     dailyInputFlags[WIND_NORTH])) {
 
@@ -1580,7 +1645,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo,
          monthlyFlagPrioritized = swTRUE;
      }
 
-     if(SW_Weather->use_humidityMonthly) {
+     if(use_humidityMonthly) {
          if(dailyInputFlags[REL_HUMID] || dailyInputFlags[REL_HUMID_MAX]  ||
             dailyInputFlags[REL_HUMID_MIN] || dailyInputFlags[SPEC_HUMID] ||
             dailyInputFlags[ACTUAL_VP]) {
@@ -1594,7 +1659,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo,
          }
      }
 
-     if(SW_Weather->use_cloudCoverMonthly && dailyInputFlags[CLOUD_COV]) {
+     if(use_cloudCoverMonthly && dailyInputFlags[CLOUD_COV]) {
          dailyInputFlags[CLOUD_COV] = swFALSE;
          monthlyFlagPrioritized = swTRUE;
      }
@@ -1668,8 +1733,8 @@ void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
       SW_Weather->use_weathergenerator_only,
       SW_Weather->name_prefix,
       SW_Weather->use_cloudCoverMonthly,
-      SW_Weather->use_windSpeedMonthly,
       SW_Weather->use_humidityMonthly,
+      SW_Weather->use_windSpeedMonthly,
       SW_Weather->n_input_forcings,
       SW_Weather->dailyInputIndices,
       SW_Weather->dailyInputFlags,

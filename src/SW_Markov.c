@@ -162,7 +162,12 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 		LogError(LogInfo, LOGFATAL, "\nBad covariance matrix in mvnorm()");
 	}
 
-	vc11 = (EQ(wTmin_var, s)) ? 0. : sqrt(wTmin_var - s);
+	/* Apparently, it's possible for some but not all setups that
+	   for some values of `s` and `wTmin_var` (e.g., 99.264050000, 99.264050000)
+	   that both `GT(s, wTmin_var)` and `EQ(wTmin_var, s)` are FALSE;
+	   and thus, `vc11` becomes `NaN`
+  */
+	vc11 = (LE(wTmin_var, s)) ? 0. : sqrt(wTmin_var - s);
 
 	// mvnorm = mean + A * z
 	*tmax = wTmax_sd * z1 + wTmax;

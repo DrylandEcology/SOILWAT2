@@ -73,7 +73,7 @@ static void _begin_year(SW_ALL* sw, LOG_INFO* LogInfo) {
 static void _begin_day(SW_ALL* sw, LOG_INFO* LogInfo) {
 	SW_MDL_new_day(&sw->Model);
 	SW_WTH_new_day(&sw->Weather, &sw->Site, sw->SoilWat.snowpack,
-                  sw->Model.doy, sw->Model.year, LogInfo);
+                sw->Model.doy, sw->Model.year, LogInfo);
 }
 
 static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
