@@ -212,21 +212,12 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 		*/
 		SW_ST_setup_run(
 			&sw->StRegValues,
+			&sw->Site,
 			&sw->SoilWat.soiltempError,
 			&sw->StRegValues.soil_temp_init,
 			sw->Weather.now.temp_avg,
 			sw->SoilWat.swcBulk[Today],
-			sw->Site.swcBulk_saturated,
-			sw->Site.soilBulk_density,
-			sw->Site.width,
 			sw->SoilWat.avgLyrTemp, // yesterday's soil temperature values
-			n_layers,
-			sw->Site.swcBulk_fieldcap,
-			sw->Site.swcBulk_wiltpt,
-			sw->Site.Tsoil_constant,
-			sw->Site.stDeltaX,
-			sw->Site.stMaxDepth,
-			sw->Site.stNRGR,
 			&sw->Weather.surfaceAvg, // yesterday's soil surface temperature
 			sw->SoilWat.lyrFrozen,
 			LogInfo

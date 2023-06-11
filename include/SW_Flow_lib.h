@@ -170,21 +170,12 @@ void SW_ST_init_run(ST_RGR_VALUES* StRegValues);
 
 void SW_ST_setup_run(
 	ST_RGR_VALUES* SW_StRegValues,
+	SW_SITE *SW_Site,
 	Bool *ptr_stError,
 	Bool *soil_temp_init,
 	double airTemp,
 	double swc[],
-	double swc_sat[],
-	double bDensity[],
-	double width[],
 	double oldavgLyrTemp[],
-	unsigned int nlyrs,
-	double fc[],
-	double wp[],
-	double sTconst,
-	double deltaX,
-	double theMaxDepth,
-	unsigned int nRgr,
 	double *surfaceAvg,
 	double* lyrFrozen,
 	LOG_INFO* LogInfo

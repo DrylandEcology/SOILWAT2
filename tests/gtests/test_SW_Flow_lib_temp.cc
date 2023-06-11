@@ -440,17 +440,24 @@ namespace {
     Bool ptr_stError = swFALSE;
 
     double swc[] = {1.0}, swc_sat[] = {1.5}, bDensity[] = {1.8}, width[] = {20},
-    oldsTemp[] = {5.0}, sTemp[1], fc[] = {2.6}, wp[] = {1.0}, min_temp[] = {10.0}, max_temp[] = {1.0};
+    oldsTemp[] = {5.0}, sTemp[1], min_temp[] = {10.0}, max_temp[] = {1.0};
+
+    SW_All.Site.soilBulk_density[0] = 1.8;
+    SW_All.Site.width[0] = 20;
+    SW_All.Site.n_layers = 1;
+    SW_All.Site.swcBulk_fieldcap[0] = 2.6;
+    SW_All.Site.swcBulk_wiltpt[0] = 1.0;
+    SW_All.Site.stNRGR = 65;
+    SW_All.Site.stDeltaX = 15;
+    SW_All.Site.Tsoil_constant = 4.15;
+    SW_All.Site.stMaxDepth = 990.;
+    SW_All.Site.swcBulk_saturated[0] = 1.5;
 
 
     SW_ST_setup_run(
-      &SW_All.StRegValues, &ptr_stError, &SW_All.StRegValues.soil_temp_init,
-      airTemp, swc, swc_sat,
-      bDensity, width,
-      oldsTemp,
-      nlyrs, fc, wp,
-      sTconst, deltaX, theMaxDepth,
-      nRgr, &surfaceTemp, SW_All.SoilWat.lyrFrozen, &LogInfo
+      &SW_All.StRegValues, &SW_All.Site, &ptr_stError,
+      &SW_All.StRegValues.soil_temp_init, airTemp, swc,
+      oldsTemp, &surfaceTemp, SW_All.SoilWat.lyrFrozen, &LogInfo
     );
 
     for (k = 0; k < nlyrs; k++) {
@@ -535,13 +542,9 @@ namespace {
     }
 
     SW_ST_setup_run(
-      &SW_All.StRegValues, &ptr_stError, &SW_All.StRegValues.soil_temp_init,
-      airTemp, swc, swc_sat,
-      bDensity, width,
-      oldsTemp,
-      nlyrs, fc, wp,
-      sTconst, deltaX, theMaxDepth,
-      nRgr, &surfaceTemp, SW_All.SoilWat.lyrFrozen, &LogInfo
+      &SW_All.StRegValues, &SW_All.Site, &ptr_stError,
+      &SW_All.StRegValues.soil_temp_init, airTemp, swc, oldsTemp,
+      &surfaceTemp, SW_All.SoilWat.lyrFrozen, &LogInfo
     );
 
     EXPECT_EQ(ptr_stError, swFALSE);
@@ -590,32 +593,37 @@ namespace {
     // and SWC(wilting point)
     double *swc2 = new double[nlyrs2];
     double *swc_sat2 = new double[nlyrs2];
-    double *fc2 = new double[nlyrs2];
-    double *wp2 = new double[nlyrs2];
     double *min_temp = new double[nlyrs2];
     double *max_temp = new double[nlyrs2];
     for (i = 0; i < nlyrs2; i++) {
       // SWC(wilting point): width > swc_wp > 0
-      wp2[i] = 0.1 * width2[i];
+      SW_All.Site.swcBulk_wiltpt[i] = 0.1 * width2[i];
       // SWC(field capacity): width > swc_fc > swc_wp
-      fc2[i] = fminf(width2[i], wp2[i] + 0.15 * width2[i]);
+      SW_All.Site.swcBulk_fieldcap[i] =
+           fminf(width2[i], SW_All.Site.swcBulk_wiltpt[i] + 0.15 * width2[i]);
       // SWC(saturation): width > swc_sat > swc_fc
-      swc_sat2[i] = fminf(width2[i], fc2[i] + 0.2 * width2[i]);
+      SW_All.Site.swcBulk_saturated[i] =
+          fminf(width2[i], SW_All.Site.swcBulk_fieldcap[i] + 0.2 * width2[i]);
       // SWC: swc_sat >= SWC > 0; here, swc_fc >= SWC >= swc_wp
-      swc2[i] = RandUniFloatRange(wp2[i], fc2[i], &soilTemp_rng);
+      swc2[i] = RandUniFloatRange(SW_All.Site.swcBulk_wiltpt[i],
+                              SW_All.Site.swcBulk_fieldcap[i], &soilTemp_rng);
+
+      SW_All.Site.soilBulk_density[i] = 1.;
+      SW_All.Site.width[i] = width2[i];
+      SW_All.Site.swcBulk_fieldcap[0] = 2.6;
+      SW_All.Site.swcBulk_wiltpt[0] = 1.0;
+      SW_All.Site.stDeltaX = 15;
+      SW_All.Site.stMaxDepth = 990.;
 
       //swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
       //  i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
     }
+    SW_All.Site.n_layers = nlyrs2;
 
     SW_ST_setup_run(
-      &SW_All.StRegValues, &ptr_stError, &SW_All.StRegValues.soil_temp_init,
-      airTemp, swc2, swc_sat2,
-      bDensity2, width2,
-      oldsTemp3,
-      nlyrs2, fc2, wp2,
-      sTconst, deltaX, theMaxDepth,
-      nRgr, &surfaceTemp, SW_All.SoilWat.lyrFrozen, &LogInfo
+      &SW_All.StRegValues, &SW_All.Site, &ptr_stError,
+      &SW_All.StRegValues.soil_temp_init, airTemp, swc2,
+      oldsTemp3, &surfaceTemp, SW_All.SoilWat.lyrFrozen, &LogInfo
     );
 
     // Test surface temp equals surface_temperature_under_snow() because snow > 0
@@ -692,7 +700,7 @@ namespace {
       EXPECT_NE(SW_All.StRegValues.oldavgLyrTempR[k], SW_MISSING);
     }
 
-    double *array_list[] = { swc2, swc_sat2, fc2, wp2, min_temp, max_temp};
+    double *array_list[] = { swc2, swc_sat2, min_temp, max_temp};
     for (i = 0; i < length(array_list); i++){
       delete[] array_list[i];
     }

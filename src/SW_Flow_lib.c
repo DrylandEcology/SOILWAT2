@@ -1418,27 +1418,14 @@ void SW_ST_init_run(ST_RGR_VALUES* StRegValues) {
 
 	@param[in,out] SW_StRegValues Struct of type SW_StRegValues which keeps
 		track of variables used within `soil_temperature()`
+	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in,out] ptr_stError Boolean indicating whether there was an error.
 	@param[in,out] soil_temp_init Flag specifying if the values for
 		`soil_temperature()` have been initialized
 	@param[in] airTemp Average daily air temperature (&deg;C).
 	@param[in] swc Soilwater content in each layer before drainage
 		(m<SUP>3</SUP> H<SUB>2</SUB>O).
-	@param[in] swc_sat The satured soil water content of the soil layers (cm/cm).
-	@param[in] bDensity An array of the bulk density of the whole soil per soil layer
-		(g/cm<SUP>3</SUP>).
-	@param[in] width The width of the layers (cm).
 	@param[in] oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
-	@param[in] nlyrs Number of layers in the soil profile.
-	@param[in] fc An array of the field capacity of the soil layers (cm/layer).
-	@param[in] wp An array of the wilting point of the soil layers (cm/layer).
-	@param[in] sTconst Constant soil temperature (&deg;C).
-	@param[in] deltaX Distance between profile points
-		(default is 15 cm from Parton's equation @cite Parton1984).
-	@param[in] theMaxDepth Lower bound of the equation
-		(default is 180 cm from Parton's equation @cite Parton1984).
-	@param[in] nRgr Number of regressions
-		(1 extra is needed for the avgLyrTempR and oldavgLyrTempR for the last layer.
 	@param[out] surfaceAvg Initialized surface air temperatature (&deg;C).
 	@param[out] lyrFrozen Frozen information at each layer.
 	@param[in] LogInfo Holds information dealing with logfile output
@@ -1447,21 +1434,12 @@ void SW_ST_init_run(ST_RGR_VALUES* StRegValues) {
 */
 void SW_ST_setup_run(
 	ST_RGR_VALUES* SW_StRegValues,
+	SW_SITE *SW_Site,
 	Bool *ptr_stError,
 	Bool *soil_temp_init,
 	double airTemp,
 	double swc[],
-	double swc_sat[],
-	double bDensity[],
-	double width[],
 	double oldavgLyrTemp[],
-	unsigned int nlyrs,
-	double fc[],
-	double wp[],
-	double sTconst,
-	double deltaX,
-	double theMaxDepth,
-	unsigned int nRgr,
 	double *surfaceAvg,
 	double* lyrFrozen,
 	LOG_INFO* LogInfo
@@ -1480,15 +1458,15 @@ void SW_ST_setup_run(
 
 		*surfaceAvg = airTemp;
 		soil_temperature_setup(
-			SW_StRegValues, bDensity,
-			width, oldavgLyrTemp, sTconst,
-			nlyrs, fc, wp,
-			deltaX, theMaxDepth, nRgr,
-			ptr_stError, soil_temp_init, LogInfo
+			SW_StRegValues, SW_Site->soilBulk_density,
+			SW_Site->width, oldavgLyrTemp, SW_Site->Tsoil_constant,
+			SW_Site->n_layers, SW_Site->swcBulk_fieldcap,
+			SW_Site->swcBulk_wiltpt, SW_Site->stDeltaX, SW_Site->stMaxDepth,
+			SW_Site->stNRGR, ptr_stError, soil_temp_init, LogInfo
 		);
 
-		set_frozen_unfrozen(nlyrs, oldavgLyrTemp, swc, swc_sat,
-															width, lyrFrozen);
+		set_frozen_unfrozen(SW_Site->n_layers, oldavgLyrTemp, swc,
+					SW_Site->swcBulk_saturated, SW_Site->width, lyrFrozen);
 	}
 }
 
