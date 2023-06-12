@@ -345,10 +345,6 @@ namespace
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
     EXPECT_NEAR(swp_avg, swp_avgExpected1, tol6);
 
-    //Reset to previous global states.
-
-
-
     //--- TEST_F when n_layers is at "max" ------
     //INPUTS
     swp_avg = 10, n_tr_rgns = 4, n_layers = 25;
@@ -377,12 +373,7 @@ namespace
 
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
 
-
     EXPECT_NEAR(swp_avg, swp_avgExpectedM, tol6);
-
-    //Reset to previous global states.
-
-
   }
 
 
@@ -404,10 +395,6 @@ namespace
     EXPECT_LT(fbst, 1); //fbse and fbst must be between zero and one
     EXPECT_DOUBLE_EQ(fbst + fbse, 1); //Must add up to one.
 
-    //Reset to previous global states.
-
-
-
     //TEST_F when fbse < bsemax
     blivelai = 0.0012, lai_param = 5, fbseExpected = 0.994018,
       fbstExpected = 0.005982036;
@@ -421,9 +408,6 @@ namespace
     EXPECT_LT(fbse, 1); //fbse and fbst must be between zero and one
     EXPECT_LT(fbst, 1); //fbse and fbst must be between zero and one
     EXPECT_DOUBLE_EQ(fbst + fbse, 1);  //Must add up to one.
-    //Reset to previous global states.
-
-
   }
 
   // TEST pot_soil_evap
@@ -508,11 +492,6 @@ namespace
       // expect baresoil evaporation rate <= potential water loss fraction
       EXPECT_LE(bserate, fbse) <<
         "pot_soil_evap !<= fbse for " << nelyrs << " soil layers";
-
-
-      //Reset to previous global states.
-
-
     }
   }
 
@@ -556,10 +535,6 @@ namespace
       {
         EXPECT_NEAR(bserate, 0.062997815, tol6) <<
           "pot_soil_evap_bs != 0.06306041 if nelyr = 1 for " << nelyrs << " soil layesrs";
-        //Reset to previous global states.
-
-
-        // Setup soil layers for next test
       }
       if (nelyrs == 25)
       {
@@ -567,10 +542,6 @@ namespace
           "pot_soil_evap_bs != 0.06306041 if nelyr = 25 for " << nelyrs << " soil layesrs";
       }
     }
-
-    //Reset to previous global states.
-
-
   }
 
 
@@ -593,10 +564,6 @@ namespace
 
     EXPECT_DOUBLE_EQ(bstrate, 0); //bstrate = 0 if biolove < 0
 
-    //Reset to previous global states.
-
-
-
     //Begin TEST_F for if biolive > 0
     biolive = 0.8;
     pot_transp(&bstrate, swpavg, biolive, biodead, fbst, petday, swp_shift, swp_shape,
@@ -606,10 +573,6 @@ namespace
     EXPECT_NEAR(bstrate, bstrateExpected, tol6); //For this test local variable shadeaf = 1, affecting bstrate
                                    //bstrate is expected to be 0.06596299
 
-    //Reset to previous global states.
-
-
-
     //Begin TEST_F for if biodead > shade_deadmax
     biodead = 0.95, bstrateExpected = 0.0659629;
     pot_transp(&bstrate, swpavg, biolive, biodead, fbst, petday, swp_shift, swp_shape,
@@ -617,10 +580,6 @@ namespace
         shade_yinflex, shade_range, co2_wue_multiplier);
 
     EXPECT_NEAR(bstrate, bstrateExpected, tol6); //bstrate is expected to be 0.06564905
-
-    //Reset to previous global states.
-
-
 
     //Begin TEST_F for if biodead < shade_deadmax
     biodead = 0.2, bstrateExpected = 0.0659629;
@@ -630,10 +589,6 @@ namespace
 
     EXPECT_NEAR(bstrate, bstrateExpected, tol6); //For this test local variable shadeaf = 1, affecting bstrate
                                    //bstrate is expected to be 0.06596299
-
-    //Reset to previous global states.
-
-
   }
 
   //Test result for watrate by manipulating variable petday
@@ -658,10 +613,6 @@ namespace
     EXPECT_LE(wat, 1); //watrate must be between 0 & 1
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
-    //Reset to previous global states.
-
-
-
     //Begin TEST_F for if 0.4 < petday < .6
     petday = 0.5, watExpected = 0.6285504;
     wat = watrate(swp, petday, shift, shape, inflec, range);
@@ -670,10 +621,6 @@ namespace
     EXPECT_LE(wat, 1); //watrate must be between 0 & 1
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
 
-    //Reset to previous global states.
-
-
-
     //Begin TEST_F for if 0.6 < petday < 1
     petday = 0.8, watExpected = 0.627666;
     wat = watrate(swp, petday, shift, shape, inflec, range);
@@ -681,10 +628,6 @@ namespace
     EXPECT_NEAR(wat, watExpected, tol6); //When petday = 0.8, watrate = 0.627666
     EXPECT_LE(wat, 1); //watrate must be between 0 & 1
     EXPECT_GE(wat, 0); //watrate must be between 0 & 1
-
-    //Reset to previous global states.
-
-
   }
 
   //Test evap_fromSurface by manipulating water_pool and evap_rate variables
@@ -718,10 +661,6 @@ namespace
 
     EXPECT_DOUBLE_EQ(water_pool, 0); //Variable water_pool is expected to be 0 when water_pool < evap_rate
     EXPECT_GE(water_pool, 0); //water_pool is never negative
-
-    //Reset to previous global states.
-
-
   }
 
   //Test remove_from_soil when nlyrs = 1 and when nlyrs = MAX
