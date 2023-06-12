@@ -343,7 +343,7 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   RealD
     Etotal, Etotalsurf, Etotalint, Eponded, Elitter, Esnow, Esoil = 0., Eveg = 0.,
     Ttotal = 0., Ttotalj[MAX_LAYERS],
-    percolationIn[MAX_LAYERS], percolationOut[MAX_LAYERS],
+    percolationIn[MAX_LAYERS + 1], percolationOut[MAX_LAYERS + 1],
     hydraulicRedistribution[MAX_LAYERS],
     infiltration, deepDrainage, runoff, runon, snowmelt, rain, arriving_water,
     intercepted, int_veg_total = 0.,
