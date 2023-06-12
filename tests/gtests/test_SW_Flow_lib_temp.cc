@@ -46,7 +46,7 @@ pcg32_random_t flowTemp_rng;
 namespace {
 
   // Test the function 'surface_temperature_under_snow'
-  TEST_F(AllTest, SurfaceTemperatureUnderSnow) {
+  TEST_F(AllTest, SWFlowTempSurfaceTemperatureUnderSnow) {
 
     // declare inputs and output
     double snow, airTempAvg;
@@ -84,7 +84,7 @@ namespace {
   }
 
   // Test the soil temperature initialization function 'soil_temperature_setup'
-  TEST_F(AllTest, SoilTemperatureInit) {
+  TEST_F(AllTest, SWFlowTempSoilTemperatureInit) {
 
     // declare inputs and output
     double deltaX = 15.0, theMaxDepth = 990.0, sTconst = 4.15;
@@ -155,7 +155,7 @@ namespace {
   }
 
   // Death tests for soil_temperature_setup function
-  TEST_F(AllTest, SoilTemperatureInitDeathTest) {
+  TEST_F(AllTest, SWFlowTempSoilTemperatureInitDeathTest) {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     double deltaX = 15.0, sTconst = 4.15;
@@ -195,7 +195,7 @@ namespace {
 
   // Test lyrSoil_to_lyrTemp, lyrSoil_to_lyrTemp_temperature via
   // soil_temperature_setup function
-  TEST_F(AllTest, SoilLayerInterpolationFunctions) {
+  TEST_F(AllTest, SWFlowTempSoilLayerInterpolationFunctions) {
 
     // declare inputs and output
     double deltaX = 15.0, theMaxDepth = 990.0, sTconst = 4.15;
@@ -299,7 +299,7 @@ namespace {
   }
 
   // Test set layer to frozen or unfrozen 'set_frozen_unfrozen'
-  TEST_F(AllTest, SetFrozenUnfrozen){
+  TEST_F(AllTest, SWFlowTempSetFrozenUnfrozen){
 
     // declare inputs and output
     // *****  Test when nlyrs = 1  ***** //
@@ -347,7 +347,7 @@ namespace {
   }
 
   // Test soil temperature today function 'soil_temperature_today'
-  TEST_F(AllTest, SoilTemperatureTodayFunction) {
+  TEST_F(AllTest, SWFlowTempSoilTemperatureTodayFunction) {
 
     // declare inputs and output
     double delta_time = 86400., deltaX = 15.0, T1 = 20.0, sTconst = 4.16, csParam1 = 0.00070,
@@ -423,7 +423,7 @@ namespace {
   // Test main soil temperature function 'soil_temperature'
   // AND lyrTemp_to_lyrSoil_temperature as this function
   // is only called in the soil_temperature function
-  TEST_F(AllTest, MainSoilTemperatureFunction_Lyr01) {
+  TEST_F(AllTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
 
     unsigned int k, i;
 
@@ -566,7 +566,7 @@ namespace {
   // Test main soil temperature function 'soil_temperature'
   // AND lyrTemp_to_lyrSoil_temperature as this function
   // is only called in the soil_temperature function
-  TEST_F(AllTest, MainSoilTemperatureFunction_LyrMAX) {
+  TEST_F(AllTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     // *****  Test when nlyrs = MAX_LAYERS  ***** //
     pcg32_random_t soilTemp_rng;
     RandSeed(0u, 0u, &soilTemp_rng);
@@ -707,7 +707,7 @@ namespace {
   }
 
   // Test that main soil temperature functions fails when it is supposed to
-  TEST_F(AllTest, MainSoilTemperatureFunctionDeathTest) {
+  TEST_F(AllTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
 
     unsigned int nlyrs = 1, nRgr = 65;
     double airTemp = 25.0, pet = 5.0, aet = 4.0, biomass = 100., surfaceTemp = 15.,

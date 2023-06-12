@@ -114,7 +114,7 @@ namespace {
   int k;
 
   // Test the SW_VEGPROD constructor 'SW_VPD_construct'
-  TEST_F(AllTest, Constructor) {
+  TEST_F(AllTest, VegProdConstructor) {
     SW_VPD_construct(&SW_All.VegProd, &LogInfo);
     SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather,
                     &SW_All.Model, SW_All.Site.latitude, &LogInfo);
@@ -150,7 +150,7 @@ namespace {
 
 
   // Test summing values across vegetation types
-  TEST_F(AllTest, Summing) {
+  TEST_F(AllTest, VegProdSumming) {
     int vegIndex;
 
     for(vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
@@ -168,7 +168,7 @@ namespace {
 
 
 	// Check `get_critical_rank`
-	TEST_F(AllTest, rank) {
+	TEST_F(AllTest, VegProdrank) {
 		int k;
 		// Check `get_critical_rank` for normal inputs, e.g., -2.0, -2.0, -3.5, -3.9
 		get_critical_rank(&SW_All.VegProd);
@@ -205,7 +205,7 @@ namespace {
 		assert_decreasing_SWPcrit(&SW_All.VegProd);
 	}
 
-    TEST_F(AllTest, NotFullVegetation) {
+    TEST_F(AllTest, EstimateVegNotFullVegetation) {
 
         /*  ================================================================
                     This block of tests deals with input values to
@@ -675,7 +675,7 @@ namespace {
         deallocateClimateStructs(&climateOutput, &climateAverages);
     }
 
-    TEST_F(AllTest, FullVegetation) {
+    TEST_F(AllTest, EstimateVegFullVegetation) {
 
         /*  ================================================================
                    This block of tests deals with input values to
@@ -1146,7 +1146,7 @@ namespace {
 
     }
 
-    TEST_F(AllTest, VegInputGreaterThanOneDeathTest) {
+    TEST_F(AllTest, EstimateVegInputGreaterThanOneDeathTest) {
 
         /*  ================================================================
                    Tests a death case of `estimatePotNatVegComposition()`

@@ -45,7 +45,7 @@ namespace {
       ii) Summarize checks added to debugging code of 'SW_SWC_water_flow' (which is
           compiled if flag 'SWDEBUG' is defined)
   */
-  TEST_F(AllTest, Example1) { // default run == 'testing' example1
+  TEST_F(AllTest, WaterBalanceExample1) { // default run == 'testing' example1
     int i;
 
     // Run the simulation
@@ -60,7 +60,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WithSoilTemperature) {
+  TEST_F(AllTest, WaterBalanceWithSoilTemperature) {
     int i;
 
     // Turn on soil temperature simulations
@@ -99,7 +99,7 @@ namespace {
 
 
 
-  TEST_F(AllTest, WithWeatherGeneratorOnly) {
+  TEST_F(AllTest, WaterBalanceWithWeatherGeneratorOnly) {
     int i;
 
     // Turn on Markov weather generator (and turn off use of historical weather)
@@ -131,7 +131,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WithWeatherGeneratorForSomeMissingValues) {
+  TEST_F(AllTest, WaterBalanceWithWeatherGeneratorForSomeMissingValues) {
     int i;
 
     // Turn on Markov weather generator
@@ -162,7 +162,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WithHighGravelVolume) {
+  TEST_F(AllTest, WaterBalanceWithHighGravelVolume) {
     int i;
     LyrIndex s;
 
@@ -187,7 +187,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WithVegetationFromClimate1) {
+  TEST_F(AllTest, WaterBalanceWithVegetationFromClimate1) {
     int i;
 
     // Select method to estimate vegetation from long-term climate
@@ -208,7 +208,7 @@ namespace {
     }
   }
 
-  TEST_F(AllTest, WithSWRCvanGenuchten1980) {
+  TEST_F(AllTest, WaterBalanceWithSWRCvanGenuchten1980) {
     int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)
@@ -240,7 +240,7 @@ namespace {
 
 
 
-  TEST_F(AllTest, WithSWRCFXW) {
+  TEST_F(AllTest, WaterBalanceWithSWRCFXW) {
     int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)

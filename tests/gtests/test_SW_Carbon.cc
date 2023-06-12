@@ -86,7 +86,7 @@ namespace {
 
 
   // Test the calculation of CO2-effect multipliers
-  TEST_F(AllTest, CO2multipliers) {
+  TEST_F(AllTest, CarbonCO2multipliers) {
     TimeInt year, simendyr = SW_All.Model.endyr + SW_All.Model.addtl_yr;
     int k;
 

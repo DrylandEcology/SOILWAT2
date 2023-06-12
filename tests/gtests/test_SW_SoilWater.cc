@@ -21,7 +21,7 @@
 
 namespace{
   // Test the 'SW_SoilWater' function 'SW_SWC_adjust_snow'
-  TEST_F(AllTest, SWCadjustSnow){
+  TEST_F(AllTest, SoilWaterSWCadjustSnow){
     // setup mock variables
     SW_All.Site.TminAccu2 = 0;
     SW_All.Model.doy = 1;
@@ -56,7 +56,7 @@ namespace{
     EXPECT_EQ(snowmelt, 0);
   }
 
-  TEST_F(AllTest, SWCadjustSnow2) {
+  TEST_F(AllTest, SoilWaterSWCadjustSnow2) {
         // setup mock variables
     SW_All.Site.TminAccu2 = 0;
     SW_All.Model.doy = 1;
@@ -81,7 +81,7 @@ namespace{
 
 
   // Test the 'SW_SoilWater' functions 'SWRC_SWCtoSWP' and `SWRC_SWPtoSWC`
-  TEST_F(AllTest, TranslateBetweenSWCandSWP) {
+  TEST_F(AllTest, SoilWaterTranslateBetweenSWCandSWP) {
     // set up mock variables
     unsigned int swrc_type, ptf_type, k;
     const int em = LOGFATAL;
@@ -269,7 +269,7 @@ namespace{
 
 
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWCtoSWP'
-  TEST_F(AllTest, SWCtoSWPDeathTest) {
+  TEST_F(AllTest, SoilWaterSWCtoSWPDeathTest) {
     // set up mock variables
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -346,7 +346,7 @@ namespace{
 
 
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWPtoSWC'
-  TEST_F(AllTest, SWPtoSWCDeathTest) {
+  TEST_F(AllTest, SoilWaterSWPtoSWCDeathTest) {
     // set up mock variables
     RealD
       swrcp[SWRC_PARAM_NMAX],

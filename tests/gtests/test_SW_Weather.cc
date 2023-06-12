@@ -25,7 +25,7 @@
 
 namespace {
 
-    TEST_F(AllTest, DefaultValues) {
+    TEST_F(AllTest, ReadAllWeatherDefaultValues) {
 
         // Testing to fill allHist from `SW_Weather`
         SW_SKY_read(PathInfo.InFiles, &SW_All.Sky, &LogInfo);
@@ -58,7 +58,7 @@ namespace {
         EXPECT_NEAR(SW_All.Weather.allHist[0]->ppt[0], .220000, tol6);
     }
 
-    TEST_F(AllTest, NoMemoryLeakIfDecreasedNumberOfYears) {
+    TEST_F(AllTest, ReadAllWeatherNoMemoryLeakIfDecreasedNumberOfYears) {
 
         // Default number of years is 31
         EXPECT_EQ(SW_All.Weather.n_years, 31);
@@ -77,7 +77,7 @@ namespace {
 
     }
 
-    TEST_F(AllTest, SomeMissingValuesDays) {
+    TEST_F(AllTest, ReadAllWeatherSomeMissingValuesDays) {
 
         SW_All.Weather.generateWeatherMethod = 2;
 
@@ -105,7 +105,7 @@ namespace {
 
     }
 
-    TEST_F(AllTest, SomeMissingValuesYears) {
+    TEST_F(AllTest, ReadAllWeatherSomeMissingValuesYears) {
 
         int year, day;
         SW_All.Weather.generateWeatherMethod = 2;
@@ -137,7 +137,7 @@ namespace {
 
     }
 
-    TEST_F(AllTest, WeatherGeneratorOnly) {
+    TEST_F(AllTest, ReadAllWeatherWeatherGeneratorOnly) {
 
         int year, day;
 
@@ -167,7 +167,7 @@ namespace {
 
     }
 
-    TEST_F(AllTest, TooManyMissingForLOCFDeathTest) {
+    TEST_F(AllTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
 
         // Change to directory without input files
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
@@ -192,7 +192,7 @@ namespace {
 
     }
 
-    TEST_F(AllTest, ClimateFromDefaultWeather) {
+    TEST_F(AllTest, ClimateVariableClimateFromDefaultWeather) {
 
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
@@ -302,7 +302,7 @@ namespace {
 
 
 
-    TEST_F(AllTest, ClimateFromOneYearWeather) {
+    TEST_F(AllTest, ClimateVariableClimateFromOneYearWeather) {
 
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
@@ -548,7 +548,7 @@ namespace {
     }
 
 
-    TEST_F(AllTest, ClimateFromConstantWeather) {
+    TEST_F(AllTest, ClimateVariableClimateFromConstantWeather) {
 
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
@@ -653,7 +653,7 @@ namespace {
     }
 
 
-    TEST_F(AllTest, AverageTemperatureOfDriestQuarterTest) {
+    TEST_F(AllTest, ClimateVariableAverageTemperatureOfDriestQuarterTest) {
 
         double monthlyPPT[MAX_MONTHS] = {.5, .5, .1, .4, .9, 1.0, 1.2, 6.5, 7.5, 1.2, 4., .6};
         double monthlyTemp[MAX_MONTHS] = {-3.2, -.4, 1.2, 3.5, 7.5, 4.5, 6.5, 8.2, 2.0, 3., .1, -.3};
@@ -722,14 +722,14 @@ namespace {
 
     }
 
-    TEST_F(AllTest, Initialization) {
+    TEST_F(AllTest, WeatherReadInitialization) {
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 
         EXPECT_FLOAT_EQ(SW_All.Weather.allHist[0]->temp_max[0], -.52);
     }
 
-    TEST_F(AllTest, MonthlyInputPrioritization) {
+    TEST_F(AllTest, MonthlyWeatherInputPrioritization) {
         /*
            This section covers the correct prioritization of monthly input values
            instead of daily read-in values
@@ -754,7 +754,7 @@ namespace {
          EXPECT_NEAR(SW_All.Weather.allHist[yearIndex]->windspeed_daily[midJanDay], SW_All.Sky.windspeed[0], tol6);
      }
 
-     TEST_F(AllTest, DailyGridMet) {
+     TEST_F(AllTest, DailyWeatherInputDailyGridMet) {
 
          /*
             This section tests humidity-related values that can be averaged,
@@ -851,7 +851,7 @@ namespace {
          checkAllWeather(&SW_All.Weather, &LogInfo);
      }
 
-     TEST_F(AllTest, DailyDayMet) {
+     TEST_F(AllTest, DailyWeatherInputDayMet) {
 
          /*
             This section covers the assurance that if a daily value is provided
@@ -951,7 +951,7 @@ namespace {
          checkAllWeather(&SW_All.Weather, &LogInfo);
      }
 
-     TEST_F(AllTest, DailyMACA) {
+     TEST_F(AllTest, DailyWeatherInputMACA) {
 
          /*
             This section assures that a variable aside from humidity-related ones,
@@ -1054,7 +1054,7 @@ namespace {
          checkAllWeather(&SW_All.Weather, &LogInfo);
      }
 
-     TEST_F(AllTest, LOCFForDailyValues) {
+     TEST_F(AllTest, DailyLOCFInputValues) {
 
          /*
             Since SOILWAT2 now has the ability to deal with more than
@@ -1101,7 +1101,7 @@ namespace {
         }
      }
 
-     TEST_F(AllTest, ReasonableValuesAndFlagsDeathTest) {
+     TEST_F(AllTest, MonthlyWeatherInputReasonableValuesAndFlagsDeathTest) {
          /*
             This section covers number of flags and the testing of reasonable results (`checkAllWeather()`).
 

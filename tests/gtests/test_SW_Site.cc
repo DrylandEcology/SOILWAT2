@@ -65,7 +65,7 @@ namespace {
   };
 
   // Test pedotransfer functions
-  TEST_F(AllTest, PTFs) {
+  TEST_F(AllTest, SitePTFs) {
     // inputs
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -124,7 +124,7 @@ namespace {
 
 
   // Test fatal failures of PTF estimation
-  TEST_F(AllTest, PTFsDeathTest) {
+  TEST_F(AllTest, SitePTFsDeathTest) {
 
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -154,7 +154,7 @@ namespace {
 
 
   // Test PTF-SWRC pairings
-  TEST_F(AllTest, PTF2SWRC) {
+  TEST_F(AllTest, SitePTF2SWRC) {
     unsigned int k; // `length()` returns "unsigned long"
 
     for (k = 1; k < length(ns_ptfca2C1974); k++) {
@@ -231,7 +231,7 @@ namespace {
 
 
   // Test fatal failures of SWRC parameter checks
-  TEST_F(AllTest, SWRCpChecksDeathTest) {
+  TEST_F(AllTest, SiteSWRCpChecksDeathTest) {
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
@@ -249,7 +249,7 @@ namespace {
 
 
   // Test nonfatal failures of SWRC parameter checks
-  TEST_F(AllTest, SWRCpChecks) {
+  TEST_F(AllTest, SiteSWRCpChecks) {
 
     // inputs
     RealD
@@ -387,7 +387,7 @@ namespace {
 
 
   // Test 'PTF_RawlsBrakensiek1985'
-  TEST_F(AllTest, PTFRawlsBrakensiek1985) {
+  TEST_F(AllTest, SitePTFRawlsBrakensiek1985) {
     //declare mock INPUTS
     double
       theta_min,
@@ -441,7 +441,7 @@ namespace {
 
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST_F(AllTest, SoilParametersDeathTest) {
+  TEST_F(AllTest, SiteSoilParametersDeathTest) {
     LyrIndex n1 = 0, n2 = 1, k = 2;
     RealD help;
 
@@ -464,7 +464,7 @@ namespace {
 
 
   // Test that soil transpiration regions are derived well
-  TEST_F(AllTest, SoilTranspirationRegions) {
+  TEST_F(AllTest, SiteSoilTranspirationRegions) {
     /* Notes:
         - SW_Site.n_layers is base1
         - soil layer information in _TranspRgnBounds is base0
@@ -543,7 +543,7 @@ namespace {
 
 
   // Test bulk and matric soil density functionality
-  TEST_F(AllTest, SoilDensity) {
+  TEST_F(AllTest, SiteSoilDensity) {
     double
       soildensity = 1.4,
       fcoarse = 0.1;
@@ -613,7 +613,7 @@ namespace {
 
 
   // Test that bulk and matric soil density fail
-  TEST_F(AllTest, SoilDensityDeathTest) {
+  TEST_F(AllTest, SiteSoilDensityDeathTest) {
 
     // Check error if bulk density too low for coarse fragments
     EXPECT_DEATH_IF_SUPPORTED(

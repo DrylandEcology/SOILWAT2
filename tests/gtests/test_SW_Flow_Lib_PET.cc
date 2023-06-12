@@ -47,7 +47,7 @@
 namespace
 {
   // Test solar position
-  TEST_F(AllTest, SolarPosition)
+  TEST_F(AllTest, SolarPosSolarPosition)
   {
     double declin, reldist, lat,
       six_hours = 6. * swPI / 12.,
@@ -141,7 +141,7 @@ namespace
 
 
   // Test sun hour angles for horizontal and tilted surfaces
-  TEST_F(AllTest, SW_HourAnglesSymmetries)
+  TEST_F(AllTest, SolarPosSW_HourAnglesSymmetries)
   {
     //------ Check expectations on some symmetries
     //  - Expectation 1: Horizontal sunset/sunrise:
@@ -351,7 +351,7 @@ namespace
   // ```
   //   Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lat_and_doy.R
   // ```
-  TEST_F(AllTest, HourAnglesByLatAndDoy)
+  TEST_F(AllTest, SolarPosHourAnglesByLatAndDoy)
   {
     int k, ilat, idoy, isl, iasp, length_strnum;
     double
@@ -498,7 +498,7 @@ namespace
   // ```
   //   Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lats.R
   // ```
-  TEST_F(AllTest, HourAnglesByLats)
+  TEST_F(AllTest, SolarPosHourAnglesByLats)
   {
     int k, ilat, idoy, isl, iasp, iasp2,
       // day of nonleap year Mar 18 (one day before equinox), Jun 21 (solstice),
@@ -589,7 +589,7 @@ namespace
   //   Comparison against examples by Duffie & Beckman 2013 are expected to
   //   deviate in value, but show similar patterns, because equations for
   //   (i) sun-earth distance equation and (ii) solar declination differ
-  TEST_F(AllTest, extraterrestrial)
+  TEST_F(AllTest, SolarRadiationExtraterrestrial)
   {
     unsigned int k1, k2, doy;
     double
@@ -705,10 +705,10 @@ namespace
   //   Comparison against examples by Duffie & Beckman 2013 are expected to
   //   deviate in value, but show similar patterns, because
   //   (i) calculations for H_oh differ
-  //       (see `SW2_SolarRadiation_Test.extraterrestrial`),
+  //       (see `SW2_SolarRadiationiation_Test.extraterrestrial`),
   //   (ii) we calculate H_gh while they use measured H_gh values, and
   //   (iii) separation models differ, etc.
-  TEST_F(AllTest, global)
+  TEST_F(AllTest, SolarRadiationGlobal)
   {
     unsigned int k;
 
@@ -871,7 +871,7 @@ namespace
 
 
   // Test saturation vapor pressure functions
-  TEST_F(AllTest, svp)
+  TEST_F(AllTest, SW2PETsvp)
   {
     int i;
     double
@@ -905,7 +905,7 @@ namespace
 
 
   // Test `petfunc()`
-  TEST_F(AllTest, petfunc)
+  TEST_F(AllTest, SW2PETpetfunc)
   {
     int i;
     unsigned int
@@ -928,7 +928,7 @@ namespace
       actual_vap_pressure;
 
 
-    // TEST_F `petfunc()` for varying average daily air temperature `avgtemp` [C]
+    // TEST `petfunc()` for varying average daily air temperature `avgtemp` [C]
     double
       // Inputs
       avgtemps[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60},
@@ -957,7 +957,7 @@ namespace
     }
 
 
-    // TEST_F `petfunc()` for varying latitude `lat` [± pi / 2]
+    // TEST `petfunc()` for varying latitude `lat` [± pi / 2]
     double
       // Inputs
       lats[] = {-90., -45., 0., 45., 90.},
@@ -985,7 +985,7 @@ namespace
    }
 
 
-    // TEST_F `petfunc()` for varying elevation [m a.s.l.]
+    // TEST `petfunc()` for varying elevation [m a.s.l.]
     // Testing from -413 meters (Death Valley) to 8727 meters (~Everest).
     double
       // Inputs
@@ -1010,7 +1010,7 @@ namespace
     }
 
 
-    // TEST_F `petfunc()` for varying slope [0 - pi / 2; radians]
+    // TEST `petfunc()` for varying slope [0 - pi / 2; radians]
     double
       // Inputs
       slopes[] = {0., 15., 34., 57., 90.},
@@ -1036,7 +1036,7 @@ namespace
     }
 
 
-    // TEST_F `petfunc()` for varying aspect
+    // TEST `petfunc()` for varying aspect
     //   [South facing slope = 0, East = -pi / 2, West = pi / 2, North = ±pi]
     double
       // Inputs
@@ -1065,7 +1065,7 @@ namespace
     }
 
 
-    // TEST_F `petfunc()` for varying albedo [0-1]
+    // TEST `petfunc()` for varying albedo [0-1]
     double
       // Inputs
       reflecs[] = {0., 0.22, 0.46, 0.55, 1.},
@@ -1089,7 +1089,7 @@ namespace
     }
 
 
-    // TEST_F `petfunc()` for varying relative humidity [0-100; %]
+    // TEST `petfunc()` for varying relative humidity [0-100; %]
     double
       // Inputs
       RHs[] = {0, 34, 56, 79, 100},
@@ -1115,7 +1115,7 @@ namespace
     }
 
 
-    // TEST_F `petfunc()` for varying wind speed [m / s]
+    // TEST `petfunc()` for varying wind speed [m / s]
     double
       // Inputs
       windsps[] = {0., 1., 5., 10., 20.},
@@ -1139,7 +1139,7 @@ namespace
     }
 
 
-    // TEST_F `petfunc()` for varying cloud cover [0-100; %]
+    // TEST `petfunc()` for varying cloud cover [0-100; %]
     double
       // Inputs
       cloudcovs[] = {0, 12, 36, 76, 100},
@@ -1178,7 +1178,7 @@ namespace
   // ```
   //   Rscript tools/plot__SW2_PET_Test__petfunc_by_temps.R
   // ```
-  TEST_F(AllTest, PetfuncByTemps)
+  TEST_F(AllTest, SW2PETPetfuncByTemps)
   {
     int doy, k1, k2, k3, k4, k5;
 

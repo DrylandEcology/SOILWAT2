@@ -23,7 +23,7 @@
 
 namespace {
 
-  TEST_F(AllTest, MissingValues) {
+  TEST_F(AllTest, SWDefinesMissingValues) {
     // SOILWAT2 missing value
     EXPECT_TRUE(missing(SW_MISSING));
 

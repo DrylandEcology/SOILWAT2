@@ -49,7 +49,7 @@ namespace
 {
 
   // Test the veg interception function 'veg_intercepted_water'
-  TEST_F(AllTest, VegInterceptedWater)
+  TEST_F(AllTest, SWFlowVegInterceptedWater)
   {
 
     ForEachVegType(k)
@@ -94,7 +94,7 @@ namespace
   }
 
   // Test the litter interception function 'litter_intercepted_water'
-  TEST_F(AllTest, LitterInterceptedWater)
+  TEST_F(AllTest, SWFlowLitterInterceptedWater)
   {
 
     ForEachVegType(k)
@@ -144,7 +144,7 @@ namespace
   }
 
   // Test infiltration under high water function, 'infiltrate_water_high'
-  TEST_F(AllTest, SaturatedPercolation)
+  TEST_F(AllTest, SWFlowSaturatedPercolation)
   {
 
     // declare inputs
@@ -313,7 +313,7 @@ namespace
 
 
   //Test transp_weighted_avg function.
-  TEST_F(AllTest, TranspWeightedAvg)
+  TEST_F(AllTest, SWFlowTranspWeightedAvg)
   {
     //--- TEST_F when n_layers is 1 ------
     //INPUTS
@@ -387,7 +387,7 @@ namespace
 
 
   //Test EsT_partitioning by manipulating fbse and fbst variables.
-  TEST_F(AllTest, EsTPartitioning)
+  TEST_F(AllTest, SWFlowEsTPartitioning)
   {
     //INPUTS
     double fbse = 0, fbst = 0, blivelai = 0.002, lai_param = 2;
@@ -426,8 +426,8 @@ namespace
 
   }
 
-  // TEST_F pot_soil_evap
-  TEST_F(AllTest, PotentialSoilEvaporation)
+  // TEST pot_soil_evap
+  TEST_F(AllTest, SWFlowPotentialSoilEvaporation)
   {
     unsigned int i, k, nelyrs;
     double bserate = 0, totagb, Es_param_limit = 999.,
@@ -518,7 +518,7 @@ namespace
 
 
   //TEST_F pot_soil_evap_bs for when nelyrs = 1 and nelyrs = MAX
-  TEST_F(AllTest, PotentialSoilEvaporation2)
+  TEST_F(AllTest, SWFlowPotentialSoilEvaporation2)
   {
     //INPUTS
     unsigned int nelyrs,i;
@@ -575,7 +575,7 @@ namespace
 
 
   //Test pot_transp by manipulating biolive and biodead input variables
-  TEST_F(AllTest, PotentialTranspiration)
+  TEST_F(AllTest, SWFlowPotentialTranspiration)
   {
     //INPUTS
     double bstrate = 0, swpavg = 0.8, biolive = -0.8, biodead = 0.2, fbst = 0.8, petday = 0.1,
@@ -637,7 +637,7 @@ namespace
   }
 
   //Test result for watrate by manipulating variable petday
-  TEST_F(AllTest, watrate)
+  TEST_F(AllTest, SWFlowWatrate)
   {
     //INPUTS
     double swp = 0.8, petday = 0.1, shift = 45, shape = 0.1, inflec = 0.25, range = 0.8;
@@ -688,7 +688,7 @@ namespace
   }
 
   //Test evap_fromSurface by manipulating water_pool and evap_rate variables
-  TEST_F(AllTest, SurfaceEvaporation)
+  TEST_F(AllTest, SWFlowSurfaceEvaporation)
   {
     //INPUTS
     double water_pool = 1, evap_rate = 0.33, aet = 0.53;
@@ -725,7 +725,7 @@ namespace
   }
 
   //Test remove_from_soil when nlyrs = 1 and when nlyrs = MAX
-  TEST_F(AllTest, RemoveFromSoil)
+  TEST_F(AllTest, SWFlowRemoveFromSoil)
   {
     // INPUTS
     unsigned int nlyrs, i;
@@ -889,7 +889,7 @@ namespace
 
 
   //Test when nlyrs = 1 and 25 for outputs; swc, drain, drainout, standing water
-  TEST_F(AllTest, PercolateUnsaturated)
+  TEST_F(AllTest, SWFlowPercolateUnsaturated)
   {
     //INPUTS
     unsigned int nlyrs, i, k;
@@ -1100,7 +1100,7 @@ namespace
 
 
   //TEST_F for hydraulic_redistribution when nlyrs = MAX_LAYERS and nlyrs = 1
-  TEST_F(AllTest, HydraulicRedistribution)
+  TEST_F(AllTest, SWFlowHydraulicRedistribution)
   {
     // INPUTS
     unsigned int nlyrs, i, k;

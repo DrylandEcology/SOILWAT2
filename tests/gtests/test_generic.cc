@@ -32,7 +32,7 @@ namespace {
       2.44949, 2.738613};
   float tol = 1e-6;
 
-  TEST_F(AllTest, RunningMean) {
+  TEST_F(AllTest, GenericRunningMean) {
     double m_at_k = 0.;
 
     for (k = 0; k < N; k++)
@@ -42,7 +42,7 @@ namespace {
     }
   }
 
-  TEST_F(AllTest, RunningSD) {
+  TEST_F(AllTest, GenericRunningSD) {
     double ss, sd_at_k;
 
     for (k = 0; k < N; k++)
@@ -60,7 +60,7 @@ namespace {
     }
   }
 
-    TEST_F(AllTest, UnexpectedAndExpectedCasesSD) {
+    TEST_F(AllTest, GenericUnexpectedAndExpectedCasesSD) {
         double value[1] = {5.};
         double values[5] = {5.4, 3.4, 7.6, 5.6, 1.8};
         double oneValMissing[5] = {5.4, SW_MISSING, 7.6, 5.6, 1.8};
@@ -87,7 +87,7 @@ namespace {
         EXPECT_NEAR(standardDev, 2.413848, tol);
     }
 
-    TEST_F(AllTest, UnexpectedAndExpectedCasesMean) {
+    TEST_F(AllTest, GenericUnexpectedAndExpectedCasesMean) {
 
         double result;
         double values[5] = {1.8, 2.2, 10., 13.5, 3.2};

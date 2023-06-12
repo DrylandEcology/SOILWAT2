@@ -44,7 +44,7 @@ extern void (*test_temp_correct_wetdry)(RealD *, RealD *, RealD, RealD, RealD, R
 
 namespace {
   // Test the SW_MARKOV constructor 'SW_MKV_construct'
-  TEST_F(AllTest, Constructor) {
+  TEST_F(AllTest, WeatherGeneratorConstructor) {
     SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov, &LogInfo);
 
     // Check that at least first array elements are initialized to zero
@@ -62,7 +62,7 @@ namespace {
 
 
   // Check seeding of RNG for weather generator
-  TEST_F(AllTest, Seeding) {
+  TEST_F(AllTest, WeatherGeneratorRNGSeeding) {
     short k, n = 18, seed = 42;
     RealD
       tmax, *tmax0 = new double[n],
@@ -141,7 +141,7 @@ namespace {
 
 
   // Test drawing multivariate normal variates for daily maximum/minimum temp
-  TEST_F(AllTest, mvnorm) {
+  TEST_F(AllTest, WeatherGeneratormvnorm) {
     short k, n = 3;
     RealD tmax = 0., tmin = 0., tval;
 
@@ -179,7 +179,7 @@ namespace {
     SW_MKV_deconstruct(&SW_All.Markov);
   }
 
-  TEST_F(AllTest, mvnormDeathTest) {
+  TEST_F(AllTest, WeatherGeneratormvnormDeathTest) {
     RealD tmax = 0., tmin = 0.;
 
     SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov, &LogInfo); // initialize markov_rng
@@ -196,7 +196,7 @@ namespace {
 
 
   // Test correcting daily temperatures for wet/dry days
-  TEST_F(AllTest, WetDryTemperatureCorrection) {
+  TEST_F(AllTest, WeatherGeneratorWetDryTemperatureCorrection) {
     RealD
       tmax = 0., tmin = 0., t0 = 0., t10 = 10.,
       wet = 1., dry = 0.,
