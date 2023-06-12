@@ -275,8 +275,13 @@ typedef struct {
 	unsigned int
 		swrc_type[MAX_LAYERS + 1], /**< Type of SWRC (see #swrc2str) */
 		ptf_type[MAX_LAYERS + 1]; /**< Type of PTF (see #ptf2str) */
-	RealD swrcp[MAX_LAYERS + 1][SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation varies with selected SWRC, see `SWRC_check_parameters()` */
 
+	/*
+		Note: We loop over SWRC_PARAM_NMAX for every soil layer in
+			 `swrcp` but we need to loop over soil layers for every
+			 vegetation type in `my_transp_rng`
+	*/
+	RealD swrcp[MAX_LAYERS + 1][SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation varies with selected SWRC, see `SWRC_check_parameters()` */
 	LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS + 1]; /* which transp zones from Site am I in? */
 
 } SW_SITE;
