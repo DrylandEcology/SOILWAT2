@@ -187,6 +187,54 @@ namespace {
   }
 
 
+  TEST_F(AllTest, WaterBalanceWithOneSoilLayers) {
+    int i;
+
+    // Setup one soil layer
+    create_test_soillayers(
+      1,
+      PathInfo.InFiles,
+      &SW_All.VegProd,
+      &SW_All.Site,
+      &LogInfo
+    );
+
+    // Run the simulation
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+    }
+  }
+
+
+  TEST_F(AllTest, WaterBalanceWithMaxSoilLayers) {
+    int i;
+
+    // Setup maximum number of soil layers
+    create_test_soillayers(
+      MAX_LAYERS,
+      PathInfo.InFiles,
+      &SW_All.VegProd,
+      &SW_All.Site,
+      &LogInfo
+    );
+
+    // Run the simulation
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+    }
+  }
+
+
   TEST_F(AllTest, WaterBalanceWithVegetationFromClimate1) {
     int i;
 
