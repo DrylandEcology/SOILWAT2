@@ -1299,13 +1299,12 @@ void add_deepdrain_layer(SW_SITE* SW_Site) {
 		if (SW_Site->deep_lyr == 0) {
 
 			SW_Site->width[SW_Site->n_layers] = 1.0;
-			SW_Site->n_layers++;
 
-			/* sp->deepdrain indicates an extra (dummy) layer for deep drainage
+			/* SW_Site->deepdrain indicates an extra (dummy) layer for deep drainage
 			* has been added, so n_layers really should be n_layers -1
 			* NOTE: deep_lyr is base0, n_layers is BASE1
 			*/
-			SW_Site->deep_lyr = --SW_Site->n_layers;
+			SW_Site->deep_lyr = SW_Site->n_layers;
 		}
 
 	} else {
