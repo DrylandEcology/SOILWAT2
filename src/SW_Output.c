@@ -470,7 +470,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
 		break;
 
 	case eSW_DeepSWC:
-		s->deep += v->swcBulk[Today][SW_Site->deep_lyr];
+		s->deep += v->drain[SW_Site->deep_lyr]; // deepest percolation == deep drainage
 		break;
 
 	case eSW_SoilTemp:
@@ -717,7 +717,7 @@ static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
 			case eSW_DeepSWC:
 				sw->SoilWat.p_oagg[pd]->deep =
 						(sw->Output[k].sumtype == eSW_Fnl) ?
-								sw->SoilWat.swcBulk[Yesterday][sw->Site.deep_lyr] :
+								sw->SoilWat.drain[sw->Site.deep_lyr] : // deepest percolation == deep drainage
 								sw->SoilWat.p_accu[pd]->deep / div;
 				break;
 

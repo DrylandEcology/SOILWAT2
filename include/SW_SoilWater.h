@@ -73,7 +73,7 @@ void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site,
 void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year, LOG_INFO* LogInfo);
 void SW_SWC_water_flow(SW_ALL* sw, char *InFiles[], LOG_INFO* LogInfo);
 void calculate_repartitioned_soilwater(SW_SOILWAT* SW_SoilWat,
-	RealD swcBulk_atSWPcrit[][MAX_LAYERS + 1], SW_VEGPROD* SW_VegProd,
+	RealD swcBulk_atSWPcrit[][MAX_LAYERS], SW_VEGPROD* SW_VegProd,
 	LyrIndex n_layers);
 void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], RealD swcBulk_min[],
 	TimeInt doy, SW_SOILWAT_HIST SoilWat_hist, LyrIndex n_layers,

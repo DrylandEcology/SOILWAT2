@@ -719,9 +719,20 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 	/* Soil Temperature ends here */
 
 	/* Finalize "flow" of today */
-	if (sw->Site.deepdrain) {
-		sw->SoilWat.swcBulk[Today][sw->Site.deep_lyr] = drainout;
+	#ifdef SWDEBUG
+	if (debug) {
+		if (sw->Site.deepdrain) {
+			if (!EQ(sw->SoilWat.drain[sw->Site.deep_lyr], drainout)) {
+				swprintf(
+					"Percolation (%f) of last layer [%d] is not equal to deep drainage (%f).\n",
+					sw->SoilWat.drain[sw->Site.deep_lyr],
+					sw->Site.deep_lyr + 1,
+					drainout
+				);
+			}
+		}
 	}
+	#endif
 
 	*standingWaterYesterday = *standingWaterToday;
 

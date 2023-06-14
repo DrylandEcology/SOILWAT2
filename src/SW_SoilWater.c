@@ -84,16 +84,11 @@ static void _reset_swc(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site) {
 		SW_SoilWat->swcBulk[Today][lyr] =
 							SW_SoilWat->swcBulk[Yesterday][lyr] =
 												SW_Site->swcBulk_init[lyr];
-		SW_SoilWat->drain[lyr] = 0.;
+		SW_SoilWat->drain[lyr] = 0.; // deepest percolation is deep drainage
 	}
 
 	/* reset the snowpack */
 	SW_SoilWat->snowpack[Today] = SW_SoilWat->snowpack[Yesterday] = 0.;
-
-	/* reset deep drainage */
-	if (SW_Site->deepdrain) {
-		SW_SoilWat->swcBulk[Today][SW_Site->deep_lyr] = 0.;
-  }
 }
 
 
@@ -401,7 +396,7 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
 
   // Get other water flux values
   infiltration = sw->Weather.soil_inf;
-  deepDrainage = sw->SoilWat.swcBulk[Today][sw->Site.deep_lyr]; // see issue #137
+  deepDrainage = sw->SoilWat.drain[sw->Site.deep_lyr];
 
   percolationIn[0] = infiltration;
   percolationOut[sw->Site.n_layers] = deepDrainage;
@@ -706,7 +701,7 @@ void SW_SWC_water_flow(SW_ALL* sw, char *InFiles[], LOG_INFO* LogInfo) {
 */
 /***********************************************************/
 void calculate_repartitioned_soilwater(SW_SOILWAT* SW_SoilWat,
-	RealD swcBulk_atSWPcrit[][MAX_LAYERS + 1], SW_VEGPROD* SW_VegProd,
+	RealD swcBulk_atSWPcrit[][MAX_LAYERS], SW_VEGPROD* SW_VegProd,
 	LyrIndex n_layers) {
 
   // this will run for every day of every year

@@ -241,29 +241,29 @@ typedef struct {
 
 	RealD
 		/* Inputs */
-		width[MAX_LAYERS + 1], /* width of the soil layer (cm) */
-		soilDensityInput[MAX_LAYERS + 1], /* soil density [g / cm3]: either of the matric component or bulk soil */
-		evap_coeff[MAX_LAYERS + 1], /* prop. of total soil evap from this layer */
-		transp_coeff[NVEGTYPES][MAX_LAYERS + 1], /* prop. of total transp from this layer    */
-		fractionVolBulk_gravel[MAX_LAYERS + 1], /* gravel content (> 2 mm) as volume-fraction of bulk soil (g/cm3) */
-		fractionWeightMatric_sand[MAX_LAYERS + 1], /* sand content (< 2 mm & > . mm) as weight-fraction of matric soil (g/g) */
-		fractionWeightMatric_clay[MAX_LAYERS + 1], /* clay content (< . mm & > . mm) as weight-fraction of matric soil (g/g) */
-		impermeability[MAX_LAYERS + 1], /* fraction of how impermeable a layer is (0=permeable, 1=impermeable)    */
-		avgLyrTemp[MAX_LAYERS + 1], /* initial soil temperature for each soil layer */
+		width[MAX_LAYERS], /* width of the soil layer (cm) */
+		soilDensityInput[MAX_LAYERS], /* soil density [g / cm3]: either of the matric component or bulk soil */
+		evap_coeff[MAX_LAYERS], /* prop. of total soil evap from this layer */
+		transp_coeff[NVEGTYPES][MAX_LAYERS], /* prop. of total transp from this layer    */
+		fractionVolBulk_gravel[MAX_LAYERS], /* gravel content (> 2 mm) as volume-fraction of bulk soil (g/cm3) */
+		fractionWeightMatric_sand[MAX_LAYERS], /* sand content (< 2 mm & > . mm) as weight-fraction of matric soil (g/g) */
+		fractionWeightMatric_clay[MAX_LAYERS], /* clay content (< . mm & > . mm) as weight-fraction of matric soil (g/g) */
+		impermeability[MAX_LAYERS], /* fraction of how impermeable a layer is (0=permeable, 1=impermeable)    */
+		avgLyrTemp[MAX_LAYERS], /* initial soil temperature for each soil layer */
 
 		/* Derived soil characteristics */
-		soilMatric_density[MAX_LAYERS + 1], /* matric soil density of the < 2 mm fraction, i.e., gravel component excluded, (g/cm3) */
-		soilBulk_density[MAX_LAYERS + 1], /* bulk soil density of the whole soil, i.e., including rock/gravel component, (g/cm3) */
-		swcBulk_fieldcap[MAX_LAYERS + 1], /* Soil water content (SWC) corresponding to field capacity (SWP = -0.033 MPa) [cm] */
-		swcBulk_wiltpt[MAX_LAYERS + 1], /* SWC corresponding to wilting point (SWP = -1.5 MPa) [cm] */
-		swcBulk_halfwiltpt[MAX_LAYERS + 1], /* Adjusted half-wilting point used as SWC limit for bare-soil evaporation */
-		swcBulk_min[MAX_LAYERS + 1], /* Minimal SWC [cm] */
-		swcBulk_wet[MAX_LAYERS + 1], /* SWC considered "wet" [cm] */
-		swcBulk_init[MAX_LAYERS + 1], /* Initial SWC for first day of simulation [cm] */
-		swcBulk_atSWPcrit[NVEGTYPES][MAX_LAYERS + 1], /* SWC corresponding to critical SWP for transpiration */
+		soilMatric_density[MAX_LAYERS], /* matric soil density of the < 2 mm fraction, i.e., gravel component excluded, (g/cm3) */
+		soilBulk_density[MAX_LAYERS], /* bulk soil density of the whole soil, i.e., including rock/gravel component, (g/cm3) */
+		swcBulk_fieldcap[MAX_LAYERS], /* Soil water content (SWC) corresponding to field capacity (SWP = -0.033 MPa) [cm] */
+		swcBulk_wiltpt[MAX_LAYERS], /* SWC corresponding to wilting point (SWP = -1.5 MPa) [cm] */
+		swcBulk_halfwiltpt[MAX_LAYERS], /* Adjusted half-wilting point used as SWC limit for bare-soil evaporation */
+		swcBulk_min[MAX_LAYERS], /* Minimal SWC [cm] */
+		swcBulk_wet[MAX_LAYERS], /* SWC considered "wet" [cm] */
+		swcBulk_init[MAX_LAYERS], /* Initial SWC for first day of simulation [cm] */
+		swcBulk_atSWPcrit[NVEGTYPES][MAX_LAYERS], /* SWC corresponding to critical SWP for transpiration */
 
 		/* Saxton et al. 2006 */
-		swcBulk_saturated[MAX_LAYERS + 1]; /* saturated bulk SWC [cm] */
+		swcBulk_saturated[MAX_LAYERS]; /* saturated bulk SWC [cm] */
 		// currently, not used;
 		//Saxton2006_K_sat_matric, /* saturated matric conductivity [cm / day] */
 		//Saxton2006_K_sat_bulk, /* saturated bulk conductivity [cm / day] */
@@ -273,16 +273,16 @@ typedef struct {
 
 	/* Soil water retention curve (SWRC) */
 	unsigned int
-		swrc_type[MAX_LAYERS + 1], /**< Type of SWRC (see #swrc2str) */
-		ptf_type[MAX_LAYERS + 1]; /**< Type of PTF (see #ptf2str) */
+		swrc_type[MAX_LAYERS], /**< Type of SWRC (see #swrc2str) */
+		ptf_type[MAX_LAYERS]; /**< Type of PTF (see #ptf2str) */
 
 	/*
 		Note: We loop over SWRC_PARAM_NMAX for every soil layer in
 			 `swrcp` but we need to loop over soil layers for every
 			 vegetation type in `my_transp_rng`
 	*/
-	RealD swrcp[MAX_LAYERS + 1][SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation varies with selected SWRC, see `SWRC_check_parameters()` */
-	LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS + 1]; /* which transp zones from Site am I in? */
+	RealD swrcp[MAX_LAYERS][SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation varies with selected SWRC, see `SWRC_check_parameters()` */
+	LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS]; /* which transp zones from Site am I in? */
 
 } SW_SITE;
 
@@ -701,7 +701,7 @@ typedef struct {
 		snowdepth,
 		transpiration[NVEGTYPES][MAX_LAYERS],
 		evap_baresoil[MAX_LAYERS], /* bare-soil evaporation [cm/layer] */
-		drain[MAX_LAYERS], /* amt of swc able to drain from curr layer to next */
+		drain[MAX_LAYERS], /** drain[i] = total net (saturated + unsaturated) percolation [cm/day] from layer i into layer i + 1; last value is equal to deep drainage */
 		hydred[NVEGTYPES][MAX_LAYERS], /* hydraulic redistribution cm/layer */
 		surfaceWater, surfaceWater_evap,
 		pet, H_oh, H_ot, H_gh, H_gt,

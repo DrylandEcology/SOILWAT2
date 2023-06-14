@@ -232,7 +232,7 @@ RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel,
 								  LOG_INFO* LogInfo);
 LyrIndex nlayers_bsevap(RealD *evap_coeff, LyrIndex n_layers);
 void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
-					  RealD transp_coeff[][MAX_LAYERS + 1]);
+					  RealD transp_coeff[][MAX_LAYERS]);
 
 void SW_SIT_construct(SW_SITE* SW_Site);
 void SW_SIT_init_counts(SW_SITE* SW_Site);

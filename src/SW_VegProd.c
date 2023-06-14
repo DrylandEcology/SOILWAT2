@@ -800,7 +800,7 @@ void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, SW_MODEL* SW_Model) {
   @param[in] layerno Current layer which is being worked with
   @return Sum across `*x`
 */
-RealD sum_across_vegtypes(RealD x[][MAX_LAYERS + 1], LyrIndex layerno)
+RealD sum_across_vegtypes(RealD x[][MAX_LAYERS], LyrIndex layerno)
 {
   unsigned int k;
   RealD sum = 0.;

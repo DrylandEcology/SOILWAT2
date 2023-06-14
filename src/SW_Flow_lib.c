@@ -237,7 +237,7 @@ void litter_intercepted_water(double *ppt_through, double *int_lit,
 
 @param swc Soilwater content in each layer before drainage (cm H<SUB>2</SUB>O).
 @param drain Drainage amount in each layer (cm/day).
-@param *drainout Drainage from the previous layer (cm H<SUB>2</SUB>O).
+@param *drainout Drainage from the last layer (cm H<SUB>2</SUB>O).
 @param pptleft Daily precipitation available to the soil (cm/day).
 @param nlyrs Number of layers available to drain from.
 @param swcfc Soilwater content in each layer at field capacity (cm H<SUB>2</SUB>O).

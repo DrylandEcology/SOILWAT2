@@ -73,7 +73,7 @@ void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	SW_MODEL* SW_Model, RealD site_latitude, LOG_INFO* LogInfo);
 void SW_VPD_deconstruct(SW_VEGPROD* SW_VegProd);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
-RealD sum_across_vegtypes(RealD x[][MAX_LAYERS + 1], LyrIndex layerno);
+RealD sum_across_vegtypes(RealD x[][MAX_LAYERS], LyrIndex layerno);
 void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov,
 				   LOG_INFO* LogInfo);
 void get_critical_rank(SW_VEGPROD* SW_VegProd);

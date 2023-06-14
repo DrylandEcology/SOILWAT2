@@ -1266,7 +1266,7 @@ LyrIndex nlayers_bsevap(RealD *evap_coeff, LyrIndex n_layers) {
   @param[out] n_transp_lyrs Index of the deepest transp. region
 */
 void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
-					  RealD transp_coeff[][MAX_LAYERS + 1]) {
+					  RealD transp_coeff[][MAX_LAYERS]) {
 	LyrIndex s;
 	int k;
 
@@ -1287,29 +1287,16 @@ void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
 
 
 /**
-  @brief Adds a dummy soil layer to handle deep drainage
+  @brief Set `deep_lyr` to indicate that deep drainage is being simulated
 
   @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 */
 void add_deepdrain_layer(SW_SITE* SW_Site) {
 
 	if (SW_Site->deepdrain) {
-
-		/* check if deep drain dummy layer was already added */
-		if (SW_Site->deep_lyr == 0) {
-
-			SW_Site->width[SW_Site->n_layers] = 1.0;
-
-			/* SW_Site->deepdrain indicates an extra (dummy) layer for deep drainage
-			* has been added, so n_layers really should be n_layers -1
-			* NOTE: deep_lyr is base0, n_layers is BASE1
-			*/
-			SW_Site->deep_lyr = SW_Site->n_layers;
-		}
-
+		/* total percolation from last layer == deep drainage */
+		SW_Site->deep_lyr = SW_Site->n_layers - 1; /* deep_lyr is base0 */
 	} else {
-
-		/* no deep drainage */
 		SW_Site->deep_lyr = 0;
 	}
 }
