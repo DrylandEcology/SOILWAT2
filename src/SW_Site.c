@@ -1727,6 +1727,9 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
   @note
     - This function is a modified version of the function _read_layers() in
       SW_Site.c.
+    - Soil moisture values must be properly initialized before running a
+      simulation after this function has set soil layers, e.g.,
+      SW_SWC_init_run()
 */
 void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 	LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel, RealF *evco,

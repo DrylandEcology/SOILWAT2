@@ -27,6 +27,17 @@
 #include "tests/gtests/sw_testhelpers.h"
 
 
+/**
+  @brief Creates soil layers based on function arguments (instead of reading
+    them from an input file as _read_layers() does)
+
+  For details, see set_soillayers().
+
+  @note
+    - Soil moisture values must be properly initialized before running a
+      simulation after this function has set soil layers, e.g.,
+      SW_SWC_init_run()
+*/
 void create_test_soillayers(unsigned int nlayers, char *InFiles[],
       SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo) {
 

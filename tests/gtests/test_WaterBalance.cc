@@ -223,6 +223,9 @@ namespace {
       &LogInfo
     );
 
+    // Initialize `swcBulk` based on new soil layers
+    SW_SWC_init_run(&SW_All.SoilWat, &SW_All.Site, &SW_All.Weather.temp_snow);
+
     // Run the simulation
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
 
