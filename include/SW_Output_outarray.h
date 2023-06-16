@@ -66,8 +66,8 @@ void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,
 
 #ifdef STEPWAT
 void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x);
-void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output,
-		RealD *p_OUT[][SW_OUTNPERIODS], RealD *p_OUTsd[][SW_OUTNPERIODS]);
+void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput,
+									   LOG_INFO *LogInfo);
 #endif
 
 

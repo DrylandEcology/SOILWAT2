@@ -203,37 +203,38 @@ void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
 
     @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
 		basic output information for all output keys
-	@param[out] p_OUT Allocated arrays, for running means
-		for every out key and period
-	@param[out] p_OUTsd Allocated arrays, for running standard deviations
-		for every out key and period
+	@param[out] GenOutput Holds general variables that deal with output
+	@param[in] LogInfo Holds information dealing with logfile output
 
 	Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in `rSW_Output.c`
 
-	@sideeffect: `*p_OUT` and `*p_OUTsd` pointing to allocated arrays for
+	@sideeffect: `GenOutput->p_OUT` and `GenOutput->p_OUTsd` pointing to allocated arrays for
 		each output period and output key.
 	*/
-void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output,
-		RealD *p_OUT[][SW_OUTNPERIODS], RealD *p_OUTsd[][SW_OUTNPERIODS])
+void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput,
+									   LOG_INFO *LogInfo)
 {
 	IntUS i;
 	size_t
 		size,
 		s = sizeof(RealD);
 	OutKey k;
+	OutPeriod timeStepOutPeriod;
 
 	ForEachOutKey(k) {
-		for (i = 0; i < used_OUTNPERIODS; i++) {
-			if (SW_Output[k].use && timeSteps[k][i] != eSW_NoTime)
+		for (i = 0; i < GenOutput->used_OUTNPERIODS; i++) {
+			timeStepOutPeriod = GenOutput->timeSteps[k][i];
+
+			if (SW_Output[k].use && timeStepOutPeriod != eSW_NoTime)
 			{
-				size = nrow_OUT[timeSteps[k][i]] *
-					(ncol_OUT[k] + ncol_TimeOUT[timeSteps[k][i]]);
+				size = GenOutput->nrow_OUT[timeStepOutPeriod] *
+					(GenOutput->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
 
-				p_OUT[k][timeSteps[k][i]] = (RealD *) Mem_Calloc(size, s,
-					"setGlobalSTEPWAT2_OutputVariables()");
+				GenOutput->p_OUT[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(size, s,
+					"setGlobalSTEPWAT2_OutputVariables()", LogInfo);
 
-				p_OUTsd[k][timeSteps[k][i]] = (RealD *) Mem_Calloc(size, s,
-					"setGlobalSTEPWAT2_OutputVariables()");
+				GenOutput->p_OUTsd[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(size, s,
+					"setGlobalSTEPWAT2_OutputVariables()", LogInfo);
 			}
 		}
 	}
