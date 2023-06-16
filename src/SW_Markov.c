@@ -206,7 +206,9 @@ void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
 	  - rSOILWAT2: R API handles RNGs
 	*/
 	#if defined(SOILWAT)
-	RandSeed(rng_seed, 1u, &SW_Markov->markov_rng);
+		RandSeed(rng_seed, 1u, &SW_Markov->markov_rng);
+	#else
+		(void) rng_seed; // Silence compiler flag `-Wunused-parameter`
 	#endif
 
 	SW_Markov->ppt_events = 0;
