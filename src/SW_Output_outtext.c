@@ -209,48 +209,53 @@ static void _create_filename_ST(char *str, char *flag, int iteration, char *file
   \param iteration Current iteration value (base1) that is used for the file
     name if -i flag used in STEPWAT2. Set to a negative value otherwise.
   \param pd The output time step.
+  \param FileStatus Struct of type
+		SW_FILE_STATUS which holds basic information about output files
+		and values
+  \param LogInfo Holds information dealing with logfile output
 */
 /***********************************************************/
-static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[])
+static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
+								SW_FILE_STATUS *FileStatus, LOG_INFO *LogInfo)
 {
 	char filename[FILENAME_MAX];
 
 	if (iteration <= 0)
 	{ // STEPWAT2: aggregated values over all iterations
-		if (SW_OutFiles.make_regular[pd]) {
+		if (FileStatus->make_regular[pd]) {
 			// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
 			// a specific order of `SW_FileIndex` --> fix and create something that
 			// allows subsetting such as `eOutputFile[pd]` or append time period to
 			// a basename, etc.
 			_create_filename_ST(InFiles[eOutputDaily + pd], "agg", 0, filename, FILENAME_MAX);
-			SW_OutFiles.fp_reg_agg[pd] = OpenFile(filename, "w");
+			FileStatus->fp_reg_agg[pd] = OpenFile(filename, "w", LogInfo);
 		}
 
-		if (SW_OutFiles.make_soil[pd]) {
+		if (FileStatus->make_soil[pd]) {
 			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "agg", 0, filename, FILENAME_MAX);
-			SW_OutFiles.fp_soil_agg[pd] = OpenFile(filename, "w");
+			FileStatus->fp_soil_agg[pd] = OpenFile(filename, "w", LogInfo);
 		}
 
 	} else
 	{ // STEPWAT2: storing values for every iteration
 		if (iteration > 1) {
 			// close files from previous iteration
-			if (SW_OutFiles.make_regular[pd]) {
-				CloseFile(&SW_OutFiles.fp_reg[pd]);
+			if (FileStatus->make_regular[pd]) {
+				CloseFile(&FileStatus->fp_reg[pd], LogInfo);
 			}
-			if (SW_OutFiles.make_soil[pd]) {
-				CloseFile(&SW_OutFiles.fp_soil[pd]);
+			if (FileStatus->make_soil[pd]) {
+				CloseFile(&FileStatus->fp_soil[pd], LogInfo);
 			}
 		}
 
-		if (SW_OutFiles.make_regular[pd]) {
+		if (FileStatus->make_regular[pd]) {
 			_create_filename_ST(InFiles[eOutputDaily + pd], "rep", iteration, filename, FILENAME_MAX);
-			SW_OutFiles.fp_reg[pd] = OpenFile(filename, "w");
+			FileStatus->fp_reg[pd] = OpenFile(filename, "w", LogInfo);
 		}
 
-		if (SW_OutFiles.make_soil[pd]) {
+		if (FileStatus->make_soil[pd]) {
 			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "rep", iteration, filename, FILENAME_MAX);
-			SW_OutFiles.fp_soil[pd] = OpenFile(filename, "w");
+			FileStatus->fp_soil[pd] = OpenFile(filename, "w", LogInfo);
 		}
 	}
 }
