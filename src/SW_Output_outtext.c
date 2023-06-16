@@ -302,14 +302,14 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 #elif defined(STEPWAT)
 
 void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
-		SW_OUTPUT* SW_Output, SW_OUT_GEN GenOutput,
-		char *InFiles[], LOG_INFO* LogInfo) {
+		SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput,
+		char *InFiles[], LyrIndex n_layers, LOG_INFO* LogInfo) {
 
 	OutPeriod p;
 
 	ForEachOutPeriod(p) {
-		if (use_OutPeriod[p]) {
-			_create_csv_file_ST(-1, p, InFiles);
+		if (GenOutput->use_OutPeriod[p]) {
+			_create_csv_file_ST(-1, p, InFiles, SW_FileStatus, LogInfo);
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg_agg[p],
 				SW_FileStatus->fp_soil_agg[p], swTRUE, SW_FileStatus->make_soil,
@@ -320,14 +320,14 @@ void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
 }
 
 void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
-		SW_OUTPUT* SW_Output, int iteration, SW_OUT_GEN GenOutput,
-		char *InFiles[], LOG_INFO* LogInfo) {
+		SW_OUTPUT* SW_Output, int iteration, SW_GEN_OUT *GenOutput,
+		char *InFiles[], LyrIndex n_layers, LOG_INFO* LogInfo) {
 
 	OutPeriod p;
 
 	ForEachOutPeriod(p) {
-		if (use_OutPeriod[p]) {
-			_create_csv_file_ST(iteration, p, InFiles);
+		if (GenOutput->use_OutPeriod[p]) {
+			_create_csv_file_ST(iteration, p, InFiles, SW_FileStatus, LogInfo);
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg[p],
 				SW_FileStatus->fp_soil[p], swTRUE, SW_FileStatus->make_soil,

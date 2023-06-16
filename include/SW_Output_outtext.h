@@ -32,11 +32,11 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 
 #elif defined(STEPWAT)
 void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
-		SW_OUTPUT* SW_Output, SW_OUT_GEN GenOutput,
-		char *InFiles[], LOG_INFO* LogInfo);
+		SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput,
+		char *InFiles[], LyrIndex n_layers, LOG_INFO* LogInfo);
 void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
-		SW_OUTPUT* SW_Output, int iteration, SW_OUT_GEN GenOutput,
-		char *InFiles[], LOG_INFO* LogInfo);
+		SW_OUTPUT* SW_Output, int iteration, SW_GEN_OUT *GenOutput,
+		char *InFiles[], LyrIndex n_layers, LOG_INFO* LogInfo) ;
 #endif
 
 void get_outstrleader(OutPeriod pd, size_t sizeof_str,
