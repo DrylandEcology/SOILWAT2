@@ -133,7 +133,8 @@ static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
 
 #ifdef STEPWAT
 static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
-	const char *str);
+	const char *str, SW_OUTPUT* SW_Output, OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
+	LOG_INFO *LogInfo);
 #endif
 
 
@@ -921,7 +922,8 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 
 #ifdef STEPWAT
 static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
-	const char *str, SW_OUTPUT* SW_Output, OutPeriod timeSteps_SXW[][SW_OUTNPERIODS])
+	const char *str, SW_OUTPUT* SW_Output, OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
+	LOG_INFO *LogInfo)
 {
 	Bool warn = SW_Output[k].use;
 
@@ -1014,17 +1016,18 @@ void find_OutPeriods_inUse2(void)
 /** Determine whether output period `pd` is active for output key `k` while
 		accounting for output needs of `SXW`
 */
-Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k,
-						  OutPeriod timeSteps_SXW[][SW_OUTNPERIODS])
+Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k, SW_GEN_OUT *GenOutput)
 {
 	int i;
-	Bool has_timeStep2 = has_OutPeriod_inUse(pd, k);
+	Bool has_timeStep2 = has_OutPeriod_inUse(pd, k, GenOutput->used_OUTNPERIODS,
+											GenOutput->timeSteps_SXW);
 
 	if (!has_timeStep2)
 	{
-		for (i = 0; i < used_OUTNPERIODS; i++)
+		for (i = 0; i < GenOutput->used_OUTNPERIODS; i++)
 		{
-			has_timeStep2 = (Bool) has_timeStep2 || timeSteps_SXW[k][i] == pd;
+			has_timeStep2 = (Bool) has_timeStep2 ||
+									GenOutput->timeSteps_SXW[k][i] == pd;
 		}
 	}
 
@@ -1045,7 +1048,8 @@ Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k,
 			and adjusts variables `use`, `sumtype` (with a warning), `first_orig`,
 			and `last_orig` of `SW_Output`.
 */
-void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS])
+void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
+		IntUS used_OUTNPERIODS, SW_OUTPUT *SW_Output, LOG_INFO *LogInfo)
 {
 	// Update `used_OUTNPERIODS`:
 	// SXW uses up to 2 time periods for the same output key: monthly and yearly
@@ -1053,25 +1057,25 @@ void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS])
 
 	// STEPWAT2 requires monthly summed transpiration
 	_set_SXWrequests_helper(eSW_Transp, eSW_Month, eSW_Sum,
-		"monthly transpiration");
+		"monthly transpiration", SW_Output, timeSteps_SXW, LogInfo);
 
 	// STEPWAT2 requires monthly mean bulk soil water content
 	_set_SXWrequests_helper(eSW_SWCBulk, eSW_Month, eSW_Avg,
-		"monthly bulk soil water content");
+		"monthly bulk soil water content", SW_Output, timeSteps_SXW, LogInfo);
 
 	// STEPWAT2 requires annual and monthly mean air temperature
 	_set_SXWrequests_helper(eSW_Temp, eSW_Month, eSW_Avg,
-		"annual and monthly air temperature");
+		"annual and monthly air temperature", SW_Output, timeSteps_SXW, LogInfo);
 	timeSteps_SXW[eSW_Temp][1] = eSW_Year;
 
 	// STEPWAT2 requires annual and monthly precipitation sum
 	_set_SXWrequests_helper(eSW_Precip, eSW_Month, eSW_Sum,
-		"annual and monthly precipitation");
+		"annual and monthly precipitation", SW_Output, timeSteps_SXW, LogInfo);
 	timeSteps_SXW[eSW_Precip][1] = eSW_Year;
 
 	// STEPWAT2 requires annual sum of AET
 	_set_SXWrequests_helper(eSW_AET, eSW_Year, eSW_Sum,
-		"annual AET");
+		"annual AET", SW_Output, timeSteps_SXW, LogInfo);
 }
 #endif
 
