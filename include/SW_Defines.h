@@ -240,6 +240,10 @@ typedef enum { eF,   /* file management */
                eOUT  /* output */
 } ObjType;
 
+/* Types to use for time and layer-related values and make a custom flag */
+typedef unsigned int TimeInt;
+typedef unsigned int LyrIndex;
+typedef signed char flag;
 
 #ifdef __cplusplus
 }

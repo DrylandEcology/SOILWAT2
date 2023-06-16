@@ -30,10 +30,6 @@
 #define SW_OUTTEXT
 #endif
 
-typedef unsigned int TimeInt;
-typedef unsigned int LyrIndex;
-typedef signed char flag;
-
 #define SW_NFILES 23 // For `InFiles`
 
 /* =================================================== */
