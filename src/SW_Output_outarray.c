@@ -25,6 +25,8 @@
 #include "include/SW_Model.h"
 #include "include/SW_Output_outarray.h"
 #include "include/SW_Output.h"
+#include "include/SW_Times.h"
+#include "include/myMemory.h"
 
 #ifdef STEPWAT
 #include "ST_defines.h"
