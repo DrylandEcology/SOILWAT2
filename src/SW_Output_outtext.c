@@ -497,7 +497,7 @@ void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
 		close_regular = (Bool) (SW_FileStatus->make_regular[p] && GenOutput->storeAllIterations);
 		close_layers = (Bool) (SW_FileStatus->make_soil[p] && GenOutput->storeAllIterations);
 		close_aggs = (Bool) ((SW_FileStatus->make_regular[p] || SW_FileStatus->make_soil[p])
-			&& prepare_IterationSummary);
+			&& GenOutput->prepare_IterationSummary);
 		#endif
 
 		if (GenOutput->use_OutPeriod[p]) {
@@ -511,10 +511,10 @@ void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
 
 			if (close_aggs) {
 				#ifdef STEPWAT
-				CloseFile(&SW_FileStatus->fp_reg_agg[p]);
+				CloseFile(&SW_FileStatus->fp_reg_agg[p], LogInfo);
 
 				if (close_layers) {
-					CloseFile(&SW_FileStatus->fp_soil_agg[p]);
+					CloseFile(&SW_FileStatus->fp_soil_agg[p], LogInfo);
 				}
 				#endif
 			}
