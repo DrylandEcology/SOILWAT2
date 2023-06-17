@@ -31,7 +31,7 @@ extern "C" {
   `pd` is `OutPeriod`. The index order has to match up with column names as
   defined by `SW_OUT_set_colnames`.
 */
-#define iOUT(i, k, pd, GenOutput, n_layers) \
+#define iOUT(i, pd, GenOutput, n_layers) \
             ((GenOutput.irow_OUT[(pd)]) + (GenOutput.nrow_OUT[(pd)]) * \
             (ncol_TimeOUT[(pd)] + (i)))
 
