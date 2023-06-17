@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
 	SW_CTL_setup_model(&sw, SW_OutputPtrs, &PathInfo, &LogInfo);
 
 	// read user inputs
-	SW_CTL_read_inputs_from_disk(&sw, &PathInfo, EchoInits, &LogInfo);
+	SW_CTL_read_inputs_from_disk(&sw, &PathInfo, &LogInfo);
 
 	// finalize daily weather
 	SW_WTH_finalize_all_weather(&sw.Markov, &sw.Weather, sw.Model.cum_monthdays,

@@ -275,11 +275,10 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 @param[in,out] sw Comprehensive struct of type SW_ALL containing
   all information in the simulation
 @param[in,out] PathInfo Struct holding all information about the programs path/files
-@param[in] EchoInits Flag to control if inputs are to be output to the user
 @param[in] LogInfo Holds information dealing with logfile output
 */
 void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
-                                  Bool EchoInits, LOG_INFO* LogInfo) {
+                                  LOG_INFO* LogInfo) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -343,7 +342,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
   if (debug) swprintf(" > 'swrc parameters'");
   #endif
 
-  SW_VES_read(&sw->VegEstab, EchoInits, PathInfo->InFiles,
+  SW_VES_read(&sw->VegEstab, PathInfo->InFiles,
               PathInfo->_ProjDir, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'establishment'");

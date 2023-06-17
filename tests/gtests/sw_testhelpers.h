@@ -36,7 +36,6 @@ class AllTest : public::testing::Test {
       // since the function does not copy dynamically allocated memory
 
       const char * masterfile_test = "files.in"; // relative to 'dir_test'
-      Bool EchoInits = swFALSE;
 
       // Initialize SOILWAT2 variables and read values from example input file
       LogInfo.logged = swFALSE;
@@ -45,7 +44,7 @@ class AllTest : public::testing::Test {
       PathInfo.InFiles[eFirst] = Str_Dup(masterfile_test, &LogInfo);
 
       SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
-      SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, EchoInits, &LogInfo);
+      SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo);
 
       /* Notes on messages during tests
         - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file

@@ -2635,6 +2635,10 @@ void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
 
 void _echo_all_inputs(SW_ALL* sw, char *InFiles[], LOG_INFO* LogInfo) {
 
+	if (!sw->VegEstab.use) {
+		LogError(LogInfo, LOGNOTE, "Establishment not used.\n");
+	}
+
 	_echo_inputs(&sw->Site, InFiles, LogInfo);
 	_echo_VegEstab(sw->Site.width, sw->VegEstab.parms,
 				   sw->VegEstab.count, LogInfo);
