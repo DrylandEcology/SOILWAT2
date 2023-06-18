@@ -100,7 +100,7 @@ static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
 		for (i = 0; i < sw->Site.n_layers; i++)
 		{
 			n = iOUT2(i, k + offset, pd, sw->GenOutput, sw->Site.n_layers);
-			sd = final_running_sd(SuperGlobals.runModelIterations, psd[n]);
+			sd = final_running_sd(sw->Model.SuperGlobals.runModelIterations, psd[n]);
 
 			snprintf(str, OUTSTRLEN, "%c%.*f%c%.*f",
 				_OUTSEP, OUT_DIGITS, p[n], _OUTSEP, OUT_DIGITS, sd);
@@ -207,7 +207,7 @@ void get_co2effects_agg(OutPeriod pd, SW_ALL* sw) {
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, GenO->ncol_OUT[eSW_CO2Effects]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_CO2Effects], sw);
 	}
 }
 #endif
@@ -525,7 +525,7 @@ void get_temp_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Temp]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Temp], sw);
 	}
 }
 
@@ -738,7 +738,7 @@ void get_vwcBulk_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_VWCBulk]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_VWCBulk], sw);
 	}
 }
 #endif
@@ -821,7 +821,7 @@ void get_vwcMatric_agg(OutPeriod pd, SW_ALL* sw)
 
 	ForEachSoilLayer(i, sw->Site.n_layers) {
 		/* vwcMatric at this point is identical to swcBulk */
-		convert = 1. / (1. - sw->Site.lyr[i]->fractionVolBulk_gravel) / sw->Site.lyr[i]->width;
+		convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
 
 		do_running_agg(p, psd, iOUT(i, pd, sw->GenOutput, sw->Site.n_layers),
 			sw->GenOutput.Globals.currIter, vo->vwcMatric[i] * convert);
@@ -829,7 +829,7 @@ void get_vwcMatric_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_VWCMatric]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_VWCMatric], sw);
 	}
 }
 #endif
@@ -925,7 +925,7 @@ void get_swa_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary2(p, psd, pd, NVEGTYPES, 0, &sw);
+		format_IterationSummary2(p, psd, pd, NVEGTYPES, 0, sw);
 	}
 }
 #endif
@@ -1006,7 +1006,7 @@ void get_swcBulk_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SWCBulk]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SWCBulk], sw);
 	}
 }
 
@@ -1086,6 +1086,7 @@ void get_swpMatric_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+	LOG_INFO local_log;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SWPMatric][pd];
 	get_outvalleader(sw->Model, p, pd);
@@ -1093,7 +1094,8 @@ void get_swpMatric_mem(OutPeriod pd, SW_ALL* sw)
 	ForEachSoilLayer(i, sw->Site.n_layers)
 	{
 		/* swpMatric at this point is identical to swcBulk */
-		p[iOUT(i, pd)] = SW_SWRC_SWCtoSWP(vo->swpMatric[i], sw->Site.lyr[i]);
+		p[iOUT(i, pd, sw->GenOutput, sw->Site.n_layers)] =
+						SW_SWRC_SWCtoSWP(vo->swpMatric[i], &sw->Site, i, &local_log);
 	}
 }
 
@@ -1111,6 +1113,7 @@ void get_swpMatric_agg(OutPeriod pd, SW_ALL* sw)
 	RealD val;
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+	LOG_INFO local_log;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_SWPMatric][pd],
@@ -1126,7 +1129,7 @@ void get_swpMatric_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SWPMatric]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SWPMatric], sw);
 	}
 }
 #endif
@@ -1207,7 +1210,7 @@ void get_swaBulk_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SWABulk]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SWABulk], sw);
 	}
 }
 #endif
@@ -1298,7 +1301,7 @@ void get_swaMatric_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SWAMatric]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SWAMatric], sw);
 	}
 }
 #endif
@@ -1365,7 +1368,7 @@ void get_surfaceWater_agg(OutPeriod pd, SW_ALL* sw)
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd,
-									sw->GenOutput.ncol_OUT[eSW_SurfaceWater]);
+									sw->GenOutput.ncol_OUT[eSW_SurfaceWater], sw);
 	}
 }
 #endif
@@ -1453,7 +1456,7 @@ void get_runoffrunon_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Runoff]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Runoff], sw);
 	}
 }
 #endif
@@ -1558,7 +1561,7 @@ void get_transp_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, n_layers);
+		format_IterationSummary(p, psd, pd, n_layers, sw);
 	}
 
 	/* transpiration for each vegetation type */
@@ -1573,7 +1576,7 @@ void get_transp_agg(OutPeriod pd, SW_ALL* sw)
 	}
 
 	if (sw->GenOutput.print_IterationSummary) {
-		format_IterationSummary2(p, psd, pd, NVEGTYPES, 1, &sw);
+		format_IterationSummary2(p, psd, pd, NVEGTYPES, 1, sw);
 	}
 }
 
@@ -1655,7 +1658,7 @@ void get_evapSoil_mem(OutPeriod pd, SW_ALL* sw)
 	RealD *p = sw->GenOutput.p_OUT[eSW_EvapSoil][pd];
 	get_outvalleader(sw->Model, p, pd);
 
-	ForEachEvapLayer(i, sw->Site.n_evap_layers)
+	ForEachEvapLayer(i, sw->Site.n_evap_lyrs)
 	{
 		p[iOUT(i, pd, sw->GenOutput, sw->Site.n_layers)] = vo->evap_baresoil[i];
 	}
@@ -1679,7 +1682,7 @@ void get_evapSoil_agg(OutPeriod pd, SW_ALL* sw)
 		*p = sw->GenOutput.p_OUT[eSW_EvapSoil][pd],
 		*psd = sw->GenOutput.p_OUTsd[eSW_EvapSoil][pd];
 
-	ForEachEvapLayer(i, sw->Site.n_evap_layers)
+	ForEachEvapLayer(i, sw->Site.n_evap_lyrs)
 	{
 		do_running_agg(p, psd, iOUT(i, pd, sw->GenOutput, sw->Site.n_layers),
 									sw->GenOutput.Globals.currIter, vo->evap_baresoil[i]);
@@ -1687,7 +1690,7 @@ void get_evapSoil_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_EvapSoil]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_EvapSoil], sw);
 	}
 }
 #endif
@@ -1786,7 +1789,7 @@ void get_evapSurface_agg(OutPeriod pd, SW_ALL* sw)
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd,
-								sw->GenOutput.ncol_OUT[eSW_EvapSurface]);
+								sw->GenOutput.ncol_OUT[eSW_EvapSurface], sw);
 	}
 }
 #endif
@@ -1878,7 +1881,7 @@ void get_interception_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Interception]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Interception], sw);
 	}
 }
 #endif
@@ -1947,7 +1950,7 @@ void get_soilinf_agg(OutPeriod pd, SW_ALL* sw)
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd,
-										sw->GenOutput.ncol_OUT[eSW_SoilInf]);
+										sw->GenOutput.ncol_OUT[eSW_SoilInf], sw);
 	}
 }
 #endif
@@ -2030,7 +2033,7 @@ void get_lyrdrain_agg(OutPeriod pd, SW_ALL* sw)
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
 		format_IterationSummary(p, psd, pd,
-								sw->GenOutput.ncol_OUT[eSW_LyrDrain]);
+								sw->GenOutput.ncol_OUT[eSW_LyrDrain], sw);
 	}
 }
 #endif
@@ -2137,7 +2140,7 @@ void get_hydred_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, n_layers);
+		format_IterationSummary(p, psd, pd, n_layers, sw);
 	}
 
 	/* hydraulic redistribution for each vegetation type */
@@ -2152,7 +2155,7 @@ void get_hydred_agg(OutPeriod pd, SW_ALL* sw)
 	}
 
 	if (sw->GenOutput.print_IterationSummary) {
-		format_IterationSummary2(p, psd, pd, NVEGTYPES, 1, &sw);
+		format_IterationSummary2(p, psd, pd, NVEGTYPES, 1, sw);
 	}
 }
 #endif
@@ -2248,7 +2251,7 @@ void get_aet_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_AET]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_AET], sw);
 	}
 }
 
@@ -2457,7 +2460,7 @@ void get_wetdays_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_WetDays]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_WetDays], sw);
 	}
 }
 #endif
@@ -2528,7 +2531,7 @@ void get_snowpack_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SnowPack]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SnowPack], sw);
 	}
 }
 #endif
@@ -2594,8 +2597,7 @@ void get_deepswc_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput,
-													ncol_OUT[eSW_DeepSWC]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_DeepSWC], sw);
 	}
 }
 #endif
@@ -2693,7 +2695,7 @@ void get_soiltemp_agg(OutPeriod pd, SW_ALL* sw)
 
 	if (sw->GenOutput.print_IterationSummary) {
 		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SoilTemp]);
+		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SoilTemp], sw);
 	}
 }
 #endif
@@ -2773,7 +2775,7 @@ void get_frozen_agg(OutPeriod pd, SW_ALL* sw)
 
     if (sw->GenOutput.print_IterationSummary) {
         sw->GenOutput.sw_outstr_agg[0] = '\0';
-        format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Frozen]);
+        format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Frozen], sw);
     }
 }
 #endif
