@@ -79,7 +79,7 @@ void SW_OUT_set_nrow(SW_MODEL* SW_Model, Bool use_OutPeriod[],
 	startyear = SW_Model->startyr;
 
 	#ifdef STEPWAT
-	n_yrs = SW_Model->SuperGlobals.runModelYears;
+	n_yrs = SW_Model->runModelYears;
 	endyear = startyear + n_yrs + 1;
 
 	#else

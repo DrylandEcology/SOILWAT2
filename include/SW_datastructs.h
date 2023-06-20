@@ -15,11 +15,6 @@
 #include "include/SW_Defines.h"
 #include "external/pcg/pcg_basic.h"
 
-#ifdef STEPWAT
-#include "sxw.h" // For type `SXW_t`
-#include "ST_defines.h" // For types `ModelType` and `GlobalType`
-#endif
-
 // Array-based output:
 #if defined(RSOILWAT) || defined(STEPWAT)
 #define SW_OUTARRAY
@@ -128,7 +123,8 @@ typedef struct {
 	Bool isnorth;
 
 	#ifdef STEPWAT
-	GlobalType SuperGlobals;
+	/* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
+	IntUS runModelIterations, runModelYears;
 	#endif
 
 } SW_MODEL;
@@ -986,8 +982,24 @@ typedef struct {
 		across iterations/repeats */
 	Bool prepare_IterationSummary;
 
-	ModelType Globals;
-	SXW_t SXW;
+	/* Variable from ModelType (STEPWAT2) used in SOILWAT2 */
+	IntUS currIter;
+
+	/* Variables from SXW_t (STEPWAT2) used in SOILWAT2 */
+	// transpXXX: monthly sum of soilwat's transpiration by soil layer
+	// * these are dynamic arrays that are indexed by Ilp()
+	RealD *transpTotal, // total transpiration, i.e., sum across vegetation types
+		  *transpVeg[NVEGTYPES]; // transpiration as contributed by vegetation types
+	RealF *swc; // monthly mean SWCbulk for each soil layer
+
+	// fixed monthly array:
+	RealF ppt_monthly[MAX_MONTHS];  // monthly sum of soilwat's precipitation
+	RealF temp_monthly[MAX_MONTHS];  // monthly mean soilwat's air temperature
+
+	// annual values:
+	RealF temp,   // annual mean soilwat's air temperature
+		  ppt,    // annual sum of soilwat's precipitation
+		  aet;    // annual sum of soilwat's evapotranspiration
 	#endif
 } SW_GEN_OUT;
 
