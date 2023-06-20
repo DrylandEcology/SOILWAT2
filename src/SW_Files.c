@@ -225,7 +225,7 @@ void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[],
 
 	if ((c = dirString)) {
 		strcpy(_ProjDir, c);
-		c = (char *) local_firstfile;
+		c = local_firstfile;
 		p = c + strlen(_ProjDir);
 		while (*p)
 			*(c++) = *(p++);

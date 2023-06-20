@@ -5,6 +5,7 @@
 #include "include/SW_Weather.h"
 #include "include/myMemory.h"
 #include "include/SW_Files.h"
+#include "include/SW_Main_lib.h"
 
 
 #define length(array) (sizeof(array) / sizeof(*(array))) //get length of an array
@@ -36,6 +37,7 @@ class AllTest : public::testing::Test {
       // since the function does not copy dynamically allocated memory
 
       const char * masterfile_test = "files.in"; // relative to 'dir_test'
+      Bool QuietMode = swFALSE;
 
       // Initialize SOILWAT2 variables and read values from example input file
       LogInfo.logged = swFALSE;
@@ -53,7 +55,7 @@ class AllTest : public::testing::Test {
         - we set `logfp` to NULL to silence all non-error messages during tests
         - error messages go directly to stderr (which DeathTests use to match against)
       */
-
+      sw_check_log(QuietMode, &LogInfo);
       LogInfo.logfp = NULL;
 
       SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,

@@ -43,6 +43,7 @@
 
 #ifdef STEPWAT
 #include <math.h>
+#include "sxw.h"
 #endif
 
 // Array-based output declarations:
