@@ -195,15 +195,17 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 @brief Determines string length of file being read in combined with _ProjDir.
 
 @param[in,out] InFiles Array of program in/output files
-@param[out] *firstfile File to be read in.
+@param[in] *firstfile File to be read in.
 @param[out] _ProjDir Project directory
+@param[in] LogInfo Holds information dealing with logfile output
 
 @sideeffect
 	- *firstfile File to be read in.
 	- *c Counter parameter for the firstfile.
 	- *p Parameter for length of project directory plus *c
 */
-void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[]) {
+void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[],
+					LOG_INFO *LogInfo) {
 	/* =================================================== */
 	/* 10-May-02 (cwb) enhancement allows model to be run
 	 *    in one directory while getting its input from another.
@@ -211,6 +213,7 @@ void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[]) {
 	 *    it could be useful in a standalone run.
 	 */
 	char *c, *p, dirString[FILENAME_MAX];
+	char *local_firstfile = Str_Dup(firstfile, LogInfo);
 	int file;
 
 	// Initialize `InFile` pointers to all NULL aside from index eFirst
@@ -218,17 +221,19 @@ void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[]) {
 		InFiles[file] = NULL;
 	}
 
-	DirName(firstfile, dirString);
+	DirName(local_firstfile, dirString);
 
 	if ((c = dirString)) {
 		strcpy(_ProjDir, c);
-		c = (char *) firstfile;
+		c = (char *) local_firstfile;
 		p = c + strlen(_ProjDir);
 		while (*p)
 			*(c++) = *(p++);
 		*c = '\0';
 	} else
 		_ProjDir[0] = '\0';
+
+	free(local_firstfile);
 
 }
 

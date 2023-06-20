@@ -128,7 +128,8 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 
-	SW_F_construct(PathInfo->InFiles, PathInfo->InFiles[eFirst], PathInfo->_ProjDir);
+	SW_F_construct(PathInfo->InFiles, PathInfo->InFiles[eFirst],
+                 PathInfo->_ProjDir, LogInfo);
 	SW_MDL_construct(sw->Model.newperiod, sw->Model.days_in_month);
 	SW_WTH_construct(&sw->Weather, LogInfo);
 	// delay SW_MKV_construct() until we know from inputs whether we need it
