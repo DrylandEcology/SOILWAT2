@@ -1105,6 +1105,10 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		make_soil[p] = swFALSE;
 		make_regular[p] = swFALSE;
 	}
+	#else
+	/* Silence compiler */
+	(void) make_soil;
+	(void) make_regular;
 	#endif
 
 	GenOutput->tOffset = 1;
@@ -1559,9 +1563,9 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 		}
 
 		#ifdef RSOILWAT
-		if (!isnull(sw->SW_Output[k].outfile)) {
-			Mem_Free(sw->SW_Output[k].outfile);
-			sw->SW_Output[k].outfile = NULL;
+		if (!isnull(sw->Output[k].outfile)) {
+			Mem_Free(sw->Output[k].outfile);
+			sw->Output[k].outfile = NULL;
 		}
 		#endif
 	}
@@ -2183,7 +2187,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 		// For now: rSOILWAT2's function `onGet_SW_OUT` requires that
 		// `sw->Output[k].outfile` is allocated here
 		#if defined(RSOILWAT)
-		sw->Output[k].outfile = (char *) Str_Dup(outfile);
+		sw->Output[k].outfile = (char *) Str_Dup(outfile, LogInfo);
 		#else
 		outfile[0] = '\0';
 		#endif
@@ -2540,6 +2544,8 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				}
 			}
 			#endif
+			#else
+			(void) tempstr;
 			#endif
 		} // end of loop across `used_OUTNPERIODS`
 	} // end of loop across output keys
@@ -2588,6 +2594,8 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			}
 		}
 	}
+	#else
+	(void) tOffset;
 	#endif
 
 	#ifdef SW_OUTARRAY
