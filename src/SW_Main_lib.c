@@ -154,7 +154,8 @@ void sw_init_args(int argc, char **argv, LOG_INFO* LogInfo,
 					break;
 
 				case 1: /* -f */
-					strcpy(*_firstfile, str);
+					free(*_firstfile);
+					*_firstfile = Str_Dup(str, LogInfo);
 					break;
 
 				case 2: /* -e */
