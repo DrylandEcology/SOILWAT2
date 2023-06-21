@@ -50,7 +50,7 @@ extern "C" {
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
 
-const IntUS ncol_TimeOUT[SW_OUTNPERIODS];
+extern const IntUS ncol_TimeOUT[SW_OUTNPERIODS];
 
 /* =================================================== */
 /*             Global Function Declarations            */
