@@ -162,7 +162,8 @@ void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput)
     @param[out] p Allocated array to hold output periods for every output key
 */
 void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,
-					  size_t irow_OUT[], size_t nrow_OUT[], RealD *p) {
+	size_t irow_OUT[], size_t nrow_OUT[], TimeInt tOffset, RealD *p) {
+
 	p[irow_OUT[pd] + nrow_OUT[pd] * 0] = SW_Model->simyear;
 
 	switch (pd) {

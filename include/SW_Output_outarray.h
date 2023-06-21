@@ -61,7 +61,7 @@ void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput);
 
 #ifdef RSOILWAT
 void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,
-					  size_t irow_OUT[], size_t nrow_OUT[], RealD *p);
+	size_t irow_OUT[], size_t nrow_OUT[], TimeInt tOffset, RealD *p);
 #endif
 
 #ifdef STEPWAT
