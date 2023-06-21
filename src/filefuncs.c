@@ -171,7 +171,7 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
             // exit with error and always show message
             error(buf);
 
-        } else if(fp != NULL) {
+        } else if(LogInfo->logfp != NULL) {
             // send warning message only if not silenced (fp is not NULL)
             warning(buf);
         }
