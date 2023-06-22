@@ -43,7 +43,6 @@
 
 #ifdef STEPWAT
 #include <math.h>
-#include "sxw.h"
 #endif
 
 // Array-based output declarations:
@@ -1028,16 +1027,16 @@ void get_swcBulk_agg(OutPeriod pd, SW_ALL* sw)
 */
 void get_swcBulk_SXW(OutPeriod pd, SW_ALL* sw)
 {
-	TimeInt tOffset;
+	TimeInt month;
 
 	if (pd == eSW_Month) {
 		LyrIndex i;
 		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-		tOffset = sw->GenOutput.tOffset;
+		month = sw->Model.month - sw->GenOutput.tOffset;
 
 		ForEachSoilLayer(i, sw->Site.n_layers)
 		{
-			sw->GenOutput.swc[Ilp(i, sw->Model.month - tOffset)] = vo->swcBulk[i];
+			sw->GenOutput.swc[i][month] = vo->swcBulk[i];
 		}
 	}
 }
@@ -1605,18 +1604,18 @@ void get_transp_agg(OutPeriod pd, SW_ALL* sw)
 */
 void get_transp_SXW(OutPeriod pd, SW_ALL* sw)
 {
-	TimeInt tOffset;
+	TimeInt month;
 
 	if (pd == eSW_Month) {
 		LyrIndex i;
 		int k;
 		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-		tOffset = sw->GenOutput.tOffset;
+		month = sw->Model.month - sw->GenOutput.tOffset;
 
 		/* total transpiration */
 		ForEachSoilLayer(i, sw->Site.n_layers)
 		{
-			sw->GenOutput.transpTotal[Ilp(i, sw->Model.month - tOffset)] = vo->transp_total[i];
+			sw->GenOutput.transpTotal[i][month] = vo->transp_total[i];
 		}
 
 		/* transpiration for each vegetation type */
@@ -1624,7 +1623,7 @@ void get_transp_SXW(OutPeriod pd, SW_ALL* sw)
 		{
 			ForEachSoilLayer(i, sw->Site.n_layers)
 			{
-				sw->GenOutput.transpVeg[k][Ilp(i, sw->Model.month - tOffset)] = vo->transp[k][i];
+				sw->GenOutput.transpVeg[k][i][month] = vo->transp[k][i];
 			}
 		}
 	}

@@ -988,9 +988,9 @@ typedef struct {
 	/* Variables from SXW_t (STEPWAT2) used in SOILWAT2 */
 	// transpXXX: monthly sum of soilwat's transpiration by soil layer
 	// * these are dynamic arrays that are indexed by Ilp()
-	RealD *transpTotal, // total transpiration, i.e., sum across vegetation types
-		  *transpVeg[NVEGTYPES]; // transpiration as contributed by vegetation types
-	RealF *swc; // monthly mean SWCbulk for each soil layer
+	RealD transpTotal[MAX_LAYERS][MAX_MONTHS], // total transpiration, i.e., sum across vegetation types
+		  transpVeg[NVEGTYPES][MAX_LAYERS][MAX_MONTHS]; // transpiration as contributed by vegetation types
+	RealF swc[MAX_LAYERS][MAX_MONTHS]; // monthly mean SWCbulk for each soil layer
 
 	// fixed monthly array:
 	RealF ppt_monthly[MAX_MONTHS];  // monthly sum of soilwat's precipitation
