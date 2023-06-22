@@ -4,23 +4,6 @@
 # - is currently set up for use with macports
 # - expects clang as default compiler
 
-# Problems:
-# - (Jan 2022): running unit tests crashes with
-#   "AddressSanitizer: stack-overflow" for test_severe and sanitizer tests
-#   but no error with regular unit test:
-#   affected compilers:
-#   - all available gccs: i.e., gcc9, gcc10, gcc11
-#   - no problem with any clang
-
-# - (Jan 2022): compiling any unit test fails with
-#   ```
-#   Undefined symbols for architecture x86_64:
-#     "std::runtime_error::what() const", referenced from:
-#         vtable for testing::internal::GoogleTestFailureException in libgtest.a(gtest-all.o)
-#     ...
-#   ```
-#   affected compilers: clang-13
-
 
 # Notes:
 # - googletests (Jan 2022) requires a C++11 compliant compilers,
@@ -29,23 +12,26 @@
 #   which is not enabled by default on all systems
 
 
+#--- Name of reference output
+dir_out_ref="tests/example/Output_ref"
+
 
 #--- List of (builtin and macport) compilers
 
 declare -a port_compilers=(
   "none"
   "mp-gcc10" "mp-gcc11" "mp-gcc12"
-  "mp-clang-10" "mp-clang-11" "mp-clang-12" "mp-clang-13" "mp-clang-14" "mp-clang-15"
+  "mp-clang-10" "mp-clang-11" "mp-clang-12" "mp-clang-13" "mp-clang-14" "mp-clang-15" "mp-clang-16"
 )
 declare -a ccs=(
   "clang"
   "gcc" "gcc" "gcc"
-  "clang" "clang" "clang" "clang" "clang" "clang"
+  "clang" "clang" "clang" "clang" "clang" "clang" "clang"
 )
 declare -a cxxs=(
   "clang++"
   "g++" "g++" "g++"
-  "clang++" "clang++" "clang++" "clang++" "clang++" "clang++"
+  "clang++" "clang++" "clang++" "clang++" "clang++" "clang++" "clang++"
 )
 
 
@@ -54,11 +40,11 @@ ncomp=${#ccs[@]}
 
 #--- Function to check testing output
 check_testing_output () {
-  if diff  -q -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ tests/example/Output_ref/ >/dev/null 2>&1; then
+  if diff  -q -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dir_out_ref}"/ >/dev/null 2>&1; then
     echo $'\n'"Example output is reproduced by binary!"$'\n'$'\n'
   else
     echo $'\n'"Error: Example output is not reproduced by binary!"
-    diff  -qs -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ tests/example/Output_ref/
+    diff  -qs -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dir_out_ref}"/
     echo $'\n'$'\n'
   fi
 }
@@ -96,8 +82,10 @@ for ((k = 0; k < ncomp; k++)); do
   CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_run
 
   if [ ${k} -eq 0 ]; then
-    # Save default testing output as reference for future comparisons
-    cp -r tests/example/Output tests/example/Output_ref
+    if [ ! -d "${dir_out_ref}" ]; then
+      echo "Save default testing output as reference for future comparisons"
+      cp -r tests/example/Output "${dir_out_ref}"
+    fi
   fi
   check_testing_output
 
