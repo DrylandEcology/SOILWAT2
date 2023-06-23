@@ -42,6 +42,9 @@
 # make bin_debug_severe   similar to `make bin_debug` stricter flags for
 #                  warnings and instrumentation; consider cleaning previous
 #                  build artifacts beforehand, e.g., `make clean_build`
+# make bin_leaks   similar to `make bin_debug_severe` with stricter
+#                  sanitizer settings; consider cleaning previous build
+#                  artifacts beforehand, e.g., `make clean_build`
 #
 # --- Code coverage ------
 # make cov         same as 'make test_run' with code coverage support and
@@ -370,6 +373,10 @@ bin_debug :
 .PHONY : bin_debug_severe
 bin_debug_severe :
 		./tools/run_debug_severe.sh
+
+.PHONY : bin_leaks
+bin_leaks :
+		./tools/run_bin_leaks.sh
 
 
 #--- Convenience targets for code coverage
