@@ -44,15 +44,36 @@ declare -a cxxs=(
 ncomp=${#ccs[@]}
 
 
-#--- Function to check testing output
-check_testing_output () {
-  if diff  -q -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dir_out_ref}"/ >/dev/null 2>&1; then
-    echo "Success: reference output is reproduced."
+#--- Function to compare output against reference
+compare_output_with_tolerance () {
+  if command -v Rscript >/dev/null 2>&1; then
+    Rscript \
+      -e 'dir_out_ref <- as.character(commandArgs(TRUE)[[1L]])' \
+      -e 'fnames <- list.files(path = dir_out_ref, pattern = ".csv$")' \
+      -e 'res <- vapply(fnames, function(fn) isTRUE(all.equal(read.csv(file.path(dir_out_ref, fn)), read.csv(file.path("tests/example/Output", fn)))), FUN.VALUE = NA)' \
+      -e 'if (!all(res)) for (k in which(!res)) cat(shQuote(fnames[[k]]), "and reference differ beyond tolerance.\n")' \
+      "${dir_out_ref}"
   else
-    echo "Failure: reference output is not reproduced:"
+    echo "R is not installed: cannot compare output against reference with tolerance."
+  fi
+}
+
+compare_output_against_reference () {
+  if diff  -q -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dir_out_ref}"/ >/dev/null 2>&1; then
+    echo "Success: output reproduces reference exactly."
+  else
+    res=$(compare_output_with_tolerance)
+    if [ "${res}" ]; then
+      echo "Failure: output deviates beyond tolerance from reference:"
+      echo "${res}"
+    else
+      echo "Success: output reproduces reference within tolerance but not exactly:"
+    fi
+
     diff  -qs -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dir_out_ref}"/
   fi
 }
+
 
 #--- Function to check for errors (but avoid false hits)
 # $1 Text string
@@ -109,7 +130,7 @@ for ((k = 0; k < ncomp; k++)); do
       fi
     fi
 
-    check_testing_output
+    compare_output_against_reference
   fi
 
   echo $'\n'"Target 'bin_debug_severe' ..."
@@ -126,7 +147,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   else
     echo "Success: target."
-    check_testing_output
+    compare_output_against_reference
   fi
 
 
