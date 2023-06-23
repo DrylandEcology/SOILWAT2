@@ -16,6 +16,12 @@
 dir_out_ref="tests/example/Output_ref"
 
 
+#--- Verbosity on failure
+#  * on error: if true, print entire output
+#  * on error: if false (default), print only selected parts that include the error message
+verbosity_on_error=false # options: true false
+
+
 #--- List of (builtin and macport) compilers
 
 declare -a port_compilers=(
@@ -41,12 +47,19 @@ ncomp=${#ccs[@]}
 #--- Function to check testing output
 check_testing_output () {
   if diff  -q -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dir_out_ref}"/ >/dev/null 2>&1; then
-    echo $'\n'"Example output is reproduced by binary!"$'\n'$'\n'
+    echo "Success: reference output is reproduced."
   else
-    echo $'\n'"Error: Example output is not reproduced by binary!"
+    echo "Failure: reference output is not reproduced:"
     diff  -qs -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dir_out_ref}"/
-    echo $'\n'$'\n'
   fi
+}
+
+#--- Function to check for errors (but avoid false hits)
+# $1 Text string
+# Returns lines that contain "failed", "abort", "trap", " not ", or "error"
+# ("error" besides "Werror", "Wno-error", or "*Test.Errors")
+check_error() {
+  echo "$1" | awk 'tolower($0) ~ /[^-.w]error|failed|abort|trap|( not )/'
 }
 
 
@@ -54,10 +67,10 @@ check_testing_output () {
 for ((k = 0; k < ncomp; k++)); do
   echo $'\n'$'\n'$'\n'\
        ==================================================$'\n'\
-       ${k} Test SOILWAT2 with compiler \'${port_compilers[k]}\'$'\n'\
+       ${k}')' Test SOILWAT2 with compiler \'${port_compilers[k]}\'$'\n'\
        ==================================================
 
-  echo $'\n'Set compiler ...
+  echo $'\n'"Set compiler ..."
   if [ "${port_compilers[k]}" != "none" ]; then
     res=$(sudo port select --set ${ccs[k]} ${port_compilers[k]})
 
@@ -66,54 +79,145 @@ for ((k = 0; k < ncomp; k++)); do
     fi
   fi
 
-  echo $'\n'`"${ccs[k]}" --version`
-  echo $'\n'`"${cxxs[k]}" --version`
-  echo $'\n'\
-       -----------------------------------------------------
-
   CC=${ccs[k]} CXX=${cxxs[k]} make compiler_version
 
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       Run binary with ${port_compilers[k]} ...$'\n'\
+       ${k}'-a)' Run example simulation with ${port_compilers[k]} ...$'\n'\
        --------------------------------------------------
 
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_run
+  echo $'\n'"Target 'bin_run' ..."
+  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_run 2>&1)
 
-  if [ ${k} -eq 0 ]; then
-    if [ ! -d "${dir_out_ref}" ]; then
-      echo "Save default testing output as reference for future comparisons"
-      cp -r tests/example/Output "${dir_out_ref}"
+  res_error=$(check_error "${res}")
+  if [ "${res_error}" ]; then
+    echo "Failure:"
+    if [ "${verbosity_on_error}" = true ]; then
+      echo "${res}"
+    else
+      echo "${res_error}"
     fi
-  fi
-  check_testing_output
 
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_debug_severe
-  check_testing_output
+  else
+    echo "Success: target."
+
+    if [ ${k} -eq 0 ]; then
+      if [ ! -d "${dir_out_ref}" ]; then
+        echo "Save default testing output as reference for future comparisons"
+        cp -r tests/example/Output "${dir_out_ref}"
+      fi
+    fi
+
+    check_testing_output
+  fi
+
+  echo $'\n'"Target 'bin_debug_severe' ..."
+  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_debug_severe 2>&1)
+
+  res_error=$(check_error "${res}")
+  if [ "${res_error}" ]; then
+    echo "Failure:"
+    if [ "${verbosity_on_error}" = true ]; then
+      echo "${res}"
+    else
+      echo "${res_error}"
+    fi
+
+  else
+    echo "Success: target."
+    check_testing_output
+  fi
+
 
   if command -v valgrind >/dev/null 2>&1; then
-    CC=${ccs[k]} CXX=${cxxs[k]} make clean bind_valgrind
+    echo $'\n'"Target 'bind_valgrind' ..."
+    res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bind_valgrind)
   fi
 
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       Run tests with ${port_compilers[k]} ...$'\n'\
+       ${k}'-b)' Run sanitizer on example simulation with ${port_compilers[k]}: exclude known leaks ...$'\n'\
        --------------------------------------------------
 
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean test_run
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean test_severe
+  echo $'\n'"Target 'bin_leaks' ..."
+  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_leaks 2>&1)
+
+  res_error=$(check_error "${res}")
+  if [ "${res_error}" ]; then
+    echo "Failure:"
+    if [ "${verbosity_on_error}" = true ]; then
+      echo "${res}"
+    else
+      echo "${res_error}"
+    fi
+
+  else
+    echo "Success: target."
+  fi
 
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       Run sanitizer on tests with ${port_compilers[k]}: exclude known leaks ...$'\n'\
+       ${k}'-c)' Run tests with ${port_compilers[k]} ...$'\n'\
        --------------------------------------------------
 
-  # CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
-  # https://github.com/google/sanitizers/wiki/AddressSanitizer
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean test_leaks
+  echo $'\n'"Target 'test_run' ..."
+  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test_run 2>&1)
+
+  res_error=$(check_error "${res}")
+  if [ "${res_error}" ]; then
+    echo "Failure:"
+    if [ "${verbosity_on_error}" = true ]; then
+      echo "${res}"
+    else
+      echo "${res_error}"
+    fi
+
+  else
+    echo "Success: target."
+  fi
+
+
+  echo $'\n'"Target 'test_severe' ..."
+  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test_severe 2>&1)
+
+  res_error=$(check_error "${res}")
+  if [ "${res_error}" ]; then
+    echo "Failure:"
+    if [ "${verbosity_on_error}" = true ]; then
+      echo "${res}"
+    else
+      echo "${res_error}"
+    fi
+
+  else
+    echo "Success: target."
+
+    echo $'\n'$'\n'\
+         --------------------------------------------------$'\n'\
+         ${k}'-d)' Run sanitizer on tests with ${port_compilers[k]}: exclude known leaks ...$'\n'\
+         --------------------------------------------------
+
+    # CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+    # https://github.com/google/sanitizers/wiki/AddressSanitizer
+    echo $'\n'"Target 'test_leaks' ..."
+    res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test_leaks 2>&1)
+
+    res_error=$(check_error "${res}")
+    if [ "${res_error}" ]; then
+      echo "Failure:"
+      if [ "${verbosity_on_error}" = true ]; then
+        echo "${res}"
+      else
+        echo "${res_error}"
+      fi
+
+    else
+      echo "Success: target."
+    fi
+  fi
 
 
   echo $'\n'$'\n'\
