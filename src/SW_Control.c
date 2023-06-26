@@ -78,8 +78,9 @@ static void _begin_day(SW_ALL* sw, LOG_INFO* LogInfo) {
 
 static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                      LOG_INFO* LogInfo) {
+  int localTOffset = 1; // tOffset is one when called from this function
 
-	_collect_values(sw, SW_OutputPtrs, swFALSE, sw->GenOutput.tOffset, LogInfo);
+	_collect_values(sw, SW_OutputPtrs, swFALSE, localTOffset, LogInfo);
 	SW_SWC_end_day(&sw->SoilWat, sw->Site.n_layers);
 }
 

@@ -1111,8 +1111,6 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	(void) make_regular;
 	#endif
 
-	GenOutput->tOffset = 1;
-
 	ForEachSoilLayer(i, n_layers) {
 		ForEachVegType(j) {
 			s->SWA_VegType[j][i] = 0.;
@@ -2283,7 +2281,7 @@ void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 */
 void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				  LOG_INFO* LogInfo) {
-	TimeInt localTOffset = 0;
+	TimeInt localTOffset = 0; // tOffset is zero when called from this function
 
 	_collect_values(sw, SW_OutputPtrs, swTRUE, localTOffset, LogInfo);
 }
@@ -2396,6 +2394,9 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	Bool use_help_txt, use_help_SXW;
 	#endif
 	IntUS i, outPeriod;
+
+	/* Update `tOffset` within SW_GEN_OUT for output functions */
+	sw->GenOutput.tOffset = tOffset;
 
 	#ifdef SWDEBUG
   int debug = 0;
