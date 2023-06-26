@@ -1049,11 +1049,11 @@ Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k, SW_GEN_OUT *GenOutput)
 			and `last_orig` of `SW_Output`.
 */
 void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
-		IntUS used_OUTNPERIODS, SW_OUTPUT *SW_Output, LOG_INFO *LogInfo)
+		IntUS *used_OUTNPERIODS, SW_OUTPUT *SW_Output, LOG_INFO *LogInfo)
 {
 	// Update `used_OUTNPERIODS`:
 	// SXW uses up to 2 time periods for the same output key: monthly and yearly
-	used_OUTNPERIODS = max(2, used_OUTNPERIODS);
+	*used_OUTNPERIODS = max(2, *used_OUTNPERIODS);
 
 	// STEPWAT2 requires monthly summed transpiration
 	_set_SXWrequests_helper(eSW_Transp, eSW_Month, eSW_Sum,

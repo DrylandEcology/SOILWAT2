@@ -165,7 +165,7 @@ Bool has_key_soillayers(OutKey k);
 void find_OutPeriods_inUse2(void);
 Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k, SW_GEN_OUT *GenOutput);
 void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
-		IntUS used_OUTNPERIODS, SW_OUTPUT *SW_Output, LOG_INFO *LogInfo);
+		IntUS *used_OUTNPERIODS, SW_OUTPUT *SW_Output, LOG_INFO *LogInfo);
 #endif
 
 
