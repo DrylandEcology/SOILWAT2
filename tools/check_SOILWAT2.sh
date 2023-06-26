@@ -25,7 +25,7 @@ verbosity_on_error=false # options: true false
 #--- List of (builtin and macport) compilers
 
 declare -a port_compilers=(
-  "none"
+  "default compiler"
   "mp-gcc10" "mp-gcc11" "mp-gcc12"
   "mp-clang-10" "mp-clang-11" "mp-clang-12" "mp-clang-13" "mp-clang-14" "mp-clang-15" "mp-clang-16"
 )
@@ -60,14 +60,14 @@ compare_output_with_tolerance () {
 
 compare_output_against_reference () {
   if diff  -q -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dir_out_ref}"/ >/dev/null 2>&1; then
-    echo "Success: output reproduces reference exactly."
+    echo "Simulation: success: output reproduces reference exactly."
   else
     res=$(compare_output_with_tolerance)
     if [ "${res}" ]; then
-      echo "Failure: output deviates beyond tolerance from reference:"
+      echo "Simulation: failure: output deviates beyond tolerance from reference:"
       echo "${res}"
     else
-      echo "Success: output reproduces reference within tolerance but not exactly:"
+      echo "Simulation: success: output reproduces reference within tolerance but not exactly:"
     fi
 
     diff  -qs -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dir_out_ref}"/
@@ -78,9 +78,10 @@ compare_output_against_reference () {
 #--- Function to check for errors (but avoid false hits)
 # $1 Text string
 # Returns lines that contain "failed", "abort", "trap", " not ", or "error"
-# ("error" besides "Werror", "Wno-error", or "*Test.Errors")
+# ("error" besides "Werror", "Wno-error", or
+# any unit test name: "*Test.Errors", "RNGBetaErrorsDeathTest")
 check_error() {
-  echo "$1" | awk 'tolower($0) ~ /[^-.w]error|failed|abort|trap|( not )/'
+  echo "$1" | awk 'tolower($0) ~ /[^-.w]error|failed|abort|trap|( not )/ && !/RNGBetaErrorsDeathTest/'
 }
 
 
@@ -88,16 +89,19 @@ check_error() {
 for ((k = 0; k < ncomp; k++)); do
   echo $'\n'$'\n'$'\n'\
        ==================================================$'\n'\
-       ${k}')' Test SOILWAT2 with compiler \'${port_compilers[k]}\'$'\n'\
+       ${k}')' Test SOILWAT2 with compiler \'"${port_compilers[k]}"\'$'\n'\
        ==================================================
 
   echo $'\n'"Set compiler ..."
-  if [ "${port_compilers[k]}" != "none" ]; then
+  res=""
+  if [ "${port_compilers[k]}" = "default compiler" ]; then
+    res=$(sudo port select --set ${ccs[k]} none)
+  else
     res=$(sudo port select --set ${ccs[k]} ${port_compilers[k]})
+  fi
 
-    if ( echo ${res} | grep "failed" ); then
-      continue
-    fi
+  if ( echo "${res}" | grep "failed" ); then
+    continue
   fi
 
   CC=${ccs[k]} CXX=${cxxs[k]} make compiler_version
@@ -105,7 +109,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       ${k}'-a)' Run example simulation with ${port_compilers[k]} ...$'\n'\
+       ${k}'-a)' Run example simulation with \'"${port_compilers[k]}"\'$'\n'\
        --------------------------------------------------
 
   echo $'\n'"Target 'bin_run' ..."
@@ -113,7 +117,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
-    echo "Failure:"
+    echo "Target: failure:"
     if [ "${verbosity_on_error}" = true ]; then
       echo "${res}"
     else
@@ -121,11 +125,11 @@ for ((k = 0; k < ncomp; k++)); do
     fi
 
   else
-    echo "Success: target."
+    echo "Target: success."
 
     if [ ${k} -eq 0 ]; then
       if [ ! -d "${dir_out_ref}" ]; then
-        echo "Save default testing output as reference for future comparisons"
+        echo $'\n'"Save default testing output as reference for future comparisons"
         cp -r tests/example/Output "${dir_out_ref}"
       fi
     fi
@@ -138,7 +142,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
-    echo "Failure:"
+    echo "Target: failure:"
     if [ "${verbosity_on_error}" = true ]; then
       echo "${res}"
     else
@@ -146,7 +150,7 @@ for ((k = 0; k < ncomp; k++)); do
     fi
 
   else
-    echo "Success: target."
+    echo "Target: success."
     compare_output_against_reference
   fi
 
@@ -159,7 +163,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       ${k}'-b)' Run sanitizer on example simulation with ${port_compilers[k]}: exclude known leaks ...$'\n'\
+       ${k}'-b)' Run sanitizer on example simulation with \'"${port_compilers[k]}"\': exclude known leaks$'\n'\
        --------------------------------------------------
 
   echo $'\n'"Target 'bin_leaks' ..."
@@ -167,7 +171,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
-    echo "Failure:"
+    echo "Target: failure:"
     if [ "${verbosity_on_error}" = true ]; then
       echo "${res}"
     else
@@ -175,13 +179,13 @@ for ((k = 0; k < ncomp; k++)); do
     fi
 
   else
-    echo "Success: target."
+    echo "Target: success."
   fi
 
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       ${k}'-c)' Run tests with ${port_compilers[k]} ...$'\n'\
+       ${k}'-c)' Run tests with \'"${port_compilers[k]}"\'$'\n'\
        --------------------------------------------------
 
   echo $'\n'"Target 'test_run' ..."
@@ -189,7 +193,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
-    echo "Failure:"
+    echo "Target: failure:"
     if [ "${verbosity_on_error}" = true ]; then
       echo "${res}"
     else
@@ -197,7 +201,7 @@ for ((k = 0; k < ncomp; k++)); do
     fi
 
   else
-    echo "Success: target."
+    echo "Target: success."
   fi
 
 
@@ -206,7 +210,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
-    echo "Failure:"
+    echo "Target: failure:"
     if [ "${verbosity_on_error}" = true ]; then
       echo "${res}"
     else
@@ -214,11 +218,11 @@ for ((k = 0; k < ncomp; k++)); do
     fi
 
   else
-    echo "Success: target."
+    echo "Target: success."
 
     echo $'\n'$'\n'\
          --------------------------------------------------$'\n'\
-         ${k}'-d)' Run sanitizer on tests with ${port_compilers[k]}: exclude known leaks ...$'\n'\
+         ${k}'-d)' Run sanitizer on tests with \'"${port_compilers[k]}"\': exclude known leaks$'\n'\
          --------------------------------------------------
 
     # CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
@@ -228,7 +232,7 @@ for ((k = 0; k < ncomp; k++)); do
 
     res_error=$(check_error "${res}")
     if [ "${res_error}" ]; then
-      echo "Failure:"
+      echo "Target: failure:"
       if [ "${verbosity_on_error}" = true ]; then
         echo "${res}"
       else
@@ -236,29 +240,27 @@ for ((k = 0; k < ncomp; k++)); do
       fi
 
     else
-      echo "Success: target."
+      echo "Target: success."
     fi
   fi
 
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       Unset compiler ...$'\n'\
+       Unset compiler$'\n'\
        --------------------------------------------------
 
-  if [ "${port_compilers[k]}" != "none" ]; then
-    sudo port select --set ${ccs[k]} none
-  fi
+  sudo port select --set ${ccs[k]} none
 
 done
-
-echo $'\n'$'\n'\
-     --------------------------------------------------$'\n'\
-     Complete!$'\n'\
-     --------------------------------------------------$'\n'
 
 
 #--- Cleanup
 unset -v ccs
 unset -v cxxs
 unset -v port_compilers
+
+echo $'\n'$'\n'\
+     --------------------------------------------------$'\n'\
+     Complete!$'\n'\
+     --------------------------------------------------$'\n'
