@@ -298,8 +298,8 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 			_create_csv_files(SW_FileStatus, pd, LogInfo, InFiles);
 
 			write_headers_to_csv(pd, SW_FileStatus->fp_reg[pd],
-				SW_FileStatus->fp_soil[pd], swFALSE, SW_FileStatus->make_soil,
-				SW_FileStatus->make_regular, SW_Output, n_layers, GenOutput,
+				SW_FileStatus->fp_soil[pd], swFALSE, SW_FileStatus->make_regular,
+				SW_FileStatus->make_soil, SW_Output, n_layers, GenOutput,
 				LogInfo);
 		}
 	}
@@ -319,8 +319,8 @@ void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
 			_create_csv_file_ST(-1, p, InFiles, SW_FileStatus, LogInfo);
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg_agg[p],
-				SW_FileStatus->fp_soil_agg[p], swTRUE, SW_FileStatus->make_soil,
-				SW_FileStatus->make_regular, SW_Output, n_layers, GenOutput,
+				SW_FileStatus->fp_soil_agg[p], swTRUE, SW_FileStatus->make_regular,
+				SW_FileStatus->make_soil, SW_Output, n_layers, GenOutput,
 				LogInfo);
 		}
 	}
@@ -337,8 +337,8 @@ void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
 			_create_csv_file_ST(iteration, p, InFiles, SW_FileStatus, LogInfo);
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg[p],
-				SW_FileStatus->fp_soil[p], swTRUE, SW_FileStatus->make_soil,
-				SW_FileStatus->make_regular, SW_Output, n_layers, GenOutput,
+				SW_FileStatus->fp_soil[p], swFALSE, SW_FileStatus->make_regular,
+				SW_FileStatus->make_soil, SW_Output, n_layers, GenOutput,
 				LogInfo);
 		}
 	}
