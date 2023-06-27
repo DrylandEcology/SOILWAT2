@@ -224,6 +224,11 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 		);
 	}
 
+	ForEachSoilLayer(i, n_layers) {
+		/* Default average layer temperature to zero in case values are
+		   not updated otherwise */
+		sw->SoilWat.avgLyrTemp[i] = 0.;
+	}
 
 	/* Solar radiation and PET */
 	x = sw->VegProd.bare_cov.albedo * sw->VegProd.bare_cov.fCover;
