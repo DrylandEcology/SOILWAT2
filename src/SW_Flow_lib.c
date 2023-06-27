@@ -2293,6 +2293,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 
 		// save yesterday's values for later use
 		oldavgLyrTemp[i] = avgLyrTemp[i];
+		avgLyrTemp[i] = 0.; // Default average layer temperature to zero
 	}
 
 	lyrSoil_to_lyrTemp(SW_StRegValues->tlyrs_by_slyrs, nlyrs, width, vwc, nRgr, deltaX, vwcR);
