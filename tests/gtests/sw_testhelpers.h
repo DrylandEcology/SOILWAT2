@@ -36,14 +36,13 @@ class AllTest : public::testing::Test {
       // `memcpy()` does not work to copy from a global to local attributes
       // since the function does not copy dynamically allocated memory
 
-      const char * masterfile_test = "files.in"; // relative to 'dir_test'
       Bool QuietMode = swFALSE;
 
       // Initialize SOILWAT2 variables and read values from example input file
       LogInfo.logged = swFALSE;
       LogInfo.logfp = NULL;
 
-      PathInfo.InFiles[eFirst] = Str_Dup(masterfile_test, &LogInfo);
+      PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
 
       SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
       SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo);
