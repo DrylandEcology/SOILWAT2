@@ -4,23 +4,6 @@
 # - is currently set up for use with macports
 # - expects clang as default compiler
 
-# Problems:
-# - (Jan 2022): running unit tests crashes with
-#   "AddressSanitizer: stack-overflow" for test_severe and sanitizer tests
-#   but no error with regular unit test:
-#   affected compilers:
-#   - all available gccs: i.e., gcc9, gcc10, gcc11
-#   - no problem with any clang
-
-# - (Jan 2022): compiling any unit test fails with
-#   ```
-#   Undefined symbols for architecture x86_64:
-#     "std::runtime_error::what() const", referenced from:
-#         vtable for testing::internal::GoogleTestFailureException in libgtest.a(gtest-all.o)
-#     ...
-#   ```
-#   affected compilers: clang-13
-
 
 # Notes:
 # - googletests (Jan 2022) requires a C++11 compliant compilers,
@@ -29,38 +12,76 @@
 #   which is not enabled by default on all systems
 
 
+#--- Name of reference output
+dir_out_ref="tests/example/Output_ref"
+
+
+#--- Verbosity on failure
+#  * on error: if true, print entire output
+#  * on error: if false (default), print only selected parts that include the error message
+verbosity_on_error=false # options: true false
+
 
 #--- List of (builtin and macport) compilers
 
 declare -a port_compilers=(
-  "none"
+  "default compiler"
   "mp-gcc10" "mp-gcc11" "mp-gcc12"
-  "mp-clang-10" "mp-clang-11" "mp-clang-12" "mp-clang-13" "mp-clang-14" "mp-clang-15"
+  "mp-clang-10" "mp-clang-11" "mp-clang-12" "mp-clang-13" "mp-clang-14" "mp-clang-15" "mp-clang-16"
 )
 declare -a ccs=(
   "clang"
   "gcc" "gcc" "gcc"
-  "clang" "clang" "clang" "clang" "clang" "clang"
+  "clang" "clang" "clang" "clang" "clang" "clang" "clang"
 )
 declare -a cxxs=(
   "clang++"
   "g++" "g++" "g++"
-  "clang++" "clang++" "clang++" "clang++" "clang++" "clang++"
+  "clang++" "clang++" "clang++" "clang++" "clang++" "clang++" "clang++"
 )
 
 
 ncomp=${#ccs[@]}
 
 
-#--- Function to check testing output
-check_testing_output () {
-  if diff  -q -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ tests/example/Output_ref/ >/dev/null 2>&1; then
-    echo $'\n'"Example output is reproduced by binary!"$'\n'$'\n'
+#--- Function to compare output against reference
+compare_output_with_tolerance () {
+  if command -v Rscript >/dev/null 2>&1; then
+    Rscript \
+      -e 'dir_out_ref <- as.character(commandArgs(TRUE)[[1L]])' \
+      -e 'fnames <- list.files(path = dir_out_ref, pattern = ".csv$")' \
+      -e 'res <- vapply(fnames, function(fn) isTRUE(all.equal(read.csv(file.path(dir_out_ref, fn)), read.csv(file.path("tests/example/Output", fn)))), FUN.VALUE = NA)' \
+      -e 'if (!all(res)) for (k in which(!res)) cat(shQuote(fnames[[k]]), "and reference differ beyond tolerance.\n")' \
+      "${dir_out_ref}"
   else
-    echo $'\n'"Error: Example output is not reproduced by binary!"
-    diff  -qs -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ tests/example/Output_ref/
-    echo $'\n'$'\n'
+    echo "R is not installed: cannot compare output against reference with tolerance."
   fi
+}
+
+compare_output_against_reference () {
+  if diff  -q -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dir_out_ref}"/ >/dev/null 2>&1; then
+    echo "Simulation: success: output reproduces reference exactly."
+  else
+    res=$(compare_output_with_tolerance)
+    if [ "${res}" ]; then
+      echo "Simulation: failure: output deviates beyond tolerance from reference:"
+      echo "${res}"
+    else
+      echo "Simulation: success: output reproduces reference within tolerance but not exactly:"
+    fi
+
+    diff  -qs -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dir_out_ref}"/
+  fi
+}
+
+
+#--- Function to check for errors (but avoid false hits)
+# $1 Text string
+# Returns lines that contain "failed", "abort", "trap", " not ", or "error"
+# ("error" besides "Werror", "Wno-error", or
+# any unit test name: "*Test.Errors", "RNGBetaErrorsDeathTest")
+check_error() {
+  echo "$1" | awk 'tolower($0) ~ /[^-.w]error|failed|abort|trap|( not )/ && !/RNGBetaErrorsDeathTest/'
 }
 
 
@@ -68,84 +89,178 @@ check_testing_output () {
 for ((k = 0; k < ncomp; k++)); do
   echo $'\n'$'\n'$'\n'\
        ==================================================$'\n'\
-       ${k} Test SOILWAT2 with compiler \'${port_compilers[k]}\'$'\n'\
+       ${k}')' Test SOILWAT2 with compiler \'"${port_compilers[k]}"\'$'\n'\
        ==================================================
 
-  echo $'\n'Set compiler ...
-  if [ "${port_compilers[k]}" != "none" ]; then
+  echo $'\n'"Set compiler ..."
+  res=""
+  if [ "${port_compilers[k]}" = "default compiler" ]; then
+    res=$(sudo port select --set ${ccs[k]} none)
+  else
     res=$(sudo port select --set ${ccs[k]} ${port_compilers[k]})
-
-    if ( echo ${res} | grep "failed" ); then
-      continue
-    fi
   fi
 
-  echo $'\n'`"${ccs[k]}" --version`
-  echo $'\n'`"${cxxs[k]}" --version`
-  echo $'\n'\
-       -----------------------------------------------------
+  if ( echo "${res}" | grep "failed" ); then
+    continue
+  fi
 
   CC=${ccs[k]} CXX=${cxxs[k]} make compiler_version
 
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       Run binary with ${port_compilers[k]} ...$'\n'\
+       ${k}'-a)' Run example simulation with \'"${port_compilers[k]}"\'$'\n'\
        --------------------------------------------------
 
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_run
+  echo $'\n'"Target 'bin_run' ..."
+  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_run 2>&1)
 
-  if [ ${k} -eq 0 ]; then
-    # Save default testing output as reference for future comparisons
-    cp -r tests/example/Output tests/example/Output_ref
+  res_error=$(check_error "${res}")
+  if [ "${res_error}" ]; then
+    echo "Target: failure:"
+    if [ "${verbosity_on_error}" = true ]; then
+      echo "${res}"
+    else
+      echo "${res_error}"
+    fi
+
+  else
+    echo "Target: success."
+
+    if [ ${k} -eq 0 ]; then
+      if [ ! -d "${dir_out_ref}" ]; then
+        echo $'\n'"Save default testing output as reference for future comparisons"
+        cp -r tests/example/Output "${dir_out_ref}"
+      fi
+    fi
+
+    compare_output_against_reference
   fi
-  check_testing_output
 
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_debug_severe
-  check_testing_output
+  echo $'\n'"Target 'bin_debug_severe' ..."
+  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_debug_severe 2>&1)
+
+  res_error=$(check_error "${res}")
+  if [ "${res_error}" ]; then
+    echo "Target: failure:"
+    if [ "${verbosity_on_error}" = true ]; then
+      echo "${res}"
+    else
+      echo "${res_error}"
+    fi
+
+  else
+    echo "Target: success."
+    compare_output_against_reference
+  fi
+
 
   if command -v valgrind >/dev/null 2>&1; then
-    CC=${ccs[k]} CXX=${cxxs[k]} make clean bind_valgrind
+    echo $'\n'"Target 'bind_valgrind' ..."
+    res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bind_valgrind)
   fi
 
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       Run tests with ${port_compilers[k]} ...$'\n'\
+       ${k}'-b)' Run sanitizer on example simulation with \'"${port_compilers[k]}"\': exclude known leaks$'\n'\
        --------------------------------------------------
 
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean test_run
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean test_severe
+  echo $'\n'"Target 'bin_leaks' ..."
+  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_leaks 2>&1)
 
+  res_error=$(check_error "${res}")
+  if [ "${res_error}" ]; then
+    echo "Target: failure:"
+    if [ "${verbosity_on_error}" = true ]; then
+      echo "${res}"
+    else
+      echo "${res_error}"
+    fi
 
-  echo $'\n'$'\n'\
-       --------------------------------------------------$'\n'\
-       Run sanitizer on tests with ${port_compilers[k]}: exclude known leaks ...$'\n'\
-       --------------------------------------------------
-
-  # CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
-  # https://github.com/google/sanitizers/wiki/AddressSanitizer
-  CC=${ccs[k]} CXX=${cxxs[k]} make clean test_leaks
-
-
-  echo $'\n'$'\n'\
-       --------------------------------------------------$'\n'\
-       Unset compiler ...$'\n'\
-       --------------------------------------------------
-
-  if [ "${port_compilers[k]}" != "none" ]; then
-    sudo port select --set ${ccs[k]} none
+  else
+    echo "Target: success."
   fi
+
+
+  echo $'\n'$'\n'\
+       --------------------------------------------------$'\n'\
+       ${k}'-c)' Run tests with \'"${port_compilers[k]}"\'$'\n'\
+       --------------------------------------------------
+
+  echo $'\n'"Target 'test_run' ..."
+  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test_run 2>&1)
+
+  res_error=$(check_error "${res}")
+  if [ "${res_error}" ]; then
+    echo "Target: failure:"
+    if [ "${verbosity_on_error}" = true ]; then
+      echo "${res}"
+    else
+      echo "${res_error}"
+    fi
+
+  else
+    echo "Target: success."
+  fi
+
+
+  echo $'\n'"Target 'test_severe' ..."
+  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test_severe 2>&1)
+
+  res_error=$(check_error "${res}")
+  if [ "${res_error}" ]; then
+    echo "Target: failure:"
+    if [ "${verbosity_on_error}" = true ]; then
+      echo "${res}"
+    else
+      echo "${res_error}"
+    fi
+
+  else
+    echo "Target: success."
+
+    echo $'\n'$'\n'\
+         --------------------------------------------------$'\n'\
+         ${k}'-d)' Run sanitizer on tests with \'"${port_compilers[k]}"\': exclude known leaks$'\n'\
+         --------------------------------------------------
+
+    # CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+    # https://github.com/google/sanitizers/wiki/AddressSanitizer
+    echo $'\n'"Target 'test_leaks' ..."
+    res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test_leaks 2>&1)
+
+    res_error=$(check_error "${res}")
+    if [ "${res_error}" ]; then
+      echo "Target: failure:"
+      if [ "${verbosity_on_error}" = true ]; then
+        echo "${res}"
+      else
+        echo "${res_error}"
+      fi
+
+    else
+      echo "Target: success."
+    fi
+  fi
+
+
+  echo $'\n'$'\n'\
+       --------------------------------------------------$'\n'\
+       Unset compiler$'\n'\
+       --------------------------------------------------
+
+  sudo port select --set ${ccs[k]} none
 
 done
-
-echo $'\n'$'\n'\
-     --------------------------------------------------$'\n'\
-     Complete!$'\n'\
-     --------------------------------------------------$'\n'
 
 
 #--- Cleanup
 unset -v ccs
 unset -v cxxs
 unset -v port_compilers
+
+echo $'\n'$'\n'\
+     --------------------------------------------------$'\n'\
+     Complete!$'\n'\
+     --------------------------------------------------$'\n'
