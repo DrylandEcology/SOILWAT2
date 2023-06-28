@@ -151,6 +151,8 @@ void SW_FLW_init_run(SW_SOILWAT* SW_SoilWat) {
 
 		SW_SoilWat->swcBulk[Today][i] = 0.;
 		SW_SoilWat->drain[i] = 0.;
+
+		SW_SoilWat->avgLyrTemp[i] = 0.;
 	}
 
 	//When running as a library make sure these are set to zero.
@@ -217,18 +219,13 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 			&sw->StRegValues.soil_temp_init,
 			sw->Weather.now.temp_avg,
 			sw->SoilWat.swcBulk[Today],
-			sw->SoilWat.avgLyrTemp, // yesterday's soil temperature values
-			&sw->Weather.surfaceAvg, // yesterday's soil surface temperature
+			&sw->Weather.surfaceAvg,
+			sw->SoilWat.avgLyrTemp,
 			sw->SoilWat.lyrFrozen,
 			LogInfo
 		);
 	}
 
-	ForEachSoilLayer(i, n_layers) {
-		/* Default average layer temperature to zero in case values are
-		   not updated otherwise */
-		sw->SoilWat.avgLyrTemp[i] = 0.;
-	}
 
 	/* Solar radiation and PET */
 	x = sw->VegProd.bare_cov.albedo * sw->VegProd.bare_cov.fCover;

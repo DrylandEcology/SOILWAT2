@@ -1439,11 +1439,13 @@ void SW_ST_setup_run(
 	Bool *soil_temp_init,
 	double airTemp,
 	double swc[],
-	double oldavgLyrTemp[],
 	double *surfaceAvg,
+	double avgLyrTemp[],
 	double* lyrFrozen,
 	LOG_INFO* LogInfo
 ) {
+
+	LyrIndex i;
 
 	#ifdef SWDEBUG
 	int debug = 0;
@@ -1456,17 +1458,47 @@ void SW_ST_setup_run(
 		}
 		#endif
 
-		*surfaceAvg = airTemp;
+		/*
+		Calculate soil temperature layer profile and
+		translation matrix between soil layer profile and soil temperature layer profile.
+		Then, calculate initial values of members of SW_StRegValues across
+		soil temperature layer profile,
+		i.e., interpolate from initial site values across soil layer profile,
+		including soil temperature, soil density, field capacity, and wilting point.
+		*/
 		soil_temperature_setup(
-			SW_StRegValues, SW_Site->soilBulk_density,
-			SW_Site->width, oldavgLyrTemp, SW_Site->Tsoil_constant,
-			SW_Site->n_layers, SW_Site->swcBulk_fieldcap,
-			SW_Site->swcBulk_wiltpt, SW_Site->stDeltaX, SW_Site->stMaxDepth,
-			SW_Site->stNRGR, ptr_stError, soil_temp_init, LogInfo
+			SW_StRegValues,
+			SW_Site->soilBulk_density,
+			SW_Site->width,
+			SW_Site->avgLyrTempInit,
+			SW_Site->Tsoil_constant,
+			SW_Site->n_layers,
+			SW_Site->swcBulk_fieldcap,
+			SW_Site->swcBulk_wiltpt,
+			SW_Site->stDeltaX,
+			SW_Site->stMaxDepth,
+			SW_Site->stNRGR,
+			ptr_stError,
+			soil_temp_init,
+			LogInfo
 		);
 
-		set_frozen_unfrozen(SW_Site->n_layers, oldavgLyrTemp, swc,
-					SW_Site->swcBulk_saturated, SW_Site->width, lyrFrozen);
+		/* Initialize soil temperature and frozen status across the soil layer profile. */
+		ForEachSoilLayer(i, SW_Site->n_layers) {
+			avgLyrTemp[i] = SW_Site->avgLyrTempInit[i];
+		}
+
+		set_frozen_unfrozen(
+			SW_Site->n_layers,
+			SW_Site->avgLyrTempInit,
+			swc,
+			SW_Site->swcBulk_saturated,
+			SW_Site->width,
+			lyrFrozen
+		);
+
+		/* Initialize surface temperature */
+		*surfaceAvg = airTemp;
 	}
 }
 
@@ -1500,7 +1532,7 @@ void SW_ST_setup_run(
 */
 
 void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
-	double width[], double oldavgLyrTemp[], double sTconst, unsigned int nlyrs,
+	double width[], double avgLyrTempInit[], double sTconst, unsigned int nlyrs,
 	double fc[], double wp[], double deltaX, double theMaxDepth,
 	unsigned int nRgr, Bool *ptr_stError, Bool *soil_temp_init, LOG_INFO* LogInfo) {
 
@@ -1635,8 +1667,13 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 	// initial soil temperature for layers of the soil temperature profile
 	lyrSoil_to_lyrTemp(SW_StRegValues->tlyrs_by_slyrs, nlyrs, width, bDensity, nRgr, deltaX,
 		SW_StRegValues->bDensityR);
-	lyrSoil_to_lyrTemp_temperature(nlyrs, SW_StRegValues->depths, oldavgLyrTemp, sTconst, nRgr,
+	lyrSoil_to_lyrTemp_temperature(nlyrs, SW_StRegValues->depths, avgLyrTempInit, sTconst, nRgr,
 		SW_StRegValues->depthsR, theMaxDepth, SW_StRegValues->oldavgLyrTempR);
+
+	// Initial surface soil temperature `oldavgLyrTempR[0]` is not used;
+	// `soil_temperature_today()` utilizes today's (not yesterday's) surface temperatures
+	// here, set to missing so that it would produce error/unreasonable values in case it would be used by mistake
+	SW_StRegValues->oldavgLyrTempR[0] = SW_MISSING;
 
 	// units of fc and wp are [cm H2O]; units of fcR and wpR are [m3/m3]
 	for (i = 0; i < nlyrs; i++){
@@ -1652,7 +1689,7 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 	if (debug) {
 		for (j = 0; j < nlyrs; j++) {
 			swprintf("\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, oldT=%2.2f",
-				j, SW_StRegValues->depths[j], fc[j], wp[j], bDensity[j], oldavgLyrTemp[j]);
+				j, SW_StRegValues->depths[j], fc[j], wp[j], bDensity[j], avgLyrTempInit[j]);
 		}
 
 		swprintf("\nConv ST oldSurfaceTR=%2.2f", SW_StRegValues->oldavgLyrTempR[0]);

@@ -961,15 +961,16 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 
 @param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
 	soil water related values
-@param[in] site_avgLyrTemp Initial soil temperature for each soil layer
 @param[in] endyr Ending year for model run
-@param[in] n_layers Number of layers of soil within the simulation run
 @param[in] InFiles Array of program in/output files
 @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_SWC_read(SW_SOILWAT* SW_SoilWat, RealD site_avgLyrTemp[],
-	TimeInt endyr, LyrIndex n_layers, char *InFiles[],
-	LOG_INFO* LogInfo) {
+void SW_SWC_read(
+	SW_SOILWAT* SW_SoilWat,
+	TimeInt endyr,
+	char *InFiles[],
+	LOG_INFO* LogInfo
+) {
 	/* =================================================== */
 	/* HISTORY
 	 *  1/25/02 - cwb - removed unused records of logfile and
@@ -979,11 +980,6 @@ void SW_SWC_read(SW_SOILWAT* SW_SoilWat, RealD site_avgLyrTemp[],
 	FILE *f;
 	int lineno = 0, nitems = 4;
 	char inbuf[MAX_FILENAMESIZE];
-// gets the soil temperatures from where they are read in the SW_Site struct for use later
-// SW_Site.c must call it's read function before this, or it won't work
-	LyrIndex i;
-	ForEachSoilLayer(i, n_layers)
-		SW_SoilWat->avgLyrTemp[i] = site_avgLyrTemp[i];
 
 	char *MyFileName = InFiles[eSoilwat];
 	f = OpenFile(MyFileName, "r", LogInfo);
