@@ -1174,18 +1174,16 @@ void hydraulic_redistribution(
 @brief Interpolate soil temperature layer temperature values to
      input soil profile depths/layers.
 
-@param cor Two dimensional array containing soil temperature data.
-@param nlyrTemp The number of soil temperature layers.
-@param depth_Temp Depths of soil temperature layers (cm).
-@param avgLyrTempR Temperature values of soil temperature layers (&deg;C).
-@param nlyrSoil Number of soil layers.
-@param depth_Soil Depths of soil layers (cm).
-@param width_Soil Witdths of soil layers (cm).
-@param avgLyrTemp Temperature values of soil layers (&deg;C).
-@param temperatureRangeR Temperature ranges of each layers based on avgLyrTempR
-@param temperatureRange Temperature range values at each soil layer
-
-@sideeffect avgLyrTemp Updated temperatature values soil layers (&deg;C).
+@param[in] cor Two dimensional array containing soil temperature data.
+@param[in] nlyrTemp The number of soil temperature layers.
+@param[in] depth_Temp Depths of soil temperature layers (cm).
+@param[in] avgLyrTempR Temperature values of soil temperature layers (&deg;C).
+@param[in] nlyrSoil Number of soil layers.
+@param[in] depth_Soil Depths of soil layers (cm).
+@param[in] width_Soil Witdths of soil layers (cm).
+@param[out] avgLyrTemp Temperature values of soil layers (&deg;C).
+@param[in] temperatureRangeR Temperature ranges of each layers based on avgLyrTempR
+@param[out] temperatureRange Temperature range values at each soil layer
 */
 
 void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
@@ -1265,17 +1263,14 @@ void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
 @brief Interpolate soil layer temperature values to soil temperature profile
    depths/layers.
 
-@param nlyrSoil Number of soil layers.
-@param depth_Soil Depths of soil layers (cm).
-@param avgLyrTemp Temperatature values of soil layers (&deg;C).
-@param endTemp Final input for avgLyrTemp variables
-@param nlyrTemp Number of soil temperature layers.
-@param depth_Temp Depths of soil temperature layers (cm).
-@param maxTempDepth Maximum depth temperature (&deg;C).
-@param avgLyrTempR Array of today's (regression)-layer soil temperature values.
-
-@sideeffect avgLyrTempR Updated array of today's (regression)-layer soil temperature values.
-
+@param[in] nlyrSoil Number of soil layers.
+@param[in] depth_Soil Depths of soil layers (cm).
+@param[in] avgLyrTemp Temperature values of soil layers (&deg;C).
+@param[in] endTemp Final input for avgLyrTemp variables
+@param[in] nlyrTemp Number of soil temperature layers.
+@param[in] depth_Temp Depths of soil temperature layers (cm).
+@param[in] maxTempDepth Maximum depth temperature (&deg;C).
+@param[out] avgLyrTempR Array of today's (regression)-layer soil temperature values.
 */
 
 void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
@@ -1333,7 +1328,7 @@ void lyrSoil_to_lyrTemp_temperature(unsigned int nlyrSoil, double depth_Soil[],
 @param[in] var Soil layer values to be interpolated.
 @param[in] nlyrTemp Number of soil temperature layers.
 @param[in] width_Temp Width of the soil temperature layers.
-@param[in,out] res Values interpolated to soil temperature depths.
+@param[out] res Values interpolated to soil temperature depths.
 
 */
 
@@ -1381,8 +1376,8 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR][MAX_LAYERS + 1], unsigned int nly
 
 Based on equations from Parton et al. 1998. Equations 5 & 6. @cite Parton1998
 
-@param airTempAvg Average air temperature of the area (&deg;C).
-@param snow Snow-water-equivalent of the area (cm).
+@param[in] airTempAvg Average air temperature of the area (&deg;C).
+@param[in] snow Snow-water-equivalent of the area (cm).
 
 @return tSoilAvg Average temperature of the soil surface (&deg;C).
 */
@@ -1416,21 +1411,27 @@ void SW_ST_init_run(ST_RGR_VALUES* StRegValues) {
 /**
 	@brief Initialize soil temperature for a simulation run.
 
-	@param[in,out] SW_StRegValues Struct of type SW_StRegValues which keeps
+  Calculate soil temperature layer profile and
+  translation matrix between soil layer profile and soil temperature layer profile.
+  Then, calculate initial values of members of SW_StRegValues across
+  soil temperature layer profile,
+  i.e., interpolate from initial site values across soil layer profile,
+  including soil temperature, soil density, field capacity, and wilting point.
+  Initialize soil temperature and frozen status across the soil layer profile.
+
+	@param[out] SW_StRegValues Struct of type ST_RGR_VALUES which keeps
 		track of variables used within `soil_temperature()`
-	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+	@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in,out] ptr_stError Boolean indicating whether there was an error.
 	@param[in,out] soil_temp_init Flag specifying if the values for
 		`soil_temperature()` have been initialized
-	@param[in] airTemp Average daily air temperature (&deg;C).
+	@param[in] airTemp Initial (today's) air temperature (&deg;C).
 	@param[in] swc Soilwater content in each layer before drainage
 		(m<SUP>3</SUP> H<SUB>2</SUB>O).
-	@param[in] oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
-	@param[out] surfaceAvg Initialized surface air temperatature (&deg;C).
-	@param[out] lyrFrozen Frozen information at each layer.
+	@param[out] surfaceAvg Initialized surface temperature (&deg;C).
+	@param[out] avgLyrTemp Initialized soil temperature of the soil layer profile (&deg;C).
+	@param[out] lyrFrozen Frozen information at each soil layer.
 	@param[in] LogInfo Holds information dealing with logfile output
-
-	@sideeffect *ptr_stError Updated boolean indicating if there was an error.
 */
 void SW_ST_setup_run(
 	ST_RGR_VALUES* SW_StRegValues,
@@ -1505,30 +1506,25 @@ void SW_ST_setup_run(
 /**
 @brief Initialize soil structure and properties for soil temperature simulation.
 
-@param SW_StRegValues Struct of type SW_StRegValues which keeps track of
-	variables used within `soil_temperature()`
-@param bDensity An array of the bulk density of the whole soil per soil layer,
+@param[out] SW_StRegValues Struct of type ST_RGR_VALUES which keeps track of
+	variables used within `soil_temperature()`.
+@param[in] bDensity An array of the bulk density of the whole soil per soil layer,
   (g/cm3).
-@param width The width of the layers (cm).
-@param oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
-@param sTconst The soil temperature at a soil depth where it stays constant as
-	lower boundary condition (&deg;C).
-@param nlyrs The number of layers in the soil profile.
-@param fc An array of the field capacity of the soil layers (cm/layer).
-@param wp An array of the wilting point of the soil layers (cm/layer).
-@param deltaX The depth increment for the soil temperature calculations (cm).
-@param theMaxDepth the lower bound of the equation (cm).
-@param nRgr the number of regressions (1 extra value is needed for the avgLyrTempR).
-@param ptr_stError Booleans status of soil temperature error in *ptr_stError.
-@param soil_temp_init Flag specifying if the values for
+@param[in] width The width of the layers (cm).
+@param[in] avgLyrTempInit An array of initial soil temperature values (&deg;C)
+  utilized to interpolate initial soil temperature values at soil temperate layers.
+@param[in] sTconst The soil temperature at a soil depth where it stays constant
+  , i.e., `theMaxDepth`, as lower boundary condition (&deg;C).
+@param[in] nlyrs The number of layers in the soil profile.
+@param[in] fc An array of the field capacity of the soil layers (cm/layer).
+@param[in] wp An array of the wilting point of the soil layers (cm/layer).
+@param[in] deltaX The depth increment for the soil temperature calculations (cm).
+@param[in] theMaxDepth the lower bound of the equation (cm).
+@param[in] nRgr the number of regressions (1 extra value is needed for the avgLyrTempR).
+@param[in,out] ptr_stError Booleans status of soil temperature error in *ptr_stError.
+@param[out] soil_temp_init Flag specifying if the values for
 	`soil_temperature()` have been initialized
 @param[in] LogInfo Holds information dealing with logfile output
-
-@sideeffect
-  - *ptr_stError Updated booleans status of soil temperature error in *ptr_stError.
-  - ST_RGR_VALUES.depths Depths of soil layer profile (cm).
-  - ST_RGR_VALUES.depthsR Evenly spaced depths of soil temperature profile (cm).
-  - ST_RGR_VALUES.tlyrs_by_slyrs Values of correspondance between soil profile layers and soil temperature layers.
 */
 
 void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
@@ -1709,15 +1705,12 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 
 Equations based on Parton 1998. @cite Parton1998
 
-@param nlyrs Number of layers.
-@param avgLyrTemp The temperature of the soil layers (&deg;C).
-@param swc The soil water content of the soil layers (cm/cm).
-@param swc_sat The satured soil water content of the soil layers (cm/cm).
-@param width The width of them soil layers (cm).
-@param lyrFrozen Frozen information at each layer.
-
-@sideeffect update module level variable ST_RGR_VALUES.lyrFrozen. lyrFrozen
-    is a Boolean (0 for not frozen, 1 for frozen)
+@param[in] nlyrs Number of layers.
+@param[in] avgLyrTemp The temperature of the soil layers (&deg;C).
+@param[in] swc The soil water content of the soil layers (cm/cm).
+@param[in] swc_sat The satured soil water content of the soil layers (cm/cm).
+@param[in] width The width of them soil layers (cm).
+@param[out] lyrFrozen Frozen information at each layer.
 */
 
 void set_frozen_unfrozen(unsigned int nlyrs, double avgLyrTemp[], double swc[],
@@ -1745,7 +1738,7 @@ void set_frozen_unfrozen(unsigned int nlyrs, double avgLyrTemp[], double swc[],
 Based on equations from Eitzinger 2000. @cite Eitzinger2000
 
 @param oldavgLyrTemp An array of yesterday's temperature values (&deg;C).
-@param avgLyrTemp Temperatature values soil layers (&deg;C).
+@param avgLyrTemp Temperature values soil layers (&deg;C).
 @param shParam A constant for specific heat capacity equation.
 @param nlyrs Number of layers available.
 @param vwc An array of temperature-layer VWC values (cm/layer).
@@ -1848,8 +1841,12 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double
 /**
 @brief Calculate today's soil temperature for each layer.
 
-The algorithm selects a shorter time step if required for a stable solution
-(@cite Parton1978, @cite Parton1984).
+The function
+  - calculates soil temperature values in arrays avgLyrTempR and temperatureRangeR
+  - selects a shorter time step if required for a stable solution
+    (@cite Parton1978, @cite Parton1984) and returns the updated value of *ptr_dTime
+  - updates the status of soil temperature error in *ptr_stError.
+
 
 @param[in,out] ptr_dTime Yesterday's successful time step in seconds.
 @param[in] deltaX The depth increment for the soil temperature (regression) calculations (cm).
@@ -1869,7 +1866,7 @@ The algorithm selects a shorter time step if required for a stable solution
 @param[in] shParam A constant for specific heat capacity equation.
 @param[in,out] *ptr_stError A boolean indicating whether there was an error.
 @param[in] surface_range Temperature range at the surface (&deg;C)
-@param[in,out] temperatureRangeR An array of temperature ranges at each (regression)-layer to be interpolated (&deg;C)
+@param[out] temperatureRangeR An array of temperature ranges at each (regression)-layer to be interpolated (&deg;C)
 @param[in] depthsR Evenly spaced depths of the soil temperature profile (cm).
 @param[in] year Current year being run in the simulation
 @param[in] doy Day of the year (base1) [1-366]
@@ -1878,9 +1875,6 @@ The algorithm selects a shorter time step if required for a stable solution
 	avgLyrTempR[0] and temperatureRangeR[0] represent soil surface conditions.
 
 @sideeffect
-  - Updated soil temperature values in arrays avgLyrTempR and temperatureRangeR.
-  - Realized time step for today in updated value of ptr_dTime.
-  - Updated status of soil temperature error in *ptr_stError.
 */
 
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
@@ -2148,9 +2142,9 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 
 @param[in,out] SW_StRegValues Struct of type SW_StRegValues which keeps
 	track of variables used within `soil_temperature()`
-@param[in,out] *surface_max Maxmimum surface temperature (&deg;C)
-@param[in,out] *surface_min Minimum surface temperature (&deg;C)
-@param[in,out] lyrFrozen Frozen information at each layer.
+@param[out] *surface_max Maxmimum surface temperature (&deg;C)
+@param[out] *surface_min Minimum surface temperature (&deg;C)
+@param[out] lyrFrozen Frozen information at each layer.
 @param[in] airTemp Average daily air temperature (&deg;C).
 @param[in] pet Potential evapotranspiration rate (cm/day).
 @param[in] aet Actual evapotranspiration (cm/day).
@@ -2160,10 +2154,9 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param[in] bDensity An array of the bulk density of the whole soil per soil layer
   (g/cm<SUP>3</SUP>).
 @param[in] width The width of the layers (cm).
-@param[in,out] avgLyrTemp Temperatature values of soil layers
+@param[in,out] avgLyrTemp Temperature values of soil layers
 (yesterday's values for input; today's values as output)  (&deg;C).
-@param[in,out] surfaceAvg Average daily surface air temperatature
-(yesterday's value for input; today's value as output) (&deg;C).
+@param[out] surfaceAvg Average daily surface air temperature
 @param[in] nlyrs Number of layers in the soil profile.
 @param[in] bmLimiter Biomass limiter constant (300 g/m<SUP>2</SUP>).
 @param[in] t1Param1 Constant for the avg temp at the top of soil equation (15).
@@ -2187,8 +2180,6 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param[out] minLyrTemperature An array holding all of the layers minimum temperature (&deg;C)
 @param[out] *ptr_stError Boolean indicating whether there was an error.
 @param[in] LogInfo Holds information dealing with logfile output
-
-@sideeffect *ptr_stError Updated boolean indicating whether there was an error.
 */
 
 void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
