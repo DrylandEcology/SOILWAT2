@@ -41,9 +41,9 @@ jobs:
       run: make clean test_rep3rnd
 
     - name: Unit tests (seed 19456)
-	run: |
-	  CC=clang CXX=clang++ make clean_test test
-	  bin/sw_test --gtest_shuffle --gtest_random_seed=19456
+      run: |
+        CC=clang CXX=clang++ make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_random_seed=19456
 
     - name: Severe unit tests (without sanitizers)
       if: ${{ runner.os == 'macOS' }}
