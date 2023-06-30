@@ -56,12 +56,12 @@ typedef struct {
 typedef struct {
 
 	double depths[MAX_LAYERS],  //soil layer depths of SoilWat soil
-	       depthsR[MAX_ST_RGR],//evenly spaced soil layer depths for soil temperature calculations
-		   	 fcR[MAX_ST_RGR],//field capacity of soil layers for soil temperature calculations
-		   	 wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
-		   	 bDensityR[MAX_ST_RGR],//bulk density of the whole soil per soil layer for soil temperature calculations
+	       depthsR[MAX_ST_RGR],//evenly spaced depths of soil temperature layer profile
+		   	 fcR[MAX_ST_RGR],//field capacity of soil temperature layer profile, i.e., at `depthsR[]`
+		   	 wpR[MAX_ST_RGR], //wilting point of soil temperature layer profile, i.e., at `depthsR[]`
+		   	 bDensityR[MAX_ST_RGR],//bulk density of the whole soil of soil temperature layer profile, i.e., at `depthsR[]`
 		   	 oldsFusionPool_actual[MAX_LAYERS],
-             oldavgLyrTempR[MAX_ST_RGR];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
+             oldavgLyrTempR[MAX_ST_RGR];//yesterdays soil temperature of soil temperature layer profile, i.e., at `depthsR[]`; Note: index 0 is surface temperature
 
 	double tlyrs_by_slyrs[MAX_ST_RGR][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers
 
@@ -241,7 +241,7 @@ typedef struct {
 		fractionWeightMatric_sand[MAX_LAYERS], /* sand content (< 2 mm & > . mm) as weight-fraction of matric soil (g/g) */
 		fractionWeightMatric_clay[MAX_LAYERS], /* clay content (< . mm & > . mm) as weight-fraction of matric soil (g/g) */
 		impermeability[MAX_LAYERS], /* fraction of how impermeable a layer is (0=permeable, 1=impermeable)    */
-		avgLyrTemp[MAX_LAYERS], /* initial soil temperature for each soil layer */
+		avgLyrTempInit[MAX_LAYERS], /* initial soil temperature for each soil layer */
 
 		/* Derived soil characteristics */
 		soilMatric_density[MAX_LAYERS], /* matric soil density of the < 2 mm fraction, i.e., gravel component excluded, (g/cm3) */

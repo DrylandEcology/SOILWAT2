@@ -362,8 +362,12 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
   if (debug) swprintf(" > 'CO2'");
   #endif
 
-  SW_SWC_read(&sw->SoilWat, sw->Site.avgLyrTemp, sw->Model.endyr,
-              sw->Site.n_layers, PathInfo->InFiles, LogInfo);
+  SW_SWC_read(
+    &sw->SoilWat,
+    sw->Model.endyr,
+    PathInfo->InFiles,
+    LogInfo
+  );
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'swc'");
   if (debug) swprintf(" completed.\n");
