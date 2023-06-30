@@ -1650,7 +1650,7 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 		SW_Site->fractionWeightMatric_sand[lyrno] = psand;
 		SW_Site->fractionWeightMatric_clay[lyrno] = pclay;
 		SW_Site->impermeability[lyrno] = imperm;
-		SW_Site->avgLyrTemp[lyrno] = soiltemp;
+		SW_Site->avgLyrTempInit[lyrno] = soiltemp;
 
 		if (lyrno >= MAX_LAYERS) {
 			CloseFile(&f, LogInfo);
@@ -1768,7 +1768,7 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
     SW_Site->fractionWeightMatric_sand[lyrno] = psand[i];
     SW_Site->fractionWeightMatric_clay[lyrno] = pclay[i];
     SW_Site->impermeability[lyrno] = imperm[i];
-    SW_Site->avgLyrTemp[lyrno] = soiltemp[i];
+    SW_Site->avgLyrTempInit[lyrno] = soiltemp[i];
   }
 
 
@@ -2537,7 +2537,7 @@ void _echo_inputs(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 		LogError(LogInfo, LOGNOTE, "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %8.4f %7.4f %5.4f\n", i + 1, SW_Site->width[i],
 				SW_Site->soilBulk_density[i], SW_Site->fractionVolBulk_gravel[i], SW_Site->swcBulk_fieldcap[i], SW_Site->swcBulk_wiltpt[i], SW_Site->fractionWeightMatric_sand[i],
 				SW_Site->fractionWeightMatric_clay[i], SW_Site->swcBulk_atSWPcrit[i][SW_FORBS], SW_Site->swcBulk_atSWPcrit[i][SW_TREES], SW_Site->swcBulk_atSWPcrit[i][SW_SHRUB],
-				SW_Site->swcBulk_atSWPcrit[i][SW_GRASS], SW_Site->swcBulk_wet[i], SW_Site->swcBulk_min[i], SW_Site->swcBulk_init[i], SW_Site->swcBulk_saturated[i], SW_Site->avgLyrTemp[i]);
+				SW_Site->swcBulk_atSWPcrit[i][SW_GRASS], SW_Site->swcBulk_wet[i], SW_Site->swcBulk_min[i], SW_Site->swcBulk_init[i], SW_Site->swcBulk_saturated[i], SW_Site->avgLyrTempInit[i]);
 	}
 
 	LogError(LogInfo, LOGNOTE, "\n  Water Potential values:\n");

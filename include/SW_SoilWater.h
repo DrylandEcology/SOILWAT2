@@ -65,9 +65,12 @@ void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo);
 void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat);
 void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 					 LOG_INFO* LogInfo);
-void SW_SWC_read(SW_SOILWAT* SW_SoilWat, RealD site_avgLyrTemp[],
-	TimeInt endyr, LyrIndex n_layers, char *InFiles[],
-	LOG_INFO* LogInfo);
+void SW_SWC_read(
+	SW_SOILWAT* SW_SoilWat,
+	TimeInt endyr,
+	char *InFiles[],
+	LOG_INFO* LogInfo
+);
 void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site,
 					 RealD* temp_snow);
 void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year, LOG_INFO* LogInfo);
