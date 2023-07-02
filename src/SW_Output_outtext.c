@@ -59,7 +59,7 @@
 
 static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 		Bool does_agg, LyrIndex n_layers, SW_OUTPUT* SW_Output,
-		LOG_INFO* LogInfo, SW_GEN_OUT* GenOutput) {
+		SW_GEN_OUT* GenOutput, LOG_INFO* LogInfo) {
 
 	unsigned int i;
 	char key[50],
@@ -123,12 +123,12 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 	SW_FILE_STATUS which holds basic information about output files
 	and values
   \param[in] pd The output time step.
-  \param[in] LogInfo Holds information dealing with logfile output
   \param[in] InFiles Array of program in/output files
+  \param[in] LogInfo Holds information dealing with logfile output
 */
 /***********************************************************/
 static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
-							  LOG_INFO* LogInfo, char *InFiles[])
+							  char *InFiles[], LOG_INFO* LogInfo)
 {
 	// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
 	// a specific order of `SW_FileIndex` --> fix and create something that
@@ -295,7 +295,7 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 
 	ForEachOutPeriod(pd) {
 		if (GenOutput->use_OutPeriod[pd]) {
-			_create_csv_files(SW_FileStatus, pd, LogInfo, InFiles);
+			_create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
 
 			write_headers_to_csv(pd, SW_FileStatus->fp_reg[pd],
 				SW_FileStatus->fp_soil[pd], swFALSE, SW_FileStatus->make_regular,
@@ -425,7 +425,7 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 	// Acquire headers
 	get_outstrheader(pd, str_time, sizeof str_time);
 	_create_csv_headers(pd, header_reg, header_soil, does_agg,
-			n_layers, SW_Output, LogInfo, GenOutput);
+			n_layers, SW_Output, GenOutput, LogInfo);
 
 	// Write headers to files
 	if (make_regular[pd]) {

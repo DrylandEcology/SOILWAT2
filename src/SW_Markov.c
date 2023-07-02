@@ -103,15 +103,15 @@ static void temp_correct_wetdry(RealD *tmax, RealD *tmin, RealD rain,
            previously `vc11 = _vcov[1][1]`
     @param wT_covar Mean weekly covariance between maximum and minimum
            daily temperature; previously `vc10 = _vcov[1][0]`
-	@param LogInfo Holds information dealing with logfile output
 	@param markov_rng Random number generator of the weather
 		   generator
+	@param LogInfo Holds information dealing with logfile output
 
     @return Daily minimum (*tmin) and maximum (*tmax) temperature.
 */
 static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
-	RealD wTmax_var, RealD wTmin_var, RealD wT_covar, LOG_INFO* LogInfo,
-	pcg32_random_t *markov_rng) {
+	RealD wTmax_var, RealD wTmin_var, RealD wT_covar, pcg32_random_t *markov_rng,
+	LOG_INFO* LogInfo) {
 	/* --------------------------------------------------- */
 	/* This proc is distilled from a much more general function
 	 * in the original fortran version which was prepared to
@@ -178,7 +178,7 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
   // since `mvnorm` is static we cannot do unit tests unless we set it up
   // as an externed function pointer
   void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD,
-  				      RealD, LOG_INFO*, pcg32_random_t*) = &mvnorm;
+  				      RealD, pcg32_random_t*, LOG_INFO*) = &mvnorm;
 #endif
 
 
@@ -346,8 +346,8 @@ void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 		SW_Markov->v_cov[week][0][0],  // mean weekly variance of maximum daily temp
 		SW_Markov->v_cov[week][1][1],  // mean weekly variance of minimum daily temp
 		SW_Markov->v_cov[week][1][0],  // mean weekly covariance of min/max daily temp
-		LogInfo,
-		&SW_Markov->markov_rng
+		&SW_Markov->markov_rng,
+		LogInfo
 	);
 
 	temp_correct_wetdry(tmax, tmin, *rain,

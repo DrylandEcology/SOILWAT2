@@ -360,17 +360,16 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 }
 
 
-static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
-		ObjType otyp, OutPeriod pd, Bool bFlush_output,
-		TimeInt tOffset)
+static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
+		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo)
 {
 	if (pd == eSW_Day) {}
 	SW_OUT_sum_today(sw, otyp, bFlush_output, tOffset, LogInfo);
 }
 
 static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
-	LOG_INFO* LogInfo, OutPeriod timeSteps[][SW_OUTNPERIODS],
-	IntUS used_OUTNPERIODS)
+	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS used_OUTNPERIODS,
+	LOG_INFO* LogInfo)
 {
 	TimeInt tOffset = 0;
 
@@ -439,10 +438,10 @@ void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
 
 	ObjType otyp = eF;
 
-	average_for(sw, LogInfo, otyp, pd, swFALSE, sw->GenOutput.tOffset);
+	average_for(sw, otyp, pd, swFALSE, sw->GenOutput.tOffset, LogInfo);
 
-	collect_sums(sw, otyp, pd, LogInfo, sw->GenOutput.timeSteps,
-				 sw->GenOutput.used_OUTNPERIODS);
+	collect_sums(sw, otyp, pd, sw->GenOutput.timeSteps,
+				 sw->GenOutput.used_OUTNPERIODS, LogInfo);
 }
 
 

@@ -75,15 +75,16 @@ void sw_print_version(void) {
 
 @param argc Argument C.
 @param argv Argument V.
-@param[in] LogInfo Holds information dealing with logfile output
 @param[out] QuietMode Flag to control if the program version is displayed
 @param[out] EchoInits Flag to control if inputs are to be output to the user
 @param[out] _firstfile First file name to be filled in the program run
+@param[in] LogInfo Holds information dealing with logfile output
 
 @sideeffect argv Updated argument V.
 */
-void sw_init_args(int argc, char **argv, LOG_INFO* LogInfo,
-	Bool *QuietMode, Bool *EchoInits, char **_firstfile) {
+void sw_init_args(int argc, char **argv, Bool *QuietMode,
+	Bool *EchoInits, char **_firstfile, LOG_INFO* LogInfo) {
+
 	/* =================================================== */
 	/* to add an option:
 	 *  - include it in opts[]
