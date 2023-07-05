@@ -44,3 +44,8 @@ jobs:
 
     - name: Unit tests (shuffle and repeat 3x)
       run: make clean test_rep3rnd
+
+    - name: Unit tests (seed 2998)
+      run: |
+       CC=clang CXX=clang++ make clean_test test
+       bin/sw_test --gtest_shuffle --gtest_random_seed=2998
