@@ -74,23 +74,23 @@ namespace {
 
 
     //--- Generate some weather values with fixed seed ------
-
+printf("Print 1\n");
     // Initialize weather generator
     SW_All.Weather.rng_seed = seed;
     SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                  SW_All.Weather.generateWeatherMethod,
                  PathInfo.InFiles, &LogInfo);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
-
+printf("Print 2\n");
     for (k = 0; k < n; k++) {
       SW_MKV_today(&SW_All.Markov, k, SW_All.Model.year,
                    &tmax0[k], &tmin0[k], &ppt, &LogInfo);
       ppt0[k] = ppt;
     }
-
+printf("Print 3\n");
     // Reset weather generator
     SW_MKV_deconstruct(&SW_All.Markov);
-
+printf("Print 4\n");
 
     //--- Expect that generated weather is different with time-varying seed ----
     // Re-initialize weather generator
@@ -99,7 +99,7 @@ namespace {
                  SW_All.Weather.generateWeatherMethod,
                  PathInfo.InFiles, &LogInfo);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
-
+printf("Print 5\n");
     for (k = 0; k < n; k++) {
       SW_MKV_today(&SW_All.Markov, k, SW_All.Model.year,
                    &tmax, &tmin, &ppt, &LogInfo);
@@ -110,10 +110,10 @@ namespace {
         EXPECT_NE(ppt, ppt0[k]); // ppt is different on wet days
       }
     }
-
+printf("Print 6\n");
     // Reset weather generator
     SW_MKV_deconstruct(&SW_All.Markov);
-
+printf("Print 7\n");
 
     //--- Expect that generated weather is reproducible with same seed ------
     // Re-initialize weather generator
@@ -122,7 +122,7 @@ namespace {
                  SW_All.Weather.generateWeatherMethod,
                  PathInfo.InFiles, &LogInfo);
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
-
+printf("Print 8\n");
     for (k = 0; k < n; k++) {
       SW_MKV_today(&SW_All.Markov, k, SW_All.Model.year,
                    &tmax, &tmin, &ppt, &LogInfo);
@@ -131,7 +131,7 @@ namespace {
       EXPECT_DOUBLE_EQ(tmin, tmin0[k]);
       EXPECT_DOUBLE_EQ(ppt, ppt0[k]);
     }
-
+printf("Print 9\n");
 
     // Deallocate arrays
     delete[] tmax0;
