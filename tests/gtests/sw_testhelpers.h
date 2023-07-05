@@ -41,12 +41,13 @@ class AllTest : public::testing::Test {
       // Initialize SOILWAT2 variables and read values from example input file
       LogInfo.logged = swFALSE;
       LogInfo.logfp = NULL;
-
+      printf("Setup 1\n");
       PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
-
+      printf("Setup 1\n");
       SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+      printf("Setup 1\n");
       SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo);
-
+      printf("Setup 1\n");
       /* Notes on messages during tests
         - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
           "example/Output/logfile.log" to disk (based on content of "files.in")
@@ -55,11 +56,14 @@ class AllTest : public::testing::Test {
         - error messages go directly to stderr (which DeathTests use to match against)
       */
       sw_check_log(QuietMode, &LogInfo);
+      printf("Setup 1\n");
       LogInfo.logfp = NULL;
 
       SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
             SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+      printf("Setup 1\n");
       SW_CTL_init_run(&SW_All, &PathInfo, &LogInfo);
+      printf("Setup 1\n");
     }
 
     void TearDown() override {
