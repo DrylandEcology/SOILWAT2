@@ -291,7 +291,7 @@ namespace {
     }
   }
 
-  TEST_F(AllTest, RNGBetaErrorsDeathTest) {
+  TEST_F(AllDeathTest, RNGBetaErrorsDeathTest) {
     pcg32_random_t error_rng;
     RandSeed(0u, 0u, &error_rng);
     EXPECT_DEATH_IF_SUPPORTED(RandBeta(-0.5, 2, &error_rng), "AA <= 0.0");

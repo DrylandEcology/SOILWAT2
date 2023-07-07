@@ -778,7 +778,7 @@ void get_vwcBulk_mem(OutPeriod pd, SW_ALL* sw)
 
 	ForEachSoilLayer(i, sw->Site.n_layers) {
 		/* vwcBulk at this point is identical to swcBulk */
-		iOUTIndex = OUT(i, pd, sw->GenOutput, sw->Site.n_layers);
+		iOUTIndex = iOUT(i, pd, sw->GenOutput, sw->Site.n_layers);
 		p[iOUTIndex] = vo->vwcBulk[i] / sw->Site.width[i];
 	}
 }
@@ -1447,7 +1447,7 @@ void get_surfaceWater_mem(OutPeriod pd, SW_ALL* sw)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
 
-	iOUTIndex = OUT(0, pd, sw->GenOutput, sw->Site.n_layers);
+	iOUTIndex = iOUT(0, pd, sw->GenOutput, sw->Site.n_layers);
 	p[iOUTIndex] = vo->surfaceWater;
 }
 

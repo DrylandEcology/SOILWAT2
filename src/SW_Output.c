@@ -114,12 +114,12 @@ char const *styp2str[] =
 /* --------------------------------------------------- */
 
 static OutPeriod str2period(char *s);
-static OutKey str2key(char *s, LOG_INFO* LogInfo, char *InFiles[]);
-static OutSum str2stype(char *s, LOG_INFO* LogInfo, char *InFiles[]);
+static OutKey str2key(char *s, char *InFiles[], LOG_INFO* LogInfo);
+static OutSum str2stype(char *s, char *InFiles[], LOG_INFO* LogInfo);
 
 static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
-	LOG_INFO* LogInfo, OutPeriod timeSteps[][SW_OUTNPERIODS],
-	IntUS used_OUTNPERIODS);
+	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS used_OUTNPERIODS,
+	LOG_INFO* LogInfo);
 static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k,
 					  LOG_INFO *LogInfo);
 static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
@@ -127,9 +127,8 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy,
 					  LOG_INFO *LogInfo);
-static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
-		ObjType otyp, OutPeriod pd, Bool bFlush_output,
-		TimeInt tOffset);
+static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
+		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo);
 
 #ifdef STEPWAT
 static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
@@ -154,7 +153,7 @@ static OutPeriod str2period(char *s)
 
 /** Convert string representation of output type to `OutKey` value.
 */
-static OutKey str2key(char *s, LOG_INFO* LogInfo, char *InFiles[])
+static OutKey str2key(char *s, char *InFiles[], LOG_INFO *LogInfo)
 {
 	IntUS key;
 
@@ -168,7 +167,7 @@ static OutKey str2key(char *s, LOG_INFO* LogInfo, char *InFiles[])
 
 /** Convert string representation of output aggregation function to `OutSum` value.
 */
-static OutSum str2stype(char *s, LOG_INFO* LogInfo, char *InFiles[])
+static OutSum str2stype(char *s, char *InFiles[], LOG_INFO *LogInfo)
 {
 	IntUS styp;
 
@@ -502,16 +501,15 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
 
    @param[in,out] sw Comprehensive struct of type SW_ALL containing
    		all information in the simulation.
-   @param[in] LogInfo Holds information dealing with logfile output
    @param[in] otyp Identifies the current module/object
    @param[in] pd Time period in simulation output (day/week/month/year)
    @param[in] bFlush_output Determines if output should be created for
 		a specific output key
    @param[in] tOffset Offset describing with the previous or current period
+   @param[in] LogInfo Holds information dealing with logfile output
 */
-static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
-		ObjType otyp, OutPeriod pd, Bool bFlush_output,
-		TimeInt tOffset) {
+static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
+		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo) {
 
 	TimeInt curr_pd = 0;
 	RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
@@ -834,8 +832,8 @@ static void average_for(SW_ALL* sw, LOG_INFO* LogInfo,
 
 
 static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
-	LOG_INFO* LogInfo, OutPeriod timeSteps[][SW_OUTNPERIODS],
-	IntUS used_OUTNPERIODS)
+	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS used_OUTNPERIODS,
+	LOG_INFO* LogInfo)
 {
 	TimeInt pd = 0;
 	OutKey k;
@@ -2180,7 +2178,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 		}
 
 		// Convert strings to index numbers
-		k = str2key(Str_ToUpper(keyname, upkey), LogInfo, InFiles);
+		k = str2key(Str_ToUpper(keyname, upkey), InFiles, LogInfo);
 
 		// For now: rSOILWAT2's function `onGet_SW_OUT` requires that
 		// `sw->Output[k].outfile` is allocated here
@@ -2193,7 +2191,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 		// Fill information into `sw->Output[k]`
 		msg_type = SW_OUT_read_onekey(
 			k,
-			str2stype(Str_ToUpper(sumtype, upsum), LogInfo, InFiles),
+			str2stype(Str_ToUpper(sumtype, upsum), InFiles, LogInfo),
 			first,
 			!Str_CompareI("END", (char *)last) ? 366 : atoi(last),
 			msg,
@@ -2312,7 +2310,7 @@ void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,
 	{
 		if (bFlush_output || sw->Model.newperiod[pd]) // `newperiod[eSW_Day]` is always TRUE
 		{
-			average_for(sw, LogInfo, otyp, pd, bFlush_output, tOffset);
+			average_for(sw, otyp, pd, bFlush_output, tOffset, LogInfo);
 
 			switch (otyp)
 			{
@@ -2338,8 +2336,8 @@ void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,
 	{
 		ForEachOutPeriod(pd)
 		{
-			collect_sums(sw, otyp, pd, LogInfo, sw->GenOutput.timeSteps,
-						 sw->GenOutput.used_OUTNPERIODS);
+			collect_sums(sw, otyp, pd, sw->GenOutput.timeSteps,
+						 sw->GenOutput.used_OUTNPERIODS, LogInfo);
 		}
 	}
 }

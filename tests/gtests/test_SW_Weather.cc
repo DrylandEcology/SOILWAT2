@@ -167,7 +167,7 @@ namespace {
 
     }
 
-    TEST_F(AllTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
+    TEST_F(AllDeathTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
 
         // Change to directory without input files
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
@@ -1101,7 +1101,7 @@ namespace {
         }
      }
 
-     TEST_F(AllTest, MonthlyWeatherInputReasonableValuesAndFlagsDeathTest) {
+     TEST_F(AllDeathTest, MonthlyWeatherInputReasonableValuesAndFlagsDeathTest) {
          /*
             This section covers number of flags and the testing of reasonable results (`checkAllWeather()`).
 
