@@ -45,12 +45,12 @@ jobs:
     - name: Unit tests (shuffle and repeat 3x)
       run: make clean test_rep3rnd
 
-    - name: Unit tests (seed 2998)
-      run: |
-        make clean_test test
-        bin/sw_test --gtest_shuffle --gtest_random_seed=2998
-
     - name: Unit tests RNG Seeding only
       run: |
         make clean_test test
         bin/sw_test --gtest_filter=AllTest.WeatherGeneratorRNGSeeding
+
+    - name: Unit tests (seed 2998)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_random_seed=2998
