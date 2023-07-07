@@ -49,8 +49,8 @@ jobs:
       run: |
         make clean_test test
         bin/sw_test --gtest_shuffle --gtest_random_seed=2998
-	
+
     - name: Unit tests RNG Seeding only
       run: |
         make clean_test test
-	bin/sw_test --gtest_filter=AllTest.WeatherGeneratorRNGSeeding
+        bin/sw_test --gtest_filter=AllTest.WeatherGeneratorRNGSeeding
