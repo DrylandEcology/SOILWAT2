@@ -427,8 +427,7 @@ void SWRC_PTF_estimate_parameters(
 		LogError(
 			LogInfo,
 			LOGFATAL,
-			"PTF is not implemented in SOILWAT2.",
-			ptf_type
+			"PTF is not implemented in SOILWAT2."
 		);
 	}
 
