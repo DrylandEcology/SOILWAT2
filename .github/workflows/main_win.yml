@@ -48,7 +48,7 @@ jobs:
     - name: Unit tests RNG Seeding only
       run: |
         make clean_test test
-        bin/sw_test --gtest_filter=AllTest.WeatherGeneratorRNGSeeding
+        bin/sw_test --gtest_filter=AllTest.WeatherGeneratorRNGSeeding:AllTest.SitePTFsDeathTest
 
     - name: Unit tests (seed 2998)
       run: |
