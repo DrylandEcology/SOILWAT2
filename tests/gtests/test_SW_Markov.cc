@@ -179,7 +179,7 @@ namespace {
     SW_MKV_deconstruct(&SW_All.Markov);
   }
 
-  TEST_F(AllTest, WeatherGeneratormvnormDeathTest) {
+  TEST_F(AllDeathTest, WeatherGeneratormvnormDeathTest) {
     RealD tmax = 0., tmin = 0.;
 
     SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov, &LogInfo); // initialize markov_rng

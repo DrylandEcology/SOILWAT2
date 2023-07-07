@@ -67,6 +67,8 @@ class AllTest : public::testing::Test {
     }
 };
 
+using AllDeathTest = AllTest;
+
 /* Functions for unit tests */
 
 void Reset_SOILWAT2_after_UnitTest(void);

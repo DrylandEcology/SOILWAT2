@@ -124,7 +124,7 @@ namespace {
 
 
   // Test fatal failures of PTF estimation
-  TEST_F(AllTest, SitePTFsDeathTest) {
+  TEST_F(AllDeathTest, SitePTFsDeathTest) {
 
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -231,7 +231,7 @@ namespace {
 
 
   // Test fatal failures of SWRC parameter checks
-  TEST_F(AllTest, SiteSWRCpChecksDeathTest) {
+  TEST_F(AllDeathTest, SiteSWRCpChecksDeathTest) {
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
@@ -441,7 +441,7 @@ namespace {
 
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST_F(AllTest, SiteSoilParametersDeathTest) {
+  TEST_F(AllDeathTest, SiteSoilParametersDeathTest) {
     LyrIndex n1 = 0, n2 = 1, k = 2;
     RealD help;
 
@@ -613,7 +613,7 @@ namespace {
 
 
   // Test that bulk and matric soil density fail
-  TEST_F(AllTest, SiteSoilDensityDeathTest) {
+  TEST_F(AllDeathTest, SiteSoilDensityDeathTest) {
 
     // Check error if bulk density too low for coarse fragments
     EXPECT_DEATH_IF_SUPPORTED(
