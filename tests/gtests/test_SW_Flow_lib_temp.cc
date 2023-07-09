@@ -155,7 +155,7 @@ namespace {
   }
 
   // Death tests for soil_temperature_setup function
-  TEST_F(AllDeathTest, DISABLED_SWFlowTempSoilTemperatureInitDeathTest) {
+  TEST_F(AllDeathTest, SWFlowTempSoilTemperatureInitDeathTest) {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     double deltaX = 15.0, sTconst = 4.15;
@@ -178,18 +178,21 @@ namespace {
 
     /// test when theMaxDepth is less than soil layer depth - function should fail
     double theMaxDepth2 = 70.0;
+    AllTest2 *local_inst = new AllTest2();
 
     // We expect death when max depth < last layer
     EXPECT_DEATH_IF_SUPPORTED(
       soil_temperature_setup(
-        &SW_All.StRegValues, bDensity2, width2, sTempInit2, sTconst, nlyrs,
+        &local_inst->SW_All.StRegValues, bDensity2, width2, sTempInit2, sTconst, nlyrs,
         fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError,
-        &SW_All.StRegValues.soil_temp_init, &LogInfo
+        &local_inst->SW_All.StRegValues.soil_temp_init, &local_inst->LogInfo
       ),
       "SOIL_TEMP FUNCTION ERROR: soil temperature max depth"
     );
 
-    delete[] wp2; delete[] fc2; delete[] bDensity2;
+    local_inst->destruct();
+
+    delete[] wp2; delete[] fc2; delete[] bDensity2; delete local_inst;
   }
 
 
