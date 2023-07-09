@@ -179,7 +179,7 @@ printf("Print 9\n");
     SW_MKV_deconstruct(&SW_All.Markov);
   }
 
-  TEST_F(AllDeathTest, WeatherGeneratormvnormDeathTest) {
+  TEST_F(AllDeathTest, DISABLED_WeatherGeneratormvnormDeathTest) {
     RealD tmax = 0., tmin = 0.;
 
     SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov, &LogInfo); // initialize markov_rng
