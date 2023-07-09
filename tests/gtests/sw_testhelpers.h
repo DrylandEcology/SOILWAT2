@@ -75,6 +75,55 @@ class AllTest : public::testing::Test {
 
 using AllDeathTest = AllTest;
 
+class AllTest2 {
+  public:
+
+    SW_ALL SW_All;
+    PATH_INFO PathInfo;
+    LOG_INFO LogInfo;
+    SW_OUTPUT_POINTERS SW_OutputPtrs;
+
+    AllTest2() {
+      // `memcpy()` does not work to copy from a global to local attributes
+      // since the function does not copy dynamically allocated memory
+
+      Bool QuietMode = swFALSE;
+
+      // Initialize SOILWAT2 variables and read values from example input file
+      LogInfo.logged = swFALSE;
+      LogInfo.logfp = NULL;
+      printf("Setup 1\n");
+      PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
+      printf("Setup 2\n");
+      SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+      printf("Setup 3\n");
+      SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo);
+      printf("Setup 4\n");
+      /* Notes on messages during tests
+        - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
+          "example/Output/logfile.log" to disk (based on content of "files.in")
+        - we close "Output/logfile.log"
+        - we set `logfp` to NULL to silence all non-error messages during tests
+        - error messages go directly to stderr (which DeathTests use to match against)
+      */
+      sw_check_log(QuietMode, &LogInfo);
+      printf("Setup 5\n");
+      LogInfo.logfp = NULL;
+
+      SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
+            SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+      printf("Setup 1\n");
+      SW_CTL_init_run(&SW_All, &PathInfo, &LogInfo);
+      printf("Setup 1\n");
+    }
+
+    void destruct() {
+      printf("Tear down 1\n");
+      SW_CTL_clear_model(swTRUE, &SW_All, &PathInfo);
+      printf("Tear down 2\n");
+    }
+};
+
 /* Functions for unit tests */
 
 void Reset_SOILWAT2_after_UnitTest(void);
