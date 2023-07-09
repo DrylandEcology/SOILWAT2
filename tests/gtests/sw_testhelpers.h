@@ -43,11 +43,11 @@ class AllTest : public::testing::Test {
       LogInfo.logfp = NULL;
       printf("Setup 1\n");
       PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
-      printf("Setup 1\n");
+      printf("Setup 2\n");
       SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
-      printf("Setup 1\n");
+      printf("Setup 3\n");
       SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo);
-      printf("Setup 1\n");
+      printf("Setup 4\n");
       /* Notes on messages during tests
         - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
           "example/Output/logfile.log" to disk (based on content of "files.in")
@@ -56,7 +56,7 @@ class AllTest : public::testing::Test {
         - error messages go directly to stderr (which DeathTests use to match against)
       */
       sw_check_log(QuietMode, &LogInfo);
-      printf("Setup 1\n");
+      printf("Setup 5\n");
       LogInfo.logfp = NULL;
 
       SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
@@ -67,7 +67,9 @@ class AllTest : public::testing::Test {
     }
 
     void TearDown() override {
+      printf("Tear down 1\n");
       SW_CTL_clear_model(swTRUE, &SW_All, &PathInfo);
+      printf("Tear down 2\n");
     }
 };
 
