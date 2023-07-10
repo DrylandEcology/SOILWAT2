@@ -124,7 +124,7 @@ namespace {
 
 
   // Test fatal failures of PTF estimation
-  TEST_F(AllDeathTest, DISABLED_SitePTFsDeathTest) {
+  TEST_F(AllTestDeathTest, DISABLED_SitePTFsDeathTest) {
 
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -231,7 +231,7 @@ namespace {
 
 
   // Test fatal failures of SWRC parameter checks
-  TEST_F(AllDeathTest, DISABLED_SiteSWRCpChecksDeathTest) {
+  TEST_F(AllTestDeathTest, DISABLED_SiteSWRCpChecksDeathTest) {
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
@@ -441,7 +441,7 @@ namespace {
 
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST_F(AllDeathTest, DISABLED_SiteSoilParametersDeathTest) {
+  TEST_F(AllTestDeathTest, DISABLED_SiteSoilParametersDeathTest) {
     LyrIndex n1 = 0, n2 = 1, k = 2;
     RealD help;
 

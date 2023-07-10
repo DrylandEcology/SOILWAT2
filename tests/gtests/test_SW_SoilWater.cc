@@ -269,7 +269,7 @@ namespace{
 
 
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWCtoSWP'
-  TEST_F(AllDeathTest, DISABLED_SoilWaterSWCtoSWPDeathTest) {
+  TEST_F(AllTestDeathTest, DISABLED_SoilWaterSWCtoSWPDeathTest) {
     // set up mock variables
     RealD
       swrcp[SWRC_PARAM_NMAX],

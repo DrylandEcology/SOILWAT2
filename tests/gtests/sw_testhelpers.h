@@ -73,7 +73,7 @@ class AllTest : public::testing::Test {
     }
 };
 
-using AllDeathTest = AllTest;
+using AllTestDeathTest = AllTest;
 
 class AllTest2 {
   public:
