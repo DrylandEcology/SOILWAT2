@@ -715,7 +715,7 @@ namespace {
   }
 
   // Test that main soil temperature functions fails when it is supposed to
-  TEST_F(AllTestDeathTest, DISABLED_SWFlowTempMainSoilTemperatureFunctionDeathTest) {
+  TEST_F(AllTestDeathTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
 
     unsigned int nlyrs = 1, nRgr = 65;
     double airTemp = 25.0, pet = 5.0, aet = 4.0, biomass = 100., surfaceTemp = 15.,
