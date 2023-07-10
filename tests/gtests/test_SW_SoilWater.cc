@@ -269,7 +269,7 @@ namespace{
 
 
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWCtoSWP'
-  TEST_F(AllTestDeathTest, DISABLED_SoilWaterSWCtoSWPDeathTest) {
+  TEST(SoilWaterDeathTest, SWCtoSWP) {
     // set up mock variables
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -277,6 +277,9 @@ namespace{
       width = 10.;
 
     unsigned int swrc_type;
+    LOG_INFO LogInfo;
+    LogInfo.logged = swFALSE;
+    LogInfo.logfp = NULL;
 
 
     //--- we expect (non-)fatal errors in a few situations
