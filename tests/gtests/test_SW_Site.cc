@@ -613,7 +613,7 @@ namespace {
 
 
   // Test that bulk and matric soil density fail
-  TEST_F(AllDeathTest, DISABLED_SiteSoilDensityDeathTest) {
+  TEST_F(AllTestDeathTest, DISABLED_SiteSoilDensityDeathTest) {
 
     // Check error if bulk density too low for coarse fragments
     EXPECT_DEATH_IF_SUPPORTED(
