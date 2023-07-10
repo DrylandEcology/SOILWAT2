@@ -167,7 +167,7 @@ namespace {
 
     }
 
-    TEST_F(AllTestDeathTest, DISABLED_ReadAllWeatherTooManyMissingForLOCFDeathTest) {
+    TEST_F(AllTestDeathTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
 
         // Change to directory without input files
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
@@ -186,10 +186,6 @@ namespace {
           SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo),
           "more than 3 days missing in year 1981 and weather generator turned off"
         );
-
-
-
-
     }
 
     TEST_F(AllTest, ClimateVariableClimateFromDefaultWeather) {
