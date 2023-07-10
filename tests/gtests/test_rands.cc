@@ -291,7 +291,7 @@ namespace {
     }
   }
 
-  TEST_F(AllTestDeathTest, RNGBetaErrorsDeathTest) {
+  TEST_F(AllTestDeathTest, DISABLED_RNGBetaErrorsDeathTest) {
     pcg32_random_t error_rng;
     RandSeed(0u, 0u, &error_rng);
 

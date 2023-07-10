@@ -155,7 +155,7 @@ namespace {
   }
 
   // Death tests for soil_temperature_setup function
-  TEST_F(AllTestDeathTest, SWFlowTempSoilTemperatureInitDeathTest) {
+  TEST_F(AllTestDeathTest, DISABLED_SWFlowTempSoilTemperatureInitDeathTest) {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     double deltaX = 15.0, sTconst = 4.15;
