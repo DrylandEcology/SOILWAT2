@@ -169,7 +169,6 @@ namespace {
     double *wp2 = new double[nlyrs];
     pcg32_random_t STInitDeath_rng;
     RandSeed(0u, 0u, &STInitDeath_rng);
-    AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
     for (i = 0; i < nlyrs; i++) {
       bDensity2[i] = RandNorm(1.,0.5,&STInitDeath_rng);
@@ -182,15 +181,14 @@ namespace {
 
     // We expect death when max depth < last layer
     EXPECT_DEATH_IF_SUPPORTED(
+      AllTestDeathTestClass local;
       soil_temperature_setup(
-        &local_inst.SW_All.StRegValues, bDensity2, width2, sTempInit2, sTconst, nlyrs,
+        &local.SW_All.StRegValues, bDensity2, width2, sTempInit2, sTconst, nlyrs,
         fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError,
-        &local_inst.SW_All.StRegValues.soil_temp_init, &local_inst.LogInfo
-      ),
+        &local.SW_All.StRegValues.soil_temp_init, &local.LogInfo
+      );,
       "SOIL_TEMP FUNCTION ERROR: soil temperature max depth"
     );
-
-    local_inst.destruct();
 
     delete[] wp2; delete[] fc2; delete[] bDensity2;
   }
