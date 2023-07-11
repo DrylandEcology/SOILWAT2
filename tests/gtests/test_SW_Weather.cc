@@ -167,23 +167,28 @@ namespace {
 
     }
 
-    TEST_F(AllTestDeathTest, DISABLED_ReadAllWeatherTooManyMissingForLOCFDeathTest) {
-
-        // Change to directory without input files
-        strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
-
-        // Set LOCF (temp) + 0 (PPT) method
-        SW_All.Weather.generateWeatherMethod = 1;
-
-        SW_All.Model.startyr = 1981;
-        SW_All.Model.endyr = 1981;
-
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+    TEST(ReadAllWeatherDeathTest, TooManyMissingForLOCF) {
 
         // Error: too many missing values and weather generator turned off
         EXPECT_DEATH_IF_SUPPORTED(
-          SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-          SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo),
+            AllTestDeathTestClass local_inst = AllTestDeathTestClass();
+
+            // Change to directory without input files
+            strcpy(local_inst.SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
+
+            // Set LOCF (temp) + 0 (PPT) method
+            local_inst.SW_All.Weather.generateWeatherMethod = 1;
+
+            local_inst.SW_All.Model.startyr = 1981;
+            local_inst.SW_All.Model.endyr = 1981;
+
+            SW_WTH_read(&local_inst.SW_All.Weather, &local_inst.SW_All.Sky,
+                        &local_inst.SW_All.Model, &local_inst.LogInfo);
+
+
+          SW_WTH_finalize_all_weather(&local_inst.SW_All.Markov,
+                &local_inst.SW_All.Weather, local_inst.SW_All.Model.cum_monthdays,
+                local_inst.SW_All.Model.days_in_month, &local_inst.LogInfo),
           "more than 3 days missing in year 1981 and weather generator turned off"
         );
     }
