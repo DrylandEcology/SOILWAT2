@@ -75,7 +75,7 @@ class AllTest : public::testing::Test {
 
 using AllTestDeathTest = AllTest;
 
-class AllTest2 {
+class AllTestDeathTestClass {
   public:
 
     SW_ALL SW_All;
@@ -83,7 +83,7 @@ class AllTest2 {
     LOG_INFO LogInfo;
     SW_OUTPUT_POINTERS SW_OutputPtrs;
 
-    AllTest2() {
+    AllTestDeathTestClass() {
       // `memcpy()` does not work to copy from a global to local attributes
       // since the function does not copy dynamically allocated memory
 
