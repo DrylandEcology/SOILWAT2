@@ -1102,7 +1102,7 @@ namespace {
         }
      }
 
-     TEST_F(AllTestDeathTest, DISABLED_MonthlyWeatherInputReasonableValuesAndFlagsDeathTest) {
+     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
          /*
             This section covers number of flags and the testing of reasonable results (`checkAllWeather()`).
 
@@ -1117,24 +1117,26 @@ namespace {
           TimeInt year = 1980;
           double originVal;
 
-         /* Not the same number of flags as columns */
-
-         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
-
-         // Set SW_WEATHER's n_input_forcings to a number that is
-         // not the columns being read in
-         SW_All.Weather.n_input_forcings = 0;
-
              // Run death test
          EXPECT_DEATH_IF_SUPPORTED(
+            AllTestDeathTestClass local_inst = AllTestDeathTestClass();
+
+            /* Not the same number of flags as columns */
+            SW_WTH_read(&local_inst.SW_All.Weather, &local_inst.SW_All.Sky,
+                        &local_inst.SW_All.Model, &local_inst.LogInfo);
+
+            // Set SW_WEATHER's n_input_forcings to a number that is
+            // not the columns being read in
+            local_inst.SW_All.Weather.n_input_forcings = 0;
+
              _read_weather_hist(
                  year,
-                 SW_All.Weather.allHist[0],
-                 SW_All.Weather.name_prefix,
-                 SW_All.Weather.n_input_forcings,
-                 SW_All.Weather.dailyInputIndices,
-                 SW_All.Weather.dailyInputFlags,
-                 &LogInfo
+                 local_inst.SW_All.Weather.allHist[0],
+                 local_inst.SW_All.Weather.name_prefix,
+                 local_inst.SW_All.Weather.n_input_forcings,
+                 local_inst.SW_All.Weather.dailyInputIndices,
+                 local_inst.SW_All.Weather.dailyInputFlags,
+                 &local_inst.LogInfo
              ),
              "Incomplete record 1"
          );
@@ -1142,37 +1144,40 @@ namespace {
          /* Check for value(s) that are not within reasonable range these
             tests will make use of `checkAllWeather()` */
 
-         // Edit SW_WEATHER_HIST values from their original value
-             // Make temperature unreasonable (not within [-100, 100])
-
-         originVal = SW_All.Weather.allHist[0]->temp_max[0];
-
-         SW_All.Weather.allHist[0]->temp_max[0] = -102.;
-
          EXPECT_DEATH_IF_SUPPORTED(
-             checkAllWeather(&SW_All.Weather, &LogInfo),
+            AllTestDeathTestClass local_inst = AllTestDeathTestClass();
+
+            // Edit SW_WEATHER_HIST values from their original value
+                // Make temperature unreasonable (not within [-100, 100])
+            originVal = local_inst.SW_All.Weather.allHist[0]->temp_max[0];
+
+            local_inst.SW_All.Weather.allHist[0]->temp_max[0] = -102.;
+
+             checkAllWeather(&local_inst.SW_All.Weather, &local_inst.LogInfo),
              "Daily input value for minimum temperature is greater than daily input value for maximum temperature"
          );
 
-             // Make precipitation unresonable (< 0)
-         SW_All.Weather.allHist[0]->temp_max[0] = originVal;
-
-         originVal = SW_All.Weather.allHist[0]->ppt[0];
-
-         SW_All.Weather.allHist[0]->ppt[0] = -1.;
-
          EXPECT_DEATH_IF_SUPPORTED(
-             checkAllWeather(&SW_All.Weather, &LogInfo),
+            AllTestDeathTestClass local_inst = AllTestDeathTestClass();
+
+            // Make precipitation unresonable (< 0)
+            local_inst.SW_All.Weather.allHist[0]->temp_max[0] = originVal;
+
+            originVal = local_inst.SW_All.Weather.allHist[0]->ppt[0];
+
+            local_inst.SW_All.Weather.allHist[0]->ppt[0] = -1.;
+             checkAllWeather(&local_inst.SW_All.Weather, &local_inst.LogInfo),
              "Invalid daily precipitation value"
          );
 
-             // Make relative humidity unreasonable (< 0%)
-         SW_All.Weather.allHist[0]->ppt[0] = originVal;
-
-         SW_All.Weather.allHist[0]->r_humidity_daily[0] = -.1252;
-
          EXPECT_DEATH_IF_SUPPORTED(
-             checkAllWeather(&SW_All.Weather, &LogInfo),
+            AllTestDeathTestClass local_inst = AllTestDeathTestClass();
+
+            // Make relative humidity unreasonable (< 0%)
+            local_inst.SW_All.Weather.allHist[0]->ppt[0] = originVal;
+
+            local_inst.SW_All.Weather.allHist[0]->r_humidity_daily[0] = -.1252;
+             checkAllWeather(&local_inst.SW_All.Weather, &local_inst.LogInfo),
              "relative humidity value did not fall in the range"
          );
      }
