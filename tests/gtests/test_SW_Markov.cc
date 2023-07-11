@@ -179,19 +179,18 @@ printf("Print 9\n");
     SW_MKV_deconstruct(&SW_All.Markov);
   }
 
-  TEST_F(AllTestDeathTest, DISABLED_WeatherGeneratormvnormDeathTest) {
+  TEST(WGDeathTest, mvnorm) {
     RealD tmax = 0., tmin = 0.;
-
-    SW_MKV_construct(SW_All.Weather.rng_seed, &SW_All.Markov, &LogInfo); // initialize markov_rng
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL
     EXPECT_DEATH_IF_SUPPORTED(
+      AllTestDeathTestClass local_inst = AllTestDeathTestClass();
+      SW_MKV_construct(local_inst.SW_All.Weather.rng_seed,
+                       &local_inst.SW_All.Markov, &local_inst.LogInfo); // initialize markov_rng
       (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.,
-                                &SW_All.Markov.markov_rng, &LogInfo),
+                    &local_inst.SW_All.Markov.markov_rng, &local_inst.LogInfo),
       "Bad covariance matrix"
     );
-
-    SW_MKV_deconstruct(&SW_All.Markov);
   }
 
 
