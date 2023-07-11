@@ -444,23 +444,26 @@ namespace {
 
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST_F(AllTestDeathTest, DISABLED_SiteSoilParametersDeathTest) {
+  TEST(SiteDeathTest, SoilParameters) {
     LyrIndex n1 = 0, n2 = 1, k = 2;
-    RealD help;
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
-    help = SW_All.Site.evap_coeff[n1];
-    SW_All.Site.evap_coeff[n1] = -0.5;
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo),
+      AllTestDeathTestClass local_inst = AllTestDeathTestClass();
+      local_inst.SW_All.Site.evap_coeff[n1] = -0.5;
+
+      SW_SIT_init_run(&local_inst.SW_All.VegProd, &local_inst.SW_All.Site,
+                      local_inst.PathInfo.InFiles, &local_inst.LogInfo),
       "'bare-soil evaporation coefficient' has an invalid value"
     );
-    SW_All.Site.evap_coeff[n1] = help;
 
     // Check error for bad transpiration coefficient (should be [0-1])
-    SW_All.Site.transp_coeff[k][n2] = 1.5;
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo),
+      AllTestDeathTestClass local_inst = AllTestDeathTestClass();
+      local_inst.SW_All.Site.transp_coeff[k][n2] = 1.5;
+
+      SW_SIT_init_run(&local_inst.SW_All.VegProd, &local_inst.SW_All.Site,
+                      local_inst.PathInfo.InFiles, &local_inst.LogInfo),
       "'transpiration coefficient' has an invalid value"
     );
   }
