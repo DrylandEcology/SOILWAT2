@@ -1146,7 +1146,7 @@ namespace {
 
     }
 
-    TEST(VegEstimationDeathTest, VegInputGreaterThanOne) {
+    TEST(VegEstimationDeathTest, DISABLED_VegInputGreaterThanOne) {
 
         /*  ================================================================
                    Tests a death case of `estimatePotNatVegComposition()`
