@@ -183,13 +183,13 @@ printf("Print 9\n");
     RealD tmax = 0., tmin = 0.;
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL
-    EXPECT_DEATH_IF_SUPPORTED(
+    EXPECT_DEATH_IF_SUPPORTED({
       AllTestDeathTestClass local_inst = AllTestDeathTestClass();
       SW_MKV_construct(local_inst.SW_All.Weather.rng_seed,
                        &local_inst.SW_All.Markov, &local_inst.LogInfo); // initialize markov_rng
       (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.,
-                    &local_inst.SW_All.Markov.markov_rng, &local_inst.LogInfo),
-      "Bad covariance matrix"
+                    &local_inst.SW_All.Markov.markov_rng, &local_inst.LogInfo);
+      }, "Bad covariance matrix"
     );
   }
 
