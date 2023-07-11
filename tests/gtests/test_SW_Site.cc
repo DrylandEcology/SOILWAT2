@@ -619,20 +619,24 @@ namespace {
 
 
   // Test that bulk and matric soil density fail
-  TEST_F(AllTestDeathTest, DISABLED_SiteSoilDensityDeathTest) {
-
+  TEST(SWSiteDeathTest, SoilDensity) {
     // Check error if bulk density too low for coarse fragments
     EXPECT_DEATH_IF_SUPPORTED(
+      LOG_INFO LogInfo;
+      LogInfo.logged = swFALSE;
+      LogInfo.logfp = NULL;
+
       calculate_soilMatricDensity(1.65, 0.7, &LogInfo),
       "is lower than expected"
     );
 
-
-    // Check error if type_soilDensityInput not implemented
-    SW_All.Site.type_soilDensityInput = SW_MISSING;
-
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site,  PathInfo.InFiles, &LogInfo),
+      AllTestDeathTestClass local_inst = AllTestDeathTestClass();
+
+      // Check error if type_soilDensityInput not implemented
+      local_inst.SW_All.Site.type_soilDensityInput = SW_MISSING;
+
+      SW_SIT_init_run(&local_inst.SW_All.VegProd, &local_inst.SW_All.Site, local_inst.PathInfo.InFiles, &local_inst.LogInfo),
       "Soil density type not recognized"
     );
   }
