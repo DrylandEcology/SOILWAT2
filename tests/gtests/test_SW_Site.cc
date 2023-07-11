@@ -124,7 +124,7 @@ namespace {
 
 
   // Test fatal failures of PTF estimation
-  TEST_F(AllTestDeathTest, DISABLED_SitePTFsDeathTest) {
+  TEST(SiteDeathTest, PTFs) {
 
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -133,6 +133,9 @@ namespace {
       gravel = 0.1,
       bdensity = 1.4;
     unsigned int ptf_type;
+    LOG_INFO LogInfo;
+    LogInfo.logged = swFALSE;
+    LogInfo.logfp = NULL;
 
 
     //--- Test unimplemented PTF
