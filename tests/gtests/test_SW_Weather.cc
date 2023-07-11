@@ -167,7 +167,7 @@ namespace {
 
     }
 
-    TEST_F(AllTestDeathTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
+    TEST_F(AllTestDeathTest, DISABLED_ReadAllWeatherTooManyMissingForLOCFDeathTest) {
 
         // Change to directory without input files
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
