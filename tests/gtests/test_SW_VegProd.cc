@@ -1146,7 +1146,7 @@ namespace {
 
     }
 
-    TEST(VegEstimationDeathTest, DISABLED_VegInputGreaterThanOne) {
+    TEST(VegEstimationDeathTest, VegInputGreaterThanOne) {
 
         /*  ================================================================
                    Tests a death case of `estimatePotNatVegComposition()`
@@ -1209,6 +1209,32 @@ namespace {
                     fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &local_inst.LogInfo);,
           "User defined relative abundance values sum to more than 1 = full land cover"
         );
+    }
+
+    TEST(VegEstimationDeathTest, VegInputGreaterThanOne2) {
+        SW_CLIMATE_CLIM climateAverages;
+        SW_CLIMATE_YEARLY climateOutput;
+
+        double SumGrassesFraction = .5;
+        double C4Variables[3];
+
+        Bool fillEmptyWithBareGround = swTRUE;
+        Bool inNorthHem = swTRUE;
+        Bool warnExtrapolation = swTRUE;
+        Bool fixBareGround = swTRUE;
+
+        double inputValues[8] = {.0567, .25, SW_MISSING, SW_MISSING,
+                                .0912, .0465, .1293, .0405};
+        double shrubLimit = .2;
+
+        // Array holding only grass values
+        double grassOutput[3]; // 3 = Number of grass variables
+
+        // Array holding all values from the estimation
+        double RelAbundanceL0[8]; // 8 = Number of types
+
+        // Array holding all values from estimation minus grasses
+        double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
         /*  ===============================================================
          Test for fail when SumGrassesFraction makes the input sum greater than one
@@ -1218,17 +1244,6 @@ namespace {
          is already defined, so that value is subtracted from SumGrassesFraction and
          added to the initial input sum
             ===============================================================  */
-
-        SumGrassesFraction = .5;
-
-        inputValues[succIndex] = .0567;
-        inputValues[forbIndex] = .25;
-        inputValues[C3Index] = SW_MISSING;
-        inputValues[C4Index] = SW_MISSING;
-        inputValues[grassAnn] = .0912;
-        inputValues[shrubIndex] = .0465;
-        inputValues[treeIndex] = .1293;
-        inputValues[bareGround] = .0405;
 
         EXPECT_DEATH_IF_SUPPORTED(
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
