@@ -234,11 +234,14 @@ namespace {
 
 
   // Test fatal failures of SWRC parameter checks
-  TEST_F(AllTestDeathTest, DISABLED_SiteSWRCpChecksDeathTest) {
+  TEST(SiteDeathTest, SWRCpChecks) {
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
     unsigned int swrc_type;
+    LOG_INFO LogInfo;
+    LogInfo.logged = swFALSE;
+    LogInfo.logfp = NULL;
 
 
     //--- Test unimplemented SWRC
