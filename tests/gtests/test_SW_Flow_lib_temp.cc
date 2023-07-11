@@ -713,7 +713,7 @@ namespace {
   }
 
   // Test that main soil temperature functions fails when it is supposed to
-  TEST_F(AllTestDeathTest, DISABLED_SWFlowTempMainSoilTemperatureFunctionDeathTest) {
+  TEST(SWFlowTempDeathTest, MainSoilTemperatureFunction) {
 
     unsigned int nlyrs = 1, nRgr = 65;
     double airTemp = 25.0, pet = 5.0, aet = 4.0, biomass = 100., surfaceTemp = 15.,
@@ -728,14 +728,16 @@ namespace {
 
     // Should fail when soil_temperature was not initialized
     EXPECT_DEATH_IF_SUPPORTED(
-      soil_temperature(&SW_All.StRegValues,
-        &surface_max, &surface_min, SW_All.SoilWat.lyrFrozen,
+      AllTestDeathTestClass local_inst = AllTestDeathTestClass();
+      soil_temperature(&local_inst.SW_All.StRegValues,
+        &surface_max, &surface_min, local_inst.SW_All.SoilWat.lyrFrozen,
         airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
         sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
         t1Param3, csParam1, csParam2, shParam, snowdepth,
         sTconst, deltaX, theMaxDepth, nRgr, snow, max_air_temp,
-        min_air_temp, H_gt, SW_All.Model.year, SW_All.Model.doy,
-        min_temp, max_temp, &ptr_stError, &LogInfo
+        min_air_temp, H_gt, local_inst.SW_All.Model.year,
+        local_inst.SW_All.Model.doy, min_temp, max_temp,
+        &ptr_stError, &local_inst.LogInfo
       ),
       "SOILWAT2 ERROR soil temperature module was not initialized"
     );
