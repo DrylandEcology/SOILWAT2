@@ -117,7 +117,7 @@ class AllTestDeathTestClass {
       printf("Setup 1\n");
     }
 
-    void destruct() {
+    ~AllTestDeathTestClass() {
       printf("Tear down 1\n");
       SW_CTL_clear_model(swTRUE, &SW_All, &PathInfo);
       printf("Tear down 2\n");
