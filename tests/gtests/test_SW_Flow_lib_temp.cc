@@ -180,14 +180,14 @@ namespace {
     double theMaxDepth2 = 70.0;
 
     // We expect death when max depth < last layer
-    EXPECT_DEATH_IF_SUPPORTED(
+    EXPECT_DEATH_IF_SUPPORTED({
       AllTestDeathTestClass local;
       soil_temperature_setup(
         &local.SW_All.StRegValues, bDensity2, width2, sTempInit2, sTconst, nlyrs,
         fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError,
         &local.SW_All.StRegValues.soil_temp_init, &local.LogInfo
-      );,
-      "SOIL_TEMP FUNCTION ERROR: soil temperature max depth"
+      );
+      }, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth"
     );
 
     delete[] wp2; delete[] fc2; delete[] bDensity2;
@@ -727,7 +727,7 @@ namespace {
       sTemp[1], min_temp[] = {10.0}, max_temp[] = {1.0};
 
     // Should fail when soil_temperature was not initialized
-    EXPECT_DEATH_IF_SUPPORTED(
+    EXPECT_DEATH_IF_SUPPORTED({
       AllTestDeathTestClass local_inst = AllTestDeathTestClass();
       soil_temperature(&local_inst.SW_All.StRegValues,
         &surface_max, &surface_min, local_inst.SW_All.SoilWat.lyrFrozen,
@@ -738,8 +738,8 @@ namespace {
         min_air_temp, H_gt, local_inst.SW_All.Model.year,
         local_inst.SW_All.Model.doy, min_temp, max_temp,
         &ptr_stError, &local_inst.LogInfo
-      ),
-      "SOILWAT2 ERROR soil temperature module was not initialized"
+      );
+      }, "SOILWAT2 ERROR soil temperature module was not initialized"
     );
   }
 }

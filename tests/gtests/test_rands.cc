@@ -295,9 +295,9 @@ namespace {
     pcg32_random_t error_rng;
     RandSeed(0u, 0u, &error_rng);
 
-    EXPECT_DEATH_IF_SUPPORTED(RandBeta(-0.5, 2, &error_rng), "AA <= 0.0");
-    EXPECT_DEATH_IF_SUPPORTED(RandBeta(1, -3, &error_rng), "BB <= 0.0");
-    EXPECT_DEATH_IF_SUPPORTED(RandBeta(-1, -3, &error_rng), "AA <= 0.0");
+    EXPECT_DEATH_IF_SUPPORTED({RandBeta(-0.5, 2, &error_rng);}, "AA <= 0.0");
+    EXPECT_DEATH_IF_SUPPORTED({RandBeta(1, -3, &error_rng);}, "BB <= 0.0");
+    EXPECT_DEATH_IF_SUPPORTED({RandBeta(-1, -3, &error_rng);}, "AA <= 0.0");
   }
 
 } // namespace

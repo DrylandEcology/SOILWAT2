@@ -1182,7 +1182,7 @@ namespace {
          [.0567, .5, .0392, .0981, .3218, .0827, .1293, .0405]
             ===============================================================  */
 
-        EXPECT_DEATH_IF_SUPPORTED(
+        EXPECT_DEATH_IF_SUPPORTED({
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
             // Reset "SW_All.Weather.allHist"
@@ -1206,8 +1206,8 @@ namespace {
             estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
                     climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
                     SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &local_inst.LogInfo);,
-          "User defined relative abundance values sum to more than 1 = full land cover"
+                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &local_inst.LogInfo);
+          }, "User defined relative abundance values sum to more than 1 = full land cover"
         );
     }
 
@@ -1245,7 +1245,7 @@ namespace {
          added to the initial input sum
             ===============================================================  */
 
-        EXPECT_DEATH_IF_SUPPORTED(
+        EXPECT_DEATH_IF_SUPPORTED({
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
             // Reset "SW_All.Weather.allHist"
@@ -1269,8 +1269,8 @@ namespace {
             estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
                     climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
                     SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &local_inst.LogInfo);,
-          "User defined relative abundance values sum to more than 1 = full land cover"
+                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &local_inst.LogInfo);
+          }, "User defined relative abundance values sum to more than 1 = full land cover"
         );
     }
 

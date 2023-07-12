@@ -287,9 +287,9 @@ namespace{
 
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
-    EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-      "is not implemented"
+    EXPECT_DEATH_IF_SUPPORTED({
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+      }, "is not implemented"
     );
     EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
@@ -299,27 +299,27 @@ namespace{
 
     // --- 2) swc < 0: water content cannot be negative
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
-      EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-        "invalid SWC"
+      EXPECT_DEATH_IF_SUPPORTED({
+        SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+        }, "invalid SWC"
       );
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
         SW_MISSING
       );
 
-      EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGFATAL, &LogInfo),
-        "invalid SWC"
+      EXPECT_DEATH_IF_SUPPORTED({
+        SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGFATAL, &LogInfo);
+        }, "invalid SWC"
       );
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGWARN, &LogInfo),
         SW_MISSING
       );
 
-      EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGFATAL, &LogInfo),
-        "invalid SWC"
+      EXPECT_DEATH_IF_SUPPORTED({
+        SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGFATAL, &LogInfo);
+        }, "invalid SWC"
       );
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGWARN, &LogInfo),
@@ -337,9 +337,9 @@ namespace{
     swrcp[3] = 1.2673;
     swrcp[4] = 7.78506;
 
-    EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-      "invalid value"
+    EXPECT_DEATH_IF_SUPPORTED({
+      SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+      }, "invalid value"
     );
     EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
@@ -367,9 +367,9 @@ namespace{
 
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
-    EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-      "is not implemented"
+    EXPECT_DEATH_IF_SUPPORTED({
+      SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+      }, "is not implemented"
     );
     EXPECT_DOUBLE_EQ(
       SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
@@ -378,9 +378,9 @@ namespace{
 
     // --- 2) swp < 0: water content cannot be negative (any SWRC)
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
-      EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-        "invalid SWP"
+      EXPECT_DEATH_IF_SUPPORTED({
+        SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+        }, "invalid SWP"
       );
       EXPECT_DOUBLE_EQ(
         SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),

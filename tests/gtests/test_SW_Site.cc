@@ -141,7 +141,7 @@ namespace {
     //--- Test unimplemented PTF
     ptf_type = N_PTFs + 1;
 
-    EXPECT_DEATH_IF_SUPPORTED(
+    EXPECT_DEATH_IF_SUPPORTED({
       SWRC_PTF_estimate_parameters(
         ptf_type,
         swrcp,
@@ -150,8 +150,8 @@ namespace {
         gravel,
         bdensity,
         &LogInfo
-      ),
-      "PTF is not implemented in SOILWAT2"
+      );
+    }, "PTF is not implemented in SOILWAT2"
     );
   }
 
@@ -247,9 +247,9 @@ namespace {
     //--- Test unimplemented SWRC
     swrc_type = N_SWRCs + 1;
 
-    EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_check_parameters(swrc_type, swrcp, &LogInfo),
-      "is not implemented"
+    EXPECT_DEATH_IF_SUPPORTED({
+      SWRC_check_parameters(swrc_type, swrcp, &LogInfo);
+      }, "is not implemented"
     );
   }
 
@@ -451,13 +451,13 @@ namespace {
     LyrIndex n1 = 0;
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
-    EXPECT_DEATH_IF_SUPPORTED(
+    EXPECT_DEATH_IF_SUPPORTED({
       AllTestDeathTestClass local_inst = AllTestDeathTestClass();
       local_inst.SW_All.Site.evap_coeff[n1] = -0.5;
 
       SW_SIT_init_run(&local_inst.SW_All.VegProd, &local_inst.SW_All.Site,
-                      local_inst.PathInfo.InFiles, &local_inst.LogInfo),
-      "'bare-soil evaporation coefficient' has an invalid value"
+                      local_inst.PathInfo.InFiles, &local_inst.LogInfo);
+      }, "'bare-soil evaporation coefficient' has an invalid value"
     );
   }
 
@@ -465,13 +465,13 @@ namespace {
     LyrIndex n2 = 1, k = 2;
 
     // Check error for bad transpiration coefficient (should be [0-1])
-    EXPECT_DEATH_IF_SUPPORTED(
+    EXPECT_DEATH_IF_SUPPORTED({
       AllTestDeathTestClass local_inst = AllTestDeathTestClass();
       local_inst.SW_All.Site.transp_coeff[k][n2] = 1.5;
 
       SW_SIT_init_run(&local_inst.SW_All.VegProd, &local_inst.SW_All.Site,
-                      local_inst.PathInfo.InFiles, &local_inst.LogInfo),
-      "'transpiration coefficient' has an invalid value"
+                      local_inst.PathInfo.InFiles, &local_inst.LogInfo);
+    }, "'transpiration coefficient' has an invalid value"
     );
   }
 
@@ -628,23 +628,24 @@ namespace {
   // Test that bulk and matric soil density fail
   TEST(SWSiteDeathTest, SoilDensity) {
     // Check error if bulk density too low for coarse fragments
-    EXPECT_DEATH_IF_SUPPORTED(
+    EXPECT_DEATH_IF_SUPPORTED({
       LOG_INFO LogInfo;
       LogInfo.logged = swFALSE;
       LogInfo.logfp = NULL;
 
-      calculate_soilMatricDensity(1.65, 0.7, &LogInfo),
-      "is lower than expected"
+      calculate_soilMatricDensity(1.65, 0.7, &LogInfo);
+      }, "is lower than expected"
     );
 
-    EXPECT_DEATH_IF_SUPPORTED(
+    EXPECT_DEATH_IF_SUPPORTED({
       AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
       // Check error if type_soilDensityInput not implemented
       local_inst.SW_All.Site.type_soilDensityInput = SW_MISSING;
 
-      SW_SIT_init_run(&local_inst.SW_All.VegProd, &local_inst.SW_All.Site, local_inst.PathInfo.InFiles, &local_inst.LogInfo),
-      "Soil density type not recognized"
+      SW_SIT_init_run(&local_inst.SW_All.VegProd, &local_inst.SW_All.Site,
+                      local_inst.PathInfo.InFiles, &local_inst.LogInfo);
+      }, "Soil density type not recognized"
     );
   }
 } // namespace

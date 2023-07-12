@@ -170,7 +170,7 @@ namespace {
     TEST(ReadAllWeatherDeathTest, TooManyMissingForLOCF) {
 
         // Error: too many missing values and weather generator turned off
-        EXPECT_DEATH_IF_SUPPORTED(
+        EXPECT_DEATH_IF_SUPPORTED({
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
             // Change to directory without input files
@@ -188,8 +188,8 @@ namespace {
 
           SW_WTH_finalize_all_weather(&local_inst.SW_All.Markov,
                 &local_inst.SW_All.Weather, local_inst.SW_All.Model.cum_monthdays,
-                local_inst.SW_All.Model.days_in_month, &local_inst.LogInfo),
-          "more than 3 days missing in year 1981 and weather generator turned off"
+                local_inst.SW_All.Model.days_in_month, &local_inst.LogInfo);
+            }, "more than 3 days missing in year 1981 and weather generator turned off"
         );
     }
 
@@ -1117,7 +1117,7 @@ namespace {
           TimeInt year = 1980;
 
              // Run death test
-         EXPECT_DEATH_IF_SUPPORTED(
+         EXPECT_DEATH_IF_SUPPORTED({
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
             /* Not the same number of flags as columns */
@@ -1136,13 +1136,13 @@ namespace {
                  local_inst.SW_All.Weather.dailyInputIndices,
                  local_inst.SW_All.Weather.dailyInputFlags,
                  &local_inst.LogInfo
-             ),
-             "Incomplete record 1"
+             );
+            }, "Incomplete record 1"
          );
      }
 
      TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags2) {
-         EXPECT_DEATH_IF_SUPPORTED(
+         EXPECT_DEATH_IF_SUPPORTED({
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
             // Edit SW_WEATHER_HIST values from their original value
@@ -1150,30 +1150,30 @@ namespace {
 
             local_inst.SW_All.Weather.allHist[0]->temp_max[0] = -102.;
 
-             checkAllWeather(&local_inst.SW_All.Weather, &local_inst.LogInfo),
-             "Daily input value for minimum temperature is greater than daily input value for maximum temperature"
+             checkAllWeather(&local_inst.SW_All.Weather, &local_inst.LogInfo);
+            }, "Daily input value for minimum temperature is greater than daily input value for maximum temperature"
          );
      }
      TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags3) {
-         EXPECT_DEATH_IF_SUPPORTED(
+         EXPECT_DEATH_IF_SUPPORTED({
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
             // Make precipitation unresonable (< 0)
-
             local_inst.SW_All.Weather.allHist[0]->ppt[0] = -1.;
-             checkAllWeather(&local_inst.SW_All.Weather, &local_inst.LogInfo),
-             "Invalid daily precipitation value"
+
+            checkAllWeather(&local_inst.SW_All.Weather, &local_inst.LogInfo);
+            }, "Invalid daily precipitation value"
          );
      }
      TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags4) {
-         EXPECT_DEATH_IF_SUPPORTED(
+         EXPECT_DEATH_IF_SUPPORTED({
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
             // Make relative humidity unreasonable (< 0%)
 
             local_inst.SW_All.Weather.allHist[0]->r_humidity_daily[0] = -.1252;
-             checkAllWeather(&local_inst.SW_All.Weather, &local_inst.LogInfo),
-             "relative humidity value did not fall in the range"
+             checkAllWeather(&local_inst.SW_All.Weather, &local_inst.LogInfo);
+             }, "relative humidity value did not fall in the range"
          );
      }
 }
