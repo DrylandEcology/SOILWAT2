@@ -448,7 +448,7 @@ namespace {
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
   TEST(SiteDeathTest, SoilParameters) {
-    LyrIndex n1 = 0, n2 = 1, k = 2;
+    LyrIndex n1 = 0;
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
     EXPECT_DEATH_IF_SUPPORTED(
@@ -459,6 +459,10 @@ namespace {
                       local_inst.PathInfo.InFiles, &local_inst.LogInfo),
       "'bare-soil evaporation coefficient' has an invalid value"
     );
+  }
+
+  TEST(SiteDeathTest, SoilParameters2) {
+    LyrIndex n2 = 1, k = 2;
 
     // Check error for bad transpiration coefficient (should be [0-1])
     EXPECT_DEATH_IF_SUPPORTED(

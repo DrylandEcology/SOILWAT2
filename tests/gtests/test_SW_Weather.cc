@@ -1115,7 +1115,6 @@ namespace {
 
           // Initialize any variables
           TimeInt year = 1980;
-          double originVal;
 
              // Run death test
          EXPECT_DEATH_IF_SUPPORTED(
@@ -1140,41 +1139,37 @@ namespace {
              ),
              "Incomplete record 1"
          );
+     }
 
-         /* Check for value(s) that are not within reasonable range these
-            tests will make use of `checkAllWeather()` */
-
+     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags2) {
          EXPECT_DEATH_IF_SUPPORTED(
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
             // Edit SW_WEATHER_HIST values from their original value
                 // Make temperature unreasonable (not within [-100, 100])
-            originVal = local_inst.SW_All.Weather.allHist[0]->temp_max[0];
 
             local_inst.SW_All.Weather.allHist[0]->temp_max[0] = -102.;
 
              checkAllWeather(&local_inst.SW_All.Weather, &local_inst.LogInfo),
              "Daily input value for minimum temperature is greater than daily input value for maximum temperature"
          );
-
+     }
+     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags3) {
          EXPECT_DEATH_IF_SUPPORTED(
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
             // Make precipitation unresonable (< 0)
-            local_inst.SW_All.Weather.allHist[0]->temp_max[0] = originVal;
-
-            originVal = local_inst.SW_All.Weather.allHist[0]->ppt[0];
 
             local_inst.SW_All.Weather.allHist[0]->ppt[0] = -1.;
              checkAllWeather(&local_inst.SW_All.Weather, &local_inst.LogInfo),
              "Invalid daily precipitation value"
          );
-
+     }
+     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags4) {
          EXPECT_DEATH_IF_SUPPORTED(
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
             // Make relative humidity unreasonable (< 0%)
-            local_inst.SW_All.Weather.allHist[0]->ppt[0] = originVal;
 
             local_inst.SW_All.Weather.allHist[0]->r_humidity_daily[0] = -.1252;
              checkAllWeather(&local_inst.SW_All.Weather, &local_inst.LogInfo),
