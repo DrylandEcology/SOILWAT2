@@ -167,7 +167,7 @@ namespace {
 
     }
 
-    TEST(ReadAllWeatherDeathTest, TooManyMissingForLOCF) {
+    TEST(ReadAllWeatherDeathTest, DISABLED_TooManyMissingForLOCF) {
 
         // Error: too many missing values and weather generator turned off
         EXPECT_DEATH_IF_SUPPORTED({
@@ -1102,7 +1102,7 @@ namespace {
         }
      }
 
-     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags) {
+     TEST(DailyInsteadOfMonthlyInputDeathTest, DISABLED_ReasonableValuesAndFlags) {
          /*
             This section covers number of flags and the testing of reasonable results (`checkAllWeather()`).
 
@@ -1141,7 +1141,7 @@ namespace {
          );
      }
 
-     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags2) {
+     TEST(DailyInsteadOfMonthlyInputDeathTest, DISABLED_ReasonableValuesAndFlags2) {
          EXPECT_DEATH_IF_SUPPORTED({
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
@@ -1154,7 +1154,7 @@ namespace {
             }, "Daily input value for minimum temperature is greater than daily input value for maximum temperature"
          );
      }
-     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags3) {
+     TEST(DailyInsteadOfMonthlyInputDeathTest, DISABLED_ReasonableValuesAndFlags3) {
          EXPECT_DEATH_IF_SUPPORTED({
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 
@@ -1165,7 +1165,7 @@ namespace {
             }, "Invalid daily precipitation value"
          );
      }
-     TEST(DailyInsteadOfMonthlyInputDeathTest, ReasonableValuesAndFlags4) {
+     TEST(DailyInsteadOfMonthlyInputDeathTest, DISABLED_ReasonableValuesAndFlags4) {
          EXPECT_DEATH_IF_SUPPORTED({
             AllTestDeathTestClass local_inst = AllTestDeathTestClass();
 

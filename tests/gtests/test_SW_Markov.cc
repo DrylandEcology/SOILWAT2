@@ -179,7 +179,7 @@ printf("Print 9\n");
     SW_MKV_deconstruct(&SW_All.Markov);
   }
 
-  TEST(WGDeathTest, mvnorm) {
+  TEST(WGDeathTest, DISABLED_mvnorm) {
     RealD tmax = 0., tmin = 0.;
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL

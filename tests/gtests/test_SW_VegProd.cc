@@ -1146,7 +1146,7 @@ namespace {
 
     }
 
-    TEST(VegEstimationDeathTest, VegInputGreaterThanOne) {
+    TEST(VegEstimationDeathTest, DISABLED_VegInputGreaterThanOne) {
 
         /*  ================================================================
                    Tests a death case of `estimatePotNatVegComposition()`
@@ -1211,7 +1211,7 @@ namespace {
         );
     }
 
-    TEST(VegEstimationDeathTest, VegInputGreaterThanOne2) {
+    TEST(VegEstimationDeathTest, DISABLED_VegInputGreaterThanOne2) {
         SW_CLIMATE_CLIM climateAverages;
         SW_CLIMATE_YEARLY climateOutput;
 

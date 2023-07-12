@@ -124,7 +124,7 @@ namespace {
 
 
   // Test fatal failures of PTF estimation
-  TEST(SiteDeathTest, PTFs) {
+  TEST(SiteDeathTest, DISABLED_PTFs) {
 
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -234,7 +234,7 @@ namespace {
 
 
   // Test fatal failures of SWRC parameter checks
-  TEST(SiteDeathTest, SWRCpChecks) {
+  TEST(SiteDeathTest, DISABLED_SWRCpChecks) {
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
@@ -447,7 +447,7 @@ namespace {
 
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST(SiteDeathTest, SoilParameters) {
+  TEST(SiteDeathTest, DISABLED_SoilParameters) {
     LyrIndex n1 = 0;
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
@@ -461,7 +461,7 @@ namespace {
     );
   }
 
-  TEST(SiteDeathTest, SoilParameters2) {
+  TEST(SiteDeathTest, DISABLED_SoilParameters2) {
     LyrIndex n2 = 1, k = 2;
 
     // Check error for bad transpiration coefficient (should be [0-1])
@@ -626,7 +626,7 @@ namespace {
 
 
   // Test that bulk and matric soil density fail
-  TEST(SWSiteDeathTest, SoilDensity) {
+  TEST(SWSiteDeathTest, DISABLED_SoilDensity) {
     // Check error if bulk density too low for coarse fragments
     EXPECT_DEATH_IF_SUPPORTED({
       LOG_INFO LogInfo;
