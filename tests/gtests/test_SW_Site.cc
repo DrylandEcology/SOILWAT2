@@ -124,7 +124,7 @@ namespace {
 
 
   // Test fatal failures of PTF estimation
-  TEST(SiteDeathTest, DISABLED_PTFs) {
+  TEST(SiteDeathTest, PTFs) {
 
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -234,7 +234,7 @@ namespace {
 
 
   // Test fatal failures of SWRC parameter checks
-  TEST(SiteDeathTest, DISABLED_SWRCpChecks) {
+  TEST(SiteDeathTest, SWRCpChecks) {
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
