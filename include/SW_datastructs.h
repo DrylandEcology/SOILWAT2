@@ -950,9 +950,6 @@ typedef struct {
 	#if defined(RSOILWAT) || defined(STEPWAT)
 	/** \brief A 2-dim array of pointers to output arrays.
 
-	\note This should be initialized to NULL because they are defined globally
-		and thus have `static storage duration`.
-
 	The variable p_OUT used by rSOILWAT2 for output and by STEPWAT2 for
 	mean aggregation.
 	*/
