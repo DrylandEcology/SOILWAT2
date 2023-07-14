@@ -54,6 +54,11 @@ jobs:
       if: ${{ runner.os != 'macOS' }}
       run: make clean test_leaks
 
+    - name: Unit tests (seed 92968)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_random_seed=92968
+
 
   check_code_coverage:
     runs-on: ubuntu-latest
