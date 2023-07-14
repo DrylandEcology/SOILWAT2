@@ -59,3 +59,8 @@ jobs:
       run: |
         make clean_test test
         bin/sw_test --gtest_shuffle --gtest_random_seed=71212
+
+    - name: Unit tests (seed 92968)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_random_seed=92968
