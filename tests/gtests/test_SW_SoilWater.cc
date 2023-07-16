@@ -368,18 +368,29 @@ namespace{
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
     EXPECT_DEATH_IF_SUPPORTED({
-      SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+      LOG_INFO LogInfo2;
+      LogInfo2.logged = swFALSE;
+      LogInfo2.logfp = stderr;
+
+      printf("First call\n");
+
+      SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo2);
       }, "is not implemented"
     );
     EXPECT_DOUBLE_EQ(
-      SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
+     SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
       SW_MISSING
     );
 
     // --- 2) swp < 0: water content cannot be negative (any SWRC)
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
       EXPECT_DEATH_IF_SUPPORTED({
-        SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+        LOG_INFO LogInfo2;
+        LogInfo2.logged = swFALSE;
+        LogInfo2.logfp = stderr;
+        printf("Made it here\n");
+
+        SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo2);
         }, "invalid SWP"
       );
       EXPECT_DOUBLE_EQ(
