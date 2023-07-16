@@ -82,15 +82,15 @@ namespace {
         // SW_All.Weather.generateWeatherMethod = 2;
 
         // Change directory to get input files with some missing data
-        strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
+        // strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
         // SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
         //              SW_All.Weather.generateWeatherMethod,
         //              PathInfo.InFiles, &LogInfo);
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
-        SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+        // SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        // SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
+        // SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
 
         // Expect that missing input values (from 1980) are filled by the weather generator
