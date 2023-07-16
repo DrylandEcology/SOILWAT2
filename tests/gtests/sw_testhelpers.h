@@ -68,7 +68,7 @@ class AllTest : public::testing::Test {
 
     void TearDown() override {
       printf("Tear down 1\n");
-      SW_CTL_clear_model(swTRUE, &SW_All, &PathInfo);
+      SW_CTL_clear_model(swFALSE, &SW_All, &PathInfo);
       printf("Tear down 2\n");
     }
 };
