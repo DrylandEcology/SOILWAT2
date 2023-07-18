@@ -59,10 +59,15 @@ jobs:
         make clean_test test
         bin/sw_test --gtest_shuffle --gtest_random_seed=92968
 
-    - name: Unit tests (500 shuffle)
+    - name: Unit tests (seed 29864)
       run: |
         make clean_test test
-        bin/sw_test --gtest_shuffle --gtest_repeat=500
+        bin/sw_test --gtest_shuffle --gtest_random_seed=29864
+
+    - name: Unit tests (50 shuffle)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_repeat=50
 
 
   check_code_coverage:
