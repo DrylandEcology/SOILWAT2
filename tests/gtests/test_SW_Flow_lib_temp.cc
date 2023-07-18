@@ -665,6 +665,8 @@ namespace {
     }
     SW_Site.n_layers = nlyrs2;
 
+    SW_Site.Tsoil_constant = 4.15;
+
     SW_ST_setup_run(
       &SW_StRegValues,
       &SW_Site,
