@@ -41,19 +41,20 @@
 
 namespace {
   // Test the SW_Carbon constructor 'SW_CBN_construct'
-  TEST_F(AllTest, CarbonConstructor) {
+  TEST(CarbonTest, CarbonConstructor) {
     int x;
+    SW_CARBON SW_Carbon;
 
-    SW_CBN_construct(&SW_All.Carbon);
+    SW_CBN_construct(&SW_Carbon); // does not allocate memory
 
     // Test type (and existence)
-    EXPECT_EQ(typeid(x), typeid(SW_All.Carbon.use_wue_mult));
-    EXPECT_EQ(typeid(x), typeid(SW_All.Carbon.use_bio_mult));
+    EXPECT_EQ(typeid(x), typeid(SW_Carbon.use_wue_mult));
+    EXPECT_EQ(typeid(x), typeid(SW_Carbon.use_bio_mult));
   }
 
 
   // Test reading yearly CO2 data from disk file
-  TEST_F(AllTest, ReadCarbonInputFile) {
+  TEST_F(CarbonStructTest, CarbonReadInputFile) {
     TimeInt year, simendyr = SW_All.Model.endyr + SW_All.Model.addtl_yr;
     double sum_CO2;
 
@@ -86,7 +87,7 @@ namespace {
 
 
   // Test the calculation of CO2-effect multipliers
-  TEST_F(AllTest, CarbonCO2multipliers) {
+  TEST_F(CarbonStructTest, CarbonCO2multipliers) {
     TimeInt year, simendyr = SW_All.Model.endyr + SW_All.Model.addtl_yr;
     int k;
 

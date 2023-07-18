@@ -27,6 +27,11 @@
 #include "tests/gtests/sw_testhelpers.h"
 
 
+void silent_tests(LOG_INFO* LogInfo) {
+  LogInfo->logged = swFALSE;
+  LogInfo->logfp = NULL;
+}
+
 /**
   @brief Creates soil layers based on function arguments (instead of reading
     them from an input file as _read_layers() does)
@@ -96,4 +101,23 @@ void create_test_soillayers(unsigned int nlayers,
     bulkd, f_gravel, evco, trco_grass, trco_shrub, trco_tree,
     trco_forb, psand, pclay, imperm, soiltemp, nRegions,
     regionLowerBounds, LogInfo);
+}
+
+
+
+void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
+    SW_Site->_SWCMinVal = 100;
+    SW_Site->_SWCWetVal = 15;
+    SW_Site->_SWCInitVal = 15;
+
+    SW_Site->slow_drain_coeff = 0.02;
+
+    SW_Site->site_has_swrcp = swFALSE;
+    strcpy(SW_Site->site_swrc_name, (char *) "Campbell1974");
+    SW_Site->site_swrc_type = encode_str2swrc(SW_Site->site_swrc_name, &LogInfo);
+    strcpy(SW_Site->site_ptf_name, (char *) "Cosby1984AndOthers");
+    SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
 }

@@ -21,21 +21,36 @@
 
 namespace{
   // Test the 'SW_SoilWater' function 'SW_SWC_adjust_snow'
-  TEST_F(AllTest, SoilWaterSWCadjustSnow){
-    // setup mock variables
-    SW_All.Site.TminAccu2 = 0;
-    SW_All.Model.doy = 1;
-    SW_All.Site.RmeltMax = 1;
-    SW_All.Site.RmeltMin = 0;
-    SW_All.Site.lambdasnow = .1;
-    SW_All.Site.TmaxCrit = 1;
 
-    RealD temp_min = 0, temp_max = 10, ppt = 1, rain = 1.5, snow = 1.5,
-    snowmelt = 1.2;
+  TEST(SoilWaterTest, SoilWaterSWCadjustSnow){
+    // setup variables
+    RealD
+      doy = 1,
+      temp_min = 0,
+      temp_max = 10,
+      ppt = 1,
+      rain = 1.5,
+      snow = 1.5,
+      snowmelt = 1.2,
+      temp_snow = 0,
+      snowpack[TWO_DAYS] = {0};
 
-    SW_SWC_adjust_snow(&SW_All.Weather.temp_snow, SW_All.SoilWat.snowpack,
-                       &SW_All.Site, temp_min, temp_max, ppt,
-                       SW_All.Model.doy, &rain, &snow, &snowmelt);
+    SW_SITE SW_Site;
+
+    SW_Site.TminAccu2 = 0;
+    SW_Site.RmeltMax = 1;
+    SW_Site.RmeltMin = 0;
+    SW_Site.lambdasnow = .1;
+    SW_Site.TmaxCrit = 1;
+
+
+    SW_SWC_adjust_snow(
+      &temp_snow, snowpack,
+      &SW_Site,
+      temp_min, temp_max, ppt, doy,
+      &rain, &snow, &snowmelt
+    );
+
     // when average temperature >= SW_Site.TminAccu2, we expect rain == ppt
     EXPECT_EQ(rain, 1);
     // when average temperature >= SW_All.Site.TminAccu2, we expect snow == 0
@@ -43,11 +58,15 @@ namespace{
     // when temp_snow <= SW_All.Site.TmaxCrit, we expect snowmelt == 0
     EXPECT_EQ(snowmelt, 0);
 
-    SW_All.Site.TminAccu2 = 6;
+    SW_Site.TminAccu2 = 6;
 
-    SW_SWC_adjust_snow(&SW_All.Weather.temp_snow, SW_All.SoilWat.snowpack,
-                       &SW_All.Site, temp_min, temp_max, ppt,
-                       SW_All.Model.doy, &rain, &snow, &snowmelt);
+    SW_SWC_adjust_snow(
+      &temp_snow, snowpack,
+      &SW_Site,
+      temp_min, temp_max, ppt, doy,
+      &rain, &snow, &snowmelt
+    );
+
     // when average temperature < SW_Site.TminAccu2, we expect rain == 0
     EXPECT_EQ(rain, 0);
     // when average temperature < SW_All.Site.TminAccu2, we expect snow == ppt
@@ -56,21 +75,34 @@ namespace{
     EXPECT_EQ(snowmelt, 0);
   }
 
-  TEST_F(AllTest, SoilWaterSWCadjustSnow2) {
-        // setup mock variables
-    SW_All.Site.TminAccu2 = 0;
-    SW_All.Model.doy = 1;
-    SW_All.Site.RmeltMax = 1;
-    SW_All.Site.RmeltMin = 0;
-    SW_All.Site.lambdasnow = .1;
-    SW_All.Site.TmaxCrit = 1;
+  TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
+    RealD
+      doy = 1,
+      temp_min = 0,
+      temp_max = 22,
+      ppt = 1,
+      rain = 1.5,
+      snow = 1.5,
+      snowmelt = 1.2,
+      temp_snow = 0,
+      snowpack[TWO_DAYS] = {0};
 
-    RealD temp_min = 0, temp_max = 22, ppt = 1, rain = 1.5, snow = 1.5,
-    snowmelt = 1.2;
+    SW_SITE SW_Site;
 
-    SW_SWC_adjust_snow(&SW_All.Weather.temp_snow, SW_All.SoilWat.snowpack,
-                       &SW_All.Site, temp_min, temp_max, ppt,
-                       SW_All.Model.doy, &rain, &snow, &snowmelt);
+    SW_Site.TminAccu2 = 0;
+    SW_Site.RmeltMax = 1;
+    SW_Site.RmeltMin = 0;
+    SW_Site.lambdasnow = .1;
+    SW_Site.TmaxCrit = 1;
+
+
+    SW_SWC_adjust_snow(
+      &temp_snow, snowpack,
+      &SW_Site,
+      temp_min, temp_max, ppt, doy,
+      &rain, &snow, &snowmelt
+    );
+
     // when average temperature >= SW_Site.TminAccu2, we expect rain == ppt
     EXPECT_EQ(rain, 1);
     // when average temperature >= SW_All.Site.TminAccu2, we expect snow == 0
@@ -81,7 +113,10 @@ namespace{
 
 
   // Test the 'SW_SoilWater' functions 'SWRC_SWCtoSWP' and `SWRC_SWPtoSWC`
-  TEST_F(AllTest, SoilWaterTranslateBetweenSWCandSWP) {
+  TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
     // set up mock variables
     unsigned int swrc_type, ptf_type, k;
     const int em = LOGFATAL;
@@ -269,7 +304,10 @@ namespace{
 
 
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWCtoSWP'
-  TEST_F(AllDeathTest, SoilWaterSWCtoSWPDeathTest) {
+  TEST(SoilWaterDeathTest, SoilWaterSWCtoSWPDeathTest) {
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
     // set up mock variables
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -346,7 +384,10 @@ namespace{
 
 
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWPtoSWC'
-  TEST_F(AllDeathTest, SoilWaterSWPtoSWCDeathTest) {
+  TEST(SoilWaterDeathTest, SoilWaterSWPtoSWCDeathTest) {
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
     // set up mock variables
     RealD
       swrcp[SWRC_PARAM_NMAX],

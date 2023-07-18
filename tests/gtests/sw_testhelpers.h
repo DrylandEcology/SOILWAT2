@@ -26,10 +26,15 @@ static const double
 
 /* Functions for tests */
 
+void silent_tests(LOG_INFO* LogInfo);
+
 void create_test_soillayers(unsigned int nlayers,
       SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo);
 
+void setup_SW_Site_for_tests(SW_SITE *SW_Site);
 
+
+/* Classes for tests and test fixtures */
 class AllTest : public::testing::Test {
   protected:
 
@@ -45,8 +50,7 @@ class AllTest : public::testing::Test {
       Bool QuietMode = swFALSE;
 
       // Initialize SOILWAT2 variables and read values from example input file
-      LogInfo.logged = swFALSE;
-      LogInfo.logfp = NULL;
+      silent_tests(&LogInfo);
 
       PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
 
@@ -61,7 +65,7 @@ class AllTest : public::testing::Test {
         - error messages go directly to stderr (which DeathTests use to match against)
       */
       sw_check_log(QuietMode, &LogInfo);
-      LogInfo.logfp = NULL;
+      silent_tests(&LogInfo);
 
       SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
             SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
@@ -73,7 +77,18 @@ class AllTest : public::testing::Test {
     }
 };
 
-using AllDeathTest = AllTest;
 
+using CarbonStructTest = AllTest;
 
+using SiteStructTest = AllTest;
+using SiteStructDeathTest = AllTest;
 
+using VegEstabStructTest = AllTest;
+
+using VegProdStructTest = AllTest;
+using VegProdStructDeathTest = AllTest;
+
+using WeatherStructTest = AllTest;
+using WeatherStructDeathTest = AllTest;
+
+using WaterBalanceStructTest = AllTest;

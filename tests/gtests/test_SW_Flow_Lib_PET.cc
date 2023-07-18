@@ -47,7 +47,7 @@
 namespace
 {
   // Test solar position
-  TEST_F(AllTest, SolarPosSolarPosition)
+  TEST(AtmDemandTest, SolarPosSolarPosition)
   {
     double declin, reldist, lat,
       six_hours = 6. * swPI / 12.,
@@ -141,7 +141,7 @@ namespace
 
 
   // Test sun hour angles for horizontal and tilted surfaces
-  TEST_F(AllTest, SolarPosSW_HourAnglesSymmetries)
+  TEST(AtmDemandTest, SolarPosSW_HourAnglesSymmetries)
   {
     //------ Check expectations on some symmetries
     //  - Expectation 1: Horizontal sunset/sunrise:
@@ -164,6 +164,8 @@ namespace
     // (particularly near equinoxes and near "edges" of shading):
     //    --> not unit tested here, but see
     //        `SW2_SolarPosition_Test__hourangles_by_lat_and_doy`
+
+    SW_ATMD SW_AtmDemand;
 
     int
       k, k2, ilat, itime, isl, iasp,
@@ -237,9 +239,11 @@ namespace
                   );
               }
 
+              SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
+
               // Calculate sun hour angles
               sun_hourangles(
-                &SW_All.AtmDemand,
+                &SW_AtmDemand,
                 doy_used[k][itime],
                 latitude_used[k][itime],
                 slope,
@@ -264,8 +268,6 @@ namespace
 
               daylength[k][itime] *= rad_to_hours;
             }
-
-            SW_PET_init_run(&SW_All.AtmDemand); // Re-init radiation memoization
           }
 
 
@@ -351,7 +353,7 @@ namespace
   // ```
   //   Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lat_and_doy.R
   // ```
-  TEST_F(AllTest, SolarPosHourAnglesByLatAndDoy)
+  TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy)
   {
     int k, ilat, idoy, isl, iasp, length_strnum;
     double
@@ -498,7 +500,7 @@ namespace
   // ```
   //   Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lats.R
   // ```
-  TEST_F(AllTest, SolarPosHourAnglesByLats)
+  TEST(AtmDemandTest, SolarPosHourAnglesByLats)
   {
     int k, ilat, idoy, isl, iasp, iasp2,
       // day of nonleap year Mar 18 (one day before equinox), Jun 21 (solstice),
@@ -589,8 +591,10 @@ namespace
   //   Comparison against examples by Duffie & Beckman 2013 are expected to
   //   deviate in value, but show similar patterns, because equations for
   //   (i) sun-earth distance equation and (ii) solar declination differ
-  TEST_F(AllTest, SolarRadiationExtraterrestrial)
+  TEST(AtmDemandTest, SolarRadiationExtraterrestrial)
   {
+    SW_ATMD SW_AtmDemand;
+
     unsigned int k1, k2, doy;
     double
       lat,
@@ -626,15 +630,18 @@ namespace
       lat = lats_Table1_10_1[k1] * deg_to_rad;
 
       for (k2 = 0; k2 < 12; k2++) {
+
+        SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization (for new location)
+
         if (std::isfinite(H_oh_Table1_10_1[k1][k2])) {
           doy = doys_Table1_6_1[k2];
 
           sun_hourangles(
-            &SW_All.AtmDemand,
+            &SW_AtmDemand,
             doy, lat, 0., 0.,
             sun_angles, int_cos_theta, int_sin_beta
           );
-          solar_radiation_extraterrestrial(SW_All.AtmDemand.memoized_G_o, doy,
+          solar_radiation_extraterrestrial(SW_AtmDemand.memoized_G_o, doy,
                                            int_cos_theta, H_o);
 
           if (ZRO(H_oh_Table1_10_1[k1][k2])) {
@@ -657,47 +664,47 @@ namespace
           }
         }
       }
-
-      SW_PET_init_run(&SW_All.AtmDemand); // Re-init radiation memoization (for next location)
     }
 
 
     // Duffie & Beckman 2013: Example 1.10.1
+    SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
     doy = 105;
     sun_hourangles(
-      &SW_All.AtmDemand,
+      &SW_AtmDemand,
       doy, lat_Madison_WI, 0., 0.,
       sun_angles, int_cos_theta, int_sin_beta
     );
-    solar_radiation_extraterrestrial(SW_All.AtmDemand.memoized_G_o, doy,
+    solar_radiation_extraterrestrial(SW_AtmDemand.memoized_G_o, doy,
                                      int_cos_theta, H_o);
     EXPECT_NEAR(H_o[0], 33.8, 2. * tol1)
       << "Duffie & Beckman 2013: Example 1.10.1\n";
-    SW_PET_init_run(&SW_All.AtmDemand); // Re-init radiation memoization
+
 
     // Duffie & Beckman 2013: Example 2.11.1
+    SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
     doy = 246;
     sun_hourangles(
-      &SW_All.AtmDemand,
+      &SW_AtmDemand,
       doy, lat_StLouis_MO, 0., 0.,
       sun_angles, int_cos_theta, int_sin_beta
     );
-    solar_radiation_extraterrestrial(SW_All.AtmDemand.memoized_G_o, doy, int_cos_theta, H_o);
+    solar_radiation_extraterrestrial(SW_AtmDemand.memoized_G_o, doy, int_cos_theta, H_o);
     EXPECT_NEAR(H_o[0], 33.0, 7. * tol1)
       << "Duffie & Beckman 2013: Example 2.11.1\n";
-    SW_PET_init_run(&SW_All.AtmDemand); // Re-init radiation memoization
+
 
     // Duffie & Beckman 2013: Example 2.12.1
+    SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
     doy = 162;
     sun_hourangles(
-      &SW_All.AtmDemand,
+      &SW_AtmDemand,
       doy, lat_Madison_WI, 0., 0.,
       sun_angles, int_cos_theta, int_sin_beta
     );
-    solar_radiation_extraterrestrial(SW_All.AtmDemand.memoized_G_o, doy, int_cos_theta, H_o);
+    solar_radiation_extraterrestrial(SW_AtmDemand.memoized_G_o, doy, int_cos_theta, H_o);
     EXPECT_NEAR(H_o[0], 41.8, tol1)
       << "Duffie & Beckman 2013: Example 2.12.1\n";
-    SW_PET_init_run(&SW_All.AtmDemand); // Re-init radiation memoization
   }
 
 
@@ -708,8 +715,14 @@ namespace
   //       (see `SW2_SolarRadiationiation_Test.extraterrestrial`),
   //   (ii) we calculate H_gh while they use measured H_gh values, and
   //   (iii) separation models differ, etc.
-  TEST_F(AllTest, SolarRadiationGlobal)
+  TEST(AtmDemandTest, SolarRadiationGlobal)
   {
+    SW_ATMD SW_AtmDemand;
+    SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
+
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
     unsigned int k;
 
     // Duffie & Beckman 2013: Table 1.6.1
@@ -767,7 +780,7 @@ namespace
       rsds = SW_MISSING;
 
       H_gt = solar_radiation(
-        &SW_All.AtmDemand,
+        &SW_AtmDemand,
         doys_Table1_6_1[k],
         43. * deg_to_rad, // latitude
         226., // elevation
@@ -801,7 +814,7 @@ namespace
       rsds = H_gh; // calculated using `cloud_cover1[]`
 
       H_gt = solar_radiation(
-        &SW_All.AtmDemand,
+        &SW_AtmDemand,
         doys_Table1_6_1[k],
         43. * deg_to_rad, // latitude
         226., // elevation
@@ -830,7 +843,7 @@ namespace
       rsds = H_Ex2_19_1[1][k];
 
       H_gt = solar_radiation(
-        &SW_All.AtmDemand,
+        &SW_AtmDemand,
         doys_Table1_6_1[k],
         43. * deg_to_rad, // latitude
         226., // elevation
@@ -863,15 +876,13 @@ namespace
         << "Duffie & Beckman 2013: Example 2.19.1 (observed rsds), cloud cover: "
         << "month = " << k + 1 << "\n";
     }
-
-    SW_PET_init_run(&SW_All.AtmDemand); // Re-init radiation memoization
   }
 
 
 
 
   // Test saturation vapor pressure functions
-  TEST_F(AllTest, SW2PETsvp)
+  TEST(AtmDemandTest, PETsvp)
   {
     int i;
     double
@@ -905,8 +916,14 @@ namespace
 
 
   // Test `petfunc()`
-  TEST_F(AllTest, SW2PETpetfunc)
+  TEST(AtmDemandTest, PETpetfunc)
   {
+    SW_ATMD SW_AtmDemand;
+
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
+
     int i;
     unsigned int
       doy = 2,
@@ -938,12 +955,14 @@ namespace
         0.0896, 0.1290, 0.1867, 0.2736, 0.4027, 0.5890
       };
 
+    SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
+
     for (i = 0; i < 10; i++)
     {
       actual_vap_pressure = actualVaporPressure1(RH, avgtemps[i]);
 
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, doy,
+        &SW_AtmDemand, doy,
         lat, elev, slope0, aspect, reflec,
         &cloudcov, actual_vap_pressure,
         rsds, desc_rsds,
@@ -962,14 +981,16 @@ namespace
       // Inputs
       lats[] = {-90., -45., 0., 45., 90.},
       // Expected PET
-      expected_pet_lats[] = {0.1550, 0.4360, 0.3597, 0.1216, 0.0421};
+      expected_pet_lats[] = {0.416576, 0.435964, 0.359670, 0.121564, 0.042131};
 
     double e_a = actualVaporPressure1(RH, temp);
 
     for (i = 0; i < 5; i++)
     {
+      SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
+
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, doy,
+        &SW_AtmDemand, doy,
         lats[i] * deg_to_rad, elev, slope0, aspect, reflec,
         &cloudcov, e_a,
         rsds, desc_rsds,
@@ -979,9 +1000,7 @@ namespace
       check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp,
                           cloudcov, &LogInfo);
 
-      EXPECT_NEAR(check_pet, expected_pet_lats[i], tol3);
-
-      SW_PET_init_run(&SW_All.AtmDemand); // Re-init radiation memoization
+      EXPECT_NEAR(check_pet, expected_pet_lats[i], tol6);
    }
 
 
@@ -995,8 +1014,10 @@ namespace
 
     for (i = 0; i < 5; i++)
     {
+      SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
+
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, doy,
+        &SW_AtmDemand, doy,
         lat, elevs[i], slope0, aspect, reflec,
         &cloudcov, e_a,
         rsds, desc_rsds,
@@ -1019,8 +1040,10 @@ namespace
 
     for (i = 0; i < 5; i++)
     {
+      SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
+
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, doy,
+        &SW_AtmDemand, doy,
         lat, elev, slopes[i] * deg_to_rad, aspect, reflec,
         &cloudcov, e_a,
         rsds, desc_rsds,
@@ -1031,8 +1054,6 @@ namespace
                           cloudcov, &LogInfo);
 
       EXPECT_NEAR(check_pet, expected_pet_slopes[i], tol3);
-
-      SW_PET_init_run(&SW_All.AtmDemand); // Re-init radiation memoization
     }
 
 
@@ -1048,8 +1069,10 @@ namespace
 
     for (i = 0; i < 7; i++)
     {
+      SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
+
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, doy,
+        &SW_AtmDemand, doy,
         lat, elev, sloped, aspects[i] * deg_to_rad, reflec,
         &cloudcov, e_a,
         rsds, desc_rsds,
@@ -1060,8 +1083,6 @@ namespace
                           cloudcov, &LogInfo);
 
       EXPECT_NEAR(check_pet, expected_pet_aspects[i], tol3);
-
-      SW_PET_init_run(&SW_All.AtmDemand); // Re-init radiation memoization
     }
 
 
@@ -1074,8 +1095,10 @@ namespace
 
     for (i = 0; i < 5; i++)
     {
+      SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
+
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, doy,
+        &SW_AtmDemand, doy,
         lat, elev, sloped, aspect, reflecs[i],
         &cloudcov, e_a,
         rsds, desc_rsds,
@@ -1098,10 +1121,12 @@ namespace
 
     for (i = 0; i < 5; i++)
     {
+      SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
+
       actual_vap_pressure = actualVaporPressure1(RHs[i], temp);
 
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, doy,
+        &SW_AtmDemand, doy,
         lat, elev, slope0, aspect, reflec,
         &cloudcov, actual_vap_pressure,
         rsds, desc_rsds,
@@ -1122,8 +1147,10 @@ namespace
       // Expected PET
       expected_pet_windsps[] = {0.1016, 0.1426, 0.3070, 0.5124, 0.9232};
 
+    SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
+
     H_gt = solar_radiation(
-      &SW_All.AtmDemand, doy,
+      &SW_AtmDemand, doy,
       lat, elev, slope0, aspect, reflec,
       &cloudcov, e_a,
       rsds, desc_rsds,
@@ -1149,8 +1176,10 @@ namespace
 
     for (i = 0; i < 5; i++)
     {
+      SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
+
       H_gt = solar_radiation(
-        &SW_All.AtmDemand, doy,
+        &SW_AtmDemand, doy,
         lat, elev, slope0, aspect, reflec,
         &cloudcovs[i], e_a,
         rsds, desc_rsds,
@@ -1162,8 +1191,6 @@ namespace
 
       EXPECT_NEAR(check_pet, expected_pet_cloudcovs[i], tol3);
     }
-
-    SW_PET_init_run(&SW_All.AtmDemand); // Re-init radiation memoization
   }
 
 
@@ -1178,8 +1205,15 @@ namespace
   // ```
   //   Rscript tools/plot__SW2_PET_Test__petfunc_by_temps.R
   // ```
-  TEST_F(AllTest, SW2PETPetfuncByTemps)
+  TEST(AtmDemandTest, PETPetfuncByTemps)
   {
+    SW_ATMD SW_AtmDemand;
+    SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
+
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
+
     int doy, k1, k2, k3, k4, k5;
 
     unsigned int desc_rsds = 0;
@@ -1235,7 +1269,7 @@ namespace
               {
 
                 H_gt = fH_gt * solar_radiation(
-                  &SW_All.AtmDemand, doy,
+                  &SW_AtmDemand, doy,
                   lat, elev, slope, aspect, reflec,
                   &cloudcover, RH, temp,
                   rsds, desc_rsds,

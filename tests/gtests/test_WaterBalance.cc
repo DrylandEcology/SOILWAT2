@@ -45,7 +45,7 @@ namespace {
       ii) Summarize checks added to debugging code of 'SW_SWC_water_flow' (which is
           compiled if flag 'SWDEBUG' is defined)
   */
-  TEST_F(AllTest, WaterBalanceExample1) { // default run == 'testing' example1
+  TEST_F(WaterBalanceStructTest, WaterBalanceExample1) { // default run == 'testing' example1
     int i;
 
     // Run the simulation
@@ -60,7 +60,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WaterBalanceWithSoilTemperature) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithSoilTemperature) {
     int i;
 
     // Turn on soil temperature simulations
@@ -78,7 +78,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WithPondedWaterRunonRunoff) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithPondedWaterRunonRunoff) {
     int i;
 
     // Turn on impermeability of first soil layer, runon, and runoff
@@ -99,7 +99,7 @@ namespace {
 
 
 
-  TEST_F(AllTest, WaterBalanceWithWeatherGeneratorOnly) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithWeatherGeneratorOnly) {
     int i;
 
     // Turn on Markov weather generator (and turn off use of historical weather)
@@ -131,7 +131,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WaterBalanceWithWeatherGeneratorForSomeMissingValues) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithWeatherGeneratorForSomeMissingValues) {
     int i;
 
     // Turn on Markov weather generator
@@ -162,7 +162,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WaterBalanceWithHighGravelVolume) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithHighGravelVolume) {
     int i;
     LyrIndex s;
 
@@ -187,7 +187,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WaterBalanceWithOneSoilLayer) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithOneSoilLayer) {
     int i;
 
     // Setup one soil layer
@@ -213,7 +213,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WaterBalanceWithMaxSoilLayers) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithMaxSoilLayers) {
     int i;
 
     // Setup maximum number of soil layers
@@ -239,7 +239,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WaterBalanceWithVegetationFromClimate1) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithVegetationFromClimate1) {
     int i;
 
     // Select method to estimate vegetation from long-term climate
@@ -260,7 +260,7 @@ namespace {
     }
   }
 
-  TEST_F(AllTest, WaterBalanceWithSWRCvanGenuchten1980) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithSWRCvanGenuchten1980) {
     int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)
@@ -292,7 +292,7 @@ namespace {
 
 
 
-  TEST_F(AllTest, WaterBalanceWithSWRCFXW) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithSWRCFXW) {
     int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)
@@ -323,7 +323,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WaterBalanceWithDaymet) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithDaymet) {
     int i;
 
     // Point to Daymet weather data
@@ -362,7 +362,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WaterBalanceWithGRIDMET) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithGRIDMET) {
     int i;
 
     // Point to gridMET weather data
@@ -405,7 +405,7 @@ namespace {
   }
 
 
-  TEST_F(AllTest, WaterBalanceWithMACA) {
+  TEST_F(WaterBalanceStructTest, WaterBalanceWithMACA) {
     int i;
 
     // Point to MACA weather data

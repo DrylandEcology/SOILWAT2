@@ -65,7 +65,10 @@ namespace {
   };
 
   // Test pedotransfer functions
-  TEST_F(AllTest, SitePTFs) {
+  TEST(SiteTest, SitePTFs) {
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
     // inputs
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -124,7 +127,10 @@ namespace {
 
 
   // Test fatal failures of PTF estimation
-  TEST_F(AllDeathTest, SitePTFsDeathTest) {
+  TEST(SiteDeathTest, SitePTFsDeathTest) {
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
 
     RealD
       swrcp[SWRC_PARAM_NMAX],
@@ -154,7 +160,7 @@ namespace {
 
 
   // Test PTF-SWRC pairings
-  TEST_F(AllTest, SitePTF2SWRC) {
+  TEST(SiteTest, SitePTF2SWRC) {
     unsigned int k; // `length()` returns "unsigned long"
 
     for (k = 1; k < length(ns_ptfca2C1974); k++) {
@@ -231,7 +237,9 @@ namespace {
 
 
   // Test fatal failures of SWRC parameter checks
-  TEST_F(AllDeathTest, SiteSWRCpChecksDeathTest) {
+  TEST(SiteDeathTest, SiteSWRCpChecksDeathTest) {
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
@@ -249,7 +257,9 @@ namespace {
 
 
   // Test nonfatal failures of SWRC parameter checks
-  TEST_F(AllTest, SiteSWRCpChecks) {
+  TEST(SiteTest, SiteSWRCpChecks) {
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
 
     // inputs
     RealD
@@ -387,7 +397,10 @@ namespace {
 
 
   // Test 'PTF_RawlsBrakensiek1985'
-  TEST_F(AllTest, SitePTFRawlsBrakensiek1985) {
+  TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
     //declare mock INPUTS
     double
       theta_min,
@@ -441,7 +454,7 @@ namespace {
 
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST_F(AllDeathTest, SiteSoilParametersDeathTest) {
+  TEST_F(SiteStructDeathTest, SiteSoilParametersDeathTest) {
     LyrIndex n1 = 0, n2 = 1, k = 2;
     RealD help;
 
@@ -543,7 +556,10 @@ namespace {
 
 
   // Test bulk and matric soil density functionality
-  TEST_F(AllTest, SiteSoilDensity) {
+  TEST(SiteTest, SiteSoilDensity) {
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
     double
       soildensity = 1.4,
       fcoarse = 0.1;
@@ -587,7 +603,11 @@ namespace {
       calculate_soilBulkDensity(soildensity, fcoarse),
       soildensity
     );
+  }
 
+
+  TEST_F(SiteStructTest, SiteSoilDensityTypes) {
+    double fcoarse = 0.1;
 
     // Inputs represent matric density
     SW_All.Site.type_soilDensityInput = SW_MATRIC;
@@ -613,7 +633,7 @@ namespace {
 
 
   // Test that bulk and matric soil density fail
-  TEST_F(AllDeathTest, SiteSoilDensityDeathTest) {
+  TEST_F(SiteStructDeathTest, SiteSoilDensityDeathTest) {
 
     // Check error if bulk density too low for coarse fragments
     EXPECT_DEATH_IF_SUPPORTED(

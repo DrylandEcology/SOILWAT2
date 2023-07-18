@@ -150,9 +150,9 @@ namespace {
 
 
   // Test the application of the biomass CO2-effect
-  TEST_F(AllTest, BiomassCO2effect) {
+  TEST(VegProdTest, VegProdBiomassCO2effect) {
     int i;
-    double x;
+    double x = 1.5;
     double biom1[12], biom2[12];
 
     for (i = 0; i < 12; i++) {
@@ -160,7 +160,6 @@ namespace {
     }
 
     // One example
-    x = SW_All.VegProd.veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_All.Model.startyr + SW_All.Model.addtl_yr];
     apply_biomassCO2effect(biom2, biom1, x);
 
     for (i = 0; i < 12; i++) {
@@ -170,25 +169,28 @@ namespace {
 
 
   // Test summing values across vegetation types
-  TEST_F(AllTest, VegProdSumming) {
+  TEST(VegProdTest, VegProdSumming) {
     int vegIndex;
 
-    for(vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
-      SW_All.Site.transp_coeff[vegIndex][0] = 0.;
-    }
+    RealD transp_coeff[NVEGTYPES][MAX_LAYERS];
 
-    EXPECT_DOUBLE_EQ(sum_across_vegtypes(SW_All.Site.transp_coeff, 0), 0.);
 
     for(vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
-      SW_All.Site.transp_coeff[vegIndex][0] = 0.25;
+      transp_coeff[vegIndex][0] = 0.;
     }
 
-    EXPECT_DOUBLE_EQ(sum_across_vegtypes(SW_All.Site.transp_coeff, 0), 1.);
+    EXPECT_DOUBLE_EQ(sum_across_vegtypes(transp_coeff, 0), 0.);
+
+    for(vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
+      transp_coeff[vegIndex][0] = 0.25;
+    }
+
+    EXPECT_DOUBLE_EQ(sum_across_vegtypes(transp_coeff, 0), 1.);
   }
 
 
 	// Check `get_critical_rank`
-	TEST_F(AllTest, VegProdrank) {
+	TEST_F(VegProdStructTest, VegProdrank) {
 		int k;
 		// Check `get_critical_rank` for normal inputs, e.g., -2.0, -2.0, -3.5, -3.9
 		get_critical_rank(&SW_All.VegProd);
@@ -225,7 +227,7 @@ namespace {
 		assert_decreasing_SWPcrit(&SW_All.VegProd);
 	}
 
-    TEST_F(AllTest, EstimateVegNotFullVegetation) {
+    TEST_F(VegProdStructTest, VegProdEstimateVegNotFullVegetation) {
 
         /*  ================================================================
                     This block of tests deals with input values to
@@ -695,7 +697,7 @@ namespace {
         deallocateClimateStructs(&climateOutput, &climateAverages);
     }
 
-    TEST_F(AllTest, EstimateVegFullVegetation) {
+    TEST_F(VegProdStructTest, VegProdEstimateVegFullVegetation) {
 
         /*  ================================================================
                    This block of tests deals with input values to
@@ -1166,7 +1168,7 @@ namespace {
 
     }
 
-    TEST_F(AllDeathTest, EstimateVegInputGreaterThanOneDeathTest) {
+    TEST_F(VegProdStructDeathTest, EstimateVegInputGreaterThanOneDeathTest) {
 
         /*  ================================================================
                    Tests a death case of `estimatePotNatVegComposition()`
