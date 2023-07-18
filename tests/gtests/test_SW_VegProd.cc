@@ -114,18 +114,38 @@ namespace {
   int k;
 
   // Test the SW_VEGPROD constructor 'SW_VPD_construct'
-  TEST_F(AllTest, VegProdConstructor) {
-    SW_VPD_construct(&SW_All.VegProd, &LogInfo);
-    SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather,
-                    &SW_All.Model, SW_All.Site.latitude, &LogInfo);
+  TEST_F(VegProdStructTest, VegProdConstructor) {
+    // This test requires a local copy of SW_VEGPROD to avoid a memory leak
+    // (see issue #205)
+    // -- If using `SW_All.VegProd` or a global variable
+    // (for which `SW_VPD_construct()` has already been called once, e.g.,
+    // during the test fixture's `SetUp()`), then this (second) call to
+    // `SW_VPD_construct()` would allocate memory a second time
+    // while `SW_VPD_deconstruct()` will de-allocate memory only once
+    // (the call to `SW_VPD_deconstruct()`during the test fixture's `TearDown()`
+    // would see only NULL and thus not de-allocate the required second time
+    // to avoid a leak)
+    SW_VEGPROD SW_VegProd;
+
+    SW_VPD_construct(&SW_VegProd, &LogInfo); // allocates memory
+
+    SW_VPD_init_run(
+      &SW_VegProd,
+      &SW_All.Weather,
+      &SW_All.Model,
+      SW_All.Site.latitude,
+      &LogInfo
+    );
 
     ForEachVegType(k) {
-      EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[BIO_INDEX][0]);
-      EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]);
+      EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][0]);
+      EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]);
 
-      EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[WUE_INDEX][0]);
-      EXPECT_DOUBLE_EQ(1., SW_All.VegProd.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
+      EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][0]);
+      EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
     }
+
+    SW_VPD_deconstruct(&SW_VegProd);
   }
 
 
