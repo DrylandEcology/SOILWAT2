@@ -321,7 +321,7 @@ namespace {
 
   // Test set layer to frozen or unfrozen 'set_frozen_unfrozen'
   TEST(SWFlowTempTest, SWFlowTempSetFrozenUnfrozen){
-    RealD lyrFrozen[MAX_LAYERS];
+    RealD lyrFrozen[MAX_LAYERS] = {0};
 
     // declare inputs and output
     // *****  Test when nlyrs = 1  ***** //
@@ -454,7 +454,7 @@ namespace {
     LOG_INFO LogInfo;
     silent_tests(&LogInfo);
 
-    RealD lyrFrozen[MAX_LAYERS];
+    RealD lyrFrozen[MAX_LAYERS] = {0};
 
     unsigned int k, year = 1980, doy = 1;
 
@@ -470,16 +470,18 @@ namespace {
     double swc[] = {1.0}, swc_sat[] = {1.5}, bDensity[] = {1.8}, width[] = {20},
     sTemp[1], min_temp[] = {10.0}, max_temp[] = {1.0};
 
-    SW_Site.avgLyrTempInit[0] = 5.0;
+    SW_Site.n_layers = nlyrs;
+    SW_Site.stNRGR = nRgr;
+
     SW_Site.soilBulk_density[0] = 1.8;
     SW_Site.width[0] = 20;
-    SW_Site.n_layers = 1;
+    SW_Site.avgLyrTempInit[0] = 5.0;
+    SW_Site.Tsoil_constant = 4.15;
     SW_Site.swcBulk_fieldcap[0] = 2.6;
     SW_Site.swcBulk_wiltpt[0] = 1.0;
-    SW_Site.stNRGR = 65;
     SW_Site.stDeltaX = 15;
-    SW_Site.Tsoil_constant = 4.15;
     SW_Site.stMaxDepth = 990.;
+
     SW_Site.swcBulk_saturated[0] = 1.5;
 
 
@@ -608,7 +610,7 @@ namespace {
     LOG_INFO LogInfo;
     silent_tests(&LogInfo);
 
-    RealD lyrFrozen[MAX_LAYERS];
+    RealD lyrFrozen[MAX_LAYERS] = {0};
 
 
     // *****  Test when nlyrs = MAX_LAYERS  ***** //
@@ -639,6 +641,10 @@ namespace {
     double *swc_sat2 = new double[nlyrs2];
     double *min_temp = new double[nlyrs2];
     double *max_temp = new double[nlyrs2];
+
+    SW_Site.n_layers = nlyrs2;
+    SW_Site.stNRGR = nRgr;
+
     for (i = 0; i < nlyrs2; i++) {
       SW_Site.avgLyrTempInit[i] = sTempInit3[i];
       // SWC(wilting point): width > swc_wp > 0
@@ -663,7 +669,8 @@ namespace {
       //swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
       //  i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
     }
-    SW_Site.n_layers = nlyrs2;
+
+    SW_Site.Tsoil_constant = 4.15;
 
     SW_ST_setup_run(
       &SW_StRegValues,
@@ -763,7 +770,7 @@ namespace {
     LOG_INFO LogInfo;
     silent_tests(&LogInfo);
 
-    RealD lyrFrozen[MAX_LAYERS];
+    RealD lyrFrozen[MAX_LAYERS] = {0};
 
     unsigned int nlyrs = 1, nRgr = 65, year = 1980, doy = 1;
     double airTemp = 25.0, pet = 5.0, aet = 4.0, biomass = 100., surfaceTemp = 15.,
