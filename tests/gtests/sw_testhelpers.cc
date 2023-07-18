@@ -38,7 +38,7 @@
       simulation after this function has set soil layers, e.g.,
       SW_SWC_init_run()
 */
-void create_test_soillayers(unsigned int nlayers, char *InFiles[],
+void create_test_soillayers(unsigned int nlayers,
       SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo) {
 
   if (nlayers <= 0 || nlayers > MAX_LAYERS) {
@@ -95,5 +95,5 @@ void create_test_soillayers(unsigned int nlayers, char *InFiles[],
   set_soillayers(SW_VegProd, SW_Site, nlayers, dmax,
     bulkd, f_gravel, evco, trco_grass, trco_shrub, trco_tree,
     trco_forb, psand, pclay, imperm, soiltemp, nRegions,
-    regionLowerBounds, InFiles, LogInfo);
+    regionLowerBounds, LogInfo);
 }

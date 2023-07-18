@@ -327,8 +327,7 @@ namespace
     double swp_avgExpected1 = 1.5992088;
 
     // Setup soil layers
-    create_test_soillayers(n_layers, PathInfo.InFiles, &SW_All.VegProd,
-                           &SW_All.Site, &LogInfo);
+    create_test_soillayers(n_layers, &SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     ForEachSoilLayer(i, n_layers)
     {
@@ -356,8 +355,7 @@ namespace
     double swp_avgExpectedM = 1.7389131503001496;
 
     // Setup soil layers
-    create_test_soillayers(n_layers, PathInfo.InFiles, &SW_All.VegProd,
-                           &SW_All.Site, &LogInfo);
+    create_test_soillayers(n_layers, &SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     ForEachSoilLayer(i, n_layers)
     {
@@ -433,8 +431,7 @@ namespace
       }
 
       // Setup soil layers
-      create_test_soillayers(nelyrs, PathInfo.InFiles, &SW_All.VegProd,
-                             &SW_All.Site, &LogInfo);
+      create_test_soillayers(nelyrs, &SW_All.VegProd, &SW_All.Site, &LogInfo);
 
       ForEachSoilLayer(i, SW_All.Site.n_layers)
       {
@@ -518,8 +515,7 @@ namespace
       }
 
       // Setup soil layers
-      create_test_soillayers(nelyrs, PathInfo.InFiles, &SW_All.VegProd,
-                             &SW_All.Site, &LogInfo);
+      create_test_soillayers(nelyrs, &SW_All.VegProd, &SW_All.Site, &LogInfo);
 
       ForEachSoilLayer(i, SW_All.Site.n_layers)
       {
@@ -688,8 +684,7 @@ namespace
       }
 
       // Setup: soil layers
-      create_test_soillayers(nlyrs, PathInfo.InFiles, &SW_All.VegProd,
-                             &SW_All.Site, &LogInfo);
+      create_test_soillayers(nlyrs, &SW_All.VegProd, &SW_All.Site, &LogInfo);
 
       ForEachSoilLayer(i, nlyrs)
       {
@@ -851,8 +846,7 @@ namespace
       }
 
       // Setup soil layers
-      create_test_soillayers(nlyrs, PathInfo.InFiles, &SW_All.VegProd,
-                             &SW_All.Site, &LogInfo);
+      create_test_soillayers(nlyrs, &SW_All.VegProd, &SW_All.Site, &LogInfo);
 
       // Initialize soil arrays to be independent of soil texture...
       ForEachSoilLayer(i, nlyrs)
@@ -1079,8 +1073,8 @@ namespace
       }
 
       // Setup soil layers
-      create_test_soillayers(nlyrs, PathInfo.InFiles, &SW_All.VegProd,
-                             &SW_All.Site, &LogInfo);
+      create_test_soillayers(nlyrs, &SW_All.VegProd, &SW_All.Site, &LogInfo);
+
       ForEachSoilLayer(i, nlyrs)
       {
         // example data based on soil:

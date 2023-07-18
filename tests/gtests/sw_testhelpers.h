@@ -24,6 +24,12 @@ static const double
 #define missing(x)  ( EQ( fabs( (x) ), SW_MISSING ) || !std::isfinite( (x) ) )
 
 
+/* Functions for tests */
+
+void create_test_soillayers(unsigned int nlayers,
+      SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo);
+
+
 class AllTest : public::testing::Test {
   protected:
 
@@ -59,7 +65,7 @@ class AllTest : public::testing::Test {
 
       SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
             SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
-      SW_CTL_init_run(&SW_All, &PathInfo, &LogInfo);
+      SW_CTL_init_run(&SW_All, &LogInfo);
     }
 
     void TearDown() override {
@@ -69,9 +75,5 @@ class AllTest : public::testing::Test {
 
 using AllDeathTest = AllTest;
 
-/* Functions for unit tests */
 
-void Reset_SOILWAT2_after_UnitTest(void);
 
-void create_test_soillayers(unsigned int nlayers, char *InFiles[],
-      SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo);

@@ -173,7 +173,7 @@ namespace {
     }
 
     // Re-calculate soils
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Run the simulation
      SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
@@ -193,7 +193,6 @@ namespace {
     // Setup one soil layer
     create_test_soillayers(
       1,
-      PathInfo.InFiles,
       &SW_All.VegProd,
       &SW_All.Site,
       &LogInfo
@@ -220,7 +219,6 @@ namespace {
     // Setup maximum number of soil layers
     create_test_soillayers(
       MAX_LAYERS,
-      PathInfo.InFiles,
       &SW_All.VegProd,
       &SW_All.Site,
       &LogInfo
@@ -279,7 +277,7 @@ namespace {
     SW_SWRC_read(&SW_All.Site, PathInfo.InFiles, &LogInfo);
 
     // Update soils
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Run the simulation
      SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
@@ -311,7 +309,7 @@ namespace {
     SW_SWRC_read(&SW_All.Site, PathInfo.InFiles, &LogInfo);
 
     // Update soils
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Run the simulation
      SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);

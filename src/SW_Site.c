@@ -1704,7 +1704,6 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
     depth [cm] of each region in ascending (in value) order. If you think about
     this from the perspective of soil, it would mean the shallowest bound is at
     `lowerBounds[0]`.
-  @param[in] InFiles Array of program in/output files
   @param[in] LogInfo Holds information dealing with logfile output
 
   @sideeffect After deleting any previous data in the soil layer array
@@ -1721,7 +1720,8 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 	LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel, RealF *evco,
 	RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree, RealF *trco_forb,
 	RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp, int nRegions,
-	RealD *regionLowerBounds, char *InFiles[], LOG_INFO* LogInfo)
+	RealD *regionLowerBounds,
+	LOG_INFO* LogInfo)
 {
 
   RealF dmin = 0.0;
@@ -1775,7 +1775,7 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
   derive_soilRegions(SW_Site, nRegions, regionLowerBounds, LogInfo);
 
   // Re-initialize site parameters based on new soil layers
-  SW_SIT_init_run(SW_VegProd, SW_Site, InFiles, LogInfo);
+  SW_SIT_init_run(SW_VegProd, SW_Site, LogInfo);
 }
 
 
@@ -1949,13 +1949,11 @@ void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 	@param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
 		cover conditions in the simulation
 	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-	@param[in] InFiles Array of program in/output files
 	@param[in] LogInfo Holds information dealing with logfile output
 
 	@sideeffect Values stored in global variable `SW_Site`.
 */
-void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
-					 char *InFiles[], LOG_INFO* LogInfo) {
+void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* potentially this routine can be called whether the
 	 * layer data came from a file or a function call which
@@ -2271,15 +2269,15 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 				SW_Site->n_transp_lyrs[k] = max(SW_Site->n_transp_lyrs[k], s);
 
 			} else if (s == 0) {
-				LogError(LogInfo, LOGFATAL, "%s : Top soil layer must be included\n"
-						"  in %s tranpiration regions.\n", InFiles[eSite], key2veg[k]);
+				LogError(LogInfo, LOGFATAL, ": Top soil layer must be included\n"
+						"  in %s tranpiration regions.\n", key2veg[k]);
 			} else if (r < SW_Site->n_transp_rgn) {
-				LogError(LogInfo, LOGFATAL, "%s : Transpiration region %d \n"
+				LogError(LogInfo, LOGFATAL, ": Transpiration region %d \n"
 						"  is deeper than the deepest layer with a\n"
-						"  %s transpiration coefficient > 0 (%d) in '%s'.\n"
+						"  %s transpiration coefficient > 0 (%d).\n"
 						"  Please fix the discrepancy and try again.\n",
-						InFiles[eSite], r + 1, key2veg[k], s,
-								  InFiles[eLayers]);
+						r + 1, key2veg[k], s
+				);
 			} else {
 				SW_Site->my_transp_rgn[k][s] = 0;
 			}

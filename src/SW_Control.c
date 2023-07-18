@@ -179,10 +179,9 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw, PATH_INFO* PathInfo) {
 
   @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
-  @param[in] PathInfo Struct holding all information about the programs path/files
   @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_init_run(SW_ALL* sw, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
+void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
 
 	// SW_F_init_run() not needed
 	// SW_MDL_init_run() not needed
@@ -190,7 +189,7 @@ void SW_CTL_init_run(SW_ALL* sw, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 	// SW_MKV_init_run() not needed
 	SW_PET_init_run(&sw->AtmDemand);
 	// SW_SKY_init_run() not needed
-	SW_SIT_init_run(&sw->VegProd, &sw->Site, PathInfo->InFiles, LogInfo);
+	SW_SIT_init_run(&sw->VegProd, &sw->Site, LogInfo);
 	SW_VES_init_run(sw->VegEstab.parms, &sw->Site, sw->Site.n_transp_lyrs,
                   sw->VegEstab.count, LogInfo); // must run after `SW_SIT_init_run()`
 	SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model,

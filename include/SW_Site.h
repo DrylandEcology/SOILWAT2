@@ -239,7 +239,7 @@ void SW_SIT_init_counts(SW_SITE* SW_Site);
 void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 				 SW_CARBON* SW_Carbon, LOG_INFO* LogInfo);
 void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
-					 char *InFiles[], LOG_INFO* LogInfo);
+					LOG_INFO* LogInfo);
 void _echo_inputs(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo);
 
 /* these used to be in Layers */
@@ -251,7 +251,7 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 	LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel, RealF *evco,
 	RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree, RealF *trco_forb,
 	RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp, int nRegions,
-	RealD *regionLowerBounds, char *InFiles[], LOG_INFO* LogInfo);
+	RealD *regionLowerBounds, LOG_INFO* LogInfo);
 void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
 						RealD *regionLowerBounds, LOG_INFO* LogInfo);
 
