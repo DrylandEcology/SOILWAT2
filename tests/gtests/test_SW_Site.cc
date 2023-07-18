@@ -449,7 +449,7 @@ namespace {
     help = SW_All.Site.evap_coeff[n1];
     SW_All.Site.evap_coeff[n1] = -0.5;
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo),
+      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo),
       "'bare-soil evaporation coefficient' has an invalid value"
     );
     SW_All.Site.evap_coeff[n1] = help;
@@ -457,14 +457,14 @@ namespace {
     // Check error for bad transpiration coefficient (should be [0-1])
     SW_All.Site.transp_coeff[k][n2] = 1.5;
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo),
+      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo),
       "'transpiration coefficient' has an invalid value"
     );
   }
 
 
   // Test that soil transpiration regions are derived well
-  TEST_F(AllTest, SiteSoilTranspirationRegions) {
+  TEST_F(SiteStructTest, SiteSoilTranspirationRegions) {
     /* Notes:
         - SW_Site.n_layers is base1
         - soil layer information in _TranspRgnBounds is base0
@@ -592,7 +592,7 @@ namespace {
     // Inputs represent matric density
     SW_All.Site.type_soilDensityInput = SW_MATRIC;
     SW_All.Site.fractionVolBulk_gravel[0] = fcoarse;
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     EXPECT_GT(
       SW_All.Site.soilBulk_density[0],
@@ -603,7 +603,7 @@ namespace {
     // Inputs represent bulk density
     SW_All.Site.type_soilDensityInput = SW_BULK;
     SW_All.Site.fractionVolBulk_gravel[0] = fcoarse;
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, PathInfo.InFiles, &LogInfo);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     EXPECT_GT(
       SW_All.Site.soilBulk_density[0],
@@ -626,7 +626,7 @@ namespace {
     SW_All.Site.type_soilDensityInput = SW_MISSING;
 
     EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site,  PathInfo.InFiles, &LogInfo),
+      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo),
       "Soil density type not recognized"
     );
   }

@@ -31,7 +31,7 @@ extern "C" {
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw, PATH_INFO* PathInfo);
-void SW_CTL_init_run(SW_ALL* sw, PATH_INFO* PathInfo, LOG_INFO* LogInfo);
+void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo);
 void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
                                   LOG_INFO* LogInfo);
 void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,

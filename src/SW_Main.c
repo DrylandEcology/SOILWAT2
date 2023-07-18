@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
 								sw.Model.days_in_month, &LogInfo);
 
 	// initialize simulation run (based on user inputs)
-	SW_CTL_init_run(&sw, &PathInfo, &LogInfo);
+	SW_CTL_init_run(&sw, &LogInfo);
 
   // initialize output
 	SW_OUT_set_ncol(sw.Site.n_layers, sw.Site.n_evap_lyrs, sw.VegEstab.count,
