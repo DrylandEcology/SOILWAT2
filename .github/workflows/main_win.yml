@@ -42,5 +42,30 @@ jobs:
     - name: Run binary
       run: make clean bin_run
 
+    - name: Unit tests (seed 2998)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_random_seed=2998
+
+    - name: Unit tests (seed 71212)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_random_seed=71212
+
+    - name: Unit tests (seed 40913)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_random_seed=40913
+
+    - name: Unit tests (seed 43986)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_random_seed=43986
+
+    - name: Unit tests (50 shuffle)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_repeat=50
+
     - name: Unit tests (shuffle and repeat 3x)
       run: make clean test_rep3rnd

@@ -37,6 +37,32 @@ jobs:
       if: ${{ runner.os != 'macOS' }}
       run: make clean bin_leaks
 
+    - name: Unit tests (seed 19456)
+      run: |
+        CC=clang CXX=clang++ make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_random_seed=19456
+
+    - name: Unit tests (seed 92968)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_random_seed=92968
+
+    - name: Unit tests (seed 29864)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_random_seed=29864
+
+    - name: Unit tests (seed 15683)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_random_seed=29864
+
+    - name: Unit tests (50 shuffle)
+      run: |
+        make clean_test test
+        bin/sw_test --gtest_shuffle --gtest_repeat=50
+
+
     - name: Unit tests (shuffle and repeat 3x)
       run: make clean test_rep3rnd
 
