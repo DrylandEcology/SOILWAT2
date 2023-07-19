@@ -109,9 +109,14 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
     LOG_INFO LogInfo;
     silent_tests(&LogInfo);
 
+    SW_Site->deepdrain = swTRUE;
+
     SW_Site->_SWCMinVal = 100;
     SW_Site->_SWCWetVal = 15;
     SW_Site->_SWCInitVal = 15;
+
+    SW_Site->stMaxDepth = 990;
+    SW_Site->stDeltaX = 15;
 
     SW_Site->slow_drain_coeff = 0.02;
 

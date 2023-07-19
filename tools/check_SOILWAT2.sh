@@ -6,11 +6,14 @@
 
 
 # Notes:
-# - googletests (Jan 2022) requires a C++11 compliant compilers,
-#   gcc >= 5.0 or clang >= 5.0,
+# - googletests (July 2023) requires a C++14 compliant compilers,
+#   gcc >= 7.3.1 or clang >= 7.0.0,
 #   and POSIX API (e.g., `_POSIX_C_SOURCE=200809L`)
 #   which is not enabled by default on all systems
+#   (https://google.github.io/googletest/platforms.html)
 
+
+#------ USER SETTINGS ----------------------------------------------------------
 
 #--- Name of reference output
 dir_out_ref="tests/example/Output_ref"
@@ -21,6 +24,8 @@ dir_out_ref="tests/example/Output_ref"
 #  * on error: if false (default), print only selected parts that include the error message
 verbosity_on_error=false # options: true false
 
+
+#------ SETTINGS ---------------------------------------------------------------
 
 #--- List of (builtin and macport) compilers
 
@@ -43,6 +48,9 @@ declare -a cxxs=(
 
 ncomp=${#ccs[@]}
 
+
+
+#------ FUNCTIONS --------------------------------------------------------------
 
 #--- Function to compare output against reference
 compare_output_with_tolerance () {
@@ -84,12 +92,30 @@ check_error() {
   echo "$1" | awk 'tolower($0) ~ /[^-.w]error|failed|abort|trap|( not )/ && !/RNGBetaErrorsDeathTest/'
 }
 
+#--- Function to check for leaks (but avoid false hits)
+# $1 Text string
+# Returns lines that contain "leak"
+# (besides name of the command, report of no leaks, or
+# any unit test name: "WeatherNoMemoryLeakIfDecreasedNumberOfYears")
+check_leaks() {
+  echo "$1" | awk 'tolower($0) ~ /leak/ && !/leaks Report/ && !/ 0 leaks/ && !/debuggable/ && !/NoMemoryLeak/'
+}
+
+
+#--- Function to check if a command exists
+# $1 name of command
+exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+
+#------ MAIN -------------------------------------------------------------------
 
 #--- Loop through tests and compilers
 for ((k = 0; k < ncomp; k++)); do
   echo $'\n'$'\n'$'\n'\
        ==================================================$'\n'\
-       ${k}')' Test SOILWAT2 with compiler \'"${port_compilers[k]}"\'$'\n'\
+       ${k}") Test SOILWAT2 with compiler "\'"${port_compilers[k]}"\'$'\n'\
        ==================================================
 
   echo $'\n'"Set compiler ..."
@@ -109,7 +135,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       ${k}'-a)' Run example simulation with \'"${port_compilers[k]}"\'$'\n'\
+       ${k}"-a) Run example simulation with "\'"${port_compilers[k]}"\'$'\n'\
        --------------------------------------------------
 
   echo $'\n'"Target 'bin_run' ..."
@@ -155,7 +181,7 @@ for ((k = 0; k < ncomp; k++)); do
   fi
 
 
-  if command -v valgrind >/dev/null 2>&1; then
+  if exists valgrind ; then
     echo $'\n'"Target 'bind_valgrind' ..."
     res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bind_valgrind)
   fi
@@ -163,7 +189,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       ${k}'-b)' Run sanitizer on example simulation with \'"${port_compilers[k]}"\': exclude known leaks$'\n'\
+       ${k}"-b) Run sanitizers on example simulation with "\'"${port_compilers[k]}"$'\n'\
        --------------------------------------------------
 
   echo $'\n'"Target 'bin_leaks' ..."
@@ -183,9 +209,47 @@ for ((k = 0; k < ncomp; k++)); do
   fi
 
 
+
+  if exists leaks ; then
+
+    echo $'\n'"Target: 'leaks' command on example simulation ..."
+    res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean all 2>&1)
+
+    res_error=$(check_error "${res}")
+    if [ "${res_error}" ]; then
+      echo "Target: failure:"
+      if [ "${verbosity_on_error}" = true ]; then
+        echo "${res}"
+      else
+        echo "${res_error}"
+      fi
+
+    else
+      res=$(MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocScribble=1 MallocPreScribble=1 MallocCheckHeapStart=0 MallocCheckHeapEach=0 leaks -quiet -atExit -- bin/SOILWAT2 -d ./tests/example -f files.in 2>&1)
+
+      res_leaks=$(check_leaks "${res}")
+      if [ "${res_leaks}" ]; then
+        echo "Target: failure: leaks detected:"
+        if [ "${verbosity_on_error}" = true ]; then
+          echo "${res}"
+        else
+          echo "${res_leaks}"
+        fi
+
+      else
+        echo "Target: success: no leaks detected"
+      fi
+    fi
+
+  else
+    echo "Target: skipped: 'leaks' command not found."
+  fi
+
+
+
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       ${k}'-c)' Run tests with \'"${port_compilers[k]}"\'$'\n'\
+       ${k}"-c) Run tests with "\'"${port_compilers[k]}"\'$'\n'\
        --------------------------------------------------
 
   echo $'\n'"Target 'test_run' ..."
@@ -217,14 +281,22 @@ for ((k = 0; k < ncomp; k++)); do
       echo "${res_error}"
     fi
 
+    do_target_test_leaks=false
+
   else
     echo "Target: success."
 
-    echo $'\n'$'\n'\
-         --------------------------------------------------$'\n'\
-         ${k}'-d)' Run sanitizer on tests with \'"${port_compilers[k]}"\': exclude known leaks$'\n'\
-         --------------------------------------------------
+    do_target_test_leaks=true
+  fi
 
+
+
+  echo $'\n'$'\n'\
+       --------------------------------------------------$'\n'\
+       ${k}"-d) Run sanitizers on tests with "\'"${port_compilers[k]}"$'\n'\
+       --------------------------------------------------
+
+  if [ "${do_target_test_leaks}" = true ]; then
     # CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
     # https://github.com/google/sanitizers/wiki/AddressSanitizer
     echo $'\n'"Target 'test_leaks' ..."
@@ -242,12 +314,51 @@ for ((k = 0; k < ncomp; k++)); do
     else
       echo "Target: success."
     fi
+
+  else
+    echo "Target: skipped: 'test_leaks' not operational for current compiler."
+  fi
+
+
+  if exists leaks ; then
+
+    echo $'\n'"Target: 'leaks' command on 'test' executable ..."
+    res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test 2>&1)
+
+    res_error=$(check_error "${res}")
+    if [ "${res_error}" ]; then
+      echo "Target: failure:"
+      if [ "${verbosity_on_error}" = true ]; then
+        echo "${res}"
+      else
+        echo "${res_error}"
+      fi
+
+    else
+      res=$(MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocScribble=1 MallocPreScribble=1 MallocCheckHeapStart=0 MallocCheckHeapEach=0 leaks -quiet -atExit -- bin/sw_test 2>&1)
+
+      res_leaks=$(check_leaks "${res}")
+      if [ "${res_leaks}" ]; then
+        echo "Target: failure: leaks detected:"
+        if [ "${verbosity_on_error}" = true ]; then
+          echo "${res}"
+        else
+          echo "${res_leaks}"
+        fi
+
+      else
+        echo "Target: success: no leaks detected"
+      fi
+    fi
+
+  else
+    echo "Target: skipped: 'leaks' command not found."
   fi
 
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       Unset compiler$'\n'\
+       "Unset compiler"$'\n'\
        --------------------------------------------------
 
   sudo port select --set ${ccs[k]} none
@@ -255,12 +366,12 @@ for ((k = 0; k < ncomp; k++)); do
 done
 
 
-#--- Cleanup
+#------ CLEANUP ----------------------------------------------------------------
 unset -v ccs
 unset -v cxxs
 unset -v port_compilers
 
 echo $'\n'$'\n'\
      --------------------------------------------------$'\n'\
-     Complete!$'\n'\
+     "Complete!"$'\n'\
      --------------------------------------------------$'\n'
