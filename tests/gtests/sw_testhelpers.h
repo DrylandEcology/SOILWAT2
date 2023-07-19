@@ -1,11 +1,9 @@
 #include <cmath>
 #include "gtest/gtest.h"
 #include "include/SW_datastructs.h"
+#include "include/SW_Defines.h"
 #include "include/SW_Control.h"
-#include "include/SW_Weather.h"
-#include "include/myMemory.h"
-#include "include/SW_Files.h"
-#include "include/SW_Main_lib.h"
+
 
 
 #define length(array) (sizeof(array) / sizeof(*(array))) //get length of an array
@@ -33,9 +31,23 @@ void create_test_soillayers(unsigned int nlayers,
 
 void setup_SW_Site_for_tests(SW_SITE *SW_Site);
 
+void setup_AllTest_for_tests(
+  SW_ALL *SW_All,
+  PATH_INFO *PathInfo,
+  LOG_INFO *LogInfo,
+  SW_OUTPUT_POINTERS *SW_OutputPtrs
+);
 
-/* Classes for tests and test fixtures */
-class AllTest : public::testing::Test {
+
+/* AllTestFixture is our base test fixture class inheriting from `::testing::Test` */
+/* Note: don't use text fixtures with death tests in thread-safe mode,
+   use class `AllTestStruct` (inside the death assertion) instead (see below).
+   This is because each thread-safe death assertion is run from scratch and
+   any code inside the death test and before the `EXPECT_DEATH` assertion is
+   run twice (including setting up of a test fixture).
+   See https://google.github.io/googletest/reference/assertions.html#death
+*/
+class AllTestFixture : public ::testing::Test {
   protected:
 
     SW_ALL SW_All;
@@ -44,32 +56,7 @@ class AllTest : public::testing::Test {
     SW_OUTPUT_POINTERS SW_OutputPtrs;
 
     void SetUp() override {
-      // `memcpy()` does not work to copy from a global to local attributes
-      // since the function does not copy dynamically allocated memory
-
-      Bool QuietMode = swFALSE;
-
-      // Initialize SOILWAT2 variables and read values from example input file
-      silent_tests(&LogInfo);
-
-      PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
-
-      SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
-      SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo);
-
-      /* Notes on messages during tests
-        - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
-          "example/Output/logfile.log" to disk (based on content of "files.in")
-        - we close "Output/logfile.log"
-        - we set `logfp` to NULL to silence all non-error messages during tests
-        - error messages go directly to stderr (which DeathTests use to match against)
-      */
-      sw_check_log(QuietMode, &LogInfo);
-      silent_tests(&LogInfo);
-
-      SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-            SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
-      SW_CTL_init_run(&SW_All, &LogInfo);
+      setup_AllTest_for_tests(&SW_All, &PathInfo, &LogInfo, &SW_OutputPtrs);
     }
 
     void TearDown() override {
@@ -78,17 +65,55 @@ class AllTest : public::testing::Test {
 };
 
 
-using CarbonStructTest = AllTest;
+using CarbonFixtureTest = AllTestFixture;
 
-using SiteStructTest = AllTest;
-using SiteStructDeathTest = AllTest;
+using SiteFixtureTest = AllTestFixture;
 
-using VegEstabStructTest = AllTest;
+using VegEstabFixtureTest = AllTestFixture;
 
-using VegProdStructTest = AllTest;
-using VegProdStructDeathTest = AllTest;
+using VegProdFixtureTest = AllTestFixture;
 
-using WeatherStructTest = AllTest;
-using WeatherStructDeathTest = AllTest;
+using WeatherFixtureTest = AllTestFixture;
 
-using WaterBalanceStructTest = AllTest;
+using WaterBalanceFixtureTest = AllTestFixture;
+
+
+
+/* AllTestStruct is like AllTestFixture but does not inherit from `::testing::Test` */
+
+/* Note: Use class `AllTestStruct` for thread-safe death tests inside the
+   assertion itself -- otherwise, multiple instances will be created
+   see https://google.github.io/googletest/reference/assertions.html#death
+
+   Example code that avoids the creation of multiple instances:
+   ```
+   TEST(SomeDeathTest, TestName) {
+       ...; // code here will be run twice
+
+       EXPECT_DEATH_IF_SUPPORTED({
+               // code inside `EXPECT_DEATH` is run once
+               AllTestStruct sw = AllTestStruct();
+               ...
+               function_that_should_fail(...);
+           },
+           "Expected failure message."
+       )
+   }
+   ```
+*/
+class AllTestStruct {
+  public:
+
+    SW_ALL SW_All;
+    PATH_INFO PathInfo;
+    LOG_INFO LogInfo;
+    SW_OUTPUT_POINTERS SW_OutputPtrs;
+
+    AllTestStruct() {
+      setup_AllTest_for_tests(&SW_All, &PathInfo, &LogInfo, &SW_OutputPtrs);
+    }
+
+    ~AllTestStruct() {
+      SW_CTL_clear_model(swTRUE, &SW_All, &PathInfo);
+    }
+};

@@ -25,7 +25,7 @@
 
 namespace {
 
-    TEST_F(WeatherStructTest, WeatherDefaultValues) {
+    TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
 
         // Testing to fill allHist from `SW_Weather`
         SW_SKY_read(PathInfo.InFiles, &SW_All.Sky, &LogInfo);
@@ -58,7 +58,7 @@ namespace {
         EXPECT_NEAR(SW_All.Weather.allHist[0]->ppt[0], .220000, tol6);
     }
 
-    TEST_F(WeatherStructTest, WeatherNoMemoryLeakIfDecreasedNumberOfYears) {
+    TEST_F(WeatherFixtureTest, WeatherNoMemoryLeakIfDecreasedNumberOfYears) {
 
         // Default number of years is 31
         EXPECT_EQ(SW_All.Weather.n_years, 31);
@@ -77,7 +77,7 @@ namespace {
 
     }
 
-    TEST_F(WeatherStructTest, WeatherSomeMissingValuesDays) {
+    TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
 
         SW_All.Weather.generateWeatherMethod = 2;
 
@@ -105,7 +105,7 @@ namespace {
 
     }
 
-    TEST_F(WeatherStructTest, WeatherSomeMissingValuesYears) {
+    TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
 
         int year, day;
         SW_All.Weather.generateWeatherMethod = 2;
@@ -137,7 +137,7 @@ namespace {
 
     }
 
-    TEST_F(WeatherStructTest, WeatherWeatherGeneratorOnly) {
+    TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
 
         int year, day;
 
@@ -161,38 +161,36 @@ namespace {
                 EXPECT_TRUE(!missing(SW_All.Weather.allHist[year]->temp_max[day]));
             }
         }
-
-
-
-
     }
 
-    TEST_F(WeatherStructTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
 
-        // Change to directory without input files
-        strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
-
-        // Set LOCF (temp) + 0 (PPT) method
-        SW_All.Weather.generateWeatherMethod = 1;
-
-        SW_All.Model.startyr = 1981;
-        SW_All.Model.endyr = 1981;
-
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+    TEST(WeatherStructDeathTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
 
         // Error: too many missing values and weather generator turned off
-        EXPECT_DEATH_IF_SUPPORTED(
-          SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-          SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo),
+        EXPECT_DEATH_IF_SUPPORTED({
+            AllTestStruct sw = AllTestStruct();
+
+            // Change to directory without input files
+            strcpy(sw.SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
+
+            // Set LOCF (temp) + 0 (PPT) method
+            sw.SW_All.Weather.generateWeatherMethod = 1;
+
+            sw.SW_All.Model.startyr = 1981;
+            sw.SW_All.Model.endyr = 1981;
+
+            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
+
+            SW_WTH_finalize_all_weather(
+              &sw.SW_All.Markov, &sw.SW_All.Weather,
+              sw.SW_All.Model.cum_monthdays, sw.SW_All.Model.days_in_month, &sw.LogInfo
+            );
+          },
           "more than 3 days missing in year 1981 and weather generator turned off"
         );
-
-
-
-
     }
 
-    TEST_F(WeatherStructTest, ClimateVariableClimateFromDefaultWeather) {
+    TEST_F(WeatherFixtureTest, ClimateVariableClimateFromDefaultWeather) {
 
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
@@ -302,7 +300,7 @@ namespace {
 
 
 
-    TEST_F(WeatherStructTest, ClimateVariableClimateFromOneYearWeather) {
+    TEST_F(WeatherFixtureTest, ClimateVariableClimateFromOneYearWeather) {
 
         // This test relies on allHist from `SW_WEATHER` being already filled
         SW_CLIMATE_YEARLY climateOutput;
@@ -423,7 +421,7 @@ namespace {
 
     }
 
-    TEST_F(WeatherStructTest, ClimateFromDefaultWeatherSouth) {
+    TEST_F(WeatherFixtureTest, ClimateFromDefaultWeatherSouth) {
 
         /* ==================================================================
          Values for these SOILWAT2 tests and in rSOILWAT2 v6.0.0 for
@@ -548,7 +546,7 @@ namespace {
     }
 
 
-    TEST_F(WeatherStructTest, ClimateVariableClimateFromConstantWeather) {
+    TEST_F(WeatherFixtureTest, ClimateVariableClimateFromConstantWeather) {
 
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
@@ -653,7 +651,7 @@ namespace {
     }
 
 
-    TEST_F(WeatherStructTest, ClimateVariableAverageTemperatureOfDriestQuarterTest) {
+    TEST_F(WeatherFixtureTest, ClimateVariableAverageTemperatureOfDriestQuarterTest) {
 
         double monthlyPPT[MAX_MONTHS] = {.5, .5, .1, .4, .9, 1.0, 1.2, 6.5, 7.5, 1.2, 4., .6};
         double monthlyTemp[MAX_MONTHS] = {-3.2, -.4, 1.2, 3.5, 7.5, 4.5, 6.5, 8.2, 2.0, 3., .1, -.3};
@@ -722,14 +720,14 @@ namespace {
 
     }
 
-    TEST_F(WeatherStructTest, WeatherReadInitialization) {
+    TEST_F(WeatherFixtureTest, WeatherReadInitialization) {
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 
         EXPECT_FLOAT_EQ(SW_All.Weather.allHist[0]->temp_max[0], -.52);
     }
 
-    TEST_F(WeatherStructTest, WeatherMonthlyInputPrioritization) {
+    TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
         /*
            This section covers the correct prioritization of monthly input values
            instead of daily read-in values
@@ -754,7 +752,7 @@ namespace {
          EXPECT_NEAR(SW_All.Weather.allHist[yearIndex]->windspeed_daily[midJanDay], SW_All.Sky.windspeed[0], tol6);
      }
 
-     TEST_F(WeatherStructTest, WeatherInputDailyGridMet) {
+     TEST_F(WeatherFixtureTest, WeatherInputDailyGridMet) {
 
          /*
             This section tests humidity-related values that can be averaged,
@@ -851,7 +849,7 @@ namespace {
          checkAllWeather(&SW_All.Weather, &LogInfo);
      }
 
-     TEST_F(WeatherStructTest, WeatherInputDayMet) {
+     TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
 
          /*
             This section covers the assurance that if a daily value is provided
@@ -951,7 +949,7 @@ namespace {
          checkAllWeather(&SW_All.Weather, &LogInfo);
      }
 
-     TEST_F(WeatherStructTest, WeatherInputMACA) {
+     TEST_F(WeatherFixtureTest, WeatherInputMACA) {
 
          /*
             This section assures that a variable aside from humidity-related ones,
@@ -1054,7 +1052,7 @@ namespace {
          checkAllWeather(&SW_All.Weather, &LogInfo);
      }
 
-     TEST_F(WeatherStructTest, WeatherDailyLOCFInputValues) {
+     TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
 
          /*
             Since SOILWAT2 now has the ability to deal with more than
@@ -1101,7 +1099,7 @@ namespace {
         }
      }
 
-     TEST_F(WeatherStructDeathTest, WeatherMonthlyInputReasonableValuesAndFlagsDeathTest) {
+    TEST(WeatherStructDeathTest, WeatherDailyInputWrongColumnNumberDeathTest) {
          /*
             This section covers number of flags and the testing of reasonable results (`checkAllWeather()`).
 
@@ -1112,67 +1110,92 @@ namespace {
             `checkAllWeather()` should result in a crash.
           */
 
-          // Initialize any variables
-          TimeInt year = 1980;
-          double originVal;
+        // Initialize any variables
+        TimeInt year = 1980;
 
-         /* Not the same number of flags as columns */
+        /* Not the same number of flags as columns */
+        // Run death test
+        EXPECT_DEATH_IF_SUPPORTED({
+                AllTestStruct sw = AllTestStruct();
 
-         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+                SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
 
-         // Set SW_WEATHER's n_input_forcings to a number that is
-         // not the columns being read in
-         SW_All.Weather.n_input_forcings = 0;
+                // Set SW_WEATHER's n_input_forcings to a number that is
+                // not the columns being read in
+                sw.SW_All.Weather.n_input_forcings = 0;
 
-             // Run death test
-         EXPECT_DEATH_IF_SUPPORTED(
-             _read_weather_hist(
-                 year,
-                 SW_All.Weather.allHist[0],
-                 SW_All.Weather.name_prefix,
-                 SW_All.Weather.n_input_forcings,
-                 SW_All.Weather.dailyInputIndices,
-                 SW_All.Weather.dailyInputFlags,
-                 &LogInfo
-             ),
-             "Incomplete record 1"
-         );
+                _read_weather_hist(
+                    year,
+                    sw.SW_All.Weather.allHist[0],
+                    sw.SW_All.Weather.name_prefix,
+                    sw.SW_All.Weather.n_input_forcings,
+                    sw.SW_All.Weather.dailyInputIndices,
+                    sw.SW_All.Weather.dailyInputFlags,
+                    &sw.LogInfo
+                );
+            },
+            "Incomplete record 1"
+        );
+    }
 
+
+    TEST(WeatherStructDeathTest, WeatherDailyInputBadTemperatureDeathTest) {
          /* Check for value(s) that are not within reasonable range these
             tests will make use of `checkAllWeather()` */
 
          // Edit SW_WEATHER_HIST values from their original value
-             // Make temperature unreasonable (not within [-100, 100])
 
-         originVal = SW_All.Weather.allHist[0]->temp_max[0];
+        EXPECT_DEATH_IF_SUPPORTED({
+                AllTestStruct sw = AllTestStruct();
 
-         SW_All.Weather.allHist[0]->temp_max[0] = -102.;
+                SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
 
-         EXPECT_DEATH_IF_SUPPORTED(
-             checkAllWeather(&SW_All.Weather, &LogInfo),
-             "Daily input value for minimum temperature is greater than daily input value for maximum temperature"
-         );
+                // Make temperature unreasonable (not within [-100, 100])
+                sw.SW_All.Weather.allHist[0]->temp_max[0] = -102.;
 
-             // Make precipitation unresonable (< 0)
-         SW_All.Weather.allHist[0]->temp_max[0] = originVal;
+                checkAllWeather(&sw.SW_All.Weather, &sw.LogInfo);
+            },
+            "Daily input value for minimum temperature is greater than daily input value for maximum temperature"
+        );
+    }
 
-         originVal = SW_All.Weather.allHist[0]->ppt[0];
+    TEST(WeatherStructDeathTest, WeatherDailyInputBadPrecipitationDeathTest) {
+         /* Check for value(s) that are not within reasonable range these
+            tests will make use of `checkAllWeather()` */
 
-         SW_All.Weather.allHist[0]->ppt[0] = -1.;
+         // Edit SW_WEATHER_HIST values from their original value
 
-         EXPECT_DEATH_IF_SUPPORTED(
-             checkAllWeather(&SW_All.Weather, &LogInfo),
-             "Invalid daily precipitation value"
-         );
+        EXPECT_DEATH_IF_SUPPORTED({
+                AllTestStruct sw = AllTestStruct();
 
-             // Make relative humidity unreasonable (< 0%)
-         SW_All.Weather.allHist[0]->ppt[0] = originVal;
+                SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
 
-         SW_All.Weather.allHist[0]->r_humidity_daily[0] = -.1252;
+                // Make precipitation unresonable (< 0)
+                sw.SW_All.Weather.allHist[0]->ppt[0] = -1.;
 
-         EXPECT_DEATH_IF_SUPPORTED(
-             checkAllWeather(&SW_All.Weather, &LogInfo),
-             "relative humidity value did not fall in the range"
-         );
-     }
+                checkAllWeather(&sw.SW_All.Weather, &sw.LogInfo);
+            },
+            "Invalid daily precipitation value"
+        );
+    }
+
+    TEST(WeatherStructDeathTest, WeatherDailyInputBadHumidityDeathTest) {
+         /* Check for value(s) that are not within reasonable range these
+            tests will make use of `checkAllWeather()` */
+
+         // Edit SW_WEATHER_HIST values from their original value
+
+        EXPECT_DEATH_IF_SUPPORTED({
+                AllTestStruct sw = AllTestStruct();
+
+                SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
+
+                // Make relative humidity unreasonable (< 0%)
+                sw.SW_All.Weather.allHist[0]->r_humidity_daily[0] = -.1252;
+
+                checkAllWeather(&sw.SW_All.Weather, &sw.LogInfo);
+            },
+            "relative humidity value did not fall in the range"
+        );
+    }
 }

@@ -454,30 +454,37 @@ namespace {
 
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST_F(SiteStructDeathTest, SiteSoilParametersDeathTest) {
-    LyrIndex n1 = 0, n2 = 1, k = 2;
-    RealD help;
+  TEST(SiteStructDeathTest, SiteSoilEvaporationParametersDeathTest) {
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
-    help = SW_All.Site.evap_coeff[n1];
-    SW_All.Site.evap_coeff[n1] = -0.5;
-    EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo),
+    EXPECT_DEATH_IF_SUPPORTED({
+        AllTestStruct sw = AllTestStruct();
+
+        sw.SW_All.Site.evap_coeff[0] = -0.5;
+
+        SW_SIT_init_run(&sw.SW_All.VegProd, &sw.SW_All.Site, &sw.LogInfo);
+      },
       "'bare-soil evaporation coefficient' has an invalid value"
     );
-    SW_All.Site.evap_coeff[n1] = help;
+  }
+
+
+  TEST(SiteStructDeathTest, SiteSoilTranspirationParametersDeathTest) {
 
     // Check error for bad transpiration coefficient (should be [0-1])
-    SW_All.Site.transp_coeff[k][n2] = 1.5;
-    EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo),
+    EXPECT_DEATH_IF_SUPPORTED({
+        AllTestStruct sw = AllTestStruct();
+
+        sw.SW_All.Site.transp_coeff[SW_GRASS][1] = 1.5;
+        SW_SIT_init_run(&sw.SW_All.VegProd, &sw.SW_All.Site, &sw.LogInfo);
+      },
       "'transpiration coefficient' has an invalid value"
     );
   }
 
 
   // Test that soil transpiration regions are derived well
-  TEST_F(SiteStructTest, SiteSoilTranspirationRegions) {
+  TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     /* Notes:
         - SW_Site.n_layers is base1
         - soil layer information in _TranspRgnBounds is base0
@@ -606,7 +613,7 @@ namespace {
   }
 
 
-  TEST_F(SiteStructTest, SiteSoilDensityTypes) {
+  TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
     double fcoarse = 0.1;
 
     // Inputs represent matric density
@@ -633,20 +640,27 @@ namespace {
 
 
   // Test that bulk and matric soil density fail
-  TEST_F(SiteStructDeathTest, SiteSoilDensityDeathTest) {
+  TEST(SiteDeathTest, SiteSoilDensityTooLowDeathTest) {
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
 
     // Check error if bulk density too low for coarse fragments
     EXPECT_DEATH_IF_SUPPORTED(
       calculate_soilMatricDensity(1.65, 0.7, &LogInfo),
       "is lower than expected"
     );
+  }
 
 
+  TEST(SiteStructDeathTest, SiteSoilDensityMissingDeathTest) {
     // Check error if type_soilDensityInput not implemented
-    SW_All.Site.type_soilDensityInput = SW_MISSING;
+    EXPECT_DEATH_IF_SUPPORTED({
+        AllTestStruct sw = AllTestStruct();
 
-    EXPECT_DEATH_IF_SUPPORTED(
-      SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo),
+        sw.SW_All.Site.type_soilDensityInput = SW_MISSING;
+
+        SW_SIT_init_run(&sw.SW_All.VegProd, &sw.SW_All.Site, &sw.LogInfo);
+      },
       "Soil density type not recognized"
     );
   }
