@@ -72,7 +72,10 @@ namespace{
     // point to the structure that contains cloud coverage monthly values
     RealD
       cloudcov_monthly[MAX_MONTHS],
-      cloudcov_daily[MAX_DAYS];
+      // `interpolate_monthlyValues()` needs an array of length `MAX_DAYS + 1`
+      // if `interpAsBase1` is TRUE
+      cloudcov_daily[MAX_DAYS + 1];
+
 
     TimeInt
       days_in_month[MAX_MONTHS],
