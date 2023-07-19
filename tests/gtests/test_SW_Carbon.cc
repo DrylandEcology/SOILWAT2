@@ -54,7 +54,7 @@ namespace {
 
 
   // Test reading yearly CO2 data from disk file
-  TEST_F(CarbonStructTest, CarbonReadInputFile) {
+  TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
     TimeInt year, simendyr = SW_All.Model.endyr + SW_All.Model.addtl_yr;
     double sum_CO2;
 
@@ -87,7 +87,7 @@ namespace {
 
 
   // Test the calculation of CO2-effect multipliers
-  TEST_F(CarbonStructTest, CarbonCO2multipliers) {
+  TEST_F(CarbonFixtureTest, CarbonCO2multipliers) {
     TimeInt year, simendyr = SW_All.Model.endyr + SW_All.Model.addtl_yr;
     int k;
 
