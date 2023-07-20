@@ -157,7 +157,7 @@ void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput)
 	@param[in] SW_Model Struct of type SW_MODEL holding basic time information
 		about the simulation
 	@param[in] pd Time period in simulation output (day/week/month/year)
-	@param[in] irow_OUT Number of output rows for each output period
+	@param[in] irow_OUT Current time step
 	@param[in] nrow_OUT Number of output rows for each output period
     @param[out] p Allocated array to hold output periods for every output key
 */
