@@ -114,7 +114,7 @@ namespace {
   int k;
 
   // Test the SW_VEGPROD constructor 'SW_VPD_construct'
-  TEST_F(VegProdStructTest, VegProdConstructor) {
+  TEST_F(VegProdFixtureTest, VegProdConstructor) {
     // This test requires a local copy of SW_VEGPROD to avoid a memory leak
     // (see issue #205)
     // -- If using `SW_All.VegProd` or a global variable
@@ -150,9 +150,9 @@ namespace {
 
 
   // Test the application of the biomass CO2-effect
-  TEST_F(AllTest, BiomassCO2effect) {
+  TEST(VegProdTest, VegProdBiomassCO2effect) {
     int i;
-    double x;
+    double x = 1.5;
     double biom1[12], biom2[12];
 
     for (i = 0; i < 12; i++) {
@@ -160,7 +160,6 @@ namespace {
     }
 
     // One example
-    x = SW_All.VegProd.veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_All.Model.startyr + SW_All.Model.addtl_yr];
     apply_biomassCO2effect(biom2, biom1, x);
 
     for (i = 0; i < 12; i++) {
@@ -170,25 +169,28 @@ namespace {
 
 
   // Test summing values across vegetation types
-  TEST_F(AllTest, VegProdSumming) {
+  TEST(VegProdTest, VegProdSumming) {
     int vegIndex;
 
-    for(vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
-      SW_All.Site.transp_coeff[vegIndex][0] = 0.;
-    }
+    RealD transp_coeff[NVEGTYPES][MAX_LAYERS];
 
-    EXPECT_DOUBLE_EQ(sum_across_vegtypes(SW_All.Site.transp_coeff, 0), 0.);
 
     for(vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
-      SW_All.Site.transp_coeff[vegIndex][0] = 0.25;
+      transp_coeff[vegIndex][0] = 0.;
     }
 
-    EXPECT_DOUBLE_EQ(sum_across_vegtypes(SW_All.Site.transp_coeff, 0), 1.);
+    EXPECT_DOUBLE_EQ(sum_across_vegtypes(transp_coeff, 0), 0.);
+
+    for(vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
+      transp_coeff[vegIndex][0] = 0.25;
+    }
+
+    EXPECT_DOUBLE_EQ(sum_across_vegtypes(transp_coeff, 0), 1.);
   }
 
 
 	// Check `get_critical_rank`
-	TEST_F(AllTest, VegProdrank) {
+	TEST_F(VegProdFixtureTest, VegProdrank) {
 		int k;
 		// Check `get_critical_rank` for normal inputs, e.g., -2.0, -2.0, -3.5, -3.9
 		get_critical_rank(&SW_All.VegProd);
@@ -225,7 +227,7 @@ namespace {
 		assert_decreasing_SWPcrit(&SW_All.VegProd);
 	}
 
-    TEST_F(AllTest, EstimateVegNotFullVegetation) {
+    TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
         /*  ================================================================
                     This block of tests deals with input values to
@@ -695,7 +697,7 @@ namespace {
         deallocateClimateStructs(&climateOutput, &climateAverages);
     }
 
-    TEST_F(AllTest, EstimateVegFullVegetation) {
+    TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
 
         /*  ================================================================
                    This block of tests deals with input values to
@@ -1166,7 +1168,7 @@ namespace {
 
     }
 
-    TEST_F(AllDeathTest, EstimateVegInputGreaterThanOneDeathTest) {
+    TEST(VegProdStructDeathTest, EstimateVegInputGreaterThanOne1DeathTest) {
 
         /*  ================================================================
                    Tests a death case of `estimatePotNatVegComposition()`
@@ -1197,42 +1199,77 @@ namespace {
         // Array holding all values from estimation minus grasses
         double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
-        // Reset "SW_All.Weather.allHist"
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
-		    finalizeAllWeather(&SW_All.Markov, &SW_All.Weather,
-            SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
-
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
-
-        // Calculate climate of the site and add results to "climateOutput"
-        calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
-            SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
-
-        // Average values from "climateOutput" and put them in "climateAverages"
-        averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
 
         /*  ===============================================================
          Test for fail when input sum is greater than one with the values:
          [.0567, .5, .0392, .0981, .3218, .0827, .1293, .0405]
             ===============================================================  */
 
-        EXPECT_DEATH_IF_SUPPORTED(
-            estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+        EXPECT_DEATH_IF_SUPPORTED({
+            AllTestStruct sw = AllTestStruct();
+
+            // Reset "SW_All.Weather.allHist"
+            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
+            finalizeAllWeather(&sw.SW_All.Markov, &sw.SW_All.Weather,
+                sw.SW_All.Model.cum_monthdays, sw.SW_All.Model.days_in_month, &sw.LogInfo);
+
+            // Calculate climate of the site and add results to "climateOutput"
+            calcSiteClimate(sw.SW_All.Weather.allHist, sw.SW_All.Model.cum_monthdays,
+                sw.SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
+
+            // Average values from "climateOutput" and put them in "climateAverages"
+            averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
+
+            estimatePotNatVegComposition(
+              climateAverages.meanTemp_C, climateAverages.PPT_cm,
                     climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
                     SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);,
+                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &sw.LogInfo
+            );
+          },
           "User defined relative abundance values sum to more than 1 = full land cover"
         );
 
-        /*  ===============================================================
-         Test for fail when SumGrassesFraction makes the input sum greater than one
-         [.0567, .25, .SW_MISSING, SW_MISSING, .0912, .0465, .1293, .0405], input sum = .6142
-         SumGrassesFraction = .5, total input sum: 1.023.
-         Total input sum is 1.1211 instead of 1.1142, because annual grass
-         is already defined, so that value is subtracted from SumGrassesFraction and
-         added to the initial input sum
-            ===============================================================  */
+        // Free allocated data
+        deallocateClimateStructs(&climateOutput, &climateAverages);
+    }
+
+
+    TEST(VegProdStructDeathTest, EstimateVegInputGreaterThanOne2DeathTest) {
+
+        /*  ================================================================
+                   Tests a death case of `estimatePotNatVegComposition()`
+                        when input vegetation values sum to over 1
+            ================================================================  */
+
+        SW_CLIMATE_CLIM climateAverages;
+        SW_CLIMATE_YEARLY climateOutput;
+
+        double SumGrassesFraction = SW_MISSING;
+        double C4Variables[3];
+
+        Bool fillEmptyWithBareGround = swTRUE;
+        Bool inNorthHem = swTRUE;
+        Bool warnExtrapolation = swTRUE;
+        Bool fixBareGround = swTRUE;
+
+        double inputValues[8];
+        double shrubLimit = .2;
+
+        // Array holding only grass values
+        double grassOutput[3]; // 3 = Number of grass variables
+
+        // Array holding all values from the estimation
+        double RelAbundanceL0[8]; // 8 = Number of types
+
+        // Array holding all values from estimation minus grasses
+        double RelAbundanceL1[5]; // 5 = Number of types minus grasses
+
+        // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
+        allocateClimateStructs(31, &climateOutput, &climateAverages);
+
 
         SumGrassesFraction = .5;
 
@@ -1245,17 +1282,42 @@ namespace {
         inputValues[treeIndex] = .1293;
         inputValues[bareGround] = .0405;
 
-        EXPECT_DEATH_IF_SUPPORTED(
-            estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+        /*  ===============================================================
+         Test for fail when SumGrassesFraction makes the input sum greater than one
+         [.0567, .25, .SW_MISSING, SW_MISSING, .0912, .0465, .1293, .0405], input sum = .6142
+         SumGrassesFraction = .5, total input sum: 1.023.
+         Total input sum is 1.1211 instead of 1.1142, because annual grass
+         is already defined, so that value is subtracted from SumGrassesFraction and
+         added to the initial input sum
+            ===============================================================  */
+
+        EXPECT_DEATH_IF_SUPPORTED({
+            AllTestStruct sw = AllTestStruct();
+
+            // Reset "SW_All.Weather.allHist"
+            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
+            finalizeAllWeather(&sw.SW_All.Markov, &sw.SW_All.Weather,
+                sw.SW_All.Model.cum_monthdays, sw.SW_All.Model.days_in_month, &sw.LogInfo);
+
+            // Calculate climate of the site and add results to "climateOutput"
+            calcSiteClimate(sw.SW_All.Weather.allHist, sw.SW_All.Model.cum_monthdays,
+                sw.SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
+
+            // Average values from "climateOutput" and put them in "climateAverages"
+            averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
+
+            estimatePotNatVegComposition(
+              climateAverages.meanTemp_C, climateAverages.PPT_cm,
                     climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
                     SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);,
+                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &sw.LogInfo
+            );
+          },
           "User defined relative abundance values sum to more than 1 = full land cover"
         );
 
         // Free allocated data
         deallocateClimateStructs(&climateOutput, &climateAverages);
-
     }
 
 } // namespace
