@@ -572,11 +572,9 @@ void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	OutPeriod pd;
 
-	// Clear memory before setting it
-	if (!isnull(SW_SoilWat->hist.file_prefix)) {
-		Mem_Free(SW_SoilWat->hist.file_prefix);
-		SW_SoilWat->hist.file_prefix = NULL;
-	}
+	/* initialize pointer */
+	SW_SoilWat->hist.file_prefix = NULL;
+
 
 	// Clear the module structure:
 	memset(SW_SoilWat, 0, sizeof(SW_SOILWAT));

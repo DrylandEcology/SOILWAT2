@@ -1,6 +1,10 @@
 # NEWS
 
 # SOILWAT2 v7.1.0-9000
+* Bugfixes
+    * Fix an error where a pointer was freed even though it was not allocated
+      (issue #356; @dschlaep).
+    * Fix memory leak in test of `SW_VPD_construct()` (issue #205; @dschlaep).
 
 # SOILWAT2 v7.0.0
 * This version produces nearly identical simulation output

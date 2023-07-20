@@ -191,7 +191,9 @@ Bool isleapyear(const TimeInt year) {
  @param[in] interpAsBase1 Boolean value specifying if "dailyValues" should be base1 or base0
  @param[in] cum_monthdays Monthly cumulative number of days for "current" year
  @param[in] days_in_month Number of days per month for "current" year
- @param[out] dailyValues Array with linearly interpolated values for each day
+ @param[out] dailyValues Array with linearly interpolated values for each day;
+   `dailyValues` must be at least of length `MAX_DAYS` if `interpAsBase1` is
+   FALSE , and length `MAX_DAYS + 1` if `interpAsBase1` is TRUE.
 
  @note If `interpAsBase1` is TRUE, then `dailyValues[0]` is ignored (with a value of 0) because a `base1`
  index for "day of year" (doy) is used, i.e., the value on the first day of year (`doy = 1`) is located in `dailyValues[1]`.
