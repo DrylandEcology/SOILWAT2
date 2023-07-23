@@ -2387,6 +2387,10 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	OutKey k;
 	OutPeriod p;
 	Bool writeit[SW_OUTNPERIODS], use_help;
+
+	// Temporary string to hold sw_outstr before concatenating
+	// to buf_soil/buf_reg
+	// Silences -Wrestrict when compiling on Linux (found within -Wall)
 	char tempstr[MAX_LAYERS * OUTSTRLEN];
 	#ifdef STEPWAT
 	Bool use_help_txt, use_help_SXW;
