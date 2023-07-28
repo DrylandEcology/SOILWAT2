@@ -6,6 +6,7 @@
 #ifndef SW_MAIN_LIB_H
 #define SW_MAIN_LIB_H
 
+#include "include/SW_datastructs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,9 +16,10 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void sw_init_args(int argc, char **argv);
+void sw_init_args(int argc, char **argv, Bool *QuietMode,
+	Bool *EchoInits, char **_firstfile, LOG_INFO* LogInfo);
 void sw_print_version(void);
-void sw_check_log(void);
+void sw_check_log(Bool QuietMode, LOG_INFO* LogInfo);
 
 #ifdef __cplusplus
 }

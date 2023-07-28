@@ -17,42 +17,27 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "include/generic.h" // externs `QuietMode`, `EchoInits`
-#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
+#include "include/generic.h"
+#include "include/filefuncs.h"
 #include "include/myMemory.h"
 #include "include/Times.h"
 
-#include "include/SW_Carbon.h" // externs SW_Carbon
+#include "include/SW_Carbon.h"
 #include "include/SW_Defines.h"
 #include "include/SW_Files.h"
-#include "include/SW_Model.h" // externs SW_Model
-#include "include/SW_Site.h" // externs SW_Site
-#include "include/SW_SoilWater.h" // externs SW_Soilwat
-#include "include/SW_Times.h"
+#include "include/SW_Model.h"
+#include "include/SW_Site.h"
+#include "include/SW_SoilWater.h"
+#include "include/Times.h"
 #include "include/SW_Output.h"
-#include "include/SW_Weather.h"  // externs SW_Weather
-#include "include/SW_VegEstab.h" // externs SW_VegEstab
-#include "include/SW_VegProd.h" // externs SW_VegProd
+#include "include/SW_Weather.h"
+#include "include/SW_VegEstab.h"
 
 
 
 /* =================================================== */
 /*                  Global Variables                   */
 /* --------------------------------------------------- */
-
-// Copy-paste definitions from SW_Output.c (lines 81-103)
-SW_OUTPUT SW_Output[SW_OUTNKEYS];
-
-char _Sep;
-TimeInt tOffset;
-
-OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
-IntUS used_OUTNPERIODS;
-Bool use_OutPeriod[SW_OUTNPERIODS];
-
-char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
-IntUS ncol_OUT[SW_OUTNKEYS];
-
 
 // Mock definitions
 char const *key2str[] = {"SW_MISSING"};
@@ -64,193 +49,287 @@ char const *pd2longstr[] = {"SW_MISSING"};
 /*             Global Function Definitions             */
 /*             (declared in SW_Output.h)               */
 /* --------------------------------------------------- */
-void SW_OUT_set_colnames(void)
-{}
+void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
+	IntUS ncol_OUT[], char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
+	LOG_INFO* LogInfo)
+{
+	/* Silence compiler */
+	(void) tLayers;
+	(void) parms;
+	(void) LogInfo;
+	(void) ncol_OUT;
+	(void) colnames_OUT;
+}
 
-void SW_OUT_set_ncol(void)
-{}
+void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
+					 IntUS ncol_OUT[])
+{
+	/* Silence compiler */
+	(void) tLayers;
+	(void) n_evap_lyrs;
+	(void) count;
+	(void) ncol_OUT;
+}
 
-void SW_OUT_construct(void)
-{}
+void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
+		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
+		LyrIndex n_layers, SW_GEN_OUT *GenOutput)
+{
+	/* Silence compiler */
+	(void) make_soil;
+	(void) make_regular;
+	(void) SW_OutputPtrs;
+	(void) SW_Output;
+	(void) n_layers;
+	(void) GenOutput;
+}
 
-void SW_OUT_deconstruct(Bool full_reset)
+void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 {
 	if (full_reset) {}
+	(void) sw;
 }
 
-void SW_OUT_new_year(void)
-{}
-
-void SW_OUT_read(void)
-{}
-
-/**
-@brief This is a blank function.
-*/
-void _collect_values(void)
-{}
-
-void SW_OUT_flush(void)
+void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
+					 SW_OUTPUT* SW_Output)
 {
-	_collect_values();
+	/* silence compiler warnings */
+	if(EQ(0, firstdoy)) {}
+	if(EQ(0, lastdoy)) {}
+
+	(void) SW_Output;
 }
 
-void SW_OUT_sum_today(ObjType otyp)
+void SW_OUT_read(SW_ALL* sw, char *InFiles[],
+	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS,
+	LOG_INFO* LogInfo)
+{
+	/* use sw to silence compiler warnings */
+	(void) sw;
+	(void) LogInfo;
+	(void) InFiles;
+	(void) timeSteps;
+	(void) used_OUTNPERIODS;
+}
+
+void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo)
+{
+	/* silence compiler warnings */
+	(void) sw;
+	(void) SW_OutputPtrs;
+	(void) LogInfo;
+	(void) bFlush_output;
+	(void) tOffset;
+}
+
+void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+				  LOG_INFO* LogInfo)
+{
+	TimeInt tOffset = 0;
+
+	_collect_values(sw, SW_OutputPtrs, swFALSE, tOffset, LogInfo);
+}
+
+void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,
+		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo)
 {
 	ObjType x = otyp;
 	if (x == eF) {}
+
+	/* silence compiler warnings */
+	(void) sw;
+	(void) LogInfo;
+	(void) bFlush_output;
+	(void) tOffset;
 }
 
-void SW_OUT_write_today(void)
-{}
+void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+						Bool bFlush_output, TimeInt tOffset)
+{
+	/* silence compiler warnings */
+	(void) sw;
+	(void) SW_OutputPtrs;
+	(void) bFlush_output;
+	(void) tOffset;
+}
 
-void get_none(OutPeriod pd)
+void get_none(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_co2effects_text(OutPeriod pd)
+void get_co2effects_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_biomass_text(OutPeriod pd)
+void get_biomass_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_estab_text(OutPeriod pd)
+void get_estab_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_temp_text(OutPeriod pd)
+void get_temp_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_precip_text(OutPeriod pd)
+void get_precip_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_vwcBulk_text(OutPeriod pd)
+void get_vwcBulk_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_vwcMatric_text(OutPeriod pd)
+void get_vwcMatric_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_swcBulk_text(OutPeriod pd)
+void get_swcBulk_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_swpMatric_text(OutPeriod pd)
+void get_swpMatric_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_swaBulk_text(OutPeriod pd)
+void get_swaBulk_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_swaMatric_text(OutPeriod pd)
+void get_swaMatric_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_surfaceWater_text(OutPeriod pd)
+void get_surfaceWater_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_runoffrunon_text(OutPeriod pd)
+void get_runoffrunon_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_transp_text(OutPeriod pd)
+void get_transp_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_evapSoil_text(OutPeriod pd)
+void get_evapSoil_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_evapSurface_text(OutPeriod pd)
+void get_evapSurface_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_interception_text(OutPeriod pd)
+void get_interception_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_soilinf_text(OutPeriod pd)
+void get_soilinf_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_lyrdrain_text(OutPeriod pd)
+void get_lyrdrain_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_hydred_text(OutPeriod pd)
+void get_hydred_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_aet_text(OutPeriod pd)
+void get_aet_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_pet_text(OutPeriod pd)
+void get_pet_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_wetdays_text(OutPeriod pd)
+void get_wetdays_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_snowpack_text(OutPeriod pd)
+void get_snowpack_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_deepswc_text(OutPeriod pd)
+void get_deepswc_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_soiltemp_text(OutPeriod pd)
+void get_soiltemp_text(OutPeriod pd, SW_ALL* sw)
 {
 	if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-void get_frozen_text(OutPeriod pd)
+void get_frozen_text(OutPeriod pd, SW_ALL* sw)
 {
     if (pd) {}
+	(void) sw; // use sw to silence compiler warnings
 }
 
-static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k)
+static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy)
 {
 	OutKey x = k;
 	if ((int)x == 1) {}
 
 	if (EQ(0., v->bare_cov.fCover)) {}
 	if (EQ(0., s->veg[SW_GRASS].biomass_inveg)) {}
+	if (EQ(0, doy)) {}
 }
 
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k)
@@ -281,53 +360,66 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k)
 }
 
 
-static void average_for(ObjType otyp, OutPeriod pd)
+static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
+		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo)
 {
 	if (pd == eSW_Day) {}
-	SW_OUT_sum_today(otyp);
+	SW_OUT_sum_today(sw, otyp, bFlush_output, tOffset, LogInfo);
 }
 
-static void collect_sums(ObjType otyp, OutPeriod op)
+static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
+	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS used_OUTNPERIODS,
+	LOG_INFO* LogInfo)
 {
+	TimeInt tOffset = 0;
+
 	if (op == eSW_Day) {}
-	SW_OUT_sum_today(otyp);
+	SW_OUT_sum_today(sw, otyp, swFALSE, tOffset, LogInfo);
+
+	(void) timeSteps;
+	(void) used_OUTNPERIODS;
+	(void) LogInfo;
 }
 
 /**
-@brief Runs get commands for each eSW_Year.
+	@brief Runs get commands for each eSW_Year.
+
+	@param sw Comprehensive structure holding all information
+		dealt with in SOILWAT2
+	@param LogInfo Holds information dealing with logfile output
 */
-void _echo_outputs(void)
+void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
 {
 	OutPeriod pd = eSW_Year;
 
-	get_none(pd);
-	get_estab_text(pd);
-	get_temp_text(pd);
-	get_precip_text(pd);
-	get_vwcBulk_text(pd);
-	get_vwcMatric_text(pd);
-	get_swcBulk_text(pd);
-	get_swpMatric_text(pd);
-	get_swaBulk_text(pd);
-	get_swaMatric_text(pd);
-	get_surfaceWater_text(pd);
-	get_runoffrunon_text(pd);
-	get_transp_text(pd);
-	get_evapSoil_text(pd);
-	get_evapSurface_text(pd);
-	get_interception_text(pd);
-	get_soilinf_text(pd);
-	get_lyrdrain_text(pd);
-	get_hydred_text(pd);
-	get_aet_text(pd);
-	get_pet_text(pd);
-	get_wetdays_text(pd);
-	get_snowpack_text(pd);
-	get_deepswc_text(pd);
-	get_soiltemp_text(pd);
-    get_frozen_text(pd);
-	get_co2effects_text(pd);
-	get_biomass_text(pd);
+	get_none(pd, sw);
+	get_estab_text(pd, sw);
+	get_temp_text(pd, sw);
+	get_precip_text(pd, sw);
+	get_vwcBulk_text(pd, sw);
+	get_vwcMatric_text(pd, sw);
+	get_swcBulk_text(pd, sw);
+	get_swpMatric_text(pd, sw);
+	get_swaBulk_text(pd, sw);
+	get_swaMatric_text(pd, sw);
+	get_surfaceWater_text(pd, sw);
+	get_runoffrunon_text(pd, sw);
+	get_transp_text(pd, sw);
+	get_evapSoil_text(pd, sw);
+	get_evapSurface_text(pd, sw);
+	get_interception_text(pd, sw);
+	get_soilinf_text(pd, sw);
+	get_lyrdrain_text(pd, sw);
+	get_hydred_text(pd, sw);
+	get_aet_text(pd, sw);
+	get_pet_text(pd, sw);
+	get_wetdays_text(pd, sw);
+	get_snowpack_text(pd, sw);
+	get_deepswc_text(pd, sw);
+	get_soiltemp_text(pd, sw);
+    get_frozen_text(pd, sw);
+	get_co2effects_text(pd, sw);
+	get_biomass_text(pd, sw);
 
 	OutKey k = eSW_NoKey;
 	SW_VEGPROD *vveg = NULL;
@@ -339,24 +431,30 @@ void _echo_outputs(void)
 	SW_SOILWAT *vswc = NULL;
 	SW_SOILWAT_OUTPUTS *sswc = NULL;
 
-	sumof_vpd(vveg, sveg, k);
+	sumof_vpd(vveg, sveg, k, sw->Model.doy);
 	sumof_ves(vestab, sestab, k);
 	sumof_wth(vweath, sweath, k);
 	sumof_swc(vswc, sswc, k);
 
 	ObjType otyp = eF;
 
-	average_for(otyp, pd);
-	collect_sums(otyp, pd);
+	average_for(sw, otyp, pd, swFALSE, sw->GenOutput.tOffset, LogInfo);
+
+	collect_sums(sw, otyp, pd, sw->GenOutput.timeSteps,
+				 sw->GenOutput.used_OUTNPERIODS, LogInfo);
 }
 
 
-Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k)
+Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k, IntUS used_OUTNPERIODS,
+						 OutPeriod timeSteps[][SW_OUTNPERIODS])
 {
 	Bool res = swTRUE;
 
 	if (k) {}
 	if (pd) {}
+
+	(void) used_OUTNPERIODS;
+	(void) timeSteps;
 
 	return res;
 }

@@ -47,7 +47,7 @@
 #ifndef SW_SITE_H
 #define SW_SITE_H
 
-#include "include/SW_Defines.h"
+#include "include/SW_datastructs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -138,7 +138,6 @@ extern "C" {
     to utilize new XXX/YYY functions
 */
 
-#define SWRC_PARAM_NMAX 6 /**< Maximal number of SWRC parameters implemented */
 #define N_SWRCs 3 /**< Number of SWRCs implemented by SOILWAT2 */
 #define N_PTFs 2 /**< Number of PTFs implemented by SOILWAT2 */
 
@@ -151,138 +150,9 @@ extern "C" {
 #define sw_Cosby1984AndOthers 0
 #define sw_Cosby1984 1
 
-
-#define FXW_h0 6.3e6 /**< Pressure head at zero water content [cm] of FWX SWRC */
-#define FXW_hr 1500. /**< Pressure head at residual water content [cm] of FXW SWRC */
-
-
-/* =================================================== */
-/*            TYPEDEFS                                 */
-/* --------------------------------------------------- */
-
-typedef unsigned int LyrIndex;
-
-typedef struct {
-	/* bulk = relating to the whole soil, i.e., matric + rock/gravel/coarse fragments */
-	/* matric = relating to the < 2 mm fraction of the soil, i.e., sand, clay, and silt */
-
-	LyrIndex id; /**< Number of soil layer: 1 = most shallow, 2 = second shallowest, etc. up to ::MAX_LAYERS */
-
-	RealD
-		/* Inputs */
-		width, /* width of the soil layer (cm) */
-		soilDensityInput, /* soil density [g / cm3]: either of the matric component or bulk soil */
-		evap_coeff, /* prop. of total soil evap from this layer */
-		transp_coeff[NVEGTYPES], /* prop. of total transp from this layer    */
-		fractionVolBulk_gravel, /* gravel content (> 2 mm) as volume-fraction of bulk soil (g/cm3) */
-		fractionWeightMatric_sand, /* sand content (< 2 mm & > . mm) as weight-fraction of matric soil (g/g) */
-		fractionWeightMatric_clay, /* clay content (< . mm & > . mm) as weight-fraction of matric soil (g/g) */
-		impermeability, /* fraction of how impermeable a layer is (0=permeable, 1=impermeable)    */
-		avgLyrTemp, /* initial soil temperature for each soil layer */
-
-		/* Derived soil characteristics */
-		soilMatric_density, /* matric soil density of the < 2 mm fraction, i.e., gravel component excluded, (g/cm3) */
-		soilBulk_density, /* bulk soil density of the whole soil, i.e., including rock/gravel component, (g/cm3) */
-		swcBulk_fieldcap, /* Soil water content (SWC) corresponding to field capacity (SWP = -0.033 MPa) [cm] */
-		swcBulk_wiltpt, /* SWC corresponding to wilting point (SWP = -1.5 MPa) [cm] */
-		swcBulk_halfwiltpt, /* Adjusted half-wilting point used as SWC limit for bare-soil evaporation */
-		swcBulk_min, /* Minimal SWC [cm] */
-		swcBulk_wet, /* SWC considered "wet" [cm] */
-		swcBulk_init, /* Initial SWC for first day of simulation [cm] */
-		swcBulk_atSWPcrit[NVEGTYPES], /* SWC corresponding to critical SWP for transpiration */
-
-		/* Saxton et al. 2006 */
-		swcBulk_saturated; /* saturated bulk SWC [cm] */
-		// currently, not used;
-		//Saxton2006_K_sat_matric, /* saturated matric conductivity [cm / day] */
-		//Saxton2006_K_sat_bulk, /* saturated bulk conductivity [cm / day] */
-		//Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
-		//Saxton2006_lambda; /* Slope of logarithmic tension-moisture curve */
-
-
-	/* Soil water retention curve (SWRC) */
-	unsigned int
-		swrc_type, /**< Type of SWRC (see #swrc2str) */
-		ptf_type; /**< Type of PTF (see #ptf2str) */
-	RealD swrcp[SWRC_PARAM_NMAX]; /**< Parameters of SWRC: parameter interpretation varies with selected SWRC, see `SWRC_check_parameters()` */
-
-	LyrIndex my_transp_rgn[NVEGTYPES]; /* which transp zones from Site am I in? */
-} SW_LAYER_INFO;
-
-
-typedef struct {
-
-	Bool reset_yr, /* 1: reset values at start of each year */
-		deepdrain, /* 1: allow drainage into deepest layer  */
-		use_soil_temp; /* whether or not to do soil_temperature calculations */
-
-	unsigned int type_soilDensityInput; /* Encodes whether `soilDensityInput` represent matric density (type = SW_MATRIC = 0) or bulk density (type = SW_BULK = 1) */
-
-	LyrIndex n_layers, /* total number of soil layers */
-		n_transp_rgn, /* soil layers are grouped into n transp. regions */
-		n_evap_lyrs, /* number of layers in which evap is possible */
-		n_transp_lyrs[NVEGTYPES], /* layer index of deepest transp. region       */
-		deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
-
-	RealD
-		slow_drain_coeff, /* low soil water drainage coefficient   */
-		pet_scale,	/* changes relative effect of PET calculation */
-		longitude,	/* longitude of the site (radians)        */
-		latitude,	/* latitude of the site (radians)        */
-		altitude,	/* altitude a.s.l (m) of the site */
-		slope,		/* slope of the site (radians): between 0 (horizontal) and pi / 2 (vertical) */
-		aspect,		/* aspect of the site (radians): A value of \ref SW_MISSING indicates no data, ie., treat it as if slope = 0; South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi */
-					/* SWAT2K model parameters : Neitsch S, Arnold J, Kiniry J, Williams J. 2005. Soil and water assessment tool (SWAT) theoretical documentation. version 2005. Blackland Research Center, Texas Agricultural Experiment Station: Temple, TX. */
-		TminAccu2,	/* Avg. air temp below which ppt is snow ( C) */
-		TmaxCrit,	/* Snow temperature at which snow melt starts ( C) */
-		lambdasnow,	/* Relative contribution of avg. air temperature to todays snow temperture vs. yesterday's snow temperature (0-1) */
-		RmeltMin,	/* Minimum snow melt rate on winter solstice (cm/day/C) */
-		RmeltMax,	/* Maximum snow melt rate on summer solstice (cm/day/C) */
-		t1Param1,	/* Soil temperature constants */
-		t1Param2,	/* t1Params are the parameters for the avg daily temperature at the top of the soil (T1) equation */
-		t1Param3,
-		csParam1,	/* csParams are the parameters for the soil thermal conductivity (cs) equation */
-		csParam2,
-		shParam,	/* shParam is the parameter for the specific heat capacity equation */
-		bmLimiter,	/* bmLimiter is the biomass limiter constant, for use in the T1 equation */
-		Tsoil_constant, 	/* soil temperature at a depth where soil temperature is (mostly) constant in time; for instance, approximated as the mean air temperature */
-		stDeltaX,		/* for the soil_temperature function, deltaX is the distance between profile points (default: 15) */
-		stMaxDepth,		/* for the soil_temperature function, the maxDepth of the interpolation function */
-		percentRunoff,	/* the percentage of surface water lost daily */
-		percentRunon;	/* the percentage of water that is added to surface gained daily */
-
-	unsigned int stNRGR; /* number of interpolations, for the soil_temperature function */
-	/* params for tanfunc rate calculations for evap and transp. */
-	/* tanfunc() creates a logistic-type graph if shift is positive,
-	 * the graph has a negative slope, if shift is 0, slope is positive.
-	 */
-	tanfunc_t evap, transp;
-
-	SW_LAYER_INFO **lyr; 	/* one struct per soil layer pointed to by   */
-							/* a dynamically allocated block of pointers */
-
-	/* Soil water retention curve (SWRC), see `SW_LAYER_INFO` */
-	unsigned int
-		site_swrc_type,
-		site_ptf_type;
-
-	char
-		site_swrc_name[64],
-		site_ptf_name[64];
-
-	Bool site_has_swrcp; /**< Are `swrcp` already (TRUE) or not yet estimated (FALSE)? */
-
-} SW_SITE;
-
-
-
 /* =================================================== */
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
-extern SW_SITE SW_Site;
-extern LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
-extern RealD _SWCInitVal, _SWCWetVal, _SWCMinVal;
-
 extern char const *swrc2str[];
 extern char const *ptf2str[];
 
@@ -291,7 +161,7 @@ extern char const *ptf2str[];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
-unsigned int encode_str2swrc(char *swrc_name);
+unsigned int encode_str2swrc(char *swrc_name, LOG_INFO* LogInfo);
 unsigned int encode_str2ptf(char *ptf_name);
 
 void SWRC_PTF_estimate_parameters(
@@ -300,7 +170,8 @@ void SWRC_PTF_estimate_parameters(
 	double sand,
 	double clay,
 	double gravel,
-	double bdensity
+	double bdensity,
+	LOG_INFO* LogInfo
 );
 void SWRC_PTF_Cosby1984_for_Campbell1974(
 	double *swrcp,
@@ -310,10 +181,13 @@ void SWRC_PTF_Cosby1984_for_Campbell1974(
 
 
 Bool check_SWRC_vs_PTF(char *swrc_name, char *ptf_name);
-Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp);
-Bool SWRC_check_parameters_for_Campbell1974(double *swrcp);
-Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp);
-Bool SWRC_check_parameters_for_FXW(double *swrcp);
+Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp,
+						   LOG_INFO* LogInfo);
+Bool SWRC_check_parameters_for_Campbell1974(double *swrcp,
+										    LOG_INFO* LogInfo);
+Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp,
+												LOG_INFO* LogInfo);
+Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO* LogInfo);
 
 double SW_swcBulk_saturated(
 	unsigned int swrc_type,
@@ -322,7 +196,8 @@ double SW_swcBulk_saturated(
 	double width,
 	unsigned int ptf_type,
 	double sand,
-	double clay
+	double clay,
+	LOG_INFO* LogInfo
 );
 double SW_swcBulk_minimum(
 	unsigned int swrc_type,
@@ -333,45 +208,52 @@ double SW_swcBulk_minimum(
 	double ui_sm_min,
 	double sand,
 	double clay,
-	double swcBulk_sat
+	double swcBulk_sat,
+	RealD _SWCMinVal,
+	LOG_INFO* LogInfo
 );
 void PTF_Saxton2006(
 	double *theta_sat,
 	double sand,
-	double clay
+	double clay,
+	LOG_INFO* LogInfo
 );
 void PTF_RawlsBrakensiek1985(
 	double *theta_min,
 	double sand,
 	double clay,
-	double porosity
+	double porosity,
+	LOG_INFO* LogInfo
 );
 
 
 RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
-RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel);
-LyrIndex nlayers_bsevap(void);
-void nlayers_vegroots(LyrIndex n_transp_lyrs[]);
+RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel,
+								  LOG_INFO* LogInfo);
+LyrIndex nlayers_bsevap(RealD *evap_coeff, LyrIndex n_layers);
+void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
+					  RealD transp_coeff[][MAX_LAYERS]);
 
-void SW_SIT_construct(void);
-void SW_SIT_deconstruct(void);
-void SW_SIT_init_counts(void);
-void SW_SIT_read(void);
-void SW_SIT_init_run(void);
-void _echo_inputs(void);
+void SW_SIT_construct(SW_SITE* SW_Site);
+void SW_SIT_init_counts(SW_SITE* SW_Site);
+void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
+				 SW_CARBON* SW_Carbon, LOG_INFO* LogInfo);
+void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
+					LOG_INFO* LogInfo);
+void _echo_inputs(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo);
 
 /* these used to be in Layers */
-void SW_LYR_read(void);
-void SW_SWRC_read(void);
-void SW_SIT_clear_layers(void);
-LyrIndex _newlayer(void);
-void add_deepdrain_layer(void);
+void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo);
+void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo);
+void add_deepdrain_layer(SW_SITE* SW_Site);
 
-void set_soillayers(LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel,
-  RealF *evco, RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree,
-  RealF *trco_forb, RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp,
-  int nRegions, RealD *regionLowerBounds);
-void derive_soilRegions(int nRegions, RealD *regionLowerBounds);
+void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
+	LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel, RealF *evco,
+	RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree, RealF *trco_forb,
+	RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp, int nRegions,
+	RealD *regionLowerBounds, LOG_INFO* LogInfo);
+void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
+						RealD *regionLowerBounds, LOG_INFO* LogInfo);
 
 #ifdef DEBUG_MEM
 	void SW_SIT_SetMemoryRefs(void);

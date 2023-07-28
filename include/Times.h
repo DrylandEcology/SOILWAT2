@@ -41,17 +41,16 @@
 #define TIMES_H
 
 #include <time.h>
-#include "include/generic.h"
+#include "include/SW_datastructs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-/*---------------------------------------------------------------*/
-#define MAX_MONTHS 12
-#define MAX_WEEKS 53
-#define MAX_DAYS 366
+/* =================================================== */
+/*                    Local Defines                    */
+/* --------------------------------------------------- */
 
 /* constants for each month; this was previously a typedef enum.
  * Note: this has to be base0 and continuous. */
@@ -70,38 +69,28 @@ extern "C" {
 #define NoMonth 12
 
 #define NoDay 999
-
-typedef unsigned int TimeInt;
-
 #define WKDAYS 7
-/* number of days in each week. unlikely to change, but
- * useful as a readable indicator of usage where it occurs.
- * On the other hand, it is conceivable that one might be
- * interested in 4, 5, or 6 day periods, but redefine it
- * in specific programs and take responsibility there,
- * not here.
- */
-
-
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void Time_init_model(void);
-void Time_new_year(TimeInt year);
+void Time_init_model(TimeInt days_in_month[]);
+void Time_new_year(TimeInt year, TimeInt days_in_month[],
+                   TimeInt cum_monthdays[]);
 
-TimeInt Time_days_in_month(TimeInt month);
+TimeInt Time_days_in_month(TimeInt month, TimeInt days_in_month[]);
 TimeInt Time_get_lastdoy_y(TimeInt year);
 
-TimeInt doy2month(const TimeInt doy);
-TimeInt doy2mday(const TimeInt doy);
+TimeInt doy2month(const TimeInt doy, TimeInt cum_monthdays[]);
+TimeInt doy2mday(const TimeInt doy, TimeInt cum_monthdays[],
+                 TimeInt days_in_month[]);
 TimeInt doy2week(TimeInt doy);
 TimeInt yearto4digit(TimeInt yr);
 
 Bool isleapyear(const TimeInt year);
 
 void interpolate_monthlyValues(double monthlyValues[], Bool interpAsBase1,
-                               double dailyValues[]);
+  TimeInt cum_monthdays[], TimeInt days_in_month[], double dailyValues[]);
 
 
 #ifdef __cplusplus

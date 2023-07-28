@@ -188,41 +188,6 @@ typedef unsigned char byte;
 #define squared(x) ((x) * (x)) // added for convenience
 
 
-
-/* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern Bool QuietMode; /* defined in SW_Main_lib.c */
-extern Bool EchoInits; /* defined in SW_Main_lib.c */
-
-extern FILE *logfp; /* REQUIRED; defined in SW_Main_lib.c */
-/* This is the pointer to the log file.  It is declared in the
- * main module and externed here to make it available to any
- * file that needs it so all modules write to the same logfile.
- * See also the comments on 'logged' below.
- */
-
-extern char errstr[MAX_ERROR]; /* REQUIRED; defined in SW_Main_lib.c */
-/* declared in the main module, this is an ever-ready
- * buffer to put error text into for printing or
- * writing to the log file.
- */
-
-extern int logged; /* REQUIRED; defined in SW_Main_lib.c */
-/* use as a boolean: see gen_funcs.c.
- * Global variable indicates logfile written to via LogError.
- * In the main module, create a subroutine (eg, log_notify)
- * that tells the user or performs some other task based on the
- * event and include generic.h. Near the top of main(), set
- * logged = FALSE (ie, before calling LogError()) to clear the
- * flag.  Next call atexit(log_notify) to run the routine upon
- * termination.  Note that we can't declare logged as Bool
- * because Bool isn't defined in gen_funcs.c when logged is
- * declared, else we couldn't extern it here.
- */
-
-
-
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */

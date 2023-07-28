@@ -232,8 +232,10 @@ float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rn
 	\param last Upper bound of the values.
 	\param[out] list Upon return this array will be filled with random values.
   \param[in,out] *pcg_rng The random number generator to use.
+  \param[in] LogInfo Holds information dealing with logfile output
 */
-void RandUniList(long count, long first, long last, RandListType list[], pcg32_random_t* pcg_rng) {
+void RandUniList(long count, long first, long last, RandListType list[],
+                 pcg32_random_t* pcg_rng, LOG_INFO* LogInfo) {
 
 	long i, j, c, range, *klist;
 
@@ -265,7 +267,7 @@ void RandUniList(long count, long first, long last, RandListType list[], pcg32_r
 	/* otherwise, go through the whole groovy algorithm */
 
 	/* allocate space for the temp list */
-	klist = (long *) Mem_Malloc(sizeof(long) * range, "RandUniList");
+	klist = (long *) Mem_Malloc(sizeof(long) * range, "RandUniList", LogInfo);
 
 	/* populate the list with valid numbers */
 	for (i = 0, j = first; j <= last; klist[i++] = j++)
