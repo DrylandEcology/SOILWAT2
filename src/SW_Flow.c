@@ -238,7 +238,7 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 		&sw->AtmDemand,
 		doy,
 		sw->Site.latitude,
-		sw->Site.altitude,
+		sw->Site.elevation,
 		sw->Site.slope,
 		sw->Site.aspect,
 		x,
@@ -255,7 +255,7 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 	sw->SoilWat.pet = sw->Site.pet_scale * petfunc(
 		sw->SoilWat.H_gt,
 		sw->Weather.now.temp_avg,
-		sw->Site.altitude,
+		sw->Site.elevation,
 		x,
         sw->Weather.now.relHumidity,
         sw->Weather.now.windSpeed,

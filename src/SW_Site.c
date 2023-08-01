@@ -1434,7 +1434,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 			SW_Site->latitude = atof(inbuf) * deg_to_rad;
 			break;
 		case 24:
-			SW_Site->altitude = atof(inbuf);
+			SW_Site->elevation = atof(inbuf);
 			break;
 		case 25:
 			SW_Site->slope = atof(inbuf) * deg_to_rad;

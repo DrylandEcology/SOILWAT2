@@ -113,7 +113,7 @@ typedef struct {
 
 	RealD longitude,	/* longitude of the site (radians)        */
 		  latitude,		/* latitude of the site (radians)        */
-		  altitude,		/* altitude a.s.l (m) of the site */
+		  elevation,		/* altitude a.s.l (m) of the site */
 		  slope,		/* slope of the site (radians): between 0 (horizontal) and pi / 2 (vertical) */
 		  aspect;		/* aspect of the site (radians): A value of \ref SW_MISSING indicates no data, ie., treat it as if slope = 0; South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi */
 
