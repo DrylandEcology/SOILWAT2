@@ -111,6 +111,12 @@ typedef struct {
 	 * doy and year are base1. */
 	/* simyear = year + addtl_yr */
 
+	RealD longitude,	/* longitude of the site (radians)        */
+		  latitude,		/* latitude of the site (radians)        */
+		  altitude,		/* altitude a.s.l (m) of the site */
+		  slope,		/* slope of the site (radians): between 0 (horizontal) and pi / 2 (vertical) */
+		  aspect;		/* aspect of the site (radians): A value of \ref SW_MISSING indicates no data, ie., treat it as if slope = 0; South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi */
+
 	TimeInt
 		days_in_month[MAX_MONTHS], /* number of days per month for "current" year */
 		cum_monthdays[MAX_MONTHS]; /* monthly cumulative number of days for "current" year */
@@ -178,11 +184,6 @@ typedef struct {
 	RealD
 		slow_drain_coeff, /* low soil water drainage coefficient   */
 		pet_scale,	/* changes relative effect of PET calculation */
-		longitude,	/* longitude of the site (radians)        */
-		latitude,	/* latitude of the site (radians)        */
-		altitude,	/* altitude a.s.l (m) of the site */
-		slope,		/* slope of the site (radians): between 0 (horizontal) and pi / 2 (vertical) */
-		aspect,		/* aspect of the site (radians): A value of \ref SW_MISSING indicates no data, ie., treat it as if slope = 0; South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi */
 					/* SWAT2K model parameters : Neitsch S, Arnold J, Kiniry J, Williams J. 2005. Soil and water assessment tool (SWAT) theoretical documentation. version 2005. Blackland Research Center, Texas Agricultural Experiment Station: Temple, TX. */
 		TminAccu2,	/* Avg. air temp below which ppt is snow ( C) */
 		TmaxCrit,	/* Snow temperature at which snow melt starts ( C) */
