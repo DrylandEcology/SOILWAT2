@@ -1,0 +1,11 @@
+#------ Input file for domain/time of the simulation
+
+# USER: years must be consistent with `weathsetup.in`, `carbon.in`,
+#       and (if used) `swcsetup.in`.
+# NOTE: This file follows a key-value pair. That is, the value is only matched with the key
+# eliminating the possibility of incorrect reads due to line dependancies.
+
+StartYear 1980                  # First (Gregorian) calendar year of simulation
+EndYear   2010                  # Last (Gregorian) calendar year of simulation
+StartDoy  1                     # First day of first year
+EndDoy    365                   # Last day of last year (365 is equivalent to 366)
