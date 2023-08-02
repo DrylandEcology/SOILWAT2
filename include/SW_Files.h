@@ -43,6 +43,8 @@ typedef enum {
 	eCarbon,
 	/* (optional) soil moisture measurements */
 	eSoilwat,
+	/* Domain information */
+	eDomain,
 	/* Simulation outputs */
 	eOutput, eOutputDaily, eOutputWeekly, eOutputMonthly, eOutputYearly,
 	eOutputDaily_soil, eOutputWeekly_soil, eOutputMonthly_soil, eOutputYearly_soil,

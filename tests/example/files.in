@@ -34,6 +34,9 @@ Input/swcsetup.in	# Input file for settings used if soil moisture measurements s
 Output/			# Path for output files: / for same directory, or e.g., Output/; PROGRAMMER NOTE: This is currently the 13th position; if this changes then update function SW_Files.c/SW_F_read()
 Input/outsetup.in	# Input file that determines time periods, aggregation functions, and variables
 
+#--- Constant (between simulation runs) temporal description of the simulation
+Input/domain.in
+
 Output/sw2_daily.csv	# Output file if daily output time period was selected
 Output/sw2_weekly.csv	# Output file if weekly output time period was selected
 Output/sw2_monthly.csv	# Output file if monthly output time period was selected
