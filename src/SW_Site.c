@@ -1425,93 +1425,74 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 			SW_Site->transp.range = atof(inbuf);
 			break;
 		case 22:
-			// longitude is currently not used by the code, but may be used in the future
-			// it is present in the `siteparam.in` input file to completely document
-			// site location
-			SW_Site->longitude = atof(inbuf) * deg_to_rad;
-			break;
-		case 23:
-			SW_Site->latitude = atof(inbuf) * deg_to_rad;
-			break;
-		case 24:
-			SW_Site->elevation = atof(inbuf);
-			break;
-		case 25:
-			SW_Site->slope = atof(inbuf) * deg_to_rad;
-			break;
-		case 26:
-			tmp = atof(inbuf);
-			SW_Site->aspect = missing(tmp) ? tmp : tmp * deg_to_rad;
-			break;
-		case 27:
 			SW_Site->bmLimiter = atof(inbuf);
 			break;
-		case 28:
+		case 23:
 			SW_Site->t1Param1 = atof(inbuf);
 			break;
-		case 29:
+		case 24:
 			SW_Site->t1Param2 = atof(inbuf);
 			break;
-		case 30:
+		case 25:
 			SW_Site->t1Param3 = atof(inbuf);
 			break;
-		case 31:
+		case 26:
 			SW_Site->csParam1 = atof(inbuf);
 			break;
-		case 32:
+		case 27:
 			SW_Site->csParam2 = atof(inbuf);
 			break;
-		case 33:
+		case 28:
 			SW_Site->shParam = atof(inbuf);
 			break;
-		case 34:
+		case 29:
 			SW_Site->Tsoil_constant = atof(inbuf);
 			break;
-		case 35:
+		case 30:
 			SW_Site->stDeltaX = atof(inbuf);
 			break;
-		case 36:
+		case 31:
 			SW_Site->stMaxDepth = atof(inbuf);
 			break;
-		case 37:
+		case 32:
 			SW_Site->use_soil_temp = itob(atoi(inbuf));
 			break;
-		case 38:
+		case 33:
 			SW_Carbon->use_bio_mult = itob(atoi(inbuf));
 			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': use_bio_mult = %d\n", SW_Carbon->use_bio_mult);
 			#endif
 			break;
-		case 39:
+		case 34:
 			SW_Carbon->use_wue_mult = itob(atoi(inbuf));
 			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': use_wue_mult = %d\n", SW_Carbon->use_wue_mult);
 			#endif
 			break;
-		case 40:
+		case 35:
 			strcpy(SW_Carbon->scenario, inbuf);
 			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", SW_Carbon->scenario);
 			#endif
 			break;
-		case 41:
+		case 36:
 			SW_Site->type_soilDensityInput = atoi(inbuf);
 			break;
-		case 42:
+		case 37:
 			strcpy(SW_Site->site_swrc_name, inbuf);
 			SW_Site->site_swrc_type =
 							encode_str2swrc(SW_Site->site_swrc_name, LogInfo);
 			break;
-		case 43:
+		case 38:
 			strcpy(SW_Site->site_ptf_name, inbuf);
 			SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
 			break;
-		case 44:
+		case 39:
 			SW_Site->site_has_swrcp = itob(atoi(inbuf));
 			break;
 
 		default:
-			if (lineno > 44 + MAX_TRANSP_REGIONS)
+			if (lineno > 39 + MAX_TRANSP_REGIONS)
 				break; /* skip extra lines */
 
 			if (MAX_TRANSP_REGIONS < SW_Site->n_transp_rgn) {

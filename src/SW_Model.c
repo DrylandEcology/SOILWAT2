@@ -111,107 +111,110 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	 *    starting year
 	 */
 	FILE *f;
-	int y, cnt;
+	int y, lineno;
 	TimeInt d;
 	char *p, enddyval[6], errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 	Bool fstartdy = swFALSE, fenddy = swFALSE, fhemi = swFALSE;
+	double temp;
 
 	MyFileName = InFiles[eModel];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
-	/* ----- beginning year */
-	if (!GetALine(f, inbuf)) {
-		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGFATAL, "%s: No input.", MyFileName);
-	}
-	y = atoi(inbuf);
-	if (y < 0) {
-		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGFATAL, "%s: Negative start year (%d)", MyFileName, y);
-	}
-	SW_Model->startyr = yearto4digit((TimeInt) y);
-	SW_Model->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
+	// /* ----- beginning year */
+	// if (!GetALine(f, inbuf)) {
+	// 	CloseFile(&f, LogInfo);
+	// 	LogError(LogInfo, LOGFATAL, "%s: No input.", MyFileName);
+	// }
+	// y = atoi(inbuf);
+	// if (y < 0) {
+	// 	CloseFile(&f, LogInfo);
+	// 	LogError(LogInfo, LOGFATAL, "%s: Negative start year (%d)", MyFileName, y);
+	// }
+	// SW_Model->startyr = yearto4digit((TimeInt) y);
+	// SW_Model->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
 
-	/* ----- ending year */
-	if (!GetALine(f, inbuf)) {
-		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGFATAL, "%s: Ending year not found.", MyFileName);
-	}
-	y = atoi(inbuf);
-	//assert(y > 0);
-	if (y < 0) {
-		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGFATAL, "%s: Negative ending year (%d)", MyFileName, y);
-	}
-	SW_Model->endyr = yearto4digit((TimeInt) y);
-	if (SW_Model->endyr < SW_Model->startyr) {
-		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGFATAL, "%s: Start Year > End Year", MyFileName);
-	}
+	// /* ----- ending year */
+	// if (!GetALine(f, inbuf)) {
+	// 	CloseFile(&f, LogInfo);
+	// 	LogError(LogInfo, LOGFATAL, "%s: Ending year not found.", MyFileName);
+	// }
+	// y = atoi(inbuf);
+	// //assert(y > 0);
+	// if (y < 0) {
+	// 	CloseFile(&f, LogInfo);
+	// 	LogError(LogInfo, LOGFATAL, "%s: Negative ending year (%d)", MyFileName, y);
+	// }
+	// SW_Model->endyr = yearto4digit((TimeInt) y);
+	// if (SW_Model->endyr < SW_Model->startyr) {
+	// 	CloseFile(&f, LogInfo);
+	// 	LogError(LogInfo, LOGFATAL, "%s: Start Year > End Year", MyFileName);
+	// }
 
 	/* ----- Start checking for model time parameters */
 	/*   input should be in order of startdy, enddy, hemisphere,
 	 but if hemisphere occurs first, skip checking for the rest
 	 and assume they're not there.
 	 */
-	cnt = 0;
+	lineno = 0;
 	while (GetALine(f, inbuf)) {
-		cnt++;
-		if (isalpha((int) *inbuf) && strcmp(inbuf, "end")) { /* get hemisphere */
-			SW_Model->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
-			fhemi = swTRUE;
-			break;
-		}//TODO: SHOULDN'T WE SKIP THIS BELOW IF ABOVE IS swTRUE
-		switch (cnt) {
-		case 1:
-			SW_Model->startstart = atoi(inbuf);
-			fstartdy = swTRUE;
-			break;
-		case 2:
-			p = inbuf;
-			cnt = 0;
-			while (*p && cnt < 6) {
-				enddyval[cnt++] = tolower((int) *(p++));
-			}
-			enddyval[cnt] = enddyval[5] = '\0';
-			fenddy = swTRUE;
-			break;
-		case 3:
-			SW_Model->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
-			fhemi = swTRUE;
-			break;
-		default:
-			break; /* skip any extra lines */
+		lineno++;
+		switch(lineno) {
+			case 0: // Hemisphere
+				SW_Model->isnorth =  (Bool) (toupper((int) *inbuf) == 'N');
+				break;
+			case 1: // Longitude
+				// longitude is currently not used by the code, but may be used in the future
+				// it is present in the `siteparam.in` input file to completely document
+				// site location
+				SW_Model->longitude = atof(inbuf) * deg_to_rad;
+				break;
+			case 2: // Latitude
+				SW_Model->latitude = atof(inbuf) * deg_to_rad;
+				break;
+			case 3: // Elevation
+				SW_Model->elevation = atof(inbuf);
+				break;
+			case 4: // Slope
+				SW_Model->slope = atof(inbuf) * deg_to_rad;
+				break;
+			case 5: // Aspect
+				temp = atof(inbuf);
+				SW_Model->aspect = missing(temp) ? temp : temp * deg_to_rad;
+				break;
+			default: // More lines than expected
+				LogError(LogInfo, LOGFATAL, "More lines read than expected." \
+						 "Please double check your `modelrun.in` file.");
+				break;
 		}
 	}
 
-	if (!(fstartdy && fenddy && fhemi)) {
-		snprintf(errstr, MAX_ERROR, "\nNot found in %s:\n", MyFileName);
-		if (!fstartdy) {
-			strcat(errstr, "\tStart Day  - using 1\n");
-			SW_Model->startstart = 1;
-		}
-		if (!fenddy) {
-			strcat(errstr, "\tEnd Day    - using \"end\"\n");
-			strcpy(enddyval, "end");
-		}
-		if (!fhemi) {
-			strcat(errstr, "\tHemisphere - using \"N\"\n");
-			SW_Model->isnorth = swTRUE;
-		}
-		strcat(errstr, "Continuing.\n");
-		LogError(LogInfo, LOGWARN, errstr);
-	}
+	// if (!(fstartdy && fenddy && fhemi)) {
+	// 	snprintf(errstr, MAX_ERROR, "\nNot found in %s:\n", MyFileName);
+	// 	if (!fstartdy) {
+	// 		strcat(errstr, "\tStart Day  - using 1\n");
+	// 		SW_Model->startstart = 1;
+	// 	}
+	// 	if (!fenddy) {
+	// 		strcat(errstr, "\tEnd Day    - using \"end\"\n");
+	// 		strcpy(enddyval, "end");
+	// 	}
+	// 	if (!fhemi) {
+	// 		strcat(errstr, "\tHemisphere - using \"N\"\n");
+	// 		SW_Model->isnorth = swTRUE;
+	// 	}
+	// 	strcat(errstr, "Continuing.\n");
+	// 	LogError(LogInfo, LOGWARN, errstr);
+	// }
 
-	SW_Model->startstart += ((SW_Model->isnorth) ? DAYFIRST_NORTH : DAYFIRST_SOUTH) - 1;
-	if (strcmp(enddyval, "end") == 0) {
-		SW_Model->endend = (SW_Model->isnorth) ? Time_get_lastdoy_y(SW_Model->endyr) : DAYLAST_SOUTH;
-	} else {
-		d = atoi(enddyval);
-		SW_Model->endend = (d == 365) ? Time_get_lastdoy_y(SW_Model->endyr) : 365;
-	}
+	// SW_Model->startstart += ((SW_Model->isnorth) ? DAYFIRST_NORTH : DAYFIRST_SOUTH) - 1;
+	// if (strcmp(enddyval, "end") == 0) {
+	// 	SW_Model->endend = (SW_Model->isnorth) ? Time_get_lastdoy_y(SW_Model->endyr) : DAYLAST_SOUTH;
+	// } else {
+	// 	d = atoi(enddyval);
+	// 	SW_Model->endend = (d == 365) ? Time_get_lastdoy_y(SW_Model->endyr) : 365;
+	// }
 
-	SW_Model->daymid = (SW_Model->isnorth) ? DAYMID_NORTH : DAYMID_SOUTH;
+	// SW_Model->daymid = (SW_Model->isnorth) ? DAYMID_NORTH : DAYMID_SOUTH;
 	CloseFile(&f, LogInfo);
 
 }
