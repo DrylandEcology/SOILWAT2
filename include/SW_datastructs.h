@@ -94,10 +94,6 @@ typedef struct {
 
 typedef struct {
 	TimeInt /* controlling dates for model run */
-	startyr, /* beginning year for model run */
-	endyr, /* ending year for model run */
-	startstart, /* startday in start year */
-	endend, /* end day in end year */
 	daymid, /* mid year depends on hemisphere */
 	/* current year dates */
 	firstdoy, /* start day for this year */
@@ -1002,6 +998,17 @@ typedef struct {
 } SW_GEN_OUT;
 
 /* =================================================== */
+/*                    Domain struct                    */
+/* --------------------------------------------------- */
+
+typedef struct {
+	TimeInt startyr,       /* beginning year for model run */
+			endyr,         /* ending year for model run */
+			startstart,    /* startday in start year */
+			endend;        /* end day in end year */
+} SW_DOMAIN;
+
+/* =================================================== */
 /*                 Comprehensive struct                */
 /* --------------------------------------------------- */
 
@@ -1018,6 +1025,7 @@ typedef struct {
 	SW_FILE_STATUS FileStatus;
 	SW_MARKOV Markov;
 	SW_OUTPUT Output[SW_OUTNKEYS];
+	SW_DOMAIN Domain;
 
 	SW_ATMD AtmDemand;
 	SW_GEN_OUT GenOutput;
