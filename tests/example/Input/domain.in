@@ -5,6 +5,11 @@
 # NOTE: This file follows a key-value pair. That is, the value is only matched with the key
 # eliminating the possibility of incorrect reads due to line dependancies.
 
+Domain    s
+nDimX     1
+nDimY     1
+nDimS     1
+
 StartYear 1980                  # First (Gregorian) calendar year of simulation
 EndYear   2010                  # Last (Gregorian) calendar year of simulation
 StartDoy  1                     # First day of first year

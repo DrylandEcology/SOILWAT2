@@ -1002,8 +1002,15 @@ typedef struct {
 /* --------------------------------------------------- */
 
 typedef struct {
-	TimeInt startyr,       /* beginning year for model run */
-			endyr,         /* ending year for model run */
+	// Spacial domain information
+	char DomainType[3]; // Either "xy" or "s" (exluding '\0')
+	int nDimX,
+		nDimY,
+		nDimS;
+
+	// Temporal domain information
+	TimeInt startyr,       /* beginning year for a set of simulation run */
+			endyr,         /* ending year for a set of simulation run */
 			startstart,    /* startday in start year */
 			endend;        /* end day in end year */
 } SW_DOMAIN;
