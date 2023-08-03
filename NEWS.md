@@ -1,6 +1,6 @@
 # NEWS
 
-# SOILWAT2 v7.1.0-9000
+# SOILWAT2 v7.1.0
 * Simulation output remains the same as the previous version.
 
 * Prepare for SOILWAT2 to become thread-safe and reentrant (#346; @N1ckP3rsl3y)
@@ -21,6 +21,8 @@
           e.g., directories, file paths to input data.
         * SW_OUTPUT_POINTERS - Points to requested output subroutines.
         * LOG_INFO - Manages information for logging warnings and errors.
+
+* Tests now require `c++14` and utilize `googletest` `v1.14.0` (issue #339).
 
 * Bugfixes
     * Fix an error where a pointer was freed even though it was not allocated
