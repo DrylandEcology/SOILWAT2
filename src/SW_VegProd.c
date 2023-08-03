@@ -583,14 +583,10 @@ void SW_VPD_construct(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
 
 
 void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-	SW_MODEL* SW_Model, RealD site_latitude, LOG_INFO* LogInfo) {
+	SW_MODEL* SW_Model, int startyr, int endyr, LOG_INFO* LogInfo) {
 
 	TimeInt year;
-    int k, veg_method;
-
-    veg_method = SW_VegProd->veg_method;
-
-    double latitude = site_latitude;
+    int k;
 
     /* Set co2-multipliers to default */
     for (year = 0; year < MAX_NYEAR; year++)
@@ -602,9 +598,9 @@ void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
         }
     }
 
-    if(veg_method > 0) {
+    if(SW_VegProd->veg_method > 0) {
         estimateVegetationFromClimate(SW_VegProd, SW_Weather->allHist,
-									  SW_Model, veg_method, latitude, LogInfo);
+									  SW_Model, startyr, endyr, LogInfo);
     }
 
 }
@@ -925,21 +921,20 @@ void get_critical_rank(SW_VEGPROD* SW_VegProd){
 /**
  @brief Wrapper function for estimating natural vegetation. First, climate is calculated and averaged, then values are estimated
 
- @param[in,out] vegProd Structure holding all values for vegetation cover of simulation
+ @param[in,out] SW_VegProd Structure holding all values for vegetation cover of simulation
  @param[in,out] Weather_hist Array containing all historical data of a site
  @param[in] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
- @param[in] veg_method User specified value determining method of vegetation estimation with the current option(s):
- 1 - Estimate fixed vegetation composition (fractional cover) from long-term climate conditions
- @param[in] latitude Value of type double specifying latitude coordinate the current site is located at
+ @param[in] startyr Start year of the simulation
+ @param[in] endyr End year of the simulation
  @param[in] LogInfo Holds information dealing with logfile output
  */
 
-void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
-	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model, int veg_method,
-	double latitude, LOG_INFO* LogInfo) {
+void estimateVegetationFromClimate(SW_VEGPROD *SW_VegProd,
+	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model, int startyr,
+	int endyr, LOG_INFO* LogInfo) {
 
-    int numYears = SW_Model->endyr - SW_Model->startyr + 1,
+    int numYears = endyr - startyr + 1,
 	k, bareGroundIndex = 7;
 
     SW_CLIMATE_YEARLY climateOutput;
@@ -957,7 +952,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
     Bool inNorthHem = swTRUE;
     Bool fixBareGround = swTRUE;
 
-    if(latitude < 0.0) {
+    if(SW_Model->latitude < 0.0) {
         inNorthHem = swFALSE;
     }
 
@@ -965,12 +960,12 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
     allocateClimateStructs(numYears, &climateOutput, &climateAverages);
 
     calcSiteClimate(Weather_hist, SW_Model->cum_monthdays,
-					SW_Model->days_in_month, numYears, SW_Model->startyr,
+					SW_Model->days_in_month, numYears, startyr,
 					inNorthHem, &climateOutput);
 
     averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);
 
-    if(veg_method == 1) {
+    if(SW_VegProd->veg_method == 1) {
 
         C4Variables[0] = climateAverages.minTemp7thMon_C;
         C4Variables[1] = climateAverages.ddAbove65F_degday;
@@ -984,10 +979,10 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
                 RelAbundanceL0, RelAbundanceL1, LogInfo);
 
         ForEachVegType(k) {
-            vegProd->veg[k].cov.fCover = RelAbundanceL1[k];
+            SW_VegProd->veg[k].cov.fCover = RelAbundanceL1[k];
         }
 
-        vegProd->bare_cov.fCover = RelAbundanceL0[bareGroundIndex];
+        SW_VegProd->bare_cov.fCover = RelAbundanceL0[bareGroundIndex];
     }
 
     // Deallocate climate structs' memory

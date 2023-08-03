@@ -237,10 +237,10 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 	sw->SoilWat.H_gt = solar_radiation(
 		&sw->AtmDemand,
 		doy,
-		sw->Site.latitude,
-		sw->Site.elevation,
-		sw->Site.slope,
-		sw->Site.aspect,
+		sw->Model.latitude,
+		sw->Model.elevation,
+		sw->Model.slope,
+		sw->Model.aspect,
 		x,
         &sw->Weather.now.cloudCover,
         sw->Weather.now.actualVaporPressure,
@@ -255,7 +255,7 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 	sw->SoilWat.pet = sw->Site.pet_scale * petfunc(
 		sw->SoilWat.H_gt,
 		sw->Weather.now.temp_avg,
-		sw->Site.elevation,
+		sw->Model.elevation,
 		x,
         sw->Weather.now.relHumidity,
         sw->Weather.now.windSpeed,

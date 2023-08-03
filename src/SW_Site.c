@@ -1348,7 +1348,6 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 	#endif
 	LyrIndex r;
 	Bool too_many_regions = swFALSE;
-	RealD tmp;
 	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
@@ -2426,10 +2425,13 @@ void SW_SIT_init_counts(SW_SITE* SW_Site) {
 @brief Print site-parameters and soil characteristics.
 
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_Model Struct of type SW_MODEL holding basic time information
+	about the simulation
 @param[in] InFiles Array of program in/output files
 @param[in] LogInfo Holds information dealing with logfile output
 */
-void _echo_inputs(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
+void _echo_inputs(SW_SITE* SW_Site, SW_MODEL* SW_Model, char *InFiles[],
+				  LOG_INFO* LogInfo) {
 	/* =================================================== */
 	LyrIndex i;
 
@@ -2443,11 +2445,11 @@ void _echo_inputs(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 	LogError(LogInfo, LOGNOTE, "  PET Scale: %5.4f\n", SW_Site->pet_scale);
 	LogError(LogInfo, LOGNOTE, "  Runoff: proportion of surface water lost: %5.4f\n", SW_Site->percentRunoff);
 	LogError(LogInfo, LOGNOTE, "  Runon: proportion of new surface water gained: %5.4f\n", SW_Site->percentRunon);
-	LogError(LogInfo, LOGNOTE, "  Longitude (degree): %4.2f\n", SW_Site->longitude * rad_to_deg);
-	LogError(LogInfo, LOGNOTE, "  Latitude (degree): %4.2f\n", SW_Site->latitude * rad_to_deg);
-	LogError(LogInfo, LOGNOTE, "  Altitude (m a.s.l.): %4.2f \n", SW_Site->altitude);
-	LogError(LogInfo, LOGNOTE, "  Slope (degree): %4.2f\n", SW_Site->slope * rad_to_deg);
-	LogError(LogInfo, LOGNOTE, "  Aspect (degree): %4.2f\n", SW_Site->aspect * rad_to_deg);
+	LogError(LogInfo, LOGNOTE, "  Longitude (degree): %4.2f\n", SW_Model->longitude * rad_to_deg);
+	LogError(LogInfo, LOGNOTE, "  Latitude (degree): %4.2f\n", SW_Model->latitude * rad_to_deg);
+	LogError(LogInfo, LOGNOTE, "  Altitude (m a.s.l.): %4.2f \n", SW_Model->elevation);
+	LogError(LogInfo, LOGNOTE, "  Slope (degree): %4.2f\n", SW_Model->slope * rad_to_deg);
+	LogError(LogInfo, LOGNOTE, "  Aspect (degree): %4.2f\n", SW_Model->aspect * rad_to_deg);
 
 	LogError(LogInfo, LOGNOTE, "\nSnow simulation parameters (SWAT2K model):\n----------------------\n");
 	LogError(LogInfo, LOGNOTE, "  Avg. air temp below which ppt is snow ( C): %5.4f\n", SW_Site->TminAccu2);

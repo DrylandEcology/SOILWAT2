@@ -353,7 +353,7 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
 
   // re-init static variables on first day of each simulation
   // to prevent carry-over
-  if (sw->Model.year == sw->Model.startyr && sw->Model.doy == sw->Model.firstdoy) {
+  if (sw->Model.year == sw->Domain.startyr && sw->Model.doy == sw->Model.firstdoy) {
     surfaceWater_yesterday = 0.;
   }
 
@@ -654,7 +654,7 @@ void SW_SWC_water_flow(SW_ALL* sw, char *InFiles[], LOG_INFO* LogInfo) {
 
 	if (sw->SoilWat.hist_use && !missing( sw->SoilWat.hist.swc[sw->Model.doy-1][1])) {
 
-		if (!(sw->Model.doy == sw->Model.startstart && sw->Model.year == sw->Model.startyr)) {
+		if (!(sw->Model.doy == sw->Domain.startstart && sw->Model.year == sw->Domain.startyr)) {
 
       #ifdef SWDEBUG
       if (debug) swprintf("\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n");

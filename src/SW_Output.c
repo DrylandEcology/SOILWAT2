@@ -2650,7 +2650,7 @@ void _echo_all_inputs(SW_ALL* sw, char *InFiles[], LOG_INFO* LogInfo) {
 		LogError(LogInfo, LOGNOTE, "Establishment not used.\n");
 	}
 
-	_echo_inputs(&sw->Site, InFiles, LogInfo);
+	_echo_inputs(&sw->Site, &sw->Model, InFiles, LogInfo);
 	_echo_VegEstab(sw->Site.width, sw->VegEstab.parms,
 				   sw->VegEstab.count, LogInfo);
 	_echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov, LogInfo);

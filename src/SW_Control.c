@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "include/SW_Domain.h"
 #include "include/SW_VegProd.h"
 #include "include/Times.h"
 #include "include/SW_Files.h"
@@ -57,9 +58,9 @@
 */
 static void _begin_year(SW_ALL* sw, LOG_INFO* LogInfo) {
 	// SW_F_new_year() not needed
-	SW_MDL_new_year(&sw->Model); // call first to set up time-related arrays for this year
+	SW_MDL_new_year(&sw->Model, &sw->Domain); // call first to set up time-related arrays for this year
 	// SW_MKV_new_year() not needed
-	SW_SKY_new_year(&sw->Model, sw->Sky.snow_density,
+	SW_SKY_new_year(&sw->Model, sw->Domain.startyr, sw->Sky.snow_density,
                   sw->Sky.snow_density_daily); // Update daily climate variables from monthly values
 	//SW_SIT_new_year() not needed
 	SW_VES_new_year(sw->VegEstab.count);
@@ -108,7 +109,7 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
   TimeInt *cur_yr = &sw->Model.year;
 
-  for (*cur_yr = sw->Model.startyr; *cur_yr <= sw->Model.endyr; (*cur_yr)++) {
+  for (*cur_yr = sw->Domain.startyr; *cur_yr <= sw->Domain.endyr; (*cur_yr)++) {
     #ifdef SWDEBUG
     if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
     #endif
@@ -192,14 +193,15 @@ void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
 	SW_SIT_init_run(&sw->VegProd, &sw->Site, LogInfo);
 	SW_VES_init_run(sw->VegEstab.parms, &sw->Site, sw->Site.n_transp_lyrs,
                   sw->VegEstab.count, LogInfo); // must run after `SW_SIT_init_run()`
-	SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model,
-                  sw->Site.latitude, LogInfo);
+	SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model, sw->Domain.startyr,
+                  sw->Domain.endyr, LogInfo);
 	SW_FLW_init_run(&sw->SoilWat);
 	SW_ST_init_run(&sw->StRegValues);
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
 	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
 	SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->Weather.temp_snow);
-	SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->Carbon, LogInfo);
+	SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->Carbon,
+                  sw->Domain.startyr, sw->Domain.endyr, LogInfo);
 }
 
 
@@ -298,6 +300,11 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
   if (debug) swprintf(" > 'model'");
   #endif
 
+  SW_DOM_read(&sw->Model, PathInfo->InFiles, &sw->Domain, LogInfo);
+  #ifdef SWDEBUG
+  if(debug) swprintf(" 'domain'");
+  #endif
+
   SW_WTH_setup(&sw->Weather, PathInfo->InFiles,
                PathInfo->weather_prefix, LogInfo);
   #ifdef SWDEBUG
@@ -318,7 +325,8 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
     #endif
   }
 
-  SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model, LogInfo);
+  SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model,
+              &sw->Domain, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather read'");
   #endif
@@ -356,14 +364,15 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
   if (debug) swprintf(" > 'ouput'");
   #endif
 
-  SW_CBN_read(&sw->Carbon, &sw->Model, PathInfo->InFiles, LogInfo);
+  SW_CBN_read(&sw->Carbon, &sw->Model, PathInfo->InFiles,
+              &sw->Domain, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'CO2'");
   #endif
 
   SW_SWC_read(
     &sw->SoilWat,
-    sw->Model.endyr,
+    sw->Domain.endyr,
     PathInfo->InFiles,
     LogInfo
   );

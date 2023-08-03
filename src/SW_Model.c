@@ -89,7 +89,7 @@ void SW_MDL_deconstruct(void)
 {}
 
 /**
-@brief Reads in MDL file and displays error message if file is incorrect.
+@brief Reads in `modelrun.in` and displays error message if file is incorrect.
 
 @param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
@@ -172,8 +172,10 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 
 @param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
 		about the simulation
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+      	temporal/spacial information for a set of simulation runs
 */
-void SW_MDL_new_year(SW_MODEL* SW_Model) {
+void SW_MDL_new_year(SW_MODEL* SW_Model, SW_DOMAIN* SW_Domain) {
 	/* =================================================== */
 	/* 1/24/02 - added code for partial start and end years
 	 */
@@ -184,8 +186,8 @@ void SW_MDL_new_year(SW_MODEL* SW_Model) {
 	Time_new_year(year, SW_Model->days_in_month, SW_Model->cum_monthdays);
 	SW_Model->simyear = SW_Model->year + SW_Model->addtl_yr;
 
-	SW_Model->firstdoy = (year == SW_Model->startyr) ? SW_Model->startstart : 1;
-	SW_Model->lastdoy = (year == SW_Model->endyr) ? SW_Model->endend : Time_get_lastdoy_y(year);
+	SW_Model->firstdoy = (year == SW_Domain->startyr) ? SW_Domain->startstart : 1;
+	SW_Model->lastdoy = (year == SW_Domain->endyr) ? SW_Domain->endend : Time_get_lastdoy_y(year);
 }
 
 /**

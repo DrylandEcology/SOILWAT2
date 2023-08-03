@@ -51,6 +51,8 @@ void SW_CBN_deconstruct(void)
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
  * @param[in] InFiles Array of program in/output files
+ * @param[in] startyr Beginning year for simulation
+ * @param[in] endyr End year of the simulation
  * @param[in] LogInfo Holds information dealing with logfile output
  *
  * Additionally, check for the following issues:
@@ -61,7 +63,7 @@ void SW_CBN_deconstruct(void)
  *   5. Negative year.
  */
 void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
-                 LOG_INFO* LogInfo)
+                 SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo)
 {
   #ifdef SWDEBUG
   short debug = 0;
@@ -83,8 +85,8 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
   FILE *f;
   char scenario[64];
   int year,
-    simstartyr = (int) SW_Model->startyr + SW_Model->addtl_yr,
-    simendyr = (int) SW_Model->endyr + SW_Model->addtl_yr;
+    simstartyr = (int) SW_Domain->startyr + SW_Model->addtl_yr,
+    simendyr = (int) SW_Domain->endyr + SW_Model->addtl_yr;
 
   // The following variables must be initialized to show if they've been changed or not
   double ppm = 1.;
@@ -234,13 +236,15 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
  * @param[in] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
+ * @param[in] startyr Beginning year for simulation
+ * @param[in] endyr End year of the simulation
  * @param[in] LogInfo Holds information dealing with logfile output
  *
  */
 void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
-                     SW_CARBON* SW_Carbon, LOG_INFO* LogInfo) {
+    SW_CARBON* SW_Carbon, int startyr, int endyr, LOG_INFO* LogInfo) {
   int k;
-  TimeInt year, simendyr = SW_Model->endyr + SW_Model->addtl_yr;
+  TimeInt year, simendyr = endyr + SW_Model->addtl_yr;
   double ppm;
   char errstr[MAX_ERROR];
   #ifdef SWDEBUG
@@ -253,7 +257,7 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
   }
 
   // Only iterate through the years that we know will be used
-  for (year = SW_Model->startyr + SW_Model->addtl_yr; year <= simendyr; year++)
+  for (year = startyr + SW_Model->addtl_yr; year <= simendyr; year++)
   {
     ppm = SW_Carbon->ppm[year];
 
@@ -272,8 +276,8 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
     if (SW_Carbon->use_bio_mult) {
       ForEachVegType(k) {
         VegProd_veg[k].co2_multipliers[BIO_INDEX][year] =
-                                              VegProd_veg[k].co2_bio_coeff1
-                                              * pow(ppm, VegProd_veg[k].co2_bio_coeff2);
+                            VegProd_veg[k].co2_bio_coeff1
+                            * pow(ppm, VegProd_veg[k].co2_bio_coeff2);
       }
     }
 
@@ -287,8 +291,9 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
 
     if (SW_Carbon->use_wue_mult) {
       ForEachVegType(k) {
-        VegProd_veg[k].co2_multipliers[WUE_INDEX][year] = VegProd_veg[k].co2_wue_coeff1 *
-          pow(ppm, VegProd_veg[k].co2_wue_coeff2);
+        VegProd_veg[k].co2_multipliers[WUE_INDEX][year] =
+                VegProd_veg[k].co2_wue_coeff1 *
+                    pow(ppm, VegProd_veg[k].co2_wue_coeff2);
       }
     }
   }
