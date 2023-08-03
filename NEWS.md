@@ -22,6 +22,8 @@
         * SW_OUTPUT_POINTERS - Points to requested output subroutines.
         * LOG_INFO - Manages information for logging warnings and errors.
 
+* Tests now require `c++14` and utilize `googletest` `v1.14.0` (issue #339).
+
 * Bugfixes
     * Fix an error where a pointer was freed even though it was not allocated
       (issue #356; @dschlaep).
