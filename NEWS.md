@@ -1,6 +1,6 @@
 # NEWS
 
-# SOILWAT2 v7.1.0-9000
+# SOILWAT2 v7.1.0
 * Simulation output remains the same as the previous version.
 
 * Prepare for SOILWAT2 to become thread-safe and reentrant (#346; @N1ckP3rsl3y)
