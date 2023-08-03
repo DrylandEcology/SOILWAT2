@@ -106,50 +106,50 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 		case 6:
 			strcpy(PathInfo->weather_prefix, inbuf);
 			break;
-		case 14:
+		case 15:
 			strcpy(PathInfo->output_prefix, inbuf);
 			break;
-		case 16:
+		case 17:
 			PathInfo->InFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily], LogInfo);
 			break;
-		case 17:
+		case 18:
 			PathInfo->InFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
-		case 18:
+		case 19:
 			PathInfo->InFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
-		case 19:
+		case 20:
 			PathInfo->InFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly], LogInfo);
 			break;
-		case 20:
+		case 21:
 			PathInfo->InFiles[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily_soil], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputDaily]);
 			break;
-		case 21:
+		case 22:
 			PathInfo->InFiles[eOutputWeekly_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly_soil], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
-		case 22:
+		case 23:
 			PathInfo->InFiles[eOutputMonthly_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly_soil], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
-		case 23:
+		case 24:
 			PathInfo->InFiles[eOutputYearly_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly_soil], LogInfo);
