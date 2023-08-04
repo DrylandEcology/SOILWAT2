@@ -51,8 +51,8 @@ void SW_CBN_deconstruct(void)
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
  * @param[in] InFiles Array of program in/output files
- * @param[in] startyr Beginning year for simulation
- * @param[in] endyr End year of the simulation
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spacial information for a set of simulation runs
  * @param[in] LogInfo Holds information dealing with logfile output
  *
  * Additionally, check for the following issues:
