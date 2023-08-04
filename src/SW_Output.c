@@ -114,8 +114,8 @@ char const *styp2str[] =
 /* --------------------------------------------------- */
 
 static OutPeriod str2period(char *s);
-static OutKey str2key(char *s, char *InFiles[], LOG_INFO* LogInfo);
-static OutSum str2stype(char *s, char *InFiles[], LOG_INFO* LogInfo);
+static OutKey str2key(char *s, LOG_INFO* LogInfo);
+static OutSum str2stype(char *s, LOG_INFO* LogInfo);
 
 static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS used_OUTNPERIODS,
@@ -153,28 +153,28 @@ static OutPeriod str2period(char *s)
 
 /** Convert string representation of output type to `OutKey` value.
 */
-static OutKey str2key(char *s, char *InFiles[], LOG_INFO *LogInfo)
+static OutKey str2key(char *s, LOG_INFO *LogInfo)
 {
 	IntUS key;
 
 	for (key = 0; key < SW_OUTNKEYS && Str_CompareI(s, (char *)key2str[key]); key++) ;
 	if (key == SW_OUTNKEYS)
 	{
-		LogError(LogInfo, LOGFATAL, "%s : Invalid key (%s) in %s", InFiles[eOutput], s);
+		LogError(LogInfo, LOGFATAL, "Invalid key (%s) in 'outsetup.in'.\n", s);
 	}
 	return (OutKey) key;
 }
 
 /** Convert string representation of output aggregation function to `OutSum` value.
 */
-static OutSum str2stype(char *s, char *InFiles[], LOG_INFO *LogInfo)
+static OutSum str2stype(char *s, LOG_INFO *LogInfo)
 {
 	IntUS styp;
 
 	for (styp = eSW_Off; styp < SW_NSUMTYPES && Str_CompareI(s, (char *)styp2str[styp]); styp++) ;
 	if (styp == SW_NSUMTYPES)
 	{
-		LogError(LogInfo, LOGFATAL, "%s : Invalid summary type (%s)\n", InFiles[eOutput], s);
+		LogError(LogInfo, LOGFATAL, "'outsetup.in : Invalid summary type (%s).\n", s);
 	}
 	return (OutSum) styp;
 }
@@ -2178,7 +2178,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 		}
 
 		// Convert strings to index numbers
-		k = str2key(Str_ToUpper(keyname, upkey), InFiles, LogInfo);
+		k = str2key(Str_ToUpper(keyname, upkey), LogInfo);
 
 		// For now: rSOILWAT2's function `onGet_SW_OUT` requires that
 		// `sw->Output[k].outfile` is allocated here
@@ -2191,7 +2191,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 		// Fill information into `sw->Output[k]`
 		msg_type = SW_OUT_read_onekey(
 			k,
-			str2stype(Str_ToUpper(sumtype, upsum), InFiles, LogInfo),
+			str2stype(Str_ToUpper(sumtype, upsum), LogInfo),
 			first,
 			!Str_CompareI("END", (char *)last) ? 366 : atoi(last),
 			msg,
@@ -2644,13 +2644,13 @@ void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
 	LogError(LogInfo, LOGNOTE, errstr);
 }
 
-void _echo_all_inputs(SW_ALL* sw, char *InFiles[], LOG_INFO* LogInfo) {
+void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo) {
 
 	if (!sw->VegEstab.use) {
 		LogError(LogInfo, LOGNOTE, "Establishment not used.\n");
 	}
 
-	_echo_inputs(&sw->Site, InFiles, LogInfo);
+	_echo_inputs(&sw->Site, LogInfo);
 	_echo_VegEstab(sw->Site.width, sw->VegEstab.parms,
 				   sw->VegEstab.count, LogInfo);
 	_echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov, LogInfo);

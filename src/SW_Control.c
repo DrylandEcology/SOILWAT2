@@ -96,12 +96,11 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   information in the simulation
 @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   hold pointers to subroutines for output keys
-@param[in,out] PathInfo Struct holding all information about the programs path/files
 @param[in] LogInfo Holds information dealing with logfile output
 */
 
 void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-                 PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
+                 LOG_INFO* LogInfo) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -113,7 +112,7 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
     if (debug) swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
     #endif
 
-    SW_CTL_run_current_year(sw, SW_OutputPtrs, PathInfo, LogInfo);
+    SW_CTL_run_current_year(sw, SW_OutputPtrs, LogInfo);
   }
 } /******* End Main Loop *********/
 
@@ -210,11 +209,10 @@ void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
   all information in the simulation
 @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   hold pointers to subroutines for output keys
-@param[in] PathInfo Struct holding all information about the programs path/files
 @param[in] LogInfo Holds information dealing with logfile output
 */
 void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-                             PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
+                             LOG_INFO* LogInfo) {
   /*=======================================================*/
   TimeInt *doy = &sw->Model.doy; // base1
   #ifdef SWDEBUG
@@ -235,7 +233,7 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
     #ifdef SWDEBUG
     if (debug) swprintf("simulate water ... ");
     #endif
-    SW_SWC_water_flow(sw, PathInfo->InFiles, LogInfo);
+    SW_SWC_water_flow(sw, LogInfo);
 
     // Only run this function if SWA output is asked for
     if (sw->VegProd.use_SWA) {

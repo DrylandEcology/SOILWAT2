@@ -93,11 +93,11 @@ int main(int argc, char **argv) {
 	                    PathInfo.InFiles, &sw.GenOutput, &LogInfo); // only used with SOILWAT2
 
 	if(EchoInits) {
-		_echo_all_inputs(&sw, PathInfo.InFiles, &LogInfo);
+		_echo_all_inputs(&sw, &LogInfo);
 	}
 
   // run simulation: loop through each year
-	SW_CTL_main(&sw, SW_OutputPtrs, &PathInfo, &LogInfo);
+	SW_CTL_main(&sw, SW_OutputPtrs, &LogInfo);
 
   // finish-up output
 	SW_OUT_close_files(&sw.FileStatus, &sw.GenOutput, &LogInfo); // not used with rSOILWAT2
