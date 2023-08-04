@@ -49,7 +49,7 @@ namespace {
     int i;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -67,7 +67,7 @@ namespace {
     SW_All.Site.use_soil_temp = swTRUE;
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -87,7 +87,7 @@ namespace {
     SW_All.Site.percentRunon = 1.25;
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -121,7 +121,7 @@ namespace {
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -153,7 +153,7 @@ namespace {
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -178,7 +178,7 @@ namespace {
     SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -204,7 +204,7 @@ namespace {
     SW_SWC_init_run(&SW_All.SoilWat, &SW_All.Site, &SW_All.Weather.temp_snow);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -230,7 +230,7 @@ namespace {
     SW_SWC_init_run(&SW_All.SoilWat, &SW_All.Site, &SW_All.Weather.temp_snow);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -252,7 +252,7 @@ namespace {
                     SW_All.Domain.startyr, SW_All.Domain.endyr, &LogInfo);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -282,7 +282,7 @@ namespace {
     SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -314,7 +314,7 @@ namespace {
     SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -354,7 +354,7 @@ namespace {
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -398,7 +398,7 @@ namespace {
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -444,7 +444,7 @@ namespace {
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {

@@ -2427,18 +2427,16 @@ void SW_SIT_init_counts(SW_SITE* SW_Site) {
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
-@param[in] InFiles Array of program in/output files
 @param[in] LogInfo Holds information dealing with logfile output
 */
-void _echo_inputs(SW_SITE* SW_Site, SW_MODEL* SW_Model, char *InFiles[],
-				  LOG_INFO* LogInfo) {
+void _echo_inputs(SW_SITE* SW_Site, SW_MODEL* SW_Model, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	LyrIndex i;
 
 	LogError(LogInfo, LOGNOTE, "\n\n=====================================================\n"
 			"Site Related Parameters:\n"
 			"---------------------\n");
-	LogError(LogInfo, LOGNOTE, "  Site File: %s\n", InFiles[eSite]);
+	LogError(LogInfo, LOGNOTE, "  Site File: 'siteparam.in'\n");
 	LogError(LogInfo, LOGNOTE, "  Reset SWC values each year: %s\n", (SW_Site->reset_yr) ? "swTRUE" : "swFALSE");
 	LogError(LogInfo, LOGNOTE, "  Use deep drainage reservoir: %s\n", (SW_Site->deepdrain) ? "swTRUE" : "swFALSE");
 	LogError(LogInfo, LOGNOTE, "  Slow Drain Coefficient: %5.4f\n", SW_Site->slow_drain_coeff);
@@ -2473,7 +2471,7 @@ void _echo_inputs(SW_SITE* SW_Site, SW_MODEL* SW_Model, char *InFiles[],
 	LogError(LogInfo, LOGNOTE, "  Number of regressions for the soil temperature function: %d\n", SW_Site->stNRGR);
 
 	LogError(LogInfo, LOGNOTE, "\nLayer Related Values:\n----------------------\n");
-	LogError(LogInfo, LOGNOTE, "  Soils File: %s\n", InFiles[eLayers]);
+	LogError(LogInfo, LOGNOTE, "  Soils File: 'soils.in'\n");
 	LogError(LogInfo, LOGNOTE, "  Number of soil layers: %d\n", SW_Site->n_layers);
 	LogError(LogInfo, LOGNOTE, "  Number of evaporation layers: %d\n", SW_Site->n_evap_lyrs);
 	LogError(LogInfo, LOGNOTE, "  Number of forb transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_FORBS]);
