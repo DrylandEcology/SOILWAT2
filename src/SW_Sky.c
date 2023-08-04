@@ -24,29 +24,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "include/generic.h"
-#include "include/Times.h"
 #include "include/filefuncs.h"
-#include "include/SW_Defines.h"
+#include "include/Times.h"
 #include "include/SW_Files.h"
-#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Model.h"
 #include "include/SW_Sky.h"
-#include "include/SW_Weather.h"  // externs SW_Weather
-
-
-
-/* =================================================== */
-/*                  Global Variables                   */
-/* --------------------------------------------------- */
-
-SW_SKY SW_Sky;
-
-
-/* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-static char *MyFileName;
-
-
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -54,78 +36,96 @@ static char *MyFileName;
 
 /**
 @brief Reads in file for sky.
+
+@param[in] InFiles Array of program in/output files
+@param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
+	over the simulated site
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_SKY_read(void) {
+void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* 6-Oct-03 (cwb) - all this time I had lines 1 & 3
 	 *                  switched!
 	 * 06/16/2010	(drs) all cloud.in input files contain on line 1 cloud cover, line 2 wind speed, line 3 rel. humidity, and line 4 transmissivity, but SW_SKY_read() was reading rel. humidity from line 1 and cloud cover from line 3 instead -> SW_SKY_read() is now reading as the input files are formatted
 	 */
-	SW_SKY *v = &SW_Sky;
 	FILE *f;
 	int lineno = 0, x = 0;
+	char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 
-	MyFileName = SW_F_name(eSky);
-	f = OpenFile(MyFileName, "r");
+	MyFileName = InFiles[eSky];
+	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
 		case 0:
-			x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", &v->cloudcov[0], &v->cloudcov[1], &v->cloudcov[2], &v->cloudcov[3], &v->cloudcov[4],
-					&v->cloudcov[5], &v->cloudcov[6], &v->cloudcov[7], &v->cloudcov[8], &v->cloudcov[9], &v->cloudcov[10], &v->cloudcov[11]);
+			x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+			&SW_Sky->cloudcov[0], &SW_Sky->cloudcov[1], &SW_Sky->cloudcov[2], &SW_Sky->cloudcov[3],
+			&SW_Sky->cloudcov[4], &SW_Sky->cloudcov[5], &SW_Sky->cloudcov[6], &SW_Sky->cloudcov[7],
+			&SW_Sky->cloudcov[8], &SW_Sky->cloudcov[9], &SW_Sky->cloudcov[10], &SW_Sky->cloudcov[11]);
 			break;
 		case 1:
-			x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", &v->windspeed[0], &v->windspeed[1], &v->windspeed[2], &v->windspeed[3], &v->windspeed[4],
-					&v->windspeed[5], &v->windspeed[6], &v->windspeed[7], &v->windspeed[8], &v->windspeed[9], &v->windspeed[10], &v->windspeed[11]);
+			x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+			&SW_Sky->windspeed[0], &SW_Sky->windspeed[1], &SW_Sky->windspeed[2], &SW_Sky->windspeed[3],
+			&SW_Sky->windspeed[4], &SW_Sky->windspeed[5], &SW_Sky->windspeed[6], &SW_Sky->windspeed[7],
+			&SW_Sky->windspeed[8], &SW_Sky->windspeed[9], &SW_Sky->windspeed[10], &SW_Sky->windspeed[11]);
 			break;
 		case 2:
-			x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", &v->r_humidity[0], &v->r_humidity[1], &v->r_humidity[2], &v->r_humidity[3], &v->r_humidity[4],
-					&v->r_humidity[5], &v->r_humidity[6], &v->r_humidity[7], &v->r_humidity[8], &v->r_humidity[9], &v->r_humidity[10], &v->r_humidity[11]);
+			x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+			&SW_Sky->r_humidity[0], &SW_Sky->r_humidity[1], &SW_Sky->r_humidity[2], &SW_Sky->r_humidity[3],
+			&SW_Sky->r_humidity[4], &SW_Sky->r_humidity[5], &SW_Sky->r_humidity[6], &SW_Sky->r_humidity[7],
+			&SW_Sky->r_humidity[8], &SW_Sky->r_humidity[9], &SW_Sky->r_humidity[10], &SW_Sky->r_humidity[11]);
 			break;
 		case 3:
-			x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", &v->snow_density[0], &v->snow_density[1], &v->snow_density[2], &v->snow_density[3],
-					&v->snow_density[4], &v->snow_density[5], &v->snow_density[6], &v->snow_density[7], &v->snow_density[8], &v->snow_density[9], &v->snow_density[10],
-					&v->snow_density[11]);
+			x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+			&SW_Sky->snow_density[0], &SW_Sky->snow_density[1], &SW_Sky->snow_density[2], &SW_Sky->snow_density[3],
+			&SW_Sky->snow_density[4], &SW_Sky->snow_density[5], &SW_Sky->snow_density[6], &SW_Sky->snow_density[7],
+			&SW_Sky->snow_density[8], &SW_Sky->snow_density[9], &SW_Sky->snow_density[10], &SW_Sky->snow_density[11]);
 			break;
 		case 4:
       x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-          &v->n_rain_per_day[0], &v->n_rain_per_day[1], &v->n_rain_per_day[2],
-          &v->n_rain_per_day[3], &v->n_rain_per_day[4], &v->n_rain_per_day[5],
-          &v->n_rain_per_day[6], &v->n_rain_per_day[7], &v->n_rain_per_day[8],
-          &v->n_rain_per_day[9], &v->n_rain_per_day[10], &v->n_rain_per_day[11]);
+          &SW_Sky->n_rain_per_day[0], &SW_Sky->n_rain_per_day[1], &SW_Sky->n_rain_per_day[2],
+          &SW_Sky->n_rain_per_day[3], &SW_Sky->n_rain_per_day[4], &SW_Sky->n_rain_per_day[5],
+          &SW_Sky->n_rain_per_day[6], &SW_Sky->n_rain_per_day[7], &SW_Sky->n_rain_per_day[8],
+          &SW_Sky->n_rain_per_day[9], &SW_Sky->n_rain_per_day[10], &SW_Sky->n_rain_per_day[11]);
 			break;
 		}
 
 		if (x < 12) {
-			CloseFile(&f);
+			CloseFile(&f, LogInfo);
 			snprintf(errstr, MAX_ERROR, "%s : invalid record %d.\n", MyFileName, lineno);
-			LogError(logfp, LOGFATAL, errstr);
+			LogError(LogInfo, LOGFATAL, errstr);
 		}
 
 		x = 0;
 		lineno++;
 	}
 
-	CloseFile(&f);
+	CloseFile(&f, LogInfo);
 }
 
 /**
   @brief Interpolate monthly input values to daily records
   (depends on "current" year)
 
+  @param[in] SW_Model Struct of type SW_MODEL holding basic time information
+		about the simulation
+  @param[in] snow_density[] Snow density (kg/m3)
+  @param[out] snow_density_daily[] Interpolated daily snow density (kg/m3)
+
   Note: time must be set with SW_MDL_new_year() or Time_new_year()
   prior to this function.
 */
-void SW_SKY_new_year(void) {
-	TimeInt year = SW_Model.year;
-	SW_SKY *v = &SW_Sky;
+void SW_SKY_new_year(SW_MODEL* SW_Model, RealD snow_density[MAX_MONTHS],
+					 RealD snow_density_daily[MAX_MONTHS]) {
     Bool interpAsBase1 = swTRUE;
+	TimeInt year = SW_Model->year;
 
   /* We only need to re-calculate values if this is first year or
      if previous year was different from current year in leap/noleap status
   */
 
-  if (year == SW_Model.startyr || isleapyear(year) != isleapyear(year - 1)) {
-    interpolate_monthlyValues(v->snow_density, interpAsBase1, v->snow_density_daily);
+  if (year == SW_Model->startyr || isleapyear(year) != isleapyear(year - 1)) {
+    interpolate_monthlyValues(snow_density, interpAsBase1,
+		SW_Model->cum_monthdays, SW_Model->days_in_month,snow_density_daily);
   }
 }

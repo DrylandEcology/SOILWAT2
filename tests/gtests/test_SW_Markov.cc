@@ -37,69 +37,91 @@
 
 
 
-extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD);
+extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD,
+                           pcg32_random_t*, LOG_INFO*);
 extern void (*test_temp_correct_wetdry)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD);
 
 
 namespace {
-  SW_MARKOV *m = &SW_Markov;
-
   // Test the SW_MARKOV constructor 'SW_MKV_construct'
-  TEST(WGTest, Constructor) {
-    SW_MKV_construct();
+  TEST(WeatherGeneratorTest, WeatherGeneratorConstructor) {
+    SW_MARKOV SW_Markov;
+
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
+    int rng_seed = 8;
+
+    SW_MKV_construct(rng_seed, &SW_Markov, &LogInfo); // allocates memory
 
     // Check that at least first array elements are initialized to zero
-    EXPECT_DOUBLE_EQ(0., m->wetprob[0]);
-    EXPECT_DOUBLE_EQ(0., m->dryprob[0]);
-    EXPECT_DOUBLE_EQ(0., m->avg_ppt[0]);
-    EXPECT_DOUBLE_EQ(0., m->std_ppt[0]);
-    EXPECT_DOUBLE_EQ(0., m->cfxw[0]);
-    EXPECT_DOUBLE_EQ(0., m->cfxd[0]);
-    EXPECT_DOUBLE_EQ(0., m->cfnw[0]);
-    EXPECT_DOUBLE_EQ(0., m->cfnd[0]);
+    EXPECT_DOUBLE_EQ(0., SW_Markov.wetprob[0]);
+    EXPECT_DOUBLE_EQ(0., SW_Markov.dryprob[0]);
+    EXPECT_DOUBLE_EQ(0., SW_Markov.avg_ppt[0]);
+    EXPECT_DOUBLE_EQ(0., SW_Markov.std_ppt[0]);
+    EXPECT_DOUBLE_EQ(0., SW_Markov.cfxw[0]);
+    EXPECT_DOUBLE_EQ(0., SW_Markov.cfxd[0]);
+    EXPECT_DOUBLE_EQ(0., SW_Markov.cfnw[0]);
+    EXPECT_DOUBLE_EQ(0., SW_Markov.cfnd[0]);
 
-    // Reset to previous global state
-    // Reset_SOILWAT2_after_UnitTest();
-    SW_MKV_deconstruct();
+    SW_MKV_deconstruct(&SW_Markov);
   }
 
 
   // Check seeding of RNG for weather generator
-  TEST(WGTest, Seeding) {
-    short k, n = 18, seed = 42;
+  TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
+    SW_MARKOV SW_Markov;
+
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
+    char *InFiles[SW_NFILES];
+    for (short file = 0; file < SW_NFILES; file++) {
+      InFiles[file] = NULL;
+    }
+
+    InFiles[eMarkovCov] = Str_Dup("Input/mkv_covar.in", &LogInfo);
+    InFiles[eMarkovProb] = Str_Dup("Input/mkv_prob.in", &LogInfo);
+
+    int
+      rng_seed,
+      // Turn on Markov weather generator
+      generateWeatherMethod = 2;
+
+    short k, n = 18, seed = 42, year = 1980;
     RealD
       tmax, *tmax0 = new double[n],
       tmin, *tmin0 = new double[n],
       ppt, *ppt0 = new double[n];
 
-    // Turn on Markov weather generator
-    SW_Weather.generateWeatherMethod = 2;
 
 
     //--- Generate some weather values with fixed seed ------
 
-    // Initialize weather generator
-    SW_Weather.rng_seed = seed;
-    SW_MKV_setup();
+    // Initialize weather generator and read input files mkv_cover and mkv_prob
+    rng_seed = seed;
+    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo);
+
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-      SW_MKV_today(k, &tmax0[k], &tmin0[k], &ppt);
+      SW_MKV_today(&SW_Markov, k, year, &tmax0[k], &tmin0[k], &ppt, &LogInfo);
       ppt0[k] = ppt;
     }
 
     // Reset weather generator
-    SW_MKV_deconstruct();
+    SW_MKV_deconstruct(&SW_Markov);
 
 
     //--- Expect that generated weather is different with time-varying seed ----
-    // Re-initialize weather generator
-    SW_Weather.rng_seed = 0;
-    SW_MKV_setup();
+    // Initialize weather generator and read input files mkv_cover and mkv_prob
+    rng_seed = 0;
+    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo);
+
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-      SW_MKV_today(k, &tmax, &tmin, &ppt);
+      SW_MKV_today(&SW_Markov, k, year, &tmax, &tmin, &ppt, &LogInfo);
 
       EXPECT_NE(tmax, tmax0[k]);
       EXPECT_NE(tmin, tmin0[k]);
@@ -109,17 +131,18 @@ namespace {
     }
 
     // Reset weather generator
-    SW_MKV_deconstruct();
+    SW_MKV_deconstruct(&SW_Markov);
 
 
     //--- Expect that generated weather is reproducible with same seed ------
-    // Re-initialize weather generator
-    SW_Weather.rng_seed = seed;
-    SW_MKV_setup();
+    // Initialize weather generator and read input files mkv_cover and mkv_prob
+    rng_seed = seed;
+    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo);
+
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-      SW_MKV_today(k, &tmax, &tmin, &ppt);
+      SW_MKV_today(&SW_Markov, k, year, &tmax, &tmin, &ppt, &LogInfo);
 
       EXPECT_DOUBLE_EQ(tmax, tmax0[k]);
       EXPECT_DOUBLE_EQ(tmin, tmin0[k]);
@@ -127,78 +150,100 @@ namespace {
     }
 
 
+    // Reset weather generator
+    SW_MKV_deconstruct(&SW_Markov);
+
+
     // Deallocate arrays
     delete[] tmax0;
     delete[] tmin0;
     delete[] ppt0;
 
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
+    SW_F_deconstruct(InFiles);
   }
 
 
   // Test drawing multivariate normal variates for daily maximum/minimum temp
-  TEST(WGTest, mvnorm) {
+  TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
+    SW_MARKOV SW_Markov;
+
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
+    int rng_seed = 9;
     short k, n = 3;
     RealD tmax = 0., tmin = 0., tval;
 
-    SW_MKV_construct(); // initialize markov_rng
+    SW_MKV_construct(rng_seed, &SW_Markov, &LogInfo); // initialize markov_rng
 
     for (k = 0; k < n; k++) {
       // Create temperature values: here with n = 3: -10, 0, +10
       tval = -10. + 10. * k;
 
       // Case: wtmax = wtmin, variance = 0, covar = 0 ==> input = output
-      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 0.);
+      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 0.,
+                    &SW_Markov.markov_rng, &LogInfo);
       EXPECT_DOUBLE_EQ(tmax, tval);
       EXPECT_DOUBLE_EQ(tmin, tval);
       EXPECT_DOUBLE_EQ(tmin, tmax);
 
       // Case: wtmax = wtmin, variance = 0, covar > 0 ==> input = output
-      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 1.);
+      (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 1.,
+                    &SW_Markov.markov_rng, &LogInfo);
       EXPECT_DOUBLE_EQ(tmax, tval);
       EXPECT_DOUBLE_EQ(tmin, tval);
       EXPECT_DOUBLE_EQ(tmin, tmax);
 
       // Case: wtmax > wtmin, variance > 0, covar > 0 ==> tmin <= tmax
-      (test_mvnorm)(&tmax, &tmin, tval + 1., tval, 1., 1., 1.);
+      (test_mvnorm)(&tmax, &tmin, tval + 1., tval, 1., 1., 1.,
+                    &SW_Markov.markov_rng, &LogInfo);
       EXPECT_LE(tmin, tmax);
 
       // Case: wtmax < wtmin, variance > 0, covar > 0 ==> tmin == tmax
-      (test_mvnorm)(&tmax, &tmin, tval - 1., tval, 1., 1., 1.);
+      (test_mvnorm)(&tmax, &tmin, tval - 1., tval, 1., 1., 1.,
+                    &SW_Markov.markov_rng, &LogInfo);
       EXPECT_DOUBLE_EQ(tmin, tmax);
     }
 
-    // Reset to previous global state
-    // Reset_SOILWAT2_after_UnitTest();
-    SW_MKV_deconstruct();
+    SW_MKV_deconstruct(&SW_Markov);
   }
 
-  TEST(WGDeathTest, mvnorm) {
+  TEST(WeatherGeneratorDeathTest, WeatherGeneratormvnormDeathTest) {
+    SW_MARKOV SW_Markov;
+
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
+    int rng_seed = 11;
     RealD tmax = 0., tmin = 0.;
 
-    SW_MKV_construct(); // initialize markov_rng
+    SW_MKV_construct(rng_seed, &SW_Markov, &LogInfo); // initialize markov_rng
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL
     EXPECT_DEATH_IF_SUPPORTED(
-      (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.),
+      (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.,
+                                &SW_Markov.markov_rng, &LogInfo),
       "Bad covariance matrix"
     );
 
-    // Reset to previous global state
-    // Reset_SOILWAT2_after_UnitTest();
-    SW_MKV_deconstruct();
+    SW_MKV_deconstruct(&SW_Markov);
   }
 
 
   // Test correcting daily temperatures for wet/dry days
-  TEST(WGTest, WetDryTemperatureCorrection) {
+  TEST(WeatherGeneratorTest, WeatherGeneratorWetDryTemperatureCorrection) {
+    SW_MARKOV SW_Markov;
+
+    LOG_INFO LogInfo;
+    silent_tests(&LogInfo);
+
+    int rng_seed = 13;
     RealD
       tmax = 0., tmin = 0., t0 = 0., t10 = 10.,
       wet = 1., dry = 0.,
       cf0 = 0., cf_pos = 5., cf_neg = -5.;
 
-    SW_MKV_construct(); // initialize markov_rng
+    SW_MKV_construct(rng_seed, &SW_Markov, &LogInfo); // initialize markov_rng
 
     // Case: tmax = tmin; wet; cf_*_wet = 0 ==> input = output
     tmax = t0;
@@ -230,9 +275,7 @@ namespace {
     EXPECT_DOUBLE_EQ(tmin, fmin(tmax, t10 + cf_pos));
     EXPECT_LE(tmin, tmax);
 
-    // Reset to previous global state
-    // Reset_SOILWAT2_after_UnitTest();
-    SW_MKV_deconstruct();
+    SW_MKV_deconstruct(&SW_Markov);
   }
 
 } // namespace

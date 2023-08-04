@@ -43,16 +43,13 @@ typedef enum {
 	Yesterday, Today
 } TwoDays;
 
-typedef struct {
-	TimeInt first, last, total;
-} SW_TIMES;
-
 #define DAYFIRST_NORTH 1
 #define DAYLAST_NORTH 366
 #define DAYFIRST_SOUTH 183
 #define DAYLAST_SOUTH 182
 #define DAYMID_NORTH 183
 #define DAYMID_SOUTH 366
+
 /* The above define the beginning, ending and middle
  * days of the year for northern and southern
  * hemispheres, so there won't be a coding accident.

@@ -23,34 +23,10 @@
 #else
 #include <unistd.h>
 #endif
-#include "include/generic.h" // externs `QuietMode`, `EchoInits`
-#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
-#include "include/SW_Defines.h"
-#include "include/SW_Control.h"
-#include "include/SW_Site.h"
-#include "include/SW_Weather.h"
+#include "include/generic.h"
+#include "include/filefuncs.h"
 #include "include/SW_Main_lib.h"
-
-
-/* =================================================== */
-/*                  Global Variables                   */
-/* --------------------------------------------------- */
-
-// externed by "SW_Main_lib.h"
-char _firstfile[MAX_FILENAMESIZE];
-Bool QuietMode = swTRUE;
-Bool EchoInits = swFALSE; /* if true, echo inits to logfile */
-
-
-// externed by "generic.h"
-char errstr[MAX_ERROR]; /* used to compose an error msg    */
-FILE *logfp; /* file handle for logging messages */
-int logged = 0; /* boolean: true = we logged a msg; if true, write indicator to stderr */
-
-// externed by "filefuncs.h"
-char inbuf[MAX_FILENAMESIZE]; /* buffer used by input statements */
-
-
+#include "include/myMemory.h"
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -99,10 +75,16 @@ void sw_print_version(void) {
 
 @param argc Argument C.
 @param argv Argument V.
+@param[out] QuietMode Flag to control if the program version is displayed
+@param[out] EchoInits Flag to control if inputs are to be output to the user
+@param[out] _firstfile First file name to be filled in the program run
+@param[in] LogInfo Holds information dealing with logfile output
 
 @sideeffect argv Updated argument V.
 */
-void sw_init_args(int argc, char **argv) {
+void sw_init_args(int argc, char **argv, Bool *QuietMode,
+	Bool *EchoInits, char **_firstfile, LOG_INFO* LogInfo) {
+
 	/* =================================================== */
 	/* to add an option:
 	 *  - include it in opts[]
@@ -126,8 +108,8 @@ void sw_init_args(int argc, char **argv) {
 	nopts = sizeof(opts) / sizeof(char *);
 
 	/* Defaults */
-	strcpy(_firstfile, DFLT_FIRSTFILE);
-	QuietMode = EchoInits = swFALSE;
+	*_firstfile = Str_Dup(DFLT_FIRSTFILE, LogInfo);
+	*QuietMode = *EchoInits = swFALSE;
 
 	a = 1;
 	for (i = 1; i <= nopts; i++) {
@@ -168,20 +150,21 @@ void sw_init_args(int argc, char **argv) {
 			switch (op) {
 				case 0: /* -d */
 					if (!ChDir(str)) {
-						LogError(logfp, LOGFATAL, "Invalid project directory (%s)", str);
+						LogError(LogInfo, LOGFATAL, "Invalid project directory (%s)", str);
 					}
 					break;
 
 				case 1: /* -f */
-					strcpy(_firstfile, str);
+					free(*_firstfile);
+					*_firstfile = Str_Dup(str, LogInfo);
 					break;
 
 				case 2: /* -e */
-					EchoInits = swTRUE;
+					*EchoInits = swTRUE;
 					break;
 
 				case 3: /* -q */
-					QuietMode = swTRUE;
+					*QuietMode = swTRUE;
 					break;
 
 				case 4: /* -v */
@@ -196,7 +179,7 @@ void sw_init_args(int argc, char **argv) {
 
 				default:
 					LogError(
-						logfp,
+						LogInfo,
 						LOGFATAL,
 						"Programmer: bad option in main:sw_init_args:switch"
 					);
@@ -209,15 +192,15 @@ void sw_init_args(int argc, char **argv) {
 }
 
 
-void sw_check_log(void) {
+void sw_check_log(Bool QuietMode, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* function to be called by atexit() so it's the last
 	 * to execute before termination.  This is the place to
 	 * do any cleanup or progress reporting.
 	 */
-	if (logfp != stdout && logfp != stderr) {
-		CloseFile(&logfp);
-		if (logged && !QuietMode) {
+	if (LogInfo->logfp != stdout && LogInfo->logfp != stderr) {
+		CloseFile(&LogInfo->logfp, LogInfo);
+		if (LogInfo->logged && !QuietMode) {
 			sw_error(0, "\nCheck logfile for error or status messages.\n");
 		}
 	}

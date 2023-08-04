@@ -37,43 +37,11 @@
 #ifndef SW_WATERSUBS_H
 #define SW_WATERSUBS_H
 
+#include "include/SW_datastructs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// based on Eitzinger, J., W. J. Parton, and M. Hartman. 2000. Improvement and Validation of A Daily Soil Temperature Submodel for Freezing/Thawing Periods. Soil Science 165:525-534.
-#define TCORRECTION			0.02 	// correction factor for eq. 3 [unitless]; estimate based on data from CPER/SGS LTER
-#define FREEZING_TEMP_C		-1.		// freezing point of water in soil [C]; based on Parton 1984
-#define FUSIONHEAT_H2O		80.		// Eitzinger et al. (2000): fusion energy of water; units = [cal cm-3]
-
-// based on Parton, W. J., M. Hartman, D. Ojima, and D. Schimel. 1998. DAYCENT and its land surface submodel: description and testing. Global and Planetary Change 19:35-48.
-#define MIN_VWC_TO_FREEZE	0.13
-
-// this structure is for keeping track of the variables used in the soil_temperature function (mainly the regressions)
-typedef struct {
-
-	double depths[MAX_LAYERS],  //soil layer depths of SoilWat soil
-	       depthsR[MAX_ST_RGR],//evenly spaced soil layer depths for soil temperature calculations
-		   	 fcR[MAX_ST_RGR],//field capacity of soil layers for soil temperature calculations
-		   	 wpR[MAX_ST_RGR], //wilting point of soil layers for soil temperature calculations
-		   	 bDensityR[MAX_ST_RGR],//bulk density of the whole soil per soil layer for soil temperature calculations
-		   	 oldsFusionPool_actual[MAX_LAYERS],
-             oldavgLyrTempR[MAX_ST_RGR];//yesterdays soil temperature of soil layers for soil temperature calculations; index 0 is surface temperature
-    
-	double tlyrs_by_slyrs[MAX_ST_RGR][MAX_LAYERS + 1]; // array of soil depth correspondance between soil profile layers and soil temperature layers; last column has negative values and indicates use of deepest soil layer values copied for deeper soil temperature layers
-
-	/*unsigned int x1BoundsR[MAX_ST_RGR],
-	             x2BoundsR[MAX_ST_RGR],
-				 x1Bounds[MAX_LAYERS],
-				 x2Bounds[MAX_LAYERS];*/
-} ST_RGR_VALUES;
-
-
-/* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern ST_RGR_VALUES stValues;
-extern unsigned int soil_temp_init;
 
 
 /* =================================================== */
@@ -85,18 +53,24 @@ void veg_intercepted_water(double *ppt_incident, double *int_veg, double *s_veg,
 void litter_intercepted_water(double *ppt_through, double *int_lit, double *s_lit,
   double m, double kSmax, double blitter, double scale);
 
-void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft, int nlyrs, double swcfc[], double swcsat[], double impermeability[],
-		double *standingWater);
+void infiltrate_water_high(double swc[], double drain[], double *drainout, double pptleft,
+	int nlyrs, double swcfc[], double swcsat[], double impermeability[],
+	double *standingWater, double lyrFrozen[]);
 
-void transp_weighted_avg(double *swp_avg, unsigned int n_tr_rgns, unsigned int n_layers, unsigned int tr_regions[], double tr_coeff[], double swc[]);
+void transp_weighted_avg(double *swp_avg, SW_SITE *SW_Site,
+	unsigned int n_tr_rgns, LyrIndex n_layers, unsigned int tr_regions[],
+	double swc[], int VegType, LOG_INFO* LogInfo);
 
 void EsT_partitioning(double *fbse, double *fbst, double blivelai, double lai_param);
 
-void pot_soil_evap(double *bserate, unsigned int nelyrs, double ecoeff[], double totagb, double fbse, double petday, double shift, double shape, double inflec, double range,
-		double width[], double swc[], double Es_param_limit);
+void pot_soil_evap(SW_SITE *SW_Site, unsigned int nelyrs, double totagb,
+  double fbse, double petday, double shift, double shape, double inflec,
+  double range, double swc[], double Es_param_limit, double *bserate,
+  LOG_INFO* LogInfo);
 
-void pot_soil_evap_bs(double *bserate, unsigned int nelyrs, double ecoeff[], double petday, double shift, double shape, double inflec, double range, double width[],
-		double swc[]);
+void pot_soil_evap_bs(double *bserate, SW_SITE *SW_Site,
+	unsigned int nelyrs, double petday, double shift, double shape,
+	double inflec, double range, double swc[], LOG_INFO* LogInfo);
 
 void pot_transp(double *bstrate, double swpavg, double biolive, double biodead, double fbst, double petday, double swp_shift, double swp_shape, double swp_inflec,
 		double swp_range, double shade_scale, double shade_deadmax, double shade_xinflex, double shade_slope, double shade_yinflex, double shade_range, double co2_wue_multiplier);
@@ -107,7 +81,9 @@ void evap_litter_veg_surfaceWater(double *cwlit, double *cwstcr, double *standin
 
 void evap_fromSurface(double *water_pool, double *evap_rate, double *aet);
 
-void remove_from_soil(double swc[], double qty[], double *aet, unsigned int nlyrs, double ecoeff[], double rate, double swcmin[]);
+void remove_from_soil(double swc[], double qty[], SW_SITE *SW_Site,
+	double *aet, unsigned int nlyrs, double coeff[], double rate,
+	double swcmin[], double lyrFrozen[], LOG_INFO* LogInfo);
 
 void percolate_unsaturated(
 	double swc[],
@@ -115,8 +91,8 @@ void percolate_unsaturated(
 	double *drainout,
 	double *standingWater,
 	unsigned int nlyrs,
-	SW_LAYER_INFO *lyr[],
-    RealD lyrFrozen[],
+    double lyrFrozen[],
+	SW_SITE *SW_Site,
 	double slow_drain_coeff,
 	double slow_drain_depth
 );
@@ -124,27 +100,33 @@ void percolate_unsaturated(
 void hydraulic_redistribution(
 	double swc[],
 	double hydred[],
+	SW_SITE *SW_Site,
 	unsigned int vegk,
 	unsigned int nlyrs,
-	SW_LAYER_INFO *lyr[],
-	RealD lyrFrozen[],
+    double lyrFrozen[],
 	double maxCondroot,
 	double swp50,
 	double shapeCond,
-	double scale
+	double scale,
+	TimeInt year,
+	TimeInt doy,
+	LOG_INFO* LogInfo
 );
 
-void soil_temperature(double airTemp,
-		              double pet,
+void soil_temperature(ST_RGR_VALUES* SW_StRegValues,
+					  double *surface_max,
+					  double *surface_min,
+					  double lyrFrozen[],
+					  double airTemp,
+					  double pet,
 					  double aet,
 					  double biomass,
 					  double swc[],
 					  double swc_sat[],
 					  double bDensity[],
 					  double width[],
-					  double oldavgLyrTemp[],
 					  double avgLyrTemp[],
-					  double surfaceAvg[2],
+					  double *surfaceAvg,
 					  unsigned int nlyrs,
 					  double bmLimiter,
 					  double t1Param1,
@@ -153,20 +135,21 @@ void soil_temperature(double airTemp,
 					  double csParam1,
 					  double csParam2,
 					  double shParam,
-		              double snowdepth,
+					  double snowdepth,
 					  double sTconst,
 					  double deltaX,
 					  double theMaxDepth,
 					  unsigned int nRgr,
-						double snow,
-						Bool *ptr_stError,
-                      double maxAirTemp,
-                      double minAirTemp,
-                      double H_gt,
-                      double minLyrTemperature[],
-                      double maxLyrTemperature[],
-                      double *surface_max,
-                      double *surface_min);
+					  double snow,
+					  double max_air_temp,
+					  double min_air_temp,
+					  double H_gt,
+					  TimeInt year,
+					  TimeInt doy,
+					  double maxLyrTemperature[],
+					  double minLyrTemperature[],
+					  Bool *ptr_stError,
+					  LOG_INFO* LogInfo);
 
 void lyrTemp_to_lyrSoil_temperature(double cor[MAX_ST_RGR][MAX_LAYERS + 1],
   unsigned int nlyrTemp, double depth_Temp[], double avgLyrTempR[], unsigned int nlyrSoil,
@@ -183,40 +166,38 @@ void lyrSoil_to_lyrTemp(double cor[MAX_ST_RGR][MAX_LAYERS + 1], unsigned int nly
 
 double surface_temperature_under_snow(double airTempAvg, double snow);
 
-void SW_ST_init_run(void);
+void SW_ST_init_run(ST_RGR_VALUES* StRegValues);
 
 void SW_ST_setup_run(
+	ST_RGR_VALUES* SW_StRegValues,
+	SW_SITE *SW_Site,
+	Bool *ptr_stError,
+	Bool *soil_temp_init,
 	double airTemp,
 	double swc[],
-	double swc_sat[],
-	double bDensity[],
-	double width[],
-	double oldavgLyrTemp[],
-	double surfaceAvg[2],
-	unsigned int nlyrs,
-	double fc[],
-	double wp[],
-	double sTconst,
-	double deltaX,
-	double theMaxDepth,
-	unsigned int nRgr,
-	Bool *ptr_stError
+	double *surfaceAvg,
+	double avgLyrTemp[],
+	double* lyrFrozen,
+	LOG_INFO* LogInfo
 );
 
-void soil_temperature_setup(double bDensity[], double width[], double oldavgLyrTemp[],
-	double sTconst, unsigned int nlyrs, double fc[], double wp[], double deltaX,
-	double theMaxDepth, unsigned int nRgr, Bool *ptr_stError);
+void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
+	double width[], double oldavgLyrTemp[], double sTconst, unsigned int nlyrs,
+	double fc[], double wp[], double deltaX, double theMaxDepth,
+	unsigned int nRgr, Bool *ptr_stError, Bool *soil_temp_init, LOG_INFO* LogInfo);
 
 void set_frozen_unfrozen(unsigned int nlyrs, double avgLyrTemp[], double swc[],
-		double swc_sat[], double width[]);
+						 double swc_sat[], double width[], double lyrFrozen[]);
 
 unsigned int adjust_Tsoil_by_freezing_and_thawing(double oldavgLyrTemp[], double avgLyrTemp[],
-		double shParam, unsigned int nlyrs, double vwc[], double bDensity[]);
+	double shParam, unsigned int nlyrs, double vwc[], double bDensity[],
+	Bool fusion_pool_init, double oldsFusionPool_actual[]);
 
 void soil_temperature_today(double *ptr_dTime, double deltaX, double sT1, double sTconst,
-    int nRgr, double avgLyrTempR[], double oldavgLyrTempR[], double vwcR[], double wpR[], double fcR[],
-    double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError,
-    double surface_range, double temperatureRangeR[], double depthsR[]);
+	int nRgr, double avgLyrTempR[], double oldavgLyrTempR[], double vwcR[], double wpR[], double fcR[],
+	double bDensityR[], double csParam1, double csParam2, double shParam, Bool *ptr_stError,
+    double surface_range, double temperatureRangeR[], double depthsR[], TimeInt year,
+	TimeInt doy);
 
 #ifdef __cplusplus
 }

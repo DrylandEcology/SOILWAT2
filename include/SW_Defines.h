@@ -89,6 +89,9 @@ extern "C" {
 
 #define SEC_PER_DAY	86400. // the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400 seconds)
 
+#define OUTSTRLEN 3000 /* max output string length: in get_transp: 4*every soil layer with 14 chars */
+#define OUT_DIGITS 6 // number of floating point decimal digits written to output files
+#define _OUTSEP ',' // Separator used when generating output files
 
 //was 256 & 1024...
 #define MAX_FILENAMESIZE 512
@@ -115,6 +118,20 @@ extern "C" {
 #define SW_SHRUB 1
 #define SW_FORBS 2
 #define SW_GRASS 3
+
+/* Constants for number of months, weeks, and days in a year */
+  /* number of days in each week. unlikely to change, but
+  * useful as a readable indicator of usage where it occurs.
+  * On the other hand, it is conceivable that one might be
+  * interested in 4, 5, or 6 day periods, but redefine it
+  * in specific programs and take responsibility there,
+  * not here.
+  */
+#define MAX_MONTHS 12
+#define MAX_WEEKS 53
+#define MAX_DAYS 366
+
+#define SWRC_PARAM_NMAX 6 /**< Maximal number of SWRC parameters implemented */
 
 /*
    Indices to daily input flags/indices (dailyInputFlags & dailyInputIndices in SW_WEATHER)
@@ -158,17 +175,22 @@ extern "C" {
 // macro `ForEachOutPeriod` --> instead, define as type `IntUS`
 typedef IntUS OutPeriod;
 
+/*
+  * Number of output keys
+
+  * Must match number of items in output enum (minus eSW_NoKey and eSW_LastKey)
+*/
+#define SW_OUTNKEYS 32
 
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */
 /* Note the loop var must be declared as LyrIndex */
-#define ForEachSoilLayer(i)     for((i)=0; (i) < SW_Site.n_layers;      (i)++)
-#define ForEachEvapLayer(i)     for((i)=0; (i) < SW_Site.n_evap_lyrs;   (i)++)
-#define ForEachTreeTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_TREES]; (i)++)
-#define ForEachShrubTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_SHRUB]; (i)++)
-#define ForEachGrassTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_GRASS]; (i)++)
-#define ForEachForbTranspLayer(i)   for((i)=0; (i) < SW_Site.n_transp_lyrs[SW_FORBS]; (i)++)
-#define ForEachTranspRegion(r)  for((r)=0; (r) < SW_Site.n_transp_rgn;  (r)++)
+#define ForEachSoilLayer(i, n_layers)     for((i)=0; (i) < (n_layers);      (i)++)
+#define ForEachEvapLayer(i, n_evap_lyrs)     for((i)=0; (i) < (n_evap_lyrs);   (i)++)
+#ifdef STEPWAT
+#define ForEachTranspLayer(i, n_transp_lyrs, veg_index)   for((i)=0; (i) < (n_transp_lyrs)[(veg_index)]; (i)++)
+#endif
+#define ForEachTranspRegion(r, n_transp_rgn)  for((r)=0; (r) < ((unsigned int)n_transp_rgn);  (r)++)
 #define ForEachVegType(k)  for ((k) = 0; (k) < NVEGTYPES; (k)++)
 #define ForEachVegTypeBottomUp(k)  for ((k) = NVEGTYPES - 1; (k) >= 0; (k)--)
 /* define m as Months */
@@ -218,6 +240,10 @@ typedef enum { eF,   /* file management */
                eOUT  /* output */
 } ObjType;
 
+/* Types to use for time and layer-related values and make a custom flag */
+typedef unsigned int TimeInt;
+typedef unsigned int LyrIndex;
+typedef signed char flag;
 
 #ifdef __cplusplus
 }

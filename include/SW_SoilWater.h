@@ -45,163 +45,98 @@
 extern "C" {
 #endif
 
-#include "include/generic.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Times.h"
-#include "include/SW_Site.h"
+#include "include/SW_datastructs.h"
+
+/* =================================================== */
+/*                 Local Defines/enum                  */
+/* --------------------------------------------------- */
 
 typedef enum {
 	SW_Adjust_Avg = 1, SW_Adjust_StdErr
 } SW_AdjustMethods;
 
-/* parameters for historical (measured) swc values */
-typedef struct {
-	int method; /* method: 1=average; 2=hist+/- stderr */
-	SW_TIMES yr;
-	char *file_prefix; /* prefix to historical swc filenames */
-	RealD swc[MAX_DAYS][MAX_LAYERS], std_err[MAX_DAYS][MAX_LAYERS];
-
-} SW_SOILWAT_HIST;
-
-/* accumulators for output values hold only the */
-/* current period's values (eg, weekly or monthly) */
-typedef struct {
-	RealD wetdays[MAX_LAYERS], vwcBulk[MAX_LAYERS], /* soil water content cm/cm */
-	vwcMatric[MAX_LAYERS], swcBulk[MAX_LAYERS], /* soil water content cm/layer */
-	swpMatric[MAX_LAYERS], /* soil water potential */
-	swaBulk[MAX_LAYERS], /* available soil water cm/layer, swc-(wilting point) */
-	SWA_VegType[NVEGTYPES][MAX_LAYERS],
-	swaMatric[MAX_LAYERS],
-	transp_total[MAX_LAYERS], transp[NVEGTYPES][MAX_LAYERS],
-	evap[MAX_LAYERS],
-	lyrdrain[MAX_LAYERS],
-	hydred_total[MAX_LAYERS], hydred[NVEGTYPES][MAX_LAYERS], /* hydraulic redistribution cm/layer */
-	surfaceWater, surfaceWater_evap,
-	total_evap, evap_veg[NVEGTYPES],
-	litter_evap,
-	total_int, int_veg[NVEGTYPES], litter_int,
-			snowpack,
-			snowdepth,
-			et,
-			aet, tran, esoil, ecnw, esurf, esnow,
-			pet, H_oh, H_ot, H_gh, H_gt,
-			deep,
-			avgLyrTemp[MAX_LAYERS], // average soil temperature in celcius for each layer
-            lyrFrozen[MAX_LAYERS],
-            minLyrTemperature[MAX_LAYERS], // Holds the minimum temperature estimation of each layer
-            maxLyrTemperature[MAX_LAYERS]; // Holds the maximum temperature estimation of each layer
-} SW_SOILWAT_OUTPUTS;
-
-
-#ifdef SWDEBUG
-  #define N_WBCHECKS 9 // number of water balance checks
-#endif
-
-typedef struct {
-	/* current daily soil water related values */
-	Bool is_wet[MAX_LAYERS]; /* swc sufficient to count as wet today */
-	RealD swcBulk[TWO_DAYS][MAX_LAYERS],
-		SWA_VegType[TWO_DAYS][MAX_LAYERS],
-		snowpack[TWO_DAYS], /* swe of snowpack, if accumulation flag set */
-		snowdepth,
-		transpiration[NVEGTYPES][MAX_LAYERS],
-		evaporation[MAX_LAYERS],
-		drain[MAX_LAYERS], /* amt of swc able to drain from curr layer to next */
-		hydred[NVEGTYPES][MAX_LAYERS], /* hydraulic redistribution cm/layer */
-		surfaceWater, surfaceWater_evap,
-		pet, H_oh, H_ot, H_gh, H_gt,
-		aet,
-		litter_evap, evap_veg[NVEGTYPES],
-		litter_int, int_veg[NVEGTYPES], // todays intercepted rain by litter and by vegetation
-		avgLyrTemp[MAX_LAYERS],
-        lyrFrozen[MAX_LAYERS],
-        minLyrTemperature[MAX_LAYERS], // Holds the minimum temperature estimation of each layer
-        maxLyrTemperature[MAX_LAYERS]; // Holds the maximum temperature estimation of each layer
-
-	RealF swa_master[NVEGTYPES][NVEGTYPES][MAX_LAYERS]; // veg_type, crit_val, layer
-	RealF dSWA_repartitioned_sum[NVEGTYPES][MAX_LAYERS];
-
-	Bool soiltempError; // soil temperature error indicator
-	#ifdef SWDEBUG
-	int wbError[N_WBCHECKS]; /* water balance and water cycling error indicators (currently 8)
-	    0, no error detected; > 0, number of errors detected */
-  char *wbErrorNames[N_WBCHECKS];
-  Bool is_wbError_init;
-  #endif
-
-	SW_SOILWAT_OUTPUTS
-		*p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time period
-		*p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time periods
-	Bool hist_use;
-	SW_SOILWAT_HIST hist;
-
-} SW_SOILWAT;
-
-
-/* =================================================== */
-/*            Externed Global Variables                */
-/* --------------------------------------------------- */
-extern SW_SOILWAT SW_Soilwat;
-
+#define FXW_h0 6.3e6 /**< Pressure head at zero water content [cm] of FWX SWRC */
+#define FXW_hr 1500. /**< Pressure head at residual water content [cm] of FXW SWRC */
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_SWC_construct(void);
-void SW_SWC_deconstruct(void);
-void SW_SWC_new_year(void);
-void SW_SWC_read(void);
-void SW_SWC_init_run(void);
-void _read_swc_hist(TimeInt year);
-void SW_SWC_water_flow(void);
-void calculate_repartitioned_soilwater(void);
-void SW_SWC_adjust_swc(TimeInt doy);
-void SW_SWC_adjust_snow(RealD temp_min, RealD temp_max, RealD ppt, RealD *rain,
-  RealD *snow, RealD *snowmelt);
+void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo);
+void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat);
+void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
+					 LOG_INFO* LogInfo);
+void SW_SWC_read(
+	SW_SOILWAT* SW_SoilWat,
+	TimeInt endyr,
+	char *InFiles[],
+	LOG_INFO* LogInfo
+);
+void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site,
+					 RealD* temp_snow);
+void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year, LOG_INFO* LogInfo);
+void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo);
+void calculate_repartitioned_soilwater(SW_SOILWAT* SW_SoilWat,
+	RealD swcBulk_atSWPcrit[][MAX_LAYERS], SW_VEGPROD* SW_VegProd,
+	LyrIndex n_layers);
+void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], RealD swcBulk_min[],
+	TimeInt doy, SW_SOILWAT_HIST SoilWat_hist, LyrIndex n_layers,
+	LOG_INFO* LogInfo);
+void SW_SWC_adjust_snow(RealD *temp_snow, RealD snowpack[], SW_SITE* SW_Site,
+	RealD temp_min, RealD temp_max, RealD ppt, TimeInt doy, RealD *rain,
+	RealD *snow, RealD *snowmelt);
 RealD SW_SWC_snowloss(RealD pet, RealD *snowpack);
 RealD SW_SnowDepth(RealD SWE, RealD snowdensity);
-void SW_SWC_end_day(void);
-void get_dSWAbulk(int i);
+void SW_SWC_end_day(SW_SOILWAT* SW_SoilWat, LyrIndex n_layers);
+void get_dSWAbulk(int i, SW_VEGPROD* SW_VegProd,
+		RealF swa_master[][NVEGTYPES][MAX_LAYERS],
+		RealF dSWA_repart_sum[][MAX_LAYERS]);
 
-double SW_SWRC_SWCtoSWP(double swcBulk, SW_LAYER_INFO *lyr);
+RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_SITE *SW_Site, LyrIndex layerno,
+					   LOG_INFO* LogInfo);
 double SWRC_SWCtoSWP(
 	double swcBulk,
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 );
-double SWRC_SWCtoSWP_Campbell1974(
+double SWRC_SWCtoSWP_Campbell1974 (
 	double swcBulk,
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 );
 double SWRC_SWCtoSWP_vanGenuchten1980(
 	double swcBulk,
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 );
 double SWRC_SWCtoSWP_FXW(
 	double swcBulk,
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 );
 
-RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_LAYER_INFO *lyr);
+RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_SITE *SW_Site,
+					   LyrIndex layerno, LOG_INFO* LogInfo);
 double SWRC_SWPtoSWC(
 	double swpMatric,
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,
 	double width,
-	const int errmode
+	const int errmode,
+	LOG_INFO* LogInfo
 );
 double SWRC_SWPtoSWC_Campbell1974(
 	double swpMatric,
@@ -223,7 +158,7 @@ double SWRC_SWPtoSWC_FXW(
 );
 
 #ifdef SWDEBUG
-void SW_WaterBalance_Checks(void);
+void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo);
 #endif
 
 #ifdef DEBUG_MEM

@@ -14,9 +14,7 @@
 #endif
 
 #include "include/filefuncs.h"
-#include "include/generic.h" // externs errstr
 #include "include/myMemory.h"
-#include "include/SW_Defines.h"
 #ifdef RSOILWAT
   #include <R.h>    // for REvprintf(), error(), and warning()
 #endif
@@ -32,7 +30,7 @@
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static char **getfiles(const char *fspec, int *nfound) {
+static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 	/* return a list of files described by fspec
 	 * fspec is as described in RemoveFiles(),
 	 * **flist is a dynamic char array containing pointers to the
@@ -40,7 +38,8 @@ static char **getfiles(const char *fspec, int *nfound) {
 	 * nfound is the number of files found, also, num elements in flist
 	 */
 
-	char **flist = NULL, *dname, *fname, *fn1, *fn2, *p2;
+	char **flist = NULL, *fname, *fn1, *fn2, *p2;
+	char dname[FILENAME_MAX];
 
 	int len1, len2;
 	Bool match, alloc = swFALSE;
@@ -50,8 +49,8 @@ static char **getfiles(const char *fspec, int *nfound) {
 
 	assert(fspec != NULL);
 
-	dname = Str_Dup(DirName(fspec));
-	fname = Str_Dup(BaseName(fspec));
+	DirName(fspec, dname); // Copy `fspec` into `dname`
+	fname = Str_Dup(BaseName(fspec), LogInfo);
 
 	if (strchr(fname, '*')) {
 		fn1 = strtok(fname, "*");
@@ -80,17 +79,16 @@ static char **getfiles(const char *fspec, int *nfound) {
 		if (match) {
 			(*nfound)++;
 			if (alloc) {
-				flist = (char **) Mem_ReAlloc(flist, sizeof(char *) * (*nfound));
+				flist = (char **) Mem_ReAlloc(flist, sizeof(char *) * (*nfound), LogInfo);
 			} else {
-				flist = (char **) Mem_Malloc(sizeof(char *) * (*nfound), "getfiles");
+				flist = (char **) Mem_Malloc(sizeof(char *) * (*nfound), "getfiles", LogInfo);
 				alloc = swTRUE;
 			}
-			flist[(*nfound) - 1] = Str_Dup(ent->d_name);
+			flist[(*nfound) - 1] = Str_Dup(ent->d_name, LogInfo);
 		}
 	}
 
 	closedir(dir);
-	free(dname);
 	free(fname);
 
 	return flist;
@@ -139,7 +137,7 @@ void sw_error(int code, const char *format, ...)
 }
 
 /**************************************************************/
-void LogError(FILE *fp, const int mode, const char *fmt, ...) {
+void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
     /* uses global variable logged to indicate that a log message
      * was sent to output, which can be used to inform user, etc.
      *
@@ -173,13 +171,13 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
             // exit with error and always show message
             error(buf);
 
-        } else if(fp != NULL) {
+        } else if(LogInfo->logfp != NULL) {
             // send warning message only if not silenced (fp is not NULL)
             warning(buf);
         }
 
     #else
-        if (isnull(fp)) {
+        if (isnull(LogInfo->logfp)) {
           // silence messages (fp is NULL) except errors (which go to stderr)
           if (LOGEXIT & mode) {
             vsnprintf(buf, MAX_ERROR, outfmt, args);
@@ -191,13 +189,13 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
           // send message to fp
 
           int check_eof;
-          check_eof = (EOF == vfprintf(fp, outfmt, args));
+          check_eof = (EOF == vfprintf(LogInfo->logfp, outfmt, args));
 
           if (check_eof) {
               sw_error(0, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
           }
 
-          fflush(fp);
+          fflush(LogInfo->logfp);
 
           if (LOGEXIT & mode) {
               // exit with error
@@ -207,7 +205,7 @@ void LogError(FILE *fp, const int mode, const char *fmt, ...) {
     #endif
 
 
-    logged = swTRUE;
+    LogInfo->logged = swTRUE;
     va_end(args);
 }
 
@@ -234,26 +232,24 @@ Bool GetALine(FILE *f, char buf[]) {
 }
 
 /**************************************************************/
-char *DirName(const char *p) {
+void DirName(const char *p, char *outString) {
 	/* copy path (if any) to a static buffer.
 	 * Be sure to copy the return value to a more stable buffer
 	 * before moving on.
 	 */
-	static char s[FILENAME_MAX];
 	char *c;
 	int l;
 	char sep1 = '/', sep2 = '\\';
 
-	*s = '\0';
+	*outString = '\0';
 	if (!(c = (char*) strrchr(p, (int) sep1)))
 		c = (char*) strrchr(p, (int) sep2);
 
 	if (c) {
 		l = c - p + 1;
-		strncpy(s, p, l);
-		s[l] = '\0';
+		strncpy(outString, p, l);
+		outString[l] = '\0';
 	}
-	return s;
 }
 
 /**************************************************************/
@@ -271,16 +267,16 @@ const char *BaseName(const char *p) {
 }
 
 /**************************************************************/
-FILE * OpenFile(const char *name, const char *mode) {
+FILE * OpenFile(const char *name, const char *mode, LOG_INFO* LogInfo) {
 	FILE *fp;
 	fp = fopen(name, mode);
 	if (isnull(fp))
-		LogError(logfp, LOGERROR | LOGEXIT, "Cannot open file %s: %s", name, strerror(errno));
+		LogError(LogInfo, LOGERROR | LOGEXIT, "Cannot open file %s: %s", name, strerror(errno));
 	return (fp);
 }
 
 /**************************************************************/
-void CloseFile(FILE **f) {
+void CloseFile(FILE **f, LOG_INFO* LogInfo) {
 	/* This routine is a wrapper for the basic fclose() so
 	 it might be possible to add more code like error checking
 	 or other special features in the future.
@@ -289,7 +285,7 @@ void CloseFile(FILE **f) {
 	 used as a check for whether the file is opened or not.
 	 */
 	if (*f == NULL ) {
-		LogError(logfp, LOGWARN,
+		LogError(LogInfo, LOGWARN,
 			"Tried to close file that doesn't exist or isn't open!");
 		return;
 	}
@@ -372,6 +368,7 @@ Bool MkDir(const char *dname) {
 	char *a[256] = { 0 }, /* points to each path element for mkdir -p behavior */
 		*c; /* duplicate of dname so we don't change it */
 	const char *delim = "\\/"; /* path separators */
+	char errstr[MAX_ERROR];
 
 	if (isnull(dname))
 		return swFALSE;
@@ -406,7 +403,7 @@ Bool MkDir(const char *dname) {
 #undef mkdir
 
 /**************************************************************/
-Bool RemoveFiles(const char *fspec) {
+Bool RemoveFiles(const char *fspec, LOG_INFO* LogInfo) {
 	/* delete files matching fspec. ASSUMES terminal element
 	 *   describes files, ie, is not a directory.
 	 * fspec may contain leading path (eg, here/and/now/files)
@@ -419,14 +416,14 @@ Bool RemoveFiles(const char *fspec) {
 	 * Check errno if return is FALSE.
 	 */
 
-	char **flist, fname[1024];
+	char **flist, fname[FILENAME_MAX];
 	int i, nfiles, dlen, result = swTRUE;
 
 	if (fspec == NULL )
 		return swTRUE;
 
-	if ((flist = getfiles(fspec, &nfiles))) {
-		strcpy(fname, DirName(fspec));
+	if ((flist = getfiles(fspec, &nfiles, LogInfo))) {
+		DirName(fspec, fname); // Transfer `fspec` into `fname`
 		dlen = strlen(fname);
 		for (i = 0; i < nfiles; i++) {
 			strcpy(fname + dlen, flist[i]);

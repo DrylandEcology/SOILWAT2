@@ -38,14 +38,14 @@
 
 
 
-static void assert_decreasing_SWPcrit(void);
-static void assert_decreasing_SWPcrit(void)
+static void assert_decreasing_SWPcrit(SW_VEGPROD* SW_VegProd);
+static void assert_decreasing_SWPcrit(SW_VEGPROD* SW_VegProd)
 {
 	int rank, vegtype;
 
 	for (rank = 0; rank < NVEGTYPES - 1; rank++)
 	{
-		vegtype = SW_VegProd.rank_SWPcrits[rank];
+		vegtype = SW_VegProd->rank_SWPcrits[rank];
 
 		/*
 		swprintf("Rank=%d is vegtype=%d with SWPcrit=%f\n",
@@ -56,8 +56,8 @@ static void assert_decreasing_SWPcrit(void)
 		// Check that SWPcrit of `vegtype` is larger or equal to
 		// SWPcrit of the vegetation type with the next larger rank
 		ASSERT_GE(
-			SW_VegProd.critSoilWater[vegtype],
-			SW_VegProd.critSoilWater[SW_VegProd.rank_SWPcrits[rank + 1]]);
+			SW_VegProd->critSoilWater[vegtype],
+			SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[rank + 1]]);
 	}
 }
 
@@ -111,31 +111,48 @@ static void calcGrassCoverFromL0(double grass[], double L0[]) {
 
 
 namespace {
-  SW_VEGPROD *v = &SW_VegProd;
   int k;
 
   // Test the SW_VEGPROD constructor 'SW_VPD_construct'
-  TEST(VegTest, Constructor) {
-    SW_VPD_construct();
-    SW_VPD_init_run();
+  TEST_F(VegProdFixtureTest, VegProdConstructor) {
+    // This test requires a local copy of SW_VEGPROD to avoid a memory leak
+    // (see issue #205)
+    // -- If using `SW_All.VegProd` or a global variable
+    // (for which `SW_VPD_construct()` has already been called once, e.g.,
+    // during the test fixture's `SetUp()`), then this (second) call to
+    // `SW_VPD_construct()` would allocate memory a second time
+    // while `SW_VPD_deconstruct()` will de-allocate memory only once
+    // (the call to `SW_VPD_deconstruct()`during the test fixture's `TearDown()`
+    // would see only NULL and thus not de-allocate the required second time
+    // to avoid a leak)
+    SW_VEGPROD SW_VegProd;
+
+    SW_VPD_construct(&SW_VegProd, &LogInfo); // allocates memory
+
+    SW_VPD_init_run(
+      &SW_VegProd,
+      &SW_All.Weather,
+      &SW_All.Model,
+      SW_All.Site.latitude,
+      &LogInfo
+    );
 
     ForEachVegType(k) {
-      EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[BIO_INDEX][0]);
-      EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]);
+      EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][0]);
+      EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]);
 
-      EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[WUE_INDEX][0]);
-      EXPECT_DOUBLE_EQ(1., v->veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
+      EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][0]);
+      EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]);
     }
 
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
+    SW_VPD_deconstruct(&SW_VegProd);
   }
 
 
   // Test the application of the biomass CO2-effect
-  TEST(VegTest, BiomassCO2effect) {
+  TEST(VegProdTest, VegProdBiomassCO2effect) {
     int i;
-    double x;
+    double x = 1.5;
     double biom1[12], biom2[12];
 
     for (i = 0; i < 12; i++) {
@@ -143,71 +160,74 @@ namespace {
     }
 
     // One example
-    x = v->veg[SW_GRASS].co2_multipliers[BIO_INDEX][SW_Model.startyr + SW_Model.addtl_yr];
     apply_biomassCO2effect(biom2, biom1, x);
 
     for (i = 0; i < 12; i++) {
       EXPECT_DOUBLE_EQ(biom2[i], biom1[i] * x);
     }
-
-    // Reset to previous global state
-    Reset_SOILWAT2_after_UnitTest();
   }
 
 
   // Test summing values across vegetation types
-  TEST(VegTest, Summing) {
-    double x0[NVEGTYPES] = {0.};
-    double x1[NVEGTYPES] = {0.25, 0.25, 0.25, 0.25};
+  TEST(VegProdTest, VegProdSumming) {
+    int vegIndex;
 
-    EXPECT_DOUBLE_EQ(sum_across_vegtypes(x0), 0.);
-    EXPECT_DOUBLE_EQ(sum_across_vegtypes(x1), 1.);
+    RealD transp_coeff[NVEGTYPES][MAX_LAYERS];
+
+
+    for(vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
+      transp_coeff[vegIndex][0] = 0.;
+    }
+
+    EXPECT_DOUBLE_EQ(sum_across_vegtypes(transp_coeff, 0), 0.);
+
+    for(vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
+      transp_coeff[vegIndex][0] = 0.25;
+    }
+
+    EXPECT_DOUBLE_EQ(sum_across_vegtypes(transp_coeff, 0), 1.);
   }
 
 
 	// Check `get_critical_rank`
-	TEST(VegTest, rank) {
+	TEST_F(VegProdFixtureTest, VegProdrank) {
 		int k;
 		// Check `get_critical_rank` for normal inputs, e.g., -2.0, -2.0, -3.5, -3.9
-		get_critical_rank();
-		assert_decreasing_SWPcrit();
+		get_critical_rank(&SW_All.VegProd);
+		assert_decreasing_SWPcrit(&SW_All.VegProd);
 
 
 		// Check `get_critical_rank` for constant values
 		ForEachVegType(k)
 		{
-			SW_VegProd.critSoilWater[k] = 0.;
+			SW_All.VegProd.critSoilWater[k] = 0.;
 		}
 
-		get_critical_rank();
-		assert_decreasing_SWPcrit();
+		get_critical_rank(&SW_All.VegProd);
+		assert_decreasing_SWPcrit(&SW_All.VegProd);
 
 
 		// Check `get_critical_rank` for increasing values
 		ForEachVegType(k)
 		{
-			SW_VegProd.critSoilWater[k] = k;
+			SW_All.VegProd.critSoilWater[k] = k;
 		}
 
-		get_critical_rank();
-		assert_decreasing_SWPcrit();
+		get_critical_rank(&SW_All.VegProd);
+		assert_decreasing_SWPcrit(&SW_All.VegProd);
 
 
 		// Check `get_critical_rank` for decreasing values
 		ForEachVegType(k)
 		{
-			SW_VegProd.critSoilWater[k] = NVEGTYPES - k;
+			SW_All.VegProd.critSoilWater[k] = NVEGTYPES - k;
 		}
 
-		get_critical_rank();
-		assert_decreasing_SWPcrit();
-
-
-		// Reset to previous global state
-		Reset_SOILWAT2_after_UnitTest();
+		get_critical_rank(&SW_All.VegProd);
+		assert_decreasing_SWPcrit(&SW_All.VegProd);
 	}
 
-    TEST(EstimateVegetationTest, NotFullVegetation) {
+    TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
         /*  ================================================================
                     This block of tests deals with input values to
@@ -237,8 +257,6 @@ namespace {
         double SumGrassesFraction = SW_MISSING;
         double C4Variables[3];
 
-        int startYear = 1980;
-        int endYear = 2010;
         int veg_method = 1;
         double latitude = 90.0;
 
@@ -255,16 +273,20 @@ namespace {
         double RelAbundanceL1Expected[5];
         double grassOutputExpected[3];
 
+        SW_All.Model.startyr = 1980;
+        SW_All.Model.endyr = 2010;
 
-        // Reset "SW_Weather.allHist"
-        SW_WTH_read();
-		finalizeAllWeather(&SW_Weather);
+        // Reset "SW_All.Weather.allHist"
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+		    finalizeAllWeather(&SW_All.Markov, &SW_All.Weather,
+            SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
 
         // Calculate climate of the site and add results to "climateOutput"
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
+        calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
+            SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
 
         // Average values from "climateOutput" and put them in "climateAverages"
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
@@ -323,7 +345,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
 
 
         // Loop through RelAbundanceL0 and test results
@@ -390,7 +412,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
 
         // Loop through RelAbundanceL0 and test results
         for(index = 0; index < 8; index++) {
@@ -461,7 +483,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < nTypes; index++) {
@@ -510,7 +532,8 @@ namespace {
         RelAbundanceL1Expected[bareGroundL1] = 0.;
 
 
-        estimateVegetationFromClimate(&vegProd, startYear, endYear, veg_method, latitude);
+        estimateVegetationFromClimate(&vegProd, SW_All.Weather.allHist,
+                                      &SW_All.Model, veg_method, latitude, &LogInfo);
 
         // Loop through RelAbundanceL1 and test results
         for(index = 0; index < 4; index++) {
@@ -534,7 +557,8 @@ namespace {
 
         // Recalculate climate of the site in southern hemisphere and add results to "climateOutput"
         inNorthHem = swFALSE;
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
+        calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
+            SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
 
 
         inputValues[treeIndex] = .0549;
@@ -577,7 +601,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < 8; index++) {
@@ -650,7 +674,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
 
 
         // Loop through RelAbundanceL0 and test results.
@@ -673,7 +697,7 @@ namespace {
         deallocateClimateStructs(&climateOutput, &climateAverages);
     }
 
-    TEST(EstimateVegetationTest, FullVegetation) {
+    TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
 
         /*  ================================================================
                    This block of tests deals with input values to
@@ -713,15 +737,17 @@ namespace {
         Bool fixBareGround = swTRUE;
 
 
-        // Reset "SW_Weather.allHist"
-        SW_WTH_read();
-		finalizeAllWeather(&SW_Weather);
+        // Reset "SW_All.Weather.allHist"
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+		    finalizeAllWeather(&SW_All.Markov, &SW_All.Weather,
+            SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
 
         // Calculate climate of the site and add results to "climateOutput"
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
+        calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
+            SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
 
         // Average values from "climateOutput" and put them in "climateAverages"
         averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
@@ -756,7 +782,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
 
 
         // Loop through RelAbundanceL0 and test results.
@@ -823,7 +849,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
 
 
         // Loop through RelAbundanceL0 and test results.
@@ -894,7 +920,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < nTypes; index++) {
@@ -964,7 +990,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < nTypes; index++) {
@@ -1039,7 +1065,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < nTypes; index++) {
@@ -1114,7 +1140,7 @@ namespace {
         estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);
+            fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
 
 
         // Loop through RelAbundanceL0 and test results.
@@ -1142,7 +1168,7 @@ namespace {
 
     }
 
-    TEST(VegEstimationDeathTest, VegInputGreaterThanOne) {
+    TEST(VegProdStructDeathTest, EstimateVegInputGreaterThanOne1DeathTest) {
 
         /*  ================================================================
                    Tests a death case of `estimatePotNatVegComposition()`
@@ -1173,40 +1199,77 @@ namespace {
         // Array holding all values from estimation minus grasses
         double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
-        // Reset "SW_Weather.allHist"
-        SW_WTH_read();
-		finalizeAllWeather(&SW_Weather);
-
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages);
-
-        // Calculate climate of the site and add results to "climateOutput"
-        calcSiteClimate(SW_Weather.allHist, 31, 1980, inNorthHem, &climateOutput);
-
-        // Average values from "climateOutput" and put them in "climateAverages"
-        averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
 
         /*  ===============================================================
          Test for fail when input sum is greater than one with the values:
          [.0567, .5, .0392, .0981, .3218, .0827, .1293, .0405]
             ===============================================================  */
 
-        EXPECT_DEATH_IF_SUPPORTED(
-            estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+        EXPECT_DEATH_IF_SUPPORTED({
+            AllTestStruct sw = AllTestStruct();
+
+            // Reset "SW_All.Weather.allHist"
+            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
+            finalizeAllWeather(&sw.SW_All.Markov, &sw.SW_All.Weather,
+                sw.SW_All.Model.cum_monthdays, sw.SW_All.Model.days_in_month, &sw.LogInfo);
+
+            // Calculate climate of the site and add results to "climateOutput"
+            calcSiteClimate(sw.SW_All.Weather.allHist, sw.SW_All.Model.cum_monthdays,
+                sw.SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
+
+            // Average values from "climateOutput" and put them in "climateAverages"
+            averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
+
+            estimatePotNatVegComposition(
+              climateAverages.meanTemp_C, climateAverages.PPT_cm,
                     climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
                     SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);,
+                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &sw.LogInfo
+            );
+          },
           "User defined relative abundance values sum to more than 1 = full land cover"
         );
 
-        /*  ===============================================================
-         Test for fail when SumGrassesFraction makes the input sum greater than one
-         [.0567, .25, .SW_MISSING, SW_MISSING, .0912, .0465, .1293, .0405], input sum = .6142
-         SumGrassesFraction = .5, total input sum: 1.023.
-         Total input sum is 1.1211 instead of 1.1142, because annual grass
-         is already defined, so that value is subtracted from SumGrassesFraction and
-         added to the initial input sum
-            ===============================================================  */
+        // Free allocated data
+        deallocateClimateStructs(&climateOutput, &climateAverages);
+    }
+
+
+    TEST(VegProdStructDeathTest, EstimateVegInputGreaterThanOne2DeathTest) {
+
+        /*  ================================================================
+                   Tests a death case of `estimatePotNatVegComposition()`
+                        when input vegetation values sum to over 1
+            ================================================================  */
+
+        SW_CLIMATE_CLIM climateAverages;
+        SW_CLIMATE_YEARLY climateOutput;
+
+        double SumGrassesFraction = SW_MISSING;
+        double C4Variables[3];
+
+        Bool fillEmptyWithBareGround = swTRUE;
+        Bool inNorthHem = swTRUE;
+        Bool warnExtrapolation = swTRUE;
+        Bool fixBareGround = swTRUE;
+
+        double inputValues[8];
+        double shrubLimit = .2;
+
+        // Array holding only grass values
+        double grassOutput[3]; // 3 = Number of grass variables
+
+        // Array holding all values from the estimation
+        double RelAbundanceL0[8]; // 8 = Number of types
+
+        // Array holding all values from estimation minus grasses
+        double RelAbundanceL1[5]; // 5 = Number of types minus grasses
+
+        // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
+        allocateClimateStructs(31, &climateOutput, &climateAverages);
+
 
         SumGrassesFraction = .5;
 
@@ -1219,17 +1282,42 @@ namespace {
         inputValues[treeIndex] = .1293;
         inputValues[bareGround] = .0405;
 
-        EXPECT_DEATH_IF_SUPPORTED(
-            estimatePotNatVegComposition(climateAverages.meanTemp_C, climateAverages.PPT_cm,
+        /*  ===============================================================
+         Test for fail when SumGrassesFraction makes the input sum greater than one
+         [.0567, .25, .SW_MISSING, SW_MISSING, .0912, .0465, .1293, .0405], input sum = .6142
+         SumGrassesFraction = .5, total input sum: 1.023.
+         Total input sum is 1.1211 instead of 1.1142, because annual grass
+         is already defined, so that value is subtracted from SumGrassesFraction and
+         added to the initial input sum
+            ===============================================================  */
+
+        EXPECT_DEATH_IF_SUPPORTED({
+            AllTestStruct sw = AllTestStruct();
+
+            // Reset "SW_All.Weather.allHist"
+            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
+            finalizeAllWeather(&sw.SW_All.Markov, &sw.SW_All.Weather,
+                sw.SW_All.Model.cum_monthdays, sw.SW_All.Model.days_in_month, &sw.LogInfo);
+
+            // Calculate climate of the site and add results to "climateOutput"
+            calcSiteClimate(sw.SW_All.Weather.allHist, sw.SW_All.Model.cum_monthdays,
+                sw.SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
+
+            // Average values from "climateOutput" and put them in "climateAverages"
+            averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
+
+            estimatePotNatVegComposition(
+              climateAverages.meanTemp_C, climateAverages.PPT_cm,
                     climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
                     SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1);,
+                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &sw.LogInfo
+            );
+          },
           "User defined relative abundance values sum to more than 1 = full land cover"
         );
 
         // Free allocated data
         deallocateClimateStructs(&climateOutput, &climateAverages);
-
     }
 
 } // namespace

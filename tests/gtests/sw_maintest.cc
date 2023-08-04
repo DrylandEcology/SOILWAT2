@@ -15,10 +15,12 @@
 #include <time.h>
 #include <unistd.h>
 
-// externs `*logfp`, `errstr`, `logged`, `QuietMode`, `EchoInits`
 #include "include/generic.h"
-#include "include/filefuncs.h" // externs `_firstfile`, `inbuf`
-#include "include/SW_Control.h"
+#include "include/filefuncs.h"
+#include "include/SW_Files.h"
+#include "include/myMemory.h"
+#include "include/SW_Weather.h"
+#include "include/SW_datastructs.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
@@ -29,7 +31,6 @@
    of the SOILWAT2 repository
 */
 const char * dir_test = "./tests/example";
-const char * masterfile_test = "files.in"; // relative to 'dir_test'
 
 
 /* Naming scheme for unit tests
@@ -45,37 +46,27 @@ const char * masterfile_test = "files.in"; // relative to 'dir_test'
 
 int main(int argc, char **argv) {
   int res;
-  /*--- Imitate 'SW_Main.c/main()':
-    we need to initialize and take down SOILWAT2 variables
-    because SOILWAT2 uses (global) states.
-    This is otherwise not comptable with the c++ approach used by googletest.
-  */
+  /*--- Imitate 'SW_Main.c/main()' */
 
   // Emulate 'sw_init_args()'
   if (!ChDir(dir_test)) {
     swprintf("Invalid project directory (%s)", dir_test);
   }
-  strcpy(_firstfile, masterfile_test);
-
-
-  // Initialize SOILWAT2 variables and read values from example input file
-  Reset_SOILWAT2_after_UnitTest();
-
 
   //--- Setup unit tests
   ::testing::InitGoogleTest(&argc, argv);
 
-  // set death tests to be "threadsafe" instead of "fast"
+  // Set death tests to be "threadsafe" instead of "fast", i.e.,
+  // "re-executes the binary to cause just the single death test under consideration to be run"
+  // (https://google.github.io/googletest/reference/assertions.html#death)
+  // See code example in header for `AllTestStruct`
   GTEST_FLAG_SET(death_test_style, "threadsafe");
 
   // Run unit tests
   res = RUN_ALL_TESTS();
 
-
-  //--- Take down SOILWAT2 variables
-  SW_CTL_clear_model(swTRUE); // de-allocate all memory
-
-  //--- Return output of 'RUN_ALL_TESTS()', see https://github.com/google/googletest/blob/master/googletest/docs/FAQ.md#my-compiler-complains-about-ignoring-return-value-when-i-call-run_all_tests-why
+  //--- Return output of 'RUN_ALL_TESTS()'
+  // (https://google.github.io/googletest/primer.html#writing-the-main-function)
   return res;
 }
 

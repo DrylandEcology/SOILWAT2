@@ -39,35 +39,19 @@
 #include "include/filefuncs.h"
 #include "include/rands.h"
 #include "include/Times.h"
-#include "include/myMemory.h"
 
-#include "include/SW_Defines.h"
 #include "include/SW_Files.h"
-#include "include/SW_Site.h" // externs SW_Site
+#include "include/SW_Site.h"
 #include "include/SW_SoilWater.h"  /* for setup_new_year() */
 #include "include/SW_Times.h"
-#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Model.h"
 
 
 /* =================================================== */
-/*                  Global Variables                   */
+/*                   Local Variable                    */
 /* --------------------------------------------------- */
-SW_MODEL SW_Model;
 
-
-/* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-static char *MyFileName;
-
-/* these are set in _new_day() */
-static TimeInt
-  _prevweek, /* check for new week */
-  _prevmonth, /* check for new month */
-  _prevyear, /* check for new year */
-  _notime = 0xffff; /* init value for _prev* */
-
-
+const TimeInt _notime = 0xffff; /* init value for _prev* */
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -75,8 +59,12 @@ static TimeInt
 
 /**
 @brief MDL constructor for global variables.
+
+@param[out] newperiod newperiod[] Specifies when a new day/week/month/year
+	has started
+@param[out] days_in_month[] Number of days per month for "current" year
 */
-void SW_MDL_construct(void) {
+void SW_MDL_construct(Bool newperiod[], TimeInt days_in_month[]) {
 	/* =================================================== */
 	/* note that an initializer that is called during
 	 * execution (better called clean() or something)
@@ -85,13 +73,13 @@ void SW_MDL_construct(void) {
 	 */
 	OutPeriod pd;
 
-	Time_init_model(); // values of time are correct only after Time_new_year()
+	Time_init_model(days_in_month); // values of time are correct only after Time_new_year()
 
 	ForEachOutPeriod(pd)
 	{
-		SW_Model.newperiod[pd] = swFALSE;
+		newperiod[pd] = swFALSE;
 	}
-	SW_Model.newperiod[eSW_Day] = swTRUE; // every day is a new day
+	newperiod[eSW_Day] = swTRUE; // every day is a new day
 }
 
 /**
@@ -102,8 +90,13 @@ void SW_MDL_deconstruct(void)
 
 /**
 @brief Reads in MDL file and displays error message if file is incorrect.
+
+@param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
+	about the simulation
+@param[in] InFiles Array of program in/output files
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_MDL_read(void) {
+void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/*
 	 * 1/24/02 - added code for partial start and end years
@@ -117,44 +110,43 @@ void SW_MDL_read(void) {
 	 *    allows some degree of flexibility on the
 	 *    starting year
 	 */
-	SW_MODEL *m = &SW_Model;
 	FILE *f;
 	int y, cnt;
 	TimeInt d;
-	char *p, enddyval[6];
+	char *p, enddyval[6], errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 	Bool fstartdy = swFALSE, fenddy = swFALSE, fhemi = swFALSE;
 
-	MyFileName = SW_F_name(eModel);
-	f = OpenFile(MyFileName, "r");
+	MyFileName = InFiles[eModel];
+	f = OpenFile(MyFileName, "r", LogInfo);
 
 	/* ----- beginning year */
 	if (!GetALine(f, inbuf)) {
-		CloseFile(&f);
-		LogError(logfp, LOGFATAL, "%s: No input.", MyFileName);
+		CloseFile(&f, LogInfo);
+		LogError(LogInfo, LOGFATAL, "%s: No input.", MyFileName);
 	}
 	y = atoi(inbuf);
 	if (y < 0) {
-		CloseFile(&f);
-		LogError(logfp, LOGFATAL, "%s: Negative start year (%d)", MyFileName, y);
+		CloseFile(&f, LogInfo);
+		LogError(LogInfo, LOGFATAL, "%s: Negative start year (%d)", MyFileName, y);
 	}
-	m->startyr = yearto4digit((TimeInt) y);
-	m->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
+	SW_Model->startyr = yearto4digit((TimeInt) y);
+	SW_Model->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
 
 	/* ----- ending year */
 	if (!GetALine(f, inbuf)) {
-		CloseFile(&f);
-		LogError(logfp, LOGFATAL, "%s: Ending year not found.", MyFileName);
+		CloseFile(&f, LogInfo);
+		LogError(LogInfo, LOGFATAL, "%s: Ending year not found.", MyFileName);
 	}
 	y = atoi(inbuf);
 	//assert(y > 0);
 	if (y < 0) {
-		CloseFile(&f);
-		LogError(logfp, LOGFATAL, "%s: Negative ending year (%d)", MyFileName, y);
+		CloseFile(&f, LogInfo);
+		LogError(LogInfo, LOGFATAL, "%s: Negative ending year (%d)", MyFileName, y);
 	}
-	m->endyr = yearto4digit((TimeInt) y);
-	if (m->endyr < m->startyr) {
-		CloseFile(&f);
-		LogError(logfp, LOGFATAL, "%s: Start Year > End Year", MyFileName);
+	SW_Model->endyr = yearto4digit((TimeInt) y);
+	if (SW_Model->endyr < SW_Model->startyr) {
+		CloseFile(&f, LogInfo);
+		LogError(LogInfo, LOGFATAL, "%s: Start Year > End Year", MyFileName);
 	}
 
 	/* ----- Start checking for model time parameters */
@@ -166,13 +158,13 @@ void SW_MDL_read(void) {
 	while (GetALine(f, inbuf)) {
 		cnt++;
 		if (isalpha((int) *inbuf) && strcmp(inbuf, "end")) { /* get hemisphere */
-			m->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
+			SW_Model->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
 			fhemi = swTRUE;
 			break;
 		}//TODO: SHOULDN'T WE SKIP THIS BELOW IF ABOVE IS swTRUE
 		switch (cnt) {
 		case 1:
-			m->startstart = atoi(inbuf);
+			SW_Model->startstart = atoi(inbuf);
 			fstartdy = swTRUE;
 			break;
 		case 2:
@@ -185,7 +177,7 @@ void SW_MDL_read(void) {
 			fenddy = swTRUE;
 			break;
 		case 3:
-			m->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
+			SW_Model->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
 			fhemi = swTRUE;
 			break;
 		default:
@@ -197,7 +189,7 @@ void SW_MDL_read(void) {
 		snprintf(errstr, MAX_ERROR, "\nNot found in %s:\n", MyFileName);
 		if (!fstartdy) {
 			strcat(errstr, "\tStart Day  - using 1\n");
-			m->startstart = 1;
+			SW_Model->startstart = 1;
 		}
 		if (!fenddy) {
 			strcat(errstr, "\tEnd Day    - using \"end\"\n");
@@ -205,77 +197,81 @@ void SW_MDL_read(void) {
 		}
 		if (!fhemi) {
 			strcat(errstr, "\tHemisphere - using \"N\"\n");
-			m->isnorth = swTRUE;
+			SW_Model->isnorth = swTRUE;
 		}
 		strcat(errstr, "Continuing.\n");
-		LogError(logfp, LOGWARN, errstr);
+		LogError(LogInfo, LOGWARN, errstr);
 	}
 
-	m->startstart += ((m->isnorth) ? DAYFIRST_NORTH : DAYFIRST_SOUTH) - 1;
+	SW_Model->startstart += ((SW_Model->isnorth) ? DAYFIRST_NORTH : DAYFIRST_SOUTH) - 1;
 	if (strcmp(enddyval, "end") == 0) {
-		m->endend = (m->isnorth) ? Time_get_lastdoy_y(m->endyr) : DAYLAST_SOUTH;
+		SW_Model->endend = (SW_Model->isnorth) ? Time_get_lastdoy_y(SW_Model->endyr) : DAYLAST_SOUTH;
 	} else {
 		d = atoi(enddyval);
-		m->endend = (d == 365) ? Time_get_lastdoy_y(m->endyr) : 365;
+		SW_Model->endend = (d == 365) ? Time_get_lastdoy_y(SW_Model->endyr) : 365;
 	}
 
-	m->daymid = (m->isnorth) ? DAYMID_NORTH : DAYMID_SOUTH;
-	CloseFile(&f);
+	SW_Model->daymid = (SW_Model->isnorth) ? DAYMID_NORTH : DAYMID_SOUTH;
+	CloseFile(&f, LogInfo);
 
 }
 
 /**
 @brief Sets up time structures and calls modules that have yearly init routines.
+
+@param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
+		about the simulation
 */
-void SW_MDL_new_year(void) {
+void SW_MDL_new_year(SW_MODEL* SW_Model) {
 	/* =================================================== */
 	/* 1/24/02 - added code for partial start and end years
 	 */
+	TimeInt year = SW_Model->year;
 
-	SW_MODEL *m = &SW_Model;
-	TimeInt year = SW_Model.year;
+	SW_Model->_prevweek = SW_Model->_prevmonth = SW_Model->_prevyear = _notime;
 
-	_prevweek = _prevmonth = _prevyear = _notime;
+	Time_new_year(year, SW_Model->days_in_month, SW_Model->cum_monthdays);
+	SW_Model->simyear = SW_Model->year + SW_Model->addtl_yr;
 
-	Time_new_year(year);
-	SW_Model.simyear = SW_Model.year + SW_Model.addtl_yr;
-
-	m->firstdoy = (year == m->startyr) ? m->startstart : 1;
-	m->lastdoy = (year == m->endyr) ? m->endend : Time_get_lastdoy_y(year);
+	SW_Model->firstdoy = (year == SW_Model->startyr) ? SW_Model->startstart : 1;
+	SW_Model->lastdoy = (year == SW_Model->endyr) ? SW_Model->endend : Time_get_lastdoy_y(year);
 }
 
 /**
-@brief Sets the output period elements of SW_Model based on current day.
+	@brief Sets the output period elements of SW_Model based on current day.
+
+	@param[in,out] SW_Model Struct of type SW_MODEL holding basic time
+		information about the simulation
 */
-void SW_MDL_new_day(void) {
+void SW_MDL_new_day(SW_MODEL* SW_Model) {
 
 	OutPeriod pd;
 
-	SW_Model.month = doy2month(SW_Model.doy); /* base0 */
-	SW_Model.week = doy2week(SW_Model.doy); /* base0; more often an index */
+	SW_Model->month = doy2month(SW_Model->doy, SW_Model->cum_monthdays); /* base0 */
+	SW_Model->week = doy2week(SW_Model->doy); /* base0; more often an index */
 
 	/* in this case, we've finished the daily loop and are about
 	 * to flush the output */
-	if (SW_Model.doy > SW_Model.lastdoy) {
+	if (SW_Model->doy > SW_Model->lastdoy) {
 		ForEachOutPeriod(pd)
 		{
-		SW_Model.newperiod[pd] = swTRUE;
+		SW_Model->newperiod[pd] = swTRUE;
 		}
 
 		return;
 	}
 
-	if (SW_Model.month != _prevmonth) {
-		SW_Model.newperiod[eSW_Month] = (_prevmonth != _notime) ? swTRUE : swFALSE;
-		_prevmonth = SW_Model.month;
+	if (SW_Model->month != SW_Model->_prevmonth) {
+		SW_Model->newperiod[eSW_Month] = (SW_Model->_prevmonth != _notime) ? swTRUE : swFALSE;
+		SW_Model->_prevmonth = SW_Model->month;
 	} else
-		SW_Model.newperiod[eSW_Month] = swFALSE;
+		SW_Model->newperiod[eSW_Month] = swFALSE;
 
 	/*  if (SW_Model.week != _prevweek || SW_Model.month == NoMonth) { */
-	if (SW_Model.week != _prevweek) {
-		SW_Model.newperiod[eSW_Week] = (_prevweek != _notime) ? swTRUE : swFALSE;
-		_prevweek = SW_Model.week;
+	if (SW_Model->week != SW_Model->_prevweek) {
+		SW_Model->newperiod[eSW_Week] = (SW_Model->_prevweek != _notime) ? swTRUE : swFALSE;
+		SW_Model->_prevweek = SW_Model->week;
 	} else
-		SW_Model.newperiod[eSW_Week] = swFALSE;
+		SW_Model->newperiod[eSW_Week] = swFALSE;
 
 }

@@ -1,5 +1,41 @@
 # NEWS
 
+# SOILWAT2 v7.1.0
+* Simulation output remains the same as the previous version.
+
+* Prepare for SOILWAT2 to become thread-safe and reentrant (#346; @N1ckP3rsl3y)
+    * Definition clarifications
+        * Thread-safe - Multiple threads (a future SOILWAT2 development)
+          will not influence each other unintentionally. Here, we implemented
+          structures to enable thread-local storage, i.e., each thread operates
+          on local data structures or with static data.
+        * Reentrant - The ability to correctly execute any part of the program
+          by multiple threads simultaneously but independently from others.
+    * All non-static variables are replaced by local variables;
+      functions gained arguments to pass local variables by reference
+      (replacing global variables).
+    * New main abstract types
+        * SW_ALL - Contains the existing structures that are relevant
+          for the simulation itself, e.g., SW_MODEL, SW_SOILWAT, SW_WEATHER.
+        * PATH_INFO - Holds information about location of input and output data,
+          e.g., directories, file paths to input data.
+        * SW_OUTPUT_POINTERS - Points to requested output subroutines.
+        * LOG_INFO - Manages information for logging warnings and errors.
+
+* Tests now require `c++14` and utilize `googletest` `v1.14.0` (issue #339).
+
+* Bugfixes
+    * Fix an error where a pointer was freed even though it was not allocated
+      (issue #356; @dschlaep).
+    * Fix memory leak in test of `SW_VPD_construct()` (issue #205; @dschlaep).
+
+## Changes to inputs
+* The output separator `OUTSEP` has been unused since the switch (`v4.0.0`)
+  from writing free-form text files to `"csv"` spreadsheets
+  (where the separator is fixed to a comma); the occurrence of
+  `OUTSEP` in `"outsetup.in"` is now deprecated and triggers a warning.
+
+
 # SOILWAT2 v7.0.0
 * This version produces nearly identical simulation output
   as the previous release under default values for the new inputs.

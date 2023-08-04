@@ -23,34 +23,13 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "include/generic.h"
 #include "include/filefuncs.h"
 #include "include/rands.h"
 #include "include/Times.h"
 #include "include/myMemory.h"
-#include "include/SW_Defines.h"
 #include "include/SW_Files.h"
-#include "include/SW_Weather.h"
-#include "include/SW_Model.h" // externs SW_Model
+#include "include/SW_Model.h"
 #include "include/SW_Markov.h"
-#include "external/pcg/pcg_basic.h"
-
-
-/* =================================================== */
-/*                  Global Variables                   */
-/* --------------------------------------------------- */
-
-pcg32_random_t markov_rng; // used by STEPWAT2
-SW_MARKOV SW_Markov;
-
-
-
-/* =================================================== */
-/*                  Local Variables                    */
-/* --------------------------------------------------- */
-
-static char *MyFileName;
-
 
 
 /* =================================================== */
@@ -124,11 +103,15 @@ static void temp_correct_wetdry(RealD *tmax, RealD *tmin, RealD rain,
            previously `vc11 = _vcov[1][1]`
     @param wT_covar Mean weekly covariance between maximum and minimum
            daily temperature; previously `vc10 = _vcov[1][0]`
+	@param markov_rng Random number generator of the weather
+		   generator
+	@param LogInfo Holds information dealing with logfile output
 
     @return Daily minimum (*tmin) and maximum (*tmax) temperature.
 */
 static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
-	RealD wTmax_var, RealD wTmin_var, RealD wT_covar) {
+	RealD wTmax_var, RealD wTmin_var, RealD wT_covar, pcg32_random_t *markov_rng,
+	LOG_INFO* LogInfo) {
 	/* --------------------------------------------------- */
 	/* This proc is distilled from a much more general function
 	 * in the original fortran version which was prepared to
@@ -168,15 +151,15 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 	//   vc11 = sqrt(var2 - covar ^ 2 / var1)
 
 	// Generate two independent standard normal random numbers
-	z1 = RandNorm(0., 1., &markov_rng);
-	z2 = RandNorm(0., 1., &markov_rng);
+	z1 = RandNorm(0., 1., markov_rng);
+	z2 = RandNorm(0., 1., markov_rng);
 
 	wTmax_sd = sqrt(wTmax_var);
 	vc10 = (GT(wTmax_sd, 0.)) ? wT_covar / wTmax_sd : 0;
 	s = vc10 * vc10;
 
 	if (GT(s, wTmin_var)) {
-		LogError(logfp, LOGFATAL, "\nBad covariance matrix in mvnorm()");
+		LogError(LogInfo, LOGFATAL, "\nBad covariance matrix in mvnorm()");
 	}
 
 	/* Apparently, it's possible for some but not all setups that
@@ -194,7 +177,8 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 #ifdef SWDEBUG
   // since `mvnorm` is static we cannot do unit tests unless we set it up
   // as an externed function pointer
-  void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD) = &mvnorm;
+  void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD,
+  				      RealD, pcg32_random_t*, LOG_INFO*) = &mvnorm;
 #endif
 
 
@@ -205,10 +189,15 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 
 /**
 @brief Markov constructor for global variables.
+
+@param[in] rng_seed Initial state for Markov
+@param[out] SW_Markov Struct of type SW_MARKOV which holds values
+	related to temperature and weather generator
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_MKV_construct(void) {
+void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
+					  LOG_INFO* LogInfo) {
 	/* =================================================== */
-	SW_MARKOV *m = &SW_Markov;
 	size_t s = sizeof(RealD);
 
 	/* Set seed of `markov_rng`
@@ -217,80 +206,98 @@ void SW_MKV_construct(void) {
 	  - rSOILWAT2: R API handles RNGs
 	*/
 	#if defined(SOILWAT)
-	RandSeed(SW_Weather.rng_seed, 1u, &markov_rng);
+		RandSeed(rng_seed, 1u, &SW_Markov->markov_rng);
+	#else
+		(void) rng_seed; // Silence compiler flag `-Wunused-parameter`
 	#endif
 
-	m->ppt_events = 0;
+	SW_Markov->ppt_events = 0;
 
-	m->wetprob = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
-	m->dryprob = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
-	m->avg_ppt = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
-	m->std_ppt = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
-	m->cfxw = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
-	m->cfxd = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
-	m->cfnw = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
-	m->cfnd = (RealD *) Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct");
+	SW_Markov->wetprob = (RealD *)
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+	SW_Markov->dryprob = (RealD *)
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+	SW_Markov->avg_ppt = (RealD *)
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+	SW_Markov->std_ppt = (RealD *)
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+	SW_Markov->cfxw = (RealD *)
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+	SW_Markov->cfxd = (RealD *)
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+	SW_Markov->cfnw = (RealD *)
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+	SW_Markov->cfnd = (RealD *)
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
 }
 
 /**
 @brief Markov deconstructor; frees up memory space.
+
+@param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
+	related to temperature and weather generator
 */
-void SW_MKV_deconstruct(void)
+void SW_MKV_deconstruct(SW_MARKOV* SW_Markov)
 {
-	if (!isnull(SW_Markov.wetprob)) {
-		Mem_Free(SW_Markov.wetprob);
-		SW_Markov.wetprob = NULL;
+	if (!isnull(SW_Markov->wetprob)) {
+		Mem_Free(SW_Markov->wetprob);
+		SW_Markov->wetprob = NULL;
 	}
 
-	if (!isnull(SW_Markov.dryprob)) {
-		Mem_Free(SW_Markov.dryprob);
-		SW_Markov.dryprob = NULL;
+	if (!isnull(SW_Markov->dryprob)) {
+		Mem_Free(SW_Markov->dryprob);
+		SW_Markov->dryprob = NULL;
 	}
 
-	if (!isnull(SW_Markov.avg_ppt)) {
-		Mem_Free(SW_Markov.avg_ppt);
-		SW_Markov.avg_ppt = NULL;
+	if (!isnull(SW_Markov->avg_ppt)) {
+		Mem_Free(SW_Markov->avg_ppt);
+		SW_Markov->avg_ppt = NULL;
 	}
 
-	if (!isnull(SW_Markov.std_ppt)) {
-		Mem_Free(SW_Markov.std_ppt);
-		SW_Markov.std_ppt = NULL;
+	if (!isnull(SW_Markov->std_ppt)) {
+		Mem_Free(SW_Markov->std_ppt);
+		SW_Markov->std_ppt = NULL;
 	}
 
-	if (!isnull(SW_Markov.cfxw)) {
-		Mem_Free(SW_Markov.cfxw);
-		SW_Markov.cfxw = NULL;
+	if (!isnull(SW_Markov->cfxw)) {
+		Mem_Free(SW_Markov->cfxw);
+		SW_Markov->cfxw = NULL;
 	}
 
-	if (!isnull(SW_Markov.cfxd)) {
-		Mem_Free(SW_Markov.cfxd);
-		SW_Markov.cfxd = NULL;
+	if (!isnull(SW_Markov->cfxd)) {
+		Mem_Free(SW_Markov->cfxd);
+		SW_Markov->cfxd = NULL;
 	}
 
-	if (!isnull(SW_Markov.cfnw)) {
-		Mem_Free(SW_Markov.cfnw);
-		SW_Markov.cfnw = NULL;
+	if (!isnull(SW_Markov->cfnw)) {
+		Mem_Free(SW_Markov->cfnw);
+		SW_Markov->cfnw = NULL;
 	}
 
-	if (!isnull(SW_Markov.cfnd)) {
-		Mem_Free(SW_Markov.cfnd);
-		SW_Markov.cfnd = NULL;
+	if (!isnull(SW_Markov->cfnd)) {
+		Mem_Free(SW_Markov->cfnd);
+		SW_Markov->cfnd = NULL;
 	}
 }
 
 /**
 @brief Calculates precipitation and temperature.
 
-@param doy0 Day of the year (base0).
-@param *tmax Maximum temperature (&deg;C).
-@param *tmin Mininum temperature (&deg;C).
-@param *rain Rainfall (cm).
+@param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
+	related to temperature and weather generator
+@param[in] doy0 Day of the year (base0).
+@param[in] year Current year in simulation
+@param[out] *tmax Maximum temperature (&deg;C).
+@param[out] *tmin Mininum temperature (&deg;C).
+@param[out] *rain Rainfall (cm).
+@param[in] LogInfo Holds information dealing with logfile output
 
 @sideeffect *tmax Updated maximum temperature (&deg;C).
 @sideeffect *tmin Updated minimum temperature (&deg;C).
 @sideeffect *rain Updated rainfall (cm).
 */
-void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
+void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
+			RealD *tmax, RealD *tmin, RealD *rain, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* enter with rain == yesterday's ppt, doy0 as array index: [0, 365] = doy - 1
 	 * leave with rain == today's ppt
@@ -306,7 +313,7 @@ void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 	if (debug) {
 		swprintf(
 			"mkv(before): yr=%u/doy0=%u: ppt=%.3f, tmax=%.3f, tmin=%.3f\n",
-			SW_Model.year, doy0, *rain, *tmax, *tmin
+			year, doy0, *rain, *tmax, *tmin
 		);
 	}
 	#endif
@@ -315,64 +322,76 @@ void SW_MKV_today(TimeInt doy0, RealD *tmax, RealD *tmin, RealD *rain) {
 		prop = probability that it precipitates today depending on whether it
 			was wet (precipitated) yesterday `wetprob` or
 			whether it was dry yesterday `dryprob` */
-	prob = (GT(*rain, 0.0)) ? SW_Markov.wetprob[doy0] : SW_Markov.dryprob[doy0];
+	prob = (GT(*rain, 0.0)) ? SW_Markov->wetprob[doy0] : SW_Markov->dryprob[doy0];
 
-	p = RandUni(&markov_rng);
+	p = RandUni(&SW_Markov->markov_rng);
 	if (LE(p, prob)) {
-		x = RandNorm(SW_Markov.avg_ppt[doy0], SW_Markov.std_ppt[doy0], &markov_rng);
+		x = RandNorm(SW_Markov->avg_ppt[doy0],
+							SW_Markov->std_ppt[doy0], &SW_Markov->markov_rng);
 		*rain = fmax(0., x);
 	} else {
 		*rain = 0.;
 	}
 
 	if (GT(*rain, 0.)) {
-		SW_Markov.ppt_events++;
+		SW_Markov->ppt_events++;
 	}
 
 	/* Calculate temperature */
 	week = doy2week(doy0 + 1);
 
 	mvnorm(tmax, tmin,
-		SW_Markov.u_cov[week][0],    // mean weekly maximum daily temp
-		SW_Markov.u_cov[week][1],    // mean weekly minimum daily temp
-		SW_Markov.v_cov[week][0][0], // mean weekly variance of maximum daily temp
-		SW_Markov.v_cov[week][1][1], // mean weekly variance of minimum daily temp
-		SW_Markov.v_cov[week][1][0]  // mean weekly covariance of min/max daily temp
+		SW_Markov->u_cov[week][0],     // mean weekly maximum daily temp
+		SW_Markov->u_cov[week][1],     // mean weekly minimum daily temp
+		SW_Markov->v_cov[week][0][0],  // mean weekly variance of maximum daily temp
+		SW_Markov->v_cov[week][1][1],  // mean weekly variance of minimum daily temp
+		SW_Markov->v_cov[week][1][0],  // mean weekly covariance of min/max daily temp
+		&SW_Markov->markov_rng,
+		LogInfo
 	);
 
 	temp_correct_wetdry(tmax, tmin, *rain,
-		SW_Markov.cfxw[week],  // correction factor for tmax for wet days
-		SW_Markov.cfxd[week],  // correction factor for tmax for dry days
-		SW_Markov.cfnw[week],  // correction factor for tmin for wet days
-		SW_Markov.cfnd[week]   // correction factor for tmin for dry days
+		SW_Markov->cfxw[week],  // correction factor for tmax for wet days
+		SW_Markov->cfxd[week],  // correction factor for tmax for dry days
+		SW_Markov->cfnw[week],  // correction factor for tmin for wet days
+		SW_Markov->cfnd[week]   // correction factor for tmin for dry days
 	);
 
 	#ifdef SWDEBUG
 	if (debug) {
 		swprintf(
 			"mkv(after): yr=%u/doy0=%u/week=%u: ppt=%.3f, tmax=%.3f, tmin=%.3f\n",
-			SW_Model.year, doy0, week, *rain, *tmax, *tmin
+			year, doy0, week, *rain, *tmax, *tmin
 		);
 	}
+	#else
+		/* Silence compiler for year not being used if SWDEBUG isn't defined */
+		(void) year;
 	#endif
 
 }
 /**
 @brief Reads prob file in and checks input variables for errors, then stores files in SW_Markov.
 
+@param[in] InFiles Array of program in/output files
+@param[out] SW_Markov Struct of type SW_MARKOV which holds values
+	related to temperature and weather generator
+@param[in] LogInfo Holds information dealing with logfile output
+
 @return swTRUE Returns true if prob file is correctly opened and closed.
 */
-Bool SW_MKV_read_prob(void) {
+Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
+					  LOG_INFO* LogInfo) {
 	/* =================================================== */
-	SW_MARKOV *v = &SW_Markov;
 	const int nitems = 5;
 	FILE *f;
 	int lineno = 0, day, x, msg_type = 0;
 	char msg[200]; // error message
 	RealF wet, dry, avg, std;
+	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
-	MyFileName = SW_F_name(eMarkovProb);
+	char *MyFileName = InFiles[eMarkovProb];
 
 	if (NULL == (f = fopen(MyFileName, "r")))
 		return swFALSE;
@@ -448,20 +467,20 @@ Bool SW_MKV_read_prob(void) {
 		// If any input is bad, then close file and fail with message:
 		if (msg_type != 0)
 		{
-			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "%s", msg);
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGFATAL, "%s", msg);
 		}
 
 		// Store values in `SW_Markov`
 		day--; // base1 -> base0
 
-		v->wetprob[day] = wet; // probability of being wet today given a wet yesterday
-		v->dryprob[day] = dry; // probability of being wet today given a dry yesterday
-		v->avg_ppt[day] = avg; // mean precip (cm) of wet days
-		v->std_ppt[day] = std; // std dev. for precip of wet days
+		SW_Markov->wetprob[day] = wet; // probability of being wet today given a wet yesterday
+		SW_Markov->dryprob[day] = dry; // probability of being wet today given a dry yesterday
+		SW_Markov->avg_ppt[day] = avg; // mean precip (cm) of wet days
+		SW_Markov->std_ppt[day] = std; // std dev. for precip of wet days
 	}
 
-	CloseFile(&f);
+	CloseFile(&f, LogInfo);
 
 	return swTRUE;
 }
@@ -469,18 +488,23 @@ Bool SW_MKV_read_prob(void) {
 /**
 @brief Reads cov file in and checks input variables for errors, then stores files in SW_Markov.
 
+@param[in] InFiles Array of program in/output files
+@param[out] SW_Markov Struct of type SW_MARKOV which holds values
+	related to temperature and weather generator
+@param[in] LogInfo Holds information dealing with logfile output
+
 @return Returns true if cov file is correctly opened and closed.
 */
-Bool SW_MKV_read_cov(void) {
+Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 	/* =================================================== */
-	SW_MARKOV *v = &SW_Markov;
 	const int nitems = 11;
 	FILE *f;
 	int lineno = 0, week, x, msg_type = 0;
 	char msg[200]; // error message
+	char inbuf[MAX_FILENAMESIZE];
 	RealF t1, t2, t3, t4, t5, t6, cfxw, cfxd, cfnw, cfnd;
 
-	MyFileName = SW_F_name(eMarkovCov);
+	char *MyFileName = InFiles[eMarkovCov];
 
 	if (NULL == (f = fopen(MyFileName, "r")))
 		return swFALSE;
@@ -574,49 +598,51 @@ Bool SW_MKV_read_cov(void) {
 		// If any input is bad, then close file and fail with message:
 		if (msg_type != 0)
 		{
-			CloseFile(&f);
-			LogError(logfp, LOGFATAL, "%s", msg);
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGFATAL, "%s", msg);
 		}
 
 		// Store values in `SW_Markov`
 		week--; // base1 -> base0
 
-		v->u_cov[week][0] = t1;    // mean weekly maximum daily temp
-		v->u_cov[week][1] = t2;    // mean weekly minimum daily temp
-		v->v_cov[week][0][0] = t3; // mean weekly variance of maximum daily temp
-		v->v_cov[week][0][1] = t4; // mean weekly covariance of min/max daily temp
-		v->v_cov[week][1][0] = t5; // mean weekly covariance of min/max daily temp
-		v->v_cov[week][1][1] = t6; // mean weekly variance of minimum daily temp
-		v->cfxw[week] = cfxw;      // correction factor for tmax for wet days
-		v->cfxd[week] = cfxd;      // correction factor for tmax for dry days
-		v->cfnw[week] = cfnw;      // correction factor for tmin for wet days
-		v->cfnd[week] = cfnd;      // correction factor for tmin for dry days
+		SW_Markov->u_cov[week][0] = t1;    // mean weekly maximum daily temp
+		SW_Markov->u_cov[week][1] = t2;    // mean weekly minimum daily temp
+		SW_Markov->v_cov[week][0][0] = t3; // mean weekly variance of maximum daily temp
+		SW_Markov->v_cov[week][0][1] = t4; // mean weekly covariance of min/max daily temp
+		SW_Markov->v_cov[week][1][0] = t5; // mean weekly covariance of min/max daily temp
+		SW_Markov->v_cov[week][1][1] = t6; // mean weekly variance of minimum daily temp
+		SW_Markov->cfxw[week] = cfxw;      // correction factor for tmax for wet days
+		SW_Markov->cfxd[week] = cfxd;      // correction factor for tmax for dry days
+		SW_Markov->cfnw[week] = cfnw;      // correction factor for tmin for wet days
+		SW_Markov->cfnd[week] = cfnd;      // correction factor for tmin for dry days
 	}
 
-	CloseFile(&f);
+	CloseFile(&f, LogInfo);
 
 	return swTRUE;
 }
 
 
-void SW_MKV_setup(void) {
-  SW_MKV_construct();
+void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
+	int Weather_genWeathMethod, char *InFiles[], LOG_INFO* LogInfo) {
 
-  if (!SW_MKV_read_prob() && SW_Weather.generateWeatherMethod == 2) {
+  SW_MKV_construct(Weather_rng_seed, SW_Markov, LogInfo);
+
+  if (!SW_MKV_read_prob(InFiles, SW_Markov, LogInfo) && Weather_genWeathMethod == 2) {
     LogError(
-      logfp,
+      LogInfo,
       LOGFATAL,
       "Weather generator requested but could not open %s",
-      SW_F_name(eMarkovProb)
+      InFiles[eMarkovProb]
     );
   }
 
-  if (!SW_MKV_read_cov() && SW_Weather.generateWeatherMethod == 2) {
+  if (!SW_MKV_read_cov(InFiles, SW_Markov, LogInfo) && Weather_genWeathMethod == 2) {
     LogError(
-      logfp,
+      LogInfo,
       LOGFATAL,
       "Weather generator requested but could not open %s",
-      SW_F_name(eMarkovCov)
+      InFiles[eMarkovCov]
     );
   }
 }
