@@ -1,14 +1,16 @@
-#------ Input file for domain/time of the simulation
+#------ Input file for the spatial and temporal domain
+
+# A domain describes a set of related simulation runs
 
 # USER: years must be consistent with `weathsetup.in`, `carbon.in`,
 #       and (if used) `swcsetup.in`.
 # NOTE: This file follows a key-value pair. That is, the value is only matched with the key
-# eliminating the possibility of incorrect reads due to line dependancies.
+# eliminating the possibility of incorrect reads due to line dependencies.
 
-Domain    s
-nDimX     1
-nDimY     1
-nDimS     1
+Domain    s                     # Supported types: "xy" (grid), "s" (sites)
+nDimX     1                     # Number of grid cells along x dimension (used if "xy")
+nDimY     1                     # Number of grid cells along y dimension (used if "xy")
+nDimS     1                     # Number of sites (used if "s")
 
 StartYear 1980                  # First (Gregorian) calendar year of simulation
 EndYear   2010                  # Last (Gregorian) calendar year of simulation
