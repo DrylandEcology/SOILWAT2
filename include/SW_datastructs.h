@@ -1032,7 +1032,6 @@ typedef struct {
 	SW_FILE_STATUS FileStatus;
 	SW_MARKOV Markov;
 	SW_OUTPUT Output[SW_OUTNKEYS];
-	SW_DOMAIN Domain;
 
 	SW_ATMD AtmDemand;
 	SW_GEN_OUT GenOutput;

@@ -54,6 +54,7 @@
 int main(int argc, char **argv) {
 	/* =================================================== */
 	SW_ALL sw;
+	SW_DOMAIN SW_Domain;
 	SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
 	LOG_INFO LogInfo;
 	PATH_INFO PathInfo;
