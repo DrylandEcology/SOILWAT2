@@ -34,6 +34,7 @@ void SW_DOM_read(SW_MODEL* SW_Model, char *InFiles[],
     MyFileName = InFiles[eDomain];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
+    // Set SW_DOMAIN
     while(GetALine(f, inbuf)) {
         sscanf(inbuf, "%s %s", key, value);
 
@@ -116,6 +117,12 @@ void SW_DOM_read(SW_MODEL* SW_Model, char *InFiles[],
 	}
 
 	SW_Model->daymid = (SW_Model->isnorth) ? DAYMID_NORTH : DAYMID_SOUTH;
+
+    // Copy information to SW_MODEL
+    SW_Model->startyr = SW_Domain->startyr; // Copy start year
+    SW_Model->endyr = SW_Domain->endyr; // Copy end year
+    SW_Model->startstart = SW_Domain->startstart; // Copy start doy
+    SW_Model->endend = SW_Domain->endend; // Copy end doy
 }
 
 /**

@@ -107,6 +107,13 @@ typedef struct {
 	 * doy and year are base1. */
 	/* simyear = year + addtl_yr */
 
+	// Create a copy of SW_DOMAIN's time information to instead
+	// of passing around SW_DOMAIN
+	TimeInt startyr,       /* beginning year for a set of simulation run */
+			endyr,         /* ending year for a set of simulation run */
+			startstart,    /* startday in start year */
+			endend;        /* end day in end year */
+
 	RealD longitude,	/* longitude of the site (radians)        */
 		  latitude,		/* latitude of the site (radians)        */
 		  elevation,		/* altitude a.s.l (m) of the site */

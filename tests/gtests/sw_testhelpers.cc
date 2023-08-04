@@ -137,6 +137,7 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
 // members of `SW_ALL` point to
 void setup_AllTest_for_tests(
   SW_ALL *SW_All,
+  SW_DOMAIN *SW_Domain,
   PATH_INFO *PathInfo,
   LOG_INFO *LogInfo,
   SW_OUTPUT_POINTERS *SW_OutputPtrs
@@ -149,7 +150,7 @@ void setup_AllTest_for_tests(
       PathInfo->InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, LogInfo);
 
       SW_CTL_setup_model(SW_All, SW_OutputPtrs, PathInfo, LogInfo);
-      SW_CTL_read_inputs_from_disk(SW_All, PathInfo, LogInfo);
+      SW_CTL_read_inputs_from_disk(SW_All, SW_Domain, PathInfo, LogInfo);
 
       /* Notes on messages during tests
         - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file

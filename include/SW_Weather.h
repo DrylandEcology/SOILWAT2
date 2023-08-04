@@ -44,7 +44,7 @@ extern "C" {
 void SW_WTH_setup(SW_WEATHER* SW_Weather, char *InFiles[],
                   char *_weather_prefix, LOG_INFO* LogInfo);
 void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
-          SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
+          LOG_INFO* LogInfo);
 void set_dailyInputIndices(
   Bool dailyInputFlags[MAX_INPUT_COLUMNS],
   unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],

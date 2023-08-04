@@ -55,7 +55,7 @@ namespace {
 
   // Test reading yearly CO2 data from disk file
   TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
-    TimeInt year, simendyr = SW_All.Domain.endyr + SW_All.Model.addtl_yr;
+    TimeInt year, simendyr = SW_All.Model.endyr + SW_All.Model.addtl_yr;
     double sum_CO2;
 
     // Test if CO2-effects are turned off -> no CO2 concentration data are read from file
@@ -63,8 +63,7 @@ namespace {
     SW_All.Carbon.use_wue_mult = 0;
     SW_All.Carbon.use_bio_mult = 0;
 
-    SW_CBN_read(&SW_All.Carbon, &SW_All.Model, PathInfo.InFiles,
-                &SW_All.Domain, &LogInfo);
+    SW_CBN_read(&SW_All.Carbon, &SW_All.Model, PathInfo.InFiles, &LogInfo);
 
     sum_CO2 = 0.;
     for (year = 0; year < MAX_NYEAR; year++) {
@@ -79,10 +78,9 @@ namespace {
     SW_All.Carbon.use_bio_mult = 1;
     SW_All.Model.addtl_yr = 0;
 
-    SW_CBN_read(&SW_All.Carbon, &SW_All.Model, PathInfo.InFiles,
-                &SW_All.Domain, &LogInfo);
+    SW_CBN_read(&SW_All.Carbon, &SW_All.Model, PathInfo.InFiles, &LogInfo);
 
-    for (year = SW_All.Domain.startyr + SW_All.Model.addtl_yr; year <= simendyr; year++) {
+    for (year = SW_All.Model.startyr + SW_All.Model.addtl_yr; year <= simendyr; year++) {
       EXPECT_GT(SW_All.Carbon.ppm[year], 0.);
     }
   }
@@ -90,7 +88,7 @@ namespace {
 
   // Test the calculation of CO2-effect multipliers
   TEST_F(CarbonFixtureTest, CarbonCO2multipliers) {
-    TimeInt year, simendyr = SW_All.Domain.endyr + SW_All.Model.addtl_yr;
+    TimeInt year, simendyr = SW_All.Model.endyr + SW_All.Model.addtl_yr;
     int k;
 
     SW_CBN_construct(&SW_All.Carbon);
@@ -99,12 +97,11 @@ namespace {
     SW_All.Carbon.use_bio_mult = 1;
     SW_All.Model.addtl_yr = 0;
 
-    SW_CBN_read(&SW_All.Carbon, &SW_All.Model, PathInfo.InFiles,
-                &SW_All.Domain, &LogInfo);
+    SW_CBN_read(&SW_All.Carbon, &SW_All.Model, PathInfo.InFiles, &LogInfo);
     SW_CBN_init_run(SW_All.VegProd.veg, &SW_All.Model, &SW_All.Carbon,
-                    SW_All.Domain.startyr, SW_All.Domain.endyr, &LogInfo);
+                    SW_All.Model.startyr, SW_All.Model.endyr, &LogInfo);
 
-    for (year = SW_All.Domain.startyr + SW_All.Model.addtl_yr; year <= simendyr; year++) {
+    for (year = SW_All.Model.startyr + SW_All.Model.addtl_yr; year <= simendyr; year++) {
       ForEachVegType(k) {
         EXPECT_GT(SW_All.VegProd.veg[k].co2_multipliers[BIO_INDEX][year], 0.);
         EXPECT_GT(SW_All.VegProd.veg[k].co2_multipliers[WUE_INDEX][year], 0.);

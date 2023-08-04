@@ -33,6 +33,7 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site);
 
 void setup_AllTest_for_tests(
   SW_ALL *SW_All,
+  SW_DOMAIN *SW_Domain,
   PATH_INFO *PathInfo,
   LOG_INFO *LogInfo,
   SW_OUTPUT_POINTERS *SW_OutputPtrs
@@ -51,12 +52,14 @@ class AllTestFixture : public ::testing::Test {
   protected:
 
     SW_ALL SW_All;
+    SW_DOMAIN SW_Domain;
     PATH_INFO PathInfo;
     LOG_INFO LogInfo;
     SW_OUTPUT_POINTERS SW_OutputPtrs;
 
     void SetUp() override {
-      setup_AllTest_for_tests(&SW_All, &PathInfo, &LogInfo, &SW_OutputPtrs);
+      setup_AllTest_for_tests(&SW_All, &SW_Domain, &PathInfo,
+                              &LogInfo, &SW_OutputPtrs);
     }
 
     void TearDown() override {
@@ -105,12 +108,14 @@ class AllTestStruct {
   public:
 
     SW_ALL SW_All;
+    SW_DOMAIN SW_Domain;
     PATH_INFO PathInfo;
     LOG_INFO LogInfo;
     SW_OUTPUT_POINTERS SW_OutputPtrs;
 
     AllTestStruct() {
-      setup_AllTest_for_tests(&SW_All, &PathInfo, &LogInfo, &SW_OutputPtrs);
+      setup_AllTest_for_tests(&SW_All, &SW_Domain, &PathInfo,
+                              &LogInfo, &SW_OutputPtrs);
     }
 
     ~AllTestStruct() {

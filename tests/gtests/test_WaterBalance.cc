@@ -115,8 +115,7 @@ namespace {
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
     // Prepare weather data
-    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                &SW_All.Domain, &LogInfo);
+    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
@@ -147,8 +146,7 @@ namespace {
                  PathInfo.InFiles, &LogInfo);
 
     // Prepare weather data
-    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                &SW_All.Domain, &LogInfo);
+    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
@@ -249,7 +247,7 @@ namespace {
 
     // Re-calculate vegetation
     SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather, &SW_All.Model,
-                    SW_All.Domain.startyr, SW_All.Domain.endyr, &LogInfo);
+                    SW_All.Model.startyr, SW_All.Model.endyr, &LogInfo);
 
     // Run the simulation
      SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
@@ -332,8 +330,8 @@ namespace {
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_daymet/weath");
 
     // Adjust simulation years: we have 2 years of Daymet inputs
-    SW_All.Domain.startyr = 1980;
-    SW_All.Domain.endyr = 1981;
+    SW_All.Model.startyr = 1980;
+    SW_All.Model.endyr = 1981;
 
     // Describe daily Daymet inputs
     SW_All.Weather.use_cloudCoverMonthly = swFALSE;
@@ -348,8 +346,7 @@ namespace {
     SW_All.Weather.desc_rsds = 2; // Daymet rsds is flux density over daylight period
 
     // Prepare weather data
-    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                &SW_All.Domain, &LogInfo);
+    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
@@ -372,8 +369,8 @@ namespace {
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_gridmet/weath");
 
     // Adjust simulation years: we have 2 years of gridMET inputs
-    SW_All.Domain.startyr = 1980;
-    SW_All.Domain.endyr = 1981;
+    SW_All.Model.startyr = 1980;
+    SW_All.Model.endyr = 1981;
 
     // Describe daily gridMET inputs
     SW_All.Weather.use_cloudCoverMonthly = swFALSE;
@@ -392,8 +389,7 @@ namespace {
     SW_All.Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
 
     // Prepare weather data
-    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                &SW_All.Domain, &LogInfo);
+    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
@@ -416,8 +412,8 @@ namespace {
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_maca/weath");
 
     // Adjust simulation years: we have 2 years of MACA inputs
-    SW_All.Domain.startyr = 1980;
-    SW_All.Domain.endyr = 1981;
+    SW_All.Model.startyr = 1980;
+    SW_All.Model.endyr = 1981;
 
     // Describe daily MACA inputs
     SW_All.Weather.use_cloudCoverMonthly = swFALSE;
@@ -438,8 +434,7 @@ namespace {
     SW_All.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Prepare weather data
-    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                &SW_All.Domain, &LogInfo);
+    SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
     SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 

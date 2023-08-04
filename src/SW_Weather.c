@@ -1708,12 +1708,10 @@ void check_and_update_dailyInputFlags(
 	  of the simulated site
   @param[in] SW_Model Struct of type SW_MODEL holding basic time information
 		about the simulation
-  @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
-    temporal/spacial information for a set of simulation runs
   @param[in] LogInfo Holds information dealing with logfile output
 */
 void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
-          SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
+          LOG_INFO* LogInfo) {
 
     // Deallocate (previous, if any) `allHist`
     // (using value of `SW_Weather.n_years` previously used to allocate)
@@ -1721,8 +1719,8 @@ void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
     deallocateAllWeather(SW_Weather);
 
     // Update number of years and first calendar year represented
-    SW_Weather->n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
-    SW_Weather->startYear = SW_Domain->startyr;
+    SW_Weather->n_years = SW_Model->endyr - SW_Model->startyr + 1;
+    SW_Weather->startYear = SW_Model->startyr;
 
     // Allocate new `allHist` (based on current `SW_Weather.n_years`)
     allocateAllWeather(SW_Weather);

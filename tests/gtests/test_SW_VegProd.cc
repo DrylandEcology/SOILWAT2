@@ -133,8 +133,8 @@ namespace {
       &SW_VegProd,
       &SW_All.Weather,
       &SW_All.Model,
-      SW_All.Domain.startyr,
-      SW_All.Domain.endyr,
+      SW_All.Model.startyr,
+      SW_All.Model.endyr,
       &LogInfo
     );
 
@@ -270,15 +270,14 @@ namespace {
         double RelAbundanceL1Expected[5];
         double grassOutputExpected[3];
 
-        SW_All.Domain.startyr = 1980;
-        SW_All.Domain.endyr = 2010;
+        SW_All.Model.startyr = 1980;
+        SW_All.Model.endyr = 2010;
 
         SW_All.VegProd.veg_method = 1;
         SW_All.Model.latitude = 90.0;
 
         // Reset "SW_All.Weather.allHist"
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                    &SW_All.Domain, &LogInfo);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 		    finalizeAllWeather(&SW_All.Markov, &SW_All.Weather,
             SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
@@ -534,7 +533,7 @@ namespace {
 
 
         estimateVegetationFromClimate(&SW_All.VegProd, SW_All.Weather.allHist,
-          &SW_All.Model, SW_All.Domain.startyr, SW_All.Domain.endyr, &LogInfo);
+          &SW_All.Model, SW_All.Model.startyr, SW_All.Model.endyr, &LogInfo);
 
         // Loop through RelAbundanceL1 and test results
         for(index = 0; index < 4; index++) {
@@ -741,8 +740,7 @@ namespace {
 
 
         // Reset "SW_All.Weather.allHist"
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                    &SW_All.Domain, &LogInfo);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 		    finalizeAllWeather(&SW_All.Markov, &SW_All.Weather,
             SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
@@ -1215,8 +1213,8 @@ namespace {
             AllTestStruct sw = AllTestStruct();
 
             // Reset "SW_All.Weather.allHist"
-            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model,
-                        &sw.SW_All.Domain, &sw.LogInfo);
+            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky,
+                        &sw.SW_All.Model, &sw.LogInfo);
             finalizeAllWeather(&sw.SW_All.Markov, &sw.SW_All.Weather,
                 sw.SW_All.Model.cum_monthdays, sw.SW_All.Model.days_in_month, &sw.LogInfo);
 
@@ -1300,8 +1298,8 @@ namespace {
             AllTestStruct sw = AllTestStruct();
 
             // Reset "SW_All.Weather.allHist"
-            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model,
-                        &sw.SW_All.Domain, &sw.LogInfo);
+            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky,
+                        &sw.SW_All.Model, &sw.LogInfo);
             finalizeAllWeather(&sw.SW_All.Markov, &sw.SW_All.Weather,
                 sw.SW_All.Model.cum_monthdays, sw.SW_All.Model.days_in_month, &sw.LogInfo);
 

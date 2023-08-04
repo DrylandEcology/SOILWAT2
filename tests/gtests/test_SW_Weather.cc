@@ -64,12 +64,11 @@ namespace {
         EXPECT_EQ(SW_All.Weather.n_years, 31);
 
         // Decrease number of years
-        SW_All.Domain.startyr = 1981;
-        SW_All.Domain.endyr = 1982;
+        SW_All.Model.startyr = 1981;
+        SW_All.Model.endyr = 1982;
 
         // Real expectation is that there is no memory leak for `allHist`
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                    &SW_All.Domain, &LogInfo);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 
         EXPECT_EQ(SW_All.Weather.n_years, 2);
     }
@@ -85,8 +84,7 @@ namespace {
                      SW_All.Weather.generateWeatherMethod,
                      PathInfo.InFiles, &LogInfo);
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                    &SW_All.Domain, &LogInfo);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
         SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
         SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
@@ -115,11 +113,10 @@ namespace {
                      SW_All.Weather.generateWeatherMethod,
                      PathInfo.InFiles, &LogInfo);
 
-        SW_All.Domain.startyr = 1981;
-        SW_All.Domain.endyr = 1982;
+        SW_All.Model.startyr = 1981;
+        SW_All.Model.endyr = 1982;
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                    &SW_All.Domain, &LogInfo);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
         SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
         SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
@@ -150,8 +147,7 @@ namespace {
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                    &SW_All.Domain, &LogInfo);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
         SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
         SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
@@ -176,11 +172,11 @@ namespace {
             // Set LOCF (temp) + 0 (PPT) method
             sw.SW_All.Weather.generateWeatherMethod = 1;
 
-            sw.SW_All.Domain.startyr = 1981;
-            sw.SW_All.Domain.endyr = 1981;
+            sw.SW_All.Model.startyr = 1981;
+            sw.SW_All.Model.endyr = 1981;
 
-            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model,
-                        &sw.SW_All.Domain, &sw.LogInfo);
+            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky,
+                        &sw.SW_All.Model, &sw.LogInfo);
 
             SW_WTH_finalize_all_weather(
               &sw.SW_All.Markov, &sw.SW_All.Weather,
@@ -723,8 +719,8 @@ namespace {
 
     TEST_F(WeatherFixtureTest, WeatherReadInitialization) {
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                    &SW_All.Domain, &LogInfo);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky,
+                    &SW_All.Model, &LogInfo);
 
         EXPECT_FLOAT_EQ(SW_All.Weather.allHist[0]->temp_max[0], -.52);
     }
@@ -743,8 +739,8 @@ namespace {
                       PathInfo.weather_prefix, &LogInfo);
 
          // Read in all weather
-         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                     &SW_All.Domain, &LogInfo);
+         SW_WTH_read(&SW_All.Weather, &SW_All.Sky,
+                     &SW_All.Model, &LogInfo);
 
          // Test the middle of January in year 1980 and see if it's not equal to SW_All.Sky.r_humidity[0],
          // SW_All.Sky.cloudcov[0], and SW_All.Sky.windspeed[0]
@@ -1079,8 +1075,7 @@ namespace {
         SW_All.Weather.use_humidityMonthly = swFALSE;
         SW_All.Weather.use_windSpeedMonthly = swFALSE;
 
-        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model,
-                    &SW_All.Domain, &LogInfo);
+        SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
 
         // Setup values/flags for `generateMissingWeather()` to deal with
         SW_All.Weather.generateWeatherMethod = 1;
@@ -1122,8 +1117,8 @@ namespace {
         EXPECT_DEATH_IF_SUPPORTED({
                 AllTestStruct sw = AllTestStruct();
 
-                SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model,
-                            &sw.SW_All.Domain, &sw.LogInfo);
+                SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky,
+                            &sw.SW_All.Model, &sw.LogInfo);
 
                 // Set SW_WEATHER's n_input_forcings to a number that is
                 // not the columns being read in
@@ -1153,8 +1148,8 @@ namespace {
         EXPECT_DEATH_IF_SUPPORTED({
                 AllTestStruct sw = AllTestStruct();
 
-                SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model,
-                            &sw.SW_All.Domain, &sw.LogInfo);
+                SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky,
+                            &sw.SW_All.Model, &sw.LogInfo);
 
                 // Make temperature unreasonable (not within [-100, 100])
                 sw.SW_All.Weather.allHist[0]->temp_max[0] = -102.;
@@ -1174,8 +1169,8 @@ namespace {
         EXPECT_DEATH_IF_SUPPORTED({
                 AllTestStruct sw = AllTestStruct();
 
-                SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model,
-                            &sw.SW_All.Domain, &sw.LogInfo);
+                SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky,
+                            &sw.SW_All.Model, &sw.LogInfo);
 
                 // Make precipitation unresonable (< 0)
                 sw.SW_All.Weather.allHist[0]->ppt[0] = -1.;
@@ -1195,8 +1190,8 @@ namespace {
         EXPECT_DEATH_IF_SUPPORTED({
                 AllTestStruct sw = AllTestStruct();
 
-                SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model,
-                            &sw.SW_All.Domain, &sw.LogInfo);
+                SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky,
+                            &sw.SW_All.Model, &sw.LogInfo);
 
                 // Make relative humidity unreasonable (< 0%)
                 sw.SW_All.Weather.allHist[0]->r_humidity_daily[0] = -.1252;

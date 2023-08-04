@@ -51,8 +51,6 @@ void SW_CBN_deconstruct(void)
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
  * @param[in] InFiles Array of program in/output files
- * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
- *  temporal/spacial information for a set of simulation runs
  * @param[in] LogInfo Holds information dealing with logfile output
  *
  * Additionally, check for the following issues:
@@ -63,7 +61,7 @@ void SW_CBN_deconstruct(void)
  *   5. Negative year.
  */
 void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
-                 SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo)
+                 LOG_INFO* LogInfo)
 {
   #ifdef SWDEBUG
   short debug = 0;
@@ -85,8 +83,8 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
   FILE *f;
   char scenario[64];
   int year,
-    simstartyr = (int) SW_Domain->startyr + SW_Model->addtl_yr,
-    simendyr = (int) SW_Domain->endyr + SW_Model->addtl_yr;
+    simstartyr = (int) SW_Model->startyr + SW_Model->addtl_yr,
+    simendyr = (int) SW_Model->endyr + SW_Model->addtl_yr;
 
   // The following variables must be initialized to show if they've been changed or not
   double ppm = 1.;
