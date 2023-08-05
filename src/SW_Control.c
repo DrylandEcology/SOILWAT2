@@ -274,7 +274,7 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 @param[in,out] sw Comprehensive struct of type SW_ALL containing
   all information in the simulation
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
-  temporal/spacial information for a set of simulation runs
+  temporal/spatial information for a set of simulation runs
 @param[in,out] PathInfo Struct holding all information about the programs path/files
 @param[in] LogInfo Holds information dealing with logfile output
 */

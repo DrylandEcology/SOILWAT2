@@ -18,7 +18,7 @@
  *      information about the simulation
  * @param[in] InFiles Array of program in/output files
  * @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
- *      temporal/spacial information for a set of simulation runs
+ *      temporal/spatial information for a set of simulation runs
  * @param[in] LogInfo Holds information dealing with logfile output
 */
 void SW_DOM_read(SW_MODEL* SW_Model, char *InFiles[],
