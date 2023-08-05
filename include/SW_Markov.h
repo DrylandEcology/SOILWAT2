@@ -25,11 +25,11 @@ extern "C" {
 void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
 					  LOG_INFO* LogInfo);
 void SW_MKV_deconstruct(SW_MARKOV* SW_Markov);
-Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
+Bool SW_MKV_read_prob(char *InFiles_csv[], SW_MARKOV* SW_Markov,
 					  LOG_INFO* LogInfo);
-Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo);
+Bool SW_MKV_read_cov(char *InFiles_csv[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo);
 void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
-	int Weather_genWeathMethod, char *InFiles[], LOG_INFO* LogInfo);
+	int Weather_genWeathMethod, char *InFiles_csv[], LOG_INFO* LogInfo);
 void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 			RealD *tmax, RealD *tmin, RealD *rain, LOG_INFO* LogInfo);
 

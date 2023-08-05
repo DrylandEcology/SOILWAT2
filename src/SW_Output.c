@@ -1957,11 +1957,11 @@ void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 
 int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 	char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA, Bool deepdrain,
-	SW_OUTPUT* SW_Output, char *InFiles[])
+	SW_OUTPUT* SW_Output, char *InFiles_csv[])
 {
 	int res = 0; // return value indicating type of message if any
 
-	char *MyFileName = InFiles[eOutput];
+	char *MyFileName = InFiles_csv[eOutput];
 	msg[0] = '\0';
 
 	// Convert strings to index numbers
@@ -2029,7 +2029,7 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 			"%s : DEEPSWC cannot produce output if deep drainage is " \
 			"not simulated (flag not set in %s).",
 			MyFileName,
-			InFiles[eSite]
+			InFiles_csv[eSite]
 		);
 		return(LOGWARN);
 	}
@@ -2072,14 +2072,14 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 
 	@param[in,out] sw Comprehensive structure holding all information
     	dealt with in SOILWAT2
-	@param[in] InFiles Array of program in/output files
+	@param[in] InFiles_csv Array of program in/output files
 	@param[in] timeSteps Keeps track of the output time periods that
 		are required for each output key
 	@param[out] used_OUTNPERIODS The number of different time steps/periods
 		 that are used/requested
 	@param[in] LogInfo Holds information dealing with logfile output
  */
-void SW_OUT_read(SW_ALL* sw, char *InFiles[],
+void SW_OUT_read(SW_ALL* sw, char *InFiles_csv[],
 	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS,
 	LOG_INFO* LogInfo)
 {
@@ -2114,7 +2114,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 			inbuf[MAX_FILENAMESIZE];
 	int first; /* first doy for output */
 
-	char *MyFileName = InFiles[eOutput];
+	char *MyFileName = InFiles_csv[eOutput];
 	f = OpenFile(MyFileName, "r", LogInfo);
 	itemno = 0;
 
@@ -2199,7 +2199,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 			&sw->VegProd.use_SWA,
 			sw->Site.deepdrain,
 			sw->Output,
-			InFiles
+			InFiles_csv
 		);
 
 		if (msg_type != 0) {

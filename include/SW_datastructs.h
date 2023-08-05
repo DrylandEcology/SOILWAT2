@@ -25,7 +25,8 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NFILES 24 // For `InFiles`
+#define SW_NFILES 24 // For `InFiles_csv`
+#define SW_NFILESNC 1 // For `InFiles_nc`
 
 /* =================================================== */
 /*                   Carbon structs                    */
@@ -742,7 +743,8 @@ typedef struct {
 } LOG_INFO;
 
 typedef struct {
-	char *InFiles[SW_NFILES];
+	char *InFiles_csv[SW_NFILES];
+	char *InFiles_nc[SW_NFILESNC];
 	char _ProjDir[FILENAME_MAX];
 	char weather_prefix[FILENAME_MAX];
 	char output_prefix[FILENAME_MAX];

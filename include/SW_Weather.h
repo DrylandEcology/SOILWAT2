@@ -41,7 +41,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_WTH_setup(SW_WEATHER* SW_Weather, char *InFiles[],
+void SW_WTH_setup(SW_WEATHER* SW_Weather, char *InFiles_csv[],
                   char *_weather_prefix, LOG_INFO* LogInfo);
 void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
           LOG_INFO* LogInfo);

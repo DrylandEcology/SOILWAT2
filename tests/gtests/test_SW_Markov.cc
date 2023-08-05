@@ -75,13 +75,13 @@ namespace {
     LOG_INFO LogInfo;
     silent_tests(&LogInfo);
 
-    char *InFiles[SW_NFILES];
+    char *InFiles_csv[SW_NFILES];
     for (short file = 0; file < SW_NFILES; file++) {
-      InFiles[file] = NULL;
+      InFiles_csv[file] = NULL;
     }
 
-    InFiles[eMarkovCov] = Str_Dup("Input/mkv_covar.in", &LogInfo);
-    InFiles[eMarkovProb] = Str_Dup("Input/mkv_prob.in", &LogInfo);
+    InFiles_csv[eMarkovCov] = Str_Dup("Input/mkv_covar.in", &LogInfo);
+    InFiles_csv[eMarkovProb] = Str_Dup("Input/mkv_prob.in", &LogInfo);
 
     int
       rng_seed,
@@ -100,7 +100,7 @@ namespace {
 
     // Initialize weather generator and read input files mkv_cover and mkv_prob
     rng_seed = seed;
-    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo);
+    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles_csv, &LogInfo);
 
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
@@ -116,7 +116,7 @@ namespace {
     //--- Expect that generated weather is different with time-varying seed ----
     // Initialize weather generator and read input files mkv_cover and mkv_prob
     rng_seed = 0;
-    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo);
+    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles_csv, &LogInfo);
 
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
@@ -137,7 +137,7 @@ namespace {
     //--- Expect that generated weather is reproducible with same seed ------
     // Initialize weather generator and read input files mkv_cover and mkv_prob
     rng_seed = seed;
-    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo);
+    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles_csv, &LogInfo);
 
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
@@ -159,7 +159,7 @@ namespace {
     delete[] tmin0;
     delete[] ppt0;
 
-    SW_F_deconstruct(InFiles);
+    SW_F_deconstruct(InFiles_csv);
   }
 
 

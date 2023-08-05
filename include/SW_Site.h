@@ -236,15 +236,15 @@ void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
 
 void SW_SIT_construct(SW_SITE* SW_Site);
 void SW_SIT_init_counts(SW_SITE* SW_Site);
-void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
+void SW_SIT_read(SW_SITE* SW_Site, char *InFiles_csv[],
 				 SW_CARBON* SW_Carbon, LOG_INFO* LogInfo);
 void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 					LOG_INFO* LogInfo);
 void _echo_inputs(SW_SITE* SW_Site, SW_MODEL* SW_Model, LOG_INFO* LogInfo);
 
 /* these used to be in Layers */
-void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo);
-void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo);
+void SW_LYR_read(SW_SITE* SW_Site, char *InFiles_csv[], LOG_INFO* LogInfo);
+void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles_csv[], LOG_INFO* LogInfo);
 void add_deepdrain_layer(SW_SITE* SW_Site);
 
 void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,

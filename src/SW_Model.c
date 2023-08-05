@@ -93,10 +93,10 @@ void SW_MDL_deconstruct(void)
 
 @param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
-@param[in] InFiles Array of program in/output files
+@param[in] InFiles_csv Array of program in/output files
 @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
+void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles_csv[], LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/*
 	 * 1/24/02 - added code for partial start and end years
@@ -115,7 +115,7 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	char *MyFileName, inbuf[MAX_FILENAMESIZE];
 	double temp;
 
-	MyFileName = InFiles[eModel];
+	MyFileName = InFiles_csv[eModel];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	/* ----- Start checking for model time parameters */

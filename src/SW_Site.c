@@ -1329,11 +1329,11 @@ void SW_SIT_construct(SW_SITE* SW_Site) {
 @brief Reads in file for input values.
 
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] InFiles Array of program in/output files
+@param[in] InFiles_csv Array of program in/output files
 @param[out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
 @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
+void SW_SIT_read(SW_SITE* SW_Site, char *InFiles_csv[],
 				 SW_CARBON* SW_Carbon, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* 5-Feb-2002 (cwb) Removed rgntop requirement in
@@ -1351,7 +1351,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
-	char *MyFileName = InFiles[eSite];
+	char *MyFileName = InFiles_csv[eSite];
 
 	f = OpenFile(MyFileName, "r", LogInfo);
 
@@ -1551,7 +1551,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 				LogInfo,
 				LOGFATAL,
 				"%s : Discontinuity/reversal in transpiration regions.\n",
-				InFiles[eSite]
+				InFiles_csv[eSite]
 			);
 		}
 	}
@@ -1562,12 +1562,12 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 /** Reads soil layers and soil properties from input file
 
 	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-	@param[in] InFiles Array of program in/output files
+	@param[in] InFiles_csv Array of program in/output files
 	@param[in] LogInfo Holds information dealing with logfile output
 
 	@note Previously, the function was static and named `_read_layers()`.
 */
-void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
+void SW_LYR_read(SW_SITE* SW_Site, char *InFiles_csv[], LOG_INFO* LogInfo) {
 	/* =================================================== */
 	/* 5-Feb-2002 (cwb) removed dmin requirement in input file */
 
@@ -1579,7 +1579,7 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
-	char *MyFileName = InFiles[eLayers];
+	char *MyFileName = InFiles_csv[eLayers];
 
 	f = OpenFile(MyFileName, "r", LogInfo);
 
@@ -1843,11 +1843,11 @@ void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
 /** Obtain soil water retention curve parameters from disk
  *
  * @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
- * @param[in] InFiles Array of program in/output files
+ * @param[in] InFiles_csv Array of program in/output files
  * @param[in] LogInfo Holds information dealing with logfile output
  *
 */
-void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
+void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles_csv[], LOG_INFO* LogInfo) {
 
 	/* Don't read values from disk if they will be estimated via a PTF */
 	if (!SW_Site->site_has_swrcp) return;
@@ -1859,7 +1859,7 @@ void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
-	char *MyFileName = InFiles[eSWRCp];
+	char *MyFileName = InFiles_csv[eSWRCp];
 
 	f = OpenFile(MyFileName, "r", LogInfo);
 

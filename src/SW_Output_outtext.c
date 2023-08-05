@@ -123,12 +123,12 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 	SW_FILE_STATUS which holds basic information about output files
 	and values
   \param[in] pd The output time step.
-  \param[in] InFiles Array of program in/output files
+  \param[in] InFiles_csv Array of program in/output files
   \param[in] LogInfo Holds information dealing with logfile output
 */
 /***********************************************************/
 static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
-							  char *InFiles[], LOG_INFO* LogInfo)
+							  char *InFiles_csv[], LOG_INFO* LogInfo)
 {
 	// PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
 	// a specific order of `SW_FileIndex` --> fix and create something that
@@ -137,12 +137,12 @@ static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
 
 	if (SW_FileStatus->make_regular[pd]) {
 		SW_FileStatus->fp_reg[pd] =
-			OpenFile(InFiles[eOutputDaily + pd], "w", LogInfo);
+			OpenFile(InFiles_csv[eOutputDaily + pd], "w", LogInfo);
 	}
 
 	if (SW_FileStatus->make_soil[pd]) {
 		SW_FileStatus->fp_soil[pd] =
-			OpenFile(InFiles[eOutputDaily_soil + pd], "w", LogInfo);
+			OpenFile(InFiles_csv[eOutputDaily_soil + pd], "w", LogInfo);
 	}
 }
 #endif
@@ -215,7 +215,7 @@ static void _create_filename_ST(char *str, char *flag, int iteration, char *file
   \param LogInfo Holds information dealing with logfile output
 */
 /***********************************************************/
-static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
+static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles_csv[],
 								SW_FILE_STATUS *FileStatus, LOG_INFO *LogInfo)
 {
 	char filename[FILENAME_MAX];
@@ -227,12 +227,12 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
 			// a specific order of `SW_FileIndex` --> fix and create something that
 			// allows subsetting such as `eOutputFile[pd]` or append time period to
 			// a basename, etc.
-			_create_filename_ST(InFiles[eOutputDaily + pd], "agg", 0, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles_csv[eOutputDaily + pd], "agg", 0, filename, FILENAME_MAX);
 			FileStatus->fp_reg_agg[pd] = OpenFile(filename, "w", LogInfo);
 		}
 
 		if (FileStatus->make_soil[pd]) {
-			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "agg", 0, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles_csv[eOutputDaily_soil + pd], "agg", 0, filename, FILENAME_MAX);
 			FileStatus->fp_soil_agg[pd] = OpenFile(filename, "w", LogInfo);
 		}
 
@@ -249,12 +249,12 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
 		}
 
 		if (FileStatus->make_regular[pd]) {
-			_create_filename_ST(InFiles[eOutputDaily + pd], "rep", iteration, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles_csv[eOutputDaily + pd], "rep", iteration, filename, FILENAME_MAX);
 			FileStatus->fp_reg[pd] = OpenFile(filename, "w", LogInfo);
 		}
 
 		if (FileStatus->make_soil[pd]) {
-			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "rep", iteration, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles_csv[eOutputDaily_soil + pd], "rep", iteration, filename, FILENAME_MAX);
 			FileStatus->fp_soil[pd] = OpenFile(filename, "w", LogInfo);
 		}
 	}
@@ -280,7 +280,7 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  * 	basic output information for all output keys
  * @param[in] n_layers Number of layers of soil within the simulation run
- * @param[in] InFiles Array of program in/output files
+ * @param[in] InFiles_csv Array of program in/output files
  * @param[in] GenOutput Holds general variables that deal with output
  * @param[in] LogInfo Holds information dealing with logfile output
  *
@@ -288,14 +288,14 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
  *  after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
 void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
-	LyrIndex n_layers, char *InFiles[], SW_GEN_OUT* GenOutput,
+	LyrIndex n_layers, char *InFiles_csv[], SW_GEN_OUT* GenOutput,
 	LOG_INFO* LogInfo) {
 
 	OutPeriod pd;
 
 	ForEachOutPeriod(pd) {
 		if (GenOutput->use_OutPeriod[pd]) {
-			_create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
+			_create_csv_files(SW_FileStatus, pd, InFiles_csv, LogInfo);
 
 			write_headers_to_csv(pd, SW_FileStatus->fp_reg[pd],
 				SW_FileStatus->fp_soil[pd], swFALSE, SW_FileStatus->make_regular,
@@ -310,13 +310,13 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 
 void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
 		SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput,
-		char *InFiles[], LyrIndex n_layers, LOG_INFO* LogInfo) {
+		char *InFiles_csv[], LyrIndex n_layers, LOG_INFO* LogInfo) {
 
 	OutPeriod p;
 
 	ForEachOutPeriod(p) {
 		if (GenOutput->use_OutPeriod[p]) {
-			_create_csv_file_ST(-1, p, InFiles, SW_FileStatus, LogInfo);
+			_create_csv_file_ST(-1, p, InFiles_csv, SW_FileStatus, LogInfo);
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg_agg[p],
 				SW_FileStatus->fp_soil_agg[p], swTRUE, SW_FileStatus->make_regular,
@@ -328,13 +328,13 @@ void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
 
 void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
 		SW_OUTPUT* SW_Output, int iteration, SW_GEN_OUT *GenOutput,
-		char *InFiles[], LyrIndex n_layers, LOG_INFO* LogInfo) {
+		char *InFiles_csv[], LyrIndex n_layers, LOG_INFO* LogInfo) {
 
 	OutPeriod p;
 
 	ForEachOutPeriod(p) {
 		if (GenOutput->use_OutPeriod[p]) {
-			_create_csv_file_ST(iteration, p, InFiles, SW_FileStatus, LogInfo);
+			_create_csv_file_ST(iteration, p, InFiles_csv, SW_FileStatus, LogInfo);
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg[p],
 				SW_FileStatus->fp_soil[p], swFALSE, SW_FileStatus->make_regular,
