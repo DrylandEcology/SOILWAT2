@@ -1,5 +1,4 @@
 #---- Site location and topography
-N               # Hemisphere (N, S)
 
 -105.58	# longitude (degrees; W < 0; E > 0)
 				# (currently not used by simulation, but useful for site documentation)

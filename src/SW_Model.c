@@ -114,7 +114,6 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	int lineno;
 	char *MyFileName, inbuf[MAX_FILENAMESIZE];
 	double temp;
-	Bool foundHem = swFALSE;
 
 	MyFileName = InFiles[eModel];
 	f = OpenFile(MyFileName, "r", LogInfo);
@@ -127,26 +126,25 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	lineno = 0;
 	while (GetALine(f, inbuf)) {
 		switch(lineno) {
-			case 0: // Hemisphere
-				SW_Model->isnorth =  (Bool) (toupper((int) *inbuf) == 'N');
-				foundHem = swTRUE;
-				break;
-			case 1: // Longitude
+			case 0: // Longitude
 				// longitude is currently not used by the code, but may be used in the future
 				// it is present in the `siteparam.in` input file to completely document
 				// site location
 				SW_Model->longitude = atof(inbuf) * deg_to_rad;
 				break;
-			case 2: // Latitude
+			case 1: // Latitude
 				SW_Model->latitude = atof(inbuf) * deg_to_rad;
+
+				// Calculate hemisphere based on latitude
+				SW_Model->isnorth = (GT(SW_Model->latitude, 0.)) ? swTRUE : swFALSE;
 				break;
-			case 3: // Elevation
+			case 2: // Elevation
 				SW_Model->elevation = atof(inbuf);
 				break;
-			case 4: // Slope
+			case 3: // Slope
 				SW_Model->slope = atof(inbuf) * deg_to_rad;
 				break;
-			case 5: // Aspect
+			case 4: // Aspect
 				temp = atof(inbuf);
 				SW_Model->aspect = missing(temp) ? temp : temp * deg_to_rad;
 				break;
@@ -156,11 +154,6 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 				break;
 		}
 		lineno++;
-	}
-
-	if(!foundHem) {
-		LogError(LogInfo, LOGWARN, "\tHemisphere - using \"N\"\n");
-		SW_Model->isnorth = swTRUE;
 	}
 
 	CloseFile(&f, LogInfo);
