@@ -94,7 +94,6 @@ typedef struct {
 
 typedef struct {
 	TimeInt /* controlling dates for model run */
-	daymid, /* mid year depends on hemisphere */
 	/* current year dates */
 	firstdoy, /* start day for this year */
 	lastdoy, /* 366 if leapyear or endend if endyr */

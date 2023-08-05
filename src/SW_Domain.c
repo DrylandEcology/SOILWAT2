@@ -116,8 +116,6 @@ void SW_DOM_read(SW_MODEL* SW_Model, char *InFiles[],
                 "Domain.in: Missing End Day - using \"%d\"\n", SW_Domain->endend);
 	}
 
-	SW_Model->daymid = (SW_Model->isnorth) ? DAYMID_NORTH : DAYMID_SOUTH;
-
     // Copy information to SW_MODEL
     SW_Model->startyr = SW_Domain->startyr; // Copy start year
     SW_Model->endyr = SW_Domain->endyr; // Copy end year
