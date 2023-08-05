@@ -14,15 +14,12 @@
 /**
  * @brief Read `domain.in` and report any problems encountered when doing so
  *
- * @param[in,out] SW_Model Struct of type SW_MODEL holding basic time
- *      information about the simulation
  * @param[in] InFiles Array of program in/output files
  * @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
  *      temporal/spatial information for a set of simulation runs
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_DOM_read(SW_MODEL* SW_Model, char *InFiles[],
-    SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
+void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     FILE *f;
     int y, keyID;
@@ -66,7 +63,6 @@ void SW_DOM_read(SW_MODEL* SW_Model, char *InFiles[],
                              "%s: Negative start year (%d)", MyFileName, y);
                 }
                 SW_Domain->startyr = yearto4digit((TimeInt) y);
-                SW_Model->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
                 break;
             case 5: // End year
                 y = atoi(value);
@@ -106,21 +102,29 @@ void SW_DOM_read(SW_MODEL* SW_Model, char *InFiles[],
         SW_Domain->startstart = 1;
     }
 
-	SW_Domain->startstart += ((SW_Model->isnorth) ? DAYFIRST_NORTH : DAYFIRST_SOUTH) - 1;
-
     // Check if end day of year was not found
 	if (!fenddy) {
-		SW_Domain->endend = (SW_Model->isnorth) ?
-                        Time_get_lastdoy_y(SW_Domain->endyr) : DAYLAST_SOUTH;
+		SW_Domain->endend = Time_get_lastdoy_y(SW_Domain->endyr);
         LogError(LogInfo, LOGWARN,
-                "Domain.in: Missing End Day - using \"%d\"\n", SW_Domain->endend);
+                "Domain.in: Missing End Day - using %d\n", SW_Domain->endend);
 	}
+}
 
-    // Copy information to SW_MODEL
+/**
+ * @brief Copy temporal domain information from SW_DOMAIN to SW_MODEL
+ *
+ * @param[in,out] SW_Model Struct of type SW_MODEL holding basic time
+ *      information about the simulation
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *      temporal/spatial information for a set of simulation runs
+*/
+void SW_DOM_setModelTime(SW_MODEL *SW_Model, SW_DOMAIN *SW_Domain) {
     SW_Model->startyr = SW_Domain->startyr; // Copy start year
     SW_Model->endyr = SW_Domain->endyr; // Copy end year
     SW_Model->startstart = SW_Domain->startstart; // Copy start doy
     SW_Model->endend = SW_Domain->endend; // Copy end doy
+
+    SW_Model->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
 }
 
 /**

@@ -298,9 +298,14 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, SW_DOMAIN* SW_Domain,
   if (debug) swprintf(" > 'model'");
   #endif
 
-  SW_DOM_read(&sw->Model, PathInfo->InFiles, SW_Domain, LogInfo);
+  SW_DOM_read(PathInfo->InFiles, SW_Domain, LogInfo);
   #ifdef SWDEBUG
   if(debug) swprintf(" 'domain'");
+  #endif
+
+  SW_DOM_setModelTime(&sw->Model, SW_Domain);
+  #ifdef SWDEBUG
+  if(debug) swprintf(" 'domain to model'");
   #endif
 
   SW_WTH_setup(&sw->Weather, PathInfo->InFiles,
