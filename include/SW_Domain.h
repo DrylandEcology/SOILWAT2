@@ -1,6 +1,10 @@
 #ifndef SWDOMAIN_H
 #define SWDOMAIN_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "include/SW_datastructs.h"
 
 /* =================================================== */
@@ -13,5 +17,9 @@
 void SW_DOM_read(SW_MODEL* SW_Model, char *InFiles[],
     SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 int domain_inkey_to_id(char *key);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // SWDOMAIN_H
