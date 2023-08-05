@@ -31,6 +31,8 @@ typedef enum {
 	eNoFile = -1,
 	/* List of all input files */
 	eFirst = 0,
+	/* Domain information */
+	eDomain,
 	/* Description of a model run */
 	eModel, eLog,
 	/* Description of simulated site */
@@ -43,8 +45,6 @@ typedef enum {
 	eCarbon,
 	/* (optional) soil moisture measurements */
 	eSoilwat,
-	/* Domain information */
-	eDomain,
 	/* Simulation outputs */
 	eOutput, eOutputDaily, eOutputWeekly, eOutputMonthly, eOutputYearly,
 	eOutputDaily_soil, eOutputWeekly_soil, eOutputMonthly_soil, eOutputYearly_soil,

@@ -103,7 +103,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
     #endif
 
 		switch (lineno) {
-		case 6:
+		case 7:
 			strcpy(PathInfo->weather_prefix, inbuf);
 			break;
 		case 15:
