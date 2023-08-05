@@ -103,53 +103,53 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
     #endif
 
 		switch (lineno) {
-		case 7:
+		case 8:
 			strcpy(PathInfo->weather_prefix, inbuf);
 			break;
-		case 15:
+		case 16:
 			strcpy(PathInfo->output_prefix, inbuf);
 			break;
-		case 17:
+		case 18:
 			PathInfo->InFiles_csv[eOutputDaily] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputDaily], LogInfo);
 			break;
-		case 18:
+		case 19:
 			PathInfo->InFiles_csv[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputWeekly], LogInfo);
 			//printf("filename: %s \n",InFiles_csv[eOutputWeekly]);
 			break;
-		case 19:
+		case 20:
 			PathInfo->InFiles_csv[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputMonthly], LogInfo);
 			//printf("filename: %s \n",InFiles_csv[eOutputMonthly]);
 			break;
-		case 20:
+		case 21:
 			PathInfo->InFiles_csv[eOutputYearly] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputYearly], LogInfo);
 			break;
-		case 21:
+		case 22:
 			PathInfo->InFiles_csv[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputDaily_soil], LogInfo);
 			//printf("filename: %s \n",InFiles_csv[eOutputDaily]);
 			break;
-		case 22:
+		case 23:
 			PathInfo->InFiles_csv[eOutputWeekly_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputWeekly_soil], LogInfo);
 			//printf("filename: %s \n",InFiles_csv[eOutputWeekly]);
 			break;
-		case 23:
+		case 24:
 			PathInfo->InFiles_csv[eOutputMonthly_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputMonthly_soil], LogInfo);
 			//printf("filename: %s \n",InFiles_csv[eOutputMonthly]);
 			break;
-		case 24:
+		case 25:
 			PathInfo->InFiles_csv[eOutputYearly_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputYearly_soil], LogInfo);
