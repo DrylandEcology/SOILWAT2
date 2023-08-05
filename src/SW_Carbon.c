@@ -234,15 +234,13 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
  * @param[in] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
- * @param[in] startyr Beginning year for simulation
- * @param[in] endyr End year of the simulation
  * @param[in] LogInfo Holds information dealing with logfile output
  *
  */
 void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
-    SW_CARBON* SW_Carbon, int startyr, int endyr, LOG_INFO* LogInfo) {
+    SW_CARBON* SW_Carbon, LOG_INFO* LogInfo) {
   int k;
-  TimeInt year, simendyr = endyr + SW_Model->addtl_yr;
+  TimeInt year, simendyr = SW_Model->endyr + SW_Model->addtl_yr;
   double ppm;
   char errstr[MAX_ERROR];
   #ifdef SWDEBUG
@@ -255,7 +253,7 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
   }
 
   // Only iterate through the years that we know will be used
-  for (year = startyr + SW_Model->addtl_yr; year <= simendyr; year++)
+  for (year = SW_Model->startyr + SW_Model->addtl_yr; year <= simendyr; year++)
   {
     ppm = SW_Carbon->ppm[year];
 

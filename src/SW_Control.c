@@ -60,8 +60,7 @@ static void _begin_year(SW_ALL* sw, LOG_INFO* LogInfo) {
 	// SW_F_new_year() not needed
 	SW_MDL_new_year(&sw->Model); // call first to set up time-related arrays for this year
 	// SW_MKV_new_year() not needed
-	SW_SKY_new_year(&sw->Model, sw->Model.startyr, sw->Sky.snow_density,
-                  sw->Sky.snow_density_daily); // Update daily climate variables from monthly values
+	SW_SKY_new_year(&sw->Model, sw->Sky.snow_density, sw->Sky.snow_density_daily); // Update daily climate variables from monthly values
 	//SW_SIT_new_year() not needed
 	SW_VES_new_year(sw->VegEstab.count);
 	SW_VPD_new_year(&sw->VegProd, &sw->Model); // Dynamic CO2 effects on vegetation
@@ -199,8 +198,7 @@ void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
 	//   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
 	SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->Weather.temp_snow);
-	SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->Carbon,
-                  sw->Model.startyr, sw->Model.endyr, LogInfo);
+	SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->Carbon, LogInfo);
 }
 
 

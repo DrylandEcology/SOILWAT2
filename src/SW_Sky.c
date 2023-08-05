@@ -109,15 +109,14 @@ void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 
   @param[in] SW_Model Struct of type SW_MODEL holding basic time information
 		about the simulation
-  @param[in] startyr Beginning year for simulation run
   @param[in] snow_density[] Snow density (kg/m3)
   @param[out] snow_density_daily[] Interpolated daily snow density (kg/m3)
 
   Note: time must be set with SW_MDL_new_year() or Time_new_year()
   prior to this function.
 */
-void SW_SKY_new_year(SW_MODEL* SW_Model, TimeInt startyr,
-	RealD snow_density[MAX_MONTHS], RealD snow_density_daily[MAX_MONTHS]) {
+void SW_SKY_new_year(SW_MODEL* SW_Model, RealD snow_density[MAX_MONTHS],
+					 RealD snow_density_daily[MAX_MONTHS]) {
 
     Bool interpAsBase1 = swTRUE;
 	TimeInt year = SW_Model->year;
@@ -126,7 +125,7 @@ void SW_SKY_new_year(SW_MODEL* SW_Model, TimeInt startyr,
      if previous year was different from current year in leap/noleap status
   */
 
-  if (year == startyr || isleapyear(year) != isleapyear(year - 1)) {
+  if (year == SW_Model->startyr || isleapyear(year) != isleapyear(year - 1)) {
     interpolate_monthlyValues(snow_density, interpAsBase1,
 		SW_Model->cum_monthdays, SW_Model->days_in_month,snow_density_daily);
   }

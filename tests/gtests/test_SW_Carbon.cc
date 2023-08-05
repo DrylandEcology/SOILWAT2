@@ -98,8 +98,7 @@ namespace {
     SW_All.Model.addtl_yr = 0;
 
     SW_CBN_read(&SW_All.Carbon, &SW_All.Model, PathInfo.InFiles, &LogInfo);
-    SW_CBN_init_run(SW_All.VegProd.veg, &SW_All.Model, &SW_All.Carbon,
-                    SW_All.Model.startyr, SW_All.Model.endyr, &LogInfo);
+    SW_CBN_init_run(SW_All.VegProd.veg, &SW_All.Model, &SW_All.Carbon, &LogInfo);
 
     for (year = SW_All.Model.startyr + SW_All.Model.addtl_yr; year <= simendyr; year++) {
       ForEachVegType(k) {
