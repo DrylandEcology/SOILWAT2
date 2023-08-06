@@ -27,6 +27,7 @@
 #include "include/filefuncs.h"
 #include "include/myMemory.h"
 #include "include/SW_Files.h"
+#include "include/SW_netCDF.h"
 
 
 /* =================================================== */
@@ -189,12 +190,15 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 	}
 #endif
 
+	// Read in netCDF input files
+	SW_NC_read_files(PathInfo, LogInfo);
 }
 
 /**
 @brief Determines string length of file being read in combined with _ProjDir.
 
 @param[in,out] InFiles_csv Array of program in/output files
+@param[in,out] InFiles_nc  Array of program netCDF input files
 @param[in] *firstfile File to be read in.
 @param[out] _ProjDir Project directory
 @param[in] LogInfo Holds information dealing with logfile output

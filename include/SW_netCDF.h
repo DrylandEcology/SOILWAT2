@@ -5,7 +5,15 @@
 extern "C" {
 #endif
 
+#include "include/SW_datastructs.h"
 
+/* =================================================== */
+/*                  Local Definitions                  */
+/* --------------------------------------------------- */
+
+#define DOMAIN_NC 0
+
+void SW_NC_read_files(PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 
 #ifdef __cplusplus
 }
