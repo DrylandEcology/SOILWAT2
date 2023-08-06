@@ -228,7 +228,8 @@ sources_core := \
 	$(dir_src)/SW_Flow_lib.c \
 	$(dir_src)/SW_Flow.c \
 	$(dir_src)/SW_Carbon.c \
-	$(dir_src)/SW_Domain.c
+	$(dir_src)/SW_Domain.c \
+	$(dir_src)/SW_netCDF.c
 
 sources_lib = \
 	$(sw_sources) \
