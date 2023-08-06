@@ -76,8 +76,14 @@ namespace {
     silent_tests(&LogInfo);
 
     char *InFiles_csv[SW_NFILES];
+    char *InFiles_nc[SW_NFILESNC];
     for (short file = 0; file < SW_NFILES; file++) {
       InFiles_csv[file] = NULL;
+    }
+
+    // Initialize `InFiles_nc` but it is not in use
+    for(short file = 0; file < SW_NFILESNC; file++) {
+      InFiles_nc[file] = NULL;
     }
 
     InFiles_csv[eMarkovCov] = Str_Dup("Input/mkv_covar.in", &LogInfo);
@@ -159,7 +165,7 @@ namespace {
     delete[] tmin0;
     delete[] ppt0;
 
-    SW_F_deconstruct(InFiles_csv);
+    SW_F_deconstruct(InFiles_csv, InFiles_nc);
   }
 
 

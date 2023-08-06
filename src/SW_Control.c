@@ -128,8 +128,8 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 
-	SW_F_construct(PathInfo->InFiles_csv, PathInfo->InFiles_csv[eFirst],
-                 PathInfo->_ProjDir, LogInfo);
+	SW_F_construct(PathInfo->InFiles_csv, PathInfo->InFiles_nc,
+          PathInfo->InFiles_csv[eFirst], PathInfo->_ProjDir, LogInfo);
 	SW_MDL_construct(sw->Model.newperiod, sw->Model.days_in_month);
 	SW_WTH_construct(&sw->Weather, LogInfo);
 	// delay SW_MKV_construct() until we know from inputs whether we need it
@@ -159,7 +159,7 @@ void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   @param[in] PathInfo Struct holding all information about the programs path/files
 */
 void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw, PATH_INFO* PathInfo) {
-	SW_F_deconstruct(PathInfo->InFiles_csv);
+	SW_F_deconstruct(PathInfo->InFiles_csv, PathInfo->InFiles_nc);
 	SW_MDL_deconstruct();
 	SW_WTH_deconstruct(&sw->Markov, &sw->Weather); // calls SW_MKV_deconstruct() if needed
 	// SW_SKY_deconstruct() not needed

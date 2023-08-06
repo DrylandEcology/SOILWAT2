@@ -208,8 +208,9 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 	- *c Counter parameter for the firstfile.
 	- *p Parameter for length of project directory plus *c
 */
-void SW_F_construct(char *InFiles_csv[], const char *firstfile, char _ProjDir[],
-					LOG_INFO *LogInfo) {
+void SW_F_construct(char *InFiles_csv[], char *InFiles_nc[],
+		const char *firstfile, char _ProjDir[], LOG_INFO *LogInfo) {
+
 	/* =================================================== */
 	/* 10-May-02 (cwb) enhancement allows model to be run
 	 *    in one directory while getting its input from another.
@@ -220,9 +221,14 @@ void SW_F_construct(char *InFiles_csv[], const char *firstfile, char _ProjDir[],
 	char *local_firstfile = Str_Dup(firstfile, LogInfo);
 	int file;
 
-	// Initialize `InFile` pointers to all NULL aside from index eFirst
+	// Initialize `InFiles_csv` pointers to all NULL aside from index eFirst
 	for(file = 1; file < SW_NFILES; file++) {
 		InFiles_csv[file] = NULL;
+	}
+
+	// Initialize `InFiles_nc` pointers to NULL
+	for(file = 0; file < SW_NFILESNC; file++) {
+		InFiles_nc[file] = NULL;
 	}
 
 	DirName(local_firstfile, dirString);
@@ -245,15 +251,25 @@ void SW_F_construct(char *InFiles_csv[], const char *firstfile, char _ProjDir[],
 @brief Deconstructor for each of the SW_NFILES.
 
 @param[in,out] InFiles_csv Array of program in/output files
+@param[in,out] InFiles_nc Array of program netCDF input files
 */
-void SW_F_deconstruct(char *InFiles_csv[]) {
+void SW_F_deconstruct(char *InFiles_csv[], char *InFiles_nc[]) {
 	IntUS i;
 
+	// Deallocate CSV input file array
 	for (i = 0; i < SW_NFILES; i++)
 	{
 		if (!isnull(InFiles_csv[i])) {
 			Mem_Free(InFiles_csv[i]);
 			InFiles_csv[i] = NULL;
+		}
+	}
+
+	// Deallocate NC input file array
+	for(i = 0; i < SW_NFILESNC; i++) {
+		if(!isnull(InFiles_nc[i])) {
+			Mem_Free(InFiles_nc[i]);
+			InFiles_nc[i] = NULL;
 		}
 	}
 }
