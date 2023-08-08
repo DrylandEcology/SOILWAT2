@@ -76,5 +76,43 @@ void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
 
     nc_close(OPEN_NC_ID);
 }
+
+/**
+ * @brief Write an attribute (string value) to a variable
+ *
+ * @param[in] attName Attribute name to write
+ * @param[in] attValue String value to write
+ * @param[in] varID Variable id within netCDF to write to
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void write_att_str(char* attName, char* attValue, int varID, LOG_INFO* LogInfo) {
+
+    int res = nc_put_att_text(OPEN_NC_ID, varID, attName, strlen(attValue),
+                              attValue);
+
+    if(res != NC_NOERR) {
+        LogError(LogInfo, LOGWARN, "A problem occurred when writing"\
+                " attribute %s.", attName);
+    }
+}
+
+/**
+ * @brief Write an attribute (double value) to a variable
+ *
+ * @param[in] attName Attribute name to write
+ * @param[in] attValue String value to write
+ * @param[in] attSize Number of values that will be written to the attribute
+ * @param[in] varID Variable id within netCDF to write to
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void write_att_val(char* attName, double attValue[], int attSize,
+                   int varID, LOG_INFO* LogInfo) {
+
+    int res = nc_put_att_double(OPEN_NC_ID, varID, attName, NC_DOUBLE,
+                                attSize, attValue);
+
+    if(res != NC_NOERR) {
+        LogError(LogInfo, LOGWARN, "A problem occurred when writing the" \
+                 " attribute %s.", attName);
     }
 }

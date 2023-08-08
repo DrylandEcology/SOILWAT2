@@ -30,6 +30,9 @@ void SW_NC_read_files(PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 int nc_key_to_ID(char* key);
 void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
                          LOG_INFO* LogInfo);
+void write_att_str(char *attName, char *attValue, int varID, LOG_INFO* LogInfo);
+void write_att_val(char* attName, double attValue[], int attSize,
+                   int varID, LOG_INFO* LogInfo);
 
 #ifdef __cplusplus
 }
