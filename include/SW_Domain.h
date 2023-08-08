@@ -1,11 +1,11 @@
 #ifndef SWDOMAIN_H
 #define SWDOMAIN_H
 
+#include "include/SW_datastructs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "include/SW_datastructs.h"
 
 /* =================================================== */
 /*                  Local Definitions                  */
