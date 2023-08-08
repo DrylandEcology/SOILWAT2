@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <netcdf.h>
 
 #include "include/SW_netCDF.h"
 #include "include/SW_Files.h"
@@ -58,6 +59,22 @@ int nc_key_to_ID(char* key) {
     }
 
     return KEY_NOT_FOUND;
+}
+
+/**
+ * @brief Creates a new domain netCDF if one was not provided
+ *
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in] DomainName Domain netCDF name
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
+                         LOG_INFO* LogInfo) {
+
+    nc_create(DomainName, NC_NETCDF4, NULL); // Don't store file ID (OPEN_NC_ID)
+
+    nc_close(OPEN_NC_ID);
 }
     }
 }

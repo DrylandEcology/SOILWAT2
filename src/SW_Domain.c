@@ -7,6 +7,10 @@
 #include "include/SW_Files.h"
 #include "include/SW_Times.h"
 
+#ifdef SWNETCDF
+#include "include/SW_netCDF.h"
+#endif
+
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -108,6 +112,14 @@ void SW_DOM_read(PATH_INFO* PathInfo, SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         LogError(LogInfo, LOGWARN,
                 "Domain.in: Missing End Day - using %d\n", SW_Domain->endend);
 	}
+
+    #ifdef SWNETCDF
+    // Check if the provided domain netCDF does not exist and needs to be created
+    if(!FileExists(PathInfo->InFiles_nc[DOMAIN_NC])) {
+        SW_NC_create_domain(SW_Domain, PathInfo->InFiles_nc[DOMAIN_NC],
+                            LogInfo);
+    }
+    #endif
 }
 
 /**
