@@ -30,6 +30,10 @@ void SW_NC_read_files(PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 int nc_key_to_ID(char* key);
 void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
                          LOG_INFO* LogInfo);
+void create_var_x(int* xID, int xDim[], LOG_INFO* LogInfo);
+void create_var_y(int* yID, int yDim[], LOG_INFO* LogInfo);
+void create_var_domain(int* domID, int domDim[], size_t chunkSize,
+                       unsigned int chunkVals[], LOG_INFO* LogInfo);
 void create_var_crs(LOG_INFO* LogInfo);
 void fill_xy_vars(int nDimX, int nDimY, int domainID,
         int xID, int yID, int x_bndsID, int y_bndsID);

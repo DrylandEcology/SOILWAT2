@@ -80,6 +80,67 @@ void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
     nc_close(OPEN_NC_ID);
 }
 
+/**
+ * @brief Create an "x" variable with common attributes between the domains
+ *  "xy" and "site"
+ *
+ * @param[in] xID ID of the x variable within the domain netCDF
+ * @param[in] xDim Dimensions of the x variable
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void create_var_x(int* xID, int xDim[], LOG_INFO* LogInfo) {
+
+    create_variable("x", ONEDIM, xDim, NC_DOUBLE, xID, LogInfo);
+
+    write_att_str("units", "m", *xID, LogInfo);
+    write_att_str("long_name", "projection_x_coordinate", *xID, LogInfo);
+    write_att_str("standard_name", "x coordinate of projection", *xID, LogInfo);
+}
+
+/**
+ * @brief Create a "y" variable with common attributes between the domains
+ *  "xy" and "site"
+ *
+ * @param[in] yID ID of the y variable within the domain netCDF
+ * @param[in] yDim Dimensions of the y variable
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void create_var_y(int *yID, int yDim[], LOG_INFO* LogInfo) {
+
+    create_variable("y", ONEDIM, yDim, NC_DOUBLE, yID, LogInfo);
+
+    write_att_str("units", "m", *yID, LogInfo);
+    write_att_str("long_name", "projection_y_coordinate", *yID, LogInfo);
+    write_att_str("standard_name", "y coordinate of projection", *yID, LogInfo);
+}
+
+/**
+ * @brief Create a "domain" variable with common attributes between the domains
+ *  "xy" and "site"
+ *
+ * @param[in] domID ID of the y variable within the domain netCDF
+ * @param[in] domDim Dimensions of the domain variable
+ * @param[in] chunkSize How many values that will be written under the
+ *  "_ChunkSizes" attribute
+ * @param[in] chunkVals Values under the attribute "_ChunkSizes"
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void create_var_domain(int* domID, int domDim[], size_t chunkSize,
+                       unsigned int chunkVals[], LOG_INFO* LogInfo) {
+    // Longer attribute names
+    int numFillSize = 1;
+    float fillVal[] = {-3.4E38};
+
+    create_variable("domain", ONEDIM, domDim, NC_FLOAT, domID, LogInfo);
+
+    write_att_str("long_name", "Domain simulation unit identifier (suid)",
+                  *domDim, LogInfo);
+    write_att_str("grid_mapping", "crs: x y", *domDim, LogInfo);
+    nc_put_att_float(OPEN_NC_ID, *domID, "_FillValue", NC_FLOAT,
+                     numFillSize, fillVal);
+    nc_put_att_uint(OPEN_NC_ID, *domID, "_ChunkSizes", NC_UINT,
+                     chunkSize, chunkVals);
+}
 
 /**
  * @brief Create the "crs" variable in a netCDF
