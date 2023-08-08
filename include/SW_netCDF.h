@@ -31,6 +31,9 @@ int nc_key_to_ID(char* key);
 void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
                          LOG_INFO* LogInfo);
 void create_var_crs(LOG_INFO* LogInfo);
+void fill_xy_vars(int nDimX, int nDimY, int domainID,
+        int xID, int yID, int x_bndsID, int y_bndsID);
+void fill_s_vars(int nDimS, int siteID, int domainID, int xID, int yID);
 void write_global_domain_atts(LOG_INFO* LogInfo);
 void create_dimension(char* dimName, int* dimID, int size, LOG_INFO* LogInfo);
 void create_variable(char* varName, int numDims, int dims[], int varType,

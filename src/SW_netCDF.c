@@ -128,6 +128,132 @@ void create_var_crs(LOG_INFO* LogInfo) {
 
     write_att_str("crs_wkt", crs_wktVal, crsID, LogInfo);
 }
+
+/**
+ * @brief Fill variables within domain "xy" with values
+ *
+ * @param[in] nDimX Size of dimension "x"
+ * @param[in] nDimY Size of dimension "y"
+ * @param[in] domainID ID of the domain variable within the domain netCDF
+ * @param[in] xID ID of the x variable within the domain netCDF
+ * @param[in] yID ID of the y variable within the domain netCDF
+ * @param[in] x_bndsID ID of the x_bnds variable within the domain netCDF
+ * @param[in] y_bndsID ID of the y_bnds variable within the domain netCDF
+*/
+void fill_xy_vars(int nDimX, int nDimY, int domainID,
+        int xID, int yID, int x_bndsID, int y_bndsID) {
+
+    double setValsX[nDimX], setValsY[nDimY];
+    double setValsXBnds[nDimX][NUMBNDS], setValsYBnds[nDimY][NUMBNDS];
+    double Xval = 2000.0, xBndsVal = 0.0, xIncrement = 4000.0;
+    double Yval = 2503826.1, yBndsVal = 2501326.1, yIncrement = 5000.0;
+    float DomVal = 1.0, DomIncrement = 1.0, setValsDom[nDimY][nDimX];
+    int indexX, indexY, indexBnds;
+
+    // NOTE: startXYDom works for both 1D and 2D variables, it seems
+    // the second element of the array is ignored when a 1D variable
+    // is being written to
+    size_t startXYDom[] = {0, 0}, Xcount[] = {nDimX}, Ycount[] = {nDimY},
+        DomCount[2] = {nDimY, nDimX};
+    size_t xBndsCount[] = {nDimX, NUMBNDS}, yBndsCount[] = {nDimY, NUMBNDS};
+
+    // Fill "x" and "x_bnds"
+    // Because "x_bnds" is a 2D variable, use a nested loop to fill the columns
+    // "xBndsVal" is only incremented if it is not the last column
+    for(indexX = 0; indexX < nDimX; indexX++) {
+        setValsX[indexX] = Xval;
+        Xval += xIncrement;
+
+        for(indexBnds = 0; indexBnds < NUMBNDS; indexBnds++) {
+            setValsXBnds[indexX][indexBnds] = xBndsVal;
+
+            if(indexBnds == 0) {
+                xBndsVal += xIncrement;
+            }
+        }
+    }
+
+    nc_put_vara_double(OPEN_NC_ID, xID, startXYDom, Xcount, &setValsX[0]);
+    nc_put_vara_double(OPEN_NC_ID, x_bndsID, startXYDom, xBndsCount,
+                       &setValsXBnds[0][0]);
+
+    // Fill "y" and "y_bnds"
+    // Because "y_bnds" is a 2D variable, use a nested loop to fill the columns
+    // "yBndsVal" is only incremented if it is not the last column
+    for(indexY = 0; indexY < nDimY; indexY++) {
+        setValsY[indexY] = Yval;
+        Yval += yIncrement;
+
+        for(indexBnds = 0; indexBnds < NUMBNDS; indexBnds++) {
+            setValsYBnds[indexY][indexBnds] = yBndsVal;
+
+            if(indexBnds == 0) {
+                yBndsVal += yIncrement;
+            }
+        }
+    }
+
+    nc_put_vara_double(OPEN_NC_ID, yID, startXYDom, Ycount, &setValsY[0]);
+    nc_put_vara_double(OPEN_NC_ID, y_bndsID, startXYDom, yBndsCount,
+                       &setValsYBnds[0][0]);
+
+    // Fill "domain"
+    for(indexY = 0; indexY < nDimY; indexY++) {
+        for(indexX = 0; indexX < nDimX; indexX++) {
+            setValsDom[indexY][indexX] = DomVal;
+            DomVal += DomIncrement;
+        }
+    }
+
+    nc_put_vara_float(OPEN_NC_ID, domainID, startXYDom, DomCount,
+                      &setValsDom[0][0]);
+}
+
+/**
+ * @brief Fill all values within the s domain netCDF
+ *
+ * @param[in] nDimS Size of dimension "site"
+ * @param[in] siteID ID of the "site" variable within the domain netCDF
+ * @param[in] domainID ID of the domain variable within the domain netCDF
+ * @param[in] xID ID of the x variable within the domain netCDF
+ * @param[in] yID ID of the y variable within the domain netCDF
+*/
+void fill_s_vars(int nDimS, int siteID, int domainID, int xID, int yID) {
+
+    double setValsX[nDimS], setValsY[nDimS];
+    int setValsSite[nDimS];
+    size_t start[] = {0}, count[] = {nDimS};
+    double yVal = 2508826.1, yDecrement = 5000.0;
+    int xValStart = 2000.0, xValTemp = xValStart, xValIncrement = 4000.0;
+    float domVal = 1.0, domIncrement = 1.0, setValsDom[nDimS];
+    int siteVal = 1, siteIncrement = 1;
+    int valIndex;
+
+    // Fill values
+    for(valIndex = 0; valIndex < nDimS; valIndex++) {
+        setValsX[valIndex] = xValTemp;
+        setValsY[valIndex] = yVal;
+        setValsDom[valIndex] = domVal;
+        setValsSite[valIndex] = siteVal;
+
+        siteVal += siteIncrement;
+        domVal += domIncrement;
+        xValTemp += xValIncrement;
+
+        // Check if filling is half way through (base0)
+        if(valIndex == (nDimS / 2) - 1) {
+            // Reset "x" value and decrement "y" value
+            xValTemp = xValStart;
+            yVal -= yDecrement;
+        }
+    }
+
+    nc_put_vara_int(OPEN_NC_ID, siteID, start, count, &setValsSite[0]);
+    nc_put_vara_float(OPEN_NC_ID, domainID, start, count, &setValsDom[0]);
+    nc_put_vara_double(OPEN_NC_ID, xID, start, count, &setValsX[0]);
+    nc_put_vara_double(OPEN_NC_ID, yID, start, count, &setValsY[0]);
+}
+
 /**
  * @brief Fill a domain netCDF with global attributes (only when a domain
  *  netCDF is generated)
