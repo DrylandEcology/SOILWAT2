@@ -14,7 +14,7 @@ extern "C" {
 #define NUM_DOM_IN_KEYS 8 // Number of possible keys within `domain.in`
 #define KEY_NOT_FOUND -1 // A key within `domain.in` is not a valid one
 
-void SW_DOM_read(char *InFiles_csv[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
+void SW_DOM_read(PATH_INFO* PathInfo, SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 void SW_DOM_setModelTime(SW_MODEL *SW_Model, SW_DOMAIN *SW_Domain);
 int domain_inkey_to_id(char *key);
 
