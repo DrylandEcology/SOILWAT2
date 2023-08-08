@@ -1,11 +1,11 @@
 #ifndef SWNETCDF_H
 #define SWNETCDF_H
 
+#include "include/SW_datastructs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "include/SW_datastructs.h"
 
 /* =================================================== */
 /*                  Local Definitions                  */
