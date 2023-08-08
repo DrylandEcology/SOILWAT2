@@ -8,6 +8,7 @@
 #include "include/SW_Files.h"
 #include "include/myMemory.h"
 #include "include/filefuncs.h"
+#include "include/SW_Domain.h"
 
 /**
  * @brief Read input files for netCDF related actions
