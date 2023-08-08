@@ -11,7 +11,20 @@ extern "C" {
 /*                  Local Definitions                  */
 /* --------------------------------------------------- */
 
-#define DOMAIN_NC 0
+#define DOMAIN_NC 0 // Domain index
+
+// Open netCDF identifer - this should always be 65536 because
+// the program will always have at most one netCDF open
+#define OPEN_NC_ID 65536
+
+// Constants for number of dimensions
+#define ZERODIMS 0
+#define ONEDIM 1
+#define TWODIMS 2
+#define THREEDIMS 3
+
+// Constant sizes
+#define NUMBNDS 2
 
 void SW_NC_read_files(PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 int nc_key_to_ID(char* key);
