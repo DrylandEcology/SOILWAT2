@@ -75,10 +75,59 @@ void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
 
     nc_create(DomainName, NC_NETCDF4, NULL); // Don't store file ID (OPEN_NC_ID)
 
+    create_var_crs(LogInfo);
     write_global_domain_atts(LogInfo);
     nc_close(OPEN_NC_ID);
 }
 
+
+/**
+ * @brief Create the "crs" variable in a netCDF
+ *
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void create_var_crs(LOG_INFO* LogInfo) {
+    int crsID;
+    double stdParallel[] = {29.5, 45.5}, longCentralMerid[] = {-96.0},
+        latProjOrigin[] = {23.0}, false_easting[] = {0.0},
+        false_northing[] = {0.0}, longPrimeMerid[] = {0.0},
+        semiMajorAxis[] = {6378137.0}, inverse_flattening[] = {298.257222101};
+    size_t sizeOne = 1, sizeTwo = 2;
+
+    // Constant attribute strings
+    static char *crs_wktVal = "PROJCS[\"NAD83(2011) / Conus Albers\","\
+        "GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference"\
+        "_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101]],PRIMEM"\
+        "[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY"\
+        "[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION"\
+        "[\"Albers_Conic_Equal_Area\"],PARAMETER[\"latitude_of_center\",23],"\
+        "PARAMETER[\"longitude_of_center\",-96],PARAMETER[\"standard_parallel"\
+        "_1\",29.5],PARAMETER[\"standard_parallel_2\",45.5],PARAMETER[\""\
+        "false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1],"\
+        "AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\","\
+        "\"6350\"]]";
+
+    // Create "crs" and write attributes
+    create_variable("crs", ZERODIMS, NULL, NC_INT, &crsID, LogInfo);
+
+    write_att_str("grid_mapping_name", "albers_conical_equal_area",
+                  crsID, LogInfo);
+
+    write_att_val("standard_parallel", stdParallel, sizeTwo, crsID, LogInfo);
+    write_att_val("longitude_of_central_meridian", longCentralMerid, sizeOne,
+                  crsID, LogInfo);
+    write_att_val("latitude_of_projection_origin", latProjOrigin, sizeOne,
+                  crsID, LogInfo);
+    write_att_val("false_easting", false_easting, sizeOne, crsID, LogInfo);
+    write_att_val("false_northing", false_northing, sizeOne, crsID, LogInfo);
+    write_att_val("longitude_of_prime_meridian", longPrimeMerid, sizeOne,
+                  crsID, LogInfo);
+    write_att_val("semi_major_axis", semiMajorAxis, sizeOne, crsID, LogInfo);
+    write_att_val("inverse_flattening", inverse_flattening, sizeOne,
+                  crsID, LogInfo);
+
+    write_att_str("crs_wkt", crs_wktVal, crsID, LogInfo);
+}
 /**
  * @brief Fill a domain netCDF with global attributes (only when a domain
  *  netCDF is generated)
