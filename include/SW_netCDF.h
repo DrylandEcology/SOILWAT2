@@ -30,6 +30,7 @@ void SW_NC_read_files(PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 int nc_key_to_ID(char* key);
 void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
                          LOG_INFO* LogInfo);
+void write_global_domain_atts(LOG_INFO* LogInfo);
 void create_dimension(char* dimName, int* dimID, int size, LOG_INFO* LogInfo);
 void create_variable(char* varName, int numDims, int dims[], int varType,
                      int* varID, LOG_INFO* LogInfo);

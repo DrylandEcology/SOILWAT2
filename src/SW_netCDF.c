@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <netcdf.h>
+#include <time.h>
 
 #include "include/SW_netCDF.h"
 #include "include/SW_Files.h"
@@ -74,7 +75,54 @@ void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
 
     nc_create(DomainName, NC_NETCDF4, NULL); // Don't store file ID (OPEN_NC_ID)
 
+    write_global_domain_atts(LogInfo);
     nc_close(OPEN_NC_ID);
+}
+
+/**
+ * @brief Fill a domain netCDF with global attributes (only when a domain
+ *  netCDF is generated)
+ *
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void write_global_domain_atts(LOG_INFO* LogInfo) {
+
+    // Time information
+    int tFormatSize = 20, dateSize = 10, yearOffset = 1900, monOffset = 1;
+    char timeStr[tFormatSize], dateStr[dateSize];
+    time_t timeInfo = time(NULL);
+    struct tm timeStruct = *localtime(&timeInfo);
+
+    // Format date/version strings
+    sprintf(timeStr, "%d-%02d-%02d %02d:%02d:%02d",
+            timeStruct.tm_year + yearOffset, timeStruct.tm_mon + monOffset,
+            timeStruct.tm_mday, timeStruct.tm_hour, timeStruct.tm_min,
+            timeStruct.tm_sec);
+    sprintf(dateStr, "v%d%02d%02d", timeStruct.tm_year + yearOffset,
+            timeStruct.tm_mon + monOffset, timeStruct.tm_mday);
+
+    // Fill global attributes
+    write_att_str("Conventions", "CF-1.8", NC_GLOBAL, LogInfo);
+    write_att_str("created_by", "SOILWAT2 v7.1.0", NC_GLOBAL, LogInfo);
+    write_att_str("creation_date", timeStr, NC_GLOBAL, LogInfo);
+    write_att_str("title", "Domain for SOILWAT2", NC_GLOBAL, LogInfo);
+    write_att_str("version", dateStr, NC_GLOBAL, LogInfo);
+    write_att_str("source_id", "SOILWAT2", NC_GLOBAL, LogInfo);
+    write_att_str("further_info_url", "https://github.com/DrylandEcology/",
+                  NC_GLOBAL, LogInfo);
+
+    write_att_str("source_type", "LAND", NC_GLOBAL, LogInfo);
+    write_att_str("realm", "land", NC_GLOBAL, LogInfo);
+    write_att_str("product", "model-input", NC_GLOBAL, LogInfo);
+    write_att_str("grid", "native Alberts projection grid with NAD83 datum",
+                  NC_GLOBAL, LogInfo);
+
+    write_att_str("grid_label", "gn", NC_GLOBAL, LogInfo);
+    write_att_str("nominal_resolution", "1 m", NC_GLOBAL, LogInfo);
+    write_att_str("featureType", "point", NC_GLOBAL, LogInfo);
+    write_att_str("time_label", "None", NC_GLOBAL, LogInfo);
+    write_att_str("time_title", "No temporal dimensions ... fixed field",
+                  NC_GLOBAL, LogInfo);
 }
 
 /**
