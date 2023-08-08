@@ -14,6 +14,7 @@ extern "C" {
 #define DOMAIN_NC 0
 
 void SW_NC_read_files(PATH_INFO* PathInfo, LOG_INFO* LogInfo);
+int nc_key_to_ID(char* key);
 
 #ifdef __cplusplus
 }
