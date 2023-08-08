@@ -228,8 +228,7 @@ sources_core := \
 	$(dir_src)/SW_Flow_lib.c \
 	$(dir_src)/SW_Flow.c \
 	$(dir_src)/SW_Carbon.c \
-	$(dir_src)/SW_Domain.c \
-	$(dir_src)/SW_netCDF.c
+	$(dir_src)/SW_Domain.c
 
 sources_lib = \
 	$(sw_sources) \
@@ -288,7 +287,7 @@ $(lib_sw2) : $(objects_lib) $(objects_lib_pcg) | $(dir_bin)
 
 #--- SOILWAT2 stand-alone executable (utilizing SOILWAT2 library)
 $(bin_sw2) : $(lib_sw2) $(objects_bin) | $(dir_bin)
-		$(CC) $(bin_flags) $(warning_flags) $(set_std) $(objects_bin) $(sw_LDFLAGS_bin) $(target_LDLIBS) -o $(bin_sw2)
+		$(CC) $(bin_flags) $(warning_flags) $(set_std) $(objects_bin) $(sw_LDFLAGS_bin) $(target_LDLIBS) -lnetcdf -o $(bin_sw2)
 
 
 #--- Unit test library and executable
