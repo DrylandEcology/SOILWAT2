@@ -78,6 +78,45 @@ void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
 }
 
 /**
+ * @brief Create a dimension within any netCDF
+ *
+ * @param[in] dimName Name of the dimension
+ * @param[in] dimID Dimension identifier
+ * @param[in] size Dimension size
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void create_dimension(char* dimName, int* dimID, int size, LOG_INFO* LogInfo) {
+
+    int res = nc_def_dim(OPEN_NC_ID, dimName, size, dimID);
+
+    if(res != NC_NOERR) {
+        LogError(LogInfo, LOGFATAL, "A problem has occurred when creating"\
+                 " dimension %s.", dimName);
+    }
+}
+
+/**
+ * @brief Create a variable within any netCDF
+ *
+ * @param[in] varName Name of the variable
+ * @param[in] numDims Number of dimensions the new variable has
+ * @param[in] dims Dimensions of the variable
+ * @param[in] varType Type of written variable (e.g., NC_DOUBLE)
+ * @param[in] varID New variable ID
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void create_variable(char* varName, int numDims, int dims[], int varType,
+                     int* varID, LOG_INFO* LogInfo) {
+
+    int res = nc_def_var(OPEN_NC_ID, varName, varType, numDims, dims, varID);
+
+    if(res != NC_NOERR) {
+        LogError(LogInfo, LOGFATAL, "A problem has occurred when creating"
+                 " the %s variable.", varName);
+    }
+}
+
+/**
  * @brief Write an attribute (string value) to a variable
  *
  * @param[in] attName Attribute name to write
