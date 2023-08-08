@@ -74,11 +74,156 @@ int nc_key_to_ID(char* key) {
 void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
                          LOG_INFO* LogInfo) {
 
+    int equalString = 0;
+    int yDimID, xDimID, bndsDimID, siteDimID;
+
     nc_create(DomainName, NC_NETCDF4, NULL); // Don't store file ID (OPEN_NC_ID)
 
     create_var_crs(LogInfo);
     write_global_domain_atts(LogInfo);
+
+    if(strcmp(SW_Domain->DomainType, "xy") == equalString) {
+        create_dim_xy(SW_Domain->nDimX, SW_Domain->nDimY, &yDimID,
+                      &xDimID, &bndsDimID, LogInfo);
+        create_xy_vars(SW_Domain->nDimX, SW_Domain->nDimY, yDimID,
+                       xDimID, bndsDimID, LogInfo);
+    } else {
+        create_dim_s(SW_Domain->nDimS, &siteDimID, LogInfo);
+        create_s_vars(SW_Domain->nDimS, siteDimID, LogInfo);
+    }
+
     nc_close(OPEN_NC_ID);
+}
+
+/**
+ * @brief Creates dimensions "x", "y", and "bnds" for the domain type "xy"
+ *
+ * @param[in] nDimX Size of dimension "x"
+ * @param[in] nDimY Size of dimension "y"
+ * @param[in] yDimID Dimension ID of "y" within the domain
+ * @param[in] xDimID Dimension ID of "x" within the domain
+ * @param[in] bndsDimID Dimension ID of "bnds" within the domain
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void create_dim_xy(int nDimX, int nDimY, int* yDimID, int* xDimID,
+                   int* bndsDimID, LOG_INFO* LogInfo) {
+
+    // Create dimensions "x", "y", and "bnds" and don't store variable ID
+    create_dimension("x", xDimID, nDimX, LogInfo);
+    create_dimension("y", yDimID, nDimY, LogInfo);
+    create_dimension("bnds", bndsDimID, NUMBNDS, LogInfo);
+}
+
+/**
+ * @brief Creates dimension "site" for the domain type "s" (sites)
+ *
+ * @param[in] nDimS Size of dimension "site"
+ * @param[in] sDimID Dimension ID of "site" within the domain
+ *
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void create_dim_s(int nDimS, int* sDimID, LOG_INFO* LogInfo) {
+
+    // Create dimension "site" and don't store variable ID
+    create_dimension("site", sDimID, nDimS, LogInfo);
+}
+
+/**
+ * @brief Creates/files all variables related to domain "xy"
+ *  in the new domain netCDF
+ *
+ * @param[in] nDimX Size of dimension "x"
+ * @param[in] nDimY Size of dimension "y"
+ * @param[in] yDimID Dimension ID of "y" with the domain
+ * @param[in] xDimID Dimension ID of "x" with the domain
+ * @param[in] bndsDimID Dimension ID of "bnds" with the domain
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
+                    int bndsDimID, LOG_INFO* LogInfo) {
+
+    int xDim[] = {xDimID}, yDim[] = {yDimID}, xBndsDim[] = {xDimID, bndsDimID},
+        yBndsDim[] = {yDimID, bndsDimID}, domainDims[] = {yDimID, xDimID};
+    int xID, yID, xBndsID, yBndsID, domID;
+    size_t numChunkVals = 2, sizeOne = 1;
+    unsigned int xBndsAttVals[] = {nDimX, NUMBNDS},
+        yBndsAttVals[] = {nDimY, NUMBNDS}, ChunkVals[] = {nDimX, nDimY};
+    float fillVal[] = {-3.4E38};
+
+    // "domain" variable
+    create_var_domain(&domID, domainDims, numChunkVals, ChunkVals, LogInfo);
+    write_att_str("grid_mapping", "crs: xy", domID, LogInfo);
+    nc_put_att_float(OPEN_NC_ID, domID, "_FillValue", NC_FLOAT,
+                     sizeOne, fillVal);
+
+    // "x" variable
+    create_var_x(&xID, xDim, LogInfo);
+    write_att_str("axis", "X", xID, LogInfo);
+    write_att_str("bounds", "x_bnds", xID, LogInfo);
+
+    // "x_bnds variable"
+    create_variable("x_bnds", TWODIMS, xBndsDim, NC_DOUBLE,
+                    &xBndsID, LogInfo);
+    nc_put_att_uint(OPEN_NC_ID, xBndsID, "_ChunkSizes", NC_UINT,
+                    numChunkVals, xBndsAttVals);
+
+    // "y" variable
+    create_var_y(&yID, yDim, LogInfo);
+    write_att_str("axis", "Y", yID, LogInfo);
+    write_att_str("bounds", "y_bnds", yID, LogInfo);
+
+    // "y_bnds" variable
+    create_variable("y_bnds", TWODIMS, yBndsDim, NC_DOUBLE,
+                    &yBndsID, LogInfo);
+    nc_put_att_uint(OPEN_NC_ID, yBndsID, "_ChunkSizes", NC_UINT,
+                    numChunkVals, yBndsAttVals);
+
+    nc_enddef(OPEN_NC_ID); // End of defining variables, dimensions, etc.
+
+    // Fill values
+    fill_xy_vars(nDimX, nDimY, domID, xID, yID, xBndsID, yBndsID);
+}
+
+/**
+ * @brief Creates all variables related to domain "s" in the new domain netCDF
+ *
+ * @param[in] nDimS Size of dimension "s"
+ * @param[in] sDimID Dimension ID of "site" within the domain
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo) {
+    int sID, yID, xID, domainID;
+    int dims[] = {sDimID};
+    size_t NumChunkVal = 1;
+    double fillValDoub[] = {-3.4E38};
+    unsigned int chunkAttSize[] = {nDimS};
+
+    // "domain" variable
+    create_var_domain(&domainID, dims, NumChunkVal, chunkAttSize, LogInfo);
+    write_att_str("coordinates", "y x", domainID, LogInfo);
+    write_att_str("units", "1", domainID, LogInfo);
+
+    // "site" variable
+    create_variable("site", ONEDIM, dims, NC_INT, &sID, LogInfo);
+    write_att_str("units", "1", sID, LogInfo);
+    write_att_str("long_name", "SOILWAT2 simulation sites", sID, LogInfo);
+
+    // "x" variable
+    create_var_x(&xID, dims, LogInfo);
+    nc_put_att_uint(OPEN_NC_ID, xID, "_ChunkSize", NC_UINT, NumChunkVal,
+                    chunkAttSize);
+    write_att_val("_FillValue", fillValDoub, NumChunkVal, xID, LogInfo);
+
+    // "y" variable
+    create_var_y(&yID, dims, LogInfo);
+    nc_put_att_uint(OPEN_NC_ID, yID, "_ChunkSize", NC_UINT, NumChunkVal,
+                    chunkAttSize);
+    nc_put_att_double(OPEN_NC_ID, yID, "_FillValue", NC_DOUBLE, NumChunkVal,
+                    fillValDoub);
+
+    nc_enddef(OPEN_NC_ID); // End of defining variables, dimensions, etc.
+
+    fill_s_vars(nDimS, sID, domainID, xID, yID);
 }
 
 /**
