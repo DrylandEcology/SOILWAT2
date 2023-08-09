@@ -41,6 +41,8 @@ void SW_DOM_read(PATH_INFO* PathInfo, SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
         keyID = domain_inkey_to_id(key);
         switch(keyID) {
+            // Only expect domain information when SWNETCDF is defined
+            #ifdef SWNETCDF
             case 0: // Domain type
                 if(strcmp(value, "xy") != 0 && strcmp(value, "s") != 0) {
                     LogError(LogInfo, LOGFATAL, "%s: Incorrect domain type %s."\
@@ -58,6 +60,8 @@ void SW_DOM_read(PATH_INFO* PathInfo, SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
             case 3: // Number of S slots
                 SW_Domain->nDimS = atoi(value);
                 break;
+            #endif
+
             case 4: // Start year
                 y = atoi(value);
 
@@ -119,6 +123,10 @@ void SW_DOM_read(PATH_INFO* PathInfo, SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         SW_NC_create_domain(SW_Domain, PathInfo->InFiles_nc[DOMAIN_NC],
                             LogInfo);
     }
+    #else
+    // Default domain type to "s" and number of sites to one
+    strcpy(SW_Domain->DomainType, "s");
+    SW_Domain->nDimS = 1;
     #endif
 }
 

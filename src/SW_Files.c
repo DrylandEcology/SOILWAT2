@@ -27,7 +27,10 @@
 #include "include/filefuncs.h"
 #include "include/myMemory.h"
 #include "include/SW_Files.h"
+
+#ifdef SWNETCDF
 #include "include/SW_netCDF.h"
+#endif
 
 
 /* =================================================== */
@@ -190,8 +193,10 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 	}
 #endif
 
+	#ifdef SWNETCDF
 	// Read in netCDF input files
 	SW_NC_read_files(PathInfo, LogInfo);
+	#endif
 }
 
 /**
