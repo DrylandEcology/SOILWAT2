@@ -151,8 +151,8 @@ void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
     float fillVal[] = {-3.4E38};
 
     // "domain" variable
-    create_var_domain(&domID, domainDims, numChunkVals, ChunkVals, LogInfo);
-    write_att_str("grid_mapping", "crs: xy", domID, LogInfo);
+    create_var_domain(&domID, domainDims, TWODIMS, numChunkVals,
+                      ChunkVals, LogInfo);
     nc_put_att_float(OPEN_NC_ID, domID, "_FillValue", NC_FLOAT,
                      sizeOne, fillVal);
 
@@ -199,7 +199,8 @@ void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo) {
     unsigned int chunkAttSize[] = {nDimS};
 
     // "domain" variable
-    create_var_domain(&domainID, dims, NumChunkVal, chunkAttSize, LogInfo);
+    create_var_domain(&domainID, dims, ONEDIM, NumChunkVal,
+                      chunkAttSize, LogInfo);
     write_att_str("coordinates", "y x", domainID, LogInfo);
     write_att_str("units", "1", domainID, LogInfo);
 
@@ -266,18 +267,20 @@ void create_var_y(int *yID, int yDim[], LOG_INFO* LogInfo) {
  *
  * @param[in] domID ID of the y variable within the domain netCDF
  * @param[in] domDim Dimensions of the domain variable
+ * @param[in] numDims The number of dimensions "domain" will be
  * @param[in] chunkSize How many values that will be written under the
  *  "_ChunkSizes" attribute
  * @param[in] chunkVals Values under the attribute "_ChunkSizes"
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void create_var_domain(int* domID, int domDim[], size_t chunkSize,
-                       unsigned int chunkVals[], LOG_INFO* LogInfo) {
+void create_var_domain(int* domID, int domDim[], int numDims,
+        size_t chunkSize, unsigned int chunkVals[], LOG_INFO* LogInfo) {
+
     // Longer attribute names
     int numFillSize = 1;
     float fillVal[] = {-3.4E38};
 
-    create_variable("domain", ONEDIM, domDim, NC_FLOAT, domID, LogInfo);
+    create_variable("domain", numDims, domDim, NC_FLOAT, domID, LogInfo);
 
     write_att_str("long_name", "Domain simulation unit identifier (suid)",
                   *domDim, LogInfo);

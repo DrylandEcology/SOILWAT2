@@ -38,8 +38,8 @@ void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
 void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo);
 void create_var_x(int* xID, int xDim[], LOG_INFO* LogInfo);
 void create_var_y(int* yID, int yDim[], LOG_INFO* LogInfo);
-void create_var_domain(int* domID, int domDim[], size_t chunkSize,
-                       unsigned int chunkVals[], LOG_INFO* LogInfo);
+void create_var_domain(int* domID, int domDim[], int numDims,
+        size_t chunkSize, unsigned int chunkVals[], LOG_INFO* LogInfo);
 void create_var_crs(LOG_INFO* LogInfo);
 void fill_xy_vars(int nDimX, int nDimY, int domainID,
         int xID, int yID, int x_bndsID, int y_bndsID);
