@@ -155,6 +155,8 @@ void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
                       ChunkVals, LogInfo);
     nc_put_att_float(OPEN_NC_ID, domID, "_FillValue", NC_FLOAT,
                      sizeOne, fillVal);
+    write_att_str("long_name", "Domain simulation unit identifier (suid)",
+                  domID, LogInfo);
 
     // "x" variable
     create_var_x(&xID, xDim, LogInfo);
@@ -202,7 +204,8 @@ void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo) {
     create_var_domain(&domainID, dims, ONEDIM, NumChunkVal,
                       chunkAttSize, LogInfo);
     write_att_str("coordinates", "y x", domainID, LogInfo);
-    write_att_str("units", "1", domainID, LogInfo);
+    write_att_str("long_name", "Domain simulation unit identifier (suid)",
+                  domainID, LogInfo);
 
     // "site" variable
     create_variable("site", ONEDIM, dims, NC_INT, &sID, LogInfo);
@@ -282,13 +285,12 @@ void create_var_domain(int* domID, int domDim[], int numDims,
 
     create_variable("domain", numDims, domDim, NC_FLOAT, domID, LogInfo);
 
-    write_att_str("long_name", "Domain simulation unit identifier (suid)",
-                  *domDim, LogInfo);
     write_att_str("grid_mapping", "crs: x y", *domDim, LogInfo);
     nc_put_att_float(OPEN_NC_ID, *domID, "_FillValue", NC_FLOAT,
                      numFillSize, fillVal);
     nc_put_att_uint(OPEN_NC_ID, *domID, "_ChunkSizes", NC_UINT,
                      chunkSize, chunkVals);
+    write_att_str("units", "1", *domID, LogInfo);
 }
 
 /**
