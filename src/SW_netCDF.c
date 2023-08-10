@@ -196,13 +196,13 @@ void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
 void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo) {
     int sID, yID, xID, domainID;
     int dims[] = {sDimID};
-    size_t NumChunkVal = 1;
-    double fillValDoub[] = {-3.4E38};
-    unsigned int chunkAttSize[] = {nDimS};
+    size_t numChunkVals = 1;
+    double fillVal[] = {-3.4E38};
+    unsigned int ChunkVals[] = {nDimS};
 
     // "domain" variable
-    create_var_domain(&domainID, dims, ONEDIM, NumChunkVal,
-                      chunkAttSize, LogInfo);
+    create_var_domain(&domainID, dims, ONEDIM, numChunkVals,
+                      ChunkVals, LogInfo);
     write_att_str("coordinates", "y x", domainID, LogInfo);
     write_att_str("long_name", "Domain simulation unit identifier (suid)",
                   domainID, LogInfo);
@@ -214,16 +214,16 @@ void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo) {
 
     // "x" variable
     create_var_x(&xID, dims, LogInfo);
-    nc_put_att_uint(OPEN_NC_ID, xID, "_ChunkSize", NC_UINT, NumChunkVal,
-                    chunkAttSize);
-    write_att_val("_FillValue", fillValDoub, NumChunkVal, xID, LogInfo);
+    nc_put_att_uint(OPEN_NC_ID, xID, "_ChunkSize", NC_UINT, numChunkVals,
+                    ChunkVals);
+    write_att_val("_FillValue", fillVal, numChunkVals, xID, LogInfo);
 
     // "y" variable
     create_var_y(&yID, dims, LogInfo);
-    nc_put_att_uint(OPEN_NC_ID, yID, "_ChunkSize", NC_UINT, NumChunkVal,
-                    chunkAttSize);
-    nc_put_att_double(OPEN_NC_ID, yID, "_FillValue", NC_DOUBLE, NumChunkVal,
-                    fillValDoub);
+    nc_put_att_uint(OPEN_NC_ID, yID, "_ChunkSize", NC_UINT, numChunkVals,
+                    ChunkVals);
+    nc_put_att_double(OPEN_NC_ID, yID, "_FillValue", NC_DOUBLE, numChunkVals,
+                    fillVal);
 
     nc_enddef(OPEN_NC_ID); // End of defining variables, dimensions, etc.
 
