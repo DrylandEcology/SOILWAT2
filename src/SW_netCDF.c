@@ -145,7 +145,7 @@ void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
     int xDim[] = {xDimID}, yDim[] = {yDimID}, xBndsDim[] = {xDimID, bndsDimID},
         yBndsDim[] = {yDimID, bndsDimID}, domainDims[] = {yDimID, xDimID};
     int xID, yID, xBndsID, yBndsID, domID;
-    size_t numChunkVals = 2, sizeOne = 1;
+    size_t numChunkVals = 2;
     unsigned int xBndsAttVals[] = {nDimX, NUMBNDS},
         yBndsAttVals[] = {nDimY, NUMBNDS}, ChunkVals[] = {nDimX, nDimY};
     float fillVal[] = {-3.4E38};
@@ -154,7 +154,7 @@ void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
     create_var_domain(&domID, domainDims, TWODIMS, numChunkVals,
                       ChunkVals, LogInfo);
     nc_put_att_float(OPEN_NC_ID, domID, "_FillValue", NC_FLOAT,
-                     sizeOne, fillVal);
+                     SIZEONE, fillVal);
     write_att_str("long_name", "Domain simulation unit identifier (suid)",
                   domID, LogInfo);
 
@@ -304,7 +304,6 @@ void create_var_crs(LOG_INFO* LogInfo) {
         latProjOrigin[] = {23.0}, false_easting[] = {0.0},
         false_northing[] = {0.0}, longPrimeMerid[] = {0.0},
         semiMajorAxis[] = {6378137.0}, inverse_flattening[] = {298.257222101};
-    size_t sizeOne = 1, sizeTwo = 2;
 
     // Constant attribute strings
     static char *crs_wktVal = "PROJCS[\"NAD83(2011) / Conus Albers\","\
@@ -325,17 +324,17 @@ void create_var_crs(LOG_INFO* LogInfo) {
     write_att_str("grid_mapping_name", "albers_conical_equal_area",
                   crsID, LogInfo);
 
-    write_att_val("standard_parallel", stdParallel, sizeTwo, crsID, LogInfo);
-    write_att_val("longitude_of_central_meridian", longCentralMerid, sizeOne,
+    write_att_val("standard_parallel", stdParallel, SIZETWO, crsID, LogInfo);
+    write_att_val("longitude_of_central_meridian", longCentralMerid, SIZEONE,
                   crsID, LogInfo);
-    write_att_val("latitude_of_projection_origin", latProjOrigin, sizeOne,
+    write_att_val("latitude_of_projection_origin", latProjOrigin, SIZEONE,
                   crsID, LogInfo);
-    write_att_val("false_easting", false_easting, sizeOne, crsID, LogInfo);
-    write_att_val("false_northing", false_northing, sizeOne, crsID, LogInfo);
-    write_att_val("longitude_of_prime_meridian", longPrimeMerid, sizeOne,
+    write_att_val("false_easting", false_easting, SIZEONE, crsID, LogInfo);
+    write_att_val("false_northing", false_northing, SIZEONE, crsID, LogInfo);
+    write_att_val("longitude_of_prime_meridian", longPrimeMerid, SIZEONE,
                   crsID, LogInfo);
-    write_att_val("semi_major_axis", semiMajorAxis, sizeOne, crsID, LogInfo);
-    write_att_val("inverse_flattening", inverse_flattening, sizeOne,
+    write_att_val("semi_major_axis", semiMajorAxis, SIZEONE, crsID, LogInfo);
+    write_att_val("inverse_flattening", inverse_flattening, SIZEONE,
                   crsID, LogInfo);
 
     write_att_str("crs_wkt", crs_wktVal, crsID, LogInfo);

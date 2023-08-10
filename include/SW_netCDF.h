@@ -26,6 +26,9 @@ extern "C" {
 // Constant sizes
 #define NUMBNDS 2
 
+#define SIZEONE 1
+#define SIZETWO 2
+
 void SW_NC_read_files(PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 int nc_key_to_ID(char* key);
 void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
