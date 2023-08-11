@@ -12,7 +12,6 @@
 /* --------------------------------------------------- */
 
 #define NUM_DOM_IN_KEYS 8 // Number of possible keys within `domain.in`
-#define KEY_NOT_FOUND -1 // A key found in `domain.in` is invalid
 
 /* =================================================== */
 /*             Private Function Declarations           */
