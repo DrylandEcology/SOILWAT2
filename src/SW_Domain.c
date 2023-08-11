@@ -12,7 +12,19 @@
 #endif
 
 /* =================================================== */
-/*             Local Function Definitions              */
+/*                   Local Defines                     */
+/* --------------------------------------------------- */
+
+#define NUM_DOM_IN_KEYS 8 // Number of possible keys within `domain.in`
+#define KEY_NOT_FOUND -1 // A key found in `domain.in` is invalid
+
+/* =================================================== */
+/*             Private Function Declarations           */
+/* --------------------------------------------------- */
+static int domain_inkey_to_id(char *key);
+
+/* =================================================== */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /**
@@ -147,6 +159,10 @@ void SW_DOM_setModelTime(SW_MODEL *SW_Model, SW_DOMAIN *SW_Domain) {
     SW_Model->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
 }
 
+/* =================================================== */
+/*             Local Function Definitions              */
+/* --------------------------------------------------- */
+
 /**
  * @brief Helper function to `SW_DOM_read()` to determine which input
  *        key has been read in
@@ -156,7 +172,7 @@ void SW_DOM_setModelTime(SW_MODEL *SW_Model, SW_DOMAIN *SW_Domain) {
  * @return Either the ID of the key within a fixed set of possible keys,
  *         or KEY_NOT_FOUND (-1) for an unknown key
 */
-int domain_inkey_to_id(char *key) {
+static int domain_inkey_to_id(char *key) {
     static const char *possibleKeys[] =
             {"Domain", "nDimX", "nDimY", "nDimS",
             "StartYear", "EndYear", "StartDoy", "EndDoy"};
