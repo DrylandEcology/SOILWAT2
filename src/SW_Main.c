@@ -63,8 +63,8 @@ int main(int argc, char **argv) {
 	LogInfo.logged = swFALSE;
 	LogInfo.logfp = stdout;
 
-	sw_init_args(argc, argv, &QuietMode, &EchoInits, &PathInfo.InFiles[eFirst],
-				 &LogInfo);
+	sw_init_args(argc, argv, &QuietMode, &EchoInits, &sw.Model.suid,
+			&PathInfo.InFiles[eFirst], &LogInfo);
 
 	// Print version if not in quiet mode
 	if (!QuietMode) {

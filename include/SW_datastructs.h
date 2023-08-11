@@ -131,6 +131,8 @@ typedef struct {
 	Bool newperiod[SW_OUTNPERIODS];
 	Bool isnorth;
 
+	int suid; // Unqiue model run identifier (aka Simulation Unique Identifier)
+
 	#ifdef STEPWAT
 	/* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
 	IntUS runModelIterations, runModelYears;

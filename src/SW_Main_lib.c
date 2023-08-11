@@ -38,7 +38,7 @@ static void sw_print_usage(void) {
 	swprintf(
 		"Ecosystem water simulation model SOILWAT2\n"
 		"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
-		"Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h]\n"
+		"Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h] [-i 1]\n"
 		"  -d : operate (chdir) in startdir (default=.)\n"
 		"  -f : name of main input file (default=files.in)\n"
 		"       a preceeding path applies to all input files\n"
@@ -46,6 +46,7 @@ static void sw_print_usage(void) {
 		"  -q : quiet mode, don't print message to check logfile\n"
 		"  -v : print version information\n"
 		"  -h : print this help information\n"
+		"  -i : input a simulation unique identifier (suid)\n"
 	);
 }
 
@@ -77,13 +78,15 @@ void sw_print_version(void) {
 @param argv Argument V.
 @param[out] QuietMode Flag to control if the program version is displayed
 @param[out] EchoInits Flag to control if inputs are to be output to the user
+@param[out] suid Simulation Unique Identifer, aka simulation run ID within
+	a group of simulation runs
 @param[out] _firstfile First file name to be filled in the program run
 @param[in] LogInfo Holds information dealing with logfile output
 
 @sideeffect argv Updated argument V.
 */
 void sw_init_args(int argc, char **argv, Bool *QuietMode,
-	Bool *EchoInits, char **_firstfile, LOG_INFO* LogInfo) {
+	Bool *EchoInits, int* suid, char **_firstfile, LOG_INFO* LogInfo) {
 
 	/* =================================================== */
 	/* to add an option:
@@ -99,8 +102,8 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 	 *                   at end of program.
 	 */
 	char str[1024];
-	char const *opts[] = { "-d", "-f", "-e", "-q", "-v", "-h" }; /* valid options */
-	int valopts[] = { 1, 1, 0, 0, 0, 0 }; /* indicates options with values */
+	char const *opts[] = { "-d", "-f", "-e", "-q", "-v", "-h", "-i" }; /* valid options */
+	int valopts[] = { 1, 1, 0, 0, 0, 0, 1 }; /* indicates options with values */
 	/* 0=none, 1=required, -1=optional */
 	int i, /* looper through all cmdline arguments */
 	a, /* current valid argument-value position */
@@ -110,6 +113,7 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 	/* Defaults */
 	*_firstfile = Str_Dup(DFLT_FIRSTFILE, LogInfo);
 	*QuietMode = *EchoInits = swFALSE;
+	*suid = 0;
 
 	a = 1;
 	for (i = 1; i <= nopts; i++) {
@@ -175,6 +179,16 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 				case 5: /* -h */
 					sw_print_usage();
 					sw_error(-1, "");
+					break;
+
+				case 6: /* -i */
+					*suid = atoi(str) - 1; // Turn suid to base 0
+
+					// Check if the user input a value less than or equal to 0
+					if(*suid < 0) {
+						LogError(LogInfo, LOGFATAL, "Suid input must be" \
+								 " greater than 0.");
+					}
 					break;
 
 				default:
