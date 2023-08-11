@@ -104,6 +104,8 @@ extern "C" {
 
 #define MAX_SPECIESNAMELEN   4  /* for vegestab */
 
+/* Constant for a key not found when reading in a key-value style input file */
+#define KEY_NOT_FOUND -1
 
 /* convenience indices to arrays in the model */
 #define TWO_DAYS   2
