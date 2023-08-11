@@ -154,7 +154,7 @@ static int nc_key_to_ID(char* key) {
 static void create_dim_xy(int nDimX, int nDimY, int* yDimID, int* xDimID,
                    int* bndsDimID, LOG_INFO* LogInfo) {
 
-    // Create dimensions "x", "y", and "bnds" and don't store variable ID
+    // Create dimensions "x", "y", and "bnds"
     create_dimension("x", xDimID, nDimX, LogInfo);
     create_dimension("y", yDimID, nDimY, LogInfo);
     create_dimension("bnds", bndsDimID, NUMBNDS, LogInfo);
@@ -170,7 +170,7 @@ static void create_dim_xy(int nDimX, int nDimY, int* yDimID, int* xDimID,
 */
 static void create_dim_s(int nDimS, int* sDimID, LOG_INFO* LogInfo) {
 
-    // Create dimension "site" and don't store variable ID
+    // Create dimension "site"
     create_dimension("site", sDimID, nDimS, LogInfo);
 }
 
@@ -193,7 +193,7 @@ static void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
     int xID, yID, xBndsID, yBndsID, domID;
     size_t numChunkVals = 2, numFillSize = 1;
     unsigned int xBndsAttVals[] = {nDimX, NUMBNDS},
-        yBndsAttVals[] = {nDimY, NUMBNDS}, ChunkVals[] = {nDimX, nDimY};
+        yBndsAttVals[] = {nDimY, NUMBNDS}, ChunkVals[] = {nDimY, nDimX};
     float fillVal[] = {-3.4E38};
 
     // "domain" variable
@@ -299,8 +299,8 @@ static void create_var_x(int* xID, int xDim[], LOG_INFO* LogInfo) {
     create_variable("x", ONEDIM, xDim, NC_DOUBLE, xID, LogInfo);
 
     write_att_str("units", "m", *xID, LogInfo);
-    write_att_str("long_name", "projection_x_coordinate", *xID, LogInfo);
-    write_att_str("standard_name", "x coordinate of projection", *xID, LogInfo);
+    write_att_str("long_name", "x coordinate of projection", *xID, LogInfo);
+    write_att_str("standard_name", "projection_x_coordinate", *xID, LogInfo);
 }
 
 /**
