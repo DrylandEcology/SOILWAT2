@@ -22,8 +22,6 @@ static void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
 static void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo);
 static void create_var_x(int* xID, int xDim[], LOG_INFO* LogInfo);
 static void create_var_y(int* yID, int yDim[], LOG_INFO* LogInfo);
-static void create_var_domain(int* domID, int domDim[], int numDims,
-        size_t chunkSize, unsigned int chunkVals[], LOG_INFO* LogInfo);
 static void create_var_crs(LOG_INFO* LogInfo);
 static void fill_xy_vars(int nDimX, int nDimY, int domainID,
                          int xID, int yID, int x_bndsID, int y_bndsID);
@@ -193,18 +191,22 @@ static void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
     int xDim[] = {xDimID}, yDim[] = {yDimID}, xBndsDim[] = {xDimID, bndsDimID},
         yBndsDim[] = {yDimID, bndsDimID}, domainDims[] = {yDimID, xDimID};
     int xID, yID, xBndsID, yBndsID, domID;
-    size_t numChunkVals = 2;
+    size_t numChunkVals = 2, numFillSize = 1;
     unsigned int xBndsAttVals[] = {nDimX, NUMBNDS},
         yBndsAttVals[] = {nDimY, NUMBNDS}, ChunkVals[] = {nDimX, nDimY};
     float fillVal[] = {-3.4E38};
 
     // "domain" variable
-    create_var_domain(&domID, domainDims, TWODIMS, numChunkVals,
-                      ChunkVals, LogInfo);
-    nc_put_att_float(OPEN_NC_ID, domID, "_FillValue", NC_FLOAT,
-                     SIZEONE, fillVal);
+    create_variable("domain", TWODIMS, domainDims, NC_FLOAT, &domID, LogInfo);
+
     write_att_str("long_name", "Domain simulation unit identifier (suid)",
                   domID, LogInfo);
+    write_att_str("grid_mapping", "crs: x y", domID, LogInfo);
+    write_att_str("units", "1", domID, LogInfo);
+    nc_put_att_float(OPEN_NC_ID, domID, "_FillValue", NC_FLOAT,
+                     numFillSize, fillVal);
+    nc_put_att_uint(OPEN_NC_ID, domID, "_ChunkSizes", NC_UINT,
+                     numChunkVals, ChunkVals);
 
     // "x" variable
     create_var_x(&xID, xDim, LogInfo);
@@ -244,16 +246,23 @@ static void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
 static void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo) {
     int sID, yID, xID, domainID;
     int dims[] = {sDimID};
-    size_t numChunkVals = 1;
-    double fillVal[] = {-3.4E38};
+    size_t numChunkVals = 1, numFillSize = 1;
+    float fillValFloat[] = {-3.4E38};
+    double fillValDouble[] = {-3.4000000000000003E38};
     unsigned int ChunkVals[] = {nDimS};
 
     // "domain" variable
-    create_var_domain(&domainID, dims, ONEDIM, numChunkVals,
-                      ChunkVals, LogInfo);
-    write_att_str("coordinates", "y x", domainID, LogInfo);
+    create_variable("domain", ONEDIM, dims, NC_FLOAT, &domainID, LogInfo);
+
     write_att_str("long_name", "Domain simulation unit identifier (suid)",
                   domainID, LogInfo);
+    write_att_str("grid_mapping", "crs: x y", domainID, LogInfo);
+    write_att_str("coordinates", "y x", domainID, LogInfo);
+    nc_put_att_float(OPEN_NC_ID, domainID, "_FillValue", NC_FLOAT,
+                     numFillSize, fillValFloat);
+    write_att_str("units", "1", domainID, LogInfo);
+    nc_put_att_uint(OPEN_NC_ID, domainID, "_ChunkSizes", NC_UINT,
+                     numChunkVals, ChunkVals);
 
     // "site" variable
     create_variable("site", ONEDIM, dims, NC_INT, &sID, LogInfo);
@@ -264,14 +273,13 @@ static void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo) {
     create_var_x(&xID, dims, LogInfo);
     nc_put_att_uint(OPEN_NC_ID, xID, "_ChunkSize", NC_UINT, numChunkVals,
                     ChunkVals);
-    write_att_val("_FillValue", fillVal, numChunkVals, xID, LogInfo);
+    write_att_val("_FillValue", fillValDouble, numFillSize, xID, LogInfo);
 
     // "y" variable
     create_var_y(&yID, dims, LogInfo);
     nc_put_att_uint(OPEN_NC_ID, yID, "_ChunkSize", NC_UINT, numChunkVals,
                     ChunkVals);
-    nc_put_att_double(OPEN_NC_ID, yID, "_FillValue", NC_DOUBLE, numChunkVals,
-                    fillVal);
+    write_att_val("_FillValue", fillValDouble, numFillSize, yID, LogInfo);
 
     nc_enddef(OPEN_NC_ID); // End of defining variables, dimensions, etc.
 
@@ -308,37 +316,8 @@ static void create_var_y(int *yID, int yDim[], LOG_INFO* LogInfo) {
     create_variable("y", ONEDIM, yDim, NC_DOUBLE, yID, LogInfo);
 
     write_att_str("units", "m", *yID, LogInfo);
-    write_att_str("long_name", "projection_y_coordinate", *yID, LogInfo);
-    write_att_str("standard_name", "y coordinate of projection", *yID, LogInfo);
-}
-
-/**
- * @brief Create a "domain" variable with common attributes between the domains
- *  "xy" and "site"
- *
- * @param[in] domID ID of the y variable within the domain netCDF
- * @param[in] domDim Dimensions of the domain variable
- * @param[in] numDims The number of dimensions "domain" will be
- * @param[in] chunkSize How many values that will be written under the
- *  "_ChunkSizes" attribute
- * @param[in] chunkVals Values under the attribute "_ChunkSizes"
- * @param[in] LogInfo Holds information dealing with logfile output
-*/
-static void create_var_domain(int* domID, int domDim[], int numDims,
-        size_t chunkSize, unsigned int chunkVals[], LOG_INFO* LogInfo) {
-
-    // Longer attribute names
-    int numFillSize = 1;
-    float fillVal[] = {-3.4E38};
-
-    create_variable("domain", numDims, domDim, NC_FLOAT, domID, LogInfo);
-
-    write_att_str("grid_mapping", "crs: x y", *domDim, LogInfo);
-    nc_put_att_float(OPEN_NC_ID, *domID, "_FillValue", NC_FLOAT,
-                     numFillSize, fillVal);
-    nc_put_att_uint(OPEN_NC_ID, *domID, "_ChunkSizes", NC_UINT,
-                     chunkSize, chunkVals);
-    write_att_str("units", "1", *domID, LogInfo);
+    write_att_str("long_name", "y coordinate of projection", *yID, LogInfo);
+    write_att_str("standard_name", "projection_y_coordinate", *yID, LogInfo);
 }
 
 /**
