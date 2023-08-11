@@ -10,6 +10,50 @@
 #include "include/filefuncs.h"
 #include "include/SW_Domain.h"
 
+/* =================================================== */
+/*             Private Function Declarations           */
+/* --------------------------------------------------- */
+static int nc_key_to_ID(char* key);
+static void create_dim_xy(int nDimX, int nDimY, int* yDimID, int* xDimID,
+                          int* bndsDimID, LOG_INFO* LogInfo);
+static void create_dim_s(int nDimS, int* sDimID, LOG_INFO* LogInfo);
+static void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
+                           int bndsDimID, LOG_INFO* LogInfo);
+static void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo);
+static void create_var_x(int* xID, int xDim[], LOG_INFO* LogInfo);
+static void create_var_y(int* yID, int yDim[], LOG_INFO* LogInfo);
+static void create_var_domain(int* domID, int domDim[], int numDims,
+        size_t chunkSize, unsigned int chunkVals[], LOG_INFO* LogInfo);
+static void create_var_crs(LOG_INFO* LogInfo);
+static void fill_xy_vars(int nDimX, int nDimY, int domainID,
+                         int xID, int yID, int x_bndsID, int y_bndsID);
+static void fill_s_vars(int nDimS, int siteID, int domainID, int xID, int yID);
+static void write_global_domain_atts(LOG_INFO* LogInfo);
+static void create_dimension(char* dimName, int* dimID, int size, LOG_INFO* LogInfo);
+static void create_variable(char* varName, int numDims, int dims[], int varType,
+                            int* varID, LOG_INFO* LogInfo);
+static void write_att_str(char *attName, char *attValue, int varID, LOG_INFO* LogInfo);
+static void write_att_val(char* attName, double attValue[], int attSize,
+                          int varID, LOG_INFO* LogInfo);
+
+/* =================================================== */
+/*                   Local Defines                     */
+/* --------------------------------------------------- */
+// Constant sizes
+#define NUMBNDS 2
+
+#define SIZEONE 1
+#define SIZETWO 2
+
+// Constants for number of dimensions
+#define ZERODIMS 0
+#define ONEDIM 1
+#define TWODIMS 2
+#define THREEDIMS 3
+
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
 /**
  * @brief Read input files for netCDF related actions
  *
@@ -44,26 +88,6 @@ void SW_NC_read_files(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 }
 
 /**
- * @brief Helper function to `SW_NC_read_files()` to determine which input
- *        key has been read in
- * @param[in] key Read-in key from domain input files file
-*/
-int nc_key_to_ID(char* key) {
-    static const char *possibleKeys[] = {"Domain"};
-    int keyIndex, result, sameString = 0;
-
-    for(keyIndex = 0; keyIndex < SW_NFILESNC; keyIndex++) {
-        result = strcmp(key, possibleKeys[keyIndex]);
-
-        if(result == sameString) {
-            return keyIndex;
-        }
-    }
-
-    return KEY_NOT_FOUND;
-}
-
-/**
  * @brief Creates a new domain netCDF if one was not provided
  *
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -95,6 +119,30 @@ void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
     nc_close(OPEN_NC_ID);
 }
 
+/* =================================================== */
+/*             Local Function Definitions              */
+/* --------------------------------------------------- */
+
+/**
+ * @brief Helper function to `SW_NC_read_files()` to determine which input
+ *        key has been read in
+ * @param[in] key Read-in key from domain input files file
+*/
+static int nc_key_to_ID(char* key) {
+    static const char *possibleKeys[] = {"Domain"};
+    int keyIndex, result, sameString = 0;
+
+    for(keyIndex = 0; keyIndex < SW_NFILESNC; keyIndex++) {
+        result = strcmp(key, possibleKeys[keyIndex]);
+
+        if(result == sameString) {
+            return keyIndex;
+        }
+    }
+
+    return KEY_NOT_FOUND;
+}
+
 /**
  * @brief Creates dimensions "x", "y", and "bnds" for the domain type "xy"
  *
@@ -105,7 +153,7 @@ void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
  * @param[in] bndsDimID Dimension ID of "bnds" within the domain
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void create_dim_xy(int nDimX, int nDimY, int* yDimID, int* xDimID,
+static void create_dim_xy(int nDimX, int nDimY, int* yDimID, int* xDimID,
                    int* bndsDimID, LOG_INFO* LogInfo) {
 
     // Create dimensions "x", "y", and "bnds" and don't store variable ID
@@ -122,7 +170,7 @@ void create_dim_xy(int nDimX, int nDimY, int* yDimID, int* xDimID,
  *
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void create_dim_s(int nDimS, int* sDimID, LOG_INFO* LogInfo) {
+static void create_dim_s(int nDimS, int* sDimID, LOG_INFO* LogInfo) {
 
     // Create dimension "site" and don't store variable ID
     create_dimension("site", sDimID, nDimS, LogInfo);
@@ -139,7 +187,7 @@ void create_dim_s(int nDimS, int* sDimID, LOG_INFO* LogInfo) {
  * @param[in] bndsDimID Dimension ID of "bnds" with the domain
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
+static void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
                     int bndsDimID, LOG_INFO* LogInfo) {
 
     int xDim[] = {xDimID}, yDim[] = {yDimID}, xBndsDim[] = {xDimID, bndsDimID},
@@ -193,7 +241,7 @@ void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
  * @param[in] sDimID Dimension ID of "site" within the domain
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo) {
+static void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo) {
     int sID, yID, xID, domainID;
     int dims[] = {sDimID};
     size_t numChunkVals = 1;
@@ -238,7 +286,7 @@ void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo) {
  * @param[in] xDim Dimensions of the x variable
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void create_var_x(int* xID, int xDim[], LOG_INFO* LogInfo) {
+static void create_var_x(int* xID, int xDim[], LOG_INFO* LogInfo) {
 
     create_variable("x", ONEDIM, xDim, NC_DOUBLE, xID, LogInfo);
 
@@ -255,7 +303,7 @@ void create_var_x(int* xID, int xDim[], LOG_INFO* LogInfo) {
  * @param[in] yDim Dimensions of the y variable
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void create_var_y(int *yID, int yDim[], LOG_INFO* LogInfo) {
+static void create_var_y(int *yID, int yDim[], LOG_INFO* LogInfo) {
 
     create_variable("y", ONEDIM, yDim, NC_DOUBLE, yID, LogInfo);
 
@@ -276,7 +324,7 @@ void create_var_y(int *yID, int yDim[], LOG_INFO* LogInfo) {
  * @param[in] chunkVals Values under the attribute "_ChunkSizes"
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void create_var_domain(int* domID, int domDim[], int numDims,
+static void create_var_domain(int* domID, int domDim[], int numDims,
         size_t chunkSize, unsigned int chunkVals[], LOG_INFO* LogInfo) {
 
     // Longer attribute names
@@ -298,7 +346,7 @@ void create_var_domain(int* domID, int domDim[], int numDims,
  *
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void create_var_crs(LOG_INFO* LogInfo) {
+static void create_var_crs(LOG_INFO* LogInfo) {
     int crsID;
     double stdParallel[] = {29.5, 45.5}, longCentralMerid[] = {-96.0},
         latProjOrigin[] = {23.0}, false_easting[] = {0.0},
@@ -351,7 +399,7 @@ void create_var_crs(LOG_INFO* LogInfo) {
  * @param[in] x_bndsID ID of the x_bnds variable within the domain netCDF
  * @param[in] y_bndsID ID of the y_bnds variable within the domain netCDF
 */
-void fill_xy_vars(int nDimX, int nDimY, int domainID,
+static void fill_xy_vars(int nDimX, int nDimY, int domainID,
         int xID, int yID, int x_bndsID, int y_bndsID) {
 
     double setValsX[nDimX], setValsY[nDimY];
@@ -429,7 +477,7 @@ void fill_xy_vars(int nDimX, int nDimY, int domainID,
  * @param[in] xID ID of the x variable within the domain netCDF
  * @param[in] yID ID of the y variable within the domain netCDF
 */
-void fill_s_vars(int nDimS, int siteID, int domainID, int xID, int yID) {
+static void fill_s_vars(int nDimS, int siteID, int domainID, int xID, int yID) {
 
     double setValsX[nDimS], setValsY[nDimS];
     int setValsSite[nDimS];
@@ -471,7 +519,7 @@ void fill_s_vars(int nDimS, int siteID, int domainID, int xID, int yID) {
  *
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void write_global_domain_atts(LOG_INFO* LogInfo) {
+static void write_global_domain_atts(LOG_INFO* LogInfo) {
 
     // Time information
     int tFormatSize = 20, dateSize = 10, yearOffset = 1900, monOffset = 1;
@@ -519,7 +567,7 @@ void write_global_domain_atts(LOG_INFO* LogInfo) {
  * @param[in] size Dimension size
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void create_dimension(char* dimName, int* dimID, int size, LOG_INFO* LogInfo) {
+static void create_dimension(char* dimName, int* dimID, int size, LOG_INFO* LogInfo) {
 
     int res = nc_def_dim(OPEN_NC_ID, dimName, size, dimID);
 
@@ -539,7 +587,7 @@ void create_dimension(char* dimName, int* dimID, int size, LOG_INFO* LogInfo) {
  * @param[in] varID New variable ID
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void create_variable(char* varName, int numDims, int dims[], int varType,
+static void create_variable(char* varName, int numDims, int dims[], int varType,
                      int* varID, LOG_INFO* LogInfo) {
 
     int res = nc_def_var(OPEN_NC_ID, varName, varType, numDims, dims, varID);
@@ -558,7 +606,7 @@ void create_variable(char* varName, int numDims, int dims[], int varType,
  * @param[in] varID Variable id within netCDF to write to
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void write_att_str(char* attName, char* attValue, int varID, LOG_INFO* LogInfo) {
+static void write_att_str(char* attName, char* attValue, int varID, LOG_INFO* LogInfo) {
 
     int res = nc_put_att_text(OPEN_NC_ID, varID, attName, strlen(attValue),
                               attValue);
@@ -578,7 +626,7 @@ void write_att_str(char* attName, char* attValue, int varID, LOG_INFO* LogInfo) 
  * @param[in] varID Variable id within netCDF to write to
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void write_att_val(char* attName, double attValue[], int attSize,
+static void write_att_val(char* attName, double attValue[], int attSize,
                    int varID, LOG_INFO* LogInfo) {
 
     int res = nc_put_att_double(OPEN_NC_ID, varID, attName, NC_DOUBLE,
