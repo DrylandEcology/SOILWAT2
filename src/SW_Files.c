@@ -86,7 +86,7 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
     @sideeffect Update values of variables within PATH_INFO:
       - `weather_prefix`
       - `output_prefix`
-      - `InFiles_csv`
+      - `InFiles`
       - `logfp` for SOILWAT2-standalone
   */
 void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
@@ -97,7 +97,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
   int debug = 0;
   #endif
 
-	char *MyFileName = PathInfo->InFiles_csv[eFirst];
+	char *MyFileName = PathInfo->InFiles[eFirst];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {
@@ -114,62 +114,62 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 			strcpy(PathInfo->output_prefix, inbuf);
 			break;
 		case 18:
-			PathInfo->InFiles_csv[eOutputDaily] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputDaily], LogInfo);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily], LogInfo);
 			break;
 		case 19:
-			PathInfo->InFiles_csv[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputWeekly], LogInfo);
-			//printf("filename: %s \n",InFiles_csv[eOutputWeekly]);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly], LogInfo);
+			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
 		case 20:
-			PathInfo->InFiles_csv[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputMonthly], LogInfo);
-			//printf("filename: %s \n",InFiles_csv[eOutputMonthly]);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly], LogInfo);
+			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
 		case 21:
-			PathInfo->InFiles_csv[eOutputYearly] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputYearly], LogInfo);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly], LogInfo);
 			break;
 		case 22:
-			PathInfo->InFiles_csv[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputDaily_soil], LogInfo);
-			//printf("filename: %s \n",InFiles_csv[eOutputDaily]);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily_soil], LogInfo);
+			//printf("filename: %s \n",InFiles[eOutputDaily]);
 			break;
 		case 23:
-			PathInfo->InFiles_csv[eOutputWeekly_soil] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputWeekly_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputWeekly_soil], LogInfo);
-			//printf("filename: %s \n",InFiles_csv[eOutputWeekly]);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly_soil], LogInfo);
+			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
 		case 24:
-			PathInfo->InFiles_csv[eOutputMonthly_soil] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputMonthly_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputMonthly_soil], LogInfo);
-			//printf("filename: %s \n",InFiles_csv[eOutputMonthly]);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly_soil], LogInfo);
+			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
 		case 25:
-			PathInfo->InFiles_csv[eOutputYearly_soil] = Str_Dup(inbuf, LogInfo);
+			PathInfo->InFiles[eOutputYearly_soil] = Str_Dup(inbuf, LogInfo);
 			++fileno;
-			SW_CSV_F_INIT(PathInfo->InFiles_csv[eOutputYearly_soil], LogInfo);
+			SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly_soil], LogInfo);
 			break;
 
 		default:
 			if (++fileno == SW_NFILES)
 				break;
 
-			if (!isnull(PathInfo->InFiles_csv[fileno])) {
-				Mem_Free(PathInfo->InFiles_csv[fileno]);
+			if (!isnull(PathInfo->InFiles[fileno])) {
+				Mem_Free(PathInfo->InFiles[fileno]);
 			}
 
 			strcpy(buf, PathInfo->_ProjDir);
 			strcat(buf, inbuf);
-			PathInfo->InFiles_csv[fileno] = Str_Dup(buf, LogInfo);
+			PathInfo->InFiles[fileno] = Str_Dup(buf, LogInfo);
 		}
 
 		lineno++;
@@ -183,13 +183,13 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 	CloseFile(&f, LogInfo);
 
 #ifdef SOILWAT
-	if (0 == strcmp(PathInfo->InFiles_csv[eLog], "stdout")) {
+	if (0 == strcmp(PathInfo->InFiles[eLog], "stdout")) {
 		LogInfo->logfp = stdout;
-	} else if (0 == strcmp(PathInfo->InFiles_csv[eLog], "stderr")) {
+	} else if (0 == strcmp(PathInfo->InFiles[eLog], "stderr")) {
 		LogInfo->logfp = stderr;
 	} else {
 		LogInfo->logfp =
-				OpenFile(PathInfo->InFiles_csv[eLog], "w", LogInfo);
+				OpenFile(PathInfo->InFiles[eLog], "w", LogInfo);
 	}
 #endif
 
@@ -202,7 +202,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 /**
 @brief Determines string length of file being read in combined with _ProjDir.
 
-@param[in,out] InFiles_csv Array of program in/output files
+@param[in,out] InFiles Array of program in/output files
 @param[in,out] InFiles_nc  Array of program netCDF input files
 @param[in] *firstfile File to be read in.
 @param[out] _ProjDir Project directory
@@ -213,7 +213,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 	- *c Counter parameter for the firstfile.
 	- *p Parameter for length of project directory plus *c
 */
-void SW_F_construct(char *InFiles_csv[], char *InFiles_nc[],
+void SW_F_construct(char *InFiles[], char *InFiles_nc[],
 		const char *firstfile, char _ProjDir[], LOG_INFO *LogInfo) {
 
 	/* =================================================== */
@@ -226,9 +226,9 @@ void SW_F_construct(char *InFiles_csv[], char *InFiles_nc[],
 	char *local_firstfile = Str_Dup(firstfile, LogInfo);
 	int file;
 
-	// Initialize `InFiles_csv` pointers to all NULL aside from index eFirst
+	// Initialize `InFiles` pointers to all NULL aside from index eFirst
 	for(file = 1; file < SW_NFILES; file++) {
-		InFiles_csv[file] = NULL;
+		InFiles[file] = NULL;
 	}
 
 	// Initialize `InFiles_nc` pointers to NULL
@@ -255,18 +255,18 @@ void SW_F_construct(char *InFiles_csv[], char *InFiles_nc[],
 /**
 @brief Deconstructor for each of the SW_NFILES.
 
-@param[in,out] InFiles_csv Array of program in/output files
+@param[in,out] InFiles Array of program in/output files
 @param[in,out] InFiles_nc Array of program netCDF input files
 */
-void SW_F_deconstruct(char *InFiles_csv[], char *InFiles_nc[]) {
+void SW_F_deconstruct(char *InFiles[], char *InFiles_nc[]) {
 	IntUS i;
 
 	// Deallocate CSV input file array
 	for (i = 0; i < SW_NFILES; i++)
 	{
-		if (!isnull(InFiles_csv[i])) {
-			Mem_Free(InFiles_csv[i]);
-			InFiles_csv[i] = NULL;
+		if (!isnull(InFiles[i])) {
+			Mem_Free(InFiles[i]);
+			InFiles[i] = NULL;
 		}
 	}
 
@@ -294,7 +294,7 @@ void SW_F_SetMemoryRefs( void) {
 	SW_FileIndex i;
 
 	for ( i=eFirst; i < eEndFile; i++)
-	NoteMemoryRef(InFiles_csv[i]);
+	NoteMemoryRef(InFiles[i]);
 
 }
 

@@ -23,7 +23,7 @@ void SW_NC_read_files(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
     char key[15], value[MAX_FILENAMESIZE]; // 15 - Max key size
     int keyID;
 
-    MyFileName = PathInfo->InFiles_csv[eNCIn];
+    MyFileName = PathInfo->InFiles[eNCIn];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
     // Get domain file name

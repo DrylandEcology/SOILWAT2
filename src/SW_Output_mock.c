@@ -100,14 +100,14 @@ void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 	(void) SW_Output;
 }
 
-void SW_OUT_read(SW_ALL* sw, char *InFiles_csv[],
+void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS,
 	LOG_INFO* LogInfo)
 {
 	/* use sw to silence compiler warnings */
 	(void) sw;
 	(void) LogInfo;
-	(void) InFiles_csv;
+	(void) InFiles;
 	(void) timeSteps;
 	(void) used_OUTNPERIODS;
 }

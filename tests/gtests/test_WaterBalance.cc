@@ -109,7 +109,7 @@ namespace {
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                  SW_All.Weather.generateWeatherMethod,
-                 PathInfo.InFiles_csv, &LogInfo);
+                 PathInfo.InFiles, &LogInfo);
 
     // Point to nonexisting weather data
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
@@ -143,7 +143,7 @@ namespace {
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                  SW_All.Weather.generateWeatherMethod,
-                 PathInfo.InFiles_csv, &LogInfo);
+                 PathInfo.InFiles, &LogInfo);
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
@@ -270,11 +270,11 @@ namespace {
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
-    Mem_Free(PathInfo.InFiles_csv[eSWRCp]);
-    PathInfo.InFiles_csv[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
+    Mem_Free(PathInfo.InFiles[eSWRCp]);
+    PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_All.Site, PathInfo.InFiles_csv, &LogInfo);
+    SW_SWRC_read(&SW_All.Site, PathInfo.InFiles, &LogInfo);
 
     // Update soils
     SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
@@ -302,11 +302,11 @@ namespace {
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
-    Mem_Free(PathInfo.InFiles_csv[eSWRCp]);
-    PathInfo.InFiles_csv[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
+    Mem_Free(PathInfo.InFiles[eSWRCp]);
+    PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_All.Site, PathInfo.InFiles_csv, &LogInfo);
+    SW_SWRC_read(&SW_All.Site, PathInfo.InFiles, &LogInfo);
 
     // Update soils
     SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);

@@ -53,7 +53,7 @@ extern char const *key2veg[NVEGTYPES];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles_csv[], LOG_INFO* LogInfo);
+void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo);
 void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, SW_MODEL* SW_Model);
 void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo);
 void SW_VPD_construct(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo);

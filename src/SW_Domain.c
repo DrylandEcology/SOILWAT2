@@ -44,7 +44,7 @@ void SW_DOM_read(PATH_INFO* PathInfo, SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     char key[10], value[6]; // 10 - Max key size, 6 - max characters
     Bool fstartdy = swFALSE, fenddy = swFALSE;
 
-    MyFileName = PathInfo->InFiles_csv[eDomain];
+    MyFileName = PathInfo->InFiles[eDomain];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
     // Set SW_DOMAIN

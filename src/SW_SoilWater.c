@@ -959,13 +959,13 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 @param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
 	soil water related values
 @param[in] endyr Ending year for model run
-@param[in] InFiles_csv Array of program in/output files
+@param[in] InFiles Array of program in/output files
 @param[in] LogInfo Holds information dealing with logfile output
 */
 void SW_SWC_read(
 	SW_SOILWAT* SW_SoilWat,
 	TimeInt endyr,
-	char *InFiles_csv[],
+	char *InFiles[],
 	LOG_INFO* LogInfo
 ) {
 	/* =================================================== */
@@ -978,7 +978,7 @@ void SW_SWC_read(
 	int lineno = 0, nitems = 4;
 	char inbuf[MAX_FILENAMESIZE];
 
-	char *MyFileName = InFiles_csv[eSoilwat];
+	char *MyFileName = InFiles[eSoilwat];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {

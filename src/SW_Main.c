@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 	LogInfo.logged = swFALSE;
 	LogInfo.logfp = stdout;
 
-	sw_init_args(argc, argv, &QuietMode, &EchoInits, &PathInfo.InFiles_csv[eFirst],
+	sw_init_args(argc, argv, &QuietMode, &EchoInits, &PathInfo.InFiles[eFirst],
 				 &LogInfo);
 
 	// Print version if not in quiet mode
@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
 						sw.GenOutput.ncol_OUT, sw.GenOutput.colnames_OUT,
 						&LogInfo);
 	SW_OUT_create_files(&sw.FileStatus, sw.Output, sw.Site.n_layers,
-	                    PathInfo.InFiles_csv, &sw.GenOutput, &LogInfo); // only used with SOILWAT2
+	                    PathInfo.InFiles, &sw.GenOutput, &LogInfo); // only used with SOILWAT2
 
 	if(EchoInits) {
 		_echo_all_inputs(&sw, &LogInfo);

@@ -75,10 +75,10 @@ namespace {
     LOG_INFO LogInfo;
     silent_tests(&LogInfo);
 
-    char *InFiles_csv[SW_NFILES];
+    char *InFiles[SW_NFILES];
     char *InFiles_nc[SW_NFILESNC];
     for (short file = 0; file < SW_NFILES; file++) {
-      InFiles_csv[file] = NULL;
+      InFiles[file] = NULL;
     }
 
     // Initialize `InFiles_nc` but it is not in use
@@ -86,8 +86,8 @@ namespace {
       InFiles_nc[file] = NULL;
     }
 
-    InFiles_csv[eMarkovCov] = Str_Dup("Input/mkv_covar.in", &LogInfo);
-    InFiles_csv[eMarkovProb] = Str_Dup("Input/mkv_prob.in", &LogInfo);
+    InFiles[eMarkovCov] = Str_Dup("Input/mkv_covar.in", &LogInfo);
+    InFiles[eMarkovProb] = Str_Dup("Input/mkv_prob.in", &LogInfo);
 
     int
       rng_seed,
@@ -106,7 +106,7 @@ namespace {
 
     // Initialize weather generator and read input files mkv_cover and mkv_prob
     rng_seed = seed;
-    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles_csv, &LogInfo);
+    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo);
 
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
@@ -122,7 +122,7 @@ namespace {
     //--- Expect that generated weather is different with time-varying seed ----
     // Initialize weather generator and read input files mkv_cover and mkv_prob
     rng_seed = 0;
-    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles_csv, &LogInfo);
+    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo);
 
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
@@ -143,7 +143,7 @@ namespace {
     //--- Expect that generated weather is reproducible with same seed ------
     // Initialize weather generator and read input files mkv_cover and mkv_prob
     rng_seed = seed;
-    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles_csv, &LogInfo);
+    SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo);
 
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
@@ -165,7 +165,7 @@ namespace {
     delete[] tmin0;
     delete[] ppt0;
 
-    SW_F_deconstruct(InFiles_csv, InFiles_nc);
+    SW_F_deconstruct(InFiles, InFiles_nc);
   }
 
 

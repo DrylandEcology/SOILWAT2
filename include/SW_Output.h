@@ -139,8 +139,8 @@ void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 					 SW_OUTPUT* SW_Output);
 int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 	char msg[], size_t sizeof_msg, Bool* VegProd_use_SWA, Bool deepdrain,
-	SW_OUTPUT* SW_Output, char *InFiles_csv[]);
-void SW_OUT_read(SW_ALL* sw, char *InFiles_csv[],
+	SW_OUTPUT* SW_Output, char *InFiles[]);
+void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS,
 	LOG_INFO* LogInfo);
 void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,

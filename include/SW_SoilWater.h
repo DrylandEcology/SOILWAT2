@@ -68,7 +68,7 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 void SW_SWC_read(
 	SW_SOILWAT* SW_SoilWat,
 	TimeInt endyr,
-	char *InFiles_csv[],
+	char *InFiles[],
 	LOG_INFO* LogInfo
 );
 void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site,

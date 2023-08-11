@@ -167,15 +167,15 @@ void SW_VES_new_year(IntU count) {
 
 @param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all information about
   vegetation establishment within the simulation
-@param[in] InFiles_csv Array of program in/output files
+@param[in] InFiles Array of program in/output files
 @param[in] _ProjDir Project directory
 @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_VES_read(SW_VEGESTAB* SW_VegEstab, char *InFiles_csv[],
+void SW_VES_read(SW_VEGESTAB* SW_VegEstab, char *InFiles[],
 				 char *_ProjDir, LOG_INFO* LogInfo) {
 
 	SW_VES_read2(SW_VegEstab, swTRUE, swTRUE,
-				 InFiles_csv, _ProjDir, LogInfo);
+				 InFiles, _ProjDir, LogInfo);
 }
 
 /**
@@ -187,7 +187,7 @@ void SW_VES_read(SW_VEGESTAB* SW_VegEstab, char *InFiles_csv[],
   should be processed.
 @param[in] consider_InputFlag Should the user input flag read from `"estab.in"` be
   considered for turning on/off calculations of vegetation establishment.
-@param[in] InFiles_csv Array of program in/output files
+@param[in] InFiles Array of program in/output files
 @param[in] _ProjDir Project directory
 @param[in] LogInfo Holds information dealing with logfile output
 
@@ -202,7 +202,7 @@ void SW_VES_read(SW_VEGESTAB* SW_VegEstab, char *InFiles_csv[],
     if `"ESTABL"` is turned on in `"outsetup.in"`
 */
 void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
-	Bool consider_InputFlag, char *InFiles_csv[], char *_ProjDir,
+	Bool consider_InputFlag, char *InFiles[], char *_ProjDir,
 	LOG_INFO* LogInfo) {
 
 	SW_VES_deconstruct(SW_VegEstab);
@@ -215,7 +215,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 	FILE *f;
 
 	if (SW_VegEstab->use) {
-		char *MyFileName = InFiles_csv[eVegEstab];
+		char *MyFileName = InFiles[eVegEstab];
 		f = OpenFile(MyFileName, "r", LogInfo);
 
 		if (!GetALine(f, inbuf) || (consider_InputFlag && *inbuf == '0')) {

@@ -27,16 +27,16 @@ extern "C" {
 /* --------------------------------------------------- */
 #if defined(SOILWAT)
 void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
-	LyrIndex n_layers, char *InFiles_csv[], SW_GEN_OUT* GenOutput,
+	LyrIndex n_layers, char *InFiles[], SW_GEN_OUT* GenOutput,
 	LOG_INFO* LogInfo);
 
 #elif defined(STEPWAT)
 void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
 		SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput,
-		char *InFiles_csv[], LyrIndex n_layers, LOG_INFO* LogInfo);
+		char *InFiles[], LyrIndex n_layers, LOG_INFO* LogInfo);
 void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
 		SW_OUTPUT* SW_Output, int iteration, SW_GEN_OUT *GenOutput,
-		char *InFiles_csv[], LyrIndex n_layers, LOG_INFO* LogInfo) ;
+		char *InFiles[], LyrIndex n_layers, LOG_INFO* LogInfo) ;
 #endif
 
 void get_outstrleader(OutPeriod pd, size_t sizeof_str,

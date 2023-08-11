@@ -74,10 +74,10 @@ char const *key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 
 @param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
-@param[in] InFiles_csv Array of program in/output files
+@param[in] InFiles Array of program in/output files
 @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles_csv[], LOG_INFO* LogInfo) {
+void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
 	FILE *f;
 	TimeInt mon = Jan;
@@ -86,7 +86,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles_csv[], LOG_INFO* LogInfo)
 	RealF help_veg[NVEGTYPES], help_bareGround, litt, biom, pctl, laic;
 	char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
 
-	MyFileName = InFiles_csv[eVegProd];
+	MyFileName = InFiles[eVegProd];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
 	while (GetALine(f, inbuf)) {

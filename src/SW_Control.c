@@ -128,8 +128,8 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 
-	SW_F_construct(PathInfo->InFiles_csv, PathInfo->InFiles_nc,
-          PathInfo->InFiles_csv[eFirst], PathInfo->_ProjDir, LogInfo);
+	SW_F_construct(PathInfo->InFiles, PathInfo->InFiles_nc,
+          PathInfo->InFiles[eFirst], PathInfo->_ProjDir, LogInfo);
 	SW_MDL_construct(sw->Model.newperiod, sw->Model.days_in_month);
 	SW_WTH_construct(&sw->Weather, LogInfo);
 	// delay SW_MKV_construct() until we know from inputs whether we need it
@@ -159,7 +159,7 @@ void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   @param[in] PathInfo Struct holding all information about the programs path/files
 */
 void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw, PATH_INFO* PathInfo) {
-	SW_F_deconstruct(PathInfo->InFiles_csv, PathInfo->InFiles_nc);
+	SW_F_deconstruct(PathInfo->InFiles, PathInfo->InFiles_nc);
 	SW_MDL_deconstruct();
 	SW_WTH_deconstruct(&sw->Markov, &sw->Weather); // calls SW_MKV_deconstruct() if needed
 	// SW_SKY_deconstruct() not needed
@@ -293,7 +293,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, SW_DOMAIN* SW_Domain,
   if (debug) swprintf(" 'files'");
   #endif
 
-  SW_MDL_read(&sw->Model, PathInfo->InFiles_csv, LogInfo);
+  SW_MDL_read(&sw->Model, PathInfo->InFiles, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'model'");
   #endif
@@ -308,20 +308,20 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, SW_DOMAIN* SW_Domain,
   if(debug) swprintf(" 'domain to model'");
   #endif
 
-  SW_WTH_setup(&sw->Weather, PathInfo->InFiles_csv,
+  SW_WTH_setup(&sw->Weather, PathInfo->InFiles,
                PathInfo->weather_prefix, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather setup'");
   #endif
 
-  SW_SKY_read(PathInfo->InFiles_csv, &sw->Sky, LogInfo);
+  SW_SKY_read(PathInfo->InFiles, &sw->Sky, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'climate'");
   #endif
 
   if (sw->Weather.generateWeatherMethod == 2) {
     SW_MKV_setup(&sw->Markov, sw->Weather.rng_seed,
-                 sw->Weather.generateWeatherMethod, PathInfo->InFiles_csv,
+                 sw->Weather.generateWeatherMethod, PathInfo->InFiles,
                  LogInfo);
     #ifdef SWDEBUG
     if (debug) swprintf(" > 'weather generator'");
@@ -333,40 +333,40 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, SW_DOMAIN* SW_Domain,
   if (debug) swprintf(" > 'weather read'");
   #endif
 
-  SW_VPD_read(&sw->VegProd, PathInfo->InFiles_csv, LogInfo);
+  SW_VPD_read(&sw->VegProd, PathInfo->InFiles, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'veg'");
   #endif
 
-  SW_SIT_read(&sw->Site, PathInfo->InFiles_csv, &sw->Carbon, LogInfo);
+  SW_SIT_read(&sw->Site, PathInfo->InFiles, &sw->Carbon, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'site'");
   #endif
 
-  SW_LYR_read(&sw->Site, PathInfo->InFiles_csv, LogInfo);
+  SW_LYR_read(&sw->Site, PathInfo->InFiles, LogInfo);
   #ifdef RSWDEBUG
   if (debug) swprintf(" > 'soils'");
   #endif
 
-  SW_SWRC_read(&sw->Site, PathInfo->InFiles_csv, LogInfo);
+  SW_SWRC_read(&sw->Site, PathInfo->InFiles, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'swrc parameters'");
   #endif
 
-  SW_VES_read(&sw->VegEstab, PathInfo->InFiles_csv,
+  SW_VES_read(&sw->VegEstab, PathInfo->InFiles,
               PathInfo->_ProjDir, LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'establishment'");
   #endif
 
-  SW_OUT_read(sw, PathInfo->InFiles_csv, sw->GenOutput.timeSteps,
+  SW_OUT_read(sw, PathInfo->InFiles, sw->GenOutput.timeSteps,
               &sw->GenOutput.used_OUTNPERIODS, LogInfo);
 
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'ouput'");
   #endif
 
-  SW_CBN_read(&sw->Carbon, &sw->Model, PathInfo->InFiles_csv,
+  SW_CBN_read(&sw->Carbon, &sw->Model, PathInfo->InFiles,
               LogInfo);
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'CO2'");
@@ -375,7 +375,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, SW_DOMAIN* SW_Domain,
   SW_SWC_read(
     &sw->SoilWat,
     sw->Model.endyr,
-    PathInfo->InFiles_csv,
+    PathInfo->InFiles,
     LogInfo
   );
   #ifdef SWDEBUG
