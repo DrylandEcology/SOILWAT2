@@ -20,7 +20,7 @@
 static int domain_inkey_to_id(char *key);
 
 /* =================================================== */
-/*             Local Function Definitions              */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /**
@@ -138,6 +138,10 @@ void SW_DOM_setModelTime(SW_MODEL *SW_Model, SW_DOMAIN *SW_Domain) {
 
     SW_Model->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
 }
+
+/* =================================================== */
+/*             Local Function Definitions              */
+/* --------------------------------------------------- */
 
 /**
  * @brief Helper function to `SW_DOM_read()` to determine which input
