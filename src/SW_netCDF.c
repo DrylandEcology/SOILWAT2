@@ -26,7 +26,7 @@ static void create_var_crs(LOG_INFO* LogInfo);
 static void fill_xy_vars(int nDimX, int nDimY, int domainID,
                          int xID, int yID, int x_bndsID, int y_bndsID);
 static void fill_s_vars(int nDimS, int siteID, int domainID, int xID, int yID);
-static void write_global_domain_atts(LOG_INFO* LogInfo);
+static void write_global_atts(LOG_INFO* LogInfo);
 static void create_dimension(char* dimName, int* dimID, int size, LOG_INFO* LogInfo);
 static void create_variable(char* varName, int numDims, int dims[], int varType,
                             int* varID, LOG_INFO* LogInfo);
@@ -102,7 +102,7 @@ void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
     nc_create(DomainName, NC_NETCDF4, NULL); // Don't store file ID (OPEN_NC_ID)
 
     create_var_crs(LogInfo);
-    write_global_domain_atts(LogInfo);
+    write_global_atts(LogInfo);
 
     if(strcmp(SW_Domain->DomainType, "xy") == equalString) {
         create_dim_xy(SW_Domain->nDimX, SW_Domain->nDimY, &yDimID,
@@ -493,12 +493,11 @@ static void fill_s_vars(int nDimS, int siteID, int domainID, int xID, int yID) {
 }
 
 /**
- * @brief Fill a domain netCDF with global attributes (only when a domain
- *  netCDF is generated)
+ * @brief Fill a given netCDF file with global attributes
  *
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-static void write_global_domain_atts(LOG_INFO* LogInfo) {
+static void write_global_atts(LOG_INFO* LogInfo) {
 
     // Time information
     int tFormatSize = 20, dateSize = 10, yearOffset = 1900, monOffset = 1;
