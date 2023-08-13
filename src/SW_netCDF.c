@@ -502,8 +502,15 @@ static void write_global_atts(LOG_INFO* LogInfo) {
     // Time information
     int tFormatSize = 20, dateSize = 10, yearOffset = 1900, monOffset = 1;
     char timeStr[tFormatSize], dateStr[dateSize];
-    time_t timeInfo = time(NULL);
-    struct tm timeStruct = *localtime(&timeInfo);
+    time_t timeInfo;
+    struct tm timeStruct;
+
+    // Version information
+    int versionStrSize = 40;
+    char verstionStr[versionStrSize];
+
+    timeInfo = time(NULL);
+    timeStruct = *localtime(&timeInfo);
 
     // Format date/version strings
     sprintf(timeStr, "%d-%02d-%02d %02d:%02d:%02d",
@@ -513,28 +520,31 @@ static void write_global_atts(LOG_INFO* LogInfo) {
     sprintf(dateStr, "v%d%02d%02d", timeStruct.tm_year + yearOffset,
             timeStruct.tm_mon + monOffset, timeStruct.tm_mday);
 
+    // Create version string
+    sprintf(verstionStr, "SOILWAT2 %s", SW2_VERSION);
+
     // Fill global attributes
     write_att_str("Conventions", "CF-1.8", NC_GLOBAL, LogInfo);
-    write_att_str("created_by", "SOILWAT2 v7.1.0", NC_GLOBAL, LogInfo);
+    write_att_str("created_by", verstionStr, NC_GLOBAL, LogInfo);
     write_att_str("creation_date", timeStr, NC_GLOBAL, LogInfo);
     write_att_str("title", "Domain for SOILWAT2", NC_GLOBAL, LogInfo);
     write_att_str("version", dateStr, NC_GLOBAL, LogInfo);
     write_att_str("source_id", "SOILWAT2", NC_GLOBAL, LogInfo);
     write_att_str("further_info_url", "https://github.com/DrylandEcology/",
-                  NC_GLOBAL, LogInfo);
+                    NC_GLOBAL, LogInfo);
 
     write_att_str("source_type", "LAND", NC_GLOBAL, LogInfo);
     write_att_str("realm", "land", NC_GLOBAL, LogInfo);
     write_att_str("product", "model-input", NC_GLOBAL, LogInfo);
     write_att_str("grid", "native Alberts projection grid with NAD83 datum",
-                  NC_GLOBAL, LogInfo);
+                    NC_GLOBAL, LogInfo);
 
     write_att_str("grid_label", "gn", NC_GLOBAL, LogInfo);
     write_att_str("nominal_resolution", "1 m", NC_GLOBAL, LogInfo);
     write_att_str("featureType", "point", NC_GLOBAL, LogInfo);
     write_att_str("time_label", "None", NC_GLOBAL, LogInfo);
     write_att_str("time_title", "No temporal dimensions ... fixed field",
-                  NC_GLOBAL, LogInfo);
+                    NC_GLOBAL, LogInfo);
 }
 
 /**
