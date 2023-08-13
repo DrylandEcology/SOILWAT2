@@ -194,7 +194,7 @@ static void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
     size_t numChunkVals = 2, numFillSize = 1;
     unsigned int xBndsAttVals[] = {nDimX, NUMBNDS},
         yBndsAttVals[] = {nDimY, NUMBNDS}, ChunkVals[] = {nDimY, nDimX};
-    float fillVal[] = {-3.4E38};
+    float fillVal[] = {NC_FILL_FLOAT};
 
     // "domain" variable
     create_variable("domain", TWODIMS, domainDims, NC_FLOAT, &domID, LogInfo);
@@ -247,8 +247,8 @@ static void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo) {
     int sID, yID, xID, domainID;
     int dims[] = {sDimID};
     size_t numChunkVals = 1, numFillSize = 1;
-    float fillValFloat[] = {-3.4E38};
-    double fillValDouble[] = {-3.4000000000000003E38};
+    float fillValFloat[] = {NC_FILL_FLOAT};
+    double fillValDouble[] = {NC_FILL_DOUBLE};
     unsigned int ChunkVals[] = {nDimS};
 
     // "domain" variable
