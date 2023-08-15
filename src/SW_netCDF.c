@@ -14,12 +14,8 @@
 /*             Private Function Declarations           */
 /* --------------------------------------------------- */
 static int nc_key_to_ID(char* key);
-static void create_dim_xy(int nDimX, int nDimY, int* yDimID, int* xDimID,
-                          int* bndsDimID, LOG_INFO* LogInfo);
-static void create_dim_s(int nDimS, int* sDimID, LOG_INFO* LogInfo);
-static void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
-                           int bndsDimID, LOG_INFO* LogInfo);
-static void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo);
+static void create_xy_vars(int nDimX, int nDimY, LOG_INFO* LogInfo);
+static void create_s_vars(int nDimS, LOG_INFO* LogInfo);
 static void create_var_x(int* xID, int xDim[], LOG_INFO* LogInfo);
 static void create_var_y(int* yID, int yDim[], LOG_INFO* LogInfo);
 static void create_var_crs(LOG_INFO* LogInfo);
@@ -97,7 +93,6 @@ void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
                          LOG_INFO* LogInfo) {
 
     int equalString = 0;
-    int yDimID, xDimID, bndsDimID, siteDimID;
 
     nc_create(DomainName, NC_NETCDF4, NULL); // Don't store file ID (OPEN_NC_ID)
 
@@ -105,13 +100,9 @@ void SW_NC_create_domain(SW_DOMAIN* SW_Domain, char* DomainName,
     write_global_atts(LogInfo);
 
     if(strcmp(SW_Domain->DomainType, "xy") == equalString) {
-        create_dim_xy(SW_Domain->nDimX, SW_Domain->nDimY, &yDimID,
-                      &xDimID, &bndsDimID, LogInfo);
-        create_xy_vars(SW_Domain->nDimX, SW_Domain->nDimY, yDimID,
-                       xDimID, bndsDimID, LogInfo);
+        create_xy_vars(SW_Domain->nDimX, SW_Domain->nDimY, LogInfo);
     } else {
-        create_dim_s(SW_Domain->nDimS, &siteDimID, LogInfo);
-        create_s_vars(SW_Domain->nDimS, siteDimID, LogInfo);
+        create_s_vars(SW_Domain->nDimS, LogInfo);
     }
 
     nc_close(OPEN_NC_ID);
@@ -142,59 +133,37 @@ static int nc_key_to_ID(char* key) {
 }
 
 /**
- * @brief Creates dimensions "x", "y", and "bnds" for the domain type "xy"
- *
- * @param[in] nDimX Size of dimension "x"
- * @param[in] nDimY Size of dimension "y"
- * @param[in] yDimID Dimension ID of "y" within the domain
- * @param[in] xDimID Dimension ID of "x" within the domain
- * @param[in] bndsDimID Dimension ID of "bnds" within the domain
- * @param[in] LogInfo Holds information dealing with logfile output
-*/
-static void create_dim_xy(int nDimX, int nDimY, int* yDimID, int* xDimID,
-                   int* bndsDimID, LOG_INFO* LogInfo) {
-
-    // Create dimensions "x", "y", and "bnds"
-    create_dimension("x", xDimID, nDimX, LogInfo);
-    create_dimension("y", yDimID, nDimY, LogInfo);
-    create_dimension("bnds", bndsDimID, NUMBNDS, LogInfo);
-}
-
-/**
- * @brief Creates dimension "site" for the domain type "s" (sites)
- *
- * @param[in] nDimS Size of dimension "site"
- * @param[in] sDimID Dimension ID of "site" within the domain
- *
- * @param[in] LogInfo Holds information dealing with logfile output
-*/
-static void create_dim_s(int nDimS, int* sDimID, LOG_INFO* LogInfo) {
-
-    // Create dimension "site"
-    create_dimension("site", sDimID, nDimS, LogInfo);
-}
-
-/**
  * @brief Creates/files all variables related to domain "xy"
  *  in the new domain netCDF
  *
  * @param[in] nDimX Size of dimension "x"
  * @param[in] nDimY Size of dimension "y"
- * @param[in] yDimID Dimension ID of "y" with the domain
- * @param[in] xDimID Dimension ID of "x" with the domain
- * @param[in] bndsDimID Dimension ID of "bnds" with the domain
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-static void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
-                    int bndsDimID, LOG_INFO* LogInfo) {
+static void create_xy_vars(int nDimX, int nDimY, LOG_INFO* LogInfo) {
 
-    int xDim[] = {xDimID}, yDim[] = {yDimID}, xBndsDim[] = {xDimID, bndsDimID},
-        yBndsDim[] = {yDimID, bndsDimID}, domainDims[] = {yDimID, xDimID};
+    // Variable information
+        // 1 - Variable has one dimension
+        // 2 - Variable has two dimensions
+    int xDim[1], yDim[1], xBndsDim[2], yBndsDim[2], domainDims[2];
     int xID, yID, xBndsID, yBndsID, domID;
     size_t numChunkVals = 2, numFillSize = 1;
     unsigned int xBndsAttVals[] = {nDimX, NUMBNDS},
         yBndsAttVals[] = {nDimY, NUMBNDS}, ChunkVals[] = {nDimY, nDimX};
     float fillVal[] = {NC_FILL_FLOAT};
+
+    // Dimension information
+    int yDimID, xDimID, bndsDimID, firstDim = 0, secDim = 1;
+
+    // Create dimensions "x", "y", and "bnds"
+    create_dimension("x", &xDimID, nDimX, LogInfo);
+    create_dimension("y", &yDimID, nDimY, LogInfo);
+    create_dimension("bnds", &bndsDimID, NUMBNDS, LogInfo);
+
+    // Set dimension arrays
+    yDim[firstDim] = yBndsDim[firstDim] = domainDims[firstDim] = yDimID;
+    xDim[firstDim] = xBndsDim[firstDim] = domainDims[secDim] = xDimID;
+    xBndsDim[secDim] = yBndsDim[secDim] = bndsDimID;
 
     // "domain" variable
     create_variable("domain", TWODIMS, domainDims, NC_FLOAT, &domID, LogInfo);
@@ -240,16 +209,22 @@ static void create_xy_vars(int nDimX, int nDimY, int yDimID, int xDimID,
  * @brief Creates all variables related to domain "s" in the new domain netCDF
  *
  * @param[in] nDimS Size of dimension "s"
- * @param[in] sDimID Dimension ID of "site" within the domain
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-static void create_s_vars(int nDimS, int sDimID, LOG_INFO* LogInfo) {
-    int sID, yID, xID, domainID;
-    int dims[] = {sDimID};
+static void create_s_vars(int nDimS, LOG_INFO* LogInfo) {
+    int sID, yID, xID, domainID, sDimID;
+    int dims[1]; // 1 - Variable has one dimension
+    int firstDim = 1;
     size_t numChunkVals = 1, numFillSize = 1;
     float fillValFloat[] = {NC_FILL_FLOAT};
     double fillValDouble[] = {NC_FILL_DOUBLE};
     unsigned int ChunkVals[] = {nDimS};
+
+    // Create dimension "site"
+    create_dimension("site", &sDimID, nDimS, LogInfo);
+
+    // Set dimension array
+    dims[firstDim] = sDimID;
 
     // "domain" variable
     create_variable("domain", ONEDIM, dims, NC_FLOAT, &domainID, LogInfo);
