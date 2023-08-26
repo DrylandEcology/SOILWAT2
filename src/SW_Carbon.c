@@ -90,7 +90,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
   double ppm = 1.;
   int existing_years[MAX_NYEAR] = {0};
   short fileWasEmpty = 1;
-  char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
+  char *MyFileName, inbuf[MAX_FILENAMESIZE];
 
   MyFileName = InFiles[eCarbon];
   f = OpenFile(MyFileName, "r", LogInfo);
@@ -132,15 +132,10 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
     if (year < 0)
     {
       CloseFile(&f, LogInfo);
-      snprintf(
-        errstr,
-        MAX_ERROR,
-        "(SW_Carbon) Year %d in scenario '%.64s' is negative; "
-        "only positive values are allowed.\n",
-        year,
-        SW_Carbon->scenario
-      );
-      LogError(LogInfo, LOGFATAL, errstr);
+      LogError(LogInfo, LOGFATAL, "(SW_Carbon) Year %d in scenario"\
+                    " '%.64s' is negative; only positive values"\
+                    " are allowed.\n",
+                    year, SW_Carbon->scenario);
     }
 
     SW_Carbon->ppm[year] = ppm;
@@ -157,15 +152,10 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
     if (existing_years[year] != 0)
     {
       CloseFile(&f, LogInfo);
-      snprintf(
-        errstr,
-        MAX_ERROR,
-        "(SW_Carbon) Year %d in scenario '%.64s' is entered more than once; "
-        "only one entry is allowed.\n",
-        year,
-        SW_Carbon->scenario
-      );
-      LogError(LogInfo, LOGFATAL, errstr);
+      LogError(LogInfo, LOGFATAL, "(SW_Carbon) Year %d in scenario"\
+                    " '%.64s' is entered more than once; only one"
+                    " entry is allowed.\n",
+                    year, SW_Carbon->scenario);
     }
     existing_years[year] = 1;
   }
@@ -179,25 +169,16 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
   // otherwise the empty file will be masked as not being able to find the scenario
   if (fileWasEmpty == 1)
   {
-    snprintf(
-      errstr,
-      MAX_ERROR,
-      "(SW_Carbon) carbon.in was empty; "
-      "for debugging purposes, SOILWAT2 read in file '%s'\n",
-      MyFileName
-    );
-    LogError(LogInfo, LOGFATAL, errstr);
+    LogError(LogInfo, LOGFATAL, "(SW_Carbon) carbon.in was empty; for"\
+                    " debugging purposes, SOILWAT2 read in file '%s'\n",
+                    MyFileName);
   }
 
   if (EQ(ppm, -1.))  // A scenario must be found in order for ppm to have a positive value
   {
-    snprintf(
-      errstr,
-      MAX_ERROR,
-      "(SW_Carbon) The scenario '%.64s' was not found in carbon.in\n",
-      SW_Carbon->scenario
-    );
-    LogError(LogInfo, LOGFATAL, errstr);
+    LogError(LogInfo, LOGFATAL, "(SW_Carbon) The scenario '%.64s'"\
+                    " was not found in carbon.in\n",
+                    SW_Carbon->scenario);
   }
 
   // Ensure that the desired years were calculated
@@ -205,15 +186,10 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
   {
     if (existing_years[year] == 0)
     {
-      snprintf(
-        errstr,
-        MAX_ERROR,
-        "(SW_Carbon) missing CO2 data for year %d; "
-        "ensure that ppm values for this year exist in scenario '%.64s'\n",
-        year,
-        SW_Carbon->scenario
-      );
-      LogError(LogInfo, LOGFATAL, errstr);
+      LogError(LogInfo, LOGFATAL, "(SW_Carbon) missing CO2 data for"\
+                    " year %d; ensure that ppm values for this year"\
+                    " exist in scenario '%.64s'\n",
+                    year, SW_Carbon->scenario);
     }
   }
 }
@@ -242,7 +218,6 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
   int k;
   TimeInt year, simendyr = SW_Model->endyr + SW_Model->addtl_yr;
   double ppm;
-  char errstr[MAX_ERROR];
   #ifdef SWDEBUG
   short debug = 0;
   #endif
@@ -259,13 +234,9 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
 
     if (LT(ppm, 0.))  // CO2 concentration must not be negative values
     {
-      snprintf(
-        errstr,
-        MAX_ERROR,
-        "(SW_Carbon) No CO2 ppm data was provided for year %d\n",
-        year
-      );
-      LogError(LogInfo, LOGFATAL, errstr);
+      LogError(LogInfo, LOGFATAL, "(SW_Carbon) No CO2 ppm data was"\
+                                  " provided for year %d\n",
+                                  year);
     }
 
     // Calculate multipliers per PFT

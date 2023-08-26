@@ -50,7 +50,7 @@ void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 	 */
 	FILE *f;
 	int lineno = 0, x = 0;
-	char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
+	char *MyFileName, inbuf[MAX_FILENAMESIZE];
 
 	MyFileName = InFiles[eSky];
 	f = OpenFile(MyFileName, "r", LogInfo);
@@ -92,8 +92,8 @@ void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 
 		if (x < 12) {
 			CloseFile(&f, LogInfo);
-			snprintf(errstr, MAX_ERROR, "%s : invalid record %d.\n", MyFileName, lineno);
-			LogError(LogInfo, LOGFATAL, errstr);
+			LogError(LogInfo, LOGFATAL, "%s : invalid record %d.\n",
+										MyFileName, lineno);
 		}
 
 		x = 0;
