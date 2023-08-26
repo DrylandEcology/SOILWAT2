@@ -2345,7 +2345,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 			SW_Site->evap_coeff[s] /= evsum;
 			LogError(
 				LogInfo,
-				LOGNOTE,
+				LOGWARN,
 				"  Layer %2d : %.4f",
 				s + 1, SW_Site->evap_coeff[s]
 			);
@@ -2374,7 +2374,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 					SW_Site->transp_coeff[k][s] /= trsum_veg[k];
 					LogError(
 						LogInfo,
-						LOGNOTE,
+						LOGWARN,
 						"  Layer %2d : %.4f",
 						s + 1,
 						SW_Site->transp_coeff[k][s]

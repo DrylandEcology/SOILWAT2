@@ -1689,7 +1689,7 @@ void check_and_update_dailyInputFlags(
      // Check to see if any daily flags were turned off due to a set monthly flag
      if(monthlyFlagPrioritized) {
          // Give the user a generalized note
-         LogError(LogInfo, LOGNOTE, "One or more daily flags have been turned off due to a set monthly "
+         LogError(LogInfo, LOGWARN, "One or more daily flags have been turned off due to a set monthly "
                                   "input flag which overrides daily flags. Please see `weathsetup.in` "
                                   "to change this if it was not the desired action.");
      }

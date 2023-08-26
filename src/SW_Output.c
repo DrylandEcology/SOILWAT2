@@ -2015,7 +2015,7 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 			MyFileName,
 			key2str[k]
 		);
-		return(LOGNOTE);
+		return(LOGWARN);
 	}
 
 	/* verify deep drainage parameters */

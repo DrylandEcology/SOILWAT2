@@ -574,11 +574,11 @@ void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo)
       "New coefficients are:", fraction_sum);
 
     SW_VegProd->bare_cov.fCover /= fraction_sum;
-    LogError(LogInfo, LOGNOTE, "Bare ground fraction = %.4f", SW_VegProd->bare_cov.fCover);
+    LogError(LogInfo, LOGWARN, "Bare ground fraction = %.4f", SW_VegProd->bare_cov.fCover);
 
     ForEachVegType(k) {
       SW_VegProd->veg[k].cov.fCover /= fraction_sum;
-      LogError(LogInfo, LOGNOTE, "%s fraction = %.4f",
+      LogError(LogInfo, LOGWARN, "%s fraction = %.4f",
         key2veg[k], SW_VegProd->veg[k].cov.fCover);
     }
 
