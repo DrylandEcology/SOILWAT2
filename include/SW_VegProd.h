@@ -68,7 +68,7 @@ void estimatePotNatVegComposition(double meanTemp_C,
 	double *RelAbundanceL0, double *RelAbundanceL1, LOG_INFO* LogInfo);
 double cutZeroInf(double testValue);
 void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTwoSize,
-                   int *finalIndexArray, int *finalIndexArraySize);
+                   int *finalIndexArray, int *finalIndexArraySize, LOG_INFO* LogInfo);
 void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 	SW_MODEL* SW_Model, RealD site_latitude, LOG_INFO* LogInfo);
 void SW_VPD_deconstruct(SW_VEGPROD* SW_VegProd);

@@ -71,7 +71,7 @@ void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYe
                            int *adjustedYearTwo, int *adjustedMonth, int *prevMonth,
                            int *nextMonth);
 void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
-                            SW_CLIMATE_CLIM *climateAverages);
+                        SW_CLIMATE_CLIM *climateAverages, LOG_INFO* LogInfo);
 void deallocateClimateStructs(SW_CLIMATE_YEARLY *climateOutput,
                               SW_CLIMATE_CLIM *climateAverages);
 void _read_weather_hist(
@@ -130,7 +130,7 @@ void generateMissingWeather(
   LOG_INFO* LogInfo
 );
 void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo);
-void allocateAllWeather(SW_WEATHER *w);
+void allocateAllWeather(SW_WEATHER *w, LOG_INFO* LogInfo);
 void deallocateAllWeather(SW_WEATHER *w);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
 void SW_WTH_finalize_all_weather(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather,

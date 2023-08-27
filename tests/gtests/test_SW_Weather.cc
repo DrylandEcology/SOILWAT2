@@ -200,7 +200,7 @@ namespace {
 
         // Allocate memory
             // 31 = number of years used in test
-        allocateClimateStructs(31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
 
 
         // ------ Check climate variables for default weather ------
@@ -310,7 +310,7 @@ namespace {
 
         // Allocate memory
             // 1 = number of years used in test
-        allocateClimateStructs(1, &climateOutput, &climateAverages);
+        allocateClimateStructs(1, &climateOutput, &climateAverages, &LogInfo);
 
         // ------ Check climate variables for one year of default weather ------
 
@@ -445,7 +445,7 @@ namespace {
 
         // Allocate memory
             // 31 = number of years used in test
-        allocateClimateStructs(31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
 
 
         // ------ Check climate variables for default weather ------
@@ -555,7 +555,7 @@ namespace {
         Bool inNorthHem = swTRUE;
 
         // Allocate memory
-        allocateClimateStructs(2, &climateOutput, &climateAverages);
+        allocateClimateStructs(2, &climateOutput, &climateAverages, &LogInfo);
 
         allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * 2);
 

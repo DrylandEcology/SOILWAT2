@@ -1197,15 +1197,18 @@ void SW_WTH_deconstruct(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather)
 
   @param[out] w Struct of type SW_WEATHER holding all relevant
     information pretaining to weather input data
+  @param[in] LogInfo Holds information dealing with logfile output
 */
-void allocateAllWeather(SW_WEATHER *w) {
+void allocateAllWeather(SW_WEATHER *w, LOG_INFO* LogInfo) {
   unsigned int year;
 
-  w->allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * w->n_years);
+  w->allHist = (SW_WEATHER_HIST **)Mem_Malloc(sizeof(SW_WEATHER_HIST *) * w->n_years,
+                                   "allocateAllWeather()", LogInfo);
 
   for (year = 0; year < w->n_years; year++) {
 
-      w->allHist[year] = (SW_WEATHER_HIST *)malloc(sizeof(SW_WEATHER_HIST));
+      w->allHist[year] = (SW_WEATHER_HIST *)Mem_Malloc(sizeof(SW_WEATHER_HIST),
+                                            "allocateAllWeather()", LogInfo);
   }
 }
 
@@ -1723,7 +1726,7 @@ void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
     SW_Weather->startYear = SW_Model->startyr;
 
     // Allocate new `allHist` (based on current `SW_Weather.n_years`)
-    allocateAllWeather(SW_Weather);
+    allocateAllWeather(SW_Weather, LogInfo);
 
     // Read daily meteorological input from disk (if available)
     readAllWeather(
@@ -2024,36 +2027,58 @@ void _read_weather_hist(
 }
 
 void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
-                            SW_CLIMATE_CLIM *climateAverages) {
+                        SW_CLIMATE_CLIM *climateAverages, LOG_INFO* LogInfo) {
 
     int month;
 
-    climateOutput->PPTMon_cm = (double **)malloc(sizeof(double *) * MAX_MONTHS);
-    climateOutput->meanTempMon_C = (double **)malloc(sizeof(double *) * MAX_MONTHS);
-    climateOutput->maxTempMon_C = (double **)malloc(sizeof(double *) * MAX_MONTHS);
-    climateOutput->minTempMon_C = (double **)malloc(sizeof(double *) * MAX_MONTHS);
+    climateOutput->PPTMon_cm = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
+                                          "allocateClimateStructs()", LogInfo);
+    climateOutput->meanTempMon_C = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
+                                              "allocateClimateStructs()", LogInfo);
+    climateOutput->maxTempMon_C = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
+                                             "allocateClimateStructs()", LogInfo);
+    climateOutput->minTempMon_C = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
+                                             "allocateClimateStructs()", LogInfo);
 
     for(month = 0; month < MAX_MONTHS; month++) {
-        climateOutput->PPTMon_cm[month] = (double *)malloc(sizeof(double) * numYears);
-        climateOutput->meanTempMon_C[month] = (double *)malloc(sizeof(double) * numYears);
-        climateOutput->maxTempMon_C[month] = (double *)malloc(sizeof(double) * numYears);
-        climateOutput->minTempMon_C[month] = (double *)malloc(sizeof(double) * numYears);
+        climateOutput->PPTMon_cm[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
+                                                    "allocateClimateStructs()", LogInfo);
+        climateOutput->meanTempMon_C[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
+                                                        "allocateClimateStructs()", LogInfo);
+        climateOutput->maxTempMon_C[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
+                                                       "allocateClimateStructs()", LogInfo);
+        climateOutput->minTempMon_C[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
+                                                       "allocateClimateStructs()", LogInfo);
     }
 
-    climateOutput->PPT_cm = (double *)malloc(sizeof(double) * numYears);
-    climateOutput->PPT7thMon_mm = (double *)malloc(sizeof(double) * numYears);
-    climateOutput->meanTemp_C = (double *)malloc(sizeof(double) * numYears);
-    climateOutput->meanTempDriestQtr_C = (double *)malloc(sizeof(double) * numYears);
-    climateOutput->minTemp2ndMon_C = (double *)malloc(sizeof(double) * numYears);
-    climateOutput->minTemp7thMon_C = (double *)malloc(sizeof(double) * numYears);
-    climateOutput->frostFree_days = (double *)malloc(sizeof(double) * numYears);
-    climateOutput->ddAbove65F_degday = (double *)malloc(sizeof(double) * numYears);
-    climateAverages->meanTempMon_C = (double *)malloc(sizeof(double) * MAX_MONTHS);
-    climateAverages->maxTempMon_C = (double *)malloc(sizeof(double) * MAX_MONTHS);
-    climateAverages->minTempMon_C = (double *)malloc(sizeof(double) * MAX_MONTHS);
-    climateAverages->PPTMon_cm = (double *)malloc(sizeof(double) * MAX_MONTHS);
-    climateAverages->sdC4 = (double *)malloc(sizeof(double) * 3);
-    climateAverages->sdCheatgrass = (double *)malloc(sizeof(double) * 3);
+    climateOutput->PPT_cm = (double *)Mem_Malloc(sizeof(double) * numYears,
+                                      "allocateClimateStructs()", LogInfo);
+    climateOutput->PPT7thMon_mm = (double *)Mem_Malloc(sizeof(double) * numYears,
+                                            "allocateClimateStructs()", LogInfo);
+    climateOutput->meanTemp_C = (double *)Mem_Malloc(sizeof(double) * numYears,
+                                          "allocateClimateStructs()", LogInfo);
+    climateOutput->meanTempDriestQtr_C = (double *)Mem_Malloc(sizeof(double) * numYears,
+                                                   "allocateClimateStructs()", LogInfo);
+    climateOutput->minTemp2ndMon_C = (double *)Mem_Malloc(sizeof(double) * numYears,
+                                               "allocateClimateStructs()", LogInfo);
+    climateOutput->minTemp7thMon_C = (double *)Mem_Malloc(sizeof(double) * numYears,
+                                               "allocateClimateStructs()", LogInfo);
+    climateOutput->frostFree_days = (double *)Mem_Malloc(sizeof(double) * numYears,
+                                              "allocateClimateStructs()", LogInfo);
+    climateOutput->ddAbove65F_degday = (double *)Mem_Malloc(sizeof(double) * numYears,
+                                                 "allocateClimateStructs()", LogInfo);
+    climateAverages->meanTempMon_C = (double *)Mem_Malloc(sizeof(double) * MAX_MONTHS,
+                                               "allocateClimateStructs()", LogInfo);
+    climateAverages->maxTempMon_C = (double *)Mem_Malloc(sizeof(double) * MAX_MONTHS,
+                                              "allocateClimateStructs()", LogInfo);
+    climateAverages->minTempMon_C = (double *)Mem_Malloc(sizeof(double) * MAX_MONTHS,
+                                              "allocateClimateStructs()", LogInfo);
+    climateAverages->PPTMon_cm = (double *)Mem_Malloc(sizeof(double) * MAX_MONTHS,
+                                           "allocateClimateStructs()", LogInfo);
+    climateAverages->sdC4 = (double *)Mem_Malloc(sizeof(double) * 3,
+                                      "allocateClimateStructs()", LogInfo);
+    climateAverages->sdCheatgrass = (double *)Mem_Malloc(sizeof(double) * 3,
+                                              "allocateClimateStructs()", LogInfo);
 }
 
 void deallocateClimateStructs(SW_CLIMATE_YEARLY *climateOutput,

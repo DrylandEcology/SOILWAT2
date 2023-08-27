@@ -975,7 +975,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
     }
 
     // Allocate climate structs' memory
-    allocateClimateStructs(numYears, &climateOutput, &climateAverages);
+    allocateClimateStructs(numYears, &climateOutput, &climateAverages, LogInfo);
 
     calcSiteClimate(Weather_hist, SW_Model->cum_monthdays,
 					SW_Model->days_in_month, numYears, SW_Model->startyr,
@@ -1175,7 +1175,7 @@ void estimatePotNatVegComposition(double meanTemp_C,
         }
     }
 
-    uniqueIndices(isetIndices, iFixed, 3, iFixedSize, iFixed, &iFixedSize);
+    uniqueIndices(isetIndices, iFixed, 3, iFixedSize, iFixed, &iFixedSize, LogInfo);
 
     // Set boolean value to true if grasses still need to be estimated
     if(!EQ(totalSumGrasses, 0.)) {
@@ -1361,7 +1361,8 @@ void estimatePotNatVegComposition(double meanTemp_C,
 
             if(fixSumGrasses) {
                 // Add grasses to `iFixed` array
-                uniqueIndices(iFixed, grassesEstim, iFixedSize, grassEstimSize, iFixed, &iFixedSize);
+                uniqueIndices(iFixed, grassesEstim, iFixedSize, grassEstimSize,
+							  iFixed, &iFixedSize, LogInfo);
 
                 // Remove them from the `estimIndices` array
                 for(index = 0; index < overallEstimSize; index++) {
@@ -1495,17 +1496,18 @@ double cutZeroInf(double testValue) {
  @param[in] arrayTwoSize Size of second array
  @param[out] finalIndexArray Array of size finalIndexArraySize that holds all unique indices from both arrays
  @param[in,out] finalIndexArraySize Value holding the size of finalIndexArray both before and after the function is run
+ @param[in] LogInfo Holds information dealing with logfile output
  */
 
 void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTwoSize,
-                   int *finalIndexArray, int *finalIndexArraySize) {
+                   int *finalIndexArray, int *finalIndexArraySize, LOG_INFO* LogInfo) {
 
     int index, finalArrayIndex = 0, nTypes = 8,
     tempSize = arrayOneSize + arrayTwoSize + finalArrayIndex, tempIndex = 0;
     int *tempArray, *tempArraySeen;
 
-    tempArray = (int *)malloc(sizeof(int) * tempSize);
-    tempArraySeen = (int *)malloc(sizeof(int) * nTypes);
+    tempArray = (int *)Mem_Malloc(sizeof(int) * tempSize, "uniqueIndices()", LogInfo);
+    tempArraySeen = (int *)Mem_Malloc(sizeof(int) * nTypes, "uniqueIndices()", LogInfo);
 
     memset(tempArray, 0, sizeof(int) * tempSize);
     memset(tempArraySeen, 0, sizeof(int) * nTypes);

@@ -176,10 +176,12 @@ static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
 
 		\return `name_flagiteration.ext`
 */
-static void _create_filename_ST(char *str, char *flag, int iteration, char *filename, size_t sizeof_filename) {
+static void _create_filename_ST(char *str, char *flag, int iteration,
+			char *filename, size_t sizeof_filename, LOG_INFO* LogInfo) {
 	char *basename;
 	char *ext;
-	char *fileDup = (char *)malloc(strlen(str) + 1);
+	char *fileDup = (char *)Mem_Malloc(strlen(str) + 1,
+							"_create_filename_ST", LogInfo);
 
 	// Determine basename and file extension
 	strcpy(fileDup, str); // copy file name to new variable
@@ -227,12 +229,14 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
 			// a specific order of `SW_FileIndex` --> fix and create something that
 			// allows subsetting such as `eOutputFile[pd]` or append time period to
 			// a basename, etc.
-			_create_filename_ST(InFiles[eOutputDaily + pd], "agg", 0, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles[eOutputDaily + pd], "agg", 0,
+								filename, FILENAME_MAX, LogInfo);
 			FileStatus->fp_reg_agg[pd] = OpenFile(filename, "w", LogInfo);
 		}
 
 		if (FileStatus->make_soil[pd]) {
-			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "agg", 0, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "agg", 0,
+								filename, FILENAME_MAX, LogInfo);
 			FileStatus->fp_soil_agg[pd] = OpenFile(filename, "w", LogInfo);
 		}
 
@@ -249,12 +253,14 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
 		}
 
 		if (FileStatus->make_regular[pd]) {
-			_create_filename_ST(InFiles[eOutputDaily + pd], "rep", iteration, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles[eOutputDaily + pd], "rep", iteration,
+								filename, FILENAME_MAX, LogInfo);
 			FileStatus->fp_reg[pd] = OpenFile(filename, "w", LogInfo);
 		}
 
 		if (FileStatus->make_soil[pd]) {
-			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "rep", iteration, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "rep", iteration,
+								filename, FILENAME_MAX, LogInfo);
 			FileStatus->fp_soil[pd] = OpenFile(filename, "w", LogInfo);
 		}
 	}

@@ -282,7 +282,7 @@ namespace {
             SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
-        allocateClimateStructs(31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
 
         // Calculate climate of the site and add results to "climateOutput"
         calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
@@ -743,7 +743,7 @@ namespace {
             SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
-        allocateClimateStructs(31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
 
         // Calculate climate of the site and add results to "climateOutput"
         calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
@@ -1175,6 +1175,9 @@ namespace {
                         when input vegetation values sum to over 1
             ================================================================  */
 
+        LOG_INFO LogInfo;
+        silent_tests(&LogInfo);
+
         SW_CLIMATE_CLIM climateAverages;
         SW_CLIMATE_YEARLY climateOutput;
 
@@ -1200,7 +1203,7 @@ namespace {
         double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
-        allocateClimateStructs(31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
 
         /*  ===============================================================
          Test for fail when input sum is greater than one with the values:
@@ -1244,6 +1247,9 @@ namespace {
                         when input vegetation values sum to over 1
             ================================================================  */
 
+        LOG_INFO LogInfo;
+        silent_tests(&LogInfo);
+
         SW_CLIMATE_CLIM climateAverages;
         SW_CLIMATE_YEARLY climateOutput;
 
@@ -1268,7 +1274,7 @@ namespace {
         double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
-        allocateClimateStructs(31, &climateOutput, &climateAverages);
+        allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
 
 
         SumGrassesFraction = .5;
