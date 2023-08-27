@@ -149,13 +149,17 @@ int Str_CompareI(char *t, char *s) {
 	 * works like strcmp() except case-insensitive
 	 * cwb 4-Sep-03
 	 */
+	char *tChar = t, *sChar = s;
 
-	char *t1 = (char *) malloc(strlen(t) + 1);
-	char *s1 = (char *) malloc(strlen(s) + 1);
-	int r = strcmp(Str_ToUpper(t, t1), Str_ToUpper(s, s1));
-	free(t1);
-	free(s1);
-	return r;
+	// While t and s characters are not '\0' (null)
+	// and the lower case character of t and s are the same
+	while(*tChar && *sChar && tolower(*tChar) == tolower(*sChar)) {
+		// Increment pointers to their next character
+		tChar++;
+		sChar++;
+	}
+
+	return *tChar - *sChar; // Return the difference between the t and s characters
 }
 
 /*****************************************************/
