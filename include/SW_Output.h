@@ -126,6 +126,7 @@ extern char const *styp2str[];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+void SW_OUT_init_ptrs(SW_ALL* sw);
 void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
 		LyrIndex n_layers, SW_GEN_OUT *GenOutput);

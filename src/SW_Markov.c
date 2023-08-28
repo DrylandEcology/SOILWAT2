@@ -188,6 +188,24 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 /* --------------------------------------------------- */
 
 /**
+ * @brief Initialize all possible pointers in the array, SW_OUTPUT, and
+ *		SW_GEN_OUT to NULL
+ *
+ * @param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
+ * 		related to temperature and weather generator
+*/
+void SW_MKV_init_ptrs(SW_MARKOV* SW_Markov) {
+	SW_Markov->wetprob = NULL;
+	SW_Markov->dryprob = NULL;
+	SW_Markov->avg_ppt = NULL;
+	SW_Markov->std_ppt = NULL;
+	SW_Markov->cfxw = NULL;
+	SW_Markov->cfxd = NULL;
+	SW_Markov->cfnw = NULL;
+	SW_Markov->cfnd = NULL;
+}
+
+/**
 @brief Markov constructor for global variables.
 
 @param[in] rng_seed Initial state for Markov

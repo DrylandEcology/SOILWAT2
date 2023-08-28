@@ -40,6 +40,7 @@ void SW_VES_read2(
 	char *_ProjDir,
 	LOG_INFO* LogInfo
 );
+void SW_VES_init_ptrs(SW_VEGESTAB* SW_VegEstab);
 void SW_VES_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
 void SW_VES_deconstruct(SW_VEGESTAB* SW_VegEstab);
 void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_SITE *SW_Site,

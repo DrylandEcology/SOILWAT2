@@ -1132,6 +1132,27 @@ void _clear_hist_weather(SW_WEATHER_HIST *yearWeather) {
 /* --------------------------------------------------- */
 
 /**
+ * @brief Initialize all possible pointers in SW_WEATHER to NULL
+ *
+ * @param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
+ *    information pretaining to meteorological input data
+*/
+void SW_WTH_init_ptrs(SW_WEATHER* SW_Weather) {
+  OutPeriod pd;
+
+  // Initialize output structures
+	ForEachOutPeriod(pd)
+	{
+		SW_Weather->p_accu[pd] = NULL;
+		if (pd > eSW_Day) {
+			SW_Weather->p_oagg[pd] = NULL;
+		}
+	}
+
+  SW_Weather->allHist = NULL;
+}
+
+/**
 @brief Constructor for SW_Weather.
 
 @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant

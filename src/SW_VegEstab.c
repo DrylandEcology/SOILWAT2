@@ -67,6 +67,28 @@ static void _zero_state(unsigned int sppnum, SW_VEGESTAB_INFO** parms);
 /* --------------------------------------------------- */
 
 /**
+ * @brief Initialize all possible pointers in SW_VEGESTAB to NULL
+ *
+ * @param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all
+ * 		information about vegetation establishment within the simulation
+*/
+void SW_VES_init_ptrs(SW_VEGESTAB* SW_VegEstab) {
+	OutPeriod pd;
+
+	// Initalize output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_VegEstab->p_accu[pd] = NULL;
+		if (pd > eSW_Day) {
+			SW_VegEstab->p_oagg[pd] = NULL;
+		}
+	}
+
+	SW_VegEstab->parms = NULL;
+	SW_VegEstab->count = 0;
+}
+
+/**
 @brief Constructor for SW_VegEstab.
 
 @param[out] SW_VegEstab Struct of type SW_VEGESTAB holding all
@@ -208,7 +230,6 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 	SW_VES_deconstruct(SW_VegEstab);
 	SW_VES_construct(SW_VegEstab, LogInfo);
 
-	SW_VegEstab->count = 0;
 	SW_VegEstab->use = use_VegEstab;
 
 	char buf[FILENAME_MAX], inbuf[MAX_FILENAMESIZE];

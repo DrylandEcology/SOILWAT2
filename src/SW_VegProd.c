@@ -587,6 +587,25 @@ void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo)
 }
 
 /**
+ * @brief Initialize all possible pointers in SW_VEGPROD to NULL
+ *
+ * @param[in,out] SW_VegProd SW_VegProd SW_VegProd Struct of type SW_VEGPROD
+ * 		describing surface cover conditions in the simulation
+*/
+void SW_VPD_init_ptrs(SW_VEGPROD* SW_VegProd) {
+	OutPeriod pd;
+
+	// Initialize output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_VegProd->p_accu[pd] = NULL;
+		if (pd > eSW_Day) {
+			SW_VegProd->p_oagg[pd] = NULL;
+		}
+	}
+}
+
+/**
 @brief Constructor for SW_VegProd->
 
 @param[out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface

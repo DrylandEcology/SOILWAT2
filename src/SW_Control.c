@@ -116,6 +116,24 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   }
 } /******* End Main Loop *********/
 
+/**
+ * @brief Initialize all possible pointers to NULL incase of an unexpected
+ *  program exit
+ *
+ * @param[in,out] sw Comprehensive struct of type SW_ALL containing
+ *  all information in the simulation
+ * @param[in,out] InFiles Array of program in/output files
+*/
+void SW_CTL_init_ptrs(SW_ALL* sw, char *InFiles[]) {
+  SW_F_init_ptrs(InFiles);
+  SW_WTH_init_ptrs(&sw->Weather);
+  SW_MKV_init_ptrs(&sw->Markov);
+  SW_VES_init_ptrs(&sw->VegEstab);
+  SW_VPD_init_ptrs(&sw->VegProd);
+  SW_OUT_init_ptrs(sw);
+  SW_SWC_init_ptrs(&sw->SoilWat);
+}
+
 /** @brief Setup and construct model (independent of inputs)
  *
  * @param[in,out] sw Comprehensive struct of type SW_ALL containing all
@@ -128,7 +146,7 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 
-	SW_F_construct(PathInfo->InFiles, PathInfo->InFiles[eFirst],
+	SW_F_construct(PathInfo->InFiles[eFirst],
                  PathInfo->_ProjDir, LogInfo);
 	SW_MDL_construct(sw->Model.newperiod, sw->Model.days_in_month);
 	SW_WTH_construct(&sw->Weather, LogInfo);

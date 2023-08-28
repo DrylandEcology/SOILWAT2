@@ -192,9 +192,22 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 }
 
 /**
+ * @brief Initialize all input files to NULL (`InFiles`)
+ *
+ * @brief[in,out] InFiles Array of program in/output files
+*/
+void SW_F_init_ptrs(char *InFiles[]) {
+	int file;
+
+	// Initialize `InFile` pointers to NULL
+	for(file = 0; file < SW_NFILES; file++) {
+		InFiles[file] = NULL;
+	}
+}
+
+/**
 @brief Determines string length of file being read in combined with _ProjDir.
 
-@param[in,out] InFiles Array of program in/output files
 @param[in] *firstfile File to be read in.
 @param[out] _ProjDir Project directory
 @param[in] LogInfo Holds information dealing with logfile output
@@ -204,7 +217,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 	- *c Counter parameter for the firstfile.
 	- *p Parameter for length of project directory plus *c
 */
-void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[],
+void SW_F_construct(const char *firstfile, char _ProjDir[],
 					LOG_INFO *LogInfo) {
 	/* =================================================== */
 	/* 10-May-02 (cwb) enhancement allows model to be run
@@ -214,12 +227,6 @@ void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[],
 	 */
 	char *c, *p, dirString[FILENAME_MAX];
 	char *local_firstfile = Str_Dup(firstfile, LogInfo);
-	int file;
-
-	// Initialize `InFile` pointers to all NULL aside from index eFirst
-	for(file = 1; file < SW_NFILES; file++) {
-		InFiles[file] = NULL;
-	}
 
 	DirName(local_firstfile, dirString);
 

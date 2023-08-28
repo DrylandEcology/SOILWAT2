@@ -71,6 +71,10 @@ void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
 	(void) ncol_OUT;
 }
 
+void SW_OUT_init_ptrs(SW_ALL* sw) {
+	(void) sw;
+}
+
 void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
 		LyrIndex n_layers, SW_GEN_OUT *GenOutput)

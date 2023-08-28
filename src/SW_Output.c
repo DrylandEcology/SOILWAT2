@@ -1077,6 +1077,42 @@ void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
 }
 #endif
 
+/**
+ * @brief Initialize all possible pointers in the array, SW_OUTPUT, and
+ * 		SW_GEN_OUT to NULL
+ *
+ * @param[in,out] sw Comprehensive struct of type SW_ALL containing
+ * 		all information in the simulation
+*/
+void SW_OUT_init_ptrs(SW_ALL* sw) {
+	OutKey key;
+	IntU column;
+
+	ForEachOutKey(key)
+	{
+		for (column = 0; column < 5 * NVEGTYPES + MAX_LAYERS; column++)
+		{
+			sw->GenOutput.colnames_OUT[key][column] = NULL;
+		}
+
+		#ifdef RSOILWAT
+		sw->Output[key].outfile = NULL;
+		#endif
+	}
+
+	#ifdef SW_OUTARRAY
+	ForEachOutKey(key) {
+		for (column = 0; column < SW_OUTNPERIODS; column++) {
+			sw->GenOutput.p_OUT[key][column] = NULL;
+
+			#ifdef STEPWAT
+			sw->GenOutput.p_OUTsd[key][column] = NULL;
+			#endif
+		}
+	}
+	#endif
+}
+
 
 void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,

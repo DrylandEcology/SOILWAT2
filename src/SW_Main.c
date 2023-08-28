@@ -62,6 +62,8 @@ int main(int argc, char **argv) {
 	LogInfo.logged = swFALSE;
 	LogInfo.logfp = stdout;
 
+	SW_CTL_init_ptrs(&sw, PathInfo.InFiles);
+
 	sw_init_args(argc, argv, &QuietMode, &EchoInits, &PathInfo.InFiles[eFirst],
 				 &LogInfo);
 

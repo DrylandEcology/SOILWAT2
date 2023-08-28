@@ -560,6 +560,35 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
 }
 #endif
 
+/**
+ * @brief Initialize all possible pointers in SW_SOILWAT to NULL
+ *
+ * @param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
+ * 		soil water related values
+*/
+void SW_SWC_init_ptrs(SW_SOILWAT* SW_SoilWat) {
+	OutPeriod pd;
+
+	// Initialize output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_SoilWat->p_accu[pd] = NULL;
+		if (pd > eSW_Day) {
+			SW_SoilWat->p_oagg[pd] = NULL;
+		}
+	}
+
+	SW_SoilWat->hist.file_prefix = NULL;
+
+	#ifdef SWDEBUG
+	IntU i;
+
+	for (i = 0; i < N_WBCHECKS; i++)
+	{
+		SW_SoilWat->wbErrorNames[i] = NULL;
+	}
+	#endif
+}
 
 /**
 @brief Constructor for soilWater Content.

@@ -146,6 +146,8 @@ void setup_AllTest_for_tests(
       // Initialize SOILWAT2 variables and read values from example input file
       silent_tests(LogInfo);
 
+      SW_CTL_init_ptrs(SW_All, PathInfo->InFiles);
+
       PathInfo->InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, LogInfo);
 
       SW_CTL_setup_model(SW_All, SW_OutputPtrs, PathInfo, LogInfo);
