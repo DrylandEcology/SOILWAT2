@@ -669,10 +669,9 @@ IntU _new_species(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
 	information about every vegetation species
 @param[in] count Held within type SW_VEGESTAB to determine
 	how many species to check
-@param[in] LogInfo Holds information dealing with logfile output
 */
 void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO** parms,
-					IntU count, LOG_INFO* LogInfo) {
+					IntU count) {
 	/* --------------------------------------------------- */
 	IntU i;
 	char outstr[2048], errstr[MAX_ERROR];
@@ -739,5 +738,5 @@ void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO** parms,
 	}
 	strcat(outstr, "\n-----------------  End of Establishment Parameters ------------\n");
 
-	LogError(LogInfo, LOGNOTE, outstr);
+	printf("%s\n", outstr);
 }

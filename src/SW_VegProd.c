@@ -853,20 +853,17 @@ RealD sum_across_vegtypes(RealD x[][MAX_LAYERS], LyrIndex layerno)
 	observed in total vegetation
 @param[in] VegProd_bare_cov Bare-ground cover of plot that is not
 	occupied by vegetation
-@param[in] LogInfo Holds information dealing with logfile output
 */
-void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov,
-				   LOG_INFO* LogInfo) {
+void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
 	/* ================================================== */
 
 	int k;
 
-	LogError(LogInfo, LOGNOTE,
-					"\n==============================================\n"
-					"Vegetation Production Parameters\n");
+	printf("\n==============================================\n"
+		   "Vegetation Production Parameters\n");
 
 	ForEachVegType(k) {
-		LogError(LogInfo, LOGNOTE, "%s component\t= %1.2f\n"
+		printf("%s component\t= %1.2f\n"
 					"\tAlbedo\t= %1.2f\n"
 					"\tHydraulic redistribution flag\t= %d",
 					key2veg[k], VegProd_veg[k].cov.fCover,
@@ -874,9 +871,9 @@ void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov,
 					VegProd_veg[k].flagHydraulicRedistribution);
 	}
 
-	LogError(LogInfo, LOGNOTE, "Bare Ground component\t= %1.2f\n"
-					"\tAlbedo\t= %1.2f\n",
-					VegProd_bare_cov.fCover, VegProd_bare_cov.albedo);
+	printf("Bare Ground component\t= %1.2f\n"
+		   "\tAlbedo\t= %1.2f\n",
+		   VegProd_bare_cov.fCover, VegProd_bare_cov.albedo);
 }
 
 

@@ -2641,19 +2641,21 @@ void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
 	}
 
 	strcat(errstr, "\n----------  End of Output Configuration ---------- \n");
-	LogError(LogInfo, LOGNOTE, errstr);
+	printf("%s\n", errstr);
+
+	(void) LogInfo; // Silence compiler - used in SW_Output_mock.c
 }
 
 void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo) {
 
 	if (!sw->VegEstab.use) {
-		LogError(LogInfo, LOGNOTE, "Establishment not used.\n");
+		printf("Establishment not used.\n");
 	}
 
 	_echo_inputs(&sw->Site, LogInfo);
 	_echo_VegEstab(sw->Site.width, sw->VegEstab.parms,
-				   sw->VegEstab.count, LogInfo);
-	_echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov, LogInfo);
+				   sw->VegEstab.count);
+	_echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov);
 	_echo_outputs(sw, LogInfo);
 }
 

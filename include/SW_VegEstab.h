@@ -53,7 +53,7 @@ void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
 	SW_SITE *SW_Site, LyrIndex n_transp_lyrs[], LOG_INFO* LogInfo);
 IntU _new_species(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
 void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO** parms,
-					IntU count, LOG_INFO* LogInfo);
+					IntU count);
 
 
 /* COMMENT-1

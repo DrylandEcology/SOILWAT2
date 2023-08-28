@@ -2451,65 +2451,61 @@ void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	LyrIndex i;
 
-	LogError(LogInfo, LOGNOTE, "\n\n=====================================================\n"
+	printf("\n\n=====================================================\n"
 			"Site Related Parameters:\n"
 			"---------------------\n");
-	LogError(LogInfo, LOGNOTE, "  Site File: 'siteparam.in'\n");
-	LogError(LogInfo, LOGNOTE, "  Reset SWC values each year: %s\n", (SW_Site->reset_yr) ? "swTRUE" : "swFALSE");
-	LogError(LogInfo, LOGNOTE, "  Use deep drainage reservoir: %s\n", (SW_Site->deepdrain) ? "swTRUE" : "swFALSE");
-	LogError(LogInfo, LOGNOTE, "  Slow Drain Coefficient: %5.4f\n", SW_Site->slow_drain_coeff);
-	LogError(LogInfo, LOGNOTE, "  PET Scale: %5.4f\n", SW_Site->pet_scale);
-	LogError(LogInfo, LOGNOTE, "  Runoff: proportion of surface water lost: %5.4f\n", SW_Site->percentRunoff);
-	LogError(LogInfo, LOGNOTE, "  Runon: proportion of new surface water gained: %5.4f\n", SW_Site->percentRunon);
-	LogError(LogInfo, LOGNOTE, "  Longitude (degree): %4.2f\n", SW_Site->longitude * rad_to_deg);
-	LogError(LogInfo, LOGNOTE, "  Latitude (degree): %4.2f\n", SW_Site->latitude * rad_to_deg);
-	LogError(LogInfo, LOGNOTE, "  Altitude (m a.s.l.): %4.2f \n", SW_Site->altitude);
-	LogError(LogInfo, LOGNOTE, "  Slope (degree): %4.2f\n", SW_Site->slope * rad_to_deg);
-	LogError(LogInfo, LOGNOTE, "  Aspect (degree): %4.2f\n", SW_Site->aspect * rad_to_deg);
+	printf("  Site File: 'siteparam.in'\n");
+	printf("  Reset SWC values each year: %s\n", (SW_Site->reset_yr) ? "swTRUE" : "swFALSE");
+	printf("  Use deep drainage reservoir: %s\n", (SW_Site->deepdrain) ? "swTRUE" : "swFALSE");
+	printf("  Slow Drain Coefficient: %5.4f\n", SW_Site->slow_drain_coeff);
+	printf("  PET Scale: %5.4f\n", SW_Site->pet_scale);
+	printf("  Runoff: proportion of surface water lost: %5.4f\n", SW_Site->percentRunoff);
+	printf("  Runon: proportion of new surface water gained: %5.4f\n", SW_Site->percentRunon);
+	printf("  Longitude (degree): %4.2f\n", SW_Site->longitude * rad_to_deg);
+	printf("  Latitude (degree): %4.2f\n", SW_Site->latitude * rad_to_deg);
+	printf("  Altitude (m a.s.l.): %4.2f \n", SW_Site->altitude);
+	printf("  Slope (degree): %4.2f\n", SW_Site->slope * rad_to_deg);
+	printf("  Aspect (degree): %4.2f\n", SW_Site->aspect * rad_to_deg);
 
-	LogError(LogInfo, LOGNOTE, "\nSnow simulation parameters (SWAT2K model):\n----------------------\n");
-	LogError(LogInfo, LOGNOTE, "  Avg. air temp below which ppt is snow ( C): %5.4f\n", SW_Site->TminAccu2);
-	LogError(LogInfo, LOGNOTE, "  Snow temperature at which snow melt starts ( C): %5.4f\n", SW_Site->TmaxCrit);
-	LogError(LogInfo, LOGNOTE, "  Relative contribution of avg. air temperature to todays snow temperture vs. yesterday's snow temperature (0-1): %5.4f\n", SW_Site->lambdasnow);
-	LogError(LogInfo, LOGNOTE, "  Minimum snow melt rate on winter solstice (cm/day/C): %5.4f\n", SW_Site->RmeltMin);
-	LogError(LogInfo, LOGNOTE, "  Maximum snow melt rate on summer solstice (cm/day/C): %5.4f\n", SW_Site->RmeltMax);
+	printf("\nSnow simulation parameters (SWAT2K model):\n----------------------\n");
+	printf("  Avg. air temp below which ppt is snow ( C): %5.4f\n", SW_Site->TminAccu2);
+	printf("  Snow temperature at which snow melt starts ( C): %5.4f\n", SW_Site->TmaxCrit);
+	printf("  Relative contribution of avg. air temperature to todays snow temperture vs. yesterday's snow temperature (0-1): %5.4f\n", SW_Site->lambdasnow);
+	printf("  Minimum snow melt rate on winter solstice (cm/day/C): %5.4f\n", SW_Site->RmeltMin);
+	printf("  Maximum snow melt rate on summer solstice (cm/day/C): %5.4f\n", SW_Site->RmeltMax);
 
-	LogError(LogInfo, LOGNOTE, "\nSoil Temperature Constants:\n----------------------\n");
-	LogError(LogInfo, LOGNOTE, "  Biomass Limiter constant: %5.4f\n", SW_Site->bmLimiter);
-	LogError(LogInfo, LOGNOTE, "  T1Param1: %5.4f\n", SW_Site->t1Param1);
-	LogError(LogInfo, LOGNOTE, "  T1Param2: %5.4f\n", SW_Site->t1Param2);
-	LogError(LogInfo, LOGNOTE, "  T1Param3: %5.4f\n", SW_Site->t1Param3);
-	LogError(LogInfo, LOGNOTE, "  csParam1: %5.4f\n", SW_Site->csParam1);
-	LogError(LogInfo, LOGNOTE, "  csParam2: %5.4f\n", SW_Site->csParam2);
-	LogError(LogInfo, LOGNOTE, "  shParam: %5.4f\n", SW_Site->shParam);
-	LogError(LogInfo, LOGNOTE, "  Tsoil_constant: %5.4f\n", SW_Site->Tsoil_constant);
-	LogError(LogInfo, LOGNOTE, "  deltaX: %5.4f\n", SW_Site->stDeltaX);
-	LogError(LogInfo, LOGNOTE, "  max depth: %5.4f\n", SW_Site->stMaxDepth);
-	LogError(LogInfo, LOGNOTE, "  Make soil temperature calculations: %s\n", (SW_Site->use_soil_temp) ? "swTRUE" : "swFALSE");
-	LogError(LogInfo, LOGNOTE, "  Number of regressions for the soil temperature function: %d\n", SW_Site->stNRGR);
+	printf("\nSoil Temperature Constants:\n----------------------\n");
+	printf("  Biomass Limiter constant: %5.4f\n", SW_Site->bmLimiter);
+	printf("  T1Param1: %5.4f\n", SW_Site->t1Param1);
+	printf("  T1Param2: %5.4f\n", SW_Site->t1Param2);
+	printf("  T1Param3: %5.4f\n", SW_Site->t1Param3);
+	printf("  csParam1: %5.4f\n", SW_Site->csParam1);
+	printf("  csParam2: %5.4f\n", SW_Site->csParam2);
+	printf("  shParam: %5.4f\n", SW_Site->shParam);
+	printf("  Tsoil_constant: %5.4f\n", SW_Site->Tsoil_constant);
+	printf("  deltaX: %5.4f\n", SW_Site->stDeltaX);
+	printf("  max depth: %5.4f\n", SW_Site->stMaxDepth);
+	printf("  Make soil temperature calculations: %s\n", (SW_Site->use_soil_temp) ? "swTRUE" : "swFALSE");
+	printf("  Number of regressions for the soil temperature function: %d\n", SW_Site->stNRGR);
 
-	LogError(LogInfo, LOGNOTE, "\nLayer Related Values:\n----------------------\n");
-	LogError(LogInfo, LOGNOTE, "  Soils File: 'soils.in'\n");
-	LogError(LogInfo, LOGNOTE, "  Number of soil layers: %d\n", SW_Site->n_layers);
-	LogError(LogInfo, LOGNOTE, "  Number of evaporation layers: %d\n", SW_Site->n_evap_lyrs);
-	LogError(LogInfo, LOGNOTE, "  Number of forb transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_FORBS]);
-	LogError(LogInfo, LOGNOTE, "  Number of tree transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_TREES]);
-	LogError(LogInfo, LOGNOTE, "  Number of shrub transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_SHRUB]);
-	LogError(LogInfo, LOGNOTE, "  Number of grass transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_GRASS]);
-	LogError(LogInfo, LOGNOTE, "  Number of transpiration regions: %d\n", SW_Site->n_transp_rgn);
+	printf("\nLayer Related Values:\n----------------------\n");
+	printf("  Soils File: 'soils.in'\n");
+	printf("  Number of soil layers: %d\n", SW_Site->n_layers);
+	printf("  Number of evaporation layers: %d\n", SW_Site->n_evap_lyrs);
+	printf("  Number of forb transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_FORBS]);
+	printf("  Number of tree transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_TREES]);
+	printf("  Number of shrub transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_SHRUB]);
+	printf("  Number of grass transpiration layers: %d\n", SW_Site->n_transp_lyrs[SW_GRASS]);
+	printf("  Number of transpiration regions: %d\n", SW_Site->n_transp_rgn);
 
-	LogError(LogInfo, LOGNOTE, "\nLayer Specific Values:\n----------------------\n");
-	LogError(LogInfo, LOGNOTE, "\n  Layer information on a per centimeter depth basis:\n");
-	LogError(LogInfo, LOGNOTE,
-			"  Lyr Width   BulkD 	%%Gravel    FieldC   WiltPt   %%Sand  %%Clay VWC at Forb-critSWP 	VWC at Tree-critSWP	VWC at Shrub-critSWP	VWC at Grass-critSWP	EvCo   	TrCo_Forb   TrCo_Tree  TrCo_Shrub  TrCo_Grass   TrRgn_Forb    TrRgn_Tree   TrRgn_Shrub   TrRgn_Grass   Wet     Min      Init     Saturated    Impermeability\n");
-	LogError(LogInfo, LOGNOTE,
-			"       (cm)   (g/cm^3)  (prop)    (cm/cm)  (cm/cm)   (prop) (prop)  (cm/cm)			(cm/cm)                (cm/cm)            		(cm/cm)         (prop)    (prop)      (prop)     (prop)    (prop)        (int)           (int) 	      	(int) 	    (int) 	    (cm/cm)  (cm/cm)  (cm/cm)  (cm/cm)      (frac)\n");
-	LogError(LogInfo, LOGNOTE,
-			"  --- -----   ------    ------     ------   ------   -----  ------   ------                	-------			------            		------          ------    ------      ------      ------   ------       ------   	 -----	        -----       -----   	 ----     ----     ----    ----         ----\n");
+	printf("\nLayer Specific Values:\n----------------------\n");
+	printf("\n  Layer information on a per centimeter depth basis:\n");
+	printf(			"  Lyr Width   BulkD 	%%Gravel    FieldC   WiltPt   %%Sand  %%Clay VWC at Forb-critSWP 	VWC at Tree-critSWP	VWC at Shrub-critSWP	VWC at Grass-critSWP	EvCo   	TrCo_Forb   TrCo_Tree  TrCo_Shrub  TrCo_Grass   TrRgn_Forb    TrRgn_Tree   TrRgn_Shrub   TrRgn_Grass   Wet     Min      Init     Saturated    Impermeability\n");
+	printf(			"       (cm)   (g/cm^3)  (prop)    (cm/cm)  (cm/cm)   (prop) (prop)  (cm/cm)			(cm/cm)                (cm/cm)            		(cm/cm)         (prop)    (prop)      (prop)     (prop)    (prop)        (int)           (int) 	      	(int) 	    (int) 	    (cm/cm)  (cm/cm)  (cm/cm)  (cm/cm)      (frac)\n");
+	printf(			"  --- -----   ------    ------     ------   ------   -----  ------   ------                	-------			------            		------          ------    ------      ------      ------   ------       ------   	 -----	        -----       -----   	 ----     ----     ----    ----         ----\n");
 	ForEachSoilLayer(i, SW_Site->n_layers)
 	{
-		LogError(LogInfo, LOGNOTE,
-				"  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f %9.2f %9.2f %9.2f %9.2f %9.2f %10d %10d %15d %15d %15.4f %9.4f %9.4f %9.4f %9.4f\n",
+		printf("  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f %9.2f %9.2f %9.2f %9.2f %9.2f %10d %10d %15d %15d %15.4f %9.4f %9.4f %9.4f %9.4f\n",
 				i + 1, SW_Site->width[i], SW_Site->soilBulk_density[i], SW_Site->fractionVolBulk_gravel[i], SW_Site->swcBulk_fieldcap[i] / SW_Site->width[i],
 				SW_Site->swcBulk_wiltpt[i] / SW_Site->width[i], SW_Site->fractionWeightMatric_sand[i], SW_Site->fractionWeightMatric_clay[i],
 				SW_Site->swcBulk_atSWPcrit[i][SW_FORBS] / SW_Site->width[i], SW_Site->swcBulk_atSWPcrit[i][SW_TREES] / SW_Site->width[i],
@@ -2517,37 +2513,30 @@ void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 				SW_Site->transp_coeff[SW_FORBS][i], SW_Site->transp_coeff[SW_TREES][i], SW_Site->transp_coeff[SW_SHRUB][i], SW_Site->transp_coeff[i][SW_GRASS], SW_Site->my_transp_rgn[SW_FORBS][i],
 				SW_Site->my_transp_rgn[SW_TREES][i], SW_Site->my_transp_rgn[SW_SHRUB][i], SW_Site->my_transp_rgn[SW_GRASS][i], SW_Site->swcBulk_wet[i] / SW_Site->width[i],
 				SW_Site->swcBulk_min[i] / SW_Site->width[i], SW_Site->swcBulk_init[i] / SW_Site->width[i], SW_Site->swcBulk_saturated[i] / SW_Site->width[i],
-				SW_Site->impermeability);
+				SW_Site->impermeability[i]);
 
 	}
-	LogError(LogInfo, LOGNOTE, "\n  Actual per-layer values:\n");
-	LogError(LogInfo, LOGNOTE,
-			"  Lyr Width  BulkD	 %%Gravel   FieldC   WiltPt %%Sand  %%Clay	SWC at Forb-critSWP     SWC at Tree-critSWP	SWC at Shrub-critSWP	SWC at Grass-critSWP	 Wet    Min      Init  Saturated	SoilTemp\n");
-	LogError(LogInfo, LOGNOTE,
-			"       (cm)  (g/cm^3)	(prop)    (cm)     (cm)  (prop) (prop)   (cm)    	(cm)        		(cm)            (cm)            (cm)   (cm)      (cm)     (cm)		(celcius)\n");
-	LogError(LogInfo, LOGNOTE,
-			"  --- -----  -------	------   ------   ------ ------ ------   ------        	------            	------          ----   		----     ----     ----    ----		----\n");
+	printf("\n  Actual per-layer values:\n");
+	printf("  Lyr Width  BulkD	 %%Gravel   FieldC   WiltPt %%Sand  %%Clay	SWC at Forb-critSWP     SWC at Tree-critSWP	SWC at Shrub-critSWP	SWC at Grass-critSWP	 Wet    Min      Init  Saturated	SoilTemp\n");
+	printf(			"       (cm)  (g/cm^3)	(prop)    (cm)     (cm)  (prop) (prop)   (cm)    	(cm)        		(cm)            (cm)            (cm)   (cm)      (cm)     (cm)		(celcius)\n");
+	printf(			"  --- -----  -------	------   ------   ------ ------ ------   ------        	------            	------          ----   		----     ----     ----    ----		----\n");
 
 	ForEachSoilLayer(i, SW_Site->n_layers)
 	{
-		LogError(LogInfo, LOGNOTE, "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %8.4f %7.4f %5.4f\n", i + 1, SW_Site->width[i],
+		printf("  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %8.4f %7.4f %5.4f\n", i + 1, SW_Site->width[i],
 				SW_Site->soilBulk_density[i], SW_Site->fractionVolBulk_gravel[i], SW_Site->swcBulk_fieldcap[i], SW_Site->swcBulk_wiltpt[i], SW_Site->fractionWeightMatric_sand[i],
 				SW_Site->fractionWeightMatric_clay[i], SW_Site->swcBulk_atSWPcrit[i][SW_FORBS], SW_Site->swcBulk_atSWPcrit[i][SW_TREES], SW_Site->swcBulk_atSWPcrit[i][SW_SHRUB],
 				SW_Site->swcBulk_atSWPcrit[i][SW_GRASS], SW_Site->swcBulk_wet[i], SW_Site->swcBulk_min[i], SW_Site->swcBulk_init[i], SW_Site->swcBulk_saturated[i], SW_Site->avgLyrTempInit[i]);
 	}
 
-	LogError(LogInfo, LOGNOTE, "\n  Water Potential values:\n");
-	LogError(LogInfo, LOGNOTE, "  Lyr       FieldCap         WiltPt            Forb-critSWP     Tree-critSWP     Shrub-critSWP    Grass-critSWP    Wet            Min            Init\n");
-	LogError(LogInfo, LOGNOTE,
-			"            (bars)           (bars)            (bars)           (bars)           (bars)           (bars)           (bars)         (bars)         (bars)\n");
-	LogError(LogInfo, LOGNOTE,
-			"  ---       -----------      ------------      -----------      -----------      -----------      -----------      -----------    -----------    --------------    --------------\n");
+	printf("\n  Water Potential values:\n");
+	printf("  Lyr       FieldCap         WiltPt            Forb-critSWP     Tree-critSWP     Shrub-critSWP    Grass-critSWP    Wet            Min            Init\n");
+	printf(			"            (bars)           (bars)            (bars)           (bars)           (bars)           (bars)           (bars)         (bars)         (bars)\n");
+	printf(			"  ---       -----------      ------------      -----------      -----------      -----------      -----------      -----------    -----------    --------------    --------------\n");
 
 	ForEachSoilLayer(i, SW_Site->n_layers)
 	{
-		LogError(
-			LogInfo,
-			LOGNOTE,
+		printf(
 			"  %3d   %15.4f   %15.4f  %15.4f %15.4f  %15.4f  %15.4f  %15.4f   %15.4f   %15.4f\n",
 			i + 1,
 			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_fieldcap[i], SW_Site, i, LogInfo),
@@ -2562,36 +2551,26 @@ void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 		);
 	}
 
-	LogError(
-		LogInfo,
-		LOGNOTE,
+	printf(
 		"\nSoil Water Retention Curve:\n---------------------------\n"
 	);
-	LogError(
-		LogInfo,
-		LOGNOTE,
+	printf(
 		"  SWRC type: %d (%s)\n",
 		SW_Site->site_swrc_type,
 		SW_Site->site_swrc_name
 	);
-	LogError(
-		LogInfo,
-		LOGNOTE,
+	printf(
 		"  PTF type: %d (%s)\n",
 		SW_Site->site_ptf_type,
 		SW_Site->site_ptf_name
 	);
 
-	LogError(
-		LogInfo,
-		LOGNOTE,
+	printf(
 		"  Lyr     Param1     Param2     Param3     Param4     Param5     Param6\n"
 	);
 	ForEachSoilLayer(i, SW_Site->n_layers)
 	{
-		LogError(
-			LogInfo,
-			LOGNOTE,
+		printf(
 			"  %3d%11.4f%11.4f%11.4f%11.4f%11.4f%11.4f\n",
 			i + 1,
 			SW_Site->swrcp[i][0],
@@ -2605,12 +2584,9 @@ void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 
 
 
-	LogError(
-		LogInfo,
-		LOGNOTE,
+	printf(
 		"\n------------ End of Site Parameters ------------------\n"
 	);
-	//fflush(LogInfo);
 }
 
 #ifdef DEBUG_MEM
