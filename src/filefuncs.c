@@ -344,7 +344,7 @@ Bool ChDir(const char *dname) {
 #define mkdir(d, m) mkdir(d, m)
 #endif
 
-Bool MkDir(const char *dname) {
+Bool MkDir(const char *dname, LOG_INFO* LogInfo) {
 	/* make a path with 'mkdir -p' -like behavior. provides an
 	 * interface for portability problems.
 	 * RELATIVE PATH ONLY solves problems like "C:\etc" and null
@@ -374,7 +374,7 @@ Bool MkDir(const char *dname) {
 		return swFALSE;
 
 	if (NULL == (c = strdup(dname))) {
-		sw_error(-1, "Out of memory making string in MkDir()");
+		LogError(LogInfo, LOGFATAL, "Out of memory making string in MkDir()");
 	}
 
 	n = 0;

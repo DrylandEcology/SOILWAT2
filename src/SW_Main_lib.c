@@ -124,7 +124,7 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 		if (op >= nopts) {
       sw_print_usage();
-      sw_error(-1, "\nInvalid option %s\n", argv[a]);
+      LogError(LogInfo, LOGFATAL, "\nInvalid option %s\n", argv[a]);
 
 		} else {
 			// Use `valopts[op]` in else-branch to avoid
@@ -141,7 +141,7 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 				} else if (0 < valopts[op]) { /* required opt-val not found */
 					sw_print_usage();
-					sw_error(-1, "\nIncomplete option %s\n", opts[op]);
+					LogError(LogInfo, LOGFATAL, "\nIncomplete option %s\n", opts[op]);
 				} /* opt-val not required */
 			}
 
@@ -169,12 +169,12 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 				case 4: /* -v */
 					sw_print_version();
-					sw_error(-1, "");
+					LogError(LogInfo, LOGEXIT, "");
 					break;
 
 				case 5: /* -h */
 					sw_print_usage();
-					sw_error(-1, "");
+					LogError(LogInfo, LOGEXIT, "");
 					break;
 
 				default:
@@ -201,7 +201,8 @@ void sw_check_log(Bool QuietMode, LOG_INFO* LogInfo) {
 	if (LogInfo->logfp != stdout && LogInfo->logfp != stderr) {
 		CloseFile(&LogInfo->logfp, LogInfo);
 		if (LogInfo->logged && !QuietMode) {
-			sw_error(0, "\nCheck logfile for error or status messages.\n");
+			fprintf(stderr, "\nCheck logfile for error or status messages.\n");
+			fflush(stderr);
 		}
 	}
 

@@ -242,7 +242,7 @@ void RandUniList(long count, long first, long last, RandListType list[],
 	range = last - first + 1;
 
 	if (count > range || range <= 0) {
-    sw_error(-1, "Error in RandUniList: count > range || range <= 0\n");
+    LogError(LogInfo, LOGFATAL, "Error in RandUniList: count > range || range <= 0\n");
 	}
 
 	/* if count == range for some weird reason, just
@@ -406,9 +406,10 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
   \param bb The second shape parameter of the beta distribution with
          \f$0.0 < bb\f$.
   \param[in,out] *pcg_rng The random number generator to use.
+  \param[in] LogInfo Holds information dealing with logfile output
   \return A random variate of a beta distribution.
 */
-float RandBeta ( float aa, float bb, pcg32_random_t* pcg_rng) {
+float RandBeta ( float aa, float bb, pcg32_random_t* pcg_rng, LOG_INFO* LogInfo) {
   float a;
   float alpha;
   float b;
@@ -431,11 +432,11 @@ float RandBeta ( float aa, float bb, pcg32_random_t* pcg_rng) {
   float z;
 
   if ( aa <= 0.0 ) {
-    sw_error(1, "RandBeta - Fatal error: AA <= 0.0\n");
+    LogError(LogInfo, LOGFATAL, "RandBeta - Fatal error: AA <= 0.0\n");
   }
 
   if ( bb <= 0.0 ) {
-    sw_error(1, "RandBeta - Fatal error: BB <= 0.0\n");
+    LogError(LogInfo, LOGFATAL, "RandBeta - Fatal error: BB <= 0.0\n");
   }
 
   //------  Algorithm BB

@@ -107,7 +107,7 @@ void *Mem_Malloc(size_t size, const char *funcname, LOG_INFO* LogInfo) {
 
 #ifdef DEBUG_MEM_LOG
 	if( NULL==(f=fopen("memory.log","a")) ) {
-    sw_error(-1, "Can't open memory.log for errors\n");
+		LogError(LogInfo, LOGFATAL, "Can't open memory.log for errors\n");
 	}
 	swprintf("%s: %d: %p\n", funcname, size, p);
 	fclose(f);
@@ -191,7 +191,7 @@ void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO* LogInfo) {
 	assert(p != NULL && sizeNew > 0);
 #else
 	if(p == NULL || sizeNew == 0)
-		sw_error(-1, "assert failed in ReAlloc");
+		LogError(LogInfo, LOGFATAL, "assert failed in ReAlloc");
 #endif
 
 #ifdef DEBUG_MEM

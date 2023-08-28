@@ -62,7 +62,7 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
 			printf("Can't remove old csv output file: %s\n", s);
 		}
 	}
-	else if (!MkDir(dirString))
+	else if (!MkDir(dirString, LogInfo))
 	{
 		LogError(LogInfo, LOGFATAL, "Can't make output path for csv file: %s\n", dirString);
 		printf("Can't make output path for csv file: %s\n", dirString);

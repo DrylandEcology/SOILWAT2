@@ -28,7 +28,7 @@ const char *BaseName(const char *p);
 Bool FileExists(const char *f);
 Bool DirExists(const char *d);
 Bool ChDir(const char *d);
-Bool MkDir(const char *d);
+Bool MkDir(const char *dname, LOG_INFO* LogInfo);
 Bool RemoveFiles(const char *fspec, LOG_INFO* LogInfo);
 void sw_error(int errorcode, const char *format, ...);
 void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...);
