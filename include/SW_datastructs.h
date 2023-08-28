@@ -736,6 +736,13 @@ typedef struct {
 	Bool logged;
 	// Indicates logfile written to via LogError.
 
+	char *errorMsg,              // Holds the message for a fatal error
+		 *warningMsgs[MAX_MSGS]; // Holds up to MAX_MSGS warning messages to report
+
+	int numWarnings;        // Number of warnings to be written out
+
+	Bool stopRun;           // Specifies if an error has occurred and
+                            // the program needs to stop early (backtrack)
 } LOG_INFO;
 
 typedef struct {
