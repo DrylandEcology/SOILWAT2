@@ -390,62 +390,18 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 
 	@param sw Comprehensive structure holding all information
 		dealt with in SOILWAT2
-	@param LogInfo Holds information dealing with logfile output
 */
-void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo)
+void _echo_outputs(SW_ALL* sw)
 {
-	OutPeriod pd = eSW_Year;
+	sumof_vpd(NULL, NULL, eSW_NoKey, sw->Model.doy);
+	sumof_ves(NULL, NULL, eSW_NoKey);
+	sumof_wth(NULL, NULL, eSW_NoKey);
+	sumof_swc(NULL, NULL, eSW_NoKey);
 
-	get_none(pd, sw);
-	get_estab_text(pd, sw);
-	get_temp_text(pd, sw);
-	get_precip_text(pd, sw);
-	get_vwcBulk_text(pd, sw);
-	get_vwcMatric_text(pd, sw);
-	get_swcBulk_text(pd, sw);
-	get_swpMatric_text(pd, sw);
-	get_swaBulk_text(pd, sw);
-	get_swaMatric_text(pd, sw);
-	get_surfaceWater_text(pd, sw);
-	get_runoffrunon_text(pd, sw);
-	get_transp_text(pd, sw);
-	get_evapSoil_text(pd, sw);
-	get_evapSurface_text(pd, sw);
-	get_interception_text(pd, sw);
-	get_soilinf_text(pd, sw);
-	get_lyrdrain_text(pd, sw);
-	get_hydred_text(pd, sw);
-	get_aet_text(pd, sw);
-	get_pet_text(pd, sw);
-	get_wetdays_text(pd, sw);
-	get_snowpack_text(pd, sw);
-	get_deepswc_text(pd, sw);
-	get_soiltemp_text(pd, sw);
-    get_frozen_text(pd, sw);
-	get_co2effects_text(pd, sw);
-	get_biomass_text(pd, sw);
+	average_for(sw, eF, eSW_Year, swFALSE, sw->GenOutput.tOffset, NULL);
 
-	OutKey k = eSW_NoKey;
-	SW_VEGPROD *vveg = NULL;
-	SW_VEGPROD_OUTPUTS *sveg = NULL;
-	SW_VEGESTAB *vestab = NULL;
-	SW_VEGESTAB_OUTPUTS *sestab = NULL;
-	SW_WEATHER *vweath = NULL;
-	SW_WEATHER_OUTPUTS *sweath = NULL;
-	SW_SOILWAT *vswc = NULL;
-	SW_SOILWAT_OUTPUTS *sswc = NULL;
-
-	sumof_vpd(vveg, sveg, k, sw->Model.doy);
-	sumof_ves(vestab, sestab, k);
-	sumof_wth(vweath, sweath, k);
-	sumof_swc(vswc, sswc, k);
-
-	ObjType otyp = eF;
-
-	average_for(sw, otyp, pd, swFALSE, sw->GenOutput.tOffset, LogInfo);
-
-	collect_sums(sw, otyp, pd, sw->GenOutput.timeSteps,
-				 sw->GenOutput.used_OUTNPERIODS, LogInfo);
+	collect_sums(sw, eF, eSW_Year, sw->GenOutput.timeSteps,
+				 sw->GenOutput.used_OUTNPERIODS, NULL);
 }
 
 

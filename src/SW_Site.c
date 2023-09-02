@@ -67,6 +67,7 @@
 #include "include/SW_Files.h"
 #include "include/SW_Site.h"
 #include "include/SW_SoilWater.h"
+#include "include/SW_Main_lib.h"
 
 
 
@@ -2445,11 +2446,12 @@ void SW_SIT_init_counts(SW_SITE* SW_Site) {
 @brief Print site-parameters and soil characteristics.
 
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] LogInfo Holds information dealing with logfile output
 */
-void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
+void _echo_inputs(SW_SITE* SW_Site) {
 	/* =================================================== */
 	LyrIndex i;
+	LOG_INFO LogInfo;
+	sw_init_logs(&LogInfo);
 
 	printf("\n\n=====================================================\n"
 			"Site Related Parameters:\n"
@@ -2539,15 +2541,15 @@ void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 		printf(
 			"  %3d   %15.4f   %15.4f  %15.4f %15.4f  %15.4f  %15.4f  %15.4f   %15.4f   %15.4f\n",
 			i + 1,
-			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_fieldcap[i], SW_Site, i, LogInfo),
-			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_wiltpt[i], SW_Site, i, LogInfo),
-			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_atSWPcrit[i][SW_FORBS], SW_Site, i, LogInfo),
-			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_atSWPcrit[i][SW_TREES], SW_Site, i, LogInfo),
-			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_atSWPcrit[i][SW_SHRUB], SW_Site, i, LogInfo),
-			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_atSWPcrit[i][SW_SHRUB], SW_Site, i, LogInfo),
-			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_atSWPcrit[i][SW_GRASS], SW_Site, i, LogInfo),
-			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_min[i], SW_Site, i, LogInfo),
-			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_init[i], SW_Site, i, LogInfo)
+			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_fieldcap[i], SW_Site, i, &LogInfo),
+			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_wiltpt[i], SW_Site, i, &LogInfo),
+			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_atSWPcrit[i][SW_FORBS], SW_Site, i, &LogInfo),
+			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_atSWPcrit[i][SW_TREES], SW_Site, i, &LogInfo),
+			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_atSWPcrit[i][SW_SHRUB], SW_Site, i, &LogInfo),
+			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_atSWPcrit[i][SW_SHRUB], SW_Site, i, &LogInfo),
+			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_atSWPcrit[i][SW_GRASS], SW_Site, i, &LogInfo),
+			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_min[i], SW_Site, i, &LogInfo),
+			SW_SWRC_SWCtoSWP(SW_Site->swcBulk_init[i], SW_Site, i, &LogInfo)
 		);
 	}
 

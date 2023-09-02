@@ -153,8 +153,8 @@ void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				  LOG_INFO* LogInfo);
 void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo);
-void _echo_outputs(SW_ALL* sw, LOG_INFO* LogInfo);
-void _echo_all_inputs(SW_ALL* sw, LOG_INFO* LogInfo);
+void _echo_outputs(SW_ALL* sw);
+void _echo_all_inputs(SW_ALL* sw);
 
 void find_OutPeriods_inUse(SW_GEN_OUT* GenOutput, SW_OUTPUT* SW_Output);
 Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k, IntUS used_OUTNPERIODS,

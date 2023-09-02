@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
 	                    PathInfo.InFiles, &sw.GenOutput, &LogInfo); // only used with SOILWAT2
 
 	if(EchoInits) {
-		_echo_all_inputs(&sw, &LogInfo);
+		_echo_all_inputs(&sw);
 	}
 
   // run simulation: loop through each year
