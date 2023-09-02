@@ -97,7 +97,7 @@ void *Mem_Malloc(size_t size, const char *funcname, LOG_INFO* LogInfo) {
 #ifdef DEBUG_MEM
 	{
 		if (size == 0)
-		LogError(logfp, LOGFATAL, "Programmer Error: "
+		LogError(LogInfo, LOGFATAL, "Programmer Error: "
 				"size == 0 in MallocErr()");
 
 	}
@@ -208,7 +208,7 @@ void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO* LogInfo) {
 		memset((p+sizeNew), bGarbage, sizeOld - sizeNew);
 		else if (sizeNew > sizeOld) {
 			byte *pForceNew;
-			if (NULL != (pForceNew = (byte *)Mem_Malloc( sizeNew,"Mem_Realloc()"))) {
+			if (NULL != (pForceNew = (byte *)Mem_Malloc( sizeNew,"Mem_Realloc()", LogInfo))) {
 				memcpy( pForceNew, p, sizeOld);
 				Mem_Free( p);
 				p = pForceNew;
