@@ -739,7 +739,7 @@ typedef struct {
 	char *errorMsg,              // Holds the message for a fatal error
 		 *warningMsgs[MAX_MSGS]; // Holds up to MAX_MSGS warning messages to report
 
-	int numWarnings;        // Number of warnings to be written out
+	int numWarnings;        // Number of total warnings thrown
 
 	Bool stopRun;           // Specifies if an error has occurred and
                             // the program needs to stop early (backtrack)
