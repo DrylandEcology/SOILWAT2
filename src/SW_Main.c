@@ -59,9 +59,7 @@ int main(int argc, char **argv) {
 	PATH_INFO PathInfo;
 	Bool EchoInits, QuietMode;
 
-	LogInfo.logged = swFALSE;
-	LogInfo.logfp = stdout;
-
+	sw_init_logs(&LogInfo);
 	SW_CTL_init_ptrs(&sw, PathInfo.InFiles);
 
 	sw_init_args(argc, argv, &QuietMode, &EchoInits, &PathInfo.InFiles[eFirst],
@@ -108,7 +106,7 @@ int main(int argc, char **argv) {
 	SW_CTL_clear_model(swTRUE, &sw, &PathInfo);
 
 	// Mention to the user if something was logged
-	sw_check_log(QuietMode, &LogInfo);
+	sw_write_logs(QuietMode, &LogInfo);
 
 	return 0;
 }

@@ -207,3 +207,72 @@ void sw_check_log(Bool QuietMode, LOG_INFO* LogInfo) {
 	}
 
 }
+
+/**
+ * @brief Initialize values within LOG_INFO
+ *
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void sw_init_logs(LOG_INFO* LogInfo) {
+
+	int msgNum;
+
+	LogInfo->logged = swFALSE;
+	LogInfo->logfp = stdout;
+
+	for(msgNum = 0; msgNum < MAX_MSGS; msgNum++) {
+		LogInfo->warningMsgs[msgNum] = NULL;
+	}
+	LogInfo->errorMsg = NULL;
+
+	LogInfo->stopRun = swFALSE;
+	LogInfo->numWarnings = 0;
+}
+
+/**
+ * @brief Write logs that have been accumulated throughout the program/
+ * 	simulation run
+ *
+ * @param[in] QuietMode Flag to control if the program version is displayed
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
+
+	int warnMsgNum, warningUpperBound = LogInfo->numWarnings;
+	Bool tooManyWarns = swFALSE;
+
+	if(warningUpperBound > MAX_MSGS) {
+		warningUpperBound = MAX_MSGS;
+		tooManyWarns = swTRUE;
+	}
+
+	#ifdef RSOILWAT
+	for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
+		warning(LogInfo->warningMsgs[warnMsgNum]);
+	}
+
+	if(!isnull(LogInfo->errorMsg)) {
+		warning(LogInfo->errorMsg);
+	}
+
+	if(tooManyWarns) {
+		warning("\nMore warnings were found but not are stored/shown.\n");
+	}
+	#else
+	for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
+		fprintf(LogInfo->logfp, "%s\n", LogInfo->warningMsgs[warnMsgNum]);
+	}
+
+	if(!isnull(LogInfo->errorMsg)) {
+		fprintf(LogInfo->logfp, "%s\n", LogInfo->errorMsg);
+	}
+
+	if(tooManyWarns) {
+		fprintf(LogInfo->logfp, "\nMore warnings were found but are not"\
+								" stored/shown.\n");
+	}
+
+	fflush(LogInfo->logfp);
+	sw_check_log(QuietMode, LogInfo);
+	#endif
+}
