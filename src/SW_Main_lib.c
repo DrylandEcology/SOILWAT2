@@ -194,9 +194,8 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 void sw_check_log(Bool QuietMode, LOG_INFO* LogInfo) {
 	/* =================================================== */
-	/* function to be called by atexit() so it's the last
-	 * to execute before termination.  This is the place to
-	 * do any cleanup or progress reporting.
+	/* This function is the last to execute before termination.
+	 * This is the place to do any cleanup or progress reporting.
 	 */
 	if (LogInfo->logfp != stdout && LogInfo->logfp != stderr) {
 		CloseFile(&LogInfo->logfp, LogInfo);
