@@ -1144,9 +1144,7 @@ void SW_WTH_init_ptrs(SW_WEATHER* SW_Weather) {
 	ForEachOutPeriod(pd)
 	{
 		SW_Weather->p_accu[pd] = NULL;
-		if (pd > eSW_Day) {
-			SW_Weather->p_oagg[pd] = NULL;
-		}
+    SW_Weather->p_oagg[pd] = NULL;
 	}
 
   SW_Weather->allHist = NULL;

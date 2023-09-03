@@ -79,9 +79,7 @@ void SW_VES_init_ptrs(SW_VEGESTAB* SW_VegEstab) {
 	ForEachOutPeriod(pd)
 	{
 		SW_VegEstab->p_accu[pd] = NULL;
-		if (pd > eSW_Day) {
-			SW_VegEstab->p_oagg[pd] = NULL;
-		}
+		SW_VegEstab->p_oagg[pd] = NULL;
 	}
 
 	SW_VegEstab->parms = NULL;

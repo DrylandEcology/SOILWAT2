@@ -597,9 +597,7 @@ void SW_VPD_init_ptrs(SW_VEGPROD* SW_VegProd) {
 	ForEachOutPeriod(pd)
 	{
 		SW_VegProd->p_accu[pd] = NULL;
-		if (pd > eSW_Day) {
-			SW_VegProd->p_oagg[pd] = NULL;
-		}
+		SW_VegProd->p_oagg[pd] = NULL;
 	}
 }
 

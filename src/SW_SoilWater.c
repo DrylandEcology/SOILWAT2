@@ -573,9 +573,7 @@ void SW_SWC_init_ptrs(SW_SOILWAT* SW_SoilWat) {
 	ForEachOutPeriod(pd)
 	{
 		SW_SoilWat->p_accu[pd] = NULL;
-		if (pd > eSW_Day) {
-			SW_SoilWat->p_oagg[pd] = NULL;
-		}
+		SW_SoilWat->p_oagg[pd] = NULL;
 	}
 
 	SW_SoilWat->hist.file_prefix = NULL;
