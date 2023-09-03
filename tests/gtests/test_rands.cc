@@ -244,7 +244,7 @@ namespace {
   TEST(RNGTest, RNGBetaZeroToOneOutput) {
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     pcg32_random_t ZeroToOne_rng;
     RandSeed(0u, 0u, &ZeroToOne_rng);
@@ -300,7 +300,7 @@ namespace {
   TEST(RNGDeathTest, RNGBetaErrorsDeathTest) {
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     pcg32_random_t error_rng;
     RandSeed(0u, 0u, &error_rng);

@@ -721,7 +721,7 @@ namespace
     SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     unsigned int k;
 
@@ -921,7 +921,7 @@ namespace
     SW_ATMD SW_AtmDemand;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
 
     int i;
@@ -1211,7 +1211,7 @@ namespace
     SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
 
     int doy, k1, k2, k3, k4, k5;

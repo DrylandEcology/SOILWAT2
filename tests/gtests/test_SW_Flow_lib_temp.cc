@@ -91,7 +91,7 @@ namespace {
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     // declare inputs and output
     double deltaX = 15.0, theMaxDepth = 990.0, sTconst = 4.15;
@@ -171,7 +171,7 @@ namespace {
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     double deltaX = 15.0, sTconst = 4.15;
@@ -217,7 +217,7 @@ namespace {
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     // declare inputs and output
     double deltaX = 15.0, theMaxDepth = 990.0, sTconst = 4.15;
@@ -455,7 +455,7 @@ namespace {
     SW_SITE SW_Site;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     RealD lyrFrozen[MAX_LAYERS] = {0};
 
@@ -611,7 +611,7 @@ namespace {
     SW_SITE SW_Site;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     RealD lyrFrozen[MAX_LAYERS] = {0};
 
@@ -771,7 +771,7 @@ namespace {
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     RealD lyrFrozen[MAX_LAYERS] = {0};
 

@@ -67,7 +67,7 @@ namespace {
   // Test pedotransfer functions
   TEST(SiteTest, SitePTFs) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     // inputs
     RealD
@@ -129,7 +129,7 @@ namespace {
   // Test fatal failures of PTF estimation
   TEST(SiteDeathTest, SitePTFsDeathTest) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
 
     RealD
@@ -240,7 +240,7 @@ namespace {
   // Test fatal failures of SWRC parameter checks
   TEST(SiteDeathTest, SiteSWRCpChecksDeathTest) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
@@ -260,7 +260,7 @@ namespace {
   // Test nonfatal failures of SWRC parameter checks
   TEST(SiteTest, SiteSWRCpChecks) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     // inputs
     RealD
@@ -400,7 +400,7 @@ namespace {
   // Test 'PTF_RawlsBrakensiek1985'
   TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     //declare mock INPUTS
     double
@@ -566,7 +566,7 @@ namespace {
   // Test bulk and matric soil density functionality
   TEST(SiteTest, SiteSoilDensity) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     double
       soildensity = 1.4,
@@ -643,7 +643,7 @@ namespace {
   // Test that bulk and matric soil density fail
   TEST(SiteDeathTest, SiteSoilDensityTooLowDeathTest) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     // Create an error if bulk density too low for coarse fragments
     calculate_soilMatricDensity(1.65, 0.7, &LogInfo);

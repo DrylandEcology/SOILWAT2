@@ -48,7 +48,7 @@ namespace {
     SW_MARKOV SW_Markov;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     int rng_seed = 8;
 
@@ -73,7 +73,7 @@ namespace {
     SW_MARKOV SW_Markov;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     char *InFiles[SW_NFILES];
     for (short file = 0; file < SW_NFILES; file++) {
@@ -168,7 +168,7 @@ namespace {
     SW_MARKOV SW_Markov;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     int rng_seed = 9;
     short k, n = 3;
@@ -212,7 +212,7 @@ namespace {
     SW_MARKOV SW_Markov;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     int rng_seed = 11;
     RealD tmax = 0., tmin = 0.;
@@ -235,7 +235,7 @@ namespace {
     SW_MARKOV SW_Markov;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     int rng_seed = 13;
     RealD

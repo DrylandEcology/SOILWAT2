@@ -117,7 +117,7 @@ namespace{
   // Test the 'SW_SoilWater' functions 'SWRC_SWCtoSWP' and `SWRC_SWPtoSWC`
   TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     // set up mock variables
     unsigned int swrc_type, ptf_type, k;
@@ -308,7 +308,7 @@ namespace{
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWCtoSWP'
   TEST(SoilWaterDeathTest, SoilWaterSWCtoSWPDeathTest) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     // set up mock variables
     RealD
@@ -393,7 +393,7 @@ namespace{
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWPtoSWC'
   TEST(SoilWaterDeathTest, SoilWaterSWPtoSWCDeathTest) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     // set up mock variables
     RealD

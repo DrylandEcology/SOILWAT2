@@ -351,7 +351,7 @@ namespace
     unsigned int k;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     SW_SITE SW_Site;
     setup_SW_Site_for_tests(&SW_Site);
@@ -458,7 +458,7 @@ namespace
     unsigned int k;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     SW_SITE SW_Site;
     setup_SW_Site_for_tests(&SW_Site);
@@ -555,7 +555,7 @@ namespace
     unsigned int k;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     SW_SITE SW_Site;
     setup_SW_Site_for_tests(&SW_Site);
@@ -733,7 +733,7 @@ namespace
     unsigned int k;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     SW_SITE SW_Site;
     setup_SW_Site_for_tests(&SW_Site);
@@ -912,7 +912,7 @@ namespace
     unsigned int k;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     SW_SITE SW_Site;
     setup_SW_Site_for_tests(&SW_Site);
@@ -1138,7 +1138,7 @@ namespace
     unsigned int k;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    init_silent_tests(&LogInfo);
 
     SW_SITE SW_Site;
     setup_SW_Site_for_tests(&SW_Site);

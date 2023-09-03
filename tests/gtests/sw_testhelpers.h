@@ -24,7 +24,7 @@ static const double
 
 /* Functions for tests */
 
-void silent_tests(LOG_INFO* LogInfo);
+void init_silent_tests(LOG_INFO* LogInfo);
 
 void create_test_soillayers(unsigned int nlayers,
       SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo);
