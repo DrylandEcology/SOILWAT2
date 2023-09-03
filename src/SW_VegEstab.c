@@ -112,9 +112,18 @@ void SW_VES_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
 	{
 		SW_VegEstab->p_accu[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(1,
 			sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_construct()", LogInfo);
+
+		// Intiailize p_accu to NULL to eliminate the chance of
+		// deallocating unallocated memory
+		SW_VegEstab->p_accu[pd]->days = NULL;
+
 		if (pd > eSW_Day) {
 			SW_VegEstab->p_oagg[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(1,
 				sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_construct()", LogInfo);
+
+			// Intiailize p_accu to NULL to eliminate the chance of
+			// deallocating unallocated memory
+			SW_VegEstab->p_oagg[pd]->days = NULL;
 		}
 	}
 }
