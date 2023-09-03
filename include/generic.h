@@ -218,11 +218,6 @@ extern errstr[];
           LogError(fp, m, errstr);
 #endif
 
-#ifndef strdup
-  char * sw_strdup(const char * s);
-  #define strdup(x) sw_strdup(x)
-#endif
-
 
 #ifdef __cplusplus
 }

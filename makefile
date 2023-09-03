@@ -121,7 +121,7 @@ lib_gtest := $(dir_build_test)/lib$(gtest).a
 
 #------ STANDARDS
 # googletest requires c++14 and POSIX API
-# cygwin does not enable POSIX API by default (e.g., `strdup()` is missing)
+# cygwin does not enable POSIX API by default
 # --> enable by defining `_POSIX_C_SOURCE=200809L`
 #     (or `-std=gnu++11` or `_GNU_SOURCE`)
 # see https://github.com/google/googletest/issues/813 and

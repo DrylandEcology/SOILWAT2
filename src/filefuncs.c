@@ -346,9 +346,7 @@ Bool MkDir(const char *dname, LOG_INFO* LogInfo) {
 	if (isnull(dname))
 		return swFALSE;
 
-	if (NULL == (c = strdup(dname))) {
-		LogError(LogInfo, LOGFATAL, "Out of memory making string in MkDir()");
-	}
+	c = Str_Dup(dname, LogInfo);
 
 	n = 0;
 	a[n++] = strtok(c, delim);
