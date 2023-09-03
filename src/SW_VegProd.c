@@ -581,8 +581,6 @@ void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo)
       LogError(LogInfo, LOGWARN, "%s fraction = %.4f",
         key2veg[k], SW_VegProd->veg[k].cov.fCover);
     }
-
-    LogError(LogInfo, LOGQUIET, "");
   }
 }
 

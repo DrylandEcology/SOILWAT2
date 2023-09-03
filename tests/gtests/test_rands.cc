@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -21,6 +21,8 @@
 #include "external/pcg/pcg_basic.h"
 
 #include "tests/gtests/sw_testhelpers.h"
+
+using ::testing::HasSubstr;
 
 
 namespace {
@@ -302,9 +304,14 @@ namespace {
 
     pcg32_random_t error_rng;
     RandSeed(0u, 0u, &error_rng);
-    EXPECT_DEATH_IF_SUPPORTED(RandBeta(-0.5, 2, &error_rng, &LogInfo), "AA <= 0.0");
-    EXPECT_DEATH_IF_SUPPORTED(RandBeta(1, -3, &error_rng, &LogInfo), "BB <= 0.0");
-    EXPECT_DEATH_IF_SUPPORTED(RandBeta(-1, -3, &error_rng, &LogInfo), "AA <= 0.0");
+    RandBeta(-0.5, 2, &error_rng, &LogInfo);
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("AA <= 0.0"));
+
+    RandBeta(1, -3, &error_rng, &LogInfo);
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("BB <= 0.0"));
+
+    RandBeta(-1, -3, &error_rng, &LogInfo);
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("AA <= 0.0"));
   }
 
 } // namespace

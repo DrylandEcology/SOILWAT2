@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -42,6 +42,8 @@
 
 
 pcg32_random_t flowTemp_rng;
+
+using ::testing::HasSubstr;
 
 namespace {
 
@@ -193,15 +195,16 @@ namespace {
     /// test when theMaxDepth is less than soil layer depth - function should fail
     double theMaxDepth2 = 70.0;
 
-    // We expect death when max depth < last layer
-    EXPECT_DEATH_IF_SUPPORTED(
-      soil_temperature_setup(
-        &SW_StRegValues, bDensity2, width2, sTempInit2, sTconst, nlyrs,
-        fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError,
-        &SW_StRegValues.soil_temp_init, &LogInfo
-      ),
-      "SOIL_TEMP FUNCTION ERROR: soil temperature max depth"
+    // We expect an error when max depth < last layer
+    soil_temperature_setup(
+      &SW_StRegValues, bDensity2, width2, sTempInit2, sTconst, nlyrs,
+      fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError,
+      &SW_StRegValues.soil_temp_init, &LogInfo
     );
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg,
+                HasSubstr("SOIL_TEMP FUNCTION ERROR: soil temperature max depth"));
 
     delete[] wp2; delete[] fc2; delete[] bDensity2;
   }
@@ -784,17 +787,18 @@ namespace {
       sTemp[1], min_temp[] = {10.0}, max_temp[] = {1.0};
 
     // Should fail when soil_temperature was not initialized
-    EXPECT_DEATH_IF_SUPPORTED(
-      soil_temperature(&SW_StRegValues,
-        &surface_max, &surface_min, lyrFrozen,
-        airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-        sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
-        t1Param3, csParam1, csParam2, shParam, snowdepth,
-        sTconst, deltaX, theMaxDepth, nRgr, snow, max_air_temp,
-        min_air_temp, H_gt, year, doy,
-        min_temp, max_temp, &ptr_stError, &LogInfo
-      ),
-      "SOILWAT2 ERROR soil temperature module was not initialized"
+    soil_temperature(&SW_StRegValues,
+      &surface_max, &surface_min, lyrFrozen,
+      airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
+      sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
+      t1Param3, csParam1, csParam2, shParam, snowdepth,
+      sTconst, deltaX, theMaxDepth, nRgr, snow, max_air_temp,
+      min_air_temp, H_gt, year, doy,
+      min_temp, max_temp, &ptr_stError, &LogInfo
     );
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg,
+                HasSubstr("SOILWAT2 ERROR soil temperature module was not initialized"));
   }
 }

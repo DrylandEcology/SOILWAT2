@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -35,7 +35,7 @@
 
 #include "tests/gtests/sw_testhelpers.h"
 
-
+using ::testing::HasSubstr;
 
 
 static void assert_decreasing_SWPcrit(SW_VEGPROD* SW_VegProd);
@@ -1174,9 +1174,7 @@ namespace {
                    Tests a death case of `estimatePotNatVegComposition()`
                         when input vegetation values sum to over 1
             ================================================================  */
-
-        LOG_INFO LogInfo;
-        silent_tests(&LogInfo);
+        AllTestStruct sw = AllTestStruct();
 
         SW_CLIMATE_CLIM climateAverages;
         SW_CLIMATE_YEARLY climateOutput;
@@ -1203,37 +1201,37 @@ namespace {
         double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
-        allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
+        allocateClimateStructs(31, &climateOutput, &climateAverages, &sw.LogInfo);
 
         /*  ===============================================================
          Test for fail when input sum is greater than one with the values:
          [.0567, .5, .0392, .0981, .3218, .0827, .1293, .0405]
             ===============================================================  */
 
-        EXPECT_DEATH_IF_SUPPORTED({
-            AllTestStruct sw = AllTestStruct();
 
-            // Reset "SW_All.Weather.allHist"
-            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
-            finalizeAllWeather(&sw.SW_All.Markov, &sw.SW_All.Weather,
-                sw.SW_All.Model.cum_monthdays, sw.SW_All.Model.days_in_month, &sw.LogInfo);
+        // Reset "SW_All.Weather.allHist"
+        SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
+        finalizeAllWeather(&sw.SW_All.Markov, &sw.SW_All.Weather,
+            sw.SW_All.Model.cum_monthdays, sw.SW_All.Model.days_in_month, &sw.LogInfo);
 
-            // Calculate climate of the site and add results to "climateOutput"
-            calcSiteClimate(sw.SW_All.Weather.allHist, sw.SW_All.Model.cum_monthdays,
-                sw.SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
+        // Calculate climate of the site and add results to "climateOutput"
+        calcSiteClimate(sw.SW_All.Weather.allHist, sw.SW_All.Model.cum_monthdays,
+            sw.SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
 
-            // Average values from "climateOutput" and put them in "climateAverages"
-            averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
+        // Average values from "climateOutput" and put them in "climateAverages"
+        averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
 
-            estimatePotNatVegComposition(
-              climateAverages.meanTemp_C, climateAverages.PPT_cm,
-                    climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
-                    SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &sw.LogInfo
-            );
-          },
-          "User defined relative abundance values sum to more than 1 = full land cover"
+        estimatePotNatVegComposition(
+          climateAverages.meanTemp_C, climateAverages.PPT_cm,
+                climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
+                SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
+                fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &sw.LogInfo
         );
+
+        // Detect failure by error message
+        EXPECT_THAT(sw.LogInfo.errorMsg,
+                    HasSubstr("User defined relative abundance values sum to more"\
+                    " than 1 = full land cover"));
 
         // Free allocated data
         deallocateClimateStructs(&climateOutput, &climateAverages);
@@ -1247,8 +1245,7 @@ namespace {
                         when input vegetation values sum to over 1
             ================================================================  */
 
-        LOG_INFO LogInfo;
-        silent_tests(&LogInfo);
+        AllTestStruct sw = AllTestStruct();
 
         SW_CLIMATE_CLIM climateAverages;
         SW_CLIMATE_YEARLY climateOutput;
@@ -1274,7 +1271,7 @@ namespace {
         double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
-        allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
+        allocateClimateStructs(31, &climateOutput, &climateAverages, &sw.LogInfo);
 
 
         SumGrassesFraction = .5;
@@ -1297,30 +1294,29 @@ namespace {
          added to the initial input sum
             ===============================================================  */
 
-        EXPECT_DEATH_IF_SUPPORTED({
-            AllTestStruct sw = AllTestStruct();
+        // Reset "SW_All.Weather.allHist"
+        SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
+        finalizeAllWeather(&sw.SW_All.Markov, &sw.SW_All.Weather,
+            sw.SW_All.Model.cum_monthdays, sw.SW_All.Model.days_in_month, &sw.LogInfo);
 
-            // Reset "SW_All.Weather.allHist"
-            SW_WTH_read(&sw.SW_All.Weather, &sw.SW_All.Sky, &sw.SW_All.Model, &sw.LogInfo);
-            finalizeAllWeather(&sw.SW_All.Markov, &sw.SW_All.Weather,
-                sw.SW_All.Model.cum_monthdays, sw.SW_All.Model.days_in_month, &sw.LogInfo);
+        // Calculate climate of the site and add results to "climateOutput"
+        calcSiteClimate(sw.SW_All.Weather.allHist, sw.SW_All.Model.cum_monthdays,
+            sw.SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
 
-            // Calculate climate of the site and add results to "climateOutput"
-            calcSiteClimate(sw.SW_All.Weather.allHist, sw.SW_All.Model.cum_monthdays,
-                sw.SW_All.Model.days_in_month, 31, 1980, inNorthHem, &climateOutput);
+        // Average values from "climateOutput" and put them in "climateAverages"
+        averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
 
-            // Average values from "climateOutput" and put them in "climateAverages"
-            averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
-
-            estimatePotNatVegComposition(
-              climateAverages.meanTemp_C, climateAverages.PPT_cm,
-                    climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
-                    SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
-                    fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &sw.LogInfo
-            );
-          },
-          "User defined relative abundance values sum to more than 1 = full land cover"
+        estimatePotNatVegComposition(
+          climateAverages.meanTemp_C, climateAverages.PPT_cm,
+                climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
+                SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
+                fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &sw.LogInfo
         );
+
+        // Detect failure by error message
+        EXPECT_THAT(sw.LogInfo.errorMsg,
+                    HasSubstr("User defined relative abundance values sum to more"\
+                    " than 1 = full land cover"));
 
         // Free allocated data
         deallocateClimateStructs(&climateOutput, &climateAverages);

@@ -2351,8 +2351,6 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				s + 1, SW_Site->evap_coeff[s]
 			);
 		}
-
-		LogError(LogInfo, LOGQUIET, "");
 	}
 
 	ForEachVegType(k)
@@ -2382,8 +2380,6 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 					);
 				}
 			}
-
-			LogError(LogInfo, LOGQUIET, "");
 		}
 	}
 

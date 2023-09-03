@@ -146,17 +146,14 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
      *           to be called each time replacement args occur.
      */
 
-    char outfmt[MAX_ERROR] = {0}; /* to prepend err type str */
-    char buf[MAX_ERROR];
-    va_list args;
+    char outfmt[MAX_LOG_SIZE] = {0}; /* to prepend err type str */
+	char buf[MAX_LOG_SIZE];
+	int nextWarn = LogInfo->numWarnings;
+	va_list args;
 
-    va_start(args, fmt);
+	va_start(args, fmt);
 
-    if (LOGQUIET & mode)
-        strcpy(outfmt, "");
-    else if (LOGNOTE & mode)
-        strcpy(outfmt, "NOTE: ");
-    else if (LOGWARN & mode)
+    if (LOGWARN & mode)
         strcpy(outfmt, "WARNING: ");
     else if (LOGERROR & mode)
         strcpy(outfmt, "ERROR: ");
@@ -164,49 +161,25 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
     strcat(outfmt, fmt);
     strcat(outfmt, "\n");
 
-    #ifdef RSOILWAT
-        vsnprintf(buf, MAX_ERROR, outfmt, args);
+	vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
 
-        if (LOGEXIT & mode) {
-            // exit with error and always show message
-            error(buf);
+	if(LOGWARN & mode) {
+		if(nextWarn < MAX_MSGS) {
+			strcpy(LogInfo->warningMsgs[nextWarn], buf);
+		}
+		LogInfo->numWarnings++;
+	} else if(mode == LOGFATAL || mode == LOGERROR || mode == LOGEXIT) {
 
-        } else if(LogInfo->logfp != NULL) {
-            // send warning message only if not silenced (fp is not NULL)
-            warning(buf);
-        }
+		#ifdef STEPWAT
+		sw_error(-1, outfmt);
+		#else
+		strcpy(LogInfo->errorMsg, buf);
+		LogInfo->stopRun = swTRUE;
+		#endif
+	}
 
-    #else
-        if (isnull(LogInfo->logfp)) {
-          // silence messages (fp is NULL) except errors (which go to stderr)
-          if (LOGEXIT & mode) {
-            vsnprintf(buf, MAX_ERROR, outfmt, args);
-            sw_error(-1, buf);
-          }
-
-
-        } else {
-          // send message to fp
-
-          int check_eof;
-          check_eof = (EOF == vfprintf(LogInfo->logfp, outfmt, args));
-
-          if (check_eof) {
-              sw_error(0, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
-          }
-
-          fflush(LogInfo->logfp);
-
-          if (LOGEXIT & mode) {
-              // exit with error
-              sw_error(-1, "@ generic.c LogError");
-          }
-        }
-    #endif
-
-
-    LogInfo->logged = swTRUE;
-    va_end(args);
+	LogInfo->logged = swTRUE;
+	va_end(args);
 }
 
 

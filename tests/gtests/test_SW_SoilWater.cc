@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -18,6 +18,8 @@
 #include "include/SW_VegProd.h"
 #include "include/SW_Flow_lib.h"
 #include "tests/gtests/sw_testhelpers.h"
+
+using ::testing::HasSubstr;
 
 namespace{
   // Test the 'SW_SoilWater' function 'SW_SWC_adjust_snow'
@@ -322,10 +324,11 @@ namespace{
 
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
-    EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-      "is not implemented"
-    );
+    SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is not implemented"));
+
     EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
       SW_MISSING
@@ -334,28 +337,31 @@ namespace{
 
     // --- 2) swc < 0: water content cannot be negative
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
-      EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-        "invalid SWC"
-      );
+      SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+
+      // Detect failure by error message
+      EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWC"));
+
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
         SW_MISSING
       );
 
-      EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGFATAL, &LogInfo),
-        "invalid SWC"
-      );
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGFATAL, &LogInfo);
+
+      // Detect failure by error message
+      EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWC"));
+
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGWARN, &LogInfo),
         SW_MISSING
       );
 
-      EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGFATAL, &LogInfo),
-        "invalid SWC"
-      );
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGFATAL, &LogInfo);
+
+      // Detect failure by error message
+      EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWC"));
+
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGWARN, &LogInfo),
         SW_MISSING
@@ -372,10 +378,11 @@ namespace{
     swrcp[3] = 1.2673;
     swrcp[4] = 7.78506;
 
-    EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-      "invalid value"
-    );
+    SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid value"));
+
     EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
       SW_MISSING
@@ -402,10 +409,12 @@ namespace{
 
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
-    EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-      "is not implemented"
-    );
+    SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is not implemented"));
+
     EXPECT_DOUBLE_EQ(
       SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
       SW_MISSING
@@ -413,10 +422,11 @@ namespace{
 
     // --- 2) swp < 0: water content cannot be negative (any SWRC)
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
-      EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-        "invalid SWP"
-      );
+      SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+
+      // Detect failure by error message
+      EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWP"));
+
       EXPECT_DOUBLE_EQ(
         SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
         SW_MISSING
