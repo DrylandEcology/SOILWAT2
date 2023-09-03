@@ -736,8 +736,8 @@ typedef struct {
 	Bool logged;
 	// Indicates logfile written to via LogError.
 
-	char *errorMsg,              // Holds the message for a fatal error
-		 *warningMsgs[MAX_MSGS]; // Holds up to MAX_MSGS warning messages to report
+	char errorMsg[MAX_LOG_SIZE],              // Holds the message for a fatal error
+		 warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning messages to report
 
 	int numWarnings;        // Number of total warnings thrown
 

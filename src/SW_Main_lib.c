@@ -214,15 +214,10 @@ void sw_check_log(Bool QuietMode, LOG_INFO* LogInfo) {
 */
 void sw_init_logs(LOG_INFO* LogInfo) {
 
-	int msgNum;
-
 	LogInfo->logged = swFALSE;
 	LogInfo->logfp = stdout;
 
-	for(msgNum = 0; msgNum < MAX_MSGS; msgNum++) {
-		LogInfo->warningMsgs[msgNum] = NULL;
-	}
-	LogInfo->errorMsg = NULL;
+	LogInfo->errorMsg[0] = '\0';
 
 	LogInfo->stopRun = swFALSE;
 	LogInfo->numWarnings = 0;
@@ -262,7 +257,7 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
 		fprintf(LogInfo->logfp, "%s\n", LogInfo->warningMsgs[warnMsgNum]);
 	}
 
-	if(!isnull(LogInfo->errorMsg)) {
+	if(LogInfo->errorMsg[0] != '\0') {
 		fprintf(LogInfo->logfp, "%s\n", LogInfo->errorMsg);
 	}
 

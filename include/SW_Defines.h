@@ -100,6 +100,9 @@ extern "C" {
 /* Maximum number of messages to store in LOG_INFO */
 #define MAX_MSGS 10
 
+/* Maximum number of characters for a single message in LOG_INFO */
+#define MAX_LOG_SIZE 300
+
 /* this could be defined by STEPWAT */
 #ifndef DFLT_FIRSTFILE
   #define DFLT_FIRSTFILE "files.in"
