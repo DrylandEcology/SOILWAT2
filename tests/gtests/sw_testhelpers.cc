@@ -30,13 +30,6 @@
 
 #include "tests/gtests/sw_testhelpers.h"
 
-
-void init_silent_tests(LOG_INFO* LogInfo) {
-  sw_init_logs(LogInfo);
-
-  LogInfo->logfp = NULL;
-}
-
 /**
   @brief Creates soil layers based on function arguments (instead of reading
     them from an input file as _read_layers() does)
@@ -112,7 +105,7 @@ void create_test_soillayers(unsigned int nlayers,
 
 void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     SW_Site->deepdrain = swTRUE;
 
@@ -145,7 +138,7 @@ void setup_AllTest_for_tests(
       Bool QuietMode = swFALSE;
 
       // Initialize SOILWAT2 variables and read values from example input file
-      init_silent_tests(LogInfo);
+      sw_init_logs(NULL, LogInfo);
 
       SW_CTL_init_ptrs(SW_All, PathInfo->InFiles);
 
@@ -162,7 +155,7 @@ void setup_AllTest_for_tests(
         - error messages go directly to stderr (which DeathTests use to match against)
       */
       sw_check_log(QuietMode, LogInfo);
-      init_silent_tests(LogInfo);
+      sw_init_logs(NULL, LogInfo);
 
       SW_WTH_finalize_all_weather(
         &SW_All->Markov,

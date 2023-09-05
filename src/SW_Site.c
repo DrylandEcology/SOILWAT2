@@ -2447,7 +2447,7 @@ void _echo_inputs(SW_SITE* SW_Site) {
 	/* =================================================== */
 	LyrIndex i;
 	LOG_INFO LogInfo;
-	sw_init_logs(&LogInfo);
+	sw_init_logs(stdout, &LogInfo);
 
 	printf("\n\n=====================================================\n"
 			"Site Related Parameters:\n"

@@ -34,6 +34,7 @@
 #include "include/SW_Weather.h"
 #include "include/SW_Markov.h"
 #include "include/SW_Sky.h"
+#include "include/SW_Main_lib.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
@@ -67,7 +68,7 @@ namespace {
   // Test pedotransfer functions
   TEST(SiteTest, SitePTFs) {
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // inputs
     RealD
@@ -129,7 +130,7 @@ namespace {
   // Test fatal failures of PTF estimation
   TEST(SiteDeathTest, SitePTFsDeathTest) {
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
 
     RealD
@@ -240,7 +241,7 @@ namespace {
   // Test fatal failures of SWRC parameter checks
   TEST(SiteDeathTest, SiteSWRCpChecksDeathTest) {
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
@@ -260,7 +261,7 @@ namespace {
   // Test nonfatal failures of SWRC parameter checks
   TEST(SiteTest, SiteSWRCpChecks) {
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // inputs
     RealD
@@ -400,7 +401,7 @@ namespace {
   // Test 'PTF_RawlsBrakensiek1985'
   TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     //declare mock INPUTS
     double
@@ -566,7 +567,7 @@ namespace {
   // Test bulk and matric soil density functionality
   TEST(SiteTest, SiteSoilDensity) {
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     double
       soildensity = 1.4,
@@ -643,7 +644,7 @@ namespace {
   // Test that bulk and matric soil density fail
   TEST(SiteDeathTest, SiteSoilDensityTooLowDeathTest) {
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // Create an error if bulk density too low for coarse fragments
     calculate_soilMatricDensity(1.65, 0.7, &LogInfo);

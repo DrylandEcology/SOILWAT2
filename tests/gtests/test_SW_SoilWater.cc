@@ -17,6 +17,7 @@
 #include "include/SW_SoilWater.h"
 #include "include/SW_VegProd.h"
 #include "include/SW_Flow_lib.h"
+#include "include/SW_Main_lib.h"
 #include "tests/gtests/sw_testhelpers.h"
 
 using ::testing::HasSubstr;
@@ -117,7 +118,7 @@ namespace{
   // Test the 'SW_SoilWater' functions 'SWRC_SWCtoSWP' and `SWRC_SWPtoSWC`
   TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // set up mock variables
     unsigned int swrc_type, ptf_type, k;
@@ -308,7 +309,7 @@ namespace{
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWCtoSWP'
   TEST(SoilWaterDeathTest, SoilWaterSWCtoSWPDeathTest) {
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // set up mock variables
     RealD
@@ -393,7 +394,7 @@ namespace{
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWPtoSWC'
   TEST(SoilWaterDeathTest, SoilWaterSWPtoSWCDeathTest) {
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // set up mock variables
     RealD

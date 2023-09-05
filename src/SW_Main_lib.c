@@ -210,12 +210,14 @@ void sw_check_log(Bool QuietMode, LOG_INFO* LogInfo) {
 /**
  * @brief Initialize values within LOG_INFO
  *
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[in] logInitPtr Log file pointer that LOG_INFO will be initialized to
+ * @param[in,out] LogInfo Holds information dealing with log file output
 */
-void sw_init_logs(LOG_INFO* LogInfo) {
+void sw_init_logs(FILE* logInitPtr, LOG_INFO* LogInfo) {
 
 	LogInfo->logged = swFALSE;
-	LogInfo->logfp = stdout;
+	LogInfo->logfp = logInitPtr;
+	printf("ASDf\n");
 
 	LogInfo->errorMsg[0] = '\0';
 

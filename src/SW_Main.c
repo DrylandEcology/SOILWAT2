@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
 	PATH_INFO PathInfo;
 	Bool EchoInits, QuietMode;
 
-	sw_init_logs(&LogInfo);
+	sw_init_logs(stdout, &LogInfo);
 	SW_CTL_init_ptrs(&sw, PathInfo.InFiles);
 
 	sw_init_args(argc, argv, &QuietMode, &EchoInits, &PathInfo.InFiles[eFirst],

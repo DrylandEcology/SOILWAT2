@@ -19,6 +19,7 @@
 #include "include/filefuncs.h"
 #include "include/rands.h"
 #include "external/pcg/pcg_basic.h"
+#include "include/SW_Main_lib.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
@@ -244,7 +245,7 @@ namespace {
   TEST(RNGTest, RNGBetaZeroToOneOutput) {
 
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     pcg32_random_t ZeroToOne_rng;
     RandSeed(0u, 0u, &ZeroToOne_rng);
@@ -300,7 +301,7 @@ namespace {
   TEST(RNGDeathTest, RNGBetaErrorsDeathTest) {
 
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     pcg32_random_t error_rng;
     RandSeed(0u, 0u, &error_rng);

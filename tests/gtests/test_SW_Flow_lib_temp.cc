@@ -35,6 +35,7 @@
 #include "include/SW_Markov.h"
 #include "include/SW_Sky.h"
 #include "external/pcg/pcg_basic.h"
+#include "include/SW_Main_lib.h"
 
 #include "include/SW_Flow_lib.h"
 
@@ -91,7 +92,7 @@ namespace {
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // declare inputs and output
     double deltaX = 15.0, theMaxDepth = 990.0, sTconst = 4.15;
@@ -171,7 +172,7 @@ namespace {
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     double deltaX = 15.0, sTconst = 4.15;
@@ -217,7 +218,7 @@ namespace {
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // declare inputs and output
     double deltaX = 15.0, theMaxDepth = 990.0, sTconst = 4.15;
@@ -455,7 +456,7 @@ namespace {
     SW_SITE SW_Site;
 
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     RealD lyrFrozen[MAX_LAYERS] = {0};
 
@@ -611,7 +612,7 @@ namespace {
     SW_SITE SW_Site;
 
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     RealD lyrFrozen[MAX_LAYERS] = {0};
 
@@ -771,7 +772,7 @@ namespace {
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
-    init_silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     RealD lyrFrozen[MAX_LAYERS] = {0};
 
