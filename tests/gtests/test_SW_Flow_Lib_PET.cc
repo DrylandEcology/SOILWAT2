@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include "gmock/gmock.h"
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -42,7 +42,7 @@
 
 #include "tests/gtests/sw_testhelpers.h"
 
-
+using ::testing::StrEq;
 
 namespace
 {
@@ -167,6 +167,9 @@ namespace
 
     SW_ATMD SW_AtmDemand;
 
+    LOG_INFO LogInfo;
+    init_silent_tests(&LogInfo);
+
     int
       k, k2, ilat, itime, isl, iasp,
       doys[14] =
@@ -233,11 +236,11 @@ namespace
                   break;
 
                 default:
-                  sw_error(
-                    -1,
-                    "Error in SW2_SolarPosition_Test__hourangles_symmetries"
-                  );
+                  LogError(&LogInfo, LOGFATAL,
+                           "Error in SW2_SolarPosition_Test__hourangles_symmetries");
               }
+
+              EXPECT_THAT(LogInfo.errorMsg, StrEq(""));
 
               SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
 

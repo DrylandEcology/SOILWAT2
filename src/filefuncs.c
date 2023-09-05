@@ -24,7 +24,8 @@
  06/21/2013	(DLM)	memory leak in function getfiles(): variables dname and fname need to be free'd
  */
 
-
+// Making this static results in a compilation warning [-Wunused-function]
+void sw_error(int errorcode, const char *format, ...);
 
 /* =================================================== */
 /*             Local Function Definitions              */
