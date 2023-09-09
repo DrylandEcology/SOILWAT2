@@ -113,7 +113,7 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	FILE *f;
 	int y, cnt;
 	TimeInt d;
-	char *p, enddyval[6], errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
+	char *p, enddyval[6], errstr[MAX_LOG_SIZE], *MyFileName, inbuf[MAX_FILENAMESIZE];
 	Bool fstartdy = swFALSE, fenddy = swFALSE, fhemi = swFALSE;
 
 	MyFileName = InFiles[eModel];
@@ -186,7 +186,7 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	}
 
 	if (!(fstartdy && fenddy && fhemi)) {
-		snprintf(errstr, MAX_ERROR, "\nNot found in %s:\n", MyFileName);
+		snprintf(errstr, MAX_LOG_SIZE, "\nNot found in %s:\n", MyFileName);
 		if (!fstartdy) {
 			strcat(errstr, "\tStart Day  - using 1\n");
 			SW_Model->startstart = 1;
