@@ -108,8 +108,10 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
      *           to be called each time replacement args occur.
      */
 
-    char outfmt[MAX_LOG_SIZE] = {0}; /* to prepend err type str */
-	char buf[MAX_LOG_SIZE];
+	// NOTE: for the variables `outfmt` and `buf`, 2 is a reasonable
+	// size to hold prepended message type and newline character
+    char outfmt[MAX_LOG_SIZE * 2] = {0}; /* to prepend err type str */
+	char buf[MAX_LOG_SIZE * 2];
 	int nextWarn = LogInfo->numWarnings;
 	va_list args;
 
@@ -123,7 +125,7 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
     strcat(outfmt, fmt);
     strcat(outfmt, "\n");
 
-	vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
+	vsprintf(buf, outfmt, args);
 
 	if(LOGWARN & mode) {
 		if(nextWarn < MAX_MSGS) {
