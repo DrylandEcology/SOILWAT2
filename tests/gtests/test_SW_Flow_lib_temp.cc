@@ -167,7 +167,7 @@ namespace {
   }
 
   // Death tests for soil_temperature_setup function
-  TEST(SWFlowTempDeathTest, SWFlowTempSoilTemperatureInitDeathTest) {
+  TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
     ST_RGR_VALUES SW_StRegValues;
     SW_ST_init_run(&SW_StRegValues);
 
@@ -767,7 +767,7 @@ namespace {
   }
 
   // Test that main soil temperature functions fails when it is supposed to
-  TEST(SWFlowTempDeathTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
+  TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
     ST_RGR_VALUES SW_StRegValues;
     SW_ST_init_run(&SW_StRegValues);
 

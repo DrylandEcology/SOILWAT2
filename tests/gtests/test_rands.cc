@@ -298,7 +298,7 @@ namespace {
     }
   }
 
-  TEST(RNGDeathTest, RNGBetaErrorsDeathTest) {
+  TEST(RNGTest, RNGBetaErrorsDeathTest) {
 
     LOG_INFO LogInfo;
     sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting

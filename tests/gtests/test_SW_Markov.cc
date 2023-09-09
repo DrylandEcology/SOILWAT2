@@ -209,7 +209,7 @@ namespace {
     SW_MKV_deconstruct(&SW_Markov);
   }
 
-  TEST(WeatherGeneratorDeathTest, WeatherGeneratormvnormDeathTest) {
+  TEST(WeatherGeneratorTest, WeatherGeneratormvnormDeathTest) {
     SW_MARKOV SW_Markov;
 
     LOG_INFO LogInfo;

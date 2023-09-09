@@ -307,7 +307,7 @@ namespace{
 
 
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWCtoSWP'
-  TEST(SoilWaterDeathTest, SoilWaterSWCtoSWPDeathTest) {
+  TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
     LOG_INFO LogInfo;
     sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
@@ -392,7 +392,7 @@ namespace{
 
 
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWPtoSWC'
-  TEST(SoilWaterDeathTest, SoilWaterSWPtoSWCDeathTest) {
+  TEST(SoilWaterTest, SoilWaterSWPtoSWCDeathTest) {
     LOG_INFO LogInfo;
     sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 

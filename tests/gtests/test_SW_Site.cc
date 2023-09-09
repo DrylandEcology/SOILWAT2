@@ -128,7 +128,7 @@ namespace {
 
 
   // Test fatal failures of PTF estimation
-  TEST(SiteDeathTest, SitePTFsDeathTest) {
+  TEST(SiteTest, SitePTFsDeathTest) {
     LOG_INFO LogInfo;
     sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
@@ -239,7 +239,7 @@ namespace {
 
 
   // Test fatal failures of SWRC parameter checks
-  TEST(SiteDeathTest, SiteSWRCpChecksDeathTest) {
+  TEST(SiteTest, SiteSWRCpChecksDeathTest) {
     LOG_INFO LogInfo;
     sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
@@ -456,31 +456,29 @@ namespace {
 
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST(SiteStructDeathTest, SiteSoilEvaporationParametersDeathTest) {
+  TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
-    AllTestStruct sw = AllTestStruct();
 
-    sw.SW_All.Site.evap_coeff[0] = -0.5;
+    SW_All.Site.evap_coeff[0] = -0.5;
 
-    SW_SIT_init_run(&sw.SW_All.VegProd, &sw.SW_All.Site, &sw.LogInfo);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Detect failure by error message
-    EXPECT_THAT(sw.LogInfo.errorMsg,
+    EXPECT_THAT(LogInfo.errorMsg,
                 HasSubstr("'bare-soil evaporation coefficient' has an invalid value"));
   }
 
 
-  TEST(SiteStructDeathTest, SiteSoilTranspirationParametersDeathTest) {
+  TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 
     // Check error for bad transpiration coefficient (should be [0-1])
-    AllTestStruct sw = AllTestStruct();
 
-    sw.SW_All.Site.transp_coeff[SW_GRASS][1] = 1.5;
-    SW_SIT_init_run(&sw.SW_All.VegProd, &sw.SW_All.Site, &sw.LogInfo);
+    SW_All.Site.transp_coeff[SW_GRASS][1] = 1.5;
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Detect failure by error message
-    EXPECT_THAT(sw.LogInfo.errorMsg,
+    EXPECT_THAT(LogInfo.errorMsg,
                 HasSubstr("'transpiration coefficient' has an invalid value"));
   }
 
@@ -642,7 +640,7 @@ namespace {
 
 
   // Test that bulk and matric soil density fail
-  TEST(SiteDeathTest, SiteSoilDensityTooLowDeathTest) {
+  TEST(SiteTest, SiteSoilDensityTooLowDeathTest) {
     LOG_INFO LogInfo;
     sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
@@ -654,15 +652,14 @@ namespace {
   }
 
 
-  TEST(SiteStructDeathTest, SiteSoilDensityMissingDeathTest) {
+  TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
     // Create an error if type_soilDensityInput not implemented
-    AllTestStruct sw = AllTestStruct();
 
-    sw.SW_All.Site.type_soilDensityInput = SW_MISSING;
+    SW_All.Site.type_soilDensityInput = SW_MISSING;
 
-    SW_SIT_init_run(&sw.SW_All.VegProd, &sw.SW_All.Site, &sw.LogInfo);
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Detect failure by error message
-    EXPECT_THAT(sw.LogInfo.errorMsg, HasSubstr("Soil density type not recognized"));
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("Soil density type not recognized"));
   }
 } // namespace
