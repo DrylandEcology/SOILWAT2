@@ -216,7 +216,6 @@ void sw_init_logs(FILE* logInitPtr, LOG_INFO* LogInfo) {
 
 	LogInfo->logged = swFALSE;
 	LogInfo->logfp = logInitPtr;
-	printf("ASDf\n");
 
 	LogInfo->errorMsg[0] = '\0';
 
