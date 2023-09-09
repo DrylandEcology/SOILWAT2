@@ -24,10 +24,6 @@
  06/21/2013	(DLM)	memory leak in function getfiles(): variables dname and fname need to be free'd
  */
 
-#ifdef STEPWAT
-void sw_error(int errorcode, const char *format, ...);
-#endif
-
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -102,42 +98,6 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
-/**
- * @brief Prints an error message and throws an error or warning. Works both for rSOILWAT2
- *  and SOILWAT2-standalone.
- *
- * @param code The error/warning code. If `code` is not 0, then it is passed to `exit`
- *  (SOILWAT2) / `error` (rSOILWAT2). If `code` is 0, then it is passed to
- *  `warning` (rSOILWAT2), respectively.
- * @param format The character string with formatting (as for `printf`).
- * @param ... Variables to be printed.
- */
-void sw_error(int code, const char *format, ...)
-{
-  va_list ap;
-  va_start(ap, format);
-
-#ifdef RSOILWAT
-  REvprintf(format, ap);
-#else
-  vfprintf(stderr, format, ap);
-#endif
-  va_end(ap);
-
-  if (code == 0) {
-    #ifdef RSOILWAT
-      warning("Warning: %d\n", code);
-    #endif
-
-  } else {
-    #ifdef RSOILWAT
-      error("exit %d\n", code);
-    #else
-      exit(code);
-    #endif
-  }
-}
-
 /**************************************************************/
 void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
     /* uses global variable logged to indicate that a log message
@@ -173,7 +133,11 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
 	} else if(LOGERROR & mode) {
 
 		#ifdef STEPWAT
-		sw_error(-1, outfmt);
+		fprintf(stderr, "%s", buf);
+
+		// Consider updating STEPWAT2: instead of exiting/crashing, do catch
+		// errors, recoil, and use `sw_write_logs()` similar to SOILWAT2 >= 7.2.0
+		exit(-1);
 		#else
 		strcpy(LogInfo->errorMsg, buf);
 		LogInfo->stopRun = swTRUE;
