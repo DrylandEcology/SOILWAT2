@@ -1146,7 +1146,7 @@ void hydraulic_redistribution(
 
 	if (is_hd_adj) {
 		LogError(
-			LogInfo, LOGFATAL,
+			LogInfo, LOGERROR,
 			"[%d-%d/veg(%d)]: "
 			"hydraulic redistribution failed to constrain to swc_min.",
 			year, doy, vegk
@@ -1559,7 +1559,7 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 			(*ptr_stError) = swTRUE;
 
 			// if the error hasn't been reported yet... print an error to the logfile
-			LogError(LogInfo, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: "\
+			LogError(LogInfo, LOGERROR, "SOIL_TEMP FUNCTION ERROR: "\
 				"too many (n = %d) regression layers requested... "\
 				"soil temperature will NOT be calculated\n", nRgr);
 		}
@@ -1605,7 +1605,7 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 			(*ptr_stError) = swTRUE;
 
 			// if the error hasn't been reported yet... print an error to the logfile
-        LogError(LogInfo, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, SW_StRegValues->depths[nlyrs - 1]);
+        LogError(LogInfo, LOGERROR, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, SW_StRegValues->depths[nlyrs - 1]);
 
 		}
 
@@ -2227,7 +2227,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"SOILWAT2 ERROR soil temperature module was not initialized.\n"
 		);
 	}
@@ -2424,7 +2424,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 
 	#ifdef SWDEBUG
 	if (debug) {
-		LogError(LogInfo, LOGEXIT, "Stop at end of soil temperature calculations.\n");
+		LogError(LogInfo, LOGERROR, "Stop at end of soil temperature calculations.\n");
 	}
 	#endif
 }

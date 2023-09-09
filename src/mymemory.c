@@ -97,7 +97,7 @@ void *Mem_Malloc(size_t size, const char *funcname, LOG_INFO* LogInfo) {
 #ifdef DEBUG_MEM
 	{
 		if (size == 0)
-		LogError(LogInfo, LOGFATAL, "Programmer Error: "
+		LogError(LogInfo, LOGERROR, "Programmer Error: "
 				"size == 0 in MallocErr()");
 
 	}
@@ -107,14 +107,14 @@ void *Mem_Malloc(size_t size, const char *funcname, LOG_INFO* LogInfo) {
 
 #ifdef DEBUG_MEM_LOG
 	if( NULL==(f=fopen("memory.log","a")) ) {
-		LogError(LogInfo, LOGFATAL, "Can't open memory.log for errors\n");
+		LogError(LogInfo, LOGERROR, "Can't open memory.log for errors\n");
 	}
 	swprintf("%s: %d: %p\n", funcname, size, p);
 	fclose(f);
 #endif
 
 	if (p == NULL )
-		LogError(LogInfo, LOGFATAL, "Out of memory in %s()", funcname);
+		LogError(LogInfo, LOGERROR, "Out of memory in %s()", funcname);
 
 #ifdef DEBUG_MEM
 	{
@@ -191,7 +191,7 @@ void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO* LogInfo) {
 	assert(p != NULL && sizeNew > 0);
 #else
 	if(p == NULL || sizeNew == 0)
-		LogError(LogInfo, LOGFATAL, "assert failed in ReAlloc");
+		LogError(LogInfo, LOGERROR, "assert failed in ReAlloc");
 #endif
 
 #ifdef DEBUG_MEM
@@ -232,7 +232,7 @@ void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO* LogInfo) {
 
 		p = pNew;
 	} else
-		LogError(LogInfo, LOGFATAL, "realloc failed in Mem_ReAlloc()");
+		LogError(LogInfo, LOGERROR, "realloc failed in Mem_ReAlloc()");
 
 	return p;
 }
@@ -249,7 +249,7 @@ void Mem_Free(void *block) {
 #ifdef DEBUG_MEM_X
 	{
 		if (mem_SizeOf(block) > SizeOfMalloc)
-		LogError(logfp, LOGFATAL,"Mem: Inconsistency in SizeOfMalloc");
+		LogError(logfp, LOGERROR,"Mem: Inconsistency in SizeOfMalloc");
 
 		mem_DelNode(block);
 	}

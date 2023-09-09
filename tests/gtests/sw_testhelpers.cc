@@ -45,7 +45,7 @@ void create_test_soillayers(unsigned int nlayers,
       SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo) {
 
   if (nlayers <= 0 || nlayers > MAX_LAYERS) {
-    LogError(LogInfo, LOGFATAL, "create_test_soillayers(): "
+    LogError(LogInfo, LOGERROR, "create_test_soillayers(): "
       "requested number of soil layers (n = %d) is not accepted.\n", nlayers);
   }
 

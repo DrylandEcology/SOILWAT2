@@ -122,7 +122,7 @@ namespace{
 
     // set up mock variables
     unsigned int swrc_type, ptf_type, k;
-    const int em = LOGFATAL;
+    const int em = LOGERROR;
     RealD
       phi,
       swcBulk, swc_sat, swc_fc, swc_wp,
@@ -325,7 +325,7 @@ namespace{
 
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
-    SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+    SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is not implemented"));
@@ -338,7 +338,7 @@ namespace{
 
     // --- 2) swc < 0: water content cannot be negative
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
-      SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+      SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
 
       // Detect failure by error message
       EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWC"));
@@ -348,7 +348,7 @@ namespace{
         SW_MISSING
       );
 
-      SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGFATAL, &LogInfo);
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGERROR, &LogInfo);
 
       // Detect failure by error message
       EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWC"));
@@ -358,7 +358,7 @@ namespace{
         SW_MISSING
       );
 
-      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGFATAL, &LogInfo);
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGERROR, &LogInfo);
 
       // Detect failure by error message
       EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWC"));
@@ -379,7 +379,7 @@ namespace{
     swrcp[3] = 1.2673;
     swrcp[4] = 7.78506;
 
-    SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+    SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid value"));
@@ -410,7 +410,7 @@ namespace{
 
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
-    SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+    SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
 
 
     // Detect failure by error message
@@ -423,7 +423,7 @@ namespace{
 
     // --- 2) swp < 0: water content cannot be negative (any SWRC)
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
-      SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo);
+      SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
 
       // Detect failure by error message
       EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWP"));

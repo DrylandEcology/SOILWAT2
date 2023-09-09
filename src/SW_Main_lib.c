@@ -124,7 +124,7 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 		if (op >= nopts) {
       sw_print_usage();
-      LogError(LogInfo, LOGFATAL, "\nInvalid option %s\n", argv[a]);
+      LogError(LogInfo, LOGERROR, "\nInvalid option %s\n", argv[a]);
 
 		} else {
 			// Use `valopts[op]` in else-branch to avoid
@@ -141,7 +141,7 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 				} else if (0 < valopts[op]) { /* required opt-val not found */
 					sw_print_usage();
-					LogError(LogInfo, LOGFATAL, "\nIncomplete option %s\n", opts[op]);
+					LogError(LogInfo, LOGERROR, "\nIncomplete option %s\n", opts[op]);
 				} /* opt-val not required */
 			}
 
@@ -150,7 +150,7 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 			switch (op) {
 				case 0: /* -d */
 					if (!ChDir(str)) {
-						LogError(LogInfo, LOGFATAL, "Invalid project directory (%s)", str);
+						LogError(LogInfo, LOGERROR, "Invalid project directory (%s)", str);
 					}
 					break;
 
@@ -169,18 +169,18 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 				case 4: /* -v */
 					sw_print_version();
-					LogError(LogInfo, LOGEXIT, "");
+					LogError(LogInfo, LOGERROR, "");
 					break;
 
 				case 5: /* -h */
 					sw_print_usage();
-					LogError(LogInfo, LOGEXIT, "");
+					LogError(LogInfo, LOGERROR, "");
 					break;
 
 				default:
 					LogError(
 						LogInfo,
-						LOGFATAL,
+						LOGERROR,
 						"Programmer: bad option in main:sw_init_args:switch"
 					);
 			}
@@ -198,7 +198,6 @@ void sw_check_log(Bool QuietMode, LOG_INFO* LogInfo) {
 	 * This is the place to do any cleanup or progress reporting.
 	 */
 	if (LogInfo->logfp != stdout && LogInfo->logfp != stderr) {
-		CloseFile(&LogInfo->logfp, LogInfo);
 		if (LogInfo->logged && !QuietMode) {
 			fprintf(stderr, "\nCheck logfile for error or status messages.\n");
 			fflush(stderr);
@@ -269,6 +268,7 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
 	}
 
 	fflush(LogInfo->logfp);
+	CloseFile(&LogInfo->logfp, LogInfo);
 	sw_check_log(QuietMode, LogInfo);
 	#endif
 }

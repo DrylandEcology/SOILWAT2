@@ -160,7 +160,7 @@ static OutKey str2key(char *s, LOG_INFO *LogInfo)
 	for (key = 0; key < SW_OUTNKEYS && Str_CompareI(s, (char *)key2str[key]); key++) ;
 	if (key == SW_OUTNKEYS)
 	{
-		LogError(LogInfo, LOGFATAL, "Invalid key (%s) in 'outsetup.in'.\n", s);
+		LogError(LogInfo, LOGERROR, "Invalid key (%s) in 'outsetup.in'.\n", s);
 	}
 	return (OutKey) key;
 }
@@ -174,7 +174,7 @@ static OutSum str2stype(char *s, LOG_INFO *LogInfo)
 	for (styp = eSW_Off; styp < SW_NSUMTYPES && Str_CompareI(s, (char *)styp2str[styp]); styp++) ;
 	if (styp == SW_NSUMTYPES)
 	{
-		LogError(LogInfo, LOGFATAL, "'outsetup.in : Invalid summary type (%s).\n", s);
+		LogError(LogInfo, LOGERROR, "'outsetup.in : Invalid summary type (%s).\n", s);
 	}
 	return (OutSum) styp;
 }
@@ -273,7 +273,7 @@ static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt do
 			break;
 
 		default:
-			LogError(LogInfo, LOGFATAL, "PGMR: Invalid key in sumof_vpd(%s)", key2str[k]);
+			LogError(LogInfo, LOGERROR, "PGMR: Invalid key in sumof_vpd(%s)", key2str[k]);
 	}
 }
 
@@ -325,7 +325,7 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k,
 		s->surfaceRunon += v->surfaceRunon;
 		break;
 	default:
-		LogError(LogInfo, LOGFATAL, "PGMR: Invalid key in sumof_wth(%s)", key2str[k]);
+		LogError(LogInfo, LOGERROR, "PGMR: Invalid key in sumof_wth(%s)", key2str[k]);
 	}
 
 }
@@ -487,7 +487,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
         break;
 
 	default:
-		LogError(LogInfo, LOGFATAL, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
+		LogError(LogInfo, LOGERROR, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
 	}
 }
 
@@ -540,7 +540,7 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
 			case eVES:
 				break;
 			default:
-				LogError(LogInfo, LOGFATAL,
+				LogError(LogInfo, LOGERROR,
 						"Invalid object type in average_for().");
 		}
 
@@ -572,7 +572,7 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
 					break;
 
 				default:
-					LogError(LogInfo, LOGFATAL, "Programmer: Invalid period in average_for().");
+					LogError(LogInfo, LOGERROR, "Programmer: Invalid period in average_for().");
 			} /* end switch(pd) */
 
 			if (sw->Output[k].myobj != otyp
@@ -823,7 +823,7 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
 				break;
 
 			default:
-				LogError(LogInfo, LOGFATAL, "PGMR: Invalid key in average_for(%SW_SoilWat)", key2str[k]);
+				LogError(LogInfo, LOGERROR, "PGMR: Invalid key in average_for(%SW_SoilWat)", key2str[k]);
 			}
 
 		} /* end ForEachKey */
@@ -855,7 +855,7 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 			pd = sw->Model.doy;
 			break;
 		default:
-			LogError(LogInfo, LOGFATAL, "PGMR: Invalid outperiod in collect_sums()");
+			LogError(LogInfo, LOGERROR, "PGMR: Invalid outperiod in collect_sums()");
 	}
 
 
@@ -2084,7 +2084,7 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 			last,
 			key2str[k]
 		);
-		return(LOGFATAL);
+		return(LOGERROR);
 	}
 
 	return(res);
@@ -2181,7 +2181,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 				if (*used_OUTNPERIODS > SW_OUTNPERIODS)
 				{
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "SW_OUT_read: used_OUTNPERIODS = %d > " \
+					LogError(LogInfo, LOGERROR, "SW_OUT_read: used_OUTNPERIODS = %d > " \
 						"SW_OUTNPERIODS = %d which is illegal.\n",
 						*used_OUTNPERIODS, SW_OUTNPERIODS);
 				}
@@ -2207,7 +2207,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 		if (x < 6)
 		{
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : Insufficient input for key %s item %d.",
+			LogError(LogInfo, LOGERROR, "%s : Insufficient input for key %s item %d.",
 				MyFileName, keyname, itemno);
 
 			continue; //read next line of `outsetup.in`
@@ -2240,7 +2240,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 
 		if (msg_type != 0) {
 			if (msg_type > 0) {
-				if (msg_type == LOGFATAL) {
+				if (msg_type == LOGERROR) {
 					CloseFile(&f, LogInfo);
 				}
 				LogError(LogInfo, msg_type, "%s", msg);
@@ -2362,7 +2362,7 @@ void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,
 					memset(sw->VegProd.p_accu[pd], 0, sizeof(SW_VEGPROD_OUTPUTS));
 					break;
 				default:
-					LogError(LogInfo, LOGFATAL,
+					LogError(LogInfo, LOGERROR,
 							"Invalid object type in SW_OUT_sum_today().");
 			}
 		}

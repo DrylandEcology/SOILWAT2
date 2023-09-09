@@ -955,7 +955,7 @@ double solar_radiation(
       default:
         LogError(
           LogInfo,
-          LOGFATAL,
+          LOGERROR,
           "`desc_rsds` has an unrecognized value: %u",
           desc_rsds
         );
@@ -1067,7 +1067,7 @@ double solar_radiation(
   if (!(H_g >= 0. && H_g <= 50)) {
     LogError(
       LogInfo,
-      LOGFATAL,
+      LOGERROR,
       "\nSolar radiation (%f) out of valid range (0-50 MJ m-2)\n",
       H_g
     );
@@ -1297,7 +1297,7 @@ double petfunc(double H_g, double avgtemp, double elev, double reflec,
   if (missing(cloudcov)) {
     LogError(
       LogInfo,
-      LOGFATAL,
+      LOGERROR,
       "Cloud cover is missing."
     );
   }

@@ -878,7 +878,7 @@ void generateMissingWeather(
   if (method > 2) {
     LogError(
       LogInfo,
-      LOGFATAL,
+      LOGERROR,
       "generateMissingWeather(): method = %u is not implemented.\n",
       method
     );
@@ -965,7 +965,7 @@ void generateMissingWeather(
           if (iMissing > optLOCF_nMax) {
             LogError(
               LogInfo,
-              LOGFATAL,
+              LOGERROR,
               "generateMissingWeather(): more than %u days missing in year %u "
               "and weather generator turned off.\n",
               optLOCF_nMax,
@@ -1023,7 +1023,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                dailyMinTemp > dailyMaxTemp) {
 
                 // Fail
-                LogError(LogInfo, LOGFATAL, "Daily input value for minimum temperature"
+                LogError(LogInfo, LOGERROR, "Daily input value for minimum temperature"
                          " is greater than daily input value for maximum temperature (minimum = %f, maximum = %f)"
                          " on day %d of year %d.", dailyMinTemp, dailyMaxTemp, doy + 1, year + weather->startYear);
             }
@@ -1036,7 +1036,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                    ) {
 
                 // Fail
-                LogError(LogInfo, LOGFATAL, "Daily minimum and/or maximum temperature on "
+                LogError(LogInfo, LOGERROR, "Daily minimum and/or maximum temperature on "
                          "day %d of year %d do not fit in the range of [-100, 100] C.",
                          doy, year + weather->startYear);
             }
@@ -1044,7 +1044,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
             else if(!missing(weathHist[year]->ppt[doy]) && weathHist[year]->ppt[doy] < 0) {
 
                 // Fail
-                LogError(LogInfo, LOGFATAL, "Invalid daily precipitation value: %f cm (< 0) on day %d of year %d.",
+                LogError(LogInfo, LOGERROR, "Invalid daily precipitation value: %f cm (< 0) on day %d of year %d.",
                          weathHist[year]->ppt[doy], doy + 1, year + weather->startYear);
             }
             // Otherwise, check if relative humidity is less than 0% or greater than 100%
@@ -1055,7 +1055,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                    ) {
 
                 // Fail
-                LogError(LogInfo, LOGFATAL, "Invalid daily/calculated relative humidity value did"
+                LogError(LogInfo, LOGERROR, "Invalid daily/calculated relative humidity value did"
                          " not fall in the range [0, 100] % (relative humidity = %f). ",
                          weathHist[year]->r_humidity_daily[doy]);
             }
@@ -1068,7 +1068,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                    ) {
 
                 // Fail
-                LogError(LogInfo, LOGFATAL, "Invalid daily/calculated cloud cover value did"
+                LogError(LogInfo, LOGERROR, "Invalid daily/calculated cloud cover value did"
                          " not fall in the range [0, 100] % (cloud cover = %f). ",
                          weathHist[year]->cloudcov_daily[doy]);
             }
@@ -1077,7 +1077,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                     weathHist[year]->windspeed_daily[doy] < 0.) {
 
                 // Fail
-                LogError(LogInfo, LOGFATAL, "Invalid daily wind speed value is less than zero."
+                LogError(LogInfo, LOGERROR, "Invalid daily wind speed value is less than zero."
                          "(wind speed = %f) on day %d of year %d. ",
                          weathHist[year]->windspeed_daily[doy], doy + 1, year + weather->startYear);
             }
@@ -1086,7 +1086,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                     weathHist[year]->shortWaveRad[doy] < 0.) {
 
                 // Fail
-                LogError(LogInfo, LOGFATAL, "Invalid daily shortwave radiation value is less than zero."
+                LogError(LogInfo, LOGERROR, "Invalid daily shortwave radiation value is less than zero."
                          "(shortwave radation = %f) on day %d of year %d. ",
                          weathHist[year]->shortWaveRad[doy], doy + 1, year + weather->startYear);
             }
@@ -1095,7 +1095,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                     weathHist[year]->actualVaporPressure[doy] < 0.) {
 
                 // Fail
-                LogError(LogInfo, LOGFATAL, "Invalid daily actual vapor pressure value is less than zero."
+                LogError(LogInfo, LOGERROR, "Invalid daily actual vapor pressure value is less than zero."
                          "(actual vapor pressure = %f) on day %d of year %d. ",
                          weathHist[year]->actualVaporPressure[doy], doy + 1, year + weather->startYear);
             }
@@ -1338,7 +1338,7 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
     ) {
       LogError(
         LogInfo,
-        LOGFATAL,
+        LOGERROR,
         "Missing weather data (day %u - %u) during simulation: "
         "Tavg=%.2f, ppt=%.2f, wind=%.2f, rH=%.2f, vp=%.2f, rsds=%.2f / cloud=%.2f\n",
         year,
@@ -1444,7 +1444,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, char *InFiles[],
 					CloseFile(&f, LogInfo);
 					LogError(
 						LogInfo,
-						LOGFATAL,
+						LOGERROR,
 						"%s : Bad missing weather method %d.",
 						MyFileName,
 						x
@@ -1541,7 +1541,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, char *InFiles[],
 
 			if (x != 9) {
 				CloseFile(&f, LogInfo);
-				LogError(LogInfo, LOGFATAL, "%s : Bad record %d.", MyFileName, lineno);
+				LogError(LogInfo, LOGERROR, "%s : Bad record %d.", MyFileName, lineno);
 			}
 
 			month--; // convert to base0
@@ -1562,7 +1562,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, char *InFiles[],
 	CloseFile(&f, LogInfo);
 
  	if (lineno < nitems) {
- 		LogError(LogInfo, LOGFATAL, "%s : Too few input lines.", MyFileName);
+ 		LogError(LogInfo, LOGERROR, "%s : Too few input lines.", MyFileName);
  	}
 
      // Calculate value indices for `allHist`
@@ -1645,7 +1645,7 @@ void check_and_update_dailyInputFlags(
         (!dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN])) {
 
          // Fail
-         LogError(LogInfo, LOGFATAL, "Maximum/minimum temperature flags are unevenly set. "
+         LogError(LogInfo, LOGERROR, "Maximum/minimum temperature flags are unevenly set. "
                                    "Both flags for temperature must be set.");
 
       }
@@ -1653,7 +1653,7 @@ void check_and_update_dailyInputFlags(
      // Check if minimum and maximum temperature, or precipitation flags are not set
      if((!dailyInputFlags[TEMP_MAX] && !dailyInputFlags[TEMP_MIN]) || !dailyInputFlags[PPT]) {
          // Fail
-         LogError(LogInfo, LOGFATAL, "Both maximum/minimum temperature and/or precipitation flag(s) "
+         LogError(LogInfo, LOGERROR, "Both maximum/minimum temperature and/or precipitation flag(s) "
                                    "are not set. All three flags must be set.");
      }
 
@@ -1691,7 +1691,7 @@ void check_and_update_dailyInputFlags(
         (!dailyInputFlags[REL_HUMID_MAX] && dailyInputFlags[REL_HUMID_MIN])) {
 
          // Fail
-         LogError(LogInfo, LOGFATAL, "Max/min relative humidity flags are unevenly set. "
+         LogError(LogInfo, LOGERROR, "Max/min relative humidity flags are unevenly set. "
                                    "Both flags for maximum/minimum relative humidity must be the "
                                    "same (1 or 0).");
 
@@ -1702,7 +1702,7 @@ void check_and_update_dailyInputFlags(
         (!dailyInputFlags[WIND_EAST] && dailyInputFlags[WIND_NORTH])) {
 
          // Fail
-         LogError(LogInfo, LOGFATAL, "East/north wind speed flags are unevenly set. "
+         LogError(LogInfo, LOGERROR, "East/north wind speed flags are unevenly set. "
                                    "Both flags for east/north wind speed components "
                                    "must be the same (1 or 0).");
 
@@ -1851,15 +1851,15 @@ void _read_weather_hist(
 
 		if (x != n_input_forcings + 1) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : Incomplete record %d (doy=%d).", fname, lineno, doy);
+			LogError(LogInfo, LOGERROR, "%s : Incomplete record %d (doy=%d).", fname, lineno, doy);
 		}
 		if (x > MAX_INPUT_COLUMNS + 1) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : Too many values in record %d (doy=%d).", fname, lineno, doy);
+			LogError(LogInfo, LOGERROR, "%s : Too many values in record %d (doy=%d).", fname, lineno, doy);
 		}
 		if (doy < 1 || doy > MAX_DAYS) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : Day of year out of range, line %d.", fname, lineno);
+			LogError(LogInfo, LOGERROR, "%s : Day of year out of range, line %d.", fname, lineno);
 		}
 
 		/* --- Make the assignments ---- */

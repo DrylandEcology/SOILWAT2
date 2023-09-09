@@ -92,7 +92,7 @@ void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 
 		if (x < 12) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : invalid record %d.\n",
+			LogError(LogInfo, LOGERROR, "%s : invalid record %d.\n",
 										MyFileName, lineno);
 		}
 

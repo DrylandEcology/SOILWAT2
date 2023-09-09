@@ -64,7 +64,7 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
 	}
 	else if (!MkDir(dirString, LogInfo))
 	{
-		LogError(LogInfo, LOGFATAL, "Can't make output path for csv file: %s\n", dirString);
+		LogError(LogInfo, LOGERROR, "Can't make output path for csv file: %s\n", dirString);
 		printf("Can't make output path for csv file: %s\n", dirString);
 	}
 }
@@ -173,7 +173,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 
 	if (fileno < eEndFile - 1) {
 		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGFATAL, "Too few files (%d) in %s", fileno, MyFileName);
+		LogError(LogInfo, LOGERROR, "Too few files (%d) in %s", fileno, MyFileName);
 	}
 
 	CloseFile(&f, LogInfo);

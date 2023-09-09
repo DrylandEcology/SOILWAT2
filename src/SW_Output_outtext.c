@@ -73,7 +73,7 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 
 	#ifdef SOILWAT
 		if (does_agg) {
-			LogError(LogInfo, LOGFATAL, "'_create_csv_headers': value TRUE for "\
+			LogError(LogInfo, LOGERROR, "'_create_csv_headers': value TRUE for "\
 				"argument 'does_agg' is not implemented for SOILWAT2-standalone.");
 		}
 	#else

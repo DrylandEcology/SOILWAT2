@@ -1031,11 +1031,11 @@ void SW_SWC_read(
 	}
 	if (lineno < nitems) {
 		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGFATAL, "%s : Insufficient parameters specified.", MyFileName);
+		LogError(LogInfo, LOGERROR, "%s : Insufficient parameters specified.", MyFileName);
 	}
 	if (SW_SoilWat->hist.method < 1 || SW_SoilWat->hist.method > 2) {
 		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGFATAL, "%s : Invalid swc adjustment method.", MyFileName);
+		LogError(LogInfo, LOGERROR, "%s : Invalid swc adjustment method.", MyFileName);
 	}
 	SW_SoilWat->hist.yr.last = endyr;
 	SW_SoilWat->hist.yr.total = SW_SoilWat->hist.yr.last - SW_SoilWat->hist.yr.first + 1;
@@ -1102,19 +1102,19 @@ void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 		x = sscanf(inbuf, "%d %d %f %f", &doy, &lyr, &swc, &st_err);
 		if (x < 4) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : Incomplete layer data at record %d\n   Should be DOY LYR SWC STDERR.", fname, recno);
+			LogError(LogInfo, LOGERROR, "%s : Incomplete layer data at record %d\n   Should be DOY LYR SWC STDERR.", fname, recno);
 		}
 		if (x > 4) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : Too many input fields at record %d\n   Should be DOY LYR SWC STDERR.", fname, recno);
+			LogError(LogInfo, LOGERROR, "%s : Too many input fields at record %d\n   Should be DOY LYR SWC STDERR.", fname, recno);
 		}
 		if (doy < 1 || doy > MAX_DAYS) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : Day of year out of range at record %d", fname, recno);
+			LogError(LogInfo, LOGERROR, "%s : Day of year out of range at record %d", fname, recno);
 		}
 		if (lyr < 1 || lyr > MAX_LAYERS) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : Layer number out of range (%d > %d), record %d\n", fname, lyr, MAX_LAYERS, recno);
+			LogError(LogInfo, LOGERROR, "%s : Layer number out of range (%d > %d), record %d\n", fname, lyr, MAX_LAYERS, recno);
 		}
 
 		SoilWat_hist->swc[doy - 1][lyr - 1] = swc;
@@ -1168,7 +1168,7 @@ void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], RealD swcBulk_min[],
 		break;
 
 	default:
-		LogError(LogInfo, LOGFATAL,
+		LogError(LogInfo, LOGERROR,
 				 "swcsetup.in : Invalid SWC adjustment method.");
 	}
 
@@ -1320,7 +1320,7 @@ RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_SITE *SW_Site, LyrIndex layerno,
     SW_Site->swrcp[layerno],
     SW_Site->fractionVolBulk_gravel[layerno],
     SW_Site->width[layerno],
-    LOGFATAL,
+    LOGERROR,
 	LogInfo
   );
 }
@@ -1344,7 +1344,7 @@ RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_SITE *SW_Site, LyrIndex layerno,
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
   @param[in] errmode An error code passed to `LogError()`.
-    SOILWAT2 uses `LOGFATAL` and fails but
+    SOILWAT2 uses `LOGERROR` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
   @param[in] LogInfo Holds information dealing with logfile output
 
@@ -1434,7 +1434,7 @@ double SWRC_SWCtoSWP(
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
   @param[in] errmode An error code passed to `LogError()`.
-    SOILWAT2 uses `LOGFATAL` and fails but
+    SOILWAT2 uses `LOGERROR` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
   @param[in] LogInfo Holds information dealing with logfile output
 
@@ -1503,7 +1503,7 @@ double SWRC_SWCtoSWP_Campbell1974 (
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
   @param[in] errmode An error code passed to `LogError()`.
-    SOILWAT2 uses `LOGFATAL` and fails but
+    SOILWAT2 uses `LOGERROR` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
   @param[in] LogInfo Holds information dealing with logfile output
 
@@ -1589,7 +1589,7 @@ double SWRC_SWCtoSWP_vanGenuchten1980(
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
   @param[in] errmode An error code passed to `LogError()`.
-    SOILWAT2 uses `LOGFATAL` and fails but
+    SOILWAT2 uses `LOGERROR` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
   @param[in] LogInfo Holds information dealing with logfile output
 
@@ -1671,7 +1671,7 @@ RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_SITE *SW_Site,
     SW_Site->swrcp[layerno],
     SW_Site->fractionVolBulk_gravel[layerno],
     SW_Site->width[layerno],
-    LOGFATAL,
+    LOGERROR,
 	LogInfo
   );
 }
@@ -1696,7 +1696,7 @@ RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_SITE *SW_Site,
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
   @param[in] errmode An error code passed to `LogError()`.
-    SOILWAT2 uses `LOGFATAL` and fails but
+    SOILWAT2 uses `LOGERROR` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
   @param[in] LogInfo Holds information dealing with logfile output
 

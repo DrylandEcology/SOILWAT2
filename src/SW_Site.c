@@ -200,7 +200,7 @@ static Bool SW_check_soil_properties(SW_SITE *SW_Site,
 	if (!res) {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"'%s' has an invalid value (%5.4f) in layer %d.\n",
 			errtype, fval, layerno + 1
 		);
@@ -227,7 +227,7 @@ static double lower_limit_of_theta_min(
 	double width
 ) {
 	double res = SWRC_SWPtoSWC(300., swrc_type, swrcp,
-							   gravel, width, LOGFATAL, LogInfo);
+							   gravel, width, LOGERROR, LogInfo);
 
 	// convert bulk [cm] to matric [cm / cm]
 	return res / ((1. - gravel) * width);
@@ -308,7 +308,7 @@ static double ui_theta_min(
 			swrcp,
 			gravel,
 			width,
-			LOGFATAL,
+			LOGERROR,
 			LogInfo
 		) / ((1. - gravel) * width);
 
@@ -350,7 +350,7 @@ unsigned int encode_str2swrc(char *swrc_name, LOG_INFO* LogInfo) {
 	if (k == N_SWRCs) {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"SWRC '%s' is not implemented.",
 			swrc_name
 		);
@@ -427,7 +427,7 @@ void SWRC_PTF_estimate_parameters(
 	} else {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"PTF is not implemented in SOILWAT2."
 		);
 	}
@@ -550,7 +550,7 @@ double SW_swcBulk_saturated(
 		default:
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"`SW_swcBulk_saturated()`: SWRC (type %d) is not implemented.",
 				swrc_type
 			);
@@ -626,7 +626,7 @@ double SW_swcBulk_minimum(
 		default:
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"`SW_swcBulk_minimum()`: SWRC (type %d) is not implemented.",
 				swrc_type
 			);
@@ -720,7 +720,7 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp,
 		default:
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"Selected SWRC (type %d) is not implemented.",
 				swrc_type
 			);
@@ -1057,7 +1057,7 @@ void PTF_Saxton2006(
 	) {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"PTF_Saxton2006(): invalid value of "
 			"theta(saturated, [cm / cm]) = %f (must be within 0-1)\n",
 			*theta_sat
@@ -1213,7 +1213,7 @@ RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel,
 		if (LT(res, 0.)) {
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"bulkDensity (%f) is lower than expected "
 				"(density of coarse fragments = %f [g/cm3] "
 				"based on %f [%%] coarse fragments).\n",
@@ -1522,7 +1522,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 			x = sscanf(inbuf, "%d %d", &region, &rgnlow);
 			if (x < 2 || region < 1 || rgnlow < 1) {
 				CloseFile(&f, LogInfo);
-				LogError(LogInfo, LOGFATAL, "%s : Bad record %d.\n", MyFileName, lineno);
+				LogError(LogInfo, LOGERROR, "%s : Bad record %d.\n", MyFileName, lineno);
 			}
 			SW_Site->_TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
 			SW_Site->n_transp_rgn++;
@@ -1538,7 +1538,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 	if (LT(SW_Site->percentRunoff, 0.) || GT(SW_Site->percentRunoff, 1.)) {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"%s : proportion of ponded surface water removed as daily"
 			"runoff = %f (value ranges between 0 and 1)\n",
 			MyFileName, SW_Site->percentRunoff
@@ -1548,7 +1548,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 	if (LT(SW_Site->percentRunon, 0.)) {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"%s : proportion of water that arrives at surface added "
 			"as daily runon = %f (value ranges between 0 and +inf)\n",
 			MyFileName, SW_Site->percentRunon
@@ -1558,7 +1558,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 	if (too_many_regions) {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"%s : Number of transpiration regions"
 			" exceeds maximum allowed (%d > %d)\n",
 			MyFileName, SW_Site->n_transp_rgn, MAX_TRANSP_REGIONS
@@ -1570,7 +1570,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 		if (SW_Site->_TranspRgnBounds[r - 1] >= SW_Site->_TranspRgnBounds[r]) {
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"%s : Discontinuity/reversal in transpiration regions.\n",
 				InFiles[eSite]
 			);
@@ -1627,7 +1627,7 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 			CloseFile(&f, LogInfo);
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"%s : Incomplete record %d.\n",
 				MyFileName, lyrno + 1
 			);
@@ -1656,7 +1656,7 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 			CloseFile(&f, LogInfo);
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"%s : Too many layers specified (%d).\n"
 				"Maximum number of layers is %d\n",
 				MyFileName, lyrno + 1, MAX_LAYERS
@@ -1811,7 +1811,7 @@ void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
 
 	/* ------------- Error checking --------------- */
 	if(nRegions < 1 || nRegions > MAX_TRANSP_REGIONS){
-		LogError(LogInfo, LOGFATAL, "derive_soilRegions: invalid number of regions (%d)\n", nRegions);
+		LogError(LogInfo, LOGERROR, "derive_soilRegions: invalid number of regions (%d)\n", nRegions);
 		return;
 	}
 
@@ -1903,7 +1903,7 @@ void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 			CloseFile(&f, LogInfo);
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"%s : Bad number of SWRC parameters %d -- must be %d.\n",
 				"Site", x, SWRC_PARAM_NMAX
 			);
@@ -1914,7 +1914,7 @@ void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 			CloseFile(&f, LogInfo);
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"%s : Number of layers with SWRC parameters (%d) "
 				"must match number of soil layers (%d)\n",
 				"Site", lyrno + 1, SW_Site->n_layers
@@ -1988,7 +1988,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 		if (!check_SWRC_vs_PTF(SW_Site->site_swrc_name, SW_Site->site_ptf_name)) {
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"Selected PTF '%s' is incompatible with selected SWRC '%s'\n",
 				SW_Site->site_ptf_name,
 				SW_Site->site_swrc_name
@@ -2013,7 +2013,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 		if (!SW_check_soil_properties(SW_Site, s, LogInfo)) {
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"Invalid soil properties in layer %d.\n",
 				s + 1
 			);
@@ -2047,7 +2047,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 		default:
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"Soil density type not recognized",
 				SW_Site->type_soilDensityInput
 			);
@@ -2078,7 +2078,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 									SW_Site->swrcp[s], LogInfo)) {
 			LogError(
 				LogInfo,
-				LOGFATAL,
+				LOGERROR,
 				"Checks of parameters for SWRC '%s' in layer %d failed.",
 				swrc2str[SW_Site->swrc_type[s]],
 				s + 1
@@ -2145,7 +2145,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 		/* test validity of values */
 		if (LT(SW_Site->swcBulk_init[s], SW_Site->swcBulk_min[s])) {
 			LogError(
-				LogInfo, LOGFATAL,
+				LogInfo, LOGERROR,
 				"%s : Layer %d\n"
 				"  calculated `swcBulk_init` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
 				"  Recheck parameters and try again.\n",
@@ -2155,7 +2155,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 
 		if (LT(SW_Site->swcBulk_wiltpt[s], SW_Site->swcBulk_min[s])) {
 			LogError(
-				LogInfo, LOGFATAL,
+				LogInfo, LOGERROR,
 				"%s : Layer %d\n"
 				"  calculated `swcBulk_wiltpt` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
 				"  Recheck parameters and try again.\n",
@@ -2182,7 +2182,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 
 		if (LE(SW_Site->swcBulk_wet[s], SW_Site->swcBulk_min[s])) {
 			LogError(
-				LogInfo, LOGFATAL,
+				LogInfo, LOGERROR,
 				"%s : Layer %d\n"
 				"  calculated `swcBulk_wet` (%.4f cm) <= `swcBulk_min` (%.4f cm).\n"
 				"  Recheck parameters and try again.\n",
@@ -2270,10 +2270,10 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				SW_Site->n_transp_lyrs[k] = max(SW_Site->n_transp_lyrs[k], s);
 
 			} else if (s == 0) {
-				LogError(LogInfo, LOGFATAL, ": Top soil layer must be included\n"
+				LogError(LogInfo, LOGERROR, ": Top soil layer must be included\n"
 						"  in %s tranpiration regions.\n", key2veg[k]);
 			} else if (r < SW_Site->n_transp_rgn) {
-				LogError(LogInfo, LOGFATAL, ": Transpiration region %d \n"
+				LogError(LogInfo, LOGERROR, ": Transpiration region %d \n"
 						"  is deeper than the deepest layer with a\n"
 						"  %s transpiration coefficient > 0 (%d).\n"
 						"  Please fix the discrepancy and try again.\n",
@@ -2306,7 +2306,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				if (LT(SW_Site->swcBulk_atSWPcrit[k][s],
 												SW_Site->swcBulk_min[s])) {
 					LogError(
-						LogInfo, LOGFATAL,
+						LogInfo, LOGERROR,
 						"%s : Layer %d - vegtype %d\n"
 						"  calculated `swcBulk_atSWPcrit` (%.4f cm)\n"
 						"          <= `swcBulk_min` (%.4f cm).\n"

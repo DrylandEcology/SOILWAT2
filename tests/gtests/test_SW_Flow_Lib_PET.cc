@@ -237,7 +237,7 @@ namespace
                   break;
 
                 default:
-                  LogError(&LogInfo, LOGFATAL,
+                  LogError(&LogInfo, LOGERROR,
                            "Error in SW2_SolarPosition_Test__hourangles_symmetries");
               }
 

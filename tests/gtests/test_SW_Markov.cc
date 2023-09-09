@@ -220,7 +220,7 @@ namespace {
 
     SW_MKV_construct(rng_seed, &SW_Markov, &LogInfo); // initialize markov_rng
 
-    // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL
+    // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGERROR
     (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.,
                               &SW_Markov.markov_rng, &LogInfo);
 

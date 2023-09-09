@@ -519,7 +519,7 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 		if (0 == lineno) {
 			if (strlen(name) > MAX_SPECIESNAMELEN) {
 				CloseFile(&f, LogInfo);
-				LogError(LogInfo, LOGFATAL, "%s: Species name <%s> too long (> %d chars).\n Try again.\n", infile, name, MAX_SPECIESNAMELEN);
+				LogError(LogInfo, LOGERROR, "%s: Species name <%s> too long (> %d chars).\n Try again.\n", infile, name, MAX_SPECIESNAMELEN);
 			} else {
 				strcpy(v->sppname, name);
 			}
@@ -530,7 +530,7 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 
 	if (lineno < nitems) {
 		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGFATAL, "%s : Too few input parameters.\n", infile);
+		LogError(LogInfo, LOGERROR, "%s : Too few input parameters.\n", infile);
 	}
 
 	CloseFile(&f, LogInfo);
@@ -585,7 +585,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 	if (parms_sppnum->vegType >= NVEGTYPES) {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"%s (%s) : Specified vegetation type (%d) is not implemented.",
 			"VegEstab",
 			parms_sppnum->sppname,
@@ -596,7 +596,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 	if (parms_sppnum->estab_lyrs > n_transp_lyrs[parms_sppnum->vegType]) {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"%s (%s) : Layers requested (estab_lyrs = %d) > "
 			"(# transpiration layers = %d).",
 			"VegEstab",
@@ -609,7 +609,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 	if (parms_sppnum->min_pregerm_days > parms_sppnum->max_pregerm_days) {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"%s (%s) : First day of germination > last day of germination.",
 			"VegEstab",
 			parms_sppnum->sppname
@@ -619,7 +619,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 	if (parms_sppnum->min_wetdays_for_estab > parms_sppnum->max_days_germ2estab) {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"%s (%s) : Minimum wetdays after germination (%d) > "
 			"maximum days allowed for establishment (%d).",
 			"VegEstab",
@@ -632,7 +632,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 	if (parms_sppnum->min_swc_germ < swcBulk_wiltpt[0]) {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"%s (%s) : Minimum swc for germination (%.4f) < wiltpoint (%.4f)",
 			"VegEstab",
 			parms_sppnum->sppname,
@@ -650,7 +650,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 	if (LT(parms_sppnum->min_swc_estab, mean_wiltpt)) {
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"%s (%s) : Minimum swc for establishment (%.4f) < wiltpoint (%.4f)",
 			"VegEstab",
 			parms_sppnum->sppname,

@@ -24,8 +24,9 @@
  06/21/2013	(DLM)	memory leak in function getfiles(): variables dname and fname need to be free'd
  */
 
-// Making this static results in a compilation warning [-Wunused-function]
+#ifdef STEPWAT
 void sw_error(int errorcode, const char *format, ...);
+#endif
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -169,7 +170,7 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
 			strcpy(LogInfo->warningMsgs[nextWarn], buf);
 		}
 		LogInfo->numWarnings++;
-	} else if(mode == LOGFATAL || mode == LOGERROR || mode == LOGEXIT) {
+	} else if(LOGERROR & mode) {
 
 		#ifdef STEPWAT
 		sw_error(-1, outfmt);
@@ -245,7 +246,7 @@ FILE * OpenFile(const char *name, const char *mode, LOG_INFO* LogInfo) {
 	FILE *fp;
 	fp = fopen(name, mode);
 	if (isnull(fp))
-		LogError(LogInfo, LOGERROR | LOGEXIT, "Cannot open file %s: %s", name, strerror(errno));
+		LogError(LogInfo, LOGERROR, "Cannot open file %s: %s", name, strerror(errno));
 	return (fp);
 }
 

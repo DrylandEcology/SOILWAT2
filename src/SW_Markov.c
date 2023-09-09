@@ -159,7 +159,7 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 	s = vc10 * vc10;
 
 	if (GT(s, wTmin_var)) {
-		LogError(LogInfo, LOGFATAL, "\nBad covariance matrix in mvnorm()");
+		LogError(LogInfo, LOGERROR, "\nBad covariance matrix in mvnorm()");
 	}
 
 	/* Apparently, it's possible for some but not all setups that
@@ -423,7 +423,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 		// Check that text file is ok:
 		if (x < nitems) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "Too few values in"\
+			LogError(LogInfo, LOGERROR, "Too few values in"\
 					" line %d of file %s\n",
 					lineno,
 					MyFileName);
@@ -435,7 +435,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 		if (!isfinite((float) day) || day < 1 || day > MAX_DAYS)
 		{
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "'day' = %d is out of range"\
+			LogError(LogInfo, LOGERROR, "'day' = %d is out of range"\
 					" in line %d of file %s\n",
 					day, lineno, MyFileName);
 		}
@@ -445,7 +445,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 				!isfinite(dry) || LT(dry, 0.) || GT(dry, 1.))
 		{
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "Probabilities of being wet = %f"\
+			LogError(LogInfo, LOGERROR, "Probabilities of being wet = %f"\
 					" and/or of being dry = %f are out of range in line"\
 					" %d of file %s\n",
 					wet, dry, lineno, MyFileName);
@@ -455,7 +455,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 		if (!isfinite(avg) || LT(avg, 0.) || !isfinite(std) || LT(std, 0.))
 		{
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "Mean daily precipitation"\
+			LogError(LogInfo, LOGERROR, "Mean daily precipitation"\
 					" = %f and/or SD = %f are out of range in line"\
 					" %d of file %s\n",
 					avg, std, lineno, MyFileName);
@@ -508,7 +508,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 		// Check that text file is ok:
 		if (x < nitems) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "Too few values in line"\
+			LogError(LogInfo, LOGERROR, "Too few values in line"\
 					" %d of file %s\n",
 					lineno, MyFileName);
 		}
@@ -517,7 +517,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 		if (!isfinite((float) week) || week < 1 || week > MAX_WEEKS)
 		{
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "'week' = %d is out of range"\
+			LogError(LogInfo, LOGERROR, "'week' = %d is out of range"\
 					" in line %d of file %s\n",
 					week, lineno, MyFileName);
 		}
@@ -526,7 +526,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 		if (!isfinite(t1) || !isfinite(t2))
 		{
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "Mean weekly temperature"\
+			LogError(LogInfo, LOGERROR, "Mean weekly temperature"\
 					" (max = %f and/or min = %f) are not real numbers"\
 					" in line %d of file %s\n",
 					t1, t2, lineno, MyFileName);
@@ -536,7 +536,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 		if (!isfinite(t3) || !isfinite(t4) || !isfinite(t5) || !isfinite(t6))
 		{
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "One of the covariance values is"\
+			LogError(LogInfo, LOGERROR, "One of the covariance values is"\
 					" not a real number (t3 = %f; t4 = %f; t5 = %f; t6 = %f)"\
 					" in line %d of file %s\n",
 					t3, t4, t5, t6, lineno, MyFileName);
@@ -547,7 +547,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 				!isfinite(cfnw) || !isfinite(cfnd))
 		{
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "One of the correction factor is not"\
+			LogError(LogInfo, LOGERROR, "One of the correction factor is not"\
 					" a real number (cfxw = %f; cfxd = %f; cfnw = %f; cfnd = %f)"\
 					" in line %d of file %s\n",
 					cfxw, cfxd, cfnw, cfnd, lineno, MyFileName);
@@ -582,7 +582,7 @@ void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
   if (!SW_MKV_read_prob(InFiles, SW_Markov, LogInfo) && Weather_genWeathMethod == 2) {
     LogError(
       LogInfo,
-      LOGFATAL,
+      LOGERROR,
       "Weather generator requested but could not open %s",
       InFiles[eMarkovProb]
     );
@@ -591,7 +591,7 @@ void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
   if (!SW_MKV_read_cov(InFiles, SW_Markov, LogInfo) && Weather_genWeathMethod == 2) {
     LogError(
       LogInfo,
-      LOGFATAL,
+      LOGERROR,
       "Weather generator requested but could not open %s",
       InFiles[eMarkovCov]
     );

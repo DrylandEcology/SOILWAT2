@@ -96,7 +96,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
                 x = sscanf(inbuf, "%d", &veg_method);
                 if(x != 1) {
                     CloseFile(&f, LogInfo);
-                    LogError(LogInfo, LOGFATAL, "ERROR: invalid record"\
+                    LogError(LogInfo, LOGERROR, "ERROR: invalid record"\
 									" in vegetation type components in %s\n",
 									MyFileName);
                 }
@@ -108,7 +108,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS], &help_bareGround);
 				if (x < NVEGTYPES + 1) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in" \
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in" \
 									" vegetation type components in %s\n",
 									MyFileName);
 				}
@@ -124,7 +124,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS], &help_bareGround);
 				if (x < NVEGTYPES + 1) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" albedo values in %s\n",
 									MyFileName);
 				}
@@ -140,7 +140,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" canopy xinflec in %s\n",
 									MyFileName);
 				}
@@ -153,7 +153,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in" \
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in" \
 									" canopy yinflec in %s\n",
 									MyFileName);
 				}
@@ -166,7 +166,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" canopy range in %s\n",
 									MyFileName);
 				}
@@ -179,7 +179,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" canopy slope in %s\n",
 									MyFileName);
 				}
@@ -192,7 +192,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" canopy height constant option in %s\n",
 									MyFileName);
 				}
@@ -207,7 +207,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" interception parameter kSmax(veg) in %s\n",
 									MyFileName);
 				}
@@ -220,7 +220,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" interception parameter kdead(veg) in %s\n",
 									MyFileName);
 				}
@@ -235,7 +235,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" litter interception parameter kSmax(litter)"\
 									" in %s\n",
 									MyFileName);
@@ -251,7 +251,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" parameter for partitioning of bare-soil"\
 									" evaporation and transpiration in %s\n",
 									MyFileName);
@@ -267,7 +267,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" parameter for Parameter for scaling and"\
 									" limiting bare soil evaporation rate in %s\n",
 									MyFileName);
@@ -283,7 +283,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" shade scale in %s\n",
 									MyFileName);
 				}
@@ -296,7 +296,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" shade max dead biomass in %s\n",
 									MyFileName);
 				}
@@ -309,7 +309,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" shade xinflec in %s\n",
 									MyFileName);
 				}
@@ -322,7 +322,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" shade yinflec in %s\n",
 									MyFileName);
 				}
@@ -335,7 +335,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" shade range in %s\n",
 									MyFileName);
 				}
@@ -348,7 +348,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" shade slope in %s\n",
 									MyFileName);
 				}
@@ -363,7 +363,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" hydraulic redistribution: flag in %s\n",
 									MyFileName);
 				}
@@ -376,7 +376,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" hydraulic redistribution: maxCondroot in %s\n",
 									MyFileName);
 				}
@@ -389,7 +389,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" hydraulic redistribution: swpMatric50 in %s\n",
 									MyFileName);
 				}
@@ -402,7 +402,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" hydraulic redistribution: shapeCond in %s\n",
 									MyFileName);
 				}
@@ -417,7 +417,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: invalid record in"\
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" critical soil water potentials: flag in %s\n",
 									MyFileName);
 				}
@@ -435,7 +435,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: Not enough arguments"\
+					LogError(LogInfo, LOGERROR, "ERROR: Not enough arguments"\
 									" for CO2 Biomass Coefficient 1 in %s\n",
 									MyFileName);
 				}
@@ -449,7 +449,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: Not enough arguments"\
+					LogError(LogInfo, LOGERROR, "ERROR: Not enough arguments"\
 									" for CO2 Biomass Coefficient 2 in %s\n",
 									MyFileName);
 				}
@@ -465,7 +465,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: Not enough arguments"\
+					LogError(LogInfo, LOGERROR, "ERROR: Not enough arguments"\
 									" for CO2 WUE Coefficient 1 in %s\n",
 									MyFileName);
 				}
@@ -479,7 +479,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, "ERROR: Not enough arguments"\
+					LogError(LogInfo, LOGERROR, "ERROR: Not enough arguments"\
 									" for CO2 WUE Coefficient 2 in %s\n",
 									MyFileName);
 				}
@@ -499,7 +499,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 			x = sscanf(inbuf, "%f %f %f %f", &litt, &biom, &pctl, &laic);
 			if (x < NVEGTYPES) {
 				CloseFile(&f, LogInfo);
-				LogError(LogInfo, LOGFATAL, "ERROR: invalid record %d in %s\n",
+				LogError(LogInfo, LOGERROR, "ERROR: invalid record %d in %s\n",
 								mon + 1, MyFileName);
 			}
 			if (lineno > line_help + 12 * 3 && lineno <= line_help + 12 * 4) {
@@ -1140,7 +1140,7 @@ void estimatePotNatVegComposition(double meanTemp_C,
 
         // Check if totalSumGrasses is less than zero
         if(totalSumGrasses < 0){
-            LogError(LogInfo, LOGFATAL, "'estimate_PotNatVeg_composition': "
+            LogError(LogInfo, LOGERROR, "'estimate_PotNatVeg_composition': "
                      "User defined grass values including C3, C4, and annuals "
                      "sum to more than user defined total grass cover.");
         }
@@ -1195,7 +1195,7 @@ void estimatePotNatVegComposition(double meanTemp_C,
     }
 
     if(GT(initialVegSum, 1.)) {
-        LogError(LogInfo, LOGFATAL, "'estimate_PotNatVeg_composition': "
+        LogError(LogInfo, LOGERROR, "'estimate_PotNatVeg_composition': "
                  "User defined relative abundance values sum to more than "
                  "1 = full land cover.");
     }
@@ -1210,7 +1210,7 @@ void estimatePotNatVegComposition(double meanTemp_C,
                 // at index `bareGround`)
                 inputValues[bareGround] = 1 - (initialVegSum - estimCover[bareGround]);
             } else if(initialVegSum < 1) {
-                LogError(LogInfo, LOGFATAL, "'estimate_PotNatVeg_composition': "
+                LogError(LogInfo, LOGERROR, "'estimate_PotNatVeg_composition': "
                          "User defined relative abundance values are all fixed, "
                          "but their sum is smaller than 1 = full land cover.");
             }
@@ -1430,7 +1430,7 @@ void estimatePotNatVegComposition(double meanTemp_C,
                             inputValues[bareGround] -= estimCover[index];
                         }
                     } else {
-                        LogError(LogInfo, LOGFATAL, "'estimate_PotNatVeg_composition': "
+                        LogError(LogInfo, LOGERROR, "'estimate_PotNatVeg_composition': "
                                     "The estimated vegetation cover values are 0, "
                                     "the user fixed relative abundance values sum to less than 1, "
                                     "and bare-ground is fixed. "

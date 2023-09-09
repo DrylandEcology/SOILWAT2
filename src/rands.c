@@ -242,7 +242,7 @@ void RandUniList(long count, long first, long last, RandListType list[],
 	range = last - first + 1;
 
 	if (count > range || range <= 0) {
-    LogError(LogInfo, LOGFATAL, "Error in RandUniList: count > range || range <= 0\n");
+    LogError(LogInfo, LOGERROR, "Error in RandUniList: count > range || range <= 0\n");
 	}
 
 	/* if count == range for some weird reason, just
@@ -432,11 +432,11 @@ float RandBeta ( float aa, float bb, pcg32_random_t* pcg_rng, LOG_INFO* LogInfo)
   float z;
 
   if ( aa <= 0.0 ) {
-    LogError(LogInfo, LOGFATAL, "RandBeta - Fatal error: AA <= 0.0\n");
+    LogError(LogInfo, LOGERROR, "RandBeta - Fatal error: AA <= 0.0\n");
   }
 
   if ( bb <= 0.0 ) {
-    LogError(LogInfo, LOGFATAL, "RandBeta - Fatal error: BB <= 0.0\n");
+    LogError(LogInfo, LOGERROR, "RandBeta - Fatal error: BB <= 0.0\n");
   }
 
   //------  Algorithm BB
