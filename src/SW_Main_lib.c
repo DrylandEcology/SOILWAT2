@@ -234,10 +234,15 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
 
 	int warnMsgNum, warningUpperBound = LogInfo->numWarnings;
 	Bool tooManyWarns = swFALSE;
+	char tooManyWarnsStr[MAX_LOG_SIZE];
 
 	if(warningUpperBound > MAX_MSGS) {
 		warningUpperBound = MAX_MSGS;
 		tooManyWarns = swTRUE;
+
+        sprintf(tooManyWarnsStr, "There were a total of %d warnings and"\
+                                 " only %d were printed.\n",
+                                 LogInfo->numWarnings, MAX_MSGS);
 	}
 
 	#ifdef RSOILWAT
@@ -250,7 +255,7 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
 	}
 
 	if(tooManyWarns) {
-		warning("\nMore warnings were found but not are stored/shown.\n");
+		warning(tooManyWarnsStr);
 	}
 	#else
 	for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
@@ -262,8 +267,7 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
 	}
 
 	if(tooManyWarns) {
-		fprintf(LogInfo->logfp, "\nMore warnings were found but are not"\
-								" stored/shown.\n");
+		fprintf(LogInfo->logfp, "%s", tooManyWarnsStr);
 	}
 
 	fflush(LogInfo->logfp);
