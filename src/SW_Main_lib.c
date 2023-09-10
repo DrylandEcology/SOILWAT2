@@ -191,19 +191,24 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 }
 
-
-void sw_check_log(Bool QuietMode, LOG_INFO* LogInfo) {
-	/* =================================================== */
-	/* This function is the last to execute before termination.
-	 * This is the place to do any cleanup or progress reporting.
-	 */
-	if (LogInfo->logfp != stdout && LogInfo->logfp != stderr) {
-		if (LogInfo->logged && !QuietMode) {
-			fprintf(stderr, "\nCheck logfile for error or status messages.\n");
-			fflush(stderr);
-		}
-	}
-
+/**
+ * @brief In SOILWAT2 and rSOILWAT2, if an error occurs, this function
+ *  notifies the user and crashes
+ *
+ * @param[in] QuietMode Flag to control if the program version is displayed
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void sw_check_exit(Bool QuietMode, LOG_INFO* LogInfo) {
+    #ifdef RSOILWAT
+    if(LogInfo->stopRun) {
+        error(LogInfo->errorMsg);
+    }
+    #else
+    if(LogInfo->stopRun && !QuietMode) {
+        fprintf(stderr, "%s", LogInfo->errorMsg);
+        exit(-1);
+    }
+    #endif
 }
 
 /**
@@ -272,6 +277,12 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
 
 	fflush(LogInfo->logfp);
 	CloseFile(&LogInfo->logfp, LogInfo);
-	sw_check_log(QuietMode, LogInfo);
+
+    // Notify the user that there are messages in the log file
+    if(LogInfo->logfp != stdout && LogInfo->logfp != stderr) {
+        if(LogInfo->logged && !QuietMode) {
+            fprintf(stderr, "\nCheck logfile for logged messages.\n");
+        }
+    }
 	#endif
 }

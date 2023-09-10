@@ -107,6 +107,7 @@ int main(int argc, char **argv) {
 
 	// Mention to the user if something was logged
 	sw_write_logs(QuietMode, &LogInfo);
+    sw_check_exit(QuietMode, &LogInfo);
 
 	return 0;
 }

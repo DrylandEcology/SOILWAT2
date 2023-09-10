@@ -73,7 +73,7 @@ class AllTestFixture : public ::testing::Test {
             - we set `logfp` to NULL to silence all non-error messages during tests
             - error messages go directly to stderr (which DeathTests use to match against)
         */
-        sw_check_log(QuietMode, &LogInfo);
+        sw_check_exit(QuietMode, &LogInfo);
         sw_init_logs(NULL, &LogInfo);
 
         SW_WTH_finalize_all_weather(
