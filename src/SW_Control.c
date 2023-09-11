@@ -66,6 +66,10 @@ static void _begin_year(SW_ALL* sw, LOG_INFO* LogInfo) {
 	SW_VPD_new_year(&sw->VegProd, &sw->Model); // Dynamic CO2 effects on vegetation
 	// SW_FLW_new_year() not needed
 	SW_SWC_new_year(&sw->SoilWat, &sw->Site, sw->Model.year, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 	// SW_CBN_new_year() not needed
 	SW_OUT_new_year(sw->Model.firstdoy, sw->Model.lastdoy, sw->Output);
 }
@@ -81,6 +85,10 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   int localTOffset = 1; // tOffset is one when called from this function
 
 	_collect_values(sw, SW_OutputPtrs, swFALSE, localTOffset, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 	SW_SWC_end_day(&sw->SoilWat, sw->Site.n_layers);
 }
 
@@ -113,6 +121,9 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
     #endif
 
     SW_CTL_run_current_year(sw, SW_OutputPtrs, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
 } /******* End Main Loop *********/
 
@@ -148,17 +159,34 @@ void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 	SW_F_construct(PathInfo->InFiles[eFirst],
                  PathInfo->_ProjDir, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_MDL_construct(sw->Model.newperiod, sw->Model.days_in_month);
 	SW_WTH_construct(&sw->Weather, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	// delay SW_MKV_construct() until we know from inputs whether we need it
 	// SW_SKY_construct() not need
 	SW_SIT_construct(&sw->Site);
 	SW_VES_construct(&sw->VegEstab, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 	SW_VPD_construct(&sw->VegProd, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	// SW_FLW_construct() not needed
 	SW_OUT_construct(sw->FileStatus.make_soil, sw->FileStatus.make_regular,
       SW_OutputPtrs, sw->Output, sw->Site.n_layers, &sw->GenOutput);
 	SW_SWC_construct(&sw->SoilWat, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 	SW_CBN_construct(&sw->Carbon);
 }
 
@@ -207,10 +235,22 @@ void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
 	SW_PET_init_run(&sw->AtmDemand);
 	// SW_SKY_init_run() not needed
 	SW_SIT_init_run(&sw->VegProd, &sw->Site, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 	SW_VES_init_run(sw->VegEstab.parms, &sw->Site, sw->Site.n_transp_lyrs,
                   sw->VegEstab.count, LogInfo); // must run after `SW_SIT_init_run()`
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 	SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model,
                   sw->Site.latitude, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 	SW_FLW_init_run(&sw->SoilWat);
 	SW_ST_init_run(&sw->StRegValues);
 	// SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
@@ -241,17 +281,26 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   if (debug) swprintf("\n'SW_CTL_run_current_year': begin new year\n");
   #endif
   _begin_year(sw, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
 
   for (*doy = sw->Model.firstdoy; *doy <= sw->Model.lastdoy; (*doy)++) {
     #ifdef SWDEBUG
     if (debug) swprintf("\t: begin doy = %d ... ", *doy);
     #endif
     _begin_day(sw, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     #ifdef SWDEBUG
     if (debug) swprintf("simulate water ... ");
     #endif
     SW_SWC_water_flow(sw, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     // Only run this function if SWA output is asked for
     if (sw->VegProd.use_SWA) {
@@ -268,6 +317,9 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
     if (debug) swprintf("ending day ... ");
     #endif
     _end_day(sw, SW_OutputPtrs, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     #ifdef SWDEBUG
     if (debug) swprintf("doy = %d completed.\n", *doy);
@@ -280,6 +332,10 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   SW_OUT_flush(sw, SW_OutputPtrs, LogInfo);
 
   #ifdef SWDEBUG
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
+
   if (debug) swprintf("'SW_CTL_run_current_year': completed.\n");
   #endif
 }
@@ -305,22 +361,34 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
   #endif
 
   SW_F_read(PathInfo, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   #ifdef SWDEBUG
   if (debug) swprintf(" 'files'");
   #endif
 
   SW_MDL_read(&sw->Model, PathInfo->InFiles, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'model'");
   #endif
 
   SW_WTH_setup(&sw->Weather, PathInfo->InFiles,
                PathInfo->weather_prefix, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather setup'");
   #endif
 
   SW_SKY_read(PathInfo->InFiles, &sw->Sky, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'climate'");
   #endif
@@ -329,50 +397,76 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
     SW_MKV_setup(&sw->Markov, sw->Weather.rng_seed,
                  sw->Weather.generateWeatherMethod, PathInfo->InFiles,
                  LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
     #ifdef SWDEBUG
     if (debug) swprintf(" > 'weather generator'");
     #endif
   }
 
   SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'weather read'");
   #endif
 
   SW_VPD_read(&sw->VegProd, PathInfo->InFiles, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'veg'");
   #endif
 
   SW_SIT_read(&sw->Site, PathInfo->InFiles, &sw->Carbon, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'site'");
   #endif
 
   SW_LYR_read(&sw->Site, PathInfo->InFiles, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   #ifdef RSWDEBUG
   if (debug) swprintf(" > 'soils'");
   #endif
 
   SW_SWRC_read(&sw->Site, PathInfo->InFiles, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'swrc parameters'");
   #endif
 
   SW_VES_read(&sw->VegEstab, PathInfo->InFiles,
               PathInfo->_ProjDir, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'establishment'");
   #endif
 
   SW_OUT_read(sw, PathInfo->InFiles, sw->GenOutput.timeSteps,
               &sw->GenOutput.used_OUTNPERIODS, LogInfo);
-
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'ouput'");
   #endif
 
   SW_CBN_read(&sw->Carbon, &sw->Model, PathInfo->InFiles, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'CO2'");
   #endif

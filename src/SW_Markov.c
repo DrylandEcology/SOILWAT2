@@ -160,6 +160,7 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 
 	if (GT(s, wTmin_var)) {
 		LogError(LogInfo, LOGERROR, "\nBad covariance matrix in mvnorm()");
+        return; // Exit function prematurely due to error
 	}
 
 	/* Apparently, it's possible for some but not all setups that
@@ -233,18 +234,39 @@ void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
 
 	SW_Markov->wetprob = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->dryprob = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->avg_ppt = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->std_ppt = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->cfxw = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->cfxd = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->cfnw = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->cfnd = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
 }
@@ -427,6 +449,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 					" line %d of file %s\n",
 					lineno,
 					MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Check that input values meet requirements:
@@ -438,6 +461,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 			LogError(LogInfo, LOGERROR, "'day' = %d is out of range"\
 					" in line %d of file %s\n",
 					day, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Probabilities are in [0, 1]
@@ -449,6 +473,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 					" and/or of being dry = %f are out of range in line"\
 					" %d of file %s\n",
 					wet, dry, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Mean and SD of daily precipitation are >= 0
@@ -459,6 +484,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 					" = %f and/or SD = %f are out of range in line"\
 					" %d of file %s\n",
 					avg, std, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Store values in `SW_Markov`
@@ -511,6 +537,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 			LogError(LogInfo, LOGERROR, "Too few values in line"\
 					" %d of file %s\n",
 					lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// week is a real calendar week
@@ -520,6 +547,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 			LogError(LogInfo, LOGERROR, "'week' = %d is out of range"\
 					" in line %d of file %s\n",
 					week, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Mean weekly temperature values are real numbers
@@ -530,6 +558,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 					" (max = %f and/or min = %f) are not real numbers"\
 					" in line %d of file %s\n",
 					t1, t2, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Covariance values are finite
@@ -540,6 +569,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 					" not a real number (t3 = %f; t4 = %f; t5 = %f; t6 = %f)"\
 					" in line %d of file %s\n",
 					t3, t4, t5, t6, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Correction factors are real numbers
@@ -551,6 +581,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 					" a real number (cfxw = %f; cfxd = %f; cfnw = %f; cfnd = %f)"\
 					" in line %d of file %s\n",
 					cfxw, cfxd, cfnw, cfnd, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Store values in `SW_Markov`
@@ -578,6 +609,9 @@ void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
 	int Weather_genWeathMethod, char *InFiles[], LOG_INFO* LogInfo) {
 
   SW_MKV_construct(Weather_rng_seed, SW_Markov, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
 
   if (!SW_MKV_read_prob(InFiles, SW_Markov, LogInfo) && Weather_genWeathMethod == 2) {
     LogError(
@@ -586,6 +620,7 @@ void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
       "Weather generator requested but could not open %s",
       InFiles[eMarkovProb]
     );
+    return; // Exit function prematurely due to error
   }
 
   if (!SW_MKV_read_cov(InFiles, SW_Markov, LogInfo) && Weather_genWeathMethod == 2) {
@@ -595,6 +630,7 @@ void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
       "Weather generator requested but could not open %s",
       InFiles[eMarkovCov]
     );
+    return; // Exit function prematurely due to error
   }
 }
 

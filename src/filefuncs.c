@@ -209,8 +209,10 @@ const char *BaseName(const char *p) {
 FILE * OpenFile(const char *name, const char *mode, LOG_INFO* LogInfo) {
 	FILE *fp;
 	fp = fopen(name, mode);
-	if (isnull(fp))
+	if (isnull(fp)) {
 		LogError(LogInfo, LOGERROR, "Cannot open file %s: %s", name, strerror(errno));
+        return NULL; // Exit function prematurely due to error
+    }
 	return (fp);
 }
 

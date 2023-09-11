@@ -88,6 +88,9 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 
 	MyFileName = InFiles[eVegProd];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	while (GetALine(f, inbuf)) {
 		if (lineno++ < line_help) {
@@ -99,6 +102,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
                     LogError(LogInfo, LOGERROR, "ERROR: invalid record"\
 									" in vegetation type components in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
                 }
                 SW_VegProd->veg_method = veg_method;
                 break;
@@ -111,6 +115,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in" \
 									" vegetation type components in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cov.fCover = help_veg[k];
@@ -127,6 +132,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" albedo values in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cov.albedo = help_veg[k];
@@ -143,6 +149,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" canopy xinflec in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cnpy.xinflec = help_veg[k];
@@ -156,6 +163,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in" \
 									" canopy yinflec in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cnpy.yinflec = help_veg[k];
@@ -169,6 +177,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" canopy range in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cnpy.range = help_veg[k];
@@ -182,6 +191,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" canopy slope in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cnpy.slope = help_veg[k];
@@ -195,6 +205,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" canopy height constant option in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].canopy_height_constant = help_veg[k];
@@ -210,6 +221,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" interception parameter kSmax(veg) in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].veg_kSmax = help_veg[k];
@@ -223,6 +235,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" interception parameter kdead(veg) in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].veg_kdead = help_veg[k];
@@ -239,6 +252,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 									" litter interception parameter kSmax(litter)"\
 									" in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].lit_kSmax = help_veg[k];
@@ -255,6 +269,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 									" parameter for partitioning of bare-soil"\
 									" evaporation and transpiration in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].EsTpartitioning_param = help_veg[k];
@@ -271,6 +286,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 									" parameter for Parameter for scaling and"\
 									" limiting bare soil evaporation rate in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].Es_param_limit = help_veg[k];
@@ -286,6 +302,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" shade scale in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].shade_scale = help_veg[k];
@@ -299,6 +316,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" shade max dead biomass in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].shade_deadmax = help_veg[k];
@@ -312,6 +330,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" shade xinflec in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].tr_shade_effects.xinflec = help_veg[k];
@@ -325,6 +344,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" shade yinflec in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].tr_shade_effects.yinflec = help_veg[k];
@@ -338,6 +358,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" shade range in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].tr_shade_effects.range = help_veg[k];
@@ -351,6 +372,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" shade slope in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].tr_shade_effects.slope = help_veg[k];
@@ -366,6 +388,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" hydraulic redistribution: flag in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].flagHydraulicRedistribution = (Bool) EQ(help_veg[k], 1.);
@@ -379,6 +402,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" hydraulic redistribution: maxCondroot in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].maxCondroot = help_veg[k];
@@ -392,6 +416,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" hydraulic redistribution: swpMatric50 in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].swpMatric50 = help_veg[k];
@@ -405,6 +430,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" hydraulic redistribution: shapeCond in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].shapeCond = help_veg[k];
@@ -420,6 +446,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
 									" critical soil water potentials: flag in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].SWPcrit = -10. * help_veg[k];
@@ -438,6 +465,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: Not enough arguments"\
 									" for CO2 Biomass Coefficient 1 in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].co2_bio_coeff1 = help_veg[k];
@@ -452,6 +480,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: Not enough arguments"\
 									" for CO2 Biomass Coefficient 2 in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].co2_bio_coeff2 = help_veg[k];
@@ -468,6 +497,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: Not enough arguments"\
 									" for CO2 WUE Coefficient 1 in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].co2_wue_coeff1 = help_veg[k];
@@ -482,6 +512,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 					LogError(LogInfo, LOGERROR, "ERROR: Not enough arguments"\
 									" for CO2 WUE Coefficient 2 in %s\n",
 									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].co2_wue_coeff2 = help_veg[k];
@@ -501,6 +532,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				CloseFile(&f, LogInfo);
 				LogError(LogInfo, LOGERROR, "ERROR: invalid record %d in %s\n",
 								mon + 1, MyFileName);
+                return; // Exit function prematurely due to error
 			}
 			if (lineno > line_help + 12 * 3 && lineno <= line_help + 12 * 4) {
 				SW_VegProd->veg[SW_FORBS].litter[mon] = litt;
@@ -620,9 +652,17 @@ void SW_VPD_construct(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
 	{
 		SW_VegProd->p_accu[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
 			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()", LogInfo);
+
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 		if (pd > eSW_Day) {
 			SW_VegProd->p_oagg[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
 				sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()", LogInfo);
+
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 }
@@ -1143,6 +1183,7 @@ void estimatePotNatVegComposition(double meanTemp_C,
             LogError(LogInfo, LOGERROR, "'estimate_PotNatVeg_composition': "
                      "User defined grass values including C3, C4, and annuals "
                      "sum to more than user defined total grass cover.");
+            return; // Exit function prematurely due to error
         }
         // Find indices to estimate related to grass (i.e., C3, C4 and annual grasses)
         for(index = C3Index; index < grassAnn; index++) {
@@ -1198,6 +1239,7 @@ void estimatePotNatVegComposition(double meanTemp_C,
         LogError(LogInfo, LOGERROR, "'estimate_PotNatVeg_composition': "
                  "User defined relative abundance values sum to more than "
                  "1 = full land cover.");
+        return; // Exit function prematurely due to error
     }
 
     // Check if number of elements to estimate is less than or equal to 1
@@ -1213,6 +1255,7 @@ void estimatePotNatVegComposition(double meanTemp_C,
                 LogError(LogInfo, LOGERROR, "'estimate_PotNatVeg_composition': "
                          "User defined relative abundance values are all fixed, "
                          "but their sum is smaller than 1 = full land cover.");
+                return; // Exit function prematurely due to error
             }
         } else if(overallEstimSize == 1) {
             estimCover[overallEstim[0]] = 1 - initialVegSum;
@@ -1436,6 +1479,7 @@ void estimatePotNatVegComposition(double meanTemp_C,
                                     "and bare-ground is fixed. "
                                     "Thus, the function cannot compute "
                                     "complete land cover composition.");
+                        return; // Exit function prematurely due to error
                     }
                 }
             }

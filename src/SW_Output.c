@@ -274,6 +274,8 @@ static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt do
 
 		default:
 			LogError(LogInfo, LOGERROR, "PGMR: Invalid key in sumof_vpd(%s)", key2str[k]);
+            return; // Exit function prematurely due to error
+            break;
 	}
 }
 
@@ -326,6 +328,8 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k,
 		break;
 	default:
 		LogError(LogInfo, LOGERROR, "PGMR: Invalid key in sumof_wth(%s)", key2str[k]);
+        return; // Exit function prematurely due to error
+        break;
 	}
 
 }
@@ -488,6 +492,8 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
 
 	default:
 		LogError(LogInfo, LOGERROR, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
+        return; // Exit function prematurely due to error
+        break;
 	}
 }
 
@@ -542,6 +548,8 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
 			default:
 				LogError(LogInfo, LOGERROR,
 						"Invalid object type in average_for().");
+                return; // Exit function prematurely due to error
+                break;
 		}
 
 	}
@@ -573,6 +581,8 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
 
 				default:
 					LogError(LogInfo, LOGERROR, "Programmer: Invalid period in average_for().");
+                    return; // Exit function prematurely due to error
+                    break;
 			} /* end switch(pd) */
 
 			if (sw->Output[k].myobj != otyp
@@ -824,6 +834,7 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
 
 			default:
 				LogError(LogInfo, LOGERROR, "PGMR: Invalid key in average_for(%SW_SoilWat)", key2str[k]);
+                return; // Exit function prematurely due to error
 			}
 
 		} /* end ForEachKey */
@@ -856,6 +867,8 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 			break;
 		default:
 			LogError(LogInfo, LOGERROR, "PGMR: Invalid outperiod in collect_sums()");
+            return; // Exit function prematurely due to error
+            break;
 	}
 
 
@@ -890,13 +903,18 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 			case eSWC:
 				sumof_swc(&sw->SoilWat, sw->SoilWat.p_accu[op], k, &sw->Site,
 														  			LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 				break;
 
 			case eWTH:
 				sumof_wth(&sw->Weather, sw->Weather.p_accu[op], k,
 											   				LogInfo);
-				break;
-
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
+                break;
 			case eVES:
 				if (op == eSW_Year) {
 					sumof_ves(&sw->VegEstab, sw->VegEstab.p_accu[eSW_Year], k); /* yearly, y'see */
@@ -906,6 +924,9 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 			case eVPD:
 				sumof_vpd(&sw->VegProd, sw->VegProd.p_accu[op], k, sw->Model.doy,
 															  			LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 				break;
 
 			default:
@@ -1723,6 +1744,9 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
         }
 
         colnames_OUT[eSW_Temp][i] = Str_Dup(ctemp, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 	}
 	#ifdef SWDEBUG
@@ -1730,42 +1754,63 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_Precip]; i++) {
 		colnames_OUT[eSW_Precip][i] = Str_Dup(cnames_eSW_Precip[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SoilInf' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SoilInf]; i++) {
 		colnames_OUT[eSW_SoilInf][i] = Str_Dup(cnames_eSW_SoilInf[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Runoff' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_Runoff]; i++) {
 		colnames_OUT[eSW_Runoff][i] = Str_Dup(cnames_eSW_Runoff[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_VWCBulk' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_VWCBulk]; i++) {
 		colnames_OUT[eSW_VWCBulk][i] = Str_Dup(Layers_names[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_VWCMatric' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_VWCMatric]; i++) {
 		colnames_OUT[eSW_VWCMatric][i] = Str_Dup(Layers_names[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWCBulk' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SWCBulk]; i++) {
 		colnames_OUT[eSW_SWCBulk][i] = Str_Dup(Layers_names[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWABulk' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SWABulk]; i++) {
 		colnames_OUT[eSW_SWABulk][i] = Str_Dup(Layers_names[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWA' ...");
@@ -1778,6 +1823,9 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 			strcat(ctemp, Layers_names[i]);
 
 			colnames_OUT[eSW_SWA][i + j * tLayers] = Str_Dup(ctemp, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 	#ifdef SWDEBUG
@@ -1785,18 +1833,27 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SWAMatric]; i++) {
 		colnames_OUT[eSW_SWAMatric][i] = Str_Dup(Layers_names[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SWPMatric' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SWPMatric]; i++) {
 		colnames_OUT[eSW_SWPMatric][i] = Str_Dup(Layers_names[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SurfaceWater' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SurfaceWater]; i++) {
 		colnames_OUT[eSW_SurfaceWater][i] = Str_Dup(cnames_eSW_SurfaceWater[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Transp' ...");
@@ -1809,6 +1866,9 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 			strcat(ctemp, Layers_names[i]);
 
 			colnames_OUT[eSW_Transp][i + j * tLayers] = Str_Dup(ctemp, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 	#ifdef SWDEBUG
@@ -1816,6 +1876,9 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_EvapSoil]; i++) {
 		colnames_OUT[eSW_EvapSoil][i] = Str_Dup(Layers_names[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_EvapSurface' ...");
@@ -1824,9 +1887,15 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 		strcpy(ctemp, "evap_");
 		strcat(ctemp, cnames_VegTypes[i]);
 		colnames_OUT[eSW_EvapSurface][i] = Str_Dup(ctemp, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	for (i = 0; i < ncol_OUT[eSW_EvapSurface] - (NVEGTYPES + 2); i++) {
 		colnames_OUT[eSW_EvapSurface][NVEGTYPES + 2 + i] = Str_Dup(cnames_add_eSW_EvapSurface[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Interception' ...");
@@ -1835,12 +1904,18 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 		strcpy(ctemp, "int_");
 		strcat(ctemp, cnames_VegTypes[i]);
 		colnames_OUT[eSW_Interception][i] = Str_Dup(ctemp, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_LyrDrain' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_LyrDrain]; i++) {
 		colnames_OUT[eSW_LyrDrain][i] = Str_Dup(Layers_names[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_HydRed' ...");
@@ -1851,6 +1926,9 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 			strcat(ctemp, "_");
 			strcat(ctemp, Layers_names[i]);
 			colnames_OUT[eSW_HydRed][i + j * tLayers] = Str_Dup(ctemp, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 	#ifdef SWDEBUG
@@ -1858,30 +1936,45 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_AET]; i++) {
 		colnames_OUT[eSW_AET][i] = Str_Dup(cnames_eSW_AET[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_PET' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_PET]; i++) {
 		colnames_OUT[eSW_PET][i] = Str_Dup(cnames_eSW_PET[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_WetDays' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_WetDays]; i++) {
 		colnames_OUT[eSW_WetDays][i] = Str_Dup(Layers_names[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SnowPack' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_SnowPack]; i++) {
 		colnames_OUT[eSW_SnowPack][i] = Str_Dup(cnames_eSW_SnowPack[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_DeepSWC' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_DeepSWC]; i++) {
 		colnames_OUT[eSW_DeepSWC][i] = Str_Dup(cnames_eSW_DeepSWC[i], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_SoilTemp' ...");
@@ -1899,6 +1992,9 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
         strcat(ctemp, cnames_eSW_Temp[i % 3]);
 
         colnames_OUT[eSW_SoilTemp][i] = Str_Dup(ctemp, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
     }
 
@@ -1907,12 +2003,18 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
     #endif
         for (i = 0; i < ncol_OUT[eSW_Frozen]; i++) {
                 colnames_OUT[eSW_Frozen][i] = Str_Dup(Layers_names[i], LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
     }
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_Estab' ...");
 	#endif
 	for (i = 0; i < ncol_OUT[eSW_Estab]; i++) {
 		colnames_OUT[eSW_Estab][i] = Str_Dup(parms[i]->sppname, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	#ifdef SWDEBUG
 	if (debug) swprintf(" 'eSW_CO2Effects' ...");
@@ -1923,6 +2025,9 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 			strcat(ctemp, "_");
 			strcat(ctemp, cnames_VegTypes[j + 1]); // j+1 since no total column
 			colnames_OUT[eSW_CO2Effects][j + i * NVEGTYPES] = Str_Dup(ctemp, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 
@@ -1932,29 +2037,45 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 	i = 0;
 	strcpy(ctemp, "fCover_BareGround");
 	colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	i = 1;
 	for (j = 0; j < NVEGTYPES; j++) {
 		strcpy(ctemp, "fCover_");
 		strcat(ctemp, cnames_VegTypes[j + 1]); // j+1 since no total column
 		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	i += j;
 	for (j = 0; j < NVEGTYPES + 2; j++) {
 		strcpy(ctemp, "Biomass_");
 		strcat(ctemp, cnames_VegTypes[j]);
 		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	i += j;
 	for (j = 0; j < NVEGTYPES + 1; j++) {
 		strcpy(ctemp, "Biolive_");
 		strcat(ctemp, cnames_VegTypes[j]);
 		colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	i += j;
 	strcpy(ctemp, "LAI_total");
     colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp, LogInfo);
 
 	#ifdef SWDEBUG
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 	if (debug) swprintf(" completed.\n");
 	#endif
 }
@@ -2152,6 +2273,9 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 
 	char *MyFileName = InFiles[eOutput];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	itemno = 0;
 
 	*used_OUTNPERIODS = 1; // if 'TIMESTEP' is not specified in input file, then only one time step = period can be specified
@@ -2184,6 +2308,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 					LogError(LogInfo, LOGERROR, "SW_OUT_read: used_OUTNPERIODS = %d > " \
 						"SW_OUTNPERIODS = %d which is illegal.\n",
 						*used_OUTNPERIODS, SW_OUTNPERIODS);
+                    return; // Exit function prematurely due to error
 				}
 			}
 
@@ -2209,12 +2334,15 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 			CloseFile(&f, LogInfo);
 			LogError(LogInfo, LOGERROR, "%s : Insufficient input for key %s item %d.",
 				MyFileName, keyname, itemno);
-
-			continue; //read next line of `outsetup.in`
+            return; // Exit function prematurely due to error
 		}
 
 		// Convert strings to index numbers
 		k = str2key(Str_ToUpper(keyname, upkey), LogInfo);
+        if(LogInfo->stopRun) {
+            CloseFile(&f, LogInfo);
+            return; // Exit function prematurely due to error
+        }
 
 		// For now: rSOILWAT2's function `onGet_SW_OUT` requires that
 		// `sw->Output[k].outfile` is allocated here
@@ -2238,16 +2366,14 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 			InFiles
 		);
 
-		if (msg_type != 0) {
-			if (msg_type > 0) {
-				if (msg_type == LOGERROR) {
-					CloseFile(&f, LogInfo);
-				}
-				LogError(LogInfo, msg_type, "%s", msg);
-			}
+        if(msg_type == LOGWARN || msg_type == LOGERROR) {
+            LogError(LogInfo, msg_type, "%s", msg);
 
-			continue;
-		}
+            if(msg_type == LOGERROR) {
+                CloseFile(&f, LogInfo);
+                return; // Exit function prematurely due to error
+            }
+        }
 
 		// Specify which output time periods are requested for this output key/type
 		if (sw->Output[k].use)
@@ -2292,12 +2418,24 @@ void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo) {
 
 	SW_OUT_sum_today(sw, eSWC, bFlush_output, tOffset, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	SW_OUT_sum_today(sw, eWTH, bFlush_output, tOffset, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	SW_OUT_sum_today(sw, eVES, bFlush_output, tOffset, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	SW_OUT_sum_today(sw, eVPD, bFlush_output, tOffset, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	SW_OUT_write_today(sw, SW_OutputPtrs, bFlush_output, tOffset);
 }
@@ -2348,6 +2486,10 @@ void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,
 		{
 			average_for(sw, otyp, pd, bFlush_output, tOffset, LogInfo);
 
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
 			switch (otyp)
 			{
 				case eSWC:
@@ -2364,6 +2506,7 @@ void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,
 				default:
 					LogError(LogInfo, LOGERROR,
 							"Invalid object type in SW_OUT_sum_today().");
+                    return; // Exit function prematurely due to error
 			}
 		}
 	}
@@ -2374,6 +2517,10 @@ void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,
 		{
 			collect_sums(sw, otyp, pd, sw->GenOutput.timeSteps,
 						 sw->GenOutput.used_OUTNPERIODS, LogInfo);
+
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 }

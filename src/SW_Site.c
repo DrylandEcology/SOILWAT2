@@ -430,6 +430,7 @@ void SWRC_PTF_estimate_parameters(
 			LOGERROR,
 			"PTF is not implemented in SOILWAT2."
 		);
+        return; // Exit function prematurely due to error
 	}
 
 	/**********************************/
@@ -630,6 +631,7 @@ double SW_swcBulk_minimum(
 				"`SW_swcBulk_minimum()`: SWRC (type %d) is not implemented.",
 				swrc_type
 			);
+            return theta_min_theoretical; // Exit function prematurely due to error
 			break;
 	}
 
@@ -1062,6 +1064,7 @@ void PTF_Saxton2006(
 			"theta(saturated, [cm / cm]) = %f (must be within 0-1)\n",
 			*theta_sat
 		);
+        return; // Exit function prematurely due to error
 	}
 
 
@@ -1523,6 +1526,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 			if (x < 2 || region < 1 || rgnlow < 1) {
 				CloseFile(&f, LogInfo);
 				LogError(LogInfo, LOGERROR, "%s : Bad record %d.\n", MyFileName, lineno);
+                return; // Exit function prematurely due to error
 			}
 			SW_Site->_TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
 			SW_Site->n_transp_rgn++;
@@ -1543,6 +1547,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 			"runoff = %f (value ranges between 0 and 1)\n",
 			MyFileName, SW_Site->percentRunoff
 		);
+        return; // Exit function prematurely due to error
 	}
 
 	if (LT(SW_Site->percentRunon, 0.)) {
@@ -1553,6 +1558,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 			"as daily runon = %f (value ranges between 0 and +inf)\n",
 			MyFileName, SW_Site->percentRunon
 		);
+        return; // Exit function prematurely due to error
 	}
 
 	if (too_many_regions) {
@@ -1563,6 +1569,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 			" exceeds maximum allowed (%d > %d)\n",
 			MyFileName, SW_Site->n_transp_rgn, MAX_TRANSP_REGIONS
 		);
+        return; // Exit function prematurely due to error
 	}
 
 	/* check for any discontinuities (reversals) in the transpiration regions */
@@ -1574,6 +1581,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 				"%s : Discontinuity/reversal in transpiration regions.\n",
 				InFiles[eSite]
 			);
+            return; // Exit function prematurely due to error
 		}
 	}
 }
@@ -1603,6 +1611,9 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 	char *MyFileName = InFiles[eLayers];
 
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	while (GetALine(f, inbuf)) {
 		lyrno = SW_Site->n_layers++;
@@ -1631,6 +1642,7 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 				"%s : Incomplete record %d.\n",
 				MyFileName, lyrno + 1
 			);
+            return; // Exit function prematurely due to error
 		}
 
 		SW_Site->width[lyrno] = dmax - dmin;
@@ -1661,6 +1673,7 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 				"Maximum number of layers is %d\n",
 				MyFileName, lyrno + 1, MAX_LAYERS
 			);
+            return; // Exit function prematurely due to error
 		}
 	}
 
@@ -1812,7 +1825,7 @@ void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
 	/* ------------- Error checking --------------- */
 	if(nRegions < 1 || nRegions > MAX_TRANSP_REGIONS){
 		LogError(LogInfo, LOGERROR, "derive_soilRegions: invalid number of regions (%d)\n", nRegions);
-		return;
+		return; // Exit function prematurely due to error
 	}
 
 	/* --------------- Clear out the array ------------------ */
@@ -1883,6 +1896,9 @@ void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 	char *MyFileName = InFiles[eSWRCp];
 
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	while (GetALine(f, inbuf)) {
 		x = sscanf(
@@ -1907,6 +1923,7 @@ void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 				"%s : Bad number of SWRC parameters %d -- must be %d.\n",
 				"Site", x, SWRC_PARAM_NMAX
 			);
+            return; // Exit function prematurely due to error
 		}
 
 		/* Check that we are within `SW_Site.n_layers` */
@@ -1919,6 +1936,7 @@ void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 				"must match number of soil layers (%d)\n",
 				"Site", lyrno + 1, SW_Site->n_layers
 			);
+            return; // Exit function prematurely due to error
 		}
 
 		/* Copy values into structure */
@@ -1993,6 +2011,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				SW_Site->site_ptf_name,
 				SW_Site->site_swrc_name
 			);
+            return; // Exit function prematurely due to error
 		}
 	}
 
@@ -2011,12 +2030,18 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 
 		/* Check soil properties for valid values */
 		if (!SW_check_soil_properties(SW_Site, s, LogInfo)) {
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
 			LogError(
 				LogInfo,
 				LOGERROR,
 				"Invalid soil properties in layer %d.\n",
 				s + 1
 			);
+
+            return; // Exit function prematurely due to error
 		}
 
 
@@ -2051,6 +2076,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				"Soil density type not recognized",
 				SW_Site->type_soilDensityInput
 			);
+            return; // Exit function prematurely due to error
 		}
 
 
@@ -2083,6 +2109,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				swrc2str[SW_Site->swrc_type[s]],
 				s + 1
 			);
+            return; // Exit function prematurely due to error
 		}
 
 		/* Calculate SWC at field capacity and at wilting point */
@@ -2151,6 +2178,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				"  Recheck parameters and try again.\n",
 				"Site", s + 1, SW_Site->swcBulk_init[s], SW_Site->swcBulk_min[s]
 			);
+            return; // Exit function prematurely due to error
 		}
 
 		if (LT(SW_Site->swcBulk_wiltpt[s], SW_Site->swcBulk_min[s])) {
@@ -2161,6 +2189,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				"  Recheck parameters and try again.\n",
 				"Site", s + 1, SW_Site->swcBulk_wiltpt[s], SW_Site->swcBulk_min[s]
 			);
+            return; // Exit function prematurely due to error
 		}
 
 		if (LT(SW_Site->swcBulk_halfwiltpt[s], SW_Site->swcBulk_min[s])) {
@@ -2188,6 +2217,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				"  Recheck parameters and try again.\n",
 				"Site", s + 1, SW_Site->swcBulk_wet[s], SW_Site->swcBulk_min[s]
 			);
+            return; // Exit function prematurely due to error
 		}
 
 
@@ -2272,6 +2302,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 			} else if (s == 0) {
 				LogError(LogInfo, LOGERROR, ": Top soil layer must be included\n"
 						"  in %s tranpiration regions.\n", key2veg[k]);
+                return; // Exit function prematurely due to error
 			} else if (r < SW_Site->n_transp_rgn) {
 				LogError(LogInfo, LOGERROR, ": Transpiration region %d \n"
 						"  is deeper than the deepest layer with a\n"
@@ -2279,6 +2310,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 						"  Please fix the discrepancy and try again.\n",
 						r + 1, key2veg[k], s
 				);
+                return; // Exit function prematurely due to error
 			} else {
 				SW_Site->my_transp_rgn[k][s] = 0;
 			}
@@ -2316,6 +2348,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 						SW_Site->swcBulk_min[s],
 						-0.1 * SW_VegProd->veg[k].SWPcrit
 					);
+                    return; // Exit function prematurely due to error
 				}
 			}
 		}

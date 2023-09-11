@@ -43,6 +43,10 @@ void create_test_soillayers(unsigned int nlayers,
       "requested number of soil layers (n = %d) is not accepted.\n", nlayers);
   }
 
+  if(LogInfo->stopRun) {
+    sw_check_exit(swFALSE, LogInfo);
+  }
+
   RealF dmax[MAX_LAYERS] = {
     5, 6, 10, 11, 12, 20, 21, 22, 25, 30, 40, 41, 42, 50, 51, 52, 53, 54, 55,
     60, 70, 80, 90, 110, 150};

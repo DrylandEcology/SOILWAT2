@@ -59,13 +59,12 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
 		if (!RemoveFiles(inbuf, LogInfo))
 		{
 			LogError(LogInfo, LOGWARN, "Can't remove old csv output file: %s\n", s);
-			printf("Can't remove old csv output file: %s\n", s);
 		}
 	}
 	else if (!MkDir(dirString, LogInfo))
 	{
 		LogError(LogInfo, LOGERROR, "Can't make output path for csv file: %s\n", dirString);
-		printf("Can't make output path for csv file: %s\n", dirString);
+        return; // Exit function prematurely due to error
 	}
 }
 
@@ -95,6 +94,9 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 
 	char *MyFileName = PathInfo->InFiles[eFirst];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	while (GetALine(f, inbuf)) {
 
@@ -174,6 +176,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 	if (fileno < eEndFile - 1) {
 		CloseFile(&f, LogInfo);
 		LogError(LogInfo, LOGERROR, "Too few files (%d) in %s", fileno, MyFileName);
+        return; // Exit function prematurely due to error
 	}
 
 	CloseFile(&f, LogInfo);
@@ -227,6 +230,9 @@ void SW_F_construct(const char *firstfile, char _ProjDir[],
 	 */
 	char *c, *p, dirString[FILENAME_MAX];
 	char *local_firstfile = Str_Dup(firstfile, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	DirName(local_firstfile, dirString);
 

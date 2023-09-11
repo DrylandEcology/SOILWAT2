@@ -430,6 +430,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   // AET <= PET
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[0] = Str_Dup("AET <= PET", LogInfo);
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   if (!LE(sw->SoilWat.aet, sw->SoilWat.pet))
   {
@@ -441,6 +445,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   // AET == E(total) + T(total)
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[1] = Str_Dup("AET == Etotal + Ttotal", LogInfo);
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   rhs = Etotal + Ttotal;
   if (!EQ_w_tol(sw->SoilWat.aet, rhs, wbtol))
@@ -454,6 +462,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   // doesn't make sense here because Ttotal is the sum of Tvegij
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[2] = Str_Dup("T(total) = sum of T(veg-type i from soil layer j)", LogInfo);
+
+    if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+    }
   }
   sw->SoilWat.wbError[2] += 0;
 
@@ -461,6 +473,9 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   //            + E(total veg-intercepted) + E(snow sublimation)
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[3] = Str_Dup("Etotal == Esoil + Eponded + Eveg + Elitter + Esnow", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   rhs = Esoil + Eponded + Eveg + Elitter + Esnow;
   if (!EQ_w_tol(Etotal, rhs, wbtol))
@@ -474,6 +489,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   //                    + E(total veg-intercepted)
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[4] = Str_Dup("Esurf == Eponded + Eveg + Elitter", LogInfo);
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   rhs = Eponded + Eveg + Elitter;
   if (!EQ_w_tol(Etotalsurf, rhs, wbtol))
@@ -488,6 +507,9 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   // infiltration = [rain + snowmelt + runon] - (runoff + intercepted + delta_surfaceWater + Eponded)
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + intercepted + delta_surfaceWater + Eponded)", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   rhs = arriving_water - (runoff + intercepted + delta_surfaceWater + Eponded);
   if (!EQ_w_tol(infiltration, rhs, wbtol))
@@ -500,6 +522,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   // E(soil) + Ttotal = infiltration - (deepDrainage + delta(swc))
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[6] = Str_Dup("Ttotal + Esoil = inf - (deepDrainage + delta_swc)", LogInfo);
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   lhs = Ttotal + Esoil;
   rhs = infiltration - (deepDrainage + delta_swc_total);
@@ -515,6 +541,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   //     (percolationOut/deepDrainage + transpiration + baresoil_evaporation)
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[7] = Str_Dup("delta_swc[i] == perc_in[i] + hydred[i] - (perc_out[i] + Ttot[i] + Esoil[i]))", LogInfo);
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   ForEachSoilLayer(i, n_layers)
   {
@@ -532,6 +562,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   // for every soil layer j: swc_min <= swc <= swc_sat
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[8] = Str_Dup("swc[i] => swc_min[i] && swc[i] <= swc_sat[i]", LogInfo);
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   ForEachSoilLayer(i, n_layers)
   {
@@ -689,6 +723,10 @@ void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 	  					sw->Model.doy, sw->SoilWat.hist,
 						sw->Site.n_layers, LogInfo);
 
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
 		} else {
 			LogError(LogInfo, LOGWARN, "Attempt to set SWC on start day of first year of simulation disallowed.");
 		}
@@ -698,11 +736,17 @@ void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo) {
     if (debug) swprintf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
     #endif
 		SW_Water_Flow(sw, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 
   #ifdef SWDEBUG
   if (debug) swprintf("\n'SW_SWC_water_flow': check water balance.\n");
   SW_WaterBalance_Checks(sw, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
 
   if (debug) swprintf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
   #endif
@@ -1007,6 +1051,9 @@ void SW_SWC_read(
 
 	char *MyFileName = InFiles[eSoilwat];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
@@ -1032,10 +1079,12 @@ void SW_SWC_read(
 	if (lineno < nitems) {
 		CloseFile(&f, LogInfo);
 		LogError(LogInfo, LOGERROR, "%s : Insufficient parameters specified.", MyFileName);
+        return; // Exit function prematurely due to error
 	}
 	if (SW_SoilWat->hist.method < 1 || SW_SoilWat->hist.method > 2) {
 		CloseFile(&f, LogInfo);
 		LogError(LogInfo, LOGERROR, "%s : Invalid swc adjustment method.", MyFileName);
+        return; // Exit function prematurely due to error
 	}
 	SW_SoilWat->hist.yr.last = endyr;
 	SW_SoilWat->hist.yr.total = SW_SoilWat->hist.yr.last - SW_SoilWat->hist.yr.first + 1;
@@ -1090,10 +1139,13 @@ void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 
 	if (!FileExists(fname)) {
 		LogError(LogInfo, LOGWARN, "Historical SWC file %s not found.", fname);
-		return;
+		return; // Exit function prematurely due to error
 	}
 
 	f = OpenFile(fname, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	_clear_hist(SoilWat_hist->swc, SoilWat_hist->std_err);
 
@@ -1103,18 +1155,22 @@ void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 		if (x < 4) {
 			CloseFile(&f, LogInfo);
 			LogError(LogInfo, LOGERROR, "%s : Incomplete layer data at record %d\n   Should be DOY LYR SWC STDERR.", fname, recno);
+            return; // Exit function prematurely due to error
 		}
 		if (x > 4) {
 			CloseFile(&f, LogInfo);
 			LogError(LogInfo, LOGERROR, "%s : Too many input fields at record %d\n   Should be DOY LYR SWC STDERR.", fname, recno);
+            return; // Exit function prematurely due to error
 		}
 		if (doy < 1 || doy > MAX_DAYS) {
 			CloseFile(&f, LogInfo);
 			LogError(LogInfo, LOGERROR, "%s : Day of year out of range at record %d", fname, recno);
+            return; // Exit function prematurely due to error
 		}
 		if (lyr < 1 || lyr > MAX_LAYERS) {
 			CloseFile(&f, LogInfo);
 			LogError(LogInfo, LOGERROR, "%s : Layer number out of range (%d > %d), record %d\n", fname, lyr, MAX_LAYERS, recno);
+            return; // Exit function prematurely due to error
 		}
 
 		SoilWat_hist->swc[doy - 1][lyr - 1] = swc;
@@ -1170,6 +1226,7 @@ void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], RealD swcBulk_min[],
 	default:
 		LogError(LogInfo, LOGERROR,
 				 "swcsetup.in : Invalid SWC adjustment method.");
+        return; // Exit function prematurely due to error
 	}
 
 	/* this will guarantee that any method will not lower swc */
@@ -1369,42 +1426,41 @@ double SWRC_SWCtoSWP(
 			swcBulk
 		);
 
-		return res;
-	}
+	} else {
+        switch (swrc_type) {
+            case sw_Campbell1974:
+                res = SWRC_SWCtoSWP_Campbell1974(
+                    swcBulk, swrcp, gravel, width,
+                    errmode, LogInfo
+                );
+                break;
 
-	switch (swrc_type) {
-		case sw_Campbell1974:
-			res = SWRC_SWCtoSWP_Campbell1974(
-				swcBulk, swrcp, gravel, width,
-				errmode, LogInfo
-			);
-			break;
+            case sw_vanGenuchten1980:
+                res = SWRC_SWCtoSWP_vanGenuchten1980(
+                    swcBulk, swrcp, gravel, width,
+                    errmode, LogInfo
+                );
+                break;
 
-		case sw_vanGenuchten1980:
-			res = SWRC_SWCtoSWP_vanGenuchten1980(
-				swcBulk, swrcp, gravel, width,
-				errmode, LogInfo
-			);
-			break;
+            case sw_FXW:
+                res = SWRC_SWCtoSWP_FXW(
+                    swcBulk, swrcp, gravel, width,
+                    errmode, LogInfo
+                );
+                break;
 
-		case sw_FXW:
-			res = SWRC_SWCtoSWP_FXW(
-				swcBulk, swrcp, gravel, width,
-				errmode, LogInfo
-			);
-			break;
+            default:
+                LogError(
+                    LogInfo,
+                    errmode,
+                    "SWRC (type %d) is not implemented.",
+                    swrc_type
+                );
+                break;
+        }
+    }
 
-		default:
-			LogError(
-				LogInfo,
-				errmode,
-				"SWRC (type %d) is not implemented.",
-				swrc_type
-			);
-			break;
-	}
-
-	return res;
+    return res;
 }
 
 
@@ -1475,7 +1531,7 @@ double SWRC_SWCtoSWP_Campbell1974 (
 				theta, swrcp[1], swrcp[2], tmp
 			);
 
-			return SW_MISSING;
+			return SW_MISSING; // Exit function prematurely due to error
 		}
 
 		res = swrcp[0] / tmp;
@@ -1721,31 +1777,30 @@ double SWRC_SWPtoSWC(
 			swpMatric
 		);
 
-		return res;
-	}
+	} else {
+        switch (swrc_type) {
+            case sw_Campbell1974:
+                res = SWRC_SWPtoSWC_Campbell1974(swpMatric, swrcp, gravel, width);
+                break;
 
-	switch (swrc_type) {
-		case sw_Campbell1974:
-			res = SWRC_SWPtoSWC_Campbell1974(swpMatric, swrcp, gravel, width);
-			break;
+            case sw_vanGenuchten1980:
+                res = SWRC_SWPtoSWC_vanGenuchten1980(swpMatric, swrcp, gravel, width);
+                break;
 
-		case sw_vanGenuchten1980:
-			res = SWRC_SWPtoSWC_vanGenuchten1980(swpMatric, swrcp, gravel, width);
-			break;
+            case sw_FXW:
+                res = SWRC_SWPtoSWC_FXW(swpMatric, swrcp, gravel, width);
+                break;
 
-		case sw_FXW:
-			res = SWRC_SWPtoSWC_FXW(swpMatric, swrcp, gravel, width);
-			break;
-
-		default:
-			LogError(
-				LogInfo,
-				errmode,
-				"SWRC (type %d) is not implemented.",
-				swrc_type
-			);
-			break;
-	}
+            default:
+                LogError(
+                    LogInfo,
+                    errmode,
+                    "SWRC (type %d) is not implemented.",
+                    swrc_type
+                );
+                break;
+        }
+    }
 
 	return res;
 }

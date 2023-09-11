@@ -75,6 +75,7 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 		if (does_agg) {
 			LogError(LogInfo, LOGERROR, "'_create_csv_headers': value TRUE for "\
 				"argument 'does_agg' is not implemented for SOILWAT2-standalone.");
+            return; // Exit function prematurely due to error
 		}
 	#else
 		(void) LogInfo;
@@ -138,11 +139,17 @@ static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
 	if (SW_FileStatus->make_regular[pd]) {
 		SW_FileStatus->fp_reg[pd] =
 			OpenFile(InFiles[eOutputDaily + pd], "w", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 	}
 
 	if (SW_FileStatus->make_soil[pd]) {
 		SW_FileStatus->fp_soil[pd] =
 			OpenFile(InFiles[eOutputDaily_soil + pd], "w", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 	}
 }
 #endif
@@ -302,11 +309,17 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 	ForEachOutPeriod(pd) {
 		if (GenOutput->use_OutPeriod[pd]) {
 			_create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			write_headers_to_csv(pd, SW_FileStatus->fp_reg[pd],
 				SW_FileStatus->fp_soil[pd], swFALSE, SW_FileStatus->make_regular,
 				SW_FileStatus->make_soil, SW_Output, n_layers, GenOutput,
 				LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 }
@@ -432,6 +445,9 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 	get_outstrheader(pd, str_time, sizeof str_time);
 	_create_csv_headers(pd, header_reg, header_soil, does_agg,
 			n_layers, SW_Output, GenOutput, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	// Write headers to files
 	if (make_regular[pd]) {

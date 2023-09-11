@@ -368,6 +368,11 @@ void transp_weighted_avg(double *swp_avg, SW_SITE *SW_Site,
 			if (tr_regions[i] == r) {
 				swp += SW_Site->transp_coeff[VegType][i] *
 								SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
+
 				sumco += SW_Site->transp_coeff[VegType][i];
 			}
 		}
@@ -481,6 +486,9 @@ void pot_soil_evap(SW_SITE *SW_Site, unsigned int nelyrs, double totagb,
 		x = SW_Site->width[i] * SW_Site->evap_coeff[i];
 		sumwidth += x;
 		avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 
   // Note: avswp = 0 if swc = 0 because that is the return value of SW_SWRC_SWCtoSWP
@@ -541,6 +549,9 @@ void pot_soil_evap_bs(double *bserate, SW_SITE *SW_Site,
 		x = SW_Site->width[i] * SW_Site->evap_coeff[i];
 		sumwidth += x;
 		avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 
 	avswp /= sumwidth;
@@ -753,6 +764,10 @@ void remove_from_soil(double swc[], double qty[], SW_SITE *SW_Site,
 
 	for (i = 0; i < nlyrs; i++) {
 		tmpswp = SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
 		if (GT(tmpswp, 0.)) {
 			swpfrac[i] = coeff[i] / tmpswp;
 		} else {
@@ -992,6 +1007,9 @@ void hydraulic_redistribution(
 		);
 
 		swp[i] = SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 		/* Ryel et al. 2002: eq. 7 relative soil-root conductance */
 		relCondroot[i] = fmin(
@@ -1151,6 +1169,7 @@ void hydraulic_redistribution(
 			"hydraulic redistribution failed to constrain to swc_min.",
 			year, doy, vegk
 		);
+        return; // Exit function prematurely due to error
 	}
 
 
@@ -1483,6 +1502,9 @@ void SW_ST_setup_run(
 			soil_temp_init,
 			LogInfo
 		);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 		/* Initialize soil temperature and frozen status across the soil layer profile. */
 		ForEachSoilLayer(i, SW_Site->n_layers) {
@@ -1563,7 +1585,7 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 				"too many (n = %d) regression layers requested... "\
 				"soil temperature will NOT be calculated\n", nRgr);
 		}
-		return; // exits the function
+        return; // Exit function prematurely due to error
 	}
 
 
@@ -1606,7 +1628,7 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 
 			// if the error hasn't been reported yet... print an error to the logfile
         LogError(LogInfo, LOGERROR, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, SW_StRegValues->depths[nlyrs - 1]);
-
+            return; // Exit function prematurely due to error
 		}
 
 		return; // exits the function
@@ -2230,6 +2252,8 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 			LOGERROR,
 			"SOILWAT2 ERROR soil temperature module was not initialized.\n"
 		);
+
+        return; // Exit function prematurely due to error
 	}
 
 	// calculating min/mean/max surface temperature
@@ -2310,7 +2334,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 		}
 		#endif
 
-		return;
+		return; // Exit function prematurely due to error
 	}
 
 
@@ -2425,6 +2449,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 	#ifdef SWDEBUG
 	if (debug) {
 		LogError(LogInfo, LOGERROR, "Stop at end of soil temperature calculations.\n");
+        return; // Exit function prematurely due to error
 	}
 	#endif
 }
