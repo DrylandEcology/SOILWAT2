@@ -244,19 +244,23 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
 	int warnMsgNum, warningUpperBound = LogInfo->numWarnings;
 	Bool tooManyWarns = swFALSE;
 	char tooManyWarnsStr[MAX_LOG_SIZE];
+    char tooManyStrFmt[] = "There were a total of %d warnings and"\
+                          " only %d were printed.\n";
 
 	if(warningUpperBound > MAX_MSGS) {
 		warningUpperBound = MAX_MSGS;
 		tooManyWarns = swTRUE;
 
-        sprintf(tooManyWarnsStr, "There were a total of %d warnings and"\
-                                 " only %d were printed.\n",
-                                 LogInfo->numWarnings, MAX_MSGS);
+        snprintf(tooManyWarnsStr, sizeof(tooManyStrFmt), tooManyStrFmt,
+                 LogInfo->numWarnings, MAX_MSGS);
 	}
 
 	#ifdef RSOILWAT
 	for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
-		warning(LogInfo->warningMsgs[warnMsgNum]);
+        // Send warning message only if not silenced (fp is not NULL)
+        if(!isnull(LogInfo->logfp)) {
+            warning(LogInfo->warningMsgs[warnMsgNum]);
+        }
 	}
 
 	if(!isnull(LogInfo->errorMsg)) {
@@ -264,6 +268,8 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
 	}
 
 	if(tooManyWarns) {
+        // Write out error message as a warning for now, `error()` will
+        // be used in the exiting function (`sw_check_exit()`)
 		warning(tooManyWarnsStr);
 	}
 	#else
