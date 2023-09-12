@@ -123,7 +123,7 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
     strcat(outfmt, fmt);
     strcat(outfmt, "\n");
 
-	vsprintf(buf, outfmt, args);
+	vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
 
 	if(LOGWARN & mode) {
 		if(nextWarn < MAX_MSGS) {
