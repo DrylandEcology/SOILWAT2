@@ -203,9 +203,13 @@ void sw_check_exit(Bool QuietMode, LOG_INFO* LogInfo) {
     if(LogInfo->stopRun) {
         error(LogInfo->errorMsg);
     }
+
+    (void) QuietMode; // Silence compiler flag `-Wunused-parameter`
     #else
-    if(LogInfo->stopRun && !QuietMode) {
-        fprintf(stderr, "%s", LogInfo->errorMsg);
+    if(LogInfo->stopRun) {
+        if(!QuietMode) {
+            fprintf(stderr, "%s", LogInfo->errorMsg);
+        }
         exit(-1);
     }
     #endif
