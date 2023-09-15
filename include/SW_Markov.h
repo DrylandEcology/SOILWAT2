@@ -33,10 +33,6 @@ void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
 void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 			RealD *tmax, RealD *tmin, RealD *rain, LOG_INFO* LogInfo);
 
-#ifdef DEBUG_MEM
-void SW_MKV_SetMemoryRefs( void);
-#endif
-
 
 #ifdef __cplusplus
 }

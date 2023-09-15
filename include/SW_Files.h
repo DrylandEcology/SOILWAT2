@@ -58,10 +58,6 @@ void SW_F_construct(char *InFiles[], const char *firstfile, char _ProjDir[],
 void SW_F_deconstruct(char *InFiles[]);
 void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo);
 
-#ifdef DEBUG_MEM
-void SW_F_SetMemoryRefs(void);
-#endif
-
 
 #ifdef __cplusplus
 }

@@ -253,24 +253,3 @@ void SW_F_deconstruct(char *InFiles[]) {
 		}
 	}
 }
-#ifdef DEBUG_MEM
-#include "include/myMemory.h"
-/*======================================================*/
-void SW_F_SetMemoryRefs( void) {
-	/* when debugging memory problems, use the bookkeeping
-	 code in myMemory.c
-	 This routine sets the known memory refs in this module
-	 so they can be  checked for leaks, etc.  Includes
-	 malloc-ed memory in SOILWAT.  All refs will have been
-	 cleared by a call to ClearMemoryRefs() before this, and
-	 will be checked via CheckMemoryRefs() after this, most
-	 likely in the main() function.
-	 */
-	SW_FileIndex i;
-
-	for ( i=eFirst; i < eEndFile; i++)
-	NoteMemoryRef(InFiles[i]);
-
-}
-
-#endif
