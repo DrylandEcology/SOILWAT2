@@ -72,6 +72,7 @@ void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYe
                            int *nextMonth);
 void initializeClimatePtrs(SW_CLIMATE_YEARLY *climateOutput,
                            SW_CLIMATE_CLIM *climateAverages);
+void initializeMonthlyClimatePtrs(SW_CLIMATE_YEARLY *climateOutput, int month);
 void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
                         SW_CLIMATE_CLIM *climateAverages, LOG_INFO* LogInfo);
 void deallocateClimateStructs(SW_CLIMATE_YEARLY *climateOutput,

@@ -2068,6 +2068,14 @@ void initializeClimatePtrs(SW_CLIMATE_YEARLY *climateOutput,
     climateAverages->sdC4 = NULL;
     climateAverages->sdCheatgrass = NULL;
 }
+
+void initializeMonthlyClimatePtrs(SW_CLIMATE_YEARLY *climateOutput, int month) {
+    climateOutput->PPTMon_cm[month] = NULL;
+    climateOutput->meanTempMon_C[month] = NULL;
+    climateOutput->maxTempMon_C[month] = NULL;
+    climateOutput->minTempMon_C[month] = NULL;
+}
+
 void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
                         SW_CLIMATE_CLIM *climateAverages, LOG_INFO* LogInfo) {
 
@@ -2085,6 +2093,8 @@ void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
                                              "allocateClimateStructs()", LogInfo);
 
     for(month = 0; month < MAX_MONTHS; month++) {
+        initializeMonthlyClimatePtrs(climateOutput, month);
+
         climateOutput->PPTMon_cm[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                     "allocateClimateStructs()", LogInfo);
         climateOutput->meanTempMon_C[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
