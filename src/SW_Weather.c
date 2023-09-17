@@ -1056,7 +1056,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
 
                 // Fail
                 LogError(LogInfo, LOGERROR, "Invalid daily/calculated relative humidity value did"
-                         " not fall in the range [0, 100] % (relative humidity = %f). ",
+                         " not fall in the range [0, 100] (relative humidity = %f). ",
                          weathHist[year]->r_humidity_daily[doy]);
             }
             // Otherwise, check if cloud cover was input and
@@ -1069,7 +1069,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
 
                 // Fail
                 LogError(LogInfo, LOGERROR, "Invalid daily/calculated cloud cover value did"
-                         " not fall in the range [0, 100] % (cloud cover = %f). ",
+                         " not fall in the range [0, 100] (cloud cover = %f). ",
                          weathHist[year]->cloudcov_daily[doy]);
             }
             // Otherwise, check if wind speed is less than 0 m/s
