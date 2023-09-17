@@ -70,6 +70,8 @@ void findDriestQtr(int numYears, Bool inNorthHem, double *meanTempDriestQtr_C,
 void driestQtrSouthAdjMonYears(int month, int *adjustedYearZero, int *adjustedYearOne,
                            int *adjustedYearTwo, int *adjustedMonth, int *prevMonth,
                            int *nextMonth);
+void initializeClimatePtrs(SW_CLIMATE_YEARLY *climateOutput,
+                           SW_CLIMATE_CLIM *climateAverages);
 void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
                         SW_CLIMATE_CLIM *climateAverages, LOG_INFO* LogInfo);
 void deallocateClimateStructs(SW_CLIMATE_YEARLY *climateOutput,

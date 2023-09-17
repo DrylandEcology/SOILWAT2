@@ -2045,10 +2045,35 @@ void _read_weather_hist(
 	fclose(f);
 }
 
+void initializeClimatePtrs(SW_CLIMATE_YEARLY *climateOutput,
+                           SW_CLIMATE_CLIM *climateAverages) {
+
+    climateOutput->PPTMon_cm = NULL;
+    climateOutput->meanTempMon_C = NULL;
+    climateOutput->maxTempMon_C = NULL;
+    climateOutput->minTempMon_C = NULL;
+
+    climateOutput->PPT_cm = NULL;
+    climateOutput->PPT7thMon_mm = NULL;
+    climateOutput->meanTemp_C = NULL;
+    climateOutput->meanTempDriestQtr_C = NULL;
+    climateOutput->minTemp2ndMon_C = NULL;
+    climateOutput->minTemp7thMon_C = NULL;
+    climateOutput->frostFree_days = NULL;
+    climateOutput->ddAbove65F_degday = NULL;
+    climateAverages->meanTempMon_C = NULL;
+    climateAverages->maxTempMon_C = NULL;
+    climateAverages->minTempMon_C = NULL;
+    climateAverages->PPTMon_cm = NULL;
+    climateAverages->sdC4 = NULL;
+    climateAverages->sdCheatgrass = NULL;
+}
 void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
                         SW_CLIMATE_CLIM *climateAverages, LOG_INFO* LogInfo) {
 
     int month;
+
+    initializeClimatePtrs(climateOutput, climateAverages);
 
     climateOutput->PPTMon_cm = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
                                           "allocateClimateStructs()", LogInfo);
