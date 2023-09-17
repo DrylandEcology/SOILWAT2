@@ -28,6 +28,10 @@
 #include "include/SW_Main_lib.h"
 #include "include/myMemory.h"
 
+#ifdef RSOILWAT
+  #include <R.h>    // for error(), and warning()
+#endif
+
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -221,9 +225,13 @@ void sw_check_exit(Bool QuietMode, LOG_INFO* LogInfo) {
     if(LogInfo->stopRun) {
         error(LogInfo->errorMsg);
     }
+
+    (void) QuietMode; // Silence compiler flag `-Wunused-parameter`
     #else
-    if(LogInfo->stopRun && !QuietMode) {
-        fprintf(stderr, "%s", LogInfo->errorMsg);
+    if(LogInfo->stopRun) {
+        if(!QuietMode) {
+            fprintf(stderr, "%s", LogInfo->errorMsg);
+        }
         exit(-1);
     }
     #endif
@@ -258,19 +266,23 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
 	int warnMsgNum, warningUpperBound = LogInfo->numWarnings;
 	Bool tooManyWarns = swFALSE;
 	char tooManyWarnsStr[MAX_LOG_SIZE];
+    char tooManyStrFmt[] = "There were a total of %d warnings and"\
+                          " only %d were printed.\n";
 
 	if(warningUpperBound > MAX_MSGS) {
 		warningUpperBound = MAX_MSGS;
 		tooManyWarns = swTRUE;
 
-        sprintf(tooManyWarnsStr, "There were a total of %d warnings and"\
-                                 " only %d were printed.\n",
-                                 LogInfo->numWarnings, MAX_MSGS);
+        snprintf(tooManyWarnsStr, MAX_LOG_SIZE, tooManyStrFmt,
+                 LogInfo->numWarnings, MAX_MSGS);
 	}
 
 	#ifdef RSOILWAT
 	for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
-		warning(LogInfo->warningMsgs[warnMsgNum]);
+        // Send warning message only if not silenced (fp is not NULL)
+        if(!isnull(LogInfo->logfp)) {
+            warning(LogInfo->warningMsgs[warnMsgNum]);
+        }
 	}
 
 	if(!isnull(LogInfo->errorMsg)) {
@@ -278,8 +290,12 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
 	}
 
 	if(tooManyWarns) {
+        // Write out error message as a warning for now, `error()` will
+        // be used in the exiting function (`sw_check_exit()`)
 		warning(tooManyWarnsStr);
 	}
+
+    (void) QuietMode; // Silence compiler flag `-Wunused-parameter`
 	#else
 	for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
 		fprintf(LogInfo->logfp, "%s\n", LogInfo->warningMsgs[warnMsgNum]);

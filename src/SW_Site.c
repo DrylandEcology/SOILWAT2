@@ -118,7 +118,7 @@ static Bool SW_check_soil_properties(SW_SITE *SW_Site,
 
 	int k;
 	RealD fval = 0;
-	const char *errtype = "\0";
+	char *errtype = NULL;
 	Bool res = swTRUE;
 
 
@@ -197,13 +197,14 @@ static Bool SW_check_soil_properties(SW_SITE *SW_Site,
 		}
 	}
 
-	if (!res) {
+	if (!res && !isnull(errtype)) {
 		LogError(
 			LogInfo,
 			LOGERROR,
 			"'%s' has an invalid value (%5.4f) in layer %d.\n",
 			errtype, fval, layerno + 1
 		);
+        free(errtype); // Free temporary string
 	}
 
 	return res;

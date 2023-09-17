@@ -15,9 +15,6 @@
 
 #include "include/filefuncs.h"
 #include "include/myMemory.h"
-#ifdef RSOILWAT
-  #include <R.h>    // for REvprintf(), error(), and warning()
-#endif
 
 
 /* 01/05/2011	(drs) removed unused variable *p from MkDir()
@@ -112,6 +109,9 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
 	char buf[MAX_LOG_SIZE];
 	int nextWarn = LogInfo->numWarnings;
 	va_list args;
+    #ifdef SWDEBUG
+    int expectedWriteSize;
+    #endif
 
 	va_start(args, fmt);
 
@@ -120,10 +120,26 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
     else if (LOGERROR & mode)
         strcpy(outfmt, "ERROR: ");
 
-    strcat(outfmt, fmt);
-    strcat(outfmt, "\n");
+    #ifdef SWDEBUG
+    expectedWriteSize = snprintf(outfmt, MAX_LOG_SIZE, "%s\n", fmt);
+    if(expectedWriteSize > MAX_LOG_SIZE) {
+        fprintf(stderr, "Programmer: Size of format exceeds the maximum size.\n");
+        exit(-1);
+    }
+    #else
+    snprintf(outfmt, MAX_LOG_SIZE, "%s\n", fmt);
+    #endif
 
-	vsprintf(buf, outfmt, args);
+    #ifdef SWDEBUG
+    expectedWriteSize = vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
+    if(expectedWriteSize > MAX_LOG_SIZE) {
+        fprintf(stderr, "Programmer: Injecting arguments to final message buffer "
+                        "makes it exceed the maxiumum size.\n");
+        exit(-1);
+    }
+    #else
+    vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
+    #endif
 
 	if(LOGWARN & mode) {
 		if(nextWarn < MAX_MSGS) {

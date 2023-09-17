@@ -1064,7 +1064,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
 
                 // Fail
                 LogError(LogInfo, LOGERROR, "Invalid daily/calculated relative humidity value did"
-                         " not fall in the range [0, 100] % (relative humidity = %f). ",
+                         " not fall in the range [0, 100] (relative humidity = %f). ",
                          weathHist[year]->r_humidity_daily[doy]);
                 return; // Exit function prematurely due to error
             }
@@ -1078,7 +1078,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
 
                 // Fail
                 LogError(LogInfo, LOGERROR, "Invalid daily/calculated cloud cover value did"
-                         " not fall in the range [0, 100] % (cloud cover = %f). ",
+                         " not fall in the range [0, 100] (cloud cover = %f). ",
                          weathHist[year]->cloudcov_daily[doy]);
                 return; // Exit function prematurely due to error
             }
@@ -2079,10 +2079,43 @@ void _read_weather_hist(
 	fclose(f);
 }
 
+void initializeClimatePtrs(SW_CLIMATE_YEARLY *climateOutput,
+                           SW_CLIMATE_CLIM *climateAverages) {
+
+    climateOutput->PPTMon_cm = NULL;
+    climateOutput->meanTempMon_C = NULL;
+    climateOutput->maxTempMon_C = NULL;
+    climateOutput->minTempMon_C = NULL;
+
+    climateOutput->PPT_cm = NULL;
+    climateOutput->PPT7thMon_mm = NULL;
+    climateOutput->meanTemp_C = NULL;
+    climateOutput->meanTempDriestQtr_C = NULL;
+    climateOutput->minTemp2ndMon_C = NULL;
+    climateOutput->minTemp7thMon_C = NULL;
+    climateOutput->frostFree_days = NULL;
+    climateOutput->ddAbove65F_degday = NULL;
+    climateAverages->meanTempMon_C = NULL;
+    climateAverages->maxTempMon_C = NULL;
+    climateAverages->minTempMon_C = NULL;
+    climateAverages->PPTMon_cm = NULL;
+    climateAverages->sdC4 = NULL;
+    climateAverages->sdCheatgrass = NULL;
+}
+
+void initializeMonthlyClimatePtrs(SW_CLIMATE_YEARLY *climateOutput, int month) {
+    climateOutput->PPTMon_cm[month] = NULL;
+    climateOutput->meanTempMon_C[month] = NULL;
+    climateOutput->maxTempMon_C[month] = NULL;
+    climateOutput->minTempMon_C[month] = NULL;
+}
+
 void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
                         SW_CLIMATE_CLIM *climateAverages, LOG_INFO* LogInfo) {
 
     int month;
+
+    initializeClimatePtrs(climateOutput, climateAverages);
 
     climateOutput->PPTMon_cm = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
                                           "allocateClimateStructs()", LogInfo);
@@ -2094,6 +2127,8 @@ void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
                                              "allocateClimateStructs()", LogInfo);
 
     for(month = 0; month < MAX_MONTHS; month++) {
+        initializeMonthlyClimatePtrs(climateOutput, month);
+
         climateOutput->PPTMon_cm[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                     "allocateClimateStructs()", LogInfo);
         climateOutput->meanTempMon_C[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
@@ -2137,34 +2172,45 @@ void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
 void deallocateClimateStructs(SW_CLIMATE_YEARLY *climateOutput,
                             SW_CLIMATE_CLIM *climateAverages) {
 
-    int month;
+    int month, pointer;
+    const int numSinglePtrs = 14, numDoublePtrs = 4;
 
-    free(climateOutput->PPT_cm);
-    free(climateOutput->PPT7thMon_mm);
-    free(climateOutput->meanTemp_C);
-    free(climateOutput->meanTempDriestQtr_C);
-    free(climateOutput->minTemp2ndMon_C);
-    free(climateOutput->minTemp7thMon_C);
-    free(climateOutput->frostFree_days);
-    free(climateOutput->ddAbove65F_degday);
-    free(climateAverages->meanTempMon_C);
-    free(climateAverages->maxTempMon_C);
-    free(climateAverages->minTempMon_C);
-    free(climateAverages->PPTMon_cm);
-    free(climateAverages->sdC4);
-    free(climateAverages->sdCheatgrass);
+    double *singlePtrs[] = {
+        climateOutput->PPT_cm, climateOutput->PPT7thMon_mm,
+        climateOutput->meanTemp_C, climateOutput->meanTempDriestQtr_C,
+        climateOutput->minTemp2ndMon_C, climateOutput->minTemp7thMon_C,
+        climateOutput->frostFree_days, climateOutput->ddAbove65F_degday,
+        climateAverages->meanTempMon_C, climateAverages->maxTempMon_C,
+        climateAverages->minTempMon_C, climateAverages->PPTMon_cm,
+        climateAverages->sdC4, climateAverages->sdCheatgrass
+    };
 
-    for(month = 0; month < MAX_MONTHS; month++) {
-        free(climateOutput->PPTMon_cm[month]);
-        free(climateOutput->meanTempMon_C[month]);
-        free(climateOutput->maxTempMon_C[month]);
-        free(climateOutput->minTempMon_C[month]);
+    double **doublePtrs[] = {
+        climateOutput->PPTMon_cm, climateOutput->meanTempMon_C,
+        climateOutput->maxTempMon_C, climateOutput->minTempMon_C
+    };
+
+    // Free single pointers
+    for(pointer = 0; pointer < numSinglePtrs; pointer++) {
+        if(!isnull(singlePtrs[pointer])) {
+            free(singlePtrs[pointer]);
+            singlePtrs[pointer] = NULL;
+        }
     }
 
-    free(climateOutput->PPTMon_cm);
-    free(climateOutput->meanTempMon_C);
-    free(climateOutput->maxTempMon_C);
-    free(climateOutput->minTempMon_C);
+    // Free double pointers
+    for(pointer = 0; pointer < numDoublePtrs; pointer++) {
+
+        if(!isnull(doublePtrs[pointer])) {
+            for(month = 0; month < MAX_MONTHS; month++) {
+                if(!isnull(doublePtrs[pointer][month])) {
+                    free(doublePtrs[pointer][month]);
+                }
+            }
+
+            free(doublePtrs[pointer]);
+        }
+    }
 }
 
 #ifdef DEBUG_MEM
