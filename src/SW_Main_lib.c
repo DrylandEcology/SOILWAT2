@@ -255,7 +255,7 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
 		warningUpperBound = MAX_MSGS;
 		tooManyWarns = swTRUE;
 
-        snprintf(tooManyWarnsStr, sizeof(tooManyStrFmt), tooManyStrFmt,
+        snprintf(tooManyWarnsStr, MAX_LOG_SIZE, tooManyStrFmt,
                  LogInfo->numWarnings, MAX_MSGS);
 	}
 
@@ -276,6 +276,8 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
         // be used in the exiting function (`sw_check_exit()`)
 		warning(tooManyWarnsStr);
 	}
+
+    (void) QuietMode; // Silence compiler flag `-Wunused-parameter`
 	#else
 	for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
 		fprintf(LogInfo->logfp, "%s\n", LogInfo->warningMsgs[warnMsgNum]);
