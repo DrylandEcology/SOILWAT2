@@ -28,6 +28,10 @@
 #include "include/SW_Main_lib.h"
 #include "include/myMemory.h"
 
+#ifdef RSOILWAT
+  #include <R.h>    // for error(), and warning()
+#endif
+
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */

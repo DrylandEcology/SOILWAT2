@@ -15,9 +15,6 @@
 
 #include "include/filefuncs.h"
 #include "include/myMemory.h"
-#ifdef RSOILWAT
-  #include <R.h>    // for REvprintf(), error(), and warning()
-#endif
 
 
 /* 01/05/2011	(drs) removed unused variable *p from MkDir()

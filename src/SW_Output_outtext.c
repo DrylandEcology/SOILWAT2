@@ -27,6 +27,7 @@
 #include "include/SW_Files.h"
 #include "include/SW_Model.h"
 #include "include/SW_Site.h"
+#include "include/myMemory.h"
 
 // externs `key2str`, `pd2longstr`
 #include "include/SW_Output.h"
