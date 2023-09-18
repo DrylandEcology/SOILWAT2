@@ -98,6 +98,8 @@ void *Mem_Calloc(size_t nobjs, size_t size, const char *funcname,
 
 	p = Mem_Malloc(size * nobjs, funcname, LogInfo);
 
+	Mem_Set(p, 0, size * nobjs);
+
 	return p;
 }
 
