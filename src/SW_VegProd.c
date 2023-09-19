@@ -1028,6 +1028,11 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
 
     // Allocate climate structs' memory
     allocateClimateStructs(numYears, &climateOutput, &climateAverages, LogInfo);
+    if(LogInfo->stopRun) {
+        // Deallocate climate structs' memory before error
+        deallocateClimateStructs(&climateOutput, &climateAverages);
+        return; // Exit function prematurely due to error
+    }
 
     calcSiteClimate(Weather_hist, SW_Model->cum_monthdays,
 					SW_Model->days_in_month, numYears, SW_Model->startyr,
@@ -1047,6 +1052,12 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
 				SumGrassesFraction, C4Variables, fillEmptyWithBareGround,
                 inNorthHem, warnExtrapolation, fixBareGround, grassOutput,
                 RelAbundanceL0, RelAbundanceL1, LogInfo);
+
+        if(LogInfo->stopRun) {
+            // Deallocate climate structs' memory before error
+            deallocateClimateStructs(&climateOutput, &climateAverages);
+            return; // Exit function prematurely due to error
+        }
 
         ForEachVegType(k) {
             vegProd->veg[k].cov.fCover = RelAbundanceL1[k];
@@ -1229,6 +1240,9 @@ void estimatePotNatVegComposition(double meanTemp_C,
     }
 
     uniqueIndices(isetIndices, iFixed, 3, iFixedSize, iFixed, &iFixedSize, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     // Set boolean value to true if grasses still need to be estimated
     if(!EQ(totalSumGrasses, 0.)) {
@@ -1419,6 +1433,10 @@ void estimatePotNatVegComposition(double meanTemp_C,
                 uniqueIndices(iFixed, grassesEstim, iFixedSize, grassEstimSize,
 							  iFixed, &iFixedSize, LogInfo);
 
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
+
                 // Remove them from the `estimIndices` array
                 for(index = 0; index < overallEstimSize; index++) {
                     do {
@@ -1563,7 +1581,13 @@ void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTw
     int *tempArray, *tempArraySeen;
 
     tempArray = (int *)Mem_Malloc(sizeof(int) * tempSize, "uniqueIndices()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
     tempArraySeen = (int *)Mem_Malloc(sizeof(int) * nTypes, "uniqueIndices()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     memset(tempArray, 0, sizeof(int) * tempSize);
     memset(tempArraySeen, 0, sizeof(int) * nTypes);

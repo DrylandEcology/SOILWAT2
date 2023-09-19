@@ -2348,6 +2348,9 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 		// `sw->Output[k].outfile` is allocated here
 		#if defined(RSOILWAT)
 		sw->Output[k].outfile = (char *) Str_Dup(outfile, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 		#else
 		outfile[0] = '\0';
 		#endif

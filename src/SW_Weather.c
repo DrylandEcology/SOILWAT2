@@ -1244,11 +1244,17 @@ void allocateAllWeather(SW_WEATHER *w, LOG_INFO* LogInfo) {
 
   w->allHist = (SW_WEATHER_HIST **)Mem_Malloc(sizeof(SW_WEATHER_HIST *) * w->n_years,
                                    "allocateAllWeather()", LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
 
   for (year = 0; year < w->n_years; year++) {
 
       w->allHist[year] = (SW_WEATHER_HIST *)Mem_Malloc(sizeof(SW_WEATHER_HIST),
                                             "allocateAllWeather()", LogInfo);
+      if(LogInfo->stopRun) {
+          return; // Exit function prematurely due to error
+      }
   }
 }
 
@@ -1675,7 +1681,7 @@ void check_and_update_dailyInputFlags(
          // Fail
          LogError(LogInfo, LOGERROR, "Maximum/minimum temperature flags are unevenly set. "
                                    "Both flags for temperature must be set.");
-
+         return; // Exit function prematurely due to error
       }
 
      // Check if minimum and maximum temperature, or precipitation flags are not set
@@ -1683,6 +1689,7 @@ void check_and_update_dailyInputFlags(
          // Fail
          LogError(LogInfo, LOGERROR, "Both maximum/minimum temperature and/or precipitation flag(s) "
                                    "are not set. All three flags must be set.");
+         return; // Exit function prematurely due to error
      }
 
      if(use_windSpeedMonthly && (dailyInputFlags[WIND_SPEED] ||
@@ -1722,7 +1729,7 @@ void check_and_update_dailyInputFlags(
          LogError(LogInfo, LOGERROR, "Max/min relative humidity flags are unevenly set. "
                                    "Both flags for maximum/minimum relative humidity must be the "
                                    "same (1 or 0).");
-
+         return; // Exit function prematurely due to error
       }
 
      // Check if east/north wind speed flags are set unevenly (1/0) or (0/1)
@@ -1733,7 +1740,7 @@ void check_and_update_dailyInputFlags(
          LogError(LogInfo, LOGERROR, "East/north wind speed flags are unevenly set. "
                                    "Both flags for east/north wind speed components "
                                    "must be the same (1 or 0).");
-
+         return; // Exit function prematurely due to error
       }
 
      // Check to see if any daily flags were turned off due to a set monthly flag
@@ -2119,52 +2126,131 @@ void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
 
     climateOutput->PPTMon_cm = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
                                           "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->meanTempMon_C = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
                                               "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->maxTempMon_C = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
                                              "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->minTempMon_C = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
                                              "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     for(month = 0; month < MAX_MONTHS; month++) {
         initializeMonthlyClimatePtrs(climateOutput, month);
 
         climateOutput->PPTMon_cm[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                     "allocateClimateStructs()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
         climateOutput->meanTempMon_C[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                         "allocateClimateStructs()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
         climateOutput->maxTempMon_C[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                        "allocateClimateStructs()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
         climateOutput->minTempMon_C[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                        "allocateClimateStructs()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
     }
 
     climateOutput->PPT_cm = (double *)Mem_Malloc(sizeof(double) * numYears,
                                       "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->PPT7thMon_mm = (double *)Mem_Malloc(sizeof(double) * numYears,
                                             "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->meanTemp_C = (double *)Mem_Malloc(sizeof(double) * numYears,
                                           "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->meanTempDriestQtr_C = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                    "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->minTemp2ndMon_C = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->minTemp7thMon_C = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->frostFree_days = (double *)Mem_Malloc(sizeof(double) * numYears,
                                               "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->ddAbove65F_degday = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                  "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateAverages->meanTempMon_C = (double *)Mem_Malloc(sizeof(double) * MAX_MONTHS,
                                                "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateAverages->maxTempMon_C = (double *)Mem_Malloc(sizeof(double) * MAX_MONTHS,
                                               "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateAverages->minTempMon_C = (double *)Mem_Malloc(sizeof(double) * MAX_MONTHS,
                                               "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateAverages->PPTMon_cm = (double *)Mem_Malloc(sizeof(double) * MAX_MONTHS,
                                            "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateAverages->sdC4 = (double *)Mem_Malloc(sizeof(double) * 3,
                                       "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateAverages->sdCheatgrass = (double *)Mem_Malloc(sizeof(double) * 3,
                                               "allocateClimateStructs()", LogInfo);
 }

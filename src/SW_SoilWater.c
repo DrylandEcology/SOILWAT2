@@ -645,9 +645,17 @@ void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
 	{
 		SW_SoilWat->p_accu[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
 			sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_construct()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
 		if (pd > eSW_Day) {
 			SW_SoilWat->p_oagg[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
 				sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_construct()", LogInfo);
+
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 }
@@ -1013,9 +1021,15 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 	if (SW_SoilWat->hist_use && year >= SW_SoilWat->hist.yr.first) {
 		#ifndef RSOILWAT
 			_read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		#else
 			if (useFiles) {
 				_read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 			} else {
 				onSet_SW_SWC_hist();
 			}
@@ -1062,6 +1076,9 @@ void SW_SWC_read(
 			break;
 		case 1:
 			SW_SoilWat->hist.file_prefix = (char *) Str_Dup(inbuf, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 			break;
 		case 2:
 			SW_SoilWat->hist.yr.first = yearto4digit(atoi(inbuf));
@@ -1669,6 +1686,9 @@ double SWRC_SWCtoSWP_FXW(
 		if (LT(theta, swrcp[0])) {
 			// calculate tension = phi [bar]
 			res = itp_FXW_for_phi(theta, swrcp, LogInfo);
+            if(LogInfo->stopRun) {
+                return SW_MISSING; // Exit function prematurely due to error
+            }
 
 		} else if (EQ(theta, swrcp[0])) {
 			// theta is theta_sat

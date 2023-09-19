@@ -269,6 +269,9 @@ void RandUniList(long count, long first, long last, RandListType list[],
 
 	/* allocate space for the temp list */
 	klist = (long *) Mem_Malloc(sizeof(long) * range, "RandUniList", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	/* populate the list with valid numbers */
 	for (i = 0, j = first; j <= last; klist[i++] = j++)

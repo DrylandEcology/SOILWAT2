@@ -632,7 +632,7 @@ double SW_swcBulk_minimum(
 				"`SW_swcBulk_minimum()`: SWRC (type %d) is not implemented.",
 				swrc_type
 			);
-            return theta_min_theoretical; // Exit function prematurely due to error
+            return SW_MISSING; // Exit function prematurely due to error
 			break;
 	}
 
@@ -1360,6 +1360,9 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 	char *MyFileName = InFiles[eSite];
 
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
@@ -1506,6 +1509,9 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 			strcpy(SW_Site->site_swrc_name, inbuf);
 			SW_Site->site_swrc_type =
 							encode_str2swrc(SW_Site->site_swrc_name, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 			break;
 		case 43:
 			strcpy(SW_Site->site_ptf_name, inbuf);
@@ -1788,6 +1794,9 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 
   // Guess soil transpiration regions
   derive_soilRegions(SW_Site, nRegions, regionLowerBounds, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
 
   // Re-initialize site parameters based on new soil layers
   SW_SIT_init_run(SW_VegProd, SW_Site, LogInfo);
@@ -2115,7 +2124,14 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 
 		/* Calculate SWC at field capacity and at wilting point */
 		SW_Site->swcBulk_fieldcap[s] = SW_SWRC_SWPtoSWC(0.333, SW_Site, s, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
 		SW_Site->swcBulk_wiltpt[s] = SW_SWRC_SWPtoSWC(15., SW_Site, s, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 		/* Calculate lower SWC limit of bare-soil evaporation
 			as `max(0.5 * wiltpt, SWC@hygroscopic)`

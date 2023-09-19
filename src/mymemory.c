@@ -66,6 +66,9 @@ char *Str_Dup(const char *s, LOG_INFO* LogInfo) {
 	char *p;
 
 	p = (char *) Mem_Malloc(strlen(s) + 1, "Str_Dup()", LogInfo);
+    if(LogInfo->stopRun) {
+        return NULL; // Exit function prematurely due to error
+    }
 
 	strcpy(p, s);
 
@@ -159,6 +162,9 @@ void *Mem_Calloc(size_t nobjs, size_t size, const char *funcname,
 	void *p;
 
 	p = Mem_Malloc(size * nobjs, funcname, LogInfo);
+    if(LogInfo->stopRun) {
+        return NULL; // Exit function prematurely due to error
+    }
 
 #ifndef DEBUG_MEM
 	/* if using mcguire's code, no need to memset after

@@ -46,6 +46,9 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 
 	DirName(fspec, dname); // Copy `fspec` into `dname`
 	fname = Str_Dup(BaseName(fspec), LogInfo);
+    if(LogInfo->stopRun) {
+        return NULL; // Exit function prematurely due to error
+    }
 
 	if (strchr(fname, '*')) {
 		fn1 = strtok(fname, "*");
@@ -75,11 +78,20 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 			(*nfound)++;
 			if (alloc) {
 				flist = (char **) Mem_ReAlloc(flist, sizeof(char *) * (*nfound), LogInfo);
+                if(LogInfo->stopRun) {
+                    return NULL; // Exit function prematurely due to error
+                }
 			} else {
 				flist = (char **) Mem_Malloc(sizeof(char *) * (*nfound), "getfiles", LogInfo);
+                if(LogInfo->stopRun) {
+                    return NULL; // Exit function prematurely due to error
+                }
 				alloc = swTRUE;
 			}
 			flist[(*nfound) - 1] = Str_Dup(ent->d_name, LogInfo);
+            if(LogInfo->stopRun) {
+                return NULL; // Exit function prematurely due to error
+            }
 		}
 	}
 
@@ -331,6 +343,9 @@ Bool MkDir(const char *dname, LOG_INFO* LogInfo) {
 		return swFALSE;
 
 	c = Str_Dup(dname, LogInfo);
+    if(LogInfo->stopRun) {
+        return swFALSE; // Exit function prematurely due to error
+    }
 
 	n = 0;
 	a[n++] = strtok(c, delim);

@@ -305,6 +305,9 @@ void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo)
 		SW_VegEstab->p_oagg[eSW_Year]->days = (TimeInt *) Mem_Calloc(
 			SW_VegEstab->count, sizeof(TimeInt), "SW_VegEstab_construct()",
 																	LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 		SW_VegEstab->p_accu[eSW_Year]->days = (TimeInt *) Mem_Calloc(
 			SW_VegEstab->count, sizeof(TimeInt), "SW_VegEstab_construct()",
@@ -335,6 +338,9 @@ void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_SITE *SW_Site,
 
 	for (i = 0; i < count; i++) {
 		_spp_init(parms, i, SW_Site, n_transp_lyrs, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 }
 
@@ -476,10 +482,16 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 	char inbuf[MAX_FILENAMESIZE];
 
 	f = OpenFile(infile, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	IntU count;
 
 	count = _new_species(SW_VegEstab, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	v = SW_VegEstab->parms[count];
 
 	strcpy(v->sppFileName, inbuf); //have to copy before the pointer infile gets reset below by getAline
@@ -580,6 +592,9 @@ void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
 	/* (see watereqn() ) */
 	parms_sppnum->min_swc_germ =
 		SW_SWRC_SWPtoSWC(parms_sppnum->bars[SW_GERM_BARS], SW_Site, 0, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	/* due to possible differences in layer textures and widths, we need
 	 * to average the estab swc across the given layers to peoperly
@@ -588,6 +603,9 @@ void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
 	for (i = 0; i < parms_sppnum->estab_lyrs; i++) {
 		parms_sppnum->min_swc_estab +=
 		SW_SWRC_SWPtoSWC(parms_sppnum->bars[SW_ESTAB_BARS], SW_Site, i, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	parms_sppnum->min_swc_estab /= parms_sppnum->estab_lyrs;
 
@@ -710,6 +728,9 @@ IntU _new_species(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
 					Mem_Calloc(SW_VegEstab->count + 1, sizeof(SW_VEGESTAB_INFO *), me, LogInfo) :
 				(SW_VEGESTAB_INFO **)
 					Mem_ReAlloc(SW_VegEstab->parms, sizeof(SW_VEGESTAB_INFO *) * (SW_VegEstab->count + 1), LogInfo);
+    if(LogInfo->stopRun) {
+        return SW_VegEstab->count; // Return function prematurely due to error
+    }
 
 	SW_VegEstab->parms[SW_VegEstab->count] =
 			(SW_VEGESTAB_INFO *) Mem_Calloc(1, sizeof(SW_VEGESTAB_INFO), me, LogInfo);

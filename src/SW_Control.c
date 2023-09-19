@@ -478,6 +478,9 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
     LogInfo
   );
   #ifdef SWDEBUG
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
   if (debug) swprintf(" > 'swc'");
   if (debug) swprintf(" completed.\n");
   #endif
