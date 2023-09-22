@@ -2449,7 +2449,6 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 	#ifdef SWDEBUG
 	if (debug) {
 		LogError(LogInfo, LOGERROR, "Stop at end of soil temperature calculations.\n");
-        return; // Exit function prematurely due to error
 	}
 	#endif
 }

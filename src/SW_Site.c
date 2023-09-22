@@ -284,6 +284,9 @@ static double ui_theta_min(
 		/* realistic lower limit for theta_min */
 		vwc_min = lower_limit_of_theta_min(LogInfo, swrc_type,
 										   swrcp, gravel, width);
+        if(LogInfo->stopRun) {
+            return SW_MISSING; // Exit function prematurely due to error
+        }
 
 		if (legacy_mode) {
 			/* residual theta estimated with Rawls & Brakensiek (1985) PTF */
@@ -2066,6 +2069,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 					SW_Site->fractionVolBulk_gravel[s],
 					LogInfo
 				);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 
 				break;
 
@@ -2107,6 +2113,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				SW_Site->soilBulk_density[s],
 				LogInfo
 			);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 
 		/* Check parameters of selected SWRC */
@@ -2146,6 +2155,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 			0.5 * SW_Site->swcBulk_wiltpt[s],
 			SW_SWRC_SWPtoSWC(100., SW_Site, s, LogInfo)
 		);
+        if(LogInfo->stopRun) {
+            return;  // Exit function prematurely due to error
+        }
 
 
 		/* Extract or estimate additional properties */
@@ -2159,6 +2171,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 			SW_Site->fractionWeightMatric_clay[s],
 			LogInfo
 		);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 		SW_Site->swcBulk_min[s] = SW_swcBulk_minimum(
 			SW_Site->swrc_type[s],
@@ -2173,17 +2188,26 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 			SW_Site->_SWCMinVal,
 			LogInfo
 		);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 
 		/* Calculate wet limit of SWC for what inputs defined as wet */
 		SW_Site->swcBulk_wet[s] = GE(SW_Site->_SWCWetVal, 1.0) ?
 			SW_SWRC_SWPtoSWC(SW_Site->_SWCWetVal, SW_Site, s, LogInfo) :
 			SW_Site->_SWCWetVal * SW_Site->width[s];
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 		/* Calculate initial SWC based on inputs */
 		SW_Site->swcBulk_init[s] = GE(SW_Site->_SWCInitVal, 1.0) ?
 			SW_SWRC_SWPtoSWC(SW_Site->_SWCInitVal, SW_Site, s, LogInfo) :
 			SW_Site->_SWCInitVal * SW_Site->width[s];
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 
 		/* test validity of values */
@@ -2222,6 +2246,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				SW_Site->swcBulk_min[s],
 				-0.1 * SW_SWRC_SWCtoSWP(SW_Site->swcBulk_min[s], SW_Site, s, LogInfo)
 			);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			SW_Site->swcBulk_halfwiltpt[s] = SW_Site->swcBulk_min[s];
 		}
@@ -2246,6 +2273,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				SW_Site->swcBulk_min[s],
 				SW_SWRC_SWCtoSWP(SW_Site->swcBulk_min[s], SW_Site, s, LogInfo)
 			);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			swprintf(
 				"L[%d] SWC(HalfWiltpt)=%f = swp(hw)=%f\n",
@@ -2253,6 +2283,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				SW_Site->swcBulk_halfwiltpt[s],
 				SW_SWRC_SWCtoSWP(SW_Site->swcBulk_halfwiltpt[s], SW_Site, s, LogInfo)
 			);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 		#endif
 
@@ -2270,6 +2303,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 				s,
 				LogInfo
 			);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			if (LT(SW_Site->swcBulk_atSWPcrit[k][s], SW_Site->swcBulk_min[s])) {
 				flagswpcrit++;
@@ -2279,6 +2315,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 					SW_VegProd->veg[k].SWPcrit,
 					SW_SWRC_SWCtoSWP(SW_Site->swcBulk_min[s], SW_Site, s, LogInfo)
 				);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 
 				LogError(
 					LogInfo, LOGWARN,
@@ -2294,6 +2333,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 					-0.1 * SW_SWRC_SWCtoSWP(SW_Site->swcBulk_min[s], SW_Site, s, LogInfo),
 					-0.1 * tmp
 				);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 
 				SW_VegProd->veg[k].SWPcrit = tmp;
 			}
@@ -2351,6 +2393,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 					s,
 					LogInfo
 				);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 
 				if (LT(SW_Site->swcBulk_atSWPcrit[k][s],
 												SW_Site->swcBulk_min[s])) {

@@ -304,7 +304,7 @@ static double itp_FXW_for_phi(double theta, double *swrcp, LOG_INFO* LogInfo) {
 
 
 	#ifdef SWDEBUG
-	if (debug) {
+	if (debug && !LogInfo->stopRun) {
 		if (!missing(phi)) {
 			swprintf(
 				"itp_FXW_for_phi() = phi = %f [bar]: converged in j=%d/%d steps\n",
@@ -1021,15 +1021,9 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 	if (SW_SoilWat->hist_use && year >= SW_SoilWat->hist.yr.first) {
 		#ifndef RSOILWAT
 			_read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
-            if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
 		#else
 			if (useFiles) {
 				_read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
-                if(LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
 			} else {
 				onSet_SW_SWC_hist();
 			}
@@ -1686,9 +1680,6 @@ double SWRC_SWCtoSWP_FXW(
 		if (LT(theta, swrcp[0])) {
 			// calculate tension = phi [bar]
 			res = itp_FXW_for_phi(theta, swrcp, LogInfo);
-            if(LogInfo->stopRun) {
-                return SW_MISSING; // Exit function prematurely due to error
-            }
 
 		} else if (EQ(theta, swrcp[0])) {
 			// theta is theta_sat

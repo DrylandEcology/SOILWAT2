@@ -64,7 +64,6 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
 	else if (!MkDir(dirString, LogInfo))
 	{
 		LogError(LogInfo, LOGERROR, "Can't make output path for csv file: %s\n", dirString);
-        return; // Exit function prematurely due to error
 	}
 }
 

@@ -235,9 +235,15 @@ void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutp
 
 				GenOutput->p_OUT[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(size, s,
 					"setGlobalSTEPWAT2_OutputVariables()", LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 
 				GenOutput->p_OUTsd[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(size, s,
 					"setGlobalSTEPWAT2_OutputVariables()", LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 			}
 		}
 	}

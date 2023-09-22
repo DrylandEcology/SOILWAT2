@@ -390,6 +390,10 @@ Bool RemoveFiles(const char *fspec, LOG_INFO* LogInfo) {
 		return swTRUE;
 
 	if ((flist = getfiles(fspec, &nfiles, LogInfo))) {
+        if(LogInfo->stopRun) {
+            return swFALSE;
+        }
+
 		DirName(fspec, fname); // Transfer `fspec` into `fname`
 		dlen = strlen(fname);
 		for (i = 0; i < nfiles; i++) {

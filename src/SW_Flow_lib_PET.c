@@ -1073,7 +1073,6 @@ double solar_radiation(
       "\nSolar radiation (%f) out of valid range (0-50 MJ m-2)\n",
       H_g
     );
-    return SW_MISSING; // Exit function prematurely due to error
   }
 
   return H_g;

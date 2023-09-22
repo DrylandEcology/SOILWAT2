@@ -274,7 +274,6 @@ static void sumof_vpd(SW_VEGPROD *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt do
 
 		default:
 			LogError(LogInfo, LOGERROR, "PGMR: Invalid key in sumof_vpd(%s)", key2str[k]);
-            return; // Exit function prematurely due to error
             break;
 	}
 }
@@ -328,7 +327,6 @@ static void sumof_wth(SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k,
 		break;
 	default:
 		LogError(LogInfo, LOGERROR, "PGMR: Invalid key in sumof_wth(%s)", key2str[k]);
-        return; // Exit function prematurely due to error
         break;
 	}
 
@@ -492,7 +490,6 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
 
 	default:
 		LogError(LogInfo, LOGERROR, "PGMR: Invalid key in sumof_swc(%s)", key2str[k]);
-        return; // Exit function prematurely due to error
         break;
 	}
 }
@@ -548,7 +545,6 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
 			default:
 				LogError(LogInfo, LOGERROR,
 						"Invalid object type in average_for().");
-                return; // Exit function prematurely due to error
                 break;
 		}
 
@@ -867,7 +863,6 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 			break;
 		default:
 			LogError(LogInfo, LOGERROR, "PGMR: Invalid outperiod in collect_sums()");
-            return; // Exit function prematurely due to error
             break;
 	}
 
@@ -1077,24 +1072,39 @@ void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
 	// STEPWAT2 requires monthly summed transpiration
 	_set_SXWrequests_helper(eSW_Transp, eSW_Month, eSW_Sum,
 		"monthly transpiration", SW_Output, timeSteps_SXW, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	// STEPWAT2 requires monthly mean bulk soil water content
 	_set_SXWrequests_helper(eSW_SWCBulk, eSW_Month, eSW_Avg,
 		"monthly bulk soil water content", SW_Output, timeSteps_SXW, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	// STEPWAT2 requires annual and monthly mean air temperature
 	_set_SXWrequests_helper(eSW_Temp, eSW_Month, eSW_Avg,
 		"annual and monthly air temperature", SW_Output, timeSteps_SXW, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	timeSteps_SXW[eSW_Temp][1] = eSW_Year;
 
 	// STEPWAT2 requires annual and monthly precipitation sum
 	_set_SXWrequests_helper(eSW_Precip, eSW_Month, eSW_Sum,
 		"annual and monthly precipitation", SW_Output, timeSteps_SXW, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	timeSteps_SXW[eSW_Precip][1] = eSW_Year;
 
 	// STEPWAT2 requires annual sum of AET
 	_set_SXWrequests_helper(eSW_AET, eSW_Year, eSW_Sum,
 		"annual AET", SW_Output, timeSteps_SXW, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 }
 #endif
 

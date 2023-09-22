@@ -702,7 +702,6 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 			parms_sppnum->min_swc_estab,
 			mean_wiltpt
 		);
-        return; // Exit function prematurely due to error
 	}
 
 }

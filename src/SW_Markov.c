@@ -389,6 +389,9 @@ void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 		&SW_Markov->markov_rng,
 		LogInfo
 	);
+    if(LogInfo->stopRun) {
+        return; // Exit the function prematurely due to error
+    }
 
 	temp_correct_wetdry(tmax, tmin, *rain,
 		SW_Markov->cfxw[week],  // correction factor for tmax for wet days
@@ -630,7 +633,6 @@ void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
       "Weather generator requested but could not open %s",
       InFiles[eMarkovCov]
     );
-    return; // Exit function prematurely due to error
   }
 }
 

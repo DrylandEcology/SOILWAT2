@@ -578,6 +578,10 @@ void readAllWeather(
               dailyInputFlags,
               LogInfo
             );
+
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
         }
     }
 }
@@ -926,6 +930,9 @@ void generateMissingWeather(
             &allHist[yearIndex]->ppt[day],
             LogInfo
           );
+          if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+          }
 
         } else if (method == 1) {
           // LOCF (temp, cloud cover, wind speed, relative humidity,
