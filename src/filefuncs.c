@@ -119,38 +119,35 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
 
     char outfmt[MAX_LOG_SIZE] = {0}; /* to prepend err type str */
 	char buf[MAX_LOG_SIZE];
+    char msgType[MAX_LOG_SIZE];
 	int nextWarn = LogInfo->numWarnings;
 	va_list args;
-    #ifdef SWDEBUG
-    int expectedWriteSize;
-    #endif
+    int expectedWriteSize; // Not used when SWDEBUG is not defined
 
 	va_start(args, fmt);
 
     if (LOGWARN & mode)
-        strcpy(outfmt, "WARNING: ");
+        strcpy(msgType, "WARNING: ");
     else if (LOGERROR & mode)
-        strcpy(outfmt, "ERROR: ");
+        strcpy(msgType, "ERROR: ");
 
+    expectedWriteSize = snprintf(outfmt, MAX_LOG_SIZE, "%s%s\n", msgType, fmt);
     #ifdef SWDEBUG
-    expectedWriteSize = snprintf(outfmt, MAX_LOG_SIZE, "%s\n", fmt);
     if(expectedWriteSize > MAX_LOG_SIZE) {
         fprintf(stderr, "Programmer: Size of format exceeds the maximum size.\n");
         exit(-1);
     }
-    #else
-    snprintf(outfmt, MAX_LOG_SIZE, "%s\n", fmt);
     #endif
 
-    #ifdef SWDEBUG
     expectedWriteSize = vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
+    #ifdef SWDEBUG
     if(expectedWriteSize > MAX_LOG_SIZE) {
         fprintf(stderr, "Programmer: Injecting arguments to final message buffer "
-                        "makes it exceed the maxiumum size.\n");
+                        "makes it exceed the maximum size.\n");
         exit(-1);
     }
     #else
-    vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
+    (void) expectedWriteSize; // Silence compiler flag `-Wunused-parameter`
     #endif
 
 	if(LOGWARN & mode) {

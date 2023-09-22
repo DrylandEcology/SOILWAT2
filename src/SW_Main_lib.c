@@ -285,7 +285,7 @@ void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo) {
         }
 	}
 
-	if(!isnull(LogInfo->errorMsg)) {
+	if(LogInfo->errorMsg[0] != '\0') {
 		warning(LogInfo->errorMsg);
 	}
 

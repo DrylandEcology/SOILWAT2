@@ -2110,11 +2110,15 @@ void initializeClimatePtrs(SW_CLIMATE_YEARLY *climateOutput,
     climateAverages->sdCheatgrass = NULL;
 }
 
-void initializeMonthlyClimatePtrs(SW_CLIMATE_YEARLY *climateOutput, int month) {
-    climateOutput->PPTMon_cm[month] = NULL;
-    climateOutput->meanTempMon_C[month] = NULL;
-    climateOutput->maxTempMon_C[month] = NULL;
-    climateOutput->minTempMon_C[month] = NULL;
+void initializeMonthlyClimatePtrs(SW_CLIMATE_YEARLY *climateOutput) {
+    int month;
+
+    for(month = 0; month < MAX_MONTHS; month++) {
+        climateOutput->PPTMon_cm[month] = NULL;
+        climateOutput->meanTempMon_C[month] = NULL;
+        climateOutput->maxTempMon_C[month] = NULL;
+        climateOutput->minTempMon_C[month] = NULL;
+    }
 }
 
 void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
@@ -2148,9 +2152,10 @@ void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
         return; // Exit function prematurely due to error
     }
 
-    for(month = 0; month < MAX_MONTHS; month++) {
-        initializeMonthlyClimatePtrs(climateOutput, month);
+    // Initialize all month pointers before they are allocated
+    initializeMonthlyClimatePtrs(climateOutput);
 
+    for(month = 0; month < MAX_MONTHS; month++) {
         climateOutput->PPTMon_cm[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                     "allocateClimateStructs()", LogInfo);
         if(LogInfo->stopRun) {
