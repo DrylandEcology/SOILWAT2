@@ -221,11 +221,11 @@ static Bool SW_check_soil_properties(SW_SITE *SW_Site,
 		not as extreme as "oven-dry" (-1000. MPa; Fredlund et al. 1994)
 */
 static double lower_limit_of_theta_min(
-	LOG_INFO* LogInfo,
 	unsigned int swrc_type,
 	double *swrcp,
 	double gravel,
-	double width
+	double width,
+    LOG_INFO* LogInfo
 ) {
 	double res = SWRC_SWPtoSWC(300., swrc_type, swrcp,
 							   gravel, width, LOGERROR, LogInfo);
@@ -264,7 +264,6 @@ static double lower_limit_of_theta_min(
 	@return Minimum volumetric water content of the matric soil [cm / cm]
 */
 static double ui_theta_min(
-	LOG_INFO* LogInfo,
 	double ui_sm_min,
 	double gravel,
 	double width,
@@ -274,7 +273,8 @@ static double ui_theta_min(
 	unsigned int swrc_type,
 	double *swrcp,
 	Bool legacy_mode,
-	RealD _SWCMinVal
+	RealD _SWCMinVal,
+    LOG_INFO* LogInfo
 ) {
 	double vwc_min = SW_MISSING, tmp_vwcmin;
 
@@ -282,8 +282,8 @@ static double ui_theta_min(
 		/* user input: request to estimate minimum theta */
 
 		/* realistic lower limit for theta_min */
-		vwc_min = lower_limit_of_theta_min(LogInfo, swrc_type,
-										   swrcp, gravel, width);
+		vwc_min = lower_limit_of_theta_min(swrc_type, swrcp,
+                                        gravel, width, LogInfo);
         if(LogInfo->stopRun) {
             return SW_MISSING; // Exit function prematurely due to error
         }
@@ -641,7 +641,6 @@ double SW_swcBulk_minimum(
 
 	/* `theta_min` based on user input `ui_sm_min` */
 	theta_min_sim = ui_theta_min(
-		LogInfo,
 		ui_sm_min,
 		gravel,
 		width,
@@ -653,7 +652,8 @@ double SW_swcBulk_minimum(
 		// `(Bool) ptf_type == sw_Cosby1984AndOthers` doesn't work for unit test:
 		//   error: "no known conversion from 'bool' to 'Bool'"
 		ptf_type == sw_Cosby1984AndOthers ? swTRUE : swFALSE,
-		_SWCMinVal
+		_SWCMinVal,
+        LogInfo
 	);
 
 	/* `theta_min_sim` must be strictly larger than `theta_min_theoretical` */
