@@ -2612,25 +2612,3 @@ void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo) {
 	);
 	//fflush(LogInfo);
 }
-
-#ifdef DEBUG_MEM
-#include "include/myMemory.h"
-/*======================================================*/
-void SW_SIT_SetMemoryRefs( void) {
-	/* when debugging memory problems, use the bookkeeping
-	 code in myMemory.c
-	 This routine sets the known memory refs in this module
-	 so they can be  checked for leaks, etc.  All refs will
-	 have been cleared by a call to ClearMemoryRefs() before
-	 this, and will be checked via CheckMemoryRefs() after
-	 this, most likely in the main() function.
-	 */
-	LyrIndex l;
-
-	NoteMemoryRef(SW_Site.lyr);
-	ForEachSoilLayer(l) {
-		NoteMemoryRef(SW_Site.lyr[l]);
-	}
-}
-
-#endif

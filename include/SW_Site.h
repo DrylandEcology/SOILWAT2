@@ -255,10 +255,6 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
 						RealD *regionLowerBounds, LOG_INFO* LogInfo);
 
-#ifdef DEBUG_MEM
-	void SW_SIT_SetMemoryRefs(void);
-#endif
-
 
 #ifdef __cplusplus
 }
