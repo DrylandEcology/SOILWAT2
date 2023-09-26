@@ -304,7 +304,7 @@ static double itp_FXW_for_phi(double theta, double *swrcp, LOG_INFO* LogInfo) {
 
 
 	#ifdef SWDEBUG
-	if (debug && !LogInfo->stopRun) {
+	if (debug) {
 		if (!missing(phi)) {
 			swprintf(
 				"itp_FXW_for_phi() = phi = %f [bar]: converged in j=%d/%d steps\n",
