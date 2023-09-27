@@ -202,7 +202,7 @@ void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO* LogInfo) {
 #else
 	if(p == NULL || sizeNew == 0) {
 		LogError(LogInfo, LOGERROR, "assert failed in ReAlloc");
-        return; // Exit function prematurely due to error
+        return NULL; // Exit function prematurely due to error
     }
 #endif
 
