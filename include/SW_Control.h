@@ -40,10 +40,6 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                              LOG_INFO* LogInfo);
 
-#ifdef DEBUG_MEM
-void SW_CTL_SetMemoryRefs(SW_OUTPUT SW_Output[]);
-#endif
-
 
 #ifdef __cplusplus
 }

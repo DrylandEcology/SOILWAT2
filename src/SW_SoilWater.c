@@ -1948,31 +1948,3 @@ double SWRC_SWPtoSWC_FXW(
 	// convert matric theta [cm / cm] to bulk SWC [cm]
 	return (1. - gravel) * width * res;
 }
-
-
-
-
-/**
-@brief This routine sets the known memory refs in this module
-     so they can be  checked for leaks, etc.
-*/
-
-#ifdef DEBUG_MEM
-#include "include/myMemory.h"
-/*======================================================*/
-void SW_SWC_SetMemoryRefs( void) {
-	/* when debugging memory problems, use the bookkeeping
-	 code in myMemory.c
-	 This routine sets the known memory refs in this module
-	 so they can be  checked for leaks, etc.  Includes
-	 malloc-ed memory in SOILWAT.  All refs will have been
-	 cleared by a call to ClearMemoryRefs() before this, and
-	 will be checked via CheckMemoryRefs() after this, most
-	 likely in the main() function.
-	 */
-
-	/*  NoteMemoryRef(SW_Soilwat.hist.file_prefix); */
-
-}
-
-#endif

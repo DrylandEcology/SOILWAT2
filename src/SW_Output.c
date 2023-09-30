@@ -2854,31 +2854,6 @@ void _echo_all_inputs(SW_ALL* sw) {
 }
 
 
-#ifdef DEBUG_MEM
-#include "include/myMemory.h"
-/** when debugging memory problems, use the bookkeeping
-  code in myMemory.c
-  This routine sets the known memory refs in this module
-  so they can be  checked for leaks, etc.  Includes
-  malloc-ed memory in SOILWAT.  All refs will have been
-  cleared by a call to ClearMemoryRefs() before this, and
-  will be checked via CheckMemoryRefs() after this, most
-  likely in the main() function.
-*/
-void SW_OUT_SetMemoryRefs(SW_OUTPUT SW_Output[])
-{
-	OutKey k;
-
-	ForEachOutKey(k)
-	{
-		if (SW_Output[k].use)
-		//NoteMemoryRef(SW_Output[k].outfile);
-	}
-
-}
-
-#endif
-
 
 /*==================================================================*/
 /**

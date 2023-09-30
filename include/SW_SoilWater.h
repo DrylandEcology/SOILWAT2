@@ -162,10 +162,6 @@ double SWRC_SWPtoSWC_FXW(
 void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo);
 #endif
 
-#ifdef DEBUG_MEM
-void SW_SWC_SetMemoryRefs(void);
-#endif
-
 
 #ifdef __cplusplus
 }

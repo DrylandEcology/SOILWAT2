@@ -485,32 +485,3 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
   if (debug) swprintf(" completed.\n");
   #endif
 }
-
-
-
-#ifdef DEBUG_MEM
-#include "include/SW_Markov.h"  /* for setmemrefs function */
-
-/**
-@brief This routine sets the known memory refs so they can be
-      checked for leaks, etc.  Includes malloc-ed memory in
-      SOILWAT.  All refs will have been cleared
-      by a call to ClearMemoryRefs() before this, and will be
-      checked via CheckMemoryRefs() after this, most likely in
-      the main() function.
-*/
-void SW_CTL_SetMemoryRefs(SW_OUTPUT SW_Output[]) {
-	/* when debugging memory problems, use the bookkeeping
-	 code in myMemory.c
-
-	 */
-
-	SW_F_SetMemoryRefs();
-	SW_OUT_SetMemoryRefs(SW_Output);
-	SW_SWC_SetMemoryRefs();
-	SW_SIT_SetMemoryRefs();
-	SW_WTH_SetMemoryRefs();
-	SW_MKV_SetMemoryRefs();
-}
-
-#endif

@@ -307,11 +307,6 @@ void get_biomass_SXW(OutPeriod pd, SW_ALL* sw);
 #endif
 
 
-#ifdef DEBUG_MEM
-	void SW_OUT_SetMemoryRefs(SW_OUTPUT SW_Output[]);
-#endif
-
-
 #ifdef __cplusplus
 }
 #endif

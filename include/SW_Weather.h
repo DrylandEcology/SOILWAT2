@@ -147,10 +147,6 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
 void SW_WTH_sum_today(void);
 
 
-#ifdef DEBUG_MEM
-void SW_WTH_SetMemoryRefs(void);
-#endif
-
 
 #ifdef __cplusplus
 }

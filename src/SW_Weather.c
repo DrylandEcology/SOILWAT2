@@ -2310,19 +2310,3 @@ void deallocateClimateStructs(SW_CLIMATE_YEARLY *climateOutput,
         }
     }
 }
-
-#ifdef DEBUG_MEM
-#include "include/myMemory.h"
-/*======================================================*/
-void SW_WTH_SetMemoryRefs( void) {
-	/* when debugging memory problems, use the bookkeeping
-	 code in myMemory.c
-	 This routine sets the known memory refs in this module
-	 so they can be  checked for leaks, etc.  All refs will
-	 have been cleared by a call to ClearMemoryRefs() before
-	 this, and will be checked via CheckMemoryRefs() after
-	 this, most likely in the main() function.
-	 */
-}
-
-#endif
