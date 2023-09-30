@@ -113,6 +113,10 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 	/* Defaults */
 	*_firstfile = Str_Dup(DFLT_FIRSTFILE, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 	*QuietMode = *EchoInits = swFALSE;
 
 	a = 1;
@@ -129,6 +133,7 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 		if (op >= nopts) {
       sw_print_usage();
       LogError(LogInfo, LOGERROR, "\nInvalid option %s\n", argv[a]);
+      return; // Exit function prematurely due to error
 
 		} else {
 			// Use `valopts[op]` in else-branch to avoid
@@ -146,6 +151,7 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 				} else if (0 < valopts[op]) { /* required opt-val not found */
 					sw_print_usage();
 					LogError(LogInfo, LOGERROR, "\nIncomplete option %s\n", opts[op]);
+                    return; // Exit function prematurely due to error
 				} /* opt-val not required */
 			}
 
@@ -155,12 +161,16 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 				case 0: /* -d */
 					if (!ChDir(str)) {
 						LogError(LogInfo, LOGERROR, "Invalid project directory (%s)", str);
+                        return; // Exit function prematurely due to error
 					}
 					break;
 
 				case 1: /* -f */
 					free(*_firstfile);
 					*_firstfile = Str_Dup(str, LogInfo);
+                    if(LogInfo->stopRun) {
+                        return; // Exit function prematurely due to error
+                    }
 					break;
 
 				case 2: /* -e */
@@ -174,11 +184,17 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 				case 4: /* -v */
 					sw_print_version();
 					LogError(LogInfo, LOGERROR, "");
+                    if(LogInfo->stopRun) {
+                        return; // Exit function prematurely due to error
+                    }
 					break;
 
 				case 5: /* -h */
 					sw_print_usage();
 					LogError(LogInfo, LOGERROR, "");
+                    if(LogInfo->stopRun) {
+                        return; // Exit function prematurely due to error
+                    }
 					break;
 
 				default:
@@ -187,6 +203,8 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 						LOGERROR,
 						"Programmer: bad option in main:sw_init_args:switch"
 					);
+
+                    return; // Exit function prematurely due to error
 			}
 
 			a++; /* move to next valid arg-value position */

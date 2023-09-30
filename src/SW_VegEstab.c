@@ -111,6 +111,10 @@ void SW_VES_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
 		SW_VegEstab->p_accu[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(1,
 			sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_construct()", LogInfo);
 
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
 		// Intiailize p_accu to NULL to eliminate the chance of
 		// deallocating unallocated memory
 		SW_VegEstab->p_accu[pd]->days = NULL;
@@ -118,6 +122,10 @@ void SW_VES_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
 		if (pd > eSW_Day) {
 			SW_VegEstab->p_oagg[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(1,
 				sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_construct()", LogInfo);
+
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			// Intiailize p_accu to NULL to eliminate the chance of
 			// deallocating unallocated memory
@@ -236,6 +244,9 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 
 	SW_VES_deconstruct(SW_VegEstab);
 	SW_VES_construct(SW_VegEstab, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	SW_VegEstab->use = use_VegEstab;
 
@@ -245,6 +256,9 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 	if (SW_VegEstab->use) {
 		char *MyFileName = InFiles[eVegEstab];
 		f = OpenFile(MyFileName, "r", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 		if (!GetALine(f, inbuf) || (consider_InputFlag && *inbuf == '0')) {
 			/* turn off vegetation establishment if either
@@ -262,9 +276,15 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 				strcpy(buf, _ProjDir); // add `_ProjDir` to path, e.g., for STEPWAT2
 				strcat(buf, inbuf);
 				_read_spp(buf, SW_VegEstab, LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 			}
 
 			SW_VegEstab_construct(SW_VegEstab, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 
 		CloseFile(&f, LogInfo);
@@ -285,6 +305,9 @@ void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo)
 		SW_VegEstab->p_oagg[eSW_Year]->days = (TimeInt *) Mem_Calloc(
 			SW_VegEstab->count, sizeof(TimeInt), "SW_VegEstab_construct()",
 																	LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 		SW_VegEstab->p_accu[eSW_Year]->days = (TimeInt *) Mem_Calloc(
 			SW_VegEstab->count, sizeof(TimeInt), "SW_VegEstab_construct()",
@@ -315,6 +338,9 @@ void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_SITE *SW_Site,
 
 	for (i = 0; i < count; i++) {
 		_spp_init(parms, i, SW_Site, n_transp_lyrs, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 }
 
@@ -456,10 +482,16 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 	char inbuf[MAX_FILENAMESIZE];
 
 	f = OpenFile(infile, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	IntU count;
 
 	count = _new_species(SW_VegEstab, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	v = SW_VegEstab->parms[count];
 
 	strcpy(v->sppFileName, inbuf); //have to copy before the pointer infile gets reset below by getAline
@@ -520,6 +552,7 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 			if (strlen(name) > MAX_SPECIESNAMELEN) {
 				CloseFile(&f, LogInfo);
 				LogError(LogInfo, LOGERROR, "%s: Species name <%s> too long (> %d chars).\n Try again.\n", infile, name, MAX_SPECIESNAMELEN);
+                return; // Exit function prematurely due to error
 			} else {
 				strcpy(v->sppname, name);
 			}
@@ -531,6 +564,7 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 	if (lineno < nitems) {
 		CloseFile(&f, LogInfo);
 		LogError(LogInfo, LOGERROR, "%s : Too few input parameters.\n", infile);
+        return; // Exit function prematurely due to error
 	}
 
 	CloseFile(&f, LogInfo);
@@ -558,6 +592,9 @@ void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
 	/* (see watereqn() ) */
 	parms_sppnum->min_swc_germ =
 		SW_SWRC_SWPtoSWC(parms_sppnum->bars[SW_GERM_BARS], SW_Site, 0, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	/* due to possible differences in layer textures and widths, we need
 	 * to average the estab swc across the given layers to peoperly
@@ -566,6 +603,9 @@ void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
 	for (i = 0; i < parms_sppnum->estab_lyrs; i++) {
 		parms_sppnum->min_swc_estab +=
 		SW_SWRC_SWPtoSWC(parms_sppnum->bars[SW_ESTAB_BARS], SW_Site, i, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 	parms_sppnum->min_swc_estab /= parms_sppnum->estab_lyrs;
 
@@ -591,6 +631,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 			parms_sppnum->sppname,
 			parms_sppnum->vegType
 		);
+        return; // Exit function prematurely due to error
 	}
 
 	if (parms_sppnum->estab_lyrs > n_transp_lyrs[parms_sppnum->vegType]) {
@@ -604,6 +645,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 			parms_sppnum->estab_lyrs,
 			n_transp_lyrs[parms_sppnum->vegType]
 		);
+        return; // Exit function prematurely due to error
 	}
 
 	if (parms_sppnum->min_pregerm_days > parms_sppnum->max_pregerm_days) {
@@ -614,6 +656,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 			"VegEstab",
 			parms_sppnum->sppname
 		);
+        return; // Exit function prematurely due to error
 	}
 
 	if (parms_sppnum->min_wetdays_for_estab > parms_sppnum->max_days_germ2estab) {
@@ -627,6 +670,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 			parms_sppnum->min_wetdays_for_estab,
 			parms_sppnum->max_days_germ2estab
 		);
+        return; // Exit function prematurely due to error
 	}
 
 	if (parms_sppnum->min_swc_germ < swcBulk_wiltpt[0]) {
@@ -639,6 +683,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 			parms_sppnum->min_swc_germ,
 			swcBulk_wiltpt[0]
 		);
+        return; // Exit function prematurely due to error
 	}
 
 	mean_wiltpt = 0.;
@@ -682,6 +727,9 @@ IntU _new_species(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
 					Mem_Calloc(SW_VegEstab->count + 1, sizeof(SW_VEGESTAB_INFO *), me, LogInfo) :
 				(SW_VEGESTAB_INFO **)
 					Mem_ReAlloc(SW_VegEstab->parms, sizeof(SW_VEGESTAB_INFO *) * (SW_VegEstab->count + 1), LogInfo);
+    if(LogInfo->stopRun) {
+        return SW_VegEstab->count; // Return function prematurely due to error
+    }
 
 	SW_VegEstab->parms[SW_VegEstab->count] =
 			(SW_VEGESTAB_INFO *) Mem_Calloc(1, sizeof(SW_VEGESTAB_INFO), me, LogInfo);

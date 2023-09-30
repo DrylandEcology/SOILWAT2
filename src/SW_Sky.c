@@ -54,6 +54,9 @@ void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 
 	MyFileName = InFiles[eSky];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
@@ -94,6 +97,7 @@ void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 			CloseFile(&f, LogInfo);
 			LogError(LogInfo, LOGERROR, "%s : invalid record %d.\n",
 										MyFileName, lineno);
+            return; // Exit function prematurely due to error
 		}
 
 		x = 0;

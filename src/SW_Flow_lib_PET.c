@@ -959,6 +959,8 @@ double solar_radiation(
           "`desc_rsds` has an unrecognized value: %u",
           desc_rsds
         );
+
+        return SW_MISSING; // Exit function prematurely due to error
     }
 
     *H_gh = convert_rsds_to_H_gh * rsds;
@@ -1300,6 +1302,8 @@ double petfunc(double H_g, double avgtemp, double elev, double reflec,
       LOGERROR,
       "Cloud cover is missing."
     );
+
+    return SW_MISSING; // Exit function prematurely due to error
   }
 
   clrsky = 1. - cloudcov / 100.;

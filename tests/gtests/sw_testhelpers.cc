@@ -39,8 +39,10 @@ void create_test_soillayers(unsigned int nlayers,
       SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo) {
 
   if (nlayers <= 0 || nlayers > MAX_LAYERS) {
-    LogError(LogInfo, LOGERROR, "create_test_soillayers(): "
+    fprintf(stderr, "create_test_soillayers(): "
       "requested number of soil layers (n = %d) is not accepted.\n", nlayers);
+
+    exit(-1);
   }
 
   RealF dmax[MAX_LAYERS] = {

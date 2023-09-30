@@ -76,7 +76,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
       swprintf("'SW_CBN_read': CO2-effects are turned off; don't read CO2-concentration data from file.\n");
     }
     #endif
-    return;
+    return; // Exit function prematurely due to error
   }
 
   /* Reading carbon.in */
@@ -94,6 +94,9 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
 
   MyFileName = InFiles[eCarbon];
   f = OpenFile(MyFileName, "r", LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
 
   #ifdef SWDEBUG
   if (debug) {
@@ -136,6 +139,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
                     " '%.64s' is negative; only positive values"\
                     " are allowed.\n",
                     year, SW_Carbon->scenario);
+      return; // Exit function prematurely due to error
     }
 
     SW_Carbon->ppm[year] = ppm;
@@ -156,6 +160,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
                     " '%.64s' is entered more than once; only one"
                     " entry is allowed.\n",
                     year, SW_Carbon->scenario);
+      return; // Exit function prematurely due to error
     }
     existing_years[year] = 1;
   }
@@ -172,6 +177,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
     LogError(LogInfo, LOGERROR, "(SW_Carbon) carbon.in was empty; for"\
                     " debugging purposes, SOILWAT2 read in file '%s'\n",
                     MyFileName);
+    return; // Exit function prematurely due to error
   }
 
   if (EQ(ppm, -1.))  // A scenario must be found in order for ppm to have a positive value
@@ -179,6 +185,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
     LogError(LogInfo, LOGERROR, "(SW_Carbon) The scenario '%.64s'"\
                     " was not found in carbon.in\n",
                     SW_Carbon->scenario);
+    return; // Exit function prematurely due to error
   }
 
   // Ensure that the desired years were calculated
@@ -190,6 +197,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
                     " year %d; ensure that ppm values for this year"\
                     " exist in scenario '%.64s'\n",
                     year, SW_Carbon->scenario);
+    return; // Exit function prematurely due to error
     }
   }
 }
@@ -237,6 +245,7 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
       LogError(LogInfo, LOGERROR, "(SW_Carbon) No CO2 ppm data was"\
                                   " provided for year %d\n",
                                   year);
+      return; // Exit function prematurely due to error
     }
 
     // Calculate multipliers per PFT

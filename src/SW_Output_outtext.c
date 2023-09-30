@@ -76,6 +76,7 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 		if (does_agg) {
 			LogError(LogInfo, LOGERROR, "'_create_csv_headers': value TRUE for "\
 				"argument 'does_agg' is not implemented for SOILWAT2-standalone.");
+            return; // Exit function prematurely due to error
 		}
 	#else
 		(void) LogInfo;
@@ -139,11 +140,17 @@ static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
 	if (SW_FileStatus->make_regular[pd]) {
 		SW_FileStatus->fp_reg[pd] =
 			OpenFile(InFiles[eOutputDaily + pd], "w", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 	}
 
 	if (SW_FileStatus->make_soil[pd]) {
 		SW_FileStatus->fp_soil[pd] =
 			OpenFile(InFiles[eOutputDaily_soil + pd], "w", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 	}
 }
 #endif
@@ -183,6 +190,9 @@ static void _create_filename_ST(char *str, char *flag, int iteration,
 	char *ext;
 	char *fileDup = (char *)Mem_Malloc(strlen(str) + 1,
 							"_create_filename_ST", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	// Determine basename and file extension
 	strcpy(fileDup, str); // copy file name to new variable
@@ -232,13 +242,27 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
 			// a basename, etc.
 			_create_filename_ST(InFiles[eOutputDaily + pd], "agg", 0,
 								filename, FILENAME_MAX, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
 			FileStatus->fp_reg_agg[pd] = OpenFile(filename, "w", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 
 		if (FileStatus->make_soil[pd]) {
 			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "agg", 0,
 								filename, FILENAME_MAX, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
 			FileStatus->fp_soil_agg[pd] = OpenFile(filename, "w", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 
 	} else
@@ -256,12 +280,23 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
 		if (FileStatus->make_regular[pd]) {
 			_create_filename_ST(InFiles[eOutputDaily + pd], "rep", iteration,
 								filename, FILENAME_MAX, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
 			FileStatus->fp_reg[pd] = OpenFile(filename, "w", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 
 		if (FileStatus->make_soil[pd]) {
 			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "rep", iteration,
 								filename, FILENAME_MAX, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
 			FileStatus->fp_soil[pd] = OpenFile(filename, "w", LogInfo);
 		}
 	}
@@ -303,11 +338,17 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 	ForEachOutPeriod(pd) {
 		if (GenOutput->use_OutPeriod[pd]) {
 			_create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			write_headers_to_csv(pd, SW_FileStatus->fp_reg[pd],
 				SW_FileStatus->fp_soil[pd], swFALSE, SW_FileStatus->make_regular,
 				SW_FileStatus->make_soil, SW_Output, n_layers, GenOutput,
 				LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 }
@@ -324,11 +365,17 @@ void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
 	ForEachOutPeriod(p) {
 		if (GenOutput->use_OutPeriod[p]) {
 			_create_csv_file_ST(-1, p, InFiles, SW_FileStatus, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg_agg[p],
 				SW_FileStatus->fp_soil_agg[p], swTRUE, SW_FileStatus->make_regular,
 				SW_FileStatus->make_soil, SW_Output, n_layers, GenOutput,
 				LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 }
@@ -342,11 +389,17 @@ void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
 	ForEachOutPeriod(p) {
 		if (GenOutput->use_OutPeriod[p]) {
 			_create_csv_file_ST(iteration, p, InFiles, SW_FileStatus, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg[p],
 				SW_FileStatus->fp_soil[p], swFALSE, SW_FileStatus->make_regular,
 				SW_FileStatus->make_soil, SW_Output, n_layers, GenOutput,
 				LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 }
@@ -433,6 +486,9 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 	get_outstrheader(pd, str_time, sizeof str_time);
 	_create_csv_headers(pd, header_reg, header_soil, does_agg,
 			n_layers, SW_Output, GenOutput, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	// Write headers to files
 	if (make_regular[pd]) {

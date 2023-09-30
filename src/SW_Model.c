@@ -118,16 +118,21 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 
 	MyFileName = InFiles[eModel];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	/* ----- beginning year */
 	if (!GetALine(f, inbuf)) {
 		CloseFile(&f, LogInfo);
 		LogError(LogInfo, LOGERROR, "%s: No input.", MyFileName);
+        return; // Exit function prematurely due to error
 	}
 	y = atoi(inbuf);
 	if (y < 0) {
 		CloseFile(&f, LogInfo);
 		LogError(LogInfo, LOGERROR, "%s: Negative start year (%d)", MyFileName, y);
+        return; // Exit function prematurely due to error
 	}
 	SW_Model->startyr = yearto4digit((TimeInt) y);
 	SW_Model->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
@@ -136,17 +141,20 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	if (!GetALine(f, inbuf)) {
 		CloseFile(&f, LogInfo);
 		LogError(LogInfo, LOGERROR, "%s: Ending year not found.", MyFileName);
+        return; // Exit function prematurely due to error
 	}
 	y = atoi(inbuf);
 	//assert(y > 0);
 	if (y < 0) {
 		CloseFile(&f, LogInfo);
 		LogError(LogInfo, LOGERROR, "%s: Negative ending year (%d)", MyFileName, y);
+        return; // Exit function prematurely due to error
 	}
 	SW_Model->endyr = yearto4digit((TimeInt) y);
 	if (SW_Model->endyr < SW_Model->startyr) {
 		CloseFile(&f, LogInfo);
 		LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
+        return; // Exit function prematurely due to error
 	}
 
 	/* ----- Start checking for model time parameters */

@@ -66,6 +66,9 @@ char *Str_Dup(const char *s, LOG_INFO* LogInfo) {
 	char *p;
 
 	p = (char *) Mem_Malloc(strlen(s) + 1, "Str_Dup()", LogInfo);
+    if(LogInfo->stopRun) {
+        return NULL; // Exit function prematurely due to error
+    }
 
 	strcpy(p, s);
 
@@ -99,6 +102,7 @@ void *Mem_Malloc(size_t size, const char *funcname, LOG_INFO* LogInfo) {
 		if (size == 0)
 		LogError(LogInfo, LOGERROR, "Programmer Error: "
 				"size == 0 in MallocErr()");
+        return; // Exit function prematurely due to error
 
 	}
 #endif
@@ -108,13 +112,16 @@ void *Mem_Malloc(size_t size, const char *funcname, LOG_INFO* LogInfo) {
 #ifdef DEBUG_MEM_LOG
 	if( NULL==(f=fopen("memory.log","a")) ) {
 		LogError(LogInfo, LOGERROR, "Can't open memory.log for errors\n");
+        return NULL; // Exit function prematurely due to error
 	}
 	swprintf("%s: %d: %p\n", funcname, size, p);
 	fclose(f);
 #endif
 
-	if (p == NULL )
+	if (p == NULL ) {
 		LogError(LogInfo, LOGERROR, "Out of memory in %s()", funcname);
+        return NULL; // Exit function prematurely due to error
+    }
 
 #ifdef DEBUG_MEM
 	{
@@ -155,6 +162,9 @@ void *Mem_Calloc(size_t nobjs, size_t size, const char *funcname,
 	void *p;
 
 	p = Mem_Malloc(size * nobjs, funcname, LogInfo);
+    if(LogInfo->stopRun) {
+        return NULL; // Exit function prematurely due to error
+    }
 
 #ifndef DEBUG_MEM
 	/* if using mcguire's code, no need to memset after
@@ -190,8 +200,10 @@ void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO* LogInfo) {
 #ifndef RSOILWAT
 	assert(p != NULL && sizeNew > 0);
 #else
-	if(p == NULL || sizeNew == 0)
+	if(p == NULL || sizeNew == 0) {
 		LogError(LogInfo, LOGERROR, "assert failed in ReAlloc");
+        return NULL; // Exit function prematurely due to error
+    }
 #endif
 
 #ifdef DEBUG_MEM
@@ -231,8 +243,10 @@ void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO* LogInfo) {
 #endif
 
 		p = pNew;
-	} else
+	} else {
 		LogError(LogInfo, LOGERROR, "realloc failed in Mem_ReAlloc()");
+        return NULL; // Exit function prematurely due to error
+    }
 
 	return p;
 }
@@ -248,8 +262,10 @@ void Mem_Free(void *block) {
 
 #ifdef DEBUG_MEM_X
 	{
-		if (mem_SizeOf(block) > SizeOfMalloc)
-		LogError(logfp, LOGERROR,"Mem: Inconsistency in SizeOfMalloc");
+		if (mem_SizeOf(block) > SizeOfMalloc) {
+        LogError(logfp, LOGERROR,"Mem: Inconsistency in SizeOfMalloc");
+            return; // Exit function prematurely due to error
+        }
 
 		mem_DelNode(block);
 	}

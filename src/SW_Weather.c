@@ -578,6 +578,10 @@ void readAllWeather(
               dailyInputFlags,
               LogInfo
             );
+
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
         }
     }
 }
@@ -614,6 +618,9 @@ void finalizeAllWeather(SW_MARKOV* SW_Markov, SW_WEATHER *w,
     3, // optLOCF_nMax (TODO: make this user input)
     LogInfo
   );
+  if(LogInfo->stopRun) {
+    return; // Prematurely exit function
+  }
 
   // Check to see if actual vapor pressure needs to be calculated
   if(w->use_humidityMonthly) {
@@ -882,6 +889,7 @@ void generateMissingWeather(
       "generateMissingWeather(): method = %u is not implemented.\n",
       method
     );
+    return; // Exit function prematurely due to error
   }
 
 
@@ -922,6 +930,9 @@ void generateMissingWeather(
             &allHist[yearIndex]->ppt[day],
             LogInfo
           );
+          if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+          }
 
         } else if (method == 1) {
           // LOCF (temp, cloud cover, wind speed, relative humidity,
@@ -971,6 +982,7 @@ void generateMissingWeather(
               optLOCF_nMax,
               year
             );
+            return; // Exit function prematurely due to error
           }
         }
 
@@ -1026,6 +1038,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                 LogError(LogInfo, LOGERROR, "Daily input value for minimum temperature"
                          " is greater than daily input value for maximum temperature (minimum = %f, maximum = %f)"
                          " on day %d of year %d.", dailyMinTemp, dailyMaxTemp, doy + 1, year + weather->startYear);
+                return; // Exit function prematurely due to error
             }
             // Otherwise, check if maximum or minimum temp, or
             // dew point temp is not [-100, 100]
@@ -1039,6 +1052,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                 LogError(LogInfo, LOGERROR, "Daily minimum and/or maximum temperature on "
                          "day %d of year %d do not fit in the range of [-100, 100] C.",
                          doy, year + weather->startYear);
+                return; // Exit function prematurely due to error
             }
             // Otherwise, check if precipitation is less than 0cm
             else if(!missing(weathHist[year]->ppt[doy]) && weathHist[year]->ppt[doy] < 0) {
@@ -1046,6 +1060,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                 // Fail
                 LogError(LogInfo, LOGERROR, "Invalid daily precipitation value: %f cm (< 0) on day %d of year %d.",
                          weathHist[year]->ppt[doy], doy + 1, year + weather->startYear);
+                return; // Exit function prematurely due to error
             }
             // Otherwise, check if relative humidity is less than 0% or greater than 100%
             else if(
@@ -1058,6 +1073,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                 LogError(LogInfo, LOGERROR, "Invalid daily/calculated relative humidity value did"
                          " not fall in the range [0, 100] (relative humidity = %f). ",
                          weathHist[year]->r_humidity_daily[doy]);
+                return; // Exit function prematurely due to error
             }
             // Otherwise, check if cloud cover was input and
             // if the value is less than 0% or greater than 100%
@@ -1071,6 +1087,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                 LogError(LogInfo, LOGERROR, "Invalid daily/calculated cloud cover value did"
                          " not fall in the range [0, 100] (cloud cover = %f). ",
                          weathHist[year]->cloudcov_daily[doy]);
+                return; // Exit function prematurely due to error
             }
             // Otherwise, check if wind speed is less than 0 m/s
             else if(!missing(weathHist[year]->windspeed_daily[doy]) &&
@@ -1080,6 +1097,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                 LogError(LogInfo, LOGERROR, "Invalid daily wind speed value is less than zero."
                          "(wind speed = %f) on day %d of year %d. ",
                          weathHist[year]->windspeed_daily[doy], doy + 1, year + weather->startYear);
+                return; // Exit function prematurely due to error
             }
             // Otherwise, check if radiation if less than 0 W/m^2
             else if(!missing(weathHist[year]->shortWaveRad[doy]) &&
@@ -1089,6 +1107,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                 LogError(LogInfo, LOGERROR, "Invalid daily shortwave radiation value is less than zero."
                          "(shortwave radation = %f) on day %d of year %d. ",
                          weathHist[year]->shortWaveRad[doy], doy + 1, year + weather->startYear);
+                return; // Exit function prematurely due to error
             }
             // Otherwise, check if actual vapor pressure is less than 0 kPa
             else if(!missing(weathHist[year]->actualVaporPressure[doy]) &&
@@ -1098,6 +1117,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo) {
                 LogError(LogInfo, LOGERROR, "Invalid daily actual vapor pressure value is less than zero."
                          "(actual vapor pressure = %f) on day %d of year %d. ",
                          weathHist[year]->actualVaporPressure[doy], doy + 1, year + weather->startYear);
+                return; // Exit function prematurely due to error
             }
         }
     }
@@ -1169,9 +1189,17 @@ void SW_WTH_construct(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
 	{
 		SW_Weather->p_accu[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
 			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()", LogInfo);
+
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 		if (pd > eSW_Day) {
 			SW_Weather->p_oagg[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
 				sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()", LogInfo);
+
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
     SW_Weather->n_years = 0;
@@ -1223,11 +1251,17 @@ void allocateAllWeather(SW_WEATHER *w, LOG_INFO* LogInfo) {
 
   w->allHist = (SW_WEATHER_HIST **)Mem_Malloc(sizeof(SW_WEATHER_HIST *) * w->n_years,
                                    "allocateAllWeather()", LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
 
   for (year = 0; year < w->n_years; year++) {
 
       w->allHist[year] = (SW_WEATHER_HIST *)Mem_Malloc(sizeof(SW_WEATHER_HIST),
                                             "allocateAllWeather()", LogInfo);
+      if(LogInfo->stopRun) {
+          return; // Exit function prematurely due to error
+      }
   }
 }
 
@@ -1351,6 +1385,7 @@ void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],
         SW_Weather->allHist[yearIndex]->shortWaveRad[doy0],
         SW_Weather->allHist[yearIndex]->cloudcov_daily[doy0]
       );
+      return; // Prematurely return the function
     }
 
     wn->temp_max = SW_Weather->allHist[yearIndex]->temp_max[doy0];
@@ -1401,6 +1436,9 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, char *InFiles[],
 
 	char *MyFileName = InFiles[eWeather];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
@@ -1449,6 +1487,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, char *InFiles[],
 						MyFileName,
 						x
 					);
+                    return; // Exit function prematurely due to error
 			}
 			break;
 
@@ -1542,6 +1581,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, char *InFiles[],
 			if (x != 9) {
 				CloseFile(&f, LogInfo);
 				LogError(LogInfo, LOGERROR, "%s : Bad record %d.", MyFileName, lineno);
+                return; // Exit function prematurely due to error
 			}
 
 			month--; // convert to base0
@@ -1563,6 +1603,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, char *InFiles[],
 
  	if (lineno < nitems) {
  		LogError(LogInfo, LOGERROR, "%s : Too few input lines.", MyFileName);
+        return; // Exit function prematurely due to error
  	}
 
      // Calculate value indices for `allHist`
@@ -1647,7 +1688,7 @@ void check_and_update_dailyInputFlags(
          // Fail
          LogError(LogInfo, LOGERROR, "Maximum/minimum temperature flags are unevenly set. "
                                    "Both flags for temperature must be set.");
-
+         return; // Exit function prematurely due to error
       }
 
      // Check if minimum and maximum temperature, or precipitation flags are not set
@@ -1655,6 +1696,7 @@ void check_and_update_dailyInputFlags(
          // Fail
          LogError(LogInfo, LOGERROR, "Both maximum/minimum temperature and/or precipitation flag(s) "
                                    "are not set. All three flags must be set.");
+         return; // Exit function prematurely due to error
      }
 
      if(use_windSpeedMonthly && (dailyInputFlags[WIND_SPEED] ||
@@ -1694,7 +1736,7 @@ void check_and_update_dailyInputFlags(
          LogError(LogInfo, LOGERROR, "Max/min relative humidity flags are unevenly set. "
                                    "Both flags for maximum/minimum relative humidity must be the "
                                    "same (1 or 0).");
-
+         return; // Exit function prematurely due to error
       }
 
      // Check if east/north wind speed flags are set unevenly (1/0) or (0/1)
@@ -1705,7 +1747,7 @@ void check_and_update_dailyInputFlags(
          LogError(LogInfo, LOGERROR, "East/north wind speed flags are unevenly set. "
                                    "Both flags for east/north wind speed components "
                                    "must be the same (1 or 0).");
-
+         return; // Exit function prematurely due to error
       }
 
      // Check to see if any daily flags were turned off due to a set monthly flag
@@ -1746,6 +1788,9 @@ void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
 
     // Allocate new `allHist` (based on current `SW_Weather.n_years`)
     allocateAllWeather(SW_Weather, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     // Read daily meteorological input from disk (if available)
     readAllWeather(
@@ -1852,14 +1897,17 @@ void _read_weather_hist(
 		if (x != n_input_forcings + 1) {
 			CloseFile(&f, LogInfo);
 			LogError(LogInfo, LOGERROR, "%s : Incomplete record %d (doy=%d).", fname, lineno, doy);
+            return; // Exit function prematurely due to error
 		}
 		if (x > MAX_INPUT_COLUMNS + 1) {
 			CloseFile(&f, LogInfo);
 			LogError(LogInfo, LOGERROR, "%s : Too many values in record %d (doy=%d).", fname, lineno, doy);
+            return; // Exit function prematurely due to error
 		}
 		if (doy < 1 || doy > MAX_DAYS) {
 			CloseFile(&f, LogInfo);
 			LogError(LogInfo, LOGERROR, "%s : Day of year out of range, line %d.", fname, lineno);
+            return; // Exit function prematurely due to error
 		}
 
 		/* --- Make the assignments ---- */
@@ -2089,12 +2137,27 @@ void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
 
     climateOutput->PPTMon_cm = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
                                           "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->meanTempMon_C = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
                                               "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->maxTempMon_C = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
                                              "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->minTempMon_C = (double **)Mem_Malloc(sizeof(double *) * MAX_MONTHS,
                                              "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     // Initialize all month pointers before they are allocated
     initializeMonthlyClimatePtrs(climateOutput);
@@ -2102,40 +2165,104 @@ void allocateClimateStructs(int numYears, SW_CLIMATE_YEARLY *climateOutput,
     for(month = 0; month < MAX_MONTHS; month++) {
         climateOutput->PPTMon_cm[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                     "allocateClimateStructs()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
         climateOutput->meanTempMon_C[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                         "allocateClimateStructs()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
         climateOutput->maxTempMon_C[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                        "allocateClimateStructs()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
         climateOutput->minTempMon_C[month] = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                        "allocateClimateStructs()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
     }
 
     climateOutput->PPT_cm = (double *)Mem_Malloc(sizeof(double) * numYears,
                                       "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->PPT7thMon_mm = (double *)Mem_Malloc(sizeof(double) * numYears,
                                             "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->meanTemp_C = (double *)Mem_Malloc(sizeof(double) * numYears,
                                           "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->meanTempDriestQtr_C = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                    "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->minTemp2ndMon_C = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->minTemp7thMon_C = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->frostFree_days = (double *)Mem_Malloc(sizeof(double) * numYears,
                                               "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateOutput->ddAbove65F_degday = (double *)Mem_Malloc(sizeof(double) * numYears,
                                                  "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateAverages->meanTempMon_C = (double *)Mem_Malloc(sizeof(double) * MAX_MONTHS,
                                                "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateAverages->maxTempMon_C = (double *)Mem_Malloc(sizeof(double) * MAX_MONTHS,
                                               "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateAverages->minTempMon_C = (double *)Mem_Malloc(sizeof(double) * MAX_MONTHS,
                                               "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateAverages->PPTMon_cm = (double *)Mem_Malloc(sizeof(double) * MAX_MONTHS,
                                            "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateAverages->sdC4 = (double *)Mem_Malloc(sizeof(double) * 3,
                                       "allocateClimateStructs()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     climateAverages->sdCheatgrass = (double *)Mem_Malloc(sizeof(double) * 3,
                                               "allocateClimateStructs()", LogInfo);
 }

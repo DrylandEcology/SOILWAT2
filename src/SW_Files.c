@@ -59,13 +59,11 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
 		if (!RemoveFiles(inbuf, LogInfo))
 		{
 			LogError(LogInfo, LOGWARN, "Can't remove old csv output file: %s\n", s);
-			printf("Can't remove old csv output file: %s\n", s);
 		}
 	}
 	else if (!MkDir(dirString, LogInfo))
 	{
 		LogError(LogInfo, LOGERROR, "Can't make output path for csv file: %s\n", dirString);
-		printf("Can't make output path for csv file: %s\n", dirString);
 	}
 }
 
@@ -95,6 +93,9 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 
 	char *MyFileName = PathInfo->InFiles[eFirst];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	while (GetALine(f, inbuf)) {
 
@@ -111,46 +112,70 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 			break;
 		case 16:
 			PathInfo->InFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily], LogInfo);
 			break;
 		case 17:
 			PathInfo->InFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
 		case 18:
 			PathInfo->InFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
 		case 19:
 			PathInfo->InFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly], LogInfo);
 			break;
 		case 20:
 			PathInfo->InFiles[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily_soil], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputDaily]);
 			break;
 		case 21:
 			PathInfo->InFiles[eOutputWeekly_soil] = Str_Dup(inbuf, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly_soil], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputWeekly]);
 			break;
 		case 22:
 			PathInfo->InFiles[eOutputMonthly_soil] = Str_Dup(inbuf, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly_soil], LogInfo);
 			//printf("filename: %s \n",InFiles[eOutputMonthly]);
 			break;
 		case 23:
 			PathInfo->InFiles[eOutputYearly_soil] = Str_Dup(inbuf, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 			++fileno;
 			SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly_soil], LogInfo);
 			break;
@@ -166,17 +191,25 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 			strcpy(buf, PathInfo->_ProjDir);
 			strcat(buf, inbuf);
 			PathInfo->InFiles[fileno] = Str_Dup(buf, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
+
+        // Check if something went wrong in `SW_CSV_F_INIT()`
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 		lineno++;
 	}
 
-	if (fileno < eEndFile - 1) {
-		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGERROR, "Too few files (%d) in %s", fileno, MyFileName);
-	}
+    CloseFile(&f, LogInfo);
 
-	CloseFile(&f, LogInfo);
+	if (fileno < eEndFile - 1) {
+        LogError(LogInfo, LOGERROR, "Too few files (%d) in %s", fileno, MyFileName);
+        return; // Exit function prematurely due to error
+	}
 
 #ifdef SOILWAT
 	if (0 == strcmp(PathInfo->InFiles[eLog], "stdout")) {
@@ -227,6 +260,9 @@ void SW_F_construct(const char *firstfile, char _ProjDir[],
 	 */
 	char *c, *p, dirString[FILENAME_MAX];
 	char *local_firstfile = Str_Dup(firstfile, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	DirName(local_firstfile, dirString);
 
