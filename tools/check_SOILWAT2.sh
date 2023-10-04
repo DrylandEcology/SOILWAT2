@@ -89,7 +89,7 @@ compare_output_against_reference () {
 # ("error" besides "Werror", "Wno-error", or
 # any unit test name: "*Test.Errors", "RNGBetaErrorsDeathTest")
 check_error() {
-  echo "$1" | awk 'tolower($0) ~ /[^-.w]error|failed|abort|trap|( not )/ && !/RNGBetaErrorsDeathTest/'
+  echo "$1" | awk 'tolower($0) ~ /[^-.w]error|failed|abort|trap|( not )/ && !/RNGBetaErrorsDeathTest/ && !/WarningsAndErrors/ && !/FailOnErrorDeath/'
 }
 
 #--- Function to check for leaks (but avoid false hits)
@@ -189,7 +189,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       ${k}"-b) Run sanitizers on example simulation with "\'"${port_compilers[k]}"$'\n'\
+       ${k}"-b) Run sanitizers on example simulation with "\'"${port_compilers[k]}"\'$'\n'\
        --------------------------------------------------
 
   echo $'\n'"Target 'bin_leaks' ..."
@@ -293,7 +293,7 @@ for ((k = 0; k < ncomp; k++)); do
 
   echo $'\n'$'\n'\
        --------------------------------------------------$'\n'\
-       ${k}"-d) Run sanitizers on tests with "\'"${port_compilers[k]}"$'\n'\
+       ${k}"-d) Run sanitizers on tests with "\'"${port_compilers[k]}"\'$'\n'\
        --------------------------------------------------
 
   if [ "${do_target_test_leaks}" = true ]; then
