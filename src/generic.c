@@ -5,12 +5,6 @@
 #include <stdarg.h>
 #include <math.h>
 
-/* int logged is to be declared in the main module of your program. */
-/* global variable indicates logfile used: externed via generic.h */
-/* so we can't make it Bool.  But we don't have to explicitly */
-/* externed it in each module, just include generic.h. */
-/* Just be sure to set logged = FALSE as the first step in main(). */
-
 /*
  History:
  2011/01/27	(drs) renamed from "gen_funcs.c" to "generic.c"

@@ -16,12 +16,12 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void sw_init_args(int argc, char **argv, Bool *QuietMode,
+void sw_init_args(int argc, char **argv,
 	Bool *EchoInits, char **_firstfile, LOG_INFO* LogInfo);
 void sw_print_version(void);
-void sw_check_exit(Bool QuietMode, LOG_INFO* LogInfo);
+void sw_fail_on_error(LOG_INFO* LogInfo);
 void sw_init_logs(FILE* logInitPtr, LOG_INFO* LogInfo);
-void sw_write_logs(Bool QuietMode, LOG_INFO* LogInfo);
+void sw_write_warnings(LOG_INFO* LogInfo);
 
 #ifdef __cplusplus
 }

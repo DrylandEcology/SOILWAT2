@@ -109,10 +109,7 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 
 /**************************************************************/
 void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
-    /* uses global variable logged to indicate that a log message
-     * was sent to output, which can be used to inform user, etc.
-     *
-     *  9-Dec-03 (cwb) Modified to accept argument list similar
+    /* 9-Dec-03 (cwb) Modified to accept argument list similar
      *           to fprintf() so sprintf(errstr...) doesn't need
      *           to be called each time replacement args occur.
      */
@@ -145,7 +142,7 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
     if(expectedWriteSize > MAX_LOG_SIZE) {
         fprintf(stderr, "Programmer: Injecting arguments to final message buffer "
                         "makes it exceed the maximum size.\n");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     #endif
 
@@ -160,15 +157,15 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
 		fprintf(stderr, "%s", buf);
 
 		// Consider updating STEPWAT2: instead of exiting/crashing, do catch
-		// errors, recoil, and use `sw_write_logs()` similar to SOILWAT2 >= 7.2.0
-		exit(-1);
+		// errors, recoil, and use `sw_write_warnings(); sw_fail_on_error()`
+		// as SOILWAT2 >= 7.2.0
+		exit(EXIT_FAILURE);
 		#else
 		strcpy(LogInfo->errorMsg, buf);
 		LogInfo->stopRun = swTRUE;
 		#endif
 	}
 
-	LogInfo->logged = swTRUE;
 	va_end(args);
 }
 

@@ -47,29 +47,24 @@
 /* --------------------------------------------------- */
 
 /************  Main() ************************/
-/**
-@brief Provides a way to inform the user that something was logged, can be changed by code
- 			(eg. init file) but must be set before sw_init_args().  See generic.h
-*/
 int main(int argc, char **argv) {
 	/* =================================================== */
 	SW_ALL sw;
 	SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
 	LOG_INFO LogInfo;
 	PATH_INFO PathInfo;
-	Bool EchoInits, QuietMode;
+	Bool EchoInits;
 
 	sw_init_logs(stdout, &LogInfo);
 	SW_CTL_init_ptrs(&sw, PathInfo.InFiles);
 
-	sw_init_args(argc, argv, &QuietMode, &EchoInits, &PathInfo.InFiles[eFirst],
-				 &LogInfo);
+	sw_init_args(argc, argv, &EchoInits, &PathInfo.InFiles[eFirst],  &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
 
 	// Print version if not in quiet mode
-	if (!QuietMode) {
+	if (!LogInfo.QuietMode) {
 		sw_print_version();
 	}
 
@@ -129,9 +124,8 @@ int main(int argc, char **argv) {
         // de-allocate all memory
         SW_CTL_clear_model(swTRUE, &sw, &PathInfo);
 
-        // Mention to the user if something was logged
-        sw_write_logs(QuietMode, &LogInfo);
-        sw_check_exit(QuietMode, &LogInfo);
+        sw_write_warnings(&LogInfo);
+        sw_fail_on_error(&LogInfo);
     }
 
 	return 0;

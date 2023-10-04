@@ -54,7 +54,6 @@ class AllTestFixture : public ::testing::Test {
     // because it does not copy dynamically allocated memory to which
     // members of `SW_ALL` point to
     void SetUp() override {
-        Bool QuietMode = swFALSE;
 
         // Initialize SOILWAT2 variables and read values from example input file
         sw_init_logs(NULL, &LogInfo);
@@ -73,7 +72,7 @@ class AllTestFixture : public ::testing::Test {
             - we set `logfp` to NULL to silence all non-error messages during tests
             - error messages go directly to stderr (which DeathTests use to match against)
         */
-        sw_check_exit(QuietMode, &LogInfo);
+        sw_fail_on_error(&LogInfo);
         sw_init_logs(NULL, &LogInfo);
 
         SW_WTH_finalize_all_weather(
