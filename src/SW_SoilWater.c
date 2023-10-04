@@ -54,8 +54,8 @@
   #include "include/SW_Weather.h"
 #endif
 #ifdef RSOILWAT
-  #include "rSW_SoilWater.h" // for onSet_SW_SWC_hist()
-  #include "SW_R_lib.h" // externs `useFiles`
+  // SW_SWC_new_year() is currently not functional in rSOILWAT2
+  //#include "rSW_SoilWater.h" // for onSet_SW_SWC_hist() used by SW_SWC_new_year()
 #endif
 
 /* =================================================== */
@@ -1022,10 +1022,18 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 		#ifndef RSOILWAT
 			_read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
 		#else
-			if (useFiles) {
+			LogError(
+			  LogInfo,
+			  LOGERROR,
+			  "rSOILWAT2 currently does not support historical SWC inputs."
+			);
+
+			if (swFALSE) {
+			  // read from disk:
 				_read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
 			} else {
-				onSet_SW_SWC_hist();
+				// copy from R memory
+				// onSet_SW_SWC_hist(LogInfo);
 			}
 		#endif
 	}
