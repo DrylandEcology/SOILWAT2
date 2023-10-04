@@ -132,12 +132,13 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
         strcpy(msgType, "ERROR: ");
 
     expectedWriteSize = snprintf(outfmt, MAX_LOG_SIZE, "%s%s\n", msgType, fmt);
-    #ifdef SWDEBUG
     if(expectedWriteSize > MAX_LOG_SIZE) {
-        fprintf(stderr, "Programmer: Size of format exceeds the maximum size.\n");
-        exit(-1);
+        // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`, i.e., handle output truncation
+        fprintf(stderr, "Programmer: message exceeds the maximum size.\n");
+        #ifdef SWDEBUG
+        exit(EXIT_FAILURE);
+        #endif
     }
-    #endif
 
     expectedWriteSize = vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
     #ifdef SWDEBUG
@@ -146,8 +147,6 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
                         "makes it exceed the maximum size.\n");
         exit(-1);
     }
-    #else
-    (void) expectedWriteSize; // Silence compiler flag `-Wunused-parameter`
     #endif
 
 	if(LOGWARN & mode) {
