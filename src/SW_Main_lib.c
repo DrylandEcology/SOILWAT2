@@ -77,14 +77,11 @@ void sw_print_version(void) {
 /**
 @brief Initializes arguments and sets indicators/variables based on results.
 
-@param argc Argument C.
-@param argv Argument V.
-@param[out] QuietMode Flag to control if the program version is displayed
+@param[in] argc Number (count) of command line arguments.
+@param[in] argv Values of command line arguments.
 @param[out] EchoInits Flag to control if inputs are to be output to the user
 @param[out] _firstfile First file name to be filled in the program run
-@param[in] LogInfo Holds information dealing with logfile output
-
-@sideeffect argv Updated argument V.
+@param[out] LogInfo Holds information dealing with logfile output
 */
 void sw_init_args(int argc, char **argv,
 	Bool *EchoInits, char **_firstfile, LOG_INFO* LogInfo) {
