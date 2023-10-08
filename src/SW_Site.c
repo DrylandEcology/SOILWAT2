@@ -109,7 +109,7 @@ char const *ptf2str[N_PTFs] = {
 
 	@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in] layerno Current layer which is being worked with
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	@return A logical value indicating if soil properties passed the checks.
 */
@@ -338,7 +338,7 @@ static double ui_theta_min(
 	Throws an error if `SWRC` is not implemented.
 
 	@param[in] *swrc_name Name of a SWRC
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	@return Internal identification number of selected SWRC
 */
@@ -406,7 +406,7 @@ unsigned int encode_str2ptf(char *ptf_name) {
 	@param[in] bdensity Density of the whole soil
 		(matric soil plus coarse fragments) [g/cm3];
 		accepts #SW_MISSING if not used by selected PTF
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 */
 void SWRC_PTF_estimate_parameters(
@@ -518,7 +518,7 @@ void SWRC_PTF_Cosby1984_for_Campbell1974(
 	@param[in] ptf_type Identification number of selected PTF
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	@return Estimated saturated water content of the bulk soil [cm]
 */
@@ -595,7 +595,7 @@ double SW_swcBulk_saturated(
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] swcBulk_sat Saturated water content of the bulk soil [cm]
 	@param[in] _SWCMinVal Lower bound on swc.
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	@return Minimum water content of the bulk soil [cm]
 */
@@ -702,7 +702,7 @@ Bool check_SWRC_vs_PTF(char *swrc_name, char *ptf_name) {
 
 	@param[in] swrc_type Identification number of selected SWRC
 	@param[in] *swrcp Vector of SWRC parameters
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	@return A logical value indicating if parameters passed the checks.
 */
@@ -752,7 +752,7 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp,
 		- `swrcp[3]` (`K_sat`): saturated hydraulic conductivity `[cm / day]`
 
 	@param[in] *swrcp Vector of SWRC parameters
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	@return A logical value indicating if parameters passed the checks.
 */
@@ -823,7 +823,7 @@ Bool SWRC_check_parameters_for_Campbell1974(double *swrcp,
 		- `swrcp[4]` (`K_sat`): saturated hydraulic conductivity `[cm / day]`
 
 	@param[in] *swrcp Vector of SWRC parameters
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	@return A logical value indicating if parameters passed the checks.
 */
@@ -931,7 +931,7 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp,
 	Table 1 in \cite wang2022WRRa.
 
 	@param[in] *swrcp Vector of SWRC parameters
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	@return A logical value indicating if parameters passed the checks.
 */
@@ -1016,7 +1016,7 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO* LogInfo) {
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 	@param[out] *theta_sat Estimated saturated volumetric water content
 		of the matric soil [cm/cm]
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void PTF_Saxton2006(
 	double *theta_sat,
@@ -1145,7 +1145,7 @@ void PTF_Saxton2006(
 	@param[in] porosity Pore space of the matric soil (< 2 mm fraction) [cm3/cm3]
 	@param[out] *theta_min Estimated residual volumetric water content
 		of the matric soil [cm/cm]
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void PTF_RawlsBrakensiek1985(
 	double *theta_min,
@@ -1339,7 +1339,7 @@ void SW_SIT_construct(SW_SITE* SW_Site) {
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 				 SW_CARBON* SW_Carbon, LOG_INFO* LogInfo) {
@@ -1602,7 +1602,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 
 	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in] InFiles Array of program in/output files
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	@note Previously, the function was static and named `_read_layers()`.
 */
@@ -1728,7 +1728,7 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
     depth [cm] of each region in ascending (in value) order. If you think about
     this from the perspective of soil, it would mean the shallowest bound is at
     `lowerBounds[0]`.
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @sideeffect After deleting any previous data in the soil layer array
     SW_Site.lyr, it creates new soil layers based on the argument inputs.
@@ -1817,7 +1817,7 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
     depth [cm] of each region in ascending (in value) order. If you think about
     this from the perspective of soil, it would mean the shallowest bound is at
     `lowerBounds[0]`.
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @sideeffect
     \ref SW_SITE._TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
@@ -1891,7 +1891,7 @@ void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
  *
  * @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
  * @param[in] InFiles Array of program in/output files
- * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in,out] LogInfo Holds information dealing with logfile output
  *
 */
 void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
@@ -1981,7 +1981,7 @@ void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 	@param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
 		cover conditions in the simulation
 	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	@sideeffect Values stored in global variable `SW_Site`.
 */

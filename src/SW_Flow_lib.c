@@ -325,7 +325,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
         to represent shallow, mid, & deep depths to compute transpiration rate.
 @param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param[in] VegType Current vegetation
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @sideeffect *swp_avg Weighted average of soilwater potential and transpiration coefficients (-bar).
 
@@ -441,7 +441,7 @@ Based on equations from Parton 1978. @cite Parton1978
 @param[in] Es_param_limit Parameter to determine when soil surface is completely covered with
     litter and that bare soil evaporation is inhibited.
 @param[out] *bserate Bare soil evaporation loss rate (cm/day).
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @sideeffect *bserate Updated bare soil evaporation loss rate (cm/day).
 
@@ -523,7 +523,7 @@ Based on equations from Parton 1978. @cite Parton1978
 @param[in] inflec Y-value of the inflection point.
 @param[in] range Max y-value - min y-value at the limits.
 @param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 */
 
@@ -733,7 +733,7 @@ added to input value (mm/day).
 @param[in] rate Removal rate, either soil_evap_rate or soil_transp_rate.
 @param[in] swcmin Lower limit on soilwater content per layer.
 @param[in] lyrFrozen Frozen information at each layer.
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @note The variable `SW_Site` is only used as input for another function.
 	  It will not affect other elements passed in from it.
@@ -945,7 +945,7 @@ void percolate_unsaturated( double swc[], double percolate[],
 	@param[in] scale Fraction of vegetation type to scale hydred.
 	@param[in] year Current year in simulation
 	@param[in] doy  Day of the year (base1) [1-366]
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	@sideeffect
 		- swc Updated soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
@@ -1450,7 +1450,7 @@ void SW_ST_init_run(ST_RGR_VALUES* StRegValues) {
 	@param[out] surfaceAvg Initialized surface temperature (&deg;C).
 	@param[out] avgLyrTemp Initialized soil temperature of the soil layer profile (&deg;C).
 	@param[out] lyrFrozen Frozen information at each soil layer.
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_ST_setup_run(
 	ST_RGR_VALUES* SW_StRegValues,
@@ -1546,7 +1546,7 @@ void SW_ST_setup_run(
 @param[in,out] ptr_stError Booleans status of soil temperature error in *ptr_stError.
 @param[out] soil_temp_init Flag specifying if the values for
 	`soil_temperature()` have been initialized
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 
 void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
@@ -2201,7 +2201,7 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param[out] maxLyrTemperature An array holding all of the layers maximum temperature (&deg;C)
 @param[out] minLyrTemperature An array holding all of the layers minimum temperature (&deg;C)
 @param[out] *ptr_stError Boolean indicating whether there was an error.
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 
 void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,

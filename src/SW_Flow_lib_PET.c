@@ -842,7 +842,7 @@ double clearnessindex_diffuse(double K_b)
   @param[out] H_oh Daily extraterrestrial horizontal irradiation [MJ / m2]
   @param[out] H_ot Daily extraterrestrial tilted irradiation [MJ / m2]
   @param[out] H_gh Daily global horizontal irradiation [MJ / m2]
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @return H_gt Daily global (tilted) irradiation [MJ / m2]
 */
@@ -1249,7 +1249,7 @@ double actualVaporPressure3(double dewpointTemp) {
   @param humid Average relative humidity [%]
   @param windsp Average wind speed at 2-m above ground [m / s]
   @param cloudcov Average cloud cover [%]
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @return Potential evapotranspiration [cm / day]
 */

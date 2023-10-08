@@ -212,7 +212,7 @@ void SW_MKV_init_ptrs(SW_MARKOV* SW_Markov) {
 @param[in] rng_seed Initial state for Markov
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
 					  LOG_INFO* LogInfo) {
@@ -330,7 +330,7 @@ void SW_MKV_deconstruct(SW_MARKOV* SW_Markov)
 @param[out] *tmax Maximum temperature (&deg;C).
 @param[out] *tmin Mininum temperature (&deg;C).
 @param[out] *rain Rainfall (cm).
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @sideeffect *tmax Updated maximum temperature (&deg;C).
 @sideeffect *tmin Updated minimum temperature (&deg;C).
@@ -419,7 +419,7 @@ void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @return swTRUE Returns true if prob file is correctly opened and closed.
 */
@@ -510,7 +510,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @return Returns true if cov file is correctly opened and closed.
 */

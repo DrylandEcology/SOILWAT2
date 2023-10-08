@@ -53,7 +53,7 @@
 
 @param[in,out] sw Comprehensive struct of type SW_ALL containing all
   information in the simulation
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void _begin_year(SW_ALL* sw, LOG_INFO* LogInfo) {
 	// SW_F_new_year() not needed
@@ -104,7 +104,7 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   information in the simulation
 @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   hold pointers to subroutines for output keys
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 
 void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
@@ -152,7 +152,7 @@ void SW_CTL_init_ptrs(SW_ALL* sw, char *InFiles[]) {
  * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  *  hold pointers to subroutines for output keys
  * @param[in,out] PathInfo Struct holding all information about the programs path/files
- * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in,out] LogInfo Holds information dealing with logfile output
  */
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
@@ -224,7 +224,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw, PATH_INFO* PathInfo) {
 
   @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
 
@@ -267,7 +267,7 @@ void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
   all information in the simulation
 @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   hold pointers to subroutines for output keys
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                              LOG_INFO* LogInfo) {
@@ -348,7 +348,7 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 @param[in,out] sw Comprehensive struct of type SW_ALL containing
   all information in the simulation
 @param[in,out] PathInfo Struct holding all information about the programs path/files
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
                                   LOG_INFO* LogInfo) {

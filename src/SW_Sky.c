@@ -40,7 +40,7 @@
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
 	over the simulated site
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 	/* =================================================== */

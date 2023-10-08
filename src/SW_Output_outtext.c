@@ -126,7 +126,7 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 	and values
   \param[in] pd The output time step.
   \param[in] InFiles Array of program in/output files
-  \param[in] LogInfo Holds information dealing with logfile output
+  \param[in,out] LogInfo Holds information dealing with logfile output
 */
 /***********************************************************/
 static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
@@ -324,7 +324,7 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
  * @param[in] n_layers Number of layers of soil within the simulation run
  * @param[in] InFiles Array of program in/output files
  * @param[in] GenOutput Holds general variables that deal with output
- * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in,out] LogInfo Holds information dealing with logfile output
  *
  *  @note Call this routine at the beginning of the main program run, but
  *  after SW_OUT_read() which sets the global variable use_OutPeriod.
@@ -541,7 +541,7 @@ void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 		SW_FILE_STATUS which holds basic information about output files
 		and values
 	@param[in] GenOutput Holds general variables that deal with output
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
 						LOG_INFO* LogInfo) {

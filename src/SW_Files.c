@@ -38,7 +38,7 @@
 
 @param *s Name of the first file to read for filenames, or NULL. If NULL, then read
 	from DFLT_FIRSTFILE or whichever filename was set previously.
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @sideeffect *s Updated name of the first file to read for filenames, or NULL. If NULL, then read
 	from DFLT_FIRSTFILE or whichever filename was set previously.
@@ -243,7 +243,7 @@ void SW_F_init_ptrs(char *InFiles[]) {
 
 @param[in] *firstfile File to be read in.
 @param[out] _ProjDir Project directory
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @sideeffect
 	- *firstfile File to be read in.

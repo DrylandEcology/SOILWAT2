@@ -217,7 +217,7 @@ void sw_init_args(int argc, char **argv,
   (unless `QuietMode` is TRUE) and exit with `EXIT_FAILURE`;
   for rSOILWAT2, then issue an error with the error message.
 
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void sw_fail_on_error(LOG_INFO* LogInfo) {
     #ifdef RSOILWAT
@@ -256,7 +256,7 @@ void sw_init_logs(FILE* logInitPtr, LOG_INFO* LogInfo) {
  * @brief Write warnings that have been accumulated throughout the program/
  * simulation run
  *
- * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void sw_write_warnings(LOG_INFO* LogInfo) {
 
