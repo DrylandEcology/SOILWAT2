@@ -28,7 +28,7 @@
  Updated the use of these three function in all files
  06/24/2013	(rjm)	made temp_snow a module-level static variable (instead of function-level): otherwise it will not get reset to 0 between consecutive calls as a dynamic library
  need to set temp_snow to 0 in function SW_SWC_construct()
- 06/26/2013	(rjm)	closed open files at end of functions SW_SWC_read(), _read_hist() or if LogError() with LOGFATAL is called
+ 06/26/2013	(rjm)	closed open files at end of functions SW_SWC_read(), _read_hist() or if LogError() with LOGERROR is called
  */
 /********************************************************/
 /********************************************************/
@@ -54,8 +54,8 @@
   #include "include/SW_Weather.h"
 #endif
 #ifdef RSOILWAT
-  #include "rSW_SoilWater.h" // for onSet_SW_SWC_hist()
-  #include "SW_R_lib.h" // externs `useFiles`
+  // SW_SWC_new_year() is currently not functional in rSOILWAT2
+  //#include "rSW_SoilWater.h" // for onSet_SW_SWC_hist() used by SW_SWC_new_year()
 #endif
 
 /* =================================================== */
@@ -430,6 +430,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   // AET <= PET
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[0] = Str_Dup("AET <= PET", LogInfo);
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   if (!LE(sw->SoilWat.aet, sw->SoilWat.pet))
   {
@@ -441,6 +445,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   // AET == E(total) + T(total)
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[1] = Str_Dup("AET == Etotal + Ttotal", LogInfo);
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   rhs = Etotal + Ttotal;
   if (!EQ_w_tol(sw->SoilWat.aet, rhs, wbtol))
@@ -454,6 +462,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   // doesn't make sense here because Ttotal is the sum of Tvegij
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[2] = Str_Dup("T(total) = sum of T(veg-type i from soil layer j)", LogInfo);
+
+    if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+    }
   }
   sw->SoilWat.wbError[2] += 0;
 
@@ -461,6 +473,9 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   //            + E(total veg-intercepted) + E(snow sublimation)
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[3] = Str_Dup("Etotal == Esoil + Eponded + Eveg + Elitter + Esnow", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   rhs = Esoil + Eponded + Eveg + Elitter + Esnow;
   if (!EQ_w_tol(Etotal, rhs, wbtol))
@@ -474,6 +489,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   //                    + E(total veg-intercepted)
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[4] = Str_Dup("Esurf == Eponded + Eveg + Elitter", LogInfo);
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   rhs = Eponded + Eveg + Elitter;
   if (!EQ_w_tol(Etotalsurf, rhs, wbtol))
@@ -488,6 +507,9 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   // infiltration = [rain + snowmelt + runon] - (runoff + intercepted + delta_surfaceWater + Eponded)
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[5] = Str_Dup("inf == rain + snowmelt + runon - (runoff + intercepted + delta_surfaceWater + Eponded)", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   rhs = arriving_water - (runoff + intercepted + delta_surfaceWater + Eponded);
   if (!EQ_w_tol(infiltration, rhs, wbtol))
@@ -500,6 +522,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   // E(soil) + Ttotal = infiltration - (deepDrainage + delta(swc))
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[6] = Str_Dup("Ttotal + Esoil = inf - (deepDrainage + delta_swc)", LogInfo);
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   lhs = Ttotal + Esoil;
   rhs = infiltration - (deepDrainage + delta_swc_total);
@@ -515,6 +541,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   //     (percolationOut/deepDrainage + transpiration + baresoil_evaporation)
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[7] = Str_Dup("delta_swc[i] == perc_in[i] + hydred[i] - (perc_out[i] + Ttot[i] + Esoil[i]))", LogInfo);
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   ForEachSoilLayer(i, n_layers)
   {
@@ -532,6 +562,10 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   // for every soil layer j: swc_min <= swc <= swc_sat
   if (!sw->SoilWat.is_wbError_init) {
     sw->SoilWat.wbErrorNames[8] = Str_Dup("swc[i] => swc_min[i] && swc[i] <= swc_sat[i]", LogInfo);
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
   }
   ForEachSoilLayer(i, n_layers)
   {
@@ -560,13 +594,40 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
 }
 #endif
 
+/**
+ * @brief Initialize all possible pointers in SW_SOILWAT to NULL
+ *
+ * @param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
+ * 		soil water related values
+*/
+void SW_SWC_init_ptrs(SW_SOILWAT* SW_SoilWat) {
+	OutPeriod pd;
+
+	// Initialize output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_SoilWat->p_accu[pd] = NULL;
+		SW_SoilWat->p_oagg[pd] = NULL;
+	}
+
+	SW_SoilWat->hist.file_prefix = NULL;
+
+	#ifdef SWDEBUG
+	IntU i;
+
+	for (i = 0; i < N_WBCHECKS; i++)
+	{
+		SW_SoilWat->wbErrorNames[i] = NULL;
+	}
+	#endif
+}
 
 /**
 @brief Constructor for soilWater Content.
 
 @param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
 	soil water related values
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
 	/* =================================================== */
@@ -584,9 +645,17 @@ void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
 	{
 		SW_SoilWat->p_accu[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
 			sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_construct()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
 		if (pd > eSW_Day) {
 			SW_SoilWat->p_oagg[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
 				sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_construct()", LogInfo);
+
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 }
@@ -632,7 +701,7 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat)
 
 @param[in,out] sw Comprehensive struct of type SW_ALL containing all information
   in the simulation.
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 	/* =================================================== */
@@ -662,6 +731,10 @@ void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 	  					sw->Model.doy, sw->SoilWat.hist,
 						sw->Site.n_layers, LogInfo);
 
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
 		} else {
 			LogError(LogInfo, LOGWARN, "Attempt to set SWC on start day of first year of simulation disallowed.");
 		}
@@ -671,11 +744,17 @@ void SW_SWC_water_flow(SW_ALL* sw, LOG_INFO* LogInfo) {
     if (debug) swprintf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
     #endif
 		SW_Water_Flow(sw, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 
   #ifdef SWDEBUG
   if (debug) swprintf("\n'SW_SWC_water_flow': check water balance.\n");
   SW_WaterBalance_Checks(sw, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
 
   if (debug) swprintf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
   #endif
@@ -917,7 +996,7 @@ void SW_SWC_init_run(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site,
 	soil water related values
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] year Current year being run in the simulation
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 					 LOG_INFO* LogInfo) {
@@ -943,10 +1022,18 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 		#ifndef RSOILWAT
 			_read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
 		#else
-			if (useFiles) {
+			LogError(
+			  LogInfo,
+			  LOGERROR,
+			  "rSOILWAT2 currently does not support historical SWC inputs."
+			);
+
+			if (swFALSE) {
+			  // read from disk:
 				_read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
 			} else {
-				onSet_SW_SWC_hist();
+				// copy from R memory
+				// onSet_SW_SWC_hist(LogInfo);
 			}
 		#endif
 	}
@@ -960,7 +1047,7 @@ void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 	soil water related values
 @param[in] endyr Ending year for model run
 @param[in] InFiles Array of program in/output files
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_SWC_read(
 	SW_SOILWAT* SW_SoilWat,
@@ -980,6 +1067,9 @@ void SW_SWC_read(
 
 	char *MyFileName = InFiles[eSoilwat];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
@@ -988,6 +1078,9 @@ void SW_SWC_read(
 			break;
 		case 1:
 			SW_SoilWat->hist.file_prefix = (char *) Str_Dup(inbuf, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 			break;
 		case 2:
 			SW_SoilWat->hist.yr.first = yearto4digit(atoi(inbuf));
@@ -1004,11 +1097,13 @@ void SW_SWC_read(
 	}
 	if (lineno < nitems) {
 		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGFATAL, "%s : Insufficient parameters specified.", MyFileName);
+		LogError(LogInfo, LOGERROR, "%s : Insufficient parameters specified.", MyFileName);
+        return; // Exit function prematurely due to error
 	}
 	if (SW_SoilWat->hist.method < 1 || SW_SoilWat->hist.method > 2) {
 		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGFATAL, "%s : Invalid swc adjustment method.", MyFileName);
+		LogError(LogInfo, LOGERROR, "%s : Invalid swc adjustment method.", MyFileName);
+        return; // Exit function prematurely due to error
 	}
 	SW_SoilWat->hist.yr.last = endyr;
 	SW_SoilWat->hist.yr.total = SW_SoilWat->hist.yr.last - SW_SoilWat->hist.yr.first + 1;
@@ -1022,7 +1117,7 @@ void SW_SWC_read(
 @param[in, out] SoilWat_hist Struct of type SW_SOILWAT_HIST holding parameters for
 	historical (measured) swc values
 @param[in] year Four digit number for desired year, measured in years.
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 					LOG_INFO* LogInfo) {
@@ -1063,10 +1158,13 @@ void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 
 	if (!FileExists(fname)) {
 		LogError(LogInfo, LOGWARN, "Historical SWC file %s not found.", fname);
-		return;
+		return; // Exit function prematurely due to error
 	}
 
 	f = OpenFile(fname, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	_clear_hist(SoilWat_hist->swc, SoilWat_hist->std_err);
 
@@ -1075,19 +1173,23 @@ void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 		x = sscanf(inbuf, "%d %d %f %f", &doy, &lyr, &swc, &st_err);
 		if (x < 4) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : Incomplete layer data at record %d\n   Should be DOY LYR SWC STDERR.", fname, recno);
+			LogError(LogInfo, LOGERROR, "%s : Incomplete layer data at record %d\n   Should be DOY LYR SWC STDERR.", fname, recno);
+            return; // Exit function prematurely due to error
 		}
 		if (x > 4) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : Too many input fields at record %d\n   Should be DOY LYR SWC STDERR.", fname, recno);
+			LogError(LogInfo, LOGERROR, "%s : Too many input fields at record %d\n   Should be DOY LYR SWC STDERR.", fname, recno);
+            return; // Exit function prematurely due to error
 		}
 		if (doy < 1 || doy > MAX_DAYS) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : Day of year out of range at record %d", fname, recno);
+			LogError(LogInfo, LOGERROR, "%s : Day of year out of range at record %d", fname, recno);
+            return; // Exit function prematurely due to error
 		}
 		if (lyr < 1 || lyr > MAX_LAYERS) {
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s : Layer number out of range (%d > %d), record %d\n", fname, lyr, MAX_LAYERS, recno);
+			LogError(LogInfo, LOGERROR, "%s : Layer number out of range (%d > %d), record %d\n", fname, lyr, MAX_LAYERS, recno);
+            return; // Exit function prematurely due to error
 		}
 
 		SoilWat_hist->swc[doy - 1][lyr - 1] = swc;
@@ -1106,7 +1208,7 @@ void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 @param[in] SoilWat_hist Struct of type SW_SOILWAT_HIST holding parameters for
 					historical (measured) swc values
 @param[in] n_layers Total number of soil layers in simulation
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], RealD swcBulk_min[],
 	TimeInt doy, SW_SOILWAT_HIST SoilWat_hist, LyrIndex n_layers,
@@ -1141,8 +1243,9 @@ void SW_SWC_adjust_swc(RealD swcBulk[][MAX_LAYERS], RealD swcBulk_min[],
 		break;
 
 	default:
-		LogError(LogInfo, LOGFATAL,
+		LogError(LogInfo, LOGERROR,
 				 "swcsetup.in : Invalid SWC adjustment method.");
+        return; // Exit function prematurely due to error
 	}
 
 	/* this will guarantee that any method will not lower swc */
@@ -1281,7 +1384,7 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
   @param[in] swcBulk Soil water content in the layer [cm]
   @param[in] SW_Site Struct of type SW_SITE describing the simulated site
   @param[in] layerno Current layer which is being worked with
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @return Soil water potential [-bar]
 */
@@ -1293,7 +1396,7 @@ RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_SITE *SW_Site, LyrIndex layerno,
     SW_Site->swrcp[layerno],
     SW_Site->fractionVolBulk_gravel[layerno],
     SW_Site->width[layerno],
-    LOGFATAL,
+    LOGERROR,
 	LogInfo
   );
 }
@@ -1317,9 +1420,9 @@ RealD SW_SWRC_SWCtoSWP(RealD swcBulk, SW_SITE *SW_Site, LyrIndex layerno,
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
   @param[in] errmode An error code passed to `LogError()`.
-    SOILWAT2 uses `LOGFATAL` and fails but
+    SOILWAT2 uses `LOGERROR` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @return Soil water potential [-bar]
 */
@@ -1342,42 +1445,41 @@ double SWRC_SWCtoSWP(
 			swcBulk
 		);
 
-		return res;
-	}
+	} else {
+        switch (swrc_type) {
+            case sw_Campbell1974:
+                res = SWRC_SWCtoSWP_Campbell1974(
+                    swcBulk, swrcp, gravel, width,
+                    errmode, LogInfo
+                );
+                break;
 
-	switch (swrc_type) {
-		case sw_Campbell1974:
-			res = SWRC_SWCtoSWP_Campbell1974(
-				swcBulk, swrcp, gravel, width,
-				errmode, LogInfo
-			);
-			break;
+            case sw_vanGenuchten1980:
+                res = SWRC_SWCtoSWP_vanGenuchten1980(
+                    swcBulk, swrcp, gravel, width,
+                    errmode, LogInfo
+                );
+                break;
 
-		case sw_vanGenuchten1980:
-			res = SWRC_SWCtoSWP_vanGenuchten1980(
-				swcBulk, swrcp, gravel, width,
-				errmode, LogInfo
-			);
-			break;
+            case sw_FXW:
+                res = SWRC_SWCtoSWP_FXW(
+                    swcBulk, swrcp, gravel, width,
+                    errmode, LogInfo
+                );
+                break;
 
-		case sw_FXW:
-			res = SWRC_SWCtoSWP_FXW(
-				swcBulk, swrcp, gravel, width,
-				errmode, LogInfo
-			);
-			break;
+            default:
+                LogError(
+                    LogInfo,
+                    errmode,
+                    "SWRC (type %d) is not implemented.",
+                    swrc_type
+                );
+                break;
+        }
+    }
 
-		default:
-			LogError(
-				LogInfo,
-				errmode,
-				"SWRC (type %d) is not implemented.",
-				swrc_type
-			);
-			break;
-	}
-
-	return res;
+    return res;
 }
 
 
@@ -1407,9 +1509,9 @@ double SWRC_SWCtoSWP(
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
   @param[in] errmode An error code passed to `LogError()`.
-    SOILWAT2 uses `LOGFATAL` and fails but
+    SOILWAT2 uses `LOGERROR` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @return Soil water potential [-bar]
 */
@@ -1448,7 +1550,7 @@ double SWRC_SWCtoSWP_Campbell1974 (
 				theta, swrcp[1], swrcp[2], tmp
 			);
 
-			return SW_MISSING;
+			return SW_MISSING; // Exit function prematurely due to error
 		}
 
 		res = swrcp[0] / tmp;
@@ -1476,9 +1578,9 @@ double SWRC_SWCtoSWP_Campbell1974 (
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
   @param[in] errmode An error code passed to `LogError()`.
-    SOILWAT2 uses `LOGFATAL` and fails but
+    SOILWAT2 uses `LOGERROR` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @return Soil water potential [-bar]
 */
@@ -1562,9 +1664,9 @@ double SWRC_SWCtoSWP_vanGenuchten1980(
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
   @param[in] errmode An error code passed to `LogError()`.
-    SOILWAT2 uses `LOGFATAL` and fails but
+    SOILWAT2 uses `LOGERROR` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @return Soil water potential [-bar]
 */
@@ -1632,7 +1734,7 @@ double SWRC_SWCtoSWP_FXW(
   @param[in] swpMatric Soil water potential [-bar]
   @param[in] SW_Site Struct of type SW_SITE describing the simulated site
   @param[in] layerno Current layer which is being worked with
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @return Soil water content in the layer [cm]
 */
@@ -1644,7 +1746,7 @@ RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_SITE *SW_Site,
     SW_Site->swrcp[layerno],
     SW_Site->fractionVolBulk_gravel[layerno],
     SW_Site->width[layerno],
-    LOGFATAL,
+    LOGERROR,
 	LogInfo
   );
 }
@@ -1669,9 +1771,9 @@ RealD SW_SWRC_SWPtoSWC(RealD swpMatric, SW_SITE *SW_Site,
     of the whole soil [m3/m3]
   @param[in] width Soil layer width [cm]
   @param[in] errmode An error code passed to `LogError()`.
-    SOILWAT2 uses `LOGFATAL` and fails but
+    SOILWAT2 uses `LOGERROR` and fails but
     other applications may want to warn only (`LOGWARN`) and return.
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @return Soil water content in the layer [cm]
 */
@@ -1694,31 +1796,30 @@ double SWRC_SWPtoSWC(
 			swpMatric
 		);
 
-		return res;
-	}
+	} else {
+        switch (swrc_type) {
+            case sw_Campbell1974:
+                res = SWRC_SWPtoSWC_Campbell1974(swpMatric, swrcp, gravel, width);
+                break;
 
-	switch (swrc_type) {
-		case sw_Campbell1974:
-			res = SWRC_SWPtoSWC_Campbell1974(swpMatric, swrcp, gravel, width);
-			break;
+            case sw_vanGenuchten1980:
+                res = SWRC_SWPtoSWC_vanGenuchten1980(swpMatric, swrcp, gravel, width);
+                break;
 
-		case sw_vanGenuchten1980:
-			res = SWRC_SWPtoSWC_vanGenuchten1980(swpMatric, swrcp, gravel, width);
-			break;
+            case sw_FXW:
+                res = SWRC_SWPtoSWC_FXW(swpMatric, swrcp, gravel, width);
+                break;
 
-		case sw_FXW:
-			res = SWRC_SWPtoSWC_FXW(swpMatric, swrcp, gravel, width);
-			break;
-
-		default:
-			LogError(
-				LogInfo,
-				errmode,
-				"SWRC (type %d) is not implemented.",
-				swrc_type
-			);
-			break;
-	}
+            default:
+                LogError(
+                    LogInfo,
+                    errmode,
+                    "SWRC (type %d) is not implemented.",
+                    swrc_type
+                );
+                break;
+        }
+    }
 
 	return res;
 }
@@ -1855,31 +1956,3 @@ double SWRC_SWPtoSWC_FXW(
 	// convert matric theta [cm / cm] to bulk SWC [cm]
 	return (1. - gravel) * width * res;
 }
-
-
-
-
-/**
-@brief This routine sets the known memory refs in this module
-     so they can be  checked for leaks, etc.
-*/
-
-#ifdef DEBUG_MEM
-#include "include/myMemory.h"
-/*======================================================*/
-void SW_SWC_SetMemoryRefs( void) {
-	/* when debugging memory problems, use the bookkeeping
-	 code in myMemory.c
-	 This routine sets the known memory refs in this module
-	 so they can be  checked for leaks, etc.  Includes
-	 malloc-ed memory in SOILWAT.  All refs will have been
-	 cleared by a call to ClearMemoryRefs() before this, and
-	 will be checked via CheckMemoryRefs() after this, most
-	 likely in the main() function.
-	 */
-
-	/*  NoteMemoryRef(SW_Soilwat.hist.file_prefix); */
-
-}
-
-#endif

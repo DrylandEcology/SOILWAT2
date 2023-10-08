@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -32,10 +32,11 @@
 #include "include/SW_Weather.h"
 #include "include/SW_Markov.h"
 #include "include/SW_Sky.h"
+#include "include/SW_Main_lib.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
-
+using ::testing::HasSubstr;
 
 extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD,
                            pcg32_random_t*, LOG_INFO*);
@@ -48,7 +49,7 @@ namespace {
     SW_MARKOV SW_Markov;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     int rng_seed = 8;
 
@@ -73,7 +74,7 @@ namespace {
     SW_MARKOV SW_Markov;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     char *InFiles[SW_NFILES];
     for (short file = 0; file < SW_NFILES; file++) {
@@ -168,7 +169,7 @@ namespace {
     SW_MARKOV SW_Markov;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     int rng_seed = 9;
     short k, n = 3;
@@ -208,23 +209,23 @@ namespace {
     SW_MKV_deconstruct(&SW_Markov);
   }
 
-  TEST(WeatherGeneratorDeathTest, WeatherGeneratormvnormDeathTest) {
+  TEST(WeatherGeneratorTest, WeatherGeneratormvnormDeathTest) {
     SW_MARKOV SW_Markov;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     int rng_seed = 11;
     RealD tmax = 0., tmin = 0.;
 
     SW_MKV_construct(rng_seed, &SW_Markov, &LogInfo); // initialize markov_rng
 
-    // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGFATAL
-    EXPECT_DEATH_IF_SUPPORTED(
-      (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.,
-                                &SW_Markov.markov_rng, &LogInfo),
-      "Bad covariance matrix"
-    );
+    // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGERROR
+    (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.,
+                              &SW_Markov.markov_rng, &LogInfo);
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("Bad covariance matrix"));
 
     SW_MKV_deconstruct(&SW_Markov);
   }
@@ -235,7 +236,7 @@ namespace {
     SW_MARKOV SW_Markov;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     int rng_seed = 13;
     RealD

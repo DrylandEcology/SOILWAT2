@@ -22,6 +22,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+void SW_MKV_init_ptrs(SW_MARKOV* SW_Markov);
 void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
 					  LOG_INFO* LogInfo);
 void SW_MKV_deconstruct(SW_MARKOV* SW_Markov);
@@ -32,10 +33,6 @@ void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
 	int Weather_genWeathMethod, char *InFiles[], LOG_INFO* LogInfo);
 void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 			RealD *tmax, RealD *tmin, RealD *rain, LOG_INFO* LogInfo);
-
-#ifdef DEBUG_MEM
-void SW_MKV_SetMemoryRefs( void);
-#endif
 
 
 #ifdef __cplusplus

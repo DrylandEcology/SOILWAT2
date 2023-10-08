@@ -31,7 +31,7 @@ increased length of char outstr[1000] to outstr[1500] because of increased echo
 added the variable RealF help_bareGround as a place holder for the sscanf call.
 01/31/2013	(clk)	changed the read in to account for the albedo for bare ground, storing the input in bare_cov.albedo
 changed _echo_inits() to now display the bare ground components in logfile.log
-06/27/2013	(drs)	closed open files if LogError() with LOGFATAL is called in SW_VPD_read()
+06/27/2013	(drs)	closed open files if LogError() with LOGERROR is called in SW_VPD_read()
 07/09/2013	(clk)	added initialization of all the values of the new vegtype variable forb and forb.cov.fCover
 */
 /********************************************************/
@@ -75,7 +75,7 @@ char const *key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 @param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
 @param[in] InFiles Array of program in/output files
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
@@ -84,10 +84,13 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 	int x, k, lineno = 0, veg_method;
 	const int line_help = 28; // last case line number before monthly biomass densities
 	RealF help_veg[NVEGTYPES], help_bareGround, litt, biom, pctl, laic;
-	char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
+	char *MyFileName, inbuf[MAX_FILENAMESIZE];
 
 	MyFileName = InFiles[eVegProd];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	while (GetALine(f, inbuf)) {
 		if (lineno++ < line_help) {
@@ -95,9 +98,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
             case 1:
                 x = sscanf(inbuf, "%d", &veg_method);
                 if(x != 1) {
-                    snprintf(errstr, MAX_ERROR, "ERROR: invalid record in vegetation type components in %s\n", MyFileName);
                     CloseFile(&f, LogInfo);
-                    LogError(LogInfo, LOGFATAL, errstr);
+                    LogError(LogInfo, LOGERROR, "ERROR: invalid record"\
+									" in vegetation type components in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
                 }
                 SW_VegProd->veg_method = veg_method;
                 break;
@@ -106,9 +111,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS], &help_bareGround);
 				if (x < NVEGTYPES + 1) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in vegetation type components in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in" \
+									" vegetation type components in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cov.fCover = help_veg[k];
@@ -121,9 +128,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS], &help_bareGround);
 				if (x < NVEGTYPES + 1) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in albedo values in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" albedo values in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cov.albedo = help_veg[k];
@@ -136,9 +145,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy xinflec in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" canopy xinflec in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cnpy.xinflec = help_veg[k];
@@ -148,9 +159,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy yinflec in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in" \
+									" canopy yinflec in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cnpy.yinflec = help_veg[k];
@@ -160,9 +173,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy range in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" canopy range in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cnpy.range = help_veg[k];
@@ -172,9 +187,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy slope in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" canopy slope in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].cnpy.slope = help_veg[k];
@@ -184,9 +201,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in canopy height constant option in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" canopy height constant option in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].canopy_height_constant = help_veg[k];
@@ -198,9 +217,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in interception parameter kSmax(veg) in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" interception parameter kSmax(veg) in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].veg_kSmax = help_veg[k];
@@ -210,9 +231,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in interception parameter kdead(veg) in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" interception parameter kdead(veg) in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].veg_kdead = help_veg[k];
@@ -224,9 +247,12 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in litter interception parameter kSmax(litter) in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" litter interception parameter kSmax(litter)"\
+									" in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].lit_kSmax = help_veg[k];
@@ -238,9 +264,12 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in parameter for partitioning of bare-soil evaporation and transpiration in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" parameter for partitioning of bare-soil"\
+									" evaporation and transpiration in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].EsTpartitioning_param = help_veg[k];
@@ -252,9 +281,12 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in parameter for Parameter for scaling and limiting bare soil evaporation rate in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" parameter for Parameter for scaling and"\
+									" limiting bare soil evaporation rate in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].Es_param_limit = help_veg[k];
@@ -266,9 +298,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade scale in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" shade scale in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].shade_scale = help_veg[k];
@@ -278,9 +312,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade max dead biomass in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" shade max dead biomass in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].shade_deadmax = help_veg[k];
@@ -290,9 +326,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade xinflec in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" shade xinflec in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].tr_shade_effects.xinflec = help_veg[k];
@@ -302,9 +340,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade yinflec in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" shade yinflec in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].tr_shade_effects.yinflec = help_veg[k];
@@ -314,9 +354,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade range in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" shade range in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].tr_shade_effects.range = help_veg[k];
@@ -326,9 +368,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in shade slope in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" shade slope in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].tr_shade_effects.slope = help_veg[k];
@@ -340,9 +384,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in hydraulic redistribution: flag in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" hydraulic redistribution: flag in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].flagHydraulicRedistribution = (Bool) EQ(help_veg[k], 1.);
@@ -352,9 +398,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in hydraulic redistribution: maxCondroot in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" hydraulic redistribution: maxCondroot in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].maxCondroot = help_veg[k];
@@ -364,9 +412,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in hydraulic redistribution: swpMatric50 in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" hydraulic redistribution: swpMatric50 in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].swpMatric50 = help_veg[k];
@@ -376,9 +426,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in hydraulic redistribution: shapeCond in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" hydraulic redistribution: shapeCond in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].shapeCond = help_veg[k];
@@ -390,9 +442,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: invalid record in critical soil water potentials: flag in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: invalid record in"\
+									" critical soil water potentials: flag in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].SWPcrit = -10. * help_veg[k];
@@ -407,9 +461,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: Not enough arguments for CO2 Biomass Coefficient 1 in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: Not enough arguments"\
+									" for CO2 Biomass Coefficient 1 in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].co2_bio_coeff1 = help_veg[k];
@@ -420,9 +476,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: Not enough arguments for CO2 Biomass Coefficient 2 in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: Not enough arguments"\
+									" for CO2 Biomass Coefficient 2 in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].co2_bio_coeff2 = help_veg[k];
@@ -435,9 +493,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: Not enough arguments for CO2 WUE Coefficient 1 in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: Not enough arguments"\
+									" for CO2 WUE Coefficient 1 in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].co2_wue_coeff1 = help_veg[k];
@@ -448,9 +508,11 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 				x = sscanf(inbuf, "%f %f %f %f", &help_veg[SW_GRASS], &help_veg[SW_SHRUB],
 					&help_veg[SW_TREES], &help_veg[SW_FORBS]);
 				if (x < NVEGTYPES) {
-					snprintf(errstr, MAX_ERROR, "ERROR: Not enough arguments for CO2 WUE Coefficient 2 in %s\n", MyFileName);
 					CloseFile(&f, LogInfo);
-					LogError(LogInfo, LOGFATAL, errstr);
+					LogError(LogInfo, LOGERROR, "ERROR: Not enough arguments"\
+									" for CO2 WUE Coefficient 2 in %s\n",
+									MyFileName);
+                    return; // Exit function prematurely due to error
 				}
 				ForEachVegType(k) {
 					SW_VegProd->veg[k].co2_wue_coeff2 = help_veg[k];
@@ -467,9 +529,10 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 
 			x = sscanf(inbuf, "%f %f %f %f", &litt, &biom, &pctl, &laic);
 			if (x < NVEGTYPES) {
-				snprintf(errstr, MAX_ERROR, "ERROR: invalid record %d in %s\n", mon + 1, MyFileName);
 				CloseFile(&f, LogInfo);
-				LogError(LogInfo, LOGFATAL, errstr);
+				LogError(LogInfo, LOGERROR, "ERROR: invalid record %d in %s\n",
+								mon + 1, MyFileName);
+                return; // Exit function prematurely due to error
 			}
 			if (lineno > line_help + 12 * 3 && lineno <= line_help + 12 * 4) {
 				SW_VegProd->veg[SW_FORBS].litter[mon] = litt;
@@ -502,8 +565,9 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 	}
 
 	if (mon < Dec) {
-		snprintf(errstr, MAX_ERROR, "No Veg Production values after month %d", mon + 1);
-		LogError(LogInfo, LOGWARN, errstr);
+		LogError(LogInfo, LOGWARN, "No Veg Production"\
+						" values after month %d\n",
+						mon + 1);
 	}
 
   SW_VPD_fix_cover(SW_VegProd, LogInfo);
@@ -516,7 +580,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 
   @param[in,out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   \sideeffect
     - Adjusts `SW_VegProd->bare_cov.fCover` and `SW_VegProd->veg[k].cov.fCover`
@@ -542,16 +606,31 @@ void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo)
       "New coefficients are:", fraction_sum);
 
     SW_VegProd->bare_cov.fCover /= fraction_sum;
-    LogError(LogInfo, LOGNOTE, "Bare ground fraction = %.4f", SW_VegProd->bare_cov.fCover);
+    LogError(LogInfo, LOGWARN, "Bare ground fraction = %.4f", SW_VegProd->bare_cov.fCover);
 
     ForEachVegType(k) {
       SW_VegProd->veg[k].cov.fCover /= fraction_sum;
-      LogError(LogInfo, LOGNOTE, "%s fraction = %.4f",
+      LogError(LogInfo, LOGWARN, "%s fraction = %.4f",
         key2veg[k], SW_VegProd->veg[k].cov.fCover);
     }
-
-    LogError(LogInfo, LOGQUIET, "");
   }
+}
+
+/**
+ * @brief Initialize all possible pointers in SW_VEGPROD to NULL
+ *
+ * @param[in,out] SW_VegProd SW_VegProd SW_VegProd Struct of type SW_VEGPROD
+ * 		describing surface cover conditions in the simulation
+*/
+void SW_VPD_init_ptrs(SW_VEGPROD* SW_VegProd) {
+	OutPeriod pd;
+
+	// Initialize output structures:
+	ForEachOutPeriod(pd)
+	{
+		SW_VegProd->p_accu[pd] = NULL;
+		SW_VegProd->p_oagg[pd] = NULL;
+	}
 }
 
 /**
@@ -559,7 +638,7 @@ void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo)
 
 @param[out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_VPD_construct(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
 	/* =================================================== */
@@ -573,9 +652,17 @@ void SW_VPD_construct(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
 	{
 		SW_VegProd->p_accu[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
 			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()", LogInfo);
+
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 		if (pd > eSW_Day) {
 			SW_VegProd->p_oagg[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
 				sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()", LogInfo);
+
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 }
@@ -817,49 +904,27 @@ RealD sum_across_vegtypes(RealD x[][MAX_LAYERS], LyrIndex layerno)
 	observed in total vegetation
 @param[in] VegProd_bare_cov Bare-ground cover of plot that is not
 	occupied by vegetation
-@param[in] LogInfo Holds information dealing with logfile output
 */
-void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov,
-				   LOG_INFO* LogInfo) {
+void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
 	/* ================================================== */
 
-	char outstr[1500], errstr[MAX_ERROR];
 	int k;
 
-	snprintf(
-		errstr,
-		MAX_ERROR,
-		"\n==============================================\n"
-		"Vegetation Production Parameters\n\n"
-	);
-	strcpy(outstr, errstr);
-	LogError(LogInfo, LOGNOTE, outstr);
+	printf("\n==============================================\n"
+		   "Vegetation Production Parameters\n");
 
 	ForEachVegType(k) {
-		snprintf(
-			errstr,
-			MAX_ERROR,
-			"%s component\t= %1.2f\n"
-			"\tAlbedo\t= %1.2f\n"
-			"\tHydraulic redistribution flag\t= %d\n",
-			key2veg[k], VegProd_veg[k].cov.fCover,
-			VegProd_veg[k].cov.albedo,
-			VegProd_veg[k].flagHydraulicRedistribution
-		);
-		strcpy(outstr, errstr);
-		LogError(LogInfo, LOGNOTE, outstr);
+		printf("%s component\t= %1.2f\n"
+					"\tAlbedo\t= %1.2f\n"
+					"\tHydraulic redistribution flag\t= %d",
+					key2veg[k], VegProd_veg[k].cov.fCover,
+					VegProd_veg[k].cov.albedo,
+					VegProd_veg[k].flagHydraulicRedistribution);
 	}
 
-	snprintf(
-		errstr,
-		MAX_ERROR,
-		"Bare Ground component\t= %1.2f\n"
-		"\tAlbedo\t= %1.2f\n",
-		VegProd_bare_cov.fCover,
-		VegProd_bare_cov.albedo
-	);
-	strcpy(outstr, errstr);
-	LogError(LogInfo, LOGNOTE, outstr);
+	printf("Bare Ground component\t= %1.2f\n"
+		   "\tAlbedo\t= %1.2f\n",
+		   VegProd_bare_cov.fCover, VegProd_bare_cov.albedo);
 }
 
 
@@ -957,7 +1022,12 @@ void estimateVegetationFromClimate(SW_VEGPROD *SW_VegProd,
     }
 
     // Allocate climate structs' memory
-    allocateClimateStructs(numYears, &climateOutput, &climateAverages);
+    allocateClimateStructs(numYears, &climateOutput, &climateAverages, LogInfo);
+    if(LogInfo->stopRun) {
+        // Deallocate climate structs' memory before error
+        deallocateClimateStructs(&climateOutput, &climateAverages);
+        return; // Exit function prematurely due to error
+    }
 
     calcSiteClimate(Weather_hist, SW_Model->cum_monthdays,
 					SW_Model->days_in_month, numYears, startyr,
@@ -977,6 +1047,12 @@ void estimateVegetationFromClimate(SW_VEGPROD *SW_VegProd,
 				SumGrassesFraction, C4Variables, fillEmptyWithBareGround,
                 inNorthHem, warnExtrapolation, fixBareGround, grassOutput,
                 RelAbundanceL0, RelAbundanceL1, LogInfo);
+
+        if(LogInfo->stopRun) {
+            // Deallocate climate structs' memory before error
+            deallocateClimateStructs(&climateOutput, &climateAverages);
+            return; // Exit function prematurely due to error
+        }
 
         ForEachVegType(k) {
             SW_VegProd->veg[k].cov.fCover = RelAbundanceL1[k];
@@ -1036,7 +1112,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *SW_VegProd,
  0) Succulents, 1) Forbs, 2) C3, 3) C4, 4) annual grasses, 5) Shrubs, 6) Trees, 7) Bare ground
  @param[out] RelAbundanceL1 Array of size five holding all estimated values aside from grasses (not including sum of grasses).
  The elements are: 0) trees, 1) shrubs 2) sum of forbs and succulents 3) overall sum of grasses 4) bare ground
- @param[in] LogInfo Holds information dealing with logfile output
+ @param[in,out] LogInfo Holds information dealing with logfile output
 
  @note This function uses equations developed by
  Paruelo & Lauenroth (1996) @cite paruelo1996EA and,
@@ -1110,9 +1186,10 @@ void estimatePotNatVegComposition(double meanTemp_C,
 
         // Check if totalSumGrasses is less than zero
         if(totalSumGrasses < 0){
-            LogError(LogInfo, LOGFATAL, "'estimate_PotNatVeg_composition': "
+            LogError(LogInfo, LOGERROR, "'estimate_PotNatVeg_composition': "
                      "User defined grass values including C3, C4, and annuals "
                      "sum to more than user defined total grass cover.");
+            return; // Exit function prematurely due to error
         }
         // Find indices to estimate related to grass (i.e., C3, C4 and annual grasses)
         for(index = C3Index; index < grassAnn; index++) {
@@ -1157,7 +1234,10 @@ void estimatePotNatVegComposition(double meanTemp_C,
         }
     }
 
-    uniqueIndices(isetIndices, iFixed, 3, iFixedSize, iFixed, &iFixedSize);
+    uniqueIndices(isetIndices, iFixed, 3, iFixedSize, iFixed, &iFixedSize, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     // Set boolean value to true if grasses still need to be estimated
     if(!EQ(totalSumGrasses, 0.)) {
@@ -1165,9 +1245,10 @@ void estimatePotNatVegComposition(double meanTemp_C,
     }
 
     if(GT(initialVegSum, 1.)) {
-        LogError(LogInfo, LOGFATAL, "'estimate_PotNatVeg_composition': "
+        LogError(LogInfo, LOGERROR, "'estimate_PotNatVeg_composition': "
                  "User defined relative abundance values sum to more than "
                  "1 = full land cover.");
+        return; // Exit function prematurely due to error
     }
 
     // Check if number of elements to estimate is less than or equal to 1
@@ -1180,9 +1261,10 @@ void estimatePotNatVegComposition(double meanTemp_C,
                 // at index `bareGround`)
                 inputValues[bareGround] = 1 - (initialVegSum - estimCover[bareGround]);
             } else if(initialVegSum < 1) {
-                LogError(LogInfo, LOGFATAL, "'estimate_PotNatVeg_composition': "
+                LogError(LogInfo, LOGERROR, "'estimate_PotNatVeg_composition': "
                          "User defined relative abundance values are all fixed, "
                          "but their sum is smaller than 1 = full land cover.");
+                return; // Exit function prematurely due to error
             }
         } else if(overallEstimSize == 1) {
             estimCover[overallEstim[0]] = 1 - initialVegSum;
@@ -1343,7 +1425,12 @@ void estimatePotNatVegComposition(double meanTemp_C,
 
             if(fixSumGrasses) {
                 // Add grasses to `iFixed` array
-                uniqueIndices(iFixed, grassesEstim, iFixedSize, grassEstimSize, iFixed, &iFixedSize);
+                uniqueIndices(iFixed, grassesEstim, iFixedSize, grassEstimSize,
+							  iFixed, &iFixedSize, LogInfo);
+
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 
                 // Remove them from the `estimIndices` array
                 for(index = 0; index < overallEstimSize; index++) {
@@ -1399,12 +1486,13 @@ void estimatePotNatVegComposition(double meanTemp_C,
                             inputValues[bareGround] -= estimCover[index];
                         }
                     } else {
-                        LogError(LogInfo, LOGFATAL, "'estimate_PotNatVeg_composition': "
+                        LogError(LogInfo, LOGERROR, "'estimate_PotNatVeg_composition': "
                                     "The estimated vegetation cover values are 0, "
                                     "the user fixed relative abundance values sum to less than 1, "
                                     "and bare-ground is fixed. "
                                     "Thus, the function cannot compute "
                                     "complete land cover composition.");
+                        return; // Exit function prematurely due to error
                     }
                 }
             }
@@ -1477,17 +1565,24 @@ double cutZeroInf(double testValue) {
  @param[in] arrayTwoSize Size of second array
  @param[out] finalIndexArray Array of size finalIndexArraySize that holds all unique indices from both arrays
  @param[in,out] finalIndexArraySize Value holding the size of finalIndexArray both before and after the function is run
+ @param[in,out] LogInfo Holds information dealing with logfile output
  */
 
 void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTwoSize,
-                   int *finalIndexArray, int *finalIndexArraySize) {
+                   int *finalIndexArray, int *finalIndexArraySize, LOG_INFO* LogInfo) {
 
     int index, finalArrayIndex = 0, nTypes = 8,
     tempSize = arrayOneSize + arrayTwoSize + finalArrayIndex, tempIndex = 0;
     int *tempArray, *tempArraySeen;
 
-    tempArray = (int *)malloc(sizeof(int) * tempSize);
-    tempArraySeen = (int *)malloc(sizeof(int) * nTypes);
+    tempArray = (int *)Mem_Malloc(sizeof(int) * tempSize, "uniqueIndices()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    tempArraySeen = (int *)Mem_Malloc(sizeof(int) * nTypes, "uniqueIndices()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     memset(tempArray, 0, sizeof(int) * tempSize);
     memset(tempArraySeen, 0, sizeof(int) * nTypes);

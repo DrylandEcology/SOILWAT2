@@ -47,10 +47,6 @@
 /* --------------------------------------------------- */
 
 /************  Main() ************************/
-/**
-@brief Provides a way to inform the user that something was logged, can be changed by code
- 			(eg. init file) but must be set before sw_init_args().  See generic.h
-*/
 int main(int argc, char **argv) {
 	/* =================================================== */
 	SW_ALL sw;
@@ -58,31 +54,45 @@ int main(int argc, char **argv) {
 	SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
 	LOG_INFO LogInfo;
 	PATH_INFO PathInfo;
-	Bool EchoInits, QuietMode;
+	Bool EchoInits;
 
-	LogInfo.logged = swFALSE;
-	LogInfo.logfp = stdout;
+	sw_init_logs(stdout, &LogInfo);
+	SW_CTL_init_ptrs(&sw, PathInfo.InFiles);
 
-	sw_init_args(argc, argv, &QuietMode, &EchoInits, &PathInfo.InFiles[eFirst],
-				 &LogInfo);
+	sw_init_args(argc, argv, &EchoInits, &PathInfo.InFiles[eFirst],  &LogInfo);
+    if(LogInfo.stopRun) {
+        goto finishProgram;
+    }
 
 	// Print version if not in quiet mode
-	if (!QuietMode) {
+	if (!LogInfo.QuietMode) {
 		sw_print_version();
 	}
 
   // setup and construct model (independent of inputs)
 	SW_CTL_setup_model(&sw, SW_OutputPtrs, &PathInfo, &LogInfo);
+    if(LogInfo.stopRun) {
+        goto finishProgram;
+    }
 
 	// read user inputs
 	SW_CTL_read_inputs_from_disk(&sw, &SW_Domain, &PathInfo, &LogInfo);
+    if(LogInfo.stopRun) {
+        goto finishProgram;
+    }
 
 	// finalize daily weather
 	SW_WTH_finalize_all_weather(&sw.Markov, &sw.Weather, sw.Model.cum_monthdays,
 								sw.Model.days_in_month, &LogInfo);
+    if(LogInfo.stopRun) {
+        goto finishProgram;
+    }
 
 	// initialize simulation run (based on user inputs)
 	SW_CTL_init_run(&sw, &LogInfo);
+    if(LogInfo.stopRun) {
+        goto finishProgram;
+    }
 
   // initialize output
 	SW_OUT_set_ncol(sw.Site.n_layers, sw.Site.n_evap_lyrs, sw.VegEstab.count,
@@ -90,24 +100,34 @@ int main(int argc, char **argv) {
 	SW_OUT_set_colnames(sw.Site.n_layers, sw.VegEstab.parms,
 						sw.GenOutput.ncol_OUT, sw.GenOutput.colnames_OUT,
 						&LogInfo);
+    if(LogInfo.stopRun) {
+        goto finishProgram;
+    }
 	SW_OUT_create_files(&sw.FileStatus, sw.Output, sw.Site.n_layers,
 	                    PathInfo.InFiles, &sw.GenOutput, &LogInfo); // only used with SOILWAT2
+    if(LogInfo.stopRun) {
+        goto closeFiles;
+    }
 
 	if(EchoInits) {
-		_echo_all_inputs(&sw, &LogInfo);
+		_echo_all_inputs(&sw);
 	}
 
   // run simulation: loop through each year
 	SW_CTL_main(&sw, SW_OutputPtrs, &LogInfo);
 
-  // finish-up output
-	SW_OUT_close_files(&sw.FileStatus, &sw.GenOutput, &LogInfo); // not used with rSOILWAT2
+    closeFiles: {
+        // finish-up output
+        SW_OUT_close_files(&sw.FileStatus, &sw.GenOutput, &LogInfo); // not used with rSOILWAT2
+    }
 
-	// de-allocate all memory
-	SW_CTL_clear_model(swTRUE, &sw, &PathInfo);
+    finishProgram: {
+        // de-allocate all memory
+        SW_CTL_clear_model(swTRUE, &sw, &PathInfo);
 
-	// Mention to the user if something was logged
-	sw_check_log(QuietMode, &LogInfo);
+        sw_write_warnings(&LogInfo);
+        sw_fail_on_error(&LogInfo);
+    }
 
 	return 0;
 }

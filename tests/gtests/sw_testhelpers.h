@@ -3,6 +3,10 @@
 #include "include/SW_datastructs.h"
 #include "include/SW_Defines.h"
 #include "include/SW_Control.h"
+#include "include/SW_Main_lib.h"
+#include "include/SW_Files.h"
+#include "include/myMemory.h"
+#include "include/SW_Weather.h"
 
 
 
@@ -24,20 +28,10 @@ static const double
 
 /* Functions for tests */
 
-void silent_tests(LOG_INFO* LogInfo);
-
 void create_test_soillayers(unsigned int nlayers,
       SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo);
 
 void setup_SW_Site_for_tests(SW_SITE *SW_Site);
-
-void setup_AllTest_for_tests(
-  SW_ALL *SW_All,
-  SW_DOMAIN *SW_Domain,
-  PATH_INFO *PathInfo,
-  LOG_INFO *LogInfo,
-  SW_OUTPUT_POINTERS *SW_OutputPtrs
-);
 
 
 /* AllTestFixture is our base test fixture class inheriting from `::testing::Test` */
@@ -57,9 +51,40 @@ class AllTestFixture : public ::testing::Test {
     LOG_INFO LogInfo;
     SW_OUTPUT_POINTERS SW_OutputPtrs;
 
+    // `memcpy()` does not work for copying an initialized `SW_ALL`
+    // because it does not copy dynamically allocated memory to which
+    // members of `SW_ALL` point to
     void SetUp() override {
-      setup_AllTest_for_tests(&SW_All, &SW_Domain, &PathInfo,
-                              &LogInfo, &SW_OutputPtrs);
+
+        // Initialize SOILWAT2 variables and read values from example input file
+        sw_init_logs(NULL, &LogInfo);
+
+        SW_CTL_init_ptrs(&SW_All, PathInfo.InFiles);
+
+        PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
+
+        SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+        SW_CTL_read_inputs_from_disk(&SW_All, &SW_Domain, &PathInfo, &LogInfo);
+
+        /* Notes on messages during tests
+            - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
+            "example/Output/logfile.log" to disk (based on content of "files.in")
+            - we close "Output/logfile.log"
+            - we set `logfp` to NULL to silence all non-error messages during tests
+            - error messages go directly to stderr (which DeathTests use to match against)
+        */
+        sw_fail_on_error(&LogInfo);
+        sw_init_logs(NULL, &LogInfo);
+
+        SW_WTH_finalize_all_weather(
+            &SW_All.Markov,
+            &SW_All.Weather,
+            SW_All.Model.cum_monthdays,
+            SW_All.Model.days_in_month,
+            &LogInfo
+        );
+
+        SW_CTL_init_run(&SW_All, &LogInfo);
     }
 
     void TearDown() override {
@@ -79,46 +104,3 @@ using VegProdFixtureTest = AllTestFixture;
 using WeatherFixtureTest = AllTestFixture;
 
 using WaterBalanceFixtureTest = AllTestFixture;
-
-
-
-/* AllTestStruct is like AllTestFixture but does not inherit from `::testing::Test` */
-
-/* Note: Use class `AllTestStruct` for thread-safe death tests inside the
-   assertion itself -- otherwise, multiple instances will be created
-   see https://google.github.io/googletest/reference/assertions.html#death
-
-   Example code that avoids the creation of multiple instances:
-   ```
-   TEST(SomeDeathTest, TestName) {
-       ...; // code here will be run twice
-
-       EXPECT_DEATH_IF_SUPPORTED({
-               // code inside `EXPECT_DEATH` is run once
-               AllTestStruct sw = AllTestStruct();
-               ...
-               function_that_should_fail(...);
-           },
-           "Expected failure message."
-       )
-   }
-   ```
-*/
-class AllTestStruct {
-  public:
-
-    SW_ALL SW_All;
-    SW_DOMAIN SW_Domain;
-    PATH_INFO PathInfo;
-    LOG_INFO LogInfo;
-    SW_OUTPUT_POINTERS SW_OutputPtrs;
-
-    AllTestStruct() {
-      setup_AllTest_for_tests(&SW_All, &SW_Domain, &PathInfo,
-                              &LogInfo, &SW_OutputPtrs);
-    }
-
-    ~AllTestStruct() {
-      SW_CTL_clear_model(swTRUE, &SW_All, &PathInfo);
-    }
-};

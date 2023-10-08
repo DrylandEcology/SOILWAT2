@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include "gmock/gmock.h"
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -37,12 +37,13 @@
 #include "include/SW_Markov.h"
 #include "include/SW_Sky.h"
 #include "external/pcg/pcg_basic.h"
+#include "include/SW_Main_lib.h"
 
 #include "include/SW_Flow_lib_PET.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
-
+using ::testing::StrEq;
 
 namespace
 {
@@ -167,6 +168,9 @@ namespace
 
     SW_ATMD SW_AtmDemand;
 
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+
     int
       k, k2, ilat, itime, isl, iasp,
       doys[14] =
@@ -233,11 +237,11 @@ namespace
                   break;
 
                 default:
-                  sw_error(
-                    -1,
-                    "Error in SW2_SolarPosition_Test__hourangles_symmetries"
-                  );
+                  LogError(&LogInfo, LOGERROR,
+                           "Error in SW2_SolarPosition_Test__hourangles_symmetries");
               }
+
+              EXPECT_THAT(LogInfo.errorMsg, StrEq(""));
 
               SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
 
@@ -721,7 +725,7 @@ namespace
     SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     unsigned int k;
 
@@ -921,7 +925,7 @@ namespace
     SW_ATMD SW_AtmDemand;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
 
     int i;
@@ -1211,7 +1215,7 @@ namespace
     SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
 
     int doy, k1, k2, k3, k4, k5;

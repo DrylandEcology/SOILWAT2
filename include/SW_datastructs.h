@@ -736,9 +736,15 @@ typedef struct {
 	FILE *logfp;
 	// This is the pointer to the log file.
 
-	Bool logged;
-	// Indicates logfile written to via LogError.
+	char errorMsg[MAX_LOG_SIZE],              // Holds the message for a fatal error
+		 warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning messages to report
 
+	int numWarnings;        // Number of total warnings thrown
+
+	Bool stopRun;           // Specifies if an error has occurred and
+                            // the program needs to stop early (backtrack)
+
+  Bool QuietMode; /**< Don't print version, error message, or notify user about logfile (only used by SOILWAT2) */
 } LOG_INFO;
 
 typedef struct {

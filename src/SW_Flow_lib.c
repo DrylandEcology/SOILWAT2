@@ -325,7 +325,7 @@ void infiltrate_water_high(double swc[], double drain[], double *drainout, doubl
         to represent shallow, mid, & deep depths to compute transpiration rate.
 @param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param[in] VegType Current vegetation
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @sideeffect *swp_avg Weighted average of soilwater potential and transpiration coefficients (-bar).
 
@@ -368,6 +368,11 @@ void transp_weighted_avg(double *swp_avg, SW_SITE *SW_Site,
 			if (tr_regions[i] == r) {
 				swp += SW_Site->transp_coeff[VegType][i] *
 								SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
+
 				sumco += SW_Site->transp_coeff[VegType][i];
 			}
 		}
@@ -436,7 +441,7 @@ Based on equations from Parton 1978. @cite Parton1978
 @param[in] Es_param_limit Parameter to determine when soil surface is completely covered with
     litter and that bare soil evaporation is inhibited.
 @param[out] *bserate Bare soil evaporation loss rate (cm/day).
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @sideeffect *bserate Updated bare soil evaporation loss rate (cm/day).
 
@@ -481,6 +486,9 @@ void pot_soil_evap(SW_SITE *SW_Site, unsigned int nelyrs, double totagb,
 		x = SW_Site->width[i] * SW_Site->evap_coeff[i];
 		sumwidth += x;
 		avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 
   // Note: avswp = 0 if swc = 0 because that is the return value of SW_SWRC_SWCtoSWP
@@ -515,7 +523,7 @@ Based on equations from Parton 1978. @cite Parton1978
 @param[in] inflec Y-value of the inflection point.
 @param[in] range Max y-value - min y-value at the limits.
 @param[in] swc Soilwater content in each layer before drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 */
 
@@ -541,6 +549,9 @@ void pot_soil_evap_bs(double *bserate, SW_SITE *SW_Site,
 		x = SW_Site->width[i] * SW_Site->evap_coeff[i];
 		sumwidth += x;
 		avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 
 	avswp /= sumwidth;
@@ -722,7 +733,7 @@ added to input value (mm/day).
 @param[in] rate Removal rate, either soil_evap_rate or soil_transp_rate.
 @param[in] swcmin Lower limit on soilwater content per layer.
 @param[in] lyrFrozen Frozen information at each layer.
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @note The variable `SW_Site` is only used as input for another function.
 	  It will not affect other elements passed in from it.
@@ -753,6 +764,10 @@ void remove_from_soil(double swc[], double qty[], SW_SITE *SW_Site,
 
 	for (i = 0; i < nlyrs; i++) {
 		tmpswp = SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
 		if (GT(tmpswp, 0.)) {
 			swpfrac[i] = coeff[i] / tmpswp;
 		} else {
@@ -930,7 +945,7 @@ void percolate_unsaturated( double swc[], double percolate[],
 	@param[in] scale Fraction of vegetation type to scale hydred.
 	@param[in] year Current year in simulation
 	@param[in] doy  Day of the year (base1) [1-366]
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	@sideeffect
 		- swc Updated soilwater content in each layer after drainage (m<SUP>3</SUP> H<SUB>2</SUB>O).
@@ -992,6 +1007,9 @@ void hydraulic_redistribution(
 		);
 
 		swp[i] = SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 		/* Ryel et al. 2002: eq. 7 relative soil-root conductance */
 		relCondroot[i] = fmin(
@@ -1146,11 +1164,12 @@ void hydraulic_redistribution(
 
 	if (is_hd_adj) {
 		LogError(
-			LogInfo, LOGFATAL,
+			LogInfo, LOGERROR,
 			"[%d-%d/veg(%d)]: "
 			"hydraulic redistribution failed to constrain to swc_min.",
 			year, doy, vegk
 		);
+        return; // Exit function prematurely due to error
 	}
 
 
@@ -1431,7 +1450,7 @@ void SW_ST_init_run(ST_RGR_VALUES* StRegValues) {
 	@param[out] surfaceAvg Initialized surface temperature (&deg;C).
 	@param[out] avgLyrTemp Initialized soil temperature of the soil layer profile (&deg;C).
 	@param[out] lyrFrozen Frozen information at each soil layer.
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_ST_setup_run(
 	ST_RGR_VALUES* SW_StRegValues,
@@ -1483,6 +1502,9 @@ void SW_ST_setup_run(
 			soil_temp_init,
 			LogInfo
 		);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 		/* Initialize soil temperature and frozen status across the soil layer profile. */
 		ForEachSoilLayer(i, SW_Site->n_layers) {
@@ -1524,7 +1546,7 @@ void SW_ST_setup_run(
 @param[in,out] ptr_stError Booleans status of soil temperature error in *ptr_stError.
 @param[out] soil_temp_init Flag specifying if the values for
 	`soil_temperature()` have been initialized
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 
 void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
@@ -1559,11 +1581,11 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 			(*ptr_stError) = swTRUE;
 
 			// if the error hasn't been reported yet... print an error to the logfile
-			LogError(LogInfo, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: "\
+			LogError(LogInfo, LOGERROR, "SOIL_TEMP FUNCTION ERROR: "\
 				"too many (n = %d) regression layers requested... "\
 				"soil temperature will NOT be calculated\n", nRgr);
 		}
-		return; // exits the function
+        return; // Exit function prematurely due to error
 	}
 
 
@@ -1605,8 +1627,8 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 			(*ptr_stError) = swTRUE;
 
 			// if the error hasn't been reported yet... print an error to the logfile
-        LogError(LogInfo, LOGFATAL, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, SW_StRegValues->depths[nlyrs - 1]);
-
+        LogError(LogInfo, LOGERROR, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, SW_StRegValues->depths[nlyrs - 1]);
+            return; // Exit function prematurely due to error
 		}
 
 		return; // exits the function
@@ -2179,7 +2201,7 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param[out] maxLyrTemperature An array holding all of the layers maximum temperature (&deg;C)
 @param[out] minLyrTemperature An array holding all of the layers minimum temperature (&deg;C)
 @param[out] *ptr_stError Boolean indicating whether there was an error.
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 
 void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
@@ -2227,9 +2249,11 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 
 		LogError(
 			LogInfo,
-			LOGFATAL,
+			LOGERROR,
 			"SOILWAT2 ERROR soil temperature module was not initialized.\n"
 		);
+
+        return; // Exit function prematurely due to error
 	}
 
 	// calculating min/mean/max surface temperature
@@ -2310,7 +2334,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 		}
 		#endif
 
-		return;
+		return; // Exit function prematurely due to error
 	}
 
 
@@ -2424,7 +2448,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 
 	#ifdef SWDEBUG
 	if (debug) {
-		sw_error(0, "Stop at end of soil temperature calculations.\n");
+		LogError(LogInfo, LOGERROR, "Stop at end of soil temperature calculations.\n");
 	}
 	#endif
 }

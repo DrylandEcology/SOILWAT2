@@ -224,6 +224,10 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 			sw->SoilWat.lyrFrozen,
 			LogInfo
 		);
+
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 
 
@@ -251,6 +255,9 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 		&sw->SoilWat.H_gh,
 		LogInfo
 	);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	sw->SoilWat.pet = sw->Site.pet_scale * petfunc(
 		sw->SoilWat.H_gt,
@@ -262,6 +269,9 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
         sw->Weather.now.cloudCover,
 		LogInfo
 	);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 
 	/* snowdepth scaling */
@@ -413,6 +423,10 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 			sw->Site.n_evap_lyrs, sw->SoilWat.pet,
 			sw->Site.evap.xinflec, sw->Site.evap.slope, sw->Site.evap.yinflec,
 			sw->Site.evap.range, sw->SoilWat.swcBulk[Today], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
 		soil_evap_rate_bs *= sw->VegProd.bare_cov.fCover;
 
 	} else {
@@ -436,6 +450,9 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 					sw->Site.evap.range, sw->SoilWat.swcBulk[Today],
 					sw->VegProd.veg[k].Es_param_limit,
 					&soil_evap_rate[k], LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 
 				soil_evap_rate[k] *= sw->VegProd.veg[k].cov.fCover;
 
@@ -447,6 +464,9 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 				sw->Site.n_transp_rgn, sw->Site.n_transp_lyrs[k],
 				sw->Site.my_transp_rgn[k], sw->SoilWat.swcBulk[Today],
 				k, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			pot_transp(&transp_rate[k], swpot_avg[k],
 				sw->VegProd.veg[k].biolive_daily[doy], sw->VegProd.veg[k].biodead_daily[doy],
@@ -534,6 +554,10 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 			&sw->Site, &sw->SoilWat.aet, sw->Site.n_evap_lyrs, sw->Site.evap_coeff,
 			soil_evap_rate_bs, sw->Site.swcBulk_halfwiltpt, sw->SoilWat.lyrFrozen,
 			LogInfo);
+
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 	}
 
 	#ifdef SWDEBUG
@@ -564,6 +588,9 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 				sw->Site.evap_coeff, soil_evap_rate[k],
 				sw->Site.swcBulk_halfwiltpt, sw->SoilWat.lyrFrozen,
 				LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			/* remove transp from swc */
 			remove_from_soil(sw->SoilWat.swcBulk[Today], sw->SoilWat.transpiration[k],
@@ -571,6 +598,9 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 				sw->Site.transp_coeff[k], transp_rate[k],
 				sw->Site.swcBulk_atSWPcrit[k], sw->SoilWat.lyrFrozen,
 				LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 
@@ -618,6 +648,9 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 				sw->Model.doy,
 				LogInfo
 			);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 		} else {
 			/* Set daily array to zero */
@@ -716,6 +749,10 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 			sw->Weather.now.temp_min, sw->SoilWat.H_gt, sw->Model.year,
 			sw->Model.doy, sw->SoilWat.maxLyrTemperature,
 			sw->SoilWat.minLyrTemperature, &sw->SoilWat.soiltempError, LogInfo);
+
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 	}
 
 	/* Soil Temperature ends here */

@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -19,8 +19,11 @@
 #include "include/filefuncs.h"
 #include "include/rands.h"
 #include "external/pcg/pcg_basic.h"
+#include "include/SW_Main_lib.h"
 
 #include "tests/gtests/sw_testhelpers.h"
+
+using ::testing::HasSubstr;
 
 
 namespace {
@@ -240,12 +243,16 @@ namespace {
 
   // This tests the beta random number generator
   TEST(RNGTest, RNGBetaZeroToOneOutput) {
+
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+
     pcg32_random_t ZeroToOne_rng;
     RandSeed(0u, 0u, &ZeroToOne_rng);
-    EXPECT_LT(RandBeta(0.5, 2, &ZeroToOne_rng), 1);
-    EXPECT_LT(RandBeta(1, 3, &ZeroToOne_rng), 1);
-    EXPECT_GT(RandBeta(1, 4, &ZeroToOne_rng), 0);
-    EXPECT_GT(RandBeta(0.25, 1, &ZeroToOne_rng), 0);
+    EXPECT_LT(RandBeta(0.5, 2, &ZeroToOne_rng, &LogInfo), 1);
+    EXPECT_LT(RandBeta(1, 3, &ZeroToOne_rng, &LogInfo), 1);
+    EXPECT_GT(RandBeta(1, 4, &ZeroToOne_rng, &LogInfo), 0);
+    EXPECT_GT(RandBeta(0.25, 1, &ZeroToOne_rng, &LogInfo), 0);
 
 
     pcg32_random_t rng71, rng71b, rng11, rng12;
@@ -264,19 +271,19 @@ namespace {
 
     for (i = 0; i < n; i++) {
       // Produce random numbers and check that within bounds of [min, max]
-      x71 = RandBeta(a, b, &rng71);
+      x71 = RandBeta(a, b, &rng71, &LogInfo);
       EXPECT_GE(x71, min);
       EXPECT_LE(x71, max);
 
-      x71b = RandBeta(a, b, &rng71b);
+      x71b = RandBeta(a, b, &rng71b, &LogInfo);
       EXPECT_GE(x71b, min);
       EXPECT_LE(x71b, max);
 
-      x11 = RandBeta(a, b, &rng11);
+      x11 = RandBeta(a, b, &rng11, &LogInfo);
       EXPECT_GE(x11, min);
       EXPECT_LE(x11, max);
 
-      x12 = RandBeta(a, b, &rng12);
+      x12 = RandBeta(a, b, &rng12, &LogInfo);
       EXPECT_GE(x12, min);
       EXPECT_LE(x12, max);
 
@@ -291,12 +298,21 @@ namespace {
     }
   }
 
-  TEST(RNGDeathTest, RNGBetaErrorsDeathTest) {
+  TEST(RNGTest, RNGBetaErrorsDeathTest) {
+
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+
     pcg32_random_t error_rng;
     RandSeed(0u, 0u, &error_rng);
-    EXPECT_DEATH_IF_SUPPORTED(RandBeta(-0.5, 2, &error_rng), "AA <= 0.0");
-    EXPECT_DEATH_IF_SUPPORTED(RandBeta(1, -3, &error_rng), "BB <= 0.0");
-    EXPECT_DEATH_IF_SUPPORTED(RandBeta(-1, -3, &error_rng), "AA <= 0.0");
+    RandBeta(-0.5, 2, &error_rng, &LogInfo);
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("AA <= 0.0"));
+
+    RandBeta(1, -3, &error_rng, &LogInfo);
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("BB <= 0.0"));
+
+    RandBeta(-1, -3, &error_rng, &LogInfo);
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("AA <= 0.0"));
   }
 
 } // namespace

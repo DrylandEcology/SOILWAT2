@@ -132,12 +132,8 @@ typedef unsigned char byte;
 
 
 /* constants for LogError() mode */
-#define LOGQUIET  0x00
-#define LOGNOTE  0x01
 #define LOGWARN  0x02
 #define LOGERROR 0x04
-#define LOGEXIT  0x08
-#define LOGFATAL 0x0c  /* LOGEXIT | LOGERROR */
 #define MAX_ERROR 4096
 
 
@@ -216,11 +212,6 @@ extern errstr[];
 #define LogError(fp, m, fmt, p1, p2, p3, p4, p5, p6, p7, p8, p9) \
           snprintf(errstr, MAX_ERROR, fmt, p1, p2, p3, p4, p5, p6, p7, p8, p9); \
           LogError(fp, m, errstr);
-#endif
-
-#ifndef strdup
-  char * sw_strdup(const char * s);
-  #define strdup(x) sw_strdup(x)
 #endif
 
 

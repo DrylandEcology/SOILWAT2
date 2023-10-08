@@ -88,6 +88,7 @@ dir_test := tests/gtests
 # directories that contain submodules
 dir_pcg := external/pcg
 dir_gtest := external/googletest/googletest
+dir_gmock := external/googletest/googlemock
 
 # output directory for executables, shared objects, libraries
 dir_bin := bin
@@ -108,7 +109,9 @@ lib_test := $(dir_build_test)/lib$(target_test).a
 bin_test := $(dir_bin)/sw_test
 
 gtest := gtest
+gmock := gmock
 lib_gtest := $(dir_build_test)/lib$(gtest).a
+lib_gmock := $(dir_build_test)/lib$(gmock).a
 
 
 
@@ -121,7 +124,7 @@ lib_gtest := $(dir_build_test)/lib$(gtest).a
 
 #------ STANDARDS
 # googletest requires c++14 and POSIX API
-# cygwin does not enable POSIX API by default (e.g., `strdup()` is missing)
+# cygwin does not enable POSIX API by default
 # --> enable by defining `_POSIX_C_SOURCE=200809L`
 #     (or `-std=gnu++11` or `_GNU_SOURCE`)
 # see https://github.com/google/googletest/issues/813 and
@@ -197,6 +200,7 @@ sw_LDLIBS := $(LDLIBS) -lm
 target_LDLIBS := -l$(target) $(sw_LDLIBS)
 test_LDLIBS := -l$(target_test) $(sw_LDLIBS)
 gtest_LDLIBS := -l$(gtest)
+gmock_LDLIBS := -l$(gmock)
 
 
 #------ CODE FILES
@@ -267,6 +271,9 @@ objects_test_pcg := $(sources_pcg:$(dir_pcg)/%.c=$(dir_build_test)/%.o)
 GTEST_SRCS_ := $(dir_gtest)/src/*.cc $(dir_gtest)/src/*.h $(GTEST_HEADERS)
 GTEST_HEADERS := $(dir_gtest)/include/gtest/*.h $(dir_gtest)/include/gtest/internal/*.h
 
+GMOCK_SRCS_ := $(dir_gmock)/src/*.cc $(GMOCK_HEADERS)
+GMOCK_HEADERS := $(dir_gmock)/include/gmock/*.h $(dir_gmock)/include/gmock/internal/*.h $(GTEST_HEADERS)
+
 
 
 #------ TARGETS
@@ -294,11 +301,12 @@ $(bin_sw2) : $(lib_sw2) $(objects_bin) | $(dir_bin)
 $(lib_test) : $(objects_lib_test) $(objects_test_pcg) | $(dir_build_test)
 		$(AR) -rcs $(lib_test) $(objects_lib_test) $(objects_test_pcg)
 
-$(bin_test) : $(lib_gtest) $(lib_test) $(objects_test) | $(dir_bin)
+$(bin_test) : $(lib_gtest) $(lib_gmock) $(lib_test) $(objects_test) | $(dir_bin)
 		$(CXX) $(gtest_flags) $(debug_flags) $(warning_flags) \
 		$(instr_flags) $(set_std++_tests) \
-		-isystem ${dir_gtest}/include -pthread \
-		$(objects_test) $(sw_LDFLAGS_test) $(gtest_LDLIBS) $(test_LDLIBS) -o $(bin_test)
+		-isystem ${dir_gtest}/include \
+                -isystem ${dir_gmock}/include -pthread \
+		$(objects_test) $(sw_LDFLAGS_test) $(gtest_LDLIBS) $(gmock_LDLIBS) $(test_LDLIBS) -o $(bin_test)
 
 # GoogleTest library
 # based on section 'Generic Build Instructions' at
@@ -308,9 +316,18 @@ $(bin_test) : $(lib_gtest) $(lib_test) $(objects_test) | $(dir_bin)
 $(lib_gtest) : | $(dir_build_test)
 		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(set_std++_tests) \
 		-isystem ${dir_gtest}/include -I${dir_gtest} \
+                -isystem ${dir_gmock}/include -I${dir_gmock} \
 		-pthread -c ${dir_gtest}/src/gtest-all.cc -o $(dir_build_test)/gtest-all.o
 
 		$(AR) -r $(lib_gtest) $(dir_build_test)/gtest-all.o
+
+$(lib_gmock) : | $(dir_build_test)
+		 $(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(set_std++_tests) \
+		 -isystem ${dir_gtest}/include -I${dir_gtest} \
+                 -isystem ${dir_gmock}/include -I${dir_gmock} \
+		 -pthread -c ${dir_gmock}/src/gmock-all.cc -o $(dir_build_test)/gmock-all.o
+
+		 $(AR) -r $(lib_gmock) $(dir_build_test)/gmock-all.o
 
 
 #--- Compile source files for library and executable
@@ -329,7 +346,9 @@ $(dir_build_test)/%.o: $(dir_pcg)/%.c | $(dir_build_test)
 		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -c $< -o $@
 
 $(dir_build_test)/%.o: $(dir_test)/%.cc | $(dir_build_test)
-		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -isystem ${dir_gtest}/include -pthread -c $< -o $@
+		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) \
+                -isystem ${dir_gmock}/include \
+                -isystem ${dir_gtest}/include -pthread -c $< -o $@
 
 
 #--- Create directories

@@ -40,7 +40,7 @@ float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rn
 double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng);
 void RandUniList(long count, long first, long last, RandListType list[],
                  pcg32_random_t* pcg_rng, LOG_INFO* LogInfo);
-float RandBeta(float aa, float bb, pcg32_random_t* pcg_rng);
+float RandBeta(float aa, float bb, pcg32_random_t* pcg_rng, LOG_INFO* LogInfo);
 
 
 #ifdef __cplusplus

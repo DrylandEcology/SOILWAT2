@@ -50,7 +50,7 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         switch(keyID) {
             case 0: // Domain type
                 if(strcmp(value, "xy") != 0 && strcmp(value, "s") != 0) {
-                    LogError(LogInfo, LOGFATAL, "%s: Incorrect domain type %s."\
+                    LogError(LogInfo, LOGERROR, "%s: Incorrect domain type %s."\
                              " Please select from \"xy\" and \"s\".",
                              MyFileName, value);
                 }
@@ -70,7 +70,7 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
                 if (y < 0) {
                     CloseFile(&f, LogInfo);
-                    LogError(LogInfo, LOGFATAL,
+                    LogError(LogInfo, LOGERROR,
                              "%s: Negative start year (%d)", MyFileName, y);
                 }
                 SW_Domain->startyr = yearto4digit((TimeInt) y);
@@ -80,7 +80,7 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
                 if (y < 0) {
                     CloseFile(&f, LogInfo);
-                    LogError(LogInfo, LOGFATAL,
+                    LogError(LogInfo, LOGERROR,
                              "%s: Negative ending year (%d)", MyFileName, y);
                 }
                 SW_Domain->endyr = yearto4digit((TimeInt) y);
@@ -104,7 +104,7 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
 	if (SW_Domain->endyr < SW_Domain->startyr) {
 		CloseFile(&f, LogInfo);
-        LogError(LogInfo, LOGFATAL, "%s: Start Year > End Year", MyFileName);
+        LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
 	}
 
     // Check if start day of year was not found

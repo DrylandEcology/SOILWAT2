@@ -35,6 +35,7 @@
 #include "include/SW_Markov.h"
 #include "include/SW_Sky.h"
 #include "external/pcg/pcg_basic.h"
+#include "include/SW_Main_lib.h"
 
 #include "include/SW_Flow_lib.h"
 
@@ -351,7 +352,7 @@ namespace
     unsigned int k;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     SW_SITE SW_Site;
     setup_SW_Site_for_tests(&SW_Site);
@@ -458,7 +459,7 @@ namespace
     unsigned int k;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     SW_SITE SW_Site;
     setup_SW_Site_for_tests(&SW_Site);
@@ -555,7 +556,7 @@ namespace
     unsigned int k;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     SW_SITE SW_Site;
     setup_SW_Site_for_tests(&SW_Site);
@@ -733,7 +734,7 @@ namespace
     unsigned int k;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     SW_SITE SW_Site;
     setup_SW_Site_for_tests(&SW_Site);
@@ -912,7 +913,7 @@ namespace
     unsigned int k;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     SW_SITE SW_Site;
     setup_SW_Site_for_tests(&SW_Site);
@@ -1138,7 +1139,7 @@ namespace
     unsigned int k;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     SW_SITE SW_Site;
     setup_SW_Site_for_tests(&SW_Site);

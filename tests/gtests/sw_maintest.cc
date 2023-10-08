@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
 
   //--- Setup unit tests
   ::testing::InitGoogleTest(&argc, argv);
+  ::testing::InitGoogleMock(&argc, argv);
 
   // Set death tests to be "threadsafe" instead of "fast", i.e.,
   // "re-executes the binary to cause just the single death test under consideration to be run"

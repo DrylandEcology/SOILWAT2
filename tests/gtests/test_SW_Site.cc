@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -34,10 +34,11 @@
 #include "include/SW_Weather.h"
 #include "include/SW_Markov.h"
 #include "include/SW_Sky.h"
+#include "include/SW_Main_lib.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
-
+using ::testing::HasSubstr;
 
 namespace {
   // List SWRC: PTFs
@@ -67,7 +68,7 @@ namespace {
   // Test pedotransfer functions
   TEST(SiteTest, SitePTFs) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // inputs
     RealD
@@ -127,9 +128,9 @@ namespace {
 
 
   // Test fatal failures of PTF estimation
-  TEST(SiteDeathTest, SitePTFsDeathTest) {
+  TEST(SiteTest, SitePTFsDeathTest) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
 
     RealD
@@ -144,18 +145,19 @@ namespace {
     //--- Test unimplemented PTF
     ptf_type = N_PTFs + 1;
 
-    EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_PTF_estimate_parameters(
-        ptf_type,
-        swrcp,
-        sand,
-        clay,
-        gravel,
-        bdensity,
-        &LogInfo
-      ),
-      "PTF is not implemented in SOILWAT2"
+    SWRC_PTF_estimate_parameters(
+      ptf_type,
+      swrcp,
+      sand,
+      clay,
+      gravel,
+      bdensity,
+      &LogInfo
     );
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("PTF is not implemented in SOILWAT2"));
+
   }
 
 
@@ -237,9 +239,9 @@ namespace {
 
 
   // Test fatal failures of SWRC parameter checks
-  TEST(SiteDeathTest, SiteSWRCpChecksDeathTest) {
+  TEST(SiteTest, SiteSWRCpChecksDeathTest) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
@@ -249,17 +251,17 @@ namespace {
     //--- Test unimplemented SWRC
     swrc_type = N_SWRCs + 1;
 
-    EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_check_parameters(swrc_type, swrcp, &LogInfo),
-      "is not implemented"
-    );
+    SWRC_check_parameters(swrc_type, swrcp, &LogInfo);
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is not implemented"));
   }
 
 
   // Test nonfatal failures of SWRC parameter checks
   TEST(SiteTest, SiteSWRCpChecks) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // inputs
     RealD
@@ -399,7 +401,7 @@ namespace {
   // Test 'PTF_RawlsBrakensiek1985'
   TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     //declare mock INPUTS
     double
@@ -454,32 +456,30 @@ namespace {
 
 
   // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST(SiteStructDeathTest, SiteSoilEvaporationParametersDeathTest) {
+  TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
-    EXPECT_DEATH_IF_SUPPORTED({
-        AllTestStruct sw = AllTestStruct();
 
-        sw.SW_All.Site.evap_coeff[0] = -0.5;
+    SW_All.Site.evap_coeff[0] = -0.5;
 
-        SW_SIT_init_run(&sw.SW_All.VegProd, &sw.SW_All.Site, &sw.LogInfo);
-      },
-      "'bare-soil evaporation coefficient' has an invalid value"
-    );
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg,
+                HasSubstr("'bare-soil evaporation coefficient' has an invalid value"));
   }
 
 
-  TEST(SiteStructDeathTest, SiteSoilTranspirationParametersDeathTest) {
+  TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 
     // Check error for bad transpiration coefficient (should be [0-1])
-    EXPECT_DEATH_IF_SUPPORTED({
-        AllTestStruct sw = AllTestStruct();
 
-        sw.SW_All.Site.transp_coeff[SW_GRASS][1] = 1.5;
-        SW_SIT_init_run(&sw.SW_All.VegProd, &sw.SW_All.Site, &sw.LogInfo);
-      },
-      "'transpiration coefficient' has an invalid value"
-    );
+    SW_All.Site.transp_coeff[SW_GRASS][1] = 1.5;
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg,
+                HasSubstr("'transpiration coefficient' has an invalid value"));
   }
 
 
@@ -565,7 +565,7 @@ namespace {
   // Test bulk and matric soil density functionality
   TEST(SiteTest, SiteSoilDensity) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     double
       soildensity = 1.4,
@@ -640,28 +640,26 @@ namespace {
 
 
   // Test that bulk and matric soil density fail
-  TEST(SiteDeathTest, SiteSoilDensityTooLowDeathTest) {
+  TEST(SiteTest, SiteSoilDensityTooLowDeathTest) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
-    // Check error if bulk density too low for coarse fragments
-    EXPECT_DEATH_IF_SUPPORTED(
-      calculate_soilMatricDensity(1.65, 0.7, &LogInfo),
-      "is lower than expected"
-    );
+    // Create an error if bulk density too low for coarse fragments
+    calculate_soilMatricDensity(1.65, 0.7, &LogInfo);
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is lower than expected"));
   }
 
 
-  TEST(SiteStructDeathTest, SiteSoilDensityMissingDeathTest) {
-    // Check error if type_soilDensityInput not implemented
-    EXPECT_DEATH_IF_SUPPORTED({
-        AllTestStruct sw = AllTestStruct();
+  TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
+    // Create an error if type_soilDensityInput not implemented
 
-        sw.SW_All.Site.type_soilDensityInput = SW_MISSING;
+    SW_All.Site.type_soilDensityInput = SW_MISSING;
 
-        SW_SIT_init_run(&sw.SW_All.VegProd, &sw.SW_All.Site, &sw.LogInfo);
-      },
-      "Soil density type not recognized"
-    );
+    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("Soil density type not recognized"));
   }
 } // namespace

@@ -94,7 +94,7 @@ void SW_MDL_deconstruct(void)
 @param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
 @param[in] InFiles Array of program in/output files
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
@@ -117,6 +117,9 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 
 	MyFileName = InFiles[eModel];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	/* ----- Start checking for model time parameters */
 	/*   input should be in order of startdy, enddy, hemisphere,
@@ -149,7 +152,7 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 				SW_Model->aspect = missing(temp) ? temp : temp * deg_to_rad;
 				break;
 			default: // More lines than expected
-				LogError(LogInfo, LOGFATAL, "More lines read than expected." \
+				LogError(LogInfo, LOGERROR, "More lines read than expected." \
 						 "Please double check your `modelrun.in` file.");
 				break;
 		}

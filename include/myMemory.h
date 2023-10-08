@@ -10,9 +10,6 @@
 #include "include/SW_datastructs.h"
 
 
-#ifdef DEBUG_MEM
-#include "include/memblock.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
