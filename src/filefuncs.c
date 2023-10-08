@@ -25,6 +25,22 @@
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
+static void freeGetfilesEarly(char **flist, int nfound, DIR *dir, char *fname) {
+    int index;
+
+    for(index = 0; index < nfound; index++) {
+        if(!isnull(flist[index])) {
+            free(flist[index]);
+        }
+    }
+    if(!isnull(flist)) {
+        free(flist);
+    }
+
+    closedir(dir);
+    free(fname);
+}
+
 static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 	/* return a list of files described by fspec
 	 * fspec is as described in RemoveFiles(),
@@ -78,18 +94,25 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 			(*nfound)++;
 			if (alloc) {
 				flist = (char **) Mem_ReAlloc(flist, sizeof(char *) * (*nfound), LogInfo);
+                flist[(*nfound) - 1] = NULL;
+
                 if(LogInfo->stopRun) {
+                    freeGetfilesEarly(flist, *nfound, dir, fname);
                     return NULL; // Exit function prematurely due to error
                 }
 			} else {
 				flist = (char **) Mem_Malloc(sizeof(char *) * (*nfound), "getfiles", LogInfo);
+                flist[(*nfound) - 1] = NULL;
+
                 if(LogInfo->stopRun) {
+                    freeGetfilesEarly(flist, *nfound, dir, fname);
                     return NULL; // Exit function prematurely due to error
                 }
 				alloc = swTRUE;
 			}
 			flist[(*nfound) - 1] = Str_Dup(ent->d_name, LogInfo);
             if(LogInfo->stopRun) {
+                freeGetfilesEarly(flist, *nfound, dir, fname);
                 return NULL; // Exit function prematurely due to error
             }
 		}

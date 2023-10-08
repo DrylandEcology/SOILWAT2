@@ -134,6 +134,7 @@ void generateMissingWeather(
 );
 void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo);
 void allocateAllWeather(SW_WEATHER *w, LOG_INFO* LogInfo);
+void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years);
 void deallocateAllWeather(SW_WEATHER *w);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
 void SW_WTH_finalize_all_weather(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather,

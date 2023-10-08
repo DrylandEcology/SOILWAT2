@@ -1255,6 +1255,8 @@ void allocateAllWeather(SW_WEATHER *w, LOG_INFO* LogInfo) {
     return; // Exit function prematurely due to error
   }
 
+  initializeAllWeatherPtrs(w->allHist, w->n_years);
+
   for (year = 0; year < w->n_years; year++) {
 
       w->allHist[year] = (SW_WEATHER_HIST *)Mem_Malloc(sizeof(SW_WEATHER_HIST),
@@ -1263,6 +1265,22 @@ void allocateAllWeather(SW_WEATHER *w, LOG_INFO* LogInfo) {
           return; // Exit function prematurely due to error
       }
   }
+}
+
+/**
+  @brief Initialize all `allHist` pointers to NULL
+
+  @param[out] w Struct of type SW_WEATHER holding all relevant
+    information pretaining to weather input data
+  @param[in] LogInfo Holds information dealing with logfile output
+*/
+void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years)
+{
+    unsigned int year;
+
+    for(year = 0; year < n_years; year++) {
+        allHist[year] = NULL;
+    }
 }
 
 
@@ -1278,7 +1296,9 @@ void deallocateAllWeather(SW_WEATHER *w) {
 
     if(!isnull(w->allHist)) {
         for(year = 0; year < w->n_years; year++) {
-            free(w->allHist[year]);
+            if(!isnull(w->allHist[year])) {
+                free(w->allHist[year]);
+            }
         }
 
         free(w->allHist);
