@@ -154,6 +154,8 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 			default: // More lines than expected
 				LogError(LogInfo, LOGERROR, "More lines read than expected." \
 						 "Please double check your `modelrun.in` file.");
+                return; // Exit function prematurely due to error
+
 				break;
 		}
 		lineno++;

@@ -53,6 +53,7 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                     LogError(LogInfo, LOGERROR, "%s: Incorrect domain type %s."\
                              " Please select from \"xy\" and \"s\".",
                              MyFileName, value);
+                    return; // Exit function prematurely due to error
                 }
                 strcpy(SW_Domain->DomainType, value);
                 break;
@@ -72,6 +73,7 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                     CloseFile(&f, LogInfo);
                     LogError(LogInfo, LOGERROR,
                              "%s: Negative start year (%d)", MyFileName, y);
+                    return; // Exit function prematurely due to error
                 }
                 SW_Domain->startyr = yearto4digit((TimeInt) y);
                 break;
@@ -82,6 +84,7 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                     CloseFile(&f, LogInfo);
                     LogError(LogInfo, LOGERROR,
                              "%s: Negative ending year (%d)", MyFileName, y);
+                    return; // Exit function prematurely due to error
                 }
                 SW_Domain->endyr = yearto4digit((TimeInt) y);
                 break;
@@ -105,6 +108,7 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 	if (SW_Domain->endyr < SW_Domain->startyr) {
 		CloseFile(&f, LogInfo);
         LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
+        return; // Exit function prematurely due to error
 	}
 
     // Check if start day of year was not found
