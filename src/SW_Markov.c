@@ -611,12 +611,19 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
 	int Weather_genWeathMethod, char *InFiles[], LOG_INFO* LogInfo) {
 
+  Bool read_prob, read_cov;
+
   SW_MKV_construct(Weather_rng_seed, SW_Markov, LogInfo);
   if(LogInfo->stopRun) {
     return; // Exit function prematurely due to error
   }
 
-  if (!SW_MKV_read_prob(InFiles, SW_Markov, LogInfo) && Weather_genWeathMethod == 2) {
+  read_prob = SW_MKV_read_prob(InFiles, SW_Markov, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
+
+  if (!read_prob && Weather_genWeathMethod == 2) {
     LogError(
       LogInfo,
       LOGERROR,
@@ -626,7 +633,12 @@ void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
     return; // Exit function prematurely due to error
   }
 
-  if (!SW_MKV_read_cov(InFiles, SW_Markov, LogInfo) && Weather_genWeathMethod == 2) {
+  read_cov = SW_MKV_read_cov(InFiles, SW_Markov, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
+
+  if (!read_cov && Weather_genWeathMethod == 2) {
     LogError(
       LogInfo,
       LOGERROR,
