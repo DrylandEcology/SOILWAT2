@@ -497,3 +497,25 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, SW_DOMAIN* SW_Domain,
   if (debug) swprintf(" completed.\n");
   #endif
 }
+
+/**
+ * @brief Do an (independent) model simulation run; Don’t fail/crash
+ *  on error but end early and report to caller
+ *
+ * @param[in] sw_template Template SW_ALL for the function to use as a
+ *  reference for local versions of SW_ALL
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in] ncStartSuid Unique indentifier of the first suid to run
+ *  in relation to netCDF gridcells/sites
+ * @param[in] ncInFiles Input netCDF files
+ * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
+ *  hold pointers to subroutines for output keys
+ * @param[in,out] p_OUT Data storage for simulation run values
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, int ncStartSuid,
+                   char* ncInFiles[], SW_OUTPUT_POINTERS SW_OutputPtrs[],
+                   RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
+
+}

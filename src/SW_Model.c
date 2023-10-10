@@ -224,3 +224,19 @@ void SW_MDL_new_day(SW_MODEL* SW_Model) {
 		SW_Model->newperiod[eSW_Week] = swFALSE;
 
 }
+
+/**
+ * @brief Obtain information from domain for one model run based on
+ * user inputted suid
+ *
+ * @param[in,out] SW_Model Struct of type SW_MODEL holding basic time
+ *  information about the simulation
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in] fileNames Input netCDF files
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_MDL_get_ModelRun(SW_MODEL* SW_Model, SW_DOMAIN* SW_Domain,
+                         char* fileNames[], LOG_INFO* LogInfo) {
+
+}

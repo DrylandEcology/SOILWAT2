@@ -39,6 +39,9 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                  LOG_INFO* LogInfo); /* main controlling loop for SOILWAT  */
 void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                              LOG_INFO* LogInfo);
+void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, int ncStartSuid,
+                   char* ncInFiles[], SW_OUTPUT_POINTERS SW_OutputPtrs[],
+                   RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo);
 
 
 #ifdef __cplusplus

@@ -23,6 +23,55 @@ static int domain_inkey_to_id(char *key);
 /* --------------------------------------------------- */
 
 /**
+ * @brief Calculate the suid for the start gridcell/site position
+ *
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in] suid Unique identifier for a simulation run
+ *
+ * @return Calculated gridcell/site position
+*/
+int* SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, int suid) {
+
+}
+
+/**
+ * @brief Calculate the number of suids in the given domain
+ *
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ *
+ * @return Number of suids in the domain
+*/
+int SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
+
+}
+
+/**
+ * @brief Check if suid progress netCDF is marked as completed
+ *
+ * @param[in] domainType Type of domain in which simulations are running
+ *  (gridcell/sites)
+ * @param[in] ncStartSuid Unique indentifier of the first suid to run
+ *  in relation to netCDF gridcells/sites
+ *
+ * @return Whether or not progress the input suid has been marked as complete
+*/
+Bool SW_DOM_CheckProgress(char* domainType, int* ncStartSuid) {
+
+}
+
+/**
+ * @brief Create an empty progress netCDF
+ *
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+*/
+void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain) {
+
+}
+
+/**
  * @brief Read `domain.in` and report any problems encountered when doing so
  *
  * @param[in] InFiles Array of program in/output files
@@ -129,9 +178,9 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  * @brief Copy temporal domain information from SW_DOMAIN to SW_MODEL
  *
  * @param[in,out] SW_Model Struct of type SW_MODEL holding basic time
- *      information about the simulation
+ *  information about the simulation
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
- *      temporal/spatial information for a set of simulation runs
+ *  temporal/spatial information for a set of simulation runs
 */
 void SW_DOM_setModelTime(SW_MODEL *SW_Model, SW_DOMAIN *SW_Domain) {
     SW_Model->startyr = SW_Domain->startyr; // Copy start year
@@ -140,6 +189,34 @@ void SW_DOM_setModelTime(SW_MODEL *SW_Model, SW_DOMAIN *SW_Domain) {
     SW_Model->endend = SW_Domain->endend; // Copy end doy
 
     SW_Model->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
+}
+
+/**
+ * @brief Mark a completed suid in progress netCDF
+ *
+ * @param[in] domainType Type of domain in which simulations are running
+ *  (gridcell/sites)
+ * @param[in] ncStartSuid Unique indentifier of the first suid to run
+ *  in relation to netCDFs
+*/
+void SW_DOM_SetProgress(char* domainType, int* ncStartSuid) {
+
+}
+
+/**
+ * @brief Calculate range of suids to run simulations for
+ *
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in] userSUID Suid in which the user input to run
+ * @param[in] nSUIDs Maximum number of suids that may be run
+ * @param[out] startSimSet First suid within a simulation set
+ * @param[out] endSimSet Final suid in a simulation set
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, int userSUID, int nSUIDs,
+                   int* startSimSet, int* endSimSet, LOG_INFO* LogInfo) {
+
 }
 
 /* =================================================== */
