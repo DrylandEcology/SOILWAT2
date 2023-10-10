@@ -1270,9 +1270,8 @@ void allocateAllWeather(SW_WEATHER *w, LOG_INFO* LogInfo) {
 /**
   @brief Initialize all `allHist` pointers to NULL
 
-  @param[out] w Struct of type SW_WEATHER holding all relevant
-    information pretaining to weather input data
-  @param[in,out] LogInfo Holds information dealing with logfile output
+  @param[out] allHist Array containing all historical data of a site
+  @param[in] n_years Number of years in simulation
 */
 void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years)
 {
