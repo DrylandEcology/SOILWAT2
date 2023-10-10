@@ -129,6 +129,7 @@ namespace {
     SW_VEGPROD SW_VegProd;
 
     SW_VPD_construct(&SW_VegProd, &LogInfo); // allocates memory
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_VPD_init_run(
       &SW_VegProd,
@@ -137,6 +138,7 @@ namespace {
       SW_All.Site.latitude,
       &LogInfo
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachVegType(k) {
       EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][0]);
@@ -279,11 +281,15 @@ namespace {
 
         // Reset "SW_All.Weather.allHist"
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
 		    finalizeAllWeather(&SW_All.Markov, &SW_All.Weather,
             SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Calculate climate of the site and add results to "climateOutput"
         calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
@@ -347,6 +353,7 @@ namespace {
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
         // Loop through RelAbundanceL0 and test results
@@ -414,6 +421,7 @@ namespace {
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Loop through RelAbundanceL0 and test results
         for(index = 0; index < 8; index++) {
@@ -485,6 +493,7 @@ namespace {
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < nTypes; index++) {
@@ -535,6 +544,7 @@ namespace {
 
         estimateVegetationFromClimate(&vegProd, SW_All.Weather.allHist,
                                       &SW_All.Model, veg_method, latitude, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Loop through RelAbundanceL1 and test results
         for(index = 0; index < 4; index++) {
@@ -603,6 +613,7 @@ namespace {
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < 8; index++) {
@@ -676,6 +687,7 @@ namespace {
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
         // Loop through RelAbundanceL0 and test results.
@@ -740,11 +752,15 @@ namespace {
 
         // Reset "SW_All.Weather.allHist"
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
 		    finalizeAllWeather(&SW_All.Markov, &SW_All.Weather,
             SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Calculate climate of the site and add results to "climateOutput"
         calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
@@ -784,6 +800,7 @@ namespace {
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
         // Loop through RelAbundanceL0 and test results.
@@ -851,6 +868,7 @@ namespace {
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
         // Loop through RelAbundanceL0 and test results.
@@ -922,6 +940,7 @@ namespace {
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < nTypes; index++) {
@@ -992,6 +1011,7 @@ namespace {
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < nTypes; index++) {
@@ -1067,6 +1087,7 @@ namespace {
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Loop through RelAbundanceL0 and test results.
         for(index = 0; index < nTypes; index++) {
@@ -1142,6 +1163,7 @@ namespace {
             climateAverages.meanTempMon_C, climateAverages.PPTMon_cm, inputValues, shrubLimit,
             SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
             fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
         // Loop through RelAbundanceL0 and test results.
@@ -1202,6 +1224,7 @@ namespace {
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         /*  ===============================================================
          Test for fail when input sum is greater than one with the values:
@@ -1211,8 +1234,11 @@ namespace {
 
         // Reset "SW_All.Weather.allHist"
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
         finalizeAllWeather(&SW_All.Markov, &SW_All.Weather,
             SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Calculate climate of the site and add results to "climateOutput"
         calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
@@ -1227,6 +1253,7 @@ namespace {
                 SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
                 fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo
         );
+        // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
         // Detect failure by error message
         EXPECT_THAT(LogInfo.errorMsg,
@@ -1270,6 +1297,7 @@ namespace {
 
         // Allocate arrays needed for `calcSiteClimate()` and `averageClimateAcrossYears()`
         allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
         SumGrassesFraction = .5;
@@ -1294,8 +1322,12 @@ namespace {
 
         // Reset "SW_All.Weather.allHist"
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
         finalizeAllWeather(&SW_All.Markov, &SW_All.Weather,
             SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
 
         // Calculate climate of the site and add results to "climateOutput"
         calcSiteClimate(SW_All.Weather.allHist, SW_All.Model.cum_monthdays,
@@ -1310,6 +1342,7 @@ namespace {
                 SumGrassesFraction, C4Variables, fillEmptyWithBareGround, inNorthHem, warnExtrapolation,
                 fixBareGround, grassOutput, RelAbundanceL0, RelAbundanceL1, &LogInfo
         );
+        // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
         // Detect failure by error message
         EXPECT_THAT(LogInfo.errorMsg,

@@ -54,6 +54,7 @@ namespace {
     int rng_seed = 8;
 
     SW_MKV_construct(rng_seed, &SW_Markov, &LogInfo); // allocates memory
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that at least first array elements are initialized to zero
     EXPECT_DOUBLE_EQ(0., SW_Markov.wetprob[0]);
@@ -82,7 +83,9 @@ namespace {
     }
 
     InFiles[eMarkovCov] = Str_Dup("Input/mkv_covar.in", &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     InFiles[eMarkovProb] = Str_Dup("Input/mkv_prob.in", &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     int
       rng_seed,
@@ -102,11 +105,13 @@ namespace {
     // Initialize weather generator and read input files mkv_cover and mkv_prob
     rng_seed = seed;
     SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
       SW_MKV_today(&SW_Markov, k, year, &tmax0[k], &tmin0[k], &ppt, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       ppt0[k] = ppt;
     }
 
@@ -118,11 +123,13 @@ namespace {
     // Initialize weather generator and read input files mkv_cover and mkv_prob
     rng_seed = 0;
     SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
       SW_MKV_today(&SW_Markov, k, year, &tmax, &tmin, &ppt, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_NE(tmax, tmax0[k]);
       EXPECT_NE(tmin, tmin0[k]);
@@ -139,11 +146,13 @@ namespace {
     // Initialize weather generator and read input files mkv_cover and mkv_prob
     rng_seed = seed;
     SW_MKV_setup(&SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
       SW_MKV_today(&SW_Markov, k, year, &tmax, &tmin, &ppt, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_DOUBLE_EQ(tmax, tmax0[k]);
       EXPECT_DOUBLE_EQ(tmin, tmin0[k]);
@@ -176,6 +185,7 @@ namespace {
     RealD tmax = 0., tmin = 0., tval;
 
     SW_MKV_construct(rng_seed, &SW_Markov, &LogInfo); // initialize markov_rng
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (k = 0; k < n; k++) {
       // Create temperature values: here with n = 3: -10, 0, +10
@@ -184,6 +194,7 @@ namespace {
       // Case: wtmax = wtmin, variance = 0, covar = 0 ==> input = output
       (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 0.,
                     &SW_Markov.markov_rng, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       EXPECT_DOUBLE_EQ(tmax, tval);
       EXPECT_DOUBLE_EQ(tmin, tval);
       EXPECT_DOUBLE_EQ(tmin, tmax);
@@ -191,6 +202,7 @@ namespace {
       // Case: wtmax = wtmin, variance = 0, covar > 0 ==> input = output
       (test_mvnorm)(&tmax, &tmin, tval, tval, 0., 0., 1.,
                     &SW_Markov.markov_rng, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       EXPECT_DOUBLE_EQ(tmax, tval);
       EXPECT_DOUBLE_EQ(tmin, tval);
       EXPECT_DOUBLE_EQ(tmin, tmax);
@@ -198,11 +210,13 @@ namespace {
       // Case: wtmax > wtmin, variance > 0, covar > 0 ==> tmin <= tmax
       (test_mvnorm)(&tmax, &tmin, tval + 1., tval, 1., 1., 1.,
                     &SW_Markov.markov_rng, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       EXPECT_LE(tmin, tmax);
 
       // Case: wtmax < wtmin, variance > 0, covar > 0 ==> tmin == tmax
       (test_mvnorm)(&tmax, &tmin, tval - 1., tval, 1., 1., 1.,
                     &SW_Markov.markov_rng, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       EXPECT_DOUBLE_EQ(tmin, tmax);
     }
 
@@ -219,10 +233,12 @@ namespace {
     RealD tmax = 0., tmin = 0.;
 
     SW_MKV_construct(rng_seed, &SW_Markov, &LogInfo); // initialize markov_rng
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGERROR
     (test_mvnorm)(&tmax, &tmin, 0., 0., 1., 1., 2.,
                               &SW_Markov.markov_rng, &LogInfo);
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("Bad covariance matrix"));
@@ -245,6 +261,7 @@ namespace {
       cf0 = 0., cf_pos = 5., cf_neg = -5.;
 
     SW_MKV_construct(rng_seed, &SW_Markov, &LogInfo); // initialize markov_rng
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Case: tmax = tmin; wet; cf_*_wet = 0 ==> input = output
     tmax = t0;

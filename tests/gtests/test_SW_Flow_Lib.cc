@@ -376,6 +376,7 @@ namespace
 
     // Setup soil layers
     create_test_soillayers(n_layers, &SW_VegProd, &SW_Site, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachSoilLayer(i, n_layers)
     {
@@ -386,6 +387,7 @@ namespace
     //Begin Test when n_layers is one
     transp_weighted_avg(&swp_avg, &SW_Site, n_tr_rgns, n_layers,
                         tr_regions, swc, SW_SHRUB, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
     EXPECT_NEAR(swp_avg, swp_avgExpected1, tol6);
@@ -402,6 +404,7 @@ namespace
 
     // Setup soil layers
     create_test_soillayers(n_layers, &SW_VegProd, &SW_Site, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachSoilLayer(i, n_layers)
     {
@@ -412,6 +415,7 @@ namespace
 
     transp_weighted_avg(&swp_avg, &SW_Site, n_tr_rgns, n_layers,
                         tr_regions2, swc2, SW_SHRUB, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_GE(swp_avg, 0); //Must always be non negative.
 
@@ -491,6 +495,7 @@ namespace
 
       // Setup soil layers
       create_test_soillayers(nelyrs, &SW_VegProd, &SW_Site, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       ForEachSoilLayer(i, SW_Site.n_layers)
       {
@@ -503,6 +508,7 @@ namespace
       pot_soil_evap(&SW_Site, nelyrs, totagb, fbse,
         petday, shift, shape, inflec, range, swc, Es_param_limit,
         &bserate, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // expect baresoil evaporation rate = 0 if totagb >= Es_param_limit
       EXPECT_DOUBLE_EQ(bserate, 0.) <<
@@ -515,6 +521,7 @@ namespace
       // Begin Test if (PET = 0)
       pot_soil_evap(&SW_Site, nelyrs, totagb, fbse, petday0, shift,
         shape, inflec, range, swc, Es_param_limit, &bserate, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // expect baresoil evaporation rate = 0 if PET = 0
       EXPECT_DOUBLE_EQ(bserate, 0.) <<
@@ -524,6 +531,7 @@ namespace
       // Begin Test if (potential baresoil rate = 0)
       pot_soil_evap(&SW_Site, nelyrs, totagb, fbse0, petday, shift,
         shape, inflec, range, swc, Es_param_limit, &bserate, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // expect baresoil evaporation rate = 0 if fbse = 0
       EXPECT_DOUBLE_EQ(bserate, 0.) <<
@@ -533,6 +541,7 @@ namespace
       // Begin Test if (totagb < Es_param_limit)
       pot_soil_evap(&SW_Site, nelyrs, totagb, fbse, petday, shift,
         shape, inflec, range, swc, Es_param_limit, &bserate, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // expect baresoil evaporation rate > 0
       // if totagb >= Es_param_limit & swc > 0
@@ -586,6 +595,7 @@ namespace
 
       // Setup soil layers
       create_test_soillayers(nelyrs, &SW_VegProd, &SW_Site, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       ForEachSoilLayer(i, SW_Site.n_layers)
       {
@@ -596,6 +606,8 @@ namespace
       //Begin Test for bserate when nelyrs = 1
       pot_soil_evap_bs(&bserate, &SW_Site, nelyrs, petday, shift, shape,
                        inflec, range, swc, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
       if (nelyrs == 1)
       {
         EXPECT_NEAR(bserate, 0.062997815, tol6) <<
@@ -770,6 +782,7 @@ namespace
 
       // Setup: soil layers
       create_test_soillayers(nlyrs, &SW_VegProd, &SW_Site, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       ForEachSoilLayer(i, nlyrs)
       {
@@ -791,6 +804,7 @@ namespace
       // Call function to test: use coeffZero instead of coeff
       remove_from_soil(swc, qty, &SW_Site, &aet, nlyrs, coeffZero,
           rate, swcmin, lyrFrozen, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // Check expectation of no change from original values
       qty_sum = 0.;
@@ -824,6 +838,7 @@ namespace
       // Call function to test
       remove_from_soil(swc, qty, &SW_Site, &aet, nlyrs, coeff,
           rate, swcmin, lyrFrozen, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // Check expectation of no change from original values
       qty_sum = 0.;
@@ -857,6 +872,7 @@ namespace
       // Call function to test
       remove_from_soil(swc, qty, &SW_Site, &aet, nlyrs, coeff,
           rate, swcmin, lyrFrozen, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // Check values of qty[] and swc[]
       qty_sum = 0.;
@@ -948,6 +964,7 @@ namespace
 
       // Setup soil layers
       create_test_soillayers(nlyrs, &SW_VegProd, &SW_Site, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // Initialize soil arrays to be independent of soil texture...
       ForEachSoilLayer(i, nlyrs)
@@ -1190,6 +1207,7 @@ namespace
 
       // Setup soil layers
       create_test_soillayers(nlyrs, &SW_VegProd, &SW_Site, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       ForEachSoilLayer(i, nlyrs)
       {
@@ -1210,6 +1228,7 @@ namespace
         year, doy,
         &LogInfo
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // Expection: no hydred in top layer
       EXPECT_DOUBLE_EQ(hydred[0], 0.);

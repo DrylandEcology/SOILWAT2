@@ -31,6 +31,7 @@ namespace {
 
         // Testing to fill allHist from `SW_Weather`
         SW_SKY_read(PathInfo.InFiles, &SW_All.Sky, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         readAllWeather(
           SW_All.Weather.allHist,
@@ -51,6 +52,7 @@ namespace {
           SW_All.Model.days_in_month,
           &LogInfo
         );
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Test first day of first year in `allHist` to make sure correct
         // temperature max/min/avg and precipitation values
@@ -71,12 +73,9 @@ namespace {
 
         // Real expectation is that there is no memory leak for `allHist`
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         EXPECT_EQ(SW_All.Weather.n_years, 2);
-
-
-
-
     }
 
     TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
@@ -89,10 +88,14 @@ namespace {
         SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                      SW_All.Weather.generateWeatherMethod,
                      PathInfo.InFiles, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
         SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+          SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
         // Expect that missing input values (from 1980) are filled by the weather generator
@@ -118,13 +121,17 @@ namespace {
         SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                      SW_All.Weather.generateWeatherMethod,
                      PathInfo.InFiles, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         SW_All.Model.startyr = 1981;
         SW_All.Model.endyr = 1982;
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
         SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+          SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
         // Check everyday's value and test if it's `MISSING`
@@ -149,13 +156,17 @@ namespace {
         SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                      SW_All.Weather.generateWeatherMethod,
                      PathInfo.InFiles, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Change directory to get input files with some missing data
         strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
         SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-        SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+          SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Check everyday's value and test if it's `MISSING`
         for(year = 0; year < 31; year++) {
@@ -180,11 +191,13 @@ namespace {
         SW_All.Model.endyr = 1981;
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         SW_WTH_finalize_all_weather(
           &SW_All.Markov, &SW_All.Weather,
           SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo
         );
+        // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
         // Detect failure by error message
         EXPECT_THAT(LogInfo.errorMsg,
@@ -202,6 +215,7 @@ namespace {
         // Allocate memory
             // 31 = number of years used in test
         allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
         // ------ Check climate variables for default weather ------
@@ -312,6 +326,7 @@ namespace {
         // Allocate memory
             // 1 = number of years used in test
         allocateClimateStructs(1, &climateOutput, &climateAverages, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // ------ Check climate variables for one year of default weather ------
 
@@ -447,6 +462,7 @@ namespace {
         // Allocate memory
             // 31 = number of years used in test
         allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
         // ------ Check climate variables for default weather ------
@@ -557,6 +573,7 @@ namespace {
 
         // Allocate memory
         allocateClimateStructs(2, &climateOutput, &climateAverages, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * 2);
 
@@ -724,6 +741,7 @@ namespace {
     TEST_F(WeatherFixtureTest, WeatherReadInitialization) {
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         EXPECT_FLOAT_EQ(SW_All.Weather.allHist[0]->temp_max[0], -.52);
     }
@@ -740,9 +758,11 @@ namespace {
          /* Test if monthly values are not being used */
          SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
                       PathInfo.weather_prefix, &LogInfo);
+         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
          // Read in all weather
          SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
          // Test the middle of January in year 1980 and see if it's not equal to SW_All.Sky.r_humidity[0],
          // SW_All.Sky.cloudcov[0], and SW_All.Sky.windspeed[0]
@@ -769,6 +789,7 @@ namespace {
         /* Test correct priority is being given to input values from DAYMET */
          SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
                       PathInfo.weather_prefix, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
              // Switch directory to gridmet input folder
          strcpy(SW_All.Weather.name_prefix, "Input/data_weather_gridmet/weath");
@@ -806,6 +827,7 @@ namespace {
              SW_All.Weather.dailyInputFlags,
              &LogInfo
          );
+         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
          result = SW_All.Weather.allHist[yearIndex]->r_humidity_daily[0];
 
@@ -848,6 +870,7 @@ namespace {
 
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(&SW_All.Weather, &LogInfo);
+         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
      }
 
      TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
@@ -868,6 +891,7 @@ namespace {
          /* Test correct priority is being given to input values from DAYMET */
          SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
                       PathInfo.weather_prefix, &LogInfo);
+         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
                  // Switch directory to daymet input folder
          strcpy(SW_All.Weather.name_prefix, "Input/data_weather_daymet/weath");
@@ -901,6 +925,7 @@ namespace {
              SW_All.Weather.dailyInputFlags,
              &LogInfo
          );
+         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
          result = SW_All.Weather.allHist[yearIndex]->actualVaporPressure[0];
 
@@ -948,6 +973,7 @@ namespace {
 
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(&SW_All.Weather, &LogInfo);
+         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
      }
 
      TEST_F(WeatherFixtureTest, WeatherInputMACA) {
@@ -966,6 +992,7 @@ namespace {
 
          SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
                       PathInfo.weather_prefix, &LogInfo);
+         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
                  // Switch directory to daymet input folder
          strcpy(SW_All.Weather.name_prefix, "Input/data_weather_maca/weath");
@@ -1005,6 +1032,7 @@ namespace {
              SW_All.Weather.dailyInputFlags,
              &LogInfo
          );
+         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
          result = SW_All.Weather.allHist[yearIndex]->windspeed_daily[0];
 
@@ -1051,6 +1079,7 @@ namespace {
 
          // Make sure calculations and set input values are within reasonable range
          checkAllWeather(&SW_All.Weather, &LogInfo);
+         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
      }
 
      TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
@@ -1069,6 +1098,7 @@ namespace {
         // Setup and read in weather
         SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
                      PathInfo.weather_prefix, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Turn off flags for monthly values along with daily flags
         // so all daily variables aside from max/min temperature and precipiation
@@ -1078,6 +1108,7 @@ namespace {
         SW_All.Weather.use_windSpeedMonthly = swFALSE;
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Setup values/flags for `generateMissingWeather()` to deal with
         SW_All.Weather.generateWeatherMethod = 1;
@@ -1089,6 +1120,7 @@ namespace {
                                1980, 1,
                                SW_All.Weather.generateWeatherMethod,
                                numDaysLOCFTolerance, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Test to see if the first year of cloud cover, actual vapor pressure and
         // wind speed has been filled with cloudCovTestVal, actVapPressTestVal,
@@ -1118,6 +1150,7 @@ namespace {
         // Run weather functions and expect an failure (error)
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Set SW_WEATHER's n_input_forcings to a number that is
         // not the columns being read in
@@ -1132,6 +1165,7 @@ namespace {
             SW_All.Weather.dailyInputFlags,
             &LogInfo
         );
+        // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
         // Detect failure by error message
         EXPECT_THAT(LogInfo.errorMsg, HasSubstr("Incomplete record 1"));
@@ -1145,11 +1179,13 @@ namespace {
          // Edit SW_WEATHER_HIST values from their original value
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Make temperature unreasonable (not within [-100, 100])
         SW_All.Weather.allHist[0]->temp_max[0] = -102.;
 
         checkAllWeather(&SW_All.Weather, &LogInfo);
+        // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
         // Detect failure by error message
         EXPECT_THAT(LogInfo.errorMsg,
@@ -1165,11 +1201,13 @@ namespace {
          // Edit SW_WEATHER_HIST values from their original value
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Make precipitation unresonable (< 0)
         SW_All.Weather.allHist[0]->ppt[0] = -1.;
 
         checkAllWeather(&SW_All.Weather, &LogInfo);
+        // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
         // Detect failure by error message
         EXPECT_THAT(LogInfo.errorMsg, HasSubstr("Invalid daily precipitation value"));
@@ -1182,11 +1220,13 @@ namespace {
          // Edit SW_WEATHER_HIST values from their original value
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Make relative humidity unreasonable (< 0%)
         SW_All.Weather.allHist[0]->r_humidity_daily[0] = -.1252;
 
         checkAllWeather(&SW_All.Weather, &LogInfo);
+        // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
         // Detect failure by error message
         EXPECT_THAT(LogInfo.errorMsg,
