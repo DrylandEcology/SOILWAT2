@@ -336,8 +336,8 @@ namespace{
     );
 
 
-    // --- 2) swc < 0: water content cannot be negative
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
+      // --- 2a) fail if swc < 0: water content cannot be negative
       SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
 
       // Detect failure by error message
@@ -348,20 +348,24 @@ namespace{
         SW_MISSING
       );
 
+
+      // --- 2b) fail if gravel >= 1: gravel cannot be equal or larger than 1
       SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGERROR, &LogInfo);
 
       // Detect failure by error message
-      EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWC"));
+      EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid gravel"));
 
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGWARN, &LogInfo),
         SW_MISSING
       );
 
+
+      // --- 2c) fail if soil layer width = 0: soil layers cannot be 0
       SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGERROR, &LogInfo);
 
       // Detect failure by error message
-      EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWC"));
+      EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid layer width"));
 
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGWARN, &LogInfo),
@@ -369,7 +373,7 @@ namespace{
       );
     }
 
-    // --- *) if (theta - theta_res) < 0 (specific to vanGenuchten1980)
+    // --- *) fail if (theta - theta_res) < 0 (specific to vanGenuchten1980)
     // note: this case is normally prevented due to SWC checks
     swrc_type = encode_str2swrc((char *) "vanGenuchten1980", &LogInfo);
     memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
@@ -382,7 +386,7 @@ namespace{
     SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
 
     // Detect failure by error message
-    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid value"));
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid value of\n\ttheta"));
 
     EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
