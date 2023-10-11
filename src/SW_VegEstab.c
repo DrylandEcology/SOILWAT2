@@ -277,12 +277,14 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 				strcat(buf, inbuf);
 				_read_spp(buf, SW_VegEstab, LogInfo);
                 if(LogInfo->stopRun) {
+                    CloseFile(&f, LogInfo);
                     return; // Exit function prematurely due to error
                 }
 			}
 
 			SW_VegEstab_construct(SW_VegEstab, LogInfo);
             if(LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
 		}
@@ -481,11 +483,6 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 	char name[80]; /* only allow 4 char sppnames */
 	char inbuf[MAX_FILENAMESIZE];
 
-	f = OpenFile(infile, "r", LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
 	IntU count;
 
 	count = _new_species(SW_VegEstab, LogInfo);
@@ -494,7 +491,12 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
     }
 	v = SW_VegEstab->parms[count];
 
-	strcpy(v->sppFileName, inbuf); //have to copy before the pointer infile gets reset below by getAline
+	strcpy(v->sppFileName, infile); //have to copy before the pointer infile gets reset below by getAline
+
+	f = OpenFile(infile, "r", LogInfo);
+	if(LogInfo->stopRun) {
+			return; // Exit function prematurely due to error
+	}
 
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
@@ -561,13 +563,13 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 		lineno++; /*only increments when there's a value */
 	}
 
-	if (lineno < nitems) {
-		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGERROR, "%s : Too few input parameters.\n", infile);
+	CloseFile(&f, LogInfo);
+
+	if (lineno != nitems) {
+		LogError(LogInfo, LOGERROR, "%s : Too few/many input parameters.\n", infile);
         return; // Exit function prematurely due to error
 	}
 
-	CloseFile(&f, LogInfo);
 }
 
 /**

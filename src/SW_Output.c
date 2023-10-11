@@ -2359,6 +2359,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 		#if defined(RSOILWAT)
 		sw->Output[k].outfile = (char *) Str_Dup(outfile, LogInfo);
         if(LogInfo->stopRun) {
+            CloseFile(&f, LogInfo);
             return; // Exit function prematurely due to error
         }
 		#else
@@ -2403,6 +2404,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 		}
 	} //end of while-loop
 
+	CloseFile(&f, LogInfo);
 
 	// Determine which output periods are turned on for at least one output key
 	find_OutPeriods_inUse(&sw->GenOutput, sw->Output);
@@ -2422,7 +2424,6 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 					sw->GenOutput.nrow_OUT);
 	#endif
 
-	CloseFile(&f, LogInfo);
 }
 
 
