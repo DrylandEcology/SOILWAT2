@@ -110,7 +110,7 @@ static void temp_correct_wetdry(RealD *tmax, RealD *tmin, RealD rain,
     @return Daily minimum (*tmin) and maximum (*tmax) temperature.
 */
 static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
-	RealD wTmax_var, RealD wTmin_var, RealD wT_covar, pcg32_random_t *markov_rng,
+	RealD wTmax_var, RealD wTmin_var, RealD wT_covar, sw_random_t *markov_rng,
 	LOG_INFO* LogInfo) {
 	/* --------------------------------------------------- */
 	/* This proc is distilled from a much more general function
@@ -178,7 +178,7 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
   // since `mvnorm` is static we cannot do unit tests unless we set it up
   // as an externed function pointer
   void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD,
-  				      RealD, pcg32_random_t*, LOG_INFO*) = &mvnorm;
+  				      RealD, sw_random_t*, LOG_INFO*) = &mvnorm;
 #endif
 
 

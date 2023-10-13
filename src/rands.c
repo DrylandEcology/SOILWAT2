@@ -9,8 +9,6 @@
 #include "include/myMemory.h"
 #include "include/filefuncs.h"
 
-#include "external/pcg/pcg_basic.h"
-
 
 #ifdef RSOILWAT
   // R-API requires that we use it's own random number implementation
@@ -18,6 +16,10 @@
   // and https://cran.r-project.org/doc/manuals/R-exts.html#Random-numbers
   #include <R_ext/Random.h> // for the random number generators
   #include <Rmath.h> // for rnorm()
+
+#else
+#include "external/pcg/pcg_basic.h"
+
 #endif
 
 
@@ -56,7 +58,7 @@
 void RandSeed(
   unsigned long initstate,
   unsigned long initseq,
-  pcg32_random_t* pcg_rng
+  sw_random_t* pcg_rng
 ) {
 // R uses its own random number generators
 #ifndef RSOILWAT
@@ -72,7 +74,9 @@ void RandSeed(
 
 #else
   // silence compile warnings [-Wunused-parameter]
-  if (pcg_rng == NULL && initstate > 1u && initseq > 1u) {}
+  (void) pcg_rng;
+  (void) initstate;
+  (void) initseq;
 
 #endif
 }
@@ -90,7 +94,7 @@ void RandSeed(
 
   @return A pseudo-random number between 0 and 1.
 */
-double RandUni(pcg32_random_t* pcg_rng) {
+double RandUni(sw_random_t* pcg_rng) {
 
   double res;
 
@@ -99,7 +103,7 @@ double RandUni(pcg32_random_t* pcg_rng) {
     res = ldexp(pcg32_random_r(pcg_rng), -32);
 
   #else
-    if (pcg_rng == NULL) {} // silence compile warnings [-Wunused-parameter]
+    (void) pcg_rng; // silence compile warnings [-Wunused-parameter]
 
     GetRNGstate();
     res = unif_rand();
@@ -121,7 +125,7 @@ double RandUni(pcg32_random_t* pcg_rng) {
 
 	\return Random number between the two bounds defined.
 */
-int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) {
+int RandUniIntRange(const long first, const long last, sw_random_t* pcg_rng) {
 /* History:
 	Return a randomly selected integer between
 	first and last, inclusive.
@@ -158,7 +162,7 @@ int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) 
     res = pcg32_boundedrand_r(pcg_rng, r) + f;
 
   #else
-    if (pcg_rng == NULL) {} // silence compile warnings [-Wunused-parameter]
+    (void) pcg_rng; // silence compile warnings [-Wunused-parameter]
 
     GetRNGstate();
     res = (long) runif(f, l);
@@ -180,7 +184,7 @@ int RandUniIntRange(const long first, const long last, pcg32_random_t* pcg_rng) 
 
 	\return Random number between first and last, inclusive.
 */
-float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rng) {
+float RandUniFloatRange(const float min, const float max, sw_random_t* pcg_rng) {
 /* History:
 
 	cwb - 12/5/00
@@ -235,7 +239,7 @@ float RandUniFloatRange(const float min, const float max, pcg32_random_t* pcg_rn
   \param[in] LogInfo Holds information dealing with logfile output
 */
 void RandUniList(long count, long first, long last, RandListType list[],
-                 pcg32_random_t* pcg_rng, LOG_INFO* LogInfo) {
+                 sw_random_t* pcg_rng, LOG_INFO* LogInfo) {
 
 	long i, j, c, range, *klist;
 
@@ -318,7 +322,7 @@ void RandUniList(long count, long first, long last, RandListType list[],
 	\param stddev Standard deviation of the distribution.
 	\param[in,out] *pcg_rng The random number generator to use.
 */
-double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
+double RandNorm(double mean, double stddev, sw_random_t* pcg_rng) {
 /* History:
 	 cwb - 6/20/00
 	 This routine is
@@ -374,7 +378,7 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
 
 
 	#else
-		if (pcg_rng == NULL) {} // silence compile warnings [-Wunused-parameter]
+		(void) pcg_rng; // silence compile warnings [-Wunused-parameter]
 
 		GetRNGstate();
 		res = rnorm(mean, stddev);
@@ -408,7 +412,7 @@ double RandNorm(double mean, double stddev, pcg32_random_t* pcg_rng) {
   \param[in,out] *pcg_rng The random number generator to use.
   \return A random variate of a beta distribution.
 */
-float RandBeta ( float aa, float bb, pcg32_random_t* pcg_rng) {
+float RandBeta ( float aa, float bb, sw_random_t* pcg_rng) {
   float a;
   float alpha;
   float b;
