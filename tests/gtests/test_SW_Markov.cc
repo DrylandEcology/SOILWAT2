@@ -38,7 +38,7 @@
 
 
 extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD,
-                           pcg32_random_t*, LOG_INFO*);
+                           sw_random_t*, LOG_INFO*);
 extern void (*test_temp_correct_wetdry)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD);
 
 

@@ -34,13 +34,12 @@
 #include "include/SW_Weather.h"
 #include "include/SW_Markov.h"
 #include "include/SW_Sky.h"
-#include "external/pcg/pcg_basic.h"
 
 #include "include/SW_Flow_lib.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
-pcg32_random_t flow_rng;
+sw_random_t flow_rng;
 //SW_SOILWAT_OUTPUTS *swo = NULL;
 
 int k;
@@ -220,7 +219,7 @@ namespace
     double *impermeability2 = new double[nlyrs];
     double *drain2 = new double[nlyrs];
 
-    pcg32_random_t infiltrate_rng;
+    sw_random_t infiltrate_rng;
     RandSeed(0u, 0u, &infiltrate_rng);
 
     for (i = 0; i < MAX_LAYERS; i++)

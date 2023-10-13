@@ -18,7 +18,6 @@
 #include "include/myMemory.h"
 #include "include/filefuncs.h"
 #include "include/rands.h"
-#include "external/pcg/pcg_basic.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
@@ -26,7 +25,7 @@
 namespace {
   // This tests the uniform random number generator
   TEST(RNGTest, RNGUnifZeroToOneOutput) {
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     double min = 0., max = 1.;
     double x71, x71b, x11, x12;
@@ -68,7 +67,7 @@ namespace {
   }
 
   TEST(RNGTest, RNGUnifFloatRangeOutput) {
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     float min = 7.5, max = 77.7;
     double x71, x71b, x11, x12, x0;
@@ -120,7 +119,7 @@ namespace {
 
 
   TEST(RNGTest, RNGUnifIntRangeOutput) {
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     int min = 7, max = 123;
     double x71, x71b, x11, x12, x0;
@@ -175,7 +174,7 @@ namespace {
 
   // This tests the normal random number generator
   TEST(RNGTest, RNGNormMeanSD) {
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10, f = 9999;
     double
       mean = 0., sd = 1.,
@@ -240,7 +239,7 @@ namespace {
 
   // This tests the beta random number generator
   TEST(RNGTest, RNGBetaZeroToOneOutput) {
-    pcg32_random_t ZeroToOne_rng;
+    sw_random_t ZeroToOne_rng;
     RandSeed(0u, 0u, &ZeroToOne_rng);
     EXPECT_LT(RandBeta(0.5, 2, &ZeroToOne_rng), 1);
     EXPECT_LT(RandBeta(1, 3, &ZeroToOne_rng), 1);
@@ -248,7 +247,7 @@ namespace {
     EXPECT_GT(RandBeta(0.25, 1, &ZeroToOne_rng), 0);
 
 
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     double
       a = 0.25, b = 2.,
@@ -292,7 +291,7 @@ namespace {
   }
 
   TEST(RNGDeathTest, RNGBetaErrorsDeathTest) {
-    pcg32_random_t error_rng;
+    sw_random_t error_rng;
     RandSeed(0u, 0u, &error_rng);
     EXPECT_DEATH_IF_SUPPORTED(RandBeta(-0.5, 2, &error_rng), "AA <= 0.0");
     EXPECT_DEATH_IF_SUPPORTED(RandBeta(1, -3, &error_rng), "BB <= 0.0");
