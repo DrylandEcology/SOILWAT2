@@ -1042,19 +1042,4 @@ typedef struct {
 	#endif
 } SW_OUTPUT_POINTERS;
 
-/* =================================================== */
-/*                 Block info struct                   */
-/* --------------------------------------------------- */
-
- /* blockinfo is a structure that contains the memory log information
- * for one allocated memory block.  Every allocated memory block has
- * a corresponding blockinfo structure in the memory log.
- */
-typedef struct BLOCKINFO {
-	struct BLOCKINFO *pbiNext;
-	byte *pb; /* start of block    */
-	size_t size; /* length of block   */
-	flag fReferenced; /* Ever referenced?  */
-} blockinfo; /* Naming:  bi, *pbi */
-
 #endif // DATATYPES_H
