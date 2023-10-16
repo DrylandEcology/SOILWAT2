@@ -136,7 +136,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO* LogInfo);
 void allocateAllWeather(SW_WEATHER_HIST ***allHist, unsigned int n_years,
                         LOG_INFO* LogInfo);
 void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years);
-void deallocateAllWeather(SW_WEATHER *w);
+void deallocateAllWeather(SW_WEATHER_HIST **allHist, unsigned int n_years);
 void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
 void SW_WTH_finalize_all_weather(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather,
               TimeInt cum_monthdays[], TimeInt days_in_month[], LOG_INFO* LogInfo);

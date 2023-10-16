@@ -567,19 +567,18 @@ namespace {
 
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
-        SW_WEATHER_HIST **allHist;
+        SW_WEATHER_HIST **allHist = NULL;
+
+        unsigned int n_years = 2;
 
         Bool inNorthHem = swTRUE;
 
         // Allocate memory
-        allocateClimateStructs(2, &climateOutput, &climateAverages, &LogInfo);
+        allocateClimateStructs(n_years, &climateOutput, &climateAverages, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-        allHist = (SW_WEATHER_HIST **)malloc(sizeof(SW_WEATHER_HIST *) * 2);
-
-        for (int year = 0; year < 2; year++) {
-            allHist[year] = (SW_WEATHER_HIST *)malloc(sizeof(SW_WEATHER_HIST));
-        }
+        allocateAllWeather(&allHist, n_years, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
         // ------ Check climate variables for constant weather = 1 ------
@@ -591,7 +590,7 @@ namespace {
         // Expect that the average number of days in February is 28.5 (1 leap + 1 nonleap)
 
         // Set all weather values to 1
-        for(int year = 0; year < 2; year++) {
+        for(unsigned int year = 0; year < n_years; year++) {
             for(int day = 0; day < 366; day++) {
                 allHist[year]->temp_max[day] = 1.;
                 allHist[year]->temp_min[day] = 1.;
@@ -602,7 +601,7 @@ namespace {
 
         // --- Annual time-series of climate variables ------
         calcSiteClimate(allHist, SW_All.Model.cum_monthdays,
-            SW_All.Model.days_in_month, 2, 1980, inNorthHem, &climateOutput);
+            SW_All.Model.days_in_month, n_years, 1980, inNorthHem, &climateOutput);
 
         EXPECT_DOUBLE_EQ(climateOutput.meanTempMon_C[Jan][0], 1.);
         EXPECT_DOUBLE_EQ(climateOutput.maxTempMon_C[Jan][0], 1.);
@@ -630,7 +629,7 @@ namespace {
 
 
         // --- Long-term variables (aggregated across years) ------
-        averageClimateAcrossYears(&climateOutput, 2, &climateAverages);
+        averageClimateAcrossYears(&climateOutput, n_years, &climateAverages);
 
         EXPECT_DOUBLE_EQ(climateAverages.meanTempMon_C[Jan], 1.);
         EXPECT_DOUBLE_EQ(climateAverages.maxTempMon_C[Jan], 1.);
@@ -660,11 +659,7 @@ namespace {
 
         // ------ Reset and deallocate
         deallocateClimateStructs(&climateOutput, &climateAverages);
-
-        for (int year = 0; year < 2; year++) {
-            free(allHist[year]);
-        }
-        free(allHist);
+        deallocateAllWeather(allHist, n_years);
 
     }
 
