@@ -113,6 +113,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 		case 17:
 			PathInfo->InFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
             if(LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
 			++fileno;
@@ -121,6 +122,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 		case 18:
 			PathInfo->InFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
             if(LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
 			++fileno;
@@ -130,6 +132,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 		case 19:
 			PathInfo->InFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
             if(LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
 			++fileno;
@@ -139,6 +142,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 		case 20:
 			PathInfo->InFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
             if(LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
 			++fileno;
@@ -147,6 +151,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 		case 21:
 			PathInfo->InFiles[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
             if(LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
 			++fileno;
@@ -156,6 +161,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 		case 22:
 			PathInfo->InFiles[eOutputWeekly_soil] = Str_Dup(inbuf, LogInfo);
             if(LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
 			++fileno;
@@ -165,6 +171,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 		case 23:
 			PathInfo->InFiles[eOutputMonthly_soil] = Str_Dup(inbuf, LogInfo);
             if(LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
 			++fileno;
@@ -174,6 +181,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 		case 24:
 			PathInfo->InFiles[eOutputYearly_soil] = Str_Dup(inbuf, LogInfo);
             if(LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
 			++fileno;
@@ -192,12 +200,14 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 			strcat(buf, inbuf);
 			PathInfo->InFiles[fileno] = Str_Dup(buf, LogInfo);
             if(LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
 		}
 
         // Check if something went wrong in `SW_CSV_F_INIT()`
         if(LogInfo->stopRun) {
+            CloseFile(&f, LogInfo);
             return; // Exit function prematurely due to error
         }
 

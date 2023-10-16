@@ -22,6 +22,8 @@ namespace {
 
     // Run the simulation
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
 
     // Expect valid 'day of year' 1-366 output for each species from the
     // vegetation establishment calculations

@@ -113,6 +113,7 @@ namespace {
     soil_temperature_setup(&SW_StRegValues, bDensity, width, sTempInit,
       sTconst, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError,
       &SW_StRegValues.soil_temp_init, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     //Structure Tests
     EXPECT_EQ(
@@ -147,6 +148,7 @@ namespace {
     soil_temperature_setup(&SW_StRegValues, bDensity2, width2, sTempInit2,
       sTconst, nlyrs, fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError,
       &SW_StRegValues.soil_temp_init, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     //Structure Tests
     EXPECT_EQ(
@@ -202,6 +204,7 @@ namespace {
       fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError,
       &SW_StRegValues.soil_temp_init, &LogInfo
     );
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg,
@@ -241,6 +244,7 @@ namespace {
     soil_temperature_setup(&SW_StRegValues, bDensity, width, sTempInit,
       sTconst, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError,
       &SW_StRegValues.soil_temp_init, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // lyrSoil_to_lyrTemp tests: This function is used in soil_temperature_setup
     // to transfer the soil layer values of bdensity, fc, and wp, to the "temperature layer"
@@ -292,6 +296,7 @@ namespace {
     soil_temperature_setup(&SW_StRegValues, bDensity2, width2, sTempInit2,
       sTconst, nlyrs, fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError,
       &SW_StRegValues.soil_temp_init, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // lyrSoil_to_lyrTemp tests
     for (i = 0; i < nRgr + 1; i++) {  // all Values should be greater than 0
@@ -501,6 +506,7 @@ namespace {
       lyrFrozen,
       &LogInfo
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     soil_temperature(
       &SW_StRegValues,
@@ -510,6 +516,7 @@ namespace {
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
       theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       year, doy, min_temp, max_temp, &ptr_stError, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Expect that surface temp equals surface_temperature_under_snow() because snow > 0
     EXPECT_EQ(surfaceTemp, surface_temperature_under_snow(airTemp, snow));
@@ -531,6 +538,7 @@ namespace {
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
       theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       year, doy, min_temp, max_temp, &ptr_stError, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(surfaceTemp, airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp, airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
@@ -551,6 +559,7 @@ namespace {
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
       theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       year, doy, min_temp, max_temp, &ptr_stError, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(surfaceTemp, airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp, airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
@@ -586,6 +595,7 @@ namespace {
       lyrFrozen,
       &LogInfo
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(ptr_stError, swFALSE);
 
@@ -597,6 +607,7 @@ namespace {
       csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, max_air_temp, min_air_temp, H_gt, year,
       doy, min_temp, max_temp, &ptr_stError, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that error has occurred as indicated by ptr_stError
     EXPECT_EQ(ptr_stError, swTRUE);
@@ -688,6 +699,7 @@ namespace {
       lyrFrozen,
       &LogInfo
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
     // Test surface temp equals surface_temperature_under_snow() because snow > 0
@@ -700,6 +712,7 @@ namespace {
       deltaX, theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       year, doy, min_temp, max_temp, &ptr_stError,
       &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(surfaceTemp, surface_temperature_under_snow(airTemp, snow));
     EXPECT_NE(surfaceTemp, airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
@@ -719,6 +732,7 @@ namespace {
       deltaX, theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       year, doy, min_temp, max_temp, &ptr_stError,
       &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(surfaceTemp, airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp, airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
@@ -737,6 +751,7 @@ namespace {
       deltaX, theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       year, doy, min_temp, max_temp, &ptr_stError,
       &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(surfaceTemp, airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp, airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
@@ -797,6 +812,7 @@ namespace {
       min_air_temp, H_gt, year, doy,
       min_temp, max_temp, &ptr_stError, &LogInfo
     );
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg,

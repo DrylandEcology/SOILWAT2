@@ -1493,6 +1493,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 			SW_Site->site_swrc_type =
 							encode_str2swrc(SW_Site->site_swrc_name, LogInfo);
             if(LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
 			break;

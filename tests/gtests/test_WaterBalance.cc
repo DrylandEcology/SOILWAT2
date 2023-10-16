@@ -50,6 +50,7 @@ namespace {
 
     // Run the simulation
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -67,7 +68,8 @@ namespace {
     SW_All.Site.use_soil_temp = swTRUE;
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -87,7 +89,8 @@ namespace {
     SW_All.Site.percentRunon = 1.25;
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -110,17 +113,22 @@ namespace {
     SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                  SW_All.Weather.generateWeatherMethod,
                  PathInfo.InFiles, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Point to nonexisting weather data
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+      SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -144,14 +152,19 @@ namespace {
     SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                  SW_All.Weather.generateWeatherMethod,
                  PathInfo.InFiles, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+      SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -174,9 +187,11 @@ namespace {
 
     // Re-calculate soils
     SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -197,12 +212,14 @@ namespace {
       &SW_All.Site,
       &LogInfo
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Initialize `swcBulk` based on new soil layers
     SW_SWC_init_run(&SW_All.SoilWat, &SW_All.Site, &SW_All.Weather.temp_snow);
 
     // Run the simulation
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -223,12 +240,14 @@ namespace {
       &SW_All.Site,
       &LogInfo
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Initialize `swcBulk` based on new soil layers
     SW_SWC_init_run(&SW_All.SoilWat, &SW_All.Site, &SW_All.Weather.temp_snow);
 
     // Run the simulation
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -248,9 +267,11 @@ namespace {
     // Re-calculate vegetation
     SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather, &SW_All.Model,
                     SW_All.Model.startyr, SW_All.Model.endyr, &LogInfo);
+    sw_fail_on_error(&LogInfo);
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -266,21 +287,26 @@ namespace {
     // Set SWRC and PTF (and SWRC parameter input filename)
     strcpy(SW_All.Site.site_swrc_name, (char *) "vanGenuchten1980");
     SW_All.Site.site_swrc_type = encode_str2swrc(SW_All.Site.site_swrc_name, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     strcpy(SW_All.Site.site_ptf_name, (char *) "Rosetta3");
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
     Mem_Free(PathInfo.InFiles[eSWRCp]);
     PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
     SW_SWRC_read(&SW_All.Site, PathInfo.InFiles, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils
     SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -298,21 +324,26 @@ namespace {
     // Set SWRC and PTF (and SWRC parameter input filename)
     strcpy(SW_All.Site.site_swrc_name, (char *) "FXW");
     SW_All.Site.site_swrc_type = encode_str2swrc(SW_All.Site.site_swrc_name, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     strcpy(SW_All.Site.site_ptf_name, (char *) "neuroFX2021");
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
     Mem_Free(PathInfo.InFiles[eSWRCp]);
     PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
     SW_SWRC_read(&SW_All.Site, PathInfo.InFiles, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils
     SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -347,11 +378,15 @@ namespace {
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+      SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -390,11 +425,15 @@ namespace {
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+      SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -435,11 +474,15 @@ namespace {
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
     SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-    SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+      SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {

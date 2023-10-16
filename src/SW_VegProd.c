@@ -1581,6 +1581,7 @@ void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTw
     }
     tempArraySeen = (int *)Mem_Malloc(sizeof(int) * nTypes, "uniqueIndices()", LogInfo);
     if(LogInfo->stopRun) {
+        free(tempArray);
         return; // Exit function prematurely due to error
     }
 

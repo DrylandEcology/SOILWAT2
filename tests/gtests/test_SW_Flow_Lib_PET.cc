@@ -241,7 +241,7 @@ namespace
                            "Error in SW2_SolarPosition_Test__hourangles_symmetries");
               }
 
-              EXPECT_THAT(LogInfo.errorMsg, StrEq(""));
+              sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
               SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
 
@@ -800,6 +800,7 @@ namespace
         &H_gh,
         &LogInfo
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_NEAR(H_oh, H_Ex2_19_1[0][k], tol0)
         << "Duffie & Beckman 2013: Example 2.19.1 (missing rsds), H_oh: "
@@ -834,6 +835,7 @@ namespace
         &H_gh,
         &LogInfo
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // Expect: observed `rsds` (for `desc_rsds = 0`) is equal to `H_gh`
       EXPECT_DOUBLE_EQ(rsds, H_gh);
@@ -863,6 +865,7 @@ namespace
         &H_gh,
         &LogInfo
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_NEAR(H_oh, H_Ex2_19_1[0][k], tol0)
         << "Duffie & Beckman 2013: Example 2.19.1 (observed rsds), H_oh: "
@@ -972,9 +975,11 @@ namespace
         rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh, &LogInfo
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       check_pet = petfunc(H_gt, avgtemps[i], elev, reflec, RH, windsp,
                           cloudcov, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_NEAR(check_pet, expected_pet_avgtemps[i], tol3);
     }
@@ -1000,9 +1005,11 @@ namespace
         rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh, &LogInfo
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp,
                           cloudcov, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_NEAR(check_pet, expected_pet_lats[i], tol6);
    }
@@ -1027,9 +1034,11 @@ namespace
         rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh, &LogInfo
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       check_pet = petfunc(H_gt, temp, elevs[i], reflec, RH, windsp,
                           cloudcov, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_NEAR(check_pet, expected_pet_elevs[i], tol3);
     }
@@ -1053,9 +1062,11 @@ namespace
         rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh, &LogInfo
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp,
                           cloudcov, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_NEAR(check_pet, expected_pet_slopes[i], tol3);
     }
@@ -1082,9 +1093,11 @@ namespace
         rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh, &LogInfo
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp,
                           cloudcov, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_NEAR(check_pet, expected_pet_aspects[i], tol3);
     }
@@ -1108,9 +1121,11 @@ namespace
         rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh, &LogInfo
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       check_pet = petfunc(H_gt, temp, elev, reflecs[i], RH, windsp,
                           cloudcov, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_NEAR(check_pet, expected_pet_reflecs[i], tol3);
     }
@@ -1136,9 +1151,11 @@ namespace
         rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh, &LogInfo
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       check_pet = petfunc(H_gt, temp, elev, reflec, RHs[i], windsp,
                           cloudcov, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_NEAR(check_pet, expected_pet_RHs[i], tol3);
     }
@@ -1160,11 +1177,13 @@ namespace
       rsds, desc_rsds,
       &H_oh, &H_ot, &H_gh, &LogInfo
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < 5; i++)
     {
       check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsps[i],
                           cloudcov, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_NEAR(check_pet, expected_pet_windsps[i], tol3);
     }
@@ -1189,9 +1208,11 @@ namespace
         rsds, desc_rsds,
         &H_oh, &H_ot, &H_gh, &LogInfo
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       check_pet = petfunc(H_gt, temp, elev, reflec, RH, windsp,
                           cloudcovs[i], &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       EXPECT_NEAR(check_pet, expected_pet_cloudcovs[i], tol3);
     }
@@ -1279,6 +1300,7 @@ namespace
                   rsds, desc_rsds,
                   &H_oh, &H_ot, &H_gh, &LogInfo
                 );
+                sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
                 pet += petfunc(
                   H_gt,
@@ -1287,6 +1309,7 @@ namespace
                   RH, windspeed, cloudcover,
                   &LogInfo
                 );
+                sw_fail_on_error(&LogInfo); // exit test program if unexpected error
               }
 
               fprintf(

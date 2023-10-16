@@ -1242,24 +1242,26 @@ void SW_WTH_deconstruct(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather)
 /**
   @brief Allocate memory for `allHist` for `w` based on `n_years`
 
-  @param[out] w Struct of type SW_WEATHER holding all relevant
-    information pretaining to weather input data
+  @param[out] allHist Array containing all historical data of a site
+  @param[in] n_years Number of years in simulation
   @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void allocateAllWeather(SW_WEATHER *w, LOG_INFO* LogInfo) {
+void allocateAllWeather(SW_WEATHER_HIST ***allHist, unsigned int n_years,
+                        LOG_INFO* LogInfo) {
+
   unsigned int year;
 
-  w->allHist = (SW_WEATHER_HIST **)Mem_Malloc(sizeof(SW_WEATHER_HIST *) * w->n_years,
+  *allHist = (SW_WEATHER_HIST **)Mem_Malloc(sizeof(SW_WEATHER_HIST *) * n_years,
                                    "allocateAllWeather()", LogInfo);
   if(LogInfo->stopRun) {
     return; // Exit function prematurely due to error
   }
 
-  initializeAllWeatherPtrs(w->allHist, w->n_years);
+  initializeAllWeatherPtrs(*allHist, n_years);
 
-  for (year = 0; year < w->n_years; year++) {
+  for (year = 0; year < n_years; year++) {
 
-      w->allHist[year] = (SW_WEATHER_HIST *)Mem_Malloc(sizeof(SW_WEATHER_HIST),
+      (*allHist)[year] = (SW_WEATHER_HIST *)Mem_Malloc(sizeof(SW_WEATHER_HIST),
                                             "allocateAllWeather()", LogInfo);
       if(LogInfo->stopRun) {
           return; // Exit function prematurely due to error
@@ -1806,7 +1808,7 @@ void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
     SW_Weather->startYear = SW_Model->startyr;
 
     // Allocate new `allHist` (based on current `SW_Weather.n_years`)
-    allocateAllWeather(SW_Weather, LogInfo);
+    allocateAllWeather(&SW_Weather->allHist, SW_Weather->n_years, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

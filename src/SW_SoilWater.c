@@ -1079,6 +1079,7 @@ void SW_SWC_read(
 		case 1:
 			SW_SoilWat->hist.file_prefix = (char *) Str_Dup(inbuf, LogInfo);
             if(LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
 			break;
@@ -1091,23 +1092,22 @@ void SW_SWC_read(
 		}
 		lineno++;
 	}
+
+	CloseFile(&f, LogInfo);
+
 	if(!SW_SoilWat->hist_use) {
-		CloseFile(&f, LogInfo);
 		return;
 	}
 	if (lineno < nitems) {
-		CloseFile(&f, LogInfo);
 		LogError(LogInfo, LOGERROR, "%s : Insufficient parameters specified.", MyFileName);
         return; // Exit function prematurely due to error
 	}
 	if (SW_SoilWat->hist.method < 1 || SW_SoilWat->hist.method > 2) {
-		CloseFile(&f, LogInfo);
 		LogError(LogInfo, LOGERROR, "%s : Invalid swc adjustment method.", MyFileName);
         return; // Exit function prematurely due to error
 	}
 	SW_SoilWat->hist.yr.last = endyr;
 	SW_SoilWat->hist.yr.total = SW_SoilWat->hist.yr.last - SW_SoilWat->hist.yr.first + 1;
-	CloseFile(&f, LogInfo);
 }
 
 /**
@@ -1437,13 +1437,32 @@ double SWRC_SWCtoSWP(
 ) {
 	double res = SW_MISSING;
 
-	if (LT(swcBulk, 0.) || EQ(gravel, 1.) || LE(width, 0.)) {
-		LogError(
-			LogInfo,
-			errmode,
-			"SWRC_SWCtoSWP(): invalid SWC = %.4f (must be >= 0)\n",
-			swcBulk
-		);
+	if (LT(swcBulk, 0.) || GE(gravel, 1.) || LE(width, 0.)) {
+
+    if (LT(swcBulk, 0.)) {
+      LogError(
+        LogInfo,
+        errmode,
+        "SWRC_SWCtoSWP(): invalid SWC = %.4f (must be >= 0)\n",
+        swcBulk
+      );
+
+    } else if (GE(gravel, 1.)) {
+      LogError(
+        LogInfo,
+        errmode,
+        "SWRC_SWCtoSWP(): invalid gravel = %.4f (must be in [0, 1[)\n",
+        gravel
+      );
+
+    } else {
+      LogError(
+        LogInfo,
+        errmode,
+        "SWRC_SWCtoSWP(): invalid layer width = %.4f (must be > 0)\n",
+        width
+      );
+    }
 
 	} else {
         switch (swrc_type) {
