@@ -40,7 +40,7 @@
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
 	over the simulated site
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 	/* =================================================== */
@@ -50,10 +50,13 @@ void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 	 */
 	FILE *f;
 	int lineno = 0, x = 0;
-	char errstr[MAX_ERROR], *MyFileName, inbuf[MAX_FILENAMESIZE];
+	char *MyFileName, inbuf[MAX_FILENAMESIZE];
 
 	MyFileName = InFiles[eSky];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	while (GetALine(f, inbuf)) {
 		switch (lineno) {
@@ -92,8 +95,9 @@ void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 
 		if (x < 12) {
 			CloseFile(&f, LogInfo);
-			snprintf(errstr, MAX_ERROR, "%s : invalid record %d.\n", MyFileName, lineno);
-			LogError(LogInfo, LOGFATAL, errstr);
+			LogError(LogInfo, LOGERROR, "%s : invalid record %d.\n",
+										MyFileName, lineno);
+            return; // Exit function prematurely due to error
 		}
 
 		x = 0;

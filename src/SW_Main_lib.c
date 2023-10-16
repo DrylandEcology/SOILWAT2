@@ -28,6 +28,10 @@
 #include "include/SW_Main_lib.h"
 #include "include/myMemory.h"
 
+#ifdef RSOILWAT
+  #include <R.h>    // for error(), and warning()
+#endif
+
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -43,7 +47,7 @@ static void sw_print_usage(void) {
 		"  -f : name of main input file (default=files.in)\n"
 		"       a preceeding path applies to all input files\n"
 		"  -e : echo initial values from site and estab to logfile\n"
-		"  -q : quiet mode, don't print message to check logfile\n"
+		"  -q : quiet mode (print version, print error, message to check logfile)\n"
 		"  -v : print version information\n"
 		"  -h : print this help information\n"
 	);
@@ -73,16 +77,13 @@ void sw_print_version(void) {
 /**
 @brief Initializes arguments and sets indicators/variables based on results.
 
-@param argc Argument C.
-@param argv Argument V.
-@param[out] QuietMode Flag to control if the program version is displayed
+@param[in] argc Number (count) of command line arguments.
+@param[in] argv Values of command line arguments.
 @param[out] EchoInits Flag to control if inputs are to be output to the user
 @param[out] _firstfile First file name to be filled in the program run
-@param[in] LogInfo Holds information dealing with logfile output
-
-@sideeffect argv Updated argument V.
+@param[out] LogInfo Holds information dealing with logfile output
 */
-void sw_init_args(int argc, char **argv, Bool *QuietMode,
+void sw_init_args(int argc, char **argv,
 	Bool *EchoInits, char **_firstfile, LOG_INFO* LogInfo) {
 
 	/* =================================================== */
@@ -109,7 +110,11 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 	/* Defaults */
 	*_firstfile = Str_Dup(DFLT_FIRSTFILE, LogInfo);
-	*QuietMode = *EchoInits = swFALSE;
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+	*EchoInits = swFALSE;
 
 	a = 1;
 	for (i = 1; i <= nopts; i++) {
@@ -124,7 +129,8 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 		if (op >= nopts) {
       sw_print_usage();
-      sw_error(-1, "\nInvalid option %s\n", argv[a]);
+      LogError(LogInfo, LOGERROR, "\nInvalid option %s\n", argv[a]);
+      return; // Exit function prematurely due to error
 
 		} else {
 			// Use `valopts[op]` in else-branch to avoid
@@ -141,7 +147,8 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 				} else if (0 < valopts[op]) { /* required opt-val not found */
 					sw_print_usage();
-					sw_error(-1, "\nIncomplete option %s\n", opts[op]);
+					LogError(LogInfo, LOGERROR, "\nIncomplete option %s\n", opts[op]);
+                    return; // Exit function prematurely due to error
 				} /* opt-val not required */
 			}
 
@@ -150,13 +157,17 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 			switch (op) {
 				case 0: /* -d */
 					if (!ChDir(str)) {
-						LogError(LogInfo, LOGFATAL, "Invalid project directory (%s)", str);
+						LogError(LogInfo, LOGERROR, "Invalid project directory (%s)", str);
+                        return; // Exit function prematurely due to error
 					}
 					break;
 
 				case 1: /* -f */
 					free(*_firstfile);
 					*_firstfile = Str_Dup(str, LogInfo);
+                    if(LogInfo->stopRun) {
+                        return; // Exit function prematurely due to error
+                    }
 					break;
 
 				case 2: /* -e */
@@ -164,25 +175,33 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 					break;
 
 				case 3: /* -q */
-					*QuietMode = swTRUE;
+					LogInfo->QuietMode = swTRUE;
 					break;
 
 				case 4: /* -v */
 					sw_print_version();
-					sw_error(-1, "");
+					LogError(LogInfo, LOGERROR, "");
+                    if(LogInfo->stopRun) {
+                        return; // Exit function prematurely due to error
+                    }
 					break;
 
 				case 5: /* -h */
 					sw_print_usage();
-					sw_error(-1, "");
+					LogError(LogInfo, LOGERROR, "");
+                    if(LogInfo->stopRun) {
+                        return; // Exit function prematurely due to error
+                    }
 					break;
 
 				default:
 					LogError(
 						LogInfo,
-						LOGFATAL,
+						LOGERROR,
 						"Programmer: bad option in main:sw_init_args:switch"
 					);
+
+                    return; // Exit function prematurely due to error
 			}
 
 			a++; /* move to next valid arg-value position */
@@ -191,18 +210,115 @@ void sw_init_args(int argc, char **argv, Bool *QuietMode,
 
 }
 
+/**
+ @brief Deal with error that occurred during runtime
 
-void sw_check_log(Bool QuietMode, LOG_INFO* LogInfo) {
-	/* =================================================== */
-	/* function to be called by atexit() so it's the last
-	 * to execute before termination.  This is the place to
-	 * do any cleanup or progress reporting.
-	 */
-	if (LogInfo->logfp != stdout && LogInfo->logfp != stderr) {
-		CloseFile(&LogInfo->logfp, LogInfo);
-		if (LogInfo->logged && !QuietMode) {
-			sw_error(0, "\nCheck logfile for error or status messages.\n");
-		}
+  On error, for SOILWAT2, then print the error message to `stderr`
+  (unless `QuietMode` is TRUE) and exit with `EXIT_FAILURE`;
+  for rSOILWAT2, then issue an error with the error message.
+
+  @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void sw_fail_on_error(LOG_INFO* LogInfo) {
+    #ifdef RSOILWAT
+    if(LogInfo->stopRun) {
+        error(LogInfo->errorMsg);
+    }
+
+    #else
+    if(LogInfo->stopRun) {
+        if(!LogInfo->QuietMode) {
+            fprintf(stderr, "%s", LogInfo->errorMsg);
+        }
+        exit(EXIT_FAILURE);
+    }
+    #endif
+}
+
+/**
+ * @brief Initialize values within LOG_INFO
+ *
+ * @param[in] logInitPtr Log file pointer that LOG_INFO will be initialized to
+ * @param[in,out] LogInfo Holds information dealing with log file output
+*/
+void sw_init_logs(FILE* logInitPtr, LOG_INFO* LogInfo) {
+
+	LogInfo->logfp = logInitPtr;
+
+	LogInfo->errorMsg[0] = '\0';
+
+	LogInfo->stopRun = swFALSE;
+	LogInfo->numWarnings = 0;
+	LogInfo->QuietMode = swFALSE;
+}
+
+/**
+ * @brief Write warnings that have been accumulated throughout the program/
+ * simulation run
+ *
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void sw_write_warnings(LOG_INFO* LogInfo) {
+
+	int warnMsgNum, warningUpperBound = LogInfo->numWarnings;
+	Bool tooManyWarns = swFALSE, QuietMode;
+	char tooManyWarnsStr[MAX_LOG_SIZE];
+    char tooManyStrFmt[] = "There were a total of %d warnings and"\
+                          " only %d were printed.\n";
+
+  QuietMode = (Bool)(LogInfo->QuietMode || isnull(LogInfo->logfp));
+
+	if(warningUpperBound > MAX_MSGS) {
+		warningUpperBound = MAX_MSGS;
+		tooManyWarns = swTRUE;
+
+        snprintf(tooManyWarnsStr, MAX_LOG_SIZE, tooManyStrFmt,
+                 LogInfo->numWarnings, MAX_MSGS);
 	}
 
+	#ifdef RSOILWAT
+	/* rSOILWAT2: don't issue `warnings()` if quiet */
+  if (!QuietMode) {
+	    for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
+          warning(LogInfo->warningMsgs[warnMsgNum]);
+      }
+
+      if(tooManyWarns) {
+          warning(tooManyWarnsStr);
+      }
+  }
+	#else
+	/* SOILWAT2: do print warnings and don't notify user if quiet */
+  if (!isnull(LogInfo->logfp)) {
+      for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
+          fprintf(LogInfo->logfp, "%s\n", LogInfo->warningMsgs[warnMsgNum]);
+      }
+
+      if(tooManyWarns) {
+          fprintf(LogInfo->logfp, "%s", tooManyWarnsStr);
+      }
+
+      if(LogInfo->stopRun) {
+          /* Write error message to log file here;
+             later (sw_fail_on_error()), we will write it to stderr and crash */
+          fprintf(LogInfo->logfp, "%s", LogInfo->errorMsg);
+      }
+
+      fflush(LogInfo->logfp);
+      // Close logfile (but not if it is stdout or stderr)
+      if (LogInfo->logfp == stdout || LogInfo->logfp == stderr) {
+          CloseFile(&LogInfo->logfp, LogInfo);
+      }
+  }
+
+  // Notify the user that there are messages in the logfile (unless QuietMode)
+  if(
+    (LogInfo->stopRun || LogInfo->numWarnings > 0) &&
+    !QuietMode &&
+    LogInfo->logfp != stdout &&
+    LogInfo->logfp != stderr
+  ) {
+      fprintf(stderr, "\nCheck logfile for warnings and error messages.\n");
+  }
+	#endif
 }

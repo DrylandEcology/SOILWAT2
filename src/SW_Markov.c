@@ -159,7 +159,8 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 	s = vc10 * vc10;
 
 	if (GT(s, wTmin_var)) {
-		LogError(LogInfo, LOGFATAL, "\nBad covariance matrix in mvnorm()");
+		LogError(LogInfo, LOGERROR, "\nBad covariance matrix in mvnorm()");
+        return; // Exit function prematurely due to error
 	}
 
 	/* Apparently, it's possible for some but not all setups that
@@ -188,12 +189,30 @@ static void mvnorm(RealD *tmax, RealD *tmin, RealD wTmax, RealD wTmin,
 /* --------------------------------------------------- */
 
 /**
+ * @brief Initialize all possible pointers in the array, SW_OUTPUT, and
+ *		SW_GEN_OUT to NULL
+ *
+ * @param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
+ * 		related to temperature and weather generator
+*/
+void SW_MKV_init_ptrs(SW_MARKOV* SW_Markov) {
+	SW_Markov->wetprob = NULL;
+	SW_Markov->dryprob = NULL;
+	SW_Markov->avg_ppt = NULL;
+	SW_Markov->std_ppt = NULL;
+	SW_Markov->cfxw = NULL;
+	SW_Markov->cfxd = NULL;
+	SW_Markov->cfnw = NULL;
+	SW_Markov->cfnd = NULL;
+}
+
+/**
 @brief Markov constructor for global variables.
 
 @param[in] rng_seed Initial state for Markov
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
 					  LOG_INFO* LogInfo) {
@@ -215,18 +234,39 @@ void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
 
 	SW_Markov->wetprob = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->dryprob = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->avg_ppt = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->std_ppt = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->cfxw = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->cfxd = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->cfnw = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 	SW_Markov->cfnd = (RealD *)
 						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
 }
@@ -290,7 +330,7 @@ void SW_MKV_deconstruct(SW_MARKOV* SW_Markov)
 @param[out] *tmax Maximum temperature (&deg;C).
 @param[out] *tmin Mininum temperature (&deg;C).
 @param[out] *rain Rainfall (cm).
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @sideeffect *tmax Updated maximum temperature (&deg;C).
 @sideeffect *tmin Updated minimum temperature (&deg;C).
@@ -349,6 +389,9 @@ void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 		&SW_Markov->markov_rng,
 		LogInfo
 	);
+    if(LogInfo->stopRun) {
+        return; // Exit the function prematurely due to error
+    }
 
 	temp_correct_wetdry(tmax, tmin, *rain,
 		SW_Markov->cfxw[week],  // correction factor for tmax for wet days
@@ -376,7 +419,7 @@ void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @return swTRUE Returns true if prob file is correctly opened and closed.
 */
@@ -385,8 +428,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 	/* =================================================== */
 	const int nitems = 5;
 	FILE *f;
-	int lineno = 0, day, x, msg_type = 0;
-	char msg[200]; // error message
+	int lineno = 0, day, x;
 	RealF wet, dry, avg, std;
 	char inbuf[MAX_FILENAMESIZE];
 
@@ -405,14 +447,12 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 
 		// Check that text file is ok:
 		if (x < nitems) {
-			msg_type = LOGFATAL;
-			snprintf(
-				msg,
-				sizeof msg,
-				"Too few values in line %d of file %s\n",
-				lineno,
-				MyFileName
-			);
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGERROR, "Too few values in"\
+					" line %d of file %s\n",
+					lineno,
+					MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Check that input values meet requirements:
@@ -420,55 +460,34 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 		// day is a real calendar day
 		if (!isfinite((float) day) || day < 1 || day > MAX_DAYS)
 		{
-			msg_type = LOGFATAL;
-			snprintf(
-				msg,
-				sizeof msg,
-				"'day' = %d is out of range in line %d of file %s\n",
-				day,
-				lineno,
-				MyFileName
-			);
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGERROR, "'day' = %d is out of range"\
+					" in line %d of file %s\n",
+					day, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Probabilities are in [0, 1]
 		if (!isfinite(wet) || LT(wet, 0.) || GT(wet, 1.) ||
 				!isfinite(dry) || LT(dry, 0.) || GT(dry, 1.))
 		{
-			msg_type = LOGFATAL;
-			snprintf(
-				msg,
-				sizeof msg,
-				"Probabilities of being wet = %f and/or of being dry = %f "\
-				"are out of range in line %d of file %s\n",
-				wet,
-				dry,
-				lineno,
-				MyFileName
-			);
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGERROR, "Probabilities of being wet = %f"\
+					" and/or of being dry = %f are out of range in line"\
+					" %d of file %s\n",
+					wet, dry, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Mean and SD of daily precipitation are >= 0
 		if (!isfinite(avg) || LT(avg, 0.) || !isfinite(std) || LT(std, 0.))
 		{
-			msg_type = LOGFATAL;
-			snprintf(
-				msg,
-				sizeof msg,
-				"Mean daily precipitation = %f and/or SD = %f "\
-				"are out of range in line %d of file %s\n",
-				avg,
-				std,
-				lineno,
-				MyFileName
-			);
-		}
-
-		// If any input is bad, then close file and fail with message:
-		if (msg_type != 0)
-		{
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s", msg);
+			LogError(LogInfo, LOGERROR, "Mean daily precipitation"\
+					" = %f and/or SD = %f are out of range in line"\
+					" %d of file %s\n",
+					avg, std, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Store values in `SW_Markov`
@@ -491,7 +510,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in,out] LogInfo Holds information dealing with logfile output
 
 @return Returns true if cov file is correctly opened and closed.
 */
@@ -499,8 +518,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 	/* =================================================== */
 	const int nitems = 11;
 	FILE *f;
-	int lineno = 0, week, x, msg_type = 0;
-	char msg[200]; // error message
+	int lineno = 0, week, x;
 	char inbuf[MAX_FILENAMESIZE];
 	RealF t1, t2, t3, t4, t5, t6, cfxw, cfxd, cfnw, cfnd;
 
@@ -518,88 +536,55 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 
 		// Check that text file is ok:
 		if (x < nitems) {
-			msg_type = LOGFATAL;
-			snprintf(
-				msg,
-				sizeof msg,
-				"Too few values in line %d of file %s\n",
-				lineno,
-				MyFileName
-			);
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGERROR, "Too few values in line"\
+					" %d of file %s\n",
+					lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// week is a real calendar week
 		if (!isfinite((float) week) || week < 1 || week > MAX_WEEKS)
 		{
-			msg_type = LOGFATAL;
-			snprintf(
-				msg,
-				sizeof msg,
-				"'week' = %d is out of range in line %d of file %s\n",
-				week,
-				lineno,
-				MyFileName
-			);
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGERROR, "'week' = %d is out of range"\
+					" in line %d of file %s\n",
+					week, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Mean weekly temperature values are real numbers
 		if (!isfinite(t1) || !isfinite(t2))
 		{
-			msg_type = LOGFATAL;
-			snprintf(
-				msg,
-				sizeof msg,
-				"Mean weekly temperature (max = %f and/or min = %f) "\
-				"are not real numbers in line %d of file %s\n",
-				t1,
-				t2,
-				lineno,
-				MyFileName
-			);
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGERROR, "Mean weekly temperature"\
+					" (max = %f and/or min = %f) are not real numbers"\
+					" in line %d of file %s\n",
+					t1, t2, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Covariance values are finite
 		if (!isfinite(t3) || !isfinite(t4) || !isfinite(t5) || !isfinite(t6))
 		{
-			msg_type = LOGFATAL;
-			snprintf(
-				msg,
-				sizeof msg,
-				"One of the covariance values is not a real number "\
-				"(t3 = %f; t4 = %f; t5 = %f; t6 = %f) in line %d of file %s\n",
-				t3,
-				t4,
-				t5,
-				t6,
-				lineno,
-				MyFileName
-			);
+			CloseFile(&f, LogInfo);
+			LogError(LogInfo, LOGERROR, "One of the covariance values is"\
+					" not a real number (t3 = %f; t4 = %f; t5 = %f; t6 = %f)"\
+					" in line %d of file %s\n",
+					t3, t4, t5, t6, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Correction factors are real numbers
 		if (!isfinite(cfxw) || !isfinite(cfxd) ||
 				!isfinite(cfnw) || !isfinite(cfnd))
 		{
-			msg_type = LOGFATAL;
-			snprintf(
-				msg,
-				sizeof msg,
-				"One of the correction factor is not a real number "\
-				"(cfxw = %f; cfxd = %f; cfnw = %f; cfnd = %f) in line %d of file %s\n",
-				cfxw,
-				cfxd,
-				cfnw,
-				cfnd,
-				lineno,
-				MyFileName
-			);
-		}
-
-		// If any input is bad, then close file and fail with message:
-		if (msg_type != 0)
-		{
 			CloseFile(&f, LogInfo);
-			LogError(LogInfo, LOGFATAL, "%s", msg);
+			LogError(LogInfo, LOGERROR, "One of the correction factor is not"\
+					" a real number (cfxw = %f; cfxd = %f; cfnw = %f; cfnd = %f)"\
+					" in line %d of file %s\n",
+					cfxw, cfxd, cfnw, cfnd, lineno, MyFileName);
+            return swFALSE; // Exit function prematurely due to error
 		}
 
 		// Store values in `SW_Markov`
@@ -626,21 +611,37 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
 	int Weather_genWeathMethod, char *InFiles[], LOG_INFO* LogInfo) {
 
-  SW_MKV_construct(Weather_rng_seed, SW_Markov, LogInfo);
+  Bool read_prob, read_cov;
 
-  if (!SW_MKV_read_prob(InFiles, SW_Markov, LogInfo) && Weather_genWeathMethod == 2) {
+  SW_MKV_construct(Weather_rng_seed, SW_Markov, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
+
+  read_prob = SW_MKV_read_prob(InFiles, SW_Markov, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
+
+  if (!read_prob && Weather_genWeathMethod == 2) {
     LogError(
       LogInfo,
-      LOGFATAL,
+      LOGERROR,
       "Weather generator requested but could not open %s",
       InFiles[eMarkovProb]
     );
+    return; // Exit function prematurely due to error
   }
 
-  if (!SW_MKV_read_cov(InFiles, SW_Markov, LogInfo) && Weather_genWeathMethod == 2) {
+  read_cov = SW_MKV_read_cov(InFiles, SW_Markov, LogInfo);
+  if(LogInfo->stopRun) {
+    return; // Exit function prematurely due to error
+  }
+
+  if (!read_cov && Weather_genWeathMethod == 2) {
     LogError(
       LogInfo,
-      LOGFATAL,
+      LOGERROR,
       "Weather generator requested but could not open %s",
       InFiles[eMarkovCov]
     );

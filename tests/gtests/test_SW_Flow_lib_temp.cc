@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -34,6 +34,7 @@
 #include "include/SW_Weather.h"
 #include "include/SW_Markov.h"
 #include "include/SW_Sky.h"
+#include "include/SW_Main_lib.h"
 
 #include "include/SW_Flow_lib.h"
 
@@ -41,6 +42,8 @@
 
 
 sw_random_t flowTemp_rng;
+
+using ::testing::HasSubstr;
 
 namespace {
 
@@ -88,7 +91,7 @@ namespace {
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // declare inputs and output
     double deltaX = 15.0, theMaxDepth = 990.0, sTconst = 4.15;
@@ -109,6 +112,7 @@ namespace {
     soil_temperature_setup(&SW_StRegValues, bDensity, width, sTempInit,
       sTconst, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError,
       &SW_StRegValues.soil_temp_init, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     //Structure Tests
     EXPECT_EQ(
@@ -143,6 +147,7 @@ namespace {
     soil_temperature_setup(&SW_StRegValues, bDensity2, width2, sTempInit2,
       sTconst, nlyrs, fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError,
       &SW_StRegValues.soil_temp_init, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     //Structure Tests
     EXPECT_EQ(
@@ -163,12 +168,12 @@ namespace {
   }
 
   // Death tests for soil_temperature_setup function
-  TEST(SWFlowTempDeathTest, SWFlowTempSoilTemperatureInitDeathTest) {
+  TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
     ST_RGR_VALUES SW_StRegValues;
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     double deltaX = 15.0, sTconst = 4.15;
@@ -192,15 +197,17 @@ namespace {
     /// test when theMaxDepth is less than soil layer depth - function should fail
     double theMaxDepth2 = 70.0;
 
-    // We expect death when max depth < last layer
-    EXPECT_DEATH_IF_SUPPORTED(
-      soil_temperature_setup(
-        &SW_StRegValues, bDensity2, width2, sTempInit2, sTconst, nlyrs,
-        fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError,
-        &SW_StRegValues.soil_temp_init, &LogInfo
-      ),
-      "SOIL_TEMP FUNCTION ERROR: soil temperature max depth"
+    // We expect an error when max depth < last layer
+    soil_temperature_setup(
+      &SW_StRegValues, bDensity2, width2, sTempInit2, sTconst, nlyrs,
+      fc2, wp2, deltaX, theMaxDepth2, nRgr, &ptr_stError,
+      &SW_StRegValues.soil_temp_init, &LogInfo
     );
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg,
+                HasSubstr("SOIL_TEMP FUNCTION ERROR: soil temperature max depth"));
 
     delete[] wp2; delete[] fc2; delete[] bDensity2;
   }
@@ -213,7 +220,7 @@ namespace {
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // declare inputs and output
     double deltaX = 15.0, theMaxDepth = 990.0, sTconst = 4.15;
@@ -236,6 +243,7 @@ namespace {
     soil_temperature_setup(&SW_StRegValues, bDensity, width, sTempInit,
       sTconst, nlyrs, fc, wp, deltaX, theMaxDepth, nRgr, &ptr_stError,
       &SW_StRegValues.soil_temp_init, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // lyrSoil_to_lyrTemp tests: This function is used in soil_temperature_setup
     // to transfer the soil layer values of bdensity, fc, and wp, to the "temperature layer"
@@ -287,6 +295,7 @@ namespace {
     soil_temperature_setup(&SW_StRegValues, bDensity2, width2, sTempInit2,
       sTconst, nlyrs, fc2, wp2, deltaX, theMaxDepth, nRgr, &ptr_stError,
       &SW_StRegValues.soil_temp_init, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // lyrSoil_to_lyrTemp tests
     for (i = 0; i < nRgr + 1; i++) {  // all Values should be greater than 0
@@ -451,7 +460,7 @@ namespace {
     SW_SITE SW_Site;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     RealD lyrFrozen[MAX_LAYERS] = {0};
 
@@ -496,6 +505,7 @@ namespace {
       lyrFrozen,
       &LogInfo
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     soil_temperature(
       &SW_StRegValues,
@@ -505,6 +515,7 @@ namespace {
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
       theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       year, doy, min_temp, max_temp, &ptr_stError, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Expect that surface temp equals surface_temperature_under_snow() because snow > 0
     EXPECT_EQ(surfaceTemp, surface_temperature_under_snow(airTemp, snow));
@@ -526,6 +537,7 @@ namespace {
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
       theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       year, doy, min_temp, max_temp, &ptr_stError, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(surfaceTemp, airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp, airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
@@ -546,6 +558,7 @@ namespace {
       t1Param3, csParam1, csParam2, shParam, snowdepth, sTconst, deltaX,
       theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       year, doy, min_temp, max_temp, &ptr_stError, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(surfaceTemp, airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp, airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
@@ -581,6 +594,7 @@ namespace {
       lyrFrozen,
       &LogInfo
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(ptr_stError, swFALSE);
 
@@ -592,6 +606,7 @@ namespace {
       csParam1, csParam2, shParam, snowdepth, sTconst, deltaX, theMaxDepth,
       nRgr, snow, max_air_temp, min_air_temp, H_gt, year,
       doy, min_temp, max_temp, &ptr_stError, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that error has occurred as indicated by ptr_stError
     EXPECT_EQ(ptr_stError, swTRUE);
@@ -607,7 +622,7 @@ namespace {
     SW_SITE SW_Site;
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     RealD lyrFrozen[MAX_LAYERS] = {0};
 
@@ -683,6 +698,7 @@ namespace {
       lyrFrozen,
       &LogInfo
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
     // Test surface temp equals surface_temperature_under_snow() because snow > 0
@@ -695,6 +711,7 @@ namespace {
       deltaX, theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       year, doy, min_temp, max_temp, &ptr_stError,
       &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(surfaceTemp, surface_temperature_under_snow(airTemp, snow));
     EXPECT_NE(surfaceTemp, airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
@@ -714,6 +731,7 @@ namespace {
       deltaX, theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       year, doy, min_temp, max_temp, &ptr_stError,
       &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(surfaceTemp, airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
     EXPECT_NE(surfaceTemp, airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
@@ -732,6 +750,7 @@ namespace {
       deltaX, theMaxDepth, nRgr, snow, max_air_temp, min_air_temp, H_gt,
       year, doy, min_temp, max_temp, &ptr_stError,
       &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(surfaceTemp, airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3));
     EXPECT_NE(surfaceTemp, airTemp + (t1Param1 * pet * (1. - (aet / pet)) * (1. - (biomass / bmLimiter))));
@@ -762,12 +781,12 @@ namespace {
   }
 
   // Test that main soil temperature functions fails when it is supposed to
-  TEST(SWFlowTempDeathTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
+  TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
     ST_RGR_VALUES SW_StRegValues;
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     RealD lyrFrozen[MAX_LAYERS] = {0};
 
@@ -783,17 +802,19 @@ namespace {
       sTemp[1], min_temp[] = {10.0}, max_temp[] = {1.0};
 
     // Should fail when soil_temperature was not initialized
-    EXPECT_DEATH_IF_SUPPORTED(
-      soil_temperature(&SW_StRegValues,
-        &surface_max, &surface_min, lyrFrozen,
-        airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
-        sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
-        t1Param3, csParam1, csParam2, shParam, snowdepth,
-        sTconst, deltaX, theMaxDepth, nRgr, snow, max_air_temp,
-        min_air_temp, H_gt, year, doy,
-        min_temp, max_temp, &ptr_stError, &LogInfo
-      ),
-      "SOILWAT2 ERROR soil temperature module was not initialized"
+    soil_temperature(&SW_StRegValues,
+      &surface_max, &surface_min, lyrFrozen,
+      airTemp, pet, aet, biomass, swc, swc_sat, bDensity, width,
+      sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
+      t1Param3, csParam1, csParam2, shParam, snowdepth,
+      sTconst, deltaX, theMaxDepth, nRgr, snow, max_air_temp,
+      min_air_temp, H_gt, year, doy,
+      min_temp, max_temp, &ptr_stError, &LogInfo
     );
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg,
+                HasSubstr("SOILWAT2 ERROR soil temperature module was not initialized"));
   }
 }

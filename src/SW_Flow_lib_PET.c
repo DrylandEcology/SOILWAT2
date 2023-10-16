@@ -842,7 +842,7 @@ double clearnessindex_diffuse(double K_b)
   @param[out] H_oh Daily extraterrestrial horizontal irradiation [MJ / m2]
   @param[out] H_ot Daily extraterrestrial tilted irradiation [MJ / m2]
   @param[out] H_gh Daily global horizontal irradiation [MJ / m2]
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @return H_gt Daily global (tilted) irradiation [MJ / m2]
 */
@@ -955,10 +955,12 @@ double solar_radiation(
       default:
         LogError(
           LogInfo,
-          LOGFATAL,
+          LOGERROR,
           "`desc_rsds` has an unrecognized value: %u",
           desc_rsds
         );
+
+        return SW_MISSING; // Exit function prematurely due to error
     }
 
     *H_gh = convert_rsds_to_H_gh * rsds;
@@ -1067,7 +1069,7 @@ double solar_radiation(
   if (!(H_g >= 0. && H_g <= 50)) {
     LogError(
       LogInfo,
-      LOGFATAL,
+      LOGERROR,
       "\nSolar radiation (%f) out of valid range (0-50 MJ m-2)\n",
       H_g
     );
@@ -1247,7 +1249,7 @@ double actualVaporPressure3(double dewpointTemp) {
   @param humid Average relative humidity [%]
   @param windsp Average wind speed at 2-m above ground [m / s]
   @param cloudcov Average cloud cover [%]
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in,out] LogInfo Holds information dealing with logfile output
 
   @return Potential evapotranspiration [cm / day]
 */
@@ -1297,9 +1299,11 @@ double petfunc(double H_g, double avgtemp, double elev, double reflec,
   if (missing(cloudcov)) {
     LogError(
       LogInfo,
-      LOGFATAL,
+      LOGERROR,
       "Cloud cover is missing."
     );
+
+    return SW_MISSING; // Exit function prematurely due to error
   }
 
   clrsky = 1. - cloudcov / 100.;

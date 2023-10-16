@@ -236,7 +236,7 @@ float RandUniFloatRange(const float min, const float max, sw_random_t* pcg_rng) 
 	\param last Upper bound of the values.
 	\param[out] list Upon return this array will be filled with random values.
   \param[in,out] *pcg_rng The random number generator to use.
-  \param[in] LogInfo Holds information dealing with logfile output
+  \param[in,out] LogInfo Holds information dealing with logfile output
 */
 void RandUniList(long count, long first, long last, RandListType list[],
                  sw_random_t* pcg_rng, LOG_INFO* LogInfo) {
@@ -246,7 +246,8 @@ void RandUniList(long count, long first, long last, RandListType list[],
 	range = last - first + 1;
 
 	if (count > range || range <= 0) {
-    sw_error(-1, "Error in RandUniList: count > range || range <= 0\n");
+    LogError(LogInfo, LOGERROR, "Error in RandUniList: count > range || range <= 0\n");
+    return; // Exit function prematurely due to error
 	}
 
 	/* if count == range for some weird reason, just
@@ -272,6 +273,9 @@ void RandUniList(long count, long first, long last, RandListType list[],
 
 	/* allocate space for the temp list */
 	klist = (long *) Mem_Malloc(sizeof(long) * range, "RandUniList", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	/* populate the list with valid numbers */
 	for (i = 0, j = first; j <= last; klist[i++] = j++)
@@ -410,9 +414,10 @@ double RandNorm(double mean, double stddev, sw_random_t* pcg_rng) {
   \param bb The second shape parameter of the beta distribution with
          \f$0.0 < bb\f$.
   \param[in,out] *pcg_rng The random number generator to use.
+  \param[in,out] LogInfo Holds information dealing with logfile output
   \return A random variate of a beta distribution.
 */
-float RandBeta ( float aa, float bb, sw_random_t* pcg_rng) {
+float RandBeta ( float aa, float bb, sw_random_t* pcg_rng, LOG_INFO* LogInfo) {
   float a;
   float alpha;
   float b;
@@ -435,11 +440,13 @@ float RandBeta ( float aa, float bb, sw_random_t* pcg_rng) {
   float z;
 
   if ( aa <= 0.0 ) {
-    sw_error(1, "RandBeta - Fatal error: AA <= 0.0\n");
+    LogError(LogInfo, LOGERROR, "RandBeta - Fatal error: AA <= 0.0\n");
+    return SW_MISSING; // Exit function prematurely due to error
   }
 
   if ( bb <= 0.0 ) {
-    sw_error(1, "RandBeta - Fatal error: BB <= 0.0\n");
+    LogError(LogInfo, LOGERROR, "RandBeta - Fatal error: BB <= 0.0\n");
+    return SW_MISSING; // Exit function prematurely due to error
   }
 
   //------  Algorithm BB
