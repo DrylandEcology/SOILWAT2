@@ -140,6 +140,8 @@ void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO* LogInfo) {
 	if (pNew != NULL ) {
 		p = pNew;
 	} else {
+        free(p);
+
 		LogError(LogInfo, LOGERROR, "realloc failed in Mem_ReAlloc()");
         return NULL; // Exit function prematurely due to error
     }

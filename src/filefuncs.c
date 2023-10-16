@@ -28,12 +28,13 @@
 static void freeGetfilesEarly(char **flist, int nfound, DIR *dir, char *fname) {
     int index;
 
-    for(index = 0; index < nfound; index++) {
-        if(!isnull(flist[index])) {
-            free(flist[index]);
-        }
-    }
     if(!isnull(flist)) {
+        for(index = 0; index < nfound; index++) {
+            if(!isnull(flist[index])) {
+                free(flist[index]);
+            }
+        }
+
         free(flist);
     }
 
@@ -78,8 +79,10 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 
 	(*nfound) = 0;
 
-	if ((dir = opendir(dname)) == NULL )
+	if ((dir = opendir(dname)) == NULL ) {
+        free(fname);
 		return NULL ;
+    }
 
 	while ((ent = readdir(dir)) != NULL ) {
 		match = swTRUE;
@@ -94,18 +97,16 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 			(*nfound)++;
 			if (alloc) {
 				flist = (char **) Mem_ReAlloc(flist, sizeof(char *) * (*nfound), LogInfo);
-                flist[(*nfound) - 1] = NULL;
 
                 if(LogInfo->stopRun) {
-                    freeGetfilesEarly(flist, *nfound, dir, fname);
+                    freeGetfilesEarly(flist, 0, dir, fname);
                     return NULL; // Exit function prematurely due to error
                 }
 			} else {
 				flist = (char **) Mem_Malloc(sizeof(char *) * (*nfound), "getfiles", LogInfo);
-                flist[(*nfound) - 1] = NULL;
 
                 if(LogInfo->stopRun) {
-                    freeGetfilesEarly(flist, *nfound, dir, fname);
+                    freeGetfilesEarly(flist, 0, dir, fname);
                     return NULL; // Exit function prematurely due to error
                 }
 				alloc = swTRUE;
