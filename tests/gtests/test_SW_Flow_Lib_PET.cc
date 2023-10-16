@@ -36,7 +36,6 @@
 #include "include/SW_Weather.h"
 #include "include/SW_Markov.h"
 #include "include/SW_Sky.h"
-#include "external/pcg/pcg_basic.h"
 #include "include/SW_Main_lib.h"
 
 #include "include/SW_Flow_lib_PET.h"

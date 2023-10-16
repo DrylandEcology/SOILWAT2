@@ -102,6 +102,7 @@ dir_build_test := $(dir_build)/test
 #------ OUTPUT NAMES
 target := SOILWAT2
 lib_sw2 := $(dir_bin)/lib$(target).a
+lib_rsw2 := $(dir_bin)/libr$(target).a
 bin_sw2 := $(dir_bin)/$(target)
 
 target_test = $(target)_test
@@ -260,7 +261,7 @@ sources_test := $(wildcard $(dir_test)/*.cc)
 objects_test := $(sources_test:$(dir_test)/%.cc=$(dir_build_test)/%.o)
 
 
-# PCG random generator files
+# PCG random generator files (not used by rSOILWAT2)
 sources_pcg := $(dir_pcg)/pcg_basic.c
 objects_lib_pcg := $(sources_pcg:$(dir_pcg)/%.c=$(dir_build_sw2)/%.o)
 objects_test_pcg := $(sources_pcg:$(dir_pcg)/%.c=$(dir_build_test)/%.o)
@@ -280,15 +281,21 @@ all : $(bin_sw2)
 
 lib : $(lib_sw2)
 
+libr : $(lib_rsw2)
+
 test : $(bin_test)
 
-.PHONY : all lib test
+.PHONY : all lib libr test
 
 
 
-#--- SOILWAT2 library (utilized by SOILWAT2, rSOILWAT2, and STEPWAT2)
+#--- SOILWAT2 library (utilized by SOILWAT2 and STEPWAT2)
 $(lib_sw2) : $(objects_lib) $(objects_lib_pcg) | $(dir_bin)
 		$(AR) -rcs $(lib_sw2) $(objects_lib) $(objects_lib_pcg)
+
+#--- SOILWAT2 library without pcg (utilized by rSOILWAT2)
+$(lib_rsw2) : $(objects_lib) | $(dir_bin)
+		$(AR) -rcs $(lib_sw2) $(objects_lib)
 
 
 #--- SOILWAT2 stand-alone executable (utilizing SOILWAT2 library)
@@ -426,7 +433,7 @@ clean_bin:
 .PHONY : clean_build
 clean_build:
 		-@$(RM) -r $(dir_build_sw2)
-		-@$(RM) -f $(bin_sw2) $(lib_sw2)
+		-@$(RM) -f $(bin_sw2) $(lib_sw2) $(lib_rsw2)
 
 .PHONY : clean_test
 clean_test:

@@ -18,7 +18,6 @@
 #include "include/myMemory.h"
 #include "include/filefuncs.h"
 #include "include/rands.h"
-#include "external/pcg/pcg_basic.h"
 #include "include/SW_Main_lib.h"
 
 #include "tests/gtests/sw_testhelpers.h"
@@ -29,7 +28,7 @@ using ::testing::HasSubstr;
 namespace {
   // This tests the uniform random number generator
   TEST(RNGTest, RNGUnifZeroToOneOutput) {
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     double min = 0., max = 1.;
     double x71, x71b, x11, x12;
@@ -71,7 +70,7 @@ namespace {
   }
 
   TEST(RNGTest, RNGUnifFloatRangeOutput) {
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     float min = 7.5, max = 77.7;
     double x71, x71b, x11, x12, x0;
@@ -123,7 +122,7 @@ namespace {
 
 
   TEST(RNGTest, RNGUnifIntRangeOutput) {
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     int min = 7, max = 123;
     double x71, x71b, x11, x12, x0;
@@ -178,7 +177,7 @@ namespace {
 
   // This tests the normal random number generator
   TEST(RNGTest, RNGNormMeanSD) {
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10, f = 9999;
     double
       mean = 0., sd = 1.,
@@ -247,9 +246,9 @@ namespace {
     LOG_INFO LogInfo;
     sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
-    pcg32_random_t ZeroToOne_rng;
+    sw_random_t ZeroToOne_rng;
     RandSeed(0u, 0u, &ZeroToOne_rng);
-
+    
     EXPECT_LT(RandBeta(0.5, 2, &ZeroToOne_rng, &LogInfo), 1);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -263,7 +262,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     double
       a = 0.25, b = 2.,
@@ -315,7 +314,7 @@ namespace {
     LOG_INFO LogInfo;
     sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
-    pcg32_random_t error_rng;
+    sw_random_t error_rng;
     RandSeed(0u, 0u, &error_rng);
     RandBeta(-0.5, 2, &error_rng, &LogInfo);
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
