@@ -1,9 +1,27 @@
 # NEWS
 
+# SOILWAT2 v7.2.0-devel
+* Simulation output remains the same as the previous version.
+
+* SOILWAT2 now handles errors more gracefully (#346; @N1ckP3rsl3y, @dschlaep).
+    * Code no longer crashes on error immediately (except for STEPWAT2).
+    * Code stores messages of warnings and error status.
+    * All functions now check for errors and return early
+      (after cleaning up memory).
+
+* SOILWAT2 now defines its own structure for random numbers (#373; @dschlaep).
+  This allows to hide implementation details, i.e., STEPWAT2 will no
+  longer need to interact directly with `pcg` and rSOILWAT2 will no longer
+  depend on `pcg` which it never has used.
+
+* Obsolete code in DEBUG_MEM* sections is removed (#369; @dschlaep).
+
+
 # SOILWAT2 v7.1.0
 * Simulation output remains the same as the previous version.
 
-* Prepare for SOILWAT2 to become thread-safe and reentrant (#346; @N1ckP3rsl3y)
+* Prepare for SOILWAT2 to become thread-safe and reentrant
+  (#346; @N1ckP3rsl3y, @dschlaep)
     * Definition clarifications
         * Thread-safe - Multiple threads (a future SOILWAT2 development)
           will not influence each other unintentionally. Here, we implemented
