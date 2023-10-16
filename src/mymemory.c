@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include "include/filefuncs.h"
 #include "include/myMemory.h"
 
@@ -110,43 +109,36 @@ void *Mem_Calloc(size_t nobjs, size_t size, const char *funcname,
 }
 
 /*****************************************************/
+/** Wrapper for realloc()
+
+  Recognized errors include
+    - \p sizeNew is zero
+    - realloc() fails to allocate memory.
+
+  @param[in,out] block pointer to the memory to be reallocated.
+  @param[in] sizeNew new size of the array in bytes.
+  @param[out] LogInfo Holds information dealing with logfile output.
+
+  @return On success, a pointer to the beginning of newly allocated memory;
+  on failure, a null pointer (and freed original pointer \p block).
+*/
 void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO* LogInfo) {
-	/*-------------------------------------------
-	 Provide a wrapper for realloc() that facilitates debugging.
-	 Copied from Macguire.
 
-	 Normally, realloc() can possibly move the reallocated block
-	 resulting in potentially orphaned pointers somewhere in the
-	 code.  The debug block here forces the new block to be in a
-	 different place every time, allowing such bugs to be
-	 triggered.
+	if (sizeNew == 0) {
+		free(block);
+		LogError(LogInfo, LOGERROR, "Mem_ReAlloc() failed due to new_size = 0.");
+		return NULL;
+	}
 
-	 cwb - 7/23/2001
-	 -------------------------------------------*/
-	byte *p = (byte *) block, /* a copy so as not to damage original ? */
-	*pNew;
+	void *res = (void *) realloc(block, sizeNew);
 
-#ifndef RSOILWAT
-	assert(p != NULL && sizeNew > 0);
-#else
-	if(p == NULL || sizeNew == 0) {
-		LogError(LogInfo, LOGERROR, "assert failed in ReAlloc");
-        return NULL; // Exit function prematurely due to error
-    }
-#endif
+	if (isnull(res)) {
+		free(block);
+		LogError(LogInfo, LOGERROR, "Mem_ReAlloc() failed to allocate.");
+		return NULL;
+	}
 
-	pNew = (byte *) realloc(p, sizeNew);
-
-	if (pNew != NULL ) {
-		p = pNew;
-	} else {
-        free(p);
-
-		LogError(LogInfo, LOGERROR, "realloc failed in Mem_ReAlloc()");
-        return NULL; // Exit function prematurely due to error
-    }
-
-	return p;
+	return res;
 }
 
 /*****************************************************/
