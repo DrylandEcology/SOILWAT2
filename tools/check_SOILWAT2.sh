@@ -31,18 +31,18 @@ verbosity_on_error=false # options: true false
 
 declare -a port_compilers=(
   "default compiler"
-  "mp-gcc10" "mp-gcc11" "mp-gcc12"
-  "mp-clang-10" "mp-clang-11" "mp-clang-12" "mp-clang-13" "mp-clang-14" "mp-clang-15" "mp-clang-16"
+  "mp-gcc10" "mp-gcc11" "mp-gcc12" "mp-gcc13"
+  "mp-clang-10" "mp-clang-11" "mp-clang-12" "mp-clang-13" "mp-clang-14" "mp-clang-15" "mp-clang-16" "mp-clang-17"
 )
 declare -a ccs=(
   "clang"
-  "gcc" "gcc" "gcc"
-  "clang" "clang" "clang" "clang" "clang" "clang" "clang"
+  "gcc" "gcc" "gcc" "gcc"
+  "clang" "clang" "clang" "clang" "clang" "clang" "clang" "clang"
 )
 declare -a cxxs=(
   "clang++"
-  "g++" "g++" "g++"
-  "clang++" "clang++" "clang++" "clang++" "clang++" "clang++" "clang++"
+  "g++" "g++" "g++" "g++"
+  "clang++" "clang++" "clang++" "clang++" "clang++" "clang++" "clang++" "clang++"
 )
 
 
