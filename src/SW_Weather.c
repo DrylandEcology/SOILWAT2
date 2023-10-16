@@ -1179,30 +1179,43 @@ void SW_WTH_init_ptrs(SW_WEATHER* SW_Weather) {
 */
 void SW_WTH_construct(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
 	/* =================================================== */
-	OutPeriod pd;
 
 	// Clear the module structure:
 	memset(SW_Weather, 0, sizeof(SW_WEATHER));
 
-	// Allocate output structures:
+    SW_Weather->n_years = 0;
+
+    SW_WTH_alloc_ptrs(SW_Weather, LogInfo);
+}
+
+/**
+ * @brief Dynamically allocate all memory within the SW_WEATHER struct
+ *
+ * @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
+ *  information pretaining to meteorological input data
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_WTH_alloc_ptrs(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
+	OutPeriod pd;
+
+    // Allocate output structures:
 	ForEachOutPeriod(pd)
 	{
 		SW_Weather->p_accu[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()", LogInfo);
+			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_alloc_ptrs()", LogInfo);
 
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 		if (pd > eSW_Day) {
 			SW_Weather->p_oagg[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
-				sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()", LogInfo);
+				sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_alloc_ptrs()", LogInfo);
 
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 		}
 	}
-    SW_Weather->n_years = 0;
 }
 
 /**

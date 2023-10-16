@@ -631,7 +631,6 @@ void SW_SWC_init_ptrs(SW_SOILWAT* SW_SoilWat) {
 */
 void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
 	/* =================================================== */
-	OutPeriod pd;
 
 	/* initialize pointer */
 	SW_SoilWat->hist.file_prefix = NULL;
@@ -640,18 +639,31 @@ void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
 	// Clear the module structure:
 	memset(SW_SoilWat, 0, sizeof(SW_SOILWAT));
 
+    SW_SWC_alloc_ptrs(SW_SoilWat, LogInfo);
+}
+
+/**
+ * @brief Dynamically allocate all memory within the SW_SOILWAT struct
+ *
+ * @param[out] SW_SoilWat SW_SoilWat Struct of type SW_SOILWAT containing
+ *  soil water related values
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_SWC_alloc_ptrs(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
+    OutPeriod pd;
+
 	// Allocate output structures:
 	ForEachOutPeriod(pd)
 	{
 		SW_SoilWat->p_accu[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_construct()", LogInfo);
+			sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_alloc_ptrs()", LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
 		if (pd > eSW_Day) {
 			SW_SoilWat->p_oagg[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
-				sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_construct()", LogInfo);
+				sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_alloc_ptrs()", LogInfo);
 
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error

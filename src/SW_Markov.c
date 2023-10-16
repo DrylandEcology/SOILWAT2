@@ -217,7 +217,6 @@ void SW_MKV_init_ptrs(SW_MARKOV* SW_Markov) {
 void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
 					  LOG_INFO* LogInfo) {
 	/* =================================================== */
-	size_t s = sizeof(RealD);
 
 	/* Set seed of `markov_rng`
 	  - SOILWAT2: set seed here
@@ -232,43 +231,56 @@ void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
 
 	SW_Markov->ppt_events = 0;
 
-	SW_Markov->wetprob = (RealD *)
-						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+    SW_MKV_alloc_ptrs(SW_Markov, LogInfo);
+}
+
+/**
+ * @brief Dynamically allocate all memory within the SW_MARKOV struct
+ *
+ * @param[out] SW_Markov Struct of type SW_MARKOV which holds values
+ *  related to temperature and weather generator
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_MKV_alloc_ptrs(SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
+    size_t s = sizeof(RealD);
+
+    SW_Markov->wetprob = (RealD *)
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_alloc_ptrs", LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 	SW_Markov->dryprob = (RealD *)
-						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_alloc_ptrs", LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 	SW_Markov->avg_ppt = (RealD *)
-						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_alloc_ptrs", LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 	SW_Markov->std_ppt = (RealD *)
-						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_alloc_ptrs", LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 	SW_Markov->cfxw = (RealD *)
-						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_alloc_ptrs", LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 	SW_Markov->cfxd = (RealD *)
-						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_alloc_ptrs", LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 	SW_Markov->cfnw = (RealD *)
-						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_alloc_ptrs", LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 	SW_Markov->cfnd = (RealD *)
-						Mem_Calloc(MAX_DAYS, s, "SW_MKV_construct", LogInfo);
+						Mem_Calloc(MAX_DAYS, s, "SW_MKV_alloc_ptrs", LogInfo);
 }
 
 /**

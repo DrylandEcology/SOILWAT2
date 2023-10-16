@@ -58,6 +58,7 @@ void SW_VPD_new_year(SW_VEGPROD* SW_VegProd, SW_MODEL* SW_Model);
 void SW_VPD_fix_cover(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo);
 void SW_VPD_init_ptrs(SW_VEGPROD* SW_VegProd);
 void SW_VPD_construct(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo);
+void SW_VPD_alloc_ptrs(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo);
 void estimateVegetationFromClimate(SW_VEGPROD *SW_VegProd,
 	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model,
 	int startyr, int endyr, LOG_INFO* LogInfo);

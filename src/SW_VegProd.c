@@ -642,23 +642,35 @@ void SW_VPD_init_ptrs(SW_VEGPROD* SW_VegProd) {
 */
 void SW_VPD_construct(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
 	/* =================================================== */
-	OutPeriod pd;
 
 	// Clear the module structure:
 	memset(SW_VegProd, 0, sizeof(SW_VEGPROD));
 
-	// Allocate output structures:
+	SW_VPD_alloc_ptrs(SW_VegProd, LogInfo);
+}
+
+/**
+ * @brief Dynamically allocate all memory within the SW_VEGPROD struct
+ *
+ * @param[out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
+ *  cover conditions in the simulation
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_VPD_alloc_ptrs(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
+	OutPeriod pd;
+
+    // Allocate output structures:
 	ForEachOutPeriod(pd)
 	{
 		SW_VegProd->p_accu[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()", LogInfo);
+			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_alloc_ptrs()", LogInfo);
 
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 		if (pd > eSW_Day) {
 			SW_VegProd->p_oagg[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
-				sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()", LogInfo);
+				sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_alloc_ptrs()", LogInfo);
 
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
