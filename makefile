@@ -28,9 +28,12 @@
 # make test_severe similar to `make test_run` with stricter flags for warnings
 #                  and instrumentation; consider cleaning previous build
 #                  artifacts beforehand, e.g., `make clean_test`
-# make test_leaks  similar to `make test_severe` with stricter
+# make test_sanitizer  similar to `make test_severe` with stricter
 #                  sanitizer settings; consider cleaning previous build
 #                  artifacts beforehand, e.g., `make clean_test`
+# make test_leaks  similar to `make test_run` but using `leaks` program;
+#                  consider cleaning previous build artifacts beforehand,
+#                  e.g., `make clean_test`
 # make test_reprnd similar to `make test_run`, i.e., execute the test binary
 #                  repeatedly while randomly shuffling tests
 # make test_rep3rnd   similar to `make test_run`, i.e., execute the test binary
@@ -42,9 +45,12 @@
 # make bin_debug_severe   similar to `make bin_debug` stricter flags for
 #                  warnings and instrumentation; consider cleaning previous
 #                  build artifacts beforehand, e.g., `make clean_build`
-# make bin_leaks   similar to `make bin_debug_severe` with stricter
+# make bin_sanitizer   similar to `make bin_debug_severe` with stricter
 #                  sanitizer settings; consider cleaning previous build
 #                  artifacts beforehand, e.g., `make clean_build`
+# make bin_leaks   similar to `make bin_run` but using `leaks` program;
+#                  consider cleaning previous build artifacts beforehand,
+#                  e.g., `make clean_test`
 #
 # --- Code coverage ------
 # make cov         same as 'make test_run' with code coverage support and
@@ -380,8 +386,12 @@ test_run : test
 test_severe :
 		./tools/run_test_severe.sh
 
+.PHONY : test_sanitizer
+test_sanitizer :
+		./tools/run_test_sanitizer.sh
+
 .PHONY : test_leaks
-test_leaks :
+test_leaks : test
 		./tools/run_test_leaks.sh
 
 .PHONY : test_reprnd
@@ -400,8 +410,12 @@ bin_debug :
 bin_debug_severe :
 		./tools/run_debug_severe.sh
 
+.PHONY : bin_sanitizer
+bin_sanitizer :
+		./tools/run_bin_sanitizer.sh
+
 .PHONY : bin_leaks
-bin_leaks :
+bin_leaks : all
 		./tools/run_bin_leaks.sh
 
 
