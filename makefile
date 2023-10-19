@@ -8,7 +8,6 @@
 # --- Binary executable ------
 # make             create the binary executable 'SOILWAT2'
 # make all
-# make bin
 #
 # make bin_run     same as 'make bin' plus execute the binary for tests/example/
 #                  (previously, `make bint_run`; target `bint` is obsolete)
@@ -39,6 +38,7 @@
 # make test_rep3rnd   similar to `make test_run`, i.e., execute the test binary
 #                  three times while randomly shuffling tests
 #
+# make bin_run     runs the executable 'SOILWAT2' on the "example/" inputs
 # make bin_debug   similar to `make bin_run` with debug settings;
 #                  consider cleaning previous build artifacts beforehand,
 #                  e.g., `make clean_build`
@@ -57,9 +57,10 @@
 #                  running `gcov` on each source file
 #                  (previously, `make cov cov_run`); consider cleaning
 #                  previous artifacts beforehand, e.g., `make clean_cov`;
-#                  use matching compiler and `gcov` versions, e.g., for gcc
-#                  `CC=gcc CXX=g++ make clean cov` or for clang v14
-#                  `CC=clang CXX=clang++ GCOV="llvm-cov-mp-14 gcov" make clean_cov cov`
+#                  use matching compiler and `gcov` versions, e.g.,
+#                  for gcc `CXX=g++ GCOV=gcov make clean clean_cov cov`
+#                  and for clang v14
+#                  `CXX=clang++ GCOV="llvm-cov-mp-14 gcov" make clean clean_cov cov`
 #
 # --- Cleanup ------
 # make clean       same as 'make clean_bin clean_build clean_test';
@@ -131,6 +132,8 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 
 #------ STANDARDS
 # googletest requires c++14 and POSIX API
+# see https://github.com/google/oss-policies-info/blob/main/foundational-cxx-support-matrix.md
+#
 # cygwin does not enable POSIX API by default
 # --> enable by defining `_POSIX_C_SOURCE=200809L`
 #     (or `-std=gnu++11` or `_GNU_SOURCE`)

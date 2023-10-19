@@ -139,7 +139,7 @@ for ((k = 0; k < ncomp; k++)); do
        --------------------------------------------------
 
   echo $'\n'"Target 'bin_run' ..."
-  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_run 2>&1)
+  res=$(CC=${ccs[k]} make clean bin_run 2>&1)
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
@@ -164,7 +164,7 @@ for ((k = 0; k < ncomp; k++)); do
   fi
 
   echo $'\n'"Target 'bin_debug_severe' ..."
-  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_debug_severe 2>&1)
+  res=$(CC=${ccs[k]} make clean bin_debug_severe 2>&1)
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
@@ -193,7 +193,7 @@ for ((k = 0; k < ncomp; k++)); do
        --------------------------------------------------
 
   echo $'\n'"Target 'bin_sanitizer' ..."
-  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_sanitizer 2>&1)
+  res=$(CC=${ccs[k]} make clean bin_sanitizer 2>&1)
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
@@ -213,7 +213,7 @@ for ((k = 0; k < ncomp; k++)); do
   if exists leaks ; then
 
     echo $'\n'"Target: 'bin_leaks' ..."
-    res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean all 2>&1)
+    res=$(CC=${ccs[k]} make clean all 2>&1)
 
     res_error=$(check_error "${res}")
     if [ "${res_error}" ]; then
@@ -253,7 +253,7 @@ for ((k = 0; k < ncomp; k++)); do
        --------------------------------------------------
 
   echo $'\n'"Target 'test_run' ..."
-  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test_run 2>&1)
+  res=$(CXX=${cxxs[k]} make clean test_run 2>&1)
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
@@ -270,7 +270,7 @@ for ((k = 0; k < ncomp; k++)); do
 
 
   echo $'\n'"Target 'test_severe' ..."
-  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test_severe 2>&1)
+  res=$(CXX=${cxxs[k]} make clean test_severe 2>&1)
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
@@ -297,10 +297,10 @@ for ((k = 0; k < ncomp; k++)); do
        --------------------------------------------------
 
   if [ "${do_target_test_sanitizer}" = true ]; then
-    # CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+    # CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
     # https://github.com/google/sanitizers/wiki/AddressSanitizer
     echo $'\n'"Target 'test_sanitizer' ..."
-    res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test_sanitizer 2>&1)
+    res=$(CXX=${cxxs[k]} make clean test_sanitizer 2>&1)
 
     res_error=$(check_error "${res}")
     if [ "${res_error}" ]; then
@@ -323,7 +323,7 @@ for ((k = 0; k < ncomp; k++)); do
   if exists leaks ; then
 
     echo $'\n'"Target: 'test_leaks' ..."
-    res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test 2>&1)
+    res=$(CXX=${cxxs[k]} make clean test 2>&1)
 
     res_error=$(check_error "${res}")
     if [ "${res_error}" ]; then

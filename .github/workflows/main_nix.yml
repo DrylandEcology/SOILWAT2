@@ -60,7 +60,7 @@ jobs:
         submodules: recursive
 
     - name: Generate coverage report
-      run: CC=gcc CXX=g++ GCOV=gcov make clean clean_cov cov
+      run: CXX=g++ GCOV=gcov make clean clean_cov cov
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
