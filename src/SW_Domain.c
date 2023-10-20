@@ -200,6 +200,27 @@ void SW_DOM_SetProgress(char* domainType, int* ncStartSuid) {
 void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, int userSUID, int nSUIDs,
                    int* startSimSet, int* endSimSet, LOG_INFO* LogInfo) {
 
+    int* startSuid;
+
+    if(userSUID != -1) {
+        if(userSUID >= nSUIDs) {
+            LogError(LogInfo, LOGERROR, "User input for start suid is bigger"
+                              " than the total number of suids.");
+            return; // Exit function prematurely due to error
+        }
+
+        *startSimSet = userSUID;
+        *endSimSet = userSUID + 1;
+    } else {
+        *endSimSet = nSUIDs;
+        for(*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
+            startSuid = SW_DOM_calc_ncStartSuid(SW_Domain, startSimSet);
+
+            if(SW_DOM_CheckProgress(SW_Domain->DomainType, startSuid)) {
+                return; // Found start suid
+            }
+        }
+    }
 }
 
 /* =================================================== */
