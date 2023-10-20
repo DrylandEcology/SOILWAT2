@@ -175,23 +175,6 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 }
 
 /**
- * @brief Copy temporal domain information from SW_DOMAIN to SW_MODEL
- *
- * @param[in,out] SW_Model Struct of type SW_MODEL holding basic time
- *  information about the simulation
- * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
- *  temporal/spatial information for a set of simulation runs
-*/
-void SW_DOM_setModelTime(SW_MODEL *SW_Model, SW_DOMAIN *SW_Domain) {
-    SW_Model->startyr = SW_Domain->startyr; // Copy start year
-    SW_Model->endyr = SW_Domain->endyr; // Copy end year
-    SW_Model->startstart = SW_Domain->startstart; // Copy start doy
-    SW_Model->endend = SW_Domain->endend; // Copy end doy
-
-    SW_Model->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
-}
-
-/**
  * @brief Mark a completed suid in progress netCDF
  *
  * @param[in] domainType Type of domain in which simulations are running
