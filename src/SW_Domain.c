@@ -32,7 +32,7 @@ static int domain_inkey_to_id(char *key);
  * @return Calculated gridcell/site position
 */
 int* SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, int suid) {
-
+    return NULL; // Temporary return
 }
 
 /**
@@ -60,7 +60,7 @@ void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
  * @return Whether or not progress the input suid has been marked as complete
 */
 Bool SW_DOM_CheckProgress(char* domainType, int* ncStartSuid) {
-
+    return swFALSE; // Temporary return
 }
 
 /**
@@ -216,7 +216,7 @@ void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, int userSUID, int nSUIDs,
     } else {
         *endSimSet = nSUIDs;
         for(*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
-            startSuid = SW_DOM_calc_ncStartSuid(SW_Domain, startSimSet);
+            startSuid = SW_DOM_calc_ncStartSuid(SW_Domain, *startSimSet);
 
             if(SW_DOM_CheckProgress(SW_Domain->DomainType, startSuid)) {
                 return; // Found start suid
