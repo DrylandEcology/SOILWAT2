@@ -1,6 +1,6 @@
 # NEWS
 
-# SOILWAT2 v7.2.0-devel
+# SOILWAT2 v7.2.0
 * Simulation output remains the same as the previous version.
 
 * SOILWAT2 now handles errors more gracefully (#346; @N1ckP3rsl3y, @dschlaep).
