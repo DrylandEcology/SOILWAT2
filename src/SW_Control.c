@@ -509,8 +509,18 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, SW_DOMAIN* SW_Domain,
  * @param[in,out] p_OUT Data storage for simulation run values
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, int ncStartSuid,
+void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, int ncStartSuid[],
                    char* ncInFiles[], SW_OUTPUT_POINTERS SW_OutputPtrs[],
                    RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 
+    SW_ALL *local_sw = NULL;
+
+    // Copy template SW_ALL to local instance -- yet to be fully implemented
+
+    SW_MDL_get_ModelRun(&local_sw->Model, SW_Domain, ncInFiles, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit prematurely due to error
+    }
+
+    SW_CTL_main(local_sw, SW_OutputPtrs, LogInfo);
 }
