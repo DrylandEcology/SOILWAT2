@@ -22,6 +22,11 @@
 #include <math.h>  /* >= C99; for: atan(), isfinite() */
 #include "include/generic.h"
 
+#if !defined(RSOILWAT) /* rSOILWAT2 uses R's RNGs */
+#include "external/pcg/pcg_basic.h" // see https://github.com/imneme/pcg-c-basic
+#endif
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -252,6 +257,17 @@ typedef enum { eF,   /* file management */
 typedef unsigned int TimeInt;
 typedef unsigned int LyrIndex;
 typedef signed char flag;
+
+
+/* =================================================== */
+/*                   RNG structs                    */
+/* --------------------------------------------------- */
+#if defined(RSOILWAT)
+typedef int sw_random_t; /* not used by rSOILWAT2; it uses instead R's RNG */
+#else
+typedef pcg32_random_t sw_random_t;
+#endif
+
 
 #ifdef __cplusplus
 }

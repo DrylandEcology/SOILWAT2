@@ -1248,12 +1248,12 @@ void SW_WTH_deconstruct(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather)
 		SW_MKV_deconstruct(SW_Markov);
 	}
 
-    deallocateAllWeather(SW_Weather);
+    deallocateAllWeather(SW_Weather->allHist, SW_Weather->n_years);
 }
 
 
 /**
-  @brief Allocate memory for `allHist` for `w` based on `n_years`
+  @brief Allocate memory for `allHist` based on `n_years`
 
   @param[out] allHist Array containing all historical data of a site
   @param[in] n_years Number of years in simulation
@@ -1276,7 +1276,9 @@ void allocateAllWeather(SW_WEATHER_HIST ***allHist, unsigned int n_years,
 
       (*allHist)[year] = (SW_WEATHER_HIST *)Mem_Malloc(sizeof(SW_WEATHER_HIST),
                                             "allocateAllWeather()", LogInfo);
+
       if(LogInfo->stopRun) {
+          deallocateAllWeather(*allHist, n_years);
           return; // Exit function prematurely due to error
       }
   }
@@ -1301,22 +1303,22 @@ void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years)
 /**
  @brief Helper function to SW_WTH_deconstruct to deallocate `allHist` of `w`.
 
- @param[out] w Struct of type SW_WEATHER holding all relevant
-    information pretaining to weather input data
+  @param[in,out] allHist Array containing all historical data of a site
+  @param[in] n_years Number of years in simulation
  */
 
-void deallocateAllWeather(SW_WEATHER *w) {
+void deallocateAllWeather(SW_WEATHER_HIST **allHist, unsigned int n_years) {
     unsigned int year;
 
-    if(!isnull(w->allHist)) {
-        for(year = 0; year < w->n_years; year++) {
-            if(!isnull(w->allHist[year])) {
-                free(w->allHist[year]);
+    if(!isnull(allHist)) {
+        for(year = 0; year < n_years; year++) {
+            if(!isnull(allHist[year])) {
+                free(allHist[year]);
             }
         }
 
-        free(w->allHist);
-        w->allHist = NULL;
+        free(allHist);
+        allHist = NULL;
     }
 
 }
@@ -1814,7 +1816,7 @@ void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
     // Deallocate (previous, if any) `allHist`
     // (using value of `SW_Weather.n_years` previously used to allocate)
     // `SW_WTH_construct()` sets `n_years` to zero
-    deallocateAllWeather(SW_Weather);
+    deallocateAllWeather(SW_Weather->allHist, SW_Weather->n_years);
 
     // Update number of years and first calendar year represented
     SW_Weather->n_years = SW_Model->endyr - SW_Model->startyr + 1;

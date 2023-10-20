@@ -34,7 +34,6 @@
 #include "include/SW_Weather.h"
 #include "include/SW_Markov.h"
 #include "include/SW_Sky.h"
-#include "external/pcg/pcg_basic.h"
 #include "include/SW_Main_lib.h"
 
 #include "include/SW_Flow_lib.h"
@@ -42,7 +41,7 @@
 #include "tests/gtests/sw_testhelpers.h"
 
 
-pcg32_random_t flowTemp_rng;
+sw_random_t flowTemp_rng;
 
 using ::testing::HasSubstr;
 
@@ -98,7 +97,7 @@ namespace {
     double deltaX = 15.0, theMaxDepth = 990.0, sTconst = 4.15;
     unsigned int nlyrs, nRgr = 65;
     Bool ptr_stError = swFALSE;
-    pcg32_random_t STInit_rng;
+    sw_random_t STInit_rng;
     RandSeed(0u, 0u, &STInit_rng);
 
     // *****  Test when nlyrs = 1  ***** //
@@ -186,7 +185,7 @@ namespace {
     double *bDensity2 = new double[nlyrs];
     double *fc2 = new double[nlyrs];
     double *wp2 = new double[nlyrs];
-    pcg32_random_t STInitDeath_rng;
+    sw_random_t STInitDeath_rng;
     RandSeed(0u, 0u, &STInitDeath_rng);
 
     for (i = 0; i < nlyrs; i++) {
@@ -228,7 +227,7 @@ namespace {
     unsigned int nlyrs, nRgr = 65;
     Bool ptr_stError = swFALSE;
 
-    pcg32_random_t SLIF_rng;
+    sw_random_t SLIF_rng;
     RandSeed(0u, 0u, &SLIF_rng);
 
     // *****  Test when nlyrs = 1  ***** //
@@ -386,7 +385,7 @@ namespace {
     unsigned int nRgr =65, year = 1980, doy = 1;
     Bool ptr_stError = swFALSE;
 
-    pcg32_random_t STTF_rng;
+    sw_random_t STTF_rng;
     RandSeed(0u, 0u, &STTF_rng);
 
     // declare input in for loop for non-error causing conditions;
@@ -629,7 +628,7 @@ namespace {
 
 
     // *****  Test when nlyrs = MAX_LAYERS  ***** //
-    pcg32_random_t soilTemp_rng;
+    sw_random_t soilTemp_rng;
     RandSeed(0u, 0u, &soilTemp_rng);
 
 

@@ -13,7 +13,7 @@
 #define DATATYPES_H
 
 #include "include/SW_Defines.h"
-#include "external/pcg/pcg_basic.h"
+
 
 // Array-based output:
 #if defined(RSOILWAT) || defined(STEPWAT)
@@ -26,6 +26,7 @@
 #endif
 
 #define SW_NFILES 24 // For `InFiles`
+
 
 /* =================================================== */
 /*                   Carbon structs                    */
@@ -855,7 +856,7 @@ typedef struct {
     u_cov[MAX_WEEKS][2], /* mean weekly maximum and minimum temperature in degree Celsius */
     v_cov[MAX_WEEKS][2][2]; /* covariance matrix */
   int ppt_events; /* number of ppt events generated this year */
-  pcg32_random_t markov_rng; // used by STEPWAT2
+  sw_random_t markov_rng; // used by STEPWAT2
 
 } SW_MARKOV;
 
@@ -1068,20 +1069,5 @@ typedef struct {
 	void (*pfunc_SXW)(OutPeriod, SW_ALL*); /* pointer to output routine for STEPWAT in-memory output */
 	#endif
 } SW_OUTPUT_POINTERS;
-
-/* =================================================== */
-/*                 Block info struct                   */
-/* --------------------------------------------------- */
-
- /* blockinfo is a structure that contains the memory log information
- * for one allocated memory block.  Every allocated memory block has
- * a corresponding blockinfo structure in the memory log.
- */
-typedef struct BLOCKINFO {
-	struct BLOCKINFO *pbiNext;
-	byte *pb; /* start of block    */
-	size_t size; /* length of block   */
-	flag fReferenced; /* Ever referenced?  */
-} blockinfo; /* Naming:  bi, *pbi */
 
 #endif // DATATYPES_H
