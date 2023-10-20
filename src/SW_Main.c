@@ -59,7 +59,8 @@ int main(int argc, char **argv) {
 	sw_init_logs(stdout, &LogInfo);
 	SW_CTL_init_ptrs(&sw, PathInfo.InFiles);
 
-	sw_init_args(argc, argv, &EchoInits, &PathInfo.InFiles[eFirst],  &LogInfo);
+	sw_init_args(argc, argv, &EchoInits, &PathInfo.InFiles[eFirst],
+                 &userSuid, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }

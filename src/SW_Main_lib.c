@@ -42,7 +42,7 @@ static void sw_print_usage(void) {
 	swprintf(
 		"Ecosystem water simulation model SOILWAT2\n"
 		"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
-		"Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h]\n"
+		"Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h] [-s 1]\n"
 		"  -d : operate (chdir) in startdir (default=.)\n"
 		"  -f : name of main input file (default=files.in)\n"
 		"       a preceeding path applies to all input files\n"
@@ -50,6 +50,7 @@ static void sw_print_usage(void) {
 		"  -q : quiet mode (print version, print error, message to check logfile)\n"
 		"  -v : print version information\n"
 		"  -h : print this help information\n"
+        "  -s : input start Simulation Unit Identifier (suid)\n"
 	);
 }
 
@@ -81,10 +82,11 @@ void sw_print_version(void) {
 @param[in] argv Values of command line arguments.
 @param[out] EchoInits Flag to control if inputs are to be output to the user
 @param[out] _firstfile First file name to be filled in the program run
+@param[out] userSUID Simulation Unit Identifier that the user sent in
 @param[out] LogInfo Holds information dealing with logfile output
 */
-void sw_init_args(int argc, char **argv,
-	Bool *EchoInits, char **_firstfile, LOG_INFO* LogInfo) {
+void sw_init_args(int argc, char **argv, Bool *EchoInits,
+                  char **_firstfile, int *userSUID, LOG_INFO* LogInfo) {
 
 	/* =================================================== */
 	/* to add an option:
@@ -100,8 +102,8 @@ void sw_init_args(int argc, char **argv,
 	 *                   at end of program.
 	 */
 	char str[1024];
-	char const *opts[] = { "-d", "-f", "-e", "-q", "-v", "-h" }; /* valid options */
-	int valopts[] = { 1, 1, 0, 0, 0, 0 }; /* indicates options with values */
+	char const *opts[] = { "-d", "-f", "-e", "-q", "-v", "-h", "-s" }; /* valid options */
+	int valopts[] = { 1, 1, 0, 0, 0, 0, 0 }; /* indicates options with values */
 	/* 0=none, 1=required, -1=optional */
 	int i, /* looper through all cmdline arguments */
 	a, /* current valid argument-value position */
@@ -115,6 +117,7 @@ void sw_init_args(int argc, char **argv,
     }
 
 	*EchoInits = swFALSE;
+    *userSUID = -1; // Default user suid to -1 (not input)
 
 	a = 1;
 	for (i = 1; i <= nopts; i++) {
@@ -193,6 +196,17 @@ void sw_init_args(int argc, char **argv,
                         return; // Exit function prematurely due to error
                     }
 					break;
+
+                case 6: /* -s */
+                    *userSUID = atoi(str) - 1; /* Make suid base0 */
+
+                    if(*userSUID < 0) {
+                        LogError(LogInfo, LOGERROR,
+                                 "Input suid was less than 1."
+                                 " Please input a value >= 1.");
+                        return; // Exit function prematurely due to error
+                    }
+                    break;
 
 				default:
 					LogError(
