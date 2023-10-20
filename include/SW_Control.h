@@ -29,6 +29,9 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_CTL_init_ptrs(SW_ALL* sw, char *InFiles[]);
+void SW_CTL_setup_domain(PATH_INFO* PathInfo, int userSuid,
+                         SW_DOMAIN* SW_Domain, int *startSimSet,
+                         int *endSimSet, LOG_INFO* LogInfo);
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw, PATH_INFO* PathInfo);

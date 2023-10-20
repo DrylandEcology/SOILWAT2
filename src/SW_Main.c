@@ -33,6 +33,7 @@
 #include "include/SW_Output.h"
 #include "include/SW_Output_outtext.h"
 #include "include/SW_Main_lib.h"
+#include "include/SW_Domain.h"
 
 
 
@@ -49,15 +50,18 @@
 /************  Main() ************************/
 int main(int argc, char **argv) {
 	/* =================================================== */
-	SW_ALL sw;
+	SW_ALL sw_template;
 	SW_DOMAIN SW_Domain;
 	SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
 	LOG_INFO LogInfo;
 	PATH_INFO PathInfo;
 	Bool EchoInits;
 
+    int startSimSet, endSimSet, userSuid, suid;
+    int *ncStartSuid;
+
 	sw_init_logs(stdout, &LogInfo);
-	SW_CTL_init_ptrs(&sw, PathInfo.InFiles);
+	SW_CTL_init_ptrs(&sw_template, PathInfo.InFiles);
 
 	sw_init_args(argc, argv, &EchoInits, &PathInfo.InFiles[eFirst],
                  &userSuid, &LogInfo);
@@ -71,62 +75,86 @@ int main(int argc, char **argv) {
 	}
 
   // setup and construct model (independent of inputs)
-	SW_CTL_setup_model(&sw, SW_OutputPtrs, &PathInfo, &LogInfo);
+	SW_CTL_setup_model(&sw_template, SW_OutputPtrs, &PathInfo, &LogInfo);
+    if(LogInfo.stopRun) {
+        goto finishProgram;
+    }
+
+    SW_CTL_setup_domain(&PathInfo, userSuid, &SW_Domain, &startSimSet,
+                        &endSimSet, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
 
 	// read user inputs
-	SW_CTL_read_inputs_from_disk(&sw, &SW_Domain, &PathInfo, &LogInfo);
+	SW_CTL_read_inputs_from_disk(&sw_template, &SW_Domain, &PathInfo, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
 
 	// finalize daily weather
-	SW_WTH_finalize_all_weather(&sw.Markov, &sw.Weather, sw.Model.cum_monthdays,
-								sw.Model.days_in_month, &LogInfo);
+	SW_WTH_finalize_all_weather(&sw_template.Markov, &sw_template.Weather,
+                                sw_template.Model.cum_monthdays,
+								sw_template.Model.days_in_month, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
 
 	// initialize simulation run (based on user inputs)
-	SW_CTL_init_run(&sw, &LogInfo);
+	SW_CTL_init_run(&sw_template, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
 
   // initialize output
-	SW_OUT_set_ncol(sw.Site.n_layers, sw.Site.n_evap_lyrs, sw.VegEstab.count,
-					sw.GenOutput.ncol_OUT);
-	SW_OUT_set_colnames(sw.Site.n_layers, sw.VegEstab.parms,
-						sw.GenOutput.ncol_OUT, sw.GenOutput.colnames_OUT,
+	SW_OUT_set_ncol(sw_template.Site.n_layers, sw_template.Site.n_evap_lyrs,
+                    sw_template.VegEstab.count, sw_template.GenOutput.ncol_OUT);
+	SW_OUT_set_colnames(sw_template.Site.n_layers, sw_template.VegEstab.parms,
+						sw_template.GenOutput.ncol_OUT, sw_template.GenOutput.colnames_OUT,
 						&LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
-	SW_OUT_create_files(&sw.FileStatus, sw.Output, sw.Site.n_layers,
-	                    PathInfo.InFiles, &sw.GenOutput, &LogInfo); // only used with SOILWAT2
+	SW_OUT_create_files(&sw_template.FileStatus, sw_template.Output, sw_template.Site.n_layers,
+	                    PathInfo.InFiles, &sw_template.GenOutput, &LogInfo); // only used with SOILWAT2
     if(LogInfo.stopRun) {
         goto closeFiles;
     }
 
 	if(EchoInits) {
-		_echo_all_inputs(&sw);
+		_echo_all_inputs(&sw_template);
 	}
 
-  // run simulation: loop through each year
-	SW_CTL_main(&sw, SW_OutputPtrs, &LogInfo);
+  // run simulations: loop over simulation set
+    for(suid = startSimSet; suid < endSimSet; suid++)
+    {
+        ncStartSuid = SW_DOM_calc_ncStartSuid(&SW_Domain, suid);
+        if(!SW_DOM_CheckProgress(SW_Domain.DomainType, ncStartSuid)) {
+
+            SW_CTL_run_sw(&sw_template, &SW_Domain, ncStartSuid, NULL,
+                          SW_OutputPtrs, NULL, &LogInfo);
+
+            sw_write_warnings(&LogInfo);
+            sw_init_logs(stdout, &LogInfo); // Reset LOG_INFO for next simulation run
+
+            if(!LogInfo.stopRun) {
+                // Process output
+
+                // Set simulation run progress
+                SW_DOM_SetProgress(SW_Domain.DomainType, ncStartSuid);
+            }
+        }
+    }
 
     closeFiles: {
         // finish-up output
-        SW_OUT_close_files(&sw.FileStatus, &sw.GenOutput, &LogInfo); // not used with rSOILWAT2
+        SW_OUT_close_files(&sw_template.FileStatus, &sw_template.GenOutput, &LogInfo); // not used with rSOILWAT2
     }
 
     finishProgram: {
         // de-allocate all memory
-        SW_CTL_clear_model(swTRUE, &sw, &PathInfo);
+        SW_CTL_clear_model(swTRUE, &sw_template, &PathInfo);
 
-        sw_write_warnings(&LogInfo);
         sw_fail_on_error(&LogInfo);
     }
 

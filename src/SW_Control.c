@@ -145,6 +145,36 @@ void SW_CTL_init_ptrs(SW_ALL* sw, char *InFiles[]) {
   SW_SWC_init_ptrs(&sw->SoilWat);
 }
 
+/**
+ * @brief Setup SW_DOMAIN for the program run
+ *
+ * @param[in] PathInfo Struct holding all information about the programs path/files
+ * @param[in] userSuid Suid input by the user
+ * @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[out] startSimSet First suid within a simulation set
+ * @param[out] endSimSet Final suid in a simulation set
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_CTL_setup_domain(PATH_INFO* PathInfo, int userSuid,
+                         SW_DOMAIN* SW_Domain, int *startSimSet,
+                         int *endSimSet, LOG_INFO* LogInfo) {
+
+    SW_F_read(PathInfo, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_DOM_read(PathInfo->InFiles, SW_Domain, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_DOM_calc_nSUIDs(SW_Domain);
+    SW_DOM_SimSet(SW_Domain, userSuid, SW_Domain->nSUIDs,
+                  startSimSet, endSimSet, LogInfo);
+}
+
 /** @brief Setup and construct model (independent of inputs)
  *
  * @param[in,out] sw Comprehensive struct of type SW_ALL containing all
@@ -360,14 +390,6 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, SW_DOMAIN* SW_Domain,
 
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_read_inputs_from_disk': Read input from disk:");
-  #endif
-
-  SW_F_read(PathInfo, LogInfo);
-  if(LogInfo->stopRun) {
-    return; // Exit function prematurely due to error
-  }
-  #ifdef SWDEBUG
-  if (debug) swprintf(" 'files'");
   #endif
 
   SW_MDL_read(&sw->Model, PathInfo->InFiles, LogInfo);
