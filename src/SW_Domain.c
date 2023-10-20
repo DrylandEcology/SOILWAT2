@@ -38,13 +38,15 @@ int* SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, int suid) {
 /**
  * @brief Calculate the number of suids in the given domain
  *
- * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ * @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
- *
- * @return Number of suids in the domain
 */
-int SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
+void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
+    SW_Domain->nSUIDs = SW_Domain->nDimS;
 
+    if(!strcmp(SW_Domain->DomainType, "s")) {
+        SW_Domain->nSUIDs = SW_Domain->nDimX * SW_Domain->nDimY;
+    }
 }
 
 /**
