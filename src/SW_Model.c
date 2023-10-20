@@ -239,4 +239,8 @@ void SW_MDL_new_day(SW_MODEL* SW_Model) {
 void SW_MDL_get_ModelRun(SW_MODEL* SW_Model, SW_DOMAIN* SW_Domain,
                          char* fileNames[], LOG_INFO* LogInfo) {
 
+    SW_Model->startyr = SW_Domain->startyr; // Copy start year
+    SW_Model->endyr = SW_Domain->endyr; // Copy end year
+    SW_Model->startstart = SW_Domain->startstart; // Copy start doy
+    SW_Model->endend = SW_Domain->endend; // Copy end doy
 }
