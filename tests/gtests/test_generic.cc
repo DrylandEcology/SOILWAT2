@@ -122,17 +122,55 @@ namespace {
         char emptyDelim[] = "";
         char oneDelim[] = "\\";
         char multipleDelim[] = "*/^%\\";
+        char pathDelim[] = "/";
+        char extDelim[] = ".";
 
         char emptyString[] = "";
         char oneDelimStr[] = "dir\\testFile.in";
         char multipleDelimStr[] = "%root\\dir^folder/testFile.in";
+        char filepathStr1[] = "path/to/my_file1.txt";
+        char filepathStr2[] = "path/to/my_file2.txt";
 
-        // Test strings when there is an empty delimiter
-        // Strings should remain the same
+
+        // Test separation between file name and file extension
+        currString = sw_strtok(filepathStr1, &startIndex, &strLen, extDelim);
+        ASSERT_STREQ(currString, "path/to/my_file1");
+
+        currString = sw_strtok(filepathStr1, &startIndex, &strLen, extDelim);
+        ASSERT_STREQ(currString, "txt");
+
+        currString = sw_strtok(filepathStr1, &startIndex, &strLen, extDelim);
+        ASSERT_TRUE(currString == NULL);
+        startIndex = 0, strLen = 0; // Reset start index and string length for next test
+
+
+        // Test separation among file path elements
+        currString = sw_strtok(filepathStr2, &startIndex, &strLen, pathDelim);
+        ASSERT_STREQ(currString, "path");
+
+        currString = sw_strtok(filepathStr2, &startIndex, &strLen, pathDelim);
+        ASSERT_STREQ(currString, "to");
+
+        currString = sw_strtok(filepathStr2, &startIndex, &strLen, pathDelim);
+        ASSERT_STREQ(currString, "my_file2.txt");
+
+        currString = sw_strtok(filepathStr2, &startIndex, &strLen, pathDelim);
+        ASSERT_TRUE(currString == NULL);
+        startIndex = 0, strLen = 0; // Reset start index and string length for next test
+
+
+        // Test that empty strings return NULL
         currString = sw_strtok(emptyString, &startIndex, &strLen, emptyDelim);
         ASSERT_TRUE(currString == NULL);
         startIndex = 0, strLen = 0; // Reset start index and string length for next test
 
+        currString = sw_strtok(emptyString, &startIndex, &strLen, pathDelim);
+        ASSERT_TRUE(currString == NULL);
+        startIndex = 0, strLen = 0; // Reset start index and string length for next test
+
+
+        // Test strings when there is an empty delimiter
+        // Strings should remain the same
         currString = sw_strtok(multipleDelimStr, &startIndex, &strLen, emptyDelim);
         ASSERT_STREQ(currString, "%root\\dir^folder/testFile.in");
         startIndex = 0, strLen = 0; // Reset start index and string length for next test

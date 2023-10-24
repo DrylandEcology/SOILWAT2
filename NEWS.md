@@ -14,6 +14,9 @@
   longer need to interact directly with `pcg` and rSOILWAT2 will no longer
   depend on `pcg` which it never has used.
 
+* New `sw_strtok()` is thread-safe and replaces not thread-safe `strtok()`
+  (#376; @N1ckP3rsl3y).
+
 * Obsolete code in DEBUG_MEM* sections is removed (#369; @dschlaep).
 
 

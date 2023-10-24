@@ -190,14 +190,12 @@ static void _create_filename_ST(char *str, char *flag, int iteration,
 
 	char *basename;
 	char *ext;
-	char *fileDup = (char *)Mem_Malloc(strlen(str) + 1,
-							"_create_filename_ST", LogInfo);
+	char *fileDup = Str_Dup(str, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
 	// Determine basename and file extension
-	strcpy(fileDup, str); // copy file name to new variable
 	basename = sw_strtok(fileDup, &startIndex, &strLen, ".");
 	ext = sw_strtok(fileDup, &startIndex, &strLen, ".");
 

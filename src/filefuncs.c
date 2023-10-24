@@ -369,7 +369,6 @@ Bool MkDir(const char *dname, LOG_INFO* LogInfo) {
     }
 
 	n = 0;
-	a[n++] = sw_strtok(c, &startIndex, &strLen, delim);
 	while (NULL != (a[n++] = sw_strtok(c, &startIndex, &strLen, delim)))
 		; /* parse path */
 	n--;

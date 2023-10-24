@@ -157,6 +157,10 @@ int Str_CompareI(char *t, char *s) {
 }
 
 /*****************************************************/
+/** Find beginning of next string token
+
+  This is a thread-safe replacement for strtok.
+*/
 char *sw_strtok(char inputStr[], int *startIndex, int *strLen, const char *delim) {
     int index = *startIndex;
     char *newPtr = NULL;
