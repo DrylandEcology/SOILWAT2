@@ -240,7 +240,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 				 SW_CARBON* SW_Carbon, LOG_INFO* LogInfo);
 void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 					LOG_INFO* LogInfo);
-void _echo_inputs(SW_SITE* SW_Site, LOG_INFO* LogInfo);
+void _echo_inputs(SW_SITE* SW_Site);
 
 /* these used to be in Layers */
 void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo);
@@ -254,10 +254,6 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
 	RealD *regionLowerBounds, LOG_INFO* LogInfo);
 void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
 						RealD *regionLowerBounds, LOG_INFO* LogInfo);
-
-#ifdef DEBUG_MEM
-	void SW_SIT_SetMemoryRefs(void);
-#endif
 
 
 #ifdef __cplusplus

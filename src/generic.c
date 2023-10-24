@@ -5,12 +5,6 @@
 #include <stdarg.h>
 #include <math.h>
 
-/* int logged is to be declared in the main module of your program. */
-/* global variable indicates logfile used: externed via generic.h */
-/* so we can't make it Bool.  But we don't have to explicitly */
-/* externed it in each module, just include generic.h. */
-/* Just be sure to set logged = FALSE as the first step in main(). */
-
 /*
  History:
  2011/01/27	(drs) renamed from "gen_funcs.c" to "generic.c"
@@ -149,13 +143,71 @@ int Str_CompareI(char *t, char *s) {
 	 * works like strcmp() except case-insensitive
 	 * cwb 4-Sep-03
 	 */
+	char *tChar = t, *sChar = s;
 
-	char *t1 = (char *) malloc(strlen(t) + 1);
-	char *s1 = (char *) malloc(strlen(s) + 1);
-	int r = strcmp(Str_ToUpper(t, t1), Str_ToUpper(s, s1));
-	free(t1);
-	free(s1);
-	return r;
+	// While t and s characters are not '\0' (null)
+	// and the lower case character of t and s are the same
+	while(*tChar && *sChar && tolower(*tChar) == tolower(*sChar)) {
+		// Increment pointers to their next character
+		tChar++;
+		sChar++;
+	}
+
+	return *tChar - *sChar; // Return the difference between the t and s characters
+}
+
+/*****************************************************/
+/** Find beginning of next string token
+
+  This is a thread-safe replacement for strtok.
+*/
+char *sw_strtok(char inputStr[], int *startIndex, int *strLen, const char *delim) {
+    int index = *startIndex;
+    char *newPtr = NULL;
+
+    if(*startIndex == 0) {
+        *strLen = strlen(inputStr);
+    }
+
+    // Make sure the next "token" will not attempt to access outside of the string
+    if(*startIndex < *strLen) {
+        // Make sure to loop past any duplicates
+        while(inputStr[index] == '\0' || isDelim(inputStr[index], delim)) {
+            index++;
+        }
+
+        // Make sure the end of the string has not been reached
+        if(inputStr[index] != '\0') {
+            newPtr = &inputStr[index];
+        } else {
+            // Return NULL if so, to notify that the string is done
+            return NULL;
+        }
+
+        // Loop until next "token" (delimiter) to update the next start index
+        while(inputStr[index] != '\0' && !isDelim(inputStr[index], delim)) {
+            index++;
+        }
+        // Set next null character
+        inputStr[index] = '\0';
+
+        // Update the index to start at next
+        *startIndex = index + 1;
+    }
+
+    return newPtr;
+}
+
+/*****************************************************/
+Bool isDelim(char currChar, const char *delim) {
+    while(*delim != '\0') {
+        if(*delim == currChar) {
+            return swTRUE;
+        }
+        delim++;
+    }
+
+    return swFALSE;
 }
 
 /*****************************************************/
@@ -313,23 +365,6 @@ double lobfB(double xs[], double ys[], unsigned int n) {
 void lobf(double *m, double *b, double xs[], double ys[], unsigned int n) {
 	*m = lobfM(xs, ys, n); // m = slope
 	*b = lobfB(xs, ys, n); // b = y-intercept
-}
-
-/** @brief Duplicate strings.
-
-  Used if strdup() is not available. strdup() is not a ISO C standard,
-  but included in the POSIX standard. That means that it is not available on
-  some compilers, e.g., travis-ci with -std=c11 flag set.
-
-  @see
-    Code from <https://stackoverflow.com/questions/482375/strdup-function>
-*/
-char * sw_strdup(const char * s)
-{
-  size_t len = 1 + strlen(s);
-  char *p = (char*) malloc(len); // explicit cast necessary for c++ compiler when unit testing against googletest
-
-  return p ? (char*) memcpy(p, s, len) : NULL;
 }
 
 

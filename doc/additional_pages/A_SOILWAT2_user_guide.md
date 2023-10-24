@@ -39,15 +39,13 @@ on your side.
 
 ### Minimal requirements
   - on any platform:
-    - to compile the `SOILWAT2` executable
-      - `C11` compliant [gcc][] or [clang/llvm][] toolchains;
-        ideally, `gcc >= v4.9` or `clang >= v3.3`
-    - to compile the `SOILWAT2` unit tests (using `googletest`)
-      - `C++11` compliant [gcc][] or [clang/llvm][] toolchains;
-        where `gcc >= v5.0` or `clang >= v5.0`
+    - to compile the `SOILWAT2` simulation program
+      - `C99` compliant [gcc][] or [clang/llvm][] toolchains
+    - to compile the `SOILWAT2` tests program (using `googletest`)
+      - `C++14` compliant [gcc][] or [clang/llvm][] toolchains
+         (see [googletest cxx support](https://github.com/google/oss-policies-info/blob/main/foundational-cxx-support-matrix.md));
       - `POSIX API` (needs to be activated on `cygwin`, see `makefile`)
-    - POSIX- [make](https://pubs.opengroup.org/onlinepubs/9699919799/) or
-      GNU-compliant [make](https://www.gnu.org/software/make/)
+    - GNU-compliant [make](https://www.gnu.org/software/make/)
     - [git][] to download the code from the `github` repository
   - additionally, on Windows OS:
     - a `*nix` emulator, e.g., an installation of [cygwin][] or [docker][]
@@ -56,7 +54,7 @@ on your side.
     - having agreed to the xcode license (run `xcodebuild -license`)
     - or, alternatively, the full [xcode][] installation
   - optional:
-    - [doxygen][] (ideally `>= v1.8.17`) and
+    - [doxygen][] (ideally `>= v1.9.3`) and
       a minimal `latex` installation (see below)
       to generate a local copy of the documentation
 
@@ -111,7 +109,7 @@ on your side.
   * Compile an executable binary, e.g.,
 ```{.sh}
     cd SOILWAT2/
-    make bin
+    make
 ```
 
 <br>
@@ -141,7 +139,7 @@ on your side.
 ```
     or, equivalently,
 ```{.sh}
-    make bin
+    make
     bin/SOILWAT2 -d ./tests/example -f files.in
 ```
 

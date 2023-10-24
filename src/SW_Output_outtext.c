@@ -27,6 +27,7 @@
 #include "include/SW_Files.h"
 #include "include/SW_Model.h"
 #include "include/SW_Site.h"
+#include "include/myMemory.h"
 
 // externs `key2str`, `pd2longstr`
 #include "include/SW_Output.h"
@@ -73,8 +74,9 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 
 	#ifdef SOILWAT
 		if (does_agg) {
-			LogError(LogInfo, LOGFATAL, "'_create_csv_headers': value TRUE for "\
+			LogError(LogInfo, LOGERROR, "'_create_csv_headers': value TRUE for "\
 				"argument 'does_agg' is not implemented for SOILWAT2-standalone.");
+            return; // Exit function prematurely due to error
 		}
 	#else
 		(void) LogInfo;
@@ -124,7 +126,7 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 	and values
   \param[in] pd The output time step.
   \param[in] InFiles Array of program in/output files
-  \param[in] LogInfo Holds information dealing with logfile output
+  \param[in,out] LogInfo Holds information dealing with logfile output
 */
 /***********************************************************/
 static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
@@ -138,11 +140,17 @@ static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
 	if (SW_FileStatus->make_regular[pd]) {
 		SW_FileStatus->fp_reg[pd] =
 			OpenFile(InFiles[eOutputDaily + pd], "w", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 	}
 
 	if (SW_FileStatus->make_soil[pd]) {
 		SW_FileStatus->fp_soil[pd] =
 			OpenFile(InFiles[eOutputDaily_soil + pd], "w", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 	}
 }
 #endif
@@ -176,15 +184,20 @@ static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
 
 		\return `name_flagiteration.ext`
 */
-static void _create_filename_ST(char *str, char *flag, int iteration, char *filename, size_t sizeof_filename) {
+static void _create_filename_ST(char *str, char *flag, int iteration,
+			char *filename, size_t sizeof_filename, LOG_INFO* LogInfo) {
+    int startIndex = 0, strLen = 0; // For `sw_strtok()`
+
 	char *basename;
 	char *ext;
-	char *fileDup = (char *)malloc(strlen(str) + 1);
+	char *fileDup = Str_Dup(str, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	// Determine basename and file extension
-	strcpy(fileDup, str); // copy file name to new variable
-	basename = strtok(fileDup, ".");
-	ext = strtok(NULL, ".");
+	basename = sw_strtok(fileDup, &startIndex, &strLen, ".");
+	ext = sw_strtok(fileDup, &startIndex, &strLen, ".");
 
 	// Put new file together
 	if (iteration > 0) {
@@ -227,13 +240,29 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
 			// a specific order of `SW_FileIndex` --> fix and create something that
 			// allows subsetting such as `eOutputFile[pd]` or append time period to
 			// a basename, etc.
-			_create_filename_ST(InFiles[eOutputDaily + pd], "agg", 0, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles[eOutputDaily + pd], "agg", 0,
+								filename, FILENAME_MAX, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
 			FileStatus->fp_reg_agg[pd] = OpenFile(filename, "w", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 
 		if (FileStatus->make_soil[pd]) {
-			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "agg", 0, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "agg", 0,
+								filename, FILENAME_MAX, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
 			FileStatus->fp_soil_agg[pd] = OpenFile(filename, "w", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 
 	} else
@@ -249,12 +278,25 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
 		}
 
 		if (FileStatus->make_regular[pd]) {
-			_create_filename_ST(InFiles[eOutputDaily + pd], "rep", iteration, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles[eOutputDaily + pd], "rep", iteration,
+								filename, FILENAME_MAX, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
 			FileStatus->fp_reg[pd] = OpenFile(filename, "w", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 
 		if (FileStatus->make_soil[pd]) {
-			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "rep", iteration, filename, FILENAME_MAX);
+			_create_filename_ST(InFiles[eOutputDaily_soil + pd], "rep", iteration,
+								filename, FILENAME_MAX, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
 			FileStatus->fp_soil[pd] = OpenFile(filename, "w", LogInfo);
 		}
 	}
@@ -282,7 +324,7 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
  * @param[in] n_layers Number of layers of soil within the simulation run
  * @param[in] InFiles Array of program in/output files
  * @param[in] GenOutput Holds general variables that deal with output
- * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in,out] LogInfo Holds information dealing with logfile output
  *
  *  @note Call this routine at the beginning of the main program run, but
  *  after SW_OUT_read() which sets the global variable use_OutPeriod.
@@ -296,11 +338,17 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 	ForEachOutPeriod(pd) {
 		if (GenOutput->use_OutPeriod[pd]) {
 			_create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			write_headers_to_csv(pd, SW_FileStatus->fp_reg[pd],
 				SW_FileStatus->fp_soil[pd], swFALSE, SW_FileStatus->make_regular,
 				SW_FileStatus->make_soil, SW_Output, n_layers, GenOutput,
 				LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 }
@@ -317,11 +365,17 @@ void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
 	ForEachOutPeriod(p) {
 		if (GenOutput->use_OutPeriod[p]) {
 			_create_csv_file_ST(-1, p, InFiles, SW_FileStatus, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg_agg[p],
 				SW_FileStatus->fp_soil_agg[p], swTRUE, SW_FileStatus->make_regular,
 				SW_FileStatus->make_soil, SW_Output, n_layers, GenOutput,
 				LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 }
@@ -335,11 +389,17 @@ void SW_OUT_create_iteration_files(SW_FILE_STATUS* SW_FileStatus,
 	ForEachOutPeriod(p) {
 		if (GenOutput->use_OutPeriod[p]) {
 			_create_csv_file_ST(iteration, p, InFiles, SW_FileStatus, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
 			write_headers_to_csv(p, SW_FileStatus->fp_reg[p],
 				SW_FileStatus->fp_soil[p], swFALSE, SW_FileStatus->make_regular,
 				SW_FileStatus->make_soil, SW_Output, n_layers, GenOutput,
 				LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 		}
 	}
 }
@@ -426,6 +486,9 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 	get_outstrheader(pd, str_time, sizeof str_time);
 	_create_csv_headers(pd, header_reg, header_soil, does_agg,
 			n_layers, SW_Output, GenOutput, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 	// Write headers to files
 	if (make_regular[pd]) {
@@ -478,7 +541,7 @@ void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 		SW_FILE_STATUS which holds basic information about output files
 		and values
 	@param[in] GenOutput Holds general variables that deal with output
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
 						LOG_INFO* LogInfo) {

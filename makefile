@@ -8,7 +8,6 @@
 # --- Binary executable ------
 # make             create the binary executable 'SOILWAT2'
 # make all
-# make bin
 #
 # make bin_run     same as 'make bin' plus execute the binary for tests/example/
 #                  (previously, `make bint_run`; target `bint` is obsolete)
@@ -28,32 +27,40 @@
 # make test_severe similar to `make test_run` with stricter flags for warnings
 #                  and instrumentation; consider cleaning previous build
 #                  artifacts beforehand, e.g., `make clean_test`
-# make test_leaks  similar to `make test_severe` with stricter
+# make test_sanitizer  similar to `make test_severe` with stricter
 #                  sanitizer settings; consider cleaning previous build
 #                  artifacts beforehand, e.g., `make clean_test`
+# make test_leaks  similar to `make test_run` but using `leaks` program;
+#                  consider cleaning previous build artifacts beforehand,
+#                  e.g., `make clean_test`
 # make test_reprnd similar to `make test_run`, i.e., execute the test binary
 #                  repeatedly while randomly shuffling tests
 # make test_rep3rnd   similar to `make test_run`, i.e., execute the test binary
 #                  three times while randomly shuffling tests
 #
+# make bin_run     runs the executable 'SOILWAT2' on the "example/" inputs
 # make bin_debug   similar to `make bin_run` with debug settings;
 #                  consider cleaning previous build artifacts beforehand,
 #                  e.g., `make clean_build`
 # make bin_debug_severe   similar to `make bin_debug` stricter flags for
 #                  warnings and instrumentation; consider cleaning previous
 #                  build artifacts beforehand, e.g., `make clean_build`
-# make bin_leaks   similar to `make bin_debug_severe` with stricter
+# make bin_sanitizer   similar to `make bin_debug_severe` with stricter
 #                  sanitizer settings; consider cleaning previous build
 #                  artifacts beforehand, e.g., `make clean_build`
+# make bin_leaks   similar to `make bin_run` but using `leaks` program;
+#                  consider cleaning previous build artifacts beforehand,
+#                  e.g., `make clean_test`
 #
 # --- Code coverage ------
 # make cov         same as 'make test_run' with code coverage support and
 #                  running `gcov` on each source file
 #                  (previously, `make cov cov_run`); consider cleaning
 #                  previous artifacts beforehand, e.g., `make clean_cov`;
-#                  use matching compiler and `gcov` versions, e.g., for gcc
-#                  `CC=gcc CXX=g++ make clean cov` or for clang v14
-#                  `CC=clang CXX=clang++ GCOV="llvm-cov-mp-14 gcov" make clean_cov cov`
+#                  use matching compiler and `gcov` versions, e.g.,
+#                  for gcc `CXX=g++ GCOV=gcov make clean clean_cov cov`
+#                  and for clang v14
+#                  `CXX=clang++ GCOV="llvm-cov-mp-14 gcov" make clean clean_cov cov`
 #
 # --- Cleanup ------
 # make clean       same as 'make clean_bin clean_build clean_test';
@@ -88,6 +95,7 @@ dir_test := tests/gtests
 # directories that contain submodules
 dir_pcg := external/pcg
 dir_gtest := external/googletest/googletest
+dir_gmock := external/googletest/googlemock
 
 # output directory for executables, shared objects, libraries
 dir_bin := bin
@@ -101,6 +109,7 @@ dir_build_test := $(dir_build)/test
 #------ OUTPUT NAMES
 target := SOILWAT2
 lib_sw2 := $(dir_bin)/lib$(target).a
+lib_rsw2 := $(dir_bin)/libr$(target).a
 bin_sw2 := $(dir_bin)/$(target)
 
 target_test = $(target)_test
@@ -108,7 +117,9 @@ lib_test := $(dir_build_test)/lib$(target_test).a
 bin_test := $(dir_bin)/sw_test
 
 gtest := gtest
+gmock := gmock
 lib_gtest := $(dir_build_test)/lib$(gtest).a
+lib_gmock := $(dir_build_test)/lib$(gmock).a
 
 
 
@@ -121,13 +132,15 @@ lib_gtest := $(dir_build_test)/lib$(gtest).a
 
 #------ STANDARDS
 # googletest requires c++14 and POSIX API
-# cygwin does not enable POSIX API by default (e.g., `strdup()` is missing)
+# see https://github.com/google/oss-policies-info/blob/main/foundational-cxx-support-matrix.md
+#
+# cygwin does not enable POSIX API by default
 # --> enable by defining `_POSIX_C_SOURCE=200809L`
 #     (or `-std=gnu++11` or `_GNU_SOURCE`)
 # see https://github.com/google/googletest/issues/813 and
 # see https://github.com/google/googletest/pull/2839#issue-613300962
 
-set_std := -std=c11
+set_std := -std=c99
 set_std++_tests := -std=c++14
 
 
@@ -197,6 +210,7 @@ sw_LDLIBS := $(LDLIBS) -lm
 target_LDLIBS := -l$(target) $(sw_LDLIBS)
 test_LDLIBS := -l$(target_test) $(sw_LDLIBS)
 gtest_LDLIBS := -l$(gtest)
+gmock_LDLIBS := -l$(gmock)
 
 
 #------ CODE FILES
@@ -256,7 +270,7 @@ sources_test := $(wildcard $(dir_test)/*.cc)
 objects_test := $(sources_test:$(dir_test)/%.cc=$(dir_build_test)/%.o)
 
 
-# PCG random generator files
+# PCG random generator files (not used by rSOILWAT2)
 sources_pcg := $(dir_pcg)/pcg_basic.c
 objects_lib_pcg := $(sources_pcg:$(dir_pcg)/%.c=$(dir_build_sw2)/%.o)
 objects_test_pcg := $(sources_pcg:$(dir_pcg)/%.c=$(dir_build_test)/%.o)
@@ -266,6 +280,9 @@ objects_test_pcg := $(sources_pcg:$(dir_pcg)/%.c=$(dir_build_test)/%.o)
 GTEST_SRCS_ := $(dir_gtest)/src/*.cc $(dir_gtest)/src/*.h $(GTEST_HEADERS)
 GTEST_HEADERS := $(dir_gtest)/include/gtest/*.h $(dir_gtest)/include/gtest/internal/*.h
 
+GMOCK_SRCS_ := $(dir_gmock)/src/*.cc $(GMOCK_HEADERS)
+GMOCK_HEADERS := $(dir_gmock)/include/gmock/*.h $(dir_gmock)/include/gmock/internal/*.h $(GTEST_HEADERS)
+
 
 
 #------ TARGETS
@@ -273,15 +290,21 @@ all : $(bin_sw2)
 
 lib : $(lib_sw2)
 
+libr : $(lib_rsw2)
+
 test : $(bin_test)
 
-.PHONY : all lib test
+.PHONY : all lib libr test
 
 
 
-#--- SOILWAT2 library (utilized by SOILWAT2, rSOILWAT2, and STEPWAT2)
+#--- SOILWAT2 library (utilized by SOILWAT2 and STEPWAT2)
 $(lib_sw2) : $(objects_lib) $(objects_lib_pcg) | $(dir_bin)
 		$(AR) -rcs $(lib_sw2) $(objects_lib) $(objects_lib_pcg)
+
+#--- SOILWAT2 library without pcg (utilized by rSOILWAT2)
+$(lib_rsw2) : $(objects_lib) | $(dir_bin)
+		$(AR) -rcs $(lib_sw2) $(objects_lib)
 
 
 #--- SOILWAT2 stand-alone executable (utilizing SOILWAT2 library)
@@ -293,11 +316,12 @@ $(bin_sw2) : $(lib_sw2) $(objects_bin) | $(dir_bin)
 $(lib_test) : $(objects_lib_test) $(objects_test_pcg) | $(dir_build_test)
 		$(AR) -rcs $(lib_test) $(objects_lib_test) $(objects_test_pcg)
 
-$(bin_test) : $(lib_gtest) $(lib_test) $(objects_test) | $(dir_bin)
+$(bin_test) : $(lib_gtest) $(lib_gmock) $(lib_test) $(objects_test) | $(dir_bin)
 		$(CXX) $(gtest_flags) $(debug_flags) $(warning_flags) \
 		$(instr_flags) $(set_std++_tests) \
-		-isystem ${dir_gtest}/include -pthread \
-		$(objects_test) $(sw_LDFLAGS_test) $(gtest_LDLIBS) $(test_LDLIBS) -o $(bin_test)
+		-isystem ${dir_gtest}/include \
+                -isystem ${dir_gmock}/include -pthread \
+		$(objects_test) $(sw_LDFLAGS_test) $(gtest_LDLIBS) $(gmock_LDLIBS) $(test_LDLIBS) -o $(bin_test)
 
 # GoogleTest library
 # based on section 'Generic Build Instructions' at
@@ -307,9 +331,18 @@ $(bin_test) : $(lib_gtest) $(lib_test) $(objects_test) | $(dir_bin)
 $(lib_gtest) : | $(dir_build_test)
 		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(set_std++_tests) \
 		-isystem ${dir_gtest}/include -I${dir_gtest} \
+                -isystem ${dir_gmock}/include -I${dir_gmock} \
 		-pthread -c ${dir_gtest}/src/gtest-all.cc -o $(dir_build_test)/gtest-all.o
 
 		$(AR) -r $(lib_gtest) $(dir_build_test)/gtest-all.o
+
+$(lib_gmock) : | $(dir_build_test)
+		 $(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(set_std++_tests) \
+		 -isystem ${dir_gtest}/include -I${dir_gtest} \
+                 -isystem ${dir_gmock}/include -I${dir_gmock} \
+		 -pthread -c ${dir_gmock}/src/gmock-all.cc -o $(dir_build_test)/gmock-all.o
+
+		 $(AR) -r $(lib_gmock) $(dir_build_test)/gmock-all.o
 
 
 #--- Compile source files for library and executable
@@ -328,7 +361,9 @@ $(dir_build_test)/%.o: $(dir_pcg)/%.c | $(dir_build_test)
 		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -c $< -o $@
 
 $(dir_build_test)/%.o: $(dir_test)/%.cc | $(dir_build_test)
-		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -isystem ${dir_gtest}/include -pthread -c $< -o $@
+		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) \
+                -isystem ${dir_gmock}/include \
+                -isystem ${dir_gtest}/include -pthread -c $< -o $@
 
 
 #--- Create directories
@@ -354,8 +389,12 @@ test_run : test
 test_severe :
 		./tools/run_test_severe.sh
 
+.PHONY : test_sanitizer
+test_sanitizer :
+		./tools/run_test_sanitizer.sh
+
 .PHONY : test_leaks
-test_leaks :
+test_leaks : test
 		./tools/run_test_leaks.sh
 
 .PHONY : test_reprnd
@@ -374,8 +413,12 @@ bin_debug :
 bin_debug_severe :
 		./tools/run_debug_severe.sh
 
+.PHONY : bin_sanitizer
+bin_sanitizer :
+		./tools/run_bin_sanitizer.sh
+
 .PHONY : bin_leaks
-bin_leaks :
+bin_leaks : all
 		./tools/run_bin_leaks.sh
 
 
@@ -407,7 +450,7 @@ clean_bin:
 .PHONY : clean_build
 clean_build:
 		-@$(RM) -r $(dir_build_sw2)
-		-@$(RM) -f $(bin_sw2) $(lib_sw2)
+		-@$(RM) -f $(bin_sw2) $(lib_sw2) $(lib_rsw2)
 
 .PHONY : clean_test
 clean_test:

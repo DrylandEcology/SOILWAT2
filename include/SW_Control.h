@@ -28,6 +28,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+void SW_CTL_init_ptrs(SW_ALL* sw, char *InFiles[]);
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw, PATH_INFO* PathInfo);
@@ -38,10 +39,6 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                  LOG_INFO* LogInfo); /* main controlling loop for SOILWAT  */
 void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                              LOG_INFO* LogInfo);
-
-#ifdef DEBUG_MEM
-void SW_CTL_SetMemoryRefs(SW_OUTPUT SW_Output[]);
-#endif
 
 
 #ifdef __cplusplus

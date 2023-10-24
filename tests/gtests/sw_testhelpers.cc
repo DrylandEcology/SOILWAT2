@@ -20,21 +20,9 @@
 #include "include/SW_Site.h"
 #include "include/SW_SoilWater.h"
 
-#include "include/SW_Control.h"
 #include "include/SW_Files.h"
-#include "include/myMemory.h"
-
-#include "include/SW_Weather.h"
-#include "include/SW_Main_lib.h"
-
 
 #include "tests/gtests/sw_testhelpers.h"
-
-
-void silent_tests(LOG_INFO* LogInfo) {
-  LogInfo->logged = swFALSE;
-  LogInfo->logfp = NULL;
-}
 
 /**
   @brief Creates soil layers based on function arguments (instead of reading
@@ -51,8 +39,10 @@ void create_test_soillayers(unsigned int nlayers,
       SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo) {
 
   if (nlayers <= 0 || nlayers > MAX_LAYERS) {
-    LogError(LogInfo, LOGFATAL, "create_test_soillayers(): "
+    fprintf(stderr, "create_test_soillayers(): "
       "requested number of soil layers (n = %d) is not accepted.\n", nlayers);
+
+    exit(-1);
   }
 
   RealF dmax[MAX_LAYERS] = {
@@ -111,7 +101,7 @@ void create_test_soillayers(unsigned int nlayers,
 
 void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     SW_Site->deepdrain = swTRUE;
 
@@ -129,45 +119,4 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
     SW_Site->site_swrc_type = encode_str2swrc(SW_Site->site_swrc_name, &LogInfo);
     strcpy(SW_Site->site_ptf_name, (char *) "Cosby1984AndOthers");
     SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
-}
-
-
-// `memcpy()` does not work for copying an initialized `SW_ALL`
-// because it does not copy dynamically allocated memory to which
-// members of `SW_ALL` point to
-void setup_AllTest_for_tests(
-  SW_ALL *SW_All,
-  PATH_INFO *PathInfo,
-  LOG_INFO *LogInfo,
-  SW_OUTPUT_POINTERS *SW_OutputPtrs
-) {
-      Bool QuietMode = swFALSE;
-
-      // Initialize SOILWAT2 variables and read values from example input file
-      silent_tests(LogInfo);
-
-      PathInfo->InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, LogInfo);
-
-      SW_CTL_setup_model(SW_All, SW_OutputPtrs, PathInfo, LogInfo);
-      SW_CTL_read_inputs_from_disk(SW_All, PathInfo, LogInfo);
-
-      /* Notes on messages during tests
-        - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
-          "example/Output/logfile.log" to disk (based on content of "files.in")
-        - we close "Output/logfile.log"
-        - we set `logfp` to NULL to silence all non-error messages during tests
-        - error messages go directly to stderr (which DeathTests use to match against)
-      */
-      sw_check_log(QuietMode, LogInfo);
-      silent_tests(LogInfo);
-
-      SW_WTH_finalize_all_weather(
-        &SW_All->Markov,
-        &SW_All->Weather,
-        SW_All->Model.cum_monthdays,
-        SW_All->Model.days_in_month,
-        LogInfo
-      );
-
-      SW_CTL_init_run(SW_All, LogInfo);
 }

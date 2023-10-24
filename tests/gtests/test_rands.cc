@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -18,15 +18,17 @@
 #include "include/myMemory.h"
 #include "include/filefuncs.h"
 #include "include/rands.h"
-#include "external/pcg/pcg_basic.h"
+#include "include/SW_Main_lib.h"
 
 #include "tests/gtests/sw_testhelpers.h"
+
+using ::testing::HasSubstr;
 
 
 namespace {
   // This tests the uniform random number generator
   TEST(RNGTest, RNGUnifZeroToOneOutput) {
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     double min = 0., max = 1.;
     double x71, x71b, x11, x12;
@@ -68,7 +70,7 @@ namespace {
   }
 
   TEST(RNGTest, RNGUnifFloatRangeOutput) {
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     float min = 7.5, max = 77.7;
     double x71, x71b, x11, x12, x0;
@@ -120,7 +122,7 @@ namespace {
 
 
   TEST(RNGTest, RNGUnifIntRangeOutput) {
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     int min = 7, max = 123;
     double x71, x71b, x11, x12, x0;
@@ -175,7 +177,7 @@ namespace {
 
   // This tests the normal random number generator
   TEST(RNGTest, RNGNormMeanSD) {
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10, f = 9999;
     double
       mean = 0., sd = 1.,
@@ -240,15 +242,27 @@ namespace {
 
   // This tests the beta random number generator
   TEST(RNGTest, RNGBetaZeroToOneOutput) {
-    pcg32_random_t ZeroToOne_rng;
+
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+
+    sw_random_t ZeroToOne_rng;
     RandSeed(0u, 0u, &ZeroToOne_rng);
-    EXPECT_LT(RandBeta(0.5, 2, &ZeroToOne_rng), 1);
-    EXPECT_LT(RandBeta(1, 3, &ZeroToOne_rng), 1);
-    EXPECT_GT(RandBeta(1, 4, &ZeroToOne_rng), 0);
-    EXPECT_GT(RandBeta(0.25, 1, &ZeroToOne_rng), 0);
+    
+    EXPECT_LT(RandBeta(0.5, 2, &ZeroToOne_rng, &LogInfo), 1);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    EXPECT_LT(RandBeta(1, 3, &ZeroToOne_rng, &LogInfo), 1);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    EXPECT_GT(RandBeta(1, 4, &ZeroToOne_rng, &LogInfo), 0);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    EXPECT_GT(RandBeta(0.25, 1, &ZeroToOne_rng, &LogInfo), 0);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
-    pcg32_random_t rng71, rng71b, rng11, rng12;
+    sw_random_t rng71, rng71b, rng11, rng12;
     int i, n = 10;
     double
       a = 0.25, b = 2.,
@@ -264,19 +278,23 @@ namespace {
 
     for (i = 0; i < n; i++) {
       // Produce random numbers and check that within bounds of [min, max]
-      x71 = RandBeta(a, b, &rng71);
+      x71 = RandBeta(a, b, &rng71, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       EXPECT_GE(x71, min);
       EXPECT_LE(x71, max);
 
-      x71b = RandBeta(a, b, &rng71b);
+      x71b = RandBeta(a, b, &rng71b, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       EXPECT_GE(x71b, min);
       EXPECT_LE(x71b, max);
 
-      x11 = RandBeta(a, b, &rng11);
+      x11 = RandBeta(a, b, &rng11, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       EXPECT_GE(x11, min);
       EXPECT_LE(x11, max);
 
-      x12 = RandBeta(a, b, &rng12);
+      x12 = RandBeta(a, b, &rng12, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       EXPECT_GE(x12, min);
       EXPECT_LE(x12, max);
 
@@ -291,12 +309,24 @@ namespace {
     }
   }
 
-  TEST(RNGDeathTest, RNGBetaErrorsDeathTest) {
-    pcg32_random_t error_rng;
+  TEST(RNGTest, RNGBetaErrorsDeathTest) {
+
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+
+    sw_random_t error_rng;
     RandSeed(0u, 0u, &error_rng);
-    EXPECT_DEATH_IF_SUPPORTED(RandBeta(-0.5, 2, &error_rng), "AA <= 0.0");
-    EXPECT_DEATH_IF_SUPPORTED(RandBeta(1, -3, &error_rng), "BB <= 0.0");
-    EXPECT_DEATH_IF_SUPPORTED(RandBeta(-1, -3, &error_rng), "AA <= 0.0");
+    RandBeta(-0.5, 2, &error_rng, &LogInfo);
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("AA <= 0.0"));
+
+    RandBeta(1, -3, &error_rng, &LogInfo);
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("BB <= 0.0"));
+
+    RandBeta(-1, -3, &error_rng, &LogInfo);
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("AA <= 0.0"));
   }
 
 } // namespace

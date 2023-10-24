@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -17,7 +17,10 @@
 #include "include/SW_SoilWater.h"
 #include "include/SW_VegProd.h"
 #include "include/SW_Flow_lib.h"
+#include "include/SW_Main_lib.h"
 #include "tests/gtests/sw_testhelpers.h"
+
+using ::testing::HasSubstr;
 
 namespace{
   // Test the 'SW_SoilWater' function 'SW_SWC_adjust_snow'
@@ -115,11 +118,11 @@ namespace{
   // Test the 'SW_SoilWater' functions 'SWRC_SWCtoSWP' and `SWRC_SWPtoSWC`
   TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // set up mock variables
     unsigned int swrc_type, ptf_type, k;
-    const int em = LOGFATAL;
+    const int em = LOGERROR;
     RealD
       phi,
       swcBulk, swc_sat, swc_fc, swc_wp,
@@ -168,6 +171,7 @@ namespace{
           bdensity,
           &LogInfo
         );
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       } else {
         // PTF not implemented in C: provide hard coded values
@@ -212,13 +216,17 @@ namespace{
       //msg << "SWRC/PTF = " << swrc2str[swrc_type] << "/" << ptf2str[ptf_type];
 
       swc_sat = SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width, em, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       swc_fc = SWRC_SWPtoSWC(1. / 3., swrc_type, swrcp, gravel, width, em, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       swc_wp = SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, em, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
       // if swc = saturation, then we expect phi in [0, fc]
       // for instance, Campbell1974 goes to (theta_sat, swrcp[0]) instead of 0
       swp = SWRC_SWCtoSWP(swc_sat, swrc_type, swrcp, gravel, width, em, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       EXPECT_GE(swp, 0.) << msg.str();
       EXPECT_LT(swp, 1. / 3.) << msg.str();
 
@@ -229,6 +237,7 @@ namespace{
         SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width, em, &LogInfo),
         1. / 3.
       ) << msg.str();
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // if swc = field capacity, then we expect phi == 0.33 bar
       EXPECT_NEAR(
@@ -236,11 +245,13 @@ namespace{
         1. / 3.,
         tol9
       ) << msg.str();
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // if field capacity > swc > wilting point, then
       // we expect 15 bar > phi > 0.33 bar
       swcBulk = (swc_wp + swc_fc) / 2.;
       phi = SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width, em, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       EXPECT_GT(phi, 1. / 3.) << msg.str();
       EXPECT_LT(phi, 15.) << msg.str();
 
@@ -250,13 +261,16 @@ namespace{
         15.,
         tol9
       ) << msg.str();
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // if swc < wilting point, then we expect phi > 15 bar
       swcBulk = SWRC_SWPtoSWC(2. * 15., swrc_type, swrcp, gravel, width, em, &LogInfo);
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       EXPECT_GT(
         SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width, em, &LogInfo),
         15.
       ) << msg.str();
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
 
@@ -266,16 +280,19 @@ namespace{
         SWRC_SWPtoSWC(15., swrc_type, swrcp, 1., width, em, &LogInfo),
         0.
       ) << msg.str();
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // when width is 0, we expect theta == 0
       EXPECT_EQ(
         SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, 0., em, &LogInfo),
         0.
       ) << msg.str();
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
       // check bounds of swc
       for (k = 0; k < length(swpsb); k++) {
         swcBulk = SWRC_SWPtoSWC(swpsb[k], swrc_type, swrcp, gravel, width, em, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
         EXPECT_GE(swcBulk, 0.) <<
           msg.str() << " at SWP = " << swpsb[k] << " bar";
         EXPECT_LE(swcBulk, width * (1. - gravel)) <<
@@ -289,7 +306,9 @@ namespace{
       // for instance, Campbell1974 is not inverse in ]0, swrcp[0][
       for (k = 0; k < length(swpsi); k++) {
         swcBulk = SWRC_SWPtoSWC(swpsi[k], swrc_type, swrcp, gravel, width, em, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
         swp = SWRC_SWCtoSWP(swcBulk, swrc_type, swrcp, gravel, width, em, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         EXPECT_NEAR(swp, swpsi[k], tol9) <<
           msg.str() << " at SWP = " << swpsi[k] << " bar";
@@ -298,15 +317,16 @@ namespace{
           swcBulk,
           tol9
         ) << msg.str() << " at SWC = " << swcBulk << " cm";
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       }
     }
   }
 
 
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWCtoSWP'
-  TEST(SoilWaterDeathTest, SoilWaterSWCtoSWPDeathTest) {
+  TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // set up mock variables
     RealD
@@ -322,49 +342,75 @@ namespace{
 
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
-    EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-      "is not implemented"
-    );
+    SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is not implemented"));
+
+    // Check that the same call but with a warning does not produce an error
+    sw_init_logs(NULL, &LogInfo);
     EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
       SW_MISSING
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
-    // --- 2) swc < 0: water content cannot be negative
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
-      EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-        "invalid SWC"
-      );
+      // --- 2a) fail if swc < 0: water content cannot be negative
+      sw_init_logs(NULL, &LogInfo);
+      SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
+      // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+
+      // Detect failure by error message
+      EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWC"));
+      sw_init_logs(NULL, &LogInfo);
+
+      // Check that the same call but with a warning does not produce an error
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
         SW_MISSING
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-      EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGFATAL, &LogInfo),
-        "invalid SWC"
-      );
+
+      // --- 2b) fail if gravel >= 1: gravel cannot be equal or larger than 1
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGERROR, &LogInfo);
+      // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+
+      // Detect failure by error message
+      EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid gravel"));
+      sw_init_logs(NULL, &LogInfo);
+
+      // Check that the same call but with a warning does not produce an error
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGWARN, &LogInfo),
         SW_MISSING
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-      EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGFATAL, &LogInfo),
-        "invalid SWC"
-      );
+
+      // --- 2c) fail if soil layer width = 0: soil layers cannot be 0
+      SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGERROR, &LogInfo);
+      // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+
+      // Detect failure by error message
+      EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid layer width"));
+      sw_init_logs(NULL, &LogInfo);
+
+      // Check that the same call but with a warning does not produce an error
       EXPECT_DOUBLE_EQ(
         SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGWARN, &LogInfo),
         SW_MISSING
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     }
 
-    // --- *) if (theta - theta_res) < 0 (specific to vanGenuchten1980)
+    // --- *) fail if (theta - theta_res) < 0 (specific to vanGenuchten1980)
     // note: this case is normally prevented due to SWC checks
     swrc_type = encode_str2swrc((char *) "vanGenuchten1980", &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 0.1246;
     swrcp[1] = 0.4445;
@@ -372,21 +418,25 @@ namespace{
     swrcp[3] = 1.2673;
     swrcp[4] = 7.78506;
 
-    EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-      "invalid value"
-    );
+    SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid value of\n\ttheta"));
+    sw_init_logs(NULL, &LogInfo);
+
     EXPECT_DOUBLE_EQ(
       SWRC_SWCtoSWP(0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
       SW_MISSING
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
   }
 
 
   // Death Tests of 'SW_SoilWater' function 'SWRC_SWPtoSWC'
-  TEST(SoilWaterDeathTest, SoilWaterSWPtoSWCDeathTest) {
+  TEST(SoilWaterTest, SoilWaterSWPtoSWCDeathTest) {
     LOG_INFO LogInfo;
-    silent_tests(&LogInfo);
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     // set up mock variables
     RealD
@@ -402,25 +452,35 @@ namespace{
 
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
-    EXPECT_DEATH_IF_SUPPORTED(
-      SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-      "is not implemented"
-    );
+    SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+
+    // Detect failure by error message
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is not implemented"));
+
+    // Check that the same call but with a warning does not produce an error
+    sw_init_logs(NULL, &LogInfo);
     EXPECT_DOUBLE_EQ(
       SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
       SW_MISSING
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // --- 2) swp < 0: water content cannot be negative (any SWRC)
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
-      EXPECT_DEATH_IF_SUPPORTED(
-        SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGFATAL, &LogInfo),
-        "invalid SWP"
-      );
+      SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
+      // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+
+      // Detect failure by error message
+      EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWP"));
+
+      // Check that the same call but with a warning does not produce an error
+      sw_init_logs(NULL, &LogInfo);
       EXPECT_DOUBLE_EQ(
         SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
         SW_MISSING
       );
+      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     }
   }
 }

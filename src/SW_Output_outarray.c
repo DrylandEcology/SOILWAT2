@@ -207,7 +207,7 @@ void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
     @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
 		basic output information for all output keys
 	@param[out] GenOutput Holds general variables that deal with output
-	@param[in] LogInfo Holds information dealing with logfile output
+	@param[in,out] LogInfo Holds information dealing with logfile output
 
 	Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in `rSW_Output.c`
 
@@ -235,9 +235,15 @@ void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutp
 
 				GenOutput->p_OUT[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(size, s,
 					"setGlobalSTEPWAT2_OutputVariables()", LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 
 				GenOutput->p_OUTsd[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(size, s,
 					"setGlobalSTEPWAT2_OutputVariables()", LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 			}
 		}
 	}

@@ -15,20 +15,32 @@
 
 #include "include/filefuncs.h"
 #include "include/myMemory.h"
-#ifdef RSOILWAT
-  #include <R.h>    // for REvprintf(), error(), and warning()
-#endif
 
 
 /* 01/05/2011	(drs) removed unused variable *p from MkDir()
  06/21/2013	(DLM)	memory leak in function getfiles(): variables dname and fname need to be free'd
  */
 
-
-
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
+
+static void freeGetfilesEarly(char **flist, int nfound, DIR *dir, char *fname) {
+    int index;
+
+    if(!isnull(flist)) {
+        for(index = 0; index < nfound; index++) {
+            if(!isnull(flist[index])) {
+                free(flist[index]);
+            }
+        }
+
+        free(flist);
+    }
+
+    closedir(dir);
+    free(fname);
+}
 
 static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 	/* return a list of files described by fspec
@@ -41,6 +53,8 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 	char **flist = NULL, *fname, *fn1, *fn2, *p2;
 	char dname[FILENAME_MAX];
 
+    int startIndex = 0, strLen = 0; // For `sw_strtok()`
+
 	int len1, len2;
 	Bool match, alloc = swFALSE;
 
@@ -51,10 +65,13 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 
 	DirName(fspec, dname); // Copy `fspec` into `dname`
 	fname = Str_Dup(BaseName(fspec), LogInfo);
+    if(LogInfo->stopRun) {
+        return NULL; // Exit function prematurely due to error
+    }
 
 	if (strchr(fname, '*')) {
-		fn1 = strtok(fname, "*");
-		fn2 = strtok(NULL, "*");
+		fn1 = sw_strtok(fname, &startIndex, &strLen, "*");
+		fn2 = sw_strtok(fname, &startIndex, &strLen, "*");
 	} else {
 		fn1 = fname;
 		fn2 = NULL;
@@ -64,8 +81,10 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 
 	(*nfound) = 0;
 
-	if ((dir = opendir(dname)) == NULL )
+	if ((dir = opendir(dname)) == NULL ) {
+        free(fname);
 		return NULL ;
+    }
 
 	while ((ent = readdir(dir)) != NULL ) {
 		match = swTRUE;
@@ -80,11 +99,25 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 			(*nfound)++;
 			if (alloc) {
 				flist = (char **) Mem_ReAlloc(flist, sizeof(char *) * (*nfound), LogInfo);
+
+                if(LogInfo->stopRun) {
+                    freeGetfilesEarly(flist, 0, dir, fname);
+                    return NULL; // Exit function prematurely due to error
+                }
 			} else {
 				flist = (char **) Mem_Malloc(sizeof(char *) * (*nfound), "getfiles", LogInfo);
+
+                if(LogInfo->stopRun) {
+                    freeGetfilesEarly(flist, 0, dir, fname);
+                    return NULL; // Exit function prematurely due to error
+                }
 				alloc = swTRUE;
 			}
 			flist[(*nfound) - 1] = Str_Dup(ent->d_name, LogInfo);
+            if(LogInfo->stopRun) {
+                freeGetfilesEarly(flist, *nfound, dir, fname);
+                return NULL; // Exit function prematurely due to error
+            }
 		}
 	}
 
@@ -100,113 +133,66 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
-/**
- * @brief Prints an error message and throws an error or warning. Works both for rSOILWAT2
- *  and SOILWAT2-standalone.
- *
- * @param code The error/warning code. If `code` is not 0, then it is passed to `exit`
- *  (SOILWAT2) / `error` (rSOILWAT2). If `code` is 0, then it is passed to
- *  `warning` (rSOILWAT2), respectively.
- * @param format The character string with formatting (as for `printf`).
- * @param ... Variables to be printed.
- */
-void sw_error(int code, const char *format, ...)
-{
-  va_list ap;
-  va_start(ap, format);
-
-#ifdef RSOILWAT
-  REvprintf(format, ap);
-#else
-  vfprintf(stderr, format, ap);
-#endif
-  va_end(ap);
-
-  if (code == 0) {
-    #ifdef RSOILWAT
-      warning("Warning: %d\n", code);
-    #endif
-
-  } else {
-    #ifdef RSOILWAT
-      error("exit %d\n", code);
-    #else
-      exit(code);
-    #endif
-  }
-}
-
 /**************************************************************/
 void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
-    /* uses global variable logged to indicate that a log message
-     * was sent to output, which can be used to inform user, etc.
-     *
-     *  9-Dec-03 (cwb) Modified to accept argument list similar
+    /* 9-Dec-03 (cwb) Modified to accept argument list similar
      *           to fprintf() so sprintf(errstr...) doesn't need
      *           to be called each time replacement args occur.
      */
 
-    char outfmt[MAX_ERROR] = {0}; /* to prepend err type str */
-    char buf[MAX_ERROR];
-    va_list args;
+    char outfmt[MAX_LOG_SIZE] = {0}; /* to prepend err type str */
+	char buf[MAX_LOG_SIZE];
+    char msgType[MAX_LOG_SIZE];
+	int nextWarn = LogInfo->numWarnings;
+	va_list args;
+    int expectedWriteSize; // Not used when SWDEBUG is not defined
 
-    va_start(args, fmt);
+	va_start(args, fmt);
 
-    if (LOGQUIET & mode)
-        strcpy(outfmt, "");
-    else if (LOGNOTE & mode)
-        strcpy(outfmt, "NOTE: ");
-    else if (LOGWARN & mode)
-        strcpy(outfmt, "WARNING: ");
+    if (LOGWARN & mode)
+        strcpy(msgType, "WARNING: ");
     else if (LOGERROR & mode)
-        strcpy(outfmt, "ERROR: ");
+        strcpy(msgType, "ERROR: ");
 
-    strcat(outfmt, fmt);
-    strcat(outfmt, "\n");
+    expectedWriteSize = snprintf(outfmt, MAX_LOG_SIZE, "%s%s\n", msgType, fmt);
+    if(expectedWriteSize > MAX_LOG_SIZE) {
+        // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`, i.e., handle output truncation
+        fprintf(stderr, "Programmer: message exceeds the maximum size.\n");
+        #ifdef SWDEBUG
+        exit(EXIT_FAILURE);
+        #endif
+    }
 
-    #ifdef RSOILWAT
-        vsnprintf(buf, MAX_ERROR, outfmt, args);
-
-        if (LOGEXIT & mode) {
-            // exit with error and always show message
-            error(buf);
-
-        } else if(LogInfo->logfp != NULL) {
-            // send warning message only if not silenced (fp is not NULL)
-            warning(buf);
-        }
-
-    #else
-        if (isnull(LogInfo->logfp)) {
-          // silence messages (fp is NULL) except errors (which go to stderr)
-          if (LOGEXIT & mode) {
-            vsnprintf(buf, MAX_ERROR, outfmt, args);
-            sw_error(-1, buf);
-          }
-
-
-        } else {
-          // send message to fp
-
-          int check_eof;
-          check_eof = (EOF == vfprintf(LogInfo->logfp, outfmt, args));
-
-          if (check_eof) {
-              sw_error(0, "SYSTEM: Cannot write to FILE *fp in LogError()\n");
-          }
-
-          fflush(LogInfo->logfp);
-
-          if (LOGEXIT & mode) {
-              // exit with error
-              sw_error(-1, "@ generic.c LogError");
-          }
-        }
+    expectedWriteSize = vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
+    #ifdef SWDEBUG
+    if(expectedWriteSize > MAX_LOG_SIZE) {
+        fprintf(stderr, "Programmer: Injecting arguments to final message buffer "
+                        "makes it exceed the maximum size.\n");
+        exit(EXIT_FAILURE);
+    }
     #endif
 
+	if(LOGWARN & mode) {
+		if(nextWarn < MAX_MSGS) {
+			strcpy(LogInfo->warningMsgs[nextWarn], buf);
+		}
+		LogInfo->numWarnings++;
+	} else if(LOGERROR & mode) {
 
-    LogInfo->logged = swTRUE;
-    va_end(args);
+		#ifdef STEPWAT
+		fprintf(stderr, "%s", buf);
+
+		// Consider updating STEPWAT2: instead of exiting/crashing, do catch
+		// errors, recoil, and use `sw_write_warnings(); sw_fail_on_error()`
+		// as SOILWAT2 >= 7.2.0
+		exit(EXIT_FAILURE);
+		#else
+		strcpy(LogInfo->errorMsg, buf);
+		LogInfo->stopRun = swTRUE;
+		#endif
+	}
+
+	va_end(args);
 }
 
 
@@ -270,8 +256,10 @@ const char *BaseName(const char *p) {
 FILE * OpenFile(const char *name, const char *mode, LOG_INFO* LogInfo) {
 	FILE *fp;
 	fp = fopen(name, mode);
-	if (isnull(fp))
-		LogError(LogInfo, LOGERROR | LOGEXIT, "Cannot open file %s: %s", name, strerror(errno));
+	if (isnull(fp)) {
+		LogError(LogInfo, LOGERROR, "Cannot open file %s: %s", name, strerror(errno));
+        return NULL; // Exit function prematurely due to error
+    }
 	return (fp);
 }
 
@@ -344,7 +332,7 @@ Bool ChDir(const char *dname) {
 #define mkdir(d, m) mkdir(d, m)
 #endif
 
-Bool MkDir(const char *dname) {
+Bool MkDir(const char *dname, LOG_INFO* LogInfo) {
 	/* make a path with 'mkdir -p' -like behavior. provides an
 	 * interface for portability problems.
 	 * RELATIVE PATH ONLY solves problems like "C:\etc" and null
@@ -370,16 +358,18 @@ Bool MkDir(const char *dname) {
 	const char *delim = "\\/"; /* path separators */
 	char errstr[MAX_ERROR];
 
+    int startIndex = 0, strLen = 0; // For `sw_strtok()`
+
 	if (isnull(dname))
 		return swFALSE;
 
-	if (NULL == (c = strdup(dname))) {
-		sw_error(-1, "Out of memory making string in MkDir()");
-	}
+	c = Str_Dup(dname, LogInfo);
+    if(LogInfo->stopRun) {
+        return swFALSE; // Exit function prematurely due to error
+    }
 
 	n = 0;
-	a[n++] = strtok(c, delim);
-	while (NULL != (a[n++] = strtok(NULL, delim)))
+	while (NULL != (a[n++] = sw_strtok(c, &startIndex, &strLen, delim)))
 		; /* parse path */
 	n--;
 	errstr[0] = '\0';
@@ -433,6 +423,9 @@ Bool RemoveFiles(const char *fspec, LOG_INFO* LogInfo) {
 			}
 		}
 	}
+    if(LogInfo->stopRun) {
+        return swFALSE;
+    }
 
 	for (i = 0; i < nfiles; i++)
 		Mem_Free(flist[i]);
