@@ -186,6 +186,8 @@ static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
 */
 static void _create_filename_ST(char *str, char *flag, int iteration,
 			char *filename, size_t sizeof_filename, LOG_INFO* LogInfo) {
+    int startIndex = 0, strLen = 0; // For `sw_strtok()`
+
 	char *basename;
 	char *ext;
 	char *fileDup = (char *)Mem_Malloc(strlen(str) + 1,
@@ -196,8 +198,8 @@ static void _create_filename_ST(char *str, char *flag, int iteration,
 
 	// Determine basename and file extension
 	strcpy(fileDup, str); // copy file name to new variable
-	basename = strtok(fileDup, ".");
-	ext = strtok(NULL, ".");
+	basename = sw_strtok(fileDup, &startIndex, &strLen, ".");
+	ext = sw_strtok(fileDup, &startIndex, &strLen, ".");
 
 	// Put new file together
 	if (iteration > 0) {
