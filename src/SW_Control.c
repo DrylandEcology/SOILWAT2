@@ -41,6 +41,7 @@
 #include "include/SW_Sky.h"
 #include "include/SW_SoilWater.h"
 #include "include/SW_Carbon.h"
+#include "include/myMemory.h"
 
 
 
@@ -90,6 +91,35 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
     }
 
 	SW_SWC_end_day(&sw->SoilWat, sw->Site.n_layers);
+}
+
+/**
+ * @brief Copy dynamic memory from a template SW_ALL to a new instance
+ *
+ * @param[in] template Source struct of type SW_ALL to copy
+ * @param[out] dest Destination struct of type SW_ALL to be copied into
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* LogInfo)
+{
+    Mem_Copy(dest, sw_template, sizeof(SW_ALL));
+    SW_CTL_alloc_ptrs(dest, LogInfo);
+
+    dest->SoilWat.hist.file_prefix = NULL;
+
+    dest->Weather.allHist = NULL;
+    allocateAllWeather(&dest->Weather.allHist, sw_template->Weather.n_years, LogInfo);
+    for(unsigned int year = 0; year < sw_template->Weather.n_years; year++) {
+        Mem_Copy(dest->Weather.allHist[year], sw_template->Weather.allHist[year],
+                 sizeof(SW_WEATHER_HIST));
+    }
+
+    dest->VegEstab.parms = NULL;
+    for(IntU speciesNum = 0; speciesNum < sw_template->VegEstab.count; speciesNum++) {
+        _new_species(&dest->VegEstab, LogInfo);
+        Mem_Copy(dest->VegEstab.parms[speciesNum], sw_template->VegEstab.parms[speciesNum],
+                 sizeof(SW_VEGESTAB_INFO));
+    }
 }
 
 
@@ -143,6 +173,29 @@ void SW_CTL_init_ptrs(SW_ALL* sw, char *InFiles[]) {
   SW_VPD_init_ptrs(&sw->VegProd);
   SW_OUT_init_ptrs(sw);
   SW_SWC_init_ptrs(&sw->SoilWat);
+}
+
+/**
+ * @brief Allocate dynamic aggregate and accumulation pointers
+ *
+ * @param[out] sw Comprehensive struct of type SW_ALL containing
+ *  all information in the simulation
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_CTL_alloc_ptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
+    SW_VPD_alloc_ptrs(&sw->VegProd, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit prematurely due to error
+    }
+    SW_SWC_alloc_ptrs(&sw->SoilWat, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit prematurely due to error
+    }
+    SW_WTH_alloc_ptrs(&sw->Weather, &sw->Markov, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit prematurely due to error
+    }
+    SW_VES_alloc_ptrs(&sw->VegEstab, LogInfo);
 }
 
 /**
@@ -525,14 +578,18 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, int ncStartSuid[],
                    char* ncInFiles[], SW_OUTPUT_POINTERS SW_OutputPtrs[],
                    RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 
-    SW_ALL *local_sw = NULL;
+    SW_ALL local_sw;
 
     // Copy template SW_ALL to local instance -- yet to be fully implemented
-
-    SW_MDL_get_ModelRun(&local_sw->Model, SW_Domain, ncInFiles, LogInfo);
+    _copy_template_vals(sw_template, &local_sw, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
 
-    SW_CTL_main(local_sw, SW_OutputPtrs, LogInfo);
+    SW_MDL_get_ModelRun(&local_sw.Model, SW_Domain, ncInFiles, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit prematurely due to error
+    }
+
+    SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
 }
