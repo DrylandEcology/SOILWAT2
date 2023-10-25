@@ -45,11 +45,9 @@ int* SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, int suid) {
  *  temporal/spatial information for a set of simulation runs
 */
 void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
-    SW_Domain->nSUIDs = SW_Domain->nDimS;
-
-    if(!strcmp(SW_Domain->DomainType, "s")) {
-        SW_Domain->nSUIDs = SW_Domain->nDimX * SW_Domain->nDimY;
-    }
+    SW_Domain->nSUIDs = (strcmp(SW_Domain->DomainType, "s") == 0) ?
+        SW_Domain->nDimS :
+        SW_Domain->nDimX * SW_Domain->nDimY;
 }
 
 /**
