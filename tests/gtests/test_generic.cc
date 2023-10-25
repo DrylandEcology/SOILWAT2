@@ -110,4 +110,96 @@ namespace {
 
     }
 
+    TEST(GenericTest, GenericStrtok) {
+        /*
+            This section covers a custom version of C's `strtok()` function
+            which is not thread-safe -- while the custom version, `sw_strtok()` is.
+        */
+
+        char *currString;
+        int startIndex = 0, strLen = 0;
+
+        char emptyDelim[] = "";
+        char oneDelim[] = "\\";
+        char multipleDelim[] = "*/^%\\";
+        char pathDelim[] = "/";
+        char extDelim[] = ".";
+
+        char emptyString[] = "";
+        char oneDelimStr[] = "dir\\testFile.in";
+        char multipleDelimStr[] = "%root\\dir^folder/testFile.in";
+        char filepathStr1[] = "path/to/my_file1.txt";
+        char filepathStr2[] = "path/to/my_file2.txt";
+
+
+        // Test separation between file name and file extension
+        currString = sw_strtok(filepathStr1, &startIndex, &strLen, extDelim);
+        ASSERT_STREQ(currString, "path/to/my_file1");
+
+        currString = sw_strtok(filepathStr1, &startIndex, &strLen, extDelim);
+        ASSERT_STREQ(currString, "txt");
+
+        currString = sw_strtok(filepathStr1, &startIndex, &strLen, extDelim);
+        ASSERT_TRUE(currString == NULL);
+        startIndex = 0, strLen = 0; // Reset start index and string length for next test
+
+
+        // Test separation among file path elements
+        currString = sw_strtok(filepathStr2, &startIndex, &strLen, pathDelim);
+        ASSERT_STREQ(currString, "path");
+
+        currString = sw_strtok(filepathStr2, &startIndex, &strLen, pathDelim);
+        ASSERT_STREQ(currString, "to");
+
+        currString = sw_strtok(filepathStr2, &startIndex, &strLen, pathDelim);
+        ASSERT_STREQ(currString, "my_file2.txt");
+
+        currString = sw_strtok(filepathStr2, &startIndex, &strLen, pathDelim);
+        ASSERT_TRUE(currString == NULL);
+        startIndex = 0, strLen = 0; // Reset start index and string length for next test
+
+
+        // Test that empty strings return NULL
+        currString = sw_strtok(emptyString, &startIndex, &strLen, emptyDelim);
+        ASSERT_TRUE(currString == NULL);
+        startIndex = 0, strLen = 0; // Reset start index and string length for next test
+
+        currString = sw_strtok(emptyString, &startIndex, &strLen, pathDelim);
+        ASSERT_TRUE(currString == NULL);
+        startIndex = 0, strLen = 0; // Reset start index and string length for next test
+
+
+        // Test strings when there is an empty delimiter
+        // Strings should remain the same
+        currString = sw_strtok(multipleDelimStr, &startIndex, &strLen, emptyDelim);
+        ASSERT_STREQ(currString, "%root\\dir^folder/testFile.in");
+        startIndex = 0, strLen = 0; // Reset start index and string length for next test
+
+        // Test strings when there is one delimiter
+        // The strings should be split into multiple parts depending on the number
+        // of delimiters used (two here)
+        currString = sw_strtok(oneDelimStr, &startIndex, &strLen, oneDelim);
+        ASSERT_STREQ(currString, "dir");
+
+        currString = sw_strtok(oneDelimStr, &startIndex, &strLen, oneDelim);
+        ASSERT_STREQ(currString, "testFile.in");
+        startIndex = 0, strLen = 0; // Reset start index and string length for next test
+
+        // Test things when there are more than one delimiter, both possible characters
+        // and more than one occurrance
+        // This should split the string up in into multiple parts depending on the number
+        // of delimiters used (four here)
+        currString = sw_strtok(multipleDelimStr, &startIndex, &strLen, multipleDelim);
+        ASSERT_STREQ(currString, "root");
+
+        currString = sw_strtok(multipleDelimStr, &startIndex, &strLen, multipleDelim);
+        ASSERT_STREQ(currString, "dir");
+
+        currString = sw_strtok(multipleDelimStr, &startIndex, &strLen, multipleDelim);
+        ASSERT_STREQ(currString, "folder");
+
+        currString = sw_strtok(multipleDelimStr, &startIndex, &strLen, multipleDelim);
+        ASSERT_STREQ(currString, "testFile.in");
+    }
+
 } // namespace

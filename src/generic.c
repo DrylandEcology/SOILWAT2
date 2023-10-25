@@ -157,6 +157,60 @@ int Str_CompareI(char *t, char *s) {
 }
 
 /*****************************************************/
+/** Find beginning of next string token
+
+  This is a thread-safe replacement for strtok.
+*/
+char *sw_strtok(char inputStr[], int *startIndex, int *strLen, const char *delim) {
+    int index = *startIndex;
+    char *newPtr = NULL;
+
+    if(*startIndex == 0) {
+        *strLen = strlen(inputStr);
+    }
+
+    // Make sure the next "token" will not attempt to access outside of the string
+    if(*startIndex < *strLen) {
+        // Make sure to loop past any duplicates
+        while(inputStr[index] == '\0' || isDelim(inputStr[index], delim)) {
+            index++;
+        }
+
+        // Make sure the end of the string has not been reached
+        if(inputStr[index] != '\0') {
+            newPtr = &inputStr[index];
+        } else {
+            // Return NULL if so, to notify that the string is done
+            return NULL;
+        }
+
+        // Loop until next "token" (delimiter) to update the next start index
+        while(inputStr[index] != '\0' && !isDelim(inputStr[index], delim)) {
+            index++;
+        }
+        // Set next null character
+        inputStr[index] = '\0';
+
+        // Update the index to start at next
+        *startIndex = index + 1;
+    }
+
+    return newPtr;
+}
+
+/*****************************************************/
+Bool isDelim(char currChar, const char *delim) {
+    while(*delim != '\0') {
+        if(*delim == currChar) {
+            return swTRUE;
+        }
+        delim++;
+    }
+
+    return swFALSE;
+}
+
+/*****************************************************/
 void UnComment(char *s) {
 	/*-------------------------------------------
 	 Decomments a string by :

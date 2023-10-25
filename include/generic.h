@@ -193,6 +193,8 @@ char *Str_TrimLeftQ(char *s); /* "quick" version */
 char *Str_ToUpper(char *s, char *r);
 char *Str_ToLower(char *s, char *r);
 int Str_CompareI(char *t, char *s);
+char *sw_strtok(char inputStr[], int *startIndex, int *strLen, const char *delim);
+Bool isDelim(char currChar, const char *delim);
 void UnComment(char *s);
 double interpolation(double x1, double x2, double y1, double y2, double deltaX);
 void st_getBounds(unsigned int *x1, unsigned int *x2, unsigned int *equal, unsigned int size, double depth, double bounds[]);

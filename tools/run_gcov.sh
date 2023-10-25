@@ -6,8 +6,8 @@
 # note: `--coverage` is equivalent to `-fprofile-arcs -ftest-coverage`
 
 # note: make sure that compiler and cover tool version agree, i.e.,
-# `CC=gcc CXX=g++ make clean cov`
-# `CC=clang CXX=clang++ GCOV="llvm-cov-mp-14 gcov" make clean_cov cov`
+# `CXX=g++ make clean cov`
+# `CXX=clang++ GCOV="llvm-cov-mp-14 gcov" make clean_cov cov`
 
 GCOV="${GCOV:-gcov}"
 

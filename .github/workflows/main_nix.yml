@@ -35,7 +35,7 @@ jobs:
     - name: Run binary (with sanitizers)
       # Apple clang does not support "AddressSanitizer: detect_leaks" (at least as of clang-1200.0.32.29)
       if: ${{ runner.os != 'macOS' }}
-      run: make clean bin_leaks
+      run: make clean bin_sanitizer
 
     - name: Unit tests (shuffle and repeat 3x)
       run: make clean test_rep3rnd
@@ -47,7 +47,7 @@ jobs:
     - name: Severe unit tests (with sanitizers)
       # Apple clang does not support "AddressSanitizer: detect_leaks" (at least as of clang-1200.0.32.29)
       if: ${{ runner.os != 'macOS' }}
-      run: make clean test_leaks
+      run: make clean test_sanitizer
 
 
   check_code_coverage:
@@ -60,7 +60,7 @@ jobs:
         submodules: recursive
 
     - name: Generate coverage report
-      run: CC=gcc CXX=g++ GCOV=gcov make clean clean_cov cov
+      run: CXX=g++ GCOV=gcov make clean clean_cov cov
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

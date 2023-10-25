@@ -53,6 +53,8 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 	char **flist = NULL, *fname, *fn1, *fn2, *p2;
 	char dname[FILENAME_MAX];
 
+    int startIndex = 0, strLen = 0; // For `sw_strtok()`
+
 	int len1, len2;
 	Bool match, alloc = swFALSE;
 
@@ -68,8 +70,8 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
     }
 
 	if (strchr(fname, '*')) {
-		fn1 = strtok(fname, "*");
-		fn2 = strtok(NULL, "*");
+		fn1 = sw_strtok(fname, &startIndex, &strLen, "*");
+		fn2 = sw_strtok(fname, &startIndex, &strLen, "*");
 	} else {
 		fn1 = fname;
 		fn2 = NULL;
@@ -356,6 +358,8 @@ Bool MkDir(const char *dname, LOG_INFO* LogInfo) {
 	const char *delim = "\\/"; /* path separators */
 	char errstr[MAX_ERROR];
 
+    int startIndex = 0, strLen = 0; // For `sw_strtok()`
+
 	if (isnull(dname))
 		return swFALSE;
 
@@ -365,8 +369,7 @@ Bool MkDir(const char *dname, LOG_INFO* LogInfo) {
     }
 
 	n = 0;
-	a[n++] = strtok(c, delim);
-	while (NULL != (a[n++] = strtok(NULL, delim)))
+	while (NULL != (a[n++] = sw_strtok(c, &startIndex, &strLen, delim)))
 		; /* parse path */
 	n--;
 	errstr[0] = '\0';

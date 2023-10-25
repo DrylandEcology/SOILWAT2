@@ -95,9 +95,9 @@ A full code documentation may be built, see [here](#get_documentation).
 <a name="compile"></a>
 ### Compilation
   * Requirements:
-    - the `gcc` or `clang/llvm` toolchains compliant with `C11`
-      - for unit tests (using `googletest`), additionally,
-        - `g++ >= v5.0` or `clang++ >= v5.0` compliant with `C++11`
+    - the `gcc` or `clang/llvm` toolchains compliant with `C99`
+      - for unit tests (using `googletest`)
+        - toolchains compliant with `C++14`
         - `POSIX API`
     - GNU-compliant `make`
     - On Windows OS: an installation of `cygwin`
@@ -113,7 +113,13 @@ A full code documentation may be built, see [here](#get_documentation).
     available targets), for instance,
     ```{.sh}
         cd SOILWAT2/
-        make bin
+        make
+    ```
+
+    You can use a specific compiler, e.g.,
+    ```{.sh}
+        CC=gcc make
+        CC=clang make
     ```
 <br>
 
@@ -208,9 +214,9 @@ causes some complications, see `makefile`.
 
 Run unit tests locally on the command-line with
 ```{.sh}
-      make test test_run         # compiles and executes the unit-tests
-      make test_severe test_run  # compiles/executes with strict/severe flags
-      make clean                 # cleans build artifacts
+      make test_run              # compiles and executes the tests
+      make test_severe           # compiles/executes with strict/severe flags
+      make clean_test            # cleans build artifacts
 ```
 
 
@@ -308,24 +314,31 @@ Currently, the following is implemented:
 
 __Continous integration checks__
 
-Development/feature branches can only be merged into master if they pass
-all checks on the continuous integration servers.
-Running the following tests locally helps to increase chances that
-they will work well on the servers as well:
+Development/feature branches can only be merged into the main branch and
+released if they pass all checks on the continuous integration servers
+(see `.github/workflows/`).
+
+Please run the "severe", "sanitizer", and "leak" targets locally
+(see also `tools/check_SOILWAT2.sh`)
 ```{.sh}
-      make clean bin_debug_severe bint_run
-      make clean test_severe test_run
+      make clean_build bin_debug_severe
+      make clean_test test_severe
 ```
 
 <br>
 
-__Sanitizer__
+__Sanitizers & leaks__
 
-Running tests with the `severe` targets may require excluding known memory leaks
-(see [issue #205](https://github.com/DrylandEcology/SOILWAT2/issues/205)):
-
+Run the simulation and tests with the `leaks` program, For instance,
 ```{.sh}
-      ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+      make clean_build bin_leaks
+      make clean_test test_leaks
+```
+
+Run the simulation and tests with sanitizers. For instance,
+```{.sh}
+      make clean_build bin_sanitizer
+      make clean_test test_sanitizer
 ```
 
 The address sanitizer may not work correctly and/or fail when used with the
@@ -343,7 +356,7 @@ This can be fixed, for instance, with the following steps
 
 ```{.sh}
       # build test executable with clang and leak detection
-      CC=clang CXX=clang++ ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe
+      CXX=clang++ ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe
 
       # check faulty library path
       otool -L sw_test
@@ -386,21 +399,14 @@ This can be fixed, for instance, with the following steps
     with, e.g.,
 
 ```{.sh}
-    make bin bint_run CPPFLAGS=-DSWDEBUG
+    make bin_run CPPFLAGS=-DSWDEBUG
 ```
 
   * Alternatively, use the pre-configured debugging targets
     `bin_debug` and `bin_debug_severe`, for instance, with
 
 ```{.sh}
-    make bin_debug_severe bint_run
-```
-
-  * If **valgrind** is installed, then call the target `bind_valgrind`
-    (see description in `makefile`) with
-
-```
-    make bind_valgrind
+    make bin_debug_severe
 ```
 
 <br>

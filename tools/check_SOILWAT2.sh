@@ -98,7 +98,7 @@ check_error() {
 # (besides name of the command, report of no leaks, or
 # any unit test name: "WeatherNoMemoryLeakIfDecreasedNumberOfYears")
 check_leaks() {
-  echo "$1" | awk 'tolower($0) ~ /leak/ && !/leaks Report/ && !/ 0 leaks/ && !/debuggable/ && !/NoMemoryLeak/'
+  echo "$1" | awk 'tolower($0) ~ /leak/ && !/leaks Report/ && !/ 0 leaks/ && !/debuggable/ && !/NoMemoryLeak/ && !/leaks.sh/'
 }
 
 
@@ -139,7 +139,7 @@ for ((k = 0; k < ncomp; k++)); do
        --------------------------------------------------
 
   echo $'\n'"Target 'bin_run' ..."
-  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_run 2>&1)
+  res=$(CC=${ccs[k]} make clean bin_run 2>&1)
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
@@ -164,7 +164,7 @@ for ((k = 0; k < ncomp; k++)); do
   fi
 
   echo $'\n'"Target 'bin_debug_severe' ..."
-  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_debug_severe 2>&1)
+  res=$(CC=${ccs[k]} make clean bin_debug_severe 2>&1)
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
@@ -192,8 +192,8 @@ for ((k = 0; k < ncomp; k++)); do
        ${k}"-b) Run sanitizers on example simulation with "\'"${port_compilers[k]}"\'$'\n'\
        --------------------------------------------------
 
-  echo $'\n'"Target 'bin_leaks' ..."
-  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean bin_leaks 2>&1)
+  echo $'\n'"Target 'bin_sanitizer' ..."
+  res=$(CC=${ccs[k]} make clean bin_sanitizer 2>&1)
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
@@ -212,8 +212,8 @@ for ((k = 0; k < ncomp; k++)); do
 
   if exists leaks ; then
 
-    echo $'\n'"Target: 'leaks' command on example simulation ..."
-    res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean all 2>&1)
+    echo $'\n'"Target: 'bin_leaks' ..."
+    res=$(CC=${ccs[k]} make clean all 2>&1)
 
     res_error=$(check_error "${res}")
     if [ "${res_error}" ]; then
@@ -225,7 +225,7 @@ for ((k = 0; k < ncomp; k++)); do
       fi
 
     else
-      res=$(MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocScribble=1 MallocPreScribble=1 MallocCheckHeapStart=0 MallocCheckHeapEach=0 leaks -quiet -atExit -- bin/SOILWAT2 -d ./tests/example -f files.in 2>&1)
+      res=$(make bin_leaks 2>&1)
 
       res_leaks=$(check_leaks "${res}")
       if [ "${res_leaks}" ]; then
@@ -253,7 +253,7 @@ for ((k = 0; k < ncomp; k++)); do
        --------------------------------------------------
 
   echo $'\n'"Target 'test_run' ..."
-  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test_run 2>&1)
+  res=$(CXX=${cxxs[k]} make clean test_run 2>&1)
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
@@ -270,7 +270,7 @@ for ((k = 0; k < ncomp; k++)); do
 
 
   echo $'\n'"Target 'test_severe' ..."
-  res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test_severe 2>&1)
+  res=$(CXX=${cxxs[k]} make clean test_severe 2>&1)
 
   res_error=$(check_error "${res}")
   if [ "${res_error}" ]; then
@@ -281,12 +281,12 @@ for ((k = 0; k < ncomp; k++)); do
       echo "${res_error}"
     fi
 
-    do_target_test_leaks=false
+    do_target_test_sanitizer=false
 
   else
     echo "Target: success."
 
-    do_target_test_leaks=true
+    do_target_test_sanitizer=true
   fi
 
 
@@ -296,11 +296,11 @@ for ((k = 0; k < ncomp; k++)); do
        ${k}"-d) Run sanitizers on tests with "\'"${port_compilers[k]}"\'$'\n'\
        --------------------------------------------------
 
-  if [ "${do_target_test_leaks}" = true ]; then
-    # CC=${ccs[k]} CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+  if [ "${do_target_test_sanitizer}" = true ]; then
+    # CXX=${cxxs[k]} ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
     # https://github.com/google/sanitizers/wiki/AddressSanitizer
-    echo $'\n'"Target 'test_leaks' ..."
-    res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test_leaks 2>&1)
+    echo $'\n'"Target 'test_sanitizer' ..."
+    res=$(CXX=${cxxs[k]} make clean test_sanitizer 2>&1)
 
     res_error=$(check_error "${res}")
     if [ "${res_error}" ]; then
@@ -316,14 +316,14 @@ for ((k = 0; k < ncomp; k++)); do
     fi
 
   else
-    echo "Target: skipped: 'test_leaks' not operational for current compiler."
+    echo "Target: skipped: 'test_sanitizer' not operational for current compiler."
   fi
 
 
   if exists leaks ; then
 
-    echo $'\n'"Target: 'leaks' command on 'test' executable ..."
-    res=$(CC=${ccs[k]} CXX=${cxxs[k]} make clean test 2>&1)
+    echo $'\n'"Target: 'test_leaks' ..."
+    res=$(CXX=${cxxs[k]} make clean test 2>&1)
 
     res_error=$(check_error "${res}")
     if [ "${res_error}" ]; then
@@ -335,7 +335,7 @@ for ((k = 0; k < ncomp; k++)); do
       fi
 
     else
-      res=$(MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocScribble=1 MallocPreScribble=1 MallocCheckHeapStart=0 MallocCheckHeapEach=0 leaks -quiet -atExit -- bin/sw_test 2>&1)
+      res=$(make test_leaks 2>&1)
 
       res_leaks=$(check_leaks "${res}")
       if [ "${res_leaks}" ]; then
