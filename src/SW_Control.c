@@ -284,22 +284,12 @@ void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
           `SW_OUTARRAY` to pass output in-memory to `rSOILWAT2` and to
           `STEPWAT2`
     * if `TRUE`, de-allocate all memory including output arrays.
-  @param[in] cleanTemplate
-    * If `FALSE`, deallocates the given instance of SW_ALL except for
-        output/path information (not including `full_reset`)
-    * If `TRUE`, deallocates all memory of the given SW_ALL including
-        output/path information (not including `full_reset`)
   @param[in,out] sw Comprehensive structure holding all information
-    dealt with in SOILWAT2
-  @param[in] PathInfo Struct holding all information about the programs path/files
+  dealt with in SOILWAT2
 */
-void SW_CTL_clear_model(Bool full_reset, Bool cleanTemplate, SW_ALL* sw,
-                        PATH_INFO* PathInfo) {
+void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
 
-    if(cleanTemplate) {
-        SW_F_deconstruct(PathInfo->InFiles);
-        SW_OUT_deconstruct(full_reset, sw);
-    }
+	SW_OUT_deconstruct(full_reset, sw);
 
 	SW_MDL_deconstruct();
 	SW_WTH_deconstruct(&sw->Weather);
@@ -608,9 +598,8 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, int ncStartSuid[],
 
     SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
 
-    // Clear local instance of SW_ALL, the programs variable, `PathInfo`,
-    // will not be cleared, hence NULL
-    SW_CTL_clear_model(swFALSE, swFALSE, &local_sw, NULL);
+    // Clear local instance of SW_ALL
+    SW_CTL_clear_model(swFALSE, &local_sw);
 
     (void) SW_Domain;
     (void) ncInFiles;
