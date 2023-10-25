@@ -7,6 +7,7 @@
 #include "include/SW_Files.h"
 #include "include/myMemory.h"
 #include "include/SW_Weather.h"
+#include "include/SW_Model.h"
 
 
 
@@ -50,11 +51,13 @@ class AllTestFixture : public ::testing::Test {
     PATH_INFO PathInfo;
     LOG_INFO LogInfo;
     SW_OUTPUT_POINTERS SW_OutputPtrs;
+    int userSuid, *startSimSuid, *endSimSuid;
 
     // `memcpy()` does not work for copying an initialized `SW_ALL`
     // because it does not copy dynamically allocated memory to which
     // members of `SW_ALL` point to
     void SetUp() override {
+        userSuid = -1; // Mimic no user input for suid
 
         // Initialize SOILWAT2 variables and read values from example input file
         sw_init_logs(NULL, &LogInfo);
@@ -64,7 +67,11 @@ class AllTestFixture : public ::testing::Test {
         PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
 
         SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
+        SW_CTL_setup_domain(&PathInfo, userSuid, &SW_Domain, startSimSuid,
+                            endSimSuid, &LogInfo);
+        SW_MDL_get_ModelRun(&SW_All.Model, &SW_Domain, NULL, &LogInfo);
         SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo);
+        SW_CTL_alloc_ptrs(&SW_All, &LogInfo);
 
         /* Notes on messages during tests
             - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
