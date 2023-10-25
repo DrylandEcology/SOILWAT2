@@ -64,7 +64,7 @@ class AllTestFixture : public ::testing::Test {
         PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
 
         SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
-        SW_CTL_read_inputs_from_disk(&SW_All, &SW_Domain, &PathInfo, &LogInfo);
+        SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo);
 
         /* Notes on messages during tests
             - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file

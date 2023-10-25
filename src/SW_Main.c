@@ -34,6 +34,7 @@
 #include "include/SW_Output_outtext.h"
 #include "include/SW_Main_lib.h"
 #include "include/SW_Domain.h"
+#include "include/SW_Model.h"
 
 
 
@@ -74,7 +75,7 @@ int main(int argc, char **argv) {
 		sw_print_version();
 	}
 
-  // setup and construct model (independent of inputs)
+  // setup and construct model/domain/SW_ALL template (independent of inputs)
 	SW_CTL_setup_model(&sw_template, SW_OutputPtrs, &PathInfo, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
@@ -86,8 +87,13 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
+    SW_MDL_get_ModelRun(&sw_template.Model, &SW_Domain, NULL, &LogInfo);
+    if(LogInfo.stopRun) {
+        goto finishProgram;
+    }
+
 	// read user inputs
-	SW_CTL_read_inputs_from_disk(&sw_template, &SW_Domain, &PathInfo, &LogInfo);
+	SW_CTL_read_inputs_from_disk(&sw_template, &PathInfo, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }

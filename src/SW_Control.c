@@ -430,13 +430,11 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 @param[in,out] sw Comprehensive struct of type SW_ALL containing
   all information in the simulation
-@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
-  temporal/spatial information for a set of simulation runs
 @param[in,out] PathInfo Struct holding all information about the programs path/files
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_read_inputs_from_disk(SW_ALL* sw, SW_DOMAIN* SW_Domain,
-                  PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
+void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
+                                  LOG_INFO* LogInfo) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
@@ -451,11 +449,6 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, SW_DOMAIN* SW_Domain,
   }
   #ifdef SWDEBUG
   if (debug) swprintf(" > 'model'");
-  #endif
-
-  SW_DOM_read(PathInfo->InFiles, SW_Domain, LogInfo);
-  #ifdef SWDEBUG
-  if(debug) swprintf(" 'domain'");
   #endif
 
   SW_WTH_setup(&sw->Weather, PathInfo->InFiles,
