@@ -599,4 +599,9 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, int ncStartSuid[],
     // Clear local instance of SW_ALL, the programs variable, `PathInfo`,
     // will not be cleared, hence NULL
     SW_CTL_clear_model(swFALSE, swFALSE, &local_sw, NULL);
+
+    (void) SW_Domain;
+    (void) ncInFiles;
+    (void) ncStartSuid;
+    (void) p_OUT;
 }

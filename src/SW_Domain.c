@@ -32,6 +32,9 @@ static int domain_inkey_to_id(char *key);
  * @return Calculated gridcell/site position
 */
 int* SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, int suid) {
+    (void) SW_Domain;
+    (void) suid;
+
     return NULL; // Temporary return
 }
 
@@ -60,6 +63,8 @@ void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
  * @return Whether or not progress the input suid has been marked as complete
 */
 Bool SW_DOM_CheckProgress(char* domainType, int* ncStartSuid) {
+    (void) domainType;
+    (void) ncStartSuid;
     return swFALSE; // Temporary return
 }
 
@@ -70,7 +75,7 @@ Bool SW_DOM_CheckProgress(char* domainType, int* ncStartSuid) {
  *  temporal/spatial information for a set of simulation runs
 */
 void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain) {
-
+    (void) SW_Domain;
 }
 
 /**
@@ -185,7 +190,8 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  *  in relation to netCDFs
 */
 void SW_DOM_SetProgress(char* domainType, int* ncStartSuid) {
-
+    (void) domainType;
+    (void) ncStartSuid;
 }
 
 /**
