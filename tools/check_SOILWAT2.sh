@@ -85,11 +85,11 @@ compare_output_against_reference () {
 
 #--- Function to check for errors (but avoid false hits)
 # $1 Text string
-# Returns lines that contain "failed", "abort", "trap", " not ", or "error"
+# Returns lines that contain "failed", "abort", "trap", "fault", " not ", or "error"
 # ("error" besides "Werror", "Wno-error", or
 # any unit test name: "*Test.Errors", "RNGBetaErrorsDeathTest")
 check_error() {
-  echo "$1" | awk 'tolower($0) ~ /[^-.w]error|failed|abort|trap|( not )/ && !/RNGBetaErrorsDeathTest/ && !/WarningsAndErrors/ && !/FailOnErrorDeath/'
+  echo "$1" | awk 'tolower($0) ~ /[^-.w]error|failed|abort|trap|fault|( not )/ && !/RNGBetaErrorsDeathTest/ && !/WarningsAndErrors/ && !/FailOnErrorDeath/'
 }
 
 #--- Function to check for leaks (but avoid false hits)
