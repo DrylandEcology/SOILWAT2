@@ -1190,12 +1190,9 @@ void SW_WTH_construct(SW_WEATHER* SW_Weather) {
  *
  * @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
  *  information pretaining to meteorological input data
- * @param[out] SW_Markov Struct of type SW_MARKOV which holds values
- *  related to temperature and weather generator
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_WTH_alloc_ptrs(SW_WEATHER* SW_Weather, SW_MARKOV* SW_Markov,
-                       LOG_INFO* LogInfo) {
+void SW_WTH_alloc_ptrs(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
 	OutPeriod pd;
 
     // Allocate output structures:
@@ -1216,21 +1213,15 @@ void SW_WTH_alloc_ptrs(SW_WEATHER* SW_Weather, SW_MARKOV* SW_Markov,
             }
 		}
 	}
-
-    if (SW_Weather->generateWeatherMethod == 2) {
-		SW_MKV_alloc_ptrs(SW_Markov, LogInfo);
-	}
 }
 
 /**
 @brief Deconstructor for SW_Weather and SW_Markov (if used)
 
-@param[out] SW_Markov Struct of type SW_MARKOV which holds values
-	related to temperature and weather generator
 @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
 */
-void SW_WTH_deconstruct(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather)
+void SW_WTH_deconstruct(SW_WEATHER* SW_Weather)
 {
 	OutPeriod pd;
 
@@ -1246,10 +1237,6 @@ void SW_WTH_deconstruct(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather)
 			Mem_Free(SW_Weather->p_accu[pd]);
 			SW_Weather->p_accu[pd] = NULL;
 		}
-	}
-
-	if (SW_Weather->generateWeatherMethod == 2) {
-		SW_MKV_deconstruct(SW_Markov);
 	}
 
     deallocateAllWeather(SW_Weather->allHist, SW_Weather->n_years);

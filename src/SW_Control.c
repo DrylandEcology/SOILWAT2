@@ -107,6 +107,8 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
 
     dest->SoilWat.hist.file_prefix = NULL;
 
+
+    /* Allocate memory and copy daily weather */
     dest->Weather.allHist = NULL;
     allocateAllWeather(&dest->Weather.allHist, sw_template->Weather.n_years, LogInfo);
     for(unsigned int year = 0; year < sw_template->Weather.n_years; year++) {
@@ -114,6 +116,14 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
                  sizeof(SW_WEATHER_HIST));
     }
 
+    /* Allocate memory and copy weather generator parameters */
+    SW_MKV_init_ptrs(&dest->Markov);
+    if (dest->Weather.generateWeatherMethod == 2) {
+        allocateMKV(&dest->Markov, LogInfo);
+        copyMKV(&dest->Markov, &sw_template->Markov);
+    }
+
+    /* Allocate memory and copy vegetation establishment parameters */
     dest->VegEstab.parms = NULL;
     for(IntU speciesNum = 0; speciesNum < sw_template->VegEstab.count; speciesNum++) {
         _new_species(&dest->VegEstab, LogInfo);
@@ -191,7 +201,7 @@ void SW_CTL_alloc_ptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
-    SW_WTH_alloc_ptrs(&sw->Weather, &sw->Markov, LogInfo);
+    SW_WTH_alloc_ptrs(&sw->Weather, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
@@ -291,7 +301,8 @@ void SW_CTL_clear_model(Bool full_reset, Bool cleanTemplate, SW_ALL* sw,
     }
 
 	SW_MDL_deconstruct();
-	SW_WTH_deconstruct(&sw->Markov, &sw->Weather); // calls SW_MKV_deconstruct() if needed
+	SW_WTH_deconstruct(&sw->Weather);
+	SW_MKV_deconstruct(&sw->Markov);
 	// SW_SKY_deconstruct() not needed
 	// SW_SIT_deconstruct() not needed
 	SW_VES_deconstruct(&sw->VegEstab);
