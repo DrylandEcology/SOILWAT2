@@ -23,8 +23,7 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_MKV_init_ptrs(SW_MARKOV* SW_Markov);
-void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
-					  LOG_INFO* LogInfo);
+void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov);
 void SW_MKV_alloc_ptrs(SW_MARKOV* SW_Markov, LOG_INFO* LogInfo);
 void SW_MKV_deconstruct(SW_MARKOV* SW_Markov);
 Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,

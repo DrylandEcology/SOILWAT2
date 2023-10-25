@@ -193,30 +193,20 @@ void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
         return; // Exit function prematurely due to error
     }
 	SW_MDL_construct(sw->Model.newperiod, sw->Model.days_in_month);
-	SW_WTH_construct(&sw->Weather, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+	SW_WTH_construct(&sw->Weather);
+
 	// delay SW_MKV_construct() until we know from inputs whether we need it
 	// SW_SKY_construct() not need
 	SW_SIT_construct(&sw->Site);
-	SW_VES_construct(&sw->VegEstab, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-	SW_VPD_construct(&sw->VegProd, LogInfo);
+	SW_VES_construct(&sw->VegEstab);
+	SW_VPD_construct(&sw->VegProd);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 	// SW_FLW_construct() not needed
 	SW_OUT_construct(sw->FileStatus.make_soil, sw->FileStatus.make_regular,
       SW_OutputPtrs, sw->Output, sw->Site.n_layers, &sw->GenOutput);
-	SW_SWC_construct(&sw->SoilWat, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
+	SW_SWC_construct(&sw->SoilWat);
 	SW_CBN_construct(&sw->Carbon);
 }
 

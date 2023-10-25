@@ -141,8 +141,8 @@ void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
 void SW_WTH_finalize_all_weather(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather,
               TimeInt cum_monthdays[], TimeInt days_in_month[], LOG_INFO* LogInfo);
 void SW_WTH_init_run(SW_WEATHER* SW_Weather);
-void SW_WTH_construct(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo);
 void SW_WTH_alloc_ptrs(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo);
+void SW_WTH_construct(SW_WEATHER* SW_Weather);
 void SW_WTH_init_ptrs(SW_WEATHER* SW_Weather);
 void SW_WTH_deconstruct(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather);
 void SW_WTH_new_day(SW_WEATHER* SW_Weather, SW_SITE* SW_Site, RealD snowpack[],

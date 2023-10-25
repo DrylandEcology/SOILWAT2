@@ -638,15 +638,12 @@ void SW_VPD_init_ptrs(SW_VEGPROD* SW_VegProd) {
 
 @param[out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
-@param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_VPD_construct(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
+void SW_VPD_construct(SW_VEGPROD* SW_VegProd) {
 	/* =================================================== */
 
 	// Clear the module structure:
 	memset(SW_VegProd, 0, sizeof(SW_VEGPROD));
-
-	SW_VPD_alloc_ptrs(SW_VegProd, LogInfo);
 }
 
 /**

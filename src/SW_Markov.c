@@ -212,10 +212,8 @@ void SW_MKV_init_ptrs(SW_MARKOV* SW_Markov) {
 @param[in] rng_seed Initial state for Markov
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
-@param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
-					  LOG_INFO* LogInfo) {
+void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov) {
 	/* =================================================== */
 
 	/* Set seed of `markov_rng`
@@ -230,8 +228,6 @@ void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov,
 	#endif
 
 	SW_Markov->ppt_events = 0;
-
-    SW_MKV_alloc_ptrs(SW_Markov, LogInfo);
 }
 
 /**
@@ -625,7 +621,8 @@ void SW_MKV_setup(SW_MARKOV* SW_Markov, unsigned long Weather_rng_seed,
 
   Bool read_prob, read_cov;
 
-  SW_MKV_construct(Weather_rng_seed, SW_Markov, LogInfo);
+  SW_MKV_construct(Weather_rng_seed, SW_Markov);
+  SW_MKV_alloc_ptrs(SW_Markov, LogInfo);
   if(LogInfo->stopRun) {
     return; // Exit function prematurely due to error
   }

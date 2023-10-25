@@ -91,9 +91,8 @@ void SW_VES_init_ptrs(SW_VEGESTAB* SW_VegEstab) {
 
 @param[out] SW_VegEstab Struct of type SW_VEGESTAB holding all
   information about vegetation within the simulation
-@param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_VES_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
+void SW_VES_construct(SW_VEGESTAB* SW_VegEstab) {
 	/* =================================================== */
 	/* note that an initializer that is called during
 	 * execution (better called clean() or something)
@@ -103,8 +102,6 @@ void SW_VES_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
 
 	// Clear the module structure:
 	memset(SW_VegEstab, 0, sizeof(SW_VEGESTAB));
-
-    SW_VES_alloc_ptrs(SW_VegEstab, LogInfo);
 }
 
 /**
@@ -255,10 +252,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 	LOG_INFO* LogInfo) {
 
 	SW_VES_deconstruct(SW_VegEstab);
-	SW_VES_construct(SW_VegEstab, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+	SW_VES_construct(SW_VegEstab);
 
 	SW_VegEstab->use = use_VegEstab;
 

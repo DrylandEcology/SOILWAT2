@@ -1175,17 +1175,14 @@ void SW_WTH_init_ptrs(SW_WEATHER* SW_Weather) {
 
 @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
-@param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_WTH_construct(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
+void SW_WTH_construct(SW_WEATHER* SW_Weather) {
 	/* =================================================== */
 
 	// Clear the module structure:
 	memset(SW_Weather, 0, sizeof(SW_WEATHER));
 
     SW_Weather->n_years = 0;
-
-    SW_WTH_alloc_ptrs(SW_Weather, LogInfo);
 }
 
 /**

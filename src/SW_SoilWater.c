@@ -627,9 +627,8 @@ void SW_SWC_init_ptrs(SW_SOILWAT* SW_SoilWat) {
 
 @param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
 	soil water related values
-@param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
+void SW_SWC_construct(SW_SOILWAT* SW_SoilWat) {
 	/* =================================================== */
 
 	/* initialize pointer */
@@ -638,8 +637,6 @@ void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
 
 	// Clear the module structure:
 	memset(SW_SoilWat, 0, sizeof(SW_SOILWAT));
-
-    SW_SWC_alloc_ptrs(SW_SoilWat, LogInfo);
 }
 
 /**
