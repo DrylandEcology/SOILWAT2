@@ -129,7 +129,7 @@ namespace {
     SW_VEGPROD SW_VegProd;
 
     SW_VPD_construct(&SW_VegProd);
-    SW_VPD_alloc_ptrs(&SW_VegProd, &LogInfo); // allocates memory
+    SW_VPD_alloc_outptrs(&SW_VegProd, &LogInfo); // allocate memory for output pointers
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_VPD_init_run(

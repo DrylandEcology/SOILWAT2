@@ -640,27 +640,27 @@ void SW_SWC_construct(SW_SOILWAT* SW_SoilWat) {
 }
 
 /**
- * @brief Dynamically allocate all memory within the SW_SOILWAT struct
+ * @brief Allocate dynamic memory for output pointers in SW_SOILWAT struct
  *
  * @param[out] SW_SoilWat SW_SoilWat Struct of type SW_SOILWAT containing
  *  soil water related values
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_SWC_alloc_ptrs(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
+void SW_SWC_alloc_outptrs(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
     OutPeriod pd;
 
 	// Allocate output structures:
 	ForEachOutPeriod(pd)
 	{
 		SW_SoilWat->p_accu[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_alloc_ptrs()", LogInfo);
+			sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_alloc_outptrs()", LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
 		if (pd > eSW_Day) {
 			SW_SoilWat->p_oagg[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
-				sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_alloc_ptrs()", LogInfo);
+				sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_alloc_outptrs()", LogInfo);
 
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error

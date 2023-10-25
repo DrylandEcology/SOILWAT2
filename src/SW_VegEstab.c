@@ -105,20 +105,20 @@ void SW_VES_construct(SW_VEGESTAB* SW_VegEstab) {
 }
 
 /**
- * @brief Dynamically allocate all memory within the SW_VEGESTAB struct
+ * @brief Allocate dynamic memory for output pointers in the SW_VEGESTAB struct
  *
  * @param[out] SW_VegEstab SW_VegEstab Struct of type SW_VEGESTAB holding all
  *  information about vegetation within the simulation
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_VES_alloc_ptrs(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
+void SW_VES_alloc_outptrs(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
     OutPeriod pd;
 
     // Allocate output structures:
 	ForEachOutPeriod(pd)
 	{
 		SW_VegEstab->p_accu[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_alloc_ptrs()", LogInfo);
+			sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_alloc_outptrs()", LogInfo);
 
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -130,7 +130,7 @@ void SW_VES_alloc_ptrs(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
 
 		if (pd > eSW_Day) {
 			SW_VegEstab->p_oagg[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(1,
-				sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_alloc_ptrs()", LogInfo);
+				sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_alloc_outptrs()", LogInfo);
 
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error

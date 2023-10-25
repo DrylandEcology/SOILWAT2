@@ -71,7 +71,7 @@ class AllTestFixture : public ::testing::Test {
                             endSimSuid, &LogInfo);
         SW_MDL_get_ModelRun(&SW_All.Model, &SW_Domain, NULL, &LogInfo);
         SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo);
-        SW_CTL_alloc_ptrs(&SW_All, &LogInfo);
+        SW_CTL_alloc_outptrs(&SW_All, &LogInfo);  /* allocate memory for output pointers */
 
         /* Notes on messages during tests
             - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file

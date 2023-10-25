@@ -1186,27 +1186,27 @@ void SW_WTH_construct(SW_WEATHER* SW_Weather) {
 }
 
 /**
- * @brief Dynamically allocate all memory within the SW_WEATHER struct
+ * @brief Allocate dynamic memory for output pointers in the SW_WEATHER struct
  *
  * @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
  *  information pretaining to meteorological input data
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_WTH_alloc_ptrs(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
+void SW_WTH_alloc_outptrs(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
 	OutPeriod pd;
 
     // Allocate output structures:
 	ForEachOutPeriod(pd)
 	{
 		SW_Weather->p_accu[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_alloc_ptrs()", LogInfo);
+			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_alloc_outptrs()", LogInfo);
 
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 		if (pd > eSW_Day) {
 			SW_Weather->p_oagg[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
-				sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_alloc_ptrs()", LogInfo);
+				sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_alloc_outptrs()", LogInfo);
 
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error

@@ -29,7 +29,7 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_CTL_init_ptrs(SW_ALL* sw, char *InFiles[]);
-void SW_CTL_alloc_ptrs(SW_ALL* sw, LOG_INFO* LogInfo);
+void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo);
 void SW_CTL_setup_domain(PATH_INFO* PathInfo, int userSuid,
                          SW_DOMAIN* SW_Domain, int *startSimSet,
                          int *endSimSet, LOG_INFO* LogInfo);

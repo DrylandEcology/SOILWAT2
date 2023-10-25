@@ -103,10 +103,11 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* LogInfo)
 {
     Mem_Copy(dest, sw_template, sizeof(SW_ALL));
-    SW_CTL_alloc_ptrs(dest, LogInfo);
 
-    dest->SoilWat.hist.file_prefix = NULL;
+    /* Allocate memory for output pointers */
+    SW_CTL_alloc_outptrs(dest, LogInfo);
 
+    dest->SoilWat.hist.file_prefix = NULL; /* currently unused */
 
     /* Allocate memory and copy daily weather */
     dest->Weather.allHist = NULL;
@@ -186,26 +187,26 @@ void SW_CTL_init_ptrs(SW_ALL* sw, char *InFiles[]) {
 }
 
 /**
- * @brief Allocate dynamic aggregate and accumulation pointers
+ * @brief Allocate dynamic memory for output aggregate and accumulation pointers
  *
  * @param[out] sw Comprehensive struct of type SW_ALL containing
  *  all information in the simulation
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_alloc_ptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
-    SW_VPD_alloc_ptrs(&sw->VegProd, LogInfo);
+void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
+    SW_VPD_alloc_outptrs(&sw->VegProd, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
-    SW_SWC_alloc_ptrs(&sw->SoilWat, LogInfo);
+    SW_SWC_alloc_outptrs(&sw->SoilWat, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
-    SW_WTH_alloc_ptrs(&sw->Weather, LogInfo);
+    SW_WTH_alloc_outptrs(&sw->Weather, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
-    SW_VES_alloc_ptrs(&sw->VegEstab, LogInfo);
+    SW_VES_alloc_outptrs(&sw->VegEstab, LogInfo);
 }
 
 /**
