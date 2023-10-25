@@ -135,8 +135,8 @@ int main(int argc, char **argv) {
     for(suid = startSimSet; suid < endSimSet; suid++)
     {
         ncStartSuid = SW_DOM_calc_ncStartSuid(&SW_Domain, suid);
-        if(!SW_DOM_CheckProgress(SW_Domain.DomainType, ncStartSuid)) {
 
+        if(SW_DOM_CheckProgress(SW_Domain.DomainType, ncStartSuid)) {
             SW_CTL_run_sw(&sw_template, &SW_Domain, ncStartSuid, NULL,
                           SW_OutputPtrs, NULL, &LogInfo);
 

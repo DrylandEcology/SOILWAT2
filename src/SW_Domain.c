@@ -51,19 +51,23 @@ void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
 }
 
 /**
- * @brief Check if suid progress netCDF is marked as completed
+ * @brief Check progress in domain
  *
  * @param[in] domainType Type of domain in which simulations are running
  *  (gridcell/sites)
- * @param[in] ncStartSuid Unique indentifier of the first suid to run
- *  in relation to netCDF gridcells/sites
+ * @param[in] ncStartSuid Current simulation unit identifier for which progress
+ * should be checked.
  *
- * @return Whether or not progress the input suid has been marked as complete
+ * @return
+ * TRUE if simulation for \p ncStartSuid has not been completed yet;
+ * FALSE if simulation for \p ncStartSuid has been completed (i.e., skip).
 */
 Bool SW_DOM_CheckProgress(char* domainType, int* ncStartSuid) {
     (void) domainType;
     (void) ncStartSuid;
-    return swFALSE; // Temporary return
+
+    // return TRUE (due to lack of capability to track progress)
+    return swTRUE;
 }
 
 /**
