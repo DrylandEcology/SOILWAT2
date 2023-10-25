@@ -88,7 +88,7 @@ class AllTestFixture : public ::testing::Test {
     }
 
     void TearDown() override {
-      SW_CTL_clear_model(swTRUE, &SW_All, &PathInfo);
+      SW_CTL_clear_model(swTRUE, swTRUE, &SW_All, &PathInfo);
     }
 };
 

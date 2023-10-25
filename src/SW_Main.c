@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
 
     finishProgram: {
         // de-allocate all memory
-        SW_CTL_clear_model(swTRUE, &sw_template, &PathInfo);
+        SW_CTL_clear_model(swTRUE, swTRUE, &sw_template, &PathInfo);
 
         sw_fail_on_error(&LogInfo);
     }

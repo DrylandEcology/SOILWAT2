@@ -35,7 +35,8 @@ void SW_CTL_setup_domain(PATH_INFO* PathInfo, int userSuid,
                          int *endSimSet, LOG_INFO* LogInfo);
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         PATH_INFO* PathInfo, LOG_INFO* LogInfo);
-void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw, PATH_INFO* PathInfo);
+void SW_CTL_clear_model(Bool full_reset, Bool cleanTemplate, SW_ALL* sw,
+                        PATH_INFO* PathInfo);
 void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo);
 void SW_CTL_read_inputs_from_disk(SW_ALL* sw, SW_DOMAIN* SW_Domain,
                   PATH_INFO* PathInfo, LOG_INFO* LogInfo);
