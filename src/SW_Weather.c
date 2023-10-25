@@ -1190,9 +1190,12 @@ void SW_WTH_construct(SW_WEATHER* SW_Weather) {
  *
  * @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
  *  information pretaining to meteorological input data
+ * @param[out] SW_Markov Struct of type SW_MARKOV which holds values
+ *  related to temperature and weather generator
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_WTH_alloc_ptrs(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
+void SW_WTH_alloc_ptrs(SW_WEATHER* SW_Weather, SW_MARKOV* SW_Markov,
+                       LOG_INFO* LogInfo) {
 	OutPeriod pd;
 
     // Allocate output structures:
@@ -1212,6 +1215,10 @@ void SW_WTH_alloc_ptrs(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
                 return; // Exit function prematurely due to error
             }
 		}
+	}
+
+    if (SW_Weather->generateWeatherMethod == 2) {
+		SW_MKV_alloc_ptrs(SW_Markov, LogInfo);
 	}
 }
 
