@@ -51,7 +51,7 @@ class AllTestFixture : public ::testing::Test {
     PATH_INFO PathInfo;
     LOG_INFO LogInfo;
     SW_OUTPUT_POINTERS SW_OutputPtrs;
-    int userSuid, *startSimSuid, *endSimSuid;
+    unsigned long userSuid, startSimSuid, endSimSuid;
 
     // `memcpy()` does not work for copying an initialized `SW_ALL`
     // because it does not copy dynamically allocated memory to which
