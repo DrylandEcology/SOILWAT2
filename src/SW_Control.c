@@ -220,9 +220,9 @@ void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
  * @param[out] endSimSet Final suid in a simulation set
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_setup_domain(PATH_INFO* PathInfo, int userSuid,
-                         SW_DOMAIN* SW_Domain, int *startSimSet,
-                         int *endSimSet, LOG_INFO* LogInfo) {
+void SW_CTL_setup_domain(PATH_INFO* PathInfo, unsigned long userSuid,
+                         SW_DOMAIN* SW_Domain, unsigned long *startSimSet,
+                         unsigned long *endSimSet, LOG_INFO* LogInfo) {
 
     SW_F_read(PathInfo, LogInfo);
     if(LogInfo->stopRun) {
@@ -579,7 +579,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
  * @param[in,out] p_OUT Data storage for simulation run values
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, int ncStartSuid[],
+void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncStartSuid[],
                    char* ncInFiles[], SW_OUTPUT_POINTERS SW_OutputPtrs[],
                    RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 

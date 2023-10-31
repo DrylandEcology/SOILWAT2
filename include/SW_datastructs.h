@@ -1019,9 +1019,9 @@ typedef struct {
 typedef struct {
 	// Spacial domain information
 	char DomainType[3]; // Either "xy" or "s" (exluding '\0')
-	int nDimX,
-		nDimY,
-		nDimS;
+	unsigned long nDimX,
+		          nDimY,
+		          nDimS;
 
     unsigned long nSUIDs; // to clarify, "long" = "long int", not double
 

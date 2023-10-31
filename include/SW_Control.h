@@ -30,9 +30,9 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_CTL_init_ptrs(SW_ALL* sw, char *InFiles[]);
 void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo);
-void SW_CTL_setup_domain(PATH_INFO* PathInfo, int userSuid,
-                         SW_DOMAIN* SW_Domain, int *startSimSet,
-                         int *endSimSet, LOG_INFO* LogInfo);
+void SW_CTL_setup_domain(PATH_INFO* PathInfo, unsigned long userSuid,
+                         SW_DOMAIN* SW_Domain, unsigned long *startSimSet,
+                         unsigned long *endSimSet, LOG_INFO* LogInfo);
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw);
@@ -43,7 +43,7 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                  LOG_INFO* LogInfo); /* main controlling loop for SOILWAT  */
 void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                              LOG_INFO* LogInfo);
-void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, int ncStartSuid[],
+void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncStartSuid[],
                    char* ncInFiles[], SW_OUTPUT_POINTERS SW_OutputPtrs[],
                    RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo);
 

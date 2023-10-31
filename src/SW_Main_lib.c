@@ -86,7 +86,8 @@ void sw_print_version(void) {
 @param[out] LogInfo Holds information dealing with logfile output
 */
 void sw_init_args(int argc, char **argv, Bool *EchoInits,
-                  char **_firstfile, int *userSUID, LOG_INFO* LogInfo) {
+                  char **_firstfile, unsigned long *userSUID,
+                  LOG_INFO* LogInfo) {
 
 	/* =================================================== */
 	/* to add an option:

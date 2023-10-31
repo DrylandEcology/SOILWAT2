@@ -58,8 +58,8 @@ int main(int argc, char **argv) {
 	PATH_INFO PathInfo;
 	Bool EchoInits;
 
-    int startSimSet, endSimSet, userSuid, suid;
-    int *ncStartSuid;
+    unsigned long startSimSet, endSimSet, userSuid, suid;
+    unsigned long *ncStartSuid;
 
 	sw_init_logs(stdout, &LogInfo);
 	SW_CTL_init_ptrs(&sw_template, PathInfo.InFiles);

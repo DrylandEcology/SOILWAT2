@@ -17,7 +17,8 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void sw_init_args(int argc, char **argv, Bool *EchoInits,
-                  char **_firstfile, int *userSUID, LOG_INFO* LogInfo);
+                  char **_firstfile, unsigned long *userSUID,
+                  LOG_INFO* LogInfo);
 void sw_print_version(void);
 void sw_fail_on_error(LOG_INFO* LogInfo);
 void sw_init_logs(FILE* logInitPtr, LOG_INFO* LogInfo);

@@ -31,7 +31,8 @@ static int domain_inkey_to_id(char *key);
  *
  * @return Calculated gridcell/site position
 */
-int* SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, int suid) {
+int* SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, unsigned long suid) {
+
     (void) SW_Domain;
     (void) suid;
 
@@ -62,7 +63,7 @@ void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
  * TRUE if simulation for \p ncStartSuid has not been completed yet;
  * FALSE if simulation for \p ncStartSuid has been completed (i.e., skip).
 */
-Bool SW_DOM_CheckProgress(char* domainType, int* ncStartSuid) {
+Bool SW_DOM_CheckProgress(char* domainType, unsigned long ncStartSuid[]) {
     (void) domainType;
     (void) ncStartSuid;
 
@@ -191,7 +192,7 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  * @param[in] ncStartSuid Unique indentifier of the first suid to run
  *  in relation to netCDFs
 */
-void SW_DOM_SetProgress(char* domainType, int* ncStartSuid) {
+void SW_DOM_SetProgress(char* domainType, unsigned long ncStartSuid[]) {
     (void) domainType;
     (void) ncStartSuid;
 }
@@ -207,12 +208,14 @@ void SW_DOM_SetProgress(char* domainType, int* ncStartSuid) {
  * @param[out] endSimSet Final suid in a simulation set
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, int userSUID, int nSUIDs,
-                   int* startSimSet, int* endSimSet, LOG_INFO* LogInfo) {
+void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
+                   unsigned long nSUIDs, unsigned long* startSimSet,
+                   unsigned long* endSimSet, LOG_INFO* LogInfo) {
 
-    int* startSuid;
+    const unsigned long noUserInput = -1;
+    unsigned long startSuid[2]; // 2 -> [y, x] or [0, s]
 
-    if(userSUID != -1) {
+    if(userSUID != noUserInput) {
         if(userSUID >= nSUIDs) {
             LogError(LogInfo, LOGERROR, "User input for start suid is bigger"
                               " than the total number of suids.");
