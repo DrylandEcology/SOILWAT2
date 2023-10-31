@@ -10,7 +10,8 @@ extern "C" {
 /* =================================================== */
 /*                  Local Definitions                  */
 /* --------------------------------------------------- */
-int* SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, unsigned long suid);
+void SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
+                             unsigned long ncStartSuid[]);
 void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain);
 Bool SW_DOM_CheckProgress(char* domainType, unsigned long ncStartSuid[]);
 void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain);

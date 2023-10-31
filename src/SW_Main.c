@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
 	Bool EchoInits;
 
     unsigned long startSimSet, endSimSet, userSuid, suid;
-    unsigned long *ncStartSuid;
+    unsigned long ncStartSuid[2]; // 2 -> [y, x] or [0, s]
 
 	sw_init_logs(stdout, &LogInfo);
 	SW_CTL_init_ptrs(&sw_template, PathInfo.InFiles);
@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
   // run simulations: loop over simulation set
     for(suid = startSimSet; suid < endSimSet; suid++)
     {
-        ncStartSuid = SW_DOM_calc_ncStartSuid(&SW_Domain, suid);
+        SW_DOM_calc_ncStartSuid(&SW_Domain, suid, ncStartSuid);
 
         if(SW_DOM_CheckProgress(SW_Domain.DomainType, ncStartSuid)) {
             SW_CTL_run_sw(&sw_template, &SW_Domain, ncStartSuid, NULL,

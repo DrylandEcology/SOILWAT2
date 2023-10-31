@@ -28,15 +28,13 @@ static int domain_inkey_to_id(char *key);
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
  * @param[in] suid Unique identifier for a simulation run
- *
- * @return Calculated gridcell/site position
 */
-int* SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, unsigned long suid) {
+void SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
+                             unsigned long ncStartSuid[]) {
 
     (void) SW_Domain;
     (void) suid;
-
-    return NULL; // Temporary return
+    (void) ncStartSuid;
 }
 
 /**
@@ -227,7 +225,7 @@ void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
     } else {
         *endSimSet = nSUIDs;
         for(*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
-            startSuid = SW_DOM_calc_ncStartSuid(SW_Domain, *startSimSet);
+            SW_DOM_calc_ncStartSuid(SW_Domain, *startSimSet, startSuid);
 
             if(SW_DOM_CheckProgress(SW_Domain->DomainType, startSuid)) {
                 return; // Found start suid
