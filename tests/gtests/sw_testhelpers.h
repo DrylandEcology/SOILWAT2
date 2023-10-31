@@ -58,6 +58,7 @@ class AllTestFixture : public ::testing::Test {
     // members of `SW_ALL` point to
     void SetUp() override {
         userSuid = -1; // Mimic no user input for suid
+        startSimSuid = endSimSuid = 0;
 
         // Initialize SOILWAT2 variables and read values from example input file
         sw_init_logs(NULL, &LogInfo);
@@ -67,8 +68,8 @@ class AllTestFixture : public ::testing::Test {
         PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
 
         SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
-        SW_CTL_setup_domain(&PathInfo, userSuid, &SW_Domain, startSimSuid,
-                            endSimSuid, &LogInfo);
+        SW_CTL_setup_domain(&PathInfo, userSuid, &SW_Domain, &startSimSuid,
+                            &endSimSuid, &LogInfo);
         SW_MDL_get_ModelRun(&SW_All.Model, &SW_Domain, NULL, &LogInfo);
         SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo);
         SW_CTL_alloc_outptrs(&SW_All, &LogInfo);  /* allocate memory for output pointers */
