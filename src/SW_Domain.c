@@ -28,6 +28,8 @@ static int domain_inkey_to_id(char *key);
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
  * @param[in] suid Unique identifier for a simulation run
+ * @param[out] ncStartSuid Unique indentifier of the first suid to run
+ *  in relation to netCDFs
 */
 void SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
                              unsigned long ncStartSuid[]) {
