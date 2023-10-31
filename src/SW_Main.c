@@ -58,8 +58,7 @@ int main(int argc, char **argv) {
 	PATH_INFO PathInfo;
 	Bool EchoInits;
 
-    unsigned long startSimSet, endSimSet, userSuid, suid;
-    unsigned long ncStartSuid[2]; // 2 -> [y, x] or [0, s]
+    unsigned long startSimSet, endSimSet, userSuid;
 
 	sw_init_logs(stdout, &LogInfo);
 	SW_CTL_init_ptrs(&sw_template, PathInfo.InFiles);
@@ -132,25 +131,8 @@ int main(int argc, char **argv) {
 	}
 
   // run simulations: loop over simulation set
-    for(suid = startSimSet; suid < endSimSet; suid++)
-    {
-        SW_DOM_calc_ncStartSuid(&SW_Domain, suid, ncStartSuid);
-
-        if(SW_DOM_CheckProgress(SW_Domain.DomainType, ncStartSuid)) {
-            SW_CTL_run_sw(&sw_template, &SW_Domain, ncStartSuid, NULL,
-                          SW_OutputPtrs, NULL, &LogInfo);
-
-            sw_write_warnings(&LogInfo);
-            sw_init_logs(stdout, &LogInfo); // Reset LOG_INFO for next simulation run
-
-            if(!LogInfo.stopRun) {
-                // Process output
-
-                // Set simulation run progress
-                SW_DOM_SetProgress(SW_Domain.DomainType, ncStartSuid);
-            }
-        }
-    }
+    SW_CTL_RunSimSet(&sw_template, SW_OutputPtrs, &SW_Domain, startSimSet,
+                     endSimSet, &LogInfo);
 
     closeFiles: {
         // finish-up output

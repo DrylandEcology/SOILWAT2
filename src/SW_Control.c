@@ -42,6 +42,7 @@
 #include "include/SW_SoilWater.h"
 #include "include/SW_Carbon.h"
 #include "include/myMemory.h"
+#include "include/SW_Main_lib.h"
 
 
 
@@ -167,6 +168,34 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
     }
   }
 } /******* End Main Loop *********/
+
+void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
+                      SW_DOMAIN *SW_Domain, unsigned long startSimSet,
+                      unsigned long endSimSet, LOG_INFO *LogInfo) {
+
+    unsigned long suid;
+    unsigned long ncStartSuid[2]; // 2 -> [y, x] or [0, s]
+
+    for(suid = startSimSet; suid < endSimSet; suid++)
+    {
+        SW_DOM_calc_ncStartSuid(SW_Domain, suid, ncStartSuid);
+        if(SW_DOM_CheckProgress(SW_Domain->DomainType, ncStartSuid)) {
+
+            SW_CTL_run_sw(sw_template, SW_Domain, ncStartSuid, NULL,
+                          SW_OutputPtrs, NULL, LogInfo);
+
+            sw_write_warnings(LogInfo);
+            sw_init_logs(stdout, LogInfo); // Reset LOG_INFO for next simulation run
+
+            if(!LogInfo->stopRun) {
+                // Process output
+
+                // Set simulation run progress
+                SW_DOM_SetProgress(SW_Domain->DomainType, ncStartSuid);
+            }
+        }
+    }
+}
 
 /**
  * @brief Initialize all possible pointers to NULL incase of an unexpected
