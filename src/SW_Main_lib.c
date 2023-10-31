@@ -104,7 +104,7 @@ void sw_init_args(int argc, char **argv, Bool *EchoInits,
 	 */
 	char str[1024];
 	char const *opts[] = { "-d", "-f", "-e", "-q", "-v", "-h", "-s" }; /* valid options */
-	int valopts[] = { 1, 1, 0, 0, 0, 0, 0 }; /* indicates options with values */
+	int valopts[] = { 1, 1, 0, 0, 0, 0, -1 }; /* indicates options with values */
 	/* 0=none, 1=required, -1=optional */
 	int i, /* looper through all cmdline arguments */
 	a, /* current valid argument-value position */
