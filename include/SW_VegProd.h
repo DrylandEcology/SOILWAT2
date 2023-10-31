@@ -61,7 +61,7 @@ void SW_VPD_construct(SW_VEGPROD* SW_VegProd);
 void SW_VPD_alloc_outptrs(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo);
 void estimateVegetationFromClimate(SW_VEGPROD *SW_VegProd,
 	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model,
-	int startyr, int endyr, LOG_INFO* LogInfo);
+    LOG_INFO* LogInfo);
 void estimatePotNatVegComposition(double meanTemp_C,
 	double PPT_cm, double meanTempMon_C[], double PPTMon_cm[],
 	double inputValues[], double shrubLimit, double SumGrassesFraction,
@@ -72,7 +72,7 @@ double cutZeroInf(double testValue);
 void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTwoSize,
                    int *finalIndexArray, int *finalIndexArraySize, LOG_INFO* LogInfo);
 void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-	SW_MODEL* SW_Model, int startyr, int endyr, LOG_INFO* LogInfo);
+                     SW_MODEL* SW_Model, LOG_INFO* LogInfo);
 void SW_VPD_deconstruct(SW_VEGPROD* SW_VegProd);
 void apply_biomassCO2effect(double* new_biomass, double *biomass, double multiplier);
 RealD sum_across_vegtypes(RealD x[][MAX_LAYERS], LyrIndex layerno);

@@ -679,7 +679,7 @@ void SW_VPD_alloc_outptrs(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
 
 
 void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-	SW_MODEL* SW_Model, int startyr, int endyr, LOG_INFO* LogInfo) {
+                     SW_MODEL* SW_Model, LOG_INFO* LogInfo) {
 
 	TimeInt year;
     int k;
@@ -696,7 +696,7 @@ void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
 
     if(SW_VegProd->veg_method > 0) {
         estimateVegetationFromClimate(SW_VegProd, SW_Weather->allHist,
-									  SW_Model, startyr, endyr, LogInfo);
+									  SW_Model, LogInfo);
     }
 
 }
@@ -999,16 +999,14 @@ void get_critical_rank(SW_VEGPROD* SW_VegProd){
  @param[in,out] Weather_hist Array containing all historical data of a site
  @param[in] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
- @param[in] startyr Start year of the simulation
- @param[in] endyr End year of the simulation
  @param[in] LogInfo Holds information dealing with logfile output
  */
 
 void estimateVegetationFromClimate(SW_VEGPROD *SW_VegProd,
-	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model, int startyr,
-	int endyr, LOG_INFO* LogInfo) {
+	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model,
+    LOG_INFO* LogInfo) {
 
-    int numYears = endyr - startyr + 1,
+    int numYears = SW_Model->endyr - SW_Model->startyr + 1,
 	k, bareGroundIndex = 7;
 
     SW_CLIMATE_YEARLY climateOutput;
@@ -1039,7 +1037,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *SW_VegProd,
     }
 
     calcSiteClimate(Weather_hist, SW_Model->cum_monthdays,
-					SW_Model->days_in_month, numYears, startyr,
+					SW_Model->days_in_month, numYears, SW_Model->startyr,
 					inNorthHem, &climateOutput);
 
     averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);

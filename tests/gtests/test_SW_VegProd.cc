@@ -136,8 +136,6 @@ namespace {
       &SW_VegProd,
       &SW_All.Weather,
       &SW_All.Model,
-      SW_All.Model.startyr,
-      SW_All.Model.endyr,
       &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -544,7 +542,7 @@ namespace {
 
 
         estimateVegetationFromClimate(&SW_All.VegProd, SW_All.Weather.allHist,
-          &SW_All.Model, SW_All.Model.startyr, SW_All.Model.endyr, &LogInfo);
+          &SW_All.Model, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Loop through RelAbundanceL1 and test results

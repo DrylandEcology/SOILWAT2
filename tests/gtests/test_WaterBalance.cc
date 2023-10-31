@@ -266,7 +266,7 @@ namespace {
 
     // Re-calculate vegetation
     SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather, &SW_All.Model,
-                    SW_All.Model.startyr, SW_All.Model.endyr, &LogInfo);
+                    &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation

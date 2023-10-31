@@ -360,7 +360,7 @@ void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
     }
 
 	SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model,
-                    sw->Model.startyr, sw->Model.endyr, LogInfo);
+                    LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
