@@ -144,6 +144,8 @@ int main(int argc, char **argv) {
         SW_F_deconstruct(PathInfo.InFiles);
         SW_CTL_clear_model(swTRUE, &sw_template);
 
+        sw_write_warnings("(main) ", &LogInfo);
+        sw_wrapup_logs(&LogInfo);
         sw_fail_on_error(&LogInfo);
     }
 

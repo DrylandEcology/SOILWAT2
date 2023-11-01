@@ -743,6 +743,9 @@ typedef struct {
 		 warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning messages to report
 
 	int numWarnings;        // Number of total warnings thrown
+	unsigned long
+	  numDomainWarnings,  /**< Number of suids with at least one warning */
+	  numDomainErrors;    /**< Number of suids with an error */
 
 	Bool stopRun;           // Specifies if an error has occurred and
                             // the program needs to stop early (backtrack)
@@ -1017,19 +1020,20 @@ typedef struct {
 /* --------------------------------------------------- */
 
 typedef struct {
-	// Spacial domain information
-	char DomainType[3]; // Either "xy" or "s" (exluding '\0')
-	unsigned long nDimX,
-		          nDimY,
-		          nDimS;
+	// Spatial domain information
+	char DomainType[3];  /**< Type of domain: 'xy' (grid), 's' (sites) */ // (3 = 2 characters + '\0')
 
-    unsigned long nSUIDs; // to clarify, "long" = "long int", not double
+	unsigned long // to clarify, "long" = "long int", not double
+		nDimX,             /**< Number of grid cells along x dimension (used if domainType is 'xy') */
+		nDimY,             /**< Number of grid cells along y dimension (used if domainType is 'xy') */
+		nDimS,             /**< Number of sites (used if domainType is 's') */
+		nSUIDs;            /**< Total size of domain, i.e., total number of grid cells (if domainType is 'xy') or number of sites (if domainType is 's') */
 
 	// Temporal domain information
-	TimeInt startyr,       /* beginning year for a set of simulation run */
-			endyr,         /* ending year for a set of simulation run */
-			startstart,    /* startday in start year */
-			endend;        /* end day in end year */
+	TimeInt startyr,     /**< First calendar year of the simulation runs */
+			endyr,           /**< Last calendar year of the simulation runs */
+			startstart,      /**< First day in first calendar year of the simulation runs */
+			endend;          /**< Last day in last calendar year of the simulation runs */
 } SW_DOMAIN;
 
 /* =================================================== */

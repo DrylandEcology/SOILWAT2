@@ -22,7 +22,8 @@ void sw_init_args(int argc, char **argv, Bool *EchoInits,
 void sw_print_version(void);
 void sw_fail_on_error(LOG_INFO* LogInfo);
 void sw_init_logs(FILE* logInitPtr, LOG_INFO* LogInfo);
-void sw_write_warnings(LOG_INFO* LogInfo);
+void sw_write_warnings(const char *header, LOG_INFO* LogInfo);
+void sw_wrapup_logs(LOG_INFO* LogInfo);
 
 #ifdef __cplusplus
 }

@@ -270,77 +270,115 @@ void sw_init_logs(FILE* logInitPtr, LOG_INFO* LogInfo) {
 	LogInfo->errorMsg[0] = '\0';
 
 	LogInfo->stopRun = swFALSE;
-	LogInfo->numWarnings = 0;
 	LogInfo->QuietMode = swFALSE;
+	LogInfo->numWarnings = 0;
+	LogInfo->numDomainWarnings = 0;
+	LogInfo->numDomainErrors = 0;
 }
 
 /**
  * @brief Write warnings that have been accumulated throughout the program/
  * simulation run
  *
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[in] header String that is printed before warning and error messages;
+ *            may be empty.
+ * @param[in] LogInfo Holds information dealing with logfile output
 */
-void sw_write_warnings(LOG_INFO* LogInfo) {
+void sw_write_warnings(const char *header, LOG_INFO* LogInfo) {
 
 	int warnMsgNum, warningUpperBound = LogInfo->numWarnings;
-	Bool tooManyWarns = swFALSE, QuietMode;
+	Bool tooManyWarns = swFALSE;
 	char tooManyWarnsStr[MAX_LOG_SIZE];
-    char tooManyStrFmt[] = "There were a total of %d warnings and"\
-                          " only %d were printed.\n";
 
-  QuietMode = (Bool)(LogInfo->QuietMode || isnull(LogInfo->logfp));
+
 
 	if(warningUpperBound > MAX_MSGS) {
 		warningUpperBound = MAX_MSGS;
 		tooManyWarns = swTRUE;
 
-        snprintf(tooManyWarnsStr, MAX_LOG_SIZE, tooManyStrFmt,
-                 LogInfo->numWarnings, MAX_MSGS);
+        snprintf(
+            tooManyWarnsStr, MAX_LOG_SIZE,
+            "There were a total of %d warnings and only %d were printed.\n",
+            LogInfo->numWarnings, MAX_MSGS);
 	}
 
 	#ifdef RSOILWAT
-	/* rSOILWAT2: don't issue `warnings()` if quiet */
+  /* rSOILWAT2: don't issue `warnings()` if quiet */
+  Bool QuietMode = (Bool)(LogInfo->QuietMode || isnull(LogInfo->logfp));
+
   if (!QuietMode) {
-	    for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
-          warning(LogInfo->warningMsgs[warnMsgNum]);
+      for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
+          warning("%s%s", header, LogInfo->warningMsgs[warnMsgNum]);
       }
 
       if(tooManyWarns) {
-          warning(tooManyWarnsStr);
+          warning("%s%s", header, tooManyWarnsStr);
       }
   }
 	#else
 	/* SOILWAT2: do print warnings and don't notify user if quiet */
   if (!isnull(LogInfo->logfp)) {
       for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
-          fprintf(LogInfo->logfp, "%s\n", LogInfo->warningMsgs[warnMsgNum]);
+          fprintf(LogInfo->logfp, "%s%s", header, LogInfo->warningMsgs[warnMsgNum]);
       }
 
       if(tooManyWarns) {
-          fprintf(LogInfo->logfp, "%s", tooManyWarnsStr);
+          fprintf(LogInfo->logfp, "%s%s", header, tooManyWarnsStr);
       }
 
       if(LogInfo->stopRun) {
           /* Write error message to log file here;
              later (sw_fail_on_error()), we will write it to stderr and crash */
-          fprintf(LogInfo->logfp, "%s", LogInfo->errorMsg);
+          fprintf(LogInfo->logfp, "%s%s", header, LogInfo->errorMsg);
       }
 
       fflush(LogInfo->logfp);
-      // Close logfile (but not if it is stdout or stderr)
-      if (LogInfo->logfp == stdout || LogInfo->logfp == stderr) {
-          CloseFile(&LogInfo->logfp, LogInfo);
-      }
-  }
-
-  // Notify the user that there are messages in the logfile (unless QuietMode)
-  if(
-    (LogInfo->stopRun || LogInfo->numWarnings > 0) &&
-    !QuietMode &&
-    LogInfo->logfp != stdout &&
-    LogInfo->logfp != stderr
-  ) {
-      fprintf(stderr, "\nCheck logfile for warnings and error messages.\n");
   }
 	#endif
+}
+
+
+/** Close logfile and notify user
+
+  Close logfile and notify user that logfile has content (unless QuietMode);
+  print number of simulation units with warnings and errors (if any).
+
+  @param[in] LogInfo Holds information dealing with logfile output
+*/
+void sw_wrapup_logs(LOG_INFO* LogInfo) {
+    Bool QuietMode = (Bool)(LogInfo->QuietMode || isnull(LogInfo->logfp));
+
+    // Close logfile (but not if it is stdout or stderr)
+    if (LogInfo->logfp != stdout || LogInfo->logfp != stderr) {
+        CloseFile(&LogInfo->logfp, LogInfo);
+    }
+
+    // Notify the user that there are messages in the logfile (unless QuietMode)
+    if(
+      (
+        LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||
+        LogInfo->stopRun || LogInfo->numWarnings > 0
+      ) &&
+      !QuietMode &&
+      LogInfo->logfp != stdout &&
+      LogInfo->logfp != stderr
+    ) {
+        fprintf(stderr, "\nCheck logfile for warnings and error messages.\n");
+
+        if (LogInfo->numDomainWarnings > 0) {
+            fprintf(
+                stderr,
+                "Simulation units with warnings: n = %lu\n",
+                LogInfo->numDomainWarnings
+            );
+        }
+
+        if (LogInfo->numDomainErrors > 0) {
+            fprintf(
+                stderr,
+                "Simulation units with an error: n = %lu\n",
+                LogInfo->numDomainErrors
+            );
+        }
+    }
 }

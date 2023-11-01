@@ -27,6 +27,7 @@
 #include "include/SW_Domain.h"
 #include "include/SW_VegProd.h"
 #include "include/Times.h"
+#include "include/filefuncs.h"
 #include "include/SW_Files.h"
 #include "include/SW_Control.h"
 #include "include/SW_Model.h"
@@ -171,29 +172,52 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
                       SW_DOMAIN *SW_Domain, unsigned long startSimSet,
-                      unsigned long endSimSet, LOG_INFO *LogInfo) {
+                      unsigned long endSimSet, LOG_INFO *main_LogInfo) {
 
-    unsigned long suid;
+    unsigned long suid, nSims = 0;
     unsigned long ncStartSuid[2]; // 2 -> [y, x] or [0, s]
+    char tag_suid[32]; /* 32 = 11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
+    tag_suid[0] = '\0';
 
     for(suid = startSimSet; suid < endSimSet; suid++)
     {
+        LOG_INFO local_LogInfo;
+        sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
+
         SW_DOM_calc_ncStartSuid(SW_Domain, suid, ncStartSuid);
         if(SW_DOM_CheckProgress(SW_Domain->DomainType, ncStartSuid)) {
 
+            nSims++; // Counter of simulation runs
+
             SW_CTL_run_sw(sw_template, SW_Domain, ncStartSuid, NULL,
-                          SW_OutputPtrs, NULL, LogInfo);
+                          SW_OutputPtrs, NULL, &local_LogInfo);
 
-            sw_write_warnings(LogInfo);
-            sw_init_logs(stdout, LogInfo); // Reset LOG_INFO for next simulation run
 
-            if(!LogInfo->stopRun) {
-                // Process output
+            if(local_LogInfo.stopRun) {
+                main_LogInfo->numDomainErrors++; // Counter of simulation units with error
 
+            } else {
                 // Set simulation run progress
                 SW_DOM_SetProgress(SW_Domain->DomainType, ncStartSuid);
             }
+
+            if (local_LogInfo.numWarnings > 0) {
+                main_LogInfo->numDomainWarnings++;  // Counter of simulation units with warnings
+            }
+
+            if (local_LogInfo.stopRun || local_LogInfo.numWarnings > 0) {
+                snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
+                sw_write_warnings(tag_suid, &local_LogInfo);
+            }
         }
+    }
+
+    if (nSims == main_LogInfo->numDomainErrors) {
+        LogError(
+            main_LogInfo,
+            LOGERROR,
+            "All simulated units produced errors."
+        );
     }
 }
 
