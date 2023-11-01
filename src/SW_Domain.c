@@ -202,28 +202,31 @@ void SW_DOM_SetProgress(char* domainType, unsigned long ncStartSuid[]) {
  *
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
- * @param[in] userSUID Suid in which the user input to run
+ * @param[in] userSUID Simulation Unit Identifier requested by the user (base1);
+ *            0 indicates that all simulations units within domain are requested
  * @param[in] nSUIDs Maximum number of suids that may be run
- * @param[out] startSimSet First suid within a simulation set
- * @param[out] endSimSet Final suid in a simulation set
+ * @param[out] startSimSet First suid within a simulation set (base0)
+ * @param[out] endSimSet Final suid in a simulation set (base0)
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
                    unsigned long nSUIDs, unsigned long* startSimSet,
                    unsigned long* endSimSet, LOG_INFO* LogInfo) {
 
-    const unsigned long noUserInput = -1;
     unsigned long startSuid[2]; // 2 -> [y, x] or [0, s]
 
-    if(userSUID != noUserInput) {
-        if(userSUID >= nSUIDs) {
-            LogError(LogInfo, LOGERROR, "User input for start suid is bigger"
-                              " than the total number of suids.");
+    if(userSUID > 0) {
+        if(userSUID > nSUIDs) {
+            LogError(LogInfo, LOGERROR,
+                "User requested simulation unit (suid = %lu) "
+                "does not exist in simulation domain (n = %lu).",
+                userSUID, nSUIDs
+            );
             return; // Exit function prematurely due to error
         }
 
-        *startSimSet = userSUID;
-        *endSimSet = userSUID + 1;
+        *startSimSet = userSUID - 1;
+        *endSimSet = userSUID;
     } else {
         *endSimSet = nSUIDs;
         for(*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {

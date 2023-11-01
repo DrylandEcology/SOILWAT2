@@ -58,13 +58,13 @@ int main(int argc, char **argv) {
 	PATH_INFO PathInfo;
 	Bool EchoInits;
 
-    unsigned long startSimSet, endSimSet, userSuid;
+    unsigned long startSimSet, endSimSet, userSUID;
 
 	sw_init_logs(stdout, &LogInfo);
 	SW_CTL_init_ptrs(&sw_template, PathInfo.InFiles);
 
 	sw_init_args(argc, argv, &EchoInits, &PathInfo.InFiles[eFirst],
-                 &userSuid, &LogInfo);
+                 &userSUID, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
-    SW_CTL_setup_domain(&PathInfo, userSuid, &SW_Domain, &startSimSet,
+    SW_CTL_setup_domain(&PathInfo, userSUID, &SW_Domain, &startSimSet,
                         &endSimSet, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;

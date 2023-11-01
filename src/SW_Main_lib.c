@@ -50,7 +50,8 @@ static void sw_print_usage(void) {
 		"  -q : quiet mode (print version, print error, message to check logfile)\n"
 		"  -v : print version information\n"
 		"  -h : print this help information\n"
-        "  -s : input start Simulation Unit Identifier (suid)\n"
+		"  -s : simulate all (0) or one (> 0) simulation unit from the domain\n"
+		"       (default = 0)\n"
 	);
 }
 
@@ -82,7 +83,8 @@ void sw_print_version(void) {
 @param[in] argv Values of command line arguments.
 @param[out] EchoInits Flag to control if inputs are to be output to the user
 @param[out] _firstfile First file name to be filled in the program run
-@param[out] userSUID Simulation Unit Identifier that the user sent in
+@param[out] userSUID Simulation Unit Identifier requested by the user (base1);
+            0 indicates that all simulations units within domain are requested
 @param[out] LogInfo Holds information dealing with logfile output
 */
 void sw_init_args(int argc, char **argv, Bool *EchoInits,
@@ -118,7 +120,7 @@ void sw_init_args(int argc, char **argv, Bool *EchoInits,
     }
 
 	*EchoInits = swFALSE;
-    *userSUID = -1; // Default user suid to -1 (not input)
+    *userSUID = 0; // Default (if no input) is 0 (i.e., all suids)
 
 	a = 1;
 	for (i = 1; i <= nopts; i++) {
@@ -199,12 +201,17 @@ void sw_init_args(int argc, char **argv, Bool *EchoInits,
 					break;
 
                 case 6: /* -s */
-                    *userSUID = atoi(str) - 1; /* Make suid base0 */
-
-                    if(*userSUID < 0) {
-                        LogError(LogInfo, LOGERROR,
-                                 "Input suid was less than 1."
-                                 " Please input a value >= 1.");
+                    *userSUID = atoll(str);
+                    /* Check that user input can be represented by userSUID (currently, unsigned long) */
+                    /* Expect that conversion of string to double results in the same value as conversion of userSUID to double */
+                    if (!EQ(atof(str), (double) *userSUID)) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "User input not recognized as a simulation unit "
+                            "('-s %s' vs. %lu).",
+                            str, *userSUID
+                        );
                         return; // Exit function prematurely due to error
                     }
                     break;

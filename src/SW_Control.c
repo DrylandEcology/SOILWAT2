@@ -242,14 +242,15 @@ void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
  * @brief Setup SW_DOMAIN for the program run
  *
  * @param[in] PathInfo Struct holding all information about the programs path/files
- * @param[in] userSuid Suid input by the user
+ * @param[in] userSUID Simulation Unit Identifier requested by the user (base1);
+ *            0 indicates that all simulations units within domain are requested
  * @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
  * @param[out] startSimSet First suid within a simulation set
  * @param[out] endSimSet Final suid in a simulation set
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_setup_domain(PATH_INFO* PathInfo, unsigned long userSuid,
+void SW_CTL_setup_domain(PATH_INFO* PathInfo, unsigned long userSUID,
                          SW_DOMAIN* SW_Domain, unsigned long *startSimSet,
                          unsigned long *endSimSet, LOG_INFO* LogInfo) {
 
@@ -264,7 +265,7 @@ void SW_CTL_setup_domain(PATH_INFO* PathInfo, unsigned long userSuid,
     }
 
     SW_DOM_calc_nSUIDs(SW_Domain);
-    SW_DOM_SimSet(SW_Domain, userSuid, SW_Domain->nSUIDs,
+    SW_DOM_SimSet(SW_Domain, userSUID, SW_Domain->nSUIDs,
                   startSimSet, endSimSet, LogInfo);
 }
 
