@@ -1021,13 +1021,18 @@ typedef struct {
 
 typedef struct {
 	// Spatial domain information
+	// SUID = simulation unit identifier
+
 	char DomainType[3];  /**< Type of domain: 'xy' (grid), 's' (sites) */ // (3 = 2 characters + '\0')
 
 	unsigned long // to clarify, "long" = "long int", not double
 		nDimX,             /**< Number of grid cells along x dimension (used if domainType is 'xy') */
 		nDimY,             /**< Number of grid cells along y dimension (used if domainType is 'xy') */
 		nDimS,             /**< Number of sites (used if domainType is 's') */
-		nSUIDs;            /**< Total size of domain, i.e., total number of grid cells (if domainType is 'xy') or number of sites (if domainType is 's') */
+		nSUIDs,            /**< Total size of domain, i.e., total number of grid cells (if domainType is 'xy') or number of sites (if domainType is 's') */
+
+		startSimSet,       /**< First SUID in simulation set within domain to simulate */
+		endSimSet;         /**< Last SUID in simulation set within domain to simulate */
 
 	// Temporal domain information
 	TimeInt startyr,     /**< First calendar year of the simulation runs */

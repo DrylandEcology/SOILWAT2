@@ -171,15 +171,14 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 } /******* End Main Loop *********/
 
 void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
-                      SW_DOMAIN *SW_Domain, unsigned long startSimSet,
-                      unsigned long endSimSet, LOG_INFO *main_LogInfo) {
+                      SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo) {
 
     unsigned long suid, nSims = 0;
     unsigned long ncStartSuid[2]; // 2 -> [y, x] or [0, s]
     char tag_suid[32]; /* 32 = 11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
     tag_suid[0] = '\0';
 
-    for(suid = startSimSet; suid < endSimSet; suid++)
+    for(suid = SW_Domain->startSimSet; suid < SW_Domain->endSimSet; suid++)
     {
         LOG_INFO local_LogInfo;
         sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
@@ -267,13 +266,11 @@ void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
  *            0 indicates that all simulations units within domain are requested
  * @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
- * @param[out] startSimSet First suid within a simulation set
- * @param[out] endSimSet Final suid in a simulation set
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_CTL_setup_domain(unsigned long userSUID,
-                         SW_DOMAIN* SW_Domain, unsigned long *startSimSet,
-                         unsigned long *endSimSet, LOG_INFO* LogInfo) {
+                         SW_DOMAIN* SW_Domain,
+                         LOG_INFO* LogInfo) {
 
     SW_F_construct(
         SW_Domain->PathInfo.InFiles[eFirst],
@@ -295,8 +292,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     }
 
     SW_DOM_calc_nSUIDs(SW_Domain);
-    SW_DOM_SimSet(SW_Domain, userSUID, SW_Domain->nSUIDs,
-                  startSimSet, endSimSet, LogInfo);
+    SW_DOM_SimSet(SW_Domain, userSUID, LogInfo);
 }
 
 /** @brief Setup and construct model (independent of inputs)

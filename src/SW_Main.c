@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
 	LOG_INFO LogInfo;
 	Bool EchoInits;
 
-    unsigned long startSimSet, endSimSet, userSUID;
+    unsigned long userSUID;
 
     // Initialize logs and pointer objects
     sw_init_logs(stdout, &LogInfo);
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
 	}
 
     // setup and construct domain
-    SW_CTL_setup_domain(userSUID, &SW_Domain, &startSimSet, &endSimSet, &LogInfo);
+    SW_CTL_setup_domain(userSUID, &SW_Domain, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -134,8 +134,7 @@ int main(int argc, char **argv) {
 	}
 
   // run simulations: loop over simulation set
-    SW_CTL_RunSimSet(&sw_template, SW_OutputPtrs, &SW_Domain, startSimSet,
-                     endSimSet, &LogInfo);
+    SW_CTL_RunSimSet(&sw_template, SW_OutputPtrs, &SW_Domain, &LogInfo);
 
     closeFiles: {
         // finish-up output

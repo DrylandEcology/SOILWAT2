@@ -199,27 +199,26 @@ void SW_DOM_SetProgress(char* domainType, unsigned long ncStartSuid[]) {
 /**
  * @brief Calculate range of suids to run simulations for
  *
- * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ * @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
  * @param[in] userSUID Simulation Unit Identifier requested by the user (base1);
  *            0 indicates that all simulations units within domain are requested
- * @param[in] nSUIDs Maximum number of suids that may be run
- * @param[out] startSimSet First suid within a simulation set (base0)
- * @param[out] endSimSet Final suid in a simulation set (base0)
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
-                   unsigned long nSUIDs, unsigned long* startSimSet,
-                   unsigned long* endSimSet, LOG_INFO* LogInfo) {
+                   LOG_INFO* LogInfo) {
 
-    unsigned long startSuid[2]; // 2 -> [y, x] or [0, s]
+    unsigned long
+      *startSimSet = &SW_Domain->startSimSet,
+      *endSimSet = &SW_Domain->endSimSet,
+      startSuid[2]; // 2 -> [y, x] or [0, s]
 
     if(userSUID > 0) {
-        if(userSUID > nSUIDs) {
+        if(userSUID > SW_Domain->nSUIDs) {
             LogError(LogInfo, LOGERROR,
                 "User requested simulation unit (suid = %lu) "
                 "does not exist in simulation domain (n = %lu).",
-                userSUID, nSUIDs
+                userSUID, SW_Domain->nSUIDs
             );
             return; // Exit function prematurely due to error
         }
@@ -227,7 +226,7 @@ void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
         *startSimSet = userSUID - 1;
         *endSimSet = userSUID;
     } else {
-        *endSimSet = nSUIDs;
+        *endSimSet = SW_Domain->nSUIDs;
         for(*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
             SW_DOM_calc_ncStartSuid(SW_Domain, *startSimSet, startSuid);
 

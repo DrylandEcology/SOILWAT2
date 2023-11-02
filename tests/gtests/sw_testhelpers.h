@@ -50,7 +50,7 @@ class AllTestFixture : public ::testing::Test {
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
     SW_OUTPUT_POINTERS SW_OutputPtrs;
-    unsigned long userSUID, startSimSuid, endSimSuid;
+    unsigned long userSUID;
 
     // `memcpy()` does not work for copying an initialized `SW_ALL`
     // because it does not copy dynamically allocated memory to which
@@ -63,11 +63,9 @@ class AllTestFixture : public ::testing::Test {
         SW_CTL_init_ptrs(&SW_All);
 
         SW_Domain.PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
-        userSUID = 0; // Mimic no user input for suid
-        startSimSuid = endSimSuid = 0;
+        userSUID = 0; // 0 means no user input for suid, i.e., entire simulation domain
 
-        SW_CTL_setup_domain(userSUID, &SW_Domain, &startSimSuid,
-                            &endSimSuid, &LogInfo);
+        SW_CTL_setup_domain(userSUID, &SW_Domain, &LogInfo);
 
         SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &LogInfo);
         SW_MDL_get_ModelRun(&SW_All.Model, &SW_Domain, NULL, &LogInfo);
