@@ -48,7 +48,6 @@ class AllTestFixture : public ::testing::Test {
 
     SW_ALL SW_All;
     SW_DOMAIN SW_Domain;
-    PATH_INFO PathInfo;
     LOG_INFO LogInfo;
     SW_OUTPUT_POINTERS SW_OutputPtrs;
     unsigned long userSUID, startSimSuid, endSimSuid;
@@ -57,21 +56,22 @@ class AllTestFixture : public ::testing::Test {
     // because it does not copy dynamically allocated memory to which
     // members of `SW_ALL` point to
     void SetUp() override {
-        userSUID = 0; // Mimic no user input for suid
-        startSimSuid = endSimSuid = 0;
-
         // Initialize SOILWAT2 variables and read values from example input file
         sw_init_logs(NULL, &LogInfo);
 
-        SW_CTL_init_ptrs(&SW_All, PathInfo.InFiles);
+        SW_F_init_ptrs(SW_Domain.PathInfo.InFiles);
+        SW_CTL_init_ptrs(&SW_All);
 
-        PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
+        SW_Domain.PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
+        userSUID = 0; // Mimic no user input for suid
+        startSimSuid = endSimSuid = 0;
 
-        SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &PathInfo, &LogInfo);
-        SW_CTL_setup_domain(&PathInfo, userSUID, &SW_Domain, &startSimSuid,
+        SW_CTL_setup_domain(userSUID, &SW_Domain, &startSimSuid,
                             &endSimSuid, &LogInfo);
+
+        SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &LogInfo);
         SW_MDL_get_ModelRun(&SW_All.Model, &SW_Domain, NULL, &LogInfo);
-        SW_CTL_read_inputs_from_disk(&SW_All, &PathInfo, &LogInfo);
+        SW_CTL_read_inputs_from_disk(&SW_All, &SW_Domain.PathInfo, &LogInfo);
         SW_CTL_alloc_outptrs(&SW_All, &LogInfo);  /* allocate memory for output pointers */
 
         /* Notes on messages during tests
@@ -96,7 +96,7 @@ class AllTestFixture : public ::testing::Test {
     }
 
     void TearDown() override {
-      SW_F_deconstruct(PathInfo.InFiles);
+      SW_F_deconstruct(SW_Domain.PathInfo.InFiles);
       SW_CTL_clear_model(swTRUE, &SW_All);
     }
 };

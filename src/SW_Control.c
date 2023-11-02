@@ -227,10 +227,8 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
  *
  * @param[in,out] sw Comprehensive struct of type SW_ALL containing
  *  all information in the simulation
- * @param[in,out] InFiles Array of program in/output files
 */
-void SW_CTL_init_ptrs(SW_ALL* sw, char *InFiles[]) {
-  SW_F_init_ptrs(InFiles);
+void SW_CTL_init_ptrs(SW_ALL* sw) {
   SW_WTH_init_ptrs(&sw->Weather);
   SW_MKV_init_ptrs(&sw->Markov);
   SW_VES_init_ptrs(&sw->VegEstab);
@@ -263,9 +261,8 @@ void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
 }
 
 /**
- * @brief Setup SW_DOMAIN for the program run
+ * @brief Construct, setup, and obtain inputs for SW_DOMAIN
  *
- * @param[in] PathInfo Struct holding all information about the programs path/files
  * @param[in] userSUID Simulation Unit Identifier requested by the user (base1);
  *            0 indicates that all simulations units within domain are requested
  * @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -274,16 +271,25 @@ void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
  * @param[out] endSimSet Final suid in a simulation set
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_setup_domain(PATH_INFO* PathInfo, unsigned long userSUID,
+void SW_CTL_setup_domain(unsigned long userSUID,
                          SW_DOMAIN* SW_Domain, unsigned long *startSimSet,
                          unsigned long *endSimSet, LOG_INFO* LogInfo) {
 
-    SW_F_read(PathInfo, LogInfo);
+    SW_F_construct(
+        SW_Domain->PathInfo.InFiles[eFirst],
+        SW_Domain->PathInfo._ProjDir,
+        LogInfo
+    );
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_DOM_read(PathInfo->InFiles, SW_Domain, LogInfo);
+    SW_F_read(&SW_Domain->PathInfo, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_DOM_read(SW_Domain, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -299,17 +305,10 @@ void SW_CTL_setup_domain(PATH_INFO* PathInfo, unsigned long userSUID,
  *  information in the simulation
  * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  *  hold pointers to subroutines for output keys
- * @param[in,out] PathInfo Struct holding all information about the programs path/files
  * @param[in,out] LogInfo Holds information dealing with logfile output
  */
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-                        PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
-
-	SW_F_construct(PathInfo->InFiles[eFirst],
-                 PathInfo->_ProjDir, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+                        LOG_INFO* LogInfo) {
 	SW_MDL_construct(sw->Model.newperiod, sw->Model.days_in_month);
 	SW_WTH_construct(&sw->Weather);
 

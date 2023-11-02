@@ -1034,6 +1034,9 @@ typedef struct {
 			endyr,           /**< Last calendar year of the simulation runs */
 			startstart,      /**< First day in first calendar year of the simulation runs */
 			endend;          /**< Last day in last calendar year of the simulation runs */
+
+	// Information on input files
+	PATH_INFO PathInfo;
 } SW_DOMAIN;
 
 /* =================================================== */

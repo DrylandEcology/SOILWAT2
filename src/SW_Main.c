@@ -55,15 +55,18 @@ int main(int argc, char **argv) {
 	SW_DOMAIN SW_Domain;
 	SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
 	LOG_INFO LogInfo;
-	PATH_INFO PathInfo;
 	Bool EchoInits;
 
     unsigned long startSimSet, endSimSet, userSUID;
 
-	sw_init_logs(stdout, &LogInfo);
-	SW_CTL_init_ptrs(&sw_template, PathInfo.InFiles);
+    // Initialize logs and pointer objects
+    sw_init_logs(stdout, &LogInfo);
 
-	sw_init_args(argc, argv, &EchoInits, &PathInfo.InFiles[eFirst],
+    SW_F_init_ptrs(SW_Domain.PathInfo.InFiles);
+    SW_CTL_init_ptrs(&sw_template);
+
+    // Obtain user input from the command line
+    sw_init_args(argc, argv, &EchoInits, &SW_Domain.PathInfo.InFiles[eFirst],
                  &userSUID, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
@@ -74,14 +77,14 @@ int main(int argc, char **argv) {
 		sw_print_version();
 	}
 
-  // setup and construct model/domain/SW_ALL template (independent of inputs)
-	SW_CTL_setup_model(&sw_template, SW_OutputPtrs, &PathInfo, &LogInfo);
+    // setup and construct domain
+    SW_CTL_setup_domain(userSUID, &SW_Domain, &startSimSet, &endSimSet, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
 
-    SW_CTL_setup_domain(&PathInfo, userSUID, &SW_Domain, &startSimSet,
-                        &endSimSet, &LogInfo);
+    // setup and construct model template (independent of inputs)
+    SW_CTL_setup_model(&sw_template, SW_OutputPtrs, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -92,7 +95,7 @@ int main(int argc, char **argv) {
     }
 
 	// read user inputs
-	SW_CTL_read_inputs_from_disk(&sw_template, &PathInfo, &LogInfo);
+	SW_CTL_read_inputs_from_disk(&sw_template, &SW_Domain.PathInfo, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -121,7 +124,7 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 	SW_OUT_create_files(&sw_template.FileStatus, sw_template.Output, sw_template.Site.n_layers,
-	                    PathInfo.InFiles, &sw_template.GenOutput, &LogInfo); // only used with SOILWAT2
+	                    SW_Domain.PathInfo.InFiles, &sw_template.GenOutput, &LogInfo); // only used with SOILWAT2
     if(LogInfo.stopRun) {
         goto closeFiles;
     }
@@ -141,7 +144,7 @@ int main(int argc, char **argv) {
 
     finishProgram: {
         // de-allocate all memory
-        SW_F_deconstruct(PathInfo.InFiles);
+        SW_F_deconstruct(SW_Domain.PathInfo.InFiles);
         SW_CTL_clear_model(swTRUE, &sw_template);
 
         sw_write_warnings("(main) ", &LogInfo);

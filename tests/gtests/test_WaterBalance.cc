@@ -112,7 +112,7 @@ namespace {
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                  SW_All.Weather.generateWeatherMethod,
-                 PathInfo.InFiles, &LogInfo);
+                 SW_Domain.PathInfo.InFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Point to nonexisting weather data
@@ -151,7 +151,7 @@ namespace {
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                  SW_All.Weather.generateWeatherMethod,
-                 PathInfo.InFiles, &LogInfo);
+                 SW_Domain.PathInfo.InFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Prepare weather data
@@ -292,12 +292,12 @@ namespace {
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
-    Mem_Free(PathInfo.InFiles[eSWRCp]);
-    PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
+    Mem_Free(SW_Domain.PathInfo.InFiles[eSWRCp]);
+    SW_Domain.PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_All.Site, PathInfo.InFiles, &LogInfo);
+    SW_SWRC_read(&SW_All.Site, SW_Domain.PathInfo.InFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils
@@ -329,12 +329,12 @@ namespace {
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
-    Mem_Free(PathInfo.InFiles[eSWRCp]);
-    PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
+    Mem_Free(SW_Domain.PathInfo.InFiles[eSWRCp]);
+    SW_Domain.PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_All.Site, PathInfo.InFiles, &LogInfo);
+    SW_SWRC_read(&SW_All.Site, SW_Domain.PathInfo.InFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils

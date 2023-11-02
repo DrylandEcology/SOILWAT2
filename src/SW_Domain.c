@@ -84,12 +84,11 @@ void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain) {
 /**
  * @brief Read `domain.in` and report any problems encountered when doing so
  *
- * @param[in] InFiles Array of program in/output files
- * @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
+ * @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
  *      temporal/spatial information for a set of simulation runs
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
+void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     FILE *f;
     int y, keyID;
@@ -98,7 +97,7 @@ void SW_DOM_read(char *InFiles[], SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     char key[10], value[6]; // 10 - Max key size, 6 - max characters
     Bool fstartdy = swFALSE, fenddy = swFALSE;
 
-    MyFileName = InFiles[eDomain];
+    MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
     // Set SW_DOMAIN
