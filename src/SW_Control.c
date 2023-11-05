@@ -108,6 +108,7 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
 
     /* Allocate memory for output pointers */
     SW_CTL_alloc_outptrs(dest, LogInfo);
+    SW_VES_alloc_outptrs(&dest->VegEstab, LogInfo);
 
     dest->SoilWat.hist.file_prefix = NULL; /* currently unused */
 
@@ -253,10 +254,6 @@ void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
         return; // Exit prematurely due to error
     }
     SW_WTH_alloc_outptrs(&sw->Weather, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
-    SW_VES_alloc_outptrs(&sw->VegEstab, LogInfo);
 }
 
 /**
@@ -633,26 +630,39 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSt
                    RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 
     SW_ALL local_sw;
+    SW_ALL *local_sw_ptr = &local_sw;
 
-    // Copy template SW_ALL to local instance -- yet to be fully implemented
-    _copy_template_vals(sw_template, &local_sw, LogInfo);
-    if(LogInfo->stopRun) {
-        goto freeMem; // Free memory and skip simulation run
+    // Check to see if we can modify `sw_template` (nSUIDS = 1) and there's no
+    // need to copy
+    if(SW_Domain->nSUIDs == 1) {
+        // Make the address of `local_sw` point to `sw_template`'s address
+        local_sw_ptr = sw_template;
+        SW_CTL_alloc_outptrs(sw_template, LogInfo);
+
+    } else {
+        // Copy template SW_ALL to local instance -- yet to be fully implemented
+        _copy_template_vals(sw_template, local_sw_ptr, LogInfo);
+        if(LogInfo->stopRun) {
+            goto freeMem; // Free memory and skip simulation run
+        }
+
+        SW_MDL_get_ModelRun(&local_sw.Model, SW_Domain, ncInFiles, LogInfo);
+        if(LogInfo->stopRun) {
+            goto freeMem; // Free memory and skip simulation run
+        }
     }
 
-    SW_MDL_get_ModelRun(&local_sw.Model, SW_Domain, ncInFiles, LogInfo);
-    if(LogInfo->stopRun) {
-        goto freeMem; // Free memory and skip simulation run
-    }
-
-    SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
+    SW_CTL_main(local_sw_ptr, SW_OutputPtrs, LogInfo);
 
     // Clear local instance of SW_ALL
     freeMem: {
-        SW_CTL_clear_model(swFALSE, &local_sw);
+        // Check if the number of suids is greater than 1
+        // If the number of suids is 1, deallocation will happen later
+        if(SW_Domain->nSUIDs > 1) {
+            SW_CTL_clear_model(swFALSE, local_sw_ptr);
+        }
     }
 
-    (void) SW_Domain;
     (void) ncInFiles;
     (void) ncStartSuid;
     (void) p_OUT;
