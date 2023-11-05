@@ -108,13 +108,22 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
 
     /* Allocate memory for output pointers */
     SW_CTL_alloc_outptrs(dest, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit prematurely due to error
+    }
     SW_VES_alloc_outptrs(&dest->VegEstab, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit prematurely due to error
+    }
 
     dest->SoilWat.hist.file_prefix = NULL; /* currently unused */
 
     /* Allocate memory and copy daily weather */
     dest->Weather.allHist = NULL;
     allocateAllWeather(&dest->Weather.allHist, sw_template->Weather.n_years, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit prematurely due to error
+    }
     for(unsigned int year = 0; year < sw_template->Weather.n_years; year++) {
         Mem_Copy(dest->Weather.allHist[year], sw_template->Weather.allHist[year],
                  sizeof(SW_WEATHER_HIST));
@@ -124,6 +133,10 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
     SW_MKV_init_ptrs(&dest->Markov);
     if (dest->Weather.generateWeatherMethod == 2) {
         allocateMKV(&dest->Markov, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit prematurely due to error
+        }
+
         copyMKV(&dest->Markov, &sw_template->Markov);
     }
 
@@ -131,6 +144,10 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
     dest->VegEstab.parms = NULL;
     for(IntU speciesNum = 0; speciesNum < sw_template->VegEstab.count; speciesNum++) {
         _new_species(&dest->VegEstab, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit prematurely due to error
+        }
+
         Mem_Copy(dest->VegEstab.parms[speciesNum], sw_template->VegEstab.parms[speciesNum],
                  sizeof(SW_VEGESTAB_INFO));
     }
