@@ -224,6 +224,8 @@ namespace {
                     &SW_Markov.markov_rng, &LogInfo);
       sw_fail_on_error(&LogInfo); // exit test program if unexpected error
       EXPECT_DOUBLE_EQ(tmin, tmax);
+
+      SW_MKV_deconstruct(&SW_Markov);
     }
   }
 
@@ -247,6 +249,8 @@ namespace {
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("Bad covariance matrix"));
+
+    SW_MKV_deconstruct(&SW_Markov);
   }
 
 
@@ -296,6 +300,8 @@ namespace {
     EXPECT_DOUBLE_EQ(tmax, t0 + cf_pos);
     EXPECT_DOUBLE_EQ(tmin, fmin(tmax, t10 + cf_pos));
     EXPECT_LE(tmin, tmax);
+
+    SW_MKV_deconstruct(&SW_Markov);
   }
 
 } // namespace

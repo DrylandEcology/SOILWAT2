@@ -69,8 +69,8 @@ class AllTestFixture : public ::testing::Test {
 
         SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &LogInfo);
         SW_MDL_get_ModelRun(&SW_All.Model, &SW_Domain, NULL, &LogInfo);
-        SW_CTL_read_inputs_from_disk(&SW_All, &SW_Domain.PathInfo, &LogInfo);
         SW_CTL_alloc_outptrs(&SW_All, &LogInfo);  /* allocate memory for output pointers */
+        SW_CTL_read_inputs_from_disk(&SW_All, &SW_Domain.PathInfo, &LogInfo);
 
         /* Notes on messages during tests
             - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
