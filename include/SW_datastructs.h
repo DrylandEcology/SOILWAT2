@@ -826,7 +826,7 @@ typedef struct {
 
 typedef struct {
 	TimeInt *days;	/* only output the day of estab for each species in the input */
-					/* this array is allocated via `SW_VegEstab_construct()` */
+					/* this array is allocated via `SW_VegEstab_alloc_outptrs()` */
 					/* each day in the array corresponds to the ordered species list */
 } SW_VEGESTAB_OUTPUTS;
 

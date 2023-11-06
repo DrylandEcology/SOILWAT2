@@ -292,7 +292,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
                 }
 			}
 
-			SW_VegEstab_construct(SW_VegEstab, LogInfo);
+			SW_VegEstab_alloc_outptrs(SW_VegEstab, LogInfo);
             if(LogInfo->stopRun) {
                 CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
@@ -305,24 +305,43 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 
 
 /**
-@brief Construct SW_VegEstab output variables
+@brief Allocates element `day` for SW_VegEstab output variables
 
 @param[in,out] SW_VegEstab SW_VegEstab SW_VegEstab Struct of type SW_VEGESTAB
   holding all information about vegetation within the simulation
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo)
+void SW_VegEstab_alloc_outptrs(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo)
 {
 	if (SW_VegEstab->count > 0) {
+
+		if (isnull(SW_VegEstab->p_oagg[eSW_Year])) {
+			LogError(
+				LogInfo,
+				LOGERROR,
+				"SW_VegEstab_alloc_outptrs: 'p_oagg[eSW_Year]' is unexpectedly NULL."
+			);
+			return; // Exit function prematurely due to error
+		}
+
+		if (isnull(SW_VegEstab->p_accu[eSW_Year])) {
+			LogError(
+				LogInfo,
+				LOGERROR,
+				"SW_VegEstab_alloc_outptrs: 'p_accu[eSW_Year]' is unexpectedly NULL."
+			);
+			return; // Exit function prematurely due to error
+		}
+
 		SW_VegEstab->p_oagg[eSW_Year]->days = (TimeInt *) Mem_Calloc(
-			SW_VegEstab->count, sizeof(TimeInt), "SW_VegEsta_construct()",
+			SW_VegEstab->count, sizeof(TimeInt), "SW_VegEstab_alloc_outptrs()",
 																	LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
 		SW_VegEstab->p_accu[eSW_Year]->days = (TimeInt *) Mem_Calloc(
-			SW_VegEstab->count, sizeof(TimeInt), "SW_VegEstab_construct()",
+			SW_VegEstab->count, sizeof(TimeInt), "SW_VegEstab_alloc_outptrs()",
 																	LogInfo);
 	}
 }

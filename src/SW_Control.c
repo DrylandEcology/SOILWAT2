@@ -111,10 +111,6 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
-    SW_VES_alloc_outptrs(&dest->VegEstab, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
 
     dest->SoilWat.hist.file_prefix = NULL; /* currently unused */
 
@@ -141,7 +137,12 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
     }
 
     /* Allocate memory and copy vegetation establishment parameters */
-    dest->VegEstab.parms = NULL;
+    SW_VES_init_ptrs(&dest->VegEstab);
+    SW_VES_alloc_outptrs(&dest->VegEstab, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit prematurely due to error
+    }
+
     for(IntU speciesNum = 0; speciesNum < sw_template->VegEstab.count; speciesNum++) {
         _new_species(&dest->VegEstab, LogInfo);
         if(LogInfo->stopRun) {
@@ -151,6 +152,8 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
         Mem_Copy(dest->VegEstab.parms[speciesNum], sw_template->VegEstab.parms[speciesNum],
                  sizeof(SW_VEGESTAB_INFO));
     }
+
+    SW_VegEstab_alloc_outptrs(&dest->VegEstab, LogInfo);
 }
 
 
