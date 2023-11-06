@@ -44,6 +44,7 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                  LOG_INFO* LogInfo); /* main controlling loop for SOILWAT  */
 void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
                       SW_DOMAIN *SW_Domain,
+                      SW_WALLTIME *SW_WallTime,
                       LOG_INFO *main_LogInfo);
 void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                              LOG_INFO* LogInfo);
