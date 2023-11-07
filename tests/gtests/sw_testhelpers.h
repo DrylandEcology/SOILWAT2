@@ -73,14 +73,15 @@ class AllTestFixture : public ::testing::Test {
         SW_CTL_read_inputs_from_disk(&SW_All, &SW_Domain.PathInfo, &LogInfo);
 
         /* Notes on messages during tests
-            - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), writes the file
-            "example/Output/logfile.log" to disk (based on content of "files.in")
+            - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), opens the file
+            "example/Output/logfile.log" on disk (based on content of "files.in")
             - we close "Output/logfile.log"
             - we set `logfp` to NULL to silence all non-error messages during tests
             - error messages go directly to stderr (which DeathTests use to match against)
         */
-        sw_fail_on_error(&LogInfo);
+        sw_wrapup_logs(&LogInfo);
         sw_init_logs(NULL, &LogInfo);
+        sw_fail_on_error(&LogInfo);
 
         SW_WTH_finalize_all_weather(
             &SW_All.Markov,
@@ -89,8 +90,10 @@ class AllTestFixture : public ::testing::Test {
             SW_All.Model.days_in_month,
             &LogInfo
         );
+        sw_fail_on_error(&LogInfo);
 
         SW_CTL_init_run(&SW_All, &LogInfo);
+        sw_fail_on_error(&LogInfo);
     }
 
     void TearDown() override {

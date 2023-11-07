@@ -163,8 +163,10 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         }
     }
 
+    CloseFile(&f, LogInfo);
+
+
 	if (SW_Domain->endyr < SW_Domain->startyr) {
-		CloseFile(&f, LogInfo);
         LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
         return; // Exit function prematurely due to error
 	}
