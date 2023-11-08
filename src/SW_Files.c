@@ -193,7 +193,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 				break;
 
 			if (!isnull(PathInfo->InFiles[fileno])) {
-				Mem_Free(PathInfo->InFiles[fileno]);
+				free(PathInfo->InFiles[fileno]);
 			}
 
 			strcpy(buf, PathInfo->_ProjDir);
@@ -301,7 +301,7 @@ void SW_F_deconstruct(char *InFiles[]) {
 	for (i = 0; i < SW_NFILES; i++)
 	{
 		if (!isnull(InFiles[i])) {
-			Mem_Free(InFiles[i]);
+			free(InFiles[i]);
 			InFiles[i] = NULL;
 		}
 	}

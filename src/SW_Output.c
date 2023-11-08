@@ -1619,7 +1619,7 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 			for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++)
 			{
 				if (!isnull(sw->GenOutput.colnames_OUT[k][i])) {
-					Mem_Free(sw->GenOutput.colnames_OUT[k][i]);
+					free(sw->GenOutput.colnames_OUT[k][i]);
 					sw->GenOutput.colnames_OUT[k][i] = NULL;
 				}
 			}
@@ -1627,7 +1627,7 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 
 		#ifdef RSOILWAT
 		if (!isnull(sw->Output[k].outfile)) {
-			Mem_Free(sw->Output[k].outfile);
+			free(sw->Output[k].outfile);
 			sw->Output[k].outfile = NULL;
 		}
 		#endif

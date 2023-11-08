@@ -1229,12 +1229,12 @@ void SW_WTH_deconstruct(SW_WEATHER* SW_Weather)
 	ForEachOutPeriod(pd)
 	{
 		if (pd > eSW_Day && !isnull(SW_Weather->p_oagg[pd])) {
-			Mem_Free(SW_Weather->p_oagg[pd]);
+			free(SW_Weather->p_oagg[pd]);
 			SW_Weather->p_oagg[pd] = NULL;
 		}
 
 		if (!isnull(SW_Weather->p_accu[pd])) {
-			Mem_Free(SW_Weather->p_accu[pd]);
+			free(SW_Weather->p_accu[pd]);
 			SW_Weather->p_accu[pd] = NULL;
 		}
 	}

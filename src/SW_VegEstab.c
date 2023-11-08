@@ -159,11 +159,11 @@ void SW_VES_deconstruct(SW_VEGESTAB* SW_VegEstab)
 	{
 		for (i = 0; i < SW_VegEstab->count; i++)
 		{
-			Mem_Free(SW_VegEstab->parms[i]);
+			free(SW_VegEstab->parms[i]);
 			SW_VegEstab->parms[i] = NULL;
 		}
 
-		Mem_Free(SW_VegEstab->parms);
+		free(SW_VegEstab->parms);
 		SW_VegEstab->parms = NULL;
 	}
 
@@ -174,22 +174,24 @@ void SW_VES_deconstruct(SW_VEGESTAB* SW_VegEstab)
 		if (SW_VegEstab->count > 0)
 		{
 			if (pd > eSW_Day && !isnull(SW_VegEstab->p_oagg[pd]->days)) {
-				Mem_Free(SW_VegEstab->p_oagg[eSW_Year]->days);
+				free(SW_VegEstab->p_oagg[eSW_Year]->days);
+				SW_VegEstab->p_oagg[eSW_Year]->days = NULL;
 			}
 
 			if (!isnull(SW_VegEstab->p_accu[pd]->days)) {
-				Mem_Free(SW_VegEstab->p_accu[eSW_Year]->days);
+				free(SW_VegEstab->p_accu[eSW_Year]->days);
+				SW_VegEstab->p_accu[eSW_Year]->days = NULL;
 			}
 		}
 
 		// De-allocate output structures
 		if (pd > eSW_Day && !isnull(SW_VegEstab->p_oagg[pd])) {
-			Mem_Free(SW_VegEstab->p_oagg[pd]);
+			free(SW_VegEstab->p_oagg[pd]);
 			SW_VegEstab->p_oagg[pd] = NULL;
 		}
 
 		if (!isnull(SW_VegEstab->p_accu[pd])) {
-			Mem_Free(SW_VegEstab->p_accu[pd]);
+			free(SW_VegEstab->p_accu[pd]);
 			SW_VegEstab->p_accu[pd] = NULL;
 		}
 	}

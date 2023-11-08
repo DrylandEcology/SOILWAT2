@@ -142,18 +142,6 @@ void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO* LogInfo) {
 }
 
 /*****************************************************/
-void Mem_Free(void *block) {
-	/*-------------------------------------------
-	 Provide a wrapper for free() that facilitates debugging.
-
-	 cwb - 5/19/2001
-	 7/23/01  - added Macguire's code.
-	 -------------------------------------------*/
-
-	free(block);
-}
-
-/*****************************************************/
 void Mem_Set(void *block, byte c, size_t n) {
 	/*-------------------------------------------
 	 Provide a wrapper for memset() that facilitates debugging.

@@ -287,42 +287,42 @@ void allocateMKV(SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 void deallocateMKV(SW_MARKOV* SW_Markov) {
 
 	if (!isnull(SW_Markov->wetprob)) {
-		Mem_Free(SW_Markov->wetprob);
+		free(SW_Markov->wetprob);
 		SW_Markov->wetprob = NULL;
 	}
 
 	if (!isnull(SW_Markov->dryprob)) {
-		Mem_Free(SW_Markov->dryprob);
+		free(SW_Markov->dryprob);
 		SW_Markov->dryprob = NULL;
 	}
 
 	if (!isnull(SW_Markov->avg_ppt)) {
-		Mem_Free(SW_Markov->avg_ppt);
+		free(SW_Markov->avg_ppt);
 		SW_Markov->avg_ppt = NULL;
 	}
 
 	if (!isnull(SW_Markov->std_ppt)) {
-		Mem_Free(SW_Markov->std_ppt);
+		free(SW_Markov->std_ppt);
 		SW_Markov->std_ppt = NULL;
 	}
 
 	if (!isnull(SW_Markov->cfxw)) {
-		Mem_Free(SW_Markov->cfxw);
+		free(SW_Markov->cfxw);
 		SW_Markov->cfxw = NULL;
 	}
 
 	if (!isnull(SW_Markov->cfxd)) {
-		Mem_Free(SW_Markov->cfxd);
+		free(SW_Markov->cfxd);
 		SW_Markov->cfxd = NULL;
 	}
 
 	if (!isnull(SW_Markov->cfnw)) {
-		Mem_Free(SW_Markov->cfnw);
+		free(SW_Markov->cfnw);
 		SW_Markov->cfnw = NULL;
 	}
 
 	if (!isnull(SW_Markov->cfnd)) {
-		Mem_Free(SW_Markov->cfnd);
+		free(SW_Markov->cfnd);
 		SW_Markov->cfnd = NULL;
 	}
 }

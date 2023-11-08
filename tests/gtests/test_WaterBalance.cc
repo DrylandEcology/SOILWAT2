@@ -292,7 +292,7 @@ namespace {
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
-    Mem_Free(SW_Domain.PathInfo.InFiles[eSWRCp]);
+    free(SW_Domain.PathInfo.InFiles[eSWRCp]);
     SW_Domain.PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -329,7 +329,7 @@ namespace {
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
-    Mem_Free(SW_Domain.PathInfo.InFiles[eSWRCp]);
+    free(SW_Domain.PathInfo.InFiles[eSWRCp]);
     SW_Domain.PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 

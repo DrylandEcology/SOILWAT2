@@ -677,18 +677,18 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat)
 	ForEachOutPeriod(pd)
 	{
 		if (pd > eSW_Day && !isnull(SW_SoilWat->p_oagg[pd])) {
-			Mem_Free(SW_SoilWat->p_oagg[pd]);
+			free(SW_SoilWat->p_oagg[pd]);
 			SW_SoilWat->p_oagg[pd] = NULL;
 		}
 
 		if (!isnull(SW_SoilWat->p_accu[pd])) {
-			Mem_Free(SW_SoilWat->p_accu[pd]);
+			free(SW_SoilWat->p_accu[pd]);
 			SW_SoilWat->p_accu[pd] = NULL;
 		}
 	}
 
 	if (!isnull(SW_SoilWat->hist.file_prefix)) {
-		Mem_Free(SW_SoilWat->hist.file_prefix);
+		free(SW_SoilWat->hist.file_prefix);
 		SW_SoilWat->hist.file_prefix = NULL;
 	}
 
@@ -698,7 +698,7 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat)
 	for (i = 0; i < N_WBCHECKS; i++)
 	{
 		if (!isnull(SW_SoilWat->wbErrorNames[i])) {
-			Mem_Free(SW_SoilWat->wbErrorNames[i]);
+			free(SW_SoilWat->wbErrorNames[i]);
 			SW_SoilWat->wbErrorNames[i] = NULL;
 		}
 	}

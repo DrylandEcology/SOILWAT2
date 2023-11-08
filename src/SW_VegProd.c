@@ -716,12 +716,12 @@ void SW_VPD_deconstruct(SW_VEGPROD* SW_VegProd)
 	ForEachOutPeriod(pd)
 	{
 		if (pd > eSW_Day && !isnull(SW_VegProd->p_oagg[pd])) {
-			Mem_Free(SW_VegProd->p_oagg[pd]);
+			free(SW_VegProd->p_oagg[pd]);
 			SW_VegProd->p_oagg[pd] = NULL;
 		}
 
 		if (!isnull(SW_VegProd->p_accu[pd])) {
-			Mem_Free(SW_VegProd->p_accu[pd]);
+			free(SW_VegProd->p_accu[pd]);
 			SW_VegProd->p_accu[pd] = NULL;
 		}
 	}
