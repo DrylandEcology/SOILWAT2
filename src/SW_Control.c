@@ -98,13 +98,13 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 /**
  * @brief Copy dynamic memory from a template SW_ALL to a new instance
  *
- * @param[in] template Source struct of type SW_ALL to copy
+ * @param[in] source Source struct of type SW_ALL to copy
  * @param[out] dest Destination struct of type SW_ALL to be copied into
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* LogInfo)
+void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo)
 {
-    Mem_Copy(dest, sw_template, sizeof(SW_ALL));
+    memcpy(dest, source, sizeof (*dest));
 
     /* Allocate memory for output pointers */
     SW_CTL_alloc_outptrs(dest, LogInfo);
@@ -116,13 +116,16 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
 
     /* Allocate memory and copy daily weather */
     dest->Weather.allHist = NULL;
-    allocateAllWeather(&dest->Weather.allHist, sw_template->Weather.n_years, LogInfo);
+    allocateAllWeather(&dest->Weather.allHist, source->Weather.n_years, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
-    for(unsigned int year = 0; year < sw_template->Weather.n_years; year++) {
-        Mem_Copy(dest->Weather.allHist[year], sw_template->Weather.allHist[year],
-                 sizeof(SW_WEATHER_HIST));
+    for(unsigned int year = 0; year < source->Weather.n_years; year++) {
+        memcpy(
+            dest->Weather.allHist[year],
+            source->Weather.allHist[year],
+            sizeof (*dest->Weather.allHist[year])
+        );
     }
 
     /* Allocate memory and copy weather generator parameters */
@@ -133,7 +136,7 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
             return; // Exit prematurely due to error
         }
 
-        copyMKV(&dest->Markov, &sw_template->Markov);
+        copyMKV(&dest->Markov, &source->Markov);
     }
 
     /* Allocate memory and copy vegetation establishment parameters */
@@ -143,14 +146,17 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
         return; // Exit prematurely due to error
     }
 
-    for(IntU speciesNum = 0; speciesNum < sw_template->VegEstab.count; speciesNum++) {
+    for(IntU speciesNum = 0; speciesNum < source->VegEstab.count; speciesNum++) {
         _new_species(&dest->VegEstab, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit prematurely due to error
         }
 
-        Mem_Copy(dest->VegEstab.parms[speciesNum], sw_template->VegEstab.parms[speciesNum],
-                 sizeof(SW_VEGESTAB_INFO));
+        memcpy(
+            dest->VegEstab.parms[speciesNum],
+            source->VegEstab.parms[speciesNum],
+            sizeof (*dest->VegEstab.parms[speciesNum])
+        );
     }
 
     SW_VegEstab_alloc_outptrs(&dest->VegEstab, LogInfo);
@@ -661,7 +667,8 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSt
 
     } else {
         // Copy template SW_ALL to local instance -- yet to be fully implemented
-        _copy_template_vals(sw_template, local_sw_ptr, LogInfo);
+        SW_ALL_deepCopy(sw_template, local_sw_ptr, LogInfo);
+
         if(LogInfo->stopRun) {
             goto freeMem; // Free memory and skip simulation run
         }

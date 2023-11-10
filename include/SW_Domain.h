@@ -19,6 +19,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 void SW_DOM_SetProgress(char* domainType, unsigned long ncStartSuid[]);
 void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
                    LOG_INFO* LogInfo);
+void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo);
 
 #ifdef __cplusplus
 }

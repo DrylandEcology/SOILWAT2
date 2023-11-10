@@ -30,6 +30,7 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_CTL_init_ptrs(SW_ALL* sw);
 void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo);
+void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo);
 void SW_CTL_setup_domain(unsigned long userSUID,
                          SW_DOMAIN* SW_Domain,
                          LOG_INFO* LogInfo);
