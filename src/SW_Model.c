@@ -126,6 +126,7 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	 but if hemisphere occurs first, skip checking for the rest
 	 and assume they're not there.
 	 */
+    SW_Model->addtl_yr = 0;
 	lineno = 0;
 	while (GetALine(f, inbuf)) {
 		switch(lineno) {
