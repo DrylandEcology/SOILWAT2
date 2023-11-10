@@ -667,7 +667,20 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSt
 
     } else {
         // Copy template SW_ALL to local instance -- yet to be fully implemented
+
+
+struct timespec ts1, ts2;
+int err = timespec_get(&ts1, TIME_UTC);
+
         SW_ALL_deepCopy(sw_template, local_sw_ptr, LogInfo);
+
+err = timespec_get(&ts2, TIME_UTC);
+(void) err;
+printf(
+  "copy time: %f\n",
+  difftime(ts2.tv_sec, ts1.tv_sec) + (ts2.tv_nsec - ts1.tv_nsec) / 1000000000.
+);
+
 
         if(LogInfo->stopRun) {
             goto freeMem; // Free memory and skip simulation run

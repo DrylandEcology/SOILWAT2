@@ -140,8 +140,8 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 # see https://github.com/google/googletest/issues/813 and
 # see https://github.com/google/googletest/pull/2839#issue-613300962
 
-set_std := -std=c99
-set_std++_tests := -std=c++14
+set_std := -std=c11
+set_std++_tests := -std=c++17
 
 
 #------ FLAGS
