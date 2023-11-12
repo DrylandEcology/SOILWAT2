@@ -31,6 +31,8 @@ typedef enum {
 	eNoFile = -1,
 	/* List of all input files */
 	eFirst = 0,
+    /* netCDF-related input files directory */
+    eNCIn,
 	/* Domain information */
 	eDomain,
 	/* Description of a model run */

@@ -25,7 +25,7 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NFILES 24 // For `InFiles`
+#define SW_NFILES 25 // For `InFiles`
 
 
 /* =================================================== */

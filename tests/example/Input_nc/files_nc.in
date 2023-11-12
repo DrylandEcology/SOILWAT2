@@ -1,0 +1,4 @@
+#------ Input files relating to netCDF actions
+#
+# NOTE: This file follows a key-value pair. That is, the value is only matched with the key
+# eliminating the possibility of incorrect reads due to line dependencies.
