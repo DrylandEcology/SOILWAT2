@@ -34,9 +34,13 @@ static int domain_inkey_to_id(char *key);
 void SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
                              unsigned long ncStartSuid[]) {
 
-    (void) SW_Domain;
-    (void) suid;
-    (void) ncStartSuid;
+    if(strcmp(SW_Domain->DomainType, "s") == 0) {
+        ncStartSuid[0] = 0;
+        ncStartSuid[1] = SW_Domain->nDimS;
+    } else {
+        ncStartSuid[0] = suid / SW_Domain->nDimX;
+        ncStartSuid[1] = suid % SW_Domain->nDimX;
+    }
 }
 
 /**
