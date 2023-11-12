@@ -24,8 +24,8 @@ static void create_netCDF_dim(const char* dimName, unsigned long size,
     char errorStr[MAX_LOG_SIZE];
 
     if(nc_def_dim(*domFileID, dimName, size, dimID) != NC_NOERR) {
-        sprintf(errorStr, "Could not create dimension '%s' in "
-                          "domain netCDF.", dimName);
+        snprintf(errorStr, MAX_LOG_SIZE, "Could not create dimension '%s' in "
+                                         "domain netCDF.", dimName);
 
         LogError(LogInfo, LOGERROR, errorStr);
     }
@@ -47,8 +47,8 @@ static void create_netCDF_var(const char* varName, int* dimIDs, int* domFileID,
     char errorStr[MAX_LOG_SIZE];
 
     if(nc_def_var(*domFileID, varName, varType, numDims, dimIDs, &varID) != NC_NOERR) {
-        sprintf(errorStr, "Could not create '%s' variable in "
-                          "domain netCDF.", varName);
+        snprintf(errorStr, MAX_LOG_SIZE, "Could not create '%s' variable in "
+                                         "domain netCDF.", varName);
 
         LogError(LogInfo, LOGERROR, errorStr);
     }
