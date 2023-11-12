@@ -758,6 +758,8 @@ typedef struct {
 	char _ProjDir[FILENAME_MAX];
 	char weather_prefix[FILENAME_MAX];
 	char output_prefix[FILENAME_MAX];
+
+    int domainFileID;
 } PATH_INFO;
 
 /* =================================================== */

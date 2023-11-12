@@ -308,6 +308,22 @@ void SW_CTL_setup_domain(unsigned long userSUID,
         return; // Exit function prematurely due to error
     }
 
+    #ifdef SW_NETCDF
+    if(FileExists("domain.nc")) {
+
+    } else {
+        SW_NC_create_domain_template(SW_Domain, "domain_template.nc" LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit prematurely due to error
+        }
+
+        LogError(LogInfo, LOGERROR, "Domain netCDF template has been created. "
+                                    "Please modify it and rename it to "
+                                    "'domain.nc' when done and try again.");
+        return; // Exit prematurely so the user can modify the domain template
+    }
+    #endif
+
     SW_DOM_calc_nSUIDs(SW_Domain);
     SW_DOM_SimSet(SW_Domain, userSUID, LogInfo);
 }
