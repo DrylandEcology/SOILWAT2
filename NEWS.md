@@ -1,5 +1,8 @@
 # NEWS
 
+# SOILWAT2 v8.0.0-devel
+
+
 # SOILWAT2 v7.2.0
 * Simulation output remains the same as the previous version.
 
