@@ -5,10 +5,39 @@
 #include <netcdf.h>
 
 #include "include/filefuncs.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/myMemory.h"
+
+/* =================================================== */
+/*                   Local Defines                     */
+/* --------------------------------------------------- */
+
+#define NUM_NC_IN_KEYS 1 // Number of possible keys within `files_nc.in`
 
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
+
+/**
+ * @brief Convert a key read-in from `files_nc.in` to an index
+ *  the program can understand
+ *
+ * @param[in] key Key found within the file to test for
+*/
+static int nc_key_to_id(const char* key) {
+    static const char* knownKeys[] = {"domain"};
+
+    int id;
+
+    for(id = 0; id < NUM_NC_IN_KEYS; id++) {
+        if(strcmp(key, knownKeys[id]) == 0) {
+            return id;
+        }
+    }
+
+    return KEY_NOT_FOUND;
+}
 
 /**
  * @brief Create a dimension within a netCDF file
@@ -286,5 +315,40 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, unsigned long ncSUID,
 void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     (void) SW_Domain;
     (void) LogInfo;
+}
+
+/**
+ * @brief Read input files for netCDF related actions
+ *
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+void SW_NC_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
+    FILE *f;
+    char inbuf[MAX_FILENAMESIZE], *MyFileName;
+    char key[15]; // 15 - Max key size
+    char varName[MAX_FILENAMESIZE], path[MAX_FILENAMESIZE];
+    int keyID;
+
+    MyFileName = SW_Domain->PathInfo.InFiles[eNCIn];
+	f = OpenFile(MyFileName, "r", LogInfo);
+
+    // Get domain file name
+    while(GetALine(f, inbuf)) {
+        sscanf(inbuf, "%s %s %s", key, varName, path);
+
+        keyID = nc_key_to_id(key);
+        switch(keyID) {
+            case DOMAIN_NC:
+                SW_Domain->varNC[DOMAIN_NC] = Str_Dup(varName, LogInfo);
+                SW_Domain->PathInfo.InFilesNC[DOMAIN_NC] = Str_Dup(path, LogInfo);
+                break;
+            default:
+                LogError(LogInfo, LOGWARN, "Ignoring unknown key in %s, %s",
+                         MyFileName, key);
+                break;
+        }
+    }
 }
 

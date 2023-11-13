@@ -45,6 +45,10 @@
 #include "include/myMemory.h"
 #include "include/SW_Main_lib.h"
 
+#ifdef SW_NETCDF
+#include "include/SW_netCDF.h"
+#endif
+
 
 
 /* =================================================== */

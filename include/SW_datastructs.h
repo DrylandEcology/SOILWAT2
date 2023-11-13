@@ -26,6 +26,7 @@
 #endif
 
 #define SW_NFILES 25 // For `InFiles`
+#define SW_NVARNC 1 // For `InFilesNC`
 
 
 /* =================================================== */
@@ -759,6 +760,8 @@ typedef struct {
 	char weather_prefix[FILENAME_MAX];
 	char output_prefix[FILENAME_MAX];
 
+    char *InFilesNC[SW_NVARNC];
+
     int domainFileID;
 } PATH_INFO;
 
@@ -1041,6 +1044,8 @@ typedef struct {
 			endyr,           /**< Last calendar year of the simulation runs */
 			startstart,      /**< First day in first calendar year of the simulation runs */
 			endend;          /**< Last day in last calendar year of the simulation runs */
+
+    char *varNC[SW_NVARNC];
 
 	// Information on input files
 	PATH_INFO PathInfo;
