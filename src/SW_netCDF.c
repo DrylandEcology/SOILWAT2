@@ -125,7 +125,6 @@ static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
 
     int bndsID = 0;
     int bndVarDims[2]; // Used for x and y bound variables
-    bndVarDims[1] = bndsID;
 
     // Create x, y, and bnds dimension
     create_netCDF_dim("x", nDimX, domFileID, xDimID, LogInfo);
@@ -143,20 +142,21 @@ static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
         return; // Exit prematurely due to error
     }
 
-    // Create x, x_bnds, y, and y_bnds variables
+    // Create x, y, x_bnds, and y_bnds variables
     create_netCDF_var("x", xDimID, domFileID, NC_DOUBLE, 1, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
 
-    bndVarDims[0] = *xDimID;
-
-    create_netCDF_var("x_bnds", bndVarDims, domFileID, NC_DOUBLE, 2, LogInfo);
+    create_netCDF_var("y", yDimID, domFileID, NC_DOUBLE, 1, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
 
-    create_netCDF_var("y", yDimID, domFileID, NC_DOUBLE, 1, LogInfo);
+    bndVarDims[0] = *xDimID;
+    bndVarDims[1] = bndsID;
+
+    create_netCDF_var("x_bnds", bndVarDims, domFileID, NC_DOUBLE, 2, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
@@ -232,8 +232,6 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     if(strcmp(SW_Domain->DomainType, "s") == 0) {
         nDomainDims = 1;
-        domDims[0] = sDimID;
-        domDims[1] = 0;
 
         // Create s dimension/domain variables
         fill_domain_netCDF_s(SW_Domain->nDimS, domFileID, &sDimID,
@@ -243,10 +241,10 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
             return; // Exit prematurely due to error
         }
 
+        domDims[0] = sDimID;
+        domDims[1] = 0;
     } else {
         nDomainDims = 2;
-        domDims[0] = yDimID;
-        domDims[1] = xDimID;
 
         fill_domain_netCDF_xy(SW_Domain->nDimX, SW_Domain->nDimY, domFileID,
                               &xDimID, &yDimID, LogInfo);
@@ -254,6 +252,9 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
             nc_close(*domFileID);
             return; // Exit prematurely due to error
         }
+
+        domDims[0] = yDimID;
+        domDims[1] = xDimID;
     }
 
     // Create domain variable
