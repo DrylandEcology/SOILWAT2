@@ -437,3 +437,59 @@ Bool RemoveFiles(const char *fspec, LOG_INFO* LogInfo) {
 	return (Bool) result;
 }
 
+
+/** Copy a file
+
+@param[in] from The file path of the source (original) file.
+@param[in] to The file path to the file copy (destination).
+@param[out] LogInfo Holds information dealing with logfile output
+
+@return swTRUE on success and swFALSE on failure.
+*/
+Bool CopyFile(const char *from, const char *to, LOG_INFO* LogInfo) {
+    char buffer[4096]; // or any other constant that is a multiple of 512
+    size_t n;
+    FILE *ffrom, *fto;
+
+    ffrom = fopen(from, "r");
+    if (ffrom == NULL) {
+      LogError(LogInfo, LOGERROR, "CopyFile: error opening source file %s.\n", *from);
+      return swFALSE;  // Exit function prematurely due to error
+    }
+
+    fto = fopen(to, "w");
+    if (fto == NULL) {
+      fclose(ffrom);
+      LogError(LogInfo, LOGERROR, "CopyFile: error opening destination file %s.\n", to);
+      return swFALSE;  // Exit function prematurely due to error
+    }
+
+    while ((n = fread(buffer, 1, sizeof buffer, ffrom)) > 0) {
+        if (fwrite(buffer, 1, n, fto) != n) {
+            LogError(LogInfo, LOGERROR, "CopyFile: error while copying to %s.\n", to);
+            fclose(ffrom);
+            fclose(fto);
+            return swFALSE;  // Exit function prematurely due to error
+        }
+    }
+
+    if (ferror(ffrom)) {
+      LogError(LogInfo, LOGERROR, "CopyFile: error reading source file %s.\n", from);
+      fclose(ffrom);
+      fclose(fto);
+      return swFALSE;  // Exit function prematurely due to error
+    }
+
+    // clean up
+    if (fclose(ffrom) == EOF) {
+      LogError(LogInfo, LOGERROR, "CopyFile: error closing source file %s.\n", from);
+      return swFALSE;  // Exit function prematurely due to error
+    }
+
+    if (fclose(fto) == EOF) {
+      LogError(LogInfo, LOGERROR, "CopyFile: error closing destination file %s.\n", to);
+      return swFALSE;  // Exit function prematurely due to error
+    }
+
+    return swTRUE;
+}

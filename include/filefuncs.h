@@ -30,6 +30,7 @@ Bool DirExists(const char *d);
 Bool ChDir(const char *d);
 Bool MkDir(const char *dname, LOG_INFO* LogInfo);
 Bool RemoveFiles(const char *fspec, LOG_INFO* LogInfo);
+Bool CopyFile(const char *from, const char *to, LOG_INFO* LogInfo);
 void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...);
 
 
