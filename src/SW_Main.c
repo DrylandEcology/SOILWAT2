@@ -36,6 +36,9 @@
 #include "include/SW_Domain.h"
 #include "include/SW_Model.h"
 
+#ifdef SW_NETCDF
+#include "include/SW_netCDF.h"
+#endif
 
 
 /* =================================================== */
@@ -99,6 +102,10 @@ int main(int argc, char **argv) {
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
+
+    #ifdef SW_NETCDF
+    SW_NC_check_input_files(&SW_Domain, &LogInfo);
+    #endif
 
 	// finalize daily weather
 	SW_WTH_finalize_all_weather(&sw_template.Markov, &sw_template.Weather,

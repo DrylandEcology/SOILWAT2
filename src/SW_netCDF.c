@@ -313,8 +313,15 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, unsigned long ncSUID,
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
-    (void) SW_Domain;
-    (void) LogInfo;
+    int file;
+
+    for(file = 0; file < SW_NVARNC; file++) {
+        SW_NC_check(SW_Domain, SW_Domain->PathInfo.InFilesNC[file], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to inconsistent data
+        }
+    }
+
 }
 
 /**
