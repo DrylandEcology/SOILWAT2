@@ -25,7 +25,7 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NFILES 23 // For `InFiles`
+#define SW_NFILES 24 // For `InFiles`
 
 
 /* =================================================== */
@@ -95,11 +95,6 @@ typedef struct {
 
 typedef struct {
 	TimeInt /* controlling dates for model run */
-	startyr, /* beginning year for model run */
-	endyr, /* ending year for model run */
-	startstart, /* startday in start year */
-	endend, /* end day in end year */
-	daymid, /* mid year depends on hemisphere */
 	/* current year dates */
 	firstdoy, /* start day for this year */
 	lastdoy, /* 366 if leapyear or endend if endyr */
@@ -112,6 +107,19 @@ typedef struct {
 	 * doy and year are base1. */
 	/* simyear = year + addtl_yr */
 
+	// Create a copy of SW_DOMAIN's time information to instead
+	// of passing around SW_DOMAIN
+	TimeInt startyr,       /* beginning year for a set of simulation run */
+			endyr,         /* ending year for a set of simulation run */
+			startstart,    /* startday in start year */
+			endend;        /* end day in end year */
+
+	RealD longitude,	/* longitude of the site (radians)        */
+		  latitude,		/* latitude of the site (radians)        */
+		  elevation,	/* elevation a.s.l (m) of the site */
+		  slope,		/* slope of the site (radians): between 0 (horizontal) and pi / 2 (vertical) */
+		  aspect;		/* aspect of the site (radians): A value of \ref SW_MISSING indicates no data, ie., treat it as if slope = 0; South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi */
+
 	TimeInt
 		days_in_month[MAX_MONTHS], /* number of days per month for "current" year */
 		cum_monthdays[MAX_MONTHS]; /* monthly cumulative number of days for "current" year */
@@ -122,6 +130,8 @@ typedef struct {
 	 * printing and summing weekly/monthly values */
 	Bool newperiod[SW_OUTNPERIODS];
 	Bool isnorth;
+
+    int ncStartSuid[2]; // First element used for domain "s", both used for "xy"
 
 	#ifdef STEPWAT
 	/* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
@@ -179,11 +189,6 @@ typedef struct {
 	RealD
 		slow_drain_coeff, /* low soil water drainage coefficient   */
 		pet_scale,	/* changes relative effect of PET calculation */
-		longitude,	/* longitude of the site (radians)        */
-		latitude,	/* latitude of the site (radians)        */
-		altitude,	/* altitude a.s.l (m) of the site */
-		slope,		/* slope of the site (radians): between 0 (horizontal) and pi / 2 (vertical) */
-		aspect,		/* aspect of the site (radians): A value of \ref SW_MISSING indicates no data, ie., treat it as if slope = 0; South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi */
 					/* SWAT2K model parameters : Neitsch S, Arnold J, Kiniry J, Williams J. 2005. Soil and water assessment tool (SWAT) theoretical documentation. version 2005. Blackland Research Center, Texas Agricultural Experiment Station: Temple, TX. */
 		TminAccu2,	/* Avg. air temp below which ppt is snow ( C) */
 		TmaxCrit,	/* Snow temperature at which snow melt starts ( C) */
@@ -738,6 +743,9 @@ typedef struct {
 		 warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning messages to report
 
 	int numWarnings;        // Number of total warnings thrown
+	unsigned long
+	  numDomainWarnings,  /**< Number of suids with at least one warning */
+	  numDomainErrors;    /**< Number of suids with an error */
 
 	Bool stopRun;           // Specifies if an error has occurred and
                             // the program needs to stop early (backtrack)
@@ -818,7 +826,7 @@ typedef struct {
 
 typedef struct {
 	TimeInt *days;	/* only output the day of estab for each species in the input */
-					/* this array is allocated via `SW_VegEstab_construct()` */
+					/* this array is allocated via `SW_VegEstab_alloc_outptrs()` */
 					/* each day in the array corresponds to the ordered species list */
 } SW_VEGESTAB_OUTPUTS;
 
@@ -1006,6 +1014,35 @@ typedef struct {
 		  aet;    // annual sum of soilwat's evapotranspiration
 	#endif
 } SW_GEN_OUT;
+
+/* =================================================== */
+/*                    Domain struct                    */
+/* --------------------------------------------------- */
+
+typedef struct {
+	// Spatial domain information
+	// SUID = simulation unit identifier
+
+	char DomainType[3];  /**< Type of domain: 'xy' (grid), 's' (sites) */ // (3 = 2 characters + '\0')
+
+	unsigned long // to clarify, "long" = "long int", not double
+		nDimX,             /**< Number of grid cells along x dimension (used if domainType is 'xy') */
+		nDimY,             /**< Number of grid cells along y dimension (used if domainType is 'xy') */
+		nDimS,             /**< Number of sites (used if domainType is 's') */
+		nSUIDs,            /**< Total size of domain, i.e., total number of grid cells (if domainType is 'xy') or number of sites (if domainType is 's') */
+
+		startSimSet,       /**< First SUID in simulation set within domain to simulate */
+		endSimSet;         /**< Last SUID in simulation set within domain to simulate */
+
+	// Temporal domain information
+	TimeInt startyr,     /**< First calendar year of the simulation runs */
+			endyr,           /**< Last calendar year of the simulation runs */
+			startstart,      /**< First day in first calendar year of the simulation runs */
+			endend;          /**< Last day in last calendar year of the simulation runs */
+
+	// Information on input files
+	PATH_INFO PathInfo;
+} SW_DOMAIN;
 
 /* =================================================== */
 /*                 Comprehensive struct                */

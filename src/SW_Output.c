@@ -1619,7 +1619,7 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 			for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++)
 			{
 				if (!isnull(sw->GenOutput.colnames_OUT[k][i])) {
-					Mem_Free(sw->GenOutput.colnames_OUT[k][i]);
+					free(sw->GenOutput.colnames_OUT[k][i]);
 					sw->GenOutput.colnames_OUT[k][i] = NULL;
 				}
 			}
@@ -1627,7 +1627,7 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 
 		#ifdef RSOILWAT
 		if (!isnull(sw->Output[k].outfile)) {
-			Mem_Free(sw->Output[k].outfile);
+			free(sw->Output[k].outfile);
 			sw->Output[k].outfile = NULL;
 		}
 		#endif
@@ -2847,7 +2847,7 @@ void _echo_all_inputs(SW_ALL* sw) {
 		printf("Establishment not used.\n");
 	}
 
-	_echo_inputs(&sw->Site);
+	_echo_inputs(&sw->Site, &sw->Model);
 	_echo_VegEstab(sw->Site.width, sw->VegEstab.parms,
 				   sw->VegEstab.count);
 	_echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov);

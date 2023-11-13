@@ -31,6 +31,8 @@ typedef enum {
 	eNoFile = -1,
 	/* List of all input files */
 	eFirst = 0,
+	/* Domain information */
+	eDomain,
 	/* Description of a model run */
 	eModel, eLog,
 	/* Description of simulated site */
@@ -53,6 +55,7 @@ typedef enum {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo);
+void SW_F_deepCopy(PATH_INFO* source, PATH_INFO* dest, LOG_INFO* LogInfo);
 void SW_F_init_ptrs(char *InFiles[]);
 void SW_F_construct(const char *firstfile, char _ProjDir[],
 					LOG_INFO *LogInfo);

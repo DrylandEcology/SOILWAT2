@@ -403,6 +403,7 @@ namespace
         snprintf(strnum, length_strnum + 1, "%d", (int) slope);
         strcat(fname, strnum);
         free(strnum);
+        strnum = NULL
 
         strcat(fname, "__aspect");
         length_strnum = snprintf(NULL, 0, "%d", (int) aspect);
@@ -410,6 +411,7 @@ namespace
         snprintf(strnum, length_strnum + 1, "%d", (int) aspect);
         strcat(fname, strnum);
         free(strnum);
+        strnum = NULL
 
         strcat(fname, ".csv");
 

@@ -42,7 +42,7 @@ static void sw_print_usage(void) {
 	swprintf(
 		"Ecosystem water simulation model SOILWAT2\n"
 		"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
-		"Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h]\n"
+		"Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h] [-s 1]\n"
 		"  -d : operate (chdir) in startdir (default=.)\n"
 		"  -f : name of main input file (default=files.in)\n"
 		"       a preceeding path applies to all input files\n"
@@ -50,6 +50,8 @@ static void sw_print_usage(void) {
 		"  -q : quiet mode (print version, print error, message to check logfile)\n"
 		"  -v : print version information\n"
 		"  -h : print this help information\n"
+		"  -s : simulate all (0) or one (> 0) simulation unit from the domain\n"
+		"       (default = 0)\n"
 	);
 }
 
@@ -81,10 +83,13 @@ void sw_print_version(void) {
 @param[in] argv Values of command line arguments.
 @param[out] EchoInits Flag to control if inputs are to be output to the user
 @param[out] _firstfile First file name to be filled in the program run
+@param[out] userSUID Simulation Unit Identifier requested by the user (base1);
+            0 indicates that all simulations units within domain are requested
 @param[out] LogInfo Holds information dealing with logfile output
 */
-void sw_init_args(int argc, char **argv,
-	Bool *EchoInits, char **_firstfile, LOG_INFO* LogInfo) {
+void sw_init_args(int argc, char **argv, Bool *EchoInits,
+                  char **_firstfile, unsigned long *userSUID,
+                  LOG_INFO* LogInfo) {
 
 	/* =================================================== */
 	/* to add an option:
@@ -100,8 +105,8 @@ void sw_init_args(int argc, char **argv,
 	 *                   at end of program.
 	 */
 	char str[1024];
-	char const *opts[] = { "-d", "-f", "-e", "-q", "-v", "-h" }; /* valid options */
-	int valopts[] = { 1, 1, 0, 0, 0, 0 }; /* indicates options with values */
+	char const *opts[] = { "-d", "-f", "-e", "-q", "-v", "-h", "-s" }; /* valid options */
+	int valopts[] = { 1, 1, 0, 0, 0, 0, -1 }; /* indicates options with values */
 	/* 0=none, 1=required, -1=optional */
 	int i, /* looper through all cmdline arguments */
 	a, /* current valid argument-value position */
@@ -115,6 +120,7 @@ void sw_init_args(int argc, char **argv,
     }
 
 	*EchoInits = swFALSE;
+    *userSUID = 0; // Default (if no input) is 0 (i.e., all suids)
 
 	a = 1;
 	for (i = 1; i <= nopts; i++) {
@@ -194,6 +200,22 @@ void sw_init_args(int argc, char **argv,
                     }
 					break;
 
+                case 6: /* -s */
+                    *userSUID = atoll(str);
+                    /* Check that user input can be represented by userSUID (currently, unsigned long) */
+                    /* Expect that conversion of string to double results in the same value as conversion of userSUID to double */
+                    if (!EQ(atof(str), (double) *userSUID)) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "User input not recognized as a simulation unit "
+                            "('-s %s' vs. %lu).",
+                            str, *userSUID
+                        );
+                        return; // Exit function prematurely due to error
+                    }
+                    break;
+
 				default:
 					LogError(
 						LogInfo,
@@ -248,77 +270,115 @@ void sw_init_logs(FILE* logInitPtr, LOG_INFO* LogInfo) {
 	LogInfo->errorMsg[0] = '\0';
 
 	LogInfo->stopRun = swFALSE;
-	LogInfo->numWarnings = 0;
 	LogInfo->QuietMode = swFALSE;
+	LogInfo->numWarnings = 0;
+	LogInfo->numDomainWarnings = 0;
+	LogInfo->numDomainErrors = 0;
 }
 
 /**
  * @brief Write warnings that have been accumulated throughout the program/
  * simulation run
  *
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[in] header String that is printed before warning and error messages;
+ *            may be empty.
+ * @param[in] LogInfo Holds information dealing with logfile output
 */
-void sw_write_warnings(LOG_INFO* LogInfo) {
+void sw_write_warnings(const char *header, LOG_INFO* LogInfo) {
 
 	int warnMsgNum, warningUpperBound = LogInfo->numWarnings;
-	Bool tooManyWarns = swFALSE, QuietMode;
+	Bool tooManyWarns = swFALSE;
 	char tooManyWarnsStr[MAX_LOG_SIZE];
-    char tooManyStrFmt[] = "There were a total of %d warnings and"\
-                          " only %d were printed.\n";
 
-  QuietMode = (Bool)(LogInfo->QuietMode || isnull(LogInfo->logfp));
+
 
 	if(warningUpperBound > MAX_MSGS) {
 		warningUpperBound = MAX_MSGS;
 		tooManyWarns = swTRUE;
 
-        snprintf(tooManyWarnsStr, MAX_LOG_SIZE, tooManyStrFmt,
-                 LogInfo->numWarnings, MAX_MSGS);
+        snprintf(
+            tooManyWarnsStr, MAX_LOG_SIZE,
+            "There were a total of %d warnings and only %d were printed.\n",
+            LogInfo->numWarnings, MAX_MSGS);
 	}
 
 	#ifdef RSOILWAT
-	/* rSOILWAT2: don't issue `warnings()` if quiet */
+  /* rSOILWAT2: don't issue `warnings()` if quiet */
+  Bool QuietMode = (Bool)(LogInfo->QuietMode || isnull(LogInfo->logfp));
+
   if (!QuietMode) {
-	    for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
-          warning(LogInfo->warningMsgs[warnMsgNum]);
+      for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
+          warning("%s%s", header, LogInfo->warningMsgs[warnMsgNum]);
       }
 
       if(tooManyWarns) {
-          warning(tooManyWarnsStr);
+          warning("%s%s", header, tooManyWarnsStr);
       }
   }
 	#else
 	/* SOILWAT2: do print warnings and don't notify user if quiet */
   if (!isnull(LogInfo->logfp)) {
       for(warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
-          fprintf(LogInfo->logfp, "%s\n", LogInfo->warningMsgs[warnMsgNum]);
+          fprintf(LogInfo->logfp, "%s%s", header, LogInfo->warningMsgs[warnMsgNum]);
       }
 
       if(tooManyWarns) {
-          fprintf(LogInfo->logfp, "%s", tooManyWarnsStr);
+          fprintf(LogInfo->logfp, "%s%s", header, tooManyWarnsStr);
       }
 
       if(LogInfo->stopRun) {
           /* Write error message to log file here;
              later (sw_fail_on_error()), we will write it to stderr and crash */
-          fprintf(LogInfo->logfp, "%s", LogInfo->errorMsg);
+          fprintf(LogInfo->logfp, "%s%s", header, LogInfo->errorMsg);
       }
 
       fflush(LogInfo->logfp);
-      // Close logfile (but not if it is stdout or stderr)
-      if (LogInfo->logfp == stdout || LogInfo->logfp == stderr) {
-          CloseFile(&LogInfo->logfp, LogInfo);
-      }
-  }
-
-  // Notify the user that there are messages in the logfile (unless QuietMode)
-  if(
-    (LogInfo->stopRun || LogInfo->numWarnings > 0) &&
-    !QuietMode &&
-    LogInfo->logfp != stdout &&
-    LogInfo->logfp != stderr
-  ) {
-      fprintf(stderr, "\nCheck logfile for warnings and error messages.\n");
   }
 	#endif
+}
+
+
+/** Close logfile and notify user
+
+  Close logfile and notify user that logfile has content (unless QuietMode);
+  print number of simulation units with warnings and errors (if any).
+
+  @param[in] LogInfo Holds information dealing with logfile output
+*/
+void sw_wrapup_logs(LOG_INFO* LogInfo) {
+    Bool QuietMode = (Bool)(LogInfo->QuietMode || isnull(LogInfo->logfp));
+
+    // Close logfile (but not if it is stdout or stderr)
+    if (LogInfo->logfp != stdout || LogInfo->logfp != stderr) {
+        CloseFile(&LogInfo->logfp, LogInfo);
+    }
+
+    // Notify the user that there are messages in the logfile (unless QuietMode)
+    if(
+      (
+        LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||
+        LogInfo->stopRun || LogInfo->numWarnings > 0
+      ) &&
+      !QuietMode &&
+      LogInfo->logfp != stdout &&
+      LogInfo->logfp != stderr
+    ) {
+        fprintf(stderr, "\nCheck logfile for warnings and error messages.\n");
+
+        if (LogInfo->numDomainWarnings > 0) {
+            fprintf(
+                stderr,
+                "Simulation units with warnings: n = %lu\n",
+                LogInfo->numDomainWarnings
+            );
+        }
+
+        if (LogInfo->numDomainErrors > 0) {
+            fprintf(
+                stderr,
+                "Simulation units with an error: n = %lu\n",
+                LogInfo->numDomainErrors
+            );
+        }
+    }
 }

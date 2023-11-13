@@ -32,7 +32,7 @@
  06/24/2013	(rjm) added function void SW_WTH_clear_runavg_list(void) to free memory
  06/24/2013	(rjm) 	made 'tail' and 'firsttime' a module-level static variable (instead of function-level): otherwise it will not get reset to 0 between consecutive calls as a dynamic library
  need to set these variables to 0 resp TRUE in function SW_WTH_construct()
- 06/27/2013	(drs)	closed open files if LogError() with LOGFATAL is called in SW_WTH_read(), _read_hist()
+ 06/27/2013	(drs)	closed open files if LogError() with LOGERROR is called in SW_WTH_read(), _read_hist()
  08/26/2013 (rjm) removed extern SW_OUTPUT never used.
  */
 /********************************************************/
@@ -1175,29 +1175,38 @@ void SW_WTH_init_ptrs(SW_WEATHER* SW_Weather) {
 
 @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
-@param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_WTH_construct(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
+void SW_WTH_construct(SW_WEATHER* SW_Weather) {
 	/* =================================================== */
-	OutPeriod pd;
 
 	// Clear the module structure:
 	memset(SW_Weather, 0, sizeof(SW_WEATHER));
 
-	SW_Weather->n_years = 0;
+    SW_Weather->n_years = 0;
+}
 
-	// Allocate output structures:
+/**
+ * @brief Allocate dynamic memory for output pointers in the SW_WEATHER struct
+ *
+ * @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
+ *  information pretaining to meteorological input data
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_WTH_alloc_outptrs(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
+	OutPeriod pd;
+
+    // Allocate output structures:
 	ForEachOutPeriod(pd)
 	{
 		SW_Weather->p_accu[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()", LogInfo);
+			sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_alloc_outptrs()", LogInfo);
 
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 		if (pd > eSW_Day) {
 			SW_Weather->p_oagg[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(1,
-				sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_construct()", LogInfo);
+				sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_alloc_outptrs()", LogInfo);
 
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -1209,12 +1218,10 @@ void SW_WTH_construct(SW_WEATHER* SW_Weather, LOG_INFO* LogInfo) {
 /**
 @brief Deconstructor for SW_Weather and SW_Markov (if used)
 
-@param[out] SW_Markov Struct of type SW_MARKOV which holds values
-	related to temperature and weather generator
 @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
 		information pretaining to meteorological input data
 */
-void SW_WTH_deconstruct(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather)
+void SW_WTH_deconstruct(SW_WEATHER* SW_Weather)
 {
 	OutPeriod pd;
 
@@ -1222,18 +1229,14 @@ void SW_WTH_deconstruct(SW_MARKOV* SW_Markov, SW_WEATHER* SW_Weather)
 	ForEachOutPeriod(pd)
 	{
 		if (pd > eSW_Day && !isnull(SW_Weather->p_oagg[pd])) {
-			Mem_Free(SW_Weather->p_oagg[pd]);
+			free(SW_Weather->p_oagg[pd]);
 			SW_Weather->p_oagg[pd] = NULL;
 		}
 
 		if (!isnull(SW_Weather->p_accu[pd])) {
-			Mem_Free(SW_Weather->p_accu[pd]);
+			free(SW_Weather->p_accu[pd]);
 			SW_Weather->p_accu[pd] = NULL;
 		}
-	}
-
-	if (SW_Weather->generateWeatherMethod == 2) {
-		SW_MKV_deconstruct(SW_Markov);
 	}
 
     deallocateAllWeather(SW_Weather->allHist, SW_Weather->n_years);
@@ -1799,7 +1802,7 @@ void check_and_update_dailyInputFlags(
   @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_WTH_read(SW_WEATHER* SW_Weather, SW_SKY* SW_Sky, SW_MODEL* SW_Model,
-                 LOG_INFO* LogInfo) {
+          LOG_INFO* LogInfo) {
 
     // Deallocate (previous, if any) `allHist`
     // (using value of `SW_Weather.n_years` previously used to allocate)

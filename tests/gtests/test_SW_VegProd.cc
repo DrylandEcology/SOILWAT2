@@ -128,14 +128,14 @@ namespace {
     // to avoid a leak)
     SW_VEGPROD SW_VegProd;
 
-    SW_VPD_construct(&SW_VegProd, &LogInfo); // allocates memory
+    SW_VPD_construct(&SW_VegProd);
+    SW_VPD_alloc_outptrs(&SW_VegProd, &LogInfo); // allocate memory for output pointers
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_VPD_init_run(
       &SW_VegProd,
       &SW_All.Weather,
       &SW_All.Model,
-      SW_All.Site.latitude,
       &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -243,7 +243,6 @@ namespace {
 
         SW_CLIMATE_YEARLY climateOutput;
         SW_CLIMATE_CLIM climateAverages;
-        SW_VEGPROD vegProd;
 
         double inputValues[8];
         double shrubLimit = .2;
@@ -260,9 +259,6 @@ namespace {
         double SumGrassesFraction = SW_MISSING;
         double C4Variables[3];
 
-        int veg_method = 1;
-        double latitude = 90.0;
-
         Bool fillEmptyWithBareGround = swTRUE;
         Bool warnExtrapolation = swTRUE;
         Bool inNorthHem = swTRUE;
@@ -278,6 +274,9 @@ namespace {
 
         SW_All.Model.startyr = 1980;
         SW_All.Model.endyr = 2010;
+
+        SW_All.VegProd.veg_method = 1;
+        SW_All.Model.latitude = 90.0;
 
         // Reset "SW_All.Weather.allHist"
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
@@ -542,16 +541,18 @@ namespace {
         RelAbundanceL1Expected[bareGroundL1] = 0.;
 
 
-        estimateVegetationFromClimate(&vegProd, SW_All.Weather.allHist,
-                                      &SW_All.Model, veg_method, latitude, &LogInfo);
+        estimateVegetationFromClimate(&SW_All.VegProd, SW_All.Weather.allHist,
+          &SW_All.Model, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Loop through RelAbundanceL1 and test results
         for(index = 0; index < 4; index++) {
-            EXPECT_NEAR(vegProd.veg[index].cov.fCover, RelAbundanceL1Expected[index], tol6);
+            EXPECT_NEAR(SW_All.VegProd.veg[index].cov.fCover,
+                        RelAbundanceL1Expected[index], tol6);
         }
 
-        EXPECT_NEAR(vegProd.bare_cov.fCover, RelAbundanceL1Expected[bareGroundL1], tol6);
+        EXPECT_NEAR(SW_All.VegProd.bare_cov.fCover,
+                    RelAbundanceL1Expected[bareGroundL1], tol6);
 
 
 

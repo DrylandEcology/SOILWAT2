@@ -41,11 +41,12 @@ void SW_VES_read2(
 	LOG_INFO* LogInfo
 );
 void SW_VES_init_ptrs(SW_VEGESTAB* SW_VegEstab);
-void SW_VES_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
+void SW_VES_construct(SW_VEGESTAB* SW_VegEstab);
+void SW_VES_alloc_outptrs(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
+void SW_VegEstab_alloc_outptrs(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
 void SW_VES_deconstruct(SW_VEGESTAB* SW_VegEstab);
 void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_SITE *SW_Site,
 	LyrIndex n_transp_lyrs[], IntU count, LOG_INFO* LogInfo);
-void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
 void SW_VES_checkestab(SW_VEGESTAB_INFO** parms, SW_WEATHER* SW_Weather,
 					   RealD swcBulk[][MAX_LAYERS], TimeInt doy,
 					   TimeInt firstdoy, IntU count);

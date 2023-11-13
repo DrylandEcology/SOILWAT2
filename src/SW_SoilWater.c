@@ -28,7 +28,7 @@
  Updated the use of these three function in all files
  06/24/2013	(rjm)	made temp_snow a module-level static variable (instead of function-level): otherwise it will not get reset to 0 between consecutive calls as a dynamic library
  need to set temp_snow to 0 in function SW_SWC_construct()
- 06/26/2013	(rjm)	closed open files at end of functions SW_SWC_read(), _read_hist() or if LogError() with LOGFATAL is called
+ 06/26/2013	(rjm)	closed open files at end of functions SW_SWC_read(), _read_hist() or if LogError() with LOGERROR is called
  */
 /********************************************************/
 /********************************************************/
@@ -627,11 +627,9 @@ void SW_SWC_init_ptrs(SW_SOILWAT* SW_SoilWat) {
 
 @param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
 	soil water related values
-@param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
+void SW_SWC_construct(SW_SOILWAT* SW_SoilWat) {
 	/* =================================================== */
-	OutPeriod pd;
 
 	/* initialize pointer */
 	SW_SoilWat->hist.file_prefix = NULL;
@@ -639,19 +637,30 @@ void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
 
 	// Clear the module structure:
 	memset(SW_SoilWat, 0, sizeof(SW_SOILWAT));
+}
+
+/**
+ * @brief Allocate dynamic memory for output pointers in SW_SOILWAT struct
+ *
+ * @param[out] SW_SoilWat SW_SoilWat Struct of type SW_SOILWAT containing
+ *  soil water related values
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_SWC_alloc_outptrs(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo) {
+    OutPeriod pd;
 
 	// Allocate output structures:
 	ForEachOutPeriod(pd)
 	{
 		SW_SoilWat->p_accu[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_construct()", LogInfo);
+			sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_alloc_outptrs()", LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
 		if (pd > eSW_Day) {
 			SW_SoilWat->p_oagg[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(1,
-				sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_construct()", LogInfo);
+				sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_alloc_outptrs()", LogInfo);
 
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -668,18 +677,18 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat)
 	ForEachOutPeriod(pd)
 	{
 		if (pd > eSW_Day && !isnull(SW_SoilWat->p_oagg[pd])) {
-			Mem_Free(SW_SoilWat->p_oagg[pd]);
+			free(SW_SoilWat->p_oagg[pd]);
 			SW_SoilWat->p_oagg[pd] = NULL;
 		}
 
 		if (!isnull(SW_SoilWat->p_accu[pd])) {
-			Mem_Free(SW_SoilWat->p_accu[pd]);
+			free(SW_SoilWat->p_accu[pd]);
 			SW_SoilWat->p_accu[pd] = NULL;
 		}
 	}
 
 	if (!isnull(SW_SoilWat->hist.file_prefix)) {
-		Mem_Free(SW_SoilWat->hist.file_prefix);
+		free(SW_SoilWat->hist.file_prefix);
 		SW_SoilWat->hist.file_prefix = NULL;
 	}
 
@@ -689,7 +698,7 @@ void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat)
 	for (i = 0; i < N_WBCHECKS; i++)
 	{
 		if (!isnull(SW_SoilWat->wbErrorNames[i])) {
-			Mem_Free(SW_SoilWat->wbErrorNames[i]);
+			free(SW_SoilWat->wbErrorNames[i]);
 			SW_SoilWat->wbErrorNames[i] = NULL;
 		}
 	}

@@ -62,7 +62,8 @@ typedef enum {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_SWC_init_ptrs(SW_SOILWAT* SW_SoilWat);
-void SW_SWC_construct(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo);
+void SW_SWC_construct(SW_SOILWAT* SW_SoilWat);
+void SW_SWC_alloc_outptrs(SW_SOILWAT* SW_SoilWat, LOG_INFO* LogInfo);
 void SW_SWC_deconstruct(SW_SOILWAT* SW_SoilWat);
 void SW_SWC_new_year(SW_SOILWAT* SW_SoilWat, SW_SITE* SW_Site, TimeInt year,
 					 LOG_INFO* LogInfo);

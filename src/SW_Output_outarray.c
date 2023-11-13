@@ -138,11 +138,11 @@ void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput)
 
 	ForEachOutKey(k) {
 		for (i = 0; i < SW_OUTNPERIODS; i++) {
-			Mem_Free(GenOutput->p_OUT[k][i]);
+			free(GenOutput->p_OUT[k][i]);
 			GenOutput->p_OUT[k][i] = NULL;
 
 			#ifdef STEPWAT
-			Mem_Free(GenOutput->p_OUTsd[k][i]);
+			free(GenOutput->p_OUTsd[k][i]);
 			GenOutput->p_OUTsd[k][i] = NULL;
 			#endif
 		}

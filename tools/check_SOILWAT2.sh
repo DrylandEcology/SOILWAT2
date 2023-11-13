@@ -19,6 +19,10 @@
 dir_out_ref="tests/example/Output_ref"
 
 
+#--- Test with all compilers (true) or with only one recent version per type (false)
+use_all_compilers=true # options: true false
+
+
 #--- Verbosity on failure
 #  * on error: if true, print entire output
 #  * on error: if false (default), print only selected parts that include the error message
@@ -29,22 +33,27 @@ verbosity_on_error=false # options: true false
 
 #--- List of (builtin and macport) compilers
 
-declare -a port_compilers=(
-  "default compiler"
-  "mp-gcc10" "mp-gcc11" "mp-gcc12" "mp-gcc13"
-  "mp-clang-10" "mp-clang-11" "mp-clang-12" "mp-clang-13" "mp-clang-14" "mp-clang-15" "mp-clang-16" "mp-clang-17"
-)
-declare -a ccs=(
-  "clang"
-  "gcc" "gcc" "gcc" "gcc"
-  "clang" "clang" "clang" "clang" "clang" "clang" "clang" "clang"
-)
-declare -a cxxs=(
-  "clang++"
-  "g++" "g++" "g++" "g++"
-  "clang++" "clang++" "clang++" "clang++" "clang++" "clang++" "clang++" "clang++"
-)
-
+if [ "${use_all_compilers}" = true ]; then
+    declare -a port_compilers=(
+      "default compiler"
+      "mp-gcc10" "mp-gcc11" "mp-gcc12" "mp-gcc13"
+      "mp-clang-10" "mp-clang-11" "mp-clang-12" "mp-clang-13" "mp-clang-14" "mp-clang-15" "mp-clang-16" "mp-clang-17"
+    )
+    declare -a ccs=(
+      "clang"
+      "gcc" "gcc" "gcc" "gcc"
+      "clang" "clang" "clang" "clang" "clang" "clang" "clang" "clang"
+    )
+    declare -a cxxs=(
+      "clang++"
+      "g++" "g++" "g++" "g++"
+      "clang++" "clang++" "clang++" "clang++" "clang++" "clang++" "clang++" "clang++"
+    )
+else
+    declare -a port_compilers=("default compiler" "mp-gcc12" "mp-clang-17")
+    declare -a ccs=("clang" "gcc" "clang")
+    declare -a cxxs=("clang++" "g++" "clang++")
+fi
 
 ncomp=${#ccs[@]}
 
@@ -85,11 +94,11 @@ compare_output_against_reference () {
 
 #--- Function to check for errors (but avoid false hits)
 # $1 Text string
-# Returns lines that contain "failed", "abort", "trap", " not ", or "error"
-# ("error" besides "Werror", "Wno-error", or
+# Returns lines that contain "failed", "abort", "trap", "fault", " not ", or "error"
+# (and exclude "Werror", "Wno-error", "default", and
 # any unit test name: "*Test.Errors", "RNGBetaErrorsDeathTest")
 check_error() {
-  echo "$1" | awk 'tolower($0) ~ /[^-.w]error|failed|abort|trap|( not )/ && !/RNGBetaErrorsDeathTest/ && !/WarningsAndErrors/ && !/FailOnErrorDeath/'
+  echo "$1" | awk 'tolower($0) ~ /[^-.w]error|failed|abort|trap|[^e]fault|( not )/ && !/RNGBetaErrorsDeathTest/ && !/WarningsAndErrors/ && !/FailOnErrorDeath/'
 }
 
 #--- Function to check for leaks (but avoid false hits)

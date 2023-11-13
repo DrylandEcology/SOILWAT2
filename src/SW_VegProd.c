@@ -31,7 +31,7 @@ increased length of char outstr[1000] to outstr[1500] because of increased echo
 added the variable RealF help_bareGround as a place holder for the sscanf call.
 01/31/2013	(clk)	changed the read in to account for the albedo for bare ground, storing the input in bare_cov.albedo
 changed _echo_inits() to now display the bare ground components in logfile.log
-06/27/2013	(drs)	closed open files if LogError() with LOGFATAL is called in SW_VPD_read()
+06/27/2013	(drs)	closed open files if LogError() with LOGERROR is called in SW_VPD_read()
 07/09/2013	(clk)	added initialization of all the values of the new vegtype variable forb and forb.cov.fCover
 */
 /********************************************************/
@@ -638,27 +638,36 @@ void SW_VPD_init_ptrs(SW_VEGPROD* SW_VegProd) {
 
 @param[out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
-@param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_VPD_construct(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
+void SW_VPD_construct(SW_VEGPROD* SW_VegProd) {
 	/* =================================================== */
-	OutPeriod pd;
 
 	// Clear the module structure:
 	memset(SW_VegProd, 0, sizeof(SW_VEGPROD));
+}
 
-	// Allocate output structures:
+/**
+ * @brief Allocate dynamic memory for output pointers in the SW_VEGPROD struct
+ *
+ * @param[out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
+ *  cover conditions in the simulation
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_VPD_alloc_outptrs(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
+	OutPeriod pd;
+
+    // Allocate output structures:
 	ForEachOutPeriod(pd)
 	{
 		SW_VegProd->p_accu[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()", LogInfo);
+			sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_alloc_outptrs()", LogInfo);
 
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 		if (pd > eSW_Day) {
 			SW_VegProd->p_oagg[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(1,
-				sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_construct()", LogInfo);
+				sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_alloc_outptrs()", LogInfo);
 
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -670,14 +679,10 @@ void SW_VPD_construct(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
 
 
 void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
-	SW_MODEL* SW_Model, RealD site_latitude, LOG_INFO* LogInfo) {
+                     SW_MODEL* SW_Model, LOG_INFO* LogInfo) {
 
 	TimeInt year;
-    int k, veg_method;
-
-    veg_method = SW_VegProd->veg_method;
-
-    double latitude = site_latitude;
+    int k;
 
     /* Set co2-multipliers to default */
     for (year = 0; year < MAX_NYEAR; year++)
@@ -689,9 +694,9 @@ void SW_VPD_init_run(SW_VEGPROD* SW_VegProd, SW_WEATHER* SW_Weather,
         }
     }
 
-    if(veg_method > 0) {
+    if(SW_VegProd->veg_method > 0) {
         estimateVegetationFromClimate(SW_VegProd, SW_Weather->allHist,
-									  SW_Model, veg_method, latitude, LogInfo);
+									  SW_Model, LogInfo);
     }
 
 }
@@ -711,12 +716,12 @@ void SW_VPD_deconstruct(SW_VEGPROD* SW_VegProd)
 	ForEachOutPeriod(pd)
 	{
 		if (pd > eSW_Day && !isnull(SW_VegProd->p_oagg[pd])) {
-			Mem_Free(SW_VegProd->p_oagg[pd]);
+			free(SW_VegProd->p_oagg[pd]);
 			SW_VegProd->p_oagg[pd] = NULL;
 		}
 
 		if (!isnull(SW_VegProd->p_accu[pd])) {
-			Mem_Free(SW_VegProd->p_accu[pd]);
+			free(SW_VegProd->p_accu[pd]);
 			SW_VegProd->p_accu[pd] = NULL;
 		}
 	}
@@ -990,19 +995,16 @@ void get_critical_rank(SW_VEGPROD* SW_VegProd){
 /**
  @brief Wrapper function for estimating natural vegetation. First, climate is calculated and averaged, then values are estimated
 
- @param[in,out] vegProd Structure holding all values for vegetation cover of simulation
+ @param[in,out] SW_VegProd Structure holding all values for vegetation cover of simulation
  @param[in,out] Weather_hist Array containing all historical data of a site
  @param[in] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
- @param[in] veg_method User specified value determining method of vegetation estimation with the current option(s):
- 1 - Estimate fixed vegetation composition (fractional cover) from long-term climate conditions
- @param[in] latitude Value of type double specifying latitude coordinate the current site is located at
- @param[in,out] LogInfo Holds information dealing with logfile output
+ @param[in] LogInfo Holds information dealing with logfile output
  */
 
-void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
-	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model, int veg_method,
-	double latitude, LOG_INFO* LogInfo) {
+void estimateVegetationFromClimate(SW_VEGPROD *SW_VegProd,
+	SW_WEATHER_HIST** Weather_hist, SW_MODEL* SW_Model,
+    LOG_INFO* LogInfo) {
 
     int numYears = SW_Model->endyr - SW_Model->startyr + 1,
 	k, bareGroundIndex = 7;
@@ -1022,7 +1024,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
     Bool inNorthHem = swTRUE;
     Bool fixBareGround = swTRUE;
 
-    if(latitude < 0.0) {
+    if(SW_Model->latitude < 0.0) {
         inNorthHem = swFALSE;
     }
 
@@ -1040,7 +1042,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
 
     averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);
 
-    if(veg_method == 1) {
+    if(SW_VegProd->veg_method == 1) {
 
         C4Variables[0] = climateAverages.minTemp7thMon_C;
         C4Variables[1] = climateAverages.ddAbove65F_degday;
@@ -1060,10 +1062,10 @@ void estimateVegetationFromClimate(SW_VEGPROD *vegProd,
         }
 
         ForEachVegType(k) {
-            vegProd->veg[k].cov.fCover = RelAbundanceL1[k];
+            SW_VegProd->veg[k].cov.fCover = RelAbundanceL1[k];
         }
 
-        vegProd->bare_cov.fCover = RelAbundanceL0[bareGroundIndex];
+        SW_VegProd->bare_cov.fCover = RelAbundanceL0[bareGroundIndex];
     }
 
     // Deallocate climate structs' memory

@@ -40,7 +40,7 @@
  Lastly, since fieldcap and wiltpt were removed from soils.in, those values are now calculated within read_layers()
  05/16/2013	(drs)	fixed in init_site_info() the check of transpiration region validity: it gave error if only one layer was present
  06/24/2013	(rjm)	added function void SW_SIT_clear_layers(void) to free allocated soil layers
- 06/27/2013	(drs)	closed open files if LogError() with LOGFATAL is called in SW_SIT_read(), _read_layers()
+ 06/27/2013	(drs)	closed open files if LogError() with LOGERROR is called in SW_SIT_read(), _read_layers()
  07/09/2013	(clk)	added the initialization of all the new variables
  06/05/2016 (ctd) Modified threshold for condition involving gravel in _read_layers() function - as per Caitlin's request.
  									Also, added print statements to notify the user that values may be invalid if the gravel content does not follow
@@ -1356,7 +1356,6 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 	#endif
 	LyrIndex r;
 	Bool too_many_regions = swFALSE;
-	RealD tmp;
 	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
@@ -1436,79 +1435,60 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 			SW_Site->transp.range = atof(inbuf);
 			break;
 		case 22:
-			// longitude is currently not used by the code, but may be used in the future
-			// it is present in the `siteparam.in` input file to completely document
-			// site location
-			SW_Site->longitude = atof(inbuf) * deg_to_rad;
-			break;
-		case 23:
-			SW_Site->latitude = atof(inbuf) * deg_to_rad;
-			break;
-		case 24:
-			SW_Site->altitude = atof(inbuf);
-			break;
-		case 25:
-			SW_Site->slope = atof(inbuf) * deg_to_rad;
-			break;
-		case 26:
-			tmp = atof(inbuf);
-			SW_Site->aspect = missing(tmp) ? tmp : tmp * deg_to_rad;
-			break;
-		case 27:
 			SW_Site->bmLimiter = atof(inbuf);
 			break;
-		case 28:
+		case 23:
 			SW_Site->t1Param1 = atof(inbuf);
 			break;
-		case 29:
+		case 24:
 			SW_Site->t1Param2 = atof(inbuf);
 			break;
-		case 30:
+		case 25:
 			SW_Site->t1Param3 = atof(inbuf);
 			break;
-		case 31:
+		case 26:
 			SW_Site->csParam1 = atof(inbuf);
 			break;
-		case 32:
+		case 27:
 			SW_Site->csParam2 = atof(inbuf);
 			break;
-		case 33:
+		case 28:
 			SW_Site->shParam = atof(inbuf);
 			break;
-		case 34:
+		case 29:
 			SW_Site->Tsoil_constant = atof(inbuf);
 			break;
-		case 35:
+		case 30:
 			SW_Site->stDeltaX = atof(inbuf);
 			break;
-		case 36:
+		case 31:
 			SW_Site->stMaxDepth = atof(inbuf);
 			break;
-		case 37:
+		case 32:
 			SW_Site->use_soil_temp = itob(atoi(inbuf));
 			break;
-		case 38:
+		case 33:
 			SW_Carbon->use_bio_mult = itob(atoi(inbuf));
 			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': use_bio_mult = %d\n", SW_Carbon->use_bio_mult);
 			#endif
 			break;
-		case 39:
+		case 34:
 			SW_Carbon->use_wue_mult = itob(atoi(inbuf));
 			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': use_wue_mult = %d\n", SW_Carbon->use_wue_mult);
 			#endif
 			break;
-		case 40:
+		case 35:
 			strcpy(SW_Carbon->scenario, inbuf);
 			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", SW_Carbon->scenario);
 			#endif
 			break;
-		case 41:
+		case 36:
 			SW_Site->type_soilDensityInput = atoi(inbuf);
 			break;
-		case 42:
+		case 37:
 			strcpy(SW_Site->site_swrc_name, inbuf);
 			SW_Site->site_swrc_type =
 							encode_str2swrc(SW_Site->site_swrc_name, LogInfo);
@@ -1517,16 +1497,16 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
                 return; // Exit function prematurely due to error
             }
 			break;
-		case 43:
+		case 38:
 			strcpy(SW_Site->site_ptf_name, inbuf);
 			SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
 			break;
-		case 44:
+		case 39:
 			SW_Site->site_has_swrcp = itob(atoi(inbuf));
 			break;
 
 		default:
-			if (lineno > 44 + MAX_TRANSP_REGIONS)
+			if (lineno > 39 + MAX_TRANSP_REGIONS)
 				break; /* skip extra lines */
 
 			if (MAX_TRANSP_REGIONS < SW_Site->n_transp_rgn) {
@@ -2538,8 +2518,10 @@ void SW_SIT_init_counts(SW_SITE* SW_Site) {
 @brief Print site-parameters and soil characteristics.
 
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_Model Struct of type SW_MODEL holding basic time information
+	about the simulation
 */
-void _echo_inputs(SW_SITE* SW_Site) {
+void _echo_inputs(SW_SITE* SW_Site, SW_MODEL* SW_Model) {
 	/* =================================================== */
 	LyrIndex i;
 	LOG_INFO LogInfo;
@@ -2555,11 +2537,11 @@ void _echo_inputs(SW_SITE* SW_Site) {
 	printf("  PET Scale: %5.4f\n", SW_Site->pet_scale);
 	printf("  Runoff: proportion of surface water lost: %5.4f\n", SW_Site->percentRunoff);
 	printf("  Runon: proportion of new surface water gained: %5.4f\n", SW_Site->percentRunon);
-	printf("  Longitude (degree): %4.2f\n", SW_Site->longitude * rad_to_deg);
-	printf("  Latitude (degree): %4.2f\n", SW_Site->latitude * rad_to_deg);
-	printf("  Altitude (m a.s.l.): %4.2f \n", SW_Site->altitude);
-	printf("  Slope (degree): %4.2f\n", SW_Site->slope * rad_to_deg);
-	printf("  Aspect (degree): %4.2f\n", SW_Site->aspect * rad_to_deg);
+	printf("  Longitude (degree): %4.2f\n", SW_Model->longitude * rad_to_deg);
+	printf("  Latitude (degree): %4.2f\n", SW_Model->latitude * rad_to_deg);
+	printf("  Altitude (m a.s.l.): %4.2f \n", SW_Model->elevation);
+	printf("  Slope (degree): %4.2f\n", SW_Model->slope * rad_to_deg);
+	printf("  Aspect (degree): %4.2f\n", SW_Model->aspect * rad_to_deg);
 
 	printf("\nSnow simulation parameters (SWAT2K model):\n----------------------\n");
 	printf("  Avg. air temp below which ppt is snow ( C): %5.4f\n", SW_Site->TminAccu2);

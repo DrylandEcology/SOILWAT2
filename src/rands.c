@@ -296,7 +296,7 @@ void RandUniList(long count, long first, long last, RandListType list[],
 		list[i] = klist[i];
 	}
 
-	Mem_Free(klist);
+	free(klist);
 }
 
 /*****************************************************/
