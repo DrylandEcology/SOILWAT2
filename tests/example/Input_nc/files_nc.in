@@ -3,4 +3,4 @@
 # NOTE: This file follows a key-value-value triplet. That is, the value is only matched with the key
 # eliminating the possibility of incorrect reads due to line dependencies.
 
-domain domain "Input_nc/domain.nc"
+domain domain Input_nc/domain.nc

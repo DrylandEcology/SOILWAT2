@@ -13,6 +13,8 @@ extern "C" {
 
 #define DOMAIN_NC 0 // Domain netCDF index within `InFilesNC` (PATH_INFO) and `varNC` (SW_DOMAIN)
 
+#define DOMAIN_TEMP "Input_nc/domain_template.nc"
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
@@ -20,8 +22,7 @@ void SW_NC_read_domain(SW_DOMAIN* SW_Domain, const char* domFileName,
                        LOG_INFO* LogInfo);
 void SW_NC_check(SW_DOMAIN* SW_Domain, const char* fileName,
                  LOG_INFO* LogInfo);
-void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, const char* domFileName,
-                                  LOG_INFO* LogInfo);
+void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 void SW_NC_create_template(const char* fileName, unsigned long timeSize,
                            unsigned long vertSize, const char* varName,
                            char* varAttributes[], LOG_INFO* LogInfo);

@@ -307,16 +307,23 @@ void SW_CTL_setup_domain(unsigned long userSUID,
         return; // Exit function prematurely due to error
     }
 
+    #ifdef SW_NETCDF
+    SW_NC_read(SW_Domain, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    #endif
+
     SW_DOM_read(SW_Domain, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     #ifdef SW_NETCDF
-    if(FileExists("domain.nc")) {
+    if(FileExists(SW_Domain->PathInfo.InFilesNC[DOMAIN_NC])) {
 
     } else {
-        SW_NC_create_domain_template(SW_Domain, "domain_template.nc" LogInfo);
+        SW_NC_create_domain_template(SW_Domain, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit prematurely due to error
         }

@@ -204,29 +204,27 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, const char* fileName,
 }
 
 /**
- * @brief Create “domain_template.nc” if “domain.nc” does not exists
+ * @brief Create domain netCDF template if it does not already exists
  *
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
- * @param[in] domFileName File name in which the new netCDF file will have
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, const char* domFileName,
-                                  LOG_INFO* LogInfo) {
+void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     int* domFileID = &SW_Domain->PathInfo.domainFileID;
     int sDimID = 0, xDimID = 0, yDimID = 0; // varID is not used
-    int domDims[2]; // Either [&yDimID, &xDimID] or [&sDimID, 0]
+    int domDims[2]; // Either [yDimID, xDimID] or [sDimID, 0]
     int nDomainDims;
 
-    if(FileExists(domFileName)) {
+    if(FileExists(DOMAIN_TEMP)) {
         LogError(LogInfo, LOGERROR, "Could not create new domain template. "
                                     "This is due to the fact that it already "
                                     " exists. Please modify it and change the name.");
         return; // Exit prematurely due to error
     }
 
-    if(nc_create(domFileName, NC_NETCDF4, domFileID) != NC_NOERR) {
+    if(nc_create(DOMAIN_TEMP, NC_NETCDF4, domFileID) != NC_NOERR) {
         LogError(LogInfo, LOGERROR, "Could not create new domain template due "
                                     "to something internal.");
         return; // Exit prematurely due to error
