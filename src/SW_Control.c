@@ -45,7 +45,7 @@
 #include "include/myMemory.h"
 #include "include/SW_Main_lib.h"
 
-#ifdef SW_NETCDF
+#if defined(SWNETCDF)
 #include "include/SW_netCDF.h"
 #endif
 
@@ -307,7 +307,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
         return; // Exit function prematurely due to error
     }
 
-    #ifdef SW_NETCDF
+    #if defined(SWNETCDF)
     SW_NC_read(SW_Domain, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -319,7 +319,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
         return; // Exit function prematurely due to error
     }
 
-    #ifdef SW_NETCDF
+    #if defined(SWNETCDF)
     if(FileExists(SW_Domain->PathInfo.InFilesNC[DOMAIN_NC])) {
 
     } else {
