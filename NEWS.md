@@ -2,6 +2,40 @@
 
 # SOILWAT2 v8.0.0-devel
 
+* SOILWAT2 now represents a simulation `"domain"`, i.e.,
+  a set of (independent) simulation units/runs (#360; @N1ckP3rsl3y, @dschlaep).
+  A `"domain"` is defined by either a set of `"sites"` or by a `"xy"`-grid.
+  The simulation set consists of simulation units within a `"domain"` that
+  have not yet been simulated.
+  Simulation units are identified via `"suid"` (simulation unit identifier).
+    * Input files are read once and now populate a `"template"`.
+    * New `SW_CTL_RunSimSet()` loops over the simulation set or runs
+      one user specified simulation unit.
+      It writes warning and error messages from all simulation units to the
+      `logfile` but does not exit if a simulation unit fails
+      (`main()` will exit with an error if it fails or
+      if every simulation unit produced an error).
+    * New `SW_CTL_run_sw()` takes a deep copy of the `"template"` as basis
+      for each simulation unit.
+
+* Tests now utilize the same template/deep-copy approach (@dschlaep),
+  i.e., input files from `test/example/` populate a `"template"` and
+  test fixture deep copy the `"template"` (avoiding repeated reading from disk).
+
+## Changes to inputs
+* New input file `"domain.in"` with input variables that specify
+  type and spatial dimensions of the simulation `"domain"`
+  (with a backwards compatible default of one site)
+  as well as start and end year (the latter previously in `"years.in"`).
+  This input file uses a key-value pair approach, i.e., inputs must use
+  the correct key while they don't have to be on a specific line
+  (as they have to be in other input files).
+* Input file `"years.in"` was removed (content moved to `"domain.in"`).
+* New input file `"modelrun.in"` with inputs for geographic coordinates and
+  topography (previously in `"siteparam.in"`).
+* Input file `"siteparam.in"` lost inputs for geographic coordinates and
+  topography (content moved to `"modelrun.in"`).
+
 
 # SOILWAT2 v7.2.0
 * Simulation output remains the same as the previous version.
