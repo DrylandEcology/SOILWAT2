@@ -42,7 +42,7 @@ static void sw_print_usage(void) {
 	swprintf(
 		"Ecosystem water simulation model SOILWAT2\n"
 		"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
-		"Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h] [-s 1] [-t]\n"
+		"Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h] [-s 1] [-t 10]\n"
 		"  -d : operate (chdir) in startdir (default=.)\n"
 		"  -f : name of main input file (default=files.in)\n"
 		"       a preceeding path applies to all input files\n"
