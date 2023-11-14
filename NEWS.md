@@ -22,6 +22,19 @@
   i.e., input files from `test/example/` populate a `"template"` and
   test fixture deep copy the `"template"` (avoiding repeated reading from disk).
 
+* SOILWAT2 gained basic time tracking and reporting (#380; @dschlaep).
+  Temporal resolution may only be full seconds (for C99) but may be sub-seconds
+  for C11 or later.
+  The runs over the simulation set end gracefully
+  if a user specified wall time limit is (nearly) reached
+  (nearly is defined by `SW_WRAPUPTIME`).
+  A report is written to `stdout` or (silently) to the `logfile` if user
+  requested quiet mode; the report includes
+    * Overall wall time and proportion of wall time for the simulation set
+    * Time of simulation units and reports average, standard deviation
+      minimum and maximum time.
+
+
 ## Changes to inputs
 * New input file `"domain.in"` with input variables that specify
   type and spatial dimensions of the simulation `"domain"`
@@ -35,6 +48,7 @@
   topography (previously in `"siteparam.in"`).
 * Input file `"siteparam.in"` lost inputs for geographic coordinates and
   topography (content moved to `"modelrun.in"`).
+* New command line option `"-t X"` where `X` is the wall time limit in seconds.
 
 
 # SOILWAT2 v7.2.0

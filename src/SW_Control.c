@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include "include/SW_Domain.h"
 #include "include/SW_VegProd.h"
+#include "include/SW_Defines.h"
 #include "include/Times.h"
 #include "include/filefuncs.h"
 #include "include/SW_Files.h"
@@ -198,15 +199,30 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 } /******* End Main Loop *********/
 
 void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
-                      SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo) {
+                      SW_DOMAIN *SW_Domain, SW_WALLTIME *SW_WallTime, LOG_INFO *main_LogInfo) {
 
     unsigned long suid, nSims = 0;
     unsigned long ncStartSuid[2]; // 2 -> [y, x] or [0, s]
     char tag_suid[32]; /* 32 = 11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
     tag_suid[0] = '\0';
+    WallTimeSpec tss, tsr;
+    Bool ok_tss = swFALSE, ok_tsr = swFALSE;
+
+    set_walltime(&tss, &ok_tss);
 
     for(suid = SW_Domain->startSimSet; suid < SW_Domain->endSimSet; suid++)
     {
+        /* Check wall time against limit */
+        if (
+            SW_WallTime->has_walltime &&
+            GT(
+                diff_walltime(SW_WallTime->timeStart, swTRUE),
+                SW_WallTime->wallTimeLimit - SW_WRAPUPTIME
+            )
+        ) {
+            goto wrapUp; // wall time (nearly) exhausted, return early
+        }
+
         LOG_INFO local_LogInfo;
         sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
 
@@ -215,9 +231,10 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
 
             nSims++; // Counter of simulation runs
 
+            set_walltime(&tsr, &ok_tsr);
             SW_CTL_run_sw(sw_template, SW_Domain, ncStartSuid, NULL,
                           SW_OutputPtrs, NULL, &local_LogInfo);
-
+            SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
             if(local_LogInfo.stopRun) {
                 main_LogInfo->numDomainErrors++; // Counter of simulation units with error
@@ -244,6 +261,10 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
             LOGERROR,
             "All simulated units produced errors."
         );
+    }
+
+    wrapUp: {
+        SW_WallTime->timeSimSet = diff_walltime(tss, ok_tss);
     }
 }
 

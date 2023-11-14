@@ -25,6 +25,7 @@
 #endif
 #include "include/generic.h"
 #include "include/filefuncs.h"
+#include "include/Times.h"
 #include "include/SW_Files.h"
 #include "include/SW_Defines.h"
 #include "include/SW_Control.h"
@@ -51,13 +52,17 @@
 /************  Main() ************************/
 int main(int argc, char **argv) {
 	/* =================================================== */
+	SW_WALLTIME SW_WallTime;
 	SW_ALL sw_template;
 	SW_DOMAIN SW_Domain;
 	SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
 	LOG_INFO LogInfo;
-	Bool EchoInits;
+	Bool EchoInits = swFALSE;
 
     unsigned long userSUID;
+
+    // Start overall wall time
+    SW_WT_StartTime(&SW_WallTime);
 
     // Initialize logs and pointer objects
     sw_init_logs(stdout, &LogInfo);
@@ -67,7 +72,7 @@ int main(int argc, char **argv) {
 
     // Obtain user input from the command line
     sw_init_args(argc, argv, &EchoInits, &SW_Domain.PathInfo.InFiles[eFirst],
-                 &userSUID, &LogInfo);
+                 &userSUID, &SW_WallTime.wallTimeLimit, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -134,7 +139,7 @@ int main(int argc, char **argv) {
 	}
 
   // run simulations: loop over simulation set
-    SW_CTL_RunSimSet(&sw_template, SW_OutputPtrs, &SW_Domain, &LogInfo);
+    SW_CTL_RunSimSet(&sw_template, SW_OutputPtrs, &SW_Domain, &SW_WallTime, &LogInfo);
 
     closeFiles: {
         // finish-up output
@@ -147,6 +152,7 @@ int main(int argc, char **argv) {
         SW_CTL_clear_model(swTRUE, &sw_template);
 
         sw_write_warnings("(main) ", &LogInfo);
+        SW_WT_ReportTime(SW_WallTime, &LogInfo);
         sw_wrapup_logs(&LogInfo);
         sw_fail_on_error(&LogInfo);
     }
