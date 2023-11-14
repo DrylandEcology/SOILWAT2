@@ -23,8 +23,8 @@
   test fixture deep copy the `"template"` (avoiding repeated reading from disk).
 
 * SOILWAT2 gained basic time tracking and reporting (#380; @dschlaep).
-  Temporal resolution may only be full seconds (for C99) but may be sub-seconds
-  for C11 or later.
+  Temporal resolution may only be full seconds (for C99) but
+  could be sub-seconds (for C11 or later).
   The runs over the simulation set end gracefully
   if a user specified wall time limit is (nearly) reached
   (nearly is defined by `SW_WRAPUPTIME`).
@@ -48,7 +48,14 @@
   topography (previously in `"siteparam.in"`).
 * Input file `"siteparam.in"` lost inputs for geographic coordinates and
   topography (content moved to `"modelrun.in"`).
+* New command line option `"-s X"` where `X` is a simulation unit identifier;
+  if the option `"-s X"` is absent or `X` is `0`, then all simulation units
+  in the simulation `"domain"` are run;
+  otherwise, only the simulation unit `X` is run.
 * New command line option `"-t X"` where `X` is the wall time limit in seconds.
+  The code gracefully ends early if the wall time reaches a limit of
+  `X - SW_WRAPUPTIME` seconds; if the option `"-t X"` is absent,
+  then there is (practically) no wall time limit.
 
 
 # SOILWAT2 v7.2.0
