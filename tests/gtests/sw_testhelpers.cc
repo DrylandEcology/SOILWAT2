@@ -19,10 +19,17 @@
 #include "include/filefuncs.h"
 #include "include/SW_Site.h"
 #include "include/SW_SoilWater.h"
+#include "include/SW_Control.h"
 
 #include "include/SW_Files.h"
 
 #include "tests/gtests/sw_testhelpers.h"
+
+
+SW_ALL template_SW_All;
+SW_DOMAIN template_SW_Domain;
+SW_OUTPUT_POINTERS template_SW_OutputPtrs;
+
 
 /**
   @brief Creates soil layers based on function arguments (instead of reading
@@ -119,4 +126,64 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
     SW_Site->site_swrc_type = encode_str2swrc(SW_Site->site_swrc_name, &LogInfo);
     strcpy(SW_Site->site_ptf_name, (char *) "Cosby1984AndOthers");
     SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
+}
+
+
+/* Set up global variables for testing and read in values from SOILWAT2 example
+
+  Prepares global variables `template_SW_Domain`, `template_SW_All`, and
+  `template_SW_OutputPtrs`.
+
+  The purpose is to read in text files once, and then have `AllTestFixture`
+  create deep copies for each test.
+*/
+void setup_testGlobalSoilwatTemplate() {
+    unsigned long userSUID;
+    LOG_INFO LogInfo;
+
+    // Initialize SOILWAT2 variables and read values from example input file
+    sw_init_logs(NULL, &LogInfo);
+
+    SW_F_init_ptrs(template_SW_Domain.PathInfo.InFiles);
+    SW_CTL_init_ptrs(&template_SW_All);
+
+    template_SW_Domain.PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
+    userSUID = 0; // 0 means no user input for suid, i.e., entire simulation domain
+
+    SW_CTL_setup_domain(userSUID, &template_SW_Domain, &LogInfo);
+
+    SW_CTL_setup_model(&template_SW_All, &template_SW_OutputPtrs, &LogInfo);
+    SW_MDL_get_ModelRun(&template_SW_All.Model, &template_SW_Domain, NULL, &LogInfo);
+    SW_CTL_alloc_outptrs(&template_SW_All, &LogInfo);  /* allocate memory for output pointers */
+    SW_CTL_read_inputs_from_disk(&template_SW_All, &template_SW_Domain.PathInfo, &LogInfo);
+
+    /* Notes on messages during tests
+        - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), opens the file
+        "example/Output/logfile.log" on disk (based on content of "files.in")
+        - we close "Output/logfile.log"
+        - we set `logfp` to NULL to silence all non-error messages during tests
+        - error messages go directly to stderr (which DeathTests use to match against)
+    */
+    sw_wrapup_logs(&LogInfo);
+    sw_fail_on_error(&LogInfo);
+    sw_init_logs(NULL, &LogInfo);
+
+    SW_WTH_finalize_all_weather(
+        &template_SW_All.Markov,
+        &template_SW_All.Weather,
+        template_SW_All.Model.cum_monthdays,
+        template_SW_All.Model.days_in_month,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo);
+
+    SW_CTL_init_run(&template_SW_All, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+}
+
+/* Free allocated memory of global test variables
+*/
+void teardown_testGlobalSoilwatTemplate() {
+    SW_F_deconstruct(template_SW_Domain.PathInfo.InFiles);
+    SW_CTL_clear_model(swTRUE, &template_SW_All);
 }

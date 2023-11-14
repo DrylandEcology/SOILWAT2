@@ -42,7 +42,7 @@ static void sw_print_usage(void) {
 	swprintf(
 		"Ecosystem water simulation model SOILWAT2\n"
 		"More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
-		"Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h] [-s 1]\n"
+		"Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h] [-s 1] [-t 10]\n"
 		"  -d : operate (chdir) in startdir (default=.)\n"
 		"  -f : name of main input file (default=files.in)\n"
 		"       a preceeding path applies to all input files\n"
@@ -52,6 +52,7 @@ static void sw_print_usage(void) {
 		"  -h : print this help information\n"
 		"  -s : simulate all (0) or one (> 0) simulation unit from the domain\n"
 		"       (default = 0)\n"
+		"  -t : wall time limit in seconds\n"
 	);
 }
 
@@ -85,10 +86,14 @@ void sw_print_version(void) {
 @param[out] _firstfile First file name to be filled in the program run
 @param[out] userSUID Simulation Unit Identifier requested by the user (base1);
             0 indicates that all simulations units within domain are requested
+@param[out] wallTimeLimit Terminate simulations early when
+            wall time limit is reached
+            (default value is set by SW_WT_StartTime())
 @param[out] LogInfo Holds information dealing with logfile output
 */
 void sw_init_args(int argc, char **argv, Bool *EchoInits,
                   char **_firstfile, unsigned long *userSUID,
+                  double *wallTimeLimit,
                   LOG_INFO* LogInfo) {
 
 	/* =================================================== */
@@ -105,8 +110,8 @@ void sw_init_args(int argc, char **argv, Bool *EchoInits,
 	 *                   at end of program.
 	 */
 	char str[1024];
-	char const *opts[] = { "-d", "-f", "-e", "-q", "-v", "-h", "-s" }; /* valid options */
-	int valopts[] = { 1, 1, 0, 0, 0, 0, -1 }; /* indicates options with values */
+	char const *opts[] = { "-d", "-f", "-e", "-q", "-v", "-h", "-s", "-t" }; /* valid options */
+	int valopts[] = { 1, 1, 0, 0, 0, 0, 1, 1 }; /* indicates options with values */
 	/* 0=none, 1=required, -1=optional */
 	int i, /* looper through all cmdline arguments */
 	a, /* current valid argument-value position */
@@ -214,6 +219,10 @@ void sw_init_args(int argc, char **argv, Bool *EchoInits,
                         );
                         return; // Exit function prematurely due to error
                     }
+                    break;
+
+                case 7: /* -t */
+                    *wallTimeLimit = atof(str);
                     break;
 
 				default:

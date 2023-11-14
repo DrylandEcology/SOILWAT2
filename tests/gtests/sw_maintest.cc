@@ -65,6 +65,9 @@ int main(int argc, char **argv) {
     swprintf("Invalid project directory (%s)", dir_test);
   }
 
+  setup_testGlobalSoilwatTemplate();
+
+
   //--- Setup unit tests
   ::testing::InitGoogleTest(&argc, argv);
   ::testing::InitGoogleMock(&argc, argv);
@@ -77,6 +80,8 @@ int main(int argc, char **argv) {
 
   // Run unit tests
   res = RUN_ALL_TESTS();
+
+  teardown_testGlobalSoilwatTemplate();
 
   //--- Return output of 'RUN_ALL_TESTS()'
   // (https://google.github.io/googletest/primer.html#writing-the-main-function)

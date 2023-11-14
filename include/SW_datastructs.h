@@ -494,6 +494,24 @@ typedef struct {
 	TimeInt first, last, total;
 } SW_TIMES;
 
+typedef struct {
+  Bool has_walltime; /**< Flag indicating whether timing functionality works */
+  WallTimeSpec timeStart; /**< Time stamp at start of main() */
+
+  double
+    wallTimeLimit, /**< User provided wall time limit in seconds */
+    timeSimSet,    /**< Wall time [seconds] of the loop over the simulation set */
+    timeMean,      /**< Mean time [seconds] across simulation runs - defined as a call to SW_CTL_run_sw() */
+    timeSS,        /**< Sum of squared time - helper for calculating running standard deviation */
+    timeSD,        /**< Standard deviation of time [seconds] across simulation runs */
+    timeMin,       /**< Minimum time [seconds] of a simulation run */
+    timeMax;       /**< Maximum time [seconds] of a simulation run */
+
+  unsigned long
+    nTimedRuns,   /**< Number of simulation runs with timing information */
+    nUntimedRuns; /**< Number of simulation runs for which timing failed */
+} SW_WALLTIME;
+
 /* =================================================== */
 /*                   Weather structs                   */
 /* --------------------------------------------------- */

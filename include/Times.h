@@ -41,6 +41,7 @@
 #define TIMES_H
 
 #include <time.h>
+#include "include/SW_Defines.h"
 #include "include/SW_datastructs.h"
 
 #ifdef __cplusplus
@@ -92,6 +93,12 @@ Bool isleapyear(const TimeInt year);
 void interpolate_monthlyValues(double monthlyValues[], Bool interpAsBase1,
   TimeInt cum_monthdays[], TimeInt days_in_month[], double dailyValues[]);
 
+
+void set_walltime(WallTimeSpec *ts, Bool *ok);
+double diff_walltime(WallTimeSpec start, Bool ok_start);
+void SW_WT_StartTime(SW_WALLTIME *wt);
+void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, SW_WALLTIME *wt);
+void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO* LogInfo);
 
 #ifdef __cplusplus
 }

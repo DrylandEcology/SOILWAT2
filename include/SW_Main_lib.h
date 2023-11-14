@@ -18,6 +18,7 @@ extern "C" {
 /* --------------------------------------------------- */
 void sw_init_args(int argc, char **argv, Bool *EchoInits,
                   char **_firstfile, unsigned long *userSUID,
+                  double *wallTimeLimit,
                   LOG_INFO* LogInfo);
 void sw_print_version(void);
 void sw_fail_on_error(LOG_INFO* LogInfo);

@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include "include/SW_Domain.h"
 #include "include/SW_VegProd.h"
+#include "include/SW_Defines.h"
 #include "include/Times.h"
 #include "include/filefuncs.h"
 #include "include/SW_Files.h"
@@ -102,13 +103,13 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 /**
  * @brief Copy dynamic memory from a template SW_ALL to a new instance
  *
- * @param[in] template Source struct of type SW_ALL to copy
+ * @param[in] source Source struct of type SW_ALL to copy
  * @param[out] dest Destination struct of type SW_ALL to be copied into
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* LogInfo)
+void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo)
 {
-    Mem_Copy(dest, sw_template, sizeof(SW_ALL));
+    memcpy(dest, source, sizeof (*dest));
 
     /* Allocate memory for output pointers */
     SW_CTL_alloc_outptrs(dest, LogInfo);
@@ -120,13 +121,16 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
 
     /* Allocate memory and copy daily weather */
     dest->Weather.allHist = NULL;
-    allocateAllWeather(&dest->Weather.allHist, sw_template->Weather.n_years, LogInfo);
+    allocateAllWeather(&dest->Weather.allHist, source->Weather.n_years, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
-    for(unsigned int year = 0; year < sw_template->Weather.n_years; year++) {
-        Mem_Copy(dest->Weather.allHist[year], sw_template->Weather.allHist[year],
-                 sizeof(SW_WEATHER_HIST));
+    for(unsigned int year = 0; year < source->Weather.n_years; year++) {
+        memcpy(
+            dest->Weather.allHist[year],
+            source->Weather.allHist[year],
+            sizeof (*dest->Weather.allHist[year])
+        );
     }
 
     /* Allocate memory and copy weather generator parameters */
@@ -137,7 +141,7 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
             return; // Exit prematurely due to error
         }
 
-        copyMKV(&dest->Markov, &sw_template->Markov);
+        copyMKV(&dest->Markov, &source->Markov);
     }
 
     /* Allocate memory and copy vegetation establishment parameters */
@@ -147,14 +151,17 @@ static void _copy_template_vals(SW_ALL* sw_template, SW_ALL* dest, LOG_INFO* Log
         return; // Exit prematurely due to error
     }
 
-    for(IntU speciesNum = 0; speciesNum < sw_template->VegEstab.count; speciesNum++) {
+    for(IntU speciesNum = 0; speciesNum < source->VegEstab.count; speciesNum++) {
         _new_species(&dest->VegEstab, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit prematurely due to error
         }
 
-        Mem_Copy(dest->VegEstab.parms[speciesNum], sw_template->VegEstab.parms[speciesNum],
-                 sizeof(SW_VEGESTAB_INFO));
+        memcpy(
+            dest->VegEstab.parms[speciesNum],
+            source->VegEstab.parms[speciesNum],
+            sizeof (*dest->VegEstab.parms[speciesNum])
+        );
     }
 
     SW_VegEstab_alloc_outptrs(&dest->VegEstab, LogInfo);
@@ -196,15 +203,30 @@ void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 } /******* End Main Loop *********/
 
 void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
-                      SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo) {
+                      SW_DOMAIN *SW_Domain, SW_WALLTIME *SW_WallTime, LOG_INFO *main_LogInfo) {
 
     unsigned long suid, nSims = 0;
     unsigned long ncStartSuid[2]; // 2 -> [y, x] or [0, s]
     char tag_suid[32]; /* 32 = 11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
     tag_suid[0] = '\0';
+    WallTimeSpec tss, tsr;
+    Bool ok_tss = swFALSE, ok_tsr = swFALSE;
+
+    set_walltime(&tss, &ok_tss);
 
     for(suid = SW_Domain->startSimSet; suid < SW_Domain->endSimSet; suid++)
     {
+        /* Check wall time against limit */
+        if (
+            SW_WallTime->has_walltime &&
+            GT(
+                diff_walltime(SW_WallTime->timeStart, swTRUE),
+                SW_WallTime->wallTimeLimit - SW_WRAPUPTIME
+            )
+        ) {
+            goto wrapUp; // wall time (nearly) exhausted, return early
+        }
+
         LOG_INFO local_LogInfo;
         sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
 
@@ -213,9 +235,10 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
 
             nSims++; // Counter of simulation runs
 
+            set_walltime(&tsr, &ok_tsr);
             SW_CTL_run_sw(sw_template, SW_Domain, ncStartSuid, NULL,
                           SW_OutputPtrs, NULL, &local_LogInfo);
-
+            SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
             if(local_LogInfo.stopRun) {
                 main_LogInfo->numDomainErrors++; // Counter of simulation units with error
@@ -242,6 +265,10 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
             LOGERROR,
             "All simulated units produced errors."
         );
+    }
+
+    wrapUp: {
+        SW_WallTime->timeSimSet = diff_walltime(tss, ok_tss);
     }
 }
 
@@ -688,7 +715,8 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSt
 
     } else {
         // Copy template SW_ALL to local instance -- yet to be fully implemented
-        _copy_template_vals(sw_template, local_sw_ptr, LogInfo);
+        SW_ALL_deepCopy(sw_template, local_sw_ptr, LogInfo);
+
         if(LogInfo->stopRun) {
             goto freeMem; // Free memory and skip simulation run
         }

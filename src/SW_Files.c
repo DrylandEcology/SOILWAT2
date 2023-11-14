@@ -234,6 +234,26 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 
 }
 
+
+void SW_F_deepCopy(PATH_INFO* source, PATH_INFO* dest, LOG_INFO* LogInfo) {
+    int file;
+
+    memcpy(dest, source, sizeof (*dest));
+
+    SW_F_init_ptrs(dest->InFiles);
+
+    for(file = 0; file < SW_NFILES; file++) {
+        dest->InFiles[file] =  Str_Dup(source->InFiles[file], LogInfo);
+
+        if(LogInfo->stopRun) {
+            return; // Exit prematurely due to error
+        }
+    }
+
+}
+
+
+
 /**
  * @brief Initialize all input files to NULL (`InFiles`)
  *

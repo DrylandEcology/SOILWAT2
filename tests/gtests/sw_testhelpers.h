@@ -8,7 +8,12 @@
 #include "include/myMemory.h"
 #include "include/SW_Weather.h"
 #include "include/SW_Model.h"
+#include "include/SW_Domain.h"
 
+
+extern SW_ALL template_SW_All;
+extern SW_DOMAIN template_SW_Domain;
+extern SW_OUTPUT_POINTERS template_SW_OutputPtrs;
 
 
 #define length(array) (sizeof(array) / sizeof(*(array))) //get length of an array
@@ -34,6 +39,9 @@ void create_test_soillayers(unsigned int nlayers,
 
 void setup_SW_Site_for_tests(SW_SITE *SW_Site);
 
+void setup_testGlobalSoilwatTemplate();
+void teardown_testGlobalSoilwatTemplate();
+
 
 /* AllTestFixture is our base test fixture class inheriting from `::testing::Test` */
 /* Note: don't use text fixtures with death tests in thread-safe mode,
@@ -50,55 +58,26 @@ class AllTestFixture : public ::testing::Test {
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
     SW_OUTPUT_POINTERS SW_OutputPtrs;
-    unsigned long userSUID;
 
-    // `memcpy()` does not work for copying an initialized `SW_ALL`
-    // because it does not copy dynamically allocated memory to which
-    // members of `SW_ALL` point to
+    // Deep copy global test variables
+    // (that were set up by `setup_testGlobalSoilwatTemplate()`) to
+    // test fixture local variables
     void SetUp() override {
-        // Initialize SOILWAT2 variables and read values from example input file
         sw_init_logs(NULL, &LogInfo);
 
-        SW_F_init_ptrs(SW_Domain.PathInfo.InFiles);
-        SW_CTL_init_ptrs(&SW_All);
+        memcpy(&SW_OutputPtrs, &template_SW_OutputPtrs, sizeof (SW_OutputPtrs));
 
-        SW_Domain.PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
-        userSUID = 0; // 0 means no user input for suid, i.e., entire simulation domain
-
-        SW_CTL_setup_domain(userSUID, &SW_Domain, &LogInfo);
-
-        SW_CTL_setup_model(&SW_All, &SW_OutputPtrs, &LogInfo);
-        SW_MDL_get_ModelRun(&SW_All.Model, &SW_Domain, NULL, &LogInfo);
-        SW_CTL_alloc_outptrs(&SW_All, &LogInfo);  /* allocate memory for output pointers */
-        SW_CTL_read_inputs_from_disk(&SW_All, &SW_Domain.PathInfo, &LogInfo);
-
-        /* Notes on messages during tests
-            - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), opens the file
-            "example/Output/logfile.log" on disk (based on content of "files.in")
-            - we close "Output/logfile.log"
-            - we set `logfp` to NULL to silence all non-error messages during tests
-            - error messages go directly to stderr (which DeathTests use to match against)
-        */
-        sw_wrapup_logs(&LogInfo);
-        sw_init_logs(NULL, &LogInfo);
+        SW_DOM_deepCopy(&template_SW_Domain, &SW_Domain, &LogInfo);
         sw_fail_on_error(&LogInfo);
 
-        SW_WTH_finalize_all_weather(
-            &SW_All.Markov,
-            &SW_All.Weather,
-            SW_All.Model.cum_monthdays,
-            SW_All.Model.days_in_month,
-            &LogInfo
-        );
-        sw_fail_on_error(&LogInfo);
-
-        SW_CTL_init_run(&SW_All, &LogInfo);
+        SW_ALL_deepCopy(&template_SW_All, &SW_All, &LogInfo);
         sw_fail_on_error(&LogInfo);
     }
 
+    // Free allocated memory in test fixture local variables
     void TearDown() override {
-      SW_F_deconstruct(SW_Domain.PathInfo.InFiles);
-      SW_CTL_clear_model(swTRUE, &SW_All);
+        SW_F_deconstruct(SW_Domain.PathInfo.InFiles);
+        SW_CTL_clear_model(swTRUE, &SW_All);
     }
 };
 

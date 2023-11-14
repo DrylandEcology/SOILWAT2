@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include "include/SW_Defines.h"
 #include "include/Times.h"
 
 
@@ -239,4 +241,166 @@ void interpolate_monthlyValues(double monthlyValues[], Bool interpAsBase1,
 			  * (mday - 15.) / nmdays;
 		}
 	}
+}
+
+
+/* Wall time functionality
+
+  Ordered by preference, if available, utilize (defined in time.h)
+    * (not implemented here) POSIX: clock_gettime(CLOCK_MONOTONIC, .)
+    * C11 or later: timespec_get(., TIME_UTC)
+    * time()
+*/
+
+void set_walltime(WallTimeSpec *ts, Bool *ok) {
+/*
+  #if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 199309L
+    int err = clock_gettime(CLOCK_MONOTONIC, ts);
+    *ok = (err != 0) ? swTRUE : swFALSE;
+*/
+
+  #if defined(__STDC__) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+    /* C11 or later */
+    int err = timespec_get(ts, TIME_UTC);
+    *ok = (err != 0) ? swTRUE : swFALSE;
+
+  #else
+    *ts = time(NULL);
+    *ok = (*ts != (time_t)(-1)) ? swTRUE : swFALSE;
+  #endif
+}
+
+
+double diff_walltime(WallTimeSpec start, Bool ok_start) {
+  WallTimeSpec end;
+  Bool ok;
+  double d = -1.; /* time lapsed since start [seconds] */
+
+  if (ok_start) {
+    set_walltime(&end, &ok);
+
+    if (ok) {
+      #if (defined(__STDC__) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L)
+        /* C11 or later */
+        d = difftime(end.tv_sec, start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1000000000.;
+
+      #else
+        d = difftime(end, start);
+      #endif
+    }
+  }
+
+  return d;
+}
+
+
+void SW_WT_StartTime(SW_WALLTIME *wt) {
+  set_walltime(&wt->timeStart, &wt->has_walltime);
+
+  wt->wallTimeLimit = 1e12; // unrealistic large value (1e12 s are c. 3.6 years)
+
+  wt->timeSimSet = -1;
+
+  wt->timeMean = 0;
+  wt->timeSS = 0;
+  wt->timeSD = 0;
+  wt->timeMin = 1e9; // unrealistic large value
+  wt->timeMax = 0;
+
+  wt->nTimedRuns = 0;
+  wt->nUntimedRuns = 0;
+}
+
+/* Assumes that all values have been initialized */
+void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, SW_WALLTIME *wt) {
+    double ut = diff_walltime(ts, ok_ts); // negative if time failed
+    double new_mean = 0;
+
+    if (GE(ut, 0.)) {
+        wt->nTimedRuns++;
+
+        new_mean = get_running_mean(wt->nTimedRuns, wt->timeMean, ut);
+
+        wt->timeSS += get_running_sqr(wt->timeMean, new_mean, ut);
+
+        wt->timeMean = new_mean;
+
+        wt->timeMin = fmin(ut, wt->timeMin);
+        wt->timeMax = fmax(ut, wt->timeMax);
+
+
+    } else {
+        wt->nUntimedRuns++;
+    }
+}
+
+
+/** Write time report
+
+Reports on total wall time, number of simulations timed in the simulation set,
+average time for a simulation run and variation among simulation runs
+(standard deviation, SD; min, minimum; max, maximum),
+as well as the proportion of wall time spent during the loop over the
+simulation set relative to the total wall time.
+
+Time report is written to
+    + `logfile`, if quiet mode is active (`-q` flag) and `logfile` is not `NULL`
+    + `stdout`, if not quiet mode
+
+Time is not reported at all if quiet mode and `logfile` is `NULL`.
+
+@param[in] wt Object with timing information.
+@param[in] LogInfo Holds information dealing with logfile output
+*/
+void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO* LogInfo) {
+    double total_time = 0;
+    unsigned long nSims = wt.nTimedRuns + wt.nUntimedRuns;
+
+    FILE *logfp = (Bool)LogInfo->QuietMode ? LogInfo->logfp : stdout;
+
+    if (isnull(logfp)) return;
+
+    fprintf(logfp, "Time report\n");
+
+    total_time = diff_walltime(wt.timeStart, wt.has_walltime); // negative if failed
+
+    if (GT(total_time, 0.)) {
+        fprintf(logfp, "    * Total wall time: %.2f [seconds]\n", total_time);
+    } else {
+        fprintf(logfp, "    * Wall time failed.\n");
+    }
+
+    if (nSims > 1) {
+        fprintf(logfp, "    * Number of simulation runs: %lu", nSims);
+
+        if (wt.nUntimedRuns > 0) {
+            fprintf(
+                logfp,
+                " total (%lu timed | %lu untimed)",
+                wt.nTimedRuns, wt.nUntimedRuns
+            );
+        }
+
+        fprintf(logfp, "\n");
+
+        if (wt.nTimedRuns > 0) {
+            fprintf(
+                logfp,
+                "    * Variation among simulation runs: "
+                "%.3f mean (%.3f SD, %.3f-%.3f min-max) [seconds]\n",
+                wt.timeMean,
+                final_running_sd(wt.nTimedRuns, wt.timeSS),
+                wt.timeMin,
+                wt.timeMax
+            );
+        }
+    }
+
+    if (GT(total_time, 0.) && GE(wt.timeSimSet, 0.)) {
+        fprintf(
+            logfp,
+            "    * Wall time for simulation set: %.2f %% [percent of total wall time]\n",
+            100. * wt.timeSimSet / total_time
+        );
+    }
 }

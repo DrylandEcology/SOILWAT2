@@ -216,4 +216,46 @@ namespace{
       }
     }
   }
+
+
+  // Test time tracking
+  TEST(TimesTest, TimeTracking) {
+    SW_WALLTIME wt;
+    WallTimeSpec start;
+    Bool ok;
+    int k, n_runs = 10;
+    LOG_INFO LogInfo;
+
+
+    // Time difference between start and stop
+    set_walltime(&start, &ok);
+    // ... do some work
+    if (ok) {
+        EXPECT_GE(diff_walltime(start, ok), 0.);
+    }
+
+    EXPECT_DOUBLE_EQ(diff_walltime(start, swFALSE), -1.);
+
+
+    // Time tracking
+    SW_WT_StartTime(&wt);
+
+    for (k = 0; k < n_runs; k++) {
+        set_walltime(&start, &ok);
+        // ... do some work
+        SW_WT_TimeRun(start, ok, &wt);
+    }
+
+    // Time reporting
+    sw_init_logs(NULL, &LogInfo);
+    LogInfo.QuietMode = swTRUE;
+    SW_WT_ReportTime(wt, &LogInfo);
+
+    if (wt.has_walltime) {
+        EXPECT_EQ(wt.nTimedRuns, n_runs);
+        EXPECT_GE(wt.timeMean, 0.);
+    } else {
+        EXPECT_EQ(wt.nTimedRuns, 0);
+    }
+  }
 }

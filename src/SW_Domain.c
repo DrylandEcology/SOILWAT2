@@ -243,6 +243,12 @@ void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
     }
 }
 
+void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo) {
+    memcpy(dest, source, sizeof (*dest));
+
+    SW_F_deepCopy(&dest->PathInfo, &source->PathInfo, LogInfo);
+}
+
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
