@@ -6,12 +6,13 @@
 #include "include/filefuncs.h"
 #include "include/SW_Files.h"
 #include "include/SW_Times.h"
+#include "include/myMemory.h"
 
 /* =================================================== */
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
 
-#define NUM_DOM_IN_KEYS 8 // Number of possible keys within `domain.in`
+#define NUM_DOM_IN_KEYS 13 // Number of possible keys within `domain.in`
 
 /* =================================================== */
 /*             Private Function Declarations           */
@@ -98,7 +99,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     int y, keyID;
     char inbuf[MAX_FILENAMESIZE], *MyFileName;
     TimeInt tempdoy;
-    char key[10], value[6]; // 10 - Max key size, 6 - max characters
+    char key[10], value[12]; // 10 - Max key size, 12 - max value characters
     Bool fstartdy = swFALSE, fenddy = swFALSE;
 
     MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
@@ -159,6 +160,24 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 SW_Domain->endend = (tempdoy == 365) ?
                                 Time_get_lastdoy_y(SW_Domain->endyr) : 365;
                 fenddy = swTRUE;
+                break;
+            case 8: // CRS box
+                SW_Domain->crs_bbox = Str_Dup(value, LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
+                break;
+            case 9: // Minimum x coordinate
+                SW_Domain->min_x = atof(value);
+                break;
+            case 10: // Minimum y coordinate
+                SW_Domain->min_y = atof(value);
+                break;
+            case 11: // Maximum x coordinate
+                SW_Domain->max_x = atof(value);
+                break;
+            case 12: // Maximum y coordinate
+                SW_Domain->max_y = atof(value);
                 break;
             case KEY_NOT_FOUND: // Unknown key
                 LogError(LogInfo, LOGWARN, "%s: Ignoring an unknown key, %s",
@@ -265,7 +284,8 @@ void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo) {
 static int domain_inkey_to_id(char *key) {
     static const char *possibleKeys[] =
             {"Domain", "nDimX", "nDimY", "nDimS",
-            "StartYear", "EndYear", "StartDoy", "EndDoy"};
+            "StartYear", "EndYear", "StartDoy", "EndDoy",
+            "crs_bbox", "xmin_bbox", "ymin_bbox", "xmax_bbox", "ymax_bbox"};
 
     int id, stringMatch = 0, compRes;
 
