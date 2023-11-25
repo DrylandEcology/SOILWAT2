@@ -315,7 +315,7 @@ void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     int file;
 
     for(file = 0; file < SW_NVARNC; file++) {
-        SW_NC_check(SW_Domain, SW_Domain->PathInfo.InFilesNC[file], LogInfo);
+        SW_NC_check(SW_Domain, SW_Domain->netCDFInfo.InFilesNC[file], LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to inconsistent data
         }
@@ -347,8 +347,8 @@ void SW_NC_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         keyID = nc_key_to_id(key);
         switch(keyID) {
             case DOMAIN_NC:
-                SW_Domain->varNC[DOMAIN_NC] = Str_Dup(varName, LogInfo);
-                SW_Domain->PathInfo.InFilesNC[DOMAIN_NC] = Str_Dup(path, LogInfo);
+                SW_Domain->netCDFInfo.varNC[DOMAIN_NC] = Str_Dup(varName, LogInfo);
+                SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC] = Str_Dup(path, LogInfo);
                 break;
             default:
                 LogError(LogInfo, LOGWARN, "Ignoring unknown key in %s, %s",

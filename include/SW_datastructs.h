@@ -778,8 +778,6 @@ typedef struct {
 	char weather_prefix[FILENAME_MAX];
 	char output_prefix[FILENAME_MAX];
 
-    char *InFilesNC[SW_NVARNC];
-
     int domainFileID;
 } PATH_INFO;
 
@@ -1054,6 +1052,22 @@ typedef struct {
            false_easting,
            false_northing;
 } SW_CRS;
+
+/* =================================================== */
+/*                SOILWAT2 netCDF struct               */
+/* --------------------------------------------------- */
+
+typedef struct {
+
+    char *title, *author, *institution, *comment, *coordinate_system;
+    char primary_crs[11]; // Either "geographic" or "projected"
+
+    SW_CRS crs_geogsc, crs_projsc;
+
+    char *varNC[SW_NVARNC];
+    char *InFilesNC[SW_NVARNC];
+} SW_NETCDF;
+
 /* =================================================== */
 /*                    Domain struct                    */
 /* --------------------------------------------------- */
@@ -1079,10 +1093,11 @@ typedef struct {
 			startstart,      /**< First day in first calendar year of the simulation runs */
 			endend;          /**< Last day in last calendar year of the simulation runs */
 
-    char *varNC[SW_NVARNC];
-
 	// Information on input files
 	PATH_INFO PathInfo;
+
+    // Information dealing with netCDFs
+    SW_NETCDF netCDFInfo;
 } SW_DOMAIN;
 
 /* =================================================== */

@@ -347,7 +347,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     }
 
     #if defined(SWNETCDF)
-    if(FileExists(SW_Domain->PathInfo.InFilesNC[DOMAIN_NC])) {
+    if(FileExists(SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC])) {
 
     } else {
         SW_NC_create_domain_template(SW_Domain, LogInfo);
