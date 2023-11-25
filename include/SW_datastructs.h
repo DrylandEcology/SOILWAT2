@@ -1039,6 +1039,22 @@ typedef struct {
 } SW_GEN_OUT;
 
 /* =================================================== */
+/*         Coordinate Reference System struct          */
+/* --------------------------------------------------- */
+
+typedef struct {
+    char *long_name, *grid_mapping_name, crs_wkt;
+    double longitude_of_prime_meridian, semi_major_axis, inverse_flattening;
+
+    // Possible attributes if the type is "projected"
+    char *datum, *units;
+    double standard_parallel[2]; // 2 = [x, y] or [lat, long]
+    double longitude_of_central_meridian,
+           latitude_of_projection_origin,
+           false_easting,
+           false_northing;
+} SW_CRS;
+/* =================================================== */
 /*                    Domain struct                    */
 /* --------------------------------------------------- */
 
