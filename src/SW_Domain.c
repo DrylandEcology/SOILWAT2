@@ -37,7 +37,7 @@ void SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
 
     if(strcmp(SW_Domain->DomainType, "s") == 0) {
         ncStartSuid[0] = 0;
-        ncStartSuid[1] = SW_Domain->nDimS;
+        ncStartSuid[1] = suid;
     } else {
         ncStartSuid[0] = suid / SW_Domain->nDimX;
         ncStartSuid[1] = suid % SW_Domain->nDimX;
