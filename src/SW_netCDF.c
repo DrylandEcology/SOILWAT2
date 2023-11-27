@@ -214,7 +214,7 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     if(FileExists(DOMAIN_TEMP)) {
         LogError(LogInfo, LOGERROR, "Could not create new domain template. "
                                     "This is due to the fact that it already "
-                                    " exists. Please modify it and change the name.");
+                                    "exists. Please modify it and change the name.");
         return; // Exit prematurely due to error
     }
 

@@ -357,7 +357,9 @@ void SW_CTL_setup_domain(unsigned long userSUID,
 
         LogError(LogInfo, LOGERROR, "Domain netCDF template has been created. "
                                     "Please modify it and rename it to "
-                                    "'domain.nc' when done and try again.");
+                                    "'domain.nc' when done and try again. "
+                                    "The template path is: %s",
+                                    DOMAIN_TEMP);
         return; // Exit prematurely so the user can modify the domain template
     }
     #endif
