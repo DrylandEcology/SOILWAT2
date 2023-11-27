@@ -44,19 +44,16 @@ static int nc_key_to_id(const char* key) {
  *
  * @param[in] dimName Name of the new dimension
  * @param[in] size Value/size of the dimension
- * @param[in] domFileID Domain netCDF file ID
+ * @param[in] ncFileID Domain netCDF file ID
  * @param[in,out] dimID Dimension ID
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void create_netCDF_dim(const char* dimName, unsigned long size,
-                    int* domFileID, int* dimID, LOG_INFO* LogInfo) {
-    char errorStr[MAX_LOG_SIZE];
+                    int* ncFileID, int* dimID, LOG_INFO* LogInfo) {
 
-    if(nc_def_dim(*domFileID, dimName, size, dimID) != NC_NOERR) {
-        snprintf(errorStr, MAX_LOG_SIZE, "Could not create dimension '%s' in "
-                                         "domain netCDF.", dimName);
-
-        LogError(LogInfo, LOGERROR, errorStr);
+    if(nc_def_dim(*ncFileID, dimName, size, dimID) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not create dimension '%s' in "
+                                    "netCDF.", dimName);
     }
 }
 
@@ -65,21 +62,18 @@ static void create_netCDF_dim(const char* dimName, unsigned long size,
  *
  * @param[in] varName Name of the new variable
  * @param[in] dimIDs Dimensions of the variable
- * @param[in] domFileID Domain netCDF file ID
+ * @param[in] ncFileID Domain netCDF file ID
  * @param[in] varType The type in which the new variable will be
  * @param[in] numDims Number of dimensions the new variable will hold
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-static void create_netCDF_var(const char* varName, int* dimIDs, int* domFileID,
+static void create_netCDF_var(const char* varName, int* dimIDs, int* ncFileID,
                               int varType, int numDims, LOG_INFO* LogInfo) {
     int varID; // Not used
-    char errorStr[MAX_LOG_SIZE];
 
-    if(nc_def_var(*domFileID, varName, varType, numDims, dimIDs, &varID) != NC_NOERR) {
-        snprintf(errorStr, MAX_LOG_SIZE, "Could not create '%s' variable in "
-                                         "domain netCDF.", varName);
-
-        LogError(LogInfo, LOGERROR, errorStr);
+    if(nc_def_var(*ncFileID, varName, varType, numDims, dimIDs, &varID) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not create '%s' variable in "
+                                    "netCDF.", varName);
     }
     (void) varID;
 }
@@ -212,7 +206,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, const char* fileName,
 */
 void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
-    int* domFileID = &SW_Domain->PathInfo.domainFileID;
+    int* domFileID = &SW_Domain->PathInfo.ncFileIDs[DOMAIN_NC];
     int sDimID = 0, xDimID = 0, yDimID = 0; // varID is not used
     int domDims[2]; // Either [yDimID, xDimID] or [sDimID, 0]
     int nDomainDims;
@@ -258,7 +252,8 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     }
 
     // Create domain variable
-    create_netCDF_var("domain", domDims, domFileID, NC_FLOAT, nDomainDims, LogInfo);
+    create_netCDF_var(SW_Domain->netCDFInfo.varNC[DOMAIN_NC], domDims,
+                      domFileID, NC_FLOAT, nDomainDims, LogInfo);
 
     nc_close(*domFileID);
 }

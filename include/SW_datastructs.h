@@ -778,7 +778,7 @@ typedef struct {
 	char weather_prefix[FILENAME_MAX];
 	char output_prefix[FILENAME_MAX];
 
-    int domainFileID;
+    int ncFileIDs[SW_NVARNC];
 } PATH_INFO;
 
 /* =================================================== */
