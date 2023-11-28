@@ -1074,8 +1074,7 @@ typedef struct {
 	int mode,				/**< Mode: (1) repeated random resample; (2) construct sequence of M years */
 		rng_seed;			/**< Seed for generating random years for mode 1 */
 
-	bool spinup;			/**< Whether the spinup is currently running - used to disable outputs */
-
+	Bool spinup;			/**< Whether the spinup is currently running - used to disable outputs */
 } SW_SPINUP
 
 /* =================================================== */
