@@ -25,7 +25,7 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NFILES 25 // For `InFiles`
+#define SW_NFILES 26 // For `InFiles`
 #define SW_NVARNC 1 // For `InFilesNC`
 
 
@@ -1041,7 +1041,7 @@ typedef struct {
 /* --------------------------------------------------- */
 
 typedef struct {
-    char *long_name, *grid_mapping_name, crs_wkt;
+    char *long_name, *grid_mapping_name, *crs_wkt;
     double longitude_of_prime_meridian, semi_major_axis, inverse_flattening;
 
     // Possible attributes if the type is "projected"
@@ -1060,7 +1060,7 @@ typedef struct {
 typedef struct {
 
     char *title, *author, *institution, *comment, *coordinate_system;
-    char primary_crs[11]; // Either "geographic" or "projected"
+    char *primary_crs; // Either "geographic" or "projected"
 
     SW_CRS crs_geogsc, crs_projsc;
 

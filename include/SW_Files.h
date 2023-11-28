@@ -32,7 +32,7 @@ typedef enum {
 	/* List of all input files */
 	eFirst = 0,
     /* netCDF-related input files directory */
-    eNCIn,
+    eNCIn, eNCInAtt,
 	/* Domain information */
 	eDomain,
 	/* Description of a model run */

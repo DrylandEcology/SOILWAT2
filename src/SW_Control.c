@@ -335,7 +335,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     }
 
     #if defined(SWNETCDF)
-    SW_NC_read(SW_Domain, LogInfo);
+    SW_NC_read(&SW_Domain->netCDFInfo, &SW_Domain->PathInfo, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

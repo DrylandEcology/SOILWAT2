@@ -1,9 +1,9 @@
-#include "include/SW_netCDF.h"
-
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <netcdf.h>
 
+#include "include/SW_netCDF.h"
 #include "include/filefuncs.h"
 #include "include/SW_Defines.h"
 #include "include/SW_Files.h"
@@ -14,6 +14,7 @@
 /* --------------------------------------------------- */
 
 #define NUM_NC_IN_KEYS 1 // Number of possible keys within `files_nc.in`
+#define NUM_ATT_IN_KEYS 27 // Number of possible keys within `attributes_nc.in`
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -24,19 +25,180 @@
  *  the program can understand
  *
  * @param[in] key Key found within the file to test for
+ * @param[in] possibleKeys A list of possible keys that can be found
 */
-static int nc_key_to_id(const char* key) {
-    static const char* knownKeys[] = {"domain"};
-
+static int nc_key_to_id(const char* key, const char **possibleKeys,
+                        int numPossKeys) {
     int id;
 
-    for(id = 0; id < NUM_NC_IN_KEYS; id++) {
-        if(strcmp(key, knownKeys[id]) == 0) {
+    for(id = 0; id < numPossKeys; id++) {
+        if(strcmp(key, possibleKeys[id]) == 0) {
             return id;
         }
     }
 
     return KEY_NOT_FOUND;
+}
+
+/**
+ * @brief Read invariant netCDF information (attributes/CRS) from input file
+ *
+ * @param[in,out] ncInfo Struct of type SW_NETCDF holding constant
+ *  netCDF file information
+ * @param[in,out] PathInfo Struct holding all information about the programs path/files
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
+                         LOG_INFO* LogInfo) {
+
+    static const char* possibleKeys[] = {
+            "title", "author", "institution", "comment",
+            "coordinate_system", "primary_crs",
+
+            "geo_long_name", "geo_grid_mapping_name", "geo_crs_wkt",
+            "geo_longitude_of_prime_meridian", "geo_semi_major_axis",
+            "geo_inverse_flattening",
+
+            "proj_datum", "proj_units", "proj_long_name",
+            "proj_grid_mapping_name", "proj_crs_wkt",
+            "proj_longitude_of_prime_meridian", "proj_semi_major_axis",
+            "proj_inverse_flattening", "proj_datum", "proj_units",
+            "proj_standard_parallel", "proj_longitude_of_central_meridian",
+            "proj_latitude_of_projection_origin", "proj_false_easting",
+            "proj_false_northing"
+            };
+
+    FILE *f;
+    char inbuf[MAX_FILENAMESIZE * 2], value[MAX_FILENAMESIZE * 2]; // * 2 - fit crs_wkt
+    char key[30]; // 30 - Max key size
+    char *MyFileName;
+    int keyID;
+    char std_par_x[5], std_par_y[5]; // 5 to hold up to [-90.0, -90.0]
+    Bool geoCRSFound = swFALSE, projCRSFound = swFALSE;
+
+    MyFileName = PathInfo->InFiles[eNCInAtt];
+	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        LogError(LogInfo, LOGERROR, "Could not open the required file %s",
+                                    PathInfo->InFiles[eNCInAtt]);
+        return; // Exit function prematurely due to error
+    }
+
+    while (GetALine(f, inbuf)) {
+        sscanf(inbuf, "%s %s", key, value);
+
+        // Check if the key is a "long_name", "crs_wkt", or "coordinate_system"
+        if(strstr(key, "long_name") != NULL || strstr(key, "crs_wkt") != NULL ||
+           strcmp(key, "coordinate_system") == 0) {
+
+            // Reread the like and get the entire value (includes spaces)
+            sscanf(inbuf, "%s %[^\n]", key, value);
+        }
+
+        keyID = nc_key_to_id(key, possibleKeys, NUM_ATT_IN_KEYS);
+        switch(keyID)
+        {
+            case 0:
+                ncInfo->title = Str_Dup(value, LogInfo);
+                break;
+            case 1:
+                ncInfo->author = Str_Dup(value, LogInfo);
+                break;
+            case 2:
+                ncInfo->institution = Str_Dup(value, LogInfo);
+                break;
+            case 3:
+                ncInfo->comment = Str_Dup(value, LogInfo);
+                break;
+            case 4:
+                ncInfo->coordinate_system = Str_Dup(value, LogInfo);
+                break;
+            case 5:
+                ncInfo->primary_crs = Str_Dup(value, LogInfo);
+                break;
+            case 6:
+                ncInfo->crs_geogsc.long_name = Str_Dup(value, LogInfo);
+                break;
+            case 7:
+                ncInfo->crs_geogsc.grid_mapping_name = Str_Dup(value, LogInfo);
+                break;
+            case 8:
+                ncInfo->crs_geogsc.crs_wkt = Str_Dup(value, LogInfo);
+                geoCRSFound = swTRUE;
+                break;
+            case 9:
+                ncInfo->crs_geogsc.longitude_of_prime_meridian = atof(value);
+                break;
+            case 10:
+                ncInfo->crs_geogsc.semi_major_axis = atof(value);
+                break;
+            case 11:
+                ncInfo->crs_geogsc.inverse_flattening = atof(value);
+                break;
+            case 12:
+                ncInfo->crs_projsc.datum = Str_Dup(value, LogInfo);
+                break;
+            case 13:
+                ncInfo->crs_geogsc.long_name = Str_Dup(value, LogInfo);
+                break;
+            case 14:
+                ncInfo->crs_geogsc.grid_mapping_name = Str_Dup(value, LogInfo);
+                break;
+            case 15:
+                ncInfo->crs_geogsc.crs_wkt = Str_Dup(value, LogInfo);
+                projCRSFound = swTRUE;
+                break;
+            case 16:
+                ncInfo->crs_geogsc.longitude_of_prime_meridian = atof(value);
+                break;
+            case 17:
+                ncInfo->crs_geogsc.semi_major_axis = atof(value);
+                break;
+            case 18:
+                ncInfo->crs_geogsc.inverse_flattening = atof(value);
+                break;
+            case 19:
+                ncInfo->crs_projsc.datum = Str_Dup(value, LogInfo);
+                break;
+            case 20:
+                ncInfo->crs_projsc.units = Str_Dup(value, LogInfo);
+                break;
+            case 21:
+                sscanf(value, "%s, %s", std_par_x, std_par_y);
+                ncInfo->crs_projsc.standard_parallel[0] = atof(std_par_x);
+                ncInfo->crs_projsc.standard_parallel[1] = atof(std_par_y);
+                break;
+            case 22:
+                ncInfo->crs_projsc.longitude_of_central_meridian = atof(value);
+                break;
+            case 23:
+                ncInfo->crs_projsc.latitude_of_projection_origin = atof(value);
+                break;
+            case 24:
+                ncInfo->crs_projsc.false_easting = atoi(value);
+                break;
+            case 25:
+                ncInfo->crs_projsc.false_northing = atoi(value);
+                break;
+            case KEY_NOT_FOUND:
+                LogError(LogInfo, LOGWARN, "Ignoring unknown key in %s - %s",
+                                            MyFileName, key);
+                break;
+        }
+
+        if(LogInfo->stopRun) {
+            return; // Exist function prematurely due to error
+        }
+    }
+
+    if(projCRSFound && !geoCRSFound) {
+        LogError(LogInfo, LOGERROR, "Program found a projected CRS "
+                                    "in %s but not a geographic CRS. "
+                                    "SOILWAT2 requires either a primary CRS of "
+                                    "type 'geographic' CRS or a primary CRS of "
+                                    "'projected' with a geographic CRS.",
+                                    PathInfo->InFiles[eNCInAtt]);
+    }
 }
 
 /**
@@ -321,29 +483,32 @@ void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 /**
  * @brief Read input files for netCDF related actions
  *
- * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
- *  temporal/spatial information for a set of simulation runs
+ * @param[in,out] ncInfo Struct of type SW_NETCDF holding constant
+ *  netCDF file information
+ * @param[in,out] PathInfo Struct holding all information about the programs path/files
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_NC_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
+void SW_NC_read(SW_NETCDF* ncInfo, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
+    static const char* possibleKeys[] = {"domain"};
+
     FILE *f;
     char inbuf[MAX_FILENAMESIZE], *MyFileName;
     char key[15]; // 15 - Max key size
     char varName[MAX_FILENAMESIZE], path[MAX_FILENAMESIZE];
     int keyID;
 
-    MyFileName = SW_Domain->PathInfo.InFiles[eNCIn];
+    MyFileName = PathInfo->InFiles[eNCIn];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
     // Get domain file name
     while(GetALine(f, inbuf)) {
         sscanf(inbuf, "%s %s %s", key, varName, path);
 
-        keyID = nc_key_to_id(key);
+        keyID = nc_key_to_id(key, possibleKeys, NUM_NC_IN_KEYS);
         switch(keyID) {
             case DOMAIN_NC:
-                SW_Domain->netCDFInfo.varNC[DOMAIN_NC] = Str_Dup(varName, LogInfo);
-                SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC] = Str_Dup(path, LogInfo);
+                ncInfo->varNC[DOMAIN_NC] = Str_Dup(varName, LogInfo);
+                ncInfo->InFilesNC[DOMAIN_NC] = Str_Dup(path, LogInfo);
                 break;
             default:
                 LogError(LogInfo, LOGWARN, "Ignoring unknown key in %s, %s",
@@ -351,5 +516,6 @@ void SW_NC_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 break;
         }
     }
-}
 
+    nc_read_atts(ncInfo, PathInfo, LogInfo);
+}
