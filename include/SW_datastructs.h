@@ -1062,7 +1062,7 @@ typedef struct {
 	PATH_INFO PathInfo;
 
 	// Data for (optional) spinup
-	SW_SPINUP SpinUp;
+	SW_SPINUP SW_SpinUp;
 } SW_DOMAIN;
 
 typedef struct {
