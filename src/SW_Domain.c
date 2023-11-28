@@ -11,7 +11,7 @@
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
 
-#define NUM_DOM_IN_KEYS 8 // Number of possible keys within `domain.in`
+#define NUM_DOM_IN_KEYS 12 // Number of possible keys within `domain.in`
 
 /* =================================================== */
 /*             Private Function Declarations           */
@@ -155,6 +155,43 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 SW_Domain->endend = (tempdoy == 365) ?
                                 Time_get_lastdoy_y(SW_Domain->endyr) : 365;
                 fenddy = swTRUE;
+                break;
+            case 8: // Spinup Mode
+                y = atoi(value);
+                
+                if (y != 1 || y != 2) {
+                    CloseFile(&f, LogInfo);
+                    LogError(LogInfo, LOGERROR,
+                            "%s: Incorrect Mode (%d) for spinup"\
+                            " Please select (1) or (2)", MyFileName, y);
+                    return; // Exit function prematurely due to error
+                }
+                SW_Domain->SW_SpinUp.mode = atoi(value);
+                break;
+            case 9: // Spinup Scope
+                y = atoi(value);
+
+                if (y < 1 || y > (SW_Domain->endyr - SW_Domain->startyr)) {
+                    CloseFile(&f, LogInfo);
+                    LogError(LogInfo, LOGERROR,
+                            "%s: Invalid Scope (N = %d) for spinup", MyFileName, y);
+                    return; // Exit function prematurely due to error
+                }
+                SW_Domain->SW_SpinUp.scope = yearto4digit((TimeInt) y);
+                break;
+            case 10: // Spinup Duration
+                y = atoi(value);
+                
+                if (y < 0) {
+                    CloseFile(&f, LogInfo);
+                    LogError(LogInfo, LOGERROR,
+                            "%s: Invalid Duration (%d) for spinup", MyFileName, y);
+                    return; // Exit function prematurely due to error
+                }
+                SW_Domain->SW_SpinUp.duration = yearto4digit((TimeInt) y);
+                break;
+            case 11: // Spinup Seed
+                SW_Domain->SW_SpinUp.rng_seed = atoi(value);
                 break;
             case KEY_NOT_FOUND: // Unknown key
                 LogError(LogInfo, LOGWARN, "%s: Ignoring an unknown key, %s",
