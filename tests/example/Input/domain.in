@@ -16,3 +16,8 @@ StartYear 1980                  # First (Gregorian) calendar year of simulation
 EndYear   2010                  # Last (Gregorian) calendar year of simulation
 StartDoy  1                     # First day of first year
 EndDoy    365                   # Last day of last year (365 is equivalent to 366)
+
+SpinupMode      1               # Mode ( 1: repeated random resample; 2: sequence of m years ), default = 1
+SpinupScope     1               # Scope ( N ): use first N years of simulation, default = 1
+SpinupDuration  0               # Duration ( M ): sample M years of the first N years, default = 0
+SpinupSeed      11              # Seed for randomly generating years for mode 1, default = 11
