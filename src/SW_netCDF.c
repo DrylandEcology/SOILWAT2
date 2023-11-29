@@ -70,10 +70,11 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
 
     FILE *f;
     char inbuf[MAX_FILENAMESIZE * 2], value[MAX_FILENAMESIZE * 2]; // * 2 - fit crs_wkt
-    char key[30]; // 30 - Max key size
+    char key[35]; // 34 - Max key size
     char *MyFileName;
     int keyID;
-    char std_par_x[5], std_par_y[5]; // 5 to hold up to [-90.0, -90.0]
+    int n;
+    float num1 = 0, num2 = 0;
     Bool geoCRSFound = swFALSE, projCRSFound = swFALSE;
 
     MyFileName = PathInfo->InFiles[eNCInAtt];
@@ -85,17 +86,18 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
     }
 
     while (GetALine(f, inbuf)) {
-        sscanf(inbuf, "%s %s", key, value);
+        sscanf(inbuf, "%34s %s", key, value);
 
         // Check if the key is a "long_name", "crs_wkt", or "coordinate_system"
         if(strstr(key, "long_name") != NULL || strstr(key, "crs_wkt") != NULL ||
            strcmp(key, "coordinate_system") == 0) {
 
             // Reread the like and get the entire value (includes spaces)
-            sscanf(inbuf, "%s %[^\n]", key, value);
+            sscanf(inbuf, "%34s %[^\n]", key, value);
         }
 
         keyID = nc_key_to_id(key, possibleKeys, NUM_ATT_IN_KEYS);
+
         switch(keyID)
         {
             case 0:
@@ -164,9 +166,12 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
                 ncInfo->crs_projsc.units = Str_Dup(value, LogInfo);
                 break;
             case 21:
-                sscanf(value, "%s, %s", std_par_x, std_par_y);
-                ncInfo->crs_projsc.standard_parallel[0] = atof(std_par_x);
-                ncInfo->crs_projsc.standard_parallel[1] = atof(std_par_y);
+                // Re-scan for 1 or 2 values of standard parallel(s)
+                // the user may separate values by white-space, comma, etc.
+                n = sscanf(inbuf, "%34s %f%*[^-.0123456789]%f", key, &num1, &num2);
+
+                ncInfo->crs_projsc.standard_parallel[0] = num1;
+                ncInfo->crs_projsc.standard_parallel[1] = (n == 3) ? num2 : NAN;
                 break;
             case 22:
                 ncInfo->crs_projsc.longitude_of_central_meridian = atof(value);
