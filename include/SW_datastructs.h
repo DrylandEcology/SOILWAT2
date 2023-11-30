@@ -1075,7 +1075,7 @@ typedef struct {
 		rng_seed;			/**< Seed for generating random years for mode 1 */
 
 	Bool spinup;			/**< Whether the spinup is currently running - used to disable outputs */
-} SW_SPINUP
+} SW_SPINUP;
 
 /* =================================================== */
 /*                 Comprehensive struct                */
