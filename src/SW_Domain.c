@@ -167,6 +167,8 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 fenddy = swTRUE;
                 break;
             case 8: // CRS box
+                // Re-scan and get the entire value (including spaces)
+                sscanf(inbuf, "%9s %[^\n]", key, value);
                 SW_Domain->crs_bbox = Str_Dup(value, LogInfo);
                 if(LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
