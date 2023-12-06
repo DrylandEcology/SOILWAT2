@@ -4,6 +4,7 @@
 #include <netcdf.h>
 
 #include "include/SW_netCDF.h"
+#include "include/generic.h"
 #include "include/filefuncs.h"
 #include "include/SW_Defines.h"
 #include "include/SW_Files.h"
@@ -19,26 +20,6 @@
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
-
-/**
- * @brief Convert a key read-in from `files_nc.in` to an index
- *  the program can understand
- *
- * @param[in] key Key found within the file to test for
- * @param[in] possibleKeys A list of possible keys that can be found
-*/
-static int nc_key_to_id(const char* key, const char **possibleKeys,
-                        int numPossKeys) {
-    int id;
-
-    for(id = 0; id < numPossKeys; id++) {
-        if(strcmp(key, possibleKeys[id]) == 0) {
-            return id;
-        }
-    }
-
-    return KEY_NOT_FOUND;
-}
 
 /**
  * @brief Read invariant netCDF information (attributes/CRS) from input file
@@ -96,7 +77,7 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
             sscanf(inbuf, "%34s %[^\n]", key, value);
         }
 
-        keyID = nc_key_to_id(key, possibleKeys, NUM_ATT_IN_KEYS);
+        keyID = key_to_id(key, possibleKeys, NUM_ATT_IN_KEYS);
 
         switch(keyID)
         {
@@ -509,7 +490,7 @@ void SW_NC_read(SW_NETCDF* ncInfo, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
     while(GetALine(f, inbuf)) {
         sscanf(inbuf, "%s %s %s", key, varName, path);
 
-        keyID = nc_key_to_id(key, possibleKeys, NUM_NC_IN_KEYS);
+        keyID = key_to_id(key, possibleKeys, NUM_NC_IN_KEYS);
         switch(keyID) {
             case DOMAIN_NC:
                 ncInfo->varNC[DOMAIN_NC] = Str_Dup(varName, LogInfo);

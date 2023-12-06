@@ -7,6 +7,7 @@
 #include "include/SW_Files.h"
 #include "include/SW_Times.h"
 #include "include/myMemory.h"
+#include "include/generic.h"
 
 /* =================================================== */
 /*                   Local Defines                     */
@@ -17,7 +18,6 @@
 /* =================================================== */
 /*             Private Function Declarations           */
 /* --------------------------------------------------- */
-static int domain_inkey_to_id(char *key);
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -95,6 +95,11 @@ void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain) {
 */
 void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
+    static const char *possibleKeys[] =
+            {"Domain", "nDimX", "nDimY", "nDimS",
+            "StartYear", "EndYear", "StartDoy", "EndDoy",
+            "crs_bbox", "xmin_bbox", "ymin_bbox", "xmax_bbox", "ymax_bbox"};
+
     FILE *f;
     int y, keyID;
     char inbuf[MAX_FILENAMESIZE], *MyFileName;
@@ -109,7 +114,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     while(GetALine(f, inbuf)) {
         sscanf(inbuf, "%s %s", key, value);
 
-        keyID = domain_inkey_to_id(key);
+        keyID = key_to_id(key, possibleKeys, NUM_DOM_IN_KEYS);
         switch(keyID) {
             case 0: // Domain type
                 if(strcmp(value, "xy") != 0 && strcmp(value, "s") != 0) {
@@ -271,31 +276,3 @@ void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo) {
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
-
-/**
- * @brief Helper function to `SW_DOM_read()` to determine which input
- *        key has been read in
- *
- * @param[in] key Read-in key from domain input file
- *
- * @return Either the ID of the key within a fixed set of possible keys,
- *         or KEY_NOT_FOUND (-1) for an unknown key
-*/
-static int domain_inkey_to_id(char *key) {
-    static const char *possibleKeys[] =
-            {"Domain", "nDimX", "nDimY", "nDimS",
-            "StartYear", "EndYear", "StartDoy", "EndDoy",
-            "crs_bbox", "xmin_bbox", "ymin_bbox", "xmax_bbox", "ymax_bbox"};
-
-    int id, stringMatch = 0, compRes;
-
-    for(id = 0; id < NUM_DOM_IN_KEYS; id++) {
-        compRes = strcmp(key, possibleKeys[id]);
-
-        if(compRes == stringMatch) {
-            return id;
-        }
-    }
-
-    return KEY_NOT_FOUND;
-}
