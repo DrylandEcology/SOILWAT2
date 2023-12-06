@@ -97,7 +97,16 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
                 ncInfo->coordinate_system = Str_Dup(value, LogInfo);
                 break;
             case 5:
-                ncInfo->primary_crs = Str_Dup(value, LogInfo);
+                if(strcmp(value, "geographic") == 0) {
+                    ncInfo->primary_crs_is_geographic = swTRUE;
+                } else if(strcmp(value, "projected") == 0) {
+                    ncInfo->primary_crs_is_geographic = swFALSE;
+                } else {
+                    LogError(LogInfo, LOGERROR, "The read-in primary CRS "
+                             "(%s) is not a valid one. Please choose between "
+                             "geographic and projected.", value);
+                    return; // Exit function prematurely due to error
+                }
                 break;
             case 6:
                 ncInfo->crs_geogsc.long_name = Str_Dup(value, LogInfo);
@@ -354,7 +363,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, const char* fileName,
 */
 void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
-    int* domFileID = &SW_Domain->PathInfo.ncFileIDs[DOMAIN_NC];
+    int* domFileID = &SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC];
     int sDimID = 0, xDimID = 0, yDimID = 0; // varID is not used
     int domDims[2]; // Either [yDimID, xDimID] or [sDimID, 0]
     int nDomainDims;

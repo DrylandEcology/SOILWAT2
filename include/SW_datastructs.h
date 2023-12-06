@@ -777,8 +777,6 @@ typedef struct {
 	char _ProjDir[FILENAME_MAX];
 	char weather_prefix[FILENAME_MAX];
 	char output_prefix[FILENAME_MAX];
-
-    int ncFileIDs[SW_NVARNC];
 } PATH_INFO;
 
 /* =================================================== */
@@ -1060,12 +1058,14 @@ typedef struct {
 typedef struct {
 
     char *title, *author, *institution, *comment, *coordinate_system;
-    char *primary_crs; // Either "geographic" or "projected"
+    Bool primary_crs_is_geographic;
 
     SW_CRS crs_geogsc, crs_projsc;
 
     char *varNC[SW_NVARNC];
     char *InFilesNC[SW_NVARNC];
+
+    int ncFileIDs[SW_NVARNC];
 } SW_NETCDF;
 
 /* =================================================== */
