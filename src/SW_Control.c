@@ -206,7 +206,7 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
                       SW_DOMAIN *SW_Domain, SW_WALLTIME *SW_WallTime, LOG_INFO *main_LogInfo) {
 
     unsigned long suid, nSims = 0;
-    unsigned long ncStartSuid[2]; // 2 -> [y, x] or [0, s]
+    unsigned long ncSuid[2]; // 2 -> [y, x] or [0, s]
     char tag_suid[32]; /* 32 = 11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
     tag_suid[0] = '\0';
     WallTimeSpec tss, tsr;
@@ -230,13 +230,13 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
         LOG_INFO local_LogInfo;
         sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
 
-        SW_DOM_calc_ncStartSuid(SW_Domain, suid, ncStartSuid);
-        if(SW_DOM_CheckProgress(SW_Domain->DomainType, ncStartSuid)) {
+        SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
+        if(SW_DOM_CheckProgress(SW_Domain->DomainType, ncSuid)) {
 
             nSims++; // Counter of simulation runs
 
             set_walltime(&tsr, &ok_tsr);
-            SW_CTL_run_sw(sw_template, SW_Domain, ncStartSuid, NULL,
+            SW_CTL_run_sw(sw_template, SW_Domain, ncSuid, NULL,
                           SW_OutputPtrs, NULL, &local_LogInfo);
             SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
@@ -245,7 +245,7 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
 
             } else {
                 // Set simulation run progress
-                SW_DOM_SetProgress(SW_Domain->DomainType, ncStartSuid);
+                SW_DOM_SetProgress(SW_Domain->DomainType, ncSuid);
             }
 
             if (local_LogInfo.numWarnings > 0) {
@@ -693,7 +693,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
  *  reference for local versions of SW_ALL
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
- * @param[in] ncStartSuid Unique indentifier of the first suid to run
+ * @param[in] ncSuid Unique indentifier of the first suid to run
  *  in relation to netCDF gridcells/sites
  * @param[in] ncInFiles Input netCDF files
  * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
@@ -701,7 +701,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
  * @param[in,out] p_OUT Data storage for simulation run values
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncStartSuid[],
+void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSuid[],
                    char* ncInFiles[], SW_OUTPUT_POINTERS SW_OutputPtrs[],
                    RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 
@@ -741,6 +741,6 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSt
     }
 
     (void) ncInFiles;
-    (void) ncStartSuid;
+    (void) ncSuid;
     (void) p_OUT;
 }

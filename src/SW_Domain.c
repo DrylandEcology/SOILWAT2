@@ -29,18 +29,18 @@
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
  * @param[in] suid Unique identifier for a simulation run
- * @param[out] ncStartSuid Unique indentifier of the first suid to run
+ * @param[out] ncSuid Unique indentifier of the first suid to run
  *  in relation to netCDFs
 */
-void SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
-                             unsigned long ncStartSuid[]) {
+void SW_DOM_calc_ncSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
+                             unsigned long ncSuid[]) {
 
     if(strcmp(SW_Domain->DomainType, "s") == 0) {
-        ncStartSuid[0] = 0;
-        ncStartSuid[1] = suid;
+        ncSuid[0] = 0;
+        ncSuid[1] = suid;
     } else {
-        ncStartSuid[0] = suid / SW_Domain->nDimX;
-        ncStartSuid[1] = suid % SW_Domain->nDimX;
+        ncSuid[0] = suid / SW_Domain->nDimX;
+        ncSuid[1] = suid % SW_Domain->nDimX;
     }
 }
 
@@ -61,16 +61,16 @@ void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
  *
  * @param[in] domainType Type of domain in which simulations are running
  *  (gridcell/sites)
- * @param[in] ncStartSuid Current simulation unit identifier for which progress
+ * @param[in] ncSuid Current simulation unit identifier for which progress
  * should be checked.
  *
  * @return
- * TRUE if simulation for \p ncStartSuid has not been completed yet;
- * FALSE if simulation for \p ncStartSuid has been completed (i.e., skip).
+ * TRUE if simulation for \p ncSuid has not been completed yet;
+ * FALSE if simulation for \p ncSuid has been completed (i.e., skip).
 */
-Bool SW_DOM_CheckProgress(char* domainType, unsigned long ncStartSuid[]) {
+Bool SW_DOM_CheckProgress(char* domainType, unsigned long ncSuid[]) {
     (void) domainType;
-    (void) ncStartSuid;
+    (void) ncSuid;
 
     // return TRUE (due to lack of capability to track progress)
     return swTRUE;
@@ -218,12 +218,12 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  *
  * @param[in] domainType Type of domain in which simulations are running
  *  (gridcell/sites)
- * @param[in] ncStartSuid Unique indentifier of the first suid to run
+ * @param[in] ncSuid Unique indentifier of the first suid to run
  *  in relation to netCDFs
 */
-void SW_DOM_SetProgress(char* domainType, unsigned long ncStartSuid[]) {
+void SW_DOM_SetProgress(char* domainType, unsigned long ncSuid[]) {
     (void) domainType;
-    (void) ncStartSuid;
+    (void) ncSuid;
 }
 
 /**
@@ -258,7 +258,7 @@ void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
     } else {
         *endSimSet = SW_Domain->nSUIDs;
         for(*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
-            SW_DOM_calc_ncStartSuid(SW_Domain, *startSimSet, startSuid);
+            SW_DOM_calc_ncSuid(SW_Domain, *startSimSet, startSuid);
 
             if(SW_DOM_CheckProgress(SW_Domain->DomainType, startSuid)) {
                 return; // Found start suid

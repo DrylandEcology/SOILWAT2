@@ -132,7 +132,7 @@ typedef struct {
 	Bool newperiod[SW_OUTNPERIODS];
 	Bool isnorth;
 
-    int ncStartSuid[2]; // First element used for domain "s", both used for "xy"
+    int ncSuid[2]; // First element used for domain "s", both used for "xy"
 
 	#ifdef STEPWAT
 	/* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
