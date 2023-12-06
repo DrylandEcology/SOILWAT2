@@ -1038,6 +1038,18 @@ typedef struct {
 /* --------------------------------------------------- */
 
 typedef struct {
+	// data for the (optional) spinup before simulation loop
+	
+	TimeInt scope,			/**< Scope (N): use first N years of simulation for the spinup */
+			duration;		/**< Duration (M): sample M years out of the first N years */
+	
+	int mode,				/**< Mode: (1) repeated random resample; (2) construct sequence of M years */
+		rng_seed;			/**< Seed for generating random years for mode 1 */
+
+	Bool spinup;			/**< Whether the spinup is currently running - used to disable outputs */
+} SW_SPINUP;
+
+typedef struct {
 	// Spatial domain information
 	// SUID = simulation unit identifier
 
@@ -1064,18 +1076,6 @@ typedef struct {
 	// Data for (optional) spinup
 	SW_SPINUP SW_SpinUp;
 } SW_DOMAIN;
-
-typedef struct {
-	// data for the (optional) spinup before simulation loop
-	
-	TimeInt scope,			/**< Scope (N): use first N years of simulation for the spinup */
-			duration;		/**< Duration (M): sample M years out of the first N years */
-	
-	int mode,				/**< Mode: (1) repeated random resample; (2) construct sequence of M years */
-		rng_seed;			/**< Seed for generating random years for mode 1 */
-
-	Bool spinup;			/**< Whether the spinup is currently running - used to disable outputs */
-} SW_SPINUP;
 
 /* =================================================== */
 /*                 Comprehensive struct                */
