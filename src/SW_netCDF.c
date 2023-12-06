@@ -15,7 +15,7 @@
 /* --------------------------------------------------- */
 
 #define NUM_NC_IN_KEYS 1 // Number of possible keys within `files_nc.in`
-#define NUM_ATT_IN_KEYS 27 // Number of possible keys within `attributes_nc.in`
+#define NUM_ATT_IN_KEYS 25 // Number of possible keys within `attributes_nc.in`
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -40,8 +40,7 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
             "geo_longitude_of_prime_meridian", "geo_semi_major_axis",
             "geo_inverse_flattening",
 
-            "proj_datum", "proj_units", "proj_long_name",
-            "proj_grid_mapping_name", "proj_crs_wkt",
+            "proj_long_name", "proj_grid_mapping_name", "proj_crs_wkt",
             "proj_longitude_of_prime_meridian", "proj_semi_major_axis",
             "proj_inverse_flattening", "proj_datum", "proj_units",
             "proj_standard_parallel", "proj_longitude_of_central_meridian",
@@ -128,34 +127,31 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
                 ncInfo->crs_geogsc.inverse_flattening = atof(value);
                 break;
             case 12:
-                ncInfo->crs_projsc.datum = Str_Dup(value, LogInfo);
+                ncInfo->crs_projsc.long_name = Str_Dup(value, LogInfo);
                 break;
             case 13:
-                ncInfo->crs_geogsc.long_name = Str_Dup(value, LogInfo);
+                ncInfo->crs_projsc.grid_mapping_name = Str_Dup(value, LogInfo);
                 break;
             case 14:
-                ncInfo->crs_geogsc.grid_mapping_name = Str_Dup(value, LogInfo);
-                break;
-            case 15:
-                ncInfo->crs_geogsc.crs_wkt = Str_Dup(value, LogInfo);
+                ncInfo->crs_projsc.crs_wkt = Str_Dup(value, LogInfo);
                 projCRSFound = swTRUE;
                 break;
+            case 15:
+                ncInfo->crs_projsc.longitude_of_prime_meridian = atof(value);
+                break;
             case 16:
-                ncInfo->crs_geogsc.longitude_of_prime_meridian = atof(value);
+                ncInfo->crs_projsc.semi_major_axis = atof(value);
                 break;
             case 17:
-                ncInfo->crs_geogsc.semi_major_axis = atof(value);
+                ncInfo->crs_projsc.inverse_flattening = atof(value);
                 break;
             case 18:
-                ncInfo->crs_geogsc.inverse_flattening = atof(value);
-                break;
-            case 19:
                 ncInfo->crs_projsc.datum = Str_Dup(value, LogInfo);
                 break;
-            case 20:
+            case 19:
                 ncInfo->crs_projsc.units = Str_Dup(value, LogInfo);
                 break;
-            case 21:
+            case 20:
                 // Re-scan for 1 or 2 values of standard parallel(s)
                 // the user may separate values by white-space, comma, etc.
                 n = sscanf(inbuf, "%34s %f%*[^-.0123456789]%f", key, &num1, &num2);
@@ -163,16 +159,16 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
                 ncInfo->crs_projsc.standard_parallel[0] = num1;
                 ncInfo->crs_projsc.standard_parallel[1] = (n == 3) ? num2 : NAN;
                 break;
-            case 22:
+            case 21:
                 ncInfo->crs_projsc.longitude_of_central_meridian = atof(value);
                 break;
-            case 23:
+            case 22:
                 ncInfo->crs_projsc.latitude_of_projection_origin = atof(value);
                 break;
-            case 24:
+            case 23:
                 ncInfo->crs_projsc.false_easting = atoi(value);
                 break;
-            case 25:
+            case 24:
                 ncInfo->crs_projsc.false_northing = atoi(value);
                 break;
             case KEY_NOT_FOUND:
