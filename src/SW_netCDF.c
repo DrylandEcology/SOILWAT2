@@ -50,8 +50,8 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
             };
 
     FILE *f;
-    char inbuf[MAX_FILENAMESIZE * 2], value[MAX_FILENAMESIZE * 2]; // * 2 - fit crs_wkt
-    char key[35]; // 34 - Max key size
+    char inbuf[LARGE_VALUE], value[LARGE_VALUE];
+    char key[30]; // 30 - Max key size
     char *MyFileName;
     int keyID;
     int n;

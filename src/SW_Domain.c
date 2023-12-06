@@ -104,7 +104,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     int y, keyID;
     char inbuf[MAX_FILENAMESIZE], *MyFileName;
     TimeInt tempdoy;
-    char key[10], value[12]; // 10 - Max key size, 12 - max value characters
+    char key[10], value[LARGE_VALUE]; // 10 - Max key size
     Bool fstartdy = swFALSE, fenddy = swFALSE;
 
     MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
