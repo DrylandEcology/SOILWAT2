@@ -1,6 +1,7 @@
 #------ Input file for netCDF attribute/CRS specifications
 #
 # NOTE: This file follows the convention of key-value pairs. That is, the value is only matched with the key eliminating the possibility of incorrect reads due to line dependencies.
+# NOTE: When writing the value for any "crs_wkt" please remove occurrences of '\' within it (when generating netCDFs, the '\' will be placed back into the attribute value).
 
 #------ Global Attributes
 title              example_title
@@ -16,7 +17,7 @@ primary_crs geographic
 
 geo_long_name                   WGS84
 geo_grid_mapping_name           latitude_longitude
-geo_crs_wkt                     GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]
+geo_crs_wkt                     GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]
 geo_longitude_of_prime_meridian 0.0
 geo_semi_major_axis             6378137.0
 geo_inverse_flattening          298.257223563
@@ -25,7 +26,7 @@ geo_inverse_flattening          298.257223563
 
 proj_long_name                     NAD83 / Conus Albers
 proj_grid_mapping_name             albers_conical_equal_area
-proj_crs_wkt                       PROJCS[\"NAD83 / Conus Albers\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Albers_Conic_Equal_Area\"],PARAMETER[\"latitude_of_center\",23],PARAMETER[\"longitude_of_center\",-96],PARAMETER[\"standard_parallel_1\",29.5],PARAMETER[\"standard_parallel_2\",45.5],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"5070\"]]
+proj_crs_wkt                       PROJCS["NAD83 / Conus Albers",GEOGCS["NAD83",DATUM["North_American_Datum_1983",SPHEROID["GRS 1980",6378137,298.257222101]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4269"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["latitude_of_center",23],PARAMETER["longitude_of_center",-96],PARAMETER["standard_parallel_1",29.5],PARAMETER["standard_parallel_2",45.5],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","5070"]]
 proj_longitude_of_prime_meridian 0.0
 proj_semi_major_axis               6378137.0
 proj_inverse_flattening            298.257222101
