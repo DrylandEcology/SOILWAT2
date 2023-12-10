@@ -1366,7 +1366,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
         return; // Exit function prematurely due to error
     }
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		switch (lineno) {
 		case 0:
 			SW_Site->_SWCMinVal = atof(inbuf);
@@ -1606,7 +1606,7 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		lyrno = SW_Site->n_layers++;
 
 		x = sscanf(
@@ -1894,7 +1894,7 @@ void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		x = sscanf(
 			inbuf,
 			"%f %f %f %f %f %f",

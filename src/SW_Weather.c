@@ -1467,7 +1467,7 @@ void SW_WTH_setup(SW_WEATHER* SW_Weather, char *InFiles[],
         return; // Exit function prematurely due to error
     }
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		switch (lineno) {
 		case 0:
 			SW_Weather->use_snow = itob(atoi(inbuf));
@@ -1913,7 +1913,7 @@ void _read_weather_hist(
 	if (NULL == (f = fopen(fname, "r")))
 		return;
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		lineno++;
 		x = sscanf(inbuf, "%d %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
                    &doy, &weathInput[0], &weathInput[1], &weathInput[2], &weathInput[3],

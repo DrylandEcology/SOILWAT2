@@ -2291,7 +2291,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 	*used_OUTNPERIODS = 1; // if 'TIMESTEP' is not specified in input file, then only one time step = period can be specified
 
 
-	while (GetALine(f, inbuf))
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE))
 	{
 		itemno++; /* note extra lines will cause an error */
 

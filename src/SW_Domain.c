@@ -102,7 +102,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     FILE *f;
     int y, keyID;
-    char inbuf[MAX_FILENAMESIZE], *MyFileName;
+    char inbuf[LARGE_VALUE], *MyFileName;
     TimeInt tempdoy;
     char key[10], value[LARGE_VALUE]; // 10 - Max key size
     Bool fstartdy = swFALSE, fenddy = swFALSE;
@@ -111,8 +111,8 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 	f = OpenFile(MyFileName, "r", LogInfo);
 
     // Set SW_DOMAIN
-    while(GetALine(f, inbuf)) {
-        sscanf(inbuf, "%s %s", key, value);
+    while(GetALine(f, inbuf, LARGE_VALUE)) {
+        sscanf(inbuf, "%9s %s", key, value);
 
         keyID = key_to_id(key, possibleKeys, NUM_DOM_IN_KEYS);
         switch(keyID) {

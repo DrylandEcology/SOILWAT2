@@ -97,7 +97,7 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 
     #ifdef SWDEBUG
     if (debug) swprintf("'SW_F_read': line = %d/%d: %s\n", lineno, eEndFile, inbuf);

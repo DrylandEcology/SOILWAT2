@@ -50,7 +50,7 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
 
     FILE *f;
     char inbuf[LARGE_VALUE], value[LARGE_VALUE];
-    char key[30]; // 30 - Max key size
+    char key[35]; // 35 - Max key size
     char *MyFileName;
     int keyID;
     int n;
@@ -65,7 +65,7 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf)) {
+    while (GetALine(f, inbuf, LARGE_VALUE)) {
         sscanf(inbuf, "%34s %s", key, value);
 
         // Check if the key is a "long_name", "crs_wkt", or "coordinate_system"
@@ -492,8 +492,8 @@ void SW_NC_read(SW_NETCDF* ncInfo, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 	f = OpenFile(MyFileName, "r", LogInfo);
 
     // Get domain file name
-    while(GetALine(f, inbuf)) {
-        sscanf(inbuf, "%s %s %s", key, varName, path);
+    while(GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+        sscanf(inbuf, "%14s %s %s", key, varName, path);
 
         keyID = key_to_id(key, possibleKeys, NUM_NC_IN_KEYS);
         switch(keyID) {

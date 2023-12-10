@@ -104,7 +104,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
   }
   #endif
 
-  while (GetALine(f, inbuf)) {
+  while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
     #ifdef SWDEBUG
     if (debug) swprintf("\ninbuf = %s", inbuf);
     #endif

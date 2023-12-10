@@ -272,7 +272,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
             return; // Exit function prematurely due to error
         }
 
-		if (!GetALine(f, inbuf) || (consider_InputFlag && *inbuf == '0')) {
+		if (!GetALine(f, inbuf, MAX_FILENAMESIZE) || (consider_InputFlag && *inbuf == '0')) {
 			/* turn off vegetation establishment if either
 					 * no species listed
 					 * if user input flag is set to 0 and we don't ignore that input,
@@ -284,7 +284,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 			/* read file names with species establishment parameters
 				 and read those files one by one
 			*/
-			while (GetALine(f, inbuf)) {
+			while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 				strcpy(buf, _ProjDir); // add `_ProjDir` to path, e.g., for STEPWAT2
 				strcat(buf, inbuf);
 				_read_spp(buf, SW_VegEstab, LogInfo);
@@ -529,7 +529,7 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 			return; // Exit function prematurely due to error
 	}
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		switch (lineno) {
 		case 0:
 			strcpy(name, inbuf);

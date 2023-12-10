@@ -92,7 +92,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		if (lineno++ < line_help) {
 			switch (lineno) {
             case 1:

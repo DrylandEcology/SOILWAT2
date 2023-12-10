@@ -199,14 +199,14 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
 
 
 /**************************************************************/
-Bool GetALine(FILE *f, char buf[]) {
+Bool GetALine(FILE *f, char buf[], int numChars) {
 	/* Read a line of possibly commented input from the file *f.
 	 * Skip blank lines and comment lines.  Comments within the
 	 * line are removed and trailing whitespace is removed.
 	 */
 	char *p;
 	Bool not_eof = swFALSE;
-	while (!isnull( fgets(buf, 1024, f) )) {
+	while (!isnull( fgets(buf, numChars, f) )) {
 		if (!isnull( p=strchr(buf, (int) '\n')))
 			*p = '\0';
 

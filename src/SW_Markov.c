@@ -479,7 +479,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 	if (NULL == (f = fopen(MyFileName, "r")))
 		return swFALSE;
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		if (lineno++ == MAX_DAYS)
 			break; /* skip extra lines */
 
@@ -568,7 +568,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
 	if (NULL == (f = fopen(MyFileName, "r")))
 		return swFALSE;
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		if (lineno++ == MAX_WEEKS)
 			break; /* skip extra lines */
 

@@ -1080,7 +1080,7 @@ void SW_SWC_read(
         return; // Exit function prematurely due to error
     }
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		switch (lineno) {
 		case 0:
 			SW_SoilWat->hist_use = (atoi(inbuf)) ? swTRUE : swFALSE;
@@ -1177,7 +1177,7 @@ void _read_swc_hist(SW_SOILWAT_HIST* SoilWat_hist, TimeInt year,
 
 	_clear_hist(SoilWat_hist->swc, SoilWat_hist->std_err);
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		recno++;
 		x = sscanf(inbuf, "%d %d %f %f", &doy, &lyr, &swc, &st_err);
 		if (x < 4) {

@@ -128,7 +128,7 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	 */
     SW_Model->addtl_yr = 0;
 	lineno = 0;
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		switch(lineno) {
 			case 0: // Longitude
 				// longitude is currently not used by the code, but may be used in the future
