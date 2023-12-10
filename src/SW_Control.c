@@ -337,6 +337,10 @@ void SW_CTL_setup_domain(unsigned long userSUID,
 
     SW_DOM_calc_nSUIDs(SW_Domain);
     SW_DOM_SimSet(SW_Domain, userSUID, LogInfo);
+
+    if ( SW_Domain->SW_SpinUp.spinup ) {
+      SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
+    }
 }
 
 /** @brief Setup and construct model (independent of inputs)
