@@ -193,6 +193,63 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
 }
 
 /**
+ * @brief Checks to see if a given netCDF has a specific dimention
+ *
+ * @param[in] targetDim Dimension name to test for
+ * @param[in] ncFileID Identifier of the open netCDF file to test
+ *
+ * @return Whether or not the given dimension name exists in the netCDF file
+*/
+static Bool dimExists(const char* targetDim, int ncFileID) {
+
+    int dimID; // Not used
+
+    // Attempt to get the dimension identifier
+    int inquireRes = nc_inq_dimid(ncFileID, targetDim, &dimID);
+
+    return (Bool) (inquireRes != NC_EBADDIM);
+}
+
+/**
+ * @brief Write a global attribute (text) to a netCDF file
+ *
+ * @param[in] attName Name of the attribute to create
+ * @param[in] attStr Attribute string to write out
+ * @param[in] varID Identifier of the variable to add the attribute to
+ *  (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
+ * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void write_str_att(const char* attName, const char* attStr,
+                          int varID, int ncFileID, LOG_INFO* LogInfo) {
+
+    if(nc_put_att_text(ncFileID, varID, attName, strlen(attStr), attStr) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not create new global attribute %s",
+                                    attName);
+    }
+}
+
+/**
+ * @brief Write a global attribute (double) to a netCDF file
+ *
+ * @param[in] attName Name of the attribute to create
+ * @param[in] attVal Attribute value to write out
+ * @param[in] varID Identifier of the variable to add the attribute to
+ *  (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
+ * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
+ * @param[in] numVals Number of values to write to the single attribute
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void write_double_att(const char* attName, double* attVal, int varID,
+                        int ncFileID, int numVals, LOG_INFO* LogInfo) {
+
+    if(nc_put_att_double(ncFileID, varID, attName, NC_DOUBLE, numVals, attVal) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not create new global attribute %s",
+                                    attName);
+    }
+}
+
+/**
  * @brief Create a dimension within a netCDF file
  *
  * @param[in] dimName Name of the new dimension
@@ -213,6 +270,7 @@ static void create_netCDF_dim(const char* dimName, unsigned long size,
 /**
  * @brief Create a variable within a netCDF file
  *
+ * @param[in,out] varID Variable ID within the netCDF
  * @param[in] varName Name of the new variable
  * @param[in] dimIDs Dimensions of the variable
  * @param[in] ncFileID Domain netCDF file ID
@@ -220,15 +278,13 @@ static void create_netCDF_dim(const char* dimName, unsigned long size,
  * @param[in] numDims Number of dimensions the new variable will hold
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-static void create_netCDF_var(const char* varName, int* dimIDs, int* ncFileID,
-                              int varType, int numDims, LOG_INFO* LogInfo) {
-    int varID; // Not used
+static void create_netCDF_var(int* varID, const char* varName, int* dimIDs,
+                int* ncFileID, int varType, int numDims, LOG_INFO* LogInfo) {
 
-    if(nc_def_var(*ncFileID, varName, varType, numDims, dimIDs, &varID) != NC_NOERR) {
+    if(nc_def_var(*ncFileID, varName, varType, numDims, dimIDs, varID) != NC_NOERR) {
         LogError(LogInfo, LOGERROR, "Could not create '%s' variable in "
                                     "netCDF.", varName);
     }
-    (void) varID;
 }
 
 /**
@@ -243,18 +299,19 @@ static void create_netCDF_var(const char* varName, int* dimIDs, int* ncFileID,
 */
 static void fill_domain_netCDF_s(unsigned long nDimS, int* domFileID, int* sDimID,
                                  int* xDimID, int* yDimID, LOG_INFO* LogInfo) {
+    int varID = 0; // Not used
 
     create_netCDF_dim("site", nDimS, domFileID, sDimID, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
 
-    create_netCDF_var("x", xDimID, domFileID, NC_DOUBLE, 1, LogInfo);
+    create_netCDF_var(&varID, "x", xDimID, domFileID, NC_DOUBLE, 1, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
 
-    create_netCDF_var("y", yDimID, domFileID, NC_DOUBLE, 1, LogInfo);
+    create_netCDF_var(&varID, "y", yDimID, domFileID, NC_DOUBLE, 1, LogInfo);
 }
 
 /**
@@ -272,6 +329,7 @@ static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
 
     int bndsID = 0;
     int bndVarDims[2]; // Used for x and y bound variables
+    int varID = 0;
 
     // Create x, y, and bnds dimension
     create_netCDF_dim("x", nDimX, domFileID, xDimID, LogInfo);
@@ -290,12 +348,12 @@ static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
     }
 
     // Create x, y, x_bnds, and y_bnds variables
-    create_netCDF_var("x", xDimID, domFileID, NC_DOUBLE, 1, LogInfo);
+    create_netCDF_var(&varID, "x", xDimID, domFileID, NC_DOUBLE, 1, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
 
-    create_netCDF_var("y", yDimID, domFileID, NC_DOUBLE, 1, LogInfo);
+    create_netCDF_var(&varID, "y", yDimID, domFileID, NC_DOUBLE, 1, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
@@ -303,14 +361,272 @@ static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
     bndVarDims[0] = *xDimID;
     bndVarDims[1] = bndsID;
 
-    create_netCDF_var("x_bnds", bndVarDims, domFileID, NC_DOUBLE, 2, LogInfo);
+    create_netCDF_var(&varID, "x_bnds", bndVarDims, domFileID, NC_DOUBLE, 2, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
 
     bndVarDims[0] = *yDimID;
 
-    create_netCDF_var("y_bnds", bndVarDims, domFileID, NC_DOUBLE, 2, LogInfo);
+    create_netCDF_var(&varID, "y_bnds", bndVarDims, domFileID, NC_DOUBLE, 2, LogInfo);
+}
+
+/**
+ * @brief Fill the desired netCDF with a projected CRS
+ *
+ * @param[in] ncInfo Struct of type SW_NETCDF holding constant
+ *  netCDF file information
+ * @param[in] ncFileID Identifier of the open netCDF file to write all information to
+ * @param[in] proj_id Projected CRS variable identifier within the netCDF we are writing to
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+static void fill_netCDF_with_proj_CRS_atts(SW_NETCDF* ncInfo, int* ncFileID,
+                                           int proj_id, LOG_INFO* LogInfo) {
+
+    write_str_att("long_name", ncInfo->crs_projsc.long_name,
+                  proj_id, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_str_att("grid_mapping_name", ncInfo->crs_projsc.grid_mapping_name,
+                proj_id, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_str_att("datum", ncInfo->crs_projsc.datum,
+                proj_id, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_str_att("units", ncInfo->crs_projsc.units,
+                proj_id, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_str_att("crs_wkt", ncInfo->crs_projsc.crs_wkt,
+                proj_id, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_double_att("standard_parallel", ncInfo->crs_projsc.standard_parallel,
+                    proj_id, *ncFileID, 2, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_double_att("longitude_of_central_meridian",
+                        &ncInfo->crs_projsc.longitude_of_central_meridian,
+                        proj_id, *ncFileID, 1, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_double_att("latitude_of_projection_origin",
+                        &ncInfo->crs_projsc.latitude_of_projection_origin,
+                        proj_id, *ncFileID, 1, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_double_att("false_easting",
+                        &ncInfo->crs_projsc.false_easting,
+                        proj_id, *ncFileID, 1, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_double_att("false_northing",
+                        &ncInfo->crs_projsc.false_northing,
+                        proj_id, *ncFileID, 1, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_double_att("longitude_of_prime_meridian",
+                    &ncInfo->crs_projsc.longitude_of_prime_meridian,
+                    proj_id, *ncFileID, 1, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_double_att("semi_major_axis", &ncInfo->crs_projsc.semi_major_axis,
+                    proj_id, *ncFileID, 1, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_double_att("inverse_flattening", &ncInfo->crs_projsc.inverse_flattening,
+                    proj_id, *ncFileID, 1, LogInfo);
+}
+
+/**
+ * @brief Fill the desired netCDF with a projected CRS
+ *
+ * @param[in] ncInfo Struct of type SW_NETCDF holding constant
+ *  netCDF file information
+ * @param[in] ncFileID Identifier of the open netCDF file to write all information to
+ * @param[in] geo_id Projected CRS variable identifier within the netCDF we are writing to
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+static void fill_netCDF_with_geo_CRS_atts(SW_NETCDF* ncInfo, int* ncFileID,
+                                          int geo_id, LOG_INFO* LogInfo) {
+
+    if(strcmp(ncInfo->coordinate_system, "Absent") != 0) {
+        write_str_att("grid_mapping_name", ncInfo->crs_geogsc.grid_mapping_name,
+                      geo_id, *ncFileID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    write_str_att("long_name", ncInfo->crs_geogsc.long_name,
+                geo_id, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_str_att("crs_wkt", ncInfo->crs_geogsc.crs_wkt,
+                geo_id, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_double_att("longitude_of_prime_meridian",
+                    &ncInfo->crs_geogsc.longitude_of_prime_meridian,
+                    geo_id, *ncFileID, 1, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_double_att("semi_major_axis", &ncInfo->crs_geogsc.semi_major_axis,
+                    geo_id, *ncFileID, 1, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_double_att("inverse_flattening", &ncInfo->crs_geogsc.inverse_flattening,
+                    geo_id, *ncFileID, 1, LogInfo);
+}
+
+/**
+ * @brief Fill the given netCDF with global attributes
+ *
+ * @param[in] ncInfo Struct of type SW_NETCDF holding constant
+ *  netCDF file information
+ * @param[in] ncFileID Identifier of the open netCDF file to write all information to
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+static void fill_netCDF_with_global_atts(SW_NETCDF* ncInfo, int* ncFileID,
+                        const char* domType, Bool isInputFile, LOG_INFO* LogInfo) {
+    char sourceStr[40];
+    char creation_date[21];
+    time_t t = time(NULL);
+
+    write_str_att("title", ncInfo->title,
+                  NC_GLOBAL, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_str_att("author", ncInfo->author,
+                  NC_GLOBAL, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_str_att("institution", ncInfo->institution,
+                  NC_GLOBAL, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_str_att("comment", ncInfo->comment,
+                  NC_GLOBAL, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_str_att("coordinate_system", ncInfo->coordinate_system,
+                  NC_GLOBAL, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_str_att("Conventions", "CF-1.10", NC_GLOBAL, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
+    write_str_att("source", sourceStr, NC_GLOBAL, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_str_att("source_id", "SOILWAT2", NC_GLOBAL, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    write_str_att("further_info_url", "https://github.com/DrylandEcology/SOILWAT2",
+                  NC_GLOBAL, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    strftime(creation_date, sizeof creation_date, "%FT%TZ", gmtime(&t));
+    write_str_att("creation_date", creation_date, NC_GLOBAL, *ncFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    if(strcmp(domType, "s") == 0) {
+        if(dimExists("time", *ncFileID)) {
+            write_str_att("featureType", "timeSeries", NC_GLOBAL, *ncFileID, LogInfo);
+        } else {
+            write_str_att("featureType", "point", NC_GLOBAL, *ncFileID, LogInfo);
+        }
+    }
+
+    write_str_att("history", "No revisions.", NC_GLOBAL, *ncFileID, LogInfo);
+
+    if(isInputFile) {
+        write_str_att("product", "model-input", NC_GLOBAL, *ncFileID, LogInfo);
+    } else {
+        write_str_att("product", "model-output", NC_GLOBAL, *ncFileID, LogInfo);
+    }
+
+    // TODO: Add another global attribute - "frequency"
+}
+
+/**
+ * @brief Wrapper function to fill a netCDF with all the invariant information
+ *  i.e., global attributes (including time created) and CRS information
+ *  (including the creation of these variables)
+ *
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in] ncFileID Identifier of the open netCDF file to write all information to
+ * @param[in] isInputFile Specifies whether the file being written to is input
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void fill_netCDF_with_invariants(SW_DOMAIN* SW_Domain, int* ncFileID,
+                                        Bool isInputFile, LOG_INFO* LogInfo) {
+
+    SW_NETCDF* ncInfo = &SW_Domain->netCDFInfo;
+    int geo_id = 0, proj_id = 0;
+
+    create_netCDF_var(&geo_id, "crs_geogsc", NULL, ncFileID, NC_BYTE, 0, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    // Geographic CRS attributes
+    fill_netCDF_with_geo_CRS_atts(ncInfo, ncFileID, geo_id, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    // Projected CRS variable/attributes
+    if(!ncInfo->primary_crs_is_geographic) {
+        create_netCDF_var(&proj_id, "crs_projsc", NULL, ncFileID, NC_BYTE, 0, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        fill_netCDF_with_proj_CRS_atts(ncInfo, ncFileID, proj_id, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    // Write global attributes
+    fill_netCDF_with_global_atts(ncInfo, ncFileID, SW_Domain->DomainType,
+                                 isInputFile, LogInfo);
 }
 
 /* =================================================== */
@@ -363,6 +679,7 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     int sDimID = 0, xDimID = 0, yDimID = 0; // varID is not used
     int domDims[2]; // Either [yDimID, xDimID] or [sDimID, 0]
     int nDomainDims;
+    int varID; // Not used
 
     if(FileExists(DOMAIN_TEMP)) {
         LogError(LogInfo, LOGERROR, "Could not create new domain template. "
@@ -405,9 +722,18 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     }
 
     // Create domain variable
-    create_netCDF_var(SW_Domain->netCDFInfo.varNC[DOMAIN_NC], domDims,
+    create_netCDF_var(&varID, SW_Domain->netCDFInfo.varNC[DOMAIN_NC], domDims,
                       domFileID, NC_FLOAT, nDomainDims, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
+    fill_netCDF_with_invariants(SW_Domain, domFileID, swTRUE, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    nc_enddef(*domFileID);
     nc_close(*domFileID);
 }
 
