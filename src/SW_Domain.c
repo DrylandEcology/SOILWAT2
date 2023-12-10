@@ -158,8 +158,8 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 break;
             case 8: // Spinup Mode
                 y = atoi(value);
-                
-                if (y != 1 || y != 2) {
+                                
+                if (y != 1 && y != 2) {
                     CloseFile(&f, LogInfo);
                     LogError(LogInfo, LOGERROR,
                             "%s: Incorrect Mode (%d) for spinup"\
@@ -170,24 +170,18 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 break;
             case 9: // Spinup Scope
                 tempdoy = atoi(value);
-
+                
                 if (tempdoy < 1 || tempdoy > (SW_Domain->endyr - SW_Domain->startyr)) {
                     CloseFile(&f, LogInfo);
                     LogError(LogInfo, LOGERROR,
-                            "%s: Invalid Scope (N = %d) for spinup", MyFileName, y);
+                            "%s: Invalid Scope (N = %d) for spinup", MyFileName, tempdoy);
                     return; // Exit function prematurely due to error
                 }
                 SW_Domain->SW_SpinUp.scope = tempdoy;
                 break;
             case 10: // Spinup Duration
                 tempdoy = atoi(value);
-                
-                if (tempdoy < 0) {
-                    CloseFile(&f, LogInfo);
-                    LogError(LogInfo, LOGERROR,
-                            "%s: Invalid Duration (%d) for spinup", MyFileName, tempdoy);
-                    return; // Exit function prematurely due to error
-                }
+                                
                 SW_Domain->SW_SpinUp.duration = tempdoy;
 
                 // Set the spinup flag to true if duration > 0
@@ -200,6 +194,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 break;
             case 11: // Spinup Seed
                 y = atoi(value);
+                
                 if (y <= 0) {
                     CloseFile(&f, LogInfo);
                     LogError(LogInfo, LOGERROR,
@@ -312,7 +307,8 @@ void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo) {
 static int domain_inkey_to_id(char *key) {
     static const char *possibleKeys[] =
             {"Domain", "nDimX", "nDimY", "nDimS",
-            "StartYear", "EndYear", "StartDoy", "EndDoy"};
+            "StartYear", "EndYear", "StartDoy", "EndDoy",
+            "SpinupMode", "SpinupScope", "SpinupDuration", "SpinupSeed"};
 
     int id, stringMatch = 0, compRes;
 
