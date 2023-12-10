@@ -82,6 +82,30 @@ void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain) {
 }
 
 /**
+ * @brief Domain constructor for global variables.
+ *
+ * @param[in] rng_seed Initial state for spinup RNG
+ * @param[out] SW_Domain Struct of type SW_DOMAIN which
+ * holds constant temporal/spatial information for a set
+ * of simulation runs
+*/
+void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN* SW_Domain) {
+
+	/* Set seed of `spinup_rng`
+	  - SOILWAT2: set seed here
+	  - STEPWAT2: `main()` uses `Globals.randseed` to (re-)set for each iteration
+	  - rSOILWAT2: R API handles RNGs
+	*/
+	#if defined(SOILWAT)
+		RandSeed(rng_seed, 1u, &SW_Domain->SW_SpinUp.spinup_rng);
+	#else
+		(void) rng_seed; // Silence compiler flag `-Wunused-parameter`
+	#endif
+}
+
+
+
+/**
  * @brief Read `domain.in` and report any problems encountered when doing so
  *
  * @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
