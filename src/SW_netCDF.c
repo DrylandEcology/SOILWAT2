@@ -588,82 +588,58 @@ static void fill_netCDF_with_geo_CRS_atts(SW_NETCDF* ncInfo, int* ncFileID,
  * @param[in] ncFileID Identifier of the open netCDF file to write all information to
  * @param[in] domType Type of domain in which simulations are running
  *  (gridcell/sites)
+ * @param[in] freqAtt Value of a global attribute "frequency" (may be "fx",
+ *  "day", "week", "month", or "year")
  * @param[in] LogInfo Holds information dealing with logfile output
 */
 static void fill_netCDF_with_global_atts(SW_NETCDF* ncInfo, int* ncFileID,
-                        const char* domType, Bool isInputFile, LOG_INFO* LogInfo) {
-    char sourceStr[40];
-    char creation_date[21];
+                                         const char* domType, char* freqAtt,
+                                         Bool isInputFile, LOG_INFO* LogInfo) {
+
+    char sourceStr[40]; // 40 - valid size of the SOILWAT2 global `SW2_VERSION` + "SOILWAT2"
+    char creationDateStr[21]; // 21 - valid size to hold a string of format YYYY-MM-DDTHH:MM:SSZ
+    char featureTypeStr[11]; // 11 - valid size to hold "timeSeries" or "point" (may not be used)
     time_t t = time(NULL);
 
-    write_str_att("title", ncInfo->title,
-                  NC_GLOBAL, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_str_att("author", ncInfo->author,
-                  NC_GLOBAL, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_str_att("institution", ncInfo->institution,
-                  NC_GLOBAL, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_str_att("comment", ncInfo->comment,
-                  NC_GLOBAL, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_str_att("coordinate_system", ncInfo->coordinate_system,
-                  NC_GLOBAL, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_str_att("Conventions", "CF-1.10", NC_GLOBAL, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    const int numGlobAtts = (strcmp(domType, "s") == 0) ? 14 : 13; // Do or do not include "featureType"
+    char* productStr = (isInputFile) ? "model-input" : "model-output";
+    char* attNames[] = {"title", "author", "institution", "comment",
+                        "coordinate_system", "Conventions", "source",
+                        "source_id", "further_info_url", "creation_date",
+                        "history", "product", "frequency", "featureType"};
 
+    char* attVals[] = {ncInfo->title, ncInfo->author, ncInfo->institution,
+                       ncInfo->comment, ncInfo->coordinate_system, "CF-1.10",
+                       sourceStr, "SOILWAT2", "https://github.com/DrylandEcology/SOILWAT2",
+                       creationDateStr, "No revisions.", productStr, freqAtt,
+                       featureTypeStr};
+    int attNum;
+    char *currAtt, *currAttVal;
+
+    // Fill `sourceStr` and `creationDateStr`
     snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
-    write_str_att("source", sourceStr, NC_GLOBAL, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_str_att("source_id", "SOILWAT2", NC_GLOBAL, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_str_att("further_info_url", "https://github.com/DrylandEcology/SOILWAT2",
-                  NC_GLOBAL, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    strftime(creationDateStr, sizeof creationDateStr, "%FT%TZ", gmtime(&t));
 
-    strftime(creation_date, sizeof creation_date, "%FT%TZ", gmtime(&t));
-    write_str_att("creation_date", creation_date, NC_GLOBAL, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
+    // Determine if the netCDF variable "featureType" is to be written out
+    // If so, copy a value to the correct spot in `attNames` (last index)
     if(strcmp(domType, "s") == 0) {
         if(dimExists("time", *ncFileID)) {
-            write_str_att("featureType", "timeSeries", NC_GLOBAL, *ncFileID, LogInfo);
+            strcpy(attVals[numGlobAtts - 1], "timeSeries");
         } else {
-            write_str_att("featureType", "point", NC_GLOBAL, *ncFileID, LogInfo);
+            strcpy(attVals[numGlobAtts - 1], "point");
         }
     }
 
-    write_str_att("history", "No revisions.", NC_GLOBAL, *ncFileID, LogInfo);
+    // Write out the necessary global attributes that are listed above
+    for(attNum = 0; attNum < numGlobAtts; attNum++) {
+        currAtt = attNames[attNum];
+        currAttVal = attVals[attNum];
 
-    if(isInputFile) {
-        write_str_att("product", "model-input", NC_GLOBAL, *ncFileID, LogInfo);
-    } else {
-        write_str_att("product", "model-output", NC_GLOBAL, *ncFileID, LogInfo);
+        write_str_att(currAtt, currAttVal, NC_GLOBAL, *ncFileID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
     }
-
-    // TODO: Add another global attribute - "frequency"
 }
 
 /**
@@ -709,7 +685,7 @@ static void fill_netCDF_with_invariants(SW_DOMAIN* SW_Domain, int* ncFileID,
 
     // Write global attributes
     fill_netCDF_with_global_atts(ncInfo, ncFileID, SW_Domain->DomainType,
-                                 isInputFile, LogInfo);
+                                 "fx", isInputFile, LogInfo);
 }
 
 /* =================================================== */
