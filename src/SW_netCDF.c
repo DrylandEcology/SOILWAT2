@@ -292,26 +292,64 @@ static void create_netCDF_var(int* varID, const char* varName, int* dimIDs,
  *
  * @param[in] nDimS Size of the 's' dimension (number of sites)
  * @param[in] domFileID Domain netCDF file ID
+ * @param[in] primCRSIsGeo Specifies if the primary CRS type is geographic
+ * @param[out] sDimID 'site' dimension identifier
  * @param[out] sDimID 's' dimension ID
  * @param[out] xDimID 'x' dimension ID
  * @param[out] yDimID 'y' dimension ID
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-static void fill_domain_netCDF_s(unsigned long nDimS, int* domFileID, int* sDimID,
-                                 int* xDimID, int* yDimID, LOG_INFO* LogInfo) {
-    int varID = 0; // Not used
+static void fill_domain_netCDF_s(unsigned long nDimS, int* domFileID,
+                                 Bool primCRSIsGeo, int* sDimID,
+                                 LOG_INFO* LogInfo) {
+    const int numSiteAtt = 3, numLatAtt = 4, numLonAtt = 4;
+    const int numYAtt = 3, numXAtt = 3;
+    int numVarsToWrite = (primCRSIsGeo) ? 3 : 5; // Do or do not write "x" and "y"
+    char* attNames[][4] = {{"long_name", "units", "cf_role"},
+                           {"long_name", "standard_name", "units", "axis"},
+                           {"long_name", "standard_name", "units", "axis"},
+                           {"long_name", "standard_name", "units"},
+                           {"long_name", "standard_name", "units"}};
+
+    char* attVals[][4] = {{"simulation site", "1", "timeseries_id"},
+                          {"latitude", "latitude", "degrees_north", "Y"},
+                          {"longitude", "longitude", "degrees_east", "X"},
+                          {"y coordinate of projection", "projection_y_coordinate", "degrees_north"},
+                          {"x coordinate of projection", "projection_x_coordinate", "degrees_east"}};
+
+    const char* varNames[] = {"site", "lat", "lon", "x", "y"};
+    int varIDs[5]; // 5 - Maximum number of variables to create
+    const int numAtts[] = {numSiteAtt, numLatAtt, numLonAtt, numYAtt, numXAtt};
+
+    char *currAtt, *currAttVal;
+    int currVarID, varNum, attNum;
 
     create_netCDF_dim("site", nDimS, domFileID, sDimID, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
 
-    create_netCDF_var(&varID, "x", xDimID, domFileID, NC_DOUBLE, 1, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
+    // Create all variables above (may or may not include "x" and "y")
+    // Then fill them with their respective attributes
+    for(varNum = 0; varNum < numVarsToWrite; varNum++) {
+        create_netCDF_var(&varIDs[varNum], varNames[varNum],
+                          sDimID, domFileID, NC_DOUBLE, 1, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit prematurely due to error
+        }
 
-    create_netCDF_var(&varID, "y", yDimID, domFileID, NC_DOUBLE, 1, LogInfo);
+        currVarID = varIDs[varNum];
+
+        for(attNum = 0; attNum < numAtts[varNum]; attNum++) {
+            currAtt = attNames[varNum][attNum];
+            currAttVal = attVals[varNum][attNum];
+
+            write_str_att(currAtt, currAttVal, currVarID, *domFileID, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+    }
 }
 
 /**
@@ -698,8 +736,9 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         nDomainDims = 1;
 
         // Create s dimension/domain variables
-        fill_domain_netCDF_s(SW_Domain->nDimS, domFileID, &sDimID,
-                             &xDimID, &yDimID, LogInfo);
+        fill_domain_netCDF_s(SW_Domain->nDimS, domFileID,
+                             SW_Domain->netCDFInfo.primary_crs_is_geographic,
+                             &sDimID, LogInfo);
         if(LogInfo->stopRun) {
             nc_close(*domFileID);
             return; // Exit prematurely due to error
