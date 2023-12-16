@@ -288,6 +288,51 @@ static void create_netCDF_var(int* varID, const char* varName, int* dimIDs,
 }
 
 /**
+ * @brief Fill the variable "domain" with it's attributes
+ *
+ * @param[in] domainVarName User-specified domain variable name
+ * @param[in,out] domID Identifier of the "domain" (or another user-specified name) variable
+ * @param[in] domDims Set dimensions for the domain variable
+ * @param[in] domFileID Domain netCDF file identifier
+ * @param[in] nDomainDims Number of dimensions the domain variable will have
+ * @param[in] primCRSIsGeo Specifies if the current CRS type is geographic
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void fill_domain_netCDF_domain(const char* domainVarName, int* domID,
+                        int domDims[], int domFileID, int nDomainDims, Bool primCRSIsGeo,
+                        const char* domType, LOG_INFO* LogInfo) {
+
+    char* gridMapVal = (primCRSIsGeo) ? "crs_geogsc" : "crs_projsc: x y crs_geogsc: lat lon";
+    char* coordVal = (strcmp(domType, "s") == 0) ? "lat lon site" : "lat lon";
+    char* strAttNames[] = {"long_name", "units", "grid_mapping", "coordinates"};
+    char* strAttVals[] = {"simulation domain", "1", gridMapVal, coordVal};
+    int attNum;
+    const int numAtts = 4;
+    char *currAtt, *currAttVal;
+
+    create_netCDF_var(domID, domainVarName, domDims,
+                      &domFileID, NC_UINT, nDomainDims, LogInfo);
+
+    write_uint_att("_FillValue", NC_FILL_UINT, *domID, domFileID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    // Write all attributes to the domain variable
+    for(attNum = 0; attNum < numAtts; attNum++) {
+        currAtt = strAttNames[attNum];
+        currAttVal = strAttVals[attNum];
+        write_str_att(currAtt, currAttVal, *domID, domFileID, LogInfo);
+
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+}
+
+/**
  * @brief Fill the domain netCDF file with variables that are for domain type "s"
  *
  * @param[in] nDimS Size of the 's' dimension (number of sites)
@@ -761,8 +806,10 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     }
 
     // Create domain variable
-    create_netCDF_var(&varID, SW_Domain->netCDFInfo.varNC[DOMAIN_NC], domDims,
-                      domFileID, NC_FLOAT, nDomainDims, LogInfo);
+    fill_domain_netCDF_domain(SW_Domain->netCDFInfo.varNC[DOMAIN_NC], &domVarID,
+                              domDims, *domFileID, nDomainDims,
+                              SW_Domain->netCDFInfo.primary_crs_is_geographic,
+                              SW_Domain->DomainType, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
