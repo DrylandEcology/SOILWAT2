@@ -403,55 +403,96 @@ static void fill_domain_netCDF_s(unsigned long nDimS, int* domFileID,
  * @param[in] nDimX Size of the 'x' dimension
  * @param[in] nDimY Size of the 'y' dimension
  * @param[in] domFileID Domain netCDF file ID
- * @param[out] xDimID 'x' dimension ID
- * @param[out] yDimID 'y' dimension ID
+ * @param[in] primCRSIsGeo Specifies if the primary CRS type is geographic
+ * @param[out] latDimID Horizontal coordinate "lat" or "y" variable identifier
+ * @param[out] lonDimID Horizontal coordinate "lon" or "x" variable identifier
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
-                int* domFileID, int* xDimID, int* yDimID, LOG_INFO* LogInfo) {
+                int* domFileID, Bool primCRSIsGeo, int* latDimID, int* lonDimID,
+                LOG_INFO* LogInfo) {
 
     int bndsID = 0;
-    int bndVarDims[2]; // Used for x and y bound variables
+    int bndVarDims[2]; // Used for bound variables in the netCDF file
     int varID = 0;
+    int dimNum, varNum, attNum;
 
-    // Create x, y, and bnds dimension
-    create_netCDF_dim("x", nDimX, domFileID, xDimID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit prematurely due to error
+    const int numVars = (primCRSIsGeo) ? 2 : 4; // lat/lon or lat/lon + x/y vars
+    char* varNames[] = {"lat", "lon", "y", "x"};
+    char* bndVarNames[] = {"lat_bnds", "lon_bnds", "y_bnds", "x_bnds"};
+    char* varAttNames[][5] = {{"long_name", "standard_name", "units", "axis", "bounds"},
+                              {"long_name", "standard_name", "units", "axis", "bounds"},
+                              {"long_name", "standard_name", "units", "bounds"},
+                              {"long_name", "standard_name", "units", "bounds"}};
+
+    char* varAttVals[][5] = {{"latitude", "latitude", "degrees_north", "Y", "lat_bnds"},
+                             {"longitude", "longitude", "degrees_east", "X", "lon_bnds"},
+                             {"y coordinate of projection", "projection_y_coordinate",
+                              "degrees_north", "y_bnds"},
+                             {"x coordinate of projection", "projection_x_coordinate",
+                              "degrees_east", "x_bnds"}};
+    int numLatAtt = 5, numLonAtt = 5, numYAtt = 4, numXAtt = 4;
+    int numAtts[] = {numLatAtt, numLonAtt, numYAtt, numXAtt};
+
+    const int numDims = 3;
+    char* latDimName = (primCRSIsGeo) ? "lat" : "y";
+    char* lonDimName = (primCRSIsGeo) ? "lon" : "x";
+
+    char* dimNames[] = {latDimName, lonDimName, "bnds"};
+    unsigned long dimVals[] = {nDimY, nDimX, 2};
+    int* dimIDs[] = {latDimID, lonDimID, &bndsID};
+    int dimVal, *dimID;
+    int dimIDIndex, currDimID;
+    char *dimName, *currVarName;
+    char *currAtt, *currAttVal;
+
+    // Create dimensions
+    for(dimNum = 0; dimNum < numDims; dimNum++) {
+        dimName = dimNames[dimNum];
+        dimVal = dimVals[dimNum];
+        dimID = dimIDs[dimNum];
+
+        create_netCDF_dim(dimName, dimVal, domFileID, dimID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
     }
 
-    create_netCDF_dim("y", nDimY, domFileID, yDimID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit prematurely due to error
+    // Create variables - lat/lon and (if the primary CRS is
+    // not geographic) y/x along with the corresponding *_bnds variable
+    bndVarDims[1] = bndsID; // Set the second dimension of variable to bounds
+
+    for(varNum = 0; varNum < numVars; varNum++) {
+        dimIDIndex = varNum % 2; // 2 - get lat/lon dim ids only, not bounds
+        currDimID = *dimIDs[dimIDIndex];
+        currVarName = varNames[varNum];
+
+        create_netCDF_var(&varID, currVarName, &currDimID, domFileID,
+                          NC_DOUBLE, 1, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        // Fill attributes
+        for(attNum = 0; attNum < numAtts[varNum]; attNum++) {
+            currAtt = varAttNames[varNum][attNum];
+            currAttVal = varAttVals[varNum][attNum];
+            write_str_att(currAtt, currAttVal, varID, *domFileID, LogInfo);
+
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+
+        bndVarDims[0] = currDimID; // Set the first dimension of the variable
+        currVarName = bndVarNames[varNum];
+
+        create_netCDF_var(&varID, currVarName, bndVarDims, domFileID,
+                          NC_DOUBLE, 2, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
     }
-
-    create_netCDF_dim("bnds", 2, domFileID, &bndsID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
-
-    // Create x, y, x_bnds, and y_bnds variables
-    create_netCDF_var(&varID, "x", xDimID, domFileID, NC_DOUBLE, 1, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
-
-    create_netCDF_var(&varID, "y", yDimID, domFileID, NC_DOUBLE, 1, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
-
-    bndVarDims[0] = *xDimID;
-    bndVarDims[1] = bndsID;
-
-    create_netCDF_var(&varID, "x_bnds", bndVarDims, domFileID, NC_DOUBLE, 2, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
-
-    bndVarDims[0] = *yDimID;
-
-    create_netCDF_var(&varID, "y_bnds", bndVarDims, domFileID, NC_DOUBLE, 2, LogInfo);
 }
 
 /**
@@ -771,7 +812,8 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         nDomainDims = 2;
 
         fill_domain_netCDF_xy(SW_Domain->nDimX, SW_Domain->nDimY, domFileID,
-                              &xDimID, &yDimID, LogInfo);
+                              SW_Domain->netCDFInfo.primary_crs_is_geographic,
+                              &yDimID, &xDimID, LogInfo);
         if(LogInfo->stopRun) {
             nc_close(*domFileID);
             return; // Exit prematurely due to error
