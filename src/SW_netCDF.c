@@ -498,127 +498,114 @@ static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
 /**
  * @brief Fill the desired netCDF with a projected CRS
  *
- * @param[in] ncInfo Struct of type SW_NETCDF holding constant
- *  netCDF file information
+ * @param[in] crs_projsc Struct of type SW_CRS that holds all information
+ *  regarding to the CRS type "projected"
  * @param[in] ncFileID Identifier of the open netCDF file to write all information to
  * @param[in] proj_id Projected CRS variable identifier within the netCDF we are writing to
  * @param[in] LogInfo Holds information dealing with logfile output
 */
-static void fill_netCDF_with_proj_CRS_atts(SW_NETCDF* ncInfo, int* ncFileID,
+static void fill_netCDF_with_proj_CRS_atts(SW_CRS* crs_projsc, int* ncFileID,
                                            int proj_id, LOG_INFO* LogInfo) {
 
-    write_str_att("long_name", ncInfo->crs_projsc.long_name,
-                  proj_id, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_str_att("grid_mapping_name", ncInfo->crs_projsc.grid_mapping_name,
-                proj_id, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_str_att("datum", ncInfo->crs_projsc.datum,
-                proj_id, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_str_att("units", ncInfo->crs_projsc.units,
-                proj_id, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_str_att("crs_wkt", ncInfo->crs_projsc.crs_wkt,
-                proj_id, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_double_att("standard_parallel", ncInfo->crs_projsc.standard_parallel,
-                    proj_id, *ncFileID, 2, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_double_att("longitude_of_central_meridian",
-                        &ncInfo->crs_projsc.longitude_of_central_meridian,
-                        proj_id, *ncFileID, 1, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_double_att("latitude_of_projection_origin",
-                        &ncInfo->crs_projsc.latitude_of_projection_origin,
-                        proj_id, *ncFileID, 1, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_double_att("false_easting",
-                        &ncInfo->crs_projsc.false_easting,
-                        proj_id, *ncFileID, 1, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_double_att("false_northing",
-                        &ncInfo->crs_projsc.false_northing,
-                        proj_id, *ncFileID, 1, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_double_att("longitude_of_prime_meridian",
-                    &ncInfo->crs_projsc.longitude_of_prime_meridian,
-                    proj_id, *ncFileID, 1, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_double_att("semi_major_axis", &ncInfo->crs_projsc.semi_major_axis,
-                    proj_id, *ncFileID, 1, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_double_att("inverse_flattening", &ncInfo->crs_projsc.inverse_flattening,
-                    proj_id, *ncFileID, 1, LogInfo);
-}
+    const int numStrAtts = 5, numDoubleAtts = 8;
+    int strAttNum, doubleAttNum, numValsToWrite;
+    char *currAttName, *currStrAttVal;
+    double *currDoubleVal;
+    char *strAttNames[] = {"long_name", "grid_mapping_name", "datum", "units",
+                           "crs_wkt"};
+    char *doubleAttNames[] = {"standard_parallel", "longitude_of_central_meridian",
+                              "latitude_of_projection_origin", "false_easting",
+                              "false_northing", "longitude_of_prime_meridian",
+                              "semi_major_axis", "inverse_flattening"};
 
-/**
- * @brief Fill the desired netCDF with a projected CRS
- *
- * @param[in] ncInfo Struct of type SW_NETCDF holding constant
- *  netCDF file information
- * @param[in] ncFileID Identifier of the open netCDF file to write all information to
- * @param[in] geo_id Projected CRS variable identifier within the netCDF we are writing to
- * @param[in] LogInfo Holds information dealing with logfile output
-*/
-static void fill_netCDF_with_geo_CRS_atts(SW_NETCDF* ncInfo, int* ncFileID,
-                                          int geo_id, LOG_INFO* LogInfo) {
+    char *strAttVals[] = {crs_projsc->long_name, crs_projsc->grid_mapping_name,
+                          crs_projsc->datum, crs_projsc->units, crs_projsc->crs_wkt};
+    double *doubleAttVals[] = {
+        crs_projsc->standard_parallel, &crs_projsc->longitude_of_central_meridian,
+        &crs_projsc->latitude_of_projection_origin, &crs_projsc->false_easting,
+        &crs_projsc->false_northing, &crs_projsc->longitude_of_prime_meridian,
+        &crs_projsc->semi_major_axis, &crs_projsc->inverse_flattening
+    };
 
-    if(strcmp(ncInfo->coordinate_system, "Absent") != 0) {
-        write_str_att("grid_mapping_name", ncInfo->crs_geogsc.grid_mapping_name,
-                      geo_id, *ncFileID, LogInfo);
+    for(strAttNum = 0; strAttNum < numStrAtts; strAttNum++) {
+        currAttName = strAttNames[strAttNum];
+        currStrAttVal = strAttVals[strAttNum];
+
+        write_str_att(currAttName, currStrAttVal, proj_id, *ncFileID, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
     }
 
-    write_str_att("long_name", ncInfo->crs_geogsc.long_name,
-                geo_id, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+    for(doubleAttNum = 0; doubleAttNum < numDoubleAtts; doubleAttNum++) {
+        currAttName = doubleAttNames[doubleAttNum];
+        currDoubleVal = doubleAttVals[doubleAttNum];
+
+        numValsToWrite = (doubleAttNum > 0) ? 1 : 2; // Index 0 has two values to write
+
+        write_double_att(currAttName, currDoubleVal, proj_id, *ncFileID,
+                         numValsToWrite, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
     }
-    write_str_att("crs_wkt", ncInfo->crs_geogsc.crs_wkt,
-                geo_id, *ncFileID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+}
+
+/**
+ * @brief Fill the desired netCDF with a projected CRS
+ *
+ * @param[in] crs_geogsc Struct of type SW_CRS that holds all information
+ *  regarding to the CRS type "geographic"
+ * @param[in] ncFileID Identifier of the open netCDF file to write all information to
+ * @param[in] coord_sys Name of the coordinate system being used
+ * @param[in] geo_id Projected CRS variable identifier within the netCDF we are writing to
+ * @param[in] LogInfo Holds information dealing with logfile output
+*/
+static void fill_netCDF_with_geo_CRS_atts(SW_CRS* crs_geogsc, int* ncFileID,
+                            char* coord_sys, int geo_id, LOG_INFO* LogInfo) {
+
+    int attNum, numStrAtts = 3, numDoubleAtts = 3;
+    const int numValsToWrite = 1;
+    char *strAttNames[] = {"grid_mapping_name", "long_name", "crs_wkt"};
+    char *doubleAttNames[] = {"longitude_of_prime_meridian", "semi_major_axis",
+                              "inverse_flattening"};
+    char *strAttVals[] = {crs_geogsc->grid_mapping_name, crs_geogsc->long_name,
+                          crs_geogsc->crs_wkt};
+    double *doubleAttVals[] = {&crs_geogsc->longitude_of_prime_meridian,
+                               &crs_geogsc->semi_major_axis,
+                               &crs_geogsc->inverse_flattening};
+    char *currAttName, *currStrAttVal;
+    double *currDoubleVal;
+
+    if(strcmp(coord_sys, "Absent") == 0) {
+        // Only write out `grid_mapping_name`
+        currAttName = strAttNames[0];
+        currStrAttVal = strAttVals[0];
+
+        write_str_att(currAttName, currStrAttVal, geo_id, *ncFileID, LogInfo);
+    } else {
+        // Write out all attributes
+        for(attNum = 0; attNum < numStrAtts; attNum++) {
+            currAttName = strAttNames[attNum];
+            currStrAttVal = strAttVals[attNum];
+
+            write_str_att(currAttName, currStrAttVal, geo_id, *ncFileID, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+
+        for(attNum = 0; attNum < numDoubleAtts; attNum++) {
+            currAttName = doubleAttNames[attNum];
+            currDoubleVal = doubleAttVals[attNum];
+
+            write_double_att(currAttName, currDoubleVal, geo_id, *ncFileID,
+                             numValsToWrite, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
     }
-    write_double_att("longitude_of_prime_meridian",
-                    &ncInfo->crs_geogsc.longitude_of_prime_meridian,
-                    geo_id, *ncFileID, 1, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_double_att("semi_major_axis", &ncInfo->crs_geogsc.semi_major_axis,
-                    geo_id, *ncFileID, 1, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    write_double_att("inverse_flattening", &ncInfo->crs_geogsc.inverse_flattening,
-                    geo_id, *ncFileID, 1, LogInfo);
 }
 
 /**
@@ -706,7 +693,8 @@ static void fill_netCDF_with_invariants(SW_DOMAIN* SW_Domain, int* ncFileID,
     }
 
     // Geographic CRS attributes
-    fill_netCDF_with_geo_CRS_atts(ncInfo, ncFileID, geo_id, LogInfo);
+    fill_netCDF_with_geo_CRS_atts(&ncInfo->crs_geogsc, ncFileID,
+                                  ncInfo->coordinate_system, geo_id, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -718,7 +706,7 @@ static void fill_netCDF_with_invariants(SW_DOMAIN* SW_Domain, int* ncFileID,
             return; // Exit function prematurely due to error
         }
 
-        fill_netCDF_with_proj_CRS_atts(ncInfo, ncFileID, proj_id, LogInfo);
+        fill_netCDF_with_proj_CRS_atts(&ncInfo->crs_projsc, ncFileID, proj_id, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
