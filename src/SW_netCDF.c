@@ -675,16 +675,18 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* ncInfo, int* ncFileID,
  *  i.e., global attributes (including time created) and CRS information
  *  (including the creation of these variables)
  *
- * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
- *  temporal/spatial information for a set of simulation runs
+ * @param[in] ncInfo Struct of type SW_NETCDF holding constant
+ *  netCDF file information
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
  * @param[in] ncFileID Identifier of the open netCDF file to write all information to
  * @param[in] isInputFile Specifies whether the file being written to is input
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-static void fill_netCDF_with_invariants(SW_DOMAIN* SW_Domain, int* ncFileID,
-                                        Bool isInputFile, LOG_INFO* LogInfo) {
+static void fill_netCDF_with_invariants(SW_NETCDF* ncInfo, char* domType,
+                                        int* ncFileID, Bool isInputFile,
+                                        LOG_INFO* LogInfo) {
 
-    SW_NETCDF* ncInfo = &SW_Domain->netCDFInfo;
     int geo_id = 0, proj_id = 0;
 
     create_netCDF_var(&geo_id, "crs_geogsc", NULL, ncFileID, NC_BYTE, 0, LogInfo);
@@ -713,8 +715,8 @@ static void fill_netCDF_with_invariants(SW_DOMAIN* SW_Domain, int* ncFileID,
     }
 
     // Write global attributes
-    fill_netCDF_with_global_atts(ncInfo, ncFileID, SW_Domain->DomainType,
-                                 "fx", isInputFile, LogInfo);
+    fill_netCDF_with_global_atts(ncInfo, ncFileID, domType, "fx", isInputFile,
+                                 LogInfo);
 }
 
 /* =================================================== */
@@ -820,7 +822,8 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    fill_netCDF_with_invariants(SW_Domain, domFileID, swTRUE, LogInfo);
+    fill_netCDF_with_invariants(&SW_Domain->netCDFInfo, SW_Domain->DomainType,
+                                domFileID, swTRUE, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
