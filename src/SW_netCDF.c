@@ -68,9 +68,8 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
     while (GetALine(f, inbuf, LARGE_VALUE)) {
         sscanf(inbuf, "%34s %s", key, value);
 
-        // Check if the key is a "long_name", "crs_wkt", or "coordinate_system"
-        if(strstr(key, "long_name") != NULL || strstr(key, "crs_wkt") != NULL ||
-           strcmp(key, "coordinate_system") == 0) {
+        // Check if the key is "long_name" or "crs_wkt"
+        if(strstr(key, "long_name") != NULL || strstr(key, "crs_wkt") != NULL) {
 
             // Reread the like and get the entire value (includes spaces)
             sscanf(inbuf, "%34s %[^\n]", key, value);
@@ -92,9 +91,9 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
             case 3:
                 ncInfo->comment = Str_Dup(value, LogInfo);
                 break;
-            case 4:
-                ncInfo->coordinate_system = Str_Dup(value, LogInfo);
+            case 4: // coordinate_system is calculated
                 break;
+
             case 5:
                 if(strcmp(value, "geographic") == 0) {
                     ncInfo->primary_crs_is_geographic = swTRUE;
@@ -189,7 +188,12 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
                                     "type 'geographic' CRS or a primary CRS of "
                                     "'projected' with a geographic CRS.",
                                     PathInfo->InFiles[eNCInAtt]);
+        return; // Exit function prematurely due to error
     }
+
+    ncInfo->coordinate_system = (ncInfo->primary_crs_is_geographic) ?
+        Str_Dup(ncInfo->crs_geogsc.long_name, LogInfo) :
+        Str_Dup(ncInfo->crs_projsc.long_name, LogInfo);
 }
 
 /**

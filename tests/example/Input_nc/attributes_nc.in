@@ -8,10 +8,10 @@ title              example_title
 author             example_author
 institution        example_name
 comment            None
-coordinate_system  WGS84
 
 # Coordinate Reference System
-primary_crs geographic
+primary_crs geographic          # options: geographic, projected
+
 
 #------ Geographic CRS Attributes
 
