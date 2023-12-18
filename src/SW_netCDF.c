@@ -211,6 +211,48 @@ static Bool dimExists(const char* targetDim, int ncFileID) {
 }
 
 /**
+ * @brief Fills a variable with value(s) of type unsigned integer
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to write the value(s) to
+ * @param[in] varID Identifier to the variable within the given netCDF file
+ * @param[in] values Individual or list of input variables
+ * @param[in] startIndices Specification of where the C-provided netCDF
+ *  should start writing values within the specified variable
+ * @param[in] count How many values to write into the given variable
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void fill_netCDF_var_uint(int ncFileID, int varID, unsigned int values[],
+                                 size_t startIndices[], size_t count[],
+                                 LOG_INFO* LogInfo) {
+
+    if(nc_put_vara_uint(ncFileID, varID, startIndices, count, &values[0]) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not fill variable (unsigned int) "
+                                    "with the given value(s).");
+    }
+}
+
+/**
+ * @brief Fills a variable with value(s) of type double
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to write the value(s) to
+ * @param[in] varID Identifier to the variable within the given netCDF file
+ * @param[in] values Individual or list of input variables
+ * @param[in] startIndices Specification of where the C-provided netCDF
+ *  should start writing values within the specified variable
+ * @param[in] count How many values to write into the given variable
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void fill_netCDF_var_double(int ncFileID, int varID, double values[],
+                                   size_t startIndices[], size_t count[],
+                                   LOG_INFO* LogInfo) {
+
+    if(nc_put_vara_double(ncFileID, varID, startIndices, count, &values[0]) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not fill variable (double) "
+                                    "with the given value(s).");
+    }
+}
+
+/**
  * @brief Write a global attribute (text) to a netCDF file
  *
  * @param[in] attName Name of the attribute to create
@@ -307,6 +349,126 @@ static void create_netCDF_var(int* varID, const char* varName, int* dimIDs,
 }
 
 /**
+ * @brief Fill horizontal coordinate variables, "domain"
+ *  (or another user-specified name) variable and "sites" (if applicable)
+ *  within the domain netCDF
+ *
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in] domFileID Domain netCDF file identifier
+ * @param[in] domID Identifier of the "domain" (or another user-specified name) variable
+ * @param[in] siteID Identifier of the "site" variable within the given netCDF
+ *  (if the variable exists)
+ * @param[in] latVarID Horizontal coordinate "lat" or "y" variable identifier
+ * @param[in] lonVarID Horizontal coordinate "lon" or "x" variable identifier
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void fill_domain_netCDF_vars(SW_DOMAIN* SW_Domain, int domFileID,
+                                  int domID, int siteID, int latVarID,
+                                  int lonVarID, LOG_INFO* LogInfo) {
+
+    unsigned int suidNum, gridNum = 0, latValGridComp;
+    unsigned int* domVals = (unsigned int*) Mem_Malloc(SW_Domain->nSUIDs *
+                                                       sizeof(unsigned int),
+                                                       "fill_domain_netCDF_domain_vals()",
+                                                       LogInfo);
+    double *latVals = NULL, *lonVals = NULL;
+    size_t start[] = {0, 0}, domCount[2]; // 2 - [#lat dim, #lon dim] or [#sites, 0]
+    size_t latFillCount[] = {SW_Domain->nDimY}, lonFillCount[] = {SW_Domain->nDimX};
+    double resY, resX;
+    unsigned int numSVals = SW_Domain->nDimS, numLonVals = SW_Domain->nDimX;
+    unsigned int numLatVals = SW_Domain->nDimY;
+
+    for(suidNum = 0; suidNum < SW_Domain->nSUIDs; suidNum++) {
+        domVals[suidNum] = suidNum + 1;
+    }
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    if(strcmp(SW_Domain->DomainType, "s") == 0) {
+        domCount[0] = SW_Domain->nDimS;
+        domCount[1] = 0;
+
+        // Sites should be fill with the same information as the domain variable
+        fill_netCDF_var_uint(domFileID, siteID, domVals, start, domCount, LogInfo);
+        if(LogInfo->stopRun) {
+            free(domVals);
+            return; // Exit function prematurely due to error
+        }
+
+        // Handle lat/lon variables differently due to domain now being 1D (sites)
+        numLatVals = numSVals;
+        numLonVals = numSVals;
+
+        latFillCount[0] = numSVals;
+        lonFillCount[0] = numSVals;
+    } else {
+        domCount[0] = SW_Domain->nDimY;
+        domCount[1] = SW_Domain->nDimX;
+    }
+
+    // --- Write out the horitzontal coordinate values
+
+    // Calculate resolution for y and x and allocate value arrays
+    resY = (SW_Domain->max_y - SW_Domain->min_y) / numLatVals;
+    resX = (SW_Domain->max_x - SW_Domain->min_x) / numLonVals;
+
+    latVals = (double *) Mem_Malloc(SW_Domain->nDimY * sizeof(double),
+                                    "fill_domain_netCDF_domain_vals()",
+                                    LogInfo);
+    if(LogInfo->stopRun) {
+        free(domVals);
+        return; // Exit function prematurely due to error
+    }
+    lonVals = (double *) Mem_Malloc(SW_Domain->nDimX * sizeof(double),
+                                    "fill_domain_netCDF_domain_vals()",
+                                    LogInfo);
+    if(LogInfo->stopRun) {
+        free(domVals);
+        free(latVals);
+        return; // Exit function prematurely due to error
+    }
+
+    // Generate/fill the horizontal variable values
+    // Lon values increase from minimum to maximum
+    // Lat values are reversed, i.e., [max, ..., min]
+    // These values are within a bounding box given by the user
+    // I.e., lat values are within [ymin, ymax] and lon are within [xmin, xmax]
+    for(gridNum = 0; gridNum < numLonVals; gridNum++) {
+        lonVals[gridNum] = SW_Domain->min_x + (gridNum + .5) * resX;
+    }
+
+    for(gridNum = 0; gridNum < numLatVals; gridNum++) {
+        latValGridComp = numLatVals - gridNum - 1;
+        latVals[latValGridComp] = SW_Domain->min_y + (gridNum + .5) * resY;
+    }
+
+    fill_netCDF_var_double(domFileID, latVarID, latVals, start, latFillCount, LogInfo);
+    if(LogInfo->stopRun) {
+        free(domVals);
+        free(latVals);
+        free(lonVals);
+        return; // Exit function prematurely due to error
+    }
+
+    fill_netCDF_var_double(domFileID, lonVarID, lonVals, start, lonFillCount, LogInfo);
+
+    free(latVals);
+    free(lonVals);
+    if(LogInfo->stopRun) {
+        free(domVals);
+        return; // Exit function prematurely due to error
+    }
+
+    // Fill domain variable with SUIDs
+    fill_netCDF_var_uint(domFileID, domID, domVals, start, domCount, LogInfo);
+
+    free(domVals);
+}
+
+/**
  * @brief Fill the variable "domain" with it's attributes
  *
  * @param[in] domainVarName User-specified domain variable name
@@ -358,14 +520,15 @@ static void fill_domain_netCDF_domain(const char* domainVarName, int* domID,
  * @param[in] domFileID Domain netCDF file ID
  * @param[in] primCRSIsGeo Specifies if the primary CRS type is geographic
  * @param[out] sDimID 'site' dimension identifier
- * @param[out] sDimID 's' dimension ID
- * @param[out] xDimID 'x' dimension ID
- * @param[out] yDimID 'y' dimension ID
+ * @param[out] sVarID 'site' variable identifier
+ * @param[out] latVarID Horizontal coordinate "lat" or "y" variable identifier
+ * @param[out] lonVarID Horizontal coordinate "lon" or "x" variable identifier
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void fill_domain_netCDF_s(unsigned long nDimS, int* domFileID,
-                                 Bool primCRSIsGeo, int* sDimID,
-                                 LOG_INFO* LogInfo) {
+                                 Bool primCRSIsGeo, int* sDimID, int* sVarID,
+                                 int* latVarID, int* lonVarID, LOG_INFO* LogInfo) {
+
     const int numSiteAtt = 3, numLatAtt = 4, numLonAtt = 4;
     const int numYAtt = 3, numXAtt = 3;
     int numVarsToWrite = (primCRSIsGeo) ? 3 : 5; // Do or do not write "x" and "y"
@@ -381,7 +544,7 @@ static void fill_domain_netCDF_s(unsigned long nDimS, int* domFileID,
                           {"y coordinate of projection", "projection_y_coordinate", "degrees_north"},
                           {"x coordinate of projection", "projection_x_coordinate", "degrees_east"}};
 
-    const char* varNames[] = {"site", "lat", "lon", "x", "y"};
+    const char* varNames[] = {"site", "lat", "lon", "y", "x"};
     int varIDs[5]; // 5 - Maximum number of variables to create
     const int numAtts[] = {numSiteAtt, numLatAtt, numLonAtt, numYAtt, numXAtt};
 
@@ -414,26 +577,38 @@ static void fill_domain_netCDF_s(unsigned long nDimS, int* domFileID,
             }
         }
     }
+
+    // Set lat/lon/site variable IDs to the values created above
+    *sVarID = varIDs[0];
+
+    if(primCRSIsGeo) {
+        *latVarID = varIDs[1];
+        *lonVarID = varIDs[2];
+    } else {
+        *latVarID = varIDs[3];
+        *lonVarID = varIDs[4];
+    }
 }
 
 /**
  * @brief Fill the domain netCDF file with variables that are for domain type "xy"
  *
- * @param[in] nDimX Size of the 'x' dimension
- * @param[in] nDimY Size of the 'y' dimension
+ * @param[in] nDimX Size of the 'x'/'lon' dimension
+ * @param[in] nDimY Size of the 'y'/'lat' dimension
  * @param[in] domFileID Domain netCDF file ID
  * @param[in] primCRSIsGeo Specifies if the primary CRS type is geographic
- * @param[out] latDimID Horizontal coordinate "lat" or "y" variable identifier
- * @param[out] lonDimID Horizontal coordinate "lon" or "x" variable identifier
+ * @param[out] latDimID Horizontal coordinate "lat" or "y" dimension identifier
+ * @param[out] lonDimID Horizontal coordinate "lon" or "x" dimension identifier
+ * @param[out] latVarID Horizontal coordinate "lat" or "y" variable identifier
+ * @param[out] lonVarID Horizontal coordinate "lon" or "x" variable identifier
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
                 int* domFileID, Bool primCRSIsGeo, int* latDimID, int* lonDimID,
-                LOG_INFO* LogInfo) {
+                int* latVarID, int* lonVarID, LOG_INFO* LogInfo) {
 
     int bndsID = 0;
     int bndVarDims[2]; // Used for bound variables in the netCDF file
-    int varID = 0;
     int dimNum, varNum, attNum;
 
     const int numVars = (primCRSIsGeo) ? 2 : 4; // lat/lon or lat/lon + x/y vars
@@ -457,13 +632,15 @@ static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
     char* latDimName = (primCRSIsGeo) ? "lat" : "y";
     char* lonDimName = (primCRSIsGeo) ? "lon" : "x";
 
-    char* dimNames[] = {latDimName, lonDimName, "bnds"};
-    unsigned long dimVals[] = {nDimY, nDimX, 2};
-    int* dimIDs[] = {latDimID, lonDimID, &bndsID};
-    int dimVal, *dimID;
+    char *dimNames[] = {latDimName, lonDimName, "bnds"};
+    unsigned long dimVals[] = {nDimY, nDimX, 2}, dimVal;
+    int *dimIDs[] = {latDimID, lonDimID, &bndsID}, *dimID;
     int dimIDIndex, currDimID;
     char *dimName, *currVarName;
     char *currAtt, *currAttVal;
+
+    int yVarID, xVarID, *varIDs[] = {latVarID, lonVarID, &yVarID, &xVarID};
+    int varID = 0; // Set by *_bnds but is not used
 
     // Create dimensions
     for(dimNum = 0; dimNum < numDims; dimNum++) {
@@ -486,7 +663,7 @@ static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
         currDimID = *dimIDs[dimIDIndex];
         currVarName = varNames[varNum];
 
-        create_netCDF_var(&varID, currVarName, &currDimID, domFileID,
+        create_netCDF_var(varIDs[varNum], currVarName, &currDimID, domFileID,
                           NC_DOUBLE, 1, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -496,7 +673,7 @@ static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
         for(attNum = 0; attNum < numAtts[varNum]; attNum++) {
             currAtt = varAttNames[varNum][attNum];
             currAttVal = varAttVals[varNum][attNum];
-            write_str_att(currAtt, currAttVal, varID, *domFileID, LogInfo);
+            write_str_att(currAtt, currAttVal, *varIDs[varNum], *domFileID, LogInfo);
 
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -511,6 +688,12 @@ static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
+    }
+
+    // If the primary CRS is projected, update the lat/lon var IDs to x/y vars
+    if(!primCRSIsGeo) {
+        *latVarID = yVarID;
+        *lonVarID = xVarID;
     }
 }
 
@@ -637,6 +820,7 @@ static void fill_netCDF_with_geo_CRS_atts(SW_CRS* crs_geogsc, int* ncFileID,
  *  (gridcell/sites)
  * @param[in] freqAtt Value of a global attribute "frequency" (may be "fx",
  *  "day", "week", "month", or "year")
+ * @param[in] isInputFile Specifies if the file being written to is input
  * @param[in] LogInfo Holds information dealing with logfile output
 */
 static void fill_netCDF_with_global_atts(SW_NETCDF* ncInfo, int* ncFileID,
@@ -785,10 +969,9 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, const char* fileName,
 void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     int* domFileID = &SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC];
-    int sDimID = 0, xDimID = 0, yDimID = 0; // varID is not used
-    int domDims[2]; // Either [yDimID, xDimID] or [sDimID, 0]
-    int nDomainDims;
-    int varID; // Not used
+    int sDimID = 0, latDimID = 0, lonDimID = 0; // varID is not used
+    int domDims[2]; // Either [latDimID, lonDimID] or [sDimID, 0]
+    int nDomainDims, domVarID = 0, latVarID = 0, lonVarID = 0, sVarID = 0;
 
     if(FileExists(DOMAIN_TEMP)) {
         LogError(LogInfo, LOGERROR, "Could not create new domain template. "
@@ -809,7 +992,7 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         // Create s dimension/domain variables
         fill_domain_netCDF_s(SW_Domain->nDimS, domFileID,
                              SW_Domain->netCDFInfo.primary_crs_is_geographic,
-                             &sDimID, LogInfo);
+                             &sDimID, &sVarID, &latVarID, &lonVarID, LogInfo);
         if(LogInfo->stopRun) {
             nc_close(*domFileID);
             return; // Exit prematurely due to error
@@ -822,14 +1005,14 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
         fill_domain_netCDF_xy(SW_Domain->nDimX, SW_Domain->nDimY, domFileID,
                               SW_Domain->netCDFInfo.primary_crs_is_geographic,
-                              &yDimID, &xDimID, LogInfo);
+                              &latDimID, &lonDimID, &latVarID, &lonVarID, LogInfo);
         if(LogInfo->stopRun) {
             nc_close(*domFileID);
             return; // Exit prematurely due to error
         }
 
-        domDims[0] = yDimID;
-        domDims[1] = xDimID;
+        domDims[0] = latDimID;
+        domDims[1] = lonDimID;
     }
 
     // Create domain variable
@@ -838,16 +1021,22 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                               SW_Domain->netCDFInfo.primary_crs_is_geographic,
                               SW_Domain->DomainType, LogInfo);
     if(LogInfo->stopRun) {
+        nc_close(*domFileID);
         return; // Exit function prematurely due to error
     }
 
     fill_netCDF_with_invariants(&SW_Domain->netCDFInfo, SW_Domain->DomainType,
                                 domFileID, swTRUE, LogInfo);
     if(LogInfo->stopRun) {
+        nc_close(*domFileID);
         return; // Exit function prematurely due to error
     }
 
     nc_enddef(*domFileID);
+
+    fill_domain_netCDF_vars(SW_Domain, *domFileID, domVarID, sVarID,
+                            latVarID, lonVarID, LogInfo);
+
     nc_close(*domFileID);
 }
 

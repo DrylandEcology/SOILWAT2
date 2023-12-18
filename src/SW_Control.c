@@ -345,6 +345,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
+    SW_DOM_calc_nSUIDs(SW_Domain);
 
     #if defined(SWNETCDF)
     if(FileExists(SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC])) {
@@ -364,7 +365,6 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     }
     #endif
 
-    SW_DOM_calc_nSUIDs(SW_Domain);
     SW_DOM_SimSet(SW_Domain, userSUID, LogInfo);
 }
 
