@@ -214,6 +214,25 @@ static Bool dimExists(const char* targetDim, int ncFileID) {
  * @brief Write a global attribute (text) to a netCDF file
  *
  * @param[in] attName Name of the attribute to create
+ * @param[in] attVal Attribute string to write out
+ * @param[in] varID Identifier of the variable to add the attribute to
+ *  (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
+ * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void write_uint_att(const char* attName, unsigned int attVal,
+                          int varID, int ncFileID, LOG_INFO* LogInfo) {
+
+    if(nc_put_att_uint(ncFileID, varID, attName, NC_UINT, 1, &attVal) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not create new global attribute %s",
+                                    attName);
+    }
+}
+
+/**
+ * @brief Write a global attribute (text) to a netCDF file
+ *
+ * @param[in] attName Name of the attribute to create
  * @param[in] attStr Attribute string to write out
  * @param[in] varID Identifier of the variable to add the attribute to
  *  (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
