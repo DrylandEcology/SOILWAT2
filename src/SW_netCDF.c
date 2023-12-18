@@ -193,7 +193,7 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
 }
 
 /**
- * @brief Checks to see if a given netCDF has a specific dimention
+ * @brief Checks to see if a given netCDF has a specific dimension
  *
  * @param[in] targetDim Dimension name to test for
  * @param[in] ncFileID Identifier of the open netCDF file to test
