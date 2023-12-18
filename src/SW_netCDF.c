@@ -108,13 +108,13 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
                 break;
             case 6:
                 ncInfo->crs_geogsc.long_name = Str_Dup(value, LogInfo);
+                geoCRSFound = swTRUE;
                 break;
             case 7:
                 ncInfo->crs_geogsc.grid_mapping_name = Str_Dup(value, LogInfo);
                 break;
             case 8:
                 ncInfo->crs_geogsc.crs_wkt = Str_Dup(value, LogInfo);
-                geoCRSFound = swTRUE;
                 break;
             case 9:
                 ncInfo->crs_geogsc.longitude_of_prime_meridian = atof(value);
@@ -127,13 +127,13 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
                 break;
             case 12:
                 ncInfo->crs_projsc.long_name = Str_Dup(value, LogInfo);
+                projCRSFound = swTRUE;
                 break;
             case 13:
                 ncInfo->crs_projsc.grid_mapping_name = Str_Dup(value, LogInfo);
                 break;
             case 14:
                 ncInfo->crs_projsc.crs_wkt = Str_Dup(value, LogInfo);
-                projCRSFound = swTRUE;
                 break;
             case 15:
                 ncInfo->crs_projsc.longitude_of_prime_meridian = atof(value);
@@ -179,6 +179,22 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
         if(LogInfo->stopRun) {
             return; // Exist function prematurely due to error
         }
+    }
+
+
+    if (
+        (ncInfo->primary_crs_is_geographic && !geoCRSFound) ||
+        (!ncInfo->primary_crs_is_geographic && !projCRSFound)
+    ) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "'%s': type of primary CRS is '%s' but "
+            "attributes (including '*_long_name') for such a CRS are missing.",
+            PathInfo->InFiles[eNCInAtt],
+            (ncInfo->primary_crs_is_geographic) ? "geographic" : "projected"
+        );
+        return; // Exit function prematurely due to error
     }
 
     if(projCRSFound && !geoCRSFound) {
