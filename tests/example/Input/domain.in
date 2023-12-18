@@ -21,7 +21,7 @@ EndDoy    365                   # Last day of last year (365 is equivalent to 36
 crs_bbox WGS84  # Supported:
                 # Geographic - "Absent", "WGS84", "WGS 84", "EPSG:4326", "WGS_1984", "World Geodetic System 1984"
                 # Projected - "NAD83 / Conus Albers", "North American Daymet"
-xmin_bbox -112.124056
-ymin_bbox 35.694228
-xmax_bbox -109.200444
-ymax_bbox 37.193393
+xmin_bbox -105.58
+ymin_bbox 39.59
+xmax_bbox -105.58
+ymax_bbox 39.59
