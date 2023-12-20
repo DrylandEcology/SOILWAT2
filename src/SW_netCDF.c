@@ -682,6 +682,7 @@ static void fill_domain_netCDF_domain(const char* domainVarName, int* domID,
  * @param[in] nDimS Size of the 's' dimension (number of sites)
  * @param[in] domFileID Domain netCDF file ID
  * @param[in] primCRSIsGeo Specifies if the primary CRS type is geographic
+ * @param[in] units Attribute value for the "y" and "x" variables
  * @param[out] sDimID 'site' dimension identifier
  * @param[out] sVarID 'site' variable identifier
  * @param[out] latVarID Horizontal coordinate "lat" or "y" variable identifier
@@ -689,8 +690,9 @@ static void fill_domain_netCDF_domain(const char* domainVarName, int* domID,
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void fill_domain_netCDF_s(unsigned long nDimS, int* domFileID,
-                                 Bool primCRSIsGeo, int* sDimID, int* sVarID,
-                                 int* latVarID, int* lonVarID, LOG_INFO* LogInfo) {
+                                 Bool primCRSIsGeo, const char* units, int* sDimID,
+                                 int* sVarID, int* latVarID, int* lonVarID,
+                                 LOG_INFO* LogInfo) {
 
     const int numSiteAtt = 3, numLatAtt = 4, numLonAtt = 4;
     const int numYAtt = 3, numXAtt = 3;
@@ -704,8 +706,8 @@ static void fill_domain_netCDF_s(unsigned long nDimS, int* domFileID,
     const char* attVals[][4] = {{"simulation site", "1", "timeseries_id"},
                           {"latitude", "latitude", "degrees_north", "Y"},
                           {"longitude", "longitude", "degrees_east", "X"},
-                          {"y coordinate of projection", "projection_y_coordinate", "degrees_north"},
-                          {"x coordinate of projection", "projection_x_coordinate", "degrees_east"}};
+                          {"y coordinate of projection", "projection_y_coordinate", units},
+                          {"x coordinate of projection", "projection_x_coordinate", units}};
 
     const char* varNames[] = {"site", "lat", "lon", "y", "x"};
     int varIDs[5]; // 5 - Maximum number of variables to create
@@ -756,6 +758,7 @@ static void fill_domain_netCDF_s(unsigned long nDimS, int* domFileID,
  * @param[in] nDimY Size of the 'y'/'lat' dimension
  * @param[in] domFileID Domain netCDF file ID
  * @param[in] primCRSIsGeo Specifies if the primary CRS type is geographic
+ * @param[in] units Attribute value for the "y" and "x" variables
  * @param[out] latDimID Horizontal coordinate "lat" or "y" dimension identifier
  * @param[out] lonDimID Horizontal coordinate "lon" or "x" dimension identifier
  * @param[out] latVarID Horizontal coordinate "lat" or "y" variable identifier
@@ -767,9 +770,10 @@ static void fill_domain_netCDF_s(unsigned long nDimS, int* domFileID,
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
-                int* domFileID, Bool primCRSIsGeo, int* latDimID, int* lonDimID,
-                int* latVarID, int* lonVarID, int* latBndsID, int* lonBndsID,
-                int* yBndsID, int* xBndsID, LOG_INFO* LogInfo) {
+                int* domFileID, Bool primCRSIsGeo, const char* units,
+                int* latDimID, int* lonDimID, int* latVarID, int* lonVarID,
+                int* latBndsID, int* lonBndsID, int* yBndsID, int* xBndsID,
+                LOG_INFO* LogInfo) {
 
     int bndsID = 0;
     int bndVarDims[2]; // Used for bound variables in the netCDF file
@@ -786,9 +790,9 @@ static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
     const char* varAttVals[][5] = {{"latitude", "latitude", "degrees_north", "Y", "lat_bnds"},
                              {"longitude", "longitude", "degrees_east", "X", "lon_bnds"},
                              {"y coordinate of projection", "projection_y_coordinate",
-                              "degrees_north", "y_bnds"},
+                              units, "y_bnds"},
                              {"x coordinate of projection", "projection_x_coordinate",
-                              "degrees_east", "x_bnds"}};
+                              units, "x_bnds"}};
     int numLatAtt = 5, numLonAtt = 5, numYAtt = 4, numXAtt = 4;
     int numAtts[] = {numLatAtt, numLonAtt, numYAtt, numXAtt};
 
@@ -1122,7 +1126,9 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         // Create s dimension/domain variables
         fill_domain_netCDF_s(SW_Domain->nDimS, domFileID,
                              SW_Domain->netCDFInfo.primary_crs_is_geographic,
-                             &sDimID, &sVarID, &latVarID, &lonVarID, LogInfo);
+                             SW_Domain->netCDFInfo.crs_projsc.units,
+                             &sDimID, &sVarID, &latVarID, &lonVarID,
+                             LogInfo);
         if(LogInfo->stopRun) {
             nc_close(*domFileID);
             return; // Exit prematurely due to error
