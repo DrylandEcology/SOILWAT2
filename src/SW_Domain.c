@@ -6,6 +6,7 @@
 #include "include/filefuncs.h"
 #include "include/SW_Files.h"
 #include "include/SW_Times.h"
+#include "include/rands.h"
 
 /* =================================================== */
 /*                   Local Defines                     */
@@ -217,14 +218,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 }
                 break;
             case 11: // Spinup Seed
-                y = atoi(value);
-                
-                if (y <= 0) {
-                    CloseFile(&f, LogInfo);
-                    LogError(LogInfo, LOGERROR,
-                            "%s: Invalid RNG seed (%d). Must be > 0.", MyFileName, y);
-                }
-                SW_Domain->SW_SpinUp.rng_seed = y;
+                SW_Domain->SW_SpinUp.rng_seed = atoi( value );
                 break;
             case KEY_NOT_FOUND: // Unknown key
                 LogError(LogInfo, LOGWARN, "%s: Ignoring an unknown key, %s",
@@ -232,7 +226,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 break;
         }
     }
-
+    
     CloseFile(&f, LogInfo);
 
 
