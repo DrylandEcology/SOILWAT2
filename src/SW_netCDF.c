@@ -239,7 +239,7 @@ static Bool dimExists(const char* targetDim, int ncFileID) {
  * @param[in] startIndices Specification of where the C-provided netCDF
  *  should start writing values within the specified variable
  * @param[in] count How many values to write into the given variable
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information dealing with logfile output
 */
 static void fill_netCDF_var_uint(int ncFileID, int varID, unsigned int values[],
                                  size_t startIndices[], size_t count[],
@@ -260,7 +260,7 @@ static void fill_netCDF_var_uint(int ncFileID, int varID, unsigned int values[],
  * @param[in] startIndices Specification of where the C-provided netCDF
  *  should start writing values within the specified variable
  * @param[in] count How many values to write into the given variable
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information dealing with logfile output
 */
 static void fill_netCDF_var_double(int ncFileID, int varID, double values[],
                                    size_t startIndices[], size_t count[],
@@ -280,7 +280,7 @@ static void fill_netCDF_var_double(int ncFileID, int varID, double values[],
  * @param[in] varID Identifier of the variable to add the attribute to
  *  (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
  * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information dealing with logfile output
 */
 static void write_uint_att(const char* attName, unsigned int attVal,
                           int varID, int ncFileID, LOG_INFO* LogInfo) {
@@ -299,7 +299,7 @@ static void write_uint_att(const char* attName, unsigned int attVal,
  * @param[in] varID Identifier of the variable to add the attribute to
  *  (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
  * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information dealing with logfile output
 */
 static void write_str_att(const char* attName, const char* attStr,
                           int varID, int ncFileID, LOG_INFO* LogInfo) {
@@ -319,7 +319,7 @@ static void write_str_att(const char* attName, const char* attStr,
  *  (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
  * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
  * @param[in] numVals Number of values to write to the single attribute
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information dealing with logfile output
 */
 static void write_double_att(const char* attName, const double* attVal, int varID,
                         int ncFileID, int numVals, LOG_INFO* LogInfo) {
@@ -337,7 +337,7 @@ static void write_double_att(const char* attName, const double* attVal, int varI
  * @param[in] size Value/size of the dimension
  * @param[in] ncFileID Domain netCDF file ID
  * @param[in,out] dimID Dimension ID
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information dealing with logfile output
 */
 static void create_netCDF_dim(const char* dimName, unsigned long size,
                     int* ncFileID, int* dimID, LOG_INFO* LogInfo) {
@@ -351,13 +351,13 @@ static void create_netCDF_dim(const char* dimName, unsigned long size,
 /**
  * @brief Create a variable within a netCDF file
  *
- * @param[in,out] varID Variable ID within the netCDF
+ * @param[out] varID Variable ID within the netCDF
  * @param[in] varName Name of the new variable
  * @param[in] dimIDs Dimensions of the variable
  * @param[in] ncFileID Domain netCDF file ID
  * @param[in] varType The type in which the new variable will be
  * @param[in] numDims Number of dimensions the new variable will hold
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information dealing with logfile output
 */
 static void create_netCDF_var(int* varID, const char* varName, int* dimIDs,
                 int* ncFileID, int varType, int numDims, LOG_INFO* LogInfo) {
@@ -863,7 +863,7 @@ static void fill_domain_netCDF_xy(unsigned long nDimX, unsigned long nDimY,
  *  regarding to the CRS type "projected"
  * @param[in] ncFileID Identifier of the open netCDF file to write all information to
  * @param[in] proj_id Projected CRS variable identifier within the netCDF we are writing to
- * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void fill_netCDF_with_proj_CRS_atts(SW_CRS* crs_projsc, int* ncFileID,
                                            int proj_id, LOG_INFO* LogInfo) {
@@ -912,7 +912,7 @@ static void fill_netCDF_with_proj_CRS_atts(SW_CRS* crs_projsc, int* ncFileID,
  * @param[in] ncFileID Identifier of the open netCDF file to write all information to
  * @param[in] coord_sys Name of the coordinate system being used
  * @param[in] geo_id Projected CRS variable identifier within the netCDF we are writing to
- * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void fill_netCDF_with_geo_CRS_atts(SW_CRS* crs_geogsc, int* ncFileID,
                             char* coord_sys, int geo_id, LOG_INFO* LogInfo) {
@@ -961,7 +961,7 @@ static void fill_netCDF_with_geo_CRS_atts(SW_CRS* crs_geogsc, int* ncFileID,
  * @param[in] freqAtt Value of a global attribute "frequency" (may be "fx",
  *  "day", "week", "month", or "year")
  * @param[in] isInputFile Specifies if the file being written to is input
- * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void fill_netCDF_with_global_atts(SW_NETCDF* ncInfo, int* ncFileID,
                                          const char* domType, const char* freqAtt,
@@ -1247,7 +1247,7 @@ void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  * @param[in,out] ncInfo Struct of type SW_NETCDF holding constant
  *  netCDF file information
  * @param[in,out] PathInfo Struct holding all information about the programs path/files
- * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_read(SW_NETCDF* ncInfo, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
     static const char* possibleKeys[] = {"domain"};
