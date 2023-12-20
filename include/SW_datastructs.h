@@ -107,12 +107,23 @@ typedef struct {
 	 * doy and year are base1. */
 	/* simyear = year + addtl_yr */
 
-	// Create a copy of SW_DOMAIN's time information to instead
-	// of passing around SW_DOMAIN
-	TimeInt startyr,       /* beginning year for a set of simulation run */
-			endyr,         /* ending year for a set of simulation run */
-			startstart,    /* startday in start year */
-			endend;        /* end day in end year */
+	// Create a copy of SW_DOMAIN's time & spinup information
+	// to use instead of passing around SW_DOMAIN
+	TimeInt startyr,       	 /* beginning year for a set of simulation run */
+			endyr,         	 /* ending year for a set of simulation run */
+			startstart,    	 /* startday in start year */
+			endend,        	 /* end day in end year */
+			spinup_scope,  	 /* scope of spinup */
+			spinup_duration; /* duration of spinup */
+
+	int spinup_mode, 	 /* mode used for spinup */
+		spinup_rng_seed; /* RNG seed for spinup */
+
+	sw_random_t spinup_rng; /* RNG to use for spinup */
+
+	Bool spinup_active; /* flag used for enabling spinup capabilites */
+	
+	// ********** END of copying SW_DOMAIN's data *************
 
 	RealD longitude,	/* longitude of the site (radians)        */
 		  latitude,		/* latitude of the site (radians)        */
