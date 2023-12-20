@@ -71,6 +71,9 @@ int main(int argc, char **argv) {
     sw_init_logs(stdout, &LogInfo);
 
     SW_F_init_ptrs(SW_Domain.PathInfo.InFiles);
+    #if defined(SWNETCDF)
+    SW_NC_init_ptrs(&SW_Domain.netCDFInfo);
+    #endif
     SW_CTL_init_ptrs(&sw_template);
 
     // Obtain user input from the command line
@@ -156,6 +159,9 @@ int main(int argc, char **argv) {
     finishProgram: {
         // de-allocate all memory
         SW_F_deconstruct(SW_Domain.PathInfo.InFiles);
+        #if defined(SWNETCDF)
+        SW_NC_deconstruct(&SW_Domain.netCDFInfo);
+        #endif
         SW_CTL_clear_model(swTRUE, &sw_template);
 
         sw_write_warnings("(main) ", &LogInfo);

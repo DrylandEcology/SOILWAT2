@@ -30,8 +30,8 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, unsigned long ncSUID,
                        LOG_INFO* LogInfo);
 void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 void SW_NC_read(SW_NETCDF* ncInfo, PATH_INFO* PathInfo, LOG_INFO* LogInfo);
-void SW_NC_init_ptrs(char* InFilesNC[], char* varNC[]);
-void SW_NC_deconstruct(char* InFilesNC[], char* varNC[]);
+void SW_NC_init_ptrs(SW_NETCDF* SW_netCDF);
+void SW_NC_deconstruct(SW_NETCDF* SW_netCDF);
 
 #ifdef __cplusplus
 }

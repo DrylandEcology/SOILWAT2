@@ -1280,3 +1280,68 @@ void SW_NC_read(SW_NETCDF* ncInfo, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 
     nc_read_atts(ncInfo, PathInfo, LogInfo);
 }
+
+/**
+ * @brief Initializes pointers within the type SW_NETCDF and SW_CRS
+ *
+ * @param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
+ *  netCDF input/output file information
+*/
+void SW_NC_init_ptrs(SW_NETCDF* SW_netCDF) {
+
+    int index;
+    const int numFreeVars = 13;
+    char *allocArr[] = {
+        SW_netCDF->title, SW_netCDF->author, SW_netCDF->institution,
+        SW_netCDF->comment, SW_netCDF->coordinate_system,
+
+        SW_netCDF->crs_geogsc.long_name, SW_netCDF->crs_geogsc.grid_mapping_name,
+        SW_netCDF->crs_geogsc.crs_wkt, // geogsc does not use datum and units
+
+        SW_netCDF->crs_projsc.long_name, SW_netCDF->crs_projsc.grid_mapping_name,
+        SW_netCDF->crs_projsc.crs_wkt, SW_netCDF->crs_projsc.datum,
+        SW_netCDF->crs_projsc.units
+    };
+
+    SW_netCDF->crs_projsc.standard_parallel[0] = '\0';
+
+    for(index = 0; index < numFreeVars; index++) {
+        allocArr[index] = NULL;
+    }
+
+    // Files/variables
+    for(index = 0; index < SW_NVARNC; index++) {
+
+        SW_netCDF->varNC[index] = NULL;
+        SW_netCDF->InFilesNC[index] = NULL;
+    }
+}
+
+/**
+ * @brief Deconstruct netCDF-related information through the type SW_NETCDF
+ *
+ * @param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
+ *  netCDF input/output file information
+*/
+void SW_NC_deconstruct(SW_NETCDF* SW_netCDF) {
+
+    int index;
+    const int numFreeVars = 13;
+    char *freeArr[] = {
+        SW_netCDF->title, SW_netCDF->author, SW_netCDF->institution,
+        SW_netCDF->comment, SW_netCDF->coordinate_system,
+
+        SW_netCDF->crs_geogsc.long_name, SW_netCDF->crs_geogsc.grid_mapping_name,
+        SW_netCDF->crs_geogsc.crs_wkt, // geogsc does not use datum and units
+
+        SW_netCDF->crs_projsc.long_name, SW_netCDF->crs_projsc.grid_mapping_name,
+        SW_netCDF->crs_projsc.crs_wkt, SW_netCDF->crs_projsc.datum,
+        SW_netCDF->crs_projsc.units
+    };
+
+    for(index = 0; index < numFreeVars; index++) {
+        if(!isnull(freeArr[index])) {
+            free(freeArr[index]);
+        }
+    }
+}
