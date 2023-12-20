@@ -45,6 +45,7 @@
 #include "include/SW_Carbon.h"
 #include "include/myMemory.h"
 #include "include/SW_Main_lib.h"
+#include "include/rands.h"
 
 
 
@@ -88,10 +89,12 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                      LOG_INFO* LogInfo) {
   int localTOffset = 1; // tOffset is one when called from this function
 
-	_collect_values(sw, SW_OutputPtrs, swFALSE, localTOffset, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+  if ( !sw->Model.spinup_active ) {
+    _collect_values(sw, SW_OutputPtrs, swFALSE, localTOffset, LogInfo);
+      if(LogInfo->stopRun) {
+          return; // Exit function prematurely due to error
+      }
+  }
 
 	SW_SWC_end_day(&sw->SoilWat, sw->Site.n_layers);
 }
@@ -338,9 +341,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     SW_DOM_calc_nSUIDs(SW_Domain);
     SW_DOM_SimSet(SW_Domain, userSUID, LogInfo);
 
-    if ( SW_Domain->SW_SpinUp.spinup ) {
-      SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
-    }
+    SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
 }
 
 /** @brief Setup and construct model (independent of inputs)
@@ -511,7 +512,9 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_run_current_year': flush output\n");
   #endif
-  SW_OUT_flush(sw, SW_OutputPtrs, LogInfo);
+  if ( !sw->Model.spinup_active ) {
+    SW_OUT_flush(sw, SW_OutputPtrs, LogInfo);
+  }
 
   #ifdef SWDEBUG
   if(LogInfo->stopRun) {
@@ -520,6 +523,86 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
   if (debug) swprintf("'SW_CTL_run_current_year': completed.\n");
   #endif
+}
+
+/**
+@brief Calls 'SW_CTL_run_current_year' over an array of simulated years
+          as specified by the given spinup scope and duration which
+          then calls 'SW_SWC_water_flow' for each day.
+
+@param[in,out] sw Comprehensive struct of type SW_ALL containing all
+  information in the simulation
+@param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
+  hold pointers to subroutines for output keys
+@param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_CTL_run_spinup(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
+                      LOG_INFO* LogInfo) {
+  // spinup stuff
+
+  unsigned int i, quotient = 0, remainder = 0;
+  int mode = sw->Model.spinup_mode,
+      yr;
+  TimeInt
+    duration = sw->Model.spinup_duration,
+    scope = sw->Model.spinup_scope,
+    finalyr = sw->Model.startyr + scope,
+    years[ duration ];
+
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
+  
+  switch ( mode ) {
+    case 2:
+      // initialize structured array
+      if ( duration <= scope ) {
+        // 1:m
+        yr = sw->Model.startyr;
+        for ( i = 0; i < duration; i++ ) {
+          years[ i ] = yr + i;
+        }
+      }
+      else {
+        // { {1:n}_(m//n), 1:(m%n) }
+        quotient = duration / scope;
+        remainder = duration % scope;
+        yr = sw->Model.startyr;
+        for ( i = 0; i < quotient * scope; i ++ ) {
+          years[ i ] = yr + ( i % scope );
+        }
+        for ( i = 0; i < remainder; i++) {
+          years[ i + ( scope * quotient ) ] = yr + i;
+        }
+      }
+
+      break;
+    default: // same as case 1
+      // initialize random array
+      for ( i = 0; i < duration; i++ ) {
+        yr = RandUniIntRange( sw->Model.startyr,
+                                      finalyr,
+                                      &sw->Model.spinup_rng );
+        years[ i ] = yr;
+      }
+      break;
+  }
+
+  TimeInt *cur_yr = &sw->Model.year,
+          yrIdx;
+
+  for (yrIdx = 0; yrIdx < duration; yrIdx++) {
+    *cur_yr = years[ yrIdx ];
+
+    #ifdef SWDEBUG
+    if (debug) swprintf("\n'SW_CTL_run_spinup': simulate year = %d\n", *cur_yr);
+    #endif
+
+    SW_CTL_run_current_year(sw, SW_OutputPtrs, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+  }
 }
 
 
@@ -704,7 +787,12 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSt
         }
     }
 
-    SW_CTL_main(local_sw_ptr, SW_OutputPtrs, LogInfo);
+    if ( SW_Domain->SW_SpinUp.spinup ) {
+      SW_CTL_run_spinup(local_sw_ptr, SW_OutputPtrs, LogInfo );
+    }
+    else {
+      SW_CTL_main(local_sw_ptr, SW_OutputPtrs, LogInfo);
+    }
 
     // Clear local instance of SW_ALL
     freeMem: {
