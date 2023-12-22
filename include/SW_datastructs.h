@@ -1087,7 +1087,7 @@ typedef struct {
 		startSimSet,       /**< First SUID in simulation set within domain to simulate */
 		endSimSet;         /**< Last SUID in simulation set within domain to simulate */
 
-    char *crs_bbox;        /**< Input name/CRS type (domain.in) */
+    char crs_bbox[27];     /**< Input name/CRS type (domain.in) - holds up to "World Geodetic System 1984" (26) */
     double min_x,          /**< Minimum x coordinate of the bounding box */
            min_y,          /**< Minimum y coordinate of the bounding box */
            max_x,          /**< Maximum x coordinate of the bounding box */

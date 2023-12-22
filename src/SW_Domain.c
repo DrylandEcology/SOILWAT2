@@ -9,6 +9,10 @@
 #include "include/myMemory.h"
 #include "include/generic.h"
 
+#if defined(SWNETCDF)
+#include "include/SW_netCDF.h"
+#endif
+
 /* =================================================== */
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
@@ -168,11 +172,8 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 break;
             case 8: // CRS box
                 // Re-scan and get the entire value (including spaces)
-                sscanf(inbuf, "%9s %[^\n]", key, value);
-                SW_Domain->crs_bbox = Str_Dup(value, LogInfo);
-                if(LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
+                sscanf(inbuf, "%9s %27[^\n]", key, value);
+                strcpy(SW_Domain->crs_bbox, value);
                 break;
             case 9: // Minimum x coordinate
                 SW_Domain->min_x = atof(value);
@@ -274,6 +275,23 @@ void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo) {
 
     SW_F_deepCopy(&dest->PathInfo, &source->PathInfo, LogInfo);
 }
+
+void SW_DOM_init_ptrs(SW_DOMAIN* SW_Domain) {
+    SW_F_init_ptrs(SW_Domain->PathInfo.InFiles);
+
+    #if defined(SWNETCDF)
+    SW_NC_init_ptrs(&SW_Domain->netCDFInfo);
+    #endif
+}
+
+void SW_DOM_deconstruct(SW_DOMAIN* SW_Domain) {
+    SW_F_deconstruct(SW_Domain->PathInfo.InFiles);
+
+    #if defined(SWNETCDF)
+    SW_NC_deconstruct(&SW_Domain->netCDFInfo);
+    #endif
+}
+
 
 /* =================================================== */
 /*             Local Function Definitions              */

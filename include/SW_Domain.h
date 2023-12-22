@@ -20,6 +20,8 @@ void SW_DOM_SetProgress(char* domainType, unsigned long ncSuid[]);
 void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
                    LOG_INFO* LogInfo);
 void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo);
+void SW_DOM_init_ptrs(SW_DOMAIN* SW_Domain);
+void SW_DOM_deconstruct(SW_DOMAIN* SW_Domain);
 
 #ifdef __cplusplus
 }

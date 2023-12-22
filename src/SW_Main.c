@@ -70,10 +70,7 @@ int main(int argc, char **argv) {
     // Initialize logs and pointer objects
     sw_init_logs(stdout, &LogInfo);
 
-    SW_F_init_ptrs(SW_Domain.PathInfo.InFiles);
-    #if defined(SWNETCDF)
-    SW_NC_init_ptrs(&SW_Domain.netCDFInfo);
-    #endif
+    SW_DOM_init_ptrs(&SW_Domain);
     SW_CTL_init_ptrs(&sw_template);
 
     // Obtain user input from the command line
@@ -154,14 +151,14 @@ int main(int argc, char **argv) {
     closeFiles: {
         // finish-up output
         SW_OUT_close_files(&sw_template.FileStatus, &sw_template.GenOutput, &LogInfo); // not used with rSOILWAT2
+        #if defined(SWNETCDF)
+        SW_NC_close_files(&SW_Domain.netCDFInfo);
+        #endif
     }
 
     finishProgram: {
         // de-allocate all memory
-        SW_F_deconstruct(SW_Domain.PathInfo.InFiles);
-        #if defined(SWNETCDF)
-        SW_NC_deconstruct(&SW_Domain.netCDFInfo);
-        #endif
+        SW_DOM_deconstruct(&SW_Domain);
         SW_CTL_clear_model(swTRUE, &sw_template);
 
         sw_write_warnings("(main) ", &LogInfo);
