@@ -20,7 +20,7 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_NC_read_domain(SW_DOMAIN* SW_Domain, const char* domFileName,
                        LOG_INFO* LogInfo);
-void SW_NC_check(SW_DOMAIN* SW_Domain, const char* fileName,
+void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
                  LOG_INFO* LogInfo);
 void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 void SW_NC_create_template(const char* fileName, unsigned long timeSize,

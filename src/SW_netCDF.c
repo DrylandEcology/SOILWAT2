@@ -213,6 +213,68 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
 }
 
 /**
+ * @brief Get a dimension identifier within a given netCDF
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to access
+ * @param[in] dimName Name of the new dimension
+ * @param[out] dimID Identifier of the dimension
+ * @param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_dim_identifier(int ncFileID, char* dimName, int* dimID,
+                               LOG_INFO* LogInfo) {
+
+    if(nc_inq_dimid(ncFileID, dimName, dimID) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred attempting to "
+                                    "retrieve the dimension identifier "
+                                    "of the dimension %s.",
+                                    dimName);
+    }
+}
+/**
+ * @brief Get a dimension value from a given netCDF file
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to access
+ * @param[in] dimName Name of the dimension to access
+ * @param[out] dimVal String buffer to hold the resulting value
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void get_dim_val(int ncFileID, char* dimName, size_t* dimVal,
+                        LOG_INFO* LogInfo) {
+
+    int dimID = 0;
+
+    get_dim_identifier(ncFileID, dimName, &dimID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    printf("%s %d\n", dimName, dimID);
+    if(nc_inq_dimlen(ncFileID, dimID, dimVal) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when attempting "
+                                    "to retrieve the dimension value of "
+                                    "%s.", dimName);
+    }
+}
+
+/**
+ * @brief Determine if a given CRS name is wgs84
+ *
+ * @param[in] crs_name Name of the CRS to test
+*/
+static Bool is_wgs84(const char* crs_name) {
+    const int numPosSyns = 5;
+    static const char* wgs84_synonyms[] = {"WGS84", "WGS 84", "EPSG:4326",
+                                           "WGS_1984", "World Geodetic System 1984"};
+
+    for (int index = 0; index < numPosSyns; index++) {
+        if (Str_CompareI(crs_name, wgs84_synonyms[index]) == 0) {
+                return swTRUE;
+        }
+    }
+
+    return swFALSE;
+}
+
+/**
  * @brief Checks to see if a given netCDF has a specific dimension
  *
  * @param[in] targetDim Dimension name to test for
@@ -229,6 +291,25 @@ static Bool dimExists(const char* targetDim, int ncFileID) {
 
     return (Bool) (inquireRes != NC_EBADDIM);
 }
+
+/**
+ * @brief Check if a variable exists within a given netCDF and does not
+ *  throw an error if anything goes wrong
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to test
+ * @param[in] varName Name of the variable to test for
+ *
+ * @return Whether or not the given variable name exists in the netCDF file
+*/
+static Bool varExists(int ncFileID, const char* varName) {
+    int varID;
+
+    int inquireRes = nc_inq_varid(ncFileID, varName, &varID);
+
+    return (Bool) (inquireRes != NC_ENOTVAR);
+}
+
+
 
 /**
  * @brief Fills a variable with value(s) of type unsigned integer
@@ -1077,19 +1158,92 @@ void SW_NC_read_domain(SW_DOMAIN* SW_Domain, const char* domFileName,
 }
 
 /**
- * @brief Check that content is consistent with domain
+ * @brief Check that the constant content is consistent between
+ *  domain.in and a given netCDF file
  *
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
+ * @param[in] ncFileID Identifier of the open netCDF file to check
  * @param[in] fileName Name of netCDF file to test
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_NC_check(SW_DOMAIN* SW_Domain, const char* fileName,
+void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
                  LOG_INFO* LogInfo) {
 
-    (void) SW_Domain;
-    (void) fileName;
-    (void) LogInfo;
+    Bool geoCRSExists = varExists(ncFileID, "crs_geogsc");
+    Bool projCRSExists = varExists(ncFileID, "crs_projsc");
+    Bool dimMismatch = swFALSE;
+    size_t latDimVal = 0, lonDimVal = 0, SDimVal = 0;
+    const char* geoCRSLongName = SW_Domain->netCDFInfo.crs_geogsc.long_name;
+    const char* projCRSLongName = SW_Domain->netCDFInfo.crs_projsc.long_name;
+    const char* crs_bbox = SW_Domain->crs_bbox;
+
+    // Make sure the domain type is consistent
+    if(Str_CompareI(crs_bbox, geoCRSLongName) != 0 ||
+        (is_wgs84(crs_bbox) && is_wgs84(geoCRSLongName))) {
+
+        if(!geoCRSExists || projCRSExists) {
+            LogError(LogInfo, LOGERROR, "A domain type mismatch was found "
+                                        "between %s and domain.in, for domain "
+                                        "type 's' (sites) please make sure "
+                                        "they match.", fileName);
+            return; // Exit function prematurely due to error
+        }
+
+        get_dim_val(ncFileID, "site", &SDimVal, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        dimMismatch = (SDimVal != SW_Domain->nDimS);
+    } else if(!SW_Domain->netCDFInfo.primary_crs_is_geographic &&
+              Str_CompareI(crs_bbox, projCRSLongName) == 0) {
+
+        if(!geoCRSExists) {
+            LogError(LogInfo, LOGERROR, "A domain type mismatch was found "
+                                        "between %s and domain.in, for domain "
+                                        "type 'xy' (grid) please make sure "
+                                        "they match.", fileName);
+            return; // Exit function prematurely due to error
+        }
+
+        if(SW_Domain->netCDFInfo.primary_crs_is_geographic) {
+            get_dim_val(ncFileID, "lat", &latDimVal, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            get_dim_val(ncFileID, "lon", &lonDimVal, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit prematurely due to error
+            }
+        } else {
+            get_dim_val(ncFileID, "y", &latDimVal, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            get_dim_val(ncFileID, "x", &lonDimVal, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit prematurely due to error
+            }
+        }
+
+        dimMismatch = (latDimVal != SW_Domain->nDimY ||
+                       lonDimVal != SW_Domain->nDimX);
+    } else {
+        LogError(LogInfo, LOGERROR, "The CRS type within the "
+                                    "domain netCDF does not match the one "
+                                    "found in domain.in. Please make sure "
+                                    "these values are consistant.");
+        return; // Exit function prematurely due to error
+    }
+
+    if(dimMismatch) {
+        LogError(LogInfo, LOGERROR, "A domain dimension size mismatch "
+                            "was found between %s and domain.in, please "
+                            "make sure they match.", fileName);
+    }
 }
 
 /**
@@ -1233,7 +1387,8 @@ void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     int file;
 
     for(file = 0; file < SW_NVARNC; file++) {
-        SW_NC_check(SW_Domain, SW_Domain->netCDFInfo.InFilesNC[file], LogInfo);
+        SW_NC_check(SW_Domain, SW_Domain->netCDFInfo.ncFileIDs[file],
+                    SW_Domain->netCDFInfo.InFilesNC[file], LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to inconsistent data
         }
