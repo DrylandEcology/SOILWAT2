@@ -350,6 +350,11 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     #if defined(SWNETCDF)
     if(FileExists(SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC])) {
 
+        SW_NC_check(SW_Domain, SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC],
+                    SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
     } else {
         SW_NC_create_domain_template(SW_Domain, LogInfo);
         if(LogInfo->stopRun) {

@@ -230,6 +230,101 @@ static void get_dim_identifier(int ncFileID, char* dimName, int* dimID,
                                     dimName);
     }
 }
+
+/**
+ * @brief Get a variable identifier within a given netCDF
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to access
+ * @param[in] varName Name of the new variable
+ * @param[out] varID Identifier of the variable
+ * @param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_var_identifier(int ncFileID, const char* varName, int* varID,
+                               LOG_INFO* LogInfo) {
+
+    int callRes = nc_inq_varid(ncFileID, varName, varID);
+
+    if(callRes == NC_ENOTVAR) {
+        LogError(LogInfo, LOGERROR, "Could not find variable %s.",
+                                    varName);
+    }
+
+}
+
+/**
+ * @brief Get a string value from an attribute
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to test
+ * @param[in] varName Name of the variable to access
+ * @param[in] attName Name of the attribute to access
+ * @param[out] strVal String buffer to hold the resulting value
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void get_str_att_val(int ncFileID, const char* varName,
+                            const char* attName, char* strVal,
+                            LOG_INFO* LogInfo) {
+
+    int varID = 0, attCallRes, attLenCallRes;
+    size_t attLen = 0;
+    get_var_identifier(ncFileID, varName, &varID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    attLenCallRes = nc_inq_attlen(ncFileID, varID, attName, &attLen);
+    if(attLenCallRes == NC_ENOTATT) {
+        LogError(LogInfo, LOGERROR, "Could not find an attribute %s "
+                                    "for the variable %s.",
+                                    attName, varName);
+        return; // Exit function prematurely due to error
+    } else if(attLenCallRes != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when attempting to "
+                                    "get the length of the value of the "
+                                    "attribute %s.", attName);
+    }
+
+    attCallRes = nc_get_att_text(ncFileID, varID, attName, strVal);
+    if(attCallRes != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when attempting to "
+                                    "access the attribute %s of variable %s.",
+                                    attName, varName);
+        return; // Exit function prematurely due to error
+    }
+
+    strVal[attLen] = '\0';
+}
+
+/**
+ * @brief Get a double value from an attribute
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to test
+ * @param[in] varName Name of the variable to access
+ * @param[in] attName Name of the attribute to access
+ * @param[out] attVal String buffer to hold the resulting value
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void get_double_att_val(int ncFileID, const char* varName,
+                               const char* attName, double* attVal,
+                               LOG_INFO* LogInfo) {
+
+    int varID = 0, attCallRes;
+    get_var_identifier(ncFileID, varName, &varID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    attCallRes = nc_get_att_double(ncFileID, varID, attName, attVal);
+    if(attCallRes == NC_ENOTATT) {
+        LogError(LogInfo, LOGERROR, "Could not find an attribute %s "
+                                    "for the variable %s.",
+                                    attName, varName);
+    } else if(attCallRes != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when attempting to "
+                                    "access the attribute %s of variable %s.",
+                                    attName, varName);
+    }
+}
+
 /**
  * @brief Get a dimension value from a given netCDF file
  *
@@ -247,7 +342,7 @@ static void get_dim_val(int ncFileID, char* dimName, size_t* dimVal,
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
-    printf("%s %d\n", dimName, dimID);
+
     if(nc_inq_dimlen(ncFileID, dimID, dimVal) != NC_NOERR) {
         LogError(LogInfo, LOGERROR, "An error occurred when attempting "
                                     "to retrieve the dimension value of "
@@ -260,10 +355,10 @@ static void get_dim_val(int ncFileID, char* dimName, size_t* dimVal,
  *
  * @param[in] crs_name Name of the CRS to test
 */
-static Bool is_wgs84(const char* crs_name) {
+static Bool is_wgs84(char* crs_name) {
     const int numPosSyns = 5;
-    static const char* wgs84_synonyms[] = {"WGS84", "WGS 84", "EPSG:4326",
-                                           "WGS_1984", "World Geodetic System 1984"};
+    static char* wgs84_synonyms[] = {"WGS84", "WGS 84", "EPSG:4326",
+                                     "WGS_1984", "World Geodetic System 1984"};
 
     for (int index = 0; index < numPosSyns; index++) {
         if (Str_CompareI(crs_name, wgs84_synonyms[index]) == 0) {
@@ -1141,23 +1236,6 @@ static void fill_netCDF_with_invariants(SW_NETCDF* ncInfo, char* domType,
 /* --------------------------------------------------- */
 
 /**
- * @brief Read domain netCDF, obtain CRS-related information,
- *  and check that content is consistent with "domain.in"
- *
- * @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
- *  temporal/spatial information for a set of simulation runs
- * @param[in] domFileName Name of the domain netCDF file
- * @param[in,out] LogInfo Holds information dealing with logfile output
-*/
-void SW_NC_read_domain(SW_DOMAIN* SW_Domain, const char* domFileName,
-                       LOG_INFO* LogInfo) {
-
-    (void) SW_Domain;
-    (void) domFileName;
-    (void) LogInfo;
-}
-
-/**
  * @brief Check that the constant content is consistent between
  *  domain.in and a given netCDF file
  *
@@ -1170,79 +1248,227 @@ void SW_NC_read_domain(SW_DOMAIN* SW_Domain, const char* domFileName,
 void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
                  LOG_INFO* LogInfo) {
 
-    Bool geoCRSExists = varExists(ncFileID, "crs_geogsc");
-    Bool projCRSExists = varExists(ncFileID, "crs_projsc");
+    SW_CRS *crs_geogsc = &SW_Domain->netCDFInfo.crs_geogsc;
+    SW_CRS *crs_projsc = &SW_Domain->netCDFInfo.crs_projsc;
+    Bool geoIsPrimCRS = SW_Domain->netCDFInfo.primary_crs_is_geographic;
+    char strAttVal[LARGE_VALUE];
+    double doubleAttVal;
+    const char *geoCRS = "crs_geogsc", *projCRS = "crs_projsc";
+    Bool geoCRSExists = varExists(ncFileID, geoCRS);
+    Bool projCRSExists = varExists(ncFileID, projCRS);
+    char* impliedDomType = dimExists("site", ncFileID) ? "s" : "xy";
     Bool dimMismatch = swFALSE;
     size_t latDimVal = 0, lonDimVal = 0, SDimVal = 0;
-    const char* geoCRSLongName = SW_Domain->netCDFInfo.crs_geogsc.long_name;
-    const char* projCRSLongName = SW_Domain->netCDFInfo.crs_projsc.long_name;
-    const char* crs_bbox = SW_Domain->crs_bbox;
 
-    // Make sure the domain type is consistent
-    if(Str_CompareI(crs_bbox, geoCRSLongName) != 0 ||
-        (is_wgs84(crs_bbox) && is_wgs84(geoCRSLongName))) {
+    const char* strAttsToComp[] = {"long_name", "grid_mapping_name", "crs_wkt"};
+    const char* doubleAttsToComp[] = {"longitude_of_prime_meridian",
+                                      "semi_major_axis", "inverse_flattening"};
 
-        if(!geoCRSExists || projCRSExists) {
-            LogError(LogInfo, LOGERROR, "A domain type mismatch was found "
-                                        "between %s and domain.in, for domain "
-                                        "type 's' (sites) please make sure "
-                                        "they match.", fileName);
-            return; // Exit function prematurely due to error
-        }
+    const char* strProjAttsToComp[] = {"datum", "units"};
+    const char* doubleProjAttsToComp[] = {"longitude_of_central_meridian",
+                                          "latitude_of_projection_origin",
+                                          "false_easting", "false_northing"};
+    const char* stdParallel = "standard_parallel";
+    const double stdParVals[] = {crs_projsc->standard_parallel[0],
+                                 crs_projsc->standard_parallel[1]};
 
+    const char* geoStrAttVals[] = {crs_geogsc->long_name,
+                                   crs_geogsc->grid_mapping_name,
+                                   crs_geogsc->crs_wkt};
+    const double geoDoubleAttVals[] = {crs_geogsc->longitude_of_prime_meridian,
+                                       crs_geogsc->semi_major_axis,
+                                       crs_geogsc->inverse_flattening};
+    const char* projStrAttVals[] = {crs_projsc->long_name,
+                                    crs_projsc->grid_mapping_name,
+                                    crs_projsc->crs_wkt};
+    const double projDoubleAttVals[] = {crs_projsc->longitude_of_prime_meridian,
+                                        crs_projsc->semi_major_axis,
+                                        crs_projsc->inverse_flattening};
+
+    const char* strProjAttVals[] = {SW_Domain->netCDFInfo.crs_projsc.datum,
+                                    SW_Domain->netCDFInfo.crs_projsc.units};
+    const double doubleProjAttVals[] = {
+        crs_projsc->longitude_of_central_meridian,
+        crs_projsc->latitude_of_projection_origin,
+        crs_projsc->false_easting,
+        crs_projsc->false_northing,
+    };
+
+    const int numNormAtts = 3, numProjStrAtts = 2, numProjDoubleAtts = 4;
+    double projStdParallel[2]; // Compare to standard_parallel is projected CRS
+    int attNum;
+
+    char* attFailMsg = "The attribute '%s' of the variable '%s' "
+                       "within the file %s does not match the one "
+                       "in the domain input file. Please make sure "
+                       "these match.";
+
+    /*
+       Make sure the domain types are consistent
+    */
+    if(strcmp(SW_Domain->DomainType, impliedDomType) != 0) {
+        LogError(LogInfo, LOGERROR, "The implied domain type within %s "
+                    "does not match the one specified in the domain input "
+                    "file ('%s'). Please make sure these match.",
+                    fileName, SW_Domain->DomainType);
+    }
+
+    /*
+       Make sure the dimensions of the netCDF file is consistent with the
+       domain input file
+    */
+    if(strcmp(impliedDomType, "s") == 0) {
         get_dim_val(ncFileID, "site", &SDimVal, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        dimMismatch = (SDimVal != SW_Domain->nDimS);
-    } else if(!SW_Domain->netCDFInfo.primary_crs_is_geographic &&
-              Str_CompareI(crs_bbox, projCRSLongName) == 0) {
-
-        if(!geoCRSExists) {
-            LogError(LogInfo, LOGERROR, "A domain type mismatch was found "
-                                        "between %s and domain.in, for domain "
-                                        "type 'xy' (grid) please make sure "
-                                        "they match.", fileName);
-            return; // Exit function prematurely due to error
-        }
-
-        if(SW_Domain->netCDFInfo.primary_crs_is_geographic) {
+        dimMismatch = SDimVal != SW_Domain->nDimS;
+    } else if(strcmp(impliedDomType, "xy") == 0) {
+        if(geoIsPrimCRS && geoCRSExists) {
             get_dim_val(ncFileID, "lat", &latDimVal, LogInfo);
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
-
             get_dim_val(ncFileID, "lon", &lonDimVal, LogInfo);
             if(LogInfo->stopRun) {
-                return; // Exit prematurely due to error
+                return; // Exit function prematurely due to error
             }
-        } else {
+        } else if(!geoIsPrimCRS && projCRSExists) {
             get_dim_val(ncFileID, "y", &latDimVal, LogInfo);
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
-
             get_dim_val(ncFileID, "x", &lonDimVal, LogInfo);
             if(LogInfo->stopRun) {
-                return; // Exit prematurely due to error
+                return; // Exit function prematurely due to error
             }
+        } else {
+            LogError(LogInfo, LOGERROR, "Could not find the proper CRS variable "
+                                        "for the domain type/primary CRS.");
+            return; // Exit function prematurely due to error
         }
 
-        dimMismatch = (latDimVal != SW_Domain->nDimY ||
-                       lonDimVal != SW_Domain->nDimX);
-    } else {
-        LogError(LogInfo, LOGERROR, "The CRS type within the "
-                                    "domain netCDF does not match the one "
-                                    "found in domain.in. Please make sure "
-                                    "these values are consistant.");
-        return; // Exit function prematurely due to error
+        dimMismatch = latDimVal != SW_Domain->nDimY ||
+                      lonDimVal != SW_Domain->nDimX;
     }
 
     if(dimMismatch) {
-        LogError(LogInfo, LOGERROR, "A domain dimension size mismatch "
-                            "was found between %s and domain.in, please "
-                            "make sure they match.", fileName);
+        LogError(LogInfo, LOGERROR, "The size of the dimensions in %s do "
+                    "not match the domain input file's. Please make sure "
+                    "these match.", fileName);
+        return; // Exit function prematurely due to error
+    }
+
+    /*
+       Make sure the geographic CRS information is consistent with the
+       domain input file - both string and double values
+    */
+    if(geoCRSExists) {
+        for(attNum = 0; attNum < numNormAtts; attNum++) {
+            get_str_att_val(ncFileID, geoCRS, strAttsToComp[attNum],
+                            strAttVal, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if(strcmp(geoStrAttVals[attNum], strAttVal) != 0) {
+                LogError(LogInfo, LOGERROR, attFailMsg,
+                        strAttsToComp[attNum], geoCRS, fileName);
+                return; // Exit function prematurely due to error
+            }
+        }
+
+        for(attNum = 0; attNum < numNormAtts; attNum++) {
+            get_double_att_val(ncFileID, geoCRS, doubleAttsToComp[attNum],
+                            &doubleAttVal, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if(doubleAttVal != geoDoubleAttVals[attNum]) {
+                LogError(LogInfo, LOGERROR, attFailMsg,
+                        doubleAttsToComp[attNum], geoCRS, fileName);
+                return; // Exit function prematurely due to error
+            }
+        }
+    }
+
+    /*
+       Test all projected CRS attributes - both string and double values -
+       if applicable
+    */
+    if(!geoIsPrimCRS && projCRSExists) {
+        // Normal attributes (same tested for in crs_geogsc)
+        for(attNum = 0; attNum < numNormAtts; attNum++) {
+            get_str_att_val(ncFileID, projCRS, strAttsToComp[attNum],
+                            strAttVal, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if(strcmp(projStrAttVals[attNum], strAttVal) != 0) {
+                LogError(LogInfo, LOGERROR, attFailMsg,
+                        strAttsToComp[attNum], projCRS, fileName);
+                return; // Exit function prematurely due to error
+            }
+        }
+
+        for(attNum = 0; attNum < numNormAtts; attNum++) {
+            get_double_att_val(ncFileID, projCRS, doubleAttsToComp[attNum],
+                               &doubleAttVal, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if(doubleAttVal != projDoubleAttVals[attNum]) {
+                LogError(LogInfo, LOGERROR, attFailMsg,
+                        doubleAttsToComp[attNum], projCRS, fileName);
+                return; // Exit function prematurely due to error
+            }
+        }
+
+        // Projected CRS-only attributes
+        for(attNum = 0; attNum < numProjStrAtts; attNum++) {
+            get_str_att_val(ncFileID, projCRS, strProjAttsToComp[attNum],
+                            strAttVal, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if(strcmp(strAttVal, strProjAttVals[attNum]) != 0) {
+                LogError(LogInfo, LOGERROR, attFailMsg, strProjAttsToComp[attNum],
+                         projCRS, fileName);
+                return; // Exit function prematurely due to error
+            }
+        }
+
+        for(attNum = 0; attNum < numProjDoubleAtts; attNum++) {
+            get_double_att_val(ncFileID, projCRS, doubleProjAttsToComp[attNum],
+                                &doubleAttVal, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if(doubleAttVal != doubleProjAttVals[attNum]) {
+                LogError(LogInfo, LOGERROR, attFailMsg, doubleProjAttsToComp[attNum],
+                         projCRS, fileName);
+                return; // Exit function prematurely due to error
+            }
+        }
+
+        // Test for standard_parallel
+        get_double_att_val(ncFileID, projCRS, stdParallel, projStdParallel, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        if(projStdParallel[0] != stdParVals[0] ||
+           projStdParallel[1] != stdParVals[1]) {
+
+            LogError(LogInfo, LOGERROR, attFailMsg, stdParallel,
+                     projCRS, fileName);
+        }
     }
 }
 
