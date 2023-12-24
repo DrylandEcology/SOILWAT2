@@ -789,10 +789,11 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSt
 
     if ( SW_Domain->SW_SpinUp.spinup ) {
       SW_CTL_run_spinup(local_sw_ptr, SW_OutputPtrs, LogInfo );
+      SW_Domain->SW_SpinUp.spinup = swFALSE;
+      local_sw_ptr->Model.spinup_active = SW_Domain->SW_SpinUp.spinup;
     }
-    else {
-      SW_CTL_main(local_sw_ptr, SW_OutputPtrs, LogInfo);
-    }
+    
+    SW_CTL_main(local_sw_ptr, SW_OutputPtrs, LogInfo);
 
     // Clear local instance of SW_ALL
     freeMem: {
