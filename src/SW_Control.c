@@ -206,7 +206,7 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
                       SW_DOMAIN *SW_Domain, SW_WALLTIME *SW_WallTime, LOG_INFO *main_LogInfo) {
 
     unsigned long suid, nSims = 0;
-    unsigned long ncSuid[2]; // 2 -> [y, x] or [0, s]
+    unsigned long ncSuid[2]; // 2 -> [y, x] or [s, 0]
     char tag_suid[32]; /* 32 = 11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
     tag_suid[0] = '\0';
     WallTimeSpec tss, tsr;
@@ -348,8 +348,11 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     SW_DOM_calc_nSUIDs(SW_Domain);
 
     #if defined(SWNETCDF)
+    SW_NC_open_files(&SW_Domain->netCDFInfo, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
     if(FileExists(SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC])) {
-
         SW_NC_check(SW_Domain, SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC],
                     SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC], LogInfo);
         if(LogInfo->stopRun) {
@@ -727,6 +730,13 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
         if(LogInfo->stopRun) {
             goto freeMem; // Free memory and skip simulation run
         }
+
+        #if defined(SWNETCDF)
+        SW_NC_read_inputs(sw_template, SW_Domain, ncSuid, LogInfo);
+        if(LogInfo->stopRun) {
+            goto freeMem;
+        }
+        #endif
 
         SW_MDL_get_ModelRun(&local_sw.Model, SW_Domain, ncInFiles, LogInfo);
         if(LogInfo->stopRun) {

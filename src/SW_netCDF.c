@@ -326,6 +326,31 @@ static void get_double_att_val(int ncFileID, const char* varName,
 }
 
 /**
+ * @brief Get a double value from a variable
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to access
+ * @param[in] varName Name of the variable to access
+ * @param[in] index Location of the value within the variable
+ * @param[out] value String buffer to hold the resulting value
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void get_single_double_val(int ncFileID, const char* varName,
+                                  size_t index[], double* value,
+                                  LOG_INFO* LogInfo) {
+    int varID = 0;
+    get_var_identifier(ncFileID, varName, &varID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    if(nc_get_var1_double(ncFileID, varID, index, value) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when trying to "
+                                    "get a value from variable %s.",
+                                    varName);
+    }
+}
+
+/**
  * @brief Get a dimension value from a given netCDF file
  *
  * @param[in] ncFileID Identifier of the open netCDF file to access
@@ -1620,13 +1645,42 @@ void SW_NC_create_template(const char* fileName, unsigned long timeSize,
  *  to get data from netCDF
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, unsigned long ncSUID,
+void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
                        LOG_INFO* LogInfo) {
 
-    (void) sw;
-    (void) SW_Domain;
-    (void) ncSUID;
-    (void) LogInfo;
+    int file, varNum;
+    char* geo_long_name = SW_Domain->netCDFInfo.crs_geogsc.long_name;
+    Bool geoFilled = Str_CompareI(SW_Domain->crs_bbox, geo_long_name) == 0 ||
+                     (is_wgs84(SW_Domain->crs_bbox) && is_wgs84(geo_long_name));
+    Bool domTypeS = Str_CompareI(SW_Domain->DomainType, "s") == 0;
+    const int numDomVals = 2;
+    const int numVals[] = {numDomVals};
+    const int ncFileIDs[] = {SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC]};
+    const char* domLatVar = geoFilled ? "lat" : "y";
+    const char* domLonVar = geoFilled ? "lon" : "x";
+    const char* varNames[][2] = {{domLatVar, domLonVar}};
+    int ncIndex;
+
+    RealD *values[][2] = {{&sw->Model.latitude, &sw->Model.longitude}};
+
+    /*
+        Gather all values being requested within the array "values"
+        The index within the netCDF file for domain type "s" is simply the
+        first index in "ncSUID"
+        For the domain type "xy", the index of the variable "y" is the first
+        in "ncSUID" and the index of the variable "x" is the second in "ncSUID"
+    */
+    for(file = 0; file < SW_NVARNC; file++) {
+        for(varNum = 0; varNum < numVals[file]; varNum++) {
+            ncIndex = domTypeS ? 0 : varNum % 2;
+
+            get_single_double_val(ncFileIDs[file], varNames[file][varNum],
+                                  &ncSUID[ncIndex], values[file][varNum], LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+    }
 }
 
 /**
@@ -1751,5 +1805,44 @@ void SW_NC_deconstruct(SW_NETCDF* SW_netCDF) {
         if(!isnull(freeArr[index])) {
             free(freeArr[index]);
         }
+    }
+}
+
+/**
+ * @brief Open all netCDF files that should be open throughout the program
+ *
+ * @param[in,out] ncInfo Struct of type SW_NETCDF holding constant
+ *  netCDF file information
+ * @param[out] LogInfo Struct of type SW_NETCDF holding constant
+ *  netCDF file information
+*/
+void SW_NC_open_files(SW_NETCDF* ncInfo, LOG_INFO* LogInfo) {
+    int fileNum;
+
+    for(fileNum = 0; fileNum < SW_NVARNC; fileNum++) {
+        if(FileExists(ncInfo->InFilesNC[fileNum])) {
+            if(nc_open(ncInfo->InFilesNC[fileNum], NC_NOWRITE,
+                                    &ncInfo->ncFileIDs[fileNum]) != NC_NOERR) {
+
+                LogError(LogInfo, LOGERROR, "An error occurred when opening %s.",
+                                            ncInfo->InFilesNC[fileNum]);
+
+                return; // Exit function prematurely due to error
+            }
+        }
+    }
+}
+
+/**
+ * @brief Close all netCDF files that have been opened while the program ran
+ *
+ * @param[in,out] ncInfo Struct of type SW_NETCDF holding constant
+ *  netCDF file information
+*/
+void SW_NC_close_files(SW_NETCDF* ncInfo) {
+    int fileNum;
+
+    for(fileNum = 0; fileNum < SW_NVARNC; fileNum++) {
+        nc_close(ncInfo->ncFileIDs[fileNum]);
     }
 }

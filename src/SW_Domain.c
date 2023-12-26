@@ -40,8 +40,8 @@ void SW_DOM_calc_ncSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
                              unsigned long ncSuid[]) {
 
     if(strcmp(SW_Domain->DomainType, "s") == 0) {
-        ncSuid[0] = 0;
-        ncSuid[1] = suid;
+        ncSuid[0] = suid;
+        ncSuid[1] = 0;
     } else {
         ncSuid[0] = suid / SW_Domain->nDimX;
         ncSuid[1] = suid % SW_Domain->nDimX;
