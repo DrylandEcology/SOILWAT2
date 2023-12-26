@@ -1752,7 +1752,7 @@ void SW_NC_read(SW_NETCDF* ncInfo, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 void SW_NC_init_ptrs(SW_NETCDF* SW_netCDF) {
 
     int index;
-    const int numFreeVars = 13;
+    const int numAllocVars = 13;
     char *allocArr[] = {
         SW_netCDF->title, SW_netCDF->author, SW_netCDF->institution,
         SW_netCDF->comment, SW_netCDF->coordinate_system,
@@ -1767,7 +1767,7 @@ void SW_NC_init_ptrs(SW_NETCDF* SW_netCDF) {
 
     SW_netCDF->crs_projsc.standard_parallel[0] = '\0';
 
-    for(index = 0; index < numFreeVars; index++) {
+    for(index = 0; index < numAllocVars; index++) {
         allocArr[index] = NULL;
     }
 
@@ -1777,6 +1777,8 @@ void SW_NC_init_ptrs(SW_NETCDF* SW_netCDF) {
         SW_netCDF->varNC[index] = NULL;
         SW_netCDF->InFilesNC[index] = NULL;
     }
+
+    (void) allocArr; // Silence compiler
 }
 
 /**
