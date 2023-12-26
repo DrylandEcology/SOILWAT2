@@ -563,9 +563,23 @@ static void create_netCDF_dim(const char* dimName, unsigned long size,
 static void create_netCDF_var(int* varID, const char* varName, int* dimIDs,
                 int* ncFileID, int varType, int numDims, LOG_INFO* LogInfo) {
 
+    // Deflate information
+    int shuffle = 1, deflate = 1; // 0 or 1
+    int level = 5; // 0 to 9
+
     if(nc_def_var(*ncFileID, varName, varType, numDims, dimIDs, varID) != NC_NOERR) {
         LogError(LogInfo, LOGERROR, "Could not create '%s' variable in "
                                     "netCDF.", varName);
+        return; // Exit prematurely due to error
+    }
+
+    // Do not compress the CRS variables
+    if(strcmp(varName, "crs_geogsc") != 0 && strcmp(varName, "crs_projsc") != 0) {
+
+        if(nc_def_var_deflate(*ncFileID, *varID, shuffle, deflate, level) != NC_NOERR) {
+            LogError(LogInfo, LOGERROR, "An error occurred when attempting to "
+                                        "deflate the variable %s", varName);
+        }
     }
 }
 
