@@ -546,7 +546,7 @@ void SW_CTL_run_spinup(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   TimeInt
     duration = sw->Model.spinup_duration,
     scope = sw->Model.spinup_scope,
-    finalyr = sw->Model.startyr + scope,
+    finalyr = sw->Model.startyr + scope - 1,
     *years;
 
     years = ( TimeInt* )Mem_Malloc( sizeof( TimeInt ) * duration, "SW_CTL_run_spinup()", LogInfo );
@@ -563,7 +563,6 @@ void SW_CTL_run_spinup(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
         yr = sw->Model.startyr;
         for ( i = 0; i < duration; i++ ) {
           years[ i ] = yr + i;
-          printf("Year[%d]: %d\n", i, years[ i ]);
         }
       }
       else {
@@ -573,11 +572,9 @@ void SW_CTL_run_spinup(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
         yr = sw->Model.startyr;
         for ( i = 0; i < quotient * scope; i ++ ) {
           years[ i ] = yr + ( i % scope );
-          printf("Year[%d]: %d\n", i, years[ i ]);
         }
         for ( i = 0; i < remainder; i++) {
           years[ i + ( scope * quotient ) ] = yr + i;
-          printf("Year[%d]: %d\n", (i + ( scope * quotient )), years[ (i + (scope * quotient) ) ]);
         }
       }
 
@@ -589,7 +586,6 @@ void SW_CTL_run_spinup(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                                       finalyr,
                                       &sw->Model.spinup_rng );
         years[ i ] = yr;
-        printf("Year[%d]: %d\n", i, years[ i ]);
       }
       break;
   }
