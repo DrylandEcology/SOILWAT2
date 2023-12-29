@@ -1652,24 +1652,69 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 }
 
 /**
- * @brief Copy domain netCDF to a new file and make it ready for a new variable
+ * @brief Copy domain netCDF to a new file and add a new variable
  *
+ * @param[in] domFile Name of the domain netCDF
+ * @param[in] domFileID Identifier of the domain netCDF file
  * @param[in] fileName Name of the netCDF file to create
+ * @param[in] newFileID Identifier of the netCDF file to create
+ * @param[in] newVarType Type of the variable to create
  * @param[in] timeSize Size of "time" dimension
  * @param[in] vertSize Size of "vertical" dimension
  * @param[in] varName Name of variable to write
- * @param[in] varAttributes Attributes that the new variable will contain
+ * @param[in] attNames Attribute names that the new variable will contain
+ * @param[in] attVals Attribute values that the new variable will contain
+ * @param[in] numAtts Number of attributes being sent in
  * @param[in,out] LogInfo  Holds information dealing with logfile output
 */
-void SW_NC_create_template(const char* fileName, unsigned long timeSize,
-                           unsigned long vertSize, const char* varName,
-                           char* varAttributes[], LOG_INFO* LogInfo) {
-    (void) fileName;
-    (void) timeSize;
-    (void) vertSize;
-    (void) varName;
-    (void) varAttributes;
-    (void) LogInfo;
+void SW_NC_create_template(const char* domFile, int domFileID,
+    const char* fileName, int* newFileID, int newVarType,
+    unsigned long timeSize, unsigned long vertSize, const char* varName,
+    const char* attNames[], const char* attVals[], int numAtts, LOG_INFO* LogInfo) {
+
+}
+
+/**
+ * @brief Create a progress netCDF file
+ *
+ * @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
+
+}
+
+/**
+ * @brief Mark a site/gridcell as completed in the progress file
+ *
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
+ * @param[in] progFileID Identifier of the progress netCDF file
+ * @param[in] progVarName User-specified progress variable name
+ * @param[in] ncSUID Current simulation unit identifier for which is used
+ *  to get data from netCDF
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_NC_set_progress(const char* domType, int progFileID,
+                        const char* progVarName, unsigned long ncSUID[],
+                        LOG_INFO* LogInfo) {
+
+}
+
+/**
+ * @brief Check if a site/grid cell is marked to be run in the progress
+ *  netCDF
+ *
+ * @param[in] progFileID Identifier of the progress netCDF file
+ * @param[in] progVarName User-specified progress variable name
+ * @param[in] ncSUID Current simulation unit identifier for which is used
+ *  to get data from netCDF
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+Bool SW_NC_check_progress(int progFileID, const char* progVarName,
+                          unsigned long ncSUID[], LOG_INFO* LogInfo) {
+
 }
 
 /**
