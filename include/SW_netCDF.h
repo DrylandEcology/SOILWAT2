@@ -12,6 +12,7 @@ extern "C" {
 /* --------------------------------------------------- */
 
 #define DOMAIN_NC 0 // Domain netCDF index within `InFilesNC` and `varNC` (SW_NETCDF)
+#define PROG_NC 1 // Progress netCDF index within `InFilesNC` and `varNC` (SW_NETCDF)
 
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
 

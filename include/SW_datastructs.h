@@ -26,7 +26,7 @@
 #endif
 
 #define SW_NFILES 26 // For `InFiles`
-#define SW_NVARNC 1 // For `InFilesNC`
+#define SW_NVARNC 2 // For `InFilesNC`
 
 
 /* =================================================== */

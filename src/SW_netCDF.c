@@ -14,7 +14,7 @@
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
 
-#define NUM_NC_IN_KEYS 1 // Number of possible keys within `files_nc.in`
+#define NUM_NC_IN_KEYS 2 // Number of possible keys within `files_nc.in`
 #define NUM_ATT_IN_KEYS 25 // Number of possible keys within `attributes_nc.in`
 
 /* =================================================== */
@@ -1795,7 +1795,7 @@ void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
-    static const char* possibleKeys[] = {"domain"};
+    static const char* possibleKeys[] = {"domain", "progress"};
 
     FILE *f;
     char inbuf[MAX_FILENAMESIZE], *MyFileName;
@@ -1816,6 +1816,9 @@ void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
                 SW_netCDF->varNC[DOMAIN_NC] = Str_Dup(varName, LogInfo);
                 SW_netCDF->InFilesNC[DOMAIN_NC] = Str_Dup(path, LogInfo);
                 break;
+            case PROG_NC:
+                SW_netCDF->varNC[PROG_NC] = Str_Dup(varName, LogInfo);
+                SW_netCDF->InFilesNC[PROG_NC] = Str_Dup(path, LogInfo);
             default:
                 LogError(LogInfo, LOGWARN, "Ignoring unknown key in %s, %s",
                          MyFileName, key);
@@ -1902,11 +1905,13 @@ void SW_NC_deconstruct(SW_NETCDF* SW_netCDF) {
  *  netCDF file information
 */
 void SW_NC_open_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo) {
-    int fileNum;
+    int fileNum, openType;
 
     for(fileNum = 0; fileNum < SW_NVARNC; fileNum++) {
         if(FileExists(SW_netCDF->InFilesNC[fileNum])) {
-            if(nc_open(SW_netCDF->InFilesNC[fileNum], NC_NOWRITE,
+            openType = (fileNum == PROG_NC) ? NC_WRITE : NC_NOWRITE;
+
+            if(nc_open(SW_netCDF->InFilesNC[fileNum], openType,
                                     &SW_netCDF->ncFileIDs[fileNum]) != NC_NOERR) {
 
                 LogError(LogInfo, LOGERROR, "An error occurred when opening %s.",
