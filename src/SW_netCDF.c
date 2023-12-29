@@ -474,7 +474,7 @@ static void fill_netCDF_var_double(int ncFileID, int varID, double values[],
 }
 
 /**
- * @brief Write a global attribute (text) to a netCDF file
+ * @brief Write an attribute of type unsigned integer to a variable
  *
  * @param[in] attName Name of the attribute to create
  * @param[in] attVal Attribute string to write out
@@ -512,7 +512,7 @@ static void write_str_att(const char* attName, const char* attStr,
 }
 
 /**
- * @brief Write a global attribute (double) to a netCDF file
+ * @brief Write an attribute of type double to a variable
  *
  * @param[in] attName Name of the attribute to create
  * @param[in] attVal Attribute value to write out
@@ -642,7 +642,7 @@ static void alloc_netCDF_domain_vars(Bool domTypeIsSite, Bool fillGeo,
 
     double **vars[] = {latVals, lonVals};
     double **bndsVars[] = {latBndsVals, lonBndsVals, yBndsVals, xBndsVals};
-    const int startBndVar = fillGeo ? 0 : 2, numBndsVars = 4;
+    const int startBndVar = (fillGeo) ? 0 : 2, numBndsVars = 4;
     const int numVars = 2, numBnds = 2;
     int varNum, bndVarNum, numVals;
 
@@ -920,17 +920,21 @@ static void fill_domain_netCDF_s(SW_DOMAIN* SW_Domain, int* domFileID,
     const int numSiteAtt = 3, numLatAtt = 4, numLonAtt = 4;
     const int numYAtt = 3, numXAtt = 3;
     int numVarsToWrite = (primCRSIsGeo) ? 3 : 5; // Do or do not write "x" and "y"
-    const char* attNames[][4] = {{"long_name", "units", "cf_role"},
-                           {"long_name", "standard_name", "units", "axis"},
-                           {"long_name", "standard_name", "units", "axis"},
-                           {"long_name", "standard_name", "units"},
-                           {"long_name", "standard_name", "units"}};
+    const char* attNames[][4] = {
+        {"long_name", "units", "cf_role"},
+        {"long_name", "standard_name", "units", "axis"},
+        {"long_name", "standard_name", "units", "axis"},
+        {"long_name", "standard_name", "units"},
+        {"long_name", "standard_name", "units"}
+    };
 
-    const char* attVals[][4] = {{"simulation site", "1", "timeseries_id"},
-                          {"latitude", "latitude", "degrees_north", "Y"},
-                          {"longitude", "longitude", "degrees_east", "X"},
-                          {"y coordinate of projection", "projection_y_coordinate", units},
-                          {"x coordinate of projection", "projection_x_coordinate", units}};
+    const char* attVals[][4] = {
+        {"simulation site", "1", "timeseries_id"},
+        {"latitude", "latitude", "degrees_north", "Y"},
+        {"longitude", "longitude", "degrees_east", "X"},
+        {"y coordinate of projection", "projection_y_coordinate", units},
+        {"x coordinate of projection", "projection_x_coordinate", units}
+    };
 
     const char* varNames[] = {"site", "lat", "lon", "y", "x"};
     int varIDs[5]; // 5 - Maximum number of variables to create
@@ -1017,17 +1021,19 @@ static void fill_domain_netCDF_xy(SW_DOMAIN* SW_Domain, int* domFileID,
     const int numVars = (primCRSIsGeo) ? 2 : 4; // lat/lon or lat/lon + x/y vars
     const char* varNames[] = {"lat", "lon", "y", "x"};
     const char* bndVarNames[] = {"lat_bnds", "lon_bnds", "y_bnds", "x_bnds"};
-    const char* varAttNames[][5] = {{"long_name", "standard_name", "units", "axis", "bounds"},
-                              {"long_name", "standard_name", "units", "axis", "bounds"},
-                              {"long_name", "standard_name", "units", "bounds"},
-                              {"long_name", "standard_name", "units", "bounds"}};
+    const char* varAttNames[][5] = {
+        {"long_name", "standard_name", "units", "axis", "bounds"},
+        {"long_name", "standard_name", "units", "axis", "bounds"},
+        {"long_name", "standard_name", "units", "bounds"},
+        {"long_name", "standard_name", "units", "bounds"}
+    };
 
-    const char* varAttVals[][5] = {{"latitude", "latitude", "degrees_north", "Y", "lat_bnds"},
-                             {"longitude", "longitude", "degrees_east", "X", "lon_bnds"},
-                             {"y coordinate of projection", "projection_y_coordinate",
-                              units, "y_bnds"},
-                             {"x coordinate of projection", "projection_x_coordinate",
-                              units, "x_bnds"}};
+    const char* varAttVals[][5] = {
+        {"latitude", "latitude", "degrees_north", "Y", "lat_bnds"},
+        {"longitude", "longitude", "degrees_east", "X", "lon_bnds"},
+        {"y coordinate of projection", "projection_y_coordinate", units, "y_bnds"},
+        {"x coordinate of projection", "projection_x_coordinate", units, "x_bnds"}
+    };
     int numLatAtt = 5, numLonAtt = 5, numYAtt = 4, numXAtt = 4;
     int numAtts[] = {numLatAtt, numLonAtt, numYAtt, numXAtt};
 
@@ -1045,7 +1051,8 @@ static void fill_domain_netCDF_xy(SW_DOMAIN* SW_Domain, int* domFileID,
 
     // Create dimensions
     for(dimNum = 0; dimNum < numDims; dimNum++) {
-        create_netCDF_dim(dimNames[dimNum], dimVals[dimNum], domFileID, dimIDs[dimNum], LogInfo);
+        create_netCDF_dim(dimNames[dimNum], dimVals[dimNum], domFileID,
+                          dimIDs[dimNum], LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -1073,8 +1080,8 @@ static void fill_domain_netCDF_xy(SW_DOMAIN* SW_Domain, int* domFileID,
         }
         // Fill attributes
         for(attNum = 0; attNum < numAtts[varNum]; attNum++) {
-            write_str_att(varAttNames[varNum][attNum], varAttVals[varNum][attNum], varIDs[varNum], *domFileID, LogInfo);
-
+            write_str_att(varAttNames[varNum][attNum], varAttVals[varNum][attNum],
+                          varIDs[varNum], *domFileID, LogInfo);
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -1116,15 +1123,19 @@ static void fill_netCDF_with_proj_CRS_atts(SW_CRS* crs_projsc, int* ncFileID,
 
     const int numStrAtts = 5, numDoubleAtts = 8;
     int strAttNum, doubleAttNum, numValsToWrite;
-    const char *strAttNames[] = {"long_name", "grid_mapping_name", "datum", "units",
-                           "crs_wkt"};
-    const char *doubleAttNames[] = {"standard_parallel", "longitude_of_central_meridian",
-                              "latitude_of_projection_origin", "false_easting",
-                              "false_northing", "longitude_of_prime_meridian",
-                              "semi_major_axis", "inverse_flattening"};
+    const char *strAttNames[] = {
+        "long_name", "grid_mapping_name", "datum", "units", "crs_wkt"
+    };
+    const char *doubleAttNames[] = {
+        "standard_parallel", "longitude_of_central_meridian",
+        "latitude_of_projection_origin", "false_easting", "false_northing",
+        "longitude_of_prime_meridian",  "semi_major_axis", "inverse_flattening"
+    };
 
-    const char *strAttVals[] = {crs_projsc->long_name, crs_projsc->grid_mapping_name,
-                          crs_projsc->datum, crs_projsc->units, crs_projsc->crs_wkt};
+    const char *strAttVals[] = {
+        crs_projsc->long_name, crs_projsc->grid_mapping_name,
+        crs_projsc->datum, crs_projsc->units, crs_projsc->crs_wkt
+    };
     const double *doubleAttVals[] = {
         crs_projsc->standard_parallel, &crs_projsc->longitude_of_central_meridian,
         &crs_projsc->latitude_of_projection_origin, &crs_projsc->false_easting,
@@ -1133,7 +1144,8 @@ static void fill_netCDF_with_proj_CRS_atts(SW_CRS* crs_projsc, int* ncFileID,
     };
 
     for(strAttNum = 0; strAttNum < numStrAtts; strAttNum++) {
-        write_str_att(strAttNames[strAttNum], strAttVals[strAttNum], proj_id, *ncFileID, LogInfo);
+        write_str_att(strAttNames[strAttNum], strAttVals[strAttNum],
+                      proj_id, *ncFileID, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -1142,8 +1154,8 @@ static void fill_netCDF_with_proj_CRS_atts(SW_CRS* crs_projsc, int* ncFileID,
     for(doubleAttNum = 0; doubleAttNum < numDoubleAtts; doubleAttNum++) {
         numValsToWrite = (doubleAttNum > 0 || isnan(crs_projsc->standard_parallel[1])) ? 1 : 2;
 
-        write_double_att(doubleAttNames[doubleAttNum], doubleAttVals[doubleAttNum], proj_id, *ncFileID,
-                         numValsToWrite, LogInfo);
+        write_double_att(doubleAttNames[doubleAttNum], doubleAttVals[doubleAttNum],
+                         proj_id, *ncFileID, numValsToWrite, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -1166,13 +1178,16 @@ static void fill_netCDF_with_geo_CRS_atts(SW_CRS* crs_geogsc, int* ncFileID,
     int attNum, numStrAtts = 3, numDoubleAtts = 3;
     const int numValsToWrite = 1;
     const char *strAttNames[] = {"grid_mapping_name", "long_name", "crs_wkt"};
-    const char *doubleAttNames[] = {"longitude_of_prime_meridian", "semi_major_axis",
-                              "inverse_flattening"};
-    const char *strAttVals[] = {crs_geogsc->grid_mapping_name, crs_geogsc->long_name,
-                          crs_geogsc->crs_wkt};
-    const double *doubleAttVals[] = {&crs_geogsc->longitude_of_prime_meridian,
-                               &crs_geogsc->semi_major_axis,
-                               &crs_geogsc->inverse_flattening};
+    const char *doubleAttNames[] = {
+        "longitude_of_prime_meridian", "semi_major_axis", "inverse_flattening"
+    };
+    const char *strAttVals[] = {
+        crs_geogsc->grid_mapping_name, crs_geogsc->long_name, crs_geogsc->crs_wkt
+    };
+    const double *doubleAttVals[] = {
+        &crs_geogsc->longitude_of_prime_meridian, &crs_geogsc->semi_major_axis,
+        &crs_geogsc->inverse_flattening
+    };
 
     if(strcmp(coord_sys, "Absent") == 0) {
         // Only write out `grid_mapping_name`
@@ -1180,15 +1195,16 @@ static void fill_netCDF_with_geo_CRS_atts(SW_CRS* crs_geogsc, int* ncFileID,
     } else {
         // Write out all attributes
         for(attNum = 0; attNum < numStrAtts; attNum++) {
-            write_str_att(strAttNames[attNum], strAttVals[attNum], geo_id, *ncFileID, LogInfo);
+            write_str_att(strAttNames[attNum], strAttVals[attNum],
+                          geo_id, *ncFileID, LogInfo);
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
         }
 
         for(attNum = 0; attNum < numDoubleAtts; attNum++) {
-            write_double_att(doubleAttNames[attNum], doubleAttVals[attNum], geo_id, *ncFileID,
-                             numValsToWrite, LogInfo);
+            write_double_att(doubleAttNames[attNum], doubleAttVals[attNum],
+                             geo_id, *ncFileID, numValsToWrite, LogInfo);
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -1217,11 +1233,13 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
     char creationDateStr[21]; // 21 - valid size to hold a string of format YYYY-MM-DDTHH:MM:SSZ
     time_t t = time(NULL);
 
+    int attNum;
     const int numGlobAtts = (strcmp(domType, "s") == 0) ? 14 : 13; // Do or do not include "featureType"
-    const char* attNames[] = {"title", "author", "institution", "comment",
-                        "coordinate_system", "Conventions", "source",
-                        "source_id", "further_info_url", "creation_date",
-                        "history", "product", "frequency", "featureType"};
+    const char* attNames[] = {
+        "title", "author", "institution", "comment", "coordinate_system",
+        "Conventions", "source", "source_id", "further_info_url", "creation_date",
+        "history", "product", "frequency", "featureType"
+    };
 
     const char* productStr = (isInputFile) ? "model-input" : "model-output";
     const char* featureTypeStr;
@@ -1231,12 +1249,12 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
         featureTypeStr = "";
     }
 
-    const char* attVals[] = {SW_netCDF->title, SW_netCDF->author, SW_netCDF->institution,
-                       SW_netCDF->comment, SW_netCDF->coordinate_system, "CF-1.10",
-                       sourceStr, "SOILWAT2", "https://github.com/DrylandEcology/SOILWAT2",
-                       creationDateStr, "No revisions.", productStr, freqAtt,
-                       featureTypeStr};
-    int attNum;
+    const char* attVals[] = {
+        SW_netCDF->title, SW_netCDF->author, SW_netCDF->institution,
+        SW_netCDF->comment, SW_netCDF->coordinate_system, "CF-1.10", sourceStr,
+        "SOILWAT2", "https://github.com/DrylandEcology/SOILWAT2", creationDateStr,
+        "No revisions.", productStr, freqAtt, featureTypeStr
+    };
 
     // Fill `sourceStr` and `creationDateStr`
     snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
@@ -1285,20 +1303,22 @@ static void fill_netCDF_with_invariants(SW_NETCDF* SW_netCDF, char* domType,
 
     // Projected CRS variable/attributes
     if(!SW_netCDF->primary_crs_is_geographic) {
-        create_netCDF_var(&proj_id, "crs_projsc", NULL, ncFileID, NC_BYTE, 0, LogInfo);
+        create_netCDF_var(&proj_id, "crs_projsc", NULL, ncFileID, NC_BYTE,
+                          0, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        fill_netCDF_with_proj_CRS_atts(&SW_netCDF->crs_projsc, ncFileID, proj_id, LogInfo);
+        fill_netCDF_with_proj_CRS_atts(&SW_netCDF->crs_projsc,
+                                       ncFileID, proj_id, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
     }
 
     // Write global attributes
-    fill_netCDF_with_global_atts(SW_netCDF, ncFileID, domType, fx, isInputFile,
-                                 LogInfo);
+    fill_netCDF_with_global_atts(SW_netCDF, ncFileID, domType, fx,
+                                 isInputFile, LogInfo);
 }
 
 /* =================================================== */
@@ -1326,34 +1346,38 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
     const char *geoCRS = "crs_geogsc", *projCRS = "crs_projsc";
     Bool geoCRSExists = varExists(ncFileID, geoCRS);
     Bool projCRSExists = varExists(ncFileID, projCRS);
-    char* impliedDomType = dimExists("site", ncFileID) ? "s" : "xy";
+    char* impliedDomType = (dimExists("site", ncFileID)) ? "s" : "xy";
     Bool dimMismatch = swFALSE;
     size_t latDimVal = 0, lonDimVal = 0, SDimVal = 0;
 
     const char* strAttsToComp[] = {"long_name", "grid_mapping_name", "crs_wkt"};
-    const char* doubleAttsToComp[] = {"longitude_of_prime_meridian",
-                                      "semi_major_axis", "inverse_flattening"};
+    const char* doubleAttsToComp[] = {
+        "longitude_of_prime_meridian", "semi_major_axis", "inverse_flattening"
+    };
 
     const char* strProjAttsToComp[] = {"datum", "units"};
-    const char* doubleProjAttsToComp[] = {"longitude_of_central_meridian",
-                                          "latitude_of_projection_origin",
-                                          "false_easting", "false_northing"};
+    const char* doubleProjAttsToComp[] = {
+        "longitude_of_central_meridian", "latitude_of_projection_origin",
+        "false_easting", "false_northing"
+    };
     const char* stdParallel = "standard_parallel";
     const double stdParVals[] = {crs_projsc->standard_parallel[0],
                                  crs_projsc->standard_parallel[1]};
 
-    const char* geoStrAttVals[] = {crs_geogsc->long_name,
-                                   crs_geogsc->grid_mapping_name,
-                                   crs_geogsc->crs_wkt};
-    const double geoDoubleAttVals[] = {crs_geogsc->longitude_of_prime_meridian,
-                                       crs_geogsc->semi_major_axis,
-                                       crs_geogsc->inverse_flattening};
-    const char* projStrAttVals[] = {crs_projsc->long_name,
-                                    crs_projsc->grid_mapping_name,
-                                    crs_projsc->crs_wkt};
-    const double projDoubleAttVals[] = {crs_projsc->longitude_of_prime_meridian,
-                                        crs_projsc->semi_major_axis,
-                                        crs_projsc->inverse_flattening};
+    const char* geoStrAttVals[] = {
+        crs_geogsc->long_name, crs_geogsc->grid_mapping_name, crs_geogsc->crs_wkt
+    };
+    const double geoDoubleAttVals[] = {
+        crs_geogsc->longitude_of_prime_meridian, crs_geogsc->semi_major_axis,
+        crs_geogsc->inverse_flattening
+    };
+    const char* projStrAttVals[] = {
+        crs_projsc->long_name, crs_projsc->grid_mapping_name, crs_projsc->crs_wkt
+    };
+    const double projDoubleAttVals[] = {
+        crs_projsc->longitude_of_prime_meridian, crs_projsc->semi_major_axis,
+        crs_projsc->inverse_flattening
+    };
 
     const char* strProjAttVals[] = {SW_Domain->netCDFInfo.crs_projsc.datum,
                                     SW_Domain->netCDFInfo.crs_projsc.units};
@@ -1553,7 +1577,7 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     SW_NETCDF* SW_netCDF = &SW_Domain->netCDFInfo;
     int* domFileID = &SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC];
-    int sDimID = 0, latDimID = 0, lonDimID = 0; // varID is not used
+    int sDimID = 0, latDimID = 0, lonDimID = 0;
     int domDims[2]; // Either [latDimID, lonDimID] or [sDimID, 0]
     int nDomainDims, domVarID = 0, latVarID = 0, lonVarID = 0, sVarID = 0;
     int latBndsID = 0, lonBndsID = 0, yBndsID = 0, xBndsID = 0;
@@ -1670,8 +1694,8 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
     const int numDomVals = 2;
     const int numVals[] = {numDomVals};
     const int ncFileIDs[] = {SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC]};
-    const char* domLatVar = geoFilled ? "lat" : "y";
-    const char* domLonVar = geoFilled ? "lon" : "x";
+    const char* domLatVar = (geoFilled) ? "lat" : "y";
+    const char* domLonVar = (geoFilled) ? "lon" : "x";
     const char* varNames[][2] = {{domLatVar, domLonVar}};
     int ncIndex;
 
@@ -1686,7 +1710,7 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
     */
     for(file = 0; file < SW_NVARNC; file++) {
         for(varNum = 0; varNum < numVals[file]; varNum++) {
-            ncIndex = domTypeS ? 0 : varNum % 2;
+            ncIndex = (domTypeS) ? 0 : varNum % 2;
 
             get_single_double_val(ncFileIDs[file], varNames[file][varNum],
                                   &ncSUID[ncIndex], values[file][varNum], LogInfo);
@@ -1796,7 +1820,7 @@ void SW_NC_init_ptrs(SW_NETCDF* SW_netCDF) {
 }
 
 /**
- * @brief Deconstruct netCDF-related information through the type SW_NETCDF
+ * @brief Deconstruct netCDF-related information
  *
  * @param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF input/output file information
