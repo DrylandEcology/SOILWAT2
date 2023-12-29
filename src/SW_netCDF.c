@@ -24,12 +24,12 @@
 /**
  * @brief Read invariant netCDF information (attributes/CRS) from input file
  *
- * @param[in,out] ncInfo Struct of type SW_NETCDF holding constant
+ * @param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF file information
  * @param[in,out] PathInfo Struct holding all information about the programs path/files
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
+static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
                          LOG_INFO* LogInfo) {
 
     static const char* possibleKeys[] = {
@@ -80,25 +80,25 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
         switch(keyID)
         {
             case 0:
-                ncInfo->title = Str_Dup(value, LogInfo);
+                SW_netCDF->title = Str_Dup(value, LogInfo);
                 break;
             case 1:
-                ncInfo->author = Str_Dup(value, LogInfo);
+                SW_netCDF->author = Str_Dup(value, LogInfo);
                 break;
             case 2:
-                ncInfo->institution = Str_Dup(value, LogInfo);
+                SW_netCDF->institution = Str_Dup(value, LogInfo);
                 break;
             case 3:
-                ncInfo->comment = Str_Dup(value, LogInfo);
+                SW_netCDF->comment = Str_Dup(value, LogInfo);
                 break;
             case 4: // coordinate_system is calculated
                 break;
 
             case 5:
                 if(strcmp(value, "geographic") == 0) {
-                    ncInfo->primary_crs_is_geographic = swTRUE;
+                    SW_netCDF->primary_crs_is_geographic = swTRUE;
                 } else if(strcmp(value, "projected") == 0) {
-                    ncInfo->primary_crs_is_geographic = swFALSE;
+                    SW_netCDF->primary_crs_is_geographic = swFALSE;
                 } else {
                     LogError(LogInfo, LOGERROR, "The read-in primary CRS "
                              "(%s) is not a valid one. Please choose between "
@@ -107,68 +107,68 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
                 }
                 break;
             case 6:
-                ncInfo->crs_geogsc.long_name = Str_Dup(value, LogInfo);
+                SW_netCDF->crs_geogsc.long_name = Str_Dup(value, LogInfo);
                 geoCRSFound = swTRUE;
                 break;
             case 7:
-                ncInfo->crs_geogsc.grid_mapping_name = Str_Dup(value, LogInfo);
+                SW_netCDF->crs_geogsc.grid_mapping_name = Str_Dup(value, LogInfo);
                 break;
             case 8:
-                ncInfo->crs_geogsc.crs_wkt = Str_Dup(value, LogInfo);
+                SW_netCDF->crs_geogsc.crs_wkt = Str_Dup(value, LogInfo);
                 break;
             case 9:
-                ncInfo->crs_geogsc.longitude_of_prime_meridian = atof(value);
+                SW_netCDF->crs_geogsc.longitude_of_prime_meridian = atof(value);
                 break;
             case 10:
-                ncInfo->crs_geogsc.semi_major_axis = atof(value);
+                SW_netCDF->crs_geogsc.semi_major_axis = atof(value);
                 break;
             case 11:
-                ncInfo->crs_geogsc.inverse_flattening = atof(value);
+                SW_netCDF->crs_geogsc.inverse_flattening = atof(value);
                 break;
             case 12:
-                ncInfo->crs_projsc.long_name = Str_Dup(value, LogInfo);
+                SW_netCDF->crs_projsc.long_name = Str_Dup(value, LogInfo);
                 projCRSFound = swTRUE;
                 break;
             case 13:
-                ncInfo->crs_projsc.grid_mapping_name = Str_Dup(value, LogInfo);
+                SW_netCDF->crs_projsc.grid_mapping_name = Str_Dup(value, LogInfo);
                 break;
             case 14:
-                ncInfo->crs_projsc.crs_wkt = Str_Dup(value, LogInfo);
+                SW_netCDF->crs_projsc.crs_wkt = Str_Dup(value, LogInfo);
                 break;
             case 15:
-                ncInfo->crs_projsc.longitude_of_prime_meridian = atof(value);
+                SW_netCDF->crs_projsc.longitude_of_prime_meridian = atof(value);
                 break;
             case 16:
-                ncInfo->crs_projsc.semi_major_axis = atof(value);
+                SW_netCDF->crs_projsc.semi_major_axis = atof(value);
                 break;
             case 17:
-                ncInfo->crs_projsc.inverse_flattening = atof(value);
+                SW_netCDF->crs_projsc.inverse_flattening = atof(value);
                 break;
             case 18:
-                ncInfo->crs_projsc.datum = Str_Dup(value, LogInfo);
+                SW_netCDF->crs_projsc.datum = Str_Dup(value, LogInfo);
                 break;
             case 19:
-                ncInfo->crs_projsc.units = Str_Dup(value, LogInfo);
+                SW_netCDF->crs_projsc.units = Str_Dup(value, LogInfo);
                 break;
             case 20:
                 // Re-scan for 1 or 2 values of standard parallel(s)
                 // the user may separate values by white-space, comma, etc.
                 n = sscanf(inbuf, "%34s %f%*[^-.0123456789]%f", key, &num1, &num2);
 
-                ncInfo->crs_projsc.standard_parallel[0] = num1;
-                ncInfo->crs_projsc.standard_parallel[1] = (n == 3) ? num2 : NAN;
+                SW_netCDF->crs_projsc.standard_parallel[0] = num1;
+                SW_netCDF->crs_projsc.standard_parallel[1] = (n == 3) ? num2 : NAN;
                 break;
             case 21:
-                ncInfo->crs_projsc.longitude_of_central_meridian = atof(value);
+                SW_netCDF->crs_projsc.longitude_of_central_meridian = atof(value);
                 break;
             case 22:
-                ncInfo->crs_projsc.latitude_of_projection_origin = atof(value);
+                SW_netCDF->crs_projsc.latitude_of_projection_origin = atof(value);
                 break;
             case 23:
-                ncInfo->crs_projsc.false_easting = atoi(value);
+                SW_netCDF->crs_projsc.false_easting = atoi(value);
                 break;
             case 24:
-                ncInfo->crs_projsc.false_northing = atoi(value);
+                SW_netCDF->crs_projsc.false_northing = atoi(value);
                 break;
             case KEY_NOT_FOUND:
                 LogError(LogInfo, LOGWARN, "Ignoring unknown key in %s - %s",
@@ -183,8 +183,8 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
 
 
     if (
-        (ncInfo->primary_crs_is_geographic && !geoCRSFound) ||
-        (!ncInfo->primary_crs_is_geographic && !projCRSFound)
+        (SW_netCDF->primary_crs_is_geographic && !geoCRSFound) ||
+        (!SW_netCDF->primary_crs_is_geographic && !projCRSFound)
     ) {
         LogError(
             LogInfo,
@@ -192,7 +192,7 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
             "'%s': type of primary CRS is '%s' but "
             "attributes (including '*_long_name') for such a CRS are missing.",
             PathInfo->InFiles[eNCInAtt],
-            (ncInfo->primary_crs_is_geographic) ? "geographic" : "projected"
+            (SW_netCDF->primary_crs_is_geographic) ? "geographic" : "projected"
         );
         return; // Exit function prematurely due to error
     }
@@ -207,9 +207,9 @@ static void nc_read_atts(SW_NETCDF* ncInfo, PATH_INFO* PathInfo,
         return; // Exit function prematurely due to error
     }
 
-    ncInfo->coordinate_system = (ncInfo->primary_crs_is_geographic) ?
-        Str_Dup(ncInfo->crs_geogsc.long_name, LogInfo) :
-        Str_Dup(ncInfo->crs_projsc.long_name, LogInfo);
+    SW_netCDF->coordinate_system = (SW_netCDF->primary_crs_is_geographic) ?
+        Str_Dup(SW_netCDF->crs_geogsc.long_name, LogInfo) :
+        Str_Dup(SW_netCDF->crs_projsc.long_name, LogInfo);
 }
 
 /**
@@ -1199,7 +1199,7 @@ static void fill_netCDF_with_geo_CRS_atts(SW_CRS* crs_geogsc, int* ncFileID,
 /**
  * @brief Fill the given netCDF with global attributes
  *
- * @param[in] ncInfo Struct of type SW_NETCDF holding constant
+ * @param[in] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF file information
  * @param[in] ncFileID Identifier of the open netCDF file to write all information to
  * @param[in] domType Type of domain in which simulations are running
@@ -1209,7 +1209,7 @@ static void fill_netCDF_with_geo_CRS_atts(SW_CRS* crs_geogsc, int* ncFileID,
  * @param[in] isInputFile Specifies if the file being written to is input
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-static void fill_netCDF_with_global_atts(SW_NETCDF* ncInfo, int* ncFileID,
+static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
                                          const char* domType, const char* freqAtt,
                                          Bool isInputFile, LOG_INFO* LogInfo) {
 
@@ -1231,8 +1231,8 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* ncInfo, int* ncFileID,
         featureTypeStr = "";
     }
 
-    const char* attVals[] = {ncInfo->title, ncInfo->author, ncInfo->institution,
-                       ncInfo->comment, ncInfo->coordinate_system, "CF-1.10",
+    const char* attVals[] = {SW_netCDF->title, SW_netCDF->author, SW_netCDF->institution,
+                       SW_netCDF->comment, SW_netCDF->coordinate_system, "CF-1.10",
                        sourceStr, "SOILWAT2", "https://github.com/DrylandEcology/SOILWAT2",
                        creationDateStr, "No revisions.", productStr, freqAtt,
                        featureTypeStr};
@@ -1256,7 +1256,7 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* ncInfo, int* ncFileID,
  *  i.e., global attributes (including time created) and CRS information
  *  (including the creation of these variables)
  *
- * @param[in] ncInfo Struct of type SW_NETCDF holding constant
+ * @param[in] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF file information
  * @param[in] domType Type of domain in which simulations are running
  *  (gridcell/sites)
@@ -1264,7 +1264,7 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* ncInfo, int* ncFileID,
  * @param[in] isInputFile Specifies whether the file being written to is input
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-static void fill_netCDF_with_invariants(SW_NETCDF* ncInfo, char* domType,
+static void fill_netCDF_with_invariants(SW_NETCDF* SW_netCDF, char* domType,
                                         int* ncFileID, Bool isInputFile,
                                         LOG_INFO* LogInfo) {
 
@@ -1277,27 +1277,27 @@ static void fill_netCDF_with_invariants(SW_NETCDF* ncInfo, char* domType,
     }
 
     // Geographic CRS attributes
-    fill_netCDF_with_geo_CRS_atts(&ncInfo->crs_geogsc, ncFileID,
-                                  ncInfo->coordinate_system, geo_id, LogInfo);
+    fill_netCDF_with_geo_CRS_atts(&SW_netCDF->crs_geogsc, ncFileID,
+                                  SW_netCDF->coordinate_system, geo_id, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     // Projected CRS variable/attributes
-    if(!ncInfo->primary_crs_is_geographic) {
+    if(!SW_netCDF->primary_crs_is_geographic) {
         create_netCDF_var(&proj_id, "crs_projsc", NULL, ncFileID, NC_BYTE, 0, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        fill_netCDF_with_proj_CRS_atts(&ncInfo->crs_projsc, ncFileID, proj_id, LogInfo);
+        fill_netCDF_with_proj_CRS_atts(&SW_netCDF->crs_projsc, ncFileID, proj_id, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
     }
 
     // Write global attributes
-    fill_netCDF_with_global_atts(ncInfo, ncFileID, domType, fx, isInputFile,
+    fill_netCDF_with_global_atts(SW_netCDF, ncFileID, domType, fx, isInputFile,
                                  LogInfo);
 }
 
@@ -1551,7 +1551,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
 */
 void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
-    SW_NETCDF* ncInfo = &SW_Domain->netCDFInfo;
+    SW_NETCDF* SW_netCDF = &SW_Domain->netCDFInfo;
     int* domFileID = &SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC];
     int sDimID = 0, latDimID = 0, lonDimID = 0; // varID is not used
     int domDims[2]; // Either [latDimID, lonDimID] or [sDimID, 0]
@@ -1602,16 +1602,16 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     }
 
     // Create domain variable
-    fill_domain_netCDF_domain(ncInfo->varNC[DOMAIN_NC], &domVarID,
+    fill_domain_netCDF_domain(SW_netCDF->varNC[DOMAIN_NC], &domVarID,
                               domDims, *domFileID, nDomainDims,
-                              ncInfo->primary_crs_is_geographic,
+                              SW_netCDF->primary_crs_is_geographic,
                               SW_Domain->DomainType, LogInfo);
     if(LogInfo->stopRun) {
         nc_close(*domFileID);
         return; // Exit function prematurely due to error
     }
 
-    fill_netCDF_with_invariants(ncInfo, SW_Domain->DomainType,
+    fill_netCDF_with_invariants(SW_netCDF, SW_Domain->DomainType,
                                 domFileID, swTRUE, LogInfo);
     if(LogInfo->stopRun) {
         nc_close(*domFileID);
@@ -1720,12 +1720,12 @@ void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 /**
  * @brief Read input files for netCDF related actions
  *
- * @param[in,out] ncInfo Struct of type SW_NETCDF holding constant
+ * @param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF file information
  * @param[in,out] PathInfo Struct holding all information about the programs path/files
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_NC_read(SW_NETCDF* ncInfo, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
+void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
     static const char* possibleKeys[] = {"domain"};
 
     FILE *f;
@@ -1744,8 +1744,8 @@ void SW_NC_read(SW_NETCDF* ncInfo, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
         keyID = key_to_id(key, possibleKeys, NUM_NC_IN_KEYS);
         switch(keyID) {
             case DOMAIN_NC:
-                ncInfo->varNC[DOMAIN_NC] = Str_Dup(varName, LogInfo);
-                ncInfo->InFilesNC[DOMAIN_NC] = Str_Dup(path, LogInfo);
+                SW_netCDF->varNC[DOMAIN_NC] = Str_Dup(varName, LogInfo);
+                SW_netCDF->InFilesNC[DOMAIN_NC] = Str_Dup(path, LogInfo);
                 break;
             default:
                 LogError(LogInfo, LOGWARN, "Ignoring unknown key in %s, %s",
@@ -1754,7 +1754,7 @@ void SW_NC_read(SW_NETCDF* ncInfo, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
         }
     }
 
-    nc_read_atts(ncInfo, PathInfo, LogInfo);
+    nc_read_atts(SW_netCDF, PathInfo, LogInfo);
 }
 
 /**
@@ -1827,21 +1827,21 @@ void SW_NC_deconstruct(SW_NETCDF* SW_netCDF) {
 /**
  * @brief Open all netCDF files that should be open throughout the program
  *
- * @param[in,out] ncInfo Struct of type SW_NETCDF holding constant
+ * @param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF file information
  * @param[out] LogInfo Struct of type SW_NETCDF holding constant
  *  netCDF file information
 */
-void SW_NC_open_files(SW_NETCDF* ncInfo, LOG_INFO* LogInfo) {
+void SW_NC_open_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo) {
     int fileNum;
 
     for(fileNum = 0; fileNum < SW_NVARNC; fileNum++) {
-        if(FileExists(ncInfo->InFilesNC[fileNum])) {
-            if(nc_open(ncInfo->InFilesNC[fileNum], NC_NOWRITE,
-                                    &ncInfo->ncFileIDs[fileNum]) != NC_NOERR) {
+        if(FileExists(SW_netCDF->InFilesNC[fileNum])) {
+            if(nc_open(SW_netCDF->InFilesNC[fileNum], NC_NOWRITE,
+                                    &SW_netCDF->ncFileIDs[fileNum]) != NC_NOERR) {
 
                 LogError(LogInfo, LOGERROR, "An error occurred when opening %s.",
-                                            ncInfo->InFilesNC[fileNum]);
+                                            SW_netCDF->InFilesNC[fileNum]);
 
                 return; // Exit function prematurely due to error
             }
@@ -1852,13 +1852,13 @@ void SW_NC_open_files(SW_NETCDF* ncInfo, LOG_INFO* LogInfo) {
 /**
  * @brief Close all netCDF files that have been opened while the program ran
  *
- * @param[in,out] ncInfo Struct of type SW_NETCDF holding constant
+ * @param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF file information
 */
-void SW_NC_close_files(SW_NETCDF* ncInfo) {
+void SW_NC_close_files(SW_NETCDF* SW_netCDF) {
     int fileNum;
 
     for(fileNum = 0; fileNum < SW_NVARNC; fileNum++) {
-        nc_close(ncInfo->ncFileIDs[fileNum]);
+        nc_close(SW_netCDF->ncFileIDs[fileNum]);
     }
 }
