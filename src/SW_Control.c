@@ -714,45 +714,30 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
                    RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 
     SW_ALL local_sw;
-    SW_ALL *local_sw_ptr = &local_sw;
 
-    // Check to see if we can modify `sw_template` (nSUIDS = 1) and there's no
-    // need to copy
-    if(SW_Domain->nSUIDs == 1) {
-        // Make the address of `local_sw` point to `sw_template`'s address
-        local_sw_ptr = sw_template;
-        SW_CTL_alloc_outptrs(sw_template, LogInfo);
-
-    } else {
-        // Copy template SW_ALL to local instance -- yet to be fully implemented
-        SW_ALL_deepCopy(sw_template, local_sw_ptr, LogInfo);
-
-        if(LogInfo->stopRun) {
-            goto freeMem; // Free memory and skip simulation run
-        }
-
-        #if defined(SWNETCDF)
-        SW_NC_read_inputs(sw_template, SW_Domain, ncSuid, LogInfo);
-        if(LogInfo->stopRun) {
-            goto freeMem;
-        }
-        #endif
-
-        SW_MDL_get_ModelRun(&local_sw.Model, SW_Domain, ncInFiles, LogInfo);
-        if(LogInfo->stopRun) {
-            goto freeMem; // Free memory and skip simulation run
-        }
+    // Copy template SW_ALL to local instance -- yet to be fully implemented
+    SW_ALL_deepCopy(sw_template, &local_sw, LogInfo);
+    if(LogInfo->stopRun) {
+        goto freeMem; // Free memory and skip simulation run
     }
 
-    SW_CTL_main(local_sw_ptr, SW_OutputPtrs, LogInfo);
+    #if defined(SWNETCDF)
+    SW_NC_read_inputs(sw_template, SW_Domain, ncSuid, LogInfo);
+    if(LogInfo->stopRun) {
+        goto freeMem;
+    }
+    #endif
+
+    SW_MDL_get_ModelRun(&local_sw.Model, SW_Domain, ncInFiles, LogInfo);
+    if(LogInfo->stopRun) {
+        goto freeMem; // Free memory and skip simulation run
+    }
+
+    SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
 
     // Clear local instance of SW_ALL
     freeMem: {
-        // Check if the number of suids is greater than 1
-        // If the number of suids is 1, deallocation will happen later
-        if(SW_Domain->nSUIDs > 1) {
-            SW_CTL_clear_model(swFALSE, local_sw_ptr);
-        }
+        SW_CTL_clear_model(swFALSE, &local_sw);
     }
 
     (void) ncInFiles;
