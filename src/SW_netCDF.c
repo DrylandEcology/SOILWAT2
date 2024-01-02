@@ -1796,22 +1796,23 @@ void SW_NC_init_ptrs(SW_NETCDF* SW_netCDF) {
 
     int index;
     const int numAllocVars = 13;
-    char *allocArr[] = {
-        SW_netCDF->title, SW_netCDF->author, SW_netCDF->institution,
-        SW_netCDF->comment, SW_netCDF->coordinate_system,
+    char **allocArr[] = {
+        &SW_netCDF->title, &SW_netCDF->author, &SW_netCDF->institution,
+        &SW_netCDF->comment, &SW_netCDF->coordinate_system,
 
-        SW_netCDF->crs_geogsc.long_name, SW_netCDF->crs_geogsc.grid_mapping_name,
-        SW_netCDF->crs_geogsc.crs_wkt, // geogsc does not use datum and units
+        &SW_netCDF->crs_geogsc.long_name, &SW_netCDF->crs_geogsc.grid_mapping_name,
+        &SW_netCDF->crs_geogsc.crs_wkt, // geogsc does not use datum and units
 
-        SW_netCDF->crs_projsc.long_name, SW_netCDF->crs_projsc.grid_mapping_name,
-        SW_netCDF->crs_projsc.crs_wkt, SW_netCDF->crs_projsc.datum,
-        SW_netCDF->crs_projsc.units
+        &SW_netCDF->crs_projsc.long_name, &SW_netCDF->crs_projsc.grid_mapping_name,
+        &SW_netCDF->crs_projsc.crs_wkt, &SW_netCDF->crs_projsc.datum,
+        &SW_netCDF->crs_projsc.units
     };
 
-    SW_netCDF->crs_projsc.standard_parallel[0] = '\0';
+    SW_netCDF->crs_projsc.standard_parallel[0] = NAN;
+    SW_netCDF->crs_projsc.standard_parallel[1] = NAN;
 
     for(index = 0; index < numAllocVars; index++) {
-        allocArr[index] = NULL;
+        *allocArr[index] = NULL;
     }
 
     // Files/variables
@@ -1849,6 +1850,19 @@ void SW_NC_deconstruct(SW_NETCDF* SW_netCDF) {
     for(index = 0; index < numFreeVars; index++) {
         if(!isnull(freeArr[index])) {
             free(freeArr[index]);
+            freeArr[index] = NULL;
+        }
+    }
+
+    for(index = 0; index < SW_NVARNC; index++) {
+        if(!isnull(SW_netCDF->varNC[index])) {
+            free(SW_netCDF->varNC[index]);
+            SW_netCDF->varNC[index] = NULL;
+        }
+
+        if(!isnull(SW_netCDF->InFilesNC[index])) {
+            free(SW_netCDF->InFilesNC[index]);
+            SW_netCDF->InFilesNC[index] = NULL;
         }
     }
 }
