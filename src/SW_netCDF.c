@@ -103,6 +103,7 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
                     LogError(LogInfo, LOGERROR, "The read-in primary CRS "
                              "(%s) is not a valid one. Please choose between "
                              "geographic and projected.", value);
+                    CloseFile(&f, LogInfo);
                     return; // Exit function prematurely due to error
                 }
                 break;
@@ -177,10 +178,12 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
         }
 
         if(LogInfo->stopRun) {
+            CloseFile(&f, LogInfo);
             return; // Exist function prematurely due to error
         }
     }
 
+    CloseFile(&f, LogInfo);
 
     if (
         (SW_netCDF->primary_crs_is_geographic && !geoCRSFound) ||
@@ -1777,6 +1780,8 @@ void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
                 break;
         }
     }
+
+    CloseFile(&f, LogInfo);
 
     nc_read_atts(SW_netCDF, PathInfo, LogInfo);
 }
