@@ -1717,13 +1717,10 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
                        LOG_INFO* LogInfo) {
 
     int file, varNum;
-    char* geo_long_name = SW_Domain->netCDFInfo.crs_geogsc.long_name;
-    Bool geoFilled = Str_CompareI(SW_Domain->crs_bbox, geo_long_name) == 0 ||
-                     (is_wgs84(SW_Domain->crs_bbox) && is_wgs84(geo_long_name));
     Bool domTypeS = Str_CompareI(SW_Domain->DomainType, "s") == 0;
     const int numDomVals = 2;
     const int numVals[] = {numDomVals};
-    const int ncFileIDs[] = {SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC]};
+    const int ncFileIDs[] = {SW_Domain->netCDFInfo.ncFileIDs[vNCdom]};
     const char* domLatVar = "lat", *domLonVar = "lon";
     const char* varNames[][2] = {{domLatVar, domLonVar}};
     int ncIndex;
