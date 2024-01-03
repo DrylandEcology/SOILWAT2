@@ -1724,8 +1724,7 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
     const int numDomVals = 2;
     const int numVals[] = {numDomVals};
     const int ncFileIDs[] = {SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC]};
-    const char* domLatVar = (geoFilled) ? "lat" : "y";
-    const char* domLonVar = (geoFilled) ? "lon" : "x";
+    const char* domLatVar = "lat", *domLonVar = "lon";
     const char* varNames[][2] = {{domLatVar, domLonVar}};
     int ncIndex;
 
