@@ -99,17 +99,20 @@ void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain) {
 */
 void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
-    static const char *possibleKeys[] =
+    static const char *possibleKeys[NUM_DOM_IN_KEYS] =
             {"Domain", "nDimX", "nDimY", "nDimS",
             "StartYear", "EndYear", "StartDoy", "EndDoy",
             "crs_bbox", "xmin_bbox", "ymin_bbox", "xmax_bbox", "ymax_bbox"};
+    static const Bool requiredKeys[NUM_DOM_IN_KEYS] =
+            {swTRUE, swTRUE, swTRUE, swTRUE,
+            swTRUE, swTRUE, swFALSE, swFALSE,
+            swTRUE, swTRUE, swTRUE, swTRUE, swTRUE};
+    Bool hasKeys[NUM_DOM_IN_KEYS] = {swFALSE};
 
     FILE *f;
     int y, keyID;
     char inbuf[LARGE_VALUE], *MyFileName;
-    TimeInt tempdoy;
     char key[10], value[LARGE_VALUE]; // 10 - Max key size
-    Bool fstartdy = swFALSE, fenddy = swFALSE;
 
     MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
 	f = OpenFile(MyFileName, "r", LogInfo);
@@ -119,6 +122,8 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         sscanf(inbuf, "%9s %s", key, value);
 
         keyID = key_to_id(key, possibleKeys, NUM_DOM_IN_KEYS);
+        set_hasKey(keyID, possibleKeys, hasKeys, LogInfo); // no error, only warnings possible
+
         switch(keyID) {
             case 0: // Domain type
                 if(strcmp(value, "xy") != 0 && strcmp(value, "s") != 0) {
@@ -162,13 +167,9 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 break;
             case 6: // Start day of year
                 SW_Domain->startstart = atoi(value);
-                fstartdy = swTRUE;
                 break;
             case 7: // End day of year
-                tempdoy = atoi(value);
-                SW_Domain->endend = (tempdoy == 365) ?
-                                Time_get_lastdoy_y(SW_Domain->endyr) : 365;
-                fenddy = swTRUE;
+                SW_Domain->endend = atoi(value);
                 break;
             case 8: // CRS box
                 // Re-scan and get the entire value (including spaces)
@@ -197,23 +198,35 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     CloseFile(&f, LogInfo);
 
 
-	if (SW_Domain->endyr < SW_Domain->startyr) {
-        LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
+    // Check if all required input was provided
+    check_requiredKeys(hasKeys, requiredKeys, possibleKeys, NUM_DOM_IN_KEYS, LogInfo);
+    if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
-	}
+    }
+
+    if (SW_Domain->endyr < SW_Domain->startyr) {
+          LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
+          return; // Exit function prematurely due to error
+    }
 
     // Check if start day of year was not found
-    if(!fstartdy) {
+    keyID = key_to_id("StartDoy", possibleKeys, NUM_DOM_IN_KEYS);
+    if(!hasKeys[keyID]) {
         LogError(LogInfo, LOGWARN, "Domain.in: Missing Start Day - using 1\n");
         SW_Domain->startstart = 1;
     }
 
-    // Check if end day of year was not found
-	if (!fenddy) {
-		SW_Domain->endend = Time_get_lastdoy_y(SW_Domain->endyr);
-        LogError(LogInfo, LOGWARN,
-                "Domain.in: Missing End Day - using %d\n", SW_Domain->endend);
-	}
+    // Check end day of year
+    keyID = key_to_id("EndDoy", possibleKeys, NUM_DOM_IN_KEYS);
+    if (SW_Domain->endend == 365 || !hasKeys[keyID]) {
+        // Make sure last day is correct if last year is a leap year and
+        // last day is last day of that year
+        SW_Domain->endend = Time_get_lastdoy_y(SW_Domain->endyr);
+    }
+    if (!hasKeys[keyID]) {
+          LogError(LogInfo, LOGWARN,
+                  "Domain.in: Missing End Day - using %d\n", SW_Domain->endend);
+    }
 }
 
 /**

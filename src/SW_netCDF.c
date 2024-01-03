@@ -32,7 +32,7 @@
 static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
                          LOG_INFO* LogInfo) {
 
-    static const char* possibleKeys[] = {
+    static const char* possibleKeys[NUM_ATT_IN_KEYS] = {
             "title", "author", "institution", "comment",
             "coordinate_system", "primary_crs",
 
@@ -47,6 +47,19 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
             "proj_latitude_of_projection_origin", "proj_false_easting",
             "proj_false_northing"
             };
+    static const Bool requiredKeys[NUM_ATT_IN_KEYS] =
+            {swTRUE, swTRUE, swTRUE, swFALSE,
+            swFALSE, swTRUE,
+            swTRUE, swTRUE, swTRUE,
+            swTRUE, swTRUE,
+            swTRUE,
+            swFALSE, swFALSE, swFALSE,
+            swFALSE, swFALSE,
+            swFALSE, swFALSE, swFALSE,
+            swFALSE, swFALSE,
+            swFALSE, swFALSE,
+            swFALSE};
+    Bool hasKeys[NUM_ATT_IN_KEYS] = {swFALSE};
 
     FILE *f;
     char inbuf[LARGE_VALUE], value[LARGE_VALUE];
@@ -76,6 +89,7 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
         }
 
         keyID = key_to_id(key, possibleKeys, NUM_ATT_IN_KEYS);
+        set_hasKey(keyID, possibleKeys, hasKeys, LogInfo); // no error, only warnings possible
 
         switch(keyID)
         {
@@ -184,6 +198,14 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
     }
 
     CloseFile(&f, LogInfo);
+
+
+    // Check if all required input was provided
+    check_requiredKeys(hasKeys, requiredKeys, possibleKeys, NUM_ATT_IN_KEYS, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 
     if (
         (SW_netCDF->primary_crs_is_geographic && !geoCRSFound) ||
@@ -1335,7 +1357,7 @@ static void fill_netCDF_with_invariants(SW_NETCDF* SW_netCDF, char* domType,
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
  * @param[in] ncFileID Identifier of the open netCDF file to check
- * @param[in] fileName Name of netCDF file to test
+ * @param[in] fileName Name of netCDF file to test (used for error messages)
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
@@ -1753,7 +1775,10 @@ void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
-    static const char* possibleKeys[] = {"domain"};
+    static const char* possibleKeys[NUM_NC_IN_KEYS] = {"domain"};
+    static const Bool requiredKeys[NUM_NC_IN_KEYS] =
+            {swTRUE};
+    Bool hasKeys[NUM_NC_IN_KEYS] = {swFALSE};
 
     FILE *f;
     char inbuf[MAX_FILENAMESIZE], *MyFileName;
@@ -1769,6 +1794,8 @@ void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
         sscanf(inbuf, "%14s %s %s", key, varName, path);
 
         keyID = key_to_id(key, possibleKeys, NUM_NC_IN_KEYS);
+        set_hasKey(keyID, possibleKeys, hasKeys, LogInfo); // no error, only warnings possible
+
         switch(keyID) {
             case DOMAIN_NC:
                 SW_netCDF->varNC[DOMAIN_NC] = Str_Dup(varName, LogInfo);
@@ -1783,6 +1810,13 @@ void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 
     CloseFile(&f, LogInfo);
 
+    // Check if all required input was provided
+    check_requiredKeys(hasKeys, requiredKeys, possibleKeys, NUM_NC_IN_KEYS, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    // Read CRS and attributes for netCDFs
     nc_read_atts(SW_netCDF, PathInfo, LogInfo);
 }
 
