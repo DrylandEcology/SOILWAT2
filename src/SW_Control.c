@@ -349,7 +349,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
 
     #if defined(SWNETCDF)
     // Create domain template if it does not exist (and exit)
-    if(!FileExists(SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC])) {
+    if(!FileExists(SW_Domain->netCDFInfo.InFilesNC[vNCdom])) {
         SW_NC_create_domain_template(SW_Domain, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit prematurely due to error
@@ -369,8 +369,8 @@ void SW_CTL_setup_domain(unsigned long userSUID,
         return; // Exit function prematurely due to error
     }
 
-    SW_NC_check(SW_Domain, SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC],
-                SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC], LogInfo);
+    SW_NC_check(SW_Domain, SW_Domain->netCDFInfo.ncFileIDs[vNCdom],
+                SW_Domain->netCDFInfo.InFilesNC[vNCdom], LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

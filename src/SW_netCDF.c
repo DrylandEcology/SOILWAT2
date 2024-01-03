@@ -1606,7 +1606,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
 void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     SW_NETCDF* SW_netCDF = &SW_Domain->netCDFInfo;
-    int* domFileID = &SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC];
+    int* domFileID = &SW_Domain->netCDFInfo.ncFileIDs[vNCdom];
     int sDimID = 0, latDimID = 0, lonDimID = 0;
     int domDims[2]; // Either [latDimID, lonDimID] or [sDimID, 0]
     int nDomainDims, domVarID = 0, latVarID = 0, lonVarID = 0, sVarID = 0;
@@ -1656,7 +1656,7 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     }
 
     // Create domain variable
-    fill_domain_netCDF_domain(SW_netCDF->varNC[DOMAIN_NC], &domVarID,
+    fill_domain_netCDF_domain(SW_netCDF->varNC[vNCdom], &domVarID,
                               domDims, *domFileID, nDomainDims,
                               SW_netCDF->primary_crs_is_geographic,
                               SW_Domain->DomainType, LogInfo);
@@ -1798,9 +1798,9 @@ void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
         set_hasKey(keyID, possibleKeys, hasKeys, LogInfo); // no error, only warnings possible
 
         switch(keyID) {
-            case DOMAIN_NC:
-                SW_netCDF->varNC[DOMAIN_NC] = Str_Dup(varName, LogInfo);
-                SW_netCDF->InFilesNC[DOMAIN_NC] = Str_Dup(path, LogInfo);
+            case vNCdom:
+                SW_netCDF->varNC[vNCdom] = Str_Dup(varName, LogInfo);
+                SW_netCDF->InFilesNC[vNCdom] = Str_Dup(path, LogInfo);
                 break;
             default:
                 LogError(LogInfo, LOGWARN, "Ignoring unknown key in %s, %s",

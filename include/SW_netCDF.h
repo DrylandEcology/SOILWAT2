@@ -11,7 +11,7 @@ extern "C" {
 /*                  Local Definitions                  */
 /* --------------------------------------------------- */
 
-#define DOMAIN_NC 0 // Domain netCDF index within `InFilesNC` and `varNC` (SW_NETCDF)
+#define vNCdom 0 // Domain netCDF index within `InFilesNC` and `varNC` (SW_NETCDF)
 
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
 
