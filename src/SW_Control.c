@@ -236,7 +236,7 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
             nSims++; // Counter of simulation runs
 
             set_walltime(&tsr, &ok_tsr);
-            SW_CTL_run_sw(sw_template, SW_Domain, ncSuid, NULL,
+            SW_CTL_run_sw(sw_template, SW_Domain, ncSuid,
                           SW_OutputPtrs, NULL, &local_LogInfo);
             SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
@@ -348,17 +348,8 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     SW_DOM_calc_nSUIDs(SW_Domain);
 
     #if defined(SWNETCDF)
-    SW_NC_open_files(&SW_Domain->netCDFInfo, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    if(FileExists(SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC])) {
-        SW_NC_check(SW_Domain, SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC],
-                    SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC], LogInfo);
-        if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-    } else {
+    // Create domain template if it does not exist (and exit)
+    if(!FileExists(SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC])) {
         SW_NC_create_domain_template(SW_Domain, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit prematurely due to error
@@ -370,6 +361,18 @@ void SW_CTL_setup_domain(unsigned long userSUID,
                                     "The template path is: %s",
                                     DOMAIN_TEMP);
         return; // Exit prematurely so the user can modify the domain template
+    }
+
+    // Open necessary netCDF input files and check for consistency with domain
+    SW_NC_open_files(&SW_Domain->netCDFInfo, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_NC_check(SW_Domain, SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC],
+                SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC], LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
     }
     #endif
 
@@ -703,19 +706,18 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
  *  temporal/spatial information for a set of simulation runs
  * @param[in] ncSuid Unique indentifier of the first suid to run
  *  in relation to netCDF gridcells/sites
- * @param[in] ncInFiles Input netCDF files
  * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  *  hold pointers to subroutines for output keys
  * @param[in,out] p_OUT Data storage for simulation run values
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSuid[],
-                   char* ncInFiles[], SW_OUTPUT_POINTERS SW_OutputPtrs[],
+                   SW_OUTPUT_POINTERS SW_OutputPtrs[],
                    RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 
     SW_ALL local_sw;
 
-    // Copy template SW_ALL to local instance -- yet to be fully implemented
+    // Copy template SW_ALL to local instance
     SW_ALL_deepCopy(sw_template, &local_sw, LogInfo);
     if(LogInfo->stopRun) {
         goto freeMem; // Free memory and skip simulation run
@@ -728,11 +730,6 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
     }
     #endif
 
-    SW_MDL_get_ModelRun(&local_sw.Model, SW_Domain, ncInFiles, LogInfo);
-    if(LogInfo->stopRun) {
-        goto freeMem; // Free memory and skip simulation run
-    }
-
     SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
 
     // Clear local instance of SW_ALL
@@ -740,7 +737,7 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
         SW_CTL_clear_model(swFALSE, &local_sw);
     }
 
-    (void) ncInFiles;
+    (void) SW_Domain;
     (void) ncSuid;
     (void) p_OUT;
 }
