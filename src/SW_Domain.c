@@ -245,7 +245,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     if (SW_Domain->SW_SpinUp.scope < 1 ||
         SW_Domain->SW_SpinUp.scope > (SW_Domain->endyr - SW_Domain->startyr)) {
         LogError(LogInfo, LOGERROR,
-                "%s: Invalid Scope (N = %d) for spinup", MyFileName, tempdoy);
+                "%s: Invalid Scope (N = %d) for spinup", MyFileName, SW_Domain->SW_SpinUp.scope);
         return; // Exit function prematurely due to error
     }
 }
