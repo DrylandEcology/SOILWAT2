@@ -302,6 +302,7 @@ void SW_DOM_deconstruct(SW_DOMAIN* SW_Domain) {
 
     #if defined(SWNETCDF)
     SW_NC_deconstruct(&SW_Domain->netCDFInfo);
+    SW_NC_close_files(&SW_Domain->netCDFInfo);
     #endif
 }
 
