@@ -136,6 +136,15 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 /* --------------------------------------------------- */
 
 /**************************************************************/
+
+/**
+  @brief Compose, store and count warning and error messages
+
+  @param[in,out] LogInfo Holds information on warnings and errors
+  @param[in] mode Indicator whether message is a warning or error
+  @param[in] fmt Message string with optional format specifications for ... arguments
+  @param[in] ... Additional values that are injected into fmt
+*/
 void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
     /* 9-Dec-03 (cwb) Modified to accept argument list similar
      *           to fprintf() so sprintf(errstr...) doesn't need
@@ -147,7 +156,7 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
     char msgType[MAX_LOG_SIZE];
 	int nextWarn = LogInfo->numWarnings;
 	va_list args;
-    int expectedWriteSize; // Not used when SWDEBUG is not defined
+    int expectedWriteSize;
 
 	va_start(args, fmt);
 
@@ -442,7 +451,7 @@ Bool RemoveFiles(const char *fspec, LOG_INFO* LogInfo) {
 
 @param[in] from The file path of the source (original) file.
 @param[in] to The file path to the file copy (destination).
-@param[out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 
 @return swTRUE on success and swFALSE on failure.
 */
@@ -523,7 +532,7 @@ int key_to_id(const char* key, const char **possibleKeys,
   @param[in] possibleKeys A list of possible keys that can be found
       (used for warning messages).
   @param[in,out] hasKeys Array that is updated if keyID is found.
-  @param[out] LogInfo Holds information dealing with logfile output
+  @param[out] LogInfo Holds information on warnings and errors
 */
 void set_hasKey(int keyID, const char **possibleKeys, Bool *hasKeys, LOG_INFO* LogInfo) {
     if (keyID != KEY_NOT_FOUND) {
@@ -548,7 +557,7 @@ void set_hasKey(int keyID, const char **possibleKeys, Bool *hasKeys, LOG_INFO* L
   @param[in] possibleKeys A list of possible keys
       (used for error message).
   @param[in] numKeys Number of keys.
-  @param[out] LogInfo Holds information dealing with logfile output
+  @param[out] LogInfo Holds information on warnings and errors
 */
 void check_requiredKeys(Bool *hasKeys, const Bool *requiredKeys, const char **possibleKeys, int numKeys, LOG_INFO* LogInfo) {
     int keyID;

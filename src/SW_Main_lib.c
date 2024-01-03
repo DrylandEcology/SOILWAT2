@@ -89,7 +89,7 @@ void sw_print_version(void) {
 @param[out] wallTimeLimit Terminate simulations early when
             wall time limit is reached
             (default value is set by SW_WT_StartTime())
-@param[out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void sw_init_args(int argc, char **argv, Bool *EchoInits,
                   char **_firstfile, unsigned long *userSUID,
@@ -248,7 +248,7 @@ void sw_init_args(int argc, char **argv, Bool *EchoInits,
   (unless `QuietMode` is TRUE) and exit with `EXIT_FAILURE`;
   for rSOILWAT2, then issue an error with the error message.
 
-  @param[in,out] LogInfo Holds information dealing with logfile output
+  @param[in] LogInfo Holds information on warnings and errors
 */
 void sw_fail_on_error(LOG_INFO* LogInfo) {
     #ifdef RSOILWAT
@@ -291,7 +291,7 @@ void sw_init_logs(FILE* logInitPtr, LOG_INFO* LogInfo) {
  *
  * @param[in] header String that is printed before warning and error messages;
  *            may be empty.
- * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in] LogInfo Holds information on warnings and errors
 */
 void sw_write_warnings(const char *header, LOG_INFO* LogInfo) {
 
@@ -352,7 +352,7 @@ void sw_write_warnings(const char *header, LOG_INFO* LogInfo) {
   Close logfile and notify user that logfile has content (unless QuietMode);
   print number of simulation units with warnings and errors (if any).
 
-  @param[in] LogInfo Holds information dealing with logfile output
+  @param[in] LogInfo Holds information on warnings and errors
 */
 void sw_wrapup_logs(LOG_INFO* LogInfo) {
     Bool QuietMode = (Bool)(LogInfo->QuietMode || isnull(LogInfo->logfp));

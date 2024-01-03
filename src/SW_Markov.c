@@ -105,7 +105,7 @@ static void temp_correct_wetdry(RealD *tmax, RealD *tmin, RealD rain,
            daily temperature; previously `vc10 = _vcov[1][0]`
 	@param markov_rng Random number generator of the weather
 		   generator
-	@param LogInfo Holds information dealing with logfile output
+	@param LogInfo Holds information on warnings and errors
 
     @return Daily minimum (*tmin) and maximum (*tmax) temperature.
 */
@@ -235,7 +235,7 @@ void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV* SW_Markov) {
  *
  * @param[out] SW_Markov Struct of type SW_MARKOV which holds parameters
  *  for the weather generator
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void allocateMKV(SW_MARKOV* SW_Markov, LOG_INFO* LogInfo) {
     size_t s = sizeof(RealD);
@@ -371,7 +371,7 @@ void copyMKV(SW_MARKOV *dest_MKV, SW_MARKOV *template_MKV) {
 @param[out] *tmax Maximum temperature (&deg;C).
 @param[out] *tmin Mininum temperature (&deg;C).
 @param[out] *rain Rainfall (cm).
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect *tmax Updated maximum temperature (&deg;C).
 @sideeffect *tmin Updated minimum temperature (&deg;C).
@@ -460,7 +460,7 @@ void SW_MKV_today(SW_MARKOV* SW_Markov, TimeInt doy0, TimeInt year,
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 
 @return swTRUE Returns true if prob file is correctly opened and closed.
 */
@@ -551,7 +551,7 @@ Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV* SW_Markov,
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
 	related to temperature and weather generator
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 
 @return Returns true if cov file is correctly opened and closed.
 */

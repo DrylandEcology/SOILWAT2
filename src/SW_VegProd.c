@@ -75,7 +75,7 @@ char const *key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 @param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
 @param[in] InFiles Array of program in/output files
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
@@ -580,7 +580,7 @@ void SW_VPD_read(SW_VEGPROD* SW_VegProd, char *InFiles[], LOG_INFO* LogInfo) {
 
   @param[in,out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
 	cover conditions in the simulation
-  @param[in,out] LogInfo Holds information dealing with logfile output
+  @param[out] LogInfo Holds information on warnings and errors
 
   \sideeffect
     - Adjusts `SW_VegProd->bare_cov.fCover` and `SW_VegProd->veg[k].cov.fCover`
@@ -651,7 +651,7 @@ void SW_VPD_construct(SW_VEGPROD* SW_VegProd) {
  *
  * @param[out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
  *  cover conditions in the simulation
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VPD_alloc_outptrs(SW_VEGPROD* SW_VegProd, LOG_INFO* LogInfo) {
 	OutPeriod pd;
@@ -999,7 +999,7 @@ void get_critical_rank(SW_VEGPROD* SW_VegProd){
  @param[in,out] Weather_hist Array containing all historical data of a site
  @param[in] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
- @param[in] LogInfo Holds information dealing with logfile output
+ @param[in] LogInfo Holds information on warnings and errors
  */
 
 void estimateVegetationFromClimate(SW_VEGPROD *SW_VegProd,
@@ -1119,7 +1119,7 @@ void estimateVegetationFromClimate(SW_VEGPROD *SW_VegProd,
  0) Succulents, 1) Forbs, 2) C3, 3) C4, 4) annual grasses, 5) Shrubs, 6) Trees, 7) Bare ground
  @param[out] RelAbundanceL1 Array of size five holding all estimated values aside from grasses (not including sum of grasses).
  The elements are: 0) trees, 1) shrubs 2) sum of forbs and succulents 3) overall sum of grasses 4) bare ground
- @param[in,out] LogInfo Holds information dealing with logfile output
+ @param[out] LogInfo Holds information on warnings and errors
 
  @note This function uses equations developed by
  Paruelo & Lauenroth (1996) @cite paruelo1996EA and,
@@ -1572,7 +1572,7 @@ double cutZeroInf(double testValue) {
  @param[in] arrayTwoSize Size of second array
  @param[out] finalIndexArray Array of size finalIndexArraySize that holds all unique indices from both arrays
  @param[in,out] finalIndexArraySize Value holding the size of finalIndexArray both before and after the function is run
- @param[in,out] LogInfo Holds information dealing with logfile output
+ @param[out] LogInfo Holds information on warnings and errors
  */
 
 void uniqueIndices(int arrayOne[], int arrayTwo[], int arrayOneSize, int arrayTwoSize,

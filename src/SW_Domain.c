@@ -95,7 +95,7 @@ void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain) {
  *
  * @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
  *      temporal/spatial information for a set of simulation runs
- * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in] LogInfo Holds information on warnings and errors
 */
 void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
@@ -249,7 +249,7 @@ void SW_DOM_SetProgress(char* domainType, unsigned long ncSuid[]) {
  *  temporal/spatial information for a set of simulation runs
  * @param[in] userSUID Simulation Unit Identifier requested by the user (base1);
  *            0 indicates that all simulations units within domain are requested
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
                    LOG_INFO* LogInfo) {

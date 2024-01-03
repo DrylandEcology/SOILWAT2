@@ -62,7 +62,7 @@
 
 @param[in,out] sw Comprehensive struct of type SW_ALL containing all
   information in the simulation
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 static void _begin_year(SW_ALL* sw, LOG_INFO* LogInfo) {
 	// SW_F_new_year() not needed
@@ -105,7 +105,7 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
  *
  * @param[in] source Source struct of type SW_ALL to copy
  * @param[out] dest Destination struct of type SW_ALL to be copied into
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo)
 {
@@ -179,7 +179,7 @@ void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo)
   information in the simulation
 @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   hold pointers to subroutines for output keys
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 
 void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
@@ -293,7 +293,7 @@ void SW_CTL_init_ptrs(SW_ALL* sw) {
  *
  * @param[out] sw Comprehensive struct of type SW_ALL containing
  *  all information in the simulation
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
     SW_VPD_alloc_outptrs(&sw->VegProd, LogInfo);
@@ -314,7 +314,7 @@ void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
  *            0 indicates that all simulations units within domain are requested
  * @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_setup_domain(unsigned long userSUID,
                          SW_DOMAIN* SW_Domain,
@@ -385,7 +385,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
  *  information in the simulation
  * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  *  hold pointers to subroutines for output keys
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
  */
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         LOG_INFO* LogInfo) {
@@ -442,7 +442,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
 
   @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
-  @param[in,out] LogInfo Holds information dealing with logfile output
+  @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
 
@@ -485,7 +485,7 @@ void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
   all information in the simulation
 @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   hold pointers to subroutines for output keys
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                              LOG_INFO* LogInfo) {
@@ -566,7 +566,7 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 @param[in,out] sw Comprehensive struct of type SW_ALL containing
   all information in the simulation
 @param[in,out] PathInfo Struct holding all information about the programs path/files
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
                                   LOG_INFO* LogInfo) {
@@ -709,7 +709,7 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
  * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  *  hold pointers to subroutines for output keys
  * @param[in,out] p_OUT Data storage for simulation run values
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSuid[],
                    SW_OUTPUT_POINTERS SW_OutputPtrs[],

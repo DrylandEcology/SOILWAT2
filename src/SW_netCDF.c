@@ -27,7 +27,7 @@
  * @param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF file information
  * @param[in,out] PathInfo Struct holding all information about the programs path/files
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
                          LOG_INFO* LogInfo) {
@@ -243,7 +243,7 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
  * @param[in] ncFileID Identifier of the open netCDF file to access
  * @param[in] dimName Name of the new dimension
  * @param[out] dimID Identifier of the dimension
- * @param[out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void get_dim_identifier(int ncFileID, char* dimName, int* dimID,
                                LOG_INFO* LogInfo) {
@@ -262,7 +262,7 @@ static void get_dim_identifier(int ncFileID, char* dimName, int* dimID,
  * @param[in] ncFileID Identifier of the open netCDF file to access
  * @param[in] varName Name of the new variable
  * @param[out] varID Identifier of the variable
- * @param[out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void get_var_identifier(int ncFileID, const char* varName, int* varID,
                                LOG_INFO* LogInfo) {
@@ -283,7 +283,7 @@ static void get_var_identifier(int ncFileID, const char* varName, int* varID,
  * @param[in] varName Name of the variable to access
  * @param[in] attName Name of the attribute to access
  * @param[out] strVal String buffer to hold the resulting value
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void get_str_att_val(int ncFileID, const char* varName,
                             const char* attName, char* strVal,
@@ -326,7 +326,7 @@ static void get_str_att_val(int ncFileID, const char* varName,
  * @param[in] varName Name of the variable to access
  * @param[in] attName Name of the attribute to access
  * @param[out] attVal String buffer to hold the resulting value
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void get_double_att_val(int ncFileID, const char* varName,
                                const char* attName, double* attVal,
@@ -357,7 +357,7 @@ static void get_double_att_val(int ncFileID, const char* varName,
  * @param[in] varName Name of the variable to access
  * @param[in] index Location of the value within the variable
  * @param[out] value String buffer to hold the resulting value
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void get_single_double_val(int ncFileID, const char* varName,
                                   size_t index[], double* value,
@@ -381,7 +381,7 @@ static void get_single_double_val(int ncFileID, const char* varName,
  * @param[in] ncFileID Identifier of the open netCDF file to access
  * @param[in] dimName Name of the dimension to access
  * @param[out] dimVal String buffer to hold the resulting value
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void get_dim_val(int ncFileID, char* dimName, size_t* dimVal,
                         LOG_INFO* LogInfo) {
@@ -465,7 +465,7 @@ static Bool varExists(int ncFileID, const char* varName) {
  * @param[in] startIndices Specification of where the C-provided netCDF
  *  should start writing values within the specified variable
  * @param[in] count How many values to write into the given variable
- * @param[out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_netCDF_var_uint(int ncFileID, int varID, unsigned int values[],
                                  size_t startIndices[], size_t count[],
@@ -486,7 +486,7 @@ static void fill_netCDF_var_uint(int ncFileID, int varID, unsigned int values[],
  * @param[in] startIndices Specification of where the C-provided netCDF
  *  should start writing values within the specified variable
  * @param[in] count How many values to write into the given variable
- * @param[out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_netCDF_var_double(int ncFileID, int varID, double values[],
                                    size_t startIndices[], size_t count[],
@@ -506,7 +506,7 @@ static void fill_netCDF_var_double(int ncFileID, int varID, double values[],
  * @param[in] varID Identifier of the variable to add the attribute to
  *  (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
  * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
- * @param[out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void write_uint_att(const char* attName, unsigned int attVal,
                           int varID, int ncFileID, LOG_INFO* LogInfo) {
@@ -525,7 +525,7 @@ static void write_uint_att(const char* attName, unsigned int attVal,
  * @param[in] varID Identifier of the variable to add the attribute to
  *  (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
  * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
- * @param[out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void write_str_att(const char* attName, const char* attStr,
                           int varID, int ncFileID, LOG_INFO* LogInfo) {
@@ -545,7 +545,7 @@ static void write_str_att(const char* attName, const char* attStr,
  *  (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
  * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
  * @param[in] numVals Number of values to write to the single attribute
- * @param[out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void write_double_att(const char* attName, const double* attVal, int varID,
                         int ncFileID, int numVals, LOG_INFO* LogInfo) {
@@ -563,7 +563,7 @@ static void write_double_att(const char* attName, const double* attVal, int varI
  * @param[in] size Value/size of the dimension
  * @param[in] ncFileID Domain netCDF file ID
  * @param[in,out] dimID Dimension ID
- * @param[out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void create_netCDF_dim(const char* dimName, unsigned long size,
                     int* ncFileID, int* dimID, LOG_INFO* LogInfo) {
@@ -583,7 +583,7 @@ static void create_netCDF_dim(const char* dimName, unsigned long size,
  * @param[in] ncFileID Domain netCDF file ID
  * @param[in] varType The type in which the new variable will be
  * @param[in] numDims Number of dimensions the new variable will hold
- * @param[out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void create_netCDF_var(int* varID, const char* varName, int* dimIDs,
                 int* ncFileID, int varType, int numDims, LOG_INFO* LogInfo) {
@@ -657,7 +657,7 @@ static void dealloc_netCDF_domain_vars(double **latVals, double **lonVals,
  * @param[out] yBndsVals Array to hold all "y_bnds" values
  * @param[out] xBndsVals Array to hold all "x_bnds" values
  * @param[out] domVals Array to hold all values for the domain variable
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void alloc_netCDF_domain_vars(Bool domTypeIsSite, Bool fillGeo,
             int nSUIDs, unsigned int numLatVals, unsigned int numLonVals,
@@ -739,7 +739,7 @@ static void alloc_netCDF_domain_vars(Bool domTypeIsSite, Bool fillGeo,
  * @param[in] lonBndsID Bounding variable "lon_bnds" or "x_bnds" variable identifier
  * @param[out] yBndsID Bounding variable "y_bnds" variable identifier
  * @param[out] xBndsID Bounding variable "x_bnds" variable identifier
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_domain_netCDF_vals(SW_DOMAIN* SW_Domain, int domFileID,
         int domID, int siteID, int latVarID, int lonVarID, int latBndsID,
@@ -890,7 +890,7 @@ static void fill_domain_netCDF_vals(SW_DOMAIN* SW_Domain, int domFileID,
  * @param[in] primCRSIsGeo Specifies if the current CRS type is geographic
  * @param[in] domType Type of domain in which simulations are running
  *  (gridcell/sites)
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_domain_netCDF_domain(const char* domainVarName, int* domID,
                         int domDims[], int domFileID, int nDomainDims, Bool primCRSIsGeo,
@@ -931,7 +931,7 @@ static void fill_domain_netCDF_domain(const char* domainVarName, int* domID,
  * @param[out] sVarID 'site' variable identifier
  * @param[out] latVarID Horizontal coordinate "lat" or "y" variable identifier
  * @param[out] lonVarID Horizontal coordinate "lon" or "x" variable identifier
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_domain_netCDF_s(SW_DOMAIN* SW_Domain, int* domFileID,
                     int* sDimID, int* sVarID, int* latVarID, int* lonVarID,
@@ -1027,7 +1027,7 @@ static void fill_domain_netCDF_s(SW_DOMAIN* SW_Domain, int* domFileID,
  * @param[out] lonBndsID Bounding variable "lon_bnds" variable identifier
  * @param[out] yBndsID Bounding variable "y_bnds" variable identifier
  * @param[out] xBndsID Bounding variable "x_bnds" variable identifier
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_domain_netCDF_xy(SW_DOMAIN* SW_Domain, int* domFileID,
                     int* latDimID, int* lonDimID, int* latVarID, int* lonVarID,
@@ -1141,7 +1141,7 @@ static void fill_domain_netCDF_xy(SW_DOMAIN* SW_Domain, int* domFileID,
  *  regarding to the CRS type "projected"
  * @param[in] ncFileID Identifier of the open netCDF file to write all information to
  * @param[in] proj_id Projected CRS variable identifier within the netCDF we are writing to
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_netCDF_with_proj_CRS_atts(SW_CRS* crs_projsc, int* ncFileID,
                                            int proj_id, LOG_INFO* LogInfo) {
@@ -1195,7 +1195,7 @@ static void fill_netCDF_with_proj_CRS_atts(SW_CRS* crs_projsc, int* ncFileID,
  * @param[in] ncFileID Identifier of the open netCDF file to write all information to
  * @param[in] coord_sys Name of the coordinate system being used
  * @param[in] geo_id Projected CRS variable identifier within the netCDF we are writing to
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_netCDF_with_geo_CRS_atts(SW_CRS* crs_geogsc, int* ncFileID,
                             char* coord_sys, int geo_id, LOG_INFO* LogInfo) {
@@ -1248,7 +1248,7 @@ static void fill_netCDF_with_geo_CRS_atts(SW_CRS* crs_geogsc, int* ncFileID,
  * @param[in] freqAtt Value of a global attribute "frequency" (may be "fx",
  *  "day", "week", "month", or "year")
  * @param[in] isInputFile Specifies if the file being written to is input
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
                                          const char* domType, const char* freqAtt,
@@ -1305,7 +1305,7 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
  *  (gridcell/sites)
  * @param[in] ncFileID Identifier of the open netCDF file to write all information to
  * @param[in] isInputFile Specifies whether the file being written to is input
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_netCDF_with_invariants(SW_NETCDF* SW_netCDF, char* domType,
                                         int* ncFileID, Bool isInputFile,
@@ -1358,7 +1358,7 @@ static void fill_netCDF_with_invariants(SW_NETCDF* SW_netCDF, char* domType,
  *  temporal/spatial information for a set of simulation runs
  * @param[in] ncFileID Identifier of the open netCDF file to check
  * @param[in] fileName Name of netCDF file to test (used for error messages)
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
                  LOG_INFO* LogInfo) {
@@ -1596,7 +1596,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
  *
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
@@ -1684,7 +1684,7 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  * @param[in] vertSize Size of "vertical" dimension
  * @param[in] varName Name of variable to write
  * @param[in] varAttributes Attributes that the new variable will contain
- * @param[in,out] LogInfo  Holds information dealing with logfile output
+ * @param[in,out] LogInfo  Holds information on warnings and errors
 */
 void SW_NC_create_template(const char* fileName, unsigned long timeSize,
                            unsigned long vertSize, const char* varName,
@@ -1706,7 +1706,7 @@ void SW_NC_create_template(const char* fileName, unsigned long timeSize,
  *  temporal/spatial information for a set of simulation runs
  * @param[in] ncSUID Current simulation unit identifier for which is used
  *  to get data from netCDF
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
                        LOG_INFO* LogInfo) {
@@ -1751,7 +1751,7 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
  *
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     int file;
@@ -1772,7 +1772,7 @@ void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  * @param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF file information
  * @param[in,out] PathInfo Struct holding all information about the programs path/files
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
     static const char* possibleKeys[NUM_NC_IN_KEYS] = {"domain"};
