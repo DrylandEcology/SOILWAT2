@@ -1511,6 +1511,11 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
                 return; // Exit function prematurely due to error
             }
         }
+    } else {
+        LogError(LogInfo, LOGERROR, "A geographic CRS was not found in %s. "
+                                    "Please make sure one is provided.",
+                                    fileName);
+        return; // Exit function prematurely due to error
     }
 
     /*
