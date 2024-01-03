@@ -3,5 +3,11 @@
 
 # These are known leaks that await fixing
 
-# on Apple arm64: https://github.com/google/sanitizers/issues/1501
+# on Apple arm64: suppress system libraries
+#   * https://github.com/google/sanitizers/issues/1501
+#   * https://github.com/llvm/llvm-project/issues/59758
+#   * https://discourse.llvm.org/t/does-leaksanitizer-not-work-on-macos-13-apple-silicon
 leak:realizeClassWithoutSwift
+leak:_fetchInitializingClassList
+leak:libobjc.A.dylib
+leak:libsystem_c.dylib
