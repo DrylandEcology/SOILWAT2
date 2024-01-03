@@ -195,13 +195,6 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 break;
             case 9: // Spinup Scope
                 tempdoy = atoi(value);
-                
-                if (tempdoy < 1 || tempdoy > (SW_Domain->endyr - SW_Domain->startyr)) {
-                    CloseFile(&f, LogInfo);
-                    LogError(LogInfo, LOGERROR,
-                            "%s: Invalid Scope (N = %d) for spinup", MyFileName, tempdoy);
-                    return; // Exit function prematurely due to error
-                }
                 SW_Domain->SW_SpinUp.scope = tempdoy;
                 break;
             case 10: // Spinup Duration
@@ -247,6 +240,14 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         LogError(LogInfo, LOGWARN,
                 "Domain.in: Missing End Day - using %d\n", SW_Domain->endend);
 	}
+
+    // Check if scope value is out of range
+    if (SW_Domain->SW_SpinUp.scope < 1 ||
+        SW_Domain->SW_SpinUp.scope > (SW_Domain->endyr - SW_Domain->startyr)) {
+        LogError(LogInfo, LOGERROR,
+                "%s: Invalid Scope (N = %d) for spinup", MyFileName, tempdoy);
+        return; // Exit function prematurely due to error
+    }
 }
 
 /**

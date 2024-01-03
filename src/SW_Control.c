@@ -338,10 +338,11 @@ void SW_CTL_setup_domain(unsigned long userSUID,
         return; // Exit function prematurely due to error
     }
 
+    SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
+
     SW_DOM_calc_nSUIDs(SW_Domain);
     SW_DOM_SimSet(SW_Domain, userSUID, LogInfo);
 
-    SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
 }
 
 /** @brief Setup and construct model (independent of inputs)
@@ -532,14 +533,10 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 @param[in,out] sw Comprehensive struct of type SW_ALL containing all
   information in the simulation
-@param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
-  hold pointers to subroutines for output keys
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_run_spinup(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
-                      LOG_INFO* LogInfo) {
-  // spinup stuff
-
+void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
+  
   unsigned int i, quotient = 0, remainder = 0;
   int mode = sw->Model.spinup_mode,
       yr;
@@ -550,6 +547,9 @@ void SW_CTL_run_spinup(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
     *years;
 
     years = ( TimeInt* )Mem_Malloc( sizeof( TimeInt ) * duration, "SW_CTL_run_spinup()", LogInfo );
+    if(LogInfo->stopRun) {
+      return; // Exit function prematurely due to error
+    }
 
   #ifdef SWDEBUG
   int debug = 0;
@@ -600,7 +600,7 @@ void SW_CTL_run_spinup(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
     if (debug) swprintf("\n'SW_CTL_run_spinup': simulate year = %d\n", *cur_yr);
     #endif
 
-    SW_CTL_run_current_year(sw, SW_OutputPtrs, LogInfo);
+    SW_CTL_run_current_year(sw, NULL, LogInfo);
     if(LogInfo->stopRun) {
         free( years );
         return; // Exit function prematurely due to error
@@ -794,7 +794,7 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSt
     }
 
     if ( SW_Domain->SW_SpinUp.spinup ) {
-      SW_CTL_run_spinup(local_sw_ptr, SW_OutputPtrs, LogInfo );
+      SW_CTL_run_spinup(local_sw_ptr, LogInfo );
       SW_Domain->SW_SpinUp.spinup = swFALSE;
       local_sw_ptr->Model.spinup_active = SW_Domain->SW_SpinUp.spinup;
     }
