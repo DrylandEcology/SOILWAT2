@@ -746,7 +746,7 @@ static void fill_domain_netCDF_vals(SW_DOMAIN* SW_Domain, int domFileID,
         int lonBndsID, int yBndsID, int xBndsID, LOG_INFO* LogInfo) {
 
     Bool domTypeIsSite = (Bool)(strcmp(SW_Domain->DomainType, "s") == 0);
-    unsigned int suidNum, gridNum = 0, latComp, *domVals = NULL, bndsIndex;
+    unsigned int suidNum, gridNum = 0, *domVals = NULL, bndsIndex;
     double *latVals = NULL, *lonVals = NULL;
     double *latBndsVals = NULL, *lonBndsVals = NULL;
     double *yBndsVals = NULL, *xBndsVals = NULL;
@@ -823,11 +823,10 @@ static void fill_domain_netCDF_vals(SW_DOMAIN* SW_Domain, int domFileID,
     resY = (SW_Domain->max_y - SW_Domain->min_y) / numLatVals;
     resX = (SW_Domain->max_x - SW_Domain->min_x) / numLonVals;
 
-    // Generate/fill the horizontal variable values
-    // Lon values increase from minimum to maximum
-    // Lat values are reversed, i.e., [max, ..., min]
+    // Generate/fill the horizontal coordinate variable values
     // These values are within a bounding box given by the user
     // I.e., lat values are within [ymin, ymax] and lon are within [xmin, xmax]
+    // bounds are ordered consistently with the associated coordinate
     for(gridNum = 0; gridNum < numLonVals; gridNum++) {
         lonVals[gridNum] = SW_Domain->min_x + (gridNum + .5) * resX;
 
@@ -844,17 +843,16 @@ static void fill_domain_netCDF_vals(SW_DOMAIN* SW_Domain, int domFileID,
     }
 
     for(gridNum = 0; gridNum < numLatVals; gridNum++) {
-        latComp = numLatVals - gridNum - 1;
-        latVals[latComp] = SW_Domain->min_y + (gridNum + .5) * resY;
+        latVals[gridNum] = SW_Domain->min_y + (gridNum + .5) * resY;
 
         if(!domTypeIsSite) {
-            bndsIndex = latComp * 2;
+            bndsIndex = gridNum * 2;
             if(fillGeo) {
-                latBndsVals[bndsIndex + 1] = SW_Domain->min_y + gridNum * resY;
-                latBndsVals[bndsIndex] = SW_Domain->min_y + (gridNum + 1) * resY;
+                latBndsVals[bndsIndex] = SW_Domain->min_y + gridNum * resY;
+                latBndsVals[bndsIndex + 1] = SW_Domain->min_y + (gridNum + 1) * resY;
             } else {
-                yBndsVals[bndsIndex + 1] = SW_Domain->min_y + gridNum * resY;
-                yBndsVals[bndsIndex] = SW_Domain->min_y + (gridNum + 1) * resY;
+                yBndsVals[bndsIndex] = SW_Domain->min_y + gridNum * resY;
+                yBndsVals[bndsIndex + 1] = SW_Domain->min_y + (gridNum + 1) * resY;
             }
         }
     }
